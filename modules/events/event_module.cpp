@@ -8,6 +8,7 @@
 #include "controller/command_ui_registry.h"
 #include "controller/controller_registry.h"
 #include "controller/selection_model.h"
+#include "core/global_command_context.h"
 #include "core/selection_command_context.h"
 #include "events/event_fetcher.h"
 #include "events/event_fetcher_builder.h"
@@ -82,6 +83,18 @@ EventModule::EventModule(EventModuleContext&& context)
 
   AddOpenCommand(ID_OPEN_EVENTS, kEventJournalWindowInfo, "Current");
   AddOpenCommand(ID_HISTORICAL_EVENTS, kEventJournalWindowInfo);
+  global_commands_.AddCommand(BasicCommand<GlobalCommandContext>{
+      .command_id = ID_ACKNOWLEDGE_ALL,
+      .execute_handler =
+          [this](const GlobalCommandContext&) {
+            node_event_provider().AcknowledgeAllEvents();
+            local_events_->AcknowledgeAll();
+          },
+      .enabled_handler =
+          [this](const GlobalCommandContext&) {
+            return !node_event_provider().unacked_events().empty() ||
+                   !local_events_->events().empty();
+          }});
   selection_commands_.AddCommand(BasicCommand<SelectionCommandContext>{
       .command_id = ID_ACKNOWLEDGE_CURRENT,
       .execute_handler =

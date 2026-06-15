@@ -15,21 +15,22 @@
 #include "main_window/event_dispatcher.h"
 #include "main_window/main_menu/main_menu_model.h"
 #include "main_window/main_window.h"
-#include "main_window/main_window_commands.h"
+#include "main_window/main_window_command_router.h"
 #include "main_window/main_window_interface.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/main_window_module.h"
 #include "main_window/main_window_util.h"
 #include "main_window/opened_view/opened_view_command_registry.h"
-#include "main_window/opened_view/opened_view_commands.h"
+#include "main_window/opened_view/opened_view_command_router.h"
 #include "main_window/pages/page_commands.h"
-#include "main_window/selection_commands.h"
+#include "main_window/selection_command_router.h"
 #include "main_window/standard_command_ids.h"
 #include "main_window/status_bar/status_bar_model_builder.h"
 #include "main_window/window_definition_builder.h"
 #include "modules/node_properties/node_property_component.h"
 #include "profile/profile.h"
 #include "resources/common_resources.h"
+#include "services/speech_service.h"
 
 #if defined(UI_QT)
 #include "main_window/main_window_qt.h"
@@ -80,6 +81,27 @@ BasicCommand<GlobalCommandContext> MakeMainWindowOptionCommand(
                 profile.FindMainWindow(context.main_window.GetMainWindowId());
             return prefs && prefs->*option;
           }};
+}
+
+BasicCommand<GlobalCommandContext> MakeProfileOptionCommand(
+    unsigned command_id,
+    Profile& profile,
+    bool Profile::* option,
+    std::function<bool()> enabled_handler = {}) {
+  return {.command_id = command_id,
+          .execute_handler =
+              [&profile, option](const GlobalCommandContext&) {
+                profile.*option = !(profile.*option);
+              },
+          .enabled_handler =
+              [enabled_handler =
+                   std::move(enabled_handler)](const GlobalCommandContext&) {
+                return !enabled_handler || enabled_handler();
+              },
+          .checked_handler =
+              [&profile, option](const GlobalCommandContext&) {
+                return profile.*option;
+              }};
 }
 
 #if defined(UI_QT)
@@ -140,9 +162,10 @@ BasicCommand<GlobalCommandContext> MakeLanguageCommand(
 }
 #endif
 
-void RegisterMainWindowCommands(
+void RegisterMainWindowCommandActions(
     AnyExecutor executor,
     Profile& profile,
+    SpeechService& speech_service,
     BasicCommandRegistry<GlobalCommandContext>& global_commands) {
   global_commands.AddCommand(MakeMainWindowOptionCommand(
       ID_VIEW_TOOLBAR, Translate("Toolbar"), profile, &MainWindowDef::toolbar));
@@ -161,13 +184,30 @@ void RegisterMainWindowCommands(
 #else
   (void)executor;
 #endif
+
+  global_commands.AddCommand(MakeProfileOptionCommand(ID_SHOW_WRITEOK, profile,
+                                                      &Profile::show_write_ok));
+  global_commands.AddCommand(MakeProfileOptionCommand(
+      ID_SHOW_EVENTS, profile, &Profile::event_auto_show));
+  global_commands.AddCommand(MakeProfileOptionCommand(
+      ID_HIDE_EVENTS, profile, &Profile::event_auto_hide));
+  global_commands.AddCommand(MakeProfileOptionCommand(
+      ID_WRITE_CONFIRMATION, profile, &Profile::control_confirmation));
+  global_commands.AddCommand(MakeProfileOptionCommand(
+      ID_OPT_SPEECH, profile, &Profile::speech_enabled,
+      [&speech_service] { return speech_service.is_ok(); }));
+  global_commands.AddCommand(MakeProfileOptionCommand(
+      ID_EVENT_FLASH_WINDOW, profile, &Profile::event_flash_window));
+  global_commands.AddCommand(MakeProfileOptionCommand(
+      ID_EVENT_PLAY_SOUND, profile, &Profile::event_play_sound));
 }
 
 }  // namespace
 
 MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
     : MainWindowModuleContext{std::move(context)} {
-  RegisterMainWindowCommands(executor_, profile_, global_commands_);
+  RegisterMainWindowCommandActions(executor_, profile_, speech_service_,
+                                   global_commands_);
 
   assert(scada_services_.session_service);
 
@@ -180,8 +220,9 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
               },
           .quit_handler_ = quit_handler_});
 
-  selection_commands_object_ = std::make_shared<SelectionCommands>(
-      SelectionCommandsContext{.selection_commands_ = selection_commands_});
+  selection_command_router_ =
+      std::make_shared<SelectionCommandRouter>(SelectionCommandRouterContext{
+          .selection_commands_ = selection_commands_});
 
   // Opens windows.
   main_window_manager_->Init();
@@ -206,15 +247,15 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
     }
   };
 
-  auto main_commands_factory = [this, login_handler](
-                                   MainWindowInterface& main_window,
-                                   DialogService& dialog_service) {
+  auto main_command_router_factory = [this, login_handler](
+                                         MainWindowInterface& main_window,
+                                         DialogService& dialog_service) {
     assert(scada_services_.session_service);
-    return std::make_unique<MainWindowCommands>(MainWindowCommandsContext{
-        executor_, main_window, dialog_service,
-        *scada_services_.session_service, node_event_provider_, local_events_,
-        speech_service_, profile_, *main_window_manager_, login_handler,
-        global_commands_});
+    return std::make_unique<MainWindowCommandRouter>(
+        MainWindowCommandRouterContext{executor_, main_window, dialog_service,
+                                       *scada_services_.session_service,
+                                       *main_window_manager_, login_handler,
+                                       global_commands_});
   };
 
   auto main_menu_factory =
@@ -267,7 +308,7 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
       file_manager_, *main_window_manager_, profile_,
       /*opened_view_factory=*/
       std::bind_front(&MainWindowModule::CreateOpenedView, this),
-      main_commands_factory, selection_commands_object_,
+      main_command_router_factory, selection_command_router_,
       std::move(status_bar_model), context_menu_factory, main_menu_factory,
       connection_info_provider, progress_host_};
 }
@@ -322,14 +363,13 @@ std::unique_ptr<OpenedView> MainWindowModule::CreateOpenedView(
   assert(scada_services_.session_service);
 
   auto opened_view_commands =
-      std::make_unique<OpenedViewCommands>(OpenedViewCommandsContext{
+      std::make_unique<OpenedViewCommandRouter>(OpenedViewCommandRouterContext{
           .executor_ = executor_,
-          .selection_commands_ = selection_commands_object_});
+          .selection_command_router_ = selection_command_router_});
 
   // Must be called after `OpenedView::Init` is called, so it creates the
   // controller.
-  opened_view_commands->SetContext(opened_view.get(),
-                                   &main_window.GetDialogService());
+  opened_view_commands->SetContext(opened_view.get());
   auto* opened_view_ptr = opened_view.get();
   auto& dialog_service = main_window.GetDialogService();
   opened_view_commands->AddCommandHandlers(

@@ -1,10 +1,13 @@
 ﻿#include "filesystem/filesystem_component.h"
 
 #include "aui/translation.h"
+#include "base/client_paths.h"
+#include "base/path_service.h"
 #include "controller/action.h"
 #include "controller/command_registry.h"
 #include "controller/command_ui_registry.h"
 #include "controller/controller_registry.h"
+#include "core/global_command_context.h"
 #include "core/selection_command_context.h"
 #include "filesystem/file_cache.h"
 #include "filesystem/file_manager_impl.h"
@@ -12,14 +15,51 @@
 #include "filesystem/file_synchronizer.h"
 #include "filesystem/filesystem_commands.h"
 #include "filesystem/filesystem_view.h"
+#include "main_window/main_window_interface.h"
 #include "node_service/node_service.h"
 #include "resources/common_resources.h"
 #include "services/create_tree.h"
+
+#ifdef _WIN32
+#include <Windows.h>
+#include <shellapi.h>
+#endif
+#include <cstdlib>
+#include <filesystem>
+
+namespace {
 
 const WindowInfo kWindowInfo = {
     ID_FILE_SYSTEM_VIEW, "FileSystemView", u"Files", WIN_SING, 200, 400};
 
 REGISTER_CONTROLLER(FileSystemView, kWindowInfo);
+
+void OpenPublicFolder() {
+  std::filesystem::path path;
+  if (!base::PathService::Get(client::DIR_PUBLIC, &path)) {
+    return;
+  }
+
+#ifdef _WIN32
+  ShellExecuteW(/*hwnd=*/nullptr, /*lpOperation=*/L"open",
+                /*lpFile=*/path.wstring().c_str(), /*lpParameters=*/nullptr,
+                /*lpDirectory=*/nullptr,
+                /*nShowCmd=*/SW_SHOWNORMAL);
+#else
+  std::string command = "open '";
+  for (char ch : path.string()) {
+    if (ch == '\'') {
+      command += "'\\''";
+    } else {
+      command += ch;
+    }
+  }
+  command += "'";
+  std::system(command.c_str());
+#endif
+}
+
+}  // namespace
 
 // FileSystemComponent
 
@@ -46,6 +86,15 @@ FileSystemComponent::FileSystemComponent(FileSystemComponentContext&& context)
              .category_ = CATEGORY_CREATE,
              .title_ = Translate("File"),
              .short_title_ = Translate("Add File...")});
+
+  global_commands_.AddCommand(BasicCommand<GlobalCommandContext>{
+      .command_id = ID_VIEW_PUBLIC_FOLDER,
+      .execute_handler =
+          [](const GlobalCommandContext&) { OpenPublicFolder(); },
+      .available_handler =
+          [](const GlobalCommandContext& context) {
+            return context.main_window.GetActiveView() != nullptr;
+          }});
 
   open_file_command_ = std::bind_front(
       &OpenFileCommandImpl::Execute,

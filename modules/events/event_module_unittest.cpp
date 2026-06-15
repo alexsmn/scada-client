@@ -4,9 +4,9 @@
 #include "aui/test/app_environment.h"
 #include "base/awaitable.h"
 #include "base/logger.h"
+#include "controller/command_ui_registry.h"
 #include "controller/selection_model.h"
 #include "controller/test/controller_environment.h"
-#include "controller/command_ui_registry.h"
 #include "controller/window_info.h"
 #include "core/selection_command_context.h"
 #include "main_window/main_window_mock.h"
@@ -31,6 +31,7 @@ class EventModuleTest : public Test {
       .profile_ = controller_env_.profile_,
       .services_ = controller_env_.services(),
       .controller_registry_ = controller_env_.controller_registry_,
+      .global_commands_ = controller_env_.global_commands_,
       .selection_commands_ = controller_env_.selection_commands_,
       .ui_command_registry_ = ui_command_registry_}};
 };
@@ -87,23 +88,22 @@ TEST_F(EventModuleTest, OpenEventsCommandRoutesToMainWindowOpenView) {
 
   WindowDefinition opened;
   EXPECT_CALL(main_window, OpenView(_, _))
-      .WillOnce(Invoke(
-          [&opened](const WindowDefinition& def, bool /*activate*/)
-              -> Awaitable<OpenedViewInterface*> {
-            opened = def;
-            co_return nullptr;
-          }));
+      .WillOnce(Invoke([&opened](const WindowDefinition& def, bool /*activate*/)
+                           -> Awaitable<OpenedViewInterface*> {
+        opened = def;
+        co_return nullptr;
+      }));
 
   const auto* command =
       controller_env_.selection_commands_.FindCommand(ID_OPEN_EVENTS);
   ASSERT_THAT(command, NotNull());
   ASSERT_TRUE(command->execute_handler);
 
-  command->execute_handler(SelectionCommandContext{
-      .selection = selection,
-      .dialog_service = dialog_service,
-      .main_window = main_window,
-      .opened_view = opened_view});
+  command->execute_handler(
+      SelectionCommandContext{.selection = selection,
+                              .dialog_service = dialog_service,
+                              .main_window = main_window,
+                              .opened_view = opened_view});
 
   EXPECT_EQ(opened_view.open_definition_await_count, 0);
   EXPECT_TRUE(opened.type.empty());

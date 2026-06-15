@@ -21,7 +21,7 @@ class MainWindowInterface;
 class MainWindowManager;
 class Profile;
 class ProgressHost;
-class SelectionCommands;
+class SelectionCommandRouter;
 class UiCommandRegistry;
 class ViewManager;
 
@@ -38,9 +38,9 @@ struct MainWindowContext {
   std::function<std::unique_ptr<CommandHandler>(
       MainWindowInterface& main_window,
       DialogService& dialog_service)>
-      main_commands_factory_;
+      main_command_router_factory_;
 
-  std::shared_ptr<SelectionCommands> selection_commands_;
+  std::shared_ptr<SelectionCommandRouter> selection_command_router_;
   std::shared_ptr<aui::StatusBarModel> status_bar_model_;
 
   std::function<std::unique_ptr<aui::MenuModel>(

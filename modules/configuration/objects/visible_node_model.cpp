@@ -118,6 +118,8 @@ void ProxyVisibleNode::SetUnderlyingNode(std::shared_ptr<VisibleNode> node) {
         ptr->NotifyChanged();
     });
   }
+
+  NotifyChanged();
 }
 
 std::u16string ProxyVisibleNode::GetText() const {

@@ -58,6 +58,7 @@ class MainWindowModuleTest : public Test {
        .profile_ = controller_env_.profile_,
        .services_ = controller_env_.services(),
        .controller_registry_ = controller_env_.controller_registry_,
+       .global_commands_ = controller_env_.global_commands_,
        .selection_commands_ = controller_env_.selection_commands_,
        .ui_command_registry_ = ui_command_registry_}};
 

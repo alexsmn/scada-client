@@ -240,6 +240,7 @@ void ClientApplication::CreateEventAndDataServices(
       .profile_ = *profile_,
       .services_ = ctx.audited_scada_services,
       .controller_registry_ = *controller_registry_,
+      .global_commands_ = core_module_->global_commands(),
       .selection_commands_ = core_module_->selection_commands(),
       .ui_command_registry_ = *ui_command_registry_});
 
@@ -305,13 +306,15 @@ void ClientApplication::CreateUserServices(const PostLoginContext& ctx) {
 }
 
 void ClientApplication::CreateFeatureComponents(const PostLoginContext& ctx) {
-  filesystem_component_ = std::make_unique<FileSystemComponent>(
-      FileSystemComponentContext{.executor_ = executor_,
-                                 .node_service_ = *node_service_,
-                                 .task_manager_ = *task_manager_,
-                                 .create_tree_ = *create_tree_,
-                                 .ui_command_registry_ = *ui_command_registry_,
-                                 .scada_client_ = ctx.scada_client});
+  filesystem_component_ =
+      std::make_unique<FileSystemComponent>(FileSystemComponentContext{
+          .executor_ = executor_,
+          .node_service_ = *node_service_,
+          .task_manager_ = *task_manager_,
+          .create_tree_ = *create_tree_,
+          .global_commands_ = core_module_->global_commands(),
+          .ui_command_registry_ = *ui_command_registry_,
+          .scada_client_ = ctx.scada_client});
 
   favorites_module_ = std::make_unique<FavoritesModule>(FavoritesModuleContext{
       .profile_ = *profile_,

@@ -25,6 +25,7 @@ class NodeService;
 class TaskManager;
 class UiCommandRegistry;
 struct SelectionCommandContext;
+struct GlobalCommandContext;
 
 struct FileSystemComponentContext {
   // Needed by `FileManagerImpl` so its coroutine internals have an
@@ -33,6 +34,7 @@ struct FileSystemComponentContext {
   NodeService& node_service_;
   TaskManager& task_manager_;
   CreateTree& create_tree_;
+  BasicCommandRegistry<GlobalCommandContext>& global_commands_;
   UiCommandRegistry& ui_command_registry_;
   scada::client scada_client_;
 };

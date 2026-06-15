@@ -1,15 +1,16 @@
 ﻿#include "configuration/objects/object_tree_view.h"
 
 #include "aui/tree.h"
-#include "ui/common/client_utils.h"
-#include "configuration/tree/configuration_tree_drop_handler.h"
 #include "configuration/objects/object_tree_model.h"
+#include "configuration/tree/configuration_tree_drop_handler.h"
 #include "controller/contents_model.h"
 #include "controller/controller_delegate.h"
 #include "model/data_items_node_ids.h"
+#include "node_service/node_format.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "profile/profile.h"
+#include "ui/common/client_utils.h"
 
 namespace {
 
@@ -86,7 +87,16 @@ std::optional<std::u16string> ObjectTreeView::GetFirstValueTextForTesting() {
   }
 
   auto value_text = model().GetText(value_node_for_testing_, /*column_id=*/1);
-  if (value_text.empty() || value_node_change_count_for_testing_ == 0)
+  if (!value_text.empty() && value_node_change_count_for_testing_ != 0)
+    return value_text;
+
+  auto node = value_node_for_testing_->node();
+  if (!node.fetched())
+    return std::nullopt;
+
+  value_text =
+      FormatValue(node, node.value(), scada::Qualifier{}, FORMAT_DEFAULT);
+  if (value_text.empty())
     return std::nullopt;
 
   return value_text;
@@ -99,8 +109,7 @@ std::vector<std::u16string> ObjectTreeView::GetExpandedLabelPathForTesting(
   if (!node)
     return labels;
 
-  auto expand_path = [&](auto& self,
-                         ConfigurationTreeNode& current,
+  auto expand_path = [&](auto& self, ConfigurationTreeNode& current,
                          int depth) -> bool {
     if (current.CanFetchMore())
       current.FetchMore();

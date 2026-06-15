@@ -6,8 +6,6 @@
 #include "core/global_command_context.h"
 
 #include <functional>
-#include <memory>
-#include <type_traits>
 
 namespace scada {
 class SessionService;
@@ -17,33 +15,25 @@ template <class T>
 class BasicCommandRegistry;
 
 class DialogService;
-class LocalEvents;
 class MainWindowInterface;
 class MainWindowManager;
-class NodeEventProvider;
-class Profile;
-class SpeechService;
 struct GlobalCommandContext;
 
-struct MainWindowCommandsContext {
+struct MainWindowCommandRouterContext {
   AnyExecutor executor_;
   MainWindowInterface& main_window_;
   DialogService& dialog_service_;
   scada::SessionService& session_service_;
-  NodeEventProvider& node_event_provider_;
-  LocalEvents& local_events_;
-  SpeechService& speech_service_;
-  Profile& profile_;
   MainWindowManager& main_window_manager_;
   std::function<void(bool login)> login_handler_;
   BasicCommandRegistry<GlobalCommandContext>& global_commands_;
 };
 
-class MainWindowCommands : private MainWindowCommandsContext,
-                           public CommandHandler {
+class MainWindowCommandRouter : private MainWindowCommandRouterContext,
+                                public CommandHandler {
  public:
-  explicit MainWindowCommands(MainWindowCommandsContext&& context);
-  ~MainWindowCommands();
+  explicit MainWindowCommandRouter(MainWindowCommandRouterContext&& context);
+  ~MainWindowCommandRouter();
 
   // CommandHandler
   virtual CommandHandler* GetCommandHandler(unsigned command_id);
@@ -53,7 +43,6 @@ class MainWindowCommands : private MainWindowCommandsContext,
 
  private:
   void ShowRenameWindowDialog();
-  void RenameCurrentPage();
 
   GlobalCommandContext command_context_;
 };

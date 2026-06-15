@@ -8,10 +8,10 @@
 #include "controller/selection_model.h"
 #include "controller/window_info.h"
 #include "filesystem/file_manager.h"
-#include "main_window/pages/initial_page.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
-#include "main_window/selection_commands.h"
+#include "main_window/pages/initial_page.h"
+#include "main_window/selection_command_router.h"
 #include "main_window/tab_popup_menu.h"
 #include "main_window/view_manager.h"
 #include "net/net_executor_adapter.h"
@@ -25,13 +25,12 @@ bool BaseMainWindow::g_hide_for_testing = false;
 
 namespace {
 
-Awaitable<OpenedViewInterface*> OpenViewAsync(
-    AnyExecutor executor,
-    FileManager& file_manager,
-    ViewManager& view_manager,
-    BaseMainWindow& main_window,
-    WindowDefinition window_def,
-    bool make_active) {
+Awaitable<OpenedViewInterface*> OpenViewAsync(AnyExecutor executor,
+                                              FileManager& file_manager,
+                                              ViewManager& view_manager,
+                                              BaseMainWindow& main_window,
+                                              WindowDefinition window_def,
+                                              bool make_active) {
   if (!window_def.path.empty()) {
     try {
       co_await file_manager.DownloadFileFromServer(window_def.path);
@@ -54,7 +53,7 @@ Awaitable<OpenedViewInterface*> OpenViewAsync(
 BaseMainWindow::BaseMainWindow(MainWindowContext&& context,
                                DialogService& dialog_service)
     : MainWindowContext{std::move(context)},
-      commands_{main_commands_factory_(*this, dialog_service)},
+      commands_{main_command_router_factory_(*this, dialog_service)},
       context_menu_model_{context_menu_factory_(*this, *commands_)},
       tab_popup_menu_{std::make_unique<TabPopupMenu>(*commands_)} {}
 
@@ -117,8 +116,7 @@ void BaseMainWindow::SetActiveView(OpenedView* view) {
             active_view_->controller().GetSelectionModel()) {
       selection_model->change_handler = nullptr;
     }
-    selection_commands_->SetContext(nullptr, nullptr, nullptr, nullptr,
-                                    nullptr);
+    selection_command_router_->SetContext(nullptr, nullptr, nullptr, nullptr);
   }
 
   active_view_ = view;
@@ -126,9 +124,8 @@ void BaseMainWindow::SetActiveView(OpenedView* view) {
   if (active_view_) {
     auto* selection_model = active_view_->controller().GetSelectionModel();
 
-    selection_commands_->SetContext(this, &GetDialogService(), active_view_,
-                                    &active_view_->controller(),
-                                    selection_model);
+    selection_command_router_->SetContext(this, &GetDialogService(),
+                                          active_view_, selection_model);
 
     if (selection_model) {
       selection_model->change_handler = [this] { OnSelectionChanged(); };
@@ -143,10 +140,9 @@ void BaseMainWindow::SetActiveView(OpenedView* view) {
 }
 
 void BaseMainWindow::OpenPane(const WindowInfo& window_info, bool activate) {
-  CoSpawn(executor_, [this, window_def = WindowDefinition(window_info),
-                      activate]() -> Awaitable<void> {
-    co_await OpenView(window_def, activate);
-  });
+  CoSpawn(executor_,
+          [this, window_def = WindowDefinition(window_info), activate]()
+              -> Awaitable<void> { co_await OpenView(window_def, activate); });
 }
 
 void BaseMainWindow::ClosePane(const WindowInfo& window_info) {
@@ -214,7 +210,8 @@ void BaseMainWindow::OnViewClosed(OpenedView& view) {
     SetActiveDataView(nullptr);
   }
 
-  BOOST_LOG_TRIVIAL(info) << "Window " << view.window_info().title << " closed.";
+  BOOST_LOG_TRIVIAL(info) << "Window " << view.window_info().title
+                          << " closed.";
 
   if (view_manager_->is_closing_page()) {
     return;

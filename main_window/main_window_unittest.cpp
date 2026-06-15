@@ -18,8 +18,8 @@
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
 #include "main_window/opened_view/opened_view_command_registry.h"
-#include "main_window/opened_view/opened_view_commands.h"
-#include "main_window/selection_commands.h"
+#include "main_window/opened_view/opened_view_command_router.h"
+#include "main_window/selection_command_router.h"
 #include "main_window/status_bar/status_bar_model_impl.h"
 #include "modules/graph/graph_component.h"
 #include "modules/portfolio/portfolio_module.h"
@@ -95,9 +95,9 @@ class TestActionController final : public Controller {
   CommandRegistry command_registry_;
 };
 
-class TestOpenedViewCommands final : public CommandHandler {
+class TestOpenedViewCommandRouter final : public CommandHandler {
  public:
-  explicit TestOpenedViewCommands(Controller& controller)
+  explicit TestOpenedViewCommandRouter(Controller& controller)
       : controller_{controller} {}
 
   CommandHandler* GetCommandHandler(unsigned command_id) override {
@@ -199,7 +199,7 @@ std::unique_ptr<TestOpenedViewState> MakeOpenedViewWithCommands(
       }});
   state->view->Init();
   state->view->commands =
-      std::make_unique<TestOpenedViewCommands>(state->view->controller());
+      std::make_unique<TestOpenedViewCommandRouter>(state->view->controller());
 
   return state;
 }
@@ -317,7 +317,7 @@ MainWindowContext MainWindowTest::MakeMainWindowContext() {
       .main_window_manager_ = main_window_manager_,
       .profile_ = controller_env_.profile_,
       .opened_view_factory_ = opened_view_factory_.AsStdFunction(),
-      .main_commands_factory_ =
+      .main_command_router_factory_ =
           [](MainWindowInterface& main_window, DialogService& dialog_service) {
             return std::make_unique<CommandHandler>();
           },
@@ -409,7 +409,7 @@ TEST(MainWindowQtTest, MenuBarPopulatesTopLevelMenusImmediately) {
        .main_window_manager_ = main_window_manager,
        .profile_ = controller_env.profile_,
        .opened_view_factory_ = opened_view_factory.AsStdFunction(),
-       .main_commands_factory_ =
+       .main_command_router_factory_ =
            [](MainWindowInterface& main_window, DialogService& dialog_service) {
              return std::make_unique<CommandHandler>();
            },

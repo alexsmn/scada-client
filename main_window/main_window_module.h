@@ -29,7 +29,7 @@ class PortfolioManager;
 class Profile;
 class PrintService;
 class ProgressHost;
-class SelectionCommands;
+class SelectionCommandRouter;
 class SpeechService;
 class TaskManager;
 class TimedDataService;
@@ -86,7 +86,7 @@ class MainWindowModule : private MainWindowModuleContext {
 
   std::unique_ptr<MainWindowManager> main_window_manager_;
   std::unique_ptr<EventDispatcher> event_dispatcher_;
-  std::shared_ptr<SelectionCommands> selection_commands_object_;
+  std::shared_ptr<SelectionCommandRouter> selection_command_router_;
 
   std::stack<std::shared_ptr<void>> singletons_;
 };

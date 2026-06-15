@@ -31,3 +31,19 @@ TEST_F(VisibleNodeModelTest, Test) {
   void* tree_node = &value;
   model_.SetNode(tree_node, std::make_unique<TestVisibleNode>());
 }
+
+TEST(ProxyVisibleNodeTest, NotifiesWhenUnderlyingNodeAttached) {
+  int change_count = 0;
+  auto proxy_node = std::make_shared<ProxyVisibleNode>();
+  proxy_node->SetChangeHandler([&] { ++change_count; });
+
+  auto underlying_node = std::make_shared<TestVisibleNode>();
+  EXPECT_CALL(*underlying_node, GetText()).WillOnce(Return(u"value"));
+
+  proxy_node->SetUnderlyingNode(underlying_node);
+
+  EXPECT_EQ(change_count, 1);
+  EXPECT_EQ(proxy_node->GetText(), u"value");
+
+  proxy_node->SetChangeHandler(nullptr);
+}

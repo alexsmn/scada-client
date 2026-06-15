@@ -14,7 +14,7 @@ class MenuModel;
 
 class ContentsObserver;
 class DialogService;
-class MainWindowCommands;
+class MainWindowCommandRouter;
 class OpenedView;
 class Page;
 class ViewManager;
@@ -137,5 +137,5 @@ class BaseMainWindow : protected MainWindowContext,
 
   friend class OpenedView;
   friend class NativeMainWindow;
-  friend class MainWindowCommands;
+  friend class MainWindowCommandRouter;
 };
