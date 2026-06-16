@@ -1,6 +1,7 @@
 ﻿#include "main_window/main_window.h"
 
 #include "aui/key_codes.h"
+#include "aui/models/menu_model.h"
 #include "base/boost_log.h"
 #include "controller/contents_model.h"
 #include "controller/contents_observer.h"
@@ -86,6 +87,21 @@ void BaseMainWindow::CleanupForTesting() {
   active_data_view_ = nullptr;
 
   view_manager_->ClosePage();
+}
+
+bool BaseMainWindow::IsContextMenuCommandAvailableForTesting(
+    unsigned command_id) {
+  if (!context_menu_model_) {
+    return false;
+  }
+
+  context_menu_model_->MenuWillShow();
+
+  auto* model = context_menu_model_.get();
+  int index = -1;
+  return aui::MenuModel::GetModelAndIndexForCommandId(command_id, &model,
+                                                      &index) &&
+         model->IsEnabledAt(index);
 }
 
 void BaseMainWindow::BeforeClose() {

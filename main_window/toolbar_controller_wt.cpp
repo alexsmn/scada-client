@@ -10,6 +10,17 @@
 #include <wt/WPushButton.h>
 #pragma warning(pop)
 
+namespace {
+
+constexpr CommandContextId kToolbarContexts[] = {
+    CommandContextId::Global,
+    CommandContextId::Selection,
+    CommandContextId::OpenedView,
+    CommandContextId::Controller,
+};
+
+}  // namespace
+
 ToolbarController::ToolbarController(ToolbarControllerContext&& context)
     : ToolbarControllerContext{std::move(context)} {}
 
@@ -17,6 +28,10 @@ std::unique_ptr<Wt::WToolBar> ToolbarController::CreateToolbar() {
   auto toolbar = std::make_unique<Wt::WToolBar>();
 
   for (auto* command_info : command_manager_.commands()) {
+    if (!command_info->show_in_toolbar) {
+      continue;
+    }
+
     // bool collapsible = !CanExpandCommandCategory(command_info->category);
     auto action = std::make_unique<Wt::WPushButton>();
     action->setText(command_info->GetShortTitle());
@@ -26,7 +41,8 @@ std::unique_ptr<Wt::WToolBar> ToolbarController::CreateToolbar() {
     action->setCheckable(command_info->checkable());
     auto command_id = command_info->command_id;
     action->clicked().connect([this, command_id] {
-      auto* handler = commands_.GetCommandHandler(command_id);
+      auto* handler = ResolveCommandHandler(command_manager_, command_id,
+                                            kToolbarContexts, commands_);
       if (handler && handler->IsCommandEnabled(command_id))
         handler->ExecuteCommand(command_id);
     });
@@ -90,7 +106,8 @@ void ToolbarController::UpdateAction(Wt::WPushButton& action,
       action.setText(a->GetTitle());
   }
 
-  auto* handler = commands_.GetCommandHandler(command_id);
+  auto* handler = ResolveCommandHandler(command_manager_, command_id,
+                                        kToolbarContexts, commands_);
   if (handler)
     action.show();
   else

@@ -29,12 +29,12 @@ Awaitable<OperatorUseCaseSmokeResult> MakeSmokeResultAsync(
 class E2eTestSupportTest : public testing::Test {
  public:
   void SetUp() override {
-    report_path_ = std::filesystem::temp_directory_path() /
-                   ("scada_operator_use_cases_" +
-                    std::to_string(std::chrono::steady_clock::now()
-                                       .time_since_epoch()
-                                       .count()) +
-                    ".txt");
+    report_path_ =
+        std::filesystem::temp_directory_path() /
+        ("scada_operator_use_cases_" +
+         std::to_string(
+             std::chrono::steady_clock::now().time_since_epoch().count()) +
+         ".txt");
   }
 
   void TearDown() override {
@@ -52,21 +52,28 @@ class E2eTestSupportTest : public testing::Test {
               return MakeSmokeResultAsync(
                   OperatorUseCaseSmokeResult{.ok = true, .detail = "opened"});
             },
-        .is_window_registered = [](std::string_view window_type) {
-          return window_type == "Registered";
-        },
-        .has_selection_command = [](unsigned command_id) {
-          return command_id == 11;
-        },
-        .has_global_command = [](unsigned command_id) {
-          return command_id == 22;
-        },
-        .has_main_window_command = [](unsigned command_id) {
-          return command_id == 33;
-        },
-        .is_window_printable = [](std::string_view window_type) {
-          return window_type == "Printable";
-        },
+        .is_window_registered =
+            [](std::string_view window_type) {
+              return window_type == "Registered";
+            },
+        .has_selection_command =
+            [](unsigned command_id) { return command_id == 11; },
+        .has_global_command =
+            [](unsigned command_id) { return command_id == 22; },
+        .has_main_window_command =
+            [](unsigned command_id) { return command_id == 33; },
+        .has_context_menu_commands =
+            [](std::string_view window_type,
+               const std::vector<unsigned>& command_ids) {
+              bool ok = window_type == "ContextWindow" &&
+                        command_ids == std::vector<unsigned>{44, 55};
+              return MakeSmokeResultAsync(OperatorUseCaseSmokeResult{
+                  .ok = ok, .detail = ok ? "context-menu" : "missing"});
+            },
+        .is_window_printable =
+            [](std::string_view window_type) {
+              return window_type == "Printable";
+            },
     };
   }
 
@@ -86,6 +93,7 @@ TEST_F(E2eTestSupportTest, OperatorUseCaseSmokeWritesSuccessfulReport) {
        .registered_selection_commands = {11},
        .registered_global_commands = {22},
        .main_window_commands = {33},
+       .context_menu_commands = {{"ContextWindow", {44, 55}}},
        .printable_window_types = {"Printable"}}};
 
   WaitAwaitable(executor_, RunE2eOperatorUseCaseSmoke(
@@ -100,6 +108,8 @@ TEST_F(E2eTestSupportTest, OperatorUseCaseSmokeWritesSuccessfulReport) {
   EXPECT_NE(report.find(" command 11"), std::string::npos);
   EXPECT_NE(report.find(" global-command 22"), std::string::npos);
   EXPECT_NE(report.find(" main-window-command 33"), std::string::npos);
+  EXPECT_NE(report.find(" context-menu ContextWindow context-menu"),
+            std::string::npos);
   EXPECT_NE(report.find(" printable Printable"), std::string::npos);
 }
 
@@ -117,9 +127,9 @@ TEST_F(E2eTestSupportTest, OperatorUseCaseSmokeRecordsOpenWindowFailure) {
        .description = "window open failure",
        .open_window_types = {"BrokenWindow"}}};
 
-  WaitAwaitable(executor_, RunE2eOperatorUseCaseSmoke(
-                               std::move(context), report_path_,
-                               std::move(checks)));
+  WaitAwaitable(executor_,
+                RunE2eOperatorUseCaseSmoke(std::move(context), report_path_,
+                                           std::move(checks)));
 
   EXPECT_EQ(opened_windows_, std::vector<std::string>{"BrokenWindow"});
   const auto report = ReadFile(report_path_);
@@ -147,16 +157,16 @@ TEST_F(E2eTestSupportTest, OperatorUseCaseSmokeAllowsOptionalMissingItems) {
 }
 
 TEST_F(E2eTestSupportTest, ObjectViewValuesCheckWritesSuccessfulReport) {
-  WaitAwaitable(executor_, RunE2eObjectViewValuesCheck(
-                               ObjectViewValuesCheckContext{
-                                   .executor = executor_,
-                                   .get_first_value_text =
-                                       [] { return std::optional{u"value"}; },
-                                   .timeout = std::chrono::milliseconds{0},
-                                   .poll_interval =
-                                       std::chrono::milliseconds{0},
-                               },
-                               report_path_));
+  WaitAwaitable(
+      executor_,
+      RunE2eObjectViewValuesCheck(
+          ObjectViewValuesCheckContext{
+              .executor = executor_,
+              .get_first_value_text = [] { return std::optional{u"value"}; },
+              .timeout = std::chrono::milliseconds{0},
+              .poll_interval = std::chrono::milliseconds{0},
+          },
+          report_path_));
 
   const auto report = ReadFile(report_path_);
   EXPECT_NE(report.find("object-view-values: ok"), std::string::npos);
@@ -164,19 +174,16 @@ TEST_F(E2eTestSupportTest, ObjectViewValuesCheckWritesSuccessfulReport) {
 }
 
 TEST_F(E2eTestSupportTest, ObjectViewValuesCheckWritesTimeoutReport) {
-  WaitAwaitable(executor_, RunE2eObjectViewValuesCheck(
-                               ObjectViewValuesCheckContext{
-                                   .executor = executor_,
-                                   .get_first_value_text =
-                                       [] {
-                                         return std::optional<
-                                             std::u16string>{};
-                                       },
-                                   .timeout = std::chrono::milliseconds{0},
-                                   .poll_interval =
-                                       std::chrono::milliseconds{0},
-                               },
-                               report_path_));
+  WaitAwaitable(executor_,
+                RunE2eObjectViewValuesCheck(
+                    ObjectViewValuesCheckContext{
+                        .executor = executor_,
+                        .get_first_value_text =
+                            [] { return std::optional<std::u16string>{}; },
+                        .timeout = std::chrono::milliseconds{0},
+                        .poll_interval = std::chrono::milliseconds{0},
+                    },
+                    report_path_));
 
   const auto report = ReadFile(report_path_);
   EXPECT_NE(report.find("object-view-values: failure"), std::string::npos);
@@ -184,20 +191,19 @@ TEST_F(E2eTestSupportTest, ObjectViewValuesCheckWritesTimeoutReport) {
 }
 
 TEST_F(E2eTestSupportTest, ObjectTreeLabelsCheckWritesSuccessfulReport) {
-  WaitAwaitable(executor_, RunE2eObjectTreeLabelsCheck(
-                               ObjectTreeLabelsCheckContext{
-                                   .executor = executor_,
-                                   .get_expanded_labels =
-                                       [] {
-                                         return std::vector<std::u16string>{
-                                             u"Root", u"Area", u"Device",
-                                             u"Point"};
-                                       },
-                                   .timeout = std::chrono::milliseconds{0},
-                                   .poll_interval =
-                                       std::chrono::milliseconds{0},
-                               },
-                               report_path_));
+  WaitAwaitable(executor_,
+                RunE2eObjectTreeLabelsCheck(
+                    ObjectTreeLabelsCheckContext{
+                        .executor = executor_,
+                        .get_expanded_labels =
+                            [] {
+                              return std::vector<std::u16string>{
+                                  u"Root", u"Area", u"Device", u"Point"};
+                            },
+                        .timeout = std::chrono::milliseconds{0},
+                        .poll_interval = std::chrono::milliseconds{0},
+                    },
+                    report_path_));
 
   const auto report = ReadFile(report_path_);
   EXPECT_NE(report.find("object-tree-labels: ok"), std::string::npos);
@@ -206,19 +212,19 @@ TEST_F(E2eTestSupportTest, ObjectTreeLabelsCheckWritesSuccessfulReport) {
 }
 
 TEST_F(E2eTestSupportTest, ObjectTreeLabelsCheckWritesTimeoutReport) {
-  WaitAwaitable(executor_, RunE2eObjectTreeLabelsCheck(
-                               ObjectTreeLabelsCheckContext{
-                                   .executor = executor_,
-                                   .get_expanded_labels =
-                                       [] {
-                                         return std::vector<std::u16string>{
-                                             u"Root", u"[loading]"};
-                                       },
-                                   .timeout = std::chrono::milliseconds{0},
-                                   .poll_interval =
-                                       std::chrono::milliseconds{0},
-                               },
-                               report_path_));
+  WaitAwaitable(executor_,
+                RunE2eObjectTreeLabelsCheck(
+                    ObjectTreeLabelsCheckContext{
+                        .executor = executor_,
+                        .get_expanded_labels =
+                            [] {
+                              return std::vector<std::u16string>{u"Root",
+                                                                 u"[loading]"};
+                            },
+                        .timeout = std::chrono::milliseconds{0},
+                        .poll_interval = std::chrono::milliseconds{0},
+                    },
+                    report_path_));
 
   const auto report = ReadFile(report_path_);
   EXPECT_NE(report.find("object-tree-labels: failure"), std::string::npos);

@@ -2,8 +2,32 @@
 
 #include <algorithm>
 
+CommandDescriptor& UiCommandRegistry::RegisterCommand(
+    CommandDescriptor descriptor,
+    CommandPlacements placements) {
+  descriptor.show_in_toolbar = placements.toolbar;
+  descriptor.show_in_context_menu = placements.context_menu;
+
+  auto& registered = command_manager_.RegisterCommand(std::move(descriptor));
+  registered.show_in_toolbar = placements.toolbar;
+  registered.show_in_context_menu = placements.context_menu;
+
+  for (auto& contribution : placements.main_menu) {
+    contribution.command_id = registered.command_id;
+    AddMenuItem(std::move(contribution));
+  }
+
+  return registered;
+}
+
+void UiCommandRegistry::RegisterHandler(unsigned command_id,
+                                        CommandContextId context_id,
+                                        CommandHandler& handler) {
+  command_manager_.RegisterHandler(command_id, context_id, handler);
+}
+
 void UiCommandRegistry::AddAction(Action action) {
-  command_manager_.RegisterCommand(ToCommandDescriptor(action));
+  RegisterCommand(ToCommandDescriptor(action));
   action_manager_.AddAction(std::move(action));
 }
 

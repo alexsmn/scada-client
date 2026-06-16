@@ -110,6 +110,13 @@ void BuildDefaultPopupMenu(QMenu& menu,
   BuildMenu(menu, context_menu_model);
 }
 
+constexpr CommandContextId kToolbarContexts[] = {
+    CommandContextId::Global,
+    CommandContextId::Selection,
+    CommandContextId::OpenedView,
+    CommandContextId::Controller,
+};
+
 }  // namespace
 
 MainWindow::MainWindow(MainWindowContext&& context)
@@ -229,6 +236,10 @@ void MainWindow::CreateStatusBar() {
 void MainWindow::CreateToolbar() {
   auto& command_manager = ui_command_registry_.command_manager();
   for (auto* command_info : command_manager.commands()) {
+    if (!command_info->show_in_toolbar) {
+      continue;
+    }
+
     bool collapsible = !CanExpandCommandCategory(command_info->category);
     auto* action = new QAction(
         QString::fromStdU16String(command_info->GetShortTitle()), this);
@@ -241,12 +252,14 @@ void MainWindow::CreateToolbar() {
     if (command_info->shortcut.has_value())
       action->setShortcut(ToQKeySequence(*command_info->shortcut));
     auto command_id = command_info->command_id;
-    QObject::connect(action, &QAction::triggered,
-                     [this, command_id](bool checked) {
-                       auto* handler = commands_->GetCommandHandler(command_id);
-                       if (handler && handler->IsCommandEnabled(command_id))
-                         handler->ExecuteCommand(command_id);
-                     });
+    QObject::connect(
+        action, &QAction::triggered, [this, command_id](bool checked) {
+          auto* handler =
+              ResolveCommandHandler(ui_command_registry_.command_manager(),
+                                    command_id, kToolbarContexts, *commands_);
+          if (handler && handler->IsCommandEnabled(command_id))
+            handler->ExecuteCommand(command_id);
+        });
     action_map_.emplace(command_info->command_id, action);
     action_command_ids_.emplace(action, command_info->command_id);
   }
@@ -259,6 +272,10 @@ void MainWindow::CreateToolbar() {
     // Action order is important.
     int last_category = -1;
     for (auto* command_info : command_manager.commands()) {
+      if (!command_info->show_in_toolbar) {
+        continue;
+      }
+
       auto* action = FindAction(command_info->command_id);
       if (CanExpandCommandCategory(command_info->category)) {
         toolbar_->addAction(action);
@@ -343,7 +360,9 @@ void MainWindow::UpdateAction(QAction& action,
     }
   }
 
-  const CommandHandler* handler = commands_->GetCommandHandler(command_id);
+  const CommandHandler* handler =
+      ResolveCommandHandler(ui_command_registry_.command_manager(), command_id,
+                            kToolbarContexts, *commands_);
   action.setVisible(!!handler);
   if (handler) {
     bool enabled = handler->IsCommandEnabled(command_id);

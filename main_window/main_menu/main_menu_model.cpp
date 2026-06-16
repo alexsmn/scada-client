@@ -5,11 +5,6 @@
 #include "base/awaitable.h"
 #include "base/program_options.h"
 #include "base/u16format.h"
-#include "resources/common_resources.h"
-#include "modules/debugger/debug_switch.h"
-#include "modules/sheet/sheet_component.h"
-#include "modules/table/table_component.h"
-#include "modules/timed_data/timed_data_component.h"
 #include "controller/command_handler.h"
 #include "controller/command_registry.h"
 #include "controller/command_ui_registry.h"
@@ -22,9 +17,14 @@
 #include "main_window/opened_view/opened_view.h"
 #include "main_window/standard_command_ids.h"
 #include "main_window/view_manager.h"
+#include "modules/debugger/debug_switch.h"
+#include "modules/sheet/sheet_component.h"
+#include "modules/table/table_component.h"
+#include "modules/timed_data/timed_data_component.h"
 #include "net/net_executor_adapter.h"
 #include "profile/profile.h"
 #include "profile/window_definition.h"
+#include "resources/common_resources.h"
 
 #if !defined(UI_WT)
 #include "graph/graph_component.h"
@@ -60,12 +60,12 @@ void AddMenuCommands(aui::SimpleMenuModel& menu,
   }
 }
 
-void AddMenuContributions(aui::SimpleMenuModel& menu,
-                          const UiCommandRegistry& ui_command_registry,
-                          const BasicCommandRegistry<GlobalCommandContext>&
-                              commands,
-                          MainMenuId menu_id,
-                          bool admin) {
+void AddMenuContributions(
+    aui::SimpleMenuModel& menu,
+    const UiCommandRegistry& ui_command_registry,
+    const BasicCommandRegistry<GlobalCommandContext>& commands,
+    MainMenuId menu_id,
+    bool admin) {
   for (const auto& contribution :
        ui_command_registry.GetMenuContributions(menu_id)) {
     if (contribution.admin_only && !admin) {
@@ -81,9 +81,10 @@ void AddMenuContributions(aui::SimpleMenuModel& menu,
 
     auto title = contribution.title;
     if (title.empty()) {
-      if (const auto* action = ui_command_registry.action_manager().FindAction(
-              contribution.command_id)) {
-        title = action->GetTitle();
+      if (const auto* command =
+              ui_command_registry.command_manager().FindCommand(
+                  contribution.command_id)) {
+        title = command->GetTitle();
       }
     }
     if (title.empty()) {
@@ -195,7 +196,8 @@ void FavouritesMenuModel::MenuWillShow() {
     for (int i = 0; i != favourites_folder->GetWindowCount(); ++i) {
       const auto& window_def = favourites_folder->GetWindow(i);
       if (const auto* window_info = FindWindowInfoByName(window_def.type)) {
-        if (std::ranges::find(window_infos_, window_info) != window_infos_.end()) {
+        if (std::ranges::find(window_infos_, window_info) !=
+            window_infos_.end()) {
           AddItem(0, window_def.GetTitle(*window_info));
           windows_.push_back(&window_def);
         }
@@ -254,11 +256,10 @@ void PageMenuModel::OpenPage(const Page& page) {
   }
 
   std::u16string title = current_page.GetTitle();
-  std::u16string message =
-      u16format(L"Return to saved page {}?", title);
+  std::u16string message = u16format(L"Return to saved page {}?", title);
   CoSpawn(executor_, cancelation_,
-          [this, page_ptr = &page, message = std::move(message)]()
-              -> Awaitable<void> {
+          [this, page_ptr = &page,
+           message = std::move(message)]() -> Awaitable<void> {
             auto message_box_result = co_await dialog_service_.RunMessageBox(
                 message, {}, MessageBoxMode::QuestionYesNo);
             if (message_box_result == MessageBoxResult::Yes)
@@ -270,8 +271,9 @@ void PageMenuModel::OpenPage(const Page& page) {
 void PageMenuModel::OpenPageHelper(const Page& page, bool revert) {
   // Don't allow to open same page in different windows.
   if (!revert && main_window_manager_.IsPageOpened(page.id)) {
-    dialog_service_.RunMessageBox(Translate("The specified page is open in another window."), {},
-                                  MessageBoxMode::Info);
+    dialog_service_.RunMessageBox(
+        Translate("The specified page is open in another window."), {},
+        MessageBoxMode::Info);
     return;
   }
 
@@ -381,9 +383,9 @@ MainMenuModel::MainMenuModel(const MainMenuContext& context)
       table_favourites_{std::span{kTableWindowInfos}, context},
       table_submenu_{this},
 #if !defined(UI_WT)
-      graph_favourites_{std::make_unique<FavouritesMenuModel>(
-          std::span{kGraphWindowInfos},
-          context)},
+      graph_favourites_{
+          std::make_unique<FavouritesMenuModel>(std::span{kGraphWindowInfos},
+                                                context)},
 #endif
       graph_submenu_{this},
       more_submenu_{this},
@@ -439,11 +441,13 @@ void MainMenuModel::Rebuild() {
   window_submenu_.AddItem(ID_WINDOW_NEW, Translate("New"));
   window_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   window_submenu_.AddItem(ID_VIEW_CHANGE_TITLE, Translate("Rename"));
-  window_submenu_.AddItem(ID_VIEW_ADD_TO_FAVOURITES, Translate("Add to Favourites"));
+  window_submenu_.AddItem(ID_VIEW_ADD_TO_FAVOURITES,
+                          Translate("Add to Favourites"));
   window_submenu_.AddItem(ID_VIEW_CLOSE, Translate("Close"));
 #if defined(UI_QT)
   window_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
-  window_submenu_.AddItem(ID_WINDOW_SPLIT_HORZ, Translate("Split Horizontally"));
+  window_submenu_.AddItem(ID_WINDOW_SPLIT_HORZ,
+                          Translate("Split Horizontally"));
   window_submenu_.AddItem(ID_WINDOW_SPLIT_VERT, Translate("Split Vertically"));
 #endif
   window_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
@@ -472,7 +476,8 @@ void MainMenuModel::Rebuild() {
   settings_submenu_.AddCheckItem(ID_EVENT_PLAY_SOUND,
                                  Translate("Sound Alarm on Event"));
   settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
-  settings_submenu_.AddItem(ID_VIEW_PUBLIC_FOLDER, Translate("Open Displays Folder"));
+  settings_submenu_.AddItem(ID_VIEW_PUBLIC_FOLDER,
+                            Translate("Open Displays Folder"));
 
   AddMenuCommands(settings_submenu_, commands_, MenuGroup::DISPLAY_SETTINGS);
 

@@ -370,64 +370,104 @@ Awaitable<OperatorUseCaseSmokeResult> OpenOperatorWindowAsync(
   }
 }
 
+Awaitable<OperatorUseCaseSmokeResult> CheckContextMenuCommandsAsync(
+    ClientApplication& app,
+    AnyExecutor executor,
+    std::string window_type,
+    std::vector<unsigned> command_ids) {
+  auto result =
+      co_await OpenOperatorWindowAsync(app, executor, std::move(window_type));
+  if (!result.ok)
+    co_return result;
+
+  co_await Delay(executor, 100ms);
+
+  auto* main_window = GetFirstMainWindow(app);
+  if (!main_window) {
+    co_return OperatorUseCaseSmokeResult{.ok = false,
+                                         .detail = "main window missing"};
+  }
+
+  std::string detail = "context-menu";
+  bool ok = true;
+  for (unsigned command_id : command_ids) {
+    bool available =
+        main_window->IsContextMenuCommandAvailableForTesting(command_id);
+    ok = ok && available;
+    detail += available ? " command " : " missing-command ";
+    detail += std::to_string(command_id);
+  }
+
+  co_return OperatorUseCaseSmokeResult{.ok = ok, .detail = std::move(detail)};
+}
+
 std::vector<OperatorUseCaseSmokeCheck> MakeOperatorUseCaseSmokeChecks() {
   return {
-      {"UC-1", "monitor live values", {"Log"}},
-      {"UC-2", "visualise time-series on a graph", {"Graph"}},
-      {"UC-3",
-       "view tables summaries and sheets",
-       {"Table", "Summ", "CusTable"}},
-      {"UC-4", "acknowledge events and alarms", {"Event"}},
-      {"UC-5", "browse event journals", {"EventJournal"}},
-      {"UC-6", "watch a custom spreadsheet", {"CusTable"}},
-      {"UC-7", "issue control commands", {}, {}, {ID_WRITE, ID_WRITE_MANUAL}},
-      {"UC-8", "manage favourites and portfolios", {"Favorites", "Portfolio"}},
-      {"UC-9",
-       "print or export the active view",
-       {},
-       {},
-       {},
-       {},
-       {},
-       {"Table", "EventJournal"}},
-      {"UC-10", "browse server files", {"FileSystemView"}},
-      {"UC-11",
-       "view Modus and Vidicon schematics",
-       {},
-       {"Modus", "VidiconDisplay"},
-       {},
-       {},
-       {},
-       {},
-       true},
-      {"UC-12",
-       "edit device parameters limits and aliases",
-       {},
-       {"NewProps", "Params"},
-       {ID_EDIT_LIMITS}},
-      {"UC-13", "bulk-create data items", {}, {"TableEditor"}},
-      {"UC-14",
-       "export or import configuration",
-       {},
-       {},
-       {},
-       {ID_EXPORT_CONFIGURATION_TO_EXCEL, ID_IMPORT_CONFIGURATION_FROM_EXCEL}},
-      {"UC-15", "inspect protocol traffic", {}, {}, {ID_DUMP_DEBUG_INFO}},
-      {"UC-16",
-       "save window layouts and profiles",
-       {},
-       {},
-       {},
-       {ID_PAGE_NEW, ID_PAGE_RENAME, ID_PAGE_DELETE}},
-      {"UC-17", "authenticate against a back-end", {}, {}, {}, {}, {ID_LOGOFF}},
-      {"UC-18",
-       "manage users and passwords",
-       {},
-       {"Users"},
-       {ID_CHANGE_PASSWORD},
-       {},
-       {ID_USERS_VIEW}},
-      {"UC-19", "configure transmission rules", {}, {"Transmission"}},
+      {.id = "UC-1",
+       .description = "monitor live values",
+       .open_window_types = {"Log"}},
+      {.id = "UC-2",
+       .description = "visualise time-series on a graph",
+       .open_window_types = {"Graph"}},
+      {.id = "UC-3",
+       .description = "view tables summaries and sheets",
+       .open_window_types = {"Table", "Summ", "CusTable"}},
+      {.id = "UC-4",
+       .description = "acknowledge events and alarms",
+       .open_window_types = {"Event"}},
+      {.id = "UC-5",
+       .description = "browse event journals",
+       .open_window_types = {"EventJournal"}},
+      {.id = "UC-6",
+       .description = "watch a custom spreadsheet",
+       .open_window_types = {"CusTable"}},
+      {.id = "UC-7",
+       .description = "issue control commands",
+       .registered_selection_commands = {ID_WRITE, ID_WRITE_MANUAL}},
+      {.id = "UC-8",
+       .description = "manage favourites and portfolios",
+       .open_window_types = {"Favorites", "Portfolio"}},
+      {.id = "UC-9",
+       .description = "print or export the active view",
+       .context_menu_commands = {{"Table", {ID_PRINT, ID_EXPORT_CSV}},
+                                 {"EventJournal", {ID_PRINT, ID_EXPORT_CSV}}},
+       .printable_window_types = {"Table", "EventJournal"}},
+      {.id = "UC-10",
+       .description = "browse server files",
+       .open_window_types = {"FileSystemView"}},
+      {.id = "UC-11",
+       .description = "view Modus and Vidicon schematics",
+       .registered_window_types = {"Modus", "VidiconDisplay"},
+       .optional_when_unavailable = true},
+      {.id = "UC-12",
+       .description = "edit device parameters limits and aliases",
+       .registered_window_types = {"NewProps", "Params"},
+       .registered_selection_commands = {ID_EDIT_LIMITS}},
+      {.id = "UC-13",
+       .description = "bulk-create data items",
+       .registered_window_types = {"TableEditor"}},
+      {.id = "UC-14",
+       .description = "export or import configuration",
+       .registered_global_commands = {ID_EXPORT_CONFIGURATION_TO_EXCEL,
+                                      ID_IMPORT_CONFIGURATION_FROM_EXCEL}},
+      {.id = "UC-15",
+       .description = "inspect protocol traffic",
+       .registered_selection_commands = {ID_DUMP_DEBUG_INFO}},
+      {.id = "UC-16",
+       .description = "save window layouts and profiles",
+       .registered_global_commands = {ID_PAGE_NEW, ID_PAGE_RENAME,
+                                      ID_PAGE_DELETE}},
+      {.id = "UC-17",
+       .description = "authenticate against a back-end",
+       .main_window_commands = {ID_LOGOFF}},
+      {.id = "UC-18",
+       .description = "manage users and passwords",
+       .registered_window_types = {"Users"},
+       .registered_selection_commands = {ID_CHANGE_PASSWORD},
+       .main_window_commands = {ID_USERS_VIEW}},
+      {.id = "UC-19",
+       .description = "configure transmission rules",
+       .registered_window_types = {"Transmission"}},
   };
 }
 
@@ -474,6 +514,16 @@ Awaitable<void> RunE2eOperatorUseCaseSmokeAsync(
       detail +=
           available ? " main-window-command " : " missing-main-window-command ";
       detail += std::to_string(command_id);
+    }
+
+    for (const auto& context_menu : check.context_menu_commands) {
+      auto result = co_await context.has_context_menu_commands(
+          context_menu.window_type, context_menu.command_ids);
+      ok = ok && result.ok;
+      detail += result.ok ? " context-menu " : " missing-context-menu ";
+      detail += std::string{context_menu.window_type};
+      detail += " ";
+      detail += std::move(result.detail);
     }
 
     for (std::string_view window_type : check.printable_window_types) {
@@ -556,6 +606,12 @@ Awaitable<void> RunE2eOperatorUseCaseSmoke(ClientApplication& app) {
                 auto* main_window = GetFirstMainWindow(app);
                 return main_window &&
                        main_window->commands().GetCommandHandler(command_id);
+              },
+          .has_context_menu_commands =
+              [&app, executor](std::string_view window_type,
+                               const std::vector<unsigned>& command_ids) {
+                return CheckContextMenuCommandsAsync(
+                    app, executor, std::string{window_type}, command_ids);
               },
           .is_window_printable =
               [](std::string_view window_type) {

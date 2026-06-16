@@ -71,6 +71,18 @@ CommandDescriptor ToCommandDescriptor(const Action& action) {
   };
 }
 
+CommandHandler* ResolveCommandHandler(
+    const CommandManager& command_manager,
+    unsigned command_id,
+    std::span<const CommandContextId> active_contexts,
+    CommandHandler& fallback_handler) {
+  if (auto* handler =
+          command_manager.ResolveHandler(command_id, active_contexts)) {
+    return handler;
+  }
+  return fallback_handler.GetCommandHandler(command_id);
+}
+
 GroupedCommandDescriptors GroupCommands(CommandManager& command_manager,
                                         const std::vector<unsigned>& commands) {
   GroupedCommandDescriptors grouped_commands;

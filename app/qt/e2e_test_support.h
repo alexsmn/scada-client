@@ -17,6 +17,11 @@ class ClientApplication;
 
 namespace client {
 
+struct ContextMenuSmokeCheck {
+  std::string_view window_type;
+  std::vector<unsigned> command_ids;
+};
+
 struct OperatorUseCaseSmokeCheck {
   std::string_view id;
   std::string_view description;
@@ -25,6 +30,7 @@ struct OperatorUseCaseSmokeCheck {
   std::vector<unsigned> registered_selection_commands;
   std::vector<unsigned> registered_global_commands;
   std::vector<unsigned> main_window_commands;
+  std::vector<ContextMenuSmokeCheck> context_menu_commands;
   std::vector<std::string_view> printable_window_types;
   bool optional_when_unavailable = false;
 };
@@ -42,6 +48,10 @@ struct OperatorUseCaseSmokeContext {
   std::function<bool(unsigned)> has_selection_command;
   std::function<bool(unsigned)> has_global_command;
   std::function<bool(unsigned)> has_main_window_command;
+  std::function<Awaitable<OperatorUseCaseSmokeResult>(
+      std::string_view,
+      const std::vector<unsigned>&)>
+      has_context_menu_commands;
   std::function<bool(std::string_view)> is_window_printable;
 };
 

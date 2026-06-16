@@ -82,6 +82,7 @@ class BaseMainWindow : protected MainWindowContext,
   CommandHandler& commands() { return *commands_; }
 
   void CleanupForTesting();
+  bool IsContextMenuCommandAvailableForTesting(unsigned command_id);
 
   // TODO: Move to a separate class.
   virtual void ShowPopupMenu(aui::MenuModel* merge_menu,

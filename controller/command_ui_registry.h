@@ -30,6 +30,13 @@ struct MenuContribution {
   bool debug_only = false;
 };
 
+// Describes where a command should appear in generated UI surfaces.
+struct CommandPlacements {
+  std::vector<MenuContribution> main_menu;
+  bool toolbar = true;
+  bool context_menu = true;
+};
+
 class UiCommandRegistry {
  public:
   ActionManager& action_manager() { return action_manager_; }
@@ -37,6 +44,17 @@ class UiCommandRegistry {
 
   CommandManager& command_manager() { return command_manager_; }
   const CommandManager& command_manager() const { return command_manager_; }
+
+  // Registers command metadata and UI placements through the unified command
+  // catalog.
+  CommandDescriptor& RegisterCommand(
+      CommandDescriptor descriptor,
+      CommandPlacements placements = CommandPlacements{});
+
+  // Registers a command handler for context-aware command resolution.
+  void RegisterHandler(unsigned command_id,
+                       CommandContextId context_id,
+                       CommandHandler& handler);
 
   void AddAction(Action action);
   void AddMenuItem(MenuContribution contribution);

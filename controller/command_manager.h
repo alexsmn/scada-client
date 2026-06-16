@@ -24,6 +24,10 @@ struct CommandDescriptor {
   unsigned flags = 0;
   std::optional<Shortcut> shortcut;
   std::function<std::u16string()> title_provider;
+  // Controls whether generic toolbar builders include this command.
+  bool show_in_toolbar = true;
+  // Controls whether generic context menu builders include this command.
+  bool show_in_context_menu = true;
 
   std::u16string GetTitle() const {
     return title_provider ? title_provider() : title;
@@ -72,6 +76,14 @@ class CommandManager {
 };
 
 CommandDescriptor ToCommandDescriptor(const Action& action);
+
+// Resolves a command handler through registered contexts, falling back to an
+// aggregate command router while legacy command registrations are still used.
+CommandHandler* ResolveCommandHandler(
+    const CommandManager& command_manager,
+    unsigned command_id,
+    std::span<const CommandContextId> active_contexts,
+    CommandHandler& fallback_handler);
 
 using CommandDescriptorList = std::vector<CommandDescriptor*>;
 using GroupedCommandDescriptors =

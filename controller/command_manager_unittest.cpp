@@ -1,5 +1,7 @@
 #include "controller/command_manager.h"
 
+#include "controller/command_ui_registry.h"
+
 #include <gtest/gtest.h>
 
 namespace {
@@ -73,6 +75,57 @@ TEST(CommandManagerTest, ResolveHandlerSkipsUnavailableContext) {
   };
 
   EXPECT_EQ(&global_handler, manager.ResolveHandler(10, active_contexts));
+}
+
+TEST(CommandManagerTest, ResolveCommandHandlerUsesRegisteredHandler) {
+  CommandManager manager;
+  manager.RegisterCommand({.command_id = 10, .title = u"Command"});
+
+  TestCommandHandler registered_handler;
+  TestCommandHandler fallback_handler;
+  manager.RegisterHandler(10, CommandContextId::Global, registered_handler);
+
+  const CommandContextId active_contexts[] = {
+      CommandContextId::Global,
+  };
+
+  EXPECT_EQ(
+      &registered_handler,
+      ResolveCommandHandler(manager, 10, active_contexts, fallback_handler));
+}
+
+TEST(CommandManagerTest, ResolveCommandHandlerFallsBackToAggregateHandler) {
+  CommandManager manager;
+  manager.RegisterCommand({.command_id = 10, .title = u"Command"});
+
+  TestCommandHandler fallback_handler;
+
+  const CommandContextId active_contexts[] = {
+      CommandContextId::Global,
+  };
+
+  EXPECT_EQ(
+      &fallback_handler,
+      ResolveCommandHandler(manager, 10, active_contexts, fallback_handler));
+}
+
+TEST(UiCommandRegistryTest, RegisterCommandStoresPlacements) {
+  UiCommandRegistry registry;
+
+  auto& descriptor = registry.RegisterCommand(
+      {.command_id = 10, .title = u"Command"},
+      {.main_menu = {{.menu_id = MainMenuId::More, .order = 20}},
+       .toolbar = false,
+       .context_menu = true});
+
+  EXPECT_EQ(10u, descriptor.command_id);
+  EXPECT_FALSE(descriptor.show_in_toolbar);
+  EXPECT_TRUE(descriptor.show_in_context_menu);
+
+  auto contributions = registry.GetMenuContributions(MainMenuId::More);
+  ASSERT_EQ(1u, contributions.size());
+  EXPECT_EQ(10u, contributions[0].command_id);
+  EXPECT_EQ(20, contributions[0].order);
 }
 
 }  // namespace

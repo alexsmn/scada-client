@@ -5,6 +5,17 @@
 #include "main_window/main_window.h"
 #include "main_window/opened_view/opened_view.h"
 
+namespace {
+
+constexpr CommandContextId kContextMenuContexts[] = {
+    CommandContextId::Global,
+    CommandContextId::Selection,
+    CommandContextId::OpenedView,
+    CommandContextId::Controller,
+};
+
+}  // namespace
+
 ContextMenuModel::ContextMenuModel(MainWindowInterface& main_window,
                                    CommandManager& command_manager,
                                    CommandHandler& command_handler)
@@ -42,8 +53,13 @@ void ContextMenuModel::Rebuild() {
 
   std::vector<unsigned> all_commands;
   for (const CommandDescriptor* command : command_manager_.commands()) {
-    // TODO: Remove the static cast.
-    if (active_view->commands->GetCommandHandler(command->command_id)) {
+    auto* handler = command_manager_.ResolveHandler(command->command_id,
+                                                    kContextMenuContexts);
+    if (!handler) {
+      handler = active_view->commands->GetCommandHandler(command->command_id);
+    }
+
+    if (command->show_in_context_menu && handler) {
       all_commands.push_back(command->command_id);
     }
   }
