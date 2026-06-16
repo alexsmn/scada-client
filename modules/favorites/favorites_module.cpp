@@ -57,6 +57,13 @@ FavoritesModule::FavoritesModule(FavoritesModuleContext&& context)
 
   global_commands_.AddCommand(
       BasicCommand<GlobalCommandContext>{ID_VIEW_ADD_TO_FAVOURITES}
+          .set_available_handler([](const GlobalCommandContext& context) {
+            return context.main_window.GetActiveView() != nullptr;
+          })
+          .set_enabled_handler([](const GlobalCommandContext& context) {
+            auto* view = context.main_window.GetActiveView();
+            return view && !view->GetWindowInfo().is_pane();
+          })
           .set_execute_handler([this](const GlobalCommandContext& context) {
             auto* view = context.main_window.GetActiveView();
             if (!view || view->GetWindowInfo().is_pane()) {

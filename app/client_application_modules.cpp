@@ -55,6 +55,7 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
         std::make_shared<GraphModule>(GraphModuleContext{
             .executor_ = context.executor_,
             .file_cache_ = context.filesystem_component_.file_cache(),
+            .global_commands_ = context.global_commands_,
             .selection_commands_ = context.selection_commands_,
             .ui_command_registry_ = context.ui_command_registry_}));
 #endif
@@ -62,6 +63,7 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
         std::make_shared<TableModule>(TableModuleContext{
             .executor_ = context.executor_,
             .session_service_ = *context.scada_services_.session_service,
+            .global_commands_ = context.global_commands_,
             .selection_commands_ = context.selection_commands_,
             .ui_command_registry_ = context.ui_command_registry_}));
     context.singletons_.emplace(

@@ -7,6 +7,7 @@
 template <class T>
 class BasicCommandRegistry;
 
+struct GlobalCommandContext;
 struct SelectionCommandContext;
 class UiCommandRegistry;
 
@@ -15,6 +16,7 @@ extern const WindowInfo kTableWindowInfo;
 struct TableModuleContext {
   AnyExecutor executor_;
   scada::SessionService& session_service_;
+  BasicCommandRegistry<GlobalCommandContext>& global_commands_;
   BasicCommandRegistry<SelectionCommandContext>& selection_commands_;
   UiCommandRegistry& ui_command_registry_;
 };

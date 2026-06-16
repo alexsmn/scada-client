@@ -1,6 +1,7 @@
 #include "main_window/main_window_module.h"
 
 #include "aui/dialog_service.h"
+#include "aui/prompt_dialog.h"
 #include "aui/translation.h"
 #include "base/boost_log.h"
 #include "common/master_data_services.h"
@@ -22,6 +23,7 @@
 #include "main_window/main_window_util.h"
 #include "main_window/opened_view/opened_view_command_registry.h"
 #include "main_window/opened_view/opened_view_command_router.h"
+#include "main_window/opened_view/opened_view_interface.h"
 #include "main_window/pages/page_commands.h"
 #include "main_window/selection_command_router.h"
 #include "main_window/standard_command_ids.h"
@@ -30,6 +32,7 @@
 #include "modules/node_properties/node_property_component.h"
 #include "profile/profile.h"
 #include "resources/common_resources.h"
+#include "scada/session_service.h"
 #include "services/speech_service.h"
 
 #if defined(UI_QT)
@@ -58,6 +61,31 @@ std::unique_ptr<MainWindow> CreateMainWindow(MainWindowContext&& context) {
                                       std::move(context));
 }
 #endif
+
+Awaitable<void> ShowRenameWindowDialogAsync(DialogService& dialog_service,
+                                            OpenedViewInterface& view,
+                                            std::u16string current_view_title) {
+  auto title =
+      co_await RunPromptDialog(dialog_service, Translate("Name:"),
+                               Translate("Rename"), current_view_title);
+  // TODO: Capture weak pointer.
+  view.SetWindowTitle(title);
+  co_return;
+}
+
+void ShowRenameWindowDialog(AnyExecutor executor,
+                            const GlobalCommandContext& context) {
+  auto* view = context.main_window.GetActiveView();
+  if (!view || view->GetWindowInfo().is_pane()) {
+    return;
+  }
+
+  CoSpawn(executor, [&dialog_service = context.dialog_service, view,
+                     current_view_title = view->GetWindowTitle()] {
+    return ShowRenameWindowDialogAsync(dialog_service, *view,
+                                       current_view_title);
+  });
+}
 
 BasicCommand<GlobalCommandContext> MakeMainWindowOptionCommand(
     unsigned command_id,
@@ -166,7 +194,76 @@ void RegisterMainWindowCommandActions(
     AnyExecutor executor,
     Profile& profile,
     SpeechService& speech_service,
+    scada::SessionService& session_service,
+    MainWindowManager& main_window_manager,
+    std::function<void(bool login)> login_handler,
     BasicCommandRegistry<GlobalCommandContext>& global_commands) {
+  global_commands.AddCommand(
+      BasicCommand<GlobalCommandContext>{ID_WINDOW_NEW}
+          .set_available_handler([](const GlobalCommandContext& context) {
+            return context.main_window.GetActiveView() != nullptr;
+          })
+          .set_execute_handler(
+              [&main_window_manager](const GlobalCommandContext&) {
+                main_window_manager.CreateMainWindow();
+              }));
+
+  global_commands.AddCommand(
+      BasicCommand<GlobalCommandContext>{ID_VIEW_CHANGE_TITLE}
+          .set_available_handler([](const GlobalCommandContext& context) {
+            return context.main_window.GetActiveView() != nullptr;
+          })
+          .set_enabled_handler([](const GlobalCommandContext& context) {
+            auto* active_view = context.main_window.GetActiveView();
+            return active_view && !active_view->GetWindowInfo().is_pane();
+          })
+          .set_execute_handler(
+              [executor = executor](const GlobalCommandContext& context) {
+                ShowRenameWindowDialog(executor, context);
+              }));
+
+  global_commands.AddCommand(
+      BasicCommand<GlobalCommandContext>{ID_LOGIN}
+          .set_enabled_handler([&session_service](const GlobalCommandContext&) {
+            return !session_service.IsConnected();
+          })
+          .set_execute_handler([login_handler](const GlobalCommandContext&) {
+            login_handler(/*login=*/true);
+          }));
+  global_commands.AddCommand(
+      BasicCommand<GlobalCommandContext>{ID_LOGOFF}
+          .set_enabled_handler([&session_service](const GlobalCommandContext&) {
+            return session_service.IsConnected();
+          })
+          .set_execute_handler([login_handler](const GlobalCommandContext&) {
+            login_handler(/*login=*/false);
+          }));
+
+#if defined(UI_QT)
+  global_commands.AddCommand(
+      BasicCommand<GlobalCommandContext>{ID_WINDOW_SPLIT_HORZ}
+          .set_available_handler([](const GlobalCommandContext& context) {
+            return context.main_window.GetActiveView() != nullptr;
+          })
+          .set_execute_handler([](const GlobalCommandContext& context) {
+            if (auto* active_view = context.main_window.GetActiveView()) {
+              context.main_window.SplitView(*active_view,
+                                            /*vertically=*/true);
+            }
+          }));
+  global_commands.AddCommand(
+      BasicCommand<GlobalCommandContext>{ID_WINDOW_SPLIT_VERT}
+          .set_available_handler([](const GlobalCommandContext& context) {
+            return context.main_window.GetActiveView() != nullptr;
+          })
+          .set_execute_handler([](const GlobalCommandContext& context) {
+            if (auto* active_view = context.main_window.GetActiveView()) {
+              context.main_window.SplitView(*active_view,
+                                            /*vertically=*/false);
+            }
+          }));
+#endif
+
   global_commands.AddCommand(MakeMainWindowOptionCommand(
       ID_VIEW_TOOLBAR, Translate("Toolbar"), profile, &MainWindowDef::toolbar));
 
@@ -206,9 +303,6 @@ void RegisterMainWindowCommandActions(
 
 MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
     : MainWindowModuleContext{std::move(context)} {
-  RegisterMainWindowCommandActions(executor_, profile_, speech_service_,
-                                   global_commands_);
-
   assert(scada_services_.session_service);
 
   main_window_manager_ =
@@ -219,6 +313,18 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
                 return CreateMainWindow(MakeMainWindowContext(window_id));
               },
           .quit_handler_ = quit_handler_});
+
+  RegisterMainWindowCommandActions(
+      executor_, profile_, speech_service_, *scada_services_.session_service,
+      *main_window_manager_,
+      [this](bool login) {
+        if (login) {
+          login_handler_();
+        } else {
+          // TODO: Logoff.
+        }
+      },
+      global_commands_);
 
   selection_command_router_ =
       std::make_shared<SelectionCommandRouter>(SelectionCommandRouterContext{
@@ -239,22 +345,12 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
 MainWindowModule::~MainWindowModule() {}
 
 MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
-  auto login_handler = [this](bool login) {
-    if (login) {
-      login_handler_();
-    } else {
-      // TODO: Logoff.
-    }
-  };
-
-  auto main_command_router_factory = [this, login_handler](
-                                         MainWindowInterface& main_window,
-                                         DialogService& dialog_service) {
+  auto main_command_router_factory = [this](MainWindowInterface& main_window,
+                                            DialogService& dialog_service) {
     assert(scada_services_.session_service);
     return std::make_unique<MainWindowCommandRouter>(
         MainWindowCommandRouterContext{executor_, main_window, dialog_service,
                                        *scada_services_.session_service,
-                                       *main_window_manager_, login_handler,
                                        global_commands_});
   };
 

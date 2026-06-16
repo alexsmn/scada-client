@@ -9,6 +9,7 @@
 #include "controller/command_ui_registry.h"
 #include "controller/controller_registry.h"
 #include "controller/selection_model.h"
+#include "core/global_command_context.h"
 #include "core/selection_command_context.h"
 #include "main_window/main_window_interface.h"
 #include "model/data_items_node_ids.h"
@@ -77,6 +78,15 @@ REGISTER_CONTROLLER(TableView, kTableWindowInfo);
 TableModule::TableModule(TableModuleContext&& context)
     : TableModuleContext{std::move(context)} {
   RegisterTableCommandActions(ui_command_registry_);
+  global_commands_.AddCommand(
+      BasicCommand<GlobalCommandContext>{ID_OPEN_TABLE}.set_execute_handler(
+          [executor = executor_](const GlobalCommandContext& context) {
+            CoSpawn(executor,
+                    [&main_window = context.main_window]() -> Awaitable<void> {
+                      co_await main_window.OpenView(
+                          WindowDefinition{kTableWindowInfo});
+                    });
+          }));
   selection_commands_.AddCommand(
       MakeOpenViewSelectionCommand(ID_OPEN_TABLE, kTableWindowInfo, executor_));
   selection_commands_.AddCommand(BasicCommand<SelectionCommandContext>{

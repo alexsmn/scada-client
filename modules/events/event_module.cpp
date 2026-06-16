@@ -81,6 +81,16 @@ EventModule::EventModule(EventModuleContext&& context)
            static_cast<int>(event_fetcher_->severity_min()));
   });
 
+  global_commands_.AddCommand(
+      BasicCommand<GlobalCommandContext>{ID_OPEN_EVENTS}.set_execute_handler(
+          [executor = executor_](const GlobalCommandContext& context) {
+            CoSpawn(executor,
+                    [&main_window = context.main_window]() -> Awaitable<void> {
+                      WindowDefinition window_def{kEventJournalWindowInfo};
+                      window_def.AddItem("mode", "Current");
+                      co_await main_window.OpenView(window_def);
+                    });
+          }));
   AddOpenCommand(ID_OPEN_EVENTS, kEventJournalWindowInfo, "Current");
   AddOpenCommand(ID_HISTORICAL_EVENTS, kEventJournalWindowInfo);
   global_commands_.AddCommand(BasicCommand<GlobalCommandContext>{

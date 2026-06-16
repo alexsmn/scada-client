@@ -16,7 +16,6 @@ class BasicCommandRegistry;
 
 class DialogService;
 class MainWindowInterface;
-class MainWindowManager;
 struct GlobalCommandContext;
 
 struct MainWindowCommandRouterContext {
@@ -24,8 +23,6 @@ struct MainWindowCommandRouterContext {
   MainWindowInterface& main_window_;
   DialogService& dialog_service_;
   scada::SessionService& session_service_;
-  MainWindowManager& main_window_manager_;
-  std::function<void(bool login)> login_handler_;
   BasicCommandRegistry<GlobalCommandContext>& global_commands_;
 };
 
@@ -42,7 +39,5 @@ class MainWindowCommandRouter : private MainWindowCommandRouterContext,
   virtual void ExecuteCommand(unsigned command_id);
 
  private:
-  void ShowRenameWindowDialog();
-
   GlobalCommandContext command_context_;
 };

@@ -9,6 +9,7 @@
 #include "controller/command_ui_registry.h"
 #include "controller/controller_registry.h"
 #include "controller/selection_model.h"
+#include "core/global_command_context.h"
 #include "core/selection_command_context.h"
 #include "filesystem/file_cache.h"
 #include "graph/graph_view.h"
@@ -71,6 +72,15 @@ REGISTER_CONTROLLER(GraphView, kGraphWindowInfo);
 GraphModule::GraphModule(GraphModuleContext&& context)
     : GraphModuleContext{std::move(context)} {
   RegisterGraphCommandActions(ui_command_registry_);
+  global_commands_.AddCommand(
+      BasicCommand<GlobalCommandContext>{ID_OPEN_GRAPH}.set_execute_handler(
+          [executor = executor_](const GlobalCommandContext& context) {
+            CoSpawn(executor,
+                    [&main_window = context.main_window]() -> Awaitable<void> {
+                      co_await main_window.OpenView(
+                          WindowDefinition{kGraphWindowInfo});
+                    });
+          }));
   selection_commands_.AddCommand(
       MakeOpenViewSelectionCommand(ID_OPEN_GRAPH, kGraphWindowInfo, executor_));
   selection_commands_.AddCommand(BasicCommand<SelectionCommandContext>{

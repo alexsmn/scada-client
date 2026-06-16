@@ -493,11 +493,13 @@ TEST_F(MainWindowTest, ContextMenuShowsExpectedActionsForActiveOpenedView) {
   GraphModule graph_module{GraphModuleContext{
       .executor_ = controller_env_.executor_,
       .file_cache_ = controller_env_.file_cache_,
+      .global_commands_ = controller_env_.global_commands_,
       .selection_commands_ = controller_env_.selection_commands_,
       .ui_command_registry_ = ui_command_registry_}};
   TableModule table_module{TableModuleContext{
       .executor_ = controller_env_.executor_,
       .session_service_ = controller_env_.session_service_,
+      .global_commands_ = controller_env_.global_commands_,
       .selection_commands_ = controller_env_.selection_commands_,
       .ui_command_registry_ = ui_command_registry_}};
   SummaryModule summary_module{SummaryModuleContext{
