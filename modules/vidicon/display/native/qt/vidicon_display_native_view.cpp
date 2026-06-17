@@ -8,36 +8,9 @@
 #include "filesystem/file_util.h"
 #include "profile/window_definition.h"
 #include "timed_data/timed_data_spec.h"
-#include "vidicon/display/native/qt/display_widget.h"
-#include "vidicon/display/native/vidicon_shape_action_menu.h"
 #include "vidicon/teleclient/vidicon_client.h"
 #include "vidicon/vidicon_node_id.h"
-
-#include <QLabel>
-#include <TeleClient.h>
-#include <format>
-
-namespace {
-
-// TODO: Combine with `ModusView::OpenPlaceholder`.
-std::unique_ptr<UiView> CreateErrorPlaceholderWidget(
-    QWidget* parent_widget,
-    std::string_view error_message) {
-  auto placeholder = std::make_unique<QLabel>(parent_widget);
-  placeholder->setTextFormat(Qt::RichText);
-  placeholder->setText(QString::fromWCharArray(LR"(<html><body>
-    <p>Failed to load the Vidicon graphical display library.</p>
-    <p>Error code: <i>%1</i>.</p>
-    </body></html>)")
-                           .arg(QString::fromLatin1(error_message.data(),
-                                                    error_message.size())));
-  placeholder->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
-  placeholder->setWordWrap(true);
-  placeholder->setTextInteractionFlags(Qt::TextBrowserInteraction);
-  return placeholder;
-}
-
-}  // namespace
+#include "vds_runtime/qt/vds_runtime_widget.h"
 
 // VidiconDisplayNativeView
 
@@ -52,44 +25,21 @@ std::unique_ptr<UiView> VidiconDisplayNativeView::Init(
     const WindowDefinition& definition) {
   path_ = definition.path;
 
-  std::unique_ptr<DisplayWidget> widget;
-  try {
-    widget = std::make_unique<DisplayWidget>();
-  } catch (const std::runtime_error& e) {
-    auto error_widget = CreateErrorPlaceholderWidget(nullptr, e.what());
-    widget_ = error_widget.get();
-    return error_widget;
-  }
+  auto widget = std::make_unique<VdsRuntimeWidget>();
 
   auto full_path = GetPublicFilePath(path_);
-  widget->open(full_path, vidicon_client_.teleclient());
+  widget->Open(full_path, TC_VDS_RUNTIME_DOCUMENT_KIND_VDS);
 
-  controller_delegate_.SetTitle(full_path.stem().u16string());
+  controller_delegate_.SetTitle(
+      widget->title().isEmpty() ? full_path.stem().u16string()
+                                : widget->title().toStdU16String());
 
-  widget->setContextMenuPolicy(Qt::CustomContextMenu);
-
-  QObject::connect(
-      widget.get(), &DisplayWidget::customContextMenuRequested,
-      [this, &widget = *widget](const QPoint& pos) {
-        auto shape = widget.shapeAt(pos);
-        if (auto actions = shape.metadata().actions; !actions.empty()) {
-          VidiconShapeActionMenu action_menu{shape, actions};
-          controller_delegate_.ShowPopupMenu(&action_menu.menu_model,
-                                             /*resource_id*/ 0,
-                                             widget.mapToGlobal(pos),
-                                             /*right_click*/ true);
-        }
-      });
-
-  widget->shape_click_handler = [this](const QString& data_source) {
+  widget->set_selection_callback([this](const QString& data_source) {
     if (auto node_id = vidicon::ToNodeId(data_source.toStdWString());
         !node_id.is_null()) {
       selection_.SelectTimedData(TimedDataSpec{timed_data_service_, node_id});
     }
-  };
-
-  widget->command_handler =
-      std::bind_front(&VidiconDisplayNativeView::ExecCommand, this);
+  });
 
   widget_ = widget.get();
   return widget;

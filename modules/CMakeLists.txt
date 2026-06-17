@@ -31,6 +31,7 @@ add_subdirectory(favorites)
 add_subdirectory(filesystem)
 add_subdirectory(graph)
 add_subdirectory(print)
+add_subdirectory(vds_runtime)
 
 if(BUILD_MODUS)
   add_subdirectory(modus)

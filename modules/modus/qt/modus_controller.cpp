@@ -19,8 +19,34 @@
 #include "profile/profile.h"
 #include "profile/window_definition.h"
 #include "base/web_util.h"
+#include "vds_runtime/qt/vds_runtime_widget.h"
 
 #include <QScrollArea>
+
+namespace {
+
+class ModusVdsRuntimeView final : public VdsRuntimeWidget,
+                                  public ModusViewWrapper {
+ public:
+  explicit ModusVdsRuntimeView(QWidget* parent = nullptr)
+      : VdsRuntimeWidget{parent} {}
+
+  void Open(const WindowDefinition& definition) override {
+    path_ = GetPublicFilePath(definition.path);
+    VdsRuntimeWidget::Open(path_, TC_VDS_RUNTIME_DOCUMENT_KIND_AUTO);
+  }
+
+  void Save(WindowDefinition&) override {}
+
+  std::filesystem::path GetPath() const override { return path_; }
+
+  bool ShowContainedItem(const scada::NodeId&) override { return false; }
+
+ private:
+  std::filesystem::path path_;
+};
+
+}  // namespace
 
 ModusController::ModusController(const ControllerContext& context,
                                  AliasResolver alias_resolver)
@@ -80,28 +106,21 @@ QWidget* ModusController::CreateModusView() {
 }
 
 QWidget* ModusController::CreateModusView2() {
-  view2_ = new ModusView2{timed_data_service_};
+  auto* runtime_view = new ModusVdsRuntimeView;
 
-  view2_->set_selection_signal(
-      [this](const TimedDataSpec& spec) { selection_.SelectTimedData(spec); });
+  runtime_view->set_selection_callback([this](const QString& data_source) {
+    selection_.SelectTimedData(
+        TimedDataSpec{timed_data_service_, scada::NodeId::FromString(
+                                               data_source.toStdString())});
+  });
 
-  view2_->set_navigation_signal(
-      [executor = executor_, cancelation = cancelation_.weak_ptr(),
-       this](const std::filesystem::path& path) {
-        // Intentionally delay open to exit from the Modus handler.
-        CoSpawn(executor, cancelation, [this, path]() -> Awaitable<void> {
-          OpenPath(path);
-          co_return;
-        });
-      });
-
-  view2_->set_double_click_signal(
+  runtime_view->set_double_click_callback(
       [this] { selection_.timed_data().Acknowledge(); });
 
-  wrapper_ = view2_;
+  wrapper_ = runtime_view;
 
   auto* scroll_area = new QScrollArea;
-  scroll_area->setWidget(view2_);
+  scroll_area->setWidget(runtime_view);
   scroll_area->setStyleSheet("background-color: white;");
 
   return scroll_area;
@@ -110,7 +129,7 @@ QWidget* ModusController::CreateModusView2() {
 std::unique_ptr<UiView> ModusController::Init(
     const WindowDefinition& definition) {
   std::unique_ptr<QWidget> result;
-  result.reset(CreateModusView());
+  result.reset(CreateModusView2());
 
   wrapper_->Open(definition);
 

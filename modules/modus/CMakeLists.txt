@@ -3,6 +3,7 @@ client_module_sources(client_modus PRIVATE activex libmodus)
 
 client_module_link_libraries(client_modus PRIVATE
   client_controller
+  client_vds_runtime
 )
 
 find_package(Modus REQUIRED)
