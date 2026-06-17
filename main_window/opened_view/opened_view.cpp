@@ -178,6 +178,8 @@ void OpenedView::ShowPopupMenu(aui::MenuModel* merge_menu,
                                unsigned resource_id,
                                const aui::Point& point,
                                bool right_click) {
+  Activate();
+
   if (resource_id == 0)
     resource_id = window_info().menu;
 
