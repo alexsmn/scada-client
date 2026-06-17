@@ -151,7 +151,8 @@ install(TARGETS client_qt
 if(EXISTS "${CMAKE_SOURCE_DIR}/dependencies/bin")
   install(DIRECTORY "${CMAKE_SOURCE_DIR}/dependencies/bin/"
     DESTINATION "bin"
-    COMPONENT Client)
+    COMPONENT Client
+    PATTERN "DisplayLib.dll" EXCLUDE)
 endif()
 
 if(EXISTS "${CMAKE_SOURCE_DIR}/examples/schemes")
