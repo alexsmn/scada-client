@@ -66,6 +66,10 @@ if(TARGET client_vidicon_qt)
   target_link_libraries(client_qt_app_shared PUBLIC client_vidicon_qt)
   target_compile_definitions(client_qt_app_shared PUBLIC CLIENT_HAS_VIDICON=1)
 endif()
+if(TARGET scada_common_vidicon_services)
+  target_compile_definitions(client_qt_app_shared PUBLIC
+    CLIENT_HAS_VIDICON_SERVICES=1)
+endif()
 
 # Exe
 

@@ -169,7 +169,6 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
     if (modules.vidicon) {
       context.singletons_.emplace(
           std::make_shared<VidiconModule>(VidiconModuleContext{
-              .executor_ = context.executor_,
               .timed_data_service_ = context.timed_data_service_,
               .controller_registry_ = context.controller_registry_,
               .write_service_ = context.write_service_,

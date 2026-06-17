@@ -19,11 +19,27 @@ scada::StatusOr<scada::NodeId> GetOnlyTargetId(
   return targets[0].target_id.node_id();
 }
 
+Awaitable<void> WriteFileContents(std::filesystem::path path,
+                                  const scada::ByteString& contents) {
+  const auto public_path = GetPublicFilePath(path);
+  std::error_code ec;
+  std::filesystem::create_directories(public_path.parent_path(), ec);
+  std::ofstream ofs{public_path, std::ios::binary};
+  ofs.write(contents.data(), contents.size());
+  co_return;
+}
+
 }  // namespace
 
 Awaitable<void> FileManagerImpl::DownloadFileFromServer(
     const std::filesystem::path& path) const {
   co_await DownloadFileFromServerAsync(path);
+}
+
+Awaitable<void> FileManagerImpl::DownloadFileFromServer(
+    NodeRef file_node,
+    const std::filesystem::path& path) const {
+  co_await DownloadFileFromServerAsync(std::move(file_node), path);
 }
 
 Awaitable<void> FileManagerImpl::DownloadFileFromServerAsync(
@@ -45,15 +61,27 @@ Awaitable<void> FileManagerImpl::DownloadFileFromServerAsync(
     co_return;
   }
 
-  const auto public_path = GetPublicFilePath(path);
-  std::error_code ec;
-  std::filesystem::create_directories(public_path.parent_path(), ec);
-  std::ofstream ofs{public_path, std::ios::binary};
-  ofs.write(contents->data(), contents->size());
-  if (!ofs) {
+  co_await WriteFileContents(std::move(path), *contents);
+}
+
+Awaitable<void> FileManagerImpl::DownloadFileFromServerAsync(
+    NodeRef file_node,
+    std::filesystem::path path) const {
+  if (!file_node) {
     co_return;
   }
-  co_return;
+
+  const auto file_value = co_await file_node.scada_node().read_value();
+  if (!file_value.ok()) {
+    co_return;
+  }
+
+  const auto* contents = file_value->value.get_if<scada::ByteString>();
+  if (!contents) {
+    co_return;
+  }
+
+  co_await WriteFileContents(std::move(path), *contents);
 }
 
 Awaitable<scada::NodeId> FileManagerImpl::GetFileNodeAsync(

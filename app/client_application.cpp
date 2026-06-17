@@ -75,7 +75,7 @@ REGISTER_DATA_SERVICES("Scada",
                        CreateRemoteServices,
                        "localhost");
 
-#if CLIENT_HAS_VIDICON
+#if CLIENT_HAS_VIDICON_SERVICES
 extern bool CreateVidiconServices(const DataServicesContext& context,
                                   DataServices& services);
 
@@ -312,6 +312,7 @@ void ClientApplication::CreateFeatureComponents(const PostLoginContext& ctx) {
           .node_service_ = *node_service_,
           .task_manager_ = *task_manager_,
           .create_tree_ = *create_tree_,
+          .default_node_commands_ = default_node_commands_,
           .global_commands_ = core_module_->global_commands(),
           .ui_command_registry_ = *ui_command_registry_,
           .scada_client_ = ctx.scada_client});
@@ -407,9 +408,9 @@ void ClientApplication::CreateMainWindow(const PostLoginContext& ctx) {
           .file_cache_ = filesystem_component_->file_cache(),
           .file_manager_ = filesystem_component_->file_manager(),
           .speech_service_ = *speech_,
-          .node_command_handler_ =
-              std::bind_front(&::ExecuteDefaultNodeCommand, executor_,
-                              filesystem_component_->file_command()),
+          .node_command_handler_ = std::bind_front(
+              &DefaultNodeCommandRegistry::Execute, &default_node_commands_),
+          .default_node_commands_ = default_node_commands_,
           .progress_host_ = core_module_->progress_host(),
           .create_tree_ = *create_tree_,
           .global_commands_ = core_module_->global_commands(),

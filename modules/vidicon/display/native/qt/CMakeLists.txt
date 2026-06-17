@@ -7,9 +7,3 @@ target_link_libraries(client_vidicon_display_qt PRIVATE
   client_vidicon_display
   client_vidicon_module
 )
-
-# UTs.
-
-target_link_libraries(client_vidicon_display_qt_unittests PRIVATE
-  client_vidicon_module
-)

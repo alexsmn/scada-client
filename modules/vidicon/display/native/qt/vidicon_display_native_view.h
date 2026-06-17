@@ -19,7 +19,6 @@ class VidiconClient;
 
 struct VidiconDisplayNativeViewContext {
   TimedDataService& timed_data_service_;
-  vidicon::VidiconClient& vidicon_client_;
   ControllerDelegate& controller_delegate_;
   DialogService& dialog_service_;
   WriteService& write_service_;

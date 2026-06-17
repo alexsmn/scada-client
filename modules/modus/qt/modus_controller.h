@@ -10,8 +10,6 @@
 #include <filesystem>
 #include <memory>
 
-class ModusView;
-class ModusView2;
 class ModusViewWrapper;
 
 class ModusController : protected ControllerContext, public Controller {
@@ -29,18 +27,12 @@ class ModusController : protected ControllerContext, public Controller {
   virtual SelectionModel* GetSelectionModel() override { return &selection_; }
 
  private:
-  QWidget* CreateModusView();
-  QWidget* CreateModusView2();
-
-  void OpenPath(const std::filesystem::path& path);
-  void OpenHyperlink(std::u16string_view hyperlink);
+  QWidget* CreateRuntimeView();
 
   const AliasResolver alias_resolver_;
 
   SelectionModel selection_{{timed_data_service_}};
 
-  ModusView* view_ = nullptr;
-  ModusView2* view2_ = nullptr;
   ModusViewWrapper* wrapper_ = nullptr;
 
   CommandRegistry command_registry_;

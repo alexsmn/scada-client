@@ -15,6 +15,20 @@ std::filesystem::path GetHomeDir() {
   return std::filesystem::temp_directory_path();
 }
 
+std::filesystem::path GetInstallDirFromExeDir(std::filesystem::path exe_dir) {
+#ifdef __APPLE__
+  if (exe_dir.filename() == "MacOS" &&
+      exe_dir.parent_path().filename() == "Contents") {
+    auto app_dir = exe_dir.parent_path().parent_path();
+    if (app_dir.extension() == ".app") {
+      return app_dir.parent_path();
+    }
+  }
+#endif
+
+  return exe_dir.parent_path();
+}
+
 }  // namespace
 
 bool PathProvider(int key, std::filesystem::path* result) {
@@ -27,7 +41,7 @@ bool PathProvider(int key, std::filesystem::path* result) {
     case DIR_INSTALL:
       if (!base::PathService::Get(base::DIR_EXE, &cur))
         return false;
-      cur = cur.parent_path();
+      cur = GetInstallDirFromExeDir(std::move(cur));
       create_dir = false;
       break;
 
@@ -44,7 +58,8 @@ bool PathProvider(int key, std::filesystem::path* result) {
         return false;
       cur = cur / "Telecontrol/SCADA Client";
 #else
-      cur = GetHomeDir() / "Library/Application Support/Telecontrol/SCADA Client";
+      cur =
+          GetHomeDir() / "Library/Application Support/Telecontrol/SCADA Client";
 #endif
       create_dir = true;
       break;
@@ -55,7 +70,8 @@ bool PathProvider(int key, std::filesystem::path* result) {
         return false;
       cur = cur / "Telecontrol/SCADA Client";
 #else
-      cur = GetHomeDir() / "Library/Application Support/Telecontrol/SCADA Client";
+      cur =
+          GetHomeDir() / "Library/Application Support/Telecontrol/SCADA Client";
 #endif
       create_dir = true;
       break;

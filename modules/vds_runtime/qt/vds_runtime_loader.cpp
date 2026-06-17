@@ -4,6 +4,7 @@
 #include "base/path_service.h"
 
 #include <QDir>
+#include <QFileInfo>
 
 #include <filesystem>
 
@@ -53,6 +54,10 @@ VdsRuntimeLoader::VdsRuntimeLoader() {
 }
 
 bool VdsRuntimeLoader::TryLoad(const QString& path) {
+  if (!QFileInfo::exists(path)) {
+    return false;
+  }
+
   auto library = std::make_unique<QLibrary>(path);
   if (!library->load()) {
     error_message_ = library->errorString();

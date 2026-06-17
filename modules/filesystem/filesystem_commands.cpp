@@ -1,9 +1,8 @@
 #include "filesystem/filesystem_commands.h"
 
 #include "aui/dialog_service.h"
-#include "aui/translation.h"
 #include "aui/prompt_dialog.h"
-#include "resources/common_resources.h"
+#include "aui/translation.h"
 #include "controller/contents_model.h"
 #include "controller/window_info.h"
 #include "filesystem/file_manager.h"
@@ -14,6 +13,7 @@
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "profile/window_definition_util.h"
+#include "resources/common_resources.h"
 #include "services/task_manager.h"
 
 #include <cassert>
@@ -82,6 +82,14 @@ Awaitable<void> OpenFileCommandImpl::OpenFileAsync(
     co_return;
   }
 
+  co_await file_manager.DownloadFileFromServer(context.file_node, path);
+  if (!std::filesystem::exists(GetPublicFilePath(path))) {
+    co_await context.dialog_service.RunMessageBox(
+        Translate("Failed to download file."), kOpenFileTitle,
+        MessageBoxMode::Error);
+    co_return;
+  }
+
   auto window_def = WindowDefinition{*window_info}.set_path(std::move(path));
   co_await context.main_window->OpenView(std::move(window_def),
                                          /*activate=*/true);
@@ -110,8 +118,7 @@ Awaitable<void> AddFileAsync(NodeRef parent_directory,
   std::string contents_string{std::istreambuf_iterator<char>{ifs}, {}};
   if (!ifs.is_open()) {
     co_await dialog_service.RunMessageBox(Translate("Failed to read file."),
-                                          kAddFileTitle,
-                                          MessageBoxMode::Error);
+                                          kAddFileTitle, MessageBoxMode::Error);
     co_return;
   }
 

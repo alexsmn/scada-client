@@ -9,8 +9,8 @@
 #include "resources/common_resources.h"
 #include "timed_data/timed_data_spec.h"
 #include "vds_runtime/qt/vds_runtime_widget.h"
-#include "vidicon/teleclient/vidicon_client.h"
-#include "vidicon/vidicon_node_id.h"
+
+#include <exception>
 
 // VidiconDisplayNativeView
 
@@ -35,9 +35,13 @@ std::unique_ptr<UiView> VidiconDisplayNativeView::Init(
                                     : widget->title().toStdU16String());
 
   widget->set_selection_callback([this](const QString& data_source) {
-    if (auto node_id = vidicon::ToNodeId(data_source.toStdWString());
-        !node_id.is_null()) {
+    try {
+      auto node_id = scada::NodeId::FromString(data_source.toStdString());
+      if (node_id.is_null())
+        return;
       selection_.SelectTimedData(TimedDataSpec{timed_data_service_, node_id});
+    } catch (const std::exception&) {
+      selection_.Clear();
     }
   });
 
@@ -74,7 +78,11 @@ void VidiconDisplayNativeView::ExecCommand(const QString& command_name,
 
 void VidiconDisplayNativeView::OpenWriteWin(const QString& data_source,
                                             bool manual) {
-  auto node_id = vidicon::ToNodeId(data_source.toStdWString());
+  scada::NodeId node_id;
+  try {
+    node_id = scada::NodeId::FromString(data_source.toStdString());
+  } catch (const std::exception&) {
+  }
 
   if (node_id.is_null()) {
     dialog_service_.RunMessageBox(

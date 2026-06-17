@@ -10,6 +10,7 @@
 #include "controller/command_ui_registry.h"
 #include "controller/controller_context.h"
 #include "controller/controller_registry.h"
+#include "core/default_node_command_registry.h"
 #include "core/global_command_context.h"
 #include "events/event_fetcher.h"
 #include "main_window/context_menu_model.h"
@@ -304,6 +305,9 @@ void RegisterMainWindowCommandActions(
 MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
     : MainWindowModuleContext{std::move(context)} {
   assert(scada_services_.session_service);
+
+  default_node_commands_.AddHandler(
+      std::bind_front(&::ExecuteDefaultNodeCommand, executor_));
 
   main_window_manager_ =
       std::make_unique<MainWindowManager>(MainWindowManagerContext{

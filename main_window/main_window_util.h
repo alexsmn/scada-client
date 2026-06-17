@@ -3,7 +3,6 @@
 #include "base/any_executor.h"
 
 #include "base/awaitable.h"
-#include "filesystem/filesystem_commands.h"
 #include "profile/window_definition.h"
 
 class MainWindowInterface;
@@ -14,5 +13,4 @@ Awaitable<void> OpenView(MainWindowInterface* main_window,
                          bool activate = true);
 
 bool ExecuteDefaultNodeCommand(const AnyExecutor& executor,
-                               const OpenFileCommand& file_command,
                                const NodeCommandContext& context);

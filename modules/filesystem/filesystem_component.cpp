@@ -7,6 +7,7 @@
 #include "controller/command_registry.h"
 #include "controller/command_ui_registry.h"
 #include "controller/controller_registry.h"
+#include "core/default_node_command_registry.h"
 #include "core/global_command_context.h"
 #include "core/selection_command_context.h"
 #include "filesystem/file_cache.h"
@@ -16,7 +17,9 @@
 #include "filesystem/filesystem_commands.h"
 #include "filesystem/filesystem_view.h"
 #include "main_window/main_window_interface.h"
+#include "model/filesystem_node_ids.h"
 #include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "resources/common_resources.h"
 #include "services/create_tree.h"
 
@@ -96,9 +99,28 @@ FileSystemComponent::FileSystemComponent(FileSystemComponentContext&& context)
             return context.main_window.GetActiveView() != nullptr;
           }});
 
-  open_file_command_ = std::bind_front(
+  auto open_file_command = std::bind_front(
       &OpenFileCommandImpl::Execute,
       std::make_shared<OpenFileCommandImpl>(*file_registry_, *file_manager_));
+  default_node_commands_.AddHandler(
+      [executor = executor_, open_file_command = std::move(open_file_command)](
+          const NodeCommandContext& context) {
+        if (!IsInstanceOf(context.node, filesystem::id::FileType)) {
+          return false;
+        }
+
+        CoSpawn(
+            executor,
+            [open_file_command, main_window = context.main_window,
+             &dialog_service = context.dialog_service, executor,
+             node = context.node,
+             key_modifiers =
+                 context.key_modifiers]() mutable -> Awaitable<void> {
+              co_await open_file_command(OpenFileCommandContext{
+                  main_window, dialog_service, executor, node, key_modifiers});
+            });
+        return true;
+      });
 
   /*std::filesystem::path public_dir;
   if (base::PathService::Get(client::DIR_PUBLIC, &public_dir)) {

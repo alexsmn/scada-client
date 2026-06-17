@@ -17,6 +17,7 @@ template <typename T>
 class BasicCommandRegistry;
 
 class CreateTree;
+class DefaultNodeCommandRegistry;
 class FileCache;
 class FileManager;
 class FileRegistry;
@@ -34,6 +35,7 @@ struct FileSystemComponentContext {
   NodeService& node_service_;
   TaskManager& task_manager_;
   CreateTree& create_tree_;
+  DefaultNodeCommandRegistry& default_node_commands_;
   BasicCommandRegistry<GlobalCommandContext>& global_commands_;
   UiCommandRegistry& ui_command_registry_;
   scada::client scada_client_;
@@ -48,7 +50,6 @@ class FileSystemComponent : private FileSystemComponentContext {
   FileRegistry& file_registry() { return *file_registry_; }
   FileCache& file_cache() { return *file_cache_; }
   FileManager& file_manager() { return *file_manager_; }
-  const OpenFileCommand& file_command() const { return open_file_command_; }
 
   void set_selection_commands(
       BasicCommandRegistry<SelectionCommandContext>* selection_commands) {
@@ -69,6 +70,5 @@ class FileSystemComponent : private FileSystemComponentContext {
   std::unique_ptr<FileRegistry> file_registry_;
   std::unique_ptr<FileCache> file_cache_;
   std::unique_ptr<FileManager> file_manager_;
-  OpenFileCommand open_file_command_;
   std::unique_ptr<FileSynchronizer> file_synchronizer_;
 };

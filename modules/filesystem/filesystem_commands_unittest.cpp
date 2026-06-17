@@ -2,19 +2,33 @@
 
 #include "aui/dialog_service.h"
 #include "aui/types.h"
+#include "base/client_paths.h"
 #include "base/test/awaitable_test.h"
+#include "base/test/scoped_path_override.h"
 #include "base/test/test_executor.h"
+#include "controller/controller.h"
+#include "controller/controller_registry.h"
+#include "controller/window_info.h"
 #include "filesystem/file_manager.h"
 #include "filesystem/file_registry.h"
+#include "filesystem/file_util.h"
 #include "main_window/main_window_interface.h"
 #include "model/filesystem_node_ids.h"
 #include "node_service/static/static_node_service.h"
+#include "profile/window_definition.h"
+#include "resources/common_resources.h"
 
 #include <gtest/gtest.h>
+
+#include <fstream>
 
 #include "base/debug_util.h"
 
 namespace {
+
+const WindowInfo kTestModusWindowInfo = {ID_MODUS_VIEW, "Modus", u"Modus"};
+const WindowInfo kTestVidiconDisplayWindowInfo = {ID_VIDICON_DISPLAY_VIEW,
+                                                  "VidiconDisplay", u"Display"};
 
 // Minimal dialog-service fake that records `RunMessageBox` calls and
 // immediately resolves their awaitables. Skip pulling in `MockDialogService`
@@ -71,12 +85,37 @@ class FakeMainWindow : public MainWindowInterface {
   }
   Awaitable<OpenedViewInterface*> OpenView(const WindowDefinition&,
                                            bool) override {
+    ++open_view_calls;
     co_return nullptr;
   }
   OpenedViewInterface* FindViewByType(std::string_view) const override {
     return nullptr;
   }
   void SplitView(OpenedViewInterface&, bool) override {}
+
+  int open_view_calls = 0;
+};
+
+class RecordingMainWindow : public FakeMainWindow {
+ public:
+  Awaitable<OpenedViewInterface*> OpenView(
+      const WindowDefinition& window_definition,
+      bool activate) override {
+    ++open_view_calls;
+    last_window_definition = window_definition;
+    last_activate = activate;
+    co_return nullptr;
+  }
+
+  std::optional<WindowDefinition> last_window_definition;
+  bool last_activate = false;
+};
+
+class DummyController : public Controller {
+ public:
+  std::unique_ptr<UiView> Init(const WindowDefinition&) override {
+    return nullptr;
+  }
 };
 
 // `OpenFileCommandImpl` does not use the file manager on any path that
@@ -91,18 +130,42 @@ class DummyFileManager : public FileManager {
   }
 };
 
+class RecordingFileManager : public FileManager {
+ public:
+  Awaitable<void> DownloadFileFromServer(
+      const std::filesystem::path& path) const override {
+    downloaded_paths.push_back(path);
+    co_return;
+  }
+
+  Awaitable<void> DownloadFileFromServer(
+      NodeRef,
+      const std::filesystem::path& path) const override {
+    downloaded_paths.push_back(path);
+    auto public_path = GetPublicFilePath(path);
+    std::filesystem::create_directories(public_path.parent_path());
+    std::ofstream ofs{public_path, std::ios::binary};
+    ofs << "sde";
+    co_return;
+  }
+
+  mutable std::vector<std::filesystem::path> downloaded_paths;
+};
+
 }  // namespace
 
 // Exercises the coroutine internals of `OpenFileCommandImpl`.
 class OpenFileCommandTest : public ::testing::Test {
  protected:
+  base::ScopedPathOverride public_dir_override_{client::DIR_PUBLIC};
   TestExecutor executor_;
 
   FakeDialogService dialog_service_;
-  FakeMainWindow main_window_;
+  RecordingMainWindow main_window_;
 
+  ControllerRegistry controller_registry_;
   FileRegistry file_registry_;
-  DummyFileManager file_manager_;
+  RecordingFileManager file_manager_;
 
   OpenFileCommandImpl command_{file_registry_, file_manager_};
 
@@ -169,19 +232,73 @@ TEST_F(OpenFileCommandTest, Execute_NullMainWindowShowsDownloadErrorDialog) {
   EXPECT_EQ(dialog_service_.message_box_calls, 0);
 }
 
-TEST_F(OpenFileCommandTest, Execute_MissingWorkplaceFileShowsInvalidFormatDialog) {
+TEST_F(OpenFileCommandTest,
+       Execute_MissingWorkplaceFileShowsInvalidFormatDialog) {
   // A `.workplace` file that doesn't exist on disk takes the
   // "invalid format" branch inside `OpenJsonFileAsync`, which pops its
   // own error dialog and `co_return`s so `ExecuteAsync`'s outer catch
   // does not fire. Only the inner dialog is expected.
-  OpenFileCommandContext context{.main_window = &main_window_,
-                                 .dialog_service = dialog_service_,
-                                 .executor = executor_,
-                                 .file_node = MakeFileNode(
-                                     u"no-such-file.workplace"),
-                                 .key_modifiers = {}};
+  OpenFileCommandContext context{
+      .main_window = &main_window_,
+      .dialog_service = dialog_service_,
+      .executor = executor_,
+      .file_node = MakeFileNode(u"no-such-file.workplace"),
+      .key_modifiers = {}};
 
   EXPECT_NO_THROW(WaitCommand(command_.Execute(context)));
   EXPECT_EQ(dialog_service_.message_box_calls, 1);
   EXPECT_EQ(dialog_service_.last_mode, MessageBoxMode::Error);
+}
+
+TEST_F(OpenFileCommandTest, Execute_SdeFileOpensRegisteredModusWindow) {
+  controller_registry_.AddControllerFactory(
+      kTestModusWindowInfo, [](const ControllerContext&) {
+        return std::make_unique<DummyController>();
+      });
+  file_registry_.RegisterType(kTestModusWindowInfo.command_id,
+                              kTestModusWindowInfo.name, ".sde;.xsde");
+
+  OpenFileCommandContext context{.main_window = &main_window_,
+                                 .dialog_service = dialog_service_,
+                                 .executor = executor_,
+                                 .file_node = MakeFileNode(u"diagram.sde"),
+                                 .key_modifiers = {}};
+
+  EXPECT_NO_THROW(WaitCommand(command_.Execute(context)));
+  ASSERT_TRUE(main_window_.last_window_definition.has_value());
+  ASSERT_EQ(file_manager_.downloaded_paths.size(), 1u);
+  EXPECT_EQ(file_manager_.downloaded_paths.front(),
+            std::filesystem::path{"diagram.sde"});
+  EXPECT_EQ(main_window_.last_window_definition->type, "Modus");
+  EXPECT_EQ(main_window_.last_window_definition->path, "diagram.sde");
+  EXPECT_TRUE(main_window_.last_activate);
+  EXPECT_EQ(main_window_.open_view_calls, 1);
+  EXPECT_EQ(dialog_service_.message_box_calls, 0);
+}
+
+TEST_F(OpenFileCommandTest,
+       Execute_VdsFileOpensRegisteredVidiconDisplayWindow) {
+  controller_registry_.AddControllerFactory(
+      kTestVidiconDisplayWindowInfo, [](const ControllerContext&) {
+        return std::make_unique<DummyController>();
+      });
+  file_registry_.RegisterType(kTestVidiconDisplayWindowInfo.command_id,
+                              kTestVidiconDisplayWindowInfo.name, ".vds");
+
+  OpenFileCommandContext context{.main_window = &main_window_,
+                                 .dialog_service = dialog_service_,
+                                 .executor = executor_,
+                                 .file_node = MakeFileNode(u"display.vds"),
+                                 .key_modifiers = {}};
+
+  EXPECT_NO_THROW(WaitCommand(command_.Execute(context)));
+  ASSERT_TRUE(main_window_.last_window_definition.has_value());
+  ASSERT_EQ(file_manager_.downloaded_paths.size(), 1u);
+  EXPECT_EQ(file_manager_.downloaded_paths.front(),
+            std::filesystem::path{"display.vds"});
+  EXPECT_EQ(main_window_.last_window_definition->type, "VidiconDisplay");
+  EXPECT_EQ(main_window_.last_window_definition->path, "display.vds");
+  EXPECT_TRUE(main_window_.last_activate);
+  EXPECT_EQ(main_window_.open_view_calls, 1);
+  EXPECT_EQ(dialog_service_.message_box_calls, 0);
 }

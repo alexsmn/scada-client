@@ -6,6 +6,7 @@
 #include "controller/command_ui_registry.h"
 #include "controller/controller_fake.h"
 #include "controller/test/controller_environment.h"
+#include "core/default_node_command_registry.h"
 #include "core/progress_host_impl.h"
 #include "events/event_module.h"
 #include "favorites/favorites_module.h"
@@ -41,6 +42,7 @@ class MainWindowModuleTest : public Test {
 
   StrictMock<MockFunction<void(const NodeCommandContext& context)>>
       node_command_handler_;
+  DefaultNodeCommandRegistry default_node_commands_;
 
   StrictMock<MockFunction<void()>> quit_handler_;
   StrictMock<MockFunction<void()>> login_handler_;
@@ -112,6 +114,7 @@ void MainWindowModuleTest::SetUp() {
       .file_manager_ = controller_env_.file_manager_,
       .speech_service_ = speech_service_,
       .node_command_handler_ = node_command_handler_.AsStdFunction(),
+      .default_node_commands_ = default_node_commands_,
       .progress_host_ = progress_host_,
       .create_tree_ = controller_env_.create_tree_,
       .global_commands_ = controller_env_.global_commands_,

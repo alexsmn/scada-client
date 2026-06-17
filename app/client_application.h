@@ -7,6 +7,7 @@
 #include "base/async_completion.h"
 #include "base/awaitable.h"
 #include "configuration/configuration_module.h"
+#include "core/default_node_command_registry.h"
 #include "scada/data_services_factory.h"
 #include "scada/node_id.h"
 #include "scada/status.h"
@@ -92,6 +93,8 @@ struct ClientApplicationContext {
   // Optional override for testing/screenshots. If set, used instead of
   // creating a real NodeService from browse/attribute services.
   std::shared_ptr<NodeService> node_service_override_;
+
+  DefaultNodeCommandRegistry default_node_commands_;
 
   ClientApplicationModuleConfigurator module_configurator_ =
       MakeDefaultClientApplicationModules();

@@ -33,14 +33,8 @@ add_subdirectory(graph)
 add_subdirectory(print)
 add_subdirectory(vds_runtime)
 
-if(BUILD_MODUS)
-  add_subdirectory(modus)
-endif()
-
-# vidicon depends on scada_common_opc and scada_common_vidicon.
-if(TARGET scada_common_opc AND TARGET scada_common_vidicon)
-  add_subdirectory(vidicon)
-endif()
+add_subdirectory(modus)
+add_subdirectory(vidicon)
 
 foreach(component_name IN LISTS CLIENT_COMPONENTS)
   add_subdirectory(${component_name})

@@ -4,12 +4,9 @@
 #include "controller/command_registry.h"
 #include "core/global_command_context.h"
 
-#include <memory>
-
 class BlinkerManager;
 class ControllerRegistry;
 class FileRegistry;
-class ModusModule2;
 class Profile;
 class UiCommandRegistry;
 
@@ -27,7 +24,4 @@ class ModusModule : private ModusModuleContext {
  public:
   explicit ModusModule(ModusModuleContext&& context);
   ~ModusModule();
-
- private:
-  std::unique_ptr<ModusModule2> modus_module_;
 };

@@ -14,6 +14,7 @@ class BasicCommandRegistry;
 
 class ActionManager;
 class CreateTree;
+class DefaultNodeCommandRegistry;
 class EventDispatcher;
 class Favourites;
 class FileCache;
@@ -59,6 +60,7 @@ struct MainWindowModuleContext {
   FileManager& file_manager_;
   SpeechService& speech_service_;
   NodeCommandHandler node_command_handler_;
+  DefaultNodeCommandRegistry& default_node_commands_;
   ProgressHost& progress_host_;
   CreateTree& create_tree_;
   BasicCommandRegistry<GlobalCommandContext>& global_commands_;
