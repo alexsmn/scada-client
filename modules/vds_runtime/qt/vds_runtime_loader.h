@@ -16,8 +16,8 @@ class VdsRuntimeLoader {
   const TcVdsRuntimeApi& api() const { return *api_; }
 
  private:
-  using GetApiFn = const TcVdsRuntimeApi*(TC_VDS_RUNTIME_CALL*)(
-      uint32_t requested_abi_version);
+  using GetApiFn = const TcVdsRuntimeApi*(
+      TC_VDS_RUNTIME_CALL*)(uint32_t requested_abi_version);
 
   bool TryLoad(const QString& path);
 

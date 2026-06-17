@@ -4,24 +4,26 @@
 #include "aui/translation.h"
 #include "base/awaitable.h"
 #include "base/u16format.h"
-#include "resources/common_resources.h"
-#include "modules/web/web_component.h"
+#include "base/web_util.h"
 #include "controller/controller_delegate.h"
 #include "controller/controller_registry.h"
 #include "controller/selection_model.h"
 #include "controller/window_info.h"
 #include "filesystem/file_cache.h"
 #include "filesystem/file_util.h"
+#include "modules/web/web_component.h"
 #include "modus/modus_component.h"
 #include "modus/modus_util.h"
 #include "modus/qt/modus_view.h"
 #include "modus/qt/modus_view2.h"
 #include "profile/profile.h"
 #include "profile/window_definition.h"
-#include "base/web_util.h"
+#include "resources/common_resources.h"
 #include "vds_runtime/qt/vds_runtime_widget.h"
 
 #include <QScrollArea>
+
+#include <exception>
 
 namespace {
 
@@ -59,17 +61,16 @@ QWidget* ModusController::CreateModusView() {
     controller_delegate_.SetTitle(title);
   };
 
-  auto navigation_callback =
-      [executor = executor_, cancelation = cancelation_.weak_ptr(),
-       this](std::u16string_view hyperlink) {
-        // Intentionally delay open to exit from the Modus handler.
-        CoSpawn(executor, cancelation,
-                [this, hyperlink = std::u16string{hyperlink}]
-                    () -> Awaitable<void> {
-                  OpenHyperlink(hyperlink);
-                  co_return;
-                });
-      };
+  auto navigation_callback = [executor = executor_,
+                              cancelation = cancelation_.weak_ptr(),
+                              this](std::u16string_view hyperlink) {
+    // Intentionally delay open to exit from the Modus handler.
+    CoSpawn(executor, cancelation,
+            [this, hyperlink = std::u16string{hyperlink}]() -> Awaitable<void> {
+              OpenHyperlink(hyperlink);
+              co_return;
+            });
+  };
 
   auto selection_callback = [this](const TimedDataSpec& spec) {
     selection_.SelectTimedData(spec);
@@ -109,9 +110,16 @@ QWidget* ModusController::CreateModusView2() {
   auto* runtime_view = new ModusVdsRuntimeView;
 
   runtime_view->set_selection_callback([this](const QString& data_source) {
-    selection_.SelectTimedData(
-        TimedDataSpec{timed_data_service_, scada::NodeId::FromString(
-                                               data_source.toStdString())});
+    if (data_source.isEmpty())
+      return;
+
+    try {
+      selection_.SelectTimedData(
+          TimedDataSpec{timed_data_service_,
+                        scada::NodeId::FromString(data_source.toStdString())});
+    } catch (const std::exception&) {
+      selection_.Clear();
+    }
   });
 
   runtime_view->set_double_click_callback(
@@ -161,7 +169,8 @@ void ModusController::OpenHyperlink(std::u16string_view hyperlink) {
   auto path = MakeModusFilePath(hyperlink, wrapper_->GetPath());
   if (!path.has_value()) {
     dialog_service_.RunMessageBox(
-        u16format(L"File {} not found or located outside the diagrams folder.", hyperlink),
+        u16format(L"File {} not found or located outside the diagrams folder.",
+                  hyperlink),
         {}, MessageBoxMode::Error);
     return;
   }

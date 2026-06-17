@@ -46,8 +46,9 @@ VdsRuntimeLoader::VdsRuntimeLoader() {
   }
 
   if (error_message_.isEmpty()) {
-    error_message_ = QStringLiteral("Cannot find tc_vds_runtime in the "
-                                    "client install directory.");
+    error_message_ = QStringLiteral(
+        "Cannot find tc_vds_runtime in the "
+        "client install directory.");
   }
 }
 
@@ -58,11 +59,12 @@ bool VdsRuntimeLoader::TryLoad(const QString& path) {
     return false;
   }
 
-  auto* get_api = reinterpret_cast<GetApiFn>(
-      library->resolve("TcVdsRuntimeGetApi"));
+  auto* get_api =
+      reinterpret_cast<GetApiFn>(library->resolve("TcVdsRuntimeGetApi"));
   if (!get_api) {
-    error_message_ = QStringLiteral("tc_vds_runtime does not export "
-                                    "TcVdsRuntimeGetApi.");
+    error_message_ = QStringLiteral(
+        "tc_vds_runtime does not export "
+        "TcVdsRuntimeGetApi.");
     return false;
   }
 

@@ -1,16 +1,16 @@
 ﻿#include "vidicon/display/native/qt/vidicon_display_native_view.h"
 
 #include "aui/dialog_service.h"
-#include "resources/common_resources.h"
-#include "modules/write/write_service.h"
 #include "controller/controller_delegate.h"
 #include "controller/selection_model.h"
 #include "filesystem/file_util.h"
+#include "modules/write/write_service.h"
 #include "profile/window_definition.h"
+#include "resources/common_resources.h"
 #include "timed_data/timed_data_spec.h"
+#include "vds_runtime/qt/vds_runtime_widget.h"
 #include "vidicon/teleclient/vidicon_client.h"
 #include "vidicon/vidicon_node_id.h"
-#include "vds_runtime/qt/vds_runtime_widget.h"
 
 // VidiconDisplayNativeView
 
@@ -30,9 +30,9 @@ std::unique_ptr<UiView> VidiconDisplayNativeView::Init(
   auto full_path = GetPublicFilePath(path_);
   widget->Open(full_path, TC_VDS_RUNTIME_DOCUMENT_KIND_VDS);
 
-  controller_delegate_.SetTitle(
-      widget->title().isEmpty() ? full_path.stem().u16string()
-                                : widget->title().toStdU16String());
+  controller_delegate_.SetTitle(widget->title().isEmpty()
+                                    ? full_path.stem().u16string()
+                                    : widget->title().toStdU16String());
 
   widget->set_selection_callback([this](const QString& data_source) {
     if (auto node_id = vidicon::ToNodeId(data_source.toStdWString());

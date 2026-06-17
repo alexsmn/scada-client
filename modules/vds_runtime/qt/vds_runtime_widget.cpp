@@ -50,8 +50,8 @@ bool VdsRuntimeWidget::Open(const std::filesystem::path& path, int32_t kind) {
   }
 
   if (!loader_.api().get_document_info(document_, &document_info_, &error)) {
-    error_message_ = FormatError(QStringLiteral("Cannot read document info"),
-                                 error);
+    error_message_ =
+        FormatError(QStringLiteral("Cannot read document info"), error);
     update();
     return false;
   }
@@ -91,10 +91,9 @@ void VdsRuntimeWidget::paintEvent(QPaintEvent*) {
                                  &error)) {
     painter.fillRect(rect(), QColor{255, 255, 255});
     painter.setPen(QColor{160, 0, 0});
-    painter.drawText(rect().adjusted(24, 24, -24, -24),
-                     Qt::AlignCenter | Qt::TextWordWrap,
-                     FormatError(QStringLiteral("Cannot render document"),
-                                 error));
+    painter.drawText(
+        rect().adjusted(24, 24, -24, -24), Qt::AlignCenter | Qt::TextWordWrap,
+        FormatError(QStringLiteral("Cannot render document"), error));
     return;
   }
 
