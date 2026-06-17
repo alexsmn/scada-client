@@ -160,8 +160,7 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
               .file_registry_ = context.filesystem_component_.file_registry(),
               .global_commands_ = context.global_commands_,
               .ui_command_registry_ = context.ui_command_registry_,
-              .profile_ = context.profile_,
-              .alias_resolver_ = context.alias_resolver_}));
+              .profile_ = context.profile_}));
     }
 #endif
 

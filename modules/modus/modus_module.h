@@ -1,6 +1,5 @@
 #pragma once
 
-#include "common/aliases.h"
 #include "controller/command_registry.h"
 #include "core/global_command_context.h"
 
@@ -17,7 +16,6 @@ struct ModusModuleContext {
   BasicCommandRegistry<GlobalCommandContext>& global_commands_;
   UiCommandRegistry& ui_command_registry_;
   Profile& profile_;
-  AliasResolver alias_resolver_;
 };
 
 class ModusModule : private ModusModuleContext {

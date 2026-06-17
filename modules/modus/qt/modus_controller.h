@@ -1,7 +1,6 @@
 #pragma once
 
 #include "base/cancelation.h"
-#include "common/aliases.h"
 #include "controller/command_registry.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
@@ -14,8 +13,7 @@ class ModusViewWrapper;
 
 class ModusController : protected ControllerContext, public Controller {
  public:
-  ModusController(const ControllerContext& context,
-                  AliasResolver alias_resolver);
+  explicit ModusController(const ControllerContext& context);
   virtual ~ModusController();
 
   // Controller overrides
@@ -28,8 +26,6 @@ class ModusController : protected ControllerContext, public Controller {
 
  private:
   QWidget* CreateRuntimeView();
-
-  const AliasResolver alias_resolver_;
 
   SelectionModel selection_{{timed_data_service_}};
 

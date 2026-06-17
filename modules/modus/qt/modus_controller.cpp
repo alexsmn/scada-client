@@ -36,9 +36,8 @@ class ModusVdsRuntimeView final : public VdsRuntimeWidget,
 
 }  // namespace
 
-ModusController::ModusController(const ControllerContext& context,
-                                 AliasResolver alias_resolver)
-    : ControllerContext{context}, alias_resolver_{std::move(alias_resolver)} {}
+ModusController::ModusController(const ControllerContext& context)
+    : ControllerContext{context} {}
 
 ModusController::~ModusController() = default;
 
