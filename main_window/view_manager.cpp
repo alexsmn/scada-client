@@ -69,6 +69,14 @@ void ViewManager::SetViewTitle(OpenedView& view,
 
 void ViewManager::ActivateView(const OpenedView& view) {
   component_.ActivateView(GetComponentViewId(view));
+
+  // Keep the cached active view in sync deterministically. The platform
+  // component normally reports activation back through its active-view-changed
+  // handler, but that signal does not fire when the windows are hidden (e.g.
+  // during headless E2E runs), which would otherwise leave GetActiveView() —
+  // and anything derived from it, such as the context menu — stale. A
+  // redundant call here is a no-op (SetActiveView early-returns on no change).
+  SetActiveView(const_cast<OpenedView*>(&view));
 }
 
 void ViewManager::CloseView(OpenedView& view) {
