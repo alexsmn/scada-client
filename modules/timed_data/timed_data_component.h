@@ -20,6 +20,7 @@ struct TimedDataModuleContext {
 class TimedDataModule : private TimedDataModuleContext {
  public:
   explicit TimedDataModule(TimedDataModuleContext&& context);
+  ~TimedDataModule();
 };
 
 void RegisterTimedDataCommandActions(UiCommandRegistry& ui_command_registry);

@@ -22,9 +22,9 @@ VidiconModule::VidiconModule(VidiconModuleContext&& context)
   file_registry_.RegisterType(kVidiconDisplayWindowInfo.command_id,
                               kVidiconDisplayWindowInfo.name, ".vds");
 
-  RegisterDisplayMenuWindowInfo(kVidiconDisplayWindowInfo);
+  RegisterDisplayMenuWindowType(kVidiconDisplayWindowInfo.name);
 }
 
 VidiconModule::~VidiconModule() {
-  UnregisterDisplayMenuWindowInfo(kVidiconDisplayWindowInfo);
+  UnregisterDisplayMenuWindowType(kVidiconDisplayWindowInfo.name);
 }

@@ -4,6 +4,7 @@
 #include "controller/action.h"
 #include "controller/command_ui_registry.h"
 #include "controller/controller_registry.h"
+#include "main_window/main_menu/main_menu_model.h"
 #include "modules/sheet/sheet_view.h"
 #include "resources/common_resources.h"
 
@@ -17,7 +18,14 @@ REGISTER_CONTROLLER(SheetController, kSheetWindowInfo);
 
 SheetModule::SheetModule(SheetModuleContext&& context)
     : SheetModuleContext{std::move(context)} {
+  RegisterMainMenuFavouritesWindowType(MainMenuId::Table,
+                                       kSheetWindowInfo.name);
   RegisterSheetCommandActions(ui_command_registry_);
+}
+
+SheetModule::~SheetModule() {
+  UnregisterMainMenuFavouritesWindowType(MainMenuId::Table,
+                                         kSheetWindowInfo.name);
 }
 
 void RegisterSheetCommandActions(UiCommandRegistry& ui_command_registry) {

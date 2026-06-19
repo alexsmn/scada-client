@@ -13,6 +13,7 @@ struct SheetModuleContext {
 class SheetModule : private SheetModuleContext {
  public:
   explicit SheetModule(SheetModuleContext&& context);
+  ~SheetModule();
 };
 
 void RegisterSheetCommandActions(UiCommandRegistry& ui_command_registry);

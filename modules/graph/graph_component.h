@@ -24,6 +24,7 @@ struct GraphModuleContext {
 class GraphModule : private GraphModuleContext {
  public:
   explicit GraphModule(GraphModuleContext&& context);
+  ~GraphModule();
 };
 
 void RegisterGraphCommandActions(UiCommandRegistry& ui_command_registry);

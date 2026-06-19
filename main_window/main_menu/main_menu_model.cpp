@@ -18,22 +18,13 @@
 #include "main_window/standard_command_ids.h"
 #include "main_window/view_manager.h"
 #include "modules/debugger/debug_switch.h"
-#include "modules/sheet/sheet_component.h"
-#include "modules/table/table_component.h"
-#include "modules/timed_data/timed_data_component.h"
 #include "net/net_executor_adapter.h"
 #include "profile/profile.h"
 #include "profile/window_definition.h"
 #include "resources/common_resources.h"
 
-#if !defined(UI_WT)
-#include "graph/graph_component.h"
-#if CLIENT_HAS_MODUS
-#include "modus/modus_component.h"
-#endif
-#endif
-
 #include <ranges>
+#include <string>
 
 #if defined(UI_QT)
 #include <QApplication>
@@ -102,31 +93,53 @@ void AddMenuContributions(
   }
 }
 
-std::vector<const WindowInfo*>& GetDisplayMenuWindowInfos() {
-  static std::vector<const WindowInfo*> window_infos;
-  return window_infos;
+std::vector<std::string>& GetDisplayMenuWindowTypes() {
+  static std::vector<std::string> window_types;
+  return window_types;
+}
+
+std::vector<std::string>& GetFavouritesMenuWindowTypes(MainMenuId menu_id) {
+  static std::vector<std::string> table_window_types;
+  static std::vector<std::string> graph_window_types;
+
+  switch (menu_id) {
+    case MainMenuId::Table:
+      return table_window_types;
+    case MainMenuId::Graph:
+      return graph_window_types;
+    default:
+      assert(false);
+      return table_window_types;
+  }
 }
 
 }  // namespace
 
-void RegisterDisplayMenuWindowInfo(const WindowInfo& window_info) {
-  auto& window_infos = GetDisplayMenuWindowInfos();
-  if (std::ranges::find(window_infos, &window_info) == window_infos.end()) {
-    window_infos.push_back(&window_info);
+void RegisterDisplayMenuWindowType(std::string_view window_type) {
+  auto& window_types = GetDisplayMenuWindowTypes();
+  if (std::ranges::find(window_types, window_type) == window_types.end()) {
+    window_types.emplace_back(window_type);
   }
 }
 
-void UnregisterDisplayMenuWindowInfo(const WindowInfo& window_info) {
-  auto& window_infos = GetDisplayMenuWindowInfos();
-  std::erase(window_infos, &window_info);
+void UnregisterDisplayMenuWindowType(std::string_view window_type) {
+  auto& window_types = GetDisplayMenuWindowTypes();
+  std::erase(window_types, window_type);
 }
 
-const WindowInfo* const kTableWindowInfos[] = {
-    &kTableWindowInfo, &kSheetWindowInfo, &kTimedDataWindowInfo};
+void RegisterMainMenuFavouritesWindowType(MainMenuId menu_id,
+                                          std::string_view window_type) {
+  auto& window_types = GetFavouritesMenuWindowTypes(menu_id);
+  if (std::ranges::find(window_types, window_type) == window_types.end()) {
+    window_types.emplace_back(window_type);
+  }
+}
 
-#if !defined(UI_WT)
-const WindowInfo* const kGraphWindowInfos[] = {&kGraphWindowInfo};
-#endif
+void UnregisterMainMenuFavouritesWindowType(MainMenuId menu_id,
+                                            std::string_view window_type) {
+  auto& window_types = GetFavouritesMenuWindowTypes(menu_id);
+  std::erase(window_types, window_type);
+}
 
 // DisplayMenuModel
 
@@ -137,14 +150,11 @@ void DisplayMenuModel::MenuWillShow() {
   Clear();
   items_.clear();
 
-#if !defined(UI_WT)
-#if CLIENT_HAS_MODUS
-  AddItems(kModusWindowInfo);
-#endif
-  for (const WindowInfo* window_info : GetDisplayMenuWindowInfos()) {
-    AddItems(*window_info);
+  for (const std::string& window_type : GetDisplayMenuWindowTypes()) {
+    if (const auto* window_info = FindWindowInfoByName(window_type)) {
+      AddItems(*window_info);
+    }
   }
-#endif
 }
 
 void DisplayMenuModel::ActivatedAt(int index) {
@@ -181,12 +191,11 @@ void DisplayMenuModel::AddItems(const WindowInfo& window_info) {
 
 // FavouritesMenuModel
 
-FavouritesMenuModel::FavouritesMenuModel(
-    std::span<const WindowInfo* const> window_infos,
-    const MainMenuContext& context)
+FavouritesMenuModel::FavouritesMenuModel(MainMenuId menu_id,
+                                         const MainMenuContext& context)
     : MainMenuContext{context},
       aui::SimpleMenuModel{nullptr},
-      window_infos_{window_infos} {}
+      menu_id_{menu_id} {}
 
 void FavouritesMenuModel::MenuWillShow() {
   Clear();
@@ -196,8 +205,9 @@ void FavouritesMenuModel::MenuWillShow() {
     for (int i = 0; i != favourites_folder->GetWindowCount(); ++i) {
       const auto& window_def = favourites_folder->GetWindow(i);
       if (const auto* window_info = FindWindowInfoByName(window_def.type)) {
-        if (std::ranges::find(window_infos_, window_info) !=
-            window_infos_.end()) {
+        const auto& window_types = GetFavouritesMenuWindowTypes(menu_id_);
+        if (std::ranges::find(window_types, window_def.type) !=
+            window_types.end()) {
           AddItem(0, window_def.GetTitle(*window_info));
           windows_.push_back(&window_def);
         }
@@ -380,13 +390,10 @@ MainMenuModel::MainMenuModel(const MainMenuContext& context)
     : MainMenuContext{context},
       aui::SimpleMenuModel{this},
       display_menu_model_{context},
-      table_favourites_{std::span{kTableWindowInfos}, context},
+      table_favourites_{MainMenuId::Table, context},
       table_submenu_{this},
-#if !defined(UI_WT)
       graph_favourites_{
-          std::make_unique<FavouritesMenuModel>(std::span{kGraphWindowInfos},
-                                                context)},
-#endif
+          std::make_unique<FavouritesMenuModel>(MainMenuId::Graph, context)},
       graph_submenu_{this},
       more_submenu_{this},
       page_list_menu_{context},
@@ -422,34 +429,18 @@ void MainMenuModel::Rebuild() {
 
   AddMenuContributions(more_submenu_, ui_command_registry_, commands_,
                        MainMenuId::More, admin_);
-#if !defined(NDEBUG)
-  more_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
-  more_submenu_.AddItem(ID_LOGIN, Translate("Connect to Server..."));
-  more_submenu_.AddItem(ID_LOGOFF, Translate("Disconnect from Server"));
-#endif
   AddSubMenu(0, Translate("More"), &more_submenu_);
 
   justify_index = GetItemCount();
 
-  page_submenu_.AddItem(ID_PAGE_NEW, Translate("New"));
-  page_submenu_.AddItem(ID_PAGE_DELETE, Translate("Delete"));
-  page_submenu_.AddItem(ID_PAGE_RENAME, Translate("Rename"));
+  AddMenuContributions(page_submenu_, ui_command_registry_, commands_,
+                       MainMenuId::Page, admin_);
   page_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   page_submenu_.AddInplaceMenu(&page_list_menu_);
   AddSubMenu(0, Translate("Page"), &page_submenu_);
 
-  window_submenu_.AddItem(ID_WINDOW_NEW, Translate("New"));
-  window_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
-  window_submenu_.AddItem(ID_VIEW_CHANGE_TITLE, Translate("Rename"));
-  window_submenu_.AddItem(ID_VIEW_ADD_TO_FAVOURITES,
-                          Translate("Add to Favourites"));
-  window_submenu_.AddItem(ID_VIEW_CLOSE, Translate("Close"));
-#if defined(UI_QT)
-  window_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
-  window_submenu_.AddItem(ID_WINDOW_SPLIT_HORZ,
-                          Translate("Split Horizontally"));
-  window_submenu_.AddItem(ID_WINDOW_SPLIT_VERT, Translate("Split Vertically"));
-#endif
+  AddMenuContributions(window_submenu_, ui_command_registry_, commands_,
+                       MainMenuId::Window, admin_);
   window_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   window_submenu_.AddInplaceMenu(&window_list_menu_);
   window_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
@@ -461,31 +452,13 @@ void MainMenuModel::Rebuild() {
   AddMenuContributions(settings_submenu_, ui_command_registry_, commands_,
                        MainMenuId::Settings, admin_);
 
-  settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
-  settings_submenu_.AddCheckItem(ID_WRITE_CONFIRMATION,
-                                 Translate("Control Confirmation"));
-  settings_submenu_.AddCheckItem(ID_SHOW_WRITEOK,
-                                 Translate("Control Success Message"));
-  settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
-  settings_submenu_.AddCheckItem(ID_SHOW_EVENTS,
-                                 Translate("Show Events on Arrival"));
-  settings_submenu_.AddCheckItem(ID_HIDE_EVENTS,
-                                 Translate("Hide Events on Acknowledge"));
-  settings_submenu_.AddCheckItem(ID_EVENT_FLASH_WINDOW,
-                                 Translate("Flash Main Window on Event"));
-  settings_submenu_.AddCheckItem(ID_EVENT_PLAY_SOUND,
-                                 Translate("Sound Alarm on Event"));
-  settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
-  settings_submenu_.AddItem(ID_VIEW_PUBLIC_FOLDER,
-                            Translate("Open Displays Folder"));
-
   AddMenuCommands(settings_submenu_, commands_, MenuGroup::DISPLAY_SETTINGS);
 
 #if defined(UI_QT)
   settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   language_submenu_.Clear();
-  language_submenu_.AddCheckItem(ID_LANGUAGE_ENGLISH, Translate("English"));
-  language_submenu_.AddCheckItem(ID_LANGUAGE_RUSSIAN, Translate("Russian"));
+  AddMenuContributions(language_submenu_, ui_command_registry_, commands_,
+                       MainMenuId::Language, admin_);
   settings_submenu_.AddSubMenu(0, Translate("Language"), &language_submenu_);
   settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   settings_submenu_.AddSubMenu(0, Translate("Style"), &style_submenu_);
@@ -493,18 +466,8 @@ void MainMenuModel::Rebuild() {
 
   AddSubMenu(0, Translate("Settings"), &settings_submenu_);
 
-  help_submenu_.AddItem(ID_HELP_MANUAL, Translate("Documentation"));
-  help_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   AddMenuContributions(help_submenu_, ui_command_registry_, commands_,
                        MainMenuId::Help, admin_);
-  if (client::HasOption(kDebugSwitch)) {
-    help_submenu_.AddItem(ID_DUMP_DEBUG_INFO, Translate("Debug Information"));
-    help_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
-  }
-  help_submenu_.AddItem(ID_APP_ABOUT, Translate("About..."));
-#if defined(UI_QT)
-  help_submenu_.AddItem(ID_ABOUT_QT, Translate("About Qt..."));
-#endif
   AddSubMenu(0, Translate("Help"), &help_submenu_);
 }
 

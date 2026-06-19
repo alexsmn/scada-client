@@ -11,6 +11,7 @@
 #include "controller/selection_model.h"
 #include "core/global_command_context.h"
 #include "core/selection_command_context.h"
+#include "main_window/main_menu/main_menu_model.h"
 #include "main_window/main_window_interface.h"
 #include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
@@ -77,6 +78,8 @@ REGISTER_CONTROLLER(TableView, kTableWindowInfo);
 
 TableModule::TableModule(TableModuleContext&& context)
     : TableModuleContext{std::move(context)} {
+  RegisterMainMenuFavouritesWindowType(MainMenuId::Table,
+                                       kTableWindowInfo.name);
   RegisterTableCommandActions(ui_command_registry_);
   global_commands_.AddCommand(
       BasicCommand<GlobalCommandContext>{ID_OPEN_TABLE}.set_execute_handler(
@@ -109,6 +112,11 @@ TableModule::TableModule(TableModuleContext&& context)
         return session_service.HasPrivilege(scada::Privilege::Configure) &&
                CanCreateSomething(context.selection.node());
       }));
+}
+
+TableModule::~TableModule() {
+  UnregisterMainMenuFavouritesWindowType(MainMenuId::Table,
+                                         kTableWindowInfo.name);
 }
 
 void RegisterTableCommandActions(UiCommandRegistry& ui_command_registry) {

@@ -45,9 +45,11 @@ void RegisterClientApplicationModules(ClientApplicationModules modules) {
 ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
     ClientApplicationModules modules) {
   return [modules](ClientApplicationModuleContext& context) {
-    RegisterAboutCommands(context.global_commands_);
+    RegisterAboutCommands(context.global_commands_,
+                          context.ui_command_registry_);
 #if defined(_WIN32)
-    RegisterWebCommands(context.executor_, context.global_commands_);
+    RegisterWebCommands(context.executor_, context.global_commands_,
+                        context.ui_command_registry_);
 #endif
 
 #if defined(UI_QT)

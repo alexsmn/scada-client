@@ -13,6 +13,7 @@
 #include "core/selection_command_context.h"
 #include "filesystem/file_cache.h"
 #include "graph/graph_view.h"
+#include "main_window/main_menu/main_menu_model.h"
 #include "main_window/main_window_interface.h"
 #include "main_window/opened_view/opened_view_interface.h"
 #include "modules/selection_command_helpers.h"
@@ -71,6 +72,8 @@ REGISTER_CONTROLLER(GraphView, kGraphWindowInfo);
 
 GraphModule::GraphModule(GraphModuleContext&& context)
     : GraphModuleContext{std::move(context)} {
+  RegisterMainMenuFavouritesWindowType(MainMenuId::Graph,
+                                       kGraphWindowInfo.name);
   RegisterGraphCommandActions(ui_command_registry_);
   global_commands_.AddCommand(
       BasicCommand<GlobalCommandContext>{ID_OPEN_GRAPH}.set_execute_handler(
@@ -100,6 +103,11 @@ GraphModule::GraphModule(GraphModuleContext&& context)
           [](const SelectionCommandContext& context) {
             return context.selection.timed_data().connected();
           }});
+}
+
+GraphModule::~GraphModule() {
+  UnregisterMainMenuFavouritesWindowType(MainMenuId::Graph,
+                                         kGraphWindowInfo.name);
 }
 
 void RegisterGraphCommandActions(UiCommandRegistry& ui_command_registry) {

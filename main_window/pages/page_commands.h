@@ -14,6 +14,7 @@ class BasicCommandRegistry;
 class DialogService;
 class MainWindowManager;
 class Profile;
+class UiCommandRegistry;
 struct GlobalCommandContext;
 
 using RenamePagePromptRunner =
@@ -23,6 +24,7 @@ using RenamePagePromptRunner =
 struct PageCommandsContext {
   AnyExecutor executor_;
   BasicCommandRegistry<GlobalCommandContext>& global_commands_;
+  UiCommandRegistry& ui_command_registry_;
   Profile& profile_;
   MainWindowManager& main_window_manager_;
   RenamePagePromptRunner rename_prompt_runner_;

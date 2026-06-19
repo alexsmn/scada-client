@@ -24,6 +24,7 @@ struct TableModuleContext {
 class TableModule : private TableModuleContext {
  public:
   explicit TableModule(TableModuleContext&& context);
+  ~TableModule();
 };
 
 void RegisterTableCommandActions(UiCommandRegistry& ui_command_registry);

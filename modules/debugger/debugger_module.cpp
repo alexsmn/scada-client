@@ -4,19 +4,19 @@
 #include "aui/translation.h"
 #include "base/boost_log.h"
 #include "base/program_options.h"
-#include <boost/algorithm/string/join.hpp>
 #include "base/utf_convert.h"
+#include <boost/algorithm/string/join.hpp>
 #ifdef _WIN32
 #include "base/win/clipboard.h"
 #endif
-#include "resources/common_resources.h"
-#include "modules/debugger/debug_switch.h"
 #include "controller/command_registry.h"
-#include "controller/selection_model.h"
 #include "controller/command_ui_registry.h"
+#include "controller/selection_model.h"
 #include "core/selection_command_context.h"
 #include "debugger.h"
+#include "modules/debugger/debug_switch.h"
 #include "node_debug_info.h"
+#include "resources/common_resources.h"
 
 #include <memory>
 #if defined(UI_QT) && !defined(_WIN32)
@@ -37,12 +37,11 @@ DebuggerModule::DebuggerModule(DebuggerModuleContext&& context)
          .execute_handler = [debugger](const GlobalCommandContext& context) {
            debugger->Open();
          }});
-    ui_command_registry_.AddMenuItem(
-        {.menu_id = MainMenuId::Help,
-         .order = 100,
-         .command_id = debugger_command.command_id,
-         .title = debugger_command.title,
-         .debug_only = true});
+    ui_command_registry_.AddMenuItem({.menu_id = MainMenuId::Help,
+                                      .order = 100,
+                                      .command_id = debugger_command.command_id,
+                                      .title = debugger_command.title,
+                                      .debug_only = true});
 
     selection_commands_.AddCommand(
         {.command_id = ID_DUMP_DEBUG_INFO,
@@ -54,6 +53,11 @@ DebuggerModule::DebuggerModule(DebuggerModuleContext&& context)
              [this](const SelectionCommandContext& context) {
                return context.selection.timed_data().connected();
              }});
+    ui_command_registry_.AddMenuItem({.menu_id = MainMenuId::Help,
+                                      .order = 200,
+                                      .command_id = ID_DUMP_DEBUG_INFO,
+                                      .title = Translate("Debug Information"),
+                                      .debug_only = true});
   }
 }
 

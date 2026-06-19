@@ -8,7 +8,7 @@
 #include "filesystem/file_cache.h"
 
 #include <filesystem>
-#include <span>
+#include <string_view>
 
 class CommandHandler;
 class DialogService;
@@ -20,11 +20,16 @@ class Profile;
 class UiCommandRegistry;
 class ViewManager;
 class WindowDefinition;
+enum class MainMenuId;
 struct GlobalCommandContext;
 struct WindowInfo;
 
-void RegisterDisplayMenuWindowInfo(const WindowInfo& window_info);
-void UnregisterDisplayMenuWindowInfo(const WindowInfo& window_info);
+void RegisterDisplayMenuWindowType(std::string_view window_type);
+void UnregisterDisplayMenuWindowType(std::string_view window_type);
+void RegisterMainMenuFavouritesWindowType(MainMenuId menu_id,
+                                          std::string_view window_type);
+void UnregisterMainMenuFavouritesWindowType(MainMenuId menu_id,
+                                            std::string_view window_type);
 
 struct MainMenuContext {
   const AnyExecutor executor_;
@@ -65,8 +70,7 @@ class DisplayMenuModel : private MainMenuContext, public aui::SimpleMenuModel {
 class FavouritesMenuModel : private MainMenuContext,
                             public aui::SimpleMenuModel {
  public:
-  FavouritesMenuModel(std::span<const WindowInfo* const> window_infos,
-                      const MainMenuContext& context);
+  FavouritesMenuModel(MainMenuId menu_id, const MainMenuContext& context);
 
   // views::MenuModel
   virtual void MenuWillShow() override;
@@ -74,7 +78,7 @@ class FavouritesMenuModel : private MainMenuContext,
   virtual bool IsEnabledAt(int index) const override;
 
  private:
-  const std::span<const WindowInfo* const> window_infos_;
+  const MainMenuId menu_id_;
 
   std::vector<const WindowDefinition*> windows_;
 };

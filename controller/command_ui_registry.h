@@ -16,6 +16,7 @@ enum class MainMenuId {
   Page,
   Window,
   Settings,
+  Language,
   Help,
 };
 

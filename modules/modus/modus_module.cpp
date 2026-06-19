@@ -6,6 +6,7 @@
 
 #include "controller/controller_registry.h"
 #include "filesystem/file_registry.h"
+#include "main_window/main_menu/main_menu_model.h"
 #include "modus/modus_component.h"
 #include "modus/modus_controller.h"
 #include "profile/profile.h"
@@ -13,6 +14,8 @@
 
 ModusModule::ModusModule(ModusModuleContext&& context)
     : ModusModuleContext{std::move(context)} {
+  RegisterDisplayMenuWindowType(kModusWindowInfo.name);
+
   controller_registry_.AddControllerFactory(
       kModusWindowInfo, [this](const ControllerContext& context) {
         return std::make_unique<ModusController>(context);
@@ -52,4 +55,6 @@ ModusModule::ModusModule(ModusModuleContext&& context)
            }});
 }
 
-ModusModule::~ModusModule() = default;
+ModusModule::~ModusModule() {
+  UnregisterDisplayMenuWindowType(kModusWindowInfo.name);
+}

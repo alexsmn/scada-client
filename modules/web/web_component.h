@@ -6,6 +6,7 @@
 
 template <class T>
 class BasicCommandRegistry;
+class UiCommandRegistry;
 struct GlobalCommandContext;
 
 // Used directly by Modus controller.
@@ -13,4 +14,5 @@ inline const WindowInfo kWebWindowInfo = {ID_WEB_VIEW, "Web", u"Web"};
 
 void RegisterWebCommands(
     AnyExecutor executor,
-    BasicCommandRegistry<GlobalCommandContext>& global_commands);
+    BasicCommandRegistry<GlobalCommandContext>& global_commands,
+    UiCommandRegistry& ui_command_registry);

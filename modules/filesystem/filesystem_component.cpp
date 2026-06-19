@@ -92,12 +92,17 @@ FileSystemComponent::FileSystemComponent(FileSystemComponentContext&& context)
 
   global_commands_.AddCommand(BasicCommand<GlobalCommandContext>{
       .command_id = ID_VIEW_PUBLIC_FOLDER,
+      .title = Translate("Open Displays Folder"),
       .execute_handler =
           [](const GlobalCommandContext&) { OpenPublicFolder(); },
       .available_handler =
           [](const GlobalCommandContext& context) {
             return context.main_window.GetActiveView() != nullptr;
           }});
+  ui_command_registry_.AddMenuItem({.menu_id = MainMenuId::Settings,
+                                    .order = 400,
+                                    .command_id = ID_VIEW_PUBLIC_FOLDER,
+                                    .separator_before = true});
 
   auto open_file_command = std::bind_front(
       &OpenFileCommandImpl::Execute,

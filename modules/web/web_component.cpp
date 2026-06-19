@@ -3,6 +3,7 @@
 #include "aui/translation.h"
 #include "base/awaitable.h"
 #include "controller/command_registry.h"
+#include "controller/command_ui_registry.h"
 #include "controller/controller_registry.h"
 #include "core/global_command_context.h"
 #include "main_window/main_window_interface.h"
@@ -16,10 +17,12 @@ REGISTER_CONTROLLER(WebView, kWebWindowInfo);
 
 void RegisterWebCommands(
     AnyExecutor executor,
-    BasicCommandRegistry<GlobalCommandContext>& global_commands) {
+    BasicCommandRegistry<GlobalCommandContext>& global_commands,
+    UiCommandRegistry& ui_command_registry) {
 #if defined(_WIN32) && !defined(UI_WT)
   global_commands.AddCommand(
       {.command_id = ID_HELP_MANUAL,
+       .title = Translate("Documentation"),
        .execute_handler = [executor = std::move(executor)](
                               const GlobalCommandContext& context) {
          WindowDefinition def(kWebWindowInfo);
@@ -32,8 +35,12 @@ void RegisterWebCommands(
                    co_await main_window.OpenView(def, true);
                  });
        }});
+  ui_command_registry.AddMenuItem({.menu_id = MainMenuId::Help,
+                                   .order = 100,
+                                   .command_id = ID_HELP_MANUAL});
 #else
   (void)executor;
   (void)global_commands;
+  (void)ui_command_registry;
 #endif
 }

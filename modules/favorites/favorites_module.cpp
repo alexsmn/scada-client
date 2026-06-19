@@ -57,6 +57,7 @@ FavoritesModule::FavoritesModule(FavoritesModuleContext&& context)
 
   global_commands_.AddCommand(
       BasicCommand<GlobalCommandContext>{ID_VIEW_ADD_TO_FAVOURITES}
+          .set_title(Translate("Add to Favourites"))
           .set_available_handler([](const GlobalCommandContext& context) {
             return context.main_window.GetActiveView() != nullptr;
           })
@@ -76,6 +77,9 @@ FavoritesModule::FavoritesModule(FavoritesModuleContext&& context)
             ShowAddFavouritesDialog(context.dialog_service,
                                     {*favourites_, std::move(definition)});
           }));
+  ui_command_registry_.AddMenuItem({.menu_id = MainMenuId::Window,
+                                    .order = 210,
+                                    .command_id = ID_VIEW_ADD_TO_FAVOURITES});
 }
 
 FavoritesModule::~FavoritesModule() {}

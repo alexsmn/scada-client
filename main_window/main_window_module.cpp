@@ -114,10 +114,12 @@ BasicCommand<GlobalCommandContext> MakeMainWindowOptionCommand(
 
 BasicCommand<GlobalCommandContext> MakeProfileOptionCommand(
     unsigned command_id,
+    std::u16string_view title,
     Profile& profile,
     bool Profile::* option,
     std::function<bool()> enabled_handler = {}) {
   return {.command_id = command_id,
+          .title = std::u16string{title},
           .execute_handler =
               [&profile, option](const GlobalCommandContext&) {
                 profile.*option = !(profile.*option);
@@ -178,7 +180,6 @@ BasicCommand<GlobalCommandContext> MakeLanguageCommand(
     bool is_russian) {
   return {.command_id = command_id,
           .title = std::u16string{title},
-          .menu_group = MenuGroup::MAIN_WINDOW_SETTINGS,
           .execute_handler =
               [executor = std::move(executor),
                locale_name](const GlobalCommandContext& context) {
@@ -198,7 +199,8 @@ void RegisterMainWindowCommandActions(
     scada::SessionService& session_service,
     MainWindowManager& main_window_manager,
     std::function<void(bool login)> login_handler,
-    BasicCommandRegistry<GlobalCommandContext>& global_commands) {
+    BasicCommandRegistry<GlobalCommandContext>& global_commands,
+    UiCommandRegistry& ui_command_registry) {
   global_commands.AddCommand(
       BasicCommand<GlobalCommandContext>{ID_WINDOW_NEW}
           .set_available_handler([](const GlobalCommandContext& context) {
@@ -208,6 +210,10 @@ void RegisterMainWindowCommandActions(
               [&main_window_manager](const GlobalCommandContext&) {
                 main_window_manager.CreateMainWindow();
               }));
+  ui_command_registry.AddMenuItem({.menu_id = MainMenuId::Window,
+                                   .order = 100,
+                                   .command_id = ID_WINDOW_NEW,
+                                   .title = Translate("New")});
 
   global_commands.AddCommand(
       BasicCommand<GlobalCommandContext>{ID_VIEW_CHANGE_TITLE}
@@ -222,6 +228,15 @@ void RegisterMainWindowCommandActions(
               [executor = executor](const GlobalCommandContext& context) {
                 ShowRenameWindowDialog(executor, context);
               }));
+  ui_command_registry.AddMenuItem({.menu_id = MainMenuId::Window,
+                                   .order = 200,
+                                   .command_id = ID_VIEW_CHANGE_TITLE,
+                                   .title = Translate("Rename"),
+                                   .separator_before = true});
+  ui_command_registry.AddMenuItem({.menu_id = MainMenuId::Window,
+                                   .order = 220,
+                                   .command_id = ID_VIEW_CLOSE,
+                                   .title = Translate("Close")});
 
   global_commands.AddCommand(
       BasicCommand<GlobalCommandContext>{ID_LOGIN}
@@ -239,6 +254,18 @@ void RegisterMainWindowCommandActions(
           .set_execute_handler([login_handler](const GlobalCommandContext&) {
             login_handler(/*login=*/false);
           }));
+#if !defined(NDEBUG)
+  ui_command_registry.AddMenuItem({.menu_id = MainMenuId::More,
+                                   .order = 900,
+                                   .command_id = ID_LOGIN,
+                                   .title = Translate("Connect to Server..."),
+                                   .separator_before = true});
+  ui_command_registry.AddMenuItem(
+      {.menu_id = MainMenuId::More,
+       .order = 910,
+       .command_id = ID_LOGOFF,
+       .title = Translate("Disconnect from Server")});
+#endif
 
 #if defined(UI_QT)
   global_commands.AddCommand(
@@ -252,6 +279,11 @@ void RegisterMainWindowCommandActions(
                                             /*vertically=*/true);
             }
           }));
+  ui_command_registry.AddMenuItem({.menu_id = MainMenuId::Window,
+                                   .order = 300,
+                                   .command_id = ID_WINDOW_SPLIT_HORZ,
+                                   .title = Translate("Split Horizontally"),
+                                   .separator_before = true});
   global_commands.AddCommand(
       BasicCommand<GlobalCommandContext>{ID_WINDOW_SPLIT_VERT}
           .set_available_handler([](const GlobalCommandContext& context) {
@@ -263,6 +295,10 @@ void RegisterMainWindowCommandActions(
                                             /*vertically=*/false);
             }
           }));
+  ui_command_registry.AddMenuItem({.menu_id = MainMenuId::Window,
+                                   .order = 310,
+                                   .command_id = ID_WINDOW_SPLIT_VERT,
+                                   .title = Translate("Split Vertically")});
 #endif
 
   global_commands.AddCommand(MakeMainWindowOptionCommand(
@@ -279,25 +315,66 @@ void RegisterMainWindowCommandActions(
   global_commands.AddCommand(MakeLanguageCommand(executor, ID_LANGUAGE_RUSSIAN,
                                                  Translate("Russian"), "ru_RU",
                                                  /*is_russian=*/true));
+  ui_command_registry.AddMenuItem({.menu_id = MainMenuId::Language,
+                                   .order = 100,
+                                   .command_id = ID_LANGUAGE_ENGLISH,
+                                   .checkable = true});
+  ui_command_registry.AddMenuItem({.menu_id = MainMenuId::Language,
+                                   .order = 200,
+                                   .command_id = ID_LANGUAGE_RUSSIAN,
+                                   .checkable = true});
 #else
   (void)executor;
 #endif
 
-  global_commands.AddCommand(MakeProfileOptionCommand(ID_SHOW_WRITEOK, profile,
-                                                      &Profile::show_write_ok));
   global_commands.AddCommand(MakeProfileOptionCommand(
-      ID_SHOW_EVENTS, profile, &Profile::event_auto_show));
+      ID_SHOW_WRITEOK, Translate("Control Success Message"), profile,
+      &Profile::show_write_ok));
   global_commands.AddCommand(MakeProfileOptionCommand(
-      ID_HIDE_EVENTS, profile, &Profile::event_auto_hide));
+      ID_SHOW_EVENTS, Translate("Show Events on Arrival"), profile,
+      &Profile::event_auto_show));
   global_commands.AddCommand(MakeProfileOptionCommand(
-      ID_WRITE_CONFIRMATION, profile, &Profile::control_confirmation));
+      ID_HIDE_EVENTS, Translate("Hide Events on Acknowledge"), profile,
+      &Profile::event_auto_hide));
   global_commands.AddCommand(MakeProfileOptionCommand(
-      ID_OPT_SPEECH, profile, &Profile::speech_enabled,
+      ID_WRITE_CONFIRMATION, Translate("Control Confirmation"), profile,
+      &Profile::control_confirmation));
+  global_commands.AddCommand(MakeProfileOptionCommand(
+      ID_OPT_SPEECH, Translate("Speech"), profile, &Profile::speech_enabled,
       [&speech_service] { return speech_service.is_ok(); }));
   global_commands.AddCommand(MakeProfileOptionCommand(
-      ID_EVENT_FLASH_WINDOW, profile, &Profile::event_flash_window));
+      ID_EVENT_FLASH_WINDOW, Translate("Flash Main Window on Event"), profile,
+      &Profile::event_flash_window));
   global_commands.AddCommand(MakeProfileOptionCommand(
-      ID_EVENT_PLAY_SOUND, profile, &Profile::event_play_sound));
+      ID_EVENT_PLAY_SOUND, Translate("Sound Alarm on Event"), profile,
+      &Profile::event_play_sound));
+
+  ui_command_registry.AddMenuItem({.menu_id = MainMenuId::Settings,
+                                   .order = 200,
+                                   .command_id = ID_WRITE_CONFIRMATION,
+                                   .checkable = true,
+                                   .separator_before = true});
+  ui_command_registry.AddMenuItem({.menu_id = MainMenuId::Settings,
+                                   .order = 210,
+                                   .command_id = ID_SHOW_WRITEOK,
+                                   .checkable = true});
+  ui_command_registry.AddMenuItem({.menu_id = MainMenuId::Settings,
+                                   .order = 300,
+                                   .command_id = ID_SHOW_EVENTS,
+                                   .checkable = true,
+                                   .separator_before = true});
+  ui_command_registry.AddMenuItem({.menu_id = MainMenuId::Settings,
+                                   .order = 310,
+                                   .command_id = ID_HIDE_EVENTS,
+                                   .checkable = true});
+  ui_command_registry.AddMenuItem({.menu_id = MainMenuId::Settings,
+                                   .order = 320,
+                                   .command_id = ID_EVENT_FLASH_WINDOW,
+                                   .checkable = true});
+  ui_command_registry.AddMenuItem({.menu_id = MainMenuId::Settings,
+                                   .order = 330,
+                                   .command_id = ID_EVENT_PLAY_SOUND,
+                                   .checkable = true});
 }
 
 }  // namespace
@@ -328,7 +405,7 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
           // TODO: Logoff.
         }
       },
-      global_commands_);
+      global_commands_, ui_command_registry_);
 
   selection_command_router_ =
       std::make_shared<SelectionCommandRouter>(SelectionCommandRouterContext{
@@ -342,8 +419,9 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
       [this](bool has_events) { OnEvents(has_events); },
       ui_command_registry_.action_manager()});
 
-  singletons_.emplace(std::make_shared<PageCommands>(PageCommandsContext{
-      executor_, global_commands_, profile_, *main_window_manager_}));
+  singletons_.emplace(std::make_shared<PageCommands>(
+      PageCommandsContext{executor_, global_commands_, ui_command_registry_,
+                          profile_, *main_window_manager_}));
 }
 
 MainWindowModule::~MainWindowModule() {}
