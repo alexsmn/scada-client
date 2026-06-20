@@ -1,0 +1,39 @@
+%% OPC UA client discovery + endpoint-driven security selection.
+%% Render to SVG on Windows: c:\tools\mmdr\mmdr.exe client\docs\opcua-discovery-flow.mmd
+sequenceDiagram
+    autonumber
+    participant UI as Login UI
+    participant CS as ClientSession
+    participant DC as DiscoveryClient
+    participant SEL as SelectEndpoint
+    participant PS as ClientProtocolSession
+    participant SRV as OPC UA Server
+
+    UI->>CS: ConnectAsync(host, SecuritySettings)
+
+    Note over CS,SRV: Phase 1 — discovery over a transient None channel
+    CS->>DC: GetEndpoints(endpoint_url)
+    DC->>SRV: HEL / ACK
+    DC->>SRV: OpenSecureChannel (SecurityPolicy=None)
+    DC->>SRV: GetEndpointsRequest
+    SRV-->>DC: EndpointDescription[]<br/>(policyUri, mode, serverCert, userTokens[])
+    DC->>SRV: CloseSecureChannel
+
+    Note over CS,SEL: Phase 2 — choose a supported endpoint
+    CS->>SEL: SelectEndpoint(endpoints, preference, capabilities)
+    alt no compatible endpoint
+        SEL-->>CS: Bad_SecurityPolicyRejected (offered vs supported)
+        CS-->>UI: error
+    else endpoint chosen
+        SEL-->>CS: EndpointDescription (policy, mode, serverCert)
+    end
+
+    Note over CS,SRV: Phase 3 — secure working session
+    CS->>PS: Create(Security{policy, mode, serverCert, clientCert/key})
+    PS->>SRV: OpenSecureChannel (chosen policy)
+    PS->>SRV: CreateSessionRequest
+    SRV-->>PS: CreateSessionResponse (serverCert, serverNonce)
+    PS->>SRV: ActivateSessionRequest (identity token; clientSignature — gap 2)
+    SRV-->>PS: ActivateSessionResponse
+    PS-->>CS: Good
+    CS-->>UI: connected
