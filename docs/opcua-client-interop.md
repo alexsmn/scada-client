@@ -106,11 +106,11 @@ Severity reflects how often it blocks a real third-party server.
    (`common/opcua/binary/secure_channel.cpp`), so the client OPN handshake and
    symmetric framing are exercised end-to-end against a real secured server in
    `common/opcua/binary/secure_channel_server_unittest.cpp`. The server also
-   verifies the ActivateSession `clientSignature` and binds the client
-   certificate to the SecureChannel certificate
-   (`common/opcua/server_session_manager.cpp`). Remaining server-side gap:
-   per-token RSA-OAEP encrypted user-token decryption (the username token is
-   currently sent channel-protected).
+   verifies the ActivateSession `clientSignature`, binds the client certificate
+   to the SecureChannel certificate, and decrypts an RSA-OAEP encrypted
+   UserNameIdentityToken password (`common/opcua/server_session_manager.cpp`).
+   The server-side authentication-token surface is complete; authorization
+   (access-level/permission enforcement) is a later workstream.
 
 3. **Only `None` and `Basic256Sha256/SignAndEncrypt` security; no Sign-only.**
    `ClientSecureChannel` supports exactly two modes and explicitly does **not**
