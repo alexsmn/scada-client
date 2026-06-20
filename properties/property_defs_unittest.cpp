@@ -1,9 +1,10 @@
 #include "properties/property_defs.h"
 
-#include "address_space/address_space_impl3.h"
 #include "address_space/address_space_util.h"
 #include "address_space/generic_node_factory.h"
 #include "address_space/node_factory_util.h"
+#include "address_space/test/scada_test_address_space.h"
+#include "address_space/type_definition.h"
 #include "aui/dialog_service_mock.h"
 #include "base/test/awaitable_test.h"
 #include "base/u16format.h"
@@ -28,13 +29,88 @@
 
 using namespace testing;
 
+namespace {
+
+// Adds the IEC 60870 link/device type system that PropertyDefsTest exercises.
+// These types live in the server-owned `devices_iec60870` nodeset; they are
+// reproduced here in code so the client test needs no nodeset XML. Display names
+// and the Mode enum strings mirror that nodeset.
+void AddIec60870TestTypes(AddressSpaceImpl& address_space) {
+  GenericNodeFactory factory{address_space};
+  namespace dev = devices::id;
+
+  // Base LinkType : DeviceType (DeviceType comes from ScadaTestAddressSpace).
+  factory.CreateNode(scada::NodeState{
+      .node_id = dev::LinkType,
+      .node_class = scada::NodeClass::ObjectType,
+      .parent_id = dev::DeviceType,
+      .reference_type_id = {scada::id::HasSubtype, NamespaceIndexes::NS0},
+      .attributes = scada::NodeAttributes{}.set_browse_name("LinkType").set_display_name(u"Направление"),
+      .supertype_id = dev::DeviceType});
+
+  // Mode enumeration data type with its EnumStrings array.
+  factory.CreateNode(scada::NodeState{
+      .node_id = dev::Iec60870ModeDataType,
+      .node_class = scada::NodeClass::DataType,
+      .parent_id = {scada::id::Enumeration, NamespaceIndexes::NS0},
+      .reference_type_id = {scada::id::HasSubtype, NamespaceIndexes::NS0},
+      .attributes = scada::NodeAttributes{}.set_browse_name("Iec60870ModeType").set_display_name(u"Режим МЭК-60870"),
+      .supertype_id = {scada::id::Enumeration, NamespaceIndexes::NS0}});
+  factory.CreateNode(scada::NodeState{
+      .node_id = dev::Iec60870ModeDataType_EnumStrings,
+      .node_class = scada::NodeClass::Variable,
+      .type_definition_id = {scada::id::PropertyType, NamespaceIndexes::NS0},
+      .parent_id = dev::Iec60870ModeDataType,
+      .reference_type_id = {scada::id::HasProperty, NamespaceIndexes::NS0},
+      .attributes = scada::NodeAttributes{}
+                        .set_browse_name("EnumStrings")
+                        .set_display_name(u"EnumStrings")
+                        .set_data_type({scada::id::LocalizedText, NamespaceIndexes::NS0})
+                        .set_value(scada::Variant{std::vector<scada::LocalizedText>{
+                            u"Polling", u"Retransmission", u"Listening"}})});
+
+  // Iec60870LinkType : LinkType, with its Mode property declaration.
+  factory.CreateNode(scada::NodeState{
+      .node_id = dev::Iec60870LinkType,
+      .node_class = scada::NodeClass::ObjectType,
+      .parent_id = dev::LinkType,
+      .reference_type_id = {scada::id::HasSubtype, NamespaceIndexes::NS0},
+      .attributes = scada::NodeAttributes{}.set_browse_name("Iec60870LinkType").set_display_name(u"Направление МЭК-60870"),
+      .supertype_id = dev::LinkType});
+  factory.CreateNode(scada::NodeState{
+      .node_id = dev::Iec60870LinkType_Mode,
+      .node_class = scada::NodeClass::Variable,
+      .type_definition_id = {scada::id::PropertyType, NamespaceIndexes::NS0},
+      .parent_id = dev::Iec60870LinkType,
+      .reference_type_id = {scada::id::HasProperty, NamespaceIndexes::NS0},
+      .attributes = scada::NodeAttributes{}
+                        .set_browse_name("Mode")
+                        .set_display_name(u"Режим")
+                        .set_data_type(dev::Iec60870ModeDataType)});
+
+  // Iec60870DeviceType : DeviceType.
+  factory.CreateNode(scada::NodeState{
+      .node_id = dev::Iec60870DeviceType,
+      .node_class = scada::NodeClass::ObjectType,
+      .parent_id = dev::DeviceType,
+      .reference_type_id = {scada::id::HasSubtype, NamespaceIndexes::NS0},
+      .attributes = scada::NodeAttributes{}.set_browse_name("Iec60870DeviceType").set_display_name(u"Устройство МЭК-60870"),
+      .supertype_id = dev::DeviceType});
+
+  // HasDevice reference type (GenericNodeFactory cannot create ReferenceType).
+  address_space.AddStaticNode<scada::ReferenceType>(data_items::id::HasDevice,
+                                                    "HasDevice");
+}
+
+}  // namespace
+
 class PropertyDefsTest : public Test {
  protected:
   PropertyDefsTest();
 
   NodeRef CreateDataItem(std::string_view channel_path);
 
-  AddressSpaceImpl3 address_space;
+  scada_test::ScadaTestAddressSpace address_space;
   GenericNodeFactory node_factory{address_space};
 
   std::shared_ptr<NodeService> node_service =
@@ -58,6 +134,8 @@ class PropertyDefsTest : public Test {
 };
 
 PropertyDefsTest::PropertyDefsTest() {
+  AddIec60870TestTypes(address_space);
+
   // Create Link.
   node_factory.CreateNode(
       scada::NodeState{}

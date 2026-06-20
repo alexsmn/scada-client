@@ -1,7 +1,7 @@
 #include "modules/node_properties/node_property_model.h"
 
-#include "address_space/address_space_impl3.h"
 #include "address_space/generic_node_factory.h"
+#include "address_space/test/scada_test_address_space.h"
 #include "aui/dialog_service_mock.h"
 #include "base/test/awaitable_test.h"
 #include "common/node_state.h"
@@ -140,7 +140,7 @@ class NodePropertyModelTest : public Test {
 
   std::shared_ptr<ControllableAddressSpaceFetcher> fetcher_ =
       std::make_shared<ControllableAddressSpaceFetcher>();
-  AddressSpaceImpl3 address_space_;
+  scada_test::ScadaTestAddressSpace address_space_;
   NiceMock<scada::MockAttributeService> attribute_service_;
   NiceMock<scada::MockMonitoredItemService> monitored_item_service_;
   NiceMock<scada::MockMethodService> method_service_;

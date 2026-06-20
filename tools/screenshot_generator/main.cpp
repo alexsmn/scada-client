@@ -8,13 +8,13 @@
 #include "screenshot_wait.h"
 #include "widget_capture.h"
 
-#include "address_space/address_space_impl3.h"
 #include "address_space/attribute_service_impl.h"
 #include "address_space/local_history_service.h"
 #include "address_space/local_method_service.h"
 #include "address_space/local_monitored_item_service.h"
 #include "address_space/local_node_management_service.h"
 #include "address_space/local_session_service.h"
+#include "address_space/test/scada_test_address_space.h"
 #include "address_space/view_service_impl.h"
 #include "app/client_application.h"
 #include "aui/tree.h"
@@ -108,10 +108,11 @@ class ScreenshotGenerator : public ::testing::Test {
   QTranslator translator_;
 
   // SCADA back-end. The address space starts pre-populated with the
-  // standard OPC UA + SCADA folder/type tree (AddressSpaceImpl3 builds
-  // it in its ctor); ns=1 instance nodes from `screenshot_data.json`
-  // get added on top in the test fixture's constructor body.
-  AddressSpaceImpl3 address_space_;
+  // standard OPC UA + SCADA folder/type tree (code-defined by
+  // ScadaTestAddressSpace, no nodeset XML); ns=1 instance nodes from
+  // `screenshot_data.json` get added on top in the test fixture's
+  // constructor body.
+  scada_test::ScadaTestAddressSpace address_space_;
   SyncAttributeServiceImpl sync_attribute_service_{
       AttributeServiceImplContext{address_space_}};
   AttributeServiceImpl attribute_service_{sync_attribute_service_};
@@ -188,8 +189,8 @@ ScreenshotGenerator::ScreenshotGenerator() {
   MainWindow::SetHideForTesting();
 
   // Populate the address space with ns=1 instance nodes; everything
-  // else (standard OPC UA / SCADA tree) was already built by
-  // AddressSpaceImpl3's constructor. The real `v1::NodeServiceImpl`
+  // else (standard OPC UA / SCADA tree) was already built in code by
+  // ScadaTestAddressSpace. The real `v1::NodeServiceImpl`
   // inside ClientApplication browses and reads them through
   // ViewServiceImpl + AttributeServiceImpl on demand.
   PopulateFixtureNodes(address_space_, g_config.json);

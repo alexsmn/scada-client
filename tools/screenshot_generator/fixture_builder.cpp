@@ -128,7 +128,7 @@ void PopulateFixtureNodes(AddressSpaceImpl& address_space,
 
   // Multi-pass: a child can only be created after its parent already
   // exists in the address space. Standard OPC UA / SCADA nodes
-  // (ns=0/7) are pre-built by AddressSpaceImpl3, but fixture instances
+  // (ns=0/7) are pre-built by ScadaTestAddressSpace, but fixture instances
   // in other namespaces are not, so we may need to defer until a
   // previous pass placed their parents. Bounded by the number of
   // fixture entries to avoid runaway loops on broken fixtures.

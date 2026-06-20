@@ -3,9 +3,9 @@
 #include "address_space/address_space_impl.h"
 #include "address_space/address_space_util.h"
 #include "address_space/generic_node_factory.h"
-#include "address_space/address_space_xml.h"
 #include "address_space/node_factory_util.h"
 #include "address_space/standard_address_space.h"
+#include "address_space/test/scada_test_address_space.h"
 #include "base/test/awaitable_test.h"
 #include "base/range_util.h"
 #include "common/node_state.h"
@@ -14,7 +14,6 @@
 #include "scada/method_service_mock.h"
 #include "scada/monitored_item_service_mock.h"
 #include "model/devices_node_ids.h"
-#include "model/static_nodesets.h"
 #include "model/namespaces.h"
 #include "node_service/v1/address_space_fetcher_mock.h"
 #include "node_service/v1/node_service_impl.h"
@@ -84,10 +83,7 @@ DeviceMetricsCommandTest::DeviceMetricsCommandTest() {
       .WillByDefault(Return(std::make_pair(
           scada::StatusCode::Good, NodeFetchStatus::NodeAndChildren())));
 
-  GenericNodeFactory node_factory{address_space_};
-  [[maybe_unused]] const auto load_status = scada::LoadStaticAddressSpace(
-      scada::GetScadaStaticNodesetSourcePaths(), address_space_, node_factory);
-  assert(load_status);
+  scada_test::AddScadaDevicesTestTypes(address_space_);
 }
 
 DeviceMetricsCommandTest::~DeviceMetricsCommandTest() {

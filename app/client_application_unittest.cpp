@@ -1,9 +1,9 @@
 #include "client_application.h"
 
-#include "address_space/address_space_impl3.h"
 #include "address_space/address_space_util.h"
 #include "address_space/node_utils.h"
 #include "address_space/object.h"
+#include "address_space/test/scada_test_address_space.h"
 #include "address_space/variable.h"
 #include "aui/qt/message_loop_qt.h"
 #include "aui/test/app_environment.h"
@@ -59,7 +59,7 @@ Page MakeKnownWindowsPage() {
 }
 
 std::shared_ptr<NodeService> MakeClientTestNodeService(
-    AddressSpaceImpl3& address_space) {
+    AddressSpaceImpl& address_space) {
   address_space.AddStaticNode<scada::GenericVariable>(
       scada::NodeId{1, 1},
       "TestNode",
@@ -222,7 +222,7 @@ class ClientApplicationTestBase : public Test {
   boost::asio::io_context io_context_;
   AppEnvironment app_env_;
   AnyExecutor executor_ = MakeAnyExecutor(std::make_shared<MessageLoopQt>());
-  AddressSpaceImpl3 address_space_;
+  scada_test::ScadaTestAddressSpace address_space_;
   std::shared_ptr<NodeService> node_service_override_ =
       MakeClientTestNodeService(address_space_);
   scada::MockServices services_;
@@ -465,7 +465,7 @@ class ClientApplicationConfiguratorTest : public Test {
   boost::asio::io_context io_context_;
   AppEnvironment app_env_;
   AnyExecutor executor_ = MakeAnyExecutor(std::make_shared<MessageLoopQt>());
-  AddressSpaceImpl3 address_space_;
+  scada_test::ScadaTestAddressSpace address_space_;
   std::shared_ptr<NodeService> node_service_override_ =
       MakeClientTestNodeService(address_space_);
   scada::MockServices services_;

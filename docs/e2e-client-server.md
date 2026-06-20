@@ -9,6 +9,11 @@ path without replacing either binary with in-process mocks.
 
 ## Run Instructions
 
+The suite builds and runs on **Windows and macOS** (it is skipped on Linux —
+see `client/test/e2e/CMakeLists.txt`, guard `if(NOT WIN32 AND NOT APPLE)`).
+
+### Windows
+
 Run the client/server E2E tests from a Windows build environment. The examples
 below assume the repository is checked out at `C:\tc\scada` and the
 `release-dev` preset builds into `C:\tc\scada\build\ninja-dev`.
@@ -49,6 +54,30 @@ CTest can also run the registered test target from the build tree:
 ```cmd
 cd /d C:\tc\scada\build\ninja-dev
 ctest -C RelWithDebInfo -R client_server_e2e_tests --output-on-failure
+```
+
+### macOS
+
+The target is created only when the configure builds **both** the client and the
+server, i.e. with `BUILD_CLIENT=ON`. Use the client-enabled configure preset
+(`macos-local-client`); the plain `macos-local` preset sets `BUILD_CLIENT=OFF`,
+so `client_qt` and the E2E target are not created. `sqlite3` must be on `PATH`
+(the CMake step finds it via `find_program`).
+
+```sh
+cmake --preset macos-local-client
+cmake --build --preset client-tests-macos-local --target client_server_e2e_tests
+```
+
+Set the same license environment variables as on Windows (the dev `license.json`
+written next to the built `server` by `init_runtime_data.cmake` works locally
+with GCP binding disabled), then run the binary from the build output directory:
+
+```sh
+export SCADA_SERVER_LICENSE_FILE="$PWD/build/macos-local-client/bin/RelWithDebInfo/license.json"
+export SCADA_SERVER_LICENSE_REQUIRE_GCP_BINDING=false
+build/macos-local-client/bin/RelWithDebInfo/client_server_e2e_tests --gtest_brief=1
+# focused: ... --gtest_filter=*Connect_Success* --gtest_brief=1
 ```
 
 On failure, the harness prints the preserved temporary workspace path. Inspect
@@ -314,12 +343,13 @@ Required behavior:
 ## CI Integration
 
 The E2E executable is registered with CTest and runs in the normal Windows
-`test-release-dev` path.
+`test-release-dev` path. It also builds and runs on macOS (see Run Instructions).
 
 Constraints:
 
-- Windows only,
-- depends on built `client.exe` and `server.exe`,
+- Windows and macOS only (skipped on Linux),
+- depends on the built client and server binaries (`client.exe` / `server.exe`
+  on Windows; `client` / `server` on macOS),
 - should run serially or with unique temp workspaces to avoid fixture and port
   collisions,
 - must not mutate repo-tracked files.

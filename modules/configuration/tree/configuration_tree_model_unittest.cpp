@@ -116,7 +116,7 @@ TEST_F(ConfigurationTreeModelTest, PrefetchedChildrenAreAvailable) {
 // Regression: `ConfigurationTreeNode`'s ctor used to invoke `AddChildren()`,
 // which called the ctor of every child, which again called `AddChildren()`,
 // and so on. When the address space starts pre-populated (e.g. the
-// screenshot generator wired over AddressSpaceImpl3) every node already
+// screenshot generator wired over ScadaTestAddressSpace) every node already
 // has children loaded, so the chain walked the entire tree synchronously
 // and exploded the stack. The fix restricts the eager prefetch to the
 // root node — grandchildren stay lazy and only load via `FetchMore`.
