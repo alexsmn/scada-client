@@ -7,12 +7,12 @@
 #include "base/string_util.h"
 #include "net/net_executor_adapter.h"
 
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/join.hpp>
-#include <boost/range/iterator_range.hpp>
-#include <boost/algorithm/string/split.hpp>
 #include "base/u16format.h"
 #include "scada/session_service.h"
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/join.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/range/iterator_range.hpp>
 
 #include <algorithm>
 #include <cstdlib>
@@ -28,11 +28,38 @@ namespace {
 const wchar_t kRegistryKey[] = L"Software\\Telecontrol\\Workplace";
 const char kServerHostKeyPrefix[] = "Host:";
 
+// Backend name (DataServicesInfo::name) of the OPC UA backend. Security
+// settings are only meaningful for it.
+const char kOpcUaServerType[] = "OpcUa";
+
+// Persisted string values for the security mode, kept stable across releases.
+const char kSecurityModeNone[] = "None";
+const char kSecurityModeAuto[] = "Auto";
+const char kSecurityModeSignAndEncrypt[] = "SignAndEncrypt";
+
+int ParseSecurityModeIndex(std::string_view mode) {
+  if (mode == kSecurityModeAuto)
+    return 1;
+  if (mode == kSecurityModeSignAndEncrypt)
+    return 2;
+  return 0;
+}
+
+std::string_view SecurityModeToString(int index) {
+  switch (index) {
+    case 1:
+      return kSecurityModeAuto;
+    case 2:
+      return kSecurityModeSignAndEncrypt;
+    default:
+      return kSecurityModeNone;
+  }
+}
+
 const char kForceLogoffMessage[] =
     "The specified username is already in use by another session. "
     "Disconnect the open session and continue?";
-const wchar_t kLoginFailedMessage[] =
-    L"Error connecting to server ({}).";
+const wchar_t kLoginFailedMessage[] = L"Error connecting to server ({}).";
 const char kAutoLoginMessage[] =
     "To disable automatic login, hold Ctrl when launching the application.";
 
@@ -100,7 +127,8 @@ std::shared_ptr<SettingsStore> CreateDefaultSettingsStore() {
   std::filesystem::path base_dir =
       std::getenv("HOME") ? std::getenv("HOME") : ".";
   return std::make_shared<FileSettingsStore>(
-      base_dir / "Library/Application Support/Telecontrol/SCADA Client/settings.json");
+      base_dir /
+      "Library/Application Support/Telecontrol/SCADA Client/settings.json");
 #endif
 }
 
@@ -124,6 +152,14 @@ LoginController::LoginController(AnyExecutor executor,
   auto server_type = settings_store_->ReadString("ServerType");
   password = settings_store_->ReadString16("Password");
   auto_login = settings_store_->ReadBool("AutoLogin");
+
+  security_mode_list = {Translate("No security"),
+                        Translate("Most secure available"),
+                        Translate("Sign and encrypt")};
+  security_mode_index =
+      ParseSecurityModeIndex(settings_store_->ReadString("SecurityMode"));
+  client_certificate_path = settings_store_->ReadString("ClientCertificate");
+  client_private_key_path = settings_store_->ReadString("ClientPrivateKey");
 
   const auto& list = GetDataServicesInfoList();
   server_type_data_.resize(list.size());
@@ -193,6 +229,10 @@ void LoginController::OnLoginCompleted() {
   settings_store_->Write("AutoLogin", auto_login);
   if (auto_login)
     settings_store_->Write("Password", password);
+  settings_store_->Write("SecurityMode",
+                         SecurityModeToString(security_mode_index));
+  settings_store_->Write("ClientCertificate", client_certificate_path);
+  settings_store_->Write("ClientPrivateKey", client_private_key_path);
 
   Awaitable<void> message = []() -> Awaitable<void> { co_return; }();
   if (auto_login && login_message_) {
@@ -202,14 +242,14 @@ void LoginController::OnLoginCompleted() {
     }();
   }
 
-  CoSpawn(executor_, [executor = executor_,
-                      completion_handler = completion_handler,
-                      services = std::move(services_),
-                      message = std::move(message)]() mutable {
-    return CompleteLoginAsync(std::move(executor),
-                              std::move(completion_handler),
-                              std::move(services), std::move(message));
-  });
+  CoSpawn(executor_,
+          [executor = executor_, completion_handler = completion_handler,
+           services = std::move(services_),
+           message = std::move(message)]() mutable {
+            return CompleteLoginAsync(std::move(executor),
+                                      std::move(completion_handler),
+                                      std::move(services), std::move(message));
+          });
 }
 
 void LoginController::OnLoginFailed(const scada::Status& status) {
@@ -230,8 +270,7 @@ void LoginController::OnLoginFailed(const scada::Status& status) {
     });
 
   } else {
-    std::u16string message =
-        u16format(kLoginFailedMessage, ToString16(status));
+    std::u16string message = u16format(kLoginFailedMessage, ToString16(status));
     CoSpawn(executor_, [executor = executor_, controller = weak_from_this(),
                         prompt = dialog_service_.RunMessageBox(
                             message, {}, MessageBoxMode::Error)]() mutable {
@@ -253,17 +292,17 @@ void LoginController::Connect(bool allow_remote_logoff) {
     return;
   }
 
-  CoSpawn(executor_,
-          [executor = executor_, controller = weak_from_this(),
-           session_service = services_.session_service_,
-           params = scada::SessionConnectParams{
-               .host = server_host,
-               .user_name = scada::ToLocalizedText(user_name),
-               .password = scada::ToLocalizedText(password),
-               .allow_remote_logoff = allow_remote_logoff}]() mutable {
-            return ConnectAsync(std::move(executor), std::move(controller),
-                                *session_service, std::move(params));
-          });
+  CoSpawn(executor_, [executor = executor_, controller = weak_from_this(),
+                      session_service = services_.session_service_,
+                      params = scada::SessionConnectParams{
+                          .host = server_host,
+                          .user_name = scada::ToLocalizedText(user_name),
+                          .password = scada::ToLocalizedText(password),
+                          .allow_remote_logoff = allow_remote_logoff,
+                          .security = MakeSecuritySettings()}]() mutable {
+    return ConnectAsync(std::move(executor), std::move(controller),
+                        *session_service, std::move(params));
+  });
 }
 
 void LoginController::DeleteUserName(std::u16string_view user_name) {
@@ -284,6 +323,32 @@ void LoginController::SetServerTypeIndex(int index) {
   server_type_data_[server_type_index_].host = std::move(server_host);
   server_type_index_ = index;
   server_host = server_type_data_[index].host;
+}
+
+bool LoginController::IsSecuritySupported() const {
+  const auto& list = GetDataServicesInfoList();
+  if (server_type_index_ < 0 ||
+      server_type_index_ >= static_cast<int>(list.size()))
+    return false;
+  return EqualDataServicesName(list[server_type_index_].name, kOpcUaServerType);
+}
+
+scada::SessionSecuritySettings LoginController::MakeSecuritySettings() const {
+  scada::SessionSecuritySettings settings;
+  switch (security_mode_index) {
+    case 1:
+      settings.mode = scada::SessionSecuritySettings::Mode::Auto;
+      break;
+    case 2:
+      settings.mode = scada::SessionSecuritySettings::Mode::SignAndEncrypt;
+      break;
+    default:
+      settings.mode = scada::SessionSecuritySettings::Mode::None;
+      break;
+  }
+  settings.client_certificate_path = client_certificate_path;
+  settings.client_private_key_path = client_private_key_path;
+  return settings;
 }
 
 Awaitable<void> LoginController::ConnectAsync(

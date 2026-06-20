@@ -4,8 +4,8 @@
 
 #include "aui/dialog_service.h"
 #include "base/awaitable.h"
-#include "base/settings_store.h"
 #include "base/boost_log.h"
+#include "base/settings_store.h"
 #include "scada/data_services_factory.h"
 #include "scada/localized_text.h"
 
@@ -13,9 +13,10 @@
 
 namespace scada {
 struct SessionConnectParams;
+struct SessionSecuritySettings;
 class SessionService;
 class Status;
-}
+}  // namespace scada
 
 class DialogService;
 
@@ -46,8 +47,25 @@ class LoginController : public std::enable_shared_from_this<LoginController> {
   // Automatic startup login is performed.
   bool auto_login = false;
 
+  // OPC UA endpoint security selection. Only meaningful for the OPC UA backend
+  // (see IsSecuritySupported); other backends ignore it. `security_mode_index`
+  // indexes `security_mode_list`: 0 = no security, 1 = most secure available
+  // (discovery-driven), 2 = sign and encrypt.
+  std::vector<std::u16string> security_mode_list;
+  int security_mode_index = 0;
+  std::string client_certificate_path;
+  std::string client_private_key_path;
+
+  // True when the currently selected backend understands the security settings
+  // above (i.e. the OPC UA backend). Lets the dialog show/hide those fields.
+  bool IsSecuritySupported() const;
+
  protected:
   void Connect(bool allow_remote_logoff);
+
+  // Builds the SessionSecuritySettings from `security_mode_index` and the
+  // certificate paths.
+  scada::SessionSecuritySettings MakeSecuritySettings() const;
 
   void OnLoginResult(const scada::Status& status);
   void OnLoginCompleted();

@@ -9,6 +9,7 @@
 #include <QAbstractItemView>
 #include <QApplication>
 #include <QCheckBox>
+#include <QFileDialog>
 #include <QKeyEvent>
 #include <QSettings>
 #include <QtWidgets/qcombobox.h>
@@ -40,11 +41,11 @@ Awaitable<std::optional<DataServices>> DeleteLoginDialogOnCompletionAsync(
 
 LoginDialog::LoginDialog(AnyExecutor executor,
                          DataServicesContext&& services_context)
-    : controller_{std::make_shared<LoginController>(
-          executor,
-          std::move(services_context),
-          dialog_service_,
-          client::CreateE2eSettingsStore())},
+    : controller_{
+          std::make_shared<LoginController>(executor,
+                                            std::move(services_context),
+                                            dialog_service_,
+                                            client::CreateE2eSettingsStore())},
       completion_{std::move(executor)} {
   ui.setupUi(this);
 
@@ -58,8 +59,7 @@ LoginDialog::LoginDialog(AnyExecutor executor,
     if (!client::IsE2eTestMode())
       return false;
 
-    client::ReportE2eStatus(
-        std::string{"failure: "} + ToString(status));
+    client::ReportE2eStatus(std::string{"failure: "} + ToString(status));
     Complete(std::nullopt);
     close();
     return true;
@@ -83,6 +83,7 @@ LoginDialog::LoginDialog(AnyExecutor executor,
             controller_->SetServerTypeIndex(server_type_index);
             ui.serverComboBox->setCurrentText(
                 QString::fromStdString(controller_->server_host));
+            UpdateSecurityVisibility();
           });
 
   ui.serverComboBox->setCurrentText(
@@ -94,6 +95,21 @@ LoginDialog::LoginDialog(AnyExecutor executor,
   ui.userNameComboBox->lineEdit()->selectAll();
 
   ui.autoLoginCheckBox->setChecked(controller_->auto_login);
+
+  ui.securityModeComboBox->addItems(
+      MakeQStringList(controller_->security_mode_list));
+  ui.securityModeComboBox->setCurrentIndex(controller_->security_mode_index);
+  ui.certificateLineEdit->setText(
+      QString::fromStdString(controller_->client_certificate_path));
+  ui.privateKeyLineEdit->setText(
+      QString::fromStdString(controller_->client_private_key_path));
+  connect(ui.certificateBrowseButton, &QPushButton::clicked, this, [this] {
+    BrowseForFile(*ui.certificateLineEdit, tr("Select client certificate"));
+  });
+  connect(ui.privateKeyBrowseButton, &QPushButton::clicked, this, [this] {
+    BrowseForFile(*ui.privateKeyLineEdit, tr("Select client private key"));
+  });
+  UpdateSecurityVisibility();
 
   ui.userNameComboBox->view()->setToolTip(
       tr("You can remove the highlighted user from list by pressing Delete."));
@@ -146,6 +162,11 @@ void LoginDialog::Login() {
   controller_->user_name = ui.userNameComboBox->currentText().toStdU16String();
   controller_->password = ui.passwordLineEdit->text().toStdU16String();
   controller_->auto_login = ui.autoLoginCheckBox->isChecked();
+  controller_->security_mode_index = ui.securityModeComboBox->currentIndex();
+  controller_->client_certificate_path =
+      ui.certificateLineEdit->text().toStdString();
+  controller_->client_private_key_path =
+      ui.privateKeyLineEdit->text().toStdString();
 
   controller_->Login();
 }
@@ -156,7 +177,29 @@ void LoginDialog::EnableControls(bool enable) {
   ui.userNameComboBox->setEnabled(enable);
   ui.passwordLineEdit->setEnabled(enable);
   ui.autoLoginCheckBox->setEnabled(enable);
+  ui.securityModeComboBox->setEnabled(enable);
+  ui.certificateLineEdit->setEnabled(enable);
+  ui.certificateBrowseButton->setEnabled(enable);
+  ui.privateKeyLineEdit->setEnabled(enable);
+  ui.privateKeyBrowseButton->setEnabled(enable);
   ui.buttonBox->button(QDialogButtonBox::Ok)->setEnabled(enable);
+}
+
+void LoginDialog::UpdateSecurityVisibility() {
+  const bool show = controller_->IsSecuritySupported();
+  ui.securityLabel->setVisible(show);
+  ui.securityModeComboBox->setVisible(show);
+  ui.certificateLabel->setVisible(show);
+  ui.certificateWidget->setVisible(show);
+  ui.privateKeyLabel->setVisible(show);
+  ui.privateKeyWidget->setVisible(show);
+}
+
+void LoginDialog::BrowseForFile(QLineEdit& target, const QString& title) {
+  const QString path = QFileDialog::getOpenFileName(
+      this, title, target.text(), tr("PEM files (*.pem);;All files (*)"));
+  if (!path.isEmpty())
+    target.setText(path);
 }
 
 bool LoginDialog::eventFilter(QObject* object, QEvent* event) {
