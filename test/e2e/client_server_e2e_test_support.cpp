@@ -313,7 +313,8 @@ void ClientServerE2eTest::PrepareWorkspace() {
 }
 
 void ClientServerE2eTest::WriteClientSettings(std::string_view password,
-                                              std::string_view user) {
+                                              std::string_view user,
+                                              std::string_view security_mode) {
   const auto remote_host =
       std::string{"localhost:"} + std::to_string(remote_port_);
   const auto opcua_host =
@@ -326,6 +327,8 @@ void ClientServerE2eTest::WriteClientSettings(std::string_view password,
       {"Password", std::string{password}},
       {"AutoLogin", true},
   };
+  if (!security_mode.empty())
+    root["SecurityMode"] = std::string{security_mode};
   WriteTextFile(settings_file_, boost::json::serialize(root));
 }
 

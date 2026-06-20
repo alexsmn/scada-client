@@ -197,6 +197,13 @@ The settings file must provide at least:
 - `Password=...`
 - `AutoLogin=true`
 
+It may optionally provide:
+
+- `SecurityMode=None|Auto|SignAndEncrypt` — OPC UA endpoint security selection.
+  When `Auto` or `SignAndEncrypt`, the OPC UA backend runs `GetEndpoints`
+  discovery and selects an endpoint before connecting. Ignored by the Scada
+  (gRPC) backend.
+
 This keeps test runs isolated from `HKEY_CURRENT_USER\Software\Telecontrol\Workplace`.
 
 ### Auto-login failure behavior
@@ -299,6 +306,28 @@ Current harness details:
 - verifies the server does not log successful authorization,
 - holds the server alive for a 10 second post-rejection stability window so
   failed-auth connect crashes are also caught.
+
+### `Connect_Success_WithDiscoveryAutoSecurity` (OPC UA only)
+
+Skipped for the Scada backend. With `SecurityMode=Auto`, exercises the full
+discovery-driven connect against the real server:
+
+- the client runs `GetEndpoints` discovery, selects the server's advertised
+  (SecurityPolicy=None) endpoint, and completes login,
+- the same `Connect_Success` success signals hold (startup-completed log,
+  empty/`success` status, client still running, server auth log),
+- the client log records the post-activation `NamespaceArray` read, confirming
+  the discovery + namespace path ran,
+- both processes stay alive for the post-connect stability window.
+
+### `Connect_SignAndEncryptRejectedWhenServerOffersNone` (OPC UA only)
+
+Skipped for the Scada backend. With `SecurityMode=SignAndEncrypt` against a
+server that advertises only a None endpoint, endpoint selection must fail:
+
+- the client reports a `failure: ...` status (no compatible secure endpoint),
+- the server never logs `OPC UA session activated`,
+- the server remains alive for the post-rejection stability window.
 
 ### `OperatorUseCases_OpenRegisteredSurfaces`
 

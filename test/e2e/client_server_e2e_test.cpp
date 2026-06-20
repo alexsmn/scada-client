@@ -261,6 +261,63 @@ TEST_P(ClientServerE2eTest, Connect_BadPassword) {
       "credentials");
 }
 
+TEST_P(ClientServerE2eTest, Connect_Success_WithDiscoveryAutoSecurity) {
+  if (GetParam() != E2eProtocol::OpcUa)
+    GTEST_SKIP() << "Endpoint discovery/security applies to the OPC UA backend";
+
+  WriteClientSettings(/*password=*/"", /*user=*/"root",
+                      /*security_mode=*/"Auto");
+  StartServer();
+  StartClient();
+
+  ASSERT_TRUE(WaitForStartupOrStatus())
+      << "Timed out waiting for client startup/status signal";
+  const auto status = ReadFileOrEmpty(status_file_);
+  EXPECT_TRUE(ContainsInDirectory(client_log_dir_, kStartupCompletedLog))
+      << "Client did not log startup completion; status: " << status;
+  EXPECT_TRUE(status.empty() || status == "success")
+      << "Unexpected client status while waiting for startup: " << status;
+  EXPECT_TRUE(client_.IsRunning()) << "Client exited unexpectedly after login";
+
+  // "Auto" security can only connect if GetEndpoints discovery ran and selected
+  // the server's (None) endpoint, so a successful login proves that path. The
+  // post-activation NamespaceArray read is part of the same new flow.
+  EXPECT_TRUE(ContainsInDirectory(client_log_dir_, "NamespaceArray"))
+      << "Client did not read the server NamespaceArray after connecting";
+
+  ExpectServerAuthLog();
+  ExpectProcessesRemainRunningFor(
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          kPostConnectStabilityTimeout),
+      "waiting for the discovery-based OPC UA session to remain stable");
+}
+
+TEST_P(ClientServerE2eTest,
+       Connect_SignAndEncryptRejectedWhenServerOffersNone) {
+  if (GetParam() != E2eProtocol::OpcUa)
+    GTEST_SKIP() << "Endpoint security applies to the OPC UA backend";
+
+  // The in-repo server advertises only a SecurityPolicy=None endpoint, so a
+  // client that requires SignAndEncrypt must fail endpoint selection during
+  // discovery and never activate a session.
+  WriteClientSettings(/*password=*/"", /*user=*/"root",
+                      /*security_mode=*/"SignAndEncrypt");
+  StartServer();
+  StartClient();
+
+  const auto status = WaitForStatus();
+  EXPECT_NE(status.find("failure"), std::string::npos)
+      << "Expected the client to report a connection failure; status: "
+      << status;
+  EXPECT_FALSE(ContainsInDirectory(server_log_dir_, "OPC UA session activated"))
+      << "Server should not activate a session when security selection fails";
+  ExpectServerRemainsRunningFor(
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          kPostConnectStabilityTimeout),
+      "waiting for the server to remain stable after rejecting an unsupported "
+      "security mode");
+}
+
 INSTANTIATE_TEST_SUITE_P(Protocols,
                          ClientServerE2eTest,
                          ::testing::Values(E2eProtocol::Remote,

@@ -35,8 +35,12 @@ class ClientServerE2eTest : public ::testing::TestWithParam<E2eProtocol> {
   void TearDown() override;
 
   void PrepareWorkspace();
+  // Writes the client settings file. `security_mode`, when non-empty, sets the
+  // OPC UA endpoint security selection ("None" / "Auto" / "SignAndEncrypt");
+  // it is ignored by the Scada (gRPC) backend.
   void WriteClientSettings(std::string_view password,
-                           std::string_view user = "root");
+                           std::string_view user = "root",
+                           std::string_view security_mode = {});
   void StartServer();
   void StartClient(std::vector<std::string> extra_args = {});
 
