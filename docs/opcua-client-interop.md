@@ -100,9 +100,14 @@ Severity reflects how often it blocks a real third-party server.
    `client_nonce` (sent so the server can bind the key), `CreateSessionResponse`
    now captures the server certificate, and over a secured channel the client
    signs `serverCertificate || serverNonce` with RSA-PKCS#1-SHA256. Under
-   SecurityPolicy=None the signature stays empty (correct). Note: full
-   end-to-end validation requires a real secured server (untested here); the
-   signing primitive is unit-tested (sign + verify).
+   SecurityPolicy=None the signature stays empty (correct). The signing
+   primitive is unit-tested (sign + verify). The in-repo server now implements
+   the Basic256Sha256 SecureChannel
+   (`common/opcua/binary/secure_channel.cpp`), so the client OPN handshake and
+   symmetric framing are exercised end-to-end against a real secured server in
+   `common/opcua/binary/secure_channel_server_unittest.cpp`. Remaining
+   server-side gap: ActivateSession `clientSignature` and encrypted user-token
+   verification at the session layer are not yet wired.
 
 3. **Only `None` and `Basic256Sha256/SignAndEncrypt` security; no Sign-only.**
    `ClientSecureChannel` supports exactly two modes and explicitly does **not**
@@ -111,7 +116,8 @@ Severity reflects how often it blocks a real third-party server.
    `Basic256Sha256/Sign`, `Aes128_Sha256_RsaOaep`, `Aes256_Sha256_RsaPss`.
    Many PLCs default to Sign-only or `Basic128Sha256`. Servers that refuse
    `None` (the common secure default) are unreachable unless they happen to
-   offer exactly `Basic256Sha256/SignAndEncrypt`.
+   offer exactly `Basic256Sha256/SignAndEncrypt` — which the in-repo server now
+   does, so client↔server secured interop is covered.
 
 ### HIGH — blocks operator usability and large address spaces
 
