@@ -40,6 +40,11 @@ add_executable(client_screenshot_generator
   "${CMAKE_CURRENT_SOURCE_DIR}/../../app/client_application_modules.h"
 )
 
+# opcuapp include precedence (see client/app/qt/CMakeLists.txt).
+find_package(opcuapp REQUIRED)
+target_include_directories(client_screenshot_generator BEFORE PRIVATE
+  $<TARGET_PROPERTY:opcuapp,INTERFACE_INCLUDE_DIRECTORIES>)
+
 target_link_libraries(client_screenshot_generator PRIVATE
   aui_qt
   client_common

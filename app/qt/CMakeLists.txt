@@ -30,6 +30,12 @@ add_library(client_qt_app_shared STATIC
   "startup_flow.h"
 )
 target_precompile_headers(client_qt_app_shared REUSE_FROM scada_base)
+# opcuapp's include directory must precede the common/ tree so the OPC UA
+# services module's `opcua/...` includes resolve to opcuapp, not the now-dead
+# common/opcua native headers still on disk.
+find_package(opcuapp REQUIRED)
+target_include_directories(client_qt_app_shared BEFORE PRIVATE
+  $<TARGET_PROPERTY:opcuapp,INTERFACE_INCLUDE_DIRECTORIES>)
 if(MSVC)
   target_compile_options(client_qt_app_shared PRIVATE
     /wd4702 # unreachable code in exception/test-support control flow

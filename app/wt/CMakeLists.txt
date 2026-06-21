@@ -30,6 +30,10 @@ add_library(client_wt_lib
   "../startup_exception.h"
 )
 target_precompile_headers(client_wt_lib REUSE_FROM scada_base)
+# opcuapp include precedence (see client/app/qt/CMakeLists.txt).
+find_package(opcuapp REQUIRED)
+target_include_directories(client_wt_lib BEFORE PRIVATE
+  $<TARGET_PROPERTY:opcuapp,INTERFACE_INCLUDE_DIRECTORIES>)
 
 find_package(wt REQUIRED)
 target_link_libraries(client_wt_lib PUBLIC
