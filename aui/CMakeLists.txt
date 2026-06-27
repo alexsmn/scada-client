@@ -11,7 +11,7 @@ client_module_link_libraries(aui PUBLIC
 if(TARGET aui_qt)
   target_compile_definitions(aui_qt PUBLIC UI_QT)
 
-  target_compile_features(aui_qt PUBLIC cxx_std_20)
+  target_compile_features(aui_qt PUBLIC cxx_std_23)
 
   find_package(Qt6 COMPONENTS Widgets REQUIRED)
   target_link_libraries(aui_qt PUBLIC
@@ -33,7 +33,7 @@ endif()
 if(TARGET aui_wt)
   target_compile_definitions(aui_wt PUBLIC UI_WT)
 
-  target_compile_features(aui_wt PUBLIC cxx_std_20)
+  target_compile_features(aui_wt PUBLIC cxx_std_23)
 
   find_package(wt CONFIG REQUIRED)
 
