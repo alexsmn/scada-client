@@ -263,6 +263,53 @@ existing server-side tests.
 The current harness disables optional subsystems such as Vidicon in the temp
 `server.json` while enabling the SCADA remote-session and OPC UA endpoints.
 
+## Server topology (monolith vs multi-process)
+
+Every test is parametrized over two axes — the client backend protocol and the
+**server topology** — so each `TEST_P` runs as
+`<Protocol>_<Topology>` (e.g. `Remote_Monolith`, `OpcUa_MultiProcess`):
+
+- **Monolith** — a single `server` process on the client-facing ports. This is
+  the original behavior.
+- **MultiProcess** — the tier-split server from `server/dev/local-cluster`,
+  reduced to what the client can observe: a full-content **edge** process
+  (all protocol drivers + data items + local config DB, polling the shared
+  IEC 61850 test server) fronted by an aggregating **proxy** process on the
+  client-facing ports. The client connects only to the proxy; the proxy
+  re-exposes the edge's address space through OPC UA aggregation. Both are the
+  same `server` binary — the proxy is just `server` started with an
+  `aggregation` config and its data-item module disabled, so the northbound
+  content is served by aggregation from the edge, not by the proxy itself.
+
+The edge is launched with the shared `ServerTier` harness in
+`common/test/e2e/e2e_server_process.h` — the same one the server integration
+suite uses to stand up its config / historian / edge / proxy tiers — bound to
+the client target's paths and license via `MakeServerContext()`.
+
+The point of the MultiProcess axis is to prove the client behaves identically
+whether the server is one process or a multi-process cluster behind a northbound
+proxy. Because the proxy reuses the harness's built-in server slot
+(`server_` / `workspace_` / the client-facing ports), every existing assertion —
+auth logs, post-connect stability, the client-facing endpoint — targets the
+process the client actually connects to, unchanged.
+
+Inter-tier sessions use the built-in `root` user. With a single edge each
+process receives at most one concurrent `root` session, so `root`'s
+single-session rule is never tripped (the full `local-cluster`, with several
+edges, needs a multi-session `svc` account instead).
+
+Every test runs under both topologies. The deep content assertions —
+object-tree children/labels, hardware-tree devices, operator use-case surfaces —
+pass unchanged through the proxy because OPC UA aggregation re-exposes the edge's
+address space (browse names, display names, device status) with the same
+attribute values, only under remapped node ids that the client follows
+dynamically. Profile persistence works too: the client saves through the proxy,
+which routes the write to the edge that owns the aggregated config namespace, so
+in multi-process mode the harness reads the profile back from the edge's DB (see
+`ServerConfigDatabasePath`). The only remaining skips are protocol-based, not
+topology-based: the two OPC UA discovery/security tests apply to the OPC UA
+backend and skip on the Remote (gRPC) protocol under either topology.
+
 ## Assertions
 
 ### `Connect_Success`

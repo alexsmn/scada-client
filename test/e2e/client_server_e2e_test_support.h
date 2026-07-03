@@ -2,15 +2,21 @@
 
 #include "test/e2e/e2e_file_helpers.h"
 #include "test/e2e/e2e_process.h"
+#include "test/e2e/e2e_server_process.h"
 
 #include <gtest/gtest.h>
 
 #include <chrono>
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
+
+namespace boost::json {
+class object;
+}
 
 namespace client::test {
 
@@ -21,18 +27,44 @@ enum class E2eProtocol {
   OpcUa,
 };
 
+// Which server backend the client is exercised against:
+//   Monolith     — a single server process (the default).
+//   MultiProcess — the tier-split server: a full-content edge fronted by an
+//                  aggregating proxy, with the client connecting to the proxy
+//                  (mirrors server/dev/local-cluster). Verifies the client
+//                  behaves identically whether the server is one process or a
+//                  multi-process cluster behind a northbound proxy.
+enum class ServerTopology {
+  Monolith,
+  MultiProcess,
+};
+
 std::string_view ToString(E2eProtocol protocol);
+std::string_view ToString(ServerTopology topology);
+
+// One point in the E2E parameter space: protocol × server topology.
+struct E2eParam {
+  E2eProtocol protocol;
+  ServerTopology topology;
+};
+
+// Test-name suffix for a parameter, e.g. "Remote_Monolith" /
+// "OpcUa_MultiProcess".
+std::string E2eParamName(const E2eParam& param);
 
 extern const std::chrono::seconds kPostConnectStabilityTimeout;
 extern const std::string_view kStartupCompletedLog;
 
-class ClientServerE2eTest : public ::testing::TestWithParam<E2eProtocol> {
+class ClientServerE2eTest : public ::testing::TestWithParam<E2eParam> {
  protected:
   ClientServerE2eTest();
   ~ClientServerE2eTest() override;
 
   void SetUp() override;
   void TearDown() override;
+
+  E2eProtocol Protocol() const { return GetParam().protocol; }
+  ServerTopology Topology() const { return GetParam().topology; }
 
   void PrepareWorkspace();
   // Writes the client settings file. `security_mode`, when non-empty, sets the
@@ -83,8 +115,39 @@ class ClientServerE2eTest : public ::testing::TestWithParam<E2eProtocol> {
   ChildProcess server_;
   ChildProcess client_;
 
+  // Multi-process topology only: the aggregated downstream edge, launched with
+  // the shared ServerTier harness (common/test/e2e). The client-facing proxy
+  // reuses the built-in server_/workspace_/remote_port_/opcua_port_ slot, so
+  // every existing assertion (auth logs, stability, profile DB reads) targets
+  // the process the client actually connects to.
+  PortPool ports_;
+  std::unique_ptr<ServerTier> edge_tier_;
+
  private:
   int GetProtocolPort() const;
+
+  // Path of the configuration SQLite DB that backs the server nodes the client
+  // sees. In Monolith mode that is the single server's DB; in MultiProcess mode
+  // the client talks to the proxy but the config (users/profiles) it aggregates
+  // is owned by the edge, so profile writes land in the edge's DB.
+  std::filesystem::path ServerConfigDatabasePath() const;
+
+  // Copies the server fixture into `ws` and generates its config DB (with the
+  // shared IEC 61850 test-server port).
+  void PrepareServerFilesystem(const std::filesystem::path& ws,
+                               int iec61850_port);
+  // Writes `ws`/server.json from the shared template with the given session and
+  // OPC UA ports and the signed license, then applies `configure` (when set) to
+  // shape the process role (e.g. turn it into an aggregating proxy).
+  void WriteServerJson(
+      const std::filesystem::path& ws,
+      int remote_port,
+      int opcua_port,
+      const std::function<void(boost::json::object&)>& configure = {});
+  // Launches the tier-split cluster: a full-content edge and an aggregating
+  // proxy in front of it, with the proxy on the client-facing ports. Waits for
+  // the proxy to listen on the active protocol's port.
+  void StartMultiProcessCluster();
 };
 
 }  // namespace client::test

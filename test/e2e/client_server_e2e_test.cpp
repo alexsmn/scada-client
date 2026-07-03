@@ -262,7 +262,7 @@ TEST_P(ClientServerE2eTest, Connect_BadPassword) {
 }
 
 TEST_P(ClientServerE2eTest, Connect_Success_WithDiscoveryAutoSecurity) {
-  if (GetParam() != E2eProtocol::OpcUa)
+  if (Protocol() != E2eProtocol::OpcUa)
     GTEST_SKIP() << "Endpoint discovery/security applies to the OPC UA backend";
 
   WriteClientSettings(/*password=*/"", /*user=*/"root",
@@ -294,7 +294,7 @@ TEST_P(ClientServerE2eTest, Connect_Success_WithDiscoveryAutoSecurity) {
 
 TEST_P(ClientServerE2eTest,
        Connect_SignAndEncryptRejectedWhenServerOffersNone) {
-  if (GetParam() != E2eProtocol::OpcUa)
+  if (Protocol() != E2eProtocol::OpcUa)
     GTEST_SKIP() << "Endpoint security applies to the OPC UA backend";
 
   // The in-repo server advertises only a SecurityPolicy=None endpoint, so a
@@ -318,13 +318,17 @@ TEST_P(ClientServerE2eTest,
       "security mode");
 }
 
-INSTANTIATE_TEST_SUITE_P(Protocols,
-                         ClientServerE2eTest,
-                         ::testing::Values(E2eProtocol::Remote,
-                                           E2eProtocol::OpcUa),
-                         [](const ::testing::TestParamInfo<E2eProtocol>& info) {
-                           return std::string{ToString(info.param)};
-                         });
+INSTANTIATE_TEST_SUITE_P(
+    Protocols,
+    ClientServerE2eTest,
+    ::testing::Values(
+        E2eParam{E2eProtocol::Remote, ServerTopology::Monolith},
+        E2eParam{E2eProtocol::OpcUa, ServerTopology::Monolith},
+        E2eParam{E2eProtocol::Remote, ServerTopology::MultiProcess},
+        E2eParam{E2eProtocol::OpcUa, ServerTopology::MultiProcess}),
+    [](const ::testing::TestParamInfo<E2eParam>& info) {
+      return E2eParamName(info.param);
+    });
 
 }  // namespace
 }  // namespace client::test

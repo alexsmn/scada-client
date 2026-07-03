@@ -112,51 +112,21 @@ void ConfigureSignedLicense(boost::json::object& server_json) {
   server_json["license"] = std::move(license);
 }
 
-std::string SqlitePath(const std::filesystem::path& path) {
-  auto result = path.lexically_normal().generic_string();
-  for (auto& ch : result) {
-    if (ch == '\'')
-      ch = ' ';
-  }
-  return result;
-}
-
-void GenerateConfigurationDatabase(const std::filesystem::path& workspace,
-                                   int iec61850_port) {
-  const auto configuration_dir = workspace / "Configuration";
-  const auto database_path = configuration_dir / "configuration.sqlite3";
-  const auto script_path = workspace / "generate-configuration.sql";
-  std::error_code ec;
-  std::filesystem::remove_all(configuration_dir, ec);
-  std::filesystem::create_directories(configuration_dir, ec);
-
-  WriteTextFile(script_path,
-                ".bail on\n"
-                ".read " +
-                    SqlitePath(GetConfigurationBaseSqlPath()) +
-                    "\n"
-                    ".read " +
-                    SqlitePath(GetConfigurationFixtureSqlPath()) +
-                    "\n"
-                    "UPDATE Iec61850DeviceType SET Port = " +
-                    std::to_string(iec61850_port) + ";\n");
-
-  const auto sqlite_exe = GetSqliteExePath();
-  JobObject job;
-  ChildProcess sqlite;
-  LaunchProcess(
-      sqlite_exe,
-      {"-batch", "-init", script_path.string(), database_path.string()},
-      workspace, job, sqlite);
-  WaitForExit(sqlite, 30000);
-  auto exit_code = sqlite.ExitCode();
-  if (!exit_code || *exit_code != 0) {
-    ForceTerminate(sqlite);
-    throw std::runtime_error{
-        "sqlite3 failed while creating " + database_path.string() +
-        " with exit code " +
-        (exit_code ? std::to_string(*exit_code) : std::string{"unavailable"})};
-  }
+// Binds the shared server-process harness (common/test/e2e) to this suite's
+// SCADA_E2E_* paths and its env-var signed license (ConfigureSignedLicense).
+ServerProcessContext MakeServerContext() {
+  return ServerProcessContext{
+      .server_exe = GetServerExePath(),
+      .fixture_dir = GetServerFixtureDir(),
+      .settings_template = GetServerSettingsTemplatePath(),
+      .configuration_base_sql = GetConfigurationBaseSqlPath(),
+      .configuration_fixture_sql = GetConfigurationFixtureSqlPath(),
+      .sqlite_exe = GetSqliteExePath(),
+      .configure_license =
+          [](boost::json::object& server_json, const std::filesystem::path&) {
+            ConfigureSignedLicense(server_json);
+          },
+  };
 }
 
 int FindAvailablePort() {
@@ -234,6 +204,21 @@ std::string_view ToString(E2eProtocol protocol) {
   return "Unknown";
 }
 
+std::string_view ToString(ServerTopology topology) {
+  switch (topology) {
+    case ServerTopology::Monolith:
+      return "Monolith";
+    case ServerTopology::MultiProcess:
+      return "MultiProcess";
+  }
+  return "Unknown";
+}
+
+std::string E2eParamName(const E2eParam& param) {
+  return std::string{ToString(param.protocol)} + "_" +
+         std::string{ToString(param.topology)};
+}
+
 ClientServerE2eTest::ClientServerE2eTest()
     : job_{std::make_unique<JobObject>()} {}
 
@@ -255,6 +240,11 @@ void ClientServerE2eTest::SetUp() {
   iec61850_port_ = FindAvailablePort();
   while (iec61850_port_ == remote_port_ || iec61850_port_ == opcua_port_)
     iec61850_port_ = FindAvailablePort();
+  // Reserve the client-facing (proxy/monolith) ports and the IEC 61850 port so
+  // the shared PortPool hands the edge tier distinct ports in MultiProcess
+  // mode.
+  for (int port : {remote_port_, opcua_port_, iec61850_port_})
+    ports_.Reserve(port);
   PrepareWorkspace();
 
   iec61850_server_ = std::make_unique<Iec61850TestServer>(iec61850_port_);
@@ -269,37 +259,55 @@ void ClientServerE2eTest::SetUp() {
 void ClientServerE2eTest::TearDown() {
   if (HasFailure() || IsKeepWorkspaceEnabled()) {
     workspace_.Preserve();
+    if (edge_tier_)
+      edge_tier_->PreserveWorkspace();
     std::cerr << "Preserved E2E workspace: " << workspace_.path() << '\n';
   }
   job_->Terminate();
   ForceTerminate(client_);
   ForceTerminate(server_);
+  if (edge_tier_)
+    edge_tier_->Terminate();
   WaitForExit(client_);
   WaitForExit(server_);
   iec61850_server_.reset();
 }
 
-void ClientServerE2eTest::PrepareWorkspace() {
-  std::filesystem::copy(GetServerFixtureDir(), workspace_.path(),
+void ClientServerE2eTest::PrepareServerFilesystem(
+    const std::filesystem::path& ws,
+    int iec61850_port) {
+  std::filesystem::copy(GetServerFixtureDir(), ws,
                         std::filesystem::copy_options::recursive |
                             std::filesystem::copy_options::overwrite_existing);
-  GenerateConfigurationDatabase(workspace_.path(), iec61850_port_);
+  GenerateConfigurationDatabase(MakeServerContext(), ws, iec61850_port);
+}
 
+void ClientServerE2eTest::WriteServerJson(
+    const std::filesystem::path& ws,
+    int remote_port,
+    int opcua_port,
+    const std::function<void(boost::json::object&)>& configure) {
   auto server_json_value =
       boost::json::parse(ReadFileOrEmpty(GetServerSettingsTemplatePath()));
   auto& server_json = server_json_value.as_object();
   ConfigureSignedLicense(server_json);
   server_json["sessions"] = boost::json::array{
-      "tcp;passive;host=0.0.0.0;port=" + std::to_string(remote_port_)};
+      "tcp;passive;host=0.0.0.0;port=" + std::to_string(remote_port)};
   auto& opcua = server_json["opcua"].is_object()
                     ? server_json["opcua"].as_object()
                     : server_json["opcua"].emplace_object();
   opcua["enabled"] = true;
   opcua["url"] =
-      boost::json::array{"opc.tcp://127.0.0.1:" + std::to_string(opcua_port_)};
+      boost::json::array{"opc.tcp://127.0.0.1:" + std::to_string(opcua_port)};
   opcua["trace"] = "none";
-  WriteTextFile(workspace_.path() / "server.json",
-                boost::json::serialize(server_json_value));
+  if (configure)
+    configure(server_json);
+  WriteTextFile(ws / "server.json", boost::json::serialize(server_json_value));
+}
+
+void ClientServerE2eTest::PrepareWorkspace() {
+  PrepareServerFilesystem(workspace_.path(), iec61850_port_);
+  WriteServerJson(workspace_.path(), remote_port_, opcua_port_);
 
   status_file_ = workspace_.path() / "client-status.txt";
   object_view_values_file_ = workspace_.path() / "object-view-values.txt";
@@ -320,7 +328,7 @@ void ClientServerE2eTest::WriteClientSettings(std::string_view password,
   const auto opcua_host =
       std::string{"127.0.0.1:"} + std::to_string(opcua_port_);
   boost::json::object root{
-      {"ServerType", std::string{GetServerType(GetParam())}},
+      {"ServerType", std::string{GetServerType(Protocol())}},
       {"Host:Scada", remote_host},
       {"Host:OpcUa", opcua_host},
       {"User", std::string{user}},
@@ -333,6 +341,11 @@ void ClientServerE2eTest::WriteClientSettings(std::string_view password,
 }
 
 void ClientServerE2eTest::StartServer() {
+  if (Topology() == ServerTopology::MultiProcess) {
+    StartMultiProcessCluster();
+    return;
+  }
+
   LaunchProcess(GetServerExePath(),
                 {"--param=" + (workspace_.path() / "server.json").string()},
                 workspace_.path(), *job_, server_);
@@ -341,8 +354,52 @@ void ClientServerE2eTest::StartServer() {
   ASSERT_TRUE(WaitUntil([port] { return CanConnectTcp(port); },
                         std::chrono::duration_cast<std::chrono::milliseconds>(
                             kServerStartTimeout)))
-      << "Server did not start listening on " << ToString(GetParam())
+      << "Server did not start listening on " << ToString(Protocol())
       << " port " << port;
+}
+
+void ClientServerE2eTest::StartMultiProcessCluster() {
+  // Edge: a full server (all drivers, data items, local config DB) polling the
+  // shared IEC 61850 test server, launched with the shared ServerTier harness
+  // on its own ports. The proxy aggregates it; the client never connects to it
+  // directly.
+  edge_tier_ = std::make_unique<ServerTier>(MakeServerContext());
+  edge_tier_->AllocatePorts(ports_);
+  edge_tier_->Launch(ServerTier::Options{.iec61850_port = iec61850_port_});
+  ASSERT_TRUE(edge_tier_->WaitListening())
+      << "Multi-process edge did not start listening on OPC UA port "
+      << edge_tier_->opcua_port();
+
+  // Proxy: reshape the client-facing workspace_ into a slim aggregator of the
+  // edge — the data-item module off and its data items stripped from config, so
+  // the data items the client sees are served by aggregation from the edge, not
+  // the proxy. It keeps a local config DB to authenticate the client's login.
+  ExecuteConfigurationSql(MakeServerContext(), workspace_.path(),
+                          "PRAGMA foreign_keys=OFF;\n"
+                          "DELETE FROM AnalogItemType;\n"
+                          "DELETE FROM DiscreteItemType;\n");
+  const std::string edge_url = edge_tier_->OpcUaUrl();
+  WriteServerJson(
+      workspace_.path(), remote_port_, opcua_port_,
+      [&edge_url](boost::json::object& server_json) {
+        server_json.erase("dataItems");
+        server_json.erase("iec60870");
+        server_json.erase("modbus");
+        server_json.erase("iec61850");
+        server_json["aggregation"] = boost::json::object{
+            {"servers", boost::json::array{boost::json::object{
+                            {"endpoint", edge_url}, {"user", "root"}}}}};
+      });
+  LaunchProcess(GetServerExePath(),
+                {"--param=" + (workspace_.path() / "server.json").string()},
+                workspace_.path(), *job_, server_);
+
+  const int port = GetProtocolPort();
+  ASSERT_TRUE(WaitUntil([port] { return CanConnectTcp(port); },
+                        std::chrono::duration_cast<std::chrono::milliseconds>(
+                            kServerStartTimeout)))
+      << "Multi-process proxy did not start listening on "
+      << ToString(Protocol()) << " port " << port;
 }
 
 void ClientServerE2eTest::StartClient(std::vector<std::string> extra_args) {
@@ -448,10 +505,18 @@ std::string ClientServerE2eTest::WaitForProfileSaveReport() {
   return ReadFileOrEmpty(profile_save_file_);
 }
 
+std::filesystem::path ClientServerE2eTest::ServerConfigDatabasePath() const {
+  const std::filesystem::path& ws =
+      Topology() == ServerTopology::MultiProcess && edge_tier_
+          ? edge_tier_->WorkspaceDir()
+          : workspace_.path();
+  return ws / "Configuration" / "configuration.sqlite3";
+}
+
 std::string ClientServerE2eTest::ReadUserProfileJsonFromServerDatabase(
     int user_id) {
   return RunSqliteScalar(
-      workspace_.path() / "Configuration" / "configuration.sqlite3",
+      ServerConfigDatabasePath(),
       "SELECT COALESCE(ProfileJson, '') FROM UserType WHERE ID = " +
           std::to_string(user_id) + ";");
 }
@@ -459,7 +524,7 @@ std::string ClientServerE2eTest::ReadUserProfileJsonFromServerDatabase(
 std::string ClientServerE2eTest::ReadUserProfileRevisionFromServerDatabase(
     int user_id) {
   return RunSqliteScalar(
-      workspace_.path() / "Configuration" / "configuration.sqlite3",
+      ServerConfigDatabasePath(),
       "SELECT COALESCE(ProfileRevision, '') FROM UserType WHERE ID = " +
           std::to_string(user_id) + ";");
 }
@@ -496,7 +561,7 @@ void ClientServerE2eTest::ExpectServerRemainsRunningFor(
 void ClientServerE2eTest::ExpectServerAuthLog() {
   EXPECT_TRUE(WaitUntil(
       [this] {
-        switch (GetParam()) {
+        switch (Protocol()) {
           case E2eProtocol::Remote:
             return ContainsInDirectory(server_log_dir_,
                                        "Authorization succeeded") ||
@@ -514,7 +579,7 @@ void ClientServerE2eTest::ExpectServerAuthLog() {
 }
 
 int ClientServerE2eTest::GetProtocolPort() const {
-  switch (GetParam()) {
+  switch (Protocol()) {
     case E2eProtocol::Remote:
       return remote_port_;
     case E2eProtocol::OpcUa:
