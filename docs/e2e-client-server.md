@@ -165,8 +165,17 @@ The Qt startup path accepts these test-only flags:
 - `--test-status-file=<path>`
 - `--test-log-dir=<path>`
 - `--test-operator-use-cases-file=<path>`
+- `--test-historical-timed-data-file=<path>`
 
 These are only used by the E2E harness.
+
+When `--test-historical-timed-data-file` is present, the client opens the real
+timed-data view on the historized, simulated analog item TIT.4 over its default
+(past) window, waits for the historical HistoryRead to populate rows, and then
+exports them to the given path using the view's own Export-to-CSV writer (the
+same `ExportToCsv` the `ID_EXPORT_CSV` command runs, minus the interactive
+save-file dialog). The report is a CSV: a header row plus one row per historical
+sample.
 
 When `--test-log-dir` is present, the client overrides its normal
 `%LOCALAPPDATA%\Telecontrol\SCADA Client\logs` path and writes both component
@@ -299,11 +308,14 @@ single-session rule is never tripped (the full `local-cluster`, with several
 edges, needs a multi-session `svc` account instead).
 
 Every test runs under both topologies. The deep content assertions —
-object-tree children/labels, hardware-tree devices, operator use-case surfaces —
-pass unchanged through the proxy because OPC UA aggregation re-exposes the edge's
-address space (browse names, display names, device status) with the same
-attribute values, only under remapped node ids that the client follows
-dynamically. Profile persistence works too: the client saves through the proxy,
+object-tree children/labels, hardware-tree devices, operator use-case surfaces,
+historical timed-data — pass unchanged through the proxy because OPC UA
+aggregation re-exposes the edge's address space (browse names, display names,
+device status) with the same attribute values, only under remapped node ids that
+the client follows dynamically. Historical reads go the same way: the proxy's
+`RemappingHistoryService` forwards a HistoryRead to the downstream edge that owns
+the samples and remaps node ids on the way back. Profile persistence works too:
+the client saves through the proxy,
 which routes the write to the edge that owns the aggregated config namespace, so
 in multi-process mode the harness reads the profile back from the edge's DB (see
 `ServerConfigDatabasePath`). The only remaining skips are protocol-based, not
@@ -396,6 +408,26 @@ Current harness details:
 - starts the client in debug mode so UC-15 can verify the debug-inspection
   command registration,
 - runs for both SCADA remote-session and OPC UA back-end parameters.
+
+### `Connect_Success_DisplaysHistoricalTimedData`
+
+Expected behavior:
+
+- the harness historizes + simulates TIT.4 before launch (via
+  `EnableSimulatedHistory`), so the server collects a steady stream of samples
+  into the analog historical DB,
+- `server.exe` and `client.exe` complete the same real login/bootstrap path as
+  `Connect_Success`,
+- the client opens the real timed-data view, reads the samples back through the
+  active backend, and exports them via the view's Export-to-CSV writer,
+- the exported CSV contains at least one historical data row (beyond the
+  header),
+- the client and server remain alive for the post-connect stability window.
+
+Runs under all four parameters. In multi-process mode the data items — and their
+history — live on the edge, so a passing OPC UA/Remote MultiProcess run also
+proves the aggregating proxy forwards HistoryRead to the downstream edge
+(`RemappingHistoryService`).
 
 ## Process and Timeout Policy
 

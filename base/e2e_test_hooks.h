@@ -18,6 +18,7 @@ std::filesystem::path GetE2eOperatorUseCasesReportPath();
 std::filesystem::path GetE2eObjectViewValuesReportPath();
 std::filesystem::path GetE2eObjectTreeLabelsReportPath();
 std::filesystem::path GetE2eHardwareTreeDevicesReportPath();
+std::filesystem::path GetE2eHistoricalTimedDataReportPath();
 std::filesystem::path GetE2eProfileSaveReportPath();
 std::string GetE2eProfileSaveUserId();
 

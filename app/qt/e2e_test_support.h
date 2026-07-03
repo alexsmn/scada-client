@@ -86,6 +86,8 @@ Awaitable<void> RunE2eObjectTreeLabelsCheck(
     std::filesystem::path report_path);
 Awaitable<void> RunE2eHardwareTreeDevicesCheck(ClientApplication& app,
                                                AnyExecutor executor);
+Awaitable<void> RunE2eHistoricalTimedDataCheck(ClientApplication& app,
+                                               AnyExecutor executor);
 Awaitable<void> RunE2eProfileSaveCheck(ClientApplication& app);
 
 }  // namespace client

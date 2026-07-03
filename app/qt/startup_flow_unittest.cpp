@@ -52,6 +52,11 @@ class QtStartupFlowTest : public testing::Test {
               order_.push_back("hardware-tree");
               return Resolve();
             },
+        .run_historical_timed_data_check =
+            [this] {
+              order_.push_back("historical-timed-data");
+              return Resolve();
+            },
         .run_profile_save_check =
             [this] {
               order_.push_back("profile-save");
@@ -90,8 +95,9 @@ TEST_F(QtStartupFlowTest, SuccessfulNormalStartupRunsChecksAndQuits) {
 
   EXPECT_THAT(order_, testing::ElementsAre("start", "success", "object-view",
                                            "operator-smoke", "object-tree",
-                                           "hardware-tree", "profile-save",
-                                           "run", "quit"));
+                                           "hardware-tree",
+                                           "historical-timed-data",
+                                           "profile-save", "run", "quit"));
   EXPECT_FALSE(logged_exception_);
 }
 
@@ -118,8 +124,10 @@ TEST_F(QtStartupFlowTest, E2eModeReportsRunCompletionInsteadOfQuitting) {
 
   EXPECT_THAT(order_, testing::ElementsAre("start", "success", "object-view",
                                            "operator-smoke", "object-tree",
-                                           "hardware-tree", "profile-save",
-                                           "run", "e2e-complete"));
+                                           "hardware-tree",
+                                           "historical-timed-data",
+                                           "profile-save", "run",
+                                           "e2e-complete"));
 }
 
 }  // namespace client

@@ -19,6 +19,8 @@ constexpr std::string_view kTestObjectTreeLabelsFileOption =
     "test-object-tree-labels-file";
 constexpr std::string_view kTestHardwareTreeDevicesFileOption =
     "test-hardware-tree-devices-file";
+constexpr std::string_view kTestHistoricalTimedDataFileOption =
+    "test-historical-timed-data-file";
 constexpr std::string_view kTestProfileSaveFileOption =
     "test-profile-save-file";
 constexpr std::string_view kTestProfileSaveUserIdOption =
@@ -87,6 +89,10 @@ std::filesystem::path GetE2eObjectTreeLabelsReportPath() {
 
 std::filesystem::path GetE2eHardwareTreeDevicesReportPath() {
   return GetOptionPath(kTestHardwareTreeDevicesFileOption);
+}
+
+std::filesystem::path GetE2eHistoricalTimedDataReportPath() {
+  return GetOptionPath(kTestHistoricalTimedDataFileOption);
 }
 
 std::filesystem::path GetE2eProfileSaveReportPath() {

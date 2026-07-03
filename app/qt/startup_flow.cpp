@@ -22,6 +22,7 @@ Awaitable<void> RunQtStartupFlowAsync(QtStartupFlowContext context) {
     co_await context.run_operator_use_case_smoke();
     co_await context.run_object_tree_labels_check();
     co_await context.run_hardware_tree_devices_check();
+    co_await context.run_historical_timed_data_check();
     co_await context.run_profile_save_check();
 
     co_await context.run_application();

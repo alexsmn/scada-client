@@ -12,11 +12,14 @@
 #include "configuration/objects/object_tree_view.h"
 #include "controller/command_handler.h"
 #include "controller/window_info.h"
+#include "common/formula_util.h"
+#include "export/csv/csv_export_util.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
 #include "model/namespaces.h"
 #include "model/node_id_util.h"
+#include "modules/timed_data/timed_data_controller.h"
 #include "profile/page.h"
 #include "profile/profile.h"
 #include "profile/window_definition.h"
@@ -33,6 +36,7 @@
 #include <string_view>
 #include <system_error>
 #include <utility>
+#include <variant>
 #include <vector>
 
 using namespace std::chrono_literals;
@@ -192,6 +196,39 @@ HardwareTreeView* FindHardwareTreeView(ClientApplication& app) {
       continue;
 
     return dynamic_cast<HardwareTreeView*>(&opened_view->controller());
+  }
+
+  return nullptr;
+}
+
+// Exports the timed-data view's current rows to `path` as CSV, reusing the same
+// ExportToCsv writer the ID_EXPORT_CSV command invokes (minus its interactive
+// save-file dialog). The CSV is a header row plus one row per historical
+// sample, so the number of newlines equals the number of samples the view read.
+void WriteTimedDataCsvReport(TimedDataController& controller,
+                             const std::filesystem::path& path) {
+  if (path.empty())
+    return;
+
+  std::error_code ec;
+  if (path.has_parent_path())
+    std::filesystem::create_directories(path.parent_path(), ec);
+
+  auto export_data = controller.GetExportData();
+  if (auto* table = std::get_if<ExportModel::TableExportData>(&export_data))
+    ExportToCsv(*table, CsvExportParams{}, path);
+}
+
+TimedDataController* FindTimedDataView(ClientApplication& app) {
+  auto* main_window = GetFirstMainWindow(app);
+  if (!main_window)
+    return nullptr;
+
+  for (auto* opened_view : main_window->opened_views()) {
+    if (opened_view->GetWindowInfo().name != std::string_view{"TimeVal"})
+      continue;
+
+    return dynamic_cast<TimedDataController*>(&opened_view->controller());
   }
 
   return nullptr;
@@ -545,6 +582,53 @@ Awaitable<void> RunE2eOperatorUseCaseSmokeAsync(
   co_return;
 }
 
+// Writes an empty report file so a hard failure (no view at all) still leaves a
+// concrete, inspectable artifact instead of an absent file the harness can only
+// observe as a wait timeout.
+void WriteEmptyReport(const std::filesystem::path& path) {
+  if (path.empty())
+    return;
+  std::error_code ec;
+  if (path.has_parent_path())
+    std::filesystem::create_directories(path.parent_path(), ec);
+  std::ofstream output{path, std::ios::binary | std::ios::trunc};
+}
+
+Awaitable<void> RunHistoricalTimedDataCheckAsync(
+    ClientApplication& app,
+    AnyExecutor executor,
+    std::filesystem::path report_path) {
+  auto* main_window = GetFirstMainWindow(app);
+  const auto* window_info = FindWindowInfoByName("TimeVal");
+  if (main_window && window_info) {
+    // Point the timed-data view at the historized, simulated analog item TIT.4.
+    // TimedDataModel::Init reads the "Item"/"path" formula and defaults to a Day
+    // window, so opening it triggers a historical HistoryRead through the active
+    // backend (and, in MultiProcess, through the proxy's aggregated history).
+    WindowDefinition definition{*window_info};
+    definition.AddItem("Item").SetString(
+        "path", MakeNodeIdFormula(scada::NodeId{4, NamespaceIndexes::TIT}));
+    co_await main_window->OpenView(std::move(definition), /*activate=*/true);
+  }
+
+  const auto deadline = std::chrono::steady_clock::now() + 30s;
+  while (std::chrono::steady_clock::now() < deadline) {
+    if (auto* view = FindTimedDataView(app);
+        view && view->GetRowCountForTesting() > 0) {
+      WriteTimedDataCsvReport(*view, report_path);
+      co_return;
+    }
+    co_await Delay(executor, 100ms);
+  }
+
+  // Timed out with no samples: still emit whatever the view holds (a header-only
+  // CSV) so the failing report is inspectable.
+  if (auto* view = FindTimedDataView(app))
+    WriteTimedDataCsvReport(*view, report_path);
+  else
+    WriteEmptyReport(report_path);
+}
+
 }  // namespace
 
 Awaitable<void> RunE2eObjectViewValuesCheck(ClientApplication& app,
@@ -671,6 +755,16 @@ Awaitable<void> RunE2eHardwareTreeDevicesCheck(ClientApplication& app,
   auto check = std::make_shared<HardwareTreeDevicesCheck>(
       app, std::move(executor), std::move(report_path));
   co_await check->RunAsync();
+}
+
+Awaitable<void> RunE2eHistoricalTimedDataCheck(ClientApplication& app,
+                                               AnyExecutor executor) {
+  auto report_path = GetE2eHistoricalTimedDataReportPath();
+  if (report_path.empty())
+    co_return;
+
+  co_await RunHistoricalTimedDataCheckAsync(app, executor,
+                                            std::move(report_path));
 }
 
 Awaitable<void> RunE2eProfileSaveCheck(ClientApplication& app) {

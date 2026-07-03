@@ -153,6 +153,10 @@ int main(int argc, char* argv[]) {
             [&app, executor] {
               return client::RunE2eHardwareTreeDevicesCheck(app, executor);
             },
+        .run_historical_timed_data_check =
+            [&app, executor] {
+              return client::RunE2eHistoricalTimedDataCheck(app, executor);
+            },
         .run_profile_save_check =
             [&app] { return client::RunE2eProfileSaveCheck(app); },
         .run_application = [&app] { return app.Run(); },

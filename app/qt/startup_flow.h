@@ -17,6 +17,7 @@ struct QtStartupFlowContext {
   std::function<Awaitable<void>()> run_operator_use_case_smoke;
   std::function<Awaitable<void>()> run_object_tree_labels_check;
   std::function<Awaitable<void>()> run_hardware_tree_devices_check;
+  std::function<Awaitable<void>()> run_historical_timed_data_check;
   std::function<Awaitable<void>()> run_profile_save_check;
   std::function<Awaitable<void>()> run_application;
 

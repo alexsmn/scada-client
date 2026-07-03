@@ -41,6 +41,8 @@ void InitProgramOptions(int argc, char* argv[]) {
       "E2E-only object tree labels report file")(
       "test-hardware-tree-devices-file", po::value<std::string>(),
       "E2E-only hardware tree devices report file")(
+      "test-historical-timed-data-file", po::value<std::string>(),
+      "E2E-only historical timed-data view report file")(
       "test-profile-save-file", po::value<std::string>(),
       "E2E-only profile save report file")(
       "test-profile-save-user-id", po::value<std::string>(),

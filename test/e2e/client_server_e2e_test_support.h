@@ -73,6 +73,10 @@ class ClientServerE2eTest : public ::testing::TestWithParam<E2eParam> {
   void WriteClientSettings(std::string_view password,
                            std::string_view user = "root",
                            std::string_view security_mode = {});
+  // Historizes + simulates the analog item TIT.4 so the server collects a steady
+  // stream of samples the client's timed-data view can read back. Call before
+  // StartServer(); applies to the monolith's DB, or the edge's in MultiProcess.
+  void EnableSimulatedHistory();
   void StartServer();
   void StartClient(std::vector<std::string> extra_args = {});
 
@@ -84,6 +88,7 @@ class ClientServerE2eTest : public ::testing::TestWithParam<E2eParam> {
   std::string WaitForHardwareTreeDevicesReport();
   std::string WaitForOperatorUseCasesReport();
   std::string WaitForProfileSaveReport();
+  std::string WaitForHistoricalTimedDataReport();
   std::string ReadUserProfileJsonFromServerDatabase(int user_id);
   std::string ReadUserProfileRevisionFromServerDatabase(int user_id);
 
@@ -108,6 +113,7 @@ class ClientServerE2eTest : public ::testing::TestWithParam<E2eParam> {
   std::filesystem::path hardware_tree_devices_file_;
   std::filesystem::path operator_use_cases_file_;
   std::filesystem::path profile_save_file_;
+  std::filesystem::path historical_timed_data_file_;
   std::filesystem::path settings_file_;
   std::filesystem::path server_log_dir_;
   std::filesystem::path client_log_dir_;
@@ -122,6 +128,10 @@ class ClientServerE2eTest : public ::testing::TestWithParam<E2eParam> {
   // the process the client actually connects to.
   PortPool ports_;
   std::unique_ptr<ServerTier> edge_tier_;
+
+  // Set by EnableSimulatedHistory(); consumed at server launch to historize a
+  // simulated item in whichever tier owns the data items.
+  bool historize_simulated_item_ = false;
 
  private:
   int GetProtocolPort() const;

@@ -2,6 +2,7 @@
 
 #include <boost/json.hpp>
 
+#include <algorithm>
 #include <chrono>
 #include <sstream>
 #include <string>
@@ -167,6 +168,40 @@ TEST_P(ClientServerE2eTest, Connect_Success_ExpandsHardwareTreeDevices) {
       std::chrono::duration_cast<std::chrono::milliseconds>(
           kPostConnectStabilityTimeout),
       "waiting for expanded hardware tree devices to remain available");
+}
+
+TEST_P(ClientServerE2eTest, Connect_Success_DisplaysHistoricalTimedData) {
+  WriteClientSettings(/*password=*/"");
+  EnableSimulatedHistory();
+  StartServer();
+  StartClient({"--test-historical-timed-data-file=" +
+               historical_timed_data_file_.string()});
+
+  ASSERT_TRUE(WaitForStartupOrStatus())
+      << "Timed out waiting for client startup/status signal";
+  const auto status = ReadFileOrEmpty(status_file_);
+  ASSERT_TRUE(ContainsInDirectory(client_log_dir_, kStartupCompletedLog))
+      << "Client did not log startup completion; status: " << status;
+  ASSERT_TRUE(status.empty() || status == "success")
+      << "Unexpected client status while waiting for startup: " << status;
+  ASSERT_TRUE(client_.IsRunning()) << "Client exited unexpectedly after login";
+
+  // The server collects the simulated TIT.4 into history; the client opens the
+  // real timed-data view over a past window, reads those samples back through
+  // the active backend (and, in MultiProcess, the proxy's aggregated history),
+  // and exports them via the view's real Export-to-CSV writer. The CSV is a
+  // header row plus one row per sample, so at least one newline (one data row)
+  // proves the historical view populated.
+  const auto report = WaitForHistoricalTimedDataReport();
+  EXPECT_GT(std::count(report.begin(), report.end(), '\n'), 0)
+      << "Expected the exported timed-data CSV to contain historical rows:\n"
+      << report;
+
+  ExpectServerAuthLog();
+  ExpectProcessesRemainRunningFor(
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          kPostConnectStabilityTimeout),
+      "waiting for the historical timed-data view to remain available");
 }
 
 TEST_P(ClientServerE2eTest, OperatorUseCases_OpenRegisteredSurfaces) {

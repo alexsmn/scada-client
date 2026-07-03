@@ -43,6 +43,10 @@ class TimedDataController : protected ControllerContext,
   // ExportModel
   virtual ExportData GetExportData() override;
 
+  // Number of rows currently materialized in the timed-data table. Used by the
+  // E2E harness to assert the historical view populated after a HistoryRead.
+  int GetRowCountForTesting() const { return model_->GetRowCount(); }
+
  private:
   std::u16string MakeTitle() const;
   void UpdateColumnTitles();

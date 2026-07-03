@@ -34,6 +34,15 @@ constexpr auto kObjectTreeLabelsTimeout = 30s;
 constexpr auto kHardwareTreeDevicesTimeout = 30s;
 constexpr auto kOperatorUseCasesTimeout = 30s;
 constexpr auto kProfileSaveTimeout = 30s;
+constexpr auto kHistoricalTimedDataTimeout = 30s;
+
+// Turns the analog item TIT.4 (which already references the RAMP simulation
+// signal {9,3}) into a simulated, historized item collected into the analog
+// historical DB {6,2}. Mirrors the server integration suite's value-flow recipe
+// so the server accumulates a steady stream of samples the client can read back.
+constexpr std::string_view kHistorizeSimulatedItemSql =
+    "UPDATE AnalogItemType SET Simulated=1, HasHistoricalDatabaseNS=6, "
+    "HasHistoricalDatabaseID=2 WHERE ID=4;";
 
 std::string_view GetServerType(E2eProtocol protocol) {
   switch (protocol) {
@@ -315,6 +324,7 @@ void ClientServerE2eTest::PrepareWorkspace() {
   hardware_tree_devices_file_ = workspace_.path() / "hardware-tree-devices.txt";
   operator_use_cases_file_ = workspace_.path() / "operator-use-cases.txt";
   profile_save_file_ = workspace_.path() / "profile-save.txt";
+  historical_timed_data_file_ = workspace_.path() / "historical-timed-data.txt";
   settings_file_ = workspace_.path() / "client-settings.json";
   server_log_dir_ = workspace_.path() / "Logs";
   client_log_dir_ = workspace_.path() / "ClientLogs";
@@ -340,10 +350,21 @@ void ClientServerE2eTest::WriteClientSettings(std::string_view password,
   WriteTextFile(settings_file_, boost::json::serialize(root));
 }
 
+void ClientServerE2eTest::EnableSimulatedHistory() {
+  historize_simulated_item_ = true;
+}
+
 void ClientServerE2eTest::StartServer() {
   if (Topology() == ServerTopology::MultiProcess) {
     StartMultiProcessCluster();
     return;
+  }
+
+  // Monolith owns the data items directly; historize before the process starts
+  // so the data collector picks it up from its config DB at startup.
+  if (historize_simulated_item_) {
+    ExecuteConfigurationSql(MakeServerContext(), workspace_.path(),
+                            std::string{kHistorizeSimulatedItemSql});
   }
 
   LaunchProcess(GetServerExePath(),
@@ -365,7 +386,14 @@ void ClientServerE2eTest::StartMultiProcessCluster() {
   // directly.
   edge_tier_ = std::make_unique<ServerTier>(MakeServerContext());
   edge_tier_->AllocatePorts(ports_);
-  edge_tier_->Launch(ServerTier::Options{.iec61850_port = iec61850_port_});
+  // The edge owns the data items in this topology, so historization must land in
+  // its config DB; the client reads it back through the proxy's aggregated
+  // HistoryService.
+  edge_tier_->Launch(ServerTier::Options{
+      .iec61850_port = iec61850_port_,
+      .extra_config_sql = historize_simulated_item_
+                              ? std::string{kHistorizeSimulatedItemSql}
+                              : std::string{}});
   ASSERT_TRUE(edge_tier_->WaitListening())
       << "Multi-process edge did not start listening on OPC UA port "
       << edge_tier_->opcua_port();
@@ -503,6 +531,18 @@ std::string ClientServerE2eTest::WaitForProfileSaveReport() {
           kProfileSaveTimeout));
   EXPECT_TRUE(ok) << "Timed out waiting for profile-save report";
   return ReadFileOrEmpty(profile_save_file_);
+}
+
+std::string ClientServerE2eTest::WaitForHistoricalTimedDataReport() {
+  bool ok = WaitUntil(
+      [this] {
+        return std::filesystem::exists(historical_timed_data_file_) ||
+               !client_.IsRunning();
+      },
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          kHistoricalTimedDataTimeout));
+  EXPECT_TRUE(ok) << "Timed out waiting for historical timed-data report";
+  return ReadFileOrEmpty(historical_timed_data_file_);
 }
 
 std::filesystem::path ClientServerE2eTest::ServerConfigDatabasePath() const {
