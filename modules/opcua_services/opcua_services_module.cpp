@@ -1,6 +1,6 @@
 #include "modules/opcua_services/opcua_services_module.h"
 
-#include "opcua/client_session.h"
+#include "opcua/client/client_session.h"
 #include "opcua_bridge/client_adapters.h"
 #include "scada/data_services_factory.h"
 
