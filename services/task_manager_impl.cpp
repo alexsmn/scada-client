@@ -176,6 +176,7 @@ Awaitable<scada::StatusOr<scada::NodeId>> TaskManagerImpl::RunInsertTask(
           : scada::NodeClass::Variable;
 
   auto add_result = co_await self->node_management_service_.AddNodes(
+      scada::ServiceContext{},
       {{.parent_id = node_state.parent_id,
         .node_class = node_class,
         .type_definition_id = node_state.type_definition_id,
@@ -291,6 +292,7 @@ Awaitable<scada::Status> TaskManagerImpl::RunDeleteTask(
     std::shared_ptr<TaskManagerImpl> self,
     scada::NodeId node_id) {
   auto result = co_await self->node_management_service_.DeleteNodes(
+      scada::ServiceContext{},
       {{.node_id = node_id, .delete_target_references = false}});
   if (!result.ok()) {
     co_return result.status();
@@ -324,7 +326,8 @@ Awaitable<scada::Status> TaskManagerImpl::RunAddReferenceTask(
     scada::NodeId target_id) {
   scada::AddReferencesItem input{source_id, reference_type_id, true, {},
                                  target_id};
-  auto result = co_await self->node_management_service_.AddReferences({input});
+  auto result = co_await self->node_management_service_.AddReferences(
+      scada::ServiceContext{}, {input});
   if (!result.ok()) {
     co_return result.status();
   }
@@ -358,7 +361,8 @@ Awaitable<scada::Status> TaskManagerImpl::RunDeleteReferenceTask(
   scada::DeleteReferencesItem input{source_id, reference_type_id, true,
                                     target_id, true};
   auto result =
-      co_await self->node_management_service_.DeleteReferences({input});
+      co_await self->node_management_service_.DeleteReferences(
+          scada::ServiceContext{}, {input});
   if (!result.ok()) {
     co_return result.status();
   }
