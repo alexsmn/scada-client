@@ -1,7 +1,6 @@
 #pragma once
 
 #include "base/any_executor.h"
-#include "base/any_executor_adapter.h"
 #include "base/common_types.h"
 
 #include <QTimer>
