@@ -117,11 +117,11 @@ TEST_F(FileSynchronizerTest, DownloadsOutdatedFile) {
 
   EXPECT_CALL(attribute_service_,
               Read(/*context=*/_,
-                   /*inputs=*/Pointee(ElementsAre(scada::ReadValueId{
+                   /*inputs=*/ElementsAre(scada::ReadValueId{
                        .node_id = kFileNodeId,
-                       .attribute_id = scada::AttributeId::Value}))))
+                       .attribute_id = scada::AttributeId::Value})))
       .WillOnce([&](scada::ServiceContext,
-                    std::shared_ptr<const std::vector<scada::ReadValueId>>)
+                    std::vector<scada::ReadValueId>)
                     -> Awaitable<scada::StatusOr<std::vector<scada::DataValue>>> {
         co_return std::vector{scada::MakeReadResult(scada::ByteString(
             contents.begin(), contents.end()))};
@@ -142,7 +142,7 @@ TEST_F(FileSynchronizerTest, DownloadFailureDoesNotCreateFile) {
 
   EXPECT_CALL(attribute_service_, Read(_, _))
       .WillOnce([](scada::ServiceContext,
-                   std::shared_ptr<const std::vector<scada::ReadValueId>>)
+                   std::vector<scada::ReadValueId>)
                     -> Awaitable<scada::StatusOr<std::vector<scada::DataValue>>> {
         co_return scada::StatusCode::Bad;
       });

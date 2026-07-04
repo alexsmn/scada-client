@@ -1,10 +1,9 @@
 #include "modules/device_metrics/node_collector.h"
 
 #include "base/any_executor.h"
-#include "base/span_util.h"
+#include "base/range_util.h"
 
-#include <boost/range/adaptor/filtered.hpp>
-#include <boost/range/adaptor/transformed.hpp>
+#include <ranges>
 
 namespace {
 
@@ -32,8 +31,8 @@ Awaitable<std::vector<NodeRef>> CollectChildrenAsync(
     AnyExecutor executor,
     const NodeRef& parent_node,
     const scada::NodeId& type_definition_id) {
-  auto fetched_node = co_await FetchNodeAsync(
-      executor, parent_node, NodeFetchStatus::ChildrenOnly());
+  auto fetched_node = co_await FetchNodeAsync(executor, parent_node,
+                                              NodeFetchStatus::ChildrenOnly());
 
   std::vector<NodeRef> children;
   for (const auto& child : fetched_node.targets(scada::id::Organizes)) {
@@ -64,9 +63,7 @@ Awaitable<std::vector<NodeRef>> CollectNodesRecursiveAsync(
 }
 
 std::set<NodeRef> CollectTypeDefinitions(std::span<const NodeRef> devices) {
-  return AsRange(devices) |
-         boost::adaptors::transformed(std::mem_fn(&NodeRef::type_definition)) |
-         to_set;
+  return devices | std::views::transform(&NodeRef::type_definition) | to_set;
 }
 
 std::vector<NodeRef> GetSupertypes(NodeRef type_definition) {
@@ -78,11 +75,10 @@ std::vector<NodeRef> GetSupertypes(NodeRef type_definition) {
 
 auto GetDataVariableDecls(const NodeRef& type_defintion) {
   return GetSupertypes(type_defintion) |
-         boost::adaptors::transformed(&GetDataVariables) | flattened;
+         std::views::transform(&GetDataVariables) | flattened;
 }
 
 std::set<NodeRef> CollectVariables(std::span<const NodeRef> devices) {
   return CollectTypeDefinitions(devices) |
-         boost::adaptors::transformed(&GetDataVariableDecls) | flattened |
-         to_set;
+         std::views::transform(&GetDataVariableDecls) | flattened | to_set;
 }

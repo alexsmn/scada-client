@@ -62,9 +62,9 @@ TEST_F(FileManagerTest, DownloadFileFromServer_SendsExpectedServerRequests) {
   EXPECT_CALL(
       attribute_service_,
       Read(/*context=*/_,
-           /*inputs=*/Pointee(ElementsAre(scada::ReadValueId{file_node_id}))))
+           /*inputs=*/ElementsAre(scada::ReadValueId{file_node_id})))
       .WillOnce([&](scada::ServiceContext,
-                    std::shared_ptr<const std::vector<scada::ReadValueId>>)
+                    std::vector<scada::ReadValueId>)
                     -> Awaitable<scada::StatusOr<std::vector<scada::DataValue>>> {
         co_return std::vector{scada::MakeReadResult(scada::ByteString(
             std::begin(file_contents), std::end(file_contents)))};
@@ -126,7 +126,7 @@ TEST_F(FileManagerTest, DownloadFileFromServer_ReadFails) {
 
   EXPECT_CALL(attribute_service_, Read(_, _))
       .WillOnce([](scada::ServiceContext,
-                   std::shared_ptr<const std::vector<scada::ReadValueId>>)
+                   std::vector<scada::ReadValueId>)
                     -> Awaitable<scada::StatusOr<std::vector<scada::DataValue>>> {
         co_return scada::StatusCode::Bad;
       });
@@ -150,7 +150,7 @@ TEST_F(FileManagerTest, DownloadFileFromServer_WrongValueType) {
 
   EXPECT_CALL(attribute_service_, Read(_, _))
       .WillOnce([](scada::ServiceContext,
-                   std::shared_ptr<const std::vector<scada::ReadValueId>>)
+                   std::vector<scada::ReadValueId>)
                     -> Awaitable<scada::StatusOr<std::vector<scada::DataValue>>> {
         co_return std::vector{
             scada::MakeReadResult(std::string{"not a byte string"})};

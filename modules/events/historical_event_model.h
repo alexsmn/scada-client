@@ -4,23 +4,20 @@
 
 #include "base/awaitable.h"
 #include "base/boost_log.h"
-#include "base/format_time.h"
 #include "base/cancelation.h"
+#include "base/format_time.h"
 #include "base/time_range.h"
 #include "scada/event.h"
-#include "scada/coroutine_services.h"
 #include "scada/history_service.h"
 
 #include <boost/signals2/signal.hpp>
 #include <list>
 
-
 class HistoricalEventModel {
  public:
   HistoricalEventModel(AnyExecutor executor,
                        scada::HistoryService& history_service)
-      : executor_{std::move(executor)},
-        history_service_{history_service} {}
+      : executor_{std::move(executor)}, history_service_{history_service} {}
 
   void Init(const TimeRange& range) { time_range_ = range; }
 

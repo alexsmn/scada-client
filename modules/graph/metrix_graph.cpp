@@ -2,7 +2,6 @@
 
 #include "base/format_time.h"
 #include "base/minute_time.h"
-#include "base/optional_util.h"
 #include "base/utf_convert.h"
 #include "graph/metrix_data_source.h"
 
@@ -98,8 +97,9 @@ scada::DataValue MetrixGraph::Legend::GetCurrentValue(
   const views::GraphCursor* cursor = graph().selected_cursor();
   if (cursor && !cursor->axis_->is_vertical()) {
     base::Time cursor_time = base::Time::FromDoubleT(cursor->position_);
-    return OptionalFromPtr(data_source.timed_data().GetValueAt(cursor_time))
-        .value_or(scada::DataValue{});
+    const scada::DataValue* cursor_value =
+        data_source.timed_data().GetValueAt(cursor_time);
+    return cursor_value ? *cursor_value : scada::DataValue{};
   } else {
     return data_source.timed_data().current();
   }
@@ -242,7 +242,7 @@ void MetrixGraph::MetrixLine::OnDataSourceDeleted() {
 MetrixGraph::MetrixGraph(MetrixGraphContext&& context)
     : MetrixGraphContext{std::move(context)} {
   QObject::connect(&update_data_timer_, &QTimer::timeout,
-                    [this] { UpdateData(); });
+                   [this] { UpdateData(); });
   update_data_timer_.start(50);
 }
 

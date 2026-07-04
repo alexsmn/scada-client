@@ -126,14 +126,13 @@ TEST_F(WriteModelTest, SuccessfulWriteCompletesAfterAttributeCallback) {
   EXPECT_CALL(attribute_service_, Write(_, _))
       .WillOnce(DoAll(
           WithArg<1>([](const auto& inputs) {
-            ASSERT_EQ(inputs->size(), 1u);
-            EXPECT_EQ((*inputs)[0].node_id, kDataItemId);
-            EXPECT_EQ((*inputs)[0].attribute_id, scada::AttributeId::Value);
-            EXPECT_DOUBLE_EQ((*inputs)[0].value.template get<double>(), 42.0);
-            EXPECT_FALSE((*inputs)[0].flags.select());
+            ASSERT_EQ(inputs.size(), 1u);
+            EXPECT_EQ(inputs[0].node_id, kDataItemId);
+            EXPECT_EQ(inputs[0].attribute_id, scada::AttributeId::Value);
+            EXPECT_DOUBLE_EQ(inputs[0].value.template get<double>(), 42.0);
+            EXPECT_FALSE(inputs[0].flags.select());
           }),
-          Invoke([&](scada::ServiceContext,
-                     std::shared_ptr<const std::vector<scada::WriteValue>>)
+          Invoke([&](scada::ServiceContext, std::vector<scada::WriteValue>)
                      -> Awaitable<scada::StatusOr<
                          std::vector<scada::StatusCode>>> {
             co_await completion.Wait();
@@ -162,7 +161,7 @@ TEST_F(WriteModelTest, FailedWriteReportsErrorThenCompletes) {
 
   EXPECT_CALL(attribute_service_, Write(_, _))
       .WillOnce([&](scada::ServiceContext,
-                    std::shared_ptr<const std::vector<scada::WriteValue>>)
+                    std::vector<scada::WriteValue>)
                     -> Awaitable<scada::StatusOr<
                         std::vector<scada::StatusCode>>> {
         co_await completion.Wait();
@@ -193,7 +192,7 @@ TEST_F(WriteModelTest, DestroyedModelDropsPendingWriteCompletion) {
 
   EXPECT_CALL(attribute_service_, Write(_, _))
       .WillOnce([&](scada::ServiceContext,
-                    std::shared_ptr<const std::vector<scada::WriteValue>>)
+                    std::vector<scada::WriteValue>)
                     -> Awaitable<scada::StatusOr<
                         std::vector<scada::StatusCode>>> {
         co_await completion.Wait();
