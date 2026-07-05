@@ -5,15 +5,15 @@
 #include "base/blinker.h"
 #include "base/test/test_executor.h"
 #include "common/node_state.h"
-#include "configuration/tree/node_service_tree_mock.h"
 #include "configuration/tree/node_service_tree_impl.h"
+#include "configuration/tree/node_service_tree_mock.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/node_model_mock.h"
 #include "node_service/node_service_mock.h"
 #include "node_service/static/static_node_service.h"
 #include "profile/profile.h"
-#include "timed_data/timed_data_service_mock.h"
 #include "timed_data/timed_data_service_fake.h"
+#include "timed_data/timed_data_service_mock.h"
 
 #include <gmock/gmock.h>
 
@@ -40,14 +40,13 @@ NodeRef MakeObjectTreeNodeModel(const scada::NodeId& node_id,
 
   ON_CALL(*node_model, GetFetchStatus()).WillByDefault(Return(fetch_status));
   ON_CALL(*node_model, Fetch(_))
-      .WillByDefault([](const NodeFetchStatus&) -> Awaitable<void> {
-        co_return;
-      });
+      .WillByDefault(
+          [](const NodeFetchStatus&) -> Awaitable<void> { co_return; });
   ON_CALL(*node_model, GetAttribute(scada::AttributeId::NodeId))
       .WillByDefault(Return(node_id));
   ON_CALL(*node_model, GetAttribute(scada::AttributeId::NodeClass))
-      .WillByDefault(Return(static_cast<scada::Int32>(
-          scada::NodeClass::Variable)));
+      .WillByDefault(
+          Return(static_cast<scada::Int32>(scada::NodeClass::Variable)));
   ON_CALL(*node_model,
           GetTarget(scada::NodeId{scada::id::HasTypeDefinition}, true))
       .WillByDefault(Return(type_node));
@@ -55,20 +54,26 @@ NodeRef MakeObjectTreeNodeModel(const scada::NodeId& node_id,
   ON_CALL(*type_model, GetAttribute(scada::AttributeId::NodeId))
       .WillByDefault(Return(data_items::id::DataItemType));
   ON_CALL(*type_model, Fetch(_))
-      .WillByDefault([](const NodeFetchStatus&) -> Awaitable<void> {
-        co_return;
-      });
+      .WillByDefault(
+          [](const NodeFetchStatus&) -> Awaitable<void> { co_return; });
   ON_CALL(*type_model, GetTarget(scada::NodeId{scada::id::HasSubtype}, false))
       .WillByDefault(Return(NodeRef{}));
 
   return node_model;
 }
 
-class CountingTreeModelObserver : public aui::TreeModelObserver {
+// Records node-changed notifications so tests assert on observable events.
+class CountingTreeModelObserver {
  public:
-  void OnTreeNodeChanged(void* node) override { changed_nodes.push_back(node); }
+  void Connect(aui::TreeModel& model) {
+    connection_ = model.SubscribeNodeChanged(
+        [this](void* node) { changed_nodes.push_back(node); });
+  }
 
   std::vector<void*> changed_nodes;
+
+ private:
+  boost::signals2::scoped_connection connection_;
 };
 
 class StaticVisibleNode : public VisibleNode {
@@ -103,10 +108,9 @@ class TestObjectTreeModel : public ObjectTreeModel {
 class ObjectTreeModelTest : public ::testing::Test {
  protected:
   ObjectTreeModelTest()
-      : node_service_tree_factory_{
-            [](NodeServiceTreeImplContext&& context) {
-              return std::make_unique<NodeServiceTreeImpl>(std::move(context));
-            }},
+      : node_service_tree_factory_{[](NodeServiceTreeImplContext&& context) {
+          return std::make_unique<NodeServiceTreeImpl>(std::move(context));
+        }},
         blinker_manager_{executor_} {}
 
   void SetUp() override {
@@ -166,9 +170,8 @@ TEST_F(ObjectTreeModelTest, DataItemsUseItemIconEvenWhenNodeClassIsObject) {
 class ObjectTreeModelAsyncVisibleNodeTest : public ::testing::Test {
  protected:
   void InitModel(bool remove_child_on_second_get_children = false) {
-    root_node_ =
-        MakeObjectTreeNodeModel(scada::id::RootFolder,
-                                NodeFetchStatus::NodeAndChildren());
+    root_node_ = MakeObjectTreeNodeModel(scada::id::RootFolder,
+                                         NodeFetchStatus::NodeAndChildren());
     child_node_ = MakeObjectTreeNodeModel(kDataItemId, NodeFetchStatus::None());
 
     auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
@@ -181,8 +184,7 @@ class ObjectTreeModelAsyncVisibleNodeTest : public ::testing::Test {
     EXPECT_CALL(*node_service_tree_, GetRoot()).WillOnce(Return(root_node_));
 
     auto child_refs = std::vector<NodeServiceTree::ChildRef>{
-        {.reference_type_id = scada::id::Organizes,
-         .child_node = child_node_}};
+        {.reference_type_id = scada::id::Organizes, .child_node = child_node_}};
     if (remove_child_on_second_get_children) {
       EXPECT_CALL(*node_service_tree_, GetChildren(_))
           .WillOnce(Return(child_refs))
@@ -209,7 +211,7 @@ class ObjectTreeModelAsyncVisibleNodeTest : public ::testing::Test {
         blinker_manager_,
         node_service_tree_factory_,
     });
-    model_->AddObserver(observer_);
+    observer_.Connect(*model_);
     model_->Init();
 
     child_tree_node_ = model_->GetChild(model_->GetRoot(), 0);
@@ -226,9 +228,7 @@ class ObjectTreeModelAsyncVisibleNodeTest : public ::testing::Test {
         });
   }
 
-  void PollExecutor() {
-    executor_.Poll();
-  }
+  void PollExecutor() { executor_.Poll(); }
 
   void CompleteFetch() {
     auto child_model =

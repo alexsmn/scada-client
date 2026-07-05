@@ -1,11 +1,12 @@
 #pragma once
 
 #include "aui/models/table_model.h"
-#include "aui/models/table_model_observer.h"
+
+#include <vector>
 
 namespace aui {
 
-class MirrorTableModel : public TableModel, private TableModelObserver {
+class MirrorTableModel : public TableModel {
  public:
   explicit MirrorTableModel(TableModel& source_model);
   ~MirrorTableModel();
@@ -30,27 +31,37 @@ class MirrorTableModel : public TableModel, private TableModelObserver {
  private:
   int MirrorRow(int row) const;
 
-  // TableModelObserver
-  virtual void OnModelChanged() override;
-  virtual void OnItemsChanged(int first, int count) override;
-  virtual void OnItemsAdding(int first, int count) override;
-  virtual void OnItemsAdded(int first, int count) override;
-  virtual void OnItemsRemoving(int first, int count) override;
-  virtual void OnItemsRemoved(int first, int count) override;
+  void OnModelChanged();
+  void OnItemsChanged(int first, int count);
+  void OnItemsAdding(int first, int count);
+  void OnItemsAdded(int first, int count);
+  void OnItemsRemoving(int first, int count);
+  void OnItemsRemoved(int first, int count);
 
   TableModel& source_model_;
 
   bool mirrored_ = false;
+
+  std::vector<boost::signals2::scoped_connection> source_connections_;
 };
 
 inline MirrorTableModel::MirrorTableModel(TableModel& source_model)
     : source_model_{source_model} {
-  source_model_.observers().AddObserver(this);
+  source_connections_.push_back(
+      source_model_.SubscribeModelChanged([this] { OnModelChanged(); }));
+  source_connections_.push_back(source_model_.SubscribeItemsChanged(
+      [this](int first, int count) { OnItemsChanged(first, count); }));
+  source_connections_.push_back(source_model_.SubscribeItemsAdding(
+      [this](int first, int count) { OnItemsAdding(first, count); }));
+  source_connections_.push_back(source_model_.SubscribeItemsAdded(
+      [this](int first, int count) { OnItemsAdded(first, count); }));
+  source_connections_.push_back(source_model_.SubscribeItemsRemoving(
+      [this](int first, int count) { OnItemsRemoving(first, count); }));
+  source_connections_.push_back(source_model_.SubscribeItemsRemoved(
+      [this](int first, int count) { OnItemsRemoved(first, count); }));
 }
 
-inline MirrorTableModel::~MirrorTableModel() {
-  source_model_.observers().RemoveObserver(this);
-}
+inline MirrorTableModel::~MirrorTableModel() = default;
 
 inline void MirrorTableModel::SetMirrored(bool mirrored) {
   if (mirrored_ == mirrored)

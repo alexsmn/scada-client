@@ -3,7 +3,9 @@
 #include "aui/color.h"
 #include "aui/handlers.h"
 #include "aui/models/tree_model.h"
+
 #include "aui/os_exchange_data.h"
+#include <boost/signals2/connection.hpp>
 
 #include <QAbstractitemmodel>
 #include <memory>
@@ -14,7 +16,7 @@ namespace aui {
 
 class TreeModel;
 
-class TreeModelAdapter : public QAbstractItemModel, private TreeModelObserver {
+class TreeModelAdapter : public QAbstractItemModel {
  public:
   explicit TreeModelAdapter(std::shared_ptr<TreeModel> model);
   virtual ~TreeModelAdapter();
@@ -86,16 +88,19 @@ class TreeModelAdapter : public QAbstractItemModel, private TreeModelObserver {
                            int column,
                            const QModelIndex& parent) const;
 
-  // private TreeModelObserver
-  virtual void OnTreeNodesAdding(void* parent, int start, int count) override;
-  virtual void OnTreeNodesAdded(void* parent, int start, int count) override;
-  virtual void OnTreeNodesDeleting(void* parent, int start, int count) override;
-  virtual void OnTreeNodesDeleted(void* parent, int start, int count) override;
-  virtual void OnTreeNodeChanged(void* node) override;
-  virtual void OnTreeModelResetting() override;
-  virtual void OnTreeModelReset() override;
+  void ConnectModel();
+
+  void OnTreeNodesAdding(void* parent, int start, int count);
+  void OnTreeNodesAdded(void* parent, int start, int count);
+  void OnTreeNodesDeleting(void* parent, int start, int count);
+  void OnTreeNodesDeleted(void* parent, int start, int count);
+  void OnTreeNodeChanged(void* node);
+  void OnTreeModelResetting();
+  void OnTreeModelReset();
 
   const std::shared_ptr<TreeModel> model_;
+
+  std::vector<boost::signals2::scoped_connection> model_connections_;
 
   std::vector<QIcon> icons_;
 

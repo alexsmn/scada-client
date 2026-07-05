@@ -1,7 +1,9 @@
 #pragma once
 
 #include "base/blinker.h"
-#include "base/observer_list.h"
+#include <boost/signals2/connection.hpp>
+#include <boost/signals2/signal.hpp>
+#include <functional>
 
 #include <memory>
 
@@ -29,13 +31,13 @@ class ModusStyle2 : private Blinker {
              const Gdiplus::RectF& rect,
              bool background);
 
-  class AnimationObserver {
-   public:
-    virtual void OnAnimationStep() = 0;
-  };
+  using AnimationStepCallback = std::function<void()>;
 
-  void AddAnimationObserver(AnimationObserver& observer);
-  void RemoveAnimationObserver(AnimationObserver& observer);
+  // Notifies on every animation (blink) step. Returns an empty connection if
+  // the style is not animated. The blink timer starts with the first
+  // subscription and stops after the last one disconnects.
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeAnimationStep(
+      const AnimationStepCallback& callback);
 
  private:
   bool IsAnimated() const;
@@ -49,5 +51,5 @@ class ModusStyle2 : private Blinker {
   std::unique_ptr<Gdiplus::Pen> pen_;
   std::unique_ptr<Gdiplus::Pen> animation_pen_;
 
-  base::ObserverList<AnimationObserver> animation_observers_;
+  boost::signals2::signal<void()> animation_step_signal_;
 };

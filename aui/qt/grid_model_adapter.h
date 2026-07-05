@@ -3,13 +3,13 @@
 #include "aui/models/grid_model.h"
 
 #include <QtCore/qabstractitemmodel.h>
+#include <boost/signals2/connection.hpp>
 #include <memory>
+#include <vector>
 
 namespace aui {
 
-class GridModelAdapter final : public QAbstractTableModel,
-                               private GridModel::Observer,
-                               private ColumnHeaderModel::Observer {
+class GridModelAdapter final : public QAbstractTableModel {
  public:
   GridModelAdapter(std::shared_ptr<GridModel> model,
                    std::shared_ptr<HeaderModel> row_model,
@@ -36,24 +36,23 @@ class GridModelAdapter final : public QAbstractTableModel,
   virtual QStringList mimeTypes() const override;
   virtual QMimeData* mimeData(const QModelIndexList& indexes) const override;
 
-  // GridModel::Observer
-  virtual void OnGridModelChanged(GridModel& model) override;
-  virtual void OnGridRangeChanged(GridModel& model,
-                                  const GridRange& range) override;
-  virtual void OnGridRowsAdded(GridModel& model, int first, int count) override;
-  virtual void OnGridRowsRemoved(GridModel& model,
-                                 int first,
-                                 int count) override;
+  void OnGridModelChanged(GridModel& model);
+  void OnGridRangeChanged(GridModel& model, const GridRange& range);
+  void OnGridRowsAdded(GridModel& model, int first, int count);
+  void OnGridRowsRemoved(GridModel& model, int first, int count);
 
-  // ColumnHeaderModel::Observer
-  virtual void OnModelChanged(HeaderModel& model) override;
+  void OnModelChanged(HeaderModel& model);
 
  private:
   std::u16string GetCsvData(const QModelIndexList& indexes) const;
 
+  void ConnectModels();
+
   const std::shared_ptr<GridModel> model_;
   const std::shared_ptr<HeaderModel> row_model_;
   const std::shared_ptr<HeaderModel> column_model_;
+
+  std::vector<boost::signals2::scoped_connection> model_connections_;
 };
 
 }  // namespace aui

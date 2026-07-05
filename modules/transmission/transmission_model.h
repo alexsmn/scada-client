@@ -1,11 +1,11 @@
 #pragma once
 
-#include "controller/contents_model.h"
 #include "aui/models/fixed_row_model.h"
 #include "aui/models/grid_model.h"
-#include "node_service/node_observer.h"
+#include "controller/contents_model.h"
 #include "node_service/node_ref.h"
 
+#include <boost/signals2/connection.hpp>
 #include <functional>
 #include <vector>
 
@@ -14,7 +14,6 @@ class TaskManager;
 
 class TransmissionModel
     : private aui::FixedRowModel::Delegate,
-      private NodeRefObserver,
       public aui::GridModel,
       public aui::FixedRowModel,
       public ContentsModel,
@@ -66,10 +65,9 @@ class TransmissionModel
 
   static Row MakeRow(NodeRef transmission);
 
-  // NodeRefObserver
-  virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
-  virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
-  virtual void OnNodeFetched(const NodeFetchedEvent& event) override;
+  void OnModelChanged(const scada::ModelChangeEvent& event);
+  void OnNodeSemanticChanged(const scada::NodeId& node_id);
+  void OnNodeFetched(const NodeFetchedEvent& event);
 
   NodeService& node_service_;
   TaskManager& task_manager_;
@@ -77,4 +75,6 @@ class TransmissionModel
   NodeRef device_;
 
   Rows rows_;
+
+  std::vector<boost::signals2::scoped_connection> connections_;
 };

@@ -1,8 +1,8 @@
 #include "aui/models/mirror_table_model.h"
 
-#include "base/u16format.h"
 #include "aui/models/mirror_table_model.h"
-#include "aui/models/table_model_observer_mock.h"
+#include "aui/test/recording_table_model_observer.h"
+#include "base/u16format.h"
 
 #include <gmock/gmock.h>
 
@@ -30,21 +30,16 @@ class MirrorTableModelTest : public Test {
  public:
   // Test
   virtual void SetUp() override;
-  virtual void TearDown() override;
 
  protected:
   TestTableModel source_model_;
   MirrorTableModel model_{source_model_};
-  StrictMock<TableModelObserverMock> observer_;
+  RecordingTableModelObserver observer_{model_};
 };
 
 void MirrorTableModelTest::SetUp() {
   model_.SetMirrored(true);
-  model_.observers().AddObserver(&observer_);
-}
-
-void MirrorTableModelTest::TearDown() {
-  model_.observers().RemoveObserver(&observer_);
+  observer_.ClearEvents();
 }
 
 TEST_F(MirrorTableModelTest, GetRowCount) {
@@ -67,58 +62,58 @@ TEST_F(MirrorTableModelTest, GetCell) {
 
 TEST_F(MirrorTableModelTest, AddItemsToEmpty) {
   const int kAddCount = 3;
-  EXPECT_CALL(observer_, OnItemsAdding(0, kAddCount));
   source_model_.NotifyItemsAdding(0, kAddCount);
+  EXPECT_THAT(observer_.items_adding, ElementsAre(Pair(0, kAddCount)));
   source_model_.row_count = kAddCount;
-  EXPECT_CALL(observer_, OnItemsAdded(0, kAddCount));
   source_model_.NotifyItemsAdded(0, kAddCount);
+  EXPECT_THAT(observer_.items_added, ElementsAre(Pair(0, kAddCount)));
 }
 
 TEST_F(MirrorTableModelTest, AddItemsAtFront) {
   const int kInitCount = 7;
   const int kAddCount = 2;
   source_model_.row_count = kInitCount;
-  EXPECT_CALL(observer_, OnItemsAdding(kInitCount, kAddCount));
   source_model_.NotifyItemsAdding(0, kAddCount);
+  EXPECT_THAT(observer_.items_adding, ElementsAre(Pair(kInitCount, kAddCount)));
   source_model_.row_count = kInitCount + kAddCount;
-  EXPECT_CALL(observer_, OnItemsAdded(kInitCount, kAddCount));
   source_model_.NotifyItemsAdded(0, kAddCount);
+  EXPECT_THAT(observer_.items_added, ElementsAre(Pair(kInitCount, kAddCount)));
 }
 
 TEST_F(MirrorTableModelTest, AddItemsAtEnd) {
   const int kInitCount = 4;
   const int kAddCount = 6;
   source_model_.row_count = kInitCount;
-  EXPECT_CALL(observer_, OnItemsAdding(0, kAddCount));
   source_model_.NotifyItemsAdding(kInitCount, kAddCount);
+  EXPECT_THAT(observer_.items_adding, ElementsAre(Pair(0, kAddCount)));
   source_model_.row_count = kInitCount + kAddCount;
-  EXPECT_CALL(observer_, OnItemsAdded(0, kAddCount));
   source_model_.NotifyItemsAdded(kInitCount, kAddCount);
+  EXPECT_THAT(observer_.items_added, ElementsAre(Pair(0, kAddCount)));
 }
 
 TEST_F(MirrorTableModelTest, RemoveItemsFromFront) {
   const int kInitCount = 10;
   const int kRemoveCount = 3;
   source_model_.row_count = kInitCount;
-  EXPECT_CALL(observer_,
-              OnItemsRemoving(kInitCount - kRemoveCount - 1, kRemoveCount));
   source_model_.NotifyItemsRemoving(0, kRemoveCount);
+  EXPECT_THAT(observer_.items_removing,
+              ElementsAre(Pair(kInitCount - kRemoveCount - 1, kRemoveCount)));
   source_model_.row_count = kInitCount - kRemoveCount;
-  EXPECT_CALL(observer_,
-              OnItemsRemoved(kInitCount - kRemoveCount - 1, kRemoveCount));
   source_model_.NotifyItemsRemoved(0, kRemoveCount);
+  EXPECT_THAT(observer_.items_removed,
+              ElementsAre(Pair(kInitCount - kRemoveCount - 1, kRemoveCount)));
 }
 
 TEST_F(MirrorTableModelTest, RemoveItemsFromEnd) {
   const int kInitCount = 7;
   const int kRemoveCount = 5;
   source_model_.row_count = kInitCount;
-  EXPECT_CALL(observer_, OnItemsRemoving(0, kRemoveCount));
   source_model_.NotifyItemsRemoving(kInitCount - kRemoveCount - 1,
                                     kRemoveCount);
+  EXPECT_THAT(observer_.items_removing, ElementsAre(Pair(0, kRemoveCount)));
   source_model_.row_count = kInitCount - kRemoveCount;
-  EXPECT_CALL(observer_, OnItemsRemoved(0, kRemoveCount));
   source_model_.NotifyItemsRemoved(kInitCount - kRemoveCount - 1, kRemoveCount);
+  EXPECT_THAT(observer_.items_removed, ElementsAre(Pair(0, kRemoveCount)));
 }
 
 }  // namespace aui

@@ -190,15 +190,16 @@ void DataItemVisibleNode::SetAlerting(bool alerting) {
 
 DataGroupVisibleNode::DataGroupVisibleNode(TimedDataService& timed_data_service,
                                            NodeRef node)
-    : timed_data_service_{timed_data_service}, node_{node} {
-  node_.Subscribe(*this);
-
+    : timed_data_service_{timed_data_service},
+      node_{node},
+      model_changed_connection_{node_.SubscribeModelChanged(
+          [this](const scada::ModelChangeEvent& event) {
+            OnModelChanged(event);
+          })} {
   UpdateDevice();
 }
 
-DataGroupVisibleNode::~DataGroupVisibleNode() {
-  node_.Unsubscribe(*this);
-}
+DataGroupVisibleNode::~DataGroupVisibleNode() = default;
 
 std::u16string DataGroupVisibleNode::GetText() const {
   return device_state_notifier_ ? std::u16string{ToLocalizedString(

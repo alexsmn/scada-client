@@ -3,8 +3,8 @@
 #include "base/any_executor.h"
 
 #include "configuration/tree/node_service_tree.h"
-#include "node_service/node_observer.h"
 
+#include <boost/signals2/connection.hpp>
 #include <memory>
 
 class NodeService;
@@ -23,8 +23,7 @@ struct NodeServiceTreeImplContext {
 };
 
 class NodeServiceTreeImpl : public NodeServiceTree,
-                            private NodeServiceTreeImplContext,
-                            private NodeRefObserver {
+                            private NodeServiceTreeImplContext {
  public:
   explicit NodeServiceTreeImpl(NodeServiceTreeImplContext&& context);
   ~NodeServiceTreeImpl();
@@ -38,9 +37,11 @@ class NodeServiceTreeImpl : public NodeServiceTree,
  private:
   bool IsMatchingNode(const NodeRef& node) const;
 
-  // NodeRefObserver
-  virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
-  virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
+  void OnModelChanged(const scada::ModelChangeEvent& event);
+  void OnNodeSemanticChanged(const scada::NodeId& node_id);
 
   Observer* observer_ = nullptr;
+
+  boost::signals2::scoped_connection model_changed_connection_;
+  boost::signals2::scoped_connection node_semantic_changed_connection_;
 };

@@ -1,8 +1,10 @@
 #pragma once
 
-#include "base/observer_list.h"
 #include "controller/action.h"
 
+#include <boost/signals2/connection.hpp>
+#include <boost/signals2/signal.hpp>
+#include <functional>
 #include <map>
 #include <vector>
 
@@ -15,14 +17,6 @@ enum class ActionChangeMask : unsigned {
   Checked = 0x08,
   All = 0xFF,
   AllButTitle = All & ~Title,
-};
-
-class ActionObserver {
- public:
-  virtual ~ActionObserver() {}
-
-  virtual void OnActionChanged(Action& action,
-                               ActionChangeMask change_mask) = 0;
 };
 
 class ActionManager {
@@ -40,8 +34,13 @@ class ActionManager {
   Action& AddAction(Action action);
   Action* FindAction(unsigned command) const;
 
-  void Subscribe(ActionObserver& observer);
-  void Unsubscribe(ActionObserver& observer);
+  using ActionChangedCallback =
+      std::function<void(Action& action, ActionChangeMask change_mask)>;
+
+  // Notifies after an action state (title/visibility/enabled/checked)
+  // changed.
+  [[nodiscard]] boost::signals2::scoped_connection Subscribe(
+      const ActionChangedCallback& callback);
 
   void NotifyActionChanged(
       unsigned command_id,
@@ -50,7 +49,8 @@ class ActionManager {
  private:
   ActionMap action_map_;
   ActionList actions_;
-  base::ObserverList<ActionObserver> observers_;
+  boost::signals2::signal<void(Action&, ActionChangeMask)>
+      action_changed_signal_;
 };
 
 typedef std::map<CommandCategory, ActionList> GroupedActions;

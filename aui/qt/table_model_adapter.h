@@ -1,10 +1,11 @@
 #pragma once
 
 #include "aui/color.h"
-#include "aui/models/table_model_observer.h"
 
 #include <QAbstractItemModel>
+#include <boost/signals2/connection.hpp>
 #include <memory>
+#include <vector>
 
 class QIcon;
 
@@ -13,8 +14,7 @@ namespace aui {
 class TableModel;
 struct TableColumn;
 
-class TableModelAdapter : public QAbstractTableModel,
-                          private TableModelObserver {
+class TableModelAdapter : public QAbstractTableModel {
  public:
   TableModelAdapter(std::shared_ptr<TableModel> model,
                     std::vector<TableColumn> columns);
@@ -47,18 +47,21 @@ class TableModelAdapter : public QAbstractTableModel,
   virtual QStringList mimeTypes() const override;
   virtual QMimeData* mimeData(const QModelIndexList& indexes) const override;
 
-  // TableModelObserver
-  virtual void OnModelChanged() override;
-  virtual void OnItemsChanged(int first, int count) override;
-  virtual void OnItemsAdding(int first, int count) override;
-  virtual void OnItemsAdded(int first, int count) override;
-  virtual void OnItemsRemoving(int first, int count) override;
-  virtual void OnItemsRemoved(int first, int count) override;
+  void OnModelChanged();
+  void OnItemsChanged(int first, int count);
+  void OnItemsAdding(int first, int count);
+  void OnItemsAdded(int first, int count);
+  void OnItemsRemoving(int first, int count);
+  void OnItemsRemoved(int first, int count);
 
  private:
+  void ConnectModel();
+
   const std::shared_ptr<TableModel> model_;
   std::vector<TableColumn> columns_;
   std::vector<QIcon> icons_;
+
+  std::vector<boost::signals2::scoped_connection> model_connections_;
 };
 
 }  // namespace aui

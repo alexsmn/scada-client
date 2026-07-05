@@ -23,11 +23,34 @@ void set_flag(Wt::WFlags<T>& flags, T flag, bool value) {
 
 TreeModelAdapter::TreeModelAdapter(std::shared_ptr<TreeModel> model)
     : model_{std::move(model)} {
-  model_->AddObserver(*this);
+  ConnectModel();
 }
 
-TreeModelAdapter::~TreeModelAdapter() {
-  model_->RemoveObserver(*this);
+TreeModelAdapter::~TreeModelAdapter() = default;
+
+void TreeModelAdapter::ConnectModel() {
+  model_connections_.push_back(
+      model_->SubscribeNodesAdding([this](void* parent, int start, int count) {
+        OnTreeNodesAdding(parent, start, count);
+      }));
+  model_connections_.push_back(
+      model_->SubscribeNodesAdded([this](void* parent, int start, int count) {
+        OnTreeNodesAdded(parent, start, count);
+      }));
+  model_connections_.push_back(model_->SubscribeNodesDeleting(
+      [this](void* parent, int start, int count) {
+        OnTreeNodesDeleting(parent, start, count);
+      }));
+  model_connections_.push_back(
+      model_->SubscribeNodesDeleted([this](void* parent, int start, int count) {
+        OnTreeNodesDeleted(parent, start, count);
+      }));
+  model_connections_.push_back(model_->SubscribeNodeChanged(
+      [this](void* node) { OnTreeNodeChanged(node); }));
+  model_connections_.push_back(
+      model_->SubscribeModelResetting([this] { OnTreeModelResetting(); }));
+  model_connections_.push_back(
+      model_->SubscribeModelReset([this] { OnTreeModelReset(); }));
 }
 
 void TreeModelAdapter::LoadIcons(unsigned resource_id,

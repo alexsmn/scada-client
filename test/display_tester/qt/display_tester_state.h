@@ -18,8 +18,15 @@ class ControllerDelegateImpl final : public ControllerDelegate {
   virtual void OpenView(const WindowDefinition& def) override {}
   virtual void ExecuteDefaultNodeCommand(const NodeRef& node) override {}
   virtual ContentsModel* GetActiveContentsModel() override { return nullptr; }
-  virtual void AddContentsObserver(ContentsObserver& observer) override {}
-  virtual void RemoveContentsObserver(ContentsObserver& observer) override {}
+  [[nodiscard]] virtual boost::signals2::scoped_connection
+  SubscribeContentsChanged(const ContentsChangedCallback& callback) override {
+    return {};
+  }
+  [[nodiscard]] virtual boost::signals2::scoped_connection
+  SubscribeContainedItemChanged(
+      const ContainedItemChangedCallback& callback) override {
+    return {};
+  }
   virtual void Focus() override {}
 };
 

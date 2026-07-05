@@ -10,8 +10,7 @@ namespace aui {
 
 class TreeModel;
 
-class TreeModelAdapter : public Wt::WAbstractItemModel,
-                         private TreeModelObserver {
+class TreeModelAdapter : public Wt::WAbstractItemModel {
  public:
   explicit TreeModelAdapter(std::shared_ptr<TreeModel> model);
   virtual ~TreeModelAdapter();
@@ -60,16 +59,19 @@ class TreeModelAdapter : public Wt::WAbstractItemModel,
  private:
   int GetIndexOf(void* node) const;
 
-  // private TreeModelObserver
-  virtual void OnTreeNodesAdding(void* parent, int start, int count) override;
-  virtual void OnTreeNodesAdded(void* parent, int start, int count) override;
-  virtual void OnTreeNodesDeleting(void* parent, int start, int count) override;
-  virtual void OnTreeNodesDeleted(void* parent, int start, int count) override;
-  virtual void OnTreeNodeChanged(void* node) override;
-  virtual void OnTreeModelResetting() override;
-  virtual void OnTreeModelReset() override;
+  void ConnectModel();
+
+  void OnTreeNodesAdding(void* parent, int start, int count);
+  void OnTreeNodesAdded(void* parent, int start, int count);
+  void OnTreeNodesDeleting(void* parent, int start, int count);
+  void OnTreeNodesDeleted(void* parent, int start, int count);
+  void OnTreeNodeChanged(void* node);
+  void OnTreeModelResetting();
+  void OnTreeModelReset();
 
   const std::shared_ptr<TreeModel> model_;
+
+  std::vector<boost::signals2::scoped_connection> model_connections_;
 
   std::vector<Wt::WIcon> icons_;
 

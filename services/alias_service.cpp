@@ -13,15 +13,14 @@ AliasService::AliasService(AliasServiceContext&& context)
 
   logger_->WriteF(LogSeverity::Normal, "Fetching");
 
-  node_service_.Subscribe(*this);
+  node_fetched_connection_ = node_service_.SubscribeNodeFetched(
+      [this](const NodeFetchedEvent& event) { OnNodeFetched(event); });
   aliases_.StartFetch(NodeFetchStatus::NodeAndChildren());
   if (aliases_.children_fetched())
     OnFetchCompleted();
 }
 
-AliasService::~AliasService() {
-  node_service_.Unsubscribe(*this);
-}
+AliasService::~AliasService() = default;
 
 void AliasService::Resolve(std::string_view alias,
                            const AliasResolveCallback& callback) {

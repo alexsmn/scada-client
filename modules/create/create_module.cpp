@@ -10,7 +10,6 @@
 #include "model/devices_node_ids.h"
 #include "model/history_node_ids.h"
 #include "model/security_node_ids.h"
-#include "node_service/node_observer.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "resources/common_resources.h"
@@ -35,29 +34,28 @@ const scada::NodeId kNewCommandTypeIds[] = {
     devices::id::Iec61850TransmissionItemType,
 };
 
-class NodeActionTitle : private NodeRefObserver {
+class NodeActionTitle {
  public:
   NodeActionTitle(ActionManager& action_manager,
                   unsigned command_id,
                   NodeRef node)
       : action_manager_{action_manager},
         command_id_{command_id},
-        node_{std::move(node)} {
-    node_.Subscribe(*this);
-  }
-
-  ~NodeActionTitle() { node_.Unsubscribe(*this); }
+        node_{std::move(node)},
+        node_semantic_changed_connection_{
+            node_.SubscribeNodeSemanticChanged([this](const scada::NodeId&) {
+              action_manager_.NotifyActionChanged(command_id_,
+                                                  ActionChangeMask::Title);
+            })} {}
 
   std::u16string GetTitle() const { return ToString16(node_.display_name()); }
 
  private:
-  virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override {
-    action_manager_.NotifyActionChanged(command_id_, ActionChangeMask::Title);
-  }
-
   ActionManager& action_manager_;
   const unsigned command_id_;
   const NodeRef node_;
+
+  boost::signals2::scoped_connection node_semantic_changed_connection_;
 };
 
 Action MakeNodeAction(ActionManager& action_manager,

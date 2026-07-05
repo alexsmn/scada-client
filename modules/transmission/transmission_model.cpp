@@ -4,7 +4,6 @@
 #include "base/check.h"
 #include "base/format.h"
 #include "base/range_util.h"
-#include "controller/contents_observer.h"
 #include "model/devices_node_ids.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_service.h"
@@ -36,14 +35,19 @@ TransmissionModel::TransmissionModel(NodeService& node_service,
       node_service_{node_service},
       task_manager_{task_manager} {}
 
-TransmissionModel::~TransmissionModel() {
-  node_service_.Unsubscribe(*this);
-}
+TransmissionModel::~TransmissionModel() = default;
 
 void TransmissionModel::Init(NodeRef device) {
   device_ = std::move(device);
 
-  node_service_.Subscribe(*this);
+  connections_.push_back(node_service_.SubscribeModelChanged(
+      [this](const scada::ModelChangeEvent& event) { OnModelChanged(event); }));
+  connections_.push_back(node_service_.SubscribeNodeSemanticChanged(
+      [this](const scada::NodeId& node_id) {
+        OnNodeSemanticChanged(node_id);
+      }));
+  connections_.push_back(node_service_.SubscribeNodeFetched(
+      [this](const NodeFetchedEvent& event) { OnNodeFetched(event); }));
 
   device_.StartFetch(NodeFetchStatus::ChildrenOnly());
   if (device_.children_fetched())

@@ -2,9 +2,9 @@
 
 #include "base/any_executor.h"
 
-#include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
 
+#include <boost/signals2/connection.hpp>
 #include <filesystem>
 #include <map>
 #include <memory>
@@ -20,8 +20,7 @@ struct FileSynchronizerContext {
   const std::filesystem::path root_dir_;
 };
 
-class FileSynchronizer : private FileSynchronizerContext,
-                         private NodeRefObserver {
+class FileSynchronizer : private FileSynchronizerContext {
  public:
   explicit FileSynchronizer(FileSynchronizerContext&& context);
   ~FileSynchronizer();
@@ -35,10 +34,11 @@ class FileSynchronizer : private FileSynchronizerContext,
   bool ProcessFileDirectoryNode(NodeRef node);
   bool ProcessFileNode(NodeRef node);
 
-  // NodeRefObserver
-  virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
-  virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
+  void OnModelChanged(const scada::ModelChangeEvent& event);
+  void OnNodeSemanticChanged(const scada::NodeId& node_id);
 
   std::queue<NodeRef> node_queue_;
   std::map<NodeRef, std::vector<FetchCallback>> callbacks_;
+
+  std::vector<boost::signals2::scoped_connection> connections_;
 };

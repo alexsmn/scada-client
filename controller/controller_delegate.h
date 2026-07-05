@@ -1,7 +1,10 @@
 #pragma once
 
 #include "aui/point.h"
+#include "controller/node_id_set.h"
 
+#include <boost/signals2/connection.hpp>
+#include <functional>
 #include <string_view>
 
 namespace aui {
@@ -9,7 +12,6 @@ class MenuModel;
 }
 
 class ContentsModel;
-class ContentsObserver;
 class NodeRef;
 class WindowDefinition;
 
@@ -34,9 +36,20 @@ class ControllerDelegate {
 
   virtual void ExecuteDefaultNodeCommand(const NodeRef& node) = 0;
 
+  using ContentsChangedCallback =
+      std::function<void(const NodeIdSet& node_ids)>;
+  using ContainedItemChangedCallback =
+      std::function<void(const scada::NodeId& node_id, bool added)>;
+
   virtual ContentsModel* GetActiveContentsModel() = 0;
-  virtual void AddContentsObserver(ContentsObserver& observer) = 0;
-  virtual void RemoveContentsObserver(ContentsObserver& observer) = 0;
+  // Notifies after the contained-item set of the active view changed
+  // wholesale.
+  [[nodiscard]] virtual boost::signals2::scoped_connection
+  SubscribeContentsChanged(const ContentsChangedCallback& callback) = 0;
+  // Notifies after a single contained item was added or removed.
+  [[nodiscard]] virtual boost::signals2::scoped_connection
+  SubscribeContainedItemChanged(
+      const ContainedItemChangedCallback& callback) = 0;
 
   virtual void Focus() = 0;
 };

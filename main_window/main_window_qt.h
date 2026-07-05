@@ -13,9 +13,7 @@ class QWidget;
 class StatusBarController;
 class ViewManager;
 
-class MainWindow final : public QMainWindow,
-                         public BaseMainWindow,
-                         private ActionObserver {
+class MainWindow final : public QMainWindow, public BaseMainWindow {
   Q_OBJECT
 
  public:
@@ -58,9 +56,7 @@ class MainWindow final : public QMainWindow,
                     ActionChangeMask change_mask);
   void UpdateMenuActions(QMenu& menu);
 
-  // ActionObserver
-  virtual void OnActionChanged(Action& action,
-                               ActionChangeMask change_mask) override;
+  void OnActionChanged(Action& action, ActionChangeMask change_mask);
 
   std::unique_ptr<ViewManager> view_manager_;
 
@@ -83,4 +79,5 @@ class MainWindow final : public QMainWindow,
   std::unique_ptr<StatusBarController> status_bar_controller_;
 
   boost::signals2::scoped_connection change_profile_connection_;
+  boost::signals2::scoped_connection action_changed_connection_;
 };

@@ -29,14 +29,14 @@ class MockControllerDelegate : public ControllerDelegate {
 
   MOCK_METHOD(ContentsModel*, GetActiveContentsModel, (), (override));
 
-  MOCK_METHOD(void,
-              AddContentsObserver,
-              (ContentsObserver & observer),
+  MOCK_METHOD(boost::signals2::scoped_connection,
+              SubscribeContentsChanged,
+              (const ContentsChangedCallback& callback),
               (override));
 
-  MOCK_METHOD(void,
-              RemoveContentsObserver,
-              (ContentsObserver & observer),
+  MOCK_METHOD(boost::signals2::scoped_connection,
+              SubscribeContainedItemChanged,
+              (const ContainedItemChangedCallback& callback),
               (override));
 
   MOCK_METHOD(void, Focus, (), (override));

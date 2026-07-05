@@ -1,19 +1,18 @@
 #pragma once
 
+#include "aui/models/tree_model.h"
 #include "configuration/configuration_module.h"
 #include "configuration/tree/configuration_tree_view.h"
-#include "controller/contents_observer.h"
-#include "aui/models/tree_model.h"
+#include "controller/node_id_set.h"
 
+#include <boost/signals2/connection.hpp>
 #include <optional>
 #include <vector>
 
 class ConfigurationTreeNode;
 class ObjectTreeModel;
 
-class ObjectTreeView : public ConfigurationTreeView,
-                       protected aui::TreeModelObserver,
-                       private ContentsObserver {
+class ObjectTreeView : public ConfigurationTreeView {
  public:
   ObjectTreeView(const ControllerContext& context,
                  const NodeServiceTreeFactory& node_service_tree_factory);
@@ -25,19 +24,16 @@ class ObjectTreeView : public ConfigurationTreeView,
  protected:
   void UpdateNodesVisibility(ConfigurationTreeNode& parent_node, bool expanded);
 
-  // TreeModelObserver
-  virtual void OnTreeNodeChanged(void* node) override;
-  virtual void OnTreeNodesAdded(void* parent, int start, int count) override;
-  virtual void OnTreeNodesDeleting(void* parent, int start, int count) override;
-  virtual void OnTreeModelResetting() override;
+  void OnTreeNodeChanged(void* node);
+  void OnTreeNodesAdded(void* parent, int start, int count);
+  void OnTreeNodesDeleting(void* parent, int start, int count);
+  void OnTreeModelResetting();
 
  private:
   ObjectTreeModel& model();
 
-  // ContentsObserver
-  virtual void OnContentsChanged(const NodeIdSet& node_ids) override;
-  virtual void OnContainedItemChanged(const scada::NodeId& item_id,
-                                      bool added) override;
+  void OnContentsChanged(const NodeIdSet& node_ids);
+  void OnContainedItemChanged(const scada::NodeId& item_id, bool added);
 
   static std::shared_ptr<ConfigurationTreeModel> CreateConfigurationTreeModel(
       const ControllerContext& context,
@@ -48,4 +44,6 @@ class ObjectTreeView : public ConfigurationTreeView,
 
   ConfigurationTreeNode* value_node_for_testing_ = nullptr;
   int value_node_change_count_for_testing_ = 0;
+
+  std::vector<boost::signals2::scoped_connection> model_connections_;
 };

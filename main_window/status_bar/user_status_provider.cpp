@@ -8,17 +8,14 @@
 #include "profile/profile.h"
 #include "scada/session_service.h"
 
-UserStatusProvider::UserStatusProvider(
-    const AnyExecutor& executor,
-    NodeService& node_service,
-    scada::SessionService& session_service)
+UserStatusProvider::UserStatusProvider(const AnyExecutor& executor,
+                                       NodeService& node_service,
+                                       scada::SessionService& session_service)
     : executor_{executor},
       node_service_{node_service},
       session_service_{session_service} {}
 
-UserStatusProvider::~UserStatusProvider() {
-  user_node_.Unsubscribe(*this);
-}
+UserStatusProvider::~UserStatusProvider() = default;
 
 void UserStatusProvider::Init(const ChangeNotifier& change_notifier) {
   base::Check(!weak_from_this().expired());
@@ -28,9 +25,8 @@ void UserStatusProvider::Init(const ChangeNotifier& change_notifier) {
   // TODO: weak_ptr.
   connection_ = session_service_.SubscribeSessionStateChanged(BindExecutor(
       executor_,
-      [this, ref = shared_from_this()](bool connected, const scada::Status& status) {
-        UpdateUser();
-      }));
+      [this, ref = shared_from_this()](
+          bool connected, const scada::Status& status) { UpdateUser(); }));
 
   UpdateUser();
 }
@@ -45,15 +41,11 @@ void UserStatusProvider::UpdateUser() {
     return;
   }
 
-  user_node_.Unsubscribe(*this);
-
   user_node_ = node_service_.GetNode(user_id);
   user_node_.StartFetch(NodeFetchStatus::NodeOnly());
-  user_node_.Subscribe(*this);
+  user_node_semantic_changed_connection_ =
+      user_node_.SubscribeNodeSemanticChanged(
+          [this](const scada::NodeId&) { change_notifier_(); });
 
-  change_notifier_();
-}
-
-void UserStatusProvider::OnNodeSemanticChanged(const scada::NodeId& node_id) {
   change_notifier_();
 }

@@ -3,6 +3,9 @@
 #include "aui/models/tree_node_model.h"
 #include "favorites/favourites.h"
 
+#include <boost/signals2/connection.hpp>
+#include <vector>
+
 class FavouritesFolderNode;
 class FavouritesWindowNode;
 
@@ -91,8 +94,7 @@ class FavouritesWindowNode : public FavouritesNode {
   const WindowDefinition& window_def_;
 };
 
-class FavouritesTreeModel : public aui::TreeNodeModel<FavouritesNode>,
-                            protected Favourites::Observer {
+class FavouritesTreeModel : public aui::TreeNodeModel<FavouritesNode> {
  public:
   explicit FavouritesTreeModel(Favourites& favourites);
   ~FavouritesTreeModel();
@@ -103,17 +105,15 @@ class FavouritesTreeModel : public aui::TreeNodeModel<FavouritesNode>,
   }
 
  protected:
-  // Favorites::Observer
-  virtual void OnFolderAdded(const Page& folder) override;
-  virtual void OnFolderDeleted(const Page& folder) override;
-  virtual void OnFolderChanged(const Page& folder) override;
-  virtual void OnFavouriteAdded(const Page& folder,
-                                const WindowDefinition& window) override;
-  virtual void OnFavouriteDeleted(const Page& folder,
-                                  const WindowDefinition& window) override;
-  virtual void OnWindowChanged(const Page& folder,
-                               const WindowDefinition& window) override;
+  void OnFolderAdded(const Page& folder);
+  void OnFolderDeleted(const Page& folder);
+  void OnFolderChanged(const Page& folder);
+  void OnFavouriteAdded(const Page& folder, const WindowDefinition& window);
+  void OnFavouriteDeleted(const Page& folder, const WindowDefinition& window);
+  void OnWindowChanged(const Page& folder, const WindowDefinition& window);
 
  private:
   Favourites& favourites_;
+
+  std::vector<boost::signals2::scoped_connection> favourites_connections_;
 };

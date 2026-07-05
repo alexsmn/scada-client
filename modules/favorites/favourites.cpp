@@ -49,37 +49,31 @@ void Favourites::Delete(const WindowDefinition& win, const Page& folder) {
   if (index == -1)
     return;
 
-  for (auto& o : observers_)
-    o.OnFavouriteDeleted(local_folder, win);
+  favourite_deleted_signal_(local_folder, win);
 
   local_folder.DeleteWindow(index);
 }
 
 void Favourites::NotifyWindowAdded(const Page& folder,
                                    const WindowDefinition& win) const {
-  for (auto& o : observers_)
-    o.OnFavouriteAdded(folder, win);
+  favourite_added_signal_(folder, win);
 }
 
 void Favourites::NotifyFolderAdded(const Page& folder) const {
-  for (auto& o : observers_)
-    o.OnFolderAdded(folder);
+  folder_added_signal_(folder);
 }
 
 void Favourites::NotifyFolderDeleted(const Page& folder) const {
-  for (auto& o : observers_)
-    o.OnFolderDeleted(folder);
+  folder_deleted_signal_(folder);
 }
 
 void Favourites::NotifyFolderChanged(const Page& folder) const {
-  for (auto& o : observers_)
-    o.OnFolderChanged(folder);
+  folder_changed_signal_(folder);
 }
 
 void Favourites::NotifyWindowChanged(const Page& folder,
                                      const WindowDefinition& window) const {
-  for (auto& o : observers_)
-    o.OnWindowChanged(folder, window);
+  window_changed_signal_(folder, window);
 }
 
 void Favourites::Load(const boost::json::value& value) {

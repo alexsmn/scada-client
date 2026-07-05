@@ -1,18 +1,18 @@
 ﻿#include "modules/watch/watch_view.h"
 
 #include "aui/dialog_service.h"
-#include "aui/translation.h"
 #include "aui/table.h"
+#include "aui/translation.h"
 #include "base/awaitable.h"
 #include "base/u16format.h"
-#include "resources/common_resources.h"
-#include "modules/watch/watch_model.h"
-#include "modules/watch/watch_model_builder.h"
 #include "controller/controller_delegate.h"
 #include "model/node_id_util.h"
+#include "modules/watch/watch_model.h"
+#include "modules/watch/watch_model_builder.h"
 #include "net/net_executor_adapter.h"
 #include "node_service/node_service.h"
 #include "profile/window_definition.h"
+#include "resources/common_resources.h"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 
@@ -22,8 +22,8 @@ Awaitable<void> SaveLogAsync(AnyExecutor executor,
                              DialogService& dialog_service,
                              std::shared_ptr<WatchModel> model,
                              std::u16string name) {
-  auto path = co_await dialog_service.SelectSaveFile({Translate("Save As"),
-                                                      name});
+  auto path =
+      co_await dialog_service.SelectSaveFile({Translate("Save As"), name});
   model->SaveLog(path);
   co_return;
 }
@@ -37,9 +37,7 @@ WatchView::WatchView(const ControllerContext& context)
       model_{WatchModelBuilder{executor_, context.node_service_}
                  .CreateWatchModel()} {}
 
-WatchView::~WatchView() {
-  model_->observers().RemoveObserver(this);
-}
+WatchView::~WatchView() = default;
 
 void WatchView::Save(WindowDefinition& definition) {
   WindowItem& item = definition.AddItem("Item");
@@ -83,7 +81,8 @@ std::unique_ptr<UiView> WatchView::Init(const WindowDefinition& definition) {
   });
 
   // Must be after |table_| is bound.
-  model_->observers().AddObserver(this);
+  items_added_connection_ = model_->SubscribeItemsAdded(
+      [this](int first, int count) { OnItemsAdded(first, count); });
 
   command_registry_.AddCommand(
       Command{ID_PAUSE}
@@ -107,13 +106,12 @@ void WatchView::SaveLog() {
   auto date = time.date();
   auto time_of_day = time.time_of_day();
 
-  auto name = u16format(L"{:04}{:02}{:02}_{:02}{:02}{:02}.log",
-                        static_cast<int>(date.year()),
-                        static_cast<int>(date.month()),
-                        static_cast<int>(date.day()),
-                        static_cast<int>(time_of_day.hours()),
-                        static_cast<int>(time_of_day.minutes()),
-                        static_cast<int>(time_of_day.seconds()));
+  auto name = u16format(
+      L"{:04}{:02}{:02}_{:02}{:02}{:02}.log", static_cast<int>(date.year()),
+      static_cast<int>(date.month()), static_cast<int>(date.day()),
+      static_cast<int>(time_of_day.hours()),
+      static_cast<int>(time_of_day.minutes()),
+      static_cast<int>(time_of_day.seconds()));
 
   CoSpawn(executor_, [executor = executor_, &dialog_service = dialog_service_,
                       model = model_, name = std::move(name)] {

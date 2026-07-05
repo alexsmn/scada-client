@@ -1,12 +1,12 @@
 #pragma once
 
-#include "aui/models/table_model_observer.h"
 #include "controller/command_registry.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
 #include "controller/time_model.h"
 #include "export/export_model.h"
 
+#include <boost/signals2/connection.hpp>
 #include <memory>
 
 namespace aui {
@@ -17,7 +17,6 @@ class WatchModel;
 
 class WatchView : protected ControllerContext,
                   public Controller,
-                  private aui::TableModelObserver,
                   public TimeModel,
                   public ExportModel {
  public:
@@ -44,8 +43,7 @@ class WatchView : protected ControllerContext,
 
   void SaveLog();
 
-  // aui::TableModelObserver
-  virtual void OnItemsAdded(int first, int count) override;
+  void OnItemsAdded(int first, int count);
 
   const std::shared_ptr<WatchModel> model_;
 
@@ -54,4 +52,6 @@ class WatchView : protected ControllerContext,
   aui::Table* table_ = nullptr;
 
   CommandRegistry command_registry_;
+
+  boost::signals2::scoped_connection items_added_connection_;
 };

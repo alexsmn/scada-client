@@ -1,19 +1,19 @@
 #pragma once
 
-#include "base/observer_list.h"
-#include <string>
 #include "aui/models/table_column.h"
+
+#include <boost/signals2/connection.hpp>
+#include <boost/signals2/signal.hpp>
+#include <functional>
+#include <string>
 
 namespace aui {
 
 class HeaderModel {
  public:
-  class Observer {
-   public:
-    // Columns replaced.
-    virtual void OnModelChanged(HeaderModel& model) {}
-    virtual void OnSizeChanged(HeaderModel& model, int index) {}
-  };
+  using ModelChangedCallback = std::function<void(HeaderModel& model)>;
+  using SizeChangedCallback =
+      std::function<void(HeaderModel& model, int index)>;
 
   bool fixed_size() const { return fixed_size_; }
   void SetFixedSize(bool fixed) { fixed_size_ = fixed; }
@@ -33,7 +33,12 @@ class HeaderModel {
     return TableColumn::DataType::General;
   }
 
-  base::ObserverList<Observer>& observers() { return observers_; }
+  // Notifies after the columns have been replaced.
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeModelChanged(
+      const ModelChangedCallback& callback);
+  // Notifies after a column has been resized.
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeSizeChanged(
+      const SizeChangedCallback& callback);
 
  protected:
   HeaderModel() : fixed_size_(false) {}
@@ -44,7 +49,8 @@ class HeaderModel {
  private:
   bool fixed_size_;
 
-  base::ObserverList<Observer> observers_;
+  boost::signals2::signal<void(HeaderModel&)> model_changed_signal_;
+  boost::signals2::signal<void(HeaderModel&, int)> size_changed_signal_;
 };
 
 class ColumnHeaderModel : public HeaderModel {

@@ -2,7 +2,10 @@
 
 #include "base/blinker.h"
 #include "modus/libmodus/modus_style2.h"
+
 #include "timed_data/timed_data_spec.h"
+#include <boost/signals2/connection.hpp>
+#include <map>
 
 namespace {
 const int kModusBindingInflate = 3;
@@ -19,7 +22,7 @@ class Shape;
 class ModusView2;
 class TimedDataService;
 
-class ModusBinding2 : private ModusStyle2::AnimationObserver {
+class ModusBinding2 {
  public:
   class Delegate {
    public:
@@ -41,8 +44,7 @@ class ModusBinding2 : private ModusStyle2::AnimationObserver {
 
   bool SetStyles(unsigned styles);
 
-  // ModusStyle2::AnimationObserver
-  virtual void OnAnimationStep() override;
+  void OnAnimationStep();
 
   Delegate& delegate_;
   modus::Shape& shape_;
@@ -51,4 +53,8 @@ class ModusBinding2 : private ModusStyle2::AnimationObserver {
   TimedDataSpec data_point_;
 
   unsigned styles_;
+
+  // Animation-step subscriptions of the currently applied styles, keyed by
+  // style index.
+  std::map<size_t, boost::signals2::scoped_connection> style_connections_;
 };

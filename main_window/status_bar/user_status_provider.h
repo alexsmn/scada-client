@@ -2,7 +2,6 @@
 
 #include "base/any_executor.h"
 
-#include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
 
 #include <boost/signals2/connection.hpp>
@@ -10,8 +9,7 @@
 class NodeService;
 
 class UserStatusProvider final
-    : private NodeRefObserver,
-      public std::enable_shared_from_this<UserStatusProvider> {
+    : public std::enable_shared_from_this<UserStatusProvider> {
  public:
   using ChangeNotifier = std::function<void()>;
 
@@ -28,9 +26,6 @@ class UserStatusProvider final
  private:
   void UpdateUser();
 
-  // NodeRefObserver
-  virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
-
   AnyExecutor executor_;
   NodeService& node_service_;
   scada::SessionService& session_service_;
@@ -38,4 +33,5 @@ class UserStatusProvider final
   ChangeNotifier change_notifier_;
   NodeRef user_node_;
   boost::signals2::scoped_connection connection_;
+  boost::signals2::scoped_connection user_node_semantic_changed_connection_;
 };

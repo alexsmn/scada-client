@@ -8,11 +8,24 @@ namespace aui {
 TableModelAdapter::TableModelAdapter(std::shared_ptr<TableModel> model,
                                      std::vector<TableColumn> columns)
     : model_{std::move(model)}, columns_(std::move(columns)) {
-  model_->observers().AddObserver(this);
+  ConnectModel();
 }
 
-TableModelAdapter::~TableModelAdapter() {
-  model_->observers().RemoveObserver(this);
+TableModelAdapter::~TableModelAdapter() = default;
+
+void TableModelAdapter::ConnectModel() {
+  model_connections_.push_back(
+      model_->SubscribeModelChanged([this] { OnModelChanged(); }));
+  model_connections_.push_back(model_->SubscribeItemsChanged(
+      [this](int first, int count) { OnItemsChanged(first, count); }));
+  model_connections_.push_back(model_->SubscribeItemsAdding(
+      [this](int first, int count) { OnItemsAdding(first, count); }));
+  model_connections_.push_back(model_->SubscribeItemsAdded(
+      [this](int first, int count) { OnItemsAdded(first, count); }));
+  model_connections_.push_back(model_->SubscribeItemsRemoving(
+      [this](int first, int count) { OnItemsRemoving(first, count); }));
+  model_connections_.push_back(model_->SubscribeItemsRemoved(
+      [this](int first, int count) { OnItemsRemoved(first, count); }));
 }
 
 int TableModelAdapter::rowCount(const Wt::WModelIndex& parent) const {

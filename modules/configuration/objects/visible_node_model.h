@@ -1,9 +1,10 @@
 #pragma once
 
-#include "base/blinker.h"
 #include "aui/color.h"
-#include "node_service/node_observer.h"
+#include "base/blinker.h"
 #include "timed_data/timed_data_spec.h"
+
+#include <boost/signals2/connection.hpp>
 
 class BlinkerManager;
 class ConfigurationTreeNode;
@@ -71,7 +72,7 @@ class DataItemVisibleNode final : private Blinker, public VisibleNode {
   bool alerting_ = false;
 };
 
-class DataGroupVisibleNode final : public VisibleNode, private NodeRefObserver {
+class DataGroupVisibleNode final : public VisibleNode {
  public:
   DataGroupVisibleNode(TimedDataService& timed_data_service, NodeRef node);
   ~DataGroupVisibleNode();
@@ -83,14 +84,15 @@ class DataGroupVisibleNode final : public VisibleNode, private NodeRefObserver {
  private:
   void UpdateDevice();
 
-  // NodeRefObserver
-  virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
+  void OnModelChanged(const scada::ModelChangeEvent& event);
 
   TimedDataService& timed_data_service_;
   const NodeRef node_;
 
   NodeRef device_;
   std::unique_ptr<DeviceStateNotifier> device_state_notifier_;
+
+  boost::signals2::scoped_connection model_changed_connection_;
 };
 
 class VisibleNodeModel {

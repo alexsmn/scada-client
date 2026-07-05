@@ -38,7 +38,7 @@ void SelectionModel::SelectNode(const NodeRef& node) {
 
   type_ = NODE;
   node_ = node;
-  node_.Subscribe(*this);
+  SubscribeNode();
 
   if (node.node_class() == scada::NodeClass::Variable) {
     type_ = SPEC;
@@ -59,7 +59,7 @@ void SelectionModel::SelectTimedData(const TimedDataSpec& spec) {
   timed_data_.SetCurrentOnly();
   node_ = timed_data_.node();
   if (node_)
-    node_.Subscribe(*this);
+    SubscribeNode();
 
   Changed();
 }
@@ -82,11 +82,19 @@ void SelectionModel::Reset() {
   type_ = EMPTY;
 
   if (node_) {
-    node_.Unsubscribe(*this);
+    node_semantic_changed_connection_.disconnect();
+    model_changed_connection_.disconnect();
     node_ = nullptr;
   }
 
   timed_data_.Reset();
+}
+
+void SelectionModel::SubscribeNode() {
+  node_semantic_changed_connection_ = node_.SubscribeNodeSemanticChanged(
+      [this](const scada::NodeId& node_id) { OnNodeSemanticChanged(node_id); });
+  model_changed_connection_ = node_.SubscribeModelChanged(
+      [this](const scada::ModelChangeEvent& event) { OnModelChanged(event); });
 }
 
 void SelectionModel::Changed() {

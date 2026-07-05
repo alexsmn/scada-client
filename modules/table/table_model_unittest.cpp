@@ -1,7 +1,7 @@
 #include "table_model.h"
 
 #include "aui/dialog_service_mock.h"
-#include "aui/models/table_model_observer_mock.h"
+#include "aui/test/recording_table_model_observer.h"
 #include "base/blinker_mock.h"
 #include "base/observer_list.h"
 #include "events/node_event_provider_mock.h"
@@ -40,11 +40,12 @@ class TableModelTest : public Test {
   NiceMock<MockBlinkerManager> blinker_manager_;
   StrictMock<MockFunction<void(const scada::NodeId& item_id, bool added)>>
       item_changed_;
-  StrictMock<aui::TableModelObserverMock> table_model_observer_;
 
   TableModel table_model_{TableModelContext{timed_data_service_,
                                             node_event_provider_, profile_,
                                             dialog_service_, blinker_manager_}};
+
+  aui::RecordingTableModelObserver table_model_observer_{table_model_};
 };
 
 namespace {
@@ -92,13 +93,9 @@ NodeRef MakeDiscreteItemNode() {
 
 TableModelTest::TableModelTest() {
   table_model_.item_changed_ = item_changed_.AsStdFunction();
-
-  table_model_.observers().AddObserver(&table_model_observer_);
 }
 
-TableModelTest::~TableModelTest() {
-  table_model_.observers().RemoveObserver(&table_model_observer_);
-}
+TableModelTest::~TableModelTest() = default;
 
 std::shared_ptr<TableModelTest::RowContext> TableModelTest::SetFormula() {
   auto row_context = std::make_shared<RowContext>();
@@ -152,11 +149,16 @@ std::shared_ptr<TableModelTest::RowContext> TableModelTest::SetFormula() {
   const int row_index = table_model_.row_count();
 
   EXPECT_CALL(row_context->timed_data, GetNode());
-  EXPECT_CALL(table_model_observer_, OnItemsAdding(row_index, 1));
-  EXPECT_CALL(table_model_observer_, OnItemsAdded(row_index, 1));
   EXPECT_CALL(item_changed_, Call(node_id, true));
 
+  table_model_observer_.ClearEvents();
+
   EXPECT_TRUE(table_model_.SetFormula(row_index, formula));
+
+  EXPECT_THAT(table_model_observer_.items_adding,
+              ElementsAre(Pair(row_index, 1)));
+  EXPECT_THAT(table_model_observer_.items_added,
+              ElementsAre(Pair(row_index, 1)));
 
   EXPECT_CALL(row_context->timed_data, RemoveObserver(_));
   EXPECT_CALL(row_context->timed_data, RemoveViewObserver(_));
@@ -232,10 +234,13 @@ TEST_F(TableModelTest, ValueBlinking) {
   // Alerting, but not blinking.
 
   EXPECT_CALL(row_context->timed_data, IsAlerting()).WillOnce(Return(true));
-  EXPECT_CALL(table_model_observer_, OnItemsChanged(0, 1));
+
+  table_model_observer_.ClearEvents();
 
   for (auto& o : row_context->observers)
     o.OnEventsChanged();
+
+  EXPECT_THAT(table_model_observer_.items_changed, ElementsAre(Pair(0, 1)));
 
   EXPECT_CALL(blinker_manager_, GetState()).WillOnce(Return(false));
   EXPECT_EQ(aui::Color{aui::ColorCode::Transparent},

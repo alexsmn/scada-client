@@ -1,9 +1,9 @@
 #pragma once
 
 #include "common/aliases.h"
-#include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
 
+#include <boost/signals2/connection.hpp>
 #include <map>
 #include <unordered_map>
 
@@ -16,8 +16,7 @@ struct AliasServiceContext {
   NodeService& node_service_;
 };
 
-class AliasService final : private AliasServiceContext,
-                           private NodeRefObserver {
+class AliasService final : private AliasServiceContext {
  public:
   explicit AliasService(AliasServiceContext&& context);
   ~AliasService();
@@ -27,8 +26,7 @@ class AliasService final : private AliasServiceContext,
  private:
   void OnFetchCompleted();
 
-  // NodeRefObserver
-  virtual void OnNodeFetched(const NodeFetchedEvent& event) override;
+  void OnNodeFetched(const NodeFetchedEvent& event);
 
   scada::NodeId ResolveNow(const std::string& alias) const;
 
@@ -37,4 +35,6 @@ class AliasService final : private AliasServiceContext,
   bool fetched_ = false;
   std::unordered_map<std::string, std::vector<AliasResolveCallback>>
       pending_aliases_;
+
+  boost::signals2::scoped_connection node_fetched_connection_;
 };

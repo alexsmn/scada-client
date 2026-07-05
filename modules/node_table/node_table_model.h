@@ -5,10 +5,10 @@
 #include "aui/models/fixed_row_model.h"
 #include "aui/models/grid_model.h"
 #include "base/cancelation.h"
-#include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
 #include "properties/property_context.h"
 
+#include <boost/signals2/connection.hpp>
 #include <span>
 
 class NodeService;
@@ -17,8 +17,7 @@ class PropertyService;
 
 class NodeTableModel : private PropertyContext,
                        public aui::GridModel,
-                       private aui::FixedRowModel::Delegate,
-                       public NodeRefObserver {
+                       private aui::FixedRowModel::Delegate {
  public:
   NodeTableModel(AnyExecutor executor,
                  PropertyService& property_service,
@@ -79,9 +78,8 @@ class NodeTableModel : private PropertyContext,
   virtual int GetRowCount() override;
   virtual std::u16string GetRowTitle(int row) override;
 
-  // NodeRefObserver
-  virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
-  virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
+  void OnModelChanged(const scada::ModelChangeEvent& event);
+  void OnNodeSemanticChanged(const scada::NodeId& node_id);
 
   const AnyExecutor executor_;
   PropertyService& property_service_;
@@ -108,4 +106,7 @@ class NodeTableModel : private PropertyContext,
   scada::NodeId sort_property_id_;
 
   Cancelation cancelation_;
+
+  boost::signals2::scoped_connection model_changed_connection_;
+  boost::signals2::scoped_connection node_semantic_changed_connection_;
 };

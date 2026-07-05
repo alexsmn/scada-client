@@ -1,10 +1,15 @@
 #pragma once
 
-#include "node_service/node_observer.h"
+#include "scada/node_id.h"
 
+#include <boost/signals2/connection.hpp>
 #include <list>
 #include <set>
 #include <string>
+
+namespace scada {
+struct ModelChangeEvent;
+}
 
 class NodeService;
 class Portfolio;
@@ -23,8 +28,7 @@ struct PortfolioManagerContext {
   NodeService& node_service_;
 };
 
-class PortfolioManager : private PortfolioManagerContext,
-                         private NodeRefObserver {
+class PortfolioManager : private PortfolioManagerContext {
  public:
   using Portfolios = std::list<Portfolio>;
   using PortfolioEventsSet = std::set<PortfolioEvents*>;
@@ -52,7 +56,9 @@ class PortfolioManager : private PortfolioManagerContext,
   void UpdateNode(const scada::NodeId& node_id);
   void DeleteNode(const scada::NodeId& node_id);
 
-  // NodeRefObserver
-  virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
-  virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
+  void OnModelChanged(const scada::ModelChangeEvent& event);
+  void OnNodeSemanticChanged(const scada::NodeId& node_id);
+
+  boost::signals2::scoped_connection model_changed_connection_;
+  boost::signals2::scoped_connection node_semantic_changed_connection_;
 };

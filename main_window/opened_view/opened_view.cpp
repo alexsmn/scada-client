@@ -153,12 +153,14 @@ ContentsModel* OpenedView::GetActiveContentsModel() {
   return view ? view->controller().GetContentsModel() : nullptr;
 }
 
-void OpenedView::AddContentsObserver(ContentsObserver& observer) {
-  main_window_->AddContentsObserver(observer);
+boost::signals2::scoped_connection OpenedView::SubscribeContentsChanged(
+    const ContentsChangedCallback& callback) {
+  return main_window_->SubscribeContentsChanged(callback);
 }
 
-void OpenedView::RemoveContentsObserver(ContentsObserver& observer) {
-  main_window_->RemoveContentsObserver(observer);
+boost::signals2::scoped_connection OpenedView::SubscribeContainedItemChanged(
+    const ContainedItemChangedCallback& callback) {
+  return main_window_->SubscribeContainedItemChanged(callback);
 }
 
 void OpenedView::Print(PrintService& print_service) {

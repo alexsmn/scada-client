@@ -12,13 +12,18 @@
 #include "scada/event.h"
 
 PortfolioManager::PortfolioManager(PortfolioManagerContext&& context)
-    : PortfolioManagerContext{std::move(context)} {
-  node_service_.Subscribe(*this);
-}
+    : PortfolioManagerContext{std::move(context)},
+      model_changed_connection_{node_service_.SubscribeModelChanged(
+          [this](const scada::ModelChangeEvent& event) {
+            OnModelChanged(event);
+          })},
+      node_semantic_changed_connection_{
+          node_service_.SubscribeNodeSemanticChanged(
+              [this](const scada::NodeId& node_id) {
+                OnNodeSemanticChanged(node_id);
+              })} {}
 
-PortfolioManager::~PortfolioManager() {
-  node_service_.Unsubscribe(*this);
-}
+PortfolioManager::~PortfolioManager() = default;
 
 void PortfolioManager::OnModelChanged(const scada::ModelChangeEvent& event) {
   if (event.verb & scada::ModelChangeEvent::NodeDeleted)
@@ -46,8 +51,9 @@ void PortfolioManager::DeleteNode(const scada::NodeId& node_id) {
     Portfolio& portfolio = *i;
     if (portfolio.items.erase(node_id)) {
       std::string item_path = NodeIdToScadaString(node_id);
-      BOOST_LOG_TRIVIAL(info) << "Portfolio " << UtfConvert<char>(portfolio.name) << ": "
-                << "Item " << item_path << " is removed";
+      BOOST_LOG_TRIVIAL(info)
+          << "Portfolio " << UtfConvert<char>(portfolio.name) << ": "
+          << "Item " << item_path << " is removed";
 
       for (PortfolioEventsSet::iterator ei = portfolio_events.begin();
            ei != portfolio_events.end(); ++ei)

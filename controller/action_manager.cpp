@@ -19,19 +19,19 @@ GroupedActions GroupCommands(ActionManager& action_manager,
 
 std::u16string GetCommandCategoryTitle(CommandCategory category) {
   static const char* const kTitles[] = {
-      "New",        // CATEGORY_NEW
-      "Open",       // CATEGORY_OPEN
-      "Item",       // CATEGORY_ITEM
-      "Device",     // CATEGORY_DEVICE
-      "Options",    // CATEGORY_SETUP
-      "Export",     // CATEGORY_EXPORT
-      "Misc",       // CATEGORY_SPECIFIC
-      "Window",     // CATEGORY_VIEW
-      "Period",     // CATEGORY_PERIOD
-      "Create",     // CATEGORY_CREATE
-      "Edit",       // CATEGORY_EDIT,
-      "Function",   // CATEGORY_AGGREGATION
-      "Interval",   // CATEGORY_INTERVAL
+      "New",       // CATEGORY_NEW
+      "Open",      // CATEGORY_OPEN
+      "Item",      // CATEGORY_ITEM
+      "Device",    // CATEGORY_DEVICE
+      "Options",   // CATEGORY_SETUP
+      "Export",    // CATEGORY_EXPORT
+      "Misc",      // CATEGORY_SPECIFIC
+      "Window",    // CATEGORY_VIEW
+      "Period",    // CATEGORY_PERIOD
+      "Create",    // CATEGORY_CREATE
+      "Edit",      // CATEGORY_EDIT,
+      "Function",  // CATEGORY_AGGREGATION
+      "Interval",  // CATEGORY_INTERVAL
   };
   static_assert(std::size(kTitles) == static_cast<size_t>(CATEGORY_COUNT));
   base::Check(category >= 0 && category < std::size(kTitles));
@@ -65,12 +65,9 @@ Action* ActionManager::FindAction(unsigned command) const {
   return i != action_map_.end() ? const_cast<Action*>(&i->second) : NULL;
 }
 
-void ActionManager::Subscribe(ActionObserver& observer) {
-  observers_.AddObserver(&observer);
-}
-
-void ActionManager::Unsubscribe(ActionObserver& observer) {
-  observers_.RemoveObserver(&observer);
+boost::signals2::scoped_connection ActionManager::Subscribe(
+    const ActionChangedCallback& callback) {
+  return action_changed_signal_.connect(callback);
 }
 
 void ActionManager::NotifyActionChanged(unsigned command_id,
@@ -79,6 +76,5 @@ void ActionManager::NotifyActionChanged(unsigned command_id,
   if (!action)
     return;
 
-  for (auto& obs : observers_)
-    obs.OnActionChanged(*action, change_mask);
+  action_changed_signal_(*action, change_mask);
 }

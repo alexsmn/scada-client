@@ -33,13 +33,28 @@ GridModelAdapter::GridModelAdapter(std::shared_ptr<GridModel> model,
     : model_{std::move(model)},
       row_model_{std::move(row_model)},
       column_model_{std::move(column_model)} {
-  model_->observers().AddObserver(this);
-  column_model_->observers().AddObserver(this);
+  ConnectModels();
 }
 
-GridModelAdapter::~GridModelAdapter() {
-  model_->observers().RemoveObserver(this);
-  column_model_->observers().RemoveObserver(this);
+GridModelAdapter::~GridModelAdapter() = default;
+
+void GridModelAdapter::ConnectModels() {
+  model_connections_.push_back(model_->SubscribeModelChanged(
+      [this](GridModel& model) { OnGridModelChanged(model); }));
+  model_connections_.push_back(model_->SubscribeRangeChanged(
+      [this](GridModel& model, const GridRange& range) {
+        OnGridRangeChanged(model, range);
+      }));
+  model_connections_.push_back(model_->SubscribeRowsAdded(
+      [this](GridModel& model, int first, int count) {
+        OnGridRowsAdded(model, first, count);
+      }));
+  model_connections_.push_back(model_->SubscribeRowsRemoved(
+      [this](GridModel& model, int first, int count) {
+        OnGridRowsRemoved(model, first, count);
+      }));
+  model_connections_.push_back(column_model_->SubscribeModelChanged(
+      [this](HeaderModel& model) { OnModelChanged(model); }));
 }
 
 int GridModelAdapter::rowCount(const QModelIndex& parent) const {

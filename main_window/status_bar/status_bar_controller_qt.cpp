@@ -29,15 +29,14 @@ StatusBarController::StatusBarController(QStatusBar& status_bar,
     panes_.emplace_back(pane);
   }
 
-  model_.AddObserver(*this);
+  panes_changed_connection_ = model_.SubscribePanesChanged(
+      [this](int index, int count) { OnPanesChanged(index, count); });
 
   progress_connection_ = progress_host.Subscribe(
       [this](const ProgressStatus&) { UpdateProgressBar(); });
 }
 
-StatusBarController::~StatusBarController() {
-  model_.RemoveObserver(*this);
-}
+StatusBarController::~StatusBarController() = default;
 
 void StatusBarController::OnPanesChanged(int index, int count) {
   for (int i = 0; i < count; ++i) {

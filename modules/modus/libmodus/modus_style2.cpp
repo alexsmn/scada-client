@@ -47,26 +47,19 @@ void ModusStyle2::Paint(Gdiplus::Graphics& graphics,
   }
 }
 
-void ModusStyle2::AddAnimationObserver(AnimationObserver& observer) {
+boost::signals2::scoped_connection ModusStyle2::SubscribeAnimationStep(
+    const AnimationStepCallback& callback) {
   if (!IsAnimated())
-    return;
+    return {};
 
-  bool start = !animation_observers_.might_have_observers();
+  bool start = animation_step_signal_.num_slots() == 0;
 
-  animation_observers_.AddObserver(&observer);
+  auto connection = animation_step_signal_.connect(callback);
 
   if (start)
     Blinker::Start();
-}
 
-void ModusStyle2::RemoveAnimationObserver(AnimationObserver& observer) {
-  if (!IsAnimated())
-    return;
-
-  animation_observers_.RemoveObserver(&observer);
-
-  if (!animation_observers_.might_have_observers())
-    Blinker::Stop();
+  return boost::signals2::scoped_connection{connection};
 }
 
 bool ModusStyle2::IsAnimated() const {
@@ -75,6 +68,13 @@ bool ModusStyle2::IsAnimated() const {
 
 void ModusStyle2::OnBlink(bool state) {
   base::Check(IsAnimated());
-  for (auto& o : animation_observers_)
-    o.OnAnimationStep();
+
+  // The blink timer keeps running until the step after the last subscriber
+  // disconnected; disconnects are only detected here.
+  if (animation_step_signal_.num_slots() == 0) {
+    Blinker::Stop();
+    return;
+  }
+
+  animation_step_signal_();
 }

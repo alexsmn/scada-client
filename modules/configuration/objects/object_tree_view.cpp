@@ -61,16 +61,29 @@ ObjectTreeView::ObjectTreeView(
     }
   });
 
-  controller_delegate_.AddContentsObserver(*this);
+  model_connections_.push_back(controller_delegate_.SubscribeContentsChanged(
+      [this](const NodeIdSet& node_ids) { OnContentsChanged(node_ids); }));
+  model_connections_.push_back(
+      controller_delegate_.SubscribeContainedItemChanged(
+          [this](const scada::NodeId& item_id, bool added) {
+            OnContainedItemChanged(item_id, added);
+          }));
 
-  model().AddObserver(*this);
+  model_connections_.push_back(model().SubscribeNodeChanged(
+      [this](void* node) { OnTreeNodeChanged(node); }));
+  model_connections_.push_back(
+      model().SubscribeNodesAdded([this](void* parent, int start, int count) {
+        OnTreeNodesAdded(parent, start, count);
+      }));
+  model_connections_.push_back(model().SubscribeNodesDeleting(
+      [this](void* parent, int start, int count) {
+        OnTreeNodesDeleting(parent, start, count);
+      }));
+  model_connections_.push_back(
+      model().SubscribeModelResetting([this] { OnTreeModelResetting(); }));
 }
 
-ObjectTreeView::~ObjectTreeView() {
-  controller_delegate_.RemoveContentsObserver(*this);
-
-  model().RemoveObserver(*this);
-}
+ObjectTreeView::~ObjectTreeView() = default;
 
 std::optional<std::u16string> ObjectTreeView::GetFirstValueTextForTesting() {
   if (!value_node_for_testing_) {

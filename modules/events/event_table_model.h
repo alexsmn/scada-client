@@ -4,7 +4,6 @@
 
 #include "aui/models/table_model.h"
 #include "base/any_executor_timer.h"
-#include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
 
 #include <boost/signals2/connection.hpp>
@@ -40,9 +39,7 @@ struct EventTableModelContext {
   const bool current_events_ = true;
 };
 
-class EventTableModel : public aui::TableModel,
-                        private NodeRefObserver,
-                        private EventTableModelContext {
+class EventTableModel : public aui::TableModel, private EventTableModelContext {
  public:
   enum EventType { CURRENT_EVENT, HISTORICAL_EVENT, LOCAL_EVENT };
 
@@ -103,9 +100,8 @@ class EventTableModel : public aui::TableModel,
   void OnCurrentEvents(std::span<const scada::Event* const> events);
   void OnLocalEvent(const scada::Event& event);
 
-  // NodeRefObserver
-  virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
-  virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
+  void OnNodeSemanticChanged(const scada::NodeId& node_id);
+  void OnModelChanged(const scada::ModelChangeEvent& event);
 
   // Filter.
   unsigned severity_min_ = 0;

@@ -77,12 +77,13 @@ EventTableModel::EventTableModel(EventTableModelContext&& context)
   connections_.emplace_back(local_event_model_.on_event.connect(
       std::bind_front(&EventTableModel::OnLocalEvent, this)));
 
-  node_service_.Subscribe(*this);
+  connections_.emplace_back(node_service_.SubscribeNodeSemanticChanged(
+      std::bind_front(&EventTableModel::OnNodeSemanticChanged, this)));
+  connections_.emplace_back(node_service_.SubscribeModelChanged(
+      std::bind_front(&EventTableModel::OnModelChanged, this)));
 }
 
-EventTableModel::~EventTableModel() {
-  node_service_.Unsubscribe(*this);
-}
+EventTableModel::~EventTableModel() = default;
 
 void EventTableModel::Init(const TimeRange& range, ItemIds filter_items) {
   historical_event_model_.Init(range);

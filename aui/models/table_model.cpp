@@ -1,15 +1,12 @@
 #include "aui/models/table_model.h"
 
-#include "aui/models/table_model_observer.h"
 #include "base/check.h"
 
 namespace aui {
 
 TableModel::TableModel() = default;
 
-TableModel::~TableModel() {
-  base::Check(!observers_.might_have_observers());
-}
+TableModel::~TableModel() = default;
 
 std::u16string TableModel::GetTooltip(int row, int column_id) {
   return std::u16string();
@@ -37,39 +34,63 @@ int TableModel::CompareCells(int row1, int row2, int column_id) {
   return text1.compare(text2);
 }
 
+boost::signals2::scoped_connection TableModel::SubscribeModelChanged(
+    const ModelChangedCallback& callback) {
+  return model_changed_signal_.connect(callback);
+}
+
+boost::signals2::scoped_connection TableModel::SubscribeItemsChanged(
+    const ItemRangeCallback& callback) {
+  return items_changed_signal_.connect(callback);
+}
+
+boost::signals2::scoped_connection TableModel::SubscribeItemsAdding(
+    const ItemRangeCallback& callback) {
+  return items_adding_signal_.connect(callback);
+}
+
+boost::signals2::scoped_connection TableModel::SubscribeItemsAdded(
+    const ItemRangeCallback& callback) {
+  return items_added_signal_.connect(callback);
+}
+
+boost::signals2::scoped_connection TableModel::SubscribeItemsRemoving(
+    const ItemRangeCallback& callback) {
+  return items_removing_signal_.connect(callback);
+}
+
+boost::signals2::scoped_connection TableModel::SubscribeItemsRemoved(
+    const ItemRangeCallback& callback) {
+  return items_removed_signal_.connect(callback);
+}
+
 void TableModel::NotifyModelChanged() {
-  for (auto& o : observers_)
-    o.OnModelChanged();
+  model_changed_signal_();
 }
 
 void TableModel::NotifyItemsAdding(int first, int count) {
   base::Check(count > 0);
-  for (auto& o : observers_)
-    o.OnItemsAdding(first, count);
+  items_adding_signal_(first, count);
 }
 
 void TableModel::NotifyItemsAdded(int first, int count) {
   base::Check(count > 0);
-  for (auto& o : observers_)
-    o.OnItemsAdded(first, count);
+  items_added_signal_(first, count);
 }
 
 void TableModel::NotifyItemsRemoving(int first, int count) {
   base::Check(count > 0);
-  for (auto& o : observers_)
-    o.OnItemsRemoving(first, count);
+  items_removing_signal_(first, count);
 }
 
 void TableModel::NotifyItemsRemoved(int first, int count) {
   base::Check(count > 0);
-  for (auto& o : observers_)
-    o.OnItemsRemoved(first, count);
+  items_removed_signal_(first, count);
 }
 
 void TableModel::NotifyItemsChanged(int first, int count) {
   base::Check(count > 0);
-  for (auto& o : observers_)
-    o.OnItemsChanged(first, count);
+  items_changed_signal_(first, count);
 }
 
 bool TableModel::IsEditable(int row, int column_id) {

@@ -43,12 +43,12 @@ std::filesystem::file_time_type ToFileTime(scada::DateTime time) {
   }
 }
 
-Awaitable<void> DownloadFileNodeAsync(AnyExecutor executor,
-                                      std::shared_ptr<const Logger> logger,
-                                      NodeRef node,
-                                      std::filesystem::path path,
-                                      std::filesystem::file_time_type
-                                          last_update_time) {
+Awaitable<void> DownloadFileNodeAsync(
+    AnyExecutor executor,
+    std::shared_ptr<const Logger> logger,
+    NodeRef node,
+    std::filesystem::path path,
+    std::filesystem::file_time_type last_update_time) {
   auto data_value = co_await node.scada_node().read(scada::AttributeId::Value);
   if (!data_value.ok()) {
     logger->WriteF(LogSeverity::Warning, "Download '{}' error: {}",
@@ -58,8 +58,8 @@ Awaitable<void> DownloadFileNodeAsync(AnyExecutor executor,
 
   auto* data = data_value->value.get_if<scada::ByteString>();
   if (!data) {
-    logger->WriteF(LogSeverity::Warning,
-                   "Wrong downloaded data for file '{}'", path.string());
+    logger->WriteF(LogSeverity::Warning, "Wrong downloaded data for file '{}'",
+                   path.string());
     co_return;
   }
 
@@ -79,7 +79,12 @@ FileSynchronizer::FileSynchronizer(FileSynchronizerContext&& context)
     : FileSynchronizerContext{std::move(context)} {
   logger_->WriteF(LogSeverity::Normal, "Fetch file tree...");
 
-  node_service_.Subscribe(*this);
+  connections_.push_back(node_service_.SubscribeModelChanged(
+      [this](const scada::ModelChangeEvent& event) { OnModelChanged(event); }));
+  connections_.push_back(node_service_.SubscribeNodeSemanticChanged(
+      [this](const scada::NodeId& node_id) {
+        OnNodeSemanticChanged(node_id);
+      }));
 
   const auto& root = node_service_.GetNode(filesystem::id::FileSystem);
   CoSpawn(executor_, [this, root]() -> Awaitable<void> {
@@ -93,9 +98,7 @@ FileSynchronizer::FileSynchronizer(FileSynchronizerContext&& context)
   });
 }
 
-FileSynchronizer::~FileSynchronizer() {
-  node_service_.Unsubscribe(*this);
-}
+FileSynchronizer::~FileSynchronizer() = default;
 
 void FileSynchronizer::ProcessNodesRecursively(NodeRef root) {
   for (const auto& child : root.targets(scada::id::Organizes)) {
@@ -126,8 +129,7 @@ bool FileSynchronizer::ProcessFileDirectoryNode(NodeRef node) {
     return true;
   }
 
-  logger_->WriteF(LogSeverity::Normal, "Create directory '{}'",
-                  path.string());
+  logger_->WriteF(LogSeverity::Normal, "Create directory '{}'", path.string());
 
   if (!std::filesystem::create_directories(path, ec)) {
     logger_->WriteF(LogSeverity::Normal, "Create directory '{}' error: {}",
@@ -154,12 +156,11 @@ bool FileSynchronizer::ProcessFileNode(NodeRef node) {
 
   logger_->WriteF(LogSeverity::Normal, "Download outdated '{}'", path.string());
 
-  CoSpawn(executor_,
-          [executor = executor_, logger = logger_, node, path,
-           last_update_time] {
-            return DownloadFileNodeAsync(executor, logger, node, path,
-                                         last_update_time);
-          });
+  CoSpawn(executor_, [executor = executor_, logger = logger_, node, path,
+                      last_update_time] {
+    return DownloadFileNodeAsync(executor, logger, node, path,
+                                 last_update_time);
+  });
 
   return true;
 }

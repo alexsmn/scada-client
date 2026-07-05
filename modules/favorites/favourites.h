@@ -1,23 +1,17 @@
 #pragma once
 
-#include "base/observer_list.h"
 #include "profile/page.h"
 
+#include <boost/signals2/connection.hpp>
+#include <boost/signals2/signal.hpp>
+#include <functional>
 #include <list>
 
 class Favourites {
  public:
-  struct Observer {
-    virtual void OnFolderAdded(const Page& folder) {}
-    virtual void OnFolderDeleted(const Page& folder) {}
-    virtual void OnFolderChanged(const Page& folder) {}
-    virtual void OnFavouriteAdded(const Page& folder,
-                                  const WindowDefinition& win) {}
-    virtual void OnFavouriteDeleted(const Page& folder,
-                                    const WindowDefinition& win) {}
-    virtual void OnWindowChanged(const Page& folder,
-                                 const WindowDefinition& window) {}
-  };
+  using FolderCallback = std::function<void(const Page& folder)>;
+  using FavouriteCallback =
+      std::function<void(const Page& folder, const WindowDefinition& win)>;
 
   typedef std::list<Page> Folders;
 
@@ -32,9 +26,29 @@ class Favourites {
   void Delete(const WindowDefinition& win, const Page& folder);
   void DeleteFolder(const Page& folder);
 
-  void AddObserver(Observer& observer) { observers_.AddObserver(&observer); }
-  void RemoveObserver(Observer& observer) {
-    observers_.RemoveObserver(&observer);
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeFolderAdded(
+      const FolderCallback& callback) const {
+    return folder_added_signal_.connect(callback);
+  }
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeFolderDeleted(
+      const FolderCallback& callback) const {
+    return folder_deleted_signal_.connect(callback);
+  }
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeFolderChanged(
+      const FolderCallback& callback) const {
+    return folder_changed_signal_.connect(callback);
+  }
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeFavouriteAdded(
+      const FavouriteCallback& callback) const {
+    return favourite_added_signal_.connect(callback);
+  }
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeFavouriteDeleted(
+      const FavouriteCallback& callback) const {
+    return favourite_deleted_signal_.connect(callback);
+  }
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeWindowChanged(
+      const FavouriteCallback& callback) const {
+    return window_changed_signal_.connect(callback);
   }
 
   void Load(const boost::json::value& value);
@@ -51,7 +65,15 @@ class Favourites {
  private:
   Folders folders_;
 
-  mutable base::ObserverList<Observer> observers_;
+  mutable boost::signals2::signal<void(const Page&)> folder_added_signal_;
+  mutable boost::signals2::signal<void(const Page&)> folder_deleted_signal_;
+  mutable boost::signals2::signal<void(const Page&)> folder_changed_signal_;
+  mutable boost::signals2::signal<void(const Page&, const WindowDefinition&)>
+      favourite_added_signal_;
+  mutable boost::signals2::signal<void(const Page&, const WindowDefinition&)>
+      favourite_deleted_signal_;
+  mutable boost::signals2::signal<void(const Page&, const WindowDefinition&)>
+      window_changed_signal_;
 
   Favourites(const Favourites&) = delete;
   Favourites& operator=(const Favourites&) = delete;

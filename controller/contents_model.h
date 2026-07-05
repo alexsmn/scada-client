@@ -1,10 +1,10 @@
 #pragma once
 
-#include "common/node_state.h"
-#include "controller/contents_observer.h"
 #include "aui/types.h"
+#include "common/node_state.h"
+#include "controller/node_id_set.h"
 
-class ContentsObserver;
+#include <functional>
 
 class ContentsModel {
  public:
@@ -19,7 +19,10 @@ class ContentsModel {
 
   virtual NodeIdSet GetContainedItems() const { return {}; }
 
-  ContentsObserver* contents_observer = nullptr;
+  // Set by the active main window; single consumer.
+  std::function<void(const NodeIdSet& contents)> contents_changed_handler;
+  std::function<void(const scada::NodeId& item_id, bool added)>
+      contained_item_changed_handler;
 
  protected:
   void NotifyContentsChanged(const NodeIdSet& contents);
@@ -27,13 +30,13 @@ class ContentsModel {
 };
 
 inline void ContentsModel::NotifyContentsChanged(const NodeIdSet& contents) {
-  if (contents_observer)
-    contents_observer->OnContentsChanged(contents);
+  if (contents_changed_handler)
+    contents_changed_handler(contents);
 }
 
 inline void ContentsModel::NotifyContainedItemChanged(
     const scada::NodeId& node_id,
     bool added) {
-  if (contents_observer)
-    contents_observer->OnContainedItemChanged(node_id, added);
+  if (contained_item_changed_handler)
+    contained_item_changed_handler(node_id, added);
 }

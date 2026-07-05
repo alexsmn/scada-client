@@ -1,18 +1,19 @@
 #pragma once
 
-#include "base/observer_list.h"
-#include "controller/contents_observer.h"
+#include "controller/node_id_set.h"
 #include "main_window/main_window_context.h"
 #include "main_window/main_window_interface.h"
 #include "main_window/view_manager_delegate.h"
 
+#include <boost/signals2/connection.hpp>
+#include <boost/signals2/signal.hpp>
 #include <filesystem>
+#include <functional>
 
 namespace aui {
 class MenuModel;
 }
 
-class ContentsObserver;
 class DialogService;
 class MainWindowCommandRouter;
 class OpenedView;
@@ -24,7 +25,6 @@ struct WindowInfo;
 
 class BaseMainWindow : protected MainWindowContext,
                        protected ViewManagerDelegate,
-                       private ContentsObserver,
                        public MainWindowInterface {
  public:
   BaseMainWindow(MainWindowContext&& context, DialogService& dialog_service);
@@ -54,8 +54,18 @@ class BaseMainWindow : protected MainWindowContext,
 
   void OnViewTitleUpdated(OpenedView& view, const std::u16string& title);
 
-  void AddContentsObserver(ContentsObserver& observer);
-  void RemoveContentsObserver(ContentsObserver& observer);
+  using ContentsChangedCallback =
+      std::function<void(const NodeIdSet& node_ids)>;
+  using ContainedItemChangedCallback =
+      std::function<void(const scada::NodeId& node_id, bool added)>;
+
+  // Notifies after the contained-item set of the active data view changed
+  // wholesale.
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeContentsChanged(
+      const ContentsChangedCallback& callback);
+  // Notifies after a single contained item was added or removed.
+  [[nodiscard]] boost::signals2::scoped_connection
+  SubscribeContainedItemChanged(const ContainedItemChangedCallback& callback);
 
   // MainWindow
   virtual int GetMainWindowId() const { return window_id(); }
@@ -122,11 +132,9 @@ class BaseMainWindow : protected MainWindowContext,
   void SetActiveDataView(OpenedView* view);
 
   OpenedView* FindViewToRecycle(unsigned type);
-  // ContentsObserver
-  virtual void OnContentsChanged(
-      const std::set<scada::NodeId>& item_ids) override;
-  virtual void OnContainedItemChanged(const scada::NodeId& item_id,
-                                      bool added) override;
+
+  void OnContentsChanged(const std::set<scada::NodeId>& item_ids);
+  void OnContainedItemChanged(const scada::NodeId& item_id, bool added);
 
   ViewManager* view_manager_ = nullptr;
 
@@ -134,7 +142,9 @@ class BaseMainWindow : protected MainWindowContext,
   // View to insert new items.
   OpenedView* active_data_view_ = nullptr;
 
-  base::ObserverList<ContentsObserver> contents_observers_;
+  boost::signals2::signal<void(const NodeIdSet&)> contents_changed_signal_;
+  boost::signals2::signal<void(const scada::NodeId&, bool)>
+      contained_item_changed_signal_;
 
   friend class OpenedView;
   friend class NativeMainWindow;

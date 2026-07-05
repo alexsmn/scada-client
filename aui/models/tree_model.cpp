@@ -3,38 +3,31 @@
 namespace aui {
 
 void TreeModel::TreeNodesAdding(void* parent, int start, int count) {
-  for (ObserverList::iterator i = observers_.begin(); i != observers_.end();)
-    (*i++)->OnTreeNodesAdding(parent, start, count);
+  nodes_adding_signal_(parent, start, count);
 }
 
 void TreeModel::TreeNodesAdded(void* parent, int start, int count) {
-  for (ObserverList::iterator i = observers_.begin(); i != observers_.end();)
-    (*i++)->OnTreeNodesAdded(parent, start, count);
+  nodes_added_signal_(parent, start, count);
 }
 
 void TreeModel::TreeNodesDeleting(void* parent, int start, int count) {
-  for (ObserverList::iterator i = observers_.begin(); i != observers_.end();)
-    (*i++)->OnTreeNodesDeleting(parent, start, count);
+  nodes_deleting_signal_(parent, start, count);
 }
 
 void TreeModel::TreeNodesDeleted(void* parent, int start, int count) {
-  for (ObserverList::iterator i = observers_.begin(); i != observers_.end();)
-    (*i++)->OnTreeNodesDeleted(parent, start, count);
+  nodes_deleted_signal_(parent, start, count);
 }
 
 void TreeModel::TreeNodeChanged(void* node) {
-  for (ObserverList::iterator i = observers_.begin(); i != observers_.end();)
-    (*i++)->OnTreeNodeChanged(node);
+  node_changed_signal_(node);
 }
 
 void TreeModel::TreeModelResetting() {
-  for (ObserverList::iterator i = observers_.begin(); i != observers_.end();)
-    (*i++)->OnTreeModelResetting();
+  model_resetting_signal_();
 }
 
 void TreeModel::TreeModelReset() {
-  for (ObserverList::iterator i = observers_.begin(); i != observers_.end();)
-    (*i++)->OnTreeModelReset();
+  model_reset_signal_();
 }
 
 }  // namespace aui

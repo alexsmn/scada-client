@@ -2,15 +2,13 @@
 
 #include "base/any_executor.h"
 
+#include "aui/models/tree_node_model.h"
 #include "base/boost_log.h"
 #include "configuration/tree/configuration_tree_node.h"
 #include "configuration/tree/node_service_tree.h"
-#include "aui/models/tree_node_model.h"
-#include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
 
 #include <memory>
-
 
 struct ConfigurationTreeModelContext {
   AnyExecutor executor_;
@@ -19,7 +17,6 @@ struct ConfigurationTreeModelContext {
 
 class ConfigurationTreeModel : private ConfigurationTreeModelContext,
                                public aui::TreeNodeModel<ConfigurationTreeNode>,
-                               private NodeRefObserver,
                                private NodeServiceTree::Observer {
  public:
   explicit ConfigurationTreeModel(ConfigurationTreeModelContext&& context);

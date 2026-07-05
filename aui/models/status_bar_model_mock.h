@@ -12,14 +12,9 @@ class MockStatusBarModel : public StatusBarModel {
   MOCK_METHOD(std::u16string, GetPaneText, (int index), (const override));
   MOCK_METHOD(int, GetPaneSize, (int index), (const override));
 
-  MOCK_METHOD(void,
-              AddObserver,
-              (StatusBarModelObserver & observer),
-              (override));
-
-  MOCK_METHOD(void,
-              RemoveObserver,
-              (StatusBarModelObserver & observer),
+  MOCK_METHOD(boost::signals2::scoped_connection,
+              SubscribePanesChanged,
+              (const PanesChangedCallback& callback),
               (override));
 };
 

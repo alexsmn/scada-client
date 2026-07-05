@@ -2,9 +2,10 @@
 
 #include "common/node_state.h"
 #include "controller/node_id_set.h"
-#include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
 #include "timed_data/timed_data_spec.h"
+
+#include <boost/signals2/connection.hpp>
 
 class TimedDataService;
 
@@ -12,8 +13,7 @@ struct SelectionModelContext {
   TimedDataService& timed_data_service_;
 };
 
-class SelectionModel final : private SelectionModelContext,
-                             private NodeRefObserver {
+class SelectionModel final : private SelectionModelContext {
  public:
   explicit SelectionModel(SelectionModelContext&& context);
   SelectionModel(const SelectionModel&) = delete;
@@ -45,13 +45,17 @@ class SelectionModel final : private SelectionModelContext,
  private:
   void Reset();
 
-  // NodeRefObserver
-  virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
-  virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
+  void SubscribeNode();
+
+  void OnNodeSemanticChanged(const scada::NodeId& node_id);
+  void OnModelChanged(const scada::ModelChangeEvent& event);
 
   enum Type { EMPTY, NODE, SPEC, MULTI };
   Type type_ = EMPTY;
 
   TimedDataSpec timed_data_;
   NodeRef node_;
+
+  boost::signals2::scoped_connection node_semantic_changed_connection_;
+  boost::signals2::scoped_connection model_changed_connection_;
 };

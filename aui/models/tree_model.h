@@ -3,25 +3,52 @@
 #include "aui/color.h"
 #include "aui/models/edit_data.h"
 
-#include <set>
+#include <boost/signals2/connection.hpp>
+#include <boost/signals2/signal.hpp>
+#include <functional>
 
 namespace aui {
 
-class TreeModelObserver;
-
 class TreeModel {
  public:
+  using NodeRangeCallback =
+      std::function<void(void* parent, int start, int count)>;
+  using NodeChangedCallback = std::function<void(void* node)>;
+  using ResetCallback = std::function<void()>;
+
   TreeModel() {}
   virtual ~TreeModel() {}
 
   TreeModel(const TreeModel&) = delete;
   TreeModel& operator=(const TreeModel&) = delete;
 
-  void AddObserver(TreeModelObserver& observer) {
-    observers_.insert(&observer);
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeNodesAdding(
+      const NodeRangeCallback& callback) {
+    return nodes_adding_signal_.connect(callback);
   }
-  void RemoveObserver(TreeModelObserver& observer) {
-    observers_.erase(&observer);
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeNodesAdded(
+      const NodeRangeCallback& callback) {
+    return nodes_added_signal_.connect(callback);
+  }
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeNodesDeleting(
+      const NodeRangeCallback& callback) {
+    return nodes_deleting_signal_.connect(callback);
+  }
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeNodesDeleted(
+      const NodeRangeCallback& callback) {
+    return nodes_deleted_signal_.connect(callback);
+  }
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeNodeChanged(
+      const NodeChangedCallback& callback) {
+    return node_changed_signal_.connect(callback);
+  }
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeModelResetting(
+      const ResetCallback& callback) {
+    return model_resetting_signal_.connect(callback);
+  }
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeModelReset(
+      const ResetCallback& callback) {
+    return model_reset_signal_.connect(callback);
   }
 
   virtual void* GetRoot() = 0;
@@ -59,8 +86,6 @@ class TreeModel {
   virtual void FetchMore(void* parent) {}
 
  protected:
-  typedef std::set<TreeModelObserver*> ObserverList;
-
   void TreeNodesAdding(void* parent, int start, int count);
   void TreeNodesAdded(void* parent, int start, int count);
   void TreeNodesDeleting(void* parent, int start, int count);
@@ -69,21 +94,14 @@ class TreeModel {
   void TreeModelResetting();
   void TreeModelReset();
 
-  const ObserverList& observers() const { return observers_; }
-
  private:
-  ObserverList observers_;
-};
-
-class TreeModelObserver {
- public:
-  virtual void OnTreeNodesAdding(void* parent, int start, int count) {}
-  virtual void OnTreeNodesAdded(void* parent, int start, int count) {}
-  virtual void OnTreeNodesDeleting(void* parent, int start, int count) {}
-  virtual void OnTreeNodesDeleted(void* parent, int start, int count) {}
-  virtual void OnTreeNodeChanged(void* node) {}
-  virtual void OnTreeModelResetting() {}
-  virtual void OnTreeModelReset() {}
+  boost::signals2::signal<void(void*, int, int)> nodes_adding_signal_;
+  boost::signals2::signal<void(void*, int, int)> nodes_added_signal_;
+  boost::signals2::signal<void(void*, int, int)> nodes_deleting_signal_;
+  boost::signals2::signal<void(void*, int, int)> nodes_deleted_signal_;
+  boost::signals2::signal<void(void*)> node_changed_signal_;
+  boost::signals2::signal<void()> model_resetting_signal_;
+  boost::signals2::signal<void()> model_reset_signal_;
 };
 
 }  // namespace aui

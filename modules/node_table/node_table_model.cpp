@@ -31,9 +31,8 @@ const auto kSortDelay = 300ms;
 const aui::Color kReadOnlyCellColor = aui::Rgba{0xF0, 0xF0, 0xF0};
 
 void LogLoadFailure(const scada::Status& status) {
-  BOOST_LOG_TRIVIAL(error)
-      << "NodeTableModel startup load failed"
-      << " | Status = " << ToString(status);
+  BOOST_LOG_TRIVIAL(error) << "NodeTableModel startup load failed"
+                           << " | Status = " << ToString(status);
 }
 
 }  // namespace
@@ -47,9 +46,7 @@ NodeTableModel::NodeTableModel(AnyExecutor executor,
   row_model_.set_row_height(19);
 }
 
-NodeTableModel::~NodeTableModel() {
-  node_service_.Unsubscribe(*this);
-}
+NodeTableModel::~NodeTableModel() = default;
 
 void NodeTableModel::SetParentNode(const NodeRef& parent_node) {
   cancelation_.Cancel();
@@ -57,8 +54,8 @@ void NodeTableModel::SetParentNode(const NodeRef& parent_node) {
   parent_node_ = parent_node;
 
   CoSpawn(executor_, cancelation_,
-          [this, parent_node, cancelation = cancelation_.ref()]() mutable
-              -> Awaitable<void> {
+          [this, parent_node,
+           cancelation = cancelation_.ref()]() mutable -> Awaitable<void> {
             auto executor = executor_;
             auto property_defs =
                 co_await property_service_.GetChildPropertyDefsStatusAsync(
@@ -181,7 +178,13 @@ void NodeTableModel::UpdateRows() {
   }
 
   // Subscribe only when nodes are loaded.
-  node_service_.Subscribe(*this);
+  model_changed_connection_ = node_service_.SubscribeModelChanged(
+      [this](const scada::ModelChangeEvent& event) { OnModelChanged(event); });
+  node_semantic_changed_connection_ =
+      node_service_.SubscribeNodeSemanticChanged(
+          [this](const scada::NodeId& node_id) {
+            OnNodeSemanticChanged(node_id);
+          });
 
   Sort();
   NotifyModelChanged();
@@ -205,7 +208,8 @@ std::vector<std::pair<int, int>> NodeTableModel::FindUpdatedRanges(
     const auto& row = rows_[i];
     // E.g. TS format can update.
     if (row.node.node_id() == node_id ||
-        std::ranges::find(row.additional_targets, node_id) != row.additional_targets.end()) {
+        std::ranges::find(row.additional_targets, node_id) !=
+            row.additional_targets.end()) {
       if (!results.empty() && results.back().second + 1 == i) {
         results.back().second = i;
       } else {
@@ -321,8 +325,8 @@ void NodeTableModel::ScheduleSort() {
 
   sort_scheduled_ = true;
 
-  PostDelayedTask(
-      executor_, kSortDelay, cancelation_.Bind([this]() { ScheduleSortHelper(); }));
+  PostDelayedTask(executor_, kSortDelay,
+                  cancelation_.Bind([this]() { ScheduleSortHelper(); }));
 }
 
 void NodeTableModel::ScheduleSortHelper() {
@@ -343,16 +347,14 @@ void NodeTableModel::UpdateColumns(const PropertyDefs& property_defs) {
   {
     columns_.emplace_back(scada::AttributeId::BrowseName);
     columns.emplace_back(static_cast<int>(columns.size()),
-                         Translate("Browse Name"), 75,
-                         aui::TableColumn::LEFT);
+                         Translate("Browse Name"), 75, aui::TableColumn::LEFT);
   }
 
   // Display name
   {
     columns_.emplace_back(scada::AttributeId::DisplayName);
-    columns.emplace_back(static_cast<int>(columns.size()),
-                         Translate("Name"), 75,
-                         aui::TableColumn::LEFT);
+    columns.emplace_back(static_cast<int>(columns.size()), Translate("Name"),
+                         75, aui::TableColumn::LEFT);
   }
 
   auto AddProp = [this, &columns](const NodeRef& property_declaration,

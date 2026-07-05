@@ -155,7 +155,10 @@ MainWindow::MainWindow(MainWindowContext&& context)
   Init(*view_manager_);
   RebuildMenuBar();
 
-  ui_command_registry_.action_manager().Subscribe(*this);
+  action_changed_connection_ = ui_command_registry_.action_manager().Subscribe(
+      [this](Action& action, ActionChangeMask change_mask) {
+        OnActionChanged(action, change_mask);
+      });
 
   change_profile_connection_ = profile_.AddChangeObserver([this] {
     const MainWindowDef& prefs = GetPrefs();
@@ -165,7 +168,7 @@ MainWindow::MainWindow(MainWindowContext&& context)
 }
 
 MainWindow::~MainWindow() {
-  ui_command_registry_.action_manager().Unsubscribe(*this);
+  action_changed_connection_.disconnect();
 
   view_manager_->ClosePage();
   // TODO: Comment why explicit reset is needed.

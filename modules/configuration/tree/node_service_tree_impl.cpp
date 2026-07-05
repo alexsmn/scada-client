@@ -8,13 +8,18 @@
 #include <algorithm>
 
 NodeServiceTreeImpl::NodeServiceTreeImpl(NodeServiceTreeImplContext&& context)
-    : NodeServiceTreeImplContext{std::move(context)} {
-  node_service_.Subscribe(*this);
-}
+    : NodeServiceTreeImplContext{std::move(context)},
+      model_changed_connection_{node_service_.SubscribeModelChanged(
+          [this](const scada::ModelChangeEvent& event) {
+            OnModelChanged(event);
+          })},
+      node_semantic_changed_connection_{
+          node_service_.SubscribeNodeSemanticChanged(
+              [this](const scada::NodeId& node_id) {
+                OnNodeSemanticChanged(node_id);
+              })} {}
 
-NodeServiceTreeImpl ::~NodeServiceTreeImpl() {
-  node_service_.Unsubscribe(*this);
-}
+NodeServiceTreeImpl ::~NodeServiceTreeImpl() = default;
 
 NodeRef NodeServiceTreeImpl::GetRoot() const {
   return root_node_;

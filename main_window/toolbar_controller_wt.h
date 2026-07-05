@@ -28,8 +28,7 @@ struct ToolbarControllerContext {
   CommandHandler& commands_;
 };
 
-class ToolbarController : private ToolbarControllerContext,
-                          private ActionObserver {
+class ToolbarController : private ToolbarControllerContext {
  public:
   explicit ToolbarController(ToolbarControllerContext&& context);
   ~ToolbarController();
@@ -39,9 +38,7 @@ class ToolbarController : private ToolbarControllerContext,
   void OnSelectionChanged();
 
  private:
-  // ActionObserver
-  virtual void OnActionChanged(Action& action,
-                               ActionChangeMask change_mask) override;
+  void OnActionChanged(Action& action, ActionChangeMask change_mask);
 
   void UpdateAction(Wt::WPushButton& qaction,
                     unsigned command_id,

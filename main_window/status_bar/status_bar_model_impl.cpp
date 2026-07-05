@@ -22,15 +22,11 @@ int StatusBarModelImpl::GetPaneSize(int index) const {
   return panes_[index].size;
 }
 
-void StatusBarModelImpl::AddObserver(aui::StatusBarModelObserver& observer) {
-  observers_.AddObserver(&observer);
+boost::signals2::scoped_connection StatusBarModelImpl::SubscribePanesChanged(
+    const PanesChangedCallback& callback) {
+  return panes_changed_signal_.connect(callback);
 }
 
-void StatusBarModelImpl::RemoveObserver(aui::StatusBarModelObserver& observer) {
-  observers_.RemoveObserver(&observer);
-}
 void StatusBarModelImpl::NotifyPanesChanged(int index, int count) {
-  for (auto& o : observers_) {
-    o.OnPanesChanged(index, count);
-  }
+  panes_changed_signal_(index, count);
 }

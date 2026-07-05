@@ -9,9 +9,7 @@ namespace aui {
 
 GridModel::GridModel() {}
 
-GridModel::~GridModel() {
-  base::Check(!observers_.might_have_observers());
-}
+GridModel::~GridModel() = default;
 
 std::u16string GridModel::GetHint(int row, int column) {
   return std::u16string();
@@ -39,24 +37,40 @@ EditData GridModel::GetEditData(int row, int column) {
 
 void GridModel::HandleEditButton(int row, int column) {}
 
+boost::signals2::scoped_connection GridModel::SubscribeModelChanged(
+    const ModelChangedCallback& callback) {
+  return model_changed_signal_.connect(callback);
+}
+
+boost::signals2::scoped_connection GridModel::SubscribeRowsAdded(
+    const RowRangeCallback& callback) {
+  return rows_added_signal_.connect(callback);
+}
+
+boost::signals2::scoped_connection GridModel::SubscribeRowsRemoved(
+    const RowRangeCallback& callback) {
+  return rows_removed_signal_.connect(callback);
+}
+
+boost::signals2::scoped_connection GridModel::SubscribeRangeChanged(
+    const RangeChangedCallback& callback) {
+  return range_changed_signal_.connect(callback);
+}
+
 void GridModel::NotifyModelChanged() {
-  for (auto& o : observers_)
-    o.OnGridModelChanged(*this);
+  model_changed_signal_(*this);
 }
 
 void GridModel::NotifyRowsAdded(int first, int count) {
-  for (auto& o : observers_)
-    o.OnGridRowsAdded(*this, first, count);
+  rows_added_signal_(*this, first, count);
 }
 
 void GridModel::NotifyRowsRemoved(int first, int count) {
-  for (auto& o : observers_)
-    o.OnGridRowsRemoved(*this, first, count);
+  rows_removed_signal_(*this, first, count);
 }
 
 void GridModel::NotifyRangeChanged(const GridRange& range) {
-  for (auto& o : observers_)
-    o.OnGridRangeChanged(*this, range);
+  range_changed_signal_(*this, range);
 }
 
 void GridModel::NotifyRowsChanged(int first, int count) {

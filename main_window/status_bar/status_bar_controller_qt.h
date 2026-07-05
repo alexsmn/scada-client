@@ -14,7 +14,7 @@ class QLabel;
 class QProgressBar;
 class QStatusBar;
 
-class StatusBarController final : private aui::StatusBarModelObserver {
+class StatusBarController final {
  public:
   StatusBarController(QStatusBar& status_bar,
                       aui::StatusBarModel& model,
@@ -26,8 +26,7 @@ class StatusBarController final : private aui::StatusBarModelObserver {
  private:
   void UpdateProgressBar();
 
-  // aui::StatusBarModelObserver
-  virtual void OnPanesChanged(int index, int count) override;
+  void OnPanesChanged(int index, int count);
 
   QStatusBar& status_bar_;
   aui::StatusBarModel& model_;
@@ -38,4 +37,5 @@ class StatusBarController final : private aui::StatusBarModelObserver {
   QProgressBar* progress_bar_ = nullptr;
 
   boost::signals2::scoped_connection progress_connection_;
+  boost::signals2::scoped_connection panes_changed_connection_;
 };

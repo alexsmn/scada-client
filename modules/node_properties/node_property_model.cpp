@@ -47,25 +47,30 @@ NodePropertyModel::NodePropertyModel(PropertyService& property_service,
     : PropertyContext{std::move(context)},
       property_service_{property_service},
       node_{std::move(node)} {
-  node_service_.Subscribe(*this);
+  model_changed_connection_ = node_service_.SubscribeModelChanged(
+      [this](const scada::ModelChangeEvent& event) { OnModelChanged(event); });
+  node_semantic_changed_connection_ =
+      node_service_.SubscribeNodeSemanticChanged(
+          [this](const scada::NodeId& node_id) {
+            OnNodeSemanticChanged(node_id);
+          });
 
-  CoSpawn(executor_, [this, executor = executor_, node = node_,
-                      cancelation = cancelation_.weak_ptr()]() mutable
-                         -> Awaitable<void> {
-    co_await node.Fetch(NodeFetchStatus::NodeOnly());
-    if (cancelation.expired() || node.status().bad()) {
-      co_return;
-    }
+  CoSpawn(executor_,
+          [this, executor = executor_, node = node_,
+           cancelation = cancelation_.weak_ptr()]() mutable -> Awaitable<void> {
+            co_await node.Fetch(NodeFetchStatus::NodeOnly());
+            if (cancelation.expired() || node.status().bad()) {
+              co_return;
+            }
 
-    boost::asio::post(executor,
-                      BindCancelation(cancelation,
-                                      [this] { OnNodeFetched(); }));
-  });
+            boost::asio::post(executor, BindCancelation(cancelation, [this] {
+                                OnNodeFetched();
+                              }));
+          });
 }
 
 NodePropertyModel::~NodePropertyModel() {
   cancelation_.Cancel();
-  node_service_.Unsubscribe(*this);
 }
 
 void NodePropertyModel::OnModelChanged(const scada::ModelChangeEvent& event) {
@@ -75,7 +80,9 @@ void NodePropertyModel::OnModelChanged(const scada::ModelChangeEvent& event) {
 
   if (event.verb & scada::ModelChangeEvent::NodeDeleted) {
     cancelation_.Cancel();
-    node_service_.Unsubscribe(*this);
+    // Self-disconnect during emission is safe with Boost.Signals2.
+    model_changed_connection_.disconnect();
+    node_semantic_changed_connection_.disconnect();
     node_ = nullptr;
     node_deleted();
 

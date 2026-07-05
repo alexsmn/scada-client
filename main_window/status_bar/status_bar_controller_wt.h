@@ -2,6 +2,7 @@
 
 #include "aui/models/status_bar_model.h"
 
+#include <boost/signals2/connection.hpp>
 #include <vector>
 
 namespace aui {
@@ -12,7 +13,7 @@ class ProgressHost;
 class WLabel;
 class WProgressBar;
 
-class StatusBarController : private aui::StatusBarModelObserver {
+class StatusBarController {
  public:
   StatusBarController(aui::StatusBarModel& model, ProgressHost& progress_host);
   ~StatusBarController();
@@ -20,8 +21,7 @@ class StatusBarController : private aui::StatusBarModelObserver {
  private:
   void UpdateProgressBar();
 
-  // aui::StatusBarModelObserver
-  virtual void OnPanesChanged(int index, int count) override;
+  void OnPanesChanged(int index, int count);
 
   aui::StatusBarModel& model_;
   ProgressHost& progress_host_;
@@ -29,4 +29,6 @@ class StatusBarController : private aui::StatusBarModelObserver {
   std::vector<WLabel*> panes_;
 
   WProgressBar* progress_bar_ = nullptr;
+
+  boost::signals2::scoped_connection panes_changed_connection_;
 };

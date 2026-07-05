@@ -24,12 +24,11 @@ StatusBarController::StatusBarController(aui::StatusBarModel& model,
     panes_.emplace_back(pane);
   }*/
 
-  model_.AddObserver(*this);
+  panes_changed_connection_ = model_.SubscribePanesChanged(
+      [this](int index, int count) { OnPanesChanged(index, count); });
 }
 
-StatusBarController::~StatusBarController() {
-  model_.RemoveObserver(*this);
-}
+StatusBarController::~StatusBarController() = default;
 
 void StatusBarController::OnPanesChanged(int index, int count) {
   /*for (int i = 0; i < count; ++i)

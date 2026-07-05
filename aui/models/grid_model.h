@@ -1,11 +1,12 @@
 #pragma once
 
-#include "base/observer_list.h"
 #include "aui/models/edit_data.h"
 #include "aui/models/header_model.h"
 #include "aui/models/table_column.h"
 
-#include <cassert>
+#include <boost/signals2/connection.hpp>
+#include <boost/signals2/signal.hpp>
+#include <functional>
 #include <vector>
 
 namespace aui {
@@ -21,16 +22,11 @@ struct GridModelIndex {
 
 class GridModel {
  public:
-  class Observer {
-   public:
-    // Range has been changed.
-    virtual void OnGridModelChanged(GridModel& model) {}
-    virtual void OnGridRowsAdded(GridModel& model, int first, int count) {}
-    virtual void OnGridRowsRemoved(GridModel& model, int first, int count) {}
-
-    // Data in specified range has been changed.
-    virtual void OnGridRangeChanged(GridModel& model, const GridRange& range) {}
-  };
+  using ModelChangedCallback = std::function<void(GridModel& model)>;
+  using RowRangeCallback =
+      std::function<void(GridModel& model, int first, int count)>;
+  using RangeChangedCallback =
+      std::function<void(GridModel& model, const GridRange& range)>;
 
   GridModel();
   virtual ~GridModel();
@@ -46,7 +42,16 @@ class GridModel {
   // Invoked when `EditData.editor_type == BUTTON` and the button is clicked.
   virtual void HandleEditButton(int row, int column);
 
-  base::ObserverList<Observer>& observers() { return observers_; }
+  // Notifies after the row range has been changed wholesale.
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeModelChanged(
+      const ModelChangedCallback& callback);
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeRowsAdded(
+      const RowRangeCallback& callback);
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeRowsRemoved(
+      const RowRangeCallback& callback);
+  // Notifies after data in the specified range has been changed.
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeRangeChanged(
+      const RangeChangedCallback& callback);
 
  protected:
   void NotifyModelChanged();
@@ -56,7 +61,12 @@ class GridModel {
   void NotifyRangeChanged(const GridRange& range);
   void NotifyRowsChanged(int first, int count);
 
-  base::ObserverList<Observer> observers_;
+ private:
+  boost::signals2::signal<void(GridModel&)> model_changed_signal_;
+  boost::signals2::signal<void(GridModel&, int, int)> rows_added_signal_;
+  boost::signals2::signal<void(GridModel&, int, int)> rows_removed_signal_;
+  boost::signals2::signal<void(GridModel&, const GridRange&)>
+      range_changed_signal_;
 };
 
 }  // namespace aui

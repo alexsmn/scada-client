@@ -1,20 +1,16 @@
 ﻿#include "events/event_view.h"
 
 #include "aui/dialog_service.h"
-#include "aui/translation.h"
 #include "aui/models/table_column.h"
 #include "aui/prompt_dialog.h"
 #include "aui/resource_error.h"
 #include "aui/table.h"
+#include "aui/translation.h"
 #include "base/awaitable.h"
 #include "base/excel.h"
-#include "base/u16format.h"
 #include "base/format.h"
+#include "base/u16format.h"
 #include "base/utf_convert.h"
-#include "ui/common/client_utils.h"
-#include "resources/common_resources.h"
-#include "modules/time_range/time_range_dialog.h"
-#include "controller/contents_observer.h"
 #include "controller/controller_delegate.h"
 #include "controller/selection_model.h"
 #include "events/current_event_model.h"
@@ -22,9 +18,12 @@
 #include "events/historical_event_model.h"
 #include "events/local_event_model.h"
 #include "model/node_id_util.h"
+#include "modules/time_range/time_range_dialog.h"
 #include "node_service/node_service.h"
 #include "profile/profile.h"
 #include "profile/window_definition_util.h"
+#include "resources/common_resources.h"
+#include "ui/common/client_utils.h"
 
 namespace {
 
@@ -60,8 +59,7 @@ scada::EventSeverity ParseSeverity(std::u16string_view str) {
   unsigned severity = 0;
   if (!Parse(str, severity) || severity > scada::kSeverityMax) {
     throw ResourceError{u16format(L"Enter a number from {} to {}.",
-                                    scada::kSeverityMin,
-                                    scada::kSeverityMax)};
+                                  scada::kSeverityMin, scada::kSeverityMax)};
   }
 
   // TODO: Checked cast.
@@ -86,9 +84,10 @@ EventView::EventView(const ControllerContext& context,
       {EventColumnValue, Translate("Value"), 100, aui::TableColumn::RIGHT},
       {EventColumnMessage, Translate("Message"), 300, aui::TableColumn::LEFT},
       {EventColumnUser, Translate("User"), 100, aui::TableColumn::LEFT},
-      {EventColumnAckUser, Translate("Acknowledged By"), 100, aui::TableColumn::LEFT},
-      {EventColumnAckTime, Translate("Acknowledge Time"), 150, aui::TableColumn::LEFT,
-       aui::TableColumn::DataType::DateTime},
+      {EventColumnAckUser, Translate("Acknowledged By"), 100,
+       aui::TableColumn::LEFT},
+      {EventColumnAckTime, Translate("Acknowledge Time"), 150,
+       aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
   };
 
   size_t count = std::size(kEventViewColumns);
@@ -240,8 +239,8 @@ void EventView::Save(WindowDefinition& definition) {
 void EventView::ExportToExcel() {
   int rows = model_->GetRowCount();
   if (!rows) {
-    dialog_service_.RunMessageBox(Translate("No data to export."), Translate("Export"),
-                                  MessageBoxMode::Info);
+    dialog_service_.RunMessageBox(Translate("No data to export."),
+                                  Translate("Export"), MessageBoxMode::Info);
     return;
   }
 
@@ -266,8 +265,8 @@ void EventView::ExportToExcel() {
     excel.SetVisible();
 
   } catch (HRESULT /*err*/) {
-    dialog_service_.RunMessageBox(Translate("Export error."), Translate("Export"),
-                                  MessageBoxMode::Error);
+    dialog_service_.RunMessageBox(Translate("Export error."),
+                                  Translate("Export"), MessageBoxMode::Error);
   }
 }
 
@@ -315,9 +314,9 @@ Awaitable<void> EventView::SelectSeverityAsync() {
 
   // Wait for the prompt dialog. A user cancel surfaces as a rejection here,
   // matching the old ignored asynchronous result.
-  auto text = co_await RunPromptDialog(dialog_service_, prompt,
-                                       /*title=*/kFilter,
-                                       WideFormat(initial_severity));
+  auto text =
+      co_await RunPromptDialog(dialog_service_, prompt,
+                               /*title=*/kFilter, WideFormat(initial_severity));
 
   // Parse + apply. Preserve the original behavior where a bad value
   // pops up an error message box via `ShowResourceError` and then

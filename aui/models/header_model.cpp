@@ -6,14 +6,22 @@ namespace aui {
 
 // HeaderModel ----------------------------------------------------------------
 
+boost::signals2::scoped_connection HeaderModel::SubscribeModelChanged(
+    const ModelChangedCallback& callback) {
+  return model_changed_signal_.connect(callback);
+}
+
+boost::signals2::scoped_connection HeaderModel::SubscribeSizeChanged(
+    const SizeChangedCallback& callback) {
+  return size_changed_signal_.connect(callback);
+}
+
 void HeaderModel::NotifyModelChanged() {
-  for (auto& o : observers_)
-    o.OnModelChanged(*this);
+  model_changed_signal_(*this);
 }
 
 void HeaderModel::NotifySizeChanged(int index) {
-  for (auto& o : observers_)
-    o.OnSizeChanged(*this, index);
+  size_changed_signal_(*this, index);
 }
 
 // ColumnHeaderModel ----------------------------------------------------------

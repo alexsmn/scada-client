@@ -83,12 +83,27 @@ FavouritesTreeModel::FavouritesTreeModel(Favourites& favourites)
     : TreeNodeModel<FavouritesNode>(
           std::make_unique<FavouritesRootNode>(favourites)),
       favourites_(favourites) {
-  favourites_.AddObserver(*this);
+  favourites_connections_.push_back(favourites_.SubscribeFolderAdded(
+      [this](const Page& folder) { OnFolderAdded(folder); }));
+  favourites_connections_.push_back(favourites_.SubscribeFolderDeleted(
+      [this](const Page& folder) { OnFolderDeleted(folder); }));
+  favourites_connections_.push_back(favourites_.SubscribeFolderChanged(
+      [this](const Page& folder) { OnFolderChanged(folder); }));
+  favourites_connections_.push_back(favourites_.SubscribeFavouriteAdded(
+      [this](const Page& folder, const WindowDefinition& window) {
+        OnFavouriteAdded(folder, window);
+      }));
+  favourites_connections_.push_back(favourites_.SubscribeFavouriteDeleted(
+      [this](const Page& folder, const WindowDefinition& window) {
+        OnFavouriteDeleted(folder, window);
+      }));
+  favourites_connections_.push_back(favourites_.SubscribeWindowChanged(
+      [this](const Page& folder, const WindowDefinition& window) {
+        OnWindowChanged(folder, window);
+      }));
 }
 
-FavouritesTreeModel::~FavouritesTreeModel() {
-  favourites_.RemoveObserver(*this);
-}
+FavouritesTreeModel::~FavouritesTreeModel() = default;
 
 void FavouritesTreeModel::OnFavouriteAdded(const Page& folder,
                                            const WindowDefinition& window_def) {

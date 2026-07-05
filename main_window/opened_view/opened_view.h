@@ -96,8 +96,11 @@ class OpenedView final : private OpenedViewContext,
   virtual void OpenView(const WindowDefinition& def) override;
   virtual void ExecuteDefaultNodeCommand(const NodeRef& node) override;
   virtual ContentsModel* GetActiveContentsModel() override;
-  virtual void AddContentsObserver(ContentsObserver& observer) override;
-  virtual void RemoveContentsObserver(ContentsObserver& observer) override;
+  [[nodiscard]] virtual boost::signals2::scoped_connection
+  SubscribeContentsChanged(const ContentsChangedCallback& callback) override;
+  [[nodiscard]] virtual boost::signals2::scoped_connection
+  SubscribeContainedItemChanged(
+      const ContainedItemChangedCallback& callback) override;
   virtual void Focus() override;
 
   std::unique_ptr<Controller> controller_;

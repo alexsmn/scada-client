@@ -1,17 +1,16 @@
 #pragma once
 
-#include "aui/models/table_model_observer.h"
-
 #include <Wt/WAbstractTableModel.h>
+#include <boost/signals2/connection.hpp>
 #include <memory>
+#include <vector>
 
 namespace aui {
 
 class TableModel;
 struct TableColumn;
 
-class TableModelAdapter : public Wt::WAbstractTableModel,
-                          private TableModelObserver {
+class TableModelAdapter : public Wt::WAbstractTableModel {
  public:
   TableModelAdapter(std::shared_ptr<TableModel> model,
                     std::vector<TableColumn> columns);
@@ -41,17 +40,20 @@ class TableModelAdapter : public Wt::WAbstractTableModel,
   virtual Wt::WFlags<Wt::ItemFlag> flags(
       const Wt::WModelIndex& index) const override;
 
-  // TableModelObserver
-  virtual void OnModelChanged() override;
-  virtual void OnItemsChanged(int first, int count) override;
-  virtual void OnItemsAdding(int first, int count) override;
-  virtual void OnItemsAdded(int first, int count) override;
-  virtual void OnItemsRemoving(int first, int count) override;
-  virtual void OnItemsRemoved(int first, int count) override;
+  void OnModelChanged();
+  void OnItemsChanged(int first, int count);
+  void OnItemsAdding(int first, int count);
+  void OnItemsAdded(int first, int count);
+  void OnItemsRemoving(int first, int count);
+  void OnItemsRemoved(int first, int count);
 
  private:
+  void ConnectModel();
+
   const std::shared_ptr<TableModel> model_;
   std::vector<TableColumn> columns_;
+
+  std::vector<boost::signals2::scoped_connection> model_connections_;
 };
 
 }  // namespace aui

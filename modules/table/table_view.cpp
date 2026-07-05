@@ -1,22 +1,21 @@
 ﻿#include "modules/table/table_view.h"
 
+#include "app/string_const.h"
 #include "aui/dialog_service.h"
-#include "aui/translation.h"
 #include "aui/table.h"
-#include "ui/common/client_utils.h"
+#include "aui/translation.h"
 #include "common/formula_util.h"
-#include "resources/common_resources.h"
-#include "modules/table/table_model.h"
-#include "modules/table/table_row.h"
-#include "controller/contents_observer.h"
 #include "controller/controller_delegate.h"
 #include "controller/selection_model.h"
 #include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
+#include "modules/table/table_model.h"
+#include "modules/table/table_row.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "profile/profile.h"
-#include "app/string_const.h"
+#include "resources/common_resources.h"
+#include "ui/common/client_utils.h"
 
 // TableView
 
@@ -39,7 +38,8 @@ TableView::TableView(const ControllerContext& context)
        aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
       {TableModel::COLUMN_CHANGE_TIME, Translate("Change Time"), 170,
        aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
-      {TableModel::COLUMN_EVENT, Translate("Event"), 200, aui::TableColumn::LEFT},
+      {TableModel::COLUMN_EVENT, Translate("Event"), 200,
+       aui::TableColumn::LEFT},
   };
 
   // cppcheck-suppress noCopyConstructor

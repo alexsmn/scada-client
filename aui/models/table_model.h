@@ -1,11 +1,12 @@
 #pragma once
 
 #include "aui/models/table_column.h"
-#include "base/observer_list.h"
+
+#include <boost/signals2/connection.hpp>
+#include <boost/signals2/signal.hpp>
+#include <functional>
 
 namespace aui {
-
-class TableModelObserver;
 
 struct TableCell {
   int row = 0;
@@ -18,6 +19,9 @@ struct TableCell {
 
 class TableModel {
  public:
+  using ModelChangedCallback = std::function<void()>;
+  using ItemRangeCallback = std::function<void(int first, int count)>;
+
   TableModel();
   virtual ~TableModel();
 
@@ -37,7 +41,20 @@ class TableModel {
   virtual void Sort(int column_id, bool ascending);
   virtual int CompareCells(int row1, int row2, int column_id);
 
-  base::ObserverList<TableModelObserver>& observers() { return observers_; }
+  // Notifies after the row range has been changed wholesale.
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeModelChanged(
+      const ModelChangedCallback& callback);
+  // Notifies after data in the specified range has been changed.
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeItemsChanged(
+      const ItemRangeCallback& callback);
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeItemsAdding(
+      const ItemRangeCallback& callback);
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeItemsAdded(
+      const ItemRangeCallback& callback);
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeItemsRemoving(
+      const ItemRangeCallback& callback);
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeItemsRemoved(
+      const ItemRangeCallback& callback);
 
  protected:
   struct ScopedItemsAdding {
@@ -73,7 +90,13 @@ class TableModel {
   void NotifyItemsRemoving(int first, int count);
   void NotifyItemsRemoved(int first, int count);
 
-  base::ObserverList<TableModelObserver> observers_;
+ private:
+  boost::signals2::signal<void()> model_changed_signal_;
+  boost::signals2::signal<void(int, int)> items_changed_signal_;
+  boost::signals2::signal<void(int, int)> items_adding_signal_;
+  boost::signals2::signal<void(int, int)> items_added_signal_;
+  boost::signals2::signal<void(int, int)> items_removing_signal_;
+  boost::signals2::signal<void(int, int)> items_removed_signal_;
 };
 
 }  // namespace aui

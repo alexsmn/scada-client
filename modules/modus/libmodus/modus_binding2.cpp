@@ -141,9 +141,10 @@ bool ModusBinding2::SetStyles(unsigned styles) {
     auto* style = library.GetStyle(static_cast<StyleId>(i));
     auto mask = 1 << i;
     if (added & mask)
-      style->AddAnimationObserver(*this);
+      style_connections_[i] =
+          style->SubscribeAnimationStep([this] { OnAnimationStep(); });
     else if (removed & mask)
-      style->RemoveAnimationObserver(*this);
+      style_connections_.erase(i);
   }
 
   styles_ = styles;

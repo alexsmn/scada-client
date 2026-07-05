@@ -5,7 +5,6 @@
 #include "base/boost_log.h"
 #include "base/check.h"
 #include "controller/contents_model.h"
-#include "controller/contents_observer.h"
 #include "controller/controller.h"
 #include "controller/selection_model.h"
 #include "controller/window_info.h"
@@ -179,8 +178,10 @@ void BaseMainWindow::SetActiveDataView(OpenedView* view) {
 
   if (active_data_view_) {
     auto* contents = active_data_view_->controller().GetContentsModel();
-    if (contents)
-      contents->contents_observer = nullptr;
+    if (contents) {
+      contents->contents_changed_handler = nullptr;
+      contents->contained_item_changed_handler = nullptr;
+    }
   }
 
   active_data_view_ = view;
@@ -191,7 +192,13 @@ void BaseMainWindow::SetActiveDataView(OpenedView* view) {
         active_data_view_ ? active_data_view_->controller().GetContentsModel()
                           : nullptr;
     if (contents) {
-      contents->contents_observer = this;
+      contents->contents_changed_handler = [this](const NodeIdSet& item_ids) {
+        OnContentsChanged(item_ids);
+      };
+      contents->contained_item_changed_handler =
+          [this](const scada::NodeId& item_id, bool added) {
+            OnContainedItemChanged(item_id, added);
+          };
       if (!view_manager_->is_closing_page()) {
         OnContentsChanged(contents->GetContainedItems());
         set = true;
@@ -340,24 +347,25 @@ void BaseMainWindow::SetCurrentPageTitle(std::u16string_view title) {
   UpdateTitle();
 }
 
-void BaseMainWindow::AddContentsObserver(ContentsObserver& observer) {
-  contents_observers_.AddObserver(&observer);
+boost::signals2::scoped_connection BaseMainWindow::SubscribeContentsChanged(
+    const ContentsChangedCallback& callback) {
+  return contents_changed_signal_.connect(callback);
 }
 
-void BaseMainWindow::RemoveContentsObserver(ContentsObserver& observer) {
-  contents_observers_.RemoveObserver(&observer);
+boost::signals2::scoped_connection
+BaseMainWindow::SubscribeContainedItemChanged(
+    const ContainedItemChangedCallback& callback) {
+  return contained_item_changed_signal_.connect(callback);
 }
 
 void BaseMainWindow::OnContentsChanged(
     const std::set<scada::NodeId>& item_ids) {
-  for (auto& o : contents_observers_)
-    o.OnContentsChanged(item_ids);
+  contents_changed_signal_(item_ids);
 }
 
 void BaseMainWindow::OnContainedItemChanged(const scada::NodeId& item_id,
                                             bool added) {
-  for (auto& o : contents_observers_)
-    o.OnContainedItemChanged(item_id, added);
+  contained_item_changed_signal_(item_id, added);
 }
 
 void BaseMainWindow::SplitView(OpenedViewInterface& view, bool vertically) {
