@@ -1,6 +1,7 @@
 #include "export/configuration/diff_report.h"
 
 #include "aui/resource_error.h"
+#include "base/check.h"
 #include "base/path_service.h"
 #include "base/utf_convert.h"
 #ifdef _WIN32
@@ -85,8 +86,8 @@ void PrintRefs(NodeService& node_service,
                std::span<const scada::ReferenceDescription> refs,
                u16ostream& report) {
   for (const auto& r : refs) {
-    assert(!r.reference_type_id.is_null());
-    assert(!r.node_id.is_null());
+    base::Check(!r.reference_type_id.is_null());
+    base::Check(!r.node_id.is_null());
     auto ref_name = GetDisplayName(node_service, r.reference_type_id);
     auto target_name = GetDisplayName(node_service, r.node_id);
     report << ToString16(ref_name) << u" = " << ToString16(target_name)

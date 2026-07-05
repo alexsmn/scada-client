@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/any_executor.h"
+#include "base/check.h"
 
 #include "base/awaitable.h"
 #include "base/boost_log.h"
@@ -72,7 +73,7 @@ inline void HistoricalEventModel::Update() {
 
   BOOST_LOG_TRIVIAL(info) << "Query events from " << FormatTime(from).c_str();
 
-  assert(!request_running_);
+  base::Check(!request_running_);
   request_running_ = true;
 
   CoSpawn(executor_,
@@ -102,10 +103,9 @@ inline Awaitable<void> HistoricalEventModel::UpdateAsync(
 
 inline void HistoricalEventModel::OnHistoryReadEventsCompleted(
     scada::HistoryReadEventsResult&& result) {
-  assert(request_running_);
-  // Only acked events were requested.
-  assert(std::ranges::all_of(
-      result.events, [](const scada::Event& event) { return event.acked; }));
+  base::Check(request_running_);
+  // Only acked events were requested, but the server response is external
+  // data, so this is not enforced here.
 
   historical_events_.assign(std::make_move_iterator(result.events.begin()),
                             std::make_move_iterator(result.events.end()));

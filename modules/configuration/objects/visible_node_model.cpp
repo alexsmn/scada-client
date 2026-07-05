@@ -1,5 +1,6 @@
 #include "configuration/objects/visible_node_model.h"
 
+#include "base/check.h"
 #include "configuration/tree/configuration_tree_model.h"
 #include "model/data_items_node_ids.h"
 #include "profile/profile.h"
@@ -84,7 +85,7 @@ const VisibleNode* VisibleNodeModel::GetNode(void* tree_node) const {
 // VisibleNode
 
 VisibleNode::~VisibleNode() {
-  assert(!change_handler_);
+  base::Check(!change_handler_);
 }
 
 void VisibleNode::SetChangeHandler(ChangeHandler change_handler) {
@@ -155,7 +156,7 @@ DataItemVisibleNode::DataItemVisibleNode(TimedDataService& timed_data_service,
 }
 
 void DataItemVisibleNode::OnBlink(bool state) {
-  assert(alerting_);
+  base::Check(alerting_);
   NotifyChanged();
 }
 

@@ -1,7 +1,5 @@
 ﻿#include "vidicon/display/activex/qt/vidicon_display_activex_view.h"
 
-#include <cassert>
-
 #include "base/win/scoped_bstr.h"
 #include "filesystem/file_util.h"
 #include "profile/window_definition.h"
@@ -75,7 +73,10 @@ std::unique_ptr<UiView> VidiconDisplayActiveXView::Init(
     ax_widget->queryInterface(IID_PPV_ARGS(&view));
     if (view) {
       HRESULT res = view->SetClient(&vidicon_client_.teleclient());
-      assert(SUCCEEDED(res));
+      if (FAILED(res)) {
+        // External ActiveX component failure; the display stays
+        // disconnected. TODO: Log.
+      }
     }
 
     form_->put_AutoStartRuntime(VARIANT_TRUE);

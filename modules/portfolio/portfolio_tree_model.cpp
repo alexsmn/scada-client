@@ -1,8 +1,9 @@
 #include "portfolio/portfolio_tree_model.h"
 
-#include "portfolio/portfolio.h"
+#include "base/check.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
+#include "portfolio/portfolio.h"
 
 void PortfolioTreeNode::SetText(int column_id, const std::u16string& title) {
   if (!is_portfolio())
@@ -87,14 +88,14 @@ void PortfolioTreeModel::Portfolio_OnUpdate(Portfolio& portfolio) {
 
 void PortfolioTreeModel::Portfolio_OnDelete(Portfolio& portfolio) {
   PortfolioTreeNode* node = FindPortfolioNode(portfolio);
-  assert(node);
+  base::Check(node);
   Remove(*root(), root()->IndexOfChild(*node));
 }
 
 void PortfolioTreeModel::Portfolio_OnUpdateItem(Portfolio& portfolio,
                                                 const scada::NodeId& node_id) {
   PortfolioTreeNode* portfolio_node = FindPortfolioNode(portfolio);
-  assert(portfolio_node);
+  base::Check(portfolio_node);
 
   PortfolioTreeNode* node = FindItemNode(*portfolio_node, node_id);
   if (!node)
@@ -108,10 +109,10 @@ void PortfolioTreeModel::Portfolio_OnUpdateItem(Portfolio& portfolio,
 void PortfolioTreeModel::Portfolio_OnDeleteItem(Portfolio& portfolio,
                                                 const scada::NodeId& node_id) {
   PortfolioTreeNode* portfolio_node = FindPortfolioNode(portfolio);
-  assert(portfolio_node);
+  base::Check(portfolio_node);
 
   PortfolioTreeNode* node = FindItemNode(*portfolio_node, node_id);
-  assert(node);
+  base::Check(node);
 
   Remove(*portfolio_node, portfolio_node->IndexOfChild(*node));
 }

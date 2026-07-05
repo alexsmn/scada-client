@@ -1,6 +1,7 @@
 #include "aui/qt/dialog_service_impl_qt.h"
 
 #include "aui/qt/dialog_util.h"
+#include "base/check.h"
 
 #include <QAbstractButton>
 #include <QFileDialog>
@@ -22,7 +23,7 @@ std::string JoinStrings(std::span<const std::string_view> strings,
 }
 
 QString MakeFilter(const DialogService::Filter& filter) {
-  assert(!filter.extensions.empty());
+  base::Check(!filter.extensions.empty());
 
   QString result = QString::fromUtf16(filter.title.data(), filter.title.size());
   result += " (";
@@ -87,8 +88,7 @@ Awaitable<MessageBoxResult> DialogServiceImplQt::RunMessageBox(
       break;
 
     default:
-      assert(false);
-      break;
+      base::NotReached();
   }
 
   if (mode == MessageBoxMode::QuestionYesNoDefaultNo)

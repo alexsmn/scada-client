@@ -1,5 +1,6 @@
 ﻿#include "graph/graph_view.h"
 
+#include "base/check.h"
 #include "common/formula_util.h"
 #include "controller/controller_delegate.h"
 #include "controller/selection_model.h"
@@ -213,8 +214,7 @@ void GraphView::Save(WindowDefinition& definition) {
 
 void GraphView::DeleteSelectedPane() {
   MetrixGraph::MetrixPane* pane = graph_->selected_pane();
-  assert(pane);
-
+  // No pane selected (user selection); nothing to delete.
   if (!pane)
     return;
 
@@ -416,8 +416,7 @@ void GraphView::ToggleLineProperty(unsigned command_id) {
       line->set_stepped(!line->stepped());
       break;
     default:
-      assert(false);
-      return;
+      base::NotReached();
   }
 
   controller_delegate_.SetModified(true);

@@ -2,6 +2,7 @@
 
 #include "aui/translation.h"
 #include "base/awaitable.h"
+#include "base/check.h"
 #include "configuration/tree/configuration_tree_model.h"
 #include "model/node_id_util.h"
 
@@ -38,7 +39,7 @@ ConfigurationTreeNode::~ConfigurationTreeNode() {
   auto [first, last] = model_.tree_node_map_.equal_range(node_.node_id());
   auto i =
       std::find_if(first, last, [this](auto& p) { return p.second == this; });
-  assert(i != last);
+  base::Check(i != last);
   model_.tree_node_map_.erase(i);
 }
 
@@ -83,8 +84,8 @@ bool ConfigurationTreeNode::CanFetchMore() const {
 }
 
 void ConfigurationTreeNode::FetchMore() {
-  assert(node_);
-  assert(!children_requested_);
+  base::Check(node_);
+  base::Check(!children_requested_);
 
   LOG_INFO(model_.logger_) << "Load children"
                            << LOG_TAG("NodeId",

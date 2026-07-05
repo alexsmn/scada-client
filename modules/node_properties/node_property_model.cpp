@@ -1,7 +1,9 @@
 ﻿#include "modules/node_properties/node_property_model.h"
 
-#include "base/awaitable.h"
+#include "app/string_const.h"
 #include "aui/translation.h"
+#include "base/awaitable.h"
+#include "base/check.h"
 #include "model/scada_node_ids.h"
 #include "net/net_executor_adapter.h"
 #include "node_service/node_awaitable.h"
@@ -9,7 +11,6 @@
 #include "properties/property_definition.h"
 #include "properties/property_service.h"
 #include "scada/event.h"
-#include "app/string_const.h"
 
 #include <boost/asio/post.hpp>
 
@@ -124,7 +125,7 @@ void NodePropertyModel::Update() {
   }
 
   if (const auto& type_definition = node_.type_definition()) {
-    assert(type_definition.fetched());
+    base::Check(type_definition.fetched());
 
     for (const auto& [prop_decl, prop_def] :
          property_service_.GetTypePropertyDefs(type_definition)) {

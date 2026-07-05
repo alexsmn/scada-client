@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cassert>
+#include "base/check.h"
 
 class CommandHandler {
  public:
@@ -12,5 +12,5 @@ class CommandHandler {
 
   virtual bool IsCommandChecked(unsigned command_id) const { return false; }
 
-  virtual void ExecuteCommand(unsigned command_id) { assert(false); }
+  virtual void ExecuteCommand(unsigned command_id) { base::NotReached(); }
 };

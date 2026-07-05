@@ -19,8 +19,8 @@ class DisplayWidget : public GdiWidget2 {
               QString::fromWCharArray(command_name.data(), command_name.size()),
               *qargs);
         } else {
-          // TODO: Log.
-          assert(false);
+          // Display command arguments are external data; ignore unsupported
+          // argument types. TODO: Log.
         }
       }
     });

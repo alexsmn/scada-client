@@ -6,6 +6,7 @@
 #include "address_space/test/scada_test_address_space.h"
 #include "address_space/type_definition.h"
 #include "aui/dialog_service_mock.h"
+#include "base/check.h"
 #include "base/test/awaitable_test.h"
 #include "base/u16format.h"
 #include "common/formula_util.h"
@@ -166,8 +167,8 @@ PropertyDefsTest::PropertyDefsTest() {
             .set_node_class(scada::NodeClass::Object)
             .set_type_definition_id(data_items::id::DataGroupType)
             .set_parent(scada::id::Organizes, data_items::id::DataItems));
-    assert(status);
-    assert(node_ptr);
+    base::Check(status);
+    base::Check(node_ptr);
 
     scada::AddReference(address_space, data_items::id::HasDevice, data_group_id,
                         device_id);
@@ -181,8 +182,8 @@ NodeRef PropertyDefsTest::CreateDataItem(std::string_view channel_path) {
           .set_node_class(scada::NodeClass::Variable)
           .set_type_definition_id(data_items::id::DiscreteItemType)
           .set_parent(scada::id::Organizes, data_group_id));
-  assert(status);
-  assert(node_ptr);
+  base::Check(status);
+  base::Check(node_ptr);
 
   scada::SetPropertyValue(*node_ptr, data_items::id::DataItemType_Input1,
                           scada::String{channel_path});

@@ -28,7 +28,8 @@ MessageBoxResult ToMessageBoxResult(Wt::StandardButton button) {
     case Wt::StandardButton::No:
       return MessageBoxResult::No;
     default:
-      assert(false);
+      // Any other framework-provided button (e.g. cancel/escape) maps to
+      // Cancel.
       return MessageBoxResult::Cancel;
   }
 }

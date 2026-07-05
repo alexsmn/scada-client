@@ -1,10 +1,11 @@
 ﻿#include "configuration/objects/object_tree_model.h"
 
 #include "aui/translation.h"
+#include "base/check.h"
 #include "configuration/tree/node_service_tree_impl.h"
-#include "scada/standard_node_ids.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/node_util.h"
+#include "scada/standard_node_ids.h"
 
 namespace {
 
@@ -156,7 +157,7 @@ Awaitable<void> ObjectTreeModel::CompleteVisibleNodeFetchAsync(
 
 std::shared_ptr<VisibleNode> ObjectTreeModel::CreateFetchedVisibleNode(
     const NodeRef& node) {
-  assert(node.fetched());
+  base::Check(node.fetched());
 
   if (IsInstanceOf(node, data_items::id::DataItemType)) {
     return std::make_shared<DataItemVisibleNode>(timed_data_service_,

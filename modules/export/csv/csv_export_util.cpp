@@ -16,7 +16,7 @@
 namespace {
 
 bool Convert(const scada::Variant& source, base::win::ScopedVariant& target) {
-  assert(!source.is_array());
+  // Values come from the server; arrays are not supported for CSV export.
   if (source.is_array())
     return false;
 
@@ -66,7 +66,7 @@ bool Convert(const scada::Variant& source, base::win::ScopedVariant& target) {
       target.Set(static_cast<DATE>(source.get<scada::DateTime>().ToDoubleT()));
       return true;
     default:
-      assert(false);
+      // Server value of an unsupported type; skip it.
       return false;
   }
 }

@@ -1,5 +1,7 @@
 #include "core/progress_host_impl.h"
 
+#include "base/check.h"
+
 namespace {
 
 void Merge(const ProgressStatus& from, ProgressStatus& to) {
@@ -62,7 +64,7 @@ boost::signals2::scoped_connection ProgressHostImpl::Subscribe(
 void ProgressHostImpl::RemoveRunningProgressImpl(
     RunningProgressImpl& running_progress_impl) {
   auto i = std::ranges::find(running_progress_impls_, &running_progress_impl);
-  assert(i != running_progress_impls_.end());
+  base::Check(i != running_progress_impls_.end());
   if (i != running_progress_impls_.end())
     running_progress_impls_.erase(i);
 

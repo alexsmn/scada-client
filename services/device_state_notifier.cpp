@@ -1,5 +1,6 @@
 #include "device_state_notifier.h"
 
+#include "base/check.h"
 #include "common/formula_util.h"
 #include "model/devices_node_ids.h"
 #include "timed_data/timed_data_service.h"
@@ -27,8 +28,8 @@ DeviceStateNotifier::DeviceStateNotifier(TimedDataService& timed_data_service,
                                          const NodeRef& device,
                                          Callback callback)
     : callback_{std::move(callback)} {
-  assert(device);
-  assert(device.fetched());
+  base::Check(device);
+  base::Check(device.fetched());
 
   LOG_BIND_TAG(logger_, "DeviceId", ToString(device.node_id()));
 
@@ -54,7 +55,7 @@ DeviceStateNotifier::DeviceStateNotifier(TimedDataService& timed_data_service,
           UpdateDeviceState(true);
         };
 
-    assert(!component.node_id().is_null());
+    base::Check(!component.node_id().is_null());
     spec.Connect(timed_data_service, component);
   }
 

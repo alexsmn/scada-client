@@ -10,8 +10,8 @@ inline std::optional<QVariant> ToQVariant(const VARIANT& v) {
     case VT_BSTR:
       return QVariant{QString::fromWCharArray(v.bstrVal)};
     default:
-      // TODO: Add support for all types.
-      assert(false);
+      // VARIANT values come from the external display component; reject
+      // unsupported types. TODO: Add support for all types.
       return std::nullopt;
   }
 }

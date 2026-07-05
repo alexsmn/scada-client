@@ -4,6 +4,7 @@
 #include "aui/prompt_dialog.h"
 #include "aui/translation.h"
 #include "base/boost_log.h"
+#include "base/check.h"
 #include "common/master_data_services.h"
 #include "controller/action_manager.h"
 #include "controller/command_registry.h"
@@ -56,8 +57,8 @@ std::unique_ptr<MainWindow> CreateMainWindow(MainWindowContext&& context) {
 }
 #elif defined(UI_WT)
 std::unique_ptr<MainWindow> CreateMainWindow(MainWindowContext&& context) {
-  assert(Wt::WApplication::instance());
-  assert(Wt::WApplication::instance()->root());
+  base::Check(Wt::WApplication::instance());
+  base::Check(Wt::WApplication::instance()->root());
   return std::make_unique<MainWindow>(*Wt::WApplication::instance()->root(),
                                       std::move(context));
 }
@@ -381,7 +382,7 @@ void RegisterMainWindowCommandActions(
 
 MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
     : MainWindowModuleContext{std::move(context)} {
-  assert(scada_services_.session_service);
+  base::Check(scada_services_.session_service);
 
   default_node_commands_.AddHandler(
       std::bind_front(&::ExecuteDefaultNodeCommand, executor_));
@@ -429,7 +430,7 @@ MainWindowModule::~MainWindowModule() {}
 MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
   auto main_command_router_factory = [this](MainWindowInterface& main_window,
                                             DialogService& dialog_service) {
-    assert(scada_services_.session_service);
+    base::Check(scada_services_.session_service);
     return std::make_unique<MainWindowCommandRouter>(
         MainWindowCommandRouterContext{executor_, main_window, dialog_service,
                                        *scada_services_.session_service,
@@ -440,7 +441,7 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
       [this](MainWindowInterface& main_window, DialogService& dialog_service,
              ViewManager& view_manager, CommandHandler& global_commands,
              aui::MenuModel& context_menu_model) {
-        assert(scada_services_.session_service);
+        base::Check(scada_services_.session_service);
 
         return std::make_unique<MainMenuModel>(MainMenuContext{
             .executor_ = executor_,
@@ -465,7 +466,7 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
         main_window, ui_command_registry_.command_manager(), command_handler);
   };
 
-  assert(scada_services_.session_service);
+  base::Check(scada_services_.session_service);
 
   auto status_bar_model =
       StatusBarModelBuilder{executor_,
@@ -477,7 +478,7 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
           .Build();
 
   auto connection_info_provider = [this] {
-    assert(scada_services_.session_service);
+    base::Check(scada_services_.session_service);
     return scada_services_.session_service->GetHostName();
   };
 
@@ -538,7 +539,7 @@ std::unique_ptr<OpenedView> MainWindowModule::CreateOpenedView(
 
   opened_view->Init();
 
-  assert(scada_services_.session_service);
+  base::Check(scada_services_.session_service);
 
   auto opened_view_commands =
       std::make_unique<OpenedViewCommandRouter>(OpenedViewCommandRouterContext{

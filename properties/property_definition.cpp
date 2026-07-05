@@ -44,7 +44,11 @@ aui::EditData PropertyDefinition::GetPropertyEditor(
   if (!property_declaration)
     return aui::EditData{aui::EditData::EditorType::NONE};
 
-  assert(property_declaration.node_class() == scada::NodeClass::Variable);
+  // The type system comes from the server; only variable declarations are
+  // editable as text.
+  if (property_declaration.node_class() != scada::NodeClass::Variable)
+    return aui::EditData{aui::EditData::EditorType::NONE};
+
   return aui::EditData{aui::EditData::EditorType::TEXT};
 }
 

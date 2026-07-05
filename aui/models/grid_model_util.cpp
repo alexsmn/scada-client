@@ -1,16 +1,17 @@
 #include "aui/models/grid_model_util.h"
 
-#include "base/u16format.h"
 #include "aui/models/grid_model.h"
 #include "aui/models/grid_range.h"
+#include "base/check.h"
+#include "base/u16format.h"
 
 namespace aui {
 
 // Range utils.
 
 void SetFirstRow(GridRange& range, int row) {
-  assert(row >= 0);
-  assert(row <= range.last_row());
+  base::Check(row >= 0);
+  base::Check(row <= range.last_row());
 
   int last_row = range.last_row();
   range.set_row(row);
@@ -18,8 +19,8 @@ void SetFirstRow(GridRange& range, int row) {
 }
 
 void SetFirstColumn(GridRange& range, int column) {
-  assert(column >= 0);
-  assert(column <= range.last_column());
+  base::Check(column >= 0);
+  base::Check(column <= range.last_column());
 
   int last_column = range.last_column();
   range.set_column(column);
@@ -27,15 +28,15 @@ void SetFirstColumn(GridRange& range, int column) {
 }
 
 void SetLastRow(GridRange& range, int last_row) {
-  assert(last_row >= 0);
-  assert(last_row >= range.row());
+  base::Check(last_row >= 0);
+  base::Check(last_row >= range.row());
 
   range.set_row_count(last_row - range.row() + 1);
 }
 
 void SetLastColumn(GridRange& range, int last_column) {
-  assert(last_column >= 0);
-  assert(last_column >= range.row());
+  base::Check(last_column >= 0);
+  base::Check(last_column >= range.row());
 
   range.set_column_count(last_column - range.column() + 1);
 }
@@ -81,14 +82,14 @@ class Expander {
               int cell_count,
               int dest_first_row,
               int dest_row_count) {
-    assert(source_row >= 0);
-    assert(first_cell >= 0);
-    assert(cell_count > 0);
-    assert(dest_first_row >= 0);
-    assert(dest_row_count > 0);
+    base::Check(source_row >= 0);
+    base::Check(first_cell >= 0);
+    base::Check(cell_count > 0);
+    base::Check(dest_first_row >= 0);
+    base::Check(dest_row_count > 0);
     // Source row isn't contained in range of destination rows.
-    assert((dest_first_row > source_row) ||
-           (source_row > dest_first_row + dest_row_count - 1));
+    base::Check((dest_first_row > source_row) ||
+                (source_row > dest_first_row + dest_row_count - 1));
 
     columns_ = columns;
     first_cell_ = first_cell;
@@ -121,7 +122,7 @@ class Expander {
   };
 
   void ExpandRow(int row, int offset) {
-    assert(row >= 0);
+    base::Check(row >= 0);
     for (int i = 0; i < static_cast<int>(source_cells_.size()); ++i)
       ExpandCell(row, first_cell_ + i, source_cells_[i], offset);
   }
@@ -154,8 +155,8 @@ void ExpandGridRange(GridModel& model,
                      const GridRange& range,
                      const GridRange& new_range,
                      bool increment) {
-  assert(!range.empty());
-  assert(new_range.Contains(range));
+  base::Check(!range.empty());
+  base::Check(new_range.Contains(range));
 
   // Calculate range to fill with values. It's |new_range| excluding |range|.
   GridRange fill_range = new_range;

@@ -3,6 +3,7 @@
 #include "aui/key_codes.h"
 #include "aui/models/menu_model.h"
 #include "base/boost_log.h"
+#include "base/check.h"
 #include "controller/contents_model.h"
 #include "controller/contents_observer.h"
 #include "controller/controller.h"
@@ -114,7 +115,7 @@ void BaseMainWindow::BeforeClose() {
 }
 
 MainWindowDef& BaseMainWindow::GetPrefs() const {
-  assert(window_id_ != 0);
+  base::Check(window_id_ != 0);
   return profile_.GetMainWindow(window_id_);
 }
 

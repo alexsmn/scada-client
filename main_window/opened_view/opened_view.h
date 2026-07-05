@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/any_executor.h"
+#include "base/check.h"
 
 #include "aui/types.h"
 #include "base/any_executor_timer.h"
@@ -55,7 +56,7 @@ class OpenedView final : private OpenedViewContext,
   WindowDefinition& window_def() { return window_def_; }
   int window_id() const { return window_def_.id; }
   MainWindow& main_window() const {
-    assert(main_window_);
+    base::Check(main_window_);
     return *main_window_;
   }
   bool locked() const { return locked_; }

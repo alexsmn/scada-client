@@ -1,5 +1,6 @@
 #include "alias_service.h"
 
+#include "base/check.h"
 #include "base/logger.h"
 #include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
@@ -40,7 +41,7 @@ void AliasService::Resolve(std::string_view alias,
 }
 
 void AliasService::OnFetchCompleted() {
-  assert(!fetched_);
+  base::Check(!fetched_);
 
   logger_->WriteF(LogSeverity::Normal, "Fetch completed. {} aliases fetched",
                   aliases_.targets(scada::id::Organizes).size());

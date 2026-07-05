@@ -4,6 +4,7 @@
 #include "aui/models/tree_model.h"
 #include "aui/qt/item_delegate.h"
 #include "aui/qt/tree_model_adapter.h"
+#include "base/check.h"
 #include "base/value_util.h"
 
 #include <QEvent>
@@ -39,7 +40,7 @@ void TreeProxyModel::SetCompareHandler(TreeCompareHandler handler) {
 
 bool TreeProxyModel::lessThan(const QModelIndex& source_left,
                               const QModelIndex& source_right) const {
-  assert(source_left.column() == source_right.column());
+  base::Check(source_left.column() == source_right.column());
 
   if (compare_handler_ && source_left.column() == 0) {
     return compare_handler_(tree_.model_adapter_->GetNode(source_left),

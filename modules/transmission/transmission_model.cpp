@@ -1,6 +1,7 @@
 #include "modules/transmission/transmission_model.h"
 
 #include "base/cancelation.h"
+#include "base/check.h"
 #include "base/format.h"
 #include "base/range_util.h"
 #include "controller/contents_observer.h"
@@ -58,7 +59,7 @@ std::u16string TransmissionModel::GetRowTitle(int row) {
 }
 
 void TransmissionModel::GetCell(aui::GridCell& cell) {
-  assert(cell.row >= 0 && cell.row <= (int)rows_.size());
+  base::Check(cell.row >= 0 && cell.row <= (int)rows_.size());
 
   //	// Last cell.row is new cell.row.
   //	if (cell.row == rows_.size())
@@ -90,7 +91,7 @@ bool TransmissionModel::IsEditable(int row, int column) {
 bool TransmissionModel::SetCellText(int row,
                                     int column,
                                     const std::u16string& text) {
-  assert(row >= 0 && row < GetRowCount());
+  base::Check(row >= 0 && row < GetRowCount());
 
   /*	GridRange range = selection();
     for (int row = range.top; row <= range.bottom; row++)
@@ -163,7 +164,10 @@ void TransmissionModel::OnNodeFetched(const NodeFetchedEvent& event) {
 }
 
 void TransmissionModel::Update(NodeRef transmission) {
-  assert(IsInstanceOf(transmission, devices::id::TransmissionItemType));
+  // Node type information comes from the server address space; skip nodes
+  // that are not transmission items.
+  if (!IsInstanceOf(transmission, devices::id::TransmissionItemType))
+    return;
 
   transmission.StartFetch(NodeFetchStatus::NodeOnly());
 

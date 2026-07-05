@@ -1,8 +1,9 @@
 #include "profile/page_layout.h"
 
-#include <boost/algorithm/string/predicate.hpp>
+#include "base/check.h"
 #include "base/value_util.h"
 #include "profile/window_definition_util.h"
+#include <boost/algorithm/string/predicate.hpp>
 
 namespace {
 const char* kDockNames[4] = {"bottom", "top", "left", "right"};
@@ -37,9 +38,9 @@ boost::json::value SaveLayoutBlock(const PageLayoutBlock& block) {
 }
 
 void LoadLayoutBlock(PageLayoutBlock& block, const boost::json::value& value) {
-  assert(block.type == PageLayoutBlock::PANE);
-  assert(block.wins.empty());
-  assert(!block.left && !block.right);
+  base::Check(block.type == PageLayoutBlock::PANE);
+  base::Check(block.wins.empty());
+  base::Check(!block.left && !block.right);
 
   auto type = GetString(value, "type");
   if (boost::iequals(type, "split")) {
@@ -53,7 +54,7 @@ void LoadLayoutBlock(PageLayoutBlock& block, const boost::json::value& value) {
       LoadLayoutBlock(*block.right, *pane);
 
   } else if (boost::iequals(type, "pane")) {
-    assert(block.type == PageLayoutBlock::PANE);
+    base::Check(block.type == PageLayoutBlock::PANE);
     if (auto* windows = GetList(value, "windows")) {
       for (auto& window : *windows) {
         if (window.is_int64())

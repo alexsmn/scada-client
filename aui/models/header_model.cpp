@@ -1,5 +1,7 @@
 #include "aui/models/header_model.h"
 
+#include "base/check.h"
+
 namespace aui {
 
 // HeaderModel ----------------------------------------------------------------
@@ -20,7 +22,7 @@ void ColumnHeaderModel::SetColumnCount(int count, int column_width) {
   if (static_cast<int>(columns_.size()) == count)
     return;
 
-  assert(count > 0);
+  base::Check(count > 0);
 
   size_t old_count = columns_.size();
 

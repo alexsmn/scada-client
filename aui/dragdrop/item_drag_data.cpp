@@ -32,7 +32,8 @@ void ItemDragData::Save(base::Pickle& pickle) const {
       pickle.WriteString(node_id_.string_id());
       break;
     default:
-      assert(false);
+      // Unsupported NodeId type: write nothing; the loader rejects the
+      // payload.
       break;
   }
 }
@@ -68,8 +69,8 @@ bool ItemDragData::Load(const base::Pickle& pickle) {
     }
 
     default:
-      assert(false);
-      break;
+      // Drag-drop payload is external data; reject unknown NodeId types.
+      return false;
   }
 
   return true;

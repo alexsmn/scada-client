@@ -1,8 +1,9 @@
 ﻿#include "modules/timed_data/timed_data_model.h"
 
+#include "base/check.h"
 #include "base/format_time.h"
-#include "base/utf_convert.h"
 #include "base/time/clock.h"
+#include "base/utf_convert.h"
 #include "common/data_value_traits.h"
 #include "common/timed_data_util.h"
 #include "profile/window_definition.h"
@@ -83,7 +84,7 @@ void TimedDataModel::UpdateRows(const scada::DateTimeRange& range) {
 }
 
 const scada::DataValue& TimedDataModel::value(int row) const {
-  assert(row < count_);
+  base::Check(row < count_);
   return timed_data_.values()[begin_iterator_ + row];
 }
 

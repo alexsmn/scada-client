@@ -3,6 +3,7 @@
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
 #include "base/any_executor_dispatch.h"
+#include "base/check.h"
 #include "base/file_settings_store.h"
 #include "base/string_util.h"
 #include "net/net_executor_adapter.h"
@@ -174,7 +175,7 @@ LoginController::LoginController(AnyExecutor executor,
   }
 
   // Backward compatibility.
-  assert(!server_type_data_.empty());
+  base::Check(!server_type_data_.empty());
   if (server_type_data_[0].host.empty())
     server_type_data_[0].host = settings_store_->ReadString("Host");
 
@@ -314,8 +315,9 @@ void LoginController::DeleteUserName(std::u16string_view user_name) {
 }
 
 void LoginController::SetServerTypeIndex(int index) {
-  assert(index >= 0);
-  assert(index < static_cast<int>(server_type_list.size()));
+  // The index originates from UI selection; ignore out-of-range values.
+  if (index < 0 || index >= static_cast<int>(server_type_list.size()))
+    return;
 
   if (server_type_index_ == index)
     return;

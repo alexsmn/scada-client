@@ -2,8 +2,8 @@
 
 #include "aui/models/grid_range.h"
 #include "base/awaitable.h"
+#include "base/check.h"
 #include "base/format_time.h"
-#include "ui/common/client_utils.h"
 #include "common/aggregation.h"
 #include "common/formula_util.h"
 #include "modules/summary/summary_model_util.h"
@@ -14,6 +14,7 @@
 #include "profile/window_definition_util.h"
 #include "timed_data/timed_data_property.h"
 #include "timed_data/timed_data_spec.h"
+#include "ui/common/client_utils.h"
 
 #include "base/utf_convert.h"
 
@@ -328,17 +329,17 @@ void SummaryModel::GetCell(aui::GridCell& cell) {
 }
 
 base::Time SummaryModel::GetRowTime(int row) const {
-  assert(row >= 0 && row < static_cast<int>(row_count_));
-  assert(!start_time_.is_null());
-  assert(!aggregate_filter_.interval.is_zero());
+  base::Check(row >= 0 && row < static_cast<int>(row_count_));
+  base::Check(!start_time_.is_null());
+  base::Check(!aggregate_filter_.interval.is_zero());
   return start_time_ + aggregate_filter_.interval * row;
 }
 
 int SummaryModel::GetRowForTime(base::Time time) const {
-  assert(!start_time_.is_null());
-  assert(!end_time_.is_null());
-  assert(start_time_ <= end_time_);
-  assert(!aggregate_filter_.interval.is_zero());
+  base::Check(!start_time_.is_null());
+  base::Check(!end_time_.is_null());
+  base::Check(start_time_ <= end_time_);
+  base::Check(!aggregate_filter_.interval.is_zero());
 
   // |end_time_| defines start of the last interval.
   if (time < start_time_ || time >= end_time_)
@@ -348,7 +349,7 @@ int SummaryModel::GetRowForTime(base::Time time) const {
 
   base::TimeDelta delta = time - start_time_;
   int row = static_cast<int>(delta / aggregate_filter_.interval);
-  assert(row >= 0 && row < static_cast<int>(row_count_));
+  base::Check(row >= 0 && row < static_cast<int>(row_count_));
   return row;
 }
 
@@ -413,7 +414,7 @@ void SummaryModel::SetInterval(base::TimeDelta interval) {
 
 void SummaryModel::SetParams(const TimeRange& time_range,
                              scada::AggregateFilter aggregate_filter) {
-  assert(!aggregate_filter.is_null());
+  base::Check(!aggregate_filter.is_null());
 
   auto params = CalculateSummaryModelParams(
       time_range, aggregate_filter.interval, /*now=*/base::Time::Now());

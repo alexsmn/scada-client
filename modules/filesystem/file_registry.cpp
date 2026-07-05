@@ -1,16 +1,16 @@
 #include "filesystem/file_registry.h"
 
+#include "base/check.h"
+
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
 
-#include <cassert>
-
 void FileRegistry::RegisterType(int id,
                                 std::string_view name,
                                 std::string_view extensions) {
-  assert(type_map_.find(id) == type_map_.end());
+  base::Check(type_map_.find(id) == type_map_.end());
 
   TypeEntry& entry = type_map_[id];
   entry.type_id = id;

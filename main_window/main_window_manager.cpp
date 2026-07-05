@@ -1,5 +1,6 @@
 #include "main_window/main_window_manager.h"
 
+#include "base/check.h"
 #include "main_window/main_window.h"
 #include "profile/profile.h"
 
@@ -75,7 +76,7 @@ MainWindow* MainWindowManager::CreateMainWindow() {
 
 void MainWindowManager::OnMainWindowClosed(int window_id) {
   auto i = main_windows_.find(window_id);
-  assert(i != main_windows_.end());
+  base::Check(i != main_windows_.end());
   if (i == main_windows_.end()) {
     return;
   }

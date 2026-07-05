@@ -1,7 +1,8 @@
 #include "main_window/view_manager.h"
 
-#include "base/boost_log.h"
 #include "base/auto_reset.h"
+#include "base/boost_log.h"
+#include "base/check.h"
 #include "controller/window_info.h"
 #include "main_window/opened_view/opened_view.h"
 #include "main_window/view_manager_delegate.h"
@@ -48,7 +49,7 @@ ViewManager::ViewManager(ViewManagerDelegate& delegate)
 
 ViewManager::~ViewManager() {
   // Page must be closed before destruction, as closing calls delegate.
-  assert(views_.empty());
+  base::Check(views_.empty());
 }
 
 #if defined(UI_WT)
@@ -250,7 +251,7 @@ void ViewManager::DestroyView(OpenedView& view) {
     SetActiveView(nullptr);
   }
 
-  assert(std::ranges::find(views_, &view) != views_.end());
+  base::Check(std::ranges::find(views_, &view) != views_.end());
   std::erase(views_, &view);
   std::erase(added_views_, &view);
 
@@ -317,7 +318,7 @@ void ViewManager::SavePage() {
 }
 
 void ViewManager::ClosePage() {
-  assert(!closing_page_);
+  base::Check(!closing_page_);
 
   // Prevent WindowDefinition delete on close child windows.
   base::AutoReset<bool> closing_page(&closing_page_, true);
@@ -352,7 +353,7 @@ OpenedView* ViewManager::OpenView(const WindowDefinition& def,
     for (int i = 0; i < page.GetWindowCount(); ++i) {
       WindowDefinition& win = page.GetWindow(i);
       if (win.type == def.type) {
-        assert(!win.visible);
+        base::Check(!win.visible);
         win.visible = true;
         window_def = &win;
         break;

@@ -1,8 +1,9 @@
 ﻿#include "controller/action_manager.h"
 
 #include "aui/translation.h"
-#include "resources/common_resources.h"
+#include "base/check.h"
 #include "controller/action.h"
+#include "resources/common_resources.h"
 
 #include <utility>
 
@@ -33,7 +34,7 @@ std::u16string GetCommandCategoryTitle(CommandCategory category) {
       "Interval",   // CATEGORY_INTERVAL
   };
   static_assert(std::size(kTitles) == static_cast<size_t>(CATEGORY_COUNT));
-  assert(category >= 0 && category < std::size(kTitles));
+  base::Check(category >= 0 && category < std::size(kTitles));
   return Translate(kTitles[category]);
 }
 
@@ -51,10 +52,10 @@ ActionManager::ActionManager() {}
 ActionManager::~ActionManager() {}
 
 Action& ActionManager::AddAction(Action action) {
-  assert(!FindAction(action.command_id()));
+  base::Check(!FindAction(action.command_id()));
   const auto command_id = action.command_id();
   auto [it, inserted] = action_map_.emplace(command_id, std::move(action));
-  assert(inserted);
+  base::Check(inserted);
   actions_.push_back(&it->second);
   return it->second;
 }

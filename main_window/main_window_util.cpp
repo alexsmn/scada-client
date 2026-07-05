@@ -2,6 +2,7 @@
 
 #include "aui/key_codes.h"
 #include "base/awaitable.h"
+#include "base/check.h"
 #include "controller/contents_model.h"
 #include "controller/window_info.h"
 #include "main_window/main_window.h"
@@ -23,12 +24,10 @@
 #include "graph/graph_component.h"
 #endif
 
-#include <cassert>
-
 Awaitable<void> OpenView(MainWindowInterface* main_window,
                          const WindowDefinition& window_def,
                          bool activate) {
-  assert(main_window);
+  base::Check(main_window);
   co_await main_window->OpenView(window_def, activate);
   co_return;
 }
@@ -50,7 +49,7 @@ const WindowInfo& GetDefaultNodeWindowInfo(const NodeRef& node,
 
 bool ExecuteDefaultNodeCommand(const AnyExecutor& executor,
                                const NodeCommandContext& context) {
-  assert(context.main_window);
+  base::Check(context.main_window);
 
   const auto& window_info =
       GetDefaultNodeWindowInfo(context.node, context.key_modifiers);

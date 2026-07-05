@@ -1,7 +1,8 @@
 #include "favorites/favourites_tree_model.h"
 
-#include "resources/common_resources.h"
+#include "base/check.h"
 #include "controller/window_info.h"
+#include "resources/common_resources.h"
 
 class FavouritesFolderNode;
 class FavouritesWindowNode;
@@ -118,7 +119,7 @@ void FavouritesTreeModel::OnFavouriteDeleted(const Page& folder,
   auto& folder_node = static_cast<FavouritesFolderNode&>(root().GetChild(i));
 
   int index = folder_node.FindWindowNode(window);
-  assert(index != -1);
+  base::Check(index != -1);
   Remove(folder_node, index);
 }
 
@@ -155,7 +156,7 @@ void FavouritesTreeModel::OnWindowChanged(const Page& folder,
   auto& folder_node = static_cast<FavouritesFolderNode&>(root().GetChild(i));
 
   int index = folder_node.FindWindowNode(window);
-  assert(index != -1);
+  base::Check(index != -1);
 
   auto& window_node =
       static_cast<FavouritesWindowNode&>(folder_node.GetChild(index));

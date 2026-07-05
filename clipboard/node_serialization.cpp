@@ -9,7 +9,9 @@ void NodeToData(const NodeRef& source,
                 scada::NodeState& target,
                 bool recursive,
                 bool ignore_browse_name) {
-  assert(source.node_class().has_value());
+  // Node data originates from the server; skip nodes without a known class.
+  if (!source.node_class().has_value())
+    return;
 
   target.node_id = source.node_id();
   target.node_class = source.node_class().value();
@@ -42,7 +44,9 @@ void NodeToData(const NodeRef& source,
 
   // Skip type definitions, HasComponent.
   for (auto& ref : source.references(scada::id::NonHierarchicalReferences)) {
-    assert(ref.forward);
+    // Server-provided references; only forward ones are serialized.
+    if (!ref.forward)
+      continue;
     if (!IsSubtypeOf(ref.reference_type, scada::id::HasTypeDefinition)) {
       target.references.push_back(
           {ref.reference_type.node_id(), ref.forward, ref.target.node_id()});
@@ -102,7 +106,8 @@ void Convert(const scada::NodeState& source, protocol::Node& target) {
   target.set_node_class(ConvertTo<protocol::NodeClass>(source.node_class));
 
   if (!source.type_definition_id.is_null()) {
-    assert(!scada::IsTypeDefinition(source.node_class));
+    // Server-derived node data; a type-definition node carrying a type
+    // definition reference is tolerated.
     Convert(source.type_definition_id, *target.mutable_type_definition_id());
   } else
     target.clear_type_definition_id();

@@ -1,6 +1,7 @@
 ﻿#include "modus/qt/modus_view.h"
 
 #include "base/awaitable.h"
+#include "base/check.h"
 #include "filesystem/file_util.h"
 #include "modus/activex/modus.h"
 #include "profile/window_definition.h"
@@ -53,7 +54,7 @@ void ModusView::SetToolbarVisible(bool visible) {
 }
 
 void ModusView::Open(const WindowDefinition& definition) {
-  assert(!document_);
+  base::Check(!document_);
 
   path_ = GetPublicFilePath(definition.path);
 

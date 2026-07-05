@@ -1,6 +1,7 @@
 ﻿#include "main_window/main_window_command_router.h"
 
 #include "base/awaitable.h"
+#include "base/check.h"
 #include "controller/command_registry.h"
 #include "controller/window_info.h"
 #include "main_window/main_window.h"
@@ -84,7 +85,7 @@ void MainWindowCommandRouter::ExecuteCommand(unsigned command_id) {
 
   // Check create window command.
   if (const WindowInfo* win_info = FindWindowInfo(command_id)) {
-    assert(win_info->createable());
+    base::Check(win_info->createable());
     /*if (win_info->flags & WIN_SING) {
       OpenedView* view = view_manager_->FindViewByType(win_info->type);
       if (view) {
@@ -99,5 +100,5 @@ void MainWindowCommandRouter::ExecuteCommand(unsigned command_id) {
     return;
   }
 
-  assert(false);
+  base::NotReached();
 }

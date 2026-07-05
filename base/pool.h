@@ -1,6 +1,7 @@
 #pragma once
 
-#include <cassert>
+#include "base/check.h"
+
 #include <map>
 #include <memory>
 
@@ -21,7 +22,7 @@ template <class Key, class Payload>
 class Pool {
  public:
   Pool() {}
-  ~Pool() { assert(payload_map_.empty()); }
+  ~Pool() { base::Check(payload_map_.empty()); }
 
   Pool(const Pool&) = delete;
   Pool& operator=(const Pool&) = delete;

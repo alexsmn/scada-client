@@ -2,6 +2,7 @@
 
 #include "aui/color.h"
 #include "aui/models/grid_range.h"
+#include "base/check.h"
 
 #include <QMimeData>
 #include <QSize>
@@ -102,8 +103,7 @@ QVariant GridModelAdapter::headerData(int section,
     }
 
   } else {
-    assert(false);
-    return QVariant();
+    base::NotReached();
   }
 }
 

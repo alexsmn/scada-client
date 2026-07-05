@@ -159,7 +159,8 @@ Awaitable<scada::Status> ClientApplication::SaveProfileToServer(
   auto profile_json = boost::json::serialize(profile_->SaveToValue());
   auto status = co_await services.method_service->Call(
       user_id, security::id::UserType_SaveProfile,
-      {scada::String{std::move(profile_json)}, profile_revision_}, user_id);
+      {scada::String{std::move(profile_json)}, profile_revision_},
+      scada::ServiceContext{});
   if (scada::IsGood(status.code())) {
     ++profile_revision_;
   }

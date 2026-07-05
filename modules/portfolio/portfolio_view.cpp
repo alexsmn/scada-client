@@ -1,13 +1,14 @@
 ﻿#include "portfolio/portfolio_view.h"
 
 #include "aui/tree.h"
-#include "resources/common_resources.h"
-#include "modules/select_item/select_item_dialog.h"
+#include "base/check.h"
 #include "controller/controller_delegate.h"
 #include "controller/selection_model.h"
+#include "modules/select_item/select_item_dialog.h"
 #include "node_service/node_service.h"
 #include "portfolio/portfolio_manager.h"
 #include "portfolio/portfolio_tree_model.h"
+#include "resources/common_resources.h"
 
 // PortfolioView
 
@@ -118,10 +119,10 @@ void PortfolioView::AddContainedItem(const scada::NodeId& node_id,
   portfolio_manager_.AddItem(*portfolio, node_id);
 
   PortfolioTreeNode* portfolio_node = model_->FindPortfolioNode(*portfolio);
-  assert(portfolio_node);
+  base::Check(portfolio_node);
 
   PortfolioTreeNode* item_node = model_->FindItemNode(*portfolio_node, node_id);
-  assert(item_node);
+  base::Check(item_node);
 
   // TODO: Expand portfolio node.
   // TODO: Select and make item node visible.
@@ -153,7 +154,7 @@ void PortfolioView::NewPortfolio() {
   const Portfolio& portfolio = portfolio_manager_.New();
 
   PortfolioTreeNode* node = model_->FindPortfolioNode(portfolio);
-  assert(node);
+  base::Check(node);
 
   tree_->SelectNode(node);
   tree_->StartEditing(node);

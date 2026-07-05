@@ -1,7 +1,6 @@
 ﻿#include "profile/page.h"
 
-#include <cassert>
-
+#include "base/check.h"
 #include "base/utils.h"
 #include "base/value_util.h"
 #include "controller/window_info.h"
@@ -148,7 +147,7 @@ int Page::FindWindowDef(const WindowDefinition& window) const {
 }
 
 void Page::DeleteWindow(int index) {
-  assert(index >= 0);
+  base::Check(index >= 0);
   windows_.erase(windows_.begin() + index);
 }
 

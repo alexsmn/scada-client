@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/check.h"
 #include "base/struct_writer.h"
 #include "base/time_range.h"
 #include "common/aggregation.h"
@@ -24,7 +25,7 @@ inline SummaryModelParams CalculateSummaryModelParams(
     const TimeRange& time_range,
     scada::Duration interval,
     base::Time now) {
-  assert(!interval.is_zero());
+  base::Check(!interval.is_zero());
 
   auto [start_time, end_time] = ToDateTimeRange(time_range, now);
 
@@ -48,10 +49,10 @@ inline SummaryModelParams CalculateSummaryModelParams(
   result.end_time = start_time + interval * row_count;
   result.row_count = static_cast<size_t>(row_count);
 
-  assert(!result.start_time.is_null());
-  assert(!result.end_time.is_null());
-  assert(result.start_time <= result.end_time);
-  assert(result.row_count <= kMaxRowCount);
+  base::Check(!result.start_time.is_null());
+  base::Check(!result.end_time.is_null());
+  base::Check(result.start_time <= result.end_time);
+  base::Check(result.row_count <= kMaxRowCount);
 
   return result;
 }

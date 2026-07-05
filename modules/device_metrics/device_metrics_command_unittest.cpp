@@ -6,17 +6,18 @@
 #include "address_space/node_factory_util.h"
 #include "address_space/standard_address_space.h"
 #include "address_space/test/scada_test_address_space.h"
-#include "base/test/awaitable_test.h"
+#include "base/check.h"
 #include "base/range_util.h"
+#include "base/test/awaitable_test.h"
 #include "common/node_state.h"
+#include "model/devices_node_ids.h"
+#include "model/namespaces.h"
 #include "modules/device_metrics/node_collector.h"
+#include "node_service/v1/address_space_fetcher_mock.h"
+#include "node_service/v1/node_service_impl.h"
 #include "scada/attribute_service_mock.h"
 #include "scada/method_service_mock.h"
 #include "scada/monitored_item_service_mock.h"
-#include "model/devices_node_ids.h"
-#include "model/namespaces.h"
-#include "node_service/v1/address_space_fetcher_mock.h"
-#include "node_service/v1/node_service_impl.h"
 
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/map.hpp>
@@ -100,9 +101,9 @@ scada::Node* DeviceMetricsCommandTest::CreateDevice(
       devices::id::Devices, scada::id::Organizes,
       scada::NodeAttributes{}.set_display_name(std::move(display_name))});
 
-  assert(status);
-  assert(node);
-  assert(node->type_definition());
+  base::Check(status);
+  base::Check(node);
+  base::Check(node->type_definition());
 
   CreateDataVariables(node_factory, node->id(), *node->type_definition());
 
@@ -120,8 +121,8 @@ scada::Node* DeviceMetricsCommandTest::CreateObject(
       std::move(parent_id), scada::id::Organizes,
       scada::NodeAttributes{}.set_display_name(std::move(display_name))});
 
-  assert(status);
-  assert(node);
+  base::Check(status);
+  base::Check(node);
   return node;
 }
 

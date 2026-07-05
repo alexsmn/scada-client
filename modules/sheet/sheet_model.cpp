@@ -1,14 +1,15 @@
 #include "modules/sheet/sheet_model.h"
 
-#include "modules/sheet/sheet_cell.h"
 #include "aui/color.h"
 #include "aui/models/grid_range.h"
+#include "base/check.h"
+#include "modules/sheet/sheet_cell.h"
 #include "profile/window_definition.h"
 
 // SheetColumnModel -----------------------------------------------------------
 
 std::u16string SheetColumnModel::GetTitle(int index) const {
-  assert(index >= 0);
+  base::Check(index >= 0);
   wchar_t ch = L'A' + static_cast<char>(index);
   return std::u16string(1, ch);
 }
@@ -98,8 +99,8 @@ void SheetModel::Save(WindowDefinition& definition) {
 }
 
 void SheetModel::SetSizes(int row_count, int column_count) {
-  assert(row_count > 0);
-  assert(column_count > 0);
+  base::Check(row_count > 0);
+  base::Check(column_count > 0);
 
   if (row_count_ == row_count && column_count_ == column_count)
     return;
@@ -154,7 +155,7 @@ SheetCell& SheetModel::GetCell(int row, int column) {
 }
 
 void SheetModel::ClearRange(const aui::GridRange& range) {
-  assert(!range.empty());
+  base::Check(!range.empty());
 
   aui::GridRange update_range;
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/check.h"
 #include "controller/controller.h"
 
 #if defined(UI_QT)
@@ -17,8 +18,7 @@ class FakeController final : public Controller {
 #elif defined(UI_WT) 
     return std::make_unique<Wt::WContainerWidget>();
 #else
-    assert(false);
-    return nullptr;
+    base::NotReached();
 #endif
   }
 };

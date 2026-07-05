@@ -1,5 +1,6 @@
 #include "time_range/opened_view_time_range_command.h"
 
+#include "base/check.h"
 #include "controller/time_model.h"
 #include "net/net_executor_adapter.h"
 #include "resources/common_resources.h"
@@ -44,7 +45,7 @@ CommandHandler* OpenedViewTimeRangeCommand::GetCommandHandler(
 
 void OpenedViewTimeRangeCommand::ExecuteCommand(unsigned command_id) {
   auto time_range = GetTimeRangeCommand(command_id);
-  assert(time_range);
+  base::Check(time_range);
 
   auto* model = time_model_getter_();
   if (!model) {

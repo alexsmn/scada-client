@@ -1,10 +1,10 @@
 #include "aui/wt/tree_model_adapter.h"
 
-#include "base/win/scoped_gdi_object.h"
 #include "aui/color.h"
 #include "aui/models/tree_model.h"
+#include "base/check.h"
+#include "base/win/scoped_gdi_object.h"
 
-#include <cassert>
 #include <windows.h>
 
 namespace aui {
@@ -44,7 +44,7 @@ void TreeModelAdapter::LoadIcons(unsigned resource_id,
 }
 
 void* TreeModelAdapter::GetNode(const Wt::WModelIndex& index) const {
-  assert(index.isValid());
+  base::Check(index.isValid());
   return index.internalPointer();
 }
 
@@ -80,7 +80,7 @@ Wt::WModelIndex TreeModelAdapter::index(int row,
                                         int column,
                                         const Wt::WModelIndex& parent) const {
   if (!parent.isValid()) {
-    assert(row == 0);
+    base::Check(row == 0);
     return GetNodeIndex(model_->GetRoot(), column);
   }
 
@@ -93,7 +93,7 @@ Wt::WModelIndex TreeModelAdapter::index(int row,
 }
 
 Wt::WModelIndex TreeModelAdapter::parent(const Wt::WModelIndex& child) const {
-  assert(child.isValid());
+  base::Check(child.isValid());
 
   void* child_node = GetNode(child);
 
@@ -120,7 +120,7 @@ int TreeModelAdapter::columnCount(const Wt::WModelIndex& parent) const {
 
 Wt::cpp17::any TreeModelAdapter::data(const Wt::WModelIndex& index,
                                       Wt::ItemDataRole role) const {
-  assert(index.isValid());
+  base::Check(index.isValid());
 
   void* node = GetNode(index);
 
@@ -152,7 +152,7 @@ Wt::cpp17::any TreeModelAdapter::data(const Wt::WModelIndex& index,
 bool TreeModelAdapter::setData(const Wt::WModelIndex& index,
                                const Wt::cpp17::any& value,
                                Wt::ItemDataRole role) {
-  assert(index.isValid());
+  base::Check(index.isValid());
 
   void* node = GetNode(index);
 
@@ -174,7 +174,7 @@ bool TreeModelAdapter::setData(const Wt::WModelIndex& index,
 
 Wt::WFlags<Wt::ItemFlag> TreeModelAdapter::flags(
     const Wt::WModelIndex& index) const {
-  assert(index.isValid());
+  base::Check(index.isValid());
 
   auto flags = WAbstractItemModel::flags(index);
 

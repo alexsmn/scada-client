@@ -1,6 +1,7 @@
 #include "export/excel/opened_view_excel_export_command.h"
 
 #include "aui/dialog_service.h"
+#include "base/check.h"
 #include "base/excel.h"
 #include "base/program_options.h"
 #include "export/csv/csv_export_util.h"
@@ -20,7 +21,7 @@ CommandHandler* OpenedViewExcelExportCommand::GetCommandHandler(
 }
 
 void OpenedViewExcelExportCommand::ExecuteCommand(unsigned command_id) {
-  assert(command_id == ID_EXPORT_EXCEL);
+  base::Check(command_id == ID_EXPORT_EXCEL);
   auto* export_model = export_model_getter_();
   if (!export_model) {
     return;

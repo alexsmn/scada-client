@@ -65,7 +65,9 @@ class ModusEventSink
 
 STDMETHODIMP_(void)
 ModusEventSink::OnDocPopup(ISDEDocument50* sde_document, VARIANT_BOOL* popup) {
-  assert(popup);
+  // COM callback argument from the external display component.
+  if (!popup)
+    return;
 
   *popup = FALSE;
 
@@ -80,7 +82,9 @@ ModusEventSink::OnDocPopup(ISDEDocument50* sde_document, VARIANT_BOOL* popup) {
 STDMETHODIMP_(void)
 ModusEventSink::OnDocDblClick(ISDEDocument50* sde_document,
                               SDECore::IUIEventInfo* ui_event_info) {
-  assert(ui_event_info);
+  // COM callback argument from the external display component.
+  if (!ui_event_info)
+    return;
 
   if (document_)
     document_->OnDocDblClick(*ui_event_info);
@@ -89,7 +93,9 @@ ModusEventSink::OnDocDblClick(ISDEDocument50* sde_document,
 STDMETHODIMP_(void)
 ModusEventSink::OnDocClick(ISDEDocument50* sde_document,
                            SDECore::IUIEventInfo* ui_event_info) {
-  assert(ui_event_info);
+  // COM callback argument from the external display component.
+  if (!ui_event_info)
+    return;
 
   // WARNING: |info->get_Button()| doesn't always give the right button.
 
@@ -100,7 +106,9 @@ ModusEventSink::OnDocClick(ISDEDocument50* sde_document,
 STDMETHODIMP_(void)
 ModusEventSink::OnDocRightClick(ISDEDocument50* sde_document,
                                 SDECore::IUIEventInfo* ui_event_info) {
-  assert(ui_event_info);
+  // COM callback argument from the external display component.
+  if (!ui_event_info)
+    return;
 
   if (document_)
     document_->OnDocClick(ModusDocument::MouseButton::Right, *ui_event_info);

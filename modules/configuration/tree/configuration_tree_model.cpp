@@ -1,5 +1,6 @@
 ﻿#include "configuration/tree/configuration_tree_model.h"
 
+#include "base/check.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
 
@@ -141,7 +142,7 @@ std::unique_ptr<ConfigurationTreeNode> ConfigurationTreeModel::CreateTreeNode(
     const scada::NodeId& reference_type_id,
     bool forward_reference,
     const NodeRef& node) {
-  assert(node);
+  base::Check(node);
   return std::make_unique<ConfigurationTreeNode>(*this, reference_type_id,
                                                  forward_reference, node);
 }
@@ -151,7 +152,7 @@ ConfigurationTreeModel::CreateTreeNodeIfMatches(
     const scada::NodeId& reference_type_id,
     bool forward_reference,
     const NodeRef& node) {
-  assert(node);
+  base::Check(node);
 
   if (FindTreeNode(node.node_id(), reference_type_id, forward_reference))
     return nullptr;

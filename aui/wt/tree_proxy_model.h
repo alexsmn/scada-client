@@ -2,6 +2,7 @@
 
 #include "aui/handlers.h"
 #include "aui/tree.h"
+#include "base/check.h"
 
 #include <Wt/WSortFilterProxyModel.h>
 
@@ -33,7 +34,7 @@ inline void TreeProxyModel::SetCompareHandler(TreeCompareHandler handler) {
 inline bool TreeProxyModel::lessThan(
     const Wt::WModelIndex& source_left,
     const Wt::WModelIndex& source_right) const {
-  assert(source_left.column() == source_right.column());
+  base::Check(source_left.column() == source_right.column());
 
   if (compare_handler_ && source_left.column() == 0) {
     return compare_handler_(tree_.model_adapter_->GetNode(source_left),

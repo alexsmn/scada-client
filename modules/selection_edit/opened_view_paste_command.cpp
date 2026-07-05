@@ -1,5 +1,6 @@
 #include "selection_edit/opened_view_paste_command.h"
 
+#include "base/check.h"
 #include "clipboard/clipboard_util.h"
 #include "controller/controller.h"
 #include "controller/selection_model.h"
@@ -25,7 +26,7 @@ CommandHandler* OpenedViewPasteCommand::GetCommandHandler(unsigned command_id) {
 }
 
 bool OpenedViewPasteCommand::IsCommandEnabled(unsigned command_id) const {
-  assert(command_id == ID_PASTE);
+  base::Check(command_id == ID_PASTE);
   auto* selection_model = controller_.GetSelectionModel();
   return selection_model &&
          session_service_.HasPrivilege(scada::Privilege::Configure) &&
@@ -34,7 +35,7 @@ bool OpenedViewPasteCommand::IsCommandEnabled(unsigned command_id) const {
 }
 
 void OpenedViewPasteCommand::ExecuteCommand(unsigned command_id) {
-  assert(command_id == ID_PASTE);
+  base::Check(command_id == ID_PASTE);
   CoSpawn(executor_, cancelation_, [this]() mutable -> Awaitable<void> {
     co_await PasteFromClipboardAsync();
     co_return;

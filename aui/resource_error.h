@@ -26,7 +26,8 @@ inline std::u16string GetResourceErrorMessage(std::exception_ptr e) {
   } catch (const ResourceError& e) {
     return e.message();
   } catch (...) {
-    assert(false);
+    // Exceptions from resource loading are external failures; fall through
+    // to the generic message.
   }
   // Reached for anything that is not a `ResourceError`. The trailing
   // return also satisfies cppcheck's `missingReturn` checker, which does

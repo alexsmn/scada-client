@@ -1,9 +1,10 @@
 ﻿#include "events/event_table_model.h"
 
 #include "aui/translation.h"
+#include "base/check.h"
 #include "base/excel.h"
-#include "base/format_time.h"
 #include "base/format.h"
+#include "base/format_time.h"
 #include "base/utf_convert.h"
 #include "base/utils.h"
 #include "events/current_event_model.h"
@@ -40,7 +41,7 @@ int Compare(base::Time a, base::Time b) {
 // EventTableModel::Row
 
 void EventTableModel::Row::Update(NodeService& node_service) {
-  assert(event);
+  base::Check(event);
 
   node = node_service.GetNode(event->node_id);
   user = node_service.GetNode(event->user_id);
@@ -52,7 +53,7 @@ void EventTableModel::Row::Update(NodeService& node_service) {
 }
 
 bool EventTableModel::Row::IsAffected(const scada::NodeId& node_id) const {
-  assert(event);
+  base::Check(event);
   return event->node_id == node_id || event->user_id == node_id ||
          event->acknowledged_user_id == node_id;
 }
@@ -149,15 +150,14 @@ void EventTableModel::GetCell(aui::TableCell& cell) {
                      TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
       break;
     default:
-      assert(false);
-      break;
+      base::NotReached();
   }
 }
 
 int EventTableModel::FindRow(const scada::Event& event) const {
   for (Rows::const_iterator i = rows_.begin(); i != rows_.end(); ++i) {
     if (i->event == &event) {
-      assert(i->type == CURRENT_EVENT || i->type == LOCAL_EVENT);
+      base::Check(i->type == CURRENT_EVENT || i->type == LOCAL_EVENT);
       return static_cast<int>(i - rows_.begin());
     }
   }
@@ -197,7 +197,7 @@ void EventTableModel::AddRows(EventType type,
     } else {
       // Update row data.
       auto& row = rows_[index];
-      assert(row.type == type);
+      base::Check(row.type == type);
       row.Update(node_service_);
       NotifyItemsChanged(index, 1);
     }
@@ -217,7 +217,7 @@ void EventTableModel::AddRows(EventType type,
 }
 
 void EventTableModel::RemoveRows(int first, int count) {
-  assert(count > 0);
+  base::Check(count > 0);
   NotifyItemsRemoving(first, count);
   rows_.erase(rows_.begin() + first, rows_.begin() + (first + count));
   NotifyItemsRemoved(first, count);
@@ -277,7 +277,7 @@ void EventTableModel::OnCurrentEvents(
 }
 
 void EventTableModel::AckRows(int first, int count) {
-  assert(count > 0);
+  base::Check(count > 0);
 
   if (current_events_) {
     RemoveRows(first, count);
@@ -414,7 +414,8 @@ void EventTableModel::AcknowledgeRow(int row) {
   Row& r = rows_[row];
   switch (r.type) {
     case CURRENT_EVENT:
-      assert(!r.event->acked);
+      // Event state comes from the server; it may already have been acked
+      // concurrently.
       current_event_model_.Ack(r.event->event_id);
       break;
 
@@ -427,18 +428,17 @@ void EventTableModel::AcknowledgeRow(int row) {
       break;
 
     default:
-      assert(false);
-      break;
+      base::NotReached();
   }
 }
 
 void EventTableModel::LockUpdate() {
-  assert(!lock_update_);
+  base::Check(!lock_update_);
   lock_update_ = true;
 }
 
 void EventTableModel::UnlockUpdate() {
-  assert(lock_update_);
+  base::Check(lock_update_);
   lock_update_ = false;
   if (pending_update_)
     Update();

@@ -1,10 +1,11 @@
 #include "aui/qt/item_delegate.h"
 
+#include "base/check.h"
+
 #include <QAction>
 #include <QComboBox>
 #include <QLineEdit>
 #include <QPushButton>
-#include <cassert>
 
 namespace aui {
 
@@ -41,8 +42,7 @@ QWidget* ItemDelegate::createEditor(QWidget* parent,
       return CreateDropDown(parent, edit_data);
 
     default:
-      assert(false);
-      return nullptr;
+      base::NotReached();
   }
 }
 

@@ -1,5 +1,7 @@
 #include "aui/wt/view_manager_wt_component.h"
 
+#include "base/check.h"
+
 #include <wt/WBorderLayout.h>
 #include <wt/WContainerWidget.h>
 #include <wt/WHBoxLayout.h>
@@ -11,7 +13,6 @@
 #include <wt/WWidgetItem.h>
 
 #include <algorithm>
-#include <cassert>
 #include <ranges>
 
 namespace {
@@ -197,12 +198,12 @@ void ViewManagerWtComponent::RootPane::SetRootBlock(std::unique_ptr<Block> block
 }
 
 bool ViewManagerWtComponent::RootPane::RemoveView(const ViewInfo& view) {
-  assert(view.widget);
+  base::Check(view.widget);
   if (!view.widget)
     return false;
 
   auto* pane = FindWidgetPane(*view.widget);
-  assert(pane);
+  base::Check(pane);
   if (!pane)
     return false;
 
@@ -210,8 +211,7 @@ bool ViewManagerWtComponent::RootPane::RemoveView(const ViewInfo& view) {
 }
 
 bool ViewManagerWtComponent::DockPane::RemoveView(const ViewInfo& view) {
-  assert(false);
-  return false;
+  base::NotReached();
 }
 
 void ViewManagerWtComponent::DockPane::ClosePane() {}
@@ -219,11 +219,11 @@ void ViewManagerWtComponent::DockPane::ClosePane() {}
 ViewManagerWtComponent::DockSubPane::~DockSubPane() = default;
 
 bool ViewManagerWtComponent::DockSubPane::RemoveView(const ViewInfo& view) {
-  assert(view.widget);
+  base::Check(view.widget);
 
   tab_widget_->removeTab(view.widget);
 
-  assert(root_pane_.widget_data_.contains(view.widget));
+  base::Check(root_pane_.widget_data_.contains(view.widget));
   root_pane_.widget_data_.erase(view.widget);
 
   if (tab_widget_->count() == 0)
@@ -238,7 +238,7 @@ void ViewManagerWtComponent::DockSubPane::ClosePane() {
     return;
 
   if (item->parentLayout() == root_pane_.root_layout_) {
-    assert(root_pane_.root_layout_->indexOf(item) != -1);
+    base::Check(root_pane_.root_layout_->indexOf(item) != -1);
     root_pane_.root_layout_->removeItem(item);
   } else {
     Wt::WLayoutItem* other_item = nullptr;
@@ -248,7 +248,7 @@ void ViewManagerWtComponent::DockSubPane::ClosePane() {
         break;
       }
     }
-    assert(other_item);
+    base::Check(other_item);
     auto* parent_layout = static_cast<Wt::WBoxLayout*>(other_item->parentLayout());
     auto other_item_ptr = parent_layout->removeItem(other_item);
     auto* super_parent_layout = parent_layout->parentLayout();
@@ -264,10 +264,10 @@ void ViewManagerWtComponent::DockSubPane::ClosePane() {
 }
 
 bool ViewManagerWtComponent::CenterPane::RemoveView(const ViewInfo& view) {
-  assert(view.widget);
+  base::Check(view.widget);
 
   auto* tab_widget = root_pane_.GetTabWidget(view.id);
-  assert(tab_widget);
+  base::Check(tab_widget);
   if (!tab_widget)
     return false;
 
@@ -279,7 +279,7 @@ bool ViewManagerWtComponent::CenterPane::RemoveView(const ViewInfo& view) {
     tab_widget->removeFromParent();
   }
 
-  assert(root_pane_.widget_data_.contains(view.widget));
+  base::Check(root_pane_.widget_data_.contains(view.widget));
   root_pane_.widget_data_.erase(view.widget);
   return true;
 }
@@ -324,8 +324,8 @@ ViewManagerWtComponent::DockPane::DockPane(ViewManagerWtComponent& component,
 }
 
 void ViewManagerWtComponent::DockPane::AddView(const ViewInfo& view) {
-  assert(view.widget);
-  assert(!component_.IsViewAdded(view.id));
+  base::Check(view.widget);
+  base::Check(!component_.IsViewAdded(view.id));
 
   DockSubPane* subpane = nullptr;
   if (!subpanes_.empty() && view.tabify_existing_dock) {
@@ -355,8 +355,8 @@ ViewManagerWtComponent::DockSubPane::DockSubPane(
 }
 
 void ViewManagerWtComponent::DockSubPane::AddView(const ViewInfo& view) {
-  assert(view.widget);
-  assert(!component_.IsViewAdded(view.id));
+  base::Check(view.widget);
+  base::Check(!component_.IsViewAdded(view.id));
 
   auto* tab = tab_widget_->addTab(std::unique_ptr<Wt::WWidget>(view.widget),
                                   Wt::WString{view.title},
@@ -365,7 +365,7 @@ void ViewManagerWtComponent::DockSubPane::AddView(const ViewInfo& view) {
 
   view.widget->setHeight(Wt::WLength{99, Wt::LengthUnit::Percentage});
 
-  assert(!root_pane_.widget_data_.contains(view.widget));
+  base::Check(!root_pane_.widget_data_.contains(view.widget));
   root_pane_.widget_data_.try_emplace(view.widget, view.id, tab_widget_, this);
 
   component_.added_views_.emplace_back(view.id);
@@ -422,8 +422,8 @@ ViewManagerWtComponent::OpenLayoutBlock(const LayoutNode& block) {
 }
 
 void ViewManagerWtComponent::CenterPane::AddView(const ViewInfo& view) {
-  assert(view.widget);
-  assert(!component_.IsViewAdded(view.id));
+  base::Check(view.widget);
+  base::Check(!component_.IsViewAdded(view.id));
 
   auto* tab_widget = component_.active_view_id_
                          ? root_pane_.GetTabWidget(*component_.active_view_id_)
@@ -442,7 +442,7 @@ void ViewManagerWtComponent::CenterPane::AddView(const ViewInfo& view) {
                                  Wt::ContentLoading::Eager);
   tab->setCloseable(true);
 
-  assert(!root_pane_.widget_data_.contains(view.widget));
+  base::Check(!root_pane_.widget_data_.contains(view.widget));
   root_pane_.widget_data_.try_emplace(view.widget, view.id, tab_widget, this);
 
   component_.added_views_.emplace_back(view.id);
@@ -466,8 +466,8 @@ ViewManagerWtComponent::RootPane::CreateTabWidget() {
 void ViewManagerWtComponent::RootPane::RegisterCenterView(
     const ViewInfo& view,
     Wt::WTabWidget& tab_widget) {
-  assert(view.widget);
-  assert(!widget_data_.contains(view.widget));
+  base::Check(view.widget);
+  base::Check(!widget_data_.contains(view.widget));
   widget_data_.try_emplace(view.widget, view.id, &tab_widget, &center_pane_);
 }
 

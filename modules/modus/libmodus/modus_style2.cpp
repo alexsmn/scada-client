@@ -1,5 +1,6 @@
 #include "modus/libmodus/modus_style2.h"
 
+#include "base/check.h"
 #include "libmodus/gfx/gdip.h"
 
 ModusStyle2::ModusStyle2(BlinkerManager& blinker_manager)
@@ -73,7 +74,7 @@ bool ModusStyle2::IsAnimated() const {
 }
 
 void ModusStyle2::OnBlink(bool state) {
-  assert(IsAnimated());
+  base::Check(IsAnimated());
   for (auto& o : animation_observers_)
     o.OnAnimationStep();
 }

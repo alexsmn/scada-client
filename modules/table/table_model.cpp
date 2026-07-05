@@ -1,14 +1,15 @@
 ﻿#include "modules/table/table_model.h"
 
+#include "aui/dialog_service.h"
 #include "aui/translation.h"
-#include "base/utf_convert.h"
+#include "base/check.h"
 #include "base/time/time.h"
+#include "base/utf_convert.h"
 #include "base/utils.h"
-#include "resources/common_resources.h"
-#include "modules/table/table_row.h"
 #include "controller/node_id_set.h"
 #include "model/data_items_node_ids.h"
-#include "aui/dialog_service.h"
+#include "modules/table/table_row.h"
+#include "resources/common_resources.h"
 
 namespace {
 
@@ -59,7 +60,7 @@ TableModel::TableModel(TableModelContext&& context)
 TableModel::~TableModel() = default;
 
 void TableModel::GetCellEx(TableCellEx& cell) const {
-  assert(cell.row >= 0 && cell.row <= (long)rows_.size());
+  base::Check(cell.row >= 0 && cell.row <= (long)rows_.size());
 
   cell.text.clear();
 
@@ -96,8 +97,8 @@ void TableModel::Clear() {
 }
 
 bool TableModel::DeleteRows(int start, int count) {
-  assert(start >= 0);
-  assert(count >= 0);
+  base::Check(start >= 0);
+  base::Check(count >= 0);
 
   if (start >= (int)rows_.size())
     return false;
@@ -174,7 +175,7 @@ bool TableModel::SetFormula(int row, std::string formula) {
       rows_.push_back(std::make_unique<TableRow>(*this, added_first + i));
   }
 
-  assert(rows_[row]);
+  base::Check(rows_[row]);
   TableRow& trow = *rows_[row];
 
   try {
@@ -223,7 +224,7 @@ std::u16string TableModel::GetTooltip(int row, int column_id) {
 }
 
 TableRow* TableModel::GetRow(int index) {
-  assert(index >= 0 && index <= (int)rows_.size());
+  base::Check(index >= 0 && index <= (int)rows_.size());
   if (index == static_cast<int>(rows_.size()))
     return nullptr;
   return rows_[index].get();
@@ -236,7 +237,7 @@ const TableRow* TableModel::GetRow(int index) const {
 bool TableModel::SetCellText(int row,
                              int column_id,
                              const std::u16string& text) {
-  assert(column_id == TableModel::COLUMN_TITLE);
+  base::Check(column_id == TableModel::COLUMN_TITLE);
 
   std::string text2 = UtfConvert<char>(text);
   if (!text2.empty() && text2[0] == L'=')

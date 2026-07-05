@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/check.h"
 #include "controller/command_handler.h"
 
 #include <functional>
@@ -133,7 +134,7 @@ inline BasicCommand<C>& BasicCommandRegistry<C>::AddCommand(
   }
 
   auto command_id = command.command_id;
-  assert(!command_map_.contains(command_id));
+  base::Check(!command_map_.contains(command_id));
   return command_map_.try_emplace(command_id, std::move(command)).first->second;
 }
 

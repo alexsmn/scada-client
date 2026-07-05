@@ -2,6 +2,7 @@
 
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
+#include "base/check.h"
 #include "base/u16format.h"
 #include "common/format.h"
 #include "common/formula_util.h"
@@ -61,7 +62,7 @@ std::u16string WriteModel::GetCurrentValue(bool formatted) const {
 }
 
 std::vector<std::u16string> WriteModel::GetDiscreteStates() const {
-  assert(discrete_);
+  base::Check(discrete_);
 
   std::u16string close_label = kDefaultCloseLabel;
   std::u16string open_label = kDefaultOpenLabel;

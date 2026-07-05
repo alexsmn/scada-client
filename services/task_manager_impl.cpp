@@ -1,6 +1,7 @@
 #include "services/task_manager_impl.h"
 
 #include "aui/translation.h"
+#include "base/check.h"
 #include "base/u16format.h"
 #include "core/progress_host.h"
 #include "events/local_events.h"
@@ -37,7 +38,7 @@ scada::StatusOr<std::vector<scada::WriteValue>> PrepareUpdateInputs(
     const NodeRef& node,
     scada::NodeAttributes attributes,
     scada::NodeProperties properties) {
-  assert(node.fetched());
+  base::Check(node.fetched());
 
   std::vector<scada::WriteValue> inputs;
   inputs.reserve(2 + properties.size());
@@ -376,7 +377,7 @@ Awaitable<void> TaskManagerImpl::RunTaskBody(TaskMethod method) {
 }
 
 void TaskManagerImpl::StartTask(Task&& task) {
-  assert(!task.IsNull());
+  base::Check(!task.IsNull());
 
   running_task_ = std::move(task);
 

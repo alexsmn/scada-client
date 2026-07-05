@@ -1,11 +1,11 @@
 #include "aui/wt/message_loop_wt.h"
 
+#include "base/check.h"
+
 #pragma warning(push)
 #pragma warning(disable : 4251 4275)
 #include <wt/WServer.h>
 #pragma warning(pop)
-
-#include <cassert>
 
 MessageLoopWt::MessageLoopWt(boost::asio::io_context& io_context)
     : io_context_{io_context},
@@ -18,7 +18,7 @@ MessageLoopWt::~MessageLoopWt() {}
 void MessageLoopWt::PostDelayedTask(Duration delay,
                                     Task task,
                                     const std::source_location& location) {
-  assert(task);
+  base::Check(task);
 
   Wt::WServer::instance()->schedule(
       std::chrono::duration_cast<std::chrono::milliseconds>(delay),

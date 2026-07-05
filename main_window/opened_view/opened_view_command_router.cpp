@@ -1,5 +1,6 @@
 #include "main_window/opened_view/opened_view_command_router.h"
 
+#include "base/check.h"
 #include "controller/controller.h"
 #include "main_window/opened_view/opened_view.h"
 #include "main_window/selection_command_router.h"
@@ -20,7 +21,7 @@ class OpenedViewCloseCommand final : public CommandHandler {
   }
 
   virtual void ExecuteCommand(unsigned command_id) override {
-    assert(command_id == ID_VIEW_CLOSE);
+    base::Check(command_id == ID_VIEW_CLOSE);
     opened_view_.Close();
   }
 
@@ -37,7 +38,7 @@ OpenedViewCommandRouter::OpenedViewCommandRouter(
 OpenedViewCommandRouter::~OpenedViewCommandRouter() = default;
 
 void OpenedViewCommandRouter::SetContext(OpenedView* opened_view) {
-  assert(!opened_view || &opened_view->controller());
+  base::Check(!opened_view || &opened_view->controller());
 
   controller_ = opened_view ? &opened_view->controller() : nullptr;
   close_command_ = opened_view
@@ -47,7 +48,7 @@ void OpenedViewCommandRouter::SetContext(OpenedView* opened_view) {
 
 void OpenedViewCommandRouter::AddCommandHandler(
     std::unique_ptr<CommandHandler> command_handler) {
-  assert(command_handler);
+  base::Check(command_handler);
   command_handlers_.emplace_back(std::move(command_handler));
 }
 
@@ -61,7 +62,7 @@ void OpenedViewCommandRouter::AddCommandHandlers(
 
 CommandHandler* OpenedViewCommandRouter::GetCommandHandler(
     unsigned command_id) {
-  assert(controller_);
+  base::Check(controller_);
 
   if (auto* handler = controller_->GetCommandHandler(command_id)) {
     return handler;

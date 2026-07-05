@@ -1,8 +1,7 @@
 #include "events/local_events.h"
 
+#include "base/check.h"
 #include "scada/event.h"
-
-#include <cassert>
 
 // Windows.h #defines ReportEvent to ReportEventA/W. Undo it.
 #ifdef ReportEvent
@@ -35,7 +34,7 @@ void LocalEvents::ReportEvent(Severity severity,
 
 void LocalEvents::AcknowledgeEvent(scada::EventId event_id) {
   auto i = FindEvent(event_id);
-  assert(i != events_.end());
+  base::Check(i != events_.end());
 
   scada::Event& event = **i;
   event.acked = true;
@@ -73,7 +72,6 @@ scada::EventSeverity LocalEvents::SeverityToEvent(Severity severity) {
     case SEV_INFO:
       return scada::kSeverityNormal;
     default:
-      assert(false);
-      return scada::kSeverityCritical;
+      base::NotReached();
   }
 }

@@ -1,6 +1,7 @@
 #include "create/opened_view_create_command.h"
 
 #include "aui/dialog_service.h"
+#include "base/check.h"
 #include "base/u16format.h"
 #include "controller/controller.h"
 #include "controller/selection_model.h"
@@ -74,7 +75,7 @@ void OpenedViewCreateCommand::ExecuteCommand(unsigned command_id) {
     return;
   }
 
-  assert(false);
+  base::NotReached();
 }
 
 bool OpenedViewCreateCommand::CanCreateRecord(

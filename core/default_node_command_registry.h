@@ -1,8 +1,8 @@
 #pragma once
 
+#include "base/check.h"
 #include "core/node_command_context.h"
 
-#include <cassert>
 #include <functional>
 #include <vector>
 
@@ -15,7 +15,7 @@ class DefaultNodeCommandRegistry {
   // Registers a handler. Handlers are evaluated in registration order until
   // one returns true.
   void AddHandler(Handler handler) {
-    assert(handler);
+    base::Check(handler);
     handlers_.push_back(std::move(handler));
   }
 

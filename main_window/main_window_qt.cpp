@@ -3,6 +3,7 @@
 #include "aui/models/menu_model.h"
 #include "aui/models/simple_menu_model.h"
 #include "aui/qt/client_utils_qt.h"
+#include "base/check.h"
 #include "base/utf_convert.h"
 #include "controller/action_manager.h"
 #include "controller/command_ui_registry.h"
@@ -198,7 +199,7 @@ void MainWindow::CreateMenuBar() {
     auto* submenu = menu_bar->addMenu(
         QString::fromStdU16String(main_menu_model_->GetLabelAt(i)));
     auto* submenu_model = main_menu_model_->GetSubmenuModelAt(i);
-    assert(submenu_model);
+    base::Check(submenu_model);
     QObject::connect(submenu, &QMenu::aboutToShow, this,
                      [submenu, submenu_model] {
                        submenu->clear();
@@ -213,13 +214,13 @@ void MainWindow::CreateMenuBar() {
 
 void MainWindow::RebuildMenuBar() {
   const auto top_level_actions = menuBar()->actions();
-  assert(top_level_actions.size() == main_menu_model_->GetItemCount());
+  base::Check(top_level_actions.size() == main_menu_model_->GetItemCount());
 
   for (int i = 0; i < main_menu_model_->GetItemCount(); ++i) {
     auto* submenu = top_level_actions[i]->menu();
     auto* submenu_model = main_menu_model_->GetSubmenuModelAt(i);
-    assert(submenu);
-    assert(submenu_model);
+    base::Check(submenu);
+    base::Check(submenu_model);
     submenu->clear();
     BuildMenu(*submenu, *submenu_model);
   }

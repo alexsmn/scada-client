@@ -2,6 +2,7 @@
 
 #include "aui/models/table_model.h"
 #include "aui/qt/table_model_adapter.h"
+#include "base/check.h"
 #include "base/value_util.h"
 #include "profile/window_definition_util.h"
 
@@ -33,7 +34,7 @@ class TableProxyModel : public QSortFilterProxyModel {
 
 bool TableProxyModel::lessThan(const QModelIndex& source_left,
                                const QModelIndex& source_right) const {
-  assert(source_left.column() == source_right.column());
+  base::Check(source_left.column() == source_right.column());
   int column_id = columns_[source_left.column()].id;
   return model_.CompareCells(source_left.row(), source_right.row(), column_id) <
          0;

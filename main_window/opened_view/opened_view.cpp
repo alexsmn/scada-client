@@ -2,6 +2,7 @@
 
 #include "aui/translation.h"
 #include "base/any_executor.h"
+#include "base/check.h"
 #include "base/utf_convert.h"
 #include "controller/command_handler.h"
 #include "controller/controller.h"
@@ -29,7 +30,7 @@ OpenedView::OpenedView(OpenedViewContext&& context)
 OpenedView::~OpenedView() {}
 
 void OpenedView::Init() {
-  assert(controller_factory_);
+  base::Check(controller_factory_);
   controller_ =
       controller_factory_(window_info_.command_id, *this, dialog_service_);
   if (!controller_) {
@@ -55,7 +56,7 @@ void OpenedView::Activate() {
 }
 
 void OpenedView::SetWindowTitle(std::u16string_view title) {
-  assert(!window_info().is_pane());
+  base::Check(!window_info().is_pane());
 
   if (user_title_ != title) {
     user_title_.assign(title.data(), title.size());
@@ -89,12 +90,12 @@ void OpenedView::UpdateTitle() {
   if (working_)
     title += u" [Выполнение]";
 
-  assert(main_window_);
+  base::Check(main_window_);
   main_window_->OnViewTitleUpdated(*this, title);
 }
 
 void OpenedView::Close() {
-  assert(main_window_);
+  base::Check(main_window_);
   main_window_->CloseView(*this);
 }
 
@@ -119,7 +120,7 @@ void OpenedView::UpdateWorking() {
 }
 
 void OpenedView::SetTitle(std::u16string_view title) {
-  assert(!window_info().is_pane());
+  base::Check(!window_info().is_pane());
   if (title_ != title) {
     title_.assign(title.data(), title.size());
     UpdateTitle();
@@ -137,7 +138,7 @@ WindowDefinition OpenedView::Save() {
 }
 
 void OpenedView::OpenView(const WindowDefinition& def) {
-  assert(main_window_);
+  base::Check(main_window_);
   CoSpawn(executor_, [this, def]() -> Awaitable<void> {
     co_await main_window_->OpenView(def, true);
   });

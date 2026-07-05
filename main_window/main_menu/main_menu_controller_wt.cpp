@@ -7,6 +7,8 @@
 #include <wt/WPopupMenu.h>
 #pragma warning(pop)
 
+#include "base/check.h"
+
 namespace {
 
 std::unique_ptr<Wt::WPopupMenu> CreatePopupMenu(aui::MenuModel& model);
@@ -91,7 +93,7 @@ std::unique_ptr<Wt::WWidget> MainMenuController::CreateWidget() {
   for (int i = 0; i < main_menu_model_->GetItemCount(); ++i) {
     auto label = main_menu_model_->GetLabelAt(i);
     auto* submenu_model = main_menu_model_->GetSubmenuModelAt(i);
-    assert(submenu_model);
+    base::Check(submenu_model);
     auto item = std::make_unique<Wt::WMenuItem>(std::move(label));
     item->setMenu(CreatePopupMenu(*submenu_model));
     menu->addItem(std::move(item));

@@ -1,13 +1,14 @@
 ﻿#include "modules/node_table/node_table_model.h"
 
+#include "app/string_const.h"
+#include "aui/translation.h"
+#include "base/any_executor_dispatch.h"
 #include "base/awaitable.h"
 #include "base/boost_log.h"
-#include "base/any_executor_dispatch.h"
+#include "base/check.h"
 #include "base/range_util.h"
 #include "base/utf_convert.h"
 #include "base/utils.h"
-#include "aui/translation.h"
-#include "scada/event.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_awaitable.h"
@@ -15,8 +16,8 @@
 #include "node_service/node_util.h"
 #include "properties/property_definition.h"
 #include "properties/property_service.h"
+#include "scada/event.h"
 #include "services/task_manager.h"
-#include "app/string_const.h"
 
 #include <boost/range/adaptor/transformed.hpp>
 
@@ -107,8 +108,8 @@ void NodeTableModel::GetCell(aui::GridCell& cell) {
     return;
   }
 
-  assert(cell.row >= 0 && cell.row < static_cast<int>(rows_.size()));
-  assert(cell.column >= 0 && cell.column < column_model_.GetCount());
+  base::Check(cell.row >= 0 && cell.row < static_cast<int>(rows_.size()));
+  base::Check(cell.column >= 0 && cell.column < column_model_.GetCount());
 
   const auto& node = rows_[cell.row].node;
   const auto& column = columns_[cell.column];
@@ -131,7 +132,8 @@ void NodeTableModel::GetCell(aui::GridCell& cell) {
 bool NodeTableModel::SetCellText(int row,
                                  int column,
                                  const std::u16string& text) {
-  assert(row >= 0 && row < static_cast<int>(rows_.size()));
+  // Row index comes from the grid edit path; the check below handles
+  // out-of-range values gracefully.
   if (row < 0 || row >= static_cast<int>(rows_.size()))
     return false;
 
@@ -153,7 +155,7 @@ bool NodeTableModel::SetCellText(int row,
 
 aui::EditData NodeTableModel::GetEditData(int row, int column) {
   const auto& node = rows_[row].node;
-  assert(node);
+  base::Check(node);
 
   const auto& c = columns_[column];
   if (c.attr_id == scada::AttributeId::NodeId)

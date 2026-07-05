@@ -1,5 +1,6 @@
 #include "favorites/favourites.h"
 
+#include "base/check.h"
 #include "base/utils.h"
 
 const Page* Favourites::GetFolder(std::u16string_view name) const {
@@ -31,7 +32,7 @@ void Favourites::DeleteFolder(const Page& folder) {
       return;
     }
   }
-  assert(false);
+  base::NotReached();
 }
 
 void Favourites::Add(const WindowDefinition& win, const Page& folder) {

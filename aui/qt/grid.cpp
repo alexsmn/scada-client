@@ -1,7 +1,8 @@
 #include "aui/qt/grid.h"
 
-#include "base/value_util.h"
 #include "aui/models/grid_model_util.h"
+#include "base/check.h"
+#include "base/value_util.h"
 
 #include <QClipboard>
 #include <QGuiApplication>
@@ -294,7 +295,7 @@ void Grid::SetSelectionChangeHandler(SelectionChangeHandler handler) {
 }
 
 void Grid::OpenEditor(const GridModelIndex& index) {
-  assert(index.is_valid());
+  base::Check(index.is_valid());
   edit(model()->index(index.row, index.column));
 }
 

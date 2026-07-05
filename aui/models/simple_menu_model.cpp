@@ -1,6 +1,6 @@
 #include "aui/models/simple_menu_model.h"
 
-#include <cassert>
+#include "base/check.h"
 
 namespace aui {
 
@@ -59,7 +59,7 @@ void SimpleMenuModel::AddItem(int command_id, const std::u16string& label) {
 void SimpleMenuModel::AddSeparator(MenuSeparatorType separator_type) {
 #if !defined(USE_AURA)
   if (separator_type != NORMAL_SEPARATOR) {
-    assert(false && "Not implemented");
+    base::NotReached("Not implemented");
   }
 #endif
   // DCHECK(items_.empty() || items_.back().type != TYPE_SEPARATOR);
@@ -111,7 +111,7 @@ void SimpleMenuModel::InsertSeparatorAt(int index,
                                         MenuSeparatorType separator_type) {
 #if !defined(USE_AURA)
   if (separator_type != NORMAL_SEPARATOR) {
-    assert(false && "Not implemented");
+    base::NotReached("Not implemented");
   }
 #endif
   Item item = {kSeparatorId, std::u16string(), TYPE_SEPARATOR,
@@ -268,8 +268,8 @@ int SimpleMenuModel::FlipIndex(int index) const {
 // SimpleMenuModel, Private:
 
 int SimpleMenuModel::ValidateItemIndex(int index) const {
-  assert(index >= 0);
-  assert(static_cast<size_t>(index) < items_.size());
+  base::Check(index >= 0);
+  base::Check(static_cast<size_t>(index) < items_.size());
   return index;
 }
 
@@ -286,9 +286,9 @@ void SimpleMenuModel::InsertItemAtIndex(const Item& item, int index) {
 void SimpleMenuModel::ValidateItem(const Item& item) {
 #ifndef NDEBUG
   if (item.type == TYPE_SEPARATOR) {
-    assert(item.command_id == kSeparatorId);
+    base::Check(item.command_id == kSeparatorId);
   } else {
-    assert(item.command_id >= 0);
+    base::Check(item.command_id >= 0);
   }
 #endif  // NDEBUG
 }

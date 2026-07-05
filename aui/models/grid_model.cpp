@@ -1,8 +1,7 @@
 #include "aui/models/grid_model.h"
 
 #include "aui/models/grid_range.h"
-
-#include <cassert>
+#include "base/check.h"
 
 namespace aui {
 
@@ -11,7 +10,7 @@ namespace aui {
 GridModel::GridModel() {}
 
 GridModel::~GridModel() {
-  assert(!observers_.might_have_observers());
+  base::Check(!observers_.might_have_observers());
 }
 
 std::u16string GridModel::GetHint(int row, int column) {

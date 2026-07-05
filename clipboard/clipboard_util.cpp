@@ -48,7 +48,8 @@ Awaitable<void> PasteChildrenAsync(TaskManager& task_manager,
                                    std::vector<scada::NodeState> children,
                                    const scada::NodeId& parent_id) {
   for (auto& child : children) {
-    assert(child.reference_type_id == scada::id::Organizes);
+    // Clipboard payload is external data; the reference type is not
+    // guaranteed to be Organizes.
     child.parent_id = parent_id;
     co_await PasteNodesFromNodeStateRecursiveAsync(task_manager,
                                                    std::move(child));
@@ -80,7 +81,8 @@ Awaitable<void> PasteNodesFromNodeTreeAsync(
     const protocol::NodeTree& node_tree) {
   for (const auto& packed_node : node_tree.node()) {
     auto node_state = ConvertTo<scada::NodeState>(packed_node);
-    assert(node_state.reference_type_id == scada::id::Organizes);
+    // Clipboard payload is external data; the reference type is not
+    // guaranteed to be Organizes.
     node_state.parent_id = new_parent_id;
     co_await PasteNodesFromNodeStateRecursiveAsync(task_manager,
                                                    std::move(node_state));
@@ -161,7 +163,9 @@ void CopyNodesToClipboardSync(const std::vector<NodeRef>& nodes) {
 }
 
 void CopyNodesToClipboard(const std::vector<NodeRef>& nodes) {
-  assert(!nodes.empty());
+  // Empty user selection: nothing to copy.
+  if (nodes.empty())
+    return;
 
   CoSpawn(ThreadExecutor{}, [nodes]() -> Awaitable<void> {
     try {

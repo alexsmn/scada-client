@@ -1,13 +1,14 @@
 #include "aui/dialog_service_mock.h"
 #include "aui/test/app_environment.h"
+#include "base/check.h"
 #include "base/test/test_executor.h"
-#include "modules/web/web_component.h"
 #include "controller/controller_factory_mock.h"
 #include "controller/controller_mock.h"
 #include "controller/controller_registry.h"
 #include "controller/window_info.h"
 #include "main_window/view_manager.h"
 #include "main_window/view_manager_delegate_mock.h"
+#include "modules/web/web_component.h"
 #include "view_manager_qt_component.h"
 
 #include <QMainWindow>
@@ -78,7 +79,7 @@ void ViewManagerTest::SetUp() {
                                               // This handler is intercepted by
                                               // fake `controller_factory_` and
                                               // must never invoked.
-                                              assert(false);
+                                              base::NotReached();
                                               return nullptr;
                                             });
 }

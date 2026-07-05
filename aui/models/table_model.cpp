@@ -1,15 +1,14 @@
 #include "aui/models/table_model.h"
 
 #include "aui/models/table_model_observer.h"
-
-#include <cassert>
+#include "base/check.h"
 
 namespace aui {
 
 TableModel::TableModel() = default;
 
 TableModel::~TableModel() {
-  assert(!observers_.might_have_observers());
+  base::Check(!observers_.might_have_observers());
 }
 
 std::u16string TableModel::GetTooltip(int row, int column_id) {
@@ -44,31 +43,31 @@ void TableModel::NotifyModelChanged() {
 }
 
 void TableModel::NotifyItemsAdding(int first, int count) {
-  assert(count > 0);
+  base::Check(count > 0);
   for (auto& o : observers_)
     o.OnItemsAdding(first, count);
 }
 
 void TableModel::NotifyItemsAdded(int first, int count) {
-  assert(count > 0);
+  base::Check(count > 0);
   for (auto& o : observers_)
     o.OnItemsAdded(first, count);
 }
 
 void TableModel::NotifyItemsRemoving(int first, int count) {
-  assert(count > 0);
+  base::Check(count > 0);
   for (auto& o : observers_)
     o.OnItemsRemoving(first, count);
 }
 
 void TableModel::NotifyItemsRemoved(int first, int count) {
-  assert(count > 0);
+  base::Check(count > 0);
   for (auto& o : observers_)
     o.OnItemsRemoved(first, count);
 }
 
 void TableModel::NotifyItemsChanged(int first, int count) {
-  assert(count > 0);
+  base::Check(count > 0);
   for (auto& o : observers_)
     o.OnItemsChanged(first, count);
 }

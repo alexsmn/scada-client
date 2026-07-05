@@ -1,6 +1,7 @@
 #include "main_window/status_bar/user_status_provider.h"
 
 #include "base/any_executor_dispatch.h"
+#include "base/check.h"
 #include "events/node_event_provider.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
@@ -20,7 +21,7 @@ UserStatusProvider::~UserStatusProvider() {
 }
 
 void UserStatusProvider::Init(const ChangeNotifier& change_notifier) {
-  assert(shared_from_this());
+  base::Check(!weak_from_this().expired());
 
   change_notifier_ = change_notifier;
 

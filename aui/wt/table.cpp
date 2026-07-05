@@ -3,6 +3,7 @@
 #include "aui/models/table_column.h"
 #include "aui/models/table_model.h"
 #include "aui/wt/table_model_adapter.h"
+#include "base/check.h"
 #include "profile/window_definition_util.h"
 
 #include <Wt/WSortFilterProxyModel.h>
@@ -27,7 +28,7 @@ class TableProxyModel : public Wt::WSortFilterProxyModel {
 
 bool TableProxyModel::lessThan(const Wt::WModelIndex& source_left,
                                const Wt::WModelIndex& source_right) const {
-  assert(source_left.column() == source_right.column());
+  base::Check(source_left.column() == source_right.column());
   int column_id = columns_[source_left.column()].id;
   return model_.CompareCells(source_left.row(), source_right.row(), column_id) <
          0;

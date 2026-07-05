@@ -1,8 +1,8 @@
 #include "aui/qt/message_loop_qt.h"
 
 #include "base/boost_log.h"
+#include "base/check.h"
 
-#include <cassert>
 #include <exception>
 
 namespace {
@@ -45,7 +45,7 @@ MessageLoopQt::~MessageLoopQt() {
 void MessageLoopQt::PostDelayedTask(Duration delay,
                                     Task task,
                                     const std::source_location& location) {
-  assert(task);
+  base::Check(task);
 
   std::lock_guard<std::recursive_mutex> lock{mutex_};
   if (delay == Duration()) {

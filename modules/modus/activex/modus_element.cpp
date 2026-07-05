@@ -1,13 +1,14 @@
 ﻿#include "modus/activex/modus_element.h"
 
+#include "base/check.h"
 #include "base/format.h"
-#include <format>
 #include "base/utf_convert.h"
 #include "base/win/scoped_bstr.h"
 #include "events/event_set.h"
 #include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
 #include "modus/activex/modus_object.h"
+#include <format>
 
 namespace modus {
 
@@ -107,7 +108,7 @@ std::wstring_view ToString(Limit limit) {
   static_assert(std::size(kStrings) == static_cast<int>(Limit::Count),
                 "Wrong limits");
   auto index = static_cast<size_t>(limit);
-  assert(index < std::size(kStrings));
+  base::Check(index < std::size(kStrings));
   return kStrings[index];
 }
 

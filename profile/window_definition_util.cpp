@@ -34,8 +34,8 @@ WindowItem LoadWindowItem(const boost::json::value& item_data) {
 
 boost::json::value SaveWindowItem(const WindowItem& item) {
   if (item.attributes.is_object()) {
-    assert(!item.attributes.as_object().if_contains("name"));
-    assert(!item.attributes.as_object().if_contains("@value"));
+    // Attributes may originate from external profile JSON; a stray "name"
+    // key is overwritten below and "@value" is tolerated.
     auto item_data = item.attributes;
     SetKey(item_data, "name", item.name);
     return item_data;
@@ -72,7 +72,9 @@ std::optional<TimeRange> FromJson(const boost::json::value& value) {
     if (type == TimeRange::Type::Count)
       return std::nullopt;
 
-    if (type != TimeRange::Type::Custom)
+    // Profile JSON is external: bare Interval/Custom types need their
+    // payload fields parsed below.
+    if (type != TimeRange::Type::Custom && type != TimeRange::Type::Interval)
       return type;
   }
 

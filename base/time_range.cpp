@@ -1,5 +1,6 @@
 #include "base/time_range.h"
 
+#include "base/check.h"
 #include "base/struct_writer.h"
 
 #include <string_view>
@@ -75,7 +76,9 @@ scada::DateTimeRange ToDateTimeRange(const TimeRange& time_range,
       break;
 
     default:
-      assert(false);
+      // Unknown type: time ranges can be restored from profile data
+      // (ParseTimeRangeType yields Count for unrecognized strings); fall
+      // back via the clamp below.
       break;
   }
 
@@ -88,14 +91,14 @@ scada::DateTimeRange ToDateTimeRange(const TimeRange& time_range,
     to = to.LocalMidnight() + base::TimeDelta::FromDays(1);
   }
 
-  if (from >= to) {
+  if (from.is_null() || from >= to) {
     to = now;
     from = to - base::TimeDelta::FromHours(1);
   }
 
-  assert(!from.is_null());
-  assert(!to.is_null());
-  assert(from <= to);
+  base::Check(!from.is_null());
+  base::Check(!to.is_null());
+  base::Check(from <= to);
 
   return {from, to};
 }

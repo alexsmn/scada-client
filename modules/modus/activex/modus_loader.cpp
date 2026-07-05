@@ -1,13 +1,8 @@
 ﻿#include "modus/activex/modus_loader.h"
 
-#include <cassert>
-
+#include "base/check.h"
 #include "base/debug_util.h"
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/trim.hpp>
 #include "base/utf_convert.h"
-#include "resources/common_resources.h"
 #include "controller/window_info.h"
 #include "filesystem/file_cache_updater.h"
 #include "filesystem/file_util.h"
@@ -15,7 +10,10 @@
 #include "modus/activex/modus_document.h"
 #include "modus/activex/modus_element.h"
 #include "modus/activex/modus_object.h"
-
+#include "resources/common_resources.h"
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/trim.hpp>
 
 namespace modus {
 
@@ -123,7 +121,7 @@ void ModusLoader::LoadElement(std::unique_ptr<ModusObject>& object,
                               const std::wstring& binding,
                               long object_tag,
                               long tech_index) {
-  assert(!binding.empty());
+  base::Check(!binding.empty());
 
   // determine object type
   std::wstring prop_name;

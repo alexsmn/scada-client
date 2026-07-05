@@ -1,5 +1,6 @@
 #include "main_window/selection_command_router.h"
 
+#include "base/check.h"
 #include "controller/selection_model.h"
 #include "core/selection_command_context.h"
 #include "main_window/main_window_interface.h"
@@ -57,10 +58,10 @@ void SelectionCommandRouter::ExecuteCommand(unsigned command_id) {
 }
 
 SelectionCommandContext SelectionCommandRouter::command_context() const {
-  assert(selection_);
-  assert(dialog_service_);
-  assert(main_window_);
-  assert(opened_view_);
+  base::Check(selection_);
+  base::Check(dialog_service_);
+  base::Check(main_window_);
+  base::Check(opened_view_);
 
   return {.selection = *selection_,
           .dialog_service = *dialog_service_,

@@ -2,8 +2,7 @@
 
 #ifdef _WIN32
 
-#include <cassert>
-
+#include "base/check.h"
 #include "base/pickle.h"
 #include "base/utf_convert.h"
 
@@ -132,10 +131,8 @@ FormatEtcEnumerator::~FormatEtcEnumerator() {
 STDMETHODIMP FormatEtcEnumerator::Next(ULONG count,
                                        FORMATETC* elements_array,
                                        ULONG* elements_fetched) {
-  // MSDN says |elements_fetched| is allowed to be NULL if count is 1.
-  if (!elements_fetched) {
-    assert(count == 1ul);
-  }
+  // MSDN says |elements_fetched| is allowed to be NULL if count is 1. The
+  // caller is an external COM client, so this is not enforced here.
 
   // This method copies count elements into |elements_array|.
   ULONG index = 0;
@@ -439,23 +436,26 @@ OSExchangeData::~OSExchangeData() {
 }
 
 bool OSExchangeData::HasCustomFormat(CustomFormat format) const {
-  assert(data_object_);
+  base::Check(data_object_);
   FORMATETC format_etc = {format, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
   return data_object_->QueryGetData(&format_etc) == S_OK;
 }
 
 bool OSExchangeData::GetPickledData(CustomFormat format,
                                     base::Pickle& data) const {
-  assert(data_object_);
+  base::Check(data_object_);
   FORMATETC format_etc = {format, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
   bool success = false;
   STGMEDIUM medium;
   if (SUCCEEDED(data_object_->GetData(&format_etc, &medium))) {
     if (medium.tymed & TYMED_HGLOBAL) {
       ScopedHGlobal<char*> c_data(medium.hGlobal);
-      assert(c_data.Size() > 0u);
-      data = base::Pickle(c_data.get(), static_cast<int>(c_data.Size()));
-      success = true;
+      // Clipboard/drag data comes from an external source; ignore empty
+      // blocks.
+      if (c_data.Size() > 0u) {
+        data = base::Pickle(c_data.get(), static_cast<int>(c_data.Size()));
+        success = true;
+      }
     }
     ReleaseStgMedium(&medium);
   }

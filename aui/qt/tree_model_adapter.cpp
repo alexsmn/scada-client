@@ -4,10 +4,10 @@
 #include "aui/drag_drop_types.h"
 #include "aui/models/tree_model.h"
 #include "aui/qt/image_util.h"
+#include "base/check.h"
 
 #include <QMimeData>
 #include <QSize>
-#include <cassert>
 
 namespace aui {
 
@@ -109,7 +109,7 @@ QModelIndex TreeModelAdapter::index(int row,
                                     int column,
                                     const QModelIndex& parent) const {
   if (!parent.isValid()) {
-    assert(row == 0);
+    base::Check(row == 0);
     return GetNodeIndex(model_->GetRoot(), column);
   }
 
@@ -122,7 +122,7 @@ QModelIndex TreeModelAdapter::index(int row,
 }
 
 QModelIndex TreeModelAdapter::parent(const QModelIndex& child) const {
-  assert(child.isValid());
+  base::Check(child.isValid());
 
   void* child_node = GetNode(child);
 
@@ -148,7 +148,7 @@ int TreeModelAdapter::columnCount(const QModelIndex& parent) const {
 }
 
 QVariant TreeModelAdapter::data(const QModelIndex& index, int role) const {
-  assert(index.isValid());
+  base::Check(index.isValid());
 
   void* node = GetNode(index);
 
@@ -185,7 +185,7 @@ QVariant TreeModelAdapter::data(const QModelIndex& index, int role) const {
 bool TreeModelAdapter::setData(const QModelIndex& index,
                                const QVariant& value,
                                int role) {
-  assert(index.isValid());
+  base::Check(index.isValid());
 
   void* node = GetNode(index);
 
@@ -205,7 +205,7 @@ bool TreeModelAdapter::setData(const QModelIndex& index,
 }
 
 Qt::ItemFlags TreeModelAdapter::flags(const QModelIndex& index) const {
-  assert(index.isValid());
+  base::Check(index.isValid());
 
   auto flags = QAbstractItemModel::flags(index);
 

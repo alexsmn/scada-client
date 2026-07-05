@@ -3,6 +3,7 @@
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
 #include "base/awaitable.h"
+#include "base/check.h"
 #include "base/program_options.h"
 #include "base/u16format.h"
 #include "controller/command_handler.h"
@@ -39,8 +40,8 @@ void AddMenuCommands(aui::SimpleMenuModel& menu,
                      MenuGroup menu_group) {
   for (const auto& command : commands.commands()) {
     if (command.menu_group == menu_group) {
-      assert(command.command_id != 0);
-      assert(!command.title.empty());
+      base::Check(command.command_id != 0);
+      base::Check(!command.title.empty());
 
       if (command.checked_handler) {
         menu.AddCheckItem(command.command_id, command.title);
@@ -83,7 +84,7 @@ void AddMenuContributions(
         title = command->title;
       }
     }
-    assert(!title.empty());
+    base::Check(!title.empty());
 
     if (contribution.checkable) {
       menu.AddCheckItem(contribution.command_id, title);
@@ -108,8 +109,7 @@ std::vector<std::string>& GetFavouritesMenuWindowTypes(MainMenuId menu_id) {
     case MainMenuId::Graph:
       return graph_window_types;
     default:
-      assert(false);
-      return table_window_types;
+      base::NotReached();
   }
 }
 
@@ -164,7 +164,7 @@ void DisplayMenuModel::ActivatedAt(int index) {
     view->Activate();
   } else {
     // add new window
-    assert(item.window_info);
+    base::Check(item.window_info);
     WindowDefinition def(*item.window_info);
     def.path = item.path;
     CoSpawn(executor_, [this, def = std::move(def)]() -> Awaitable<void> {
@@ -317,7 +317,7 @@ void WindowMenuModel::MenuWillShow() {
 
 void WindowMenuModel::ActivatedAt(int index) {
   const auto& views = view_manager_.views();
-  assert(index < static_cast<int>(views.size()));
+  base::Check(index < static_cast<int>(views.size()));
   auto i = views.begin();
   std::advance(i, index);
   OpenedView& opened_view = **i;
@@ -350,7 +350,7 @@ void TrashMenuModel::MenuWillShow() {
 
 void TrashMenuModel::ActivatedAt(int index) {
   Page& trash = profile_.trash;
-  assert(index < trash.GetWindowCount());
+  base::Check(index < trash.GetWindowCount());
   auto window = trash.GetWindow(index);
   trash.DeleteWindow(index);
   CoSpawn(executor_, [this, window = std::move(window)]() -> Awaitable<void> {

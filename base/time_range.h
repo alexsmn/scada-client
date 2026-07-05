@@ -1,9 +1,8 @@
 #pragma once
 
+#include "base/check.h"
 #include "base/time/time.h"
 #include "scada/date_time_range.h"
-
-#include <cassert>
 
 // TODO: Rename.
 struct TimeRange {
@@ -14,13 +13,13 @@ struct TimeRange {
   TimeRange() {}
 
   TimeRange(Type type) : type{type} {
-    assert(type != Type::Custom && type != Type::Interval &&
-           type != Type::Count);
+    base::Check(type != Type::Custom && type != Type::Interval &&
+                type != Type::Count);
   }
 
   TimeRange(base::TimeDelta interval)
       : type{Type::Interval}, interval{interval} {
-    assert(!interval.is_zero());
+    base::Check(!interval.is_zero());
   }
 
   TimeRange(base::Time start, base::Time end, bool dates = false)

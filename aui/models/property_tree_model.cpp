@@ -2,7 +2,7 @@
 
 #include "aui/translation.h"
 
-#include <cassert>
+#include "base/check.h"
 
 namespace aui {
 
@@ -20,7 +20,7 @@ PropertyGroupTreeNode::PropertyGroupTreeNode(PropertyGroup& property_group,
 }
 
 void PropertyGroupTreeNode::Update() {
-  assert(GetChildCount() == 0);
+  base::Check(GetChildCount() == 0);
 
   for (int i = 0; i < property_group.GetCount(); ++i) {
     std::unique_ptr<PropertyTreeNode> node;
@@ -87,7 +87,7 @@ void PropertyItemTreeNode::HandleEditButton(int column_id) const {
 
 PropertyTreeModel::PropertyTreeModel(PropertyModel& property_model)
     : property_model_{property_model} {
-  assert(!property_model_.model_changed_handler);
+  base::Check(!property_model_.model_changed_handler);
   property_model_.model_changed_handler = [this] {
     if (root()->GetChildCount() != 0)
       Remove(*root(), 0, root()->GetChildCount());
@@ -99,7 +99,7 @@ PropertyTreeModel::PropertyTreeModel(PropertyModel& property_model)
     }
   };
 
-  assert(!property_model_.properties_changed_handler);
+  base::Check(!property_model_.properties_changed_handler);
   property_model_.properties_changed_handler = [this](PropertyGroup& group,
                                                       int first, int count) {
     PropertiesChanged(group, first, count);

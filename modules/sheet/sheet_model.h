@@ -1,9 +1,10 @@
 #pragma once
 
-#include "base/blinker.h"
-#include "modules/sheet/sheet_format.h"
 #include "aui/models/fixed_row_model.h"
 #include "aui/models/grid_model.h"
+#include "base/blinker.h"
+#include "base/check.h"
+#include "modules/sheet/sheet_format.h"
 
 #include <set>
 
@@ -90,13 +91,13 @@ class SheetModel : private SheetModelContext,
 };
 
 inline std::unique_ptr<SheetCell>& SheetModel::mutable_cell(int row, int col) {
-  assert(row >= 0 && row < row_count_);
-  assert(col >= 0 && col < column_count_);
+  base::Check(row >= 0 && row < row_count_);
+  base::Check(col >= 0 && col < column_count_);
   return cells_[row * column_count() + col];
 }
 
 inline const SheetCell* SheetModel::cell(int row, int col) const {
-  assert(row >= 0 && row < row_count_);
-  assert(col >= 0 && col < column_count_);
+  base::Check(row >= 0 && row < row_count_);
+  base::Check(col >= 0 && col < column_count_);
   return cells_[row * column_count() + col].get();
 }

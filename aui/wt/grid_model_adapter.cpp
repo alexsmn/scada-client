@@ -2,6 +2,7 @@
 
 #include "aui/color.h"
 #include "aui/models/grid_range.h"
+#include "base/check.h"
 
 namespace aui {
 
@@ -101,8 +102,7 @@ Wt::cpp17::any GridModelAdapter::headerData(int section,
     }
 
   } else {
-    assert(false);
-    return Wt::cpp17::any();
+    base::NotReached();
   }
 }
 

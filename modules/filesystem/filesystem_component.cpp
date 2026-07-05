@@ -1,6 +1,7 @@
 ﻿#include "filesystem/filesystem_component.h"
 
 #include "aui/translation.h"
+#include "base/check.h"
 #include "base/client_paths.h"
 #include "base/path_service.h"
 #include "controller/action.h"
@@ -151,7 +152,7 @@ void FileSystemComponent::StartUp() {
 void FileSystemComponent::AddFileCommand(
     unsigned command_id,
     const scada::NodeId& type_definition_id) {
-  assert(selection_commands_);
+  base::Check(selection_commands_);
 
   const auto& file_type = node_service_.GetNode(type_definition_id);
   file_type.StartFetch(NodeFetchStatus::NodeOnly());

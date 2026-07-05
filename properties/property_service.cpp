@@ -1,6 +1,7 @@
 #include "properties/property_service.h"
 
 #include "base/any_executor.h"
+#include "base/check.h"
 #include "base/range_util.h"
 #include "base/u16format.h"
 #include "model/data_items_node_ids.h"
@@ -62,8 +63,8 @@ void CollectCreates(const NodeRef& node,
 // Returns unfetched type definitions.
 std::unordered_set<NodeRef> GetChildTypeDefinitions(
     const NodeRef& parent_node) {
-  assert(parent_node.fetched());
-  assert(parent_node.type_definition().fetched());
+  base::Check(parent_node.fetched());
+  base::Check(parent_node.type_definition().fetched());
 
   std::unordered_set<NodeRef> child_type_definitions;
 
@@ -153,7 +154,7 @@ const PropertyDefinition* PropertyService::GetPropertyDef(
 void PropertyService::GetTypeProperties(
     const NodeRef& type_definition,
     std::unordered_set<NodeRef>& property_decls) {
-  assert(type_definition.fetched());
+  base::Check(type_definition.fetched());
   for (auto supertype_definition = type_definition; supertype_definition;
        supertype_definition = supertype_definition.supertype()) {
     for (const auto& p : supertype_definition.targets(scada::id::HasProperty))
@@ -171,7 +172,7 @@ void PropertyService::GetTypeProperties(
 
 PropertyDefs PropertyService::GetTypePropertyDefs(
     const NodeRef& type_definition) {
-  assert(type_definition.fetched());
+  base::Check(type_definition.fetched());
 
   std::unordered_set<NodeRef> prop_decls;
   GetTypeProperties(type_definition, prop_decls);

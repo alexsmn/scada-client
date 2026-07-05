@@ -1,8 +1,8 @@
 #pragma once
 
+#include "base/check.h"
 #include "base/json.h"
 
-#include <cassert>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -31,24 +31,24 @@ class PageLayoutBlock {
   bool empty() const { return type == PANE && wins.empty(); }
 
   PageLayoutBlock& top() {
-    assert(type == SPLIT);
-    assert(left);
+    base::Check(type == SPLIT);
+    base::Check(left);
     return *left;
   }
 
   PageLayoutBlock& bottom() {
-    assert(type == SPLIT);
-    assert(right);
+    base::Check(type == SPLIT);
+    base::Check(right);
     return *right;
   }
 
   void add(int window_id) {
-    assert(type == PANE);
+    base::Check(type == PANE);
     wins.push_back(window_id);
   }
 
   void split(bool horizontally) {
-    assert(wins.empty());
+    base::Check(wins.empty());
     if (type != SPLIT) {
       type = SPLIT;
       left = std::make_unique<PageLayoutBlock>();

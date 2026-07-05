@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cassert>
+#include "base/check.h"
 
 namespace aui {
 
@@ -16,32 +16,32 @@ class GridRange {
 
   int row() const { return row_; }
   void set_row(int row) {
-    assert(row >= 0);
+    base::Check(row >= 0);
     row_ = row;
   }
   int column() const { return column_; }
   void set_column(int column) {
-    assert(column >= 0);
+    base::Check(column >= 0);
     column_ = column;
   }
 
   int row_count() const { return row_count_; }
   void set_row_count(int count) {
-    assert(count >= 0);
+    base::Check(count >= 0);
     row_count_ = count;
   }
   int column_count() const { return column_count_; }
   void set_column_count(int count) {
-    assert(count >= 0);
+    base::Check(count >= 0);
     column_count_ = count;
   }
 
   int last_row() const {
-    assert(row_count_ > 0);
+    base::Check(row_count_ > 0);
     return row_ + row_count_ - 1;
   }
   int last_column() const {
-    assert(column_count_ > 0);
+    base::Check(column_count_ > 0);
     return column_ + column_count_ - 1;
   }
 

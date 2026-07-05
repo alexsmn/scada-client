@@ -3,6 +3,7 @@
 #include "address_space/generic_node_factory.h"
 #include "address_space/test/scada_test_address_space.h"
 #include "aui/dialog_service_mock.h"
+#include "base/check.h"
 #include "base/test/awaitable_test.h"
 #include "common/node_state.h"
 #include "model/data_items_node_ids.h"
@@ -21,8 +22,6 @@
 #include "services/task_manager_mock.h"
 
 #include <gmock/gmock.h>
-
-#include <cassert>
 
 using namespace testing;
 
@@ -109,8 +108,8 @@ class NodePropertyModelTest : public Test {
             .set_parent(scada::id::Organizes, data_items::id::DataItems)
             .set_attributes(
                 scada::NodeAttributes{}.set_display_name(u"Group")));
-    assert(status);
-    assert(node);
+    base::Check(status);
+    base::Check(node);
 
     fetcher_->SetFetchStatus(kNodeId, NodeFetchStatus{});
   }

@@ -1,8 +1,9 @@
 #include "base/excel.h"
 
+#include "base/check.h"
+
 #ifdef _WIN32
 
-#include <cassert>
 #include <vector>
 
 #include <format>
@@ -87,8 +88,8 @@ Microsoft::WRL::ComPtr<IDispatch> GetIndexedProperty(
 // ExcelSheetModel
 
 void ExcelSheetModel::SetDataSize(int rows, int cols) {
-  assert(rows >= 1);
-  assert(cols >= 0);
+  base::Check(rows >= 1);
+  base::Check(cols >= 0);
 
   SAFEARRAYBOUND bounds[2];
   bounds[0].lLbound = 1;

@@ -2,7 +2,7 @@
 
 #include "controller/controller_registry.h"
 
-#include <cassert>
+#include "base/check.h"
 
 const WindowInfo* FindWindowInfo(unsigned command_id) {
   auto* registrar = GetControllerRegistrar(command_id);
@@ -11,7 +11,7 @@ const WindowInfo* FindWindowInfo(unsigned command_id) {
 
 const WindowInfo& GetWindowInfo(unsigned command_id) {
   const WindowInfo* info = FindWindowInfo(command_id);
-  assert(info);
+  base::Check(info);
   return *info;
 }
 

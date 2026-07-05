@@ -1,6 +1,6 @@
 #include "controller_registry.h"
 
-#include <cassert>
+#include "base/check.h"
 
 namespace {
 
@@ -35,12 +35,12 @@ class ControllerFactoryRegistrar final : public ControllerRegistrarBase {
 // ControllerRegistry
 
 ControllerRegistry::ControllerRegistry() {
-  assert(!g_controller_registry);
+  base::Check(!g_controller_registry);
   g_controller_registry = this;
 }
 
 ControllerRegistry::~ControllerRegistry() {
-  assert(g_controller_registry == this);
+  base::Check(g_controller_registry == this);
   g_controller_registry = nullptr;
 }
 
@@ -51,9 +51,9 @@ void ControllerRegistry::AddControllerFactory(
   auto* registrar =
       new ControllerFactoryRegistrar(window_info, controller_factory);
 
-  assert(g_controller_registry);
+  base::Check(g_controller_registry);
   auto& registrars = g_controller_registry->registrars_;
-  assert(!registrars.contains(window_info.command_id));
+  base::Check(!registrars.contains(window_info.command_id));
   registrars.try_emplace(window_info.command_id, registrar);
 }
 
@@ -73,7 +73,7 @@ ControllerRegistrarBase::ControllerRegistrarBase(const WindowInfo& window_info,
     : window_info_{window_info} {
   if (is_static) {
     auto& registrar = GetStaticControllers();
-    assert(registrar.find(window_info.command_id) == registrar.end());
+    base::Check(registrar.find(window_info.command_id) == registrar.end());
     registrar.emplace(window_info.command_id, this);
   }
 }

@@ -2,13 +2,14 @@
 
 #include "aui/translation.h"
 #include "base/boost_log.h"
+#include "base/check.h"
 #include "base/u16format.h"
 #include "base/utf_convert.h"
-#include "portfolio/portfolio.h"
-#include "scada/event.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_service.h"
+#include "portfolio/portfolio.h"
+#include "scada/event.h"
 
 PortfolioManager::PortfolioManager(PortfolioManagerContext&& context)
     : PortfolioManagerContext{std::move(context)} {
@@ -99,7 +100,7 @@ Portfolio& PortfolioManager::New() {
 
 void PortfolioManager::Rename(const Portfolio& portfolio,
                               std::u16string_view name) {
-  assert(Find(portfolio) != portfolios.end());
+  base::Check(Find(portfolio) != portfolios.end());
 
   Portfolio& p = const_cast<Portfolio&>(portfolio);
   p.name.assign(name.data(), name.size());
@@ -110,7 +111,7 @@ void PortfolioManager::Rename(const Portfolio& portfolio,
 
 void PortfolioManager::Delete(const Portfolio& portfolio) {
   Portfolios::iterator p = Find(portfolio);
-  assert(p != portfolios.end());
+  base::Check(p != portfolios.end());
   for (auto* events : portfolio_events)
     events->Portfolio_OnDelete(const_cast<Portfolio&>(portfolio));
   portfolios.erase(p);

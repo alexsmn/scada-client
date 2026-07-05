@@ -30,7 +30,7 @@ Value ToValue(const scada::Variant& v) {
     case scada::Variant::NODE_ID:
       return {};
     default:
-      assert(false);
+      // Server value of an unsupported type; no binding text.
       return {};
   }
 }

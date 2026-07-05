@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aui/color.h"
+#include "base/check.h"
 
 #include <Windows.h>
 
@@ -21,7 +22,7 @@ inline Color COLORREFToColor(COLORREF colorref) noexcept {
 inline COLORREF ToCOLORREF(Color color) {
   const Rgba& rgba = color.rgba();
   // COLORREF doesn't support an alpha channel.
-  assert(rgba.a == 0);
+  base::Check(rgba.a == 0);
   return RGB(rgba.r, rgba.g, rgba.b);
 }
 

@@ -1,10 +1,11 @@
 #include "aui/wt/item_delegate.h"
 
+#include "base/check.h"
+
 #include <Wt/WAbstractItemModel.h>
 #include <Wt/WComboBox.h>
 #include <Wt/WLineEdit.h>
 #include <Wt/WPushButton.h>
-#include <cassert>
 
 std::unique_ptr<Wt::WWidget> ItemDelegate::createEditor(
     const Wt::WModelIndex& index,
@@ -54,8 +55,7 @@ std::unique_ptr<Wt::WWidget> ItemDelegate::createEditor(
     }
 
     default:
-      assert(false);
-      return nullptr;
+      base::NotReached();
   }
 }
 

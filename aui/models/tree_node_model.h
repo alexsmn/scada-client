@@ -1,9 +1,9 @@
 #pragma once
 
 #include "aui/models/tree_model.h"
+#include "base/check.h"
 
 #include <algorithm>
-#include <cassert>
 #include <memory>
 #include <vector>
 
@@ -51,14 +51,14 @@ class TreeNode {
   virtual void FetchMore() {}
 
   void Add(int index, std::unique_ptr<NodeType> child) {
-    assert(!child->parent_);
+    base::Check(!child->parent_);
     child->parent_ = reinterpret_cast<NodeType*>(this);
     children_.emplace(children_.begin() + index, std::move(child));
   }
 
   std::unique_ptr<NodeType> Remove(int index) {
     auto node = std::move(children_[index]);
-    assert(node->parent_ == this);
+    base::Check(node->parent_ == this);
     node->parent_ = nullptr;
     children_.erase(children_.begin() + index);
     return node;

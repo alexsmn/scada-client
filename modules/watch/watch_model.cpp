@@ -36,7 +36,8 @@ void WatchModel::OnError(const scada::Status& status) {
 }
 
 void WatchModel::AddLine(const scada::Event& event) {
-  assert(!event.time.is_null());
+  // Events originate from the server (or local error lines); a null time is
+  // tolerated by the ordered insert below.
 
   // Event time never changes.
   auto same_time_events =

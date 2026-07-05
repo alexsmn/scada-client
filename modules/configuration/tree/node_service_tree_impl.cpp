@@ -1,10 +1,11 @@
 #include "configuration/tree/node_service_tree_impl.h"
 
-#include <algorithm>
 #include "base/any_executor_dispatch.h"
-#include "scada/event.h"
+#include "base/check.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
+#include "scada/event.h"
+#include <algorithm>
 
 NodeServiceTreeImpl::NodeServiceTreeImpl(NodeServiceTreeImplContext&& context)
     : NodeServiceTreeImplContext{std::move(context)} {
@@ -49,7 +50,7 @@ std::vector<NodeServiceTreeImpl::ChildRef> NodeServiceTreeImpl::GetChildren(
 }
 
 bool NodeServiceTreeImpl::IsMatchingNode(const NodeRef& node) const {
-  assert(node);
+  base::Check(node);
 
   if (!type_definition_ids_.empty()) {
     bool matches = std::ranges::any_of(

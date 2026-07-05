@@ -3,6 +3,7 @@
 #include "aui/models/grid_model_util.h"
 #include "aui/wt/grid_model_adapter.h"
 #include "aui/wt/item_delegate.h"
+#include "base/check.h"
 
 #pragma warning(push)
 #pragma warning(disable : 4251 4275)
@@ -321,7 +322,7 @@ void Grid::SetSelectionChangeHandler(SelectionChangeHandler handler) {
 }
 
 void Grid::OpenEditor(const GridModelIndex& index) {
-  assert(index.is_valid());
+  base::Check(index.is_valid());
   edit(model()->index(index.row, index.column));
 }
 

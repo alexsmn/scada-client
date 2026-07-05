@@ -1,13 +1,15 @@
 #include "aui/models/grid_range.h"
 
+#include "base/check.h"
+
 #include <algorithm>
 
 namespace {
 
 void ExpandRange(int& first, int& count, int value) {
-  assert(first >= 0);
-  assert(count >= 1);
-  assert(value >= 0);
+  base::Check(first >= 0);
+  base::Check(count >= 1);
+  base::Check(value >= 0);
 
   // If value is less than lower range, lower first and increase count.
   // If value is bigger than higher range, increase count.
@@ -34,10 +36,10 @@ GridRange GridRange::Range(int row,
                            int column,
                            int row_count,
                            int column_count) {
-  assert(row >= 0);
-  assert(column >= 0);
-  assert(row_count >= 0);
-  assert(column_count >= 0);
+  base::Check(row >= 0);
+  base::Check(column >= 0);
+  base::Check(row_count >= 0);
+  base::Check(column_count >= 0);
 
   GridRange range;
   range.type_ = RANGE;
@@ -50,8 +52,8 @@ GridRange GridRange::Range(int row,
 }
 
 GridRange GridRange::Rows(int first, int count) {
-  assert(first >= 0);
-  assert(count >= 1);
+  base::Check(first >= 0);
+  base::Check(count >= 1);
 
   GridRange range;
   range.type_ = ROWS;
@@ -62,8 +64,8 @@ GridRange GridRange::Rows(int first, int count) {
 }
 
 GridRange GridRange::Columns(int first, int count) {
-  assert(first >= 0);
-  assert(count >= 1);
+  base::Check(first >= 0);
+  base::Check(count >= 1);
 
   GridRange range;
   range.type_ = COLUMNS;
@@ -90,14 +92,13 @@ bool GridRange::operator==(const GridRange& other) const {
       return (column_ == other.column_) &&
              (column_count_ == other.column_count_);
     default:
-      assert(false);
-      return false;
+      base::NotReached();
   }
 }
 
 bool GridRange::Contains(int row, int column) const {
-  assert(row >= 0);
-  assert(column >= 0);
+  base::Check(row >= 0);
+  base::Check(column >= 0);
 
   switch (type_) {
     case RANGE:
@@ -110,8 +111,7 @@ bool GridRange::Contains(int row, int column) const {
     case COLUMNS:
       return (column_ <= column) && (column < column_ + column_count_);
     default:
-      assert(false);
-      return false;
+      base::NotReached();
   }
 }
 
@@ -144,8 +144,8 @@ bool GridRange::Contains(const GridRange& range) const {
 }
 
 void GridRange::Expand(int row, int column) {
-  assert(row >= 0);
-  assert(column >= 0);
+  base::Check(row >= 0);
+  base::Check(column >= 0);
 
   if (empty()) {
     *this = Cell(row, column);
@@ -159,8 +159,8 @@ void GridRange::Expand(int row, int column) {
 }
 
 void GridRange::SetLooseBounds(int row_count, int column_count) {
-  assert(row_count >= 0);
-  assert(column_count >= 0);
+  base::Check(row_count >= 0);
+  base::Check(column_count >= 0);
 
   if (type_ == ENTIRE || type_ == ROWS)
     column_count_ = std::max(1, column_count - column_);
@@ -174,11 +174,11 @@ GridRange GridRange::Offset(int row_offset, int column_offset) const {
 
   GridRange new_range = *this;
   if (type_ == RANGE || type_ == ROWS) {
-    assert(row_ + row_offset >= 0);
+    base::Check(row_ + row_offset >= 0);
     new_range.set_row(row_ + row_offset);
   }
   if (type_ == RANGE || type_ == COLUMNS) {
-    assert(column_ + column_offset >= 0);
+    base::Check(column_ + column_offset >= 0);
     new_range.set_column(column_ + column_offset);
   }
 

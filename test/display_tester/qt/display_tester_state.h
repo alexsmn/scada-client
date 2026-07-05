@@ -1,8 +1,9 @@
 #pragma once
 
 #include "aui/qt/dialog_service_impl_qt.h"
-#include "modules/write/write_service.h"
+#include "base/check.h"
 #include "controller/controller_delegate.h"
+#include "modules/write/write_service.h"
 #include "test/display_tester/qt/variable_timed_data_service.h"
 
 class ControllerDelegateImpl final : public ControllerDelegate {
@@ -27,7 +28,7 @@ class WriteServiceImpl final : public WriteService {
   virtual void ExecuteWriteDialog(DialogService& dialog_service,
                                   const scada::NodeId& node_id,
                                   bool manual) override {
-    assert(false);
+    base::NotReached();
   }
 };
 

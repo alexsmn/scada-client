@@ -1,5 +1,6 @@
 #include "print/service/print_command.h"
 
+#include "base/check.h"
 #include "print/service/print_service.h"
 #include "resources/common_resources.h"
 
@@ -11,7 +12,7 @@ CommandHandler* PrintCommand::GetCommandHandler(unsigned command_id) {
 }
 
 void PrintCommand::ExecuteCommand(unsigned command_id) {
-  assert(command_id == ID_PRINT);
+  base::Check(command_id == ID_PRINT);
   auto print_view_handler = print_view_handler_;
   print_service_.ShowPrintPreviewDialog(
       dialog_service_,

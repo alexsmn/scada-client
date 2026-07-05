@@ -58,8 +58,7 @@ void VidiconDisplayNativeView::ExecCommand(const QString& command_name,
   // TODO: Introduce constants.
   if (command_name == "OpenWriteWin") {
     if (arguments.size() != 1) {
-      // TODO: Log error.
-      assert(false);
+      // Display command arguments are external data. TODO: Log error.
       return;
     }
 
@@ -67,8 +66,7 @@ void VidiconDisplayNativeView::ExecCommand(const QString& command_name,
 
   } else if (command_name == "OpenWriteManWin") {
     if (arguments.size() != 1) {
-      // TODO: Log error.
-      assert(false);
+      // Display command arguments are external data. TODO: Log error.
       return;
     }
 
