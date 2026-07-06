@@ -219,6 +219,16 @@ Not managed by vcpkg:
 
 The `vidicon` client module is automatically skipped when `scada_common_opc` and `scada_common_vidicon` targets are not available.
 
+## C++20 Module Facades (SCADA_CXX_MODULES)
+
+With `-DSCADA_CXX_MODULES=ON` (default OFF, build unchanged when OFF), the
+client library layers expose named-module facades (`scada.client.base`,
+`scada.client.aui`, `scada.client.controller`, ...) following the core/common
+facade design. The client set is Qt-flavored — only the `_qt` targets are
+facaded; the wt flavor stays header-based. See `docs/cxx-modules.md` for the
+module map, exclusions, and presets, and `core/docs/cxx-modules.md` for the
+underlying design and consumer rules.
+
 ## CI/CD
 
 GitHub Actions workflow (`.github/workflows/cmake-multi-platform.yml`) triggered on pushes/PRs to `release/2.5`.

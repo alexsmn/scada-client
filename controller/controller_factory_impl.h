@@ -7,6 +7,11 @@
 #include "controller/controller_context.h"
 #include "controller/controller_registry.h"
 
+// CreateController() below is defined inline and dereferences the session
+// service, so this header must be self-contained (it is included bare in the
+// scada.client.controller module facade's global module fragment).
+#include "scada/session_service.h"
+
 #include <memory>
 
 class BlinkerManager;
