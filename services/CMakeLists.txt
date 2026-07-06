@@ -8,6 +8,15 @@ client_module_link_libraries(client_services PUBLIC
   transport
 )
 
+# C++20 module facade (Qt flavor only; the wt flavor stays header-based).
+if(TARGET client_services_qt)
+  scada_add_module_facade(client_services_qt FILES scada_client_services.cppm
+    IMPORTS aui_qt_module scada_common_module)
+  if(SCADA_CXX_MODULES)
+    add_subdirectory(module_test)
+  endif()
+endif()
+
 # UTs.
 
 if(TARGET client_services_qt_unittests)

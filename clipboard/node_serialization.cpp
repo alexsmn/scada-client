@@ -1,9 +1,21 @@
 #include "clipboard/node_serialization.h"
 
-#include "common/node_state.h"
-#include "node_service/node_util.h"
+// Include-only surfaces even under the modules pilot: protocol_utils.h pulls
+// the generated scada.pb.h (excluded from the scada.remote GMF) and
+// standard_node_ids.h holds internal-linkage constants (unexportable).
 #include "remote/protocol_utils.h"
 #include "scada/standard_node_ids.h"
+
+#if defined(SCADA_USE_NODE_SERVICE_MODULE)
+// Modules-pilot consumer (SCADA_CXX_MODULES=ON): common/node_service names
+// come from the scada.node_service facade. The import sits after the textual
+// includes because the reverse order trips an AppleClang 21 declaration-
+// merging bug in libc++.
+import scada.node_service;
+#else
+#include "common/node_state.h"
+#include "node_service/node_util.h"
+#endif
 
 void NodeToData(const NodeRef& source,
                 scada::NodeState& target,

@@ -1,10 +1,17 @@
 #include "base/file_settings_store.h"
 
-#include "base/utf_convert.h"
-
 #include <boost/json.hpp>
 #include <boost/system/error_code.hpp>
 #include <fstream>
+
+#if defined(SCADA_USE_BASE_MODULE)
+// Modules-pilot consumer (SCADA_CXX_MODULES=ON): core base names come from
+// the scada.base facade. The import sits after the textual includes because
+// the reverse order trips an AppleClang 21 declaration-merging bug in libc++.
+import scada.base;
+#else
+#include "base/utf_convert.h"
+#endif
 
 FileSettingsStore::FileSettingsStore(std::filesystem::path path)
     : path_{std::move(path)} {

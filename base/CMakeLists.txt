@@ -1,6 +1,9 @@
 scada_module(client_base)
 
-target_precompile_headers(client_base REUSE_FROM scada_base)
+# No PCH in the modules pilot (see core docs: scan-deps cannot read it).
+if(NOT SCADA_CXX_MODULES)
+  target_precompile_headers(client_base REUSE_FROM scada_base)
+endif()
 
 target_link_libraries(client_base PUBLIC scada_base)
 
@@ -10,6 +13,18 @@ target_sources(client_base PRIVATE
   "e2e_test_hooks.cpp"
   "e2e_test_hooks.h"
 )
+
+# Modules-pilot consumer: file_settings_store.cpp imports scada.base (see
+# SCADA_USE_BASE_MODULE there).
+scada_module_import_pilot(client_base
+  IMPORTS scada_base_module
+  DEFINES SCADA_USE_BASE_MODULE)
+
+scada_add_module_facade(client_base FILES scada_client_base.cppm
+  IMPORTS scada_base_module)
+if(SCADA_CXX_MODULES)
+  add_subdirectory(module_test)
+endif()
 
 set(CLIENT_UI_COMMON_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/../ui/common/client_utils.cpp"

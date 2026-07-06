@@ -26,6 +26,13 @@ if(TARGET aui_qt)
   endif()
 
   target_compile_definitions(aui_qt PUBLIC UI_QT)
+
+  # C++20 module facade (Qt flavor only; the wt flavor stays header-based).
+  scada_add_module_facade(aui_qt FILES scada_client_aui.cppm
+    IMPORTS scada_base_module scada_core_module)
+  if(SCADA_CXX_MODULES)
+    add_subdirectory(module_test)
+  endif()
 endif()
 
 # WT
