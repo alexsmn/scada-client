@@ -1,8 +1,8 @@
 #include "modules/login/wt/login_dialog.h"
 
-#include "modules/login/login_controller.h"
 #include "aui/dialog_service.h"
 #include "base/callback_awaitable.h"
+#include "modules/login/login_controller.h"
 #include "net/net_executor_adapter.h"
 
 #include <Wt/WDialog.h>
@@ -100,9 +100,8 @@ class TestDialogService : public DialogService {
 
     auto [button] = co_await CallbackToAwaitable<Wt::StandardButton>(
         executor_, [message_box](auto callback) mutable {
-          auto completion =
-              std::make_shared<std::decay_t<decltype(callback)>>(
-                  std::move(callback));
+          auto completion = std::make_shared<std::decay_t<decltype(callback)>>(
+              std::move(callback));
           message_box->buttonClicked().connect(
               [message_box, completion]() mutable {
                 (*completion)(message_box->buttonResult());
@@ -171,15 +170,12 @@ class LoginDialog : public std::enable_shared_from_this<LoginDialog> {
 
     dialog_->show();
 
-    co_await CallbackToAwaitable<>(
-        executor_, [dialog = dialog_](auto callback) {
-          auto completion =
-              std::make_shared<std::decay_t<decltype(callback)>>(
-                  std::move(callback));
-          dialog->finished().connect([completion]() mutable {
-            (*completion)();
-          });
-        });
+    co_await CallbackToAwaitable<>(executor_, [dialog =
+                                                   dialog_](auto callback) {
+      auto completion = std::make_shared<std::decay_t<decltype(callback)>>(
+          std::move(callback));
+      dialog->finished().connect([completion]() mutable { (*completion)(); });
+    });
 
     parent_.removeChild(dialog_);
     co_return std::move(result_);
@@ -212,7 +208,7 @@ Awaitable<std::optional<DataServices>> RunLoginDialogAsync(
 Awaitable<std::optional<DataServices>> ExecuteLoginDialog(
     AnyExecutor executor,
     Wt::WWidget& parent,
-    DataServicesContext&& services_context) {
+    DataServicesContext services_context) {
   auto login_dialog = std::make_shared<LoginDialog>(
       executor, parent, std::move(services_context));
   co_return co_await RunLoginDialogAsync(std::move(login_dialog));

@@ -101,7 +101,6 @@ set(SCREENSHOT_DOCS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../docs/screenshots")
 add_custom_command(TARGET client_screenshot_generator POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E make_directory "${SCREENSHOT_DOCS_DIR}"
   COMMAND $<TARGET_FILE:client_screenshot_generator>
-    "--gtest_filter=-ScreenshotGenerator.CaptureDialogs"
     "--out=${SCREENSHOT_DOCS_DIR}"
     "--image-manifest=${SCREENSHOT_DOCS_DIR}/image_manifest.json"
   COMMENT "Rendering screenshots into docs/screenshots/"

@@ -223,7 +223,7 @@ bool LoginDialog::eventFilter(QObject* object, QEvent* event) {
 
 Awaitable<std::optional<DataServices>> ExecuteLoginDialog(
     AnyExecutor executor,
-    DataServicesContext&& services_context) {
+    DataServicesContext services_context) {
   LoginDialog* login_dialog =
       new LoginDialog{std::move(executor), std::move(services_context)};
 

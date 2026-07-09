@@ -5,13 +5,13 @@
 #include "screenshot_wait.h"
 
 #include "aui/qt/dialog_service_impl_qt.h"
-#include "base/console_logger.h"
 #include "base/any_executor.h"
+#include "base/console_logger.h"
 #include "modules/limits/limit_dialog.h"
 #include "modules/login/login_dialog.h"
 #include "modules/write/write_dialog.h"
-#include "node_service/node_ref.h"
 #include "node_service/node_fetch_status.h"
+#include "node_service/node_ref.h"
 #include "node_service/node_service.h"
 #include "profile/profile.h"
 #include "scada/data_services_factory.h"
@@ -22,19 +22,50 @@
 
 #include <QApplication>
 #include <QDialog>
+#include <QElapsedTimer>
 #include <QPixmap>
 #include <QString>
 #include <QWidget>
 #include <transport/transport_factory.h>
 
+#include <chrono>
 #include <gtest/gtest.h>
 #include <optional>
+#include <sstream>
 #include <stdexcept>
 #include <type_traits>
 
 namespace {
 
 using screenshot_generator::WaitForPendingNodeLoads;
+
+// Pumps the Qt event loop until `predicate()` holds or `timeout` elapses.
+//
+// Uses the single-argument processEvents(WaitForMoreEvents) form on purpose:
+// the two-argument processEvents(flags, ms) overload strips
+// QEventLoop::WaitForMoreEvents and returns as soon as the queue drains, and
+// on the macOS (Cocoa) dispatcher a drained no-wait pass never activates
+// QTimer timers — which starves MessageLoopQt's 10 ms task-queue timer, so
+// CoSpawn'd dialog coroutines never get their initial resume. The
+// single-argument form blocks until the next event (the 10 ms timer at the
+// latest), so the executor's tasks actually run.
+template <class Predicate>
+bool PumpEventsUntil(Predicate&& predicate, std::chrono::milliseconds timeout) {
+  QElapsedTimer timer;
+  timer.start();
+  while (!predicate()) {
+    if (timer.elapsed() >= timeout.count())
+      return false;
+    QApplication::processEvents(QEventLoop::WaitForMoreEvents);
+  }
+  return true;
+}
+
+// Pumps the Qt event loop for a fixed duration, letting queued executor
+// tasks and async value updates land.
+void PumpEventsFor(std::chrono::milliseconds duration) {
+  PumpEventsUntil([] { return false; }, duration);
+}
 
 template <class T>
 struct DialogAwaitableResult {
@@ -54,20 +85,20 @@ std::shared_ptr<DialogAwaitableResult<T>> StartDialogAwaitable(
     AnyExecutor executor,
     Awaitable<T> awaitable) {
   auto result = std::make_shared<DialogAwaitableResult<T>>();
-  CoSpawn(std::move(executor),
-          [result, awaitable = std::move(awaitable)]() mutable
-              -> Awaitable<void> {
-            try {
-              if constexpr (std::is_void_v<T>) {
-                co_await std::move(awaitable);
-              } else {
-                result->value.emplace(co_await std::move(awaitable));
-              }
-            } catch (...) {
-              result->error = std::current_exception();
-            }
-            result->done = true;
-          });
+  CoSpawn(
+      std::move(executor),
+      [result, awaitable = std::move(awaitable)]() mutable -> Awaitable<void> {
+        try {
+          if constexpr (std::is_void_v<T>) {
+            co_await std::move(awaitable);
+          } else {
+            result->value.emplace(co_await std::move(awaitable));
+          }
+        } catch (...) {
+          result->error = std::current_exception();
+        }
+        result->done = true;
+      });
   return result;
 }
 
@@ -155,18 +186,20 @@ bool FetchAndWaitForPendingNodeLoads(NodeService& node_service,
 // `show()` can finish the cleanup path (deleteLater in most factories).
 bool GrabAndCloseVisibleDialog(const DialogSpec& spec) {
   QDialog* dialog = nullptr;
-  for (int attempt = 0; attempt < 50 && !dialog; ++attempt) {
-    QApplication::processEvents();
+  auto find_visible_dialog = [&dialog] {
     for (QWidget* w : QApplication::topLevelWidgets()) {
       if (w->isVisible()) {
         if (auto* d = qobject_cast<QDialog*>(w)) {
           dialog = d;
-          break;
+          return true;
         }
       }
     }
-  }
-  if (!dialog)
+    return false;
+  };
+  // The dialog factories are coroutines CoSpawn'd onto MessageLoopQt; pump
+  // (see PumpEventsUntil) until the initial resume shows the dialog.
+  if (!PumpEventsUntil(find_visible_dialog, std::chrono::seconds{2}))
     return false;
 
   if (spec.width > 0 && spec.height > 0) {
@@ -196,18 +229,21 @@ bool GrabAndCloseVisibleDialog(const DialogSpec& spec) {
 bool GrabAndCloseVisibleDialogOrReport(const DialogSpec& spec) {
   if (GrabAndCloseVisibleDialog(spec))
     return true;
-  ADD_FAILURE() << "No visible dialog for kind: " << spec.kind;
+  std::ostringstream widgets;
+  for (QWidget* w : QApplication::topLevelWidgets()) {
+    widgets << " | " << w->metaObject()->className()
+            << (w->isVisible() ? " (visible)" : " (hidden)");
+  }
+  ADD_FAILURE() << "No visible dialog for kind: " << spec.kind
+                << " | top-level widgets:" << widgets.str();
   return false;
 }
 
+template <class T>
 void WaitForDialogCompletion(
-    const std::shared_ptr<DialogAwaitableResult<void>>& result) {
-  for (int i = 0; i < 200 && !IsDialogAwaitableReady(result); ++i)
-    QApplication::processEvents(QEventLoop::AllEvents |
-                                    QEventLoop::WaitForMoreEvents,
-                                20);
-
-  if (!IsDialogAwaitableReady(result))
+    const std::shared_ptr<DialogAwaitableResult<T>>& result) {
+  if (!PumpEventsUntil([&] { return IsDialogAwaitableReady(result); },
+                       std::chrono::seconds{4}))
     ADD_FAILURE() << "Dialog coroutine did not complete";
 
   try {
@@ -227,12 +263,10 @@ void WaitForDialogCompletion(
 // the `Dispatch` switch below.
 
 std::shared_ptr<DialogAwaitableResult<std::optional<DataServices>>>
-BuildLoginDialog(
-    DialogEnvironment& env,
-    NullTransportFactory& transport_factory,
-    const std::shared_ptr<Logger>& logger) {
-  DataServicesContext services_context{logger, env.executor,
-                                       transport_factory,
+BuildLoginDialog(DialogEnvironment& env,
+                 NullTransportFactory& transport_factory,
+                 const std::shared_ptr<Logger>& logger) {
+  DataServicesContext services_context{logger, env.executor, transport_factory,
                                        scada::ServiceLogParams{}};
   auto dialog_lifetime = StartDialogAwaitable(
       env.executor,
@@ -260,8 +294,8 @@ std::shared_ptr<DialogAwaitableResult<void>> BuildLimitsDialog(
     ADD_FAILURE() << "LimitsDialog: configured fixture node not found";
     return {};
   }
-  if (!FetchAndWaitForPendingNodeLoads(
-          *env.node_service, node, NodeFetchStatus::NodeOnly())) {
+  if (!FetchAndWaitForPendingNodeLoads(*env.node_service, node,
+                                       NodeFetchStatus::NodeOnly())) {
     ADD_FAILURE() << "LimitsDialog: failed to fetch configured fixture node";
     return {};
   }
@@ -290,8 +324,8 @@ std::shared_ptr<DialogAwaitableResult<void>> BuildWriteDialog(
     DialogServiceImplQt& dialog_service,
     bool manual) {
   if (!env.timed_data_service || !env.profile || !env.node_service) {
-    ADD_FAILURE()
-        << "WriteDialog needs timed_data_service + profile + node_service in env";
+    ADD_FAILURE() << "WriteDialog needs timed_data_service + profile + "
+                     "node_service in env";
     return {};
   }
   auto node = env.node_service->GetNode(env.dialog_analog_node_id);
@@ -299,20 +333,21 @@ std::shared_ptr<DialogAwaitableResult<void>> BuildWriteDialog(
     ADD_FAILURE() << "WriteDialog: configured fixture node not found";
     return {};
   }
-  if (!FetchAndWaitForPendingNodeLoads(
-          *env.node_service, node, NodeFetchStatus::NodeOnly())) {
+  if (!FetchAndWaitForPendingNodeLoads(*env.node_service, node,
+                                       NodeFetchStatus::NodeOnly())) {
     ADD_FAILURE() << "WriteDialog: failed to fetch configured fixture node";
     return {};
   }
-  auto dialog_lifetime = StartDialogAwaitable(env.executor, ExecuteWriteDialog(
-      dialog_service, WriteContext{.executor_ = env.executor,
-                                   .timed_data_service_ =
-                                       *env.timed_data_service,
-                                   .node_id_ = env.dialog_analog_node_id,
-                                   .profile_ = *env.profile,
-                                   .manual_ = manual}));
-  for (int i = 0; i < 20; ++i)
-    QApplication::processEvents();
+  auto dialog_lifetime = StartDialogAwaitable(
+      env.executor,
+      ExecuteWriteDialog(
+          dialog_service,
+          WriteContext{.executor_ = env.executor,
+                       .timed_data_service_ = *env.timed_data_service,
+                       .node_id_ = env.dialog_analog_node_id,
+                       .profile_ = *env.profile,
+                       .manual_ = manual}));
+  PumpEventsFor(std::chrono::milliseconds{200});
   return dialog_lifetime;
 }
 
@@ -326,12 +361,15 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
   auto logger = std::make_shared<ConsoleLogger>();
 
   if (spec.kind == "login") {
-    [[maybe_unused]] auto dialog_lifetime =
-        BuildLoginDialog(env, transport_factory, logger);
-    return GrabAndCloseVisibleDialogOrReport(spec);
+    auto dialog_lifetime = BuildLoginDialog(env, transport_factory, logger);
+    bool captured = GrabAndCloseVisibleDialogOrReport(spec);
+    // Wait for the dialog coroutine to finish (reject() resolves it and the
+    // dialog deleteLater's itself) before the per-call stubs above go out of
+    // scope.
+    WaitForDialogCompletion(dialog_lifetime);
+    return captured;
   } else if (spec.kind == "limits") {
-    auto dialog_lifetime =
-        BuildLimitsDialog(env, task_manager, dialog_service);
+    auto dialog_lifetime = BuildLimitsDialog(env, task_manager, dialog_service);
     if (!dialog_lifetime)
       return false;
     bool captured = GrabAndCloseVisibleDialogOrReport(spec);
