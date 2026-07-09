@@ -5,11 +5,11 @@
 #include "base/test/test_time.h"
 #include "common/aggregation.h"
 #include "common/formula_util.h"
-#include "resources/common_resources.h"
-#include "modules/summary/summary_component.h"
 #include "controller/window_info.h"
+#include "modules/summary/summary_component.h"
 #include "node_service/static/static_node_service.h"
 #include "profile/window_definition.h"
+#include "resources/common_resources.h"
 #include "timed_data/timed_data_fake.h"
 #include "timed_data/timed_data_service_fake.h"
 
@@ -93,15 +93,18 @@ TEST_F(SummaryModelTest, AddContainedItemExpandsGroupOnExecutor) {
   timed_data_service_.AddTimedData(MakeNodeIdFormula(organized_item_id));
   timed_data_service_.AddTimedData(MakeNodeIdFormula(component_item_id));
 
+  // Establish the model time range; columns connect their `TimedDataSpec`
+  // with it, and a null range violates `TimedDataSpec::SetRange` invariants.
+  summary_model_.Load(WindowDefinition{kSummaryWindowInfo});
+
   summary_model_.AddContainedItem(group_id, 0);
   EXPECT_EQ(summary_model_.column_model().GetCount(), 0);
 
   Drain(executor_);
 
   EXPECT_EQ(summary_model_.column_model().GetCount(), 2);
-  std::vector<std::u16string> titles{
-      summary_model_.column_model().GetTitle(0),
-      summary_model_.column_model().GetTitle(1)};
+  std::vector<std::u16string> titles{summary_model_.column_model().GetTitle(0),
+                                     summary_model_.column_model().GetTitle(1)};
   EXPECT_THAT(titles, UnorderedElementsAre(u"TS.2", u"TS.4"));
 }
 
