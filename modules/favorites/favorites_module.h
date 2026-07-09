@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/lifetime.h"
+
 #include <memory>
 
 template <class T>
@@ -23,7 +25,7 @@ class FavoritesModule : private FavoritesModuleContext {
   explicit FavoritesModule(FavoritesModuleContext&& context);
   ~FavoritesModule();
 
-  Favourites& favourites() { return *favourites_; }
+  Favourites& favourites() SCADA_LIFETIME_BOUND { return *favourites_; }
 
  private:
   std::unique_ptr<Favourites> favourites_;

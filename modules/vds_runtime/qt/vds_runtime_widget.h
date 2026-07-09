@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "common/vds_runtime_api.h"
 #include "vds_runtime/qt/vds_runtime_loader.h"
 
@@ -19,8 +20,12 @@ class VdsRuntimeWidget : public QWidget {
 
   bool Open(const std::filesystem::path& path,
             int32_t kind = TC_VDS_RUNTIME_DOCUMENT_KIND_AUTO);
-  const QString& error_message() const { return error_message_; }
-  const std::filesystem::path& path() const { return path_; }
+  const QString& error_message() const SCADA_LIFETIME_BOUND {
+    return error_message_;
+  }
+  const std::filesystem::path& path() const SCADA_LIFETIME_BOUND {
+    return path_;
+  }
   QString title() const { return title_; }
 
   using SelectionCallback = std::function<void(QString data_source)>;

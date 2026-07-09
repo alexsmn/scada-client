@@ -1,8 +1,9 @@
 #pragma once
 
-#include <boost/json.hpp>
+#include "base/lifetime.h"
 #include "profile/page_layout.h"
 #include "profile/window_definition.h"
+#include <boost/json.hpp>
 
 class Page {
  public:
@@ -21,7 +22,9 @@ class Page {
   void Clear();
 
   int GetWindowCount() const { return windows_.size(); }
-  WindowDefinition& GetWindow(int index) const { return *windows_[index]; }
+  WindowDefinition& GetWindow(int index) const SCADA_LIFETIME_BOUND {
+    return *windows_[index];
+  }
 
   void Load(const boost::json::value& value);
   boost::json::value Save(bool current) const;

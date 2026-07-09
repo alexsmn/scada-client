@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "scada/event.h"
 
 #include <boost/signals2/signal.hpp>
@@ -23,7 +24,7 @@ class LocalEvents {
   LocalEvents& operator=(const LocalEvents&) = delete;
 
   using Events = std::vector<scada::Event*>;
-  const Events& events() const { return events_; }
+  const Events& events() const SCADA_LIFETIME_BOUND { return events_; }
 
   void ReportEvent(Severity severity, const scada::LocalizedText& message);
 
@@ -32,7 +33,7 @@ class LocalEvents {
 
   using EventSignal = boost::signals2::signal<void(const scada::Event&)>;
 
-  EventSignal& event_signal() { return event_signal_; }
+  EventSignal& event_signal() SCADA_LIFETIME_BOUND { return event_signal_; }
 
  private:
   Events::iterator FindEvent(scada::EventId event_id);

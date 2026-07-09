@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/any_executor.h"
+#include "base/lifetime.h"
 
 #include "aui/models/tree_node_model.h"
 #include "base/awaitable.h"
@@ -12,7 +13,7 @@
 namespace scada {
 class NodeId;
 struct ModelChangeEvent;
-}
+}  // namespace scada
 
 class ConfigurationTreeModel;
 
@@ -25,8 +26,10 @@ class ConfigurationTreeNode : public aui::TreeNode<ConfigurationTreeNode> {
   virtual ~ConfigurationTreeNode();
 
   ConfigurationTreeModel& model() const { return model_; }
-  const NodeRef& node() const { return node_; }
-  const scada::NodeId& reference_type_id() const { return reference_type_id_; }
+  const NodeRef& node() const SCADA_LIFETIME_BOUND { return node_; }
+  const scada::NodeId& reference_type_id() const SCADA_LIFETIME_BOUND {
+    return reference_type_id_;
+  }
   bool forward_reference() const { return forward_reference_; }
 
   // TreeNode

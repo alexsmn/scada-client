@@ -2,6 +2,7 @@
 
 #include "base/any_executor.h"
 #include "base/check.h"
+#include "base/lifetime.h"
 
 #include "base/awaitable.h"
 #include "base/boost_log.h"
@@ -22,10 +23,12 @@ class HistoricalEventModel {
 
   void Init(const TimeRange& range) { time_range_ = range; }
 
-  const TimeRange& time_range() const { return time_range_; }
+  const TimeRange& time_range() const SCADA_LIFETIME_BOUND {
+    return time_range_;
+  }
   void SetTimeRange(const TimeRange& range) { time_range_ = range; }
 
-  const auto& events() const { return historical_events_; }
+  const auto& events() const SCADA_LIFETIME_BOUND { return historical_events_; }
 
   const scada::Event& AddEvent(scada::Event event) {
     return historical_events_.emplace_back(std::move(event));

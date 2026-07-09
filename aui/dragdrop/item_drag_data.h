@@ -1,15 +1,16 @@
 #pragma once
 
-#include "common/node_state.h"
 #include "aui/handlers.h"
 #include "aui/os_exchange_data.h"
+#include "base/lifetime.h"
+#include "common/node_state.h"
 
 class ItemDragData {
  public:
   ItemDragData() {}
   explicit ItemDragData(const scada::NodeId& item_id) : node_id_(item_id) {}
 
-  const scada::NodeId& item_id() const { return node_id_; }
+  const scada::NodeId& item_id() const SCADA_LIFETIME_BOUND { return node_id_; }
 
   void Save(base::Pickle& pickle) const;
   bool Load(const base::Pickle& pickle);

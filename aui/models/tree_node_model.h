@@ -2,6 +2,7 @@
 
 #include "aui/models/tree_model.h"
 #include "base/check.h"
+#include "base/lifetime.h"
 
 #include <algorithm>
 #include <memory>
@@ -24,8 +25,12 @@ class TreeNode {
     return static_cast<int>(children_.size());
   }
 
-  NodeType& GetChild(int index) { return *children_[index]; }
-  const NodeType& GetChild(int index) const { return *children_[index]; }
+  NodeType& GetChild(int index) SCADA_LIFETIME_BOUND {
+    return *children_[index];
+  }
+  const NodeType& GetChild(int index) const SCADA_LIFETIME_BOUND {
+    return *children_[index];
+  }
 
   virtual std::u16string GetText(int column_id) const = 0;
   virtual int GetIcon() const { return -1; }
@@ -111,8 +116,8 @@ class TreeNodeModel : public TreeModel {
 
   void set_root(std::unique_ptr<NodeType> root) { root_ = std::move(root); }
 
-  NodeType* root() { return root_.get(); }
-  const NodeType* root() const { return root_.get(); }
+  NodeType* root() SCADA_LIFETIME_BOUND { return root_.get(); }
+  const NodeType* root() const SCADA_LIFETIME_BOUND { return root_.get(); }
 
   NodeType* AsNode(void* node) { return reinterpret_cast<NodeType*>(node); }
   const NodeType* AsNode(void* node) const {

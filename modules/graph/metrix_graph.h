@@ -1,11 +1,12 @@
 #pragma once
 
 #include "aui/graph.h"
+#include "base/lifetime.h"
 #include "graph/metrix_data_source.h"
 
-#include <QTimer>
 #include "timed_data/timed_data.h"
 #include "timed_data/timed_data_observer.h"
+#include <QTimer>
 
 #include <memory>
 
@@ -85,8 +86,12 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
     }
     MetrixGraph& graph() const { return pane().graph(); }
 
-    MetrixDataSource& data_source() { return *data_source_; }
-    const MetrixDataSource& data_source() const { return *data_source_; }
+    MetrixDataSource& data_source() SCADA_LIFETIME_BOUND {
+      return *data_source_;
+    }
+    const MetrixDataSource& data_source() const SCADA_LIFETIME_BOUND {
+      return *data_source_;
+    }
 
     void UpdateTimeRange();
 

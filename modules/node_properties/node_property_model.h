@@ -2,6 +2,7 @@
 
 #include "aui/models/property_model.h"
 #include "base/cancelation.h"
+#include "base/lifetime.h"
 #include "modules/node_properties/node_group_model.h"
 #include "node_service/node_ref.h"
 #include "properties/property_context.h"
@@ -19,7 +20,7 @@ class NodePropertyModel : protected PropertyContext, public aui::PropertyModel {
                     NodeRef node);
   virtual ~NodePropertyModel();
 
-  const NodeRef& node() const { return node_; }
+  const NodeRef& node() const SCADA_LIFETIME_BOUND { return node_; }
 
   boost::signals2::signal<void()> node_deleted;
 

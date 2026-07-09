@@ -2,6 +2,7 @@
 
 #include "base/any_executor.h"
 #include "base/cancelation.h"
+#include "base/lifetime.h"
 #include "common/node_state.h"
 #include "timed_data/timed_data.h"
 #include "timed_data/timed_data_spec.h"
@@ -24,9 +25,11 @@ class MetrixDataSource : public views::GraphDataSource {
   bool is_ready() const { return timed_data_.ready(); }
   scada::NodeId node_id() const { return timed_data_.node_id(); }
   bool connected() const { return timed_data_.connected(); }
-  const TimedDataSpec& timed_data() const { return timed_data_; }
+  const TimedDataSpec& timed_data() const SCADA_LIFETIME_BOUND {
+    return timed_data_;
+  }
   std::string GetPath() const { return timed_data_.formula(); }
-  const std::u16string& title() const { return title_; }
+  const std::u16string& title() const SCADA_LIFETIME_BOUND { return title_; }
 
   bool XToData(double& x, scada::DataValue& val) const;
 

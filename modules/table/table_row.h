@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/blinker.h"
+#include "base/lifetime.h"
 #include "modules/table/table_types.h"
 #include "timed_data/timed_data_spec.h"
 
@@ -17,7 +18,9 @@ class TableRow : private Blinker {
   int index() const { return index_; }
   void set_index(int index) { index_ = index; }
 
-  const TimedDataSpec& timed_data() const { return timed_data_; }
+  const TimedDataSpec& timed_data() const SCADA_LIFETIME_BOUND {
+    return timed_data_;
+  }
   bool is_blinking() const { return is_blinking_; }
 
   std::string GetFormula() const;

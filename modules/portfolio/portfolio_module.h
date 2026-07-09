@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/lifetime.h"
+
 #include <memory>
 
 class ControllerRegistry;
@@ -20,7 +22,9 @@ class PortfolioModule : private PortfolioModuleContext {
   explicit PortfolioModule(PortfolioModuleContext&& context);
   ~PortfolioModule();
 
-  PortfolioManager& portfolio_manager() { return *portfolio_manager_; }
+  PortfolioManager& portfolio_manager() SCADA_LIFETIME_BOUND {
+    return *portfolio_manager_;
+  }
 
  private:
   std::unique_ptr<PortfolioManager> portfolio_manager_;

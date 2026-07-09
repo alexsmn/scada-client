@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/any_executor.h"
+#include "base/lifetime.h"
 
 #include "filesystem/filesystem_commands.h"
 #include "scada/client.h"
@@ -47,9 +48,9 @@ class FileSystemComponent : private FileSystemComponentContext {
   explicit FileSystemComponent(FileSystemComponentContext&& context);
   ~FileSystemComponent();
 
-  FileRegistry& file_registry() { return *file_registry_; }
-  FileCache& file_cache() { return *file_cache_; }
-  FileManager& file_manager() { return *file_manager_; }
+  FileRegistry& file_registry() SCADA_LIFETIME_BOUND { return *file_registry_; }
+  FileCache& file_cache() SCADA_LIFETIME_BOUND { return *file_cache_; }
+  FileManager& file_manager() SCADA_LIFETIME_BOUND { return *file_manager_; }
 
   void set_selection_commands(
       BasicCommandRegistry<SelectionCommandContext>* selection_commands) {

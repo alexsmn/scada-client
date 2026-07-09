@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aui/models/table_model.h"
+#include "base/lifetime.h"
 #include "scada/session_debugger.h"
 
 #include <chrono>
@@ -28,7 +29,9 @@ class RequestTableModel : public aui::TableModel {
     std::string response_body;
   };
 
-  const Request& request(int index) const { return requests_[index]; }
+  const Request& request(int index) const SCADA_LIFETIME_BOUND {
+    return requests_[index];
+  }
 
   // aui::TableModel
   virtual int GetRowCount() override;

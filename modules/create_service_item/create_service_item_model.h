@@ -1,14 +1,17 @@
 #pragma once
 
-#include "ui/common/client_utils.h"
+#include "base/lifetime.h"
 #include "modules/create_service_item/create_service_item_dialog.h"
+#include "ui/common/client_utils.h"
 
 class CreateServiceItemModel : private CreateServiceItemContext {
  public:
   explicit CreateServiceItemModel(CreateServiceItemContext&& context);
 
-  const NamedNodes& devices() const { return devices_; }
-  const NamedNodes& components() const { return components_; }
+  const NamedNodes& devices() const SCADA_LIFETIME_BOUND { return devices_; }
+  const NamedNodes& components() const SCADA_LIFETIME_BOUND {
+    return components_;
+  }
 
   int device_index() const { return device_index_; }
   void SetDeviceIndex(int index);

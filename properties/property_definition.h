@@ -1,7 +1,8 @@
 #pragma once
 
-#include "aui/models/table_column.h"
 #include "aui/models/edit_data.h"
+#include "aui/models/table_column.h"
+#include "base/lifetime.h"
 
 namespace scada {
 class NodeId;
@@ -67,7 +68,7 @@ class HierachicalPropertyDefinition : public PropertyDefinition {
       : PropertyDefinition(aui::TableColumn::LEFT),
         children_(std::move(children)) {}
 
-  const Children& children() const { return children_; }
+  const Children& children() const SCADA_LIFETIME_BOUND { return children_; }
 
   virtual const HierachicalPropertyDefinition* AsHierarchical() const {
     return this;

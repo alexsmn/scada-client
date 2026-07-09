@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/any_executor.h"
+#include "base/lifetime.h"
 
 #include "aui/models/fixed_row_model.h"
 #include "aui/models/grid_model.h"
@@ -24,18 +25,24 @@ class NodeTableModel : private PropertyContext,
                  PropertyContext&& context);
   virtual ~NodeTableModel() override;
 
-  const NodeRef& parent_node() const { return parent_node_; }
+  const NodeRef& parent_node() const SCADA_LIFETIME_BOUND {
+    return parent_node_;
+  }
   void SetParentNode(const NodeRef& parent_node);
 
-  aui::FixedRowModel& row_model() { return row_model_; }
-  aui::ColumnHeaderModel& column_model() { return column_model_; }
+  aui::FixedRowModel& row_model() SCADA_LIFETIME_BOUND { return row_model_; }
+  aui::ColumnHeaderModel& column_model() SCADA_LIFETIME_BOUND {
+    return column_model_;
+  }
 
   NodeRef node(int index) const {
     return index < static_cast<int>(rows_.size()) ? rows_[index].node
                                                   : NodeRef();
   }
 
-  const scada::NodeId& sort_property_id() const { return sort_property_id_; }
+  const scada::NodeId& sort_property_id() const SCADA_LIFETIME_BOUND {
+    return sort_property_id_;
+  }
   void SetSorting(const scada::NodeId& property_id);
 
   // GridModel

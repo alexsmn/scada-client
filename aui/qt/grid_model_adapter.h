@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aui/models/grid_model.h"
+#include "base/lifetime.h"
 
 #include <QtCore/qabstractitemmodel.h>
 #include <boost/signals2/connection.hpp>
@@ -16,8 +17,8 @@ class GridModelAdapter final : public QAbstractTableModel {
                    std::shared_ptr<HeaderModel> column_model);
   ~GridModelAdapter();
 
-  HeaderModel& row_model() { return *row_model_; }
-  HeaderModel& column_model() { return *column_model_; }
+  HeaderModel& row_model() SCADA_LIFETIME_BOUND { return *row_model_; }
+  HeaderModel& column_model() SCADA_LIFETIME_BOUND { return *column_model_; }
 
   // QAbstractTableModel
   virtual int rowCount(

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/any_executor.h"
+#include "base/lifetime.h"
 
 #include "app/client_application_modules.h"
 #include "app/login_canceled.h"
@@ -108,11 +109,15 @@ class ClientApplication : private ClientApplicationContext {
   ClientApplication(const ClientApplication&) = delete;
   ClientApplication& operator=(const ClientApplication&) = delete;
 
-  TimedDataService& timed_data_service() { return *timed_data_service_; }
-  NodeService& node_service() { return *node_service_; }
-  ControllerRegistry& controller_registry() { return *controller_registry_; }
-  Profile& profile() { return *profile_; }
-  MainWindowManager& main_window_manager();
+  TimedDataService& timed_data_service() SCADA_LIFETIME_BOUND {
+    return *timed_data_service_;
+  }
+  NodeService& node_service() SCADA_LIFETIME_BOUND { return *node_service_; }
+  ControllerRegistry& controller_registry() SCADA_LIFETIME_BOUND {
+    return *controller_registry_;
+  }
+  Profile& profile() SCADA_LIFETIME_BOUND { return *profile_; }
+  MainWindowManager& main_window_manager() SCADA_LIFETIME_BOUND;
   bool HasSelectionCommandForTesting(unsigned command_id) const;
   bool HasGlobalCommandForTesting(unsigned command_id) const;
 

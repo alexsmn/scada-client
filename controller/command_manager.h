@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "controller/action.h"
 #include "controller/command_handler.h"
 
@@ -56,9 +57,10 @@ class CommandManager {
   CommandManager(const CommandManager&) = delete;
   CommandManager& operator=(const CommandManager&) = delete;
 
-  const CommandList& commands() const { return commands_; }
+  const CommandList& commands() const SCADA_LIFETIME_BOUND { return commands_; }
 
-  CommandDescriptor& RegisterCommand(CommandDescriptor descriptor);
+  CommandDescriptor& RegisterCommand(CommandDescriptor descriptor)
+      SCADA_LIFETIME_BOUND;
   CommandDescriptor* FindCommand(unsigned command_id) const;
 
   void RegisterHandler(unsigned command_id,

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/any_executor.h"
+#include "base/lifetime.h"
 
 #include "aui/models/grid_model.h"
 #include "base/boost_log.h"
@@ -39,7 +40,9 @@ class SummaryModel : private SummaryModelContext,
   explicit SummaryModel(SummaryModelContext&& context);
   ~SummaryModel();
 
-  const TimeRange& time_range() const { return time_range_; }
+  const TimeRange& time_range() const SCADA_LIFETIME_BOUND {
+    return time_range_;
+  }
 
   base::TimeDelta interval() const { return aggregate_filter_.interval; }
   void SetInterval(base::TimeDelta interval);

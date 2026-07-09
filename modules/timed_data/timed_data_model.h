@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aui/models/table_model.h"
+#include "base/lifetime.h"
 #include "controller/time_model.h"
 #include "timed_data/timed_data_spec.h"
 
@@ -29,7 +30,9 @@ class TimedDataModel : private TimedDataModelContext,
 
   const scada::DataValue& value(int row) const;
 
-  const TimedDataSpec& timed_data() const { return timed_data_; }
+  const TimedDataSpec& timed_data() const SCADA_LIFETIME_BOUND {
+    return timed_data_;
+  }
 
   // The formula can be updated after initialization.
   void SetFormula(std::string_view formula);

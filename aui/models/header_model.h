@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aui/models/table_column.h"
+#include "base/lifetime.h"
 
 #include <boost/signals2/connection.hpp>
 #include <boost/signals2/signal.hpp>
@@ -56,7 +57,7 @@ class HeaderModel {
 class ColumnHeaderModel : public HeaderModel {
  public:
   typedef std::vector<TableColumn> Columns;
-  const Columns& columns() const { return columns_; }
+  const Columns& columns() const SCADA_LIFETIME_BOUND { return columns_; }
   void SetColumns(int count, const TableColumn* columns);
 
   void SetColumnCount(int count, int column_width);

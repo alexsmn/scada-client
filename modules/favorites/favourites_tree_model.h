@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aui/models/tree_node_model.h"
+#include "base/lifetime.h"
 #include "favorites/favourites.h"
 
 #include <boost/signals2/connection.hpp>
@@ -41,7 +42,7 @@ class FavouritesFolderNode : public FavouritesNode {
  public:
   FavouritesFolderNode(Favourites& favourites, const Page& folder);
 
-  const Page& folder() const { return folder_; }
+  const Page& folder() const SCADA_LIFETIME_BOUND { return folder_; }
 
   int FindWindowNode(const WindowDefinition& window) const;
 
@@ -72,8 +73,12 @@ class FavouritesWindowNode : public FavouritesNode {
         window_info_{window_info},
         window_def_{window_def} {}
 
-  const WindowInfo& window_info() const { return window_info_; }
-  const WindowDefinition& window_def() const { return window_def_; }
+  const WindowInfo& window_info() const SCADA_LIFETIME_BOUND {
+    return window_info_;
+  }
+  const WindowDefinition& window_def() const SCADA_LIFETIME_BOUND {
+    return window_def_;
+  }
 
   // FavouritesNode
   virtual std::u16string GetText(int column_id) const override {

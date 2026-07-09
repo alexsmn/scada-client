@@ -2,6 +2,7 @@
 
 #include "aui/color.h"
 #include "aui/rect.h"
+#include "base/lifetime.h"
 #include "base/time/time.h"
 #include "profile/page.h"
 #include "resources/common_resources.h"
@@ -115,8 +116,8 @@ class Profile {
 
   TimedData timed_data;
 
-  const boost::json::value& data() const { return data_; }
-  boost::json::value& data() { return data_; }
+  const boost::json::value& data() const SCADA_LIFETIME_BOUND { return data_; }
+  boost::json::value& data() SCADA_LIFETIME_BOUND { return data_; }
 
   using Writer = std::function<void(Profile& profile)>;
 

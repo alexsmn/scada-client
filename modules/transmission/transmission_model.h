@@ -2,6 +2,7 @@
 
 #include "aui/models/fixed_row_model.h"
 #include "aui/models/grid_model.h"
+#include "base/lifetime.h"
 #include "controller/contents_model.h"
 #include "node_service/node_ref.h"
 
@@ -32,12 +33,14 @@ class TransmissionModel
 
   void Init(NodeRef device);
 
-  const NodeRef& device() const { return device_; }
+  const NodeRef& device() const SCADA_LIFETIME_BOUND { return device_; }
 
-  const Row& row(size_t index) const { return rows_[index]; }
+  const Row& row(size_t index) const SCADA_LIFETIME_BOUND {
+    return rows_[index];
+  }
 
   typedef std::vector<Row> Rows;
-  const Rows& rows() const { return rows_; }
+  const Rows& rows() const SCADA_LIFETIME_BOUND { return rows_; }
 
   void Refresh();
 

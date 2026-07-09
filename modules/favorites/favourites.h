@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "profile/page.h"
 
 #include <boost/signals2/connection.hpp>
@@ -17,7 +18,7 @@ class Favourites {
 
   Favourites() {}
 
-  const Folders& folders() const { return folders_; }
+  const Folders& folders() const SCADA_LIFETIME_BOUND { return folders_; }
 
   const Page* GetFolder(std::u16string_view name = {}) const;
   const Page& GetOrAddFolder(std::u16string_view name = {});

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "common/vds_runtime_api.h"
 
 #include <QLibrary>
@@ -12,8 +13,10 @@ class VdsRuntimeLoader {
   VdsRuntimeLoader();
 
   bool is_loaded() const { return api_ != nullptr; }
-  const QString& error_message() const { return error_message_; }
-  const TcVdsRuntimeApi& api() const { return *api_; }
+  const QString& error_message() const SCADA_LIFETIME_BOUND {
+    return error_message_;
+  }
+  const TcVdsRuntimeApi& api() const SCADA_LIFETIME_BOUND { return *api_; }
 
  private:
   using GetApiFn = const TcVdsRuntimeApi*(

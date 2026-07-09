@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/lifetime.h"
+
 #include <memory>
 
 class PrintService;
@@ -16,7 +18,7 @@ class PrintModule : private PrintModuleContext {
   explicit PrintModule(PrintModuleContext&& context);
   ~PrintModule();
 
-  PrintService& print_service() { return *print_service_; }
+  PrintService& print_service() SCADA_LIFETIME_BOUND { return *print_service_; }
 
  private:
   std::unique_ptr<PrintService> print_service_;

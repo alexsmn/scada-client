@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "modules/sheet/sheet_format.h"
 #include "timed_data/timed_data_spec.h"
 
@@ -15,11 +16,15 @@ class SheetCell {
   int column() const { return column_; }
   int row() const { return row_; }
 
-  const std::u16string& text() const { return text_; }
+  const std::u16string& text() const SCADA_LIFETIME_BOUND { return text_; }
   bool is_blinking() const { return blinking_; }
-  const TimedDataSpec& timed_data() const { return timed_data_; }
+  const TimedDataSpec& timed_data() const SCADA_LIFETIME_BOUND {
+    return timed_data_;
+  }
 
-  const std::u16string& formula() const { return formula_; }
+  const std::u16string& formula() const SCADA_LIFETIME_BOUND {
+    return formula_;
+  }
   bool SetFormula(std::u16string formula);
 
   TimedDataSpec timed_data_;

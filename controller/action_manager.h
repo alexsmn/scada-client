@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "controller/action.h"
 
 #include <boost/signals2/connection.hpp>
@@ -29,7 +30,7 @@ class ActionManager {
   ActionManager(const ActionManager&) = delete;
   ActionManager& operator=(const ActionManager&) = delete;
 
-  const ActionList& actions() const { return actions_; }
+  const ActionList& actions() const SCADA_LIFETIME_BOUND { return actions_; }
 
   Action& AddAction(Action action);
   Action* FindAction(unsigned command) const;

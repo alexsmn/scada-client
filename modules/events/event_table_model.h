@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/any_executor.h"
+#include "base/lifetime.h"
 
 #include "aui/models/table_model.h"
 #include "base/any_executor_timer.h"
@@ -53,7 +54,9 @@ class EventTableModel : public aui::TableModel, private EventTableModelContext {
   bool current_events() const { return current_events_; }
 
   EventType event_type_at(int row) const { return rows_[row].type; }
-  const scada::Event& event_at(int row) const { return *rows_[row].event; }
+  const scada::Event& event_at(int row) const SCADA_LIFETIME_BOUND {
+    return *rows_[row].event;
+  }
   bool IsWorking() const;
 
   const TimeRange& time_range() const;
@@ -62,7 +65,9 @@ class EventTableModel : public aui::TableModel, private EventTableModelContext {
   unsigned severity_min() const { return severity_min_; }
   void SetSeverityMin(unsigned severity);
 
-  const ItemIds& filter_items() const { return filter_node_ids_; }
+  const ItemIds& filter_items() const SCADA_LIFETIME_BOUND {
+    return filter_node_ids_;
+  }
   bool AddFilteredItem(const scada::NodeId& item);
   bool RemoveFilteredItem(const scada::NodeId& item);
 

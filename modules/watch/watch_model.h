@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aui/models/table_model.h"
+#include "base/lifetime.h"
 #include "base/time_range.h"
 #include "modules/watch/watch_event_source.h"
 #include "node_service/node_ref.h"
@@ -24,10 +25,12 @@ class WatchModel : private WatchModelContext,
  public:
   explicit WatchModel(WatchModelContext&& context);
 
-  const NodeRef& device() const { return device_; }
+  const NodeRef& device() const SCADA_LIFETIME_BOUND { return device_; }
   void SetDevice(NodeRef device);
 
-  const TimeRange& time_range() const { return time_range_; }
+  const TimeRange& time_range() const SCADA_LIFETIME_BOUND {
+    return time_range_;
+  }
   void SetTimeRange(const TimeRange& time_range);
 
   bool paused() const { return paused_; }

@@ -1,8 +1,9 @@
 #pragma once
 
 #include "aui/dialog_service.h"
-#include "base/awaitable.h"
 #include "base/any_executor.h"
+#include "base/awaitable.h"
+#include "base/lifetime.h"
 
 #include <stdexcept>
 #include <string>
@@ -14,7 +15,9 @@ class ResourceError {
   explicit ResourceError(std::u16string message)
       : message_{std::move(message)} {}
 
-  const std::u16string& message() const { return message_; }
+  const std::u16string& message() const SCADA_LIFETIME_BOUND {
+    return message_;
+  }
 
  private:
   const std::u16string message_;
@@ -41,11 +44,10 @@ T RethrowResourceError(std::exception_ptr e) {
 }
 
 template <typename T>
-inline Awaitable<T> ShowResourceErrorAsync(
-    DialogService& dialog_service,
-    std::u16string message,
-    std::u16string title,
-    std::exception_ptr e) {
+inline Awaitable<T> ShowResourceErrorAsync(DialogService& dialog_service,
+                                           std::u16string message,
+                                           std::u16string title,
+                                           std::exception_ptr e) {
   co_await dialog_service.RunMessageBox(message, title, MessageBoxMode::Error);
   if constexpr (std::is_void_v<T>) {
     std::rethrow_exception(e);
@@ -65,10 +67,9 @@ inline Awaitable<T> ShowResourceError(DialogService& dialog_service,
 }
 
 template <typename T>
-inline Awaitable<T> HandleResourceErrorAsync(
-    Awaitable<T> source,
-    DialogService& dialog_service,
-    std::u16string title) {
+inline Awaitable<T> HandleResourceErrorAsync(Awaitable<T> source,
+                                             DialogService& dialog_service,
+                                             std::u16string title) {
   std::exception_ptr error;
   try {
     if constexpr (std::is_void_v<T>) {

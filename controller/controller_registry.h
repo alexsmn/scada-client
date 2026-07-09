@@ -1,8 +1,9 @@
 #pragma once
 
-#include "resources/common_resources.h"
+#include "base/lifetime.h"
 #include "controller/controller.h"
 #include "controller/window_info.h"
+#include "resources/common_resources.h"
 
 #include <memory>
 #include <ranges>
@@ -18,7 +19,9 @@ class ControllerRegistrarBase {
  public:
   ControllerRegistrarBase(const WindowInfo& window_info, bool is_static);
 
-  const WindowInfo& window_info() const { return window_info_; }
+  const WindowInfo& window_info() const SCADA_LIFETIME_BOUND {
+    return window_info_;
+  }
 
   virtual std::unique_ptr<Controller> CreateController(
       const ControllerContext& context) = 0;

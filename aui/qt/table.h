@@ -2,6 +2,7 @@
 
 #include "aui/color.h"
 #include "aui/handlers.h"
+#include "base/lifetime.h"
 #include <boost/json.hpp>
 
 #include <QTableView>
@@ -22,7 +23,7 @@ class Table : public QTableView {
         bool sorting = false);
   ~Table();
 
-  const std::vector<TableColumn>& columns() const;
+  const std::vector<TableColumn>& columns() const SCADA_LIFETIME_BOUND;
 
   void SetShowGrid(bool show_grid) { setShowGrid(show_grid); }
 

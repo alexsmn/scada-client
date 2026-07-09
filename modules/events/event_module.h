@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/any_executor.h"
+#include "base/lifetime.h"
 #include "scada/services.h"
 
 #include <memory>
@@ -37,8 +38,8 @@ class EventModule : private EventModuleContext {
   ~EventModule();
 
   NodeEventProvider& node_event_provider();
-  EventFetcher& event_fetcher() { return *event_fetcher_; }
-  LocalEvents& local_events() { return *local_events_; }
+  EventFetcher& event_fetcher() SCADA_LIFETIME_BOUND { return *event_fetcher_; }
+  LocalEvents& local_events() SCADA_LIFETIME_BOUND { return *local_events_; }
 
  private:
   void AddOpenCommand(unsigned command_id,

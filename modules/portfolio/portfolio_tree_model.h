@@ -1,8 +1,9 @@
 #pragma once
 
+#include "aui/models/tree_node_model.h"
+#include "base/lifetime.h"
 #include "common/node_state.h"
 #include "portfolio/portfolio_manager.h"
-#include "aui/models/tree_node_model.h"
 
 class PortfolioManager;
 
@@ -12,8 +13,8 @@ class PortfolioTreeNode : public aui::TreeNode<PortfolioTreeNode> {
                     const Portfolio& portfolio)
       : portfolio_manager_{portfolio_manager}, portfolio_{portfolio} {}
 
-  const Portfolio& portfolio() const { return portfolio_; }
-  const scada::NodeId& item_id() const { return item_id_; }
+  const Portfolio& portfolio() const SCADA_LIFETIME_BOUND { return portfolio_; }
+  const scada::NodeId& item_id() const SCADA_LIFETIME_BOUND { return item_id_; }
   bool is_portfolio() const { return item_id_ == scada::NodeId(); }
 
   void set_title(const std::u16string& title) { title_ = title; }

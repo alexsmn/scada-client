@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aui/color.h"
+#include "base/lifetime.h"
 
 #include <QAbstractItemModel>
 #include <boost/signals2/connection.hpp>
@@ -20,11 +21,13 @@ class TableModelAdapter : public QAbstractTableModel {
                     std::vector<TableColumn> columns);
   virtual ~TableModelAdapter();
 
-  TableModel& model() { return *model_; }
-  const TableModel& model() const { return *model_; }
+  TableModel& model() SCADA_LIFETIME_BOUND { return *model_; }
+  const TableModel& model() const SCADA_LIFETIME_BOUND { return *model_; }
 
-  std::vector<TableColumn>& columns() { return columns_; }
-  const std::vector<TableColumn>& columns() const { return columns_; }
+  std::vector<TableColumn>& columns() SCADA_LIFETIME_BOUND { return columns_; }
+  const std::vector<TableColumn>& columns() const SCADA_LIFETIME_BOUND {
+    return columns_;
+  }
 
   void LoadIcons(unsigned resource_id, int width, Color mask_color);
 

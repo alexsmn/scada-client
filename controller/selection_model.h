@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "common/node_state.h"
 #include "controller/node_id_set.h"
 #include "node_service/node_ref.h"
@@ -29,8 +30,10 @@ class SelectionModel final : private SelectionModelContext {
 
   std::u16string GetTitle() const;
   NodeIdSet GetMultipleNodeIds() const;
-  const NodeRef& node() const { return node_; }
-  const TimedDataSpec& timed_data() const { return timed_data_; }
+  const NodeRef& node() const SCADA_LIFETIME_BOUND { return node_; }
+  const TimedDataSpec& timed_data() const SCADA_LIFETIME_BOUND {
+    return timed_data_;
+  }
 
   using ChangeHandler = std::function<void()>;
   ChangeHandler change_handler;

@@ -4,6 +4,7 @@
 #include "aui/models/grid_model.h"
 #include "base/blinker.h"
 #include "base/check.h"
+#include "base/lifetime.h"
 #include "modules/sheet/sheet_format.h"
 
 #include <set>
@@ -35,8 +36,10 @@ class SheetModel : private SheetModelContext,
   void Load(const WindowDefinition& definition);
   void Save(WindowDefinition& definition);
 
-  aui::FixedRowModel& row_model() { return row_model_; }
-  SheetColumnModel& column_model() { return column_model_; }
+  aui::FixedRowModel& row_model() SCADA_LIFETIME_BOUND { return row_model_; }
+  SheetColumnModel& column_model() SCADA_LIFETIME_BOUND {
+    return column_model_;
+  }
 
   int column_count() const { return column_count_; }
   int row_count() const { return row_count_; }
@@ -57,7 +60,7 @@ class SheetModel : private SheetModelContext,
   aui::Color GetRangeColor(const aui::GridRange& range) const;
   void SetRangeColor(const aui::GridRange& range, aui::Color color);
 
-  SheetFormatPool& formats() { return formats_; }
+  SheetFormatPool& formats() SCADA_LIFETIME_BOUND { return formats_; }
 
   TimedDataService& timed_data_service() { return timed_data_service_; }
 
