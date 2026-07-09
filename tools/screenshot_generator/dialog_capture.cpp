@@ -146,7 +146,7 @@ bool FetchAndWaitForPendingNodeLoads(NodeService& node_service,
     return false;
   }
 
-  node.Fetch(requested_status);
+  node.StartFetch(requested_status);
   return WaitForPendingNodeLoads(node_service);
 }
 
