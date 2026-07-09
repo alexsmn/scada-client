@@ -1,6 +1,7 @@
 #include "write/write_module.h"
 
 #include "aui/translation.h"
+#include "base/awaitable.h"
 #include "controller/action.h"
 #include "controller/command_registry.h"
 #include "controller/command_ui_registry.h"
@@ -30,11 +31,15 @@ WriteModule::WriteModule(WriteModuleContext&& context)
       {.command_id = ID_WRITE,
        .execute_handler =
            [this](const SelectionCommandContext& context) {
-             (void)ExecuteWriteDialog(
-                 context.dialog_service,
-                 WriteContext{executor_, timed_data_service_,
-                              context.selection.node().node_id(), profile_,
-                              false});
+             // `ExecuteWriteDialog` returns a lazy awaitable — spawn it
+             // detached so the dialog actually opens.
+             CoSpawn(executor_, [this, &dialog_service = context.dialog_service,
+                                 node_id =
+                                     context.selection.node().node_id()]() {
+               return ExecuteWriteDialog(
+                   dialog_service, WriteContext{executor_, timed_data_service_,
+                                                node_id, profile_, false});
+             });
            },
        .enabled_handler =
            [](const SelectionCommandContext& context) {
@@ -58,11 +63,15 @@ WriteModule::WriteModule(WriteModuleContext&& context)
       {.command_id = ID_WRITE_MANUAL,
        .execute_handler =
            [this](const SelectionCommandContext& context) {
-             (void)ExecuteWriteDialog(
-                 context.dialog_service,
-                 WriteContext{executor_, timed_data_service_,
-                              context.selection.node().node_id(), profile_,
-                              true});
+             // `ExecuteWriteDialog` returns a lazy awaitable — spawn it
+             // detached so the dialog actually opens.
+             CoSpawn(executor_, [this, &dialog_service = context.dialog_service,
+                                 node_id =
+                                     context.selection.node().node_id()]() {
+               return ExecuteWriteDialog(
+                   dialog_service, WriteContext{executor_, timed_data_service_,
+                                                node_id, profile_, true});
+             });
            },
        .available_handler =
            [this](const SelectionCommandContext& context) {

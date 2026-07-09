@@ -1,6 +1,7 @@
 #include "limits/limits_module.h"
 
 #include "aui/translation.h"
+#include "base/awaitable.h"
 #include "controller/action.h"
 #include "controller/command_registry.h"
 #include "controller/command_ui_registry.h"
@@ -23,8 +24,12 @@ LimitsModule::LimitsModule(LimitsModuleContext&& context)
       {.command_id = ID_EDIT_LIMITS,
        .execute_handler =
            [this](const SelectionCommandContext& context) {
-             (void)ShowLimitsDialog(context.dialog_service,
-                                    {context.selection.node(), task_manager_});
+             // `ShowLimitsDialog` returns a lazy awaitable — spawn it detached
+             // so the dialog actually opens.
+             CoSpawn(executor_, [this, &dialog_service = context.dialog_service,
+                                 node = context.selection.node()]() {
+               return ShowLimitsDialog(dialog_service, {node, task_manager_});
+             });
            },
        .available_handler =
            [this](const SelectionCommandContext& context) {

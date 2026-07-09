@@ -300,6 +300,7 @@ void ClientApplication::CreateUserServices(const PostLoginContext& ctx) {
   shutdown_stack_.Push([this] { create_tree_.reset(); });
 
   singletons_.emplace(std::make_shared<LimitsModule>(LimitsModuleContext{
+      .executor_ = executor_,
       .session_service_ = *ctx.audited_scada_services.session_service,
       .task_manager_ = *task_manager_,
       .selection_commands_ = core_module_->selection_commands(),

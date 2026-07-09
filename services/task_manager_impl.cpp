@@ -27,11 +27,11 @@ std::u16string FormatReference(NodeService& node_service,
                                const scada::NodeId& source_id,
                                const scada::NodeId& target_id,
                                bool add) {
-  return u16format(
-      L"{} of type {} from {} to {}", add ? L"Adding reference" : L"Deleting reference",
-      GetDisplayName(node_service, reference_type_id),
-      GetDisplayName(node_service, source_id),
-      GetDisplayName(node_service, target_id));
+  return u16format(L"{} of type {} from {} to {}",
+                   add ? L"Adding reference" : L"Deleting reference",
+                   GetDisplayName(node_service, reference_type_id),
+                   GetDisplayName(node_service, source_id),
+                   GetDisplayName(node_service, target_id));
 }
 
 scada::StatusOr<std::vector<scada::WriteValue>> PrepareUpdateInputs(
@@ -78,9 +78,8 @@ void CompleteTaskCompletion(base::AsyncCompletion& completion,
   completion.Complete();
 }
 
-Awaitable<scada::Status> RunTaskLauncher(
-    AnyExecutor executor,
-    TaskManager::TaskLauncher launcher) {
+Awaitable<scada::Status> RunTaskLauncher(AnyExecutor executor,
+                                         TaskManager::TaskLauncher launcher) {
   co_return co_await launcher();
 }
 
@@ -115,6 +114,13 @@ Awaitable<scada::StatusOr<T>> WaitTypedTaskResult(
   co_return std::move(*result->value);
 }
 
+Awaitable<scada::Status> WaitTaskResult(
+    std::shared_ptr<TaskResultState<scada::Status>> result,
+    Awaitable<void> waiter) {
+  co_await std::move(waiter);
+  co_return result->status;
+}
+
 }  // namespace
 
 // TaskManagerImpl
@@ -138,11 +144,11 @@ Awaitable<scada::Status> TaskManagerImpl::PostTask(
     std::u16string_view description,
     const TaskLauncher& launcher) {
   auto self = shared_from_this();
-  return PostTaskMethod(
-      description,
-      [self, launcher]() mutable -> Awaitable<scada::Status> {
-        return RunTaskLauncher(self->executor_, std::move(launcher));
-      });
+  return PostTaskMethod(std::u16string{description},
+                        [self, launcher]() mutable -> Awaitable<scada::Status> {
+                          return RunTaskLauncher(self->executor_,
+                                                 std::move(launcher));
+                        });
 }
 
 Awaitable<scada::StatusOr<scada::NodeId>> TaskManagerImpl::PostInsertTask(
@@ -150,8 +156,7 @@ Awaitable<scada::StatusOr<scada::NodeId>> TaskManagerImpl::PostInsertTask(
   auto self = shared_from_this();
 
   return PostTypedTaskMethod<scada::NodeId>(
-      Translate("Insert"),
-      [self, node_state]() mutable {
+      Translate("Insert"), [self, node_state]() mutable {
         return RunInsertTask(std::move(self), std::move(node_state));
       });
 }
@@ -159,8 +164,7 @@ Awaitable<scada::StatusOr<scada::NodeId>> TaskManagerImpl::PostInsertTask(
 Awaitable<scada::StatusOr<scada::NodeId>> TaskManagerImpl::RunInsertTask(
     std::shared_ptr<TaskManagerImpl> self,
     scada::NodeState node_state) {
-  NodeRef type_def =
-      self->node_service_.GetNode(node_state.type_definition_id);
+  NodeRef type_def = self->node_service_.GetNode(node_state.type_definition_id);
   auto fetch_status = co_await FetchNodeStatus(type_def);
   if (!fetch_status) {
     co_return fetch_status;
@@ -195,13 +199,37 @@ Awaitable<scada::StatusOr<scada::NodeId>> TaskManagerImpl::RunInsertTask(
 
   const scada::NodeId added_node_id = add_results.front().added_node_id;
 
-  for (const auto& reference : node_state.references) {
-    if (reference.forward) {
-      self->PostAddReference(reference.reference_type_id, added_node_id,
-                             reference.node_id);
-    } else {
-      self->PostAddReference(reference.reference_type_id, reference.node_id,
-                             added_node_id);
+  // Add the references through the service directly, as part of this task.
+  // `PostAddReference` cannot be used here: it returns a lazy awaitable that
+  // enqueues a task only once awaited, and awaiting a queued task from inside
+  // this coroutine would deadlock — this coroutine itself runs as the queue's
+  // current task, and tasks are serialized.
+  if (!node_state.references.empty()) {
+    std::vector<scada::AddReferencesItem> reference_inputs;
+    reference_inputs.reserve(node_state.references.size());
+    for (const auto& reference : node_state.references) {
+      if (reference.forward) {
+        reference_inputs.push_back(
+            {.source_node_id = added_node_id,
+             .reference_type_id = reference.reference_type_id,
+             .target_node_id = reference.node_id});
+      } else {
+        reference_inputs.push_back(
+            {.source_node_id = reference.node_id,
+             .reference_type_id = reference.reference_type_id,
+             .target_node_id = added_node_id});
+      }
+    }
+
+    auto add_references_result =
+        co_await self->node_management_service_.AddReferences(
+            scada::ServiceContext{}, std::move(reference_inputs));
+    if (!add_references_result.ok()) {
+      co_return add_references_result.status();
+    }
+    auto bad_reference = FirstBadStatus(*add_references_result);
+    if (!bad_reference) {
+      co_return bad_reference;
     }
   }
 
@@ -236,13 +264,13 @@ Awaitable<scada::Status> TaskManagerImpl::PostUpdateTask(
     scada::NodeProperties properties) {
   std::u16string title = GetDisplayName(node_service_, node_id);
   auto self = shared_from_this();
-  return PostTaskMethod(
-      u16format(L"Modifying {}", title),
-      [self, node_id, attributes = std::move(attributes),
-       properties = std::move(properties)]() mutable {
-        return RunUpdateTask(std::move(self), node_id, std::move(attributes),
-                             std::move(properties));
-      });
+  return PostTaskMethod(u16format(L"Modifying {}", title),
+                        [self, node_id, attributes = std::move(attributes),
+                         properties = std::move(properties)]() mutable {
+                          return RunUpdateTask(std::move(self), node_id,
+                                               std::move(attributes),
+                                               std::move(properties));
+                        });
 }
 
 Awaitable<scada::Status> TaskManagerImpl::RunUpdateTask(
@@ -262,8 +290,8 @@ Awaitable<scada::Status> TaskManagerImpl::RunUpdateTask(
     co_return inputs.status();
   }
 
-  auto result = co_await self->attribute_service_.Write(
-      scada::ServiceContext{}, std::move(*inputs));
+  auto result = co_await self->attribute_service_.Write(scada::ServiceContext{},
+                                                        std::move(*inputs));
   if (!result.ok()) {
     co_return result.status();
   }
@@ -278,11 +306,10 @@ Awaitable<scada::Status> TaskManagerImpl::PostDeleteTask(
     const scada::NodeId& node_id) {
   std::u16string title = GetDisplayName(node_service_, node_id);
   auto self = shared_from_this();
-  return PostTaskMethod(
-      u16format(L"Deleting {}", title),
-      [self, node_id]() mutable {
-        return RunDeleteTask(std::move(self), node_id);
-      });
+  return PostTaskMethod(u16format(L"Deleting {}", title),
+                        [self, node_id]() mutable {
+                          return RunDeleteTask(std::move(self), node_id);
+                        });
 }
 
 Awaitable<scada::Status> TaskManagerImpl::RunDeleteTask(
@@ -308,12 +335,11 @@ Awaitable<scada::Status> TaskManagerImpl::PostAddReference(
   auto title = FormatReference(node_service_, reference_type_id, source_id,
                                target_id, true);
   auto self = shared_from_this();
-  return PostTaskMethod(
-      title,
-      [self, reference_type_id, source_id, target_id]() mutable {
-        return RunAddReferenceTask(std::move(self), reference_type_id,
-                                   source_id, target_id);
-      });
+  return PostTaskMethod(std::move(title), [self, reference_type_id, source_id,
+                                           target_id]() mutable {
+    return RunAddReferenceTask(std::move(self), reference_type_id, source_id,
+                               target_id);
+  });
 }
 
 Awaitable<scada::Status> TaskManagerImpl::RunAddReferenceTask(
@@ -321,8 +347,8 @@ Awaitable<scada::Status> TaskManagerImpl::RunAddReferenceTask(
     scada::NodeId reference_type_id,
     scada::NodeId source_id,
     scada::NodeId target_id) {
-  scada::AddReferencesItem input{source_id, reference_type_id, true, {},
-                                 target_id};
+  scada::AddReferencesItem input{
+      source_id, reference_type_id, true, {}, target_id};
   auto result = co_await self->node_management_service_.AddReferences(
       scada::ServiceContext{}, {input});
   if (!result.ok()) {
@@ -342,12 +368,11 @@ Awaitable<scada::Status> TaskManagerImpl::PostDeleteReference(
   auto title = FormatReference(node_service_, reference_type_id, source_id,
                                target_id, false);
   auto self = shared_from_this();
-  return PostTaskMethod(
-      title,
-      [self, reference_type_id, source_id, target_id]() mutable {
-        return RunDeleteReferenceTask(std::move(self), reference_type_id,
-                                      source_id, target_id);
-      });
+  return PostTaskMethod(std::move(title), [self, reference_type_id, source_id,
+                                           target_id]() mutable {
+    return RunDeleteReferenceTask(std::move(self), reference_type_id, source_id,
+                                  target_id);
+  });
 }
 
 Awaitable<scada::Status> TaskManagerImpl::RunDeleteReferenceTask(
@@ -357,9 +382,8 @@ Awaitable<scada::Status> TaskManagerImpl::RunDeleteReferenceTask(
     scada::NodeId target_id) {
   scada::DeleteReferencesItem input{source_id, reference_type_id, true,
                                     target_id, true};
-  auto result =
-      co_await self->node_management_service_.DeleteReferences(
-          scada::ServiceContext{}, {input});
+  auto result = co_await self->node_management_service_.DeleteReferences(
+      scada::ServiceContext{}, {input});
   if (!result.ok()) {
     co_return result.status();
   }
@@ -387,10 +411,10 @@ void TaskManagerImpl::StartTask(Task&& task) {
   // Own `method` here so moving out of `running_task_` inside
   // `ReportRequestCompletion` doesn't dangle the coroutine's captured body.
   auto method = running_task_.method;
-  CoSpawn(executor_, [self = shared_from_this(),
-                      method = std::move(method)]() mutable {
-    return self->RunTaskBody(std::move(method));
-  });
+  CoSpawn(executor_,
+          [self = shared_from_this(), method = std::move(method)]() mutable {
+            return self->RunTaskBody(std::move(method));
+          });
 }
 
 void TaskManagerImpl::ReportRequestCompletion(
@@ -471,16 +495,14 @@ void TaskManagerImpl::Run() {
   }
 }
 
-Awaitable<scada::Status> TaskManagerImpl::PostTaskMethod(
-    std::u16string_view title,
-    TaskMethod method) {
+Awaitable<scada::Status> TaskManagerImpl::PostTaskMethod(std::u16string title,
+                                                         TaskMethod method) {
   auto result = std::make_shared<TaskResultState<scada::Status>>();
   auto completion = base::AsyncCompletion{executor_};
   auto waiter = completion.Wait();
-  tasks_.push(Task{.title = std::u16string{title},
-                   .method =
-                       [method = std::move(method), result]() mutable
-                       -> Awaitable<scada::Status> {
+  tasks_.push(Task{.title = std::move(title),
+                   .method = [method = std::move(method),
+                              result]() mutable -> Awaitable<scada::Status> {
                      result->status = co_await method();
                      co_return result->status;
                    },
@@ -492,29 +514,28 @@ Awaitable<scada::Status> TaskManagerImpl::PostTaskMethod(
 
   PostDelayedTask(executor_, 1ms, [self = shared_from_this()] { self->Run(); });
 
-  co_await std::move(waiter);
-  co_return result->status;
+  return WaitTaskResult(std::move(result), std::move(waiter));
 }
 
 template <class T>
 Awaitable<scada::StatusOr<T>> TaskManagerImpl::PostTypedTaskMethod(
-    std::u16string_view title,
+    std::u16string title,
     std::function<Awaitable<scada::StatusOr<T>>()> method) {
   auto result = std::make_shared<TaskResultState<T>>();
   auto task_completion = base::AsyncCompletion{executor_};
   auto waiter = task_completion.Wait();
 
-  Task task{
-      .title = std::u16string{title},
-      .method =
-          [method = std::move(method), result]() mutable {
-        return RunTypedTaskMethod(std::move(method), std::move(result));
-      },
-      .completion = std::move(task_completion),
-      .cancel =
-          [result](const scada::Status& status) mutable {
-            result->status = status;
-          }};
+  Task task{.title = std::move(title),
+            .method =
+                [method = std::move(method), result]() mutable {
+                  return RunTypedTaskMethod(std::move(method),
+                                            std::move(result));
+                },
+            .completion = std::move(task_completion),
+            .cancel =
+                [result](const scada::Status& status) mutable {
+                  result->status = status;
+                }};
 
   tasks_.push(std::move(task));
   PostDelayedTask(executor_, 1ms, [self = shared_from_this()] { self->Run(); });

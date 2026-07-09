@@ -7,15 +7,24 @@
 
 #include <functional>
 
+// Queues user-visible configuration tasks (inserts, updates, deletes,
+// reference changes) and runs them sequentially, reporting progress and
+// completion to the user.
+//
+// Contract: every `Post*` method enqueues the task BEFORE returning; the
+// returned awaitable only waits for the task's result. Callers that don't
+// need the result may discard the awaitable — the task still runs
+// (fire-and-forget). Implementations must not defer the enqueue into the
+// returned (lazy) awaitable: many UI call sites discard it, and a lazy
+// implementation silently turns them into no-ops.
 class TaskManager {
  public:
   virtual ~TaskManager() {}
 
   using TaskLauncher = std::function<Awaitable<scada::Status>()>;
 
-  virtual Awaitable<scada::Status> PostTask(
-      std::u16string_view description,
-      const TaskLauncher& launcher) = 0;
+  virtual Awaitable<scada::Status> PostTask(std::u16string_view description,
+                                            const TaskLauncher& launcher) = 0;
 
   // Those fields must be unset: node_class, reference_type_id, children.
   virtual Awaitable<scada::StatusOr<scada::NodeId>> PostInsertTask(

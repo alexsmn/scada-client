@@ -13,6 +13,7 @@
 #include "events/local_events.h"
 #include "main_window/main_window_mock.h"
 #include "main_window/opened_view/opened_view_interface.h"
+#include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "node_service/node_model_mock.h"
 #include "profile/profile.h"
@@ -48,6 +49,19 @@ class FakeOpenedView : public OpenedViewInterface {
  private:
   WindowInfo window_info_;
 };
+
+// Mirrors the laziness of the production `TaskManagerImpl`: the launcher runs
+// only when the returned awaitable is awaited. The launcher parameter is taken
+// by value so the coroutine frame owns a copy (CP.53).
+Awaitable<scada::Status> RunLauncherLazily(TaskManager::TaskLauncher launcher) {
+  co_return co_await launcher();
+}
+
+// A lazy awaitable that flips `executed` only when actually awaited.
+Awaitable<scada::Status> CompleteLazily(bool* executed) {
+  *executed = true;
+  co_return scada::StatusCode::Good;
+}
 
 NodeRef MakeCommandNode(scada::node scada_node) {
   auto node_model = std::make_shared<NiceMock<MockNodeModel>>();
@@ -87,12 +101,14 @@ class ConfigurationModuleTest : public Test {
             .opened_view = opened_view_};
   }
 
-  void ExecuteInterrogateCommand() {
-    auto* command = selection_commands_.FindCommand(ID_DEV1_REFR);
+  void ExecuteCommand(unsigned command_id) {
+    auto* command = selection_commands_.FindCommand(command_id);
     ASSERT_NE(command, nullptr);
     auto context = MakeCommandContext();
     command->execute_handler(context);
   }
+
+  void ExecuteInterrogateCommand() { ExecuteCommand(ID_DEV1_REFR); }
 
   void DrainExecutor() { Drain(executor_); }
 
@@ -114,6 +130,46 @@ class ConfigurationModuleTest : public Test {
   FakeOpenedView opened_view_;
   ConfigurationModule configuration_module_;
 };
+
+// Regression: ID_UNLOCK_ITEM discarded the lazy awaitable returned by
+// `TaskManager::PostTask`, so the posted task never ran and the unlock method
+// was never called.
+TEST_F(ConfigurationModuleTest, UnlockCommandRunsPostedTask) {
+  EXPECT_CALL(task_manager_, PostTask(_, _))
+      .WillOnce(Invoke(
+          [](std::u16string_view, const TaskManager::TaskLauncher& launcher) {
+            return RunLauncherLazily(launcher);
+          }));
+  EXPECT_CALL(method_service_,
+              Call(scada::NodeId{kItemNodeId, 1},
+                   data_items::id::DataItemType_Unlock, IsEmpty(), _))
+      .WillOnce(Invoke([](auto, auto, auto, auto) {
+        return scada::MakeMethodCallResult(scada::StatusCode::Good);
+      }));
+
+  ExecuteCommand(ID_UNLOCK_ITEM);
+  DrainExecutor();
+}
+
+// Regression: ID_ITEM_ENABLE / ID_ITEM_DISABLE discarded the lazy awaitable
+// returned by `TaskManager::PostUpdateTask`, so the update never ran.
+TEST_F(ConfigurationModuleTest, EnableCommandRunsPostedUpdateTask) {
+  bool executed = false;
+  EXPECT_CALL(task_manager_,
+              PostUpdateTask(scada::NodeId{kItemNodeId, 1}, _, _))
+      .WillOnce(Invoke([&](const scada::NodeId&, scada::NodeAttributes,
+                           scada::NodeProperties properties) {
+        EXPECT_THAT(properties,
+                    ElementsAre(Pair(devices::id::DeviceType_Disabled,
+                                     scada::Variant{false})));
+        return CompleteLazily(&executed);
+      }));
+
+  ExecuteCommand(ID_ITEM_ENABLE);
+  DrainExecutor();
+
+  EXPECT_TRUE(executed);
+}
 
 TEST_F(ConfigurationModuleTest, ReportsMethodCallSuccessAfterCompletion) {
   EXPECT_CALL(method_service_,

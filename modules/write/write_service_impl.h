@@ -2,6 +2,7 @@
 
 #include "base/any_executor.h"
 
+#include "base/awaitable.h"
 #include "modules/write/write_dialog.h"
 #include "modules/write/write_service.h"
 
@@ -20,12 +21,17 @@ class WriteServiceImpl final : private WriteServiceImplContext,
   virtual void ExecuteWriteDialog(DialogService& dialog_service,
                                   const scada::NodeId& node_id,
                                   bool manual) override {
-    ::ExecuteWriteDialog(
-        dialog_service, WriteContext{.executor_ = executor_,
-                                     .timed_data_service_ = timed_data_service_,
-                                     .node_id_ = node_id,
-                                     .profile_ = profile_,
-                                     .manual_ = manual});
+    // `::ExecuteWriteDialog` returns a lazy awaitable — spawn it detached so
+    // the dialog actually opens.
+    CoSpawn(executor_, [this, &dialog_service, node_id, manual]() {
+      return ::ExecuteWriteDialog(
+          dialog_service,
+          WriteContext{.executor_ = executor_,
+                       .timed_data_service_ = timed_data_service_,
+                       .node_id_ = node_id,
+                       .profile_ = profile_,
+                       .manual_ = manual});
+    });
   }
 
  private:

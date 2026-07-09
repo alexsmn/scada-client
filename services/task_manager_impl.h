@@ -84,12 +84,17 @@ class TaskManagerImpl : private TaskManagerImplContext,
   void Run();
   void CancelProgress();
 
-  Awaitable<scada::Status> PostTaskMethod(std::u16string_view title,
+  // Enqueues the task before returning, so the caller may discard the
+  // returned awaitable for fire-and-forget usage (see the `TaskManager`
+  // interface contract). Deliberately NOT a coroutine: a lazy coroutine here
+  // regressed every call site that discarded the result — the task was never
+  // queued. Only the returned result waiter is lazy.
+  Awaitable<scada::Status> PostTaskMethod(std::u16string title,
                                           TaskMethod method);
 
   template <class T>
   Awaitable<scada::StatusOr<T>> PostTypedTaskMethod(
-      std::u16string_view title,
+      std::u16string title,
       std::function<Awaitable<scada::StatusOr<T>>()> method);
 
   [[nodiscard]] static Awaitable<scada::StatusOr<scada::NodeId>> RunInsertTask(

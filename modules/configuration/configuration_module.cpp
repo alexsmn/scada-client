@@ -130,12 +130,17 @@ ConfigurationModule::ConfigurationModule(ConfigurationModuleContext&& context)
       {.command_id = ID_UNLOCK_ITEM,
        .execute_handler =
            [this](const SelectionCommandContext& context) {
-             const auto& node = context.selection.node();
-             (void)task_manager_.PostTask(
-                 u16format(L"Unlocking {}", node.display_name()),
-                 [node]() -> Awaitable<scada::Status> {
-                   co_return co_await node.scada_node().call(
-                       data_items::id::DataItemType_Unlock);
+             // `PostTask` returns a lazy awaitable — spawn it detached so the
+             // task actually runs; the task manager reports completion itself.
+             CoSpawn(
+                 executor_,
+                 [this, node = context.selection.node()]() -> Awaitable<void> {
+                   (void)co_await task_manager_.PostTask(
+                       u16format(L"Unlocking {}", node.display_name()),
+                       [node]() -> Awaitable<scada::Status> {
+                         co_return co_await node.scada_node().call(
+                             data_items::id::DataItemType_Unlock);
+                       });
                  });
            },
        .enabled_handler =
@@ -203,9 +208,16 @@ void ConfigurationModule::RegisterEnableDeviceCommand(unsigned command_id,
       {.command_id = command_id,
        .execute_handler =
            [this, enable](const SelectionCommandContext& context) {
-             (void)task_manager_.PostUpdateTask(
-                 context.selection.node().node_id(), /*attrs=*/{}, /*props=*/
-                 {{devices::id::DeviceType_Disabled, !enable}});
+             // `PostUpdateTask` returns a lazy awaitable — spawn it detached
+             // so the task actually runs; the task manager reports completion
+             // itself.
+             CoSpawn(executor_,
+                     [this, node_id = context.selection.node().node_id(),
+                      enable]() -> Awaitable<void> {
+                       (void)co_await task_manager_.PostUpdateTask(
+                           node_id, /*attrs=*/{}, /*props=*/
+                           {{devices::id::DeviceType_Disabled, !enable}});
+                     });
            },
        .enabled_handler =
            [enable](const SelectionCommandContext& context) {
