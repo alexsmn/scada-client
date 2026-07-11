@@ -24,13 +24,6 @@ enum class MainMenuId;
 struct GlobalCommandContext;
 struct WindowInfo;
 
-void RegisterDisplayMenuWindowType(std::string_view window_type);
-void UnregisterDisplayMenuWindowType(std::string_view window_type);
-void RegisterMainMenuFavouritesWindowType(MainMenuId menu_id,
-                                          std::string_view window_type);
-void UnregisterMainMenuFavouritesWindowType(MainMenuId menu_id,
-                                            std::string_view window_type);
-
 struct MainMenuContext {
   const AnyExecutor executor_;
   MainWindowManager& main_window_manager_;

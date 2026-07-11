@@ -9,6 +9,7 @@
 #include "controller/command_handler.h"
 #include "controller/command_registry.h"
 #include "controller/command_ui_registry.h"
+#include "controller/main_menu_window_type_registry.h"
 #include "controller/window_info.h"
 #include "favorites/favourites.h"
 #include "filesystem/file_cache.h"
@@ -94,52 +95,7 @@ void AddMenuContributions(
   }
 }
 
-std::vector<std::string>& GetDisplayMenuWindowTypes() {
-  static std::vector<std::string> window_types;
-  return window_types;
-}
-
-std::vector<std::string>& GetFavouritesMenuWindowTypes(MainMenuId menu_id) {
-  static std::vector<std::string> table_window_types;
-  static std::vector<std::string> graph_window_types;
-
-  switch (menu_id) {
-    case MainMenuId::Table:
-      return table_window_types;
-    case MainMenuId::Graph:
-      return graph_window_types;
-    default:
-      base::NotReached();
-  }
-}
-
 }  // namespace
-
-void RegisterDisplayMenuWindowType(std::string_view window_type) {
-  auto& window_types = GetDisplayMenuWindowTypes();
-  if (std::ranges::find(window_types, window_type) == window_types.end()) {
-    window_types.emplace_back(window_type);
-  }
-}
-
-void UnregisterDisplayMenuWindowType(std::string_view window_type) {
-  auto& window_types = GetDisplayMenuWindowTypes();
-  std::erase(window_types, window_type);
-}
-
-void RegisterMainMenuFavouritesWindowType(MainMenuId menu_id,
-                                          std::string_view window_type) {
-  auto& window_types = GetFavouritesMenuWindowTypes(menu_id);
-  if (std::ranges::find(window_types, window_type) == window_types.end()) {
-    window_types.emplace_back(window_type);
-  }
-}
-
-void UnregisterMainMenuFavouritesWindowType(MainMenuId menu_id,
-                                            std::string_view window_type) {
-  auto& window_types = GetFavouritesMenuWindowTypes(menu_id);
-  std::erase(window_types, window_type);
-}
 
 // DisplayMenuModel
 

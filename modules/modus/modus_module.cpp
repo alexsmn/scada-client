@@ -5,8 +5,8 @@
 #include "controller/command_ui_registry.h"
 
 #include "controller/controller_registry.h"
+#include "controller/main_menu_window_type_registry.h"
 #include "filesystem/file_registry.h"
-#include "main_window/main_menu/main_menu_model.h"
 #include "modus/modus_component.h"
 #include "modus/modus_controller.h"
 #include "profile/profile.h"

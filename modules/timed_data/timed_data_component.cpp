@@ -5,7 +5,7 @@
 #include "controller/command_registry.h"
 #include "controller/command_ui_registry.h"
 #include "controller/controller_registry.h"
-#include "main_window/main_menu/main_menu_model.h"
+#include "controller/main_menu_window_type_registry.h"
 #include "modules/selection_command_helpers.h"
 #include "modules/timed_data/timed_data_controller.h"
 #include "resources/common_resources.h"

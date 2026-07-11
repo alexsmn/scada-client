@@ -2,8 +2,8 @@
 
 #include "controller/controller_context.h"
 #include "controller/controller_registry.h"
+#include "controller/main_menu_window_type_registry.h"
 #include "filesystem/file_registry.h"
-#include "main_window/main_menu/main_menu_model.h"
 #include "vidicon/display/native/vidicon_display_native_view.h"
 #include "vidicon/display/vidicon_display_component.h"
 

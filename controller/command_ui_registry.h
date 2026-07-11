@@ -3,23 +3,11 @@
 #include "base/lifetime.h"
 #include "controller/action_manager.h"
 #include "controller/command_manager.h"
+#include "controller/main_menu_id.h"
 
 #include <optional>
 #include <string>
 #include <vector>
-
-enum class MainMenuId {
-  Display,
-  Table,
-  Graph,
-  Item,
-  More,
-  Page,
-  Window,
-  Settings,
-  Language,
-  Help,
-};
 
 struct MenuContribution {
   MainMenuId menu_id = MainMenuId::More;
