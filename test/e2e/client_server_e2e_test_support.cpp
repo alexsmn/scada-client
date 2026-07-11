@@ -9,10 +9,14 @@
 #include <boost/process/v1/args.hpp>
 #include <boost/process/v1/io.hpp>
 
+#include <algorithm>
+#include <cctype>
 #include <cstdlib>
 #include <iostream>
 #include <memory>
+#include <string>
 #include <thread>
+#include <utility>
 
 using namespace std::chrono_literals;
 
@@ -22,6 +26,23 @@ namespace {
 bool IsKeepWorkspaceEnabled() {
   auto* value = std::getenv("SCADA_E2E_KEEP_WORKSPACE");
   return value && *value;
+}
+
+// Whether the spawned Qt client should render offscreen (no visible window)
+// during the E2E run. On by default so the suite does not pop up — and steal
+// focus with — a client window for every one of the 40 test cases. Set
+// SCADA_E2E_HIDE_CLIENT_WINDOW to 0/false/no/off to show the window when
+// debugging a test locally. The client still runs its full UI logic offscreen;
+// only the platform windowing is suppressed.
+bool IsHideClientWindowEnabled() {
+  auto* value = std::getenv("SCADA_E2E_HIDE_CLIENT_WINDOW");
+  if (!value || !*value)
+    return true;
+  std::string normalized{value};
+  std::transform(normalized.begin(), normalized.end(), normalized.begin(),
+                 [](unsigned char c) { return std::tolower(c); });
+  return normalized != "0" && normalized != "false" && normalized != "no" &&
+         normalized != "off";
 }
 
 constexpr auto kWaitStep = 100ms;
@@ -438,8 +459,15 @@ void ClientServerE2eTest::StartClient(std::vector<std::string> extra_args) {
   args.insert(args.end(), std::make_move_iterator(extra_args.begin()),
               std::make_move_iterator(extra_args.end()));
 
+  std::vector<std::pair<std::string, std::string>> extra_env;
+  if (IsHideClientWindowEnabled()) {
+    // Qt reads QT_QPA_PLATFORM when QApplication is constructed; "offscreen"
+    // runs the client without ever mapping a window on screen.
+    extra_env.emplace_back("QT_QPA_PLATFORM", "offscreen");
+  }
+
   LaunchProcess(GetClientExePath(), args, GetClientExePath().parent_path(),
-                *job_, client_);
+                *job_, client_, extra_env);
 }
 
 std::string ClientServerE2eTest::WaitForStatus() {
