@@ -208,7 +208,8 @@
   ],
   "screenshots": [
     { "type": "Graph",          "filename": "graph-cursor.png",        "width": 1024, "height": 901 },
-    { "type": "Table",          "filename": "table.png",               "width": 800,  "height": 400 },
+    { "type": "Table",          "filename": "table.png",               "width": 900,  "height": 300,
+      "paths": ["TIT.200", "TIT.201", "TIT.202", "TIT.208", "TIT.211", "TIT.209"] },
     { "type": "Summ",           "filename": "summary.png",             "width": 800,  "height": 500 },
     { "type": "Event",          "filename": "events.png",              "width": 800,  "height": 300 },
     { "type": "EventJournal",   "filename": "events-log.png",          "width": 800,  "height": 400 },

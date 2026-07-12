@@ -14,6 +14,10 @@ struct ScreenshotSpec {
   std::string window_type;
   std::string filename;
   std::string path;
+  // Optional multiple item paths/formulas. Views that hold a list of data
+  // items (Table, Watch) seed one row per entry so the capture shows a
+  // populated grid instead of an empty view.
+  std::vector<std::string> paths;
   int width = 800;
   int height = 600;
   // Minimum number of grid rows the rendered window must show. 0 disables

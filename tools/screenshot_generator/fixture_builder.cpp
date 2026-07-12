@@ -67,7 +67,8 @@ scada::NodeId ParseJsonTypeDefinition(const boost::json::object& node) {
                      : scada::NodeId{scada::id::FolderType, 0};
 }
 
-std::optional<scada::Variant> ParseJsonVariant(const boost::json::value& value) {
+std::optional<scada::Variant> ParseJsonVariant(
+    const boost::json::value& value) {
   if (value.is_bool())
     return scada::Variant{value.as_bool()};
   if (value.is_int64())
@@ -105,6 +106,8 @@ Page MakeScreenshotPage(const std::vector<ScreenshotSpec>& specs,
       WindowDefinition window{spec.window_type};
       if (!spec.path.empty())
         window.AddItem("Item").SetString("path", spec.path);
+      for (const auto& item_path : spec.paths)
+        window.AddItem("Item").SetString("path", item_path);
       page.AddWindow(std::move(window));
     }
   }
@@ -173,8 +176,8 @@ void PopulateFixtureNodes(AddressSpaceImpl& address_space,
 
       scada::NodeState state;
       state.node_id = node_id;
-      state.node_class = is_variable ? scada::NodeClass::Variable
-                                     : scada::NodeClass::Object;
+      state.node_class =
+          is_variable ? scada::NodeClass::Variable : scada::NodeClass::Object;
       state.type_definition_id = ParseJsonTypeDefinition(jn.as_object());
       state.parent_id = parent_id;
       state.reference_type_id = scada::NodeId{scada::id::Organizes, 0};
@@ -201,8 +204,8 @@ void PopulateFixtureNodes(AddressSpaceImpl& address_space,
           const auto& ref_obj = ref.as_object();
           pending_references.push_back(PendingReference{
               .source_id = node_id,
-              .reference_type_id =
-                  NodeIdFromScadaString(std::string_view(ref_obj.at("type").as_string())),
+              .reference_type_id = NodeIdFromScadaString(
+                  std::string_view(ref_obj.at("type").as_string())),
               .target_id = ParseJsonChildNodeId(ref_obj.at("target")),
           });
         }

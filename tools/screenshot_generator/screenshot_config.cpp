@@ -1,8 +1,8 @@
 #include "screenshot_config.h"
 
-#include "screenshot_options.h"
 #include "base/boost_json_file.h"
 #include "model/node_id_util.h"
+#include "screenshot_options.h"
 
 #include <gtest/gtest.h>
 
@@ -80,7 +80,8 @@ void ScreenshotConfig::Load(const std::filesystem::path& path) {
   json = std::move(*opt);
   const auto managed_images = GetManagedImageFilenames();
 
-  if (const auto* node_id = json.as_object().if_contains("dialog_analog_node_id")) {
+  if (const auto* node_id =
+          json.as_object().if_contains("dialog_analog_node_id")) {
     dialog_analog_node_id =
         NodeIdFromScadaString(std::string_view(node_id->as_string()));
   }
@@ -93,6 +94,10 @@ void ScreenshotConfig::Load(const std::filesystem::path& path) {
     spec.filename = std::string(js.at("filename").as_string());
     if (const auto* item_path = js.as_object().if_contains("path"))
       spec.path = std::string(item_path->as_string());
+    if (const auto* item_paths = js.as_object().if_contains("paths")) {
+      for (const auto& p : item_paths->as_array())
+        spec.paths.emplace_back(p.as_string());
+    }
     spec.width = static_cast<int>(js.at("width").as_int64());
     spec.height = static_cast<int>(js.at("height").as_int64());
     if (const auto* min_rows = js.as_object().if_contains("min_rows"))
