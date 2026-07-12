@@ -7,6 +7,45 @@
         <source>Search tags, objects, commands…</source>
         <translation>Поиск объектов, сигналов, команд…</translation>
     </message>
+    <!-- main_window/activity_bar section labels + overview_page.cpp -->
+    <message>
+        <source>Overview</source>
+        <translation>Обзор</translation>
+    </message>
+    <message>
+        <source>Alarms</source>
+        <translation>Тревоги</translation>
+    </message>
+    <message>
+        <source>Trends</source>
+        <translation>Тренды</translation>
+    </message>
+    <message>
+        <source>Substations</source>
+        <translation>Подстанции</translation>
+    </message>
+    <message>
+        <source>Tables</source>
+        <translation>Таблицы</translation>
+    </message>
+    <message>
+        <source>Administration</source>
+        <translation>Администрирование</translation>
+    </message>
+    <!-- main_window/command_palette_qt.cpp + tag search -->
+    <message>
+        <source>Type a command…</source>
+        <translation>Введите команду…</translation>
+    </message>
+    <message>
+        <source>tag</source>
+        <translation>тег</translation>
+    </message>
+    <!-- main_window/main_window_qt.cpp (alarm-flood pill) -->
+    <message>
+        <source>Alarm flood</source>
+        <translation>Поток тревог</translation>
+    </message>
     <!-- main_window/main_window_qt.cpp (Settings menu) -->
     <message>
         <source>Settings</source>
