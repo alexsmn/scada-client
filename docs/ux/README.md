@@ -39,6 +39,8 @@ Rendered, theme-toggleable HTML in
 | `trend.html` | Chart-primary trend workspace — series chips, cursor readout, min/max/avg grid, series inspector. |
 | `event-journal.html` | Filterable event/alarm journal — severity filters, acknowledge, area filter, event inspector. |
 | `table-watch.html` | Live + historical operator grid — formulas/NodeIds, quality, embedded sparklines, Qt-shaped context menu, row inspector. |
+| `config-workbench.html` | Engineering surface — device/hardware tree, tabbed device parameter editor (IEC 60870 fields, address map), live device-diagnostics inspector. |
+| `users-admin.html` | Admin surface — users grid + RBAC role/permission editor with inherited-vs-explicit grants, admin-gated. |
 | `login.html` | Themed sign-in with read-only system preview (replaces the native OS dialog). |
 | `control-command.html` | Two-stage control/write confirm dialog. |
 | `main-window-dark.html` | Earlier exploration (kept for reference). |

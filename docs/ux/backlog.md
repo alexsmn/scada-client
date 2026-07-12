@@ -73,7 +73,8 @@ the shell.
 
 | # | Item | Touches | Done when |
 |---|---|---|---|
-| 5.1 | Node-table admin surfaces (Users, Formats, Simulation, Historical DBs) adopt tokens. | `modules/node_table/` | Grids themed; admin gating visible. |
+| 5.0 | **Configuration / device workbench**: hardware/device tree, tabbed device parameter editor (protocol fields, address map, limits), Revert/Apply, live device-diagnostics inspector (`config-workbench.html`). | `modules/configuration/`, `modules/device_metrics/`, `main_window/` | Matches `config-workbench.html`; device params edit/apply; diagnostics inspector live; unsaved-changes guard. |
+| 5.1 | **Users & access rights** admin: users grid + RBAC role/permission editor (inherited-vs-explicit grants), enable/disable, reset password, admin-gated; other node-table admin surfaces (Formats, Simulation, Historical DBs) adopt tokens (`users-admin.html`). | `modules/node_table/`, `modules/change_password/` | Matches `users-admin.html`; editing gated to Administrator; grids themed. |
 | 5.2 | Transmission-rules editor themed. | `modules/transmission/` | Matches design language. |
 | 5.3 | Debugger / device-metrics themed. | `modules/debugger/`, `modules/device_metrics/` | Consistent chrome. |
 | 5.4 | **Vocabulary parity check** with `web` component names. | docs | `ActivityBar`/`InspectorPanel`/`StatusStrip`/… names align 1:1 with the web parity matrix (no shared files). |

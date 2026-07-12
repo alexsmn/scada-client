@@ -172,6 +172,8 @@ Rendered, theme-toggleable HTML under
 | `trend.html` | trend workspace: series chips, cursor readout, min/max/avg grid, series inspector |
 | `event-journal.html` | event/alarm journal: severity/area filters, acknowledge, event inspector |
 | `table-watch.html` | live/historical grid: formulas, quality, sparklines, context menu, row inspector |
+| `config-workbench.html` | engineering: hardware tree, tabbed device parameter editor, live device-diagnostics inspector |
+| `users-admin.html` | admin: users grid + RBAC role/permission editor, admin-gated |
 | `login.html` | themed sign-in + read-only system preview |
 | `control-command.html` | two-stage control/write confirm |
 
