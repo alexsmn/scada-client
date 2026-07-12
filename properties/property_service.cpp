@@ -83,9 +83,9 @@ std::unordered_set<NodeRef> GetChildTypeDefinitions(
 // PropertyService
 
 Awaitable<void> PropertyService::GetAllSubtypesPropertiesAsync(
-  AnyExecutor executor,
-  const NodeRef& type_definition,
-  const std::shared_ptr<std::unordered_set<NodeRef>>& property_decls) {
+    AnyExecutor executor,
+    const NodeRef& type_definition,
+    const std::shared_ptr<std::unordered_set<NodeRef>>& property_decls) {
   co_await FetchNode(type_definition);
 
   GetTypeProperties(type_definition, *property_decls);
@@ -193,6 +193,11 @@ Awaitable<PropertyDefs> PropertyService::GetChildPropertyDefsAsync(
   auto property_decls = std::make_shared<std::unordered_set<NodeRef>>();
 
   co_await FetchNode(parent_node);
+  // GetChildTypeDefinitions walks parent_node.type_definition() and its
+  // supertypes, and Checks the type definition is fetched. FetchNode above only
+  // fetches the parent's own attributes (NodeFetchStatus::NodeOnly), not its
+  // type-definition node, so fetch that too before traversing it.
+  co_await FetchNode(parent_node.type_definition());
   auto child_type_definitions = GetChildTypeDefinitions(parent_node);
 
   for (const auto& child_type_definition : child_type_definitions) {
@@ -209,6 +214,12 @@ PropertyService::GetChildPropertyDefsStatusAsync(AnyExecutor executor,
   auto property_decls = std::make_shared<std::unordered_set<NodeRef>>();
 
   auto status = co_await FetchNodeStatus(parent_node);
+  if (!status) {
+    co_return status;
+  }
+  // See GetChildPropertyDefsAsync: the type-definition node must be fetched
+  // before GetChildTypeDefinitions traverses it.
+  status = co_await FetchNodeStatus(parent_node.type_definition());
   if (!status) {
     co_return status;
   }
