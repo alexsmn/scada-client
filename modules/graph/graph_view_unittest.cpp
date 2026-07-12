@@ -64,22 +64,6 @@ class TestNodeModel final : public NodeModel {
   NodeRef GetChild(const scada::QualifiedName& child_name) const override {
     return {};
   }
-  boost::signals2::scoped_connection SubscribeModelChanged(
-      const ModelChangedCallback& callback) const override {
-    return {};
-  }
-  boost::signals2::scoped_connection SubscribeNodeSemanticChanged(
-      const NodeSemanticChangedCallback& callback) const override {
-    return {};
-  }
-  boost::signals2::scoped_connection SubscribeNodeFetched(
-      const NodeFetchedCallback& callback) const override {
-    return {};
-  }
-  boost::signals2::scoped_connection SubscribeNodeStateChanged(
-      const NodeStateChangedCallback& callback) const override {
-    return {};
-  }
   scada::node GetScadaNode() const override { return node_; }
 
  private:
