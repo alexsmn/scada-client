@@ -1,5 +1,6 @@
 #include "main_window/command_palette_qt.h"
 
+#include "aui/test/app_environment.h"
 #include "controller/command_handler.h"
 #include "controller/command_manager.h"
 
@@ -66,17 +67,13 @@ CommandPalette::HandlerResolver ResolverFor(CommandHandler& handler) {
   return [&handler](unsigned) -> CommandHandler* { return &handler; };
 }
 
-// Boots a single QApplication for the widget tests (Qt requires one to exist
-// before any QWidget is constructed).
-QApplication& App() {
-  static int argc = 0;
-  static QApplication app{argc, nullptr};
-  return app;
-}
-
 class CommandPaletteTest : public ::testing::Test {
  protected:
-  CommandPaletteTest() { App(); }
+  // Per-test QApplication (Qt requires one before any QWidget), destroyed
+  // with the fixture. Never keep a static QApplication in a test binary: it
+  // is destroyed during atexit teardown, where ~QGuiApplication crashes on
+  // macOS after other Qt statics are already gone.
+  AppEnvironment app_env_;
 };
 
 TEST_F(CommandPaletteTest, ListsCommandsSkippingEmptyTitles) {

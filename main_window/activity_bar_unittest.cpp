@@ -1,8 +1,8 @@
 #include "main_window/activity_bar_qt.h"
 
+#include "aui/test/app_environment.h"
 #include "main_window/status_bar/status_bar_model_impl.h"
 
-#include <QApplication>
 #include <QToolButton>
 
 #include <gtest/gtest.h>
@@ -11,13 +11,6 @@
 #include <vector>
 
 namespace {
-
-// One QApplication for the widget tests (Qt requires it before any QWidget).
-QApplication& App() {
-  static int argc = 0;
-  static QApplication app{argc, nullptr};
-  return app;
-}
 
 ActivityBar::Section MakeSection(std::string name, bool enabled) {
   ActivityBar::Section section;
@@ -35,7 +28,11 @@ std::vector<QToolButton*> Buttons(const ActivityBar& bar) {
 
 class ActivityBarTest : public ::testing::Test {
  protected:
-  ActivityBarTest() { App(); }
+  // Per-test QApplication (Qt requires one before any QWidget), destroyed
+  // with the fixture. Never keep a static QApplication in a test binary: it
+  // is destroyed during atexit teardown, where ~QGuiApplication crashes on
+  // macOS after other Qt statics are already gone.
+  AppEnvironment app_env_;
 };
 
 TEST_F(ActivityBarTest, ClickingAnEnabledSectionActivatesIt) {
