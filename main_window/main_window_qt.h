@@ -6,9 +6,12 @@
 
 #include <QMainWindow>
 #include <boost/signals2/connection.hpp>
+#include <vector>
 
 class QAction;
+class QLabel;
 class QMenu;
+class QToolBar;
 class QWidget;
 class StatusBarController;
 class ViewManager;
@@ -47,6 +50,9 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   void CreateMenuBar();
   void CreateToolbar();
   void CreateStatusBar();
+  // Opt-in top context bar (brand + command/search + live context cluster).
+  // Only built when the experimental UX is enabled; see main.cpp.
+  void CreateContextBar();
   void RebuildMenuBar();
 
   QAction* FindAction(unsigned command_id);
@@ -77,6 +83,12 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   std::unique_ptr<aui::MenuModel> main_menu_model_;
 
   std::unique_ptr<StatusBarController> status_bar_controller_;
+
+  // Top context bar (opt-in). Its right-hand cluster mirrors the status-bar
+  // model panes; `context_panes_` are the labels, refreshed on model changes.
+  QToolBar* context_bar_ = nullptr;
+  std::vector<QLabel*> context_panes_;
+  boost::signals2::scoped_connection context_bar_connection_;
 
   boost::signals2::scoped_connection change_profile_connection_;
   boost::signals2::scoped_connection action_changed_connection_;

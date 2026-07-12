@@ -2,7 +2,10 @@
 
 #include "aui/models/menu_model.h"
 #include "aui/models/simple_menu_model.h"
+#include "aui/models/status_bar_model.h"
 #include "aui/qt/client_utils_qt.h"
+#include "aui/severity_colors.h"
+#include "aui/translation.h"
 #include "base/check.h"
 #include "base/utf_convert.h"
 #include "controller/action_manager.h"
@@ -27,7 +30,9 @@
 #include <QDockWidget>
 #include <QEvent>
 #include <QGuiApplication>
+#include <QLabel>
 #include <QLayout>
+#include <QLineEdit>
 #include <QMenuBar>
 #include <QScreen>
 #include <QStatusBar>
@@ -133,6 +138,12 @@ MainWindow::MainWindow(MainWindowContext&& context)
   AttachViewManager(*view_manager_);
 
   CreateMenuBar();
+  // Opt-in top context bar, on its own row above the command toolbar. Gated on
+  // the active UX theme, which both the app (app/qt/main.cpp) and the headless
+  // screenshot generator set together with the palette when the experimental UX
+  // is enabled.
+  if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy)
+    CreateContextBar();
   CreateToolbar();
   CreateStatusBar();
 
@@ -235,6 +246,68 @@ void MainWindow::CreateStatusBar() {
 
   status_bar_controller_ = std::make_unique<StatusBarController>(
       *statusBar(), *status_bar_model_, progress_host_);
+}
+
+void MainWindow::CreateContextBar() {
+  context_bar_ = new QToolBar(this);
+  context_bar_->setObjectName(QStringLiteral("ContextBar"));
+  context_bar_->setMovable(false);
+  context_bar_->setFloatable(false);
+  context_bar_->setContextMenuPolicy(Qt::PreventContextMenu);
+
+  // Brand lockup (left).
+  auto* brand = new QLabel(context_bar_);
+  brand->setText(QStringLiteral("  Telecontrol SCADA  "));
+  brand->setStyleSheet(QStringLiteral("font-weight:700;"));
+  context_bar_->addWidget(brand);
+
+  auto* left_spacer = new QWidget(context_bar_);
+  left_spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  context_bar_->addWidget(left_spacer);
+
+  // Command/search entry point (centre). Read-only for now — the command
+  // palette that this opens is a separate slice; this is the visible
+  // affordance.
+  auto* search = new QLineEdit(context_bar_);
+  search->setPlaceholderText(
+      QString::fromStdU16String(Translate("Search tags, objects, commands…")));
+  search->setReadOnly(true);
+  search->setFixedWidth(360);
+  context_bar_->addWidget(search);
+
+  auto* right_spacer = new QWidget(context_bar_);
+  right_spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  context_bar_->addWidget(right_spacer);
+
+  // Context cluster (right): mirror the status-bar model panes so the operator
+  // keeps connection / server / user in view at the top too.
+  const int pane_count = status_bar_model_->GetPaneCount();
+  for (int i = 0; i < pane_count; ++i) {
+    auto* label = new QLabel(context_bar_);
+    label->setMargin(2);
+    context_panes_.push_back(label);
+    context_bar_->addWidget(label);
+  }
+
+  auto refresh = [this] {
+    for (int i = 0; i < static_cast<int>(context_panes_.size()); ++i) {
+      context_panes_[i]->setText(
+          QString::fromStdU16String(status_bar_model_->GetPaneText(i)));
+      const std::optional<aui::Color> color =
+          status_bar_model_->GetPaneColor(i);
+      context_panes_[i]->setStyleSheet(
+          color ? QStringLiteral("color:%1;font-weight:600;")
+                      .arg(color->qcolor().name())
+                : QString{});
+    }
+  };
+  refresh();
+  context_bar_connection_ = status_bar_model_->SubscribePanesChanged(
+      [refresh](int, int) { refresh(); });
+
+  addToolBar(Qt::TopToolBarArea, context_bar_);
+  // Force the command toolbar onto its own row below the context bar.
+  addToolBarBreak(Qt::TopToolBarArea);
 }
 
 void MainWindow::CreateToolbar() {
