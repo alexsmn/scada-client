@@ -7,6 +7,7 @@
 
 #include <QApplication>
 #include <QEventLoop>
+#include <QTimer>
 
 #include <chrono>
 #include <exception>
@@ -25,6 +26,16 @@ inline void ProcessPostedEvents() {
   }
 }
 
+// Runs a real event loop for `duration`. Unlike bare processEvents() spins,
+// QEventLoop::exec keeps firing QTimers on a drained queue (on macOS the
+// processEvents forms never do), so MessageLoopQt-scheduled continuations —
+// async model-row inserts included — actually run before capture.
+inline void PumpEventLoopFor(std::chrono::milliseconds duration) {
+  QEventLoop loop;
+  QTimer::singleShot(duration, &loop, &QEventLoop::quit);
+  loop.exec();
+}
+
 template <class T>
 struct AwaitableResult {
   std::optional<T> value;
@@ -41,20 +52,20 @@ struct AwaitableResult<void> {
 template <class T>
 T WaitForAwaitable(AnyExecutor executor, Awaitable<T> awaitable) {
   auto result = std::make_shared<AwaitableResult<T>>();
-  CoSpawn(executor,
-          [result, awaitable = std::move(awaitable)]() mutable
-              -> Awaitable<void> {
-            try {
-              if constexpr (std::is_void_v<T>) {
-                co_await std::move(awaitable);
-              } else {
-                result->value.emplace(co_await std::move(awaitable));
-              }
-            } catch (...) {
-              result->error = std::current_exception();
-            }
-            result->done = true;
-          });
+  CoSpawn(
+      executor,
+      [result, awaitable = std::move(awaitable)]() mutable -> Awaitable<void> {
+        try {
+          if constexpr (std::is_void_v<T>) {
+            co_await std::move(awaitable);
+          } else {
+            result->value.emplace(co_await std::move(awaitable));
+          }
+        } catch (...) {
+          result->error = std::current_exception();
+        }
+        result->done = true;
+      });
 
   while (!result->done) {
     QApplication::processEvents(QEventLoop::WaitForMoreEvents);
@@ -72,4 +83,4 @@ T WaitForAwaitable(AnyExecutor executor, Awaitable<T> awaitable) {
 
 bool WaitForPendingNodeLoads(NodeService& node_service);
 
-}  // namespace screenshot_generator
+}  // namespace scada::screenshot_generator

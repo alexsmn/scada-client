@@ -81,6 +81,42 @@ layered component architecture, all grounded in concrete source files. Use
 `docs/requirements.md` for use cases, functional requirements, and
 non-functional requirements. Treat both as living documents, not snapshots.
 
+### Doc screenshots and the web manual
+
+The user-facing web manual is a **separate repo** (scada-docs, Jekyll on
+GitHub Pages, usually checked out as a sibling of this repo). Almost all of
+its UI images are rendered offline by
+`client/tools/screenshot_generator/` from the JSON fixture
+`screenshot_data.json` — they are **build artifacts, not hand captures**.
+The authoritative design/workflow doc is
+[`docs/screenshots.md`](docs/screenshots.md); the source of truth for every
+manual image (tag, referencing pages, publish subset) is
+[`docs/screenshots/image_manifest.json`](docs/screenshots/image_manifest.json).
+
+Rules of the pipeline:
+
+- **Manifest first.** Every image added to, retagged in, or removed from
+  the manual gets its manifest entry updated in the same change. New
+  screenshots follow the "Adding a new auto-screenshot" flow in
+  `docs/screenshots.md` (fixture entry + capture spec + manifest row);
+  hand-captured images still get a `manual-*` manifest row.
+- **Publishing is gated.** `cmake --workflow --preset update-screenshots-dev`
+  (Windows) regenerates the local gallery `docs/screenshots/` (gitignored)
+  and copies only the manifest's `current_generator_owned_subset` into
+  scada-docs `img/`; review with `git diff img/` there. An image graduates
+  into that subset only after its rendering is reviewed against the page
+  that embeds it.
+- **Validate consistency** after touching images, the manifest, or manual
+  pages: `python3 docs/screenshots/validate_image_manifest.py` (auto-finds
+  a sibling scada-docs checkout, or pass `--docs-repo`).
+- **When UI changes, regenerate.** A diff in the generated PNGs is the
+  visual-regression signal; refresh the published copies in the same
+  effort as the UI change, and retag orphaned images `obsolete` when
+  removing features.
+- **macOS runs are for validation only** (offscreen platform + hermetic
+  `HOME`; see "Running on macOS" in `docs/screenshots.md`); published
+  images come from the Windows pipeline so fonts stay consistent.
+
 ### UX design system
 
 The client's UX design system lives under [`docs/ux/`](docs/ux/README.md).

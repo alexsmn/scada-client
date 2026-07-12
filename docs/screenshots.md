@@ -48,7 +48,11 @@ Current output groups:
 | `CaptureMainWindow` | `client-window.png` |
 | `CaptureDialogs` | One PNG per `dialogs:` entry from `screenshot_data.json`, filtered by the image manifest and `--only`. |
 
-The `update-screenshots-dev` workflow preset refreshes the approved local subset in `client/docs/screenshots/`.
+The `update-screenshots-dev` workflow preset goes one step further: after
+the POST_BUILD regeneration it runs the `update_screenshots` target, which
+publishes the `current_generator_owned_subset` from `image_manifest.json`
+into the web manual's `img/` directory (see "Publishing to the web manual"
+below).
 
 ## Source layout
 
@@ -56,7 +60,9 @@ Everything lives under `client/tools/screenshot_generator/`:
 
 | File | Responsibility |
 |---|---|
-| `main.cpp` | Test fixture `ScreenshotGenerator` and the three `TEST_F`s: `CaptureAllWindows`, `CaptureMainWindow`, `CaptureDialogs`. |
+| `main.cpp` | Test fixture `ScreenshotGenerator`, the capture `TEST_F`s (`CaptureAllWindows`, `CaptureMainWindow`, `CaptureDialogs`), and fixture-riding regression tests (`BootWithStructPageDoesNotOverflowStack`, `EventFilterBarEnumeratesAreas`). |
+| `screenshot_modules.{h,cpp}` | Module set the fixture installs into `ClientApplication`. |
+| `screenshot_generator_ns_compat.h` | `scada::` namespace-nesting compatibility shim. |
 | `screenshot_config.{h,cpp}` | `ScreenshotSpec`, `DialogSpec`, and `ScreenshotConfig::Load()` that parses `screenshot_data.json`, resolves `--image-manifest`, and applies `--only`. |
 | `screenshot_options.{h,cpp}` | Parses `--out`, `--image-manifest`, and `--only` once from the process command line. |
 | `screenshot_output.{h,cpp}` | `GetOutputDir()` — resolves `--out`. |
@@ -68,11 +74,13 @@ Everything lives under `client/tools/screenshot_generator/`:
 | `screenshot_data.json` | The fixture: nodes, tree, timed data, events, graph config, screenshot list, dialog list. |
 | `CMakeLists.txt` | Builds `client_screenshot_generator.exe`; links `client_qt_core + client_export_csv_qt + client_favorites_qt + client_main_window_qt + client_modus_qt + client_portfolio_qt + client_print_service_qt + client_properties_qt + client_vidicon_qt + scada_core_opcua + base_unittest + graph_qt` and compiles `client_application.{cpp,h}` directly (it's excluded from `client_qt_core`). |
 
-The docs refresh helper for the current rollout lives outside that
-tree at `cmake/update_screenshots.cmake`, driven by the
-`update-screenshots-dev` workflow preset. It refreshes only the approved
-local batch (`client-login.png`, `client-retransmission.png`,
-`graph-cursor.png`, `users.png`).
+The publish helper lives outside that tree at
+`cmake/update_screenshots.cmake`, driven by the top-level
+`update_screenshots` custom target (Windows + `BUILD_CLIENT` only) and the
+`update-screenshots-dev` workflow preset. It copies only the
+`current_generator_owned_subset` from `image_manifest.json`
+(`client-login.png`, `client-retransmission.png`, `graph-cursor.png`,
+`users.png`) from `client/docs/screenshots/` into `SCADA_DOCS_IMG_DIR`.
 
 ### Why the split
 
@@ -88,15 +96,19 @@ component the fixture touched. Splitting by capture kind means:
 
 ## Capture pipelines
 
-Three `TEST_F` bodies cover the three capture modes:
+Three `TEST_F` bodies cover the three capture modes (the remaining tests in
+`main.cpp` are regression tests that ride the same fixture, not captures):
 
 ### `CaptureAllWindows` — main-window views
 
 1. Reads the `screenshots:` array from the fixture.
 2. Builds a `Page` with one `WindowDefinition` per entry and saves it
    into a fresh profile.
-3. Calls `app_.Start()`, spins the Qt event loop 20× so async data
-   loads and model updates complete.
+3. Calls `app_.Start()`, waits for pending node loads, then pumps a real
+   event loop for one second (`PumpEventLoopFor`) so async data loads and
+   model updates complete. A real `QEventLoop::exec` is required — bare
+   `processEvents()` spins never fire `QTimer`s on a drained queue on
+   macOS, which starves `MessageLoopQt`-scheduled continuations.
 4. For each spec, locates the matching `OpenedView` by
    `window_info().name`, resizes to the spec dims, grabs a `QPixmap`
    and saves under `GetOutputDir() / spec.filename`.
@@ -123,9 +135,11 @@ to the graph capture path.
 ### `CaptureDialogs` — modal dialogs
 
 1. Reads the `dialogs:` array.
-2. For each entry, dispatches on `spec.kind` in `dialog_capture.cpp`:
-   - `login` → `BuildLoginDialog` → `ExecuteLoginDialog()` which
-     `show()`s the dialog non-modally (see `aui/qt/dialog_util.h`).
+2. For each entry, dispatches on `spec.kind` in `dialog_capture.cpp`.
+   Current kinds: `login`, `limits`, `write-manual`, `write-remote`,
+   `command-palette` — e.g. `login` → `BuildLoginDialog` →
+   `ExecuteLoginDialog()` which `show()`s the dialog non-modally (see
+   `aui/qt/dialog_util.h`).
 3. `GrabAndCloseVisibleDialog` scans `QApplication::topLevelWidgets()`
    for the visible `QDialog`, resizes to spec dims if set, grabs a
    pixmap, then calls `reject()` so the factory's `deleteLater` path
@@ -158,7 +172,7 @@ the sequential `for` loop in `CaptureDialogs`.
 
 | Key | Type | Purpose |
 |---|---|---|
-| `nodes` | array | Address-space entries: `{id, ns, name, class}`, class ∈ `object` \| `variable`, `base_value` on variables. Loaded into `LocalAttributeService`; the running `v1::NodeServiceImpl` pulls each node's attributes through it on demand. |
+| `nodes` | array | Address-space entries: `{id, browse_name, display_name, class, type_definition?, properties?, references?}`, class ∈ `object` \| `variable`, `base_value` on variables. Loaded into `LocalAttributeService`; the running node service pulls each node's attributes through it on demand. |
 | `tree` | object | Parent → children map. Keys are `"<ns>.<id>"` or bare IDs for ns=1. Loaded into `LocalViewService`; the running `AddressSpaceFetcher` walks it via `Browse` to populate the live address space. |
 | `timed_data` | array | `{formula, values}` entries — values are spaced at 30-minute intervals ending at "now". Feeds `FakeTimedDataService`. |
 | `events` | array | `{id, hours_ago, severity, message, node_id, change_mask}` — injected into `LocalHistoryService`. |
@@ -199,20 +213,17 @@ build\ninja-dev\bin\RelWithDebInfo\client_screenshot_generator.exe ^
   --only=client-login.png;users.png
 ```
 
-To refresh the approved local subset, use the workflow preset:
+Run a subset with `--gtest_filter`:
 
-```bash
-cmd.exe /c "cd /d C:\tc\scada && cmake --workflow --preset update-screenshots-dev"
+```batch
+client_screenshot_generator.exe --gtest_filter=ScreenshotGenerator.CaptureDialogs
 ```
 
-The target rebuilds `client_screenshot_generator` if needed, then refreshes
-the currently approved local subset in `client/docs/screenshots/`:
-`client-login.png`, `client-retransmission.png`, `graph-cursor.png`,
-and `users.png`.
+### Publishing to the web manual (full pipeline)
 
-### Full pipeline
-
-From the repo root (`C:\tc\scada`), the end-to-end refresh pipeline is:
+The published copies of the screenshots live in the **scada-docs** repo (the
+GitHub Pages web manual), under its `img/` directory. The end-to-end refresh
+pipeline, from the repo root on the Windows dev box:
 
 ```batch
 cmd.exe /c "cd /d C:\tc\scada && cmake --workflow --preset update-screenshots-dev"
@@ -220,14 +231,52 @@ cmd.exe /c "cd /d C:\tc\scada && cmake --workflow --preset update-screenshots-de
 
 What this does:
 
-1. Rebuilds `client_screenshot_generator`.
-2. Lets the target's POST_BUILD step regenerate `client/docs/screenshots/*`.
+1. Rebuilds `client_screenshot_generator` if needed.
+2. Lets the target's POST_BUILD step regenerate the local gallery
+   `client/docs/screenshots/*` (gitignored).
+3. Runs the `update_screenshots` target
+   (`cmake/update_screenshots.cmake`), which copies the
+   `current_generator_owned_subset` listed in `image_manifest.json` —
+   currently `client-login.png`, `client-retransmission.png`,
+   `graph-cursor.png`, `users.png` — into `SCADA_DOCS_IMG_DIR`.
 
-Run a subset with `--gtest_filter`:
+`SCADA_DOCS_IMG_DIR` is a cache variable defaulting to
+`<scada>/scada-docs/img`; if your scada-docs checkout lives elsewhere
+(e.g. as a sibling of the scada repo), set it once at configure time.
+The final step is always a manual review: `git diff img/` **in
+scada-docs** and commit there. Growing the published set = adding a
+filename to `current_generator_owned_subset` after its rendering is
+reviewed and approved.
 
-```batch
-client_screenshot_generator.exe --gtest_filter=ScreenshotGenerator.CaptureDialogs
+### Running on macOS
+
+The generator builds and runs on this repo's macOS client preset too:
+
+```bash
+cmake --build --preset client-macos-local -t client_screenshot_generator
+cd build/macos-local-client/bin/RelWithDebInfo
+HOME=$(mktemp -d) QT_QPA_PLATFORM=offscreen ./client_screenshot_generator \
+  --out=/tmp/shots \
+  --image-manifest=$PWD/../../../../client/docs/screenshots/image_manifest.json
 ```
+
+Two flags of that recipe are load-bearing:
+
+- **`QT_QPA_PLATFORM=offscreen`** — on the native cocoa platform the
+  captures inherit the display's `devicePixelRatio` (2× PNGs on Retina)
+  and the system light/dark appearance, so they do not match the docs
+  dimensions or palette. The offscreen platform renders DPR=1 and
+  light, dimension-identical to the Windows output for fixed-size specs.
+- **Hermetic `HOME`** — `LoginController` and friends read
+  `QSettings`, which on macOS resolves to the real user's plist. Without
+  a scratch `HOME` the login capture leaks whatever server address/user
+  you last used in the real client into the PNG.
+
+Treat macOS output as a **validation/preview** channel, not the publish
+channel: font rasterization and dialog layout widths differ from the
+Windows-rendered images the manual currently ships, so a macOS-generated
+file would visually diverge from its neighbours on the same page. Publish
+from the Windows pipeline above.
 
 ## Adding a new auto-screenshot
 
@@ -272,25 +321,55 @@ are the subject of the `auto-state` task.)
 
 ## Managing Generated Images
 
-The source of truth for which files are auto vs manual is
-`client/docs/screenshots/image_manifest.json`.
+The source of truth for every image the web manual ships is
+`client/docs/screenshots/image_manifest.json`. Every file in scada-docs
+`img/` must have exactly one entry there. Conventions:
 
-Workflow:
+- **`tag`** — `auto-view` / `auto-dialog` / `auto-menu` / `auto-state`
+  for generator-owned images, `manual-*` for hand-captured ones,
+  `obsolete` for removal candidates no page references.
+- **`referenced_from`** — the **Russian (canonical) manual pages** that
+  embed the image. English mirrors under `en/` are implied via the docs
+  repo's `_data/i18n_pages.yml` and are deliberately not listed.
+- **`published: false`** — the generator renders the file but no manual
+  page uses it yet (e.g. `command-palette.png`, which currently serves
+  the client-repo UX docs only). Such files are not expected in `img/`.
+- **`counts`** — per-tag totals; must match the entries.
+- **`current_generator_owned_subset`** — the reviewed-and-approved
+  files that `update_screenshots` actually publishes. This is the
+  rollout gate: an image graduates into it only after its generated
+  rendering has been visually compared against the page that uses it.
+
+Run the consistency validator after any manifest, image, or manual-page
+change (it needs a scada-docs checkout; pass its path if not a sibling):
+
+```bash
+python3 client/docs/screenshots/validate_image_manifest.py \
+  --docs-repo ../scada-docs
+```
+
+It checks the file ↔ manifest bijection, the `referenced_from` lists
+against the actual markdown references, the per-tag counts, that
+`obsolete` entries are truly unreferenced, and that the publish subset
+is tagged `auto-*`.
+
+Day-to-day workflow:
 
 1. For the current rollout, run
-   `cmake --workflow --preset update-screenshots-dev`.
-   It refreshes only `client-login.png`, `client-retransmission.png`,
-   `graph-cursor.png`, and `users.png` in `client/docs/screenshots/`.
-2. Inspect `client/docs/screenshots/` to review every image that changed.
-   Expect a diff any time the real UI changes — that is the visual
-   regression signal. If the diff is noise only (font antialiasing,
-   clock values), either tighten the fixture or accept it.
+   `cmake --workflow --preset update-screenshots-dev`. It regenerates the
+   local gallery and publishes the approved subset into scada-docs `img/`.
+2. Review with `git diff img/` in scada-docs. Expect a diff any time the
+   real UI changes — that is the visual regression signal. If the diff is
+   noise only (font antialiasing, clock values), either tighten the
+   fixture or accept it.
 3. If you changed the fixture or capture code, also inspect any PNGs
-   outside the approved rollout subset that were regenerated locally.
+   outside the approved rollout subset that were regenerated locally in
+   `client/docs/screenshots/`.
 4. When removing a feature from the client, update
    `image_manifest.json` by retagging the orphaned files `obsolete` in the
    same PR that removes the feature — don't leave `auto-*` rows
    pointing at dead window types.
+5. Run the validator (above) before committing either side.
 
 ## Why no native window frames
 
@@ -333,6 +412,21 @@ now.
   `third_party/net` stub doesn't match the current
   `TransportFactory` interface. `dialog_capture.cpp` carries its own
   one-method `NullTransportFactory` for now.
+- **Users/Transmission views currently render empty (regression).**
+  `NodeTableModel::SetParentNode` fails with `Bad_WrongNodeId` out of
+  `PropertyService::GetChildPropertyDefsStatusAsync` over the fixture
+  address space (log line: `NodeTableModel startup load failed`), so
+  `users.png` and `client-retransmission.png` come out as bare frames.
+  Verified on macOS 2026-07-12 after the node-service v3 consolidation;
+  the published copies in scada-docs predate it. Until this is fixed,
+  do **not** publish those two files from a fresh run — the manual's
+  copies are the last good renders.
+- **Settings bleed into captures without a hermetic profile dir.**
+  `LoginController` populates the server address and saved-user list
+  from `QSettings` (registry on Windows, plists on macOS). On a used
+  dev box the real server address — even a public demo IP — leaks into
+  `client-login.png`. Run the generator with a scratch `HOME` (macOS /
+  Linux) or a clean registry hive before publishing.
 - **Registry reads on LoginDialog.** `LoginController` reads the
   saved user list from `HKEY_CURRENT_USER\Software\Telecontrol\Workplace`.
   On a fresh dev box the form renders empty, which happens to match

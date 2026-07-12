@@ -60,9 +60,10 @@ Two `main()` entry points exist:
 Both entry points instantiate the same `ClientApplication`; the difference
 is which executor/message-loop they hand it.
 
-Also lives here: `app_init.{h,cpp}` (one-time GDI+ / ATL setup),
-`screenshot_generator.cpp` (offline rendering harness for docs and tests),
-and `client_application_unittest.cpp`.
+Also lives here: `app_init.{h,cpp}` (one-time GDI+ / ATL setup) and
+`client_application_unittest.cpp`. The offline screenshot generator
+(rendering harness for docs and tests) lives in
+`tools/screenshot_generator/` — see `docs/screenshots.md`.
 
 #### Regenerating the doc screenshots
 

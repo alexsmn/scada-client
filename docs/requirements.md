@@ -116,7 +116,7 @@ it today.
 
 ### Tooling and operations
 
-- **FR-21.** Expose an offline **screenshot generator** that loads a JSON fixture and renders every window type to PNG, used both for documentation and for visual regression testing. — `app/screenshot_generator.cpp`.
+- **FR-21.** Expose an offline **screenshot generator** that loads a JSON fixture and renders every window type to PNG, used both for documentation and for visual regression testing. — `tools/screenshot_generator/` (see `docs/screenshots.md`).
 - **FR-22.** Emit metrics and traces about itself for centralised observability. — `core/core_module.h` (`Tracer`), `metrics/boost_log_metric_reporter.h`.
 - **FR-23.** Read run-time options from the command line (verbose logging, per-service logging toggles, locale override). — `command-line.md`, `base/program_options.{h,cpp}`.
 

@@ -244,7 +244,7 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
   ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
 
   // Let async data loads and model updates complete.
-  PumpEventLoopFor(std::chrono::seconds(1));
+  screenshot_generator::PumpEventLoopFor(std::chrono::seconds(1));
 
   const auto& main_windows = app_.main_window_manager().main_windows();
   ASSERT_EQ(main_windows.size(), 1u);
