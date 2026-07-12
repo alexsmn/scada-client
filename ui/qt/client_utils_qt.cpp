@@ -44,7 +44,9 @@ constexpr std::array<std::pair<unsigned, std::string_view>, 17> kIconResources{{
 
 }  // namespace
 
-void BuildMenu(QMenu& menu, aui::MenuModel& model) {
+void BuildMenu(QMenu& menu,
+               aui::MenuModel& model,
+               const std::unordered_set<int>* skip_command_ids) {
   model.MenuWillShow();
 
   for (int i = 0; i < model.GetItemCount(); ++i) {
@@ -58,21 +60,26 @@ void BuildMenu(QMenu& menu, aui::MenuModel& model) {
         if (auto* submenu_model = model.GetSubmenuModelAt(i)) {
           auto* submenu =
               menu.addMenu(QString::fromStdU16String(model.GetLabelAt(i)));
-          BuildMenu(*submenu, *submenu_model);
+          BuildMenu(*submenu, *submenu_model, skip_command_ids);
           QObject::connect(submenu, &QMenu::aboutToShow,
-                           [submenu, submenu_model] {
+                           [submenu, submenu_model, skip_command_ids] {
                              submenu->clear();
-                             BuildMenu(*submenu, *submenu_model);
+                             BuildMenu(*submenu, *submenu_model,
+                                       skip_command_ids);
                            });
         }
         break;
 
       case aui::MenuModel::TYPE_INPLACE_MENU:
         if (auto* inplace_model = model.GetSubmenuModelAt(i))
-          BuildMenu(menu, *inplace_model);
+          BuildMenu(menu, *inplace_model, skip_command_ids);
         break;
 
       default: {
+        if (skip_command_ids &&
+            skip_command_ids->contains(model.GetCommandIdAt(i))) {
+          break;
+        }
         auto* action =
             menu.addAction(QString::fromStdU16String(model.GetLabelAt(i)));
         action->setData(model.GetCommandIdAt(i));

@@ -3,7 +3,6 @@
 #include "aui/models/menu_model.h"
 #include "aui/models/simple_menu_model.h"
 #include "aui/models/status_bar_model.h"
-#include "ui/qt/client_utils_qt.h"
 #include "aui/severity_colors.h"
 #include "aui/translation.h"
 #include "base/awaitable.h"
@@ -32,6 +31,7 @@
 #include "resources/common_resources.h"
 #include "scada/standard_node_ids.h"
 #include "ui/common/client_utils.h"
+#include "ui/qt/client_utils_qt.h"
 
 #include <QAction>
 #include <QApplication>
@@ -52,6 +52,8 @@
 #include <QTabWidget>
 #include <QToolBar>
 #include <QToolButton>
+
+#include <unordered_set>
 
 #ifdef _WIN32
 #include <atlapp.h>
@@ -118,14 +120,63 @@ QRect GetDefaultBounds(const QWidget* window) {
           desktop_bounds.width() * 3 / 4, desktop_bounds.height() * 3 / 4};
 }
 
+// Recursively collects the command ids carried by |model| (including its
+// submenus and inplace menus) so the appended generic context menu can skip
+// them.
+void CollectMenuCommandIds(aui::MenuModel& model,
+                           std::unordered_set<int>& command_ids) {
+  model.MenuWillShow();
+  for (int i = 0; i < model.GetItemCount(); ++i) {
+    switch (model.GetTypeAt(i)) {
+      case aui::MenuModel::TYPE_SUBMENU:
+      case aui::MenuModel::TYPE_INPLACE_MENU:
+        if (auto* submenu_model = model.GetSubmenuModelAt(i))
+          CollectMenuCommandIds(*submenu_model, command_ids);
+        break;
+      case aui::MenuModel::TYPE_SEPARATOR:
+        break;
+      default:
+        command_ids.insert(model.GetCommandIdAt(i));
+        break;
+    }
+  }
+}
+
+// Drops leading, trailing and consecutive separators, which can appear once
+// duplicate items have been filtered out of the appended generic menu.
+void RemoveRedundantSeparators(QMenu& menu) {
+  QList<QAction*> actions = menu.actions();
+  bool previous_was_separator = true;  // Leading separators are redundant.
+  for (auto* action : actions) {
+    if (action->isSeparator()) {
+      if (previous_was_separator)
+        menu.removeAction(action);
+      else
+        previous_was_separator = true;
+    } else {
+      previous_was_separator = false;
+    }
+  }
+  // A trailing separator, if any, is now the last remaining separator.
+  const QList<QAction*>& remaining = menu.actions();
+  if (!remaining.isEmpty() && remaining.last()->isSeparator())
+    menu.removeAction(remaining.last());
+}
+
 void BuildDefaultPopupMenu(QMenu& menu,
                            aui::MenuModel* merge_menu,
                            aui::MenuModel& context_menu_model) {
+  std::unordered_set<int> merge_command_ids;
   if (merge_menu && merge_menu->GetItemCount() != 0) {
     BuildMenu(menu, *merge_menu);
     menu.addSeparator();
+    CollectMenuCommandIds(*merge_menu, merge_command_ids);
   }
-  BuildMenu(menu, context_menu_model);
+  // The caller-supplied |merge_menu| is authoritative for the commands it
+  // lists; suppress those same commands from the generic context menu so a
+  // converted view's curated entries aren't shown twice.
+  BuildMenu(menu, context_menu_model, &merge_command_ids);
+  RemoveRedundantSeparators(menu);
 }
 
 constexpr CommandContextId kToolbarContexts[] = {
@@ -373,7 +424,8 @@ void MainWindow::CreateContextBar() {
                       .arg(color->qcolor().name())
                 : QString{});
     }
-    refresh_kpi(kpi_critical_, scada::aui::SeverityLevel::kCritical, "Critical");
+    refresh_kpi(kpi_critical_, scada::aui::SeverityLevel::kCritical,
+                "Critical");
     refresh_kpi(kpi_warning_, scada::aui::SeverityLevel::kWarning, "Warning");
   };
   refresh();
