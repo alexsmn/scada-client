@@ -182,8 +182,7 @@ TEST_F(GraphViewTest, FakeTimedDataRendersLines) {
   double from = (now - base::TimeDelta::FromHours(24)).ToDoubleT();
   double to = now.ToDoubleT();
   graph.horizontal_axis().SetTimeFit(false);
-  graph.horizontal_axis().SetRange(
-      views::GraphRange{from, to, views::GraphRange::TIME});
+  graph.horizontal_axis().SetRange(GraphRange{from, to, GraphRange::TIME});
 
   graph.UpdateData();
 

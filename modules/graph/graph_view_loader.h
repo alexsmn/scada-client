@@ -1,9 +1,9 @@
 #pragma once
 
-#include <boost/algorithm/string/predicate.hpp>
 #include "base/time_utils.h"
 #include "profile/profile.h"
 #include "profile/window_definition_util.h"
+#include <boost/algorithm/string/predicate.hpp>
 
 struct GraphViewLoader {
   void Read() {
@@ -33,7 +33,7 @@ struct GraphViewLoader {
   }
 
   void ReadPane(const WindowItem& item) {
-    views::GraphPane* pane = &graph_.NewPane();
+    GraphPane* pane = &graph_.NewPane();
 
     pane->size_percent_ = item.GetInt("size", 100);
 
@@ -86,8 +86,8 @@ struct GraphViewLoader {
     base::TimeDelta span = base::TimeDelta::FromHours(1);
     Deserialize(srange, span);
     from = to - span;
-    graph_.horizontal_axis().SetRange(views::GraphRange(
-        from.ToDoubleT(), to.ToDoubleT(), views::GraphRange::TIME));
+    graph_.horizontal_axis().SetRange(
+        GraphRange(from.ToDoubleT(), to.ToDoubleT(), GraphRange::TIME));
     graph_.SetHorizontalScrollBarVisible(
         item.GetBool("scrollBar", profile_.graph_view.default_scroll_bar));
     graph_.horizontal_axis().SetTimeFit(time_fit);
@@ -97,15 +97,15 @@ struct GraphViewLoader {
   void FixTimeRange() {
     if (auto time_range = RestoreTimeRange(definition_)) {
       auto [start, end] = ToDateTimeRange(*time_range, now);
-      graph_.horizontal_axis().SetRange(views::GraphRange{
-          start.ToDoubleT(), end.ToDoubleT(), views::GraphRange::TIME});
+      graph_.horizontal_axis().SetRange(
+          GraphRange{start.ToDoubleT(), end.ToDoubleT(), GraphRange::TIME});
       graph_.horizontal_axis().SetTimeFit(time_range->type !=
                                           TimeRange::Type::Custom);
     } else {
       base::Time now = base::Time::Now();
-      graph_.horizontal_axis().SetRange(views::GraphRange(
-          (now - profile_.graph_view.default_span).ToDoubleT(), now.ToDoubleT(),
-          views::GraphRange::TIME));
+      graph_.horizontal_axis().SetRange(
+          GraphRange((now - profile_.graph_view.default_span).ToDoubleT(),
+                     now.ToDoubleT(), GraphRange::TIME));
     }
   }
 
@@ -115,7 +115,7 @@ struct GraphViewLoader {
   GraphView& graph_view_;
   base::Time now = base::Time::Now();
 
-  using PaneMap = std::unordered_map<int, views::GraphPane*>;
+  using PaneMap = std::unordered_map<int, GraphPane*>;
   PaneMap pane_map;
 
   bool time_scale_loaded_ = false;

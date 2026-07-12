@@ -16,7 +16,7 @@ class GraphView : protected ControllerContext,
                   public Controller,
                   public ContentsModel,
                   public TimeModel,
-                  private views::Graph::Controller {
+                  private Graph::Controller {
  public:
   explicit GraphView(const ControllerContext& context);
 
@@ -68,10 +68,10 @@ class GraphView : protected ControllerContext,
   void ToggleLineProperty(unsigned command_id);
   void ToggleZoom();
 
-  // views::Graph::Controller
+  // Graph::Controller
   virtual void OnGraphModified() override;
   virtual void OnGraphSelectPane() override;
-  virtual void OnLineItemChanged(views::GraphLine& line) override;
+  virtual void OnLineItemChanged(GraphLine& line) override;
   virtual void OnSelectedCursorChanged() override;
   virtual void OnGraphActivated() override;
 
@@ -79,7 +79,7 @@ class GraphView : protected ControllerContext,
 
   MetrixGraph* graph_ = nullptr;
 
-  views::GraphRange prezoom_horizontal_range_;
+  GraphRange prezoom_horizontal_range_;
 
   CommandRegistry command_registry_;
 };

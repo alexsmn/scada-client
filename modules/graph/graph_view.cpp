@@ -60,7 +60,7 @@ std::unique_ptr<UiView> GraphView::Init(const WindowDefinition& definition) {
   graph_->horizontal_axis().SetScrollRange(graph_->horizontal_axis().range());
   graph_->UpdateData();
 
-  for (views::GraphPane* pane : graph_->panes()) {
+  for (GraphPane* pane : graph_->panes()) {
     static_cast<MetrixGraph::MetrixPane*>(pane)->ShowLegend(true);
   }
 
@@ -88,7 +88,7 @@ std::unique_ptr<UiView> GraphView::Init(const WindowDefinition& definition) {
         controller_delegate_.SetModified(true);
         graph_->NewPane();
         // TODO: Recover prompt.
-        //      PromptBegin(views::View::GetWindowHandle(),
+        //      PromptBegin(View::GetWindowHandle(),
         //          pane.rect_.left + 10, pane.rect_.top + 10);
       }));
 
@@ -219,7 +219,7 @@ void GraphView::DeleteSelectedPane() {
     return;
 
   // Deselect current pane.
-  views::GraphPane* next = graph_->GetNextPane(pane);
+  GraphPane* next = graph_->GetNextPane(pane);
   if (!next)
     next = graph_->GetPrevPane(pane);
   graph_->SelectPane(next);
@@ -232,7 +232,7 @@ void GraphView::DeleteSelectedPane() {
 }
 
 void GraphView::ClearPane(MetrixGraph::MetrixPane& pane) {
-  const views::GraphPlot::Lines& lines = pane.plot().lines();
+  const GraphPlot::Lines& lines = pane.plot().lines();
   while (!lines.empty()) {
     MetrixGraph::MetrixLine& line =
         static_cast<MetrixGraph::MetrixLine&>(*lines.front());
@@ -444,14 +444,13 @@ void GraphView::SetTimeRange(const TimeRange& range) {
   double low = start_time.ToDoubleT();
   double high = time_fit ? graph_->horizontal_axis().scroll_range().high()
                          : end_time.ToDoubleT();
-  graph_->horizontal_axis().SetRange(
-      views::GraphRange{low, high, views::GraphRange::TIME});
+  graph_->horizontal_axis().SetRange(GraphRange{low, high, GraphRange::TIME});
   graph_->horizontal_axis().SetTimeFit(time_fit);
 
   controller_delegate_.SetModified(true);
 }
 
-void GraphView::OnLineItemChanged(views::GraphLine& line) {
+void GraphView::OnLineItemChanged(GraphLine& line) {
   if (&line == graph_->primary_line())
     controller_delegate_.SetTitle(MakeTitle());
 

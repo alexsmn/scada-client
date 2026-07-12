@@ -7,13 +7,11 @@
 #include "timed_data/timed_data.h"
 #include "timed_data/timed_data_spec.h"
 
-#if defined(UI_QT)
-#include "graph_qt/model/graph_data_source.h"
-#endif
+#include "aui/graph.h"
 
 #include <memory>
 
-class MetrixDataSource : public views::GraphDataSource {
+class MetrixDataSource : public GraphDataSource {
  public:
   MetrixDataSource();
   explicit MetrixDataSource(AnyExecutor executor);
@@ -35,9 +33,9 @@ class MetrixDataSource : public views::GraphDataSource {
 
   void SetCurrentValue(double value);
 
-  // views::GraphDataSource
+  // GraphDataSource
   virtual double GetCurrentValue() const override { return current_value_; };
-  virtual std::unique_ptr<views::PointEnumerator> EnumPoints(
+  virtual std::unique_ptr<PointEnumerator> EnumPoints(
       double from,
       double to,
       bool include_left_bound,
@@ -45,8 +43,8 @@ class MetrixDataSource : public views::GraphDataSource {
 #if defined(UI_QT)
   virtual QString GetYAxisLabel(double value) const override;
 #endif
-  virtual views::GraphRange GetHorizontalRange() const override;
-  virtual views::GraphRange GetVerticalRange() const override { return range_; }
+  virtual GraphRange GetHorizontalRange() const override;
+  virtual GraphRange GetVerticalRange() const override { return range_; }
 
  protected:
   void OnItemChanged();
@@ -60,8 +58,8 @@ class MetrixDataSource : public views::GraphDataSource {
 
   void OnPropertyChanged(const PropertySet& properties);
 
-  views::GraphRange range_;
-  double current_value_ = views::kGraphUnknownValue;
+  GraphRange range_;
+  double current_value_ = kGraphUnknownValue;
 
   TimedDataSpec timed_data_;
   std::u16string title_;

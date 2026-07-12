@@ -1,17 +1,13 @@
 #include "graph/metrix_data_source.h"
 
-#include "base/awaitable.h"
 #include "base/any_executor.h"
+#include "base/awaitable.h"
 #include "base/thread_executor.h"
 #include "common/data_value_traits.h"
 #include "common/timed_data_util.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/node_util.h"
 #include "timed_data/timed_data_property.h"
-
-#if defined(UI_QT)
-#include "graph_qt/model/graph_types.h"
-#endif
 
 namespace {
 
@@ -34,7 +30,7 @@ scada::DateTime GetLatestTimestamp(const TimedDataSpec& spec) {
 
 // MetrixPointEnum
 
-class MetrixPointEnum : public views::PointEnumerator {
+class MetrixPointEnum : public PointEnumerator {
  public:
   explicit MetrixPointEnum(TimedDataSpec& timed_data)
       : timed_data_(timed_data) {}
@@ -47,7 +43,7 @@ class MetrixPointEnum : public views::PointEnumerator {
 
   // PointEnumerator
   virtual size_t GetCount() const override;
-  virtual bool EnumNext(views::GraphPoint& point) override;
+  virtual bool EnumNext(GraphPoint& point) override;
 
  private:
   TimedDataSpec& timed_data_;
@@ -101,7 +97,7 @@ size_t MetrixPointEnum::GetCount() const {
   return count_;
 }
 
-bool MetrixPointEnum::EnumNext(views::GraphPoint& point) {
+bool MetrixPointEnum::EnumNext(GraphPoint& point) {
   if (count_ == 0)
     return false;
 
@@ -143,8 +139,7 @@ bool MetrixPointEnum::EnumNext(views::GraphPoint& point) {
 
 // MetrixDataSource
 
-MetrixDataSource::MetrixDataSource()
-    : MetrixDataSource{ThreadExecutor{}} {}
+MetrixDataSource::MetrixDataSource() : MetrixDataSource{ThreadExecutor{}} {}
 
 MetrixDataSource::MetrixDataSource(AnyExecutor executor)
     : executor_{std::move(executor)} {
@@ -184,7 +179,7 @@ bool MetrixDataSource::XToData(double& x, scada::DataValue& val) const {
   }
 }
 
-std::unique_ptr<views::PointEnumerator> MetrixDataSource::EnumPoints(
+std::unique_ptr<PointEnumerator> MetrixDataSource::EnumPoints(
     double from,
     double to,
     bool include_left_bound,
@@ -197,7 +192,7 @@ std::unique_ptr<views::PointEnumerator> MetrixDataSource::EnumPoints(
 
 void MetrixDataSource::UpdateRange() {
   if (timed_data_.logical()) {
-    range_ = views::GraphRange::Logical();
+    range_ = GraphRange::Logical();
     return;
   }
 
@@ -205,28 +200,28 @@ void MetrixDataSource::UpdateRange() {
 
   if (auto node = timed_data_.node();
       IsInstanceOf(node, data_items::id::AnalogItemType)) {
-    range_ = views::GraphRange(
-        node[data_items::id::AnalogItemType_EuLo].value().get_or(
-            views::kGraphUnknownValue),
-        node[data_items::id::AnalogItemType_EuHi].value().get_or(
-            views::kGraphUnknownValue));
+    range_ =
+        GraphRange(node[data_items::id::AnalogItemType_EuLo].value().get_or(
+                       kGraphUnknownValue),
+                   node[data_items::id::AnalogItemType_EuHi].value().get_or(
+                       kGraphUnknownValue));
   }
 
   // Auto-compute range from data when node limits are unavailable.
-  if (range_.low() == views::kGraphUnknownValue) {
+  if (range_.low() == kGraphUnknownValue) {
     auto values = timed_data_.values();
     double lo = std::numeric_limits<double>::max();
     double hi = std::numeric_limits<double>::lowest();
     for (const auto& v : values) {
-      double d = v.value.get_or(views::kGraphUnknownValue);
-      if (d != views::kGraphUnknownValue) {
+      double d = v.value.get_or(kGraphUnknownValue);
+      if (d != kGraphUnknownValue) {
         lo = std::min(lo, d);
         hi = std::max(hi, d);
       }
     }
     if (lo <= hi) {
       double margin = std::max((hi - lo) * 0.05, 1.0);
-      range_ = views::GraphRange(lo - margin, hi + margin);
+      range_ = GraphRange(lo - margin, hi + margin);
     }
   }
 }
@@ -234,18 +229,18 @@ void MetrixDataSource::UpdateRange() {
 void MetrixDataSource::UpdateLimits() {
   if (auto node = timed_data_.node()) {
     limit_lo_ = node[data_items::id::AnalogItemType_LimitLo].value().get_or(
-        views::kGraphUnknownValue);
+        kGraphUnknownValue);
     limit_hi_ = node[data_items::id::AnalogItemType_LimitHi].value().get_or(
-        views::kGraphUnknownValue);
+        kGraphUnknownValue);
     limit_lolo_ = node[data_items::id::AnalogItemType_LimitLoLo].value().get_or(
-        views::kGraphUnknownValue);
+        kGraphUnknownValue);
     limit_hihi_ = node[data_items::id::AnalogItemType_LimitHiHi].value().get_or(
-        views::kGraphUnknownValue);
+        kGraphUnknownValue);
   } else {
-    limit_lo_ = views::kGraphUnknownValue;
-    limit_hi_ = views::kGraphUnknownValue;
-    limit_lolo_ = views::kGraphUnknownValue;
-    limit_hihi_ = views::kGraphUnknownValue;
+    limit_lo_ = kGraphUnknownValue;
+    limit_hi_ = kGraphUnknownValue;
+    limit_lolo_ = kGraphUnknownValue;
+    limit_hihi_ = kGraphUnknownValue;
   }
 }
 
@@ -261,7 +256,7 @@ void MetrixDataSource::OnItemChanged() {
     observer_->OnDataSourceItemChanged();
 
   const auto& tvq = timed_data_.current();
-  double value = tvq.value.get_or(views::kGraphUnknownValue);
+  double value = tvq.value.get_or(kGraphUnknownValue);
   SetCurrentValue(value);
 }
 
@@ -276,7 +271,7 @@ void MetrixDataSource::OnPropertyChanged(const PropertySet& properties) {
       OnHistoryChanged();
 
     const auto& tvq = timed_data_.current();
-    double value = tvq.value.get_or(views::kGraphUnknownValue);
+    double value = tvq.value.get_or(kGraphUnknownValue);
     SetCurrentValue(value);
   }
 
@@ -314,8 +309,8 @@ void MetrixDataSource::ScheduleUpdateEarliestTimestamp() {
   auto executor = executor_;
 
   CoSpawn(executor_,
-          [this, cancelation, node, executor = std::move(executor)]()
-              mutable -> Awaitable<void> {
+          [this, cancelation, node,
+           executor = std::move(executor)]() mutable -> Awaitable<void> {
             if (cancelation.canceled())
               co_return;
 
@@ -347,7 +342,7 @@ void MetrixDataSource::SetEarliestTimestamp(scada::DateTime timestamp) {
     observer_->OnDataSourceHistoryChanged();
 }
 
-views::GraphRange MetrixDataSource::GetHorizontalRange() const {
+GraphRange MetrixDataSource::GetHorizontalRange() const {
   auto latest_timestamp = GetTimeRange(timed_data_).second;
   if (earliest_timestamp_.is_null() || latest_timestamp.is_null() ||
       earliest_timestamp_ >= latest_timestamp) {
@@ -355,5 +350,5 @@ views::GraphRange MetrixDataSource::GetHorizontalRange() const {
   }
 
   return {earliest_timestamp_.ToDoubleT(), latest_timestamp.ToDoubleT(),
-          views::GraphRange::TIME};
+          GraphRange::TIME};
 }
