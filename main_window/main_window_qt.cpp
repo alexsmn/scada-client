@@ -422,45 +422,37 @@ void MainWindow::CreateActivityBar() {
   struct SectionSpec {
     const char* label;
     std::string_view window_info_name;
+    ActivityBar::Icon icon = ActivityBar::Icon::kNone;
     bool is_alarms = false;
     bool pinned_bottom = false;
   };
   const SectionSpec specs[] = {
-      {"Overview", kOverviewSectionId},
-      {"Alarms", "EventJournal", /*is_alarms=*/true},
-      {"Trends", "Graph"},
-      {"Substations", "Modus"},
-      {"Tables", "Table"},
-      {"Administration", "", false, /*pinned_bottom=*/true},
-      {"Settings", "", false, /*pinned_bottom=*/true},
+      {"Overview", kOverviewSectionId, ActivityBar::Icon::kOverview},
+      {"Alarms", "EventJournal", ActivityBar::Icon::kAlarms,
+       /*is_alarms=*/true},
+      {"Trends", "Graph", ActivityBar::Icon::kTrends},
+      {"Substations", "Modus", ActivityBar::Icon::kSubstations},
+      {"Tables", "Table", ActivityBar::Icon::kTables},
+      {"Administration", "", ActivityBar::Icon::kAdministration, false,
+       /*pinned_bottom=*/true},
+      {"Settings", "", ActivityBar::Icon::kSettings, false,
+       /*pinned_bottom=*/true},
   };
 
-  auto& command_manager = ui_command_registry_.command_manager();
   std::vector<ActivityBar::Section> sections;
   for (const SectionSpec& spec : specs) {
     ActivityBar::Section section;
     section.label = Translate(spec.label);
     section.window_info_name = std::string{spec.window_info_name};
+    section.icon_kind = spec.icon;
     section.is_alarms = spec.is_alarms;
     section.pinned_bottom = spec.pinned_bottom;
-    section.enabled = false;
-    if (spec.window_info_name == kOverviewSectionId) {
-      // Overview opens the Overview page (a layout of views), not a single
-      // view.
-      section.enabled = true;
-    } else if (const WindowInfo* info =
-                   spec.window_info_name.empty()
-                       ? nullptr
-                       : FindWindowInfoByName(spec.window_info_name)) {
-      // A section is live only if its view type is registered; its rail icon
-      // reuses that view command's image, so the rail matches the toolbar/menu.
-      section.enabled = true;
-      if (const CommandDescriptor* command =
-              command_manager.FindCommand(info->command_id);
-          command && command->image_id != 0) {
-        section.icon = QIcon(LoadPixmap(command->image_id));
-      }
-    }
+    // A section is live only if it opens the Overview page or its view type is
+    // registered; otherwise it is shown disabled (with a "coming soon"
+    // tooltip).
+    section.enabled = spec.window_info_name == kOverviewSectionId ||
+                      (!spec.window_info_name.empty() &&
+                       FindWindowInfoByName(spec.window_info_name) != nullptr);
     sections.push_back(std::move(section));
   }
 

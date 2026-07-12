@@ -80,6 +80,19 @@ TEST_F(ActivityBarTest, SetActiveSectionChecksTheMatchingButton) {
   EXPECT_TRUE(buttons[1]->isChecked());
 }
 
+TEST_F(ActivityBarTest, DedicatedIconKindRendersANonNullIcon) {
+  std::vector<ActivityBar::Section> sections;
+  ActivityBar::Section section = MakeSection("trends", /*enabled=*/true);
+  section.icon_kind = ActivityBar::Icon::kTrends;
+  sections.push_back(std::move(section));
+
+  ActivityBar bar{nullptr, std::move(sections), [](const std::string&) {}};
+
+  std::vector<QToolButton*> buttons = Buttons(bar);
+  ASSERT_EQ(buttons.size(), 1u);
+  EXPECT_FALSE(buttons[0]->icon().isNull());
+}
+
 TEST_F(ActivityBarTest, SetAlarmCountLeavesTheAlarmsButtonUsable) {
   std::vector<ActivityBar::Section> sections;
   ActivityBar::Section alarms = MakeSection("alarms", /*enabled=*/true);

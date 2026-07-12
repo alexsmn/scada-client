@@ -21,14 +21,29 @@ class ActivityBar : public QWidget {
   Q_OBJECT
 
  public:
+  // Dedicated rail glyph drawn for a section. Kept independent of the view
+  // command icons (which are toolbar-shaped) so the rail reads as a coherent,
+  // workbench-style icon set.
+  enum class Icon {
+    kNone,
+    kOverview,
+    kAlarms,
+    kTrends,
+    kSubstations,
+    kTables,
+    kAdministration,
+    kSettings,
+  };
+
   // One rail entry. `window_info_name` is the view type the section activates
-  // (empty / unknown => the section is disabled). `is_alarms` marks the single
-  // section that shows the unread badge; `pinned_bottom` sinks the entry to the
-  // bottom group.
+  // (empty / unknown => the section is disabled). `icon_kind` selects the
+  // dedicated glyph (falls back to the label's first letter when kNone).
+  // `is_alarms` marks the single section that shows the unread badge;
+  // `pinned_bottom` sinks the entry to the bottom group.
   struct Section {
     std::string window_info_name;
     std::u16string label;
-    QIcon icon;
+    Icon icon_kind = Icon::kNone;
     bool enabled = true;
     bool is_alarms = false;
     bool pinned_bottom = false;
