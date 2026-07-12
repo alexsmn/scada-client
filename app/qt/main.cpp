@@ -7,6 +7,7 @@
 #include "app/startup_exception.h"
 #include "aui/qt/message_loop_qt.h"
 #include "aui/qt/theme_qt.h"
+#include "aui/severity_colors.h"
 #include "base/any_executor.h"
 #include "base/any_executor_timer.h"
 #include "base/boost_log.h"
@@ -111,9 +112,9 @@ int main(int argc, char* argv[]) {
     SafeApplication qapp(argc, argv);
 
     // Register the compiled-in Qt resources (res/client.qrc). Without this the
-    // optimized app executable dead-strips the auto-init for qInitResources_client,
-    // leaving every ":/..." resource (window icon, tree node icons, toolbar
-    // icons) unregistered at runtime on macOS.
+    // optimized app executable dead-strips the auto-init for
+    // qInitResources_client, leaving every ":/..." resource (window icon, tree
+    // node icons, toolbar icons) unregistered at runtime on macOS.
     Q_INIT_RESOURCE(client);
 
     QApplication::setApplicationName("Telecontrol SCADA Client");
@@ -130,21 +131,27 @@ int main(int argc, char* argv[]) {
     InstalledStyle installed_style{settings};
 
     // Experimental UX design-token theming. Opt-in and off by default so the
-    // legacy Fusion look is unchanged until an operator enables it — the reshell
-    // ships as incremental vertical slices, not a big-bang switchover. When
-    // enabled, install the shared tokens over the Fusion base before the login
-    // dialog so pre-login chrome is themed too. `Ux/Theme` picks the variant
-    // (dark default); `Ux/StyleSheet=false` gives palette-first / palette-only.
-    // See client/docs/ux/ and client/CLAUDE.md ("UX implementation approach").
+    // legacy Fusion look is unchanged until an operator enables it — the
+    // reshell ships as incremental vertical slices, not a big-bang switchover.
+    // When enabled, install the shared tokens over the Fusion base before the
+    // login dialog so pre-login chrome is themed too. `Ux/Theme` picks the
+    // variant (dark default); `Ux/StyleSheet=false` gives palette-first /
+    // palette-only. See client/docs/ux/ and client/CLAUDE.md ("UX
+    // implementation approach").
     if (settings.value("Ux/Experimental", false).toBool()) {
+      const scada::aui::Theme theme = scada::aui::ThemeFromString(
+          settings.value("Ux/Theme").toString(), scada::aui::Theme::kDark);
       const scada::aui::ThemeScope scope =
           settings.value("Ux/StyleSheet", true).toBool()
               ? scada::aui::ThemeScope::kFull
               : scada::aui::ThemeScope::kPaletteOnly;
-      scada::aui::ApplyTheme(
-          scada::aui::ThemeFromString(settings.value("Ux/Theme").toString(),
-                                      scada::aui::Theme::kDark),
-          scope);
+      scada::aui::ApplyTheme(theme, scope);
+      // Keep event/alarm severity colours on the same single source and theme.
+      scada::aui::SetSeverityTheme(
+          theme == scada::aui::Theme::kLight ? scada::aui::SeverityTheme::kLight
+          : theme == scada::aui::Theme::kHighContrast
+              ? scada::aui::SeverityTheme::kHighContrast
+              : scada::aui::SeverityTheme::kDark);
     }
 
     // `QApplication` must be created.

@@ -1,0 +1,39 @@
+#pragma once
+
+#include "aui/color.h"
+
+#include <optional>
+
+namespace scada::aui {
+
+// The active severity colour theme for event/alarm surfaces. `kLegacy` keeps
+// the historical hardcoded colours so the default UI is unchanged; the token
+// themes use the shared design-system severity ramp
+// (client/docs/ux/design-language.md). Set once at startup from the same opt-in
+// as the palette theme
+// (`app/qt/main.cpp`); defaults to `kLegacy`.
+enum class SeverityTheme { kLegacy, kDark, kLight, kHighContrast };
+
+// Sets / reads the active severity theme. Not thread-safe: set once at startup
+// on the UI thread, read on the UI thread while rendering.
+void SetSeverityTheme(SeverityTheme theme);
+SeverityTheme GetSeverityTheme();
+
+// The event-row background classes. This is the single source of severity/alarm
+// colours: every severity surface (event journal today; alarm strip, tree,
+// inspector, and status as they gain colouring) resolves its colour here, so
+// changing a token restyles them all at once.
+enum class EventBackground { kUnacknowledged, kCritical, kWarning };
+
+// Background — and, for the token themes, text — colour for an event-row class
+// under the active theme. `text` is unset for `kLegacy`, which left the row's
+// text colour untouched.
+struct EventRowColors {
+  Color background;
+  std::optional<Color> text;
+};
+
+// Resolves the colours for an event-row class under the active severity theme.
+EventRowColors EventRowColorsFor(EventBackground background);
+
+}  // namespace scada::aui

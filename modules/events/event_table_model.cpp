@@ -1,5 +1,6 @@
 ﻿#include "events/event_table_model.h"
 
+#include "aui/severity_colors.h"
 #include "aui/translation.h"
 #include "base/check.h"
 #include "base/excel.h"
@@ -14,6 +15,8 @@
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 
+#include <optional>
+
 using namespace std::chrono_literals;
 
 namespace {
@@ -23,13 +26,24 @@ const char16_t kLocalEventSource[] = u"Local Event";
 void GetEventColors(const scada::Event& event,
                     aui::Color& text_color,
                     aui::Color& back_color) {
+  // Classify (unacknowledged, then critical, then warning) exactly as before;
+  // the colours themselves come from the single severity source, so they follow
+  // the active theme and stay in step with every other severity surface.
+  std::optional<aui::EventBackground> background;
   if (!event.acked) {
-    back_color = aui::Rgba{99, 190, 123};
+    background = aui::EventBackground::kUnacknowledged;
   } else if (event.severity >= scada::kSeverityCritical) {
-    back_color = aui::Rgba{248, 105, 107};
+    background = aui::EventBackground::kCritical;
   } else if (event.severity >= scada::kSeverityWarning) {
-    back_color = aui::Rgba{255, 235, 132};
+    background = aui::EventBackground::kWarning;
   }
+  if (!background)
+    return;
+
+  const aui::EventRowColors colors = aui::EventRowColorsFor(*background);
+  back_color = colors.background;
+  if (colors.text)
+    text_color = *colors.text;
 }
 
 int Compare(base::Time a, base::Time b) {

@@ -17,14 +17,15 @@
 #include "address_space/test/scada_test_address_space.h"
 #include "address_space/view_service_impl.h"
 #include "app/client_application.h"
-#include "aui/tree.h"
 #include "aui/qt/message_loop_qt.h"
 #include "aui/qt/theme_qt.h"
+#include "aui/severity_colors.h"
 #include "aui/test/app_environment.h"
-#include "base/client_paths.h"
-#include "base/any_executor.h"
-#include "base/test/scoped_path_override.h"
 #include "aui/translation.h"
+#include "aui/tree.h"
+#include "base/any_executor.h"
+#include "base/client_paths.h"
+#include "base/test/scoped_path_override.h"
 #include "controller/window_info.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
@@ -33,29 +34,29 @@
 #include "profile/profile.h"
 #include "timed_data/timed_data_service.h"
 
+#include <QAbstractProxyModel>
 #include <QAction>
 #include <QApplication>
-#include <QAbstractProxyModel>
 #include <QDockWidget>
 #include <QElapsedTimer>
 #include <QHeaderView>
-#include <QLocale>
 #include <QLayout>
+#include <QLocale>
 #include <QPixmap>
 #include <QStandardItem>
 #include <QStandardItemModel>
 #include <QString>
 #include <QToolBar>
-#include <QTreeView>
 #include <QTranslator>
+#include <QTreeView>
 #include <QVBoxLayout>
 #include <boost/asio/io_context.hpp>
 #include <gtest/gtest.h>
 
 namespace {
 
-using screenshot_generator::WaitForPendingNodeLoads;
 using screenshot_generator::WaitForAwaitable;
+using screenshot_generator::WaitForPendingNodeLoads;
 
 // Global config loaded once per test suite.
 ScreenshotConfig g_config;
@@ -119,7 +120,8 @@ class ScreenshotGenerator : public ::testing::Test {
   SyncAttributeServiceImpl sync_attribute_service_{
       AttributeServiceImplContext{address_space_}};
   AttributeServiceImpl attribute_service_{sync_attribute_service_};
-  SyncViewServiceImpl sync_view_service_{ViewServiceImplContext{address_space_}};
+  SyncViewServiceImpl sync_view_service_{
+      ViewServiceImplContext{address_space_}};
   ViewServiceImpl view_service_{sync_view_service_};
   scada::LocalHistoryService history_service_;
   scada::LocalMonitoredItemService monitored_item_service_;
@@ -142,12 +144,10 @@ class ScreenshotGenerator : public ::testing::Test {
   ClientApplication app_{ClientApplicationContext{
       .io_context_ = io_context_,
       .executor_ = executor_,
-      .login_handler_ =
-          [this](DataServicesContext&&)
-              -> Awaitable<std::optional<DataServices>> {
-            co_return std::optional{
-                DataServices::FromUnownedServices(services_)};
-          },
+      .login_handler_ = [this](DataServicesContext&&)
+          -> Awaitable<std::optional<DataServices>> {
+        co_return std::optional{DataServices::FromUnownedServices(services_)};
+      },
       // Intentionally no node_service/timed_data_service/tree-factory
       // overrides: we let ClientApplication build the production
       // `v1::NodeServiceImpl`, `TimedDataServiceImpl`, and default
@@ -186,10 +186,16 @@ ScreenshotGenerator::ScreenshotGenerator() {
   // Optionally render under a UX design-token theme so captures validate the
   // reshell against real Qt widgets (--theme=dark|light|hc). Applied over the
   // Fusion base exactly as app/qt/main.cpp does when the experimental UX is on.
-  if (const std::string& theme = GetScreenshotOptions().theme; !theme.empty()) {
-    scada::aui::ApplyTheme(
-        scada::aui::ThemeFromString(QString::fromStdString(theme),
-                                    scada::aui::Theme::kDark));
+  if (const std::string& theme_name = GetScreenshotOptions().theme;
+      !theme_name.empty()) {
+    const scada::aui::Theme theme = scada::aui::ThemeFromString(
+        QString::fromStdString(theme_name), scada::aui::Theme::kDark);
+    scada::aui::ApplyTheme(theme);
+    scada::aui::SetSeverityTheme(theme == scada::aui::Theme::kLight
+                                     ? scada::aui::SeverityTheme::kLight
+                                 : theme == scada::aui::Theme::kHighContrast
+                                     ? scada::aui::SeverityTheme::kHighContrast
+                                     : scada::aui::SeverityTheme::kDark);
   }
 
   // Render offscreen. `widget->grab()` renders the Qt widget tree to a
@@ -383,46 +389,49 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
 
   auto* proxy_model = qobject_cast<QAbstractProxyModel*>(tree->model());
   QModelIndex materialized_source_root;
-  const bool first_child_visible = WaitUntil([&] {
-    const auto& visible_root = tree->rootIndex();
-    if (tree->model()->canFetchMore(visible_root))
-      tree->model()->fetchMore(visible_root);
+  const bool first_child_visible = WaitUntil(
+      [&] {
+        const auto& visible_root = tree->rootIndex();
+        if (tree->model()->canFetchMore(visible_root))
+          tree->model()->fetchMore(visible_root);
 
-    auto first_child = tree->model()->index(0, 0, visible_root);
-    if (!first_child.isValid() && proxy_model) {
-      materialized_source_root = proxy_model->mapToSource(visible_root);
-      if (materialized_source_root.isValid()) {
-        const auto source_first_child =
-            proxy_model->sourceModel()->index(0, 0, materialized_source_root);
-        if (source_first_child.isValid())
-          first_child = proxy_model->mapFromSource(source_first_child);
-      }
+        auto first_child = tree->model()->index(0, 0, visible_root);
+        if (!first_child.isValid() && proxy_model) {
+          materialized_source_root = proxy_model->mapToSource(visible_root);
+          if (materialized_source_root.isValid()) {
+            const auto source_first_child = proxy_model->sourceModel()->index(
+                0, 0, materialized_source_root);
+            if (source_first_child.isValid())
+              first_child = proxy_model->mapFromSource(source_first_child);
+          }
 
-      if (!first_child.isValid() && materialized_source_root.isValid() &&
-          proxy_model->sourceModel()->rowCount(materialized_source_root) > 0) {
-        tree->model()->sort(0);
-        tree->collapse(visible_root);
-        QApplication::processEvents();
-        tree->expand(visible_root);
-        first_child = tree->model()->index(0, 0, visible_root);
+          if (!first_child.isValid() && materialized_source_root.isValid() &&
+              proxy_model->sourceModel()->rowCount(materialized_source_root) >
+                  0) {
+            tree->model()->sort(0);
+            tree->collapse(visible_root);
+            QApplication::processEvents();
+            tree->expand(visible_root);
+            first_child = tree->model()->index(0, 0, visible_root);
 
-        if (!first_child.isValid()) {
-          const auto source_first_child =
-              proxy_model->sourceModel()->index(0, 0, materialized_source_root);
-          if (source_first_child.isValid())
-            first_child = proxy_model->mapFromSource(source_first_child);
+            if (!first_child.isValid()) {
+              const auto source_first_child = proxy_model->sourceModel()->index(
+                  0, 0, materialized_source_root);
+              if (source_first_child.isValid())
+                first_child = proxy_model->mapFromSource(source_first_child);
+            }
+          }
         }
-      }
-    }
 
-    if (!first_child.isValid())
-      return false;
+        if (!first_child.isValid())
+          return false;
 
-    tree->scrollTo(first_child);
-    tree->doItemsLayout();
-    tree->viewport()->update();
-    return !tree->visualRect(first_child).isEmpty();
-  }, 2000);
+        tree->scrollTo(first_child);
+        tree->doItemsLayout();
+        tree->viewport()->update();
+        return !tree->visualRect(first_child).isEmpty();
+      },
+      2000);
   int source_child_count = -1;
   if (proxy_model && materialized_source_root.isValid()) {
     source_child_count =
@@ -443,9 +452,9 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
                   << " | proxy_child_count=" << proxy_child_count
                   << " | source_child_count=" << source_child_count
                   << " | viewport=" << viewport_size.width() << "x"
-                  << viewport_size.height()
-                  << " | root_rect=" << root_rect.x() << "," << root_rect.y()
-                  << " " << root_rect.width() << "x" << root_rect.height()
+                  << viewport_size.height() << " | root_rect=" << root_rect.x()
+                  << "," << root_rect.y() << " " << root_rect.width() << "x"
+                  << root_rect.height()
                   << " | first_child_valid=" << first_child.isValid()
                   << " | first_child_rect=" << first_child_rect.x() << ","
                   << first_child_rect.y() << " " << first_child_rect.width()
@@ -527,11 +536,12 @@ TEST_F(ScreenshotGenerator, CaptureDialogs) {
     QApplication::processEvents();
 
   Profile profile;
-  DialogEnvironment env{.executor = executor_,
-                        .node_service = &app_.node_service(),
-                        .timed_data_service = &app_.timed_data_service(),
-                        .profile = &profile,
-                        .dialog_analog_node_id = g_config.dialog_analog_node_id};
+  DialogEnvironment env{
+      .executor = executor_,
+      .node_service = &app_.node_service(),
+      .timed_data_service = &app_.timed_data_service(),
+      .profile = &profile,
+      .dialog_analog_node_id = g_config.dialog_analog_node_id};
 
   int captured = 0;
   for (const auto& spec : g_config.dialogs) {
