@@ -42,6 +42,19 @@
         <source>Observer</source>
         <translation>Наблюдатель</translation>
     </message>
+    <!-- modules/events/qt/event_filter_bar.cpp -->
+    <message>
+        <source>Unacknowledged only</source>
+        <translation>Только неквитированные</translation>
+    </message>
+    <message>
+        <source>Min. severity</source>
+        <translation>Мин. важность</translation>
+    </message>
+    <message>
+        <source>All</source>
+        <translation>Все</translation>
+    </message>
     <!-- client_utils.cpp -->
     <message>
         <source>Local</source>

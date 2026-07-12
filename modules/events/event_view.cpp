@@ -25,6 +25,14 @@
 #include "resources/common_resources.h"
 #include "ui/common/client_utils.h"
 
+#if defined(UI_QT)
+#include "aui/severity_colors.h"
+#include "events/qt/event_filter_bar.h"
+
+#include <QVBoxLayout>
+#include <QWidget>
+#endif
+
 namespace {
 
 const char16_t kFilter[] = u"Filter";
@@ -198,6 +206,28 @@ std::unique_ptr<UiView> EventView::Init(const WindowDefinition& definition) {
 
   if (!is_panel_)
     controller_delegate_.SetTitle(MakeTitle());
+
+#if defined(UI_QT)
+  // Opt-in journal filter bar: a cross-platform surfacing of the filters (the
+  // event context menu is Windows-only). Only on the full journal, not the
+  // docked panel, and only under the reshell theme.
+  if (!is_panel_ &&
+      scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy) {
+    auto* container = new QWidget;
+    auto* layout = new QVBoxLayout{container};
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+    layout->addWidget(MakeEventFilterBar(
+        model_->unacknowledged_only(), model_->severity_min(),
+        scada::kSeverityMax,
+        [this](bool value) { model_->SetUnacknowledgedOnly(value); },
+        [this](unsigned severity) {
+          SetSeverityMin(static_cast<scada::EventSeverity>(severity));
+        }));
+    layout->addWidget(table_->CreateParentIfNecessary());
+    return std::unique_ptr<UiView>{container};
+  }
+#endif
 
   return std::unique_ptr<UiView>{table_->CreateParentIfNecessary()};
 }
