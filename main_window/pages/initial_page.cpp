@@ -1,14 +1,23 @@
 #include "main_window/pages/initial_page.h"
 
-#include "resources/common_resources.h"
+#include "aui/severity_colors.h"
 #include "controller/window_info.h"
+#include "main_window/overview_page.h"
+#include "resources/common_resources.h"
 
 Page CreateInitialPage() {
+  // Under the reshell theme a fresh profile lands on the operator Overview
+  // cockpit (trend + active alarms; the Explorer and other surfaces are reshell
+  // chrome / activity-rail sections). The legacy default layout below is
+  // unchanged when the reshell is off.
+  if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy)
+    return MakeOverviewPage();
+
   Page page;
 
   /*// welcome
   WindowDefinition& def = page.AddWin();
-  def.title = _T("Руководство пользователя");
+  def.title = _T("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ");
   def.type = WinTypeWeb;*/
 
   // objects
