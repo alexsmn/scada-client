@@ -1,8 +1,7 @@
 add_library(client_common INTERFACE)
 
 target_link_libraries(client_common INTERFACE
-  node_service_v1
-  node_service_v2
+  node_service_v3
   client_base
   client_clipboard
   client_core

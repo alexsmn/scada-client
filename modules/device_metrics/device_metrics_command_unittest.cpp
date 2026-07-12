@@ -13,8 +13,7 @@
 #include "model/devices_node_ids.h"
 #include "model/namespaces.h"
 #include "modules/device_metrics/node_collector.h"
-#include "node_service/v1/address_space_fetcher_mock.h"
-#include "node_service/v1/node_service_impl.h"
+#include "node_service/test/create_test_node_service.h"
 #include "scada/attribute_service_mock.h"
 #include "scada/method_service_mock.h"
 #include "scada/monitored_item_service_mock.h"
@@ -45,34 +44,25 @@ class DeviceMetricsCommandTest : public Test {
   AddressSpaceImpl address_space_;
   StandardAddressSpace standard_address_space_{address_space_};
 
-  const std::shared_ptr<v1::MockAddressSpaceFetcher> address_space_fetcher_ =
-      std::make_shared<NiceMock<v1::MockAddressSpaceFetcher>>();
-
-  StrictMock<scada::MockAttributeService> attribute_service_;
-  StrictMock<scada::MockMonitoredItemService> monitored_item_service_;
-  StrictMock<scada::MockMethodService> method_service_;
-  scada::services services_{.attribute_service = &attribute_service_,
-                            .monitored_item_service =
-                                &monitored_item_service_,
-                            .method_service = &method_service_};
-
   TestExecutor executor_;
 
-  v1::NodeServiceImpl node_service_{v1::NodeServiceImplContext{
-      MakeAddressSpaceFetcherFactory(), address_space_, scada::client{services_}}};
+  // Lazily materialized from the current address space on first use. All tests
+  // create their nodes before the first GetNode() call, so a snapshot taken
+  // then reflects the full graph. StaticNodeService answers reads and
+  // navigation synchronously (no async fetch), which the former v1 fetcher mock
+  // reported immediately as well.
+  NodeRef GetNode(const scada::NodeId& node_id) {
+    if (!node_service_)
+      node_service_ = node_service::test::CreateTestNodeService(address_space_);
+    return node_service_->GetNode(node_id);
+  }
+
+  std::shared_ptr<NodeService> node_service_;
 
   const scada::NodeId device_type_definition_id =
       devices::id::Iec60870DeviceType;
   const scada::NamespaceIndex device_namespace_index =
       NamespaceIndexes::IEC60870_DEVICE;
-
- private:
-  v1::AddressSpaceFetcherFactory MakeAddressSpaceFetcherFactory() {
-    return [address_space_fetcher = address_space_fetcher_](
-               v1::AddressSpaceFetcherFactoryContext&& context) {
-      return address_space_fetcher;
-    };
-  }
 };
 
 MATCHER_P(CellIs, text, "") {
@@ -80,10 +70,6 @@ MATCHER_P(CellIs, text, "") {
 }
 
 DeviceMetricsCommandTest::DeviceMetricsCommandTest() {
-  ON_CALL(*address_space_fetcher_, GetNodeFetchStatus(_))
-      .WillByDefault(Return(std::make_pair(
-          scada::StatusCode::Good, NodeFetchStatus::NodeAndChildren)));
-
   scada_test::AddScadaDevicesTestTypes(address_space_);
 }
 
@@ -137,9 +123,9 @@ TEST_F(DeviceMetricsCommandTest, MakeDeviceMetricsWindowDefinitionSync) {
 
   const std::u16string title = u"Test title";
   const std::vector devices{
-      node_service_.GetNode(device1->id()),
-      node_service_.GetNode(device2->id()),
-      node_service_.GetNode(device3->id()),
+      GetNode(device1->id()),
+      GetNode(device2->id()),
+      GetNode(device3->id()),
   };
 
   auto window_definition =
@@ -202,7 +188,7 @@ TEST_F(DeviceMetricsCommandTest, MakeDeviceMetricsWindowDefinitionAsync) {
   auto window_definition = WaitAwaitable(
       executor_, MakeDeviceMetricsWindowDefinitionAsync(
                      executor_,
-                     node_service_.GetNode(device1->id())));
+                     GetNode(device1->id())));
 
   EXPECT_EQ(window_definition.title, u"Device 1");
 
@@ -228,7 +214,7 @@ TEST_F(DeviceMetricsCommandTest, CollectChildrenAsyncKeepsOnlyMatchingTypes) {
 
   auto children = WaitAwaitable(
       executor_, CollectChildrenAsync(executor_,
-                                      node_service_.GetNode(parent->id()),
+                                      GetNode(parent->id()),
                                       devices::id::DeviceType));
 
   ASSERT_THAT(children, SizeIs(1));
@@ -240,7 +226,7 @@ TEST_F(DeviceMetricsCommandTest, FetchNodePromiseUsesCoroutineBody) {
 
   auto fetched_node =
       WaitAwaitable(executor_, FetchNodeAsync(executor_,
-                                              node_service_.GetNode(device->id()),
+                                              GetNode(device->id()),
                                               NodeFetchStatus::NodeOnly));
 
   EXPECT_EQ(fetched_node.node_id(), device->id());
@@ -263,7 +249,7 @@ TEST_F(DeviceMetricsCommandTest,
 
   auto nodes = WaitAwaitable(
       executor_, CollectNodesRecursiveAsync(executor_,
-                                            node_service_.GetNode(parent->id()),
+                                            GetNode(parent->id()),
                                             devices::id::DeviceType));
 
   EXPECT_THAT(nodes | transformed(std::mem_fn(&NodeRef::node_id)) | to_vector,
@@ -279,7 +265,7 @@ TEST_F(DeviceMetricsCommandTest, CollectNodesRecursiveAsyncUsesCoroutineBody) {
 
   auto nodes = WaitAwaitable(
       executor_, CollectNodesRecursiveAsync(executor_,
-                                            node_service_.GetNode(parent->id()),
+                                            GetNode(parent->id()),
                                             devices::id::DeviceType));
 
   EXPECT_THAT(nodes | transformed(std::mem_fn(&NodeRef::node_id)) | to_vector,

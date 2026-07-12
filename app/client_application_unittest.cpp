@@ -20,7 +20,7 @@
 #include "scada/monitoring_parameters.h"
 #include "scada/read_value_id.h"
 #include "scada/services_mock.h"
-#include "node_service/v1/test/test_node_service.h"
+#include "node_service/test/create_test_node_service.h"
 #include "services/task_manager.h"
 #include "timed_data/base_timed_data.h"
 #include "timed_data/timed_data_service.h"
@@ -73,7 +73,7 @@ std::shared_ptr<NodeService> MakeClientTestNodeService(
                       scada::id::Organizes,
                       scada::id::ObjectsFolder,
                       scada::NodeId{1, 1});
-  return v1::CreateTestNodeService(address_space);
+  return node_service::test::CreateTestNodeService(address_space);
 }
 
 ClientApplicationModuleConfigurator MakeUnitTestModules() {

@@ -16,7 +16,7 @@
 #include "model/namespaces.h"
 #include "model/node_id_util.h"
 #include "node_service/node_util.h"
-#include "node_service/v1/test/test_node_service.h"
+#include "node_service/test/create_test_node_service.h"
 #include "properties/channel_property_definition.h"
 #include "properties/property_context.h"
 #include "properties/property_defs.h"
@@ -115,7 +115,7 @@ class PropertyDefsTest : public Test {
   GenericNodeFactory node_factory{address_space};
 
   std::shared_ptr<NodeService> node_service =
-      v1::CreateTestNodeService(address_space);
+      node_service::test::CreateTestNodeService(address_space);
 
   TestExecutor executor;
   StrictMock<MockTaskManager> task_manager;
