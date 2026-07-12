@@ -3,6 +3,7 @@
 #include "aui/dialog_service.h"
 #include "controller/controller_delegate.h"
 #include "controller/selection_model.h"
+#include "display_frame/qt/display_frame.h"
 #include "filesystem/file_util.h"
 #include "modules/write/write_service.h"
 #include "profile/window_definition.h"
@@ -30,9 +31,11 @@ std::unique_ptr<UiView> VidiconDisplayNativeView::Init(
   auto full_path = GetPublicFilePath(path_);
   widget->Open(full_path, TC_VDS_RUNTIME_DOCUMENT_KIND_VDS);
 
-  controller_delegate_.SetTitle(widget->title().isEmpty()
-                                    ? full_path.stem().u16string()
-                                    : widget->title().toStdU16String());
+  const QString title =
+      widget->title().isEmpty()
+          ? QString::fromStdU16String(full_path.stem().u16string())
+          : widget->title();
+  controller_delegate_.SetTitle(title.toStdU16String());
 
   widget->set_selection_callback([this](const QString& data_source) {
     try {
@@ -46,7 +49,18 @@ std::unique_ptr<UiView> VidiconDisplayNativeView::Init(
   });
 
   widget_ = widget.get();
-  return widget;
+
+  // Reshell chrome (opt-in): wrap the renderer in the display frame — Live
+  // indicator, hotspot breadcrumb, zoom / fit / export — when the UX theme is
+  // active. Under the legacy theme WrapDisplayInFrame returns the bare renderer
+  // unchanged. The frame reparents (owns) the renderer, so release the
+  // unique_ptr only when ownership actually moved into a new frame.
+  QWidget* framed = WrapDisplayInFrame(widget.get(), title);
+  if (framed == widget_)
+    return widget;
+
+  widget.release();
+  return std::unique_ptr<UiView>{framed};
 }
 
 void VidiconDisplayNativeView::Save(WindowDefinition& definition) {

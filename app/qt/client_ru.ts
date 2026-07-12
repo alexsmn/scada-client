@@ -137,6 +137,35 @@
         <source>Period</source>
         <translation>Период</translation>
     </message>
+    <!-- modules/display_frame/qt/display_frame.cpp (reshell display toolbar) -->
+    <message>
+        <source>Live</source>
+        <translation>Онлайн</translation>
+    </message>
+    <message>
+        <source>Zoom in</source>
+        <translation>Увеличить</translation>
+    </message>
+    <message>
+        <source>Zoom out</source>
+        <translation>Уменьшить</translation>
+    </message>
+    <message>
+        <source>Fit</source>
+        <translation>По размеру</translation>
+    </message>
+    <message>
+        <source>Fit to window</source>
+        <translation>Вписать в окно</translation>
+    </message>
+    <message>
+        <source>Actual size</source>
+        <translation>Реальный размер</translation>
+    </message>
+    <message>
+        <source>Export image</source>
+        <translation>Экспорт изображения</translation>
+    </message>
     <message>
         <source>Create</source>
         <translation>Создать</translation>
