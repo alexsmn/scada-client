@@ -7,6 +7,19 @@
         <source>Search tags, objects, commands…</source>
         <translation>Поиск объектов, сигналов, команд…</translation>
     </message>
+    <!-- main_window/main_window_qt.cpp (Settings menu) -->
+    <message>
+        <source>Settings</source>
+        <translation>Настройки</translation>
+    </message>
+    <message>
+        <source>Experimental UX</source>
+        <translation>Экспериментальный интерфейс</translation>
+    </message>
+    <message>
+        <source>Restart the client to apply the interface change.</source>
+        <translation>Перезапустите клиент, чтобы применить изменение интерфейса.</translation>
+    </message>
     <!-- main_window/status_bar/event_status_provider.cpp -->
     <message>
         <source>Critical</source>

@@ -53,6 +53,9 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
 
  private:
   void CreateMenuBar();
+  // Persists the experimental-reshell opt-in (Ux/Experimental) and tells the
+  // operator a restart is needed, since theming installs at startup.
+  void OnToggleExperimentalUx(bool enabled);
   void CreateToolbar();
   void CreateStatusBar();
   // Opt-in top context bar (brand + command/search + live context cluster).

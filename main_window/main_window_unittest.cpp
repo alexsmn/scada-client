@@ -447,7 +447,9 @@ TEST(MainWindowQtTest, MenuBarPopulatesTopLevelMenusImmediately) {
        .connection_info_provider_ = connection_info_provider.AsStdFunction(),
        .progress_host_ = progress_host}};
 
-  ASSERT_THAT(main_window.menuBar()->actions(), SizeIs(1));
+  // One model-driven menu plus the appended Settings menu (experimental-UX
+  // toggle). The model menu is first and populates immediately.
+  ASSERT_THAT(main_window.menuBar()->actions(), SizeIs(2));
   auto* top_menu = main_window.menuBar()->actions().front()->menu();
   ASSERT_NE(top_menu, nullptr);
   EXPECT_THAT(top_menu->actions(), SizeIs(1));

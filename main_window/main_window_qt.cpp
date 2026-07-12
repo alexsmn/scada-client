@@ -39,7 +39,9 @@
 #include <QLayout>
 #include <QLineEdit>
 #include <QMenuBar>
+#include <QMessageBox>
 #include <QScreen>
+#include <QSettings>
 #include <QShortcut>
 #include <QStatusBar>
 #include <QStyleFactory>
@@ -232,11 +234,35 @@ void MainWindow::CreateMenuBar() {
     loading_action->setEnabled(false);
 #endif
   }
+
+  // A dedicated Settings menu, appended after the model-driven menus, so the
+  // experimental-reshell opt-in is reachable even in the legacy look (the
+  // Ux/Experimental QSetting otherwise has no UI). Written through QSettings so
+  // it round-trips its own key encoding — unlike editing the plist by hand.
+  auto* settings_menu =
+      menuBar()->addMenu(QString::fromStdU16String(Translate("Settings")));
+  auto* ux_action = settings_menu->addAction(
+      QString::fromStdU16String(Translate("Experimental UX")));
+  ux_action->setCheckable(true);
+  ux_action->setChecked(QSettings{}.value("Ux/Experimental", false).toBool());
+  connect(ux_action, &QAction::toggled, this,
+          [this](bool enabled) { OnToggleExperimentalUx(enabled); });
+}
+
+void MainWindow::OnToggleExperimentalUx(bool enabled) {
+  QSettings settings;
+  settings.setValue("Ux/Experimental", enabled);
+  settings.sync();
+  QMessageBox::information(
+      this, QString::fromStdU16String(Translate("Experimental UX")),
+      QString::fromStdU16String(
+          Translate("Restart the client to apply the interface change.")));
 }
 
 void MainWindow::RebuildMenuBar() {
   const auto top_level_actions = menuBar()->actions();
-  base::Check(top_level_actions.size() == main_menu_model_->GetItemCount());
+  // The appended Settings menu is not part of the model, so allow one extra.
+  base::Check(top_level_actions.size() >= main_menu_model_->GetItemCount());
 
   for (int i = 0; i < main_menu_model_->GetItemCount(); ++i) {
     auto* submenu = top_level_actions[i]->menu();
