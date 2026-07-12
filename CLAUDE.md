@@ -81,6 +81,29 @@ layered component architecture, all grounded in concrete source files. Use
 `docs/requirements.md` for use cases, functional requirements, and
 non-functional requirements. Treat both as living documents, not snapshots.
 
+### UX design system
+
+The client's UX design system lives under [`docs/ux/`](docs/ux/README.md).
+**Read it before adding or restyling any UI**, and follow it rather than
+inventing chrome. The direction is a full reshell to an operator workbench
+(Activity bar → Explorer → workspace tabs → Inspector → status strip),
+visually consistent with the web client, using shared light/dark/high-contrast
+design tokens (desktop defaults to dark).
+
+- [`docs/ux/principles.md`](docs/ux/principles.md) — HMI/SCADA UX principles
+  (High-Performance HMI, ISA-101, ISA-18.2/EEMUA 191 alarms, situational
+  awareness, colour rules) with citations. The *why* behind every UI decision.
+- [`docs/ux/design-language.md`](docs/ux/design-language.md) — the shared
+  design tokens (exact colour/type/spacing values) and component primitives.
+  Components must consume tokens; never hard-code hex.
+- [`docs/ux/shell.md`](docs/ux/shell.md) — the reshelled layout mapped onto the
+  existing `main_window/` / registries / `modules/` code.
+- [`docs/ux/backlog.md`](docs/ux/backlog.md) — operator-first implementation
+  plan (P0 tokens → shell → cockpit → dialog theming → inspector → parity).
+- Rendered, theme-toggleable mockups (the visual source of truth) live in
+  [`docs/ui-mockups/screens/`](docs/ui-mockups/screens/): `operator-shell.html`,
+  `login.html`, `control-command.html`.
+
 ### When to update the docs
 
 **Update `docs/design.md`, `docs/requirements.md`, and the relevant diagram
@@ -100,6 +123,10 @@ minimum:
   and a functional requirement in `docs/requirements.md` §3.
 - Removing a use case (deleting a feature) — strike the row in §2 and the
   matching FR.
+- Changing a design token, component primitive, or a shell region — update the
+  matching `docs/ux/` doc **and** the affected mockup in
+  `docs/ui-mockups/screens/` in the same change, then regenerate the touched
+  `docs/screenshots/` image once the code lands.
 
 If you cannot tell whether a change affects the doc, ask. Drift between
 the doc and the code is worse than no doc.

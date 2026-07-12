@@ -1,0 +1,128 @@
+<!-- @dsCard group="Screens" viewport="1080x640" name="Login — Reshell" subtitle="Compact sign-in + read-only system preview, shared shell language" -->
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign in — Telecontrol SCADA (proposed)</title>
+<style>
+:root,[data-theme='dark']{
+  --font-sans:'Inter','Segoe UI Variable','Segoe UI',system-ui,sans-serif;
+  --font-mono:'Cascadia Mono','Consolas',ui-monospace,monospace;
+  --bg:#07111b;--bg-elevated:#0b1623;--surface:#0f1925;--surface-muted:#152635;
+  --rail-bg:#06111b;--topbar-bg:#0b1623;--fg:#eef5fb;--fg-muted:#c3d0db;--fg-subtle:#8fa3b4;
+  --border:rgba(255,255,255,.12);--border-strong:rgba(255,255,255,.24);
+  --accent:#77b4f3;--accent-fg:#0b1623;--accent-soft:rgba(119,180,243,.15);
+  --good:#44c091;--bad:#f07168;--uncertain:#e6b24b;--radius-md:6px;--radius-lg:8px;color-scheme:dark;}
+[data-theme='light']{
+  --bg:#f5f8fb;--bg-elevated:#f8fbfe;--surface:#fff;--surface-muted:#f1f5f9;
+  --rail-bg:#0d1a27;--topbar-bg:#fff;--fg:#111827;--fg-muted:#4b5b6c;--fg-subtle:#6b7b8d;
+  --border:rgba(15,23,42,.12);--border-strong:rgba(15,23,42,.22);
+  --accent:#0f6bff;--accent-fg:#fff;--accent-soft:rgba(15,107,255,.1);
+  --good:#14825f;--bad:#c53d35;--uncertain:#b67a17;color-scheme:light;}
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-sans);font-size:13px;-webkit-font-smoothing:antialiased}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.app{height:100vh;display:flex;flex-direction:column}
+.topbar{height:40px;flex:none;display:flex;align-items:center;gap:12px;padding:0 12px;background:var(--topbar-bg);border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:8px;font-weight:600}
+.brand .mark{width:20px;height:20px;border-radius:5px;background:linear-gradient(135deg,var(--accent),#3f7fd6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700}
+.brand small{color:var(--fg-subtle);font-weight:500}
+.main{flex:1;display:flex;min-height:0}
+.rail{width:52px;flex:none;background:var(--rail-bg);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:6px;opacity:.5}
+.rail .ic{width:36px;height:36px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;color:#8fa3b4}
+.rail .ic svg{width:19px;height:19px}
+.content{flex:1;display:flex}
+.left{flex:1;display:flex;align-items:center;justify-content:center;padding:24px}
+.card{width:360px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 28px 24px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.lock{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:22px}
+.lock .mk{width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#3f7fd6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:700}
+.lock .ti{font-size:17px;font-weight:600}
+.lock .su{font-size:12px;color:var(--fg-subtle)}
+.field-l{font-size:11.5px;color:var(--fg-subtle);margin:12px 0 5px;display:flex;justify-content:space-between}
+.field{height:36px;display:flex;align-items:center;gap:8px;padding:0 11px;background:var(--bg-elevated);border:1px solid var(--border-strong);border-radius:var(--radius-md);color:var(--fg)}
+.field.focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.field.combo{justify-content:space-between}
+.field svg{width:15px;height:15px;color:var(--fg-subtle)}
+.field .ph{color:var(--fg)}
+.field .caret{color:var(--fg-subtle);font-size:9px;margin-left:auto}
+.field .cur{width:1px;height:16px;background:var(--accent)}
+.row2{display:grid;grid-template-columns:130px 1fr;gap:10px}
+.opts{display:flex;align-items:center;gap:8px;margin:16px 0 4px;font-size:12.5px;color:var(--fg-muted)}
+.cb{width:15px;height:15px;border:1px solid var(--border-strong);border-radius:4px;background:var(--bg-elevated);flex:none}
+.btns{display:flex;gap:10px;margin-top:18px}
+.btn{flex:1;height:38px;border-radius:var(--radius-md);border:1px solid var(--border-strong);background:var(--surface-muted);color:var(--fg);display:flex;align-items:center;justify-content:center;gap:8px;font-size:13.5px;font-weight:600}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.ghost{flex:0 0 auto;padding:0 16px;font-weight:500;color:var(--fg-muted)}
+.right{width:340px;flex:none;background:var(--bg-elevated);border-left:1px solid var(--border);padding:22px 22px;display:flex;flex-direction:column;gap:16px}
+.right .h{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg-subtle)}
+.prev-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px}
+.stat{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12.5px}
+.stat:last-child{border-bottom:0}
+.stat .k{color:var(--fg-subtle)}.stat .v{font-family:var(--font-mono)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.dot.good{background:var(--good)}.dot.bad{background:var(--bad)}.dot.warn{background:var(--uncertain)}
+.note{font-size:11.5px;color:var(--fg-subtle);line-height:1.5}
+.sev-row{display:flex;gap:8px}
+.sev-tile{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:8px 10px;text-align:center}
+.sev-tile .n{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+.sev-tile .l{font-size:10px;color:var(--fg-subtle);text-transform:uppercase}
+.sev-tile.crit .n{color:var(--bad)}.sev-tile.warn .n{color:var(--uncertain)}
+.toggle{position:fixed;right:14px;bottom:14px;display:flex;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px}
+.toggle button{border:0;background:transparent;color:var(--fg-subtle);font:inherit;font-size:11.5px;padding:4px 12px;border-radius:16px;cursor:pointer}
+.toggle button.on{background:var(--accent);color:var(--accent-fg);font-weight:600}
+</style></head>
+<body>
+<div class="app">
+  <div class="topbar"><div class="brand"><span class="mark">TC</span>Telecontrol <small>SCADA</small></div>
+    <div style="margin-left:auto;font-size:12px;color:var(--fg-subtle)" class="mono">Not connected</div></div>
+  <div class="main">
+    <div class="rail">
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></div>
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/></svg></div>
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 17l5-6 4 4 8-9"/></svg></div>
+    </div>
+    <div class="content">
+      <div class="left">
+        <div class="card">
+          <div class="lock"><div class="mk">TC</div><div class="ti">Sign in</div><div class="su">Telecontrol SCADA operator client</div></div>
+          <div class="field-l">Server</div>
+          <div class="row2">
+            <div class="field combo"><span class="ph">Телеконтроль</span><span class="caret">▼</span></div>
+            <div class="field combo"><span class="ph mono">localhost</span><span class="caret">▼</span></div>
+          </div>
+          <div class="field-l">Username</div>
+          <div class="field combo focus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span class="ph mono">root</span><span class="cur"></span><span class="caret">▼</span></div>
+          <div class="field-l">Password</div>
+          <div class="field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span class="ph">••••••••</span></div>
+          <div class="opts"><span class="cb"></span>Sign in automatically next time</div>
+          <div class="btns"><button class="btn ghost">Anonymous</button><button class="btn primary">Connect &amp; sign in</button></div>
+        </div>
+      </div>
+      <div class="right">
+        <div class="h">System preview · read only</div>
+        <div class="prev-card">
+          <div class="stat"><span class="k">Endpoint</span><span class="v">localhost:4840</span></div>
+          <div class="stat"><span class="k">Protocol</span><span class="v">OPC UA</span></div>
+          <div class="stat"><span class="k">Reachability</span><span class="v"><span class="dot good"></span>online</span></div>
+          <div class="stat"><span class="k">Round-trip</span><span class="v">0 ms</span></div>
+          <div class="stat"><span class="k">Build</span><span class="v">v2.6.0</span></div>
+        </div>
+        <div class="h">Plant status</div>
+        <div class="sev-row">
+          <div class="sev-tile crit"><div class="n">1</div><div class="l">Crit</div></div>
+          <div class="sev-tile warn"><div class="n">2</div><div class="l">High</div></div>
+          <div class="sev-tile"><div class="n">14</div><div class="l">Objects</div></div>
+        </div>
+        <div class="prev-card">
+          <div class="stat"><span class="k"><span class="dot bad"></span>ЭСТРА-ПС · TS.104</span><span class="v" style="color:var(--bad)">offline</span></div>
+          <div class="stat"><span class="k"><span class="dot good"></span>КРУ</span><span class="v">online</span></div>
+          <div class="stat"><span class="k"><span class="dot good"></span>КСВ2.0</span><span class="v">online</span></div>
+        </div>
+        <div class="note">Read-only preview drawn from the last known server state. No control actions are available before sign-in.</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toggle"><button onclick="t('dark')" id="b-dark" class="on">Dark</button><button onclick="t('light')" id="b-light">Light</button></div>
+<script>function t(m){document.documentElement.setAttribute('data-theme',m);document.getElementById('b-dark').classList.toggle('on',m==='dark');document.getElementById('b-light').classList.toggle('on',m==='light');}</script>
+</body></html>
