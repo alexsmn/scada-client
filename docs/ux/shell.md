@@ -51,6 +51,11 @@ count badge.
   a registered top-level command that activates a section (opens/or focuses its
   default page). The unread badge subscribes to the same alarm-count source the
   `StatusStrip` uses.
+- **Landed (opt-in).** `main_window/activity_bar_qt.{h,cpp}` builds the charcoal
+  rail; live sections activate their view through `FindWindowInfoByName` →
+  `OpenView` (registry-command backing is the follow-up), and the Alarms badge
+  reads the new `StatusBarModel::GetAlarmCount()` fed from `EventStatusProvider`.
+  Sections with no registered view yet render disabled.
 - Replaces the role currently played by the `menubar` (File/Edit/View/Window/
   Help) as the *primary* navigation. A conventional menu bar may remain as a
   secondary/keyboard affordance — see §4 open question.

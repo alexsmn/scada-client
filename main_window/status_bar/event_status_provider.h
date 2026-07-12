@@ -30,6 +30,9 @@ class EventStatusProvider final : private EventObserver {
   std::u16string GetEventCountText() const;
   std::u16string GetSeverityText() const;
 
+  // Number of currently unacknowledged alarms, for an unread badge.
+  int GetAlarmCount() const;
+
   // The worst active (unacknowledged) alarm shown as a coloured indicator. Both
   // are empty/none under the legacy theme, so the default status bar is
   // unchanged; under the opt-in token themes they surface the highest severity

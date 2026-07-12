@@ -35,6 +35,10 @@ std::u16string EventStatusProvider::GetEventCountText() const {
              : u"\u041d\u0435\u0442 \u0441\u043e\u0431\u044b\u0442\u0438\u0439";
 }
 
+int EventStatusProvider::GetAlarmCount() const {
+  return static_cast<int>(node_event_provider_.unacked_events().size());
+}
+
 std::u16string EventStatusProvider::GetSeverityText() const {
   return u16format(L"\u0412\u0430\u0436\u043d\u043e\u0441\u0442\u044c: {}",
                    node_event_provider_.severity_min());

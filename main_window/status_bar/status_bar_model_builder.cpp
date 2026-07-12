@@ -34,6 +34,11 @@ std::shared_ptr<aui::StatusBarModel> StatusBarModelBuilder::Build() {
                            event_status_provider),
        .size = 130});
 
+  // The unacknowledged-alarm count for chrome that shows an unread badge (the
+  // activity rail); refreshed together with the panes below.
+  model->SetAlarmCountProvider(std::bind_front(
+      &EventStatusProvider::GetAlarmCount, event_status_provider));
+
   event_status_provider->Init([model, event_count_pane_index,
                                severity_pane_index,
                                highest_severity_pane_index] {

@@ -332,7 +332,9 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
   // every command carries an icon (many are image_id == 0, text-only), so we
   // assert that the pipeline produced icons, not that every action has one;
   // exhaustive per-id coverage lives in ClientUtilsQtTest.
-  auto* toolbar = qmain->findChild<QToolBar*>();
+  // Target the command toolbar specifically: the opt-in reshell adds other
+  // toolbars (activity rail, context bar) that carry no command icons.
+  auto* toolbar = qmain->findChild<QToolBar*>("CommandToolbar");
   ASSERT_NE(toolbar, nullptr);
   EXPECT_EQ(toolbar->toolButtonStyle(), Qt::ToolButtonIconOnly);
   int actions_with_icons = 0;

@@ -8,6 +8,7 @@
 #include <boost/signals2/connection.hpp>
 #include <vector>
 
+class ActivityBar;
 class QAction;
 class QLabel;
 class QLineEdit;
@@ -57,6 +58,10 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // Opt-in top context bar (brand + command/search + live context cluster).
   // Only built when the experimental UX is enabled; see main.cpp.
   void CreateContextBar();
+  // Opt-in left activity rail (backlog 1.1): section navigation + alarm badge.
+  void CreateActivityBar();
+  // Opens the section's default view and marks it active on the rail.
+  void ActivateSection(const std::string& window_info_name);
   // Opens the Ctrl-K command palette over every registered command.
   void ShowCommandPalette();
   void RebuildMenuBar();
@@ -96,6 +101,10 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   QLineEdit* command_search_ = nullptr;
   std::vector<QLabel*> context_panes_;
   boost::signals2::scoped_connection context_bar_connection_;
+
+  // Left activity rail (opt-in). Its alarm badge follows the status-bar model.
+  ActivityBar* activity_bar_ = nullptr;
+  boost::signals2::scoped_connection activity_bar_connection_;
 
   boost::signals2::scoped_connection change_profile_connection_;
   boost::signals2::scoped_connection action_changed_connection_;

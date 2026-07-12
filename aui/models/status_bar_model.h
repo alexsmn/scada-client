@@ -27,6 +27,12 @@ class StatusBarModel {
     return std::nullopt;
   }
 
+  // Count of currently unacknowledged alarms, for chrome that shows an unread
+  // badge (e.g. the activity rail). Refreshed together with the panes, so
+  // observers read it on SubscribePanesChanged. Default 0 for models that do
+  // not track alarms.
+  virtual int GetAlarmCount() const { return 0; }
+
   // Notifies after the text of |count| panes starting at |index| changed.
   [[nodiscard]] virtual boost::signals2::scoped_connection
   SubscribePanesChanged(const PanesChangedCallback& callback) = 0;

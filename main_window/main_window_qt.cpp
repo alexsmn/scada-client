@@ -6,14 +6,17 @@
 #include "aui/qt/client_utils_qt.h"
 #include "aui/severity_colors.h"
 #include "aui/translation.h"
+#include "base/awaitable.h"
 #include "base/check.h"
 #include "base/utf_convert.h"
 #include "controller/action_manager.h"
+#include "controller/command_manager.h"
 #include "controller/command_ui_registry.h"
 #include "controller/controller.h"
 #include "controller/selection_model.h"
 #include "controller/window_info.h"
 #include "filesystem/file_cache.h"
+#include "main_window/activity_bar_qt.h"
 #include "main_window/command_palette_qt.h"
 #include "main_window/main_window_command_router.h"
 #include "main_window/main_window_manager.h"
@@ -23,6 +26,7 @@
 #include "main_window/status_bar/status_bar_controller_qt.h"
 #include "main_window/view_manager.h"
 #include "profile/profile.h"
+#include "profile/window_definition.h"
 #include "resources/common_resources.h"
 #include "ui/common/client_utils.h"
 
@@ -144,8 +148,10 @@ MainWindow::MainWindow(MainWindowContext&& context)
   // the active UX theme, which both the app (app/qt/main.cpp) and the headless
   // screenshot generator set together with the palette when the experimental UX
   // is enabled.
-  if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy)
+  if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy) {
+    CreateActivityBar();
     CreateContextBar();
+  }
   CreateToolbar();
   CreateStatusBar();
 
@@ -317,6 +323,84 @@ void MainWindow::CreateContextBar() {
   addToolBarBreak(Qt::TopToolBarArea);
 }
 
+void MainWindow::CreateActivityBar() {
+  // Section spec: label (English, Translate()'d), the WindowInfo name it opens
+  // (empty => no view yet, shown disabled), and rail placement. Alarms carries
+  // the unread badge; Administration/Settings pin to the bottom.
+  struct SectionSpec {
+    const char* label;
+    std::string_view window_info_name;
+    bool is_alarms = false;
+    bool pinned_bottom = false;
+  };
+  const SectionSpec specs[] = {
+      {"Overview", ""},
+      {"Alarms", "EventJournal", /*is_alarms=*/true},
+      {"Trends", "Graph"},
+      {"Substations", "Modus"},
+      {"Tables", "Table"},
+      {"Administration", "", false, /*pinned_bottom=*/true},
+      {"Settings", "", false, /*pinned_bottom=*/true},
+  };
+
+  auto& command_manager = ui_command_registry_.command_manager();
+  std::vector<ActivityBar::Section> sections;
+  for (const SectionSpec& spec : specs) {
+    ActivityBar::Section section;
+    section.label = Translate(spec.label);
+    section.window_info_name = std::string{spec.window_info_name};
+    section.is_alarms = spec.is_alarms;
+    section.pinned_bottom = spec.pinned_bottom;
+    section.enabled = false;
+    // A section is live only if its view type is registered; its rail icon
+    // reuses that view command's image, so the rail matches the toolbar/menu.
+    if (const WindowInfo* info =
+            spec.window_info_name.empty()
+                ? nullptr
+                : FindWindowInfoByName(spec.window_info_name)) {
+      section.enabled = true;
+      if (const CommandDescriptor* command =
+              command_manager.FindCommand(info->command_id);
+          command && command->image_id != 0) {
+        section.icon = QIcon(LoadPixmap(command->image_id));
+      }
+    }
+    sections.push_back(std::move(section));
+  }
+
+  activity_bar_ = new ActivityBar(
+      this, std::move(sections),
+      [this](const std::string& name) { ActivateSection(name); });
+
+  auto* rail = new QToolBar(this);
+  rail->setObjectName(QStringLiteral("ActivityRail"));
+  rail->setMovable(false);
+  rail->setFloatable(false);
+  rail->setContextMenuPolicy(Qt::PreventContextMenu);
+  rail->addWidget(activity_bar_);
+  addToolBar(Qt::LeftToolBarArea, rail);
+
+  // The alarm badge tracks the same unacknowledged count as the status strip,
+  // which refreshes the status-bar model on every event change.
+  auto refresh_badge = [this] {
+    activity_bar_->SetAlarmCount(status_bar_model_->GetAlarmCount());
+  };
+  refresh_badge();
+  activity_bar_connection_ = status_bar_model_->SubscribePanesChanged(
+      [refresh_badge](int, int) { refresh_badge(); });
+}
+
+void MainWindow::ActivateSection(const std::string& window_info_name) {
+  const WindowInfo* info = FindWindowInfoByName(window_info_name);
+  if (!info)
+    return;
+  CoSpawn(executor_,
+          [this, def = WindowDefinition{*info}]() mutable -> Awaitable<void> {
+            co_await OpenView(def, /*make_active=*/true);
+          });
+  activity_bar_->SetActiveSection(window_info_name);
+}
+
 void MainWindow::ShowCommandPalette() {
   auto* palette = new CommandPalette(
       this, ui_command_registry_.command_manager(),
@@ -372,6 +456,7 @@ void MainWindow::CreateToolbar() {
   }
 
   toolbar_ = new QToolBar(this);
+  toolbar_->setObjectName(QStringLiteral("CommandToolbar"));
   toolbar_->setVisible(GetPrefs().toolbar);
   toolbar_->setWindowTitle(tr("Toolbar"));
   // Icon-only buttons, sized to the 16px source icons so the toolbar stays
