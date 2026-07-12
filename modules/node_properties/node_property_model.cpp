@@ -58,7 +58,7 @@ NodePropertyModel::NodePropertyModel(PropertyService& property_service,
   CoSpawn(executor_,
           [this, executor = executor_, node = node_,
            cancelation = cancelation_.weak_ptr()]() mutable -> Awaitable<void> {
-            co_await node.Fetch(NodeFetchStatus::NodeOnly());
+            co_await node.Fetch(NodeFetchStatus::NodeOnly);
             if (cancelation.expired() || node.status().bad()) {
               co_return;
             }

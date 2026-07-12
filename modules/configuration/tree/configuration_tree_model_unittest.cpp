@@ -21,7 +21,7 @@ NodeRef MakeTestNodeRef(const scada::NodeId& node_id) {
   ON_CALL(*node_model, GetAttribute(scada::AttributeId::NodeId))
       .WillByDefault(Return(node_id));
   ON_CALL(*node_model, GetFetchStatus())
-      .WillByDefault(Return(NodeFetchStatus::NodeAndChildren()));
+      .WillByDefault(Return(NodeFetchStatus::NodeAndChildren));
   ON_CALL(*node_model, Fetch(_))
       .WillByDefault([](const NodeFetchStatus&) -> Awaitable<void> {
         co_return;
@@ -35,7 +35,7 @@ std::shared_ptr<NiceMock<MockNodeModel>> MakeTestNodeModel(
   ON_CALL(*node_model, GetAttribute(scada::AttributeId::NodeId))
       .WillByDefault(Return(node_id));
   ON_CALL(*node_model, GetFetchStatus())
-      .WillByDefault(Return(NodeFetchStatus::NodeAndChildren()));
+      .WillByDefault(Return(NodeFetchStatus::NodeAndChildren));
   ON_CALL(*node_model, Fetch(_))
       .WillByDefault([](const NodeFetchStatus&) -> Awaitable<void> {
         co_return;
@@ -200,11 +200,11 @@ TEST_F(ConfigurationTreeModelTest,
 
   ON_CALL(*child_model, GetFetchStatus())
       .WillByDefault([&] {
-        return children_fetched ? NodeFetchStatus::NodeAndChildren()
-                                : NodeFetchStatus::NodeOnly();
+        return children_fetched ? NodeFetchStatus::NodeAndChildren
+                                : NodeFetchStatus::NodeOnly;
       });
 
-  EXPECT_CALL(*child_model, Fetch(NodeFetchStatus::NodeAndChildren()))
+  EXPECT_CALL(*child_model, Fetch(NodeFetchStatus::NodeAndChildren))
       .WillOnce([&](const NodeFetchStatus&) -> Awaitable<void> {
         children_fetched = true;
         co_return;
@@ -241,11 +241,11 @@ TEST_F(ConfigurationTreeModelTest,
   std::optional<base::AsyncCompletion> delayed_completion;
 
   ON_CALL(*child_model, GetFetchStatus())
-      .WillByDefault(Return(NodeFetchStatus::NodeOnly()));
+      .WillByDefault(Return(NodeFetchStatus::NodeOnly));
   ON_CALL(*child_model, GetAttribute(scada::AttributeId::DisplayName))
       .WillByDefault(Return(scada::LocalizedText{u"Loading node"}));
 
-  EXPECT_CALL(*child_model, Fetch(NodeFetchStatus::NodeAndChildren()))
+  EXPECT_CALL(*child_model, Fetch(NodeFetchStatus::NodeAndChildren))
       .WillOnce([&](const NodeFetchStatus&) -> Awaitable<void> {
         delayed_completion.emplace(executor_);
         co_await delayed_completion->Wait();
@@ -283,11 +283,11 @@ TEST_F(ConfigurationTreeModelTest, RootFetchesChildrenWhenNotPrefetched) {
 
   ON_CALL(*root_model, GetFetchStatus())
       .WillByDefault([&] {
-        return root_children_fetched ? NodeFetchStatus::NodeAndChildren()
-                                     : NodeFetchStatus::NodeOnly();
+        return root_children_fetched ? NodeFetchStatus::NodeAndChildren
+                                     : NodeFetchStatus::NodeOnly;
       });
 
-  EXPECT_CALL(*root_model, Fetch(NodeFetchStatus::NodeAndChildren()))
+  EXPECT_CALL(*root_model, Fetch(NodeFetchStatus::NodeAndChildren))
       .WillOnce([&](const NodeFetchStatus&) -> Awaitable<void> {
         root_children_fetched = true;
         co_return;
@@ -316,9 +316,9 @@ TEST_F(ConfigurationTreeModelTest,
   std::optional<base::AsyncCompletion> delayed_completion;
 
   ON_CALL(*child_model, GetFetchStatus())
-      .WillByDefault(Return(NodeFetchStatus::NodeOnly()));
+      .WillByDefault(Return(NodeFetchStatus::NodeOnly));
 
-  EXPECT_CALL(*child_model, Fetch(NodeFetchStatus::NodeAndChildren()))
+  EXPECT_CALL(*child_model, Fetch(NodeFetchStatus::NodeAndChildren))
       .WillOnce([&](const NodeFetchStatus&) -> Awaitable<void> {
         delayed_completion.emplace(executor_);
         co_await delayed_completion->Wait();
@@ -353,9 +353,9 @@ TEST_F(ConfigurationTreeModelTest,
   std::optional<base::AsyncCompletion> delayed_completion;
 
   ON_CALL(*child_model, GetFetchStatus())
-      .WillByDefault(Return(NodeFetchStatus::NodeOnly()));
+      .WillByDefault(Return(NodeFetchStatus::NodeOnly));
 
-  EXPECT_CALL(*child_model, Fetch(NodeFetchStatus::NodeAndChildren()))
+  EXPECT_CALL(*child_model, Fetch(NodeFetchStatus::NodeAndChildren))
       .WillOnce([&](const NodeFetchStatus&) -> Awaitable<void> {
         delayed_completion.emplace(executor_);
         co_await delayed_completion->Wait();

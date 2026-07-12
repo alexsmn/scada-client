@@ -13,7 +13,7 @@ namespace {
 std::shared_ptr<NiceMock<MockNodeModel>> MakeNodeModel(
     const scada::NodeId& node_id,
     scada::NodeClass node_class,
-    NodeFetchStatus fetch_status = NodeFetchStatus::NodeAndChildren()) {
+    NodeFetchStatus fetch_status = NodeFetchStatus::NodeAndChildren) {
   auto node_model = std::make_shared<NiceMock<MockNodeModel>>();
   ON_CALL(*node_model, GetFetchStatus()).WillByDefault(Return(fetch_status));
   ON_CALL(*node_model, GetStatus())
@@ -65,7 +65,7 @@ TEST(ClientUtilsTest, ExpandGroupItemIdsAsyncRespectsMaxCount) {
 TEST(ClientUtilsTest, ExpandGroupItemIdsAsyncZeroLimitDoesNotFetch) {
   const scada::NodeId root_id{7100, 1};
   auto root = MakeNodeModel(root_id, scada::NodeClass::Object,
-                            NodeFetchStatus::None());
+                            NodeFetchStatus::None);
   EXPECT_CALL(*root, Fetch(_)).Times(0);
 
   TestExecutor executor;

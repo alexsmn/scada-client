@@ -171,8 +171,8 @@ class ObjectTreeModelAsyncVisibleNodeTest : public ::testing::Test {
  protected:
   void InitModel(bool remove_child_on_second_get_children = false) {
     root_node_ = MakeObjectTreeNodeModel(scada::id::RootFolder,
-                                         NodeFetchStatus::NodeAndChildren());
-    child_node_ = MakeObjectTreeNodeModel(kDataItemId, NodeFetchStatus::None());
+                                         NodeFetchStatus::NodeAndChildren);
+    child_node_ = MakeObjectTreeNodeModel(kDataItemId, NodeFetchStatus::None);
 
     auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
     node_service_tree_ = node_service_tree.get();
@@ -221,7 +221,7 @@ class ObjectTreeModelAsyncVisibleNodeTest : public ::testing::Test {
   void ExpectDelayedFetch() {
     auto child_model =
         std::static_pointer_cast<const MockNodeModel>(child_node_.model());
-    EXPECT_CALL(*child_model, Fetch(NodeFetchStatus::NodeOnly()))
+    EXPECT_CALL(*child_model, Fetch(NodeFetchStatus::NodeOnly))
         .WillOnce([this](const NodeFetchStatus&) -> Awaitable<void> {
           delayed_fetch_completion_.emplace(executor_);
           co_await delayed_fetch_completion_->Wait();
@@ -234,7 +234,7 @@ class ObjectTreeModelAsyncVisibleNodeTest : public ::testing::Test {
     auto child_model =
         std::static_pointer_cast<const MockNodeModel>(child_node_.model());
     ON_CALL(*child_model, GetFetchStatus())
-        .WillByDefault(Return(NodeFetchStatus::NodeOnly()));
+        .WillByDefault(Return(NodeFetchStatus::NodeOnly));
     delayed_fetch_completion_->Complete();
     PollExecutor();
   }

@@ -10,7 +10,7 @@ namespace {
 
 Awaitable<NodeRef> FetchNodeAndChildrenAsync(AnyExecutor executor,
                                              NodeRef node) {
-  co_return co_await node.Fetch(NodeFetchStatus::NodeAndChildren());
+  co_return co_await node.Fetch(NodeFetchStatus::NodeAndChildren);
 }
 
 }  // namespace

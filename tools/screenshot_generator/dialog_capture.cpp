@@ -295,7 +295,7 @@ std::shared_ptr<DialogAwaitableResult<void>> BuildLimitsDialog(
     return {};
   }
   if (!FetchAndWaitForPendingNodeLoads(*env.node_service, node,
-                                       NodeFetchStatus::NodeOnly())) {
+                                       NodeFetchStatus::NodeOnly)) {
     ADD_FAILURE() << "LimitsDialog: failed to fetch configured fixture node";
     return {};
   }
@@ -334,7 +334,7 @@ std::shared_ptr<DialogAwaitableResult<void>> BuildWriteDialog(
     return {};
   }
   if (!FetchAndWaitForPendingNodeLoads(*env.node_service, node,
-                                       NodeFetchStatus::NodeOnly())) {
+                                       NodeFetchStatus::NodeOnly)) {
     ADD_FAILURE() << "WriteDialog: failed to fetch configured fixture node";
     return {};
   }

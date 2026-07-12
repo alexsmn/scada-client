@@ -42,7 +42,7 @@ void UserStatusProvider::UpdateUser() {
   }
 
   user_node_ = node_service_.GetNode(user_id);
-  user_node_.StartFetch(NodeFetchStatus::NodeOnly());
+  user_node_.StartFetch(NodeFetchStatus::NodeOnly);
   user_node_semantic_changed_connection_ =
       user_node_.SubscribeNodeSemanticChanged(
           [this](const scada::NodeId&) { change_notifier_(); });

@@ -15,7 +15,7 @@ AliasService::AliasService(AliasServiceContext&& context)
 
   node_fetched_connection_ = node_service_.SubscribeNodeFetched(
       [this](const NodeFetchedEvent& event) { OnNodeFetched(event); });
-  aliases_.StartFetch(NodeFetchStatus::NodeAndChildren());
+  aliases_.StartFetch(NodeFetchStatus::NodeAndChildren);
   if (aliases_.children_fetched())
     OnFetchCompleted();
 }

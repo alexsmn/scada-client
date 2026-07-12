@@ -46,7 +46,7 @@ class ControllableAddressSpaceFetcher : public v1::AddressSpaceFetcher {
     if (auto i = fetch_statuses_.find(node_id); i != fetch_statuses_.end()) {
       return {scada::StatusCode::Good, i->second};
     }
-    return {scada::StatusCode::Good, NodeFetchStatus::Max()};
+    return {scada::StatusCode::Good, NodeFetchStatus::Max};
   }
 
   void FetchNode(const scada::NodeId& node_id,
@@ -63,7 +63,7 @@ class ControllableAddressSpaceFetcher : public v1::AddressSpaceFetcher {
   }
 
   void CompleteFetch(const scada::NodeId& node_id,
-                     NodeFetchStatus fetch_status = NodeFetchStatus::Max()) {
+                     NodeFetchStatus fetch_status = NodeFetchStatus::Max) {
     SetFetchStatus(node_id, fetch_status);
     if (pending_task_count_ > 0) {
       --pending_task_count_;
@@ -163,7 +163,7 @@ TEST_F(NodePropertyModelTest, UpdatesAfterInitialFetchCompletes) {
   EXPECT_EQ(model_changed_count_, 0);
   EXPECT_EQ(RootGroup(*model).GetCount(), 0);
   ASSERT_THAT(fetcher_->fetch_requests,
-              ElementsAre(Pair(kNodeId, NodeFetchStatus::NodeOnly())));
+              ElementsAre(Pair(kNodeId, NodeFetchStatus::NodeOnly)));
 
   fetcher_->CompleteFetch(kNodeId);
   Drain(executor_);

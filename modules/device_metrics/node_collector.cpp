@@ -32,12 +32,12 @@ Awaitable<std::vector<NodeRef>> CollectChildrenAsync(
     const NodeRef& parent_node,
     const scada::NodeId& type_definition_id) {
   auto fetched_node = co_await FetchNodeAsync(executor, parent_node,
-                                              NodeFetchStatus::ChildrenOnly());
+                                              NodeFetchStatus::ChildrenOnly);
 
   std::vector<NodeRef> children;
   for (const auto& child : fetched_node.targets(scada::id::Organizes)) {
     auto fetched_child =
-        co_await FetchNodeAsync(executor, child, NodeFetchStatus::NodeOnly());
+        co_await FetchNodeAsync(executor, child, NodeFetchStatus::NodeOnly);
     if (IsInstanceOf(fetched_child, type_definition_id))
       children.emplace_back(std::move(fetched_child));
   }

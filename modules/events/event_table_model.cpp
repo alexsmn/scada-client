@@ -47,9 +47,9 @@ void EventTableModel::Row::Update(NodeService& node_service) {
   user = node_service.GetNode(event->user_id);
   acknowledged_user = node_service.GetNode(event->acknowledged_user_id);
 
-  node.StartFetch(NodeFetchStatus::NodeOnly());
-  user.StartFetch(NodeFetchStatus::NodeOnly());
-  acknowledged_user.StartFetch(NodeFetchStatus::NodeOnly());
+  node.StartFetch(NodeFetchStatus::NodeOnly);
+  user.StartFetch(NodeFetchStatus::NodeOnly);
+  acknowledged_user.StartFetch(NodeFetchStatus::NodeOnly);
 }
 
 bool EventTableModel::Row::IsAffected(const scada::NodeId& node_id) const {

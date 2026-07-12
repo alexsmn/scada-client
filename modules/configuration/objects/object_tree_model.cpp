@@ -11,7 +11,7 @@ namespace {
 
 Awaitable<NodeRef> FetchNodeOnlyAsync(AnyExecutor executor,
                                       NodeRef node) {
-  co_return co_await node.Fetch(NodeFetchStatus::NodeOnly());
+  co_return co_await node.Fetch(NodeFetchStatus::NodeOnly);
 }
 
 }  // namespace

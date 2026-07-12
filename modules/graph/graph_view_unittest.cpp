@@ -28,7 +28,7 @@ class TestNodeModel final : public NodeModel {
 
   scada::Status GetStatus() const override { return scada::StatusCode::Good; }
   NodeFetchStatus GetFetchStatus() const override {
-    return NodeFetchStatus::Max();
+    return NodeFetchStatus::Max;
   }
   Awaitable<void> Fetch(
       const NodeFetchStatus& requested_status) const override {

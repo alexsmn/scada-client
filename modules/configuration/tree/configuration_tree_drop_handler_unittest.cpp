@@ -38,7 +38,7 @@ NodeRef MakeTestNode(const scada::NodeId& node_id, TestNodeOptions options) {
   const NodeRef data_type_node{data_type_model};
 
   ON_CALL(*node_model, GetFetchStatus())
-      .WillByDefault(Return(NodeFetchStatus::NodeAndChildren()));
+      .WillByDefault(Return(NodeFetchStatus::NodeAndChildren));
   ON_CALL(*node_model, GetAttribute(scada::AttributeId::NodeId))
       .WillByDefault(Return(node_id));
   ON_CALL(*node_model, GetAttribute(scada::AttributeId::NodeClass))
@@ -69,7 +69,7 @@ NodeRef MakeTestNode(const scada::NodeId& node_id, TestNodeOptions options) {
       });
 
   ON_CALL(*type_model, GetFetchStatus())
-      .WillByDefault(Return(NodeFetchStatus::NodeAndChildren()));
+      .WillByDefault(Return(NodeFetchStatus::NodeAndChildren));
   ON_CALL(*type_model, GetAttribute(scada::AttributeId::NodeId))
       .WillByDefault(Return(options.type_definition_id));
   ON_CALL(*type_model, GetTarget(_, _)).WillByDefault(Return(NodeRef{}));
@@ -77,12 +77,12 @@ NodeRef MakeTestNode(const scada::NodeId& node_id, TestNodeOptions options) {
       .WillByDefault(Return(options.creates));
 
   ON_CALL(*parent_model, GetFetchStatus())
-      .WillByDefault(Return(NodeFetchStatus::NodeAndChildren()));
+      .WillByDefault(Return(NodeFetchStatus::NodeAndChildren));
   ON_CALL(*parent_model, GetAttribute(scada::AttributeId::NodeId))
       .WillByDefault(Return(options.parent_id));
 
   ON_CALL(*data_type_model, GetFetchStatus())
-      .WillByDefault(Return(NodeFetchStatus::NodeAndChildren()));
+      .WillByDefault(Return(NodeFetchStatus::NodeAndChildren));
   ON_CALL(*data_type_model, GetAttribute(scada::AttributeId::NodeId))
       .WillByDefault(Return(options.data_type_id));
 

@@ -82,7 +82,7 @@ MATCHER_P(CellIs, text, "") {
 DeviceMetricsCommandTest::DeviceMetricsCommandTest() {
   ON_CALL(*address_space_fetcher_, GetNodeFetchStatus(_))
       .WillByDefault(Return(std::make_pair(
-          scada::StatusCode::Good, NodeFetchStatus::NodeAndChildren())));
+          scada::StatusCode::Good, NodeFetchStatus::NodeAndChildren)));
 
   scada_test::AddScadaDevicesTestTypes(address_space_);
 }
@@ -241,7 +241,7 @@ TEST_F(DeviceMetricsCommandTest, FetchNodePromiseUsesCoroutineBody) {
   auto fetched_node =
       WaitAwaitable(executor_, FetchNodeAsync(executor_,
                                               node_service_.GetNode(device->id()),
-                                              NodeFetchStatus::NodeOnly()));
+                                              NodeFetchStatus::NodeOnly));
 
   EXPECT_EQ(fetched_node.node_id(), device->id());
   EXPECT_TRUE(fetched_node.fetched());

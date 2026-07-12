@@ -49,7 +49,7 @@ void TransmissionModel::Init(NodeRef device) {
   connections_.push_back(node_service_.SubscribeNodeFetched(
       [this](const NodeFetchedEvent& event) { OnNodeFetched(event); }));
 
-  device_.StartFetch(NodeFetchStatus::ChildrenOnly());
+  device_.StartFetch(NodeFetchStatus::ChildrenOnly);
   if (device_.children_fetched())
     Refresh();
 }
@@ -135,7 +135,7 @@ void TransmissionModel::Refresh() {
   GridModel::NotifyModelChanged();
 
   for (auto& row : rows_)
-    row.transmission.StartFetch(NodeFetchStatus::NodeOnly());
+    row.transmission.StartFetch(NodeFetchStatus::NodeOnly);
 
   auto source_ids = rows_ | boost::adaptors::filtered([](const Row& row) {
                       return !row.source_id.is_null();
@@ -173,7 +173,7 @@ void TransmissionModel::Update(NodeRef transmission) {
   if (!IsInstanceOf(transmission, devices::id::TransmissionItemType))
     return;
 
-  transmission.StartFetch(NodeFetchStatus::NodeOnly());
+  transmission.StartFetch(NodeFetchStatus::NodeOnly);
 
   auto source_id =
       transmission.target(devices::id::HasTransmissionSource).node_id();
