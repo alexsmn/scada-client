@@ -1,10 +1,12 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "base/any_executor.h"
 
 #include <memory>
 
-namespace aui {
+namespace scada::aui {
 class StatusBarModel;
 }
 

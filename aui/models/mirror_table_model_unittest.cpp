@@ -1,3 +1,5 @@
+#include "aui/aui_ns_compat.h"
+
 #include "aui/models/mirror_table_model.h"
 
 #include "aui/models/mirror_table_model.h"
@@ -8,7 +10,7 @@
 
 using namespace testing;
 
-namespace aui {
+namespace scada::aui {
 
 class TestTableModel : public TableModel {
  public:

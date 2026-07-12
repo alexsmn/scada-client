@@ -1,5 +1,7 @@
 #pragma once
 
+#include "modus/modus_ns_compat.h"
+
 #include "modus/libmodus/modus_binding2.h"
 #include "modus/modus_view_wrapper.h"
 #include "libmodus/gfx/gfx.h"
@@ -11,7 +13,7 @@
 #include <memory>
 #include <qwidget.h>
 
-namespace modus {
+namespace scada::modus {
 class Element;
 class Renderer;
 class Scheme;

@@ -1,11 +1,13 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/color.h"
 
 #include <QColor>
 #include <QRgb>
 
-namespace aui {
+namespace scada::aui {
 
 class Color {
  public:

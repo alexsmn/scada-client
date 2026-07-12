@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/color.h"
 #include "aui/handlers.h"
 #include <boost/json.hpp>
@@ -9,7 +11,7 @@
 
 class QEvent;
 
-namespace aui {
+namespace scada::aui {
 
 class TreeModel;
 

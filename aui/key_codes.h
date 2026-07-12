@@ -1,12 +1,14 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #if defined(UI_QT)
 #include <qnamespace.h>
 #elif defined(UI_WT)
 #include <Wt/WGlobal.h>
 #endif
 
-namespace aui {
+namespace scada::aui {
 
 #if defined(UI_QT)
 enum class KeyCode : int {

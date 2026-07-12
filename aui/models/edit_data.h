@@ -1,10 +1,12 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include <functional>
 #include <string>
 #include <vector>
 
-namespace aui {
+namespace scada::aui {
 
 struct EditData {
   enum class EditorType { NONE, TEXT, DROPDOWN, BUTTON };

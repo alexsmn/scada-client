@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "controller/node_id_set.h"
 #include "main_window/main_window_context.h"
 #include "main_window/main_window_interface.h"
@@ -10,7 +12,7 @@
 #include <filesystem>
 #include <functional>
 
-namespace aui {
+namespace scada::aui {
 class MenuModel;
 }
 

@@ -1,6 +1,8 @@
 #pragma once
 
-namespace aui {
+#include "aui/aui_ns_compat.h"
+
+namespace scada::aui {
 
 class MenuModelDelegate {
  public:

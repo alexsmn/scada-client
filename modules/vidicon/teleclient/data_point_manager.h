@@ -13,7 +13,7 @@ namespace scada::vidicon {
 struct DataPointAddress;
 }
 
-namespace vidicon {
+namespace scada::vidicon {
 
 using DataChangeHandler =
     std::function<void(const opc_client::DataValue& data_value)>;

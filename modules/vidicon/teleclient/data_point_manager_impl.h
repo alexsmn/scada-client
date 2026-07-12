@@ -1,5 +1,7 @@
 #pragma once
 
+#include "vidicon/vidicon_compat.h"
+
 #include "base/any_executor.h"
 #include "vidicon/teleclient/data_point_manager.h"
 
@@ -7,7 +9,7 @@
 
 class TimedDataService;
 
-namespace vidicon {
+namespace scada::vidicon {
 
 // Must be constructed and destructed from the main thread.
 class DataPointManagerImpl : public DataPointManager {

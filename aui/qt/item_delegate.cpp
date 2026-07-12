@@ -1,3 +1,5 @@
+#include "aui/aui_ns_compat.h"
+
 #include "aui/qt/item_delegate.h"
 
 #include "base/check.h"
@@ -7,7 +9,7 @@
 #include <QLineEdit>
 #include <QPushButton>
 
-namespace aui {
+namespace scada::aui {
 
 QWidget* ItemDelegate::createEditor(QWidget* parent,
                                     const QStyleOptionViewItem& option,

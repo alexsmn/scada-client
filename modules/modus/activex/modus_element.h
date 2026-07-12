@@ -1,5 +1,7 @@
 #pragma once
 
+#include "modus/modus_ns_compat.h"
+
 #include "base/win/scoped_bstr.h"
 #include "base/win/scoped_variant.h"
 #include "modus/activex/modus.h"
@@ -7,7 +9,7 @@
 
 #include <string>
 
-namespace modus {
+namespace scada::modus {
 
 class ModusObject;
 

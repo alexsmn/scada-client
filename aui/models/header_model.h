@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/models/table_column.h"
 #include "base/lifetime.h"
 
@@ -8,7 +10,7 @@
 #include <functional>
 #include <string>
 
-namespace aui {
+namespace scada::aui {
 
 class HeaderModel {
  public:

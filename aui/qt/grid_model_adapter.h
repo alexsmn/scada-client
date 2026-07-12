@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/models/grid_model.h"
 #include "base/lifetime.h"
 
@@ -8,7 +10,7 @@
 #include <memory>
 #include <vector>
 
-namespace aui {
+namespace scada::aui {
 
 class GridModelAdapter final : public QAbstractTableModel {
  public:

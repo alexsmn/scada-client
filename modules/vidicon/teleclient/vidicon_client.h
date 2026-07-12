@@ -1,5 +1,7 @@
 #pragma once
 
+#include "vidicon/vidicon_compat.h"
+
 #include "base/any_executor.h"
 
 #include <memory>
@@ -10,7 +12,7 @@ class TimedDataService;
 interface IClient;
 using TeleClient = IClient;
 
-namespace vidicon {
+namespace scada::vidicon {
 
 class ComDataPointManager;
 class DataPointManager;

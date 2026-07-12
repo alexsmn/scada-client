@@ -1,11 +1,13 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include <Wt/WAbstractTableModel.h>
 #include <boost/signals2/connection.hpp>
 #include <memory>
 #include <vector>
 
-namespace aui {
+namespace scada::aui {
 
 class TableModel;
 struct TableColumn;

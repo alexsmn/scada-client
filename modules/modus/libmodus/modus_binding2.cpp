@@ -1,3 +1,5 @@
+#include "modus/modus_ns_compat.h"
+
 #include "modus/libmodus/modus_binding2.h"
 
 #include "base/utf_convert.h"
@@ -8,7 +10,7 @@
 #include "modus/libmodus/modus_module2.h"
 #include "modus/libmodus/modus_style_library2.h"
 
-namespace modus {
+namespace scada::modus {
 
 Value ToValue(const scada::Variant& v) {
   switch (v.type()) {

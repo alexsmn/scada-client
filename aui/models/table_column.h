@@ -1,8 +1,10 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/color.h"
 
-namespace aui {
+namespace scada::aui {
 
 struct TableColumn {
   enum Alignment { LEFT, RIGHT, CENTER };

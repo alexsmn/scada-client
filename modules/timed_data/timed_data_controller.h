@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "modules/timed_data/timed_data_model.h"
 #include "controller/command_registry.h"
 #include "controller/contents_model.h"
@@ -10,7 +12,7 @@
 
 #include <memory>
 
-namespace aui {
+namespace scada::aui {
 class MirrorTableModel;
 class Table;
 }  // namespace aui

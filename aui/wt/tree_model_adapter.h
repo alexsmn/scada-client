@@ -1,12 +1,14 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/models/tree_node_model.h"
 
 #include <Wt/WAbstractItemModel.h>
 #include <Wt/WIcon.h>
 #include <memory>
 
-namespace aui {
+namespace scada::aui {
 
 class TreeModel;
 

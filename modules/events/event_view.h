@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/key_codes.h"
 #include "base/awaitable.h"
 #include "controller/command_registry.h"
@@ -12,7 +14,7 @@
 
 #include <memory>
 
-namespace aui {
+namespace scada::aui {
 class Table;
 }
 

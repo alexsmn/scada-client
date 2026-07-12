@@ -1,5 +1,7 @@
 ﻿#include "aui/color.h"
 
+#include "aui/aui_ns_compat.h"
+
 #include "base/string_util.h"
 #include <charconv>
 #include <format>
@@ -7,7 +9,7 @@
 #include <cassert>
 #include <string.h>
 
-namespace aui {
+namespace scada::aui {
 
 struct ColorEntry {
   std::string_view debug_name;

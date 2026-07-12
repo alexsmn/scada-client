@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "base/any_executor.h"
 
 #include "core/node_command_context.h"
@@ -8,7 +10,7 @@
 #include <memory>
 #include <string>
 
-namespace aui {
+namespace scada::aui {
 class MenuModel;
 class StatusBarModel;
 }  // namespace aui

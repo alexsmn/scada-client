@@ -1,8 +1,10 @@
+#include "aui/aui_ns_compat.h"
+
 #include "aui/models/simple_menu_model.h"
 
 #include "base/check.h"
 
-namespace aui {
+namespace scada::aui {
 
 const int kSeparatorId = -1;
 

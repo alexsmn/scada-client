@@ -1,5 +1,7 @@
 #pragma once
 
+#include "vidicon/vidicon_compat.h"
+
 #include <atlbase.h>
 
 #include <TeleClient.h>
@@ -7,7 +9,7 @@
 #include <functional>
 #include <wrl/client.h>
 
-namespace vidicon {
+namespace scada::vidicon {
 
 struct ComDataPointEventHanders {
   std::function<

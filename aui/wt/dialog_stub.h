@@ -1,10 +1,12 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "base/awaitable.h"
 
 #include <exception>
 
-namespace aui::wt {
+namespace scada::aui::wt {
 
 template <class T>
 Awaitable<T> MakeUnsupportedDialogAwaitable() {

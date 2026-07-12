@@ -1,3 +1,5 @@
+#include "aui/aui_ns_compat.h"
+
 #include "grid.h"
 
 #include "aui/models/grid_model_util.h"
@@ -10,7 +12,7 @@
 #include <wt/WPopupMenu.h>
 #pragma warning(pop)
 
-namespace aui {
+namespace scada::aui {
 
 namespace {
 

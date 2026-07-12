@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include <atomic>
 #include <map>
 #include <vector>
@@ -10,7 +12,7 @@ namespace scada::base {
 class Pickle;
 }
 
-namespace aui {
+namespace scada::aui {
 
 #ifdef _WIN32
 

@@ -1,8 +1,10 @@
+#include "aui/aui_ns_compat.h"
+
 #include "aui/models/fixed_row_model.h"
 
 #include "base/format.h"
 
-namespace aui {
+namespace scada::aui {
 
 // FixedRowModel --------------------------------------------------------------
 

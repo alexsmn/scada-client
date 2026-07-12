@@ -1,12 +1,14 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/models/table_model.h"
 
 #include <boost/signals2/connection.hpp>
 #include <utility>
 #include <vector>
 
-namespace aui {
+namespace scada::aui {
 
 // Fake TableModel subscriber that records every received notification, so
 // tests can assert on observable event sequences instead of mock call-shape

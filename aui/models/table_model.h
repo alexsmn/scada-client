@@ -1,12 +1,14 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/models/table_column.h"
 
 #include <boost/signals2/connection.hpp>
 #include <boost/signals2/signal.hpp>
 #include <functional>
 
-namespace aui {
+namespace scada::aui {
 
 struct TableCell {
   int row = 0;

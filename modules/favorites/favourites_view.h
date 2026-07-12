@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "base/awaitable.h"
 #include "resources/common_resources.h"
 #include "controller/command_registry.h"
@@ -8,7 +10,7 @@
 
 #include <memory>
 
-namespace aui {
+namespace scada::aui {
 class Tree;
 }
 

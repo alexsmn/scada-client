@@ -1,8 +1,10 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/models/header_model.h"
 
-namespace aui {
+namespace scada::aui {
 
 class FixedRowModel : public HeaderModel {
  public:

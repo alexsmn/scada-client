@@ -1,3 +1,5 @@
+#include "aui/aui_ns_compat.h"
+
 #include "aui/models/grid_model_util.h"
 
 #include "aui/models/grid_model.h"
@@ -5,7 +7,7 @@
 #include "base/check.h"
 #include "base/u16format.h"
 
-namespace aui {
+namespace scada::aui {
 
 // Range utils.
 

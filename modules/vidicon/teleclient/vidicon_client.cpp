@@ -1,3 +1,5 @@
+#include "vidicon/vidicon_compat.h"
+
 #include "vidicon/teleclient/vidicon_client.h"
 
 #include "vidicon/teleclient/com_data_point_manager.h"
@@ -13,7 +15,7 @@
 // "c:\TC\vidicon\vidicon2\build-vcpkg\src\TeleClient\teleclient.dir\RelWithDebInfo\TeleClient.tlb"
 // raw_interfaces_only
 
-namespace vidicon {
+namespace scada::vidicon {
 
 // VidiconClient
 

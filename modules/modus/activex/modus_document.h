@@ -1,5 +1,7 @@
 #pragma once
 
+#include "modus/modus_ns_compat.h"
+
 #include "base/any_executor.h"
 
 #include "aui/handlers.h"
@@ -29,7 +31,7 @@ namespace htsde2 {
 struct IHTSDEForm2;
 }
 
-namespace modus {
+namespace scada::modus {
 
 class ModusEventSink;
 class ModusObject;

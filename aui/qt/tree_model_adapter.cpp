@@ -1,3 +1,5 @@
+#include "aui/aui_ns_compat.h"
+
 #include "aui/qt/tree_model_adapter.h"
 
 #include "aui/color.h"
@@ -9,7 +11,7 @@
 #include <QMimeData>
 #include <QSize>
 
-namespace aui {
+namespace scada::aui {
 
 namespace {
 

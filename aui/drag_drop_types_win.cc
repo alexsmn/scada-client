@@ -1,8 +1,10 @@
+#include "aui/aui_ns_compat.h"
+
 #include "aui/drag_drop_types.h"
 
 #include <oleidl.h>
 
-namespace aui {
+namespace scada::aui {
 
 int ui::DragDropTypes::DropEffectToDragOperation(uint32_t effect) {
   int drag_operation = DRAG_NONE;

@@ -1,6 +1,8 @@
+#include "aui/aui_ns_compat.h"
+
 #include "aui/models/tree_model.h"
 
-namespace aui {
+namespace scada::aui {
 
 void TreeModel::TreeNodesAdding(void* parent, int start, int count) {
   nodes_adding_signal_(parent, start, count);

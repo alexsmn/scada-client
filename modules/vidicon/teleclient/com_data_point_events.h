@@ -1,5 +1,7 @@
 #pragma once
 
+#include "vidicon/vidicon_compat.h"
+
 #include "opc/opc_convertions.h"
 
 #include <atlbase.h>
@@ -10,7 +12,7 @@
 #include <atlcom.h>
 #include <opc_client/core/data_value.h>
 
-namespace vidicon {
+namespace scada::vidicon {
 
 class ATL_NO_VTABLE ComDataPointConnectionPoints
     : public CComObjectRootEx<CComMultiThreadModelNoCS>,

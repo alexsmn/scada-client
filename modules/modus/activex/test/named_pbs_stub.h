@@ -1,5 +1,7 @@
 #pragma once
 
+#include "modus/modus_ns_compat.h"
+
 #include "modus/activex/modus.h"
 
 #include <atlbase.h>
@@ -8,7 +10,7 @@
 #include <span>
 #include <vector>
 
-namespace modus {
+namespace scada::modus {
 
 class ATL_NO_VTABLE NamedPbsStub
     : public CComObjectRootEx<CComMultiThreadModel>,

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/models/edit_data.h"
 #include "aui/models/header_model.h"
 #include "aui/models/table_column.h"
@@ -9,7 +11,7 @@
 #include <functional>
 #include <vector>
 
-namespace aui {
+namespace scada::aui {
 
 class GridRange;
 

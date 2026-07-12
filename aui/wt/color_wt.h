@@ -1,10 +1,12 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/color.h"
 
 #include <Wt/WColor.h>
 
-namespace aui {
+namespace scada::aui {
 
 class Color {
  public:

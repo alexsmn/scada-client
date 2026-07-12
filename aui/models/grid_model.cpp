@@ -1,9 +1,11 @@
+#include "aui/aui_ns_compat.h"
+
 #include "aui/models/grid_model.h"
 
 #include "aui/models/grid_range.h"
 #include "base/check.h"
 
-namespace aui {
+namespace scada::aui {
 
 // GridModel ------------------------------------------------------------------
 

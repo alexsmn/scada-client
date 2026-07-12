@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "controller/command_registry.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
@@ -9,7 +11,7 @@
 #include <boost/signals2/connection.hpp>
 #include <memory>
 
-namespace aui {
+namespace scada::aui {
 class Table;
 }
 

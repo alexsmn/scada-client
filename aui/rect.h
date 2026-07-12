@@ -1,12 +1,14 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #if defined(UI_QT)
 #include <QRect>
 #elif defined(UI_WT)
 #include "aui/rect_internal.h"
 #endif
 
-namespace aui {
+namespace scada::aui {
 
 #if defined(UI_QT)
 using Rect = QRect;

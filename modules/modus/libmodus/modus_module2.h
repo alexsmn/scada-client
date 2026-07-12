@@ -1,8 +1,10 @@
 #pragma once
 
+#include "modus/modus_ns_compat.h"
+
 #include <memory>
 
-namespace modus {
+namespace scada::modus {
 class MasterLibrary;
 }
 

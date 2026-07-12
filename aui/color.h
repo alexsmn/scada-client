@@ -1,10 +1,12 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include <ostream>
 #include <string>
 #include <string_view>
 
-namespace aui {
+namespace scada::aui {
 
 struct Rgba {
   std::uint8_t r = 0;
@@ -27,7 +29,7 @@ struct Rgba {
 #include "aui/color_win.h"
 #endif
 
-namespace aui {
+namespace scada::aui {
 
 size_t GetColorCount();
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/models/edit_data.h"
 
 #include <QItemDelegate>
@@ -7,7 +9,7 @@
 
 class QComboBox;
 
-namespace aui {
+namespace scada::aui {
 
 class ItemDelegate final : public QItemDelegate {
   Q_OBJECT

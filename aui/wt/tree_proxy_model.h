@@ -1,12 +1,14 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/handlers.h"
 #include "aui/tree.h"
 #include "base/check.h"
 
 #include <Wt/WSortFilterProxyModel.h>
 
-namespace aui {
+namespace scada::aui {
 
 class TreeProxyModel : public Wt::WSortFilterProxyModel {
  public:

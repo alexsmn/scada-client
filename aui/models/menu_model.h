@@ -1,11 +1,13 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/models/menu_model_delegate.h"
 #include "aui/models/menu_separator_types.h"
 
 #include <string>
 
-namespace aui {
+namespace scada::aui {
 
 // An interface implemented by an object that provides the content of a menu.
 class MenuModel {

@@ -1,3 +1,5 @@
+#include "aui/aui_ns_compat.h"
+
 #include "aui/qt/grid.h"
 
 #include "aui/models/grid_model_util.h"
@@ -10,7 +12,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 
-namespace aui {
+namespace scada::aui {
 
 namespace {
 

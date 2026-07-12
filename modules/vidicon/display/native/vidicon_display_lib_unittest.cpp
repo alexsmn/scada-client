@@ -1,10 +1,12 @@
+#include "vidicon/vidicon_compat.h"
+
 #include "vidicon/display/native/vidicon_display_lib.h"
 
 #include <gmock/gmock.h>
 
 using namespace testing;
 
-namespace vidicon {
+namespace scada::vidicon {
 
 TEST(DisplayLibrary, Init_NoExceptionThrown) {
   display_library lib;

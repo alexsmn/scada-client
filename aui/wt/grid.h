@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include <boost/json.hpp>
 #include "aui/handlers.h"
 #include "aui/models/grid_model.h"
@@ -8,7 +10,7 @@
 #include <Wt/WPen.h>
 #include <Wt/WTableView.h>
 
-namespace aui {
+namespace scada::aui {
 
 class GridModel;
 class GridModelAdapter;

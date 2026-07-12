@@ -1,10 +1,12 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include <boost/signals2/connection.hpp>
 #include <functional>
 #include <string>
 
-namespace aui {
+namespace scada::aui {
 
 class StatusBarModel {
  public:

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/color.h"
 #include "aui/models/edit_data.h"
 
@@ -7,7 +9,7 @@
 #include <boost/signals2/signal.hpp>
 #include <functional>
 
-namespace aui {
+namespace scada::aui {
 
 class TreeModel {
  public:

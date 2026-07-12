@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #ifdef _WIN32
 #include "base/win/dragdrop.h"
 #endif
@@ -8,7 +10,7 @@
 #include "controller/controller_context.h"
 #include "controller/selection_model.h"
 
-namespace aui {
+namespace scada::aui {
 class Grid;
 }
 

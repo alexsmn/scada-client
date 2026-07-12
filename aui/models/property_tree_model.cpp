@@ -1,10 +1,12 @@
 ﻿#include "property_tree_model.h"
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/translation.h"
 
 #include "base/check.h"
 
-namespace aui {
+namespace scada::aui {
 
 // PropertyGroupTreeNode
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "vidicon/vidicon_compat.h"
+
 #include "controller/controller.h"
 #include "controller/selection_model.h"
 
@@ -13,7 +15,7 @@ class QWidget;
 class TimedDataService;
 class WriteService;
 
-namespace vidicon {
+namespace scada::vidicon {
 class VidiconClient;
 }
 

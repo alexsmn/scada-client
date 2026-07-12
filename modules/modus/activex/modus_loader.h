@@ -1,5 +1,7 @@
 #pragma once
 
+#include "modus/modus_ns_compat.h"
+
 #include "base/boost_log.h"
 #include "common/aliases.h"
 #include "modus/activex/modus.h"
@@ -11,7 +13,7 @@ class FileCache;
 class FileCacheUpdater;
 class TimedDataService;
 
-namespace modus {
+namespace scada::modus {
 
 class ModusObject;
 

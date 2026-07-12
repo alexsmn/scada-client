@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/color.h"
 #include "base/lifetime.h"
 
@@ -10,7 +12,7 @@
 
 class QIcon;
 
-namespace aui {
+namespace scada::aui {
 
 class TableModel;
 struct TableColumn;

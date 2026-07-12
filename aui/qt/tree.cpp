@@ -1,3 +1,5 @@
+#include "aui/aui_ns_compat.h"
+
 #include "aui/qt/tree.h"
 
 #include "aui/color.h"
@@ -13,7 +15,7 @@
 #include <QPalette>
 #include <QSortFilterProxyModel>
 
-namespace aui {
+namespace scada::aui {
 
 // TreeProxyModel
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/color.h"
 #include "aui/handlers.h"
 #include "aui/models/tree_model.h"
@@ -12,7 +14,7 @@
 
 class QIcon;
 
-namespace aui {
+namespace scada::aui {
 
 class TreeModel;
 

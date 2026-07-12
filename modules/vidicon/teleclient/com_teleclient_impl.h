@@ -1,5 +1,7 @@
 #pragma once
 
+#include "vidicon/vidicon_compat.h"
+
 #include "vidicon/teleclient/com_data_point_manager.h"
 
 #include <atlbase.h>
@@ -9,7 +11,7 @@
 #include <cassert>
 #include <wrl/client.h>
 
-namespace vidicon {
+namespace scada::vidicon {
 
 class ATL_NO_VTABLE ComTeleclientImpl
     : public CComObjectRootEx<CComMultiThreadModelNoCS>,

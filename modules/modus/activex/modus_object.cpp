@@ -1,10 +1,12 @@
 ﻿#include "modus/activex/modus_object.h"
 
+#include "modus/modus_ns_compat.h"
+
 #include "modus/activex/modus_element.h"
 
 #include <string_view>
 
-namespace modus {
+namespace scada::modus {
 
 ModusObject::ModusObject(SDECore::ISDEObject50& sde_object)
     : sde_object_(&sde_object), current_states_(0) {}

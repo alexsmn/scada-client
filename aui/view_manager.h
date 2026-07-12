@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #if defined(UI_QT) && defined(UI_WT)
 #error "Only one view manager UI backend can be selected."
 #endif
@@ -10,7 +12,7 @@
 #include "aui/wt/view_manager_wt_component.h"
 #endif
 
-namespace aui {
+namespace scada::aui {
 
 #if defined(UI_QT)
 using ViewManagerComponent = ::ViewManagerQtComponent;

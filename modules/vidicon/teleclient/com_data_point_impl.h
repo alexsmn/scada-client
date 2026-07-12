@@ -1,5 +1,7 @@
 #pragma once
 
+#include "vidicon/vidicon_compat.h"
+
 #include "base/stop_token.h"
 #include "opc/opc_convertions.h"
 #include "vidicon/teleclient/com_data_point_events.h"
@@ -13,7 +15,7 @@
 #include <memory>
 #include <mutex>
 
-namespace vidicon {
+namespace scada::vidicon {
 
 // WARNING: The object is accessed from multiple threads.
 class ATL_NO_VTABLE ComDataPointImpl

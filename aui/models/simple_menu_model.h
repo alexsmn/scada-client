@@ -1,10 +1,12 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/models/menu_model.h"
 
 #include <vector>
 
-namespace aui {
+namespace scada::aui {
 
 // A simple MenuModel implementation with an imperative API for adding menu
 // items. This makes it easy to construct fixed menus. Menus populated by

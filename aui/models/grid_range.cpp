@@ -1,3 +1,5 @@
+#include "aui/aui_ns_compat.h"
+
 #include "aui/models/grid_range.h"
 
 #include "base/check.h"
@@ -24,7 +26,7 @@ void ExpandRange(int& first, int& count, int value) {
 
 }  // namespace
 
-namespace aui {
+namespace scada::aui {
 
 GridRange GridRange::Entire() {
   GridRange range;

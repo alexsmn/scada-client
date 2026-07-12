@@ -1,5 +1,7 @@
 ﻿#include "modus/activex/modus_element.h"
 
+#include "modus/modus_ns_compat.h"
+
 #include "base/check.h"
 #include "base/format.h"
 #include "base/utf_convert.h"
@@ -10,7 +12,7 @@
 #include "modus/activex/modus_object.h"
 #include <format>
 
-namespace modus {
+namespace scada::modus {
 
 const base::win::ScopedVariant kParameterBinding(OLESTR("ключ_привязки"));
 const base::win::ScopedVariant kParameterText(OLESTR("текст"));

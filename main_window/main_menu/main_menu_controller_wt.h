@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/models/menu_model.h"
 
 #pragma warning(push)
@@ -7,7 +9,7 @@
 #include <wt/WWidget.h>
 #pragma warning(pop)
 
-namespace aui {
+namespace scada::aui {
 class MenuModel;
 }
 

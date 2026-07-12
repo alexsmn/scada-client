@@ -1,9 +1,11 @@
+#include "aui/aui_ns_compat.h"
+
 #include "aui/wt/table_model_adapter.h"
 
 #include "aui/color.h"
 #include "aui/models/table_model.h"
 
-namespace aui {
+namespace scada::aui {
 
 TableModelAdapter::TableModelAdapter(std::shared_ptr<TableModel> model,
                                      std::vector<TableColumn> columns)

@@ -1,3 +1,5 @@
+#include "vidicon/vidicon_compat.h"
+
 #include "vidicon/teleclient/data_point_manager_impl.h"
 
 #include "base/any_executor_dispatch.h"
@@ -7,7 +9,7 @@
 #include "vidicon/data_point_address.h"
 #include "vidicon/vidicon_node_id.h"
 
-namespace vidicon {
+namespace scada::vidicon {
 
 namespace {
 

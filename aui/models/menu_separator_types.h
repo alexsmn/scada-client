@@ -1,6 +1,8 @@
 #pragma once
 
-namespace aui {
+#include "aui/aui_ns_compat.h"
+
+namespace scada::aui {
 
 // For a separator we have the following types.
 enum MenuSeparatorType {

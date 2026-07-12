@@ -1,11 +1,13 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/color.h"
 #include "base/check.h"
 
 #include <Windows.h>
 
-namespace aui {
+namespace scada::aui {
 
 inline constexpr Rgba COLORREFToRgba(COLORREF colorref) noexcept {
   return Rgba{

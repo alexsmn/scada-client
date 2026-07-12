@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/color.h"
 #include "aui/handlers.h"
 #include "base/lifetime.h"
@@ -10,7 +12,7 @@
 class QSortFilterProxyModel;
 class QEvent;
 
-namespace aui {
+namespace scada::aui {
 
 class TableModel;
 class TableModelAdapter;

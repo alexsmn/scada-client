@@ -1,3 +1,5 @@
+#include "screenshot_generator_ns_compat.h"
+
 #include "screenshot_wait.h"
 
 #include "base/any_executor.h"
@@ -7,7 +9,7 @@
 
 #include <gtest/gtest.h>
 
-namespace screenshot_generator {
+namespace scada::screenshot_generator {
 
 bool WaitForPendingNodeLoads(NodeService& node_service) {
   try {

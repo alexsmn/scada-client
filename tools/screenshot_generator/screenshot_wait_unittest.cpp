@@ -1,3 +1,5 @@
+#include "screenshot_generator_ns_compat.h"
+
 #include "screenshot_wait.h"
 
 #include "aui/qt/message_loop_qt.h"
@@ -7,7 +9,7 @@
 
 #include <stdexcept>
 
-namespace screenshot_generator {
+namespace scada::screenshot_generator {
 
 namespace {
 

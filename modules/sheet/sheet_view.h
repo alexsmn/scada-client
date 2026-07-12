@@ -1,5 +1,9 @@
 #pragma once
 
+#include "modules/sheet/sheet_ns_compat.h"
+
+#include "aui/aui_ns_compat.h"
+
 #include "aui/color.h"
 #include "controller/command_registry.h"
 #include "controller/contents_model.h"
@@ -9,11 +13,11 @@
 
 #include <memory>
 
-namespace aui {
+namespace scada::aui {
 class Grid;
 }
 
-namespace ui {
+namespace scada::ui {
 class OSExchangeData;
 }
 

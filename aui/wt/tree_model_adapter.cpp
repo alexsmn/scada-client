@@ -1,3 +1,5 @@
+#include "aui/aui_ns_compat.h"
+
 #include "aui/wt/tree_model_adapter.h"
 
 #include "aui/color.h"
@@ -7,7 +9,7 @@
 
 #include <windows.h>
 
-namespace aui {
+namespace scada::aui {
 
 namespace {
 

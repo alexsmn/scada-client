@@ -1,8 +1,10 @@
+#include "aui/aui_ns_compat.h"
+
 #include "aui/models/table_model.h"
 
 #include "base/check.h"
 
-namespace aui {
+namespace scada::aui {
 
 TableModel::TableModel() = default;
 

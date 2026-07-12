@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/key_codes.h"
 #include "resources/common_resources.h"
 #include "controller/command_registry.h"
@@ -9,7 +11,7 @@
 #include "controller/selection_model.h"
 #include "export/export_model.h"
 
-namespace aui {
+namespace scada::aui {
 class Table;
 }
 

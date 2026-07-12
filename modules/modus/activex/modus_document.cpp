@@ -1,3 +1,5 @@
+#include "modus/modus_ns_compat.h"
+
 #include "modus/activex/modus_document.h"
 
 #include "base/memory_istream.h"
@@ -10,7 +12,7 @@
 #include "modus/activex/modus_object.h"
 #include "profile/profile.h"
 
-namespace modus {
+namespace scada::modus {
 
 ModusDocument::ModusDocument(ModusDocumentContext&& context,
                              htsde2::IHTSDEForm2& sde_form)

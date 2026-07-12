@@ -1,5 +1,7 @@
 #pragma once
 
+#include "modus/modus_ns_compat.h"
+
 #import "modus/activex/typelibs/sdecore.tlb" raw_interfaces_only
 
 // These two libs depend on `SDECore`.
@@ -16,7 +18,7 @@ using SDECore::ISDEDocument50;
 
 // IID DIID_Events = 4677CFA4-78EB-43C0-84AE-B5CE30BF0F0D;
 
-namespace modus {
+namespace scada::modus {
 
 using ISDEParams = SDECore::IParams;
 using ISDEObject = SDECore::ISDEObject50;

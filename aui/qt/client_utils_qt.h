@@ -1,8 +1,10 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include <QPixmap>
 
-namespace aui {
+namespace scada::aui {
 class MenuModel;
 }
 

@@ -1,3 +1,5 @@
+#include "aui/aui_ns_compat.h"
+
 #include "aui/qt/table.h"
 
 #include "aui/models/table_model.h"
@@ -14,7 +16,7 @@
 #include <QPalette>
 #include <QSortFilterProxyModel>
 
-namespace aui {
+namespace scada::aui {
 
 namespace {
 

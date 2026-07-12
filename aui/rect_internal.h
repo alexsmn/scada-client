@@ -1,6 +1,8 @@
 #pragma once
 
-namespace aui::internal {
+#include "aui/aui_ns_compat.h"
+
+namespace scada::aui::internal {
 
 // Micks Qt's `QRect`.
 class Rect {

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "vidicon/vidicon_compat.h"
+
 #include "vidicon/data_point_address.h"
 #include "vidicon/teleclient/com_data_point_impl.h"
 
@@ -12,7 +14,7 @@
 #include <unordered_map>
 #include <wrl/client.h>
 
-namespace vidicon {
+namespace scada::vidicon {
 
 class ComDataPointManager {
  public:

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "modus/modus_ns_compat.h"
+
 #include "base/blinker.h"
 #include "modus/libmodus/modus_style2.h"
 
@@ -15,7 +17,7 @@ namespace Gdiplus {
 class Graphics;
 }
 
-namespace modus {
+namespace scada::modus {
 class Shape;
 }
 

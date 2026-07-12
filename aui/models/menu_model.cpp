@@ -1,6 +1,8 @@
+#include "aui/aui_ns_compat.h"
+
 #include "aui/models/menu_model.h"
 
-namespace aui {
+namespace scada::aui {
 
 bool MenuModel::IsVisibleAt(int index) const {
   return true;

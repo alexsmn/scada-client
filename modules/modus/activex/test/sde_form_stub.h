@@ -1,12 +1,14 @@
 #pragma once
 
+#include "modus/modus_ns_compat.h"
+
 #include "modus/activex/modus.h"
 
 #include <atlbase.h>
 
 #include <atlcom.h>
 
-namespace modus {
+namespace scada::modus {
 
 class ATL_NO_VTABLE SdeFormStub
     : public CComObjectRootEx<CComMultiThreadModel>,

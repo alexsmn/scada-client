@@ -1,5 +1,7 @@
 #pragma once
 
+#include "screenshot_generator_ns_compat.h"
+
 #include "base/any_executor.h"
 #include "base/awaitable.h"
 
@@ -15,7 +17,7 @@
 
 class NodeService;
 
-namespace screenshot_generator {
+namespace scada::screenshot_generator {
 
 inline void ProcessPostedEvents() {
   for (int i = 0; i < 3; ++i) {

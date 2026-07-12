@@ -1,10 +1,12 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/models/tree_model.h"
 
 #include <gmock/gmock.h>
 
-namespace aui {
+namespace scada::aui {
 
 class MockTreeModel : public TreeModel {
  public:

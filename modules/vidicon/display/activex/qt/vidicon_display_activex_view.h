@@ -1,12 +1,14 @@
 #pragma once
 
+#include "vidicon/vidicon_compat.h"
+
 #include "controller/controller.h"
 #include "vidicon/display/activex/display_viewer_api.h"
 
 #include <filesystem>
 #include <wrl/client.h>
 
-namespace vidicon {
+namespace scada::vidicon {
 class VidiconClient;
 }
 

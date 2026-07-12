@@ -1,5 +1,7 @@
 #pragma once
 
+#include "modus/modus_ns_compat.h"
+
 #include "modus/activex/modus.h"
 
 #include <memory>
@@ -11,7 +13,7 @@ struct ISDEObject50;
 struct IParams;
 }  // namespace SDECore
 
-namespace modus {
+namespace scada::modus {
 
 class ModusElement;
 

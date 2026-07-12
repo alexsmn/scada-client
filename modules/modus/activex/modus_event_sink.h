@@ -1,5 +1,7 @@
 #pragma once
 
+#include "modus/modus_ns_compat.h"
+
 #include "modus/activex/modus.h"
 
 #include <atlbase.h>
@@ -7,7 +9,7 @@
 #include <atlcom.h>
 #include <wrl/client.h>
 
-namespace modus {
+namespace scada::modus {
 
 class ModusEventSink
     : public CComObjectRootEx<CComSingleThreadModel>,

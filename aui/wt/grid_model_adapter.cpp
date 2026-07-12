@@ -1,10 +1,12 @@
+#include "aui/aui_ns_compat.h"
+
 #include "aui/wt/grid_model_adapter.h"
 
 #include "aui/color.h"
 #include "aui/models/grid_range.h"
 #include "base/check.h"
 
-namespace aui {
+namespace scada::aui {
 
 namespace {
 

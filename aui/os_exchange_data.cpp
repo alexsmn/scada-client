@@ -1,3 +1,5 @@
+#include "aui/aui_ns_compat.h"
+
 #include "aui/os_exchange_data.h"
 
 #ifdef _WIN32
@@ -30,7 +32,7 @@ class ScopedHGlobal {
 
 }  // namespace
 
-namespace aui {
+namespace scada::aui {
 
 static STGMEDIUM* GetStorageForBytes(const void* data, size_t bytes) {
   HGLOBAL handle = GlobalAlloc(GPTR, static_cast<int>(bytes));
@@ -494,7 +496,7 @@ OSExchangeData::CustomFormat OSExchangeData::RegisterCustomFormat(
 
 #include <atomic>
 
-namespace aui {
+namespace scada::aui {
 
 OSExchangeData::OSExchangeData() = default;
 

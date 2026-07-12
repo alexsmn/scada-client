@@ -1,12 +1,14 @@
 #pragma once
 
+#include "vidicon/vidicon_compat.h"
+
 #include <TeleClient.h>
 #include <Windows.h>
 #include <filesystem>
 #include <functional>
 #include <span>
 
-namespace vidicon {
+namespace scada::vidicon {
 
 class display;
 
