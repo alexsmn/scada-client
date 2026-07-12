@@ -1,9 +1,11 @@
+#include "aui/aui_ns_compat.h"
+
 #include "aui/qt/theme_qt.h"
 
 #include <QApplication>
 #include <QString>
 
-namespace aui {
+namespace scada::aui {
 
 namespace {
 
@@ -309,14 +311,18 @@ QString BuildThemeStyleSheet(const ThemeTokens& t) {
   return qss;
 }
 
-void ApplyTheme(Theme theme) {
+void ApplyTheme(Theme theme, ThemeScope scope) {
   const ThemeTokens& tokens = GetThemeTokens(theme);
   // Order matters: setStyle() resets the application palette to the style's
   // standard palette, so the palette and stylesheet must be installed after.
   QApplication::setStyle(QStringLiteral("Fusion"));
   QApplication::setPalette(BuildThemePalette(tokens));
   if (auto* app = qApp) {
-    app->setStyleSheet(BuildThemeStyleSheet(tokens));
+    // Palette-first: install the global stylesheet only for kFull. Clearing it
+    // for kPaletteOnly keeps a live switch from leaving a stale sheet behind.
+    app->setStyleSheet(scope == ThemeScope::kFull
+                           ? BuildThemeStyleSheet(tokens)
+                           : QString());
   }
 }
 

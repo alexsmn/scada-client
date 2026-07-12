@@ -1,10 +1,12 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include <QColor>
 #include <QPalette>
 #include <QString>
 
-namespace aui {
+namespace scada::aui {
 
 // The shipped application themes. Dark is the desktop default (control-room
 // norm; low glare at night); Light mirrors the web client default; HighContrast
@@ -78,9 +80,19 @@ QPalette BuildThemePalette(const ThemeTokens& tokens);
 // properties (e.g. a QPushButton with `role` == "danger").
 QString BuildThemeStyleSheet(const ThemeTokens& tokens);
 
-// Applies a theme to the whole application: forces the Fusion style, installs
-// the palette, and installs the generated stylesheet on qApp. Safe to call at
-// runtime to switch themes live. Must run after a QApplication exists.
-void ApplyTheme(Theme theme);
+// How much of the theme to install. Palette-first: `kPaletteOnly` recolours the
+// app through the QPalette alone (safest with ActiveX/embedded and
+// custom-painted widgets), while `kFull` also installs the generated global
+// stylesheet for the full workbench chrome. Prefer extending the palette and
+// targeted per-widget styling over growing the global sheet.
+enum class ThemeScope { kPaletteOnly, kFull };
 
-}  // namespace aui
+// Applies a theme to the whole application: forces the Fusion style and installs
+// the palette, plus the generated stylesheet when `scope` is `kFull`. Safe to
+// call at runtime to switch themes live. Must run after a QApplication exists.
+//
+// This is opt-in: nothing calls it unless the operator enables the experimental
+// UX (see app/qt/main.cpp). The legacy Fusion look is unchanged by default.
+void ApplyTheme(Theme theme, ThemeScope scope = ThemeScope::kFull);
+
+}  // namespace scada::aui

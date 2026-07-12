@@ -1,21 +1,23 @@
 # SCADA Client — UX Implementation Backlog
 
-> Status: living plan. Turns the reshell design ([`shell.md`](shell.md)) into
-> sequenced, module-scoped work. Ordered **operator-first**. Each item names the
-> primary code it touches, its dependency, and a "done when" acceptance line.
-> This is a design backlog, not a commitment — sequence and sizing are advisory.
+> Status: living plan. A **catalogue of the reshell work** derived from
+> [`shell.md`](shell.md), grouped for reference — **not a fixed waterfall.**
+> Each item names the primary code it touches, its dependency, and a "done when"
+> acceptance line.
 
-## Sequencing at a glance
+## How to use this (read first)
 
-```
-P0 Foundations ──► P1 Shell chrome ──► P2 Operator core ──► P3 Dialog theming
-                                   └──► P4 Explorer/Inspector depth
-                                                          └──► P5 Engineering & parity
-```
+Per `client/CLAUDE.md` → "UX implementation approach": build the reshell as
+**incremental vertical slices**, not by executing P0→P5 top to bottom. Pick one
+coherent surface, take it end-to-end (behind the opt-in theming flag), validate
+it against real Qt widgets, ship, then re-evaluate. The groups below are a map
+of *what* exists to do and how items depend on each other; the *order* is chosen
+per slice with the user, not dictated by the numbering. Theming is **opt-in and
+palette-first** — never made unconditional here.
 
-Ship P0→P2 before anything else: they deliver the visible operator workbench.
-P3 (dialog theming) can run in parallel once P0 lands — it has no dependency on
-the shell.
+The groups (P0 foundations, P1 shell chrome, P2 operator core, P3 dialog
+theming, P4 Explorer/Inspector, P5 engineering) capture dependencies, not a
+required sequence.
 
 ---
 
@@ -23,7 +25,7 @@ the shell.
 
 | # | Item | Touches | Done when |
 |---|---|---|---|
-| 0.1 | **Token layer** — ✅ *landed*: `aui/qt/theme_qt.{h,cpp}` encodes the light/dark/high-contrast token tables and builds a Fusion `QPalette` + generated QSS from them; `ApplyTheme()` installs style+palette+sheet, wired at startup in `app/qt/main.cpp` (dark default, `"Theme"` QSetting override). *Remaining:* drive the choice from `Profile` + a runtime theme switcher, and a high-contrast entry point. | `app/qt/`, `profile/`, `aui/qt/theme_qt.*` | All three themes switch at runtime; no component hard-codes hex; values match [`design-language.md`](design-language.md). |
+| 0.1 | **Token layer** — ✅ *landed (opt-in)*: `aui/qt/theme_qt.{h,cpp}` (`scada::aui`) encodes the light/dark/high-contrast token tables, builds a Fusion `QPalette`, and generates the QSS; `ApplyTheme(theme, scope)` installs palette (+stylesheet for `kFull`). Wired in `app/qt/main.cpp` **behind the `Ux/Experimental` QSetting (off by default)**; `Ux/Theme` picks the variant, `Ux/StyleSheet=false` → palette-only. *Remaining:* drive the choice from `Profile` + a runtime switcher; validate `kFull` against ActiveX/custom-painted widgets before defaulting on. | `app/qt/`, `profile/`, `aui/qt/theme_qt.*` | Opt-in themes switch at runtime; no component hard-codes hex; values match [`design-language.md`](design-language.md). |
 | 0.2 | **Severity palette single-source**: one enum→token map consumed by tree, journal, alarm strip, inspector, status. | `aui/`, `modules/events/` | Changing a severity token restyles every surface at once. |
 | 0.3 | **Mono numerals**: apply `--font-mono` to all value/timestamp/limit cells. | `aui/models/`, table/tree delegates | Values/timestamps render tabular; columns don't jitter on update. |
 | 0.4 | **Themed control primitives**: `Field`, `Combo`, `Checkbox`, `Button` (primary/default/danger/disabled+reason). | new `aui/qt/controls` | Primitives available; retire native `QInputDialog`/`QMessageBox` defaults. |

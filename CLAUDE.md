@@ -98,11 +98,41 @@ design tokens (desktop defaults to dark).
   Components must consume tokens; never hard-code hex.
 - [`docs/ux/shell.md`](docs/ux/shell.md) — the reshelled layout mapped onto the
   existing `main_window/` / registries / `modules/` code.
-- [`docs/ux/backlog.md`](docs/ux/backlog.md) — operator-first implementation
-  plan (P0 tokens → shell → cockpit → dialog theming → inspector → parity).
+- [`docs/ux/backlog.md`](docs/ux/backlog.md) — the surface catalogue and
+  dependency notes. Treat it as a **menu of slices, not a fixed waterfall**
+  (see the implementation approach below).
 - Rendered, theme-toggleable mockups (the visual source of truth) live in
-  [`docs/ui-mockups/screens/`](docs/ui-mockups/screens/): `operator-shell.html`,
-  `login.html`, `control-command.html`.
+  [`docs/ui-mockups/screens/`](docs/ui-mockups/screens/) — operator and
+  engineering surfaces, each with a light/dark toggle.
+
+### UX implementation approach
+
+**Do not follow `backlog.md` as a strict P0→P5 waterfall.** The agreed way to
+build the reshell (decided with the user) is:
+
+- **Incremental vertical slices.** Ship one coherent surface end-to-end at a
+  time, each independently valuable, and re-evaluate after each. Do not attempt
+  a big-bang switchover — this is a live client edited by multiple people.
+- **Full reshell is the north star, reached gradually.** The operator-workbench
+  structure (Activity bar → Explorer → workspace tabs → Inspector → status
+  strip) remains the target; slices converge on it rather than landing it all
+  at once.
+- **Theming is opt-in and palette-first.** The design-token theming
+  (`scada::aui::ApplyTheme` in [`aui/qt/theme_qt.h`](aui/qt/theme_qt.h)) is
+  **off by default** — it only runs when the `Ux/Experimental` QSetting is true
+  (`app/qt/main.cpp`), so the legacy Fusion look is unchanged for everyone else.
+  Prefer recolouring through `QPalette` (`ThemeScope::kPaletteOnly`) and
+  targeted per-widget styling; the global stylesheet (`kFull`) is additive and
+  must be validated against ActiveX (Modus/Vidicon) and custom-painted widgets
+  (the graph) before it is relied on. Do not make theming unconditional or grow
+  one monolithic global sheet.
+- **Validate by purpose.** Use HTML mockups in `docs/ui-mockups/` for
+  brand-new layouts; validate anything actually implemented against **real Qt
+  widgets** via the headless `client_screenshot_generator` (see
+  `docs/screenshots.md`) — not HTML, which does not match Qt's rendering.
+
+When in doubt about scope or sequence, ask rather than executing the backlog
+top to bottom.
 
 ### When to update the docs
 

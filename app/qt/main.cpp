@@ -129,14 +129,23 @@ int main(int argc, char* argv[]) {
     InstalledTranslation installed_translation{settings};
     InstalledStyle installed_style{settings};
 
-    // Install the shared design tokens (palette + stylesheet) over the Fusion
-    // base so the whole app — including the login dialog shown before a profile
-    // loads — reads as the workbench design system. Desktop defaults to the
-    // dark theme; the persisted "Theme" setting overrides it. See
-    // client/docs/ux/design-language.md.
-    aui::ApplyTheme(
-        aui::ThemeFromString(settings.value("Theme").toString(),
-                             aui::Theme::kDark));
+    // Experimental UX design-token theming. Opt-in and off by default so the
+    // legacy Fusion look is unchanged until an operator enables it — the reshell
+    // ships as incremental vertical slices, not a big-bang switchover. When
+    // enabled, install the shared tokens over the Fusion base before the login
+    // dialog so pre-login chrome is themed too. `Ux/Theme` picks the variant
+    // (dark default); `Ux/StyleSheet=false` gives palette-first / palette-only.
+    // See client/docs/ux/ and client/CLAUDE.md ("UX implementation approach").
+    if (settings.value("Ux/Experimental", false).toBool()) {
+      const scada::aui::ThemeScope scope =
+          settings.value("Ux/StyleSheet", true).toBool()
+              ? scada::aui::ThemeScope::kFull
+              : scada::aui::ThemeScope::kPaletteOnly;
+      scada::aui::ApplyTheme(
+          scada::aui::ThemeFromString(settings.value("Ux/Theme").toString(),
+                                      scada::aui::Theme::kDark),
+          scope);
+    }
 
     // `QApplication` must be created.
     auto executor = MakeAnyExecutor(std::make_shared<MessageLoopQt>());

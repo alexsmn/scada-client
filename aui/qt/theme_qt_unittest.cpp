@@ -1,3 +1,5 @@
+#include "aui/aui_ns_compat.h"
+
 #include "aui/qt/theme_qt.h"
 
 #include "aui/test/app_environment.h"
@@ -7,7 +9,7 @@
 #include <QStyle>
 #include <gtest/gtest.h>
 
-namespace aui {
+namespace scada::aui {
 namespace {
 
 // The persisted-string form round-trips for every theme, and unknown/empty
@@ -83,5 +85,16 @@ TEST(ThemeQtTest, ApplyThemeInstallsPaletteAndStyle) {
             GetThemeTokens(Theme::kDark).bg);
 }
 
+// Palette-first: kPaletteOnly recolours through the palette but installs no
+// global stylesheet (safest for ActiveX/embedded and custom-painted widgets).
+TEST(ThemeQtTest, ApplyThemePaletteOnlyInstallsNoStyleSheet) {
+  AppEnvironment app_env;
+
+  ApplyTheme(Theme::kDark, ThemeScope::kPaletteOnly);
+  EXPECT_EQ(qApp->palette().color(QPalette::Window),
+            GetThemeTokens(Theme::kDark).bg);
+  EXPECT_TRUE(qApp->styleSheet().isEmpty());
+}
+
 }  // namespace
-}  // namespace aui
+}  // namespace scada::aui

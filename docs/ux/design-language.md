@@ -12,9 +12,12 @@ initiative. Do not fork the palette.
 
 > **Implementation.** The Qt token tables, the `QPalette` builder, and the
 > generated QSS live in [`aui/qt/theme_qt.{h,cpp}`](../../aui/qt/theme_qt.h)
-> (`aui::ThemeTokens` / `aui::ApplyTheme`). The hex values there must stay in
-> sync with the tables below. The theme is installed at startup in
-> `app/qt/main.cpp`.
+> (`scada::aui::ThemeTokens` / `scada::aui::ApplyTheme`). The hex values there
+> must stay in sync with the tables below. Theming is **opt-in and
+> palette-first**: `app/qt/main.cpp` applies it only when the `Ux/Experimental`
+> QSetting is on, and `ApplyTheme(theme, scope)` can recolour via the palette
+> alone (`ThemeScope::kPaletteOnly`) or add the global stylesheet
+> (`kFull`). See `client/CLAUDE.md` → "UX implementation approach".
 
 ## 1. Themes
 
