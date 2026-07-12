@@ -23,7 +23,7 @@ class MessageLoopWt final {
   explicit MessageLoopWt(boost::asio::io_context& io_context);
   ~MessageLoopWt();
 
-  void PostDelayedTask(Duration delay,
+  void PostDelayedTask(Clock::duration delay,
                        Task task,
                        const std::source_location& location =
                            std::source_location::current());

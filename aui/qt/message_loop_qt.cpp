@@ -42,13 +42,13 @@ MessageLoopQt::~MessageLoopQt() {
   QObject::disconnect(&timer_, nullptr, nullptr, nullptr);
 }
 
-void MessageLoopQt::PostDelayedTask(Duration delay,
+void MessageLoopQt::PostDelayedTask(Clock::duration delay,
                                     Task task,
                                     const std::source_location& location) {
   base::Check(task);
 
   std::lock_guard<std::recursive_mutex> lock{mutex_};
-  if (delay == Duration()) {
+  if (delay == Clock::duration()) {
     immediate_queue_.emplace(std::move(task));
   } else {
     PendingTask pending_task{

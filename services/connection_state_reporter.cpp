@@ -17,7 +17,7 @@
 using namespace std::chrono_literals;
 
 namespace {
-const Duration kReconnectDelays[] = {1s, 5s, 30s};
+const Clock::duration kReconnectDelays[] = {1s, 5s, 30s};
 }
 
 ConnectionStateReporter::ConnectionStateReporter(

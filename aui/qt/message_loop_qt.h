@@ -16,7 +16,7 @@ class MessageLoopQt final {
   MessageLoopQt();
   ~MessageLoopQt();
 
-  void PostDelayedTask(Duration delay,
+  void PostDelayedTask(Clock::duration delay,
                        Task task,
                        const std::source_location& location =
                            std::source_location::current());

@@ -15,7 +15,7 @@ MessageLoopWt::MessageLoopWt(boost::asio::io_context& io_context)
 
 MessageLoopWt::~MessageLoopWt() {}
 
-void MessageLoopWt::PostDelayedTask(Duration delay,
+void MessageLoopWt::PostDelayedTask(Clock::duration delay,
                                     Task task,
                                     const std::source_location& location) {
   base::Check(task);
