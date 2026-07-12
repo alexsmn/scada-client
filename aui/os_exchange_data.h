@@ -4,7 +4,9 @@
 #include <map>
 #include <vector>
 
-namespace base {
+#include "base/base_compat.h"
+
+namespace scada::base {
 class Pickle;
 }
 
@@ -130,7 +132,7 @@ class OSExchangeData {
   static CustomFormat RegisterCustomFormat(const char* name);
 
  private:
-  std::map<CustomFormat, std::vector<char>> data_;
+  std::map<CustomFormat, std::vector<char> > data_;
 };
 
 #endif

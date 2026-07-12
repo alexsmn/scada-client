@@ -2,6 +2,7 @@
 
 #include "base/any_executor.h"
 #include "base/lifetime.h"
+#include "metrics/metrics_compat.h"
 
 #include "app/client_application_modules.h"
 #include "app/login_canceled.h"
@@ -72,7 +73,7 @@ class Speech;
 class UiCommandRegistry;
 class WriteService;
 
-namespace metrics {
+namespace scada::metrics {
 class OpenTelemetryMetrics;
 }
 

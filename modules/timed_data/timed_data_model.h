@@ -1,11 +1,12 @@
 #pragma once
 
 #include "aui/models/table_model.h"
+#include "base/base_compat.h"
 #include "base/lifetime.h"
 #include "controller/time_model.h"
 #include "timed_data/timed_data_spec.h"
 
-namespace base {
+namespace scada::base {
 class Clock;
 }
 
