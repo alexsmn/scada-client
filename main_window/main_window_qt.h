@@ -113,6 +113,9 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   QToolBar* context_bar_ = nullptr;
   QLineEdit* command_search_ = nullptr;
   std::vector<QLabel*> context_panes_;
+  // Status-bar pane index shown by each context_panes_ label (the curated
+  // who/where subset), parallel to context_panes_.
+  std::vector<int> context_pane_indices_;
   // Live severity KPI tiles in the context bar (unacknowledged counts per
   // level), refreshed with the status-bar model.
   QLabel* kpi_critical_ = nullptr;

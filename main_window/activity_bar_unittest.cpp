@@ -122,4 +122,18 @@ TEST(StatusBarModelAlarmCountTest, ReportsProviderValue) {
   EXPECT_EQ(model.GetAlarmCount(), 12);
 }
 
+// Panes are flagged as context-bar (who/where) or not, so the top context
+// cluster can show a curated subset rather than the whole status strip.
+TEST(StatusBarModelContextPaneTest, FlagsOnlyMarkedPanes) {
+  StatusBarModelImpl model;
+  const int plain =
+      model.AddPane({.text_provider = [] { return std::u16string{}; }});
+  const int context =
+      model.AddPane({.text_provider = [] { return std::u16string{}; },
+                     .in_context_bar = true});
+
+  EXPECT_FALSE(model.IsContextBarPane(plain));
+  EXPECT_TRUE(model.IsContextBarPane(context));
+}
+
 }  // namespace

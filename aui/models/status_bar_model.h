@@ -34,6 +34,11 @@ class StatusBarModel {
   // not track alarms.
   virtual int GetAlarmCount() const { return 0; }
 
+  // Whether pane |index| belongs in the top context bar's curated cluster (the
+  // who/where context — user, connection, server), as opposed to the full
+  // status strip. Default false, so a plain status bar contributes no cluster.
+  virtual bool IsContextBarPane(int index) const { return false; }
+
   // Count of currently unacknowledged alarms at `level`, for the live severity
   // KPI tiles. Refreshed with the panes; default 0 for models without alarms.
   virtual int GetSeverityCount(SeverityLevel level) const { return 0; }

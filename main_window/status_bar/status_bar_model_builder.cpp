@@ -59,7 +59,8 @@ std::shared_ptr<aui::StatusBarModel> StatusBarModelBuilder::Build() {
   int user_pane_index =
       model->AddPane({.text_provider = std::bind_front(
                           &UserStatusProvider::GetText, user_status_provider),
-                      .size = 160});
+                      .size = 160,
+                      .in_context_bar = true});
 
   user_status_provider->Init(
       [model, user_pane_index] { model->NotifyPanesChanged(user_pane_index); });
@@ -73,17 +74,20 @@ std::shared_ptr<aui::StatusBarModel> StatusBarModelBuilder::Build() {
       model->AddPane({.text_provider = std::bind_front(
                           &SessionStatusProvider::GetConnectionStateText,
                           session_status_provider),
-                      .size = 100});
+                      .size = 100,
+                      .in_context_bar = true});
 
   int ping_pane_index = model->AddPane(
       {.text_provider = std::bind_front(&SessionStatusProvider::GetPingText,
                                         session_status_provider),
-       .size = 120});
+       .size = 120,
+       .in_context_bar = true});
 
   int endpoint_pane_index = model->AddPane(
       {.text_provider = std::bind_front(&SessionStatusProvider::GetEndpointText,
                                         session_status_provider),
-       .size = 200});
+       .size = 200,
+       .in_context_bar = true});
 
   session_status_provider->Init(
       [model, connection_pane_index, ping_pane_index, endpoint_pane_index] {

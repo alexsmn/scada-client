@@ -40,6 +40,10 @@ int StatusBarModelImpl::GetAlarmCount() const {
   return alarm_count_provider_ ? alarm_count_provider_() : 0;
 }
 
+bool StatusBarModelImpl::IsContextBarPane(int index) const {
+  return panes_[index].in_context_bar;
+}
+
 int StatusBarModelImpl::GetSeverityCount(aui::SeverityLevel level) const {
   return severity_count_provider_ ? severity_count_provider_(level) : 0;
 }

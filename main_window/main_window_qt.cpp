@@ -347,13 +347,17 @@ void MainWindow::CreateContextBar() {
     context_bar_->addWidget(tile);
   }
 
-  // Context cluster (right): mirror the status-bar model panes so the operator
-  // keeps connection / server / user in view at the top too.
+  // Context cluster (right): a curated who/where subset of the status-bar panes
+  // (user / connection / server / endpoint) — not the whole status strip. The
+  // alarm counts live in the KPI tiles, so the cluster stays identity/location.
   const int pane_count = status_bar_model_->GetPaneCount();
   for (int i = 0; i < pane_count; ++i) {
+    if (!status_bar_model_->IsContextBarPane(i))
+      continue;
     auto* label = new QLabel(context_bar_);
     label->setMargin(2);
     context_panes_.push_back(label);
+    context_pane_indices_.push_back(i);
     context_bar_->addWidget(label);
   }
 
@@ -372,12 +376,13 @@ void MainWindow::CreateContextBar() {
   };
 
   auto refresh = [this, refresh_kpi] {
-    for (int i = 0; i < static_cast<int>(context_panes_.size()); ++i) {
-      context_panes_[i]->setText(
-          QString::fromStdU16String(status_bar_model_->GetPaneText(i)));
+    for (int k = 0; k < static_cast<int>(context_panes_.size()); ++k) {
+      const int pane = context_pane_indices_[k];
+      context_panes_[k]->setText(
+          QString::fromStdU16String(status_bar_model_->GetPaneText(pane)));
       const std::optional<aui::Color> color =
-          status_bar_model_->GetPaneColor(i);
-      context_panes_[i]->setStyleSheet(
+          status_bar_model_->GetPaneColor(pane);
+      context_panes_[k]->setStyleSheet(
           color ? QStringLiteral("color:%1;font-weight:600;")
                       .arg(color->qcolor().name())
                 : QString{});
