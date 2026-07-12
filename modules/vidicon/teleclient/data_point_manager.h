@@ -3,13 +3,17 @@
 #include <functional>
 #include <stop_token>
 
+#include "vidicon/vidicon_compat.h"
+
 namespace opc_client {
 struct DataValue;
 }
 
-namespace vidicon {
-
+namespace scada::vidicon {
 struct DataPointAddress;
+}
+
+namespace vidicon {
 
 using DataChangeHandler =
     std::function<void(const opc_client::DataValue& data_value)>;
