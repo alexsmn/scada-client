@@ -24,9 +24,18 @@ class CommandPalette : public QDialog {
   // palette checks IsCommandEnabled and calls ExecuteCommand on it.
   using HandlerResolver = std::function<CommandHandler*(unsigned command_id)>;
 
+  // A non-command entry (e.g. an address-space tag) shown alongside commands
+  // and matched the same way; `activate` runs when it is chosen.
+  struct ExtraItem {
+    std::u16string title;
+    std::u16string detail;
+    std::function<void()> activate;
+  };
+
   CommandPalette(QWidget* parent,
                  const CommandManager& command_manager,
-                 HandlerResolver resolver);
+                 HandlerResolver resolver,
+                 std::vector<ExtraItem> extra_items = {});
   ~CommandPalette() override;
 
   // Seeds the filter (e.g. with the character that opened the palette) and
@@ -45,6 +54,8 @@ class CommandPalette : public QDialog {
 
   std::vector<CommandEntry> entries_;
   HandlerResolver resolver_;
+  // Non-command entries, indexed by (entry command_id - kExtraItemBase).
+  std::vector<ExtraItem> extra_items_;
 
   QLineEdit* filter_ = nullptr;
   QListWidget* list_ = nullptr;

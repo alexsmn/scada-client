@@ -13,7 +13,7 @@
 namespace scada::aui {
 class MenuModel;
 class StatusBarModel;
-}  // namespace aui
+}  // namespace scada::aui
 
 class ActionManager;
 class CommandHandler;
@@ -21,6 +21,7 @@ class DialogService;
 class FileManager;
 class MainWindowInterface;
 class MainWindowManager;
+class NodeService;
 class Profile;
 class ProgressHost;
 class SelectionCommandRouter;
@@ -61,4 +62,8 @@ struct MainWindowContext {
   std::function<std::string()> connection_info_provider_;
 
   ProgressHost& progress_host_;
+
+  // Optional: the address-space service, used by the command palette's tag
+  // search. Null in minimal/test contexts that do not exercise tag search.
+  NodeService* node_service_ = nullptr;
 };

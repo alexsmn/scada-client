@@ -489,7 +489,7 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
       std::bind_front(&MainWindowModule::CreateOpenedView, this),
       main_command_router_factory, selection_command_router_,
       std::move(status_bar_model), context_menu_factory, main_menu_factory,
-      connection_info_provider, progress_host_};
+      connection_info_provider, progress_host_, &node_service_};
 }
 
 void MainWindowModule::OnEvents(bool has_events) {

@@ -8,7 +8,12 @@
 #include <boost/signals2/connection.hpp>
 #include <vector>
 
+namespace scada {
+class NodeId;
+}
+
 class ActivityBar;
+class TagSearchIndex;
 class QAction;
 class QLabel;
 class QLineEdit;
@@ -65,6 +70,8 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   void CreateActivityBar();
   // Opens the section's default view and marks it active on the rail.
   void ActivateSection(const std::string& window_info_name);
+  // Opens an address-space tag (from the palette) in a table view.
+  void OpenTag(const scada::NodeId& node_id, const std::u16string& title);
   // Opens the Ctrl-K command palette over every registered command, optionally
   // seeded with `initial_text` (type-to-search from the context-bar field).
   void ShowCommandPalette(const QString& initial_text = QString());
@@ -109,6 +116,10 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // Left activity rail (opt-in). Its alarm badge follows the status-bar model.
   ActivityBar* activity_bar_ = nullptr;
   boost::signals2::scoped_connection activity_bar_connection_;
+
+  // Flat tag index for the command palette's tag search (opt-in; null when the
+  // reshell is off or no node service is available).
+  std::unique_ptr<TagSearchIndex> tag_search_index_;
 
   boost::signals2::scoped_connection change_profile_connection_;
   boost::signals2::scoped_connection action_changed_connection_;

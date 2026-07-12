@@ -14,6 +14,11 @@
 
 namespace {
 
+// Entry ids at or above this are extra (non-command) items; the offset from the
+// base is the index into extra_items_. Real command ids are small resource ids,
+// so this leaves no overlap.
+constexpr unsigned kExtraItemBase = 1u << 30;
+
 // Right-aligned shortcut hint for a command, or empty if it has none. Mirrors
 // the toolbar/menu key-sequence construction (key code + modifier bitmask).
 std::u16string ShortcutText(const CommandDescriptor& descriptor) {
@@ -28,8 +33,11 @@ std::u16string ShortcutText(const CommandDescriptor& descriptor) {
 
 CommandPalette::CommandPalette(QWidget* parent,
                                const CommandManager& command_manager,
-                               HandlerResolver resolver)
-    : QDialog{parent}, resolver_{std::move(resolver)} {
+                               HandlerResolver resolver,
+                               std::vector<ExtraItem> extra_items)
+    : QDialog{parent},
+      resolver_{std::move(resolver)},
+      extra_items_{std::move(extra_items)} {
   setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
   setObjectName("commandPalette");
   setModal(true);
@@ -40,6 +48,15 @@ CommandPalette::CommandPalette(QWidget* parent,
       continue;
     entries_.push_back(
         {descriptor->command_id, std::move(title), ShortcutText(*descriptor)});
+  }
+
+  // Non-command entries are matched by title alongside commands; their entry
+  // ids are offset past any real command id so activation can tell them apart.
+  for (size_t i = 0; i < extra_items_.size(); ++i) {
+    if (extra_items_[i].title.empty())
+      continue;
+    entries_.push_back({static_cast<unsigned>(kExtraItemBase + i),
+                        extra_items_[i].title, extra_items_[i].detail});
   }
 
   filter_ = new QLineEdit{this};
@@ -109,9 +126,16 @@ void CommandPalette::ActivateCurrent() {
     return;
   const unsigned command_id = item->data(Qt::UserRole).toUInt();
 
-  // Close before running: the command may open its own dialog, which should be
-  // parented to the main window rather than sit behind the modal palette.
+  // Close before running: the action may open its own dialog/view, which should
+  // be parented to the main window rather than sit behind the modal palette.
   close();
+
+  if (command_id >= kExtraItemBase) {
+    const size_t index = command_id - kExtraItemBase;
+    if (index < extra_items_.size() && extra_items_[index].activate)
+      extra_items_[index].activate();
+    return;
+  }
 
   if (resolver_) {
     if (CommandHandler* handler = resolver_(command_id);

@@ -121,6 +121,27 @@ TEST_F(CommandPaletteTest, PresetFilterSeedsAndNarrowsTheQuery) {
             (std::vector<std::u16string>{u"Write Value"}));
 }
 
+TEST_F(CommandPaletteTest, ExtraItemsAreMatchedAndActivated) {
+  CommandManager manager;
+  AddCommand(manager, 1, u"Open Display");
+
+  RecordingHandler handler;
+  bool tag_activated = false;
+  std::vector<CommandPalette::ExtraItem> extras;
+  extras.push_back({u"Pump Pressure", u"", [&] { tag_activated = true; }});
+
+  CommandPalette palette{nullptr, manager, ResolverFor(handler),
+                         std::move(extras)};
+
+  FilterOf(palette)->setText(QStringLiteral("pump"));
+  EXPECT_EQ(VisibleTitles(palette),
+            (std::vector<std::u16string>{u"Pump Pressure"}));
+
+  PressKey(palette, Qt::Key_Return);
+  EXPECT_TRUE(tag_activated);
+  EXPECT_TRUE(handler.executed_.empty());  // a tag is not a command
+}
+
 TEST_F(CommandPaletteTest, EnterRunsTheSelectedCommand) {
   CommandManager manager;
   AddCommand(manager, 1, u"Open Display");

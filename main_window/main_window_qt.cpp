@@ -24,10 +24,13 @@
 #include "main_window/selection_command_router.h"
 #include "main_window/simple_menu_command_handler.h"
 #include "main_window/status_bar/status_bar_controller_qt.h"
+#include "main_window/tag_search_index.h"
 #include "main_window/view_manager.h"
+#include "main_window/window_definition_builder.h"
 #include "profile/profile.h"
 #include "profile/window_definition.h"
 #include "resources/common_resources.h"
+#include "scada/standard_node_ids.h"
 #include "ui/common/client_utils.h"
 
 #include <QAction>
@@ -154,6 +157,13 @@ MainWindow::MainWindow(MainWindowContext&& context)
   if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy) {
     CreateActivityBar();
     CreateContextBar();
+    // Kick off the palette's tag browse in the background so tags are ready by
+    // the time the operator first opens the palette.
+    if (node_service_) {
+      tag_search_index_ = std::make_unique<TagSearchIndex>(
+          executor_, *node_service_, scada::id::ObjectsFolder);
+      tag_search_index_->EnsurePopulated();
+    }
   }
   CreateToolbar();
   CreateStatusBar();
@@ -428,13 +438,40 @@ void MainWindow::ActivateSection(const std::string& window_info_name) {
   activity_bar_->SetActiveSection(window_info_name);
 }
 
+void MainWindow::OpenTag(const scada::NodeId& node_id,
+                         const std::u16string& title) {
+  const WindowInfo* info = FindWindowInfoByName("Table");
+  if (!info)
+    return;
+  CoSpawn(executor_,
+          [this, def = MakeWindowDefinition(
+                     info, {node_id}, title)]() mutable -> Awaitable<void> {
+            co_await OpenView(def, /*make_active=*/true);
+          });
+}
+
 void MainWindow::ShowCommandPalette(const QString& initial_text) {
+  // Address-space tags as extra palette entries; activating one opens it in a
+  // table view. The browse was started at construction, so tags() is usually
+  // already populated here (empty on the very first open of a fresh session).
+  std::vector<CommandPalette::ExtraItem> extras;
+  if (tag_search_index_) {
+    const std::u16string tag_detail = Translate("tag");
+    for (const TagSearchIndex::Tag& tag : tag_search_index_->tags()) {
+      extras.push_back({tag.name, tag_detail,
+                        [this, node_id = tag.node_id, title = tag.name] {
+                          OpenTag(node_id, title);
+                        }});
+    }
+  }
+
   auto* palette = new CommandPalette(
       this, ui_command_registry_.command_manager(),
       [this](unsigned command_id) -> CommandHandler* {
         return ResolveCommandHandler(ui_command_registry_.command_manager(),
                                      command_id, kToolbarContexts, *commands_);
-      });
+      },
+      std::move(extras));
   palette->setAttribute(Qt::WA_DeleteOnClose);
   if (!initial_text.isEmpty())
     palette->PresetFilter(initial_text);
