@@ -7,6 +7,19 @@
 #include <QProgressBar>
 #include <QStatusBar>
 
+namespace {
+
+// Applies an optional per-pane text colour to a status-bar label. An unset
+// colour clears any previous override so the label follows the theme palette.
+void ApplyPaneColor(QLabel* label, const std::optional<aui::Color>& color) {
+  label->setStyleSheet(color
+                           ? QStringLiteral("QLabel{color:%1;font-weight:600;}")
+                                 .arg(color->qcolor().name())
+                           : QString{});
+}
+
+}  // namespace
+
 StatusBarController::StatusBarController(QStatusBar& status_bar,
                                          aui::StatusBarModel& model,
                                          ProgressHost& progress_host)
@@ -25,6 +38,7 @@ StatusBarController::StatusBarController(QStatusBar& status_bar,
     auto* pane = new QLabel{&status_bar_};
     pane->setMargin(2);
     pane->setText(QString::fromStdU16String(model_.GetPaneText(i)));
+    ApplyPaneColor(pane, model_.GetPaneColor(i));
     status_bar_.addPermanentWidget(pane);
     panes_.emplace_back(pane);
   }
@@ -42,6 +56,7 @@ void StatusBarController::OnPanesChanged(int index, int count) {
   for (int i = 0; i < count; ++i) {
     auto text = model_.GetPaneText(index + i);
     panes_[index + i]->setText(QString::fromStdU16String(text));
+    ApplyPaneColor(panes_[index + i], model_.GetPaneColor(index + i));
   }
 }
 

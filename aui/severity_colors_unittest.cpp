@@ -60,5 +60,20 @@ TEST_F(SeverityColorsTest, TokenThemesResolveFromTheRamp) {
             light_critical.background);
 }
 
+// The solid severity colour (status text / dots) is absent under legacy and for
+// kNone, and follows the ramp under the token themes.
+TEST_F(SeverityColorsTest, SolidSeverityColourIsTokenOnly) {
+  // Legacy never coloured these cues.
+  EXPECT_FALSE(SeverityColor(SeverityLevel::kCritical).has_value());
+  EXPECT_FALSE(SeverityColor(SeverityLevel::kWarning).has_value());
+
+  SetSeverityTheme(SeverityTheme::kDark);
+  EXPECT_FALSE(SeverityColor(SeverityLevel::kNone).has_value());
+  ASSERT_TRUE(SeverityColor(SeverityLevel::kCritical).has_value());
+  EXPECT_EQ(*SeverityColor(SeverityLevel::kCritical), C(232, 90, 82));
+  ASSERT_TRUE(SeverityColor(SeverityLevel::kWarning).has_value());
+  EXPECT_EQ(*SeverityColor(SeverityLevel::kWarning), C(230, 178, 75));
+}
+
 }  // namespace
 }  // namespace scada::aui

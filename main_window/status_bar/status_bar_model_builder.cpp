@@ -24,11 +24,23 @@ std::shared_ptr<aui::StatusBarModel> StatusBarModelBuilder::Build() {
                                         event_status_provider),
        .size = 100});
 
-  event_status_provider->Init(
-      [model, event_count_pane_index, severity_pane_index] {
-        model->NotifyPanesChanged(event_count_pane_index);
-        model->NotifyPanesChanged(severity_pane_index);
-      });
+  // Highest active alarm severity, coloured from the severity single source.
+  // Empty under the legacy theme, so the default status bar is unchanged.
+  int highest_severity_pane_index = model->AddPane(
+      {.text_provider = std::bind_front(
+           &EventStatusProvider::GetHighestSeverityText, event_status_provider),
+       .color_provider =
+           std::bind_front(&EventStatusProvider::GetHighestSeverityColor,
+                           event_status_provider),
+       .size = 130});
+
+  event_status_provider->Init([model, event_count_pane_index,
+                               severity_pane_index,
+                               highest_severity_pane_index] {
+    model->NotifyPanesChanged(event_count_pane_index);
+    model->NotifyPanesChanged(severity_pane_index);
+    model->NotifyPanesChanged(highest_severity_pane_index);
+  });
 
   // User.
 

@@ -11,9 +11,12 @@ class StatusBarModelImpl final : public aui::StatusBarModel {
   StatusBarModelImpl();
 
   using StatusTextProvider = std::function<std::u16string()>;
+  using StatusColorProvider = std::function<std::optional<aui::Color>()>;
 
   struct StatusPane {
     StatusTextProvider text_provider;
+    // Optional: supplies the pane's text colour (e.g. a severity indicator).
+    StatusColorProvider color_provider;
     int size = -1;
   };
 
@@ -26,6 +29,7 @@ class StatusBarModelImpl final : public aui::StatusBarModel {
   virtual int GetPaneCount() const override;
   virtual std::u16string GetPaneText(int index) const override;
   virtual int GetPaneSize(int index) const override;
+  virtual std::optional<aui::Color> GetPaneColor(int index) const override;
   [[nodiscard]] virtual boost::signals2::scoped_connection
   SubscribePanesChanged(const PanesChangedCallback& callback) override;
 

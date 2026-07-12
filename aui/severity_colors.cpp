@@ -71,6 +71,36 @@ constexpr ThemeTable kHighContrast{
     .warning = {.background = {255, 255, 0}, .text = kHcText, .has_text = true},
 };
 
+// Solid severity ramp (for text / dots / bars) per token theme: warning maps to
+// severity-medium, critical to severity-critical (client/docs/ux/
+// design-language.md). Legacy has no solid ramp — those cues were never
+// coloured — so SeverityColor returns nothing there.
+struct SolidRamp {
+  Rgba warning;
+  Rgba critical;
+};
+
+constexpr SolidRamp kDarkSolid{.warning = {230, 178, 75},
+                               .critical = {232, 90, 82}};
+constexpr SolidRamp kLightSolid{.warning = {193, 138, 36},
+                                .critical = {143, 36, 31}};
+constexpr SolidRamp kHcSolid{.warning = {255, 255, 0},
+                             .critical = {255, 107, 107}};
+
+const SolidRamp* SolidRampFor(SeverityTheme theme) {
+  switch (theme) {
+    case SeverityTheme::kDark:
+      return &kDarkSolid;
+    case SeverityTheme::kLight:
+      return &kLightSolid;
+    case SeverityTheme::kHighContrast:
+      return &kHcSolid;
+    case SeverityTheme::kLegacy:
+      break;
+  }
+  return nullptr;
+}
+
 // Function-local static (not a namespace-scope global) holds the active theme.
 SeverityTheme& CurrentTheme() {
   static SeverityTheme theme = SeverityTheme::kLegacy;
@@ -119,6 +149,16 @@ EventRowColors EventRowColorsFor(EventBackground background) {
   if (slot.has_text)
     colors.text = Color{slot.text};
   return colors;
+}
+
+std::optional<Color> SeverityColor(SeverityLevel level) {
+  if (level == SeverityLevel::kNone)
+    return std::nullopt;
+  const SolidRamp* ramp = SolidRampFor(CurrentTheme());
+  if (!ramp)
+    return std::nullopt;  // legacy: severity cues are not coloured
+  return Color{level == SeverityLevel::kCritical ? ramp->critical
+                                                 : ramp->warning};
 }
 
 }  // namespace scada::aui

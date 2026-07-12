@@ -36,4 +36,15 @@ struct EventRowColors {
 // Resolves the colours for an event-row class under the active severity theme.
 EventRowColors EventRowColorsFor(EventBackground background);
 
+// A value/event's alarm severity, coarsened to the levels the design ramp
+// distinguishes. Used for *solid* severity cues (status text, tree dots,
+// inspector marks) — as opposed to the soft `EventBackground` row fills above.
+enum class SeverityLevel { kNone, kWarning, kCritical };
+
+// The solid severity colour for a level under the active theme. Returns
+// std::nullopt for `kNone`, and — because the legacy UI never coloured these
+// cues — for the legacy theme too, so the default look is unchanged and the
+// colour appears only under the opt-in token themes.
+std::optional<Color> SeverityColor(SeverityLevel level);
+
 }  // namespace scada::aui

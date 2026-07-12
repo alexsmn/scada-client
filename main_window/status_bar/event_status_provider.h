@@ -1,9 +1,11 @@
 #pragma once
 
+#include "aui/severity_colors.h"
 #include "events/event_observer.h"
 
 #include <boost/signals2/connection.hpp>
 #include <functional>
+#include <optional>
 #include <string>
 
 class LocalEvents;
@@ -28,7 +30,17 @@ class EventStatusProvider final : private EventObserver {
   std::u16string GetEventCountText() const;
   std::u16string GetSeverityText() const;
 
+  // The worst active (unacknowledged) alarm shown as a coloured indicator. Both
+  // are empty/none under the legacy theme, so the default status bar is
+  // unchanged; under the opt-in token themes they surface the highest severity
+  // and its colour (from the severity single source).
+  std::u16string GetHighestSeverityText() const;
+  std::optional<aui::Color> GetHighestSeverityColor() const;
+
  private:
+  // Highest severity among the currently unacknowledged alarms, or kNone.
+  aui::SeverityLevel HighestUnackedLevel() const;
+
   // EventObserver
   void OnEvents(std::span<const scada::Event* const> events) override;
 

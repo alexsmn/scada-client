@@ -1,9 +1,13 @@
 #include "main_window/status_bar/event_status_provider.h"
 
 #include "base/u16format.h"
+#include "events/local_events.h"
 #include "events/node_event_provider.h"
 #include "profile/profile.h"
-#include "events/local_events.h"
+#include "scada/event.h"
+
+#include <algorithm>
+#include <ranges>
 
 void EventStatusProvider::Init(const ChangeNotifier& change_notifier) {
   change_notifier_ = change_notifier;
@@ -24,13 +28,54 @@ std::u16string EventStatusProvider::GetEventCountText() const {
   size_t event_count = node_event_provider_.unacked_events().size() +
                        local_events_.events().size();
 
-  return event_count != 0 ? u16format(L"\u0421\u043e\u0431\u044b\u0442\u0438\u044f: {}", event_count)
-                          : u"\u041d\u0435\u0442 \u0441\u043e\u0431\u044b\u0442\u0438\u0439";
+  return event_count != 0
+             ? u16format(L"\u0421\u043e\u0431\u044b\u0442\u0438\u044f: {}",
+                         event_count)
+             : u"\u041d\u0435\u0442 \u0441\u043e\u0431\u044b\u0442\u0438\u0439";
 }
 
 std::u16string EventStatusProvider::GetSeverityText() const {
   return u16format(L"\u0412\u0430\u0436\u043d\u043e\u0441\u0442\u044c: {}",
-                            node_event_provider_.severity_min());
+                   node_event_provider_.severity_min());
+}
+
+aui::SeverityLevel EventStatusProvider::HighestUnackedLevel() const {
+  scada::UInt32 highest = 0;
+  for (const scada::Event& event :
+       node_event_provider_.unacked_events() | std::views::values) {
+    highest = std::max(highest, event.severity);
+  }
+
+  if (highest >= scada::kSeverityCritical)
+    return aui::SeverityLevel::kCritical;
+  if (highest >= scada::kSeverityWarning)
+    return aui::SeverityLevel::kWarning;
+  return aui::SeverityLevel::kNone;
+}
+
+std::u16string EventStatusProvider::GetHighestSeverityText() const {
+  // Keep the legacy status bar untouched: the coloured highest-severity cell is
+  // part of the opt-in token themes only.
+  if (aui::GetSeverityTheme() == aui::SeverityTheme::kLegacy)
+    return {};
+
+  switch (HighestUnackedLevel()) {
+    case aui::SeverityLevel::kCritical:
+      // "Критично" — \u-escaped to avoid Cyrillic-literal mojibake, as
+      // elsewhere in this file.
+      return u"\u041a\u0440\u0438\u0442\u0438\u0447\u043d\u043e";
+    case aui::SeverityLevel::kWarning:
+      // "Предупреждение"
+      return u"\u041f\u0440\u0435\u0434\u0443\u043f\u0440\u0435\u0436\u0434"
+             u"\u0435\u043d\u0438\u0435";
+    case aui::SeverityLevel::kNone:
+      return {};  // calm: no active alarm, show nothing
+  }
+  return {};
+}
+
+std::optional<aui::Color> EventStatusProvider::GetHighestSeverityColor() const {
+  return aui::SeverityColor(HighestUnackedLevel());
 }
 
 void EventStatusProvider::OnEvents(

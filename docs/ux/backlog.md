@@ -38,7 +38,7 @@ required sequence.
 | 1.2 | **Top context bar**: brand + command/search field + plant/server/connection/user cluster. | `main_window/`, `core/` | 0.1 | Context cluster always visible; `Ctrl K` opens palette. |
 | 1.3 | **Command palette** over `GlobalCommandRegistry` + `SelectionCommandRegistry` + address-space browse. | `core/`, `controller/` | 1.2 | Fuzzy search finds commands, views, and tags; Enter activates. |
 | 1.4 | **Editor-style workspace tabs**; drop per-window native title chrome. | `main_window/`, `ViewManager` | 0.1 | Tabs restyled; `OpenedView` labels intact; close/reorder works. |
-| 1.5 | **Status strip**: add user·role, unacknowledged count, highest severity, endpoint, build. | `main_window/`, status bar | 0.2 | Strip mirrors top context; alarm summary live. |
+| 1.5 | **Status strip** — 🔶 *highest-severity cell landed*: a new status pane shows the worst active (unacknowledged) alarm — "Критично"/"Предупреждение" — **coloured from the severity single source** (`SeverityColor`); empty under the legacy theme so the default strip is unchanged. Added optional per-pane colour to `StatusBarModel`/impl and the Qt controller. Unit-tested (`SeverityColorsTest.SolidSeverityColourIsTokenOnly`). *Remaining:* user·role and endpoint/build cells (the strip already has event count, connection, ping, user). | `main_window/status_bar/`, `aui/` | 0.2 | Alarm summary (highest severity) live and coloured. |
 
 ## P2 — Operator core (the cockpit)
 

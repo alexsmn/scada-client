@@ -22,6 +22,11 @@ int StatusBarModelImpl::GetPaneSize(int index) const {
   return panes_[index].size;
 }
 
+std::optional<aui::Color> StatusBarModelImpl::GetPaneColor(int index) const {
+  auto color_provider = panes_[index].color_provider;
+  return color_provider ? color_provider() : std::nullopt;
+}
+
 boost::signals2::scoped_connection StatusBarModelImpl::SubscribePanesChanged(
     const PanesChangedCallback& callback) {
   return panes_changed_signal_.connect(callback);
