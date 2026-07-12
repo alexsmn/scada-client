@@ -249,7 +249,7 @@ TEST(MetrixDataSourceTest, AppliesEarliestTimestampFromHistoryRead) {
   const auto latest = scada::DateTime::FromDoubleT(200.0);
 
   EXPECT_CALL(history_service, HistoryReadRaw(_))
-      .WillOnce(Invoke([&](const scada::HistoryReadRawDetails& details)
+      .WillOnce(Invoke([&](scada::HistoryReadRawDetails details)
                            -> Awaitable<scada::HistoryReadRawResult> {
         EXPECT_EQ(details.node_id, kTestNodeId);
         EXPECT_EQ(details.max_count, 1u);
@@ -283,14 +283,14 @@ TEST(MetrixDataSourceTest, DropsCanceledEarliestTimestampRead) {
   bool second_started = false;
 
   EXPECT_CALL(history_service, HistoryReadRaw(_))
-      .WillOnce(Invoke([&](const scada::HistoryReadRawDetails& details)
+      .WillOnce(Invoke([&](scada::HistoryReadRawDetails details)
                            -> Awaitable<scada::HistoryReadRawResult> {
         EXPECT_EQ(details.node_id, kTestNodeId);
         first_started = true;
         co_await first_completion.Wait();
         co_return first_result;
       }))
-      .WillOnce(Invoke([&](const scada::HistoryReadRawDetails& details)
+      .WillOnce(Invoke([&](scada::HistoryReadRawDetails details)
                            -> Awaitable<scada::HistoryReadRawResult> {
         EXPECT_EQ(details.node_id, kTestNodeId);
         second_started = true;
