@@ -61,7 +61,7 @@
     { "id": "TIT.205", "browse_name": "Ток L2",              "class": "variable", "type_definition": "analog_item", "base_value": 302.5 },
     { "id": "TIT.206", "browse_name": "Ток L3",              "class": "variable", "type_definition": "analog_item", "base_value": 298.1 },
     { "id": "TIT.207", "browse_name": "Напряжение L3-L1",    "class": "variable", "type_definition": "analog_item", "base_value": 305.7 },
-    { "id": "TIT.208", "browse_name": "Частота",             "class": "variable", "type_definition": "analog_item", "base_value": 50.01, "properties": { "SCADA.158": 49.95, "SCADA.159": 50.05 } },
+    { "id": "TIT.208", "browse_name": "Частота",             "class": "variable", "type_definition": "analog_item", "base_value": 50.01, "history_stddev": 0.01, "properties": { "SCADA.158": 49.95, "SCADA.159": 50.05, "display_format": "0.00" } },
     { "id": "TIT.209", "browse_name": "Коэффициент мощности","class": "variable", "type_definition": "analog_item", "base_value": 0.95 },
     { "id": "TIT.210", "browse_name": "Суммарная энергия",   "class": "variable", "type_definition": "analog_item", "base_value": 48723 },
     { "id": "TIT.211", "browse_name": "Температура",         "class": "variable", "type_definition": "analog_item", "base_value": 42.3, "properties": { "display_format": "0.#", "units": "°C" } },
