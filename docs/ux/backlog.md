@@ -77,8 +77,9 @@ the shell.
 | 5.1 | **Users & access rights** admin: users grid + RBAC role/permission editor (inherited-vs-explicit grants), enable/disable, reset password, admin-gated; other node-table admin surfaces (Formats, Simulation, Historical DBs) adopt tokens (`users-admin.html`). | `modules/node_table/`, `modules/change_password/` | Matches `users-admin.html`; editing gated to Administrator; grids themed. |
 | 5.2 | **Transmission-rules editor**: rules grid (source → destination IOA, trigger, transform, live status/counts) + rule editor inspector; enable/disable, test-send, Revert/Apply (`transmission-rules.html`). | `modules/transmission/` | Matches `transmission-rules.html`; CRUD + validation; per-rule enable/disable; destination link status shown. |
 | 5.3 | **Debugger / protocol trace**: request/response frame trace with direction/type/error coding, filters, pause/clear/save, and a decoded APCI/ASDU + raw-hex inspector; device-metrics themed (`debugger.html`). | `modules/debugger/`, `modules/device_metrics/` | Matches `debugger.html`; live capture with pause/clear/filter/save; frame decode inspector; maps frame → NodeId. |
-| 5.4 | **Vocabulary parity check** with `web` component names. | docs | `ActivityBar`/`InspectorPanel`/`StatusStrip`/… names align 1:1 with the web parity matrix (no shared files). |
-| 5.5 | **Screenshot regen** for all reshelled views. | `client/tools/screenshot_generator/` | `client/docs/screenshots/` reflects the new UI; manifest tags updated. |
+| 5.4 | **Bulk create / delete wizard**: multi-step flow (target &amp; type → naming/addressing pattern with `{n}` tokens → defaults → review) with a **live preview** grid and per-item conflict resolution (skip/rename/overwrite) (`bulk-create.html`). | `modules/multi_create/`, `Session.addNodes` | Matches `bulk-create.html`; preview updates live from the pattern; conflicts flagged with resolution; create/delete verified by re-browse. |
+| 5.5 | **Vocabulary parity check** with `web` component names. | docs | `ActivityBar`/`InspectorPanel`/`StatusStrip`/… names align 1:1 with the web parity matrix (no shared files). |
+| 5.6 | **Screenshot regen** for all reshelled views. | `client/tools/screenshot_generator/` | `client/docs/screenshots/` reflects the new UI; manifest tags updated. |
 
 ---
 

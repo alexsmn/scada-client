@@ -176,6 +176,7 @@ Rendered, theme-toggleable HTML under
 | `users-admin.html` | admin: users grid + RBAC role/permission editor, admin-gated |
 | `debugger.html` | diagnostics: protocol frame trace + decoded APCI/ASDU tree + raw hex |
 | `transmission-rules.html` | re-transmission rules grid + rule editor (source → destination IOA) |
+| `bulk-create.html` | bulk create-many wizard: stepper, pattern form, live preview + conflict resolution |
 | `login.html` | themed sign-in + read-only system preview |
 | `control-command.html` | two-stage control/write confirm |
 
