@@ -6,6 +6,7 @@
 #include "app/qt/startup_flow.h"
 #include "app/startup_exception.h"
 #include "aui/qt/message_loop_qt.h"
+#include "aui/qt/theme_qt.h"
 #include "base/any_executor.h"
 #include "base/any_executor_timer.h"
 #include "base/boost_log.h"
@@ -127,6 +128,15 @@ int main(int argc, char* argv[]) {
     QSettings settings;
     InstalledTranslation installed_translation{settings};
     InstalledStyle installed_style{settings};
+
+    // Install the shared design tokens (palette + stylesheet) over the Fusion
+    // base so the whole app — including the login dialog shown before a profile
+    // loads — reads as the workbench design system. Desktop defaults to the
+    // dark theme; the persisted "Theme" setting overrides it. See
+    // client/docs/ux/design-language.md.
+    aui::ApplyTheme(
+        aui::ThemeFromString(settings.value("Theme").toString(),
+                             aui::Theme::kDark));
 
     // `QApplication` must be created.
     auto executor = MakeAnyExecutor(std::make_shared<MessageLoopQt>());

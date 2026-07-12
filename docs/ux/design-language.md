@@ -10,6 +10,12 @@ numerically identical to the web client's design system so the two products
 read as one. When one side changes a token, change the other in the same
 initiative. Do not fork the palette.
 
+> **Implementation.** The Qt token tables, the `QPalette` builder, and the
+> generated QSS live in [`aui/qt/theme_qt.{h,cpp}`](../../aui/qt/theme_qt.h)
+> (`aui::ThemeTokens` / `aui::ApplyTheme`). The hex values there must stay in
+> sync with the tables below. The theme is installed at startup in
+> `app/qt/main.cpp`.
+
 ## 1. Themes
 
 Three themes ship from one token contract, selected by a `data-theme`

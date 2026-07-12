@@ -23,7 +23,7 @@ the shell.
 
 | # | Item | Touches | Done when |
 |---|---|---|---|
-| 0.1 | **Token layer**: encode the light/dark/high-contrast token sets as a Qt palette + QSS variable sheet, driven by `Profile` theme choice. | `app/qt/`, `profile/`, new `aui/qt/theme_*` | All three themes switch at runtime; no component hard-codes hex; values match [`design-language.md`](design-language.md). |
+| 0.1 | **Token layer** — ✅ *landed*: `aui/qt/theme_qt.{h,cpp}` encodes the light/dark/high-contrast token tables and builds a Fusion `QPalette` + generated QSS from them; `ApplyTheme()` installs style+palette+sheet, wired at startup in `app/qt/main.cpp` (dark default, `"Theme"` QSetting override). *Remaining:* drive the choice from `Profile` + a runtime theme switcher, and a high-contrast entry point. | `app/qt/`, `profile/`, `aui/qt/theme_qt.*` | All three themes switch at runtime; no component hard-codes hex; values match [`design-language.md`](design-language.md). |
 | 0.2 | **Severity palette single-source**: one enum→token map consumed by tree, journal, alarm strip, inspector, status. | `aui/`, `modules/events/` | Changing a severity token restyles every surface at once. |
 | 0.3 | **Mono numerals**: apply `--font-mono` to all value/timestamp/limit cells. | `aui/models/`, table/tree delegates | Values/timestamps render tabular; columns don't jitter on update. |
 | 0.4 | **Themed control primitives**: `Field`, `Combo`, `Checkbox`, `Button` (primary/default/danger/disabled+reason). | new `aui/qt/controls` | Primitives available; retire native `QInputDialog`/`QMessageBox` defaults. |
