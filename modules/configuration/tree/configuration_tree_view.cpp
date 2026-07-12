@@ -5,7 +5,7 @@
 #include "configuration/tree/configuration_tree_drop_handler.h"
 #include "configuration/tree/configuration_tree_model.h"
 #include "controller/controller_delegate.h"
-#include "aui/dragdrop/item_drag_data.h"
+#include "ui/dragdrop/item_drag_data.h"
 #include "node_service/node_util.h"
 #include "profile/window_definition.h"
 

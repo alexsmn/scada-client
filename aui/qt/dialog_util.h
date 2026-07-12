@@ -4,7 +4,6 @@
 #include "base/async_completion.h"
 #include "base/awaitable.h"
 #include "base/callback_awaitable.h"
-#include "net/net_executor_adapter.h"
 
 #include <QDialog>
 

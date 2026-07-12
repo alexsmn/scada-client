@@ -1,4 +1,4 @@
-#include "client_utils_qt.h"
+#include "ui/qt/client_utils_qt.h"
 
 #include "aui/models/menu_model.h"
 #include "resources/common_resources.h"

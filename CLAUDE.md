@@ -511,6 +511,14 @@ Logging-related switches (pass as `--switch-name`):
 
 9. **Conditional compilation** — Use `#if !defined(UI_WT)` to guard Qt-only features (Modus, Vidicon, etc.).
 
+13. **`aui/` is slated for extraction into its own repository.** Never add
+    includes of client-repo headers (`profile/`, `resources/`, `ui/`,
+    `modules/`, `main_window/`, …) or scada-common dependencies inside
+    `aui/` — invert the dependency instead (keep the generic seam in aui,
+    move the client-coupled piece to its consumer). Its allowed dependency
+    set is `scada_base`, `graph_qt`, `view_manager_qt`, Qt/Wt — see
+    `docs/aui-extraction.md`.
+
 11. **Modus/Vidicon ActiveX parameter names** — Never rename OLESTR parameter names in `modules/modus/` (e.g., `"ключ_привязки"`, `"положение"`, `"уставки"`). These Russian-language identifiers are part of the external Vidicon ActiveX protocol interface and must remain unchanged.
 
 10. **Async code** keeps `promise<T>` at public/module boundaries, but new or touched implementation code should use coroutine bodies with `co_await`. Use `AwaitPromise(...)` to await legacy promises and `ToPromise(...)` only at compatibility boundaries; do not add new `.then()` chains for client workflows.

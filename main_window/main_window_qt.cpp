@@ -3,7 +3,7 @@
 #include "aui/models/menu_model.h"
 #include "aui/models/simple_menu_model.h"
 #include "aui/models/status_bar_model.h"
-#include "aui/qt/client_utils_qt.h"
+#include "ui/qt/client_utils_qt.h"
 #include "aui/severity_colors.h"
 #include "aui/translation.h"
 #include "base/awaitable.h"

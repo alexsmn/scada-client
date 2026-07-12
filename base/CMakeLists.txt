@@ -35,7 +35,13 @@ set(CLIENT_UI_COMMON_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/web_util.h"
 )
 
-add_library(client_ui_common_qt ${CLIENT_UI_COMMON_SOURCES})
+add_library(client_ui_common_qt ${CLIENT_UI_COMMON_SOURCES}
+  # Qt-only helpers over client-app resources (res/client.qrc icon paths keyed
+  # by common_resources.h ids); deliberately outside aui/, which must stay free
+  # of client-repo resource couplings.
+  "${CMAKE_CURRENT_SOURCE_DIR}/../ui/qt/client_utils_qt.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../ui/qt/client_utils_qt.h"
+)
 target_precompile_headers(client_ui_common_qt REUSE_FROM scada_base)
 target_link_libraries(client_ui_common_qt PRIVATE
   aui_qt
@@ -62,8 +68,8 @@ if("wt" IN_LIST CLIENT_UI_CONFIGS)
 endif()
 
 add_library(client_ui_dragdrop_qt
-  "${CMAKE_CURRENT_SOURCE_DIR}/../aui/dragdrop/item_drag_data.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/../aui/dragdrop/item_drag_data.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../ui/dragdrop/item_drag_data.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../ui/dragdrop/item_drag_data.h"
 )
 target_precompile_headers(client_ui_dragdrop_qt REUSE_FROM scada_base)
 target_link_libraries(client_ui_dragdrop_qt PRIVATE
@@ -73,8 +79,8 @@ target_link_libraries(client_ui_dragdrop_qt PRIVATE
 
 if("wt" IN_LIST CLIENT_UI_CONFIGS)
   add_library(client_ui_dragdrop_wt
-    "${CMAKE_CURRENT_SOURCE_DIR}/../aui/dragdrop/item_drag_data.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../aui/dragdrop/item_drag_data.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../ui/dragdrop/item_drag_data.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../ui/dragdrop/item_drag_data.h"
   )
   target_precompile_headers(client_ui_dragdrop_wt REUSE_FROM scada_base)
   target_link_libraries(client_ui_dragdrop_wt PRIVATE

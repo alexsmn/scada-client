@@ -1,12 +1,11 @@
 #include "aui/aui_ns_compat.h"
 
-#include "table.h"
+#include "aui/wt/table.h"
 
 #include "aui/models/table_column.h"
 #include "aui/models/table_model.h"
 #include "aui/wt/table_model_adapter.h"
 #include "base/check.h"
-#include "profile/window_definition_util.h"
 
 #include <Wt/WSortFilterProxyModel.h>
 

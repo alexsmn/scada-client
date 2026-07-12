@@ -1,9 +1,15 @@
 client_module(aui)
 client_module_sources(aui PRIVATE models)
+
+# Keep this link set minimal and honest: aui is the platform-agnostic UI
+# layer, slated for extraction into its own repository. Its project
+# dependencies are scada_base (core/base utilities) and the standalone view
+# component libraries (graph_qt, view_manager_qt — declared below for the Qt
+# flavor); everything else it needs is Qt (aui_qt) or Wt (aui_wt). Do not add
+# links to client-repo modules here — invert the dependency instead (see
+# docs/aui-extraction.md).
 client_module_link_libraries(aui PUBLIC
   scada_base
-  scada_core
-  transport
 )
 
 # QT
@@ -25,21 +31,24 @@ if(TARGET aui_qt)
     )
   endif()
 
-  target_compile_definitions(aui_qt PUBLIC UI_QT)
+  # Abstract-UI seams over the standalone view component libraries:
+  # aui/qt/graph.h wraps graph_qt, aui/view_manager.h wraps
+  # view_manager_qt. Declared here so aui owns the include paths its own
+  # headers use instead of borrowing them from consumer targets
+  # (client_graph / main_window). Both find modules are resolved through the
+  # preset-seeded CMAKE_MODULE_PATH.
+  find_package(GraphQt REQUIRED)
+  find_package(ViewManagerQt REQUIRED)
+  target_link_libraries(aui_qt PUBLIC
+    graph_qt
+    view_manager_qt
+  )
 
   # C++20 module facade (Qt flavor only; the wt flavor stays header-based).
   scada_add_module_facade(aui_qt FILES scada_client_aui.cppm
-    IMPORTS scada_base_module scada_core_module)
+    IMPORTS scada_base_module)
   if(SCADA_CXX_MODULES)
     add_subdirectory(module_test)
-  endif()
-
-  # client_utils_qt_unittest.cpp checks that every toolbar icon LoadPixmap
-  # serves resolves from res/client.qrc; compile the resource into the test
-  # binary (a separate exe from the app, so no duplicate qInitResources_client).
-  if(TARGET aui_qt_unittests)
-    set_target_properties(aui_qt_unittests PROPERTIES AUTORCC ON)
-    target_sources(aui_qt_unittests PRIVATE ../res/client.qrc)
   endif()
 endif()
 
@@ -55,8 +64,6 @@ if(TARGET aui_wt)
   target_link_libraries(aui_wt PUBLIC
     Wt::Wt
   )
-
-  target_compile_definitions(aui_wt PUBLIC UI_WT)
 endif()
 
 # Subs.

@@ -1,6 +1,6 @@
 // Smoke test for the scada.client.aui module facade: names come from
 // `import scada.client.aui;` only, including the surfaces re-exported
-// through `export import scada.base` / `export import scada.core`.
+// through `export import scada.base`.
 
 #include <gtest/gtest.h>
 
@@ -24,8 +24,7 @@ TEST(ScadaClientAuiModuleSmoke, GeometryAndColors) {
 }
 
 TEST(ScadaClientAuiModuleSmoke, TransitiveSurfaces) {
-  // scada.core / scada.base via the export import chain.
-  EXPECT_FALSE(scada::NodeId(42, 7).is_null());
+  // scada.base via the export import chain.
   base::Check(true, "aui module smoke");
 }
 

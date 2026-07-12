@@ -2,7 +2,7 @@
 
 #include "aui/models/simple_menu_model.h"
 #include "aui/models/status_bar_model_mock.h"
-#include "aui/qt/client_utils_qt.h"
+#include "ui/qt/client_utils_qt.h"
 #include "aui/test/app_environment.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"

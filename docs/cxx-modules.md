@@ -67,10 +67,10 @@ Documented per facade in each `.cppm` header comment. Highlights:
 - `services/sapi.h`, `services/atl_module.h` — Windows COM/ATL surfaces.
 - `aui/color_win.h`, `aui/rect_internal.h`, all `*_mock.h`/`*_fake.h` —
   Windows-only / internal / test-only.
-- `aui/graph.h`, `aui/view_manager.h` — their UI_QT branches include
-  headers from `graph_qt` / `third_party/view_manager_qt`, whose include
-  dirs only `client_graph` / `main_window` add; not compilable with
-  `aui_qt`'s own flags. Include-only.
+- `aui/graph.h`, `aui/view_manager.h` — thin wrappers over the external
+  `graph_qt` / `view_manager_qt` component libraries (declared `aui_qt`
+  dependencies since the aui-extraction decoupling). The names they
+  surface belong to those libraries, not aui. Include-only.
 - `aui/os_exchange_data.h` is in the GMF on non-Windows only: its `_WIN32`
   branch declares COM members without self-contained includes, so
   `aui::OSExchangeData` stays include-only on Windows.

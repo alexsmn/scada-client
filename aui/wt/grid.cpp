@@ -1,6 +1,6 @@
 #include "aui/aui_ns_compat.h"
 
-#include "grid.h"
+#include "aui/wt/grid.h"
 
 #include "aui/models/grid_model_util.h"
 #include "aui/wt/grid_model_adapter.h"

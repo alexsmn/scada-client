@@ -182,6 +182,11 @@ add_executable(client_qt_unittests
   "../../aui/test/qt/table_unittest.cpp"
   "../../aui/test/qt/tree_unittest.cpp"
 )
+# ui/qt/client_utils_qt_unittest.cpp checks that every toolbar icon LoadPixmap
+# serves resolves from res/client.qrc; compile the resource into the test
+# binary (a separate exe from the app, so no duplicate qInitResources_client).
+set_target_properties(client_qt_unittests PROPERTIES AUTORCC ON)
+target_sources(client_qt_unittests PRIVATE "../../res/client.qrc")
 target_precompile_headers(client_qt_unittests REUSE_FROM scada_base)
 if(MSVC)
   target_link_options(client_qt_unittests PRIVATE

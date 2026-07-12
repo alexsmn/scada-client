@@ -3,9 +3,9 @@
 // Same design and rules as scada.base (see core/base/scada_base.cppm and
 // core/docs/cxx-modules.md): headers stay the source of truth, the global
 // module fragment includes them, the purview re-exports names with
-// `export using`. `export import` of scada.base / scada.core mirrors aui's
-// PUBLIC links (aui also PUBLIC-links `transport`, which has no facade —
-// third-party; its headers stay textual).
+// `export using`. `export import scada.base` mirrors aui's sole PUBLIC link
+// (scada_base); aui deliberately has no other project dependency — it is
+// slated for extraction into its own repository (see docs/aui-extraction.md).
 //
 // The facade covers the Qt flavor (compiled with aui_qt's flags, so UI_QT is
 // defined); the wt flavor stays header-only and is not facaded. The
@@ -24,13 +24,10 @@
 //    include path);
 //  - dialog_service_mock.h, models/status_bar_model_mock.h,
 //    models/tree_model_mock.h (test mocks);
-//  - graph.h: its UI_QT branch includes graph_qt/*.h, and the graph_qt
-//    include dir is not on aui_qt's include path (only client_graph links
-//    graph/graph_qt) — cannot compile with aui_qt's flags; include-only for
-//    consumers that link graph_qt;
-//  - view_manager.h: its UI_QT branch includes view_manager_qt_component.h
-//    from third_party/view_manager_qt, whose include dir only main_window
-//    adds — cannot compile with aui_qt's flags; include-only there;
+//  - graph.h, view_manager.h: thin wrappers over the external graph_qt /
+//    view_manager_qt component libraries (declared aui_qt deps). The names
+//    they surface (views::*, ViewManagerQtComponent) belong to those
+//    libraries, not aui — include textually where used;
 //  - os_exchange_data.h on Windows: the _WIN32 branch declares COM members
 //    (IDataObject, FORMATETC, ...) and presumes the consumer included the
 //    COM headers first; the portable branch is facaded on non-Windows.
@@ -86,9 +83,8 @@ module;
 
 export module scada.client.aui;
 
-// Mirror aui's PUBLIC link transitivity (scada_base, scada_core).
+// Mirror aui's PUBLIC link transitivity (scada_base only).
 export import scada.base;
-export import scada.core;
 
 // ---- namespace aui ----
 export namespace aui {

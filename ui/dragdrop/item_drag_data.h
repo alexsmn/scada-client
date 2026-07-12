@@ -3,7 +3,7 @@
 #include "aui/handlers.h"
 #include "aui/os_exchange_data.h"
 #include "base/lifetime.h"
-#include "common/node_state.h"
+#include "scada/node_id.h"
 
 class ItemDragData {
  public:

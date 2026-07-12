@@ -1,4 +1,4 @@
-#include "aui/qt/client_utils_qt.h"
+#include "ui/qt/client_utils_qt.h"
 
 #include "aui/test/app_environment.h"
 #include "resources/common_resources.h"

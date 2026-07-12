@@ -6,7 +6,6 @@
 #include "aui/qt/table_model_adapter.h"
 #include "base/check.h"
 #include "base/value_util.h"
-#include "profile/window_definition_util.h"
 
 #include <QClipboard>
 #include <QEvent>
