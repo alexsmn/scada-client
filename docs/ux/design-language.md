@@ -169,6 +169,8 @@ Rendered, theme-toggleable HTML under
 |---|---|
 | `operator-shell.html` | full shell, all primitives, dark+light |
 | `substation-display.html` | single-line mimic in the shell: equipment state, live values, click-to-control |
+| `trend.html` | trend workspace: series chips, cursor readout, min/max/avg grid, series inspector |
+| `event-journal.html` | event/alarm journal: severity/area filters, acknowledge, event inspector |
 | `login.html` | themed sign-in + read-only system preview |
 | `control-command.html` | two-stage control/write confirm |
 

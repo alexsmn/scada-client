@@ -1,0 +1,251 @@
+<!-- @dsCard group="Screens" viewport="1360x820" name="Event Journal / Alarms — Reshell" subtitle="Filterable event journal with acknowledge, severity coding, and event inspector (dark default, light toggle)" -->
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Event Journal — Telecontrol SCADA (proposed)</title>
+<style>
+:root,[data-theme='dark']{
+  --font-sans:'Inter','Segoe UI Variable','Segoe UI',system-ui,sans-serif;
+  --font-mono:'Cascadia Mono','Consolas',ui-monospace,monospace;
+  --bg:#07111b;--bg-elevated:#0b1623;--surface:#0f1925;--surface-muted:#152635;
+  --rail-bg:#06111b;--topbar-bg:#0b1623;--fg:#eef5fb;--fg-muted:#c3d0db;--fg-subtle:#8fa3b4;
+  --border:rgba(255,255,255,.12);--border-strong:rgba(255,255,255,.24);
+  --accent:#77b4f3;--accent-fg:#0b1623;--accent-soft:rgba(119,180,243,.15);
+  --good:#44c091;--good-soft:rgba(68,192,145,.16);--uncertain:#e6b24b;--bad:#f07168;
+  --sev-critical:#e85a52;--sev-critical-soft:rgba(232,90,82,.16);
+  --sev-high:#f07168;--sev-high-soft:rgba(240,113,104,.14);
+  --sev-medium:#e6b24b;--sev-medium-soft:rgba(230,178,75,.14);
+  --sev-low:#77b4f3;--radius-sm:4px;--radius-md:6px;--radius-lg:8px;color-scheme:dark;}
+[data-theme='light']{
+  --bg:#f5f8fb;--bg-elevated:#f8fbfe;--surface:#fff;--surface-muted:#f1f5f9;
+  --rail-bg:#0d1a27;--topbar-bg:#fff;--fg:#111827;--fg-muted:#4b5b6c;--fg-subtle:#6b7b8d;
+  --border:rgba(15,23,42,.12);--border-strong:rgba(15,23,42,.22);
+  --accent:#0f6bff;--accent-fg:#fff;--accent-soft:rgba(15,107,255,.1);
+  --good:#14825f;--good-soft:rgba(20,130,95,.12);--uncertain:#b67a17;--bad:#c53d35;
+  --sev-critical:#8f241f;--sev-critical-soft:rgba(143,36,31,.1);
+  --sev-high:#b7312b;--sev-high-soft:rgba(183,49,43,.1);
+  --sev-medium:#c18a24;--sev-medium-soft:rgba(193,138,36,.12);
+  --sev-low:#235f98;color-scheme:light;}
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-sans);font-size:13px;-webkit-font-smoothing:antialiased}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.app{height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:40px;flex:none;display:flex;align-items:center;gap:14px;padding:0 12px;background:var(--topbar-bg);border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:8px;font-weight:600}
+.brand .mark{width:20px;height:20px;border-radius:5px;background:linear-gradient(135deg,var(--accent),#3f7fd6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700}
+.brand small{color:var(--fg-subtle);font-weight:500}
+.cmd{flex:1;max-width:440px;display:flex;align-items:center;gap:8px;height:26px;padding:0 10px;background:var(--surface-muted);border:1px solid var(--border);border-radius:var(--radius-md);color:var(--fg-subtle);font-size:12.5px}
+.cmd .kbd{margin-left:auto;font-size:10.5px;color:var(--fg-subtle);border:1px solid var(--border);border-radius:4px;padding:1px 5px}
+.ctxset{margin-left:auto;display:flex;align-items:center;gap:16px;font-size:12px;color:var(--fg-muted)}
+.ctxset .item{display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}.dot.good{background:var(--good)}
+.avatar{width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:11px}
+.main{flex:1;display:flex;min-height:0}
+.rail{width:52px;flex:none;background:var(--rail-bg);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:4px}
+.rail .ic{width:38px;height:38px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;color:#8fa3b4;position:relative}
+.rail .ic svg{width:20px;height:20px}
+.rail .ic.active{color:#eef5fb;background:rgba(255,255,255,.06)}
+.rail .ic.active::before{content:"";position:absolute;left:-8px;top:8px;bottom:8px;width:2px;border-radius:2px;background:var(--accent)}
+.rail .ic .cnt{position:absolute;top:3px;right:3px;min-width:15px;height:15px;padding:0 3px;border-radius:8px;background:var(--sev-critical);color:#0b1623;font-size:9.5px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.rail .spacer{flex:1}
+/* explorer: area filter */
+.side{width:222px;flex:none;background:var(--bg-elevated);border-right:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
+.side-head{height:30px;display:flex;align-items:center;padding:0 12px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-subtle);border-bottom:1px solid var(--border)}
+.tree{flex:1;overflow:auto;padding:6px 0}
+.anode{display:flex;align-items:center;height:26px;padding:0 12px;gap:8px;font-size:12.5px;color:var(--fg-muted)}
+.anode:hover{background:var(--surface-muted)}
+.anode.sel{background:var(--accent-soft);color:var(--fg);font-weight:600}
+.anode .ct{margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--fg-subtle)}
+.anode.sel .ct{color:var(--accent)}
+.anode .sd{width:7px;height:7px;border-radius:50%}
+/* workspace */
+.work{flex:1;display:flex;flex-direction:column;min-width:0}
+.tabs{height:34px;flex:none;display:flex;background:var(--bg-elevated);border-bottom:1px solid var(--border)}
+.tab{display:flex;align-items:center;gap:8px;padding:0 14px;font-size:12.5px;color:var(--fg-subtle);border-right:1px solid var(--border);position:relative}
+.tab.active{background:var(--bg);color:var(--fg)}
+.tab.active::after{content:"";position:absolute;left:0;right:0;top:-1px;height:2px;background:var(--accent)}
+.tab .ti svg{width:14px;height:14px;color:var(--accent)}
+/* filter bar */
+.filters{flex:none;display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.fl-field{display:flex;align-items:center;gap:7px;height:28px;padding:0 10px;background:var(--surface-muted);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--fg);font-size:12px}
+.fl-field .lb{color:var(--fg-subtle)}.fl-field .caret{color:var(--fg-subtle);font-size:9px;margin-left:2px}
+.fl-field svg{width:13px;height:13px;color:var(--fg-subtle)}
+.sevfilter{display:flex;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;font-size:11.5px}
+.sevfilter span{padding:4px 9px;color:var(--fg-subtle);display:flex;align-items:center;gap:5px;border-right:1px solid var(--border)}
+.sevfilter span:last-child{border-right:0}
+.sevfilter span.on{background:var(--accent-soft);color:var(--fg);font-weight:600}
+.sevfilter .d{width:8px;height:8px;border-radius:2px}
+.sp{flex:1}
+.abtn{display:flex;align-items:center;gap:7px;height:28px;padding:0 12px;border-radius:var(--radius-sm);border:1px solid var(--border-strong);background:var(--surface-muted);color:var(--fg);font-size:12px;font-weight:500}
+.abtn svg{width:14px;height:14px}
+.abtn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);font-weight:600}
+.abtn.ico{padding:0 9px}
+.badge{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:16px;padding:0 4px;border-radius:8px;background:var(--sev-critical);color:#0b1623;font-size:10.5px;font-weight:700}
+/* table */
+.grid{flex:1;min-height:0;overflow:auto}
+table.evt{width:100%;border-collapse:collapse;font-size:12.5px}
+table.evt th{position:sticky;top:0;z-index:1;background:var(--surface-muted);color:var(--fg-subtle);text-align:left;font-weight:500;padding:6px 10px;border-bottom:1px solid var(--border);white-space:nowrap;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em}
+table.evt td{padding:5px 10px;border-bottom:1px solid var(--border);white-space:nowrap;color:var(--fg-muted);overflow:hidden;text-overflow:ellipsis;max-width:360px}
+table.evt td.mono{font-family:var(--font-mono);color:var(--fg)}
+table.evt tr:hover td{background:var(--surface-muted)}
+table.evt tr.sel td{background:var(--accent-soft)}
+table.evt tr.sel td:first-child{box-shadow:inset 2px 0 0 var(--accent)}
+.sevtag{display:inline-flex;align-items:center;gap:7px;font-weight:600}
+.sevtag .b{width:3px;height:13px;border-radius:2px}
+tr.r-crit .sevtag .b{background:var(--sev-critical)}tr.r-crit .sevtag{color:var(--sev-critical)}
+tr.r-crit.unackrow td{background:var(--sev-critical-soft)}
+tr.r-high .sevtag .b{background:var(--sev-high)}tr.r-high .sevtag{color:var(--sev-high)}
+tr.r-high.unackrow td{background:var(--sev-high-soft)}
+tr.r-med .sevtag .b{background:var(--sev-medium)}tr.r-med .sevtag{color:var(--sev-medium)}
+tr.r-low .sevtag .b{background:var(--sev-low)}tr.r-low .sevtag{color:var(--fg-muted)}
+.unack{width:8px;height:8px;border-radius:50%;background:var(--sev-critical);display:inline-block}
+.ackyes{color:var(--fg-subtle);font-family:var(--font-mono)}
+.pager{flex:none;display:flex;align-items:center;gap:12px;padding:7px 12px;border-top:1px solid var(--border);background:var(--bg-elevated);font-size:12px;color:var(--fg-subtle)}
+.pager .pbtn{width:26px;height:24px;border:1px solid var(--border);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;color:var(--fg-muted)}
+/* inspector: event detail */
+.insp{width:312px;flex:none;background:var(--bg-elevated);border-left:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
+.insp-head{padding:12px 14px;border-bottom:1px solid var(--border)}
+.insp-head .sev{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:var(--sev-critical)}
+.insp-head .sev .b{width:4px;height:14px;border-radius:2px;background:var(--sev-critical)}
+.insp-head .msg{font-size:13.5px;margin-top:8px;color:var(--fg);line-height:1.4}
+.insp-body{flex:1;overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:16px}
+.kv{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12.5px;gap:12px}
+.kv .k{color:var(--fg-subtle);white-space:nowrap}.kv .v{font-family:var(--font-mono);color:var(--fg);text-align:right}
+.insec .h{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg-subtle);margin-bottom:6px}
+.ackbox{background:var(--sev-critical-soft);border:1px solid var(--sev-critical);border-radius:var(--radius-md);padding:11px 12px;font-size:12px;color:var(--fg-muted);display:flex;align-items:center;gap:10px}
+.ackbox svg{width:18px;height:18px;color:var(--sev-critical);flex:none}
+.actions{display:flex;flex-direction:column;gap:8px}
+.btn{height:34px;border-radius:var(--radius-md);border:1px solid var(--border-strong);background:var(--surface-muted);color:var(--fg);display:flex;align-items:center;justify-content:center;gap:8px;font-size:12.5px;font-weight:600}
+.btn svg{width:15px;height:15px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.tl{display:flex;flex-direction:column;gap:0}
+.tl .ev{display:flex;gap:10px;padding:6px 0;font-size:12px}
+.tl .ev .tm{font-family:var(--font-mono);color:var(--fg-subtle);width:64px;flex:none}
+.tl .ev .tx{color:var(--fg-muted)}
+.status{height:24px;flex:none;display:flex;align-items:center;background:var(--rail-bg);border-top:1px solid var(--border);font-size:11.5px;color:var(--fg-subtle)}
+.status .cell{display:flex;align-items:center;gap:6px;padding:0 12px;height:100%;border-right:1px solid var(--border)}
+.status .cell.accent{background:var(--accent);color:var(--accent-fg);font-weight:600}
+.status .sp{flex:1}
+.toggle{position:fixed;right:14px;bottom:34px;z-index:20;display:flex;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.toggle button{border:0;background:transparent;color:var(--fg-subtle);font:inherit;font-size:11.5px;padding:4px 12px;border-radius:16px;cursor:pointer}
+.toggle button.on{background:var(--accent);color:var(--accent-fg);font-weight:600}
+</style></head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand"><span class="mark">TC</span>Telecontrol <small>SCADA</small></div>
+    <div class="cmd"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search tags, objects, commands…<span class="kbd">Ctrl K</span></div>
+    <div class="ctxset"><div class="item"><span class="dot good"></span>North substation</div><div class="item mono">Server 0 ms</div><div class="item"><span class="dot good"></span>Connected</div><div class="item"><span class="avatar">R</span>root</div></div>
+  </div>
+  <div class="main">
+    <div class="rail">
+      <div class="ic" title="Overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></div>
+      <div class="ic active" title="Alarms"><span class="cnt">3</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg></div>
+      <div class="ic" title="Trends"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 17l5-6 4 4 8-9"/></svg></div>
+      <div class="ic" title="Substations"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V9l8-5 8 5v11"/><path d="M9 20v-6h6v6"/></svg></div>
+      <div class="ic" title="Tables"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 10h18M9 4v16"/></svg></div>
+      <div class="spacer"></div>
+      <div class="ic" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></div>
+    </div>
+    <div class="side">
+      <div class="side-head">Areas</div>
+      <div class="tree">
+        <div class="anode sel"><span class="sd" style="background:var(--good)"></span>All areas<span class="ct">128</span></div>
+        <div class="anode"><span class="sd" style="background:var(--bad)"></span>ЭСТРА-ПС<span class="ct">54</span></div>
+        <div class="anode"><span class="sd" style="background:var(--good)"></span>КРУ<span class="ct">31</span></div>
+        <div class="anode"><span class="sd" style="background:var(--good)"></span>КСВ2.0<span class="ct">22</span></div>
+        <div class="anode"><span class="sd" style="background:var(--uncertain)"></span>Мониторинг t<span class="ct">14</span></div>
+        <div class="anode"><span class="sd" style="background:var(--good)"></span>Диагностика<span class="ct">7</span></div>
+      </div>
+    </div>
+    <div class="work">
+      <div class="tabs">
+        <div class="tab active"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/></svg></span>Журнал событий за сутки</div>
+        <div class="tab">Сводка</div>
+      </div>
+      <div class="filters">
+        <div class="fl-field"><span class="lb">Period</span><span class="mono">10.07 00:00 – 24:00</span><span class="caret">▼</span></div>
+        <div class="sevfilter">
+          <span class="on"><span class="d" style="background:var(--sev-critical)"></span>Critical</span>
+          <span class="on"><span class="d" style="background:var(--sev-high)"></span>High</span>
+          <span class="on"><span class="d" style="background:var(--sev-medium)"></span>Medium</span>
+          <span><span class="d" style="background:var(--sev-low)"></span>Info</span>
+        </div>
+        <div class="fl-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="lb">Message / object…</span></div>
+        <div class="fl-field"><span class="lb">Unacknowledged only</span><span class="caret">▼</span></div>
+        <span class="sp"></span>
+        <span class="abtn primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Acknowledge all<span class="badge">3</span></span>
+        <span class="abtn ico" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="9" width="12" height="8"/><path d="M6 9V4h12v5M8 17v3h8v-3"/></svg></span>
+        <span class="abtn ico" title="Export CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg></span>
+      </div>
+      <div class="grid">
+        <table class="evt">
+          <thead><tr><th style="width:26px"></th><th>Severity</th><th>Time</th><th>Object</th><th>Message</th><th>Value</th><th>User</th><th>Acknowledged</th></tr></thead>
+          <tbody>
+            <tr class="r-crit unackrow sel"><td><span class="unack"></span></td><td><span class="sevtag"><span class="b"></span>Critical</span></td><td class="mono">19:03:58.4</td><td>ЭСТРА-ПС · TS.104</td><td>КП-02: обрыв связи</td><td class="mono"></td><td></td><td style="color:var(--sev-critical)">— pending —</td></tr>
+            <tr class="r-high unackrow"><td><span class="unack"></span></td><td><span class="sevtag"><span class="b"></span>High</span></td><td class="mono">18:03:58.1</td><td>ЭСТРА-ПС · ТС · L1-L2</td><td>Напряжение L1-L2 верхняя уставка (10.8 кВ)</td><td class="mono">10.8 кВ</td><td></td><td style="color:var(--sev-high)">— pending —</td></tr>
+            <tr class="r-high unackrow"><td><span class="unack"></span></td><td><span class="sevtag"><span class="b"></span>High</span></td><td class="mono">21:33:58.2</td><td>ТIT.209</td><td>Коэффициент мощности ниже порога (0.87)</td><td class="mono">0.87</td><td></td><td style="color:var(--sev-high)">— pending —</td></tr>
+            <tr class="r-med"><td></td><td><span class="sevtag"><span class="b"></span>Medium</span></td><td class="mono">21:03:58.0</td><td>ЭСТРА-ПС · ТИ</td><td>Ручной ввод: Активная мощность = 130.5 МВт</td><td class="mono">130.5 МВт</td><td>root</td><td class="ackyes">21:03:58</td></tr>
+            <tr class="r-low"><td></td><td><span class="sevtag"><span class="b"></span>Info</span></td><td class="mono">20:03:58.0</td><td>TS.104</td><td>КП-02: связь восстановлена</td><td class="mono"></td><td>root</td><td class="ackyes">20:03:58</td></tr>
+            <tr class="r-med"><td></td><td><span class="sevtag"><span class="b"></span>Medium</span></td><td class="mono">21:53:58.0</td><td>Температура нагрева</td><td>Трансформатор T1: температура в норме (42.3 °C)</td><td class="mono">42.3 °C</td><td></td><td class="ackyes">21:53:58</td></tr>
+            <tr class="r-low"><td></td><td><span class="sevtag"><span class="b"></span>Info</span></td><td class="mono">17:03:58.0</td><td>КП-01 МЭК-60870</td><td>КП-01 на связи</td><td class="mono"></td><td></td><td class="ackyes">17:03:58</td></tr>
+            <tr class="r-low"><td></td><td><span class="sevtag"><span class="b"></span>Info</span></td><td class="mono">16:41:02.7</td><td>КРУ · ТС1</td><td>Изменение уставки: верхняя = 210.0 А</td><td class="mono">210.0 А</td><td>root</td><td class="ackyes">16:41:02</td></tr>
+            <tr class="r-med"><td></td><td><span class="sevtag"><span class="b"></span>Medium</span></td><td class="mono">14:22:19.3</td><td>Мониторинг t · Uab</td><td>Качество: неопределённое значение</td><td class="mono">? </td><td></td><td class="ackyes">14:25:44</td></tr>
+            <tr class="r-low"><td></td><td><span class="sevtag"><span class="b"></span>Info</span></td><td class="mono">08:00:00.0</td><td>Система</td><td>Начало новых суток журнала</td><td class="mono"></td><td></td><td class="ackyes">08:00:00</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <span class="pbtn">‹</span><span class="pbtn">›</span>
+        <span>1–10 of 128 events</span>
+        <span class="sp"></span>
+        <span>3 unacknowledged · highest <b style="color:var(--sev-critical)">Critical</b></span>
+      </div>
+    </div>
+    <!-- Inspector: selected event -->
+    <div class="insp">
+      <div class="insp-head">
+        <div class="sev"><span class="b"></span>Critical · severity 80</div>
+        <div class="msg">КП-02: обрыв связи</div>
+      </div>
+      <div class="insp-body">
+        <div class="ackbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg><span>Unacknowledged. Requires an operator response (comms loss on КП-02).</span></div>
+        <div class="actions">
+          <button class="btn primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Acknowledge</button>
+          <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V9l8-5 8 5v11"/></svg>Go to source display</button>
+        </div>
+        <div class="insec">
+          <div class="h">Details</div>
+          <div class="kv"><span class="k">Object</span><span class="v">ЭСТРА-ПС · TS.104</span></div>
+          <div class="kv"><span class="k">NodeId</span><span class="v" style="font-size:11px">ns=2;s=…TS.104</span></div>
+          <div class="kv"><span class="k">Source time</span><span class="v">19:03:58.412</span></div>
+          <div class="kv"><span class="k">Protocol</span><span class="v">IEC 60870-5-104</span></div>
+          <div class="kv"><span class="k">Event type</span><span class="v">CommsFault</span></div>
+          <div class="kv"><span class="k">Area</span><span class="v">ЭСТРА-ПС</span></div>
+        </div>
+        <div class="insec">
+          <div class="h">History</div>
+          <div class="tl">
+            <div class="ev"><span class="tm">19:03:58</span><span class="tx">Alarm raised — обрыв связи</span></div>
+            <div class="ev"><span class="tm">19:03:58</span><span class="tx">Notified: operator console, sound</span></div>
+            <div class="ev"><span class="tm">—</span><span class="tx">Awaiting acknowledge…</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="status">
+    <div class="cell accent">root · Operator</div>
+    <div class="cell"><span class="dot good"></span>Connected</div>
+    <div class="cell"><span class="unack"></span>3 unacknowledged</div>
+    <div class="cell">Highest <span class="mono" style="color:var(--sev-critical)">Critical</span></div>
+    <div class="cell">128 events · 24 h</div>
+    <div class="sp"></div>
+    <div class="cell mono">North substation</div>
+    <div class="cell mono">v2.6.0</div>
+  </div>
+</div>
+<div class="toggle"><button onclick="t('dark')" id="b-dark" class="on">Dark (Qt default)</button><button onclick="t('light')" id="b-light">Light (web default)</button></div>
+<script>function t(m){document.documentElement.setAttribute('data-theme',m);document.getElementById('b-dark').classList.toggle('on',m==='dark');document.getElementById('b-light').classList.toggle('on',m==='light');}</script>
+</body></html>
