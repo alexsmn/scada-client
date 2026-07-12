@@ -51,7 +51,10 @@ TableView::TableView(const ControllerContext& context)
   view_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });
 
   view_->SetContextMenuHandler([this](const aui::Point& point) {
-    controller_delegate_.ShowPopupMenu(nullptr, IDR_TABLE_POPUP, point, true);
+    // Cross-platform AUI menu model (Windows, macOS, Wt) instead of the
+    // Windows-only `IDR_TABLE_POPUP` resource menu.
+    controller_delegate_.ShowPopupMenu(&table_menu_model_.model(),
+                                       /*resource_id=*/0, point, true);
   });
 
   view_->SetDoubleClickHandler([this] { OnDoubleClick(); });

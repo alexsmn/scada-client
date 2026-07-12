@@ -77,7 +77,10 @@ std::unique_ptr<UiView> WatchView::Init(const WindowDefinition& definition) {
   });
 
   table_->SetContextMenuHandler([this](const aui::Point& point) {
-    controller_delegate_.ShowPopupMenu(nullptr, IDR_LOG_POPUP, point, true);
+    // Cross-platform AUI menu model (Windows, macOS, Wt) instead of the
+    // Windows-only `IDR_LOG_POPUP` resource menu.
+    controller_delegate_.ShowPopupMenu(&watch_menu_model_.model(),
+                                       /*resource_id=*/0, point, true);
   });
 
   // Must be after |table_| is bound.

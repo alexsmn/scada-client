@@ -3,13 +3,14 @@
 #include "aui/aui_ns_compat.h"
 
 #include "aui/key_codes.h"
-#include "resources/common_resources.h"
 #include "controller/command_registry.h"
 #include "controller/contents_model.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
 #include "controller/selection_model.h"
 #include "export/export_model.h"
+#include "modules/table/table_menu_model.h"
+#include "resources/common_resources.h"
 
 namespace scada::aui {
 class Table;
@@ -68,4 +69,8 @@ class TableView : protected ControllerContext,
   Command& sort_name_command_ = command_registry_.AddCommand(ID_SORT_NAME);
   Command& sort_channel_command_ =
       command_registry_.AddCommand(ID_SORT_CHANNEL);
+
+  // Cross-platform context menu, backed by `command_registry_`. Declared after
+  // it so the registry outlives the menu's delegate.
+  TableMenuModel table_menu_model_{command_registry_};
 };

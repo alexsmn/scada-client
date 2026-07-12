@@ -26,7 +26,10 @@ std::unique_ptr<UiView> FavouritesView::Init(
   tree_view_->LoadIcons(IDB_WIN_TYPES, 16, aui::Rgba{255, 0, 255});
   tree_view_->SetDoubleClickHandler([this] { OpenSelection(); });
   tree_view_->SetContextMenuHandler([this](const aui::Point& point) {
-    controller_delegate_.ShowPopupMenu(nullptr, IDR_FAVOR_POPUP, point, true);
+    // Cross-platform AUI menu model (Windows, macOS, Wt) instead of the
+    // Windows-only `IDR_FAVOR_POPUP` resource menu.
+    controller_delegate_.ShowPopupMenu(&favourites_menu_model_.model(),
+                                       /*resource_id=*/0, point, true);
   });
 
   open_command_.enabled_handler = [this] {

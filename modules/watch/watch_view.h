@@ -7,6 +7,7 @@
 #include "controller/controller_context.h"
 #include "controller/time_model.h"
 #include "export/export_model.h"
+#include "modules/watch/watch_menu_model.h"
 
 #include <boost/signals2/connection.hpp>
 #include <memory>
@@ -54,6 +55,10 @@ class WatchView : protected ControllerContext,
   aui::Table* table_ = nullptr;
 
   CommandRegistry command_registry_;
+
+  // Cross-platform context menu, backed by `command_registry_`. Declared after
+  // it so the registry outlives the menu's delegate.
+  WatchMenuModel watch_menu_model_{command_registry_};
 
   boost::signals2::scoped_connection items_added_connection_;
 };
