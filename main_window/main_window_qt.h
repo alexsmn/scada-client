@@ -13,6 +13,7 @@ class NodeId;
 }
 
 class ActivityBar;
+class InspectorPanel;
 class TagSearchIndex;
 class QAction;
 class QLabel;
@@ -68,6 +69,9 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   void CreateContextBar();
   // Opt-in left activity rail (backlog 1.1): section navigation + alarm badge.
   void CreateActivityBar();
+  // Opt-in right Inspector dock (backlog 2.6): reflects the active view's
+  // selection — identity, live value, control action.
+  void CreateInspectorPanel();
   // Opens the section's default view and marks it active on the rail.
   void ActivateSection(const std::string& window_info_name);
   // Opens the operator Overview page (from the rail's Overview section).
@@ -124,6 +128,10 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // Left activity rail (opt-in). Its alarm badge follows the status-bar model.
   ActivityBar* activity_bar_ = nullptr;
   boost::signals2::scoped_connection activity_bar_connection_;
+
+  // Right Inspector dock (opt-in). Updated from OnSelectionChanged with the
+  // active view's SelectionModel.
+  InspectorPanel* inspector_ = nullptr;
 
   // Flat tag index for the command palette's tag search (opt-in; null when the
   // reshell is off or no node service is available).

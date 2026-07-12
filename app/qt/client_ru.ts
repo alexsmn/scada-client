@@ -166,6 +166,35 @@
         <source>Export image</source>
         <translation>Экспорт изображения</translation>
     </message>
+    <!-- modules/inspector/qt/inspector_panel.cpp + main_window (Inspector dock) -->
+    <message>
+        <source>Inspector</source>
+        <translation>Инспектор</translation>
+    </message>
+    <message>
+        <source>Select an element to inspect it</source>
+        <translation>Выберите элемент для просмотра</translation>
+    </message>
+    <message>
+        <source>Measurements</source>
+        <translation>Измерения</translation>
+    </message>
+    <message>
+        <source>Control…</source>
+        <translation>Управление…</translation>
+    </message>
+    <message>
+        <source>Good</source>
+        <translation>Достоверно</translation>
+    </message>
+    <message>
+        <source>Bad</source>
+        <translation>Недостоверно</translation>
+    </message>
+    <message>
+        <source>Opens the two-stage command confirm. Actions are logged.</source>
+        <translation>Открывает двухэтапное подтверждение команды. Действия журналируются.</translation>
+    </message>
     <message>
         <source>Create</source>
         <translation>Создать</translation>

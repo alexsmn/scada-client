@@ -33,6 +33,7 @@ add_subdirectory(graph)
 add_subdirectory(print)
 add_subdirectory(vds_runtime)
 add_subdirectory(display_frame)
+add_subdirectory(inspector)
 
 add_subdirectory(modus)
 add_subdirectory(vidicon)
