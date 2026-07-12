@@ -55,4 +55,16 @@ TEST(DisplayFrameZoomTest, PercentRoundsToNearest) {
   EXPECT_EQ(DisplayZoomPercent(1.236), 124);
 }
 
+// Recent-events strip severity banding (scada::kSeverityWarning == 60,
+// kSeverityCritical == 80).
+TEST(DisplaySeverityBandTest, BandsByThreshold) {
+  EXPECT_EQ(DisplaySeverityBandFor(0), DisplaySeverityBand::kInfo);
+  EXPECT_EQ(DisplaySeverityBandFor(50), DisplaySeverityBand::kInfo);
+  EXPECT_EQ(DisplaySeverityBandFor(59), DisplaySeverityBand::kInfo);
+  EXPECT_EQ(DisplaySeverityBandFor(60), DisplaySeverityBand::kWarning);
+  EXPECT_EQ(DisplaySeverityBandFor(79), DisplaySeverityBand::kWarning);
+  EXPECT_EQ(DisplaySeverityBandFor(80), DisplaySeverityBand::kCritical);
+  EXPECT_EQ(DisplaySeverityBandFor(100), DisplaySeverityBand::kCritical);
+}
+
 }  // namespace

@@ -16,7 +16,9 @@ VidiconModule::VidiconModule(VidiconModuleContext&& context)
                 .timed_data_service_ = context.timed_data_service_,
                 .controller_delegate_ = context.controller_delegate_,
                 .dialog_service_ = context.dialog_service_,
-                .write_service_ = write_service_});
+                .write_service_ = write_service_,
+                .node_event_provider_ = context.node_event_provider_,
+                .node_service_ = context.node_service_});
       });
 
   file_registry_.RegisterType(kVidiconDisplayWindowInfo.command_id,

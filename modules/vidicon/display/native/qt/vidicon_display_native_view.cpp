@@ -43,6 +43,10 @@ std::unique_ptr<UiView> VidiconDisplayNativeView::Init(
       if (node_id.is_null())
         return;
       selection_.SelectTimedData(TimedDataSpec{timed_data_service_, node_id});
+      // Mirror the selection into the frame's Measurements strip (no-op under
+      // the legacy theme, where there is no frame).
+      if (frame_)
+        frame_->ShowMeasurement(node_id);
     } catch (const std::exception&) {
       selection_.Clear();
     }
@@ -51,14 +55,20 @@ std::unique_ptr<UiView> VidiconDisplayNativeView::Init(
   widget_ = widget.get();
 
   // Reshell chrome (opt-in): wrap the renderer in the display frame — Live
-  // indicator, hotspot breadcrumb, zoom / fit / export — when the UX theme is
-  // active. Under the legacy theme WrapDisplayInFrame returns the bare renderer
-  // unchanged. The frame reparents (owns) the renderer, so release the
-  // unique_ptr only when ownership actually moved into a new frame.
-  QWidget* framed = WrapDisplayInFrame(widget.get(), title);
+  // indicator, hotspot breadcrumb, zoom / fit / export, and the bay strips —
+  // when the UX theme is active. Under the legacy theme WrapDisplayInFrame
+  // returns the bare renderer unchanged. The frame reparents (owns) the
+  // renderer, so release the unique_ptr only when ownership actually moved into
+  // a new frame.
+  QWidget* framed = WrapDisplayInFrame(
+      widget.get(), title,
+      DisplayFrameContext{.timed_data_service = &timed_data_service_,
+                          .node_event_provider = &node_event_provider_,
+                          .node_service = &node_service_});
   if (framed == widget_)
     return widget;
 
+  frame_ = static_cast<DisplayFrame*>(framed);
   widget.release();
   return std::unique_ptr<UiView>{framed};
 }

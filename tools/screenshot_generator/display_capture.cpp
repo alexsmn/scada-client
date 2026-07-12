@@ -50,7 +50,12 @@ void SaveDisplayScreenshot(const ScreenshotSpec& spec,
   auto* diagram = new VdsRuntimeWidget;
   diagram->Open(FixturePath(json), TC_VDS_RUNTIME_DOCUMENT_KIND_AUTO);
 
-  QWidget* frame = WrapDisplayInFrame(diagram, diagram->title());
+  // The standalone capture renders the chrome + diagram only: the bay strips
+  // need live app services (a running session), which the offscreen generator
+  // does not stand up here. The strips are covered by client_display_frame's
+  // widget tests instead.
+  QWidget* frame =
+      WrapDisplayInFrame(diagram, diagram->title(), DisplayFrameContext{});
   std::unique_ptr<QWidget> owner{frame};
 
   frame->setFixedSize(spec.width, spec.height);
