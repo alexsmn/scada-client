@@ -107,6 +107,20 @@ TEST_F(CommandPaletteTest, TypingFiltersTheList) {
             (std::vector<std::u16string>{u"Write Value"}));
 }
 
+TEST_F(CommandPaletteTest, PresetFilterSeedsAndNarrowsTheQuery) {
+  CommandManager manager;
+  AddCommand(manager, 1, u"Open Display");
+  AddCommand(manager, 2, u"Write Value");
+  AddCommand(manager, 3, u"Acknowledge Alarm");
+
+  RecordingHandler handler;
+  CommandPalette palette{nullptr, manager, ResolverFor(handler)};
+  palette.PresetFilter(QStringLiteral("val"));
+
+  EXPECT_EQ(VisibleTitles(palette),
+            (std::vector<std::u16string>{u"Write Value"}));
+}
+
 TEST_F(CommandPaletteTest, EnterRunsTheSelectedCommand) {
   CommandManager manager;
   AddCommand(manager, 1, u"Open Display");

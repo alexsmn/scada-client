@@ -35,6 +35,7 @@
 #include <QDockWidget>
 #include <QEvent>
 #include <QGuiApplication>
+#include <QKeyEvent>
 #include <QLabel>
 #include <QLayout>
 #include <QLineEdit>
@@ -312,7 +313,7 @@ void MainWindow::CreateContextBar() {
   auto* palette_shortcut =
       new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_K), this);
   connect(palette_shortcut, &QShortcut::activated, this,
-          &MainWindow::ShowCommandPalette);
+          [this] { ShowCommandPalette(); });
 
   auto* right_spacer = new QWidget(context_bar_);
   right_spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
@@ -427,7 +428,7 @@ void MainWindow::ActivateSection(const std::string& window_info_name) {
   activity_bar_->SetActiveSection(window_info_name);
 }
 
-void MainWindow::ShowCommandPalette() {
+void MainWindow::ShowCommandPalette(const QString& initial_text) {
   auto* palette = new CommandPalette(
       this, ui_command_registry_.command_manager(),
       [this](unsigned command_id) -> CommandHandler* {
@@ -435,17 +436,34 @@ void MainWindow::ShowCommandPalette() {
                                      command_id, kToolbarContexts, *commands_);
       });
   palette->setAttribute(Qt::WA_DeleteOnClose);
+  if (!initial_text.isEmpty())
+    palette->PresetFilter(initial_text);
   palette->show();
   palette->raise();
   palette->activateWindow();
 }
 
 bool MainWindow::eventFilter(QObject* watched, QEvent* event) {
+  if (watched != command_search_)
+    return QMainWindow::eventFilter(watched, event);
+
   // Clicking the read-only context-bar search field opens the command palette.
-  if (watched == command_search_ &&
-      event->type() == QEvent::MouseButtonRelease) {
+  if (event->type() == QEvent::MouseButtonRelease) {
     ShowCommandPalette();
     return true;
+  }
+  // Typing a printable character opens the palette seeded with it, so the
+  // field reads as a real search box even though the palette owns the input.
+  if (event->type() == QEvent::KeyPress) {
+    auto* key_event = static_cast<QKeyEvent*>(event);
+    const QString text = key_event->text();
+    const bool has_command_modifier =
+        key_event->modifiers() &
+        (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier);
+    if (!has_command_modifier && !text.isEmpty() && text.at(0).isPrint()) {
+      ShowCommandPalette(text);
+      return true;
+    }
   }
   return QMainWindow::eventFilter(watched, event);
 }

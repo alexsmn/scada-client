@@ -65,8 +65,9 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   void CreateActivityBar();
   // Opens the section's default view and marks it active on the rail.
   void ActivateSection(const std::string& window_info_name);
-  // Opens the Ctrl-K command palette over every registered command.
-  void ShowCommandPalette();
+  // Opens the Ctrl-K command palette over every registered command, optionally
+  // seeded with `initial_text` (type-to-search from the context-bar field).
+  void ShowCommandPalette(const QString& initial_text = QString());
   void RebuildMenuBar();
 
   QAction* FindAction(unsigned command_id);

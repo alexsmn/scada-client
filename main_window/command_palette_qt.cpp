@@ -73,6 +73,11 @@ CommandPalette::CommandPalette(QWidget* parent,
 
 CommandPalette::~CommandPalette() = default;
 
+void CommandPalette::PresetFilter(const QString& text) {
+  filter_->setText(text);
+  filter_->setCursorPosition(static_cast<int>(text.length()));
+}
+
 void CommandPalette::Refilter() {
   const std::u16string query = filter_->text().toStdU16String();
   std::vector<CommandEntry> matches = RankCommandMatches(entries_, query);

@@ -29,6 +29,11 @@ class CommandPalette : public QDialog {
                  HandlerResolver resolver);
   ~CommandPalette() override;
 
+  // Seeds the filter (e.g. with the character that opened the palette) and
+  // places the caret at the end, so type-to-search from the context bar
+  // continues uninterrupted.
+  void PresetFilter(const QString& text);
+
  protected:
   // QObject
   bool eventFilter(QObject* watched, QEvent* event) override;
