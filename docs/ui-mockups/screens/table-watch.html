@@ -1,0 +1,277 @@
+<!-- @dsCard group="Screens" viewport="1360x820" name="Table / Watch — Reshell" subtitle="Live + historical operator grid: formulas, quality, embedded sparklines, Qt-shaped context menu (dark default, light toggle)" -->
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Table / Watch — Telecontrol SCADA (proposed)</title>
+<style>
+:root,[data-theme='dark']{
+  --font-sans:'Inter','Segoe UI Variable','Segoe UI',system-ui,sans-serif;
+  --font-mono:'Cascadia Mono','Consolas',ui-monospace,monospace;
+  --bg:#07111b;--bg-elevated:#0b1623;--surface:#0f1925;--surface-muted:#152635;
+  --rail-bg:#06111b;--topbar-bg:#0b1623;--fg:#eef5fb;--fg-muted:#c3d0db;--fg-subtle:#8fa3b4;
+  --border:rgba(255,255,255,.12);--border-strong:rgba(255,255,255,.24);
+  --accent:#77b4f3;--accent-fg:#0b1623;--accent-soft:rgba(119,180,243,.15);
+  --good:#44c091;--good-soft:rgba(68,192,145,.16);--uncertain:#e6b24b;--uncertain-soft:rgba(230,178,75,.16);
+  --bad:#f07168;--bad-soft:rgba(240,113,104,.16);
+  --spark:#77b4f3;--radius-sm:4px;--radius-md:6px;--radius-lg:8px;color-scheme:dark;}
+[data-theme='light']{
+  --bg:#f5f8fb;--bg-elevated:#f8fbfe;--surface:#fff;--surface-muted:#f1f5f9;
+  --rail-bg:#0d1a27;--topbar-bg:#fff;--fg:#111827;--fg-muted:#4b5b6c;--fg-subtle:#6b7b8d;
+  --border:rgba(15,23,42,.12);--border-strong:rgba(15,23,42,.22);
+  --accent:#0f6bff;--accent-fg:#fff;--accent-soft:rgba(15,107,255,.1);
+  --good:#14825f;--good-soft:rgba(20,130,95,.12);--uncertain:#b67a17;--uncertain-soft:rgba(182,122,23,.14);
+  --bad:#c53d35;--bad-soft:rgba(197,61,53,.12);--spark:#2563c9;color-scheme:light;}
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-sans);font-size:13px;-webkit-font-smoothing:antialiased}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.app{height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:40px;flex:none;display:flex;align-items:center;gap:14px;padding:0 12px;background:var(--topbar-bg);border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:8px;font-weight:600}
+.brand .mark{width:20px;height:20px;border-radius:5px;background:linear-gradient(135deg,var(--accent),#3f7fd6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700}
+.brand small{color:var(--fg-subtle);font-weight:500}
+.cmd{flex:1;max-width:440px;display:flex;align-items:center;gap:8px;height:26px;padding:0 10px;background:var(--surface-muted);border:1px solid var(--border);border-radius:var(--radius-md);color:var(--fg-subtle);font-size:12.5px}
+.cmd .kbd{margin-left:auto;font-size:10.5px;color:var(--fg-subtle);border:1px solid var(--border);border-radius:4px;padding:1px 5px}
+.ctxset{margin-left:auto;display:flex;align-items:center;gap:16px;font-size:12px;color:var(--fg-muted)}
+.ctxset .item{display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}.dot.good{background:var(--good)}
+.avatar{width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:11px}
+.main{flex:1;display:flex;min-height:0}
+.rail{width:52px;flex:none;background:var(--rail-bg);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:4px}
+.rail .ic{width:38px;height:38px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;color:#8fa3b4;position:relative}
+.rail .ic svg{width:20px;height:20px}
+.rail .ic.active{color:#eef5fb;background:rgba(255,255,255,.06)}
+.rail .ic.active::before{content:"";position:absolute;left:-8px;top:8px;bottom:8px;width:2px;border-radius:2px;background:var(--accent)}
+.rail .ic .cnt{position:absolute;top:3px;right:3px;min-width:15px;height:15px;padding:0 3px;border-radius:8px;background:var(--bad);color:#0b1623;font-size:9.5px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.rail .spacer{flex:1}
+/* explorer */
+.side{width:230px;flex:none;background:var(--bg-elevated);border-right:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
+.side-head{height:30px;display:flex;align-items:center;justify-content:space-between;padding:0 10px 0 12px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-subtle);border-bottom:1px solid var(--border)}
+.side-search{margin:8px 10px 4px;display:flex;align-items:center;gap:6px;height:24px;padding:0 8px;background:var(--surface-muted);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--fg-subtle);font-size:12px}
+.tree{flex:1;overflow:auto;padding:4px 0}
+.node{display:flex;align-items:center;height:24px;padding:0 10px 0 8px;gap:7px;white-space:nowrap;font-size:12.5px;color:var(--fg-muted)}
+.node:hover{background:var(--surface-muted)}
+.node .tw{width:10px;text-align:center;color:var(--fg-subtle);font-size:9px}
+.node .sd{width:7px;height:7px;border-radius:50%;flex:none}
+.node.group .nm{color:var(--fg);font-weight:600}
+.node .nm{flex:1;overflow:hidden;text-overflow:ellipsis}
+.node .drag{color:var(--fg-subtle);font-size:11px;opacity:0}
+.node:hover .drag{opacity:1}
+.hintbar{padding:8px 12px;font-size:11px;color:var(--fg-subtle);border-top:1px solid var(--border);line-height:1.5}
+/* workspace */
+.work{flex:1;display:flex;flex-direction:column;min-width:0}
+.tabs{height:34px;flex:none;display:flex;background:var(--bg-elevated);border-bottom:1px solid var(--border)}
+.tab{display:flex;align-items:center;gap:8px;padding:0 14px;font-size:12.5px;color:var(--fg-subtle);border-right:1px solid var(--border);position:relative}
+.tab.active{background:var(--bg);color:var(--fg)}
+.tab.active::after{content:"";position:absolute;left:0;right:0;top:-1px;height:2px;background:var(--accent)}
+.tab .ti svg{width:14px;height:14px;color:var(--accent)}
+.toolbar{height:38px;flex:none;display:flex;align-items:center;gap:6px;padding:0 10px;background:var(--bg);border-bottom:1px solid var(--border);font-size:12px;color:var(--fg-muted)}
+.tbtn{display:flex;align-items:center;gap:6px;height:26px;padding:0 9px;border-radius:var(--radius-sm);color:var(--fg-muted)}
+.tbtn:hover{background:var(--surface-muted)}
+.tbtn svg{width:15px;height:15px}
+.tbtn.ico{padding:0 6px}
+.tsep{width:1px;height:18px;background:var(--border);margin:0 3px}
+.seg{display:flex;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;font-size:11.5px;margin-left:2px}
+.seg span{padding:3px 10px;color:var(--fg-subtle)}.seg span.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.sp{flex:1}
+/* grid */
+.grid{flex:1;min-height:0;overflow:auto;position:relative}
+table.t{width:100%;border-collapse:collapse;font-size:12.5px}
+table.t th{position:sticky;top:0;z-index:1;background:var(--surface-muted);color:var(--fg-subtle);text-align:left;font-weight:500;padding:6px 10px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);white-space:nowrap;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em}
+table.t th.num{text-align:right}
+table.t th.sortcol::after{content:"▲";font-size:8px;margin-left:6px;color:var(--fg-subtle)}
+table.t td{padding:4px 10px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);white-space:nowrap;color:var(--fg-muted);overflow:hidden;text-overflow:ellipsis}
+table.t td.num{text-align:right;font-family:var(--font-mono);color:var(--fg)}
+table.t td.formula{font-family:var(--font-mono);color:var(--fg-subtle);font-size:11.5px}
+table.t td.name{color:var(--fg)}
+table.t tr:hover td{background:var(--surface-muted)}
+table.t tr.sel td{background:var(--accent-soft)}
+table.t tr.sel td:first-child{box-shadow:inset 2px 0 0 var(--accent)}
+table.t td.editing{background:var(--bg-elevated);box-shadow:inset 0 0 0 2px var(--accent);color:var(--fg);position:relative}
+.cur{display:inline-block;width:1px;height:14px;background:var(--accent);vertical-align:middle;margin-left:1px}
+.q{display:inline-flex;align-items:center;gap:6px;font-size:11px}
+.q .d{width:7px;height:7px;border-radius:50%}
+.q.good{color:var(--good)}.q.good .d{background:var(--good)}
+.q.unc{color:var(--uncertain)}.q.unc .d{background:var(--uncertain)}
+.q.bad{color:var(--bad)}.q.bad .d{background:var(--bad)}
+tr.badrow td.num{color:var(--bad)}
+tr.uncrow td.num{color:var(--uncertain)}
+.grip{color:var(--fg-subtle);cursor:grab}
+.spark{display:block}
+/* context menu (Qt-shaped) */
+.ctx{position:absolute;z-index:9;min-width:210px;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-md);box-shadow:0 12px 34px rgba(0,0,0,.5);padding:4px;font-size:12.5px}
+.ctx .mi{display:flex;align-items:center;gap:9px;height:26px;padding:0 10px;border-radius:var(--radius-sm);color:var(--fg)}
+.ctx .mi svg{width:14px;height:14px;color:var(--fg-subtle)}
+.ctx .mi.hot{background:var(--accent);color:var(--accent-fg)}.ctx .mi.hot svg{color:var(--accent-fg)}
+.ctx .mi.disabled{color:var(--fg-subtle);opacity:.55}
+.ctx .mi .k{margin-left:auto;color:var(--fg-subtle);font-size:11px}
+.ctx .mi.hot .k{color:var(--accent-fg)}
+.ctx .mi .sub{margin-left:auto;color:var(--fg-subtle)}
+.ctx .sep{height:1px;background:var(--border);margin:4px 6px}
+/* inspector */
+.insp{width:300px;flex:none;background:var(--bg-elevated);border-left:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
+.insp-head{padding:12px 14px;border-bottom:1px solid var(--border)}
+.insp-head .t{font-size:14px;font-weight:600}
+.insp-head .p{font-size:11.5px;color:var(--fg-subtle);font-family:var(--font-mono);margin-top:3px}
+.insp-body{flex:1;overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:15px}
+.big-read{display:flex;align-items:baseline;gap:8px}
+.big-read .val{font-size:28px;font-weight:700;font-family:var(--font-mono);line-height:1;color:var(--good)}
+.big-read .un{color:var(--fg-subtle);font-size:14px}
+.mini-trend{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:8px}
+.insec .h{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg-subtle);margin-bottom:6px}
+.kv{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:12.5px;gap:10px}
+.kv .k{color:var(--fg-subtle)}.kv .v{font-family:var(--font-mono);color:var(--fg);text-align:right}
+.kv .v.bad{color:var(--bad)}
+.actions{display:flex;flex-direction:column;gap:8px}
+.btn{height:32px;border-radius:var(--radius-md);border:1px solid var(--border-strong);background:var(--surface-muted);color:var(--fg);display:flex;align-items:center;justify-content:center;gap:8px;font-size:12.5px;font-weight:600}
+.btn svg{width:15px;height:15px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.status{height:24px;flex:none;display:flex;align-items:center;background:var(--rail-bg);border-top:1px solid var(--border);font-size:11.5px;color:var(--fg-subtle)}
+.status .cell{display:flex;align-items:center;gap:6px;padding:0 12px;height:100%;border-right:1px solid var(--border)}
+.status .cell.accent{background:var(--accent);color:var(--accent-fg);font-weight:600}
+.status .sp{flex:1}
+.toggle{position:fixed;right:14px;bottom:34px;z-index:20;display:flex;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.toggle button{border:0;background:transparent;color:var(--fg-subtle);font:inherit;font-size:11.5px;padding:4px 12px;border-radius:16px;cursor:pointer}
+.toggle button.on{background:var(--accent);color:var(--accent-fg);font-weight:600}
+</style></head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand"><span class="mark">TC</span>Telecontrol <small>SCADA</small></div>
+    <div class="cmd"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search tags, objects, commands…<span class="kbd">Ctrl K</span></div>
+    <div class="ctxset"><div class="item"><span class="dot good"></span>North substation</div><div class="item mono">Server 0 ms</div><div class="item"><span class="dot good"></span>Connected</div><div class="item"><span class="avatar">R</span>root</div></div>
+  </div>
+  <div class="main">
+    <div class="rail">
+      <div class="ic" title="Overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></div>
+      <div class="ic" title="Alarms"><span class="cnt">3</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg></div>
+      <div class="ic" title="Trends"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 17l5-6 4 4 8-9"/></svg></div>
+      <div class="ic" title="Substations"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V9l8-5 8 5v11"/><path d="M9 20v-6h6v6"/></svg></div>
+      <div class="ic active" title="Tables"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 10h18M9 4v16"/></svg></div>
+      <div class="spacer"></div>
+      <div class="ic" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></div>
+    </div>
+    <div class="side">
+      <div class="side-head">Explorer · data items</div>
+      <div class="side-search"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Filter</div>
+      <div class="tree">
+        <div class="node group"><span class="tw">▾</span><span class="nm">КРУ</span></div>
+        <div class="node"><span class="tw"></span><span class="sd" style="background:var(--good)"></span><span class="nm">ТС1 · ток</span><span class="drag">⠿</span></div>
+        <div class="node"><span class="tw"></span><span class="sd" style="background:var(--good)"></span><span class="nm">ТС2 · ток</span><span class="drag">⠿</span></div>
+        <div class="node"><span class="tw"></span><span class="sd" style="background:var(--uncertain)"></span><span class="nm">ТС8 · ток</span><span class="drag">⠿</span></div>
+        <div class="node group"><span class="tw">▾</span><span class="nm">ЭСТРА-ПС</span></div>
+        <div class="node"><span class="tw"></span><span class="sd" style="background:var(--bad)"></span><span class="nm">ТИ · активн.</span><span class="drag">⠿</span></div>
+        <div class="node group"><span class="tw">▾</span><span class="nm">КСВ2.0</span></div>
+        <div class="node"><span class="tw"></span><span class="sd" style="background:var(--good)"></span><span class="nm">Ua</span><span class="drag">⠿</span></div>
+        <div class="node"><span class="tw"></span><span class="sd" style="background:var(--good)"></span><span class="nm">Ub</span><span class="drag">⠿</span></div>
+      </div>
+      <div class="hintbar">Drag a data item onto the table, or use <b>Add to table</b> from its menu. Rows accept live NodeIds and formulas.</div>
+    </div>
+    <div class="work">
+      <div class="tabs">
+        <div class="tab"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/></svg></span>Overview</div>
+        <div class="tab active"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 10h18M9 4v16"/></svg></span>Ключевые параметры</div>
+      </div>
+      <div class="toolbar">
+        <span class="tbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Add data item</span>
+        <span class="tbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/></svg>Add device</span>
+        <span class="tbtn ico" title="Remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></span>
+        <span class="tbtn ico" title="Move up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 15 6-6 6 6"/></svg></span>
+        <span class="tbtn ico" title="Move down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"/></svg></span>
+        <span class="tbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h10M4 18h6"/></svg>Sort A–Z</span>
+        <span class="tsep"></span>
+        <span style="color:var(--fg-subtle)">Mode</span>
+        <span class="seg"><span class="on">Live</span><span>At time</span></span>
+        <span class="sp"></span>
+        <span class="tbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 17l5-6 4 4 8-9"/></svg>Add to graph</span>
+        <span class="tbtn ico" title="Export CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg></span>
+        <span class="tbtn ico" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="9" width="12" height="8"/><path d="M6 9V4h12v5M8 17v3h8v-3"/></svg></span>
+      </div>
+      <div class="grid">
+        <table class="t">
+          <thead><tr>
+            <th style="width:20px"></th><th class="sortcol">Name</th><th>Formula / NodeId</th>
+            <th class="num">Value</th><th>Unit</th><th>Quality</th><th style="width:96px">Trend 1 h</th><th class="num">Updated</th>
+          </tr></thead>
+          <tbody>
+            <tr class="sel"><td><span class="grip">⠿</span></td><td class="name">КРУ · ТС1 ток</td><td class="formula">ns=2;s=КРУ.ТС1.I</td><td class="num">195.7</td><td>А</td><td><span class="q good"><span class="d"></span>Good</span></td>
+              <td><svg class="spark" width="88" height="20" viewBox="0 0 88 20"><polyline fill="none" stroke="var(--spark)" stroke-width="1.3" points="0,12 8,8 16,14 24,6 32,15 40,9 48,13 56,7 64,11 72,10 80,6 88,9"/></svg></td>
+              <td class="num">21:53:58</td></tr>
+            <tr><td><span class="grip">⠿</span></td><td class="name">КРУ · ТС2 ток</td><td class="formula">ns=2;s=КРУ.ТС2.I</td><td class="num">107.6</td><td>А</td><td><span class="q good"><span class="d"></span>Good</span></td>
+              <td><svg class="spark" width="88" height="20" viewBox="0 0 88 20"><polyline fill="none" stroke="var(--spark)" stroke-width="1.3" points="0,10 8,11 16,9 24,12 32,8 40,11 48,10 56,9 64,12 72,10 80,9 88,11"/></svg></td>
+              <td class="num">21:53:58</td></tr>
+            <tr class="uncrow"><td><span class="grip">⠿</span></td><td class="name">КРУ · ТС8 ток</td><td class="formula">ns=2;s=КРУ.ТС8.I</td><td class="num">119.8</td><td>А</td><td><span class="q unc"><span class="d"></span>Uncertain</span></td>
+              <td><svg class="spark" width="88" height="20" viewBox="0 0 88 20"><polyline fill="none" stroke="var(--uncertain)" stroke-width="1.3" stroke-dasharray="3 2" points="0,11 8,9 16,13 24,8 32,12 40,10 48,14 56,9 64,11 72,13 80,10 88,12"/></svg></td>
+              <td class="num">21:41:12</td></tr>
+            <tr class="badrow"><td><span class="grip">⠿</span></td><td class="name">ЭСТРА-ПС · ТИ активн.</td><td class="formula">ns=2;s=ЭСТРА.ТИ.P</td><td class="num">—</td><td>МВт</td><td><span class="q bad"><span class="d"></span>Bad · comms</span></td>
+              <td><svg class="spark" width="88" height="20" viewBox="0 0 88 20"><polyline fill="none" stroke="var(--bad)" stroke-width="1.3" points="0,10 8,10 16,11 24,10 32,10 40,11"/><line x1="40" y1="4" x2="40" y2="16" stroke="var(--bad)" stroke-width="1" stroke-dasharray="2 2"/></svg></td>
+              <td class="num" style="color:var(--bad)">19:03:58</td></tr>
+            <tr><td><span class="grip">⠿</span></td><td class="name">Ua среднее (расчёт)</td><td class="formula editing">(КСВ2.Ua+КСВ2.Ub+КСВ2.Uc)/3<span class="cur"></span></td><td class="num">230.6</td><td>В</td><td><span class="q good"><span class="d"></span>Good</span></td>
+              <td><svg class="spark" width="88" height="20" viewBox="0 0 88 20"><polyline fill="none" stroke="var(--spark)" stroke-width="1.3" points="0,9 8,10 16,9 24,8 32,10 40,9 48,10 56,9 64,8 72,10 80,9 88,9"/></svg></td>
+              <td class="num">21:53:58</td></tr>
+            <tr><td><span class="grip">⠿</span></td><td class="name">Температура нагрева</td><td class="formula">ns=2;s=ЭСТРА.T</td><td class="num">103.8</td><td>°C</td><td><span class="q good"><span class="d"></span>Good</span></td>
+              <td><svg class="spark" width="88" height="20" viewBox="0 0 88 20"><polyline fill="none" stroke="var(--spark)" stroke-width="1.3" points="0,13 8,12 16,14 24,11 32,13 40,10 48,12 56,9 64,11 72,8 80,10 88,7"/></svg></td>
+              <td class="num">21:53:58</td></tr>
+            <tr><td><span class="grip">⠿</span></td><td class="name">Активная мощность</td><td class="formula">ns=2;s=ЭСТРА.P</td><td class="num">130.5</td><td>МВт</td><td><span class="q good"><span class="d"></span>Good</span></td>
+              <td><svg class="spark" width="88" height="20" viewBox="0 0 88 20"><polyline fill="none" stroke="var(--spark)" stroke-width="1.3" points="0,10 8,9 16,11 24,8 32,11 40,9 48,12 56,8 64,10 72,9 80,11 88,9"/></svg></td>
+              <td class="num">21:53:58</td></tr>
+          </tbody>
+        </table>
+        <!-- Qt-shaped right-click context menu on the selected row -->
+        <div class="ctx" style="left:250px;top:150px">
+          <div class="mi hot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>Control…</div>
+          <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Manual input…</div>
+          <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 17l6-6-6-6M12 19h8"/></svg>Limits…</div>
+          <div class="sep"></div>
+          <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 17l5-6 4 4 8-9"/></svg>Add to graph<span class="k">↵</span></div>
+          <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Add to table<span class="sub">▸</span></div>
+          <div class="sep"></div>
+          <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Remove row<span class="k">Del</span></div>
+          <div class="mi disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Acknowledge<span class="k">not an alarm</span></div>
+          <div class="sep"></div>
+          <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>Properties</div>
+        </div>
+      </div>
+    </div>
+    <!-- Inspector: selected row -->
+    <div class="insp">
+      <div class="insp-head"><div class="t">КРУ · ТС1 ток</div><div class="p">ns=2;s=КРУ.ТС1.I</div></div>
+      <div class="insp-body">
+        <div class="big-read"><span class="val">195.7</span><span class="un">А</span></div>
+        <div class="mini-trend">
+          <svg width="100%" height="46" viewBox="0 0 260 46" preserveAspectRatio="none"><polyline fill="none" stroke="var(--spark)" stroke-width="1.5" points="0,30 20,20 40,34 60,14 80,36 100,22 120,32 140,16 160,28 180,24 200,14 220,26 240,18 260,22"/></svg>
+          <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--fg-subtle);margin-top:4px" class="mono"><span>−1 h</span><span>min 111.0 · max 210.4</span><span>now</span></div>
+        </div>
+        <div class="insec">
+          <div class="h">Measurements</div>
+          <div class="kv"><span class="k">Current</span><span class="v">195.7 А</span></div>
+          <div class="kv"><span class="k">Warning high</span><span class="v">210.0 А</span></div>
+          <div class="kv"><span class="k">Alarm high</span><span class="v bad">240.0 А</span></div>
+          <div class="kv"><span class="k">Quality</span><span class="v">Good</span></div>
+          <div class="kv"><span class="k">Source</span><span class="v">IEC 60870-5-104</span></div>
+        </div>
+        <div class="insec">
+          <div class="h">Actions</div>
+          <div class="actions">
+            <button class="btn primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 17l5-6 4 4 8-9"/></svg>Add to graph</button>
+            <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Manual input…</button>
+            <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 17l6-6-6-6M12 19h8"/></svg>Limits…</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="status">
+    <div class="cell accent">root · Operator</div>
+    <div class="cell"><span class="dot good"></span>Connected</div>
+    <div class="cell">7 rows</div>
+    <div class="cell">Live · 5 s</div>
+    <div class="cell">1 bad · 1 uncertain</div>
+    <div class="sp"></div>
+    <div class="cell mono">North substation</div>
+    <div class="cell mono">v2.6.0</div>
+  </div>
+</div>
+<div class="toggle"><button onclick="t('dark')" id="b-dark" class="on">Dark (Qt default)</button><button onclick="t('light')" id="b-light">Light (web default)</button></div>
+<script>function t(m){document.documentElement.setAttribute('data-theme',m);document.getElementById('b-dark').classList.toggle('on',m==='dark');document.getElementById('b-light').classList.toggle('on',m==='light');}</script>
+</body></html>

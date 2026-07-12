@@ -38,6 +38,7 @@ Rendered, theme-toggleable HTML in
 | `substation-display.html` | Single-line mimic display in the shell — equipment state, live values, click-to-control. |
 | `trend.html` | Chart-primary trend workspace — series chips, cursor readout, min/max/avg grid, series inspector. |
 | `event-journal.html` | Filterable event/alarm journal — severity filters, acknowledge, area filter, event inspector. |
+| `table-watch.html` | Live + historical operator grid — formulas/NodeIds, quality, embedded sparklines, Qt-shaped context menu, row inspector. |
 | `login.html` | Themed sign-in with read-only system preview (replaces the native OS dialog). |
 | `control-command.html` | Two-stage control/write confirm dialog. |
 | `main-window-dark.html` | Earlier exploration (kept for reference). |
