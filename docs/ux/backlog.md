@@ -66,7 +66,7 @@ required sequence.
 
 | # | Item | Touches | Dep | Done when |
 |---|---|---|---|---|
-| 4.1 | **Explorer status dots + inline live values.** | `modules/configuration/`, tree delegate | 0.1–0.3 | Each node shows quality dot + mono value from its subscription. |
+| 4.1 | **Explorer status dots** — ✅ *landed (opt-in)*: each object-tree node with a live value shows a quality dot (good/uncertain/bad) composed before its icon, coloured from the severity single source (`QualityColor`) via a new `TreeModel::GetStatusColor` hook fed by `VisibleNodeModel` (`IsBad`/`IsAlerting`). Folders/objects get none. Empty under the legacy theme. Validated on the real object tree (`--theme=dark`); `QualityColor` unit-tested. Inline live values already exist (Value column). | `modules/configuration/objects/`, `aui/qt/tree_model_adapter`, `aui/` | 0.1–0.3 | Each node shows quality dot; validated by real-widget capture. |
 | 4.2 | **Explorer filter field.** | `modules/configuration/` | 1.1 | Type-to-filter narrows the tree. |
 | 4.3 | **Inspector panel**: big readout, measurements-with-limits, controls (disabled+reason). | new `main_window/qt/inspector`, `modules/write`, `modules/limits`, `modules/node_properties` | 3.2, 3.3 | Selecting a node fills the inspector; controls open themed dialogs; admin-gated actions disabled with reason. |
 | 4.4 | **Sidebar extra panes**: Watchlist, Favorites/Portfolio as Explorer siblings. | `modules/watch`, `modules/favorites`, `modules/portfolio` | 1.1 | Panes switch within the sidebar host. |

@@ -87,6 +87,39 @@ constexpr SolidRamp kLightSolid{.warning = {193, 138, 36},
 constexpr SolidRamp kHcSolid{.warning = {255, 255, 0},
                              .critical = {255, 107, 107}};
 
+// Quality ramp (Explorer status dots) per token theme — the good/uncertain/bad
+// tokens from client/docs/ux/design-language.md. Legacy has no ramp (the dots
+// are opt-in), so QualityColor returns nothing there.
+struct QualityRamp {
+  Rgba good;
+  Rgba uncertain;
+  Rgba bad;
+};
+
+constexpr QualityRamp kDarkQuality{.good = {68, 192, 145},
+                                   .uncertain = {230, 178, 75},
+                                   .bad = {240, 113, 104}};
+constexpr QualityRamp kLightQuality{.good = {20, 130, 95},
+                                    .uncertain = {182, 122, 23},
+                                    .bad = {197, 61, 53}};
+constexpr QualityRamp kHcQuality{.good = {0, 255, 122},
+                                 .uncertain = {255, 255, 0},
+                                 .bad = {255, 107, 107}};
+
+const QualityRamp* QualityRampFor(SeverityTheme theme) {
+  switch (theme) {
+    case SeverityTheme::kDark:
+      return &kDarkQuality;
+    case SeverityTheme::kLight:
+      return &kLightQuality;
+    case SeverityTheme::kHighContrast:
+      return &kHcQuality;
+    case SeverityTheme::kLegacy:
+      break;
+  }
+  return nullptr;
+}
+
 const SolidRamp* SolidRampFor(SeverityTheme theme) {
   switch (theme) {
     case SeverityTheme::kDark:
@@ -159,6 +192,21 @@ std::optional<Color> SeverityColor(SeverityLevel level) {
     return std::nullopt;  // legacy: severity cues are not coloured
   return Color{level == SeverityLevel::kCritical ? ramp->critical
                                                  : ramp->warning};
+}
+
+std::optional<Color> QualityColor(Quality quality) {
+  const QualityRamp* ramp = QualityRampFor(CurrentTheme());
+  if (!ramp)
+    return std::nullopt;  // legacy: no status dots
+  switch (quality) {
+    case Quality::kBad:
+      return Color{ramp->bad};
+    case Quality::kUncertain:
+      return Color{ramp->uncertain};
+    case Quality::kGood:
+      break;
+  }
+  return Color{ramp->good};
 }
 
 }  // namespace scada::aui

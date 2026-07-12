@@ -9,8 +9,7 @@
 
 namespace {
 
-Awaitable<NodeRef> FetchNodeOnlyAsync(AnyExecutor executor,
-                                      NodeRef node) {
+Awaitable<NodeRef> FetchNodeOnlyAsync(AnyExecutor executor, NodeRef node) {
   co_return co_await node.Fetch(NodeFetchStatus::NodeOnly);
 }
 
@@ -37,8 +36,8 @@ ObjectTreeModel::ObjectTreeModel(ObjectTreeModelContext&& context)
     : ObjectTreeModelContext{std::move(context)},
       ConfigurationTreeModel{::ConfigurationTreeModelContext{
           .executor_ = ObjectTreeModelContext::executor_,
-          .node_service_tree_ = node_service_tree_factory_(
-              NodeServiceTreeImplContext{
+          .node_service_tree_ =
+              node_service_tree_factory_(NodeServiceTreeImplContext{
                   .executor_ = ObjectTreeModelContext::executor_,
                   .node_service_ = ObjectTreeModelContext::node_service_,
                   .root_node_ = ObjectTreeModelContext::root_,
@@ -92,6 +91,11 @@ aui::Color ObjectTreeModel::GetBackgroundColor(void* tree_node, int column_id) {
     return ConfigurationTreeModel::GetBackgroundColor(tree_node, column_id);
 }
 
+std::optional<aui::Color> ObjectTreeModel::GetStatusColor(void* tree_node) {
+  // Quality dot on the name column, from the node's live value.
+  return visible_node_model_.GetStatusColor(tree_node);
+}
+
 void ObjectTreeModel::SetNodeVisible(void* tree_node, bool visible) {
   auto visible_node = visible ? CreateVisibleNode(tree_node) : nullptr;
   visible_node_model_.SetNode(tree_node, std::move(visible_node));
@@ -109,12 +113,12 @@ std::shared_ptr<VisibleNode> ObjectTreeModel::CreateVisibleNode(
   auto proxy_visible_node = std::make_shared<ProxyVisibleNode>();
   CoSpawn(ObjectTreeModelContext::executor_,
           [executor = ObjectTreeModelContext::executor_,
-           lifetime_token = GetLifetimeToken(),
-           model = this, proxy_visible_node, tree_node, node,
-           node_id = node.node_id(),
+           lifetime_token = GetLifetimeToken(), model = this,
+           proxy_visible_node, tree_node, node, node_id = node.node_id(),
            reference_type_id = configuration_tree_node.reference_type_id(),
-           forward_reference = configuration_tree_node.forward_reference()]()
-              mutable -> Awaitable<void> {
+           forward_reference =
+               configuration_tree_node.forward_reference()]() mutable
+              -> Awaitable<void> {
             co_await ObjectTreeModel::CompleteVisibleNodeFetchAsync(
                 std::move(executor), std::move(lifetime_token), *model,
                 std::move(proxy_visible_node), tree_node, std::move(node),

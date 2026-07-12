@@ -47,4 +47,13 @@ enum class SeverityLevel { kNone, kWarning, kCritical };
 // colour appears only under the opt-in token themes.
 std::optional<Color> SeverityColor(SeverityLevel level);
 
+// A node/value's data quality, for the Explorer status dots and other quality
+// cues.
+enum class Quality { kGood, kUncertain, kBad };
+
+// The status-dot colour for a data quality under the active theme (the
+// good/uncertain/bad tokens). Returns std::nullopt under the legacy theme — the
+// dots are part of the opt-in token themes — so the default tree is unchanged.
+std::optional<Color> QualityColor(Quality quality);
+
 }  // namespace scada::aui

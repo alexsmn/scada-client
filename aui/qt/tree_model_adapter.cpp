@@ -8,7 +8,10 @@
 #include "aui/qt/image_util.h"
 #include "base/check.h"
 
+#include <QIcon>
 #include <QMimeData>
+#include <QPainter>
+#include <QPixmap>
 #include <QSize>
 
 namespace scada::aui {
@@ -17,6 +20,41 @@ namespace {
 
 bool IsTransparent(Color color) {
   return color.rgba().a == 0;
+}
+
+// The pixmap for a tree icon at its loaded size (icons are loaded at a single
+// size; fall back to 16 px if the icon reports none).
+QPixmap IconPixmap(const QIcon& icon) {
+  const QList<QSize> sizes = icon.availableSizes();
+  return icon.pixmap(sizes.isEmpty() ? QSize{16, 16} : sizes.first());
+}
+
+// Returns `base` with a small filled quality dot drawn to its left (a status
+// badge before the node icon), preserving the base pixmap's device-pixel ratio
+// so it stays crisp on high-DPI displays.
+QPixmap WithStatusDot(const QPixmap& base, const QColor& color) {
+  const qreal dpr = base.isNull() ? 1.0 : base.devicePixelRatio();
+  const int dot = 8;  // logical px
+  const int gap = 3;  // logical px between dot and icon
+  const int base_w = base.isNull() ? 0 : static_cast<int>(base.width() / dpr);
+  const int base_h =
+      base.isNull() ? dot : static_cast<int>(base.height() / dpr);
+  const int width = base_w + (base_w ? gap : 0) + dot;
+  const int height = std::max(base_h, dot);
+
+  QPixmap result(QSize{width, height} * dpr);
+  result.setDevicePixelRatio(dpr);
+  result.fill(Qt::transparent);
+
+  QPainter painter{&result};
+  painter.setRenderHint(QPainter::Antialiasing);
+  painter.setPen(Qt::NoPen);
+  painter.setBrush(color);
+  painter.drawEllipse(QRectF{0.0, (height - dot) / 2.0, static_cast<qreal>(dot),
+                             static_cast<qreal>(dot)});
+  if (!base.isNull())
+    painter.drawPixmap(dot + gap, (height - base_h) / 2, base);
+  return result;
 }
 
 std::unique_ptr<QMimeData> CreateMimeData(const DragData& drag_data) {
@@ -190,10 +228,19 @@ QVariant TreeModelAdapter::data(const QModelIndex& index, int role) const {
       return IsTransparent(color) ? QVariant{} : color.qcolor();
     }
     case Qt::DecorationRole: {
-      auto icon_index = index.column() == 0 ? model_->GetIcon(node) : -1;
-      return (icon_index >= 0 && icon_index < static_cast<int>(icons_.size()))
-                 ? icons_[icon_index]
-                 : QVariant();
+      if (index.column() != 0)
+        return QVariant();
+      const int icon_index = model_->GetIcon(node);
+      const bool has_icon =
+          icon_index >= 0 && icon_index < static_cast<int>(icons_.size());
+      // A quality status dot precedes the node icon when the model supplies
+      // one.
+      const std::optional<Color> status = model_->GetStatusColor(node);
+      if (!status)
+        return has_icon ? QVariant(icons_[icon_index]) : QVariant();
+      const QPixmap base =
+          has_icon ? IconPixmap(icons_[icon_index]) : QPixmap{};
+      return QVariant(WithStatusDot(base, status->qcolor()));
     }
     case Qt::SizeHintRole:
       return QSize{-1, row_height};
@@ -414,4 +461,4 @@ DropAction TreeModelAdapter::GetDropAction(const QMimeData* data,
   return drop_handler(drop_action, drag_data, node);
 }
 
-}  // namespace aui
+}  // namespace scada::aui

@@ -8,6 +8,7 @@
 #include <boost/signals2/connection.hpp>
 #include <boost/signals2/signal.hpp>
 #include <functional>
+#include <optional>
 
 namespace scada::aui {
 
@@ -74,6 +75,12 @@ class TreeModel {
     return ColorCode::Transparent;
   }
 
+  // Optional status-indicator colour for a node (e.g. a quality dot drawn on
+  // the name column). Default: none, so the node shows no status dot.
+  virtual std::optional<Color> GetStatusColor(void* node) {
+    return std::nullopt;
+  }
+
   virtual void SetText(void* node, int column_id, const std::u16string& text) {}
   // TODO: Remove. `IsEditable` should be covered by `GetEditData` none editor
   // type.
@@ -106,4 +113,4 @@ class TreeModel {
   boost::signals2::signal<void()> model_reset_signal_;
 };
 
-}  // namespace aui
+}  // namespace scada::aui

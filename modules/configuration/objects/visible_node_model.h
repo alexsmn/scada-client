@@ -5,6 +5,7 @@
 #include "timed_data/timed_data_spec.h"
 
 #include <boost/signals2/connection.hpp>
+#include <optional>
 
 class BlinkerManager;
 class ConfigurationTreeNode;
@@ -110,6 +111,10 @@ class VisibleNodeModel {
   std::u16string GetText(void* tree_node);
   aui::Color GetTextColor(void* tree_node);
   aui::Color GetBackgroundColor(void* tree_node);
+
+  // Quality status-dot colour for a node's live value (good/uncertain/bad),
+  // or none when the node has no live value (folders/objects).
+  std::optional<aui::Color> GetStatusColor(void* tree_node);
 
  private:
   const VisibleNode* GetNode(void* tree_node) const;

@@ -75,5 +75,21 @@ TEST_F(SeverityColorsTest, SolidSeverityColourIsTokenOnly) {
   EXPECT_EQ(*SeverityColor(SeverityLevel::kWarning), C(230, 178, 75));
 }
 
+// The Explorer status-dot quality colour is absent under legacy and follows the
+// good/uncertain/bad tokens under the token themes.
+TEST_F(SeverityColorsTest, QualityColourIsTokenOnly) {
+  EXPECT_FALSE(QualityColor(Quality::kGood).has_value());
+  EXPECT_FALSE(QualityColor(Quality::kBad).has_value());
+
+  SetSeverityTheme(SeverityTheme::kDark);
+  ASSERT_TRUE(QualityColor(Quality::kGood).has_value());
+  EXPECT_EQ(*QualityColor(Quality::kGood), C(68, 192, 145));
+  EXPECT_EQ(*QualityColor(Quality::kUncertain), C(230, 178, 75));
+  EXPECT_EQ(*QualityColor(Quality::kBad), C(240, 113, 104));
+
+  SetSeverityTheme(SeverityTheme::kLight);
+  EXPECT_EQ(*QualityColor(Quality::kBad), C(197, 61, 53));
+}
+
 }  // namespace
 }  // namespace scada::aui

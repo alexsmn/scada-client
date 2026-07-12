@@ -3,8 +3,8 @@
 #include "base/any_executor.h"
 
 #include "configuration/configuration_module.h"
-#include "configuration/tree/configuration_tree_model.h"
 #include "configuration/objects/visible_node_model.h"
+#include "configuration/tree/configuration_tree_model.h"
 
 #include <memory>
 
@@ -35,6 +35,7 @@ class ObjectTreeModel : private ObjectTreeModelContext,
   virtual aui::Color GetTextColor(void* tree_node, int column_id) override;
   virtual aui::Color GetBackgroundColor(void* tree_node,
                                         int column_id) override;
+  virtual std::optional<aui::Color> GetStatusColor(void* tree_node) override;
 
  private:
   virtual std::unique_ptr<ConfigurationTreeNode> CreateTreeNode(

@@ -1,5 +1,6 @@
 #include "configuration/objects/visible_node_model.h"
 
+#include "aui/severity_colors.h"
 #include "base/check.h"
 #include "configuration/tree/configuration_tree_model.h"
 #include "model/data_items_node_ids.h"
@@ -69,6 +70,17 @@ aui::Color VisibleNodeModel::GetBackgroundColor(void* tree_node) {
     return profile_.alarm_color;
 
   return aui::ColorCode::Transparent;
+}
+
+std::optional<aui::Color> VisibleNodeModel::GetStatusColor(void* tree_node) {
+  const VisibleNode* node = GetNode(tree_node);
+  if (!node)
+    return std::nullopt;  // no live value (folder/object): no status dot
+
+  const aui::Quality quality = node->IsBad()        ? aui::Quality::kBad
+                               : node->IsAlerting() ? aui::Quality::kUncertain
+                                                    : aui::Quality::kGood;
+  return aui::QualityColor(quality);
 }
 
 const VisibleNode* VisibleNodeModel::GetNode(void* tree_node) const {
