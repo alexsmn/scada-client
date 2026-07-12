@@ -14,6 +14,7 @@
 #include "controller/selection_model.h"
 #include "controller/window_info.h"
 #include "filesystem/file_cache.h"
+#include "main_window/command_palette_qt.h"
 #include "main_window/main_window_command_router.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
@@ -35,6 +36,7 @@
 #include <QLineEdit>
 #include <QMenuBar>
 #include <QScreen>
+#include <QShortcut>
 #include <QStatusBar>
 #include <QStyleFactory>
 #include <QTabWidget>
@@ -265,15 +267,20 @@ void MainWindow::CreateContextBar() {
   left_spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
   context_bar_->addWidget(left_spacer);
 
-  // Command/search entry point (centre). Read-only for now — the command
-  // palette that this opens is a separate slice; this is the visible
-  // affordance.
-  auto* search = new QLineEdit(context_bar_);
-  search->setPlaceholderText(
+  // Command/search entry point (centre). Read-only: it is an affordance that
+  // opens the command palette (click or Ctrl+K); typing happens in the palette.
+  command_search_ = new QLineEdit(context_bar_);
+  command_search_->setPlaceholderText(
       QString::fromStdU16String(Translate("Search tags, objects, commands…")));
-  search->setReadOnly(true);
-  search->setFixedWidth(360);
-  context_bar_->addWidget(search);
+  command_search_->setReadOnly(true);
+  command_search_->setFixedWidth(360);
+  command_search_->installEventFilter(this);
+  context_bar_->addWidget(command_search_);
+
+  auto* palette_shortcut =
+      new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_K), this);
+  connect(palette_shortcut, &QShortcut::activated, this,
+          &MainWindow::ShowCommandPalette);
 
   auto* right_spacer = new QWidget(context_bar_);
   right_spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
@@ -308,6 +315,29 @@ void MainWindow::CreateContextBar() {
   addToolBar(Qt::TopToolBarArea, context_bar_);
   // Force the command toolbar onto its own row below the context bar.
   addToolBarBreak(Qt::TopToolBarArea);
+}
+
+void MainWindow::ShowCommandPalette() {
+  auto* palette = new CommandPalette(
+      this, ui_command_registry_.command_manager(),
+      [this](unsigned command_id) -> CommandHandler* {
+        return ResolveCommandHandler(ui_command_registry_.command_manager(),
+                                     command_id, kToolbarContexts, *commands_);
+      });
+  palette->setAttribute(Qt::WA_DeleteOnClose);
+  palette->show();
+  palette->raise();
+  palette->activateWindow();
+}
+
+bool MainWindow::eventFilter(QObject* watched, QEvent* event) {
+  // Clicking the read-only context-bar search field opens the command palette.
+  if (watched == command_search_ &&
+      event->type() == QEvent::MouseButtonRelease) {
+    ShowCommandPalette();
+    return true;
+  }
+  return QMainWindow::eventFilter(watched, event);
 }
 
 void MainWindow::CreateToolbar() {

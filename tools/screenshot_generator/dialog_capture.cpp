@@ -5,8 +5,11 @@
 #include "screenshot_wait.h"
 
 #include "aui/qt/dialog_service_impl_qt.h"
+#include "aui/translation.h"
 #include "base/any_executor.h"
 #include "base/boost_log.h"
+#include "controller/command_manager.h"
+#include "main_window/command_palette_qt.h"
 #include "modules/limits/limit_dialog.h"
 #include "modules/login/login_dialog.h"
 #include "modules/write/write_dialog.h"
@@ -351,6 +354,25 @@ std::shared_ptr<DialogAwaitableResult<void>> BuildWriteDialog(
   return dialog_lifetime;
 }
 
+// Registers a representative spread of operator/engineering commands so the
+// palette capture shows a realistic list. Titles go through Translate() (no
+// Cyrillic literals in source); the generator loads no .ts, so they render in
+// English.
+void RegisterSampleCommands(CommandManager& manager) {
+  const char* const titles[] = {
+      "Acknowledge Alarm", "Acknowledge All Alarms",
+      "Open Display",      "Export to CSV",
+      "Write Value",       "Show Event Journal",
+      "Add to Favorites",  "Print Preview",
+      "Device Metrics",    "Refresh",
+  };
+  unsigned id = 1;
+  for (const char* title : titles) {
+    manager.RegisterCommand(
+        CommandDescriptor{.command_id = id++, .title = Translate(title)});
+  }
+}
+
 }  // namespace
 
 bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
@@ -391,6 +413,19 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
     bool captured = GrabAndCloseVisibleDialogOrReport(spec);
     WaitForDialogCompletion(dialog_lifetime);
     return captured;
+  } else if (spec.kind == "command-palette") {
+    // The palette is a plain modal QDialog (not a CoSpawn'd coroutine like the
+    // others): build it over a fixture command list and let the generic grab
+    // pick it up. The manager can die once the ctor has copied its entries.
+    CommandManager command_manager;
+    RegisterSampleCommands(command_manager);
+    auto* palette =
+        new CommandPalette(nullptr, command_manager,
+                           [](unsigned) -> CommandHandler* { return nullptr; });
+    palette->setAttribute(Qt::WA_DeleteOnClose);
+    palette->show();
+    QApplication::processEvents();
+    return GrabAndCloseVisibleDialogOrReport(spec);
   } else {
     ADD_FAILURE() << "Unknown dialog kind: " << spec.kind;
     return false;

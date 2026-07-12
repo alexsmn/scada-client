@@ -64,7 +64,15 @@ current user (principle §8).
 
 - Command palette resolves against `GlobalCommandRegistry` +
   `SelectionCommandRegistry` + address-space browse. This is new UI over
-  existing registries.
+  existing registries. **Landed (opt-in):** `Ctrl K` — or clicking the
+  command/search field — opens a modal palette that filters every registered
+  command by title (case- and script-insensitive, so a Russian query matches a
+  Russian title) and runs the selection through the existing command-handler
+  resolution. Implemented in `main_window/command_palette_qt.{h,cpp}` with the
+  Qt-free matching in `command_match.{h,cpp}`.
+
+  ![Command palette](../screenshots/command-palette.png)
+
 - Per-view action controls (period, severity filter, print, export,
   acknowledge) move **into the relevant Panel header**, not a global toolbar —
   so the controls sit with the surface they affect.

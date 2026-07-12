@@ -10,6 +10,7 @@
 
 class QAction;
 class QLabel;
+class QLineEdit;
 class QMenu;
 class QToolBar;
 class QWidget;
@@ -46,6 +47,9 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // QWidget
   virtual void closeEvent(QCloseEvent* event) override;
 
+  // QObject
+  virtual bool eventFilter(QObject* watched, QEvent* event) override;
+
  private:
   void CreateMenuBar();
   void CreateToolbar();
@@ -53,6 +57,8 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // Opt-in top context bar (brand + command/search + live context cluster).
   // Only built when the experimental UX is enabled; see main.cpp.
   void CreateContextBar();
+  // Opens the Ctrl-K command palette over every registered command.
+  void ShowCommandPalette();
   void RebuildMenuBar();
 
   QAction* FindAction(unsigned command_id);
@@ -87,6 +93,7 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // Top context bar (opt-in). Its right-hand cluster mirrors the status-bar
   // model panes; `context_panes_` are the labels, refreshed on model changes.
   QToolBar* context_bar_ = nullptr;
+  QLineEdit* command_search_ = nullptr;
   std::vector<QLabel*> context_panes_;
   boost::signals2::scoped_connection context_bar_connection_;
 

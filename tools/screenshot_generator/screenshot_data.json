@@ -226,6 +226,7 @@
     { "kind": "login",        "filename": "client-login.png",            "width": 403, "height": 180 },
     { "kind": "limits",       "filename": "limits.png",                  "width": 344, "height": 296 },
     { "kind": "write-manual", "filename": "ti-manual-control.png",       "width": 354, "height": 207 },
-    { "kind": "write-remote", "filename": "ti-remote-control-enabled.png","width": 354, "height": 207 }
+    { "kind": "write-remote", "filename": "ti-remote-control-enabled.png","width": 354, "height": 207 },
+    { "kind": "command-palette","filename": "command-palette.png",         "width": 560, "height": 380 }
   ]
 }
