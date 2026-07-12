@@ -3,6 +3,15 @@
 <TS version="2.1" language="ru_RU">
 <context>
     <name></name>
+    <!-- main_window/status_bar/event_status_provider.cpp -->
+    <message>
+        <source>Critical</source>
+        <translation>Критично</translation>
+    </message>
+    <message>
+        <source>Warning</source>
+        <translation>Предупреждение</translation>
+    </message>
     <!-- client_utils.cpp -->
     <message>
         <source>Local</source>

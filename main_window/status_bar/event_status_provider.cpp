@@ -1,5 +1,6 @@
 #include "main_window/status_bar/event_status_provider.h"
 
+#include "aui/translation.h"
 #include "base/u16format.h"
 #include "events/local_events.h"
 #include "events/node_event_provider.h"
@@ -59,15 +60,13 @@ std::u16string EventStatusProvider::GetHighestSeverityText() const {
   if (aui::GetSeverityTheme() == aui::SeverityTheme::kLegacy)
     return {};
 
+  // English literals routed through Translate(); the Russian (and any other
+  // language) lives in the .ts — never hardcode localized text here.
   switch (HighestUnackedLevel()) {
     case aui::SeverityLevel::kCritical:
-      // "Критично" — \u-escaped to avoid Cyrillic-literal mojibake, as
-      // elsewhere in this file.
-      return u"\u041a\u0440\u0438\u0442\u0438\u0447\u043d\u043e";
+      return Translate("Critical");
     case aui::SeverityLevel::kWarning:
-      // "Предупреждение"
-      return u"\u041f\u0440\u0435\u0434\u0443\u043f\u0440\u0435\u0436\u0434"
-             u"\u0435\u043d\u0438\u0435";
+      return Translate("Warning");
     case aui::SeverityLevel::kNone:
       return {};  // calm: no active alarm, show nothing
   }
