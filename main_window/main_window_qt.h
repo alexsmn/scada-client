@@ -70,6 +70,8 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   void CreateActivityBar();
   // Opens the section's default view and marks it active on the rail.
   void ActivateSection(const std::string& window_info_name);
+  // Opens the operator Overview page (from the rail's Overview section).
+  void OpenOverviewPage();
   // Opens an address-space tag (from the palette) in a table view.
   void OpenTag(const scada::NodeId& node_id, const std::u16string& title);
   // Opens the Ctrl-K command palette over every registered command, optionally

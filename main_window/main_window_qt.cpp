@@ -3,7 +3,6 @@
 #include "aui/models/menu_model.h"
 #include "aui/models/simple_menu_model.h"
 #include "aui/models/status_bar_model.h"
-#include "ui/qt/client_utils_qt.h"
 #include "aui/severity_colors.h"
 #include "aui/translation.h"
 #include "base/awaitable.h"
@@ -21,6 +20,7 @@
 #include "main_window/main_window_command_router.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
+#include "main_window/overview_page.h"
 #include "main_window/selection_command_router.h"
 #include "main_window/simple_menu_command_handler.h"
 #include "main_window/status_bar/status_bar_controller_qt.h"
@@ -32,6 +32,7 @@
 #include "resources/common_resources.h"
 #include "scada/standard_node_ids.h"
 #include "ui/common/client_utils.h"
+#include "ui/qt/client_utils_qt.h"
 
 #include <QAction>
 #include <QApplication>
@@ -373,7 +374,8 @@ void MainWindow::CreateContextBar() {
                       .arg(color->qcolor().name())
                 : QString{});
     }
-    refresh_kpi(kpi_critical_, scada::aui::SeverityLevel::kCritical, "Critical");
+    refresh_kpi(kpi_critical_, scada::aui::SeverityLevel::kCritical,
+                "Critical");
     refresh_kpi(kpi_warning_, scada::aui::SeverityLevel::kWarning, "Warning");
   };
   refresh();
@@ -396,7 +398,7 @@ void MainWindow::CreateActivityBar() {
     bool pinned_bottom = false;
   };
   const SectionSpec specs[] = {
-      {"Overview", ""},
+      {"Overview", kOverviewSectionId},
       {"Alarms", "EventJournal", /*is_alarms=*/true},
       {"Trends", "Graph"},
       {"Substations", "Modus"},
@@ -414,12 +416,16 @@ void MainWindow::CreateActivityBar() {
     section.is_alarms = spec.is_alarms;
     section.pinned_bottom = spec.pinned_bottom;
     section.enabled = false;
-    // A section is live only if its view type is registered; its rail icon
-    // reuses that view command's image, so the rail matches the toolbar/menu.
-    if (const WindowInfo* info =
-            spec.window_info_name.empty()
-                ? nullptr
-                : FindWindowInfoByName(spec.window_info_name)) {
+    if (spec.window_info_name == kOverviewSectionId) {
+      // Overview opens the Overview page (a layout of views), not a single
+      // view.
+      section.enabled = true;
+    } else if (const WindowInfo* info =
+                   spec.window_info_name.empty()
+                       ? nullptr
+                       : FindWindowInfoByName(spec.window_info_name)) {
+      // A section is live only if its view type is registered; its rail icon
+      // reuses that view command's image, so the rail matches the toolbar/menu.
       section.enabled = true;
       if (const CommandDescriptor* command =
               command_manager.FindCommand(info->command_id);
@@ -452,7 +458,17 @@ void MainWindow::CreateActivityBar() {
       [refresh_badge](int, int) { refresh_badge(); });
 }
 
+void MainWindow::OpenOverviewPage() {
+  OpenPage(MakeOverviewPage());
+}
+
 void MainWindow::ActivateSection(const std::string& window_info_name) {
+  if (window_info_name == kOverviewSectionId) {
+    OpenOverviewPage();
+    activity_bar_->SetActiveSection(window_info_name);
+    return;
+  }
+
   const WindowInfo* info = FindWindowInfoByName(window_info_name);
   if (!info)
     return;
