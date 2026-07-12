@@ -122,9 +122,22 @@ endif()
 # every build. Requires a desktop session (see docs/screenshots.md
 # "Native window frames").
 set(SCREENSHOT_DOCS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../docs/screenshots")
+
+# On macOS force the offscreen platform: the local gallery is
+# validation-only there (published images come from Windows), and cocoa
+# runs from headless/background build contexts have livelocked in event
+# dispatch, wedging the build at 100% CPU. Windows keeps the native
+# platform so the published gallery renders with real fonts.
+if(APPLE)
+  set(SCREENSHOT_POST_BUILD_LAUNCHER
+      ${CMAKE_COMMAND} -E env QT_QPA_PLATFORM=offscreen)
+else()
+  set(SCREENSHOT_POST_BUILD_LAUNCHER)
+endif()
+
 add_custom_command(TARGET client_screenshot_generator POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E make_directory "${SCREENSHOT_DOCS_DIR}"
-  COMMAND $<TARGET_FILE:client_screenshot_generator>
+  COMMAND ${SCREENSHOT_POST_BUILD_LAUNCHER} $<TARGET_FILE:client_screenshot_generator>
     "--out=${SCREENSHOT_DOCS_DIR}"
     "--image-manifest=${SCREENSHOT_DOCS_DIR}/image_manifest.json"
   COMMENT "Rendering screenshots into docs/screenshots/"

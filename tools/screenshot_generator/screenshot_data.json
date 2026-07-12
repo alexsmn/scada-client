@@ -64,8 +64,8 @@
     { "id": "TIT.208", "browse_name": "Частота",             "class": "variable", "type_definition": "analog_item", "base_value": 50.01, "properties": { "SCADA.158": 49.95, "SCADA.159": 50.05 } },
     { "id": "TIT.209", "browse_name": "Коэффициент мощности","class": "variable", "type_definition": "analog_item", "base_value": 0.95 },
     { "id": "TIT.210", "browse_name": "Суммарная энергия",   "class": "variable", "type_definition": "analog_item", "base_value": 48723 },
-    { "id": "TIT.211", "browse_name": "Температура",         "class": "variable", "type_definition": "analog_item", "base_value": 42.3, "properties": { "display_format": "0.#" } },
-    { "id": "TIT.212", "browse_name": "Температура нагрева", "class": "variable", "type_definition": "analog_item", "base_value": 41.0, "properties": { "display_format": "0.#" } },
+    { "id": "TIT.211", "browse_name": "Температура",         "class": "variable", "type_definition": "analog_item", "base_value": 42.3, "properties": { "display_format": "0.#", "units": "°C" } },
+    { "id": "TIT.212", "browse_name": "Температура нагрева", "class": "variable", "type_definition": "analog_item", "base_value": 41.0, "properties": { "display_format": "0.#", "units": "°C" } },
 
     { "id": "SCADA.234", "browse_name": "root",          "display_name": "root",           "class": "object", "type_definition": "SCADA.16", "properties": { "SCADA.170": 0, "SCADA.345": false } },
     { "id": "USER.1",    "browse_name": "Клиент 1",      "display_name": "Руководитель",   "class": "object", "type_definition": "SCADA.16", "properties": { "SCADA.170": 0, "SCADA.345": true } },

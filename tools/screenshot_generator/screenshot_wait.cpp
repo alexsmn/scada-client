@@ -24,8 +24,8 @@ bool WaitForPendingNodeLoads(NodeService& node_service) {
   }
 }
 
-bool FetchGraphNodesResident(NodeService& node_service,
-                             std::span<const scada::NodeId> node_ids) {
+bool FetchNodesResident(NodeService& node_service,
+                        std::span<const scada::NodeId> node_ids) {
   // Wave 1: each graphed instance node together with its hierarchical children
   // so the property-child references (EU range, limit bands) become known.
   bool any = false;

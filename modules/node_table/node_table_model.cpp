@@ -221,7 +221,10 @@ std::vector<std::pair<int, int>> NodeTableModel::FindUpdatedRanges(
 }
 
 void NodeTableModel::FetchRow(Row& row) const {
-  row.node.StartFetch();
+  // Children included: the property columns read the row's property instance
+  // nodes (GetAggregate -> GetChild), and v3 node fetches no longer browse
+  // Aggregates inline — property children only arrive with a children fetch.
+  row.node.StartFetch(NodeFetchStatus::NodeAndChildren);
 
   row.additional_targets.clear();
   std::ranges::for_each(columns_, [&](const auto& column) {

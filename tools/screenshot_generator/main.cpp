@@ -145,7 +145,12 @@ class ScreenshotGenerator : public ::testing::Test {
       ViewServiceImplContext{address_space_}};
   ViewServiceImpl view_service_{sync_view_service_};
   scada::LocalHistoryService history_service_;
-  scada::LocalMonitoredItemService monitored_item_service_;
+  // Delivers each subscribed node's actual address-space Value attribute
+  // (e.g. TIT.212's base_value from screenshot_data.json) as the single
+  // current-value sample, so dialog/graph current-value readouts render
+  // meaningful, stable numbers.
+  scada::LocalMonitoredItemService monitored_item_service_{
+      sync_attribute_service_};
   scada::LocalMethodService method_service_;
   scada::LocalNodeManagementService node_management_service_;
   scada::LocalSessionService session_service_;

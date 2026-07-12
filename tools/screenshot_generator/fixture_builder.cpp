@@ -200,6 +200,16 @@ void PopulateFixtureNodes(AddressSpaceImpl& address_space,
 
       if (const auto* properties = jn.as_object().if_contains("properties")) {
         for (const auto& [name, value] : properties->as_object()) {
+          // Engineering units must be stored as LocalizedText: the format
+          // path (GetTitFormatParams) reads the property with
+          // get_or(LocalizedText{}), so a plain String value would render
+          // no units at all.
+          if (name == "units" && value.is_string()) {
+            state.properties.emplace_back(
+                data_items::id::AnalogItemType_EngineeringUnits,
+                scada::ToLocalizedText(std::string(value.as_string())));
+            continue;
+          }
           auto property_id = ParseJsonPropertyId(name);
           if (!property_id)
             continue;

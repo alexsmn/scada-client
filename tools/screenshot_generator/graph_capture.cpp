@@ -73,7 +73,7 @@ void MakeGraphItemNodesResident(NodeService& node_service,
     probe.Connect(timed_data_service, std::string(ji.at("path").as_string()));
     node_ids.push_back(probe.node_id());
   }
-  scada::screenshot_generator::FetchGraphNodesResident(node_service, node_ids);
+  scada::screenshot_generator::FetchNodesResident(node_service, node_ids);
 }
 
 // Builds the fixture graph — panes, coloured lines and the time range — into

@@ -99,12 +99,13 @@ bool WaitForPendingNodeLoads(NodeService& node_service);
 // hierarchical children (the analog property bands), its type definition (so
 // `node[aggregate_declaration_id]` resolves), and every property child's value
 // — then waits for those fetches to settle. Standalone captures (the graph
-// widget, the series inspector) are built outside the main-window/tree flow
-// that would otherwise pull these property children resident, and TimedData
-// only fetches the node itself (NodeOnly), so without this `node[...].value()`
-// reads (EU range, current value, limit bands) come back empty. Null ids are
-// skipped; returns false only when a non-null id is unknown to the service.
-bool FetchGraphNodesResident(NodeService& node_service,
-                             std::span<const scada::NodeId> node_ids);
+// widget, the series inspector, the write/limits dialogs) are built outside
+// the main-window/tree flow that would otherwise pull these property children
+// resident, and TimedData only fetches the node itself (NodeOnly), so without
+// this `node[...].value()` reads (EU range, engineering units, limit bands)
+// come back empty. Null ids are skipped; returns false only when a non-null
+// id is unknown to the service.
+bool FetchNodesResident(NodeService& node_service,
+                        std::span<const scada::NodeId> node_ids);
 
 }  // namespace scada::screenshot_generator

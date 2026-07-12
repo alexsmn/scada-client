@@ -14,7 +14,6 @@
 #include "modules/limits/limit_dialog.h"
 #include "modules/login/login_dialog.h"
 #include "modules/write/write_dialog.h"
-#include "node_service/node_fetch_status.h"
 #include "node_service/node_ref.h"
 #include "node_service/node_service.h"
 #include "profile/profile.h"
@@ -174,15 +173,14 @@ class NullTaskManager : public TaskManager {
   }
 };
 
-bool FetchAndWaitForPendingNodeLoads(NodeService& node_service,
-                                     const NodeRef& node,
-                                     const NodeFetchStatus& requested_status) {
-  if (!node) {
-    return false;
-  }
-
-  node.StartFetch(requested_status);
-  return WaitForPendingNodeLoads(node_service);
+// Makes the dialog's target node fully resident — attributes, property
+// children, and the type-definition chain — so synchronous property reads
+// (engineering units, limit bands, control flags) resolve when the dialog
+// model is constructed.
+bool FetchDialogNodeResident(NodeService& node_service,
+                             const scada::NodeId& node_id) {
+  return scada::screenshot_generator::FetchNodesResident(
+      node_service, std::span<const scada::NodeId>{&node_id, 1});
 }
 
 // Scans top-level widgets for a visible QDialog, resizes it to the
@@ -291,9 +289,10 @@ BuildLoginDialog(DialogEnvironment& env,
 // Limits dialog: needs a NodeRef to an analog variable plus a
 // TaskManager for the (never-taken) write path. We pull the configured
 // dialog analog node out of the fixture; in the current fixture that is
-// "Температура нагрева", the analog node the docs images target. Limit
-// values still render empty until the fixture grows
-// HasProperty support for AnalogItemType_Limit{Hi,Lo,HiHi,LoLo} (gap #2).
+// "Температура нагрева", the analog node the docs images target. The
+// resident fetch below resolves property reads, so limit fields render
+// whenever the fixture node carries limit_{lolo,lo,hi,hihi} properties
+// (the current dialog node intentionally has none).
 std::shared_ptr<DialogAwaitableResult<void>> BuildLimitsDialog(
     DialogEnvironment& env,
     NullTaskManager& task_manager,
@@ -307,8 +306,7 @@ std::shared_ptr<DialogAwaitableResult<void>> BuildLimitsDialog(
     ADD_FAILURE() << "LimitsDialog: configured fixture node not found";
     return {};
   }
-  if (!FetchAndWaitForPendingNodeLoads(*env.node_service, node,
-                                       NodeFetchStatus::NodeOnly)) {
+  if (!FetchDialogNodeResident(*env.node_service, env.dialog_analog_node_id)) {
     ADD_FAILURE() << "LimitsDialog: failed to fetch configured fixture node";
     return {};
   }
@@ -346,8 +344,7 @@ std::shared_ptr<DialogAwaitableResult<void>> BuildWriteDialog(
     ADD_FAILURE() << "WriteDialog: configured fixture node not found";
     return {};
   }
-  if (!FetchAndWaitForPendingNodeLoads(*env.node_service, node,
-                                       NodeFetchStatus::NodeOnly)) {
+  if (!FetchDialogNodeResident(*env.node_service, env.dialog_analog_node_id)) {
     ADD_FAILURE() << "WriteDialog: failed to fetch configured fixture node";
     return {};
   }
