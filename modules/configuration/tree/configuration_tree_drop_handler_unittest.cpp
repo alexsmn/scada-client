@@ -9,6 +9,7 @@
 #include "model/devices_node_ids.h"
 #include "node_service/node_model_mock.h"
 #include "node_service/node_service_mock.h"
+#include "node_service/test/model_node_service.h"
 #include "services/create_tree.h"
 #include "services/task_manager_mock.h"
 
@@ -27,42 +28,47 @@ struct TestNodeOptions {
   scada::LocalizedText display_name{};
 };
 
-NodeRef MakeTestNode(const scada::NodeId& node_id, TestNodeOptions options) {
+// Builds a node (plus its type/parent/data-type neighbours) inside |service|
+// and returns a cursor to it. Each caller passes a dedicated service so the
+// per-node model graphs never share the same node-id map.
+NodeRef MakeTestNodeInService(ModelNodeService& service,
+                              const scada::NodeId& node_id,
+                              TestNodeOptions options) {
   auto node_model = std::make_shared<NiceMock<MockNodeModel>>();
   auto type_model = std::make_shared<NiceMock<MockNodeModel>>();
   auto parent_model = std::make_shared<NiceMock<MockNodeModel>>();
   auto data_type_model = std::make_shared<NiceMock<MockNodeModel>>();
 
-  const NodeRef type_node{type_model};
-  const NodeRef parent_node{parent_model};
-  const NodeRef data_type_node{data_type_model};
+  const NodeRef type_node = service.Add(options.type_definition_id, type_model);
+  const NodeRef parent_node = service.Add(options.parent_id, parent_model);
+  const NodeRef data_type_node =
+      service.Add(options.data_type_id, data_type_model);
 
   ON_CALL(*node_model, GetFetchStatus())
       .WillByDefault(Return(NodeFetchStatus::NodeAndChildren));
   ON_CALL(*node_model, GetAttribute(scada::AttributeId::NodeId))
       .WillByDefault(Return(node_id));
   ON_CALL(*node_model, GetAttribute(scada::AttributeId::NodeClass))
-      .WillByDefault(Return(static_cast<scada::Int32>(
-          scada::NodeClass::Object)));
+      .WillByDefault(
+          Return(static_cast<scada::Int32>(scada::NodeClass::Object)));
   ON_CALL(*node_model, GetAttribute(scada::AttributeId::BrowseName))
       .WillByDefault(Return(options.browse_name));
   ON_CALL(*node_model, GetAttribute(scada::AttributeId::DisplayName))
       .WillByDefault(Return(options.display_name));
   ON_CALL(*node_model, GetTarget(_, _))
-      .WillByDefault([type_node, parent_node,
-                      parent_id = options.parent_id](
-                         const scada::NodeId& reference_type_id,
-                         bool forward) -> NodeRef {
-        if (forward &&
-            reference_type_id == scada::id::HasTypeDefinition) {
-          return type_node;
-        }
-        if (!forward && reference_type_id == scada::id::HierarchicalReferences &&
-            !parent_id.is_null()) {
-          return parent_node;
-        }
-        return nullptr;
-      });
+      .WillByDefault(
+          [type_node, parent_node, parent_id = options.parent_id](
+              const scada::NodeId& reference_type_id, bool forward) -> NodeRef {
+            if (forward && reference_type_id == scada::id::HasTypeDefinition) {
+              return type_node;
+            }
+            if (!forward &&
+                reference_type_id == scada::id::HierarchicalReferences &&
+                !parent_id.is_null()) {
+              return parent_node;
+            }
+            return nullptr;
+          });
   ON_CALL(*node_model, GetDataType())
       .WillByDefault([data_type_node, data_type_id = options.data_type_id] {
         return data_type_id.is_null() ? NodeRef{} : data_type_node;
@@ -86,11 +92,19 @@ NodeRef MakeTestNode(const scada::NodeId& node_id, TestNodeOptions options) {
   ON_CALL(*data_type_model, GetAttribute(scada::AttributeId::NodeId))
       .WillByDefault(Return(options.data_type_id));
 
-  return node_model;
+  return service.Add(node_id, std::move(node_model));
 }
 
 class ConfigurationTreeDropHandlerTest : public Test {
  public:
+  // Creates a fresh backing service for each test node so their model graphs
+  // stay isolated, and returns a cursor to the built node.
+  NodeRef MakeTestNode(const scada::NodeId& node_id, TestNodeOptions options) {
+    return MakeTestNodeInService(
+        *node_services_.emplace_back(std::make_unique<ModelNodeService>()),
+        node_id, std::move(options));
+  }
+
   ConfigurationTreeNode* MakeTargetNode(NodeRef node) {
     auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
 
@@ -121,6 +135,9 @@ class ConfigurationTreeDropHandlerTest : public Test {
   StrictMock<MockTaskManager> task_manager_;
   CreateTree create_tree_;
   std::unique_ptr<ConfigurationTreeModel> model_;
+  // Backing services for the cursors handed out by MakeTestNode; kept alive
+  // for the whole test since NodeRef stores a non-owning service pointer.
+  std::vector<std::unique_ptr<ModelNodeService>> node_services_;
 };
 
 TEST_F(ConfigurationTreeDropHandlerTest,
@@ -128,11 +145,10 @@ TEST_F(ConfigurationTreeDropHandlerTest,
   auto target_node = MakeTargetNode(MakeTestNode(
       data_group_id_, {.type_definition_id = data_items::id::DataGroupType}));
   auto dragging_node = MakeTestNode(
-      channel_id_,
-      {.type_definition_id = devices::id::Iec61850DataVariableType,
-       .data_type_id = scada::id::Boolean,
-       .browse_name = scada::QualifiedName{"Channel"},
-       .display_name = scada::LocalizedText{u"Channel"}});
+      channel_id_, {.type_definition_id = devices::id::Iec61850DataVariableType,
+                    .data_type_id = scada::id::Boolean,
+                    .browse_name = scada::QualifiedName{"Channel"},
+                    .display_name = scada::LocalizedText{u"Channel"}});
 
   EXPECT_CALL(node_service_, GetNode(channel_id_))
       .WillOnce(Return(dragging_node));
@@ -178,17 +194,19 @@ TEST_F(ConfigurationTreeDropHandlerTest,
   EXPECT_CALL(node_service_, GetNode(channel_id_))
       .WillOnce(Return(dragging_node));
   EXPECT_CALL(task_manager_, PostUpdateTask(data_item_id_, _, _))
-      .WillOnce([&](const scada::NodeId&, scada::NodeAttributes attributes,
-                    scada::NodeProperties properties) -> Awaitable<scada::Status> {
-        EXPECT_TRUE(attributes.empty());
-        EXPECT_THAT(properties, SizeIs(1));
-        if (!properties.empty()) {
-          EXPECT_EQ(properties[0].first, data_items::id::DataItemType_Output);
-          EXPECT_EQ(properties[0].second.as_string(),
-                    MakeNodeIdFormula(channel_id_));
-        }
-        co_return scada::StatusCode::Good;
-      });
+      .WillOnce(
+          [&](const scada::NodeId&, scada::NodeAttributes attributes,
+              scada::NodeProperties properties) -> Awaitable<scada::Status> {
+            EXPECT_TRUE(attributes.empty());
+            EXPECT_THAT(properties, SizeIs(1));
+            if (!properties.empty()) {
+              EXPECT_EQ(properties[0].first,
+                        data_items::id::DataItemType_Output);
+              EXPECT_EQ(properties[0].second.as_string(),
+                        MakeNodeIdFormula(channel_id_));
+            }
+            co_return scada::StatusCode::Good;
+          });
 
   DropAction action;
   auto handler = MakeHandler();
@@ -202,9 +220,8 @@ TEST_F(ConfigurationTreeDropHandlerTest,
 
 TEST_F(ConfigurationTreeDropHandlerTest, MoveDropPostsReferenceCoroutine) {
   auto target_type = MakeTestNode(data_items::id::DataGroupType, {});
-  auto target_node = MakeTargetNode(
-      MakeTestNode(new_parent_id_,
-                   {.type_definition_id = data_items::id::DataGroupType}));
+  auto target_node = MakeTargetNode(MakeTestNode(
+      new_parent_id_, {.type_definition_id = data_items::id::DataGroupType}));
   auto dragging_node = MakeTestNode(
       channel_id_, {.type_definition_id = data_items::id::DataItemType,
                     .parent_id = old_parent_id_,

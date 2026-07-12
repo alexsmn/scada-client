@@ -280,6 +280,13 @@ class MainWindowTest : public Test {
        .main_window_factory_ = main_window_factory_.AsStdFunction(),
        .quit_handler_ = quit_handler_.AsStdFunction()}};
 
+  // Production always injects a selection command router (see
+  // MainWindowModule); mirror that so activating a view can route selection
+  // commands instead of dereferencing a null router.
+  std::shared_ptr<SelectionCommandRouter> selection_command_router_ =
+      std::make_shared<SelectionCommandRouter>(SelectionCommandRouterContext{
+          .selection_commands_ = controller_env_.selection_commands_});
+
   NiceMock<MockFunction<std::string()>> connection_info_provider_;
 
   ProgressHostImpl progress_host_;
@@ -321,6 +328,7 @@ MainWindowContext MainWindowTest::MakeMainWindowContext() {
           [](MainWindowInterface& main_window, DialogService& dialog_service) {
             return std::make_unique<CommandHandler>();
           },
+      .selection_command_router_ = selection_command_router_,
       .status_bar_model_ = std::make_shared<StatusBarModelImpl>(),
       .context_menu_factory_ =
           [](MainWindowInterface& main_window,
@@ -343,6 +351,17 @@ MainWindowTest::~MainWindowTest() {
 
 void MainWindowTest::ExpectOpenView() {
   auto controller = std::make_unique<StrictMock<MockController>>();
+
+  // Activating the opened view queries the controller for its selection and
+  // contents models (see BaseMainWindow::SetActiveView). These tests don't
+  // exercise selection/contents, so mirror the base Controller default of
+  // returning none.
+  EXPECT_CALL(*controller, GetSelectionModel())
+      .Times(AnyNumber())
+      .WillRepeatedly(Return(nullptr));
+  EXPECT_CALL(*controller, GetContentsModel())
+      .Times(AnyNumber())
+      .WillRepeatedly(Return(nullptr));
 
 // TODO: Generalize this test for all UIs.
 #if defined(UI_QT)

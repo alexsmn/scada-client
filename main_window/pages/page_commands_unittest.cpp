@@ -72,6 +72,7 @@ class PageCommandsTest : public Test {
 
   StrictMock<MockMainWindow> main_window_;
   StrictMock<MockDialogService> dialog_service_;
+  UiCommandRegistry ui_command_registry_;
   StrictMock<MockFunction<Awaitable<std::u16string>(
       DialogService& dialog_service,
       std::u16string current_title)>>
@@ -81,8 +82,8 @@ class PageCommandsTest : public Test {
                                       .dialog_service = dialog_service_};
 
   PageCommands page_commands_{
-      {executor_, commands_, profile_, main_window_manager_,
-       rename_prompt_runner_.AsStdFunction()}};
+      {executor_, commands_, ui_command_registry_, profile_,
+       main_window_manager_, rename_prompt_runner_.AsStdFunction()}};
 };
 
 TEST_F(PageCommandsTest, DeletePage) {

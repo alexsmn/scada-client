@@ -7,7 +7,7 @@
 #include "events/node_event_provider_mock.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/node_model_mock.h"
-#include "node_service/test/test_node_model.h"
+#include "node_service/test/model_node_service.h"
 #include "profile/profile.h"
 #include "timed_data/timed_data_mock.h"
 #include "timed_data/timed_data_observer.h"
@@ -33,6 +33,7 @@ class TableModelTest : public Test {
   // |RowContext| may outlive local reference.
   std::shared_ptr<RowContext> SetFormula();
 
+  ModelNodeService node_service_;
   StrictMock<MockTimedDataService> timed_data_service_;
   StrictMock<MockNodeEventProvider> node_event_provider_;
   const Profile profile_;
@@ -66,11 +67,12 @@ aui::Color GetTextColor(const TableModel& table_model, int row, int column_id) {
   return cell.text_color;
 }
 
-NodeRef MakeDiscreteItemNode() {
+NodeRef MakeDiscreteItemNode(ModelNodeService& node_service) {
   auto node_model = std::make_shared<NiceMock<MockNodeModel>>();
   auto type_model = std::make_shared<NiceMock<MockNodeModel>>();
 
-  NodeRef type_node{type_model};
+  const NodeRef type_node =
+      node_service.Add(data_items::id::DiscreteItemType, type_model);
 
   ON_CALL(*node_model, GetAttribute(scada::AttributeId::NodeId))
       .WillByDefault(Return(scada::NodeId{1, 1}));
@@ -86,7 +88,7 @@ NodeRef MakeDiscreteItemNode() {
   ON_CALL(*type_model, GetTarget(scada::NodeId{scada::id::HasSubtype}, false))
       .WillByDefault(Return(NodeRef{}));
 
-  return node_model;
+  return node_service.Add(scada::NodeId{1, 1}, node_model);
 }
 
 }  // namespace
@@ -142,9 +144,12 @@ std::shared_ptr<TableModelTest::RowContext> TableModelTest::SetFormula() {
 
   const scada::NodeId node_id{1, 1};
 
-  ON_CALL(row_context->timed_data, GetNode())
-      .WillByDefault(Return(
-          std::make_shared<TestNodeModel>(nullptr, scada::NodeState{node_id})));
+  auto item_model = std::make_shared<NiceMock<MockNodeModel>>();
+  ON_CALL(*item_model, GetAttribute(scada::AttributeId::NodeId))
+      .WillByDefault(Return(node_id));
+  const NodeRef item_node = node_service_.Add(node_id, item_model);
+
+  ON_CALL(row_context->timed_data, GetNode()).WillByDefault(Return(item_node));
 
   const int row_index = table_model_.row_count();
 
@@ -211,7 +216,7 @@ TEST_F(TableModelTest, DiscreteOpenValueUsesPaletteTextColor) {
       .WillRepeatedly(Return(scada::DataValue{false, {}, {}, {}}));
   EXPECT_CALL(row_context->timed_data, GetNode())
       .Times(AnyNumber())
-      .WillRepeatedly(Return(MakeDiscreteItemNode()));
+      .WillRepeatedly(Return(MakeDiscreteItemNode(node_service_)));
 
   EXPECT_EQ(aui::Color{aui::ColorCode::Transparent},
             GetTextColor(table_model_, 0, TableModel::COLUMN_VALUE));

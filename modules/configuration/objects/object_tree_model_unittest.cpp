@@ -11,6 +11,7 @@
 #include "node_service/node_model_mock.h"
 #include "node_service/node_service_mock.h"
 #include "node_service/static/static_node_service.h"
+#include "node_service/test/model_node_service.h"
 #include "profile/profile.h"
 #include "timed_data/timed_data_service_fake.h"
 #include "timed_data/timed_data_service_mock.h"
@@ -31,12 +32,14 @@ class IconIdsAccessor : public ConfigurationTreeNode {
   static constexpr int kItem = IMAGE_ITEM;
 };
 
-NodeRef MakeObjectTreeNodeModel(const scada::NodeId& node_id,
+NodeRef MakeObjectTreeNodeModel(ModelNodeService& node_service,
+                                const scada::NodeId& node_id,
                                 NodeFetchStatus fetch_status) {
   auto node_model = std::make_shared<NiceMock<MockNodeModel>>();
   auto type_model = std::make_shared<NiceMock<MockNodeModel>>();
 
-  const NodeRef type_node{type_model};
+  const NodeRef type_node =
+      node_service.Add(data_items::id::DataItemType, type_model);
 
   ON_CALL(*node_model, GetFetchStatus()).WillByDefault(Return(fetch_status));
   ON_CALL(*node_model, Fetch(_))
@@ -59,7 +62,7 @@ NodeRef MakeObjectTreeNodeModel(const scada::NodeId& node_id,
   ON_CALL(*type_model, GetTarget(scada::NodeId{scada::id::HasSubtype}, false))
       .WillByDefault(Return(NodeRef{}));
 
-  return node_model;
+  return node_service.Add(node_id, std::move(node_model));
 }
 
 // Records node-changed notifications so tests assert on observable events.
@@ -170,9 +173,10 @@ TEST_F(ObjectTreeModelTest, DataItemsUseItemIconEvenWhenNodeClassIsObject) {
 class ObjectTreeModelAsyncVisibleNodeTest : public ::testing::Test {
  protected:
   void InitModel(bool remove_child_on_second_get_children = false) {
-    root_node_ = MakeObjectTreeNodeModel(scada::id::RootFolder,
+    root_node_ = MakeObjectTreeNodeModel(model_service_, scada::id::RootFolder,
                                          NodeFetchStatus::NodeAndChildren);
-    child_node_ = MakeObjectTreeNodeModel(kDataItemId, NodeFetchStatus::None);
+    child_node_ = MakeObjectTreeNodeModel(model_service_, kDataItemId,
+                                          NodeFetchStatus::None);
 
     auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
     node_service_tree_ = node_service_tree.get();
@@ -219,8 +223,8 @@ class ObjectTreeModelAsyncVisibleNodeTest : public ::testing::Test {
   }
 
   void ExpectDelayedFetch() {
-    auto child_model =
-        std::static_pointer_cast<const MockNodeModel>(child_node_.model());
+    auto child_model = std::static_pointer_cast<const MockNodeModel>(
+        model_service_.GetModel(child_node_.node_id()));
     EXPECT_CALL(*child_model, Fetch(NodeFetchStatus::NodeOnly))
         .WillOnce([this](const NodeFetchStatus&) -> Awaitable<void> {
           delayed_fetch_completion_.emplace(executor_);
@@ -231,8 +235,8 @@ class ObjectTreeModelAsyncVisibleNodeTest : public ::testing::Test {
   void PollExecutor() { executor_.Poll(); }
 
   void CompleteFetch() {
-    auto child_model =
-        std::static_pointer_cast<const MockNodeModel>(child_node_.model());
+    auto child_model = std::static_pointer_cast<const MockNodeModel>(
+        model_service_.GetModel(child_node_.node_id()));
     ON_CALL(*child_model, GetFetchStatus())
         .WillByDefault(Return(NodeFetchStatus::NodeOnly));
     delayed_fetch_completion_->Complete();
@@ -243,6 +247,8 @@ class ObjectTreeModelAsyncVisibleNodeTest : public ::testing::Test {
 
   TestExecutor executor_;
   NiceMock<MockNodeService> node_service_;
+  // Backs the cursors produced by MakeObjectTreeNodeModel; must outlive them.
+  ModelNodeService model_service_;
   NiceMock<MockTimedDataService> timed_data_service_;
   Profile profile_;
   BlinkerManagerImpl blinker_manager_{executor_};

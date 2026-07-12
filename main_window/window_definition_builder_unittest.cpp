@@ -6,7 +6,6 @@
 #include "resources/common_resources.h"
 #include "controller/open_context.h"
 #include "controller/window_info.h"
-#include "node_service/node_model_mock.h"
 #include "node_service/static/static_node_service.h"
 
 #include <gmock/gmock.h>
@@ -31,18 +30,15 @@ scada::NodeState MakeNodeState(scada::NodeId node_id,
 
 TEST(MakeWindowDefinition, OpenContext_Node) {
   const scada::NodeId kNodeId{"NodeId", 1};
-  const auto node_model = std::make_shared<MockNodeModel>();
 
-  EXPECT_CALL(*node_model, GetAttribute(scada::AttributeId::NodeId))
-      .WillOnce(Return(kNodeId));
+  StaticNodeService node_service;
+  node_service.Add(
+      scada::NodeState{.node_id = kNodeId,
+                       .node_class = scada::NodeClass::Variable,
+                       .type_definition_id = scada::id::BaseVariableType}
+          .set_display_name(u"Имя в русской локали"));
 
-  EXPECT_CALL(*node_model, GetAttribute(scada::AttributeId::NodeClass))
-      .WillOnce(Return(static_cast<scada::Int32>(scada::NodeClass::Variable)));
-
-  EXPECT_CALL(*node_model, GetAttribute(scada::AttributeId::DisplayName))
-      .WillOnce(Return(u"Имя в русской локали"));
-
-  OpenContext open_context{node_model};
+  OpenContext open_context{node_service.GetNode(kNodeId)};
 
   const auto& window_info = WindowInfo{.title = u"Журнал событий"};
 

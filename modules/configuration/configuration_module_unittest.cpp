@@ -16,6 +16,7 @@
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "node_service/node_model_mock.h"
+#include "node_service/test/model_node_service.h"
 #include "profile/profile.h"
 #include "resources/common_resources.h"
 #include "scada/client.h"
@@ -63,14 +64,15 @@ Awaitable<scada::Status> CompleteLazily(bool* executed) {
   co_return scada::StatusCode::Good;
 }
 
-NodeRef MakeCommandNode(scada::node scada_node) {
+NodeRef MakeCommandNode(ModelNodeService& node_service,
+                        scada::node scada_node) {
   auto node_model = std::make_shared<NiceMock<MockNodeModel>>();
   ON_CALL(*node_model, GetAttribute(scada::AttributeId::NodeId))
       .WillByDefault(Return(scada::NodeId{kItemNodeId, 1}));
   ON_CALL(*node_model, GetAttribute(scada::AttributeId::DisplayName))
       .WillByDefault(Return(scada::LocalizedText{u"Pump"}));
   ON_CALL(*node_model, GetScadaNode()).WillByDefault(Return(scada_node));
-  return node_model;
+  return node_service.Add(scada::NodeId{kItemNodeId, 1}, std::move(node_model));
 }
 
 }  // namespace
@@ -79,7 +81,8 @@ class ConfigurationModuleTest : public Test {
  protected:
   ConfigurationModuleTest()
       : scada_client_{scada::services{.method_service = &method_service_}},
-        command_node_{MakeCommandNode(scada_client_.node({kItemNodeId, 1}))},
+        command_node_{MakeCommandNode(node_service_,
+                                      scada_client_.node({kItemNodeId, 1}))},
         selection_{SelectionModelContext{timed_data_service_}},
         configuration_module_{ConfigurationModuleContext{
             .executor_ = executor_,
@@ -115,6 +118,7 @@ class ConfigurationModuleTest : public Test {
   TestExecutor executor_;
   StrictMock<scada::MockMethodService> method_service_;
   scada::client scada_client_;
+  ModelNodeService node_service_;
   NodeRef command_node_;
   FakeTimedDataService timed_data_service_;
   BasicCommandRegistry<SelectionCommandContext> selection_commands_;

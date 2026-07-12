@@ -82,6 +82,12 @@ void ViewManagerTest::SetUp() {
                                               base::NotReached();
                                               return nullptr;
                                             });
+
+  // Opening, activating, and closing views drives active-view-changed
+  // notifications (see ViewManager). These tests assert on view creation and
+  // teardown, not active-view tracking, so tolerate the notifications.
+  EXPECT_CALL(view_manager_delegate_, OnActiveViewChanged(_))
+      .Times(AnyNumber());
 }
 
 void ViewManagerTest::TearDown() {}

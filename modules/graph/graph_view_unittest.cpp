@@ -7,6 +7,7 @@
 #include "graph/metrix_data_source.h"
 #include "graph/metrix_graph.h"
 #include "node_service/node_model.h"
+#include "node_service/test/model_node_service.h"
 #include "resources/common_resources.h"
 #include "scada/client.h"
 #include "scada/history_service_mock.h"
@@ -241,7 +242,9 @@ TEST(MetrixDataSourceTest, AppliesEarliestTimestampFromHistoryRead) {
   StrictMock<scada::MockHistoryService> history_service;
   scada::services services{.history_service = &history_service};
   scada::client client{services};
-  NodeRef node{std::make_shared<TestNodeModel>(client.node(kTestNodeId))};
+  ModelNodeService node_service;
+  NodeRef node = node_service.Add(
+      kTestNodeId, std::make_shared<TestNodeModel>(client.node(kTestNodeId)));
 
   const auto earliest = scada::DateTime::FromDoubleT(100.0);
   const auto latest = scada::DateTime::FromDoubleT(200.0);
@@ -269,7 +272,9 @@ TEST(MetrixDataSourceTest, DropsCanceledEarliestTimestampRead) {
   StrictMock<scada::MockHistoryService> history_service;
   scada::services services{.history_service = &history_service};
   scada::client client{services};
-  NodeRef node{std::make_shared<TestNodeModel>(client.node(kTestNodeId))};
+  ModelNodeService node_service;
+  NodeRef node = node_service.Add(
+      kTestNodeId, std::make_shared<TestNodeModel>(client.node(kTestNodeId)));
 
   base::AsyncCompletion first_completion{executor};
   base::AsyncCompletion second_completion{executor};

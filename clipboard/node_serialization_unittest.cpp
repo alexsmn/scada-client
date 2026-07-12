@@ -5,6 +5,7 @@
 #include "common/type_system_mock.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/node_model_mock.h"
+#include "node_service/test/model_node_service.h"
 
 #include <gmock/gmock.h>
 
@@ -13,8 +14,9 @@ using namespace testing;
 TEST(NodeSerialization, DISABLED_NodeToData) {
   NiceMock<MockTypeSystem> type_system;
 
+  ModelNodeService node_service;
   auto node_model = std::make_shared<NiceMock<MockNodeModel>>();
-  NodeRef node{node_model};
+  NodeRef node = node_service.Add(scada::NodeId{1, 1}, node_model);
 
   scada::NodeState source_node_state{
       scada::NodeId{1, 1},
