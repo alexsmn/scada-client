@@ -57,7 +57,7 @@ required sequence.
 
 | # | Item | Touches | Dep | Done when |
 |---|---|---|---|---|
-| 3.1 | **Login** → themed sign-in + read-only system preview. | `modules/login/qt/` | 0.4 | Matches `login.html`; no native chrome; anonymous + auto-login intact. |
+| 3.1 | **Login** — 🔶 *theming validated*: under the opt-in theme the real login dialog already recolours cleanly (charcoal-blue surfaces, rounded token fields, accent focus + primary OK) in dark & light — confirmed on the real Qt widget via `client_screenshot_generator --theme=…`. *Remaining (optional, its own slice):* the richer `login.html` treatment (brand lockup + read-only system preview), which needs `.ui` restructuring. | `modules/login/qt/` | — | No native chrome; anonymous + auto-login intact; validated by real-widget screenshot. |
 | 3.2 | **Control/Write** → themed dialog + **two-stage confirm** with present→command diff and audit meta (principle §7). | `modules/write/qt/` | 0.4 | Matches `control-command.html`; control commands require the confirm step. |
 | 3.3 | **Limits** → themed. | `modules/limits/qt/` | 0.4 | Warning/alarm limit editor uses token primitives. |
 | 3.4 | **Remaining modals** (change_password, select_item, time_range, about, create/multi-create). | `modules/*/qt/` | 0.4 | No modal renders native/unstyled. |

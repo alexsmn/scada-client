@@ -89,6 +89,7 @@ void InitScreenshotOptions() {
   std::string output_dir;
   std::string image_manifest;
   std::string only;
+  std::string theme;
 
   po::options_description desc{"Screenshot generator options"};
   desc.add_options()
@@ -97,7 +98,9 @@ void InitScreenshotOptions() {
       ("image-manifest", po::value(&image_manifest),
        "Path to screenshot image manifest")
       ("only", po::value(&only),
-       "Comma/semicolon/newline-separated filenames to capture");
+       "Comma/semicolon/newline-separated filenames to capture")
+      ("theme", po::value(&theme),
+       "Design-token theme to render under: dark|light|hc (default: legacy)");
 
   po::variables_map vm;
   auto args = GetProcessArgs();
@@ -113,6 +116,10 @@ void InitScreenshotOptions() {
 
   if (vm.count("only")) {
     g_options.only_filenames = ParseOnlyList(only);
+  }
+
+  if (vm.count("theme")) {
+    g_options.theme = std::move(theme);
   }
 
   g_options_initialized = true;

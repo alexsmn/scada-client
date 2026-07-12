@@ -19,6 +19,7 @@
 #include "app/client_application.h"
 #include "aui/tree.h"
 #include "aui/qt/message_loop_qt.h"
+#include "aui/qt/theme_qt.h"
 #include "aui/test/app_environment.h"
 #include "base/client_paths.h"
 #include "base/any_executor.h"
@@ -181,6 +182,15 @@ ScreenshotGenerator::ScreenshotGenerator() {
   // second TEST_F pick up whatever QStyleFactory returned instead of
   // "Fusion".
   QApplication::setStyle("Fusion");
+
+  // Optionally render under a UX design-token theme so captures validate the
+  // reshell against real Qt widgets (--theme=dark|light|hc). Applied over the
+  // Fusion base exactly as app/qt/main.cpp does when the experimental UX is on.
+  if (const std::string& theme = GetScreenshotOptions().theme; !theme.empty()) {
+    scada::aui::ApplyTheme(
+        scada::aui::ThemeFromString(QString::fromStdString(theme),
+                                    scada::aui::Theme::kDark));
+  }
 
   // Render offscreen. `widget->grab()` renders the Qt widget tree to a
   // QPixmap without needing the window to be on-screen — so this
