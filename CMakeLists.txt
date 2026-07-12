@@ -40,10 +40,17 @@ if(BUILD_CLIENT_QT)
   find_package(Qt6 COMPONENTS LinguistTools QUIET)
 endif()
 
-include(client_module.cmake)
 include(translation.cmake)
 
 find_package(ScadaCommon REQUIRED)
+
+# aui is slated for extraction into its own repository — consume it through
+# its find module, which also provides the client_module() dual-target
+# helpers used by every client module. The in-tree directory is the fallback
+# until the repo split; a sibling checkout seeded earlier on
+# CMAKE_MODULE_PATH takes precedence.
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aui")
+find_package(ScadaClientAui REQUIRED)
 
 include_directories(client
   "."
@@ -52,7 +59,6 @@ include_directories(client
 
 add_subdirectory(base)
 add_subdirectory(core)
-add_subdirectory(aui)
 add_subdirectory(clipboard)
 add_subdirectory(profile)
 # `controller` depends on `profile`.

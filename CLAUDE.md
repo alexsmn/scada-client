@@ -65,7 +65,7 @@ scada-client/
 │   └── *.svg               # Generated diagrams referenced from design.md
 ├── .github/workflows/      # CI: cmake-multi-platform.yml, msbuild.yml
 ├── CMakeLists.txt          # Root CMake build file
-├── client_module.cmake     # Custom CMake helpers for dual Qt/Wt target creation
+├── aui/client_module.cmake # Custom CMake helpers for dual Qt/Wt target creation (aui-owned)
 ├── translation.cmake       # Qt translation support
 ├── common.rc               # Windows resource definitions
 ├── common_resources.h      # Resource IDs and constants
@@ -242,7 +242,7 @@ msbuild /m /p:Configuration=Release .
 
 ### Custom CMake Module System
 
-The `client_module.cmake` file defines helper functions for the dual Qt/Wt build architecture. Every module creates two targets (`<name>_qt` and `<name>_wt`) automatically:
+The `aui/client_module.cmake` file (owned by aui, which is slated for extraction into its own repository; the client gets it via `find_package(ScadaClientAui)`) defines helper functions for the dual Qt/Wt build architecture. Every module creates two targets (`<name>_qt` and `<name>_wt`) automatically:
 
 - `client_module(name)` — Creates both Qt and Wt library targets
 - `client_module_sources(name PUBLIC|PRIVATE dirs...)` — Adds sources from directories (auto-includes `dir/qt/` and `dir/wt/` subdirs)

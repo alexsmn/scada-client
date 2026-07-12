@@ -1,0 +1,42 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "ninja",
+      "displayName": "Ninja Multi-Config",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "generator": "Ninja Multi-Config",
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+      "cacheVariables": {
+        "CMAKE_MODULE_PATH": "${sourceDir}/../core;${sourceDir}/../net;${sourceDir}/../graph_qt;${sourceDir}/../view_manager_qt;$env{THIRD_PARTY}/qt/graph_qt;$env{THIRD_PARTY}/qt/view_manager_qt"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "ninja-release",
+      "configurePreset": "ninja",
+      "configuration": "RelWithDebInfo"
+    },
+    {
+      "name": "ninja-debug",
+      "configurePreset": "ninja",
+      "configuration": "Debug"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "ninja-release",
+      "configurePreset": "ninja",
+      "configuration": "RelWithDebInfo",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

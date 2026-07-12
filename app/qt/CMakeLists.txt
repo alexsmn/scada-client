@@ -179,8 +179,6 @@ endif()
 add_executable(client_qt_unittests
   ${UNITTESTS}
   ${UNITTESTS_QT}
-  "../../aui/test/qt/table_unittest.cpp"
-  "../../aui/test/qt/tree_unittest.cpp"
 )
 # ui/qt/client_utils_qt_unittest.cpp checks that every toolbar icon LoadPixmap
 # serves resolves from res/client.qrc; compile the resource into the test
@@ -198,8 +196,9 @@ if(MSVC)
     "$<$<CONFIG:RelWithDebInfo>:/PDB:NONE>"
   )
 endif()
-# Uses the custom runner from `test/qt/test_main_qt.cpp`.
-# `client_qt_app_shared` transitively supplies the Qt client link set.
+# `client_qt_app_shared` transitively supplies the Qt client link set;
+# base_unittest provides the gtest main. aui's own tests (aui_qt_unittests,
+# aui_test_qt_unittests) are separate binaries owned by aui/.
 target_link_libraries(client_qt_unittests PRIVATE
   client_qt_app_shared
   base_unittest
