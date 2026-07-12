@@ -58,8 +58,8 @@ required sequence.
 | # | Item | Touches | Dep | Done when |
 |---|---|---|---|---|
 | 3.1 | **Login** — 🔶 *theming validated*: under the opt-in theme the real login dialog already recolours cleanly (charcoal-blue surfaces, rounded token fields, accent focus + primary OK) in dark & light — confirmed on the real Qt widget via `client_screenshot_generator --theme=…`. *Remaining (optional, its own slice):* the richer `login.html` treatment (brand lockup + read-only system preview), which needs `.ui` restructuring. | `modules/login/qt/` | — | No native chrome; anonymous + auto-login intact; validated by real-widget screenshot. |
-| 3.2 | **Control/Write** → themed dialog + **two-stage confirm** with present→command diff and audit meta (principle §7). | `modules/write/qt/` | 0.4 | Matches `control-command.html`; control commands require the confirm step. |
-| 3.3 | **Limits** → themed. | `modules/limits/qt/` | 0.4 | Warning/alarm limit editor uses token primitives. |
+| 3.2 | **Control/Write** — 🔶 *theming validated*: the manual-input and remote-control dialogs recolour cleanly under the opt-in theme (token combo/field with accent focus, accent primary OK) — confirmed on real Qt widgets (`--theme=dark` capture of `ti-manual-control.png` / `ti-remote-control-enabled.png`), no per-dialog code. *Remaining (own slice):* the **two-stage confirm** with present→command diff + audit meta (principle §7, `control-command.html`) — a behavioural change, not just theming. | `modules/write/qt/` | — | Two-stage confirm for control commands; theming validated by real-widget screenshot. |
+| 3.3 | **Limits** — ✅ *validated*: warning/alarm limit editor (group boxes + fields) themes cleanly under the opt-in theme on the real widget (`--theme=dark` capture of `limits.png`), no per-dialog code. | `modules/limits/qt/` | — | Themed limit editor; validated by real-widget screenshot. |
 | 3.4 | **Remaining modals** (change_password, select_item, time_range, about, create/multi-create). | `modules/*/qt/` | 0.4 | No modal renders native/unstyled. |
 
 ## P4 — Explorer & Inspector depth
