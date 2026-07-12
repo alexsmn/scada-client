@@ -1,18 +1,60 @@
 #pragma once
 
+#include "base/any_executor.h"
+#include "base/time_range.h"
+#include "scada/node_id.h"
+
 #include <functional>
+#include <optional>
+#include <vector>
 
 class QWidget;
+class NodeService;
 
-// Builds the event-journal filter strip (Qt): an "Unacknowledged only" toggle
-// and a minimum-severity control (0 = all). This is the discoverable, always-
-// visible surfacing of the journal filters; the right-click context menu
-// (`EventMenuModel`) is the complementary quick-action surface and is now
-// cross-platform. It is opt-in reshell chrome; the caller gates it on the
-// active UX theme. The returned widget owns its controls and invokes the
-// callbacks on user changes.
-QWidget* MakeEventFilterBar(bool unacknowledged_only,
-                            unsigned severity_min,
-                            unsigned severity_max,
-                            std::function<void(bool)> on_unacknowledged_only,
-                            std::function<void(unsigned)> on_severity_min);
+// Inputs and callbacks for the event-journal filter strip (Qt).
+//
+// The bar is the discoverable, always-visible surfacing of the journal filters,
+// complementing the right-click context menu (`EventMenuModel`). It hosts an
+// "Unacknowledged only" toggle, a minimum-severity control, an Area selector
+// and a Period selector. It is opt-in reshell chrome; the caller gates it on
+// the active UX theme and only builds it for the full historical journal (where
+// the time range is meaningful), not the docked current-events panel.
+//
+// The Area selector enumerates the top-level areas (the immediate children of
+// the address space's ObjectsFolder) asynchronously via `node_service`. The
+// Period selector offers the fixed quick-pick ranges; an arbitrary/custom range
+// (via the toolbar or context menu) is still reflected when it matches a preset
+// and otherwise leaves the selector unselected.
+struct EventFilterBarContext {
+  // Async work host: the area browse runs here (same executor as node_service).
+  AnyExecutor executor;
+  NodeService& node_service;
+
+  // Current filter state reflected in the controls.
+  bool unacknowledged_only = false;
+  unsigned severity_min = 0;
+  unsigned severity_max = 0;
+  TimeRange time_range;
+
+  // Invoked on user changes. Any callback may be empty.
+  std::function<void(bool)> on_unacknowledged_only;
+  std::function<void(unsigned)> on_severity_min;
+  std::function<void(const TimeRange&)> on_time_range;
+  // The chosen area-filter scope: the selected area node, or nullopt for
+  // "All areas".
+  std::function<void(const std::optional<scada::NodeId>&)> on_area;
+};
+
+// Builds the filter strip. The returned widget owns its controls and invokes
+// the callbacks on user changes.
+QWidget* MakeEventFilterBar(EventFilterBarContext context);
+
+// The fixed period ranges the bar offers, in display order. Mirrors the
+// toolbar's quick-pick ranges so a range set there reflects onto a preset.
+// Exposed for testing.
+const std::vector<TimeRange>& EventPeriodRanges();
+
+// Index into `EventPeriodRanges()` whose range equals `range`, or -1 when none
+// matches (an arbitrary/custom range that has no quick-pick). Exposed for
+// testing.
+int EventPeriodPresetIndex(const TimeRange& range);

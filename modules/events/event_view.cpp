@@ -241,13 +241,36 @@ std::unique_ptr<UiView> EventView::Init(const WindowDefinition& definition) {
     auto* layout = new QVBoxLayout{container};
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
-    layout->addWidget(MakeEventFilterBar(
-        model_->unacknowledged_only(), model_->severity_min(),
-        scada::kSeverityMax,
-        [this](bool value) { model_->SetUnacknowledgedOnly(value); },
-        [this](unsigned severity) {
-          SetSeverityMin(static_cast<scada::EventSeverity>(severity));
-        }));
+    // The area currently applied through the bar's Area selector, so switching
+    // areas only touches that scope and leaves other filter items intact.
+    auto applied_area = std::make_shared<std::optional<scada::NodeId>>();
+    layout->addWidget(MakeEventFilterBar(EventFilterBarContext{
+        .executor = executor_,
+        .node_service = node_service_,
+        .unacknowledged_only = model_->unacknowledged_only(),
+        .severity_min = model_->severity_min(),
+        .severity_max = scada::kSeverityMax,
+        .time_range = model_->time_range(),
+        .on_unacknowledged_only =
+            [this](bool value) { model_->SetUnacknowledgedOnly(value); },
+        .on_severity_min =
+            [this](unsigned severity) {
+              SetSeverityMin(static_cast<scada::EventSeverity>(severity));
+            },
+        .on_time_range =
+            [this](const TimeRange& time_range) { SetTimeRange(time_range); },
+        .on_area =
+            [this, applied_area](const std::optional<scada::NodeId>& area) {
+              if (*applied_area == area)
+                return;
+              if (*applied_area)
+                model_->RemoveFilteredItem(**applied_area);
+              if (area)
+                model_->AddFilteredItem(*area);
+              *applied_area = area;
+              controller_delegate_.SetTitle(MakeTitle());
+            },
+    }));
     layout->addWidget(table_->CreateParentIfNecessary());
     return std::unique_ptr<UiView>{container};
   }

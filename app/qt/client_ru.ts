@@ -52,6 +52,14 @@
         <translation>Мин. важность</translation>
     </message>
     <message>
+        <source>Area</source>
+        <translation>Зона</translation>
+    </message>
+    <message>
+        <source>All areas</source>
+        <translation>Все зоны</translation>
+    </message>
+    <message>
         <source>All</source>
         <translation>Все</translation>
     </message>
