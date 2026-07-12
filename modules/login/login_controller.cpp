@@ -235,12 +235,14 @@ void LoginController::OnLoginCompleted() {
   settings_store_->Write("ClientCertificate", client_certificate_path);
   settings_store_->Write("ClientPrivateKey", client_private_key_path);
 
-  Awaitable<void> message = []() -> Awaitable<void> { co_return; }();
+  // Build the prompt awaitable eagerly, like OnLoginFailed does. Do not wrap
+  // the call in a capturing lambda coroutine: the awaitable would read its
+  // captures through the temporary closure, which dies at the end of the
+  // statement, while the await only happens later inside CompleteLoginAsync.
+  std::optional<Awaitable<MessageBoxResult>> message;
   if (auto_login && login_message_) {
-    message = [&]() -> Awaitable<void> {
-      co_await dialog_service_.RunMessageBox(Translate(kAutoLoginMessage), {},
-                                             MessageBoxMode::Info);
-    }();
+    message = dialog_service_.RunMessageBox(Translate(kAutoLoginMessage), {},
+                                            MessageBoxMode::Info);
   }
 
   CoSpawn(executor_,
@@ -369,9 +371,10 @@ Awaitable<void> LoginController::CompleteLoginAsync(
     AnyExecutor executor,
     std::function<void(DataServices services)> completion_handler,
     DataServices services,
-    Awaitable<void> message) {
+    std::optional<Awaitable<MessageBoxResult>> message) {
   try {
-    co_await std::move(message);
+    if (message)
+      co_await std::move(*message);
     completion_handler(std::move(services));
   } catch (...) {
   }

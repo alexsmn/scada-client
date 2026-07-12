@@ -10,6 +10,7 @@
 #include "scada/localized_text.h"
 
 #include <memory>
+#include <optional>
 
 namespace scada {
 struct SessionConnectParams;
@@ -79,7 +80,7 @@ class LoginController : public std::enable_shared_from_this<LoginController> {
       AnyExecutor executor,
       std::function<void(DataServices services)> completion_handler,
       DataServices services,
-      Awaitable<void> message);
+      std::optional<Awaitable<MessageBoxResult>> message);
   static Awaitable<void> PromptForceLogoffAsync(
       AnyExecutor executor,
       std::weak_ptr<LoginController> controller,

@@ -1,8 +1,8 @@
 #include "modules/login/login_controller.h"
 
 #include "aui/dialog_service_mock.h"
-#include "base/memory_settings_store.h"
 #include "base/callback_awaitable.h"
+#include "base/memory_settings_store.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "scada/data_services_factory.h"
@@ -12,6 +12,7 @@
 #include <transport/transport_factory.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <memory>
 
 using namespace testing;
@@ -49,10 +50,9 @@ template <class T>
 class DeferredValue {
  public:
   Awaitable<T> Wait(AnyExecutor executor) {
-    auto [error, value] =
-        co_await CallbackToAwaitable<std::exception_ptr, T>(
-            std::move(executor),
-            [this](auto callback) { callback_ = std::move(callback); });
+    auto [error, value] = co_await CallbackToAwaitable<std::exception_ptr, T>(
+        std::move(executor),
+        [this](auto callback) { callback_ = std::move(callback); });
     if (error) {
       std::rethrow_exception(error);
     }
@@ -64,6 +64,33 @@ class DeferredValue {
  private:
   std::function<void(std::exception_ptr, T)> callback_;
 };
+
+#if defined(_MSC_VER)
+#define TEST_NOINLINE __declspec(noinline)
+#else
+#define TEST_NOINLINE __attribute__((noinline))
+#endif
+
+// Overwrites the stack region below the current frame so that a dangling
+// reference into an already-popped frame reads garbage instead of
+// coincidentally intact bytes. Turns stack-lifetime bugs (e.g. a coroutine
+// resuming through a dead temporary closure) into deterministic failures.
+TEST_NOINLINE void ScribbleStack() {
+  std::uint8_t garbage[16384];
+  volatile std::uint8_t* p = garbage;
+  for (size_t i = 0; i < sizeof(garbage); ++i)
+    p[i] = 0xAB;
+}
+
+// Runs ready tasks batch by batch, scribbling the stack between batches, so
+// no queued continuation can rely on dead stack memory surviving until it
+// resumes.
+void DrainWithStackScribble(TestExecutor& executor) {
+  while (executor.HasReadyTasks()) {
+    executor.Poll();
+    ScribbleStack();
+  }
+}
 
 scada::SessionService* scada_session_service = nullptr;
 
@@ -80,8 +107,14 @@ bool CreateVidiconStubDataServices(const DataServicesContext&, DataServices&) {
   return true;
 }
 
-REGISTER_DATA_SERVICES("Scada", u"Telecontrol", CreateScadaStubDataServices, "");
-REGISTER_DATA_SERVICES("Vidicon", u"Vidicon", CreateVidiconStubDataServices, "");
+REGISTER_DATA_SERVICES("Scada",
+                       u"Telecontrol",
+                       CreateScadaStubDataServices,
+                       "");
+REGISTER_DATA_SERVICES("Vidicon",
+                       u"Vidicon",
+                       CreateVidiconStubDataServices,
+                       "");
 
 class TestLoginController : public LoginController {
  public:
@@ -116,8 +149,8 @@ std::shared_ptr<TestLoginController> CreateController(
     std::shared_ptr<SettingsStore> settings_store,
     transport::TransportFactory& transport_factory) {
   auto controller = std::make_shared<TestLoginController>(
-      executor, MakeServicesContext(executor, transport_factory), dialog_service,
-      std::move(settings_store));
+      executor, MakeServicesContext(executor, transport_factory),
+      dialog_service, std::move(settings_store));
   controller->SetServerTypeIndex(FindServerTypeIndex("Scada"));
   controller->server_host = "scada-host";
   controller->user_name = u"ivan";
@@ -148,11 +181,10 @@ TEST(LoginControllerTest, PersistsEnglishServerTypeAndHostKey) {
   StrictMock<MockDialogService> dialog_service;
   NullTransportFactory transport_factory;
 
-  DataServicesContext services_context{
-      .logger = {},
-      .executor = executor,
-      .transport_factory = transport_factory,
-      .service_log_params = {}};
+  DataServicesContext services_context{.logger = {},
+                                       .executor = executor,
+                                       .transport_factory = transport_factory,
+                                       .service_log_params = {}};
 
   TestLoginController controller{executor, std::move(services_context),
                                  dialog_service, settings_store};
@@ -186,11 +218,10 @@ TEST(LoginControllerTest, ReadsStoredEnglishServerTypeIntoSelectedIndex) {
   StrictMock<MockDialogService> dialog_service;
   NullTransportFactory transport_factory;
 
-  DataServicesContext services_context{
-      .logger = {},
-      .executor = executor,
-      .transport_factory = transport_factory,
-      .service_log_params = {}};
+  DataServicesContext services_context{.logger = {},
+                                       .executor = executor,
+                                       .transport_factory = transport_factory,
+                                       .service_log_params = {}};
 
   TestLoginController controller{executor, std::move(services_context),
                                  dialog_service, settings_store};
@@ -239,6 +270,58 @@ TEST(LoginControllerTest, LoginCompletesAfterSessionConnect) {
             std::optional<std::u16string>{u"ivan"});
 }
 
+// Regression test: the auto-login info prompt used to be built by an
+// immediately-invoked capturing lambda coroutine whose temporary closure died
+// before the awaitable was awaited inside CompleteLoginAsync, so resuming it
+// read dead stack memory. The prompt awaitable must survive until the spawned
+// completion coroutine awaits it, and completion must wait for the prompt.
+TEST(LoginControllerTest, AutoLoginShowsInfoMessageBeforeCompletion) {
+  auto settings_store = std::make_shared<MemorySettingsStore>();
+  TestExecutor executor;
+  StrictMock<MockDialogService> dialog_service;
+  StrictMock<scada::MockSessionService> session_service;
+  ScopedScadaSessionService scoped_session_service{session_service};
+  NullTransportFactory transport_factory;
+  DeferredStatus connect;
+  DeferredValue<MessageBoxResult> auto_login_message;
+  bool completed = false;
+
+  EXPECT_CALL(session_service, ConnectStatus(_))
+      .WillOnce([executor, &connect](
+                    scada::SessionConnectParams) -> Awaitable<scada::Status> {
+        co_return co_await connect.Wait(executor);
+      });
+  EXPECT_CALL(dialog_service,
+              RunMessageBox(/*message=*/_, /*title=*/_, MessageBoxMode::Info))
+      .WillOnce([executor, &auto_login_message](
+                    std::u16string_view, std::u16string_view,
+                    MessageBoxMode) -> Awaitable<MessageBoxResult> {
+        co_return co_await auto_login_message.Wait(executor);
+      });
+
+  auto controller = CreateController(executor, dialog_service, settings_store,
+                                     transport_factory);
+  // The constructor sets login_message_ = true because the stored AutoLogin
+  // flag is false; enabling auto_login here selects the prompt path.
+  controller->auto_login = true;
+  controller->completion_handler = [&](DataServices) { completed = true; };
+
+  controller->Login();
+  Drain(executor);
+  connect.Resolve();
+  // Scribble between task batches: the prompt awaitable is built in
+  // OnLoginCompleted but first awaited in a later batch, so it must not
+  // reference anything on OnLoginCompleted's stack.
+  DrainWithStackScribble(executor);
+
+  EXPECT_FALSE(completed);
+
+  auto_login_message.Resolve(MessageBoxResult::Ok);
+  Drain(executor);
+
+  EXPECT_TRUE(completed);
+}
+
 TEST(LoginControllerTest, FailedLoginReportsErrorAfterMessageBox) {
   auto settings_store = std::make_shared<MemorySettingsStore>();
   TestExecutor executor;
@@ -251,17 +334,15 @@ TEST(LoginControllerTest, FailedLoginReportsErrorAfterMessageBox) {
   bool error_reported = false;
 
   EXPECT_CALL(session_service, ConnectStatus(_))
-      .WillOnce([executor, &connect](scada::SessionConnectParams)
-                    -> Awaitable<scada::Status> {
+      .WillOnce([executor, &connect](
+                    scada::SessionConnectParams) -> Awaitable<scada::Status> {
         co_return co_await connect.Wait(executor);
       });
   EXPECT_CALL(dialog_service,
-              RunMessageBox(/*message=*/_, /*title=*/_,
-                            MessageBoxMode::Error))
-      .WillOnce([executor, &error_message](std::u16string_view,
-                                           std::u16string_view,
-                                           MessageBoxMode)
-                    -> Awaitable<MessageBoxResult> {
+              RunMessageBox(/*message=*/_, /*title=*/_, MessageBoxMode::Error))
+      .WillOnce([executor, &error_message](
+                    std::u16string_view, std::u16string_view,
+                    MessageBoxMode) -> Awaitable<MessageBoxResult> {
         co_return co_await error_message.Wait(executor);
       });
 
@@ -305,13 +386,11 @@ TEST(LoginControllerTest, ForceLogoffPromptRetriesConnectWhenAccepted) {
         EXPECT_TRUE(params.allow_remote_logoff);
         co_return co_await second_connect.Wait(executor);
       });
-  EXPECT_CALL(dialog_service,
-              RunMessageBox(/*message=*/_, /*title=*/_,
-                            MessageBoxMode::QuestionYesNo))
-      .WillOnce([executor, &force_logoff_message](std::u16string_view,
-                                                  std::u16string_view,
-                                                  MessageBoxMode)
-                    -> Awaitable<MessageBoxResult> {
+  EXPECT_CALL(dialog_service, RunMessageBox(/*message=*/_, /*title=*/_,
+                                            MessageBoxMode::QuestionYesNo))
+      .WillOnce([executor, &force_logoff_message](
+                    std::u16string_view, std::u16string_view,
+                    MessageBoxMode) -> Awaitable<MessageBoxResult> {
         co_return co_await force_logoff_message.Wait(executor);
       });
 
@@ -345,8 +424,8 @@ TEST(LoginControllerTest, DestroyedControllerDropsPendingConnectCompletion) {
   bool completed = false;
 
   EXPECT_CALL(session_service, ConnectStatus(_))
-      .WillOnce([executor, &connect](scada::SessionConnectParams)
-                    -> Awaitable<scada::Status> {
+      .WillOnce([executor, &connect](
+                    scada::SessionConnectParams) -> Awaitable<scada::Status> {
         co_return co_await connect.Wait(executor);
       });
 
