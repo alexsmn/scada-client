@@ -39,9 +39,27 @@ int EventStatusProvider::GetAlarmCount() const {
   return static_cast<int>(node_event_provider_.unacked_events().size());
 }
 
+int EventStatusProvider::GetSeverityCount(aui::SeverityLevel level) const {
+  int count = 0;
+  for (const scada::Event& event :
+       node_event_provider_.unacked_events() | std::views::values) {
+    if (SeverityLevelForEvent(event.severity) == level)
+      ++count;
+  }
+  return count;
+}
+
 std::u16string EventStatusProvider::GetSeverityText() const {
   return u16format(L"\u0412\u0430\u0436\u043d\u043e\u0441\u0442\u044c: {}",
                    node_event_provider_.severity_min());
+}
+
+aui::SeverityLevel SeverityLevelForEvent(unsigned severity) {
+  if (severity >= scada::kSeverityCritical)
+    return aui::SeverityLevel::kCritical;
+  if (severity >= scada::kSeverityWarning)
+    return aui::SeverityLevel::kWarning;
+  return aui::SeverityLevel::kNone;
 }
 
 aui::SeverityLevel EventStatusProvider::HighestUnackedLevel() const {
@@ -50,12 +68,7 @@ aui::SeverityLevel EventStatusProvider::HighestUnackedLevel() const {
        node_event_provider_.unacked_events() | std::views::values) {
     highest = std::max(highest, event.severity);
   }
-
-  if (highest >= scada::kSeverityCritical)
-    return aui::SeverityLevel::kCritical;
-  if (highest >= scada::kSeverityWarning)
-    return aui::SeverityLevel::kWarning;
-  return aui::SeverityLevel::kNone;
+  return SeverityLevelForEvent(highest);
 }
 
 std::u16string EventStatusProvider::GetHighestSeverityText() const {

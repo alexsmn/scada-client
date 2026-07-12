@@ -329,6 +329,15 @@ void MainWindow::CreateContextBar() {
   right_spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
   context_bar_->addWidget(right_spacer);
 
+  // Live severity KPI tiles: unacknowledged-alarm counts per level, coloured
+  // from the severity single source (bold when active, plain when calm).
+  kpi_critical_ = new QLabel(context_bar_);
+  kpi_warning_ = new QLabel(context_bar_);
+  for (QLabel* tile : {kpi_critical_, kpi_warning_}) {
+    tile->setMargin(2);
+    context_bar_->addWidget(tile);
+  }
+
   // Context cluster (right): mirror the status-bar model panes so the operator
   // keeps connection / server / user in view at the top too.
   const int pane_count = status_bar_model_->GetPaneCount();
@@ -339,7 +348,21 @@ void MainWindow::CreateContextBar() {
     context_bar_->addWidget(label);
   }
 
-  auto refresh = [this] {
+  auto refresh_kpi = [this](QLabel* tile, scada::aui::SeverityLevel level,
+                            const char* name) {
+    const int count = status_bar_model_->GetSeverityCount(level);
+    tile->setText(QStringLiteral("%1 %2")
+                      .arg(QString::fromStdU16String(Translate(name)))
+                      .arg(count));
+    const std::optional<aui::Color> color = scada::aui::SeverityColor(level);
+    // Bold + coloured while alarms are active, plain when the count is zero.
+    tile->setStyleSheet(count > 0 && color
+                            ? QStringLiteral("color:%1;font-weight:700;")
+                                  .arg(color->qcolor().name())
+                            : QString{});
+  };
+
+  auto refresh = [this, refresh_kpi] {
     for (int i = 0; i < static_cast<int>(context_panes_.size()); ++i) {
       context_panes_[i]->setText(
           QString::fromStdU16String(status_bar_model_->GetPaneText(i)));
@@ -350,6 +373,8 @@ void MainWindow::CreateContextBar() {
                       .arg(color->qcolor().name())
                 : QString{});
     }
+    refresh_kpi(kpi_critical_, scada::aui::SeverityLevel::kCritical, "Critical");
+    refresh_kpi(kpi_warning_, scada::aui::SeverityLevel::kWarning, "Warning");
   };
   refresh();
   context_bar_connection_ = status_bar_model_->SubscribePanesChanged(

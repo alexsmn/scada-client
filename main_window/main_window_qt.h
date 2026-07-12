@@ -111,6 +111,10 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   QToolBar* context_bar_ = nullptr;
   QLineEdit* command_search_ = nullptr;
   std::vector<QLabel*> context_panes_;
+  // Live severity KPI tiles in the context bar (unacknowledged counts per
+  // level), refreshed with the status-bar model.
+  QLabel* kpi_critical_ = nullptr;
+  QLabel* kpi_warning_ = nullptr;
   boost::signals2::scoped_connection context_bar_connection_;
 
   // Left activity rail (opt-in). Its alarm badge follows the status-bar model.

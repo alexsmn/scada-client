@@ -39,6 +39,10 @@ std::shared_ptr<aui::StatusBarModel> StatusBarModelBuilder::Build() {
   model->SetAlarmCountProvider(std::bind_front(
       &EventStatusProvider::GetAlarmCount, event_status_provider));
 
+  // Per-severity unacknowledged counts for the live KPI tiles.
+  model->SetSeverityCountProvider(std::bind_front(
+      &EventStatusProvider::GetSeverityCount, event_status_provider));
+
   event_status_provider->Init([model, event_count_pane_index,
                                severity_pane_index,
                                highest_severity_pane_index] {

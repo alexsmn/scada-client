@@ -13,6 +13,11 @@ void StatusBarModelImpl::SetAlarmCountProvider(AlarmCountProvider provider) {
   alarm_count_provider_ = std::move(provider);
 }
 
+void StatusBarModelImpl::SetSeverityCountProvider(
+    SeverityCountProvider provider) {
+  severity_count_provider_ = std::move(provider);
+}
+
 int StatusBarModelImpl::GetPaneCount() const {
   return static_cast<int>(panes_.size());
 }
@@ -33,6 +38,10 @@ std::optional<aui::Color> StatusBarModelImpl::GetPaneColor(int index) const {
 
 int StatusBarModelImpl::GetAlarmCount() const {
   return alarm_count_provider_ ? alarm_count_provider_() : 0;
+}
+
+int StatusBarModelImpl::GetSeverityCount(aui::SeverityLevel level) const {
+  return severity_count_provider_ ? severity_count_provider_(level) : 0;
 }
 
 boost::signals2::scoped_connection StatusBarModelImpl::SubscribePanesChanged(

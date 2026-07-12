@@ -3,6 +3,7 @@
 #include "aui/aui_ns_compat.h"
 
 #include "aui/color.h"
+#include "aui/severity_colors.h"
 
 #include <boost/signals2/connection.hpp>
 #include <functional>
@@ -32,6 +33,10 @@ class StatusBarModel {
   // observers read it on SubscribePanesChanged. Default 0 for models that do
   // not track alarms.
   virtual int GetAlarmCount() const { return 0; }
+
+  // Count of currently unacknowledged alarms at `level`, for the live severity
+  // KPI tiles. Refreshed with the panes; default 0 for models without alarms.
+  virtual int GetSeverityCount(SeverityLevel level) const { return 0; }
 
   // Notifies after the text of |count| panes starting at |index| changed.
   [[nodiscard]] virtual boost::signals2::scoped_connection
