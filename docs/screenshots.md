@@ -70,7 +70,8 @@ Everything lives under `client/tools/screenshot_generator/`:
 | `widget_capture.{h,cpp}` | `SaveScreenshot(QWidget*, const ScreenshotSpec&)` — the generic "resize, grab, save" helper for sub-widgets inside the MDI area. |
 | `graph_capture.{h,cpp}` | `SaveGraphScreenshot` builds a standalone `MetrixGraph` (hidden main windows don't lay out `QSplitter` children); `MakeGraphDefinition` builds the matching `WindowDefinition` for the profile path. |
 | `dialog_capture.{h,cpp}` | `CaptureDialog(spec, env)` — per-kind builders invoke the component's public `Execute…Dialog()` factory, which calls `show()` internally; we then find the visible dialog via `QApplication::topLevelWidgets()`, grab, and hide+reject. |
-| `fixture_builder.{h,cpp}` | `MakeScreenshotPage` (builds a `Page` with one window per `ScreenshotSpec`) and `MakeLocalTimedDataService` (populates a `FakeTimedDataService` from the fixture's `timed_data` array). |
+| `fixture_builder.{h,cpp}` | `MakeScreenshotPage` (builds a `Page` with one window per `ScreenshotSpec`) and `PopulateFixtureNodes` (creates the fixture's ns=1 instance nodes in the test address space). |
+| `check_screenshots.py` | Structural regression net registered as the `client_screenshot_check` ctest test: runs the generator offscreen into a scratch dir and verifies every manifest-managed capture exists with spec-exact dimensions. |
 | `screenshot_data.json` | The fixture: nodes, tree, timed data, events, graph config, screenshot list, dialog list. |
 | `CMakeLists.txt` | Builds `client_screenshot_generator.exe`; links `client_qt_core + client_export_csv_qt + client_favorites_qt + client_main_window_qt + client_modus_qt + client_portfolio_qt + client_print_service_qt + client_properties_qt + client_vidicon_qt + scada_core_opcua + base_unittest + graph_qt` and compiles `client_application.{cpp,h}` directly (it's excluded from `client_qt_core`). |
 
@@ -172,12 +173,12 @@ the sequential `for` loop in `CaptureDialogs`.
 
 | Key | Type | Purpose |
 |---|---|---|
+| `now` | string | Optional frozen clock, `"YYYY-MM-DD HH:MM:SS"` (local time). Event timestamps, the synthesized raw-history series, and the standalone graph's visible range anchor to it, so regenerated PNGs don't shift timestamps on every run. Remove it for wall-clock-relative data. |
 | `nodes` | array | Address-space entries: `{id, browse_name, display_name, class, type_definition?, properties?, references?}`, class ∈ `object` \| `variable`, `base_value` on variables. Loaded into `LocalAttributeService`; the running node service pulls each node's attributes through it on demand. |
 | `tree` | object | Parent → children map. Keys are `"<ns>.<id>"` or bare IDs for ns=1. Loaded into `LocalViewService`; the running `AddressSpaceFetcher` walks it via `Browse` to populate the live address space. |
-| `timed_data` | array | `{formula, values}` entries — values are spaced at 30-minute intervals ending at "now". Feeds `FakeTimedDataService`. |
-| `events` | array | `{id, hours_ago, severity, message, node_id, change_mask}` — injected into `LocalHistoryService`. |
+| `events` | array | `{id, hours_ago, severity, message, node_id, change_mask}` — injected into `LocalHistoryService`, timestamped `now - hours_ago * 1h`. Raw-history series are synthesized by `LocalHistoryService` from the nodes' `base_value` (deterministic per-node seed), so there is no separate timed-data array. |
 | `graph` | object | Panes, lines (`path`, `color`, `pane`, `dots`, `stepped`), time scale. Used by both the `Graph` profile path and standalone rendering. |
-| `screenshots` | array | `{type, filename, width, height}` — one entry per main-window view. `type` matches `WindowInfo::name`. |
+| `screenshots` | array | `{type, filename, width, height, min_rows?}` — one entry per main-window view. `type` matches `WindowInfo::name`. `min_rows` (default 0 = disabled) makes `CaptureAllWindows` fail when the rendered window's grid shows fewer rows — set it for grid-backed views so a data-path regression fails the run instead of silently saving an empty frame. |
 | `dialogs` | array | `{kind, filename, width?, height?}` — one entry per modal dialog. `kind` is the dispatch key in `dialog_capture.cpp`. |
 
 `width`/`height` should match the intended docs image pixel-exact so
@@ -260,17 +261,17 @@ HOME=$(mktemp -d) QT_QPA_PLATFORM=offscreen ./client_screenshot_generator \
   --image-manifest=$PWD/../../../../client/docs/screenshots/image_manifest.json
 ```
 
-Two flags of that recipe are load-bearing:
+`QT_QPA_PLATFORM=offscreen` is load-bearing: on the native cocoa platform
+the captures inherit the display's `devicePixelRatio` (2× PNGs on Retina)
+and the system light/dark appearance, so they do not match the docs
+dimensions or palette. The offscreen platform renders DPR=1 and light,
+dimension-identical to the Windows output for fixed-size specs.
 
-- **`QT_QPA_PLATFORM=offscreen`** — on the native cocoa platform the
-  captures inherit the display's `devicePixelRatio` (2× PNGs on Retina)
-  and the system light/dark appearance, so they do not match the docs
-  dimensions or palette. The offscreen platform renders DPR=1 and
-  light, dimension-identical to the Windows output for fixed-size specs.
-- **Hermetic `HOME`** — `LoginController` and friends read
-  `QSettings`, which on macOS resolves to the real user's plist. Without
-  a scratch `HOME` the login capture leaks whatever server address/user
-  you last used in the real client into the PNG.
+Settings hermeticity is built into the generator itself: `SetUpTestSuite`
+redirects default-constructed `QSettings` into a scratch ini tree, and the
+login capture injects a seeded in-memory `SettingsStore` (root @
+127.0.0.1), so machine state — saved server addresses in particular —
+cannot leak into captures on any platform.
 
 Treat macOS output as a **validation/preview** channel, not the publish
 channel: font rasterization and dialog layout widths differ from the
@@ -287,7 +288,9 @@ Pick the flow that fits the new image's manifest tag.
 1. Register or locate the `WindowInfo` in the owning component.
 2. Append `{ "type": "…", "filename": "…", "width": W, "height": H }`
    to `screenshots:` in `screenshot_data.json`. Match the
-   intended docs dimensions exactly.
+   intended docs dimensions exactly. For a grid-backed view, also set
+   `"min_rows"` to the row count the fixture populates, so an
+   empty-table regression fails the capture.
 3. If the view needs nodes, timed data, or events that aren't already
    in the fixture, extend the matching arrays.
 4. Add an entry to `client/docs/screenshots/image_manifest.json` tagged
@@ -412,26 +415,21 @@ now.
   `third_party/net` stub doesn't match the current
   `TransportFactory` interface. `dialog_capture.cpp` carries its own
   one-method `NullTransportFactory` for now.
-- **Users/Transmission views currently render empty (regression).**
-  `NodeTableModel::SetParentNode` fails with `Bad_WrongNodeId` out of
-  `PropertyService::GetChildPropertyDefsStatusAsync` over the fixture
-  address space (log line: `NodeTableModel startup load failed`), so
-  `users.png` and `client-retransmission.png` come out as bare frames.
-  Verified on macOS 2026-07-12 after the node-service v3 consolidation;
-  the published copies in scada-docs predate it. Until this is fixed,
-  do **not** publish those two files from a fresh run — the manual's
-  copies are the last good renders.
-- **Settings bleed into captures without a hermetic profile dir.**
-  `LoginController` populates the server address and saved-user list
-  from `QSettings` (registry on Windows, plists on macOS). On a used
-  dev box the real server address — even a public demo IP — leaks into
-  `client-login.png`. Run the generator with a scratch `HOME` (macOS /
-  Linux) or a clean registry hive before publishing.
-- **Registry reads on LoginDialog.** `LoginController` reads the
-  saved user list from `HKEY_CURRENT_USER\Software\Telecontrol\Workplace`.
-  On a fresh dev box the form renders empty, which happens to match
-  the docs image. If that changes, the fixture will need to shim the
-  registry (or the controller will need a test hook).
+- **Settings hermeticity is two-layered — keep both.** The client reads
+  two kinds of machine state: default-constructed `QSettings`
+  (theme/UX/window state; redirected to a scratch ini tree in
+  `SetUpTestSuite`) and the login `SettingsStore` (registry on Windows, a
+  JSON file under `~/Library/Application Support` on macOS; replaced by a
+  seeded `MemorySettingsStore` in `BuildLoginDialog`). Before these
+  guards, a used dev box leaked its real server address — a public demo
+  IP included — into `client-login.png`. New capture kinds that read
+  settings through other paths need the same treatment.
+- **Registry reads on LoginDialog.** `LoginController`'s production
+  default store is `HKEY_CURRENT_USER\Software\Telecontrol\Workplace`;
+  the generator bypasses it with the injected in-memory store seeded to
+  match the docs image (user `root`, host `127.0.0.1`). If the docs
+  image should change, reseed the store in `BuildLoginDialog` rather
+  than relying on any machine's registry contents.
 - **One visible dialog at a time.** `GrabAndCloseVisibleDialog`
   assumes at most one visible `QDialog` when it scans the top-level
   widgets. That holds inside the sequential `for` loop but would

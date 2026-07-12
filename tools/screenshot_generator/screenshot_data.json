@@ -9,8 +9,15 @@
     "",
     "Synthetic instance nodes are retained under the SCADA folders so that the",
     "screenshot generator has concrete values to render in graphs, events and tables —",
-    "the address space files only define types, not instances."
+    "the address space files only define types, not instances.",
+    "",
+    "`now` freezes the fixture clock (local time): event timestamps, synthesized",
+    "raw-history series, and the graph's visible range all anchor to it, so",
+    "regenerated PNGs don't shift timestamps on every run. Remove it to get",
+    "wall-clock-relative data."
   ],
+
+  "now": "2026-04-16 15:02:00",
 
   "dialog_analog_node_id": "TIT.212",
 
@@ -208,13 +215,13 @@
     { "type": "Log",            "filename": "device-watch.png",        "width": 800,  "height": 400 },
     { "type": "Nodes",          "filename": "object-tree.png",         "width": 300,  "height": 500 },
     { "type": "Struct",         "filename": "devices.png",             "width": 300,  "height": 500 },
-    { "type": "Users",          "filename": "users.png",               "width": 500,  "height": 302 },
+    { "type": "Users",          "filename": "users.png",               "width": 500,  "height": 302, "min_rows": 13 },
     { "type": "Params",         "filename": "parameters.png",          "width": 500,  "height": 400 },
     { "type": "CusTable",       "filename": "sheet.png",               "width": 800,  "height": 400 },
     { "type": "Favorites",      "filename": "favorites.png",           "width": 300,  "height": 400 },
     { "type": "FileSystemView", "filename": "files.png",               "width": 300,  "height": 400 },
     { "type": "TimeVal",        "filename": "data.png",                "width": 800,  "height": 400 },
-    { "type": "Transmission",   "filename": "client-retransmission.png", "path": "TS.702", "width": 763,  "height": 645 }
+    { "type": "Transmission",   "filename": "client-retransmission.png", "path": "TS.702", "width": 763,  "height": 645, "min_rows": 4 }
   ],
 
   "_dialogs_comment": [

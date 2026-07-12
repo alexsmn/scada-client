@@ -40,12 +40,14 @@ Awaitable<std::optional<DataServices>> DeleteLoginDialogOnCompletionAsync(
 }  // namespace
 
 LoginDialog::LoginDialog(AnyExecutor executor,
-                         DataServicesContext&& services_context)
-    : controller_{
-          std::make_shared<LoginController>(executor,
-                                            std::move(services_context),
-                                            dialog_service_,
-                                            client::CreateE2eSettingsStore())},
+                         DataServicesContext&& services_context,
+                         std::shared_ptr<SettingsStore> settings_store)
+    : controller_{std::make_shared<LoginController>(
+          executor,
+          std::move(services_context),
+          dialog_service_,
+          settings_store ? std::move(settings_store)
+                         : client::CreateE2eSettingsStore())},
       completion_{std::move(executor)} {
   ui.setupUi(this);
 
@@ -223,9 +225,11 @@ bool LoginDialog::eventFilter(QObject* object, QEvent* event) {
 
 Awaitable<std::optional<DataServices>> ExecuteLoginDialog(
     AnyExecutor executor,
-    DataServicesContext services_context) {
+    DataServicesContext services_context,
+    std::shared_ptr<SettingsStore> settings_store) {
   LoginDialog* login_dialog =
-      new LoginDialog{std::move(executor), std::move(services_context)};
+      new LoginDialog{std::move(executor), std::move(services_context),
+                      std::move(settings_store)};
 
   login_dialog->setModal(true);
   login_dialog->show();

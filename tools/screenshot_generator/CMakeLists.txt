@@ -100,6 +100,23 @@ if(MSVC)
     $<$<CONFIG:Debug>:/PDB:NONE>)
 endif()
 
+# Structural regression net: run the generator on the Qt offscreen
+# platform into a scratch dir and verify every manifest-managed capture
+# exists with spec-exact dimensions (see check_screenshots.py). Rides
+# ctest, so any CI that runs the test suite exercises the docs pipeline.
+find_package(Python3 COMPONENTS Interpreter)
+if(Python3_FOUND)
+  add_test(NAME client_screenshot_check
+    COMMAND ${Python3_EXECUTABLE}
+      "${CMAKE_CURRENT_SOURCE_DIR}/check_screenshots.py"
+      "--generator=$<TARGET_FILE:client_screenshot_generator>"
+      "--data=${CMAKE_CURRENT_SOURCE_DIR}/screenshot_data.json"
+      "--image-manifest=${CMAKE_CURRENT_SOURCE_DIR}/../../docs/screenshots/image_manifest.json"
+      "--out=${CMAKE_CURRENT_BINARY_DIR}/screenshot_check"
+  )
+  set_tests_properties(client_screenshot_check PROPERTIES TIMEOUT 300)
+endif()
+
 # After the executable links, run it and drop the PNGs into
 # client/docs/screenshots/ so the local docs gallery stays in sync on
 # every build. Requires a desktop session (see docs/screenshots.md

@@ -21,7 +21,10 @@ class LoginDialog : public QDialog {
   Q_OBJECT
 
  public:
-  LoginDialog(AnyExecutor executor, DataServicesContext&& services_context);
+  // `settings_store` — see ExecuteLoginDialog in modules/login/login_dialog.h.
+  LoginDialog(AnyExecutor executor,
+              DataServicesContext&& services_context,
+              std::shared_ptr<SettingsStore> settings_store = {});
   ~LoginDialog();
 
   Awaitable<std::optional<DataServices>> Wait();

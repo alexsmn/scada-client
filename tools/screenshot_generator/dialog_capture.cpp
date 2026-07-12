@@ -8,6 +8,7 @@
 #include "aui/translation.h"
 #include "base/any_executor.h"
 #include "base/boost_log.h"
+#include "base/memory_settings_store.h"
 #include "controller/command_manager.h"
 #include "main_window/command_palette_qt.h"
 #include "modules/limits/limit_dialog.h"
@@ -271,9 +272,18 @@ BuildLoginDialog(DialogEnvironment& env,
                  const std::shared_ptr<BoostLogger>& logger) {
   DataServicesContext services_context{logger, env.executor, transport_factory,
                                        scada::ServiceLogParams{}};
+  // Hermetic settings: the production dialog reads the saved user list and
+  // server addresses from the registry / per-user settings file, so on a
+  // used dev box the capture would leak the real server address. Seed an
+  // in-memory store with the state the docs image shows instead.
+  auto settings_store = std::make_shared<MemorySettingsStore>();
+  settings_store->SetString16("User", u"root");
+  settings_store->SetString16("UserList", u"root");
+  settings_store->SetString("Host", "127.0.0.1");
   auto dialog_lifetime = StartDialogAwaitable(
       env.executor,
-      ExecuteLoginDialog(env.executor, std::move(services_context)));
+      ExecuteLoginDialog(env.executor, std::move(services_context),
+                         std::move(settings_store)));
   QApplication::processEvents();
   return dialog_lifetime;
 }

@@ -22,8 +22,7 @@ WindowDefinition MakeGraphDefinition(const boost::json::value& json) {
     auto& item = def.AddItem("GraphPane");
     item.SetInt("ix", static_cast<int>(jp.at("index").as_int64()));
     item.SetInt("size", static_cast<int>(jp.at("size").as_int64()));
-    if (auto* act = jp.as_object().if_contains("active");
-        act && act->as_bool())
+    if (auto* act = jp.as_object().if_contains("active"); act && act->as_bool())
       item.SetInt("act", 1);
   }
 
@@ -58,8 +57,7 @@ void SaveGraphScreenshot(const ScreenshotSpec& spec,
     int ix = static_cast<int>(jp.at("index").as_int64());
     pane.size_percent_ = static_cast<int>(jp.at("size").as_int64());
     pane_map[ix] = &pane;
-    if (auto* act = jp.as_object().if_contains("active");
-        act && act->as_bool())
+    if (auto* act = jp.as_object().if_contains("active"); act && act->as_bool())
       graph.SelectPane(&pane);
   }
 
@@ -75,8 +73,16 @@ void SaveGraphScreenshot(const ScreenshotSpec& spec,
     line.set_stepped(ji.at("stepped").as_bool());
   }
 
-  // Time range (span parsed from "HH:MM:SS").
+  // Time range (span parsed from "HH:MM:SS"). Anchor "now" to the fixture's
+  // frozen clock when present so regenerated axis labels stay stable across
+  // runs; LocalHistoryService reads the same key.
   auto now = base::Time::Now();
+  if (const auto* jnow = json.as_object().if_contains("now")) {
+    base::Time fixed_now;
+    if (base::Time::FromString(std::string(jnow->as_string()).c_str(),
+                               &fixed_now))
+      now = fixed_now;
+  }
   auto span_str = std::string(jgraph.at("time_scale").at("span").as_string());
   base::TimeDelta span;
   Deserialize(span_str, span);
