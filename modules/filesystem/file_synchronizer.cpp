@@ -1,7 +1,7 @@
 #include "filesystem/file_synchronizer.h"
 
 #include "base/awaitable.h"
-#include "base/logger.h"
+#include "base/boost_log.h"
 #include "filesystem/filesystem_util.h"
 #include "model/filesystem_node_ids.h"
 #include "net/net_executor_adapter.h"
@@ -45,25 +45,25 @@ std::filesystem::file_time_type ToFileTime(scada::DateTime time) {
 
 Awaitable<void> DownloadFileNodeAsync(
     AnyExecutor executor,
-    std::shared_ptr<const Logger> logger,
+    std::shared_ptr<BoostLogger> logger,
     NodeRef node,
     std::filesystem::path path,
     std::filesystem::file_time_type last_update_time) {
   auto data_value = co_await node.scada_node().read(scada::AttributeId::Value);
   if (!data_value.ok()) {
-    logger->WriteF(LogSeverity::Warning, "Download '{}' error: {}",
+    LOG_WARNING(*logger) << std::format("Download '{}' error: {}",
                    path.string(), ToString(data_value.status()));
     co_return;
   }
 
   auto* data = data_value->value.get_if<scada::ByteString>();
   if (!data) {
-    logger->WriteF(LogSeverity::Warning, "Wrong downloaded data for file '{}'",
+    LOG_WARNING(*logger) << std::format("Wrong downloaded data for file '{}'",
                    path.string());
     co_return;
   }
 
-  logger->WriteF(LogSeverity::Normal, "Download '{}' complete", path.string());
+  LOG_INFO(*logger) << std::format("Download '{}' complete", path.string());
 
   std::ofstream{path, std::ios::binary}.write(data->data(), data->size());
 
@@ -77,7 +77,7 @@ Awaitable<void> DownloadFileNodeAsync(
 
 FileSynchronizer::FileSynchronizer(FileSynchronizerContext&& context)
     : FileSynchronizerContext{std::move(context)} {
-  logger_->WriteF(LogSeverity::Normal, "Fetch file tree...");
+  LOG_INFO(*logger_) << std::format("Fetch file tree...");
 
   connections_.push_back(node_service_.SubscribeModelChanged(
       [this](const scada::ModelChangeEvent& event) { OnModelChanged(event); }));
@@ -90,10 +90,10 @@ FileSynchronizer::FileSynchronizer(FileSynchronizerContext&& context)
   CoSpawn(executor_, [this, root]() -> Awaitable<void> {
     co_await FetchTree(root);
     if (root.status()) {
-      logger_->WriteF(LogSeverity::Normal, "Fetch file tree completed");
+      LOG_INFO(*logger_) << std::format("Fetch file tree completed");
       ProcessNodesRecursively(root);
     } else {
-      logger_->WriteF(LogSeverity::Normal, "File-system is disabled");
+      LOG_INFO(*logger_) << std::format("File-system is disabled");
     }
   });
 }
@@ -124,15 +124,15 @@ bool FileSynchronizer::ProcessFileDirectoryNode(NodeRef node) {
 
   std::error_code ec;
   if (std::filesystem::is_directory(path, ec)) {
-    logger_->WriteF(LogSeverity::Normal, "Directory '{}' is actual",
+    LOG_INFO(*logger_) << std::format("Directory '{}' is actual",
                     path.string());
     return true;
   }
 
-  logger_->WriteF(LogSeverity::Normal, "Create directory '{}'", path.string());
+  LOG_INFO(*logger_) << std::format("Create directory '{}'", path.string());
 
   if (!std::filesystem::create_directories(path, ec)) {
-    logger_->WriteF(LogSeverity::Normal, "Create directory '{}' error: {}",
+    LOG_INFO(*logger_) << std::format("Create directory '{}' error: {}",
                     path.string(), ec.message());
     return false;
   }
@@ -150,11 +150,11 @@ bool FileSynchronizer::ProcessFileNode(NodeRef node) {
   std::error_code ec;
   auto actual_last_update_time = std::filesystem::last_write_time(path, ec);
   if (actual_last_update_time == last_update_time) {
-    logger_->WriteF(LogSeverity::Normal, "File '{}' is actual", path.string());
+    LOG_INFO(*logger_) << std::format("File '{}' is actual", path.string());
     return true;
   }
 
-  logger_->WriteF(LogSeverity::Normal, "Download outdated '{}'", path.string());
+  LOG_INFO(*logger_) << std::format("Download outdated '{}'", path.string());
 
   CoSpawn(executor_, [executor = executor_, logger = logger_, node, path,
                       last_update_time] {

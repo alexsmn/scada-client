@@ -1,6 +1,6 @@
 #include "filesystem/file_synchronizer.h"
 
-#include "base/logger.h"
+#include "base/boost_log.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "model/filesystem_node_ids.h"
@@ -95,7 +95,7 @@ class FileSynchronizerTest : public Test {
   void StartSynchronizer() {
     synchronizer_.emplace(FileSynchronizerContext{
         .executor_ = executor_,
-        .logger_ = NullLogger::GetInstance(),
+        .logger_ = std::make_shared<BoostLogger>(LOG_NAME("Test")),
         .node_service_ = node_service_,
         .root_dir_ = temp_dir_.path()});
   }

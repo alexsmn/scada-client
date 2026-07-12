@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/any_executor.h"
+#include "base/boost_log.h"
 #include "base/lifetime.h"
 #include "metrics/metrics_compat.h"
 
@@ -57,7 +58,6 @@ class CreateTree;
 class EventModule;
 class FavoritesModule;
 class FileSystemComponent;
-class Logger;
 class MainWindowManager;
 class MainWindowModule;
 class MasterDataServices;
@@ -157,7 +157,7 @@ class ClientApplication : private ClientApplicationContext {
 
   std::unique_ptr<CoreModule> core_module_;
 
-  std::shared_ptr<Logger> logger_;
+  std::shared_ptr<BoostLogger> logger_;
   std::unique_ptr<metrics::OpenTelemetryMetrics> metrics_runtime_;
 
   std::shared_ptr<transport::TransportFactory> transport_factory_;

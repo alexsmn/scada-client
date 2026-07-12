@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/boost_log.h"
 #include "common/aliases.h"
 #include "node_service/node_ref.h"
 
@@ -7,12 +8,11 @@
 #include <map>
 #include <unordered_map>
 
-class Logger;
 class NodeRef;
 class NodeService;
 
 struct AliasServiceContext {
-  const std::shared_ptr<Logger> logger_;
+  const std::shared_ptr<BoostLogger> logger_;
   NodeService& node_service_;
 };
 

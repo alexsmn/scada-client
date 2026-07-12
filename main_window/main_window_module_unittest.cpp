@@ -1,7 +1,7 @@
 #include "main_window/main_window_module.h"
 
 #include "aui/test/app_environment.h"
-#include "base/logger.h"
+#include "base/boost_log.h"
 #include "base/test/awaitable_test.h"
 #include "controller/command_ui_registry.h"
 #include "controller/controller_fake.h"
@@ -56,7 +56,7 @@ class MainWindowModuleTest : public Test {
 
   EventModule event_module_{
       {.executor_ = controller_env_.executor_,
-       .logger_ = NullLogger::GetInstance(),
+       .logger_ = std::make_shared<BoostLogger>(LOG_NAME("Test")),
        .profile_ = controller_env_.profile_,
        .services_ = controller_env_.services(),
        .controller_registry_ = controller_env_.controller_registry_,

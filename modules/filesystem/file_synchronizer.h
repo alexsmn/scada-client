@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/any_executor.h"
+#include "base/boost_log.h"
 
 #include "node_service/node_ref.h"
 
@@ -10,12 +11,11 @@
 #include <memory>
 #include <queue>
 
-class Logger;
 class NodeService;
 
 struct FileSynchronizerContext {
   const AnyExecutor executor_;
-  const std::shared_ptr<const Logger> logger_;
+  const std::shared_ptr<BoostLogger> logger_;
   NodeService& node_service_;
   const std::filesystem::path root_dir_;
 };

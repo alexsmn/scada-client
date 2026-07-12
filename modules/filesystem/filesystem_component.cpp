@@ -133,7 +133,7 @@ FileSystemComponent::FileSystemComponent(FileSystemComponentContext&& context)
     file_synchronizer_ =
         std::make_unique<FileSynchronizer>(FileSynchronizerContext{
             executor_,
-            std::make_shared<NestedLogger>(logger_, "FileSynchronizer"),
+            std::make_shared<BoostLogger>(LOG_NAME("FileSynchronizer")),
             *node_service_,
             public_dir.value(),
         });

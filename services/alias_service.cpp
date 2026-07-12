@@ -1,7 +1,7 @@
 #include "alias_service.h"
 
+#include "base/boost_log.h"
 #include "base/check.h"
-#include "base/logger.h"
 #include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_service.h"
@@ -11,7 +11,8 @@ AliasService::AliasService(AliasServiceContext&& context)
     : AliasServiceContext{std::move(context)} {
   aliases_ = node_service_.GetNode(data_items::id::Aliases);
 
-  logger_->WriteF(LogSeverity::Normal, "Fetching");
+  if (logger_)
+    LOG_INFO(*logger_) << "Fetching";
 
   node_fetched_connection_ = node_service_.SubscribeNodeFetched(
       [this](const NodeFetchedEvent& event) { OnNodeFetched(event); });
@@ -27,8 +28,8 @@ void AliasService::Resolve(std::string_view alias,
   auto alias_string = std::string{alias};
 
   if (!fetched_) {
-    logger_->WriteF(LogSeverity::Normal, "Pending resolution: {}",
-                    alias_string);
+    if (logger_)
+      LOG_INFO(*logger_) << std::format("Pending resolution: {}", alias_string);
     pending_aliases_[std::move(alias_string)].emplace_back(callback);
     return;
   }
@@ -42,8 +43,9 @@ void AliasService::Resolve(std::string_view alias,
 void AliasService::OnFetchCompleted() {
   base::Check(!fetched_);
 
-  logger_->WriteF(LogSeverity::Normal, "Fetch completed. {} aliases fetched",
-                  aliases_.targets(scada::id::Organizes).size());
+  if (logger_)
+    LOG_INFO(*logger_) << std::format("Fetch completed. {} aliases fetched",
+                                      aliases_.targets(scada::id::Organizes).size());
   fetched_ = true;
 
   for (const auto& [alias, callbacks] : pending_aliases_) {
@@ -69,8 +71,9 @@ scada::NodeId AliasService::ResolveNow(const std::string& alias) const {
   auto aliased_node = alias_node.target(data_items::id::AliasOf);
   auto aliased_node_id = aliased_node.node_id();
 
-  logger_->WriteF(LogSeverity::Normal, "{} = {}", alias,
-                  aliased_node_id.ToString());
+  if (logger_)
+    LOG_INFO(*logger_) << std::format("{} = {}", alias,
+                                      aliased_node_id.ToString());
 
   return aliased_node_id;
 }

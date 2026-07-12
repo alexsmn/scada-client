@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/any_executor.h"
+#include "base/boost_log.h"
 #include "base/lifetime.h"
 #include "scada/services.h"
 
@@ -13,7 +14,6 @@ class BasicCommandRegistry;
 class ControllerRegistry;
 class EventFetcher;
 class LocalEvents;
-class Logger;
 class NodeEventProvider;
 class Profile;
 class UiCommandRegistry;
@@ -23,7 +23,7 @@ struct WindowInfo;
 
 struct EventModuleContext {
   AnyExecutor executor_;
-  std::shared_ptr<const Logger> logger_;
+  std::shared_ptr<BoostLogger> logger_;
   Profile& profile_;
   scada::services services_;
   ControllerRegistry& controller_registry_;

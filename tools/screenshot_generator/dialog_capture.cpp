@@ -6,7 +6,7 @@
 
 #include "aui/qt/dialog_service_impl_qt.h"
 #include "base/any_executor.h"
-#include "base/console_logger.h"
+#include "base/boost_log.h"
 #include "modules/limits/limit_dialog.h"
 #include "modules/login/login_dialog.h"
 #include "modules/write/write_dialog.h"
@@ -265,7 +265,7 @@ void WaitForDialogCompletion(
 std::shared_ptr<DialogAwaitableResult<std::optional<DataServices>>>
 BuildLoginDialog(DialogEnvironment& env,
                  NullTransportFactory& transport_factory,
-                 const std::shared_ptr<Logger>& logger) {
+                 const std::shared_ptr<BoostLogger>& logger) {
   DataServicesContext services_context{logger, env.executor, transport_factory,
                                        scada::ServiceLogParams{}};
   auto dialog_lifetime = StartDialogAwaitable(
@@ -358,7 +358,7 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
   NullTransportFactory transport_factory;
   NullTaskManager task_manager;
   DialogServiceImplQt dialog_service;  // parent_widget = nullptr
-  auto logger = std::make_shared<ConsoleLogger>();
+  auto logger = std::make_shared<BoostLogger>(LOG_NAME("Screenshot"));
 
   if (spec.kind == "login") {
     auto dialog_lifetime = BuildLoginDialog(env, transport_factory, logger);

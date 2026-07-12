@@ -3,7 +3,7 @@
 #include "aui/translation.h"
 #include "base/any_executor.h"
 #include "base/blinker.h"
-#include "base/boost_log_adapter.h"
+#include "base/boost_log.h"
 #include "base/program_options.h"
 #include "common/audit.h"
 #include "common/master_data_services.h"
@@ -104,7 +104,7 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
           std::make_unique<OpenedViewCommandRegistry>()},
       master_data_services_{std::make_shared<MasterDataServices>(executor_)},
       quit_completion_{executor_} {
-  logger_ = std::make_shared<BoostLogAdapter>("client");
+  logger_ = std::make_shared<BoostLogger>(LOG_NAME("client"));
 
   transport_factory_ = transport::CreateTransportFactory();
 
@@ -188,7 +188,7 @@ void ClientApplication::PostLogin() {
       .alias_resolver = {}};
 
   CreateNodeService(ctx);
-  ctx.alias_resolver = CreateAliasResolver(*node_service_, logger_);
+  ctx.alias_resolver = CreateAliasResolver(*node_service_);
 
   singletons_.emplace(std::make_shared<CsvExportModule>(CsvExportModuleContext{
       .ui_command_registry_ = *ui_command_registry_,
@@ -429,7 +429,7 @@ Awaitable<void> ClientApplication::Login() {
 }
 
 Awaitable<void> ClientApplication::LoginAsync() {
-  logger_->Write(LogSeverity::Normal, "Login");
+  LOG_INFO(*logger_) << ("Login");
 
   DataServicesContext services_context{logger_, executor_, *transport_factory_,
                                        ReadServiceLogParamsFromCommandLine()};
@@ -443,7 +443,7 @@ Awaitable<void> ClientApplication::LoginAsync() {
 }
 
 void ClientApplication::OnLoginCompleted(const DataServices& data_services) {
-  logger_->Write(LogSeverity::Normal, "Login completed");
+  LOG_INFO(*logger_) << ("Login completed");
 
   auto audited_services =
       *AuditDataServices(data_services, core_module_->tracer(), executor_);
@@ -477,13 +477,13 @@ Awaitable<void> ClientApplication::RunAsync() {
 }
 
 Awaitable<void> ClientApplication::QuitAsync() {
-  logger_->Write(LogSeverity::Normal, "Quit");
+  LOG_INFO(*logger_) << ("Quit");
 
   if (!master_data_services_) {
     co_return;
   }
 
-  logger_->Write(LogSeverity::Normal, "Disconnect");
+  LOG_INFO(*logger_) << ("Disconnect");
 
   // Event module is not created if login fails.
   // TODO: Create event module unconditionally.

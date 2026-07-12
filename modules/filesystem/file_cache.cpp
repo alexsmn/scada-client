@@ -4,7 +4,7 @@
 #include "base/client_paths.h"
 #include "base/format.h"
 #include "base/json.h"
-#include "base/logger.h"
+#include "base/boost_log.h"
 #include "base/path_service.h"
 #include "base/value_util.h"
 #include "filesystem/file_registry.h"
