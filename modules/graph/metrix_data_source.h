@@ -29,6 +29,14 @@ class MetrixDataSource : public GraphDataSource {
   std::string GetPath() const { return timed_data_.formula(); }
   const std::u16string& title() const SCADA_LIFETIME_BOUND { return title_; }
 
+  // Configured analog-limit bands (AnalogItemType_LimitLoLo/Lo/Hi/HiHi), or
+  // kGraphUnknownValue when the node does not carry that band. Fed to
+  // ComputeLimitMarkers to draw limit markers on the pane.
+  double limit_lolo() const { return limit_lolo_; }
+  double limit_lo() const { return limit_lo_; }
+  double limit_hi() const { return limit_hi_; }
+  double limit_hihi() const { return limit_hihi_; }
+
   bool XToData(double& x, scada::DataValue& val) const;
 
   void SetCurrentValue(double value);

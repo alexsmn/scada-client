@@ -53,7 +53,7 @@
     { "id": "TS.128", "browse_name": "Uab",                 "class": "object" },
     { "id": "TS.129", "browse_name": "Ubc",                 "class": "object" },
     { "id": "TS.130", "browse_name": "Uca",                 "class": "object" },
-    { "id": "TIT.200", "browse_name": "Активная мощность",   "class": "variable", "type_definition": "analog_item", "base_value": 125.4, "properties": { "SCADA.158": 110.0,  "SCADA.159": 140.0 } },
+    { "id": "TIT.200", "browse_name": "Активная мощность",   "class": "variable", "type_definition": "analog_item", "base_value": 125.4, "properties": { "SCADA.158": 110.0,  "SCADA.159": 140.0, "limit_lolo": 113.0, "limit_lo": 118.0, "limit_hi": 133.0, "limit_hihi": 138.0 } },
     { "id": "TIT.201", "browse_name": "Реактивная мощность", "class": "variable", "type_definition": "analog_item", "base_value": -32.1, "properties": { "SCADA.158": -40.0, "SCADA.159": -20.0 } },
     { "id": "TIT.202", "browse_name": "Напряжение L1-L2",    "class": "variable", "type_definition": "analog_item", "base_value": 10.52 },
     { "id": "TIT.203", "browse_name": "Ток L1",              "class": "variable", "type_definition": "analog_item", "base_value": 10.48 },

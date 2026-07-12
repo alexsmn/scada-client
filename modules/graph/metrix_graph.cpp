@@ -3,6 +3,7 @@
 #include "base/format_time.h"
 #include "base/minute_time.h"
 #include "base/utf_convert.h"
+#include "graph/limit_markers.h"
 #include "graph/metrix_data_source.h"
 
 #include "graph/series_stats.h"
@@ -10,6 +11,7 @@
 #if defined(UI_QT)
 #include "aui/qt/theme_qt.h"
 #include "aui/severity_colors.h"
+#include "aui/translation.h"
 #include "scada/qualifier.h"
 #include "scada/variant.h"
 #endif
@@ -429,10 +431,38 @@ void MetrixGraph::MetrixLine::OnDataSourceCurrentValueChanged() {
 void MetrixGraph::MetrixLine::OnDataSourceItemChanged() {
   GraphLine::OnDataSourceItemChanged();
 
+  UpdateLimitStyles();
   pane().UpdateLegend();
 
   if (graph().controller())
     graph().controller()->OnLineItemChanged(*this);
+}
+
+void MetrixGraph::MetrixLine::UpdateLimitStyles() {
+  ClearLimitStyles();
+
+  const MetrixDataSource& source = *data_source_;
+  const std::vector<LimitMarker> markers = ComputeLimitMarkers(
+      source.limit_lolo(), source.limit_lo(), source.limit_hi(),
+      source.limit_hihi(), kGraphUnknownValue);
+
+  for (const LimitMarker& marker : markers) {
+    const std::optional<scada::aui::Color> color =
+        scada::aui::SeverityColor(SeverityOf(marker.kind));
+    // Legacy theme: SeverityColor yields nothing, so leave the band with its
+    // default (series colour, no caption) — the historical look is unchanged.
+    if (!color)
+      continue;
+
+    LimitStyle style;
+    style.color = color->qcolor();
+    style.label =
+        QString::fromStdU16String(Translate(LimitBandNameKey(marker.kind))) +
+        QStringLiteral(" ") + source.GetYAxisLabel(marker.value);
+    // LimitKind and GraphLine::LimitBand enumerate the same four bands in the
+    // same order.
+    SetLimitStyle(static_cast<LimitBand>(marker.kind), style);
+  }
 }
 
 void MetrixGraph::MetrixLine::OnDataSourceDeleted() {

@@ -20,7 +20,7 @@
     { "file": "graph-cursor.png", "tag": "auto-view", "referenced_from": ["client/graph.md"], "notes": "Graph window with cursor; generator already emits graph.png." },
     { "file": "iec-60870-5-transport.png", "tag": "manual-diagram", "referenced_from": ["dev/devices.md"], "notes": "IEC 60870-5 transport stack diagram." },
     { "file": "iec-61850-model.png", "tag": "manual-diagram", "referenced_from": ["client.md"], "notes": "IEC 61850 object model diagram." },
-    { "file": "limits-chart.png", "tag": "auto-view", "referenced_from": ["architecture.md"], "notes": "Graph with limit lines drawn; blocked on the fixture exposing AnalogItemType_LimitLo, LimitHi, LimitLoLo and LimitHiHi on a graphed node." },
+    { "file": "limits-chart.png", "tag": "auto-view", "referenced_from": ["architecture.md"], "notes": "Graph with limit lines drawn. Rendering is wired (MetrixLine severity-coloured limit markers; TIT.200 carries AnalogItemType_LimitLoLo/Lo/Hi/HiHi in the fixture) but blocked on graph captures making the graphed node resident: SaveGraphScreenshot loads history only, so node properties (EU range, current value, limits) are not fetched. Same gap hides the EU range and current value." },
     { "file": "limits.png", "tag": "auto-dialog", "referenced_from": ["architecture.md", "client.md"], "notes": "LimitDialog modal." },
     { "file": "login.png", "tag": "obsolete", "referenced_from": [], "notes": "Superseded by client-login.png." },
     { "file": "menu-copy-object.png", "tag": "auto-menu", "referenced_from": ["dev/data-items.md"], "notes": "Context menu: copy object." },

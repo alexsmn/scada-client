@@ -45,6 +45,15 @@ scada::NodeId ParseJsonChildNodeId(const boost::json::value& child) {
 std::optional<scada::NodeId> ParseJsonPropertyId(std::string_view name) {
   if (name == "display_format")
     return data_items::id::AnalogItemType_DisplayFormat;
+  // Analog-limit bands, so a fixture node can drive the trend's limit markers.
+  if (name == "limit_lolo")
+    return data_items::id::AnalogItemType_LimitLoLo;
+  if (name == "limit_lo")
+    return data_items::id::AnalogItemType_LimitLo;
+  if (name == "limit_hi")
+    return data_items::id::AnalogItemType_LimitHi;
+  if (name == "limit_hihi")
+    return data_items::id::AnalogItemType_LimitHiHi;
   if (LooksLikeJsonNodeId(name))
     return NodeIdFromScadaString(name);
   return std::nullopt;
@@ -66,7 +75,8 @@ scada::NodeId ParseJsonTypeDefinition(const boost::json::object& node) {
                      : scada::NodeId{scada::id::FolderType, 0};
 }
 
-std::optional<scada::Variant> ParseJsonVariant(const boost::json::value& value) {
+std::optional<scada::Variant> ParseJsonVariant(
+    const boost::json::value& value) {
   if (value.is_bool())
     return scada::Variant{value.as_bool()};
   if (value.is_int64())
@@ -172,8 +182,8 @@ void PopulateFixtureNodes(AddressSpaceImpl& address_space,
 
       scada::NodeState state;
       state.node_id = node_id;
-      state.node_class = is_variable ? scada::NodeClass::Variable
-                                     : scada::NodeClass::Object;
+      state.node_class =
+          is_variable ? scada::NodeClass::Variable : scada::NodeClass::Object;
       state.type_definition_id = ParseJsonTypeDefinition(jn.as_object());
       state.parent_id = parent_id;
       state.reference_type_id = scada::NodeId{scada::id::Organizes, 0};
@@ -200,8 +210,8 @@ void PopulateFixtureNodes(AddressSpaceImpl& address_space,
           const auto& ref_obj = ref.as_object();
           pending_references.push_back(PendingReference{
               .source_id = node_id,
-              .reference_type_id =
-                  NodeIdFromScadaString(std::string_view(ref_obj.at("type").as_string())),
+              .reference_type_id = NodeIdFromScadaString(
+                  std::string_view(ref_obj.at("type").as_string())),
               .target_id = ParseJsonChildNodeId(ref_obj.at("target")),
           });
         }
@@ -214,7 +224,8 @@ void PopulateFixtureNodes(AddressSpaceImpl& address_space,
   }
 
   for (const auto& ref : pending_references) {
-    if (!address_space.GetNode(ref.source_id) || !address_space.GetNode(ref.target_id))
+    if (!address_space.GetNode(ref.source_id) ||
+        !address_space.GetNode(ref.target_id))
       continue;
     scada::AddReference(address_space, ref.reference_type_id, ref.source_id,
                         ref.target_id);

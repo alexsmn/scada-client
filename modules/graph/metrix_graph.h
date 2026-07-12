@@ -116,6 +116,13 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
     virtual void OnDataSourceCurrentValueChanged() override;
     virtual void OnDataSourceItemChanged() override;
     virtual void OnDataSourceDeleted() override;
+
+   private:
+    // Recomputes the per-band limit marker styles from the data source's limits
+    // and the active severity theme, then pushes them to the base GraphLine.
+    // Under the legacy theme SeverityColor yields nothing, so the bands keep
+    // the historical series colour with no caption.
+    void UpdateLimitStyles();
   };
 
   explicit MetrixGraph(MetrixGraphContext&& context);
