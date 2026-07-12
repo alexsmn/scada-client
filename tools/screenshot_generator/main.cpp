@@ -27,10 +27,14 @@
 #include "base/client_paths.h"
 #include "base/test/scoped_path_override.h"
 #include "controller/window_info.h"
+#include "events/qt/event_filter_bar.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
+#include "model/data_items_node_ids.h"
+#include "node_service/node_ref.h"
 #include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "profile/profile.h"
 #include "timed_data/timed_data_service.h"
 
@@ -240,8 +244,7 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
   ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
 
   // Let async data loads and model updates complete.
-  for (int i = 0; i < 20; ++i)
-    QApplication::processEvents();
+  PumpEventLoopFor(std::chrono::seconds(1));
 
   const auto& main_windows = app_.main_window_manager().main_windows();
   ASSERT_EQ(main_windows.size(), 1u);
@@ -523,6 +526,42 @@ TEST_F(ScreenshotGenerator, BootWithStructPageDoesNotOverflowStack) {
   // aborted before this line — reaching here means the recursion is
   // bounded.
   EXPECT_EQ(app_.main_window_manager().main_windows().size(), 1u);
+}
+
+// Verifies the event journal's Area filter populates at runtime: the same
+// enumeration the filter bar drives (`BrowseEventAreas`), run against the real
+// `v1::NodeServiceImpl` over the fixture address space, returns the operator's
+// top-level area groupings and drops leaf data items.
+TEST_F(ScreenshotGenerator, EventFilterBarEnumeratesAreas) {
+  WaitForAwaitable(executor_, app_.Start());
+  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
+
+  NodeService& node_service = app_.node_service();
+  std::vector<EventAreaEntry> areas =
+      WaitForAwaitable(executor_, BrowseEventAreas(node_service));
+
+  // The Area dropdown is populated from this list — it must not be empty.
+  ASSERT_FALSE(areas.empty());
+
+  // Every enumerated area is a named object grouping, never a leaf data item —
+  // that is the level the operator filters the journal by.
+  for (const EventAreaEntry& area : areas) {
+    EXPECT_FALSE(area.name.empty());
+    NodeRef node = node_service.GetNode(area.node_id);
+    EXPECT_FALSE(IsInstanceOf(node, data_items::id::DataItemType))
+        << "an area must not be a leaf data item";
+  }
+
+  // The DataItems root also holds loose top-level data items; the enumeration
+  // partitions its Organizes children exactly into areas + excluded leaves.
+  std::vector<NodeRef> children = node_service.GetTargets(
+      data_items::id::DataItems, scada::id::Organizes, /*forward=*/true);
+  size_t leaf_count = 0;
+  for (NodeRef& child : children) {
+    if (IsInstanceOf(child, data_items::id::DataItemType))
+      ++leaf_count;
+  }
+  EXPECT_EQ(areas.size() + leaf_count, children.size());
 }
 
 TEST_F(ScreenshotGenerator, CaptureDialogs) {

@@ -4,6 +4,7 @@
 #include "aui/severity_colors.h"
 #include "aui/translation.h"
 #include "base/awaitable.h"
+#include "model/data_items_node_ids.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "scada/standard_node_ids.h"
@@ -37,32 +38,6 @@ const scada::aui::ThemeTokens& BarTokens() {
   return scada::aui::GetThemeTokens(theme);
 }
 
-// A top-level area: a container node directly under ObjectsFolder that events
-// can be filtered by (a data item is "in" the area when the area is one of its
-// containing nodes, which `EventTableModel::IsEventShown` already honours).
-struct AreaEntry {
-  scada::NodeId node_id;
-  std::u16string name;
-};
-
-// Browses the immediate children of ObjectsFolder (the top-level areas) and
-// returns them as {node_id, display name}. `node_service` is captured by
-// reference and outlives the browse; the caller guards its own widgets.
-Awaitable<std::vector<AreaEntry>> BrowseAreasAsync(NodeService& node_service) {
-  std::vector<AreaEntry> areas;
-
-  co_await node_service.Fetch(scada::id::ObjectsFolder,
-                              NodeFetchStatus::NodeAndChildren);
-
-  for (NodeRef& child : node_service.GetTargets(
-           scada::id::ObjectsFolder, scada::id::Organizes, /*forward=*/true)) {
-    co_await child.Fetch(NodeFetchStatus::NodeOnly);
-    areas.push_back({child.node_id(), GetFullDisplayName(child)});
-  }
-
-  co_return areas;
-}
-
 // Labels for the period presets, one per entry in `EventPeriodRanges()`. Kept
 // in lock-step with that table. Reuses the existing period-action translations.
 std::vector<std::u16string> PeriodLabels() {
@@ -71,6 +46,31 @@ std::vector<std::u16string> PeriodLabels() {
 }
 
 }  // namespace
+
+Awaitable<std::vector<EventAreaEntry>> BrowseEventAreas(
+    NodeService& node_service) {
+  std::vector<EventAreaEntry> areas;
+
+  // Browse the same root the object tree uses (`DataItems`, "Все объекты"): its
+  // immediate `Organizes` children are the operator-facing top-level groupings.
+  // ObjectsFolder is one level too high — it holds the standard OPC folders and
+  // the "Все объекты"/"Все оборудование" containers, not the areas themselves.
+  co_await node_service.Fetch(data_items::id::DataItems,
+                              NodeFetchStatus::NodeAndChildren);
+
+  for (NodeRef& child :
+       node_service.GetTargets(data_items::id::DataItems, scada::id::Organizes,
+                               /*forward=*/true)) {
+    co_await child.Fetch(NodeFetchStatus::NodeOnly);
+    // Areas are the object groupings above the data items; a top-level leaf
+    // data item (e.g. a loose tag) is not an area, so skip it.
+    if (IsInstanceOf(child, data_items::id::DataItemType))
+      continue;
+    areas.push_back({child.node_id(), GetFullDisplayName(child)});
+  }
+
+  co_return areas;
+}
 
 const std::vector<TimeRange>& EventPeriodRanges() {
   // Mirrors the toolbar's ID_TIME_RANGE_* quick-picks so a range set there
@@ -153,10 +153,10 @@ QWidget* MakeEventFilterBar(EventFilterBarContext context) {
   CoSpawn(context.executor,
           [&node_service = context.node_service, area_ids,
            combo = QPointer<QComboBox>{area}]() -> Awaitable<void> {
-            auto areas = co_await BrowseAreasAsync(node_service);
+            auto areas = co_await BrowseEventAreas(node_service);
             if (!combo)
               co_return;
-            for (const AreaEntry& entry : areas) {
+            for (const EventAreaEntry& entry : areas) {
               area_ids->push_back(entry.node_id);
               combo->addItem(QString::fromStdU16String(entry.name));
             }

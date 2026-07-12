@@ -1,11 +1,13 @@
 #pragma once
 
 #include "base/any_executor.h"
+#include "base/awaitable.h"
 #include "base/time_range.h"
 #include "scada/node_id.h"
 
 #include <functional>
 #include <optional>
+#include <string>
 #include <vector>
 
 class QWidget;
@@ -58,3 +60,19 @@ const std::vector<TimeRange>& EventPeriodRanges();
 // matches (an arbitrary/custom range that has no quick-pick). Exposed for
 // testing.
 int EventPeriodPresetIndex(const TimeRange& range);
+
+// A top-level area filterable in the journal: an object grouping (a folder or
+// object, not a leaf data item) directly under the address space's DataItems
+// root — the same root the object tree browses.
+struct EventAreaEntry {
+  scada::NodeId node_id;
+  std::u16string name;
+};
+
+// Enumerates the top-level areas — the immediate object-grouping children of
+// the DataItems root, leaf data items excluded — as {node_id, display name}.
+// This is exactly what the Area selector lists; the bar populates the dropdown
+// from it asynchronously. Exposed so the enumeration can be verified against a
+// real NodeService.
+Awaitable<std::vector<EventAreaEntry>> BrowseEventAreas(
+    NodeService& node_service);
