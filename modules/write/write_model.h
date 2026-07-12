@@ -50,10 +50,17 @@ class WriteModel : private WriteContext,
   static Awaitable<void> CompleteWriteAsync(AnyExecutor executor,
                                             std::weak_ptr<WriteModel> model,
                                             Awaitable<scada::Status> operation);
+  // Owns `message`/`title` for the lifetime of the confirmation prompt: the
+  // RunMessageBox awaitable is created and awaited inside this coroutine, so
+  // the string_views it takes stay valid (a prompt created by the caller would
+  // bind views into caller locals that die before the lazy coroutine reads
+  // them).
   static Awaitable<void> ConfirmAndStartWritingAsync(
       AnyExecutor executor,
       std::weak_ptr<WriteModel> model,
-      Awaitable<MessageBoxResult> prompt);
+      DialogService& dialog_service,
+      std::u16string message,
+      std::u16string title);
   static Awaitable<void> ReportWriteErrorAsync(
       AnyExecutor executor,
       std::function<void(bool ok)> completion_handler,

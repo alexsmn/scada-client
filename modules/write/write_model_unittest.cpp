@@ -71,8 +71,8 @@ class RecordingDialogService : public DialogService {
 class WriteModelTest : public Test {
  protected:
   WriteModelTest()
-      : node_service_{scada::services{.attribute_service =
-                                          &attribute_service_}},
+      : node_service_{
+            scada::services{.attribute_service = &attribute_service_}},
         dialog_service_{executor_} {
     node_service_.Add(scada::NodeState{}
                           .set_node_id(kDataItemTypeId)
@@ -133,8 +133,8 @@ TEST_F(WriteModelTest, SuccessfulWriteCompletesAfterAttributeCallback) {
             EXPECT_FALSE(inputs[0].flags.select());
           }),
           Invoke([&](scada::ServiceContext, std::vector<scada::WriteValue>)
-                     -> Awaitable<scada::StatusOr<
-                         std::vector<scada::StatusCode>>> {
+                     -> Awaitable<
+                         scada::StatusOr<std::vector<scada::StatusCode>>> {
             co_await completion.Wait();
             co_return std::move(*result);
           })));
@@ -154,19 +154,40 @@ TEST_F(WriteModelTest, SuccessfulWriteCompletesAfterAttributeCallback) {
   EXPECT_TRUE(dialog_service_.modes.empty());
 }
 
+TEST_F(WriteModelTest, ControlCommandConfirmationReviewsPresentAndCommand) {
+  // control_confirmation defaults to true, so a control write must prompt for
+  // a deliberate review before anything reaches the device.
+  auto model = CreateModel();
+  model->Write(42.0, /*lock=*/false);
+  Drain(executor_);
+
+  // A yes/no confirmation is shown and, crucially, nothing is written yet —
+  // StrictMock<MockAttributeService> would fail on an unexpected Write().
+  ASSERT_THAT(dialog_service_.modes,
+              ElementsAre(MessageBoxMode::QuestionYesNoDefaultNo));
+  EXPECT_FALSE(completion_.has_value());
+
+  // The prompt reviews the present reading vs. the commanded value and warns
+  // that the action is irreversible — not a bare "Switch X to Y?".
+  const std::u16string& message = dialog_service_.messages.at(0);
+  EXPECT_NE(message.find(u"Present"), std::u16string::npos);
+  EXPECT_NE(message.find(u"Command"), std::u16string::npos);
+  EXPECT_NE(message.find(u"42"), std::u16string::npos);
+  EXPECT_NE(message.find(u"cannot be undone remotely"), std::u16string::npos);
+}
+
 TEST_F(WriteModelTest, FailedWriteReportsErrorThenCompletes) {
   profile_.control_confirmation = false;
   base::AsyncCompletion completion{executor_};
   std::optional<scada::StatusOr<std::vector<scada::StatusCode>>> result;
 
   EXPECT_CALL(attribute_service_, Write(_, _))
-      .WillOnce([&](scada::ServiceContext,
-                    std::vector<scada::WriteValue>)
-                    -> Awaitable<scada::StatusOr<
-                        std::vector<scada::StatusCode>>> {
-        co_await completion.Wait();
-        co_return std::move(*result);
-      });
+      .WillOnce(
+          [&](scada::ServiceContext, std::vector<scada::WriteValue>)
+              -> Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> {
+            co_await completion.Wait();
+            co_return std::move(*result);
+          });
 
   auto model = CreateModel();
   model->Write(7.0, /*lock=*/false);
@@ -191,13 +212,12 @@ TEST_F(WriteModelTest, DestroyedModelDropsPendingWriteCompletion) {
   std::optional<scada::StatusOr<std::vector<scada::StatusCode>>> result;
 
   EXPECT_CALL(attribute_service_, Write(_, _))
-      .WillOnce([&](scada::ServiceContext,
-                    std::vector<scada::WriteValue>)
-                    -> Awaitable<scada::StatusOr<
-                        std::vector<scada::StatusCode>>> {
-        co_await completion.Wait();
-        co_return std::move(*result);
-      });
+      .WillOnce(
+          [&](scada::ServiceContext, std::vector<scada::WriteValue>)
+              -> Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> {
+            co_await completion.Wait();
+            co_return std::move(*result);
+          });
 
   auto model = CreateModel();
   model->Write(9.0, /*lock=*/false);
