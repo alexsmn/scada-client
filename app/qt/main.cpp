@@ -138,7 +138,14 @@ int main(int argc, char* argv[]) {
     // variant (dark default); `Ux/StyleSheet=false` gives palette-first /
     // palette-only. See client/docs/ux/ and client/CLAUDE.md ("UX
     // implementation approach").
-    if (settings.value("Ux/Experimental", false).toBool()) {
+    // The `SCADA_UX_EXPERIMENTAL` environment variable force-enables the
+    // reshell regardless of the stored setting — a reliable escape hatch for
+    // demos and for launching the themed shell before a Settings toggle exists
+    // (the `Ux/Experimental` QSetting has no UI yet).
+    const bool ux_experimental =
+        settings.value("Ux/Experimental", false).toBool() ||
+        qEnvironmentVariableIsSet("SCADA_UX_EXPERIMENTAL");
+    if (ux_experimental) {
       const scada::aui::Theme theme = scada::aui::ThemeFromString(
           settings.value("Ux/Theme").toString(), scada::aui::Theme::kDark);
       const scada::aui::ThemeScope scope =
