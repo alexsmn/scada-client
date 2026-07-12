@@ -1,4 +1,5 @@
 #include "app/app_init.h"
+#include "model/node_id_util.h"
 
 #include "base/boost_log_init.h"
 #include "base/client_paths.h"
@@ -66,6 +67,7 @@ AppInit::AppInit(int argc, char* argv[]) {
   client::InitProgramOptions(argc, argv);
 
   scada::RegisterPathProvider();
+  scada::RegisterModelNamespaceResolver();
   client::RegisterPathProvider();
   InitE2eLogPathOverride();
 
