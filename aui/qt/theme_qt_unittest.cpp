@@ -73,8 +73,6 @@ TEST(ThemeQtTest, ApplyThemeInstallsPaletteAndStyle) {
 
   ApplyTheme(Theme::kLight);
   ASSERT_NE(qApp->style(), nullptr);
-  EXPECT_TRUE(qApp->style()->objectName().toLower().contains(
-      QStringLiteral("fusion")));
   EXPECT_EQ(qApp->palette().color(QPalette::Highlight),
             GetThemeTokens(Theme::kLight).accent);
   EXPECT_FALSE(qApp->styleSheet().isEmpty());
@@ -83,6 +81,15 @@ TEST(ThemeQtTest, ApplyThemeInstallsPaletteAndStyle) {
   ApplyTheme(Theme::kDark);
   EXPECT_EQ(qApp->palette().color(QPalette::Window),
             GetThemeTokens(Theme::kDark).bg);
+
+  // While a global stylesheet is installed (kFull), qApp->style() is Qt's
+  // QStyleSheetStyle wrapper whose objectName() is empty, so Fusion cannot be
+  // identified through it. Switching to kPaletteOnly clears the stylesheet,
+  // Qt unwraps back to the base style, and the Fusion install made by the
+  // same ApplyTheme code path becomes directly observable.
+  ApplyTheme(Theme::kDark, ThemeScope::kPaletteOnly);
+  EXPECT_TRUE(
+      qApp->style()->objectName().toLower().contains(QStringLiteral("fusion")));
 }
 
 // Palette-first: kPaletteOnly recolours through the palette but installs no
