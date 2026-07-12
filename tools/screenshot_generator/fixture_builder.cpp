@@ -46,6 +46,15 @@ scada::NodeId ParseJsonChildNodeId(const boost::json::value& child) {
 std::optional<scada::NodeId> ParseJsonPropertyId(std::string_view name) {
   if (name == "display_format")
     return data_items::id::AnalogItemType_DisplayFormat;
+  // Analog-limit bands, so a fixture node can drive the trend's limit markers.
+  if (name == "limit_lolo")
+    return data_items::id::AnalogItemType_LimitLoLo;
+  if (name == "limit_lo")
+    return data_items::id::AnalogItemType_LimitLo;
+  if (name == "limit_hi")
+    return data_items::id::AnalogItemType_LimitHi;
+  if (name == "limit_hihi")
+    return data_items::id::AnalogItemType_LimitHiHi;
   if (LooksLikeJsonNodeId(name))
     return NodeIdFromScadaString(name);
   return std::nullopt;

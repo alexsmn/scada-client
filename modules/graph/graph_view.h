@@ -11,6 +11,7 @@
 #include "graph/metrix_graph.h"
 
 struct TimeRange;
+class SeriesInspector;
 
 class GraphView : protected ControllerContext,
                   public Controller,
@@ -51,6 +52,10 @@ class GraphView : protected ControllerContext,
 
   void DeleteSelectedPane();
 
+  // Points the reshell series inspector at the currently configurable series
+  // (no-op when the inspector is absent, i.e. under the legacy theme).
+  void RefreshInspector();
+
   MetrixGraph::MetrixLine* GetConfigurableLine() const;
 
   void ChooseLineColor();
@@ -78,6 +83,10 @@ class GraphView : protected ControllerContext,
   SelectionModel selection_{{timed_data_service_}};
 
   MetrixGraph* graph_ = nullptr;
+
+  // Reshell-only per-series inspector shown beside the chart; null under the
+  // legacy theme. Owned by the returned container widget (Qt parent), not here.
+  SeriesInspector* inspector_ = nullptr;
 
   GraphRange prezoom_horizontal_range_;
 

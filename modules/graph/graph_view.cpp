@@ -1,5 +1,6 @@
 ﻿#include "graph/graph_view.h"
 
+#include "aui/severity_colors.h"
 #include "base/check.h"
 #include "common/formula_util.h"
 #include "controller/controller_delegate.h"
@@ -7,6 +8,7 @@
 #include "graph/graph_setup_dialog.h"
 #include "graph/graph_view_loader.h"
 #include "graph/graph_view_saver.h"
+#include "graph/series_inspector.h"
 #include "modules/time_range/time_range_dialog.h"
 #include "node_service/node_service.h"
 #include "resources/common_resources.h"
@@ -16,7 +18,9 @@
 
 #if defined(UI_QT)
 #include <QColorDialog>
+#include <QHBoxLayout>
 #include <QScrollBar>
+#include <QWidget>
 #endif
 
 namespace {
@@ -161,7 +165,37 @@ std::unique_ptr<UiView> GraphView::Init(const WindowDefinition& definition) {
           .set_checked_handler(
               [this] { return graph_->horizontal_scroll_bar_visible(); }));
 
+#if defined(UI_QT)
+  // Under the opt-in reshell theme, surface the series inspector beside the
+  // chart (trend.html). Legacy keeps the bare graph so the default UI is
+  // unchanged.
+  if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy) {
+    auto container = std::make_unique<QWidget>();
+    auto* layout = new QHBoxLayout(container.get());
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+    layout->addWidget(graph_, 1);
+
+    inspector_ = new SeriesInspector();
+    inspector_->on_color_chosen = [this](QColor color) {
+      if (MetrixGraph::MetrixLine* line = GetConfigurableLine()) {
+        line->SetColor(color);
+        controller_delegate_.SetModified(true);
+        RefreshInspector();
+      }
+    };
+    layout->addWidget(inspector_);
+    RefreshInspector();
+    return container;
+  }
+#endif
+
   return std::unique_ptr<UiView>{graph_};
+}
+
+void GraphView::RefreshInspector() {
+  if (inspector_)
+    inspector_->SetLine(GetConfigurableLine());
 }
 
 bool GraphView::FindColor(aui::Color color) const {
@@ -329,6 +363,8 @@ void GraphView::OnGraphSelectPane() {
     selection_.SelectTimedData(line->data_source().timed_data());
   else
     selection_.Clear();
+
+  RefreshInspector();
 }
 
 TimeRange GraphView::GetTimeRange() const {
@@ -457,6 +493,8 @@ void GraphView::OnLineItemChanged(GraphLine& line) {
   auto& metrix_line = static_cast<MetrixGraph::MetrixLine&>(line);
   auto node_id = metrix_line.data_source().node_id();
   NotifyContainedItemChanged(node_id, true);
+
+  RefreshInspector();
 }
 
 void GraphView::UndoZoom() {
