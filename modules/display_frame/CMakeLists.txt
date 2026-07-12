@@ -13,3 +13,10 @@ client_module_link_libraries(client_display_frame
     aui
     client_vds_runtime
 )
+
+# The unit tests exercise the single-line style mapping directly against the
+# aui theme tokens, so the test binary needs aui on its own compile/link line
+# (aui is a PRIVATE dependency of the library).
+if(TARGET client_display_frame_qt_unittests)
+  target_link_libraries(client_display_frame_qt_unittests PRIVATE aui_qt)
+endif()
