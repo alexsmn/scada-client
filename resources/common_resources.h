@@ -436,6 +436,7 @@
 #define ID__33013                       33013
 #define ID_PAGE_NEW                     34122
 #define ID_OPT_SPEECH                   34123
+#define ID_UNACKNOWLEDGED_ONLY          34124
 #define ID_NEW                          40000
 #define ID_NEW_DISPLAY_0                40100
 #define ID_NEW_REPORT_0                 40200

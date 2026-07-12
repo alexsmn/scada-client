@@ -10,6 +10,7 @@
 #include "controller/controller_context.h"
 #include "controller/selection_model.h"
 #include "controller/time_model.h"
+#include "events/event_menu_model.h"
 #include "export/export_model.h"
 
 #include <memory>
@@ -76,6 +77,8 @@ class EventView : protected ControllerContext,
 
   const bool is_panel_;
 
+  LocalEvents& local_events_;
+
   const std::shared_ptr<EventTableModel> model_;
 
   SelectionModel selection_{{timed_data_service_}};
@@ -84,4 +87,8 @@ class EventView : protected ControllerContext,
   aui::Table* table_ = nullptr;
 
   CommandRegistry command_registry_;
+
+  // Cross-platform context menu, backed by `command_registry_`. Declared after
+  // it so the registry outlives the menu's delegate.
+  EventMenuModel event_menu_model_{command_registry_};
 };

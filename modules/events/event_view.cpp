@@ -83,6 +83,7 @@ EventView::EventView(const ControllerContext& context,
                      bool is_panel)
     : ControllerContext{context},
       is_panel_{is_panel},
+      local_events_{local_events},
       model_{CreateEventTableModel(context, local_events, is_panel)} {
   const aui::TableColumn kEventViewColumns[] = {
       {EventColumnTime, Translate("Time"), 150, aui::TableColumn::LEFT,
@@ -114,7 +115,10 @@ EventView::EventView(const ControllerContext& context,
 #endif
 
   table_->SetContextMenuHandler([this](const aui::Point& point) {
-    controller_delegate_.ShowPopupMenu(nullptr, IDR_EVENT_POPUP, point, true);
+    // Show the event view's own AUI menu model (works on Windows, macOS and Wt)
+    // rather than the Windows-only `IDR_EVENT_POPUP` resource menu.
+    controller_delegate_.ShowPopupMenu(&event_menu_model_.model(),
+                                       /*resource_id=*/0, point, true);
   });
 
   table_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });
@@ -130,6 +134,25 @@ EventView::EventView(const ControllerContext& context,
       Command{ID_ACKNOWLEDGE_CURRENT}
           .set_execute_handler([this] { AcknowledgeSelection(); })
           .set_enabled_handler([this] { return CanAcknowledgeSelection(); }));
+
+  command_registry_.AddCommand(
+      Command{ID_ACKNOWLEDGE_ALL}
+          .set_execute_handler([this] {
+            node_event_provider_.AcknowledgeAllEvents();
+            local_events_.AcknowledgeAll();
+          })
+          .set_enabled_handler([this] {
+            return !node_event_provider_.unacked_events().empty() ||
+                   !local_events_.events().empty();
+          }));
+
+  command_registry_.AddCommand(
+      Command{ID_UNACKNOWLEDGED_ONLY}
+          .set_execute_handler([this] {
+            model_->SetUnacknowledgedOnly(!model_->unacknowledged_only());
+          })
+          .set_checked_handler(
+              [this] { return model_->unacknowledged_only(); }));
 
   command_registry_.AddCommand(
       Command{ID_SEVERITY_ALL}
@@ -208,9 +231,10 @@ std::unique_ptr<UiView> EventView::Init(const WindowDefinition& definition) {
     controller_delegate_.SetTitle(MakeTitle());
 
 #if defined(UI_QT)
-  // Opt-in journal filter bar: a cross-platform surfacing of the filters (the
-  // event context menu is Windows-only). Only on the full journal, not the
-  // docked panel, and only under the reshell theme.
+  // Opt-in journal filter bar: discoverable reshell chrome for the filters,
+  // complementing the right-click context menu (which is now cross-platform via
+  // `event_menu_model_`). Only on the full journal, not the docked panel, and
+  // only under the reshell theme.
   if (!is_panel_ &&
       scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy) {
     auto* container = new QWidget;

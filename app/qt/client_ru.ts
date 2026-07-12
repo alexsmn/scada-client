@@ -306,6 +306,10 @@
         <translation>Важность</translation>
     </message>
     <message>
+        <source>Unacknowledged Only</source>
+        <translation>Только неквитированные</translation>
+    </message>
+    <message>
         <source>Add Web Page...</source>
         <translation>Добавить веб-страницу...</translation>
     </message>
