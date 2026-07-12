@@ -75,6 +75,27 @@ fire-engine red): alarm colour must signal *abnormal* without turning a busy
 journal into a wall of saturated red (principle §1). High-contrast theme swaps
 these for maximum-separation values (`#ff6b6b`, `#ff9f43`, `#ffff00`, `#00d4ff`).
 
+### Single-line diagram semantics (schematic displays)
+
+Mimic/single-line displays (Modus/Vidicon schematics) apply an additional
+**equipment-state** token set so the *renderer* colours breakers,
+disconnectors, busbars, and conductors consistently — independent of the
+authored drawing. Kept calm per High-Performance HMI: an energized, all-closed
+bay is not "all green everywhere".
+
+| Token | Dark | Light | Meaning |
+|---|---|---|---|
+| `--sl-live` | `#e6b24b` | `#b67a17` | energized primary conductor / live busbar (restrained amber, **not** alarm-red) |
+| `--sl-energized` | `#8fa3b4` | `#6b7b8d` | de-energized / idle conductor (neutral) |
+| `--sl-closed` | `#44c091` | `#14825f` | switching device **closed / in service** |
+| `--sl-open` | `#8fa3b4` | `#8a99a8` | switching device **open** (neutral — an open breaker is not an alarm) |
+| selection | `--accent` dashed halo | same | operator-selected element → drives the Inspector |
+
+Rules: breaker/disconnector state carries **shape as well as colour** (filled
+square = closed, hollow = open; principle §5); bad-quality telemetry marks the
+symbol and its label, it does not silently freeze; the diagram geometry itself
+is authored content and is never restyled — see [`shell.md`](shell.md) §2.6.
+
 ## 3. Typography
 
 | Token | Value | Use |
@@ -147,6 +168,7 @@ Rendered, theme-toggleable HTML under
 | File | Shows |
 |---|---|
 | `operator-shell.html` | full shell, all primitives, dark+light |
+| `substation-display.html` | single-line mimic in the shell: equipment state, live values, click-to-control |
 | `login.html` | themed sign-in + read-only system preview |
 | `control-command.html` | two-stage control/write confirm |
 

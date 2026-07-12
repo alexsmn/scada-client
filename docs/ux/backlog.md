@@ -47,6 +47,8 @@ the shell.
 | 2.3 | **Severity tiles / KPI counts** wired to live alarm counts. | `modules/events/`, `aui/` | 0.2 | Counts update as alarms arrive/clear. |
 | 2.4 | **Trend polish**: crisp thin grid, limit markings, legend with current values; embedded mini-trend option beside values. | `modules/graph/`, `graph-qt` | — | Overview trend matches `operator-shell` mockup; limits visible. |
 | 2.5 | **Alarm flood affordances**: grouping/counters so floods read as counts, not a scroll. | `modules/events/` | 2.2 | >10/10 min shows a grouped indicator, not raw scroll. |
+| 2.6 | **Substation display frame**: wrap the Modus/Vidicon renderer as a workspace tab — `Live` indicator, zoom/fit/export, hotspot breadcrumb, selection → Inspector, bay Measurements + Recent-events strips. Geometry unchanged. | `modules/modus/`, `modules/vidicon/display/`, `main_window/`, `modules/events/` | 1.1–1.5, 4.3 | Matches `substation-display.html`; clicking an element selects it and fills the Inspector; controls open the two-stage confirm. |
+| 2.7 | **Equipment-state colouring** applied by the renderer via `--sl-*` tokens (closed/open with shape, energized/de-energized, bad-quality). | `modules/modus/`, `modules/vidicon/display/`, renderer | 0.1, 0.2 | Switching-device state reads by shape **and** colour; energized ≠ alarm-red; matches `design-language.md`. |
 
 ## P3 — Dialog theming (retire native OS widgets)
 

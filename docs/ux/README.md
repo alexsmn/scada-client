@@ -35,6 +35,7 @@ Rendered, theme-toggleable HTML in
 | File | Shows |
 |---|---|
 | `operator-shell.html` | The full operator workbench (dark default + light toggle). |
+| `substation-display.html` | Single-line mimic display in the shell — equipment state, live values, click-to-control. |
 | `login.html` | Themed sign-in with read-only system preview (replaces the native OS dialog). |
 | `control-command.html` | Two-stage control/write confirm dialog. |
 | `main-window-dark.html` | Earlier exploration (kept for reference). |

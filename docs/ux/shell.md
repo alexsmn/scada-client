@@ -112,7 +112,42 @@ with quality pill, a **Measurements** section that shows the live value
 - Controls the user/capability can't perform are **disabled with a reason**
   (`WIN_REQUIRES_ADMIN` on `WindowInfo` is the existing front-line check).
 
-### 2.6 Status strip (reworked status bar)
+### 2.6 Substation / schematic display (reframed Modus/Vidicon)
+
+The single-line mimic (UC-11, FR-19/20) is the primary **Level-2** operator
+surface. Today it is a Modus 6.30 ActiveX control or a Vidicon display embedded
+raw (`modules/modus/`, `modules/vidicon/display/`), with native chrome and no
+shared visual language. The reshell wraps it as a first-class workspace tab —
+see `substation-display.html`.
+
+**Scope boundary (important):** the **diagram geometry is authored content**
+— it comes from the customer's Modus/Vidicon display file (edited in the
+Designer, rendered by Modus ActiveX on desktop and `web/packages/display-renderer`
+on web). The design system does **not** redraw it. What the shell *does* own:
+
+- **Display frame** — the tab, a `Live`/paused indicator, zoom/fit and export
+  controls, and a **hotspot-navigation breadcrumb** (site → voltage level →
+  bay). Replaces per-control native chrome.
+- **Equipment-state colouring** applied by the renderer via the
+  `--sl-*` tokens (see [`design-language.md`](design-language.md)): closed vs
+  open switching devices (shape **and** colour), energized vs de-energized
+  conductors (calm, not alarm-red per principle §1), and bad-quality marking.
+- **Selection → Inspector → control.** Clicking an element selects it (accent
+  halo), fills the Inspector (§2.5) with its state, measurements, and the
+  two-stage `Open…`/`Close…` control (principle §7); controls the user can't
+  perform are disabled with a reason.
+- **Context strips beneath the diagram** — compact bay Measurements and
+  bay-scoped Recent events (`modules/events/`), per the web Substation guidance.
+- **Click-to-navigate hotspots** (FR-19) drive the breadcrumb and open faceplates
+  / child displays.
+
+This is presentation and interaction plumbing **around** the existing renderer;
+it does not change how a `.vds`/Modus drawing is parsed or drawn. On platforms
+where the ActiveX control is unavailable (non-Windows, Wt/web), the same frame
+hosts the cross-platform display renderer instead — the frame and controls are
+identical, only the drawing backend differs.
+
+### 2.7 Status strip (reworked status bar)
 
 Charcoal bottom strip mirroring the top context: user·role, connection, server
 latency, **unacknowledged count**, **highest active severity**, endpoint, build.
