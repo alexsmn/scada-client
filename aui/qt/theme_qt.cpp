@@ -213,17 +213,18 @@ QString BuildThemeStyleSheet(const ThemeTokens& t) {
   // A single generated sheet styling the shared chrome vocabulary. Kept flat
   // (thin hairlines, small radii, no bevels) to match the workbench mockups.
   QString qss;
-  qss += QStringLiteral(
-             // Menu bar / menus.
-             "QMenuBar{background:%1;color:%2;border-bottom:1px solid %3;}"
-             "QMenuBar::item{background:transparent;padding:4px 9px;}"
-             "QMenuBar::item:selected{background:%4;color:%5;border-radius:4px;}"
-             "QMenu{background:%6;color:%2;border:1px solid %7;padding:4px;}"
-             "QMenu::item{padding:5px 22px;border-radius:4px;}"
-             "QMenu::item:selected{background:%4;color:%5;}"
-             "QMenu::separator{height:1px;background:%3;margin:4px 8px;}")
-             .arg(Css(t.topbar_bg), Css(t.fg), Css(t.border), Css(t.accent),
-                  Css(t.accent_fg), Css(t.surface), Css(t.border_strong));
+  qss +=
+      QStringLiteral(
+          // Menu bar / menus.
+          "QMenuBar{background:%1;color:%2;border-bottom:1px solid %3;}"
+          "QMenuBar::item{background:transparent;padding:4px 9px;}"
+          "QMenuBar::item:selected{background:%4;color:%5;border-radius:4px;}"
+          "QMenu{background:%6;color:%2;border:1px solid %7;padding:4px;}"
+          "QMenu::item{padding:5px 22px;border-radius:4px;}"
+          "QMenu::item:selected{background:%4;color:%5;}"
+          "QMenu::separator{height:1px;background:%3;margin:4px 8px;}")
+          .arg(Css(t.topbar_bg), Css(t.fg), Css(t.border), Css(t.accent),
+               Css(t.accent_fg), Css(t.surface), Css(t.border_strong));
 
   qss += QStringLiteral(
              // Tool bars.
@@ -244,27 +245,42 @@ QString BuildThemeStyleSheet(const ThemeTokens& t) {
              "QMainWindow::separator{background:%4;width:1px;height:1px;}")
              .arg(Css(t.fg), Css(t.bg_elevated), Css(t.border), Css(t.border));
 
-  qss += QStringLiteral(
-             // Item views (trees, tables, lists) and headers.
-             "QTreeView,QTableView,QListView{background:%1;alternate-background-"
-             "color:%2;color:%3;border:1px solid %4;gridline-color:%4;}"
-             "QTreeView::item,QListView::item{padding:2px 4px;}"
-             "QTreeView::item:selected,QTableView::item:selected,"
-             "QListView::item:selected{background:%5;color:%3;}"
-             "QHeaderView::section{background:%2;color:%6;padding:4px 8px;"
-             "border:0;border-right:1px solid %4;border-bottom:1px solid %4;}")
-             .arg(Css(t.surface), Css(t.surface_muted), Css(t.fg),
-                  Css(t.border), Css(t.accent_soft), Css(t.fg_subtle));
+  qss +=
+      QStringLiteral(
+          // Item views (trees, tables, lists) and headers.
+          "QTreeView,QTableView,QListView{background:%1;alternate-background-"
+          "color:%2;color:%3;border:1px solid %4;gridline-color:%4;}"
+          "QTreeView::item,QListView::item{padding:2px 4px;}"
+          "QTreeView::item:selected,QTableView::item:selected,"
+          "QListView::item:selected{background:%5;color:%3;}"
+          "QHeaderView::section{background:%2;color:%6;padding:4px 8px;"
+          "border:0;border-right:1px solid %4;border-bottom:1px solid %4;}")
+          .arg(Css(t.surface), Css(t.surface_muted), Css(t.fg), Css(t.border),
+               Css(t.accent_soft), Css(t.fg_subtle));
+
+  qss +=
+      QStringLiteral(
+          // Editor-style workspace tabs: flat and document-mode; the active
+          // tab drops its separators and blends into the content pane with an
+          // accent top marker, inactive tabs sit on the elevated bar.
+          "QTabWidget::pane{border:1px solid %1;background:%2;}"
+          "QTabBar{background:%3;}"
+          "QTabBar::tab{background:%3;color:%4;padding:6px 16px;"
+          "border:0;border-right:1px solid %1;}"
+          "QTabBar::tab:hover{background:%7;color:%5;}"
+          "QTabBar::tab:selected{background:%2;color:%5;"
+          "border-top:2px solid %6;}"
+          "QTabBar::close-button:hover{background:%7;border-radius:3px;}")
+          .arg(Css(t.border), Css(t.bg), Css(t.bg_elevated), Css(t.fg_subtle),
+               Css(t.fg), Css(t.accent), Css(t.surface_muted));
 
   qss += QStringLiteral(
-             // Tabs.
-             "QTabWidget::pane{border:1px solid %1;background:%2;}"
-             "QTabBar::tab{background:%3;color:%4;padding:6px 14px;"
-             "border-right:1px solid %1;}"
-             "QTabBar::tab:selected{background:%2;color:%5;"
-             "border-top:2px solid %6;}")
-             .arg(Css(t.border), Css(t.bg), Css(t.bg_elevated),
-                  Css(t.fg_subtle), Css(t.fg), Css(t.accent));
+             // Dock panels: a slim themed title strip in place of the native OS
+             // title chrome, so panels read as workbench regions, not windows.
+             "QDockWidget{color:%1;}"
+             "QDockWidget::title{background:%2;color:%1;padding:5px 8px;"
+             "border-bottom:1px solid %3;}")
+             .arg(Css(t.fg_subtle), Css(t.surface_muted), Css(t.border));
 
   qss += QStringLiteral(
              // Status bar.
@@ -272,18 +288,18 @@ QString BuildThemeStyleSheet(const ThemeTokens& t) {
              "QStatusBar::item{border:0;}")
              .arg(Css(t.rail_bg), Css(t.fg_subtle), Css(t.border));
 
-  qss += QStringLiteral(
-             // Push buttons: default (accent), normal, and role=danger.
-             "QPushButton{background:%1;color:%2;border:1px solid %3;"
-             "border-radius:6px;padding:5px 14px;}"
-             "QPushButton:hover{border-color:%4;}"
-             "QPushButton:default{background:%4;color:%5;border-color:%4;}"
-             "QPushButton:disabled{color:%6;}"
-             "QPushButton[role=\"danger\"]{background:%7;color:%5;"
-             "border-color:%7;}")
-             .arg(Css(t.surface_muted), Css(t.fg), Css(t.border_strong),
-                  Css(t.accent), Css(t.accent_fg), Css(t.fg_subtle),
-                  Css(t.bad));
+  qss +=
+      QStringLiteral(
+          // Push buttons: default (accent), normal, and role=danger.
+          "QPushButton{background:%1;color:%2;border:1px solid %3;"
+          "border-radius:6px;padding:5px 14px;}"
+          "QPushButton:hover{border-color:%4;}"
+          "QPushButton:default{background:%4;color:%5;border-color:%4;}"
+          "QPushButton:disabled{color:%6;}"
+          "QPushButton[role=\"danger\"]{background:%7;color:%5;"
+          "border-color:%7;}")
+          .arg(Css(t.surface_muted), Css(t.fg), Css(t.border_strong),
+               Css(t.accent), Css(t.accent_fg), Css(t.fg_subtle), Css(t.bad));
 
   qss += QStringLiteral(
              // Text inputs and combos.
@@ -297,16 +313,17 @@ QString BuildThemeStyleSheet(const ThemeTokens& t) {
              .arg(Css(t.bg_elevated), Css(t.fg), Css(t.border_strong),
                   Css(t.accent), Css(t.surface), Css(t.accent_soft));
 
-  qss += QStringLiteral(
-             // Thin scrollbars.
-             "QScrollBar:vertical{background:%1;width:10px;margin:0;}"
-             "QScrollBar:horizontal{background:%1;height:10px;margin:0;}"
-             "QScrollBar::handle{background:%2;border-radius:4px;min-height:24px;"
-             "min-width:24px;}"
-             "QScrollBar::handle:hover{background:%3;}"
-             "QScrollBar::add-line,QScrollBar::sub-line{width:0;height:0;}"
-             "QScrollBar::add-page,QScrollBar::sub-page{background:transparent;}")
-             .arg(Css(t.bg_elevated), Css(t.border_strong), Css(t.fg_subtle));
+  qss +=
+      QStringLiteral(
+          // Thin scrollbars.
+          "QScrollBar:vertical{background:%1;width:10px;margin:0;}"
+          "QScrollBar:horizontal{background:%1;height:10px;margin:0;}"
+          "QScrollBar::handle{background:%2;border-radius:4px;min-height:24px;"
+          "min-width:24px;}"
+          "QScrollBar::handle:hover{background:%3;}"
+          "QScrollBar::add-line,QScrollBar::sub-line{width:0;height:0;}"
+          "QScrollBar::add-page,QScrollBar::sub-page{background:transparent;}")
+          .arg(Css(t.bg_elevated), Css(t.border_strong), Css(t.fg_subtle));
 
   return qss;
 }
@@ -320,10 +337,9 @@ void ApplyTheme(Theme theme, ThemeScope scope) {
   if (auto* app = qApp) {
     // Palette-first: install the global stylesheet only for kFull. Clearing it
     // for kPaletteOnly keeps a live switch from leaving a stale sheet behind.
-    app->setStyleSheet(scope == ThemeScope::kFull
-                           ? BuildThemeStyleSheet(tokens)
-                           : QString());
+    app->setStyleSheet(scope == ThemeScope::kFull ? BuildThemeStyleSheet(tokens)
+                                                  : QString());
   }
 }
 
-}  // namespace aui
+}  // namespace scada::aui
