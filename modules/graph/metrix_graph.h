@@ -49,6 +49,20 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
     int GetColumnWidth(int column_id) const;
     int GetColumnCount() const;
 
+#if defined(UI_QT)
+    // Whether the reshell value-grid look is active (opt-in themes only). When
+    // false the legend keeps its historical compact three-column look.
+    bool Themed() const;
+    // The reshell value-grid readout: per-series swatch + name and
+    // current/min/max/average/at-cursor columns (see trend.html). `ThemedSize`
+    // is the size that layout requires for it.
+    void PaintThemed(QPainter& painter) const;
+    QSize ThemedSize() const;
+    // Formats the value at the selected time cursor for `data_source`, or the
+    // empty-cell placeholder when no horizontal cursor is set.
+    QString ValueAtCursorText(const MetrixDataSource& data_source) const;
+#endif
+
     static const int MARGX = 5;    // margin inside legend
     static const int MARGY = 5;    // margin inside legend
     static const int INDENTX = 2;  // distance between columns

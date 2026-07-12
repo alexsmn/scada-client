@@ -5,19 +5,23 @@
 #include "base/utf_convert.h"
 #include "graph/metrix_data_source.h"
 
+#include "graph/series_stats.h"
+
 #if defined(UI_QT)
 #include "aui/qt/theme_qt.h"
 #include "aui/severity_colors.h"
-#include "graph_qt/graph_axis.h"
-#include "graph_qt/graph_cursor.h"
+#include "scada/qualifier.h"
+#include "scada/variant.h"
 #endif
 
 #include <algorithm>
 #include <optional>
 
 #if defined(UI_QT)
+#include <QColor>
 #include <QPainter>
 #include <QPalette>
+#include <QString>
 #endif
 
 namespace {
@@ -82,6 +86,29 @@ std::optional<scada::aui::Theme> ReshellChartTheme() {
   }
   return std::nullopt;
 }
+
+// Formats an already-typed data value through the series' own value formatter
+// (engineering units / decimals), matching the legend's live-value column.
+QString FormatDataValue(const MetrixDataSource& data_source,
+                        const scada::DataValue& value) {
+  return QString::fromStdU16String(
+      data_source.timed_data().GetValueString(value.value, value.qualifier));
+}
+
+// Formats a raw numeric aggregate (min/max/average) through the same formatter
+// by wrapping it in a good-quality variant, so stat cells read consistently
+// with the live value.
+QString FormatNumber(const MetrixDataSource& data_source, double number) {
+  return QString::fromStdU16String(data_source.timed_data().GetValueString(
+      scada::Variant{number}, scada::Qualifier{}));
+}
+
+// Placeholder shown when a cell has no value (no cursor, or no good sample in
+// the visible range).
+QString EmptyCell() {
+  return QString::fromUtf8("\xE2\x80\x94");  // em dash
+}
+
 #endif
 
 }  // namespace
@@ -119,7 +146,7 @@ MetrixGraph::Legend::Legend(MetrixPane& pane) : MetrixWidget(pane) {}
 scada::DataValue MetrixGraph::Legend::GetCurrentValue(
     const MetrixDataSource& data_source) const {
   scada::DataValue value;
-  const views::GraphCursor* cursor = graph().selected_cursor();
+  const GraphCursor* cursor = graph().selected_cursor();
   if (cursor && !cursor->axis_->is_vertical()) {
     base::Time cursor_time = base::Time::FromDoubleT(cursor->position_);
     const scada::DataValue* cursor_value =
@@ -192,6 +219,11 @@ void MetrixGraph::Legend::Update() {
 void MetrixGraph::Legend::paintEvent(QPaintEvent* e) {
   QPainter painter(this);
 
+  if (Themed()) {
+    PaintThemed(painter);
+    return;
+  }
+
   //	dc.Rectangle(rect.left, rect.top, rect.right + 1, rect.bottom + 1);
 
   int top = MARGY;
@@ -211,10 +243,159 @@ void MetrixGraph::Legend::paintEvent(QPaintEvent* e) {
     top += ROW;
   }
 }
+
+bool MetrixGraph::Legend::Themed() const {
+  return ReshellChartTheme().has_value();
+}
+
+namespace {
+
+// Reshell value-grid geometry (device-independent pixels).
+constexpr int kThemedPad = 8;          // outer padding
+constexpr int kThemedRow = 16;         // series row height
+constexpr int kThemedHeader = 14;      // header row height
+constexpr int kThemedSwatchW = 12;     // colour swatch width
+constexpr int kThemedSwatchH = 3;      // colour swatch height
+constexpr int kThemedSwatchGap = 8;    // gap between swatch and name
+constexpr int kThemedNumColW = 68;     // width of a numeric column
+constexpr int kThemedCursorColW = 78;  // width of the wider "@ cursor" column
+
+// The five numeric columns to the right of the series name.
+struct ThemedColumn {
+  const char* header;
+  int width;
+};
+const ThemedColumn kThemedColumns[] = {
+    {"Current", kThemedNumColW},     {"Min", kThemedNumColW},
+    {"Max", kThemedNumColW},         {"Average", kThemedNumColW},
+    {"@ cursor", kThemedCursorColW},
+};
+constexpr int kThemedColumnCount =
+    static_cast<int>(sizeof(kThemedColumns) / sizeof(kThemedColumns[0]));
+
+}  // namespace
+
+void MetrixGraph::Legend::PaintThemed(QPainter& painter) const {
+  const scada::aui::ThemeTokens& tokens =
+      scada::aui::GetThemeTokens(*ReshellChartTheme());
+
+  painter.setRenderHint(QPainter::Antialiasing, true);
+
+  // Panel background + hairline border so the readout sits legibly over the
+  // plotted lines.
+  const QRectF panel = QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5);
+  painter.setPen(QPen{tokens.border});
+  painter.setBrush(tokens.surface_muted);
+  painter.drawRoundedRect(panel, 6, 6);
+
+  const int name_col_w = kThemedSwatchW + kThemedSwatchGap + title_width_;
+  const int values_left = kThemedPad + name_col_w;
+
+  // The visible range drives the min/max/average aggregates.
+  const GraphRange& range = graph().horizontal_axis().range();
+  const base::Time from = base::Time::FromDoubleT(range.low());
+  const base::Time to = base::Time::FromDoubleT(range.high());
+
+  // Header row: column captions, right-aligned over their numeric columns.
+  QFont header_font = painter.font();
+  header_font.setPointSizeF(std::max(1.0, header_font.pointSizeF() - 1.0));
+  painter.setFont(header_font);
+  painter.setPen(QPen{tokens.fg_subtle});
+  {
+    int left = values_left;
+    for (const ThemedColumn& column : kThemedColumns) {
+      const QRect cell{left, kThemedPad, column.width, kThemedHeader};
+      painter.drawText(cell, Qt::AlignRight | Qt::AlignVCenter,
+                       QString::fromUtf8(column.header));
+      left += column.width;
+    }
+  }
+
+  int top = kThemedPad + kThemedHeader;
+  for (auto* graph_line : plot().lines()) {
+    MetrixLine& line = static_cast<MetrixLine&>(*graph_line);
+    const MetrixDataSource& data_source =
+        static_cast<const MetrixDataSource&>(line.data_source());
+
+    const SeriesStats stats =
+        ComputeSeriesStats(data_source.timed_data().values(), from, to);
+
+    const int mid = top + kThemedRow / 2;
+
+    // Colour swatch matching the series line.
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(line.color());
+    painter.drawRect(kThemedPad, mid - kThemedSwatchH / 2, kThemedSwatchW,
+                     kThemedSwatchH);
+
+    // Series name.
+    QFont name_font = painter.font();
+    name_font.setPointSizeF(header_font.pointSizeF() + 1.0);
+    painter.setFont(name_font);
+    painter.setPen(QPen{tokens.fg});
+    const QRect name_rect{kThemedPad + kThemedSwatchW + kThemedSwatchGap, top,
+                          title_width_, kThemedRow};
+    painter.drawText(name_rect, Qt::AlignLeft | Qt::AlignVCenter,
+                     QString::fromStdU16String(data_source.title()));
+
+    // Value cells.
+    const scada::DataValue current = data_source.timed_data().current();
+    const QString cells[kThemedColumnCount] = {
+        FormatDataValue(data_source, current),
+        stats.valid ? FormatNumber(data_source, stats.min) : EmptyCell(),
+        stats.valid ? FormatNumber(data_source, stats.max) : EmptyCell(),
+        stats.valid ? FormatNumber(data_source, stats.average) : EmptyCell(),
+        ValueAtCursorText(data_source),
+    };
+
+    int left = values_left;
+    for (int i = 0; i < kThemedColumnCount; ++i) {
+      // The @-cursor column is accented when populated to echo the plot cursor.
+      const bool is_cursor = i == kThemedColumnCount - 1;
+      const bool populated = cells[i] != EmptyCell();
+      painter.setPen(QPen{is_cursor && populated ? tokens.accent
+                          : populated            ? tokens.fg
+                                                 : tokens.fg_subtle});
+      const QRect cell{left, top, kThemedColumns[i].width, kThemedRow};
+      painter.drawText(cell, Qt::AlignRight | Qt::AlignVCenter, cells[i]);
+      left += kThemedColumns[i].width;
+    }
+
+    top += kThemedRow;
+  }
+}
+
+QString MetrixGraph::Legend::ValueAtCursorText(
+    const MetrixDataSource& data_source) const {
+  const GraphCursor* cursor = graph().selected_cursor();
+  if (!cursor || cursor->axis_->is_vertical())
+    return EmptyCell();
+  const base::Time cursor_time = base::Time::FromDoubleT(cursor->position_);
+  const scada::DataValue* value =
+      data_source.timed_data().GetValueAt(cursor_time);
+  if (!value)
+    return EmptyCell();
+  return FormatDataValue(data_source, *value);
+}
+
+QSize MetrixGraph::Legend::ThemedSize() const {
+  int values_w = 0;
+  for (const ThemedColumn& column : kThemedColumns)
+    values_w += column.width;
+
+  const int name_col_w = kThemedSwatchW + kThemedSwatchGap + title_width_;
+  const int width = kThemedPad * 2 + name_col_w + values_w;
+  const int height = kThemedPad * 2 + kThemedHeader +
+                     static_cast<int>(plot().lines().size()) * kThemedRow;
+  return QSize{width, height};
+}
 #endif
 
 #if defined(UI_QT)
 QSize MetrixGraph::Legend::sizeHint() const {
+  if (Themed())
+    return ThemedSize();
+
   int total_width = MARGX * 2;
   for (int i = 0; i < GetColumnCount(); ++i)
     total_width += GetColumnWidth(i);
@@ -239,14 +420,14 @@ MetrixGraph::MetrixLine::~MetrixLine() {
 }
 
 void MetrixGraph::MetrixLine::OnDataSourceCurrentValueChanged() {
-  views::GraphLine::OnDataSourceCurrentValueChanged();
+  GraphLine::OnDataSourceCurrentValueChanged();
 
   if (!graph().selected_cursor())
     graph().UpdateCurBox();
 }
 
 void MetrixGraph::MetrixLine::OnDataSourceItemChanged() {
-  views::GraphLine::OnDataSourceItemChanged();
+  GraphLine::OnDataSourceItemChanged();
 
   pane().UpdateLegend();
 
