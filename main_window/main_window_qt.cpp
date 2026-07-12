@@ -16,6 +16,7 @@
 #include "controller/window_info.h"
 #include "filesystem/file_cache.h"
 #include "main_window/activity_bar_qt.h"
+#include "main_window/alarm_flood.h"
 #include "main_window/command_palette_qt.h"
 #include "main_window/main_window_command_router.h"
 #include "main_window/main_window_manager.h"
@@ -330,6 +331,13 @@ void MainWindow::CreateContextBar() {
   right_spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
   context_bar_->addWidget(right_spacer);
 
+  // Alarm-flood escalation pill (hidden unless a flood is active), left of the
+  // per-severity tiles so it reads as the dominant state during a flood.
+  flood_indicator_ = new QLabel(context_bar_);
+  flood_indicator_->setMargin(2);
+  flood_indicator_->setVisible(false);
+  context_bar_->addWidget(flood_indicator_);
+
   // Live severity KPI tiles: unacknowledged-alarm counts per level, coloured
   // from the severity single source (bold when active, plain when calm).
   kpi_critical_ = new QLabel(context_bar_);
@@ -377,6 +385,26 @@ void MainWindow::CreateContextBar() {
     refresh_kpi(kpi_critical_, scada::aui::SeverityLevel::kCritical,
                 "Critical");
     refresh_kpi(kpi_warning_, scada::aui::SeverityLevel::kWarning, "Warning");
+
+    // Flood escalation: a single prominent state pill when the unacknowledged
+    // count crosses the flood threshold, so a flood reads as a state, not a
+    // scroll.
+    const int alarm_count = status_bar_model_->GetAlarmCount();
+    const bool flood = IsAlarmFlood(alarm_count);
+    flood_indicator_->setVisible(flood);
+    if (flood) {
+      flood_indicator_->setText(
+          QStringLiteral(" %1 (%2) ")
+              .arg(QString::fromStdU16String(Translate("Alarm flood")))
+              .arg(alarm_count));
+      const std::optional<aui::Color> color =
+          scada::aui::SeverityColor(scada::aui::SeverityLevel::kCritical);
+      // White reads on the saturated critical fill across every theme.
+      flood_indicator_->setStyleSheet(
+          QStringLiteral(
+              "background:%1;color:#ffffff;border-radius:9px;font-weight:700;")
+              .arg(color ? color->qcolor().name() : QStringLiteral("#e85a52")));
+    }
   };
   refresh();
   context_bar_connection_ = status_bar_model_->SubscribePanesChanged(

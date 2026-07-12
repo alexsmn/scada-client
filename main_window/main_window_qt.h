@@ -117,6 +117,8 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // level), refreshed with the status-bar model.
   QLabel* kpi_critical_ = nullptr;
   QLabel* kpi_warning_ = nullptr;
+  // Alarm-flood escalation pill; visible only while a flood is active.
+  QLabel* flood_indicator_ = nullptr;
   boost::signals2::scoped_connection context_bar_connection_;
 
   // Left activity rail (opt-in). Its alarm badge follows the status-bar model.
