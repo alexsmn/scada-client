@@ -29,9 +29,13 @@ class TableModel : private TableModelContext, public aui::TableModel {
     COLUMN_SOURCE_TIMESTAMP,
     COLUMN_SERVER_TIMESTAMP,
     COLUMN_EVENT,
+    // Reshell-only good/uncertain/bad quality mark. Appended (not inserted) so
+    // the existing column ids in saved window state stay stable; the column is
+    // added to the view only under the opt-in token theme.
+    COLUMN_QUALITY,
 
     COLUMN_FIRST = COLUMN_TITLE,
-    COLUMN_LAST = COLUMN_EVENT,
+    COLUMN_LAST = COLUMN_QUALITY,
   };
 
   explicit TableModel(TableModelContext&& context);

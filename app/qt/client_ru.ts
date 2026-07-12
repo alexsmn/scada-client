@@ -68,6 +68,23 @@
         <source>Warning</source>
         <translation>Предупреждение</translation>
     </message>
+    <!-- modules/table (reshell quality marks) -->
+    <message>
+        <source>Quality</source>
+        <translation>Достоверность</translation>
+    </message>
+    <message>
+        <source>Good</source>
+        <translation>Достоверно</translation>
+    </message>
+    <message>
+        <source>Uncertain</source>
+        <translation>Неопределённо</translation>
+    </message>
+    <message>
+        <source>Bad</source>
+        <translation>Недостоверно</translation>
+    </message>
     <!-- main_window/status_bar/user_status_provider.cpp -->
     <message>
         <source>Administrator</source>

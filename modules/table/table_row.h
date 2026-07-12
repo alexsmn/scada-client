@@ -37,6 +37,7 @@ class TableRow : private Blinker {
   void SetBlinking(bool blinking);
 
   void GetValueCell(TableCellEx& cell) const;
+  void GetQualityCell(TableCellEx& cell) const;
   void GetEventCell(TableCellEx& cell) const;
 
   // Blinker events

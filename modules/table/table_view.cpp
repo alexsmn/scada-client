@@ -2,6 +2,7 @@
 
 #include "app/string_const.h"
 #include "aui/dialog_service.h"
+#include "aui/severity_colors.h"
 #include "aui/table.h"
 #include "aui/translation.h"
 #include "common/formula_util.h"
@@ -32,15 +33,27 @@ TableView::TableView(const ControllerContext& context)
       {TableModel::COLUMN_TITLE, kDisplayNameAttributeString, 150,
        aui::TableColumn::LEFT},
       {TableModel::COLUMN_VALUE, kValueTitle, 100, aui::TableColumn::RIGHT},
-      {TableModel::COLUMN_SOURCE_TIMESTAMP, kSourceTimestampTitle, 170,
-       aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
-      {TableModel::COLUMN_SERVER_TIMESTAMP, kServerTimestampTitle, 170,
-       aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
-      {TableModel::COLUMN_CHANGE_TIME, Translate("Change Time"), 170,
-       aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
-      {TableModel::COLUMN_EVENT, Translate("Event"), 200,
-       aui::TableColumn::LEFT},
   };
+
+  // Reshell-only quality mark column, placed next to the value exactly as in
+  // table-watch.html. Gated on the opt-in token theme so the legacy grid is
+  // unchanged (the good/uncertain/bad tokens only exist under the token
+  // themes; `QualityColor` returns nothing under kLegacy anyway).
+  if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy) {
+    columns.push_back({TableModel::COLUMN_QUALITY, Translate("Quality"), 110,
+                       aui::TableColumn::LEFT});
+  }
+
+  columns.insert(
+      columns.end(),
+      {{TableModel::COLUMN_SOURCE_TIMESTAMP, kSourceTimestampTitle, 170,
+        aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
+       {TableModel::COLUMN_SERVER_TIMESTAMP, kServerTimestampTitle, 170,
+        aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
+       {TableModel::COLUMN_CHANGE_TIME, Translate("Change Time"), 170,
+        aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
+       {TableModel::COLUMN_EVENT, Translate("Event"), 200,
+        aui::TableColumn::LEFT}});
 
   // cppcheck-suppress noCopyConstructor
   // cppcheck-suppress noOperatorEq
