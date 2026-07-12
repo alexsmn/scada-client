@@ -1,12 +1,22 @@
 #include "main_window/status_bar/user_status_provider.h"
 
+#include "aui/translation.h"
 #include "base/any_executor_dispatch.h"
 #include "base/check.h"
 #include "events/node_event_provider.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "profile/profile.h"
+#include "scada/privileges.h"
 #include "scada/session_service.h"
+
+const char* UserRoleKey(bool can_configure, bool can_control) {
+  if (can_configure)
+    return "Administrator";
+  if (can_control)
+    return "Operator";
+  return "Observer";
+}
 
 UserStatusProvider::UserStatusProvider(const AnyExecutor& executor,
                                        NodeService& node_service,
@@ -32,7 +42,16 @@ void UserStatusProvider::Init(const ChangeNotifier& change_notifier) {
 }
 
 std::u16string UserStatusProvider::GetText() const {
-  return user_node_.display_name();
+  const std::u16string user = user_node_.display_name();
+  const std::u16string role = RoleLabel();
+  return user.empty() ? role : user + u" · " + role;
+}
+
+std::u16string UserStatusProvider::RoleLabel() const {
+  // The session exposes privileges, not a role name; UserRoleKey maps them.
+  return Translate(
+      UserRoleKey(session_service_.HasPrivilege(scada::Privilege::Configure),
+                  session_service_.HasPrivilege(scada::Privilege::Control)));
 }
 
 void UserStatusProvider::UpdateUser() {

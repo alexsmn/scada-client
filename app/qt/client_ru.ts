@@ -29,6 +29,19 @@
         <source>Warning</source>
         <translation>Предупреждение</translation>
     </message>
+    <!-- main_window/status_bar/user_status_provider.cpp -->
+    <message>
+        <source>Administrator</source>
+        <translation>Администратор</translation>
+    </message>
+    <message>
+        <source>Operator</source>
+        <translation>Оператор</translation>
+    </message>
+    <message>
+        <source>Observer</source>
+        <translation>Наблюдатель</translation>
+    </message>
     <!-- client_utils.cpp -->
     <message>
         <source>Local</source>

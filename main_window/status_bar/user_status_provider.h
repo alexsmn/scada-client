@@ -8,6 +8,11 @@
 
 class NodeService;
 
+// Maps the session's two privilege tiers to a coarse role key (an English
+// literal for Translate()): Configure ⇒ "Administrator", Control ⇒ "Operator",
+// otherwise "Observer". Pure, for the status strip's user·role cell.
+const char* UserRoleKey(bool can_configure, bool can_control);
+
 class UserStatusProvider final
     : public std::enable_shared_from_this<UserStatusProvider> {
  public:
@@ -21,10 +26,14 @@ class UserStatusProvider final
 
   void Init(const ChangeNotifier& change_notifier);
 
+  // The signed-in user with a coarse role suffix, e.g. "root · Administrator".
   std::u16string GetText() const;
 
  private:
   void UpdateUser();
+
+  // Coarse role label derived from the session's privileges.
+  std::u16string RoleLabel() const;
 
   AnyExecutor executor_;
   NodeService& node_service_;

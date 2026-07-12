@@ -23,6 +23,8 @@ class SessionStatusProvider {
 
   std::u16string GetConnectionStateText() const;
   std::u16string GetPingText() const;
+  // The connected server endpoint and client build, e.g. "host:2000 · v2.6.0".
+  std::u16string GetEndpointText() const;
 
  private:
   scada::SessionService& session_service_;

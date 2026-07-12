@@ -1,5 +1,13 @@
 client_module(client_main_window)
 
+# The client build version, surfaced in the status strip's endpoint cell.
+foreach(cfg IN LISTS CLIENT_UI_CONFIGS)
+  if(TARGET client_main_window_${cfg})
+    target_compile_definitions(client_main_window_${cfg} PRIVATE
+      CLIENT_BUILD_VERSION="${PROJECT_VERSION}")
+  endif()
+endforeach()
+
 add_subdirectory(main_menu)
 add_subdirectory(opened_view)
 add_subdirectory(pages)
