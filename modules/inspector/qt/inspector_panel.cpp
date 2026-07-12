@@ -18,6 +18,7 @@
 #include <QStackedWidget>
 #include <QVBoxLayout>
 
+#include <span>
 #include <utility>
 
 namespace {
@@ -188,6 +189,7 @@ QWidget* InspectorPanel::BuildElementView() {
 }
 
 void InspectorPanel::Clear() {
+  spec_.reset();
   if (stack_)
     stack_->setCurrentIndex(0);
 }
@@ -198,29 +200,45 @@ void InspectorPanel::ShowSelection(const SelectionModel& selection) {
     return;
   }
 
-  // A snapshot of the active view's selection: its live spec already holds the
-  // current value at selection time. (Between selections the readout is static;
-  // re-selecting refreshes it.)
-  const TimedDataSpec& spec = selection.timed_data();
-  const QString title = QString::fromStdU16String(selection.GetTitle());
+  const TimedDataSpec& source = selection.timed_data();
+  title_->setText(QString::fromStdU16String(selection.GetTitle()));
 
-  QString node_text;
+  if (!source.node_id().is_null()) {
+    // Copy the selection's connected spec (which shares the underlying live
+    // TimedData) and own its update handler, so the readout keeps ticking
+    // while this element stays selected.
+    spec_ = std::make_unique<TimedDataSpec>(source);
+    spec_->SetCurrentOnly();
+    spec_->update_handler = [this](std::span<const scada::DataValue>) {
+      RefreshValue();
+    };
+    subtitle_->setText(QString::fromStdString(spec_->formula()));
+  } else {
+    spec_.reset();
+    subtitle_->clear();
+  }
+
+  RefreshValue();
+  stack_->setCurrentIndex(1);
+}
+
+void InspectorPanel::RefreshValue() {
   QString value_text;
-  QString updated_text;
   InspectorQualityBand band = InspectorQualityBand::kGood;
-  if (!spec.node_id().is_null()) {
-    node_text = QString::fromStdString(spec.formula());
+  QString updated_text;
+  if (spec_) {
     value_text = QString::fromStdU16String(
-        spec.GetCurrentString(ValueFormat{FORMAT_QUALITY | FORMAT_UNITS}));
-    band = InspectorQualityBandFor(spec.current().qualifier);
+        spec_->GetCurrentString(ValueFormat{FORMAT_QUALITY | FORMAT_UNITS}));
+    band = InspectorQualityBandFor(spec_->current().qualifier);
     updated_text = QString::fromStdString(
-        FormatTime(spec.change_time(), TIME_FORMAT_TIME));
+        FormatTime(spec_->change_time(), TIME_FORMAT_TIME));
   }
 
   const bool controllable =
       context_.is_control_enabled && context_.is_control_enabled();
 
-  ShowElement(title, node_text, value_text, band, updated_text, controllable);
+  ShowElement(title_->text(), subtitle_->text(), value_text, band, updated_text,
+              controllable);
 }
 
 void InspectorPanel::ShowElement(const QString& title,

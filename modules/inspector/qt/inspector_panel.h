@@ -11,6 +11,7 @@ class NodeId;
 class Qualifier;
 }  // namespace scada
 class SelectionModel;
+class TimedDataSpec;
 class QLabel;
 class QPushButton;
 class QStackedWidget;
@@ -46,9 +47,9 @@ class InspectorPanel : public QWidget {
                           QWidget* parent = nullptr);
   ~InspectorPanel() override;
 
-  // Reflects `selection`: empty → empty state; a data selection → the element
-  // readout (a snapshot of the selection's current value, refreshed each time
-  // the active-view selection changes).
+  // Reflects `selection`: empty → empty state; a data selection → the live
+  // element readout. The panel copies the selection's (already-connected)
+  // TimedDataSpec, so the value keeps ticking between selection changes.
   void ShowSelection(const SelectionModel& selection);
 
   // Clears to the empty state.
@@ -66,8 +67,14 @@ class InspectorPanel : public QWidget {
  private:
   QWidget* BuildEmptyState();
   QWidget* BuildElementView();
+  // Re-reads spec_ (title/value/quality/updated) into the element view.
+  void RefreshValue();
 
   InspectorPanelContext context_;
+
+  // The panel's own copy of the selected node's live spec (shares the
+  // underlying TimedData); its update_handler drives RefreshValue.
+  std::unique_ptr<TimedDataSpec> spec_;
 
   QStackedWidget* stack_ = nullptr;  // [0] empty state, [1] element view
   QLabel* title_ = nullptr;
