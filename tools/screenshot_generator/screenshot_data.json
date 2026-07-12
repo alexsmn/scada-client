@@ -208,6 +208,8 @@
   ],
   "screenshots": [
     { "type": "Graph",          "filename": "graph-cursor.png",        "width": 1024, "height": 901 },
+    { "type": "Graph",          "filename": "limits-chart.png",        "width": 1024, "height": 901 },
+    { "type": "SeriesInspector", "filename": "series-inspector.png",    "width": 290,  "height": 480 },
     { "type": "Table",          "filename": "table.png",               "width": 800,  "height": 400 },
     { "type": "Summ",           "filename": "summary.png",             "width": 800,  "height": 500 },
     { "type": "Event",          "filename": "events.png",              "width": 800,  "height": 300 },

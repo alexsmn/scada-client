@@ -252,6 +252,15 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
 
   int captured = 0;
   for (const auto& spec : g_config.screenshots) {
+    // The series inspector is standalone chrome, not a window on the page —
+    // build it from the graph fixture instead of looking up an opened view.
+    if (spec.window_type == "SeriesInspector") {
+      SaveSeriesInspectorScreenshot(spec, app_.node_service(),
+                                    app_.timed_data_service(), g_config.json);
+      ++captured;
+      continue;
+    }
+
     OpenedView* view = nullptr;
     for (OpenedView* v : main_window.opened_views()) {
       if (v->window_info().name == spec.window_type) {
@@ -274,7 +283,8 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     if (spec.window_type == "Graph") {
       // Render graph standalone — hidden main windows don't lay out
       // QSplitter children, so we build a fresh graph widget.
-      SaveGraphScreenshot(spec, app_.timed_data_service(), g_config.json);
+      SaveGraphScreenshot(spec, app_.node_service(), app_.timed_data_service(),
+                          g_config.json);
     } else {
       SaveScreenshot(widget, spec);
     }

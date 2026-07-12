@@ -4,6 +4,7 @@
 
 #include "base/any_executor.h"
 #include "base/awaitable.h"
+#include "scada/node_id.h"
 
 #include <QApplication>
 #include <QEventLoop>
@@ -13,6 +14,7 @@
 #include <exception>
 #include <memory>
 #include <optional>
+#include <span>
 #include <type_traits>
 #include <utility>
 
@@ -82,5 +84,17 @@ T WaitForAwaitable(AnyExecutor executor, Awaitable<T> awaitable) {
 }
 
 bool WaitForPendingNodeLoads(NodeService& node_service);
+
+// Makes each node in `node_ids` fully resident — its own attributes, its
+// hierarchical children (the analog property bands), its type definition (so
+// `node[aggregate_declaration_id]` resolves), and every property child's value
+// — then waits for those fetches to settle. Standalone captures (the graph
+// widget, the series inspector) are built outside the main-window/tree flow
+// that would otherwise pull these property children resident, and TimedData
+// only fetches the node itself (NodeOnly), so without this `node[...].value()`
+// reads (EU range, current value, limit bands) come back empty. Null ids are
+// skipped; returns false only when a non-null id is unknown to the service.
+bool FetchGraphNodesResident(NodeService& node_service,
+                             std::span<const scada::NodeId> node_ids);
 
 }  // namespace scada::screenshot_generator

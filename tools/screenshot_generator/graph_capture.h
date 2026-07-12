@@ -2,6 +2,7 @@
 
 #include <boost/json/value.hpp>
 
+class NodeService;
 class TimedDataService;
 struct ScreenshotSpec;
 class WindowDefinition;
@@ -17,5 +18,15 @@ WindowDefinition MakeGraphDefinition(const boost::json::value& json);
 // bypasses the hidden main-window layout issue: hidden `QSplitter`
 // children skip relayout, so we create a fresh graph as a top-level.
 void SaveGraphScreenshot(const ScreenshotSpec& spec,
+                         NodeService& node_service,
                          TimedDataService& timed_data_service,
                          const boost::json::value& json);
+
+// Renders the trend workspace's per-series inspector panel standalone: builds
+// the fixture graph, points a `SeriesInspector` at the first series and saves
+// it under `GetOutputDir() / spec.filename`. Reshell-only chrome, so the caller
+// should apply a `--theme`.
+void SaveSeriesInspectorScreenshot(const ScreenshotSpec& spec,
+                                   NodeService& node_service,
+                                   TimedDataService& timed_data_service,
+                                   const boost::json::value& json);
