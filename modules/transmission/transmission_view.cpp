@@ -13,7 +13,8 @@
 
 TransmissionView::TransmissionView(const ControllerContext& context)
     : ControllerContext{context},
-      model_{std::make_shared<TransmissionModel>(context.node_service_,
+      model_{std::make_shared<TransmissionModel>(context.executor_,
+                                                 context.node_service_,
                                                  context.task_manager_)},
       column_model_{std::make_shared<aui::ColumnHeaderModel>()} {}
 

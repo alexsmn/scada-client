@@ -4,8 +4,10 @@
 
 #include "base/any_executor.h"
 #include "base/awaitable.h"
+#include "base/check.h"
 
 #include <QApplication>
+#include <QElapsedTimer>
 #include <QEventLoop>
 #include <QTimer>
 
@@ -67,8 +69,16 @@ T WaitForAwaitable(AnyExecutor executor, Awaitable<T> awaitable) {
         result->done = true;
       });
 
+  // Fail-stop instead of hanging the build: a livelocked fetch pipeline
+  // (e.g. node-model eviction churn) otherwise leaves the POST_BUILD step
+  // stuck forever with no diagnostic.
+  QElapsedTimer elapsed;
+  elapsed.start();
   while (!result->done) {
     QApplication::processEvents(QEventLoop::WaitForMoreEvents);
+    base::Check(!elapsed.hasExpired(180'000),
+                "WaitForAwaitable: 180s deadline exceeded; async work never "
+                "completed (livelock?)");
   }
 
   if (result->error) {

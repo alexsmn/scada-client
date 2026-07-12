@@ -95,6 +95,8 @@ void ScreenshotConfig::Load(const std::filesystem::path& path) {
       spec.path = std::string(item_path->as_string());
     spec.width = static_cast<int>(js.at("width").as_int64());
     spec.height = static_cast<int>(js.at("height").as_int64());
+    if (const auto* min_rows = js.as_object().if_contains("min_rows"))
+      spec.min_rows = static_cast<int>(min_rows->as_int64());
     if (IsManagedImage(managed_images, spec))
       screenshots.push_back(std::move(spec));
   }

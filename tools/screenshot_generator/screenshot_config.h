@@ -16,6 +16,11 @@ struct ScreenshotSpec {
   std::string path;
   int width = 800;
   int height = 600;
+  // Minimum number of grid rows the rendered window must show. 0 disables
+  // the check. Set it for grid-backed windows (node tables, transmission)
+  // so a data-path regression fails the capture instead of silently saving
+  // an empty frame.
+  int min_rows = 0;
 };
 
 // Configuration for a single modal-dialog capture. `kind` is the

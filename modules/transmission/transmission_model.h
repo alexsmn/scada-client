@@ -2,6 +2,8 @@
 
 #include "aui/models/fixed_row_model.h"
 #include "aui/models/grid_model.h"
+#include "base/any_executor.h"
+#include "base/cancelation.h"
 #include "base/lifetime.h"
 #include "controller/contents_model.h"
 #include "node_service/node_ref.h"
@@ -25,7 +27,9 @@ class TransmissionModel
     scada::NodeId source_id;
   };
 
-  TransmissionModel(NodeService& node_service, TaskManager& task_manager);
+  TransmissionModel(AnyExecutor executor,
+                    NodeService& node_service,
+                    TaskManager& task_manager);
   ~TransmissionModel();
 
   TransmissionModel(const TransmissionModel&) = delete;
@@ -72,6 +76,7 @@ class TransmissionModel
   void OnNodeSemanticChanged(const scada::NodeId& node_id);
   void OnNodeFetched(const NodeFetchedEvent& event);
 
+  AnyExecutor executor_;
   NodeService& node_service_;
   TaskManager& task_manager_;
 
@@ -80,4 +85,5 @@ class TransmissionModel
   Rows rows_;
 
   std::vector<boost::signals2::scoped_connection> connections_;
+  Cancelation cancelation_;
 };

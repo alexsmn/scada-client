@@ -1,11 +1,13 @@
 #include "modules/transmission/transmission_model.h"
 
+#include "base/awaitable.h"
 #include "base/cancelation.h"
 #include "base/check.h"
 #include "base/format.h"
 #include "base/range_util.h"
 #include "model/devices_node_ids.h"
 #include "model/scada_node_ids.h"
+#include "node_service/node_awaitable.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "scada/event.h"
@@ -29,9 +31,11 @@ scada::NodeId GetTransmissionItemTypeId(const NodeRef& device) {
 
 }  // namespace
 
-TransmissionModel::TransmissionModel(NodeService& node_service,
+TransmissionModel::TransmissionModel(AnyExecutor executor,
+                                     NodeService& node_service,
                                      TaskManager& task_manager)
     : FixedRowModel(*static_cast<FixedRowModel::Delegate*>(this)),
+      executor_{std::move(executor)},
       node_service_{node_service},
       task_manager_{task_manager} {}
 
@@ -49,7 +53,44 @@ void TransmissionModel::Init(NodeRef device) {
   connections_.push_back(node_service_.SubscribeNodeFetched(
       [this](const NodeFetchedEvent& event) { OnNodeFetched(event); }));
 
-  device_.StartFetch(NodeFetchStatus::ChildrenOnly);
+  // Fetch everything the synchronous Refresh/GetCell paths read: the device's
+  // children (the rows), each row's type chain (the transmission-item
+  // IsInstanceOf filter and the source-address property declaration), each
+  // row's children (the property instances holding the address values), and
+  // each row's source node (the "Object" column display name). Node fetches
+  // are per node, so none of this is implied by fetching the device alone.
+  CoSpawn(executor_, cancelation_,
+          [this,
+           cancelation = cancelation_.ref()]() mutable -> Awaitable<void> {
+            (void)co_await FetchChildrenStatus(device_);
+            if (cancelation.canceled()) {
+              co_return;
+            }
+            (void)co_await FetchTypeChainStatus(device_.type_definition());
+            if (cancelation.canceled()) {
+              co_return;
+            }
+            for (const auto& reference :
+                 device_.references(scada::id::Organizes)) {
+              NodeRef transmission = reference.target;
+              (void)co_await FetchChildrenStatus(transmission);
+              if (cancelation.canceled()) {
+                co_return;
+              }
+              (void)co_await FetchTypeChainStatus(
+                  transmission.type_definition());
+              if (cancelation.canceled()) {
+                co_return;
+              }
+              (void)co_await FetchNodeStatus(
+                  transmission.target(devices::id::HasTransmissionSource));
+              if (cancelation.canceled()) {
+                co_return;
+              }
+            }
+            Refresh();
+          });
+
   if (device_.children_fetched())
     Refresh();
 }
@@ -134,8 +175,10 @@ void TransmissionModel::Refresh() {
 
   GridModel::NotifyModelChanged();
 
+  // Children included: the address property values live on the
+  // transmission's property instance nodes.
   for (auto& row : rows_)
-    row.transmission.StartFetch(NodeFetchStatus::NodeOnly);
+    row.transmission.StartFetch(NodeFetchStatus::NodeAndChildren);
 
   auto source_ids = rows_ | boost::adaptors::filtered([](const Row& row) {
                       return !row.source_id.is_null();
@@ -173,7 +216,7 @@ void TransmissionModel::Update(NodeRef transmission) {
   if (!IsInstanceOf(transmission, devices::id::TransmissionItemType))
     return;
 
-  transmission.StartFetch(NodeFetchStatus::NodeOnly);
+  transmission.StartFetch(NodeFetchStatus::NodeAndChildren);
 
   auto source_id =
       transmission.target(devices::id::HasTransmissionSource).node_id();

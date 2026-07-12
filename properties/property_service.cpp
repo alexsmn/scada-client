@@ -78,6 +78,57 @@ std::unordered_set<NodeRef> GetChildTypeDefinitions(
   return child_type_definitions;
 }
 
+// True when `type_definition` and its whole supertype chain are resident
+// (fetched) right now. The v3 registry holds node models in a bounded MRU
+// (NodeServiceImpl::TouchKeepAlive); a model fetched earlier in a coroutine
+// can be evicted — and its fetched() state dropped — while later fetches
+// suspend, so fetched-ness must be re-verified before any synchronous walk.
+bool IsTypeChainResident(const NodeRef& type_definition) {
+  for (auto type = type_definition; type; type = type.supertype()) {
+    if (!type.fetched())
+      return false;
+  }
+  return true;
+}
+
+// Fetches `type_definition`'s supertype chain and re-verifies it is still
+// resident after the awaits (see IsTypeChainResident). On success the
+// caller's synchronous walk must run with no suspension point in between —
+// eviction only happens on the service executor, so verified state cannot
+// thrash mid-walk.
+Awaitable<scada::Status> FetchTypeChainResident(NodeRef type_definition) {
+  constexpr int kMaxResidencyAttempts = 3;
+  for (int attempt = 0; attempt < kMaxResidencyAttempts; ++attempt) {
+    if (auto status = co_await FetchTypeChainStatus(type_definition); !status)
+      co_return status;
+    if (IsTypeChainResident(type_definition))
+      co_return scada::StatusCode::Good;
+  }
+  co_return scada::Status{scada::StatusCode::Bad_ObjectIsBusy};
+}
+
+// Fetches `parent_node` plus its type chain and re-verifies both stayed
+// resident, so GetChildTypeDefinitions can be called immediately after
+// without tripping its residency preconditions.
+Awaitable<scada::Status> FetchParentAndTypeChainResident(NodeRef parent_node) {
+  constexpr int kMaxResidencyAttempts = 3;
+  for (int attempt = 0; attempt < kMaxResidencyAttempts; ++attempt) {
+    if (auto status = co_await FetchNodeStatus(parent_node); !status)
+      co_return status;
+    if (auto status =
+            co_await FetchTypeChainResident(parent_node.type_definition());
+        !status) {
+      co_return status;
+    }
+    if (parent_node.fetched() &&
+        parent_node.type_definition() &&
+        IsTypeChainResident(parent_node.type_definition())) {
+      co_return scada::StatusCode::Good;
+    }
+  }
+  co_return scada::Status{scada::StatusCode::Bad_ObjectIsBusy};
+}
+
 }  // namespace
 
 // PropertyService
@@ -86,7 +137,10 @@ Awaitable<void> PropertyService::GetAllSubtypesPropertiesAsync(
   AnyExecutor executor,
   const NodeRef& type_definition,
   const std::shared_ptr<std::unordered_set<NodeRef>>& property_decls) {
-  co_await FetchNode(type_definition);
+  // Skip on failure rather than walking: GetTypeProperties fail-stops on an
+  // unfetched (possibly keep-alive-evicted) chain.
+  if (auto status = co_await FetchTypeChainResident(type_definition); !status)
+    co_return;
 
   GetTypeProperties(type_definition, *property_decls);
 
@@ -99,7 +153,7 @@ Awaitable<scada::Status> PropertyService::GetAllSubtypesPropertiesStatusAsync(
     AnyExecutor executor,
     const NodeRef& type_definition,
     const std::shared_ptr<std::unordered_set<NodeRef>>& property_decls) {
-  auto status = co_await FetchNodeStatus(type_definition);
+  auto status = co_await FetchTypeChainResident(type_definition);
   if (!status) {
     co_return status;
   }
@@ -192,7 +246,12 @@ Awaitable<PropertyDefs> PropertyService::GetChildPropertyDefsAsync(
     const NodeRef& parent_node) {
   auto property_decls = std::make_shared<std::unordered_set<NodeRef>>();
 
-  co_await FetchNode(parent_node);
+  // Bail out empty on failure rather than walking: GetChildTypeDefinitions
+  // fail-stops on an unfetched (possibly keep-alive-evicted) parent or chain.
+  if (auto status = co_await FetchParentAndTypeChainResident(parent_node);
+      !status) {
+    co_return PropertyDefs{};
+  }
   auto child_type_definitions = GetChildTypeDefinitions(parent_node);
 
   for (const auto& child_type_definition : child_type_definitions) {
@@ -208,7 +267,7 @@ PropertyService::GetChildPropertyDefsStatusAsync(AnyExecutor executor,
                                                  const NodeRef& parent_node) {
   auto property_decls = std::make_shared<std::unordered_set<NodeRef>>();
 
-  auto status = co_await FetchNodeStatus(parent_node);
+  auto status = co_await FetchParentAndTypeChainResident(parent_node);
   if (!status) {
     co_return status;
   }

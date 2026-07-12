@@ -6,6 +6,7 @@
 #include "address_space/address_space_impl.h"
 #include "address_space/address_space_util.h"
 #include "address_space/generic_node_factory.h"
+#include "base/check.h"
 #include "common/node_state.h"
 #include "model/data_items_node_ids.h"
 #include "model/node_id_util.h"
@@ -207,15 +208,28 @@ void PopulateFixtureNodes(AddressSpaceImpl& address_space,
         }
       }
 
-      factory.CreateNode(state);
+      // A fixture node that fails to build (usually a type definition
+      // missing from ScadaTestAddressSpace) must abort the run: a silent
+      // drop cascades into empty screenshots that still "pass".
+      const auto [status, node] = factory.CreateNode(state);
+      base::Check(status, "fixture node creation failed: " +
+                              NodeIdToScadaString(node_id) + " | " +
+                              ToString(status));
       progressed = true;
     }
     pending = std::move(next);
   }
 
+  base::Check(pending.empty(),
+              "fixture nodes left unresolved (parent missing from the "
+              "address space)");
+
   for (const auto& ref : pending_references) {
-    if (!address_space.GetNode(ref.source_id) || !address_space.GetNode(ref.target_id))
-      continue;
+    base::Check(address_space.GetNode(ref.source_id) &&
+                    address_space.GetNode(ref.target_id),
+                "fixture reference endpoints missing: " +
+                    NodeIdToScadaString(ref.source_id) + " -> " +
+                    NodeIdToScadaString(ref.target_id));
     scada::AddReference(address_space, ref.reference_type_id, ref.source_id,
                         ref.target_id);
   }

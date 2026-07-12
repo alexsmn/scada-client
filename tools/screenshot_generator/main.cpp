@@ -25,6 +25,7 @@
 #include "aui/tree.h"
 #include "base/any_executor.h"
 #include "base/client_paths.h"
+#include "base/no_destructor.h"
 #include "base/test/scoped_path_override.h"
 #include "controller/window_info.h"
 #include "events/qt/event_filter_bar.h"
@@ -47,9 +48,12 @@
 #include <QLayout>
 #include <QLocale>
 #include <QPixmap>
+#include <QSettings>
 #include <QStandardItem>
 #include <QStandardItemModel>
 #include <QString>
+#include <QTableView>
+#include <QTemporaryDir>
 #include <QToolBar>
 #include <QTranslator>
 #include <QTreeView>
@@ -97,6 +101,19 @@ aui::Tree* FindTreeWidget(QWidget* widget) {
 class ScreenshotGenerator : public ::testing::Test {
  public:
   static void SetUpTestSuite() {
+    // Hermetic settings: the client reads default-constructed QSettings
+    // (registry on Windows, plists on macOS), so on a used dev box the
+    // captures would inherit real state — e.g. the last-used server
+    // address in the login dialog. Redirect the default format into a
+    // scratch ini tree so every run renders from a factory-fresh profile
+    // regardless of the machine.
+    static base::NoDestructor<QTemporaryDir> settings_dir;
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope,
+                       settings_dir->path());
+    QSettings::setPath(QSettings::IniFormat, QSettings::SystemScope,
+                       settings_dir->path());
+    QSettings::setDefaultFormat(QSettings::IniFormat);
+
     InitScreenshotOptions();
     g_config.Load(GetDataFilePath());
   }
@@ -269,6 +286,25 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     if (!widget) {
       ADD_FAILURE() << "No QWidget for: " << spec.window_type;
       continue;
+    }
+
+    // A grid-backed window that renders fewer rows than the fixture defines
+    // is a data-path regression (empty users/transmission tables have
+    // shipped as "successful" captures before) — fail loudly instead of
+    // silently saving a bare frame.
+    if (spec.min_rows > 0) {
+      int max_rows = 0;
+      QList<QTableView*> tables = widget->findChildren<QTableView*>();
+      if (auto* table = qobject_cast<QTableView*>(widget))
+        tables.prepend(table);
+      for (const QTableView* table : tables) {
+        if (table->model())
+          max_rows = std::max(max_rows, table->model()->rowCount());
+      }
+      EXPECT_GE(max_rows, spec.min_rows)
+          << spec.filename << ": the " << spec.window_type
+          << " grid rendered fewer rows than the fixture populates - the "
+             "capture would be empty or partial";
     }
 
     if (spec.window_type == "Graph") {
