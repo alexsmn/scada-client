@@ -5,6 +5,9 @@ if(TARGET client_graph_qt)
 endif()
 
 client_module_link_libraries(client_graph PRIVATE
+  # Reshell chart chrome reads the shared design tokens (theme_qt.h) and the
+  # opt-in gate (severity_colors.h); both live in aui.
+  aui
   client_controller
   client_filesystem
   graph
