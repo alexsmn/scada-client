@@ -1,0 +1,216 @@
+<!-- @dsCard group="Screens" viewport="1360x820" name="Protocol Debugger — Reshell" subtitle="Request/response frame inspector with decoded APDU/ASDU detail (dark default, light toggle)" -->
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Protocol Debugger — Telecontrol SCADA (proposed)</title>
+<style>
+:root,[data-theme='dark']{
+  --font-sans:'Inter','Segoe UI Variable','Segoe UI',system-ui,sans-serif;
+  --font-mono:'Cascadia Mono','Consolas',ui-monospace,monospace;
+  --bg:#07111b;--bg-elevated:#0b1623;--surface:#0f1925;--surface-muted:#152635;
+  --rail-bg:#06111b;--topbar-bg:#0b1623;--fg:#eef5fb;--fg-muted:#c3d0db;--fg-subtle:#8fa3b4;
+  --border:rgba(255,255,255,.12);--border-strong:rgba(255,255,255,.24);
+  --accent:#77b4f3;--accent-fg:#0b1623;--accent-soft:rgba(119,180,243,.15);
+  --good:#44c091;--good-soft:rgba(68,192,145,.16);--uncertain:#e6b24b;--bad:#f07168;--bad-soft:rgba(240,113,104,.16);
+  --tx:#77b4f3;--rx:#44c091;--radius-sm:4px;--radius-md:6px;--radius-lg:8px;color-scheme:dark;}
+[data-theme='light']{
+  --bg:#f5f8fb;--bg-elevated:#f8fbfe;--surface:#fff;--surface-muted:#f1f5f9;
+  --rail-bg:#0d1a27;--topbar-bg:#fff;--fg:#111827;--fg-muted:#4b5b6c;--fg-subtle:#6b7b8d;
+  --border:rgba(15,23,42,.12);--border-strong:rgba(15,23,42,.22);
+  --accent:#0f6bff;--accent-fg:#fff;--accent-soft:rgba(15,107,255,.1);
+  --good:#14825f;--good-soft:rgba(20,130,95,.12);--uncertain:#b67a17;--bad:#c53d35;--bad-soft:rgba(197,61,53,.12);
+  --tx:#2563c9;--rx:#14825f;color-scheme:light;}
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-sans);font-size:13px;-webkit-font-smoothing:antialiased}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.app{height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:40px;flex:none;display:flex;align-items:center;gap:14px;padding:0 12px;background:var(--topbar-bg);border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:8px;font-weight:600}
+.brand .mark{width:20px;height:20px;border-radius:5px;background:linear-gradient(135deg,var(--accent),#3f7fd6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700}
+.brand small{color:var(--fg-subtle);font-weight:500}
+.crumb{display:flex;align-items:center;gap:7px;color:var(--fg-subtle);font-size:12.5px}
+.crumb b{color:var(--fg);font-weight:600}.crumb .sep{opacity:.5}
+.ctxset{margin-left:auto;display:flex;align-items:center;gap:16px;font-size:12px;color:var(--fg-muted)}
+.ctxset .item{display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}.dot.good{background:var(--good)}.dot.bad{background:var(--bad)}
+.avatar{width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:11px}
+.main{flex:1;display:flex;min-height:0}
+.rail{width:52px;flex:none;background:var(--rail-bg);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:4px}
+.rail .ic{width:38px;height:38px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;color:#8fa3b4;position:relative}
+.rail .ic svg{width:20px;height:20px}
+.rail .ic.active{color:#eef5fb;background:rgba(255,255,255,.06)}
+.rail .ic.active::before{content:"";position:absolute;left:-8px;top:8px;bottom:8px;width:2px;border-radius:2px;background:var(--accent)}
+.rail .spacer{flex:1}
+/* explorer: endpoints */
+.side{width:216px;flex:none;background:var(--bg-elevated);border-right:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
+.side-head{height:30px;display:flex;align-items:center;padding:0 12px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-subtle);border-bottom:1px solid var(--border)}
+.tree{flex:1;overflow:auto;padding:6px 0}
+.enode{display:flex;align-items:center;height:28px;padding:0 12px;gap:9px;font-size:12.5px;color:var(--fg-muted)}
+.enode:hover{background:var(--surface-muted)}
+.enode.sel{background:var(--accent-soft);color:var(--fg);font-weight:600}
+.enode .sd{width:7px;height:7px;border-radius:50%}
+.enode .ct{margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--fg-subtle)}
+/* workspace */
+.work{flex:1;display:flex;flex-direction:column;min-width:0}
+.tabs{height:34px;flex:none;display:flex;background:var(--bg-elevated);border-bottom:1px solid var(--border)}
+.tab{display:flex;align-items:center;gap:8px;padding:0 14px;font-size:12.5px;color:var(--fg-subtle);border-right:1px solid var(--border);position:relative}
+.tab.active{background:var(--bg);color:var(--fg)}
+.tab.active::after{content:"";position:absolute;left:0;right:0;top:-1px;height:2px;background:var(--accent)}
+.toolbar{height:38px;flex:none;display:flex;align-items:center;gap:6px;padding:0 10px;background:var(--bg);border-bottom:1px solid var(--border)}
+.tbtn{display:flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:var(--radius-sm);color:var(--fg-muted);font-size:12.5px}
+.tbtn:hover{background:var(--surface-muted)}.tbtn svg{width:15px;height:15px}
+.tbtn.ico{padding:0 7px}
+.tbtn.rec{color:var(--bad)}
+.tsep{width:1px;height:18px;background:var(--border);margin:0 3px}
+.chipf{display:flex;gap:5px}
+.fchip{padding:3px 9px;border:1px solid var(--border);border-radius:11px;font-size:11px;color:var(--fg-subtle)}
+.fchip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.search{display:flex;align-items:center;gap:6px;height:26px;padding:0 9px;background:var(--surface-muted);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--fg-subtle);font-size:12px;min-width:160px}
+.search svg{width:13px;height:13px}
+.sp{flex:1}
+.grid{flex:1;min-height:0;overflow:auto}
+table.f{width:100%;border-collapse:collapse;font-size:12px}
+table.f th{position:sticky;top:0;z-index:1;background:var(--surface-muted);color:var(--fg-subtle);text-align:left;font-weight:500;padding:5px 10px;border-bottom:1px solid var(--border);white-space:nowrap;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em}
+table.f th.num{text-align:right}
+table.f td{padding:4px 10px;border-bottom:1px solid var(--border);white-space:nowrap;color:var(--fg-muted);font-family:var(--font-mono);font-size:11.5px}
+table.f td.sans{font-family:var(--font-sans)}
+table.f td.num{text-align:right;color:var(--fg)}
+table.f tr:hover td{background:var(--surface-muted)}
+table.f tr.sel td{background:var(--accent-soft)}
+table.f tr.sel td:first-child{box-shadow:inset 2px 0 0 var(--accent)}
+.dir{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.dir.tx{color:var(--tx)}.dir.rx{color:var(--rx)}
+.ftype{display:inline-block;padding:1px 7px;border-radius:4px;font-size:10.5px;font-weight:600}
+.ftype.i{background:var(--accent-soft);color:var(--accent)}
+.ftype.s{background:var(--surface-muted);color:var(--fg-muted)}
+.ftype.u{background:var(--uncertain-soft,rgba(230,178,75,.16));color:var(--uncertain)}
+tr.err td{color:var(--bad)}
+tr.err td.num{color:var(--bad)}
+/* inspector: decoded frame */
+.insp{width:344px;flex:none;background:var(--bg-elevated);border-left:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
+.insp-head{padding:11px 14px;border-bottom:1px solid var(--border)}
+.insp-head .t{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
+.insp-head .p{font-size:11px;color:var(--fg-subtle);font-family:var(--font-mono);margin-top:3px}
+.insp-body{flex:1;overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:14px}
+.hex{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px;font-family:var(--font-mono);font-size:11.5px;line-height:1.6;color:var(--fg-muted);word-break:break-all}
+.hex b{color:var(--accent)}.hex .hl{background:var(--accent-soft);color:var(--fg);border-radius:2px;padding:0 1px}
+.insec .h{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg-subtle);margin-bottom:6px}
+.dtree{font-family:var(--font-mono);font-size:12px}
+.dnode{display:flex;align-items:baseline;gap:8px;padding:3px 0;border-bottom:1px solid var(--border)}
+.dnode .tw{color:var(--fg-subtle);width:12px;flex:none}
+.dnode .k{color:var(--fg-subtle)}
+.dnode .v{margin-left:auto;color:var(--fg);text-align:right}
+.dnode .v.acc{color:var(--accent)}
+.dnode.child{padding-left:18px}
+.dnode.child2{padding-left:34px}
+.dnode .off{color:var(--fg-subtle);font-size:10px;opacity:.7}
+.status{height:24px;flex:none;display:flex;align-items:center;background:var(--rail-bg);border-top:1px solid var(--border);font-size:11.5px;color:var(--fg-subtle)}
+.status .cell{display:flex;align-items:center;gap:6px;padding:0 12px;height:100%;border-right:1px solid var(--border)}
+.status .cell.accent{background:var(--accent);color:var(--accent-fg);font-weight:600}
+.status .cell.rec{color:var(--bad)}
+.status .sp{flex:1}
+.toggle{position:fixed;right:14px;bottom:34px;z-index:20;display:flex;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.toggle button{border:0;background:transparent;color:var(--fg-subtle);font:inherit;font-size:11.5px;padding:4px 12px;border-radius:16px;cursor:pointer}
+.toggle button.on{background:var(--accent);color:var(--accent-fg);font-weight:600}
+</style></head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand"><span class="mark">TC</span>Telecontrol <small>SCADA</small></div>
+    <div class="crumb"><b>Diagnostics</b><span class="sep">/</span>Protocol debugger<span class="sep">/</span><b>КП-02 · IEC 60870-5-104</b></div>
+    <div class="ctxset"><div class="item"><span class="dot good"></span>North substation</div><div class="item mono">Server 0 ms</div><div class="item"><span class="avatar">R</span>root</div></div>
+  </div>
+  <div class="main">
+    <div class="rail">
+      <div class="ic" title="Overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></div>
+      <div class="ic" title="Tables"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 10h18M9 4v16"/></svg></div>
+      <div class="ic" title="Configuration"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg></div>
+      <div class="ic active" title="Diagnostics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg></div>
+      <div class="spacer"></div>
+      <div class="ic" title="Administration"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></div>
+    </div>
+    <div class="side">
+      <div class="side-head">Endpoints</div>
+      <div class="tree">
+        <div class="enode"><span class="sd" style="background:var(--good)"></span>КП-01 · МЭК-60870<span class="ct">1.2k</span></div>
+        <div class="enode sel"><span class="sd" style="background:var(--bad)"></span>КП-02 · МЭК-60870<span class="ct">3.4k</span></div>
+        <div class="enode"><span class="sd" style="background:var(--good)"></span>ЭНИП-2 · Modbus<span class="ct">840</span></div>
+        <div class="enode"><span class="sd" style="background:var(--good)"></span>OPC UA server<span class="ct">12k</span></div>
+      </div>
+    </div>
+    <div class="work">
+      <div class="tabs"><div class="tab active">КП-02 · frame trace</div></div>
+      <div class="toolbar">
+        <span class="tbtn rec"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>Pause</span>
+        <span class="tbtn ico" title="Clear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></span>
+        <span class="tsep"></span>
+        <span class="chipf"><span class="fchip on">All</span><span class="fchip">I-format</span><span class="fchip">S/U</span><span class="fchip">Errors</span></span>
+        <span class="tsep"></span>
+        <span class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Filter IOA, type, COT…</span>
+        <span class="sp"></span>
+        <span class="tbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Save trace</span>
+      </div>
+      <div class="grid">
+        <table class="f">
+          <thead><tr><th class="num">#</th><th>Time</th><th>Dir</th><th>Frame</th><th class="sans">Type ID</th><th class="sans">Cause</th><th>IOA</th><th>Value</th><th>N(S)/N(R)</th></tr></thead>
+          <tbody>
+            <tr><td class="num">4021</td><td>21:53:58.402</td><td><span class="dir rx">← RX</span></td><td><span class="ftype i">I</span></td><td class="sans">M_ME_NC_1 (13)</td><td class="sans">cyclic (1)</td><td>4001</td><td>115.2</td><td>2044/1602</td></tr>
+            <tr class="sel"><td class="num">4022</td><td>21:53:58.404</td><td><span class="dir rx">← RX</span></td><td><span class="ftype i">I</span></td><td class="sans">M_ME_NC_1 (13)</td><td class="sans">cyclic (1)</td><td>4002</td><td>130.5</td><td>2045/1602</td></tr>
+            <tr><td class="num">4023</td><td>21:53:58.410</td><td><span class="dir tx">→ TX</span></td><td><span class="ftype s">S</span></td><td class="sans">—</td><td class="sans">—</td><td>—</td><td>—</td><td>—/2046</td></tr>
+            <tr><td class="num">4024</td><td>21:53:59.001</td><td><span class="dir rx">← RX</span></td><td><span class="ftype i">I</span></td><td class="sans">M_SP_NA_1 (1)</td><td class="sans">spont (3)</td><td>1001</td><td>OFF</td><td>2046/1602</td></tr>
+            <tr><td class="num">4025</td><td>21:53:59.002</td><td><span class="dir tx">→ TX</span></td><td><span class="ftype i">I</span></td><td class="sans">C_SC_NA_1 (45)</td><td class="sans">act (6)</td><td>6001</td><td>ON/SBO</td><td>1602/2047</td></tr>
+            <tr><td class="num">4026</td><td>21:53:59.088</td><td><span class="dir rx">← RX</span></td><td><span class="ftype i">I</span></td><td class="sans">C_SC_NA_1 (45)</td><td class="sans">actcon (7)</td><td>6001</td><td>ON</td><td>2047/1603</td></tr>
+            <tr class="err"><td class="num">4027</td><td>21:54:00.402</td><td><span class="dir tx">→ TX</span></td><td><span class="ftype u">U</span></td><td class="sans">TESTFR act</td><td class="sans">—</td><td>—</td><td>—</td><td>t1 timeout</td></tr>
+            <tr class="err"><td class="num">4028</td><td>21:54:15.402</td><td><span class="dir rx">← RX</span></td><td class="sans" colspan="6" style="color:var(--bad)">⚠ No TESTFR con — link declared down, closing socket</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Inspector: decoded frame #4022 -->
+    <div class="insp">
+      <div class="insp-head"><div class="t"><span class="dir rx">← RX</span>Frame #4022 · 14 bytes</div><div class="p">21:53:58.404 · КП-02 · I-format</div></div>
+      <div class="insp-body">
+        <div class="insec">
+          <div class="h">Raw</div>
+          <div class="hex"><b>68</b> 0C <span class="hl">FA 0F 04 0C</span> 0D 01 06 00 01 00 <span class="hl">A1 0F</span> …</div>
+        </div>
+        <div class="insec">
+          <div class="h">Decoded</div>
+          <div class="dtree">
+            <div class="dnode"><span class="tw">▾</span><span class="k">APCI</span><span class="v">I-format</span></div>
+            <div class="dnode child"><span class="k">Start</span><span class="off">@0</span><span class="v">0x68</span></div>
+            <div class="dnode child"><span class="k">APDU length</span><span class="off">@1</span><span class="v">12</span></div>
+            <div class="dnode child"><span class="k">N(S) send</span><span class="off">@2-3</span><span class="v acc">2045</span></div>
+            <div class="dnode child"><span class="k">N(R) recv</span><span class="off">@4-5</span><span class="v acc">1602</span></div>
+            <div class="dnode"><span class="tw">▾</span><span class="k">ASDU</span><span class="v">M_ME_NC_1</span></div>
+            <div class="dnode child"><span class="k">Type ID</span><span class="off">@6</span><span class="v">13 · short float</span></div>
+            <div class="dnode child"><span class="k">SQ / count</span><span class="off">@7</span><span class="v">0 / 1</span></div>
+            <div class="dnode child"><span class="k">Cause (COT)</span><span class="off">@8-9</span><span class="v">1 · cyclic</span></div>
+            <div class="dnode child"><span class="k">Common addr</span><span class="off">@10-11</span><span class="v">1</span></div>
+            <div class="dnode child"><span class="tw">▾</span><span class="k">Object</span><span class="v">IOA 4002</span></div>
+            <div class="dnode child2"><span class="k">Value</span><span class="v acc">130.5 МВт</span></div>
+            <div class="dnode child2"><span class="k">Quality (QDS)</span><span class="v">0x00 · good</span></div>
+          </div>
+        </div>
+        <div class="insec">
+          <div class="h">Mapped node</div>
+          <div class="dtree"><div class="dnode"><span class="k">NodeId</span><span class="v" style="font-size:11px">ns=2;s=ЭСТРА.P</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="status">
+    <div class="cell accent">root · Engineer</div>
+    <div class="cell rec"><span class="dot bad"></span>Capturing · KП-02</div>
+    <div class="cell">3 402 frames</div>
+    <div class="cell">RX 2 271 · TX 1 131</div>
+    <div class="cell">2 errors</div>
+    <div class="sp"></div>
+    <div class="cell mono">North substation</div>
+    <div class="cell mono">v2.6.0</div>
+  </div>
+</div>
+<div class="toggle"><button onclick="t('dark')" id="b-dark" class="on">Dark (Qt default)</button><button onclick="t('light')" id="b-light">Light (web default)</button></div>
+<script>function t(m){document.documentElement.setAttribute('data-theme',m);document.getElementById('b-dark').classList.toggle('on',m==='dark');document.getElementById('b-light').classList.toggle('on',m==='light');}</script>
+</body></html>

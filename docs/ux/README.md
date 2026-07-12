@@ -41,6 +41,8 @@ Rendered, theme-toggleable HTML in
 | `table-watch.html` | Live + historical operator grid — formulas/NodeIds, quality, embedded sparklines, Qt-shaped context menu, row inspector. |
 | `config-workbench.html` | Engineering surface — device/hardware tree, tabbed device parameter editor (IEC 60870 fields, address map), live device-diagnostics inspector. |
 | `users-admin.html` | Admin surface — users grid + RBAC role/permission editor with inherited-vs-explicit grants, admin-gated. |
+| `debugger.html` | Diagnostics — protocol frame trace (IEC 60870) with decoded APCI/ASDU tree + raw hex, direction/error coding. |
+| `transmission-rules.html` | Re-transmission rules grid (source → destination IOA, trigger, transform, status) + rule editor. |
 | `login.html` | Themed sign-in with read-only system preview (replaces the native OS dialog). |
 | `control-command.html` | Two-stage control/write confirm dialog. |
 | `main-window-dark.html` | Earlier exploration (kept for reference). |

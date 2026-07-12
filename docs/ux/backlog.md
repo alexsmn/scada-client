@@ -75,8 +75,8 @@ the shell.
 |---|---|---|---|
 | 5.0 | **Configuration / device workbench**: hardware/device tree, tabbed device parameter editor (protocol fields, address map, limits), Revert/Apply, live device-diagnostics inspector (`config-workbench.html`). | `modules/configuration/`, `modules/device_metrics/`, `main_window/` | Matches `config-workbench.html`; device params edit/apply; diagnostics inspector live; unsaved-changes guard. |
 | 5.1 | **Users & access rights** admin: users grid + RBAC role/permission editor (inherited-vs-explicit grants), enable/disable, reset password, admin-gated; other node-table admin surfaces (Formats, Simulation, Historical DBs) adopt tokens (`users-admin.html`). | `modules/node_table/`, `modules/change_password/` | Matches `users-admin.html`; editing gated to Administrator; grids themed. |
-| 5.2 | Transmission-rules editor themed. | `modules/transmission/` | Matches design language. |
-| 5.3 | Debugger / device-metrics themed. | `modules/debugger/`, `modules/device_metrics/` | Consistent chrome. |
+| 5.2 | **Transmission-rules editor**: rules grid (source → destination IOA, trigger, transform, live status/counts) + rule editor inspector; enable/disable, test-send, Revert/Apply (`transmission-rules.html`). | `modules/transmission/` | Matches `transmission-rules.html`; CRUD + validation; per-rule enable/disable; destination link status shown. |
+| 5.3 | **Debugger / protocol trace**: request/response frame trace with direction/type/error coding, filters, pause/clear/save, and a decoded APCI/ASDU + raw-hex inspector; device-metrics themed (`debugger.html`). | `modules/debugger/`, `modules/device_metrics/` | Matches `debugger.html`; live capture with pause/clear/filter/save; frame decode inspector; maps frame → NodeId. |
 | 5.4 | **Vocabulary parity check** with `web` component names. | docs | `ActivityBar`/`InspectorPanel`/`StatusStrip`/… names align 1:1 with the web parity matrix (no shared files). |
 | 5.5 | **Screenshot regen** for all reshelled views. | `client/tools/screenshot_generator/` | `client/docs/screenshots/` reflects the new UI; manifest tags updated. |
 
