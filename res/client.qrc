@@ -3,4 +3,25 @@
         <file>client.ico</file>
         <file>device.png</file>
     </qresource>
+    <!-- Toolbar/command action icons, addressable as :/res/<name>.png. Kept in
+         lock-step with the id->path table in aui/qt/client_utils_qt.cpp. -->
+    <qresource prefix="/res">
+        <file>acknowledge_all.png</file>
+        <file>chart_curve.png</file>
+        <file>copy.png</file>
+        <file>delete.png</file>
+        <file>display.png</file>
+        <file>doc_table.png</file>
+        <file>event_view.png</file>
+        <file>events3.png</file>
+        <file>execute.png</file>
+        <file>paste.png</file>
+        <file>printer.png</file>
+        <file>record_editor.png</file>
+        <file>summary.png</file>
+        <file>table.png</file>
+        <file>unlock.png</file>
+        <file>write_manual.png</file>
+        <file>settings/settings64-32bit.png</file>
+    </qresource>
 </RCC>

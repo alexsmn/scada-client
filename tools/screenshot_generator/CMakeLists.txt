@@ -40,6 +40,13 @@ add_executable(client_screenshot_generator
   "${CMAKE_CURRENT_SOURCE_DIR}/../../app/client_application_modules.h"
 )
 
+# Compile client.qrc so LoadPixmap's :/res toolbar icons resolve in the
+# generated screenshots, matching the client_qt app. Separate exe from the
+# app, so no duplicate qInitResources_client symbol.
+set_target_properties(client_screenshot_generator PROPERTIES AUTORCC ON)
+target_sources(client_screenshot_generator PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}/../../res/client.qrc")
+
 # opcuapp include precedence (see client/app/qt/CMakeLists.txt).
 find_package(opcuapp REQUIRED)
 target_include_directories(client_screenshot_generator BEFORE PRIVATE

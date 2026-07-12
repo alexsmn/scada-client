@@ -1,12 +1,48 @@
 #include "client_utils_qt.h"
 
 #include "aui/models/menu_model.h"
+#include "resources/common_resources.h"
 
 #include <QMenu>
+#include <QString>
 
-#ifdef _WIN32
-#include <wtypes.h>
-#endif
+#include <array>
+#include <string_view>
+#include <utility>
+
+namespace {
+
+// Maps an integer command/action resource id to the Qt resource path of its
+// icon (packaged in res/client.qrc under the "/res" prefix). This is the
+// cross-platform replacement for the former Win32 FindResource("PNG") lookup,
+// and must stay in lock-step with client.qrc and common_resources.h.
+//
+// NOTE: the table is keyed by the raw numeric id. common_resources.h reuses
+// numeric values across unrelated symbols; the ids below (the ones actually
+// used as an Action image_id today) are all distinct, but a future
+// .image_id_ that happens to share a number with one of these would silently
+// resolve to the wrong icon.
+constexpr std::array<std::pair<unsigned, std::string_view>, 17> kIconResources{{
+    {ID_GRAPH_VIEW, ":/res/chart_curve.png"},
+    {ID_MODUS_VIEW, ":/res/display.png"},
+    {ID_TABLE_VIEW, ":/res/table.png"},
+    {IDB_SUMMARY, ":/res/summary.png"},
+    {ID_EVENT_VIEW, ":/res/event_view.png"},
+    {IDB_OPEN_EVENTS, ":/res/events3.png"},
+    {IDB_TIMED_DATA, ":/res/doc_table.png"},
+    {IDB_RECORD_EDITOR, ":/res/record_editor.png"},
+    {IDB_PRINTER, ":/res/printer.png"},
+    {IDB_WRITE, ":/res/execute.png"},
+    {IDB_WRITE_MANUAL, ":/res/write_manual.png"},
+    {IDB_UNLOCK, ":/res/unlock.png"},
+    {IDB_COPY, ":/res/copy.png"},
+    {IDB_PASTE, ":/res/paste.png"},
+    {IDB_DELETE, ":/res/delete.png"},
+    {IDB_ACKNOWLEDGE_ALL, ":/res/acknowledge_all.png"},
+    {ID_APPLICATION, ":/res/settings/settings64-32bit.png"},
+}};
+
+}  // namespace
 
 void BuildMenu(QMenu& menu, aui::MenuModel& model) {
   model.MenuWillShow();
@@ -55,19 +91,9 @@ void BuildMenu(QMenu& menu, aui::MenuModel& model) {
 }
 
 QPixmap LoadPixmap(unsigned resource_id) {
-#ifdef _WIN32
-  HRSRC hres = FindResource(NULL, MAKEINTRESOURCE(resource_id), L"PNG");
-  DWORD size = SizeofResource(NULL, hres);
-
-  HGLOBAL resource = LoadResource(NULL, hres);
-
-  LPVOID resource_data = LockResource(resource);
-
-  QPixmap pixmap;
-  pixmap.loadFromData(static_cast<const uchar*>(resource_data), size);
-  return pixmap;
-#else
-  (void)resource_id;
+  for (const auto& [id, path] : kIconResources) {
+    if (id == resource_id)
+      return QPixmap(QString::fromUtf8(path.data(), path.size()));
+  }
   return {};
-#endif
 }

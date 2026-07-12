@@ -79,6 +79,10 @@ endif()
 # Exe
 
 add_executable(client_qt WIN32 ${MAIN_QT})
+# Compile res/client.qrc (window icon, tree node icons, toolbar icons). This
+# plain executable target does not inherit AUTORCC, so without this the qrc is
+# never turned into a Qt resource and every ":/..." lookup is null at runtime.
+set_target_properties(client_qt PROPERTIES AUTORCC ON)
 target_precompile_headers(client_qt REUSE_FROM scada_base)
 target_link_libraries(client_qt PUBLIC client_qt_app_shared)
 set_property(TARGET client_qt PROPERTY OUTPUT_NAME "client")

@@ -33,6 +33,14 @@ if(TARGET aui_qt)
   if(SCADA_CXX_MODULES)
     add_subdirectory(module_test)
   endif()
+
+  # client_utils_qt_unittest.cpp checks that every toolbar icon LoadPixmap
+  # serves resolves from res/client.qrc; compile the resource into the test
+  # binary (a separate exe from the app, so no duplicate qInitResources_client).
+  if(TARGET aui_qt_unittests)
+    set_target_properties(aui_qt_unittests PROPERTIES AUTORCC ON)
+    target_sources(aui_qt_unittests PRIVATE ../res/client.qrc)
+  endif()
 endif()
 
 # WT

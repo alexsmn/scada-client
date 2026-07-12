@@ -109,6 +109,12 @@ int main(int argc, char* argv[]) {
 
     SafeApplication qapp(argc, argv);
 
+    // Register the compiled-in Qt resources (res/client.qrc). Without this the
+    // optimized app executable dead-strips the auto-init for qInitResources_client,
+    // leaving every ":/..." resource (window icon, tree node icons, toolbar
+    // icons) unregistered at runtime on macOS.
+    Q_INIT_RESOURCE(client);
+
     QApplication::setApplicationName("Telecontrol SCADA Client");
     QApplication::setOrganizationName("Telecontrol");
     QApplication::setOrganizationDomain("telecontrol.ru");

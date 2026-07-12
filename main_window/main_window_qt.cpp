@@ -271,6 +271,12 @@ void MainWindow::CreateToolbar() {
   toolbar_ = new QToolBar(this);
   toolbar_->setVisible(GetPrefs().toolbar);
   toolbar_->setWindowTitle(tr("Toolbar"));
+  // Icon-only buttons, sized to the 16px source icons so the toolbar stays
+  // compact (the platform default icon size is larger and would upscale the
+  // icons and inflate the button height). Actions without an icon fall back to
+  // showing their text.
+  toolbar_->setToolButtonStyle(Qt::ToolButtonIconOnly);
+  toolbar_->setIconSize(QSize(16, 16));
 
   {
     // Action order is important.

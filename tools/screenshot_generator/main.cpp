@@ -32,6 +32,7 @@
 #include "profile/profile.h"
 #include "timed_data/timed_data_service.h"
 
+#include <QAction>
 #include <QApplication>
 #include <QAbstractProxyModel>
 #include <QDockWidget>
@@ -43,6 +44,7 @@
 #include <QStandardItem>
 #include <QStandardItemModel>
 #include <QString>
+#include <QToolBar>
 #include <QTreeView>
 #include <QTranslator>
 #include <QVBoxLayout>
@@ -306,6 +308,24 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
       layout->activate();
   for (int i = 0; i < 20; ++i)
     QApplication::processEvents();
+
+  // Verify the toolbar icon wiring against the live QWidget tree directly,
+  // not the rendered pixels: the style must be icon-only, and the icon-bearing
+  // command actions must have resolved their icons through LoadPixmap, which
+  // returned empty pixmaps on macOS/Linux before the res/client.qrc fix. Not
+  // every command carries an icon (many are image_id == 0, text-only), so we
+  // assert that the pipeline produced icons, not that every action has one;
+  // exhaustive per-id coverage lives in ClientUtilsQtTest.
+  auto* toolbar = qmain->findChild<QToolBar*>();
+  ASSERT_NE(toolbar, nullptr);
+  EXPECT_EQ(toolbar->toolButtonStyle(), Qt::ToolButtonIconOnly);
+  int actions_with_icons = 0;
+  for (QAction* action : toolbar->actions()) {
+    if (!action->isSeparator() && !action->icon().isNull())
+      ++actions_with_icons;
+  }
+  EXPECT_GT(actions_with_icons, 0)
+      << "no toolbar action resolved an icon (LoadPixmap/qrc regression)";
 
   aui::Tree* tree = nullptr;
   QDockWidget* tree_dock = nullptr;
