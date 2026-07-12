@@ -65,6 +65,12 @@ class EventTableModel : public aui::TableModel, private EventTableModelContext {
   unsigned severity_min() const { return severity_min_; }
   void SetSeverityMin(unsigned severity);
 
+  // When set, the journal hides already-acknowledged events, leaving only the
+  // actionable (unacknowledged) ones — the active-alarm surface. No effect on
+  // the current-events surface, which is unacknowledged by construction.
+  bool unacknowledged_only() const { return unacknowledged_only_; }
+  void SetUnacknowledgedOnly(bool value);
+
   const ItemIds& filter_items() const SCADA_LIFETIME_BOUND {
     return filter_node_ids_;
   }
@@ -110,6 +116,7 @@ class EventTableModel : public aui::TableModel, private EventTableModelContext {
 
   // Filter.
   unsigned severity_min_ = 0;
+  bool unacknowledged_only_ = false;
   ItemIds filter_node_ids_;
 
   // Rows displayed in grid.

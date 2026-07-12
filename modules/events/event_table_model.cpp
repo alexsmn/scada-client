@@ -183,6 +183,9 @@ bool EventTableModel::IsEventShown(const scada::Event& event) const {
   if (event.severity < severity_min_)
     return false;
 
+  if (unacknowledged_only_ && event.acked)
+    return false;
+
   if (filter_node_ids_.empty())
     return true;
 
@@ -352,6 +355,14 @@ void EventTableModel::SetSeverityMin(unsigned severity) {
     return;
 
   severity_min_ = severity;
+  RefilterNow();
+}
+
+void EventTableModel::SetUnacknowledgedOnly(bool value) {
+  if (unacknowledged_only_ == value)
+    return;
+
+  unacknowledged_only_ = value;
   RefilterNow();
 }
 

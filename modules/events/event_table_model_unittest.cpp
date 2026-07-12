@@ -30,8 +30,7 @@ struct TestNodeGenerator {
   }
 
   scada::LocalizedText display_name(int index) const {
-    return UtfConvert<char16_t>(
-        std::format("Event {}", index + 1));
+    return UtfConvert<char16_t>(std::format("Event {}", index + 1));
   }
 
   const int count = 3;
@@ -44,10 +43,10 @@ NodeEventProvider::EventContainer GenerateEvents(const TestNodeGenerator& nodes,
   for (int i = 0; i < count; ++i) {
     int index = i + start;
     scada::EventId event_id = static_cast<scada::EventId>(index + 1);
-    scada::Event event{.event_id = event_id,
-                       .node_id = nodes.node_id(index % nodes.count),
-                       .message = UtfConvert<char16_t>(
-                           std::format("Event {}", index + 1))};
+    scada::Event event{
+        .event_id = event_id,
+        .node_id = nodes.node_id(index % nodes.count),
+        .message = UtfConvert<char16_t>(std::format("Event {}", index + 1))};
     events.try_emplace(event_id, std::move(event));
   }
   return events;
@@ -169,6 +168,60 @@ TEST_F(EventTableModelTest, CurrentEvents_NewUnackedEvents) {
   event_observer_->OnEvents(new_event_ptrs);
 
   ValidateEvents();
+}
+
+// The historical journal can be filtered to the actionable (unacknowledged)
+// events — the mockup's "Unacknowledged only" control — while off it keeps the
+// full history. Built in historical mode with an empty current surface so only
+// the historical rows are under test; refilter is driven synchronously through
+// the historical model's refilter_now signal (no async history read).
+TEST(EventTableModelUnacknowledgedFilterTest,
+     HidesAcknowledgedHistoricalEvents) {
+  TestExecutor executor;
+
+  StaticNodeService node_service;
+  const scada::NodeId node_id{1, NamespaceIndexes::TIT};
+  node_service.Add(
+      {.node_id = node_id,
+       .type_definition_id = data_items::id::AnalogItemType,
+       .attributes = {.browse_name = "n1", .display_name = u"N1"}});
+
+  NiceMock<MockNodeEventProvider> node_event_provider;
+  NodeEventProvider::EventContainer empty_current;
+  ON_CALL(node_event_provider, unacked_events())
+      .WillByDefault(ReturnRef(empty_current));
+  CurrentEventModel current_event_model{node_event_provider};
+
+  NiceMock<scada::MockHistoryService> history_service;
+  HistoricalEventModel historical_event_model{executor, history_service};
+  LocalEvents local_events;
+  LocalEventModel local_event_model{local_events};
+
+  EventTableModel model{{.executor_ = executor,
+                         .node_service_ = node_service,
+                         .current_event_model_ = current_event_model,
+                         .historical_event_model_ = historical_event_model,
+                         .local_event_model_ = local_event_model,
+                         .current_events_ = false}};
+
+  historical_event_model.AddEvent({.event_id = 1, .node_id = node_id});
+  historical_event_model.AddEvent({.event_id = 2, .node_id = node_id});
+  historical_event_model.AddEvent(
+      {.event_id = 3, .node_id = node_id, .acked = true});
+
+  // Off: the full history (two unacked + one acked).
+  historical_event_model.refilter_now();
+  EXPECT_EQ(model.GetRowCount(), 3);
+
+  // On: only the actionable (unacknowledged) events remain.
+  model.SetUnacknowledgedOnly(true);
+  EXPECT_EQ(model.GetRowCount(), 2);
+  for (int row = 0; row < model.GetRowCount(); ++row)
+    EXPECT_FALSE(model.event_at(row).acked);
+
+  // Back off: the acknowledged event returns.
+  model.SetUnacknowledgedOnly(false);
+  EXPECT_EQ(model.GetRowCount(), 3);
 }
 
 TEST_F(EventTableModelTest, CurrentEvents_AckEvents) {
