@@ -46,6 +46,67 @@
         <source>Alarm flood</source>
         <translation>Поток тревог</translation>
     </message>
+    <!-- modules/graph series inspector + limit markers (2.4 trend workspace) -->
+    <message>
+        <source>Series</source>
+        <translation>Серия</translation>
+    </message>
+    <message>
+        <source>Colour</source>
+        <translation>Цвет</translation>
+    </message>
+    <message>
+        <source>Appearance</source>
+        <translation>Вид</translation>
+    </message>
+    <message>
+        <source>Own pane</source>
+        <translation>Отдельная область</translation>
+    </message>
+    <message>
+        <source>Show dots</source>
+        <translation>Показывать точки</translation>
+    </message>
+    <message>
+        <source>Stepped</source>
+        <translation>Ступенчато</translation>
+    </message>
+    <message>
+        <source>Y-axis</source>
+        <translation>Ось Y</translation>
+    </message>
+    <message>
+        <source>Auto</source>
+        <translation>Авто</translation>
+    </message>
+    <message>
+        <source>Limits &amp; annotations</source>
+        <translation>Уставки и аннотации</translation>
+    </message>
+    <message>
+        <source>No limits configured</source>
+        <translation>Уставки не заданы</translation>
+    </message>
+    <message>
+        <source>Node</source>
+        <translation>Узел</translation>
+    </message>
+    <message>
+        <source>Alarm low</source>
+        <translation>Аварийная нижняя</translation>
+    </message>
+    <message>
+        <source>Warning low</source>
+        <translation>Предупредительная нижняя</translation>
+    </message>
+    <message>
+        <source>Warning high</source>
+        <translation>Предупредительная верхняя</translation>
+    </message>
+    <message>
+        <source>Alarm high</source>
+        <translation>Аварийная верхняя</translation>
+    </message>
     <!-- main_window/main_window_qt.cpp (Settings menu) -->
     <message>
         <source>Settings</source>
