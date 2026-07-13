@@ -3,6 +3,8 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <cmath>
+#include <limits>
 
 namespace {
 
@@ -54,6 +56,30 @@ TEST(SparklineTest, FlatSeriesIsCentred) {
   ASSERT_EQ(points.size(), 3u);
   for (const auto& point : points)
     EXPECT_FLOAT_EQ(point.y, 10.0f);  // height / 2
+}
+
+TEST(SparklineTest, DropsNonFiniteSamples) {
+  // A NaN/inf sample (a bad/unavailable value) is dropped and the line is drawn
+  // over the finite ones; without the guard the poisoned range makes every y
+  // NaN.
+  const std::array<double, 4> values{
+      10.0, std::numeric_limits<double>::quiet_NaN(),
+      std::numeric_limits<double>::infinity(), 30.0};
+  const auto points = ComputeSparklinePoints(values, 100, 20, 2.0f);
+  ASSERT_EQ(points.size(), 2u);  // only the two finite samples
+  for (const auto& point : points) {
+    EXPECT_TRUE(std::isfinite(point.x));
+    EXPECT_TRUE(std::isfinite(point.y));
+  }
+  EXPECT_FLOAT_EQ(points.front().y, 18.0f);  // 10 -> min -> bottom
+  EXPECT_FLOAT_EQ(points.back().y, 2.0f);    // 30 -> max -> top
+}
+
+TEST(SparklineTest, FewerThanTwoFiniteSamplesIsEmpty) {
+  const std::array<double, 3> values{std::numeric_limits<double>::quiet_NaN(),
+                                     5.0,
+                                     std::numeric_limits<double>::infinity()};
+  EXPECT_TRUE(ComputeSparklinePoints(values, 100, 20).empty());
 }
 
 TEST(SparklineTest, StaysWithinPaddedBand) {
