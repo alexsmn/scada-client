@@ -45,7 +45,9 @@ struct Action {
     CHECKED = 0x0002,
     VISIBLE = 0x0004,
     ALWAYS_VISIBLE = 0x0008,
-    CHECKABLE = 0x0016,
+    // Distinct bit. 0x0016 (= 0x10|0x04|0x02) used to overlap VISIBLE|CHECKED,
+    // so set_checkable()/checkable() spuriously toggled/read those flags.
+    CHECKABLE = 0x0010,
   };
 
   unsigned command_id_ = 0;
