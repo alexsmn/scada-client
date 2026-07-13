@@ -36,6 +36,11 @@ class GraphView : protected ControllerContext,
   virtual ContentsModel* GetContentsModel() override { return this; }
   virtual TimeModel* GetTimeModel() override { return this; }
 
+  // The reshell series inspector (null when the reshell theme is off / not
+  // built). Exposed for tests to observe that the inspector's line pointer is
+  // refreshed after the graph mutates.
+  SeriesInspector* inspector() const { return inspector_; }
+
   // ContentsModel
   virtual void AddContainedItem(const scada::NodeId& node_id,
                                 unsigned flags) override;

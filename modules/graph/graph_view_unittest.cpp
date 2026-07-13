@@ -1,11 +1,13 @@
 #include "graph/graph_view.h"
 
+#include "aui/severity_colors.h"
 #include "aui/test/app_environment.h"
 #include "base/async_completion.h"
 #include "base/test/awaitable_test.h"
 #include "controller/test/controller_environment.h"
 #include "graph/metrix_data_source.h"
 #include "graph/metrix_graph.h"
+#include "graph/series_inspector.h"
 #include "node_service/node_model.h"
 #include "node_service/test/model_node_service.h"
 #include "resources/common_resources.h"
@@ -157,6 +159,40 @@ TEST_F(GraphViewTest, NewLineUsesDefaultLineWidth) {
   }
   ASSERT_THAT(graph_item, NotNull());
   EXPECT_EQ(graph_item->GetInt("width"), 4);
+}
+
+// Regression: deleting the selected pane frees its lines, one of which the
+// reshell series inspector may point at. DeleteSelectedPane must re-derive the
+// inspector's line afterwards (it used to leave a dangling pointer that the
+// next repaint dereferenced — a use-after-free). Standalone (not the fixture)
+// so the reshell theme is active during Init, which is when the inspector is
+// created.
+TEST(GraphViewInspectorTest, DeletingSelectedPaneRefreshesSeriesInspector) {
+  AppEnvironment app_env;
+  ControllerEnvironment env;
+
+  const scada::aui::SeverityTheme previous_theme =
+      scada::aui::GetSeverityTheme();
+  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
+  GraphView view{env.MakeControllerContext()};
+  WindowDefinition def;
+  std::unique_ptr<UiView> ui = view.Init(def);
+  scada::aui::SetSeverityTheme(previous_theme);
+
+  view.AddContainedItem(kTestNodeId, 0);
+
+  SeriesInspector* inspector = view.inspector();
+  ASSERT_THAT(inspector, NotNull());  // reshell theme => inspector exists
+
+  // Delete the selected pane via its command (DeleteSelectedPane is private).
+  CommandHandler* delete_handler = view.GetCommandHandler(ID_GRAPH_DELETE_PANE);
+  ASSERT_THAT(delete_handler, NotNull());
+  ASSERT_TRUE(delete_handler->IsCommandEnabled(ID_GRAPH_DELETE_PANE));
+  delete_handler->ExecuteCommand(ID_GRAPH_DELETE_PANE);
+
+  // No panes remain, so the inspector's line must be cleared — not left
+  // pointing at a freed line.
+  EXPECT_THAT(inspector->line(), IsNull());
 }
 
 TEST_F(GraphViewTest, FakeTimedDataRendersLines) {

@@ -262,6 +262,13 @@ void GraphView::DeleteSelectedPane() {
   ClearPane(*pane);
   graph_->DeletePane(*pane);
 
+  // ClearPane/DeletePane frees the pane's lines, one of which the series
+  // inspector may still point at (the SelectPane above refreshed it while the
+  // doomed pane still existed). Re-derive its line from the now-current pane —
+  // the same post-mutation refresh RemoveContainedItem does — so a subsequent
+  // repaint does not dereference a freed line.
+  OnGraphSelectPane();
+
   controller_delegate_.SetModified(true);
 }
 

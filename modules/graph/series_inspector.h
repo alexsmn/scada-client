@@ -32,6 +32,10 @@ class SeriesInspector : public QWidget {
   // colour, flags, title, limits and source on each call and repaints.
   void SetLine(MetrixGraph::MetrixLine* line);
 
+  // The line the inspector currently points at (null when cleared). Lets the
+  // host / tests confirm the pointer is refreshed after the graph mutates.
+  MetrixGraph::MetrixLine* line() const { return line_; }
+
   // Invoked when the operator picks a swatch; the host applies it (e.g. via the
   // graph view's recolour path) and calls SetLine again to refresh.
   std::function<void(QColor)> on_color_chosen;
