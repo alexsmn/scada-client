@@ -439,6 +439,19 @@ void MetrixGraph::MetrixLine::OnDataSourceItemChanged() {
 }
 
 void MetrixGraph::MetrixLine::UpdateLimitStyles() {
+  // The loop below casts LimitKind -> GraphLine::LimitBand by value, relying on
+  // the two enums listing the same four bands in the same order. Guard that at
+  // compile time so a reorder in either (LimitKind here, LimitBand in the
+  // external graph_qt) is a build error, not a silent severity mis-map.
+  static_assert(static_cast<int>(LimitKind::kLoLo) ==
+                static_cast<int>(LimitBand::kLoLo));
+  static_assert(static_cast<int>(LimitKind::kLo) ==
+                static_cast<int>(LimitBand::kLo));
+  static_assert(static_cast<int>(LimitKind::kHi) ==
+                static_cast<int>(LimitBand::kHi));
+  static_assert(static_cast<int>(LimitKind::kHiHi) ==
+                static_cast<int>(LimitBand::kHiHi));
+
   ClearLimitStyles();
 
   const MetrixDataSource& source = *data_source_;
