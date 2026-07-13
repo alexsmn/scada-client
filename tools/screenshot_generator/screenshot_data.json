@@ -21,6 +21,9 @@
 
   "dialog_analog_node_id": "TIT.212",
 
+  "_display_comment": "VDS/SDE fixture for the reshelled substation display (CaptureDisplay), relative to this file.",
+  "display": { "path": "fixtures/substation.vds" },
+
   "nodes": [
     { "id": "TS.100", "browse_name": "M340",                "class": "object", "type_definition": "SCADA.108" },
     { "id": "TS.101", "browse_name": "Smart Termo",         "class": "object", "type_definition": "SCADA.118" },
@@ -224,7 +227,8 @@
     { "type": "Favorites",      "filename": "favorites.png",           "width": 300,  "height": 400 },
     { "type": "FileSystemView", "filename": "files.png",               "width": 300,  "height": 400 },
     { "type": "TimeVal",        "filename": "data.png",                "width": 800,  "height": 400 },
-    { "type": "Transmission",   "filename": "client-retransmission.png", "path": "TS.702", "width": 763,  "height": 645, "min_rows": 4 }
+    { "type": "Transmission",   "filename": "client-retransmission.png", "path": "TS.702", "width": 763,  "height": 645, "min_rows": 4 },
+    { "type": "Display",        "filename": "substation-display.png",   "width": 1100, "height": 720 }
   ],
 
   "_dialogs_comment": [

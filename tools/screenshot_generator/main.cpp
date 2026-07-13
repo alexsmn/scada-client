@@ -1,4 +1,5 @@
 #include "dialog_capture.h"
+#include "display_capture.h"
 #include "fixture_builder.h"
 #include "graph_capture.h"
 #include "screenshot_config.h"
@@ -282,6 +283,10 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
       ++captured;
       continue;
     }
+    // The substation display is rendered standalone (CaptureDisplay) — it is
+    // not opened as a page view, so skip it in the view-matching loop.
+    if (spec.window_type == "Display")
+      continue;
 
     OpenedView* view = nullptr;
     for (OpenedView* v : main_window.opened_views()) {
@@ -334,6 +339,25 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
 
   std::cout << "Captured " << captured << "/" << g_config.screenshots.size()
             << " screenshots to " << output_dir.string() << std::endl;
+}
+
+TEST_F(ScreenshotGenerator, CaptureDisplay) {
+  // The reshelled substation display renders standalone from a VDS fixture — it
+  // isn't part of the profile page, so it can't be picked up by
+  // CaptureAllWindows' view-matching loop. Cross-platform: the VDS renderer
+  // paints without the Windows-only Modus/Vidicon ActiveX host.
+  const ScreenshotSpec* display_spec = nullptr;
+  for (const auto& spec : g_config.screenshots) {
+    if (spec.window_type == "Display") {
+      display_spec = &spec;
+      break;
+    }
+  }
+  if (!display_spec || !ShouldCaptureScreenshot(display_spec->filename))
+    GTEST_SKIP() << "Display capture not requested";
+
+  std::filesystem::create_directories(GetOutputDir());
+  SaveDisplayScreenshot(*display_spec, g_config.json);
 }
 
 TEST_F(ScreenshotGenerator, CaptureMainWindow) {

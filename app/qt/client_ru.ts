@@ -193,6 +193,64 @@
         <source>Period</source>
         <translation>Период</translation>
     </message>
+    <!-- modules/display_frame/qt/display_frame.cpp (reshell display toolbar) -->
+    <message>
+        <source>Live</source>
+        <translation>Онлайн</translation>
+    </message>
+    <message>
+        <source>Zoom in</source>
+        <translation>Увеличить</translation>
+    </message>
+    <message>
+        <source>Zoom out</source>
+        <translation>Уменьшить</translation>
+    </message>
+    <message>
+        <source>Fit</source>
+        <translation>По размеру</translation>
+    </message>
+    <message>
+        <source>Fit to window</source>
+        <translation>Вписать в окно</translation>
+    </message>
+    <message>
+        <source>Actual size</source>
+        <translation>Реальный размер</translation>
+    </message>
+    <message>
+        <source>Export image</source>
+        <translation>Экспорт изображения</translation>
+    </message>
+    <!-- modules/inspector/qt/inspector_panel.cpp + main_window (Inspector dock) -->
+    <message>
+        <source>Inspector</source>
+        <translation>Инспектор</translation>
+    </message>
+    <message>
+        <source>Select an element to inspect it</source>
+        <translation>Выберите элемент для просмотра</translation>
+    </message>
+    <message>
+        <source>Measurements</source>
+        <translation>Измерения</translation>
+    </message>
+    <message>
+        <source>Control…</source>
+        <translation>Управление…</translation>
+    </message>
+    <message>
+        <source>Good</source>
+        <translation>Достоверно</translation>
+    </message>
+    <message>
+        <source>Bad</source>
+        <translation>Недостоверно</translation>
+    </message>
+    <message>
+        <source>Opens the two-stage command confirm. Actions are logged.</source>
+        <translation>Открывает двухэтапное подтверждение команды. Действия журналируются.</translation>
+    </message>
     <message>
         <source>Create</source>
         <translation>Создать</translation>

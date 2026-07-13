@@ -14,6 +14,7 @@
     { "file": "devices-status.png", "tag": "auto-state", "referenced_from": ["client.md"], "notes": "Struct window, status column visible." },
     { "file": "devices-traffic.png", "tag": "auto-state", "referenced_from": ["client/device-watch.md"], "notes": "Log window showing live device traffic." },
     { "file": "display.png", "tag": "manual-modus", "referenced_from": ["client/display.md"], "notes": "Modus schematic; out of scope until fake runtime lands." },
+    { "file": "substation-display.png", "tag": "auto-view", "published": false, "referenced_from": [], "notes": "Reshelled substation display: the DisplayFrame chrome (Live indicator, breadcrumb, zoom/fit/export) around the cross-platform VDS renderer. Opt-in UX — rendered by CaptureDisplay; run with --theme=dark for the framed reshell. Windows-only Modus ActiveX not exercised." },
     { "file": "events-cur.jpg", "tag": "obsolete", "referenced_from": [], "notes": "Superseded by menu-events-log.png." },
     { "file": "firewall.jpg", "tag": "manual-os", "referenced_from": [], "notes": "Windows firewall dialog; OS-level." },
     { "file": "firewall.png", "tag": "manual-os", "referenced_from": [], "notes": "Windows firewall dialog; OS-level." },

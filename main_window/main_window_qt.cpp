@@ -15,6 +15,7 @@
 #include "controller/selection_model.h"
 #include "controller/window_info.h"
 #include "filesystem/file_cache.h"
+#include "inspector/qt/inspector_panel.h"
 #include "main_window/activity_bar_qt.h"
 #include "main_window/alarm_flood.h"
 #include "main_window/command_palette_qt.h"
@@ -159,6 +160,7 @@ MainWindow::MainWindow(MainWindowContext&& context)
   if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy) {
     CreateActivityBar();
     CreateContextBar();
+    CreateInspectorPanel();
     // Kick off the palette's tag browse in the background so tags are ready by
     // the time the operator first opens the palette.
     if (node_service_) {
@@ -653,7 +655,46 @@ void MainWindow::CreateToolbar() {
 
 void MainWindow::SetWindowFlashing(bool flashing) {}
 
+void MainWindow::CreateInspectorPanel() {
+  // The control action reuses the selection-scoped write/control command
+  // (ID_WRITE) — the existing two-stage confirm — resolved against the active
+  // selection exactly like the toolbar/menu path.
+  auto resolve_write = [this]() -> CommandHandler* {
+    return ResolveCommandHandler(ui_command_registry_.command_manager(),
+                                 ID_WRITE, kToolbarContexts, *commands_);
+  };
+
+  inspector_ = new InspectorPanel(InspectorPanelContext{
+      .on_control =
+          [resolve_write] {
+            CommandHandler* handler = resolve_write();
+            if (handler && handler->IsCommandEnabled(ID_WRITE))
+              handler->ExecuteCommand(ID_WRITE);
+          },
+      .is_control_enabled =
+          [resolve_write] {
+            CommandHandler* handler = resolve_write();
+            return handler && handler->IsCommandEnabled(ID_WRITE);
+          }});
+
+  auto* dock =
+      new QDockWidget(QString::fromStdU16String(Translate("Inspector")), this);
+  dock->setObjectName(QStringLiteral("InspectorDock"));
+  dock->setWidget(inspector_);
+  addDockWidget(Qt::RightDockWidgetArea, dock);
+}
+
 void MainWindow::OnSelectionChanged() {
+  if (inspector_) {
+    OpenedView* active = GetActiveView();
+    SelectionModel* selection =
+        active ? active->controller().GetSelectionModel() : nullptr;
+    if (selection)
+      inspector_->ShowSelection(*selection);
+    else
+      inspector_->Clear();
+  }
+
   for (const auto& [command_id, action] : action_map_) {
     UpdateAction(*action, command_id, ActionChangeMask::AllButTitle);
   }

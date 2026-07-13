@@ -27,6 +27,8 @@ add_executable(client_screenshot_generator
   "widget_capture.h"
   "graph_capture.cpp"
   "graph_capture.h"
+  "display_capture.cpp"
+  "display_capture.h"
   "dialog_capture.cpp"
   "dialog_capture.h"
   "fixture_builder.cpp"
@@ -57,6 +59,7 @@ target_link_libraries(client_screenshot_generator PRIVATE
   client_common
   client_configuration_qt
   client_controller_qt
+  client_display_frame_qt
   client_events_qt
   client_export_configuration_qt
   client_export_excel_qt
@@ -73,6 +76,7 @@ target_link_libraries(client_screenshot_generator PRIVATE
   client_portfolio_qt
   client_print_service_qt
   client_properties_qt
+  client_vds_runtime_qt
   scada_core_opcua_client
   Boost::program_options
   base_unittest

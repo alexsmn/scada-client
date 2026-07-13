@@ -109,6 +109,10 @@ Page MakeScreenshotPage(const std::vector<ScreenshotSpec>& specs,
                         const boost::json::value& json) {
   Page page;
   for (const auto& spec : specs) {
+    // The substation display is rendered standalone (CaptureDisplay); it has no
+    // registered page view type, so keep it off the profile page.
+    if (spec.window_type == "Display")
+      continue;
     if (spec.window_type == "Graph")
       page.AddWindow(MakeGraphDefinition(json));
     else {
