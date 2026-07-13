@@ -201,22 +201,25 @@ void InspectorPanel::ShowSelection(const SelectionModel& selection) {
   }
 
   const TimedDataSpec& source = selection.timed_data();
+  if (source.node_id().is_null()) {
+    // A non-Variable node selection (a folder/object) carries no live value and
+    // no data spec, so its title/value would render blank. Show the empty state
+    // rather than an empty element card.
+    Clear();
+    return;
+  }
+
   title_->setText(QString::fromStdU16String(selection.GetTitle()));
 
-  if (!source.node_id().is_null()) {
-    // Copy the selection's connected spec (which shares the underlying live
-    // TimedData) and own its update handler, so the readout keeps ticking
-    // while this element stays selected.
-    spec_ = std::make_unique<TimedDataSpec>(source);
-    spec_->SetCurrentOnly();
-    spec_->update_handler = [this](std::span<const scada::DataValue>) {
-      RefreshValue();
-    };
-    subtitle_->setText(QString::fromStdString(spec_->formula()));
-  } else {
-    spec_.reset();
-    subtitle_->clear();
-  }
+  // Copy the selection's connected spec (which shares the underlying live
+  // TimedData) and own its update handler, so the readout keeps ticking
+  // while this element stays selected.
+  spec_ = std::make_unique<TimedDataSpec>(source);
+  spec_->SetCurrentOnly();
+  spec_->update_handler = [this](std::span<const scada::DataValue>) {
+    RefreshValue();
+  };
+  subtitle_->setText(QString::fromStdString(spec_->formula()));
 
   RefreshValue();
   stack_->setCurrentIndex(1);
