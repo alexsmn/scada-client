@@ -50,7 +50,10 @@ std::unique_ptr<UiView> PortfolioView::Init(
   });
 
   tree_->SetContextMenuHandler([this](const aui::Point& point) {
-    controller_delegate_.ShowPopupMenu(nullptr, IDR_PFOLIO_POPUP, point, true);
+    // No view-specific static items: the portfolio's node commands are supplied
+    // by the generic cross-platform context menu (the former `IDR_PFOLIO_POPUP`
+    // carried only the dynamic `<Item>` placeholder).
+    controller_delegate_.ShowPopupMenu(nullptr, /*resource_id=*/0, point, true);
   });
 
   command_registry_.AddCommand(

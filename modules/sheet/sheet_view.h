@@ -10,6 +10,7 @@
 #include "controller/controller.h"
 #include "controller/controller_context.h"
 #include "controller/selection_model.h"
+#include "modules/sheet/sheet_menu_model.h"
 
 #include <memory>
 
@@ -78,6 +79,10 @@ class SheetController : protected ControllerContext,
   aui::Grid* grid_ = nullptr;
 
   CommandRegistry command_registry_;
+
+  // Cross-platform context menu, backed by `command_registry_`. Declared after
+  // it so the registry outlives the menu's delegate.
+  SheetMenuModel sheet_menu_model_{command_registry_};
 
   friend class SheetCell;
 };

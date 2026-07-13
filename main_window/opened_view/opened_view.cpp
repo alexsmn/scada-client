@@ -187,12 +187,8 @@ void OpenedView::ShowPopupMenu(aui::MenuModel* merge_menu,
   // cross-platform; don't substitute a Windows-only default resource menu.
   // Callers without a menu model fall back to the view's default resource menu
   // (and ultimately the generic item popup).
-  if (resource_id == 0 && !merge_menu) {
-    resource_id = window_info().menu;
-
-    if (resource_id == 0)
-      resource_id = IDR_ITEM_POPUP;
-  }
+  if (resource_id == 0 && !merge_menu)
+    resource_id = window_info().menu ? window_info().menu : IDR_ITEM_POPUP;
 
   popup_menu_handler_(merge_menu, resource_id, point, right_click);
 }

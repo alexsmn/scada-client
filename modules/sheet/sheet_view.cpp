@@ -82,8 +82,12 @@ std::unique_ptr<UiView> SheetController::Init(
   grid_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });
 
   grid_->SetContextMenuHandler([this](const aui::Point& point) {
+    // While editing, offer the view's cross-platform menu model (the "Color..."
+    // command); otherwise fall back to the generic item popup. Replaces the
+    // Windows-only `IDR_SHEET_POPUP` resource menu.
     controller_delegate_.ShowPopupMenu(
-        nullptr, model_->is_editing() ? IDR_SHEET_POPUP : 0, point, true);
+        model_->is_editing() ? &sheet_menu_model_.model() : nullptr,
+        /*resource_id=*/0, point, true);
   });
 
   command_registry_.AddCommand(

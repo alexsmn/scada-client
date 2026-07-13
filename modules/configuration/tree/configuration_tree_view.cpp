@@ -72,7 +72,10 @@ ConfigurationTreeView::ConfigurationTreeView(
   });
 
   tree_view_->SetContextMenuHandler([this](const aui::Point& point) {
-    controller_delegate_.ShowPopupMenu(nullptr, IDR_ITEM_POPUP, point, true);
+    // No view-specific static items: the tree's node commands are supplied by
+    // the generic cross-platform context menu (the former `IDR_ITEM_POPUP`
+    // carried only the dynamic `<Item>` placeholder).
+    controller_delegate_.ShowPopupMenu(nullptr, /*resource_id=*/0, point, true);
   });
 }
 

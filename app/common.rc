@@ -749,29 +749,6 @@ BEGIN
     END
 END
 
-IDR_EVENT_POPUP MENU
-BEGIN
-    POPUP "События"
-    BEGIN
-        MENUITEM "Квитировать все",             ID_ACKNOWLEDGE_ALL
-        MENUITEM SEPARATOR
-        MENUITEM "<Item>",                      ID_ITEM_COMMANDS
-    END
-END
-
-IDR_FAVOR_POPUP MENU
-BEGIN
-    POPUP "Popup"
-    BEGIN
-        MENUITEM "Открыть",                     ID_OPEN
-        MENUITEM SEPARATOR
-        MENUITEM "Добавить Web-страницу...",    ID_FAVOURITES_ADD_URL
-        MENUITEM SEPARATOR
-        MENUITEM "Переименовать",               ID_RENAME
-        MENUITEM "Удалить",                     ID_DELETE
-    END
-END
-
 IDR_GRAPH_POPUP MENU
 BEGIN
     POPUP "Popup"
@@ -787,57 +764,6 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Добавить панель",             ID_GRAPH_ADD_PANE
         MENUITEM "Удалить панель",              ID_GRAPH_DELETE_PANE
-    END
-END
-
-IDR_PFOLIO_POPUP MENU
-BEGIN
-    POPUP "Popup"
-    BEGIN
-        MENUITEM "<Управление>",                ID_ITEM_COMMANDS
-    END
-END
-
-IDR_TABLE_POPUP MENU
-BEGIN
-    POPUP "Popup"
-    BEGIN
-        MENUITEM "<Управление>",                ID_ITEM_COMMANDS
-        MENUITEM SEPARATOR
-        MENUITEM "Квитировать все",             ID_ACKNOWLEDGE_ALL
-        MENUITEM SEPARATOR
-        MENUITEM "Изменить\tF2",                ID_RENAME
-        MENUITEM "Сместить вверх",              ID_MOVE_UP
-        MENUITEM "Сместить вниз",               ID_MOVE_DOWN
-        MENUITEM "Удалить строку",              ID_DELETE
-        MENUITEM SEPARATOR
-        POPUP "Упорядочить"
-        BEGIN
-            MENUITEM "Имя",                         ID_SORT_NAME, CHECKED
-            MENUITEM "Канал",                       ID_SORT_CHANNEL, CHECKED
-        END
-    END
-END
-
-IDR_SHEET_POPUP MENU
-BEGIN
-    POPUP "Popup"
-    BEGIN
-        MENUITEM "<Item>",                      ID_ITEM_COMMANDS
-        MENUITEM SEPARATOR
-        MENUITEM "Цвет...",                     ID_GRAPH_COLOR
-    END
-END
-
-IDR_LOG_POPUP MENU
-BEGIN
-    POPUP "Popup"
-    BEGIN
-        MENUITEM "Пауза",                       ID_PAUSE, CHECKED
-        MENUITEM SEPARATOR
-        MENUITEM "Сохранить как...",            ID_SAVE_AS
-        MENUITEM SEPARATOR
-        MENUITEM "Очистить",                    ID_CLEAR_ALL
     END
 END
 

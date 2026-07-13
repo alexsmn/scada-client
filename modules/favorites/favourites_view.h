@@ -3,10 +3,11 @@
 #include "aui/aui_ns_compat.h"
 
 #include "base/awaitable.h"
-#include "resources/common_resources.h"
 #include "controller/command_registry.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
+#include "modules/favorites/favourites_view_menu_model.h"
+#include "resources/common_resources.h"
 
 #include <memory>
 
@@ -53,4 +54,8 @@ class FavouritesView final : protected ControllerContext, public Controller {
   Command& add_url_command_ =
       command_registry_.AddCommand(ID_FAVOURITES_ADD_URL);
 #endif
+
+  // Cross-platform context menu, backed by `command_registry_`. Declared after
+  // it so the registry outlives the menu's delegate.
+  FavouritesViewMenuModel favourites_menu_model_{command_registry_};
 };

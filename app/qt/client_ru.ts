@@ -1037,6 +1037,31 @@
         <source>Address</source>
         <translation>Адрес</translation>
     </message>
+    <!-- context menu models (modules/table, modules/sheet) -->
+    <message>
+        <source>Delete Row</source>
+        <translation>Удалить строку</translation>
+    </message>
+    <message>
+        <source>Move Up</source>
+        <translation>Сместить вверх</translation>
+    </message>
+    <message>
+        <source>Move Down</source>
+        <translation>Сместить вниз</translation>
+    </message>
+    <message>
+        <source>Sort</source>
+        <translation>Упорядочить</translation>
+    </message>
+    <message>
+        <source>Channel</source>
+        <translation>Канал</translation>
+    </message>
+    <message>
+        <source>Color...</source>
+        <translation>Цвет...</translation>
+    </message>
 </context>
 <context>
     <name>AboutDialog</name>
