@@ -235,7 +235,7 @@
     { "type": "Subsystems",     "filename": "hardware-tree.png",       "width": 300,  "height": 500 },
     { "type": "Users",          "filename": "users.png",               "width": 500,  "height": 302, "min_rows": 13 },
     { "type": "Params",         "filename": "parameters.png",          "width": 500,  "height": 400 },
-    { "type": "NewProps",       "filename": "config-parameters.png",   "width": 640,  "height": 480, "path": "TS.104" },
+    { "type": "NewProps",       "filename": "config-parameters.png",   "width": 640,  "height": 480, "path": "TS.702" },
     { "type": "CusTable",       "filename": "sheet.png",               "width": 800,  "height": 400 },
     { "type": "Favorites",      "filename": "favorites.png",           "width": 300,  "height": 400 },
     { "type": "FileSystemView", "filename": "files.png",               "width": 300,  "height": 400 },

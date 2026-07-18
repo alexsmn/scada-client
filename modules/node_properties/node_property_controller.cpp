@@ -13,7 +13,14 @@
 
 #if defined(UI_QT)
 #include "aui/severity_colors.h"
+#include "base/awaitable.h"
+#include "node_properties/device_address_map.h"
 #include "parameter_form/qt/device_parameter_form.h"
+
+#include <QPointer>
+
+#include <utility>
+#include <vector>
 #endif
 
 // NodePropertyController
@@ -50,6 +57,19 @@ std::unique_ptr<UiView> NodePropertyController::Init(
     if (DeviceParameterForm* form = MakeDeviceParameterForm(
             *property_model_, QString::fromStdU16String(
                                   property_model_->node().display_name()))) {
+      // Populate the address-map preview from the device's transmission items,
+      // off the construction path. Guarded by a QPointer so a late completion
+      // cannot touch a destroyed form.
+      CoSpawn(executor_,
+              [executor = executor_, device = property_model_->node(),
+               form_ptr = QPointer<DeviceParameterForm>{form}]()
+                  mutable -> Awaitable<void> {
+                std::vector<AddressMapRow> rows = co_await BuildDeviceAddressMap(
+                    executor, std::move(device));
+                if (form_ptr && !rows.empty())
+                  form_ptr->SetAddressMap(std::move(rows));
+                co_return;
+              });
       return std::unique_ptr<UiView>{form};
     }
   }

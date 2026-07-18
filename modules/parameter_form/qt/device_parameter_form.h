@@ -1,5 +1,6 @@
 #pragma once
 
+#include "parameter_form/address_map_row.h"
 #include "parameter_form/parameter_staging.h"
 
 #include <QString>
@@ -47,6 +48,12 @@ class DeviceParameterForm : public QWidget {
   // Discards every staged edit, restoring fields to the model's live values.
   void Revert();
 
+  // Supplies the device's address-map rows. When non-empty, an extra read-only
+  // "Address map" tab is shown after the property-group tabs (config-workbench's
+  // address-map preview). Passing an empty list removes the tab. Safe to call
+  // repeatedly as the async browse streams rows in.
+  void SetAddressMap(std::vector<AddressMapRow> rows);
+
  private:
   // One rendered field: the (group, index) it writes to and its editor. The
   // editor is a QLineEdit (TEXT / BUTTON / read-only) or a QComboBox (DROPDOWN),
@@ -62,6 +69,8 @@ class DeviceParameterForm : public QWidget {
   void Rebuild();
   QWidget* BuildSectionPage(scada::aui::PropertyGroup& group,
                             const std::vector<int>& field_indices);
+  // Builds the read-only address-map grid page from address_map_.
+  QWidget* BuildAddressMapPage();
   // Builds the editor widget for one property from its EditData (text box,
   // editable dropdown, dialog-button field, or read-only box), seeded with the
   // property's current value. Does not wire the change signal (see
@@ -84,6 +93,7 @@ class DeviceParameterForm : public QWidget {
   scada::aui::PropertyModel& model_;
   QString title_;
   ParameterStaging staging_;
+  std::vector<AddressMapRow> address_map_;
 
   QLabel* title_label_ = nullptr;
   QHBoxLayout* subtab_layout_ = nullptr;

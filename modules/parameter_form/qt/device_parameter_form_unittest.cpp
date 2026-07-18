@@ -8,6 +8,7 @@
 #include <QComboBox>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QTableWidget>
 
 #include <memory>
 #include <utility>
@@ -251,6 +252,41 @@ TEST_F(DeviceParameterFormTest, ReadOnlyPropertyIsNotEditable) {
   QLineEdit* type = FindEditorWithText(form, QStringLiteral("ModbusDeviceType"));
   ASSERT_NE(type, nullptr);
   EXPECT_TRUE(type->isReadOnly());
+}
+
+TEST_F(DeviceParameterFormTest, SetAddressMapAddsAReadOnlyGridTab) {
+  auto model = MakeDeviceModel();
+  DeviceParameterForm form{*model, QStringLiteral("RTU-02")};
+
+  form.SetAddressMap({
+      {u"Q1 state", u"TS", u"1001", u"ns=2;s=Q1"},
+      {u"U L1-L2", u"TI", u"4001", u"ns=2;s=U12"},
+  });
+
+  bool has_tab = false;
+  for (QPushButton* button : form.findChildren<QPushButton*>()) {
+    if (button->text() == QStringLiteral("Address map"))
+      has_tab = true;
+  }
+  EXPECT_TRUE(has_tab);
+
+  auto* table =
+      form.findChild<QTableWidget*>(QStringLiteral("addressMapTable"));
+  ASSERT_NE(table, nullptr);
+  EXPECT_EQ(table->editTriggers(), QAbstractItemView::NoEditTriggers);
+  ASSERT_EQ(table->rowCount(), 2);
+  EXPECT_EQ(table->item(0, 0)->text(), QStringLiteral("Q1 state"));
+  EXPECT_EQ(table->item(0, 2)->text(), QStringLiteral("1001"));
+  EXPECT_EQ(table->item(1, 1)->text(), QStringLiteral("TI"));
+}
+
+TEST_F(DeviceParameterFormTest, EmptyAddressMapAddsNoTab) {
+  auto model = MakeDeviceModel();
+  DeviceParameterForm form{*model, QStringLiteral("RTU-02")};
+  form.SetAddressMap({});
+
+  for (QPushButton* button : form.findChildren<QPushButton*>())
+    EXPECT_NE(button->text(), QStringLiteral("Address map"));
 }
 
 }  // namespace

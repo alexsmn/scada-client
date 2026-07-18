@@ -13,10 +13,13 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QHeaderView>
 #include <QScrollArea>
 #include <QSignalBlocker>
 #include <QStackedWidget>
 #include <QStyle>
+#include <QTableWidget>
+#include <QTableWidgetItem>
 #include <QVBoxLayout>
 
 #include <memory>
@@ -360,9 +363,59 @@ void DeviceParameterForm::Rebuild() {
     add_subtab(name, page_index);
   }
 
+  // The device's address-map preview, after the property-group tabs.
+  if (!address_map_.empty()) {
+    const int page_index = pages_->count();
+    pages_->addWidget(BuildAddressMapPage());
+    add_subtab(Tr("Address map"), page_index);
+  }
+
   if (pages_->count() > 0)
     SelectSection(0);
   UpdateDirtyUi();
+}
+
+void DeviceParameterForm::SetAddressMap(std::vector<AddressMapRow> rows) {
+  address_map_ = std::move(rows);
+  Rebuild();
+}
+
+QWidget* DeviceParameterForm::BuildAddressMapPage() {
+  const scada::aui::ThemeTokens& tokens = FormTokens();
+
+  auto* table = new QTableWidget;
+  table->setObjectName(QStringLiteral("addressMapTable"));
+  table->setEditTriggers(QAbstractItemView::NoEditTriggers);  // read-only.
+  table->setSelectionMode(QAbstractItemView::NoSelection);
+  table->setColumnCount(4);
+  const QStringList headers{Tr("Signal"), Tr("Type"), Tr("IOA"), Tr("NodeId")};
+  table->setHorizontalHeaderLabels(headers);
+  table->verticalHeader()->setVisible(false);
+  table->horizontalHeader()->setStretchLastSection(true);
+  table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+  table->setStyleSheet(
+      QStringLiteral("QTableWidget{background:%1;color:%2;border:none;"
+                     "gridline-color:%3;}"
+                     "QHeaderView::section{background:%4;color:%5;border:none;"
+                     "border-bottom:1px solid %3;padding:4px 8px;}")
+          .arg(tokens.bg.name(), tokens.fg.name(), tokens.border.name(),
+               tokens.surface_muted.name(), tokens.fg_subtle.name()));
+
+  table->setRowCount(static_cast<int>(address_map_.size()));
+  for (int row = 0; row < static_cast<int>(address_map_.size()); ++row) {
+    const AddressMapRow& data = address_map_[row];
+    const QString cells[] = {QString::fromStdU16String(data.signal),
+                             QString::fromStdU16String(data.type),
+                             QString::fromStdU16String(data.ioa),
+                             QString::fromStdU16String(data.node_id)};
+    for (int col = 0; col < 4; ++col) {
+      auto* item = new QTableWidgetItem{cells[col]};
+      item->setFlags(Qt::ItemIsEnabled);
+      table->setItem(row, col, item);
+    }
+  }
+
+  return table;
 }
 
 void DeviceParameterForm::OnFieldEdited(const Field& field,
