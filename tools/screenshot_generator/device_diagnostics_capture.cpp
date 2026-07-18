@@ -1,0 +1,41 @@
+#include "device_diagnostics_capture.h"
+
+#include "screenshot_config.h"
+#include "screenshot_wait.h"
+#include "widget_capture.h"
+
+#include "device_diagnostics/qt/device_diagnostics_panel.h"
+#include "model/node_id_util.h"
+#include "node_service/node_ref.h"
+#include "node_service/node_service.h"
+#include "scada/node_id.h"
+
+#include <array>
+#include <chrono>
+
+void SaveDeviceDiagnosticsScreenshot(const ScreenshotSpec& spec,
+                                     NodeService& node_service,
+                                     TimedDataService& timed_data_service,
+                                     const boost::json::value& json) {
+  // The fixture device carrying seeded diagnostic child variables (link down +
+  // traffic/polling counters) — КП-01, an IEC 60870-5-104 RTU, matching the
+  // mockup's "Link down" hero.
+  const scada::NodeId device_id = NodeIdFromScadaString("TS.103");
+
+  // Make the device (its children + type definition + values) resident so
+  // ShowDevice can resolve the diagnostic variables and read their values.
+  const std::array<scada::NodeId, 1> ids{device_id};
+  scada::screenshot_generator::FetchNodesResident(node_service, ids);
+
+  NodeRef device = node_service.GetNode(device_id);
+
+  DeviceDiagnosticsPanel panel{
+      DeviceDiagnosticsPanelContext{.is_metrics_enabled = [] { return true; }}};
+  panel.ShowDevice(device, timed_data_service);
+
+  // Let the current-value fetch chains settle so the counters and hero populate
+  // before the grab (see SaveSeriesInspectorScreenshot).
+  scada::screenshot_generator::PumpEventLoopFor(std::chrono::seconds(1));
+
+  SaveScreenshot(&panel, spec);
+}

@@ -29,6 +29,8 @@ add_executable(client_screenshot_generator
   "graph_capture.h"
   "display_capture.cpp"
   "display_capture.h"
+  "device_diagnostics_capture.cpp"
+  "device_diagnostics_capture.h"
   "dialog_capture.cpp"
   "dialog_capture.h"
   "fixture_builder.cpp"
@@ -60,6 +62,7 @@ target_link_libraries(client_screenshot_generator PRIVATE
   client_configuration_qt
   client_controller_qt
   client_display_frame_qt
+  client_device_diagnostics_qt
   client_events_qt
   client_export_configuration_qt
   client_export_excel_qt

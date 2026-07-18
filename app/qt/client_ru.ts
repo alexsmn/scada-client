@@ -308,6 +308,71 @@
         <source>Bad</source>
         <translation>Недостоверно</translation>
     </message>
+    <!-- modules/device_diagnostics/qt/device_diagnostics_panel.cpp + main_window (Device diagnostics dock) -->
+    <message>
+        <source>Device diagnostics</source>
+        <translation>Диагностика устройства</translation>
+    </message>
+    <message>
+        <source>Select a device to see its diagnostics</source>
+        <translation>Выберите устройство для просмотра диагностики</translation>
+    </message>
+    <message>
+        <source>Link up</source>
+        <translation>Связь есть</translation>
+    </message>
+    <message>
+        <source>Link down</source>
+        <translation>Нет связи</translation>
+    </message>
+    <message>
+        <source>Disabled</source>
+        <translation>Отключено</translation>
+    </message>
+    <message>
+        <source>no response from device</source>
+        <translation>устройство не отвечает</translation>
+    </message>
+    <message>
+        <source>device is not polled</source>
+        <translation>устройство не опрашивается</translation>
+    </message>
+    <message>
+        <source>Counters</source>
+        <translation>Счётчики</translation>
+    </message>
+    <message>
+        <source>Actions</source>
+        <translation>Действия</translation>
+    </message>
+    <message>
+        <source>Metrics trend</source>
+        <translation>График метрик</translation>
+    </message>
+    <message>
+        <source>Messages RX</source>
+        <translation>Сообщений принято</translation>
+    </message>
+    <message>
+        <source>Messages TX</source>
+        <translation>Сообщений передано</translation>
+    </message>
+    <message>
+        <source>Bytes RX</source>
+        <translation>Байт принято</translation>
+    </message>
+    <message>
+        <source>Bytes TX</source>
+        <translation>Байт передано</translation>
+    </message>
+    <message>
+        <source>Interrogations</source>
+        <translation>Опросов</translation>
+    </message>
+    <message>
+        <source>Clock syncs</source>
+        <translation>Синхронизаций часов</translation>
+    </message>
     <message>
         <source>Opens the two-stage command confirm. Actions are logged.</source>
         <translation>Открывает двухэтапное подтверждение команды. Действия журналируются.</translation>

@@ -13,9 +13,11 @@ class NodeId;
 }
 
 class ActivityBar;
+class DeviceDiagnosticsPanel;
 class InspectorPanel;
 class TagSearchIndex;
 class QAction;
+class QDockWidget;
 class QLabel;
 class QLineEdit;
 class QMenu;
@@ -72,6 +74,10 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // Opt-in right Inspector dock (backlog 2.6): reflects the active view's
   // selection — identity, live value, control action.
   void CreateInspectorPanel();
+  // Opt-in right Device-diagnostics dock (backlog 5.0): reflects a selected
+  // device's link status + live traffic/polling counters. Tabified with the
+  // Inspector dock.
+  void CreateDiagnosticsPanel();
   // Opens the section's default view and marks it active on the rail.
   void ActivateSection(const std::string& window_info_name);
   // Opens the operator Overview page (from the rail's Overview section).
@@ -135,6 +141,13 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // Right Inspector dock (opt-in). Updated from OnSelectionChanged with the
   // active view's SelectionModel.
   InspectorPanel* inspector_ = nullptr;
+  // The Inspector's host dock, kept so the Device-diagnostics dock can tabify
+  // onto it.
+  QDockWidget* inspector_dock_ = nullptr;
+
+  // Right Device-diagnostics dock (opt-in). Filled from OnSelectionChanged when
+  // the active view's selection is a device; cleared otherwise.
+  DeviceDiagnosticsPanel* diagnostics_ = nullptr;
 
   // Flat tag index for the command palette's tag search (opt-in; null when the
   // reshell is off or no node service is available).

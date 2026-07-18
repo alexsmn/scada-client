@@ -20,6 +20,7 @@
     { "file": "firewall.png", "tag": "manual-os", "referenced_from": [], "notes": "Windows firewall dialog; OS-level." },
     { "file": "graph-cursor.png", "tag": "auto-view", "referenced_from": ["client/graph.md"], "notes": "Graph window with cursor; generator already emits graph.png." },
     { "file": "series-inspector.png", "tag": "auto-view", "referenced_from": ["client/graph.md"], "notes": "Trend workspace per-series inspector panel (SeriesInspector): colour swatches, display flags, limits, source. Reshell-only chrome, captured under --theme. Limits/quality populate because the capture makes the graphed node resident (FetchGraphNodesResident) before building the panel." },
+    { "file": "device-diagnostics.png", "tag": "auto-view", "referenced_from": [], "notes": "Configuration workbench device-diagnostics inspector (DeviceDiagnostics): link-status hero (up/down/disabled) + live traffic/polling counters from the device's diagnostic child variables (Online/Enabled/MessagesIn/...). Reshell-only chrome (backlog 5.0), captured under --theme against a fixture device (TS.103, link down). Standalone like series-inspector; the capture makes the device resident (FetchNodesResident) so ShowDevice resolves the diagnostic variables and reads their current values. Not yet embedded in a manual page." },
     { "file": "iec-60870-5-transport.png", "tag": "manual-diagram", "referenced_from": ["dev/devices.md"], "notes": "IEC 60870-5 transport stack diagram." },
     { "file": "iec-61850-model.png", "tag": "manual-diagram", "referenced_from": ["client.md"], "notes": "IEC 61850 object model diagram." },
     { "file": "limits-chart.png", "tag": "auto-view", "referenced_from": ["architecture.md"], "notes": "Graph with severity-coloured limit markers drawn (MetrixLine limit styles; TIT.200 carries AnalogItemType_LimitLoLo/Lo/Hi/HiHi in the fixture). SaveGraphScreenshot now makes each graphed node resident (FetchGraphNodesResident) before building the widget, so the node's EU range and limit-band property children are fetched: the axes use the EU range instead of the data auto-range and the limit markers draw. (The legend 'Current' cell stays blank in the offscreen fixture - the live monitored-item value is not delivered there, a separate gap that also blanks the write dialog's current value.)" },
@@ -63,7 +64,7 @@
     { "file": "users.png", "tag": "auto-view", "referenced_from": ["dev/users.md"], "notes": "Users window." }
   ],
   "counts": {
-    "auto-view": 4,
+    "auto-view": 7,
     "auto-dialog": 16,
     "auto-menu": 17,
     "auto-state": 5,

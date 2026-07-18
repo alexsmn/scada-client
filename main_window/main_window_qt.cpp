@@ -15,7 +15,10 @@
 #include "controller/selection_model.h"
 #include "controller/window_info.h"
 #include "filesystem/file_cache.h"
+#include "device_diagnostics/qt/device_diagnostics_panel.h"
 #include "inspector/qt/inspector_panel.h"
+#include "model/devices_node_ids.h"
+#include "node_service/node_util.h"
 #include "main_window/activity_bar_qt.h"
 #include "main_window/alarm_flood.h"
 #include "main_window/command_palette_qt.h"
@@ -212,6 +215,7 @@ MainWindow::MainWindow(MainWindowContext&& context)
     CreateActivityBar();
     CreateContextBar();
     CreateInspectorPanel();
+    CreateDiagnosticsPanel();
     // Kick off the palette's tag browse in the background so tags are ready by
     // the time the operator first opens the palette.
     if (node_service_) {
@@ -733,17 +737,67 @@ void MainWindow::CreateInspectorPanel() {
   dock->setObjectName(QStringLiteral("InspectorDock"));
   dock->setWidget(inspector_);
   addDockWidget(Qt::RightDockWidgetArea, dock);
+  inspector_dock_ = dock;
+}
+
+void MainWindow::CreateDiagnosticsPanel() {
+  // The Metrics-trend action reuses the selection-scoped device-metrics command
+  // (ID_OPEN_DEVICE_METRICS), resolved against the active selection exactly like
+  // the toolbar/menu path.
+  auto resolve_metrics = [this]() -> CommandHandler* {
+    return ResolveCommandHandler(ui_command_registry_.command_manager(),
+                                 ID_OPEN_DEVICE_METRICS, kToolbarContexts,
+                                 *commands_);
+  };
+
+  diagnostics_ = MakeDeviceDiagnosticsPanel(DeviceDiagnosticsPanelContext{
+      .on_metrics =
+          [resolve_metrics] {
+            CommandHandler* handler = resolve_metrics();
+            if (handler && handler->IsCommandEnabled(ID_OPEN_DEVICE_METRICS))
+              handler->ExecuteCommand(ID_OPEN_DEVICE_METRICS);
+          },
+      .is_metrics_enabled =
+          [resolve_metrics] {
+            CommandHandler* handler = resolve_metrics();
+            return handler && handler->IsCommandEnabled(ID_OPEN_DEVICE_METRICS);
+          }});
+  if (!diagnostics_)
+    return;
+
+  auto* dock = new QDockWidget(
+      QString::fromStdU16String(Translate("Device diagnostics")), this);
+  dock->setObjectName(QStringLiteral("DeviceDiagnosticsDock"));
+  dock->setWidget(diagnostics_);
+  addDockWidget(Qt::RightDockWidgetArea, dock);
+  // Share the right dock area with the Inspector; the device-diagnostics tab
+  // comes to the front only when a device is selected.
+  if (inspector_dock_)
+    tabifyDockWidget(inspector_dock_, dock);
 }
 
 void MainWindow::OnSelectionChanged() {
-  if (inspector_) {
+  if (inspector_ || diagnostics_) {
     OpenedView* active = GetActiveView();
     SelectionModel* selection =
         active ? active->controller().GetSelectionModel() : nullptr;
-    if (selection)
-      inspector_->ShowSelection(*selection);
-    else
-      inspector_->Clear();
+    if (inspector_) {
+      if (selection)
+        inspector_->ShowSelection(*selection);
+      else
+        inspector_->Clear();
+    }
+    if (diagnostics_) {
+      // Only a single device selection carries diagnostics; anything else
+      // clears the panel.
+      if (selection && !selection->empty() && !selection->multiple() &&
+          IsInstanceOf(selection->node(), scada::devices::id::DeviceType)) {
+        diagnostics_->ShowDevice(selection->node(),
+                                 selection->timed_data_service());
+      } else {
+        diagnostics_->Clear();
+      }
+    }
   }
 
   for (const auto& [command_id, action] : action_map_) {

@@ -1,3 +1,4 @@
+#include "device_diagnostics_capture.h"
 #include "dialog_capture.h"
 #include "display_capture.h"
 #include "fixture_builder.h"
@@ -280,6 +281,15 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     if (spec.window_type == "SeriesInspector") {
       SaveSeriesInspectorScreenshot(spec, app_.node_service(),
                                     app_.timed_data_service(), g_config.json);
+      ++captured;
+      continue;
+    }
+    // The device-diagnostics panel is standalone reshell chrome (the right
+    // region of config-workbench.html), built from a fixture device rather than
+    // an opened page view.
+    if (spec.window_type == "DeviceDiagnostics") {
+      SaveDeviceDiagnosticsScreenshot(spec, app_.node_service(),
+                                      app_.timed_data_service(), g_config.json);
       ++captured;
       continue;
     }

@@ -34,6 +34,12 @@ class SelectionModel final : private SelectionModelContext {
   const TimedDataSpec& timed_data() const SCADA_LIFETIME_BOUND {
     return timed_data_;
   }
+  // The service backing this selection's live data. The shell uses it to open
+  // additional live specs scoped to the selection (e.g. a selected device's
+  // diagnostic counters).
+  TimedDataService& timed_data_service() const SCADA_LIFETIME_BOUND {
+    return timed_data_service_;
+  }
 
   using ChangeHandler = std::function<void()>;
   ChangeHandler change_handler;
