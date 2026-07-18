@@ -2,6 +2,7 @@
 
 #include "base/any_executor.h"
 
+#include "aui/color.h"
 #include "configuration/configuration_module.h"
 #include "configuration/tree/configuration_tree_model.h"
 #include "services/device_state_notifier.h"
@@ -27,6 +28,11 @@ class HardwareTreeModel : public ConfigurationTreeModel {
   TimedDataService& timed_data_service() { return timed_data_service_; }
   std::optional<DeviceState> GetDeviceStateForTesting(
       void* tree_node) const;
+
+  // aui::TreeModel: the reshell hardware-tree status dot. Returns the
+  // device-state colour (Online/Offline/Disabled) for a device node under the
+  // token theme, or nullopt (no dot) for non-device nodes and the legacy theme.
+  virtual std::optional<aui::Color> GetStatusColor(void* tree_node) override;
 
  protected:
   // ConfigurationTreeModel

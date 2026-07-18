@@ -75,7 +75,14 @@ DeviceState DeviceStateNotifier::CalculateDeviceState() const {
   if (online_tvq.qualifier.failed())
     return DeviceState::Unknown;
 
-  bool online = specs_[FIELD_ONLINE].current().value.get_or(false);
+  // No Online value delivered yet (the component is absent, or the monitored
+  // value has not arrived): the state is genuinely unknown, not Offline. A
+  // premature Offline both mislabels a just-loaded device and masks the
+  // hardware tree's Value-attribute snapshot fallback (DeviceStateFromNode).
+  if (online_tvq.value.is_null())
+    return DeviceState::Unknown;
+
+  bool online = online_tvq.value.get_or(false);
   return online ? DeviceState::Online : DeviceState::Offline;
 }
 

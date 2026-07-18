@@ -1,5 +1,7 @@
 #include "hardware_tree_model.h"
 
+#include "aui/severity_colors.h"
+#include "configuration/devices/device_state_color.h"
 #include "configuration/tree/node_service_tree_impl.h"
 #include "model/devices_node_ids.h"
 #include "node_service/node_ref.h"
@@ -33,6 +35,12 @@ class HardwareTreeModel::DeviceTreeNode : public ConfigurationTreeNode {
   // TreeNode
   virtual int GetIcon() const override;
 
+  // The device's connection state: the live DeviceStateNotifier value, falling
+  // back to the node's Value-attribute snapshot (DeviceStateFromNode) while the
+  // notifier still reads Unknown (right after load, and in the headless
+  // capture, where monitored values are not delivered).
+  DeviceState device_state() const;
+
   std::optional<DeviceState> GetDeviceStateForTesting() const;
 
  private:
@@ -53,10 +61,7 @@ HardwareTreeModel::DeviceTreeNode::DeviceTreeNode(
 
 int HardwareTreeModel::DeviceTreeNode::GetIcon() const {
   if (IsHardwareDeviceNode(node())) {
-    auto device_state = device_state_notifier_
-                            ? device_state_notifier_->device_state()
-                            : DeviceState::Unknown;
-    switch (device_state) {
+    switch (device_state()) {
       case DeviceState::Disabled:
         return IMAGE_DEVICE_DISABLED;
       case DeviceState::Offline:
@@ -70,6 +75,17 @@ int HardwareTreeModel::DeviceTreeNode::GetIcon() const {
   }
 
   return ConfigurationTreeNode::GetIcon();
+}
+
+DeviceState HardwareTreeModel::DeviceTreeNode::device_state() const {
+  if (!IsHardwareDeviceNode(node()))
+    return DeviceState::Unknown;
+  DeviceState state = device_state_notifier_
+                          ? device_state_notifier_->device_state()
+                          : DeviceState::Unknown;
+  if (state == DeviceState::Unknown)
+    state = DeviceStateFromNode(node());
+  return state;
 }
 
 std::optional<DeviceState>
@@ -129,6 +145,18 @@ std::optional<DeviceState> HardwareTreeModel::GetDeviceStateForTesting(
       static_cast<ConfigurationTreeNode*>(tree_node));
   return device_tree_node ? device_tree_node->GetDeviceStateForTesting()
                           : std::nullopt;
+}
+
+std::optional<aui::Color> HardwareTreeModel::GetStatusColor(void* tree_node) {
+  auto* device_tree_node = dynamic_cast<DeviceTreeNode*>(
+      static_cast<ConfigurationTreeNode*>(tree_node));
+  if (!device_tree_node)
+    return std::nullopt;
+  std::optional<scada::aui::Quality> quality =
+      DeviceStateQuality(device_tree_node->device_state());
+  if (!quality)
+    return std::nullopt;  // Unknown state, or the legacy theme via QualityColor.
+  return scada::aui::QualityColor(*quality);
 }
 
 std::unique_ptr<ConfigurationTreeNode> HardwareTreeModel::CreateTreeNode(

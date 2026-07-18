@@ -5,6 +5,7 @@ client_module_link_libraries(client_configuration_devices PUBLIC
 )
 
 client_module_link_libraries(client_configuration_devices PRIVATE
+  aui
   client_configuration_tree
   client_services
 )
