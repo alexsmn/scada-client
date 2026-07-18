@@ -42,6 +42,7 @@
 #include "timed_data/timed_data_service.h"
 
 #include <QAbstractProxyModel>
+#include <QAbstractButton>
 #include <QAction>
 #include <QApplication>
 #include <QDockWidget>
@@ -334,6 +335,20 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
           << spec.filename << ": the " << spec.window_type
           << " grid rendered fewer rows than the fixture populates - the "
              "capture would be empty or partial";
+    }
+
+    // Optionally click a named child (e.g. a subtab button) so the capture
+    // shows a non-default tab of a multi-tab view. Done before SaveScreenshot
+    // detaches the widget for the grab.
+    if (!spec.click_object.empty()) {
+      if (auto* button = widget->findChild<QAbstractButton*>(
+              QString::fromStdString(spec.click_object))) {
+        button->click();
+        QApplication::processEvents();
+      } else {
+        ADD_FAILURE() << "click_object not found: " << spec.click_object
+                      << " in " << spec.window_type;
+      }
     }
 
     if (spec.window_type == "Graph") {

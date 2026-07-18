@@ -25,6 +25,9 @@ struct ScreenshotSpec {
   // so a data-path regression fails the capture instead of silently saving
   // an empty frame.
   int min_rows = 0;
+  // Optional: objectName of a child button to click before grabbing (e.g. a
+  // subtab), so a capture can show a non-default tab of a multi-tab view.
+  std::string click_object;
 };
 
 // Configuration for a single modal-dialog capture. `kind` is the

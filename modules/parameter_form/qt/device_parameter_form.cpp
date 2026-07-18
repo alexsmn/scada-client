@@ -368,6 +368,8 @@ void DeviceParameterForm::Rebuild() {
     const int page_index = pages_->count();
     pages_->addWidget(BuildAddressMapPage());
     add_subtab(Tr("Address map"), page_index);
+    // Stable handle so the screenshot generator can select this tab.
+    subtab_buttons_.back()->setObjectName(QStringLiteral("addressMapSubtab"));
   }
 
   if (pages_->count() > 0)

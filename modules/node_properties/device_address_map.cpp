@@ -34,10 +34,22 @@ Awaitable<std::vector<AddressMapRow>> BuildDeviceAddressMap(AnyExecutor executor
       continue;
     co_await source.Fetch(NodeFetchStatus::NodeOnly);
 
-    const scada::Int32 ioa =
-        child[scada::devices::id::TransmissionItemType_SourceAddress]
-            .value()
-            .get_or<scada::Int32>(0);
+    // Fetch the transmission item's type chain: operator[](declaration_id) maps
+    // the SourceAddress aggregate declaration to the instance property through
+    // the type, so the declarations must be resident.
+    for (NodeRef type = child.type_definition(); type;) {
+      co_await type.Fetch(NodeFetchStatus::NodeAndChildren);
+      type = type.supertype();
+    }
+
+    // Fetch the source-address property node itself so its Value attribute is
+    // resident (children fetch loads the property node but not its value).
+    scada::Int32 ioa = 0;
+    if (NodeRef address =
+            child[scada::devices::id::TransmissionItemType_SourceAddress]) {
+      co_await address.Fetch(NodeFetchStatus::NodeOnly);
+      ioa = address.value().get_or<scada::Int32>(0);
+    }
 
     AddressMapRow row;
     row.signal = source.display_name();

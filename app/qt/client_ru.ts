@@ -370,6 +370,18 @@
         <translation>Несохранённые изменения</translation>
     </message>
     <message>
+        <source>Address map</source>
+        <translation>Карта адресов</translation>
+    </message>
+    <message>
+        <source>Signal</source>
+        <translation>Сигнал</translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation>Тип</translation>
+    </message>
+    <message>
         <source>Messages RX</source>
         <translation>Сообщений принято</translation>
     </message>
