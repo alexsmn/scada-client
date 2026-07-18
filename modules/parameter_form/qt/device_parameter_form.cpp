@@ -5,6 +5,9 @@
 #include "aui/severity_colors.h"
 #include "aui/translation.h"
 
+#include <QAction>
+#include <QApplication>
+#include <QComboBox>
 #include <QFormLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -13,8 +16,10 @@
 #include <QScrollArea>
 #include <QSignalBlocker>
 #include <QStackedWidget>
+#include <QStyle>
 #include <QVBoxLayout>
 
+#include <memory>
 #include <string_view>
 #include <utility>
 
@@ -157,21 +162,15 @@ QWidget* DeviceParameterForm::BuildSectionPage(
     label->setStyleSheet(
         QStringLiteral("color:%1;").arg(tokens.fg_muted.name()));
 
-    auto* editor = new QLineEdit;
-    editor->setStyleSheet(
-        QStringLiteral("QLineEdit{background:%1;color:%2;border:1px solid %3;"
-                       "border-radius:6px;padding:5px 10px;}")
-            .arg(tokens.bg_elevated.name(), tokens.fg.name(),
-                 tokens.border_strong.name()));
-
+    // The editor kind (text box / dropdown / dialog-button / read-only) comes
+    // from the property's EditData, seeded with its current value.
+    QWidget* editor = CreateFieldEditor(group, index);
     Field field{&group, index, editor};
-    const std::u16string* staged = staging_.Get(FieldKey(field));
-    // Set the initial text before connecting, so seeding the editor does not
-    // register as an edit (programmatic resets elsewhere use QSignalBlocker).
-    editor->setText(QString::fromStdU16String(staged ? *staged
-                                                      : group.GetValue(index)));
-    connect(editor, &QLineEdit::textChanged, this,
-            [this, field](const QString& text) { OnFieldEdited(field, text); });
+    // A pending edit for this field shows the staged value; blocked so it is not
+    // re-registered as an edit.
+    if (const std::u16string* staged = staging_.Get(FieldKey(field)))
+      SetEditorText(field, QString::fromStdU16String(*staged));
+    ConnectFieldEditor(field);
     fields_.push_back(field);
     form->addRow(label, editor);
   }
@@ -184,6 +183,120 @@ QWidget* DeviceParameterForm::BuildSectionPage(
   scroll->setWidgetResizable(true);
   scroll->setWidget(page);
   return scroll;
+}
+
+QWidget* DeviceParameterForm::CreateFieldEditor(PropertyGroup& group,
+                                                int index) {
+  const scada::aui::ThemeTokens& tokens = FormTokens();
+  const QString value = QString::fromStdU16String(group.GetValue(index));
+  const QString box_style =
+      QStringLiteral("background:%1;color:%2;border:1px solid %3;"
+                     "border-radius:6px;padding:5px 10px;")
+          .arg(tokens.bg_elevated.name(), tokens.fg.name(),
+               tokens.border_strong.name());
+
+  const scada::aui::EditData edit_data = group.GetEditData(index);
+  switch (edit_data.editor_type) {
+    case scada::aui::EditData::EditorType::DROPDOWN: {
+      auto* combo = new QComboBox;
+      combo->setEditable(true);
+      combo->setInsertPolicy(QComboBox::NoInsert);
+      combo->setStyleSheet(
+          QStringLiteral("QComboBox{%1}").arg(box_style));
+      if (edit_data.async_choice_handler) {
+        // Populate asynchronously (mirrors the legacy grid's delegate): the
+        // handler streams choices in behind a trailing "Loading…" row. Guard
+        // against the combo being destroyed before the callback fires.
+        combo->addItem(Tr("Loading…"));
+        auto canceled = std::make_shared<bool>(false);
+        connect(combo, &QObject::destroyed, [canceled] { *canceled = true; });
+        edit_data.async_choice_handler(
+            [combo, canceled](const std::vector<std::u16string>& choices,
+                              bool last) {
+              if (*canceled)
+                return;
+              for (const std::u16string& choice : choices) {
+                combo->insertItem(combo->count() - 1,
+                                  QString::fromStdU16String(choice));
+              }
+              if (last)
+                combo->removeItem(combo->count() - 1);
+            });
+      } else {
+        for (const std::u16string& choice : edit_data.choices)
+          combo->addItem(QString::fromStdU16String(choice));
+      }
+      combo->setCurrentText(value);
+      return combo;
+    }
+
+    case scada::aui::EditData::EditorType::BUTTON: {
+      auto* line = new QLineEdit;
+      line->setStyleSheet(QStringLiteral("QLineEdit{%1}").arg(box_style));
+      line->setText(value);
+      QAction* action = line->addAction(
+          QApplication::style()->standardIcon(
+              QStyle::SP_FileDialogDetailedView),
+          QLineEdit::TrailingPosition);
+      PropertyGroup* group_ptr = &group;
+      connect(action, &QAction::triggered, this,
+              [group_ptr, index] { group_ptr->HandleEditButton(index); });
+      return line;
+    }
+
+    case scada::aui::EditData::EditorType::NONE: {
+      // Display-only: a read-only, muted box. Never staged.
+      auto* line = new QLineEdit;
+      line->setReadOnly(true);
+      line->setStyleSheet(
+          QStringLiteral("QLineEdit{background:%1;color:%2;border:1px solid %3;"
+                         "border-radius:6px;padding:5px 10px;}")
+              .arg(tokens.surface_muted.name(), tokens.fg_subtle.name(),
+                   tokens.border.name()));
+      line->setText(value);
+      return line;
+    }
+
+    case scada::aui::EditData::EditorType::TEXT:
+    default: {
+      auto* line = new QLineEdit;
+      line->setStyleSheet(QStringLiteral("QLineEdit{%1}").arg(box_style));
+      line->setText(value);
+      return line;
+    }
+  }
+}
+
+void DeviceParameterForm::ConnectFieldEditor(const Field& field) {
+  if (auto* line = qobject_cast<QLineEdit*>(field.editor)) {
+    if (line->isReadOnly())
+      return;  // NONE editor: display only, never staged.
+    connect(line, &QLineEdit::textChanged, this,
+            [this, field](const QString& text) { OnFieldEdited(field, text); });
+  } else if (auto* combo = qobject_cast<QComboBox*>(field.editor)) {
+    // editTextChanged fires on both typing and selecting an item (selection
+    // updates the edit text), but not on the async insert/remove of choices —
+    // so populating the dropdown does not register as an edit.
+    connect(combo, &QComboBox::editTextChanged, this,
+            [this, field](const QString& text) { OnFieldEdited(field, text); });
+  }
+}
+
+QString DeviceParameterForm::EditorText(const Field& field) const {
+  if (auto* line = qobject_cast<QLineEdit*>(field.editor))
+    return line->text();
+  if (auto* combo = qobject_cast<QComboBox*>(field.editor))
+    return combo->currentText();
+  return {};
+}
+
+void DeviceParameterForm::SetEditorText(const Field& field,
+                                        const QString& text) {
+  QSignalBlocker blocker{field.editor};
+  if (auto* line = qobject_cast<QLineEdit*>(field.editor))
+    line->setText(text);
+  else if (auto* combo = qobject_cast<QComboBox*>(field.editor))
+    combo->setCurrentText(text);
 }
 
 void DeviceParameterForm::Rebuild() {
@@ -293,9 +406,8 @@ void DeviceParameterForm::Apply() {
 void DeviceParameterForm::Revert() {
   staging_.Clear();
   for (const Field& field : fields_) {
-    QSignalBlocker blocker{field.editor};
-    field.editor->setText(
-        QString::fromStdU16String(field.group->GetValue(field.index)));
+    SetEditorText(
+        field, QString::fromStdU16String(field.group->GetValue(field.index)));
   }
   UpdateDirtyUi();
 }

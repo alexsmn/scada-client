@@ -13,7 +13,6 @@ class PropertyGroup;
 }  // namespace scada::aui
 class QHBoxLayout;
 class QLabel;
-class QLineEdit;
 class QPushButton;
 class QStackedWidget;
 
@@ -49,11 +48,13 @@ class DeviceParameterForm : public QWidget {
   void Revert();
 
  private:
-  // One rendered field: the (group, index) it writes to and its editor.
+  // One rendered field: the (group, index) it writes to and its editor. The
+  // editor is a QLineEdit (TEXT / BUTTON / read-only) or a QComboBox (DROPDOWN),
+  // chosen from the model's EditData for that property.
   struct Field {
     scada::aui::PropertyGroup* group = nullptr;
     int index = 0;
-    QLineEdit* editor = nullptr;
+    QWidget* editor = nullptr;
   };
 
   // (Re)reads the model into subtabs + fields. Hooked to the model's change
@@ -61,6 +62,19 @@ class DeviceParameterForm : public QWidget {
   void Rebuild();
   QWidget* BuildSectionPage(scada::aui::PropertyGroup& group,
                             const std::vector<int>& field_indices);
+  // Builds the editor widget for one property from its EditData (text box,
+  // editable dropdown, dialog-button field, or read-only box), seeded with the
+  // property's current value. Does not wire the change signal (see
+  // ConnectFieldEditor).
+  QWidget* CreateFieldEditor(scada::aui::PropertyGroup& group, int index);
+  // Wires the field's editor change signal to OnFieldEdited (no-op for a
+  // read-only editor).
+  void ConnectFieldEditor(const Field& field);
+  // Reads / writes the editor's text regardless of editor kind. SetEditorText
+  // blocks signals so a programmatic reset is not mistaken for an edit.
+  QString EditorText(const Field& field) const;
+  void SetEditorText(const Field& field, const QString& text);
+
   void OnFieldEdited(const Field& field, const QString& text);
   void UpdateDirtyUi();
   void SelectSection(int index);

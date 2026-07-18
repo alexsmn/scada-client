@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include <QComboBox>
 #include <QLineEdit>
 #include <QPushButton>
 
@@ -25,14 +26,32 @@ class FakeGroup : public scada::aui::PropertyGroup {
     std::u16string name;
     std::u16string value;
     std::unique_ptr<FakeGroup> sub;
+    scada::aui::EditData edit;
   };
 
   FakeGroup& AddLeaf(std::u16string name, std::u16string value) {
-    entries_.push_back({std::move(name), std::move(value), nullptr});
+    entries_.push_back({std::move(name), std::move(value), nullptr, {}});
+    return *this;
+  }
+  FakeGroup& AddDropdown(std::u16string name,
+                         std::u16string value,
+                         std::vector<std::u16string> choices) {
+    scada::aui::EditData edit;
+    edit.editor_type = scada::aui::EditData::EditorType::DROPDOWN;
+    edit.choices = std::move(choices);
+    entries_.push_back(
+        {std::move(name), std::move(value), nullptr, std::move(edit)});
+    return *this;
+  }
+  FakeGroup& AddReadOnly(std::u16string name, std::u16string value) {
+    scada::aui::EditData edit;
+    edit.editor_type = scada::aui::EditData::EditorType::NONE;
+    entries_.push_back(
+        {std::move(name), std::move(value), nullptr, std::move(edit)});
     return *this;
   }
   FakeGroup& AddSection(std::u16string name, std::unique_ptr<FakeGroup> sub) {
-    entries_.push_back({std::move(name), {}, std::move(sub)});
+    entries_.push_back({std::move(name), {}, std::move(sub), {}});
     return *this;
   }
 
@@ -50,7 +69,9 @@ class FakeGroup : public scada::aui::PropertyGroup {
     entries_[i].value = value;
     writes.push_back({i, value});
   }
-  scada::aui::EditData GetEditData(int) const override { return {}; }
+  scada::aui::EditData GetEditData(int i) const override {
+    return entries_[i].edit;
+  }
   void HandleEditButton(int) const override {}
 
   std::vector<std::pair<int, std::u16string>> writes;
@@ -79,6 +100,19 @@ std::unique_ptr<FakeModel> MakeDeviceModel() {
   auto root = std::make_unique<FakeGroup>();
   root->AddSection(u"General", std::move(general))
       .AddSection(u"Connection", std::move(connection));
+  return std::make_unique<FakeModel>(std::move(root));
+}
+
+// A section mixing a text field, a dropdown, and a read-only field, to exercise
+// the per-property editor kinds from EditData.
+std::unique_ptr<FakeModel> MakeRicherModel() {
+  auto general = std::make_unique<FakeGroup>();
+  general->AddLeaf(u"Name", u"RTU-02")
+      .AddDropdown(u"Protocol", u"Modbus",
+                   {u"Modbus", u"IEC 60870-5-104", u"IEC 61850"})
+      .AddReadOnly(u"Type", u"ModbusDeviceType");
+  auto root = std::make_unique<FakeGroup>();
+  root->AddSection(u"General", std::move(general));
   return std::make_unique<FakeModel>(std::move(root));
 }
 
@@ -178,6 +212,45 @@ TEST_F(DeviceParameterFormTest, RevertRestoresLiveValuesAndClearsDirty) {
 
   EXPECT_FALSE(form.dirty());
   EXPECT_NE(FindEditorWithText(form, QStringLiteral("10.20.14.2")), nullptr);
+}
+
+TEST_F(DeviceParameterFormTest, DropdownPropertyBecomesAComboWithChoices) {
+  auto model = MakeRicherModel();
+  DeviceParameterForm form{*model, QStringLiteral("RTU-02")};
+
+  const QList<QComboBox*> combos = form.findChildren<QComboBox*>();
+  ASSERT_EQ(combos.size(), 1);
+  QComboBox* protocol = combos.front();
+  EXPECT_EQ(protocol->currentText(), QStringLiteral("Modbus"));
+
+  QStringList items;
+  for (int i = 0; i < protocol->count(); ++i)
+    items << protocol->itemText(i);
+  EXPECT_TRUE(items.contains(QStringLiteral("IEC 60870-5-104")));
+  EXPECT_TRUE(items.contains(QStringLiteral("IEC 61850")));
+}
+
+TEST_F(DeviceParameterFormTest, ChangingADropdownStagesThenRevertRestores) {
+  auto model = MakeRicherModel();
+  DeviceParameterForm form{*model, QStringLiteral("RTU-02")};
+
+  QComboBox* protocol = form.findChildren<QComboBox*>().front();
+  EXPECT_FALSE(form.dirty());
+  protocol->setCurrentText(QStringLiteral("IEC 60870-5-104"));
+  EXPECT_TRUE(form.dirty());
+
+  form.Revert();
+  EXPECT_FALSE(form.dirty());
+  EXPECT_EQ(protocol->currentText(), QStringLiteral("Modbus"));
+}
+
+TEST_F(DeviceParameterFormTest, ReadOnlyPropertyIsNotEditable) {
+  auto model = MakeRicherModel();
+  DeviceParameterForm form{*model, QStringLiteral("RTU-02")};
+
+  QLineEdit* type = FindEditorWithText(form, QStringLiteral("ModbusDeviceType"));
+  ASSERT_NE(type, nullptr);
+  EXPECT_TRUE(type->isReadOnly());
 }
 
 }  // namespace
