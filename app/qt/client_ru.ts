@@ -374,6 +374,10 @@
         <translation>Карта адресов</translation>
     </message>
     <message>
+        <source>Limits</source>
+        <translation>Уставки</translation>
+    </message>
+    <message>
         <source>Signal</source>
         <translation>Сигнал</translation>
     </message>

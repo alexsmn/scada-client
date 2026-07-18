@@ -289,4 +289,30 @@ TEST_F(DeviceParameterFormTest, EmptyAddressMapAddsNoTab) {
     EXPECT_NE(button->text(), QStringLiteral("Address map"));
 }
 
+TEST_F(DeviceParameterFormTest, SetLimitsAddsAReadOnlyGridTab) {
+  auto model = MakeDeviceModel();
+  DeviceParameterForm form{*model, QStringLiteral("RTU-02")};
+
+  form.SetLimits({
+      {u"Power", u"113", u"118", u"133", u"138"},
+      {u"Voltage", u"", u"9.8", u"11.2", u""},
+  });
+
+  bool has_tab = false;
+  for (QPushButton* button : form.findChildren<QPushButton*>()) {
+    if (button->text() == QStringLiteral("Limits"))
+      has_tab = true;
+  }
+  EXPECT_TRUE(has_tab);
+
+  auto* table = form.findChild<QTableWidget*>(QStringLiteral("limitsTable"));
+  ASSERT_NE(table, nullptr);
+  EXPECT_EQ(table->editTriggers(), QAbstractItemView::NoEditTriggers);
+  ASSERT_EQ(table->rowCount(), 2);
+  EXPECT_EQ(table->item(0, 0)->text(), QStringLiteral("Power"));
+  EXPECT_EQ(table->item(0, 1)->text(), QStringLiteral("113"));  // LoLo
+  EXPECT_EQ(table->item(0, 4)->text(), QStringLiteral("138"));  // HiHi
+  EXPECT_EQ(table->item(1, 1)->text(), QString{});  // unset LoLo
+}
+
 }  // namespace

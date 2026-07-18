@@ -237,6 +237,7 @@
     { "type": "Params",         "filename": "parameters.png",          "width": 500,  "height": 400 },
     { "type": "NewProps",       "filename": "config-parameters.png",   "width": 640,  "height": 480, "path": "TS.702" },
     { "type": "NewProps",       "filename": "config-address-map.png",  "width": 640,  "height": 480, "path": "TS.702", "click_object": "addressMapSubtab" },
+    { "type": "NewProps",       "filename": "config-limits.png",       "width": 640,  "height": 480, "path": "TS.114", "click_object": "limitsSubtab" },
     { "type": "CusTable",       "filename": "sheet.png",               "width": 800,  "height": 400 },
     { "type": "Favorites",      "filename": "favorites.png",           "width": 300,  "height": 400 },
     { "type": "FileSystemView", "filename": "files.png",               "width": 300,  "height": 400 },

@@ -15,6 +15,7 @@
 #include "aui/severity_colors.h"
 #include "base/awaitable.h"
 #include "node_properties/device_address_map.h"
+#include "node_properties/device_limits.h"
 #include "parameter_form/qt/device_parameter_form.h"
 
 #include <QPointer>
@@ -68,6 +69,17 @@ std::unique_ptr<UiView> NodePropertyController::Init(
                     executor, std::move(device));
                 if (form_ptr && !rows.empty())
                   form_ptr->SetAddressMap(std::move(rows));
+                co_return;
+              });
+      // Likewise the limits preview from the device's analog data items.
+      CoSpawn(executor_,
+              [executor = executor_, device = property_model_->node(),
+               form_ptr = QPointer<DeviceParameterForm>{form}]()
+                  mutable -> Awaitable<void> {
+                std::vector<LimitRow> rows =
+                    co_await BuildDeviceLimits(executor, std::move(device));
+                if (form_ptr && !rows.empty())
+                  form_ptr->SetLimits(std::move(rows));
                 co_return;
               });
       return std::unique_ptr<UiView>{form};

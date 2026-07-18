@@ -17,6 +17,7 @@
 #include <QScrollArea>
 #include <QSignalBlocker>
 #include <QStackedWidget>
+#include <QStringList>
 #include <QStyle>
 #include <QTableWidget>
 #include <QTableWidgetItem>
@@ -372,6 +373,14 @@ void DeviceParameterForm::Rebuild() {
     subtab_buttons_.back()->setObjectName(QStringLiteral("addressMapSubtab"));
   }
 
+  // The device's limits preview, after the address-map tab.
+  if (!limits_.empty()) {
+    const int page_index = pages_->count();
+    pages_->addWidget(BuildLimitsPage());
+    add_subtab(Tr("Limits"), page_index);
+    subtab_buttons_.back()->setObjectName(QStringLiteral("limitsSubtab"));
+  }
+
   if (pages_->count() > 0)
     SelectSection(0);
   UpdateDirtyUi();
@@ -382,15 +391,23 @@ void DeviceParameterForm::SetAddressMap(std::vector<AddressMapRow> rows) {
   Rebuild();
 }
 
-QWidget* DeviceParameterForm::BuildAddressMapPage() {
-  const scada::aui::ThemeTokens& tokens = FormTokens();
+void DeviceParameterForm::SetLimits(std::vector<LimitRow> rows) {
+  limits_ = std::move(rows);
+  Rebuild();
+}
 
+namespace {
+
+// Builds a styled read-only grid with the given headers, shared by the
+// address-map and limits preview tabs.
+QTableWidget* MakeReadOnlyGrid(const QString& object_name,
+                               const QStringList& headers,
+                               const scada::aui::ThemeTokens& tokens) {
   auto* table = new QTableWidget;
-  table->setObjectName(QStringLiteral("addressMapTable"));
-  table->setEditTriggers(QAbstractItemView::NoEditTriggers);  // read-only.
+  table->setObjectName(object_name);
+  table->setEditTriggers(QAbstractItemView::NoEditTriggers);
   table->setSelectionMode(QAbstractItemView::NoSelection);
-  table->setColumnCount(4);
-  const QStringList headers{Tr("Signal"), Tr("Type"), Tr("IOA"), Tr("NodeId")};
+  table->setColumnCount(static_cast<int>(headers.size()));
   table->setHorizontalHeaderLabels(headers);
   table->verticalHeader()->setVisible(false);
   table->horizontalHeader()->setStretchLastSection(true);
@@ -402,21 +419,52 @@ QWidget* DeviceParameterForm::BuildAddressMapPage() {
                      "border-bottom:1px solid %3;padding:4px 8px;}")
           .arg(tokens.bg.name(), tokens.fg.name(), tokens.border.name(),
                tokens.surface_muted.name(), tokens.fg_subtle.name()));
+  return table;
+}
 
+// Fills one grid row with read-only cells.
+void FillGridRow(QTableWidget* table, int row, const QStringList& cells) {
+  for (int col = 0; col < cells.size(); ++col) {
+    auto* item = new QTableWidgetItem{cells[col]};
+    item->setFlags(Qt::ItemIsEnabled);
+    table->setItem(row, col, item);
+  }
+}
+
+}  // namespace
+
+QWidget* DeviceParameterForm::BuildAddressMapPage() {
+  QTableWidget* table = MakeReadOnlyGrid(
+      QStringLiteral("addressMapTable"),
+      {Tr("Signal"), Tr("Type"), Tr("IOA"), Tr("NodeId")}, FormTokens());
   table->setRowCount(static_cast<int>(address_map_.size()));
   for (int row = 0; row < static_cast<int>(address_map_.size()); ++row) {
     const AddressMapRow& data = address_map_[row];
-    const QString cells[] = {QString::fromStdU16String(data.signal),
-                             QString::fromStdU16String(data.type),
-                             QString::fromStdU16String(data.ioa),
-                             QString::fromStdU16String(data.node_id)};
-    for (int col = 0; col < 4; ++col) {
-      auto* item = new QTableWidgetItem{cells[col]};
-      item->setFlags(Qt::ItemIsEnabled);
-      table->setItem(row, col, item);
-    }
+    FillGridRow(table, row,
+                {QString::fromStdU16String(data.signal),
+                 QString::fromStdU16String(data.type),
+                 QString::fromStdU16String(data.ioa),
+                 QString::fromStdU16String(data.node_id)});
   }
+  return table;
+}
 
+QWidget* DeviceParameterForm::BuildLimitsPage() {
+  QTableWidget* table = MakeReadOnlyGrid(
+      QStringLiteral("limitsTable"),
+      {Tr("Signal"), QStringLiteral("LoLo"), QStringLiteral("Lo"),
+       QStringLiteral("Hi"), QStringLiteral("HiHi")},
+      FormTokens());
+  table->setRowCount(static_cast<int>(limits_.size()));
+  for (int row = 0; row < static_cast<int>(limits_.size()); ++row) {
+    const LimitRow& data = limits_[row];
+    FillGridRow(table, row,
+                {QString::fromStdU16String(data.signal),
+                 QString::fromStdU16String(data.lolo),
+                 QString::fromStdU16String(data.lo),
+                 QString::fromStdU16String(data.hi),
+                 QString::fromStdU16String(data.hihi)});
+  }
   return table;
 }
 
