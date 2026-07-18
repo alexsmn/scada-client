@@ -235,20 +235,24 @@ QWidget* DeviceDiagnosticsPanel::BuildContent() {
   rows_layout_->setSpacing(0);
   layout->addWidget(rows_host);
 
-  // Actions section.
+  // Actions section: one button per context action.
   layout->addWidget(SectionHeader(Tr("Actions"), tokens));
-  metrics_ = new QPushButton{Tr("Metrics trend")};
-  metrics_->setStyleSheet(
+  const QString action_style =
       QStringLiteral("QPushButton{background:%1;color:%2;border:1px solid %3;"
                      "border-radius:6px;padding:8px;font-weight:500;}"
                      "QPushButton:disabled{color:%4;}")
           .arg(tokens.surface_muted.name(), tokens.fg.name(),
-               tokens.border_strong.name(), tokens.fg_subtle.name()));
-  connect(metrics_, &QPushButton::clicked, this, [this] {
-    if (context_.on_metrics)
-      context_.on_metrics();
-  });
-  layout->addWidget(metrics_);
+               tokens.border_strong.name(), tokens.fg_subtle.name());
+  for (const DiagnosticAction& action : context_.actions) {
+    auto* button = new QPushButton{QString::fromStdU16String(action.label)};
+    button->setStyleSheet(action_style);
+    connect(button, &QPushButton::clicked, this, [execute = action.execute] {
+      if (execute)
+        execute();
+    });
+    action_buttons_.push_back(button);
+    layout->addWidget(button);
+  }
 
   layout->addStretch(1);
   return view;
@@ -343,10 +347,14 @@ void DeviceDiagnosticsPanel::RefreshFromSpecs() {
     rows.push_back(DeviceDiagnosticRow{reading.label, value, /*bad=*/false});
   }
 
-  const bool metrics_enabled =
-      context_.is_metrics_enabled && context_.is_metrics_enabled();
-  ShowDiagnostics(device_name_, device_type_, band, detail, rows,
-                  metrics_enabled);
+  ShowDiagnostics(device_name_, device_type_, band, detail, rows);
+}
+
+void DeviceDiagnosticsPanel::RefreshActions() {
+  for (size_t i = 0; i < action_buttons_.size(); ++i) {
+    const DiagnosticAction& action = context_.actions[i];
+    action_buttons_[i]->setEnabled(!action.is_enabled || action.is_enabled());
+  }
 }
 
 void DeviceDiagnosticsPanel::ShowDiagnostics(
@@ -354,8 +362,7 @@ void DeviceDiagnosticsPanel::ShowDiagnostics(
     const QString& type_label,
     DeviceLinkBand band,
     const QString& band_detail,
-    const std::vector<DeviceDiagnosticRow>& rows,
-    bool metrics_enabled) {
+    const std::vector<DeviceDiagnosticRow>& rows) {
   const scada::aui::ThemeTokens& tokens = PanelTokens();
 
   name_->setText(name);
@@ -395,7 +402,7 @@ void DeviceDiagnosticsPanel::ShowDiagnostics(
     rows_layout_->addWidget(row_widget);
   }
 
-  metrics_->setEnabled(metrics_enabled);
+  RefreshActions();
 
   stack_->setCurrentIndex(1);
 }

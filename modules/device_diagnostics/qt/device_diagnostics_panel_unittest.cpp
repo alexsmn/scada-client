@@ -37,8 +37,7 @@ TEST_F(DeviceDiagnosticsPanelTest, ShowDiagnosticsFillsHeroAndRows) {
 
   panel.ShowDiagnostics(QStringLiteral("RTU-02"),
                         QStringLiteral("IEC 60870-5-104"), DeviceLinkBand::kDown,
-                        QStringLiteral("no response"), SampleRows(),
-                        /*metrics_enabled=*/false);
+                        QStringLiteral("no response"), SampleRows());
 
   auto* stack = panel.findChild<QStackedWidget*>();
   ASSERT_NE(stack, nullptr);
@@ -62,32 +61,55 @@ TEST_F(DeviceDiagnosticsPanelTest, ShowDiagnosticsFillsHeroAndRows) {
 TEST_F(DeviceDiagnosticsPanelTest, UpBandShowsLinkUp) {
   DeviceDiagnosticsPanel panel{DeviceDiagnosticsPanelContext{}};
   panel.ShowDiagnostics(QStringLiteral("RTU-01"), QStringLiteral("Modbus"),
-                        DeviceLinkBand::kUp, QString{}, SampleRows(),
-                        /*metrics_enabled=*/true);
+                        DeviceLinkBand::kUp, QString{}, SampleRows());
   auto* status =
       panel.findChild<QLabel*>(QStringLiteral("diagnosticsHeroStatus"));
   ASSERT_NE(status, nullptr);
   EXPECT_EQ(status->text(), QStringLiteral("Link up"));
 }
 
-TEST_F(DeviceDiagnosticsPanelTest, MetricsActionTracksEnablement) {
-  DeviceDiagnosticsPanel panel{DeviceDiagnosticsPanelContext{}};
+TEST_F(DeviceDiagnosticsPanelTest, ActionsRenderTrackEnablementAndExecute) {
+  bool clicked = false;
+  bool enabled = false;
+  DeviceDiagnosticsPanelContext context;
+  context.actions.push_back(
+      DiagnosticAction{.label = u"Reconnect",
+                       .execute = [&clicked] { clicked = true; },
+                       .is_enabled = [&enabled] { return enabled; }});
+  // No is_enabled → always enabled.
+  context.actions.push_back(DiagnosticAction{.label = u"Open log"});
+  DeviceDiagnosticsPanel panel{std::move(context)};
 
   panel.ShowDiagnostics(QStringLiteral("RTU-02"), QString{}, DeviceLinkBand::kUp,
-                        QString{}, {}, /*metrics_enabled=*/false);
-  auto* metrics = panel.findChild<QPushButton*>();
-  ASSERT_NE(metrics, nullptr);
-  EXPECT_FALSE(metrics->isEnabled());
+                        QString{}, {});
 
+  QPushButton* reconnect = nullptr;
+  QPushButton* open_log = nullptr;
+  for (QPushButton* button : panel.findChildren<QPushButton*>()) {
+    if (button->text() == QStringLiteral("Reconnect"))
+      reconnect = button;
+    if (button->text() == QStringLiteral("Open log"))
+      open_log = button;
+  }
+  ASSERT_NE(reconnect, nullptr);
+  ASSERT_NE(open_log, nullptr);
+
+  EXPECT_FALSE(reconnect->isEnabled());  // is_enabled() == false
+  EXPECT_TRUE(open_log->isEnabled());    // no gate
+
+  enabled = true;
   panel.ShowDiagnostics(QStringLiteral("RTU-02"), QString{}, DeviceLinkBand::kUp,
-                        QString{}, {}, /*metrics_enabled=*/true);
-  EXPECT_TRUE(metrics->isEnabled());
+                        QString{}, {});
+  EXPECT_TRUE(reconnect->isEnabled());
+
+  reconnect->click();
+  EXPECT_TRUE(clicked);
 }
 
 TEST_F(DeviceDiagnosticsPanelTest, ClearReturnsToEmptyState) {
   DeviceDiagnosticsPanel panel{DeviceDiagnosticsPanelContext{}};
   panel.ShowDiagnostics(QStringLiteral("RTU-02"), QString{}, DeviceLinkBand::kUp,
-                        QString{}, SampleRows(), /*metrics_enabled=*/true);
+                        QString{}, SampleRows());
   panel.Clear();
   auto* stack = panel.findChild<QStackedWidget*>();
   ASSERT_NE(stack, nullptr);

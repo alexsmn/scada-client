@@ -18,12 +18,18 @@ class QPushButton;
 class QStackedWidget;
 class QVBoxLayout;
 
-// Action wiring for the diagnostics panel. Callbacks may be empty.
+// One button in the diagnostics panel's Actions section — wired by the host to a
+// device command (Metrics trend / Reconnect / Open log). `execute` runs it;
+// `is_enabled` gates the button (empty → always enabled).
+struct DiagnosticAction {
+  std::u16string label;
+  std::function<void()> execute;
+  std::function<bool()> is_enabled;
+};
+
+// Action wiring for the diagnostics panel.
 struct DeviceDiagnosticsPanelContext {
-  // Opens the device metrics / trend view for the shown device — wired by the
-  // host to the selection-scoped ID_OPEN_DEVICE_METRICS command.
-  std::function<void()> on_metrics;
-  std::function<bool()> is_metrics_enabled;
+  std::vector<DiagnosticAction> actions;
 };
 
 // One diagnostic reading rendered as a "Label   Value" row.
@@ -68,14 +74,15 @@ class DeviceDiagnosticsPanel : public QWidget {
                        const QString& type_label,
                        DeviceLinkBand band,
                        const QString& band_detail,
-                       const std::vector<DeviceDiagnosticRow>& rows,
-                       bool metrics_enabled);
+                       const std::vector<DeviceDiagnosticRow>& rows);
 
  private:
   QWidget* BuildEmptyState();
   QWidget* BuildContent();
   // Recomputes the band + rows from the live specs and re-renders.
   void RefreshFromSpecs();
+  // Re-queries each action's is_enabled and updates its button.
+  void RefreshActions();
 
   DeviceDiagnosticsPanelContext context_;
 
@@ -106,7 +113,8 @@ class DeviceDiagnosticsPanel : public QWidget {
   QLabel* hero_status_ = nullptr;
   QLabel* hero_detail_ = nullptr;
   QVBoxLayout* rows_layout_ = nullptr;  // owns the current DeviceDiagnosticRow widgets.
-  QPushButton* metrics_ = nullptr;
+  // One button per context action, parallel to context_.actions.
+  std::vector<QPushButton*> action_buttons_;
 };
 
 // Builds a DeviceDiagnosticsPanel under the reshell UX theme

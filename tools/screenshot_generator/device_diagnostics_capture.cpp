@@ -4,6 +4,7 @@
 #include "screenshot_wait.h"
 #include "widget_capture.h"
 
+#include "aui/translation.h"
 #include "device_diagnostics/qt/device_diagnostics_panel.h"
 #include "model/node_id_util.h"
 #include "node_service/node_ref.h"
@@ -12,6 +13,8 @@
 
 #include <array>
 #include <chrono>
+#include <string_view>
+#include <utility>
 
 void SaveDeviceDiagnosticsScreenshot(const ScreenshotSpec& spec,
                                      NodeService& node_service,
@@ -29,8 +32,12 @@ void SaveDeviceDiagnosticsScreenshot(const ScreenshotSpec& spec,
 
   NodeRef device = node_service.GetNode(device_id);
 
-  DeviceDiagnosticsPanel panel{
-      DeviceDiagnosticsPanelContext{.is_metrics_enabled = [] { return true; }}};
+  // Demo actions so the capture shows the Actions row (the app wires these to
+  // real device commands; here they are inert but enabled).
+  DeviceDiagnosticsPanelContext context;
+  for (std::string_view label : {"Metrics trend", "Reconnect", "Open log"})
+    context.actions.push_back(DiagnosticAction{.label = Translate(label)});
+  DeviceDiagnosticsPanel panel{std::move(context)};
   panel.ShowDevice(device, timed_data_service);
 
   // Let the current-value fetch chains settle so the counters and hero populate

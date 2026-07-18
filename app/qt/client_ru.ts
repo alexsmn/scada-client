@@ -378,6 +378,14 @@
         <translation>Уставки</translation>
     </message>
     <message>
+        <source>Reconnect</source>
+        <translation>Переподключить</translation>
+    </message>
+    <message>
+        <source>Open log</source>
+        <translation>Открыть журнал</translation>
+    </message>
+    <message>
         <source>Signal</source>
         <translation>Сигнал</translation>
     </message>

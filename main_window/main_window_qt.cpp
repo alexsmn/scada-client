@@ -741,27 +741,38 @@ void MainWindow::CreateInspectorPanel() {
 }
 
 void MainWindow::CreateDiagnosticsPanel() {
-  // The Metrics-trend action reuses the selection-scoped device-metrics command
-  // (ID_OPEN_DEVICE_METRICS), resolved against the active selection exactly like
-  // the toolbar/menu path.
-  auto resolve_metrics = [this]() -> CommandHandler* {
-    return ResolveCommandHandler(ui_command_registry_.command_manager(),
-                                 ID_OPEN_DEVICE_METRICS, kToolbarContexts,
-                                 *commands_);
+  // Each action reuses a selection-scoped device command, resolved against the
+  // active selection exactly like the toolbar/menu path — Metrics trend
+  // (ID_OPEN_DEVICE_METRICS), Reconnect (ID_ITEM_ENABLE re-enables the device),
+  // and Open log (ID_OPEN_EVENTS opens the event journal).
+  auto make_action = [this](unsigned command_id,
+                            std::u16string label) -> DiagnosticAction {
+    auto resolve = [this, command_id]() -> CommandHandler* {
+      return ResolveCommandHandler(ui_command_registry_.command_manager(),
+                                   command_id, kToolbarContexts, *commands_);
+    };
+    return DiagnosticAction{
+        .label = std::move(label),
+        .execute =
+            [resolve, command_id] {
+              CommandHandler* handler = resolve();
+              if (handler && handler->IsCommandEnabled(command_id))
+                handler->ExecuteCommand(command_id);
+            },
+        .is_enabled =
+            [resolve, command_id] {
+              CommandHandler* handler = resolve();
+              return handler && handler->IsCommandEnabled(command_id);
+            }};
   };
 
-  diagnostics_ = MakeDeviceDiagnosticsPanel(DeviceDiagnosticsPanelContext{
-      .on_metrics =
-          [resolve_metrics] {
-            CommandHandler* handler = resolve_metrics();
-            if (handler && handler->IsCommandEnabled(ID_OPEN_DEVICE_METRICS))
-              handler->ExecuteCommand(ID_OPEN_DEVICE_METRICS);
-          },
-      .is_metrics_enabled =
-          [resolve_metrics] {
-            CommandHandler* handler = resolve_metrics();
-            return handler && handler->IsCommandEnabled(ID_OPEN_DEVICE_METRICS);
-          }});
+  DeviceDiagnosticsPanelContext context;
+  context.actions.push_back(
+      make_action(ID_OPEN_DEVICE_METRICS, Translate("Metrics trend")));
+  context.actions.push_back(make_action(ID_ITEM_ENABLE, Translate("Reconnect")));
+  context.actions.push_back(make_action(ID_OPEN_EVENTS, Translate("Open log")));
+
+  diagnostics_ = MakeDeviceDiagnosticsPanel(std::move(context));
   if (!diagnostics_)
     return;
 
