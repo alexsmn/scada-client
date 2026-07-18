@@ -56,8 +56,13 @@ class ControllableNodeFetcher : public v3::NodeFetcher {
     co_return scada::ReferenceDescriptions{};
   }
 
+  // Idempotent: the service may re-request a node that was already
+  // completed (e.g. while chasing the type-definition chain).
   void CompleteFetch(const scada::NodeId& node_id) {
-    GetGate(node_id).Complete();
+    auto& gate = GetGate(node_id);
+    if (!gate.completed()) {
+      gate.Complete();
+    }
   }
 
   std::vector<std::pair<scada::NodeId, NodeFetchStatus>> fetch_requests;
@@ -153,8 +158,15 @@ TEST_F(NodePropertyModelTest, UpdatesAfterInitialFetchCompletes) {
   ASSERT_THAT(fetcher_->fetch_requests,
               Each(Pair(kNodeId, NodeFetchStatus::NodeOnly)));
 
+  // Completing the node fetch makes the model chase the type-definition
+  // chain before it publishes; complete each per-node fetch as it is
+  // requested until no new requests appear.
   fetcher_->CompleteFetch(kNodeId);
   Drain(executor_);
+  for (size_t i = 0; i < fetcher_->fetch_requests.size(); ++i) {
+    fetcher_->CompleteFetch(fetcher_->fetch_requests[i].first);
+    Drain(executor_);
+  }
 
   EXPECT_GE(model_changed_count_, 1);
   EXPECT_GT(RootGroup(*model).GetCount(), 0);

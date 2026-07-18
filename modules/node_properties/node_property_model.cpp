@@ -3,7 +3,6 @@
 #include "app/string_const.h"
 #include "aui/translation.h"
 #include "base/awaitable.h"
-#include "base/check.h"
 #include "model/scada_node_ids.h"
 #include "net/net_executor_adapter.h"
 #include "node_service/node_awaitable.h"
@@ -61,6 +60,17 @@ NodePropertyModel::NodePropertyModel(PropertyService& property_service,
             co_await node.Fetch(NodeFetchStatus::NodeOnly);
             if (cancelation.expired() || node.status().bad()) {
               co_return;
+            }
+
+            // Update() walks the type hierarchy synchronously
+            // (GetTypePropertyDefs), and node fetches are per node, so the
+            // whole chain must be fetched up front. A failed chain fetch
+            // degrades to the attributes-only view in Update().
+            if (NodeRef type_definition = node.type_definition()) {
+              (void)co_await FetchTypeChainStatus(std::move(type_definition));
+              if (cancelation.expired()) {
+                co_return;
+              }
             }
 
             boost::asio::post(executor, BindCancelation(cancelation, [this] {
@@ -131,9 +141,12 @@ void NodePropertyModel::Update() {
                                    scada::AttributeId::DisplayName);
   }
 
-  if (const auto& type_definition = node_.type_definition()) {
-    base::Check(type_definition.fetched());
-
+  // The constructor coroutine fetches the type chain before OnNodeFetched,
+  // but a failed remote fetch (or keep-alive eviction) can still leave the
+  // type unfetched; degrade to the attributes-only view rather than walking
+  // (GetTypePropertyDefs fail-stops on an unfetched type).
+  if (const auto& type_definition = node_.type_definition();
+      type_definition && type_definition.fetched()) {
     for (const auto& [prop_decl, prop_def] :
          property_service_.GetTypePropertyDefs(type_definition)) {
       if (!prop_decl)
