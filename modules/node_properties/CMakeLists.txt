@@ -10,6 +10,7 @@ endif()
 
 if(TARGET client_component_node_properties_qt)
   target_link_libraries(client_component_node_properties_qt PRIVATE
+    client_parameter_form_qt
     client_ui_common_qt
   )
 endif()

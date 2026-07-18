@@ -11,6 +11,11 @@
 #include "node_service/node_service.h"
 #include "profile/window_definition.h"
 
+#if defined(UI_QT)
+#include "aui/severity_colors.h"
+#include "parameter_form/qt/device_parameter_form.h"
+#endif
+
 // NodePropertyController
 
 NodePropertyController::NodePropertyController(const ControllerContext& context)
@@ -34,6 +39,21 @@ std::unique_ptr<UiView> NodePropertyController::Init(
       property_service_,
       PropertyContext{executor_, node_service_, task_manager_, dialog_service_},
       std::move(node));
+
+#if defined(UI_QT)
+  // Reshell: present the properties as the subtabbed device-parameter form
+  // (Revert / Apply, dirty tracking) instead of the legacy property grid.
+  // Opt-in on the active UX theme; the legacy look keeps the grid below.
+  if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy) {
+    node_deleted_connection_ = property_model_->node_deleted.connect(
+        [this] { controller_delegate_.Close(); });
+    if (DeviceParameterForm* form = MakeDeviceParameterForm(
+            *property_model_, QString::fromStdU16String(
+                                  property_model_->node().display_name()))) {
+      return std::unique_ptr<UiView>{form};
+    }
+  }
+#endif
 
   struct PropertyTreeModelHolder {
     explicit PropertyTreeModelHolder(
@@ -92,5 +112,7 @@ std::unique_ptr<UiView> NodePropertyController::Init(
 void NodePropertyController::Save(WindowDefinition& definition) {
   definition.AddItem("Item").SetString(
       "path", NodeIdToScadaString(property_model_->node().node_id()));
-  definition.AddItem("State").attributes = tree_view_->SaveState();
+  // The reshell form path leaves tree_view_ null; only the grid saves tree state.
+  if (tree_view_)
+    definition.AddItem("State").attributes = tree_view_->SaveState();
 }

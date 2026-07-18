@@ -354,6 +354,22 @@
         <translation>Фильтр</translation>
     </message>
     <message>
+        <source>Revert</source>
+        <translation>Откатить</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Применить</translation>
+    </message>
+    <message>
+        <source>General</source>
+        <translation>Общие</translation>
+    </message>
+    <message>
+        <source>Unsaved changes</source>
+        <translation>Несохранённые изменения</translation>
+    </message>
+    <message>
         <source>Messages RX</source>
         <translation>Сообщений принято</translation>
     </message>

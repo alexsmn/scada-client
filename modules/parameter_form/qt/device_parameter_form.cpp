@@ -1,0 +1,308 @@
+#include "parameter_form/qt/device_parameter_form.h"
+
+#include "aui/models/property_model.h"
+#include "aui/qt/theme_qt.h"
+#include "aui/severity_colors.h"
+#include "aui/translation.h"
+
+#include <QFormLayout>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QScrollArea>
+#include <QSignalBlocker>
+#include <QStackedWidget>
+#include <QVBoxLayout>
+
+#include <string_view>
+#include <utility>
+
+namespace {
+
+using scada::aui::PropertyGroup;
+
+// The design tokens for the active reshell theme. The form is only built under a
+// token theme (the factory gates on it), so the legacy fallback is harmless.
+const scada::aui::ThemeTokens& FormTokens() {
+  scada::aui::Theme theme = scada::aui::Theme::kDark;
+  switch (scada::aui::GetSeverityTheme()) {
+    case scada::aui::SeverityTheme::kLight:
+      theme = scada::aui::Theme::kLight;
+      break;
+    case scada::aui::SeverityTheme::kHighContrast:
+      theme = scada::aui::Theme::kHighContrast;
+      break;
+    default:
+      break;
+  }
+  return scada::aui::GetThemeTokens(theme);
+}
+
+QString Tr(std::string_view text) {
+  return QString::fromStdU16String(Translate(text));
+}
+
+bool IsSection(PropertyGroup& group, int index) {
+  return group.GetSubgroup(index) != nullptr;
+}
+
+}  // namespace
+
+DeviceParameterForm::DeviceParameterForm(scada::aui::PropertyModel& model,
+                                         QString title,
+                                         QWidget* parent)
+    : QWidget{parent}, model_{model}, title_{std::move(title)} {
+  const scada::aui::ThemeTokens& tokens = FormTokens();
+  setObjectName(QStringLiteral("deviceParameterForm"));
+  setStyleSheet(QStringLiteral("#deviceParameterForm{background:%1;}")
+                    .arg(tokens.bg.name()));
+
+  auto* root = new QVBoxLayout{this};
+  root->setContentsMargins(0, 0, 0, 0);
+  root->setSpacing(0);
+
+  // Form bar: title + dirty dot + subtabs + Revert / Apply.
+  auto* bar = new QWidget;
+  bar->setObjectName(QStringLiteral("parameterFormBar"));
+  bar->setStyleSheet(
+      QStringLiteral("#parameterFormBar{background:%1;border-bottom:1px solid "
+                     "%2;}")
+          .arg(tokens.bg_elevated.name(), tokens.border.name()));
+  auto* bar_layout = new QHBoxLayout{bar};
+  bar_layout->setContentsMargins(14, 6, 14, 6);
+  bar_layout->setSpacing(8);
+
+  title_label_ = new QLabel{title_};
+  title_label_->setStyleSheet(
+      QStringLiteral("color:%1;font-weight:600;").arg(tokens.fg.name()));
+  bar_layout->addWidget(title_label_);
+
+  dirty_dot_ = new QLabel;
+  dirty_dot_->setObjectName(QStringLiteral("parameterDirtyDot"));
+  dirty_dot_->setFixedSize(8, 8);
+  dirty_dot_->setStyleSheet(
+      QStringLiteral("#parameterDirtyDot{border-radius:4px;background:%1;}")
+          .arg(tokens.uncertain.name()));
+  dirty_dot_->setToolTip(Tr("Unsaved changes"));
+  bar_layout->addWidget(dirty_dot_);
+
+  subtab_layout_ = new QHBoxLayout;
+  subtab_layout_->setContentsMargins(8, 0, 0, 0);
+  subtab_layout_->setSpacing(2);
+  bar_layout->addLayout(subtab_layout_);
+
+  bar_layout->addStretch(1);
+
+  revert_ = new QPushButton{Tr("Revert")};
+  revert_->setObjectName(QStringLiteral("parameterRevert"));
+  revert_->setStyleSheet(
+      QStringLiteral("QPushButton{background:%1;color:%2;border:1px solid %3;"
+                     "border-radius:6px;padding:5px 12px;}"
+                     "QPushButton:disabled{color:%4;}")
+          .arg(tokens.surface_muted.name(), tokens.fg.name(),
+               tokens.border_strong.name(), tokens.fg_subtle.name()));
+  connect(revert_, &QPushButton::clicked, this, [this] { Revert(); });
+  bar_layout->addWidget(revert_);
+
+  apply_ = new QPushButton{Tr("Apply")};
+  apply_->setObjectName(QStringLiteral("parameterApply"));
+  apply_->setStyleSheet(
+      QStringLiteral("QPushButton{background:%1;color:%2;border:none;"
+                     "border-radius:6px;padding:5px 14px;font-weight:600;}"
+                     "QPushButton:disabled{background:%3;color:%4;}")
+          .arg(tokens.accent.name(), tokens.accent_fg.name(),
+               tokens.surface_muted.name(), tokens.fg_subtle.name()));
+  connect(apply_, &QPushButton::clicked, this, [this] { Apply(); });
+  bar_layout->addWidget(apply_);
+
+  root->addWidget(bar);
+
+  pages_ = new QStackedWidget;
+  root->addWidget(pages_, 1);
+
+  model_.model_changed_handler = [this] { Rebuild(); };
+  Rebuild();
+}
+
+DeviceParameterForm::~DeviceParameterForm() {
+  // Drop the handler so a late model change cannot call into a destroyed form.
+  model_.model_changed_handler = nullptr;
+}
+
+ParameterStaging::Key DeviceParameterForm::FieldKey(const Field& field) const {
+  return {static_cast<const void*>(field.group), field.index};
+}
+
+bool DeviceParameterForm::dirty() const {
+  return staging_.dirty();
+}
+
+QWidget* DeviceParameterForm::BuildSectionPage(
+    PropertyGroup& group,
+    const std::vector<int>& field_indices) {
+  const scada::aui::ThemeTokens& tokens = FormTokens();
+
+  auto* page = new QWidget;
+  auto* outer = new QVBoxLayout{page};
+  outer->setContentsMargins(18, 16, 18, 16);
+
+  auto* form = new QFormLayout;
+  form->setLabelAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+  form->setHorizontalSpacing(16);
+  form->setVerticalSpacing(10);
+
+  for (int index : field_indices) {
+    auto* label = new QLabel{QString::fromStdU16String(group.GetName(index))};
+    label->setStyleSheet(
+        QStringLiteral("color:%1;").arg(tokens.fg_muted.name()));
+
+    auto* editor = new QLineEdit;
+    editor->setStyleSheet(
+        QStringLiteral("QLineEdit{background:%1;color:%2;border:1px solid %3;"
+                       "border-radius:6px;padding:5px 10px;}")
+            .arg(tokens.bg_elevated.name(), tokens.fg.name(),
+                 tokens.border_strong.name()));
+
+    Field field{&group, index, editor};
+    const std::u16string* staged = staging_.Get(FieldKey(field));
+    // Set the initial text before connecting, so seeding the editor does not
+    // register as an edit (programmatic resets elsewhere use QSignalBlocker).
+    editor->setText(QString::fromStdU16String(staged ? *staged
+                                                      : group.GetValue(index)));
+    connect(editor, &QLineEdit::textChanged, this,
+            [this, field](const QString& text) { OnFieldEdited(field, text); });
+    fields_.push_back(field);
+    form->addRow(label, editor);
+  }
+
+  outer->addLayout(form);
+  outer->addStretch(1);
+
+  auto* scroll = new QScrollArea;
+  scroll->setFrameShape(QFrame::NoFrame);
+  scroll->setWidgetResizable(true);
+  scroll->setWidget(page);
+  return scroll;
+}
+
+void DeviceParameterForm::Rebuild() {
+  const scada::aui::ThemeTokens& tokens = FormTokens();
+
+  fields_.clear();
+  for (QPushButton* button : subtab_buttons_)
+    button->deleteLater();
+  subtab_buttons_.clear();
+  while (pages_->count() > 0) {
+    QWidget* page = pages_->widget(0);
+    pages_->removeWidget(page);
+    page->deleteLater();
+  }
+
+  PropertyGroup& root = model_.GetRootGroup();
+
+  // Split the root group's entries into loose leaf properties (a "General" tab)
+  // and subgroups (one tab each), preserving order.
+  std::vector<int> general_fields;
+  std::vector<std::pair<QString, PropertyGroup*>> sections;
+  for (int i = 0; i < root.GetCount(); ++i) {
+    if (IsSection(root, i))
+      sections.emplace_back(QString::fromStdU16String(root.GetName(i)),
+                            root.GetSubgroup(i));
+    else
+      general_fields.push_back(i);
+  }
+
+  auto add_subtab = [&](const QString& name, int page_index) {
+    auto* button = new QPushButton{name};
+    button->setCheckable(true);
+    button->setCursor(Qt::PointingHandCursor);
+    button->setStyleSheet(
+        QStringLiteral(
+            "QPushButton{background:transparent;border:none;color:%1;"
+            "padding:4px 10px;border-radius:4px;}"
+            "QPushButton:checked{background:%2;color:%3;font-weight:600;}")
+            .arg(tokens.fg_subtle.name(), tokens.surface_muted.name(),
+                 tokens.fg.name()));
+    connect(button, &QPushButton::clicked, this,
+            [this, page_index] { SelectSection(page_index); });
+    subtab_layout_->addWidget(button);
+    subtab_buttons_.push_back(button);
+  };
+
+  if (!general_fields.empty()) {
+    const int page_index = pages_->count();
+    pages_->addWidget(BuildSectionPage(root, general_fields));
+    add_subtab(Tr("General"), page_index);
+  }
+
+  for (const auto& [name, group] : sections) {
+    std::vector<int> field_indices;
+    for (int j = 0; j < group->GetCount(); ++j) {
+      if (!IsSection(*group, j))
+        field_indices.push_back(j);
+    }
+    const int page_index = pages_->count();
+    pages_->addWidget(BuildSectionPage(*group, field_indices));
+    add_subtab(name, page_index);
+  }
+
+  if (pages_->count() > 0)
+    SelectSection(0);
+  UpdateDirtyUi();
+}
+
+void DeviceParameterForm::OnFieldEdited(const Field& field,
+                                        const QString& text) {
+  const ParameterStaging::Key key = FieldKey(field);
+  // Stage only a real change; typing the live value back clears the edit so the
+  // form does not read as dirty when nothing differs.
+  if (text.toStdU16String() == field.group->GetValue(field.index))
+    staging_.Remove(key);
+  else
+    staging_.Set(key, text.toStdU16String());
+  UpdateDirtyUi();
+}
+
+void DeviceParameterForm::UpdateDirtyUi() {
+  const bool is_dirty = staging_.dirty();
+  revert_->setEnabled(is_dirty);
+  apply_->setEnabled(is_dirty);
+  dirty_dot_->setVisible(is_dirty);
+}
+
+void DeviceParameterForm::SelectSection(int index) {
+  pages_->setCurrentIndex(index);
+  for (size_t i = 0; i < subtab_buttons_.size(); ++i)
+    subtab_buttons_[i]->setChecked(static_cast<int>(i) == index);
+}
+
+void DeviceParameterForm::Apply() {
+  // Replay the staged edits onto the model's write path. SetValue may complete
+  // asynchronously; the field editors already show the applied text, and the
+  // model's change handler refreshes them when the write lands.
+  for (const auto& [key, value] : staging_.edits()) {
+    auto* group = const_cast<PropertyGroup*>(
+        static_cast<const PropertyGroup*>(key.first));
+    group->SetValue(key.second, value);
+  }
+  staging_.Clear();
+  UpdateDirtyUi();
+}
+
+void DeviceParameterForm::Revert() {
+  staging_.Clear();
+  for (const Field& field : fields_) {
+    QSignalBlocker blocker{field.editor};
+    field.editor->setText(
+        QString::fromStdU16String(field.group->GetValue(field.index)));
+  }
+  UpdateDirtyUi();
+}
+
+DeviceParameterForm* MakeDeviceParameterForm(scada::aui::PropertyModel& model,
+                                             QString title) {
+  if (scada::aui::GetSeverityTheme() == scada::aui::SeverityTheme::kLegacy)
+    return nullptr;
+  return new DeviceParameterForm(model, std::move(title));
+}
