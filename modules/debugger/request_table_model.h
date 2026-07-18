@@ -29,15 +29,27 @@ class RequestTableModel : public aui::TableModel {
     std::string response_body;
   };
 
+  // The request shown at visible row `index` (after the filter).
   const Request& request(int index) const SCADA_LIFETIME_BOUND {
-    return requests_[index];
+    return requests_[visible_[index]];
   }
+
+  // Filters the visible rows to requests matching `query` (title / id substring,
+  // case-insensitive); empty shows all. Backs the trace-filter field.
+  void SetFilter(std::u16string query);
+  // Drops every captured request.
+  void Clear();
+  // Pauses / resumes capture: while paused, request events are ignored.
+  void SetPaused(bool paused);
+  bool paused() const { return paused_; }
 
   // aui::TableModel
   virtual int GetRowCount() override;
   virtual void GetCell(aui::TableCell& cell) override;
 
  private:
+  void RebuildVisible();
+
   void ProcessRequestEvent(const scada::SessionDebugger::RequestEvent& event);
 
   // Returns false if the request is not found.
@@ -53,6 +65,10 @@ class RequestTableModel : public aui::TableModel {
       const scada::SessionDebugger::RequestEvent& event);
 
   std::vector<Request> requests_;
+  // Indices into requests_ that pass the current filter, in order.
+  std::vector<int> visible_;
+  std::u16string filter_;
+  bool paused_ = false;
 
   std::unordered_map<RequestId, int /*index*/> running_request_id_to_index_;
 

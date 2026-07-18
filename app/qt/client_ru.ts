@@ -386,6 +386,26 @@
         <translation>Открыть журнал</translation>
     </message>
     <message>
+        <source>Pause</source>
+        <translation>Пауза</translation>
+    </message>
+    <message>
+        <source>Resume</source>
+        <translation>Продолжить</translation>
+    </message>
+    <message>
+        <source>Clear</source>
+        <translation>Очистить</translation>
+    </message>
+    <message>
+        <source>Save trace</source>
+        <translation>Сохранить трассу</translation>
+    </message>
+    <message>
+        <source>Filter title or id</source>
+        <translation>Фильтр по имени или ID</translation>
+    </message>
+    <message>
         <source>Signal</source>
         <translation>Сигнал</translation>
     </message>

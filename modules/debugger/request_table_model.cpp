@@ -1,9 +1,14 @@
 #include "modules/debugger/request_table_model.h"
 
+#include "aui/severity_colors.h"
 #include "base/format.h"
 #include "base/utf_convert.h"
 #include "base/time_utils.h"
+#include "modules/debugger/debug_status.h"
 #include "scada/session_service.h"
+
+#include <optional>
+#include <utility>
 
 namespace {
 const size_t kMaxRequests = 1000;
@@ -27,11 +32,29 @@ RequestTableModel::RequestTableModel(scada::SessionService& session_service) {
 }
 
 int RequestTableModel::GetRowCount() {
-  return static_cast<int>(requests_.size());
+  return static_cast<int>(visible_.size());
 }
 
 void RequestTableModel::GetCell(aui::TableCell& cell) {
-  const auto& request = requests_[cell.row];
+  const auto& request = requests_[visible_[cell.row]];
+
+  // Status colouring, opt-in on the reshell theme (transparent under legacy):
+  // failed requests read bad, running ones uncertain, succeeded ones default.
+  if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy) {
+    std::optional<scada::aui::Color> color;
+    switch (DebugStatusFor(request.phase)) {
+      case DebugStatus::kError:
+        color = scada::aui::QualityColor(scada::aui::Quality::kBad);
+        break;
+      case DebugStatus::kRunning:
+        color = scada::aui::QualityColor(scada::aui::Quality::kUncertain);
+        break;
+      case DebugStatus::kOk:
+        break;
+    }
+    if (color)
+      cell.text_color = *color;
+  }
 
   switch (cell.column_id) {
     case 0:
@@ -58,12 +81,44 @@ void RequestTableModel::GetCell(aui::TableCell& cell) {
 
 void RequestTableModel::ProcessRequestEvent(
     const scada::SessionDebugger::RequestEvent& event) {
-  if (UpdateRunningRequest(event)) {
+  if (paused_)
     return;
+
+  if (!UpdateRunningRequest(event)) {
+    AddRequest(event);
+    RemoveOldRequests();
   }
 
-  AddRequest(event);
-  RemoveOldRequests();
+  // The filter indirection makes incremental row notifications unreliable, so
+  // recompute the visible set and refresh wholesale — fine for a bounded
+  // (kMaxRequests) debug trace.
+  RebuildVisible();
+  NotifyModelChanged();
+}
+
+void RequestTableModel::RebuildVisible() {
+  visible_.clear();
+  for (int i = 0; i < static_cast<int>(requests_.size()); ++i) {
+    if (DebugRequestMatches(requests_[i], filter_))
+      visible_.push_back(i);
+  }
+}
+
+void RequestTableModel::SetFilter(std::u16string query) {
+  filter_ = std::move(query);
+  RebuildVisible();
+  NotifyModelChanged();
+}
+
+void RequestTableModel::Clear() {
+  requests_.clear();
+  running_request_id_to_index_.clear();
+  visible_.clear();
+  NotifyModelChanged();
+}
+
+void RequestTableModel::SetPaused(bool paused) {
+  paused_ = paused;
 }
 
 bool RequestTableModel::UpdateRunningRequest(
@@ -83,15 +138,12 @@ bool RequestTableModel::UpdateRunningRequest(
     running_request_id_to_index_.erase(i);
   }
 
-  NotifyItemsChanged(index, 1);
   return true;
 }
 
 void RequestTableModel::AddRequest(
     const scada::SessionDebugger::RequestEvent& event) {
   auto index = static_cast<int>(requests_.size());
-
-  ScopedItemsAdding items_adding{*this, index, 1};
 
   auto& request = requests_.emplace_back(
       Request{.request_id = event.request_id,
@@ -114,7 +166,6 @@ void RequestTableModel::RemoveOldRequests() {
   }
 
   int remove_count = requests_.size() - kMaxRequests;
-  ScopedItemsRemoving items_removing{*this, 0, remove_count};
   requests_.erase(requests_.begin(), requests_.begin() + remove_count);
 }
 
