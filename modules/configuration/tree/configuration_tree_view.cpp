@@ -1,6 +1,7 @@
 ﻿#include "configuration/tree/configuration_tree_view.h"
 
 #include "aui/tree.h"
+#include "aui/translation.h"
 #include "resources/common_resources.h"
 #include "configuration/tree/configuration_tree_drop_handler.h"
 #include "configuration/tree/configuration_tree_model.h"
@@ -8,6 +9,15 @@
 #include "ui/dragdrop/item_drag_data.h"
 #include "node_service/node_util.h"
 #include "profile/window_definition.h"
+
+#if defined(UI_QT)
+#include "aui/qt/theme_qt.h"
+#include "aui/severity_colors.h"
+
+#include <QLineEdit>
+#include <QVBoxLayout>
+#include <QWidget>
+#endif
 
 namespace {
 
@@ -28,6 +38,61 @@ int CompareNodes(const NodeRef& a, const NodeRef& b) {
 }
 
 }  // namespace
+
+#if defined(UI_QT)
+namespace {
+
+// The active reshell theme's tokens. The filter field is only built under a
+// token theme (the legacy path returns the bare tree), so the default is
+// harmless.
+const scada::aui::ThemeTokens& ExplorerTokens() {
+  scada::aui::Theme theme = scada::aui::Theme::kDark;
+  switch (scada::aui::GetSeverityTheme()) {
+    case scada::aui::SeverityTheme::kLight:
+      theme = scada::aui::Theme::kLight;
+      break;
+    case scada::aui::SeverityTheme::kHighContrast:
+      theme = scada::aui::Theme::kHighContrast;
+      break;
+    default:
+      break;
+  }
+  return scada::aui::GetThemeTokens(theme);
+}
+
+// Wraps `tree` in a container with a type-to-filter field above it — the
+// Explorer "Filter" search box from the reshell mockups
+// (client/docs/ui-mockups/screens/config-workbench.html). Ownership of `tree`
+// transfers into the returned container via Qt parent-child, preserving the
+// caller-owns-the-returned-view contract.
+std::unique_ptr<UiView> WrapExplorerWithFilter(aui::Tree* tree) {
+  const scada::aui::ThemeTokens& tokens = ExplorerTokens();
+  auto container = std::make_unique<QWidget>();
+  auto* layout = new QVBoxLayout{container.get()};
+  layout->setContentsMargins(0, 0, 0, 0);
+  layout->setSpacing(0);
+
+  auto* filter = new QLineEdit;
+  filter->setObjectName(QStringLiteral("explorerFilter"));
+  filter->setClearButtonEnabled(true);
+  filter->setPlaceholderText(QString::fromStdU16String(Translate("Filter")));
+  filter->setStyleSheet(
+      QStringLiteral("QLineEdit{background:%1;border:1px solid %2;"
+                     "border-radius:4px;padding:4px 8px;margin:6px 8px;"
+                     "color:%3;}")
+          .arg(tokens.surface_muted.name(), tokens.border.name(),
+               tokens.fg.name()));
+  QObject::connect(filter, &QLineEdit::textChanged, tree,
+                   [tree](const QString& text) {
+                     tree->SetFilterText(text.toStdU16String());
+                   });
+  layout->addWidget(filter);
+  layout->addWidget(tree);
+  return container;
+}
+
+}  // namespace
+#endif
 
 ConfigurationTreeView::ConfigurationTreeView(
     const ControllerContext& context,
@@ -85,6 +150,13 @@ std::unique_ptr<UiView> ConfigurationTreeView::Init(
     const WindowDefinition& definition) {
   if (auto* state = definition.FindItem("State"))
     tree_view_->RestoreState(state->attributes);
+
+#if defined(UI_QT)
+  // Reshell: a type-to-filter field above the Explorer tree. Opt-in on the
+  // active UX theme; the legacy look keeps the bare tree.
+  if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy)
+    return WrapExplorerWithFilter(tree_view_);
+#endif
 
   return std::unique_ptr<UiView>{tree_view_};
 }

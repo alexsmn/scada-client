@@ -350,6 +350,10 @@
         <translation>График метрик</translation>
     </message>
     <message>
+        <source>Filter</source>
+        <translation>Фильтр</translation>
+    </message>
+    <message>
         <source>Messages RX</source>
         <translation>Сообщений принято</translation>
     </message>

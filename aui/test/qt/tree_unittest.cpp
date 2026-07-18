@@ -136,3 +136,47 @@ TEST(TreeTest, ExplicitTextColorOverridesPaletteForeground) {
       tree.model()->data(explicit_index, Qt::ForegroundRole).value<QColor>(),
       QColor(Qt::white));
 }
+
+TEST(TreeTest, SetFilterTextHidesNonMatchingRowsAndClears) {
+  AppEnvironment app_env;
+
+  aui::Tree tree{MakeTreeModel()};
+  // Top-level rows: First, Child, Last.
+  EXPECT_EQ(tree.model()->rowCount(tree.rootIndex()), 3);
+
+  tree.SetFilterText(u"first");
+  EXPECT_EQ(tree.model()->rowCount(tree.rootIndex()), 1);
+
+  tree.SetFilterText(u"");  // Empty filter restores every row.
+  EXPECT_EQ(tree.model()->rowCount(tree.rootIndex()), 3);
+}
+
+TEST(TreeTest, SetFilterTextIsCaseInsensitive) {
+  AppEnvironment app_env;
+
+  aui::Tree tree{MakeTreeModel()};
+  tree.SetFilterText(u"LAST");
+
+  ASSERT_EQ(tree.model()->rowCount(tree.rootIndex()), 1);
+  EXPECT_EQ(tree.model()
+                ->index(0, 0, tree.rootIndex())
+                .data(Qt::DisplayRole)
+                .toString(),
+            QStringLiteral("Last"));
+}
+
+TEST(TreeTest, SetFilterTextKeepsAncestorsOfDeeperMatches) {
+  AppEnvironment app_env;
+
+  aui::Tree tree{MakeTreeModel()};
+  // "Grandchild" lives under "Child"; filtering for it keeps "Child" visible as
+  // the ancestor of the match, even though "Child" itself does not match.
+  tree.SetFilterText(u"grandchild");
+
+  ASSERT_EQ(tree.model()->rowCount(tree.rootIndex()), 1);
+  EXPECT_EQ(tree.model()
+                ->index(0, 0, tree.rootIndex())
+                .data(Qt::DisplayRole)
+                .toString(),
+            QStringLiteral("Child"));
+}

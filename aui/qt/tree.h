@@ -56,6 +56,13 @@ class Tree : public QTreeView {
   void SetSorted(bool sorted);
   void SetCompareHandler(TreeCompareHandler handler);
 
+  // Filters visible rows to those whose column-0 text contains `text`
+  // (case-insensitive); ancestors of a match stay visible so the match keeps
+  // its place in the hierarchy. Empty text clears the filter. Only
+  // already-fetched rows are considered, so a lazily-loaded subtree is filtered
+  // as it is expanded.
+  void SetFilterText(const std::u16string& text);
+
   void SetContextMenuHandler(ContextMenuHandler handler);
   void SetFocusHandler(FocusHandler handler);
 

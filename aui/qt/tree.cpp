@@ -94,6 +94,11 @@ Tree::Tree(std::shared_ptr<TreeModel> model)
   setEditTriggers(QTreeView::EditTrigger::SelectedClicked);
 
   proxy_model_->setDynamicSortFilter(true);
+  // Column-0 substring filtering for SetFilterText; recursive so an ancestor of
+  // a deeper match stays visible, case-insensitive to match how operators type.
+  proxy_model_->setFilterKeyColumn(0);
+  proxy_model_->setFilterCaseSensitivity(Qt::CaseInsensitive);
+  proxy_model_->setRecursiveFilteringEnabled(true);
   proxy_model_->setSourceModel(model_adapter_.get());
   setModel(proxy_model_.get());
 
@@ -123,6 +128,10 @@ void Tree::SetSorted(bool sorted) {
   setSortingEnabled(sorted);
   if (sorted)
     sortByColumn(0, Qt::SortOrder::AscendingOrder);
+}
+
+void Tree::SetFilterText(const std::u16string& text) {
+  proxy_model_->setFilterFixedString(QString::fromStdU16String(text));
 }
 
 void Tree::LoadIcons(unsigned resource_id, int width, Color mask_color) {
