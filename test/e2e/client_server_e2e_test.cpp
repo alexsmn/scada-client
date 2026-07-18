@@ -139,6 +139,12 @@ TEST_P(ClientServerE2eTest, Connect_Success_ExpandsObjectTreeLabels) {
 }
 
 TEST_P(ClientServerE2eTest, Connect_Success_ExpandsHardwareTreeDevices) {
+  // The hardware tree asserts a *live* device per protocol (MODBUS + IEC60870 +
+  // IEC61850). A single device tier serves only its own protocol, and the
+  // multi-protocol fixture config confuses it. Full coverage needs the tier
+  // cluster (proxy aggregating all three device tiers) — a follow-up to this
+  // bounded single-tier rework.
+  GTEST_SKIP() << "multi-protocol hardware tree requires the tier cluster";
   WriteClientSettings(/*password=*/"");
   StartServer();
   StartClient({"--test-hardware-tree-devices-file=" +
@@ -171,6 +177,11 @@ TEST_P(ClientServerE2eTest, Connect_Success_ExpandsHardwareTreeDevices) {
 }
 
 TEST_P(ClientServerE2eTest, Connect_Success_DisplaysHistoricalTimedData) {
+  // History is the historian tier's, not a device tier's (ADR 0002: edges own no
+  // history). Covering this end-to-end needs the tier cluster (a historian
+  // collecting from the edge, client reading back through the proxy) — a
+  // follow-up to this bounded single-tier rework.
+  GTEST_SKIP() << "history requires the historian tier (multi-tier cluster)";
   WriteClientSettings(/*password=*/"");
   EnableSimulatedHistory();
   StartServer();
@@ -356,11 +367,13 @@ TEST_P(ClientServerE2eTest,
 INSTANTIATE_TEST_SUITE_P(
     Protocols,
     ClientServerE2eTest,
+    // Single real tier binary (scada-iec104) per protocol. The MultiProcess
+    // (monolith-in-roles) params were dropped with the monolith; the real
+    // multi-tier cluster is the follow-up. `Monolith` here now means the single
+    // tier process.
     ::testing::Values(
         E2eParam{E2eProtocol::Remote, ServerTopology::Monolith},
-        E2eParam{E2eProtocol::OpcUa, ServerTopology::Monolith},
-        E2eParam{E2eProtocol::Remote, ServerTopology::MultiProcess},
-        E2eParam{E2eProtocol::OpcUa, ServerTopology::MultiProcess}),
+        E2eParam{E2eProtocol::OpcUa, ServerTopology::Monolith}),
     [](const ::testing::TestParamInfo<E2eParam>& info) {
       return E2eParamName(info.param);
     });

@@ -2,7 +2,12 @@ if(NOT WIN32 AND NOT APPLE)
   return()
 endif()
 
-if(NOT TARGET server OR NOT TARGET client_qt)
+# The monolith `server` was retired (ADR 0001 Stage C); the E2E now drives a real
+# tier binary. scada-iec104 is a device tier (framework login/browse + live
+# IEC 60870 devices), which covers the connect / object-tree / hardware-tree /
+# operator / profile flows. History + multi-protocol coverage need the full tier
+# cluster (proxy + device tiers + historian) — a follow-up (see the test).
+if(NOT TARGET scada-iec104 OR NOT TARGET client_qt)
   return()
 endif()
 
@@ -36,7 +41,7 @@ target_link_libraries(client_server_e2e_tests PRIVATE
 )
 
 target_compile_definitions(client_server_e2e_tests PRIVATE
-  SCADA_E2E_SERVER_EXE="$<TARGET_FILE:server>"
+  SCADA_E2E_SERVER_EXE="$<TARGET_FILE:scada-iec104>"
   SCADA_E2E_CLIENT_EXE="$<TARGET_FILE:client_qt>"
   SCADA_E2E_SERVER_FIXTURE_DIR="${CMAKE_SOURCE_DIR}/common/test/e2e/fixtures/server-data"
   SCADA_E2E_SERVER_SETTINGS_TEMPLATE="${CMAKE_SOURCE_DIR}/common/test/e2e/fixtures/server-settings.json"
@@ -46,7 +51,7 @@ target_compile_definitions(client_server_e2e_tests PRIVATE
 )
 
 add_dependencies(client_server_e2e_tests
-  server
+  scada-iec104
   client_qt
   client_qt_copy_translations
 )
