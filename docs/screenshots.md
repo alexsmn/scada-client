@@ -33,7 +33,7 @@ The generator reads these command-line flags:
 |---|---|---|
 | `--out=<dir>` | yes | Output directory for generated PNGs. The CMake `POST_BUILD` step sets this to `client/docs/screenshots/`. |
 | `--image-manifest=<path>` | no | Override path to `image_manifest.json`. If unset, the generator falls back to its built-in manifest search paths. |
-| `--only=<files>` | no | Comma / semicolon / newline-separated list of PNG filenames to regenerate, for example `client-login.png,users.png`. If unset, the generator renders every managed screenshot. |
+| `--only=<files>` | no | Comma / semicolon / newline-separated list of PNG filenames to regenerate, for example `client-login.png,users.png`. **`--only` overrides the managed-image gate** — a named file is captured even when it is not tagged `auto-*` in the manifest, which is how reshell / not-yet-published on-page surfaces (e.g. `hardware-tree.png`, `config-parameters.png`) are validated under `--theme`. If unset, the generator renders every managed screenshot and prints the fixture specs it skipped (re-run with `--only <name>` to capture those). |
 | `--theme=<name>` | no | Render captures under a UX design-token theme: `dark`, `light`, or `hc`. Omitted → the legacy Fusion look (the default, opt-in-off UI). Use this to validate the UX reshell (`docs/ux/`) against **real Qt widgets** rather than HTML mockups, e.g. `--theme=dark --only=client-login.png`. The theme is applied exactly as `app/qt/main.cpp` does when `Ux/Experimental` is on. |
 
 ### Outputs

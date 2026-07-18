@@ -6,7 +6,11 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <iostream>
+#include <string>
 #include <unordered_set>
+#include <vector>
 
 namespace {
 
@@ -62,6 +66,15 @@ std::unordered_set<std::string> GetManagedImageFilenames() {
 template <class Spec>
 bool IsManagedImage(const std::unordered_set<std::string>& managed_images,
                     const Spec& spec) {
+  // An explicit --only list overrides the managed-image gate: the caller named
+  // exactly what to capture, which is how reshell / not-yet-published surfaces
+  // (absent from the published manifest) are validated headless, e.g.
+  //   client_screenshot_generator --theme=dark \
+  //       --only hardware-tree.png,config-parameters.png --out <dir>
+  // Without this, an unmanaged spec is dropped even when named on --only, so it
+  // silently never renders.
+  if (!GetScreenshotOptions().only_filenames.empty())
+    return ShouldCaptureScreenshot(spec.filename);
   if (!managed_images.empty() && !managed_images.contains(spec.filename))
     return false;
   return ShouldCaptureScreenshot(spec.filename);
@@ -88,6 +101,10 @@ void ScreenshotConfig::Load(const std::filesystem::path& path) {
   ASSERT_FALSE(dialog_analog_node_id.is_null())
       << "Missing or invalid dialog_analog_node_id in " << path.string();
 
+  // Under --only the caller drives the selection, so "skips" are just
+  // unrequested specs, not managed-gate drops — don't report them.
+  const bool only_mode = !GetScreenshotOptions().only_filenames.empty();
+  std::vector<std::string> skipped_screenshots;
   for (const auto& js : json.at("screenshots").as_array()) {
     ScreenshotSpec spec;
     spec.window_type = std::string(js.at("type").as_string());
@@ -104,6 +121,25 @@ void ScreenshotConfig::Load(const std::filesystem::path& path) {
       spec.min_rows = static_cast<int>(min_rows->as_int64());
     if (IsManagedImage(managed_images, spec))
       screenshots.push_back(std::move(spec));
+    else if (!only_mode)
+      skipped_screenshots.push_back(spec.filename);
+  }
+
+  // Surface fixture specs the managed-image gate dropped, so a missing capture
+  // is discoverable: re-run with --only <name> (which overrides the gate) to
+  // render them anyway. Silent when nothing was skipped (e.g. under --only).
+  if (!skipped_screenshots.empty()) {
+    std::sort(skipped_screenshots.begin(), skipped_screenshots.end());
+    std::string list;
+    for (const auto& name : skipped_screenshots) {
+      if (!list.empty())
+        list += ", ";
+      list += name;
+    }
+    std::cout << "Skipped " << skipped_screenshots.size()
+              << " fixture screenshot(s) not in the managed manifest set "
+                 "(pass --only <name> to capture): "
+              << list << std::endl;
   }
 
   if (const auto* jd = json.as_object().if_contains("dialogs")) {
