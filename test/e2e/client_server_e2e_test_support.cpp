@@ -50,7 +50,13 @@ constexpr auto kServerStartTimeout = 30s;
 constexpr auto kClientStartTimeout = 30s;
 constexpr auto kServerLogTimeout = 10s;
 constexpr auto kObjectTreeLoadTimeout = 30s;
-constexpr auto kObjectViewValuesTimeout = 30s;
+// Longer than its siblings: object-view *values* (monitored-item current
+// values) travel the full aggregation/proxy path, which is materially slower
+// for the Remote (gRPC) protocol under Cluster. The value does arrive — the
+// check passes in isolation — but when the whole matrix runs sequentially the
+// loaded machine can push Remote_Cluster delivery past 30s and flake. The
+// structure/labels checks stay at 30s; only value delivery needs the headroom.
+constexpr auto kObjectViewValuesTimeout = 60s;
 constexpr auto kObjectTreeLabelsTimeout = 30s;
 constexpr auto kHardwareTreeDevicesTimeout = 30s;
 constexpr auto kOperatorUseCasesTimeout = 30s;
