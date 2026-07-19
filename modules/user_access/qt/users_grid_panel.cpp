@@ -80,10 +80,18 @@ QWidget* UsersGridPanel::BuildHeader() {
 
   add_user_ = new QPushButton{Tr("Add user")};
   reset_password_ = new QPushButton{Tr("Reset password")};
-  // The create/reset write path is not wired at this surface; the affordances
-  // are shown disabled to match the mockup and its admin-gating hint.
+  // Add-user is a parent-scoped create that is not wired at this surface, so it
+  // stays a disabled affordance. Reset-password reuses the existing Set-Password
+  // selection command via the host's context menu; it enables once a user row
+  // is selected.
   add_user_->setEnabled(false);
   reset_password_->setEnabled(false);
+  connect(reset_password_, &QPushButton::clicked, this, [this] {
+    if (HasSelection())
+      Q_EMIT ActionsMenuRequested(
+          reset_password_->mapToGlobal(reset_password_->rect().bottomLeft()),
+          /*right_click=*/false);
+  });
 
   auto* hint = new QLabel{Tr("Editing requires the Administrator role")};
   hint->setStyleSheet(
@@ -109,8 +117,11 @@ QWidget* UsersGridPanel::BuildGrid() {
   grid_->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
   grid_->horizontalHeader()->setStretchLastSection(true);
 
+  grid_->setContextMenuPolicy(Qt::CustomContextMenu);
   connect(grid_, &QTableWidget::itemSelectionChanged, this,
           [this] { OnSelectionChanged(); });
+  connect(grid_, &QTableWidget::customContextMenuRequested, this,
+          [this](const QPoint& pos) { OnContextMenuRequested(pos); });
   return grid_;
 }
 
@@ -137,13 +148,30 @@ void UsersGridPanel::ShowRows(const std::vector<UserGridRow>& rows) {
   }
 }
 
+bool UsersGridPanel::HasSelection() const {
+  return grid_ && grid_->currentRow() >= 0 && !grid_->selectedItems().isEmpty();
+}
+
 void UsersGridPanel::OnSelectionChanged() {
+  // Reset-password acts on the selected user, so it follows the selection.
+  reset_password_->setEnabled(HasSelection());
+
   const QList<QTableWidgetItem*> selected = grid_->selectedItems();
   if (selected.isEmpty())
     return;
   const int row = selected.front()->row();
   if (row >= 0 && row < static_cast<int>(rows_.size()))
     Q_EMIT UserActivated(rows_[row].node_id);
+}
+
+void UsersGridPanel::OnContextMenuRequested(const QPoint& pos) {
+  // Select the row under the cursor first, so the actions target that user.
+  if (QTableWidgetItem* item = grid_->itemAt(pos))
+    grid_->selectRow(item->row());
+  if (HasSelection()) {
+    Q_EMIT ActionsMenuRequested(grid_->viewport()->mapToGlobal(pos),
+                                /*right_click=*/true);
+  }
 }
 
 UsersGridPanel* MakeUsersGridPanel() {

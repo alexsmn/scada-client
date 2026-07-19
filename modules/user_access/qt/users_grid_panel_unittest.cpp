@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include <QLabel>
+#include <QPushButton>
 #include <QTableWidget>
 
 #include <optional>
@@ -56,6 +57,37 @@ TEST_F(UsersGridPanelTest, SelectingARowEmitsUserActivated) {
 
   ASSERT_TRUE(activated.has_value());
   EXPECT_EQ(*activated, (scada::NodeId{2, 1}));
+}
+
+TEST_F(UsersGridPanelTest, ResetPasswordFollowsSelectionAndEmitsActionsMenu) {
+  UsersGridPanel panel;
+  panel.ShowRows(SampleRows());
+
+  const QList<QPushButton*> buttons = panel.findChildren<QPushButton*>();
+  QPushButton* reset = nullptr;
+  for (QPushButton* button : buttons) {
+    if (button->text() == QStringLiteral("Reset password"))
+      reset = button;
+  }
+  ASSERT_NE(reset, nullptr);
+  // Disabled until a user is selected.
+  EXPECT_FALSE(reset->isEnabled());
+
+  auto* grid = panel.findChild<QTableWidget*>(QStringLiteral("usersGrid"));
+  ASSERT_NE(grid, nullptr);
+  grid->selectRow(1);
+  EXPECT_TRUE(reset->isEnabled());
+
+  bool right_click = true;
+  int emitted = 0;
+  QObject::connect(&panel, &UsersGridPanel::ActionsMenuRequested,
+                   [&](const QPoint&, bool rc) {
+                     ++emitted;
+                     right_click = rc;
+                   });
+  reset->click();
+  EXPECT_EQ(emitted, 1);
+  EXPECT_FALSE(right_click);  // the button path, not a right-click.
 }
 
 TEST_F(UsersGridPanelTest, EmptyRowsClearsGrid) {

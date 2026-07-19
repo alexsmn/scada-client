@@ -86,6 +86,16 @@ std::unique_ptr<UiView> NodeTableController::Init(
                        [this](const scada::NodeId& user_id) {
                          selection_.SelectNode(node_service_.GetNode(user_id));
                        });
+      // A row's actions (Set Password... / New / Delete) reuse the existing
+      // selection commands: pop the standard context menu for the selected
+      // user, exactly as the generic grid does.
+      QObject::connect(
+          panel, &UsersGridPanel::ActionsMenuRequested, panel,
+          [this](const QPoint& global_pos, bool right_click) {
+            // aui::Point is QPoint under UI_QT.
+            controller_delegate_.ShowPopupMenu(nullptr, 0, global_pos,
+                                               right_click);
+          });
       // Populate the rows off the construction path; a QPointer guards a late
       // completion against a destroyed panel.
       CoSpawn(executor_,
