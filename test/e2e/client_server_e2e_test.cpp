@@ -106,12 +106,14 @@ TEST_P(ClientServerE2eTest, Connect_Success_LoadsObjectTree) {
 }
 
 TEST_P(ClientServerE2eTest, Connect_Success_ExpandsObjectTreeLabels) {
-  // The nested object-tree labels don't fully materialize through the cluster's
-  // remote-config/aggregation yet (same instance-enumeration gap as history);
-  // runs under SingleTier where the tree is served from the local config DB.
+  // Under Cluster the root's children load (LoadsObjectTree passes) but their
+  // nested DisplayNames don't come through aggregation, so the expected station/
+  // group labels are missing — a pending server-tier gap in the aggregation/
+  // remote-config attribute path. Runs under SingleTier where the tree is served
+  // from the local config DB.
   if (Topology() == ServerTopology::Cluster)
-    GTEST_SKIP() << "nested tree labels pending a server-tier gap (remote-config "
-                    "instance enumeration)";
+    GTEST_SKIP() << "nested tree labels pending a server-tier gap (DisplayName "
+                    "through aggregation)";
   WriteClientSettings(/*password=*/"");
   StartServer();
   StartClient(
@@ -193,8 +195,14 @@ TEST_P(ClientServerE2eTest, Connect_Success_DisplaysHistoricalTimedData) {
   // types with no static parent — a pending server-tier gap), so TIT.4 is never
   // simulated/collected. Skipped pending that fix; the assertions below are the
   // intended coverage once it lands.
-  GTEST_SKIP() << "history pending a server-tier gap (remote-config instance "
-                  "enumeration for data items)";
+  // History needs the historian tier (Cluster only). Beyond that, the
+  // config-client edges don't yet load + simulate + historize their data items
+  // over remote config, so no TIT.4 samples reach the historian (a pending
+  // server-tier gap deeper than remote-config instance enumeration — the edge
+  // never activates/simulates the item even once LoadNodes enumerates it).
+  // Skipped pending that fix; the assertions below are the intended coverage.
+  GTEST_SKIP() << "history pending a server-tier gap (edge data-item "
+                  "load/simulate/historize over remote config)";
   WriteClientSettings(/*password=*/"");
   EnableSimulatedHistory();
   StartServer();
