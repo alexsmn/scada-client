@@ -133,20 +133,23 @@ if(Python3_FOUND)
   set_tests_properties(client_screenshot_check PROPERTIES TIMEOUT 300)
 endif()
 
-# Themed multi-NewProps regression net. The structural check above renders the
-# legacy (no-theme) managed subset, so it never exercises the reshell chrome or
-# the config-workbench captures that click a subtab (config-address-map,
-# config-limits) — those are theme-only and absent from the manifest. Render
-# them together under --theme so a regression in per-spec view selection or the
-# subtab click fails the suite. This directly guards the bug where every
-# "NewProps" spec re-grabbed the first opened view, pointing config-limits at
-# TS.702's form (no Limits subtab). The generator is a gtest binary, so any
-# ADD_FAILURE (e.g. "click_object not found") returns non-zero and fails ctest.
+# Themed reshell-capture regression net. The structural check above renders the
+# legacy (no-theme) managed subset, so it never exercises the theme-gated
+# reshell captures (the "reshell-theme"-tagged manifest entries): the
+# config-workbench tabs that click a subtab (config-address-map, config-limits)
+# and the explorer trees whose status dots / filter only appear under --theme
+# (hardware-tree, object-tree). Render them together under --theme so a
+# regression fails the suite — in particular the per-spec view-selection bug
+# where every "NewProps" spec re-grabbed the first opened view, pointing
+# config-limits at TS.702's form (no Limits subtab). The generator is a gtest
+# binary, so any ADD_FAILURE (e.g. "click_object not found") returns non-zero
+# and fails ctest. Keep this --only list in sync with the reshell-theme entries
+# in docs/screenshots/image_manifest.json.
 add_test(NAME client_screenshot_check_themed
   COMMAND ${CMAKE_COMMAND} -E env QT_QPA_PLATFORM=offscreen
     $<TARGET_FILE:client_screenshot_generator>
     "--theme=dark"
-    "--only=config-parameters.png,config-address-map.png,config-limits.png"
+    "--only=config-parameters.png,config-address-map.png,config-limits.png,hardware-tree.png,object-tree.png"
     "--out=${CMAKE_CURRENT_BINARY_DIR}/screenshot_check_themed"
 )
 set_tests_properties(client_screenshot_check_themed PROPERTIES TIMEOUT 300)

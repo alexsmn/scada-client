@@ -329,8 +329,11 @@ The source of truth for every image the web manual ships is
 `img/` must have exactly one entry there. Conventions:
 
 - **`tag`** — `auto-view` / `auto-dialog` / `auto-menu` / `auto-state`
-  for generator-owned images, `manual-*` for hand-captured ones,
-  `obsolete` for removal candidates no page references.
+  for generator-owned images, `reshell-theme` for the theme-gated reshell
+  captures (see below), `manual-*` for hand-captured ones, `obsolete` for
+  removal candidates no page references. Only `auto-*` tags are part of the
+  default (no-theme) managed pipeline: the generator's managed-image gate and
+  `check_screenshots.py` both key off the `auto-` prefix.
 - **`referenced_from`** — the **Russian (canonical) manual pages** that
   embed the image. English mirrors under `en/` are implied via the docs
   repo's `_data/i18n_pages.yml` and are deliberately not listed.
@@ -342,6 +345,41 @@ The source of truth for every image the web manual ships is
   files that `update_screenshots` actually publishes. This is the
   rollout gate: an image graduates into it only after its generated
   rendering has been visually compared against the page that uses it.
+
+### Reshell captures (`--theme`-gated)
+
+The UX reshell (`docs/ux/`) is opt-in and off by default, so its chrome only
+renders under `--theme`. Two kinds of reshell capture exist:
+
+- **Standalone panel captures** (`device-diagnostics.png`,
+  `series-inspector.png`, `users-rbac.png`, `transmission-rule.png`,
+  `bulk-create.png`): a dedicated capture builds the reshell `QWidget`
+  directly (with the dark tokens), so it renders the reshell look **regardless
+  of `--theme`**. These stay `auto-view` — the default pipeline emits them and
+  `check_screenshots.py` verifies their dimensions — but are marked
+  `published: false` until a manual page adopts them.
+- **Theme-gated view captures** (`config-parameters.png`,
+  `config-address-map.png`, `config-limits.png`, `hardware-tree.png`,
+  `object-tree.png`): these grab an opened **view** whose reshell chrome
+  (tabbed parameter form + subtabs, explorer status dots / filter) only exists
+  under `--theme`; the legacy view is a plain grid/tree. They are tagged
+  **`reshell-theme`** so the default no-theme pipeline never renders or checks
+  them (the subtab `click_object` would fail, and the tree would render without
+  dots). Regenerate and guard them under the theme:
+
+  ```bash
+  # regenerate a reshell-theme capture into the local gallery
+  client_screenshot_generator --theme=dark --only=config-limits.png \
+    --out=client/docs/screenshots
+  ```
+
+  The `client_screenshot_check_themed` ctest renders all `reshell-theme`
+  captures together under `--theme=dark`; keep its `--only` list in sync with
+  the `reshell-theme` manifest entries.
+
+Both kinds are `published: false` (validation-only; not in scada-docs `img/`).
+On macOS the whole gallery is validation-only regardless — published images
+come from the Windows pipeline (see "Running on macOS").
 
 Run the consistency validator after any manifest, image, or manual-page
 change (it needs a scada-docs checkout; pass its path if not a sibling):
