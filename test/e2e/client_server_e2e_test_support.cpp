@@ -71,6 +71,12 @@ constexpr std::string_view kHistorizeSimulatedItemSql =
     "UPDATE AnalogItemType SET Simulated=1, HasHistoricalDatabaseNS=6, "
     "HasHistoricalDatabaseID=2 WHERE ID=4;";
 
+// The runtime node id of the historized item TIT.4 (analog item id 4 in the TIT
+// namespace, index 2). In Cluster mode the historian pull-collects this node
+// from the edge that serves it (historyCollection.sources[].nodes), filing the
+// samples under its own HasHistoricalDatabase config (the SQL above).
+constexpr std::string_view kHistorizedNodeId = "ns=2;i=4";
+
 std::string_view GetServerType(E2eProtocol protocol) {
   switch (protocol) {
     case E2eProtocol::Remote:
@@ -507,24 +513,64 @@ void ClientServerE2eTest::StartCluster() {
       << "cluster config tier did not start listening on OPC UA port "
       << config_tier_->opcua_port();
 
-  // --- Historian tier --------------------------------------------------------
-  // Owns the history store and authenticates the svc history pushes from the
-  // edges. It files pushed samples under TIT.4's node→historical-DB linkage, so
-  // it carries the same historization the edges' config does. Mirrors
-  // gcp/free-tier/multitier/configs/historian.json.
+  // --- Historian tier (create + allocate ports now; launched below once the
+  //     edges' ports are known so it can pull-collect from one) ---------------
+  // Owns the history store. In the history test it pull-collects the historized
+  // TIT.4 from the edge that serves it (historyCollection.sources — the ADR 0002
+  // subscription model) and files the samples under its own HasHistoricalDatabase
+  // config. Mirrors gcp/free-tier/multitier/configs/historian.json.
   historian_tier_ =
       std::make_unique<ServerTier>(MakeTierContext(GetHistorianExePath()));
   historian_tier_->AllocatePorts(ports_);
+  const std::string config_url = config_tier_->OpcUaUrl();
+  const std::string historian_url = historian_tier_->OpcUaUrl();
+
+  // --- Device edges (create + allocate ports now; launched after the historian
+  //     so its historyCollection can reference an edge, while the edges'
+  //     history.endpoint references the historian — the two links cross) ------
+  // Each edge is a config client (no local DB) running exactly one driver,
+  // fetching config from the config tier and routing history to the historian,
+  // both as svc. The proxy aggregates them anonymously. Mirrors the GCP
+  // configs/{iec104,modbus,iec61850}.json edges.
+  struct EdgeSpec {
+    std::unique_ptr<ServerTier>* slot;
+    std::filesystem::path exe;
+    std::string_view driver;
+  };
+  const EdgeSpec edges[] = {
+      {&iec104_tier_, GetIec104ExePath(), "iec60870"},
+      {&modbus_tier_, GetModbusExePath(), "modbus"},
+      {&iec61850_tier_, GetIec61850ExePath(), "iec61850"},
+  };
+  for (const EdgeSpec& edge : edges) {
+    *edge.slot = std::make_unique<ServerTier>(MakeTierContext(edge.exe));
+    (*edge.slot)->AllocatePorts(ports_);
+  }
+  // The iec104 edge serves the historized TIT.4; the historian pulls it from
+  // there (any edge would do — all serve the config-derived data items).
+  const std::string collect_source_url = iec104_tier_->OpcUaUrl();
+
   std::string historian_sql{kSvcUserSql};
   if (historize_simulated_item_)
     historian_sql += std::string{kHistorizeSimulatedItemSql};
   historian_tier_->Launch(ServerTier::Options{
       .configure =
-          [](boost::json::object& json) {
+          [collect_source_url,
+           historize = historize_simulated_item_](boost::json::object& json) {
             json.erase("iec60870");
             json.erase("modbus");
             json.erase("iec61850");
             ProvisionSvcPassword(json);
+            if (historize) {
+              json["historyCollection"] = boost::json::object{
+                  {"sources",
+                   boost::json::array{boost::json::object{
+                       {"endpoint", collect_source_url},
+                       {"user", std::string{kSvcUser}},
+                       {"password", std::string{kSvcPassword}},
+                       {"nodes", boost::json::array{
+                                     std::string{kHistorizedNodeId}}}}}}};
+            }
           },
       .extra_config_sql = historian_sql,
   });
@@ -532,13 +578,6 @@ void ClientServerE2eTest::StartCluster() {
       << "cluster historian tier did not start listening on OPC UA port "
       << historian_tier_->opcua_port();
 
-  // --- Device edges ----------------------------------------------------------
-  // Each edge is a config client (no local DB) running exactly one driver,
-  // fetching config from the config tier and routing history to the historian,
-  // both as svc. The proxy aggregates them anonymously. Mirrors the GCP
-  // configs/{iec104,modbus,iec61850}.json edges.
-  const std::string config_url = config_tier_->OpcUaUrl();
-  const std::string historian_url = historian_tier_->OpcUaUrl();
   auto make_edge_configure = [config_url, historian_url](
                                  std::string_view keep_driver) {
     return [config_url, historian_url,
@@ -557,20 +596,7 @@ void ClientServerE2eTest::StartCluster() {
           {"password", std::string{kSvcPassword}}};
     };
   };
-
-  struct EdgeSpec {
-    std::unique_ptr<ServerTier>* slot;
-    std::filesystem::path exe;
-    std::string_view driver;
-  };
-  const EdgeSpec edges[] = {
-      {&iec104_tier_, GetIec104ExePath(), "iec60870"},
-      {&modbus_tier_, GetModbusExePath(), "modbus"},
-      {&iec61850_tier_, GetIec61850ExePath(), "iec61850"},
-  };
   for (const EdgeSpec& edge : edges) {
-    *edge.slot = std::make_unique<ServerTier>(MakeTierContext(edge.exe));
-    (*edge.slot)->AllocatePorts(ports_);
     (*edge.slot)->Launch(ServerTier::Options{
         .configure = make_edge_configure(edge.driver),
         .remove_local_config_db = true,

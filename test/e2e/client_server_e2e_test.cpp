@@ -207,16 +207,14 @@ TEST_P(ClientServerE2eTest, Connect_Success_DisplaysHistoricalTimedData) {
   // reach the historian. That's a separate downstream gap (data-item value
   // production + history collection in the tier split), likely also a topology
   // mismatch (simulating a data item on a device edge). Skipped pending it.
-  // History needs the historian tier (Cluster only). The config-client edges now
-  // load + activate all their data items (remote-config enumeration fix — 97
-  // activate, verified), so this is NOT an activation gap. It's downstream: on a
-  // device edge no tier produces the simulated TIT.4 value and nothing collects
-  // it into the historian (the edge's remote-mode history module runs no
-  // collector, and the historian isn't configured to pull via
-  // historyCollection.sources), so no samples reach the historian. Pending that
-  // history-collection wiring.
-  GTEST_SKIP() << "history pending a server-tier gap (data-item value production "
-                  "+ history collection in the tier split)";
+  // History needs the historian tier (Cluster only). The historian now
+  // pull-collects TIT.4 from the edge (historyCollection.sources — StartCluster
+  // wires it, and the historian connects + subscribes, verified). The remaining
+  // gap is upstream: the edge activates TIT.4 but does not SIMULATE it (no value
+  // production over remote config), so the subscription delivers no samples and
+  // the historian stores none. Skipped pending edge value production.
+  GTEST_SKIP() << "history pending a server-tier gap (edge doesn't simulate/"
+                  "produce the data-item value the historian pulls)";
   WriteClientSettings(/*password=*/"");
   EnableSimulatedHistory();
   StartServer();
