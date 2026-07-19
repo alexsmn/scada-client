@@ -205,6 +205,47 @@
         <source>Information object address (IOA)</source>
         <translation>Адрес объекта информации (IOA)</translation>
     </message>
+    <!-- modules/bulk_create/qt/bulk_create_preview_panel.cpp -->
+    <message>
+        <source>Name template</source>
+        <translation>Шаблон имени</translation>
+    </message>
+    <message>
+        <source>NodeId template</source>
+        <translation>Шаблон NodeId</translation>
+    </message>
+    <message>
+        <source>Start index</source>
+        <translation>Начальный индекс</translation>
+    </message>
+    <message>
+        <source>Index step</source>
+        <translation>Шаг индекса</translation>
+    </message>
+    <message>
+        <source>IOA start</source>
+        <translation>Начальный IOA</translation>
+    </message>
+    <message>
+        <source>IOA step</source>
+        <translation>Шаг IOA</translation>
+    </message>
+    <message>
+        <source>Status</source>
+        <translation>Статус</translation>
+    </message>
+    <message>
+        <source>new</source>
+        <translation>новый</translation>
+    </message>
+    <message>
+        <source>exists</source>
+        <translation>существует</translation>
+    </message>
+    <message>
+        <source>conflict</source>
+        <translation>конфликт</translation>
+    </message>
     <!-- modules/events/qt/event_filter_bar.cpp -->
     <message>
         <source>Unacknowledged only</source>

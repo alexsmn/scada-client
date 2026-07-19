@@ -226,6 +226,7 @@
     { "type": "DeviceDiagnostics", "filename": "device-diagnostics.png", "width": 300,  "height": 520 },
     { "type": "UserAccess",     "filename": "users-rbac.png",          "width": 320,  "height": 400 },
     { "type": "TransmissionRule", "filename": "transmission-rule.png",  "width": 320,  "height": 420 },
+    { "type": "BulkCreate",     "filename": "bulk-create.png",         "width": 560,  "height": 760 },
     { "type": "Table",          "filename": "table.png",               "width": 900,  "height": 300,
       "paths": ["TIT.200", "TIT.201", "TIT.202", "TIT.208", "TIT.211", "TIT.209"] },
     { "type": "Summ",           "filename": "summary.png",             "width": 800,  "height": 500 },

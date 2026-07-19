@@ -1,6 +1,7 @@
 #include "device_diagnostics_capture.h"
 #include "user_access_capture.h"
 #include "transmission_rule_capture.h"
+#include "bulk_create_capture.h"
 #include "dialog_capture.h"
 #include "display_capture.h"
 #include "fixture_builder.h"
@@ -318,6 +319,13 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     // item.
     if (spec.window_type == "TransmissionRule") {
       SaveTransmissionRuleScreenshot(spec, app_.node_service());
+      ++captured;
+      continue;
+    }
+    // The bulk-create preview is standalone reshell chrome (the center of
+    // bulk-create.html), built from a demo pattern with no node service.
+    if (spec.window_type == "BulkCreate") {
+      SaveBulkCreateScreenshot(spec);
       ++captured;
       continue;
     }
