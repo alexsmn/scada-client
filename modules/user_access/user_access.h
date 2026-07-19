@@ -34,3 +34,7 @@ std::vector<UserPermission> UserPermissionsFor(int access_rights);
 
 // The permission's label key (an English literal for Translate()).
 const char* UserPermissionLabelKey(UserPermissionKind kind);
+
+// The session-policy label key for the users grid's Sessions column: a user
+// whose MultiSessions flag is set may hold several concurrent sessions.
+const char* UserSessionsLabelKey(bool multi_sessions);

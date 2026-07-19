@@ -225,6 +225,7 @@
     { "type": "SeriesInspector", "filename": "series-inspector.png",    "width": 290,  "height": 480 },
     { "type": "DeviceDiagnostics", "filename": "device-diagnostics.png", "width": 300,  "height": 520 },
     { "type": "UserAccess",     "filename": "users-rbac.png",          "width": 320,  "height": 400 },
+    { "type": "Users",          "filename": "users-admin.png",         "width": 700,  "height": 440, "min_rows": 9 },
     { "type": "TransmissionRule", "filename": "transmission-rule.png",  "width": 320,  "height": 420 },
     { "type": "BulkCreate",     "filename": "bulk-create.png",         "width": 560,  "height": 760 },
     { "type": "Table",          "filename": "table.png",               "width": 900,  "height": 300,

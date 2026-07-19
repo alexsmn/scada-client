@@ -184,6 +184,34 @@
         <source>Configure &amp; administer</source>
         <translation>Настройка и администрирование</translation>
     </message>
+    <message>
+        <source>Add user</source>
+        <translation>Добавить пользователя</translation>
+    </message>
+    <message>
+        <source>Reset password</source>
+        <translation>Сбросить пароль</translation>
+    </message>
+    <message>
+        <source>Editing requires the Administrator role</source>
+        <translation>Редактирование требует роли администратора</translation>
+    </message>
+    <message>
+        <source>Role</source>
+        <translation>Роль</translation>
+    </message>
+    <message>
+        <source>Sessions</source>
+        <translation>Сеансы</translation>
+    </message>
+    <message>
+        <source>Single</source>
+        <translation>Один</translation>
+    </message>
+    <message>
+        <source>Multiple</source>
+        <translation>Несколько</translation>
+    </message>
     <!-- modules/transmission_rules/qt/transmission_rule_inspector.cpp -->
     <message>
         <source>Transmission rule</source>

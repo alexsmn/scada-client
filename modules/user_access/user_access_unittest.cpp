@@ -34,6 +34,11 @@ TEST(UserPermissionsForTest, ViewAlwaysGranted) {
   EXPECT_TRUE(perms[0].granted);
 }
 
+TEST(UserSessionsLabelKeyTest, MapsMultiSessionFlag) {
+  EXPECT_EQ(std::string_view{UserSessionsLabelKey(true)}, "Multiple");
+  EXPECT_EQ(std::string_view{UserSessionsLabelKey(false)}, "Single");
+}
+
 TEST(UserPermissionsForTest, ControlAndConfigureTrackBits) {
   auto operator_perms = UserPermissionsFor(Access(false, true));
   EXPECT_TRUE(operator_perms[1].granted);   // Control

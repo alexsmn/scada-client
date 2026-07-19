@@ -16,7 +16,18 @@
 #include <span>
 
 #if defined(UI_QT)
+#include "aui/grid.h"
 #include "aui/qt/grid.h"
+#include "aui/severity_colors.h"
+#include "base/awaitable.h"
+#include "model/security_node_ids.h"
+#include "user_access/qt/users_grid_panel.h"
+#include "user_access/users_grid.h"
+
+#include <QPointer>
+
+#include <utility>
+#include <vector>
 #endif
 
 namespace {
@@ -60,6 +71,37 @@ std::unique_ptr<UiView> NodeTableController::Init(
   }
 
   model_->SetSorting(profile_.node_table.default_sort_property_id);
+
+#if defined(UI_QT)
+  // Under the reshell UX theme, the Users administration table renders as the
+  // themed UsersGridPanel (backlog 5.1) instead of the generic grid. Gated on
+  // the parent being the Users folder so every other node table keeps the grid.
+  if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy &&
+      model_->parent_node() &&
+      model_->parent_node().node_id() == scada::security::id::Users) {
+    if (UsersGridPanel* panel = MakeUsersGridPanel()) {
+      // Selecting a user row drives the shared SelectionModel, so the RBAC
+      // inspector (UserAccessPanel) fills exactly as it does from the grid.
+      QObject::connect(panel, &UsersGridPanel::UserActivated, panel,
+                       [this](const scada::NodeId& user_id) {
+                         selection_.SelectNode(node_service_.GetNode(user_id));
+                       });
+      // Populate the rows off the construction path; a QPointer guards a late
+      // completion against a destroyed panel.
+      CoSpawn(executor_,
+              [executor = executor_, folder = model_->parent_node(),
+               panel_ptr = QPointer<UsersGridPanel>{panel}]() mutable
+              -> Awaitable<void> {
+                std::vector<UserGridRow> rows =
+                    co_await BuildUsersGrid(executor, std::move(folder));
+                if (panel_ptr)
+                  panel_ptr->ShowRows(rows);
+                co_return;
+              });
+      return std::unique_ptr<UiView>{panel};
+    }
+  }
+#endif
 
   grid_ = new aui::Grid{
       model_, std::shared_ptr<aui::HeaderModel>(model_, &model_->row_model()),
@@ -129,7 +171,10 @@ void NodeTableController::Save(WindowDefinition& definition) {
     definition.AddItem("Item").SetString("path", path);
   }
 
-  definition.AddItem("State").attributes = grid_->SaveState();
+  // The reshell UsersGridPanel path leaves grid_ null; only the generic grid
+  // persists column/sort state.
+  if (grid_)
+    definition.AddItem("State").attributes = grid_->SaveState();
 }
 
 CommandHandler* NodeTableController::GetCommandHandler(unsigned command_id) {

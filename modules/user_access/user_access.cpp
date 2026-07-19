@@ -51,3 +51,7 @@ const char* UserPermissionLabelKey(UserPermissionKind kind) {
   }
   return "";
 }
+
+const char* UserSessionsLabelKey(bool multi_sessions) {
+  return multi_sessions ? "Multiple" : "Single";
+}
