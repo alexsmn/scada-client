@@ -10,10 +10,14 @@
 #include <boost/signals2/connection.hpp>
 #include <boost/signals2/signal.hpp>
 
+#include <memory>
+
 class PropertyService;
 struct PropertyContext;
 
-class NodePropertyModel : protected PropertyContext, public aui::PropertyModel {
+class NodePropertyModel : protected PropertyContext,
+                          public aui::PropertyModel,
+                          public std::enable_shared_from_this<NodePropertyModel> {
  public:
   NodePropertyModel(PropertyService& property_service,
                     PropertyContext&& context,

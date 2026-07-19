@@ -103,8 +103,11 @@ class NodePropertyModelTest : public Test {
     };
   }
 
-  std::unique_ptr<NodePropertyModel> CreateModel() {
-    auto model = std::make_unique<NodePropertyModel>(
+  // NodePropertyModel uses shared_from_this to keep itself alive across its own
+  // notifications, so it must be owned by a shared_ptr — as it is in production
+  // (NodePropertyController holds a std::shared_ptr).
+  std::shared_ptr<NodePropertyModel> CreateModel() {
+    auto model = std::make_shared<NodePropertyModel>(
         property_service_,
         PropertyContext{executor_, *node_service_, task_manager_,
                         dialog_service_},
@@ -205,6 +208,36 @@ TEST_F(NodePropertyModelTest, DeletedNodeCancelsPendingFetchUpdate) {
   EXPECT_EQ(node_deleted_count_, 1);
   EXPECT_EQ(model_changed_count_, 0);
   EXPECT_FALSE(model->node());
+}
+
+// Regression: node_deleted is a Boost.Signals2 signal whose production slot
+// (NodePropertyController closing the view) drops the model's last shared_ptr.
+// If that happens *inside* the emission, the signal — a member of the model —
+// must not be freed while operator() is still iterating its slots. The model's
+// shared_from_this keep-alive defers destruction until OnModelChanged returns.
+// Fails deterministically (and UAFs under libgmalloc) without the keep-alive.
+TEST_F(NodePropertyModelTest, SurvivesReentrantRefDropOnNodeDeleted) {
+  auto model = CreateModel();
+  Drain(executor_);
+
+  std::weak_ptr<NodePropertyModel> weak = model;
+  bool fired = false;
+  bool alive_after_reentrant_drop = false;
+  model->node_deleted.connect([&] {
+    if (fired)
+      return;
+    fired = true;
+    model.reset();  // release the last external ref mid-emission
+    alive_after_reentrant_drop = !weak.expired();
+  });
+
+  DeleteNode(kNodeId);  // -> OnModelChanged -> node_deleted() emission
+  Drain(executor_);
+
+  ASSERT_TRUE(fired);
+  EXPECT_TRUE(alive_after_reentrant_drop);
+  // The keep-alive is released once the emission returns — no leak.
+  EXPECT_TRUE(weak.expired());
 }
 
 }  // namespace

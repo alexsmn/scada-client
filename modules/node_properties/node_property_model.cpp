@@ -88,6 +88,13 @@ void NodePropertyModel::OnModelChanged(const scada::ModelChangeEvent& event) {
     return;
   }
 
+  // Keep the model alive across its own notifications. node_deleted is a
+  // Boost.Signals2 signal whose slot (the controller's Close()) tears down the
+  // owning view and drops the model's last shared_ptr *inside* the emission;
+  // without this the signal would free itself mid-dispatch — the same
+  // use-after-free class fixed in NodeTableModel. Released when this returns.
+  const auto self = shared_from_this();
+
   if (event.verb & scada::ModelChangeEvent::NodeDeleted) {
     cancelation_.Cancel();
     // Self-disconnect during emission is safe with Boost.Signals2.
@@ -110,6 +117,12 @@ void NodePropertyModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
 }
 
 void NodePropertyModel::OnNodeFetched() {
+  // Runs from a posted (cancelation-guarded) continuation of the fetch
+  // coroutine, so the model is shared-owned by now. Hold a keep-alive across
+  // Update()/model_changed_handler() so a handler that drops the last external
+  // ref cannot free the model while this frame is still touching it.
+  const auto self = shared_from_this();
+
   Update();
 
   if (model_changed_handler)
