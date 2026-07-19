@@ -27,16 +27,22 @@ enum class E2eProtocol {
   OpcUa,
 };
 
-// Which server backend the client is exercised against:
-//   Monolith     — a single server process (the default).
-//   MultiProcess — the tier-split server: a full-content edge fronted by an
-//                  aggregating proxy, with the client connecting to the proxy
-//                  (mirrors server/dev/local-cluster). Verifies the client
-//                  behaves identically whether the server is one process or a
-//                  multi-process cluster behind a northbound proxy.
+// Which server topology the client is exercised against:
+//   SingleTier — one device tier process (scada-iec104) plays the whole server.
+//                Covers the framework login/browse/profile flows plus one live
+//                protocol; it cannot serve the multi-protocol hardware tree or
+//                historian-backed history (a single device tier owns neither).
+//   Cluster    — the real tier split (ADR 0001): a config tier owning the
+//                configuration namespace, the three device edges (scada-iec104 /
+//                -modbus / -iec61850, each a config client running one driver), a
+//                scada-historian, and a client-facing aggregating scada-proxy.
+//                The client connects only to the proxy, which re-exposes the
+//                edges' address space through OPC UA aggregation. Verifies the
+//                client behaves identically whether the server is one process or
+//                a multi-process cluster behind a northbound proxy.
 enum class ServerTopology {
-  Monolith,
-  MultiProcess,
+  SingleTier,
+  Cluster,
 };
 
 std::string_view ToString(E2eProtocol protocol);
@@ -48,8 +54,8 @@ struct E2eParam {
   ServerTopology topology;
 };
 
-// Test-name suffix for a parameter, e.g. "Remote_Monolith" /
-// "OpcUa_MultiProcess".
+// Test-name suffix for a parameter, e.g. "Remote_SingleTier" /
+// "OpcUa_Cluster".
 std::string E2eParamName(const E2eParam& param);
 
 extern const std::chrono::seconds kPostConnectStabilityTimeout;
@@ -75,7 +81,9 @@ class ClientServerE2eTest : public ::testing::TestWithParam<E2eParam> {
                            std::string_view security_mode = {});
   // Historizes + simulates the analog item TIT.4 so the server collects a steady
   // stream of samples the client's timed-data view can read back. Call before
-  // StartServer(); applies to the monolith's DB, or the edge's in MultiProcess.
+  // StartServer(); applies to the single tier's config DB, or — in Cluster mode —
+  // to the config tier (which the edges read) plus the historian (which owns the
+  // node→DB historization the pushed samples are filed under).
   void EnableSimulatedHistory();
   void StartServer();
   void StartClient(std::vector<std::string> extra_args = {});
@@ -121,13 +129,18 @@ class ClientServerE2eTest : public ::testing::TestWithParam<E2eParam> {
   ChildProcess server_;
   ChildProcess client_;
 
-  // Multi-process topology only: the aggregated downstream edge, launched with
-  // the shared ServerTier harness (common/test/e2e). The client-facing proxy
-  // reuses the built-in server_/workspace_/remote_port_/opcua_port_ slot, so
-  // every existing assertion (auth logs, stability, profile DB reads) targets
-  // the process the client actually connects to.
+  // Cluster topology only: the downstream tiers, each launched with the shared
+  // ServerTier harness (common/test/e2e) on its own ports drawn from `ports_`.
+  // The client-facing proxy reuses the built-in server_/workspace_/remote_port_/
+  // opcua_port_ slot, so every existing assertion (auth logs, stability, profile
+  // DB reads) targets the process the client actually connects to. Ordered so
+  // destruction tears the edges down before the config/historian they depend on.
   PortPool ports_;
-  std::unique_ptr<ServerTier> edge_tier_;
+  std::unique_ptr<ServerTier> config_tier_;
+  std::unique_ptr<ServerTier> historian_tier_;
+  std::unique_ptr<ServerTier> iec104_tier_;
+  std::unique_ptr<ServerTier> modbus_tier_;
+  std::unique_ptr<ServerTier> iec61850_tier_;
 
   // Set by EnableSimulatedHistory(); consumed at server launch to historize a
   // simulated item in whichever tier owns the data items.
@@ -137,9 +150,9 @@ class ClientServerE2eTest : public ::testing::TestWithParam<E2eParam> {
   int GetProtocolPort() const;
 
   // Path of the configuration SQLite DB that backs the server nodes the client
-  // sees. In Monolith mode that is the single server's DB; in MultiProcess mode
-  // the client talks to the proxy but the config (users/profiles) it aggregates
-  // is owned by the edge, so profile writes land in the edge's DB.
+  // sees. In SingleTier mode that is the single server's DB; in Cluster mode the
+  // client talks to the proxy but the config (users/profiles) it aggregates is
+  // owned by the config tier, so profile writes land in the config tier's DB.
   std::filesystem::path ServerConfigDatabasePath() const;
 
   // Copies the server fixture into `ws` and generates its config DB (with the
@@ -154,10 +167,13 @@ class ClientServerE2eTest : public ::testing::TestWithParam<E2eParam> {
       int remote_port,
       int opcua_port,
       const std::function<void(boost::json::object&)>& configure = {});
-  // Launches the tier-split cluster: a full-content edge and an aggregating
-  // proxy in front of it, with the proxy on the client-facing ports. Waits for
-  // the proxy to listen on the active protocol's port.
-  void StartMultiProcessCluster();
+  // Launches the tier-split cluster: a config tier, the three device edges, a
+  // historian, and an aggregating proxy in front of them on the client-facing
+  // ports. Waits for the proxy to listen on the active protocol's port.
+  void StartCluster();
+  // Builds a ServerProcessContext bound to a specific tier binary (each tier is
+  // a different executable, unlike the SingleTier path's single server_exe).
+  ServerProcessContext MakeTierContext(const std::filesystem::path& exe) const;
 };
 
 }  // namespace client::test

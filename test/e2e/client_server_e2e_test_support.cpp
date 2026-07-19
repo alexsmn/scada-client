@@ -79,6 +79,26 @@ std::filesystem::path GetServerExePath() {
   return std::filesystem::path{SCADA_E2E_SERVER_EXE};
 }
 
+// Cluster-topology tier binaries (each tier is a distinct executable).
+std::filesystem::path GetConfigExePath() {
+  return std::filesystem::path{SCADA_E2E_CONFIG_EXE};
+}
+std::filesystem::path GetHistorianExePath() {
+  return std::filesystem::path{SCADA_E2E_HISTORIAN_EXE};
+}
+std::filesystem::path GetProxyExePath() {
+  return std::filesystem::path{SCADA_E2E_PROXY_EXE};
+}
+std::filesystem::path GetIec104ExePath() {
+  return std::filesystem::path{SCADA_E2E_IEC104_EXE};
+}
+std::filesystem::path GetModbusExePath() {
+  return std::filesystem::path{SCADA_E2E_MODBUS_EXE};
+}
+std::filesystem::path GetIec61850ExePath() {
+  return std::filesystem::path{SCADA_E2E_IEC61850_EXE};
+}
+
 std::filesystem::path GetClientExePath() {
   return std::filesystem::path{SCADA_E2E_CLIENT_EXE};
 }
@@ -143,10 +163,11 @@ void ConfigureSignedLicense(boost::json::object& server_json) {
 }
 
 // Binds the shared server-process harness (common/test/e2e) to this suite's
-// SCADA_E2E_* paths and its env-var signed license (ConfigureSignedLicense).
-ServerProcessContext MakeServerContext() {
+// SCADA_E2E_* paths and its env-var signed license (ConfigureSignedLicense), for
+// the given tier binary.
+ServerProcessContext MakeServerContextForExe(const std::filesystem::path& exe) {
   return ServerProcessContext{
-      .server_exe = GetServerExePath(),
+      .server_exe = exe,
       .fixture_dir = GetServerFixtureDir(),
       .settings_template = GetServerSettingsTemplatePath(),
       .configuration_base_sql = GetConfigurationBaseSqlPath(),
@@ -157,6 +178,39 @@ ServerProcessContext MakeServerContext() {
             ConfigureSignedLicense(server_json);
           },
   };
+}
+
+// The SingleTier server binary bound to the shared harness.
+ServerProcessContext MakeServerContext() {
+  return MakeServerContextForExe(GetServerExePath());
+}
+
+// Full-rights multi-session service account for inter-tier logins. The built-in
+// root user is single-session (configuration_authenticator.cpp), so concurrent
+// edge→config / edge→historian / proxy→edge logins would collide on
+// Bad_UserIsAlreadyLoggedOn; `svc` (id 100, MultiSessions=1) does not. Mirrors
+// gcp/free-tier/multitier/configs/seed-svc-user.sql. Seeded into every tier that
+// authenticates an inter-tier client (config, historian, and the edges/proxy the
+// aggregator logs into); its password is provisioned via security.provision.
+constexpr std::string_view kSvcUserSql =
+    "INSERT OR REPLACE INTO UserType "
+    "(ID, ParentNS, ParentID, BrowseName, DisplayName, AccessRights, "
+    "MultiSessions) VALUES (100, 7, 29, 'svc', 'svc', 3, 1);";
+constexpr std::string_view kSvcUser = "svc";
+constexpr std::string_view kSvcPassword = "svc-e2e-password";
+
+// Appends {id:100, password:svc} to server.json's security.provision[] so the
+// tier can authenticate inbound svc logins, preserving any existing entries
+// (e.g. the fixture's guest id 12).
+void ProvisionSvcPassword(boost::json::object& server_json) {
+  auto& security = server_json["security"].is_object()
+                       ? server_json["security"].as_object()
+                       : server_json["security"].emplace_object();
+  auto& provision = security["provision"].is_array()
+                        ? security["provision"].as_array()
+                        : security["provision"].emplace_array();
+  provision.push_back(boost::json::object{
+      {"id", 100}, {"password", std::string{kSvcPassword}}});
 }
 
 int FindAvailablePort() {
@@ -236,10 +290,10 @@ std::string_view ToString(E2eProtocol protocol) {
 
 std::string_view ToString(ServerTopology topology) {
   switch (topology) {
-    case ServerTopology::Monolith:
-      return "Monolith";
-    case ServerTopology::MultiProcess:
-      return "MultiProcess";
+    case ServerTopology::SingleTier:
+      return "SingleTier";
+    case ServerTopology::Cluster:
+      return "Cluster";
   }
   return "Unknown";
 }
@@ -270,8 +324,8 @@ void ClientServerE2eTest::SetUp() {
   iec61850_port_ = FindAvailablePort();
   while (iec61850_port_ == remote_port_ || iec61850_port_ == opcua_port_)
     iec61850_port_ = FindAvailablePort();
-  // Reserve the client-facing (proxy/monolith) ports and the IEC 61850 port so
-  // the shared PortPool hands the edge tier distinct ports in MultiProcess
+  // Reserve the client-facing (proxy / single-tier) ports and the IEC 61850 port
+  // so the shared PortPool hands the cluster tiers distinct ports in Cluster
   // mode.
   for (int port : {remote_port_, opcua_port_, iec61850_port_})
     ports_.Reserve(port);
@@ -287,17 +341,26 @@ void ClientServerE2eTest::SetUp() {
 }
 
 void ClientServerE2eTest::TearDown() {
+  // Tiers in reverse dependency order: proxy/edges before the config/historian
+  // they depend on.
+  ServerTier* const tiers[] = {iec104_tier_.get(), modbus_tier_.get(),
+                               iec61850_tier_.get(), historian_tier_.get(),
+                               config_tier_.get()};
   if (HasFailure() || IsKeepWorkspaceEnabled()) {
     workspace_.Preserve();
-    if (edge_tier_)
-      edge_tier_->PreserveWorkspace();
+    for (ServerTier* tier : tiers) {
+      if (tier)
+        tier->PreserveWorkspace();
+    }
     std::cerr << "Preserved E2E workspace: " << workspace_.path() << '\n';
   }
   job_->Terminate();
   ForceTerminate(client_);
   ForceTerminate(server_);
-  if (edge_tier_)
-    edge_tier_->Terminate();
+  for (ServerTier* tier : tiers) {
+    if (tier)
+      tier->Terminate();
+  }
   WaitForExit(client_);
   WaitForExit(server_);
   iec61850_server_.reset();
@@ -375,14 +438,19 @@ void ClientServerE2eTest::EnableSimulatedHistory() {
   historize_simulated_item_ = true;
 }
 
+ServerProcessContext ClientServerE2eTest::MakeTierContext(
+    const std::filesystem::path& exe) const {
+  return MakeServerContextForExe(exe);
+}
+
 void ClientServerE2eTest::StartServer() {
-  if (Topology() == ServerTopology::MultiProcess) {
-    StartMultiProcessCluster();
+  if (Topology() == ServerTopology::Cluster) {
+    StartCluster();
     return;
   }
 
-  // Monolith owns the data items directly; historize before the process starts
-  // so the data collector picks it up from its config DB at startup.
+  // The single tier owns the data items directly; historize before the process
+  // starts so the data collector picks it up from its config DB at startup.
   if (historize_simulated_item_) {
     ExecuteConfigurationSql(MakeServerContext(), workspace_.path(),
                             std::string{kHistorizeSimulatedItemSql});
@@ -400,46 +468,141 @@ void ClientServerE2eTest::StartServer() {
       << " port " << port;
 }
 
-void ClientServerE2eTest::StartMultiProcessCluster() {
-  // Edge: a full server (all drivers, data items, local config DB) polling the
-  // shared IEC 61850 test server, launched with the shared ServerTier harness
-  // on its own ports. The proxy aggregates it; the client never connects to it
-  // directly.
-  edge_tier_ = std::make_unique<ServerTier>(MakeServerContext());
-  edge_tier_->AllocatePorts(ports_);
-  // The edge owns the data items in this topology, so historization must land in
-  // its config DB; the client reads it back through the proxy's aggregated
-  // HistoryService.
-  edge_tier_->Launch(ServerTier::Options{
+void ClientServerE2eTest::StartCluster() {
+  // --- Config tier -----------------------------------------------------------
+  // Owns the configuration namespace (devices, data items, users, filesystem)
+  // that the edges read and re-expose through aggregation. Keeps its generated
+  // local config DB plus the svc account the edges authenticate with, and serves
+  // the per-protocol device config. The IEC 61850 device port (the shared test
+  // server) and the TIT.4 historization live here because the edges read their
+  // config from here. Mirrors gcp/free-tier/multitier/configs/config.json.
+  config_tier_ =
+      std::make_unique<ServerTier>(MakeTierContext(GetConfigExePath()));
+  config_tier_->AllocatePorts(ports_);
+  std::string config_sql{kSvcUserSql};
+  if (historize_simulated_item_)
+    config_sql += std::string{kHistorizeSimulatedItemSql};
+  config_tier_->Launch(ServerTier::Options{
+      .configure =
+          [](boost::json::object& json) {
+            json["iec60870Config"] = boost::json::object{};
+            json["modbusConfig"] = boost::json::object{};
+            json["iec61850Config"] = boost::json::object{};
+            // Serves config only — no protocol drivers of its own.
+            json.erase("iec60870");
+            json.erase("modbus");
+            json.erase("iec61850");
+            ProvisionSvcPassword(json);
+          },
       .iec61850_port = iec61850_port_,
-      .extra_config_sql = historize_simulated_item_
-                              ? std::string{kHistorizeSimulatedItemSql}
-                              : std::string{}});
-  ASSERT_TRUE(edge_tier_->WaitListening())
-      << "Multi-process edge did not start listening on OPC UA port "
-      << edge_tier_->opcua_port();
+      .extra_config_sql = config_sql,
+  });
+  ASSERT_TRUE(config_tier_->WaitListening())
+      << "cluster config tier did not start listening on OPC UA port "
+      << config_tier_->opcua_port();
 
-  // Proxy: reshape the client-facing workspace_ into a slim aggregator of the
-  // edge — the data-item module off and its data items stripped from config, so
-  // the data items the client sees are served by aggregation from the edge, not
-  // the proxy. It keeps a local config DB to authenticate the client's login.
-  ExecuteConfigurationSql(MakeServerContext(), workspace_.path(),
+  // --- Historian tier --------------------------------------------------------
+  // Owns the history store and authenticates the svc history pushes from the
+  // edges. It files pushed samples under TIT.4's node→historical-DB linkage, so
+  // it carries the same historization the edges' config does. Mirrors
+  // gcp/free-tier/multitier/configs/historian.json.
+  historian_tier_ =
+      std::make_unique<ServerTier>(MakeTierContext(GetHistorianExePath()));
+  historian_tier_->AllocatePorts(ports_);
+  std::string historian_sql{kSvcUserSql};
+  if (historize_simulated_item_)
+    historian_sql += std::string{kHistorizeSimulatedItemSql};
+  historian_tier_->Launch(ServerTier::Options{
+      .configure =
+          [](boost::json::object& json) {
+            json.erase("iec60870");
+            json.erase("modbus");
+            json.erase("iec61850");
+            ProvisionSvcPassword(json);
+          },
+      .extra_config_sql = historian_sql,
+  });
+  ASSERT_TRUE(historian_tier_->WaitListening())
+      << "cluster historian tier did not start listening on OPC UA port "
+      << historian_tier_->opcua_port();
+
+  // --- Device edges ----------------------------------------------------------
+  // Each edge is a config client (no local DB) running exactly one driver,
+  // fetching config from the config tier and routing history to the historian,
+  // both as svc. The proxy aggregates them anonymously. Mirrors the GCP
+  // configs/{iec104,modbus,iec61850}.json edges.
+  const std::string config_url = config_tier_->OpcUaUrl();
+  const std::string historian_url = historian_tier_->OpcUaUrl();
+  auto make_edge_configure = [config_url, historian_url](
+                                 std::string_view keep_driver) {
+    return [config_url, historian_url,
+            keep_driver](boost::json::object& json) {
+      for (std::string_view driver : {"iec60870", "modbus", "iec61850"}) {
+        if (driver != keep_driver)
+          json.erase(driver);
+      }
+      json["configuration"] = boost::json::object{
+          {"endpoint", config_url},
+          {"user", std::string{kSvcUser}},
+          {"password", std::string{kSvcPassword}}};
+      json["history"] = boost::json::object{
+          {"endpoint", historian_url},
+          {"user", std::string{kSvcUser}},
+          {"password", std::string{kSvcPassword}}};
+    };
+  };
+
+  struct EdgeSpec {
+    std::unique_ptr<ServerTier>* slot;
+    std::filesystem::path exe;
+    std::string_view driver;
+  };
+  const EdgeSpec edges[] = {
+      {&iec104_tier_, GetIec104ExePath(), "iec60870"},
+      {&modbus_tier_, GetModbusExePath(), "modbus"},
+      {&iec61850_tier_, GetIec61850ExePath(), "iec61850"},
+  };
+  for (const EdgeSpec& edge : edges) {
+    *edge.slot = std::make_unique<ServerTier>(MakeTierContext(edge.exe));
+    (*edge.slot)->AllocatePorts(ports_);
+    (*edge.slot)->Launch(ServerTier::Options{
+        .configure = make_edge_configure(edge.driver),
+        .remove_local_config_db = true,
+    });
+  }
+  for (const EdgeSpec& edge : edges) {
+    ASSERT_TRUE((*edge.slot)->WaitListening())
+        << "cluster " << edge.driver
+        << " edge did not start listening on OPC UA port "
+        << (*edge.slot)->opcua_port();
+  }
+
+  // --- Proxy (client-facing) -------------------------------------------------
+  // Aggregates the three edges anonymously (mirrors the GCP proxy.json). Reuses
+  // the built-in server_ slot on the client-facing ports and keeps workspace_'s
+  // local config DB to authenticate the client's login; data-item module off and
+  // its data-item rows stripped so the aggregated edge namespace is authoritative.
+  ExecuteConfigurationSql(MakeServerContextForExe(GetProxyExePath()),
+                          workspace_.path(),
                           "PRAGMA foreign_keys=OFF;\n"
                           "DELETE FROM AnalogItemType;\n"
                           "DELETE FROM DiscreteItemType;\n");
-  const std::string edge_url = edge_tier_->OpcUaUrl();
+  boost::json::array aggregation_servers;
+  for (const EdgeSpec& edge : edges) {
+    aggregation_servers.push_back(
+        boost::json::object{{"endpoint", (*edge.slot)->OpcUaUrl()}});
+  }
   WriteServerJson(
       workspace_.path(), remote_port_, opcua_port_,
-      [&edge_url](boost::json::object& server_json) {
-        server_json.erase("dataItems");
+      [&aggregation_servers](boost::json::object& server_json) {
         server_json.erase("iec60870");
         server_json.erase("modbus");
         server_json.erase("iec61850");
-        server_json["aggregation"] = boost::json::object{
-            {"servers", boost::json::array{boost::json::object{
-                            {"endpoint", edge_url}, {"user", "root"}}}}};
+        server_json["dataItems"] = boost::json::object{{"enabled", false}};
+        server_json["aggregation"] =
+            boost::json::object{{"servers", aggregation_servers}};
       });
-  LaunchProcess(GetServerExePath(),
+  LaunchProcess(GetProxyExePath(),
                 {"--param=" + (workspace_.path() / "server.json").string()},
                 workspace_.path(), *job_, server_);
 
@@ -447,8 +610,8 @@ void ClientServerE2eTest::StartMultiProcessCluster() {
   ASSERT_TRUE(WaitUntil([port] { return CanConnectTcp(port); },
                         std::chrono::duration_cast<std::chrono::milliseconds>(
                             kServerStartTimeout)))
-      << "Multi-process proxy did not start listening on "
-      << ToString(Protocol()) << " port " << port;
+      << "cluster proxy did not start listening on " << ToString(Protocol())
+      << " port " << port;
 }
 
 void ClientServerE2eTest::StartClient(std::vector<std::string> extra_args) {
@@ -574,9 +737,12 @@ std::string ClientServerE2eTest::WaitForHistoricalTimedDataReport() {
 }
 
 std::filesystem::path ClientServerE2eTest::ServerConfigDatabasePath() const {
+  // In Cluster mode the client writes profiles through the proxy, which routes
+  // the config write to the config tier that owns the aggregated config
+  // namespace, so the profile lands in the config tier's DB (not the proxy's).
   const std::filesystem::path& ws =
-      Topology() == ServerTopology::MultiProcess && edge_tier_
-          ? edge_tier_->WorkspaceDir()
+      Topology() == ServerTopology::Cluster && config_tier_
+          ? config_tier_->WorkspaceDir()
           : workspace_.path();
   return ws / "Configuration" / "configuration.sqlite3";
 }

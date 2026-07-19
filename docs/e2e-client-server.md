@@ -272,55 +272,56 @@ existing server-side tests.
 The current harness disables optional subsystems such as Vidicon in the temp
 `server.json` while enabling the SCADA remote-session and OPC UA endpoints.
 
-## Server topology (monolith vs multi-process)
+## Server topology (single tier vs cluster)
 
 Every test is parametrized over two axes — the client backend protocol and the
 **server topology** — so each `TEST_P` runs as
-`<Protocol>_<Topology>` (e.g. `Remote_Monolith`, `OpcUa_MultiProcess`):
+`<Protocol>_<Topology>` (e.g. `Remote_SingleTier`, `OpcUa_Cluster`):
 
-- **Monolith** — a single `server` process on the client-facing ports. This is
-  the original behavior.
-- **MultiProcess** — the tier-split server from `server/dev/local-cluster`,
-  reduced to what the client can observe: a full-content **edge** process
-  (all protocol drivers + data items + local config DB, polling the shared
-  IEC 61850 test server) fronted by an aggregating **proxy** process on the
-  client-facing ports. The client connects only to the proxy; the proxy
-  re-exposes the edge's address space through OPC UA aggregation. Both are the
-  same `server` binary — the proxy is just `server` started with an
-  `aggregation` config and its data-item module disabled, so the northbound
-  content is served by aggregation from the edge, not by the proxy itself.
+- **SingleTier** — one device tier process (`scada-iec104`) on the client-facing
+  ports, playing the whole server with its own local config DB. Covers the
+  framework login/browse/profile flows plus one live protocol.
+- **Cluster** — the real ADR-0001 tier split, standing up six processes: a
+  `scada-config` tier owning the configuration namespace; the three device edges
+  `scada-iec104` / `scada-modbus` / `scada-iec61850` (each a config client
+  running one driver, fetching config from the config tier and routing history to
+  the historian as the multi-session `svc` user); a `scada-historian`; and a
+  client-facing aggregating `scada-proxy` that aggregates the three edges
+  anonymously. The client connects only to the proxy, which re-exposes the edges'
+  address space through OPC UA aggregation. The tier configs mirror
+  `gcp/free-tier/multitier/configs/*.json`.
 
-The edge is launched with the shared `ServerTier` harness in
-`common/test/e2e/e2e_server_process.h` — the same one the server integration
-suite uses to stand up its config / historian / edge / proxy tiers — bound to
-the client target's paths and license via `MakeServerContext()`.
+Each tier is launched with the shared `ServerTier` harness in
+`common/test/e2e/e2e_server_process.h` — a distinct tier binary plus an arbitrary
+`server.json` `configure` lambda — bound to the client target's paths and license
+via `MakeTierContext()`. The proxy reuses the harness's built-in server slot
+(`server_` / `workspace_` / the client-facing ports), so every existing assertion
+— auth logs, post-connect stability, the client-facing endpoint — targets the
+process the client actually connects to, unchanged. `StartCluster()` in
+`client_server_e2e_test_support.cpp` wires the whole topology.
 
-The point of the MultiProcess axis is to prove the client behaves identically
-whether the server is one process or a multi-process cluster behind a northbound
-proxy. Because the proxy reuses the harness's built-in server slot
-(`server_` / `workspace_` / the client-facing ports), every existing assertion —
-auth logs, post-connect stability, the client-facing endpoint — targets the
-process the client actually connects to, unchanged.
+The point of the Cluster axis is to prove the client behaves identically whether
+the server is one process or a multi-process cluster behind a northbound proxy.
 
-Inter-tier sessions use the built-in `root` user. With a single edge each
-process receives at most one concurrent `root` session, so `root`'s
-single-session rule is never tripped (the full `local-cluster`, with several
-edges, needs a multi-session `svc` account instead).
+**Current cluster coverage.** Connect/login, operator use-cases, bad-password,
+and object-tree loading pass through the real cluster; the client also sees the
+full aggregated device tree. The deeper content assertions are gated pending
+server-tier gaps in the config-client remote-config / aggregation path (each test
+carries a comment and skips accordingly):
 
-Every test runs under both topologies. The deep content assertions —
-object-tree children/labels, hardware-tree devices, operator use-case surfaces,
-historical timed-data — pass unchanged through the proxy because OPC UA
-aggregation re-exposes the edge's address space (browse names, display names,
-device status) with the same attribute values, only under remapped node ids that
-the client follows dynamically. Historical reads go the same way: the proxy's
-`RemappingHistoryService` forwards a HistoryRead to the downstream edge that owns
-the samples and remaps node ids on the way back. Profile persistence works too:
-the client saves through the proxy,
-which routes the write to the edge that owns the aggregated config namespace, so
-in multi-process mode the harness reads the profile back from the edge's DB (see
-`ServerConfigDatabasePath`). The only remaining skips are protocol-based, not
-topology-based: the two OPC UA discovery/security tests apply to the OPC UA
-backend and skip on the Remote (gRPC) protocol under either topology.
+- **hardware-tree devices** — skipped: the aggregated devices don't yet surface
+  as online through the cluster.
+- **historical timed-data** and **nested object-tree labels** — skipped under
+  Cluster: `RemoteConfigurationManager::LoadNodes` doesn't enumerate instances of
+  types with no static parent (AnalogItemType / DiscreteItemType), so data items
+  aren't loaded over remote config. Labels still run under SingleTier.
+- **profile save** — skipped under Cluster: the client→proxy→edge→config
+  write-through isn't wired yet. Still runs under SingleTier.
+
+These are tracked server-framework follow-ups, not client issues; the
+`common/test/e2e` remote-config Browse batching (`Bad_TooManyOperations`) was one
+such gap and is already fixed. The OPC UA discovery/security tests remain
+protocol-gated (skip on the Remote/gRPC backend under either topology).
 
 ## Assertions
 
