@@ -130,6 +130,24 @@ if(Python3_FOUND)
   set_tests_properties(client_screenshot_check PROPERTIES TIMEOUT 300)
 endif()
 
+# Themed multi-NewProps regression net. The structural check above renders the
+# legacy (no-theme) managed subset, so it never exercises the reshell chrome or
+# the config-workbench captures that click a subtab (config-address-map,
+# config-limits) — those are theme-only and absent from the manifest. Render
+# them together under --theme so a regression in per-spec view selection or the
+# subtab click fails the suite. This directly guards the bug where every
+# "NewProps" spec re-grabbed the first opened view, pointing config-limits at
+# TS.702's form (no Limits subtab). The generator is a gtest binary, so any
+# ADD_FAILURE (e.g. "click_object not found") returns non-zero and fails ctest.
+add_test(NAME client_screenshot_check_themed
+  COMMAND ${CMAKE_COMMAND} -E env QT_QPA_PLATFORM=offscreen
+    $<TARGET_FILE:client_screenshot_generator>
+    "--theme=dark"
+    "--only=config-parameters.png,config-address-map.png,config-limits.png"
+    "--out=${CMAKE_CURRENT_BINARY_DIR}/screenshot_check_themed"
+)
+set_tests_properties(client_screenshot_check_themed PROPERTIES TIMEOUT 300)
+
 # After the executable links, run it and drop the PNGs into
 # client/docs/screenshots/ so the local docs gallery stays in sync on
 # every build. Requires a desktop session (see docs/screenshots.md

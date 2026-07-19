@@ -66,6 +66,8 @@
 #include <boost/asio/io_context.hpp>
 #include <gtest/gtest.h>
 
+#include <set>
+
 namespace {
 
 using screenshot_generator::WaitForAwaitable;
@@ -278,6 +280,14 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
   const MainWindow& main_window = main_windows.front();
 
   int captured = 0;
+  // Each non-standalone spec adds its own window to the fixture page (see
+  // MakeScreenshotPage), so several specs can share a window_type — e.g. the
+  // config-workbench "NewProps" specs (config-parameters, config-address-map on
+  // TS.702; config-limits on TS.114). Consume the matching opened views in
+  // page order so the Nth spec of a type gets the Nth view, instead of every
+  // spec re-grabbing the first one (which pointed config-limits at TS.702's
+  // form, whose Limits subtab does not exist).
+  std::set<const OpenedView*> used_views;
   for (const auto& spec : g_config.screenshots) {
     // The series inspector is standalone chrome, not a window on the page —
     // build it from the graph fixture instead of looking up an opened view.
@@ -318,7 +328,7 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
 
     OpenedView* view = nullptr;
     for (OpenedView* v : main_window.opened_views()) {
-      if (v->window_info().name == spec.window_type) {
+      if (v->window_info().name == spec.window_type && !used_views.contains(v)) {
         view = v;
         break;
       }
@@ -328,6 +338,7 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
       ADD_FAILURE() << "Window type not found: " << spec.window_type;
       continue;
     }
+    used_views.insert(view);
 
     QWidget* widget = view->view();
     if (!widget) {
@@ -358,8 +369,16 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     // shows a non-default tab of a multi-tab view. Done before SaveScreenshot
     // detaches the widget for the grab.
     if (!spec.click_object.empty()) {
-      if (auto* button = widget->findChild<QAbstractButton*>(
-              QString::fromStdString(spec.click_object))) {
+      // The subtab buttons are built when the reshell form finishes its async
+      // node browse, which may not have completed yet for a just-opened view;
+      // wait for the named button before clicking.
+      QAbstractButton* button = nullptr;
+      WaitUntil([&] {
+        button = widget->findChild<QAbstractButton*>(
+            QString::fromStdString(spec.click_object));
+        return button != nullptr;
+      });
+      if (button) {
         button->click();
         QApplication::processEvents();
       } else {
