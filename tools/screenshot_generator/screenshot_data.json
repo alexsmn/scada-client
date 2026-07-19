@@ -114,7 +114,11 @@
     { "id": "SCADA.9401", "browse_name": "Вкл/Откл",           "class": "object", "type_definition": "SCADA.80", "properties": { "SCADA.216": "Вкл",     "SCADA.217": "Откл",      "SCADA.218": 32768,   "SCADA.219": 8421504 } },
     { "id": "SCADA.9402", "browse_name": "Норма/Авария",       "class": "object", "type_definition": "SCADA.80", "properties": { "SCADA.216": "Норма",   "SCADA.217": "Авария",    "SCADA.218": 32768,   "SCADA.219": 255 } },
     { "id": "SCADA.9403", "browse_name": "Замкнут/Разомкнут",  "class": "object", "type_definition": "SCADA.80", "properties": { "SCADA.216": "Замкнут", "SCADA.217": "Разомкнут", "SCADA.218": 16711680, "SCADA.219": 8421504 } },
-    { "id": "SCADA.9404", "browse_name": "Работа/Стоп",        "class": "object", "type_definition": "SCADA.80", "properties": { "SCADA.216": "Работа",  "SCADA.217": "Стоп",      "SCADA.218": 32768,   "SCADA.219": 255 } }
+    { "id": "SCADA.9404", "browse_name": "Работа/Стоп",        "class": "object", "type_definition": "SCADA.80", "properties": { "SCADA.216": "Работа",  "SCADA.217": "Стоп",      "SCADA.218": 32768,   "SCADA.219": 255 } },
+
+    { "id": "SCADA.9501", "browse_name": "Оперативный архив", "class": "object", "type_definition": "SCADA.20", "properties": { "SCADA.171": 90,  "SCADA.244": 1284, "SCADA.245": 4821903, "SCADA.241": 0  } },
+    { "id": "SCADA.9502", "browse_name": "Долговременный",    "class": "object", "type_definition": "SCADA.20", "properties": { "SCADA.171": 730, "SCADA.244": 1284, "SCADA.245": 902144,  "SCADA.241": 12 } },
+    { "id": "SCADA.9503", "browse_name": "События",           "class": "object", "type_definition": "SCADA.20", "properties": { "SCADA.171": 365, "SCADA.244": 512,  "SCADA.245": 60421,   "SCADA.241": 3  } }
   ],
 
   "tree": {
@@ -126,7 +130,7 @@
 
     "SCADA.29":  ["SCADA.16", "SCADA.234", "USER.1", "USER.2", "USER.3", "USER.4", "USER.5", "USER.6", "USER.7", "USER.8", "USER.9", "USER.10", "USER.11", "USER.12"],
     "SCADA.304": ["SCADA.305", "SCADA.306"],
-    "SCADA.12":  ["SCADA.20"],
+    "SCADA.12":  ["SCADA.20", "SCADA.9501", "SCADA.9502", "SCADA.9503"],
     "SCADA.27":  ["SCADA.80", "SCADA.9401", "SCADA.9402", "SCADA.9403", "SCADA.9404"],
     "SCADA.28":  ["SCADA.67", "SCADA.9301", "SCADA.9302", "SCADA.9303", "SCADA.9304"],
     "SCADA.300": ["SCADA.301"],
@@ -251,6 +255,7 @@
     { "type": "Params",         "filename": "parameters.png",          "width": 500,  "height": 400 },
     { "type": "SimulationItems", "filename": "admin-simulation.png",    "width": 560,  "height": 320, "min_rows": 4 },
     { "type": "Params",         "filename": "admin-formats.png",       "width": 560,  "height": 300, "min_rows": 4 },
+    { "type": "HistoricalDB",   "filename": "admin-historical-dbs.png", "width": 560, "height": 280, "min_rows": 3 },
     { "type": "NewProps",       "filename": "config-parameters.png",   "width": 640,  "height": 480, "path": "TS.702" },
     { "type": "NewProps",       "filename": "config-address-map.png",  "width": 640,  "height": 480, "path": "TS.702", "click_object": "addressMapSubtab" },
     { "type": "NewProps",       "filename": "config-limits.png",       "width": 640,  "height": 480, "path": "TS.114", "click_object": "limitsSubtab" },
