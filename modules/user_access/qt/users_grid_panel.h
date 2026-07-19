@@ -17,15 +17,19 @@ class QTableWidget;
 // header carrying the count and the "editing requires Administrator" hint.
 // Selecting a row emits UserActivated so the host can drive the RBAC inspector.
 //
-// Actions reuse the existing selection commands: a right-click on a row, or the
-// Reset-password button, emits ActionsMenuRequested so the host can pop the
-// standard selection context menu (Set Password... / New / Delete) for the
-// selected user through ControllerDelegate::ShowPopupMenu — no bespoke write
-// path. Reset-password is enabled only when a user row is selected. Enable /
-// disable of an account is *not* offered: the client UserType node model has no
-// enabled/disabled attribute (it carries only AccessRights + MultiSessions +
+// Actions reuse the existing commands: a right-click on the grid, the
+// Reset-password button, or the Add-user button emits ActionsMenuRequested so
+// the host pops the standard view context menu through
+// ControllerDelegate::ShowPopupMenu — no bespoke write path. That menu carries
+// both the selection commands for the highlighted user (Set Password... /
+// Delete, admin-gated) and the CATEGORY_CREATE "New" submenu whose "User" entry
+// runs the existing create command (OpenedViewCreateCommand -> PostInsertTask,
+// parented to the Users folder, gated on the Configure privilege). Reset-
+// password is enabled only when a user row is selected; Add-user is always
+// enabled (the create is parent-scoped and privilege-gated at the command).
+// Enable / disable of an account is *not* offered: the client UserType node
+// model has no enabled/disabled attribute (only AccessRights + MultiSessions +
 // profile fields), so there is nothing to toggle; that state is server-side.
-// Add-user (a parent-scoped create) is left as a disabled affordance.
 //
 // It is returned as the Users view under the reshell theme (see
 // NodeTableController); UiView is a QWidget, so the panel is the view.

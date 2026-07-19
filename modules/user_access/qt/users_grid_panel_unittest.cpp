@@ -90,6 +90,28 @@ TEST_F(UsersGridPanelTest, ResetPasswordFollowsSelectionAndEmitsActionsMenu) {
   EXPECT_FALSE(right_click);  // the button path, not a right-click.
 }
 
+TEST_F(UsersGridPanelTest, AddUserIsEnabledAndEmitsActionsMenu) {
+  UsersGridPanel panel;
+  panel.ShowRows(SampleRows());
+
+  const QList<QPushButton*> buttons = panel.findChildren<QPushButton*>();
+  QPushButton* add = nullptr;
+  for (QPushButton* button : buttons) {
+    if (button->text() == QStringLiteral("Add user"))
+      add = button;
+  }
+  ASSERT_NE(add, nullptr);
+  // Add-user is parent-scoped, so it is always enabled (privilege-gated at the
+  // command level) — no user selection required.
+  EXPECT_TRUE(add->isEnabled());
+
+  int emitted = 0;
+  QObject::connect(&panel, &UsersGridPanel::ActionsMenuRequested,
+                   [&](const QPoint&, bool) { ++emitted; });
+  add->click();
+  EXPECT_EQ(emitted, 1);
+}
+
 TEST_F(UsersGridPanelTest, EmptyRowsClearsGrid) {
   UsersGridPanel panel;
   panel.ShowRows(SampleRows());

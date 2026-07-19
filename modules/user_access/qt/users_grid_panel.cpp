@@ -80,12 +80,16 @@ QWidget* UsersGridPanel::BuildHeader() {
 
   add_user_ = new QPushButton{Tr("Add user")};
   reset_password_ = new QPushButton{Tr("Reset password")};
-  // Add-user is a parent-scoped create that is not wired at this surface, so it
-  // stays a disabled affordance. Reset-password reuses the existing Set-Password
-  // selection command via the host's context menu; it enables once a user row
-  // is selected.
-  add_user_->setEnabled(false);
+  // Both reuse the host's view context menu. Add-user (parent-scoped create) is
+  // always enabled — the create is privilege-gated at the command level, and
+  // the admin-role hint explains the requirement. Reset-password acts on the
+  // highlighted user, so it enables once a row is selected.
   reset_password_->setEnabled(false);
+  connect(add_user_, &QPushButton::clicked, this, [this] {
+    Q_EMIT ActionsMenuRequested(
+        add_user_->mapToGlobal(add_user_->rect().bottomLeft()),
+        /*right_click=*/false);
+  });
   connect(reset_password_, &QPushButton::clicked, this, [this] {
     if (HasSelection())
       Q_EMIT ActionsMenuRequested(
@@ -165,13 +169,14 @@ void UsersGridPanel::OnSelectionChanged() {
 }
 
 void UsersGridPanel::OnContextMenuRequested(const QPoint& pos) {
-  // Select the row under the cursor first, so the actions target that user.
+  // Select the row under the cursor first, so the selection commands target
+  // that user. Emit even over empty space: the CATEGORY_CREATE "New" submenu is
+  // parent-scoped and must stay reachable when no user is selected (e.g. an
+  // empty Users folder).
   if (QTableWidgetItem* item = grid_->itemAt(pos))
     grid_->selectRow(item->row());
-  if (HasSelection()) {
-    Q_EMIT ActionsMenuRequested(grid_->viewport()->mapToGlobal(pos),
-                                /*right_click=*/true);
-  }
+  Q_EMIT ActionsMenuRequested(grid_->viewport()->mapToGlobal(pos),
+                              /*right_click=*/true);
 }
 
 UsersGridPanel* MakeUsersGridPanel() {
