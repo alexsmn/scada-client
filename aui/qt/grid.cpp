@@ -3,6 +3,8 @@
 #include "aui/qt/grid.h"
 
 #include "aui/models/grid_model_util.h"
+#include "aui/qt/theme_qt.h"
+#include "aui/severity_colors.h"
 #include "base/check.h"
 #include "base/value_util.h"
 
@@ -21,6 +23,26 @@ const int kSelectionRectWidth = 3;
 
 const Qt::GlobalColor kExpandRectColor = Qt::blue;
 const int kExpandHandleSize = 5;
+
+// The design-token set for the active reshell UX theme, or null in the legacy
+// look. The grid consumes aui-owned tokens only, so this stays within aui's
+// allowed dependency set.
+const ThemeTokens* ReshellTokens() {
+  Theme theme = Theme::kDark;
+  switch (GetSeverityTheme()) {
+    case SeverityTheme::kLegacy:
+      return nullptr;
+    case SeverityTheme::kLight:
+      theme = Theme::kLight;
+      break;
+    case SeverityTheme::kHighContrast:
+      theme = Theme::kHighContrast;
+      break;
+    case SeverityTheme::kDark:
+      break;
+  }
+  return &GetThemeTokens(theme);
+}
 
 GridRange ToUiGridRange(const QItemSelectionRange& range) {
   return GridRange::Range(range.top(), range.left(), range.height(),
@@ -48,6 +70,23 @@ Grid::Grid(std::shared_ptr<GridModel> model,
   resizeColumnsToContents();
   setItemDelegate(&item_delegate_);
   setWordWrap(false);
+
+  // Under the reshell UX theme, adopt the design tokens for the grid chrome the
+  // palette does not reach: flat header sections, hairline gridlines, and a
+  // soft accent selection fill. Legacy look is untouched (tokens == null). Cell
+  // content still renders through the item delegate, which this does not style.
+  if (const ThemeTokens* t = ReshellTokens()) {
+    setStyleSheet(
+        QStringLiteral(
+            "QTableView{ gridline-color:%1;"
+            " selection-background-color:%2; selection-color:%3; }"
+            "QHeaderView::section{ background:%4; color:%5; border:0;"
+            " border-bottom:1px solid %1; padding:2px 6px; }"
+            "QTableCornerButton::section{ background:%4; border:0;"
+            " border-bottom:1px solid %1; }")
+            .arg(t->border.name(), t->accent_soft.name(), t->fg.name(),
+                 t->surface_muted.name(), t->fg_muted.name()));
+  }
 }
 
 Grid::~Grid() {
@@ -137,9 +176,15 @@ void Grid::paintEvent(QPaintEvent* e) {
 
   QPainter painter{viewport()};
 
+  // A visible black rect reads as a gap on the dark reshell grid; use the theme
+  // accent for the selection outline + expand handle when a theme is active.
+  const ThemeTokens* tokens = ReshellTokens();
+  const QColor selection_color =
+      tokens ? tokens->accent : QColor{kSelectionRectColor};
+
   const auto selection_rect = GetRangeRect(selection_range_);
   if (!selection_rect.isNull()) {
-    const QPen selection_pen{kSelectionRectColor,
+    const QPen selection_pen{selection_color,
                              static_cast<qreal>(kSelectionRectWidth)};
     painter.setPen(selection_pen);
     painter.drawRect(selection_rect);
@@ -147,7 +192,7 @@ void Grid::paintEvent(QPaintEvent* e) {
 
   const auto expand_handle_rect = GetExpandHandleRect(selection_rect);
   if (!expand_handle_rect.isNull())
-    painter.fillRect(expand_handle_rect, kSelectionRectColor);
+    painter.fillRect(expand_handle_rect, selection_color);
 
   auto expand_rect = GetRangeRect(expand_range_);
   if (!expand_rect.isNull()) {
