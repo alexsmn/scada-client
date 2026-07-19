@@ -114,8 +114,17 @@ class PropertyDefsTest : public Test {
   scada_test::ScadaTestAddressSpace address_space;
   GenericNodeFactory node_factory{address_space};
 
-  std::shared_ptr<NodeService> node_service =
-      node_service::test::CreateTestNodeService(address_space);
+  // StaticNodeService is a *snapshot* of the address space, not a live view, so
+  // anything created after it is built stays invisible. This fixture (and
+  // CreateDataItem) add nodes after construction, so re-sync before each lookup.
+  // Re-syncing is cheap and idempotent: Add() uses try_emplace, so already
+  // known nodes are skipped and only new ones are picked up.
+  std::shared_ptr<StaticNodeService> node_service =
+      std::make_shared<StaticNodeService>();
+
+  void SyncNodeService() {
+    node_service->AddAll(scada::MakeNodeStates(address_space));
+  }
 
   TestExecutor executor;
   StrictMock<MockTaskManager> task_manager;
@@ -173,6 +182,8 @@ PropertyDefsTest::PropertyDefsTest() {
     scada::AddReference(address_space, data_items::id::HasDevice, data_group_id,
                         device_id);
   }
+
+  SyncNodeService();
 }
 
 NodeRef PropertyDefsTest::CreateDataItem(std::string_view channel_path) {
@@ -188,6 +199,7 @@ NodeRef PropertyDefsTest::CreateDataItem(std::string_view channel_path) {
   scada::SetPropertyValue(*node_ptr, data_items::id::DataItemType_Input1,
                           scada::String{channel_path});
 
+  SyncNodeService();
   return node_service->GetNode(data_item_id);
 }
 

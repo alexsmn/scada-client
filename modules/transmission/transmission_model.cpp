@@ -20,11 +20,18 @@
 namespace {
 
 scada::NodeId GetTransmissionItemTypeId(const NodeRef& device) {
-  auto creates = device.type_definition().references(scada::id::Creates);
-  for (auto&& create : creates) {
-    if (create.forward &&
-        IsSubtypeOf(create.target, devices::id::TransmissionItemType))
-      return create.target.node_id();
+  // The transmission item type is named by the device type's <TransmissionItem>
+  // OptionalPlaceholder, attached via the HasTransmissionItem reference (the
+  // standard-modelling replacement for the old Creates edge). Query that exact
+  // reference type so it resolves without fetching the reference-type hierarchy
+  // (matters for a remote node service).
+  for (auto type = device.type_definition(); type; type = type.supertype()) {
+    for (const auto& placeholder :
+         type.targets(devices::id::HasTransmissionItem)) {
+      NodeRef item_type = placeholder.type_definition();
+      if (IsSubtypeOf(item_type, devices::id::TransmissionItemType))
+        return item_type.node_id();
+    }
   }
   return {};
 }

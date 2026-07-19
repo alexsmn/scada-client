@@ -28,17 +28,7 @@
 namespace {
 
 bool CanCreateSomething(const NodeRef& node) {
-  if (node.target(scada::id::Creates)) {
-    return true;
-  }
-
-  for (auto type = node.type_definition(); type; type = type.supertype()) {
-    if (type.target(scada::id::Creates)) {
-      return true;
-    }
-  }
-
-  return false;
+  return !GetCreatableChildTypes(node).empty();
 }
 
 WindowDefinition MakeGroupWindowDefinition(const WindowInfo& window_info,

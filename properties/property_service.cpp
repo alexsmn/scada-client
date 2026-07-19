@@ -54,12 +54,6 @@ const std::unordered_map<scada::NodeId, const PropertyDefinition*>
         {data_items::id::TsFormatType_CloseColor, &kColorPropDef},
 };
 
-void CollectCreates(const NodeRef& node,
-                    std::unordered_set<NodeRef>& child_type_definitions) {
-  for (auto&& creates : node.targets(scada::id::Creates))
-    child_type_definitions.emplace(std::move(creates));
-}
-
 // Returns unfetched type definitions.
 std::unordered_set<NodeRef> GetChildTypeDefinitions(
     const NodeRef& parent_node) {
@@ -67,14 +61,8 @@ std::unordered_set<NodeRef> GetChildTypeDefinitions(
   base::Check(parent_node.type_definition().fetched());
 
   std::unordered_set<NodeRef> child_type_definitions;
-
-  CollectCreates(parent_node, child_type_definitions);
-
-  for (auto node_type = parent_node.type_definition(); node_type;
-       node_type = node_type.supertype()) {
-    CollectCreates(node_type, child_type_definitions);
-  }
-
+  for (auto&& type_definition : GetCreatableChildTypes(parent_node))
+    child_type_definitions.emplace(std::move(type_definition));
   return child_type_definitions;
 }
 
@@ -215,9 +203,7 @@ void PropertyService::GetTypeProperties(
       property_decls.emplace(p);
     for (const auto& r : supertype_definition.references(
              scada::id::NonHierarchicalReferences)) {
-      // TODO: Introduce common base reference type.
-      if (!IsSubtypeOf(r.reference_type, scada::id::Creates) &&
-          !IsSubtypeOf(r.reference_type, scada::id::HasSubtype)) {
+      if (!IsSubtypeOf(r.reference_type, scada::id::HasSubtype)) {
         property_decls.emplace(r.reference_type);
       }
     }

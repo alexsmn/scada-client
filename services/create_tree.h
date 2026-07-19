@@ -9,18 +9,12 @@ class CreateTree {
                  const NodeRef& component_type_definition) {
     parent.StartFetch(NodeFetchStatus::NodeOnly);
 
-    for (const auto& creates : parent.targets(scada::id::Creates)) {
+    // A component may be created under `parent` if `parent`'s type chain
+    // declares a placeholder for the component's type (or a supertype).
+    for (const auto& creatable : GetCreatableChildTypes(parent)) {
       component_type_definition.StartFetch(NodeFetchStatus::NodeOnly);
-      if (IsSubtypeOf(component_type_definition, creates.node_id()))
+      if (IsSubtypeOf(component_type_definition, creatable.node_id()))
         return true;
-    }
-
-    for (auto type_definition = parent.type_definition(); type_definition;
-         type_definition = type_definition.supertype()) {
-      for (const auto& creates : type_definition.targets(scada::id::Creates)) {
-        if (IsSubtypeOf(component_type_definition, creates.node_id()))
-          return true;
-      }
     }
 
     return false;

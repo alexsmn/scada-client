@@ -79,8 +79,29 @@ NodeRef MakeTestNodeInService(ModelNodeService& service,
   ON_CALL(*type_model, GetAttribute(scada::AttributeId::NodeId))
       .WillByDefault(Return(options.type_definition_id));
   ON_CALL(*type_model, GetTarget(_, _)).WillByDefault(Return(NodeRef{}));
-  ON_CALL(*type_model, GetTargets(scada::id::Creates, true))
-      .WillByDefault(Return(options.creates));
+  // Each createable type is exposed as an OptionalPlaceholder InstanceDeclaration
+  // child of the type — the standard-modelling replacement for the Creates edge
+  // that CreateTree::CanCreate now reads via GetCreatableChildTypes.
+  const NodeRef optional_placeholder = service.Add(
+      scada::NodeId{scada::id::ModellingRule_OptionalPlaceholder},
+      std::make_shared<NiceMock<MockNodeModel>>());
+  std::vector<NodeRef> placeholders;
+  for (size_t i = 0; i < options.creates.size(); ++i) {
+    const NodeRef& creatable_type = options.creates[i];
+    auto placeholder_model = std::make_shared<NiceMock<MockNodeModel>>();
+    ON_CALL(*placeholder_model,
+            GetTarget(scada::NodeId{scada::id::HasModellingRule}, true))
+        .WillByDefault(Return(optional_placeholder));
+    ON_CALL(*placeholder_model,
+            GetTarget(scada::NodeId{scada::id::HasTypeDefinition}, true))
+        .WillByDefault(Return(creatable_type));
+    placeholders.push_back(service.Add(
+        scada::NodeId{static_cast<scada::NumericId>(90000 + i)},
+        std::move(placeholder_model)));
+  }
+  ON_CALL(*type_model, GetTargets(scada::NodeId{scada::id::HierarchicalReferences},
+                                  true))
+      .WillByDefault(Return(placeholders));
 
   ON_CALL(*parent_model, GetFetchStatus())
       .WillByDefault(Return(NodeFetchStatus::NodeAndChildren));
