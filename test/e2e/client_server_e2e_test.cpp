@@ -201,8 +201,14 @@ TEST_P(ClientServerE2eTest, Connect_Success_DisplaysHistoricalTimedData) {
   // server-tier gap deeper than remote-config instance enumeration — the edge
   // never activates/simulates the item even once LoadNodes enumerates it).
   // Skipped pending that fix; the assertions below are the intended coverage.
-  GTEST_SKIP() << "history pending a server-tier gap (edge data-item "
-                  "load/simulate/historize over remote config)";
+  // History needs the historian tier (Cluster only). The config-client edges now
+  // load + activate their data items (remote-config enumeration fix), but a
+  // device edge doesn't SIMULATE or historize/collect them — no TIT.4 samples
+  // reach the historian. That's a separate downstream gap (data-item value
+  // production + history collection in the tier split), likely also a topology
+  // mismatch (simulating a data item on a device edge). Skipped pending it.
+  GTEST_SKIP() << "history pending a server-tier gap (data-item simulate/collect "
+                  "on a config-client edge)";
   WriteClientSettings(/*password=*/"");
   EnableSimulatedHistory();
   StartServer();
