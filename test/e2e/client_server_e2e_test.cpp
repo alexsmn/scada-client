@@ -106,10 +106,10 @@ TEST_P(ClientServerE2eTest, Connect_Success_LoadsObjectTree) {
 }
 
 TEST_P(ClientServerE2eTest, Connect_Success_ExpandsObjectTreeLabels) {
-  // Under Cluster the root's children load (LoadsObjectTree passes) but their
-  // nested DisplayNames don't come through aggregation, so the expected station/
-  // group labels are missing — a pending server-tier gap in the aggregation/
-  // remote-config attribute path. Runs under SingleTier where the tree is served
+  // Under Cluster the tree loads and (since the remote-config reference fix) the
+  // device labels resolve, but the expected nested station/group DisplayNames
+  // still don't fully come through aggregation — a pending server-tier gap in the
+  // aggregation attribute path. Runs under SingleTier where the tree is served
   // from the local config DB.
   if (Topology() == ServerTopology::Cluster)
     GTEST_SKIP() << "nested tree labels pending a server-tier gap (DisplayName "
@@ -148,12 +148,11 @@ TEST_P(ClientServerE2eTest, Connect_Success_ExpandsObjectTreeLabels) {
 
 TEST_P(ClientServerE2eTest, Connect_Success_ExpandsHardwareTreeDevices) {
   // The hardware tree asserts a *live* device per protocol (MODBUS + IEC60870 +
-  // IEC61850), which only the Cluster topology can serve (the proxy aggregating
-  // the three device edges). The cluster harness is in place and aggregates the
-  // devices, but the edges' devices do not yet surface as online through the
-  // remote-config/aggregation path — a pending server-tier gap (see the
-  // client-e2e-multitier-cluster notes). Skipped under both topologies pending
-  // that fix; the assertions below are the intended coverage once it lands.
+  // IEC61850). The cluster aggregates the three device edges and (since the
+  // remote-config reference fix) the device config resolves, but the devices do
+  // not yet come online (the loopback self-connect doesn't complete) — a pending
+  // server-tier gap. Skipped pending that; the assertions below are the intended
+  // coverage once it lands.
   GTEST_SKIP() << "multi-protocol hardware tree pending a server-tier gap "
                   "(device online through the cluster)";
   WriteClientSettings(/*password=*/"");
@@ -189,32 +188,15 @@ TEST_P(ClientServerE2eTest, Connect_Success_ExpandsHardwareTreeDevices) {
 
 TEST_P(ClientServerE2eTest, Connect_Success_DisplaysHistoricalTimedData) {
   // History is the historian tier's, not a device tier's (ADR 0002: edges own no
-  // history), so this needs the Cluster topology. The cluster harness is in
-  // place, but the config-client edges do not yet load AnalogItemType instances
-  // over remote config (RemoteConfigurationManager::LoadNodes returns nothing for
-  // types with no static parent — a pending server-tier gap), so TIT.4 is never
-  // simulated/collected. Skipped pending that fix; the assertions below are the
-  // intended coverage once it lands.
-  // History needs the historian tier (Cluster only). Beyond that, the
-  // config-client edges don't yet load + simulate + historize their data items
-  // over remote config, so no TIT.4 samples reach the historian (a pending
-  // server-tier gap deeper than remote-config instance enumeration — the edge
-  // never activates/simulates the item even once LoadNodes enumerates it).
-  // Skipped pending that fix; the assertions below are the intended coverage.
-  // History needs the historian tier (Cluster only). The config-client edges now
-  // load + activate their data items (remote-config enumeration fix), but a
-  // device edge doesn't SIMULATE or historize/collect them — no TIT.4 samples
-  // reach the historian. That's a separate downstream gap (data-item value
-  // production + history collection in the tier split), likely also a topology
-  // mismatch (simulating a data item on a device edge). Skipped pending it.
-  // History needs the historian tier (Cluster only). The historian now
-  // pull-collects TIT.4 from the edge (historyCollection.sources — StartCluster
-  // wires it, and the historian connects + subscribes, verified). The remaining
-  // gap is upstream: the edge activates TIT.4 but does not SIMULATE it (no value
-  // production over remote config), so the subscription delivers no samples and
-  // the historian stores none. Skipped pending edge value production.
-  GTEST_SKIP() << "history pending a server-tier gap (edge doesn't simulate/"
-                  "produce the data-item value the historian pulls)";
+  // history), so this runs only under the Cluster topology. End-to-end path: the
+  // config tier + historian carry TIT.4's historization; the edges load + activate
+  // + simulate it (remote-config enumeration + reference reconstruction); the
+  // historian pull-collects it from the edge (historyCollection.sources) and the
+  // client reads it back through the proxy. Skipped under SingleTier (no
+  // historian).
+  if (Topology() != ServerTopology::Cluster)
+    GTEST_SKIP() << "history needs the historian tier (a single device tier "
+                    "owns no history)";
   WriteClientSettings(/*password=*/"");
   EnableSimulatedHistory();
   StartServer();
