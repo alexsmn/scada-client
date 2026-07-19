@@ -1,17 +1,26 @@
-﻿#pragma once
+#pragma once
+
+#include "aui/aui_ns_compat.h"
 
 #include "aui/models/status_bar_model.h"
 
 #include <boost/signals2/signal.hpp>
 #include <functional>
 #include <memory>
+#include <vector>
 
-class StatusBarModelImpl final : public aui::StatusBarModel {
+namespace scada::aui {
+
+// Provider-driven StatusBarModel: the application registers panes whose text,
+// colour and counters are pulled from callbacks, and pushes refreshes via
+// NotifyPanesChanged(). Keeps the model free of any domain coupling — the
+// providers live with the consumer.
+class StatusBarModelImpl final : public StatusBarModel {
  public:
   StatusBarModelImpl();
 
   using StatusTextProvider = std::function<std::u16string()>;
-  using StatusColorProvider = std::function<std::optional<aui::Color>()>;
+  using StatusColorProvider = std::function<std::optional<Color>()>;
 
   struct StatusPane {
     StatusTextProvider text_provider;
@@ -23,7 +32,7 @@ class StatusBarModelImpl final : public aui::StatusBarModel {
   };
 
   using AlarmCountProvider = std::function<int()>;
-  using SeverityCountProvider = std::function<int(aui::SeverityLevel)>;
+  using SeverityCountProvider = std::function<int(SeverityLevel)>;
 
   // Returns pane index that can be used when calling `NotifyPaneChanged`.
   int AddPane(const StatusPane& pane);
@@ -40,10 +49,10 @@ class StatusBarModelImpl final : public aui::StatusBarModel {
   virtual int GetPaneCount() const override;
   virtual std::u16string GetPaneText(int index) const override;
   virtual int GetPaneSize(int index) const override;
-  virtual std::optional<aui::Color> GetPaneColor(int index) const override;
+  virtual std::optional<Color> GetPaneColor(int index) const override;
   virtual int GetAlarmCount() const override;
   virtual bool IsContextBarPane(int index) const override;
-  virtual int GetSeverityCount(aui::SeverityLevel level) const override;
+  virtual int GetSeverityCount(SeverityLevel level) const override;
   [[nodiscard]] virtual boost::signals2::scoped_connection
   SubscribePanesChanged(const PanesChangedCallback& callback) override;
 
@@ -54,3 +63,5 @@ class StatusBarModelImpl final : public aui::StatusBarModel {
 
   boost::signals2::signal<void(int, int)> panes_changed_signal_;
 };
+
+}  // namespace scada::aui

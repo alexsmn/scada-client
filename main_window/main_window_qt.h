@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aui/aui_ns_compat.h"
+
 #include "aui/qt/dialog_service_impl_qt.h"
 #include "controller/action_manager.h"
 #include "main_window/base_main_window.h"
@@ -25,7 +27,7 @@ class QLineEdit;
 class QMenu;
 class QToolBar;
 class QWidget;
-class StatusBarController;
+class ProgressController;
 class ViewManager;
 
 class MainWindow final : public QMainWindow, public BaseMainWindow {
@@ -123,7 +125,7 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
 
   std::unique_ptr<aui::MenuModel> main_menu_model_;
 
-  std::unique_ptr<StatusBarController> status_bar_controller_;
+  std::unique_ptr<ProgressController> progress_controller_;
 
   // Top context bar (opt-in). Its right-hand cluster mirrors the status-bar
   // model panes; `context_panes_` are the labels, refreshed on model changes.

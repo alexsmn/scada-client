@@ -3,6 +3,7 @@
 #include "aui/models/menu_model.h"
 #include "aui/models/simple_menu_model.h"
 #include "aui/models/status_bar_model.h"
+#include "aui/qt/status_bar.h"
 #include "aui/severity_colors.h"
 #include "aui/translation.h"
 #include "base/awaitable.h"
@@ -14,14 +15,9 @@
 #include "controller/controller.h"
 #include "controller/selection_model.h"
 #include "controller/window_info.h"
-#include "filesystem/file_cache.h"
 #include "device_diagnostics/qt/device_diagnostics_panel.h"
+#include "filesystem/file_cache.h"
 #include "inspector/qt/inspector_panel.h"
-#include "model/security_node_ids.h"
-#include "user_access/qt/user_access_panel.h"
-#include "transmission_rules/qt/transmission_rule_inspector.h"
-#include "model/devices_node_ids.h"
-#include "node_service/node_util.h"
 #include "main_window/activity_bar_qt.h"
 #include "main_window/alarm_flood.h"
 #include "main_window/command_palette_qt.h"
@@ -31,16 +27,21 @@
 #include "main_window/overview_page.h"
 #include "main_window/selection_command_router.h"
 #include "main_window/simple_menu_command_handler.h"
-#include "main_window/status_bar/status_bar_controller_qt.h"
+#include "main_window/status_bar/progress_controller_qt.h"
 #include "main_window/tag_search_index.h"
 #include "main_window/view_manager.h"
 #include "main_window/window_definition_builder.h"
+#include "model/devices_node_ids.h"
+#include "model/security_node_ids.h"
+#include "node_service/node_util.h"
 #include "profile/profile.h"
 #include "profile/window_definition.h"
 #include "resources/common_resources.h"
 #include "scada/standard_node_ids.h"
+#include "transmission_rules/qt/transmission_rule_inspector.h"
 #include "ui/common/client_utils.h"
 #include "ui/qt/client_utils_qt.h"
+#include "user_access/qt/user_access_panel.h"
 
 #include <QAction>
 #include <QApplication>
@@ -350,11 +351,12 @@ void MainWindow::RebuildMenuBar() {
 }
 
 void MainWindow::CreateStatusBar() {
-  setStatusBar(new QStatusBar(this));
-  statusBar()->setVisible(GetPrefs().status_bar);
+  auto* status_bar = new aui::StatusBar{*status_bar_model_, this};
+  setStatusBar(status_bar);
+  status_bar->setVisible(GetPrefs().status_bar);
 
-  status_bar_controller_ = std::make_unique<StatusBarController>(
-      *statusBar(), *status_bar_model_, progress_host_);
+  progress_controller_ =
+      std::make_unique<ProgressController>(*status_bar, progress_host_);
 }
 
 void MainWindow::CreateContextBar() {
@@ -774,7 +776,8 @@ void MainWindow::CreateDiagnosticsPanel() {
   DeviceDiagnosticsPanelContext context;
   context.actions.push_back(
       make_action(ID_OPEN_DEVICE_METRICS, Translate("Metrics trend")));
-  context.actions.push_back(make_action(ID_ITEM_ENABLE, Translate("Reconnect")));
+  context.actions.push_back(
+      make_action(ID_ITEM_ENABLE, Translate("Reconnect")));
   context.actions.push_back(make_action(ID_OPEN_EVENTS, Translate("Open log")));
 
   diagnostics_ = MakeDeviceDiagnosticsPanel(std::move(context));
@@ -848,7 +851,8 @@ void MainWindow::OnSelectionChanged() {
       }
     }
     if (user_access_) {
-      // A single user-node selection fills the RBAC panel; anything else clears.
+      // A single user-node selection fills the RBAC panel; anything else
+      // clears.
       if (selection && !selection->empty() && !selection->multiple() &&
           IsInstanceOf(selection->node(), scada::security::id::UserType)) {
         user_access_->ShowUser(selection->node());

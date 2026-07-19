@@ -63,6 +63,7 @@ module;
 #include "aui/models/property_tree_model.h"
 #include "aui/models/simple_menu_model.h"
 #include "aui/models/status_bar_model.h"
+#include "aui/models/status_bar_model_impl.h"
 #include "aui/models/table_column.h"
 #include "aui/models/table_model.h"
 #include "aui/models/tree_model.h"
@@ -162,8 +163,9 @@ using aui::PropertyTreeNode;
 // models/simple_menu_model.h
 using aui::SimpleMenuModel;
 
-// models/status_bar_model.h
+// models/status_bar_model.h / models/status_bar_model_impl.h
 using aui::StatusBarModel;
+using aui::StatusBarModelImpl;
 
 // models/table_column.h
 using aui::GridCell;

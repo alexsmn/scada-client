@@ -1,4 +1,6 @@
-#include "main_window/status_bar/status_bar_model_impl.h"
+#include "aui/models/status_bar_model_impl.h"
+
+namespace scada::aui {
 
 StatusBarModelImpl::StatusBarModelImpl() {
   panes_.emplace_back();
@@ -31,7 +33,7 @@ int StatusBarModelImpl::GetPaneSize(int index) const {
   return panes_[index].size;
 }
 
-std::optional<aui::Color> StatusBarModelImpl::GetPaneColor(int index) const {
+std::optional<Color> StatusBarModelImpl::GetPaneColor(int index) const {
   auto color_provider = panes_[index].color_provider;
   return color_provider ? color_provider() : std::nullopt;
 }
@@ -44,7 +46,7 @@ bool StatusBarModelImpl::IsContextBarPane(int index) const {
   return panes_[index].in_context_bar;
 }
 
-int StatusBarModelImpl::GetSeverityCount(aui::SeverityLevel level) const {
+int StatusBarModelImpl::GetSeverityCount(SeverityLevel level) const {
   return severity_count_provider_ ? severity_count_provider_(level) : 0;
 }
 
@@ -56,3 +58,5 @@ boost::signals2::scoped_connection StatusBarModelImpl::SubscribePanesChanged(
 void StatusBarModelImpl::NotifyPanesChanged(int index, int count) {
   panes_changed_signal_(index, count);
 }
+
+}  // namespace scada::aui

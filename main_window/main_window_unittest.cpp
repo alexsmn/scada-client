@@ -20,7 +20,7 @@
 #include "main_window/opened_view/opened_view_command_registry.h"
 #include "main_window/opened_view/opened_view_command_router.h"
 #include "main_window/selection_command_router.h"
-#include "main_window/status_bar/status_bar_model_impl.h"
+#include "aui/models/status_bar_model_impl.h"
 #include "modules/graph/graph_component.h"
 #include "modules/portfolio/portfolio_module.h"
 #include "modules/summary/summary_component.h"
@@ -329,7 +329,7 @@ MainWindowContext MainWindowTest::MakeMainWindowContext() {
             return std::make_unique<CommandHandler>();
           },
       .selection_command_router_ = selection_command_router_,
-      .status_bar_model_ = std::make_shared<StatusBarModelImpl>(),
+      .status_bar_model_ = std::make_shared<aui::StatusBarModelImpl>(),
       .context_menu_factory_ =
           [](MainWindowInterface& main_window,
              CommandHandler& global_commands) {
@@ -432,7 +432,7 @@ TEST(MainWindowQtTest, MenuBarPopulatesTopLevelMenusImmediately) {
            [](MainWindowInterface& main_window, DialogService& dialog_service) {
              return std::make_unique<CommandHandler>();
            },
-       .status_bar_model_ = std::make_shared<StatusBarModelImpl>(),
+       .status_bar_model_ = std::make_shared<aui::StatusBarModelImpl>(),
        .context_menu_factory_ =
            [](MainWindowInterface& main_window,
               CommandHandler& global_commands) {

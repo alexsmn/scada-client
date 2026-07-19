@@ -1,13 +1,13 @@
 #include "main_window/status_bar/status_bar_model_builder.h"
 
+#include "aui/models/status_bar_model_impl.h"
 #include "events/node_event_provider.h"
 #include "main_window/status_bar/event_status_provider.h"
 #include "main_window/status_bar/session_status_provider.h"
-#include "main_window/status_bar/status_bar_model_impl.h"
 #include "main_window/status_bar/user_status_provider.h"
 
 std::shared_ptr<aui::StatusBarModel> StatusBarModelBuilder::Build() {
-  auto model = std::make_shared<StatusBarModelImpl>();
+  auto model = std::make_shared<aui::StatusBarModelImpl>();
 
   // Event count and min severity.
 
