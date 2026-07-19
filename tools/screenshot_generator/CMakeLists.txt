@@ -31,6 +31,8 @@ add_executable(client_screenshot_generator
   "display_capture.h"
   "device_diagnostics_capture.cpp"
   "user_access_capture.cpp"
+  "transmission_rule_capture.cpp"
+  "transmission_rule_capture.h"
   "user_access_capture.h"
   "device_diagnostics_capture.h"
   "dialog_capture.cpp"
@@ -66,6 +68,7 @@ target_link_libraries(client_screenshot_generator PRIVATE
   client_display_frame_qt
   client_device_diagnostics_qt
   client_user_access_qt
+  client_transmission_rules_qt
   client_events_qt
   client_export_configuration_qt
   client_export_excel_qt

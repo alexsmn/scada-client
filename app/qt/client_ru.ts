@@ -184,6 +184,27 @@
         <source>Configure &amp; administer</source>
         <translation>Настройка и администрирование</translation>
     </message>
+    <!-- modules/transmission_rules/qt/transmission_rule_inspector.cpp -->
+    <message>
+        <source>Transmission rule</source>
+        <translation>Правило ретрансляции</translation>
+    </message>
+    <message>
+        <source>Select a transmission rule to edit it</source>
+        <translation>Выберите правило ретрансляции для редактирования</translation>
+    </message>
+    <message>
+        <source>Source</source>
+        <translation>Источник</translation>
+    </message>
+    <message>
+        <source>Destination</source>
+        <translation>Назначение</translation>
+    </message>
+    <message>
+        <source>Information object address (IOA)</source>
+        <translation>Адрес объекта информации (IOA)</translation>
+    </message>
     <!-- modules/events/qt/event_filter_bar.cpp -->
     <message>
         <source>Unacknowledged only</source>

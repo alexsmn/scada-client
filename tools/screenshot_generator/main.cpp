@@ -1,5 +1,6 @@
 #include "device_diagnostics_capture.h"
 #include "user_access_capture.h"
+#include "transmission_rule_capture.h"
 #include "dialog_capture.h"
 #include "display_capture.h"
 #include "fixture_builder.h"
@@ -299,6 +300,14 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     // region of users-admin.html), built from a fixture user.
     if (spec.window_type == "UserAccess") {
       SaveUserAccessScreenshot(spec, app_.node_service());
+      ++captured;
+      continue;
+    }
+    // The transmission-rule inspector is standalone reshell chrome (the right
+    // region of transmission-rules.html), built from a fixture transmission
+    // item.
+    if (spec.window_type == "TransmissionRule") {
+      SaveTransmissionRuleScreenshot(spec, app_.node_service());
       ++captured;
       continue;
     }

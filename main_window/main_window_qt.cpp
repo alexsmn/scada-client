@@ -19,6 +19,7 @@
 #include "inspector/qt/inspector_panel.h"
 #include "model/security_node_ids.h"
 #include "user_access/qt/user_access_panel.h"
+#include "transmission_rules/qt/transmission_rule_inspector.h"
 #include "model/devices_node_ids.h"
 #include "node_service/node_util.h"
 #include "main_window/activity_bar_qt.h"
@@ -219,6 +220,7 @@ MainWindow::MainWindow(MainWindowContext&& context)
     CreateInspectorPanel();
     CreateDiagnosticsPanel();
     CreateUserAccessPanel();
+    CreateTransmissionRulePanel();
     // Kick off the palette's tag browse in the background so tags are ready by
     // the time the operator first opens the palette.
     if (node_service_) {
@@ -805,8 +807,26 @@ void MainWindow::CreateUserAccessPanel() {
     tabifyDockWidget(inspector_dock_, dock);
 }
 
+void MainWindow::CreateTransmissionRulePanel() {
+  transmission_rule_ = MakeTransmissionRuleInspector();
+  if (!transmission_rule_)
+    return;
+
+  auto* dock = new QDockWidget(
+      QString::fromStdU16String(Translate("Transmission rule")), this);
+  dock->setObjectName(QStringLiteral("TransmissionRuleDock"));
+  dock->setWidget(transmission_rule_);
+  // No ApplyHandler is wired here: the shell has no TaskManager, so the panel
+  // presents the rule read-only. Editing rides the existing transmission grid,
+  // which writes SourceAddress through its own TaskManager.
+  addDockWidget(Qt::RightDockWidgetArea, dock);
+  // Shares the right dock; fronted only when a transmission rule is selected.
+  if (inspector_dock_)
+    tabifyDockWidget(inspector_dock_, dock);
+}
+
 void MainWindow::OnSelectionChanged() {
-  if (inspector_ || diagnostics_ || user_access_) {
+  if (inspector_ || diagnostics_ || user_access_ || transmission_rule_) {
     OpenedView* active = GetActiveView();
     SelectionModel* selection =
         active ? active->controller().GetSelectionModel() : nullptr;
@@ -834,6 +854,17 @@ void MainWindow::OnSelectionChanged() {
         user_access_->ShowUser(selection->node());
       } else {
         user_access_->Clear();
+      }
+    }
+    if (transmission_rule_) {
+      // A single transmission-item selection fills the rule inspector; anything
+      // else clears.
+      if (selection && !selection->empty() && !selection->multiple() &&
+          IsInstanceOf(selection->node(),
+                       scada::devices::id::TransmissionItemType)) {
+        transmission_rule_->ShowRule(selection->node());
+      } else {
+        transmission_rule_->Clear();
       }
     }
   }

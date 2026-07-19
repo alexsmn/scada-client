@@ -51,6 +51,7 @@ if(TARGET client_main_window_qt)
     client_device_diagnostics_qt
     client_inspector_qt
     client_user_access_qt
+    client_transmission_rules_qt
     client_ui_common_qt
     client_ui_dragdrop_qt
     client_ui_progress_qt
