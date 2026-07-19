@@ -224,6 +224,7 @@
     { "type": "Graph",          "filename": "limits-chart.png",        "width": 1024, "height": 901 },
     { "type": "SeriesInspector", "filename": "series-inspector.png",    "width": 290,  "height": 480 },
     { "type": "DeviceDiagnostics", "filename": "device-diagnostics.png", "width": 300,  "height": 520 },
+    { "type": "UserAccess",     "filename": "users-rbac.png",          "width": 320,  "height": 400 },
     { "type": "Table",          "filename": "table.png",               "width": 900,  "height": 300,
       "paths": ["TIT.200", "TIT.201", "TIT.202", "TIT.208", "TIT.211", "TIT.209"] },
     { "type": "Summ",           "filename": "summary.png",             "width": 800,  "height": 500 },

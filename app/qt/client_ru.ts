@@ -159,6 +159,31 @@
         <source>Observer</source>
         <translation>Наблюдатель</translation>
     </message>
+    <!-- modules/user_access/qt/user_access_panel.cpp -->
+    <message>
+        <source>Access rights</source>
+        <translation>Права доступа</translation>
+    </message>
+    <message>
+        <source>Permissions</source>
+        <translation>Разрешения</translation>
+    </message>
+    <message>
+        <source>Select a user to see its access rights</source>
+        <translation>Выберите пользователя, чтобы увидеть его права доступа</translation>
+    </message>
+    <message>
+        <source>View &amp; monitor</source>
+        <translation>Просмотр и наблюдение</translation>
+    </message>
+    <message>
+        <source>Control &amp; manual input</source>
+        <translation>Управление и ручной ввод</translation>
+    </message>
+    <message>
+        <source>Configure &amp; administer</source>
+        <translation>Настройка и администрирование</translation>
+    </message>
     <!-- modules/events/qt/event_filter_bar.cpp -->
     <message>
         <source>Unacknowledged only</source>

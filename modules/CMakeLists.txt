@@ -36,6 +36,7 @@ add_subdirectory(display_frame)
 add_subdirectory(inspector)
 add_subdirectory(device_diagnostics)
 add_subdirectory(parameter_form)
+add_subdirectory(user_access)
 
 add_subdirectory(modus)
 add_subdirectory(vidicon)

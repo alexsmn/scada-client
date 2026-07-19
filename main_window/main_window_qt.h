@@ -15,6 +15,7 @@ class NodeId;
 class ActivityBar;
 class DeviceDiagnosticsPanel;
 class InspectorPanel;
+class UserAccessPanel;
 class TagSearchIndex;
 class QAction;
 class QDockWidget;
@@ -78,6 +79,8 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // device's link status + live traffic/polling counters. Tabified with the
   // Inspector dock.
   void CreateDiagnosticsPanel();
+  // Opt-in right RBAC dock: reflects a selected user's role + permissions.
+  void CreateUserAccessPanel();
   // Opens the section's default view and marks it active on the rail.
   void ActivateSection(const std::string& window_info_name);
   // Opens the operator Overview page (from the rail's Overview section).
@@ -148,6 +151,10 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // Right Device-diagnostics dock (opt-in). Filled from OnSelectionChanged when
   // the active view's selection is a device; cleared otherwise.
   DeviceDiagnosticsPanel* diagnostics_ = nullptr;
+
+  // Right RBAC dock (opt-in). Filled from OnSelectionChanged when a user node
+  // is selected.
+  UserAccessPanel* user_access_ = nullptr;
 
   // Flat tag index for the command palette's tag search (opt-in; null when the
   // reshell is off or no node service is available).

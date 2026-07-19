@@ -17,6 +17,8 @@
 #include "filesystem/file_cache.h"
 #include "device_diagnostics/qt/device_diagnostics_panel.h"
 #include "inspector/qt/inspector_panel.h"
+#include "model/security_node_ids.h"
+#include "user_access/qt/user_access_panel.h"
 #include "model/devices_node_ids.h"
 #include "node_service/node_util.h"
 #include "main_window/activity_bar_qt.h"
@@ -216,6 +218,7 @@ MainWindow::MainWindow(MainWindowContext&& context)
     CreateContextBar();
     CreateInspectorPanel();
     CreateDiagnosticsPanel();
+    CreateUserAccessPanel();
     // Kick off the palette's tag browse in the background so tags are ready by
     // the time the operator first opens the palette.
     if (node_service_) {
@@ -787,8 +790,23 @@ void MainWindow::CreateDiagnosticsPanel() {
     tabifyDockWidget(inspector_dock_, dock);
 }
 
+void MainWindow::CreateUserAccessPanel() {
+  user_access_ = MakeUserAccessPanel();
+  if (!user_access_)
+    return;
+
+  auto* dock = new QDockWidget(
+      QString::fromStdU16String(Translate("Access rights")), this);
+  dock->setObjectName(QStringLiteral("UserAccessDock"));
+  dock->setWidget(user_access_);
+  addDockWidget(Qt::RightDockWidgetArea, dock);
+  // Shares the right dock; fronted only when a user is selected.
+  if (inspector_dock_)
+    tabifyDockWidget(inspector_dock_, dock);
+}
+
 void MainWindow::OnSelectionChanged() {
-  if (inspector_ || diagnostics_) {
+  if (inspector_ || diagnostics_ || user_access_) {
     OpenedView* active = GetActiveView();
     SelectionModel* selection =
         active ? active->controller().GetSelectionModel() : nullptr;
@@ -807,6 +825,15 @@ void MainWindow::OnSelectionChanged() {
                                  selection->timed_data_service());
       } else {
         diagnostics_->Clear();
+      }
+    }
+    if (user_access_) {
+      // A single user-node selection fills the RBAC panel; anything else clears.
+      if (selection && !selection->empty() && !selection->multiple() &&
+          IsInstanceOf(selection->node(), scada::security::id::UserType)) {
+        user_access_->ShowUser(selection->node());
+      } else {
+        user_access_->Clear();
       }
     }
   }

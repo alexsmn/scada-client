@@ -1,4 +1,5 @@
 #include "device_diagnostics_capture.h"
+#include "user_access_capture.h"
 #include "dialog_capture.h"
 #include "display_capture.h"
 #include "fixture_builder.h"
@@ -291,6 +292,13 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     if (spec.window_type == "DeviceDiagnostics") {
       SaveDeviceDiagnosticsScreenshot(spec, app_.node_service(),
                                       app_.timed_data_service(), g_config.json);
+      ++captured;
+      continue;
+    }
+    // The users-admin RBAC inspector is standalone reshell chrome (the right
+    // region of users-admin.html), built from a fixture user.
+    if (spec.window_type == "UserAccess") {
+      SaveUserAccessScreenshot(spec, app_.node_service());
       ++captured;
       continue;
     }
