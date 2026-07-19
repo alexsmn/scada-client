@@ -109,7 +109,12 @@
     { "id": "SCADA.9301", "browse_name": "Синусоида", "class": "object", "type_definition": "SCADA.67", "properties": { "SCADA.172": 0, "SCADA.173": 60,  "SCADA.174": 0,  "SCADA.175": 1000 } },
     { "id": "SCADA.9302", "browse_name": "Пила",      "class": "object", "type_definition": "SCADA.67", "properties": { "SCADA.172": 1, "SCADA.173": 120, "SCADA.174": 90, "SCADA.175": 1000 } },
     { "id": "SCADA.9303", "browse_name": "Меандр",    "class": "object", "type_definition": "SCADA.67", "properties": { "SCADA.172": 2, "SCADA.173": 30,  "SCADA.174": 0,  "SCADA.175": 500  } },
-    { "id": "SCADA.9304", "browse_name": "Шум",       "class": "object", "type_definition": "SCADA.67", "properties": { "SCADA.172": 3, "SCADA.173": 10,  "SCADA.174": 0,  "SCADA.175": 2000 } }
+    { "id": "SCADA.9304", "browse_name": "Шум",       "class": "object", "type_definition": "SCADA.67", "properties": { "SCADA.172": 3, "SCADA.173": 10,  "SCADA.174": 0,  "SCADA.175": 2000 } },
+
+    { "id": "SCADA.9401", "browse_name": "Вкл/Откл",           "class": "object", "type_definition": "SCADA.80", "properties": { "SCADA.216": "Вкл",     "SCADA.217": "Откл",      "SCADA.218": 32768,   "SCADA.219": 8421504 } },
+    { "id": "SCADA.9402", "browse_name": "Норма/Авария",       "class": "object", "type_definition": "SCADA.80", "properties": { "SCADA.216": "Норма",   "SCADA.217": "Авария",    "SCADA.218": 32768,   "SCADA.219": 255 } },
+    { "id": "SCADA.9403", "browse_name": "Замкнут/Разомкнут",  "class": "object", "type_definition": "SCADA.80", "properties": { "SCADA.216": "Замкнут", "SCADA.217": "Разомкнут", "SCADA.218": 16711680, "SCADA.219": 8421504 } },
+    { "id": "SCADA.9404", "browse_name": "Работа/Стоп",        "class": "object", "type_definition": "SCADA.80", "properties": { "SCADA.216": "Работа",  "SCADA.217": "Стоп",      "SCADA.218": 32768,   "SCADA.219": 255 } }
   ],
 
   "tree": {
@@ -122,7 +127,7 @@
     "SCADA.29":  ["SCADA.16", "SCADA.234", "USER.1", "USER.2", "USER.3", "USER.4", "USER.5", "USER.6", "USER.7", "USER.8", "USER.9", "USER.10", "USER.11", "USER.12"],
     "SCADA.304": ["SCADA.305", "SCADA.306"],
     "SCADA.12":  ["SCADA.20"],
-    "SCADA.27":  ["SCADA.80"],
+    "SCADA.27":  ["SCADA.80", "SCADA.9401", "SCADA.9402", "SCADA.9403", "SCADA.9404"],
     "SCADA.28":  ["SCADA.67", "SCADA.9301", "SCADA.9302", "SCADA.9303", "SCADA.9304"],
     "SCADA.300": ["SCADA.301"],
 
@@ -245,6 +250,7 @@
     { "type": "Users",          "filename": "users.png",               "width": 500,  "height": 302, "min_rows": 13 },
     { "type": "Params",         "filename": "parameters.png",          "width": 500,  "height": 400 },
     { "type": "SimulationItems", "filename": "admin-simulation.png",    "width": 560,  "height": 320, "min_rows": 4 },
+    { "type": "Params",         "filename": "admin-formats.png",       "width": 560,  "height": 300, "min_rows": 4 },
     { "type": "NewProps",       "filename": "config-parameters.png",   "width": 640,  "height": 480, "path": "TS.702" },
     { "type": "NewProps",       "filename": "config-address-map.png",  "width": 640,  "height": 480, "path": "TS.702", "click_object": "addressMapSubtab" },
     { "type": "NewProps",       "filename": "config-limits.png",       "width": 640,  "height": 480, "path": "TS.114", "click_object": "limitsSubtab" },

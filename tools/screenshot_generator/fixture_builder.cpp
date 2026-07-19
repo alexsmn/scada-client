@@ -218,6 +218,17 @@ void PopulateFixtureNodes(AddressSpaceImpl& address_space,
           auto property_id = ParseJsonPropertyId(name);
           if (!property_id)
             continue;
+          // TsFormat state labels are declared LocalizedText; a plain String
+          // value would not read back through the grid's
+          // get_or(LocalizedText{}), leaving the column blank.
+          if (value.is_string() &&
+              (*property_id == data_items::id::TsFormatType_OpenLabel ||
+               *property_id == data_items::id::TsFormatType_CloseLabel)) {
+            state.properties.emplace_back(
+                *property_id,
+                scada::ToLocalizedText(std::string(value.as_string())));
+            continue;
+          }
           if (auto prop_value = ParseJsonVariant(value))
             state.properties.emplace_back(*property_id, std::move(*prop_value));
         }
