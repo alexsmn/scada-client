@@ -10,6 +10,7 @@
 #include "properties/property_context.h"
 
 #include <boost/signals2/connection.hpp>
+#include <memory>
 #include <span>
 
 class NodeService;
@@ -18,7 +19,8 @@ class PropertyService;
 
 class NodeTableModel : private PropertyContext,
                        public aui::GridModel,
-                       private aui::FixedRowModel::Delegate {
+                       private aui::FixedRowModel::Delegate,
+                       public std::enable_shared_from_this<NodeTableModel> {
  public:
   NodeTableModel(AnyExecutor executor,
                  PropertyService& property_service,

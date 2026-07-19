@@ -53,8 +53,16 @@ void NodeTableModel::SetParentNode(const NodeRef& parent_node) {
 
   parent_node_ = parent_node;
 
+  // Keep the model alive for the whole coroutine, including its synchronous
+  // Notify*/UpdateRows dispatch. Without this, a late fetch completing during
+  // teardown resumes the coroutine and fires model_changed_signal_; a handler
+  // (the grid adapter's endReset -> view/controller teardown) can drop the last
+  // external ref *inside* that dispatch, freeing the model — and its signal —
+  // while boost::signals2::signal::operator() is still iterating slots, a
+  // use-after-free. The captured shared_ptr defers destruction until the
+  // coroutine frame unwinds, outside any notification.
   CoSpawn(executor_, cancelation_,
-          [this, parent_node,
+          [this, self = shared_from_this(), parent_node,
            cancelation = cancelation_.ref()]() mutable -> Awaitable<void> {
             auto executor = executor_;
             auto property_defs =
