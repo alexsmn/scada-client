@@ -25,6 +25,7 @@ HMI standards.
 | [`principles.md`](principles.md) | Why the UI behaves as it does — HMI/SCADA standards (High-Performance HMI, ISA-101, ISA-18.2/EEMUA 191, Endsley situational awareness, colour rules) with citations, each traced to a mockup. |
 | [`design-language.md`](design-language.md) | The shared vocabulary: colour/type/spacing tokens (exact values), themes, and the component primitives. |
 | [`shell.md`](shell.md) | The reshelled layout, region by region, mapped onto the **existing** client code; navigation rules; open questions. |
+| [`vocabulary-parity.md`](vocabulary-parity.md) | Desktop ⇄ web component-name parity matrix (backlog 5.5): shared vocabulary, drift, and reconciliation action items. No cross-repo file dependency. |
 | [`backlog.md`](backlog.md) | Operator-first, module-scoped implementation plan (P0→P5) with acceptance lines. |
 
 ## Mockups

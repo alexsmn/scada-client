@@ -198,7 +198,9 @@ the alarm summary and identity cells.
    desktop chrome names stay aligned with `web` component names
    (`ActivityBar`, `InspectorPanel`, `StatusStrip`, …) so the parity matrix
    stays one-to-one. No cross-repo code dependency — shared *vocabulary*, not
-   shared *files*.
+   shared *files*. The matrix lives in
+   [`vocabulary-parity.md`](vocabulary-parity.md) (backlog 5.5): desktop ⇄ web
+   component names, drift, and reconciliation action items.
 
 ## 5. What explicitly does not change
 
