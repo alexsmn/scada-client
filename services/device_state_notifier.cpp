@@ -1,11 +1,10 @@
 #include "device_state_notifier.h"
 
 #include "base/check.h"
-#include "common/formula_util.h"
-#include "model/devices_node_ids.h"
-#include "timed_data/timed_data_service.h"
-
 #include "base/debug_util.h"
+#include "model/node_id_util.h"
+#include "node_service/node_ref.h"
+#include "timed_data/timed_data_service.h"
 
 std::string ToString(DeviceState device_state) {
   static const char* kStrings[] = {"Unknown", "Disabled", "Offline", "Online"};
@@ -33,30 +32,41 @@ DeviceStateNotifier::DeviceStateNotifier(TimedDataService& timed_data_service,
 
   LOG_BIND_TAG(logger_, "DeviceId", ToString(device.node_id()));
 
-  const scada::NodeId kComponentIds[] = {devices::id::DeviceType_Disabled,
-                                         devices::id::DeviceType_Online};
-  static_assert(std::size(kComponentIds) == FIELD_COUNT,
+  // The runtime status components are the device's aggregate variables Disabled
+  // and Online (declared on DeviceType in the model nodeset). Their instance
+  // node ids are nested ids of the device keyed by browse name — the server
+  // routes reads/monitors of `MakeNestedNodeId(device, <browse-name>)` to the
+  // device's service variable (aggregate_node_manager builds the id the same
+  // way, and device_io_manager resolves it back via FindAggregateDecl).
+  //
+  // Address them by constructed node id rather than by browsing
+  // `device[declaration]`: a remote node service fetches lazily, so neither the
+  // instance children nor the DeviceType aggregate declarations are fetched
+  // right after the device node loads (only NodeOnly), and the synchronous
+  // aggregate lookup returns null. (The static reference-type subtype predicate
+  // makes the aggregate *filter* resolve, but the child nodes themselves are
+  // still absent until a ChildrenOnly fetch, which the notifier does not do.)
+  // The browse-resolved node id would be identical to this one.
+  const scada::NodeId& device_id = device.node_id();
+  const std::string_view kComponentBrowseNames[] = {"Disabled", "Online"};
+  static_assert(std::size(kComponentBrowseNames) == FIELD_COUNT,
                 "NotEnoughFieldChannelNames");
 
   for (size_t i = 0; i < FIELD_COUNT; ++i) {
-    auto component = device[kComponentIds[i]];
-    if (!component)
-      continue;
+    scada::NodeId component_id =
+        MakeNestedNodeId(device_id, kComponentBrowseNames[i]);
 
     TimedDataSpec& spec = specs_[i];
     spec.property_change_handler =
-        [this, component, &spec](const PropertySet& properties) {
+        [this, component_id, &spec](const PropertySet& properties) {
           LOG_INFO(logger_)
               << "Component data changed"
-              << LOG_TAG("ComponentId", ToString(component.node_id()))
-              << LOG_TAG("ComponentStatus", ToString(component.status()))
-              << LOG_TAG("ComponentDisplayName", component.display_name())
+              << LOG_TAG("ComponentId", ToString(component_id))
               << LOG_TAG("ComponentValue", ToString(spec.current().value));
           UpdateDeviceState(true);
         };
 
-    base::Check(!component.node_id().is_null());
-    spec.Connect(timed_data_service, component);
+    spec.Connect(timed_data_service, component_id);
   }
 
   UpdateDeviceState(false);
