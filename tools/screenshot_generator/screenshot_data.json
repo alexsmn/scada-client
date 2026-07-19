@@ -104,7 +104,12 @@
     { "id": "TS.731", "browse_name": "TX_TC1",                    "class": "object",   "type_definition": "SCADA.342", "properties": { "SCADA.225": 1001 }, "references": [{ "type": "SCADA.221", "target": "TIT.721" }] },
     { "id": "TS.732", "browse_name": "TX_TC8",                    "class": "object",   "type_definition": "SCADA.342", "properties": { "SCADA.225": 1002 }, "references": [{ "type": "SCADA.221", "target": "TIT.722" }] },
     { "id": "TS.733", "browse_name": "TX_Ua",                     "class": "object",   "type_definition": "SCADA.342", "properties": { "SCADA.225": 2001 }, "references": [{ "type": "SCADA.221", "target": "TIT.723" }] },
-    { "id": "TS.734", "browse_name": "TX_Ua_AVG",                 "class": "object",   "type_definition": "SCADA.342", "properties": { "SCADA.225": 2002 }, "references": [{ "type": "SCADA.221", "target": "TIT.724" }] }
+    { "id": "TS.734", "browse_name": "TX_Ua_AVG",                 "class": "object",   "type_definition": "SCADA.342", "properties": { "SCADA.225": 2002 }, "references": [{ "type": "SCADA.221", "target": "TIT.724" }] },
+
+    { "id": "SCADA.9301", "browse_name": "Синусоида", "class": "object", "type_definition": "SCADA.67", "properties": { "SCADA.172": 0, "SCADA.173": 60,  "SCADA.174": 0,  "SCADA.175": 1000 } },
+    { "id": "SCADA.9302", "browse_name": "Пила",      "class": "object", "type_definition": "SCADA.67", "properties": { "SCADA.172": 1, "SCADA.173": 120, "SCADA.174": 90, "SCADA.175": 1000 } },
+    { "id": "SCADA.9303", "browse_name": "Меандр",    "class": "object", "type_definition": "SCADA.67", "properties": { "SCADA.172": 2, "SCADA.173": 30,  "SCADA.174": 0,  "SCADA.175": 500  } },
+    { "id": "SCADA.9304", "browse_name": "Шум",       "class": "object", "type_definition": "SCADA.67", "properties": { "SCADA.172": 3, "SCADA.173": 10,  "SCADA.174": 0,  "SCADA.175": 2000 } }
   ],
 
   "tree": {
@@ -118,7 +123,7 @@
     "SCADA.304": ["SCADA.305", "SCADA.306"],
     "SCADA.12":  ["SCADA.20"],
     "SCADA.27":  ["SCADA.80"],
-    "SCADA.28":  ["SCADA.67"],
+    "SCADA.28":  ["SCADA.67", "SCADA.9301", "SCADA.9302", "SCADA.9303", "SCADA.9304"],
     "SCADA.300": ["SCADA.301"],
 
     "SCADA.24":  ["TS.100", "TS.101", "TS.102", "TS.109", "TS.110", "TS.111", "TS.112", "TS.113", "TIT.721", "TIT.725", "TIT.722", "TIT.723", "TIT.724"],
@@ -239,6 +244,7 @@
     { "type": "Subsystems",     "filename": "hardware-tree.png",       "width": 300,  "height": 500 },
     { "type": "Users",          "filename": "users.png",               "width": 500,  "height": 302, "min_rows": 13 },
     { "type": "Params",         "filename": "parameters.png",          "width": 500,  "height": 400 },
+    { "type": "SimulationItems", "filename": "admin-simulation.png",    "width": 560,  "height": 320, "min_rows": 4 },
     { "type": "NewProps",       "filename": "config-parameters.png",   "width": 640,  "height": 480, "path": "TS.702" },
     { "type": "NewProps",       "filename": "config-address-map.png",  "width": 640,  "height": 480, "path": "TS.702", "click_object": "addressMapSubtab" },
     { "type": "NewProps",       "filename": "config-limits.png",       "width": 640,  "height": 480, "path": "TS.114", "click_object": "limitsSubtab" },
