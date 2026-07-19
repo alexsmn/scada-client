@@ -58,14 +58,21 @@ struct OperatorUseCaseSmokeContext {
 struct ObjectViewValuesCheckContext {
   AnyExecutor executor;
   std::function<std::optional<std::u16string>()> get_first_value_text;
-  std::chrono::milliseconds timeout{30000};
+  // Client-side capture budget. Under full-suite load many tier processes
+  // saturate the CPU and browse + attribute/value delivery legitimately takes
+  // longer than 30s, so the check must keep polling well past that before
+  // giving up (the matching test-side wait is strictly larger — see
+  // kObjectViewValuesTimeout).
+  std::chrono::milliseconds timeout{60000};
   std::chrono::milliseconds poll_interval{100};
 };
 
 struct ObjectTreeLabelsCheckContext {
   AnyExecutor executor;
   std::function<std::vector<std::u16string>()> get_expanded_labels;
-  std::chrono::milliseconds timeout{30000};
+  // See ObjectViewValuesCheckContext::timeout — the same load-sensitivity
+  // applies to DisplayName resolution along the object tree path.
+  std::chrono::milliseconds timeout{60000};
   std::chrono::milliseconds poll_interval{100};
 };
 

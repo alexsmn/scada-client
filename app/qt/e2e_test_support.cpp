@@ -304,7 +304,12 @@ class HardwareTreeDevicesCheck final
       : app_{app},
         executor_{std::move(executor)},
         report_path_{std::move(report_path)},
-        deadline_{std::chrono::steady_clock::now() + 30s} {}
+        // Client-side capture budget for devices to browse AND come online.
+        // Under full-suite load the device tiers need well past 30s to
+        // establish their links, so poll longer before writing a failure
+        // report (the matching test-side wait is strictly larger — see
+        // kHardwareTreeDevicesTimeout).
+        deadline_{std::chrono::steady_clock::now() + 60s} {}
 
   Awaitable<void> RunAsync() {
     auto* main_window = GetFirstMainWindow(app_);

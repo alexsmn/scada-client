@@ -153,8 +153,15 @@ TEST_P(ClientServerE2eTest, Connect_Success_ExpandsHardwareTreeDevices) {
   // not yet come online (the loopback self-connect doesn't complete) — a pending
   // server-tier gap. Skipped pending that; the assertions below are the intended
   // coverage once it lands.
+  // The device TCP links DO self-connect in the cluster (iec104:2404 and
+  // modbus:1502 both LISTEN + ESTABLISHED, verified via lsof), but the devices'
+  // online status never reaches the client — it stays state=Unknown / active=
+  // false / "[Loading]" even at the client's full 60s capture deadline. So the
+  // gap is past TCP: either the protocol handshake (modbus poll / iec104 STARTDT)
+  // doesn't complete on the edge, or the device status doesn't propagate through
+  // aggregation. Pending that (a separate deep server-tier investigation).
   GTEST_SKIP() << "multi-protocol hardware tree pending a server-tier gap "
-                  "(device online through the cluster)";
+                  "(device online status not reaching the client)";
   WriteClientSettings(/*password=*/"");
   StartServer();
   StartClient({"--test-hardware-tree-devices-file=" +

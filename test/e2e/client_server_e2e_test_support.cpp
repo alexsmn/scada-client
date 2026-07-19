@@ -50,15 +50,19 @@ constexpr auto kServerStartTimeout = 30s;
 constexpr auto kClientStartTimeout = 30s;
 constexpr auto kServerLogTimeout = 10s;
 constexpr auto kObjectTreeLoadTimeout = 30s;
-// Longer than its siblings: object-view *values* (monitored-item current
-// values) travel the full aggregation/proxy path, which is materially slower
-// for the Remote (gRPC) protocol under Cluster. The value does arrive — the
-// check passes in isolation — but when the whole matrix runs sequentially the
-// loaded machine can push Remote_Cluster delivery past 30s and flake. The
-// structure/labels checks stay at 30s; only value delivery needs the headroom.
-constexpr auto kObjectViewValuesTimeout = 60s;
-constexpr auto kObjectTreeLabelsTimeout = 30s;
-constexpr auto kHardwareTreeDevicesTimeout = 30s;
+// The value/label/device checks all browse the node tree AND then wait for
+// slower per-node work: monitored-item current values, DisplayName resolution,
+// or device links coming online. That work travels the full aggregation/proxy
+// path (materially slower for the Remote/gRPC protocol under Cluster), and each
+// one passes comfortably in isolation but can exceed 30s when the whole matrix
+// runs sequentially and many tier processes saturate the machine. These waits
+// must stay strictly larger than the client-side capture deadlines they observe
+// (60s — see e2e_test_support.{h,cpp}); the client writes its report on success
+// or at that deadline, and the test waits for that report to appear, so a
+// too-short wait here would time out before the client even records its verdict.
+constexpr auto kObjectViewValuesTimeout = 75s;
+constexpr auto kObjectTreeLabelsTimeout = 75s;
+constexpr auto kHardwareTreeDevicesTimeout = 75s;
 constexpr auto kOperatorUseCasesTimeout = 30s;
 constexpr auto kProfileSaveTimeout = 30s;
 constexpr auto kHistoricalTimedDataTimeout = 30s;
