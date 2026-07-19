@@ -5,12 +5,13 @@ endif()
 # The monolith `server` was retired (ADR 0001 Stage C); the E2E drives real tier
 # binaries. The SingleTier topology runs one device tier (scada-iec104); the
 # Cluster topology stands up the full tier split — a config tier, the three
-# device edges, a historian, and a client-facing aggregating proxy — so the
-# multi-protocol hardware tree and historian-backed history flows get real
-# coverage (ADR 0001 4b cleanup #2 follow-up). The suite needs every tier binary.
+# device edges, a historian, a file-store tier, and a client-facing aggregating
+# proxy — so the multi-protocol hardware tree, historian-backed history, and
+# proxied file-store flows get real coverage (ADR 0001 4b cleanup #2
+# follow-up). The suite needs every tier binary.
 set(SCADA_E2E_TIER_TARGETS
   scada-config scada-historian scada-proxy
-  scada-iec104 scada-modbus scada-iec61850)
+  scada-iec104 scada-modbus scada-iec61850 scada-filesystem)
 set(_scada_e2e_have_all_tiers TRUE)
 foreach(_tier IN LISTS SCADA_E2E_TIER_TARGETS)
   if(NOT TARGET ${_tier})
@@ -48,6 +49,10 @@ target_link_libraries(client_server_e2e_tests PRIVATE
   base_unittest
   client_base
   iec61850pp
+  # Direct OPC UA sessions to the cluster proxy (the FileSystem read/write
+  # tests exercise the aggregation seam without driving the Qt client).
+  scada_opcua_bridge
+  transport
 )
 
 target_compile_definitions(client_server_e2e_tests PRIVATE
@@ -60,6 +65,7 @@ target_compile_definitions(client_server_e2e_tests PRIVATE
   SCADA_E2E_IEC104_EXE="$<TARGET_FILE:scada-iec104>"
   SCADA_E2E_MODBUS_EXE="$<TARGET_FILE:scada-modbus>"
   SCADA_E2E_IEC61850_EXE="$<TARGET_FILE:scada-iec61850>"
+  SCADA_E2E_FILESYSTEM_EXE="$<TARGET_FILE:scada-filesystem>"
   SCADA_E2E_CLIENT_EXE="$<TARGET_FILE:client_qt>"
   SCADA_E2E_SERVER_FIXTURE_DIR="${CMAKE_SOURCE_DIR}/common/test/e2e/fixtures/server-data"
   SCADA_E2E_SERVER_SETTINGS_TEMPLATE="${CMAKE_SOURCE_DIR}/common/test/e2e/fixtures/server-settings.json"

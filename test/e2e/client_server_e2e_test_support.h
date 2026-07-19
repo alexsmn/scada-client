@@ -35,11 +35,13 @@ enum class E2eProtocol {
 //   Cluster    — the real tier split (ADR 0001): a config tier owning the
 //                configuration namespace, the three device edges (scada-iec104 /
 //                -modbus / -iec61850, each a config client running one driver), a
-//                scada-historian, and a client-facing aggregating scada-proxy.
-//                The client connects only to the proxy, which re-exposes the
-//                edges' address space through OPC UA aggregation. Verifies the
-//                client behaves identically whether the server is one process or
-//                a multi-process cluster behind a northbound proxy.
+//                scada-historian, the file-store scada-filesystem (exclusively
+//                claimed by the proxy's aggregation for the FileSystem subtree),
+//                and a client-facing aggregating scada-proxy. The client
+//                connects only to the proxy, which re-exposes the downstream
+//                address spaces through OPC UA aggregation. Verifies the client
+//                behaves identically whether the server is one process or a
+//                multi-process cluster behind a northbound proxy.
 enum class ServerTopology {
   SingleTier,
   Cluster,
@@ -141,6 +143,7 @@ class ClientServerE2eTest : public ::testing::TestWithParam<E2eParam> {
   std::unique_ptr<ServerTier> iec104_tier_;
   std::unique_ptr<ServerTier> modbus_tier_;
   std::unique_ptr<ServerTier> iec61850_tier_;
+  std::unique_ptr<ServerTier> filesystem_tier_;
 
   // Set by EnableSimulatedHistory(); consumed at server launch to historize a
   // simulated item in whichever tier owns the data items.

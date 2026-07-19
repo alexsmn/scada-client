@@ -114,6 +114,9 @@ std::filesystem::path GetModbusExePath() {
 std::filesystem::path GetIec61850ExePath() {
   return std::filesystem::path{SCADA_E2E_IEC61850_EXE};
 }
+std::filesystem::path GetFilesystemExePath() {
+  return std::filesystem::path{SCADA_E2E_FILESYSTEM_EXE};
+}
 
 std::filesystem::path GetClientExePath() {
   return std::filesystem::path{SCADA_E2E_CLIENT_EXE};
@@ -359,9 +362,9 @@ void ClientServerE2eTest::SetUp() {
 void ClientServerE2eTest::TearDown() {
   // Tiers in reverse dependency order: proxy/edges before the config/historian
   // they depend on.
-  ServerTier* const tiers[] = {iec104_tier_.get(), modbus_tier_.get(),
-                               iec61850_tier_.get(), historian_tier_.get(),
-                               config_tier_.get()};
+  ServerTier* const tiers[] = {iec104_tier_.get(),     modbus_tier_.get(),
+                               iec61850_tier_.get(),   filesystem_tier_.get(),
+                               historian_tier_.get(),  config_tier_.get()};
   if (HasFailure() || IsKeepWorkspaceEnabled()) {
     workspace_.Preserve();
     for (ServerTier* tier : tiers) {
@@ -502,10 +505,12 @@ void ClientServerE2eTest::StartCluster() {
       .configure =
           [](boost::json::object& json) {
             json["deviceConfig"] = boost::json::object{};
-            // Serves config only — no protocol drivers of its own.
+            // Serves config only — no protocol drivers of its own, and no file
+            // store (the filesystem tier owns the FileSystem subtree).
             json.erase("iec60870");
             json.erase("modbus");
             json.erase("iec61850");
+            json.erase("filesystem");
             ProvisionSvcPassword(json);
           },
       .iec61850_port = iec61850_port_,
@@ -562,6 +567,7 @@ void ClientServerE2eTest::StartCluster() {
             json.erase("iec60870");
             json.erase("modbus");
             json.erase("iec61850");
+            json.erase("filesystem");
             ProvisionSvcPassword(json);
             if (historize) {
               json["historyCollection"] = boost::json::object{
@@ -588,6 +594,10 @@ void ClientServerE2eTest::StartCluster() {
         if (driver != keep_driver)
           json.erase(driver);
       }
+      // The filesystem tier exclusively owns the FileSystem subtree; an edge
+      // running its own file store would merge a second tree into the proxy's
+      // fan-out Browse.
+      json.erase("filesystem");
       json["configuration"] = boost::json::object{
           {"endpoint", config_url},
           {"user", std::string{kSvcUser}},
@@ -611,6 +621,40 @@ void ClientServerE2eTest::StartCluster() {
         << (*edge.slot)->opcua_port();
   }
 
+  // --- Filesystem tier -------------------------------------------------------
+  // The dedicated file store: serves the FileSystem subtree from its own
+  // workspace; no drivers/history/data items. It keeps a LOCAL config DB (like
+  // config/historian/proxy) because it must authenticate the proxy's svc
+  // aggregation login — anonymous sessions are denied the forwarded
+  // AddNodes/DeleteNodes, and remote-config tiers cannot resolve non-root
+  // users yet (the known LoadNodes(UserType) gap). Its data-item rows are
+  // stripped like the proxy's so the edges stay authoritative for values. The
+  // proxy exclusively claims the file namespace + root to it below. Mirrors
+  // gcp/free-tier/multitier/configs/filesystem.json.
+  filesystem_tier_ =
+      std::make_unique<ServerTier>(MakeTierContext(GetFilesystemExePath()));
+  filesystem_tier_->AllocatePorts(ports_);
+  filesystem_tier_->Launch(ServerTier::Options{
+      .configure =
+          [](boost::json::object& json) {
+            json.erase("iec60870");
+            json.erase("modbus");
+            json.erase("iec61850");
+            json["dataItems"] = boost::json::object{{"enabled", false}};
+            json["history"] = boost::json::object{{"enabled", false}};
+            ProvisionSvcPassword(json);
+            // The template's filesystem block stays: it roots the store at this
+            // tier's own ${DIR_PARAM}/FileSystem workspace dir.
+          },
+      .extra_config_sql = std::string{kSvcUserSql} +
+                          "PRAGMA foreign_keys=OFF;\n"
+                          "DELETE FROM AnalogItemType;\n"
+                          "DELETE FROM DiscreteItemType;\n",
+  });
+  ASSERT_TRUE(filesystem_tier_->WaitListening())
+      << "cluster filesystem tier did not start listening on OPC UA port "
+      << filesystem_tier_->opcua_port();
+
   // --- Proxy (client-facing) -------------------------------------------------
   // Aggregates the three edges anonymously (mirrors the GCP proxy.json). Reuses
   // the built-in server_ slot on the client-facing ports and keeps workspace_'s
@@ -626,12 +670,29 @@ void ClientServerE2eTest::StartCluster() {
     aggregation_servers.push_back(
         boost::json::object{{"endpoint", (*edge.slot)->OpcUaUrl()}});
   }
+  // The file-store downstream exclusively claims the file-instance namespace
+  // plus the FileSystem root object (so top-level AddNodes route to it), and
+  // its model-change events are re-raised to the proxy's clients. The link
+  // presents svc — file create/delete forwarding needs a non-anonymous
+  // downstream session under enforce_permissions. Mirrors the GCP proxy.json
+  // entry.
+  aggregation_servers.push_back(boost::json::object{
+      {"endpoint", filesystem_tier_->OpcUaUrl()},
+      {"user", std::string{kSvcUser}},
+      {"password", std::string{kSvcPassword}},
+      {"namespaces",
+       boost::json::array{"http://telecontrol.ru/opcua/filesystem/FileType"}},
+      {"nodes", boost::json::array{"ns=7;i=304"}},
+      {"forward_events", true}});
   WriteServerJson(
       workspace_.path(), remote_port_, opcua_port_,
       [&aggregation_servers](boost::json::object& server_json) {
         server_json.erase("iec60870");
         server_json.erase("modbus");
         server_json.erase("iec61850");
+        // The filesystem tier owns the FileSystem subtree; the proxy must not
+        // run a local file store of its own.
+        server_json.erase("filesystem");
         server_json["dataItems"] = boost::json::object{{"enabled", false}};
         server_json["aggregation"] =
             boost::json::object{{"servers", aggregation_servers}};
