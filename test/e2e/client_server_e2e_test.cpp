@@ -160,8 +160,17 @@ TEST_P(ClientServerE2eTest, Connect_Success_ExpandsHardwareTreeDevices) {
   // gap is past TCP: either the protocol handshake (modbus poll / iec104 STARTDT)
   // doesn't complete on the edge, or the device status doesn't propagate through
   // aggregation. Pending that (a separate deep server-tier investigation).
+  // Root-caused: the device CONFIG node aggregates fine (label resolves), but its
+  // runtime STATUS components — DeviceType_Online (ns=7;i=141) and
+  // DeviceType_Disabled (ns=7;i=248), the variables the edge's device-variable
+  // host serves — are not resolvable through the proxy aggregation. Client-side
+  // device[component] returns null for all devices (verified), so
+  // DeviceStateNotifier never subscribes and the state stays Unknown / active=
+  // false / "[Loading]". (The TCP links themselves do self-connect — verified via
+  // lsof.) Fixing this is a server-tier aggregation change (expose/route device
+  // runtime component nodes), separate from the config/reference path. Pending.
   GTEST_SKIP() << "multi-protocol hardware tree pending a server-tier gap "
-                  "(device online status not reaching the client)";
+                  "(device runtime status components not aggregated)";
   WriteClientSettings(/*password=*/"");
   StartServer();
   StartClient({"--test-hardware-tree-devices-file=" +
