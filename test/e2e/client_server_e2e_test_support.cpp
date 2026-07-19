@@ -501,9 +501,7 @@ void ClientServerE2eTest::StartCluster() {
   config_tier_->Launch(ServerTier::Options{
       .configure =
           [](boost::json::object& json) {
-            json["iec60870Config"] = boost::json::object{};
-            json["modbusConfig"] = boost::json::object{};
-            json["iec61850Config"] = boost::json::object{};
+            json["deviceConfig"] = boost::json::object{};
             // Serves config only — no protocol drivers of its own.
             json.erase("iec60870");
             json.erase("modbus");
