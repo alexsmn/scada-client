@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/time/time.h"
+
 #include <boost/json/value.hpp>
 
 #include <vector>
@@ -7,6 +9,12 @@
 class AddressSpaceImpl;
 class Page;
 struct ScreenshotSpec;
+
+// The fixture's frozen "now" (the `now` key of screenshot_data.json), or a
+// null Time when the fixture does not define one. All fixture history data is
+// laid out relative to this instant; captures anchor time-dependent rendering
+// (the generator clock, graph ranges) to it so output stays deterministic.
+scada::base::Time FixtureNow(const boost::json::value& json);
 
 // Builds a `Page` whose windows map 1:1 to `specs`. The "Graph" entry
 // gets a full `WindowDefinition` from the fixture JSON; everything

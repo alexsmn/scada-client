@@ -105,6 +105,18 @@ std::string GetJsonString(const boost::json::object& node,
 
 }  // namespace
 
+scada::base::Time FixtureNow(const boost::json::value& json) {
+  const auto* jnow = json.as_object().if_contains("now");
+  if (!jnow)
+    return {};
+  scada::base::Time now;
+  if (!scada::base::Time::FromString(std::string(jnow->as_string()).c_str(),
+                                     &now)) {
+    return {};
+  }
+  return now;
+}
+
 Page MakeScreenshotPage(const std::vector<ScreenshotSpec>& specs,
                         const boost::json::value& json) {
   Page page;
@@ -112,7 +124,8 @@ Page MakeScreenshotPage(const std::vector<ScreenshotSpec>& specs,
     // The substation display and the device-diagnostics panel are rendered
     // standalone (CaptureDisplay / DeviceDiagnostics); they have no registered
     // page view type, so keep them off the profile page.
-    if (spec.window_type == "Display" || spec.window_type == "DeviceDiagnostics")
+    if (spec.window_type == "Display" ||
+        spec.window_type == "DeviceDiagnostics")
       continue;
     if (spec.window_type == "Graph")
       page.AddWindow(MakeGraphDefinition(json));

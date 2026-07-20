@@ -1,18 +1,18 @@
-#include "device_diagnostics_capture.h"
-#include "user_access_capture.h"
-#include "transmission_rule_capture.h"
 #include "bulk_create_capture.h"
-#include "inspector_capture.h"
-#include "severity_tiles_capture.h"
+#include "device_diagnostics_capture.h"
 #include "dialog_capture.h"
 #include "display_capture.h"
 #include "fixture_builder.h"
 #include "graph_capture.h"
+#include "inspector_capture.h"
 #include "screenshot_config.h"
 #include "screenshot_modules.h"
 #include "screenshot_options.h"
 #include "screenshot_output.h"
 #include "screenshot_wait.h"
+#include "severity_tiles_capture.h"
+#include "transmission_rule_capture.h"
+#include "user_access_capture.h"
 #include "widget_capture.h"
 
 #include "address_space/attribute_service_impl.h"
@@ -33,6 +33,7 @@
 #include "base/any_executor.h"
 #include "base/client_paths.h"
 #include "base/no_destructor.h"
+#include "base/test/scoped_mock_clock_override.h"
 #include "base/test/scoped_path_override.h"
 #include "controller/window_info.h"
 #include "events/qt/event_filter_bar.h"
@@ -46,8 +47,8 @@
 #include "profile/profile.h"
 #include "timed_data/timed_data_service.h"
 
-#include <QAbstractProxyModel>
 #include <QAbstractButton>
+#include <QAbstractProxyModel>
 #include <QAction>
 #include <QApplication>
 #include <QDockWidget>
@@ -137,6 +138,22 @@ class ScreenshotGenerator : public ::testing::Test {
   // QTimer in its ctor — so app_env_ is declared first.
   AppEnvironment app_env_;
   AnyExecutor executor_ = MakeAnyExecutor(std::make_shared<MessageLoopQt>());
+
+  // Freeze base::Time::Now() at the fixture's `now` for the whole capture
+  // run, so live-window rendering (table history windows, sparklines,
+  // delivered-value timestamps) lines up with the fixture history — which is
+  // laid out relative to that instant — and every timestamp in the output is
+  // deterministic instead of the machine's wall clock. Declared before the
+  // services/app members so nothing samples the real clock first. Qt/asio
+  // timers use the steady clock and keep running normally.
+  struct FixtureClock {
+    FixtureClock() {
+      const scada::base::Time now = FixtureNow(g_config.json);
+      if (!now.is_null())
+        override_.Advance(now - override_.Now());
+    }
+    scada::base::ScopedMockClockOverride override_;
+  } fixture_clock_;
 
   // Russian translator, installed in the constructor body. Must outlive
   // the QApplication inside `app_env_`, hence declared right after it.
@@ -352,7 +369,8 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
 
     OpenedView* view = nullptr;
     for (OpenedView* v : main_window.opened_views()) {
-      if (v->window_info().name == spec.window_type && !used_views.contains(v)) {
+      if (v->window_info().name == spec.window_type &&
+          !used_views.contains(v)) {
         view = v;
         break;
       }

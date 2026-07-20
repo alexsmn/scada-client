@@ -1,5 +1,6 @@
 #include "graph_capture.h"
 
+#include "fixture_builder.h"
 #include "screenshot_config.h"
 #include "screenshot_output.h"
 #include "screenshot_wait.h"
@@ -107,14 +108,11 @@ void BuildGraphFromJson(MetrixGraph& graph, const boost::json::value& json) {
 
   // Time range (span parsed from "HH:MM:SS"). Anchor "now" to the fixture's
   // frozen clock when present so regenerated axis labels stay stable across
-  // runs; LocalHistoryService reads the same key.
-  auto now = scada::base::Time::Now();
-  if (const auto* jnow = json.as_object().if_contains("now")) {
-    scada::base::Time fixed_now;
-    if (scada::base::Time::FromString(std::string(jnow->as_string()).c_str(),
-                                      &fixed_now))
-      now = fixed_now;
-  }
+  // runs; LocalHistoryService reads the same key. (The generator fixture also
+  // freezes base::Time at this instant, so the fallback matches.)
+  auto now = FixtureNow(json);
+  if (now.is_null())
+    now = scada::base::Time::Now();
   auto span_str = std::string(jgraph.at("time_scale").at("span").as_string());
   scada::base::TimeDelta span;
   Deserialize(span_str, span);

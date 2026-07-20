@@ -173,7 +173,7 @@ the sequential `for` loop in `CaptureDialogs`.
 
 | Key | Type | Purpose |
 |---|---|---|
-| `now` | string | Optional frozen clock, `"YYYY-MM-DD HH:MM:SS"` (local time). Event timestamps, the synthesized raw-history series, and the standalone graph's visible range anchor to it, so regenerated PNGs don't shift timestamps on every run. Remove it for wall-clock-relative data. |
+| `now` | string | Optional frozen clock, `"YYYY-MM-DD HH:MM:SS"` (local time). The generator freezes `base::Time::Now()` at this instant for the whole run (`ScopedMockClockOverride` in the test fixture), so live-window rendering — table history windows and sparklines, delivered-value timestamps — lines up with the fixture history and every timestamp in the output is deterministic. Event timestamps, the synthesized raw-history series, and the standalone graph's visible range anchor to it too. Remove it for wall-clock-relative data. |
 | `nodes` | array | Address-space entries: `{id, browse_name, display_name, class, type_definition?, properties?, references?}`, class ∈ `object` \| `variable`, `base_value` on variables. Loaded into `LocalAttributeService`; the running node service pulls each node's attributes through it on demand. |
 | `tree` | object | Parent → children map. Keys are `"<ns>.<id>"` or bare IDs for ns=1. Loaded into `LocalViewService`; the running `AddressSpaceFetcher` walks it via `Browse` to populate the live address space. |
 | `events` | array | `{id, hours_ago, severity, message, node_id, change_mask}` — injected into `LocalHistoryService`, timestamped `now - hours_ago * 1h`. Raw-history series are synthesized by `LocalHistoryService` from the nodes' `base_value` (deterministic per-node seed), so there is no separate timed-data array. |
