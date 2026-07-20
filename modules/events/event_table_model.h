@@ -104,6 +104,18 @@ class EventTableModel : public scada::aui::TableModel,
   // Occurrences collapsed into `row`, 1 when it stands for a single event.
   int group_count_at(int row) const;
 
+  // Every occurrence the journal is holding, counting each member of a
+  // collapsed row separately — what the rows would number if nothing were
+  // grouped.
+  int GetOccurrenceCount() const;
+
+  // Renders `cell` for the `cell.row`-th *occurrence* in row order, expanding
+  // collapsed rows back into one entry each. This is what a record of the
+  // journal should contain — an export or a printout is evidence of what
+  // happened, not of how the display chose to fold it — so those paths read
+  // here rather than through GetCell().
+  void GetOccurrenceCell(scada::aui::TableCell& cell);
+
   void CancelRequest();
 
   std::u16string MakeTitle() const;
@@ -191,6 +203,16 @@ class EventTableModel : public scada::aui::TableModel,
 
   // Appends `events` to `rows`: one row each, or — when `grouped` — one row per
   // collapsed alarm group.
+  // Renders `cell` from `event` as it appears in `row`. `group_count` is the
+  // occurrence count to show (1 when the event is being rendered on its own).
+  void GetEventCell(const Row& row,
+                    const scada::Event& event,
+                    int group_count,
+                    scada::aui::TableCell& cell) const;
+
+  // The row and the event behind the `index`-th occurrence, in row order.
+  std::pair<const Row*, const scada::Event*> OccurrenceAt(int index) const;
+
   void AppendRows(Rows& rows,
                   EventType type,
                   std::span<const scada::Event* const> events,

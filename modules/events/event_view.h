@@ -9,6 +9,7 @@
 #include "controller/selection_model.h"
 #include "controller/time_model.h"
 #include "events/event_menu_model.h"
+#include "events/expanded_event_model.h"
 #include "export/export_model.h"
 
 #include <memory>
@@ -78,6 +79,10 @@ class EventView : protected ControllerContext,
   LocalEvents& local_events_;
 
   const std::shared_ptr<EventTableModel> model_;
+
+  // The same journal with its flood groups expanded, handed to exports and
+  // printouts so a record contains every occurrence rather than a count.
+  ExpandedEventModel expanded_model_{*model_};
 
   SelectionModel selection_{{timed_data_service_}};
 

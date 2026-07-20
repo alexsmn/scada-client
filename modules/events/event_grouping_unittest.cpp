@@ -104,7 +104,7 @@ TEST(FormatGroupedMessageTest, SingleOccurrenceKeepsItsMessage) {
 }
 
 TEST(FormatGroupedMessageTest, RepeatsCarryTheirCount) {
-  EXPECT_EQ(FormatGroupedMessage(u"comms lost", 7), u"comms lost ×7");
+  EXPECT_EQ(FormatGroupedMessage(u"comms lost", 7), u"comms lost \u00d77");
 }
 
 }  // namespace

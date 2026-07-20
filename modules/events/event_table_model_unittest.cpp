@@ -5,6 +5,7 @@
 #include "events/current_event_model.h"
 #include "events/event_grouping.h"
 #include "events/event_severity.h"
+#include "events/expanded_event_model.h"
 #include "events/historical_event_model.h"
 #include "events/local_event_model.h"
 #include "events/local_events.h"
@@ -17,7 +18,9 @@
 #include "scada/history_service_mock.h"
 
 #include "base/utf_convert.h"
+
 #include <gmock/gmock.h>
+#include <set>
 
 using namespace testing;
 
@@ -582,4 +585,66 @@ TEST_F(EventFloodGroupingTest, AcknowledgingAMultiRowSelectionIsIndexSafe) {
 
   EXPECT_TRUE(local_events_.events().empty());
   EXPECT_EQ(model_.GetRowCount(), 0);
+}
+
+// A record of the journal must contain what happened, not how the display
+// folded it: exports and printouts read the occurrences, so a collapsed row
+// contributes one entry per occurrence and none of them carries a "×N".
+TEST_F(EventFloodGroupingTest, ExpandedRowsCarryEveryOccurrence) {
+  const int count = events::kAlarmFloodThreshold + 4;
+  AddRepeats(u"comms lost", count, /*first_id=*/1);
+  AddRepeats(u"transformer overheating", 1, /*first_id=*/100);
+  Rebuild();
+
+  // Displayed: one collapsed row plus the one-off.
+  ASSERT_TRUE(model_.grouped());
+  ASSERT_EQ(model_.GetRowCount(), 2);
+
+  ExpandedEventModel expanded{model_};
+  EXPECT_EQ(expanded.GetRowCount(), count + 1);
+
+  int comms_lost = 0;
+  for (int row = 0; row < expanded.GetRowCount(); ++row) {
+    const std::u16string message =
+        expanded.GetCellText(row, EventColumnMessage);
+    // No occurrence is rendered with a count — each one stands alone.
+    EXPECT_EQ(message.find(u"\u00d7"), std::u16string::npos) << row;
+    if (message == u"comms lost")
+      ++comms_lost;
+  }
+  EXPECT_EQ(comms_lost, count);
+}
+
+// Every occurrence keeps its own timestamp; the export must not repeat the
+// representative's row `count` times.
+TEST_F(EventFloodGroupingTest, ExpandedRowsKeepTheirOwnTimes) {
+  const int count = events::kAlarmFloodThreshold + 4;
+  AddRepeats(u"comms lost", count, /*first_id=*/1);
+  Rebuild();
+  ASSERT_EQ(model_.GetRowCount(), 1);
+
+  ExpandedEventModel expanded{model_};
+  ASSERT_EQ(expanded.GetRowCount(), count);
+
+  std::set<std::u16string> times;
+  for (int row = 0; row < expanded.GetRowCount(); ++row)
+    times.insert(expanded.GetCellText(row, EventColumnTime));
+  EXPECT_EQ(times.size(), static_cast<size_t>(count));
+}
+
+// With nothing collapsed, expanding is a no-op — the export of a quiet journal
+// is unchanged.
+TEST_F(EventFloodGroupingTest, ExpandingAnUngroupedJournalChangesNothing) {
+  AddRepeats(u"comms lost", 3, /*first_id=*/1);
+  Rebuild();
+  ASSERT_FALSE(model_.grouped());
+
+  ExpandedEventModel expanded{model_};
+  ASSERT_EQ(expanded.GetRowCount(), model_.GetRowCount());
+  for (int row = 0; row < model_.GetRowCount(); ++row) {
+    EXPECT_EQ(expanded.GetCellText(row, EventColumnMessage),
+              model_.GetCellText(row, EventColumnMessage));
+    EXPECT_EQ(expanded.GetCellText(row, EventColumnTime),
+              model_.GetCellText(row, EventColumnTime));
+  }
 }

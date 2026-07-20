@@ -326,7 +326,8 @@ void EventView::Save(WindowDefinition& definition) {
 }
 
 void EventView::ExportToExcel() {
-  int rows = model_->GetRowCount();
+  // Expanded for the same reason as GetExportData() above.
+  int rows = expanded_model_.GetRowCount();
   if (!rows) {
     dialog_service_.RunMessageBox(Translate("No data to export."),
                                   Translate("Export"), MessageBoxMode::Info);
@@ -341,9 +342,9 @@ void EventView::ExportToExcel() {
     for (size_t i = 0; i < columns.size(); ++i)
       sheet.SetData(1, i + 1, UtfConvert<wchar_t>(columns[i].title));
 
-    for (int row = 0; row < model_->GetRowCount(); ++row) {
+    for (int row = 0; row < expanded_model_.GetRowCount(); ++row) {
       for (size_t col = 0; col < columns.size(); ++col) {
-        auto text = model_->GetCellText(row, columns[col].id);
+        auto text = expanded_model_.GetCellText(row, columns[col].id);
         sheet.SetData(2 + row, col + 1, UtfConvert<wchar_t>(text));
       }
     }
@@ -450,5 +451,7 @@ TimeModel* EventView::GetTimeModel() {
 }
 
 ExportModel::ExportData EventView::GetExportData() {
-  return TableExportData{*model_, table_->columns()};
+  // Export and print the occurrences, not the collapsed rows: a flood group is
+  // a way of displaying a wall of repeats, not a way of recording it.
+  return TableExportData{expanded_model_, table_->columns()};
 }

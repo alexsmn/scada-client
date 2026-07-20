@@ -130,8 +130,42 @@ int EventTableModel::GetRowCount() {
 
 void EventTableModel::GetCell(scada::aui::TableCell& cell) {
   const Row& row = rows_[cell.row];
-  const scada::Event& event = *row.event;
+  GetEventCell(row, *row.event, 1 + static_cast<int>(row.repeats.size()), cell);
+}
 
+int EventTableModel::GetOccurrenceCount() const {
+  int count = 0;
+  for (const Row& row : rows_)
+    count += 1 + static_cast<int>(row.repeats.size());
+  return count;
+}
+
+std::pair<const EventTableModel::Row*, const scada::Event*>
+EventTableModel::OccurrenceAt(int index) const {
+  for (const Row& row : rows_) {
+    if (index == 0)
+      return {&row, row.event};
+    --index;
+    if (index < static_cast<int>(row.repeats.size()))
+      return {&row, row.repeats[index]};
+    index -= static_cast<int>(row.repeats.size());
+  }
+  return {nullptr, nullptr};
+}
+
+void EventTableModel::GetOccurrenceCell(scada::aui::TableCell& cell) {
+  const auto [row, event] = OccurrenceAt(cell.row);
+  if (!row)
+    return;
+
+  // Each occurrence stands alone here, so none of them carries a count.
+  GetEventCell(*row, *event, /*group_count=*/1, cell);
+}
+
+void EventTableModel::GetEventCell(const Row& row,
+                                   const scada::Event& event,
+                                   int group_count,
+                                   scada::aui::TableCell& cell) const {
   GetEventColors(event, cell.text_color, cell.cell_color);
 
   switch (cell.column_id) {
@@ -160,12 +194,18 @@ void EventTableModel::GetCell(scada::aui::TableCell& cell) {
     case EventColumnMessage:
       // A flood group carries its occurrence count here, so a chattering source
       // reads as one line with a number instead of fifty lines to scroll past.
-      cell.text = events::FormatGroupedMessage(
-          event.message, 1 + static_cast<int>(row.repeats.size()));
+      cell.text = events::FormatGroupedMessage(event.message, group_count);
       break;
     case EventColumnUser:
-      if (row.user)
-        cell.text = ToString16(row.user.display_name());
+      // The row's NodeRef belongs to the occurrence on display; a collapsed
+      // repeat can carry a different user, so resolve it from the event being
+      // rendered rather than assuming the row's.
+      if (row.event == &event) {
+        if (row.user)
+          cell.text = ToString16(row.user.display_name());
+      } else if (NodeRef user = node_service_.GetNode(event.user_id)) {
+        cell.text = ToString16(user.display_name());
+      }
       break;
     case EventColumnValue:
       if (row.node)
@@ -174,8 +214,13 @@ void EventTableModel::GetCell(scada::aui::TableCell& cell) {
         cell.text = ToString16(event.value.get_or(scada::LocalizedText{}));
       break;
     case EventColumnAckUser:
-      if (row.acknowledged_user)
-        cell.text = ToString16(row.acknowledged_user.display_name());
+      if (row.event == &event) {
+        if (row.acknowledged_user)
+          cell.text = ToString16(row.acknowledged_user.display_name());
+      } else if (NodeRef acknowledged_user =
+                     node_service_.GetNode(event.acknowledged_user_id)) {
+        cell.text = ToString16(acknowledged_user.display_name());
+      }
       break;
     case EventColumnAckTime:
       // An unacknowledged alarm leaves this cell blank, which reads as "no
