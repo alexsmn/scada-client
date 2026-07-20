@@ -145,15 +145,28 @@ std::filesystem::path GetSqliteExePath() {
   return std::filesystem::path{SCADA_E2E_SQLITE3_EXE};
 }
 
-::testing::AssertionResult ValidateSignedLicenseEnv() {
+// Resolves SCADA_SERVER_LICENSE_FILE against the *test process* working
+// directory. Each tier is launched with its own temporary workspace as the
+// working directory, so a relative env value would not resolve there and the
+// tier would start unlicensed ("License: No license found").
+std::filesystem::path GetSignedLicensePath() {
   auto* value = std::getenv("SCADA_SERVER_LICENSE_FILE");
-  if (!value || !*value) {
+  if (!value || !*value)
+    return {};
+
+  std::error_code ec;
+  auto absolute = std::filesystem::absolute(std::filesystem::path{value}, ec);
+  return ec ? std::filesystem::path{value} : absolute;
+}
+
+::testing::AssertionResult ValidateSignedLicenseEnv() {
+  const auto license_path = GetSignedLicensePath();
+  if (license_path.empty()) {
     return ::testing::AssertionFailure()
            << "SCADA_SERVER_LICENSE_FILE must be set to an external signed "
               "license JSON before running client/server E2E tests";
   }
 
-  const std::filesystem::path license_path{value};
   if (!std::filesystem::exists(license_path)) {
     return ::testing::AssertionFailure()
            << "SCADA_SERVER_LICENSE_FILE points to missing license file: "
@@ -164,11 +177,11 @@ std::filesystem::path GetSqliteExePath() {
 }
 
 void ConfigureSignedLicense(boost::json::object& server_json) {
-  auto* license_file = std::getenv("SCADA_SERVER_LICENSE_FILE");
-  if (!license_file || !*license_file)
+  const auto license_path = GetSignedLicensePath();
+  if (license_path.empty())
     return;
 
-  boost::json::object license{{"file", license_file}};
+  boost::json::object license{{"file", license_path.string()}};
 
   if (auto* require_gcp_binding =
           std::getenv("SCADA_SERVER_LICENSE_REQUIRE_GCP_BINDING");
