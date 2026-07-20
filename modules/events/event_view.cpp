@@ -186,9 +186,10 @@ NodeIdSet EventView::GetContainedItems() const {
 }
 
 void EventView::AcknowledgeSelection() {
-  auto rows = table_->GetSelectedRows();
-  for (auto i = rows.rbegin(); i != rows.rend(); ++i)
-    model_->AcknowledgeRow(*i);
+  // The whole selection goes in one call: the model resolves every target
+  // before acknowledging any of them, because acknowledging can remove rows or
+  // regroup them and leave row indices stale mid-loop.
+  model_->AcknowledgeRows(table_->GetSelectedRows());
 }
 
 void EventView::OnSelectionChanged() {

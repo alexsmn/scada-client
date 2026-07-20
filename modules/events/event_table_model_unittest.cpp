@@ -449,22 +449,137 @@ TEST_F(EventFloodGroupingTest, AGroupedRowShowsItsNewestOccurrence) {
                 scada::base::TimeDelta::FromSeconds(count - 1));
 }
 
-// The live rows deliberately do not group: only the journal's historical rows
-// collapse. Folding an arrival into an existing group, and pulling a single
-// occurrence back out of a collapsed row when it is acknowledged, would mean
-// reworking the incremental add/acknowledge path — so this pins the boundary
-// rather than leaving it to be discovered by someone acknowledging a group and
-// silently clearing its other occupants.
-TEST_F(EventFloodGroupingTest, LiveRowsStayUngroupedDuringAFlood) {
+// The live rows collapse too. Local events are the handle: they are
+// unacknowledged on arrival, share a source and message, and — unlike the
+// historical rows — can actually be acknowledged, so the whole lifecycle of a
+// collapsed live row is observable here.
+TEST_F(EventFloodGroupingTest, LiveRepeatsCollapseDuringAFlood) {
   const int count = events::kAlarmFloodThreshold + 4;
   for (int i = 0; i < count; ++i)
     local_events_.ReportEvent(LocalEvents::SEV_ERROR, u"comms lost");
   Rebuild();
 
   ASSERT_TRUE(model_.grouped());
-  // One row per local event, uncollapsed, even though they are all the same
-  // alarm and the backlog is a flood.
-  EXPECT_EQ(model_.GetRowCount(), count);
+  EXPECT_EQ(model_.GetRowCount(), 1);
+  EXPECT_EQ(model_.group_count_at(0), count);
+}
+
+// An arrival during a flood bumps the count of the alarm it repeats instead of
+// growing the list — the whole point of grouping.
+TEST_F(EventFloodGroupingTest, AnArrivalFoldsIntoTheGroupItRepeats) {
+  const int count = events::kAlarmFloodThreshold + 4;
+  for (int i = 0; i < count; ++i)
+    local_events_.ReportEvent(LocalEvents::SEV_ERROR, u"comms lost");
+  Rebuild();
+  ASSERT_EQ(model_.GetRowCount(), 1);
+
+  local_events_.ReportEvent(LocalEvents::SEV_ERROR, u"comms lost");
+
+  EXPECT_EQ(model_.GetRowCount(), 1);
+  EXPECT_EQ(model_.group_count_at(0), count + 1);
+  // The arrival is the newest occurrence, so it is the one on display.
+  EXPECT_EQ(model_.event_at(0).event_id,
+            local_events_.events().back()->event_id);
+}
+
+// A different alarm arriving mid-flood must not be folded away — it is exactly
+// the one the flood would otherwise bury.
+TEST_F(EventFloodGroupingTest, ADifferentAlarmArrivingMidFloodGetsItsOwnRow) {
+  const int count = events::kAlarmFloodThreshold + 4;
+  for (int i = 0; i < count; ++i)
+    local_events_.ReportEvent(LocalEvents::SEV_ERROR, u"comms lost");
+  Rebuild();
+  ASSERT_EQ(model_.GetRowCount(), 1);
+
+  local_events_.ReportEvent(LocalEvents::SEV_ERROR, u"transformer overheating");
+
+  ASSERT_EQ(model_.GetRowCount(), 2);
+  EXPECT_EQ(model_.group_count_at(1), 1);
+}
+
+// Acknowledging one occupant of a collapsed row leaves the rest of the group in
+// place. Removing the whole row would drop alarms nobody has acknowledged.
+TEST_F(EventFloodGroupingTest, AcknowledgingOneOccurrenceKeepsTheRest) {
+  const int count = events::kAlarmFloodThreshold + 4;
+  for (int i = 0; i < count; ++i)
+    local_events_.ReportEvent(LocalEvents::SEV_ERROR, u"comms lost");
+  Rebuild();
+  ASSERT_EQ(model_.group_count_at(0), count);
+
+  local_events_.AcknowledgeEvent(local_events_.events().front()->event_id);
+
+  ASSERT_EQ(model_.GetRowCount(), 1);
+  EXPECT_EQ(model_.group_count_at(0), count - 1);
+}
+
+// Acknowledging the occurrence that is on display promotes another one, rather
+// than leaving the row pointing at an event the storage has already destroyed.
+TEST_F(EventFloodGroupingTest, AcknowledgingTheDisplayedOccurrencePromotes) {
+  const int count = events::kAlarmFloodThreshold + 4;
+  for (int i = 0; i < count; ++i)
+    local_events_.ReportEvent(LocalEvents::SEV_ERROR, u"comms lost");
+  Rebuild();
+  const scada::EventId displayed = model_.event_at(0).event_id;
+
+  local_events_.AcknowledgeEvent(displayed);
+
+  ASSERT_EQ(model_.GetRowCount(), 1);
+  EXPECT_NE(model_.event_at(0).event_id, displayed);
+  EXPECT_EQ(model_.group_count_at(0), count - 1);
+}
+
+// Acknowledging a collapsed row acknowledges every occurrence it stands for —
+// otherwise the operator clears what they can see and the rest of the count
+// stays unacknowledged behind it.
+TEST_F(EventFloodGroupingTest, AcknowledgingAGroupAcknowledgesEveryOccurrence) {
+  const int count = events::kAlarmFloodThreshold + 4;
+  for (int i = 0; i < count; ++i)
+    local_events_.ReportEvent(LocalEvents::SEV_ERROR, u"comms lost");
+  Rebuild();
+  ASSERT_EQ(model_.GetRowCount(), 1);
+  ASSERT_EQ(local_events_.events().size(), static_cast<size_t>(count));
+
+  model_.AcknowledgeRow(0);
+
+  EXPECT_TRUE(local_events_.events().empty());
+  EXPECT_EQ(model_.GetRowCount(), 0);
+}
+
+// Grouping is a property of the situation, not a mode: once the backlog is
+// worked back below the threshold the rows expand again on their own.
+TEST_F(EventFloodGroupingTest, RowsExpandAgainOnceTheFloodIsWorkedOff) {
+  const int count = events::kAlarmFloodThreshold + 4;
+  for (int i = 0; i < count; ++i)
+    local_events_.ReportEvent(LocalEvents::SEV_ERROR, u"comms lost");
+  Rebuild();
+  ASSERT_TRUE(model_.grouped());
+
+  // Acknowledge just enough to end the flood.
+  for (int i = 0; i < 4; ++i)
+    local_events_.AcknowledgeEvent(local_events_.events().front()->event_id);
+
+  EXPECT_FALSE(model_.grouped());
+  EXPECT_EQ(model_.GetRowCount(), events::kAlarmFloodThreshold);
   for (int row = 0; row < model_.GetRowCount(); ++row)
     EXPECT_EQ(model_.group_count_at(row), 1);
+}
+
+// Acknowledging a multi-row selection must acknowledge exactly the alarms that
+// were selected. Acknowledging the first row here drops the backlog out of
+// flood, which expands the rows and renumbers them — so a loop that re-read row
+// indices as it went would acknowledge the wrong alarm, or run off the end.
+TEST_F(EventFloodGroupingTest, AcknowledgingAMultiRowSelectionIsIndexSafe) {
+  const int count = events::kAlarmFloodThreshold + 4;
+  for (int i = 0; i < count; ++i)
+    local_events_.ReportEvent(LocalEvents::SEV_ERROR, u"comms lost");
+  local_events_.ReportEvent(LocalEvents::SEV_ERROR, u"transformer overheating");
+  Rebuild();
+  ASSERT_TRUE(model_.grouped());
+  ASSERT_EQ(model_.GetRowCount(), 2);
+
+  const int selection[] = {0, 1};
+  model_.AcknowledgeRows(selection);
+
+  EXPECT_TRUE(local_events_.events().empty());
+  EXPECT_EQ(model_.GetRowCount(), 0);
 }

@@ -18,6 +18,7 @@
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 
+#include <algorithm>
 #include <optional>
 
 using namespace std::chrono_literals;
@@ -249,6 +250,39 @@ void EventTableModel::AddRows(EventType type,
     }
   }
 
+  if (grouped_) {
+    // Fold each arrival into the group it repeats, so a chattering source bumps
+    // one row's count instead of growing the list. Rows stay live here rather
+    // than waiting for a rebuild: a flood is when a rebuild per batch would
+    // cost the most, and the event pointers are only valid for this call.
+    for (auto* event : added_events) {
+      const int index = FindAlarmGroupRow(type, *event);
+      if (index == -1) {
+        const int first = static_cast<int>(rows_.size());
+        NotifyItemsAdding(first, 1);
+        Row row{type, *event};
+        row.Update(node_service_);
+        rows_.emplace_back(std::move(row));
+        NotifyItemsAdded(first, 1);
+        continue;
+      }
+
+      Row& row = rows_[index];
+      // The newest occurrence represents the group (see GroupRepeatedEvents),
+      // so an arrival that is newer takes over and the previous one becomes a
+      // repeat.
+      if (row.event->time <= event->time) {
+        row.repeats.push_back(row.event);
+        row.event = event;
+        row.Update(node_service_);
+      } else {
+        row.repeats.push_back(event);
+      }
+      NotifyItemsChanged(index, 1);
+    }
+    return;
+  }
+
   if (!added_events.empty()) {
     int first = static_cast<int>(rows_.size());
     NotifyItemsAdding(first, added_events.size());
@@ -260,6 +294,78 @@ void EventTableModel::AddRows(EventType type,
     }
     NotifyItemsAdded(first, added_events.size());
   }
+}
+
+int EventTableModel::FindOccurrenceRow(const scada::Event& event) const {
+  for (auto i = rows_.begin(); i != rows_.end(); ++i) {
+    if (i->event == &event)
+      return static_cast<int>(i - rows_.begin());
+    for (const scada::Event* repeat : i->repeats) {
+      if (repeat == &event)
+        return static_cast<int>(i - rows_.begin());
+    }
+  }
+  return -1;
+}
+
+int EventTableModel::FindAlarmGroupRow(EventType type,
+                                       const scada::Event& event) const {
+  for (auto i = rows_.begin(); i != rows_.end(); ++i) {
+    if (i->type == type && events::IsSameAlarm(*i->event, event))
+      return static_cast<int>(i - rows_.begin());
+  }
+  return -1;
+}
+
+bool EventTableModel::RemoveOccurrence(int index, const scada::Event& event) {
+  Row& row = rows_[index];
+  if (row.repeats.empty())
+    return false;
+
+  if (row.event == &event) {
+    // The occurrence on display is going away; the newest of the rest takes
+    // over so the row keeps showing the latest state of the alarm.
+    auto newest = row.repeats.begin();
+    for (auto i = row.repeats.begin(); i != row.repeats.end(); ++i) {
+      if ((*newest)->time < (*i)->time)
+        newest = i;
+    }
+    row.event = *newest;
+    row.repeats.erase(newest);
+    row.Update(node_service_);
+  } else {
+    std::erase(row.repeats, &event);
+  }
+
+  NotifyItemsChanged(index, 1);
+  return true;
+}
+
+void EventTableModel::MoveOccurrenceToHistory(const scada::Event& event) {
+  scada::Event acked_event = event;
+  acked_event.acked = true;
+  const scada::Event& historical_event =
+      historical_event_model_.AddEvent(std::move(acked_event));
+  const scada::Event* event_ptr = &historical_event;
+  AddRows(HISTORICAL_EVENT, {&event_ptr, 1});
+}
+
+int EventTableModel::CountUnacknowledged() const {
+  int count = 0;
+  for (const Row& row : rows_) {
+    if (!row.event->acked)
+      ++count;
+    for (const scada::Event* repeat : row.repeats) {
+      if (!repeat->acked)
+        ++count;
+    }
+  }
+  return count;
+}
+
+void EventTableModel::RegroupIfFloodChanged() {
+  if (events::IsAlarmFlood(CountUnacknowledged()) != grouped_)
+    RefilterNow();
 }
 
 void EventTableModel::AppendRows(Rows& rows,
@@ -322,13 +428,27 @@ void EventTableModel::OnCurrentEvents(
       partitioned_events.begin(), partitioned_events.end(),
       [](const scada::Event* event) { return event->acked; });
 
-  // Remove acked.
+  // Remove acked. An acknowledged occurrence may be collapsed inside a group
+  // rather than be a row of its own, so drop that one occurrence and keep the
+  // row when others remain. This cannot be deferred to a rebuild: the storage
+  // extracts an acknowledged event before notifying, so its pointer dies with
+  // this call and must not stay in a group.
   for (auto i = partitioned_events.begin(); i != first_unacked; ++i) {
     auto& event = **i;
-    int index = FindRow(event);
-    if (index != -1) {
-      AckRows(index, 1);
+    int index = FindOccurrenceRow(event);
+    if (index == -1)
+      continue;
+
+    if (RemoveOccurrence(index, event)) {
+      // The row survives. In the journal the acknowledged occurrence still
+      // belongs in the history, exactly as a whole-row acknowledgement moves it
+      // there.
+      if (!current_events_)
+        MoveOccurrenceToHistory(event);
+      continue;
     }
+
+    AckRows(index, 1);
   }
 
   // Filter and add unacked.
@@ -341,6 +461,8 @@ void EventTableModel::OnCurrentEvents(
         [this](const scada::Event* event) { return IsEventShown(*event); });
     AddRows(CURRENT_EVENT, filtered_events);
   }
+
+  RegroupIfFloodChanged();
 }
 
 void EventTableModel::AckRows(int first, int count) {
@@ -354,6 +476,13 @@ void EventTableModel::AckRows(int first, int count) {
       // Convert to historical.
       Row& row = rows_[first + i];
       if (row.type == CURRENT_EVENT) {
+        // Every occurrence the row stands for has to be copied across: the
+        // storage pointers behind the collapsed repeats die with this
+        // notification, and dropping them would lose them from the journal and
+        // leave the row counting events that no longer exist.
+        std::vector<const scada::Event*> repeats;
+        repeats.swap(row.repeats);
+
         auto acked_event = *row.event;
         acked_event.acked = true;
         const scada::Event& historical_event =
@@ -361,6 +490,13 @@ void EventTableModel::AckRows(int first, int count) {
         row.type = HISTORICAL_EVENT;
         row.event = &historical_event;
         row.Update(node_service_);
+
+        for (const scada::Event* repeat : repeats) {
+          auto acked_repeat = *repeat;
+          acked_repeat.acked = true;
+          row.repeats.push_back(
+              &historical_event_model_.AddEvent(std::move(acked_repeat)));
+        }
       }
     }
     NotifyItemsChanged(first, count);
@@ -369,13 +505,17 @@ void EventTableModel::AckRows(int first, int count) {
 
 void EventTableModel::OnLocalEvent(const scada::Event& event) {
   if (event.acked) {
-    int index = FindRow(event);
-    if (index != -1)
+    // LocalEvents destroys the event right after this notification, so — as
+    // with the storage above — the occurrence has to leave the row now.
+    const int index = FindOccurrenceRow(event);
+    if (index != -1 && !RemoveOccurrence(index, event))
       RemoveRows(index, 1);
   } else {
     auto* event_ptr = &event;
     AddRows(LOCAL_EVENT, {&event_ptr, 1});
   }
+
+  RegroupIfFloodChanged();
 }
 
 bool EventTableModel::AddFilteredItem(const scada::NodeId& item) {
@@ -458,15 +598,9 @@ void EventTableModel::RefilterNow() {
   }
   grouped_ = events::IsAlarmFlood(unacknowledged);
 
-  // Only the historical rows collapse. The live rows (local and current) are
-  // maintained incrementally — arrivals append, acknowledgements remove — and
-  // folding an arrival into an existing group, or pulling one occurrence back
-  // out of a collapsed row on acknowledgement, would mean reworking that path
-  // with no way to verify it here. The scroll a flood produces is the history
-  // anyway; the live surface is bounded by what is still unacknowledged.
   std::vector<Row> rows;
-  AppendRows(rows, LOCAL_EVENT, local_events, /*grouped=*/false);
-  AppendRows(rows, CURRENT_EVENT, current_events, /*grouped=*/false);
+  AppendRows(rows, LOCAL_EVENT, local_events, grouped_);
+  AppendRows(rows, CURRENT_EVENT, current_events, grouped_);
   if (!current_events_)
     AppendRows(rows, HISTORICAL_EVENT, historical_events, grouped_);
 
@@ -508,33 +642,34 @@ int EventTableModel::group_count_at(int row) const {
   return 1 + static_cast<int>(rows_[row].repeats.size());
 }
 
-void EventTableModel::AcknowledgeRow(int row) {
-  // Collect the targets before acknowledging any of them: acknowledging
-  // notifies, and a notification can rebuild or erase rows_ (LocalEvents even
-  // destroys the acknowledged event), so anything held by reference into the
-  // row would dangle partway through the loop.
-  const EventType type = rows_[row].type;
-  std::vector<const scada::Event*> targets;
-  targets.reserve(1 + rows_[row].repeats.size());
-  targets.push_back(rows_[row].event);
-  targets.insert(targets.end(), rows_[row].repeats.begin(),
-                 rows_[row].repeats.end());
+void EventTableModel::AcknowledgeRows(std::span<const int> rows) {
+  // Resolve every target before acknowledging any of them. Acknowledging
+  // notifies, and a notification removes the occurrence from its row, can drop
+  // the row entirely, and can regroup the whole list once the backlog leaves
+  // flood — so both the row indices and any pointer into a row go stale
+  // partway through. Event ids survive all of it.
+  struct Target {
+    EventType type;
+    scada::EventId event_id;
+  };
+  std::vector<Target> targets;
 
-  // Acknowledge every occurrence the row stands for. A collapsed row hides its
-  // repeats, so acking only the representative would silently leave the rest
-  // unacknowledged — the operator would have cleared what they can see and not
-  // what they were told the count was.
-  //
-  // Today this only ever loops once: the rows that collapse are historical,
-  // which do not acknowledge. It is written for the grouped row regardless,
-  // because the day live rows start grouping this is where the under-ack would
-  // otherwise appear, silently.
-  auto acknowledge = [this, type](const scada::Event& event) {
-    switch (type) {
+  for (int row : rows) {
+    const Row& r = rows_[row];
+    // Every occurrence the row stands for: a collapsed row hides its repeats,
+    // so acknowledging only the one on display would clear what the operator
+    // can see and leave the rest of the count behind it.
+    targets.push_back({r.type, r.event->event_id});
+    for (const scada::Event* repeat : r.repeats)
+      targets.push_back({r.type, repeat->event_id});
+  }
+
+  for (const Target& target : targets) {
+    switch (target.type) {
       case CURRENT_EVENT:
         // Event state comes from the server; it may already have been acked
         // concurrently.
-        current_event_model_.Ack(event.event_id);
+        current_event_model_.Ack(target.event_id);
         break;
 
       case HISTORICAL_EVENT:
@@ -542,16 +677,13 @@ void EventTableModel::AcknowledgeRow(int row) {
         break;
 
       case LOCAL_EVENT:
-        local_event_model_.Ack(event.event_id);
+        local_event_model_.Ack(target.event_id);
         break;
 
       default:
         scada::base::NotReached();
     }
-  };
-
-  for (const scada::Event* target : targets)
-    acknowledge(*target);
+  }
 }
 
 void EventTableModel::LockUpdate() {

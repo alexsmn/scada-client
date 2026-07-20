@@ -83,10 +83,16 @@ class EventTableModel : public scada::aui::TableModel,
   void UnlockUpdate();
   bool IsUpdateLocked() const { return lock_update_; }
 
-  // Acknowledges the alarm at `row` — every occurrence collapsed into it when
-  // the row is a flood group, so acknowledging a collapsed row never leaves
-  // hidden unacknowledged alarms behind.
-  void AcknowledgeRow(int row);
+  // Acknowledges the alarms at `rows` — every occurrence collapsed into them
+  // when the rows are flood groups, so acknowledging a collapsed row never
+  // leaves hidden unacknowledged alarms behind.
+  //
+  // Takes the whole selection at once because acknowledging notifies, and a
+  // notification can remove rows or regroup them wholesale: indices resolved
+  // before the first acknowledgement are stale by the second, which would
+  // acknowledge alarms the operator never selected.
+  void AcknowledgeRows(std::span<const int> rows);
+  void AcknowledgeRow(int row) { AcknowledgeRows({&row, 1}); }
 
   // Whether the journal's historical rows are currently collapsed into flood
   // groups. Decided by the model itself on each rebuild (see
@@ -111,6 +117,35 @@ class EventTableModel : public scada::aui::TableModel,
   void AddRows(EventType type, std::span<const scada::Event* const> events);
   void RemoveRows(int first, int count);
   int FindRow(const scada::Event& event) const;
+
+  // Row holding `event` — as its representative or as one of its collapsed
+  // repeats — or -1 when no row holds it.
+  int FindOccurrenceRow(const scada::Event& event) const;
+
+  // Row of `type` whose alarm `event` is another occurrence of, or -1. Only
+  // consulted while grouped.
+  int FindAlarmGroupRow(EventType type, const scada::Event& event) const;
+
+  // Drops one occurrence from a collapsed row, promoting the newest remaining
+  // occurrence when the dropped one was on display. Returns false when `event`
+  // was the row's only occurrence, leaving the row untouched for the caller to
+  // remove or convert.
+  bool RemoveOccurrence(int index, const scada::Event& event);
+
+  // Moves `event` into the journal's history and folds it into the historical
+  // rows. Used when a live group survives losing one occurrence to
+  // acknowledgement: the storage pointer dies with the notification, so the
+  // occurrence must be copied to keep it in the journal.
+  void MoveOccurrenceToHistory(const scada::Event& event);
+
+  // Unacknowledged occurrences currently held, counting every member of a
+  // collapsed row — the signal the flood threshold is judged on.
+  int CountUnacknowledged() const;
+
+  // Rebuilds when the backlog has crossed the flood threshold in either
+  // direction, so rows collapse as a flood starts and expand once it is worked
+  // off.
+  void RegroupIfFloodChanged();
 
   // TODO: Remove this method. Keep only `OnCurrentEvents()`.
   void AckRows(int first, int count);
