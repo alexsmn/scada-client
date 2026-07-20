@@ -83,7 +83,20 @@ class EventTableModel : public scada::aui::TableModel,
   void UnlockUpdate();
   bool IsUpdateLocked() const { return lock_update_; }
 
+  // Acknowledges the alarm at `row` — every occurrence collapsed into it when
+  // the row is a flood group, so acknowledging a collapsed row never leaves
+  // hidden unacknowledged alarms behind.
   void AcknowledgeRow(int row);
+
+  // Whether the journal's historical rows are currently collapsed into flood
+  // groups. Decided by the model itself on each rebuild (see
+  // kAlarmFloodThreshold), not set by the caller: the journal groups exactly
+  // while the operator is buried. The live (current/local) rows never group —
+  // see the note in RefilterNow().
+  bool grouped() const { return grouped_; }
+
+  // Occurrences collapsed into `row`, 1 when it stands for a single event.
+  int group_count_at(int row) const;
 
   void CancelRequest();
 
@@ -130,6 +143,9 @@ class EventTableModel : public scada::aui::TableModel,
 
     EventType type;
     const scada::Event* event;
+    // Further occurrences of the same alarm collapsed into this row (flood
+    // grouping); empty when the row stands for a single event.
+    std::vector<const scada::Event*> repeats;
     NodeRef node;
     NodeRef user;
     NodeRef acknowledged_user;
@@ -137,6 +153,17 @@ class EventTableModel : public scada::aui::TableModel,
 
   using Rows = std::vector<Row>;
   Rows rows_;
+
+  // Appends `events` to `rows`: one row each, or — when `grouped` — one row per
+  // collapsed alarm group.
+  void AppendRows(Rows& rows,
+                  EventType type,
+                  std::span<const scada::Event* const> events,
+                  bool grouped) const;
+
+  // Set on rebuild when the unacknowledged backlog constitutes a flood; applies
+  // to the historical rows only.
+  bool grouped_ = false;
 
   bool lock_update_ = false;
   bool pending_update_ = false;

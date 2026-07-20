@@ -1,7 +1,9 @@
 #include "events/event_table_model.h"
 
 #include "base/test/test_executor.h"
+#include "events/alarm_flood.h"
 #include "events/current_event_model.h"
+#include "events/event_grouping.h"
 #include "events/event_severity.h"
 #include "events/historical_event_model.h"
 #include "events/local_event_model.h"
@@ -341,4 +343,128 @@ TEST_F(EventJournalAlarmSurfaceTest, SeverityColumnSortsNumerically) {
   EXPECT_GT(
       event_table_model_->CompareCells(high_row, low_row, EventColumnSeverity),
       0);
+}
+
+// Alarm-flood grouping (UX backlog 2.5): while the operator is buried, repeats
+// of one alarm collapse into a single counted row instead of a scroll.
+class EventFloodGroupingTest : public Test {
+ protected:
+  EventFloodGroupingTest() {
+    node_service_.Add(
+        {.node_id = node_id_,
+         .type_definition_id = scada::data_items::id::AnalogItemType,
+         .attributes = {.browse_name = "n1", .display_name = u"N1"}});
+  }
+
+  // Adds `count` occurrences of the same alarm (same source and message), each
+  // a second apart so they have distinct times.
+  void AddRepeats(std::u16string message, int count, int first_id) {
+    for (int i = 0; i < count; ++i) {
+      historical_event_model_.AddEvent(
+          {.event_id = static_cast<scada::EventId>(first_id + i),
+           .time = scada::DateTime::UnixEpoch() +
+                   scada::base::TimeDelta::FromSeconds(i),
+           .node_id = node_id_,
+           .message = message});
+    }
+  }
+
+  void Rebuild() { historical_event_model_.refilter_now(); }
+
+  TestExecutor executor_;
+  StaticNodeService node_service_;
+  const scada::NodeId node_id_{1, scada::NamespaceIndexes::TIT};
+
+  NiceMock<MockNodeEventProvider> node_event_provider_;
+  NodeEventProvider::EventContainer empty_current_;
+  CurrentEventModel current_event_model_{node_event_provider_};
+
+  NiceMock<scada::MockHistoryService> history_service_;
+  HistoricalEventModel historical_event_model_{executor_, history_service_};
+  LocalEvents local_events_;
+  LocalEventModel local_event_model_{local_events_};
+
+  EventTableModel model_{{.executor_ = executor_,
+                          .node_service_ = node_service_,
+                          .current_event_model_ = current_event_model_,
+                          .historical_event_model_ = historical_event_model_,
+                          .local_event_model_ = local_event_model_,
+                          .current_events_ = false}};
+};
+
+// Below the flood threshold nothing changes: a quiet journal is a plain list,
+// one row per event, so grouping never surprises an operator who is not buried.
+TEST_F(EventFloodGroupingTest, ABacklogBelowTheThresholdIsNotGrouped) {
+  AddRepeats(u"comms lost", events::kAlarmFloodThreshold, /*first_id=*/1);
+  Rebuild();
+
+  EXPECT_FALSE(model_.grouped());
+  EXPECT_EQ(model_.GetRowCount(), events::kAlarmFloodThreshold);
+}
+
+TEST_F(EventFloodGroupingTest, AFloodCollapsesRepeatsIntoOneCountedRow) {
+  const int count = events::kAlarmFloodThreshold + 5;
+  AddRepeats(u"comms lost", count, /*first_id=*/1);
+  Rebuild();
+
+  EXPECT_TRUE(model_.grouped());
+  // The flood reads as one line carrying its count, not as `count` lines.
+  ASSERT_EQ(model_.GetRowCount(), 1);
+  EXPECT_EQ(model_.group_count_at(0), count);
+
+  scada::aui::TableCell cell{.row = 0, .column_id = EventColumnMessage};
+  model_.GetCell(cell);
+  EXPECT_EQ(cell.text, events::FormatGroupedMessage(u"comms lost", count));
+}
+
+// Grouping must not swallow the alarm that only happened once — that is the one
+// the flood would otherwise bury.
+TEST_F(EventFloodGroupingTest, AOneOffAlarmStaysItsOwnRowDuringAFlood) {
+  AddRepeats(u"comms lost", events::kAlarmFloodThreshold + 5, /*first_id=*/1);
+  AddRepeats(u"transformer overheating", 1, /*first_id=*/100);
+  Rebuild();
+
+  ASSERT_EQ(model_.GetRowCount(), 2);
+
+  int singles = 0;
+  for (int row = 0; row < model_.GetRowCount(); ++row) {
+    if (model_.group_count_at(row) == 1) {
+      ++singles;
+      EXPECT_EQ(model_.event_at(row).message, u"transformer overheating");
+    }
+  }
+  EXPECT_EQ(singles, 1);
+}
+
+// The row shows the latest occurrence: during a flood the operator is looking
+// at what is happening now, not at when the chattering started.
+TEST_F(EventFloodGroupingTest, AGroupedRowShowsItsNewestOccurrence) {
+  const int count = events::kAlarmFloodThreshold + 3;
+  AddRepeats(u"comms lost", count, /*first_id=*/1);
+  Rebuild();
+
+  ASSERT_EQ(model_.GetRowCount(), 1);
+  EXPECT_EQ(model_.event_at(0).time,
+            scada::DateTime::UnixEpoch() +
+                scada::base::TimeDelta::FromSeconds(count - 1));
+}
+
+// The live rows deliberately do not group: only the journal's historical rows
+// collapse. Folding an arrival into an existing group, and pulling a single
+// occurrence back out of a collapsed row when it is acknowledged, would mean
+// reworking the incremental add/acknowledge path — so this pins the boundary
+// rather than leaving it to be discovered by someone acknowledging a group and
+// silently clearing its other occupants.
+TEST_F(EventFloodGroupingTest, LiveRowsStayUngroupedDuringAFlood) {
+  const int count = events::kAlarmFloodThreshold + 4;
+  for (int i = 0; i < count; ++i)
+    local_events_.ReportEvent(LocalEvents::SEV_ERROR, u"comms lost");
+  Rebuild();
+
+  ASSERT_TRUE(model_.grouped());
+  // One row per local event, uncollapsed, even though they are all the same
+  // alarm and the backlog is a flood.
+  EXPECT_EQ(model_.GetRowCount(), count);
+  for (int row = 0; row < model_.GetRowCount(); ++row)
+    EXPECT_EQ(model_.group_count_at(row), 1);
 }

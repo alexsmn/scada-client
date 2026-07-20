@@ -8,7 +8,9 @@
 #include "base/format_time.h"
 #include "base/utf_convert.h"
 #include "base/utils.h"
+#include "events/alarm_flood.h"
 #include "events/current_event_model.h"
+#include "events/event_grouping.h"
 #include "events/event_severity.h"
 #include "events/historical_event_model.h"
 #include "events/local_event_model.h"
@@ -155,7 +157,10 @@ void EventTableModel::GetCell(scada::aui::TableCell& cell) {
         cell.text = kLocalEventSource;
       break;
     case EventColumnMessage:
-      cell.text = event.message;
+      // A flood group carries its occurrence count here, so a chattering source
+      // reads as one line with a number instead of fifty lines to scroll past.
+      cell.text = events::FormatGroupedMessage(
+          event.message, 1 + static_cast<int>(row.repeats.size()));
       break;
     case EventColumnUser:
       if (row.user)
@@ -254,6 +259,27 @@ void EventTableModel::AddRows(EventType type,
       rows_.emplace_back(std::move(row));
     }
     NotifyItemsAdded(first, added_events.size());
+  }
+}
+
+void EventTableModel::AppendRows(Rows& rows,
+                                 EventType type,
+                                 std::span<const scada::Event* const> events,
+                                 bool grouped) const {
+  if (!grouped) {
+    for (const scada::Event* event : events) {
+      Row row{type, *event};
+      row.Update(node_service_);
+      rows.emplace_back(std::move(row));
+    }
+    return;
+  }
+
+  for (events::EventGroup& group : events::GroupRepeatedEvents(events)) {
+    Row row{type, *group.representative};
+    row.repeats = std::move(group.repeats);
+    row.Update(node_service_);
+    rows.emplace_back(std::move(row));
   }
 }
 
@@ -399,31 +425,50 @@ void EventTableModel::RefilterNow() {
     NotifyItemsRemoved(0, count);
   }
 
-  std::vector<Row> rows;
+  std::vector<const scada::Event*> local_events;
+  for (const scada::Event& event : local_event_model_.events())
+    local_events.push_back(&event);
 
-  for (const scada::Event& event : local_event_model_.events()) {
-    Row row(LOCAL_EVENT, event);
-    row.Update(node_service_);
-    rows.emplace_back(std::move(row));
-  }
-
+  std::vector<const scada::Event*> current_events;
   for (const scada::Event& event : current_event_model_.events()) {
-    if (IsEventShown(event)) {
-      Row row(CURRENT_EVENT, event);
-      row.Update(node_service_);
-      rows.emplace_back(std::move(row));
-    }
+    if (IsEventShown(event))
+      current_events.push_back(&event);
   }
 
+  std::vector<const scada::Event*> historical_events;
   if (!current_events_) {
     for (const scada::Event& event : historical_event_model_.events()) {
-      if (IsEventShown(event)) {
-        Row row(HISTORICAL_EVENT, event);
-        row.Update(node_service_);
-        rows.emplace_back(std::move(row));
-      }
+      if (IsEventShown(event))
+        historical_events.push_back(&event);
     }
   }
+
+  // Group exactly while the operator is buried, judged on the same signal as
+  // the shell's flood pill: the actionable (unacknowledged) backlog. Acking the
+  // backlog back below the threshold expands the rows again on the next
+  // rebuild, so grouping is a property of the situation, not a mode to leave
+  // on.
+  int unacknowledged = 0;
+  for (const auto* events_span :
+       {&local_events, &current_events, &historical_events}) {
+    for (const scada::Event* event : *events_span) {
+      if (!event->acked)
+        ++unacknowledged;
+    }
+  }
+  grouped_ = events::IsAlarmFlood(unacknowledged);
+
+  // Only the historical rows collapse. The live rows (local and current) are
+  // maintained incrementally — arrivals append, acknowledgements remove — and
+  // folding an arrival into an existing group, or pulling one occurrence back
+  // out of a collapsed row on acknowledgement, would mean reworking that path
+  // with no way to verify it here. The scroll a flood produces is the history
+  // anyway; the live surface is bounded by what is still unacknowledged.
+  std::vector<Row> rows;
+  AppendRows(rows, LOCAL_EVENT, local_events, /*grouped=*/false);
+  AppendRows(rows, CURRENT_EVENT, current_events, /*grouped=*/false);
+  if (!current_events_)
+    AppendRows(rows, HISTORICAL_EVENT, historical_events, grouped_);
 
   if (!rows.empty()) {
     int count = static_cast<int>(rows.size());
@@ -459,26 +504,54 @@ void EventTableModel::CancelRequest() {
   historical_event_model_.CancelRequest();
 }
 
+int EventTableModel::group_count_at(int row) const {
+  return 1 + static_cast<int>(rows_[row].repeats.size());
+}
+
 void EventTableModel::AcknowledgeRow(int row) {
-  Row& r = rows_[row];
-  switch (r.type) {
-    case CURRENT_EVENT:
-      // Event state comes from the server; it may already have been acked
-      // concurrently.
-      current_event_model_.Ack(r.event->event_id);
-      break;
+  // Collect the targets before acknowledging any of them: acknowledging
+  // notifies, and a notification can rebuild or erase rows_ (LocalEvents even
+  // destroys the acknowledged event), so anything held by reference into the
+  // row would dangle partway through the loop.
+  const EventType type = rows_[row].type;
+  std::vector<const scada::Event*> targets;
+  targets.reserve(1 + rows_[row].repeats.size());
+  targets.push_back(rows_[row].event);
+  targets.insert(targets.end(), rows_[row].repeats.begin(),
+                 rows_[row].repeats.end());
 
-    case HISTORICAL_EVENT:
-      // Do nothing.
-      break;
+  // Acknowledge every occurrence the row stands for. A collapsed row hides its
+  // repeats, so acking only the representative would silently leave the rest
+  // unacknowledged — the operator would have cleared what they can see and not
+  // what they were told the count was.
+  //
+  // Today this only ever loops once: the rows that collapse are historical,
+  // which do not acknowledge. It is written for the grouped row regardless,
+  // because the day live rows start grouping this is where the under-ack would
+  // otherwise appear, silently.
+  auto acknowledge = [this, type](const scada::Event& event) {
+    switch (type) {
+      case CURRENT_EVENT:
+        // Event state comes from the server; it may already have been acked
+        // concurrently.
+        current_event_model_.Ack(event.event_id);
+        break;
 
-    case LOCAL_EVENT:
-      local_event_model_.Ack(r.event->event_id);
-      break;
+      case HISTORICAL_EVENT:
+        // Do nothing.
+        break;
 
-    default:
-      scada::base::NotReached();
-  }
+      case LOCAL_EVENT:
+        local_event_model_.Ack(event.event_id);
+        break;
+
+      default:
+        scada::base::NotReached();
+    }
+  };
+
+  for (const scada::Event* target : targets)
+    acknowledge(*target);
 }
 
 void EventTableModel::LockUpdate() {

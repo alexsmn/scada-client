@@ -16,11 +16,11 @@
 #include "controller/selection_model.h"
 #include "controller/window_info.h"
 #include "device_diagnostics/qt/device_diagnostics_panel.h"
+#include "events/alarm_flood.h"
 #include "events/qt/severity_tile_strip.h"
 #include "filesystem/file_cache.h"
 #include "inspector/qt/inspector_panel.h"
 #include "main_window/activity_bar_qt.h"
-#include "main_window/alarm_flood.h"
 #include "main_window/command_palette_qt.h"
 #include "main_window/main_window_command_router.h"
 #include "main_window/main_window_manager.h"
@@ -457,7 +457,7 @@ void MainWindow::CreateContextBar() {
     // count crosses the flood threshold, so a flood reads as a state, not a
     // scroll.
     const int alarm_count = status_bar_model_->GetAlarmCount();
-    const bool flood = IsAlarmFlood(alarm_count);
+    const bool flood = events::IsAlarmFlood(alarm_count);
     flood_indicator_->setVisible(flood);
     if (flood) {
       flood_indicator_->setText(

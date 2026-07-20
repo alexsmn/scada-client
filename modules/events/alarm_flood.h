@@ -13,6 +13,8 @@
 // surface. A rate window would need arrivals timestamped client-side or a
 // server-side rate signal.
 
+namespace events {
+
 // Number of unacknowledged alarms above which the situation reads as a flood.
 inline constexpr int kAlarmFloodThreshold = 10;
 
@@ -20,3 +22,5 @@ inline constexpr int kAlarmFloodThreshold = 10;
 inline bool IsAlarmFlood(int unacknowledged_count) {
   return unacknowledged_count > kAlarmFloodThreshold;
 }
+
+}  // namespace events

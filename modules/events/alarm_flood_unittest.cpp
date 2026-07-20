@@ -1,7 +1,8 @@
-#include "main_window/alarm_flood.h"
+#include "events/alarm_flood.h"
 
 #include <gtest/gtest.h>
 
+namespace events {
 namespace {
 
 TEST(AlarmFloodTest, FloodOnlyAboveThreshold) {
@@ -14,3 +15,4 @@ TEST(AlarmFloodTest, FloodOnlyAboveThreshold) {
 }
 
 }  // namespace
+}  // namespace events
