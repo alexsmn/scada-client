@@ -59,7 +59,7 @@ classes; verify against those when updating (see Maintenance).
 | Trends / series inspector | `trends/TrendsView`, `SeriesChips`, `SeriesStatsTable`, `TrendInsights`, `TrendToolbar`, `Graph` | `SeriesInspector` + graph (`modules/graph`) | Partial |
 | Substation display | `substation/SubstationView`, `DisplayRendererCanvas`, `EquipmentDetailsCard`, `EquipmentStateCards`, `LiveMeasurementsTable`, `SubstationKpiStrip` | `DisplayFrame` (`modules/display_frame`) + VDS renderer | Partial |
 | Events journal | `events/EventJournal`, `EventPane`, `EventsPanel` | event journal / `EventFilterBar` (`modules/events`) | Aligned |
-| Table / sheet | `table/QtTableView`, `table/Sheet` | node table / sheet (`modules/table`, `modules/sheet`) | Aligned |
+| Table / sheet | `table/QtTableView`, `table/Sheet` | node table / sheet + `TableToolbar` (`modules/table`, `modules/sheet`) | Aligned |
 | Watch list | `watch/WatchList` | `WatchModel` view (`modules/watch`) | Aligned |
 | Favorites | `favorites/FavoritesPanel` | favorites (`modules/favorites`) | Aligned |
 | Portfolio | `portfolio/PortfolioPanel` | portfolio (`modules/portfolio`) | Aligned |

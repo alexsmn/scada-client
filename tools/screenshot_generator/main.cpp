@@ -2,6 +2,7 @@
 #include "user_access_capture.h"
 #include "transmission_rule_capture.h"
 #include "bulk_create_capture.h"
+#include "inspector_capture.h"
 #include "severity_tiles_capture.h"
 #include "dialog_capture.h"
 #include "display_capture.h"
@@ -334,6 +335,13 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     // alarm summary), built from seeded counts with no node service.
     if (spec.window_type == "SeverityTiles") {
       SaveSeverityTilesScreenshot(spec);
+      ++captured;
+      continue;
+    }
+    // The Inspector is standalone reshell chrome (the right-hand selection
+    // panel), filled with a representative expression-row selection.
+    if (spec.window_type == "Inspector") {
+      SaveInspectorScreenshot(spec);
       ++captured;
       continue;
     }

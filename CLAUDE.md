@@ -113,6 +113,12 @@ Rules of the pipeline:
   visual-regression signal; refresh the published copies in the same
   effort as the UI change, and retag orphaned images `obsolete` when
   removing features.
+- **New user-visible functionality gets BOTH a screenshot and a manual
+  description in the same effort.** Add/extend the scada-docs page (Russian
+  canonical + the `en/` mirror + `_data/i18n_pages.yml`) describing the
+  behaviour, embed the capture, and keep the manifest row's
+  `referenced_from` in sync. Reshell (opt-in) features are documented on
+  `client/workbench.md` (Экспериментальный интерфейс).
 - **macOS runs are for validation only** (offscreen platform + hermetic
   `HOME`; see "Running on macOS" in `docs/screenshots.md`); published
   images come from the Windows pipeline so fonts stay consistent.
