@@ -297,6 +297,11 @@
         <source>conflict</source>
         <translation>конфликт</translation>
     </message>
+    <!-- modules/table: reshell Trend (sparkline) column -->
+    <message>
+        <source>Trend</source>
+        <translation>Тренд</translation>
+    </message>
     <!-- modules/table/qt/table_toolbar.cpp -->
     <message>
         <source>Add signal</source>

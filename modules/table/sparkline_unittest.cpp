@@ -93,4 +93,22 @@ TEST(SparklineTest, StaysWithinPaddedBand) {
   }
 }
 
+// The row's history feeds the sparkline only through its numeric samples —
+// including coercible discrete/bool states, whose 0/1 timeline is a
+// meaningful mini-trend. Null and non-numeric values (a text state) are
+// skipped, not turned into zeros that would distort the normalization.
+TEST(NumericSeriesTest, ExtractsNumbersAndSkipsNonNumericValues) {
+  std::vector<scada::DataValue> values(4);
+  values[0].value = scada::Variant{1.5};
+  // values[1] stays null.
+  values[2].value = scada::Variant{true};
+  values[3].value = scada::Variant{u"open"};
+
+  EXPECT_EQ(NumericSeries(values), (std::vector<double>{1.5, 1.0}));
+}
+
+TEST(NumericSeriesTest, EmptyHistoryIsEmpty) {
+  EXPECT_TRUE(NumericSeries({}).empty());
+}
+
 }  // namespace

@@ -1,7 +1,15 @@
 #pragma once
 
+#include "base/time/time.h"
+#include "scada/data_value.h"
+
 #include <span>
 #include <vector>
+
+// The trailing history window a reshell table row observes to feed its
+// sparkline cell (table-watch.html "Trend 1 h").
+inline constexpr scada::base::TimeDelta kSparklineWindow =
+    scada::base::TimeDelta::FromHours(1);
 
 // A point in a sparkline's local pixel space (origin top-left, y grows down),
 // ready to feed a QPainter polyline (or any renderer).
@@ -23,3 +31,10 @@ std::vector<SparklinePoint> ComputeSparklinePoints(
     float width,
     float height,
     float padding = 2.0f);
+
+// The numeric series a row's history feeds into the sparkline: the samples of
+// `values`, in order, that coerce to a number — including discrete/bool
+// states, whose 0/1 timeline is a meaningful mini-trend. Null and non-numeric
+// samples (text states) are skipped rather than substituted — a
+// min/max-normalized mini-trend must not invent zeros. Pure and Qt-free.
+std::vector<double> NumericSeries(std::span<const scada::DataValue> values);

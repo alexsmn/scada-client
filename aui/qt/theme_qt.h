@@ -63,6 +63,12 @@ struct ThemeTokens {
 // Returns the immutable token table for a theme.
 const ThemeTokens& GetThemeTokens(Theme theme);
 
+// The token table matching the active severity theme (the reshell opt-in
+// state set at startup): kLight/kHighContrast map to their tables, everything
+// else — including the legacy theme, for standalone reshell chrome that
+// renders the dark tokens regardless — maps to dark.
+const ThemeTokens& ActiveThemeTokens();
+
 // Parses a theme from its persisted QSettings string ("dark" | "light" | "hc"),
 // falling back to `fallback` for unknown/empty input.
 Theme ThemeFromString(const QString& name, Theme fallback = Theme::kDark);

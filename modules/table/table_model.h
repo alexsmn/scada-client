@@ -33,9 +33,13 @@ class TableModel : private TableModelContext, public scada::aui::TableModel {
     // the existing column ids in saved window state stay stable; the column is
     // added to the view only under the opt-in token theme.
     COLUMN_QUALITY,
+    // Reshell-only per-row mini-trend, painted by the sparkline delegate from
+    // the row's trailing history window (no cell text). Appended for the same
+    // saved-state stability reason.
+    COLUMN_SPARKLINE,
 
     COLUMN_FIRST = COLUMN_TITLE,
-    COLUMN_LAST = COLUMN_QUALITY,
+    COLUMN_LAST = COLUMN_SPARKLINE,
   };
 
   explicit TableModel(TableModelContext&& context);

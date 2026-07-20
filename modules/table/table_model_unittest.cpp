@@ -1,11 +1,15 @@
 #include "table_model.h"
 
 #include "aui/dialog_service_mock.h"
+#include "aui/severity_colors.h"
 #include "aui/test/recording_table_model_observer.h"
 #include "base/blinker_mock.h"
 #include "base/observer_list.h"
+#include "base/test/scoped_mock_clock_override.h"
 #include "events/node_event_provider_mock.h"
 #include "model/data_items_node_ids.h"
+#include "modules/table/sparkline.h"
+#include "modules/table/table_row.h"
 #include "node_service/node_model_mock.h"
 #include "node_service/test/model_node_service.h"
 #include "profile/profile.h"
@@ -173,6 +177,34 @@ std::shared_ptr<TableModelTest::RowContext> TableModelTest::SetFormula() {
   EXPECT_CALL(row_context->timed_data, RemoveViewObserver(_));
 
   return row_context;
+}
+
+// Under the reshell theme a new row also observes a trailing history window
+// feeding its sparkline cell; the legacy grid stays current-only (covered by
+// the {Max, Max} view-observer expectation in the SetFormula helper).
+TEST_F(TableModelTest, ReshellRowObservesTheSparklineWindow) {
+  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
+  const scada::base::ScopedMockClockOverride clock;
+
+  struct NiceRowContext {
+    NiceMock<MockTimedData> timed_data;
+  };
+  auto row_context = std::make_shared<NiceRowContext>();
+  const std::string formula = "formula";
+  EXPECT_CALL(
+      timed_data_service_,
+      GetFormulaTimedData(std::string_view{formula}, scada::AggregateFilter{}))
+      .WillOnce(Return(
+          std::shared_ptr<TimedData>{row_context, &row_context->timed_data}));
+
+  table_model_.SetFormula(0, formula);
+
+  const TableRow* row = table_model_.GetRow(0);
+  ASSERT_NE(row, nullptr);
+  EXPECT_EQ(row->timed_data().from(),
+            scada::base::Time::Now() - kSparklineWindow);
+
+  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kLegacy);
 }
 
 TEST_F(TableModelTest, SetFormula) {

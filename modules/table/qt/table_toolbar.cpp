@@ -12,23 +12,6 @@
 
 namespace {
 
-// The design tokens for the active reshell theme. The bar is only built under
-// a token theme (MakeTableToolbar gates on it), so the fallback is harmless.
-const scada::aui::ThemeTokens& BarTokens() {
-  scada::aui::Theme theme = scada::aui::Theme::kDark;
-  switch (scada::aui::GetSeverityTheme()) {
-    case scada::aui::SeverityTheme::kLight:
-      theme = scada::aui::Theme::kLight;
-      break;
-    case scada::aui::SeverityTheme::kHighContrast:
-      theme = scada::aui::Theme::kHighContrast;
-      break;
-    default:
-      break;
-  }
-  return scada::aui::GetThemeTokens(theme);
-}
-
 QString Tr(std::string_view text) {
   return QString::fromStdU16String(Translate(text));
 }
@@ -39,7 +22,7 @@ TableToolbar::TableToolbar(TableToolbarContext context, QWidget* parent)
     : QWidget{parent}, context_{std::move(context)} {
   setObjectName(QStringLiteral("tableToolbar"));
 
-  const scada::aui::ThemeTokens& tokens = BarTokens();
+  const scada::aui::ThemeTokens& tokens = scada::aui::ActiveThemeTokens();
   setStyleSheet(
       QStringLiteral(
           "#tableToolbar{background:%1;border-bottom:1px solid %2;}"

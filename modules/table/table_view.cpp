@@ -19,7 +19,9 @@
 #include "ui/common/client_utils.h"
 
 #if defined(UI_QT)
+#include "modules/table/qt/sparkline_delegate.h"
 #include "modules/table/qt/table_toolbar.h"
+#include "modules/table/sparkline.h"
 
 #include <QVBoxLayout>
 #include <QWidget>
@@ -45,12 +47,17 @@ TableView::TableView(const ControllerContext& context)
        /*monospace=*/true},
   };
 
-  // Reshell-only quality mark column, placed next to the value exactly as in
-  // table-watch.html. Gated on the opt-in token theme so the legacy grid is
-  // unchanged (the good/uncertain/bad tokens only exist under the token
-  // themes; `QualityColor` returns nothing under kLegacy anyway).
+  // Reshell-only quality mark and per-row mini-trend columns, placed next to
+  // the value exactly as in table-watch.html. Gated on the opt-in token theme
+  // so the legacy grid is unchanged (the good/uncertain/bad tokens only exist
+  // under the token themes; `QualityColor` returns nothing under kLegacy
+  // anyway).
+  [[maybe_unused]] int sparkline_column = -1;
   if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy) {
     columns.push_back({TableModel::COLUMN_QUALITY, Translate("Quality"), 110,
+                       scada::aui::TableColumn::LEFT});
+    sparkline_column = static_cast<int>(columns.size());
+    columns.push_back({TableModel::COLUMN_SPARKLINE, Translate("Trend"), 120,
                        scada::aui::TableColumn::LEFT});
   }
 
@@ -70,6 +77,22 @@ TableView::TableView(const ControllerContext& context)
   // cppcheck-suppress noCopyConstructor
   // cppcheck-suppress noOperatorEq
   view_ = new scada::aui::Table{model_, std::move(columns)};
+
+#if defined(UI_QT)
+  if (sparkline_column != -1) {
+    // The Trend cells are painted, not textual: a per-row mini-trend from the
+    // row's trailing history window (see TableRow::SetFormula).
+    view_->setItemDelegateForColumn(
+        sparkline_column,
+        new SparklineDelegate{
+            [this](int row) {
+              const TableRow* table_row = model_->GetRow(row);
+              return table_row ? NumericSeries(table_row->timed_data().values())
+                               : std::vector<double>{};
+            },
+            view_});
+  }
+#endif
 
   view_->LoadIcons(IDB_ITEMS, 16, scada::aui::Rgba{255, 0, 255});
 

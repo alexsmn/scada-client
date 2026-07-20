@@ -23,21 +23,10 @@
 
 namespace {
 
-// The design tokens for the active reshell theme. The panel is only built under
-// a token theme (the host gates on it), so the legacy fallback is harmless.
+// The design tokens for the active reshell theme (dark regardless when the
+// panel is built standalone, e.g. for a capture).
 const scada::aui::ThemeTokens& InspectorTokens() {
-  scada::aui::Theme theme = scada::aui::Theme::kDark;
-  switch (scada::aui::GetSeverityTheme()) {
-    case scada::aui::SeverityTheme::kLight:
-      theme = scada::aui::Theme::kLight;
-      break;
-    case scada::aui::SeverityTheme::kHighContrast:
-      theme = scada::aui::Theme::kHighContrast;
-      break;
-    default:
-      break;
-  }
-  return scada::aui::GetThemeTokens(theme);
+  return scada::aui::ActiveThemeTokens();
 }
 
 QString Tr(std::string_view text) {

@@ -168,6 +168,21 @@ QString ThemeToString(Theme theme) {
   return QStringLiteral("dark");
 }
 
+const ThemeTokens& ActiveThemeTokens() {
+  Theme theme = Theme::kDark;
+  switch (GetSeverityTheme()) {
+    case SeverityTheme::kLight:
+      theme = Theme::kLight;
+      break;
+    case SeverityTheme::kHighContrast:
+      theme = Theme::kHighContrast;
+      break;
+    default:
+      break;
+  }
+  return GetThemeTokens(theme);
+}
+
 std::optional<QFont> MonoValueFont() {
   if (GetSeverityTheme() == SeverityTheme::kLegacy)
     return std::nullopt;

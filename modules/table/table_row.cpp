@@ -10,6 +10,7 @@
 #include "events/node_event_provider.h"
 #include "model/data_items_node_ids.h"
 #include "modules/table/quality_mark.h"
+#include "modules/table/sparkline.h"
 #include "modules/table/table_model.h"
 #include "node_service/node_util.h"
 #include "profile/profile.h"
@@ -90,6 +91,10 @@ TableRow::TableRow(TableModel& model, int index)
   timed_data_.property_change_handler = [this](const PropertySet& properties) {
     NotifyUpdate();
   };
+  // Historical values arriving for the sparkline window repaint the row.
+  timed_data_.update_handler = [this](std::span<const scada::DataValue>) {
+    NotifyUpdate();
+  };
   timed_data_.event_change_handler = [this] {
     SetBlinking(timed_data_.alerting());
   };
@@ -117,6 +122,12 @@ void TableRow::SetFormula(std::string formula, bool notify_update) {
     formula_.erase(formula_.begin());
 
   timed_data_.Connect(model_.timed_data_service(), formula_);
+
+  // Under the reshell theme each row also observes a trailing history window
+  // feeding its sparkline cell (the mockup's "Trend 1 h"); the legacy grid
+  // stays current-only.
+  if (ReshellActive())
+    timed_data_.SetFrom(scada::base::Time::Now() - kSparklineWindow);
 
   SetBlinking(timed_data_.alerting());
 

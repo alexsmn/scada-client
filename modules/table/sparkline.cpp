@@ -4,6 +4,17 @@
 #include <cmath>
 #include <vector>
 
+std::vector<double> NumericSeries(std::span<const scada::DataValue> values) {
+  std::vector<double> series;
+  series.reserve(values.size());
+  for (const scada::DataValue& value : values) {
+    double sample = 0;
+    if (value.value.get(sample))
+      series.push_back(sample);
+  }
+  return series;
+}
+
 std::vector<SparklinePoint> ComputeSparklinePoints(
     std::span<const double> values,
     float width,
