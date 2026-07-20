@@ -1501,6 +1501,61 @@
 </context>
 <context>
     <name>CsvExportDialog</name>
+    <!-- The dialog's strings belong to this context: uic emits
+         QCoreApplication::translate("CsvExportDialog", ...) for a .ui, and the
+         QMessageBox calls in csv_export_dialog.cpp use tr(). They previously
+         sat under the empty context as "vanished", so none of them shipped.
+         The literal delimiter (",") and quote ("\"") combo items are
+         deliberately absent: accept() parses them as single characters, so a
+         translation would break the dialog. -->
+    <message>
+        <source>CSV parameters</source>
+        <translation>Параметры CSV</translation>
+    </message>
+    <message>
+        <source>Encoding:</source>
+        <translation>Кодировка:</translation>
+    </message>
+    <message>
+        <source>Delimiter:</source>
+        <translation>Разделитель:</translation>
+    </message>
+    <message>
+        <source>Quote:</source>
+        <translation>Кавычки:</translation>
+    </message>
+    <message>
+        <source>System</source>
+        <translation>Системная</translation>
+    </message>
+    <message>
+        <source>Unicode (UTF-8)</source>
+        <translation>Юникод (UTF-8)</translation>
+    </message>
+    <message>
+        <source>Tab</source>
+        <translation>Табуляция</translation>
+    </message>
+    <message>
+        <source>Space</source>
+        <translation>Пробел</translation>
+    </message>
+    <message>
+        <source>OK</source>
+        <translation>ОК</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Отмена</translation>
+    </message>
+    <message>
+        <source>Please enter a symbol for the delimiter or choose one from the drop-down list.</source>
+        <translation>Пожалуйста, укажите одиночный символ разделителя или выберите из списка.</translation>
+    </message>
+    <message>
+        <source>Please enter a symbol for the quote or choose one from the drop-down list.</source>
+        <translation>Пожалуйста, укажите одиночный символ кавычки или выберите из списка.</translation>
+    </message>
     <!-- modules/export/csv/qt/csv_export_dialog.ui (flood-group expansion) -->
     <message>
         <source>Expand grouped rows</source>
