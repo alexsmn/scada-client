@@ -137,11 +137,11 @@
     <!-- modules/login/login_controller.cpp (security_mode_list) -->
     <message>
         <source>No security</source>
-        <translation>Без защиты</translation>
+        <translation>Нет безопасности</translation>
     </message>
     <message>
         <source>Most secure available</source>
-        <translation>Максимальная доступная защита</translation>
+        <translation>Максимальная безопасность</translation>
     </message>
     <message>
         <source>Sign and encrypt</source>
