@@ -202,6 +202,7 @@ TEST_F(E2eTestSupportTest, ObjectTreeLabelsCheckWritesSuccessfulReport) {
                             },
                         .timeout = std::chrono::milliseconds{0},
                         .poll_interval = std::chrono::milliseconds{0},
+                        .settle_duration = std::chrono::milliseconds{0},
                     },
                     report_path_));
 
@@ -209,6 +210,37 @@ TEST_F(E2eTestSupportTest, ObjectTreeLabelsCheckWritesSuccessfulReport) {
   EXPECT_NE(report.find("object-tree-labels: ok"), std::string::npos);
   EXPECT_NE(report.find("expanded first rendered path"), std::string::npos);
   EXPECT_NE(report.find("label[3]=Point"), std::string::npos);
+}
+
+// The tree capture walks the first child reaching the requested depth while
+// FetchMore() is still in flight, so a transient subtree can present a
+// complete-looking path before the intended one loads. The check must wait for
+// the path to stop changing instead of accepting the first ready-looking one.
+TEST_F(E2eTestSupportTest, ObjectTreeLabelsCheckWaitsForTransientPathToSettle) {
+  int call_count = 0;
+  WaitAwaitable(executor_,
+                RunE2eObjectTreeLabelsCheck(
+                    ObjectTreeLabelsCheckContext{
+                        .executor = executor_,
+                        .get_expanded_labels =
+                            [&call_count] {
+                              if (++call_count <= 5) {
+                                return std::vector<std::u16string>{
+                                    u"Root", u"Transient", u"Group", u"Point"};
+                              }
+                              return std::vector<std::u16string>{
+                                  u"Root", u"Area", u"Device", u"Point"};
+                            },
+                        .timeout = std::chrono::seconds{10},
+                        .poll_interval = std::chrono::milliseconds{1},
+                        .settle_duration = std::chrono::milliseconds{50},
+                    },
+                    report_path_));
+
+  const auto report = ReadFile(report_path_);
+  EXPECT_NE(report.find("object-tree-labels: ok"), std::string::npos);
+  EXPECT_NE(report.find("label[1]=Area"), std::string::npos) << report;
+  EXPECT_EQ(report.find("Transient"), std::string::npos) << report;
 }
 
 TEST_F(E2eTestSupportTest, ObjectTreeLabelsCheckWritesTimeoutReport) {

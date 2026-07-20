@@ -276,12 +276,26 @@ Awaitable<void> RunObjectTreeLabelsCheckAsync(
     std::filesystem::path report_path) {
   const auto deadline = std::chrono::steady_clock::now() + context.timeout;
   std::vector<std::u16string> labels;
+  // A ready-looking path is only accepted once it has repeated unchanged for
+  // settle_duration; anything captured mid-FetchMore keeps changing and resets
+  // the window. See ObjectTreeLabelsCheckContext::settle_duration.
+  std::vector<std::u16string> candidate;
+  std::chrono::steady_clock::time_point candidate_since;
   do {
     labels = context.get_expanded_labels();
     if (IsObjectTreeLabelsReady(labels)) {
-      WriteObjectTreeLabelsReport(report_path, true, labels,
-                                  "expanded first rendered path");
-      co_return;
+      const auto now = std::chrono::steady_clock::now();
+      if (labels != candidate) {
+        candidate = labels;
+        candidate_since = now;
+      }
+      if (now - candidate_since >= context.settle_duration) {
+        WriteObjectTreeLabelsReport(report_path, true, labels,
+                                    "expanded first rendered path (settled)");
+        co_return;
+      }
+    } else {
+      candidate.clear();
     }
 
     if (std::chrono::steady_clock::now() >= deadline)
@@ -291,7 +305,7 @@ Awaitable<void> RunObjectTreeLabelsCheckAsync(
   } while (true);
 
   WriteObjectTreeLabelsReport(report_path, false, labels,
-                              "timed out waiting for rendered labels");
+                              "timed out waiting for rendered labels to settle");
   co_return;
 }
 

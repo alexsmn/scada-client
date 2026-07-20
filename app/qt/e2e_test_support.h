@@ -74,6 +74,13 @@ struct ObjectTreeLabelsCheckContext {
   // applies to DisplayName resolution along the object tree path.
   std::chrono::milliseconds timeout{60000};
   std::chrono::milliseconds poll_interval{100};
+  // How long a candidate path must stay unchanged before it is accepted.
+  // The capture walks the first child that reaches the requested depth while
+  // FetchMore() is still in flight, so a transient subtree can briefly present
+  // a complete-looking path before the intended one finishes loading. Requiring
+  // the same path across this window means "the tree has settled" rather than
+  // merely "four labels are non-empty".
+  std::chrono::milliseconds settle_duration{2000};
 };
 
 Awaitable<void> RunE2eObjectViewValuesCheck(ClientApplication& app,
