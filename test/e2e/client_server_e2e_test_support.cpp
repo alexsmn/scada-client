@@ -683,18 +683,19 @@ void ClientServerE2eTest::StartCluster() {
     aggregation_servers.push_back(
         boost::json::object{{"endpoint", (*edge.slot)->OpcUaUrl()}});
   }
-  // The file-store downstream exclusively claims the file-instance namespace
-  // plus the FileSystem root object (so top-level AddNodes route to it), and
-  // its model-change events are re-raised to the proxy's clients. The link
-  // presents svc — file create/delete forwarding needs a non-anonymous
-  // downstream session under enforce_permissions. Mirrors the GCP proxy.json
-  // entry.
+  // The file-store downstream. It no longer needs a namespace claim: the file
+  // instance namespace is now tier-exclusive (ADR 0003 — only this tier
+  // publishes FILESYSTEM_FILE), so the proxy routes it there by ownership. The
+  // one remaining claim is the FileSystem root object i=304, which lives in the
+  // shared SCADA namespace (every tier serves it) and so cannot be routed by
+  // namespace alone — it anchors top-level AddNodes to this tier. Its
+  // model-change events are re-raised to the proxy's clients; the link presents
+  // svc, since file create/delete forwarding needs a non-anonymous downstream
+  // session under enforce_permissions. Mirrors the GCP proxy.json entry.
   aggregation_servers.push_back(boost::json::object{
       {"endpoint", filesystem_tier_->OpcUaUrl()},
       {"user", std::string{kSvcUser}},
       {"password", std::string{kSvcPassword}},
-      {"namespaces",
-       boost::json::array{"http://telecontrol.ru/opcua/filesystem/FileType"}},
       {"nodes", boost::json::array{"ns=7;i=304"}},
       {"forward_events", true}});
   WriteServerJson(
