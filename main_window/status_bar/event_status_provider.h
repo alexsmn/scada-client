@@ -2,6 +2,7 @@
 
 #include "aui/severity_colors.h"
 #include "events/event_observer.h"
+#include "events/severity_tiles.h"
 
 #include <boost/signals2/connection.hpp>
 #include <functional>
@@ -34,6 +35,10 @@ class EventStatusProvider final : private EventObserver {
 
   std::u16string GetEventCountText() const;
   std::u16string GetSeverityText() const;
+
+  // The KPI severity tile counts for the current alarm set — the single
+  // aggregation the accessors below are views onto.
+  events::SeverityTileCounts GetTileCounts() const;
 
   // Number of currently unacknowledged alarms, for an unread badge.
   int GetAlarmCount() const;

@@ -29,9 +29,9 @@ SeverityTileCounts CountSeverityTiles(std::span<const AlarmSummary> alarms) {
 
 std::vector<SeverityTile> BuildSeverityTiles(
     const SeverityTileCounts& counts,
-    std::string caption_critical,
-    std::string caption_warning,
-    std::string caption_unacknowledged) {
+    std::u16string caption_critical,
+    std::u16string caption_warning,
+    std::u16string caption_unacknowledged) {
   std::vector<SeverityTile> tiles;
   tiles.reserve(3);
   tiles.push_back({.caption = std::move(caption_critical),

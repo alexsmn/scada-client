@@ -78,14 +78,14 @@ TEST(SeverityTilesTest, BuildsTilesMostSevereFirst) {
       .critical = 3, .warning = 2, .unacknowledged = 5};
 
   const std::vector<SeverityTile> tiles =
-      BuildSeverityTiles(counts, "Critical", "Warning", "Unacknowledged");
+      BuildSeverityTiles(counts, u"Critical", u"Warning", u"Unacknowledged");
 
   ASSERT_EQ(tiles.size(), 3u);
-  EXPECT_EQ(tiles[0].caption, "Critical");
+  EXPECT_EQ(tiles[0].caption, u"Critical");
   EXPECT_EQ(tiles[0].count, 3);
-  EXPECT_EQ(tiles[1].caption, "Warning");
+  EXPECT_EQ(tiles[1].caption, u"Warning");
   EXPECT_EQ(tiles[1].count, 2);
-  EXPECT_EQ(tiles[2].caption, "Unacknowledged");
+  EXPECT_EQ(tiles[2].caption, u"Unacknowledged");
   EXPECT_EQ(tiles[2].count, 5);
 }
 
@@ -94,7 +94,7 @@ TEST(SeverityTilesTest, BuildsTilesMostSevereFirst) {
 // workflow state and carries no severity colour.
 TEST(SeverityTilesTest, TileColorsComeFromSeveritySingleSource) {
   const std::vector<SeverityTile> tiles =
-      BuildSeverityTiles(SeverityTileCounts{}, "C", "W", "U");
+      BuildSeverityTiles(SeverityTileCounts{}, u"C", u"W", u"U");
 
   ASSERT_EQ(tiles.size(), 3u);
   EXPECT_EQ(tiles[0].color,

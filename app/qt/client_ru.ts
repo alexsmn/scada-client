@@ -120,7 +120,8 @@
         <source>Restart the client to apply the interface change.</source>
         <translation>Перезапустите клиент, чтобы применить изменение интерфейса.</translation>
     </message>
-    <!-- main_window/status_bar/event_status_provider.cpp -->
+    <!-- main_window/status_bar/event_status_provider.cpp
+         + modules/events/qt/severity_tile_strip.cpp (KPI severity tiles) -->
     <message>
         <source>Critical</source>
         <translation>Критично</translation>
@@ -128,6 +129,10 @@
     <message>
         <source>Warning</source>
         <translation>Предупреждение</translation>
+    </message>
+    <message>
+        <source>Unacknowledged</source>
+        <translation>Не квитировано</translation>
     </message>
     <!-- modules/table (reshell quality marks) -->
     <message>

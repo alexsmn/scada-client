@@ -242,6 +242,7 @@
     { "type": "Users",          "filename": "users-admin.png",         "width": 700,  "height": 440, "min_rows": 9 },
     { "type": "TransmissionRule", "filename": "transmission-rule.png",  "width": 320,  "height": 420 },
     { "type": "BulkCreate",     "filename": "bulk-create.png",         "width": 560,  "height": 760 },
+    { "type": "SeverityTiles",  "filename": "severity-tiles.png",      "width": 420,  "height": 32 },
     { "type": "Table",          "filename": "table.png",               "width": 900,  "height": 300,
       "paths": ["TIT.200", "TIT.201", "TIT.202", "TIT.208", "TIT.211", "TIT.209"] },
     { "type": "Summ",           "filename": "summary.png",             "width": 800,  "height": 500 },

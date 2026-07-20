@@ -5,6 +5,11 @@
 #include "main_window/base_main_window.h"
 
 #include <QMainWindow>
+
+namespace events {
+class SeverityTileStrip;
+}
+
 #include <boost/signals2/connection.hpp>
 #include <vector>
 
@@ -133,10 +138,9 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // Status-bar pane index shown by each context_panes_ label (the curated
   // who/where subset), parallel to context_panes_.
   std::vector<int> context_pane_indices_;
-  // Live severity KPI tiles in the context bar (unacknowledged counts per
-  // level), refreshed with the status-bar model.
-  QLabel* kpi_critical_ = nullptr;
-  QLabel* kpi_warning_ = nullptr;
+  // Live severity KPI tiles in the context bar (critical / warning /
+  // unacknowledged), refreshed with the status-bar model.
+  events::SeverityTileStrip* severity_tiles_ = nullptr;
   // Alarm-flood escalation pill; visible only while a flood is active.
   QLabel* flood_indicator_ = nullptr;
   boost::signals2::scoped_connection context_bar_connection_;

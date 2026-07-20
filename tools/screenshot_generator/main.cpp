@@ -2,6 +2,7 @@
 #include "user_access_capture.h"
 #include "transmission_rule_capture.h"
 #include "bulk_create_capture.h"
+#include "severity_tiles_capture.h"
 #include "dialog_capture.h"
 #include "display_capture.h"
 #include "fixture_builder.h"
@@ -326,6 +327,13 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     // bulk-create.html), built from a demo pattern with no node service.
     if (spec.window_type == "BulkCreate") {
       SaveBulkCreateScreenshot(spec);
+      ++captured;
+      continue;
+    }
+    // The KPI severity tiles are standalone reshell chrome (the context bar's
+    // alarm summary), built from seeded counts with no node service.
+    if (spec.window_type == "SeverityTiles") {
+      SaveSeverityTilesScreenshot(spec);
       ++captured;
       continue;
     }

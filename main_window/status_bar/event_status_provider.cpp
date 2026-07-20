@@ -35,19 +35,40 @@ std::u16string EventStatusProvider::GetEventCountText() const {
              : u"\u041d\u0435\u0442 \u0441\u043e\u0431\u044b\u0442\u0438\u0439";
 }
 
+events::SeverityTileCounts EventStatusProvider::GetTileCounts() const {
+  // The client's event model retains only alarms nobody has acknowledged yet
+  // (NodeEventProvider drops an event once it is acked) and carries no
+  // condition-cleared state, so every alarm it knows about is active and
+  // unacknowledged. The aggregation still runs through CountSeverityTiles() so
+  // the tiles' semantics live in one tested place — when the client gains a
+  // cleared-but-unread state, only the mapping below changes.
+  std::vector<events::AlarmSummary> alarms;
+  alarms.reserve(node_event_provider_.unacked_events().size());
+  for (const scada::Event& event :
+       node_event_provider_.unacked_events() | std::views::values) {
+    alarms.push_back({.severity = SeverityLevelForEvent(event.severity),
+                      .acknowledged = false,
+                      .active = true});
+  }
+  return events::CountSeverityTiles(alarms);
+}
+
 int EventStatusProvider::GetAlarmCount() const {
-  return static_cast<int>(node_event_provider_.unacked_events().size());
+  return GetTileCounts().unacknowledged;
 }
 
 int EventStatusProvider::GetSeverityCount(
     scada::aui::SeverityLevel level) const {
-  int count = 0;
-  for (const scada::Event& event :
-       node_event_provider_.unacked_events() | std::views::values) {
-    if (SeverityLevelForEvent(event.severity) == level)
-      ++count;
+  const events::SeverityTileCounts counts = GetTileCounts();
+  switch (level) {
+    case scada::aui::SeverityLevel::kCritical:
+      return counts.critical;
+    case scada::aui::SeverityLevel::kWarning:
+      return counts.warning;
+    case scada::aui::SeverityLevel::kNone:
+      return 0;
   }
-  return count;
+  return 0;
 }
 
 std::u16string EventStatusProvider::GetSeverityText() const {

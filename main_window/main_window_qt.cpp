@@ -16,6 +16,7 @@
 #include "controller/selection_model.h"
 #include "controller/window_info.h"
 #include "device_diagnostics/qt/device_diagnostics_panel.h"
+#include "events/qt/severity_tile_strip.h"
 #include "filesystem/file_cache.h"
 #include "inspector/qt/inspector_panel.h"
 #include "main_window/activity_bar_qt.h"
@@ -404,14 +405,24 @@ void MainWindow::CreateContextBar() {
   flood_indicator_->setVisible(false);
   context_bar_->addWidget(flood_indicator_);
 
-  // Live severity KPI tiles: unacknowledged-alarm counts per level, coloured
-  // from the severity single source (bold when active, plain when calm).
-  kpi_critical_ = new QLabel(context_bar_);
-  kpi_warning_ = new QLabel(context_bar_);
-  for (QLabel* tile : {kpi_critical_, kpi_warning_}) {
-    tile->setMargin(2);
-    context_bar_->addWidget(tile);
-  }
+  // Live severity KPI tiles (backlog 2.3): critical / warning / unacknowledged,
+  // ordered and coloured by the shared tile builder. Opt-in — the factory
+  // returns nothing under the legacy theme.
+  severity_tiles_ = events::MakeSeverityTileStrip(
+      [this] {
+        // The status-bar model exposes the counts as separate aggregates; the
+        // alarm total is the unacknowledged count (see
+        // EventStatusProvider::GetTileCounts).
+        return events::SeverityTileCounts{
+            .critical = status_bar_model_->GetSeverityCount(
+                scada::aui::SeverityLevel::kCritical),
+            .warning = status_bar_model_->GetSeverityCount(
+                scada::aui::SeverityLevel::kWarning),
+            .unacknowledged = status_bar_model_->GetAlarmCount()};
+      },
+      context_bar_);
+  if (severity_tiles_)
+    context_bar_->addWidget(severity_tiles_);
 
   // Context cluster (right): a curated who/where subset of the status-bar panes
   // (user / connection / server / endpoint) — not the whole status strip. The
@@ -427,22 +438,7 @@ void MainWindow::CreateContextBar() {
     context_bar_->addWidget(label);
   }
 
-  auto refresh_kpi = [this](QLabel* tile, scada::aui::SeverityLevel level,
-                            const char* name) {
-    const int count = status_bar_model_->GetSeverityCount(level);
-    tile->setText(QStringLiteral("%1 %2")
-                      .arg(QString::fromStdU16String(Translate(name)))
-                      .arg(count));
-    const std::optional<scada::aui::Color> color =
-        scada::aui::SeverityColor(level);
-    // Bold + coloured while alarms are active, plain when the count is zero.
-    tile->setStyleSheet(count > 0 && color
-                            ? QStringLiteral("color:%1;font-weight:700;")
-                                  .arg(color->qcolor().name())
-                            : QString{});
-  };
-
-  auto refresh = [this, refresh_kpi] {
+  auto refresh = [this] {
     for (int k = 0; k < static_cast<int>(context_panes_.size()); ++k) {
       const int pane = context_pane_indices_[k];
       context_panes_[k]->setText(
@@ -454,9 +450,8 @@ void MainWindow::CreateContextBar() {
                       .arg(color->qcolor().name())
                 : QString{});
     }
-    refresh_kpi(kpi_critical_, scada::aui::SeverityLevel::kCritical,
-                "Critical");
-    refresh_kpi(kpi_warning_, scada::aui::SeverityLevel::kWarning, "Warning");
+    if (severity_tiles_)
+      severity_tiles_->Refresh();
 
     // Flood escalation: a single prominent state pill when the unacknowledged
     // count crosses the flood threshold, so a flood reads as a state, not a
