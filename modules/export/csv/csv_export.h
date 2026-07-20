@@ -8,5 +8,9 @@
 class DialogService;
 class Profile;
 
+// Asks for the CSV options. `can_expand` tells the dialog whether the data
+// being exported has grouped rows to expand; the option is hidden when it does
+// not, rather than offered with no effect.
 Awaitable<CsvExportParams> ShowCsvExportDialog(DialogService& dialog_service,
-                                               Profile& profile);
+                                               Profile& profile,
+                                               bool can_expand);

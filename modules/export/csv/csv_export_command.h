@@ -12,8 +12,10 @@ class DialogService;
 class ExportModel;
 class Profile;
 
+// The bool is whether the data being exported has grouped rows to expand; the
+// dialog offers the option only then.
 using CsvExportDialogRunner =
-    std::function<Awaitable<CsvExportParams>(DialogService&, Profile&)>;
+    std::function<Awaitable<CsvExportParams>(DialogService&, Profile&, bool)>;
 
 struct CsvExportContext {
   AnyExecutor executor_;

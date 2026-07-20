@@ -451,7 +451,10 @@ TimeModel* EventView::GetTimeModel() {
 }
 
 ExportModel::ExportData EventView::GetExportData() {
-  // Export and print the occurrences, not the collapsed rows: a flood group is
-  // a way of displaying a wall of repeats, not a way of recording it.
-  return TableExportData{expanded_model_, table_->columns()};
+  // Both forms: the rows as displayed, and the same events expanded out of
+  // their flood groups. A flood group is a way of *displaying* a wall of
+  // repeats, not of recording it, so the record-shaped consumers (spreadsheet,
+  // printout) take the expanded form and the CSV dialog offers the choice.
+  return TableExportData{*model_, table_->columns(), /*row_range=*/std::nullopt,
+                         &expanded_model_};
 }

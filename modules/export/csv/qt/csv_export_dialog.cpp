@@ -14,6 +14,7 @@ class CsvExportDialog : public QDialog {
 
  public:
   explicit CsvExportDialog(const CsvExportParams& params,
+                           bool can_expand,
                            QWidget* parent = nullptr);
 
   CsvExportParams params_;
@@ -30,9 +31,16 @@ class CsvExportDialog : public QDialog {
 
 #include "csv_export_dialog.moc"
 
-CsvExportDialog::CsvExportDialog(const CsvExportParams& params, QWidget* parent)
+CsvExportDialog::CsvExportDialog(const CsvExportParams& params,
+                                 bool can_expand,
+                                 QWidget* parent)
     : QDialog{parent}, params_{params} {
   ui.setupUi(this);
+
+  // Only the views that group rows can expand them; for every other export the
+  // choice would be meaningless, so it is not offered.
+  ui.expandGroupsCheckBox->setVisible(can_expand);
+  ui.expandGroupsCheckBox->setChecked(params_.expand_groups);
 
   ui.encodingComboBox->setCurrentIndex(params_.unicode ? 1 : 0);
 
@@ -48,6 +56,10 @@ CsvExportDialog::CsvExportDialog(const CsvExportParams& params, QWidget* parent)
 
 void CsvExportDialog::accept() {
   params_.unicode = ui.encodingComboBox->currentIndex() != 0;
+  // Left at its stored value when the box is hidden, so a view without groups
+  // never silently rewrites the preference.
+  if (ui.expandGroupsCheckBox->isVisible())
+    params_.expand_groups = ui.expandGroupsCheckBox->isChecked();
 
   auto delimiter_index = ui.delimiterComboBox->currentIndex();
   auto delimiter = ui.delimiterComboBox->currentText();
@@ -82,13 +94,14 @@ void CsvExportDialog::accept() {
 }
 
 Awaitable<CsvExportParams> ShowCsvExportDialog(DialogService& dialog_service,
-                                               Profile& profile) {
+                                               Profile& profile,
+                                               bool can_expand) {
   auto csv_export_params =
       FromJson<CsvExportParams>(GetKey(profile.data(), "csv"))
           .value_or(CsvExportParams{});
 
   auto dialog = std::make_unique<CsvExportDialog>(
-      csv_export_params, dialog_service.GetParentWidget());
+      csv_export_params, can_expand, dialog_service.GetParentWidget());
 
   return StartMappedModalDialog(
       std::move(dialog), [&profile](CsvExportDialog& dialog) {

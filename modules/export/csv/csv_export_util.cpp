@@ -87,13 +87,14 @@ void ExportToCsv(ExportModel::TableExportData& table,
   for (int i = 0; i < static_cast<int>(table.columns.size()); ++i)
     writer.WriteCell(table.columns[i].title);
 
-  const auto row_range = table.GetRowRange();
+  scada::aui::TableModel& model = table.ModelFor(params.expand_groups);
+  const auto row_range = table.GetRowRange(params.expand_groups);
   for (int i = 0; i < row_range.count; ++i) {
     writer.StartRow();
 
     for (int j = 0; j < static_cast<int>(table.columns.size()); ++j) {
       auto column_id = table.columns[j].id;
-      auto text = table.model.GetCellText(row_range.first + i, column_id);
+      auto text = model.GetCellText(row_range.first + i, column_id);
       writer.WriteCell(text);
     }
   }
@@ -125,7 +126,10 @@ void ExportToCsv(ExportModel::GridExportData& grid,
 
 void ExportToExcel(ExportModel::TableExportData& table,
                    ExcelSheetModel& sheet) {
-  const auto row_range = table.GetRowRange();
+  // The Excel path has no options dialog; a spreadsheet is a record, so it
+  // takes the expanded form when the view offers one.
+  scada::aui::TableModel& model = table.ModelFor(/*expanded=*/true);
+  const auto row_range = table.GetRowRange(/*expanded=*/true);
   const int column_count = static_cast<int>(table.columns.size());
 
   sheet.SetDataSize(row_range.count + 1, column_count);
@@ -141,7 +145,7 @@ void ExportToExcel(ExportModel::TableExportData& table,
   for (int i = 0; i < row_range.count; ++i) {
     for (int j = 0; j < column_count; ++j) {
       auto column_id = table.columns[j].id;
-      auto text = table.model.GetCellText(row_range.first + i, column_id);
+      auto text = model.GetCellText(row_range.first + i, column_id);
       sheet.SetData(2 + i, 1 + j, UtfConvert<wchar_t>(text));
     }
   }
@@ -181,6 +185,7 @@ boost::json::value ToJson(const CsvExportParams& params) {
   SetKey(result, "unicode", params.unicode);
   SetKey(result, "delimiter", std::string{params.delimiter});
   SetKey(result, "quote", std::string{params.quote});
+  SetKey(result, "expandGroups", params.expand_groups);
   return result;
 }
 
@@ -197,6 +202,8 @@ std::optional<CsvExportParams> FromJson(const boost::json::value& value) {
   auto quote = GetString(value, "quote");
   if (quote.size() == 1)
     params.quote = quote.front();
+
+  params.expand_groups = GetBool(value, "expandGroups", params.expand_groups);
 
   return params;
 }

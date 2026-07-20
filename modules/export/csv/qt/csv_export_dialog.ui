@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>308</width>
-    <height>131</height>
+    <height>161</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -162,6 +162,16 @@
       </widget>
      </item>
     </layout>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="expandGroupsCheckBox">
+     <property name="text">
+      <string>Expand grouped rows</string>
+     </property>
+     <property name="toolTip">
+      <string>Write one row per event. When the journal collapses repeated alarms during a flood, an unchecked box exports the collapsed rows as shown, with their counts.</string>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>

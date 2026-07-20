@@ -109,7 +109,10 @@ QTextDocument& TableDocumentBuilder::Build() {
 
 void Print(PrintService& print_service,
            const ExportModel::TableExportData& table) {
-  const auto row_range = table.GetRowRange();
+  // A printout is a record like the spreadsheet exports, so it prints one row
+  // per event where the view groups them.
+  scada::aui::TableModel& model = table.ModelFor(/*expanded=*/true);
+  const auto row_range = table.GetRowRange(/*expanded=*/true);
   const int column_count = static_cast<int>(table.columns.size());
 
   TableDocumentBuilder builder{row_range.count, column_count};
@@ -119,8 +122,8 @@ void Print(PrintService& print_service,
 
   for (int row = 0; row < row_range.count; ++row) {
     for (int column = 0; column < column_count; ++column) {
-      auto text = table.model.GetCellText(row_range.first + row,
-                                          table.columns[column].id);
+      auto text =
+          model.GetCellText(row_range.first + row, table.columns[column].id);
       builder.SetCell(row, column, text);
     }
   }

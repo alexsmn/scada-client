@@ -7,6 +7,7 @@
 #include "export/csv/csv_export_util.h"
 #include "profile/profile.h"
 
+#include <QCheckBox>
 #include <QComboBox>
 #include <QDialog>
 #include <gtest/gtest.h>
@@ -49,6 +50,7 @@ void ExpectParamsEq(const CsvExportParams& actual,
   EXPECT_EQ(actual.unicode, expected.unicode);
   EXPECT_EQ(actual.delimiter, expected.delimiter);
   EXPECT_EQ(actual.quote, expected.quote);
+  EXPECT_EQ(actual.expand_groups, expected.expand_groups);
 }
 
 class CsvExportDialogTest : public testing::Test {
@@ -62,7 +64,7 @@ class CsvExportDialogTest : public testing::Test {
 
 TEST_F(CsvExportDialogTest, AcceptedDialogReturnsParamsAndStoresProfile) {
   auto result = scada::aui::qt::test::StartAwaitable(
-      ShowCsvExportDialog(dialog_service_, profile_));
+      ShowCsvExportDialog(dialog_service_, profile_, /*can_expand=*/false));
 
   scada::aui::qt::test::ProcessEventsUntilSettled(result, [](QDialog& dialog) {
     dialog.findChild<QComboBox*>("encodingComboBox")->setCurrentIndex(1);
@@ -72,9 +74,8 @@ TEST_F(CsvExportDialogTest, AcceptedDialogReturnsParamsAndStoresProfile) {
   });
 
   ASSERT_TRUE(scada::aui::qt::test::IsAwaitableReady(result));
-  const CsvExportParams expected{.unicode = true,
-                                 .delimiter = ';',
-                                 .quote = '\''};
+  const CsvExportParams expected{
+      .unicode = true, .delimiter = ';', .quote = '\''};
   ExpectParamsEq(scada::aui::qt::test::GetAwaitableResult(result), expected);
   ExpectParamsEq(ReadProfileParams(profile_), expected);
 }
@@ -84,7 +85,7 @@ TEST_F(CsvExportDialogTest, RejectedDialogDoesNotStoreProfileParams) {
       ToJson(CsvExportParams{.unicode = true, .delimiter = ';', .quote = '\''});
 
   auto result = scada::aui::qt::test::StartAwaitable(
-      ShowCsvExportDialog(dialog_service_, profile_));
+      ShowCsvExportDialog(dialog_service_, profile_, /*can_expand=*/false));
 
   scada::aui::qt::test::ProcessEventsUntilSettled(
       result, scada::aui::qt::test::RejectDialog);
@@ -92,8 +93,46 @@ TEST_F(CsvExportDialogTest, RejectedDialogDoesNotStoreProfileParams) {
   ASSERT_TRUE(scada::aui::qt::test::IsAwaitableReady(result));
   EXPECT_THROW(scada::aui::qt::test::GetAwaitableResult(result),
                std::exception);
-  ExpectParamsEq(ReadProfileParams(profile_),
-                 CsvExportParams{.unicode = true,
-                                 .delimiter = ';',
-                                 .quote = '\''});
+  ExpectParamsEq(
+      ReadProfileParams(profile_),
+      CsvExportParams{.unicode = true, .delimiter = ';', .quote = '\''});
+}
+
+// The expand option is only meaningful for a view that groups rows, so it is
+// hidden rather than shown with no effect.
+TEST_F(CsvExportDialogTest, ExpandOptionIsHiddenWhenThereIsNothingToExpand) {
+  auto result = scada::aui::qt::test::StartAwaitable(
+      ShowCsvExportDialog(dialog_service_, profile_, /*can_expand=*/false));
+
+  scada::aui::qt::test::ProcessEventsUntilSettled(result, [](QDialog& dialog) {
+    auto* checkbox = dialog.findChild<QCheckBox*>("expandGroupsCheckBox");
+    ASSERT_NE(checkbox, nullptr);
+    EXPECT_FALSE(checkbox->isVisible());
+    dialog.accept();
+  });
+
+  ASSERT_TRUE(scada::aui::qt::test::IsAwaitableReady(result));
+  // Hidden means untouched: the stored preference is not rewritten by a view
+  // that could not honour it either way.
+  EXPECT_TRUE(scada::aui::qt::test::GetAwaitableResult(result).expand_groups);
+}
+
+TEST_F(CsvExportDialogTest, ExpandOptionIsOfferedAndStoredWhenGroupsExist) {
+  auto result = scada::aui::qt::test::StartAwaitable(
+      ShowCsvExportDialog(dialog_service_, profile_, /*can_expand=*/true));
+
+  scada::aui::qt::test::ProcessEventsUntilSettled(result, [](QDialog& dialog) {
+    auto* checkbox = dialog.findChild<QCheckBox*>("expandGroupsCheckBox");
+    ASSERT_NE(checkbox, nullptr);
+    EXPECT_TRUE(checkbox->isVisible());
+    // Defaults to expanding — a spreadsheet is a record of what happened.
+    EXPECT_TRUE(checkbox->isChecked());
+    checkbox->setChecked(false);
+    dialog.accept();
+  });
+
+  ASSERT_TRUE(scada::aui::qt::test::IsAwaitableReady(result));
+  EXPECT_FALSE(scada::aui::qt::test::GetAwaitableResult(result).expand_groups);
+  // And the choice is remembered for the next export.
+  EXPECT_FALSE(ReadProfileParams(profile_).expand_groups);
 }

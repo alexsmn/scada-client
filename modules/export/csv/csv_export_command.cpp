@@ -2,8 +2,8 @@
 
 #include "aui/dialog_service.h"
 
-#include <boost/algorithm/string/replace.hpp>
 #include "base/value_util.h"
+#include <boost/algorithm/string/replace.hpp>
 #ifdef _WIN32
 #include "base/win/win_util2.h"
 #endif
@@ -74,7 +74,23 @@ class CsvExportCommandRun
     });
     SetKey(profile_.data(), "csvPath", path_.u16string());
 
-    auto params = co_await show_csv_export_dialog(dialog_service_, profile_);
+    // Ask the data whether it can expand before offering the choice. This is a
+    // best-effort question: the export itself runs later and is the thing that
+    // reports failures, so a view that cannot produce its data right now must
+    // not fail here — it would skip the error dialog the export path raises.
+    bool can_expand = false;
+    try {
+      auto export_data = export_model_.GetExportData();
+      if (auto* table =
+              std::get_if<ExportModel::TableExportData>(&export_data)) {
+        can_expand = table->can_expand();
+      }
+    } catch (const std::runtime_error&) {
+      // Do not offer what we could not confirm; the export reports the failure.
+    }
+
+    auto params =
+        co_await show_csv_export_dialog(dialog_service_, profile_, can_expand);
     co_await ExportAsync(params);
 
     auto open_prompt_result = co_await dialog_service_.RunMessageBox(

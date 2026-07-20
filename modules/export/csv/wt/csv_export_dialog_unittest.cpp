@@ -11,7 +11,8 @@ TEST(WtCsvExportDialogTest, UnsupportedDialogRejects) {
   DialogServiceImplWt dialog_service;
   Profile profile;
 
-  auto result = ShowCsvExportDialog(dialog_service, profile);
+  auto result =
+      ShowCsvExportDialog(dialog_service, profile, /*can_expand=*/false);
 
   EXPECT_THROW(WaitAwaitable(executor, std::move(result)), std::exception);
 }

@@ -1501,6 +1501,15 @@
 </context>
 <context>
     <name>CsvExportDialog</name>
+    <!-- modules/export/csv/qt/csv_export_dialog.ui (flood-group expansion) -->
+    <message>
+        <source>Expand grouped rows</source>
+        <translation>Развернуть сгруппированные строки</translation>
+    </message>
+    <message>
+        <source>Write one row per event. When the journal collapses repeated alarms during a flood, an unchecked box exports the collapsed rows as shown, with their counts.</source>
+        <translation>Записывать по одной строке на событие. Когда журнал сворачивает повторяющиеся тревоги при их потоке, снятый флажок выгружает свёрнутые строки как показано, вместе со счётчиками.</translation>
+    </message>
     <message>
         <source>New and repeated password do not match.</source>
         <translation type="obsolete">Новый и повторенный пароль не совпадают.</translation>

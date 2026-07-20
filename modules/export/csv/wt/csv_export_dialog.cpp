@@ -3,6 +3,7 @@
 #include "aui/wt/dialog_stub.h"
 
 Awaitable<CsvExportParams> ShowCsvExportDialog(DialogService& dialog_service,
-                                               Profile& profile) {
+                                               Profile& profile,
+                                               bool can_expand) {
   return scada::aui::wt::MakeUnsupportedDialogAwaitable<CsvExportParams>();
 }

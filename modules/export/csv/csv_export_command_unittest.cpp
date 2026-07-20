@@ -59,11 +59,11 @@ class TestExportModel : public ExportModel {
 class CsvExportCommandTest : public Test {
  public:
   void SetUp() override {
-    temp_dir_ = std::filesystem::temp_directory_path() /
-                ("scada_csv_export_test_" +
-                 std::to_string(std::chrono::steady_clock::now()
-                                    .time_since_epoch()
-                                    .count()));
+    temp_dir_ =
+        std::filesystem::temp_directory_path() /
+        ("scada_csv_export_test_" +
+         std::to_string(
+             std::chrono::steady_clock::now().time_since_epoch().count()));
     std::filesystem::create_directories(temp_dir_);
   }
 
@@ -90,9 +90,9 @@ class CsvExportCommandTest : public Test {
   Profile profile_;
   TestExportModel export_model_;
   CsvExportDialogRunner show_csv_export_dialog_ =
-      [](DialogService&, Profile&) -> Awaitable<CsvExportParams> {
-        co_return CsvExportParams{};
-      };
+      [](DialogService&, Profile&, bool) -> Awaitable<CsvExportParams> {
+    co_return CsvExportParams{};
+  };
   std::filesystem::path temp_dir_;
 };
 
@@ -110,11 +110,11 @@ TEST_F(CsvExportCommandTest, WritesCsvAndPromptsToOpen) {
         co_return export_file_path;
       });
 
-  EXPECT_CALL(dialog_service_,
-              RunMessageBox(
-                  std::u16string_view{u"Export completed. Open the file now?"},
-                  std::u16string_view{u"Export"},
-                  MessageBoxMode::QuestionYesNo))
+  EXPECT_CALL(
+      dialog_service_,
+      RunMessageBox(
+          std::u16string_view{u"Export completed. Open the file now?"},
+          std::u16string_view{u"Export"}, MessageBoxMode::QuestionYesNo))
       .WillOnce(ReturnAwaitable(MessageBoxResult::No));
 
   WaitAwaitable(executor_, Run());
@@ -131,10 +131,10 @@ TEST_F(CsvExportCommandTest, ExportFailureShowsErrorDialogAndRejects) {
   EXPECT_CALL(dialog_service_, SelectSaveFile(_))
       .WillOnce(ReturnAwaitable(export_file_path));
 
-  EXPECT_CALL(dialog_service_,
-              RunMessageBox(std::u16string_view{u"Export failed."},
-                            std::u16string_view{u"Export"},
-                            MessageBoxMode::Error))
+  EXPECT_CALL(
+      dialog_service_,
+      RunMessageBox(std::u16string_view{u"Export failed."},
+                    std::u16string_view{u"Export"}, MessageBoxMode::Error))
       .WillOnce(ReturnAwaitable(MessageBoxResult::Ok));
 
   EXPECT_THROW(WaitAwaitable(executor_, Run()), std::runtime_error);
@@ -143,8 +143,8 @@ TEST_F(CsvExportCommandTest, ExportFailureShowsErrorDialogAndRejects) {
 
 TEST_F(CsvExportCommandTest, RejectedSaveDialogStopsExportFlow) {
   bool export_dialog_shown = false;
-  show_csv_export_dialog_ = [&](DialogService&, Profile&)
-      -> Awaitable<CsvExportParams> {
+  show_csv_export_dialog_ = [&](DialogService&, Profile&,
+                                bool) -> Awaitable<CsvExportParams> {
     export_dialog_shown = true;
     co_return CsvExportParams{};
   };
@@ -162,8 +162,8 @@ TEST_F(CsvExportCommandTest, RejectedSaveDialogStopsExportFlow) {
 
 TEST_F(CsvExportCommandTest, RejectedExportDialogStopsBeforeWritingFile) {
   const auto export_file_path = temp_dir_ / "export.csv";
-  show_csv_export_dialog_ = [](DialogService&, Profile&)
-      -> Awaitable<CsvExportParams> {
+  show_csv_export_dialog_ = [](DialogService&, Profile&,
+                               bool) -> Awaitable<CsvExportParams> {
     return ThrowAwaitable<CsvExportParams>(
         std::make_exception_ptr(std::exception{}));
   };
