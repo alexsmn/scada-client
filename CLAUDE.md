@@ -484,6 +484,19 @@ Ordered as: project headers, then third-party/standard headers, separated by bla
 - UI strings use `u"..."` (UTF-16 string literals) for Russian text
 - Qt `.ts` translation files in `qt/` subdirectories
 - Translation files: `*_ru.ts`
+- **Never run `lupdate` against `app/qt/client_ru.ts`.** Most client UI strings
+  go through the custom `Translate()` helper, which `lupdate` does not
+  recognise as a translation call — a refresh would mark every one of them
+  `vanished`, and `lrelease` drops those, so they would silently stop shipping.
+  Maintain that file by hand. To get an authoritative string list for a form,
+  run `lupdate` over just that form into a scratch `.ts` and merge the result
+  in.
+- A `.ui` form's strings belong to the **form class's context**
+  (`uic` emits `QCoreApplication::translate("<FormClass>", ...)`), not the
+  empty context. `client_ui_translation_check` (ctest, see
+  `tools/check_ui_translations.py`) fails the build when a form string has no
+  translation that would reach the `.qm`; it also records the deliberate
+  exclusions and the remaining untranslated strings.
 
 ## Testing
 
