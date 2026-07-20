@@ -457,15 +457,14 @@ TEST_P(ClientServerE2eTest, Connect_Success_ExpandsHardwareTreeDevices) {
   // end through the proxy: IEC61850 devices reach state=Online in the Cluster,
   // and the lone IEC60870 devices reach state=Online under SingleTier (verified).
   //
-  // What remains is a separate device-CONNECTIVITY gap: in the Cluster, the
-  // IEC60870 and MODBUS edge devices never come online (Online stays 0 / no value;
-  // the edge logs show no link activity), so their tree rows stay Unknown. That is
-  // the device-online investigation, independent of the status-resolution fix
-  // above. Skipped pending it.
-  GTEST_SKIP() << "multi-protocol hardware tree pending the device-online gap "
-                  "(IEC60870/MODBUS edge devices do not connect in the cluster; "
-                  "status resolution itself is fixed and verified)";
-
+  // The device-online gap that kept this skipped is closed: every protocol now
+  // reports a live device through the proxy. Two things had masked it — an
+  // unreadable Disabled short-circuiting the state before Online was consulted
+  // (fixed alongside the nested-id read), and tiers refusing to start at all
+  // when the signed license demands a GCP host identity. Run the cluster suite
+  // with SCADA_SERVER_LICENSE_REQUIRE_GCP_BINDING=false; without it every tier
+  // stops during startup and the harness reports it as "did not start
+  // listening", which reads like a timeout rather than a licence refusal.
   if (Topology() != ServerTopology::Cluster)
     GTEST_SKIP() << "multi-protocol hardware tree requires the Cluster "
                     "topology (SingleTier configures only IEC60870)";
