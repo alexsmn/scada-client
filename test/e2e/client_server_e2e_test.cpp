@@ -46,6 +46,30 @@ bool HasActiveHardwareTreeDevice(std::string_view report,
   return false;
 }
 
+// True if the report lists at least one device and NO device is left in
+// state=Unknown. A device whose runtime status never routes through the proxy
+// reads Unknown (the device-online regression); a device that is genuinely not
+// connected reports Offline — a real value that DID route. So "no Unknown"
+// catches the routing gap for EVERY device, a stricter guard than "one active
+// device per protocol", without asserting connectivity the loopback fixture
+// does not give every device (e.g. the IEC60870 server-side device settles
+// Offline).
+bool NoHardwareTreeDeviceUnknown(std::string_view report) {
+  static constexpr std::string_view kStateMarker = ".state=";
+  std::istringstream stream{std::string{report}};
+  std::string line;
+  int device_count = 0;
+  while (std::getline(stream, line)) {
+    const auto pos = line.find(kStateMarker);
+    if (!line.starts_with("device[") || pos == std::string::npos)
+      continue;
+    ++device_count;
+    if (line.substr(pos + kStateMarker.size()) == "Unknown")
+      return false;
+  }
+  return device_count > 0;
+}
+
 bool ProfileJsonContainsPageTitle(std::string_view profile_json,
                                   std::string_view page_title) {
   auto value = boost::json::parse(profile_json);
@@ -447,24 +471,23 @@ TEST_P(ClientServerE2eTest, Connect_Success_ExpandsHardwareTreeDevices) {
   // the Cluster topology stands them up (the SingleTier fixture configures
   // IEC60870 devices alone), so this test is Cluster-only.
   //
-  // Device-STATUS resolution is now fixed: DeviceStateNotifier reads the runtime
-  // status by its nested node id (`MakeNestedNodeId(device, "Online"/"Disabled")`)
-  // instead of the synchronous `device[declaration]` aggregate lookup, which
-  // returned null against a remote node service (the DeviceType aggregate
-  // declarations and instance child nodes are not fetched right after the device
-  // node loads — verified identically under SingleTier, so it was never an
-  // aggregation gap). With that fix, devices that ARE online report Online end to
-  // end through the proxy: IEC61850 devices reach state=Online in the Cluster,
-  // and the lone IEC60870 devices reach state=Online under SingleTier (verified).
+  // Device-status routing through the aggregating proxy is fixed end to end:
+  // every device (both instances of MODBUS, IEC60870 and IEC61850) reaches
+  // state=Online through the proxy. The path had two masks: the client reading
+  // status by its nested node id (`MakeNestedNodeId(device, "Online")`) rather
+  // than a synchronous aggregate lookup that returned null against a remote node
+  // service, and — the last server-side piece — per-tier served NamespaceArrays
+  // (ADR 0003), which stopped an edge from forwarding a device's runtime-status
+  // monitored item to the config tier (which has no such node → Bad_WrongNodeId
+  // → Unknown). The client-side capture asserts EVERY device resolved its
+  // status (never Unknown), not one per protocol, so a single device left
+  // Unknown fails the test. Offline is allowed — it is a value that routed (the
+  // IEC60870 server-side device has no peer and settles Offline).
   //
-  // The device-online gap that kept this skipped is closed: every protocol now
-  // reports a live device through the proxy. Two things had masked it — an
-  // unreadable Disabled short-circuiting the state before Online was consulted
-  // (fixed alongside the nested-id read), and tiers refusing to start at all
-  // when the signed license demands a GCP host identity. Run the cluster suite
-  // with SCADA_SERVER_LICENSE_REQUIRE_GCP_BINDING=false; without it every tier
-  // stops during startup and the harness reports it as "did not start
-  // listening", which reads like a timeout rather than a licence refusal.
+  // Run the cluster suite with SCADA_SERVER_LICENSE_REQUIRE_GCP_BINDING=false;
+  // without it every tier stops during startup and the harness reports it as
+  // "did not start listening", which reads like a timeout rather than a licence
+  // refusal.
   if (Topology() != ServerTopology::Cluster)
     GTEST_SKIP() << "multi-protocol hardware tree requires the Cluster "
                     "topology (SingleTier configures only IEC60870)";
@@ -492,6 +515,16 @@ TEST_P(ClientServerE2eTest, Connect_Success_ExpandsHardwareTreeDevices) {
         << " was not active in report:\n"
         << report;
   }
+  // Every device — of every protocol — must have a resolved runtime status
+  // (never Unknown), not just one active per protocol. This is the actual
+  // regression guard: a device whose status fails to route through the proxy
+  // reads state=Unknown, and the earlier "one active per protocol" check passed
+  // as long as one sibling was up. Offline is allowed — it is a real value that
+  // routed (the IEC60870 server-side device has no peer and settles Offline).
+  EXPECT_TRUE(NoHardwareTreeDeviceUnknown(report))
+      << "A hardware-tree device was left state=Unknown, meaning its runtime "
+         "status did not route through the proxy:\n"
+      << report;
 
   ExpectServerAuthLog();
   ExpectProcessesRemainRunningFor(

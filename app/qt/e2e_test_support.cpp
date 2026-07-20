@@ -348,19 +348,36 @@ class HardwareTreeDevicesCheck final
   }
 
  private:
-  static bool HasActiveDevice(
+  static bool HasDevice(
       const std::vector<HardwareTreeDeviceForTesting>& devices,
       std::string_view protocol) {
     return std::ranges::any_of(devices, [&](const auto& device) {
-      return device.protocol == protocol && device.active;
+      return device.protocol == protocol;
     });
   }
 
-  static bool IsReady(
+  // The settle condition. Requires every expanded device — of all three
+  // protocols — to have a RESOLVED runtime status (anything but Unknown), not
+  // merely one active device per protocol. The earlier one-per-protocol rule
+  // captured the report the instant the first device of each protocol came up,
+  // i.e. before its siblings settled, so a device whose runtime status never
+  // reached the client (the device-online routing regression this guards
+  // against) went unnoticed as long as one sibling was up. The test asserts on
+  // Unknown, not Online, deliberately: a device that never routes its status
+  // through the proxy reads Unknown, whereas a device that is genuinely not
+  // connected reports Offline — a real value that DID route (e.g. the IEC60870
+  // server-side device has no peer and settles Offline). "Every device resolved"
+  // therefore catches the routing gap without asserting connectivity the
+  // loopback fixture does not give every device.
+  static bool DeviceResolved(const HardwareTreeDeviceForTesting& device) {
+    return device.state != "Unknown";
+  }
+
+  static bool AllProtocolsResolved(
       const std::vector<HardwareTreeDeviceForTesting>& devices) {
-    return HasActiveDevice(devices, "MODBUS") &&
-           HasActiveDevice(devices, "IEC60870") &&
-           HasActiveDevice(devices, "IEC61850");
+    return HasDevice(devices, "MODBUS") && HasDevice(devices, "IEC60870") &&
+           HasDevice(devices, "IEC61850") &&
+           std::ranges::all_of(devices, DeviceResolved);
   }
 
   void StartProtocolActivity() {
@@ -381,7 +398,14 @@ class HardwareTreeDevicesCheck final
     while (std::chrono::steady_clock::now() < deadline_) {
       if (auto* hardware_tree_view = FindHardwareTreeView(app_)) {
         auto devices = hardware_tree_view->GetExpandedDevicesForTesting();
-        if (IsReady(devices)) {
+        // Require the device set to have stopped growing before accepting an
+        // all-resolved snapshot, so a tree still populating (only its first,
+        // already-resolved device visible) is not mistaken for "every device
+        // resolved". Two consecutive polls of equal, non-zero size settle it.
+        const bool stable =
+            !devices.empty() && devices.size() == last_device_count_;
+        last_device_count_ = devices.size();
+        if (stable && AllProtocolsResolved(devices)) {
           WriteHardwareTreeDevicesReport(report_path_, true, devices,
                                          "expanded hardware tree devices");
           co_return;
@@ -402,6 +426,8 @@ class HardwareTreeDevicesCheck final
   const std::filesystem::path report_path_;
   const std::chrono::steady_clock::time_point deadline_;
   std::vector<TimedDataSpec> activation_specs_;
+  // Previous poll's device count, for the "set has stopped growing" gate.
+  std::size_t last_device_count_ = 0;
 };
 
 Awaitable<OperatorUseCaseSmokeResult> OpenOperatorWindowAsync(
