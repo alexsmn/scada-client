@@ -354,12 +354,13 @@ class HardwareTreeDevicesCheck final
 
     activation_specs_.emplace_back(
         app_.timed_data_service(),
-        MakeNestedNodeId(scada::NodeId{2, NamespaceIndexes::MODBUS_DEVICES},
-                         "BOOL:1"));
+        MakeNestedNodeId(
+            scada::NodeId{2, scada::NamespaceIndexes::MODBUS_DEVICES},
+            "BOOL:1"));
     activation_specs_.emplace_back(
         app_.timed_data_service(),
-        MakeNestedNodeId(scada::NodeId{2, NamespaceIndexes::IEC60870_DEVICE},
-                         "111"));
+        MakeNestedNodeId(
+            scada::NodeId{2, scada::NamespaceIndexes::IEC60870_DEVICE}, "111"));
   }
 
   Awaitable<void> PollAsync() {
@@ -612,7 +613,8 @@ Awaitable<void> RunHistoricalTimedDataCheckAsync(
     // backend (and, in MultiProcess, through the proxy's aggregated history).
     WindowDefinition definition{*window_info};
     definition.AddItem("Item").SetString(
-        "path", MakeNodeIdFormula(scada::NodeId{4, NamespaceIndexes::TIT}));
+        "path",
+        MakeNodeIdFormula(scada::NodeId{4, scada::NamespaceIndexes::TIT}));
     co_await main_window->OpenView(std::move(definition), /*activate=*/true);
   }
 

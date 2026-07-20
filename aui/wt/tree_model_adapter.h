@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include "aui/models/tree_node_model.h"
 
 #include <Wt/WAbstractItemModel.h>

@@ -34,7 +34,7 @@ Awaitable<void> BrowseNodeAsync(
     if (out->size() >= max_tags)
       co_return;
     co_await child.Fetch(NodeFetchStatus::NodeOnly);
-    if (IsInstanceOf(child, data_items::id::DataItemType)) {
+    if (IsInstanceOf(child, scada::data_items::id::DataItemType)) {
       out->push_back({child.node_id(), GetFullDisplayName(child)});
     } else {
       co_await BrowseNodeAsync(node_service, child.node_id(), out, visited,

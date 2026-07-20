@@ -30,7 +30,7 @@ OpenedView::OpenedView(OpenedViewContext&& context)
 OpenedView::~OpenedView() {}
 
 void OpenedView::Init() {
-  base::Check(controller_factory_);
+  scada::base::Check(controller_factory_);
   controller_ =
       controller_factory_(window_info_.command_id, *this, dialog_service_);
   if (!controller_) {
@@ -56,7 +56,7 @@ void OpenedView::Activate() {
 }
 
 void OpenedView::SetWindowTitle(std::u16string_view title) {
-  base::Check(!window_info().is_pane());
+  scada::base::Check(!window_info().is_pane());
 
   if (user_title_ != title) {
     user_title_.assign(title.data(), title.size());
@@ -90,12 +90,12 @@ void OpenedView::UpdateTitle() {
   if (working_)
     title += u" [Выполнение]";
 
-  base::Check(main_window_);
+  scada::base::Check(main_window_);
   main_window_->OnViewTitleUpdated(*this, title);
 }
 
 void OpenedView::Close() {
-  base::Check(main_window_);
+  scada::base::Check(main_window_);
   main_window_->CloseView(*this);
 }
 
@@ -120,7 +120,7 @@ void OpenedView::UpdateWorking() {
 }
 
 void OpenedView::SetTitle(std::u16string_view title) {
-  base::Check(!window_info().is_pane());
+  scada::base::Check(!window_info().is_pane());
   if (title_ != title) {
     title_.assign(title.data(), title.size());
     UpdateTitle();
@@ -138,7 +138,7 @@ WindowDefinition OpenedView::Save() {
 }
 
 void OpenedView::OpenView(const WindowDefinition& def) {
-  base::Check(main_window_);
+  scada::base::Check(main_window_);
   CoSpawn(executor_, [this, def]() -> Awaitable<void> {
     co_await main_window_->OpenView(def, true);
   });
@@ -177,9 +177,9 @@ void OpenedView::Focus() {
   Activate();
 }
 
-void OpenedView::ShowPopupMenu(aui::MenuModel* merge_menu,
+void OpenedView::ShowPopupMenu(scada::aui::MenuModel* merge_menu,
                                unsigned resource_id,
-                               const aui::Point& point,
+                               const scada::aui::Point& point,
                                bool right_click) {
   Activate();
 

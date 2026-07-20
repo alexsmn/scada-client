@@ -31,24 +31,24 @@ class PageLayoutBlock {
   bool empty() const { return type == PANE && wins.empty(); }
 
   PageLayoutBlock& top() {
-    base::Check(type == SPLIT);
-    base::Check(left);
+    scada::base::Check(type == SPLIT);
+    scada::base::Check(left);
     return *left;
   }
 
   PageLayoutBlock& bottom() {
-    base::Check(type == SPLIT);
-    base::Check(right);
+    scada::base::Check(type == SPLIT);
+    scada::base::Check(right);
     return *right;
   }
 
   void add(int window_id) {
-    base::Check(type == PANE);
+    scada::base::Check(type == PANE);
     wins.push_back(window_id);
   }
 
   void split(bool horizontally) {
-    base::Check(wins.empty());
+    scada::base::Check(wins.empty());
     if (type != SPLIT) {
       type = SPLIT;
       left = std::make_unique<PageLayoutBlock>();

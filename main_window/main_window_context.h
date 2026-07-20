@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include "base/any_executor.h"
 
 #include "core/node_command_context.h"
@@ -44,19 +42,19 @@ struct MainWindowContext {
       main_command_router_factory_;
 
   std::shared_ptr<SelectionCommandRouter> selection_command_router_;
-  std::shared_ptr<aui::StatusBarModel> status_bar_model_;
+  std::shared_ptr<scada::aui::StatusBarModel> status_bar_model_;
 
-  std::function<std::unique_ptr<aui::MenuModel>(
+  std::function<std::unique_ptr<scada::aui::MenuModel>(
       MainWindowInterface& main_window,
       CommandHandler& command_handler)>
       context_menu_factory_;
 
-  std::function<std::unique_ptr<aui::MenuModel>(
+  std::function<std::unique_ptr<scada::aui::MenuModel>(
       MainWindowInterface& main_window,
       DialogService& dialog_service,
       ViewManager& view_manager,
       CommandHandler& command_handler,
-      aui::MenuModel& context_menu_model)>
+      scada::aui::MenuModel& context_menu_model)>
       main_menu_factory_;
 
   std::function<std::string()> connection_info_provider_;

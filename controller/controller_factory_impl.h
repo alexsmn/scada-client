@@ -49,7 +49,7 @@ inline std::unique_ptr<Controller> ControllerFactoryImpl::CreateController(
     unsigned command_id,
     ControllerDelegate& delegate,
     DialogService& dialog_service) {
-  base::Check(scada_services_.session_service);
+  scada::base::Check(scada_services_.session_service);
 
   auto* registrar = GetControllerRegistrar(command_id);
   if (!registrar) {

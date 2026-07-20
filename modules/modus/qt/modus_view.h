@@ -12,11 +12,11 @@ class QAxWidget;
 // Native Modus ActiveXeme viewer.
 class ModusView : public QWidget,
                   public ModusViewWrapper,
-                  private modus::ModusDocumentContext {
+                  private scada::modus::ModusDocumentContext {
   Q_OBJECT
 
  public:
-  explicit ModusView(modus::ModusDocumentContext&& context);
+  explicit ModusView(scada::modus::ModusDocumentContext&& context);
   virtual ~ModusView();
 
   bool IsToolbarVisible() const;
@@ -54,7 +54,7 @@ class ModusView : public QWidget,
   // responsive.
   QAxWidget* ax_widget_ = nullptr;
 
-  std::unique_ptr<modus::ModusDocument> document_;
+  std::unique_ptr<scada::modus::ModusDocument> document_;
 
   Cancelation cancelation_;
 };

@@ -98,24 +98,26 @@ void DeleteSelection(AnyExecutor executor,
 
 SelectionEditModule::SelectionEditModule(SelectionEditModuleContext&& context)
     : SelectionEditModuleContext{std::move(context)} {
-  ui_command_registry_.AddAction(
-      Action{.command_id_ = ID_COPY,
-             .category_ = CATEGORY_EDIT,
-             .title_ = Translate("Copy"),
-             .image_id_ = IDB_COPY,
-             .shortcut_ = Shortcut{aui::ControlModifier, aui::KeyCode::C}});
-  ui_command_registry_.AddAction(
-      Action{.command_id_ = ID_PASTE,
-             .category_ = CATEGORY_EDIT,
-             .title_ = Translate("Paste"),
-             .image_id_ = IDB_PASTE,
-             .shortcut_ = Shortcut{aui::ControlModifier, aui::KeyCode::V}});
+  ui_command_registry_.AddAction(Action{
+      .command_id_ = ID_COPY,
+      .category_ = CATEGORY_EDIT,
+      .title_ = Translate("Copy"),
+      .image_id_ = IDB_COPY,
+      .shortcut_ =
+          Shortcut{scada::aui::ControlModifier, scada::aui::KeyCode::C}});
+  ui_command_registry_.AddAction(Action{
+      .command_id_ = ID_PASTE,
+      .category_ = CATEGORY_EDIT,
+      .title_ = Translate("Paste"),
+      .image_id_ = IDB_PASTE,
+      .shortcut_ =
+          Shortcut{scada::aui::ControlModifier, scada::aui::KeyCode::V}});
   ui_command_registry_.AddAction(
       Action{.command_id_ = ID_DELETE,
              .category_ = CATEGORY_EDIT,
              .title_ = Translate("Delete"),
              .image_id_ = IDB_DELETE,
-             .shortcut_ = Shortcut{aui::KeyCode::Delete}});
+             .shortcut_ = Shortcut{scada::aui::KeyCode::Delete}});
 
   opened_view_commands_.AddFactory(
       [](const OpenedViewCommandFactoryContext& context) {

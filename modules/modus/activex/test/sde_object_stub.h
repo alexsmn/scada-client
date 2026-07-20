@@ -1,7 +1,5 @@
 #pragma once
 
-#include "modus/modus_ns_compat.h"
-
 #include "modus/activex/modus.h"
 #include "modus/activex/test/named_pbs_stub.h"
 #include "modus/activex/test/sde_objects_stub.h"

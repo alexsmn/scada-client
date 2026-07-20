@@ -5,7 +5,7 @@
 
 #include <QProgressBar>
 
-ProgressController::ProgressController(aui::StatusBar& status_bar,
+ProgressController::ProgressController(scada::aui::StatusBar& status_bar,
                                        ProgressHost& progress_host)
     : progress_host_{progress_host} {
   // cppcheck-suppress noCopyConstructor

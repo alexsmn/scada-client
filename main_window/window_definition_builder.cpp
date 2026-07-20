@@ -158,7 +158,7 @@ Awaitable<std::optional<WindowDefinition>> MakeGroupWindowDefinitionAsync(
     const WindowInfo* window_info,
     NodeRef node) {
   auto parent = node.parent();
-  if (!IsInstanceOf(parent, data_items::id::DataGroupType))
+  if (!IsInstanceOf(parent, scada::data_items::id::DataGroupType))
     co_return std::optional<WindowDefinition>();
 
   auto node_ids = co_await ExpandGroupItemIdsAsync(executor, parent);

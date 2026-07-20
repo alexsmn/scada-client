@@ -157,7 +157,7 @@ class RecordingFileManager : public FileManager {
 // Exercises the coroutine internals of `OpenFileCommandImpl`.
 class OpenFileCommandTest : public ::testing::Test {
  protected:
-  base::ScopedPathOverride public_dir_override_{client::DIR_PUBLIC};
+  scada::base::ScopedPathOverride public_dir_override_{client::DIR_PUBLIC};
   TestExecutor executor_;
 
   FakeDialogService dialog_service_;
@@ -180,7 +180,7 @@ class OpenFileCommandTest : public ::testing::Test {
   NodeRef MakeFileNode(std::u16string display_name) {
     nodes_ = std::make_unique<StaticNodeService>();
     nodes_->Add({.node_id = scada::NodeId{42, 1},
-                 .type_definition_id = filesystem::id::FileType,
+                 .type_definition_id = scada::filesystem::id::FileType,
                  .attributes = {.display_name = std::move(display_name)}});
     return nodes_->GetNode(scada::NodeId{42, 1});
   }

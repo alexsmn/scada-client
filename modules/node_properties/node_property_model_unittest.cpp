@@ -29,7 +29,7 @@ using namespace testing;
 
 namespace {
 
-constexpr scada::NodeId kNodeId{1, NamespaceIndexes::GROUP};
+constexpr scada::NodeId kNodeId{1, scada::NamespaceIndexes::GROUP};
 
 // Controllable v3::NodeFetcher: records each fetch request and suspends
 // FetchNode until the test calls CompleteFetch, so tests drive the exact moment
@@ -85,12 +85,12 @@ class NodePropertyModelTest : public Test {
         scada::NodeState{}
             .set_node_id(kNodeId)
             .set_node_class(scada::NodeClass::Object)
-            .set_type_definition_id(data_items::id::DataGroupType)
-            .set_parent(scada::id::Organizes, data_items::id::DataItems)
+            .set_type_definition_id(scada::data_items::id::DataGroupType)
+            .set_parent(scada::id::Organizes, scada::data_items::id::DataItems)
             .set_attributes(
                 scada::NodeAttributes{}.set_display_name(u"Group")));
-    base::Check(status);
-    base::Check(node);
+    scada::base::Check(status);
+    scada::base::Check(node);
 
     node_service_->OnChannelOpened();
   }
@@ -124,8 +124,8 @@ class NodePropertyModelTest : public Test {
         .node_id = node_id, .verb = scada::ModelChangeEvent::NodeDeleted});
   }
 
-  aui::PropertyGroup& RootGroup(NodePropertyModel& model) {
-    return static_cast<aui::PropertyModel&>(model).GetRootGroup();
+  scada::aui::PropertyGroup& RootGroup(NodePropertyModel& model) {
+    return static_cast<scada::aui::PropertyModel&>(model).GetRootGroup();
   }
 
   scada_test::ScadaTestAddressSpace address_space_;

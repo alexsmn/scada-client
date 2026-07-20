@@ -38,9 +38,9 @@ boost::json::value SaveLayoutBlock(const PageLayoutBlock& block) {
 }
 
 void LoadLayoutBlock(PageLayoutBlock& block, const boost::json::value& value) {
-  base::Check(block.type == PageLayoutBlock::PANE);
-  base::Check(block.wins.empty());
-  base::Check(!block.left && !block.right);
+  scada::base::Check(block.type == PageLayoutBlock::PANE);
+  scada::base::Check(block.wins.empty());
+  scada::base::Check(!block.left && !block.right);
 
   auto type = GetString(value, "type");
   if (boost::iequals(type, "split")) {
@@ -54,7 +54,7 @@ void LoadLayoutBlock(PageLayoutBlock& block, const boost::json::value& value) {
       LoadLayoutBlock(*block.right, *pane);
 
   } else if (boost::iequals(type, "pane")) {
-    base::Check(block.type == PageLayoutBlock::PANE);
+    scada::base::Check(block.type == PageLayoutBlock::PANE);
     if (auto* windows = GetList(value, "windows")) {
       for (auto& window : *windows) {
         if (window.is_int64())

@@ -52,9 +52,9 @@ void MainWindow::OnSelectionChanged() {
   toolbar_controller_->OnSelectionChanged();
 }
 
-void MainWindow::ShowPopupMenu(aui::MenuModel* merge_menu,
+void MainWindow::ShowPopupMenu(scada::aui::MenuModel* merge_menu,
                                unsigned resource_id,
-                               const aui::Point& point,
+                               const scada::aui::Point& point,
                                bool right_click) {}
 
 std::unique_ptr<OpenedView> MainWindow::OnCreateView(

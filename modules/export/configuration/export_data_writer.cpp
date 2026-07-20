@@ -49,11 +49,11 @@ void WriteExportData(const ExportData& data, CsvWriter& writer) {
       const ExportData::PropertyValue& prop_value = *i;
 
       if (prop_value.reference) {
-        base::Check(!prop_value.target_id.is_null());
+        scada::base::Check(!prop_value.target_id.is_null());
         writer.WriteCell(FormatReferenceCell(prop_value.target_display_name,
                                              prop_value.target_id));
       } else {
-        base::Check(!prop_value.value.is_null());
+        scada::base::Check(!prop_value.value.is_null());
         auto str = prop_value.value.get_or(std::string());
         writer.WriteCell(str);
       }

@@ -76,7 +76,7 @@ MainWindow* MainWindowManager::CreateMainWindow() {
 
 void MainWindowManager::OnMainWindowClosed(int window_id) {
   auto i = main_windows_.find(window_id);
-  base::Check(i != main_windows_.end());
+  scada::base::Check(i != main_windows_.end());
   if (i == main_windows_.end()) {
     return;
   }

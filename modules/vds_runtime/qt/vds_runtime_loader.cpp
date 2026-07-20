@@ -28,7 +28,7 @@ QString RuntimeFileName() {
 
 VdsRuntimeLoader::VdsRuntimeLoader() {
   std::filesystem::path install_dir;
-  if (!base::PathService::Get(client::DIR_INSTALL, &install_dir) ||
+  if (!scada::base::PathService::Get(client::DIR_INSTALL, &install_dir) ||
       install_dir.empty()) {
     error_message_ = QStringLiteral("Cannot resolve client install directory.");
     return;

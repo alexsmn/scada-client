@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include "controller/command_registry.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
@@ -30,9 +28,9 @@ class TransmissionView : protected ControllerContext, public Controller {
   void DeleteSelection();
 
   const std::shared_ptr<TransmissionModel> model_;
-  const std::shared_ptr<aui::ColumnHeaderModel> column_model_;
+  const std::shared_ptr<scada::aui::ColumnHeaderModel> column_model_;
 
-  aui::Grid* grid_ = nullptr;
+  scada::aui::Grid* grid_ = nullptr;
 
   CommandRegistry command_registry_;
 };

@@ -1,4 +1,3 @@
-#include "aui/aui_ns_compat.h"
 
 #include "aui/models/grid_range.h"
 
@@ -9,9 +8,9 @@
 namespace {
 
 void ExpandRange(int& first, int& count, int value) {
-  base::Check(first >= 0);
-  base::Check(count >= 1);
-  base::Check(value >= 0);
+  scada::base::Check(first >= 0);
+  scada::base::Check(count >= 1);
+  scada::base::Check(value >= 0);
 
   // If value is less than lower range, lower first and increase count.
   // If value is bigger than higher range, increase count.

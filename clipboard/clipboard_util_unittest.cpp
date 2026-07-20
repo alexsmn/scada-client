@@ -56,34 +56,35 @@ void CompareRecursive(const scada::NodeState& a, const scada::NodeState& b) {
 
 TEST(PasteNodesFromNodeStateRecursive, Test) {
   TestExecutor executor;
-  TestStorage storage{data_items::id::DataItems};
+  TestStorage storage{scada::data_items::id::DataItems};
   TestTaskManager task_manager{storage};
 
   // Have to specify parent IDs for children to be able to compare them.
   const auto& top_node = scada::NodeState{
-      .node_id = {1, NamespaceIndexes::GROUP},
-      .type_definition_id = data_items::id::DataGroupType,
-      .parent_id = data_items::id::DataItems,
+      .node_id = {1, scada::NamespaceIndexes::GROUP},
+      .type_definition_id = scada::data_items::id::DataGroupType,
+      .parent_id = scada::data_items::id::DataItems,
       .reference_type_id = scada::id::Organizes,
       .attributes = {.browse_name = "Group1", .display_name = u"Group1"},
       .children = {
-          {.node_id = {2, NamespaceIndexes::GROUP},
-           .type_definition_id = data_items::id::DataGroupType,
-           .parent_id = {1, NamespaceIndexes::GROUP},
+          {.node_id = {2, scada::NamespaceIndexes::GROUP},
+           .type_definition_id = scada::data_items::id::DataGroupType,
+           .parent_id = {1, scada::NamespaceIndexes::GROUP},
            .reference_type_id = scada::id::Organizes,
            .attributes = {.browse_name = "Group2", .display_name = u"Group2"},
-           .children = {{.node_id = {1, NamespaceIndexes::TS},
-                         .type_definition_id = data_items::id::DiscreteItemType,
-                         .parent_id = {2, NamespaceIndexes::GROUP},
-                         .reference_type_id = scada::id::Organizes,
-                         .attributes = {.browse_name = "DataItem1",
-                                        .display_name = u"DataItem1"}}}}}};
+           .children = {
+               {.node_id = {1, scada::NamespaceIndexes::TS},
+                .type_definition_id = scada::data_items::id::DiscreteItemType,
+                .parent_id = {2, scada::NamespaceIndexes::GROUP},
+                .reference_type_id = scada::id::Organizes,
+                .attributes = {.browse_name = "DataItem1",
+                               .display_name = u"DataItem1"}}}}}};
 
   WaitAwaitable(
       executor,
       PasteNodesFromNodeStateRecursive(task_manager, scada::NodeState{top_node}));
 
-  auto* storage_root_node = storage.FindNode(data_items::id::DataItems);
+  auto* storage_root_node = storage.FindNode(scada::data_items::id::DataItems);
   ASSERT_THAT(storage_root_node, NotNull());
   ASSERT_THAT(storage_root_node->children, SizeIs(1));
 
@@ -95,9 +96,9 @@ TEST(PasteNodesFromNodeStateRecursive, RejectedInsertPropagates) {
   StrictMock<MockTaskManager> task_manager;
 
   scada::NodeState node_state{
-      .node_id = {1, NamespaceIndexes::GROUP},
-      .type_definition_id = data_items::id::DataGroupType,
-      .parent_id = data_items::id::DataItems,
+      .node_id = {1, scada::NamespaceIndexes::GROUP},
+      .type_definition_id = scada::data_items::id::DataGroupType,
+      .parent_id = scada::data_items::id::DataItems,
       .reference_type_id = scada::id::Organizes,
       .attributes = {.browse_name = "Group1", .display_name = u"Group1"}};
 
@@ -116,27 +117,28 @@ TEST(PasteNodesFromNodeStateRecursive,
   TestExecutor executor;
   StrictMock<MockTaskManager> task_manager;
 
-  const scada::NodeId inserted_parent_id{10, NamespaceIndexes::GROUP};
-  const scada::NodeId inserted_child_id{11, NamespaceIndexes::TS};
+  const scada::NodeId inserted_parent_id{10, scada::NamespaceIndexes::GROUP};
+  const scada::NodeId inserted_child_id{11, scada::NamespaceIndexes::TS};
 
   scada::NodeState node_state{
-      .node_id = {1, NamespaceIndexes::GROUP},
-      .type_definition_id = data_items::id::DataGroupType,
-      .parent_id = data_items::id::DataItems,
+      .node_id = {1, scada::NamespaceIndexes::GROUP},
+      .type_definition_id = scada::data_items::id::DataGroupType,
+      .parent_id = scada::data_items::id::DataItems,
       .reference_type_id = scada::id::Organizes,
       .attributes = {.browse_name = "Group1", .display_name = u"Group1"},
       .references = {{.reference_type_id = scada::id::HasTypeDefinition,
                       .forward = true,
-                      .node_id = data_items::id::DataGroupType},
+                      .node_id = scada::data_items::id::DataGroupType},
                      {.reference_type_id = scada::id::Organizes,
                       .forward = false,
-                      .node_id = data_items::id::DataItems}},
-      .children = {{.node_id = {1, NamespaceIndexes::TS},
-                    .type_definition_id = data_items::id::DiscreteItemType,
-                    .parent_id = {1, NamespaceIndexes::GROUP},
-                    .reference_type_id = scada::id::Organizes,
-                    .attributes = {.browse_name = "DataItem1",
-                                   .display_name = u"DataItem1"}}}};
+                      .node_id = scada::data_items::id::DataItems}},
+      .children = {
+          {.node_id = {1, scada::NamespaceIndexes::TS},
+           .type_definition_id = scada::data_items::id::DiscreteItemType,
+           .parent_id = {1, scada::NamespaceIndexes::GROUP},
+           .reference_type_id = scada::id::Organizes,
+           .attributes = {.browse_name = "DataItem1",
+                          .display_name = u"DataItem1"}}}};
 
   {
     InSequence sequence;
@@ -157,7 +159,7 @@ TEST(PasteNodesFromNodeStateRecursive,
           EXPECT_TRUE(inserted.children.empty());
           EXPECT_EQ(inserted.parent_id, inserted_parent_id);
           EXPECT_EQ(inserted.type_definition_id,
-                    data_items::id::DiscreteItemType);
+                    scada::data_items::id::DiscreteItemType);
           co_return inserted_child_id;
         }));
   }
@@ -173,11 +175,10 @@ TEST(PasteNodesFromClipboard, EmptyClipboardRejects) {
   ClearClipboard();
   StrictMock<MockTaskManager> task_manager;
 
-  EXPECT_THROW(
-      WaitAwaitable(executor,
-                    PasteNodesFromClipboard(task_manager,
-                                            data_items::id::DataItems)),
-      std::runtime_error);
+  EXPECT_THROW(WaitAwaitable(executor, PasteNodesFromClipboard(
+                                           task_manager,
+                                           scada::data_items::id::DataItems)),
+               std::runtime_error);
 }
 
 TEST(PasteNodesFromClipboard, InvalidClipboardPayloadRejects) {
@@ -185,10 +186,9 @@ TEST(PasteNodesFromClipboard, InvalidClipboardPayloadRejects) {
   SetNodeTreeClipboardData("not a serialized node tree");
   StrictMock<MockTaskManager> task_manager;
 
-  EXPECT_THROW(
-      WaitAwaitable(executor,
-                    PasteNodesFromClipboard(task_manager,
-                                            data_items::id::DataItems)),
-      std::runtime_error);
+  EXPECT_THROW(WaitAwaitable(executor, PasteNodesFromClipboard(
+                                           task_manager,
+                                           scada::data_items::id::DataItems)),
+               std::runtime_error);
 }
 #endif

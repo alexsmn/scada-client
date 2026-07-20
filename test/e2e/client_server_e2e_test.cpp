@@ -100,7 +100,7 @@ class ProxyOpcUaSession {
       : transport_factory_{transport::CreateTransportFactory()},
         session_{std::make_shared<opcua::ClientSession>(io_.get_executor(),
                                                         *transport_factory_)},
-        services_{opcua_bridge::CreateClientDataServices(session_)} {}
+        services_{scada::opcua_bridge::CreateClientDataServices(session_)} {}
 
   ~ProxyOpcUaSession() {
     if (connected_) {

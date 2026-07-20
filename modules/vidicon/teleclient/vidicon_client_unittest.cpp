@@ -1,7 +1,5 @@
 ﻿#include "vidicon/teleclient/vidicon_client.h"
 
-#include "vidicon/vidicon_compat.h"
-
 #include "base/test/test_executor.h"
 #include "base/win/scoped_bstr.h"
 #include "model/namespaces.h"

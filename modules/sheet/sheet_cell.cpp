@@ -46,7 +46,7 @@ void SheetCell::UpdateTextFromFormula() {
 }
 
 void SheetCell::NotifyChanged() {
-  model_.NotifyRangeChanged(aui::GridRange::Cell(row_, column_));
+  model_.NotifyRangeChanged(scada::aui::GridRange::Cell(row_, column_));
 }
 
 void SheetCell::SetBlinking(bool blinking) {

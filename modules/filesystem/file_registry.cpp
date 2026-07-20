@@ -10,7 +10,7 @@
 void FileRegistry::RegisterType(int id,
                                 std::string_view name,
                                 std::string_view extensions) {
-  base::Check(type_map_.find(id) == type_map_.end());
+  scada::base::Check(type_map_.find(id) == type_map_.end());
 
   TypeEntry& entry = type_map_[id];
   entry.type_id = id;

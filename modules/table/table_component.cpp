@@ -49,7 +49,7 @@ Awaitable<void> OpenGroupTable(AnyExecutor executor,
                                MainWindowInterface& main_window,
                                NodeRef node) {
   auto parent = node.parent();
-  if (!IsInstanceOf(parent, data_items::id::DataGroupType)) {
+  if (!IsInstanceOf(parent, scada::data_items::id::DataGroupType)) {
     co_return;
   }
 

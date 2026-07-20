@@ -68,9 +68,9 @@ void TaskManagerTest::SetUp() {
 }
 
 TEST_F(TaskManagerTest, PostInsertTask_Succeeds) {
-  const auto& parent_id = data_items::id::DataItems;
-  const auto& type_def_id = data_items::id::DiscreteItemType;
-  const auto& added_node_id = data_items::id::DataItems;
+  const auto& parent_id = scada::data_items::id::DataItems;
+  const auto& type_def_id = scada::data_items::id::DiscreteItemType;
+  const auto& added_node_id = scada::data_items::id::DataItems;
 
   EXPECT_CALL(
       node_management_service_,
@@ -89,7 +89,7 @@ TEST_F(TaskManagerTest, PostInsertTask_Succeeds) {
 
   auto node_id = Wait(task_manager_->PostInsertTask(
       // Provide the node ID similar to how it's provided on paste.
-      {.node_id = scada::NodeId{1, NamespaceIndexes::TS},
+      {.node_id = scada::NodeId{1, scada::NamespaceIndexes::TS},
        .type_definition_id = type_def_id,
        .parent_id = parent_id}));
 
@@ -107,11 +107,11 @@ TEST_F(TaskManagerTest, PostInsertTask_Succeeds) {
 // `RunInsertTask` discarded the lazy awaitables returned by
 // `PostAddReference`, so the reference tasks were never queued or executed.
 TEST_F(TaskManagerTest, PostInsertTask_AddsReferences) {
-  const auto& parent_id = data_items::id::DataItems;
-  const auto& type_def_id = data_items::id::DiscreteItemType;
-  const scada::NodeId added_node_id{7, NamespaceIndexes::TS};
-  const scada::NodeId forward_target{8, NamespaceIndexes::TS};
-  const scada::NodeId inverse_source{9, NamespaceIndexes::TS};
+  const auto& parent_id = scada::data_items::id::DataItems;
+  const auto& type_def_id = scada::data_items::id::DiscreteItemType;
+  const scada::NodeId added_node_id{7, scada::NamespaceIndexes::TS};
+  const scada::NodeId forward_target{8, scada::NamespaceIndexes::TS};
+  const scada::NodeId inverse_source{9, scada::NamespaceIndexes::TS};
 
   EXPECT_CALL(node_management_service_, AddNodes(_, _))
       .WillOnce(
@@ -158,9 +158,9 @@ TEST_F(TaskManagerTest, PostInsertTask_AddsReferences) {
 }
 
 TEST_F(TaskManagerTest, PostInsertTask_AddReferencesFailurePropagates) {
-  const auto& parent_id = data_items::id::DataItems;
-  const auto& type_def_id = data_items::id::DiscreteItemType;
-  const scada::NodeId added_node_id{7, NamespaceIndexes::TS};
+  const auto& parent_id = scada::data_items::id::DataItems;
+  const auto& type_def_id = scada::data_items::id::DiscreteItemType;
+  const scada::NodeId added_node_id{7, scada::NamespaceIndexes::TS};
 
   EXPECT_CALL(node_management_service_, AddNodes(_, _))
       .WillOnce(
@@ -183,9 +183,10 @@ TEST_F(TaskManagerTest, PostInsertTask_AddReferencesFailurePropagates) {
   auto node_id = Wait(task_manager_->PostInsertTask(
       {.type_definition_id = type_def_id,
        .parent_id = parent_id,
-       .references = {{.reference_type_id = scada::id::Organizes,
-                       .forward = true,
-                       .node_id = scada::NodeId{8, NamespaceIndexes::TS}}}}));
+       .references = {
+           {.reference_type_id = scada::id::Organizes,
+            .forward = true,
+            .node_id = scada::NodeId{8, scada::NamespaceIndexes::TS}}}}));
 
   ASSERT_FALSE(node_id.ok());
   EXPECT_EQ(node_id.status().code(), scada::StatusCode::Bad_WrongNodeId);
@@ -194,8 +195,8 @@ TEST_F(TaskManagerTest, PostInsertTask_AddReferencesFailurePropagates) {
 }
 
 TEST_F(TaskManagerTest, PostInsertTask_ServiceFails) {
-  const auto& parent_id = data_items::id::DataItems;
-  const auto& type_def_id = data_items::id::DiscreteItemType;
+  const auto& parent_id = scada::data_items::id::DataItems;
+  const auto& type_def_id = scada::data_items::id::DiscreteItemType;
 
   EXPECT_CALL(
       node_management_service_,
@@ -227,7 +228,7 @@ TEST_F(TaskManagerTest, PostInsertTask_BadTypeDefId) {
   // Intentionally specify wrong type definition ID, so add node fails.
   auto result = Wait(task_manager_->PostInsertTask(
       {.type_definition_id = scada::id::References,
-       .parent_id = data_items::id::DataItems}));
+       .parent_id = scada::data_items::id::DataItems}));
   ASSERT_FALSE(result.ok());
   EXPECT_EQ(result.status().code(), scada::StatusCode::Bad_WrongTypeId);
 
@@ -239,7 +240,7 @@ TEST_F(TaskManagerTest, PostInsertTask_BadTypeDefId) {
 }
 
 TEST_F(TaskManagerTest, PostDeleteTask_ServiceFails) {
-  const auto& node_id = scada::NodeId{1, NamespaceIndexes::TS};
+  const auto& node_id = scada::NodeId{1, scada::NamespaceIndexes::TS};
 
   EXPECT_CALL(node_management_service_,
               DeleteNodes(/*context=*/_, /*inputs=*/ElementsAre(FieldsAre(
@@ -262,7 +263,7 @@ TEST_F(TaskManagerTest, PostDeleteTask_ServiceFails) {
 }
 
 TEST_F(TaskManagerTest, PostDeleteTask_Succeeds) {
-  const auto& node_id = scada::NodeId{1, NamespaceIndexes::TS};
+  const auto& node_id = scada::NodeId{1, scada::NamespaceIndexes::TS};
 
   EXPECT_CALL(node_management_service_,
               DeleteNodes(/*context=*/_, /*inputs=*/ElementsAre(FieldsAre(
@@ -292,7 +293,7 @@ TEST_F(TaskManagerTest, PostDeleteTask_Succeeds) {
 // recursive deletes) still run. When `PostTaskMethod` was a lazy coroutine,
 // every such call site silently became a no-op.
 TEST_F(TaskManagerTest, PostDeleteTask_RunsWhenAwaitableIsDiscarded) {
-  const auto& node_id = scada::NodeId{1, NamespaceIndexes::TS};
+  const auto& node_id = scada::NodeId{1, scada::NamespaceIndexes::TS};
 
   bool deleted = false;
   EXPECT_CALL(node_management_service_, DeleteNodes(_, _))
@@ -325,8 +326,8 @@ TEST_F(TaskManagerTest, PostDeleteTask_RunsWhenAwaitableIsDiscarded) {
 
 TEST_F(TaskManagerTest, PostAddReference_Succeeds) {
   const auto ref_type = scada::id::HasComponent;
-  const auto src = scada::NodeId{1, NamespaceIndexes::TS};
-  const auto dst = scada::NodeId{2, NamespaceIndexes::TS};
+  const auto src = scada::NodeId{1, scada::NamespaceIndexes::TS};
+  const auto dst = scada::NodeId{2, scada::NamespaceIndexes::TS};
 
   EXPECT_CALL(node_management_service_, AddReferences(_, _))
       .WillOnce(Invoke(
@@ -349,8 +350,8 @@ TEST_F(TaskManagerTest, PostAddReference_Succeeds) {
 
 TEST_F(TaskManagerTest, PostAddReference_ServiceFails) {
   const auto ref_type = scada::id::HasComponent;
-  const auto src = scada::NodeId{1, NamespaceIndexes::TS};
-  const auto dst = scada::NodeId{2, NamespaceIndexes::TS};
+  const auto src = scada::NodeId{1, scada::NamespaceIndexes::TS};
+  const auto dst = scada::NodeId{2, scada::NamespaceIndexes::TS};
 
   EXPECT_CALL(node_management_service_, AddReferences(_, _))
       .WillOnce(Invoke(
@@ -372,8 +373,8 @@ TEST_F(TaskManagerTest, PostAddReference_ServiceFails) {
 
 TEST_F(TaskManagerTest, PostDeleteReference_Succeeds) {
   const auto ref_type = scada::id::HasComponent;
-  const auto src = scada::NodeId{1, NamespaceIndexes::TS};
-  const auto dst = scada::NodeId{2, NamespaceIndexes::TS};
+  const auto src = scada::NodeId{1, scada::NamespaceIndexes::TS};
+  const auto dst = scada::NodeId{2, scada::NamespaceIndexes::TS};
 
   EXPECT_CALL(node_management_service_, DeleteReferences(_, _))
       .WillOnce(Invoke(
@@ -432,8 +433,8 @@ TEST_F(TaskManagerTest, PostTask_LauncherSucceeds) {
 // dispatched via `.then()`; now it runs as a single coroutine, and we want to
 // guarantee a follow-up task still gets picked up by the queue.
 TEST_F(TaskManagerTest, BackToBackPostDeleteTasksRunSequentially) {
-  const auto& first = scada::NodeId{1, NamespaceIndexes::TS};
-  const auto& second = scada::NodeId{2, NamespaceIndexes::TS};
+  const auto& first = scada::NodeId{1, scada::NamespaceIndexes::TS};
+  const auto& second = scada::NodeId{2, scada::NamespaceIndexes::TS};
 
   InSequence seq;
   EXPECT_CALL(node_management_service_,

@@ -55,16 +55,16 @@ Awaitable<std::vector<EventAreaEntry>> BrowseEventAreas(
   // immediate `Organizes` children are the operator-facing top-level groupings.
   // ObjectsFolder is one level too high — it holds the standard OPC folders and
   // the "Все объекты"/"Все оборудование" containers, not the areas themselves.
-  co_await node_service.Fetch(data_items::id::DataItems,
+  co_await node_service.Fetch(scada::data_items::id::DataItems,
                               NodeFetchStatus::NodeAndChildren);
 
-  for (NodeRef& child :
-       node_service.GetTargets(data_items::id::DataItems, scada::id::Organizes,
-                               /*forward=*/true)) {
+  for (NodeRef& child : node_service.GetTargets(
+           scada::data_items::id::DataItems, scada::id::Organizes,
+           /*forward=*/true)) {
     co_await child.Fetch(NodeFetchStatus::NodeOnly);
     // Areas are the object groupings above the data items; a top-level leaf
     // data item (e.g. a loose tag) is not an area, so skip it.
-    if (IsInstanceOf(child, data_items::id::DataItemType))
+    if (IsInstanceOf(child, scada::data_items::id::DataItemType))
       continue;
     areas.push_back({child.node_id(), GetFullDisplayName(child)});
   }
@@ -76,8 +76,8 @@ const std::vector<TimeRange>& EventPeriodRanges() {
   // Mirrors the toolbar's ID_TIME_RANGE_* quick-picks so a range set there
   // reflects onto the matching preset here.
   static const std::vector<TimeRange> ranges = {
-      TimeRange{base::TimeDelta::FromMinutes(15)},
-      TimeRange{base::TimeDelta::FromHours(1)},
+      TimeRange{scada::base::TimeDelta::FromMinutes(15)},
+      TimeRange{scada::base::TimeDelta::FromHours(1)},
       TimeRange{TimeRange::Type::Day},
       TimeRange{TimeRange::Type::Week},
       TimeRange{TimeRange::Type::Month},

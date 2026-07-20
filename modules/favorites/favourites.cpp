@@ -32,7 +32,7 @@ void Favourites::DeleteFolder(const Page& folder) {
       return;
     }
   }
-  base::NotReached();
+  scada::base::NotReached();
 }
 
 void Favourites::Add(const WindowDefinition& win, const Page& folder) {

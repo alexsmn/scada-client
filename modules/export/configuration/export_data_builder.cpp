@@ -13,7 +13,8 @@
 namespace {
 
 const scada::NamespaceIndex kExportedNamespaceIndexes[] = {
-    NamespaceIndexes::GROUP, NamespaceIndexes::TS, NamespaceIndexes::TIT};
+    scada::NamespaceIndexes::GROUP, scada::NamespaceIndexes::TS,
+    scada::NamespaceIndexes::TIT};
 
 ExportData::Node MakeExportNode(
     const NodeRef& node,
@@ -113,16 +114,18 @@ void CollectProperties(const NodeRef& type,
 
 Awaitable<ExportData> ExportDataBuilder::BuildAsync(
     AnyExecutor executor) const {
-  return BuildExportDataAsync(std::move(executor),
-                              node_service_.GetNode(data_items::id::DataItems),
-                              CollectProps());
+  return BuildExportDataAsync(
+      std::move(executor),
+      node_service_.GetNode(scada::data_items::id::DataItems), CollectProps());
 }
 
 std::vector<ExportData::Property> ExportDataBuilder::CollectProps() const {
   std::vector<ExportData::Property> props;
-  CollectProperties(node_service_.GetNode(data_items::id::DiscreteItemType),
-                    props, true);
-  CollectProperties(node_service_.GetNode(data_items::id::AnalogItemType),
-                    props, false);
+  CollectProperties(
+      node_service_.GetNode(scada::data_items::id::DiscreteItemType), props,
+      true);
+  CollectProperties(
+      node_service_.GetNode(scada::data_items::id::AnalogItemType), props,
+      false);
   return props;
 }

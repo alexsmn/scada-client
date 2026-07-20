@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include <QColor>
 #include <QPalette>
 #include <QString>

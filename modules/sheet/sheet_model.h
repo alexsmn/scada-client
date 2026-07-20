@@ -14,7 +14,7 @@ class SheetCell;
 class TimedDataService;
 class WindowDefinition;
 
-class SheetColumnModel : public aui::ColumnHeaderModel {
+class SheetColumnModel : public scada::aui::ColumnHeaderModel {
  public:
   // aui::HeaderModel
   virtual std::u16string GetTitle(int index) const override;
@@ -26,8 +26,8 @@ struct SheetModelContext {
 };
 
 class SheetModel : private SheetModelContext,
-                   public aui::GridModel,
-                   private aui::FixedRowModel::Delegate,
+                   public scada::aui::GridModel,
+                   private scada::aui::FixedRowModel::Delegate,
                    private Blinker {
  public:
   explicit SheetModel(SheetModelContext&& context);
@@ -36,7 +36,9 @@ class SheetModel : private SheetModelContext,
   void Load(const WindowDefinition& definition);
   void Save(WindowDefinition& definition);
 
-  aui::FixedRowModel& row_model() SCADA_LIFETIME_BOUND { return row_model_; }
+  scada::aui::FixedRowModel& row_model() SCADA_LIFETIME_BOUND {
+    return row_model_;
+  }
   SheetColumnModel& column_model() SCADA_LIFETIME_BOUND {
     return column_model_;
   }
@@ -54,11 +56,12 @@ class SheetModel : private SheetModelContext,
   // Returns existing cell or creates new one.
   SheetCell& GetCell(int row, int column);
 
-  void ClearRange(const aui::GridRange& range);
+  void ClearRange(const scada::aui::GridRange& range);
   void ClearCell(int row, int col);
 
-  aui::Color GetRangeColor(const aui::GridRange& range) const;
-  void SetRangeColor(const aui::GridRange& range, aui::Color color);
+  scada::aui::Color GetRangeColor(const scada::aui::GridRange& range) const;
+  void SetRangeColor(const scada::aui::GridRange& range,
+                     scada::aui::Color color);
 
   SheetFormatPool& formats() SCADA_LIFETIME_BOUND { return formats_; }
 
@@ -66,7 +69,7 @@ class SheetModel : private SheetModelContext,
 
   // aui::GridModel
   virtual int GetRowCount() override;
-  virtual void GetCell(aui::GridCell& cell) override;
+  virtual void GetCell(scada::aui::GridCell& cell) override;
   virtual bool SetCellText(int row,
                            int column,
                            const std::u16string& text) override;
@@ -87,20 +90,20 @@ class SheetModel : private SheetModelContext,
 
   bool editing_ = false;
 
-  aui::FixedRowModel row_model_{*this};
+  scada::aui::FixedRowModel row_model_{*this};
   SheetColumnModel column_model_;
 
   friend class SheetCell;
 };
 
 inline std::unique_ptr<SheetCell>& SheetModel::mutable_cell(int row, int col) {
-  base::Check(row >= 0 && row < row_count_);
-  base::Check(col >= 0 && col < column_count_);
+  scada::base::Check(row >= 0 && row < row_count_);
+  scada::base::Check(col >= 0 && col < column_count_);
   return cells_[row * column_count() + col];
 }
 
 inline const SheetCell* SheetModel::cell(int row, int col) const {
-  base::Check(row >= 0 && row < row_count_);
-  base::Check(col >= 0 && col < column_count_);
+  scada::base::Check(row >= 0 && row < row_count_);
+  scada::base::Check(col >= 0 && col < column_count_);
   return cells_[row * column_count() + col].get();
 }

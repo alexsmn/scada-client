@@ -13,7 +13,7 @@ inline std::vector<QIcon> LoadIcons(unsigned resource_id,
                                     int width,
                                     QColor mask_color) {
 #ifdef _WIN32
-  base::win::ScopedBitmap bitmap{
+  scada::base::win::ScopedBitmap bitmap{
       ::LoadBitmap(GetModuleHandle(NULL), MAKEINTRESOURCE(resource_id))};
 
   QPixmap tile = QPixmap::fromImage(QImage::fromHBITMAP(bitmap.get()));

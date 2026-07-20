@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include "aui/models/property_model.h"
 #include "aui/models/tree_node_model.h"
 

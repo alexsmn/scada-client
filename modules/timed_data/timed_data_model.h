@@ -1,7 +1,6 @@
 #pragma once
 
 #include "aui/models/table_model.h"
-#include "base/base_compat.h"
 #include "base/lifetime.h"
 #include "controller/time_model.h"
 #include "timed_data/timed_data_spec.h"
@@ -14,13 +13,13 @@ class TimedDataService;
 class WindowDefinition;
 
 struct TimedDataModelContext {
-  base::Clock& clock_;
+  scada::base::Clock& clock_;
   TimedDataService& timed_data_service_;
   bool utc_time_ = false;
 };
 
 class TimedDataModel : private TimedDataModelContext,
-                       public aui::TableModel,
+                       public scada::aui::TableModel,
                        public TimeModel {
  public:
   enum { CID_TIME, CID_QUALITY, CID_VALUE, CID_COLLECTION_TIME };
@@ -40,7 +39,7 @@ class TimedDataModel : private TimedDataModelContext,
 
   // aui::TableModel overrides
   virtual int GetRowCount() override;
-  virtual void GetCell(aui::TableCell& cell) override;
+  virtual void GetCell(scada::aui::TableCell& cell) override;
 
   // TimeModel
   virtual TimeRange GetTimeRange() const override;
@@ -57,5 +56,5 @@ class TimedDataModel : private TimedDataModelContext,
   TimeRange time_range_;
 
   // Cannot be null.
-  base::Time end_time_ = base::Time::Max();
+  scada::base::Time end_time_ = scada::base::Time::Max();
 };

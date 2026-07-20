@@ -48,9 +48,11 @@ std::unique_ptr<UiView> SheetController::Init(
 
   model_->Load(definition);
 
-  grid_ = new aui::Grid{
-      model_, std::shared_ptr<aui::HeaderModel>{model_, &model_->row_model()},
-      std::shared_ptr<aui::HeaderModel>{model_, &model_->column_model()}};
+  grid_ = new scada::aui::Grid{
+      model_,
+      std::shared_ptr<scada::aui::HeaderModel>{model_, &model_->row_model()},
+      std::shared_ptr<scada::aui::HeaderModel>{model_,
+                                               &model_->column_model()}};
 
 #if defined(UI_QT)
   formula_row_ = new QLineEdit;
@@ -81,7 +83,7 @@ std::unique_ptr<UiView> SheetController::Init(
 
   grid_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });
 
-  grid_->SetContextMenuHandler([this](const aui::Point& point) {
+  grid_->SetContextMenuHandler([this](const scada::aui::Point& point) {
     // While editing, offer the view's cross-platform menu model (the "Color..."
     // command); otherwise fall back to the generic item popup. Replaces the
     // Windows-only `IDR_SHEET_POPUP` resource menu.
@@ -163,7 +165,7 @@ void SheetController::UpdateFormulaRow() {
   if (!model_->is_editing())
     return;
 
-  aui::GridRange range = grid_->GetSelectionRange();
+  scada::aui::GridRange range = grid_->GetSelectionRange();
 
 #if defined(UI_QT)
   formula_row_->setEnabled(!range.empty());
@@ -199,7 +201,7 @@ void SheetController::OnFormulaEdited() {
 void SheetController::OnSelectionChanged() {
   UpdateFormulaRow();
 
-  aui::GridRange range = grid_->GetSelectionRange();
+  scada::aui::GridRange range = grid_->GetSelectionRange();
   if (range.empty()) {
     selection_.Clear();
   } else if (range.is_cell()) {

@@ -22,11 +22,11 @@ namespace {
 
 struct TestNodeGenerator {
   scada::NodeId node_id(int index) const {
-    return {static_cast<scada::NumericId>(index), NamespaceIndexes::TIT};
+    return {static_cast<scada::NumericId>(index), scada::NamespaceIndexes::TIT};
   }
 
   scada::NodeId type_definition_id() const {
-    return data_items::id::AnalogItemType;
+    return scada::data_items::id::AnalogItemType;
   }
 
   scada::LocalizedText display_name(int index) const {
@@ -180,10 +180,10 @@ TEST(EventTableModelUnacknowledgedFilterTest,
   TestExecutor executor;
 
   StaticNodeService node_service;
-  const scada::NodeId node_id{1, NamespaceIndexes::TIT};
+  const scada::NodeId node_id{1, scada::NamespaceIndexes::TIT};
   node_service.Add(
       {.node_id = node_id,
-       .type_definition_id = data_items::id::AnalogItemType,
+       .type_definition_id = scada::data_items::id::AnalogItemType,
        .attributes = {.browse_name = "n1", .display_name = u"N1"}});
 
   NiceMock<MockNodeEventProvider> node_event_provider;
@@ -235,7 +235,7 @@ TEST_F(EventTableModelTest, CurrentEvents_AckEvents) {
        test_events_ | std::views::values | std::views::take(ack_count)) {
     event.acked = true;
     event.acknowledged_time = ack_time;
-    event.acknowledged_user_id = {1, NamespaceIndexes::USER};
+    event.acknowledged_user_id = {1, scada::NamespaceIndexes::USER};
     event_ptrs.emplace_back(&event);
   }
 

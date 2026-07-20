@@ -14,7 +14,9 @@ const std::string_view kTimeRangeStrings[] = {
 static_assert(std::size(kTimeRangeStrings) ==
               static_cast<size_t>(TimeRange::Type::Count));
 
-inline bool CompareBounds(base::Time a, base::Time b, bool dates) {
+inline bool CompareBounds(scada::base::Time a,
+                          scada::base::Time b,
+                          bool dates) {
   if (dates)
     return a.LocalMidnight() == b.LocalMidnight();
   else
@@ -23,26 +25,27 @@ inline bool CompareBounds(base::Time a, base::Time b, bool dates) {
 
 // WARNING: The function operates with UTC time unlikely to `TimeRange` types
 // using local time.
-base::Time AlignTime(base::Time time, base::TimeDelta interval) {
-  return time - (time - base::Time::UnixEpoch()) % interval;
+scada::base::Time AlignTime(scada::base::Time time,
+                            scada::base::TimeDelta interval) {
+  return time - (time - scada::base::Time::UnixEpoch()) % interval;
 }
 
 }  // namespace
 
 scada::DateTimeRange ToDateTimeRangeWithOpenRange(const TimeRange& time_range,
-                                                  base::Time now) {
+                                                  scada::base::Time now) {
   auto result = ToDateTimeRange(time_range, now);
 
   if (time_range.end.is_null() || time_range.end.is_max()) {
-    result.second = base::Time::Max();
+    result.second = scada::base::Time::Max();
   }
 
   return result;
 }
 
 scada::DateTimeRange ToDateTimeRange(const TimeRange& time_range,
-                                     base::Time now) {
-  base::Time from, to;
+                                     scada::base::Time now) {
+  scada::base::Time from, to;
 
   switch (time_range.type) {
     case TimeRange::Type::Day:
@@ -50,20 +53,20 @@ scada::DateTimeRange ToDateTimeRange(const TimeRange& time_range,
       break;
 
     case TimeRange::Type::Week: {
-      base::Time cur = now.LocalMidnight();
-      base::Time::Exploded ts = {};
+      scada::base::Time cur = now.LocalMidnight();
+      scada::base::Time::Exploded ts = {};
       cur.LocalExplode(&ts);
       // We need to start day of week from Monday instead of Sunday.
       unsigned day_of_week = (ts.day_of_week + 6) % 7;
-      from = cur - base::TimeDelta::FromDays(day_of_week);
+      from = cur - scada::base::TimeDelta::FromDays(day_of_week);
       break;
     }
 
     case TimeRange::Type::Month: {
-      base::Time::Exploded ts;
+      scada::base::Time::Exploded ts;
       now.LocalMidnight().LocalExplode(&ts);
       ts.day_of_month = 1;
-      base::Time::FromLocalExploded(ts, &from);
+      scada::base::Time::FromLocalExploded(ts, &from);
       break;
     }
 
@@ -88,17 +91,17 @@ scada::DateTimeRange ToDateTimeRange(const TimeRange& time_range,
 
   if (time_range.dates) {
     from = from.LocalMidnight();
-    to = to.LocalMidnight() + base::TimeDelta::FromDays(1);
+    to = to.LocalMidnight() + scada::base::TimeDelta::FromDays(1);
   }
 
   if (from.is_null() || from >= to) {
     to = now;
-    from = to - base::TimeDelta::FromHours(1);
+    from = to - scada::base::TimeDelta::FromHours(1);
   }
 
-  base::Check(!from.is_null());
-  base::Check(!to.is_null());
-  base::Check(from <= to);
+  scada::base::Check(!from.is_null());
+  scada::base::Check(!to.is_null());
+  scada::base::Check(from <= to);
 
   return {from, to};
 }

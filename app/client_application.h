@@ -3,7 +3,6 @@
 #include "base/any_executor.h"
 #include "base/boost_log.h"
 #include "base/lifetime.h"
-#include "metrics/metrics_compat.h"
 
 #include "app/client_application_modules.h"
 #include "app/login_canceled.h"
@@ -158,7 +157,7 @@ class ClientApplication : private ClientApplicationContext {
   std::unique_ptr<CoreModule> core_module_;
 
   std::shared_ptr<BoostLogger> logger_;
-  std::unique_ptr<metrics::OpenTelemetryMetrics> metrics_runtime_;
+  std::unique_ptr<scada::metrics::OpenTelemetryMetrics> metrics_runtime_;
 
   std::shared_ptr<transport::TransportFactory> transport_factory_;
 
@@ -201,7 +200,7 @@ class ClientApplication : private ClientApplicationContext {
 
   // Sets on `Quit` and never resets. Allows multiple `Quit` calls.
   bool quitting_ = false;
-  base::AsyncCompletion quit_completion_;
+  scada::base::AsyncCompletion quit_completion_;
 
   // Must be the last member so it is destroyed first, running registered
   // teardown callbacks before the other members are torn down.

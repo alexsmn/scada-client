@@ -19,11 +19,11 @@ using namespace testing;
 
 namespace {
 
-class TestTableModel : public aui::TableModel {
+class TestTableModel : public scada::aui::TableModel {
  public:
   int GetRowCount() override { return 1; }
 
-  void GetCell(aui::TableCell& cell) override {
+  void GetCell(scada::aui::TableCell& cell) override {
     if (cell.row == 0 && cell.column_id == 1)
       cell.text = u"value";
   }
@@ -52,7 +52,7 @@ class TestExportModel : public ExportModel {
   }
 
   TestTableModel table_model;
-  std::vector<aui::TableColumn> columns{{.id = 1, .title = u"Name"}};
+  std::vector<scada::aui::TableColumn> columns{{.id = 1, .title = u"Name"}};
   bool throw_on_export = false;
 };
 

@@ -11,7 +11,7 @@ namespace {
 class FileCacheTest : public ::testing::Test {
  protected:
   FileCacheTest() {
-    base::PathService::Get(client::DIR_PUBLIC, &original_public_path_);
+    scada::base::PathService::Get(client::DIR_PUBLIC, &original_public_path_);
     fallback_cache_path_ =
         std::filesystem::current_path() / "file-cache.json";
     std::filesystem::remove(fallback_cache_path_);
@@ -19,7 +19,8 @@ class FileCacheTest : public ::testing::Test {
 
   ~FileCacheTest() override {
     std::filesystem::remove(fallback_cache_path_);
-    base::PathService::Override(client::DIR_PUBLIC, original_public_path_);
+    scada::base::PathService::Override(client::DIR_PUBLIC,
+                                       original_public_path_);
   }
 
   std::filesystem::path original_public_path_;
@@ -28,7 +29,7 @@ class FileCacheTest : public ::testing::Test {
 };
 
 TEST_F(FileCacheTest, DoesNotWriteRelativeCacheFileWhenPublicPathMissing) {
-  base::PathService::Override(client::DIR_PUBLIC, {});
+  scada::base::PathService::Override(client::DIR_PUBLIC, {});
 
   {
     FileCache file_cache{file_registry_};

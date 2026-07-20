@@ -26,7 +26,7 @@ TEST(ScadaClientCoreModuleSmoke, ProgressAndCommandContexts) {
 TEST(ScadaClientCoreModuleSmoke, TransitiveSurfaces) {
   // scada.base via the export import chain.
   EXPECT_EQ(Format(7), "7");
-  base::Check(true, "client core module smoke");
+  scada::base::Check(true, "client core module smoke");
 }
 
 }  // namespace

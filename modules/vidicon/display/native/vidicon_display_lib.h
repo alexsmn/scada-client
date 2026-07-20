@@ -1,7 +1,5 @@
 #pragma once
 
-#include "vidicon/vidicon_compat.h"
-
 #include <TeleClient.h>
 #include <Windows.h>
 #include <filesystem>

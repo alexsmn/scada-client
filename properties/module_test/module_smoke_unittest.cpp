@@ -24,9 +24,9 @@ TEST(ScadaClientPropertiesModuleSmoke, PropertiesSurface) {
 
 TEST(ScadaClientPropertiesModuleSmoke, TransitiveSurfaces) {
   // scada.client.aui / scada.core / scada.base via the export import chain.
-  static_assert(std::is_class_v<aui::TableColumn>);
+  static_assert(std::is_class_v<scada::aui::TableColumn>);
   EXPECT_FALSE(scada::NodeId(42, 7).is_null());
-  base::Check(true, "client properties module smoke");
+  scada::base::Check(true, "client properties module smoke");
 }
 
 }  // namespace

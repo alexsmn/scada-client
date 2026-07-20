@@ -45,16 +45,16 @@ scada::NodeId ParseJsonChildNodeId(const boost::json::value& child) {
 
 std::optional<scada::NodeId> ParseJsonPropertyId(std::string_view name) {
   if (name == "display_format")
-    return data_items::id::AnalogItemType_DisplayFormat;
+    return scada::data_items::id::AnalogItemType_DisplayFormat;
   // Analog-limit bands, so a fixture node can drive the trend's limit markers.
   if (name == "limit_lolo")
-    return data_items::id::AnalogItemType_LimitLoLo;
+    return scada::data_items::id::AnalogItemType_LimitLoLo;
   if (name == "limit_lo")
-    return data_items::id::AnalogItemType_LimitLo;
+    return scada::data_items::id::AnalogItemType_LimitLo;
   if (name == "limit_hi")
-    return data_items::id::AnalogItemType_LimitHi;
+    return scada::data_items::id::AnalogItemType_LimitHi;
   if (name == "limit_hihi")
-    return data_items::id::AnalogItemType_LimitHiHi;
+    return scada::data_items::id::AnalogItemType_LimitHiHi;
   if (LooksLikeJsonNodeId(name))
     return NodeIdFromScadaString(name);
   return std::nullopt;
@@ -64,9 +64,9 @@ scada::NodeId ParseJsonTypeDefinition(const boost::json::object& node) {
   if (const auto* type = node.if_contains("type_definition")) {
     auto type_name = std::string_view(type->as_string());
     if (type_name == "analog_item")
-      return data_items::id::AnalogItemType;
+      return scada::data_items::id::AnalogItemType;
     if (type_name == "discrete_item")
-      return data_items::id::DiscreteItemType;
+      return scada::data_items::id::DiscreteItemType;
     if (LooksLikeJsonNodeId(type_name))
       return NodeIdFromScadaString(type_name);
   }
@@ -211,7 +211,7 @@ void PopulateFixtureNodes(AddressSpaceImpl& address_space,
           // no units at all.
           if (name == "units" && value.is_string()) {
             state.properties.emplace_back(
-                data_items::id::AnalogItemType_EngineeringUnits,
+                scada::data_items::id::AnalogItemType_EngineeringUnits,
                 scada::ToLocalizedText(std::string(value.as_string())));
             continue;
           }
@@ -222,8 +222,9 @@ void PopulateFixtureNodes(AddressSpaceImpl& address_space,
           // value would not read back through the grid's
           // get_or(LocalizedText{}), leaving the column blank.
           if (value.is_string() &&
-              (*property_id == data_items::id::TsFormatType_OpenLabel ||
-               *property_id == data_items::id::TsFormatType_CloseLabel)) {
+              (*property_id == scada::data_items::id::TsFormatType_OpenLabel ||
+               *property_id ==
+                   scada::data_items::id::TsFormatType_CloseLabel)) {
             state.properties.emplace_back(
                 *property_id,
                 scada::ToLocalizedText(std::string(value.as_string())));
@@ -250,24 +251,24 @@ void PopulateFixtureNodes(AddressSpaceImpl& address_space,
       // missing from ScadaTestAddressSpace) must abort the run: a silent
       // drop cascades into empty screenshots that still "pass".
       const auto [status, node] = factory.CreateNode(state);
-      base::Check(status, "fixture node creation failed: " +
-                              NodeIdToScadaString(node_id) + " | " +
-                              ToString(status));
+      scada::base::Check(status, "fixture node creation failed: " +
+                                     NodeIdToScadaString(node_id) + " | " +
+                                     ToString(status));
       progressed = true;
     }
     pending = std::move(next);
   }
 
-  base::Check(pending.empty(),
-              "fixture nodes left unresolved (parent missing from the "
-              "address space)");
+  scada::base::Check(pending.empty(),
+                     "fixture nodes left unresolved (parent missing from the "
+                     "address space)");
 
   for (const auto& ref : pending_references) {
-    base::Check(address_space.GetNode(ref.source_id) &&
-                    address_space.GetNode(ref.target_id),
-                "fixture reference endpoints missing: " +
-                    NodeIdToScadaString(ref.source_id) + " -> " +
-                    NodeIdToScadaString(ref.target_id));
+    scada::base::Check(address_space.GetNode(ref.source_id) &&
+                           address_space.GetNode(ref.target_id),
+                       "fixture reference endpoints missing: " +
+                           NodeIdToScadaString(ref.source_id) + " -> " +
+                           NodeIdToScadaString(ref.target_id));
     scada::AddReference(address_space, ref.reference_type_id, ref.source_id,
                         ref.target_id);
   }

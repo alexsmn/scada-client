@@ -134,7 +134,7 @@ void FavouritesTreeModel::OnFavouriteDeleted(const Page& folder,
   auto& folder_node = static_cast<FavouritesFolderNode&>(root().GetChild(i));
 
   int index = folder_node.FindWindowNode(window);
-  base::Check(index != -1);
+  scada::base::Check(index != -1);
   Remove(folder_node, index);
 }
 
@@ -171,7 +171,7 @@ void FavouritesTreeModel::OnWindowChanged(const Page& folder,
   auto& folder_node = static_cast<FavouritesFolderNode&>(root().GetChild(i));
 
   int index = folder_node.FindWindowNode(window);
-  base::Check(index != -1);
+  scada::base::Check(index != -1);
 
   auto& window_node =
       static_cast<FavouritesWindowNode&>(folder_node.GetChild(index));

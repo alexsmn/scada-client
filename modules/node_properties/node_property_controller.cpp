@@ -93,16 +93,16 @@ std::unique_ptr<UiView> NodePropertyController::Init(
         : property_model_{std::move(property_model)} {}
 
     const std::shared_ptr<NodePropertyModel> property_model_;
-    aui::PropertyTreeModel tree_model{*property_model_};
+    scada::aui::PropertyTreeModel tree_model{*property_model_};
   };
 
   auto tree_model_holder =
       std::make_shared<PropertyTreeModelHolder>(property_model_);
 
-  tree_model_ = std::shared_ptr<aui::PropertyTreeModel>(
+  tree_model_ = std::shared_ptr<scada::aui::PropertyTreeModel>(
       tree_model_holder, &tree_model_holder->tree_model);
 
-  tree_view_ = new aui::Tree{tree_model_};
+  tree_view_ = new scada::aui::Tree{tree_model_};
 
   /*tree_view_->SetColumnWidth(0, 150);
   tree_view_->SetColumnWidth(1, 200);*/
@@ -111,8 +111,9 @@ std::unique_ptr<UiView> NodePropertyController::Init(
   tree_view_->SetRowHeight(21);
 
   tree_view_->SetCompareHandler([this](void* left, void* right) {
-    auto& left_node = *static_cast<aui::PropertyTreeModel::Node*>(left);
-    auto& right_node = *static_cast<aui::PropertyTreeModel::Node*>(right);
+    auto& left_node = *static_cast<scada::aui::PropertyTreeModel::Node*>(left);
+    auto& right_node =
+        *static_cast<scada::aui::PropertyTreeModel::Node*>(right);
     auto* left_group = left_node.AsGroup();
     auto* right_group = right_node.AsGroup();
     if (left_group && right_group)

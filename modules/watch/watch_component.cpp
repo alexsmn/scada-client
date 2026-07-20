@@ -26,7 +26,8 @@ WatchModule::WatchModule(WatchModuleContext&& context)
   selection_commands_.AddCommand(MakeOpenSingleSelectionCommand(
       ID_OPEN_WATCH, kWatchWindowInfo, executor_,
       [](const SelectionCommandContext& context) {
-        return IsInstanceOf(context.selection.node(), devices::id::DeviceType);
+        return IsInstanceOf(context.selection.node(),
+                            scada::devices::id::DeviceType);
       }));
 }
 

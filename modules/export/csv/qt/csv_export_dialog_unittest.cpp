@@ -61,22 +61,21 @@ class CsvExportDialogTest : public testing::Test {
 }  // namespace
 
 TEST_F(CsvExportDialogTest, AcceptedDialogReturnsParamsAndStoresProfile) {
-  auto result =
-      aui::qt::test::StartAwaitable(ShowCsvExportDialog(dialog_service_,
-                                                        profile_));
+  auto result = scada::aui::qt::test::StartAwaitable(
+      ShowCsvExportDialog(dialog_service_, profile_));
 
-  aui::qt::test::ProcessEventsUntilSettled(result, [](QDialog& dialog) {
+  scada::aui::qt::test::ProcessEventsUntilSettled(result, [](QDialog& dialog) {
     dialog.findChild<QComboBox*>("encodingComboBox")->setCurrentIndex(1);
     dialog.findChild<QComboBox*>("delimiterComboBox")->setCurrentText(";");
     dialog.findChild<QComboBox*>("quoteComboBox")->setCurrentText("'");
     dialog.accept();
   });
 
-  ASSERT_TRUE(aui::qt::test::IsAwaitableReady(result));
+  ASSERT_TRUE(scada::aui::qt::test::IsAwaitableReady(result));
   const CsvExportParams expected{.unicode = true,
                                  .delimiter = ';',
                                  .quote = '\''};
-  ExpectParamsEq(aui::qt::test::GetAwaitableResult(result), expected);
+  ExpectParamsEq(scada::aui::qt::test::GetAwaitableResult(result), expected);
   ExpectParamsEq(ReadProfileParams(profile_), expected);
 }
 
@@ -84,15 +83,15 @@ TEST_F(CsvExportDialogTest, RejectedDialogDoesNotStoreProfileParams) {
   profile_.data().as_object()["csv"] =
       ToJson(CsvExportParams{.unicode = true, .delimiter = ';', .quote = '\''});
 
-  auto result =
-      aui::qt::test::StartAwaitable(ShowCsvExportDialog(dialog_service_,
-                                                        profile_));
+  auto result = scada::aui::qt::test::StartAwaitable(
+      ShowCsvExportDialog(dialog_service_, profile_));
 
-  aui::qt::test::ProcessEventsUntilSettled(result,
-                                           aui::qt::test::RejectDialog);
+  scada::aui::qt::test::ProcessEventsUntilSettled(
+      result, scada::aui::qt::test::RejectDialog);
 
-  ASSERT_TRUE(aui::qt::test::IsAwaitableReady(result));
-  EXPECT_THROW(aui::qt::test::GetAwaitableResult(result), std::exception);
+  ASSERT_TRUE(scada::aui::qt::test::IsAwaitableReady(result));
+  EXPECT_THROW(scada::aui::qt::test::GetAwaitableResult(result),
+               std::exception);
   ExpectParamsEq(ReadProfileParams(profile_),
                  CsvExportParams{.unicode = true,
                                  .delimiter = ';',

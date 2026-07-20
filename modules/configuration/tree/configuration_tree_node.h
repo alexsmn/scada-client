@@ -17,7 +17,8 @@ struct ModelChangeEvent;
 
 class ConfigurationTreeModel;
 
-class ConfigurationTreeNode : public aui::TreeNode<ConfigurationTreeNode> {
+class ConfigurationTreeNode
+    : public scada::aui::TreeNode<ConfigurationTreeNode> {
  public:
   ConfigurationTreeNode(ConfigurationTreeModel& model,
                         scada::NodeId reference_type_id,

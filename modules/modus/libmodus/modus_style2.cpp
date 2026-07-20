@@ -67,7 +67,7 @@ bool ModusStyle2::IsAnimated() const {
 }
 
 void ModusStyle2::OnBlink(bool state) {
-  base::Check(IsAnimated());
+  scada::base::Check(IsAnimated());
 
   // The blink timer keeps running until the step after the last subscriber
   // disconnected; disconnects are only detected here.

@@ -25,9 +25,9 @@ PortfolioView::~PortfolioView() {}
 
 std::unique_ptr<UiView> PortfolioView::Init(
     const WindowDefinition& definition) {
-  tree_ = new aui::Tree{model_};
+  tree_ = new scada::aui::Tree{model_};
   tree_->SetRootVisible(false);
-  tree_->LoadIcons(IDB_ITEMS, 16, aui::Rgba{255, 0, 255});
+  tree_->LoadIcons(IDB_ITEMS, 16, scada::aui::Rgba{255, 0, 255});
 
   tree_->SetDoubleClickHandler([this] {
     PortfolioTreeNode* node = model_->AsNode(tree_->GetSelectedNode());
@@ -49,7 +49,7 @@ std::unique_ptr<UiView> PortfolioView::Init(
       selection_.SelectNode(node_service_.GetNode(node->item_id()));
   });
 
-  tree_->SetContextMenuHandler([this](const aui::Point& point) {
+  tree_->SetContextMenuHandler([this](const scada::aui::Point& point) {
     // No view-specific static items: the portfolio's node commands are supplied
     // by the generic cross-platform context menu (the former `IDR_PFOLIO_POPUP`
     // carried only the dynamic `<Item>` placeholder).
@@ -122,10 +122,10 @@ void PortfolioView::AddContainedItem(const scada::NodeId& node_id,
   portfolio_manager_.AddItem(*portfolio, node_id);
 
   PortfolioTreeNode* portfolio_node = model_->FindPortfolioNode(*portfolio);
-  base::Check(portfolio_node);
+  scada::base::Check(portfolio_node);
 
   PortfolioTreeNode* item_node = model_->FindItemNode(*portfolio_node, node_id);
-  base::Check(item_node);
+  scada::base::Check(item_node);
 
   // TODO: Expand portfolio node.
   // TODO: Select and make item node visible.
@@ -157,7 +157,7 @@ void PortfolioView::NewPortfolio() {
   const Portfolio& portfolio = portfolio_manager_.New();
 
   PortfolioTreeNode* node = model_->FindPortfolioNode(portfolio);
-  base::Check(node);
+  scada::base::Check(node);
 
   tree_->SelectNode(node);
   tree_->StartEditing(node);

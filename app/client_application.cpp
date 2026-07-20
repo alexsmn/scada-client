@@ -95,9 +95,10 @@ struct ClientApplication::PostLoginContext {
 
 ClientApplication::ClientApplication(ClientApplicationContext&& context)
     : ClientApplicationContext{std::move(context)},
-      metrics_runtime_{std::make_unique<metrics::OpenTelemetryMetrics>(
-          metrics::OpenTelemetryMetricsOptions{.service_name = "scada-client",
-                                               .export_interval = 1min})},
+      metrics_runtime_{std::make_unique<scada::metrics::OpenTelemetryMetrics>(
+          scada::metrics::OpenTelemetryMetricsOptions{
+              .service_name = "scada-client",
+              .export_interval = 1min})},
       controller_registry_{std::make_unique<ControllerRegistry>()},
       ui_command_registry_{std::make_unique<UiCommandRegistry>()},
       opened_view_command_registry_{
@@ -158,7 +159,7 @@ Awaitable<scada::Status> ClientApplication::SaveProfileToServer(
   }
   auto profile_json = boost::json::serialize(profile_->SaveToValue());
   auto status = co_await services.method_service->Call(
-      user_id, security::id::UserType_SaveProfile,
+      user_id, scada::security::id::UserType_SaveProfile,
       {scada::String{std::move(profile_json)}, profile_revision_},
       scada::ServiceContext{});
   if (scada::IsGood(status.code())) {

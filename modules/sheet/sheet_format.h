@@ -21,7 +21,7 @@ struct SheetFormatBase {
     return false;
   }
 
-  aui::Color color = aui::ColorCode::Transparent;
+  scada::aui::Color color = scada::aui::ColorCode::Transparent;
   unsigned char align = DT_LEFT;
 
   std::shared_ptr<ConditionalFormat> conditional_format_;

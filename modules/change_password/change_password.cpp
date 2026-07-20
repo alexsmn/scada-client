@@ -26,7 +26,8 @@ void ChangePassword(const ChangePasswordContext& context,
                     const scada::LocalizedText& current_password,
                     const scada::LocalizedText& new_password) {
   auto call = context.user_.scada_node().call(
-      security::id::UserType_ChangePassword, current_password, new_password);
+      scada::security::id::UserType_ChangePassword, current_password,
+      new_password);
   CoSpawn(context.executor_,
           [executor = context.executor_,
            call = std::move(call),

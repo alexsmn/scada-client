@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include "aui/models/table_column.h"
 #include "base/lifetime.h"
 

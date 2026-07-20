@@ -12,10 +12,10 @@
 namespace {
 
 bool IsHardwareDeviceNode(const NodeRef& node) {
-  return IsInstanceOf(node, devices::id::DeviceType) ||
-         IsInstanceOf(node, devices::id::ModbusDeviceType) ||
-         IsInstanceOf(node, devices::id::Iec60870DeviceType) ||
-         IsInstanceOf(node, devices::id::Iec61850DeviceType);
+  return IsInstanceOf(node, scada::devices::id::DeviceType) ||
+         IsInstanceOf(node, scada::devices::id::ModbusDeviceType) ||
+         IsInstanceOf(node, scada::devices::id::Iec60870DeviceType) ||
+         IsInstanceOf(node, scada::devices::id::Iec61850DeviceType);
 }
 
 }  // namespace
@@ -115,25 +115,26 @@ HardwareTreeModel::HardwareTreeModel(HardwareTreeModelContext&& context)
     : ConfigurationTreeModel{::ConfigurationTreeModelContext{
           .executor_ = context.executor_,
           .node_service_tree_ =
-          context.node_service_tree_factory_(NodeServiceTreeImplContext{
-              .executor_ = context.executor_,
-              .node_service_ = context.node_service_,
-              .root_node_ = context.node_service_.GetNode(devices::id::Devices),
-              .reference_filter_ = {{scada::id::Organizes, true},
-                                    {scada::id::HasComponent, true}},
-              .type_definition_ids_ =
-                  {devices::id::DeviceType,
-                   devices::id::LinkType,
-                   devices::id::ModbusLinkType,
-                   devices::id::ModbusDeviceType,
-                   devices::id::Iec60870LinkType,
-                   devices::id::Iec60870DeviceType,
-                   devices::id::Iec61850DeviceType,
-                   devices::id::Iec61850LogicalNodeType,
-                   devices::id::Iec61850ConfigurableObjectType,
-                   devices::id::Iec61850DataVariableType,
-                   devices::id::Iec61850ControlObjectType,
-                   devices::id::TransmissionItemType}}),
+              context.node_service_tree_factory_(NodeServiceTreeImplContext{
+                  .executor_ = context.executor_,
+                  .node_service_ = context.node_service_,
+                  .root_node_ = context.node_service_.GetNode(
+                      scada::devices::id::Devices),
+                  .reference_filter_ = {{scada::id::Organizes, true},
+                                        {scada::id::HasComponent, true}},
+                  .type_definition_ids_ =
+                      {scada::devices::id::DeviceType,
+                       scada::devices::id::LinkType,
+                       scada::devices::id::ModbusLinkType,
+                       scada::devices::id::ModbusDeviceType,
+                       scada::devices::id::Iec60870LinkType,
+                       scada::devices::id::Iec60870DeviceType,
+                       scada::devices::id::Iec61850DeviceType,
+                       scada::devices::id::Iec61850LogicalNodeType,
+                       scada::devices::id::Iec61850ConfigurableObjectType,
+                       scada::devices::id::Iec61850DataVariableType,
+                       scada::devices::id::Iec61850ControlObjectType,
+                       scada::devices::id::TransmissionItemType}}),
       }},
       timed_data_service_{context.timed_data_service_} {}
 
@@ -147,7 +148,8 @@ std::optional<DeviceState> HardwareTreeModel::GetDeviceStateForTesting(
                           : std::nullopt;
 }
 
-std::optional<aui::Color> HardwareTreeModel::GetStatusColor(void* tree_node) {
+std::optional<scada::aui::Color> HardwareTreeModel::GetStatusColor(
+    void* tree_node) {
   auto* device_tree_node = dynamic_cast<DeviceTreeNode*>(
       static_cast<ConfigurationTreeNode*>(tree_node));
   if (!device_tree_node)

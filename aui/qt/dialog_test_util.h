@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include "base/any_executor.h"
 
 #include "aui/qt/message_loop_qt.h"

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include <boost/signals2/connection.hpp>
 
 class ProgressHost;
@@ -15,7 +13,8 @@ class StatusBar;
 // status bar's panes, visible while an operation is active.
 class ProgressController final {
  public:
-  ProgressController(aui::StatusBar& status_bar, ProgressHost& progress_host);
+  ProgressController(scada::aui::StatusBar& status_bar,
+                     ProgressHost& progress_host);
   ~ProgressController();
 
  private:

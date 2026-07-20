@@ -1,7 +1,5 @@
 ﻿#include "aui/models/property_tree_model.h"
 
-#include "aui/aui_ns_compat.h"
-
 #include "aui/translation.h"
 
 #include "base/check.h"

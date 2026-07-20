@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include "aui/key_codes.h"
 #include "controller/command_registry.h"
 #include "controller/contents_model.h"
@@ -53,13 +51,13 @@ class TableView : protected ControllerContext,
 
   void OnSelectionChanged();
   void OnDoubleClick();
-  bool OnKeyPressed(aui::KeyCode key_code);
+  bool OnKeyPressed(scada::aui::KeyCode key_code);
 
   SelectionModel selection_{{timed_data_service_}};
 
   const std::shared_ptr<TableModel> model_;
 
-  aui::Table* view_ = nullptr;
+  scada::aui::Table* view_ = nullptr;
 
   CommandRegistry command_registry_;
   Command& delete_command_ = command_registry_.AddCommand(ID_DELETE);

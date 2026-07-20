@@ -75,7 +75,7 @@ ExportData::Property ExportDataReader::ParseProperty(
   auto prop_decl = node_service_.GetNode(prop_decl_id);
 
   // The type system must be prefeteched before import starts.
-  base::Check(prop_decl.fetched());
+  scada::base::Check(prop_decl.fetched());
 
   bool reference = prop_decl.node_class() == scada::NodeClass::ReferenceType;
 
@@ -128,7 +128,7 @@ std::optional<ExportData::PropertyValue> ExportDataReader::ReadProperty(
   }
 
   // The type system must be prefeteched before import starts.
-  base::Check(prop_decl.fetched());
+  scada::base::Check(prop_decl.fetched());
 
   auto string_value = ReadCell();
   if (string_value.empty()) {
@@ -143,7 +143,7 @@ std::optional<ExportData::PropertyValue> ExportDataReader::ReadProperty(
 std::optional<ExportData::PropertyValue> ExportDataReader::ParsePropertyValue(
     const NodeRef& prop_decl,
     std::u16string_view string_value) const {
-  base::Check(prop_decl.fetched());
+  scada::base::Check(prop_decl.fetched());
 
   scada::Variant new_value;
   auto data_type = GetBuiltInDataType(prop_decl.data_type());
@@ -163,8 +163,8 @@ std::optional<ExportData::PropertyValue> ExportDataReader::ParsePropertyValue(
 std::optional<ExportData::PropertyValue> ExportDataReader::ParseReferenceValue(
     const NodeRef& ref_type,
     std::u16string_view string_value) const {
-  base::Check(ref_type.fetched());
-  base::Check(ref_type.node_class() == scada::NodeClass::ReferenceType);
+  scada::base::Check(ref_type.fetched());
+  scada::base::Check(ref_type.node_class() == scada::NodeClass::ReferenceType);
 
   auto target_id = ParseReferenceCell(string_value);
   if (target_id.is_null()) {

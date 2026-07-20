@@ -39,7 +39,7 @@ scada::NodeState MakeNodeState(scada::NodeId node_id,
 
 class SummaryModelTest : public Test {
  protected:
-  aui::GridCell GetCellAt(int column_index, base::Time time);
+  scada::aui::GridCell GetCellAt(int column_index, scada::base::Time time);
 
   TestExecutor executor_;
   StaticNodeService node_service_;
@@ -49,10 +49,11 @@ class SummaryModelTest : public Test {
       SummaryModelContext{executor_, node_service_, timed_data_service_}};
 };
 
-aui::GridCell SummaryModelTest::GetCellAt(int column_index, base::Time time) {
+scada::aui::GridCell SummaryModelTest::GetCellAt(int column_index,
+                                                 scada::base::Time time) {
   int row_index = summary_model_.GetRowForTime(time);
 
-  aui::GridCell cell{.row = row_index, .column = column_index};
+  scada::aui::GridCell cell{.row = row_index, .column = column_index};
   summary_model_.GetCell(cell);
 
   return cell;
@@ -111,12 +112,12 @@ TEST_F(SummaryModelTest, AddContainedItemExpandsGroupOnExecutor) {
 TEST_F(SummaryModelTest, HourlySummaryForDayShows24Rows) {
   auto start_time = TestTimeFromString("15 Nov 2004 10:00:00 UTC");
   auto time_range =
-      TimeRange{start_time, start_time + base::TimeDelta::FromHours(24)};
+      TimeRange{start_time, start_time + scada::base::TimeDelta::FromHours(24)};
 
   auto timed_data = timed_data_service_.AddTimedData("item1");
 
   for (int i = 0; i < 24; ++i) {
-    auto timestamp = start_time + base::TimeDelta::FromHours(i);
+    auto timestamp = start_time + scada::base::TimeDelta::FromHours(i);
     timed_data->data_values.emplace_back(/*value=*/i,
                                          /*qualifier=*/scada::Qualifier{},
                                          /*source_timestamp=*/timestamp,
@@ -132,7 +133,7 @@ TEST_F(SummaryModelTest, HourlySummaryForDayShows24Rows) {
   EXPECT_EQ(summary_model_.row_model().GetCount(), 24);
   EXPECT_EQ(summary_model_.GetRowTime(0), start_time);
   EXPECT_EQ(summary_model_.GetRowTime(23),
-            start_time + base::TimeDelta::FromHours(23));
+            start_time + scada::base::TimeDelta::FromHours(23));
   EXPECT_EQ(summary_model_.GetCellText(/*row=*/0, /*column=*/0), u"0");
   EXPECT_EQ(summary_model_.GetCellText(/*row=*/23, /*column=*/0), u"23");
 }
@@ -208,22 +209,22 @@ TEST_F(SummaryModelTest, CellsAreGreyWhileLoading) {
           .AddItem("Interval", scada::Duration::FromMinutes(30))
           .AddItem("AggregateType", scada::id::AggregateFunction_Maximum));
 
-  EXPECT_EQ(aui::ColorCode::DarkGray,
+  EXPECT_EQ(scada::aui::ColorCode::DarkGray,
             GetCellAt(/*column_index=*/0,
                       TestTimeFromString("15 Nov 2004 13:30:00 UTC"))
                 .cell_color);
 
-  EXPECT_EQ(aui::ColorCode::White,
+  EXPECT_EQ(scada::aui::ColorCode::White,
             GetCellAt(/*column_index=*/0,
                       TestTimeFromString("15 Nov 2004 14:00:00 UTC"))
                 .cell_color);
 
-  EXPECT_EQ(aui::ColorCode::White,
+  EXPECT_EQ(scada::aui::ColorCode::White,
             GetCellAt(/*column_index=*/0,
                       TestTimeFromString("15 Nov 2004 14:30:00 UTC"))
                 .cell_color);
 
-  EXPECT_EQ(aui::ColorCode::DarkGray,
+  EXPECT_EQ(scada::aui::ColorCode::DarkGray,
             GetCellAt(/*column_index=*/0,
                       TestTimeFromString("15 Nov 2004 15:00:00 UTC"))
                 .cell_color);

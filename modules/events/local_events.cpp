@@ -23,7 +23,7 @@ void LocalEvents::ReportEvent(Severity severity,
     event_id = next_event_id_++;
 
   scada::Event& event = *new scada::Event;
-  event.time = base::Time::Now();
+  event.time = scada::base::Time::Now();
   event.message = message;
   event.severity = SeverityToEvent(severity);
   event.event_id = event_id;
@@ -34,7 +34,7 @@ void LocalEvents::ReportEvent(Severity severity,
 
 void LocalEvents::AcknowledgeEvent(scada::EventId event_id) {
   auto i = FindEvent(event_id);
-  base::Check(i != events_.end());
+  scada::base::Check(i != events_.end());
 
   scada::Event& event = **i;
   event.acked = true;
@@ -72,6 +72,6 @@ scada::EventSeverity LocalEvents::SeverityToEvent(Severity severity) {
     case SEV_INFO:
       return scada::kSeverityNormal;
     default:
-      base::NotReached();
+      scada::base::NotReached();
   }
 }

@@ -76,7 +76,7 @@ TEST_F(WatchHistoryEventSourceTest, StartDeliversHistoryEvents) {
 }
 
 TEST_F(WatchHistoryEventSourceTest, NewStartCancelsStaleHistoryDelivery) {
-  base::AsyncCompletion completion{executor_};
+  scada::base::AsyncCompletion completion{executor_};
   scada::HistoryReadEventsResult result;
   bool history_read_started = false;
 

@@ -20,7 +20,7 @@ NodeRef FindNodeByNameAndType(const NodeRef& parent_node,
                               const std::u16string_view& name,
                               const scada::NodeId& node_type_id);
 
-aui::EditData::AsyncChoiceHandler MakeAsyncChoiceHandler(
+scada::aui::EditData::AsyncChoiceHandler MakeAsyncChoiceHandler(
     AnyExecutor executor,
     const NodeRef& parent,
     const scada::NodeId& type_definition_id);

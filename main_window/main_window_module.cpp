@@ -57,8 +57,8 @@ std::unique_ptr<MainWindow> CreateMainWindow(MainWindowContext&& context) {
 }
 #elif defined(UI_WT)
 std::unique_ptr<MainWindow> CreateMainWindow(MainWindowContext&& context) {
-  base::Check(Wt::WApplication::instance());
-  base::Check(Wt::WApplication::instance()->root());
+  scada::base::Check(Wt::WApplication::instance());
+  scada::base::Check(Wt::WApplication::instance()->root());
   return std::make_unique<MainWindow>(*Wt::WApplication::instance()->root(),
                                       std::move(context));
 }
@@ -382,7 +382,7 @@ void RegisterMainWindowCommandActions(
 
 MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
     : MainWindowModuleContext{std::move(context)} {
-  base::Check(scada_services_.session_service);
+  scada::base::Check(scada_services_.session_service);
 
   default_node_commands_.AddHandler(
       std::bind_front(&::ExecuteDefaultNodeCommand, executor_));
@@ -430,7 +430,7 @@ MainWindowModule::~MainWindowModule() {}
 MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
   auto main_command_router_factory = [this](MainWindowInterface& main_window,
                                             DialogService& dialog_service) {
-    base::Check(scada_services_.session_service);
+    scada::base::Check(scada_services_.session_service);
     return std::make_unique<MainWindowCommandRouter>(
         MainWindowCommandRouterContext{executor_, main_window, dialog_service,
                                        *scada_services_.session_service,
@@ -440,8 +440,8 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
   auto main_menu_factory =
       [this](MainWindowInterface& main_window, DialogService& dialog_service,
              ViewManager& view_manager, CommandHandler& global_commands,
-             aui::MenuModel& context_menu_model) {
-        base::Check(scada_services_.session_service);
+             scada::aui::MenuModel& context_menu_model) {
+        scada::base::Check(scada_services_.session_service);
 
         return std::make_unique<MainMenuModel>(MainMenuContext{
             .executor_ = executor_,
@@ -466,7 +466,7 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
         main_window, ui_command_registry_.command_manager(), command_handler);
   };
 
-  base::Check(scada_services_.session_service);
+  scada::base::Check(scada_services_.session_service);
 
   auto status_bar_model =
       StatusBarModelBuilder{executor_,
@@ -478,7 +478,7 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
           .Build();
 
   auto connection_info_provider = [this] {
-    base::Check(scada_services_.session_service);
+    scada::base::Check(scada_services_.session_service);
     return scada_services_.session_service->GetHostName();
   };
 
@@ -539,7 +539,7 @@ std::unique_ptr<OpenedView> MainWindowModule::CreateOpenedView(
 
   opened_view->Init();
 
-  base::Check(scada_services_.session_service);
+  scada::base::Check(scada_services_.session_service);
 
   auto opened_view_commands =
       std::make_unique<OpenedViewCommandRouter>(OpenedViewCommandRouterContext{

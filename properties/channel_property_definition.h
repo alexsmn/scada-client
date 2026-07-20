@@ -6,7 +6,7 @@
 class ChannelPropertyDefinition : public PropertyDefinition {
  public:
   ChannelPropertyDefinition(std::u16string title, bool device)
-      : PropertyDefinition(aui::TableColumn::LEFT),
+      : PropertyDefinition(scada::aui::TableColumn::LEFT),
         title_(std::move(title)),
         device_(device) {}
 
@@ -22,7 +22,7 @@ class ChannelPropertyDefinition : public PropertyDefinition {
                        const NodeRef& node,
                        const scada::NodeId& prop_decl_id,
                        const std::u16string& text) const override;
-  virtual aui::EditData GetPropertyEditor(
+  virtual scada::aui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;

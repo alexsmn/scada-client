@@ -88,14 +88,14 @@ void PortfolioTreeModel::Portfolio_OnUpdate(Portfolio& portfolio) {
 
 void PortfolioTreeModel::Portfolio_OnDelete(Portfolio& portfolio) {
   PortfolioTreeNode* node = FindPortfolioNode(portfolio);
-  base::Check(node);
+  scada::base::Check(node);
   Remove(*root(), root()->IndexOfChild(*node));
 }
 
 void PortfolioTreeModel::Portfolio_OnUpdateItem(Portfolio& portfolio,
                                                 const scada::NodeId& node_id) {
   PortfolioTreeNode* portfolio_node = FindPortfolioNode(portfolio);
-  base::Check(portfolio_node);
+  scada::base::Check(portfolio_node);
 
   PortfolioTreeNode* node = FindItemNode(*portfolio_node, node_id);
   if (!node)
@@ -109,10 +109,10 @@ void PortfolioTreeModel::Portfolio_OnUpdateItem(Portfolio& portfolio,
 void PortfolioTreeModel::Portfolio_OnDeleteItem(Portfolio& portfolio,
                                                 const scada::NodeId& node_id) {
   PortfolioTreeNode* portfolio_node = FindPortfolioNode(portfolio);
-  base::Check(portfolio_node);
+  scada::base::Check(portfolio_node);
 
   PortfolioTreeNode* node = FindItemNode(*portfolio_node, node_id);
-  base::Check(node);
+  scada::base::Check(node);
 
   Remove(*portfolio_node, portfolio_node->IndexOfChild(*node));
 }

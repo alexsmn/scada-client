@@ -36,13 +36,13 @@
 
 namespace {
 
-void AddMenuCommands(aui::SimpleMenuModel& menu,
+void AddMenuCommands(scada::aui::SimpleMenuModel& menu,
                      const BasicCommandRegistry<GlobalCommandContext>& commands,
                      MenuGroup menu_group) {
   for (const auto& command : commands.commands()) {
     if (command.menu_group == menu_group) {
-      base::Check(command.command_id != 0);
-      base::Check(!command.title.empty());
+      scada::base::Check(command.command_id != 0);
+      scada::base::Check(!command.title.empty());
 
       if (command.checked_handler) {
         menu.AddCheckItem(command.command_id, command.title);
@@ -54,7 +54,7 @@ void AddMenuCommands(aui::SimpleMenuModel& menu,
 }
 
 void AddMenuContributions(
-    aui::SimpleMenuModel& menu,
+    scada::aui::SimpleMenuModel& menu,
     const UiCommandRegistry& ui_command_registry,
     const BasicCommandRegistry<GlobalCommandContext>& commands,
     MainMenuId menu_id,
@@ -69,7 +69,7 @@ void AddMenuContributions(
     }
 
     if (contribution.separator_before) {
-      menu.AddSeparator(aui::NORMAL_SEPARATOR);
+      menu.AddSeparator(scada::aui::NORMAL_SEPARATOR);
     }
 
     auto title = contribution.title;
@@ -85,7 +85,7 @@ void AddMenuContributions(
         title = command->title;
       }
     }
-    base::Check(!title.empty());
+    scada::base::Check(!title.empty());
 
     if (contribution.checkable) {
       menu.AddCheckItem(contribution.command_id, title);
@@ -100,7 +100,7 @@ void AddMenuContributions(
 // DisplayMenuModel
 
 DisplayMenuModel::DisplayMenuModel(const MainMenuContext& context)
-    : MainMenuContext{context}, aui::SimpleMenuModel{nullptr} {}
+    : MainMenuContext{context}, scada::aui::SimpleMenuModel{nullptr} {}
 
 void DisplayMenuModel::MenuWillShow() {
   Clear();
@@ -120,7 +120,7 @@ void DisplayMenuModel::ActivatedAt(int index) {
     view->Activate();
   } else {
     // add new window
-    base::Check(item.window_info);
+    scada::base::Check(item.window_info);
     WindowDefinition def(*item.window_info);
     def.path = item.path;
     CoSpawn(executor_, [this, def = std::move(def)]() -> Awaitable<void> {
@@ -150,7 +150,7 @@ void DisplayMenuModel::AddItems(const WindowInfo& window_info) {
 FavouritesMenuModel::FavouritesMenuModel(MainMenuId menu_id,
                                          const MainMenuContext& context)
     : MainMenuContext{context},
-      aui::SimpleMenuModel{nullptr},
+      scada::aui::SimpleMenuModel{nullptr},
       menu_id_{menu_id} {}
 
 void FavouritesMenuModel::MenuWillShow() {
@@ -188,7 +188,7 @@ bool FavouritesMenuModel::IsEnabledAt(int index) const {
 // PageMenuModel
 
 PageMenuModel::PageMenuModel(const MainMenuContext& context)
-    : MainMenuContext{context}, aui::SimpleMenuModel{nullptr} {}
+    : MainMenuContext{context}, scada::aui::SimpleMenuModel{nullptr} {}
 
 void PageMenuModel::MenuWillShow() {
   Clear();
@@ -273,7 +273,7 @@ void WindowMenuModel::MenuWillShow() {
 
 void WindowMenuModel::ActivatedAt(int index) {
   const auto& views = view_manager_.views();
-  base::Check(index < static_cast<int>(views.size()));
+  scada::base::Check(index < static_cast<int>(views.size()));
   auto i = views.begin();
   std::advance(i, index);
   OpenedView& opened_view = **i;
@@ -306,7 +306,7 @@ void TrashMenuModel::MenuWillShow() {
 
 void TrashMenuModel::ActivatedAt(int index) {
   Page& trash = profile_.trash;
-  base::Check(index < trash.GetWindowCount());
+  scada::base::Check(index < trash.GetWindowCount());
   auto window = trash.GetWindow(index);
   trash.DeleteWindow(index);
   CoSpawn(executor_, [this, window = std::move(window)]() -> Awaitable<void> {
@@ -322,7 +322,7 @@ bool TrashMenuModel::IsEnabledAt(int index) const {
 
 // StyleMenuModel
 
-StyleMenuModel::StyleMenuModel() : aui::SimpleMenuModel{nullptr} {
+StyleMenuModel::StyleMenuModel() : scada::aui::SimpleMenuModel{nullptr} {
   for (const auto& style : QStyleFactory::keys())
     AddRadioItem(0, style.toStdU16String(), 0);
 }
@@ -344,7 +344,7 @@ bool StyleMenuModel::IsItemCheckedAt(int index) const {
 
 MainMenuModel::MainMenuModel(const MainMenuContext& context)
     : MainMenuContext{context},
-      aui::SimpleMenuModel{this},
+      scada::aui::SimpleMenuModel{this},
       display_menu_model_{context},
       table_favourites_{MainMenuId::Table, context},
       table_submenu_{this},
@@ -370,13 +370,13 @@ void MainMenuModel::Rebuild() {
 
   AddMenuContributions(table_submenu_, ui_command_registry_, commands_,
                        MainMenuId::Table, admin_);
-  table_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
+  table_submenu_.AddSeparator(scada::aui::NORMAL_SEPARATOR);
   table_submenu_.AddInplaceMenu(&table_favourites_);
   AddSubMenu(0, Translate("Table"), &table_submenu_);
 
   AddMenuContributions(graph_submenu_, ui_command_registry_, commands_,
                        MainMenuId::Graph, admin_);
-  graph_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
+  graph_submenu_.AddSeparator(scada::aui::NORMAL_SEPARATOR);
   if (graph_favourites_)
     graph_submenu_.AddInplaceMenu(graph_favourites_.get());
   AddSubMenu(0, Translate("Graph"), &graph_submenu_);
@@ -391,15 +391,15 @@ void MainMenuModel::Rebuild() {
 
   AddMenuContributions(page_submenu_, ui_command_registry_, commands_,
                        MainMenuId::Page, admin_);
-  page_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
+  page_submenu_.AddSeparator(scada::aui::NORMAL_SEPARATOR);
   page_submenu_.AddInplaceMenu(&page_list_menu_);
   AddSubMenu(0, Translate("Page"), &page_submenu_);
 
   AddMenuContributions(window_submenu_, ui_command_registry_, commands_,
                        MainMenuId::Window, admin_);
-  window_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
+  window_submenu_.AddSeparator(scada::aui::NORMAL_SEPARATOR);
   window_submenu_.AddInplaceMenu(&window_list_menu_);
-  window_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
+  window_submenu_.AddSeparator(scada::aui::NORMAL_SEPARATOR);
   window_submenu_.AddInplaceMenu(&trash_menu_);
   AddSubMenu(0, Translate("Window"), &window_submenu_);
 
@@ -411,12 +411,12 @@ void MainMenuModel::Rebuild() {
   AddMenuCommands(settings_submenu_, commands_, MenuGroup::DISPLAY_SETTINGS);
 
 #if defined(UI_QT)
-  settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
+  settings_submenu_.AddSeparator(scada::aui::NORMAL_SEPARATOR);
   language_submenu_.Clear();
   AddMenuContributions(language_submenu_, ui_command_registry_, commands_,
                        MainMenuId::Language, admin_);
   settings_submenu_.AddSubMenu(0, Translate("Language"), &language_submenu_);
-  settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
+  settings_submenu_.AddSeparator(scada::aui::NORMAL_SEPARATOR);
   settings_submenu_.AddSubMenu(0, Translate("Style"), &style_submenu_);
 #endif
 

@@ -164,12 +164,14 @@ class ConfigurationTreeDropHandlerTest : public Test {
 TEST_F(ConfigurationTreeDropHandlerTest,
        DataVariableDropOnDataGroupPostsInsertCoroutine) {
   auto target_node = MakeTargetNode(MakeTestNode(
-      data_group_id_, {.type_definition_id = data_items::id::DataGroupType}));
+      data_group_id_,
+      {.type_definition_id = scada::data_items::id::DataGroupType}));
   auto dragging_node = MakeTestNode(
-      channel_id_, {.type_definition_id = devices::id::Iec61850DataVariableType,
-                    .data_type_id = scada::id::Boolean,
-                    .browse_name = scada::QualifiedName{"Channel"},
-                    .display_name = scada::LocalizedText{u"Channel"}});
+      channel_id_,
+      {.type_definition_id = scada::devices::id::Iec61850DataVariableType,
+       .data_type_id = scada::id::Boolean,
+       .browse_name = scada::QualifiedName{"Channel"},
+       .display_name = scada::LocalizedText{u"Channel"}});
 
   EXPECT_CALL(node_service_, GetNode(channel_id_))
       .WillOnce(Return(dragging_node));
@@ -177,7 +179,7 @@ TEST_F(ConfigurationTreeDropHandlerTest,
       .WillOnce([&](const scada::NodeState& node_state)
                     -> Awaitable<scada::StatusOr<scada::NodeId>> {
         EXPECT_EQ(node_state.type_definition_id,
-                  data_items::id::DiscreteItemType);
+                  scada::data_items::id::DiscreteItemType);
         EXPECT_EQ(node_state.parent_id, data_group_id_);
         EXPECT_EQ(node_state.attributes.browse_name,
                   scada::QualifiedName{"Channel"});
@@ -187,7 +189,7 @@ TEST_F(ConfigurationTreeDropHandlerTest,
         EXPECT_THAT(node_state.properties, SizeIs(1));
         if (!node_state.properties.empty()) {
           EXPECT_EQ(node_state.properties[0].first,
-                    data_items::id::DataItemType_Input1);
+                    scada::data_items::id::DataItemType_Input1);
           EXPECT_EQ(node_state.properties[0].second.as_string(),
                     MakeNodeIdFormula(channel_id_));
         }
@@ -197,20 +199,21 @@ TEST_F(ConfigurationTreeDropHandlerTest,
   DropAction action;
   auto handler = MakeHandler();
   EXPECT_EQ(handler.GetDropAction(channel_id_, target_node, action),
-            aui::DragDropTypes::DRAG_COPY);
+            scada::aui::DragDropTypes::DRAG_COPY);
   ASSERT_TRUE(action);
 
-  EXPECT_EQ(action(), aui::DragDropTypes::DRAG_COPY);
+  EXPECT_EQ(action(), scada::aui::DragDropTypes::DRAG_COPY);
   Drain(executor_);
 }
 
 TEST_F(ConfigurationTreeDropHandlerTest,
        ControlObjectDropOnDataItemPostsUpdateCoroutine) {
   auto target_node = MakeTargetNode(MakeTestNode(
-      data_item_id_, {.type_definition_id = data_items::id::DataItemType}));
+      data_item_id_,
+      {.type_definition_id = scada::data_items::id::DataItemType}));
   auto dragging_node = MakeTestNode(
       channel_id_,
-      {.type_definition_id = devices::id::Iec61850ControlObjectType});
+      {.type_definition_id = scada::devices::id::Iec61850ControlObjectType});
 
   EXPECT_CALL(node_service_, GetNode(channel_id_))
       .WillOnce(Return(dragging_node));
@@ -222,7 +225,7 @@ TEST_F(ConfigurationTreeDropHandlerTest,
             EXPECT_THAT(properties, SizeIs(1));
             if (!properties.empty()) {
               EXPECT_EQ(properties[0].first,
-                        data_items::id::DataItemType_Output);
+                        scada::data_items::id::DataItemType_Output);
               EXPECT_EQ(properties[0].second.as_string(),
                         MakeNodeIdFormula(channel_id_));
             }
@@ -232,19 +235,20 @@ TEST_F(ConfigurationTreeDropHandlerTest,
   DropAction action;
   auto handler = MakeHandler();
   EXPECT_EQ(handler.GetDropAction(channel_id_, target_node, action),
-            aui::DragDropTypes::DRAG_LINK);
+            scada::aui::DragDropTypes::DRAG_LINK);
   ASSERT_TRUE(action);
 
-  EXPECT_EQ(action(), aui::DragDropTypes::DRAG_LINK);
+  EXPECT_EQ(action(), scada::aui::DragDropTypes::DRAG_LINK);
   Drain(executor_);
 }
 
 TEST_F(ConfigurationTreeDropHandlerTest, MoveDropPostsReferenceCoroutine) {
-  auto target_type = MakeTestNode(data_items::id::DataGroupType, {});
+  auto target_type = MakeTestNode(scada::data_items::id::DataGroupType, {});
   auto target_node = MakeTargetNode(MakeTestNode(
-      new_parent_id_, {.type_definition_id = data_items::id::DataGroupType}));
+      new_parent_id_,
+      {.type_definition_id = scada::data_items::id::DataGroupType}));
   auto dragging_node = MakeTestNode(
-      channel_id_, {.type_definition_id = data_items::id::DataItemType,
+      channel_id_, {.type_definition_id = scada::data_items::id::DataItemType,
                     .parent_id = old_parent_id_,
                     .creates = {target_type}});
 
@@ -272,10 +276,10 @@ TEST_F(ConfigurationTreeDropHandlerTest, MoveDropPostsReferenceCoroutine) {
   DropAction action;
   auto handler = MakeHandler();
   EXPECT_EQ(handler.GetDropAction(channel_id_, target_node, action),
-            aui::DragDropTypes::DRAG_MOVE);
+            scada::aui::DragDropTypes::DRAG_MOVE);
   ASSERT_TRUE(action);
 
-  EXPECT_EQ(action(), aui::DragDropTypes::DRAG_MOVE);
+  EXPECT_EQ(action(), scada::aui::DragDropTypes::DRAG_MOVE);
   Drain(executor_);
 }
 

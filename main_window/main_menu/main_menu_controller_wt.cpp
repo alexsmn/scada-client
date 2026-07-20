@@ -11,11 +11,11 @@
 
 namespace {
 
-std::unique_ptr<Wt::WPopupMenu> CreatePopupMenu(aui::MenuModel& model);
+std::unique_ptr<Wt::WPopupMenu> CreatePopupMenu(scada::aui::MenuModel& model);
 
 class TestPopupMenu : public Wt::WPopupMenu {
  public:
-  explicit TestPopupMenu(aui::MenuModel& model) : model_{model} {}
+  explicit TestPopupMenu(scada::aui::MenuModel& model) : model_{model} {}
 
   virtual void render(Wt::WFlags<Wt::RenderFlag> flags) override {
     while (count() != 0)
@@ -31,7 +31,8 @@ class TestPopupMenu : public Wt::WPopupMenu {
       switch (type) {
         default: {
           auto* item = addItem(model_.GetLabelAt(i));
-          item->setCheckable(type == aui::MenuModel::ItemType::TYPE_CHECK);
+          item->setCheckable(type ==
+                             scada::aui::MenuModel::ItemType::TYPE_CHECK);
           item->setDisabled(!model_.IsEnabledAt(i));
           item->setChecked(model_.IsItemCheckedAt(i));
           item->triggered().connect(
@@ -39,13 +40,13 @@ class TestPopupMenu : public Wt::WPopupMenu {
           break;
         }
 
-        case aui::MenuModel::ItemType::TYPE_SUBMENU: {
+        case scada::aui::MenuModel::ItemType::TYPE_SUBMENU: {
           addMenu(model_.GetLabelAt(i),
                   CreatePopupMenu(*model_.GetSubmenuModelAt(i)));
           break;
         }
 
-        case aui::MenuModel::ItemType::TYPE_SEPARATOR:
+        case scada::aui::MenuModel::ItemType::TYPE_SEPARATOR:
           addSeparator();
           break;
       }
@@ -55,10 +56,10 @@ class TestPopupMenu : public Wt::WPopupMenu {
   }
 
  private:
-  aui::MenuModel& model_;
+  scada::aui::MenuModel& model_;
 };
 
-std::unique_ptr<Wt::WPopupMenu> CreatePopupMenu(aui::MenuModel& model) {
+std::unique_ptr<Wt::WPopupMenu> CreatePopupMenu(scada::aui::MenuModel& model) {
   auto popup = std::make_unique<TestPopupMenu>(model);
 
   /*for (int i = 0; i < model.GetItemCount(); ++i) {
@@ -93,7 +94,7 @@ std::unique_ptr<Wt::WWidget> MainMenuController::CreateWidget() {
   for (int i = 0; i < main_menu_model_->GetItemCount(); ++i) {
     auto label = main_menu_model_->GetLabelAt(i);
     auto* submenu_model = main_menu_model_->GetSubmenuModelAt(i);
-    base::Check(submenu_model);
+    scada::base::Check(submenu_model);
     auto item = std::make_unique<Wt::WMenuItem>(std::move(label));
     item->setMenu(CreatePopupMenu(*submenu_model));
     menu->addItem(std::move(item));

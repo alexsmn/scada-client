@@ -53,11 +53,11 @@ std::u16string WatchView::MakeTitle() const {
 }
 
 std::unique_ptr<UiView> WatchView::Init(const WindowDefinition& definition) {
-  const aui::TableColumn columns[] = {
-      {0, Translate("Time"), 100, aui::TableColumn::LEFT,
-       aui::TableColumn::DataType::DateTime},
-      {1, Translate("Device"), 100, aui::TableColumn::LEFT},
-      {2, Translate("Event"), 400, aui::TableColumn::LEFT},
+  const scada::aui::TableColumn columns[] = {
+      {0, Translate("Time"), 100, scada::aui::TableColumn::LEFT,
+       scada::aui::TableColumn::DataType::DateTime},
+      {1, Translate("Device"), 100, scada::aui::TableColumn::LEFT},
+      {2, Translate("Event"), 400, scada::aui::TableColumn::LEFT},
   };
 
   if (const WindowItem* item = definition.FindItem("Item")) {
@@ -70,13 +70,14 @@ std::unique_ptr<UiView> WatchView::Init(const WindowDefinition& definition) {
     model_->SetTimeRange(*time_range);
   }
 
-  table_ = new aui::Table(model_, {columns, columns + std::size(columns)});
+  table_ =
+      new scada::aui::Table(model_, {columns, columns + std::size(columns)});
 
   table_->SetSelectionChangeHandler([this] {
     auto_scroll_ = table_->GetCurrentRow() == model_->GetRowCount() - 1;
   });
 
-  table_->SetContextMenuHandler([this](const aui::Point& point) {
+  table_->SetContextMenuHandler([this](const scada::aui::Point& point) {
     // Cross-platform AUI menu model (Windows, macOS, Wt) instead of the
     // Windows-only `IDR_LOG_POPUP` resource menu.
     controller_delegate_.ShowPopupMenu(&watch_menu_model_.model(),

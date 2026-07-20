@@ -36,7 +36,8 @@ class DummyViewManagerDelegate : public ViewManagerDelegate {
   }
   void OnViewClosed(OpenedView& view) override {}
   void OnActiveViewChanged(OpenedView* view) override {}
-  void OnShowTabPopupMenu(OpenedView& view, const aui::Point& point) override {}
+  void OnShowTabPopupMenu(OpenedView& view,
+                          const scada::aui::Point& point) override {}
 };
 
 Awaitable<std::u16string> ReturnTitleAsync(std::u16string title) {
@@ -160,7 +161,7 @@ class PageMenuModelTest : public Test {
   QMainWindow qt_main_window_;
   ViewManager view_manager_{qt_main_window_, view_manager_delegate_};
   CommandHandler command_handler_;
-  aui::SimpleMenuModel context_menu_{nullptr};
+  scada::aui::SimpleMenuModel context_menu_{nullptr};
   BasicCommandRegistry<GlobalCommandContext> commands_;
   UiCommandRegistry ui_command_registry_;
 

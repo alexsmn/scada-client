@@ -229,7 +229,7 @@ TEST_F(ConfigurationTreeModelTest,
        FetchMoreShowsTranslatedLoadingSuffixWithoutDotsWhilePending) {
   auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
   auto child_model = MakeTestNodeModel(kNodeId1);
-  std::optional<base::AsyncCompletion> delayed_completion;
+  std::optional<scada::base::AsyncCompletion> delayed_completion;
 
   ON_CALL(*child_model, GetFetchStatus())
       .WillByDefault(Return(NodeFetchStatus::NodeOnly));
@@ -301,7 +301,7 @@ TEST_F(ConfigurationTreeModelTest,
        DelayedFetchMoreCallbackAfterModelDestructionIsIgnored) {
   auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
   auto child_model = MakeTestNodeModel(kNodeId1);
-  std::optional<base::AsyncCompletion> delayed_completion;
+  std::optional<scada::base::AsyncCompletion> delayed_completion;
 
   ON_CALL(*child_model, GetFetchStatus())
       .WillByDefault(Return(NodeFetchStatus::NodeOnly));
@@ -337,7 +337,7 @@ TEST_F(ConfigurationTreeModelTest,
        DelayedFetchMoreCallbackAfterTreeNodeRemovalIsIgnored) {
   auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
   auto child_model = MakeTestNodeModel(kNodeId1);
-  std::optional<base::AsyncCompletion> delayed_completion;
+  std::optional<scada::base::AsyncCompletion> delayed_completion;
 
   ON_CALL(*child_model, GetFetchStatus())
       .WillByDefault(Return(NodeFetchStatus::NodeOnly));

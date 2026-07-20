@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include <boost/json.hpp>
 #include "aui/color.h"
 #include "aui/handlers.h"

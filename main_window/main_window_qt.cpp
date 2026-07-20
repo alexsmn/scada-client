@@ -79,10 +79,11 @@ inline QKeySequence ToQKeySequence(const Shortcut& shortcut) {
 }
 
 #ifdef _WIN32
-void BuildMenuModel(CMenuHandle menu_handle,
-                    aui::MenuModel& context_menu_model,
-                    aui::SimpleMenuModel& menu_model,
-                    std::vector<std::unique_ptr<aui::MenuModel>>& submenus) {
+void BuildMenuModel(
+    CMenuHandle menu_handle,
+    scada::aui::MenuModel& context_menu_model,
+    scada::aui::SimpleMenuModel& menu_model,
+    std::vector<std::unique_ptr<scada::aui::MenuModel>>& submenus) {
   for (int i = 0; i < menu_handle.GetMenuItemCount(); ++i) {
     wchar_t title[64] = {};
 
@@ -95,7 +96,7 @@ void BuildMenuModel(CMenuHandle menu_handle,
 
     if (menu_info.hSubMenu) {
       auto submenu_model =
-          std::make_unique<aui::SimpleMenuModel>(menu_model.delegate());
+          std::make_unique<scada::aui::SimpleMenuModel>(menu_model.delegate());
       BuildMenuModel(menu_info.hSubMenu, context_menu_model, *submenu_model,
                      submenus);
       menu_model.AddSubMenu(menu_info.wID, UtfConvert<char16_t>(title),
@@ -103,7 +104,7 @@ void BuildMenuModel(CMenuHandle menu_handle,
       submenus.emplace_back(std::move(submenu_model));
 
     } else if (menu_info.fType & MFT_SEPARATOR) {
-      menu_model.AddSeparator(aui::NORMAL_SEPARATOR);
+      menu_model.AddSeparator(scada::aui::NORMAL_SEPARATOR);
 
     } else if (menu_info.fState & MFS_CHECKED) {
       menu_model.AddCheckItem(menu_info.wID, UtfConvert<char16_t>(title));
@@ -133,17 +134,17 @@ QRect GetDefaultBounds(const QWidget* window) {
 // Recursively collects the command ids carried by |model| (including its
 // submenus and inplace menus) so the appended generic context menu can skip
 // them.
-void CollectMenuCommandIds(aui::MenuModel& model,
+void CollectMenuCommandIds(scada::aui::MenuModel& model,
                            std::unordered_set<int>& command_ids) {
   model.MenuWillShow();
   for (int i = 0; i < model.GetItemCount(); ++i) {
     switch (model.GetTypeAt(i)) {
-      case aui::MenuModel::TYPE_SUBMENU:
-      case aui::MenuModel::TYPE_INPLACE_MENU:
+      case scada::aui::MenuModel::TYPE_SUBMENU:
+      case scada::aui::MenuModel::TYPE_INPLACE_MENU:
         if (auto* submenu_model = model.GetSubmenuModelAt(i))
           CollectMenuCommandIds(*submenu_model, command_ids);
         break;
-      case aui::MenuModel::TYPE_SEPARATOR:
+      case scada::aui::MenuModel::TYPE_SEPARATOR:
         break;
       default:
         command_ids.insert(model.GetCommandIdAt(i));
@@ -174,8 +175,8 @@ void RemoveRedundantSeparators(QMenu& menu) {
 }
 
 void BuildDefaultPopupMenu(QMenu& menu,
-                           aui::MenuModel* merge_menu,
-                           aui::MenuModel& context_menu_model) {
+                           scada::aui::MenuModel* merge_menu,
+                           scada::aui::MenuModel& context_menu_model) {
   std::unordered_set<int> merge_command_ids;
   if (merge_menu && merge_menu->GetItemCount() != 0) {
     BuildMenu(menu, *merge_menu);
@@ -299,7 +300,7 @@ void MainWindow::CreateMenuBar() {
     auto* submenu = menu_bar->addMenu(
         QString::fromStdU16String(main_menu_model_->GetLabelAt(i)));
     auto* submenu_model = main_menu_model_->GetSubmenuModelAt(i);
-    base::Check(submenu_model);
+    scada::base::Check(submenu_model);
     QObject::connect(submenu, &QMenu::aboutToShow, this,
                      [submenu, submenu_model] {
                        submenu->clear();
@@ -338,20 +339,21 @@ void MainWindow::OnToggleExperimentalUx(bool enabled) {
 void MainWindow::RebuildMenuBar() {
   const auto top_level_actions = menuBar()->actions();
   // The appended Settings menu is not part of the model, so allow one extra.
-  base::Check(top_level_actions.size() >= main_menu_model_->GetItemCount());
+  scada::base::Check(top_level_actions.size() >=
+                     main_menu_model_->GetItemCount());
 
   for (int i = 0; i < main_menu_model_->GetItemCount(); ++i) {
     auto* submenu = top_level_actions[i]->menu();
     auto* submenu_model = main_menu_model_->GetSubmenuModelAt(i);
-    base::Check(submenu);
-    base::Check(submenu_model);
+    scada::base::Check(submenu);
+    scada::base::Check(submenu_model);
     submenu->clear();
     BuildMenu(*submenu, *submenu_model);
   }
 }
 
 void MainWindow::CreateStatusBar() {
-  auto* status_bar = new aui::StatusBar{*status_bar_model_, this};
+  auto* status_bar = new scada::aui::StatusBar{*status_bar_model_, this};
   setStatusBar(status_bar);
   status_bar->setVisible(GetPrefs().status_bar);
 
@@ -431,7 +433,8 @@ void MainWindow::CreateContextBar() {
     tile->setText(QStringLiteral("%1 %2")
                       .arg(QString::fromStdU16String(Translate(name)))
                       .arg(count));
-    const std::optional<aui::Color> color = scada::aui::SeverityColor(level);
+    const std::optional<scada::aui::Color> color =
+        scada::aui::SeverityColor(level);
     // Bold + coloured while alarms are active, plain when the count is zero.
     tile->setStyleSheet(count > 0 && color
                             ? QStringLiteral("color:%1;font-weight:700;")
@@ -444,7 +447,7 @@ void MainWindow::CreateContextBar() {
       const int pane = context_pane_indices_[k];
       context_panes_[k]->setText(
           QString::fromStdU16String(status_bar_model_->GetPaneText(pane)));
-      const std::optional<aui::Color> color =
+      const std::optional<scada::aui::Color> color =
           status_bar_model_->GetPaneColor(pane);
       context_panes_[k]->setStyleSheet(
           color ? QStringLiteral("color:%1;font-weight:600;")
@@ -466,7 +469,7 @@ void MainWindow::CreateContextBar() {
           QStringLiteral(" %1 (%2) ")
               .arg(QString::fromStdU16String(Translate("Alarm flood")))
               .arg(alarm_count));
-      const std::optional<aui::Color> color =
+      const std::optional<scada::aui::Color> color =
           scada::aui::SeverityColor(scada::aui::SeverityLevel::kCritical);
       // White reads on the saturated critical fill across every theme.
       flood_indicator_->setStyleSheet(
@@ -896,7 +899,8 @@ void MainWindow::OnSelectionChanged() {
 
 void MainWindow::SetToolbarPosition(unsigned position) {}
 
-void MainWindow::OnShowTabPopupMenu(OpenedView& view, const aui::Point& point) {
+void MainWindow::OnShowTabPopupMenu(OpenedView& view,
+                                    const scada::aui::Point& point) {
   QMenu menu;
   BuildMenu(menu, *tab_popup_menu_);
   menu.exec(point);
@@ -959,9 +963,9 @@ void MainWindow::closeEvent(QCloseEvent* event) {
   QMainWindow::closeEvent(event);
 }
 
-void MainWindow::ShowPopupMenu(aui::MenuModel* merge_menu,
+void MainWindow::ShowPopupMenu(scada::aui::MenuModel* merge_menu,
                                unsigned resource_id,
-                               const aui::Point& point,
+                               const scada::aui::Point& point,
                                bool right_click) {
   if (resource_id == 0) {
     QMenu menu;
@@ -971,8 +975,8 @@ void MainWindow::ShowPopupMenu(aui::MenuModel* merge_menu,
   }
 
   SimpleMenuCommandHandler command_handler{commands()};
-  aui::SimpleMenuModel menu_model{&command_handler};
-  std::vector<std::unique_ptr<aui::MenuModel>> submenus;
+  scada::aui::SimpleMenuModel menu_model{&command_handler};
+  std::vector<std::unique_ptr<scada::aui::MenuModel>> submenus;
 
 #ifdef _WIN32
   {

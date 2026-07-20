@@ -22,7 +22,7 @@ std::vector<std::string>& MutableFavouritesMenuWindowTypes(MainMenuId menu_id) {
     case MainMenuId::Graph:
       return graph_window_types;
     default:
-      base::NotReached();
+      scada::base::NotReached();
   }
 }
 

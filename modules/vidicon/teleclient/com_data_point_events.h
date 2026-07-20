@@ -1,7 +1,5 @@
 #pragma once
 
-#include "vidicon/vidicon_compat.h"
-
 #include "opc/opc_convertions.h"
 
 #include <atlbase.h>

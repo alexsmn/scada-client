@@ -43,9 +43,10 @@ class TimeRangeDialogTest : public testing::Test {
   Profile profile_;
 };
 
-base::Time ToBaseTime(const QDateTime& date_time) {
-  return base::Time::UnixEpoch() +
-         base::TimeDelta::FromMilliseconds(date_time.toMSecsSinceEpoch());
+scada::base::Time ToBaseTime(const QDateTime& date_time) {
+  return scada::base::Time::UnixEpoch() +
+         scada::base::TimeDelta::FromMilliseconds(
+             date_time.toMSecsSinceEpoch());
 }
 
 }  // namespace
@@ -55,16 +56,16 @@ TEST_F(TimeRangeDialogTest, AcceptedDialogReturnsSelectedInitialRange) {
       ToBaseTime({QDate{2024, 1, 2}, QTime{0, 0}}),
       ToBaseTime({QDate{2024, 1, 3}, QTime{0, 0}}), /*dates=*/true};
 
-  auto result = aui::qt::test::StartAwaitable(ShowTimeRangeDialog(
+  auto result = scada::aui::qt::test::StartAwaitable(ShowTimeRangeDialog(
       dialog_service_, TimeRangeContext{profile_, initial_range,
                                         /*time_required_=*/false}));
-  aui::qt::test::ProcessEventsUntilSettled(result,
-                                           aui::qt::test::AcceptDialog);
+  scada::aui::qt::test::ProcessEventsUntilSettled(
+      result, scada::aui::qt::test::AcceptDialog);
 
-  ASSERT_TRUE(aui::qt::test::IsAwaitableReady(result));
-  auto selected_range = aui::qt::test::GetAwaitableResult(result);
+  ASSERT_TRUE(scada::aui::qt::test::IsAwaitableReady(result));
+  auto selected_range = scada::aui::qt::test::GetAwaitableResult(result);
   EXPECT_TRUE(selected_range.dates);
   EXPECT_EQ(selected_range.start, initial_range.start);
   EXPECT_EQ(selected_range.end,
-            initial_range.end + base::TimeDelta::FromDays(1));
+            initial_range.end + scada::base::TimeDelta::FromDays(1));
 }

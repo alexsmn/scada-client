@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include "aui/models/table_column.h"
 #include "aui/models/table_model.h"
 
@@ -26,8 +24,8 @@ class ExportModel {
   };
 
   struct TableExportData {
-    aui::TableModel& model;
-    const std::vector<aui::TableColumn>& columns;
+    scada::aui::TableModel& model;
+    const std::vector<scada::aui::TableColumn>& columns;
     std::optional<Range> row_range;
 
     Range GetRowRange() const {
@@ -36,10 +34,10 @@ class ExportModel {
   };
 
   struct GridExportData {
-    aui::TableColumn row_title_column;
-    aui::GridModel& model;
-    aui::HeaderModel& rows;
-    aui::HeaderModel& columns;
+    scada::aui::TableColumn row_title_column;
+    scada::aui::GridModel& model;
+    scada::aui::HeaderModel& rows;
+    scada::aui::HeaderModel& columns;
   };
 
   using ExportData = std::variant<TableExportData, GridExportData>;

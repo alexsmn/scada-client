@@ -1,4 +1,3 @@
-#include "aui/aui_ns_compat.h"
 
 #include "aui/wt/table_model_adapter.h"
 

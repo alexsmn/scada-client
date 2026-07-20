@@ -31,11 +31,11 @@ class GraphSetupDialogQt final : public QDialog {
     setWindowTitle("Graph Setup");
 
     color_combo_ = new QComboBox{this};
-    for (int i = 0; i < static_cast<int>(aui::GetColorCount()); ++i) {
-      color_combo_->addItem(MakeColorIcon(aui::GetColor(i).qcolor()),
-                            ToQString(aui::GetColorName(i)), i);
+    for (int i = 0; i < static_cast<int>(scada::aui::GetColorCount()); ++i) {
+      color_combo_->addItem(MakeColorIcon(scada::aui::GetColor(i).qcolor()),
+                            ToQString(scada::aui::GetColorName(i)), i);
     }
-    int color_index = aui::FindColor(setup.color);
+    int color_index = scada::aui::FindColor(setup.color);
     color_combo_->setCurrentIndex(color_index >= 0 ? color_index : 0);
 
     line_weight_spin_ = new QSpinBox{this};
@@ -57,7 +57,7 @@ class GraphSetupDialogQt final : public QDialog {
   }
 
   void Save(GraphSetupDialog& setup) const {
-    setup.color = aui::GetColor(color_combo_->currentData().toInt());
+    setup.color = scada::aui::GetColor(color_combo_->currentData().toInt());
     setup.line_weight_ = line_weight_spin_->value();
   }
 

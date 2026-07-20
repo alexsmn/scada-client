@@ -1,7 +1,5 @@
 #pragma once
 
-#include "modus/modus_ns_compat.h"
-
 #include "base/blinker.h"
 #include "modus/libmodus/modus_style2.h"
 
@@ -28,11 +26,11 @@ class ModusBinding2 {
  public:
   class Delegate {
    public:
-    virtual void SchedulePaintShape(modus::Shape& shape) = 0;
+    virtual void SchedulePaintShape(scada::modus::Shape& shape) = 0;
   };
 
   ModusBinding2(Delegate& delegate,
-                modus::Shape& shape,
+                scada::modus::Shape& shape,
                 const std::wstring& binding,
                 TimedDataService& timed_data_service);
   ~ModusBinding2();
@@ -49,7 +47,7 @@ class ModusBinding2 {
   void OnAnimationStep();
 
   Delegate& delegate_;
-  modus::Shape& shape_;
+  scada::modus::Shape& shape_;
 
   std::string property_name_;
   TimedDataSpec data_point_;

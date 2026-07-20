@@ -1,4 +1,3 @@
-#include "aui/aui_ns_compat.h"
 
 #include "aui/models/fixed_row_model.h"
 

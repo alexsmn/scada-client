@@ -21,14 +21,14 @@ constexpr std::pair<unsigned, scada::NumericId> kAggregateCommands[] = {
     {ID_AGGREGATION_AVG, scada::id::AggregateFunction_Average},
 };
 
-constexpr std::pair<unsigned, base::TimeDelta> kIntervalCommands[] = {
-    {ID_INTERVAL_1M, base::TimeDelta::FromMinutes(1)},
-    {ID_INTERVAL_5M, base::TimeDelta::FromMinutes(5)},
-    {ID_INTERVAL_15M, base::TimeDelta::FromMinutes(15)},
-    {ID_INTERVAL_30M, base::TimeDelta::FromMinutes(30)},
-    {ID_INTERVAL_1H, base::TimeDelta::FromHours(1)},
-    {ID_INTERVAL_12H, base::TimeDelta::FromHours(12)},
-    {ID_INTERVAL_1D, base::TimeDelta::FromDays(1)},
+constexpr std::pair<unsigned, scada::base::TimeDelta> kIntervalCommands[] = {
+    {ID_INTERVAL_1M, scada::base::TimeDelta::FromMinutes(1)},
+    {ID_INTERVAL_5M, scada::base::TimeDelta::FromMinutes(5)},
+    {ID_INTERVAL_15M, scada::base::TimeDelta::FromMinutes(15)},
+    {ID_INTERVAL_30M, scada::base::TimeDelta::FromMinutes(30)},
+    {ID_INTERVAL_1H, scada::base::TimeDelta::FromHours(1)},
+    {ID_INTERVAL_12H, scada::base::TimeDelta::FromHours(12)},
+    {ID_INTERVAL_1D, scada::base::TimeDelta::FromDays(1)},
 };
 
 }  // namespace
@@ -41,9 +41,11 @@ SummaryView::SummaryView(const ControllerContext& context)
 std::unique_ptr<UiView> SummaryView::Init(const WindowDefinition& definition) {
   model_->Load(definition);
 
-  grid_ = new aui::Grid{
-      model_, std::shared_ptr<aui::HeaderModel>{model_, &model_->row_model()},
-      std::shared_ptr<aui::HeaderModel>{model_, &model_->column_model()}};
+  grid_ = new scada::aui::Grid{
+      model_,
+      std::shared_ptr<scada::aui::HeaderModel>{model_, &model_->row_model()},
+      std::shared_ptr<scada::aui::HeaderModel>{model_,
+                                               &model_->column_model()}};
 
   grid_->SetSelectionChangeHandler([this] {
     auto columns = grid_->GetSelectedColumns();
@@ -66,7 +68,7 @@ std::unique_ptr<UiView> SummaryView::Init(const WindowDefinition& definition) {
     return node_ids;
   };
 
-  grid_->SetContextMenuHandler([this](const aui::Point& point) {
+  grid_->SetContextMenuHandler([this](const scada::aui::Point& point) {
     controller_delegate_.ShowPopupMenu(nullptr, 0, point, true);
   });
 

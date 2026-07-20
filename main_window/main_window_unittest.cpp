@@ -59,15 +59,16 @@ Awaitable<void> CompleteDownloadAsync() {
   co_return;
 }
 
-class TestMainMenuModel final : public aui::SimpleMenuModel {
+class TestMainMenuModel final : public scada::aui::SimpleMenuModel {
  public:
-  TestMainMenuModel() : aui::SimpleMenuModel{nullptr}, submenu_{nullptr} {
+  TestMainMenuModel()
+      : scada::aui::SimpleMenuModel{nullptr}, submenu_{nullptr} {
     submenu_.AddItem(1, u"Action");
     AddSubMenu(0, u"Top", &submenu_);
   }
 
  private:
-  aui::SimpleMenuModel submenu_;
+  scada::aui::SimpleMenuModel submenu_;
 };
 
 class TestActionController final : public Controller {
@@ -204,14 +205,15 @@ std::unique_ptr<TestOpenedViewState> MakeOpenedViewWithCommands(
   return state;
 }
 
-bool MenuContainsCommand(aui::MenuModel& menu_model, unsigned command_id) {
+bool MenuContainsCommand(scada::aui::MenuModel& menu_model,
+                         unsigned command_id) {
   auto* model = &menu_model;
   int index = -1;
-  return aui::MenuModel::GetModelAndIndexForCommandId(command_id, &model,
-                                                      &index);
+  return scada::aui::MenuModel::GetModelAndIndexForCommandId(command_id, &model,
+                                                             &index);
 }
 
-void ExpectMenuContainsCommands(aui::MenuModel& menu_model,
+void ExpectMenuContainsCommands(scada::aui::MenuModel& menu_model,
                                 std::span<const unsigned> command_ids) {
   for (unsigned command_id : command_ids) {
     SCOPED_TRACE(command_id);
@@ -329,17 +331,17 @@ MainWindowContext MainWindowTest::MakeMainWindowContext() {
             return std::make_unique<CommandHandler>();
           },
       .selection_command_router_ = selection_command_router_,
-      .status_bar_model_ = std::make_shared<aui::StatusBarModelImpl>(),
+      .status_bar_model_ = std::make_shared<scada::aui::StatusBarModelImpl>(),
       .context_menu_factory_ =
           [](MainWindowInterface& main_window,
              CommandHandler& global_commands) {
-            return std::make_unique<aui::SimpleMenuModel>(nullptr);
+            return std::make_unique<scada::aui::SimpleMenuModel>(nullptr);
           },
       .main_menu_factory_ =
           [](MainWindowInterface& main_window, DialogService& dialog_service,
              ViewManager& view_manager, CommandHandler& global_commands,
-             aui::MenuModel& context_menu_model) {
-            return std::make_unique<aui::SimpleMenuModel>(nullptr);
+             scada::aui::MenuModel& context_menu_model) {
+            return std::make_unique<scada::aui::SimpleMenuModel>(nullptr);
           },
       .connection_info_provider_ = connection_info_provider_.AsStdFunction(),
       .progress_host_ = progress_host_};
@@ -432,16 +434,16 @@ TEST(MainWindowQtTest, MenuBarPopulatesTopLevelMenusImmediately) {
            [](MainWindowInterface& main_window, DialogService& dialog_service) {
              return std::make_unique<CommandHandler>();
            },
-       .status_bar_model_ = std::make_shared<aui::StatusBarModelImpl>(),
+       .status_bar_model_ = std::make_shared<scada::aui::StatusBarModelImpl>(),
        .context_menu_factory_ =
            [](MainWindowInterface& main_window,
               CommandHandler& global_commands) {
-             return std::make_unique<aui::SimpleMenuModel>(nullptr);
+             return std::make_unique<scada::aui::SimpleMenuModel>(nullptr);
            },
        .main_menu_factory_ =
            [](MainWindowInterface& main_window, DialogService& dialog_service,
               ViewManager& view_manager, CommandHandler& global_commands,
-              aui::MenuModel& context_menu_model) {
+              scada::aui::MenuModel& context_menu_model) {
              return std::make_unique<TestMainMenuModel>();
            },
        .connection_info_provider_ = connection_info_provider.AsStdFunction(),

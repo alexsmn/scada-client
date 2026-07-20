@@ -1,9 +1,5 @@
 #pragma once
 
-#include "modules/sheet/sheet_ns_compat.h"
-
-#include "aui/aui_ns_compat.h"
-
 #include "aui/color.h"
 #include "controller/command_registry.h"
 #include "controller/contents_model.h"
@@ -76,7 +72,7 @@ class SheetController : protected ControllerContext,
   Wt::WLineEdit* formula_row_ = nullptr;
 #endif
 
-  aui::Grid* grid_ = nullptr;
+  scada::aui::Grid* grid_ = nullptr;
 
   CommandRegistry command_registry_;
 

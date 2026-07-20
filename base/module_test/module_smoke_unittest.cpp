@@ -25,7 +25,7 @@ TEST(ScadaClientBaseModuleSmoke, SettingsStoresAndUrls) {
 TEST(ScadaClientBaseModuleSmoke, TransitiveSurfaces) {
   // scada.base via the export import chain.
   EXPECT_EQ(Format(3), "3");
-  base::Check(true, "client base module smoke");
+  scada::base::Check(true, "client base module smoke");
 }
 
 }  // namespace

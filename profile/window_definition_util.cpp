@@ -50,11 +50,11 @@ boost::json::value SaveWindowItem(const WindowItem& item) {
 }  // namespace
 
 template <>
-std::optional<base::Time> FromJson(const boost::json::value& value) {
+std::optional<scada::base::Time> FromJson(const boost::json::value& value) {
   if (!value.is_string())
     return std::nullopt;
 
-  base::Time time;
+  scada::base::Time time;
   if (!Deserialize(std::string_view{value.as_string()}, time))
     return std::nullopt;
 
@@ -79,7 +79,7 @@ std::optional<TimeRange> FromJson(const boost::json::value& value) {
   }
 
   if (auto* interval_value = value.as_object().if_contains("interval")) {
-    auto interval = FromJson<base::TimeDelta>(*interval_value);
+    auto interval = FromJson<scada::base::TimeDelta>(*interval_value);
     if (!interval.has_value() || interval->is_zero())
       return std::nullopt;
 
@@ -92,16 +92,16 @@ std::optional<TimeRange> FromJson(const boost::json::value& value) {
   if (!start_value)
     return std::nullopt;
 
-  auto start = FromJson<base::Time>(*start_value);
+  auto start = FromJson<scada::base::Time>(*start_value);
   if (!start.has_value())
     return std::nullopt;
   if (start->is_null())
     return std::nullopt;
 
-  base::Time end;
+  scada::base::Time end;
   auto* end_value = value.as_object().if_contains("end");
   if (end_value && !end_value->is_null()) {
-    auto parsed_end = FromJson<base::Time>(*end_value);
+    auto parsed_end = FromJson<scada::base::Time>(*end_value);
     if (!parsed_end.has_value())
       return std::nullopt;
     end = *parsed_end;
@@ -111,20 +111,23 @@ std::optional<TimeRange> FromJson(const boost::json::value& value) {
 }
 
 template <>
-std::optional<base::TimeDelta> FromJson(const boost::json::value& value) {
-  return base::TimeDelta::FromSeconds(
+std::optional<scada::base::TimeDelta> FromJson(
+    const boost::json::value& value) {
+  return scada::base::TimeDelta::FromSeconds(
              GetKey<int>(value, "seconds").value_or(0)) +
-         base::TimeDelta::FromMinutes(
+         scada::base::TimeDelta::FromMinutes(
              GetKey<int>(value, "minutes").value_or(0)) +
-         base::TimeDelta::FromHours(GetKey<int>(value, "hours").value_or(0)) +
-         base::TimeDelta::FromDays(GetKey<int>(value, "days").value_or(0));
+         scada::base::TimeDelta::FromHours(
+             GetKey<int>(value, "hours").value_or(0)) +
+         scada::base::TimeDelta::FromDays(
+             GetKey<int>(value, "days").value_or(0));
 }
 
 boost::json::value ToJson(std::string_view str) {
   return boost::json::value{std::string{str}};
 }
 
-boost::json::value ToJson(base::Time time) {
+boost::json::value ToJson(scada::base::Time time) {
   return boost::json::value{SerializeToString(time)};
 }
 
@@ -145,7 +148,7 @@ boost::json::value ToJson(const TimeRange& time_range) {
   return result;
 }
 
-boost::json::value ToJson(base::TimeDelta duration) {
+boost::json::value ToJson(scada::base::TimeDelta duration) {
   boost::json::value result{boost::json::object{}};
   auto value = duration.InSeconds();
   if (auto seconds = value % 60)
@@ -164,14 +167,14 @@ boost::json::value ToJson(base::TimeDelta duration) {
 
 std::string SaveBlob(std::string_view blob) {
   std::string text;
-  base::Base64Encode(blob, &text);
+  scada::base::Base64Encode(blob, &text);
   return text;
 }
 
 std::string RestoreBlob(std::string_view text) {
   auto trimmed_text = boost::trim_copy(std::string{text});
   std::string blob;
-  base::Base64Decode(trimmed_text, &blob);
+  scada::base::Base64Decode(trimmed_text, &blob);
   return blob;
 }
 

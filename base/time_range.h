@@ -13,16 +13,16 @@ struct TimeRange {
   TimeRange() {}
 
   TimeRange(Type type) : type{type} {
-    base::Check(type != Type::Custom && type != Type::Interval &&
-                type != Type::Count);
+    scada::base::Check(type != Type::Custom && type != Type::Interval &&
+                       type != Type::Count);
   }
 
-  TimeRange(base::TimeDelta interval)
+  TimeRange(scada::base::TimeDelta interval)
       : type{Type::Interval}, interval{interval} {
-    base::Check(!interval.is_zero());
+    scada::base::Check(!interval.is_zero());
   }
 
-  TimeRange(base::Time start, base::Time end, bool dates = false)
+  TimeRange(scada::base::Time start, scada::base::Time end, bool dates = false)
       : type{Type::Custom}, start{start}, end{end}, dates{dates} {}
 
   bool is_interval() const { return type == Type::Interval; }
@@ -33,18 +33,18 @@ struct TimeRange {
   Type type = Type::Day;
 
   // Only when `type == Type::Custom`.
-  base::Time start;
-  base::Time end;
+  scada::base::Time start;
+  scada::base::Time end;
   bool dates = false;
 
   // Only when `type == Type::Interval`.
-  base::TimeDelta interval;
+  scada::base::TimeDelta interval;
 };
 
 scada::DateTimeRange ToDateTimeRange(const TimeRange& time_range,
-                                     base::Time now);
+                                     scada::base::Time now);
 scada::DateTimeRange ToDateTimeRangeWithOpenRange(const TimeRange& time_range,
-                                                  base::Time now);
+                                                  scada::base::Time now);
 
 std::string ToString(TimeRange::Type type);
 std::string ToString(const TimeRange& time_range);

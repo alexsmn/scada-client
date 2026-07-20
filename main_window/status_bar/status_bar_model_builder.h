@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include "base/any_executor.h"
 
 #include <memory>
@@ -21,7 +19,7 @@ class Profile;
 class StatusProvider;
 
 struct StatusBarModelBuilder {
-  std::shared_ptr<aui::StatusBarModel> Build();
+  std::shared_ptr<scada::aui::StatusBarModel> Build();
 
   AnyExecutor executor_;
   scada::SessionService& session_service_;

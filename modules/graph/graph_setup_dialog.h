@@ -6,7 +6,7 @@ class DialogService;
 
 class GraphSetupDialog {
  public:
-  aui::Color color = aui::ColorCode::Black;
+  scada::aui::Color color = scada::aui::ColorCode::Black;
   int line_weight_ = 1;
 };
 

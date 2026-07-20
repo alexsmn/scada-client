@@ -15,11 +15,11 @@ class HierachicalPropertyDefinition;
 
 class PropertyDefinition {
  public:
-  explicit PropertyDefinition(aui::TableColumn::Alignment alignment,
+  explicit PropertyDefinition(scada::aui::TableColumn::Alignment alignment,
                               int width = 0);
   virtual ~PropertyDefinition() = default;
 
-  aui::TableColumn::Alignment alignment() const { return alignment_; }
+  scada::aui::TableColumn::Alignment alignment() const { return alignment_; }
   int width() const { return width_; }
 
   virtual bool IsReadOnly(const NodeRef& node,
@@ -40,7 +40,7 @@ class PropertyDefinition {
                        const scada::NodeId& prop_decl_id,
                        const std::u16string& text) const;
 
-  virtual aui::EditData GetPropertyEditor(
+  virtual scada::aui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const;
@@ -56,7 +56,7 @@ class PropertyDefinition {
                                     std::vector<scada::NodeId>& targets) const;
 
  private:
-  const aui::TableColumn::Alignment alignment_;
+  const scada::aui::TableColumn::Alignment alignment_;
   const int width_;
 };
 
@@ -65,7 +65,7 @@ class HierachicalPropertyDefinition : public PropertyDefinition {
   using Children = std::vector<const PropertyDefinition*>;
 
   explicit HierachicalPropertyDefinition(Children children)
-      : PropertyDefinition(aui::TableColumn::LEFT),
+      : PropertyDefinition(scada::aui::TableColumn::LEFT),
         children_(std::move(children)) {}
 
   const Children& children() const SCADA_LIFETIME_BOUND { return children_; }

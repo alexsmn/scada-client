@@ -6,5 +6,5 @@
 
 Awaitable<void> ShowLimitsDialog(DialogService& dialog_service,
                                  LimitDialogContext&& context) {
-  return aui::wt::MakeUnsupportedDialogAwaitable<void>();
+  return scada::aui::wt::MakeUnsupportedDialogAwaitable<void>();
 }

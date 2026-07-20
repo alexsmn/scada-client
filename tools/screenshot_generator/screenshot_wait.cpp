@@ -1,4 +1,3 @@
-#include "screenshot_generator_ns_compat.h"
 
 #include "screenshot_wait.h"
 

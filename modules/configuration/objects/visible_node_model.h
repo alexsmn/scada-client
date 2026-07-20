@@ -109,12 +109,12 @@ class VisibleNodeModel {
   bool HasNode(void* tree_node, const std::shared_ptr<VisibleNode>& node) const;
 
   std::u16string GetText(void* tree_node);
-  aui::Color GetTextColor(void* tree_node);
-  aui::Color GetBackgroundColor(void* tree_node);
+  scada::aui::Color GetTextColor(void* tree_node);
+  scada::aui::Color GetBackgroundColor(void* tree_node);
 
   // Quality status-dot colour for a node's live value (good/uncertain/bad),
   // or none when the node has no live value (folders/objects).
-  std::optional<aui::Color> GetStatusColor(void* tree_node);
+  std::optional<scada::aui::Color> GetStatusColor(void* tree_node);
 
  private:
   const VisibleNode* GetNode(void* tree_node) const;

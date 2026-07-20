@@ -15,7 +15,7 @@ bool CreateOpcUaServices(const DataServicesContext& context,
                          DataServices& services) {
   auto session = std::make_shared<opcua::ClientSession>(
       context.executor, context.transport_factory);
-  services = opcua_bridge::CreateClientDataServices(std::move(session));
+  services = scada::opcua_bridge::CreateClientDataServices(std::move(session));
   return true;
 }
 

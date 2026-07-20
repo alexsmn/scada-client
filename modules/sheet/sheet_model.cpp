@@ -9,7 +9,7 @@
 // SheetColumnModel -----------------------------------------------------------
 
 std::u16string SheetColumnModel::GetTitle(int index) const {
-  base::Check(index >= 0);
+  scada::base::Check(index >= 0);
   wchar_t ch = L'A' + static_cast<char>(index);
   return std::u16string(1, ch);
 }
@@ -48,7 +48,7 @@ void SheetModel::Load(const WindowDefinition& definition) {
 
       auto color_string = item.GetString("color");
       if (!color_string.empty())
-        format.color = aui::StringToColor(color_string);
+        format.color = scada::aui::StringToColor(color_string);
 
       cell.format_ = formats().Get(format);
 
@@ -84,8 +84,9 @@ void SheetModel::Save(WindowDefinition& definition) {
 
         if (cell->format_) {
           // color
-          if (cell->format_->color != aui::ColorCode::Transparent)
-            item.SetString("color", aui::ColorToString(cell->format_->color));
+          if (cell->format_->color != scada::aui::ColorCode::Transparent)
+            item.SetString("color",
+                           scada::aui::ColorToString(cell->format_->color));
 
           // align
           if (cell->format_->align == DT_RIGHT)
@@ -99,8 +100,8 @@ void SheetModel::Save(WindowDefinition& definition) {
 }
 
 void SheetModel::SetSizes(int row_count, int column_count) {
-  base::Check(row_count > 0);
-  base::Check(column_count > 0);
+  scada::base::Check(row_count > 0);
+  scada::base::Check(column_count > 0);
 
   if (row_count_ == row_count && column_count_ == column_count)
     return;
@@ -133,18 +134,18 @@ int SheetModel::GetRowCount() {
   return row_count_;
 }
 
-void SheetModel::GetCell(aui::GridCell& cell) {
+void SheetModel::GetCell(scada::aui::GridCell& cell) {
   const SheetCell* c = this->cell(cell.row, cell.column);
   if (!c)
     return;
 
   cell.text = editing_ ? c->formula() : c->text();
 
-  if (c->format_ && c->format_->color != aui::ColorCode::Transparent)
+  if (c->format_ && c->format_->color != scada::aui::ColorCode::Transparent)
     cell.cell_color = c->format_->color;
 
   if (!editing_ && c->is_blinking() && Blinker::GetState())
-    cell.cell_color = aui::ColorCode::Yellow;
+    cell.cell_color = scada::aui::ColorCode::Yellow;
 }
 
 SheetCell& SheetModel::GetCell(int row, int column) {
@@ -154,10 +155,10 @@ SheetCell& SheetModel::GetCell(int row, int column) {
   return *cell;
 }
 
-void SheetModel::ClearRange(const aui::GridRange& range) {
-  base::Check(!range.empty());
+void SheetModel::ClearRange(const scada::aui::GridRange& range) {
+  scada::base::Check(!range.empty());
 
-  aui::GridRange update_range;
+  scada::aui::GridRange update_range;
 
   for (int row = range.row(); row <= range.last_row(); ++row) {
     for (int column = range.column(); column <= range.last_column(); ++column) {
@@ -173,7 +174,7 @@ void SheetModel::ClearRange(const aui::GridRange& range) {
 }
 
 void SheetModel::ClearCell(int row, int column) {
-  ClearRange(aui::GridRange::Cell(row, column));
+  ClearRange(scada::aui::GridRange::Cell(row, column));
 }
 
 void SheetModel::OnBlink(bool state) {
@@ -184,8 +185,8 @@ void SheetModel::OnBlink(bool state) {
 
   SheetCell& first_cell = **blinking_cells_.begin();
 
-  aui::GridRange range =
-      aui::GridRange::Cell(first_cell.row(), first_cell.column());
+  scada::aui::GridRange range =
+      scada::aui::GridRange::Cell(first_cell.row(), first_cell.column());
 
   for (auto i = std::next(blinking_cells_.begin()); i != blinking_cells_.end();
        ++i) {
@@ -196,19 +197,21 @@ void SheetModel::OnBlink(bool state) {
   NotifyRangeChanged(range);
 }
 
-aui::Color SheetModel::GetRangeColor(const aui::GridRange& range) const {
+scada::aui::Color SheetModel::GetRangeColor(
+    const scada::aui::GridRange& range) const {
   if (range.empty())
-    return aui::ColorCode::Transparent;
+    return scada::aui::ColorCode::Transparent;
 
   auto* cell = this->cell(range.row(), range.column());
   if (!cell || !cell->format_)
-    return aui::ColorCode::Transparent;
+    return scada::aui::ColorCode::Transparent;
 
   return cell->format_->color;
 }
 
-void SheetModel::SetRangeColor(const aui::GridRange& range, aui::Color color) {
-  aui::GridRange update_range;
+void SheetModel::SetRangeColor(const scada::aui::GridRange& range,
+                               scada::aui::Color color) {
+  scada::aui::GridRange update_range;
 
   for (int column = range.column(); column <= range.last_column(); ++column) {
     for (int row = range.row(); row <= range.last_row(); ++row) {

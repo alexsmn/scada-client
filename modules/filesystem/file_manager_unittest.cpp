@@ -20,7 +20,7 @@ using namespace testing;
 
 class FileManagerTest : public Test {
  protected:
-  base::ScopedPathOverride public_dir_override_{client::DIR_PUBLIC};
+  scada::base::ScopedPathOverride public_dir_override_{client::DIR_PUBLIC};
 
   TestExecutor executor_;
 
@@ -43,7 +43,7 @@ namespace {
 // Matches the three-element translate-browse-path input produced by the
 // filesystem manager's `Organizes` walk for the path "some/long/path".
 const auto kSomeLongPathBrowse = ElementsAre(scada::BrowsePath{
-    .node_id = filesystem::id::FileSystem,
+    .node_id = scada::filesystem::id::FileSystem,
     .relative_path = {
         scada::RelativePathElement{.reference_type_id = scada::id::Organizes,
                                    .target_name = "some"},

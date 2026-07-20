@@ -84,7 +84,7 @@ void TimedDataModel::UpdateRows(const scada::DateTimeRange& range) {
 }
 
 const scada::DataValue& TimedDataModel::value(int row) const {
-  base::Check(row < count_);
+  scada::base::Check(row < count_);
   return timed_data_.values()[begin_iterator_ + row];
 }
 
@@ -92,7 +92,7 @@ int TimedDataModel::GetRowCount() {
   return count_;
 }
 
-void TimedDataModel::GetCell(aui::TableCell& cell) {
+void TimedDataModel::GetCell(scada::aui::TableCell& cell) {
   const auto& data_value = value(cell.row);
 
   switch (cell.column_id) {

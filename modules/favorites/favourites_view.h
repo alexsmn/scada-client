@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include "base/awaitable.h"
 #include "controller/command_registry.h"
 #include "controller/controller.h"
@@ -43,7 +41,7 @@ class FavouritesView final : protected ControllerContext, public Controller {
 
   const std::shared_ptr<FavouritesTreeModel> favourites_tree_model_;
 
-  aui::Tree* tree_view_ = nullptr;
+  scada::aui::Tree* tree_view_ = nullptr;
 
   CommandRegistry command_registry_;
   Command& open_command_ = command_registry_.AddCommand(ID_OPEN);

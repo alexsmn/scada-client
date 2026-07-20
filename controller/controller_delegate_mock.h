@@ -10,9 +10,9 @@ class MockControllerDelegate : public ControllerDelegate {
 
   MOCK_METHOD(void,
               ShowPopupMenu,
-              (aui::MenuModel * merge_menu,
+              (scada::aui::MenuModel * merge_menu,
                unsigned resource_id,
-               const aui::Point& point,
+               const scada::aui::Point& point,
                bool right_click),
               (override));
 

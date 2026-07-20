@@ -10,14 +10,14 @@ using HRESULT = int;
 using DATE = double;
 struct VARIANT {};
 struct IDispatch {};
-namespace base::win {
+namespace scada::base::win {
 class ScopedVariant {
  public:
   void Reset() {}
   template <class T>
   void Set(const T&) {}
 };
-}  // namespace base::win
+}  // namespace scada::base::win
 namespace Microsoft::WRL {
 template <class T>
 class ComPtr {
@@ -34,11 +34,11 @@ class ExcelSheetModel {
 
   void SetDataSize(int rows, int cols);
 
-  void SetData(int row, int col, base::win::ScopedVariant&& val);
+  void SetData(int row, int col, scada::base::win::ScopedVariant&& val);
   void SetData(int row, int col, const VARIANT& val);
   void SetData(int row, int col, const std::wstring& val);
 
-  base::win::ScopedVariant data;
+  scada::base::win::ScopedVariant data;
   int rows = 0;
   int cols = 0;
 };

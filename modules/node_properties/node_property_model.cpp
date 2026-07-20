@@ -142,16 +142,16 @@ void NodePropertyModel::Update() {
     group = std::make_unique<NodeGroupModel>(*this);
 
 #ifndef NDEBUG
-    group->properties.emplace_back(aui::PropertyGroup::ItemType::Property,
-                                   std::u16string{kNodeIdAttributeString},
-                                   scada::AttributeId::NodeId);
+    group->properties.emplace_back(
+        scada::aui::PropertyGroup::ItemType::Property,
+        std::u16string{kNodeIdAttributeString}, scada::AttributeId::NodeId);
 #endif
-    group->properties.emplace_back(aui::PropertyGroup::ItemType::Property,
-                                   Translate("Browse Name"),
-                                   scada::AttributeId::BrowseName);
-    group->properties.emplace_back(aui::PropertyGroup::ItemType::Property,
-                                   Translate("Name"),
-                                   scada::AttributeId::DisplayName);
+    group->properties.emplace_back(
+        scada::aui::PropertyGroup::ItemType::Property, Translate("Browse Name"),
+        scada::AttributeId::BrowseName);
+    group->properties.emplace_back(
+        scada::aui::PropertyGroup::ItemType::Property, Translate("Name"),
+        scada::AttributeId::DisplayName);
   }
 
   // The constructor coroutine fetches the type chain before OnNodeFetched,
@@ -172,18 +172,18 @@ void NodePropertyModel::Update() {
       }
 
       NodeGroupModel::Property prop{
-          .type = aui::PropertyGroup::ItemType::Property,
+          .type = scada::aui::PropertyGroup::ItemType::Property,
           .name = prop_def->GetTitle(*this, prop_decl),
           .def = prop_def,
           .prop_decl_id = prop_decl.node_id()};
       InitProperty(prop);
 
       if (auto* hierarchical_prop = prop_def->AsHierarchical()) {
-        prop.type = aui::PropertyGroup::ItemType::Group;
+        prop.type = scada::aui::PropertyGroup::ItemType::Group;
         prop.submodel = std::make_unique<NodeGroupModel>(*this);
         for (const auto* child : hierarchical_prop->children()) {
           NodeGroupModel::Property child_prop{
-              .type = aui::PropertyGroup::ItemType::Property,
+              .type = scada::aui::PropertyGroup::ItemType::Property,
               .name = child->GetTitle(*this, prop_decl),
               .def = child,
               .prop_decl_id = prop_decl.node_id()};
@@ -198,11 +198,11 @@ void NodePropertyModel::Update() {
 
   for (auto& [title, group] : groups) {
     auto new_title = title.empty() ? Translate("Misc") : title;
-    root_.properties.emplace_back(
-        NodeGroupModel::Property{.type = aui::PropertyGroup::ItemType::Category,
-                                 .name = std::move(new_title),
-                                 .attribute_id = scada::AttributeId::NodeId,
-                                 .submodel = std::move(group)});
+    root_.properties.emplace_back(NodeGroupModel::Property{
+        .type = scada::aui::PropertyGroup::ItemType::Category,
+        .name = std::move(new_title),
+        .attribute_id = scada::AttributeId::NodeId,
+        .submodel = std::move(group)});
   }
 
   SortPropertiesRecursive(root_.properties);

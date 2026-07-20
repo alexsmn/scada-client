@@ -24,8 +24,8 @@ struct SummaryModelParams {
 inline SummaryModelParams CalculateSummaryModelParams(
     const TimeRange& time_range,
     scada::Duration interval,
-    base::Time now) {
-  base::Check(!interval.is_zero());
+    scada::base::Time now) {
+  scada::base::Check(!interval.is_zero());
 
   auto [start_time, end_time] = ToDateTimeRange(time_range, now);
 
@@ -49,10 +49,10 @@ inline SummaryModelParams CalculateSummaryModelParams(
   result.end_time = start_time + interval * row_count;
   result.row_count = static_cast<size_t>(row_count);
 
-  base::Check(!result.start_time.is_null());
-  base::Check(!result.end_time.is_null());
-  base::Check(result.start_time <= result.end_time);
-  base::Check(result.row_count <= kMaxRowCount);
+  scada::base::Check(!result.start_time.is_null());
+  scada::base::Check(!result.end_time.is_null());
+  scada::base::Check(result.start_time <= result.end_time);
+  scada::base::Check(result.row_count <= kMaxRowCount);
 
   return result;
 }

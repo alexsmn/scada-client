@@ -67,7 +67,7 @@ HRESULT AutoWrap(WORD autoType,
 
 Microsoft::WRL::ComPtr<IDispatch> GetProperty(IDispatch& object,
                                               const wchar_t* property_name) {
-  base::win::ScopedVariant variant;
+  scada::base::win::ScopedVariant variant;
   AutoWrap(DISPATCH_PROPERTYGET, variant.Receive(), &object,
            const_cast<LPOLESTR>(property_name));
   return Microsoft::WRL::ComPtr<IDispatch>(variant.AsInput()->pdispVal);
@@ -77,7 +77,7 @@ Microsoft::WRL::ComPtr<IDispatch> GetIndexedProperty(
     IDispatch& object,
     const wchar_t* property_name,
     const VARIANT& index) {
-  base::win::ScopedVariant result;
+  scada::base::win::ScopedVariant result;
   AutoWrap(DISPATCH_PROPERTYGET, result.Receive(), &object,
            const_cast<LPOLESTR>(property_name), {index});
   return Microsoft::WRL::ComPtr<IDispatch>(result.AsInput()->pdispVal);
@@ -88,8 +88,8 @@ Microsoft::WRL::ComPtr<IDispatch> GetIndexedProperty(
 // ExcelSheetModel
 
 void ExcelSheetModel::SetDataSize(int rows, int cols) {
-  base::Check(rows >= 1);
-  base::Check(cols >= 0);
+  scada::base::Check(rows >= 1);
+  scada::base::Check(cols >= 0);
 
   SAFEARRAYBOUND bounds[2];
   bounds[0].lLbound = 1;
@@ -104,17 +104,17 @@ void ExcelSheetModel::SetDataSize(int rows, int cols) {
 
 void ExcelSheetModel::SetData(int row,
                               int col,
-                              base::win::ScopedVariant&& val) {
+                              scada::base::win::ScopedVariant&& val) {
   LONG ixs[] = {row, col};
   SafeArrayPutElement(data.AsInput()->parray, ixs, val.AsInput());
 }
 
 void ExcelSheetModel::SetData(int row, int col, const VARIANT& val) {
-  SetData(row, col, base::win::ScopedVariant{val});
+  SetData(row, col, scada::base::win::ScopedVariant{val});
 }
 
 void ExcelSheetModel::SetData(int row, int col, const std::wstring& val) {
-  SetData(row, col, base::win::ScopedVariant{val.c_str()});
+  SetData(row, col, scada::base::win::ScopedVariant{val.c_str()});
 }
 
 // Excel
@@ -137,7 +137,7 @@ void Excel::SetVisible(bool visible) {
 }
 
 void Excel::NewWorkbook() {
-  base::win::ScopedVariant result;
+  scada::base::win::ScopedVariant result;
   AutoWrap(DISPATCH_PROPERTYGET, result.Receive(), excel.Get(), L"Workbooks");
   Microsoft::WRL::ComPtr<IDispatch> books(result.AsInput()->pdispVal);
 
@@ -147,7 +147,7 @@ void Excel::NewWorkbook() {
 }
 
 Microsoft::WRL::ComPtr<IDispatch> Excel::GetRange(const wchar_t* name) {
-  base::win::ScopedVariant parm(name);
+  scada::base::win::ScopedVariant parm(name);
   return GetIndexedProperty(*sheet.Get(), L"Range", parm);
 }
 
@@ -188,7 +188,7 @@ void ExcelSheetModel::SetDataSize(int rows, int cols) {
   this->cols = cols;
 }
 
-void ExcelSheetModel::SetData(int, int, base::win::ScopedVariant&&) {}
+void ExcelSheetModel::SetData(int, int, scada::base::win::ScopedVariant&&) {}
 
 void ExcelSheetModel::SetData(int, int, const VARIANT&) {}
 

@@ -21,7 +21,7 @@ scada::NodeState MakeNodeState(const scada::NodeId& node_id,
   return {.node_id = node_id,
           .node_class = scada::NodeClass::Variable,
           .type_definition_id = type_definition_id,
-          .parent_id = data_items::id::DataItems,
+          .parent_id = scada::data_items::id::DataItems,
           .reference_type_id = scada::id::Organizes,
           .attributes = {.display_name = display_name},
           .properties = std::move(props)};
@@ -34,26 +34,30 @@ TEST(ExportDataBuilder, Test) {
 
   const std::vector<scada::NodeState> nodes{
       MakeNodeState(
-          /*node_id=*/{11, NamespaceIndexes::TIT},
-          /*type_definition_id=*/data_items::id::AnalogItemType,
+          /*node_id=*/{11, scada::NamespaceIndexes::TIT},
+          /*type_definition_id=*/scada::data_items::id::AnalogItemType,
           /*display_name=*/u"ТИТ 11",
-          /*props=*/{{data_items::id::AnalogItemType_DisplayFormat, "#####"}}),
+          /*props=*/
+          {{scada::data_items::id::AnalogItemType_DisplayFormat, "#####"}}),
       MakeNodeState(
-          /*node_id=*/{22, NamespaceIndexes::TS},
-          /*type_definition_id=*/data_items::id::DiscreteItemType,
+          /*node_id=*/{22, scada::NamespaceIndexes::TS},
+          /*type_definition_id=*/scada::data_items::id::DiscreteItemType,
           /*display_name=*/u"ТС 22",
-          /*props=*/{{data_items::id::DiscreteItemType_Inversion, true}}),
+          /*props=*/
+          {{scada::data_items::id::DiscreteItemType_Inversion, true}}),
       MakeNodeState(
-          /*node_id=*/{33, NamespaceIndexes::TIT},
-          /*type_definition_id=*/data_items::id::AnalogItemType,
+          /*node_id=*/{33, scada::NamespaceIndexes::TIT},
+          /*type_definition_id=*/scada::data_items::id::AnalogItemType,
           /*display_name=*/u"ТИТ 33",
-          /*props=*/{{data_items::id::AnalogItemType_DisplayFormat, "000"}}),
+          /*props=*/
+          {{scada::data_items::id::AnalogItemType_DisplayFormat, "000"}}),
       // Not exported because of the namespace.
       MakeNodeState(
-          /*node_id=*/{44, NamespaceIndexes::VIDICON},
-          /*type_definition_id=*/data_items::id::AnalogItemType,
+          /*node_id=*/{44, scada::NamespaceIndexes::VIDICON},
+          /*type_definition_id=*/scada::data_items::id::AnalogItemType,
           /*display_name=*/u"VIDICON 44",
-          /*props=*/{{data_items::id::AnalogItemType_DisplayFormat, "000"}})};
+          /*props=*/
+          {{scada::data_items::id::AnalogItemType_DisplayFormat, "000"}})};
 
   StaticNodeService node_service;
   node_service.AddAll(GetScadaNodeStates());
@@ -72,47 +76,51 @@ TEST(ExportDataBuilder, Test) {
       export_data.nodes,
       UnorderedElementsAre(
           FieldsAre(
-              /*node_id=*/scada::NodeId{11, NamespaceIndexes::TIT},
+              /*node_id=*/scada::NodeId{11, scada::NamespaceIndexes::TIT},
               /*parent_id=*/scada::NodeId{},
               /*type_display_name=*/u"Объект ТИТ",
-              /*type_id=*/data_items::id::AnalogItemType,
+              /*type_id=*/scada::data_items::id::AnalogItemType,
               /*display_name=*/u"ТИТ 11",
               /*property_values=*/
               ElementsAre(FieldsAre(
-                  /*prop_decl_id=*/data_items::id::AnalogItemType_DisplayFormat,
+                  /*prop_decl_id=*/scada::data_items::id::
+                      AnalogItemType_DisplayFormat,
                   /*value=*/"#####",
                   /*target_id=*/_, /*target_display_name=*/_,
                   /*reference=*/false))),
           FieldsAre(
-              /*node_id=*/scada::NodeId{22, NamespaceIndexes::TS},
+              /*node_id=*/scada::NodeId{22, scada::NamespaceIndexes::TS},
               /*parent_id=*/scada::NodeId{},
               /*type_display_name=*/u"Объект ТС",
-              /*type_id=*/data_items::id::DiscreteItemType,
+              /*type_id=*/scada::data_items::id::DiscreteItemType,
               /*display_name=*/u"ТС 22",
               /*property_values=*/
               ElementsAre(FieldsAre(
-                  /*prop_decl_id=*/data_items::id::DiscreteItemType_Inversion,
+                  /*prop_decl_id=*/scada::data_items::id::
+                      DiscreteItemType_Inversion,
                   /*value=*/true, /*target_id=*/_,
                   /*target_display_name=*/_,
                   /*reference=*/false))),
           FieldsAre(
-              /*node_id=*/scada::NodeId{33, NamespaceIndexes::TIT},
+              /*node_id=*/scada::NodeId{33, scada::NamespaceIndexes::TIT},
               /*parent_id=*/scada::NodeId{},
               /*type_display_name=*/u"Объект ТИТ",
-              /*type_id=*/data_items::id::AnalogItemType,
+              /*type_id=*/scada::data_items::id::AnalogItemType,
               /*display_name=*/u"ТИТ 33",
               /*property_values=*/
               ElementsAre(FieldsAre(
-                  /*prop_decl_id=*/data_items::id::AnalogItemType_DisplayFormat,
+                  /*prop_decl_id=*/scada::data_items::id::
+                      AnalogItemType_DisplayFormat,
                   /*value=*/"000",
                   /*target_id=*/_, /*target_display_name=*/_,
                   /*reference=*/false)))));
 
-  EXPECT_THAT(export_data.props,
-              Contains(FieldsAre(
-                  /*prop_decl_id=*/data_items::id::DiscreteItemType_Inversion,
-                  /*display_name=*/u"Инверсия",
-                  /*reference=*/false)));
+  EXPECT_THAT(
+      export_data.props,
+      Contains(FieldsAre(
+          /*prop_decl_id=*/scada::data_items::id::DiscreteItemType_Inversion,
+          /*display_name=*/u"Инверсия",
+          /*reference=*/false)));
 
   // TODO: Validate a reference.
 }
@@ -121,10 +129,11 @@ TEST(ExportDataBuilder, BuildAsyncUsesExecutorPinnedCoroutine) {
   StaticNodeService node_service;
   node_service.AddAll(GetScadaNodeStates());
   node_service.Add(MakeNodeState(
-      /*node_id=*/{11, NamespaceIndexes::TIT},
-      /*type_definition_id=*/data_items::id::AnalogItemType,
+      /*node_id=*/{11, scada::NamespaceIndexes::TIT},
+      /*type_definition_id=*/scada::data_items::id::AnalogItemType,
       /*display_name=*/u"ТИТ 11",
-      /*props=*/{{data_items::id::AnalogItemType_DisplayFormat, "#####"}}));
+      /*props=*/
+      {{scada::data_items::id::AnalogItemType_DisplayFormat, "#####"}}));
 
   TestExecutor executor;
   ExportDataBuilder builder{node_service, executor};
@@ -134,5 +143,5 @@ TEST(ExportDataBuilder, BuildAsyncUsesExecutorPinnedCoroutine) {
   EXPECT_THAT(
       export_data.nodes,
       ElementsAre(Field(&ExportData::Node::node_id,
-                       scada::NodeId{11, NamespaceIndexes::TIT})));
+                        scada::NodeId{11, scada::NamespaceIndexes::TIT})));
 }

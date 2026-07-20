@@ -151,7 +151,7 @@ bool SummaryModel::Column::IsReady(int row) const {
 
 // SummaryModel::RowModel -----------------------------------------------------
 
-class SummaryModel::RowModel : public aui::HeaderModel {
+class SummaryModel::RowModel : public scada::aui::HeaderModel {
  public:
   explicit RowModel(SummaryModel& model);
 
@@ -171,14 +171,14 @@ SummaryModel::RowModel::RowModel(SummaryModel& model) : model_(model) {
 }
 
 std::u16string SummaryModel::RowModel::GetTitle(int index) const {
-  base::Time time = model_.GetRowTime(index);
+  scada::base::Time time = model_.GetRowTime(index);
   return UtfConvert<char16_t>(
       FormatTime(time, TIME_FORMAT_DATE | TIME_FORMAT_TIME));
 }
 
 // SummaryModel::ColumnModel --------------------------------------------------
 
-class SummaryModel::ColumnModel : public aui::HeaderModel {
+class SummaryModel::ColumnModel : public scada::aui::HeaderModel {
  public:
   explicit ColumnModel(SummaryModel& model) : model_(model) {}
 
@@ -187,7 +187,8 @@ class SummaryModel::ColumnModel : public aui::HeaderModel {
   virtual int GetSize(int index) const override;
   virtual void SetSize(int index, int new_size) override;
   virtual std::u16string GetTitle(int index) const override;
-  virtual aui::TableColumn::Alignment GetAlignment(int index) const override;
+  virtual scada::aui::TableColumn::Alignment GetAlignment(
+      int index) const override;
 
  private:
   friend class SummaryModel;
@@ -215,9 +216,9 @@ std::u16string SummaryModel::ColumnModel::GetTitle(int index) const {
   return model_.columns_[index]->GetTitle();
 }
 
-aui::TableColumn::Alignment SummaryModel::ColumnModel::GetAlignment(
+scada::aui::TableColumn::Alignment SummaryModel::ColumnModel::GetAlignment(
     int index) const {
-  return aui::TableColumn::RIGHT;
+  return scada::aui::TableColumn::RIGHT;
 }
 
 // SummaryModel ---------------------------------------------------------------
@@ -229,11 +230,11 @@ SummaryModel::SummaryModel(SummaryModelContext&& context)
 
 SummaryModel::~SummaryModel() = default;
 
-aui::HeaderModel& SummaryModel::row_model() {
+scada::aui::HeaderModel& SummaryModel::row_model() {
   return *row_model_;
 }
 
-aui::HeaderModel& SummaryModel::column_model() {
+scada::aui::HeaderModel& SummaryModel::column_model() {
   return *column_model_;
 }
 
@@ -311,7 +312,7 @@ void SummaryModel::Save(WindowDefinition& definition) {
   definition.Set("AggregateType", aggregate_type());
 }
 
-void SummaryModel::GetCell(aui::GridCell& cell) {
+void SummaryModel::GetCell(scada::aui::GridCell& cell) {
   const Column& column = *columns_[cell.column];
 
   const scada::DataValue& data_value = column.GetDataValue(cell.row);
@@ -324,22 +325,22 @@ void SummaryModel::GetCell(aui::GridCell& cell) {
   }
 
   if (!column.IsReady(cell.row)) {
-    cell.cell_color = aui::ColorCode::DarkGray;
+    cell.cell_color = scada::aui::ColorCode::DarkGray;
   }
 }
 
-base::Time SummaryModel::GetRowTime(int row) const {
-  base::Check(row >= 0 && row < static_cast<int>(row_count_));
-  base::Check(!start_time_.is_null());
-  base::Check(!aggregate_filter_.interval.is_zero());
+scada::base::Time SummaryModel::GetRowTime(int row) const {
+  scada::base::Check(row >= 0 && row < static_cast<int>(row_count_));
+  scada::base::Check(!start_time_.is_null());
+  scada::base::Check(!aggregate_filter_.interval.is_zero());
   return start_time_ + aggregate_filter_.interval * row;
 }
 
-int SummaryModel::GetRowForTime(base::Time time) const {
-  base::Check(!start_time_.is_null());
-  base::Check(!end_time_.is_null());
-  base::Check(start_time_ <= end_time_);
-  base::Check(!aggregate_filter_.interval.is_zero());
+int SummaryModel::GetRowForTime(scada::base::Time time) const {
+  scada::base::Check(!start_time_.is_null());
+  scada::base::Check(!end_time_.is_null());
+  scada::base::Check(start_time_ <= end_time_);
+  scada::base::Check(!aggregate_filter_.interval.is_zero());
 
   // |end_time_| defines start of the last interval.
   if (time < start_time_ || time >= end_time_)
@@ -347,18 +348,18 @@ int SummaryModel::GetRowForTime(base::Time time) const {
   if (row_count_ == 0)
     return -1;
 
-  base::TimeDelta delta = time - start_time_;
+  scada::base::TimeDelta delta = time - start_time_;
   int row = static_cast<int>(delta / aggregate_filter_.interval);
-  base::Check(row >= 0 && row < static_cast<int>(row_count_));
+  scada::base::Check(row >= 0 && row < static_cast<int>(row_count_));
   return row;
 }
 
 void SummaryModel::OnCellChanged(int column, int row) {
-  NotifyRangeChanged(aui::GridRange::Cell(row, column));
+  NotifyRangeChanged(scada::aui::GridRange::Cell(row, column));
 }
 
 void SummaryModel::OnColumnChanged(int column) {
-  NotifyRangeChanged(aui::GridRange::Column(column));
+  NotifyRangeChanged(scada::aui::GridRange::Column(column));
 }
 
 void SummaryModel::OnColumnTitleChanged(int column) {
@@ -406,7 +407,7 @@ void SummaryModel::SetAggregateType(scada::NodeId aggregate_type) {
   SetParams(time_range_, std::move(new_filter));
 }
 
-void SummaryModel::SetInterval(base::TimeDelta interval) {
+void SummaryModel::SetInterval(scada::base::TimeDelta interval) {
   auto new_filter = aggregate_filter_;
   new_filter.interval = interval;
   SetParams(time_range_, std::move(new_filter));
@@ -414,10 +415,10 @@ void SummaryModel::SetInterval(base::TimeDelta interval) {
 
 void SummaryModel::SetParams(const TimeRange& time_range,
                              scada::AggregateFilter aggregate_filter) {
-  base::Check(!aggregate_filter.is_null());
+  scada::base::Check(!aggregate_filter.is_null());
 
   auto params = CalculateSummaryModelParams(
-      time_range, aggregate_filter.interval, /*now=*/base::Time::Now());
+      time_range, aggregate_filter.interval, /*now=*/scada::base::Time::Now());
 
   time_range_ = time_range;
   aggregate_filter_ = std::move(aggregate_filter);
@@ -454,7 +455,7 @@ bool SummaryModel::IsCustomUnits(const scada::NodeId& aggregation_id) {
 
 ExportModel::ExportData SummaryModel::GetExportData() {
   return GridExportData{
-      aui::TableColumn{-1, u"Time", 100, aui::TableColumn::LEFT,
-                       aui::TableColumn::DataType::General},
+      scada::aui::TableColumn{-1, u"Time", 100, scada::aui::TableColumn::LEFT,
+                              scada::aui::TableColumn::DataType::General},
       *this, row_model(), column_model()};
 }

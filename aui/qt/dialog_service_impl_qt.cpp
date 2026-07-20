@@ -23,7 +23,7 @@ std::string JoinStrings(std::span<const std::string_view> strings,
 }
 
 QString MakeFilter(const DialogService::Filter& filter) {
-  base::Check(!filter.extensions.empty());
+  scada::base::Check(!filter.extensions.empty());
 
   QString result = QString::fromUtf16(filter.title.data(), filter.title.size());
   result += " (";
@@ -88,7 +88,7 @@ Awaitable<MessageBoxResult> DialogServiceImplQt::RunMessageBox(
       break;
 
     default:
-      base::NotReached();
+      scada::base::NotReached();
   }
 
   if (mode == MessageBoxMode::QuestionYesNoDefaultNo)

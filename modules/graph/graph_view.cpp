@@ -77,7 +77,7 @@ std::unique_ptr<UiView> GraphView::Init(const WindowDefinition& definition) {
   // Don't set controller until graph is initialized.
   graph_->set_controller(this);
 
-  graph_->SetContextMenuHandler([this](const aui::Point& point) {
+  graph_->SetContextMenuHandler([this](const scada::aui::Point& point) {
     controller_delegate_.ShowPopupMenu(nullptr, 0, point, true);
   });
 
@@ -198,30 +198,31 @@ void GraphView::RefreshInspector() {
     inspector_->SetLine(GetConfigurableLine());
 }
 
-bool GraphView::FindColor(aui::Color color) const {
+bool GraphView::FindColor(scada::aui::Color color) const {
   for (auto* pane : graph_->panes()) {
     for (auto* line : pane->plot().lines())
-      if (aui::Color{line->color()} == color)
+      if (scada::aui::Color{line->color()} == color)
         return true;
   }
   return false;
 }
 
-aui::Color GraphView::NewColor() const {
+scada::aui::Color GraphView::NewColor() const {
   const auto background_color =
       graph_->palette().color(graph_->backgroundRole());
 
   const auto default_color = profile_.graph_view.default_color;
-  if (default_color != aui::ColorCode::White &&
-      default_color != aui::ColorCode::Transparent &&
+  if (default_color != scada::aui::ColorCode::White &&
+      default_color != scada::aui::ColorCode::Transparent &&
       IsReadableOnBackground(default_color.native_color(), background_color) &&
       !FindColor(default_color)) {
     return default_color;
   }
 
-  for (unsigned i = 0; i < aui::GetColorCount(); i++) {
-    const auto color = aui::GetColor(i);
-    if (color == aui::ColorCode::White || color == aui::ColorCode::Transparent)
+  for (unsigned i = 0; i < scada::aui::GetColorCount(); i++) {
+    const auto color = scada::aui::GetColor(i);
+    if (color == scada::aui::ColorCode::White ||
+        color == scada::aui::ColorCode::Transparent)
       continue;
     if (!IsReadableOnBackground(color.native_color(), background_color))
       continue;
@@ -229,15 +230,15 @@ aui::Color GraphView::NewColor() const {
       return color;
   }
 
-  for (unsigned i = 0; i < aui::GetColorCount(); i++) {
-    const auto color = aui::GetColor(i);
-    if (color == aui::ColorCode::Transparent)
+  for (unsigned i = 0; i < scada::aui::GetColorCount(); i++) {
+    const auto color = scada::aui::GetColor(i);
+    if (color == scada::aui::ColorCode::Transparent)
       continue;
     if (IsReadableOnBackground(color.native_color(), background_color))
       return color;
   }
 
-  return aui::GetColor(rand() % aui::GetColorCount());
+  return scada::aui::GetColor(rand() % scada::aui::GetColorCount());
 }
 
 void GraphView::Save(WindowDefinition& definition) {
@@ -375,10 +376,12 @@ void GraphView::OnGraphSelectPane() {
 }
 
 TimeRange GraphView::GetTimeRange() const {
-  auto start = base::Time::FromDoubleT(graph_->horizontal_axis().range().low());
-  base::Time end;
+  auto start =
+      scada::base::Time::FromDoubleT(graph_->horizontal_axis().range().low());
+  scada::base::Time end;
   if (!graph_->horizontal_axis().time_fit())
-    end = base::Time::FromDoubleT(graph_->horizontal_axis().range().high());
+    end = scada::base::Time::FromDoubleT(
+        graph_->horizontal_axis().range().high());
   return TimeRange{start, end};
 }
 
@@ -459,7 +462,7 @@ void GraphView::ToggleLineProperty(unsigned command_id) {
       line->set_stepped(!line->stepped());
       break;
     default:
-      base::NotReached();
+      scada::base::NotReached();
   }
 
   controller_delegate_.SetModified(true);
@@ -483,7 +486,7 @@ void GraphView::ToggleZoom() {
 void GraphView::SetTimeRange(const TimeRange& range) {
   bool time_fit = range.type != TimeRange::Type::Custom;
   auto [start_time, end_time] =
-      ToDateTimeRange(range, /*now=*/base::Time::Now());
+      ToDateTimeRange(range, /*now=*/scada::base::Time::Now());
   double low = start_time.ToDoubleT();
   double high = time_fit ? graph_->horizontal_axis().scroll_range().high()
                          : end_time.ToDoubleT();
@@ -517,9 +520,9 @@ void GraphView::OnGraphModified() {
   controller_delegate_.SetModified(true);
 
   // update defaults
-  base::TimeDelta span =
-      base::Time::FromDoubleT(graph_->horizontal_axis().range().high()) -
-      base::Time::FromDoubleT(graph_->horizontal_axis().range().low());
+  scada::base::TimeDelta span =
+      scada::base::Time::FromDoubleT(graph_->horizontal_axis().range().high()) -
+      scada::base::Time::FromDoubleT(graph_->horizontal_axis().range().low());
   if (span.InSeconds() >= 1)
     profile_.graph_view.default_span = span;
 }
@@ -541,8 +544,8 @@ void GraphView::SetupLine() {
   MetrixGraph::MetrixLine* line = GetConfigurableLine();
 
   GraphSetupDialog setup{
-      .color =
-          line ? aui::Color{line->color()} : profile_.graph_view.default_color,
+      .color = line ? scada::aui::Color{line->color()}
+                    : profile_.graph_view.default_color,
       .line_weight_ =
           line ? line->line_weight() : profile_.graph_view.default_width};
   if (!RunGraphSetupDialog(dialog_service_, setup))
@@ -569,7 +572,7 @@ void GraphView::ChooseGraphColor() {
 #endif
 }
 
-void GraphView::SetGraphColor(aui::Color color) {
+void GraphView::SetGraphColor(scada::aui::Color color) {
   QPalette palette = graph_->palette();
   palette.setColor(graph_->backgroundRole(), color.qcolor());
   graph_->setPalette(palette);

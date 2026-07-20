@@ -30,7 +30,7 @@ const char16_t kOpenFileTitle[] = u"Open File";
 Awaitable<void> OpenJsonFileAsync(std::filesystem::path path,
                                   MainWindowInterface* main_window,
                                   DialogService& dialog_service,
-                                  aui::KeyModifiers /*key_modifiers*/,
+                                  scada::aui::KeyModifiers /*key_modifiers*/,
                                   AnyExecutor executor) {
   if (!main_window) {
     co_return;
@@ -126,7 +126,7 @@ Awaitable<void> AddFileAsync(NodeRef parent_directory,
   scada::ByteString contents{contents_string.begin(), contents_string.end()};
 
   (void)co_await task_manager.PostInsertTask(
-      {.type_definition_id = filesystem::id::FileType,
+      {.type_definition_id = scada::filesystem::id::FileType,
        .parent_id = parent_directory.node_id(),
        .attributes = {.display_name = std::move(new_file_name),
                       .value = std::move(contents)}});

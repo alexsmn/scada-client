@@ -16,9 +16,9 @@ class NodeService;
 class TaskManager;
 
 class TransmissionModel
-    : private aui::FixedRowModel::Delegate,
-      public aui::GridModel,
-      public aui::FixedRowModel,
+    : private scada::aui::FixedRowModel::Delegate,
+      public scada::aui::GridModel,
+      public scada::aui::FixedRowModel,
       public ContentsModel,
       public std::enable_shared_from_this<TransmissionModel> {
  public:
@@ -57,7 +57,7 @@ class TransmissionModel
   // GridModel
   virtual int GetRowCount() override;
   virtual std::u16string GetRowTitle(int row) override;
-  virtual void GetCell(aui::GridCell& cell) override;
+  virtual void GetCell(scada::aui::GridCell& cell) override;
   virtual bool IsEditable(int row, int column) override;
   virtual bool SetCellText(int row,
                            int column,

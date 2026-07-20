@@ -21,21 +21,25 @@ TEST(EventFilterBarPeriodTest, FixedRangeReflectsOntoItsPreset) {
 
 // The 15-minute and hourly interval presets are present and reflect correctly.
 TEST(EventFilterBarPeriodTest, IntervalPresetsMatch) {
-  EXPECT_EQ(EventPeriodPresetIndex(TimeRange{base::TimeDelta::FromMinutes(15)}),
+  EXPECT_EQ(EventPeriodPresetIndex(
+                TimeRange{scada::base::TimeDelta::FromMinutes(15)}),
             0);
-  EXPECT_EQ(EventPeriodPresetIndex(TimeRange{base::TimeDelta::FromHours(1)}),
-            1);
+  EXPECT_EQ(
+      EventPeriodPresetIndex(TimeRange{scada::base::TimeDelta::FromHours(1)}),
+      1);
 }
 
 // A range that matches no quick-pick (an arbitrary custom window, or an
 // interval the bar does not offer) reflects as "no preset" (-1) so the selector
 // does not misrepresent it.
 TEST(EventFilterBarPeriodTest, UnmatchedRangeHasNoPreset) {
-  TimeRange custom{base::Time::UnixEpoch(),
-                   base::Time::UnixEpoch() + base::TimeDelta::FromHours(3)};
+  TimeRange custom{
+      scada::base::Time::UnixEpoch(),
+      scada::base::Time::UnixEpoch() + scada::base::TimeDelta::FromHours(3)};
   EXPECT_EQ(EventPeriodPresetIndex(custom), -1);
 
-  EXPECT_EQ(EventPeriodPresetIndex(TimeRange{base::TimeDelta::FromMinutes(42)}),
+  EXPECT_EQ(EventPeriodPresetIndex(
+                TimeRange{scada::base::TimeDelta::FromMinutes(42)}),
             -1);
 }
 

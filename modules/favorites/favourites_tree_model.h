@@ -10,7 +10,7 @@
 class FavouritesFolderNode;
 class FavouritesWindowNode;
 
-class FavouritesNode : public aui::TreeNode<FavouritesNode> {
+class FavouritesNode : public scada::aui::TreeNode<FavouritesNode> {
  public:
   explicit FavouritesNode(Favourites& favourites) : favourites_{favourites} {}
 
@@ -99,14 +99,14 @@ class FavouritesWindowNode : public FavouritesNode {
   const WindowDefinition& window_def_;
 };
 
-class FavouritesTreeModel : public aui::TreeNodeModel<FavouritesNode> {
+class FavouritesTreeModel : public scada::aui::TreeNodeModel<FavouritesNode> {
  public:
   explicit FavouritesTreeModel(Favourites& favourites);
   ~FavouritesTreeModel();
 
   FavouritesRootNode& root() {
     return *reinterpret_cast<FavouritesRootNode*>(
-        aui::TreeNodeModel<FavouritesNode>::root());
+        scada::aui::TreeNodeModel<FavouritesNode>::root());
   }
 
  protected:

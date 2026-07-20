@@ -34,6 +34,6 @@ BasicCommand<SelectionCommandContext> ChangePasswordCommandBuilder::Build() {
                session_service_](const SelectionCommandContext& context) {
             return session_service.HasPrivilege(scada::Privilege::Configure) &&
                    IsInstanceOf(context.selection.node(),
-                                security::id::UserType);
+                                scada::security::id::UserType);
           }};
 }

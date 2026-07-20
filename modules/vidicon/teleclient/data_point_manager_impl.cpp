@@ -1,4 +1,3 @@
-#include "vidicon/vidicon_compat.h"
 
 #include "vidicon/teleclient/data_point_manager_impl.h"
 

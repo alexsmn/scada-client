@@ -146,7 +146,7 @@ TEST_F(ConfigurationModuleTest, UnlockCommandRunsPostedTask) {
           }));
   EXPECT_CALL(method_service_,
               Call(scada::NodeId{kItemNodeId, 1},
-                   data_items::id::DataItemType_Unlock, IsEmpty(), _))
+                   scada::data_items::id::DataItemType_Unlock, IsEmpty(), _))
       .WillOnce(Invoke([](auto, auto, auto, auto) {
         return scada::MakeMethodCallResult(scada::StatusCode::Good);
       }));
@@ -164,7 +164,7 @@ TEST_F(ConfigurationModuleTest, EnableCommandRunsPostedUpdateTask) {
       .WillOnce(Invoke([&](const scada::NodeId&, scada::NodeAttributes,
                            scada::NodeProperties properties) {
         EXPECT_THAT(properties,
-                    ElementsAre(Pair(devices::id::DeviceType_Disabled,
+                    ElementsAre(Pair(scada::devices::id::DeviceType_Disabled,
                                      scada::Variant{false})));
         return CompleteLazily(&executed);
       }));
@@ -178,7 +178,7 @@ TEST_F(ConfigurationModuleTest, EnableCommandRunsPostedUpdateTask) {
 TEST_F(ConfigurationModuleTest, ReportsMethodCallSuccessAfterCompletion) {
   EXPECT_CALL(method_service_,
               Call(scada::NodeId{kItemNodeId, 1},
-                   devices::id::DeviceType_Interrogate, IsEmpty(), _))
+                   scada::devices::id::DeviceType_Interrogate, IsEmpty(), _))
       .WillOnce(Invoke([](auto, auto, auto, auto) {
         return scada::MakeMethodCallResult(scada::StatusCode::Good);
       }));
@@ -195,7 +195,7 @@ TEST_F(ConfigurationModuleTest, ReportsMethodCallSuccessAfterCompletion) {
 TEST_F(ConfigurationModuleTest, ReportsMethodCallFailureAfterCompletion) {
   EXPECT_CALL(method_service_,
               Call(scada::NodeId{kItemNodeId, 1},
-                   devices::id::DeviceType_Interrogate, IsEmpty(), _))
+                   scada::devices::id::DeviceType_Interrogate, IsEmpty(), _))
       .WillOnce(Invoke([](auto, auto, auto, auto) {
         return scada::MakeMethodCallResult(
             scada::StatusCode::Bad_WrongMethodId);

@@ -5,5 +5,5 @@
 
 Awaitable<TimeRange> ShowTimeRangeDialog(DialogService& dialog_service,
                                          TimeRangeContext&& context) {
-  return aui::wt::MakeUnsupportedDialogAwaitable<TimeRange>();
+  return scada::aui::wt::MakeUnsupportedDialogAwaitable<TimeRange>();
 }

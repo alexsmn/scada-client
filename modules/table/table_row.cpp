@@ -21,9 +21,10 @@ const ValueFormat kValueFormat{FORMAT_DEFAULT};
 
 namespace {
 
-std::optional<aui::Color> GetNodeColor(const NodeRef& node,
-                                       const scada::DataValue& data_value) {
-  if (!IsInstanceOf(node, data_items::id::DiscreteItemType))
+std::optional<scada::aui::Color> GetNodeColor(
+    const NodeRef& node,
+    const scada::DataValue& data_value) {
+  if (!IsInstanceOf(node, scada::data_items::id::DiscreteItemType))
     return std::nullopt;
 
   if (data_value.value.is_null())
@@ -32,18 +33,19 @@ std::optional<aui::Color> GetNodeColor(const NodeRef& node,
   int color_index = -1;
 
   bool bool_value = false;
-  auto params = node.target(data_items::id::HasTsFormat);
+  auto params = node.target(scada::data_items::id::HasTsFormat);
   if (data_value.value.get(bool_value) && params) {
-    auto pid = bool_value ? data_items::id::TsFormatType_CloseColor
-                          : data_items::id::TsFormatType_OpenColor;
+    auto pid = bool_value ? scada::data_items::id::TsFormatType_CloseColor
+                          : scada::data_items::id::TsFormatType_OpenColor;
     color_index = params[pid].value().get_or(-1);
   }
 
-  if (color_index >= 0 && color_index < static_cast<int>(aui::GetColorCount()))
-    return aui::GetColor(color_index);
+  if (color_index >= 0 &&
+      color_index < static_cast<int>(scada::aui::GetColorCount()))
+    return scada::aui::GetColor(color_index);
 
   if (bool_value)
-    return aui::ColorCode::Red;
+    return scada::aui::ColorCode::Red;
 
   return std::nullopt;
 }
@@ -155,7 +157,7 @@ void TableRow::GetValueCell(TableCellEx& cell) const {
     cell.text_color = color.value();
 
   if (Blinker::GetState() && is_blinking_)
-    cell.cell_color = aui::ColorCode::Yellow;
+    cell.cell_color = scada::aui::ColorCode::Yellow;
 }
 
 void TableRow::GetQualityCell(TableCellEx& cell) const {

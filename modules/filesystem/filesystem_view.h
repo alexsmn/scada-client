@@ -22,14 +22,15 @@ class FileSystemView : public ConfigurationTreeView {
     auto model =
         std::make_shared<ConfigurationTreeModel>(ConfigurationTreeModelContext{
             .executor_ = context.executor_,
-            .node_service_tree_ =
-                std::make_unique<NodeServiceTreeImpl>(NodeServiceTreeImplContext{
-                .executor_ = context.executor_,
-                .node_service_ = context.node_service_,
-                .root_node_ =
-                    context.node_service_.GetNode(filesystem::id::FileSystem),
-                .reference_filter_ = {{scada::id::Organizes, true}},
-                .leaf_type_definition_ids_ = {filesystem::id::FileType}})});
+            .node_service_tree_ = std::make_unique<NodeServiceTreeImpl>(
+                NodeServiceTreeImplContext{
+                    .executor_ = context.executor_,
+                    .node_service_ = context.node_service_,
+                    .root_node_ = context.node_service_.GetNode(
+                        scada::filesystem::id::FileSystem),
+                    .reference_filter_ = {{scada::id::Organizes, true}},
+                    .leaf_type_definition_ids_ = {
+                        scada::filesystem::id::FileType}})});
     model->Init();
     return model;
   }

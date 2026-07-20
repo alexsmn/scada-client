@@ -18,7 +18,7 @@ namespace {
 
 std::optional<std::filesystem::path> GetCachePath() {
   std::filesystem::path path;
-  if (!base::PathService::Get(client::DIR_PUBLIC, &path) || path.empty())
+  if (!scada::base::PathService::Get(client::DIR_PUBLIC, &path) || path.empty())
     return std::nullopt;
   return path / "file-cache.json";
 }
@@ -150,7 +150,7 @@ std::vector<FileCache::DisplayItem> FileCache::FileList::GetFilesContainingItem(
 
 void FileCache::Refresh() {
   std::filesystem::path public_path;
-  if (!base::PathService::Get(client::DIR_PUBLIC, &public_path) ||
+  if (!scada::base::PathService::Get(client::DIR_PUBLIC, &public_path) ||
       !std::filesystem::is_directory(public_path)) {
     return;
   }

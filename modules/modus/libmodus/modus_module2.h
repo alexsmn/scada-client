@@ -1,7 +1,5 @@
 #pragma once
 
-#include "modus/modus_ns_compat.h"
-
 #include <memory>
 
 namespace scada::modus {
@@ -16,14 +14,14 @@ class ModusModule2 {
   explicit ModusModule2(BlinkerManager& blinker_manager);
   ~ModusModule2();
 
-  modus::MasterLibrary& master_library() { return *master_library_; }
+  scada::modus::MasterLibrary& master_library() { return *master_library_; }
   ModusStyleLibrary2& style_library() { return *style_library_; }
 
   static ModusModule2* GetInstance() { return s_instance; }
   static void SetInstance(ModusModule2* instance) { s_instance = instance; }
 
  private:
-  std::unique_ptr<modus::MasterLibrary> master_library_;
+  std::unique_ptr<scada::modus::MasterLibrary> master_library_;
   std::unique_ptr<ModusStyleLibrary2> style_library_;
 
   static ModusModule2* s_instance;

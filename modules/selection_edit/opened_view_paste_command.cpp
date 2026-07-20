@@ -26,7 +26,7 @@ CommandHandler* OpenedViewPasteCommand::GetCommandHandler(unsigned command_id) {
 }
 
 bool OpenedViewPasteCommand::IsCommandEnabled(unsigned command_id) const {
-  base::Check(command_id == ID_PASTE);
+  scada::base::Check(command_id == ID_PASTE);
   auto* selection_model = controller_.GetSelectionModel();
   return selection_model &&
          session_service_.HasPrivilege(scada::Privilege::Configure) &&
@@ -35,7 +35,7 @@ bool OpenedViewPasteCommand::IsCommandEnabled(unsigned command_id) const {
 }
 
 void OpenedViewPasteCommand::ExecuteCommand(unsigned command_id) {
-  base::Check(command_id == ID_PASTE);
+  scada::base::Check(command_id == ID_PASTE);
   CoSpawn(executor_, cancelation_, [this]() mutable -> Awaitable<void> {
     co_await PasteFromClipboardAsync();
     co_return;

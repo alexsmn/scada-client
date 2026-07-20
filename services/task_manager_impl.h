@@ -77,7 +77,7 @@ class TaskManagerImpl : private TaskManagerImplContext,
 
     std::u16string title;
     TaskMethod method;
-    std::optional<base::AsyncCompletion> completion;
+    std::optional<scada::base::AsyncCompletion> completion;
     std::function<void(const scada::Status&)> cancel;
   };
 

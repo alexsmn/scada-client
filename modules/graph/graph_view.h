@@ -21,10 +21,10 @@ class GraphView : protected ControllerContext,
  public:
   explicit GraphView(const ControllerContext& context);
 
-  bool FindColor(aui::Color color) const;
-  aui::Color NewColor() const;
+  bool FindColor(scada::aui::Color color) const;
+  scada::aui::Color NewColor() const;
 
-  void SetGraphColor(aui::Color color);
+  void SetGraphColor(scada::aui::Color color);
 
   // Controller methods
   virtual bool IsWorking() const override;

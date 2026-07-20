@@ -35,7 +35,7 @@ int RequestTableModel::GetRowCount() {
   return static_cast<int>(visible_.size());
 }
 
-void RequestTableModel::GetCell(aui::TableCell& cell) {
+void RequestTableModel::GetCell(scada::aui::TableCell& cell) {
   const auto& request = requests_[visible_[cell.row]];
 
   // Status colouring, opt-in on the reshell theme (transparent under legacy):

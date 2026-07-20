@@ -34,7 +34,7 @@ std::u16string GetCommandCategoryTitle(CommandCategory category) {
       "Interval",  // CATEGORY_INTERVAL
   };
   static_assert(std::size(kTitles) == static_cast<size_t>(CATEGORY_COUNT));
-  base::Check(category >= 0 && category < std::size(kTitles));
+  scada::base::Check(category >= 0 && category < std::size(kTitles));
   return Translate(kTitles[category]);
 }
 
@@ -52,10 +52,10 @@ ActionManager::ActionManager() {}
 ActionManager::~ActionManager() {}
 
 Action& ActionManager::AddAction(Action action) {
-  base::Check(!FindAction(action.command_id()));
+  scada::base::Check(!FindAction(action.command_id()));
   const auto command_id = action.command_id();
   auto [it, inserted] = action_map_.emplace(command_id, std::move(action));
-  base::Check(inserted);
+  scada::base::Check(inserted);
   actions_.push_back(&it->second);
   return it->second;
 }

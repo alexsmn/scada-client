@@ -52,7 +52,7 @@ class ChangePasswordTest : public Test {
 TEST_F(ChangePasswordTest, ReportsSuccessAfterMethodCallCompletes) {
   EXPECT_CALL(method_service_,
               Call(scada::NodeId{kUserNodeId, 1},
-                   security::id::UserType_ChangePassword, SizeIs(2), _))
+                   scada::security::id::UserType_ChangePassword, SizeIs(2), _))
       .WillOnce(Invoke([](auto, auto, auto, auto) {
         return scada::MakeMethodCallResult(scada::StatusCode::Good);
       }));
@@ -72,7 +72,7 @@ TEST_F(ChangePasswordTest, ReportsSuccessAfterMethodCallCompletes) {
 TEST_F(ChangePasswordTest, ReportsFailureAfterMethodCallCompletes) {
   EXPECT_CALL(method_service_,
               Call(scada::NodeId{kUserNodeId, 1},
-                   security::id::UserType_ChangePassword, SizeIs(2), _))
+                   scada::security::id::UserType_ChangePassword, SizeIs(2), _))
       .WillOnce(Invoke([](auto, auto, auto, auto) {
         return scada::MakeMethodCallResult(
             scada::StatusCode::Bad_WrongMethodId);

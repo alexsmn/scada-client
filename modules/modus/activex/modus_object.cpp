@@ -1,7 +1,5 @@
 ﻿#include "modus/activex/modus_object.h"
 
-#include "modus/modus_ns_compat.h"
-
 #include "modus/activex/modus_element.h"
 
 #include <string_view>

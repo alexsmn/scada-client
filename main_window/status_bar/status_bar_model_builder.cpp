@@ -6,8 +6,8 @@
 #include "main_window/status_bar/session_status_provider.h"
 #include "main_window/status_bar/user_status_provider.h"
 
-std::shared_ptr<aui::StatusBarModel> StatusBarModelBuilder::Build() {
-  auto model = std::make_shared<aui::StatusBarModelImpl>();
+std::shared_ptr<scada::aui::StatusBarModel> StatusBarModelBuilder::Build() {
+  auto model = std::make_shared<scada::aui::StatusBarModelImpl>();
 
   // Event count and min severity.
 

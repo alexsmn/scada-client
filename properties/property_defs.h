@@ -6,7 +6,8 @@ using PropertyValue = std::pair<std::u16string, bool /*read_only*/>;
 
 class ReferencePropertyDefinition : public PropertyDefinition {
  public:
-  ReferencePropertyDefinition() : PropertyDefinition(aui::TableColumn::LEFT) {}
+  ReferencePropertyDefinition()
+      : PropertyDefinition(scada::aui::TableColumn::LEFT) {}
 
   // PropertyDefinition
   virtual std::u16string GetText(
@@ -17,7 +18,7 @@ class ReferencePropertyDefinition : public PropertyDefinition {
                        const NodeRef& node,
                        const scada::NodeId& prop_decl_id,
                        const std::u16string& text) const override;
-  virtual aui::EditData GetPropertyEditor(
+  virtual scada::aui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
@@ -27,14 +28,15 @@ class ReferencePropertyDefinition : public PropertyDefinition {
 
 class BoolPropertyDefinition : public PropertyDefinition {
  public:
-  BoolPropertyDefinition() : PropertyDefinition(aui::TableColumn::CENTER) {}
+  BoolPropertyDefinition()
+      : PropertyDefinition(scada::aui::TableColumn::CENTER) {}
 
   // PropertyDefinition
   virtual std::u16string GetText(
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
-  virtual aui::EditData GetPropertyEditor(
+  virtual scada::aui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
@@ -42,7 +44,8 @@ class BoolPropertyDefinition : public PropertyDefinition {
 
 class EnumPropertyDefinition : public PropertyDefinition {
  public:
-  EnumPropertyDefinition() : PropertyDefinition(aui::TableColumn::LEFT) {}
+  EnumPropertyDefinition()
+      : PropertyDefinition(scada::aui::TableColumn::LEFT) {}
 
   // PropertyDefinition
   virtual std::u16string GetText(
@@ -53,7 +56,7 @@ class EnumPropertyDefinition : public PropertyDefinition {
                        const NodeRef& node,
                        const scada::NodeId& prop_decl_id,
                        const std::u16string& text) const override;
-  virtual aui::EditData GetPropertyEditor(
+  virtual scada::aui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
@@ -61,10 +64,11 @@ class EnumPropertyDefinition : public PropertyDefinition {
 
 class TransportPropertyDefinition : public PropertyDefinition {
  public:
-  TransportPropertyDefinition() : PropertyDefinition(aui::TableColumn::LEFT) {}
+  TransportPropertyDefinition()
+      : PropertyDefinition(scada::aui::TableColumn::LEFT) {}
 
   // PropertyDefinition
-  virtual aui::EditData GetPropertyEditor(
+  virtual scada::aui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
@@ -76,7 +80,8 @@ class TransportPropertyDefinition : public PropertyDefinition {
 
 class ColorPropertyDefinition : public PropertyDefinition {
  public:
-  ColorPropertyDefinition() : PropertyDefinition(aui::TableColumn::LEFT) {}
+  ColorPropertyDefinition()
+      : PropertyDefinition(scada::aui::TableColumn::LEFT) {}
 
   // PropertyDefinition
   virtual std::u16string GetText(
@@ -87,7 +92,7 @@ class ColorPropertyDefinition : public PropertyDefinition {
                        const NodeRef& node,
                        const scada::NodeId& prop_decl_id,
                        const std::u16string& text) const override;
-  virtual aui::EditData GetPropertyEditor(
+  virtual scada::aui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;

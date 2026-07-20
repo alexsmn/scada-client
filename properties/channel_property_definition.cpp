@@ -41,7 +41,7 @@ std::u16string ChannelPropertyDefinition::GetTitle(
 scada::NodeId ChannelPropertyDefinition::GetDeviceId(
     const NodeRef& node,
     const scada::NodeId& prop_decl_id) {
-  if (!IsInstanceOf(node, data_items::id::DataItemType))
+  if (!IsInstanceOf(node, scada::data_items::id::DataItemType))
     return {};
 
   auto channel_path = node[prop_decl_id].value().get_or(std::string{});
@@ -69,7 +69,7 @@ std::u16string ChannelPropertyDefinition::GetText(
     const PropertyContext& context,
     const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
-  if (!IsInstanceOf(node, data_items::id::DataItemType))
+  if (!IsInstanceOf(node, scada::data_items::id::DataItemType))
     return std::u16string();
 
   auto channel_path = node[prop_decl_id].value().get_or(std::string{});
@@ -96,15 +96,16 @@ void ChannelPropertyDefinition::SetText(const PropertyContext& context,
                                         const NodeRef& node,
                                         const scada::NodeId& prop_decl_id,
                                         const std::u16string& text) const {
-  if (!IsInstanceOf(node, data_items::id::DataItemType))
+  if (!IsInstanceOf(node, scada::data_items::id::DataItemType))
     return;
 
   scada::NodeId new_device_id;
   if (device_) {
-    new_device_id = FindNodeByNameAndType(
-                        context.node_service_.GetNode(devices::id::Devices),
-                        text, devices::id::DeviceType)
-                        .node_id();
+    new_device_id =
+        FindNodeByNameAndType(
+            context.node_service_.GetNode(scada::devices::id::Devices), text,
+            scada::devices::id::DeviceType)
+            .node_id();
   }
 
   auto channel_path = node[prop_decl_id].value().get_or(std::string{});
@@ -119,9 +120,9 @@ void ChannelPropertyDefinition::SetText(const PropertyContext& context,
   std::string formula;
   if (!parent_id.is_null()) {
     if (item_path.empty()) {
-      item_path =
-          ToString(context.node_service_.GetNode(devices::id::DeviceType_Online)
-                       .browse_name());
+      item_path = ToString(
+          context.node_service_.GetNode(scada::devices::id::DeviceType_Online)
+              .browse_name());
     }
     formula = MakeNodeIdFormula(MakeNestedNodeId(parent_id, item_path));
   } else {
@@ -132,17 +133,17 @@ void ChannelPropertyDefinition::SetText(const PropertyContext& context,
                                        {{prop_decl_id, std::move(formula)}});
 }
 
-aui::EditData ChannelPropertyDefinition::GetPropertyEditor(
+scada::aui::EditData ChannelPropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,
     const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
-  aui::EditData result{aui::EditData::EditorType::DROPDOWN};
+  scada::aui::EditData result{scada::aui::EditData::EditorType::DROPDOWN};
 
   if (device_) {
     result.async_choice_handler = MakeAsyncChoiceHandler(
         context.executor_,
-        context.node_service_.GetNode(devices::id::Devices),
-        devices::id::DeviceType);
+        context.node_service_.GetNode(scada::devices::id::Devices),
+        scada::devices::id::DeviceType);
 
   } else {
     auto channel_path = node[prop_decl_id].value().get_or(std::string{});

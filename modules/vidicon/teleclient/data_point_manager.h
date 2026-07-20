@@ -3,8 +3,6 @@
 #include <functional>
 #include <stop_token>
 
-#include "vidicon/vidicon_compat.h"
-
 namespace opc_client {
 struct DataValue;
 }

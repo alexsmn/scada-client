@@ -4,9 +4,9 @@
 
 struct GraphViewSaver {
   void Save() {
-    base::Time time =
-        base::Time::FromDoubleT(graph_.horizontal_axis().range().high());
-    base::TimeDelta span =
+    scada::base::Time time =
+        scada::base::Time::FromDoubleT(graph_.horizontal_axis().range().high());
+    scada::base::TimeDelta span =
         TimeDeltaFromSecondsF(graph_.horizontal_axis().range().delta());
 
     // time scale
@@ -29,8 +29,8 @@ struct GraphViewSaver {
     SaveTimeRange(definition_, graph_view_.GetTimeRange());
 
     definition_.AddItem("Graph").SetString(
-        "bk_color",
-        aui::ColorToString(graph_.palette().color(graph_.backgroundRole())));
+        "bk_color", scada::aui::ColorToString(
+                        graph_.palette().color(graph_.backgroundRole())));
   }
 
   void SavePane(const GraphPane& pane) {
@@ -51,7 +51,7 @@ struct GraphViewSaver {
     WindowItem& item = definition_.AddItem("Item");
     item.SetInt("pane", pane_ix);
     item.SetString("path", line.data_source().GetPath());
-    item.SetString("clr", aui::ColorToString(line.color()));
+    item.SetString("clr", scada::aui::ColorToString(line.color()));
     item.SetInt("width", line.line_weight());
     item.SetInt("dots", line.dots_shown() ? 1 : 0);
     item.SetInt("stepped", line.stepped() ? 1 : 0);

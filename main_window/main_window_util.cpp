@@ -27,29 +27,31 @@
 Awaitable<void> OpenView(MainWindowInterface* main_window,
                          const WindowDefinition& window_def,
                          bool activate) {
-  base::Check(main_window);
+  scada::base::Check(main_window);
   co_await main_window->OpenView(window_def, activate);
   co_return;
 }
 
-const WindowInfo& GetDefaultNodeWindowInfo(const NodeRef& node,
-                                           aui::KeyModifiers key_modifiers) {
-  if (IsInstanceOf(node, data_items::id::DataGroupType))
+const WindowInfo& GetDefaultNodeWindowInfo(
+    const NodeRef& node,
+    scada::aui::KeyModifiers key_modifiers) {
+  if (IsInstanceOf(node, scada::data_items::id::DataGroupType))
     return kTableWindowInfo;
 #if !defined(UI_WT)
-  else if (IsInstanceOf(node, data_items::id::DataItemType))
+  else if (IsInstanceOf(node, scada::data_items::id::DataItemType))
     return kGraphWindowInfo;
 #endif
-  else if (IsInstanceOf(node, devices::id::DeviceType))
+  else if (IsInstanceOf(node, scada::devices::id::DeviceType))
     return kWatchWindowInfo;
   else
-    return (key_modifiers & aui::ControlModifier) ? kTableEditorWindowInfo
-                                                  : kNodePropertyWindowInfo;
+    return (key_modifiers & scada::aui::ControlModifier)
+               ? kTableEditorWindowInfo
+               : kNodePropertyWindowInfo;
 }
 
 bool ExecuteDefaultNodeCommand(const AnyExecutor& executor,
                                const NodeCommandContext& context) {
-  base::Check(context.main_window);
+  scada::base::Check(context.main_window);
 
   const auto& window_info =
       GetDefaultNodeWindowInfo(context.node, context.key_modifiers);
@@ -58,30 +60,31 @@ bool ExecuteDefaultNodeCommand(const AnyExecutor& executor,
   ContentsModel* contents = view ? view->GetContents() : nullptr;
   if (view && contents && view->GetWindowInfo().can_insert_item()) {
     if ((&view->GetWindowInfo() == &window_info) ||
-        (context.key_modifiers & aui::ControlModifier)) {
+        (context.key_modifiers & scada::aui::ControlModifier)) {
       // insert items into active frame
       // TODO: Capture weak pointer.
-      CoSpawn(executor,
-              [executor, contents, node = context.node,
-               key_modifiers = context.key_modifiers,
-               is_group = IsInstanceOf(context.node,
-                                       data_items::id::DataGroupType)]() mutable
-                  -> Awaitable<void> {
-                NodeIdSet node_ids;
-                if (is_group) {
-                  node_ids = co_await ExpandGroupItemIdsAsync(executor, node);
-                } else {
-                  node_ids = MakeNodeIdSet(node.node_id());
-                }
-                unsigned flags = (key_modifiers & aui::ControlModifier)
-                                     ? ContentsModel::APPEND
-                                     : 0;
-                for (const auto& node_id : node_ids) {
-                  contents->AddContainedItem(node_id, flags);
-                  flags |= ContentsModel::APPEND;
-                }
-                co_return;
-              });
+      CoSpawn(
+          executor,
+          [executor, contents, node = context.node,
+           key_modifiers = context.key_modifiers,
+           is_group = IsInstanceOf(
+               context.node, scada::data_items::id::DataGroupType)]() mutable
+              -> Awaitable<void> {
+            NodeIdSet node_ids;
+            if (is_group) {
+              node_ids = co_await ExpandGroupItemIdsAsync(executor, node);
+            } else {
+              node_ids = MakeNodeIdSet(node.node_id());
+            }
+            unsigned flags = (key_modifiers & scada::aui::ControlModifier)
+                                 ? ContentsModel::APPEND
+                                 : 0;
+            for (const auto& node_id : node_ids) {
+              contents->AddContainedItem(node_id, flags);
+              flags |= ContentsModel::APPEND;
+            }
+            co_return;
+          });
       return true;
     }
   }

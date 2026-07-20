@@ -47,8 +47,8 @@ WriteModule::WriteModule(WriteModuleContext&& context)
              // Allow writing to all variables. Except for data items: check
              // an output channel is present.
              auto node = context.selection.node();
-             return !IsInstanceOf(node, data_items::id::DataItemType) ||
-                    !node[data_items::id::DataItemType_Output]
+             return !IsInstanceOf(node, scada::data_items::id::DataItemType) ||
+                    !node[scada::data_items::id::DataItemType_Output]
                          .value()
                          .is_null();
            },
@@ -77,6 +77,6 @@ WriteModule::WriteModule(WriteModuleContext&& context)
            [this](const SelectionCommandContext& context) {
              return session_service_.HasPrivilege(scada::Privilege::Control) &&
                     IsInstanceOf(context.selection.node(),
-                                 data_items::id::DataItemType);
+                                 scada::data_items::id::DataItemType);
            }});
 }

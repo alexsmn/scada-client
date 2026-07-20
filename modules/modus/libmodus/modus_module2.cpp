@@ -12,10 +12,10 @@ ModusModule2* ModusModule2::s_instance = nullptr;
 ModusModule2::ModusModule2(BlinkerManager& blinker_manager)
     : style_library_{std::make_unique<ModusStyleLibrary2>(blinker_manager)} {
   std::filesystem::path path;
-  base::PathService::Get(client::DIR_DATA, &path);
+  scada::base::PathService::Get(client::DIR_DATA, &path);
   path /= "Library.txt";
-  master_library_ = std::make_unique<modus::MasterLibrary>();
-  modus::LoadMasterLibrary(*master_library_, path.string());
+  master_library_ = std::make_unique<scada::modus::MasterLibrary>();
+  scada::modus::LoadMasterLibrary(*master_library_, path.string());
 }
 
 ModusModule2::~ModusModule2() {}

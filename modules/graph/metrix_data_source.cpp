@@ -56,7 +56,7 @@ class MetrixPointEnum : public PointEnumerator {
 
   // Time of last returned value. Supposed for detection if current value is
   // duplicate of last historical value.
-  base::Time last_value_time_;
+  scada::base::Time last_value_time_;
 };
 
 bool MetrixPointEnum::Reset(double x_from,
@@ -64,19 +64,20 @@ bool MetrixPointEnum::Reset(double x_from,
                             bool include_left_bound,
                             bool include_right_bound) {
   count_ = 0;
-  last_value_time_ = base::Time();
+  last_value_time_ = scada::base::Time();
   enum_right_bound_ = x_to;
   enum_include_right_bound_ = include_right_bound;
   enum_current_passed_ = false;
 
   const auto& values = timed_data_.values();
 
-  current_position_ = LowerBound(values, base::Time::FromDoubleT(x_from));
+  current_position_ =
+      LowerBound(values, scada::base::Time::FromDoubleT(x_from));
   if (include_left_bound && current_position_ != 0) {
     --current_position_;
   }
 
-  last_position_ = UpperBound(values, base::Time::FromDoubleT(x_to));
+  last_position_ = UpperBound(values, scada::base::Time::FromDoubleT(x_to));
   if (include_right_bound && last_position_ != values.size()) {
     ++last_position_;
   }
@@ -171,7 +172,8 @@ bool MetrixDataSource::XToData(double& x, scada::DataValue& val) const {
   if (!connected())
     return false;
 
-  if (const auto* value = timed_data_.GetValueAt(base::Time::FromDoubleT(x))) {
+  if (const auto* value =
+          timed_data_.GetValueAt(scada::base::Time::FromDoubleT(x))) {
     val = *value;
     return true;
   } else {
@@ -199,12 +201,12 @@ void MetrixDataSource::UpdateRange() {
   range_ = {};
 
   if (auto node = timed_data_.node();
-      IsInstanceOf(node, data_items::id::AnalogItemType)) {
-    range_ =
-        GraphRange(node[data_items::id::AnalogItemType_EuLo].value().get_or(
-                       kGraphUnknownValue),
-                   node[data_items::id::AnalogItemType_EuHi].value().get_or(
-                       kGraphUnknownValue));
+      IsInstanceOf(node, scada::data_items::id::AnalogItemType)) {
+    range_ = GraphRange(
+        node[scada::data_items::id::AnalogItemType_EuLo].value().get_or(
+            kGraphUnknownValue),
+        node[scada::data_items::id::AnalogItemType_EuHi].value().get_or(
+            kGraphUnknownValue));
   }
 
   // Auto-compute range from data when node limits are unavailable.
@@ -228,14 +230,18 @@ void MetrixDataSource::UpdateRange() {
 
 void MetrixDataSource::UpdateLimits() {
   if (auto node = timed_data_.node()) {
-    limit_lo_ = node[data_items::id::AnalogItemType_LimitLo].value().get_or(
-        kGraphUnknownValue);
-    limit_hi_ = node[data_items::id::AnalogItemType_LimitHi].value().get_or(
-        kGraphUnknownValue);
-    limit_lolo_ = node[data_items::id::AnalogItemType_LimitLoLo].value().get_or(
-        kGraphUnknownValue);
-    limit_hihi_ = node[data_items::id::AnalogItemType_LimitHiHi].value().get_or(
-        kGraphUnknownValue);
+    limit_lo_ =
+        node[scada::data_items::id::AnalogItemType_LimitLo].value().get_or(
+            kGraphUnknownValue);
+    limit_hi_ =
+        node[scada::data_items::id::AnalogItemType_LimitHi].value().get_or(
+            kGraphUnknownValue);
+    limit_lolo_ =
+        node[scada::data_items::id::AnalogItemType_LimitLoLo].value().get_or(
+            kGraphUnknownValue);
+    limit_hihi_ =
+        node[scada::data_items::id::AnalogItemType_LimitHiHi].value().get_or(
+            kGraphUnknownValue);
   } else {
     limit_lo_ = kGraphUnknownValue;
     limit_hi_ = kGraphUnknownValue;

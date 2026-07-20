@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include "aui/models/status_bar_model.h"
 
 #include <gmock/gmock.h>

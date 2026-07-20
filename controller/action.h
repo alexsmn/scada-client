@@ -26,17 +26,17 @@ enum CommandCategory {
 
 class Shortcut {
  public:
-  Shortcut(aui::KeyCode key_code) : key_code_{key_code} {}
-  Shortcut(aui::KeyModifier key_modifier, aui::KeyCode key_code)
-      : modifiers_{static_cast<aui::KeyModifiers>(key_modifier)},
+  Shortcut(scada::aui::KeyCode key_code) : key_code_{key_code} {}
+  Shortcut(scada::aui::KeyModifier key_modifier, scada::aui::KeyCode key_code)
+      : modifiers_{static_cast<scada::aui::KeyModifiers>(key_modifier)},
         key_code_{key_code} {}
 
-  aui::KeyCode key_code() const { return key_code_; }
-  aui::KeyModifiers modifiers() const { return modifiers_; }
+  scada::aui::KeyCode key_code() const { return key_code_; }
+  scada::aui::KeyModifiers modifiers() const { return modifiers_; }
 
  private:
-  aui::KeyCode key_code_ = aui::KeyCode::Unknown;
-  aui::KeyModifiers modifiers_{};
+  scada::aui::KeyCode key_code_ = scada::aui::KeyCode::Unknown;
+  scada::aui::KeyModifiers modifiers_{};
 };
 
 struct Action {

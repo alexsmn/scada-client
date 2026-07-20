@@ -5,8 +5,9 @@
 
 // PropertyDefinition
 
-PropertyDefinition::PropertyDefinition(aui::TableColumn::Alignment alignment,
-                                       int width)
+PropertyDefinition::PropertyDefinition(
+    scada::aui::TableColumn::Alignment alignment,
+    int width)
     : alignment_(alignment), width_(width) {}
 
 std::u16string PropertyDefinition::GetTitle(
@@ -35,21 +36,21 @@ void PropertyDefinition::SetText(const PropertyContext& context,
   SetTextHelper(context, node, prop_decl_id, text);
 }
 
-aui::EditData PropertyDefinition::GetPropertyEditor(
+scada::aui::EditData PropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,
     const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
   const auto& type_definition = node.type_definition();
   const auto& property_declaration = type_definition[prop_decl_id];
   if (!property_declaration)
-    return aui::EditData{aui::EditData::EditorType::NONE};
+    return scada::aui::EditData{scada::aui::EditData::EditorType::NONE};
 
   // The type system comes from the server; only variable declarations are
   // editable as text.
   if (property_declaration.node_class() != scada::NodeClass::Variable)
-    return aui::EditData{aui::EditData::EditorType::NONE};
+    return scada::aui::EditData{scada::aui::EditData::EditorType::NONE};
 
-  return aui::EditData{aui::EditData::EditorType::TEXT};
+  return scada::aui::EditData{scada::aui::EditData::EditorType::TEXT};
 }
 
 void PropertyDefinition::HandleEditButton(

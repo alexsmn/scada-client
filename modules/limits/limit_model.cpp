@@ -14,10 +14,10 @@ std::u16string LimitModel::GetSourceTitle() const {
 }
 
 LimitModel::Limits LimitModel::GetLimits() const {
-  auto lo = node_[data_items::id::AnalogItemType_LimitLo].value();
-  auto hi = node_[data_items::id::AnalogItemType_LimitHi].value();
-  auto lolo = node_[data_items::id::AnalogItemType_LimitLoLo].value();
-  auto hihi = node_[data_items::id::AnalogItemType_LimitHiHi].value();
+  auto lo = node_[scada::data_items::id::AnalogItemType_LimitLo].value();
+  auto hi = node_[scada::data_items::id::AnalogItemType_LimitHi].value();
+  auto lolo = node_[scada::data_items::id::AnalogItemType_LimitLoLo].value();
+  auto hihi = node_[scada::data_items::id::AnalogItemType_LimitHiHi].value();
 
   return {FormatValue(node_, lo, {}, 0), FormatValue(node_, hi, {}, 0),
           FormatValue(node_, lolo, {}, 0), FormatValue(node_, hihi, {}, 0)};
@@ -34,10 +34,14 @@ void LimitModel::WriteLimits(const Limits& limits) {
                                         : ParseWithDefault(limits.hihi, 0.0);
 
   scada::NodeProperties properties;
-  properties.emplace_back(data_items::id::AnalogItemType_LimitLo, limit_lo);
-  properties.emplace_back(data_items::id::AnalogItemType_LimitHi, limit_hi);
-  properties.emplace_back(data_items::id::AnalogItemType_LimitLoLo, limit_lolo);
-  properties.emplace_back(data_items::id::AnalogItemType_LimitHiHi, limit_hihi);
+  properties.emplace_back(scada::data_items::id::AnalogItemType_LimitLo,
+                          limit_lo);
+  properties.emplace_back(scada::data_items::id::AnalogItemType_LimitHi,
+                          limit_hi);
+  properties.emplace_back(scada::data_items::id::AnalogItemType_LimitLoLo,
+                          limit_lolo);
+  properties.emplace_back(scada::data_items::id::AnalogItemType_LimitHiHi,
+                          limit_hihi);
 
   task_manager_.PostUpdateTask(node_.node_id(), {}, properties);
 }

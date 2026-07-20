@@ -8,7 +8,7 @@ class TestStorage {
   scada::NodeId Insert(scada::NodeState&& node_state) {
     if (node_state.node_id.is_null()) {
       // TODO: Set namespace based on the node type definition.
-      node_state.node_id = {next_node_id_++, NamespaceIndexes::GROUP};
+      node_state.node_id = {next_node_id_++, scada::NamespaceIndexes::GROUP};
     }
 
     auto* parent_node = FindNode(node_state.parent_id);

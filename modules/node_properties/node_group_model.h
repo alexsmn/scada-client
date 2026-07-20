@@ -7,7 +7,7 @@
 class NodePropertyModel;
 class PropertyDefinition;
 
-class NodeGroupModel : public aui::PropertyGroup {
+class NodeGroupModel : public scada::aui::PropertyGroup {
  public:
   explicit NodeGroupModel(NodePropertyModel& property_model);
   ~NodeGroupModel();
@@ -19,7 +19,7 @@ class NodeGroupModel : public aui::PropertyGroup {
   virtual ItemType GetType(int index) const override;
   virtual bool IsInherited(int index) const override;
   virtual void SetValue(int index, const std::u16string& value) override;
-  virtual aui::EditData GetEditData(int index) const override;
+  virtual scada::aui::EditData GetEditData(int index) const override;
   virtual void HandleEditButton(int index) const override;
 
   struct Property {

@@ -175,7 +175,7 @@ LoginController::LoginController(AnyExecutor executor,
   }
 
   // Backward compatibility.
-  base::Check(!server_type_data_.empty());
+  scada::base::Check(!server_type_data_.empty());
   if (server_type_data_[0].host.empty())
     server_type_data_[0].host = settings_store_->ReadString("Host");
 

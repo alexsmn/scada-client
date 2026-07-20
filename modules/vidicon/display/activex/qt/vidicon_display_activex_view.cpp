@@ -40,7 +40,7 @@ dispatch.GetIDsOfNames(IID_NULL, const_cast<LPOLESTR*>(&name), 1,
 }  // namespace
 
 VidiconDisplayActiveXView::VidiconDisplayActiveXView(
-    vidicon::VidiconClient& vidicon_client)
+    scada::vidicon::VidiconClient& vidicon_client)
     : vidicon_client_{vidicon_client} {}
 
 VidiconDisplayActiveXView::~VidiconDisplayActiveXView() {}
@@ -83,7 +83,8 @@ std::unique_ptr<UiView> VidiconDisplayActiveXView::Init(
     form_->put_AxBorderStyle(ViewerX::afbNone);
 
     auto full_path = GetPublicFilePath(path_);
-    form_->put_FileName(base::win::ScopedBstr(full_path.wstring().c_str()));
+    form_->put_FileName(
+        scada::base::win::ScopedBstr(full_path.wstring().c_str()));
 
     /*synchronize_timer_.Start(
         FROM_HERE, base::TimeDelta::FromMilliseconds(10),

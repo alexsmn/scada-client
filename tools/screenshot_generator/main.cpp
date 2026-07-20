@@ -71,8 +71,8 @@
 
 namespace {
 
-using screenshot_generator::WaitForAwaitable;
-using screenshot_generator::WaitForPendingNodeLoads;
+using scada::screenshot_generator::WaitForAwaitable;
+using scada::screenshot_generator::WaitForPendingNodeLoads;
 
 // Global config loaded once per test suite.
 ScreenshotConfig g_config;
@@ -89,15 +89,15 @@ bool WaitUntil(Predicate&& predicate, int timeout_ms = 5000) {
   return true;
 }
 
-aui::Tree* FindTreeWidget(QWidget* widget) {
+scada::aui::Tree* FindTreeWidget(QWidget* widget) {
   if (!widget)
     return nullptr;
 
-  if (auto* tree = dynamic_cast<aui::Tree*>(widget))
+  if (auto* tree = dynamic_cast<scada::aui::Tree*>(widget))
     return tree;
 
   for (auto* child : widget->findChildren<QWidget*>()) {
-    if (auto* tree = dynamic_cast<aui::Tree*>(child))
+    if (auto* tree = dynamic_cast<scada::aui::Tree*>(child))
       return tree;
   }
 
@@ -115,7 +115,7 @@ class ScreenshotGenerator : public ::testing::Test {
     // address in the login dialog. Redirect the default format into a
     // scratch ini tree so every run renders from a factory-fresh profile
     // regardless of the machine.
-    static base::NoDestructor<QTemporaryDir> settings_dir;
+    static scada::base::NoDestructor<QTemporaryDir> settings_dir;
     QSettings::setPath(QSettings::IniFormat, QSettings::UserScope,
                        settings_dir->path());
     QSettings::setPath(QSettings::IniFormat, QSettings::SystemScope,
@@ -173,7 +173,7 @@ class ScreenshotGenerator : public ::testing::Test {
       .session_service = &session_service_,
   };
 
-  base::ScopedPathOverride private_dir_override_{client::DIR_PRIVATE};
+  scada::base::ScopedPathOverride private_dir_override_{client::DIR_PRIVATE};
 
   ClientApplication app_{ClientApplicationContext{
       .io_context_ = io_context_,
@@ -274,7 +274,7 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
   ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
 
   // Let async data loads and model updates complete.
-  screenshot_generator::PumpEventLoopFor(std::chrono::seconds(1));
+  scada::screenshot_generator::PumpEventLoopFor(std::chrono::seconds(1));
 
   const auto& main_windows = app_.main_window_manager().main_windows();
   ASSERT_EQ(main_windows.size(), 1u);
@@ -492,7 +492,7 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
   EXPECT_GT(actions_with_icons, 0)
       << "no toolbar action resolved an icon (LoadPixmap/qrc regression)";
 
-  aui::Tree* tree = nullptr;
+  scada::aui::Tree* tree = nullptr;
   QDockWidget* tree_dock = nullptr;
   for (OpenedView* view : main_window.opened_views()) {
     if (view->window_info().name != "Struct")
@@ -692,17 +692,17 @@ TEST_F(ScreenshotGenerator, EventFilterBarEnumeratesAreas) {
   for (const EventAreaEntry& area : areas) {
     EXPECT_FALSE(area.name.empty());
     NodeRef node = node_service.GetNode(area.node_id);
-    EXPECT_FALSE(IsInstanceOf(node, data_items::id::DataItemType))
+    EXPECT_FALSE(IsInstanceOf(node, scada::data_items::id::DataItemType))
         << "an area must not be a leaf data item";
   }
 
   // The DataItems root also holds loose top-level data items; the enumeration
   // partitions its Organizes children exactly into areas + excluded leaves.
   std::vector<NodeRef> children = node_service.GetTargets(
-      data_items::id::DataItems, scada::id::Organizes, /*forward=*/true);
+      scada::data_items::id::DataItems, scada::id::Organizes, /*forward=*/true);
   size_t leaf_count = 0;
   for (NodeRef& child : children) {
-    if (IsInstanceOf(child, data_items::id::DataItemType))
+    if (IsInstanceOf(child, scada::data_items::id::DataItemType))
       ++leaf_count;
   }
   EXPECT_EQ(areas.size() + leaf_count, children.size());

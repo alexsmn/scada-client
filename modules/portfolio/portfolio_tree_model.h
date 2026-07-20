@@ -7,7 +7,7 @@
 
 class PortfolioManager;
 
-class PortfolioTreeNode : public aui::TreeNode<PortfolioTreeNode> {
+class PortfolioTreeNode : public scada::aui::TreeNode<PortfolioTreeNode> {
  public:
   PortfolioTreeNode(PortfolioManager& portfolio_manager,
                     const Portfolio& portfolio)
@@ -40,7 +40,7 @@ class PortfolioTreeNode : public aui::TreeNode<PortfolioTreeNode> {
   int icon_ = -1;
 };
 
-class PortfolioTreeModel : public aui::TreeNodeModel<PortfolioTreeNode>,
+class PortfolioTreeModel : public scada::aui::TreeNodeModel<PortfolioTreeNode>,
                            protected PortfolioEvents {
  public:
   PortfolioTreeModel(NodeService& node_service,

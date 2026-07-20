@@ -21,7 +21,7 @@ CommandHandler* OpenedViewExcelExportCommand::GetCommandHandler(
 }
 
 void OpenedViewExcelExportCommand::ExecuteCommand(unsigned command_id) {
-  base::Check(command_id == ID_EXPORT_EXCEL);
+  scada::base::Check(command_id == ID_EXPORT_EXCEL);
   auto* export_model = export_model_getter_();
   if (!export_model) {
     return;

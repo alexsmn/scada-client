@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #if defined(UI_QT)
 #include <QRect>
 #elif defined(UI_WT)

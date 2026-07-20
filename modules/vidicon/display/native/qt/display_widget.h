@@ -7,9 +7,10 @@
 class DisplayWidget : public GdiWidget2 {
  public:
   explicit DisplayWidget(QWidget* parent = nullptr) : GdiWidget2{parent} {
-    display_.set_invalidate_handler([this](const vidicon::display_rect& rect) {
-      update(ToQRect(display_.viewport_rect(viewport(), rect)));
-    });
+    display_.set_invalidate_handler(
+        [this](const scada::vidicon::display_rect& rect) {
+          update(ToQRect(display_.viewport_rect(viewport(), rect)));
+        });
 
     display_.set_exec_command_handler([this](std::wstring_view command_name,
                                              std::span<const VARIANT> args) {
@@ -30,7 +31,7 @@ class DisplayWidget : public GdiWidget2 {
     display_.open(path, teleclient);
   }
 
-  vidicon::shape shapeAt(const QPoint& p) const {
+  scada::vidicon::shape shapeAt(const QPoint& p) const {
     return display_.shape_at(viewport(), ToPOINT(p));
   }
 
@@ -63,12 +64,12 @@ class DisplayWidget : public GdiWidget2 {
   CommandHandler command_handler;
 
  protected:
-  vidicon::display_viewport viewport() const {
+  scada::vidicon::display_viewport viewport() const {
     return {.rect = {.right = width(), .bottom = height()}};
   }
 
   virtual void paint(HDC dc, const RECT& rect) override {
-    display_.draw(dc, vidicon::display_viewport{.rect = rect});
+    display_.draw(dc, scada::vidicon::display_viewport{.rect = rect});
   }
 
   virtual QString tooltipAt(const QPoint& p) const override {
@@ -77,10 +78,10 @@ class DisplayWidget : public GdiWidget2 {
 
  private:
   // Lazy initialization.
-  inline static const vidicon::display_library& GetDisplayLib() {
-    static const vidicon::display_library lib;
+  inline static const scada::vidicon::display_library& GetDisplayLib() {
+    static const scada::vidicon::display_library lib;
     return lib;
   }
 
-  vidicon::display display_{GetDisplayLib()};
+  scada::vidicon::display display_{GetDisplayLib()};
 };

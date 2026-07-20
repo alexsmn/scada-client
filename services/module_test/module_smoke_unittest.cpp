@@ -26,8 +26,8 @@ TEST(ScadaClientServicesModuleSmoke, TransitiveSurfaces) {
   // scada.common / scada.client.aui via the export import chain.
   scada::NodeProperties properties;
   EXPECT_EQ(scada::FindProperty(properties, scada::NodeId{1, 0}), nullptr);
-  static_assert(std::is_class_v<aui::SimpleMenuModel>);
-  base::Check(true, "client services module smoke");
+  static_assert(std::is_class_v<scada::aui::SimpleMenuModel>);
+  scada::base::Check(true, "client services module smoke");
 }
 
 }  // namespace

@@ -8,13 +8,13 @@
 class ConditionalFormatBase {
  public:
   std::string positive_format;
-  aui::Color positive_color;
+  scada::aui::Color positive_color;
 
   std::string negative_format;
-  aui::Color negative_color;
+  scada::aui::Color negative_color;
 
   std::string zero_format;
-  aui::Color zero_color;
+  scada::aui::Color zero_color;
 
   bool operator<(const ConditionalFormatBase& other) {
     if (positive_format < other.positive_format)

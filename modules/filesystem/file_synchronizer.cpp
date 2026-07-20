@@ -86,7 +86,7 @@ FileSynchronizer::FileSynchronizer(FileSynchronizerContext&& context)
         OnNodeSemanticChanged(node_id);
       }));
 
-  const auto& root = node_service_.GetNode(filesystem::id::FileSystem);
+  const auto& root = node_service_.GetNode(scada::filesystem::id::FileSystem);
   CoSpawn(executor_, [this, root]() -> Awaitable<void> {
     co_await FetchTree(root);
     if (root.status()) {
@@ -111,9 +111,9 @@ bool FileSynchronizer::ProcessNode(NodeRef node) {
   // Synchronizer receives updates for all items.
   // assert(node.fetched());
 
-  if (IsInstanceOf(node, filesystem::id::FileType))
+  if (IsInstanceOf(node, scada::filesystem::id::FileType))
     return ProcessFileNode(node);
-  else if (IsInstanceOf(node, filesystem::id::FileDirectoryType))
+  else if (IsInstanceOf(node, scada::filesystem::id::FileDirectoryType))
     return ProcessFileDirectoryNode(node);
   else
     return false;
@@ -143,8 +143,8 @@ bool FileSynchronizer::ProcessFileDirectoryNode(NodeRef node) {
 bool FileSynchronizer::ProcessFileNode(NodeRef node) {
   const auto& path = root_dir_ / GetFilePath(node);
 
-  auto last_update_time =
-      ToFileTime(node[filesystem::id::FileType_LastUpdateTime].value().get_or(
+  auto last_update_time = ToFileTime(
+      node[scada::filesystem::id::FileType_LastUpdateTime].value().get_or(
           scada::DateTime{}));
 
   std::error_code ec;

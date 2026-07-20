@@ -79,7 +79,7 @@ void ViewManagerTest::SetUp() {
                                               // This handler is intercepted by
                                               // fake `controller_factory_` and
                                               // must never invoked.
-                                              base::NotReached();
+                                              scada::base::NotReached();
                                               return nullptr;
                                             });
 

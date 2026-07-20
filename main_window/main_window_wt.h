@@ -24,10 +24,10 @@ class MainWindow final : public BaseMainWindow {
   virtual void UpdateTitle() override {}
   virtual void SetToolbarPosition(unsigned position) override {}
   virtual void OnShowTabPopupMenu(OpenedView& view,
-                                  const aui::Point& point) override {}
-  virtual void ShowPopupMenu(aui::MenuModel* merge_menu,
+                                  const scada::aui::Point& point) override {}
+  virtual void ShowPopupMenu(scada::aui::MenuModel* merge_menu,
                              unsigned resource_id,
-                             const aui::Point& point,
+                             const scada::aui::Point& point,
                              bool right_click) override;
   virtual std::unique_ptr<OpenedView> OnCreateView(
       WindowDefinition& def) override;

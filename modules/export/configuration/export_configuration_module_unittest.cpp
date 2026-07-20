@@ -94,27 +94,30 @@ TEST_F(ExportConfigurationModuleTest, Construct_RegistersCommands) {
 
 TEST_F(ExportConfigurationModuleTest, ImportCommand) {
   ExportData export_data{
-      .props = {{.prop_decl_id = data_items::id::DiscreteItemType_Inversion,
+      .props = {{.prop_decl_id =
+                     scada::data_items::id::DiscreteItemType_Inversion,
                  .display_name = u"Inversion"},
-                {.prop_decl_id = data_items::id::AnalogItemType_DisplayFormat,
+                {.prop_decl_id =
+                     scada::data_items::id::AnalogItemType_DisplayFormat,
                  .display_name = u"Display Format"}},
-      .nodes = {
-          {.node_id = {1, NamespaceIndexes::TS},
-           .parent_id = data_items::id::DataItems,
-           .type_display_name = u"DiscreteItemType",
-           .type_id = data_items::id::DiscreteItemType,
-           .display_name = u"TS 1",
-           .property_values = {{.prop_decl_id =
-                                    data_items::id::DiscreteItemType_Inversion,
-                                .value = true}}},
-          {.node_id = {1, NamespaceIndexes::TIT},
-           .parent_id = data_items::id::DataItems,
-           .type_display_name = u"AnalogItemType",
-           .type_id = data_items::id::AnalogItemType,
-           .display_name = u"TIT 1",
-           .property_values = {
-               {.prop_decl_id = data_items::id::AnalogItemType_DisplayFormat,
-                .value = "#####"}}}}};
+      .nodes = {{.node_id = {1, scada::NamespaceIndexes::TS},
+                 .parent_id = scada::data_items::id::DataItems,
+                 .type_display_name = u"DiscreteItemType",
+                 .type_id = scada::data_items::id::DiscreteItemType,
+                 .display_name = u"TS 1",
+                 .property_values =
+                     {{.prop_decl_id =
+                           scada::data_items::id::DiscreteItemType_Inversion,
+                       .value = true}}},
+                {.node_id = {1, scada::NamespaceIndexes::TIT},
+                 .parent_id = scada::data_items::id::DataItems,
+                 .type_display_name = u"AnalogItemType",
+                 .type_id = scada::data_items::id::AnalogItemType,
+                 .display_name = u"TIT 1",
+                 .property_values = {
+                     {.prop_decl_id =
+                          scada::data_items::id::AnalogItemType_DisplayFormat,
+                      .value = "#####"}}}}};
 
   std::filesystem::path export_file_path =
       WriteExportDataToTempFile(export_data);
@@ -134,22 +137,24 @@ TEST_F(ExportConfigurationModuleTest, ImportCommand) {
   EXPECT_CALL(
       task_manager_,
       PostInsertTask(NodeStateIs(scada::NodeState{
-          .node_id = {1, NamespaceIndexes::TS},
-          .type_definition_id = data_items::id::DiscreteItemType,
-          .parent_id = data_items::id::DataItems,
+          .node_id = {1, scada::NamespaceIndexes::TS},
+          .type_definition_id = scada::data_items::id::DiscreteItemType,
+          .parent_id = scada::data_items::id::DataItems,
           .attributes = {.display_name = u"TS 1"},
-          .properties = {{data_items::id::DiscreteItemType_Inversion, true}}})))
-      .WillOnce(ReturnNodeId(scada::NodeId{1, NamespaceIndexes::TS}));
+          .properties = {{scada::data_items::id::DiscreteItemType_Inversion,
+                          true}}})))
+      .WillOnce(ReturnNodeId(scada::NodeId{1, scada::NamespaceIndexes::TS}));
 
-  EXPECT_CALL(task_manager_,
-              PostInsertTask(NodeStateIs(scada::NodeState{
-                  .node_id = {1, NamespaceIndexes::TIT},
-                  .type_definition_id = data_items::id::AnalogItemType,
-                  .parent_id = data_items::id::DataItems,
-                  .attributes = {.display_name = u"TIT 1"},
-                  .properties = {{data_items::id::AnalogItemType_DisplayFormat,
-                                  "#####"}}})))
-      .WillOnce(ReturnNodeId(scada::NodeId{1, NamespaceIndexes::TIT}));
+  EXPECT_CALL(
+      task_manager_,
+      PostInsertTask(NodeStateIs(scada::NodeState{
+          .node_id = {1, scada::NamespaceIndexes::TIT},
+          .type_definition_id = scada::data_items::id::AnalogItemType,
+          .parent_id = scada::data_items::id::DataItems,
+          .attributes = {.display_name = u"TIT 1"},
+          .properties = {{scada::data_items::id::AnalogItemType_DisplayFormat,
+                          "#####"}}})))
+      .WillOnce(ReturnNodeId(scada::NodeId{1, scada::NamespaceIndexes::TIT}));
 
   ScopedImportReportSuppressor import_report_suppressor;
 

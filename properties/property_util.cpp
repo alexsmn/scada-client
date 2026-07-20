@@ -19,7 +19,7 @@ Awaitable<void> FetchNodeNamesRecursiveAsync(
     AnyExecutor executor,
     const NodeRef& parent_node,
     const scada::NodeId& type_definition_id,
-    const aui::EditData::AsyncChoiceCallback& callback) {
+    const scada::aui::EditData::AsyncChoiceCallback& callback) {
   co_await FetchChildren(parent_node);
 
   auto children = parent_node.targets(scada::id::Organizes);
@@ -75,12 +75,12 @@ NodeRef FindNodeByNameAndType(const NodeRef& parent_node,
   return nullptr;
 }
 
-aui::EditData::AsyncChoiceHandler MakeAsyncChoiceHandler(
+scada::aui::EditData::AsyncChoiceHandler MakeAsyncChoiceHandler(
     AnyExecutor executor,
     const NodeRef& parent,
     const scada::NodeId& type_definition_id) {
   return [executor = std::move(executor), parent, type_definition_id](
-             const aui::EditData::AsyncChoiceCallback& callback) {
+             const scada::aui::EditData::AsyncChoiceCallback& callback) {
     callback({std::u16string{kChoiceNone}}, false);
     CoSpawn(executor, [executor, parent, type_definition_id,
                        callback]() -> Awaitable<void> {

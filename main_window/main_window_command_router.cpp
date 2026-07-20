@@ -85,7 +85,7 @@ void MainWindowCommandRouter::ExecuteCommand(unsigned command_id) {
 
   // Check create window command.
   if (const WindowInfo* win_info = FindWindowInfo(command_id)) {
-    base::Check(win_info->createable());
+    scada::base::Check(win_info->createable());
     /*if (win_info->flags & WIN_SING) {
       OpenedView* view = view_manager_->FindViewByType(win_info->type);
       if (view) {
@@ -100,5 +100,5 @@ void MainWindowCommandRouter::ExecuteCommand(unsigned command_id) {
     return;
   }
 
-  base::NotReached();
+  scada::base::NotReached();
 }

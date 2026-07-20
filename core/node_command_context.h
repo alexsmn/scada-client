@@ -13,7 +13,7 @@ struct NodeCommandContext {
   MainWindowInterface* main_window;
   DialogService& dialog_service;
   const NodeRef& node;
-  aui::KeyModifiers key_modifiers;
+  scada::aui::KeyModifiers key_modifiers;
 };
 
 using NodeCommandHandler =

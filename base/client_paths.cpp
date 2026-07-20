@@ -39,14 +39,14 @@ bool PathProvider(int key, std::filesystem::path* result) {
   std::filesystem::path cur;
   switch (key) {
     case DIR_INSTALL:
-      if (!base::PathService::Get(base::DIR_EXE, &cur))
+      if (!scada::base::PathService::Get(scada::base::DIR_EXE, &cur))
         return false;
       cur = GetInstallDirFromExeDir(std::move(cur));
       create_dir = false;
       break;
 
     case DIR_DATA:
-      if (!base::PathService::Get(DIR_INSTALL, &cur))
+      if (!scada::base::PathService::Get(DIR_INSTALL, &cur))
         return false;
       cur = cur / "data";
       create_dir = false;
@@ -54,7 +54,8 @@ bool PathProvider(int key, std::filesystem::path* result) {
 
     case DIR_PUBLIC:
 #ifdef _WIN32
-      if (!base::PathService::Get(base::DIR_COMMON_APP_DATA, &cur))
+      if (!scada::base::PathService::Get(scada::base::DIR_COMMON_APP_DATA,
+                                         &cur))
         return false;
       cur = cur / "Telecontrol/SCADA Client";
 #else
@@ -66,7 +67,7 @@ bool PathProvider(int key, std::filesystem::path* result) {
 
     case DIR_PRIVATE:
 #ifdef _WIN32
-      if (!base::PathService::Get(base::DIR_APP_DATA, &cur))
+      if (!scada::base::PathService::Get(scada::base::DIR_APP_DATA, &cur))
         return false;
       cur = cur / "Telecontrol/SCADA Client";
 #else
@@ -77,7 +78,7 @@ bool PathProvider(int key, std::filesystem::path* result) {
       break;
 
     case DIR_DOCUMENTATION:
-      if (!base::PathService::Get(client::DIR_INSTALL, &cur))
+      if (!scada::base::PathService::Get(client::DIR_INSTALL, &cur))
         return false;
       cur = cur / "docs";
       create_dir = false;
@@ -85,7 +86,7 @@ bool PathProvider(int key, std::filesystem::path* result) {
 
     case DIR_LOG:
 #ifdef _WIN32
-      if (!base::PathService::Get(base::DIR_LOCAL_APP_DATA, &cur))
+      if (!scada::base::PathService::Get(scada::base::DIR_LOCAL_APP_DATA, &cur))
         return false;
       cur = cur / "Telecontrol/SCADA Client/logs";
 #else
@@ -107,7 +108,8 @@ bool PathProvider(int key, std::filesystem::path* result) {
 }
 
 void RegisterPathProvider() {
-  base::PathService::RegisterProvider(PathProvider, PATH_START, PATH_END);
+  scada::base::PathService::RegisterProvider(PathProvider, PATH_START,
+                                             PATH_END);
 }
 
 }  // namespace client

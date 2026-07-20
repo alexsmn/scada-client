@@ -55,20 +55,20 @@ scada::NodeState MakeType(scada::NodeId node_id,
 }
 
 scada::NodeState MakeFileSystemRoot() {
-  return {.node_id = filesystem::id::FileSystem,
+  return {.node_id = scada::filesystem::id::FileSystem,
           .node_class = scada::NodeClass::Object,
-          .type_definition_id = filesystem::id::FileDirectoryType,
+          .type_definition_id = scada::filesystem::id::FileDirectoryType,
           .attributes = {.display_name = u""}};
 }
 
 scada::NodeState MakeFileNode(scada::DateTime last_update_time) {
   return {.node_id = kFileNodeId,
           .node_class = scada::NodeClass::Variable,
-          .type_definition_id = filesystem::id::FileType,
-          .parent_id = filesystem::id::FileSystem,
+          .type_definition_id = scada::filesystem::id::FileType,
+          .parent_id = scada::filesystem::id::FileSystem,
           .reference_type_id = scada::id::Organizes,
           .attributes = {.display_name = u"test.bin"},
-          .properties = {{filesystem::id::FileType_LastUpdateTime,
+          .properties = {{scada::filesystem::id::FileType_LastUpdateTime,
                           last_update_time}}};
 }
 
@@ -77,10 +77,10 @@ class FileSynchronizerTest : public Test {
   FileSynchronizerTest()
       : node_service_{scada::services{.attribute_service =
                                           &attribute_service_}} {
-    node_service_.Add(MakeType(filesystem::id::FileDirectoryType,
+    node_service_.Add(MakeType(scada::filesystem::id::FileDirectoryType,
                                scada::NodeClass::ObjectType));
-    node_service_.Add(
-        MakeType(filesystem::id::FileType, scada::NodeClass::VariableType));
+    node_service_.Add(MakeType(scada::filesystem::id::FileType,
+                               scada::NodeClass::VariableType));
     node_service_.Add(MakeFileSystemRoot());
   }
 

@@ -55,7 +55,7 @@ std::vector<NodeServiceTreeImpl::ChildRef> NodeServiceTreeImpl::GetChildren(
 }
 
 bool NodeServiceTreeImpl::IsMatchingNode(const NodeRef& node) const {
-  base::Check(node);
+  scada::base::Check(node);
 
   if (!type_definition_ids_.empty()) {
     bool matches = std::ranges::any_of(

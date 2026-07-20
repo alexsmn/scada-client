@@ -18,8 +18,8 @@ class NodeTableControllerImpl : public NodeTableController {
 
  private:
   static NodeRef GetParentNode(NodeService& node_service) {
-    return kNodeId != 0 ? node_service.GetNode(
-                              scada::NodeId{kNodeId, NamespaceIndexes::SCADA})
+    return kNodeId != 0 ? node_service.GetNode(scada::NodeId{
+                              kNodeId, scada::NamespaceIndexes::SCADA})
                         : nullptr;
   }
 };
@@ -58,13 +58,14 @@ const WindowInfo kHistoricalDatabasesWindowInfo = {ID_HISTORICAL_DB_VIEW,
                                                    IDR_GRID_POPUP};
 
 REGISTER_CONTROLLER(NodeTableControllerImpl<0>, kTableEditorWindowInfo);
-REGISTER_CONTROLLER(NodeTableControllerImpl<data_items::numeric_id::TsFormats>,
-                    kTsFormatsWindowInfo);
-REGISTER_CONTROLLER(NodeTableControllerImpl<security::numeric_id::Users>,
+REGISTER_CONTROLLER(
+    NodeTableControllerImpl<scada::data_items::numeric_id::TsFormats>,
+    kTsFormatsWindowInfo);
+REGISTER_CONTROLLER(NodeTableControllerImpl<scada::security::numeric_id::Users>,
                     kUsersWindowInfo);
 REGISTER_CONTROLLER(
-    NodeTableControllerImpl<data_items::numeric_id::SimulationSignals>,
+    NodeTableControllerImpl<scada::data_items::numeric_id::SimulationSignals>,
     kSimulationSignalsWindowInfo);
 REGISTER_CONTROLLER(
-    NodeTableControllerImpl<history::numeric_id::HistoricalDatabases>,
+    NodeTableControllerImpl<scada::history::numeric_id::HistoricalDatabases>,
     kHistoricalDatabasesWindowInfo);

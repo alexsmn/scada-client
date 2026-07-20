@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include "controller/command_registry.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
@@ -35,7 +33,7 @@ class SummaryView : protected ControllerContext, public Controller {
   SelectionModel selection_{{timed_data_service_}};
 
   const std::shared_ptr<SummaryModel> model_;
-  aui::Grid* grid_ = nullptr;
+  scada::aui::Grid* grid_ = nullptr;
 
   CommandRegistry command_registry_;
 };

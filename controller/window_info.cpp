@@ -11,7 +11,7 @@ const WindowInfo* FindWindowInfo(unsigned command_id) {
 
 const WindowInfo& GetWindowInfo(unsigned command_id) {
   const WindowInfo* info = FindWindowInfo(command_id);
-  base::Check(info);
+  scada::base::Check(info);
   return *info;
 }
 

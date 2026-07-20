@@ -1,7 +1,5 @@
 #pragma once
 
-#include "screenshot_generator_ns_compat.h"
-
 #include "base/any_executor.h"
 #include "base/awaitable.h"
 #include "base/check.h"

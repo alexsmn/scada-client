@@ -10,7 +10,7 @@ namespace scada {
 class SessionService;
 }
 
-class RequestTableModel : public aui::TableModel {
+class RequestTableModel : public scada::aui::TableModel {
  public:
   explicit RequestTableModel(scada::SessionService& session_service);
 
@@ -45,7 +45,7 @@ class RequestTableModel : public aui::TableModel {
 
   // aui::TableModel
   virtual int GetRowCount() override;
-  virtual void GetCell(aui::TableCell& cell) override;
+  virtual void GetCell(scada::aui::TableCell& cell) override;
 
  private:
   void RebuildVisible();

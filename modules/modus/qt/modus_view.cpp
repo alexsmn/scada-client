@@ -54,7 +54,7 @@ void ModusView::SetToolbarVisible(bool visible) {
 }
 
 void ModusView::Open(const WindowDefinition& definition) {
-  base::Check(!document_);
+  scada::base::Check(!document_);
 
   path_ = GetPublicFilePath(definition.path);
 
@@ -65,7 +65,7 @@ void ModusView::Open(const WindowDefinition& definition) {
     return;
   }
 
-  document_ = std::make_unique<modus::ModusDocument>(
+  document_ = std::make_unique<scada::modus::ModusDocument>(
       ModusDocumentContext{*this}, *sde_form.Get());
 
   // TODO: Save and load state.
@@ -183,7 +183,7 @@ void ModusView::OnDocClick(IDispatch* disp_doc, IDispatch* disp_info) {
   if (!document_ || !ui_event_info)
     return;
 
-  document_->OnDocClick(modus::ModusDocument::MouseButton::Left,
+  document_->OnDocClick(scada::modus::ModusDocument::MouseButton::Left,
                         *ui_event_info);
 }
 
@@ -193,7 +193,7 @@ void ModusView::OnDocRightClick(IDispatch* disp_doc, IDispatch* disp_info) {
   if (!document_ || !ui_event_info)
     return;
 
-  document_->OnDocClick(modus::ModusDocument::MouseButton::Right,
+  document_->OnDocClick(scada::modus::ModusDocument::MouseButton::Right,
                         *ui_event_info);
 }
 

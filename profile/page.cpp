@@ -147,7 +147,7 @@ int Page::FindWindowDef(const WindowDefinition& window) const {
 }
 
 void Page::DeleteWindow(int index) {
-  base::Check(index >= 0);
+  scada::base::Check(index >= 0);
   windows_.erase(windows_.begin() + index);
 }
 

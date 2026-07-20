@@ -134,7 +134,7 @@ inline BasicCommand<C>& BasicCommandRegistry<C>::AddCommand(
   }
 
   auto command_id = command.command_id;
-  base::Check(!command_map_.contains(command_id));
+  scada::base::Check(!command_map_.contains(command_id));
   return command_map_.try_emplace(command_id, std::move(command)).first->second;
 }
 

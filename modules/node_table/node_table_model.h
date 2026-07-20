@@ -18,8 +18,8 @@ class PropertyDefinition;
 class PropertyService;
 
 class NodeTableModel : private PropertyContext,
-                       public aui::GridModel,
-                       private aui::FixedRowModel::Delegate,
+                       public scada::aui::GridModel,
+                       private scada::aui::FixedRowModel::Delegate,
                        public std::enable_shared_from_this<NodeTableModel> {
  public:
   NodeTableModel(AnyExecutor executor,
@@ -32,8 +32,10 @@ class NodeTableModel : private PropertyContext,
   }
   void SetParentNode(const NodeRef& parent_node);
 
-  aui::FixedRowModel& row_model() SCADA_LIFETIME_BOUND { return row_model_; }
-  aui::ColumnHeaderModel& column_model() SCADA_LIFETIME_BOUND {
+  scada::aui::FixedRowModel& row_model() SCADA_LIFETIME_BOUND {
+    return row_model_;
+  }
+  scada::aui::ColumnHeaderModel& column_model() SCADA_LIFETIME_BOUND {
     return column_model_;
   }
 
@@ -48,11 +50,11 @@ class NodeTableModel : private PropertyContext,
   void SetSorting(const scada::NodeId& property_id);
 
   // GridModel
-  virtual void GetCell(aui::GridCell& cell) override;
+  virtual void GetCell(scada::aui::GridCell& cell) override;
   virtual bool SetCellText(int row,
                            int column,
                            const std::u16string& text) override;
-  virtual aui::EditData GetEditData(int row, int column) override;
+  virtual scada::aui::EditData GetEditData(int row, int column) override;
 
   bool loading() const { return loading_; }
 
@@ -93,8 +95,8 @@ class NodeTableModel : private PropertyContext,
   const AnyExecutor executor_;
   PropertyService& property_service_;
 
-  aui::FixedRowModel row_model_{*this};
-  aui::ColumnHeaderModel column_model_;
+  scada::aui::FixedRowModel row_model_{*this};
+  scada::aui::ColumnHeaderModel column_model_;
 
   NodeRef parent_node_;
 

@@ -38,52 +38,67 @@ namespace {
 // and the Mode enum strings mirror that nodeset.
 void AddIec60870TestTypes(AddressSpaceImpl& address_space) {
   GenericNodeFactory factory{address_space};
-  namespace dev = devices::id;
+  namespace dev = scada::devices::id;
 
   // Base LinkType : DeviceType (DeviceType comes from ScadaTestAddressSpace).
-  factory.CreateNode(scada::NodeState{
-      .node_id = dev::LinkType,
-      .node_class = scada::NodeClass::ObjectType,
-      .parent_id = dev::DeviceType,
-      .reference_type_id = {scada::id::HasSubtype, NamespaceIndexes::NS0},
-      .attributes = scada::NodeAttributes{}.set_browse_name("LinkType").set_display_name(u"Направление"),
-      .supertype_id = dev::DeviceType});
+  factory.CreateNode(
+      scada::NodeState{.node_id = dev::LinkType,
+                       .node_class = scada::NodeClass::ObjectType,
+                       .parent_id = dev::DeviceType,
+                       .reference_type_id = {scada::id::HasSubtype,
+                                             scada::NamespaceIndexes::NS0},
+                       .attributes = scada::NodeAttributes{}
+                                         .set_browse_name("LinkType")
+                                         .set_display_name(u"Направление"),
+                       .supertype_id = dev::DeviceType});
 
   // Mode enumeration data type with its EnumStrings array.
   factory.CreateNode(scada::NodeState{
       .node_id = dev::Iec60870ModeDataType,
       .node_class = scada::NodeClass::DataType,
-      .parent_id = {scada::id::Enumeration, NamespaceIndexes::NS0},
-      .reference_type_id = {scada::id::HasSubtype, NamespaceIndexes::NS0},
-      .attributes = scada::NodeAttributes{}.set_browse_name("Iec60870ModeType").set_display_name(u"Режим МЭК-60870"),
-      .supertype_id = {scada::id::Enumeration, NamespaceIndexes::NS0}});
+      .parent_id = {scada::id::Enumeration, scada::NamespaceIndexes::NS0},
+      .reference_type_id = {scada::id::HasSubtype,
+                            scada::NamespaceIndexes::NS0},
+      .attributes = scada::NodeAttributes{}
+                        .set_browse_name("Iec60870ModeType")
+                        .set_display_name(u"Режим МЭК-60870"),
+      .supertype_id = {scada::id::Enumeration, scada::NamespaceIndexes::NS0}});
   factory.CreateNode(scada::NodeState{
       .node_id = dev::Iec60870ModeDataType_EnumStrings,
       .node_class = scada::NodeClass::Variable,
-      .type_definition_id = {scada::id::PropertyType, NamespaceIndexes::NS0},
+      .type_definition_id = {scada::id::PropertyType,
+                             scada::NamespaceIndexes::NS0},
       .parent_id = dev::Iec60870ModeDataType,
-      .reference_type_id = {scada::id::HasProperty, NamespaceIndexes::NS0},
-      .attributes = scada::NodeAttributes{}
-                        .set_browse_name("EnumStrings")
-                        .set_display_name(u"EnumStrings")
-                        .set_data_type({scada::id::LocalizedText, NamespaceIndexes::NS0})
-                        .set_value(scada::Variant{std::vector<scada::LocalizedText>{
-                            u"Polling", u"Retransmission", u"Listening"}})});
+      .reference_type_id = {scada::id::HasProperty,
+                            scada::NamespaceIndexes::NS0},
+      .attributes =
+          scada::NodeAttributes{}
+              .set_browse_name("EnumStrings")
+              .set_display_name(u"EnumStrings")
+              .set_data_type(
+                  {scada::id::LocalizedText, scada::NamespaceIndexes::NS0})
+              .set_value(scada::Variant{std::vector<scada::LocalizedText>{
+                  u"Polling", u"Retransmission", u"Listening"}})});
 
   // Iec60870LinkType : LinkType, with its Mode property declaration.
   factory.CreateNode(scada::NodeState{
       .node_id = dev::Iec60870LinkType,
       .node_class = scada::NodeClass::ObjectType,
       .parent_id = dev::LinkType,
-      .reference_type_id = {scada::id::HasSubtype, NamespaceIndexes::NS0},
-      .attributes = scada::NodeAttributes{}.set_browse_name("Iec60870LinkType").set_display_name(u"Направление МЭК-60870"),
+      .reference_type_id = {scada::id::HasSubtype,
+                            scada::NamespaceIndexes::NS0},
+      .attributes = scada::NodeAttributes{}
+                        .set_browse_name("Iec60870LinkType")
+                        .set_display_name(u"Направление МЭК-60870"),
       .supertype_id = dev::LinkType});
   factory.CreateNode(scada::NodeState{
       .node_id = dev::Iec60870LinkType_Mode,
       .node_class = scada::NodeClass::Variable,
-      .type_definition_id = {scada::id::PropertyType, NamespaceIndexes::NS0},
+      .type_definition_id = {scada::id::PropertyType,
+                             scada::NamespaceIndexes::NS0},
       .parent_id = dev::Iec60870LinkType,
-      .reference_type_id = {scada::id::HasProperty, NamespaceIndexes::NS0},
+      .reference_type_id = {scada::id::HasProperty,
+                            scada::NamespaceIndexes::NS0},
       .attributes = scada::NodeAttributes{}
                         .set_browse_name("Mode")
                         .set_display_name(u"Режим")
@@ -94,13 +109,16 @@ void AddIec60870TestTypes(AddressSpaceImpl& address_space) {
       .node_id = dev::Iec60870DeviceType,
       .node_class = scada::NodeClass::ObjectType,
       .parent_id = dev::DeviceType,
-      .reference_type_id = {scada::id::HasSubtype, NamespaceIndexes::NS0},
-      .attributes = scada::NodeAttributes{}.set_browse_name("Iec60870DeviceType").set_display_name(u"Устройство МЭК-60870"),
+      .reference_type_id = {scada::id::HasSubtype,
+                            scada::NamespaceIndexes::NS0},
+      .attributes = scada::NodeAttributes{}
+                        .set_browse_name("Iec60870DeviceType")
+                        .set_display_name(u"Устройство МЭК-60870"),
       .supertype_id = dev::DeviceType});
 
   // HasDevice reference type (GenericNodeFactory cannot create ReferenceType).
-  address_space.AddStaticNode<scada::ReferenceType>(data_items::id::HasDevice,
-                                                    "HasDevice");
+  address_space.AddStaticNode<scada::ReferenceType>(
+      scada::data_items::id::HasDevice, "HasDevice");
 }
 
 }  // namespace
@@ -136,9 +154,10 @@ class PropertyDefsTest : public Test {
 
   inline static const scada::NodeId data_item_id{1, 1};
   inline static const scada::NodeId data_group_id{2, 1};
-  inline static const scada::NodeId link_id{1, NamespaceIndexes::IEC60870_LINK};
+  inline static const scada::NodeId link_id{
+      1, scada::NamespaceIndexes::IEC60870_LINK};
   inline static const scada::NodeId device_id{
-      1, NamespaceIndexes::IEC60870_DEVICE};
+      1, scada::NamespaceIndexes::IEC60870_DEVICE};
   inline static const char16_t kLinkDisplayName[] = u"LinkDisplayName";
   inline static const char16_t kDeviceDisplayName[] = u"DeviceDisplayName";
 };
@@ -151,19 +170,19 @@ PropertyDefsTest::PropertyDefsTest() {
       scada::NodeState{}
           .set_node_id(link_id)
           .set_node_class(scada::NodeClass::Object)
-          .set_type_definition_id(devices::id::Iec60870LinkType)
-          .set_parent(scada::id::Organizes, devices::id::Devices)
+          .set_type_definition_id(scada::devices::id::Iec60870LinkType)
+          .set_parent(scada::id::Organizes, scada::devices::id::Devices)
           .set_attributes(
               scada::NodeAttributes{}.set_display_name(kLinkDisplayName))
           .set_properties(scada::NodeProperties{
-              {devices::id::Iec60870LinkType_Mode, scada::Variant{0}}}));
+              {scada::devices::id::Iec60870LinkType_Mode, scada::Variant{0}}}));
 
   // Create Device.
   node_factory.CreateNode(
       scada::NodeState{}
           .set_node_id(device_id)
           .set_node_class(scada::NodeClass::Object)
-          .set_type_definition_id(devices::id::Iec60870DeviceType)
+          .set_type_definition_id(scada::devices::id::Iec60870DeviceType)
           .set_parent(scada::id::Organizes, link_id)
           .set_attributes(
               scada::NodeAttributes{}.set_display_name(kDeviceDisplayName)));
@@ -174,13 +193,14 @@ PropertyDefsTest::PropertyDefsTest() {
         scada::NodeState{}
             .set_node_id(data_group_id)
             .set_node_class(scada::NodeClass::Object)
-            .set_type_definition_id(data_items::id::DataGroupType)
-            .set_parent(scada::id::Organizes, data_items::id::DataItems));
-    base::Check(status);
-    base::Check(node_ptr);
+            .set_type_definition_id(scada::data_items::id::DataGroupType)
+            .set_parent(scada::id::Organizes,
+                        scada::data_items::id::DataItems));
+    scada::base::Check(status);
+    scada::base::Check(node_ptr);
 
-    scada::AddReference(address_space, data_items::id::HasDevice, data_group_id,
-                        device_id);
+    scada::AddReference(address_space, scada::data_items::id::HasDevice,
+                        data_group_id, device_id);
   }
 
   SyncNodeService();
@@ -191,12 +211,12 @@ NodeRef PropertyDefsTest::CreateDataItem(std::string_view channel_path) {
       scada::NodeState{}
           .set_node_id(data_item_id)
           .set_node_class(scada::NodeClass::Variable)
-          .set_type_definition_id(data_items::id::DiscreteItemType)
+          .set_type_definition_id(scada::data_items::id::DiscreteItemType)
           .set_parent(scada::id::Organizes, data_group_id));
-  base::Check(status);
-  base::Check(node_ptr);
+  scada::base::Check(status);
+  scada::base::Check(node_ptr);
 
-  scada::SetPropertyValue(*node_ptr, data_items::id::DataItemType_Input1,
+  scada::SetPropertyValue(*node_ptr, scada::data_items::id::DataItemType_Input1,
                           scada::String{channel_path});
 
   SyncNodeService();
@@ -207,24 +227,24 @@ TEST_F(PropertyDefsTest, GetText_Device) {
   auto data_item_node = CreateDataItem(
       MakeNodeIdFormula(MakeNestedNodeId(device_id, "device.channel.path")));
 
-  EXPECT_EQ(
-      u16format(L"{} : {}", kLinkDisplayName, kDeviceDisplayName),
-      channel_property_definition.GetText(property_context, data_item_node,
-                                          data_items::id::DataItemType_Input1));
+  EXPECT_EQ(u16format(L"{} : {}", kLinkDisplayName, kDeviceDisplayName),
+            channel_property_definition.GetText(
+                property_context, data_item_node,
+                scada::data_items::id::DataItemType_Input1));
 }
 
 TEST_F(PropertyDefsTest, GetText_GroupDevice) {
   auto data_item_node = CreateDataItem("GROUP_DEVICE!device.channel.path");
 
-  EXPECT_EQ(
-      ChannelPropertyDefinition::kParentGroupDevice,
-      channel_property_definition.GetText(property_context, data_item_node,
-                                          data_items::id::DataItemType_Input1));
+  EXPECT_EQ(ChannelPropertyDefinition::kParentGroupDevice,
+            channel_property_definition.GetText(
+                property_context, data_item_node,
+                scada::data_items::id::DataItemType_Input1));
 }
 
 TEST_F(PropertyDefsTest, Enum) {
   auto mode_prop_def =
-      node_service->GetNode(devices::id::Iec60870LinkType_Mode);
+      node_service->GetNode(scada::devices::id::Iec60870LinkType_Mode);
   auto mode_data_type = mode_prop_def.data_type();
   ASSERT_TRUE(IsSubtypeOf(mode_data_type, scada::id::Enumeration));
 
@@ -245,10 +265,10 @@ TEST_F(PropertyDefsTest, GetChildPropertyDefsAsync_ReturnsChildTypeProperties) {
                     executor,
                     node_service->GetNode(data_group_id)));
 
-  const auto has_input1 = std::ranges::any_of(
-      property_defs, [](const auto& property_def) {
+  const auto has_input1 =
+      std::ranges::any_of(property_defs, [](const auto& property_def) {
         return property_def.first.node_id() ==
-               data_items::id::DataItemType_Input1;
+               scada::data_items::id::DataItemType_Input1;
       });
   EXPECT_TRUE(has_input1);
 }
@@ -258,7 +278,7 @@ TEST_F(PropertyDefsTest, DeviceChoiceHandler_LoadsChoicesFromCoroutine) {
 
   auto editor = channel_property_definition.GetPropertyEditor(
       property_context, node_service->GetNode(data_item_id),
-      data_items::id::DataItemType_Input1);
+      scada::data_items::id::DataItemType_Input1);
   ASSERT_TRUE(editor.async_choice_handler);
 
   std::vector<std::u16string> choices;

@@ -87,7 +87,7 @@ class WindowDefinition {
   std::string type;
   std::u16string title;
   std::filesystem::path path;
-  aui::Size size;
+  scada::aui::Size size;
   bool visible = true;
   bool locked = false;
 

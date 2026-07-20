@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include "controller/command_registry.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
@@ -52,7 +50,7 @@ class WatchView : protected ControllerContext,
 
   bool auto_scroll_ = false;
 
-  aui::Table* table_ = nullptr;
+  scada::aui::Table* table_ = nullptr;
 
   CommandRegistry command_registry_;
 

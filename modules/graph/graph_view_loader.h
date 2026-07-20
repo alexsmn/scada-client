@@ -28,7 +28,8 @@ struct GraphViewLoader {
 
   void ReadGraph(const WindowItem& item) {
     if (std::string_view color = item.GetString("bk_color"); !color.empty()) {
-      graph_view_.SetGraphColor(aui::StringToColor(color).native_color());
+      graph_view_.SetGraphColor(
+          scada::aui::StringToColor(color).native_color());
     }
   }
 
@@ -64,7 +65,7 @@ struct GraphViewLoader {
       pane = &static_cast<MetrixGraph::MetrixPane&>(graph_.NewPane());
     // make color
     auto color = color_string.empty() ? graph_view_.NewColor()
-                                      : aui::StringToColor(color_string);
+                                      : scada::aui::StringToColor(color_string);
     // add line
     MetrixGraph::MetrixLine& line =
         graph_.NewLine(path, *static_cast<MetrixGraph::MetrixPane*>(pane));
@@ -77,13 +78,13 @@ struct GraphViewLoader {
   void ReadTimeScale(const WindowItem& item) {
     auto srange = item.GetString("span");
     auto stime = item.GetString("time");
-    base::Time from, to;
+    scada::base::Time from, to;
     bool time_fit = boost::iequals(stime, "Now");
     if (time_fit || !Deserialize(stime, to)) {
       time_fit = true;
-      to = base::Time::Now();
+      to = scada::base::Time::Now();
     }
-    base::TimeDelta span = base::TimeDelta::FromHours(1);
+    scada::base::TimeDelta span = scada::base::TimeDelta::FromHours(1);
     Deserialize(srange, span);
     from = to - span;
     graph_.horizontal_axis().SetRange(
@@ -102,7 +103,7 @@ struct GraphViewLoader {
       graph_.horizontal_axis().SetTimeFit(time_range->type !=
                                           TimeRange::Type::Custom);
     } else {
-      base::Time now = base::Time::Now();
+      scada::base::Time now = scada::base::Time::Now();
       graph_.horizontal_axis().SetRange(
           GraphRange((now - profile_.graph_view.default_span).ToDoubleT(),
                      now.ToDoubleT(), GraphRange::TIME));
@@ -113,7 +114,7 @@ struct GraphViewLoader {
   const Profile& profile_;
   MetrixGraph& graph_;
   GraphView& graph_view_;
-  base::Time now = base::Time::Now();
+  scada::base::Time now = scada::base::Time::Now();
 
   using PaneMap = std::unordered_map<int, GraphPane*>;
   PaneMap pane_map;

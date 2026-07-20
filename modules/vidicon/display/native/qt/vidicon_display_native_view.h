@@ -1,7 +1,5 @@
 #pragma once
 
-#include "vidicon/vidicon_compat.h"
-
 #include "controller/controller.h"
 #include "controller/selection_model.h"
 

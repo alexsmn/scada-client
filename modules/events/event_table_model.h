@@ -40,7 +40,8 @@ struct EventTableModelContext {
   const bool current_events_ = true;
 };
 
-class EventTableModel : public aui::TableModel, private EventTableModelContext {
+class EventTableModel : public scada::aui::TableModel,
+                        private EventTableModelContext {
  public:
   enum EventType { CURRENT_EVENT, HISTORICAL_EVENT, LOCAL_EVENT };
 
@@ -90,7 +91,7 @@ class EventTableModel : public aui::TableModel, private EventTableModelContext {
 
   // aui::TableModel
   virtual int GetRowCount() override;
-  virtual void GetCell(aui::TableCell& cell) override;
+  virtual void GetCell(scada::aui::TableCell& cell) override;
   virtual int CompareCells(int row1, int row2, int column_id) override;
 
  private:

@@ -32,7 +32,7 @@ struct SummaryModelContext {
 };
 
 class SummaryModel : private SummaryModelContext,
-                     public aui::GridModel,
+                     public scada::aui::GridModel,
                      public ContentsModel,
                      public TimeModel,
                      public ExportModel {
@@ -44,8 +44,8 @@ class SummaryModel : private SummaryModelContext,
     return time_range_;
   }
 
-  base::TimeDelta interval() const { return aggregate_filter_.interval; }
-  void SetInterval(base::TimeDelta interval);
+  scada::base::TimeDelta interval() const { return aggregate_filter_.interval; }
+  void SetInterval(scada::base::TimeDelta interval);
 
   const scada::NodeId& aggregate_type() const {
     return aggregate_filter_.aggregate_type;
@@ -62,19 +62,19 @@ class SummaryModel : private SummaryModelContext,
   void Load(const WindowDefinition& definition);
   void Save(WindowDefinition& definition);
 
-  aui::HeaderModel& row_model();
-  aui::HeaderModel& column_model();
+  scada::aui::HeaderModel& row_model();
+  scada::aui::HeaderModel& column_model();
 
   TimedDataService& timed_data_service() { return timed_data_service_; }
 
   scada::DataValue GetDataValue(int row, int column) const;
   const TimedDataSpec& timed_data(int column) const;
 
-  base::Time GetRowTime(int row) const;
-  int GetRowForTime(base::Time time) const;
+  scada::base::Time GetRowTime(int row) const;
+  int GetRowForTime(scada::base::Time time) const;
 
   // aui::GridModel
-  virtual void GetCell(aui::GridCell& cell) override;
+  virtual void GetCell(scada::aui::GridCell& cell) override;
 
   // ContentsModel
   virtual void AddContainedItem(const scada::NodeId& node_id,
@@ -106,9 +106,9 @@ class SummaryModel : private SummaryModelContext,
 
   std::vector<std::unique_ptr<Column>> columns_;
 
-  base::Time start_time_;
+  scada::base::Time start_time_;
   // |end_time_| defines start of the last interval.
-  base::Time end_time_;
+  scada::base::Time end_time_;
   TimeRange time_range_;
   scada::AggregateFilter aggregate_filter_;
 

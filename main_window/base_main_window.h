@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include "controller/node_id_set.h"
 #include "main_window/main_window_context.h"
 #include "main_window/main_window_interface.h"
@@ -97,9 +95,9 @@ class BaseMainWindow : protected MainWindowContext,
   bool IsContextMenuCommandAvailableForTesting(unsigned command_id);
 
   // TODO: Move to a separate class.
-  virtual void ShowPopupMenu(aui::MenuModel* merge_menu,
+  virtual void ShowPopupMenu(scada::aui::MenuModel* merge_menu,
                              unsigned resource_id,
-                             const aui::Point& point,
+                             const scada::aui::Point& point,
                              bool right_click) = 0;
 
   // TODO: Move to a separate class.
@@ -123,9 +121,9 @@ class BaseMainWindow : protected MainWindowContext,
 
   std::unique_ptr<CommandHandler> commands_;
 
-  std::unique_ptr<aui::MenuModel> context_menu_model_;
+  std::unique_ptr<scada::aui::MenuModel> context_menu_model_;
 
-  std::unique_ptr<aui::MenuModel> tab_popup_menu_;
+  std::unique_ptr<scada::aui::MenuModel> tab_popup_menu_;
 
   static bool g_hide_for_testing;
 

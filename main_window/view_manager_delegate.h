@@ -16,5 +16,6 @@ class ViewManagerDelegate {
 
   virtual void OnActiveViewChanged(OpenedView* view) = 0;
 
-  virtual void OnShowTabPopupMenu(OpenedView& view, const aui::Point& point) = 0;
+  virtual void OnShowTabPopupMenu(OpenedView& view,
+                                  const scada::aui::Point& point) = 0;
 };

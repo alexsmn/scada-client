@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #ifdef _WIN32
 #include "base/win/dragdrop.h"
 #endif
@@ -43,7 +41,7 @@ class NodeTableController : protected ControllerContext,
   SelectionModel selection_{{timed_data_service_}};
 
   const std::shared_ptr<NodeTableModel> model_;
-  aui::Grid* grid_ = nullptr;
+  scada::aui::Grid* grid_ = nullptr;
 
   CommandRegistry command_registry_;
 };

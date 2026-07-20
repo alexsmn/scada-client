@@ -20,7 +20,7 @@ struct TableModelContext {
   BlinkerManager& blinker_manager_;
 };
 
-class TableModel : private TableModelContext, public aui::TableModel {
+class TableModel : private TableModelContext, public scada::aui::TableModel {
  public:
   enum ColumnId : int {
     COLUMN_TITLE,
@@ -60,7 +60,7 @@ class TableModel : private TableModelContext, public aui::TableModel {
 
   // ui::TableModel
   virtual int GetRowCount() override;
-  virtual void GetCell(aui::TableCell& cell) override;
+  virtual void GetCell(scada::aui::TableCell& cell) override;
   virtual std::u16string GetTooltip(int row, int column_id) override;
   virtual bool SetCellText(int row,
                            int column_id,

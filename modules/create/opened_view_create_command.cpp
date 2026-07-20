@@ -31,11 +31,13 @@ CommandHandler* OpenedViewCreateCommand::GetCommandHandler(
   switch (command_id) {
     case ID_NEW_SERVICE_ITEMS:
     case ID_ADD_MULTIPLE_ITEMS:
-      return CanCreateRecord(data_items::id::DiscreteItemType) ? this : nullptr;
+      return CanCreateRecord(scada::data_items::id::DiscreteItemType) ? this
+                                                                      : nullptr;
 
     case ID_NEW_IEC60870_LINK101:
     case ID_NEW_IEC60870_LINK104:
-      return CanCreateRecord(devices::id::Iec60870LinkType) ? this : nullptr;
+      return CanCreateRecord(scada::devices::id::Iec60870LinkType) ? this
+                                                                   : nullptr;
   }
 
   if (auto node_id = GetCreateCommandTypeId(command_id); !node_id.is_null()) {
@@ -48,10 +50,10 @@ CommandHandler* OpenedViewCreateCommand::GetCommandHandler(
 void OpenedViewCreateCommand::ExecuteCommand(unsigned command_id) {
   switch (command_id) {
     case ID_NEW_IEC60870_LINK101:
-      CreateRecord(devices::id::Iec60870LinkType, 0);
+      CreateRecord(scada::devices::id::Iec60870LinkType, 0);
       return;
     case ID_NEW_IEC60870_LINK104:
-      CreateRecord(devices::id::Iec60870LinkType, 1);
+      CreateRecord(scada::devices::id::Iec60870LinkType, 1);
       return;
 
     case ID_NEW_SERVICE_ITEMS:
@@ -75,7 +77,7 @@ void OpenedViewCreateCommand::ExecuteCommand(unsigned command_id) {
     return;
   }
 
-  base::NotReached();
+  scada::base::NotReached();
 }
 
 bool OpenedViewCreateCommand::CanCreateRecord(
@@ -122,15 +124,15 @@ void OpenedViewCreateCommand::CreateRecord(const scada::NodeId& type_node_id,
   bool is104 = tag != 0;
 
   attributes.display_name = node_type.display_name();
-  if (type_node_id == devices::id::Iec60870LinkType) {
+  if (type_node_id == scada::devices::id::Iec60870LinkType) {
     attributes.display_name =
         is104 ? u"IEC 60870-104 Link" : u"IEC 60870-101 Link";
   }
 
-  if (type_node_id == devices::id::Iec60870LinkType) {
-    auto protocol =
-        is104 ? cfg::Iec60870Protocol::IEC104 : cfg::Iec60870Protocol::IEC101;
-    properties.emplace_back(devices::id::Iec60870LinkType_Protocol,
+  if (type_node_id == scada::devices::id::Iec60870LinkType) {
+    auto protocol = is104 ? scada::cfg::Iec60870Protocol::IEC104
+                          : scada::cfg::Iec60870Protocol::IEC101;
+    properties.emplace_back(scada::devices::id::Iec60870LinkType_Protocol,
                             static_cast<int>(protocol));
 
     transport::TransportString ts;
@@ -143,7 +145,8 @@ void OpenedViewCreateCommand::CreateRecord(const scada::NodeId& type_node_id,
       ts.SetParam(transport::TransportString::kParamName, "COM1");
     }
     ts.SetParam(transport::TransportString::kParamActive);
-    properties.emplace_back(devices::id::LinkType_Transport, ts.ToString());
+    properties.emplace_back(scada::devices::id::LinkType_Transport,
+                            ts.ToString());
   }
 
   auto title = u16format(L"Creating \"{}\"", attributes.display_name);

@@ -41,7 +41,7 @@ void SaveDisplayScreenshot(const ScreenshotSpec& spec,
   // never sets base::DIR_EXE, so point client::DIR_INSTALL at the binary dir
   // (where the dylib is co-located) so the renderer resolves it and paints the
   // real document instead of its "runtime unavailable" placeholder.
-  base::PathService::Override(
+  scada::base::PathService::Override(
       client::DIR_INSTALL,
       std::filesystem::path{QApplication::applicationDirPath().toStdString()});
 

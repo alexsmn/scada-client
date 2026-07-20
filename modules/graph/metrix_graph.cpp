@@ -150,7 +150,8 @@ scada::DataValue MetrixGraph::Legend::GetCurrentValue(
   scada::DataValue value;
   const GraphCursor* cursor = graph().selected_cursor();
   if (cursor && !cursor->axis_->is_vertical()) {
-    base::Time cursor_time = base::Time::FromDoubleT(cursor->position_);
+    scada::base::Time cursor_time =
+        scada::base::Time::FromDoubleT(cursor->position_);
     const scada::DataValue* cursor_value =
         data_source.timed_data().GetValueAt(cursor_time);
     return cursor_value ? *cursor_value : scada::DataValue{};
@@ -295,8 +296,8 @@ void MetrixGraph::Legend::PaintThemed(QPainter& painter) const {
 
   // The visible range drives the min/max/average aggregates.
   const GraphRange& range = graph().horizontal_axis().range();
-  const base::Time from = base::Time::FromDoubleT(range.low());
-  const base::Time to = base::Time::FromDoubleT(range.high());
+  const scada::base::Time from = scada::base::Time::FromDoubleT(range.low());
+  const scada::base::Time to = scada::base::Time::FromDoubleT(range.high());
 
   // Header row: column captions, right-aligned over their numeric columns.
   QFont header_font = painter.font();
@@ -372,7 +373,8 @@ QString MetrixGraph::Legend::ValueAtCursorText(
   const GraphCursor* cursor = graph().selected_cursor();
   if (!cursor || cursor->axis_->is_vertical())
     return EmptyCell();
-  const base::Time cursor_time = base::Time::FromDoubleT(cursor->position_);
+  const scada::base::Time cursor_time =
+      scada::base::Time::FromDoubleT(cursor->position_);
   const scada::DataValue* value =
       data_source.timed_data().GetValueAt(cursor_time);
   if (!value)
@@ -533,10 +535,10 @@ void MetrixGraph::MetrixLine::UpdateTimeRange() {
 
   auto& graph_range = graph().horizontal_axis().range();
 
-  auto from = base::Time::FromDoubleT(graph_range.low());
+  auto from = scada::base::Time::FromDoubleT(graph_range.low());
   auto to = graph().horizontal_axis().time_fit()
                 ? kTimedDataCurrentOnly
-                : base::Time::FromDoubleT(graph_range.high());
+                : scada::base::Time::FromDoubleT(graph_range.high());
 
   data_source().SetRange({from, to});
 }

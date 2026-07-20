@@ -38,7 +38,7 @@ scada::StatusOr<std::vector<scada::WriteValue>> PrepareUpdateInputs(
     const NodeRef& node,
     scada::NodeAttributes attributes,
     scada::NodeProperties properties) {
-  base::Check(node.fetched());
+  scada::base::Check(node.fetched());
 
   std::vector<scada::WriteValue> inputs;
   inputs.reserve(2 + properties.size());
@@ -73,7 +73,7 @@ scada::Status FirstBadStatus(std::span<const scada::StatusCode> codes) {
                            : scada::Status{*it};
 }
 
-void CompleteTaskCompletion(base::AsyncCompletion& completion,
+void CompleteTaskCompletion(scada::base::AsyncCompletion& completion,
                             const scada::Status& status) {
   completion.Complete();
 }
@@ -401,7 +401,7 @@ Awaitable<void> TaskManagerImpl::RunTaskBody(TaskMethod method) {
 }
 
 void TaskManagerImpl::StartTask(Task&& task) {
-  base::Check(!task.IsNull());
+  scada::base::Check(!task.IsNull());
 
   running_task_ = std::move(task);
 
@@ -498,7 +498,7 @@ void TaskManagerImpl::Run() {
 Awaitable<scada::Status> TaskManagerImpl::PostTaskMethod(std::u16string title,
                                                          TaskMethod method) {
   auto result = std::make_shared<TaskResultState<scada::Status>>();
-  auto completion = base::AsyncCompletion{executor_};
+  auto completion = scada::base::AsyncCompletion{executor_};
   auto waiter = completion.Wait();
   tasks_.push(Task{.title = std::move(title),
                    .method = [method = std::move(method),
@@ -522,7 +522,7 @@ Awaitable<scada::StatusOr<T>> TaskManagerImpl::PostTypedTaskMethod(
     std::u16string title,
     std::function<Awaitable<scada::StatusOr<T>>()> method) {
   auto result = std::make_shared<TaskResultState<T>>();
-  auto task_completion = base::AsyncCompletion{executor_};
+  auto task_completion = scada::base::AsyncCompletion{executor_};
   auto waiter = task_completion.Wait();
 
   Task task{.title = std::move(title),

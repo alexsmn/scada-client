@@ -58,10 +58,10 @@ void SelectionCommandRouter::ExecuteCommand(unsigned command_id) {
 }
 
 SelectionCommandContext SelectionCommandRouter::command_context() const {
-  base::Check(selection_);
-  base::Check(dialog_service_);
-  base::Check(main_window_);
-  base::Check(opened_view_);
+  scada::base::Check(selection_);
+  scada::base::Check(dialog_service_);
+  scada::base::Check(main_window_);
+  scada::base::Check(opened_view_);
 
   return {.selection = *selection_,
           .dialog_service = *dialog_service_,

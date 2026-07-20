@@ -6,14 +6,15 @@
 
 namespace {
 
-QDateTime ToQDateTime(base::Time time) {
-  auto delta = time - base::Time::UnixEpoch();
+QDateTime ToQDateTime(scada::base::Time time) {
+  auto delta = time - scada::base::Time::UnixEpoch();
   return QDateTime::fromMSecsSinceEpoch(delta.InMilliseconds());
 }
 
-base::Time ToTime(QDateTime date_time) {
-  return base::Time::UnixEpoch() +
-         base::TimeDelta::FromMilliseconds(date_time.toMSecsSinceEpoch());
+scada::base::Time ToTime(QDateTime date_time) {
+  return scada::base::Time::UnixEpoch() +
+         scada::base::TimeDelta::FromMilliseconds(
+             date_time.toMSecsSinceEpoch());
 }
 
 }  // namespace
@@ -41,7 +42,7 @@ TimeRangeDialog::TimeRangeDialog(TimeRangeContext&& context, QWidget* parent)
 
   ui.timeGroupBox->setChecked(!time_range_.dates);
 
-  auto bounds = ToDateTimeRange(time_range_, /*now=*/base::Time::Now());
+  auto bounds = ToDateTimeRange(time_range_, /*now=*/scada::base::Time::Now());
   auto start = ToQDateTime(bounds.first);
   auto end = ToQDateTime(bounds.second);
 

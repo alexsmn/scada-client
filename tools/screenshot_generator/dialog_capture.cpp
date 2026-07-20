@@ -40,7 +40,7 @@
 
 namespace {
 
-using screenshot_generator::WaitForPendingNodeLoads;
+using scada::screenshot_generator::WaitForPendingNodeLoads;
 
 // Pumps the Qt event loop until `predicate()` holds or `timeout` elapses.
 //

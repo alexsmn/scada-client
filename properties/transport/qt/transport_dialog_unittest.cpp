@@ -52,10 +52,10 @@ TEST_F(TransportDialogTest, AcceptedDialogReturnsEditedTransportString) {
   initial.SetParam(transport::TransportString::kParamHost, "old-host");
   initial.SetParam(transport::TransportString::kParamPort, 1200);
 
-  auto result = aui::qt::test::StartAwaitable(
+  auto result = scada::aui::qt::test::StartAwaitable(
       ShowTransportDialog(dialog_service_, initial));
 
-  aui::qt::test::ProcessEventsUntilSettled(result, [](QDialog& dialog) {
+  scada::aui::qt::test::ProcessEventsUntilSettled(result, [](QDialog& dialog) {
     dialog.findChild<QComboBox*>("typeComboBox")->setCurrentIndex(2);
     dialog.findChild<QLineEdit*>("networkHostLineEdit")
         ->setText("example.test");
@@ -63,8 +63,8 @@ TEST_F(TransportDialogTest, AcceptedDialogReturnsEditedTransportString) {
     dialog.accept();
   });
 
-  ASSERT_TRUE(aui::qt::test::IsAwaitableReady(result));
-  auto updated = aui::qt::test::GetAwaitableResult(result);
+  ASSERT_TRUE(scada::aui::qt::test::IsAwaitableReady(result));
+  auto updated = scada::aui::qt::test::GetAwaitableResult(result);
   EXPECT_EQ(updated.ToString(), "UDP;Active;Host=example.test;Port=2404");
 }
 
@@ -75,12 +75,13 @@ TEST_F(TransportDialogTest, RejectedDialogRejectsResult) {
   initial.SetParam(transport::TransportString::kParamHost, "old-host");
   initial.SetParam(transport::TransportString::kParamPort, 1200);
 
-  auto result = aui::qt::test::StartAwaitable(
+  auto result = scada::aui::qt::test::StartAwaitable(
       ShowTransportDialog(dialog_service_, initial));
 
-  aui::qt::test::ProcessEventsUntilSettled(result,
-                                           aui::qt::test::RejectDialog);
+  scada::aui::qt::test::ProcessEventsUntilSettled(
+      result, scada::aui::qt::test::RejectDialog);
 
-  ASSERT_TRUE(aui::qt::test::IsAwaitableReady(result));
-  EXPECT_THROW(aui::qt::test::GetAwaitableResult(result), std::exception);
+  ASSERT_TRUE(scada::aui::qt::test::IsAwaitableReady(result));
+  EXPECT_THROW(scada::aui::qt::test::GetAwaitableResult(result),
+               std::exception);
 }

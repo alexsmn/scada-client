@@ -1,7 +1,5 @@
 #pragma once
 
-#include "modus/modus_ns_compat.h"
-
 #include "modus/libmodus/modus_binding2.h"
 #include "modus/modus_view_wrapper.h"
 #include "libmodus/gfx/gfx.h"
@@ -26,16 +24,16 @@ class TimedDataService;
 // Uses libmodus.
 class ModusView2 : public QWidget,
                    public ModusViewWrapper,
-                   private modus::RendererDelegate,
+                   private scada::modus::RendererDelegate,
                    private ModusBinding2::Delegate {
  public:
   explicit ModusView2(TimedDataService& timed_data_service);
   virtual ~ModusView2();
 
-  modus::Scheme* scheme() const { return scheme_.get(); }
+  scada::modus::Scheme* scheme() const { return scheme_.get(); }
 
-  modus::Shape* selection() { return selection_; }
-  ModusBinding2* GetBinding(modus::Shape* shape) const;
+  scada::modus::Shape* selection() { return selection_; }
+  ModusBinding2* GetBinding(scada::modus::Shape* shape) const;
 
   typedef std::function<void(const TimedDataSpec& spec)> SelectionSignal;
   void set_selection_signal(SelectionSignal signal) {
@@ -75,35 +73,35 @@ class ModusView2 : public QWidget,
 
   void Paint();
 
-  modus::Shape* GetShapeAt(const modus::Point& point) const;
+  scada::modus::Shape* GetShapeAt(const scada::modus::Point& point) const;
 
   void CreateBindings();
 
-  void SetSelection(modus::Shape* shape);
+  void SetSelection(scada::modus::Shape* shape);
 
-  void PaintSelection(QPainter& painter, modus::Shape& shape);
+  void PaintSelection(QPainter& painter, scada::modus::Shape& shape);
 
-  modus::Point PointToScheme(const QPoint& point) const;
-  QRect BoundsToView(const modus::Rect& bounds) const;
+  scada::modus::Point PointToScheme(const QPoint& point) const;
+  QRect BoundsToView(const scada::modus::Rect& bounds) const;
 
   void ZoomAtPoint(const QPoint& point, float factor);
 
   // modus::RendererDelegate
-  virtual void SchedulePaintShape(modus::Shape& shape) override;
+  virtual void SchedulePaintShape(scada::modus::Shape& shape) override;
 
   TimedDataService& timed_data_service_;
 
   std::filesystem::path path_;
   std::wstring title_;
 
-  std::unique_ptr<modus::Scheme> scheme_;
-  std::unique_ptr<modus::Renderer> renderer_;
+  std::unique_ptr<scada::modus::Scheme> scheme_;
+  std::unique_ptr<scada::modus::Renderer> renderer_;
 
   float scale_ = 1.0f;
 
-  std::map<modus::Shape*, std::unique_ptr<ModusBinding2>> bindings_;
+  std::map<scada::modus::Shape*, std::unique_ptr<ModusBinding2>> bindings_;
 
-  modus::Shape* selection_ = nullptr;
+  scada::modus::Shape* selection_ = nullptr;
 
   SelectionSignal selection_signal_;
   NavigationSignal navigation_signal_;

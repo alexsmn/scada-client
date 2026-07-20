@@ -33,14 +33,16 @@ WriteModel::WriteModel(WriteContext&& context)
   };
 
   const auto& node = spec_.node();
-  locked_ = node[data_items::id::DataItemType_Locked].value().get_or(false);
+  locked_ =
+      node[scada::data_items::id::DataItemType_Locked].value().get_or(false);
   two_staged_ =
-      node[data_items::id::DataItemType_OutputTwoStaged].value().get_or(true);
+      node[scada::data_items::id::DataItemType_OutputTwoStaged].value().get_or(
+          true);
 
   if (!manual_) {
-    auto condition =
-        node[data_items::id::DataItemType_OutputCondition].value().get_or(
-            scada::String());
+    auto condition = node[scada::data_items::id::DataItemType_OutputCondition]
+                         .value()
+                         .get_or(scada::String());
     has_condition_ = !condition.empty();
     if (has_condition_)
       condition_.Connect(timed_data_service_, condition);
@@ -61,16 +63,16 @@ std::u16string WriteModel::GetCurrentValue(bool formatted) const {
 }
 
 std::vector<std::u16string> WriteModel::GetDiscreteStates() const {
-  base::Check(discrete_);
+  scada::base::Check(discrete_);
 
   std::u16string close_label = kDefaultCloseLabel;
   std::u16string open_label = kDefaultOpenLabel;
 
-  if (auto format = spec_.node().target(data_items::id::HasTsFormat)) {
-    close_label =
-        ToString16(format[data_items::id::TsFormatType_CloseLabel].value());
-    open_label =
-        ToString16(format[data_items::id::TsFormatType_OpenLabel].value());
+  if (auto format = spec_.node().target(scada::data_items::id::HasTsFormat)) {
+    close_label = ToString16(
+        format[scada::data_items::id::TsFormatType_CloseLabel].value());
+    open_label = ToString16(
+        format[scada::data_items::id::TsFormatType_OpenLabel].value());
   }
 
   return {open_label, close_label};
@@ -82,7 +84,8 @@ int WriteModel::GetCurrentDiscreteState() const {
 
 std::u16string WriteModel::GetAnalogUnits() const {
   return ToString16(
-      spec_.node()[data_items::id::AnalogItemType_EngineeringUnits].value());
+      spec_.node()[scada::data_items::id::AnalogItemType_EngineeringUnits]
+          .value());
 }
 
 void WriteModel::Write(double value, bool lock) {
@@ -93,7 +96,7 @@ void WriteModel::Write(double value, bool lock) {
   if (manual_) {
     CoSpawn(executor_, [executor = executor_, model = weak_from_this(),
                         operation = spec_.scada_node().call(
-                            data_items::id::DataItemType_WriteManual,
+                            scada::data_items::id::DataItemType_WriteManual,
                             write_value_, lock)]() mutable {
       return CompleteWriteAsync(std::move(executor), std::move(model),
                                 std::move(operation));

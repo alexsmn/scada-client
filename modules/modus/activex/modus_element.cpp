@@ -1,7 +1,5 @@
 ﻿#include "modus/activex/modus_element.h"
 
-#include "modus/modus_ns_compat.h"
-
 #include "base/check.h"
 #include "base/format.h"
 #include "base/utf_convert.h"

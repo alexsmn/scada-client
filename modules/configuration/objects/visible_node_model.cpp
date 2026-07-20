@@ -56,31 +56,33 @@ std::u16string VisibleNodeModel::GetText(void* tree_node) {
   return node->GetText();
 }
 
-aui::Color VisibleNodeModel::GetTextColor(void* tree_node) {
+scada::aui::Color VisibleNodeModel::GetTextColor(void* tree_node) {
   auto* node = GetNode(tree_node);
   if (!node || node->IsBad())
     return profile_.bad_value_color;
 
-  return aui::ColorCode::Transparent;
+  return scada::aui::ColorCode::Transparent;
 }
 
-aui::Color VisibleNodeModel::GetBackgroundColor(void* tree_node) {
+scada::aui::Color VisibleNodeModel::GetBackgroundColor(void* tree_node) {
   auto* node = GetNode(tree_node);
   if (node && node->IsAlerting())
     return profile_.alarm_color;
 
-  return aui::ColorCode::Transparent;
+  return scada::aui::ColorCode::Transparent;
 }
 
-std::optional<aui::Color> VisibleNodeModel::GetStatusColor(void* tree_node) {
+std::optional<scada::aui::Color> VisibleNodeModel::GetStatusColor(
+    void* tree_node) {
   const VisibleNode* node = GetNode(tree_node);
   if (!node)
     return std::nullopt;  // no live value (folder/object): no status dot
 
-  const aui::Quality quality = node->IsBad()        ? aui::Quality::kBad
-                               : node->IsAlerting() ? aui::Quality::kUncertain
-                                                    : aui::Quality::kGood;
-  return aui::QualityColor(quality);
+  const scada::aui::Quality quality = node->IsBad() ? scada::aui::Quality::kBad
+                                      : node->IsAlerting()
+                                          ? scada::aui::Quality::kUncertain
+                                          : scada::aui::Quality::kGood;
+  return scada::aui::QualityColor(quality);
 }
 
 const VisibleNode* VisibleNodeModel::GetNode(void* tree_node) const {
@@ -97,7 +99,7 @@ const VisibleNode* VisibleNodeModel::GetNode(void* tree_node) const {
 // VisibleNode
 
 VisibleNode::~VisibleNode() {
-  base::Check(!change_handler_);
+  scada::base::Check(!change_handler_);
 }
 
 void VisibleNode::SetChangeHandler(ChangeHandler change_handler) {
@@ -168,7 +170,7 @@ DataItemVisibleNode::DataItemVisibleNode(TimedDataService& timed_data_service,
 }
 
 void DataItemVisibleNode::OnBlink(bool state) {
-  base::Check(alerting_);
+  scada::base::Check(alerting_);
   NotifyChanged();
 }
 
@@ -225,7 +227,7 @@ bool DataGroupVisibleNode::IsBad() const {
 }
 
 void DataGroupVisibleNode::UpdateDevice() {
-  auto device = node_.target(data_items::id::HasDevice);
+  auto device = node_.target(scada::data_items::id::HasDevice);
 
   if (device_ == device)
     return;

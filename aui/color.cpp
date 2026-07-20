@@ -1,7 +1,5 @@
 ﻿#include "aui/color.h"
 
-#include "aui/aui_ns_compat.h"
-
 #include "base/string_util.h"
 #include <charconv>
 #include <format>

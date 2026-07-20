@@ -7,7 +7,7 @@
 class MemoryIStream : public IStream {
  public:
   MemoryIStream(BYTE* data, DWORD size, DWORD capacity = 0) noexcept {
-    base::Check(data);
+    scada::base::Check(data);
     data_ = data;
     pos_ = 0;
     size_ = size;
@@ -16,7 +16,7 @@ class MemoryIStream : public IStream {
 
   ~MemoryIStream() {
 #ifndef NDEBUG
-    base::Check(ref_count_ == 0);
+    scada::base::Check(ref_count_ == 0);
 #endif
   }
 
@@ -134,7 +134,7 @@ class MemoryIStream : public IStream {
 
   ULONG STDMETHODCALLTYPE Release(void) noexcept {
 #ifndef NDEBUG
-    base::Check(ref_count_ > 0);
+    scada::base::Check(ref_count_ > 0);
     --ref_count_;
 #endif
 

@@ -15,7 +15,7 @@ class DefaultNodeCommandRegistry {
   // Registers a handler. Handlers are evaluated in registration order until
   // one returns true.
   void AddHandler(Handler handler) {
-    base::Check(handler);
+    scada::base::Check(handler);
     handlers_.push_back(std::move(handler));
   }
 

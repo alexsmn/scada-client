@@ -11,7 +11,7 @@ using namespace testing;
 
 class TimedDataModelTest : public Test {
  protected:
-  base::SimpleTestClock clock_;
+  scada::base::SimpleTestClock clock_;
   FakeTimedDataService timed_data_service_;
 
   TimedDataModel model_{
@@ -25,7 +25,7 @@ TEST_F(TimedDataModelTest, ShowsDataForTheDayByDefault) {
 
   for (auto timestamp = TestTimeFromString("14 Nov 2004 11:11:11");
        timestamp <= clock_.Now();
-       timestamp += base::TimeDelta::FromMinutes(30)) {
+       timestamp += scada::base::TimeDelta::FromMinutes(30)) {
     timed_data->data_values.emplace_back(/*value=*/timestamp.ToInternalValue(),
                                          /*qualifier=*/scada::Qualifier{},
                                          /*source_timestamp=*/timestamp,

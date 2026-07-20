@@ -29,10 +29,11 @@ TableView::TableView(const ControllerContext& context)
     NotifyContainedItemChanged(item_id, added);
   };
 
-  std::vector<aui::TableColumn> columns = {
+  std::vector<scada::aui::TableColumn> columns = {
       {TableModel::COLUMN_TITLE, kDisplayNameAttributeString, 150,
-       aui::TableColumn::LEFT},
-      {TableModel::COLUMN_VALUE, kValueTitle, 100, aui::TableColumn::RIGHT},
+       scada::aui::TableColumn::LEFT},
+      {TableModel::COLUMN_VALUE, kValueTitle, 100,
+       scada::aui::TableColumn::RIGHT},
   };
 
   // Reshell-only quality mark column, placed next to the value exactly as in
@@ -41,29 +42,31 @@ TableView::TableView(const ControllerContext& context)
   // themes; `QualityColor` returns nothing under kLegacy anyway).
   if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy) {
     columns.push_back({TableModel::COLUMN_QUALITY, Translate("Quality"), 110,
-                       aui::TableColumn::LEFT});
+                       scada::aui::TableColumn::LEFT});
   }
 
-  columns.insert(
-      columns.end(),
-      {{TableModel::COLUMN_SOURCE_TIMESTAMP, kSourceTimestampTitle, 170,
-        aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
-       {TableModel::COLUMN_SERVER_TIMESTAMP, kServerTimestampTitle, 170,
-        aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
-       {TableModel::COLUMN_CHANGE_TIME, Translate("Change Time"), 170,
-        aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
-       {TableModel::COLUMN_EVENT, Translate("Event"), 200,
-        aui::TableColumn::LEFT}});
+  columns.insert(columns.end(),
+                 {{TableModel::COLUMN_SOURCE_TIMESTAMP, kSourceTimestampTitle,
+                   170, scada::aui::TableColumn::LEFT,
+                   scada::aui::TableColumn::DataType::DateTime},
+                  {TableModel::COLUMN_SERVER_TIMESTAMP, kServerTimestampTitle,
+                   170, scada::aui::TableColumn::LEFT,
+                   scada::aui::TableColumn::DataType::DateTime},
+                  {TableModel::COLUMN_CHANGE_TIME, Translate("Change Time"),
+                   170, scada::aui::TableColumn::LEFT,
+                   scada::aui::TableColumn::DataType::DateTime},
+                  {TableModel::COLUMN_EVENT, Translate("Event"), 200,
+                   scada::aui::TableColumn::LEFT}});
 
   // cppcheck-suppress noCopyConstructor
   // cppcheck-suppress noOperatorEq
-  view_ = new aui::Table{model_, std::move(columns)};
+  view_ = new scada::aui::Table{model_, std::move(columns)};
 
-  view_->LoadIcons(IDB_ITEMS, 16, aui::Rgba{255, 0, 255});
+  view_->LoadIcons(IDB_ITEMS, 16, scada::aui::Rgba{255, 0, 255});
 
   view_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });
 
-  view_->SetContextMenuHandler([this](const aui::Point& point) {
+  view_->SetContextMenuHandler([this](const scada::aui::Point& point) {
     // Cross-platform AUI menu model (Windows, macOS, Wt) instead of the
     // Windows-only `IDR_TABLE_POPUP` resource menu.
     controller_delegate_.ShowPopupMenu(&table_menu_model_.model(),
@@ -73,7 +76,7 @@ TableView::TableView(const ControllerContext& context)
   view_->SetDoubleClickHandler([this] { OnDoubleClick(); });
 
   view_->SetKeyPressHandler(
-      [this](aui::KeyCode key_code) { return OnKeyPressed(key_code); });
+      [this](scada::aui::KeyCode key_code) { return OnKeyPressed(key_code); });
 
   selection_.multiple_handler = [this] { return GetMultipleSelection(); };
 
@@ -133,27 +136,27 @@ void TableView::Save(WindowDefinition& definition) {
   }
 }
 
-bool TableView::OnKeyPressed(aui::KeyCode key_code) {
+bool TableView::OnKeyPressed(scada::aui::KeyCode key_code) {
   switch (key_code) {
-    case aui::KeyCode::Enter:
+    case scada::aui::KeyCode::Enter:
       if (!view_->editing()) {
         OnDoubleClick();
         return true;
       }
       break;
 
-    case aui::KeyCode::Delete:
+    case scada::aui::KeyCode::Delete:
       if (!view_->editing()) {
         DeleteSelection();
         return true;
       }
       break;
 
-    case aui::KeyCode::Up:
-    case aui::KeyCode::Down:
+    case scada::aui::KeyCode::Up:
+    case scada::aui::KeyCode::Down:
 #ifdef _WIN32
       if (GetAsyncKeyState(VK_CONTROL) < 0) {
-        MoveRow(key_code == aui::KeyCode::Up);
+        MoveRow(key_code == scada::aui::KeyCode::Up);
         return true;
       }
 #endif
@@ -187,7 +190,7 @@ void TableView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
     model_->Clear();
 
   auto node = node_service_.GetNode(node_id);
-  if (IsInstanceOf(node, data_items::id::DataGroupType)) {
+  if (IsInstanceOf(node, scada::data_items::id::DataGroupType)) {
     for (auto& child : node.targets(scada::id::HasComponent))
       AddContainedItem(child.node_id(), flags | APPEND);
     return;

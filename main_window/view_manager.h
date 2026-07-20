@@ -75,17 +75,21 @@ class ViewManager {
 
   bool IsViewAdded(OpenedView& opened_view) const;
 
-  aui::ViewManagerViewId GetComponentViewId(const OpenedView& view) const;
-  aui::ViewManagerViewInfo GetComponentViewInfo(OpenedView& view) const;
-  OpenedView* FindViewByComponentId(aui::ViewManagerViewId view_id) const;
-  std::vector<aui::ViewManagerViewInfo> GetComponentViewInfos() const;
-  aui::ViewManagerSavedLayout ToComponentLayout(const PageLayout& layout) const;
-  aui::ViewManagerLayoutNode ToComponentLayoutNode(
+  scada::aui::ViewManagerViewId GetComponentViewId(
+      const OpenedView& view) const;
+  scada::aui::ViewManagerViewInfo GetComponentViewInfo(OpenedView& view) const;
+  OpenedView* FindViewByComponentId(
+      scada::aui::ViewManagerViewId view_id) const;
+  std::vector<scada::aui::ViewManagerViewInfo> GetComponentViewInfos() const;
+  scada::aui::ViewManagerSavedLayout ToComponentLayout(
+      const PageLayout& layout) const;
+  scada::aui::ViewManagerLayoutNode ToComponentLayoutNode(
       const PageLayoutBlock& block) const;
-  void FromComponentLayout(const aui::ViewManagerSavedLayout& component_layout,
-                           PageLayout& layout) const;
+  void FromComponentLayout(
+      const scada::aui::ViewManagerSavedLayout& component_layout,
+      PageLayout& layout) const;
   void FromComponentLayoutNode(
-      const aui::ViewManagerLayoutNode& component_block,
+      const scada::aui::ViewManagerLayoutNode& component_block,
       PageLayoutBlock& block) const;
 
   void OpenLayout(Page& page, const PageLayout& layout);
@@ -106,5 +110,5 @@ class ViewManager {
 
   std::unique_ptr<Page> current_page_;
 
-  aui::ViewManagerComponent component_;
+  scada::aui::ViewManagerComponent component_;
 };

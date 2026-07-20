@@ -13,9 +13,9 @@ namespace {
 std::optional<TimeRange> GetTimeRangeCommand(unsigned command_id) {
   switch (command_id) {
     case ID_TIME_RANGE_15M:
-      return base::TimeDelta::FromMinutes(15);
+      return scada::base::TimeDelta::FromMinutes(15);
     case ID_TIME_RANGE_HOUR:
-      return base::TimeDelta::FromHours(1);
+      return scada::base::TimeDelta::FromHours(1);
     case ID_TIME_RANGE_DAY:
       return TimeRange::Type::Day;
     case ID_TIME_RANGE_WEEK:
@@ -23,7 +23,8 @@ std::optional<TimeRange> GetTimeRangeCommand(unsigned command_id) {
     case ID_TIME_RANGE_MONTH:
       return TimeRange::Type::Month;
     case ID_TIME_RANGE_CUSTOM:
-      return TimeRange{/*start=*/base::Time{}, /*end=*/base::Time{}};
+      return TimeRange{/*start=*/scada::base::Time{},
+                       /*end=*/scada::base::Time{}};
     default:
       return std::nullopt;
   }
@@ -45,7 +46,7 @@ CommandHandler* OpenedViewTimeRangeCommand::GetCommandHandler(
 
 void OpenedViewTimeRangeCommand::ExecuteCommand(unsigned command_id) {
   auto time_range = GetTimeRangeCommand(command_id);
-  base::Check(time_range);
+  scada::base::Check(time_range);
 
   auto* model = time_model_getter_();
   if (!model) {

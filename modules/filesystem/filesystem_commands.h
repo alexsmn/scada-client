@@ -21,7 +21,7 @@ struct OpenFileCommandContext {
   DialogService& dialog_service;
   AnyExecutor executor;
   NodeRef file_node;
-  aui::KeyModifiers key_modifiers;
+  scada::aui::KeyModifiers key_modifiers;
 };
 
 using OpenFileCommand =
@@ -42,7 +42,7 @@ class OpenFileCommandImpl {
 Awaitable<void> OpenJsonFileAsync(std::filesystem::path path,
                                   MainWindowInterface* main_window,
                                   DialogService& dialog_service,
-                                  aui::KeyModifiers key_modifiers,
+                                  scada::aui::KeyModifiers key_modifiers,
                                   AnyExecutor executor);
 
 Awaitable<void> AddFile(NodeRef parent_directory,

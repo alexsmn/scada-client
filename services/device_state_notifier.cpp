@@ -27,8 +27,8 @@ DeviceStateNotifier::DeviceStateNotifier(TimedDataService& timed_data_service,
                                          const NodeRef& device,
                                          Callback callback)
     : callback_{std::move(callback)} {
-  base::Check(device);
-  base::Check(device.fetched());
+  scada::base::Check(device);
+  scada::base::Check(device.fetched());
 
   LOG_BIND_TAG(logger_, "DeviceId", ToString(device.node_id()));
 

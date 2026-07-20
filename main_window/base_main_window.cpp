@@ -99,8 +99,8 @@ bool BaseMainWindow::IsContextMenuCommandAvailableForTesting(
 
   auto* model = context_menu_model_.get();
   int index = -1;
-  return aui::MenuModel::GetModelAndIndexForCommandId(command_id, &model,
-                                                      &index) &&
+  return scada::aui::MenuModel::GetModelAndIndexForCommandId(command_id, &model,
+                                                             &index) &&
          model->IsEnabledAt(index);
 }
 
@@ -114,7 +114,7 @@ void BaseMainWindow::BeforeClose() {
 }
 
 MainWindowDef& BaseMainWindow::GetPrefs() const {
-  base::Check(window_id_ != 0);
+  scada::base::Check(window_id_ != 0);
   return profile_.GetMainWindow(window_id_);
 }
 
@@ -374,21 +374,21 @@ void BaseMainWindow::SplitView(OpenedViewInterface& view, bool vertically) {
 }
 
 void BaseMainWindow::ExecuteDefaultNodeCommand(const NodeRef& node) {
-  aui::KeyModifiers key_modifiers{};
+  scada::aui::KeyModifiers key_modifiers{};
 #if defined(UI_QT)
   auto modifiers = QGuiApplication::keyboardModifiers();
   if (modifiers & Qt::ShiftModifier) {
-    key_modifiers |= aui::ShiftModifier;
+    key_modifiers |= scada::aui::ShiftModifier;
   }
   if (modifiers & Qt::ControlModifier) {
-    key_modifiers |= aui::ControlModifier;
+    key_modifiers |= scada::aui::ControlModifier;
   }
 #elif defined(_WIN32)
   if (::GetAsyncKeyState(VK_SHIFT)) {
-    key_modifiers |= aui::ShiftModifier;
+    key_modifiers |= scada::aui::ShiftModifier;
   }
   if (::GetAsyncKeyState(VK_CONTROL)) {
-    key_modifiers |= aui::ControlModifier;
+    key_modifiers |= scada::aui::ControlModifier;
   }
 #endif
 

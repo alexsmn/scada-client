@@ -79,10 +79,10 @@ void WatchModel::SetDevice(NodeRef device) {
 
   Clear();
 
-  event_source_.Start(
-      device_.node_id(),
-      ToDateTimeRangeWithOpenRange(time_range_, /*now=*/base::Time::Now()),
-      /*delegate=*/*this);
+  event_source_.Start(device_.node_id(),
+                      ToDateTimeRangeWithOpenRange(
+                          time_range_, /*now=*/scada::base::Time::Now()),
+                      /*delegate=*/*this);
 }
 
 void WatchModel::SetTimeRange(const TimeRange& time_range) {
@@ -94,10 +94,10 @@ void WatchModel::SetTimeRange(const TimeRange& time_range) {
 
   Clear();
 
-  event_source_.Start(
-      device_.node_id(),
-      ToDateTimeRangeWithOpenRange(time_range_, /*now=*/base::Time::Now()),
-      /*delegate=*/*this);
+  event_source_.Start(device_.node_id(),
+                      ToDateTimeRangeWithOpenRange(
+                          time_range_, /*now=*/scada::base::Time::Now()),
+                      /*delegate=*/*this);
 }
 
 void WatchModel::SaveLog(const std::filesystem::path& path) {
@@ -117,14 +117,14 @@ int WatchModel::GetRowCount() {
   return static_cast<int>(events_.size());
 }
 
-void WatchModel::GetCell(aui::TableCell& cell) {
+void WatchModel::GetCell(scada::aui::TableCell& cell) {
   const scada::Event& event = events_[cell.row];
 
   // TODO: Unify with GetEventColors().
   if (event.severity >= scada::kSeverityCritical) {
-    cell.cell_color = aui::Rgba{248, 105, 107};
+    cell.cell_color = scada::aui::Rgba{248, 105, 107};
   } else if (event.severity >= scada::kSeverityWarning) {
-    cell.cell_color = aui::Rgba{255, 235, 132};
+    cell.cell_color = scada::aui::Rgba{255, 235, 132};
   }
 
   switch (cell.column_id) {

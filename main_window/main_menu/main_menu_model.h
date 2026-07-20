@@ -35,12 +35,13 @@ struct MainMenuContext {
   ViewManager& view_manager_;
   CommandHandler& command_handler_;
   DialogService& dialog_service_;
-  aui::MenuModel& context_menu_model_;
+  scada::aui::MenuModel& context_menu_model_;
   BasicCommandRegistry<GlobalCommandContext>& commands_;
   UiCommandRegistry& ui_command_registry_;
 };
 
-class DisplayMenuModel : private MainMenuContext, public aui::SimpleMenuModel {
+class DisplayMenuModel : private MainMenuContext,
+                         public scada::aui::SimpleMenuModel {
  public:
   explicit DisplayMenuModel(const MainMenuContext& context);
 
@@ -61,7 +62,7 @@ class DisplayMenuModel : private MainMenuContext, public aui::SimpleMenuModel {
 };
 
 class FavouritesMenuModel : private MainMenuContext,
-                            public aui::SimpleMenuModel {
+                            public scada::aui::SimpleMenuModel {
  public:
   FavouritesMenuModel(MainMenuId menu_id, const MainMenuContext& context);
 
@@ -76,7 +77,8 @@ class FavouritesMenuModel : private MainMenuContext,
   std::vector<const WindowDefinition*> windows_;
 };
 
-class PageMenuModel : private MainMenuContext, public aui::SimpleMenuModel {
+class PageMenuModel : private MainMenuContext,
+                      public scada::aui::SimpleMenuModel {
  public:
   explicit PageMenuModel(const MainMenuContext& context);
 
@@ -94,10 +96,11 @@ class PageMenuModel : private MainMenuContext, public aui::SimpleMenuModel {
   Cancelation cancelation_;
 };
 
-class WindowMenuModel : private MainMenuContext, public aui::SimpleMenuModel {
+class WindowMenuModel : private MainMenuContext,
+                        public scada::aui::SimpleMenuModel {
  public:
   explicit WindowMenuModel(const MainMenuContext& context)
-      : MainMenuContext{context}, aui::SimpleMenuModel{nullptr} {}
+      : MainMenuContext{context}, scada::aui::SimpleMenuModel{nullptr} {}
 
   // views::MenuModel
   virtual void MenuWillShow() override;
@@ -108,10 +111,11 @@ class WindowMenuModel : private MainMenuContext, public aui::SimpleMenuModel {
   int active_index_ = -1;
 };
 
-class TrashMenuModel : private MainMenuContext, public aui::SimpleMenuModel {
+class TrashMenuModel : private MainMenuContext,
+                       public scada::aui::SimpleMenuModel {
  public:
   explicit TrashMenuModel(const MainMenuContext& context)
-      : MainMenuContext{context}, aui::SimpleMenuModel{nullptr} {}
+      : MainMenuContext{context}, scada::aui::SimpleMenuModel{nullptr} {}
 
   // views::MenuModel
   virtual void MenuWillShow() override;
@@ -123,7 +127,7 @@ class TrashMenuModel : private MainMenuContext, public aui::SimpleMenuModel {
 };
 
 #if defined(UI_QT)
-class StyleMenuModel : public aui::SimpleMenuModel {
+class StyleMenuModel : public scada::aui::SimpleMenuModel {
  public:
   StyleMenuModel();
 
@@ -135,8 +139,8 @@ class StyleMenuModel : public aui::SimpleMenuModel {
 #endif  // defined(UI_QT)
 
 class MainMenuModel final : private MainMenuContext,
-                            private aui::SimpleMenuModel::Delegate,
-                            public aui::SimpleMenuModel {
+                            private scada::aui::SimpleMenuModel::Delegate,
+                            public scada::aui::SimpleMenuModel {
  public:
   explicit MainMenuModel(const MainMenuContext& context);
 
@@ -150,19 +154,19 @@ class MainMenuModel final : private MainMenuContext,
 
   DisplayMenuModel display_menu_model_;
   FavouritesMenuModel table_favourites_;
-  aui::SimpleMenuModel table_submenu_;
+  scada::aui::SimpleMenuModel table_submenu_;
   std::unique_ptr<FavouritesMenuModel> graph_favourites_;
-  aui::SimpleMenuModel graph_submenu_;
-  aui::SimpleMenuModel more_submenu_;
+  scada::aui::SimpleMenuModel graph_submenu_;
+  scada::aui::SimpleMenuModel more_submenu_;
   PageMenuModel page_list_menu_;
-  aui::SimpleMenuModel page_submenu_;
+  scada::aui::SimpleMenuModel page_submenu_;
   WindowMenuModel window_list_menu_;
   TrashMenuModel trash_menu_;
-  aui::SimpleMenuModel window_submenu_;
+  scada::aui::SimpleMenuModel window_submenu_;
 #if defined(UI_QT)
   StyleMenuModel style_submenu_;
-  aui::SimpleMenuModel language_submenu_;
+  scada::aui::SimpleMenuModel language_submenu_;
 #endif
-  aui::SimpleMenuModel settings_submenu_;
-  aui::SimpleMenuModel help_submenu_;
+  scada::aui::SimpleMenuModel settings_submenu_;
+  scada::aui::SimpleMenuModel help_submenu_;
 };

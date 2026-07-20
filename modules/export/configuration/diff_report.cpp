@@ -86,8 +86,8 @@ void PrintRefs(NodeService& node_service,
                std::span<const scada::ReferenceDescription> refs,
                u16ostream& report) {
   for (const auto& r : refs) {
-    base::Check(!r.reference_type_id.is_null());
-    base::Check(!r.node_id.is_null());
+    scada::base::Check(!r.reference_type_id.is_null());
+    scada::base::Check(!r.node_id.is_null());
     auto ref_name = GetDisplayName(node_service, r.reference_type_id);
     auto target_name = GetDisplayName(node_service, r.node_id);
     report << ToString16(ref_name) << u" = " << ToString16(target_name)
@@ -142,7 +142,7 @@ void PrintDiffReport(u16ostream& report,
 void OpenNotepad(const std::filesystem::path& path) {
 #ifdef _WIN32
   std::filesystem::path system_path;
-  if (!base::PathService::Get(base::DIR_WINDOWS, &system_path)) {
+  if (!scada::base::PathService::Get(scada::base::DIR_WINDOWS, &system_path)) {
     return;
   }
 
@@ -162,7 +162,7 @@ void OpenNotepad(const std::filesystem::path& path) {
     throw ResourceError{u"Failed to open Notepad"};
   }
 
-  base::win::ScopedProcessInformation proc_info{raw_process_info};
+  scada::base::win::ScopedProcessInformation proc_info{raw_process_info};
   ::WaitForSingleObject(proc_info.process_handle(), INFINITE);
 #else
   std::string command = "open -W '";

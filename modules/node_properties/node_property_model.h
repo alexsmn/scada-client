@@ -15,9 +15,10 @@
 class PropertyService;
 struct PropertyContext;
 
-class NodePropertyModel : protected PropertyContext,
-                          public aui::PropertyModel,
-                          public std::enable_shared_from_this<NodePropertyModel> {
+class NodePropertyModel
+    : protected PropertyContext,
+      public scada::aui::PropertyModel,
+      public std::enable_shared_from_this<NodePropertyModel> {
  public:
   NodePropertyModel(PropertyService& property_service,
                     PropertyContext&& context,
@@ -40,7 +41,7 @@ class NodePropertyModel : protected PropertyContext,
   void PropertiesChanged(int first, int count);
 
   // PropertyModel
-  virtual aui::PropertyGroup& GetRootGroup() override { return root_; }
+  virtual scada::aui::PropertyGroup& GetRootGroup() override { return root_; }
 
   void OnModelChanged(const scada::ModelChangeEvent& event);
   void OnNodeSemanticChanged(const scada::NodeId& node_id);

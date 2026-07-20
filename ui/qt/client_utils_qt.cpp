@@ -45,18 +45,18 @@ constexpr std::array<std::pair<unsigned, std::string_view>, 17> kIconResources{{
 }  // namespace
 
 void BuildMenu(QMenu& menu,
-               aui::MenuModel& model,
+               scada::aui::MenuModel& model,
                const std::unordered_set<int>* skip_command_ids) {
   model.MenuWillShow();
 
   for (int i = 0; i < model.GetItemCount(); ++i) {
     auto item_type = model.GetTypeAt(i);
     switch (item_type) {
-      case aui::MenuModel::TYPE_SEPARATOR:
+      case scada::aui::MenuModel::TYPE_SEPARATOR:
         menu.addSeparator();
         break;
 
-      case aui::MenuModel::TYPE_SUBMENU:
+      case scada::aui::MenuModel::TYPE_SUBMENU:
         if (auto* submenu_model = model.GetSubmenuModelAt(i)) {
           auto* submenu =
               menu.addMenu(QString::fromStdU16String(model.GetLabelAt(i)));
@@ -70,7 +70,7 @@ void BuildMenu(QMenu& menu,
         }
         break;
 
-      case aui::MenuModel::TYPE_INPLACE_MENU:
+      case scada::aui::MenuModel::TYPE_INPLACE_MENU:
         if (auto* inplace_model = model.GetSubmenuModelAt(i))
           BuildMenu(menu, *inplace_model, skip_command_ids);
         break;
@@ -84,8 +84,8 @@ void BuildMenu(QMenu& menu,
             menu.addAction(QString::fromStdU16String(model.GetLabelAt(i)));
         action->setData(model.GetCommandIdAt(i));
         action->setEnabled(model.IsEnabledAt(i));
-        if (item_type == aui::MenuModel::TYPE_CHECK ||
-            item_type == aui::MenuModel::TYPE_RADIO) {
+        if (item_type == scada::aui::MenuModel::TYPE_CHECK ||
+            item_type == scada::aui::MenuModel::TYPE_RADIO) {
           action->setCheckable(true);
           action->setChecked(model.IsItemCheckedAt(i));
         }

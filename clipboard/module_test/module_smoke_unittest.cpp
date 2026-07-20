@@ -25,7 +25,7 @@ TEST(ScadaClientClipboardModuleSmoke, TransitiveSurfaces) {
   scada::NodeState state;
   state.node_id = scada::NodeId{42, 7};
   EXPECT_FALSE(state.node_id.is_null());
-  base::Check(true, "client clipboard module smoke");
+  scada::base::Check(true, "client clipboard module smoke");
 }
 
 }  // namespace

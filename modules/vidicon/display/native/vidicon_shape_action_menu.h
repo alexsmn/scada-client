@@ -5,9 +5,9 @@
 
 #include "base/utf_convert.h"
 
-struct VidiconShapeActionMenu : private aui::SimpleMenuModel::Delegate {
-  VidiconShapeActionMenu(const vidicon::shape& shape,
-                         std::span<const vidicon::shape_action> actions)
+struct VidiconShapeActionMenu : private scada::aui::SimpleMenuModel::Delegate {
+  VidiconShapeActionMenu(const scada::vidicon::shape& shape,
+                         std::span<const scada::vidicon::shape_action> actions)
       : shape{shape} {
     int action_index = 0;
     for (const auto& action : actions) {
@@ -36,6 +36,6 @@ struct VidiconShapeActionMenu : private aui::SimpleMenuModel::Delegate {
     shape.exec_action(/*action_index*/ command_id);
   }
 
-  const vidicon::shape& shape;
-  aui::SimpleMenuModel menu_model{this};
+  const scada::vidicon::shape& shape;
+  scada::aui::SimpleMenuModel menu_model{this};
 };

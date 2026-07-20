@@ -75,18 +75,22 @@ QWidget* Debugger::CreateRequestView(QWidget* parent) {
   QSplitter* splitter = new QSplitter{parent};
   splitter->setOrientation(Qt::Horizontal);
 
-  std::vector<aui::TableColumn> request_table_columns{
-      {.id = 0, .title = u"ID", .alignment = aui::TableColumn::RIGHT},
-      {.id = 1, .title = u"Phase", .alignment = aui::TableColumn::LEFT},
-      {.id = 2, .title = u"Start Time", .alignment = aui::TableColumn::LEFT},
-      {.id = 3, .title = u"Duration", .alignment = aui::TableColumn::LEFT},
+  std::vector<scada::aui::TableColumn> request_table_columns{
+      {.id = 0, .title = u"ID", .alignment = scada::aui::TableColumn::RIGHT},
+      {.id = 1, .title = u"Phase", .alignment = scada::aui::TableColumn::LEFT},
+      {.id = 2,
+       .title = u"Start Time",
+       .alignment = scada::aui::TableColumn::LEFT},
+      {.id = 3,
+       .title = u"Duration",
+       .alignment = scada::aui::TableColumn::LEFT},
       {.id = 4,
        .title = u"Title",
        .width = 200,
-       .alignment = aui::TableColumn::LEFT}};
+       .alignment = scada::aui::TableColumn::LEFT}};
 
-  aui::Table* request_table_view =
-      new aui::Table{request_table_model_, std::move(request_table_columns)};
+  scada::aui::Table* request_table_view = new scada::aui::Table{
+      request_table_model_, std::move(request_table_columns)};
 
   request_table_view->setParent(parent);
   splitter->addWidget(request_table_view);

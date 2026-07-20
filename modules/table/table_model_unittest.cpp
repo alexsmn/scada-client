@@ -24,8 +24,8 @@ class TableModelTest : public Test {
 
  protected:
   struct RowContext {
-    base::ObserverList<TimedDataObserver> observers;
-    base::ObserverList<TimedDataViewObserver> view_observers;
+    scada::base::ObserverList<TimedDataObserver> observers;
+    scada::base::ObserverList<TimedDataViewObserver> view_observers;
     StrictMock<MockTimedData> timed_data;
   };
 
@@ -46,12 +46,14 @@ class TableModelTest : public Test {
                                             node_event_provider_, profile_,
                                             dialog_service_, blinker_manager_}};
 
-  aui::RecordingTableModelObserver table_model_observer_{table_model_};
+  scada::aui::RecordingTableModelObserver table_model_observer_{table_model_};
 };
 
 namespace {
 
-aui::Color GetCellColor(const TableModel& table_model, int row, int column_id) {
+scada::aui::Color GetCellColor(const TableModel& table_model,
+                               int row,
+                               int column_id) {
   TableCellEx cell = {};
   cell.row = row;
   cell.column_id = column_id;
@@ -59,7 +61,9 @@ aui::Color GetCellColor(const TableModel& table_model, int row, int column_id) {
   return cell.cell_color;
 }
 
-aui::Color GetTextColor(const TableModel& table_model, int row, int column_id) {
+scada::aui::Color GetTextColor(const TableModel& table_model,
+                               int row,
+                               int column_id) {
   TableCellEx cell = {};
   cell.row = row;
   cell.column_id = column_id;
@@ -72,7 +76,7 @@ NodeRef MakeDiscreteItemNode(ModelNodeService& node_service) {
   auto type_model = std::make_shared<NiceMock<MockNodeModel>>();
 
   const NodeRef type_node =
-      node_service.Add(data_items::id::DiscreteItemType, type_model);
+      node_service.Add(scada::data_items::id::DiscreteItemType, type_model);
 
   ON_CALL(*node_model, GetAttribute(scada::AttributeId::NodeId))
       .WillByDefault(Return(scada::NodeId{1, 1}));
@@ -80,11 +84,11 @@ NodeRef MakeDiscreteItemNode(ModelNodeService& node_service) {
           GetTarget(scada::NodeId{scada::id::HasTypeDefinition}, true))
       .WillByDefault(Return(type_node));
   ON_CALL(*node_model,
-          GetTarget(scada::NodeId{data_items::id::HasTsFormat}, true))
+          GetTarget(scada::NodeId{scada::data_items::id::HasTsFormat}, true))
       .WillByDefault(Return(NodeRef{}));
 
   ON_CALL(*type_model, GetAttribute(scada::AttributeId::NodeId))
-      .WillByDefault(Return(data_items::id::DiscreteItemType));
+      .WillByDefault(Return(scada::data_items::id::DiscreteItemType));
   ON_CALL(*type_model, GetTarget(scada::NodeId{scada::id::HasSubtype}, false))
       .WillByDefault(Return(NodeRef{}));
 
@@ -218,7 +222,7 @@ TEST_F(TableModelTest, DiscreteOpenValueUsesPaletteTextColor) {
       .Times(AnyNumber())
       .WillRepeatedly(Return(MakeDiscreteItemNode(node_service_)));
 
-  EXPECT_EQ(aui::Color{aui::ColorCode::Transparent},
+  EXPECT_EQ(scada::aui::Color{scada::aui::ColorCode::Transparent},
             GetTextColor(table_model_, 0, TableModel::COLUMN_VALUE));
 }
 
@@ -233,7 +237,7 @@ TEST_F(TableModelTest, ValueBlinking) {
 
   // Not alerting, not blinking.
 
-  EXPECT_EQ(aui::Color{aui::ColorCode::Transparent},
+  EXPECT_EQ(scada::aui::Color{scada::aui::ColorCode::Transparent},
             GetCellColor(table_model_, 0, TableModel::COLUMN_VALUE));
 
   // Alerting, but not blinking.
@@ -248,12 +252,12 @@ TEST_F(TableModelTest, ValueBlinking) {
   EXPECT_THAT(table_model_observer_.items_changed, ElementsAre(Pair(0, 1)));
 
   EXPECT_CALL(blinker_manager_, GetState()).WillOnce(Return(false));
-  EXPECT_EQ(aui::Color{aui::ColorCode::Transparent},
+  EXPECT_EQ(scada::aui::Color{scada::aui::ColorCode::Transparent},
             GetCellColor(table_model_, 0, TableModel::COLUMN_VALUE));
 
   // Alerting and blinking.
 
   EXPECT_CALL(blinker_manager_, GetState()).WillOnce(Return(true));
-  EXPECT_EQ(aui::Color{aui::ColorCode::Yellow},
+  EXPECT_EQ(scada::aui::Color{scada::aui::ColorCode::Yellow},
             GetCellColor(table_model_, 0, TableModel::COLUMN_VALUE));
 }

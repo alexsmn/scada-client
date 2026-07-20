@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include "aui/qt/dialog_service_impl_qt.h"
 #include "controller/action_manager.h"
 #include "main_window/base_main_window.h"
@@ -40,9 +38,9 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // BaseMainWindow
   virtual DialogService& GetDialogService() override { return dialog_service_; }
   virtual void SetWindowFlashing(bool flashing) override;
-  virtual void ShowPopupMenu(aui::MenuModel* merge_menu,
+  virtual void ShowPopupMenu(scada::aui::MenuModel* merge_menu,
                              unsigned resource_id,
-                             const aui::Point& point,
+                             const scada::aui::Point& point,
                              bool right_click) override;
 
  protected:
@@ -55,7 +53,7 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
 
   // ViewManagerDelegate
   virtual void OnShowTabPopupMenu(OpenedView& view,
-                                  const aui::Point& point) override;
+                                  const scada::aui::Point& point) override;
 
   // QWidget
   virtual void closeEvent(QCloseEvent* event) override;
@@ -123,7 +121,7 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
 
   DialogServiceImplQt dialog_service_;
 
-  std::unique_ptr<aui::MenuModel> main_menu_model_;
+  std::unique_ptr<scada::aui::MenuModel> main_menu_model_;
 
   std::unique_ptr<ProgressController> progress_controller_;
 

@@ -12,5 +12,7 @@ class CommandHandler {
 
   virtual bool IsCommandChecked(unsigned command_id) const { return false; }
 
-  virtual void ExecuteCommand(unsigned command_id) { base::NotReached(); }
+  virtual void ExecuteCommand(unsigned command_id) {
+    scada::base::NotReached();
+  }
 };

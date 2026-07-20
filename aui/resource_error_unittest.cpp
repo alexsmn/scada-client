@@ -38,7 +38,8 @@ class RecordingDialogService : public DialogService {
     messages.emplace_back(message);
     titles.emplace_back(title);
     modes.emplace_back(mode);
-    message_box_completion = std::make_unique<base::AsyncCompletion>(executor_);
+    message_box_completion =
+        std::make_unique<scada::base::AsyncCompletion>(executor_);
     co_await message_box_completion->Wait();
     co_return message_box_result;
   }
@@ -64,7 +65,7 @@ class RecordingDialogService : public DialogService {
  private:
   AnyExecutor executor_;
   MessageBoxResult message_box_result = MessageBoxResult::Ok;
-  std::unique_ptr<base::AsyncCompletion> message_box_completion;
+  std::unique_ptr<scada::base::AsyncCompletion> message_box_completion;
 
  public:
   std::vector<std::u16string> messages;

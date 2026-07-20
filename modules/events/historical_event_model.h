@@ -47,8 +47,8 @@ class HistoricalEventModel {
 
  private:
   Awaitable<void> UpdateAsync(CancelationRef request_cancelation,
-                              base::Time from,
-                              base::Time to);
+                              scada::base::Time from,
+                              scada::base::Time to);
 
   void OnHistoryReadEventsCompleted(scada::HistoryReadEventsResult&& result);
 
@@ -72,11 +72,12 @@ class HistoricalEventModel {
 inline void HistoricalEventModel::Update() {
   historical_events_.clear();
 
-  auto [from, to] = ToDateTimeRange(time_range_, /*now=*/base::Time::Now());
+  auto [from, to] =
+      ToDateTimeRange(time_range_, /*now=*/scada::base::Time::Now());
 
   BOOST_LOG_TRIVIAL(info) << "Query events from " << FormatTime(from).c_str();
 
-  base::Check(!request_running_);
+  scada::base::Check(!request_running_);
   request_running_ = true;
 
   CoSpawn(executor_,
@@ -92,8 +93,8 @@ inline void HistoricalEventModel::Update() {
 
 inline Awaitable<void> HistoricalEventModel::UpdateAsync(
     CancelationRef request_cancelation,
-    base::Time from,
-    base::Time to) {
+    scada::base::Time from,
+    scada::base::Time to) {
   auto result = co_await history_service_.HistoryReadEvents(
       scada::id::Server, from, to,
       scada::EventFilter{scada::EventFilter::ACKED});
@@ -106,7 +107,7 @@ inline Awaitable<void> HistoricalEventModel::UpdateAsync(
 
 inline void HistoricalEventModel::OnHistoryReadEventsCompleted(
     scada::HistoryReadEventsResult&& result) {
-  base::Check(request_running_);
+  scada::base::Check(request_running_);
   // Only acked events were requested, but the server response is external
   // data, so this is not enforced here.
 

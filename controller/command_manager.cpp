@@ -11,7 +11,7 @@ CommandManager::~CommandManager() = default;
 
 CommandDescriptor& CommandManager::RegisterCommand(
     CommandDescriptor descriptor) {
-  base::Check(descriptor.command_id != 0);
+  scada::base::Check(descriptor.command_id != 0);
 
   const auto command_id = descriptor.command_id;
   auto [it, inserted] = command_map_.emplace(command_id, std::move(descriptor));
@@ -32,7 +32,7 @@ CommandDescriptor* CommandManager::FindCommand(unsigned command_id) const {
 void CommandManager::RegisterHandler(unsigned command_id,
                                      CommandContextId context_id,
                                      CommandHandler& handler) {
-  base::Check(FindCommand(command_id));
+  scada::base::Check(FindCommand(command_id));
   registrations_.emplace(
       command_id,
       CommandRegistration{.context_id = context_id, .handler = &handler});

@@ -25,7 +25,7 @@ void WatchCurrentEventSource::Start(const scada::NodeId& device_id,
       scada::MonitoringParameters{
           .filter =
               scada::EventFilter{
-                  .of_type = {devices::id::DeviceWatchEventType}}},
+                  .of_type = {scada::devices::id::DeviceWatchEventType}}},
       // FIXME: Captures |this|. No sync.
       BindExecutor(executor_, [&delegate](const scada::Status& status,
                                           const scada::Event& event) {

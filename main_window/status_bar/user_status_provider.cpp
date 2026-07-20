@@ -28,7 +28,7 @@ UserStatusProvider::UserStatusProvider(const AnyExecutor& executor,
 UserStatusProvider::~UserStatusProvider() = default;
 
 void UserStatusProvider::Init(const ChangeNotifier& change_notifier) {
-  base::Check(!weak_from_this().expired());
+  scada::base::Check(!weak_from_this().expired());
 
   change_notifier_ = change_notifier;
 

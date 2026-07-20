@@ -18,11 +18,11 @@ class DialogServiceImplQtTest : public testing::Test {
 }  // namespace
 
 TEST_F(DialogServiceImplQtTest, RunMessageBoxMapsNoButtonResult) {
-  auto result = aui::qt::test::StartAwaitable(
-      dialog_service_.RunMessageBox(
+  auto result =
+      scada::aui::qt::test::StartAwaitable(dialog_service_.RunMessageBox(
           u"Confirm?", u"Title", MessageBoxMode::QuestionYesNoDefaultNo));
 
-  aui::qt::test::ProcessEventsUntilSettled(result, [](QDialog& dialog) {
+  scada::aui::qt::test::ProcessEventsUntilSettled(result, [](QDialog& dialog) {
     auto* message_box = qobject_cast<QMessageBox*>(&dialog);
     ASSERT_NE(message_box, nullptr);
 
@@ -31,6 +31,7 @@ TEST_F(DialogServiceImplQtTest, RunMessageBoxMapsNoButtonResult) {
     no_button->click();
   });
 
-  ASSERT_TRUE(aui::qt::test::IsAwaitableReady(result));
-  EXPECT_EQ(aui::qt::test::GetAwaitableResult(result), MessageBoxResult::No);
+  ASSERT_TRUE(scada::aui::qt::test::IsAwaitableReady(result));
+  EXPECT_EQ(scada::aui::qt::test::GetAwaitableResult(result),
+            MessageBoxResult::No);
 }

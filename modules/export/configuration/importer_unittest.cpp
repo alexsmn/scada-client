@@ -12,9 +12,9 @@ using namespace testing;
 
 // Pass child node before parent node. Ensure nodes are created correctly.
 TEST(Importer, UnorderedCreatedNodes) {
-  const auto& root_node_id = data_items::id::DataItems;
-  const auto& data_item_id = scada::NodeId{1, NamespaceIndexes::TS};
-  const auto& data_group_id = scada::NodeId{1, NamespaceIndexes::GROUP};
+  const auto& root_node_id = scada::data_items::id::DataItems;
+  const auto& data_item_id = scada::NodeId{1, scada::NamespaceIndexes::TS};
+  const auto& data_group_id = scada::NodeId{1, scada::NamespaceIndexes::GROUP};
 
   MockTaskManager task_manager;
 
@@ -34,12 +34,13 @@ TEST(Importer, UnorderedCreatedNodes) {
         co_return data_item_id;
       });
 
-  ApplyDiffData(
-      {.create_nodes = {{.node_id = data_item_id,
-                         .type_definition_id = data_items::id::AnalogItemType,
-                         .parent_id = data_group_id},
-                        {.node_id = data_group_id,
-                         .type_definition_id = data_items::id::DataGroupType,
-                         .parent_id = root_node_id}}},
-      task_manager);
+  ApplyDiffData({.create_nodes = {{.node_id = data_item_id,
+                                   .type_definition_id =
+                                       scada::data_items::id::AnalogItemType,
+                                   .parent_id = data_group_id},
+                                  {.node_id = data_group_id,
+                                   .type_definition_id =
+                                       scada::data_items::id::DataGroupType,
+                                   .parent_id = root_node_id}}},
+                task_manager);
 }

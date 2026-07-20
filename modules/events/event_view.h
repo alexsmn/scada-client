@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include "aui/key_codes.h"
 #include "base/awaitable.h"
 #include "controller/command_registry.h"
@@ -73,7 +71,7 @@ class EventView : protected ControllerContext,
 
   void OnSelectionChanged();
 
-  bool OnKeyPressed(aui::KeyCode key_code);
+  bool OnKeyPressed(scada::aui::KeyCode key_code);
 
   const bool is_panel_;
 
@@ -84,7 +82,7 @@ class EventView : protected ControllerContext,
   SelectionModel selection_{{timed_data_service_}};
 
   // Owned by the parent widget.
-  aui::Table* table_ = nullptr;
+  scada::aui::Table* table_ = nullptr;
 
   CommandRegistry command_registry_;
 

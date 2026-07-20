@@ -15,7 +15,7 @@
 namespace {
 
 ConfigurationTreeNode* FindFirstValueTreeNode(ConfigurationTreeNode& node) {
-  if (IsInstanceOf(node.node(), data_items::id::DataItemType))
+  if (IsInstanceOf(node.node(), scada::data_items::id::DataItemType))
     return &node;
 
   if (node.CanFetchMore())
@@ -158,7 +158,7 @@ ObjectTreeView::CreateConfigurationTreeModel(
   auto model = std::make_shared<ObjectTreeModel>(ObjectTreeModelContext{
       context.executor_,
       context.node_service_,
-      context.node_service_.GetNode(data_items::id::DataItems),
+      context.node_service_.GetNode(scada::data_items::id::DataItems),
       context.timed_data_service_,
       context.profile_,
       context.blinker_manager_,

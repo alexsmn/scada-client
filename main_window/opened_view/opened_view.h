@@ -23,9 +23,9 @@ class WindowDefinition;
 class PrintService;
 struct WindowInfo;
 
-using PopupMenuHandler = std::function<void(aui::MenuModel* merge_menu,
+using PopupMenuHandler = std::function<void(scada::aui::MenuModel* merge_menu,
                                             unsigned resource_id,
-                                            const aui::Point& point,
+                                            const scada::aui::Point& point,
                                             bool right_click)>;
 
 using DefaultNodeCommandHandler = std::function<void(const NodeRef& node)>;
@@ -56,7 +56,7 @@ class OpenedView final : private OpenedViewContext,
   WindowDefinition& window_def() { return window_def_; }
   int window_id() const { return window_def_.id; }
   MainWindow& main_window() const {
-    base::Check(main_window_);
+    scada::base::Check(main_window_);
     return *main_window_;
   }
   bool locked() const { return locked_; }
@@ -89,9 +89,9 @@ class OpenedView final : private OpenedViewContext,
 
   // ControllerDelegate
   virtual void SetTitle(std::u16string_view) override;
-  virtual void ShowPopupMenu(aui::MenuModel* merge_menu,
+  virtual void ShowPopupMenu(scada::aui::MenuModel* merge_menu,
                              unsigned resource_id,
-                             const aui::Point& point,
+                             const scada::aui::Point& point,
                              bool right_click) override;
   virtual void OpenView(const WindowDefinition& def) override;
   virtual void ExecuteDefaultNodeCommand(const NodeRef& node) override;

@@ -85,18 +85,22 @@ EventView::EventView(const ControllerContext& context,
       is_panel_{is_panel},
       local_events_{local_events},
       model_{CreateEventTableModel(context, local_events, is_panel)} {
-  const aui::TableColumn kEventViewColumns[] = {
-      {EventColumnTime, Translate("Time"), 150, aui::TableColumn::LEFT,
-       aui::TableColumn::DataType::DateTime},
-      {EventColumnItem, Translate("Item"), 170, aui::TableColumn::LEFT},
-      {EventColumnSeverity, Translate("Severity"), 45, aui::TableColumn::RIGHT},
-      {EventColumnValue, Translate("Value"), 100, aui::TableColumn::RIGHT},
-      {EventColumnMessage, Translate("Message"), 300, aui::TableColumn::LEFT},
-      {EventColumnUser, Translate("User"), 100, aui::TableColumn::LEFT},
+  const scada::aui::TableColumn kEventViewColumns[] = {
+      {EventColumnTime, Translate("Time"), 150, scada::aui::TableColumn::LEFT,
+       scada::aui::TableColumn::DataType::DateTime},
+      {EventColumnItem, Translate("Item"), 170, scada::aui::TableColumn::LEFT},
+      {EventColumnSeverity, Translate("Severity"), 45,
+       scada::aui::TableColumn::RIGHT},
+      {EventColumnValue, Translate("Value"), 100,
+       scada::aui::TableColumn::RIGHT},
+      {EventColumnMessage, Translate("Message"), 300,
+       scada::aui::TableColumn::LEFT},
+      {EventColumnUser, Translate("User"), 100, scada::aui::TableColumn::LEFT},
       {EventColumnAckUser, Translate("Acknowledged By"), 100,
-       aui::TableColumn::LEFT},
+       scada::aui::TableColumn::LEFT},
       {EventColumnAckTime, Translate("Acknowledge Time"), 150,
-       aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
+       scada::aui::TableColumn::LEFT,
+       scada::aui::TableColumn::DataType::DateTime},
   };
 
   size_t count = std::size(kEventViewColumns);
@@ -105,16 +109,17 @@ EventView::EventView(const ControllerContext& context,
 
   // cppcheck-suppress noCopyConstructor
   // cppcheck-suppress noOperatorEq
-  table_ = new aui::Table{model_,
-                          std::vector<aui::TableColumn>(
-                              kEventViewColumns, kEventViewColumns + count),
-                          true};
+  table_ =
+      new scada::aui::Table{model_,
+                            std::vector<scada::aui::TableColumn>(
+                                kEventViewColumns, kEventViewColumns + count),
+                            true};
 
 #if defined(UI_QT)
   table_->sortByColumn(0, Qt::DescendingOrder);
 #endif
 
-  table_->SetContextMenuHandler([this](const aui::Point& point) {
+  table_->SetContextMenuHandler([this](const scada::aui::Point& point) {
     // Show the event view's own AUI menu model (works on Windows, macOS and Wt)
     // rather than the Windows-only `IDR_EVENT_POPUP` resource menu.
     controller_delegate_.ShowPopupMenu(&event_menu_model_.model(),
@@ -126,7 +131,7 @@ EventView::EventView(const ControllerContext& context,
   table_->SetDoubleClickHandler([this] { AcknowledgeSelection(); });
 
   table_->SetKeyPressHandler(
-      [this](aui::KeyCode key_code) { return OnKeyPressed(key_code); });
+      [this](scada::aui::KeyCode key_code) { return OnKeyPressed(key_code); });
 
   selection_.multiple_handler = [this] { return GetSelectedNodeIds(); };
 
@@ -279,9 +284,9 @@ std::unique_ptr<UiView> EventView::Init(const WindowDefinition& definition) {
   return std::unique_ptr<UiView>{table_->CreateParentIfNecessary()};
 }
 
-bool EventView::OnKeyPressed(aui::KeyCode key_code) {
+bool EventView::OnKeyPressed(scada::aui::KeyCode key_code) {
   switch (key_code) {
-    case aui::KeyCode::Escape:
+    case scada::aui::KeyCode::Escape:
       model_->CancelRequest();
       return true;
 

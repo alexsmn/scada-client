@@ -18,7 +18,7 @@ class FakeController final : public Controller {
 #elif defined(UI_WT) 
     return std::make_unique<Wt::WContainerWidget>();
 #else
-    base::NotReached();
+    scada::base::NotReached();
 #endif
   }
 };

@@ -8,5 +8,6 @@
 Awaitable<transport::TransportString> ShowTransportDialog(
     DialogService& dialog_service,
     const transport::TransportString& transport_string) {
-  return aui::wt::MakeUnsupportedDialogAwaitable<transport::TransportString>();
+  return scada::aui::wt::MakeUnsupportedDialogAwaitable<
+      transport::TransportString>();
 }

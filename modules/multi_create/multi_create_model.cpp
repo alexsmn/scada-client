@@ -16,7 +16,7 @@ namespace {
 void FillDeviceItems(const NodeRef& parent,
                      std::map<std::u16string, scada::NodeId>& items) {
   for (auto& node : parent.targets(scada::id::Organizes)) {
-    if (IsInstanceOf(node, devices::id::DeviceType)) {
+    if (IsInstanceOf(node, scada::devices::id::DeviceType)) {
       auto title = GetFullDisplayName(node);
       items.emplace(std::move(title), node.node_id());
       FillDeviceItems(node, items);
@@ -28,7 +28,7 @@ void FillDeviceItems(const NodeRef& parent,
 
 MultiCreateModel::MultiCreateModel(MultiCreateContext&& context)
     : MultiCreateContext{std::move(context)} {
-  FillDeviceItems(node_service_.GetNode(devices::id::Devices), devices_);
+  FillDeviceItems(node_service_.GetNode(scada::devices::id::Devices), devices_);
 }
 
 std::u16string MultiCreateModel::GetAutoName(bool ts) const {
@@ -39,9 +39,9 @@ void MultiCreateModel::Run(const RunParams& params) {
   auto p = devices_.find(params.device);
   auto device_id = p == devices_.end() ? scada::NodeId() : p->second;
 
-  scada::NodeId type_definition_id = params.ts
-                                         ? data_items::id::DiscreteItemType
-                                         : data_items::id::AnalogItemType;
+  scada::NodeId type_definition_id =
+      params.ts ? scada::data_items::id::DiscreteItemType
+                : scada::data_items::id::AnalogItemType;
 
   for (int i = 0; i < params.count; ++i) {
     int number = params.starting_number + i;
@@ -58,6 +58,6 @@ void MultiCreateModel::Run(const RunParams& params) {
          .parent_id = parent_id_,
          .attributes = {.display_name = std::move(display_name)},
          .properties = {
-             {data_items::id::DataItemType_Input1, std::move(path)}}});
+             {scada::data_items::id::DataItemType_Input1, std::move(path)}}});
   }
 }

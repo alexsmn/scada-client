@@ -18,7 +18,7 @@ MessageLoopWt::~MessageLoopWt() {}
 void MessageLoopWt::PostDelayedTask(Clock::duration delay,
                                     Task task,
                                     const std::source_location& location) {
-  base::Check(task);
+  scada::base::Check(task);
 
   Wt::WServer::instance()->schedule(
       std::chrono::duration_cast<std::chrono::milliseconds>(delay),

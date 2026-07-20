@@ -30,11 +30,11 @@ class GdiWidget2 : public QWidget {
       rect = QRect{0, 0, this->width(), this->height()};
     }
 
-    base::win::ScopedGetDC desktop_dc{HWND_DESKTOP};
-    base::win::ScopedCreateDC dc{::CreateCompatibleDC(desktop_dc)};
-    base::win::ScopedBitmap bitmap{
+    scada::base::win::ScopedGetDC desktop_dc{HWND_DESKTOP};
+    scada::base::win::ScopedCreateDC dc{::CreateCompatibleDC(desktop_dc)};
+    scada::base::win::ScopedBitmap bitmap{
         ::CreateCompatibleBitmap(desktop_dc, rect.width(), rect.height())};
-    base::win::ScopedSelectObject select_bitmap{dc.Get(), bitmap.get()};
+    scada::base::win::ScopedSelectObject select_bitmap{dc.Get(), bitmap.get()};
 
     auto paint_rect = ToRECT(rect);
     ::FillRect(dc.Get(), &paint_rect, (HBRUSH)(COLOR_WINDOW + 1));

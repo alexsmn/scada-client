@@ -11,16 +11,16 @@
 namespace {
 
 // TODO: Can be a duplicate with Table.
-Qt::Alignment MakeQtAlignment(aui::TableColumn::Alignment alignment) {
+Qt::Alignment MakeQtAlignment(scada::aui::TableColumn::Alignment alignment) {
   Qt::Alignment result;
   switch (alignment) {
-    case aui::TableColumn::LEFT:
+    case scada::aui::TableColumn::LEFT:
       result |= Qt::AlignLeft;
       break;
-    case aui::TableColumn::RIGHT:
+    case scada::aui::TableColumn::RIGHT:
       result |= Qt::AlignRight;
       break;
-    case aui::TableColumn::CENTER:
+    case scada::aui::TableColumn::CENTER:
       result |= Qt::AlignCenter;
       break;
   }
@@ -35,7 +35,7 @@ class TableDocumentBuilder {
 
   void SetColumn(int column,
                  const std::u16string& title,
-                 aui::TableColumn::Alignment alignment);
+                 scada::aui::TableColumn::Alignment alignment);
 
   void SetCell(int row, int column, const std::u16string& text);
 
@@ -78,9 +78,10 @@ TableDocumentBuilder::TableDocumentBuilder(int row_count, int column_count)
   header_format_.setFontWeight(QFont::Bold);
 }
 
-void TableDocumentBuilder::SetColumn(int column,
-                                     const std::u16string& title,
-                                     aui::TableColumn::Alignment alignment) {
+void TableDocumentBuilder::SetColumn(
+    int column,
+    const std::u16string& title,
+    scada::aui::TableColumn::Alignment alignment) {
   column_formats_[column].setAlignment(MakeQtAlignment(alignment));
 
   auto cell = table_->cellAt(0, column);
@@ -137,7 +138,7 @@ void Print(PrintService& print_service,
 
   TableDocumentBuilder builder{row_count, 1 + column_count};
 
-  builder.SetColumn(0, {}, aui::TableColumn::Alignment::RIGHT);
+  builder.SetColumn(0, {}, scada::aui::TableColumn::Alignment::RIGHT);
   for (int i = 0; i < column_count; ++i) {
     builder.SetColumn(1 + i, grid.columns.GetTitle(i),
                       grid.columns.GetAlignment(i));

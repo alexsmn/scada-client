@@ -10,14 +10,14 @@
 
 namespace {
 
-class TestTreeNode : public aui::TreeNode<TestTreeNode> {
+class TestTreeNode : public scada::aui::TreeNode<TestTreeNode> {
  public:
   explicit TestTreeNode(std::u16string text) : text_{std::move(text)} {}
-  TestTreeNode(std::u16string text, aui::Color text_color)
+  TestTreeNode(std::u16string text, scada::aui::Color text_color)
       : text_{std::move(text)}, text_color_{text_color} {}
 
   std::u16string GetText(int /*column_id*/) const override { return text_; }
-  aui::Color GetTextColor(int /*column_id*/) const override {
+  scada::aui::Color GetTextColor(int /*column_id*/) const override {
     return text_color_;
   }
 
@@ -25,25 +25,28 @@ class TestTreeNode : public aui::TreeNode<TestTreeNode> {
 
  private:
   std::u16string text_;
-  aui::Color text_color_ = aui::ColorCode::Transparent;
+  scada::aui::Color text_color_ = scada::aui::ColorCode::Transparent;
 };
 
-std::shared_ptr<aui::TreeNodeModel<TestTreeNode>> MakeTreeModel() {
+std::shared_ptr<scada::aui::TreeNodeModel<TestTreeNode>> MakeTreeModel() {
   auto root = std::make_unique<TestTreeNode>(u"Root");
   auto child = std::make_unique<TestTreeNode>(u"Child");
   child->Add(0, std::make_unique<TestTreeNode>(u"Grandchild"));
   root->Add(0, std::make_unique<TestTreeNode>(u"First"));
   root->Add(1, std::move(child));
   root->Add(2, std::make_unique<TestTreeNode>(u"Last"));
-  return std::make_shared<aui::TreeNodeModel<TestTreeNode>>(std::move(root));
+  return std::make_shared<scada::aui::TreeNodeModel<TestTreeNode>>(
+      std::move(root));
 }
 
-std::shared_ptr<aui::TreeNodeModel<TestTreeNode>> MakeColoredTreeModel() {
+std::shared_ptr<scada::aui::TreeNodeModel<TestTreeNode>>
+MakeColoredTreeModel() {
   auto root = std::make_unique<TestTreeNode>(u"Root");
   root->Add(0, std::make_unique<TestTreeNode>(u"Default"));
-  root->Add(1,
-            std::make_unique<TestTreeNode>(u"Explicit", aui::ColorCode::White));
-  return std::make_shared<aui::TreeNodeModel<TestTreeNode>>(std::move(root));
+  root->Add(1, std::make_unique<TestTreeNode>(u"Explicit",
+                                              scada::aui::ColorCode::White));
+  return std::make_shared<scada::aui::TreeNodeModel<TestTreeNode>>(
+      std::move(root));
 }
 
 }  // namespace
@@ -51,7 +54,7 @@ std::shared_ptr<aui::TreeNodeModel<TestTreeNode>> MakeColoredTreeModel() {
 TEST(TreeTest, VisibleRootStaysDecoratedAndExpanded) {
   AppEnvironment app_env;
 
-  aui::Tree tree{MakeTreeModel()};
+  scada::aui::Tree tree{MakeTreeModel()};
   tree.SetRootVisible(true);
 
   const auto root_index = tree.model()->index(0, 0);
@@ -64,7 +67,7 @@ TEST(TreeTest, GetChildNodesReturnsModelNodesInViewOrder) {
   AppEnvironment app_env;
 
   auto model = MakeTreeModel();
-  aui::Tree tree{model};
+  scada::aui::Tree tree{model};
   auto* root = model->GetRoot();
 
   auto root_children = tree.GetChildNodes(root);
@@ -84,7 +87,7 @@ TEST(TreeTest, ExpandNodeExpandsMatchingTreeIndex) {
   AppEnvironment app_env;
 
   auto model = MakeTreeModel();
-  aui::Tree tree{model};
+  scada::aui::Tree tree{model};
   auto* child = model->GetChild(model->GetRoot(), 1);
 
   const auto child_index = tree.model()->index(1, 0, tree.rootIndex());
@@ -99,7 +102,7 @@ TEST(TreeTest, ExpandNodeExpandsMatchingTreeIndex) {
 TEST(TreeTest, DefaultTextColorUsesPaletteForeground) {
   AppEnvironment app_env;
 
-  aui::Tree tree{MakeColoredTreeModel()};
+  scada::aui::Tree tree{MakeColoredTreeModel()};
   const auto default_index = tree.model()->index(0, 0, tree.rootIndex());
 
   EXPECT_FALSE(tree.model()->data(default_index, Qt::ForegroundRole).isValid());
@@ -118,7 +121,7 @@ TEST(TreeTest, DefaultItemPaletteUsesWindowThemeColors) {
   }
   QApplication::setPalette(palette);
 
-  aui::Tree tree{MakeColoredTreeModel()};
+  scada::aui::Tree tree{MakeColoredTreeModel()};
 
   EXPECT_EQ(tree.palette().color(QPalette::Base), QColor(32, 33, 36));
   EXPECT_EQ(tree.palette().color(QPalette::Text), QColor(232, 234, 237));
@@ -128,7 +131,7 @@ TEST(TreeTest, DefaultItemPaletteUsesWindowThemeColors) {
 TEST(TreeTest, ExplicitTextColorOverridesPaletteForeground) {
   AppEnvironment app_env;
 
-  aui::Tree tree{MakeColoredTreeModel()};
+  scada::aui::Tree tree{MakeColoredTreeModel()};
   const auto explicit_index = tree.model()->index(1, 0, tree.rootIndex());
 
   ASSERT_TRUE(tree.model()->data(explicit_index, Qt::ForegroundRole).isValid());
@@ -140,7 +143,7 @@ TEST(TreeTest, ExplicitTextColorOverridesPaletteForeground) {
 TEST(TreeTest, SetFilterTextHidesNonMatchingRowsAndClears) {
   AppEnvironment app_env;
 
-  aui::Tree tree{MakeTreeModel()};
+  scada::aui::Tree tree{MakeTreeModel()};
   // Top-level rows: First, Child, Last.
   EXPECT_EQ(tree.model()->rowCount(tree.rootIndex()), 3);
 
@@ -154,7 +157,7 @@ TEST(TreeTest, SetFilterTextHidesNonMatchingRowsAndClears) {
 TEST(TreeTest, SetFilterTextIsCaseInsensitive) {
   AppEnvironment app_env;
 
-  aui::Tree tree{MakeTreeModel()};
+  scada::aui::Tree tree{MakeTreeModel()};
   tree.SetFilterText(u"LAST");
 
   ASSERT_EQ(tree.model()->rowCount(tree.rootIndex()), 1);
@@ -168,7 +171,7 @@ TEST(TreeTest, SetFilterTextIsCaseInsensitive) {
 TEST(TreeTest, SetFilterTextKeepsAncestorsOfDeeperMatches) {
   AppEnvironment app_env;
 
-  aui::Tree tree{MakeTreeModel()};
+  scada::aui::Tree tree{MakeTreeModel()};
   // "Grandchild" lives under "Child"; filtering for it keeps "Child" visible as
   // the ancestor of the match, even though "Child" itself does not match.
   tree.SetFilterText(u"grandchild");

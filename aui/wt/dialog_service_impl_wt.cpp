@@ -19,10 +19,12 @@ UiView* DialogServiceImplWt::GetParentWidget() const {
 
 Awaitable<std::filesystem::path> DialogServiceImplWt::SelectOpenFile(
     std::u16string_view title) {
-  return aui::wt::MakeUnsupportedDialogAwaitable<std::filesystem::path>();
+  return scada::aui::wt::MakeUnsupportedDialogAwaitable<
+      std::filesystem::path>();
 }
 
 Awaitable<std::filesystem::path> DialogServiceImplWt::SelectSaveFile(
     const SaveParams& params) {
-  return aui::wt::MakeUnsupportedDialogAwaitable<std::filesystem::path>();
+  return scada::aui::wt::MakeUnsupportedDialogAwaitable<
+      std::filesystem::path>();
 }

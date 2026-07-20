@@ -87,7 +87,7 @@ inline Awaitable<T*> StartModalDialog(std::unique_ptr<T> dialog) {
 template <class T>
 inline Awaitable<void> StartOwnedModalDialog(std::unique_ptr<T> dialog) {
   auto executor = co_await boost::asio::this_coro::executor;
-  base::AsyncCompletion completion{executor};
+  scada::base::AsyncCompletion completion{executor};
   T* dialog_ptr = dialog.release();
 
   QObject::connect(dialog_ptr, &QDialog::accepted,

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "vidicon/vidicon_compat.h"
-
 #include "controller/controller.h"
 #include "vidicon/display/activex/display_viewer_api.h"
 
@@ -16,7 +14,8 @@ class QAxWidget;
 
 class VidiconDisplayActiveXView : public Controller {
  public:
-  explicit VidiconDisplayActiveXView(vidicon::VidiconClient& vidicon_client);
+  explicit VidiconDisplayActiveXView(
+      scada::vidicon::VidiconClient& vidicon_client);
   virtual ~VidiconDisplayActiveXView();
 
   // Controller
@@ -27,7 +26,7 @@ class VidiconDisplayActiveXView : public Controller {
  private:
   void SynchronizeView();
 
-  vidicon::VidiconClient& vidicon_client_;
+  scada::vidicon::VidiconClient& vidicon_client_;
 
   std::filesystem::path path_;
 

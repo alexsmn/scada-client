@@ -1,12 +1,8 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include <atomic>
 #include <map>
 #include <vector>
-
-#include "base/base_compat.h"
 
 namespace scada::base {
 class Pickle;

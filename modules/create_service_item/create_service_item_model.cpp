@@ -11,8 +11,8 @@
 CreateServiceItemModel::CreateServiceItemModel(
     CreateServiceItemContext&& context)
     : CreateServiceItemContext{std::move(context)} {
-  devices_ = GetNamedNodes(node_service_.GetNode(devices::id::Devices),
-                           devices::id::DeviceType);
+  devices_ = GetNamedNodes(node_service_.GetNode(scada::devices::id::Devices),
+                           scada::devices::id::DeviceType);
   SortNamedNodes(devices_);
 
   if (!devices_.empty())
@@ -59,15 +59,15 @@ void CreateServiceItemModel::Run(const RunParams& params) {
 
     auto type_definition_id =
         IsSubtypeOf(component.data_type(), scada::id::Boolean)
-            ? data_items::id::DiscreteItemType
-            : data_items::id::AnalogItemType;
+            ? scada::data_items::id::DiscreteItemType
+            : scada::data_items::id::AnalogItemType;
 
     scada::NodeProperties properties;
-    properties.emplace_back(data_items::id::DataItemType_Input1,
+    properties.emplace_back(scada::data_items::id::DataItemType_Input1,
                             std::move(formula));
-    if (type_definition_id == data_items::id::AnalogItemType) {
-      properties.emplace_back(data_items::id::AnalogItemType_DisplayFormat,
-                              "0.");
+    if (type_definition_id == scada::data_items::id::AnalogItemType) {
+      properties.emplace_back(
+          scada::data_items::id::AnalogItemType_DisplayFormat, "0.");
     }
 
     task_manager_.PostInsertTask(

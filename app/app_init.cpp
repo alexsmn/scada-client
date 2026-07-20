@@ -24,7 +24,7 @@ void InitE2eLogPathOverride() {
     return;
 
   std::filesystem::create_directories(log_dir);
-  base::PathService::Override(client::DIR_LOG, log_dir);
+  scada::base::PathService::Override(client::DIR_LOG, log_dir);
 }
 
 #ifdef _WIN32
@@ -32,7 +32,7 @@ LONG WINAPI ProcessUnhandledException(_EXCEPTION_POINTERS* exception) {
   auto name = GetDumpFileName("client");
 
   std::filesystem::path base_path;
-  base::PathService::Get(client::DIR_LOG, &base_path);
+  scada::base::PathService::Get(client::DIR_LOG, &base_path);
   auto path = base_path / name;
 
   DumpException(path.c_str(), *exception);
@@ -52,7 +52,8 @@ void InitCrashDump() {
 // Path service must be initialized before calling this function.
 void InitLogging() {
   std::filesystem::path log_path;
-  if (!base::PathService::Get(client::DIR_LOG, &log_path) || log_path.empty()) {
+  if (!scada::base::PathService::Get(client::DIR_LOG, &log_path) ||
+      log_path.empty()) {
     throw std::runtime_error{"Cannot resolve client log directory"};
   }
   std::filesystem::create_directories(log_path);

@@ -7,7 +7,7 @@
 
 std::filesystem::path GetPublicFilePath(const std::filesystem::path& path) {
   std::filesystem::path public_path;
-  if (!base::PathService::Get(client::DIR_PUBLIC, &public_path) ||
+  if (!scada::base::PathService::Get(client::DIR_PUBLIC, &public_path) ||
       public_path.empty()) {
     throw std::runtime_error{"Cannot resolve client public directory"};
   }

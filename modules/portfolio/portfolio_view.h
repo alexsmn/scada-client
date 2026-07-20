@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include "controller/command_registry.h"
 #include "controller/contents_model.h"
 #include "controller/controller.h"
@@ -53,7 +51,7 @@ class PortfolioView final : protected ControllerContext,
 
   SelectionModel selection_{{timed_data_service_}};
 
-  aui::Tree* tree_ = nullptr;
+  scada::aui::Tree* tree_ = nullptr;
 
   CommandRegistry command_registry_;
 };

@@ -16,7 +16,7 @@ TransmissionView::TransmissionView(const ControllerContext& context)
       model_{std::make_shared<TransmissionModel>(context.executor_,
                                                  context.node_service_,
                                                  context.task_manager_)},
-      column_model_{std::make_shared<aui::ColumnHeaderModel>()} {}
+      column_model_{std::make_shared<scada::aui::ColumnHeaderModel>()} {}
 
 TransmissionView::~TransmissionView() {}
 
@@ -28,13 +28,13 @@ std::unique_ptr<UiView> TransmissionView::Init(
     model_->Init(node_service_.GetNode(device_id));
   }
 
-  const aui::TableColumn columns[] = {
-      {0, Translate("Object"), 250, aui::TableColumn::LEFT},
-      {1, Translate("Address"), 100, aui::TableColumn::RIGHT},
+  const scada::aui::TableColumn columns[] = {
+      {0, Translate("Object"), 250, scada::aui::TableColumn::LEFT},
+      {1, Translate("Address"), 100, scada::aui::TableColumn::RIGHT},
   };
   column_model_->SetColumns(std::size(columns), columns);
 
-  grid_ = new aui::Grid{model_, model_, column_model_};
+  grid_ = new scada::aui::Grid{model_, model_, column_model_};
 
   grid_->SetRowHeaderVisible(true);
   grid_->SetRowHeaderWidth(15);

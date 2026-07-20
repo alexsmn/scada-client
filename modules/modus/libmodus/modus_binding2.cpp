@@ -1,4 +1,3 @@
-#include "modus/modus_ns_compat.h"
 
 #include "modus/libmodus/modus_binding2.h"
 
@@ -48,7 +47,7 @@ inline bool UpdateValue(T& value, const T& new_value) {
 }
 
 ModusBinding2::ModusBinding2(Delegate& delegate,
-                             modus::Shape& shape,
+                             scada::modus::Shape& shape,
                              const std::wstring& binding,
                              TimedDataService& timed_data_service)
     : delegate_(delegate), shape_(shape), styles_(0) {
@@ -103,8 +102,8 @@ bool ModusBinding2::Update() {
       auto data_value = data_point_.current().value;
       auto value =
           data_value.type() == scada::Variant::DOUBLE
-              ? modus::Value(static_cast<float>(data_value.as_double()))
-              : modus::Value();
+              ? scada::modus::Value(static_cast<float>(data_value.as_double()))
+              : scada::modus::Value();
       shape_.element().SetValue("Tech.value", value);
     } else {
       bool closed = data_point_.current().value.get_or(false);
@@ -112,8 +111,8 @@ bool ModusBinding2::Update() {
     }
 
   } else {
-    shape_.element().SetValue(property_name_,
-                              modus::ToValue(data_point_.current().value));
+    shape_.element().SetValue(
+        property_name_, scada::modus::ToValue(data_point_.current().value));
   }
 
   bool changed = false;

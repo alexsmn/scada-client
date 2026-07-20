@@ -19,7 +19,7 @@ struct WindowInfo {
   std::string_view name;
   std::u16string_view title;
   unsigned flags = 0;
-  aui::Size size;
+  scada::aui::Size size;
   unsigned menu = 0;
 
   bool is_pane() const { return (flags & WIN_SING) != 0; }

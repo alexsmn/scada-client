@@ -112,7 +112,7 @@ void Profile::Load(const boost::json::value& data) {
     Deserialize(GetString(*graphe, "def_span"), graph_view.default_span);
     if (auto default_color = GetString(*graphe, "def_color");
         !default_color.empty())
-      graph_view.default_color = aui::StringToColor(default_color);
+      graph_view.default_color = scada::aui::StringToColor(default_color);
     graph_view.default_width = GetInt(*graphe, "def_weight", 1);
     graph_view.default_scroll_bar = GetBool(*graphe, "def_scroll_bar", 1);
   }
@@ -207,7 +207,8 @@ boost::json::value Profile::SerializeToValue() const {
   {
     boost::json::value graphe{boost::json::object{}};
     SetKey(graphe, "def_span", SerializeToString(graph_view.default_span));
-    SetKey(graphe, "def_color", aui::ColorToString(graph_view.default_color));
+    SetKey(graphe, "def_color",
+           scada::aui::ColorToString(graph_view.default_color));
     SetKey(graphe, "def_weight", graph_view.default_width);
     SetKey(graphe, "def_scroll_bar", graph_view.default_scroll_bar);
     data.as_object()["graph"] = std::move(graphe);
@@ -247,7 +248,8 @@ boost::json::value Profile::SerializeToValue() const {
 
 std::filesystem::path Profile::GetFilePath() {
   std::filesystem::path path;
-  if (!base::PathService::Get(client::DIR_PRIVATE, &path) || path.empty()) {
+  if (!scada::base::PathService::Get(client::DIR_PRIVATE, &path) ||
+      path.empty()) {
     throw std::runtime_error{"Cannot resolve client profile directory"};
   }
   return path / "profile.json";

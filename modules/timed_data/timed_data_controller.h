@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include "modules/timed_data/timed_data_model.h"
 #include "controller/command_registry.h"
 #include "controller/contents_model.h"
@@ -56,9 +54,9 @@ class TimedDataController : protected ControllerContext,
   SelectionModel selection_{{timed_data_service_}};
 
   std::shared_ptr<TimedDataModel> model_;
-  std::shared_ptr<aui::MirrorTableModel> mirror_model_;
+  std::shared_ptr<scada::aui::MirrorTableModel> mirror_model_;
 
-  aui::Table* view_ = nullptr;
+  scada::aui::Table* view_ = nullptr;
 
   CommandRegistry command_registry_;
 };

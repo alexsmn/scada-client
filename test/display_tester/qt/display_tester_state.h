@@ -9,9 +9,9 @@
 class ControllerDelegateImpl final : public ControllerDelegate {
  public:
   virtual void SetTitle(std::u16string_view title) override {}
-  virtual void ShowPopupMenu(aui::MenuModel* merge_menu,
+  virtual void ShowPopupMenu(scada::aui::MenuModel* merge_menu,
                              unsigned resource_id,
-                             const aui::Point& point,
+                             const scada::aui::Point& point,
                              bool right_click) override {}
   virtual void SetModified(bool modified) override {}
   virtual void Close() override {}
@@ -35,7 +35,7 @@ class WriteServiceImpl final : public WriteService {
   virtual void ExecuteWriteDialog(DialogService& dialog_service,
                                   const scada::NodeId& node_id,
                                   bool manual) override {
-    base::NotReached();
+    scada::base::NotReached();
   }
 };
 

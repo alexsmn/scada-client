@@ -5,5 +5,5 @@
 
 Awaitable<void> ExecuteWriteDialog(DialogService& dialog_service,
                                    WriteContext&& context) {
-  return aui::wt::MakeUnsupportedDialogAwaitable<void>();
+  return scada::aui::wt::MakeUnsupportedDialogAwaitable<void>();
 }

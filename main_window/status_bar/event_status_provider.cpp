@@ -39,7 +39,8 @@ int EventStatusProvider::GetAlarmCount() const {
   return static_cast<int>(node_event_provider_.unacked_events().size());
 }
 
-int EventStatusProvider::GetSeverityCount(aui::SeverityLevel level) const {
+int EventStatusProvider::GetSeverityCount(
+    scada::aui::SeverityLevel level) const {
   int count = 0;
   for (const scada::Event& event :
        node_event_provider_.unacked_events() | std::views::values) {
@@ -54,15 +55,15 @@ std::u16string EventStatusProvider::GetSeverityText() const {
                    node_event_provider_.severity_min());
 }
 
-aui::SeverityLevel SeverityLevelForEvent(unsigned severity) {
+scada::aui::SeverityLevel SeverityLevelForEvent(unsigned severity) {
   if (severity >= scada::kSeverityCritical)
-    return aui::SeverityLevel::kCritical;
+    return scada::aui::SeverityLevel::kCritical;
   if (severity >= scada::kSeverityWarning)
-    return aui::SeverityLevel::kWarning;
-  return aui::SeverityLevel::kNone;
+    return scada::aui::SeverityLevel::kWarning;
+  return scada::aui::SeverityLevel::kNone;
 }
 
-aui::SeverityLevel EventStatusProvider::HighestUnackedLevel() const {
+scada::aui::SeverityLevel EventStatusProvider::HighestUnackedLevel() const {
   scada::UInt32 highest = 0;
   for (const scada::Event& event :
        node_event_provider_.unacked_events() | std::views::values) {
@@ -74,24 +75,25 @@ aui::SeverityLevel EventStatusProvider::HighestUnackedLevel() const {
 std::u16string EventStatusProvider::GetHighestSeverityText() const {
   // Keep the legacy status bar untouched: the coloured highest-severity cell is
   // part of the opt-in token themes only.
-  if (aui::GetSeverityTheme() == aui::SeverityTheme::kLegacy)
+  if (scada::aui::GetSeverityTheme() == scada::aui::SeverityTheme::kLegacy)
     return {};
 
   // English literals routed through Translate(); the Russian (and any other
   // language) lives in the .ts — never hardcode localized text here.
   switch (HighestUnackedLevel()) {
-    case aui::SeverityLevel::kCritical:
+    case scada::aui::SeverityLevel::kCritical:
       return Translate("Critical");
-    case aui::SeverityLevel::kWarning:
+    case scada::aui::SeverityLevel::kWarning:
       return Translate("Warning");
-    case aui::SeverityLevel::kNone:
+    case scada::aui::SeverityLevel::kNone:
       return {};  // calm: no active alarm, show nothing
   }
   return {};
 }
 
-std::optional<aui::Color> EventStatusProvider::GetHighestSeverityColor() const {
-  return aui::SeverityColor(HighestUnackedLevel());
+std::optional<scada::aui::Color> EventStatusProvider::GetHighestSeverityColor()
+    const {
+  return scada::aui::SeverityColor(HighestUnackedLevel());
 }
 
 void EventStatusProvider::OnEvents(

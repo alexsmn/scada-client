@@ -44,7 +44,7 @@ DeviceMetricsModule::DeviceMetricsModule(DeviceMetricsModuleContext&& context)
       .available_handler =
           [](const SelectionCommandContext& context) {
             return IsInstanceOf(context.selection.node(),
-                                devices::id::DeviceType);
+                                scada::devices::id::DeviceType);
           }});
 }
 
@@ -61,7 +61,7 @@ WindowDefinition MakeDeviceMetricsWindowDefinitionSync(
     cell.SetInt("width", 200);
   }
 
-  const aui::Color kHeaderColor = aui::Rgba{227, 227, 227};
+  const scada::aui::Color kHeaderColor = scada::aui::Rgba{227, 227, 227};
 
   // Header.
   auto data_variable_decls = CollectVariables(devices) | to_vector;
@@ -70,7 +70,7 @@ WindowDefinition MakeDeviceMetricsWindowDefinitionSync(
     cell.SetInt("row", i + 2);
     cell.SetInt("col", 1);
     cell.SetString("text", ToString16(data_variable_decls[i].display_name()));
-    cell.SetString("color", aui::ColorToString(kHeaderColor));
+    cell.SetString("color", scada::aui::ColorToString(kHeaderColor));
     cell.SetString("align", "right");
   }
 
@@ -84,7 +84,7 @@ WindowDefinition MakeDeviceMetricsWindowDefinitionSync(
       cell.SetInt("row", 1);
       cell.SetInt("col", i + 2);
       cell.SetString("text", ToString16(device.display_name()));
-      cell.SetString("color", aui::ColorToString(kHeaderColor));
+      cell.SetString("color", scada::aui::ColorToString(kHeaderColor));
     }
 
     // Metric cells.
@@ -110,7 +110,7 @@ Awaitable<WindowDefinition> MakeDeviceMetricsWindowDefinitionAsync(
   }
 
   auto devices = co_await CollectNodesRecursiveAsync(
-      std::move(executor), device, devices::id::DeviceType);
+      std::move(executor), device, scada::devices::id::DeviceType);
   auto title = ToString16(device.display_name());
   co_return MakeDeviceMetricsWindowDefinitionSync(std::move(title), devices);
 }

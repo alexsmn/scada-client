@@ -36,7 +36,7 @@ class RecordingDialogService : public DialogService {
     titles.emplace_back(title);
     modes.emplace_back(mode);
     message_box_completion_ =
-        std::make_unique<base::AsyncCompletion>(executor_);
+        std::make_unique<scada::base::AsyncCompletion>(executor_);
     co_await message_box_completion_->Wait();
     co_return message_box_result_;
   }
@@ -65,7 +65,7 @@ class RecordingDialogService : public DialogService {
  private:
   AnyExecutor executor_;
   MessageBoxResult message_box_result_ = MessageBoxResult::Ok;
-  std::unique_ptr<base::AsyncCompletion> message_box_completion_;
+  std::unique_ptr<scada::base::AsyncCompletion> message_box_completion_;
 };
 
 class WriteModelTest : public Test {
@@ -84,8 +84,9 @@ class WriteModelTest : public Test {
             .set_node_class(scada::NodeClass::Variable)
             .set_type_definition_id(kDataItemTypeId)
             .set_display_name(u"Output")
-            .set_property(data_items::id::DataItemType_OutputTwoStaged, false)
-            .set_property(data_items::id::DataItemType_Locked, false));
+            .set_property(scada::data_items::id::DataItemType_OutputTwoStaged,
+                          false)
+            .set_property(scada::data_items::id::DataItemType_Locked, false));
 
     ON_CALL(timed_data_service_, GetFormulaTimedData(_, _))
         .WillByDefault(Return(timed_data_));
@@ -120,7 +121,7 @@ class WriteModelTest : public Test {
 
 TEST_F(WriteModelTest, SuccessfulWriteCompletesAfterAttributeCallback) {
   profile_.control_confirmation = false;
-  base::AsyncCompletion completion{executor_};
+  scada::base::AsyncCompletion completion{executor_};
   std::optional<scada::StatusOr<std::vector<scada::StatusCode>>> result;
 
   EXPECT_CALL(attribute_service_, Write(_, _))
@@ -178,7 +179,7 @@ TEST_F(WriteModelTest, ControlCommandConfirmationReviewsPresentAndCommand) {
 
 TEST_F(WriteModelTest, FailedWriteReportsErrorThenCompletes) {
   profile_.control_confirmation = false;
-  base::AsyncCompletion completion{executor_};
+  scada::base::AsyncCompletion completion{executor_};
   std::optional<scada::StatusOr<std::vector<scada::StatusCode>>> result;
 
   EXPECT_CALL(attribute_service_, Write(_, _))
@@ -208,7 +209,7 @@ TEST_F(WriteModelTest, FailedWriteReportsErrorThenCompletes) {
 
 TEST_F(WriteModelTest, DestroyedModelDropsPendingWriteCompletion) {
   profile_.control_confirmation = false;
-  base::AsyncCompletion completion{executor_};
+  scada::base::AsyncCompletion completion{executor_};
   std::optional<scada::StatusOr<std::vector<scada::StatusCode>>> result;
 
   EXPECT_CALL(attribute_service_, Write(_, _))

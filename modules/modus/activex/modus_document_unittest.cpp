@@ -1,7 +1,5 @@
 ﻿#include "modus/activex/modus_document.h"
 
-#include "modus/modus_ns_compat.h"
-
 #include "base/test/test_executor.h"
 #include "common/aliases_mock.h"
 #include "filesystem/file_cache.h"

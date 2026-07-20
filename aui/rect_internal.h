@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 namespace scada::aui::internal {
 
 // Micks Qt's `QRect`.

@@ -18,7 +18,7 @@ struct MainWindowDef {
   enum class State { kNormal, kMaximized, kMinimized };
 
   int id = 0;
-  aui::Rect bounds;
+  scada::aui::Rect bounds;
   State state = State::kNormal;
   int page_id = 0;
   bool toolbar = true;
@@ -46,8 +46,8 @@ class Profile {
 
   Page out_wins;  // windows out-of-page
 
-  aui::Color bad_value_color = aui::Rgba{192, 192, 192};
-  aui::Color alarm_color = aui::ColorCode::Yellow;
+  scada::aui::Color bad_value_color = scada::aui::Rgba{192, 192, 192};
+  scada::aui::Color alarm_color = scada::aui::ColorCode::Yellow;
 
   struct EventJournal {
     boost::json::value default_state;
@@ -89,8 +89,8 @@ class Profile {
   Modus modus;
 
   struct GraphView {
-    base::TimeDelta default_span = base::TimeDelta::FromHours(1);
-    aui::Color default_color = aui::ColorCode::White;
+    scada::base::TimeDelta default_span = scada::base::TimeDelta::FromHours(1);
+    scada::aui::Color default_color = scada::aui::ColorCode::White;
     int default_width = 1;
     bool default_scroll_bar = true;
   };

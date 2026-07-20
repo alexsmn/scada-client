@@ -17,7 +17,7 @@ CommandHandler* OpenedViewCsvExportCommand::GetCommandHandler(
 }
 
 void OpenedViewCsvExportCommand::ExecuteCommand(unsigned command_id) {
-  base::Check(command_id == ID_EXPORT_CSV);
+  scada::base::Check(command_id == ID_EXPORT_CSV);
   if (auto* export_model = export_model_getter_()) {
     CoSpawn(
         executor_, cancelation_,

@@ -18,10 +18,10 @@
 
 namespace {
 
-const PropertyDefinition kNamePropDef(aui::TableColumn::LEFT, 150);
-const PropertyDefinition kStringPropDef(aui::TableColumn::LEFT);
-const PropertyDefinition kIntPropDef(aui::TableColumn::RIGHT);
-const PropertyDefinition kDoublePropDef(aui::TableColumn::RIGHT);
+const PropertyDefinition kNamePropDef(scada::aui::TableColumn::LEFT, 150);
+const PropertyDefinition kStringPropDef(scada::aui::TableColumn::LEFT);
+const PropertyDefinition kIntPropDef(scada::aui::TableColumn::RIGHT);
+const PropertyDefinition kDoublePropDef(scada::aui::TableColumn::RIGHT);
 const BoolPropertyDefinition kBoolPropDef;
 const ReferencePropertyDefinition kRefPropDef;
 const ColorPropertyDefinition kColorPropDef;
@@ -46,19 +46,22 @@ const TransportPropertyDefinition kLinkTransportPropDef;
 
 const std::unordered_map<scada::NodeId, const PropertyDefinition*>
     kPropertyDefinitionMap = {
-        {data_items::id::DataItemType_Input1, &kObjectInput1PropTree.root},
-        {data_items::id::DataItemType_Input2, &kObjectInput2PropTree.root},
-        {data_items::id::DataItemType_Output, &kObjectOutputPropTree.root},
-        {devices::id::LinkType_Transport, &kLinkTransportPropDef},
-        {data_items::id::TsFormatType_OpenColor, &kColorPropDef},
-        {data_items::id::TsFormatType_CloseColor, &kColorPropDef},
+        {scada::data_items::id::DataItemType_Input1,
+         &kObjectInput1PropTree.root},
+        {scada::data_items::id::DataItemType_Input2,
+         &kObjectInput2PropTree.root},
+        {scada::data_items::id::DataItemType_Output,
+         &kObjectOutputPropTree.root},
+        {scada::devices::id::LinkType_Transport, &kLinkTransportPropDef},
+        {scada::data_items::id::TsFormatType_OpenColor, &kColorPropDef},
+        {scada::data_items::id::TsFormatType_CloseColor, &kColorPropDef},
 };
 
 // Returns unfetched type definitions.
 std::unordered_set<NodeRef> GetChildTypeDefinitions(
     const NodeRef& parent_node) {
-  base::Check(parent_node.fetched());
-  base::Check(parent_node.type_definition().fetched());
+  scada::base::Check(parent_node.fetched());
+  scada::base::Check(parent_node.type_definition().fetched());
 
   std::unordered_set<NodeRef> child_type_definitions;
   for (auto&& type_definition : GetCreatableChildTypes(parent_node))
@@ -196,7 +199,7 @@ const PropertyDefinition* PropertyService::GetPropertyDef(
 void PropertyService::GetTypeProperties(
     const NodeRef& type_definition,
     std::unordered_set<NodeRef>& property_decls) {
-  base::Check(type_definition.fetched());
+  scada::base::Check(type_definition.fetched());
   for (auto supertype_definition = type_definition; supertype_definition;
        supertype_definition = supertype_definition.supertype()) {
     for (const auto& p : supertype_definition.targets(scada::id::HasProperty))
@@ -212,7 +215,7 @@ void PropertyService::GetTypeProperties(
 
 PropertyDefs PropertyService::GetTypePropertyDefs(
     const NodeRef& type_definition) {
-  base::Check(type_definition.fetched());
+  scada::base::Check(type_definition.fetched());
 
   std::unordered_set<NodeRef> prop_decls;
   GetTypeProperties(type_definition, prop_decls);

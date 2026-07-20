@@ -9,7 +9,7 @@
 
 AliasService::AliasService(AliasServiceContext&& context)
     : AliasServiceContext{std::move(context)} {
-  aliases_ = node_service_.GetNode(data_items::id::Aliases);
+  aliases_ = node_service_.GetNode(scada::data_items::id::Aliases);
 
   if (logger_)
     LOG_INFO(*logger_) << "Fetching";
@@ -41,7 +41,7 @@ void AliasService::Resolve(std::string_view alias,
 }
 
 void AliasService::OnFetchCompleted() {
-  base::Check(!fetched_);
+  scada::base::Check(!fetched_);
 
   if (logger_)
     LOG_INFO(*logger_) << std::format("Fetch completed. {} aliases fetched",
@@ -68,7 +68,7 @@ void AliasService::OnNodeFetched(const NodeFetchedEvent& event) {
 
 scada::NodeId AliasService::ResolveNow(const std::string& alias) const {
   auto alias_node = aliases_[alias];
-  auto aliased_node = alias_node.target(data_items::id::AliasOf);
+  auto aliased_node = alias_node.target(scada::data_items::id::AliasOf);
   auto aliased_node_id = aliased_node.node_id();
 
   if (logger_)

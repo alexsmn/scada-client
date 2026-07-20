@@ -38,10 +38,10 @@ std::unique_ptr<UiView> WebView::Init(const WindowDefinition& definition) {
     web->put_Silent(TRUE);
 
     if (!url.empty()) {
-      base::win::ScopedVariant e;
+      scada::base::win::ScopedVariant e;
       VARIANT* empty = const_cast<VARIANT*>(e.ptr());
-      web->Navigate(base::win::ScopedBstr{UtfConvert<wchar_t>(url)}, empty, empty,
-                    empty, empty);
+      web->Navigate(scada::base::win::ScopedBstr{UtfConvert<wchar_t>(url)},
+                    empty, empty, empty, empty);
     }
   }
 

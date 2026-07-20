@@ -24,29 +24,30 @@ namespace {
 const char16_t kLocalEventSource[] = u"Local Event";
 
 void GetEventColors(const scada::Event& event,
-                    aui::Color& text_color,
-                    aui::Color& back_color) {
+                    scada::aui::Color& text_color,
+                    scada::aui::Color& back_color) {
   // Classify (unacknowledged, then critical, then warning) exactly as before;
   // the colours themselves come from the single severity source, so they follow
   // the active theme and stay in step with every other severity surface.
-  std::optional<aui::EventBackground> background;
+  std::optional<scada::aui::EventBackground> background;
   if (!event.acked) {
-    background = aui::EventBackground::kUnacknowledged;
+    background = scada::aui::EventBackground::kUnacknowledged;
   } else if (event.severity >= scada::kSeverityCritical) {
-    background = aui::EventBackground::kCritical;
+    background = scada::aui::EventBackground::kCritical;
   } else if (event.severity >= scada::kSeverityWarning) {
-    background = aui::EventBackground::kWarning;
+    background = scada::aui::EventBackground::kWarning;
   }
   if (!background)
     return;
 
-  const aui::EventRowColors colors = aui::EventRowColorsFor(*background);
+  const scada::aui::EventRowColors colors =
+      scada::aui::EventRowColorsFor(*background);
   back_color = colors.background;
   if (colors.text)
     text_color = *colors.text;
 }
 
-int Compare(base::Time a, base::Time b) {
+int Compare(scada::base::Time a, scada::base::Time b) {
   return a < b ? -1 : b < a ? 1 : 0;
 }
 
@@ -55,7 +56,7 @@ int Compare(base::Time a, base::Time b) {
 // EventTableModel::Row
 
 void EventTableModel::Row::Update(NodeService& node_service) {
-  base::Check(event);
+  scada::base::Check(event);
 
   node = node_service.GetNode(event->node_id);
   user = node_service.GetNode(event->user_id);
@@ -67,7 +68,7 @@ void EventTableModel::Row::Update(NodeService& node_service) {
 }
 
 bool EventTableModel::Row::IsAffected(const scada::NodeId& node_id) const {
-  base::Check(event);
+  scada::base::Check(event);
   return event->node_id == node_id || event->user_id == node_id ||
          event->acknowledged_user_id == node_id;
 }
@@ -122,7 +123,7 @@ int EventTableModel::GetRowCount() {
   return static_cast<int>(rows_.size());
 }
 
-void EventTableModel::GetCell(aui::TableCell& cell) {
+void EventTableModel::GetCell(scada::aui::TableCell& cell) {
   const Row& row = rows_[cell.row];
   const scada::Event& event = *row.event;
 
@@ -165,14 +166,14 @@ void EventTableModel::GetCell(aui::TableCell& cell) {
                      TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
       break;
     default:
-      base::NotReached();
+      scada::base::NotReached();
   }
 }
 
 int EventTableModel::FindRow(const scada::Event& event) const {
   for (Rows::const_iterator i = rows_.begin(); i != rows_.end(); ++i) {
     if (i->event == &event) {
-      base::Check(i->type == CURRENT_EVENT || i->type == LOCAL_EVENT);
+      scada::base::Check(i->type == CURRENT_EVENT || i->type == LOCAL_EVENT);
       return static_cast<int>(i - rows_.begin());
     }
   }
@@ -215,7 +216,7 @@ void EventTableModel::AddRows(EventType type,
     } else {
       // Update row data.
       auto& row = rows_[index];
-      base::Check(row.type == type);
+      scada::base::Check(row.type == type);
       row.Update(node_service_);
       NotifyItemsChanged(index, 1);
     }
@@ -235,7 +236,7 @@ void EventTableModel::AddRows(EventType type,
 }
 
 void EventTableModel::RemoveRows(int first, int count) {
-  base::Check(count > 0);
+  scada::base::Check(count > 0);
   NotifyItemsRemoving(first, count);
   rows_.erase(rows_.begin() + first, rows_.begin() + (first + count));
   NotifyItemsRemoved(first, count);
@@ -295,7 +296,7 @@ void EventTableModel::OnCurrentEvents(
 }
 
 void EventTableModel::AckRows(int first, int count) {
-  base::Check(count > 0);
+  scada::base::Check(count > 0);
 
   if (current_events_) {
     RemoveRows(first, count);
@@ -454,17 +455,17 @@ void EventTableModel::AcknowledgeRow(int row) {
       break;
 
     default:
-      base::NotReached();
+      scada::base::NotReached();
   }
 }
 
 void EventTableModel::LockUpdate() {
-  base::Check(!lock_update_);
+  scada::base::Check(!lock_update_);
   lock_update_ = true;
 }
 
 void EventTableModel::UnlockUpdate() {
-  base::Check(lock_update_);
+  scada::base::Check(lock_update_);
   lock_update_ = false;
   if (pending_update_)
     Update();
@@ -515,6 +516,6 @@ int EventTableModel::CompareCells(int row1, int row2, int column_id) {
     case EventColumnAckTime:
       return Compare(event1.acknowledged_time, event2.acknowledged_time);
     default:
-      return aui::TableModel::CompareCells(row1, row2, column_id);
+      return scada::aui::TableModel::CompareCells(row1, row2, column_id);
   }
 }

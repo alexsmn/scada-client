@@ -1,4 +1,3 @@
-#include "vidicon/vidicon_compat.h"
 
 #include "vidicon/teleclient/vidicon_client.h"
 

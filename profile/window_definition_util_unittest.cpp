@@ -186,12 +186,12 @@ TEST(FromToJson, TimeRange_Day) {
 }
 
 TEST(FromToJson, TimeRange_Interval) {
-  TimeRange time_range{base::TimeDelta::FromHours(3)};
+  TimeRange time_range{scada::base::TimeDelta::FromHours(3)};
   EXPECT_EQ(time_range, FromJson<TimeRange>(ToJson(time_range)));
 }
 
 TEST(FromToJson, TimeRange_CustomOpenEnd) {
-  TimeRange time_range{base::Time::UnixEpoch(), base::Time{}};
+  TimeRange time_range{scada::base::Time::UnixEpoch(), scada::base::Time{}};
 
   auto json = ToJson(time_range);
   ASSERT_TRUE(json.is_object());
@@ -203,7 +203,8 @@ TEST(FromToJson, TimeRange_CustomOpenEnd) {
 }
 
 TEST(FromToJson, TimeRange_CustomMaxEndIsOpenEnd) {
-  TimeRange time_range{base::Time::UnixEpoch(), base::Time::Max()};
+  TimeRange time_range{scada::base::Time::UnixEpoch(),
+                       scada::base::Time::Max()};
 
   auto restored = FromJson<TimeRange>(ToJson(time_range));
   ASSERT_TRUE(restored);

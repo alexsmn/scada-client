@@ -39,7 +39,7 @@ NodeRef MakeObjectTreeNodeModel(ModelNodeService& node_service,
   auto type_model = std::make_shared<NiceMock<MockNodeModel>>();
 
   const NodeRef type_node =
-      node_service.Add(data_items::id::DataItemType, type_model);
+      node_service.Add(scada::data_items::id::DataItemType, type_model);
 
   ON_CALL(*node_model, GetFetchStatus()).WillByDefault(Return(fetch_status));
   ON_CALL(*node_model, Fetch(_))
@@ -55,7 +55,7 @@ NodeRef MakeObjectTreeNodeModel(ModelNodeService& node_service,
       .WillByDefault(Return(type_node));
 
   ON_CALL(*type_model, GetAttribute(scada::AttributeId::NodeId))
-      .WillByDefault(Return(data_items::id::DataItemType));
+      .WillByDefault(Return(scada::data_items::id::DataItemType));
   ON_CALL(*type_model, Fetch(_))
       .WillByDefault(
           [](const NodeFetchStatus&) -> Awaitable<void> { co_return; });
@@ -68,7 +68,7 @@ NodeRef MakeObjectTreeNodeModel(ModelNodeService& node_service,
 // Records node-changed notifications so tests assert on observable events.
 class CountingTreeModelObserver {
  public:
-  void Connect(aui::TreeModel& model) {
+  void Connect(scada::aui::TreeModel& model) {
     connection_ = model.SubscribeNodeChanged(
         [this](void* node) { changed_nodes.push_back(node); });
   }
@@ -123,8 +123,9 @@ class ObjectTreeModelTest : public ::testing::Test {
         scada::NodeState{}
             .set_node_id(kDataGroupId)
             .set_node_class(scada::NodeClass::Object)
-            .set_type_definition_id(data_items::id::DataGroupType)
-            .set_parent(scada::id::Organizes, data_items::id::DataItems));
+            .set_type_definition_id(scada::data_items::id::DataGroupType)
+            .set_parent(scada::id::Organizes,
+                        scada::data_items::id::DataItems));
 
     // Regression setup: object view may receive a data item with object
     // node-class semantics while it still derives from `DataItemType`.
@@ -132,13 +133,14 @@ class ObjectTreeModelTest : public ::testing::Test {
         scada::NodeState{}
             .set_node_id(kDataItemId)
             .set_node_class(scada::NodeClass::Object)
-            .set_type_definition_id(data_items::id::DiscreteItemType)
-            .set_parent(scada::id::Organizes, data_items::id::DataItems));
+            .set_type_definition_id(scada::data_items::id::DiscreteItemType)
+            .set_parent(scada::id::Organizes,
+                        scada::data_items::id::DataItems));
 
     model_ = std::make_unique<ObjectTreeModel>(ObjectTreeModelContext{
         executor_,
         node_service_,
-        node_service_.GetNode(data_items::id::DataItems),
+        node_service_.GetNode(scada::data_items::id::DataItems),
         timed_data_service_,
         profile_,
         blinker_manager_,
@@ -259,7 +261,7 @@ class ObjectTreeModelAsyncVisibleNodeTest : public ::testing::Test {
   NodeRef root_node_;
   NodeRef child_node_;
   void* child_tree_node_ = nullptr;
-  std::optional<base::AsyncCompletion> delayed_fetch_completion_;
+  std::optional<scada::base::AsyncCompletion> delayed_fetch_completion_;
   std::unique_ptr<TestObjectTreeModel> model_;
 };
 

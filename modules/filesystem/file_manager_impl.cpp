@@ -97,7 +97,7 @@ Awaitable<scada::NodeId> FileManagerImpl::GetFileNodeAsync(
         .target_name = UtfConvert<char>(c.wstring())});
   }
 
-  auto targets = co_await scada_client_.node(filesystem::id::FileSystem)
+  auto targets = co_await scada_client_.node(scada::filesystem::id::FileSystem)
                      .translate_browse_path(relative_path);
   if (!targets.ok()) {
     co_return scada::NodeId{};

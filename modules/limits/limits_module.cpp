@@ -35,6 +35,6 @@ LimitsModule::LimitsModule(LimitsModuleContext&& context)
            [this](const SelectionCommandContext& context) {
              return session_service_.HasPrivilege(scada::Privilege::Control) &&
                     IsInstanceOf(context.selection.node(),
-                                 data_items::id::AnalogItemType);
+                                 scada::data_items::id::AnalogItemType);
            }});
 }

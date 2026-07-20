@@ -10,7 +10,7 @@
 namespace {
 
 scada::DateTime At(double seconds) {
-  return base::Time::FromDoubleT(seconds);
+  return scada::base::Time::FromDoubleT(seconds);
 }
 
 // Builds a good-quality numeric sample at `seconds`.

@@ -12,7 +12,7 @@ inline std::filesystem::path GetFilePath(const NodeRef& file_node) {
   auto path = file_node.display_name();
 
   for (auto directory_node = file_node;
-       IsSubtypeOf(directory_node, filesystem::id::FileDirectoryType);
+       IsSubtypeOf(directory_node, scada::filesystem::id::FileDirectoryType);
        directory_node = directory_node.parent()) {
     path.insert(0, directory_node.display_name());
   }

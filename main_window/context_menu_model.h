@@ -10,7 +10,7 @@ class CommandManager;
 class MainWindowInterface;
 class CommandHandler;
 
-class ContextMenuModel final : public aui::SimpleMenuModel {
+class ContextMenuModel final : public scada::aui::SimpleMenuModel {
  public:
   ContextMenuModel(MainWindowInterface& main_window,
                    CommandManager& command_manager,
@@ -26,5 +26,5 @@ class ContextMenuModel final : public aui::SimpleMenuModel {
   CommandManager& command_manager_;
 
   SimpleMenuCommandHandler command_handler_;
-  std::vector<std::unique_ptr<aui::MenuModel>> submenus_;
+  std::vector<std::unique_ptr<scada::aui::MenuModel>> submenus_;
 };

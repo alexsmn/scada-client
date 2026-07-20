@@ -15,9 +15,10 @@ struct ConfigurationTreeModelContext {
   std::unique_ptr<NodeServiceTree> node_service_tree_;
 };
 
-class ConfigurationTreeModel : private ConfigurationTreeModelContext,
-                               public aui::TreeNodeModel<ConfigurationTreeNode>,
-                               private NodeServiceTree::Observer {
+class ConfigurationTreeModel
+    : private ConfigurationTreeModelContext,
+      public scada::aui::TreeNodeModel<ConfigurationTreeNode>,
+      private NodeServiceTree::Observer {
  public:
   explicit ConfigurationTreeModel(ConfigurationTreeModelContext&& context);
   virtual ~ConfigurationTreeModel();

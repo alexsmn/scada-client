@@ -31,7 +31,7 @@ namespace {
 
 using namespace testing;
 
-constexpr scada::NodeId kGroupId{1, NamespaceIndexes::GROUP};
+constexpr scada::NodeId kGroupId{1, scada::NamespaceIndexes::GROUP};
 
 // Controllable v3::NodeFetcher (mirrors the node_property_model harness): each
 // FetchNode suspends until the test calls CompleteFetch, so the test drives the
@@ -84,12 +84,12 @@ class NodeTableModelTest : public Test {
         scada::NodeState{}
             .set_node_id(kGroupId)
             .set_node_class(scada::NodeClass::Object)
-            .set_type_definition_id(data_items::id::DataGroupType)
-            .set_parent(scada::id::Organizes, data_items::id::DataItems)
+            .set_type_definition_id(scada::data_items::id::DataGroupType)
+            .set_parent(scada::id::Organizes, scada::data_items::id::DataItems)
             .set_attributes(
                 scada::NodeAttributes{}.set_display_name(u"Group")));
-    base::Check(status);
-    base::Check(node);
+    scada::base::Check(status);
+    scada::base::Check(node);
 
     node_service_->OnChannelOpened();
   }
@@ -144,8 +144,8 @@ class NodeTableModelTest : public Test {
 TEST_F(NodeTableModelTest, NotifiesAfterAsyncBrowseCompletes) {
   auto model = CreateModel(kGroupId);
   int model_changed = 0;
-  boost::signals2::scoped_connection conn =
-      model->SubscribeModelChanged([&](aui::GridModel&) { ++model_changed; });
+  boost::signals2::scoped_connection conn = model->SubscribeModelChanged(
+      [&](scada::aui::GridModel&) { ++model_changed; });
 
   CompleteAllFetches();
 
@@ -168,7 +168,7 @@ TEST_F(NodeTableModelTest, SurvivesReentrantRefDropDuringAsyncNotify) {
   bool notified = false;
   bool alive_after_reentrant_drop = false;
   boost::signals2::scoped_connection conn =
-      model->SubscribeModelChanged([&](aui::GridModel&) {
+      model->SubscribeModelChanged([&](scada::aui::GridModel&) {
         if (notified)
           return;
         notified = true;

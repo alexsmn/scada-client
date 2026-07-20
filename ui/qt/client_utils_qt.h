@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include <QPixmap>
 
 #include <unordered_set>
@@ -18,7 +16,7 @@ class QMenu;
 // carries the same set into submenus. Passing null preserves the legacy
 // behavior for all other callers.
 void BuildMenu(QMenu& menu,
-               aui::MenuModel& model,
+               scada::aui::MenuModel& model,
                const std::unordered_set<int>* skip_command_ids = nullptr);
 
 QPixmap LoadPixmap(unsigned resource_id);

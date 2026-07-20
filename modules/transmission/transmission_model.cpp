@@ -27,9 +27,9 @@ scada::NodeId GetTransmissionItemTypeId(const NodeRef& device) {
   // (matters for a remote node service).
   for (auto type = device.type_definition(); type; type = type.supertype()) {
     for (const auto& placeholder :
-         type.targets(devices::id::HasTransmissionItem)) {
+         type.targets(scada::devices::id::HasTransmissionItem)) {
       NodeRef item_type = placeholder.type_definition();
-      if (IsSubtypeOf(item_type, devices::id::TransmissionItemType))
+      if (IsSubtypeOf(item_type, scada::devices::id::TransmissionItemType))
         return item_type.node_id();
     }
   }
@@ -89,8 +89,8 @@ void TransmissionModel::Init(NodeRef device) {
               if (cancelation.canceled()) {
                 co_return;
               }
-              (void)co_await FetchNodeStatus(
-                  transmission.target(devices::id::HasTransmissionSource));
+              (void)co_await FetchNodeStatus(transmission.target(
+                  scada::devices::id::HasTransmissionSource));
               if (cancelation.canceled()) {
                 co_return;
               }
@@ -110,8 +110,8 @@ std::u16string TransmissionModel::GetRowTitle(int row) {
   return std::u16string();
 }
 
-void TransmissionModel::GetCell(aui::GridCell& cell) {
-  base::Check(cell.row >= 0 && cell.row <= (int)rows_.size());
+void TransmissionModel::GetCell(scada::aui::GridCell& cell) {
+  scada::base::Check(cell.row >= 0 && cell.row <= (int)rows_.size());
 
   //	// Last cell.row is new cell.row.
   //	if (cell.row == rows_.size())
@@ -121,16 +121,18 @@ void TransmissionModel::GetCell(aui::GridCell& cell) {
 
   switch (cell.column) {
     case 0: {
-      auto source = row.transmission.target(devices::id::HasTransmissionSource);
+      auto source =
+          row.transmission.target(scada::devices::id::HasTransmissionSource);
       cell.text = source ? source.display_name() : std::u16string();
       break;
     }
 
     case 1:
       auto device_item_address =
-          row.transmission[devices::id::TransmissionItemType_SourceAddress]
-              .value()
-              .get_or(0);
+          row.transmission
+              [scada::devices::id::TransmissionItemType_SourceAddress]
+                  .value()
+                  .get_or(0);
       cell.text = WideFormat(device_item_address);
       break;
   }
@@ -143,7 +145,7 @@ bool TransmissionModel::IsEditable(int row, int column) {
 bool TransmissionModel::SetCellText(int row,
                                     int column,
                                     const std::u16string& text) {
-  base::Check(row >= 0 && row < GetRowCount());
+  scada::base::Check(row >= 0 && row < GetRowCount());
 
   /*	GridRange range = selection();
     for (int row = range.top; row <= range.bottom; row++)
@@ -156,29 +158,30 @@ bool TransmissionModel::SetCellText(int row,
 
   auto& row_item = this->row(row);
   scada::NodeProperties properties;
-  properties.emplace_back(devices::id::TransmissionItemType_SourceAddress,
-                          static_cast<int>(value));
+  properties.emplace_back(
+      scada::devices::id::TransmissionItemType_SourceAddress,
+      static_cast<int>(value));
   task_manager_.PostUpdateTask(row_item.transmission.node_id(), {}, properties);
 
   return true;
 }
 
 void TransmissionModel::Refresh() {
-  rows_ =
-      device_.references(scada::id::Organizes) |
-      boost::adaptors::filtered([](const NodeRef::Reference& reference) {
-        return IsInstanceOf(reference.target,
-                            devices::id::TransmissionItemType);
-      }) |
-      boost::adaptors::transformed([](const NodeRef::Reference& reference) {
-        return reference.target;
-      }) |
-      boost::adaptors::transformed([](const NodeRef& transmission) {
-        auto source_id =
-            transmission.target(devices::id::HasTransmissionSource).node_id();
-        return Row{transmission, source_id};
-      }) |
-      to_vector;
+  rows_ = device_.references(scada::id::Organizes) |
+          boost::adaptors::filtered([](const NodeRef::Reference& reference) {
+            return IsInstanceOf(reference.target,
+                                scada::devices::id::TransmissionItemType);
+          }) |
+          boost::adaptors::transformed([](const NodeRef::Reference& reference) {
+            return reference.target;
+          }) |
+          boost::adaptors::transformed([](const NodeRef& transmission) {
+            auto source_id =
+                transmission.target(scada::devices::id::HasTransmissionSource)
+                    .node_id();
+            return Row{transmission, source_id};
+          }) |
+          to_vector;
 
   GridModel::NotifyModelChanged();
 
@@ -201,14 +204,14 @@ void TransmissionModel::OnModelChanged(const scada::ModelChangeEvent& event) {
     Delete(event.node_id);
   } else {
     auto node = node_service_.GetNode(event.node_id);
-    if (IsInstanceOf(node, devices::id::TransmissionItemType))
+    if (IsInstanceOf(node, scada::devices::id::TransmissionItemType))
       Update(node);
   }
 }
 
 void TransmissionModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
   auto node = node_service_.GetNode(node_id);
-  if (IsInstanceOf(node, devices::id::TransmissionItemType))
+  if (IsInstanceOf(node, scada::devices::id::TransmissionItemType))
     Update(node);
 }
 
@@ -220,13 +223,13 @@ void TransmissionModel::OnNodeFetched(const NodeFetchedEvent& event) {
 void TransmissionModel::Update(NodeRef transmission) {
   // Node type information comes from the server address space; skip nodes
   // that are not transmission items.
-  if (!IsInstanceOf(transmission, devices::id::TransmissionItemType))
+  if (!IsInstanceOf(transmission, scada::devices::id::TransmissionItemType))
     return;
 
   transmission.StartFetch(NodeFetchStatus::NodeAndChildren);
 
   auto source_id =
-      transmission.target(devices::id::HasTransmissionSource).node_id();
+      transmission.target(scada::devices::id::HasTransmissionSource).node_id();
 
   int i = FindRow(transmission.node_id());
   if (i == -1) {
@@ -295,7 +298,8 @@ void TransmissionModel::AddContainedItem(const scada::NodeId& node_id,
   task_manager_.PostInsertTask(
       {.type_definition_id = transmission_item_type_id,
        .parent_id = device_.node_id(),
-       .references = {{devices::id::HasTransmissionSource, true, node_id}}});
+       .references = {
+           {scada::devices::id::HasTransmissionSource, true, node_id}}});
 }
 
 void TransmissionModel::RemoveContainedItem(const scada::NodeId& node_id) {

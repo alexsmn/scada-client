@@ -40,7 +40,7 @@ REGISTER_CONTROLLER(FileSystemView, kWindowInfo);
 
 void OpenPublicFolder() {
   std::filesystem::path path;
-  if (!base::PathService::Get(client::DIR_PUBLIC, &path)) {
+  if (!scada::base::PathService::Get(client::DIR_PUBLIC, &path)) {
     return;
   }
 
@@ -111,7 +111,7 @@ FileSystemComponent::FileSystemComponent(FileSystemComponentContext&& context)
   default_node_commands_.AddHandler(
       [executor = executor_, open_file_command = std::move(open_file_command)](
           const NodeCommandContext& context) {
-        if (!IsInstanceOf(context.node, filesystem::id::FileType)) {
+        if (!IsInstanceOf(context.node, scada::filesystem::id::FileType)) {
           return false;
         }
 
@@ -143,8 +143,9 @@ FileSystemComponent::FileSystemComponent(FileSystemComponentContext&& context)
 FileSystemComponent::~FileSystemComponent() {}
 
 void FileSystemComponent::StartUp() {
-  AddFileCommand(ID_ADD_FILE, filesystem::id::FileType);
-  AddFileCommand(ID_CREATE_FILE_DIRECTORY, filesystem::id::FileDirectoryType);
+  AddFileCommand(ID_ADD_FILE, scada::filesystem::id::FileType);
+  AddFileCommand(ID_CREATE_FILE_DIRECTORY,
+                 scada::filesystem::id::FileDirectoryType);
 
   file_cache_->Init();
 }
@@ -152,7 +153,7 @@ void FileSystemComponent::StartUp() {
 void FileSystemComponent::AddFileCommand(
     unsigned command_id,
     const scada::NodeId& type_definition_id) {
-  base::Check(selection_commands_);
+  scada::base::Check(selection_commands_);
 
   const auto& file_type = node_service_.GetNode(type_definition_id);
   file_type.StartFetch(NodeFetchStatus::NodeOnly);

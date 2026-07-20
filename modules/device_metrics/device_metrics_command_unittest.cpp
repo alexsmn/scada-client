@@ -60,9 +60,9 @@ class DeviceMetricsCommandTest : public Test {
   std::shared_ptr<NodeService> node_service_;
 
   const scada::NodeId device_type_definition_id =
-      devices::id::Iec60870DeviceType;
+      scada::devices::id::Iec60870DeviceType;
   const scada::NamespaceIndex device_namespace_index =
-      NamespaceIndexes::IEC60870_DEVICE;
+      scada::NamespaceIndexes::IEC60870_DEVICE;
 };
 
 MATCHER_P(CellIs, text, "") {
@@ -84,12 +84,12 @@ scada::Node* DeviceMetricsCommandTest::CreateDevice(
 
   auto [status, node] = node_factory.CreateNode(scada::NodeState{
       std::move(node_id), scada::NodeClass::Object, device_type_definition_id,
-      devices::id::Devices, scada::id::Organizes,
+      scada::devices::id::Devices, scada::id::Organizes,
       scada::NodeAttributes{}.set_display_name(std::move(display_name))});
 
-  base::Check(status);
-  base::Check(node);
-  base::Check(node->type_definition());
+  scada::base::Check(status);
+  scada::base::Check(node);
+  scada::base::Check(node->type_definition());
 
   CreateDataVariables(node_factory, node->id(), *node->type_definition());
 
@@ -107,8 +107,8 @@ scada::Node* DeviceMetricsCommandTest::CreateObject(
       std::move(parent_id), scada::id::Organizes,
       scada::NodeAttributes{}.set_display_name(std::move(display_name))});
 
-  base::Check(status);
-  base::Check(node);
+  scada::base::Check(status);
+  scada::base::Check(node);
   return node;
 }
 
@@ -213,9 +213,8 @@ TEST_F(DeviceMetricsCommandTest, CollectChildrenAsyncKeepsOnlyMatchingTypes) {
                       child->id());
 
   auto children = WaitAwaitable(
-      executor_, CollectChildrenAsync(executor_,
-                                      GetNode(parent->id()),
-                                      devices::id::DeviceType));
+      executor_, CollectChildrenAsync(executor_, GetNode(parent->id()),
+                                      scada::devices::id::DeviceType));
 
   ASSERT_THAT(children, SizeIs(1));
   EXPECT_EQ(children.front().node_id(), child->id());
@@ -248,9 +247,8 @@ TEST_F(DeviceMetricsCommandTest,
                       skipped_child->id());
 
   auto nodes = WaitAwaitable(
-      executor_, CollectNodesRecursiveAsync(executor_,
-                                            GetNode(parent->id()),
-                                            devices::id::DeviceType));
+      executor_, CollectNodesRecursiveAsync(executor_, GetNode(parent->id()),
+                                            scada::devices::id::DeviceType));
 
   EXPECT_THAT(nodes | transformed(std::mem_fn(&NodeRef::node_id)) | to_vector,
               ElementsAre(parent->id(), child->id()));
@@ -264,9 +262,8 @@ TEST_F(DeviceMetricsCommandTest, CollectNodesRecursiveAsyncUsesCoroutineBody) {
                       child->id());
 
   auto nodes = WaitAwaitable(
-      executor_, CollectNodesRecursiveAsync(executor_,
-                                            GetNode(parent->id()),
-                                            devices::id::DeviceType));
+      executor_, CollectNodesRecursiveAsync(executor_, GetNode(parent->id()),
+                                            scada::devices::id::DeviceType));
 
   EXPECT_THAT(nodes | transformed(std::mem_fn(&NodeRef::node_id)) | to_vector,
               ElementsAre(parent->id(), child->id()));

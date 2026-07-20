@@ -31,7 +31,7 @@ ModusView2::ModusView2(TimedDataService& timed_data_service)
 
 ModusView2::~ModusView2() {}
 
-ModusBinding2* ModusView2::GetBinding(modus::Shape* shape) const {
+ModusBinding2* ModusView2::GetBinding(scada::modus::Shape* shape) const {
   if (!shape)
     return nullptr;
   auto i = bindings_.find(shape);
@@ -42,14 +42,14 @@ void ModusView2::Open(const WindowDefinition& definition) {
   path_ = GetPublicFilePath(definition.path);
 
   auto& master_library = ModusModule2::GetInstance()->master_library();
-  scheme_ = std::make_unique<modus::Scheme>();
+  scheme_ = std::make_unique<scada::modus::Scheme>();
   scheme_->set_master_library(&master_library);
   // TODO: Check result.
-  modus::LoadScheme(*scheme_, path_);
+  scada::modus::LoadScheme(*scheme_, path_);
 
   if (scheme_) {
-    title_ = scheme_->GetValue(modus::kAttrSchemeTitle).as_string();
-    renderer_.reset(new modus::Renderer(*scheme_, *this));
+    title_ = scheme_->GetValue(scada::modus::kAttrSchemeTitle).as_string();
+    renderer_.reset(new scada::modus::Renderer(*scheme_, *this));
     CreateBindings();
   }
 
@@ -82,15 +82,15 @@ void ModusView2::paintEvent(QPaintEvent* e) {
   QPainter painter(this);
 
   {
-    base::win::ScopedCreateDC dc(::CreateCompatibleDC(GetDC(0)));
-    base::win::ScopedBitmap bitmap(
+    scada::base::win::ScopedCreateDC dc(::CreateCompatibleDC(GetDC(0)));
+    scada::base::win::ScopedBitmap bitmap(
         ::CreateCompatibleBitmap(GetDC(0), width(), height()));
     ::SelectObject(dc.Get(), bitmap.get());
 
     Gdiplus::Graphics graphics(dc.Get());
     // graphics.SetSmoothingMode(Gdiplus::SmoothingModeHighQuality);
 
-    base::win::ScopedRegion clip_region(painter.clipRegion().toHRGN());
+    scada::base::win::ScopedRegion clip_region(painter.clipRegion().toHRGN());
     graphics.SetClip(clip_region.get());
 
     graphics.Clear(static_cast<Gdiplus::ARGB>(Gdiplus::Color::White));
@@ -100,7 +100,7 @@ void ModusView2::paintEvent(QPaintEvent* e) {
     for (auto& p : bindings_)
       p.second->Paint(graphics, true);
 
-    modus::Canvas c(graphics);
+    scada::modus::Canvas c(graphics);
     renderer_->Paint(c);
 
     for (auto& p : bindings_)
@@ -140,8 +140,8 @@ void ModusView2::mouseDoubleClickEvent(QMouseEvent* e) {
 
   auto link = shape->element().GetValue("Links[0]");
   if (!link.empty() && navigation_signal_) {
-    navigation_signal_(
-        std::filesystem::path(modus::GetLinkFilePath(link.as_string_view())));
+    navigation_signal_(std::filesystem::path(
+        scada::modus::GetLinkFilePath(link.as_string_view())));
   }
 
   if (double_click_signal_)
@@ -176,7 +176,7 @@ void ModusView2::CreateBindings() {
   }
 }
 
-void ModusView2::SetSelection(modus::Shape* shape) {
+void ModusView2::SetSelection(scada::modus::Shape* shape) {
   if (shape && !GetBinding(shape))
     shape = nullptr;
 
@@ -198,7 +198,7 @@ void ModusView2::SetSelection(modus::Shape* shape) {
   }
 }
 
-void ModusView2::SchedulePaintShape(modus::Shape& shape) {
+void ModusView2::SchedulePaintShape(scada::modus::Shape& shape) {
   auto inflate = std::max(kSelectionInset, kModusBindingInflate) + 1;
 
   {
@@ -216,7 +216,7 @@ void ModusView2::SchedulePaintShape(modus::Shape& shape) {
   }
 }
 
-void ModusView2::PaintSelection(QPainter& painter, modus::Shape& shape) {
+void ModusView2::PaintSelection(QPainter& painter, scada::modus::Shape& shape) {
   {
     auto rect = BoundsToView(shape.bounds());
     if (!rect.isEmpty()) {
@@ -236,11 +236,11 @@ void ModusView2::PaintSelection(QPainter& painter, modus::Shape& shape) {
   }
 }
 
-modus::Point ModusView2::PointToScheme(const QPoint& point) const {
-  return modus::Point(point.x() / scale_, point.y() / scale_);
+scada::modus::Point ModusView2::PointToScheme(const QPoint& point) const {
+  return scada::modus::Point(point.x() / scale_, point.y() / scale_);
 }
 
-QRect ModusView2::BoundsToView(const modus::Rect& bounds) const {
+QRect ModusView2::BoundsToView(const scada::modus::Rect& bounds) const {
   return QRect(floor(bounds.x() * scale_), floor(bounds.y() * scale_),
                ceil(bounds.width() * scale_), ceil(bounds.height() * scale_));
 }
@@ -261,6 +261,7 @@ void ModusView2::ZoomAtPoint(const QPoint& point, float factor) {
     ScrollRectToVisible(new_visible_bounds);*/
 }
 
-modus::Shape* ModusView2::GetShapeAt(const modus::Point& point) const {
+scada::modus::Shape* ModusView2::GetShapeAt(
+    const scada::modus::Point& point) const {
   return renderer_->GetShapeAt(point, kHitTolerance);
 }

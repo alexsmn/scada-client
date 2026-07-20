@@ -3,7 +3,7 @@
 #include "controller/command_handler.h"
 #include "aui/models/simple_menu_model.h"
 
-class SimpleMenuCommandHandler : public aui::SimpleMenuModel::Delegate {
+class SimpleMenuCommandHandler : public scada::aui::SimpleMenuModel::Delegate {
  public:
   explicit SimpleMenuCommandHandler(CommandHandler& commands)
       : commands_{commands} {}

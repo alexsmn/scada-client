@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include "aui/handlers.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
@@ -35,7 +33,7 @@ class ConfigurationTreeView : protected ControllerContext, public Controller {
  protected:
   ConfigurationTreeModel& model() const { return *model_; }
 
-  aui::Tree& tree_view() const { return *tree_view_; }
+  scada::aui::Tree& tree_view() const { return *tree_view_; }
 
   std::vector<scada::NodeId> GetVariableNodeIds(
       const std::vector<void*>& nodes) const;
@@ -51,5 +49,5 @@ class ConfigurationTreeView : protected ControllerContext, public Controller {
 
   std::unique_ptr<ConfigurationTreeDropHandler> drop_handler_;
 
-  aui::Tree* tree_view_ = nullptr;
+  scada::aui::Tree* tree_view_ = nullptr;
 };

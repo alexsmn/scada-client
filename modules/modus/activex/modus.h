@@ -1,7 +1,5 @@
 #pragma once
 
-#include "modus/modus_ns_compat.h"
-
 #import "modus/activex/typelibs/sdecore.tlb" raw_interfaces_only
 
 // These two libs depend on `SDECore`.

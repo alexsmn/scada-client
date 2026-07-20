@@ -88,7 +88,7 @@ export module scada.client.aui;
 export import scada.base;
 
 // ---- namespace aui ----
-export namespace aui {
+export namespace scada::aui {
 
 // color.h (aui::Color itself comes from aui/qt/color_qt.h behind UI_QT)
 using aui::Color;
@@ -202,7 +202,7 @@ using aui::Tree;
 // Free operator set at aui namespace scope (color.h: ostream << for Color).
 using aui::operator<<;
 
-}  // namespace aui
+}  // namespace scada::aui
 
 // ---- global namespace ----
 export {

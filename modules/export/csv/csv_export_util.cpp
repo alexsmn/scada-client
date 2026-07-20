@@ -15,7 +15,8 @@
 
 namespace {
 
-bool Convert(const scada::Variant& source, base::win::ScopedVariant& target) {
+bool Convert(const scada::Variant& source,
+             scada::base::win::ScopedVariant& target) {
   // Values come from the server; arrays are not supported for CSV export.
   if (source.is_array())
     return false;
@@ -136,7 +137,7 @@ void ExportToExcel(ExportModel::TableExportData& table,
   }
 
   // Cells.
-  base::win::ScopedVariant data;
+  scada::base::win::ScopedVariant data;
   for (int i = 0; i < row_range.count; ++i) {
     for (int j = 0; j < column_count; ++j) {
       auto column_id = table.columns[j].id;
@@ -166,7 +167,7 @@ void ExportToExcel(ExportModel::GridExportData& grid, ExcelSheetModel& sheet) {
   }
 
   // Cells.
-  base::win::ScopedVariant data;
+  scada::base::win::ScopedVariant data;
   for (int i = 0; i < row_count; ++i) {
     for (int j = 0; j < column_count; ++j) {
       auto text = grid.model.GetCellText(i, j);

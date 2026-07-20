@@ -12,16 +12,16 @@ std::unique_ptr<Wt::WWidget> ItemDelegate::createEditor(
     Wt::WFlags<Wt::ViewItemRenderFlag> flags) const {
   auto edit_data = edit_data_provider_(index);
   switch (edit_data.editor_type) {
-    case aui::EditData::EditorType::NONE:
+    case scada::aui::EditData::EditorType::NONE:
       return nullptr;
 
-    case aui::EditData::EditorType::TEXT: {
+    case scada::aui::EditData::EditorType::TEXT: {
       auto line_edit = std::make_unique<Wt::WLineEdit>();
       // line_edit->setFrame(false);
       return line_edit;
     }
 
-    case aui::EditData::EditorType::BUTTON: {
+    case scada::aui::EditData::EditorType::BUTTON: {
       auto line_edit = std::make_unique<Wt::WLineEdit>();
       // line_edit->setFrame(false);
       // Wt::WIcon icon{":/device.png"};
@@ -38,7 +38,7 @@ std::unique_ptr<Wt::WWidget> ItemDelegate::createEditor(
       return line_edit;
     }
 
-    case aui::EditData::EditorType::DROPDOWN: {
+    case scada::aui::EditData::EditorType::DROPDOWN: {
       auto combo_box = std::make_unique<Wt::WComboBox>();
       // combo_box->setFocusPolicy(Qt::WheelFocus);
       // combo_box->setEditable(true);
@@ -55,7 +55,7 @@ std::unique_ptr<Wt::WWidget> ItemDelegate::createEditor(
     }
 
     default:
-      base::NotReached();
+      scada::base::NotReached();
   }
 }
 

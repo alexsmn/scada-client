@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include "aui/models/simple_menu_model.h"
 #include "base/lifetime.h"
 

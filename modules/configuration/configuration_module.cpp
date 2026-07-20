@@ -139,14 +139,14 @@ ConfigurationModule::ConfigurationModule(ConfigurationModuleContext&& context)
                        u16format(L"Unlocking {}", node.display_name()),
                        [node]() -> Awaitable<scada::Status> {
                          co_return co_await node.scada_node().call(
-                             data_items::id::DataItemType_Unlock);
+                             scada::data_items::id::DataItemType_Unlock);
                        });
                  });
            },
        .enabled_handler =
            [this](const SelectionCommandContext& context) {
              return context.selection
-                 .node()[data_items::id::DataItemType_Locked]
+                 .node()[scada::data_items::id::DataItemType_Locked]
                  .value()
                  .get_or(false);
            },
@@ -154,14 +154,15 @@ ConfigurationModule::ConfigurationModule(ConfigurationModuleContext&& context)
            [this](const SelectionCommandContext& context) {
              return session_service_.HasPrivilege(scada::Privilege::Control) &&
                     IsInstanceOf(context.selection.node(),
-                                 data_items::id::DataItemType);
+                                 scada::data_items::id::DataItemType);
            }});
 
   // TODO: Rename constants.
   RegisterEnableDeviceCommand(ID_ITEM_ENABLE, true);
   RegisterEnableDeviceCommand(ID_ITEM_DISABLE, false);
-  RegisterMethodCommand(ID_DEV1_REFR, devices::id::DeviceType_Interrogate);
-  RegisterMethodCommand(ID_DEV1_SYNC, devices::id::DeviceType_SyncClock);
+  RegisterMethodCommand(ID_DEV1_REFR,
+                        scada::devices::id::DeviceType_Interrogate);
+  RegisterMethodCommand(ID_DEV1_SYNC, scada::devices::id::DeviceType_SyncClock);
 
   profile_.RegisterWriter([](Profile& profile) {
     // TODO: Add writers.
@@ -181,7 +182,7 @@ void ConfigurationModule::RegisterMethodCommand(
            [this](const SelectionCommandContext& context) {
              return session_service_.HasPrivilege(scada::Privilege::Control) &&
                     IsInstanceOf(context.selection.node(),
-                                 data_items::id::DataItemType);
+                                 scada::data_items::id::DataItemType);
            }});
 }
 
@@ -211,17 +212,19 @@ void ConfigurationModule::RegisterEnableDeviceCommand(unsigned command_id,
              // `PostUpdateTask` returns a lazy awaitable — spawn it detached
              // so the task actually runs; the task manager reports completion
              // itself.
-             CoSpawn(executor_,
-                     [this, node_id = context.selection.node().node_id(),
-                      enable]() -> Awaitable<void> {
-                       (void)co_await task_manager_.PostUpdateTask(
-                           node_id, /*attrs=*/{}, /*props=*/
-                           {{devices::id::DeviceType_Disabled, !enable}});
-                     });
+             CoSpawn(
+                 executor_,
+                 [this, node_id = context.selection.node().node_id(),
+                  enable]() -> Awaitable<void> {
+                   (void)co_await task_manager_.PostUpdateTask(
+                       node_id, /*attrs=*/{}, /*props=*/
+                       {{scada::devices::id::DeviceType_Disabled, !enable}});
+                 });
            },
        .enabled_handler =
            [enable](const SelectionCommandContext& context) {
-             return context.selection.node()[devices::id::DeviceType_Disabled]
+             return context.selection
+                        .node()[scada::devices::id::DeviceType_Disabled]
                         .value()
                         .get_or(false) == enable;
            },
@@ -229,6 +232,7 @@ void ConfigurationModule::RegisterEnableDeviceCommand(unsigned command_id,
            [this](const SelectionCommandContext& context) {
              return session_service_.HasPrivilege(
                         scada::Privilege::Configure) &&
-                    context.selection.node()[devices::id::DeviceType_Disabled];
+                    context.selection
+                        .node()[scada::devices::id::DeviceType_Disabled];
            }});
 }

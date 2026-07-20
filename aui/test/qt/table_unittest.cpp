@@ -10,21 +10,21 @@
 
 namespace {
 
-class TestTableModel final : public aui::TableModel {
+class TestTableModel final : public scada::aui::TableModel {
  public:
   int GetRowCount() override { return 2; }
 
-  void GetCell(aui::TableCell& cell) override {
+  void GetCell(scada::aui::TableCell& cell) override {
     cell.text = cell.row == 0 ? u"Default" : u"Explicit";
     if (cell.row == 1) {
-      cell.text_color = aui::ColorCode::White;
-      cell.cell_color = aui::ColorCode::Black;
+      cell.text_color = scada::aui::ColorCode::White;
+      cell.cell_color = scada::aui::ColorCode::Black;
     }
   }
 };
 
-std::vector<aui::TableColumn> MakeColumns() {
-  return {{0, u"Name", 100, aui::TableColumn::LEFT}};
+std::vector<scada::aui::TableColumn> MakeColumns() {
+  return {{0, u"Name", 100, scada::aui::TableColumn::LEFT}};
 }
 
 }  // namespace
@@ -32,7 +32,7 @@ std::vector<aui::TableColumn> MakeColumns() {
 TEST(TableTest, DefaultColorsUsePalette) {
   AppEnvironment app_env;
 
-  aui::Table table{std::make_shared<TestTableModel>(), MakeColumns()};
+  scada::aui::Table table{std::make_shared<TestTableModel>(), MakeColumns()};
   const auto index = table.model()->index(0, 0);
 
   EXPECT_FALSE(table.model()->data(index, Qt::ForegroundRole).isValid());
@@ -52,7 +52,7 @@ TEST(TableTest, DefaultItemPaletteUsesWindowThemeColors) {
   }
   QApplication::setPalette(palette);
 
-  aui::Table table{std::make_shared<TestTableModel>(), MakeColumns()};
+  scada::aui::Table table{std::make_shared<TestTableModel>(), MakeColumns()};
 
   EXPECT_EQ(table.palette().color(QPalette::Base), QColor(32, 33, 36));
   EXPECT_EQ(table.palette().color(QPalette::Text), QColor(232, 234, 237));
@@ -62,7 +62,7 @@ TEST(TableTest, DefaultItemPaletteUsesWindowThemeColors) {
 TEST(TableTest, ExplicitColorsOverridePalette) {
   AppEnvironment app_env;
 
-  aui::Table table{std::make_shared<TestTableModel>(), MakeColumns()};
+  scada::aui::Table table{std::make_shared<TestTableModel>(), MakeColumns()};
   const auto index = table.model()->index(1, 0);
 
   ASSERT_TRUE(table.model()->data(index, Qt::ForegroundRole).isValid());

@@ -4,5 +4,5 @@
 
 Awaitable<void> ShowAddFavouritesDialog(DialogService& dialog_service,
                                         AddFavouritesContext&& context) {
-  return aui::wt::MakeUnsupportedDialogAwaitable<void>();
+  return scada::aui::wt::MakeUnsupportedDialogAwaitable<void>();
 }

@@ -76,11 +76,11 @@ void ReferencePropertyDefinition::SetText(const PropertyContext& context,
   }
 }
 
-aui::EditData ReferencePropertyDefinition::GetPropertyEditor(
+scada::aui::EditData ReferencePropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,
     const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
-  aui::EditData result{aui::EditData::EditorType::DROPDOWN};
+  scada::aui::EditData result{scada::aui::EditData::EditorType::DROPDOWN};
 
   auto objects = context.node_service_.GetNode(scada::id::ObjectsFolder);
   auto target_type_definition =
@@ -113,11 +113,11 @@ std::u16string BoolPropertyDefinition::GetText(
                     : std::u16string{scada::Variant::kFalseString};
 }
 
-aui::EditData BoolPropertyDefinition::GetPropertyEditor(
+scada::aui::EditData BoolPropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,
     const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
-  aui::EditData result{aui::EditData::EditorType::DROPDOWN};
+  scada::aui::EditData result{scada::aui::EditData::EditorType::DROPDOWN};
   result.choices = {std::u16string{scada::Variant::kFalseString},
                     std::u16string{scada::Variant::kTrueString}};
   return result;
@@ -168,16 +168,16 @@ void EnumPropertyDefinition::SetText(const PropertyContext& context,
                                        {{prop_decl_id, int_value}});
 }
 
-aui::EditData EnumPropertyDefinition::GetPropertyEditor(
+scada::aui::EditData EnumPropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,
     const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
   const auto& type_definition = node.type_definition();
   const auto& property_declaration = type_definition[prop_decl_id];
   if (!property_declaration)
-    return aui::EditData{aui::EditData::EditorType::NONE};
+    return scada::aui::EditData{scada::aui::EditData::EditorType::NONE};
 
-  aui::EditData result{aui::EditData::EditorType::DROPDOWN};
+  scada::aui::EditData result{scada::aui::EditData::EditorType::DROPDOWN};
 
   auto enum_strings_value =
       property_declaration.data_type()["EnumStrings"].value();
@@ -191,11 +191,11 @@ aui::EditData EnumPropertyDefinition::GetPropertyEditor(
 
 // TransportPropertyDefinition
 
-aui::EditData TransportPropertyDefinition::GetPropertyEditor(
+scada::aui::EditData TransportPropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,
     const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
-  return {.editor_type = aui::EditData::EditorType::BUTTON};
+  return {.editor_type = scada::aui::EditData::EditorType::BUTTON};
 }
 
 void TransportPropertyDefinition::HandleEditButton(
@@ -225,8 +225,9 @@ std::u16string ColorPropertyDefinition::GetText(
     const scada::NodeId& prop_decl_id) const {
   auto value = node[prop_decl_id].value();
   auto color_index = value.get_or(-1);
-  if (color_index >= 0 && color_index < static_cast<int>(aui::GetColorCount()))
-    return std::u16string{aui::GetColorName(color_index)};
+  if (color_index >= 0 &&
+      color_index < static_cast<int>(scada::aui::GetColorCount()))
+    return std::u16string{scada::aui::GetColorName(color_index)};
   else
     return kDefaultColorString;
 }
@@ -238,19 +239,19 @@ void ColorPropertyDefinition::SetText(const PropertyContext& context,
   if (text.empty())
     return;
 
-  int color = aui::FindColorName(text.c_str());
+  int color = scada::aui::FindColorName(text.c_str());
   context.task_manager_.PostUpdateTask(node.node_id(), {},
                                        {{prop_decl_id, color}});
 }
 
-aui::EditData ColorPropertyDefinition::GetPropertyEditor(
+scada::aui::EditData ColorPropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,
     const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
-  aui::EditData result{aui::EditData::EditorType::DROPDOWN};
-  result.choices.reserve(1 + aui::GetColorCount());
+  scada::aui::EditData result{scada::aui::EditData::EditorType::DROPDOWN};
+  result.choices.reserve(1 + scada::aui::GetColorCount());
   result.choices.emplace_back(kDefaultColorString);
-  for (size_t i = 0; i < aui::GetColorCount(); i++)
-    result.choices.emplace_back(aui::GetColorName(i));
+  for (size_t i = 0; i < scada::aui::GetColorCount(); i++)
+    result.choices.emplace_back(scada::aui::GetColorName(i));
   return result;
 }

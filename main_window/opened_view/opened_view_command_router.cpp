@@ -21,7 +21,7 @@ class OpenedViewCloseCommand final : public CommandHandler {
   }
 
   virtual void ExecuteCommand(unsigned command_id) override {
-    base::Check(command_id == ID_VIEW_CLOSE);
+    scada::base::Check(command_id == ID_VIEW_CLOSE);
     opened_view_.Close();
   }
 
@@ -38,7 +38,7 @@ OpenedViewCommandRouter::OpenedViewCommandRouter(
 OpenedViewCommandRouter::~OpenedViewCommandRouter() = default;
 
 void OpenedViewCommandRouter::SetContext(OpenedView* opened_view) {
-  base::Check(!opened_view || &opened_view->controller());
+  scada::base::Check(!opened_view || &opened_view->controller());
 
   controller_ = opened_view ? &opened_view->controller() : nullptr;
   close_command_ = opened_view
@@ -48,7 +48,7 @@ void OpenedViewCommandRouter::SetContext(OpenedView* opened_view) {
 
 void OpenedViewCommandRouter::AddCommandHandler(
     std::unique_ptr<CommandHandler> command_handler) {
-  base::Check(command_handler);
+  scada::base::Check(command_handler);
   command_handlers_.emplace_back(std::move(command_handler));
 }
 
@@ -62,7 +62,7 @@ void OpenedViewCommandRouter::AddCommandHandlers(
 
 CommandHandler* OpenedViewCommandRouter::GetCommandHandler(
     unsigned command_id) {
-  base::Check(controller_);
+  scada::base::Check(controller_);
 
   if (auto* handler = controller_->GetCommandHandler(command_id)) {
     return handler;

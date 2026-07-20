@@ -17,21 +17,21 @@
 namespace {
 
 const scada::NodeId kNewCommandTypeIds[] = {
-    data_items::id::DataGroupType,
-    data_items::id::DiscreteItemType,
-    data_items::id::AnalogItemType,
-    security::id::UserType,
-    history::id::HistoricalDatabaseType,
-    data_items::id::SimulationSignalType,
-    devices::id::Iec60870DeviceType,
-    devices::id::Iec61850DeviceType,
-    devices::id::Iec61850RcbType,
-    devices::id::ModbusLinkType,
-    devices::id::ModbusDeviceType,
-    data_items::id::TsFormatType,
-    devices::id::ModbusTransmissionItemType,
-    devices::id::Iec60870TransmissionItemType,
-    devices::id::Iec61850TransmissionItemType,
+    scada::data_items::id::DataGroupType,
+    scada::data_items::id::DiscreteItemType,
+    scada::data_items::id::AnalogItemType,
+    scada::security::id::UserType,
+    scada::history::id::HistoricalDatabaseType,
+    scada::data_items::id::SimulationSignalType,
+    scada::devices::id::Iec60870DeviceType,
+    scada::devices::id::Iec61850DeviceType,
+    scada::devices::id::Iec61850RcbType,
+    scada::devices::id::ModbusLinkType,
+    scada::devices::id::ModbusDeviceType,
+    scada::data_items::id::TsFormatType,
+    scada::devices::id::ModbusTransmissionItemType,
+    scada::devices::id::Iec60870TransmissionItemType,
+    scada::devices::id::Iec61850TransmissionItemType,
 };
 
 class NodeActionTitle {

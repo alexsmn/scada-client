@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #if defined(UI_QT) && defined(UI_WT)
 #error "Only one view manager UI backend can be selected."
 #endif

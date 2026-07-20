@@ -32,10 +32,12 @@ class ObjectTreeModel : private ObjectTreeModelContext,
   virtual std::u16string GetColumnText(int column_id) const override;
   virtual int GetColumnPreferredSize(int column_id) const override;
   virtual std::u16string GetText(void* tree_node, int column_id) override;
-  virtual aui::Color GetTextColor(void* tree_node, int column_id) override;
-  virtual aui::Color GetBackgroundColor(void* tree_node,
-                                        int column_id) override;
-  virtual std::optional<aui::Color> GetStatusColor(void* tree_node) override;
+  virtual scada::aui::Color GetTextColor(void* tree_node,
+                                         int column_id) override;
+  virtual scada::aui::Color GetBackgroundColor(void* tree_node,
+                                               int column_id) override;
+  virtual std::optional<scada::aui::Color> GetStatusColor(
+      void* tree_node) override;
 
  private:
   virtual std::unique_ptr<ConfigurationTreeNode> CreateTreeNode(

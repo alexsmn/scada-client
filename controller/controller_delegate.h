@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include "aui/point.h"
 #include "controller/node_id_set.h"
 
@@ -25,9 +23,9 @@ class ControllerDelegate {
   // null.
   // * `point` is in _screen_ coordinates.
   // * `right_click` should be set if popup is initated by right-click.
-  virtual void ShowPopupMenu(aui::MenuModel* merge_menu,
+  virtual void ShowPopupMenu(scada::aui::MenuModel* merge_menu,
                              unsigned resource_id,
-                             const aui::Point& point,
+                             const scada::aui::Point& point,
                              bool right_click) = 0;
 
   virtual void SetModified(bool modified) = 0;

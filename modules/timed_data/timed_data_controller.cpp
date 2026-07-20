@@ -21,13 +21,17 @@
 
 namespace {
 
-const aui::TableColumn s_columns[] = {
+const scada::aui::TableColumn s_columns[] = {
     {TimedDataModel::CID_TIME, kSourceTimestampTitle, 150,
-     aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
-    {TimedDataModel::CID_VALUE, kValueTitle, 150, aui::TableColumn::RIGHT},
-    {TimedDataModel::CID_QUALITY, u"Quality", 65, aui::TableColumn::LEFT},
+     scada::aui::TableColumn::LEFT,
+     scada::aui::TableColumn::DataType::DateTime},
+    {TimedDataModel::CID_VALUE, kValueTitle, 150,
+     scada::aui::TableColumn::RIGHT},
+    {TimedDataModel::CID_QUALITY, u"Quality", 65,
+     scada::aui::TableColumn::LEFT},
     {TimedDataModel::CID_COLLECTION_TIME, kServerTimestampTitle, 150,
-     aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
+     scada::aui::TableColumn::LEFT,
+     scada::aui::TableColumn::DataType::DateTime},
 };
 
 struct MirrorTableModelHolder {
@@ -35,7 +39,7 @@ struct MirrorTableModelHolder {
       : model_{std::move(model)} {}
 
   const std::shared_ptr<TimedDataModel> model_;
-  aui::MirrorTableModel mirror_model{*model_};
+  scada::aui::MirrorTableModel mirror_model{*model_};
 };
 
 }  // namespace
@@ -48,14 +52,14 @@ TimedDataController::TimedDataController(const ControllerContext& context)
 std::unique_ptr<UiView> TimedDataController::Init(
     const WindowDefinition& definition) {
   model_ = std::make_shared<TimedDataModel>(
-      TimedDataModelContext{.clock_ = *base::DefaultClock::GetInstance(),
+      TimedDataModelContext{.clock_ = *scada::base::DefaultClock::GetInstance(),
                             .timed_data_service_ = timed_data_service_});
 
   model_->Init(definition);
 
   auto mirror_table_holder = std::make_shared<MirrorTableModelHolder>(model_);
 
-  mirror_model_ = std::shared_ptr<aui::MirrorTableModel>(
+  mirror_model_ = std::shared_ptr<scada::aui::MirrorTableModel>(
       mirror_table_holder, &mirror_table_holder->mirror_model);
 
   if (const auto* item = definition.FindItem("View")) {
@@ -65,12 +69,12 @@ std::unique_ptr<UiView> TimedDataController::Init(
     mirror_model_->SetMirrored(profile_.timed_data.mirrored);
   }
 
-  auto view = std::make_unique<aui::Table>(
-      mirror_model_, std::vector<aui::TableColumn>(std::begin(s_columns),
-                                                   std::end(s_columns)));
+  auto view = std::make_unique<scada::aui::Table>(
+      mirror_model_, std::vector<scada::aui::TableColumn>(std::begin(s_columns),
+                                                          std::end(s_columns)));
   view->SetShowGrid(true);
 
-  view->SetContextMenuHandler([this](const aui::Point& point) {
+  view->SetContextMenuHandler([this](const scada::aui::Point& point) {
     // No view-specific static items: the node commands are supplied by the
     // generic cross-platform context menu (the former `IDR_ITEM_POPUP` carried
     // only the dynamic `<Item>` placeholder).
@@ -111,7 +115,7 @@ void TimedDataController::Save(WindowDefinition& definition) {
 }
 
 std::string GetTimedDataUnits(const TimedDataSpec& spec) {
-  return spec.node()[data_items::id::AnalogItemType_EngineeringUnits]
+  return spec.node()[scada::data_items::id::AnalogItemType_EngineeringUnits]
       .value()
       .get_or(std::string());
 }

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include "aui/handlers.h"
 #include "aui/tree.h"
 #include "base/check.h"

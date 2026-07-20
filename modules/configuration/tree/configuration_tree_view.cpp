@@ -65,7 +65,7 @@ const scada::aui::ThemeTokens& ExplorerTokens() {
 // (client/docs/ui-mockups/screens/config-workbench.html). Ownership of `tree`
 // transfers into the returned container via Qt parent-child, preserving the
 // caller-owns-the-returned-view contract.
-std::unique_ptr<UiView> WrapExplorerWithFilter(aui::Tree* tree) {
+std::unique_ptr<UiView> WrapExplorerWithFilter(scada::aui::Tree* tree) {
   const scada::aui::ThemeTokens& tokens = ExplorerTokens();
   auto container = std::make_unique<QWidget>();
   auto* layout = new QVBoxLayout{container.get()};
@@ -103,8 +103,8 @@ ConfigurationTreeView::ConfigurationTreeView(
       drop_handler_{std::move(drop_handler)} {
   // cppcheck-suppress noCopyConstructor
   // cppcheck-suppress noOperatorEq
-  tree_view_ = new aui::Tree{model_};
-  tree_view_->LoadIcons(IDB_ITEMS, 16, aui::Rgba{255, 0, 255});
+  tree_view_ = new scada::aui::Tree{model_};
+  tree_view_->LoadIcons(IDB_ITEMS, 16, scada::aui::Rgba{255, 0, 255});
   tree_view_->SetRootVisible(true);
   tree_view_->SetSorted(true);
 
@@ -136,7 +136,7 @@ ConfigurationTreeView::ConfigurationTreeView(
     return action;
   });
 
-  tree_view_->SetContextMenuHandler([this](const aui::Point& point) {
+  tree_view_->SetContextMenuHandler([this](const scada::aui::Point& point) {
     // No view-specific static items: the tree's node commands are supplied by
     // the generic cross-platform context menu (the former `IDR_ITEM_POPUP`
     // carried only the dynamic `<Item>` placeholder).

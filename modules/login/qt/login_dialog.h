@@ -52,7 +52,7 @@ class LoginDialog : public QDialog {
   DialogServiceImplQt dialog_service_;
 
   const std::shared_ptr<LoginController> controller_;
-  base::AsyncCompletion completion_;
+  scada::base::AsyncCompletion completion_;
   std::optional<DataServices> result_;
   bool completed_ = false;
 };

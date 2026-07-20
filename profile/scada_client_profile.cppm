@@ -43,9 +43,9 @@ export import scada.client.aui;
 // scada.client.base; if these declarations were discarded, a caller would
 // silently instantiate the undefined primary instead).
 static_assert(sizeof(&::FromJson<PageLayout>) > 0);
-static_assert(sizeof(&::FromJson<base::Time>) > 0);
+static_assert(sizeof(&::FromJson<scada::base::Time>) > 0);
 static_assert(sizeof(&::FromJson<TimeRange>) > 0);
-static_assert(sizeof(&::FromJson<base::TimeDelta>) > 0);
+static_assert(sizeof(&::FromJson<scada::base::TimeDelta>) > 0);
 static_assert(sizeof(&::FromJson<WindowItems>) > 0);
 static_assert(sizeof(&::FromJson<WindowDefinition>) > 0);
 

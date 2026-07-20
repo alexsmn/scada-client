@@ -106,7 +106,7 @@ Portfolio& PortfolioManager::New() {
 
 void PortfolioManager::Rename(const Portfolio& portfolio,
                               std::u16string_view name) {
-  base::Check(Find(portfolio) != portfolios.end());
+  scada::base::Check(Find(portfolio) != portfolios.end());
 
   Portfolio& p = const_cast<Portfolio&>(portfolio);
   p.name.assign(name.data(), name.size());
@@ -117,7 +117,7 @@ void PortfolioManager::Rename(const Portfolio& portfolio,
 
 void PortfolioManager::Delete(const Portfolio& portfolio) {
   Portfolios::iterator p = Find(portfolio);
-  base::Check(p != portfolios.end());
+  scada::base::Check(p != portfolios.end());
   for (auto* events : portfolio_events)
     events->Portfolio_OnDelete(const_cast<Portfolio&>(portfolio));
   portfolios.erase(p);

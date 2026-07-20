@@ -4,5 +4,5 @@
 
 Awaitable<CsvExportParams> ShowCsvExportDialog(DialogService& dialog_service,
                                                Profile& profile) {
-  return aui::wt::MakeUnsupportedDialogAwaitable<CsvExportParams>();
+  return scada::aui::wt::MakeUnsupportedDialogAwaitable<CsvExportParams>();
 }

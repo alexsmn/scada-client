@@ -20,7 +20,7 @@ struct WatchModelContext {
 };
 
 class WatchModel : private WatchModelContext,
-                   public aui::TableModel,
+                   public scada::aui::TableModel,
                    protected WatchEventSource::Delegate {
  public:
   explicit WatchModel(WatchModelContext&& context);
@@ -42,7 +42,7 @@ class WatchModel : private WatchModelContext,
 
   // ui::TableModel
   virtual int GetRowCount() override;
-  virtual void GetCell(aui::TableCell& cell) override;
+  virtual void GetCell(scada::aui::TableCell& cell) override;
 
  protected:
   // WatchEventSource
@@ -54,7 +54,7 @@ class WatchModel : private WatchModelContext,
 
   NodeRef device_;
 
-  TimeRange time_range_ = base::TimeDelta::FromMinutes(15);
+  TimeRange time_range_ = scada::base::TimeDelta::FromMinutes(15);
 
   // Sorted by `scada::Event::time`.
   std::vector<scada::Event> events_;

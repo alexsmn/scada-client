@@ -6,21 +6,21 @@ namespace {
 const uint16_t kVersion = 0;
 }
 
-void ItemDragData::Save(aui::OSExchangeData& data) const {
-  base::Pickle pickle;
+void ItemDragData::Save(scada::aui::OSExchangeData& data) const {
+  scada::base::Pickle pickle;
   Save(pickle);
   data.SetPickledData(GetCustomFormat(), pickle);
 }
 
-bool ItemDragData::Load(const aui::OSExchangeData& data) {
-  base::Pickle pickle;
+bool ItemDragData::Load(const scada::aui::OSExchangeData& data) {
+  scada::base::Pickle pickle;
   if (!data.GetPickledData(GetCustomFormat(), pickle))
     return false;
 
   return Load(pickle);
 }
 
-void ItemDragData::Save(base::Pickle& pickle) const {
+void ItemDragData::Save(scada::base::Pickle& pickle) const {
   pickle.WriteUInt16(0);
   pickle.WriteUInt16(node_id_.namespace_index());
   pickle.WriteUInt16(static_cast<uint16_t>(node_id_.type()));
@@ -38,12 +38,12 @@ void ItemDragData::Save(base::Pickle& pickle) const {
   }
 }
 
-bool ItemDragData::Load(const base::Pickle& pickle) {
+bool ItemDragData::Load(const scada::base::Pickle& pickle) {
   uint16_t version = 0;
   uint16_t namespace_index = 0;
   uint16_t identifier_type = 0;
 
-  base::PickleIterator it(pickle);
+  scada::base::PickleIterator it(pickle);
   if (!it.ReadUInt16(&version) || !it.ReadUInt16(&namespace_index) ||
       !it.ReadUInt16(&identifier_type))
     return false;
@@ -77,7 +77,7 @@ bool ItemDragData::Load(const base::Pickle& pickle) {
 }
 
 void ItemDragData::Save(DragData& drag_data) const {
-  base::Pickle pickle;
+  scada::base::Pickle pickle;
   Save(pickle);
   std::vector<char> buffer{
       static_cast<const char*>(pickle.data()),
@@ -92,13 +92,14 @@ bool ItemDragData::Load(const DragData& drag_data) {
     return false;
 
   const auto& buffer = i->second;
-  base::Pickle pickle{buffer.data(), static_cast<int>(buffer.size())};
+  scada::base::Pickle pickle{buffer.data(), static_cast<int>(buffer.size())};
   return Load(pickle);
 }
 
 // static
-aui::OSExchangeData::CustomFormat ItemDragData::GetCustomFormat() {
-  static const aui::OSExchangeData::CustomFormat kFormat =
-      aui::OSExchangeData::RegisterCustomFormat("telecontrol/scada/node");
+scada::aui::OSExchangeData::CustomFormat ItemDragData::GetCustomFormat() {
+  static const scada::aui::OSExchangeData::CustomFormat kFormat =
+      scada::aui::OSExchangeData::RegisterCustomFormat(
+          "telecontrol/scada/node");
   return kFormat;
 }

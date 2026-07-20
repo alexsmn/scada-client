@@ -13,7 +13,7 @@
 
 struct State : DisplayTesterState {
   AnyExecutor executor = TestExecutor{};
-  vidicon::VidiconClient vidicon_client{
+  scada::vidicon::VidiconClient vidicon_client{
       {.executor_ = executor, .timed_data_service_ = timed_data_service}};
 };
 

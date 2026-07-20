@@ -38,7 +38,8 @@ TransmissionModule::TransmissionModule(TransmissionModuleContext&& context)
            session_service_](const SelectionCommandContext& context) {
         return session_service.HasPrivilege(scada::Privilege::Configure) &&
                IsInstanceOf(context.selection.node(),
-                            devices::id::DeviceType) &&
-               !IsInstanceOf(context.selection.node(), devices::id::LinkType);
+                            scada::devices::id::DeviceType) &&
+               !IsInstanceOf(context.selection.node(),
+                             scada::devices::id::LinkType);
       }));
 }

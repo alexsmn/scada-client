@@ -43,13 +43,13 @@ class HardwareTreeView : public ConfigurationTreeView {
       const auto& node = current.node();
       if (node.fetched()) {
         std::optional<std::string> protocol;
-        if (IsInstanceOf(node, devices::id::ModbusDeviceType) ||
-            IsInstanceOf(node, devices::id::ModbusLinkType))
+        if (IsInstanceOf(node, scada::devices::id::ModbusDeviceType) ||
+            IsInstanceOf(node, scada::devices::id::ModbusLinkType))
           protocol = "MODBUS";
-        else if (IsInstanceOf(node, devices::id::Iec60870DeviceType) ||
-                 IsInstanceOf(node, devices::id::Iec60870LinkType))
+        else if (IsInstanceOf(node, scada::devices::id::Iec60870DeviceType) ||
+                 IsInstanceOf(node, scada::devices::id::Iec60870LinkType))
           protocol = "IEC60870";
-        else if (IsInstanceOf(node, devices::id::Iec61850DeviceType))
+        else if (IsInstanceOf(node, scada::devices::id::Iec61850DeviceType))
           protocol = "IEC61850";
 
         if (protocol) {

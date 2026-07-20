@@ -45,7 +45,7 @@ MessageLoopQt::~MessageLoopQt() {
 void MessageLoopQt::PostDelayedTask(Clock::duration delay,
                                     Task task,
                                     const std::source_location& location) {
-  base::Check(task);
+  scada::base::Check(task);
 
   std::lock_guard<std::recursive_mutex> lock{mutex_};
   if (delay == Clock::duration()) {

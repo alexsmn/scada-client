@@ -9,7 +9,7 @@ namespace {
 
 class RegHelper {
  public:
-  explicit RegHelper(base::win::RegKey& key) : key_{key} {}
+  explicit RegHelper(scada::base::win::RegKey& key) : key_{key} {}
 
   bool ReadBool(std::string_view name) const {
     DWORD value = 0;
@@ -48,7 +48,7 @@ class RegHelper {
   }
 
  private:
-  base::win::RegKey& key_;
+  scada::base::win::RegKey& key_;
 };
 
 }  // namespace
@@ -57,35 +57,38 @@ RegistrySettingsStore::RegistrySettingsStore(HKEY root, std::wstring subkey)
     : root_{root}, subkey_{std::move(subkey)} {}
 
 bool RegistrySettingsStore::ReadBool(std::string_view name) const {
-  base::win::RegKey reg(root_, subkey_.c_str(), KEY_QUERY_VALUE);
+  scada::base::win::RegKey reg(root_, subkey_.c_str(), KEY_QUERY_VALUE);
   return RegHelper{reg}.ReadBool(name);
 }
 
 std::string RegistrySettingsStore::ReadString(std::string_view name) const {
-  base::win::RegKey reg(root_, subkey_.c_str(), KEY_QUERY_VALUE);
+  scada::base::win::RegKey reg(root_, subkey_.c_str(), KEY_QUERY_VALUE);
   return RegHelper{reg}.ReadString(name);
 }
 
 std::u16string RegistrySettingsStore::ReadString16(
     std::string_view name) const {
-  base::win::RegKey reg(root_, subkey_.c_str(), KEY_QUERY_VALUE);
+  scada::base::win::RegKey reg(root_, subkey_.c_str(), KEY_QUERY_VALUE);
   return RegHelper{reg}.ReadString16(name);
 }
 
 bool RegistrySettingsStore::Write(std::string_view name, bool bool_value) {
-  base::win::RegKey reg(root_, subkey_.c_str(), KEY_SET_VALUE | KEY_QUERY_VALUE);
+  scada::base::win::RegKey reg(root_, subkey_.c_str(),
+                               KEY_SET_VALUE | KEY_QUERY_VALUE);
   return RegHelper{reg}.Write(name, bool_value);
 }
 
 bool RegistrySettingsStore::Write(std::string_view name,
                                   std::string_view string_value) {
-  base::win::RegKey reg(root_, subkey_.c_str(), KEY_SET_VALUE | KEY_QUERY_VALUE);
+  scada::base::win::RegKey reg(root_, subkey_.c_str(),
+                               KEY_SET_VALUE | KEY_QUERY_VALUE);
   return RegHelper{reg}.Write(name, string_value);
 }
 
 bool RegistrySettingsStore::Write(std::string_view name,
                                   std::u16string_view string16_value) {
-  base::win::RegKey reg(root_, subkey_.c_str(), KEY_SET_VALUE | KEY_QUERY_VALUE);
+  scada::base::win::RegKey reg(root_, subkey_.c_str(),
+                               KEY_SET_VALUE | KEY_QUERY_VALUE);
   return RegHelper{reg}.Write(name, string16_value);
 }
 

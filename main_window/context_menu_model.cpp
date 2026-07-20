@@ -19,12 +19,12 @@ constexpr CommandContextId kContextMenuContexts[] = {
 ContextMenuModel::ContextMenuModel(MainWindowInterface& main_window,
                                    CommandManager& command_manager,
                                    CommandHandler& command_handler)
-    : aui::SimpleMenuModel{&command_handler_},
+    : scada::aui::SimpleMenuModel{&command_handler_},
       main_window_{main_window},
       command_manager_{command_manager},
       command_handler_{command_handler} {}
 
-void AddMenuActions(aui::SimpleMenuModel& menu,
+void AddMenuActions(scada::aui::SimpleMenuModel& menu,
                     const CommandDescriptorList& commands,
                     OpenedView* view) {
   for (const auto* command : commands) {
@@ -69,7 +69,7 @@ void ContextMenuModel::Rebuild() {
   bool separated = true;
   for (const auto& [category, commands] : grouped_commands) {
     if (!separated) {
-      AddSeparator(aui::NORMAL_SEPARATOR);
+      AddSeparator(scada::aui::NORMAL_SEPARATOR);
       separated = true;
     }
 
@@ -80,7 +80,7 @@ void ContextMenuModel::Rebuild() {
       }
 
     } else {
-      auto* submenu = new aui::SimpleMenuModel{&command_handler_};
+      auto* submenu = new scada::aui::SimpleMenuModel{&command_handler_};
       submenus_.emplace_back(submenu);
       AddMenuActions(*submenu, commands, active_view);
 

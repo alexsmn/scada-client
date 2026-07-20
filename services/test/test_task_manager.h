@@ -16,7 +16,7 @@ class TestTaskManager : public TaskManager {
 
   virtual Awaitable<scada::StatusOr<scada::NodeId>> PostInsertTask(
       const scada::NodeState& node_state) override {
-    base::Check(node_state.children.empty());
+    scada::base::Check(node_state.children.empty());
 
     auto node_state_copy = node_state;
     auto node_id = storage_.Insert(std::move(node_state_copy));

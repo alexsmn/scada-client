@@ -198,15 +198,16 @@ TEST(GraphViewInspectorTest, DeletingSelectedPaneRefreshesSeriesInspector) {
 TEST_F(GraphViewTest, FakeTimedDataRendersLines) {
   // Set up FakeTimedDataService with pre-populated data.
   FakeTimedDataService fake_service;
-  auto now = base::Time::Now();
+  auto now = scada::base::Time::Now();
 
   auto td = fake_service.AddTimedData("TS.200");
   for (int i = 0; i < 24; ++i) {
-    auto time = now - base::TimeDelta::FromHours(24 - i);
+    auto time = now - scada::base::TimeDelta::FromHours(24 - i);
     td->data_values.push_back(
         scada::DataValue{scada::Variant{100.0 + i * 2.0}, {}, time, time});
   }
-  td->ready_ranges.push_back({now - base::TimeDelta::FromHours(24), now});
+  td->ready_ranges.push_back(
+      {now - scada::base::TimeDelta::FromHours(24), now});
 
   // Create a graph with one line using the fake service.
   MetrixGraph graph{MetrixGraphContext{fake_service}};
@@ -215,7 +216,7 @@ TEST_F(GraphViewTest, FakeTimedDataRendersLines) {
   line.SetColor(Qt::blue);
 
   // Set horizontal range to match data.
-  double from = (now - base::TimeDelta::FromHours(24)).ToDoubleT();
+  double from = (now - scada::base::TimeDelta::FromHours(24)).ToDoubleT();
   double to = now.ToDoubleT();
   graph.horizontal_axis().SetTimeFit(false);
   graph.horizontal_axis().SetRange(GraphRange{from, to, GraphRange::TIME});
@@ -311,8 +312,8 @@ TEST(MetrixDataSourceTest, DropsCanceledEarliestTimestampRead) {
   NodeRef node = node_service.Add(
       kTestNodeId, std::make_shared<TestNodeModel>(client.node(kTestNodeId)));
 
-  base::AsyncCompletion first_completion{executor};
-  base::AsyncCompletion second_completion{executor};
+  scada::base::AsyncCompletion first_completion{executor};
+  scada::base::AsyncCompletion second_completion{executor};
   scada::HistoryReadRawResult first_result;
   scada::HistoryReadRawResult second_result;
   bool first_started = false;

@@ -27,8 +27,9 @@ class ObjectTreeModel::ObjectTreeNode : public ConfigurationTreeNode {
   virtual void OnModelChanged() override { Changed(); }
 
   virtual int GetIcon() const override {
-    return IsInstanceOf(node(), data_items::id::DataItemType) ? IMAGE_ITEM
-                                                              : IMAGE_FOLDER;
+    return IsInstanceOf(node(), scada::data_items::id::DataItemType)
+               ? IMAGE_ITEM
+               : IMAGE_FOLDER;
   }
 };
 
@@ -42,7 +43,8 @@ ObjectTreeModel::ObjectTreeModel(ObjectTreeModelContext&& context)
                   .node_service_ = ObjectTreeModelContext::node_service_,
                   .root_node_ = ObjectTreeModelContext::root_,
                   .reference_filter_ = {{scada::id::Organizes, true}},
-                  .leaf_type_definition_ids_ = {data_items::id::DataItemType},
+                  .leaf_type_definition_ids_ =
+                      {scada::data_items::id::DataItemType},
               })}},
       visible_node_model_{
           timed_data_service_,
@@ -77,21 +79,24 @@ std::u16string ObjectTreeModel::GetText(void* tree_node, int column_id) {
     return ConfigurationTreeModel::GetText(tree_node, column_id);
 }
 
-aui::Color ObjectTreeModel::GetTextColor(void* tree_node, int column_id) {
+scada::aui::Color ObjectTreeModel::GetTextColor(void* tree_node,
+                                                int column_id) {
   if (column_id == 1)
     return visible_node_model_.GetTextColor(tree_node);
   else
     return ConfigurationTreeModel::GetTextColor(tree_node, column_id);
 }
 
-aui::Color ObjectTreeModel::GetBackgroundColor(void* tree_node, int column_id) {
+scada::aui::Color ObjectTreeModel::GetBackgroundColor(void* tree_node,
+                                                      int column_id) {
   if (column_id == 1)
     return visible_node_model_.GetBackgroundColor(tree_node);
   else
     return ConfigurationTreeModel::GetBackgroundColor(tree_node, column_id);
 }
 
-std::optional<aui::Color> ObjectTreeModel::GetStatusColor(void* tree_node) {
+std::optional<scada::aui::Color> ObjectTreeModel::GetStatusColor(
+    void* tree_node) {
   // Quality dot on the name column, from the node's live value.
   return visible_node_model_.GetStatusColor(tree_node);
 }
@@ -161,13 +166,13 @@ Awaitable<void> ObjectTreeModel::CompleteVisibleNodeFetchAsync(
 
 std::shared_ptr<VisibleNode> ObjectTreeModel::CreateFetchedVisibleNode(
     const NodeRef& node) {
-  base::Check(node.fetched());
+  scada::base::Check(node.fetched());
 
-  if (IsInstanceOf(node, data_items::id::DataItemType)) {
+  if (IsInstanceOf(node, scada::data_items::id::DataItemType)) {
     return std::make_shared<DataItemVisibleNode>(timed_data_service_,
                                                  blinker_manager_, node);
 
-  } else if (IsInstanceOf(node, data_items::id::DataGroupType)) {
+  } else if (IsInstanceOf(node, scada::data_items::id::DataGroupType)) {
     return std::make_shared<DataGroupVisibleNode>(timed_data_service_, node);
 
   } else {

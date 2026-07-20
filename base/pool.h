@@ -22,7 +22,7 @@ template <class Key, class Payload>
 class Pool {
  public:
   Pool() {}
-  ~Pool() { base::Check(payload_map_.empty()); }
+  ~Pool() { scada::base::Check(payload_map_.empty()); }
 
   Pool(const Pool&) = delete;
   Pool& operator=(const Pool&) = delete;

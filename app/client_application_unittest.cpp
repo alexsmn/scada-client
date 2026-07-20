@@ -227,7 +227,7 @@ class ClientApplicationTestBase : public Test {
       MakeClientTestNodeService(address_space_);
   scada::MockServices services_;
 
-  base::ScopedPathOverride private_dir_override_{client::DIR_PRIVATE};
+  scada::base::ScopedPathOverride private_dir_override_{client::DIR_PRIVATE};
 
   NiceMock<MockFunction<Awaitable<std::optional<DataServices>>(
       DataServicesContext&& services_context)>>
@@ -356,7 +356,7 @@ TEST_F(ClientApplicationTest, LoginHandlerRejectionPropagates) {
 // OnLoginCompleted runs. Verified by delaying the login coroutine and
 // checking that app_.Start() stays pending until login resumes.
 TEST_F(ClientApplicationTest, StartWaitsForLoginBeforePostLogin) {
-  base::AsyncCompletion pending_login{executor_};
+  scada::base::AsyncCompletion pending_login{executor_};
   EXPECT_CALL(login_handler_, Call(/*services_context=*/_))
       .WillOnce(Invoke([&](DataServicesContext&&)
                            -> Awaitable<std::optional<DataServices>> {
@@ -469,7 +469,7 @@ class ClientApplicationConfiguratorTest : public Test {
   std::shared_ptr<NodeService> node_service_override_ =
       MakeClientTestNodeService(address_space_);
   scada::MockServices services_;
-  base::ScopedPathOverride private_dir_override_{client::DIR_PRIVATE};
+  scada::base::ScopedPathOverride private_dir_override_{client::DIR_PRIVATE};
   NiceMock<MockFunction<Awaitable<std::optional<DataServices>>(
       DataServicesContext&& services_context)>>
       login_handler_;

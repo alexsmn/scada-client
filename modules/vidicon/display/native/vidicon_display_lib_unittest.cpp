@@ -1,4 +1,3 @@
-#include "vidicon/vidicon_compat.h"
 
 #include "vidicon/display/native/vidicon_display_lib.h"
 

@@ -28,7 +28,7 @@ namespace {
 const char16_t kFetching[] = u"Loading...";
 const auto kParentReferenceTypeId = scada::id::Organizes;
 const auto kSortDelay = 300ms;
-const aui::Color kReadOnlyCellColor = aui::Rgba{0xF0, 0xF0, 0xF0};
+const scada::aui::Color kReadOnlyCellColor = scada::aui::Rgba{0xF0, 0xF0, 0xF0};
 
 void LogLoadFailure(const scada::Status& status) {
   BOOST_LOG_TRIVIAL(error) << "NodeTableModel startup load failed"
@@ -106,15 +106,17 @@ std::u16string NodeTableModel::GetRowTitle(int row) {
   return UtfConvert<char16_t>(NodeIdToScadaString(rows_[row].node.node_id()));
 }
 
-void NodeTableModel::GetCell(aui::GridCell& cell) {
+void NodeTableModel::GetCell(scada::aui::GridCell& cell) {
   if (loading_) {
     cell.text = kFetching;
     cell.cell_color = kReadOnlyCellColor;
     return;
   }
 
-  base::Check(cell.row >= 0 && cell.row < static_cast<int>(rows_.size()));
-  base::Check(cell.column >= 0 && cell.column < column_model_.GetCount());
+  scada::base::Check(cell.row >= 0 &&
+                     cell.row < static_cast<int>(rows_.size()));
+  scada::base::Check(cell.column >= 0 &&
+                     cell.column < column_model_.GetCount());
 
   const auto& node = rows_[cell.row].node;
   const auto& column = columns_[cell.column];
@@ -158,17 +160,17 @@ bool NodeTableModel::SetCellText(int row,
   return true;
 }
 
-aui::EditData NodeTableModel::GetEditData(int row, int column) {
+scada::aui::EditData NodeTableModel::GetEditData(int row, int column) {
   const auto& node = rows_[row].node;
-  base::Check(node);
+  scada::base::Check(node);
 
   const auto& c = columns_[column];
   if (c.attr_id == scada::AttributeId::NodeId)
-    return {.editor_type = aui::EditData::EditorType::NONE};
+    return {.editor_type = scada::aui::EditData::EditorType::NONE};
 
   if (c.attr_id == scada::AttributeId::BrowseName ||
       c.attr_id == scada::AttributeId::DisplayName)
-    return {.editor_type = aui::EditData::EditorType::TEXT};
+    return {.editor_type = scada::aui::EditData::EditorType::TEXT};
 
   return c.prop_def->GetPropertyEditor(*this, node,
                                        c.property_declaration.node_id());
@@ -350,7 +352,7 @@ void NodeTableModel::ScheduleSortHelper() {
 void NodeTableModel::UpdateColumns(const PropertyDefs& property_defs) {
   columns_.clear();
 
-  std::vector<aui::TableColumn> columns;
+  std::vector<scada::aui::TableColumn> columns;
 
   columns.reserve(property_defs.size() + 2);
 
@@ -358,14 +360,15 @@ void NodeTableModel::UpdateColumns(const PropertyDefs& property_defs) {
   {
     columns_.emplace_back(scada::AttributeId::BrowseName);
     columns.emplace_back(static_cast<int>(columns.size()),
-                         Translate("Browse Name"), 75, aui::TableColumn::LEFT);
+                         Translate("Browse Name"), 75,
+                         scada::aui::TableColumn::LEFT);
   }
 
   // Display name
   {
     columns_.emplace_back(scada::AttributeId::DisplayName);
     columns.emplace_back(static_cast<int>(columns.size()), Translate("Name"),
-                         75, aui::TableColumn::LEFT);
+                         75, scada::aui::TableColumn::LEFT);
   }
 
   auto AddProp = [this, &columns](const NodeRef& property_declaration,

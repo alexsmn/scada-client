@@ -39,7 +39,7 @@ ConfigurationTreeNode::~ConfigurationTreeNode() {
   auto [first, last] = model_.tree_node_map_.equal_range(node_.node_id());
   auto i =
       std::find_if(first, last, [this](auto& p) { return p.second == this; });
-  base::Check(i != last);
+  scada::base::Check(i != last);
   model_.tree_node_map_.erase(i);
 }
 
@@ -84,8 +84,8 @@ bool ConfigurationTreeNode::CanFetchMore() const {
 }
 
 void ConfigurationTreeNode::FetchMore() {
-  base::Check(node_);
-  base::Check(!children_requested_);
+  scada::base::Check(node_);
+  scada::base::Check(!children_requested_);
 
   LOG_INFO(model_.logger_) << "Load children"
                            << LOG_TAG("NodeId",

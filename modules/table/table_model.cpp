@@ -38,10 +38,12 @@ bool CompareRows(const TableRow* left,
       if (type_id1 != type_id2) {
         return type_id1 < type_id2;
       }
-      auto channel1 = node1[data_items::id::DataItemType_Input1].value().get_or(
-          std::string{});
-      auto channel2 = node2[data_items::id::DataItemType_Input1].value().get_or(
-          std::string{});
+      auto channel1 =
+          node1[scada::data_items::id::DataItemType_Input1].value().get_or(
+              std::string{});
+      auto channel2 =
+          node2[scada::data_items::id::DataItemType_Input1].value().get_or(
+              std::string{});
       return channel1 < channel2;
     }
 
@@ -60,14 +62,14 @@ TableModel::TableModel(TableModelContext&& context)
 TableModel::~TableModel() = default;
 
 void TableModel::GetCellEx(TableCellEx& cell) const {
-  base::Check(cell.row >= 0 && cell.row <= (long)rows_.size());
+  scada::base::Check(cell.row >= 0 && cell.row <= (long)rows_.size());
 
   cell.text.clear();
 
   if (cell.row == static_cast<int>(rows_.size())) {
     if (cell.column_id == 0) {
       cell.text = Translate("Enter expression");
-      cell.text_color = aui::Rgba{192, 192, 192};
+      cell.text_color = scada::aui::Rgba{192, 192, 192};
     }
     return;
   }
@@ -85,9 +87,9 @@ int TableModel::GetRowCount() {
   return static_cast<int>(rows_.size()) + 1;
 }
 
-void TableModel::GetCell(aui::TableCell& cell) {
+void TableModel::GetCell(scada::aui::TableCell& cell) {
   TableCellEx cell_ex;
-  static_cast<aui::TableCell&>(cell_ex) = cell;
+  static_cast<scada::aui::TableCell&>(cell_ex) = cell;
   GetCellEx(cell_ex);
   cell = cell_ex;
 }
@@ -97,8 +99,8 @@ void TableModel::Clear() {
 }
 
 bool TableModel::DeleteRows(int start, int count) {
-  base::Check(start >= 0);
-  base::Check(count >= 0);
+  scada::base::Check(start >= 0);
+  scada::base::Check(count >= 0);
 
   if (start >= (int)rows_.size())
     return false;
@@ -175,7 +177,7 @@ bool TableModel::SetFormula(int row, std::string formula) {
       rows_.push_back(std::make_unique<TableRow>(*this, added_first + i));
   }
 
-  base::Check(rows_[row]);
+  scada::base::Check(rows_[row]);
   TableRow& trow = *rows_[row];
 
   try {
@@ -224,7 +226,7 @@ std::u16string TableModel::GetTooltip(int row, int column_id) {
 }
 
 TableRow* TableModel::GetRow(int index) {
-  base::Check(index >= 0 && index <= (int)rows_.size());
+  scada::base::Check(index >= 0 && index <= (int)rows_.size());
   if (index == static_cast<int>(rows_.size()))
     return nullptr;
   return rows_[index].get();
@@ -237,7 +239,7 @@ const TableRow* TableModel::GetRow(int index) const {
 bool TableModel::SetCellText(int row,
                              int column_id,
                              const std::u16string& text) {
-  base::Check(column_id == TableModel::COLUMN_TITLE);
+  scada::base::Check(column_id == TableModel::COLUMN_TITLE);
 
   std::string text2 = UtfConvert<char>(text);
   if (!text2.empty() && text2[0] == L'=')

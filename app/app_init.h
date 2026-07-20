@@ -8,5 +8,5 @@ class AppInit {
   ~AppInit();
 
 private:
-  base::AtExitManager at_exit_manager_;
+ scada::base::AtExitManager at_exit_manager_;
 };

@@ -13,7 +13,7 @@ int NodeGroupModel::GetCount() const {
   return properties.size();
 }
 
-aui::PropertyGroup* NodeGroupModel::GetSubgroup(int index) const {
+scada::aui::PropertyGroup* NodeGroupModel::GetSubgroup(int index) const {
   return properties[index].submodel.get();
 }
 
@@ -30,7 +30,7 @@ std::u16string NodeGroupModel::GetValue(int index) const {
     return ToString16(property_model_.node_.attribute(prop.attribute_id));
 }
 
-aui::PropertyGroup::ItemType NodeGroupModel::GetType(int index) const {
+scada::aui::PropertyGroup::ItemType NodeGroupModel::GetType(int index) const {
   return properties[index].type;
 }
 
@@ -63,7 +63,7 @@ void NodeGroupModel::SetValue(int index, const std::u16string& value) {
   }
 }
 
-aui::EditData NodeGroupModel::GetEditData(int index) const {
+scada::aui::EditData NodeGroupModel::GetEditData(int index) const {
   auto& prop = properties[index];
   if (!prop.def)
     return {};

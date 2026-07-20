@@ -21,18 +21,19 @@ ViewManager::ViewManager(QMainWindow& main_window, ViewManagerDelegate& delegate
     : delegate_{delegate},
       current_page_{std::make_unique<Page>()},
       component_{main_window} {
-  component_.SetCloseViewHandler([this](aui::ViewManagerViewId view_id) {
+  component_.SetCloseViewHandler([this](scada::aui::ViewManagerViewId view_id) {
     if (auto* view = FindViewByComponentId(view_id))
       CloseView(*view);
   });
 
   component_.SetActiveViewChangedHandler(
-      [this](std::optional<aui::ViewManagerViewId> view_id) {
+      [this](std::optional<scada::aui::ViewManagerViewId> view_id) {
         SetActiveView(view_id ? FindViewByComponentId(*view_id) : nullptr);
       });
 
   component_.SetTabPopupMenuHandler(
-      [this](aui::ViewManagerViewId view_id, const aui::Point& point) {
+      [this](scada::aui::ViewManagerViewId view_id,
+             const scada::aui::Point& point) {
         if (auto* view = FindViewByComponentId(view_id))
           delegate_.OnShowTabPopupMenu(*view, point);
       });
@@ -40,7 +41,7 @@ ViewManager::ViewManager(QMainWindow& main_window, ViewManagerDelegate& delegate
 #elif defined(UI_WT)
 ViewManager::ViewManager(ViewManagerDelegate& delegate)
     : delegate_{delegate}, current_page_{std::make_unique<Page>()} {
-  component_.SetCloseViewHandler([this](aui::ViewManagerViewId view_id) {
+  component_.SetCloseViewHandler([this](scada::aui::ViewManagerViewId view_id) {
     if (auto* view = FindViewByComponentId(view_id))
       CloseView(*view);
   });
@@ -49,7 +50,7 @@ ViewManager::ViewManager(ViewManagerDelegate& delegate)
 
 ViewManager::~ViewManager() {
   // Page must be closed before destruction, as closing calls delegate.
-  base::Check(views_.empty());
+  scada::base::Check(views_.empty());
 }
 
 #if defined(UI_WT)
@@ -116,15 +117,15 @@ void ViewManager::AddView(OpenedView& view) {
                    : std::nullopt);
 }
 
-aui::ViewManagerViewId ViewManager::GetComponentViewId(
+scada::aui::ViewManagerViewId ViewManager::GetComponentViewId(
     const OpenedView& view) const {
-  return reinterpret_cast<aui::ViewManagerViewId>(&view);
+  return reinterpret_cast<scada::aui::ViewManagerViewId>(&view);
 }
 
-aui::ViewManagerViewInfo ViewManager::GetComponentViewInfo(
+scada::aui::ViewManagerViewInfo ViewManager::GetComponentViewInfo(
     OpenedView& view) const {
   const auto& window_info = view.window_info();
-  return aui::ViewManagerViewInfo{
+  return scada::aui::ViewManagerViewInfo{
       .id = GetComponentViewId(view),
       .widget = view.view(),
       .title = view.GetWindowTitle(),
@@ -137,7 +138,7 @@ aui::ViewManagerViewInfo ViewManager::GetComponentViewInfo(
 }
 
 OpenedView* ViewManager::FindViewByComponentId(
-    aui::ViewManagerViewId view_id) const {
+    scada::aui::ViewManagerViewId view_id) const {
   for (auto* view : views_) {
     if (GetComponentViewId(*view) == view_id) {
       return view;
@@ -146,9 +147,9 @@ OpenedView* ViewManager::FindViewByComponentId(
   return nullptr;
 }
 
-std::vector<aui::ViewManagerViewInfo> ViewManager::GetComponentViewInfos()
-    const {
-  std::vector<aui::ViewManagerViewInfo> result;
+std::vector<scada::aui::ViewManagerViewInfo>
+ViewManager::GetComponentViewInfos() const {
+  std::vector<scada::aui::ViewManagerViewInfo> result;
   result.reserve(views_.size());
   for (auto* view : views_) {
     result.emplace_back(GetComponentViewInfo(*view));
@@ -156,9 +157,9 @@ std::vector<aui::ViewManagerViewInfo> ViewManager::GetComponentViewInfos()
   return result;
 }
 
-aui::ViewManagerSavedLayout ViewManager::ToComponentLayout(
+scada::aui::ViewManagerSavedLayout ViewManager::ToComponentLayout(
     const PageLayout& layout) const {
-  aui::ViewManagerSavedLayout component_layout;
+  scada::aui::ViewManagerSavedLayout component_layout;
   component_layout.main = ToComponentLayoutNode(layout.main);
 #if defined(UI_QT)
   component_layout.dock_state_blob = layout.blob;
@@ -166,11 +167,11 @@ aui::ViewManagerSavedLayout ViewManager::ToComponentLayout(
   return component_layout;
 }
 
-aui::ViewManagerLayoutNode ViewManager::ToComponentLayoutNode(
+scada::aui::ViewManagerLayoutNode ViewManager::ToComponentLayoutNode(
     const PageLayoutBlock& block) const {
-  aui::ViewManagerLayoutNode component_block;
+  scada::aui::ViewManagerLayoutNode component_block;
   if (block.type == PageLayoutBlock::PANE) {
-    component_block.type = aui::ViewManagerLayoutNode::Type::Tabs;
+    component_block.type = scada::aui::ViewManagerLayoutNode::Type::Tabs;
     for (int window_id : block.wins) {
       if (auto* view = FindViewByID(window_id)) {
         component_block.tabs.emplace_back(GetComponentViewId(*view));
@@ -179,18 +180,18 @@ aui::ViewManagerLayoutNode ViewManager::ToComponentLayoutNode(
     return component_block;
   }
 
-  component_block.type = aui::ViewManagerLayoutNode::Type::Split;
+  component_block.type = scada::aui::ViewManagerLayoutNode::Type::Split;
   component_block.split_vertical = block.horz;
   component_block.split_pos = block.pos;
-  component_block.left = std::make_unique<aui::ViewManagerLayoutNode>(
+  component_block.left = std::make_unique<scada::aui::ViewManagerLayoutNode>(
       ToComponentLayoutNode(*block.left));
-  component_block.right = std::make_unique<aui::ViewManagerLayoutNode>(
+  component_block.right = std::make_unique<scada::aui::ViewManagerLayoutNode>(
       ToComponentLayoutNode(*block.right));
   return component_block;
 }
 
 void ViewManager::FromComponentLayout(
-    const aui::ViewManagerSavedLayout& component_layout,
+    const scada::aui::ViewManagerSavedLayout& component_layout,
     PageLayout& layout) const {
   FromComponentLayoutNode(component_layout.main, layout.main);
 #if defined(UI_QT)
@@ -199,10 +200,10 @@ void ViewManager::FromComponentLayout(
 }
 
 void ViewManager::FromComponentLayoutNode(
-    const aui::ViewManagerLayoutNode& component_block,
+    const scada::aui::ViewManagerLayoutNode& component_block,
     PageLayoutBlock& block) const {
-  if (component_block.type == aui::ViewManagerLayoutNode::Type::Tabs) {
-    for (aui::ViewManagerViewId view_id : component_block.tabs) {
+  if (component_block.type == scada::aui::ViewManagerLayoutNode::Type::Tabs) {
+    for (scada::aui::ViewManagerViewId view_id : component_block.tabs) {
       if (auto* view = FindViewByComponentId(view_id)) {
         block.add(view->window_id());
       }
@@ -251,7 +252,7 @@ void ViewManager::DestroyView(OpenedView& view) {
     SetActiveView(nullptr);
   }
 
-  base::Check(std::ranges::find(views_, &view) != views_.end());
+  scada::base::Check(std::ranges::find(views_, &view) != views_.end());
   std::erase(views_, &view);
   std::erase(added_views_, &view);
 
@@ -291,7 +292,7 @@ void ViewManager::OpenPage(const Page& page) {
 
   {
     // Do not call AddView() from CreateView() and don't process focus change.
-    base::AutoReset<bool> opening_layout(&opening_layout_, true);
+    scada::base::AutoReset<bool> opening_layout(&opening_layout_, true);
 
     for (int i = 0; i < current_page_->GetWindowCount(); ++i) {
       WindowDefinition& win = current_page_->GetWindow(i);
@@ -318,10 +319,10 @@ void ViewManager::SavePage() {
 }
 
 void ViewManager::ClosePage() {
-  base::Check(!closing_page_);
+  scada::base::Check(!closing_page_);
 
   // Prevent WindowDefinition delete on close child windows.
-  base::AutoReset<bool> closing_page(&closing_page_, true);
+  scada::base::AutoReset<bool> closing_page(&closing_page_, true);
 
   while (!views_.empty()) {
     CloseView(*views_.front());
@@ -353,7 +354,7 @@ OpenedView* ViewManager::OpenView(const WindowDefinition& def,
     for (int i = 0; i < page.GetWindowCount(); ++i) {
       WindowDefinition& win = page.GetWindow(i);
       if (win.type == def.type) {
-        base::Check(!win.visible);
+        scada::base::Check(!win.visible);
         win.visible = true;
         window_def = &win;
         break;

@@ -37,8 +37,8 @@ std::span<
 GetSortCommands() {
   static std::pair<unsigned, scada::NodeId> kSortCommands[] = {
       {ID_SORT_NONE, scada::NodeId{}},
-      {ID_SORT_ALIAS, data_items::id::DataItemType_Alias},
-      {ID_SORT_CHANNEL, data_items::id::DataItemType_Input1},
+      {ID_SORT_ALIAS, scada::data_items::id::DataItemType_Alias},
+      {ID_SORT_CHANNEL, scada::data_items::id::DataItemType_Input1},
   };
   return kSortCommands;
 }
@@ -113,9 +113,11 @@ std::unique_ptr<UiView> NodeTableController::Init(
   }
 #endif
 
-  grid_ = new aui::Grid{
-      model_, std::shared_ptr<aui::HeaderModel>(model_, &model_->row_model()),
-      std::shared_ptr<aui::HeaderModel>(model_, &model_->column_model())};
+  grid_ = new scada::aui::Grid{
+      model_,
+      std::shared_ptr<scada::aui::HeaderModel>(model_, &model_->row_model()),
+      std::shared_ptr<scada::aui::HeaderModel>(model_,
+                                               &model_->column_model())};
 
   grid_->SetExpandAllowed(true);
   grid_->SetRowHeaderVisible(true);
@@ -142,7 +144,7 @@ std::unique_ptr<UiView> NodeTableController::Init(
     selection_.SelectNode(node);
   });
 
-  grid_->SetContextMenuHandler([this](const aui::Point& point) {
+  grid_->SetContextMenuHandler([this](const scada::aui::Point& point) {
     controller_delegate_.ShowPopupMenu(nullptr, 0, point, true);
   });
 

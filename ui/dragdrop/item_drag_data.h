@@ -12,16 +12,16 @@ class ItemDragData {
 
   const scada::NodeId& item_id() const SCADA_LIFETIME_BOUND { return node_id_; }
 
-  void Save(base::Pickle& pickle) const;
-  bool Load(const base::Pickle& pickle);
+  void Save(scada::base::Pickle& pickle) const;
+  bool Load(const scada::base::Pickle& pickle);
 
-  void Save(aui::OSExchangeData& data) const;
-  bool Load(const aui::OSExchangeData& data);
+  void Save(scada::aui::OSExchangeData& data) const;
+  bool Load(const scada::aui::OSExchangeData& data);
 
   void Save(DragData& drag_data) const;
   bool Load(const DragData& drag_data);
 
-  static aui::OSExchangeData::CustomFormat GetCustomFormat();
+  static scada::aui::OSExchangeData::CustomFormat GetCustomFormat();
 
   inline static const std::string_view kMimeType =
       "application/telecontrol.scada.nodes";

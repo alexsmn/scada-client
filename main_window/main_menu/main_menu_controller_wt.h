@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include "aui/models/menu_model.h"
 
 #pragma warning(push)
@@ -14,7 +12,7 @@ class MenuModel;
 }
 
 struct MainMenuControllerContext {
-  std::unique_ptr<aui::MenuModel> main_menu_model_;
+  std::unique_ptr<scada::aui::MenuModel> main_menu_model_;
 };
 
 class MainMenuController : private MainMenuControllerContext {

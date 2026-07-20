@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aui/aui_ns_compat.h"
-
 #include "controller/controller.h"
 #include "controller/controller_context.h"
 #include "controller/selection_model.h"
@@ -31,9 +29,9 @@ class NodePropertyController : protected ControllerContext, public Controller {
   SelectionModel selection_{{timed_data_service_}};
 
   std::shared_ptr<NodePropertyModel> property_model_;
-  std::shared_ptr<aui::TreeModel> tree_model_;
+  std::shared_ptr<scada::aui::TreeModel> tree_model_;
 
-  aui::Tree* tree_view_ = nullptr;
+  scada::aui::Tree* tree_view_ = nullptr;
 
   boost::signals2::scoped_connection node_deleted_connection_;
 };
