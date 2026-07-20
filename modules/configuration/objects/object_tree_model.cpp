@@ -101,6 +101,12 @@ std::optional<scada::aui::Color> ObjectTreeModel::GetStatusColor(
   return visible_node_model_.GetStatusColor(tree_node);
 }
 
+bool ObjectTreeModel::IsMonospaceColumn(int column_id) const {
+  // The live Value column renders in the monospace value font under the token
+  // themes so updating digits stay tabular (design-language.md §3).
+  return column_id == 1;
+}
+
 void ObjectTreeModel::SetNodeVisible(void* tree_node, bool visible) {
   auto visible_node = visible ? CreateVisibleNode(tree_node) : nullptr;
   visible_node_model_.SetNode(tree_node, std::move(visible_node));

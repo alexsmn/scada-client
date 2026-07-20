@@ -38,6 +38,7 @@ class ObjectTreeModel : private ObjectTreeModelContext,
                                                int column_id) override;
   virtual std::optional<scada::aui::Color> GetStatusColor(
       void* tree_node) override;
+  virtual bool IsMonospaceColumn(int column_id) const override;
 
  private:
   virtual std::unique_ptr<ConfigurationTreeNode> CreateTreeNode(

@@ -1,8 +1,11 @@
 #pragma once
 
 #include <QColor>
+#include <QFont>
 #include <QPalette>
 #include <QString>
+
+#include <optional>
 
 namespace scada::aui {
 
@@ -67,6 +70,14 @@ Theme ThemeFromString(const QString& name, Theme fallback = Theme::kDark);
 // Formats a theme as its persisted QSettings string.
 QString ThemeToString(Theme theme);
 
+// The monospace font for values, NodeIds, timestamps, and measurements — the
+// design-system `--font-mono` stack (Cascadia Mono → Consolas → ui-monospace;
+// client/docs/ux/design-language.md §3), sized like the application font so it
+// sits inline with UI text. Returns std::nullopt under the legacy severity
+// theme so the default look is unchanged: monospace numerals are part of the
+// opt-in token themes. Requires a QApplication (reads the application font).
+std::optional<QFont> MonoValueFont();
+
 // Builds a Fusion-compatible QPalette from the theme tokens. Fusion honours the
 // palette uniformly across platforms, which native styles do not.
 QPalette BuildThemePalette(const ThemeTokens& tokens);
@@ -85,9 +96,10 @@ QString BuildThemeStyleSheet(const ThemeTokens& tokens);
 // targeted per-widget styling over growing the global sheet.
 enum class ThemeScope { kPaletteOnly, kFull };
 
-// Applies a theme to the whole application: forces the Fusion style and installs
-// the palette, plus the generated stylesheet when `scope` is `kFull`. Safe to
-// call at runtime to switch themes live. Must run after a QApplication exists.
+// Applies a theme to the whole application: forces the Fusion style and
+// installs the palette, plus the generated stylesheet when `scope` is `kFull`.
+// Safe to call at runtime to switch themes live. Must run after a QApplication
+// exists.
 //
 // This is opt-in: nothing calls it unless the operator enables the experimental
 // UX (see app/qt/main.cpp). The legacy Fusion look is unchanged by default.

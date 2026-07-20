@@ -1,11 +1,11 @@
 ﻿#include "modules/timed_data/timed_data_controller.h"
 
+#include "app/string_const.h"
 #include "aui/dialog_service.h"
 #include "aui/models/mirror_table_model.h"
 #include "aui/table.h"
 #include "base/time/default_clock.h"
 #include "common/formula_util.h"
-#include "resources/common_resources.h"
 #include "controller/controller_delegate.h"
 #include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
@@ -13,7 +13,7 @@
 #include "profile/profile.h"
 #include "profile/window_definition.h"
 #include "profile/window_definition_util.h"
-#include "app/string_const.h"
+#include "resources/common_resources.h"
 
 #if defined(UI_QT)
 #include <QHeaderView>
@@ -26,7 +26,8 @@ const scada::aui::TableColumn s_columns[] = {
      scada::aui::TableColumn::LEFT,
      scada::aui::TableColumn::DataType::DateTime},
     {TimedDataModel::CID_VALUE, kValueTitle, 150,
-     scada::aui::TableColumn::RIGHT},
+     scada::aui::TableColumn::RIGHT, scada::aui::TableColumn::DataType::General,
+     /*monospace=*/true},
     {TimedDataModel::CID_QUALITY, u"Quality", 65,
      scada::aui::TableColumn::LEFT},
     {TimedDataModel::CID_COLLECTION_TIME, kServerTimestampTitle, 150,
@@ -120,8 +121,7 @@ std::string GetTimedDataUnits(const TimedDataSpec& spec) {
       .get_or(std::string());
 }
 
-void TimedDataController::UpdateColumnTitles() {
-}
+void TimedDataController::UpdateColumnTitles() {}
 
 std::u16string TimedDataController::MakeTitle() const {
   return model_->timed_data().GetTitle();

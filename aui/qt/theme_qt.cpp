@@ -1,6 +1,8 @@
 
 #include "aui/qt/theme_qt.h"
 
+#include "aui/severity_colors.h"
+
 #include <QApplication>
 #include <QString>
 
@@ -164,6 +166,20 @@ QString ThemeToString(Theme theme) {
       break;
   }
   return QStringLiteral("dark");
+}
+
+std::optional<QFont> MonoValueFont() {
+  if (GetSeverityTheme() == SeverityTheme::kLegacy)
+    return std::nullopt;
+  QFont font = QApplication::font();
+  // The design-language `--font-mono` stack (design-language.md §3), with the
+  // common macOS/Linux monospace faces standing in for `ui-monospace`.
+  font.setFamilies({QStringLiteral("Cascadia Mono"), QStringLiteral("Consolas"),
+                    QStringLiteral("SF Mono"), QStringLiteral("Menlo"),
+                    QStringLiteral("DejaVu Sans Mono")});
+  font.setStyleHint(QFont::Monospace);
+  font.setFixedPitch(true);
+  return font;
 }
 
 QPalette BuildThemePalette(const ThemeTokens& t) {

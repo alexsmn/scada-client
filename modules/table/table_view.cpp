@@ -33,7 +33,9 @@ TableView::TableView(const ControllerContext& context)
       {TableModel::COLUMN_TITLE, kDisplayNameAttributeString, 150,
        scada::aui::TableColumn::LEFT},
       {TableModel::COLUMN_VALUE, kValueTitle, 100,
-       scada::aui::TableColumn::RIGHT},
+       scada::aui::TableColumn::RIGHT,
+       scada::aui::TableColumn::DataType::General,
+       /*monospace=*/true},
   };
 
   // Reshell-only quality mark column, placed next to the value exactly as in

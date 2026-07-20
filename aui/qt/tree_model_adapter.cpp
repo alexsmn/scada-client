@@ -5,6 +5,7 @@
 #include "aui/drag_drop_types.h"
 #include "aui/models/tree_model.h"
 #include "aui/qt/image_util.h"
+#include "aui/qt/theme_qt.h"
 #include "base/check.h"
 
 #include <QIcon>
@@ -241,6 +242,15 @@ QVariant TreeModelAdapter::data(const QModelIndex& index, int role) const {
           has_icon ? IconPixmap(icons_[icon_index]) : QPixmap{};
       return QVariant(WithStatusDot(base, status->qcolor()));
     }
+    case Qt::FontRole:
+      // Value/timestamp columns render in the design-system monospace font so
+      // digits stay tabular as they update (design-language.md §3).
+      // `MonoValueFont` is empty under the legacy theme, keeping the default.
+      if (model_->IsMonospaceColumn(index.column())) {
+        if (std::optional<QFont> font = MonoValueFont())
+          return *font;
+      }
+      return QVariant();
     case Qt::SizeHintRole:
       return QSize{-1, row_height};
     case Qt::CheckStateRole:

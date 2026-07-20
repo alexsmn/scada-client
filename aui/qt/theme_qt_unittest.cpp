@@ -1,6 +1,7 @@
 
 #include "aui/qt/theme_qt.h"
 
+#include "aui/severity_colors.h"
 #include "aui/test/app_environment.h"
 
 #include <QApplication>
@@ -63,6 +64,25 @@ TEST(ThemeQtTest, StyleSheetIsTokenDriven) {
   EXPECT_FALSE(sheet.isEmpty());
   EXPECT_TRUE(sheet.contains(dark.accent.name()));
   EXPECT_TRUE(sheet.contains(QStringLiteral("QHeaderView")));
+}
+
+// The monospace value font is part of the opt-in token themes: empty under
+// the legacy severity theme, and a fixed-pitch monospace-hinted font — sized
+// like the application font — under a token theme.
+TEST(ThemeQtTest, MonoValueFontIsTokenThemeGated) {
+  AppEnvironment app_env;
+
+  SetSeverityTheme(SeverityTheme::kLegacy);
+  EXPECT_FALSE(MonoValueFont().has_value());
+
+  SetSeverityTheme(SeverityTheme::kDark);
+  const std::optional<QFont> font = MonoValueFont();
+  ASSERT_TRUE(font.has_value());
+  EXPECT_TRUE(font->fixedPitch());
+  EXPECT_EQ(font->styleHint(), QFont::Monospace);
+  EXPECT_EQ(font->pointSize(), QApplication::font().pointSize());
+
+  SetSeverityTheme(SeverityTheme::kLegacy);
 }
 
 // ApplyTheme installs the Fusion style plus the token palette and stylesheet on

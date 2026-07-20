@@ -3,11 +3,13 @@
 
 #include "aui/models/table_model.h"
 #include "aui/qt/table_model_adapter.h"
+#include "aui/qt/theme_qt.h"
 #include "base/check.h"
 #include "base/value_util.h"
 
 #include <QClipboard>
 #include <QEvent>
+#include <QFontMetrics>
 #include <QGuiApplication>
 #include <QHeaderView>
 #include <QKeyEvent>
@@ -38,6 +40,27 @@ bool TableProxyModel::lessThan(const QModelIndex& source_left,
   int column_id = columns_[source_left.column()].id;
   return model_.CompareCells(source_left.row(), source_right.row(), column_id) <
          0;
+}
+
+// The default width for a column: the configured width, tuned for the UI
+// font — widened for value/timestamp columns when the token theme renders
+// them in the monospace value font, scaling by the two fonts' advance over a
+// digit-heavy sample so timestamps keep fitting instead of eliding
+// (design-language.md §3 tabular numerals). A user-saved window state still
+// overrides this via RestoreState.
+int DefaultColumnWidth(const TableColumn& column) {
+  if (!column.monospace && column.data_type != TableColumn::DataType::DateTime)
+    return column.width;
+  const std::optional<QFont> mono = MonoValueFont();
+  if (!mono)
+    return column.width;
+  const QString sample = QStringLiteral("00.00.0000 00:00:00.000");
+  const int ui_advance =
+      QFontMetrics{QGuiApplication::font()}.horizontalAdvance(sample);
+  const int mono_advance = QFontMetrics{*mono}.horizontalAdvance(sample);
+  if (ui_advance <= 0 || mono_advance <= ui_advance)
+    return column.width;
+  return column.width * mono_advance / ui_advance;
 }
 
 void SetDefaultItemColors(QPalette& palette) {
@@ -74,7 +97,7 @@ Table::Table(std::shared_ptr<TableModel> model,
   }
 
   for (int i = 0; i < static_cast<int>(model_adapter_->columns().size()); ++i)
-    setColumnWidth(i, model_adapter_->columns()[i].width);
+    setColumnWidth(i, DefaultColumnWidth(model_adapter_->columns()[i]));
 
   setWordWrap(false);
   setShowGrid(false);
@@ -230,4 +253,4 @@ void Table::CopyToClipbard() {
   QGuiApplication::clipboard()->setMimeData(mime_data);
 }
 
-}  // namespace aui
+}  // namespace scada::aui

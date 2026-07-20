@@ -79,6 +79,12 @@ class TreeModel {
     return std::nullopt;
   }
 
+  // True when the column's cells hold values or timestamps that should render
+  // in the design-system monospace value font under the opt-in token themes
+  // (e.g. the Explorer's live Value column), so digits stay tabular as they
+  // update. Default: the regular UI font.
+  virtual bool IsMonospaceColumn(int column_id) const { return false; }
+
   virtual void SetText(void* node, int column_id, const std::u16string& text) {}
   // TODO: Remove. `IsEditable` should be covered by `GetEditData` none editor
   // type.

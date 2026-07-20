@@ -4,6 +4,7 @@
 #include "aui/color.h"
 #include "aui/models/table_model.h"
 #include "aui/qt/image_util.h"
+#include "aui/qt/theme_qt.h"
 #include "base/check.h"
 
 #include <QSize>
@@ -77,6 +78,16 @@ QVariant TableModelAdapter::data(const QModelIndex& index, int role) const {
     case Qt::ToolTipRole:
       return QString::fromStdU16String(
           model_->GetTooltip(index.row(), column.id));
+    case Qt::FontRole:
+      // Value and timestamp columns render in the design-system monospace
+      // font so digits stay tabular as they update (design-language.md §3).
+      // `MonoValueFont` is empty under the legacy theme, keeping the default.
+      if (column.monospace ||
+          column.data_type == TableColumn::DataType::DateTime) {
+        if (std::optional<QFont> font = MonoValueFont())
+          return *font;
+      }
+      return QVariant();
   }
 
   TableCell cell;
@@ -183,4 +194,4 @@ QMimeData* TableModelAdapter::mimeData(const QModelIndexList& indexes) const {
   return QAbstractItemModel::mimeData(indexes);
 }
 
-}  // namespace aui
+}  // namespace scada::aui
