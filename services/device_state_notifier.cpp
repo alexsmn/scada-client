@@ -73,12 +73,13 @@ DeviceStateNotifier::DeviceStateNotifier(TimedDataService& timed_data_service,
 }
 
 DeviceState DeviceStateNotifier::CalculateDeviceState() const {
+  // Only a positively read Disabled=true reports Disabled. When Disabled cannot
+  // be read at all, fall through to Online rather than reporting Unknown: an
+  // unreadable Disabled must not mask a perfectly good Online reading. A server
+  // may refuse the Disabled monitor while serving Online — the two are separate
+  // variables — and reporting Unknown then hides a device that is plainly up.
   const auto& disabled_tvq = specs_[FIELD_DISABLED].current();
-  if (disabled_tvq.qualifier.failed())
-    return DeviceState::Unknown;
-
-  bool disabled = disabled_tvq.value.get_or(false);
-  if (disabled)
+  if (!disabled_tvq.qualifier.failed() && disabled_tvq.value.get_or(false))
     return DeviceState::Disabled;
 
   const auto& online_tvq = specs_[FIELD_ONLINE].current();
