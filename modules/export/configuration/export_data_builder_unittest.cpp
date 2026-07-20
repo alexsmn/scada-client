@@ -77,7 +77,7 @@ TEST(ExportDataBuilder, Test) {
       UnorderedElementsAre(
           FieldsAre(
               /*node_id=*/scada::NodeId{11, scada::NamespaceIndexes::TIT},
-              /*parent_id=*/scada::NodeId{},
+              /*parent_id=*/scada::data_items::id::DataItems,
               /*type_display_name=*/u"Объект ТИТ",
               /*type_id=*/scada::data_items::id::AnalogItemType,
               /*display_name=*/u"ТИТ 11",
@@ -90,7 +90,7 @@ TEST(ExportDataBuilder, Test) {
                   /*reference=*/false))),
           FieldsAre(
               /*node_id=*/scada::NodeId{22, scada::NamespaceIndexes::TS},
-              /*parent_id=*/scada::NodeId{},
+              /*parent_id=*/scada::data_items::id::DataItems,
               /*type_display_name=*/u"Объект ТС",
               /*type_id=*/scada::data_items::id::DiscreteItemType,
               /*display_name=*/u"ТС 22",
@@ -103,7 +103,7 @@ TEST(ExportDataBuilder, Test) {
                   /*reference=*/false))),
           FieldsAre(
               /*node_id=*/scada::NodeId{33, scada::NamespaceIndexes::TIT},
-              /*parent_id=*/scada::NodeId{},
+              /*parent_id=*/scada::data_items::id::DataItems,
               /*type_display_name=*/u"Объект ТИТ",
               /*type_id=*/scada::data_items::id::AnalogItemType,
               /*display_name=*/u"ТИТ 33",
