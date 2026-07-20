@@ -54,6 +54,8 @@ ALLOWED_UNTRANSLATED = {
     ("WriteDialog", "units"): "Filled by ui.unitLabel->setText() from the "
                               "node's engineering units.",
     ("LimitDialog", "(Description)"): "Filled by ui.descriptionLabel->setText().",
+    ("LoginDialog", "\u2026"): "Ellipsis glyph on the certificate/private-key "
+                               "browse buttons; the same in every language.",
 }
 
 # Strings that *should* be translated but are not yet. This list must only ever
@@ -61,12 +63,8 @@ ALLOWED_UNTRANSLATED = {
 # without pretending they are fine. Adding to it is a review conversation, not
 # a fix.
 KNOWN_GAPS = {
-    ("LoginDialog", "Security:"),
-    ("LoginDialog", "Certificate:"),
-    ("LoginDialog", "Private key:"),
-    ("LoginDialog", "Client certificate (.pem)"),
-    ("LoginDialog", "Client private key (.pem)"),
-    ("LoginDialog", "…"),
+    # Empty, and worth keeping that way: the login dialog's TLS strings were the
+    # last entries here.
 }
 
 

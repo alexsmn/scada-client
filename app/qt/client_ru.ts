@@ -134,6 +134,19 @@
         <source>Unacknowledged</source>
         <translation>Не квитировано</translation>
     </message>
+    <!-- modules/login/login_controller.cpp (security_mode_list) -->
+    <message>
+        <source>No security</source>
+        <translation>Без защиты</translation>
+    </message>
+    <message>
+        <source>Most secure available</source>
+        <translation>Максимальная доступная защита</translation>
+    </message>
+    <message>
+        <source>Sign and encrypt</source>
+        <translation>Подпись и шифрование</translation>
+    </message>
     <!-- modules/events/event_table_model.cpp (journal alarm surface) -->
     <message>
         <source>— pending —</source>
@@ -1688,6 +1701,42 @@
 </context>
 <context>
     <name>LoginDialog</name>
+    <!-- modules/login/qt/login_dialog.{ui,cpp} — TLS client-authentication
+         fields. "Закрытый ключ" is the standard Russian PKI term for a private
+         key. The browse buttons' "…" is a glyph and is deliberately left
+         untranslated (see ALLOWED_UNTRANSLATED in check_ui_translations.py). -->
+    <message>
+        <source>Security:</source>
+        <translation>Безопасность:</translation>
+    </message>
+    <message>
+        <source>Certificate:</source>
+        <translation>Сертификат:</translation>
+    </message>
+    <message>
+        <source>Private key:</source>
+        <translation>Закрытый ключ:</translation>
+    </message>
+    <message>
+        <source>Client certificate (.pem)</source>
+        <translation>Сертификат клиента (.pem)</translation>
+    </message>
+    <message>
+        <source>Client private key (.pem)</source>
+        <translation>Закрытый ключ клиента (.pem)</translation>
+    </message>
+    <message>
+        <source>Select client certificate</source>
+        <translation>Выберите сертификат клиента</translation>
+    </message>
+    <message>
+        <source>Select client private key</source>
+        <translation>Выберите закрытый ключ клиента</translation>
+    </message>
+    <message>
+        <source>PEM files (*.pem);;All files (*)</source>
+        <translation>Файлы PEM (*.pem);;Все файлы (*)</translation>
+    </message>
     <message>
         <location filename="../../modules/login/qt/login_dialog.ui" line="20"/>
         <source>Login</source>
