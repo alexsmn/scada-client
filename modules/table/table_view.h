@@ -15,6 +15,7 @@ class Table;
 }
 
 class TableModel;
+class TableToolbar;
 
 class TableView : protected ControllerContext,
                   public Controller,
@@ -58,6 +59,9 @@ class TableView : protected ControllerContext,
   const std::shared_ptr<TableModel> model_;
 
   scada::aui::Table* view_ = nullptr;
+
+  // Themed reshell toolbar above the grid (Qt only; null in the legacy look).
+  TableToolbar* toolbar_ = nullptr;
 
   CommandRegistry command_registry_;
   Command& delete_command_ = command_registry_.AddCommand(ID_DELETE);

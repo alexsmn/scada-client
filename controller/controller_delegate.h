@@ -11,6 +11,7 @@ namespace scada::aui {
 class MenuModel;
 }
 
+class CommandHandler;
 class ContentsModel;
 class NodeRef;
 class WindowDefinition;
@@ -18,6 +19,16 @@ class WindowDefinition;
 class ControllerDelegate {
  public:
   virtual void SetTitle(std::u16string_view title) = 0;
+
+  // Resolves a command against the full command surface the shell offers this
+  // view — selection-scoped commands, opened-view commands, and globally
+  // registered actions — with the same resolution the main-window toolbar and
+  // command palette use. Returns null when nothing currently handles the
+  // command, so a view-embedded control can hide or disable itself. The
+  // default (headless/test hosts) offers no shell commands.
+  virtual CommandHandler* ResolveViewCommand(unsigned command_id) {
+    return nullptr;
+  }
 
   // * `merge_menu` is an additional menu to prepend the result menu. It can be
   // null.

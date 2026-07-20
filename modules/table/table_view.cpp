@@ -18,6 +18,13 @@
 #include "resources/common_resources.h"
 #include "ui/common/client_utils.h"
 
+#if defined(UI_QT)
+#include "modules/table/qt/table_toolbar.h"
+
+#include <QVBoxLayout>
+#include <QWidget>
+#endif
+
 // TableView
 
 TableView::TableView(const ControllerContext& context)
@@ -98,6 +105,25 @@ TableView::TableView(const ControllerContext& context)
   sort_channel_command_.execute_handler = [this] {
     model_->Sort(ID_SORT_CHANNEL);
   };
+
+  // Enablement for the row commands, honoured by both the context menu and the
+  // reshell toolbar. The grid's trailing "Enter expression" entry row (index
+  // == row_count()) holds no data, so it never enables them.
+  delete_command_.enabled_handler = [this] {
+    for (int row : view_->GetSelectedRows()) {
+      if (row >= 0 && row < model_->row_count())
+        return true;
+    }
+    return false;
+  };
+  move_up_command_.enabled_handler = [this] {
+    const int row = view_->GetCurrentRow();
+    return row > 0 && row < model_->row_count();
+  };
+  move_down_command_.enabled_handler = [this] {
+    const int row = view_->GetCurrentRow();
+    return row >= 0 && row + 1 < model_->row_count();
+  };
 }
 
 TableView::~TableView() {}
@@ -115,6 +141,37 @@ std::unique_ptr<UiView> TableView::Init(const WindowDefinition& definition) {
       model_->SetFormula(ix, std::string{path});
     }
   }
+
+#if defined(UI_QT)
+  // Opt-in reshell toolbar: the discoverable surfacing of the grid's row
+  // commands (table-watch.html), complementing the right-click context menu.
+  // MakeTableToolbar returns null under the legacy theme, keeping the bare
+  // grid.
+  toolbar_ = MakeTableToolbar(TableToolbarContext{
+      .resolve_command = [this](unsigned command_id) -> CommandHandler* {
+        // The view's own registry first (delete/move/sort), then the
+        // shell's command surface (to-graph, CSV, print).
+        if (CommandHandler* handler =
+                command_registry_.GetCommandHandler(command_id)) {
+          return handler;
+        }
+        return controller_delegate_.ResolveViewCommand(command_id);
+      },
+      .on_add_signal =
+          [this] {
+            // The grid's trailing "Enter expression" row (index row_count()).
+            view_->OpenEditor(model_->row_count());
+          }});
+  if (toolbar_) {
+    auto* container = new QWidget;
+    auto* layout = new QVBoxLayout{container};
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+    layout->addWidget(toolbar_);
+    layout->addWidget(view_->CreateParentIfNecessary());
+    return std::unique_ptr<UiView>{container};
+  }
+#endif
 
   return std::unique_ptr<UiView>{view_->CreateParentIfNecessary()};
 }
@@ -279,6 +336,11 @@ void TableView::OnSelectionChanged() {
   } else {
     selection_.SelectMultiple();
   }
+
+#if defined(UI_QT)
+  if (toolbar_)
+    toolbar_->Refresh();
+#endif
 }
 
 ExportModel::ExportData TableView::GetExportData() {

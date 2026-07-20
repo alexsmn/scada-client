@@ -91,6 +91,12 @@ class BaseMainWindow : protected MainWindowContext,
 
   CommandHandler& commands() { return *commands_; }
 
+  // Resolves a command against the shell's full command surface — selection
+  // commands, opened-view commands, and globally registered actions — the same
+  // resolution the toolbar and command palette use. Returns null when nothing
+  // currently handles the command.
+  CommandHandler* ResolveViewCommand(unsigned command_id);
+
   void CleanupForTesting();
   bool IsContextMenuCommandAvailableForTesting(unsigned command_id);
 

@@ -4,6 +4,8 @@
 #include "aui/models/menu_model.h"
 #include "base/boost_log.h"
 #include "base/check.h"
+#include "controller/command_manager.h"
+#include "controller/command_ui_registry.h"
 #include "controller/contents_model.h"
 #include "controller/controller.h"
 #include "controller/selection_model.h"
@@ -120,6 +122,19 @@ MainWindowDef& BaseMainWindow::GetPrefs() const {
 
 void BaseMainWindow::Close() {
   main_window_manager_.CloseMainWindow(window_id_);
+}
+
+CommandHandler* BaseMainWindow::ResolveViewCommand(unsigned command_id) {
+  // The command contexts a shell surface resolves against, in priority order —
+  // the same list the platform toolbar and command palette use.
+  static constexpr CommandContextId kShellContexts[] = {
+      CommandContextId::Global,
+      CommandContextId::Selection,
+      CommandContextId::OpenedView,
+      CommandContextId::Controller,
+  };
+  return ResolveCommandHandler(ui_command_registry_.command_manager(),
+                               command_id, kShellContexts, *commands_);
 }
 
 void BaseMainWindow::SetActiveView(OpenedView* view) {

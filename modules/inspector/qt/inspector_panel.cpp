@@ -133,6 +133,7 @@ QWidget* InspectorPanel::BuildElementView() {
       QStringLiteral("color:%1;font-size:14px;font-weight:600;")
           .arg(tokens.fg.name()));
   subtitle_ = new QLabel;
+  subtitle_->setObjectName(QStringLiteral("inspectorSubtitle"));
   subtitle_->setWordWrap(true);
   subtitle_->setStyleSheet(
       QStringLiteral("color:%1;font-size:11px;").arg(tokens.fg_subtle.name()));
@@ -169,9 +170,11 @@ QWidget* InspectorPanel::BuildElementView() {
   control_->setStyleSheet(
       QStringLiteral("QPushButton{background:%1;color:%2;border:none;"
                      "border-radius:6px;padding:8px;font-weight:600;}"
-                     "QPushButton:disabled{color:%3;}")
+                     // A muted fill, not just muted text: a disabled control
+                     // must not keep the accent's "actionable" colour.
+                     "QPushButton:disabled{background:%4;color:%3;}")
           .arg(tokens.accent.name(), tokens.accent_fg.name(),
-               tokens.fg_subtle.name()));
+               tokens.fg_subtle.name(), tokens.surface_muted.name()));
   connect(control_, &QPushButton::clicked, this, [this] {
     if (context_.on_control)
       context_.on_control();
@@ -201,10 +204,11 @@ void InspectorPanel::ShowSelection(const SelectionModel& selection) {
   }
 
   const TimedDataSpec& source = selection.timed_data();
-  if (source.node_id().is_null()) {
+  if (source.node_id().is_null() && source.formula().empty()) {
     // A non-Variable node selection (a folder/object) carries no live value and
     // no data spec, so its title/value would render blank. Show the empty state
-    // rather than an empty element card.
+    // rather than an empty element card. A node-less spec with a formula (a
+    // Table expression row) does carry a live value and is shown.
     Clear();
     return;
   }

@@ -191,13 +191,6 @@ void BuildDefaultPopupMenu(QMenu& menu,
   RemoveRedundantSeparators(menu);
 }
 
-constexpr CommandContextId kToolbarContexts[] = {
-    CommandContextId::Global,
-    CommandContextId::Selection,
-    CommandContextId::OpenedView,
-    CommandContextId::Controller,
-};
-
 }  // namespace
 
 MainWindow::MainWindow(MainWindowContext&& context)
@@ -596,8 +589,7 @@ void MainWindow::ShowCommandPalette(const QString& initial_text) {
   auto* palette = new CommandPalette(
       this, ui_command_registry_.command_manager(),
       [this](unsigned command_id) -> CommandHandler* {
-        return ResolveCommandHandler(ui_command_registry_.command_manager(),
-                                     command_id, kToolbarContexts, *commands_);
+        return ResolveViewCommand(command_id);
       },
       std::move(extras));
   palette->setAttribute(Qt::WA_DeleteOnClose);
@@ -652,14 +644,12 @@ void MainWindow::CreateToolbar() {
     if (command_info->shortcut.has_value())
       action->setShortcut(ToQKeySequence(*command_info->shortcut));
     auto command_id = command_info->command_id;
-    QObject::connect(
-        action, &QAction::triggered, [this, command_id](bool checked) {
-          auto* handler =
-              ResolveCommandHandler(ui_command_registry_.command_manager(),
-                                    command_id, kToolbarContexts, *commands_);
-          if (handler && handler->IsCommandEnabled(command_id))
-            handler->ExecuteCommand(command_id);
-        });
+    QObject::connect(action, &QAction::triggered,
+                     [this, command_id](bool checked) {
+                       auto* handler = ResolveViewCommand(command_id);
+                       if (handler && handler->IsCommandEnabled(command_id))
+                         handler->ExecuteCommand(command_id);
+                     });
     action_map_.emplace(command_info->command_id, action);
     action_command_ids_.emplace(action, command_info->command_id);
   }
@@ -720,8 +710,7 @@ void MainWindow::CreateInspectorPanel() {
   // (ID_WRITE) — the existing two-stage confirm — resolved against the active
   // selection exactly like the toolbar/menu path.
   auto resolve_write = [this]() -> CommandHandler* {
-    return ResolveCommandHandler(ui_command_registry_.command_manager(),
-                                 ID_WRITE, kToolbarContexts, *commands_);
+    return ResolveViewCommand(ID_WRITE);
   };
 
   inspector_ = new InspectorPanel(InspectorPanelContext{
@@ -753,8 +742,7 @@ void MainWindow::CreateDiagnosticsPanel() {
   auto make_action = [this](unsigned command_id,
                             std::u16string label) -> DiagnosticAction {
     auto resolve = [this, command_id]() -> CommandHandler* {
-      return ResolveCommandHandler(ui_command_registry_.command_manager(),
-                                   command_id, kToolbarContexts, *commands_);
+      return ResolveViewCommand(command_id);
     };
     return DiagnosticAction{
         .label = std::move(label),
@@ -923,9 +911,7 @@ void MainWindow::UpdateAction(QAction& action,
     }
   }
 
-  const CommandHandler* handler =
-      ResolveCommandHandler(ui_command_registry_.command_manager(), command_id,
-                            kToolbarContexts, *commands_);
+  const CommandHandler* handler = ResolveViewCommand(command_id);
   action.setVisible(!!handler);
   if (handler) {
     bool enabled = handler->IsCommandEnabled(command_id);

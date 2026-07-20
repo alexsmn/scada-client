@@ -297,6 +297,15 @@
         <source>conflict</source>
         <translation>конфликт</translation>
     </message>
+    <!-- modules/table/qt/table_toolbar.cpp -->
+    <message>
+        <source>Add signal</source>
+        <translation>Добавить сигнал</translation>
+    </message>
+    <message>
+        <source>To graph</source>
+        <translation>На график</translation>
+    </message>
     <!-- modules/events/qt/event_filter_bar.cpp -->
     <message>
         <source>Unacknowledged only</source>

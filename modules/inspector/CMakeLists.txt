@@ -21,5 +21,7 @@ if(TARGET client_inspector_qt_unittests)
   target_link_libraries(client_inspector_qt_unittests PRIVATE
     aui_qt
     aui_test_qt
+    # The formula-row selection test builds a fake TimedDataService.
+    timed_data
   )
 endif()

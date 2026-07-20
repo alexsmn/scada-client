@@ -127,6 +127,12 @@ void OpenedView::SetTitle(std::u16string_view title) {
   }
 }
 
+CommandHandler* OpenedView::ResolveViewCommand(unsigned command_id) {
+  // Headless hosts (tests, the screenshot generator's standalone captures) run
+  // views without a main window; they offer no shell commands.
+  return main_window_ ? main_window().ResolveViewCommand(command_id) : nullptr;
+}
+
 WindowDefinition OpenedView::Save() {
   window_def_.Clear();
   window_def_.title = user_title_;
