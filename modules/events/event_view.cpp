@@ -89,7 +89,13 @@ EventView::EventView(const ControllerContext& context,
       {EventColumnTime, Translate("Time"), 150, scada::aui::TableColumn::LEFT,
        scada::aui::TableColumn::DataType::DateTime},
       {EventColumnItem, Translate("Item"), 170, scada::aui::TableColumn::LEFT},
-      {EventColumnSeverity, Translate("Severity"), 45,
+      // Wide enough for the named alarm band under the reshell theme, which
+      // spells the severity out instead of leaving colour as its only signal;
+      // the legacy journal keeps the narrow numeric column.
+      {EventColumnSeverity, Translate("Severity"),
+       scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy
+           ? 165
+           : 45,
        scada::aui::TableColumn::RIGHT},
       {EventColumnValue, Translate("Value"), 100,
        scada::aui::TableColumn::RIGHT},

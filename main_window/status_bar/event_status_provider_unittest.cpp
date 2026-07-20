@@ -11,6 +11,7 @@
 namespace {
 
 TEST(SeverityLevelForEventTest, BucketsBySeverityThreshold) {
+  using events::SeverityLevelForEvent;
   EXPECT_EQ(SeverityLevelForEvent(0), scada::aui::SeverityLevel::kNone);
   EXPECT_EQ(SeverityLevelForEvent(scada::kSeverityWarning - 1),
             scada::aui::SeverityLevel::kNone);

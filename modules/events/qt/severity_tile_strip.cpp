@@ -3,6 +3,7 @@
 #include "aui/qt/theme_qt.h"
 #include "aui/severity_colors.h"
 #include "aui/translation.h"
+#include "events/event_severity.h"
 
 #include <QHBoxLayout>
 #include <QLabel>
@@ -46,11 +47,13 @@ SeverityTileStrip::SeverityTileStrip(SeverityTileCountsProvider counts,
 void SeverityTileStrip::Refresh() {
   const SeverityTileCounts counts = counts_ ? counts_() : SeverityTileCounts{};
 
-  // UI strings go through Translate() here — the builder stays
-  // translation-agnostic.
-  const std::vector<SeverityTile> tiles =
-      BuildSeverityTiles(counts, Translate("Critical"), Translate("Warning"),
-                         Translate("Unacknowledged"));
+  // UI strings arrive here — the builder stays translation-agnostic. The
+  // severity names come from the shared label so the tiles, the status strip
+  // and the journal spell a band the same way.
+  const std::vector<SeverityTile> tiles = BuildSeverityTiles(
+      counts, SeverityLevelLabel(scada::aui::SeverityLevel::kCritical),
+      SeverityLevelLabel(scada::aui::SeverityLevel::kWarning),
+      Translate("Unacknowledged"));
 
   // One label per tile the builder produces, so the tile set and its display
   // order stay owned by BuildSeverityTiles() rather than by this widget.

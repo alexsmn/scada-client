@@ -2,6 +2,7 @@
 
 #include "base/test/test_executor.h"
 #include "events/current_event_model.h"
+#include "events/event_severity.h"
 #include "events/historical_event_model.h"
 #include "events/local_event_model.h"
 #include "events/local_events.h"
@@ -242,4 +243,102 @@ TEST_F(EventTableModelTest, CurrentEvents_AckEvents) {
   event_observer_->OnEvents(event_ptrs);
 
   ValidateEvents();
+}
+
+// The reshelled journal reads as an alarm surface (UX backlog 2.2): a row
+// states its alarm band in words and says outright when it still awaits an
+// operator. Both are theme-gated, so the legacy journal is byte-for-byte
+// unchanged.
+class EventJournalAlarmSurfaceTest : public EventTableModelTest {
+ protected:
+  void TearDown() override {
+    scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kLegacy);
+  }
+
+  std::u16string CellText(int column_id, int row = 0) {
+    scada::aui::TableCell cell{.row = row, .column_id = column_id};
+    event_table_model_->GetCell(cell);
+    return cell.text;
+  }
+
+  // Row 0's event, seeded before the model reads the event set.
+  scada::Event& FirstEvent() { return test_events_.begin()->second; }
+};
+
+TEST_F(EventJournalAlarmSurfaceTest, LegacySeverityCellIsTheBareNumber) {
+  FirstEvent().severity = scada::kSeverityCritical;
+  Init();
+
+  EXPECT_EQ(CellText(EventColumnSeverity), u"80");
+}
+
+TEST_F(EventJournalAlarmSurfaceTest, ThemedSeverityCellNamesTheAlarmBand) {
+  FirstEvent().severity = scada::kSeverityCritical;
+  Init();
+  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
+
+  // The band is named as well as numbered, so severity does not depend on the
+  // row's colour alone.
+  EXPECT_EQ(CellText(EventColumnSeverity),
+            events::SeverityLevelLabel(scada::aui::SeverityLevel::kCritical) +
+                u" 80");
+}
+
+// A routine event has no alarm band, so there is nothing to name — it stays the
+// bare number rather than gaining a misleading label.
+TEST_F(EventJournalAlarmSurfaceTest, ThemedRoutineSeverityCellStaysTheNumber) {
+  FirstEvent().severity = scada::kSeverityNormal;
+  Init();
+  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
+
+  EXPECT_EQ(CellText(EventColumnSeverity), u"50");
+}
+
+TEST_F(EventJournalAlarmSurfaceTest, ThemedAckCellSaysAnAlarmIsStillPending) {
+  Init();
+  ASSERT_FALSE(event_table_model_->event_at(0).acked);
+
+  // Legacy: blank, as before.
+  EXPECT_EQ(CellText(EventColumnAckTime), u"");
+
+  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
+  EXPECT_FALSE(CellText(EventColumnAckTime).empty());
+}
+
+TEST_F(EventJournalAlarmSurfaceTest, AnAcknowledgedRowKeepsShowingItsAckTime) {
+  scada::Event& event = FirstEvent();
+  event.acked = true;
+  event.acknowledged_time = scada::DateTime::Now();
+  Init();
+  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
+
+  const std::u16string text = CellText(EventColumnAckTime);
+  EXPECT_FALSE(text.empty());
+  EXPECT_EQ(text.find(u"—"), std::u16string::npos);
+}
+
+// Severity sorts by the severity, not by the text of its cell — so a themed
+// journal that names the band, and a legacy one that shows three-digit
+// severities, both order correctly.
+TEST_F(EventJournalAlarmSurfaceTest, SeverityColumnSortsNumerically) {
+  auto event = test_events_.begin();
+  event->second.severity = 100;
+  scada::Event& high = event->second;
+  scada::Event& low = (++event)->second;
+  low.severity = 80;
+  Init();
+
+  int high_row = -1, low_row = -1;
+  for (int row = 0; row < event_table_model_->GetRowCount(); ++row) {
+    if (&event_table_model_->event_at(row) == &high)
+      high_row = row;
+    else if (&event_table_model_->event_at(row) == &low)
+      low_row = row;
+  }
+  ASSERT_NE(high_row, -1);
+  ASSERT_NE(low_row, -1);
+
+  EXPECT_GT(
+      event_table_model_->CompareCells(high_row, low_row, EventColumnSeverity),
+      0);
 }

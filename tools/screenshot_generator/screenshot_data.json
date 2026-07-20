@@ -248,6 +248,7 @@
     { "type": "Summ",           "filename": "summary.png",             "width": 800,  "height": 500 },
     { "type": "Event",          "filename": "events.png",              "width": 800,  "height": 300 },
     { "type": "EventJournal",   "filename": "events-log.png",          "width": 800,  "height": 400 },
+    { "type": "EventJournal",   "filename": "events-alarm-surface.png", "width": 800, "height": 400 },
     { "type": "Log",            "filename": "device-watch.png",        "width": 800,  "height": 400 },
     { "type": "Nodes",          "filename": "object-tree.png",         "width": 300,  "height": 500 },
     { "type": "Struct",         "filename": "devices.png",             "width": 300,  "height": 500 },

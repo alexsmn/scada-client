@@ -9,6 +9,7 @@
 #include "base/utf_convert.h"
 #include "base/utils.h"
 #include "events/current_event_model.h"
+#include "events/event_severity.h"
 #include "events/historical_event_model.h"
 #include "events/local_event_model.h"
 #include "node_service/node_format.h"
@@ -47,7 +48,8 @@ void GetEventColors(const scada::Event& event,
     text_color = *colors.text;
 }
 
-int Compare(scada::base::Time a, scada::base::Time b) {
+template <class T>
+int Compare(const T& a, const T& b) {
   return a < b ? -1 : b < a ? 1 : 0;
 }
 
@@ -136,6 +138,15 @@ void EventTableModel::GetCell(scada::aui::TableCell& cell) {
       break;
     case EventColumnSeverity:
       cell.text = WideFormat(event.severity);
+      // Under the reshell theme, name the band as well as the number: an
+      // operator triaging a journal reads "Critical", not 80, and naming it
+      // means the row's severity no longer depends on its colour alone.
+      if (const std::u16string label =
+              events::EventSeverityLabel(event.severity);
+          !label.empty() && scada::aui::GetSeverityTheme() !=
+                                scada::aui::SeverityTheme::kLegacy) {
+        cell.text = label + u" " + cell.text;
+      }
       break;
     case EventColumnItem:
       if (row.node)
@@ -161,6 +172,17 @@ void EventTableModel::GetCell(scada::aui::TableCell& cell) {
         cell.text = ToString16(row.acknowledged_user.display_name());
       break;
     case EventColumnAckTime:
+      // An unacknowledged alarm leaves this cell blank, which reads as "no
+      // data" rather than "nobody has responded yet". Under the reshell theme
+      // say so outright — the journal is an alarm surface, and a pending
+      // response is its most actionable state.
+      if (!event.acked) {
+        if (scada::aui::GetSeverityTheme() !=
+            scada::aui::SeverityTheme::kLegacy) {
+          cell.text = Translate("— pending —");
+        }
+        break;
+      }
       cell.text = UtfConvert<char16_t>(
           FormatTime(event.acknowledged_time,
                      TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
@@ -515,6 +537,11 @@ int EventTableModel::CompareCells(int row1, int row2, int column_id) {
       return Compare(event1.time, event2.time);
     case EventColumnAckTime:
       return Compare(event1.acknowledged_time, event2.acknowledged_time);
+    case EventColumnSeverity:
+      // Compare the severity itself, not its cell text: the text sorts
+      // lexically, which already misordered "100" against "80" and now also
+      // carries the band name in front of the number.
+      return Compare(event1.severity, event2.severity);
     default:
       return scada::aui::TableModel::CompareCells(row1, row2, column_id);
   }

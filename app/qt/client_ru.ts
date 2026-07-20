@@ -134,6 +134,11 @@
         <source>Unacknowledged</source>
         <translation>Не квитировано</translation>
     </message>
+    <!-- modules/events/event_table_model.cpp (journal alarm surface) -->
+    <message>
+        <source>— pending —</source>
+        <translation>— ожидает —</translation>
+    </message>
     <!-- modules/table (reshell quality marks) -->
     <message>
         <source>Quality</source>

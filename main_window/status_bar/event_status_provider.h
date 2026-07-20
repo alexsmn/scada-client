@@ -2,6 +2,7 @@
 
 #include "aui/severity_colors.h"
 #include "events/event_observer.h"
+#include "events/event_severity.h"
 #include "events/severity_tiles.h"
 
 #include <boost/signals2/connection.hpp>
@@ -12,11 +13,6 @@
 class LocalEvents;
 class NodeEventProvider;
 class Profile;
-
-// Buckets a raw OPC UA event severity (0-1000) into a coarse alarm level:
-// >= critical threshold => kCritical, >= warning threshold => kWarning, else
-// kNone. Pure, shared by the highest-severity indicator and the KPI counts.
-scada::aui::SeverityLevel SeverityLevelForEvent(unsigned severity);
 
 class EventStatusProvider final : private EventObserver {
  public:

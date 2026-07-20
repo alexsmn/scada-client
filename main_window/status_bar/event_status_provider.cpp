@@ -46,7 +46,7 @@ events::SeverityTileCounts EventStatusProvider::GetTileCounts() const {
   alarms.reserve(node_event_provider_.unacked_events().size());
   for (const scada::Event& event :
        node_event_provider_.unacked_events() | std::views::values) {
-    alarms.push_back({.severity = SeverityLevelForEvent(event.severity),
+    alarms.push_back({.severity = events::SeverityLevelForEvent(event.severity),
                       .acknowledged = false,
                       .active = true});
   }
@@ -76,21 +76,13 @@ std::u16string EventStatusProvider::GetSeverityText() const {
                    node_event_provider_.severity_min());
 }
 
-scada::aui::SeverityLevel SeverityLevelForEvent(unsigned severity) {
-  if (severity >= scada::kSeverityCritical)
-    return scada::aui::SeverityLevel::kCritical;
-  if (severity >= scada::kSeverityWarning)
-    return scada::aui::SeverityLevel::kWarning;
-  return scada::aui::SeverityLevel::kNone;
-}
-
 scada::aui::SeverityLevel EventStatusProvider::HighestUnackedLevel() const {
   scada::UInt32 highest = 0;
   for (const scada::Event& event :
        node_event_provider_.unacked_events() | std::views::values) {
     highest = std::max(highest, event.severity);
   }
-  return SeverityLevelForEvent(highest);
+  return events::SeverityLevelForEvent(highest);
 }
 
 std::u16string EventStatusProvider::GetHighestSeverityText() const {
@@ -99,17 +91,8 @@ std::u16string EventStatusProvider::GetHighestSeverityText() const {
   if (scada::aui::GetSeverityTheme() == scada::aui::SeverityTheme::kLegacy)
     return {};
 
-  // English literals routed through Translate(); the Russian (and any other
-  // language) lives in the .ts — never hardcode localized text here.
-  switch (HighestUnackedLevel()) {
-    case scada::aui::SeverityLevel::kCritical:
-      return Translate("Critical");
-    case scada::aui::SeverityLevel::kWarning:
-      return Translate("Warning");
-    case scada::aui::SeverityLevel::kNone:
-      return {};  // calm: no active alarm, show nothing
-  }
-  return {};
+  // Empty when calm: no active alarm, nothing to shout about.
+  return events::SeverityLevelLabel(HighestUnackedLevel());
 }
 
 std::optional<scada::aui::Color> EventStatusProvider::GetHighestSeverityColor()
