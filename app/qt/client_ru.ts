@@ -1317,6 +1317,10 @@
         <translation>Изменения не найдены</translation>
     </message>
     <message>
+        <source>Import</source>
+        <translation>Импорт</translation>
+    </message>
+    <message>
         <source>Apply changes?</source>
         <translation>Применить изменения?</translation>
     </message>

@@ -486,6 +486,17 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
     bool captured = GrabAndCloseVisibleDialogOrReport(spec);
     WaitForDialogCompletion(dialog_lifetime);
     return captured;
+  } else if (spec.kind == "message-box") {
+    // The shared confirmation surface (DialogService::RunMessageBox), in its
+    // question variant — the shape the two-stage confirms and apply/discard
+    // prompts use. Mirrors the Excel-import "Apply changes?" call.
+    auto dialog_lifetime = StartDialogAwaitable(
+        env.executor, dialog_service.RunMessageBox(
+                          Translate("Apply changes?"), Translate("Import"),
+                          MessageBoxMode::QuestionYesNo));
+    bool captured = GrabAndCloseVisibleDialogOrReport(spec);
+    WaitForDialogCompletion(dialog_lifetime);
+    return captured;
   } else if (spec.kind == "multi-create") {
     // Bulk TS/TI creation under the DataItems root. The device combo fills
     // from the fixture's Devices folder; the insert path is never taken.

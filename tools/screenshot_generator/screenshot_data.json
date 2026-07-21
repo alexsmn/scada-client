@@ -289,6 +289,7 @@
     { "kind": "about",          "filename": "about.png",                   "width": 420, "height": 300 },
     { "kind": "change-password","filename": "change-password.png",         "width": 380, "height": 220 },
     { "kind": "time-range",     "filename": "time-range.png",              "width": 420, "height": 320 },
-    { "kind": "multi-create",   "filename": "multi-create.png",            "width": 480, "height": 420 }
+    { "kind": "multi-create",   "filename": "multi-create.png",            "width": 480, "height": 420 },
+    { "kind": "message-box",    "filename": "message-box.png",             "width": 420, "height": 160 }
   ]
 }

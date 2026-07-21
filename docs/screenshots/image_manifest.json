@@ -7,6 +7,7 @@
     {"file": "change-password.png", "tag": "auto-dialog", "published": false, "referenced_from": [], "notes": "Set Password dialog for the fixture administrator (USER.5). Validation-only; themed look via --theme runs (backlog 3.4)."},
     {"file": "time-range.png", "tag": "auto-dialog", "published": false, "referenced_from": [], "notes": "Custom time-range (period) picker over its default interval range; date edits render the frozen fixture clock. Validation-only; themed look via --theme runs (backlog 3.4)."},
     {"file": "multi-create.png", "tag": "auto-dialog", "published": false, "referenced_from": [], "notes": "Bulk TS/TI creation dialog under the DataItems root, device combo from the fixture Devices folder. Also guards the ShowSelfOwnedModalDialog regression. Validation-only; themed look via --theme runs (backlog 3.4)."},
+    {"file": "message-box.png", "tag": "auto-dialog", "published": false, "referenced_from": [], "notes": "The shared DialogService::RunMessageBox confirmation (question variant, Yes/No) — the shape the two-stage confirms and apply/discard prompts use. Validation-only; themed look via --theme runs (closes backlog 0.4: stock Qt widgets under the token palette/QSS are the control primitives)."},
     { "file": "client-retransmission.png", "tag": "auto-view", "referenced_from": ["client.md"], "notes": "Transmission window type." },
     { "file": "client-window.png", "tag": "manual-modus", "referenced_from": ["client.md"], "notes": "Docs image is a full main window with a Modus schematic centre; CaptureMainWindow only renders the non-Modus EventJournal + Summ + Struct fallback, so keep this hand-maintained until the fake Modus runtime exists." },
     {"file": "workbench-window.png", "tag": "reshell-theme", "referenced_from": ["client/workbench.md"], "notes": "The reshelled operator workbench: CaptureMainWindow under --theme renders the full shell (activity rail, context bar with KPI severity tiles, command toolbar, editor tabs over EventJournal/Summ/Struct, status strip) and saves it under this name so the legacy client-window.png is never overwritten by a themed render. Fixture pending alarms light the tiles and the journal chrome. Published from a macOS render pending a Windows re-render; kept out of current_generator_owned_subset (subset is auto-* only)."},
@@ -87,7 +88,7 @@
   ],
   "counts": {
     "auto-view": 11,
-    "auto-dialog": 20,
+    "auto-dialog": 21,
     "auto-menu": 17,
     "auto-state": 5,
     "reshell-theme": 14,
