@@ -21,28 +21,38 @@ void SaveTransmissionRuleScreenshot(const ScreenshotSpec& spec,
   // rendered from real fixture data.
   const scada::NodeId rule_id = NodeIdFromScadaString("TS.733");
 
-  // Wave 1: the rule + its children (the SourceAddress property instance) and
+  // Wave 1: the rule + its children (the Address/SourceNode property instances) and
   // its direct type.
   scada::screenshot_generator::FetchNodesResident(node_service,
                                                   std::array{rule_id});
 
   NodeRef rule = node_service.GetNode(rule_id);
 
-  // Wave 2: the full type chain (the SourceAddress declaration lives on the
-  // TransmissionItemType supertype, so operator[](SourceAddress) needs the
-  // chain's declarations resident), plus the source data item (display name +
-  // signal tag) and the parent endpoint (destination device name).
+  // Wave 2: the full type chain (the Address/SourceNode declarations
+  // live on the TransmissionItemType supertype, so operator[](declaration)
+  // needs the chain's declarations resident), plus the parent endpoint
+  // (destination device name).
   std::vector<scada::NodeId> extra;
   for (NodeRef type = rule.type_definition(); type; type = type.supertype())
     extra.push_back(type.node_id());
-  if (NodeRef source =
-          rule.target(scada::devices::id::HasTransmissionSource))
-    extra.push_back(source.node_id());
   if (NodeRef parent = rule.parent())
     extra.push_back(parent.node_id());
   scada::screenshot_generator::FetchNodesResident(node_service, extra);
 
   rule = node_service.GetNode(rule_id);
+
+  // Wave 3: the source data item (display name + signal tag). The source link
+  // is the SourceNode NodeId property (transmission OPC UA alignment,
+  // phase 4), readable only now that the chain's declarations are resident.
+  if (scada::NodeId source_id =
+          rule[scada::devices::id::TransmissionItemType_SourceNode]
+              .value()
+              .get_or(scada::NodeId{});
+      !source_id.is_null()) {
+    scada::screenshot_generator::FetchNodesResident(node_service,
+                                                    std::array{source_id});
+    rule = node_service.GetNode(rule_id);
+  }
 
   TransmissionRuleInspector inspector;
   inspector.ShowRule(rule);

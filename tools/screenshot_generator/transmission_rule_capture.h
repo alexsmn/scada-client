@@ -11,6 +11,6 @@ class NodeService;
 // source, type chain, address value and parent endpoint) resident, builds a
 // fresh TransmissionRuleInspector, drives it via ShowRule with the real node
 // service, then grabs the widget — exercising the real source/endpoint/protocol
-// resolution and the SourceAddress read.
+// resolution and the Address read.
 void SaveTransmissionRuleScreenshot(const ScreenshotSpec& spec,
                                     NodeService& node_service);

@@ -19,6 +19,20 @@
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 
+namespace {
+
+// The source link is the SourceNode NodeId property (transmission OPC UA
+// alignment, phase 4) — the retired HasTransmissionSource reference is
+// rejected by migrated servers. Reading it via operator[] resolves the
+// declaration through the type chain, so the chain must be resident.
+scada::NodeId GetSourceNodeId(const NodeRef& transmission) {
+  return transmission[scada::devices::id::TransmissionItemType_SourceNode]
+      .value()
+      .get_or(scada::NodeId{});
+}
+
+}  // namespace
+
 TransmissionModel::TransmissionModel(AnyExecutor executor,
                                      NodeService& node_service,
                                      TaskManager& task_manager)
@@ -52,37 +66,35 @@ void TransmissionModel::Init(NodeRef device) {
   // row's children (the property instances holding the address values), and
   // each row's source node (the "Object" column display name). Node fetches
   // are per node, so none of this is implied by fetching the device alone.
-  CoSpawn(executor_, cancelation_,
-          [this,
-           cancelation = cancelation_.ref()]() mutable -> Awaitable<void> {
-            (void)co_await FetchChildrenStatus(device_);
-            if (cancelation.canceled()) {
-              co_return;
-            }
-            (void)co_await FetchTypeChainStatus(device_.type_definition());
-            if (cancelation.canceled()) {
-              co_return;
-            }
-            for (const auto& reference :
-                 device_.references(scada::id::Organizes)) {
-              NodeRef transmission = reference.target;
-              (void)co_await FetchChildrenStatus(transmission);
-              if (cancelation.canceled()) {
-                co_return;
-              }
-              (void)co_await FetchTypeChainStatus(
-                  transmission.type_definition());
-              if (cancelation.canceled()) {
-                co_return;
-              }
-              (void)co_await FetchNodeStatus(transmission.target(
-                  scada::devices::id::HasTransmissionSource));
-              if (cancelation.canceled()) {
-                co_return;
-              }
-            }
-            Refresh();
-          });
+  CoSpawn(
+      executor_, cancelation_,
+      [this, cancelation = cancelation_.ref()]() mutable -> Awaitable<void> {
+        (void)co_await FetchChildrenStatus(device_);
+        if (cancelation.canceled()) {
+          co_return;
+        }
+        (void)co_await FetchTypeChainStatus(device_.type_definition());
+        if (cancelation.canceled()) {
+          co_return;
+        }
+        for (const auto& reference : device_.references(scada::id::Organizes)) {
+          NodeRef transmission = reference.target;
+          (void)co_await FetchChildrenStatus(transmission);
+          if (cancelation.canceled()) {
+            co_return;
+          }
+          (void)co_await FetchTypeChainStatus(transmission.type_definition());
+          if (cancelation.canceled()) {
+            co_return;
+          }
+          (void)co_await FetchNodeStatus(
+              node_service_.GetNode(GetSourceNodeId(transmission)));
+          if (cancelation.canceled()) {
+            co_return;
+          }
+        }
+        Refresh();
+      });
 
   // Unconditional: on a device switch this also clears the previous device's
   // rows (an unfetched device contributes none until its fetch lands).
@@ -108,18 +120,16 @@ void TransmissionModel::GetCell(scada::aui::GridCell& cell) {
 
   switch (cell.column) {
     case 0: {
-      auto source =
-          row.transmission.target(scada::devices::id::HasTransmissionSource);
+      auto source = node_service_.GetNode(row.source_id);
       cell.text = source ? source.display_name() : std::u16string();
       break;
     }
 
     case 1:
       auto device_item_address =
-          row.transmission
-              [scada::devices::id::TransmissionItemType_SourceAddress]
-                  .value()
-                  .get_or(0);
+          row.transmission[scada::devices::id::TransmissionItemType_Address]
+              .value()
+              .get_or(0);
       cell.text = WideFormat(device_item_address);
       break;
   }
@@ -145,9 +155,8 @@ bool TransmissionModel::SetCellText(int row,
 
   auto& row_item = this->row(row);
   scada::NodeProperties properties;
-  properties.emplace_back(
-      scada::devices::id::TransmissionItemType_SourceAddress,
-      static_cast<int>(value));
+  properties.emplace_back(scada::devices::id::TransmissionItemType_Address,
+                          static_cast<int>(value));
   task_manager_.PostUpdateTask(row_item.transmission.node_id(), {}, properties);
 
   return true;
@@ -163,10 +172,7 @@ void TransmissionModel::Refresh() {
             return reference.target;
           }) |
           boost::adaptors::transformed([](const NodeRef& transmission) {
-            auto source_id =
-                transmission.target(scada::devices::id::HasTransmissionSource)
-                    .node_id();
-            return Row{transmission, source_id};
+            return Row{transmission, GetSourceNodeId(transmission)};
           }) |
           to_vector;
 
@@ -221,8 +227,7 @@ void TransmissionModel::Update(NodeRef transmission) {
 
   transmission.StartFetch(NodeFetchStatus::NodeAndChildren);
 
-  auto source_id =
-      transmission.target(scada::devices::id::HasTransmissionSource).node_id();
+  auto source_id = GetSourceNodeId(transmission);
 
   int i = FindRow(transmission.node_id());
   if (i == -1) {
@@ -291,8 +296,8 @@ void TransmissionModel::AddContainedItem(const scada::NodeId& node_id,
   task_manager_.PostInsertTask(
       {.type_definition_id = transmission_item_type_id,
        .parent_id = device_.node_id(),
-       .references = {
-           {scada::devices::id::HasTransmissionSource, true, node_id}}});
+       .properties = {{scada::devices::id::TransmissionItemType_SourceNode,
+                       scada::Variant{node_id}}}});
 }
 
 void TransmissionModel::RemoveContainedItem(const scada::NodeId& node_id) {

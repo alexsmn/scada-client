@@ -5,6 +5,7 @@
 #include "aui/translation.h"
 #include "model/devices_node_ids.h"
 #include "node_service/node_ref.h"
+#include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "scada/basic_types.h"
 #include "scada/variant.h"
@@ -145,9 +146,8 @@ QWidget* TransmissionRuleInspector::BuildContent() {
   ioa_edit_->setValidator(new QIntValidator{0, 0x7fffffff, ioa_edit_});
   ioa_edit_->setFixedWidth(96);
   ioa_edit_->setStyleSheet(
-      QStringLiteral(
-          "QLineEdit{background:%1;color:%2;border:1px solid %3;"
-          "border-radius:4px;padding:3px 6px;}")
+      QStringLiteral("QLineEdit{background:%1;color:%2;border:1px solid %3;"
+                     "border-radius:4px;padding:3px 6px;}")
           .arg(tokens.surface_muted.name(), tokens.fg.name(),
                tokens.border.name()));
   ioa_row->addWidget(ioa_label);
@@ -189,11 +189,15 @@ void TransmissionRuleInspector::ShowRule(const NodeRef& transmission) {
     return;
   }
 
-  const NodeRef source =
-      transmission.target(scada::devices::id::HasTransmissionSource);
+  // The source link is the SourceNode NodeId property (transmission OPC UA
+  // alignment, phase 4); resolving it needs the type chain resident.
+  const NodeRef source = transmission.service()->GetNode(
+      transmission[scada::devices::id::TransmissionItemType_SourceNode]
+          .value()
+          .get_or(scada::NodeId{}));
   const NodeRef endpoint = transmission.parent();
   const scada::Int32 ioa =
-      transmission[scada::devices::id::TransmissionItemType_SourceAddress]
+      transmission[scada::devices::id::TransmissionItemType_Address]
           .value()
           .get_or<scada::Int32>(0);
 
@@ -210,8 +214,8 @@ void TransmissionRuleInspector::ShowRule(const NodeRef& transmission) {
   rule.signal_tag = QString::fromStdU16String(
       source ? TransmissionSignalTag(source.type_definition().node_id())
              : std::u16string{});
-  rule.endpoint = endpoint ? QString::fromStdU16String(endpoint.display_name())
-                           : QString{};
+  rule.endpoint =
+      endpoint ? QString::fromStdU16String(endpoint.display_name()) : QString{};
   rule.ioa = ioa;
 
   ShowRuleDisplay(rule);
@@ -239,7 +243,7 @@ void TransmissionRuleInspector::ShowRuleDisplay(
   // The IOA is editable only when the host supplied a write path (an
   // ApplyHandler). With none — e.g. the MainWindow shell, which has no
   // TaskManager — the inspector is read-only and the Revert/Apply bar is
-  // hidden; editing rides the existing transmission grid's SourceAddress write.
+  // hidden; editing rides the existing transmission grid's Address write.
   const bool editable = static_cast<bool>(apply_handler_);
   ioa_edit_->setReadOnly(!editable);
   revert_->setVisible(editable);
