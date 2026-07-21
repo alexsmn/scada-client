@@ -18,7 +18,7 @@ scada::Event MakeEvent(int node, std::u16string message, int64_t seconds) {
           .time = scada::DateTime::UnixEpoch() +
                   scada::base::TimeDelta::FromSeconds(seconds),
           .severity = scada::kSeverityCritical,
-          .node_id = Node(node),
+          .source_node_id = Node(node),
           .message = std::move(message)};
 }
 
@@ -84,8 +84,8 @@ TEST(EventGroupingTest, GroupOrderFollowsFirstAppearance) {
   const std::vector<EventGroup> groups = GroupRepeatedEvents(Pointers(events));
 
   ASSERT_EQ(groups.size(), 2u);
-  EXPECT_EQ(groups[0].representative->node_id, Node(1));
-  EXPECT_EQ(groups[1].representative->node_id, Node(2));
+  EXPECT_EQ(groups[0].representative->source_node_id, Node(1));
+  EXPECT_EQ(groups[1].representative->source_node_id, Node(2));
 }
 
 // The same condition escalating must not split into two rows — that would undo

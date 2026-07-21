@@ -52,7 +52,7 @@ NodeEventProvider::EventContainer GenerateEvents(const TestNodeGenerator& nodes,
     scada::EventId event_id = static_cast<scada::EventId>(index + 1);
     scada::Event event{
         .event_id = event_id,
-        .node_id = nodes.node_id(index % nodes.count),
+        .source_node_id = nodes.node_id(index % nodes.count),
         .message = UtfConvert<char16_t>(std::format("Event {}", index + 1))};
     events.try_emplace(event_id, std::move(event));
   }
@@ -211,10 +211,10 @@ TEST(EventTableModelUnacknowledgedFilterTest,
                          .local_event_model_ = local_event_model,
                          .current_events_ = false}};
 
-  historical_event_model.AddEvent({.event_id = 1, .node_id = node_id});
-  historical_event_model.AddEvent({.event_id = 2, .node_id = node_id});
+  historical_event_model.AddEvent({.event_id = 1, .source_node_id = node_id});
+  historical_event_model.AddEvent({.event_id = 2, .source_node_id = node_id});
   historical_event_model.AddEvent(
-      {.event_id = 3, .node_id = node_id, .acked = true});
+      {.event_id = 3, .source_node_id = node_id, .acked = true});
 
   // Off: the full history (two unacked + one acked).
   historical_event_model.refilter_now();
@@ -368,7 +368,7 @@ class EventFloodGroupingTest : public Test {
           {.event_id = static_cast<scada::EventId>(first_id + i),
            .time = scada::DateTime::UnixEpoch() +
                    scada::base::TimeDelta::FromSeconds(i),
-           .node_id = node_id_,
+           .source_node_id = node_id_,
            .message = message});
     }
   }
@@ -660,15 +660,15 @@ using EventAlarmChromeTest = EventFloodGroupingTest;
 TEST_F(EventAlarmChromeTest, AlarmSummaryCountsPendingAndHighestSeverity) {
   historical_event_model_.AddEvent({.event_id = 1,
                                     .severity = scada::kSeverityWarning,
-                                    .node_id = node_id_,
+                                    .source_node_id = node_id_,
                                     .message = u"warn"});
   historical_event_model_.AddEvent({.event_id = 2,
                                     .severity = scada::kSeverityCritical,
-                                    .node_id = node_id_,
+                                    .source_node_id = node_id_,
                                     .message = u"crit"});
   historical_event_model_.AddEvent({.event_id = 3,
                                     .severity = 1000,
-                                    .node_id = node_id_,
+                                    .source_node_id = node_id_,
                                     .message = u"done",
                                     .acked = true});
   Rebuild();
@@ -690,10 +690,10 @@ TEST_F(EventAlarmChromeTest, EmptyJournalSummarizesCalm) {
 TEST_F(EventAlarmChromeTest, PendingDotMarksUnacknowledgedRows) {
   historical_event_model_.AddEvent({.event_id = 1,
                                     .severity = scada::kSeverityCritical,
-                                    .node_id = node_id_,
+                                    .source_node_id = node_id_,
                                     .message = u"crit"});
   historical_event_model_.AddEvent(
-      {.event_id = 2, .node_id = node_id_, .message = u"done", .acked = true});
+      {.event_id = 2, .source_node_id = node_id_, .message = u"done", .acked = true});
   Rebuild();
   ASSERT_EQ(model_.GetRowCount(), 2);
 
@@ -712,12 +712,12 @@ TEST_F(EventAlarmChromeTest, LiveAlarmIsNotDuplicatedByItsHistoryCopy) {
   const scada::EventId event_id = 7;
   const scada::Event live{.event_id = event_id,
                           .severity = scada::kSeverityCritical,
-                          .node_id = node_id_,
+                          .source_node_id = node_id_,
                           .message = u"crit"};
   empty_current_.try_emplace(event_id, live);
   historical_event_model_.AddEvent(live);
   historical_event_model_.AddEvent(
-      {.event_id = 8, .node_id = node_id_, .message = u"other", .acked = true});
+      {.event_id = 8, .source_node_id = node_id_, .message = u"other", .acked = true});
   Rebuild();
 
   ASSERT_EQ(model_.GetRowCount(), 2);
@@ -751,13 +751,13 @@ TEST_F(EventAlarmChromeTest, CountsUnacknowledgedByArea) {
   // Two pending alarms under area A (one direct, one via containment), one
   // acknowledged under A, and one pending outside every area.
   historical_event_model_.AddEvent(
-      {.event_id = 1, .node_id = in_a, .message = u"m1"});
+      {.event_id = 1, .source_node_id = in_a, .message = u"m1"});
   historical_event_model_.AddEvent(
-      {.event_id = 2, .node_id = area_a, .message = u"m2"});
+      {.event_id = 2, .source_node_id = area_a, .message = u"m2"});
   historical_event_model_.AddEvent(
-      {.event_id = 3, .node_id = in_a, .message = u"m3", .acked = true});
+      {.event_id = 3, .source_node_id = in_a, .message = u"m3", .acked = true});
   historical_event_model_.AddEvent(
-      {.event_id = 4, .node_id = node_id_, .message = u"m4"});
+      {.event_id = 4, .source_node_id = node_id_, .message = u"m4"});
   Rebuild();
 
   const scada::NodeId areas[] = {area_a, area_b};
