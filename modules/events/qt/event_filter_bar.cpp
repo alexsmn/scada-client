@@ -13,7 +13,6 @@
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QPointer>
 #include <QSpinBox>
 #include <QWidget>
 
@@ -132,36 +131,6 @@ QWidget* MakeEventFilterBar(EventFilterBarContext context) {
                        callback(static_cast<unsigned>(value));
                    });
   layout->addWidget(severity);
-
-  // Area selector: "All areas" plus the top-level areas, filled in
-  // asynchronously once the address-space browse completes.
-  layout->addWidget(
-      new QLabel{QString::fromStdU16String(Translate("Area")), bar});
-  auto* area = new QComboBox{bar};
-  area->addItem(QString::fromStdU16String(Translate("All areas")));
-  // Area ids, aligned with the combo entries at index+1 (index 0 is "All").
-  auto area_ids = std::make_shared<std::vector<scada::NodeId>>();
-  QObject::connect(area, QOverload<int>::of(&QComboBox::activated), bar,
-                   [area_ids, callback = context.on_area](int index) {
-                     if (!callback)
-                       return;
-                     if (index <= 0)
-                       callback(std::nullopt);
-                     else if (static_cast<size_t>(index - 1) < area_ids->size())
-                       callback((*area_ids)[index - 1]);
-                   });
-  CoSpawn(context.executor,
-          [&node_service = context.node_service, area_ids,
-           combo = QPointer<QComboBox>{area}]() -> Awaitable<void> {
-            auto areas = co_await BrowseEventAreas(node_service);
-            if (!combo)
-              co_return;
-            for (const EventAreaEntry& entry : areas) {
-              area_ids->push_back(entry.node_id);
-              combo->addItem(QString::fromStdU16String(entry.name));
-            }
-          });
-  layout->addWidget(area);
 
   // Period selector: the fixed quick-pick ranges. Reflects the current range
   // when it matches a preset, otherwise stays unselected.

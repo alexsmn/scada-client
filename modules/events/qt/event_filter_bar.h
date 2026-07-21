@@ -17,18 +17,18 @@ class NodeService;
 //
 // The bar is the discoverable, always-visible surfacing of the journal filters,
 // complementing the right-click context menu (`EventMenuModel`). It hosts an
-// "Unacknowledged only" toggle, a minimum-severity control, an Area selector
-// and a Period selector. It is opt-in reshell chrome; the caller gates it on
-// the active UX theme and only builds it for the full historical journal (where
-// the time range is meaningful), not the docked current-events panel.
+// "Unacknowledged only" toggle, a minimum-severity control and a Period
+// selector; the area scope lives in the Areas sidebar beside the journal
+// (`MakeEventAreaSidebar`). It is opt-in reshell chrome; the caller gates it
+// on the active UX theme and only builds it for the full historical journal
+// (where the time range is meaningful), not the docked current-events panel.
 //
-// The Area selector enumerates the top-level areas (the immediate children of
-// the address space's ObjectsFolder) asynchronously via `node_service`. The
-// Period selector offers the fixed quick-pick ranges; an arbitrary/custom range
-// (via the toolbar or context menu) is still reflected when it matches a preset
-// and otherwise leaves the selector unselected.
+// The Period selector offers the fixed quick-pick ranges; an arbitrary/custom
+// range (via the toolbar or context menu) is still reflected when it matches a
+// preset and otherwise leaves the selector unselected.
 struct EventFilterBarContext {
-  // Async work host: the area browse runs here (same executor as node_service).
+  // Async work host (kept for parity with the sidebar; the bar itself runs no
+  // async work today).
   AnyExecutor executor;
   NodeService& node_service;
 
@@ -42,9 +42,6 @@ struct EventFilterBarContext {
   std::function<void(bool)> on_unacknowledged_only;
   std::function<void(unsigned)> on_severity_min;
   std::function<void(const TimeRange&)> on_time_range;
-  // The chosen area-filter scope: the selected area node, or nullopt for
-  // "All areas".
-  std::function<void(const std::optional<scada::NodeId>&)> on_area;
 };
 
 // Builds the filter strip. The returned widget owns its controls and invokes

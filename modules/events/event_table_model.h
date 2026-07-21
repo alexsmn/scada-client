@@ -10,6 +10,7 @@
 #include <boost/signals2/connection.hpp>
 #include <set>
 #include <span>
+#include <vector>
 
 class CurrentEventModel;
 class HistoricalEventModel;
@@ -118,6 +119,22 @@ class EventTableModel : public scada::aui::TableModel,
   };
   AlarmSummary GetAlarmSummary() const;
 
+  // Unacknowledged counts for the journal's Areas sidebar: the overall count
+  // plus one count per entry of `areas` (an event belongs to an area when its
+  // source or any containing node is that area). Ignores the active area
+  // filter — the sidebar's counts stay meaningful for every area while one
+  // of them is filtering the rows — but respects the severity and
+  // unacknowledged-only filters, so each count matches what selecting that
+  // area would show.
+  struct AreaCounts {
+    int total = 0;
+    std::vector<int> per_area;
+
+    bool operator==(const AreaCounts&) const = default;
+  };
+  AreaCounts CountUnacknowledgedByArea(
+      std::span<const scada::NodeId> areas) const;
+
   // Occurrences collapsed into `row`, 1 when it stands for a single event.
   int group_count_at(int row) const;
 
@@ -180,6 +197,12 @@ class EventTableModel : public scada::aui::TableModel,
   void AckRows(int first, int count);
 
   bool IsEventShown(const scada::Event& event) const;
+
+  // IsEventShown split so the sidebar counting can apply every filter except
+  // the area one.
+  bool PassesFilters(const scada::Event& event, bool include_area_filter) const;
+  // The event's source, or any node containing it, is one of `areas`.
+  bool IsUnderAnyOf(const scada::Event& event, const ItemIds& areas) const;
 
   void RefilterNow();
   void Refilter();

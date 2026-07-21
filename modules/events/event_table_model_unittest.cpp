@@ -16,6 +16,7 @@
 #include "node_service/node_service_mock.h"
 #include "node_service/static/static_node_service.h"
 #include "scada/history_service_mock.h"
+#include "scada/standard_node_ids.h"
 
 #include "base/utf_convert.h"
 
@@ -724,4 +725,47 @@ TEST_F(EventAlarmChromeTest, LiveAlarmIsNotDuplicatedByItsHistoryCopy) {
       model_.GetAlarmSummary(),
       (EventTableModel::AlarmSummary{
           .unacknowledged = 1, .max_severity = scada::kSeverityCritical}));
+}
+
+// The Areas sidebar's counts: unacknowledged occurrences attribute to the
+// area containing their source, the total spans every area (and sources
+// outside all of them), acknowledged events count nowhere — and the active
+// area filter does not skew the other areas' counts.
+TEST_F(EventAlarmChromeTest, CountsUnacknowledgedByArea) {
+  const scada::NodeId area_a{100, scada::NamespaceIndexes::TIT};
+  const scada::NodeId area_b{101, scada::NamespaceIndexes::TIT};
+  const scada::NodeId in_a{102, scada::NamespaceIndexes::TIT};
+  node_service_.Add({.node_id = area_a,
+                     .type_definition_id = scada::id::FolderType,
+                     .attributes = {.browse_name = "a", .display_name = u"A"}});
+  node_service_.Add({.node_id = area_b,
+                     .type_definition_id = scada::id::FolderType,
+                     .attributes = {.browse_name = "b", .display_name = u"B"}});
+  node_service_.Add(
+      {.node_id = in_a,
+       .type_definition_id = scada::id::FolderType,
+       .parent_id = area_a,
+       .reference_type_id = scada::id::Organizes,
+       .attributes = {.browse_name = "n2", .display_name = u"N2"}});
+
+  // Two pending alarms under area A (one direct, one via containment), one
+  // acknowledged under A, and one pending outside every area.
+  historical_event_model_.AddEvent(
+      {.event_id = 1, .node_id = in_a, .message = u"m1"});
+  historical_event_model_.AddEvent(
+      {.event_id = 2, .node_id = area_a, .message = u"m2"});
+  historical_event_model_.AddEvent(
+      {.event_id = 3, .node_id = in_a, .message = u"m3", .acked = true});
+  historical_event_model_.AddEvent(
+      {.event_id = 4, .node_id = node_id_, .message = u"m4"});
+  Rebuild();
+
+  const scada::NodeId areas[] = {area_a, area_b};
+  EXPECT_EQ(model_.CountUnacknowledgedByArea(areas),
+            (EventTableModel::AreaCounts{.total = 3, .per_area = {2, 0}}));
+
+  // Filtering to area B leaves A's count intact.
+  model_.AddFilteredItem(area_b);
+  EXPECT_EQ(model_.CountUnacknowledgedByArea(areas),
+            (EventTableModel::AreaCounts{.total = 3, .per_area = {2, 0}}));
 }

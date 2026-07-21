@@ -268,27 +268,82 @@ int EventTableModel::FindRow(const scada::Event& event) const {
 }
 
 bool EventTableModel::IsEventShown(const scada::Event& event) const {
+  return PassesFilters(event, /*include_area_filter=*/true);
+}
+
+bool EventTableModel::PassesFilters(const scada::Event& event,
+                                    bool include_area_filter) const {
   if (event.severity < severity_min_)
     return false;
 
   if (unacknowledged_only_ && event.acked)
     return false;
 
-  if (filter_node_ids_.empty())
+  if (!include_area_filter || filter_node_ids_.empty())
     return true;
 
-  // Check item is in filter.
-  if (filter_node_ids_.find(event.node_id) != filter_node_ids_.end())
+  return IsUnderAnyOf(event, filter_node_ids_);
+}
+
+bool EventTableModel::IsUnderAnyOf(const scada::Event& event,
+                                   const ItemIds& areas) const {
+  // The source itself, or any containing node, is one of `areas`.
+  if (areas.find(event.node_id) != areas.end())
     return true;
 
-  // Check any containing node is in filter.
   for (auto node = node_service_.GetNode(event.node_id); node;
        node = node.parent()) {
-    if (filter_node_ids_.find(node.node_id()) != filter_node_ids_.end())
+    if (areas.find(node.node_id()) != areas.end())
       return true;
   }
 
   return false;
+}
+
+EventTableModel::AreaCounts EventTableModel::CountUnacknowledgedByArea(
+    std::span<const scada::NodeId> areas) const {
+  AreaCounts counts;
+  counts.per_area.assign(areas.size(), 0);
+
+  auto account = [&](const scada::Event& event) {
+    // Ignore the active area filter — the sidebar's counts stay meaningful
+    // for every area while one of them is filtering the rows — but respect
+    // the other filters, so the counts match what selecting an area would
+    // show.
+    if (event.acked || !PassesFilters(event, /*include_area_filter=*/false))
+      return;
+    ++counts.total;
+    // Collect the source's containment chain once, then attribute the event
+    // to its area (top-level areas are siblings, so at most one matches).
+    ItemIds chain{event.node_id};
+    for (auto node = node_service_.GetNode(event.node_id); node;
+         node = node.parent()) {
+      chain.insert(node.node_id());
+    }
+    for (size_t i = 0; i < areas.size(); ++i) {
+      if (chain.contains(areas[i])) {
+        ++counts.per_area[i];
+        break;
+      }
+    }
+  };
+
+  std::set<scada::EventId> current_ids;
+  for (const scada::Event& event : current_event_model_.events()) {
+    current_ids.insert(event.event_id);
+    account(event);
+  }
+  for (const scada::Event& event : local_event_model_.events())
+    account(event);
+  if (!current_events_) {
+    // Historical copies of live events dedupe by id, as in RefilterNow().
+    for (const scada::Event& event : historical_event_model_.events()) {
+      if (!current_ids.contains(event.event_id))
+        account(event);
+    }
+  }
+
+  return counts;
 }
 
 void EventTableModel::AddRows(EventType type,

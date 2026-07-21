@@ -28,8 +28,10 @@
 #if defined(UI_QT)
 #include "aui/severity_colors.h"
 #include "events/qt/alarm_footer.h"
+#include "events/qt/area_sidebar.h"
 #include "events/qt/event_filter_bar.h"
 
+#include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QWidget>
 #endif
@@ -272,9 +274,20 @@ std::unique_ptr<UiView> EventView::Init(const WindowDefinition& definition) {
     auto* layout = new QVBoxLayout{container};
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
-    // The area currently applied through the bar's Area selector, so switching
-    // areas only touches that scope and leaves other filter items intact.
+    // The area currently applied through the sidebar, so switching areas only
+    // touches that scope and leaves other filter items intact.
     auto applied_area = std::make_shared<std::optional<scada::NodeId>>();
+    auto apply_area = [this,
+                       applied_area](const std::optional<scada::NodeId>& area) {
+      if (*applied_area == area)
+        return;
+      if (*applied_area)
+        model_->RemoveFilteredItem(**applied_area);
+      if (area)
+        model_->AddFilteredItem(*area);
+      *applied_area = area;
+      controller_delegate_.SetTitle(MakeTitle());
+    };
     layout->addWidget(MakeEventFilterBar(EventFilterBarContext{
         .executor = executor_,
         .node_service = node_service_,
@@ -290,19 +303,25 @@ std::unique_ptr<UiView> EventView::Init(const WindowDefinition& definition) {
             },
         .on_time_range =
             [this](const TimeRange& time_range) { SetTimeRange(time_range); },
-        .on_area =
-            [this, applied_area](const std::optional<scada::NodeId>& area) {
-              if (*applied_area == area)
-                return;
-              if (*applied_area)
-                model_->RemoveFilteredItem(**applied_area);
-              if (area)
-                model_->AddFilteredItem(*area);
-              *applied_area = area;
-              controller_delegate_.SetTitle(MakeTitle());
-            },
     }));
-    layout->addWidget(table_->CreateParentIfNecessary());
+    // Areas sidebar beside the journal: every top-level area with its
+    // unacknowledged count, driving the same area-filter scope the filter
+    // bar's dropdown used to.
+    auto* body = new QWidget;
+    auto* body_layout = new QHBoxLayout{body};
+    body_layout->setContentsMargins(0, 0, 0, 0);
+    body_layout->setSpacing(0);
+    body_layout->addWidget(MakeEventAreaSidebar(EventAreaSidebarContext{
+        .executor = executor_,
+        .model = *model_,
+        .browse_areas = [this] { return BrowseEventAreas(node_service_); },
+        .counts =
+            [this](std::span<const scada::NodeId> areas) {
+              return model_->CountUnacknowledgedByArea(areas);
+            },
+        .on_area = apply_area}));
+    body_layout->addWidget(table_->CreateParentIfNecessary(), 1);
+    layout->addWidget(body, 1);
     // Alarm footer: the displayed backlog summary plus Acknowledge-all, so
     // the journal's actionable state and the action on it sit together.
     layout->addWidget(MakeAlarmFooter(AlarmFooterContext{
