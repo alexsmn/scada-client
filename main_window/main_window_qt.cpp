@@ -708,9 +708,14 @@ void MainWindow::SetWindowFlashing(bool flashing) {}
 void MainWindow::CreateInspectorPanel() {
   // The control action reuses the selection-scoped write/control command
   // (ID_WRITE) — the existing two-stage confirm — resolved against the active
-  // selection exactly like the toolbar/menu path.
+  // selection exactly like the toolbar/menu path. The event card's
+  // Acknowledge action likewise reuses the journal's own selection-scoped
+  // command (ID_ACKNOWLEDGE_CURRENT).
   auto resolve_write = [this]() -> CommandHandler* {
     return ResolveViewCommand(ID_WRITE);
+  };
+  auto resolve_acknowledge = [this]() -> CommandHandler* {
+    return ResolveViewCommand(ID_ACKNOWLEDGE_CURRENT);
   };
 
   inspector_ = new InspectorPanel(InspectorPanelContext{
@@ -724,6 +729,17 @@ void MainWindow::CreateInspectorPanel() {
           [resolve_write] {
             CommandHandler* handler = resolve_write();
             return handler && handler->IsCommandEnabled(ID_WRITE);
+          },
+      .on_acknowledge =
+          [resolve_acknowledge] {
+            CommandHandler* handler = resolve_acknowledge();
+            if (handler && handler->IsCommandEnabled(ID_ACKNOWLEDGE_CURRENT))
+              handler->ExecuteCommand(ID_ACKNOWLEDGE_CURRENT);
+          },
+      .is_acknowledge_enabled =
+          [resolve_acknowledge] {
+            CommandHandler* handler = resolve_acknowledge();
+            return handler && handler->IsCommandEnabled(ID_ACKNOWLEDGE_CURRENT);
           }});
 
   auto* dock =

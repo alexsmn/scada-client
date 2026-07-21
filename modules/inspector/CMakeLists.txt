@@ -12,6 +12,8 @@ client_module_link_libraries(client_inspector
     client_controller
   PRIVATE
     aui
+    # The event card's severity band naming/colouring (event_severity).
+    client_events
     timed_data
 )
 

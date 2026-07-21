@@ -311,6 +311,11 @@
         <source>To graph</source>
         <translation>На график</translation>
     </message>
+    <!-- modules/inspector/qt/inspector_panel.cpp (event card) -->
+    <message>
+        <source>Acknowledged</source>
+        <translation>Квитировано</translation>
+    </message>
     <!-- modules/events/event_severity.cpp + qt/alarm_footer.cpp -->
     <message>
         <source>No unacknowledged events</source>

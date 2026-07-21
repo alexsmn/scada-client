@@ -28,6 +28,12 @@ struct InspectorPanelContext {
   std::function<void()> on_control;
   // Whether the control command is currently enabled for the active selection.
   std::function<bool()> is_control_enabled;
+  // Acknowledges the selected journal event — the journal's own command
+  // (the host wires ExecuteCommand(ID_ACKNOWLEDGE_CURRENT) through the
+  // shell's command resolution).
+  std::function<void()> on_acknowledge;
+  // Whether acknowledging is currently possible for the active selection.
+  std::function<bool()> is_acknowledge_enabled;
 };
 
 // The reshell Inspector: a right-hand panel that reflects the active view's
@@ -64,9 +70,22 @@ class InspectorPanel : public QWidget {
                    const QString& updated_text,
                    bool controllable);
 
+  // Fills the alarm card for a journal-event selection: source identity, the
+  // severity band pill, the message, the event time and the acknowledgement
+  // state, plus the Acknowledge action. Render primitive behind
+  // ShowSelection's event branch and the widget tests / capture.
+  void ShowEvent(const QString& source,
+                 const QString& node_id_text,
+                 const QString& message,
+                 unsigned severity,
+                 const QString& time_text,
+                 const QString& acknowledged_text,
+                 bool acknowledgeable);
+
  private:
   QWidget* BuildEmptyState();
   QWidget* BuildElementView();
+  QWidget* BuildEventView();
   // Re-reads spec_ (title/value/quality/updated) into the element view.
   void RefreshValue();
 
@@ -76,11 +95,21 @@ class InspectorPanel : public QWidget {
   // underlying TimedData); its update_handler drives RefreshValue.
   std::unique_ptr<TimedDataSpec> spec_;
 
-  QStackedWidget* stack_ = nullptr;  // [0] empty state, [1] element view
+  // [0] empty state, [1] element view, [2] event (alarm) card.
+  QStackedWidget* stack_ = nullptr;
   QLabel* title_ = nullptr;
   QLabel* subtitle_ = nullptr;
   QLabel* value_ = nullptr;
   QLabel* quality_ = nullptr;
   QLabel* updated_ = nullptr;
   QPushButton* control_ = nullptr;
+
+  // Event-card widgets.
+  QLabel* event_title_ = nullptr;
+  QLabel* event_subtitle_ = nullptr;
+  QLabel* event_severity_ = nullptr;
+  QLabel* event_message_ = nullptr;
+  QLabel* event_time_ = nullptr;
+  QLabel* event_acknowledged_ = nullptr;
+  QPushButton* acknowledge_ = nullptr;
 };

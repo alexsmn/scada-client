@@ -64,6 +64,24 @@ void SelectionModel::SelectTimedData(const TimedDataSpec& spec) {
   Changed();
 }
 
+void SelectionModel::SelectEvent(const scada::Event& event,
+                                 const NodeRef& source) {
+  Reset();
+
+  type_ = EVENT;
+  event_ = event;
+  node_ = source;
+  if (node_) {
+    SubscribeNode();
+    // A Variable source also carries its live value, so the value-shaped
+    // surfaces (title, current readout) keep working alongside the event.
+    if (node_.node_class() == scada::NodeClass::Variable)
+      timed_data_.Connect(timed_data_service_, node_);
+  }
+
+  Changed();
+}
+
 void SelectionModel::SelectMultiple() {
   Reset();
   type_ = MULTI;
@@ -87,6 +105,7 @@ void SelectionModel::Reset() {
     node_ = nullptr;
   }
 
+  event_.reset();
   timed_data_.Reset();
 }
 

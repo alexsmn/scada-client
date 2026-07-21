@@ -145,6 +145,84 @@ TEST_F(InspectorPanelTest, FormulaRowSelectionFillsTheInspector) {
   EXPECT_EQ(subtitle->text(), QStringLiteral("{TIT.200}+{TIT.201}"));
 }
 
+// A journal-event selection shows the alarm card: the severity band pill
+// (named + numbered), the message, the pending acknowledgement state, and a
+// live Acknowledge action.
+TEST_F(InspectorPanelTest, EventSelectionShowsTheAlarmCard) {
+  FormulaTimedDataService service;
+  SelectionModel selection{{service}};
+  scada::Event event;
+  event.event_id = 5;
+  event.severity = scada::kSeverityCritical;
+  event.node_id = scada::NodeId{7, 3};
+  event.message = u"comms lost";
+  selection.SelectEvent(event, NodeRef{});
+
+  bool acknowledged = false;
+  InspectorPanel panel{
+      InspectorPanelContext{.on_acknowledge = [&] { acknowledged = true; },
+                            .is_acknowledge_enabled = [] { return true; }}};
+  panel.ShowSelection(selection);
+
+  auto* stack =
+      panel.findChild<QStackedWidget*>(QStringLiteral("inspectorStack"));
+  ASSERT_NE(stack, nullptr);
+  EXPECT_EQ(stack->currentIndex(), 2);
+
+  auto* severity =
+      panel.findChild<QLabel*>(QStringLiteral("inspectorEventSeverity"));
+  ASSERT_NE(severity, nullptr);
+  EXPECT_TRUE(severity->text().contains(QStringLiteral("Critical")));
+  EXPECT_TRUE(
+      severity->text().contains(QString::number(scada::kSeverityCritical)));
+
+  auto* message =
+      panel.findChild<QLabel*>(QStringLiteral("inspectorEventMessage"));
+  ASSERT_NE(message, nullptr);
+  EXPECT_EQ(message->text(), QStringLiteral("comms lost"));
+
+  auto* pending =
+      panel.findChild<QLabel*>(QStringLiteral("inspectorEventAcknowledged"));
+  ASSERT_NE(pending, nullptr);
+  EXPECT_TRUE(pending->text().contains(QStringLiteral("pending")));
+
+  auto* acknowledge =
+      panel.findChild<QPushButton*>(QStringLiteral("inspectorAcknowledge"));
+  ASSERT_NE(acknowledge, nullptr);
+  EXPECT_TRUE(acknowledge->isEnabled());
+  acknowledge->click();
+  EXPECT_TRUE(acknowledged);
+}
+
+// An already-acknowledged event shows its acknowledgement time and offers no
+// action.
+TEST_F(InspectorPanelTest, AcknowledgedEventDisablesTheAction) {
+  FormulaTimedDataService service;
+  SelectionModel selection{{service}};
+  scada::Event event;
+  event.event_id = 6;
+  event.node_id = scada::NodeId{7, 3};
+  event.message = u"restored";
+  event.acked = true;
+  event.acknowledged_time = scada::DateTime::Now();
+  selection.SelectEvent(event, NodeRef{});
+
+  InspectorPanel panel{
+      InspectorPanelContext{.is_acknowledge_enabled = [] { return true; }}};
+  panel.ShowSelection(selection);
+
+  auto* acknowledged_label =
+      panel.findChild<QLabel*>(QStringLiteral("inspectorEventAcknowledged"));
+  ASSERT_NE(acknowledged_label, nullptr);
+  EXPECT_FALSE(acknowledged_label->text().contains(QStringLiteral("pending")));
+  EXPECT_NE(acknowledged_label->text(), QStringLiteral("—"));
+
+  auto* acknowledge =
+      panel.findChild<QPushButton*>(QStringLiteral("inspectorAcknowledge"));
+  ASSERT_NE(acknowledge, nullptr);
+  EXPECT_FALSE(acknowledge->isEnabled());
+}
+
 // A spec with neither node nor formula (a folder/object selection) still
 // clears to the empty state.
 TEST_F(InspectorPanelTest, DataLessSelectionShowsTheEmptyState) {

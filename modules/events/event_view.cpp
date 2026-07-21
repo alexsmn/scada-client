@@ -215,8 +215,11 @@ void EventView::OnSelectionChanged() {
   else if (rows.size() >= 2)
     selection_.SelectMultiple();
   else {
+    // Publish the event itself, with its source as the node selection —
+    // node-scoped commands stay enabled and event-shaped surfaces (the
+    // Inspector's alarm card) read the alarm.
     const scada::Event& event = model_->event_at(rows.front());
-    selection_.SelectNode(node_service_.GetNode(event.node_id));
+    selection_.SelectEvent(event, node_service_.GetNode(event.node_id));
   }
 }
 

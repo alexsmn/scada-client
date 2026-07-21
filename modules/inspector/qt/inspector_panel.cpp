@@ -6,6 +6,8 @@
 #include "base/format_time.h"
 #include "common/value_format.h"
 #include "controller/selection_model.h"
+#include "model/node_id_util.h"
+#include "modules/events/event_severity.h"
 #include "scada/data_value.h"
 #include "scada/node_id.h"
 #include "scada/qualifier.h"
@@ -87,6 +89,7 @@ InspectorPanel::InspectorPanel(InspectorPanelContext context, QWidget* parent)
   stack_->setObjectName(QStringLiteral("inspectorStack"));
   stack_->addWidget(BuildEmptyState());   // index 0
   stack_->addWidget(BuildElementView());  // index 1
+  stack_->addWidget(BuildEventView());    // index 2
   root->addWidget(stack_);
 
   Clear();
@@ -180,6 +183,80 @@ QWidget* InspectorPanel::BuildElementView() {
   return view;
 }
 
+QWidget* InspectorPanel::BuildEventView() {
+  const scada::aui::ThemeTokens& tokens = InspectorTokens();
+  auto* view = new QWidget;
+  auto* layout = new QVBoxLayout{view};
+  layout->setContentsMargins(14, 14, 14, 14);
+  layout->setSpacing(14);
+
+  // Header: source identity.
+  event_title_ = new QLabel;
+  event_title_->setObjectName(QStringLiteral("inspectorEventTitle"));
+  event_title_->setWordWrap(true);
+  event_title_->setStyleSheet(
+      QStringLiteral("color:%1;font-size:14px;font-weight:600;")
+          .arg(tokens.fg.name()));
+  event_subtitle_ = new QLabel;
+  event_subtitle_->setWordWrap(true);
+  event_subtitle_->setStyleSheet(
+      QStringLiteral("color:%1;font-size:11px;").arg(tokens.fg_subtle.name()));
+  layout->addWidget(event_title_);
+  layout->addWidget(event_subtitle_);
+
+  // Alarm hero: the severity band pill (colour + name + number — colour is
+  // never the only signal) over the message.
+  auto* hero = new QFrame;
+  hero->setObjectName(QStringLiteral("inspectorEventHero"));
+  // Scoped to the frame itself: an unscoped border rule would cascade onto
+  // the child labels.
+  hero->setStyleSheet(
+      QStringLiteral("#inspectorEventHero{background:%1;border:1px solid %2;"
+                     "border-radius:6px;}")
+          .arg(tokens.surface_muted.name(), tokens.border.name()));
+  auto* hero_layout = new QVBoxLayout{hero};
+  hero_layout->setContentsMargins(14, 12, 14, 12);
+  hero_layout->setSpacing(8);
+  event_severity_ = new QLabel;
+  event_severity_->setObjectName(QStringLiteral("inspectorEventSeverity"));
+  hero_layout->addWidget(event_severity_, 0, Qt::AlignLeft);
+  event_message_ = new QLabel;
+  event_message_->setObjectName(QStringLiteral("inspectorEventMessage"));
+  event_message_->setWordWrap(true);
+  event_message_->setStyleSheet(
+      QStringLiteral("color:%1;font-size:13px;font-weight:600;")
+          .arg(tokens.fg.name()));
+  hero_layout->addWidget(event_message_);
+  layout->addWidget(hero);
+
+  // Event details.
+  layout->addWidget(SectionHeader(Tr("Event"), tokens));
+  layout->addWidget(KeyValueRow(Tr("Time"), &event_time_, tokens));
+  layout->addWidget(
+      KeyValueRow(Tr("Acknowledged"), &event_acknowledged_, tokens));
+  event_time_->setObjectName(QStringLiteral("inspectorEventTime"));
+  event_acknowledged_->setObjectName(
+      QStringLiteral("inspectorEventAcknowledged"));
+
+  // Acknowledge action, through the journal's own command.
+  acknowledge_ = new QPushButton{Tr("Acknowledge")};
+  acknowledge_->setObjectName(QStringLiteral("inspectorAcknowledge"));
+  acknowledge_->setStyleSheet(
+      QStringLiteral("QPushButton{background:%1;color:%2;border:none;"
+                     "border-radius:6px;padding:8px;font-weight:600;}"
+                     "QPushButton:disabled{background:%3;color:%4;}")
+          .arg(tokens.accent.name(), tokens.accent_fg.name(),
+               tokens.surface_muted.name(), tokens.fg_subtle.name()));
+  connect(acknowledge_, &QPushButton::clicked, this, [this] {
+    if (context_.on_acknowledge)
+      context_.on_acknowledge();
+  });
+  layout->addWidget(acknowledge_);
+
+  layout->addStretch(1);
+  return view;
+}
+
 void InspectorPanel::Clear() {
   spec_.reset();
   if (stack_)
@@ -189,6 +266,28 @@ void InspectorPanel::Clear() {
 void InspectorPanel::ShowSelection(const SelectionModel& selection) {
   if (selection.empty() || selection.multiple()) {
     Clear();
+    return;
+  }
+
+  // A journal-event selection shows the alarm card.
+  if (const std::optional<scada::Event>& event = selection.event()) {
+    spec_.reset();
+    const NodeRef& source_node = selection.node();
+    const QString source =
+        source_node
+            ? QString::fromStdU16String(ToString16(source_node.display_name()))
+            : QString::fromStdString(NodeIdToScadaString(event->node_id));
+    ShowEvent(
+        source, QString::fromStdString(NodeIdToScadaString(event->node_id)),
+        QString::fromStdU16String(event->message), event->severity,
+        QString::fromStdString(
+            FormatTime(event->time, TIME_FORMAT_DATE | TIME_FORMAT_TIME)),
+        event->acked ? QString::fromStdString(
+                           FormatTime(event->acknowledged_time,
+                                      TIME_FORMAT_DATE | TIME_FORMAT_TIME))
+                     : QString::fromStdU16String(Translate("— pending —")),
+        /*acknowledgeable=*/!event->acked && context_.is_acknowledge_enabled &&
+            context_.is_acknowledge_enabled());
     return;
   }
 
@@ -235,6 +334,44 @@ void InspectorPanel::RefreshValue() {
 
   ShowElement(title_->text(), subtitle_->text(), value_text, band, updated_text,
               controllable);
+}
+
+void InspectorPanel::ShowEvent(const QString& source,
+                               const QString& node_id_text,
+                               const QString& message,
+                               unsigned severity,
+                               const QString& time_text,
+                               const QString& acknowledged_text,
+                               bool acknowledgeable) {
+  const scada::aui::ThemeTokens& tokens = InspectorTokens();
+
+  event_title_->setText(source);
+  event_subtitle_->setText(node_id_text);
+  event_message_->setText(message.isEmpty() ? QStringLiteral("—") : message);
+
+  // The severity band pill: named + numbered, coloured from the shared ramp
+  // (a routine severity reads as a neutral pill; colour is never the only
+  // signal — the name and number carry the state).
+  QString severity_text =
+      QString::fromStdU16String(events::EventSeverityLabel(severity));
+  if (!severity_text.isEmpty())
+    severity_text += QLatin1Char(' ');
+  severity_text += QString::number(severity);
+  const std::optional<scada::aui::Color> band_color =
+      scada::aui::SeverityColor(events::SeverityLevelForEvent(severity));
+  const QColor pill = band_color ? band_color->qcolor() : tokens.fg_muted;
+  event_severity_->setText(severity_text);
+  event_severity_->setStyleSheet(
+      QStringLiteral("#inspectorEventSeverity{color:%1;border:1px solid %1;"
+                     "border-radius:9px;padding:1px 10px;font-weight:600;}")
+          .arg(pill.name()));
+
+  event_time_->setText(time_text.isEmpty() ? QStringLiteral("—") : time_text);
+  event_acknowledged_->setText(acknowledged_text.isEmpty() ? QStringLiteral("—")
+                                                           : acknowledged_text);
+  acknowledge_->setEnabled(acknowledgeable);
+
+  stack_->setCurrentIndex(2);
 }
 
 void InspectorPanel::ShowElement(const QString& title,
