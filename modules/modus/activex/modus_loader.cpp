@@ -15,9 +15,24 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
 
+#include <span>
+#include <string>
+#include <vector>
+
 namespace scada::modus {
 
 namespace {
+
+// The base::AsList dump wrapper renders elements through std::format, which
+// has no char-context formatter for std::wstring (and one cannot be legally
+// added for a std:: type), so transcode to UTF-8 before dumping.
+std::vector<std::string> ToUtf8List(std::span<const std::wstring> strings) {
+  std::vector<std::string> result;
+  result.reserve(strings.size());
+  for (const std::wstring& s : strings)
+    result.push_back(UtfConvert<char>(s));
+  return result;
+}
 
 std::wstring GetShortPath(ISDEObject& sde_object) {
   base::win::ScopedBstr result;
@@ -188,7 +203,9 @@ void ModusLoader::LoadElement(std::unique_ptr<ModusObject>& object,
 
     LOG_INFO(logger_) << "Create element" << LOG_TAG("PropName", prop_name)
                       << LOG_TAG("Formula", formula)
-                      << LOG_TAG("StateStrings", ToString(state_strings))
+                      << LOG_TAG(
+                             "StateStrings",
+                             ToString(base::AsList(ToUtf8List(state_strings))))
                       << LOG_TAG("HasLimits", has_limits);
 
     ModusElement* element = new ModusElement(ModusElementContext{
@@ -289,4 +306,4 @@ void ModusLoader::LoadObjects(ISDEObjects& objects) {
   }
 }
 
-}  // namespace modus
+}  // namespace scada::modus
