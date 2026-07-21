@@ -1,14 +1,14 @@
 ﻿#include "modules/transmission/transmission_view.h"
 
 #include "aui/grid.h"
-#include "aui/translation.h"
 #include "aui/models/header_model.h"
-#include "resources/common_resources.h"
-#include "modules/transmission/transmission_model.h"
+#include "aui/translation.h"
 #include "model/node_id_util.h"
+#include "modules/transmission/transmission_model.h"
 #include "node_service/node_service.h"
 #include "profile/window_definition.h"
 #include "remote/session_proxy.h"
+#include "resources/common_resources.h"
 #include "services/task_manager.h"
 
 TransmissionView::TransmissionView(const ControllerContext& context)
@@ -40,6 +40,16 @@ std::unique_ptr<UiView> TransmissionView::Init(
   grid_->SetRowHeaderWidth(15);
   grid_->SetExpandAllowed(true);
 
+  // Selecting a rule publishes it on the shell selection, so the
+  // Transmission-rule inspector fills and node-scoped commands enable.
+  grid_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });
+  selection_.multiple_handler = [this] {
+    NodeIdSet node_ids;
+    for (int row_index : grid_->GetSelectedRows())
+      node_ids.insert(model_->row(row_index).transmission.node_id());
+    return node_ids;
+  };
+
   command_registry_.AddCommand(
       Command{ID_DELETE}.set_execute_handler([this] { DeleteSelection(); }));
 
@@ -52,6 +62,17 @@ void TransmissionView::DeleteSelection() {
 
   for (auto row_index : grid_->GetSelectedRows())
     task_manager_.PostDeleteTask(model_->row(row_index).transmission.node_id());
+}
+
+void TransmissionView::OnSelectionChanged() {
+  const auto rows = grid_->GetSelectedRows();
+  if (rows.empty()) {
+    selection_.Clear();
+  } else if (rows.size() == 1) {
+    selection_.SelectNode(model_->row(rows.front()).transmission);
+  } else {
+    selection_.SelectMultiple();
+  }
 }
 
 CommandHandler* TransmissionView::GetCommandHandler(unsigned command_id) {
