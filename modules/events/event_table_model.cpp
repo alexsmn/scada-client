@@ -238,6 +238,20 @@ void EventTableModel::GetEventCell(const Row& row,
           FormatTime(event.acknowledged_time,
                      TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
       break;
+    case EventColumnUnacked:
+      // The leading pending marker: a dot on every unacknowledged row, so the
+      // actionable rows read at a glance. Severity-coloured for alarm bands
+      // (routine events keep the default text colour) — the shape itself is
+      // the signal, the colour a reinforcement, and the "— pending —" cell
+      // spells the state out (colour is never the only cue).
+      if (!event.acked) {
+        cell.text = u"●";
+        if (auto color = scada::aui::SeverityColor(
+                events::SeverityLevelForEvent(event.severity))) {
+          cell.text_color = *color;
+        }
+      }
+      break;
     default:
       scada::base::NotReached();
   }
@@ -396,16 +410,23 @@ void EventTableModel::MoveOccurrenceToHistory(const scada::Event& event) {
 }
 
 int EventTableModel::CountUnacknowledged() const {
-  int count = 0;
+  return GetAlarmSummary().unacknowledged;
+}
+
+EventTableModel::AlarmSummary EventTableModel::GetAlarmSummary() const {
+  AlarmSummary summary;
+  auto account = [&summary](const scada::Event& event) {
+    if (event.acked)
+      return;
+    ++summary.unacknowledged;
+    summary.max_severity = std::max(summary.max_severity, event.severity);
+  };
   for (const Row& row : rows_) {
-    if (!row.event->acked)
-      ++count;
-    for (const scada::Event* repeat : row.repeats) {
-      if (!repeat->acked)
-        ++count;
-    }
+    account(*row.event);
+    for (const scada::Event* repeat : row.repeats)
+      account(*repeat);
   }
-  return count;
+  return summary;
 }
 
 void EventTableModel::RegroupIfFloodChanged() {
@@ -622,8 +643,17 @@ void EventTableModel::RefilterNow() {
 
   std::vector<const scada::Event*> historical_events;
   if (!current_events_) {
+    // The current (live) surface takes precedence over the history record: an
+    // unacknowledged alarm that is both live and already in the read history
+    // is one event, not two rows. Dedupe by event id — ids are server-issued
+    // and unique, so a historical row with a live counterpart is the same
+    // record.
+    std::set<scada::EventId> current_ids;
+    for (const scada::Event* event : current_events)
+      current_ids.insert(event->event_id);
+
     for (const scada::Event& event : historical_event_model_.events()) {
-      if (IsEventShown(event))
+      if (IsEventShown(event) && !current_ids.contains(event.event_id))
         historical_events.push_back(&event);
     }
   }
@@ -787,6 +817,10 @@ int EventTableModel::CompareCells(int row1, int row2, int column_id) {
       return Compare(event1.time, event2.time);
     case EventColumnAckTime:
       return Compare(event1.acknowledged_time, event2.acknowledged_time);
+    case EventColumnUnacked:
+      // Pending (unacknowledged) rows order together; ties keep their
+      // relative order via the stable sort.
+      return Compare(event1.acked, event2.acked);
     case EventColumnSeverity:
       // Compare the severity itself, not its cell text: the text sorts
       // lexically, which already misordered "100" against "80" and now also

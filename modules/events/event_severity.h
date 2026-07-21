@@ -26,4 +26,10 @@ std::u16string SeverityLevelLabel(scada::aui::SeverityLevel level);
 // SeverityLevelLabel() of an event's own severity.
 std::u16string EventSeverityLabel(unsigned severity);
 
+// The journal footer's one-line summary of the displayed alarm backlog:
+// "Unacknowledged: N · highest: <band> <severity>" (the band name omitted for
+// a routine severity), or the calm "No unacknowledged events" at zero.
+// Translated; count phrasing avoids plural forms.
+std::u16string AlarmSummaryLabel(int unacknowledged, unsigned max_severity);
+
 }  // namespace events

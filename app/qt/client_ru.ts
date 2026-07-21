@@ -311,6 +311,15 @@
         <source>To graph</source>
         <translation>На график</translation>
     </message>
+    <!-- modules/events/event_severity.cpp + qt/alarm_footer.cpp -->
+    <message>
+        <source>No unacknowledged events</source>
+        <translation>Нет неквитированных событий</translation>
+    </message>
+    <message>
+        <source>highest</source>
+        <translation>наивысшая</translation>
+    </message>
     <!-- modules/events/qt/event_filter_bar.cpp -->
     <message>
         <source>Unacknowledged only</source>

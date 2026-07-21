@@ -89,6 +89,10 @@ class EventView : protected ControllerContext,
   // Owned by the parent widget.
   scada::aui::Table* table_ = nullptr;
 
+  // The journal's record columns for exports/printouts — the view columns
+  // minus the display-only pending-dot marker (EventColumnUnacked).
+  std::vector<scada::aui::TableColumn> export_columns_;
+
   CommandRegistry command_registry_;
 
   // Cross-platform context menu, backed by `command_registry_`. Declared after

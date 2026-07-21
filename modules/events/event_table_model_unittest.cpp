@@ -648,3 +648,80 @@ TEST_F(EventFloodGroupingTest, ExpandingAnUngroupedJournalChangesNothing) {
               model_.GetCellText(row, EventColumnTime));
   }
 }
+
+// The alarm chrome (journal footer + pending-dot column) reuses the flood
+// fixture's historical journal: an empty current surface plus directly-seeded
+// history.
+using EventAlarmChromeTest = EventFloodGroupingTest;
+
+// The footer summary counts the displayed unacknowledged occurrences and
+// tracks the highest severity among them; acknowledged history stays out.
+TEST_F(EventAlarmChromeTest, AlarmSummaryCountsPendingAndHighestSeverity) {
+  historical_event_model_.AddEvent({.event_id = 1,
+                                    .severity = scada::kSeverityWarning,
+                                    .node_id = node_id_,
+                                    .message = u"warn"});
+  historical_event_model_.AddEvent({.event_id = 2,
+                                    .severity = scada::kSeverityCritical,
+                                    .node_id = node_id_,
+                                    .message = u"crit"});
+  historical_event_model_.AddEvent({.event_id = 3,
+                                    .severity = 1000,
+                                    .node_id = node_id_,
+                                    .message = u"done",
+                                    .acked = true});
+  Rebuild();
+
+  EXPECT_EQ(
+      model_.GetAlarmSummary(),
+      (EventTableModel::AlarmSummary{
+          .unacknowledged = 2, .max_severity = scada::kSeverityCritical}));
+}
+
+// An empty journal summarizes as the calm zero state.
+TEST_F(EventAlarmChromeTest, EmptyJournalSummarizesCalm) {
+  Rebuild();
+  EXPECT_EQ(model_.GetAlarmSummary(), EventTableModel::AlarmSummary{});
+}
+
+// The leading pending-dot cell marks unacknowledged rows; acknowledged rows
+// stay empty, so the actionable rows read at a glance.
+TEST_F(EventAlarmChromeTest, PendingDotMarksUnacknowledgedRows) {
+  historical_event_model_.AddEvent({.event_id = 1,
+                                    .severity = scada::kSeverityCritical,
+                                    .node_id = node_id_,
+                                    .message = u"crit"});
+  historical_event_model_.AddEvent(
+      {.event_id = 2, .node_id = node_id_, .message = u"done", .acked = true});
+  Rebuild();
+  ASSERT_EQ(model_.GetRowCount(), 2);
+
+  for (int row = 0; row < model_.GetRowCount(); ++row) {
+    const bool pending = !model_.event_at(row).acked;
+    EXPECT_EQ(model_.GetCellText(row, EventColumnUnacked),
+              pending ? std::u16string{u"\u25CF"} : std::u16string{});
+  }
+}
+
+// A live unacknowledged alarm that also appears in the read history is one
+// event, not two rows: the journal drops the historical copy by event id
+// (regression: the alarm chrome surfaced live+history duplicates of every
+// pending alarm).
+TEST_F(EventAlarmChromeTest, LiveAlarmIsNotDuplicatedByItsHistoryCopy) {
+  const scada::EventId event_id = 7;
+  const scada::Event live{.event_id = event_id,
+                          .severity = scada::kSeverityCritical,
+                          .node_id = node_id_,
+                          .message = u"crit"};
+  empty_current_.try_emplace(event_id, live);
+  historical_event_model_.AddEvent(live);
+  historical_event_model_.AddEvent(
+      {.event_id = 8, .node_id = node_id_, .message = u"other", .acked = true});
+  Rebuild();
+
+  ASSERT_EQ(model_.GetRowCount(), 2);
+  EXPECT_EQ(
+      model_.GetAlarmSummary(),
+      (EventTableModel::AlarmSummary{
+          .unacknowledged = 1, .max_severity = scada::kSeverityCritical}));
+}

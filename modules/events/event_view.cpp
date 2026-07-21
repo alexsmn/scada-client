@@ -27,6 +27,7 @@
 
 #if defined(UI_QT)
 #include "aui/severity_colors.h"
+#include "events/qt/alarm_footer.h"
 #include "events/qt/event_filter_bar.h"
 
 #include <QVBoxLayout>
@@ -115,16 +116,29 @@ EventView::EventView(const ControllerContext& context,
   if (is_panel)
     count -= 2;
 
+  std::vector<scada::aui::TableColumn> columns(kEventViewColumns,
+                                               kEventViewColumns + count);
+  // The exports carry the journal's record columns; the leading pending-dot
+  // marker added below is display chrome and stays out of them.
+  export_columns_ = columns;
+  // Reshell-only leading pending marker: a severity-coloured dot on every
+  // unacknowledged row (see EventColumnUnacked), first so the actionable rows
+  // read at a glance.
+  const bool reshell =
+      scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy;
+  if (reshell) {
+    columns.insert(columns.begin(), {EventColumnUnacked, u"", 28,
+                                     scada::aui::TableColumn::CENTER});
+  }
+
   // cppcheck-suppress noCopyConstructor
   // cppcheck-suppress noOperatorEq
-  table_ =
-      new scada::aui::Table{model_,
-                            std::vector<scada::aui::TableColumn>(
-                                kEventViewColumns, kEventViewColumns + count),
-                            true};
+  table_ = new scada::aui::Table{model_, std::move(columns), true};
 
 #if defined(UI_QT)
-  table_->sortByColumn(0, Qt::DescendingOrder);
+  // Newest-first on the Time column (which the dot column precedes under the
+  // reshell theme).
+  table_->sortByColumn(reshell ? 1 : 0, Qt::DescendingOrder);
 #endif
 
   table_->SetContextMenuHandler([this](const scada::aui::Point& point) {
@@ -286,6 +300,14 @@ std::unique_ptr<UiView> EventView::Init(const WindowDefinition& definition) {
             },
     }));
     layout->addWidget(table_->CreateParentIfNecessary());
+    // Alarm footer: the displayed backlog summary plus Acknowledge-all, so
+    // the journal's actionable state and the action on it sit together.
+    layout->addWidget(MakeAlarmFooter(AlarmFooterContext{
+        .model = *model_,
+        .summary = [this] { return model_->GetAlarmSummary(); },
+        .acknowledge_all = [this]() -> CommandHandler* {
+          return command_registry_.GetCommandHandler(ID_ACKNOWLEDGE_ALL);
+        }}));
     return std::unique_ptr<UiView>{container};
   }
 #endif
@@ -339,7 +361,8 @@ void EventView::ExportToExcel() {
   try {
     ExcelSheetModel sheet{rows + 1, EventColumnCount};
 
-    const auto& columns = table_->columns();
+    // The record columns only — no display-only pending-dot column.
+    const auto& columns = export_columns_;
 
     for (size_t i = 0; i < columns.size(); ++i)
       sheet.SetData(1, i + 1, UtfConvert<wchar_t>(columns[i].title));
@@ -457,6 +480,7 @@ ExportModel::ExportData EventView::GetExportData() {
   // their flood groups. A flood group is a way of *displaying* a wall of
   // repeats, not of recording it, so the record-shaped consumers (spreadsheet,
   // printout) take the expanded form and the CSV dialog offers the choice.
-  return TableExportData{*model_, table_->columns(), /*row_range=*/std::nullopt,
+  // `export_columns_` excludes the display-only pending-dot column.
+  return TableExportData{*model_, export_columns_, /*row_range=*/std::nullopt,
                          &expanded_model_};
 }

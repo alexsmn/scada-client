@@ -1,6 +1,7 @@
 #include "events/event_severity.h"
 
 #include "aui/translation.h"
+#include "base/format.h"
 #include "scada/event.h"
 
 namespace events {
@@ -28,6 +29,21 @@ std::u16string SeverityLevelLabel(scada::aui::SeverityLevel level) {
 
 std::u16string EventSeverityLabel(unsigned severity) {
   return SeverityLevelLabel(SeverityLevelForEvent(severity));
+}
+
+std::u16string AlarmSummaryLabel(int unacknowledged, unsigned max_severity) {
+  if (unacknowledged <= 0)
+    return Translate("No unacknowledged events");
+
+  std::u16string label =
+      Translate("Unacknowledged") + u": " + WideFormat(unacknowledged);
+  label += u" · " + Translate("highest") + u": ";
+  if (const std::u16string band = EventSeverityLabel(max_severity);
+      !band.empty()) {
+    label += band + u" ";
+  }
+  label += WideFormat(max_severity);
+  return label;
 }
 
 }  // namespace events

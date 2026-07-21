@@ -26,6 +26,12 @@ enum EventColumnId {
   EventColumnUser,
   EventColumnAckUser,
   EventColumnAckTime,
+  // Reshell-only leading unacknowledged marker: a severity-coloured dot on
+  // every row whose alarm is still pending, so the actionable rows read at a
+  // glance (colour + shape, in addition to the "— pending —" cell). Appended
+  // so existing column ids in saved state stay stable; shown first in the
+  // view only under the opt-in token theme.
+  EventColumnUnacked,
   EventColumnCount
 };
 
@@ -100,6 +106,17 @@ class EventTableModel : public scada::aui::TableModel,
   // while the operator is buried. The live (current/local) rows never group —
   // see the note in RefilterNow().
   bool grouped() const { return grouped_; }
+
+  // The displayed alarm backlog, for the journal's footer summary: how many
+  // unacknowledged occurrences are on display (counting every member of a
+  // collapsed row) and the highest raw severity among them (0 when none).
+  struct AlarmSummary {
+    int unacknowledged = 0;
+    unsigned max_severity = 0;
+
+    bool operator==(const AlarmSummary&) const = default;
+  };
+  AlarmSummary GetAlarmSummary() const;
 
   // Occurrences collapsed into `row`, 1 when it stands for a single event.
   int group_count_at(int row) const;
