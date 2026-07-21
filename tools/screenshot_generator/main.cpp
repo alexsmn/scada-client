@@ -362,6 +362,12 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
       ++captured;
       continue;
     }
+    // The Inspector's event (alarm) card for a journal-row selection.
+    if (spec.window_type == "InspectorEvent") {
+      SaveInspectorEventScreenshot(spec);
+      ++captured;
+      continue;
+    }
     // The substation display is rendered standalone (CaptureDisplay) — it is
     // not opened as a page view, so skip it in the view-matching loop.
     if (spec.window_type == "Display")

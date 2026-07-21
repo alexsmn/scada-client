@@ -7,3 +7,9 @@ struct ScreenshotSpec;
 // representative Table expression-row selection — a live computed value with
 // no backing node, the shape the panel supports since UX 2.8.
 void SaveInspectorScreenshot(const ScreenshotSpec& spec);
+
+// Renders the Inspector's event (alarm) card — the per-event inspector of a
+// journal-row selection (UX 2.2): severity band pill, message, event time,
+// acknowledgement state and the Acknowledge action. Severity colours are
+// theme-gated, so render under --theme.
+void SaveInspectorEventScreenshot(const ScreenshotSpec& spec);
