@@ -110,6 +110,7 @@ QWidget* MakeEventFilterBar(EventFilterBarContext context) {
 
   auto* unacknowledged = new QCheckBox{
       QString::fromStdU16String(Translate("Unacknowledged only")), bar};
+  unacknowledged->setObjectName(QStringLiteral("unacknowledgedOnly"));
   unacknowledged->setChecked(context.unacknowledged_only);
   QObject::connect(unacknowledged, &QCheckBox::toggled, bar,
                    [callback = context.on_unacknowledged_only](bool checked) {

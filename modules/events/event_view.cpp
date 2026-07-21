@@ -249,6 +249,16 @@ std::unique_ptr<UiView> EventView::Init(const WindowDefinition& definition) {
   }
 
   if (!is_panel_) {
+    // "Current" mode (the Overview page's alarm table, ID_OPEN_EVENTS): the
+    // journal opens scoped to actionable events — the unacknowledged-only
+    // filter pre-set rather than a separate surface, so the operator can
+    // widen the scope from the filter bar. Previously this item was written
+    // by every "current events" open path but consumed by nothing.
+    if (const WindowItem* mode = definition.FindItem("mode");
+        mode && mode->attributes.is_string() &&
+        mode->attributes.as_string() == "Current") {
+      model_->SetUnacknowledgedOnly(true);
+    }
     if (auto time_range = RestoreTimeRange(definition))
       model_->SetTimeRange(*time_range);
   }

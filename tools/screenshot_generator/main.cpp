@@ -55,6 +55,7 @@
 #include <QAbstractProxyModel>
 #include <QAction>
 #include <QApplication>
+#include <QCheckBox>
 #include <QDockWidget>
 #include <QElapsedTimer>
 #include <QHeaderView>
@@ -709,6 +710,64 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
   MainWindow::SetHideForTesting(true);
 }
 
+// The Overview landing cockpit: a fresh (page-less) profile under the reshell
+// theme boots through the production seeding path — BaseMainWindow falls back
+// to CreateInitialPage, which returns MakeOverviewPage under the theme — so
+// the capture guards the reshell initial-page routing and the page's
+// dominant-trend/alarm-strip split, not a hand-assembled page.
+TEST_F(ScreenshotGenerator, CaptureOverviewPage) {
+  const char* filename = "workbench-overview.png";
+  if (GetScreenshotOptions().theme.empty())
+    GTEST_SKIP() << "the Overview landing seeds only under the reshell theme";
+  if (!ShouldCaptureScreenshot(filename))
+    GTEST_SKIP() << filename << " not requested";
+
+  MainWindow::SetHideForTesting(false);
+
+  auto output_dir = GetOutputDir();
+  std::filesystem::create_directories(output_dir);
+  const auto output_image = output_dir / filename;
+
+  // Deliberately no saved profile: the page-less boot is the state under test.
+  WaitForAwaitable(executor_, app_.Start());
+  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
+
+  for (int i = 0; i < 20; ++i)
+    QApplication::processEvents();
+
+  const auto& main_windows = app_.main_window_manager().main_windows();
+  ASSERT_EQ(main_windows.size(), 1u);
+  auto& main_window = main_windows.front();
+
+  // The seeded page carries exactly the Overview pair.
+  std::set<std::string> view_names;
+  for (OpenedView* view : main_window.opened_views())
+    view_names.insert(std::string{view->window_info().name});
+  EXPECT_TRUE(view_names.contains("Graph"));
+  EXPECT_TRUE(view_names.contains("EventJournal"));
+
+  auto* qmain = dynamic_cast<QWidget*>(&main_window);
+  ASSERT_NE(qmain, nullptr);
+
+  // The alarm table honours the page's "Current" mode: the journal opens
+  // scoped to actionable events — the unacknowledged-only filter pre-set
+  // (regression: the mode item was written by every current-events open path
+  // but consumed by nothing, so the Overview landed on the full history).
+  auto* unacknowledged_only =
+      qmain->findChild<QCheckBox*>(QStringLiteral("unacknowledgedOnly"));
+  ASSERT_NE(unacknowledged_only, nullptr);
+  EXPECT_TRUE(unacknowledged_only->isChecked());
+  qmain->resize(1920, 1080);
+  qmain->ensurePolished();
+  qmain->show();
+  scada::screenshot_generator::PumpEventLoopFor(std::chrono::milliseconds(500));
+
+  QPixmap pixmap = qmain->grab();
+  pixmap.save(QString::fromStdString(output_image.string()));
+
+  MainWindow::SetHideForTesting(true);
+}
+
 // Regression test for a stack overflow that fires during `app_.Start()`
 // when a page containing a Struct (tree) window is loaded on top of the
 // in-memory address space.
@@ -795,8 +854,8 @@ TEST_F(ScreenshotGenerator, DestinationRailEnumeratesTransmissionDevices) {
 
   NodeService& node_service = app_.node_service();
   std::vector<TransmissionDeviceEntry> devices = WaitForAwaitable(
-      executor_, BrowseTransmissionDevices(node_service.GetNode(
-                     scada::devices::id::Devices)));
+      executor_, BrowseTransmissionDevices(
+                     node_service.GetNode(scada::devices::id::Devices)));
 
   ASSERT_EQ(devices.size(), 3u);
   EXPECT_EQ(devices[0].node_id, NodeIdFromScadaString("TS.104"));

@@ -9,6 +9,7 @@
 #include "base/check.h"
 #include "common/node_state.h"
 #include "model/data_items_node_ids.h"
+#include "model/devices_node_ids.h"
 #include "model/node_id_util.h"
 #include "profile/profile.h"
 #include "profile/window_definition.h"
@@ -241,6 +242,18 @@ void PopulateFixtureNodes(AddressSpaceImpl& address_space,
             state.properties.emplace_back(
                 *property_id,
                 scada::ToLocalizedText(std::string(value.as_string())));
+            continue;
+          }
+          // The transmission source link is a NodeId-valued property
+          // (SourceNode — the OPC UA alignment replaced the retired
+          // HasTransmissionSource reference). A plain String value would not
+          // read back through the model's get_or(scada::NodeId{}).
+          if (value.is_string() &&
+              *property_id ==
+                  scada::devices::id::TransmissionItemType_SourceNode) {
+            state.properties.emplace_back(
+                *property_id,
+                NodeIdFromScadaString(std::string_view(value.as_string())));
             continue;
           }
           if (auto prop_value = ParseJsonVariant(value))
