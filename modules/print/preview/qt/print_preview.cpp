@@ -13,5 +13,5 @@ void ShowPrintPreviewDialog(DialogService& dialog_service,
       &print_service.printer, dialog_service.GetParentWidget());
   QObject::connect(dialog.get(), &QPrintPreviewDialog::paintRequested,
                    print_handler);
-  StartModalDialog(std::move(dialog));
+  ShowSelfOwnedModalDialog(std::move(dialog));
 }

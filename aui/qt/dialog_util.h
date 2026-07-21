@@ -29,41 +29,36 @@ inline Awaitable<ModalDialogResult<T, Mapper>> RunModalDialogAsync(
   auto executor = co_await boost::asio::this_coro::executor;
   T* dialog_ptr = dialog.release();
 
-  auto [completion] =
-      co_await CallbackToAwaitable<DialogCompletion<ModalDialogResult<T, Mapper>>>(
-          executor,
-          [dialog_ptr, mapper = std::move(mapper)](auto callback) mutable {
-            auto completion =
-                std::make_shared<std::decay_t<decltype(callback)>>(
-                    std::move(callback));
+  auto [completion] = co_await CallbackToAwaitable<
+      DialogCompletion<ModalDialogResult<T, Mapper>>>(
+      executor,
+      [dialog_ptr, mapper = std::move(mapper)](auto callback) mutable {
+        auto completion = std::make_shared<std::decay_t<decltype(callback)>>(
+            std::move(callback));
 
-            QObject::connect(
-                dialog_ptr, &QDialog::accepted,
-                [dialog_ptr, mapper = std::move(mapper),
-                 completion]() mutable {
-                  try {
-                    (*completion)(
-                        DialogCompletion<ModalDialogResult<T, Mapper>>{
-                            .result = mapper(*dialog_ptr)});
-                  } catch (...) {
-                    (*completion)(
-                        DialogCompletion<ModalDialogResult<T, Mapper>>{
-                            .error = std::current_exception()});
-                  }
-                  dialog_ptr->deleteLater();
-                });
+        QObject::connect(
+            dialog_ptr, &QDialog::accepted,
+            [dialog_ptr, mapper = std::move(mapper), completion]() mutable {
+              try {
+                (*completion)(DialogCompletion<ModalDialogResult<T, Mapper>>{
+                    .result = mapper(*dialog_ptr)});
+              } catch (...) {
+                (*completion)(DialogCompletion<ModalDialogResult<T, Mapper>>{
+                    .error = std::current_exception()});
+              }
+              dialog_ptr->deleteLater();
+            });
 
-            QObject::connect(
-                dialog_ptr, &QDialog::rejected,
-                [dialog_ptr, completion]() mutable {
-                  (*completion)(DialogCompletion<ModalDialogResult<T, Mapper>>{
-                      .error = std::make_exception_ptr(std::exception{})});
-                  dialog_ptr->deleteLater();
-                });
+        QObject::connect(
+            dialog_ptr, &QDialog::rejected, [dialog_ptr, completion]() mutable {
+              (*completion)(DialogCompletion<ModalDialogResult<T, Mapper>>{
+                  .error = std::make_exception_ptr(std::exception{})});
+              dialog_ptr->deleteLater();
+            });
 
-            dialog_ptr->setModal(true);
-            dialog_ptr->show();
-          });
+        dialog_ptr->setModal(true);
+        dialog_ptr->show();
+      });
 
   if (completion.error) {
     std::rethrow_exception(completion.error);
@@ -82,6 +77,20 @@ template <class T>
 inline Awaitable<T*> StartModalDialog(std::unique_ptr<T> dialog) {
   return StartMappedModalDialog(std::move(dialog),
                                 [](T& dialog) { return &dialog; });
+}
+
+// Shows `dialog` as a fire-and-forget modal that deletes itself when finished.
+// For callers with no completion to await: the Awaitable-returning
+// Start*ModalDialog variants are lazy coroutines, so *discarding* their result
+// destroys the never-started frame — and the dialog silently never shows (the
+// About / multi-create / print-preview regression).
+template <class T>
+inline void ShowSelfOwnedModalDialog(std::unique_ptr<T> dialog) {
+  T* dialog_ptr = dialog.release();
+  QObject::connect(dialog_ptr, &QDialog::finished, dialog_ptr,
+                   &QObject::deleteLater);
+  dialog_ptr->setModal(true);
+  dialog_ptr->show();
 }
 
 template <class T>
@@ -121,23 +130,21 @@ inline Awaitable<FinishedDialogResult<T, Mapper>> RunFinishedModalDialogAsync(
 
   auto [completion] = co_await CallbackToAwaitable<
       DialogCompletion<FinishedDialogResult<T, Mapper>>>(
-      executor, [dialog_ptr, mapper = std::move(mapper)](auto callback) mutable {
-        auto completion =
-            std::make_shared<std::decay_t<decltype(callback)>>(
-                std::move(callback));
+      executor,
+      [dialog_ptr, mapper = std::move(mapper)](auto callback) mutable {
+        auto completion = std::make_shared<std::decay_t<decltype(callback)>>(
+            std::move(callback));
 
         QObject::connect(
             dialog_ptr, &QDialog::finished,
             [dialog_ptr, mapper = std::move(mapper),
              completion](int result) mutable {
               try {
-                (*completion)(
-                    DialogCompletion<FinishedDialogResult<T, Mapper>>{
-                        .result = mapper(*dialog_ptr, result)});
+                (*completion)(DialogCompletion<FinishedDialogResult<T, Mapper>>{
+                    .result = mapper(*dialog_ptr, result)});
               } catch (...) {
-                (*completion)(
-                    DialogCompletion<FinishedDialogResult<T, Mapper>>{
-                        .error = std::current_exception()});
+                (*completion)(DialogCompletion<FinishedDialogResult<T, Mapper>>{
+                    .error = std::current_exception()});
               }
               dialog_ptr->deleteLater();
             });

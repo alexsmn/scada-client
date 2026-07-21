@@ -1,8 +1,8 @@
 #include "modules/multi_create/multi_create_dialog.h"
 
-#include "modules/multi_create/multi_create_model.h"
-#include "aui/qt/dialog_util.h"
 #include "aui/dialog_service.h"
+#include "aui/qt/dialog_util.h"
+#include "modules/multi_create/multi_create_model.h"
 #include "ui_multi_create_dialog.h"
 
 class MultiCreateDialog final : public QDialog {
@@ -71,5 +71,5 @@ void ShowMultiCreateDialog(DialogService& dialog_service,
   auto model = std::make_unique<MultiCreateModel>(std::move(context));
   auto dialog = std::make_unique<MultiCreateDialog>(
       std::move(model), dialog_service.GetParentWidget());
-  StartModalDialog(std::move(dialog));
+  ShowSelfOwnedModalDialog(std::move(dialog));
 }

@@ -28,9 +28,8 @@ Awaitable<T> MakeResolvedAwaitable(T value) {
 template <typename Predicate>
 void ProcessEventsUntil(Predicate predicate) {
   for (int i = 0; i < 200 && !predicate(); ++i) {
-    QApplication::processEvents(QEventLoop::AllEvents |
-                                    QEventLoop::WaitForMoreEvents,
-                                20);
+    QApplication::processEvents(
+        QEventLoop::AllEvents | QEventLoop::WaitForMoreEvents, 20);
     std::this_thread::sleep_for(std::chrono::milliseconds{1});
   }
 }
@@ -47,6 +46,28 @@ TEST_F(DialogUtilTest, DialogTestUtilDoesNotInvokeActionForSettledPromise) {
   EXPECT_TRUE(scada::aui::qt::test::IsAwaitableReady(result));
   EXPECT_EQ(scada::aui::qt::test::GetAwaitableResult(result), 7);
   EXPECT_EQ(action_count, 0);
+}
+
+// Regression: the Awaitable-returning Start*ModalDialog variants are lazy
+// coroutines, so a fire-and-forget caller that discarded the result destroyed
+// the never-started frame and its dialog silently never showed (the About /
+// multi-create / print-preview bug). ShowSelfOwnedModalDialog shows eagerly
+// and self-deletes when finished.
+TEST_F(DialogUtilTest, ShowSelfOwnedModalDialogShowsAndSelfDeletes) {
+  auto dialog = std::make_unique<QDialog>();
+  QPointer<QDialog> tracker{dialog.get()};
+
+  ShowSelfOwnedModalDialog(std::move(dialog));
+
+  ASSERT_FALSE(tracker.isNull());
+  EXPECT_TRUE(tracker->isVisible());
+  EXPECT_TRUE(tracker->isModal());
+
+  tracker->reject();
+  // deleteLater is a DeferredDelete event, which processEvents leaves queued;
+  // flush it explicitly.
+  QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+  EXPECT_TRUE(tracker.isNull());
 }
 
 TEST_F(DialogUtilTest, StartMappedModalDialogReturnsAcceptedMappedResult) {
