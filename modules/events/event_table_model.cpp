@@ -63,7 +63,7 @@ int Compare(const T& a, const T& b) {
 void EventTableModel::Row::Update(NodeService& node_service) {
   scada::base::Check(event);
 
-  node = node_service.GetNode(event->node_id);
+  node = node_service.GetNode(event->source_node_id);
   user = node_service.GetNode(event->user_id);
   acknowledged_user = node_service.GetNode(event->acknowledged_user_id);
 
@@ -74,7 +74,7 @@ void EventTableModel::Row::Update(NodeService& node_service) {
 
 bool EventTableModel::Row::IsAffected(const scada::NodeId& node_id) const {
   scada::base::Check(event);
-  return event->node_id == node_id || event->user_id == node_id ||
+  return event->source_node_id == node_id || event->user_id == node_id ||
          event->acknowledged_user_id == node_id;
 }
 
@@ -288,10 +288,10 @@ bool EventTableModel::PassesFilters(const scada::Event& event,
 bool EventTableModel::IsUnderAnyOf(const scada::Event& event,
                                    const ItemIds& areas) const {
   // The source itself, or any containing node, is one of `areas`.
-  if (areas.find(event.node_id) != areas.end())
+  if (areas.find(event.source_node_id) != areas.end())
     return true;
 
-  for (auto node = node_service_.GetNode(event.node_id); node;
+  for (auto node = node_service_.GetNode(event.source_node_id); node;
        node = node.parent()) {
     if (areas.find(node.node_id()) != areas.end())
       return true;
@@ -315,8 +315,8 @@ EventTableModel::AreaCounts EventTableModel::CountUnacknowledgedByArea(
     ++counts.total;
     // Collect the source's containment chain once, then attribute the event
     // to its area (top-level areas are siblings, so at most one matches).
-    ItemIds chain{event.node_id};
-    for (auto node = node_service_.GetNode(event.node_id); node;
+    ItemIds chain{event.source_node_id};
+    for (auto node = node_service_.GetNode(event.source_node_id); node;
          node = node.parent()) {
       chain.insert(node.node_id());
     }

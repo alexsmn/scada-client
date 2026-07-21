@@ -134,9 +134,9 @@ void WatchModel::GetCell(scada::aui::TableCell& cell) {
       break;
 
     case 1:
-      if (event.node_id.is_null())
+      if (event.source_node_id.is_null())
         break;
-      cell.text = GetDisplayName(node_service_, event.node_id);
+      cell.text = GetDisplayName(node_service_, event.source_node_id);
       if (cell.text.empty())
         cell.text = u"?";
       break;

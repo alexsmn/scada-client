@@ -405,7 +405,7 @@ void DisplayFrame::RefreshEvents() {
 
     QString object;
     if (data_context_.node_service) {
-      NodeRef node = data_context_.node_service->GetNode(event.node_id);
+      NodeRef node = data_context_.node_service->GetNode(event.source_node_id);
       if (node)
         object = QString::fromStdU16String(node.display_name());
     }

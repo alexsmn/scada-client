@@ -292,9 +292,9 @@ void InspectorPanel::ShowSelection(const SelectionModel& selection) {
     const QString source =
         source_node
             ? QString::fromStdU16String(ToString16(source_node.display_name()))
-            : QString::fromStdString(NodeIdToScadaString(event->node_id));
+            : QString::fromStdString(NodeIdToScadaString(event->source_node_id));
     ShowEvent(
-        source, QString::fromStdString(NodeIdToScadaString(event->node_id)),
+        source, QString::fromStdString(NodeIdToScadaString(event->source_node_id)),
         QString::fromStdU16String(event->message), event->severity,
         QString::fromStdString(
             FormatTime(event->time, TIME_FORMAT_DATE | TIME_FORMAT_TIME)),

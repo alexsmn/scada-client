@@ -154,7 +154,7 @@ TEST_F(InspectorPanelTest, EventSelectionShowsTheAlarmCard) {
   scada::Event event;
   event.event_id = 5;
   event.severity = scada::kSeverityCritical;
-  event.node_id = scada::NodeId{7, 3};
+  event.source_node_id = scada::NodeId{7, 3};
   event.message = u"comms lost";
   selection.SelectEvent(event, NodeRef{});
 
@@ -201,7 +201,7 @@ TEST_F(InspectorPanelTest, AcknowledgedEventDisablesTheAction) {
   SelectionModel selection{{service}};
   scada::Event event;
   event.event_id = 6;
-  event.node_id = scada::NodeId{7, 3};
+  event.source_node_id = scada::NodeId{7, 3};
   event.message = u"restored";
   event.acked = true;
   event.acknowledged_time = scada::DateTime::Now();
@@ -230,7 +230,7 @@ TEST_F(InspectorPanelTest, GoToSourceFiresTheWiredCommand) {
   SelectionModel selection{{service}};
   scada::Event event;
   event.event_id = 7;
-  event.node_id = scada::NodeId{7, 3};
+  event.source_node_id = scada::NodeId{7, 3};
   event.message = u"comms lost";
   selection.SelectEvent(event, NodeRef{});
 
@@ -255,7 +255,7 @@ TEST_F(InspectorPanelTest, GoToSourceDisabledWhenUnavailable) {
   SelectionModel selection{{service}};
   scada::Event event;
   event.event_id = 8;
-  event.node_id = scada::NodeId{7, 3};
+  event.source_node_id = scada::NodeId{7, 3};
   event.message = u"comms lost";
   selection.SelectEvent(event, NodeRef{});
 

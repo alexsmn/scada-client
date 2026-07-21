@@ -221,7 +221,7 @@ void EventView::OnSelectionChanged() {
     // node-scoped commands stay enabled and event-shaped surfaces (the
     // Inspector's alarm card) read the alarm.
     const scada::Event& event = model_->event_at(rows.front());
-    selection_.SelectEvent(event, node_service_.GetNode(event.node_id));
+    selection_.SelectEvent(event, node_service_.GetNode(event.source_node_id));
   }
 }
 
@@ -487,8 +487,8 @@ NodeIdSet EventView::GetSelectedNodeIds() const {
   NodeIdSet node_ids;
   for (auto row : table_->GetSelectedRows()) {
     const scada::Event& event = model_->event_at(row);
-    if (!event.node_id.is_null())
-      node_ids.insert(event.node_id);
+    if (!event.source_node_id.is_null())
+      node_ids.insert(event.source_node_id);
   }
   return node_ids;
 }
