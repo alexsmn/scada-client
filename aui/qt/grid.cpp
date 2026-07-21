@@ -75,16 +75,19 @@ Grid::Grid(std::shared_ptr<GridModel> model,
   // soft accent selection fill. Legacy look is untouched (tokens == null). Cell
   // content still renders through the item delegate, which this does not style.
   if (const ThemeTokens* t = ReshellTokens()) {
-    setStyleSheet(
-        QStringLiteral(
-            "QTableView{ gridline-color:%1;"
-            " selection-background-color:%2; selection-color:%3; }"
-            "QHeaderView::section{ background:%4; color:%5; border:0;"
-            " border-bottom:1px solid %1; padding:2px 6px; }"
-            "QTableCornerButton::section{ background:%4; border:0;"
-            " border-bottom:1px solid %1; }")
-            .arg(t->border.name(), t->accent_soft.name(), t->fg.name(),
-                 t->surface_muted.name(), t->fg_muted.name()));
+    setStyleSheet(QStringLiteral(
+                      "QTableView{ gridline-color:%1;"
+                      " selection-background-color:%2; selection-color:%3; }"
+                      "QHeaderView::section{ background:%4; color:%5; border:0;"
+                      " border-bottom:1px solid %1; padding:2px 6px; }"
+                      "QTableCornerButton::section{ background:%4; border:0;"
+                      " border-bottom:1px solid %1; }")
+                      // HexArgb: these tokens carry an alpha (hairline .12,
+                      // soft selection .15) that the default #RRGGBB name()
+                      // would drop, rendering them opaque.
+                      .arg(t->border.name(QColor::HexArgb),
+                           t->accent_soft.name(QColor::HexArgb), t->fg.name(),
+                           t->surface_muted.name(), t->fg_muted.name()));
   }
 }
 
@@ -399,4 +402,4 @@ void Grid::CopyToClipboard() {
     QGuiApplication::clipboard()->setMimeData(mime_data);
 }
 
-}  // namespace aui
+}  // namespace scada::aui

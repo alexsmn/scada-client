@@ -26,8 +26,12 @@ struct GridCell {
   int row = 0;
   int column = 0;
   std::u16string text;
-  Color text_color = ColorCode::Black;
-  Color cell_color = ColorCode::White;
+  // Transparent means "unstyled": the grid adapter renders the palette's
+  // colours (black-on-white in the legacy look, the theme tokens under the
+  // reshell palette). Models set explicit colours only for semantic cells
+  // (read-only grey, blink yellow, user formats).
+  Color text_color = ColorCode::Transparent;
+  Color cell_color = ColorCode::Transparent;
 };
 
 }  // namespace scada::aui

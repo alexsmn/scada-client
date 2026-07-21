@@ -3,6 +3,7 @@
 
 #include "aui/color.h"
 #include "aui/models/grid_range.h"
+#include "aui/severity_colors.h"
 #include "base/check.h"
 
 #include <QMimeData>
@@ -77,14 +78,33 @@ QVariant GridModelAdapter::data(const QModelIndex& index, int role) const {
   cell.column = index.column();
   model_->GetCell(cell);
 
+  // A transparent colour means "unstyled". The legacy look renders the
+  // historical black-on-white defaults so it stays pixel-identical; under the
+  // reshell theme unstyled cells fall through to the theme palette, and a
+  // cell with an explicit background but default text derives a contrasting
+  // text colour, so a semantically light cell (read-only grey, blink yellow)
+  // stays readable on the dark theme.
+  const bool themed = GetSeverityTheme() != SeverityTheme::kLegacy;
+  const auto is_transparent = [](Color color) { return color.rgba().a == 0; };
+
   switch (role) {
     case Qt::DisplayRole:
     case Qt::EditRole:
       return QString::fromStdU16String(cell.text);
     case Qt::ForegroundRole:
-      return cell.text_color.qcolor();
+      if (!is_transparent(cell.text_color))
+        return cell.text_color.qcolor();
+      if (!themed)
+        return QColor{Qt::black};
+      if (!is_transparent(cell.cell_color)) {
+        return cell.cell_color.qcolor().lightness() >= 128 ? QColor{Qt::black}
+                                                           : QColor{Qt::white};
+      }
+      return QVariant();
     case Qt::BackgroundRole:
-      return cell.cell_color.qcolor();
+      if (!is_transparent(cell.cell_color))
+        return cell.cell_color.qcolor();
+      return themed ? QVariant() : QColor{Qt::white};
     default:
       return QVariant();
   }
@@ -196,4 +216,4 @@ std::u16string GridModelAdapter::GetCsvData(
   return csv;
 }
 
-}  // namespace aui
+}  // namespace scada::aui
