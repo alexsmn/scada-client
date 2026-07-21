@@ -3,6 +3,7 @@
 #include "aui/grid.h"
 #include "aui/models/header_model.h"
 #include "aui/translation.h"
+#include "controller/controller_delegate.h"
 #include "model/devices_node_ids.h"
 #include "model/node_id_util.h"
 #include "modules/transmission/transmission_devices.h"
@@ -15,7 +16,7 @@
 #include "services/task_manager.h"
 
 #if defined(UI_QT)
-#include "aui/qt/theme_qt.h"
+#include "aui/severity_colors.h"
 #include "modules/transmission/qt/transmission_destination_rail.h"
 
 #include <QHBoxLayout>

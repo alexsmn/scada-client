@@ -6,18 +6,34 @@
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 
+#include <array>
+
+namespace {
+
+// The containment shapes a device type's <TransmissionItem> placeholder may
+// attach through. The production nodeset uses the dedicated
+// HasTransmissionItem reference — queried as that exact type so it resolves
+// without fetching the reference-type hierarchy (matters for a remote node
+// service). The shared test address space parents its placeholders via plain
+// Organizes instead (the way config instances are parented); the item-type
+// subtype filter keeps ordinary organized children out.
+constexpr std::array<scada::NodeId, 2> kPlaceholderReferenceTypes{
+    scada::devices::id::HasTransmissionItem,
+    scada::NodeId{scada::id::Organizes}};
+
+}  // namespace
+
 scada::NodeId TransmissionItemTypeFor(const NodeRef& device) {
   // The transmission item type is named by the device type's <TransmissionItem>
-  // OptionalPlaceholder, attached via the HasTransmissionItem reference (the
-  // standard-modelling replacement for the old Creates edge). Query that exact
-  // reference type so it resolves without fetching the reference-type hierarchy
-  // (matters for a remote node service).
+  // OptionalPlaceholder (the standard-modelling replacement for the old
+  // Creates edge); see kPlaceholderReferenceTypes for the attachment shapes.
   for (auto type = device.type_definition(); type; type = type.supertype()) {
-    for (const auto& placeholder :
-         type.targets(scada::devices::id::HasTransmissionItem)) {
-      NodeRef item_type = placeholder.type_definition();
-      if (IsSubtypeOf(item_type, scada::devices::id::TransmissionItemType))
-        return item_type.node_id();
+    for (const scada::NodeId& reference_type_id : kPlaceholderReferenceTypes) {
+      for (const auto& placeholder : type.targets(reference_type_id)) {
+        NodeRef item_type = placeholder.type_definition();
+        if (IsSubtypeOf(item_type, scada::devices::id::TransmissionItemType))
+          return item_type.node_id();
+      }
     }
   }
   return {};
@@ -58,6 +74,20 @@ Awaitable<std::vector<TransmissionDeviceEntry>> BrowseTransmissionDevices(
 
     (void)co_await FetchNodeStatus(item.node);
     (void)co_await FetchTypeChainStatus(item.node.type_definition());
+
+    // SupportsTransmission walks fetched state only: resolve each placeholder
+    // candidate's item-type chain first, or the subtype filter silently fails
+    // on whichever nodes no other surface happened to fetch.
+    for (auto type = item.node.type_definition(); type;
+         type = type.supertype()) {
+      for (const scada::NodeId& reference_type_id :
+           kPlaceholderReferenceTypes) {
+        for (const auto& placeholder : type.targets(reference_type_id)) {
+          (void)co_await FetchNodeStatus(placeholder);
+          (void)co_await FetchTypeChainStatus(placeholder.type_definition());
+        }
+      }
+    }
 
     if (item.depth > 0 && SupportsTransmission(item.node)) {
       (void)co_await FetchChildrenStatus(item.node);

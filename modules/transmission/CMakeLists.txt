@@ -16,7 +16,9 @@ endif()
 if(TARGET client_component_transmission_qt_unittests)
   target_link_libraries(client_component_transmission_qt_unittests PRIVATE
     # The destination-rail test drives a real widget, so it needs a
-    # QApplication (aui_test_qt).
+    # QApplication (aui_test_qt); scada_common supplies the node-service
+    # includes `transmission_devices.h` exposes.
     aui_test_qt
+    scada_common
   )
 endif()

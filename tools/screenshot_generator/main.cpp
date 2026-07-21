@@ -44,6 +44,7 @@
 #include "model/devices_node_ids.h"
 #include "model/node_id_util.h"
 #include "modules/transmission/transmission_devices.h"
+#include "node_service/node_awaitable.h"
 #include "node_service/node_ref.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
@@ -775,8 +776,9 @@ TEST_F(ScreenshotGenerator, EventFilterBarEnumeratesAreas) {
 
 // Verifies the Transmission view's destination rail populates at runtime: the
 // same walk the rail drives (`BrowseTransmissionDevices`), run against the
-// real `v1::NodeServiceImpl` over the fixture address space, finds both
-// fixture retransmission devices with their rule counts and nothing else.
+// real `v1::NodeServiceImpl` over the fixture address space, finds every
+// transmission-capable fixture device with its rule count — the plain Modbus
+// device (a valid, rule-less destination) and both retransmission devices.
 TEST_F(ScreenshotGenerator, DestinationRailEnumeratesTransmissionDevices) {
   WaitForAwaitable(executor_, app_.Start());
   ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
@@ -786,11 +788,13 @@ TEST_F(ScreenshotGenerator, DestinationRailEnumeratesTransmissionDevices) {
       executor_, BrowseTransmissionDevices(node_service.GetNode(
                      scada::devices::id::Devices)));
 
-  ASSERT_EQ(devices.size(), 2u);
-  EXPECT_EQ(devices[0].node_id, NodeIdFromScadaString("TS.702"));
-  EXPECT_EQ(devices[0].rule_count, 4);
-  EXPECT_EQ(devices[1].node_id, NodeIdFromScadaString("TS.703"));
-  EXPECT_EQ(devices[1].rule_count, 2);
+  ASSERT_EQ(devices.size(), 3u);
+  EXPECT_EQ(devices[0].node_id, NodeIdFromScadaString("TS.104"));
+  EXPECT_EQ(devices[0].rule_count, 0);
+  EXPECT_EQ(devices[1].node_id, NodeIdFromScadaString("TS.702"));
+  EXPECT_EQ(devices[1].rule_count, 4);
+  EXPECT_EQ(devices[2].node_id, NodeIdFromScadaString("TS.703"));
+  EXPECT_EQ(devices[2].rule_count, 2);
   for (const TransmissionDeviceEntry& device : devices)
     EXPECT_FALSE(device.name.empty());
 }
