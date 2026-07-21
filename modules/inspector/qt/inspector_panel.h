@@ -34,6 +34,12 @@ struct InspectorPanelContext {
   std::function<void()> on_acknowledge;
   // Whether acknowledging is currently possible for the active selection.
   std::function<bool()> is_acknowledge_enabled;
+  // Opens the selected event's source in a graph — the selection-scoped
+  // ID_OPEN_GRAPH command over the event's source node.
+  std::function<void()> on_go_to_source;
+  // Whether the source can be opened (the source node resolved and the graph
+  // command accepts the selection).
+  std::function<bool()> is_go_to_source_enabled;
 };
 
 // The reshell Inspector: a right-hand panel that reflects the active view's
@@ -72,15 +78,17 @@ class InspectorPanel : public QWidget {
 
   // Fills the alarm card for a journal-event selection: source identity, the
   // severity band pill, the message, the event time and the acknowledgement
-  // state, plus the Acknowledge action. Render primitive behind
-  // ShowSelection's event branch and the widget tests / capture.
+  // state, plus the Acknowledge and To-graph (go to source) actions. Render
+  // primitive behind ShowSelection's event branch and the widget tests /
+  // capture.
   void ShowEvent(const QString& source,
                  const QString& node_id_text,
                  const QString& message,
                  unsigned severity,
                  const QString& time_text,
                  const QString& acknowledged_text,
-                 bool acknowledgeable);
+                 bool acknowledgeable,
+                 bool source_available);
 
  private:
   QWidget* BuildEmptyState();
@@ -112,4 +120,5 @@ class InspectorPanel : public QWidget {
   QLabel* event_time_ = nullptr;
   QLabel* event_acknowledged_ = nullptr;
   QPushButton* acknowledge_ = nullptr;
+  QPushButton* go_to_source_ = nullptr;
 };

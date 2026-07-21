@@ -710,12 +710,17 @@ void MainWindow::CreateInspectorPanel() {
   // (ID_WRITE) — the existing two-stage confirm — resolved against the active
   // selection exactly like the toolbar/menu path. The event card's
   // Acknowledge action likewise reuses the journal's own selection-scoped
-  // command (ID_ACKNOWLEDGE_CURRENT).
+  // command (ID_ACKNOWLEDGE_CURRENT), and Go-to-source the selection-scoped
+  // open-graph command (ID_OPEN_GRAPH) — the event selection carries the
+  // alarm's source node, so the graph opens on it.
   auto resolve_write = [this]() -> CommandHandler* {
     return ResolveViewCommand(ID_WRITE);
   };
   auto resolve_acknowledge = [this]() -> CommandHandler* {
     return ResolveViewCommand(ID_ACKNOWLEDGE_CURRENT);
+  };
+  auto resolve_open_graph = [this]() -> CommandHandler* {
+    return ResolveViewCommand(ID_OPEN_GRAPH);
   };
 
   inspector_ = new InspectorPanel(InspectorPanelContext{
@@ -740,6 +745,17 @@ void MainWindow::CreateInspectorPanel() {
           [resolve_acknowledge] {
             CommandHandler* handler = resolve_acknowledge();
             return handler && handler->IsCommandEnabled(ID_ACKNOWLEDGE_CURRENT);
+          },
+      .on_go_to_source =
+          [resolve_open_graph] {
+            CommandHandler* handler = resolve_open_graph();
+            if (handler && handler->IsCommandEnabled(ID_OPEN_GRAPH))
+              handler->ExecuteCommand(ID_OPEN_GRAPH);
+          },
+      .is_go_to_source_enabled =
+          [resolve_open_graph] {
+            CommandHandler* handler = resolve_open_graph();
+            return handler && handler->IsCommandEnabled(ID_OPEN_GRAPH);
           }});
 
   auto* dock =

@@ -253,6 +253,22 @@ QWidget* InspectorPanel::BuildEventView() {
   });
   layout->addWidget(acknowledge_);
 
+  // Go to source: opens the alarm's source element in a graph. Secondary
+  // styling — Acknowledge keeps the accent as the card's primary action.
+  go_to_source_ = new QPushButton{Tr("To graph")};
+  go_to_source_->setObjectName(QStringLiteral("inspectorGoToSource"));
+  go_to_source_->setStyleSheet(
+      QStringLiteral("QPushButton{background:%1;color:%2;border:1px solid %3;"
+                     "border-radius:6px;padding:8px;font-weight:600;}"
+                     "QPushButton:disabled{color:%4;}")
+          .arg(tokens.surface_muted.name(), tokens.fg.name(),
+               tokens.border.name(QColor::HexArgb), tokens.fg_subtle.name()));
+  connect(go_to_source_, &QPushButton::clicked, this, [this] {
+    if (context_.on_go_to_source)
+      context_.on_go_to_source();
+  });
+  layout->addWidget(go_to_source_);
+
   layout->addStretch(1);
   return view;
 }
@@ -287,7 +303,9 @@ void InspectorPanel::ShowSelection(const SelectionModel& selection) {
                                       TIME_FORMAT_DATE | TIME_FORMAT_TIME))
                      : QString::fromStdU16String(Translate("— pending —")),
         /*acknowledgeable=*/!event->acked && context_.is_acknowledge_enabled &&
-            context_.is_acknowledge_enabled());
+            context_.is_acknowledge_enabled(),
+        /*source_available=*/context_.is_go_to_source_enabled &&
+            context_.is_go_to_source_enabled());
     return;
   }
 
@@ -342,7 +360,8 @@ void InspectorPanel::ShowEvent(const QString& source,
                                unsigned severity,
                                const QString& time_text,
                                const QString& acknowledged_text,
-                               bool acknowledgeable) {
+                               bool acknowledgeable,
+                               bool source_available) {
   const scada::aui::ThemeTokens& tokens = InspectorTokens();
 
   event_title_->setText(source);
@@ -370,6 +389,7 @@ void InspectorPanel::ShowEvent(const QString& source,
   event_acknowledged_->setText(acknowledged_text.isEmpty() ? QStringLiteral("—")
                                                            : acknowledged_text);
   acknowledge_->setEnabled(acknowledgeable);
+  go_to_source_->setEnabled(source_available);
 
   stack_->setCurrentIndex(2);
 }

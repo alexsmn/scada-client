@@ -223,6 +223,51 @@ TEST_F(InspectorPanelTest, AcknowledgedEventDisablesTheAction) {
   EXPECT_FALSE(acknowledge->isEnabled());
 }
 
+// The event card's To-graph action opens the alarm's source through the
+// wired command when the shell reports it available.
+TEST_F(InspectorPanelTest, GoToSourceFiresTheWiredCommand) {
+  FormulaTimedDataService service;
+  SelectionModel selection{{service}};
+  scada::Event event;
+  event.event_id = 7;
+  event.node_id = scada::NodeId{7, 3};
+  event.message = u"comms lost";
+  selection.SelectEvent(event, NodeRef{});
+
+  bool opened = false;
+  InspectorPanel panel{
+      InspectorPanelContext{.on_go_to_source = [&] { opened = true; },
+                            .is_go_to_source_enabled = [] { return true; }}};
+  panel.ShowSelection(selection);
+
+  auto* go_to_source =
+      panel.findChild<QPushButton*>(QStringLiteral("inspectorGoToSource"));
+  ASSERT_NE(go_to_source, nullptr);
+  EXPECT_TRUE(go_to_source->isEnabled());
+  go_to_source->click();
+  EXPECT_TRUE(opened);
+}
+
+// Without an available source command (no wiring, or the graph command
+// rejects the selection) the To-graph action stays disabled.
+TEST_F(InspectorPanelTest, GoToSourceDisabledWhenUnavailable) {
+  FormulaTimedDataService service;
+  SelectionModel selection{{service}};
+  scada::Event event;
+  event.event_id = 8;
+  event.node_id = scada::NodeId{7, 3};
+  event.message = u"comms lost";
+  selection.SelectEvent(event, NodeRef{});
+
+  InspectorPanel panel{InspectorPanelContext{}};
+  panel.ShowSelection(selection);
+
+  auto* go_to_source =
+      panel.findChild<QPushButton*>(QStringLiteral("inspectorGoToSource"));
+  ASSERT_NE(go_to_source, nullptr);
+  EXPECT_FALSE(go_to_source->isEnabled());
+}
+
 // A spec with neither node nor formula (a folder/object selection) still
 // clears to the empty state.
 TEST_F(InspectorPanelTest, DataLessSelectionShowsTheEmptyState) {
