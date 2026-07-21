@@ -9,10 +9,19 @@
 #include "base/any_executor.h"
 #include "base/boost_log.h"
 #include "base/memory_settings_store.h"
+#include "base/time_range.h"
 #include "controller/command_manager.h"
 #include "main_window/command_palette_qt.h"
+#include "model/data_items_node_ids.h"
+#include "model/devices_node_ids.h"
+#include "model/node_id_util.h"
+#include "modules/about/about_dialog.h"
+#include "modules/change_password/change_password_dialog.h"
+#include "modules/events/local_events.h"
 #include "modules/limits/limit_dialog.h"
 #include "modules/login/login_dialog.h"
+#include "modules/multi_create/multi_create_dialog.h"
+#include "modules/time_range/time_range_dialog.h"
 #include "modules/write/write_dialog.h"
 #include "node_service/node_ref.h"
 #include "node_service/node_service.h"
@@ -431,6 +440,67 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
                            [](unsigned) -> CommandHandler* { return nullptr; });
     palette->setAttribute(Qt::WA_DeleteOnClose);
     palette->show();
+    QApplication::processEvents();
+    return GrabAndCloseVisibleDialogOrReport(spec);
+  } else if (spec.kind == "about") {
+    // Eagerly-shown self-owned modal; the generic grab rejects it and the
+    // dialog deleteLater's itself.
+    ShowAboutDialog(dialog_service);
+    QApplication::processEvents();
+    return GrabAndCloseVisibleDialogOrReport(spec);
+  } else if (spec.kind == "change-password") {
+    // Set Password for the fixture administrator (USER.5, the same user the
+    // users-rbac capture shows). LocalEvents only collects the (never-fired)
+    // completion toast.
+    if (!env.node_service || !env.profile) {
+      ADD_FAILURE() << "ChangePasswordDialog needs node_service + profile";
+      return false;
+    }
+    const scada::NodeId user_id = NodeIdFromScadaString("USER.5");
+    if (!FetchDialogNodeResident(*env.node_service, user_id)) {
+      ADD_FAILURE() << "ChangePasswordDialog: fixture user not found";
+      return false;
+    }
+    LocalEvents local_events;
+    ShowChangePasswordDialog(
+        dialog_service,
+        ChangePasswordContext{.user_ = env.node_service->GetNode(user_id),
+                              .executor_ = env.executor,
+                              .local_events_ = local_events,
+                              .profile_ = *env.profile});
+    QApplication::processEvents();
+    return GrabAndCloseVisibleDialogOrReport(spec);
+  } else if (spec.kind == "time-range") {
+    // The journal/graph period picker over its default (interval) range; the
+    // date edits render the frozen fixture clock, so output is deterministic.
+    if (!env.profile) {
+      ADD_FAILURE() << "TimeRangeDialog needs a profile";
+      return false;
+    }
+    auto dialog_lifetime = StartDialogAwaitable(
+        env.executor,
+        ShowTimeRangeDialog(dialog_service,
+                            TimeRangeContext{.profile_ = *env.profile,
+                                             .time_range_ = TimeRange{},
+                                             .time_required_ = false}));
+    bool captured = GrabAndCloseVisibleDialogOrReport(spec);
+    WaitForDialogCompletion(dialog_lifetime);
+    return captured;
+  } else if (spec.kind == "multi-create") {
+    // Bulk TS/TI creation under the DataItems root. The device combo fills
+    // from the fixture's Devices folder; the insert path is never taken.
+    if (!env.node_service) {
+      ADD_FAILURE() << "MultiCreateDialog needs a node_service";
+      return false;
+    }
+    if (!FetchDialogNodeResident(*env.node_service,
+                                 scada::devices::id::Devices)) {
+      ADD_FAILURE() << "MultiCreateDialog: Devices folder not found";
+      return false;
+    }
+    ShowMultiCreateDialog(dialog_service,
+                          MultiCreateContext{*env.node_service, task_manager,
+                                             scada::data_items::id::DataItems});
     QApplication::processEvents();
     return GrabAndCloseVisibleDialogOrReport(spec);
   } else {
