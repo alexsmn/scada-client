@@ -26,7 +26,7 @@ std::ostream& operator<<(std::ostream& stream,
       // .AddField("size", window_definition.size)
       .AddField("visible", window_definition.visible)
       .AddField("locked", window_definition.locked)
-      .AddField("items", window_definition.items)
+      .AddField("items", scada::base::AsList(window_definition.items))
       .AddField("storage", window_definition.storage);
   return stream;
 }

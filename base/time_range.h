@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/check.h"
+#include "base/ostream_formatter.h"
 #include "base/time/time.h"
 #include "scada/date_time_range.h"
 
@@ -56,3 +57,11 @@ inline std::ostream& operator<<(std::ostream& stream, TimeRange::Type type) {
 }
 
 std::ostream& operator<<(std::ostream& stream, const TimeRange& time_range);
+
+// std::format support (used by base::AsOpt / AsList element rendering),
+// delegating to the operator<< overloads above.
+template <>
+struct std::formatter<TimeRange::Type> : OStreamFormatter {};
+
+template <>
+struct std::formatter<TimeRange> : OStreamFormatter {};

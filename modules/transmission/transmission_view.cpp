@@ -3,13 +3,24 @@
 #include "aui/grid.h"
 #include "aui/models/header_model.h"
 #include "aui/translation.h"
+#include "model/devices_node_ids.h"
 #include "model/node_id_util.h"
+#include "modules/transmission/transmission_devices.h"
 #include "modules/transmission/transmission_model.h"
 #include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "profile/window_definition.h"
 #include "remote/session_proxy.h"
 #include "resources/common_resources.h"
 #include "services/task_manager.h"
+
+#if defined(UI_QT)
+#include "aui/qt/theme_qt.h"
+#include "modules/transmission/qt/transmission_destination_rail.h"
+
+#include <QHBoxLayout>
+#include <QWidget>
+#endif
 
 TransmissionView::TransmissionView(const ControllerContext& context)
     : ControllerContext{context},
@@ -53,7 +64,43 @@ std::unique_ptr<UiView> TransmissionView::Init(
   command_registry_.AddCommand(
       Command{ID_DELETE}.set_execute_handler([this] { DeleteSelection(); }));
 
+#if defined(UI_QT)
+  // Opt-in destination rail beside the grid: every transmission-capable
+  // device with its rule count, switching which device's rules the grid
+  // shows. Reshell chrome only.
+  if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy) {
+    auto* container = new QWidget;
+    auto* layout = new QHBoxLayout{container};
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+    layout->addWidget(
+        MakeTransmissionDestinationRail(TransmissionDestinationRailContext{
+            .executor = executor_,
+            .browse =
+                [this] {
+                  return BrowseTransmissionDevices(
+                      node_service_.GetNode(scada::devices::id::Devices));
+                },
+            .current = model_->device().node_id(),
+            .current_count = [this] { return model_->GetRowCount(); },
+            .model = model_.get(),
+            .on_device = [this](const scada::NodeId& device_id) {
+              SwitchDevice(device_id);
+            }}));
+    layout->addWidget(grid_->CreateParentIfNecessary(), 1);
+    return std::unique_ptr<UiView>{container};
+  }
+#endif
+
   return std::unique_ptr<UiView>{grid_->CreateParentIfNecessary()};
+}
+
+void TransmissionView::SwitchDevice(const scada::NodeId& device_id) {
+  if (device_id == model_->device().node_id())
+    return;
+  selection_.Clear();
+  model_->Init(node_service_.GetNode(device_id));
+  controller_delegate_.SetTitle(GetFullDisplayName(model_->device()));
 }
 
 void TransmissionView::DeleteSelection() {

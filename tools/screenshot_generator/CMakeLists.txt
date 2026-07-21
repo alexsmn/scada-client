@@ -75,6 +75,7 @@ target_link_libraries(client_screenshot_generator PRIVATE
   client_device_diagnostics_qt
   client_inspector_qt
   client_user_access_qt
+  client_component_transmission_qt
   client_transmission_rules_qt
   client_bulk_create_qt
   client_events_qt

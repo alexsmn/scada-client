@@ -1,5 +1,7 @@
 #include "modules/transmission/transmission_model.h"
 
+#include "modules/transmission/transmission_devices.h"
+
 #include "base/awaitable.h"
 #include "base/cancelation.h"
 #include "base/check.h"
@@ -17,27 +19,6 @@
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 
-namespace {
-
-scada::NodeId GetTransmissionItemTypeId(const NodeRef& device) {
-  // The transmission item type is named by the device type's <TransmissionItem>
-  // OptionalPlaceholder, attached via the HasTransmissionItem reference (the
-  // standard-modelling replacement for the old Creates edge). Query that exact
-  // reference type so it resolves without fetching the reference-type hierarchy
-  // (matters for a remote node service).
-  for (auto type = device.type_definition(); type; type = type.supertype()) {
-    for (const auto& placeholder :
-         type.targets(scada::devices::id::HasTransmissionItem)) {
-      NodeRef item_type = placeholder.type_definition();
-      if (IsSubtypeOf(item_type, scada::devices::id::TransmissionItemType))
-        return item_type.node_id();
-    }
-  }
-  return {};
-}
-
-}  // namespace
-
 TransmissionModel::TransmissionModel(AnyExecutor executor,
                                      NodeService& node_service,
                                      TaskManager& task_manager)
@@ -49,6 +30,11 @@ TransmissionModel::TransmissionModel(AnyExecutor executor,
 TransmissionModel::~TransmissionModel() = default;
 
 void TransmissionModel::Init(NodeRef device) {
+  // Re-entrant: the destination rail switches the device. Drop the previous
+  // device's subscriptions and cancel its in-flight fetch walk before
+  // re-arming.
+  connections_.clear();
+  cancelation_.Cancel();
   device_ = std::move(device);
 
   connections_.push_back(node_service_.SubscribeModelChanged(
@@ -98,8 +84,9 @@ void TransmissionModel::Init(NodeRef device) {
             Refresh();
           });
 
-  if (device_.children_fetched())
-    Refresh();
+  // Unconditional: on a device switch this also clears the previous device's
+  // rows (an unfetched device contributes none until its fetch lands).
+  Refresh();
 }
 
 int TransmissionModel::GetRowCount() {
@@ -293,7 +280,7 @@ void TransmissionModel::AddContainedItem(const scada::NodeId& node_id,
   if (!device())
     return;
 
-  auto transmission_item_type_id = GetTransmissionItemTypeId(device_);
+  auto transmission_item_type_id = TransmissionItemTypeFor(device_);
 
   task_manager_.PostInsertTask(
       {.type_definition_id = transmission_item_type_id,

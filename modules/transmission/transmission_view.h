@@ -29,6 +29,8 @@ class TransmissionView : protected ControllerContext, public Controller {
  private:
   void DeleteSelection();
   void OnSelectionChanged();
+  // Points the grid at another destination device (the destination rail).
+  void SwitchDevice(const scada::NodeId& device_id);
 
   const std::shared_ptr<TransmissionModel> model_;
   const std::shared_ptr<scada::aui::ColumnHeaderModel> column_model_;

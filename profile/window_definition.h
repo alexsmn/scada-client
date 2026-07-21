@@ -2,6 +2,7 @@
 
 #include "aui/size.h"
 #include "base/json.h"
+#include "base/ostream_formatter.h"
 
 #include <boost/json.hpp>
 #include <filesystem>
@@ -109,6 +110,11 @@ class WindowDefinition {
 };
 
 std::ostream& operator<<(std::ostream& stream, const WindowItem& window_item);
+
+// std::format support (used by base::AsList element rendering, e.g. for
+// WindowDefinition::items), delegating to the operator<< overload above.
+template <>
+struct std::formatter<WindowItem> : OStreamFormatter {};
 
 std::ostream& operator<<(std::ostream& stream,
                          const WindowDefinition& window_definition);

@@ -96,6 +96,7 @@
 
     { "id": "TS.701", "browse_name": "Канал MODBUS",              "class": "object",   "type_definition": "SCADA.108" },
     { "id": "TS.702", "browse_name": "Ретрансляция КП-02 MODBUS", "class": "object",   "type_definition": "SCADA.118", "properties": { "SCADA.168": 2 } },
+    { "id": "TS.703", "browse_name": "Ретрансляция КП-05 MODBUS", "class": "object",   "type_definition": "SCADA.118", "properties": { "SCADA.168": 3 } },
     { "id": "TIT.721", "browse_name": "TC1",                       "class": "variable", "type_definition": "analog_item", "base_value": 1.0,  "properties": { "display_format": "0.#" } },
     { "id": "TIT.725", "browse_name": "TC2",                       "class": "variable", "type_definition": "analog_item", "base_value": 1.0,  "properties": { "display_format": "0.#" } },
     { "id": "TIT.722", "browse_name": "TC8",                       "class": "variable", "type_definition": "analog_item", "base_value": 1.0,  "properties": { "display_format": "0.#" } },
@@ -105,6 +106,8 @@
     { "id": "TS.732", "browse_name": "TX_TC8",                    "class": "object",   "type_definition": "SCADA.342", "properties": { "SCADA.225": 1002 }, "references": [{ "type": "SCADA.221", "target": "TIT.722" }] },
     { "id": "TS.733", "browse_name": "TX_Ua",                     "class": "object",   "type_definition": "SCADA.342", "properties": { "SCADA.225": 2001 }, "references": [{ "type": "SCADA.221", "target": "TIT.723" }] },
     { "id": "TS.734", "browse_name": "TX_Ua_AVG",                 "class": "object",   "type_definition": "SCADA.342", "properties": { "SCADA.225": 2002 }, "references": [{ "type": "SCADA.221", "target": "TIT.724" }] },
+    { "id": "TS.735", "browse_name": "TX_TC2",                    "class": "object",   "type_definition": "SCADA.342", "properties": { "SCADA.225": 3001 }, "references": [{ "type": "SCADA.221", "target": "TIT.725" }] },
+    { "id": "TS.736", "browse_name": "TX_Ua",                     "class": "object",   "type_definition": "SCADA.342", "properties": { "SCADA.225": 3002 }, "references": [{ "type": "SCADA.221", "target": "TIT.723" }] },
 
     { "id": "SCADA.9301", "browse_name": "Синусоида", "class": "object", "type_definition": "SCADA.67", "properties": { "SCADA.172": 0, "SCADA.173": 60,  "SCADA.174": 0,  "SCADA.175": 1000 } },
     { "id": "SCADA.9302", "browse_name": "Пила",      "class": "object", "type_definition": "SCADA.67", "properties": { "SCADA.172": 1, "SCADA.173": 120, "SCADA.174": 90, "SCADA.175": 1000 } },
@@ -143,8 +146,9 @@
     "TS.102":    ["TS.123"],
     "TS.103":    ["TS.120", "TS.122", "TS.9001", "TS.9002", "TS.9003", "TS.9004", "TS.9005", "TS.9006", "TS.9007", "TS.9008"],
     "TS.104":    ["TS.125", "TS.126", "TS.127", "TS.9101"],
-    "TS.701":    ["TS.702"],
+    "TS.701":    ["TS.702", "TS.703"],
     "TS.702":    ["TS.731", "TS.732", "TS.733", "TS.734"],
+    "TS.703":    ["TS.735", "TS.736"],
     "TS.105":    ["TS.128", "TS.129", "TS.130", "TS.9201"],
     "TS.108":    ["TS.124"],
     "TS.109":    ["TIT.721", "TIT.725", "TIT.722"],

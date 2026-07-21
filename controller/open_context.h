@@ -22,7 +22,7 @@ inline std::ostream& operator<<(std::ostream& stream,
                                 const OpenContext& open_context) {
   StructWriter{stream}
       .AddField("node", open_context.node.node_id())
-      .AddField("node_ids", open_context.node_ids)
-      .AddField("time_range", open_context.time_range);
+      .AddField("node_ids", scada::base::AsList(open_context.node_ids))
+      .AddField("time_range", scada::base::AsOpt(open_context.time_range));
   return stream;
 }
