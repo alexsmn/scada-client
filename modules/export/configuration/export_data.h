@@ -64,11 +64,14 @@ struct ExportData {
   bool operator==(const ExportData&) const = default;
 };
 
+// The operator<< overloads below stream the nested containers through
+// base::AsList, whose element rendering uses the std::formatter
+// specializations declared at the end of this header.
 inline std::ostream& operator<<(std::ostream& os,
                                 const ExportData& export_data) {
   StructWriter{os}
-      .AddField("props", export_data.props)
-      .AddField("nodes", export_data.nodes);
+      .AddField("props", scada::base::AsList(export_data.props))
+      .AddField("nodes", scada::base::AsList(export_data.nodes));
   return os;
 }
 
@@ -100,6 +103,17 @@ inline std::ostream& operator<<(std::ostream& os,
       .AddField("type_display_name", node.type_display_name)
       .AddField("type_id", node.type_id)
       .AddField("display_name", node.display_name)
-      .AddField("property_values", node.property_values);
+      .AddField("property_values", scada::base::AsList(node.property_values));
   return os;
 }
+
+// std::format support (used by base::AsList element rendering above),
+// delegating to the operator<< overloads.
+template <>
+struct std::formatter<ExportData::Property> : OStreamFormatter {};
+
+template <>
+struct std::formatter<ExportData::PropertyValue> : OStreamFormatter {};
+
+template <>
+struct std::formatter<ExportData::Node> : OStreamFormatter {};
