@@ -16,7 +16,23 @@ class InstalledTranslation {
         QApplication::applicationDirPath() + "/translations";
 
     const auto global_translation_dir =
-        QLibraryInfo::location(QLibraryInfo::TranslationsPath);
+        QLibraryInfo::path(QLibraryInfo::TranslationsPath);
+
+    // Qt's own catalogs must be installed before the client one: QTranslator
+    // lookup walks translators in reverse installation order, so the client
+    // catalog wins on conflicts. `qtbase_*` is loaded explicitly (standard
+    // QMessageBox buttons, print-preview chrome, etc.); the `qt_*`
+    // meta-catalog only pulls it in when its whole dependency set resolves,
+    // which fails silently on partial Qt deployments. Prefer Qt's installed
+    // translations dir and fall back to the app's staged `translations/` for
+    // deployed installs where Qt's own dir is absent.
+    const auto qtbase_translation_name = "qtbase_" + locale_name;
+    if (qtbase_translator_.load(qtbase_translation_name,
+                                global_translation_dir) ||
+        qtbase_translator_.load(qtbase_translation_name,
+                                local_translation_dir)) {
+      QApplication::installTranslator(&qtbase_translator_);
+    }
 
     const auto qt_translation_name = "qt_" + locale_name;
     if (qt_translator_.load(qt_translation_name, local_translation_dir) ||
@@ -47,6 +63,7 @@ class InstalledTranslation {
 
   QSettings& settings_;
 
+  QTranslator qtbase_translator_;
   QTranslator qt_translator_;
   QTranslator app_translator_;
 };

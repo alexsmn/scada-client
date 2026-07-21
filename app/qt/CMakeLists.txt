@@ -129,18 +129,38 @@ find_package(Qt6 COMPONENTS LinguistTools QUIET)
 if(COMMAND qt_add_translation)
   qt_add_translation(TRANSLATIONS_OUT "client_ru.ts")
 
+  # Qt's own base catalog (standard QMessageBox buttons, spin/date chrome).
+  # The app and the screenshot generator load qtbase_ru.qm at runtime with a
+  # fallback to the staged translations dir, so stage it next to client_ru.qm
+  # for deployed installs where Qt's own translations path does not exist.
+  set(QTBASE_RU_QM
+    "${QT6_INSTALL_PREFIX}/${QT6_INSTALL_TRANSLATIONS}/qtbase_ru.qm")
+  if(NOT EXISTS "${QTBASE_RU_QM}")
+    message(STATUS
+      "qtbase_ru.qm not found at ${QTBASE_RU_QM}; Qt base translations will "
+      "not be staged next to the client.")
+    set(QTBASE_RU_QM "")
+  endif()
+
+  set(STAGED_TRANSLATIONS
+    "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/translations/client_ru.qm")
+  if(QTBASE_RU_QM)
+    list(APPEND STAGED_TRANSLATIONS
+      "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/translations/qtbase_ru.qm")
+  endif()
+
   add_custom_command(
-    OUTPUT "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/translations/client_ru.qm"
-    DEPENDS ${TRANSLATIONS_OUT}
+    OUTPUT ${STAGED_TRANSLATIONS}
+    DEPENDS ${TRANSLATIONS_OUT} ${QTBASE_RU_QM}
     COMMAND ${CMAKE_COMMAND} -E make_directory
       "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/translations"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      ${TRANSLATIONS_OUT}
-      "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/translations/client_ru.qm"
+      ${TRANSLATIONS_OUT} ${QTBASE_RU_QM}
+      "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/translations"
     COMMENT "Copy translations to output directory")
 
   add_custom_target(client_qt_copy_translations
-    DEPENDS "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/translations/client_ru.qm")
+    DEPENDS ${STAGED_TRANSLATIONS})
 else()
   add_custom_target(client_qt_copy_translations
     COMMAND ${CMAKE_COMMAND} -E echo
@@ -151,7 +171,7 @@ endif()
 add_dependencies(client_qt client_qt_copy_translations)
 
 if(TRANSLATIONS_OUT)
-  install(FILES ${TRANSLATIONS_OUT}
+  install(FILES ${TRANSLATIONS_OUT} ${QTBASE_RU_QM}
     DESTINATION "bin/translations"
     COMPONENT Client)
 endif()

@@ -55,6 +55,7 @@
 #include <QElapsedTimer>
 #include <QHeaderView>
 #include <QLayout>
+#include <QLibraryInfo>
 #include <QLocale>
 #include <QPixmap>
 #include <QSettings>
@@ -155,8 +156,12 @@ class ScreenshotGenerator : public ::testing::Test {
     scada::base::ScopedMockClockOverride override_;
   } fixture_clock_;
 
-  // Russian translator, installed in the constructor body. Must outlive
+  // Russian translators, installed in the constructor body. Must outlive
   // the QApplication inside `app_env_`, hence declared right after it.
+  // `qtbase_translator_` carries Qt's own strings (standard QMessageBox
+  // buttons, spin/date chrome); it is installed before `translator_` so the
+  // client catalog wins on conflicts.
+  QTranslator qtbase_translator_;
   QTranslator translator_;
 
   // SCADA back-end. The address space starts pre-populated with the
@@ -226,6 +231,15 @@ ScreenshotGenerator::ScreenshotGenerator() {
   QLocale::setDefault(QLocale{QLocale::Russian, QLocale::Russia});
   const auto translation_dir =
       QApplication::applicationDirPath() + "/translations";
+  // Qt's own catalog first (standard Yes/No/Cancel buttons, spin/date
+  // chrome), mirroring InstalledTranslation: prefer Qt's installed
+  // translations dir, fall back to the staged app dir. Installed before the
+  // client catalog so the client strings win on conflicts.
+  if (qtbase_translator_.load(
+          "qtbase_ru", QLibraryInfo::path(QLibraryInfo::TranslationsPath)) ||
+      qtbase_translator_.load("qtbase_ru", translation_dir)) {
+    QApplication::installTranslator(&qtbase_translator_);
+  }
   if (translator_.load("client_ru", translation_dir))
     QApplication::installTranslator(&translator_);
 
