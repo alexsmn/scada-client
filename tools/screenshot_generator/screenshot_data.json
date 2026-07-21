@@ -209,7 +209,9 @@
     { "id": 1004, "hours_ago": 2.0,    "severity": "normal",   "message": "КП-02: связь восстановлена",                      "node_id": "TS.104", "change_mask": 16 },
     { "id": 1005, "hours_ago": 1.0,    "severity": "normal",   "message": "Ручной ввод: Активная мощность = 130.5 МВт",     "node_id": "TIT.200", "change_mask": 32 },
     { "id": 1006, "hours_ago": 0.5,    "severity": "warning",  "message": "Коэффициент мощности ниже порога (0.87)",         "node_id": "TIT.209", "change_mask": 4  },
-    { "id": 1007, "hours_ago": 0.1667, "severity": "normal",   "message": "Трансформатор T1: температура в норме (42.3\u00B0C)", "node_id": "TIT.211", "change_mask": 1  }
+    { "id": 1007, "hours_ago": 0.1667, "severity": "normal",   "message": "Трансформатор T1: температура в норме (42.3\u00B0C)", "node_id": "TIT.211", "change_mask": 1  },
+    { "id": 1008, "hours_ago": 0.75,   "severity": "critical", "message": "КП-03: обрыв связи", "node_id": "TS.105", "change_mask": 16, "acknowledged": false },
+    { "id": 1009, "hours_ago": 0.25,   "severity": "warning",  "message": "Частота ниже уставки (49.97 Гц)", "node_id": "TIT.208", "change_mask": 4, "acknowledged": false }
   ],
 
   "graph": {

@@ -464,14 +464,22 @@ TEST_F(ScreenshotGenerator, CaptureDisplay) {
 }
 
 TEST_F(ScreenshotGenerator, CaptureMainWindow) {
-  if (!ShouldCaptureScreenshot("client-window.png"))
-    GTEST_SKIP() << "client-window.png not requested";
+  // Under --theme the same capture renders the reshelled operator workbench
+  // (activity rail, context bar with the severity tiles, editor tabs, status
+  // strip) and is published as its own image, so the legacy client-window.png
+  // (hand-maintained for the manual until the fake Modus runtime exists) is
+  // never overwritten by a themed render.
+  const char* filename = GetScreenshotOptions().theme.empty()
+                             ? "client-window.png"
+                             : "workbench-window.png";
+  if (!ShouldCaptureScreenshot(filename))
+    GTEST_SKIP() << filename << " not requested";
 
   MainWindow::SetHideForTesting(false);
 
   auto output_dir = GetOutputDir();
   std::filesystem::create_directories(output_dir);
-  const auto output_image = output_dir / "client-window.png";
+  const auto output_image = output_dir / filename;
 
   {
     Profile profile;
