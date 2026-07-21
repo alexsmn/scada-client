@@ -59,7 +59,8 @@ constexpr auto kObjectTreeLoadTimeout = 30s;
 // must stay strictly larger than the client-side capture deadlines they observe
 // (60s — see e2e_test_support.{h,cpp}); the client writes its report on success
 // or at that deadline, and the test waits for that report to appear, so a
-// too-short wait here would time out before the client even records its verdict.
+// too-short wait here would time out before the client even records its
+// verdict.
 constexpr auto kObjectViewValuesTimeout = 75s;
 constexpr auto kObjectTreeLabelsTimeout = 75s;
 constexpr auto kHardwareTreeDevicesTimeout = 75s;
@@ -70,7 +71,8 @@ constexpr auto kHistoricalTimedDataTimeout = 30s;
 // Turns the analog item TIT.4 (which already references the RAMP simulation
 // signal {9,3}) into a simulated, historized item collected into the analog
 // historical DB {6,2}. Mirrors the server integration suite's value-flow recipe
-// so the server accumulates a steady stream of samples the client can read back.
+// so the server accumulates a steady stream of samples the client can read
+// back.
 constexpr std::string_view kHistorizeSimulatedItemSql =
     "UPDATE AnalogItemType SET Simulated=1, HasHistoricalDatabaseNS=6, "
     "HasHistoricalDatabaseID=2 WHERE ID=4;";
@@ -195,8 +197,8 @@ void ConfigureSignedLicense(boost::json::object& server_json) {
 }
 
 // Binds the shared server-process harness (common/test/e2e) to this suite's
-// SCADA_E2E_* paths and its env-var signed license (ConfigureSignedLicense), for
-// the given tier binary.
+// SCADA_E2E_* paths and its env-var signed license (ConfigureSignedLicense),
+// for the given tier binary.
 ServerProcessContext MakeServerContextForExe(const std::filesystem::path& exe) {
   return ServerProcessContext{
       .server_exe = exe,
@@ -221,9 +223,10 @@ ServerProcessContext MakeServerContext() {
 // root user is single-session (configuration_authenticator.cpp), so concurrent
 // edge→config / edge→historian / proxy→edge logins would collide on
 // Bad_UserIsAlreadyLoggedOn; `svc` (id 100, MultiSessions=1) does not. Mirrors
-// gcp/free-tier/multitier/configs/seed-svc-user.sql. Seeded into every tier that
-// authenticates an inter-tier client (config, historian, and the edges/proxy the
-// aggregator logs into); its password is provisioned via security.provision.
+// gcp/free-tier/multitier/configs/seed-svc-user.sql. Seeded into every tier
+// that authenticates an inter-tier client (config, historian, and the
+// edges/proxy the aggregator logs into); its password is provisioned via
+// security.provision.
 constexpr std::string_view kSvcUserSql =
     "INSERT OR REPLACE INTO UserType "
     "(ID, ParentNS, ParentID, BrowseName, DisplayName, AccessRights, "
@@ -356,9 +359,9 @@ void ClientServerE2eTest::SetUp() {
   iec61850_port_ = FindAvailablePort();
   while (iec61850_port_ == remote_port_ || iec61850_port_ == opcua_port_)
     iec61850_port_ = FindAvailablePort();
-  // Reserve the client-facing (proxy / single-tier) ports and the IEC 61850 port
-  // so the shared PortPool hands the cluster tiers distinct ports in Cluster
-  // mode.
+  // Reserve the client-facing (proxy / single-tier) ports and the IEC 61850
+  // port so the shared PortPool hands the cluster tiers distinct ports in
+  // Cluster mode.
   for (int port : {remote_port_, opcua_port_, iec61850_port_})
     ports_.Reserve(port);
   PrepareWorkspace();
@@ -375,9 +378,9 @@ void ClientServerE2eTest::SetUp() {
 void ClientServerE2eTest::TearDown() {
   // Tiers in reverse dependency order: proxy/edges before the config/historian
   // they depend on.
-  ServerTier* const tiers[] = {iec104_tier_.get(),     modbus_tier_.get(),
-                               iec61850_tier_.get(),   filesystem_tier_.get(),
-                               historian_tier_.get(),  config_tier_.get()};
+  ServerTier* const tiers[] = {iec104_tier_.get(),    modbus_tier_.get(),
+                               iec61850_tier_.get(),  filesystem_tier_.get(),
+                               historian_tier_.get(), config_tier_.get()};
   if (HasFailure() || IsKeepWorkspaceEnabled()) {
     workspace_.Preserve();
     for (ServerTier* tier : tiers) {
@@ -504,10 +507,11 @@ void ClientServerE2eTest::StartCluster() {
   // --- Config tier -----------------------------------------------------------
   // Owns the configuration namespace (devices, data items, users, filesystem)
   // that the edges read and re-expose through aggregation. Keeps its generated
-  // local config DB plus the svc account the edges authenticate with, and serves
-  // the per-protocol device config. The IEC 61850 device port (the shared test
-  // server) and the TIT.4 historization live here because the edges read their
-  // config from here. Mirrors gcp/free-tier/multitier/configs/config.json.
+  // local config DB plus the svc account the edges authenticate with, and
+  // serves the per-protocol device config. The IEC 61850 device port (the
+  // shared test server) and the TIT.4 historization live here because the edges
+  // read their config from here. Mirrors
+  // gcp/free-tier/multitier/configs/config.json.
   config_tier_ =
       std::make_unique<ServerTier>(MakeTierContext(GetConfigExePath()));
   config_tier_->AllocatePorts(ports_);
@@ -536,9 +540,10 @@ void ClientServerE2eTest::StartCluster() {
   // --- Historian tier (create + allocate ports now; launched below once the
   //     edges' ports are known so it can pull-collect from one) ---------------
   // Owns the history store. In the history test it pull-collects the historized
-  // TIT.4 from the edge that serves it (historyCollection.sources — the ADR 0002
-  // subscription model) and files the samples under its own HasHistoricalDatabase
-  // config. Mirrors gcp/free-tier/multitier/configs/historian.json.
+  // TIT.4 from the edge that serves it (historyCollection.sources — the ADR
+  // 0002 subscription model) and files the samples under its own
+  // HasHistoricalDatabase config. Mirrors
+  // gcp/free-tier/multitier/configs/historian.json.
   historian_tier_ =
       std::make_unique<ServerTier>(MakeTierContext(GetHistorianExePath()));
   historian_tier_->AllocatePorts(ports_);
@@ -552,14 +557,24 @@ void ClientServerE2eTest::StartCluster() {
   // fetching config from the config tier and routing history to the historian,
   // both as svc. The proxy aggregates them anonymously. Mirrors the GCP
   // configs/{iec104,modbus,iec61850}.json edges.
+  //
+  // The modbus edge is aggregated DYNAMICALLY: instead of a static
+  // aggregation.servers entry it self-registers with the proxy via OPC UA
+  // RegisterServer (WS-F: opcua.register_with_url + advertise_url + a unique
+  // application_uri), and the proxy's DiscoveryRegistry reconcile loop stands
+  // the downstream up. This keeps permanent E2E coverage of the discovery
+  // path the Windows on-prem deployment wires edges with, while iec104 /
+  // iec61850 keep covering the static path.
   struct EdgeSpec {
     std::unique_ptr<ServerTier>* slot;
     std::filesystem::path exe;
     std::string_view driver;
+    bool dynamic_registration = false;
   };
   const EdgeSpec edges[] = {
       {&iec104_tier_, GetIec104ExePath(), "iec60870"},
-      {&modbus_tier_, GetModbusExePath(), "modbus"},
+      {&modbus_tier_, GetModbusExePath(), "modbus",
+       /*dynamic_registration=*/true},
       {&iec61850_tier_, GetIec61850ExePath(), "iec61850"},
   };
   for (const EdgeSpec& edge : edges) {
@@ -584,13 +599,12 @@ void ClientServerE2eTest::StartCluster() {
             ProvisionSvcPassword(json);
             if (historize) {
               json["historyCollection"] = boost::json::object{
-                  {"sources",
-                   boost::json::array{boost::json::object{
-                       {"endpoint", collect_source_url},
-                       {"user", std::string{kSvcUser}},
-                       {"password", std::string{kSvcPassword}},
-                       {"nodes", boost::json::array{
-                                     std::string{kHistorizedNodeId}}}}}}};
+                  {"sources", boost::json::array{boost::json::object{
+                                  {"endpoint", collect_source_url},
+                                  {"user", std::string{kSvcUser}},
+                                  {"password", std::string{kSvcPassword}},
+                                  {"nodes", boost::json::array{std::string{
+                                                kHistorizedNodeId}}}}}}};
             }
           },
       .extra_config_sql = historian_sql,
@@ -599,10 +613,15 @@ void ClientServerE2eTest::StartCluster() {
       << "cluster historian tier did not start listening on OPC UA port "
       << historian_tier_->opcua_port();
 
-  auto make_edge_configure = [config_url, historian_url](
-                                 std::string_view keep_driver) {
-    return [config_url, historian_url,
-            keep_driver](boost::json::object& json) {
+  const std::string proxy_opcua_url =
+      "opc.tcp://127.0.0.1:" + std::to_string(opcua_port_);
+  auto make_edge_configure = [config_url, historian_url, proxy_opcua_url](
+                                 std::string_view keep_driver,
+                                 bool dynamic_registration,
+                                 std::string advertise_url) {
+    return [config_url, historian_url, proxy_opcua_url, keep_driver,
+            dynamic_registration, advertise_url = std::move(advertise_url)](
+               boost::json::object& json) {
       for (std::string_view driver : {"iec60870", "modbus", "iec61850"}) {
         if (driver != keep_driver)
           json.erase(driver);
@@ -611,21 +630,33 @@ void ClientServerE2eTest::StartCluster() {
       // running its own file store would merge a second tree into the proxy's
       // fan-out Browse.
       json.erase("filesystem");
-      json["configuration"] = boost::json::object{
-          {"endpoint", config_url},
-          {"user", std::string{kSvcUser}},
-          {"password", std::string{kSvcPassword}}};
-      json["history"] = boost::json::object{
-          {"endpoint", historian_url},
-          {"user", std::string{kSvcUser}},
-          {"password", std::string{kSvcPassword}}};
+      json["configuration"] =
+          boost::json::object{{"endpoint", config_url},
+                              {"user", std::string{kSvcUser}},
+                              {"password", std::string{kSvcPassword}}};
+      json["history"] =
+          boost::json::object{{"endpoint", historian_url},
+                              {"user", std::string{kSvcUser}},
+                              {"password", std::string{kSvcPassword}}};
+      if (dynamic_registration) {
+        // WS-F self-registration: a per-edge application_uri (the registry
+        // keys registrations by server URI) and an externally-reachable
+        // advertise_url the proxy connects back on.
+        auto& opcua = json.at("opcua").as_object();
+        opcua["application_uri"] = "urn:e2e:scada:" + std::string{keep_driver};
+        opcua["advertise_url"] = advertise_url;
+        opcua["register_with_url"] = proxy_opcua_url;
+      }
     };
   };
   for (const EdgeSpec& edge : edges) {
-    (*edge.slot)->Launch(ServerTier::Options{
-        .configure = make_edge_configure(edge.driver),
-        .remove_local_config_db = true,
-    });
+    (*edge.slot)
+        ->Launch(ServerTier::Options{
+            .configure =
+                make_edge_configure(edge.driver, edge.dynamic_registration,
+                                    (*edge.slot)->OpcUaUrl()),
+            .remove_local_config_db = true,
+        });
   }
   for (const EdgeSpec& edge : edges) {
     ASSERT_TRUE((*edge.slot)->WaitListening())
@@ -669,10 +700,12 @@ void ClientServerE2eTest::StartCluster() {
       << filesystem_tier_->opcua_port();
 
   // --- Proxy (client-facing) -------------------------------------------------
-  // Aggregates the three edges anonymously (mirrors the GCP proxy.json). Reuses
+  // Aggregates the edges anonymously (mirrors the GCP proxy.json): iec104 and
+  // iec61850 via static entries, modbus dynamically via RegisterServer. Reuses
   // the built-in server_ slot on the client-facing ports and keeps workspace_'s
-  // local config DB to authenticate the client's login; data-item module off and
-  // its data-item rows stripped so the aggregated edge namespace is authoritative.
+  // local config DB to authenticate the client's login; data-item module off
+  // and its data-item rows stripped so the aggregated edge namespace is
+  // authoritative.
   ExecuteConfigurationSql(MakeServerContextForExe(GetProxyExePath()),
                           workspace_.path(),
                           "PRAGMA foreign_keys=OFF;\n"
@@ -680,6 +713,10 @@ void ClientServerE2eTest::StartCluster() {
                           "DELETE FROM DiscreteItemType;\n");
   boost::json::array aggregation_servers;
   for (const EdgeSpec& edge : edges) {
+    // Dynamically-registered edges have no static entry — they arrive through
+    // the DiscoveryRegistry (asserted below once the proxy is up).
+    if (edge.dynamic_registration)
+      continue;
     aggregation_servers.push_back(
         boost::json::object{{"endpoint", (*edge.slot)->OpcUaUrl()}});
   }
@@ -710,19 +747,19 @@ void ClientServerE2eTest::StartCluster() {
        boost::json::array{"http://telecontrol.ru/opcua/filesystem/FileType"}},
       {"nodes", boost::json::array{"ns=7;i=304"}},
       {"forward_events", true}});
-  WriteServerJson(
-      workspace_.path(), remote_port_, opcua_port_,
-      [&aggregation_servers](boost::json::object& server_json) {
-        server_json.erase("iec60870");
-        server_json.erase("modbus");
-        server_json.erase("iec61850");
-        // The filesystem tier owns the FileSystem subtree; the proxy must not
-        // run a local file store of its own.
-        server_json.erase("filesystem");
-        server_json["dataItems"] = boost::json::object{{"enabled", false}};
-        server_json["aggregation"] =
-            boost::json::object{{"servers", aggregation_servers}};
-      });
+  WriteServerJson(workspace_.path(), remote_port_, opcua_port_,
+                  [&aggregation_servers](boost::json::object& server_json) {
+                    server_json.erase("iec60870");
+                    server_json.erase("modbus");
+                    server_json.erase("iec61850");
+                    // The filesystem tier owns the FileSystem subtree; the
+                    // proxy must not run a local file store of its own.
+                    server_json.erase("filesystem");
+                    server_json["dataItems"] =
+                        boost::json::object{{"enabled", false}};
+                    server_json["aggregation"] =
+                        boost::json::object{{"servers", aggregation_servers}};
+                  });
   LaunchProcess(GetProxyExePath(),
                 {"--param=" + (workspace_.path() / "server.json").string()},
                 workspace_.path(), *job_, server_);
@@ -733,6 +770,21 @@ void ClientServerE2eTest::StartCluster() {
                             kServerStartTimeout)))
       << "cluster proxy did not start listening on " << ToString(Protocol())
       << " port " << port;
+
+  // Wait until the proxy has aggregated the dynamically-registered modbus
+  // edge: the edge re-sends RegisterServer every 10 s (its first attempts
+  // predate the proxy) and the reconcile loop runs every 2 s, so tests that
+  // browse right after startup would otherwise race the downstream coming up.
+  ASSERT_TRUE(WaitUntil(
+      [this] {
+        return ContainsInDirectory(server_log_dir_,
+                                   "Aggregating registered downstream");
+      },
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          kServerStartTimeout)))
+      << "the proxy never aggregated the RegisterServer-registered modbus "
+         "edge; see the proxy log in "
+      << server_log_dir_;
 }
 
 void ClientServerE2eTest::StartClient(std::vector<std::string> extra_args) {

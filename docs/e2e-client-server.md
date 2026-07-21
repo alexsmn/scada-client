@@ -287,8 +287,16 @@ Every test is parametrized over two axes — the client backend protocol and the
   running one driver, fetching config from the config tier and routing history to
   the historian as the multi-session `svc` user); a `scada-historian`; and a
   client-facing aggregating `scada-proxy` that aggregates the three edges
-  anonymously. The client connects only to the proxy, which re-exposes the edges'
-  address space through OPC UA aggregation. The tier configs mirror
+  anonymously. The iec104 and iec61850 edges use static `aggregation.servers`
+  entries; the modbus edge is aggregated **dynamically** — it self-registers
+  with the proxy via OPC UA RegisterServer (`opcua.register_with_url` +
+  `advertise_url` + a unique `application_uri`) and the proxy's
+  DiscoveryRegistry reconcile loop stands the downstream up. That keeps
+  permanent E2E coverage of the discovery path the Windows on-prem deployment
+  (`scada-setup`) wires every edge with; cluster startup waits for the proxy
+  log line `Aggregating registered downstream` before tests run. The client
+  connects only to the proxy, which re-exposes the edges' address space
+  through OPC UA aggregation. The tier configs mirror
   `gcp/free-tier/multitier/configs/*.json`.
 
 Each tier is launched with the shared `ServerTier` harness in
