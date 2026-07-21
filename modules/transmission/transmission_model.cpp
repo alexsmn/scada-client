@@ -213,6 +213,12 @@ void TransmissionModel::Update(NodeRef transmission) {
   if (!IsInstanceOf(transmission, scada::devices::id::TransmissionItemType))
     return;
 
+  // Model-change/semantic events are global: an item that belongs to a
+  // different destination device (several are visible at once through the
+  // destination rail) must not leak into this device's grid.
+  if (transmission.parent().node_id() != device_.node_id())
+    return;
+
   transmission.StartFetch(NodeFetchStatus::NodeAndChildren);
 
   auto source_id =

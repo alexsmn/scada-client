@@ -416,7 +416,7 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     // is a data-path regression (empty users/transmission tables have
     // shipped as "successful" captures before) — fail loudly instead of
     // silently saving a bare frame.
-    if (spec.min_rows > 0) {
+    if (spec.min_rows > 0 || spec.exact_rows > 0) {
       int max_rows = 0;
       QList<QTableView*> tables = widget->findChildren<QTableView*>();
       if (auto* table = qobject_cast<QTableView*>(widget))
@@ -425,10 +425,20 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
         if (table->model())
           max_rows = std::max(max_rows, table->model()->rowCount());
       }
-      EXPECT_GE(max_rows, spec.min_rows)
-          << spec.filename << ": the " << spec.window_type
-          << " grid rendered fewer rows than the fixture populates - the "
-             "capture would be empty or partial";
+      if (spec.min_rows > 0) {
+        EXPECT_GE(max_rows, spec.min_rows)
+            << spec.filename << ": the " << spec.window_type
+            << " grid rendered fewer rows than the fixture populates - the "
+               "capture would be empty or partial";
+      }
+      // The exact expectation additionally catches rows leaking IN from
+      // outside the captured scope (the transmission grid once picked up
+      // another device's rules from a global model-change event).
+      if (spec.exact_rows > 0) {
+        EXPECT_EQ(max_rows, spec.exact_rows)
+            << spec.filename << ": the " << spec.window_type
+            << " grid row count does not match the fixture";
+      }
     }
 
     // Optionally click a named child (e.g. a subtab button) so the capture

@@ -275,8 +275,8 @@
     { "type": "Favorites",      "filename": "favorites.png",           "width": 300,  "height": 400 },
     { "type": "FileSystemView", "filename": "files.png",               "width": 300,  "height": 400 },
     { "type": "TimeVal",        "filename": "data.png",                "width": 800,  "height": 400 },
-    { "type": "Transmission",   "filename": "client-retransmission.png", "path": "TS.702", "width": 763,  "height": 645, "min_rows": 4 },
-    { "type": "Transmission",   "filename": "transmission-rules.png",   "path": "TS.702", "width": 763,  "height": 645, "min_rows": 4 },
+    { "type": "Transmission",   "filename": "client-retransmission.png", "path": "TS.702", "width": 763,  "height": 645, "rows": 4 },
+    { "type": "Transmission",   "filename": "transmission-rules.png",   "path": "TS.702", "width": 763,  "height": 645, "rows": 4 },
     { "type": "Display",        "filename": "substation-display.png",   "width": 1100, "height": 720 }
   ],
 

@@ -27,7 +27,11 @@ QWidget* MakeTransmissionDestinationRail(
     TransmissionDestinationRailContext context) {
   auto* rail = new QListWidget;
   rail->setObjectName(QStringLiteral("transmissionDestinationRail"));
-  rail->setFixedWidth(190);
+  // Wider than the journal's area rail: device names ("Ретрансляция КП-02
+  // MODBUS · 4") run longer than area names. A too-long name clips rather
+  // than growing a scrollbar.
+  rail->setFixedWidth(240);
+  rail->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
   const scada::aui::ThemeTokens& tokens = scada::aui::ActiveThemeTokens();
   rail->setStyleSheet(

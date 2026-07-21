@@ -85,9 +85,10 @@ std::unique_ptr<UiView> TransmissionView::Init(
             .current = model_->device().node_id(),
             .current_count = [this] { return model_->GetRowCount(); },
             .model = model_.get(),
-            .on_device = [this](const scada::NodeId& device_id) {
-              SwitchDevice(device_id);
-            }}));
+            .on_device =
+                [this](const scada::NodeId& device_id) {
+                  SwitchDevice(device_id);
+                }}));
     layout->addWidget(grid_->CreateParentIfNecessary(), 1);
     return std::unique_ptr<UiView>{container};
   }

@@ -1,5 +1,6 @@
 #include "modules/transmission/transmission_devices.h"
 
+#include "base/debug_util.h"
 #include "model/devices_node_ids.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_awaitable.h"
@@ -95,7 +96,10 @@ Awaitable<std::vector<TransmissionDeviceEntry>> BrowseTransmissionDevices(
       for (const NodeRef::Reference& reference :
            item.node.references(scada::id::Organizes))
         (void)co_await FetchTypeChainStatus(reference.target.type_definition());
-      entries.push_back({item.node.node_id(), GetFullDisplayName(item.node),
+      // The short display name: the rail's rows are devices, and the
+      // channel-qualified full path overflows a 190px rail.
+      entries.push_back({item.node.node_id(),
+                         ToString16(item.node.display_name()),
                          CountTransmissionRules(item.node)});
       continue;
     }
