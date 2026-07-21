@@ -683,19 +683,31 @@ void ClientServerE2eTest::StartCluster() {
     aggregation_servers.push_back(
         boost::json::object{{"endpoint", (*edge.slot)->OpcUaUrl()}});
   }
-  // The file-store downstream. It no longer needs a namespace claim: the file
-  // instance namespace is now tier-exclusive (ADR 0003 — only this tier
-  // publishes FILESYSTEM_FILE), so the proxy routes it there by ownership. The
-  // one remaining claim is the FileSystem root object i=304, which lives in the
-  // shared SCADA namespace (every tier serves it) and so cannot be routed by
-  // namespace alone — it anchors top-level AddNodes to this tier. Its
-  // model-change events are re-raised to the proxy's clients; the link presents
-  // svc, since file create/delete forwarding needs a non-anonymous downstream
-  // session under enforce_permissions. Mirrors the GCP proxy.json entry.
+  // The file-store downstream. The "namespaces" claim names the tier-exclusive
+  // file-instance namespace (FILESYSTEM_FILE). Beyond routing that namespace
+  // here, the claim is what SCOPES this downstream: a downstream with any
+  // namespace claim routes single-target services (HistoryRead, monitored
+  // items, Write, Call, NodeManagement) for ONLY its claimed namespaces
+  // (RemoteNodeManager::has_namespace_claims → ClaimsProxyNamespace). Without
+  // it, the file store falls back to routing every namespace its NamespaceArray
+  // still publishes — which includes the shared "dedicated" data-item/history
+  // namespaces every tier keeps (e.g. ns=2 TIT) even though the file store
+  // deleted its data-item rows and owns no history. The proxy would then route
+  // a HistoryRead for an edge-served data item (ns=2;i=4) to the empty file
+  // store instead of an edge that forwards it to the historian, so the readback
+  // returns no rows (DisplaysHistoricalTimedData). The extra "nodes" claim for
+  // the FileSystem root object i=304 lives in the shared SCADA namespace (every
+  // tier serves it) and so cannot be routed by namespace alone — it anchors
+  // top-level AddNodes to this tier. Model-change events are re-raised to the
+  // proxy's clients; the link presents svc, since file create/delete forwarding
+  // needs a non-anonymous downstream session under enforce_permissions. Mirrors
+  // the GCP proxy.json entry.
   aggregation_servers.push_back(boost::json::object{
       {"endpoint", filesystem_tier_->OpcUaUrl()},
       {"user", std::string{kSvcUser}},
       {"password", std::string{kSvcPassword}},
+      {"namespaces",
+       boost::json::array{"http://telecontrol.ru/opcua/filesystem/FileType"}},
       {"nodes", boost::json::array{"ns=7;i=304"}},
       {"forward_events", true}});
   WriteServerJson(
