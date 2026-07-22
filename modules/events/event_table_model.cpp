@@ -30,17 +30,39 @@ const char16_t kLocalEventSource[] = u"Local Event";
 void GetEventColors(const scada::Event& event,
                     scada::aui::Color& text_color,
                     scada::aui::Color& back_color) {
-  // Classify (unacknowledged, then critical, then warning) exactly as before;
-  // the colours themselves come from the single severity source, so they follow
+  // The colours themselves come from the single severity source, so they follow
   // the active theme and stay in step with every other severity surface.
   std::optional<scada::aui::EventBackground> background;
-  if (!event.acked) {
-    background = scada::aui::EventBackground::kUnacknowledged;
-  } else if (event.severity >= scada::kSeverityCritical) {
-    background = scada::aui::EventBackground::kCritical;
-  } else if (event.severity >= scada::kSeverityWarning) {
-    background = scada::aui::EventBackground::kWarning;
+
+  if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy) {
+    // Severity owns the row colour; acknowledgement is carried by the leading
+    // dot column, the "— pending —" acknowledge-time cell and the alarm
+    // footer. Classifying unacknowledged first (as the legacy branch below
+    // does) painted every pending row green — including a pending *critical*
+    // alarm — which reads as "normal" and spends saturated colour on
+    // something that is not a severity: both against principles.md §1
+    // ("reserve bright colour exclusively for abnormal conditions") and §5,
+    // which describes the intended design as "a red alarm row also carries a
+    // severity label and an unacknowledged dot".
+    if (event.severity >= scada::kSeverityCritical) {
+      background = scada::aui::EventBackground::kCritical;
+    } else if (event.severity >= scada::kSeverityWarning) {
+      background = scada::aui::EventBackground::kWarning;
+    }
+
+  } else {
+    // The legacy journal has no dot column, no pending cell and no footer, so
+    // the green background is its *only* unacknowledged signal — dropping it
+    // there would lose information rather than fix a miscue. Unchanged.
+    if (!event.acked) {
+      background = scada::aui::EventBackground::kUnacknowledged;
+    } else if (event.severity >= scada::kSeverityCritical) {
+      background = scada::aui::EventBackground::kCritical;
+    } else if (event.severity >= scada::kSeverityWarning) {
+      background = scada::aui::EventBackground::kWarning;
+    }
   }
+
   if (!background)
     return;
 
@@ -240,17 +262,15 @@ void EventTableModel::GetEventCell(const Row& row,
       break;
     case EventColumnUnacked:
       // The leading pending marker: a dot on every unacknowledged row, so the
-      // actionable rows read at a glance. Severity-coloured for alarm bands
-      // (routine events keep the default text colour) — the shape itself is
-      // the signal, the colour a reinforcement, and the "— pending —" cell
-      // spells the state out (colour is never the only cue).
-      if (!event.acked) {
+      // actionable rows read at a glance. It deliberately keeps the row's own
+      // text colour rather than re-encoding the severity: the row background
+      // already carries that, and a severity-coloured dot on a
+      // severity-coloured row is invisible (a red dot on a red critical row).
+      // The dot means "pending", the background means "how bad", and the
+      // "— pending —" cell spells the state out (colour is never the only
+      // cue).
+      if (!event.acked)
         cell.text = u"●";
-        if (auto color = scada::aui::SeverityColor(
-                events::SeverityLevelForEvent(event.severity))) {
-          cell.text_color = *color;
-        }
-      }
       break;
     default:
       scada::base::NotReached();

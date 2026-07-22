@@ -269,7 +269,91 @@ class EventJournalAlarmSurfaceTest : public EventTableModelTest {
 
   // Row 0's event, seeded before the model reads the event set.
   scada::Event& FirstEvent() { return test_events_.begin()->second; }
+
+  scada::aui::Color CellBackground(int row = 0) {
+    scada::aui::TableCell cell{.row = row, .column_id = EventColumnMessage};
+    event_table_model_->GetCell(cell);
+    return cell.cell_color;
+  }
+
+  static scada::aui::Color BackgroundFor(scada::aui::EventBackground kind) {
+    return scada::aui::EventRowColorsFor(kind).background;
+  }
 };
+
+// Under the reshell theme the row colour is the event's *severity*, whether or
+// not it has been acknowledged: a pending critical alarm used to paint green
+// (the unacknowledged colour won the classification), which reads as "normal"
+// and spends saturated colour on something that is not a severity.
+// Acknowledgement rides the dot column, the pending cell and the footer.
+TEST_F(EventJournalAlarmSurfaceTest,
+       ThemedPendingCriticalKeepsItsSeverityColour) {
+  FirstEvent().severity = scada::kSeverityCritical;
+  FirstEvent().acked = false;
+  Init();
+  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
+
+  EXPECT_EQ(CellBackground(),
+            BackgroundFor(scada::aui::EventBackground::kCritical));
+  EXPECT_NE(CellBackground(),
+            BackgroundFor(scada::aui::EventBackground::kUnacknowledged));
+}
+
+// Acknowledging does not change the severity, so it does not change the colour.
+TEST_F(EventJournalAlarmSurfaceTest,
+       ThemedAcknowledgedCriticalKeepsTheSameColour) {
+  FirstEvent().severity = scada::kSeverityCritical;
+  FirstEvent().acked = true;
+  Init();
+  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
+
+  EXPECT_EQ(CellBackground(),
+            BackgroundFor(scada::aui::EventBackground::kCritical));
+}
+
+// A routine event is not an alarm, so a themed journal leaves it uncoloured
+// even while it is pending — a calm surface draws the eye only to alarms
+// (principles.md §1).
+TEST_F(EventJournalAlarmSurfaceTest, ThemedPendingRoutineEventStaysUncoloured) {
+  FirstEvent().severity = scada::kSeverityNormal;
+  FirstEvent().acked = false;
+  Init();
+  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
+
+  EXPECT_NE(CellBackground(),
+            BackgroundFor(scada::aui::EventBackground::kUnacknowledged));
+  EXPECT_NE(CellBackground(),
+            BackgroundFor(scada::aui::EventBackground::kCritical));
+  EXPECT_NE(CellBackground(),
+            BackgroundFor(scada::aui::EventBackground::kWarning));
+}
+
+// The pending dot must stay readable on the severity-coloured row it marks:
+// colouring it by severity too (as it once was) painted a red dot on a red
+// critical row, erasing the very cue it exists to provide.
+TEST_F(EventJournalAlarmSurfaceTest, ThemedPendingDotContrastsWithItsRow) {
+  FirstEvent().severity = scada::kSeverityCritical;
+  FirstEvent().acked = false;
+  Init();
+  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
+
+  scada::aui::TableCell cell{.row = 0, .column_id = EventColumnUnacked};
+  event_table_model_->GetCell(cell);
+  EXPECT_EQ(cell.text, u"●");
+  EXPECT_NE(cell.text_color, cell.cell_color);
+}
+
+// The legacy journal has no dot column, no pending cell and no footer, so its
+// green background is the only unacknowledged signal there and is left alone.
+TEST_F(EventJournalAlarmSurfaceTest,
+       LegacyPendingRowKeepsTheUnacknowledgedColour) {
+  FirstEvent().severity = scada::kSeverityCritical;
+  FirstEvent().acked = false;
+  Init();
+
+  EXPECT_EQ(CellBackground(),
+            BackgroundFor(scada::aui::EventBackground::kUnacknowledged));
+}
 
 TEST_F(EventJournalAlarmSurfaceTest, LegacySeverityCellIsTheBareNumber) {
   FirstEvent().severity = scada::kSeverityCritical;
