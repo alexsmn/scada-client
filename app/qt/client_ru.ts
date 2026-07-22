@@ -1787,6 +1787,19 @@
          fields. "Закрытый ключ" is the standard Russian PKI term for a private
          key. The browse buttons' "…" is a glyph and is deliberately left
          untranslated (see ALLOWED_UNTRANSLATED in check_ui_translations.py). -->
+    <!-- Reshell sign-in chrome (brand lockup + connection summary). -->
+    <message>
+        <source>Sign in</source>
+        <translation>Вход в систему</translation>
+    </message>
+    <message>
+        <source>Telecontrol SCADA operator client</source>
+        <translation>Клиент оператора Telecontrol SCADA</translation>
+    </message>
+    <message>
+        <source>Connecting to: %1</source>
+        <translation>Подключение к: %1</translation>
+    </message>
     <message>
         <source>Security:</source>
         <translation>Безопасность:</translation>

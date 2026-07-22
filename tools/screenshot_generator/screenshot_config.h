@@ -40,6 +40,10 @@ struct DialogSpec {
   std::string filename;
   int width = 0;
   int height = 0;
+  // Renders only under --theme ("themed_only" in the JSON). Lets one dialog
+  // kind have both a legacy and a reshell capture without either run
+  // overwriting the other's image.
+  bool themed_only = false;
 };
 
 // Screenshot-generator fixture, loaded once from `screenshot_data.json`.

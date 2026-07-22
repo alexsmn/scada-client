@@ -15,6 +15,7 @@ class LoginController;
 class QDialogButtonBox;
 class QCheckBox;
 class QComboBox;
+class QLabel;
 class QLineEdit;
 
 class LoginDialog : public QDialog {
@@ -47,7 +48,17 @@ class LoginDialog : public QDialog {
   // Opens a file picker and writes the chosen path into `target`.
   void BrowseForFile(QLineEdit& target, const QString& title);
 
+  // Wraps the .ui form in the reshell chrome (brand lockup + connection
+  // summary). Built only under the reshell theme; the legacy dialog is
+  // untouched.
+  void BuildReshellChrome();
+  // Re-reads the backend/server fields into the connection summary line.
+  void RefreshConnectionSummary();
+
   Ui::LoginDialog ui;
+
+  // The reshell "connecting to" line; null when the legacy look is active.
+  QLabel* connection_summary_ = nullptr;
 
   DialogServiceImplQt dialog_service_;
 

@@ -155,6 +155,8 @@ void ScreenshotConfig::Load(const std::filesystem::path& path) {
         spec.width = static_cast<int>(w->as_int64());
       if (auto* h = js.as_object().if_contains("height"))
         spec.height = static_cast<int>(h->as_int64());
+      if (auto* themed = js.as_object().if_contains("themed_only"))
+        spec.themed_only = themed->as_bool();
       if (IsManagedImage(managed_images, spec))
         dialogs.push_back(std::move(spec));
     }

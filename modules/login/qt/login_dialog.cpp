@@ -1,7 +1,10 @@
 #include "modules/login/qt/login_dialog.h"
 
+#include "aui/qt/theme_qt.h"
+#include "aui/severity_colors.h"
 #include "base/e2e_test_hooks.h"
 #include "modules/login/login_controller.h"
+#include "modules/login/login_summary.h"
 #include "net/net_executor_adapter.h"
 #include "scada/session_service.h"
 #include "scada/status.h"
@@ -118,11 +121,96 @@ LoginDialog::LoginDialog(AnyExecutor executor,
 
   QApplication::instance()->installEventFilter(this);
 
+  // Opt-in reshell chrome, wrapped around the existing form rather than
+  // restructuring the .ui: this dialog is the one surface every user must get
+  // through, so the legacy layout stays byte-identical when the theme is off.
+  if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy)
+    BuildReshellChrome();
+
   if (controller_->auto_login) {
     ui.passwordLineEdit->setText(
         QString::fromStdU16String(controller_->password));
     Login();
   }
+}
+
+void LoginDialog::BuildReshellChrome() {
+  const scada::aui::ThemeTokens& tokens = scada::aui::ActiveThemeTokens();
+  auto* root = qobject_cast<QVBoxLayout*>(layout());
+  if (!root)
+    return;
+
+  // Brand lockup: the mark, the action, and what the operator is signing in to.
+  auto* header = new QWidget{this};
+  auto* header_layout = new QHBoxLayout{header};
+  header_layout->setContentsMargins(0, 0, 0, 8);
+  header_layout->setSpacing(10);
+
+  auto* mark = new QLabel{QStringLiteral("TC"), header};
+  mark->setObjectName(QStringLiteral("loginBrandMark"));
+  mark->setAlignment(Qt::AlignCenter);
+  mark->setFixedSize(28, 28);
+  mark->setStyleSheet(
+      QStringLiteral("#loginBrandMark{background:%1;color:%2;border-radius:6px;"
+                     "font-weight:700;}")
+          .arg(tokens.accent.name(), tokens.accent_fg.name()));
+
+  auto* titles = new QWidget{header};
+  auto* titles_layout = new QVBoxLayout{titles};
+  titles_layout->setContentsMargins(0, 0, 0, 0);
+  titles_layout->setSpacing(0);
+  auto* title = new QLabel{tr("Sign in"), titles};
+  title->setStyleSheet(
+      QStringLiteral("color:%1;font-size:14px;font-weight:600;")
+          .arg(tokens.fg.name()));
+  auto* subtitle = new QLabel{tr("Telecontrol SCADA operator client"), titles};
+  subtitle->setObjectName(QStringLiteral("loginBrandSubtitle"));
+  subtitle->setStyleSheet(
+      QStringLiteral("color:%1;font-size:11px;").arg(tokens.fg_subtle.name()));
+  titles_layout->addWidget(title);
+  titles_layout->addWidget(subtitle);
+
+  header_layout->addWidget(mark);
+  header_layout->addWidget(titles);
+  header_layout->addStretch(1);
+  root->insertWidget(0, header);
+
+  // "You are connecting to" — the wrong-server guard. Only the backend and
+  // server are shown because they are all this dialog knows before it
+  // authenticates; see LoginConnectionSummary.
+  connection_summary_ = new QLabel{this};
+  connection_summary_->setObjectName(QStringLiteral("loginConnectionSummary"));
+  connection_summary_->setWordWrap(true);
+  connection_summary_->setStyleSheet(
+      QStringLiteral("#loginConnectionSummary{background:%1;color:%2;"
+                     "border:1px solid %3;border-radius:6px;padding:6px 9px;"
+                     "font-size:11px;}")
+          .arg(tokens.surface_muted.name(), tokens.fg_muted.name(),
+               tokens.border.name(QColor::HexArgb)));
+  root->insertWidget(root->count() - 1, connection_summary_);
+
+  // The summary tracks whichever field the operator edits.
+  const auto refresh = [this] { RefreshConnectionSummary(); };
+  connect(ui.serverComboBox, &QComboBox::currentTextChanged, this, refresh);
+  connect(ui.serverTypeComboBox, &QComboBox::currentTextChanged, this, refresh);
+  RefreshConnectionSummary();
+}
+
+void LoginDialog::RefreshConnectionSummary() {
+  if (!connection_summary_)
+    return;
+
+  // The backend combo is hidden when only one backend is built in; its text is
+  // still the honest name of what will be connected to.
+  const std::u16string summary = LoginConnectionSummary(
+      ui.serverTypeComboBox->currentText().toStdU16String(),
+      ui.serverComboBox->currentText().toStdU16String());
+  connection_summary_->setVisible(!summary.empty());
+  if (summary.empty())
+    return;
+
+  connection_summary_->setText(
+      tr("Connecting to: %1").arg(QString::fromStdU16String(summary)));
 }
 
 LoginDialog::~LoginDialog() {

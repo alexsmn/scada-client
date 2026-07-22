@@ -2,6 +2,7 @@
   "images": [
     { "file": "MODBUS_func.png", "tag": "manual-diagram", "referenced_from": ["protocols.md"], "notes": "Modbus function-code table, hand-drawn." },
     { "file": "client-login.png", "tag": "auto-dialog", "referenced_from": ["getting-started.md"], "notes": "LoginDialog modal shown at startup; rendered by the dialog pipeline." },
+    {"file": "workbench-login.png", "tag": "reshell-theme", "referenced_from": ["client/workbench.md"], "notes": "The same LoginDialog under --theme (backlog 3.1): the reshell chrome wrapped around the .ui form - brand lockup (mark + Sign in + product line) and the 'Connecting to: <backend> · <server>' summary that tracks the fields. Saved under its own name so the legacy client-login.png the getting-started page embeds is never overwritten by a themed render. In the themed-ctest --only list. macOS render pending a Windows re-render; out of current_generator_owned_subset (subset is auto-* only)."},
     { "file": "command-palette.png", "tag": "auto-dialog", "referenced_from": ["client/workbench.md"], "notes": "Ctrl-K command palette (opt-in UX). Rendered by the dialog pipeline over a fixture command list; regenerate with --theme=dark for the published (workbench) look — the no-theme managed run renders the legacy look, so keep the themed render in img/. Also serves client/docs/ux/shell.md. Published from a macOS render pending a Windows re-render." },
     {"file": "about.png", "tag": "auto-dialog", "published": false, "referenced_from": [], "notes": "About dialog (Help menu). Capture also guards the ShowSelfOwnedModalDialog regression: the factory used to discard a lazy Awaitable and the dialog never showed. Validation-only; themed look via --theme runs (backlog 3.4)."},
     {"file": "change-password.png", "tag": "auto-dialog", "published": false, "referenced_from": [], "notes": "Set Password dialog for the fixture administrator (USER.5). Validation-only; themed look via --theme runs (backlog 3.4)."},
@@ -93,7 +94,7 @@
     "auto-dialog": 21,
     "auto-menu": 17,
     "auto-state": 5,
-    "reshell-theme": 16,
+    "reshell-theme": 17,
     "manual-diagram": 4,
     "manual-modus": 5,
     "manual-os": 2,

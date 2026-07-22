@@ -916,7 +916,13 @@ TEST_F(ScreenshotGenerator, CaptureDialogs) {
       .dialog_analog_node_id = g_config.dialog_analog_node_id};
 
   int captured = 0;
+  const bool themed = !GetScreenshotOptions().theme.empty();
   for (const auto& spec : g_config.dialogs) {
+    // A themed-only spec is the reshell twin of a legacy capture (see
+    // workbench-login.png): rendering it without the theme would save the
+    // legacy dialog under the reshell name.
+    if (spec.themed_only && !themed)
+      continue;
     if (CaptureDialog(spec, env))
       ++captured;
   }
