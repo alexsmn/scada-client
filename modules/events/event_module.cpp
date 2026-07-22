@@ -1,5 +1,7 @@
 #include "events/event_module.h"
 
+#include <algorithm>
+
 #include "aui/translation.h"
 #include "base/any_executor.h"
 #include "base/awaitable.h"
@@ -56,9 +58,17 @@ EventModule::EventModule(EventModuleContext&& context)
           .Build();
 
   // TODO: Checked cast.
-  event_fetcher_->SetSeverityMin(static_cast<scada::EventSeverity>(
-      GetInt(profile_.data(), "severityMin",
-             static_cast<unsigned>(scada::kSeverityMin))));
+  unsigned severity_min = GetInt(profile_.data(), "severityMin",
+                                 static_cast<unsigned>(scada::kSeverityMin));
+  // Profiles written before ADR 0005 phase 1 stored the 0-100 severity
+  // scale; the severityScale marker (written below) distinguishes them.
+  // Rescale so a saved filter keeps its meaning instead of silently
+  // loosening on the 1-1000 scale.
+  if (GetInt(profile_.data(), "severityScale", 100) != 1000) {
+    severity_min = std::clamp(severity_min * 10, 1u, 1000u);
+  }
+  event_fetcher_->SetSeverityMin(
+      static_cast<scada::EventSeverity>(severity_min));
 
   local_events_ = std::make_unique<LocalEvents>();
 
@@ -79,6 +89,7 @@ EventModule::EventModule(EventModuleContext&& context)
   profile_.RegisterSerializer([this](boost::json::value& data) {
     SetKey(data, "severityMin",
            static_cast<int>(event_fetcher_->severity_min()));
+    SetKey(data, "severityScale", 1000);
   });
 
   global_commands_.AddCommand(

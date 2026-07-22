@@ -275,7 +275,7 @@ TEST_F(EventJournalAlarmSurfaceTest, LegacySeverityCellIsTheBareNumber) {
   FirstEvent().severity = scada::kSeverityCritical;
   Init();
 
-  EXPECT_EQ(CellText(EventColumnSeverity), u"80");
+  EXPECT_EQ(CellText(EventColumnSeverity), u"800");
 }
 
 TEST_F(EventJournalAlarmSurfaceTest, ThemedSeverityCellNamesTheAlarmBand) {
@@ -287,7 +287,7 @@ TEST_F(EventJournalAlarmSurfaceTest, ThemedSeverityCellNamesTheAlarmBand) {
   // row's colour alone.
   EXPECT_EQ(CellText(EventColumnSeverity),
             events::SeverityLevelLabel(scada::aui::SeverityLevel::kCritical) +
-                u" 80");
+                u" 800");
 }
 
 // A routine event has no alarm band, so there is nothing to name — it stays the
@@ -297,7 +297,7 @@ TEST_F(EventJournalAlarmSurfaceTest, ThemedRoutineSeverityCellStaysTheNumber) {
   Init();
   scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
 
-  EXPECT_EQ(CellText(EventColumnSeverity), u"50");
+  EXPECT_EQ(CellText(EventColumnSeverity), u"500");
 }
 
 TEST_F(EventJournalAlarmSurfaceTest, ThemedAckCellSaysAnAlarmIsStillPending) {

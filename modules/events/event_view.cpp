@@ -485,7 +485,11 @@ Awaitable<void> EventView::SelectSeverityAsync() {
 
 void EventView::SetSeverityMin(scada::EventSeverity severity) {
   if (model_->current_events()) {
-    node_event_provider_.SetSeverityMin(severity);
+    // 0 means "all events" in the UI; the fetcher's valid floor is
+    // kSeverityMin (1), which matches every event on the 1-1000 scale
+    // (0 is not a valid severity — OPC UA Part 5 §6.4.2).
+    node_event_provider_.SetSeverityMin(
+        severity == 0 ? scada::kSeverityMin : severity);
     profile_.NotifyChange();
   } else {
     model_->SetSeverityMin(severity);
