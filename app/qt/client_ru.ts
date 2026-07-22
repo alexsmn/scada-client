@@ -470,6 +470,27 @@
         <source>HiHi</source>
         <translation>Верхняя аварийная</translation>
     </message>
+    <!-- modules/events/event_timeline.cpp (Inspector alarm-card History) -->
+    <message>
+        <source>History</source>
+        <translation>История</translation>
+    </message>
+    <message>
+        <source>Raised</source>
+        <translation>Возникло</translation>
+    </message>
+    <message>
+        <source>Received by the server</source>
+        <translation>Принято сервером</translation>
+    </message>
+    <message>
+        <source>Acknowledged</source>
+        <translation>Квитировано</translation>
+    </message>
+    <message>
+        <source>Awaiting acknowledgement</source>
+        <translation>Ожидает квитирования</translation>
+    </message>
     <message>
         <source>Hi</source>
         <translation>Верхняя</translation>

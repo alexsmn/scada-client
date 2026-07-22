@@ -33,6 +33,29 @@ struct InspectorLimitRow {
   bool breached = false;
 };
 
+// One step of the selected event's lifecycle in the alarm card's History
+// section.
+struct InspectorTimelineRow {
+  // The step's time, or empty for a step that has not happened yet.
+  QString time;
+  // The step's translated label.
+  QString text;
+};
+
+// The alarm card's contents, for a journal-event selection.
+struct InspectorEventView {
+  QString source;
+  QString node_id_text;
+  QString message;
+  unsigned severity = 0;
+  QString time_text;
+  QString acknowledged_text;
+  bool acknowledgeable = false;
+  bool source_available = false;
+  // The event's lifecycle, oldest step first. Empty hides the section.
+  std::vector<InspectorTimelineRow> timeline;
+};
+
 // The element card's contents. Grouped into a struct rather than a positional
 // parameter list so the widget tests and the capture can fill exactly the
 // parts they exercise.
@@ -105,19 +128,9 @@ class InspectorPanel : public QWidget {
   // ShowSelection drives, and the seam the widget tests exercise.
   void ShowElement(const InspectorElementView& element);
 
-  // Fills the alarm card for a journal-event selection: source identity, the
-  // severity band pill, the message, the event time and the acknowledgement
-  // state, plus the Acknowledge and To-graph (go to source) actions. Render
-  // primitive behind ShowSelection's event branch and the widget tests /
-  // capture.
-  void ShowEvent(const QString& source,
-                 const QString& node_id_text,
-                 const QString& message,
-                 unsigned severity,
-                 const QString& time_text,
-                 const QString& acknowledged_text,
-                 bool acknowledgeable,
-                 bool source_available);
+  // Fills the alarm card for a journal-event selection. Render primitive
+  // behind ShowSelection's event branch and the widget tests / capture.
+  void ShowEvent(const InspectorEventView& event);
 
  private:
   QWidget* BuildEmptyState();
@@ -127,6 +140,8 @@ class InspectorPanel : public QWidget {
   void RefreshValue();
   // Rebuilds the limits block; hides it when the node configures no bands.
   void ShowLimits(const std::vector<InspectorLimitRow>& limits);
+  // Rebuilds the event card's History block.
+  void ShowTimeline(const std::vector<InspectorTimelineRow>& timeline);
 
   InspectorPanelContext context_;
 
@@ -157,4 +172,7 @@ class InspectorPanel : public QWidget {
   QLabel* event_acknowledged_ = nullptr;
   QPushButton* acknowledge_ = nullptr;
   QPushButton* go_to_source_ = nullptr;
+  // The History block: a section header plus one row per lifecycle step,
+  // hidden wholesale when there is nothing to show.
+  QWidget* timeline_ = nullptr;
 };

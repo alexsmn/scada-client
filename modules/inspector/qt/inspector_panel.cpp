@@ -9,6 +9,7 @@
 #include "model/data_items_node_ids.h"
 #include "model/node_id_util.h"
 #include "modules/events/event_severity.h"
+#include "modules/events/event_timeline.h"
 #include "modules/inspector/limit_band.h"
 #include "node_service/node_format.h"
 #include "node_service/node_ref.h"
@@ -343,8 +344,65 @@ QWidget* InspectorPanel::BuildEventView() {
   });
   layout->addWidget(go_to_source_);
 
+  // History: the event's own lifecycle, so "when did this happen and has
+  // anyone responded" is answered in the card rather than by reading the
+  // journal's columns.
+  timeline_ = new QWidget;
+  timeline_->setObjectName(QStringLiteral("inspectorTimeline"));
+  auto* timeline_layout = new QVBoxLayout{timeline_};
+  timeline_layout->setContentsMargins(0, 0, 0, 0);
+  timeline_layout->setSpacing(0);
+  timeline_layout->addWidget(SectionHeader(Tr("History"), tokens));
+  layout->addWidget(timeline_);
+
   layout->addStretch(1);
   return view;
+}
+
+void InspectorPanel::ShowTimeline(
+    const std::vector<InspectorTimelineRow>& timeline) {
+  const scada::aui::ThemeTokens& tokens = InspectorTokens();
+
+  // Rebuild: the steps belong to the selected event, so they change with the
+  // selection rather than with the value.
+  auto* layout = qobject_cast<QVBoxLayout*>(timeline_->layout());
+  while (layout->count() > 1) {
+    QLayoutItem* item = layout->takeAt(1);
+    delete item->widget();
+    delete item;
+  }
+
+  timeline_->setVisible(!timeline.empty());
+  if (timeline.empty())
+    return;
+
+  for (const InspectorTimelineRow& step : timeline) {
+    auto* row = new QWidget;
+    row->setObjectName(QStringLiteral("inspectorTimelineRow"));
+    auto* row_layout = new QHBoxLayout{row};
+    row_layout->setContentsMargins(0, 3, 0, 3);
+    row_layout->setSpacing(9);
+
+    // A step that has not happened yet shows an em dash where its time would
+    // be, so the column stays aligned and the gap reads as "not yet".
+    auto* time =
+        new QLabel{step.time.isEmpty() ? QStringLiteral("—") : step.time};
+    time->setObjectName(QStringLiteral("inspectorTimelineTime"));
+    // Mono so the times form a readable column; nullopt under the legacy
+    // look, where the panel is not built anyway.
+    if (const std::optional<QFont> mono = scada::aui::MonoValueFont())
+      time->setFont(*mono);
+    time->setStyleSheet(QStringLiteral("color:%1;font-size:11px;")
+                            .arg(tokens.fg_subtle.name()));
+    auto* text = new QLabel{step.text};
+    text->setWordWrap(true);
+    text->setStyleSheet(
+        QStringLiteral("color:%1;font-size:11px;").arg(tokens.fg_muted.name()));
+
+    row_layout->addWidget(time);
+    row_layout->addWidget(text, 1);
+    layout->addWidget(row);
+  }
 }
 
 void InspectorPanel::Clear() {
@@ -368,20 +426,36 @@ void InspectorPanel::ShowSelection(const SelectionModel& selection) {
             ? QString::fromStdU16String(ToString16(source_node.display_name()))
             : QString::fromStdString(
                   NodeIdToScadaString(event->source_node_id));
-    ShowEvent(
-        source,
-        QString::fromStdString(NodeIdToScadaString(event->source_node_id)),
-        QString::fromStdU16String(event->message.text), event->severity,
-        QString::fromStdString(
+    // The lifecycle steps carry the time only: the card's Event section
+    // already states the date, so repeating it on every row would crowd them.
+    std::vector<InspectorTimelineRow> timeline;
+    for (const events::EventTimelineEntry& entry :
+         events::BuildEventTimeline(*event)) {
+      timeline.push_back(
+          {.time = entry.time.is_null() ? QString{}
+                                        : QString::fromStdString(FormatTime(
+                                              entry.time, TIME_FORMAT_TIME)),
+           .text = Tr(events::EventTimelineStepText(entry.step))});
+    }
+
+    ShowEvent(InspectorEventView{
+        .source = source,
+        .node_id_text =
+            QString::fromStdString(NodeIdToScadaString(event->source_node_id)),
+        .message = QString::fromStdU16String(event->message.text),
+        .severity = event->severity,
+        .time_text = QString::fromStdString(
             FormatTime(event->time, TIME_FORMAT_DATE | TIME_FORMAT_TIME)),
-        event->acked ? QString::fromStdString(
-                           FormatTime(event->acknowledged_time,
-                                      TIME_FORMAT_DATE | TIME_FORMAT_TIME))
-                     : QString::fromStdU16String(Translate("— pending —")),
-        /*acknowledgeable=*/!event->acked && context_.is_acknowledge_enabled &&
-            context_.is_acknowledge_enabled(),
-        /*source_available=*/context_.is_go_to_source_enabled &&
-            context_.is_go_to_source_enabled());
+        .acknowledged_text =
+            event->acked ? QString::fromStdString(
+                               FormatTime(event->acknowledged_time,
+                                          TIME_FORMAT_DATE | TIME_FORMAT_TIME))
+                         : QString::fromStdU16String(Translate("— pending —")),
+        .acknowledgeable = !event->acked && context_.is_acknowledge_enabled &&
+                           context_.is_acknowledge_enabled(),
+        .source_available = context_.is_go_to_source_enabled &&
+                            context_.is_go_to_source_enabled(),
+        .timeline = std::move(timeline)});
     return;
   }
 
@@ -433,30 +507,24 @@ void InspectorPanel::RefreshValue() {
   ShowElement(element);
 }
 
-void InspectorPanel::ShowEvent(const QString& source,
-                               const QString& node_id_text,
-                               const QString& message,
-                               unsigned severity,
-                               const QString& time_text,
-                               const QString& acknowledged_text,
-                               bool acknowledgeable,
-                               bool source_available) {
+void InspectorPanel::ShowEvent(const InspectorEventView& event) {
   const scada::aui::ThemeTokens& tokens = InspectorTokens();
 
-  event_title_->setText(source);
-  event_subtitle_->setText(node_id_text);
-  event_message_->setText(message.isEmpty() ? QStringLiteral("—") : message);
+  event_title_->setText(event.source);
+  event_subtitle_->setText(event.node_id_text);
+  event_message_->setText(event.message.isEmpty() ? QStringLiteral("—")
+                                                  : event.message);
 
   // The severity band pill: named + numbered, coloured from the shared ramp
   // (a routine severity reads as a neutral pill; colour is never the only
   // signal — the name and number carry the state).
   QString severity_text =
-      QString::fromStdU16String(events::EventSeverityLabel(severity));
+      QString::fromStdU16String(events::EventSeverityLabel(event.severity));
   if (!severity_text.isEmpty())
     severity_text += QLatin1Char(' ');
-  severity_text += QString::number(severity);
+  severity_text += QString::number(event.severity);
   const std::optional<scada::aui::Color> band_color =
-      scada::aui::SeverityColor(events::SeverityLevelForEvent(severity));
+      scada::aui::SeverityColor(events::SeverityLevelForEvent(event.severity));
   const QColor pill = band_color ? band_color->qcolor() : tokens.fg_muted;
   event_severity_->setText(severity_text);
   event_severity_->setStyleSheet(
@@ -464,11 +532,15 @@ void InspectorPanel::ShowEvent(const QString& source,
                      "border-radius:9px;padding:1px 10px;font-weight:600;}")
           .arg(pill.name()));
 
-  event_time_->setText(time_text.isEmpty() ? QStringLiteral("—") : time_text);
-  event_acknowledged_->setText(acknowledged_text.isEmpty() ? QStringLiteral("—")
-                                                           : acknowledged_text);
-  acknowledge_->setEnabled(acknowledgeable);
-  go_to_source_->setEnabled(source_available);
+  event_time_->setText(event.time_text.isEmpty() ? QStringLiteral("—")
+                                                 : event.time_text);
+  event_acknowledged_->setText(event.acknowledged_text.isEmpty()
+                                   ? QStringLiteral("—")
+                                   : event.acknowledged_text);
+  acknowledge_->setEnabled(event.acknowledgeable);
+  go_to_source_->setEnabled(event.source_available);
+
+  ShowTimeline(event.timeline);
 
   stack_->setCurrentIndex(2);
 }

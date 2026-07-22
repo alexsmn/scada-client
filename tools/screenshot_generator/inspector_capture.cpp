@@ -27,12 +27,24 @@ void SaveInspectorEventScreenshot(const ScreenshotSpec& spec) {
   InspectorPanel panel{
       InspectorPanelContext{.is_acknowledge_enabled = [] { return true; },
                             .is_go_to_source_enabled = [] { return true; }}};
-  panel.ShowEvent(
-      QStringLiteral("КП-03 МЭК-61850"), QStringLiteral("TS.105"),
-      QStringLiteral("КП-03: обрыв связи"), scada::kSeverityCritical,
-      QStringLiteral("16.04.2026 14:17:00"), QStringLiteral("— ожидает —"),
-      /*acknowledgeable=*/true,
-      /*source_available=*/true);
+  panel.ShowEvent(InspectorEventView{
+      .source = QStringLiteral("КП-03 МЭК-61850"),
+      .node_id_text = QStringLiteral("TS.105"),
+      .message = QStringLiteral("КП-03: обрыв связи"),
+      .severity = scada::kSeverityCritical,
+      .time_text = QStringLiteral("16.04.2026 14:17:00"),
+      .acknowledged_text = QStringLiteral("— ожидает —"),
+      .acknowledgeable = true,
+      .source_available = true,
+      // The lifecycle of a pending alarm that took a second to arrive.
+      .timeline = {{.time = QStringLiteral("14:17:00"),
+                    .text = QString::fromStdU16String(Translate("Raised"))},
+                   {.time = QStringLiteral("14:17:01"),
+                    .text = QString::fromStdU16String(
+                        Translate("Received by the server"))},
+                   {.time = QString{},
+                    .text = QString::fromStdU16String(
+                        Translate("Awaiting acknowledgement"))}}});
   SaveScreenshot(&panel, spec);
 }
 

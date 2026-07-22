@@ -191,6 +191,42 @@ TEST_F(InspectorPanelTest, EnabledControlHidesTheReason) {
   EXPECT_TRUE(reason->isHidden());
 }
 
+// The alarm card's History block lists the event's lifecycle, and a step that
+// has not happened yet shows an em dash where its time would be so the column
+// stays aligned and the gap reads as "not yet".
+TEST_F(InspectorPanelTest, EventTimelineListsTheLifecycle) {
+  InspectorPanel panel{InspectorPanelContext{}};
+  panel.ShowEvent(InspectorEventView{
+      .source = QStringLiteral("КП-03"),
+      .timeline = {{.time = QStringLiteral("14:17:00"),
+                    .text = QStringLiteral("Raised")},
+                   {.time = QString{},
+                    .text = QStringLiteral("Awaiting acknowledgement")}}});
+
+  auto* timeline =
+      panel.findChild<QWidget*>(QStringLiteral("inspectorTimeline"));
+  ASSERT_NE(timeline, nullptr);
+  EXPECT_FALSE(timeline->isHidden());
+
+  auto times =
+      panel.findChildren<QLabel*>(QStringLiteral("inspectorTimelineTime"));
+  ASSERT_EQ(times.size(), 2);
+  EXPECT_EQ(times[0]->text(), QStringLiteral("14:17:00"));
+  EXPECT_EQ(times[1]->text(), QStringLiteral("—"));
+}
+
+// An event card without lifecycle steps renders no History block rather than
+// an empty section.
+TEST_F(InspectorPanelTest, EmptyEventTimelineHidesTheBlock) {
+  InspectorPanel panel{InspectorPanelContext{}};
+  panel.ShowEvent(InspectorEventView{.source = QStringLiteral("КП-03")});
+
+  auto* timeline =
+      panel.findChild<QWidget*>(QStringLiteral("inspectorTimeline"));
+  ASSERT_NE(timeline, nullptr);
+  EXPECT_TRUE(timeline->isHidden());
+}
+
 // A minimal live datum identified by its formula alone (no backing node) —
 // the shape of a Table expression row.
 class FormulaTimedData : public BaseTimedData {
