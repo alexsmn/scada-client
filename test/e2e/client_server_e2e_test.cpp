@@ -1,9 +1,13 @@
 #include "test/e2e/client_server_e2e_test_support.h"
 
 #include "base/awaitable.h"
+#include "base/time/time.h"
 #include "opcua/client/client_session.h"
 #include "opcua_bridge/client_adapters.h"
 #include "scada/attribute_service.h"
+#include "scada/event.h"
+#include "scada/event_filter.h"
+#include "scada/history_service.h"
 #include "scada/node_management_service.h"
 #include "scada/read_value_id.h"
 #include "scada/session_service.h"
@@ -15,6 +19,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstdint>
 #include <filesystem>
 #include <optional>
 #include <sstream>
@@ -112,9 +117,8 @@ class ProxyOpcUaSession {
       RunAwaitable(io_, std::forward<Fn>(fn));
     } else {
       std::optional<Result> result;
-      RunAwaitable(io_, [&]() -> Awaitable<void> {
-        result.emplace(co_await fn());
-      });
+      RunAwaitable(io_,
+                   [&]() -> Awaitable<void> { result.emplace(co_await fn()); });
       return std::move(*result);
     }
   }
@@ -168,6 +172,17 @@ class ProxyOpcUaSession {
     });
   }
 
+  // Mirrors the Qt client's event journal read (HistoricalEventModel):
+  // HistoryReadEvents rooted at the Server object. An unset filter (types=0)
+  // matches every stored event regardless of type or ack state.
+  scada::HistoryReadEventsResult ReadEventHistory(scada::base::Time from,
+                                                  scada::base::Time to) {
+    return Run([this, from, to] {
+      return services_.history_service_->HistoryReadEvents(
+          scada::NodeId{scada::id::Server}, from, to, scada::EventFilter{});
+    });
+  }
+
   scada::StatusOr<std::vector<scada::AddNodesResult>> AddNode(
       scada::AddNodesItem item) {
     return Run([this, &item] {
@@ -215,10 +230,10 @@ bool FindFileChild(ProxyOpcUaSession& session,
     return false;
   }
   if (last_browse) {
-    *last_browse = "Browse status " +
-                   std::to_string(static_cast<int>(
-                       result->front().status_code)) +
-                   ", references:";
+    *last_browse =
+        "Browse status " +
+        std::to_string(static_cast<int>(result->front().status_code)) +
+        ", references:";
     for (const auto& reference : result->front().references) {
       *last_browse += " " + std::string{reference.node_id.ToString()};
     }
@@ -256,8 +271,8 @@ TEST_P(ClientServerE2eTest, FileSystem_BrowseAndReadThroughProxy) {
 
   scada::NodeId file_id;
   std::string last_browse;
-  const auto deadline = std::chrono::steady_clock::now() +
-                        std::chrono::seconds{20};
+  const auto deadline =
+      std::chrono::steady_clock::now() + std::chrono::seconds{20};
   while (!FindFileChild(session, "hello.txt", &file_id, &last_browse) &&
          std::chrono::steady_clock::now() < deadline) {
     std::this_thread::sleep_for(std::chrono::milliseconds{250});
@@ -307,11 +322,10 @@ TEST_P(ClientServerE2eTest, FileSystem_CreateAndDeleteThroughProxy) {
       .parent_id = kFileSystemRoot,
       .node_class = scada::NodeClass::Variable,
       .type_definition_id = kFileTypeId,
-      .attributes =
-          scada::NodeAttributes{}
-              .set_display_name(scada::LocalizedText{u"upload.txt"})
-              .set_value(
-                  scada::ByteString{kContents.begin(), kContents.end()})});
+      .attributes = scada::NodeAttributes{}
+                        .set_display_name(scada::LocalizedText{u"upload.txt"})
+                        .set_value(scada::ByteString{kContents.begin(),
+                                                     kContents.end()})});
   ASSERT_TRUE(added.ok()) << "AddNodes via the proxy failed: "
                           << ::ToString(added.status());
   ASSERT_EQ(added->size(), 1u);
@@ -350,8 +364,8 @@ TEST_P(ClientServerE2eTest, FileSystem_CreateAndDeleteThroughProxy) {
       << "the created file never became browsable via the proxy";
 
   auto deleted = session.DeleteNode(file_id);
-  ASSERT_TRUE(deleted.ok()) << "DeleteNodes via the proxy failed: "
-                            << ::ToString(deleted.status());
+  ASSERT_TRUE(deleted.ok())
+      << "DeleteNodes via the proxy failed: " << ::ToString(deleted.status());
   ASSERT_EQ(deleted->size(), 1u);
   EXPECT_TRUE(scada::IsGood(deleted->front()))
       << "DeleteNodes item status: " << static_cast<int>(deleted->front());
@@ -364,6 +378,67 @@ TEST_P(ClientServerE2eTest, FileSystem_CreateAndDeleteThroughProxy) {
   EXPECT_FALSE(std::filesystem::exists(file_path))
       << "DeleteNodes via the proxy did not remove the file from the "
          "filesystem tier's disk";
+}
+
+TEST_P(ClientServerE2eTest, Events_HistoryReadThroughProxy) {
+  // Event history is the historian tier's (ADR 0002/0004: edges run no history
+  // module; the events module stays framework-embedded and the historian's
+  // DataCollector subscribes to system events and files them in its event
+  // database). The client-visible path under test: HistoryReadEvents rooted at
+  // the Server object → proxy → history-link (the historian registered with
+  // the "HD" capability) → historian event DB. Only the Cluster topology has
+  // that seam, and the direct session always speaks OPC UA, so it runs once.
+  if (Topology() != ServerTopology::Cluster || Protocol() != E2eProtocol::OpcUa)
+    GTEST_SKIP() << "event history needs the historian tier behind the proxy; "
+                    "the direct-session check runs once, under OpcUa";
+
+  // The window must cover the tiers' startup burst of system events (module
+  // and device state events raised while the cluster comes up), which is what
+  // the historian collects — freeze the start before the tiers exist.
+  const scada::base::Time window_start =
+      scada::base::Time::Now() - scada::base::TimeDelta::FromMinutes(1);
+
+  StartServer();
+
+  ProxyOpcUaSession session;
+  ASSERT_TRUE(session.Connect(opcua_port_));
+
+  // The historian's event subscription and its write batching are
+  // asynchronous; poll until stored events come back through the proxy.
+  scada::HistoryReadEventsResult result;
+  const auto deadline =
+      std::chrono::steady_clock::now() + std::chrono::seconds{30};
+  while (std::chrono::steady_clock::now() < deadline) {
+    result = session.ReadEventHistory(
+        window_start,
+        scada::base::Time::Now() + scada::base::TimeDelta::FromMinutes(1));
+    if (result.status && !result.events.empty())
+      break;
+    std::this_thread::sleep_for(std::chrono::milliseconds{500});
+  }
+  ASSERT_TRUE(result.status) << "HistoryReadEvents via the proxy failed: "
+                             << ::ToString(result.status);
+  ASSERT_FALSE(result.events.empty())
+      << "HistoryReadEvents via the proxy returned no events: the historian "
+         "collected no system events from the cluster startup, or the "
+         "proxy's history link did not route the read to it";
+
+  // Every returned event must be a well-formed, fully-populated record — this
+  // locks the events OPC UA alignment invariants across the wire and the
+  // historian's store: a non-empty event id, a resolvable type, a source node,
+  // timestamps inside the requested window, and Severity in the OPC UA 1..1000
+  // range (Part 5 §6.4.2).
+  for (const scada::Event& event : result.events) {
+    EXPECT_TRUE(event.is_valid())
+        << "stored event is not valid; type " << event.event_type_id.ToString();
+    EXPECT_FALSE(event.event_type_id.is_null());
+    EXPECT_FALSE(event.source_node_id.is_null())
+        << "event has no source node; type " << event.event_type_id.ToString();
+    EXPECT_GE(event.severity, 1u);
+    EXPECT_LE(event.severity, 1000u);
+    EXPECT_GE(event.time, window_start)
+        << "event time precedes the requested window";
+  }
 }
 
 TEST_P(ClientServerE2eTest, Connect_Success) {
@@ -425,11 +500,11 @@ TEST_P(ClientServerE2eTest, Connect_Success_LoadsObjectTree) {
 }
 
 TEST_P(ClientServerE2eTest, Connect_Success_ExpandsObjectTreeLabels) {
-  // Under Cluster the tree loads and (since the remote-config reference fix) the
-  // device labels resolve, but the expected nested station/group DisplayNames
-  // still don't fully come through aggregation — a pending server-tier gap in the
-  // aggregation attribute path. Runs under SingleTier where the tree is served
-  // from the local config DB.
+  // Under Cluster the tree loads and (since the remote-config reference fix)
+  // the device labels resolve, but the expected nested station/group
+  // DisplayNames still don't fully come through aggregation — a pending
+  // server-tier gap in the aggregation attribute path. Runs under SingleTier
+  // where the tree is served from the local config DB.
   if (Topology() == ServerTopology::Cluster)
     GTEST_SKIP() << "nested tree labels pending a server-tier gap (DisplayName "
                     "through aggregation)";
@@ -475,14 +550,15 @@ TEST_P(ClientServerE2eTest, Connect_Success_ExpandsHardwareTreeDevices) {
   // every device (both instances of MODBUS, IEC60870 and IEC61850) reaches
   // state=Online through the proxy. The path had two masks: the client reading
   // status by its nested node id (`MakeNestedNodeId(device, "Online")`) rather
-  // than a synchronous aggregate lookup that returned null against a remote node
-  // service, and — the last server-side piece — per-tier served NamespaceArrays
-  // (ADR 0003), which stopped an edge from forwarding a device's runtime-status
-  // monitored item to the config tier (which has no such node → Bad_WrongNodeId
-  // → Unknown). The client-side capture asserts EVERY device resolved its
-  // status (never Unknown), not one per protocol, so a single device left
-  // Unknown fails the test. Offline is allowed — it is a value that routed (the
-  // IEC60870 server-side device has no peer and settles Offline).
+  // than a synchronous aggregate lookup that returned null against a remote
+  // node service, and — the last server-side piece — per-tier served
+  // NamespaceArrays (ADR 0003), which stopped an edge from forwarding a
+  // device's runtime-status monitored item to the config tier (which has no
+  // such node → Bad_WrongNodeId → Unknown). The client-side capture asserts
+  // EVERY device resolved its status (never Unknown), not one per protocol, so
+  // a single device left Unknown fails the test. Offline is allowed — it is a
+  // value that routed (the IEC60870 server-side device has no peer and settles
+  // Offline).
   //
   // Run the cluster suite with SCADA_SERVER_LICENSE_REQUIRE_GCP_BINDING=false;
   // without it every tier stops during startup and the harness reports it as
@@ -534,21 +610,33 @@ TEST_P(ClientServerE2eTest, Connect_Success_ExpandsHardwareTreeDevices) {
 }
 
 TEST_P(ClientServerE2eTest, Connect_Success_DisplaysHistoricalTimedData) {
-  // History is the historian tier's, not a device tier's (ADR 0002: edges own no
-  // history), so this runs only under the Cluster topology. End-to-end path: the
-  // config tier + historian carry TIT.4's historization; the edges load + activate
-  // + simulate it (remote-config enumeration + reference reconstruction); the
-  // historian pull-collects it from the edge (historyCollection.sources) and the
-  // client reads it back through the proxy. Skipped under SingleTier (no
-  // historian).
+  // History is the historian tier's, not a device tier's (ADR 0002: edges own
+  // no history), so this runs only under the Cluster topology. End-to-end path:
+  // the config tier + historian carry TIT.4's historization; the edges load +
+  // activate + simulate it (remote-config enumeration + reference
+  // reconstruction); the historian pull-collects it from the edge
+  // (historyCollection.sources) and the client reads it back through the
+  // proxy's history link to the historian (the historian registers with the
+  // "HD" capability; the proxy's history-link module routes ALL history to
+  // it). Skipped under SingleTier (no historian).
   if (Topology() != ServerTopology::Cluster)
     GTEST_SKIP() << "history needs the historian tier (a single device tier "
                     "owns no history)";
   WriteClientSettings(/*password=*/"");
   EnableSimulatedHistory();
   StartServer();
+  // Freeze the historical window's end BEFORE the client exists: every live
+  // monitored-item update the client will buffer carries a source timestamp
+  // after this instant, so only rows served by a HistoryRead against the
+  // historian's store (collected while the tiers were starting up) can land
+  // inside the window. Without this the view's default Day window let
+  // client-side live buffering populate the rows and the test passed even
+  // when proxy history routing was broken.
+  const int64_t history_window_end = scada::base::Time::Now().ToInternalValue();
   StartClient({"--test-historical-timed-data-file=" +
-               historical_timed_data_file_.string()});
+                   historical_timed_data_file_.string(),
+               "--test-historical-timed-data-end=" +
+                   std::to_string(history_window_end)});
 
   ASSERT_TRUE(WaitForStartupOrStatus())
       << "Timed out waiting for client startup/status signal";
@@ -559,12 +647,13 @@ TEST_P(ClientServerE2eTest, Connect_Success_DisplaysHistoricalTimedData) {
       << "Unexpected client status while waiting for startup: " << status;
   ASSERT_TRUE(client_.IsRunning()) << "Client exited unexpectedly after login";
 
-  // The server collects the simulated TIT.4 into history; the client opens the
-  // real timed-data view over a past window, reads those samples back through
-  // the active backend (and, in MultiProcess, the proxy's aggregated history),
-  // and exports them via the view's real Export-to-CSV writer. The CSV is a
-  // header row plus one row per sample, so at least one newline (one data row)
-  // proves the historical view populated.
+  // The historian collects the simulated TIT.4 into its store; the client
+  // opens the real timed-data view over the frozen pre-launch window, reads
+  // those samples back through the active backend (via the proxy's history
+  // link to the historian), and exports them via the view's real
+  // Export-to-CSV writer. The CSV is a header row plus one row per sample, so
+  // at least one newline (one data row) proves historian-served rows populated
+  // the view — live buffering cannot land inside the window.
   const auto report = WaitForHistoricalTimedDataReport();
   EXPECT_GT(std::count(report.begin(), report.end(), '\n'), 0)
       << "Expected the exported timed-data CSV to contain historical rows:\n"
@@ -742,11 +831,10 @@ INSTANTIATE_TEST_SUITE_P(
     // proxy (Cluster). The two multi-protocol/history tests self-skip under
     // SingleTier (see their bodies); everything else runs under both, proving
     // the client behaves identically one-process or clustered.
-    ::testing::Values(
-        E2eParam{E2eProtocol::Remote, ServerTopology::SingleTier},
-        E2eParam{E2eProtocol::OpcUa, ServerTopology::SingleTier},
-        E2eParam{E2eProtocol::Remote, ServerTopology::Cluster},
-        E2eParam{E2eProtocol::OpcUa, ServerTopology::Cluster}),
+    ::testing::Values(E2eParam{E2eProtocol::Remote, ServerTopology::SingleTier},
+                      E2eParam{E2eProtocol::OpcUa, ServerTopology::SingleTier},
+                      E2eParam{E2eProtocol::Remote, ServerTopology::Cluster},
+                      E2eParam{E2eProtocol::OpcUa, ServerTopology::Cluster}),
     [](const ::testing::TestParamInfo<E2eParam>& info) {
       return E2eParamName(info.param);
     });
