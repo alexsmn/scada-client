@@ -5,6 +5,7 @@
 
 #include "aui/translation.h"
 #include "inspector/qt/inspector_panel.h"
+#include "scada/event.h"
 
 #include <QString>
 
@@ -26,12 +27,12 @@ void SaveInspectorEventScreenshot(const ScreenshotSpec& spec) {
   InspectorPanel panel{
       InspectorPanelContext{.is_acknowledge_enabled = [] { return true; },
                             .is_go_to_source_enabled = [] { return true; }}};
-  panel.ShowEvent(QStringLiteral("КП-03 МЭК-61850"), QStringLiteral("TS.105"),
-                  QStringLiteral("КП-03: обрыв связи"),
-                  /*severity=*/80, QStringLiteral("16.04.2026 14:17:00"),
-                  QStringLiteral("— ожидает —"),
-                  /*acknowledgeable=*/true,
-                  /*source_available=*/true);
+  panel.ShowEvent(
+      QStringLiteral("КП-03 МЭК-61850"), QStringLiteral("TS.105"),
+      QStringLiteral("КП-03: обрыв связи"), scada::kSeverityCritical,
+      QStringLiteral("16.04.2026 14:17:00"), QStringLiteral("— ожидает —"),
+      /*acknowledgeable=*/true,
+      /*source_available=*/true);
   SaveScreenshot(&panel, spec);
 }
 
