@@ -162,7 +162,14 @@ EventView::EventView(const ControllerContext& context,
   command_registry_.AddCommand(
       Command{ID_ACKNOWLEDGE_CURRENT}
           .set_execute_handler([this] { AcknowledgeSelection(); })
-          .set_enabled_handler([this] { return CanAcknowledgeSelection(); }));
+          .set_enabled_handler([this] { return CanAcknowledgeSelection(); })
+          .set_disabled_reason_handler([this] {
+            return table_->GetSelectedRows().empty()
+                       ? Translate("Select an event to acknowledge")
+                       : Translate(
+                             "The selected events are already "
+                             "acknowledged");
+          }));
 
   command_registry_.AddCommand(
       Command{ID_ACKNOWLEDGE_ALL}
@@ -173,6 +180,9 @@ EventView::EventView(const ControllerContext& context,
           .set_enabled_handler([this] {
             return !node_event_provider_.unacked_events().empty() ||
                    !local_events_.events().empty();
+          })
+          .set_disabled_reason_handler([] {
+            return Translate("Nothing is waiting to be acknowledged");
           }));
 
   command_registry_.AddCommand(
@@ -488,8 +498,8 @@ void EventView::SetSeverityMin(scada::EventSeverity severity) {
     // 0 means "all events" in the UI; the fetcher's valid floor is
     // kSeverityMin (1), which matches every event on the 1-1000 scale
     // (0 is not a valid severity — OPC UA Part 5 §6.4.2).
-    node_event_provider_.SetSeverityMin(
-        severity == 0 ? scada::kSeverityMin : severity);
+    node_event_provider_.SetSeverityMin(severity == 0 ? scada::kSeverityMin
+                                                      : severity);
     profile_.NotifyChange();
   } else {
     model_->SetSeverityMin(severity);

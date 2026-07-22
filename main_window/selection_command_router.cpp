@@ -43,6 +43,14 @@ bool SelectionCommandRouter::IsCommandEnabled(unsigned command_id) const {
                      command->enabled_handler(command_context()));
 }
 
+std::u16string SelectionCommandRouter::GetCommandDisabledReason(
+    unsigned command_id) const {
+  const auto* command = selection_commands_.FindCommand(command_id);
+  if (!command || !command->disabled_reason_handler)
+    return {};
+  return command->disabled_reason_handler(command_context());
+}
+
 bool SelectionCommandRouter::IsCommandChecked(unsigned command_id) const {
   const auto* command = selection_commands_.FindCommand(command_id);
   return command && command->checked_handler &&

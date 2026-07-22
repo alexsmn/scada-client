@@ -32,6 +32,8 @@ class SelectionCommandRouter : private SelectionCommandRouterContext,
   // CommandHandler
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual bool IsCommandEnabled(unsigned command_id) const override;
+  virtual std::u16string GetCommandDisabledReason(
+      unsigned command_id) const override;
   virtual bool IsCommandChecked(unsigned command_id) const override;
   virtual void ExecuteCommand(unsigned command_id) override;
 

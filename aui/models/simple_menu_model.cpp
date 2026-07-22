@@ -19,6 +19,11 @@ struct SimpleMenuModel::Item {
 ////////////////////////////////////////////////////////////////////////////////
 // SimpleMenuModel::Delegate, public:
 
+std::u16string SimpleMenuModel::Delegate::GetDisabledReasonForCommandId(
+    int command_id) const {
+  return {};
+}
+
 bool SimpleMenuModel::Delegate::IsCommandIdVisible(int command_id) const {
   return true;
 }
@@ -212,6 +217,13 @@ bool SimpleMenuModel::IsEnabledAt(int index) const {
   return delegate_->IsCommandIdEnabled(command_id);
 }
 
+std::u16string SimpleMenuModel::GetDisabledReasonAt(int index) const {
+  int command_id = GetCommandIdAt(index);
+  if (!delegate_ || command_id == kSeparatorId)
+    return {};
+  return delegate_->GetDisabledReasonForCommandId(command_id);
+}
+
 bool SimpleMenuModel::IsVisibleAt(int index) const {
   int command_id = GetCommandIdAt(index);
   if (!delegate_ || command_id == kSeparatorId)
@@ -294,4 +306,4 @@ void SimpleMenuModel::ValidateItem(const Item& item) {
 #endif  // NDEBUG
 }
 
-}  // namespace aui
+}  // namespace scada::aui

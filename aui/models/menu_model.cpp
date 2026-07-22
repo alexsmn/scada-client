@@ -3,6 +3,10 @@
 
 namespace scada::aui {
 
+std::u16string MenuModel::GetDisabledReasonAt(int index) const {
+  return {};
+}
+
 bool MenuModel::IsVisibleAt(int index) const {
   return true;
 }
@@ -38,4 +42,4 @@ void MenuModel::ActivatedAt(int index, int event_flags) {
   ActivatedAt(index);
 }
 
-}  // namespace aui
+}  // namespace scada::aui

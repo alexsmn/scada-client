@@ -494,6 +494,19 @@
         <source>Controlling requires the Control privilege</source>
         <translation>Для управления требуется право «Управление»</translation>
     </message>
+    <!-- modules/events/event_view.cpp (disabled-command reasons) -->
+    <message>
+        <source>Select an event to acknowledge</source>
+        <translation>Выберите событие для квитирования</translation>
+    </message>
+    <message>
+        <source>The selected events are already acknowledged</source>
+        <translation>Выбранные события уже квитированы</translation>
+    </message>
+    <message>
+        <source>Nothing is waiting to be acknowledged</source>
+        <translation>Нет неквитированных событий</translation>
+    </message>
     <message>
         <source>Control…</source>
         <translation>Управление…</translation>

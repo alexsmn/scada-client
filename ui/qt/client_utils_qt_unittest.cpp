@@ -1,8 +1,11 @@
 #include "ui/qt/client_utils_qt.h"
 
+#include "aui/models/simple_menu_model.h"
 #include "aui/test/app_environment.h"
 #include "resources/common_resources.h"
 
+#include <QAction>
+#include <QMenu>
 #include <QPixmap>
 #include <QSize>
 #include <gtest/gtest.h>
@@ -62,6 +65,91 @@ TEST_F(ClientUtilsQtTest, ApplicationIconLoads) {
 TEST_F(ClientUtilsQtTest, UnmappedIdsReturnNullPixmap) {
   EXPECT_TRUE(LoadPixmap(0).isNull());
   EXPECT_TRUE(LoadPixmap(0xFFFFFFFFu).isNull());
+}
+
+// A menu model whose items' enablement and reason the test controls.
+class ReasonMenuModel : public scada::aui::SimpleMenuModel {
+ public:
+  class Delegate : public scada::aui::SimpleMenuModel::Delegate {
+   public:
+    virtual bool IsCommandIdChecked(int command_id) const override {
+      return false;
+    }
+    virtual bool IsCommandIdEnabled(int command_id) const override {
+      return enabled;
+    }
+    virtual std::u16string GetDisabledReasonForCommandId(
+        int command_id) const override {
+      return reason;
+    }
+    virtual void ExecuteCommand(int command_id) override {}
+
+    bool enabled = false;
+    std::u16string reason;
+  };
+
+  explicit ReasonMenuModel(Delegate& delegate) : SimpleMenuModel{&delegate} {}
+};
+
+class BuildMenuReasonTest : public ::testing::Test {
+ protected:
+  AppEnvironment app_env_;
+  ReasonMenuModel::Delegate delegate_;
+};
+
+// A disabled entry carries its reason as a tooltip, and the menu opts into
+// showing tooltips — Qt hides them otherwise, and hides them for disabled
+// items unless the menu asks.
+TEST_F(BuildMenuReasonTest, DisabledEntryShowsItsReason) {
+  delegate_.enabled = false;
+  delegate_.reason = u"no output channel";
+  ReasonMenuModel model{delegate_};
+  model.AddItem(1, u"Control…");
+
+  QMenu menu;
+  BuildMenu(menu, model);
+
+  ASSERT_EQ(menu.actions().size(), 1);
+  QAction* action = menu.actions().front();
+  EXPECT_FALSE(action->isEnabled());
+  EXPECT_EQ(action->toolTip(), QStringLiteral("no output channel"));
+  EXPECT_TRUE(menu.toolTipsVisible());
+}
+
+// An enabled entry is never asked for a reason and shows no tooltip, so the
+// hover text stays meaningful.
+TEST_F(BuildMenuReasonTest, EnabledEntryHasNoReasonTooltip) {
+  delegate_.enabled = true;
+  delegate_.reason = u"never shown";
+  ReasonMenuModel model{delegate_};
+  model.AddItem(1, u"Control…");
+
+  QMenu menu;
+  BuildMenu(menu, model);
+
+  ASSERT_EQ(menu.actions().size(), 1);
+  QAction* action = menu.actions().front();
+  EXPECT_TRUE(action->isEnabled());
+  // Qt defaults an action's tooltip to its text; what matters is that the
+  // reason was not adopted and the menu did not opt into tooltips.
+  EXPECT_NE(action->toolTip(), QStringLiteral("never shown"));
+  EXPECT_FALSE(menu.toolTipsVisible());
+}
+
+// A disabled entry with nothing to say leaves the menu alone rather than
+// showing an empty tooltip.
+TEST_F(BuildMenuReasonTest, DisabledEntryWithoutReasonShowsNoTooltip) {
+  delegate_.enabled = false;
+  delegate_.reason.clear();
+  ReasonMenuModel model{delegate_};
+  model.AddItem(1, u"Control…");
+
+  QMenu menu;
+  BuildMenu(menu, model);
+
+  ASSERT_EQ(menu.actions().size(), 1);
+  EXPECT_FALSE(menu.actions().front()->isEnabled());
+  EXPECT_FALSE(menu.toolTipsVisible());
 }
 
 }  // namespace

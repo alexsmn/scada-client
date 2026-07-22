@@ -83,7 +83,19 @@ void BuildMenu(QMenu& menu,
         auto* action =
             menu.addAction(QString::fromStdU16String(model.GetLabelAt(i)));
         action->setData(model.GetCommandIdAt(i));
-        action->setEnabled(model.IsEnabledAt(i));
+        const bool enabled = model.IsEnabledAt(i);
+        action->setEnabled(enabled);
+        // A greyed entry explains itself on hover rather than leaving the
+        // operator to guess whether the system is broken or the action simply
+        // does not apply. Qt hides menu tooltips unless asked, and only shows
+        // them for disabled items when the menu opts in.
+        if (!enabled) {
+          const std::u16string reason = model.GetDisabledReasonAt(i);
+          if (!reason.empty()) {
+            action->setToolTip(QString::fromStdU16String(reason));
+            menu.setToolTipsVisible(true);
+          }
+        }
         if (item_type == scada::aui::MenuModel::TYPE_CHECK ||
             item_type == scada::aui::MenuModel::TYPE_RADIO) {
           action->setCheckable(true);

@@ -54,6 +54,11 @@ class MenuModel {
   // Returns the enabled state of the item at the specified index.
   virtual bool IsEnabledAt(int index) const = 0;
 
+  // Why the item at |index| is disabled, shown on the greyed entry so the
+  // reader is not left guessing. Empty when the item is enabled or carries no
+  // explanation.
+  virtual std::u16string GetDisabledReasonAt(int index) const;
+
   // Returns true if the menu item is visible.
   virtual bool IsVisibleAt(int index) const;
 
@@ -96,4 +101,4 @@ class MenuModel {
                                            int* index);
 };
 
-}  // namespace aui
+}  // namespace scada::aui

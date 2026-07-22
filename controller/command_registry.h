@@ -34,6 +34,7 @@ class BasicCommand {
   using EnabledHandler = UnaryFunction<bool, C>;
   using CheckedHandler = UnaryFunction<bool, C>;
   using AvailableHandler = UnaryFunction<bool, C>;
+  using DisabledReasonHandler = UnaryFunction<std::u16string, C>;
 
   // TODO: Remove settings and use designated initializers.
 
@@ -67,6 +68,14 @@ class BasicCommand {
     return *this;
   }
 
+  // Explains why the command is disabled, shown on the greyed menu entry. The
+  // command owns the sentence because it owns the rule behind
+  // `enabled_handler`.
+  BasicCommand& set_disabled_reason_handler(DisabledReasonHandler handler) {
+    disabled_reason_handler = std::move(handler);
+    return *this;
+  }
+
   unsigned command_id = 0;
 
   std::u16string title;
@@ -76,6 +85,7 @@ class BasicCommand {
   EnabledHandler enabled_handler;
   CheckedHandler checked_handler;
   AvailableHandler available_handler;
+  DisabledReasonHandler disabled_reason_handler;
 };
 
 using Command = BasicCommand<void>;
@@ -117,6 +127,8 @@ class CommandRegistry : public CommandHandler,
   // CommandHandler
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual bool IsCommandEnabled(unsigned command_id) const override;
+  virtual std::u16string GetCommandDisabledReason(
+      unsigned command_id) const override;
   virtual bool IsCommandChecked(unsigned command_id) const override;
   virtual void ExecuteCommand(unsigned command_id) override;
 };
@@ -159,6 +171,14 @@ inline bool CommandRegistry::IsCommandEnabled(unsigned command_id) const {
   if (!command)
     return false;
   return command->enabled_handler ? command->enabled_handler() : true;
+}
+
+inline std::u16string CommandRegistry::GetCommandDisabledReason(
+    unsigned command_id) const {
+  auto* command = FindCommand(command_id);
+  if (!command || !command->disabled_reason_handler)
+    return {};
+  return command->disabled_reason_handler();
 }
 
 inline bool CommandRegistry::IsCommandChecked(unsigned command_id) const {

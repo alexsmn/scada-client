@@ -19,6 +19,10 @@ class SimpleMenuModel : public MenuModel {
     virtual bool IsCommandIdEnabled(int command_id) const = 0;
     virtual bool IsCommandIdVisible(int command_id) const;
 
+    // Why |command_id| is currently disabled; empty when it is enabled or has
+    // no explanation. Asked only for disabled items.
+    virtual std::u16string GetDisabledReasonForCommandId(int command_id) const;
+
     // Some command ids have labels and icons that change over time.
     virtual bool IsItemForCommandIdDynamic(int command_id) const;
     virtual std::u16string GetLabelForCommandId(int command_id) const;
@@ -102,6 +106,7 @@ class SimpleMenuModel : public MenuModel {
   virtual bool IsItemCheckedAt(int index) const override;
   virtual int GetGroupIdAt(int index) const override;
   virtual bool IsEnabledAt(int index) const override;
+  virtual std::u16string GetDisabledReasonAt(int index) const override;
   virtual bool IsVisibleAt(int index) const override;
   virtual void HighlightChangedTo(int index) override;
   virtual void ActivatedAt(int index) override;
@@ -144,4 +149,4 @@ class SimpleMenuModel : public MenuModel {
   MenuModelDelegate* menu_model_delegate_;
 };
 
-}  // namespace aui
+}  // namespace scada::aui

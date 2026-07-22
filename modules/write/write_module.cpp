@@ -56,6 +56,12 @@ WriteModule::WriteModule(WriteModuleContext&& context)
              return session_service_.HasPrivilege(scada::Privilege::Control) &&
                     GetWriteBlock(context.selection.node()) !=
                         WriteBlock::kNotCommandable;
+           },
+       // The greyed entry names the same rule the gate applied.
+       .disabled_reason_handler =
+           [](const SelectionCommandContext& context) {
+             return Translate(
+                 WriteBlockText(GetWriteBlock(context.selection.node())));
            }});
 
   selection_commands_.AddCommand(
