@@ -62,8 +62,8 @@ bool VariantIsTruthy(const scada::Variant& value) {
 // The reading's current value: the live monitored value when it has been
 // delivered, otherwise the node's Value-attribute snapshot. The offscreen
 // capture (and the moment right after selection, before the first monitored
-// update) has no delivered value, so the snapshot keeps the hero + counters from
-// reading empty/"Disabled".
+// update) has no delivered value, so the snapshot keeps the hero + counters
+// from reading empty/"Disabled".
 scada::Variant CurrentValue(const TimedDataSpec* spec, const NodeRef& node) {
   if (spec) {
     scada::DataValue current = spec->current();
@@ -203,8 +203,9 @@ QWidget* DeviceDiagnosticsPanel::BuildContent() {
   // Header: device name + type subtitle.
   name_ = new QLabel;
   name_->setWordWrap(true);
-  name_->setStyleSheet(QStringLiteral("color:%1;font-size:14px;font-weight:600;")
-                           .arg(tokens.fg.name()));
+  name_->setStyleSheet(
+      QStringLiteral("color:%1;font-size:14px;font-weight:600;")
+          .arg(tokens.fg.name()));
   type_ = new QLabel;
   type_->setWordWrap(true);
   type_->setStyleSheet(
@@ -238,9 +239,10 @@ QWidget* DeviceDiagnosticsPanel::BuildContent() {
   // Actions section: one button per context action.
   layout->addWidget(SectionHeader(Tr("Actions"), tokens));
   const QString action_style =
-      QStringLiteral("QPushButton{background:%1;color:%2;border:1px solid %3;"
-                     "border-radius:6px;padding:8px;font-weight:500;}"
-                     "QPushButton:disabled{color:%4;}")
+      QStringLiteral(
+          "QPushButton{background:%1;color:%2;border:1px solid %3;"
+          "border-radius:6px;padding:8px;font-weight:500;}"
+          "QPushButton:disabled{color:%4;}")
           .arg(tokens.surface_muted.name(), tokens.fg.name(),
                tokens.border_strong.name(), tokens.fg_subtle.name());
   for (const DiagnosticAction& action : context_.actions) {
@@ -279,9 +281,9 @@ void DeviceDiagnosticsPanel::ShowDevice(const NodeRef& device,
     return;
   }
 
-  device_name_ = QString::fromStdU16String(device.display_name());
+  device_name_ = QString::fromStdU16String(ToString16(device.display_name()));
   if (NodeRef type = device.type_definition())
-    device_type_ = QString::fromStdU16String(type.display_name());
+    device_type_ = QString::fromStdU16String(ToString16(type.display_name()));
   else
     device_type_.clear();
 
@@ -316,8 +318,7 @@ void DeviceDiagnosticsPanel::ShowDevice(const NodeRef& device,
         connect(descriptor.declaration_id, descriptor.browse_name, node);
     if (!node)
       continue;
-    readings_.push_back(
-        Reading{Tr(descriptor.label), node, std::move(spec)});
+    readings_.push_back(Reading{Tr(descriptor.label), node, std::move(spec)});
   }
 
   RefreshFromSpecs();
@@ -390,12 +391,11 @@ void DeviceDiagnosticsPanel::ShowDiagnostics(
     auto* key = new QLabel{row.label};
     key->setStyleSheet(
         QStringLiteral("color:%1;").arg(tokens.fg_subtle.name()));
-    auto* value = new QLabel{row.value.isEmpty() ? QStringLiteral("—")
-                                                 : row.value};
+    auto* value =
+        new QLabel{row.value.isEmpty() ? QStringLiteral("—") : row.value};
     value->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-    value->setStyleSheet(
-        QStringLiteral("color:%1;font-weight:600;")
-            .arg((row.bad ? tokens.bad : tokens.fg).name()));
+    value->setStyleSheet(QStringLiteral("color:%1;font-weight:600;")
+                             .arg((row.bad ? tokens.bad : tokens.fg).name()));
     row_layout->addWidget(key);
     row_layout->addStretch(1);
     row_layout->addWidget(value);

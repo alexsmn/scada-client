@@ -29,9 +29,9 @@ std::u16string FormatReference(NodeService& node_service,
                                bool add) {
   return u16format(L"{} of type {} from {} to {}",
                    add ? L"Adding reference" : L"Deleting reference",
-                   GetDisplayName(node_service, reference_type_id),
-                   GetDisplayName(node_service, source_id),
-                   GetDisplayName(node_service, target_id));
+                   GetDisplayName(node_service, reference_type_id).text,
+                   GetDisplayName(node_service, source_id).text,
+                   GetDisplayName(node_service, target_id).text);
 }
 
 scada::StatusOr<std::vector<scada::WriteValue>> PrepareUpdateInputs(
@@ -262,7 +262,7 @@ Awaitable<scada::Status> TaskManagerImpl::PostUpdateTask(
     const scada::NodeId& node_id,
     scada::NodeAttributes attributes,
     scada::NodeProperties properties) {
-  std::u16string title = GetDisplayName(node_service_, node_id);
+  std::u16string title = GetDisplayName(node_service_, node_id).text;
   auto self = shared_from_this();
   return PostTaskMethod(u16format(L"Modifying {}", title),
                         [self, node_id, attributes = std::move(attributes),
@@ -304,7 +304,7 @@ Awaitable<scada::Status> TaskManagerImpl::RunUpdateTask(
 
 Awaitable<scada::Status> TaskManagerImpl::PostDeleteTask(
     const scada::NodeId& node_id) {
-  std::u16string title = GetDisplayName(node_service_, node_id);
+  std::u16string title = GetDisplayName(node_service_, node_id).text;
   auto self = shared_from_this();
   return PostTaskMethod(u16format(L"Deleting {}", title),
                         [self, node_id]() mutable {

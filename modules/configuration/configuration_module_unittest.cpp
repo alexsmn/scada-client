@@ -189,7 +189,7 @@ TEST_F(ConfigurationModuleTest, ReportsMethodCallSuccessAfterCompletion) {
   ASSERT_EQ(local_events_.events().size(), 1);
   const auto& event = *local_events_.events().front();
   EXPECT_EQ(event.severity, scada::kSeverityNormal);
-  EXPECT_NE(event.message.find(u"Pump"), std::u16string::npos);
+  EXPECT_NE(event.message.text.find(u"Pump"), std::u16string::npos);
 }
 
 TEST_F(ConfigurationModuleTest, ReportsMethodCallFailureAfterCompletion) {
@@ -207,5 +207,5 @@ TEST_F(ConfigurationModuleTest, ReportsMethodCallFailureAfterCompletion) {
   ASSERT_EQ(local_events_.events().size(), 1);
   const auto& event = *local_events_.events().front();
   EXPECT_EQ(event.severity, scada::kSeverityCritical);
-  EXPECT_NE(event.message.find(u"Pump"), std::u16string::npos);
+  EXPECT_NE(event.message.text.find(u"Pump"), std::u16string::npos);
 }

@@ -194,7 +194,7 @@ void EventTableModel::GetEventCell(const Row& row,
     case EventColumnMessage:
       // A flood group carries its occurrence count here, so a chattering source
       // reads as one line with a number instead of fifty lines to scroll past.
-      cell.text = events::FormatGroupedMessage(event.message, group_count);
+      cell.text = events::FormatGroupedMessage(event.message.text, group_count);
       break;
     case EventColumnUser:
       // The row's NodeRef belongs to the occurrence on display; a collapsed

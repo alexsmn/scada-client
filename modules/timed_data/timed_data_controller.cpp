@@ -124,7 +124,7 @@ std::string GetTimedDataUnits(const TimedDataSpec& spec) {
 void TimedDataController::UpdateColumnTitles() {}
 
 std::u16string TimedDataController::MakeTitle() const {
-  return model_->timed_data().GetTitle();
+  return model_->timed_data().GetTitle().text;
 }
 
 void TimedDataController::AddContainedItem(const scada::NodeId& node_id,

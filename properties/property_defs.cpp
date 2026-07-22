@@ -41,7 +41,7 @@ std::u16string ReferencePropertyDefinition::GetText(
   }
 
   if (auto target = node.target(prop_decl_id))
-    return target.display_name();
+    return ToString16(target.display_name());
   else
     return std::u16string{kChoiceNone};
 }
@@ -142,7 +142,7 @@ std::u16string EnumPropertyDefinition::GetText(
       int_value >= static_cast<int>(enum_strings->size()))
     return std::u16string();
 
-  return (*enum_strings)[int_value];
+  return (*enum_strings)[int_value].text;
 }
 
 void EnumPropertyDefinition::SetText(const PropertyContext& context,
@@ -183,7 +183,9 @@ scada::aui::EditData EnumPropertyDefinition::GetPropertyEditor(
       property_declaration.data_type()["EnumStrings"].value();
   if (const auto* enum_strings =
           enum_strings_value.get_if<std::vector<scada::LocalizedText>>()) {
-    result.choices = *enum_strings;
+    result.choices.reserve(enum_strings->size());
+    for (const auto& choice : *enum_strings)
+      result.choices.push_back(choice.text);
   }
 
   return result;

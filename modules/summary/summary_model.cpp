@@ -93,7 +93,7 @@ std::u16string SummaryModel::Column::GetTitle() const {
     }
   }
 
-  return timed_data_.GetTitle();
+  return timed_data_.GetTitle().text;
 }
 
 void SummaryModel::Column::UpdateTimes() {
@@ -369,11 +369,11 @@ void SummaryModel::OnColumnTitleChanged(int column) {
 void SummaryModel::AddContainedItem(const scada::NodeId& node_id,
                                     unsigned flags) {
   // TOOD: Capture by weak pointer.
-  CoSpawn(executor_, [this, executor = executor_,
-                      node = node_service_.GetNode(node_id)]()
-                         -> Awaitable<void> {
-    return AddContainedItemAsync(*this, executor, node);
-  });
+  CoSpawn(executor_,
+          [this, executor = executor_,
+           node = node_service_.GetNode(node_id)]() -> Awaitable<void> {
+            return AddContainedItemAsync(*this, executor, node);
+          });
 }
 
 void SummaryModel::RemoveContainedItem(const scada::NodeId& node_id) {

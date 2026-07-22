@@ -371,7 +371,7 @@ void InspectorPanel::ShowSelection(const SelectionModel& selection) {
     ShowEvent(
         source,
         QString::fromStdString(NodeIdToScadaString(event->source_node_id)),
-        QString::fromStdU16String(event->message), event->severity,
+        QString::fromStdU16String(event->message.text), event->severity,
         QString::fromStdString(
             FormatTime(event->time, TIME_FORMAT_DATE | TIME_FORMAT_TIME)),
         event->acked ? QString::fromStdString(

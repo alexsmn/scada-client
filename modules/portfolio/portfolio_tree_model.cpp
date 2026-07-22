@@ -59,7 +59,7 @@ void PortfolioTreeModel::AddItemNode(PortfolioTreeNode& portfolio_node,
                                      const scada::NodeId& item_id) {
   auto node = std::make_unique<PortfolioTreeNode>(portfolio_manager_,
                                                   portfolio_node.portfolio());
-  node->set_title(GetDisplayName(node_service_, item_id));
+  node->set_title(GetDisplayName(node_service_, item_id).text);
   node->set_icon(1);
   node->set_item_id(item_id);
   Add(portfolio_node, portfolio_node.GetChildCount(), std::move(node));
@@ -101,7 +101,7 @@ void PortfolioTreeModel::Portfolio_OnUpdateItem(Portfolio& portfolio,
   if (!node)
     AddItemNode(*portfolio_node, node_id);
   else {
-    node->set_title(GetDisplayName(node_service_, node_id));
+    node->set_title(GetDisplayName(node_service_, node_id).text);
     TreeNodeChanged(node);
   }
 }

@@ -1,5 +1,6 @@
 #include "node_properties/device_address_map.h"
 
+#include "base/utf_convert.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/node_id_util.h"
@@ -64,10 +65,10 @@ Awaitable<std::vector<AddressMapRow>> BuildDeviceAddressMap(
     }
 
     AddressMapRow row;
-    row.signal = source.display_name();
+    row.signal = ToString16(source.display_name());
     row.type = SignalTypeTag(source.type_definition().node_id());
-    row.ioa = scada::ToLocalizedText(std::to_string(ioa));
-    row.node_id = scada::ToLocalizedText(NodeIdToScadaString(source.node_id()));
+    row.ioa = UtfConvert<char16_t>(std::to_string(ioa));
+    row.node_id = UtfConvert<char16_t>(NodeIdToScadaString(source.node_id()));
     rows.push_back(std::move(row));
   }
 

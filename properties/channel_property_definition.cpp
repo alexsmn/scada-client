@@ -151,7 +151,7 @@ scada::aui::EditData ChannelPropertyDefinition::GetPropertyEditor(
     const auto& parent = context.node_service_.GetNode(parent_id);
     for (const auto& component : GetDataVariables(parent)) {
       result.choices.emplace_back(
-          scada::ToLocalizedText(component.browse_name().name()));
+          UtfConvert<char16_t>(component.browse_name().name()));
     }
   }
 

@@ -49,7 +49,7 @@ std::u16string GetTimedDataTooltipText(const TimedDataSpec& timed_data) {
       FormatTime(timed_data.current().source_timestamp,
                  TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
 
-  auto str = name;
+  auto str = std::move(name.text);
   AppendHint(str, Translate("Value"), val);
   AppendHint(str, Translate("Time"), str_time);
   AppendHint(str, Translate("Updated"), str_utime);
@@ -71,7 +71,7 @@ std::u16string GetTimedDataTooltipText(const TimedDataSpec& timed_data) {
       // add event
       std::u16string stime = UtfConvert<char16_t>(FormatTime(
           event.time, TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
-      str += u16format(L"\n{} {}", stime, event.message);
+      str += u16format(L"\n{} {}", stime, event.message.text);
     }
   }
 

@@ -54,7 +54,7 @@ std::u16string WriteModel::GetWindowTitle() const {
 }
 
 std::u16string WriteModel::GetSourceTitle() const {
-  return spec_.GetTitle();
+  return spec_.GetTitle().text;
 }
 
 std::u16string WriteModel::GetCurrentValue(bool formatted) const {
@@ -171,7 +171,7 @@ std::u16string WriteModel::GetConfirmationMessage(bool second_stage) const {
   std::u16string message;
   if (second_stage)
     message += kSecondStagePrefix;
-  message += spec_.GetTitle();
+  message += spec_.GetTitle().text;
   message += u"\n\n";
   message += Translate("Present:");
   message += u"  ";
@@ -198,7 +198,7 @@ void WriteModel::StartWriting(bool second_stage) {
   // ConfirmAndStartWritingAsync declaration).
   CoSpawn(executor_,
           [executor = executor_, model = weak_from_this(),
-           dialog_service = dialog_service_, title = spec_.GetTitle(),
+           dialog_service = dialog_service_, title = spec_.GetTitle().text,
            message = GetConfirmationMessage(second_stage)]() mutable {
             return ConfirmAndStartWritingAsync(
                 std::move(executor), std::move(model), *dialog_service,

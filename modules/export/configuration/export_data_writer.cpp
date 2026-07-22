@@ -25,7 +25,8 @@ void WriteExportData(const ExportData& data, CsvWriter& writer) {
   writer.WriteCell(u"Type");
   writer.WriteCell(u"Name");
   for (const auto& prop : data.props)
-    writer.WriteCell(FormatReferenceCell(prop.display_name, prop.prop_decl_id));
+    writer.WriteCell(
+        FormatReferenceCell(prop.display_name.text, prop.prop_decl_id));
 
   // Rows
   for (const auto& node : data.nodes) {
@@ -34,9 +35,9 @@ void WriteExportData(const ExportData& data, CsvWriter& writer) {
     writer.WriteCell(NodeIdToScadaString(node.parent_id));
     writer.WriteCell(
         !node.type_id.is_null()
-            ? FormatReferenceCell(node.type_display_name, node.type_id)
+            ? FormatReferenceCell(node.type_display_name.text, node.type_id)
             : std::u16string{});
-    writer.WriteCell(node.display_name);
+    writer.WriteCell(node.display_name.text);
 
     for (const ExportData::Property& prop : data.props) {
       auto i = std::ranges::find(node.property_values, prop.prop_decl_id,
@@ -50,8 +51,8 @@ void WriteExportData(const ExportData& data, CsvWriter& writer) {
 
       if (prop_value.reference) {
         scada::base::Check(!prop_value.target_id.is_null());
-        writer.WriteCell(FormatReferenceCell(prop_value.target_display_name,
-                                             prop_value.target_id));
+        writer.WriteCell(FormatReferenceCell(
+            prop_value.target_display_name.text, prop_value.target_id));
       } else {
         scada::base::Check(!prop_value.value.is_null());
         auto str = prop_value.value.get_or(std::string());

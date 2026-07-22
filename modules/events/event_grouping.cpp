@@ -15,7 +15,7 @@ namespace {
 using GroupKey = std::pair<scada::NodeId, std::u16string>;
 
 GroupKey KeyOf(const scada::Event& event) {
-  return {event.source_node_id, event.message};
+  return {event.source_node_id, event.message.text};
 }
 
 }  // namespace

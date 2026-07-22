@@ -32,21 +32,19 @@ Awaitable<std::vector<UserGridRow>> BuildUsersGrid(AnyExecutor executor,
     co_await child.type_definition().Fetch(NodeFetchStatus::NodeAndChildren);
 
     scada::Int32 access = 0;
-    if (NodeRef rights =
-            child[scada::security::id::UserType_AccessRights]) {
+    if (NodeRef rights = child[scada::security::id::UserType_AccessRights]) {
       co_await rights.Fetch(NodeFetchStatus::NodeOnly);
       access = rights.value().get_or<scada::Int32>(0);
     }
 
     bool multi = false;
-    if (NodeRef sessions =
-            child[scada::security::id::UserType_MultiSessions]) {
+    if (NodeRef sessions = child[scada::security::id::UserType_MultiSessions]) {
       co_await sessions.Fetch(NodeFetchStatus::NodeOnly);
       multi = sessions.value().get_or<bool>(false);
     }
 
     rows.push_back(UserGridRow{.node_id = child.node_id(),
-                               .name = std::u16string(child.display_name()),
+                               .name = ToString16(child.display_name()),
                                .role = UserRoleFor(access),
                                .multi_sessions = multi});
   }

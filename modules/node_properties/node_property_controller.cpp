@@ -3,11 +3,11 @@
 #include "aui/models/property_tree_model.h"
 #include "aui/tree.h"
 #include "common/formula_util.h"
-#include "modules/node_properties/node_property_model.h"
 #include "controller/controller_delegate.h"
 #include "controller/controller_registry.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
+#include "modules/node_properties/node_property_model.h"
 #include "node_service/node_service.h"
 #include "profile/window_definition.h"
 
@@ -56,17 +56,17 @@ std::unique_ptr<UiView> NodePropertyController::Init(
     node_deleted_connection_ = property_model_->node_deleted.connect(
         [this] { controller_delegate_.Close(); });
     if (DeviceParameterForm* form = MakeDeviceParameterForm(
-            *property_model_, QString::fromStdU16String(
-                                  property_model_->node().display_name()))) {
+            *property_model_, QString::fromStdU16String(ToString16(
+                                  property_model_->node().display_name())))) {
       // Populate the address-map preview from the device's transmission items,
       // off the construction path. Guarded by a QPointer so a late completion
       // cannot touch a destroyed form.
       CoSpawn(executor_,
               [executor = executor_, device = property_model_->node(),
-               form_ptr = QPointer<DeviceParameterForm>{form}]()
-                  mutable -> Awaitable<void> {
-                std::vector<AddressMapRow> rows = co_await BuildDeviceAddressMap(
-                    executor, std::move(device));
+               form_ptr = QPointer<DeviceParameterForm>{
+                   form}]() mutable -> Awaitable<void> {
+                std::vector<AddressMapRow> rows =
+                    co_await BuildDeviceAddressMap(executor, std::move(device));
                 if (form_ptr && !rows.empty())
                   form_ptr->SetAddressMap(std::move(rows));
                 co_return;
@@ -74,8 +74,8 @@ std::unique_ptr<UiView> NodePropertyController::Init(
       // Likewise the limits preview from the device's analog data items.
       CoSpawn(executor_,
               [executor = executor_, device = property_model_->node(),
-               form_ptr = QPointer<DeviceParameterForm>{form}]()
-                  mutable -> Awaitable<void> {
+               form_ptr = QPointer<DeviceParameterForm>{
+                   form}]() mutable -> Awaitable<void> {
                 std::vector<LimitRow> rows =
                     co_await BuildDeviceLimits(executor, std::move(device));
                 if (form_ptr && !rows.empty())
@@ -145,7 +145,8 @@ std::unique_ptr<UiView> NodePropertyController::Init(
 void NodePropertyController::Save(WindowDefinition& definition) {
   definition.AddItem("Item").SetString(
       "path", NodeIdToScadaString(property_model_->node().node_id()));
-  // The reshell form path leaves tree_view_ null; only the grid saves tree state.
+  // The reshell form path leaves tree_view_ null; only the grid saves tree
+  // state.
   if (tree_view_)
     definition.AddItem("State").attributes = tree_view_->SaveState();
 }

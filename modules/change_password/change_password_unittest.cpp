@@ -65,7 +65,7 @@ TEST_F(ChangePasswordTest, ReportsSuccessAfterMethodCallCompletes) {
   ASSERT_EQ(local_events_.events().size(), 1);
   const auto& event = *local_events_.events().front();
   EXPECT_EQ(event.severity, scada::kSeverityNormal);
-  EXPECT_NE(event.message.find(u"Changing password for user Operator"),
+  EXPECT_NE(event.message.text.find(u"Changing password for user Operator"),
             std::u16string::npos);
 }
 
@@ -86,6 +86,6 @@ TEST_F(ChangePasswordTest, ReportsFailureAfterMethodCallCompletes) {
   ASSERT_EQ(local_events_.events().size(), 1);
   const auto& event = *local_events_.events().front();
   EXPECT_EQ(event.severity, scada::kSeverityCritical);
-  EXPECT_NE(event.message.find(u"Changing password for user Operator"),
+  EXPECT_NE(event.message.text.find(u"Changing password for user Operator"),
             std::u16string::npos);
 }

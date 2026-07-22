@@ -74,7 +74,7 @@ void DeleteSelection(AnyExecutor executor,
 
   auto message = nodes.size() == 1
                      ? u16format(L"Are you sure you want to delete {}?",
-                                 nodes.front().display_name())
+                                 nodes.front().display_name().text)
                      : u16format(L"Are you sure you want to delete {} items?",
                                  nodes.size());
 

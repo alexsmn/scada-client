@@ -127,7 +127,7 @@ void NodeTableModel::GetCell(scada::aui::GridCell& cell) {
   } else if (column.attr_id == scada::AttributeId::BrowseName)
     cell.text = UtfConvert<char16_t>(node.browse_name().name());
   else if (column.attr_id == scada::AttributeId::DisplayName)
-    cell.text = node.display_name();
+    cell.text = ToString16(node.display_name());
   else if (column.prop_def->IsReadOnly(node,
                                        column.property_declaration.node_id()))
     cell.cell_color = kReadOnlyCellColor;
@@ -314,8 +314,8 @@ void NodeTableModel::Sort() {
 
   struct CompareRows {
     bool operator()(const Row& left, const Row& right) const {
-      const auto& a = left.node[property_id].value().get_or(std::u16string());
-      const auto& b = right.node[property_id].value().get_or(std::u16string());
+      const auto a = ToString16(left.node[property_id].value());
+      const auto b = ToString16(right.node[property_id].value());
       return HumanCompareText(a, b) < 0;
     }
 

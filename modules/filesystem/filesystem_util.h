@@ -9,12 +9,12 @@
 inline std::filesystem::path GetFilePath(const NodeRef& file_node) {
   // TODO: Fetch all parents.
 
-  auto path = file_node.display_name();
+  std::u16string path = ToString16(file_node.display_name());
 
   for (auto directory_node = file_node;
        IsSubtypeOf(directory_node, scada::filesystem::id::FileDirectoryType);
        directory_node = directory_node.parent()) {
-    path.insert(0, directory_node.display_name());
+    path.insert(0, ToString16(directory_node.display_name()));
   }
 
   return std::filesystem::path{std::move(path)};

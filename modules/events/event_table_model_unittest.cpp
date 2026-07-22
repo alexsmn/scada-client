@@ -396,6 +396,23 @@ class EventFloodGroupingTest : public Test {
                           .current_events_ = false}};
 };
 
+// A locale-qualified message (server-side catalog translation, ADR 0005 item
+// 8b) renders its text in the Message cell — the locale tag never leaks into
+// the journal.
+TEST_F(EventFloodGroupingTest, ALocalizedMessageRendersItsText) {
+  historical_event_model_.AddEvent(
+      {.event_id = 1,
+       .time = scada::DateTime::UnixEpoch(),
+       .source_node_id = node_id_,
+       .message = scada::LocalizedText{"ru", u"Значение в норме"}});
+  Rebuild();
+
+  ASSERT_EQ(model_.GetRowCount(), 1);
+  scada::aui::TableCell cell{.row = 0, .column_id = EventColumnMessage};
+  model_.GetCell(cell);
+  EXPECT_EQ(cell.text, u"Значение в норме");
+}
+
 // Below the flood threshold nothing changes: a quiet journal is a plain list,
 // one row per event, so grouping never surprises an operator who is not buried.
 TEST_F(EventFloodGroupingTest, ABacklogBelowTheThresholdIsNotGrouped) {
@@ -692,8 +709,10 @@ TEST_F(EventAlarmChromeTest, PendingDotMarksUnacknowledgedRows) {
                                     .severity = scada::kSeverityCritical,
                                     .source_node_id = node_id_,
                                     .message = u"crit"});
-  historical_event_model_.AddEvent(
-      {.event_id = 2, .source_node_id = node_id_, .message = u"done", .acked = true});
+  historical_event_model_.AddEvent({.event_id = 2,
+                                    .source_node_id = node_id_,
+                                    .message = u"done",
+                                    .acked = true});
   Rebuild();
   ASSERT_EQ(model_.GetRowCount(), 2);
 
@@ -716,8 +735,10 @@ TEST_F(EventAlarmChromeTest, LiveAlarmIsNotDuplicatedByItsHistoryCopy) {
                           .message = u"crit"};
   empty_current_.try_emplace(event_id, live);
   historical_event_model_.AddEvent(live);
-  historical_event_model_.AddEvent(
-      {.event_id = 8, .source_node_id = node_id_, .message = u"other", .acked = true});
+  historical_event_model_.AddEvent({.event_id = 8,
+                                    .source_node_id = node_id_,
+                                    .message = u"other",
+                                    .acked = true});
   Rebuild();
 
   ASSERT_EQ(model_.GetRowCount(), 2);

@@ -98,8 +98,9 @@ QWidget* UserAccessPanel::BuildContent() {
   // Header: user name + role pill.
   auto* header = new QHBoxLayout;
   name_ = new QLabel;
-  name_->setStyleSheet(QStringLiteral("color:%1;font-size:14px;font-weight:600;")
-                           .arg(tokens.fg.name()));
+  name_->setStyleSheet(
+      QStringLiteral("color:%1;font-size:14px;font-weight:600;")
+          .arg(tokens.fg.name()));
   role_ = new QLabel;
   role_->setObjectName(QStringLiteral("userRolePill"));
   header->addWidget(name_);
@@ -136,9 +137,9 @@ void UserAccessPanel::ShowUser(const NodeRef& user) {
     return;
   }
 
-  const scada::Int32 access =
-      user[scada::security::id::UserType_AccessRights].value().get_or<scada::Int32>(
-          0);
+  const scada::Int32 access = user[scada::security::id::UserType_AccessRights]
+                                  .value()
+                                  .get_or<scada::Int32>(0);
 
   std::vector<UserPermissionDisplay> permissions;
   for (const UserPermission& permission : UserPermissionsFor(access)) {
@@ -146,7 +147,7 @@ void UserAccessPanel::ShowUser(const NodeRef& user) {
         Tr(UserPermissionLabelKey(permission.kind)), permission.granted});
   }
 
-  ShowAccess(QString::fromStdU16String(user.display_name()),
+  ShowAccess(QString::fromStdU16String(ToString16(user.display_name())),
              UserRoleFor(access), permissions);
 }
 

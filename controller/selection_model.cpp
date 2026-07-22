@@ -89,7 +89,7 @@ void SelectionModel::SelectMultiple() {
 }
 
 std::u16string SelectionModel::GetTitle() const {
-  return timed_data_.GetTitle();
+  return timed_data_.GetTitle().text;
 }
 
 NodeIdSet SelectionModel::GetMultipleNodeIds() const {

@@ -61,7 +61,7 @@ bool Convert(const scada::Variant& source,
       target.Set(UtfConvert<wchar_t>(source.get<scada::String>()).c_str());
       return true;
     case scada::Variant::LOCALIZED_TEXT:
-      target.Set(source.get<scada::LocalizedText>().c_str());
+      target.Set(source.get<scada::LocalizedText>().text.c_str());
       return true;
     case scada::Variant::DATE_TIME:
       target.Set(static_cast<DATE>(source.get<scada::DateTime>().ToDoubleT()));

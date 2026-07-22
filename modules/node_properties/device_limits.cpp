@@ -1,5 +1,6 @@
 #include "node_properties/device_limits.h"
 
+#include "base/utf_convert.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/node_ref.h"
 #include "node_service/node_util.h"
@@ -23,7 +24,7 @@ std::u16string FormatLimitValue(double value) {
     if (!text.empty() && text.back() == '.')
       text.pop_back();
   }
-  return scada::ToLocalizedText(text);
+  return UtfConvert<char16_t>(text);
 }
 
 // Reads one analog-item limit property; empty when the item has no such band.
@@ -60,15 +61,15 @@ Awaitable<std::vector<LimitRow>> BuildDeviceLimits(AnyExecutor executor,
       continue;
 
     LimitRow row;
-    row.signal = child.display_name();
-    row.lolo =
-        co_await FetchLimit(child, scada::data_items::id::AnalogItemType_LimitLoLo);
-    row.lo =
-        co_await FetchLimit(child, scada::data_items::id::AnalogItemType_LimitLo);
-    row.hi =
-        co_await FetchLimit(child, scada::data_items::id::AnalogItemType_LimitHi);
-    row.hihi =
-        co_await FetchLimit(child, scada::data_items::id::AnalogItemType_LimitHiHi);
+    row.signal = ToString16(child.display_name());
+    row.lolo = co_await FetchLimit(
+        child, scada::data_items::id::AnalogItemType_LimitLoLo);
+    row.lo = co_await FetchLimit(child,
+                                 scada::data_items::id::AnalogItemType_LimitLo);
+    row.hi = co_await FetchLimit(child,
+                                 scada::data_items::id::AnalogItemType_LimitHi);
+    row.hihi = co_await FetchLimit(
+        child, scada::data_items::id::AnalogItemType_LimitHiHi);
     rows.push_back(std::move(row));
   }
 

@@ -107,7 +107,7 @@ std::string TableRow::GetFormula() const {
 }
 
 std::u16string TableRow::GetTitle() const {
-  return timed_data_.GetTitle();
+  return timed_data_.GetTitle().text;
 }
 
 std::u16string TableRow::GetTooltip() const {
@@ -191,7 +191,7 @@ void TableRow::GetEventCell(TableCellEx& cell) const {
     return;
 
   const scada::Event& last_event = **events->rbegin();
-  cell.text = last_event.message;
+  cell.text = last_event.message.text;
 
   if (events->size() >= 2)
     cell.text.insert(0, u16format(L"[{}] ", events->size()));

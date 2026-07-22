@@ -31,7 +31,8 @@ void WatchModel::OnEvent(const scada::Event& event) {
 
 void WatchModel::OnError(const scada::Status& status) {
   scada::Event event;
-  event.message = Translate("Subscription interrupted. The device may have been deleted.");
+  event.message =
+      Translate("Subscription interrupted. The device may have been deleted.");
   AddLine(event);
 }
 
@@ -136,13 +137,13 @@ void WatchModel::GetCell(scada::aui::TableCell& cell) {
     case 1:
       if (event.source_node_id.is_null())
         break;
-      cell.text = GetDisplayName(node_service_, event.source_node_id);
+      cell.text = GetDisplayName(node_service_, event.source_node_id).text;
       if (cell.text.empty())
         cell.text = u"?";
       break;
 
     case 2:
-      cell.text = event.message;
+      cell.text = event.message.text;
       break;
   }
 }

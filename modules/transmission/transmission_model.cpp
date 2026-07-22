@@ -121,7 +121,7 @@ void TransmissionModel::GetCell(scada::aui::GridCell& cell) {
   switch (cell.column) {
     case 0: {
       auto source = node_service_.GetNode(row.source_id);
-      cell.text = source ? source.display_name() : std::u16string();
+      cell.text = source ? ToString16(source.display_name()) : std::u16string();
       break;
     }
 

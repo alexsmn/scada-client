@@ -149,7 +149,7 @@ void OpenedViewCreateCommand::CreateRecord(const scada::NodeId& type_node_id,
                             ts.ToString());
   }
 
-  auto title = u16format(L"Creating \"{}\"", attributes.display_name);
+  auto title = u16format(L"Creating \"{}\"", attributes.display_name.text);
 
   CoSpawn(executor_, cancelation_,
           [this, type_node_id, parent_id = parent_node.node_id(),

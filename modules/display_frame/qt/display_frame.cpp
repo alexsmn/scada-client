@@ -362,7 +362,8 @@ void DisplayFrame::RefreshMeasurementRow(int row, const TimedDataSpec& spec) {
     return;
 
   measurements_->setItem(
-      row, 0, new QTableWidgetItem{QString::fromStdU16String(spec.GetTitle())});
+      row, 0,
+      new QTableWidgetItem{QString::fromStdU16String(spec.GetTitle().text)});
   // Value carries quality + units inline (the token set has no per-cell quality
   // colour column here; the string is the operator-facing value).
   measurements_->setItem(
@@ -407,12 +408,13 @@ void DisplayFrame::RefreshEvents() {
     if (data_context_.node_service) {
       NodeRef node = data_context_.node_service->GetNode(event.source_node_id);
       if (node)
-        object = QString::fromStdU16String(node.display_name());
+        object = QString::fromStdU16String(ToString16(node.display_name()));
     }
     events_->setItem(i, 2, new QTableWidgetItem{object});
 
     events_->setItem(
-        i, 3, new QTableWidgetItem{QString::fromStdU16String(event.message)});
+        i, 3,
+        new QTableWidgetItem{QString::fromStdU16String(event.message.text)});
   }
 }
 

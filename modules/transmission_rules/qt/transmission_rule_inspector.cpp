@@ -202,7 +202,7 @@ void TransmissionRuleInspector::ShowRule(const NodeRef& transmission) {
           .get_or<scada::Int32>(0);
 
   const std::u16string source_name =
-      source ? std::u16string(source.display_name()) : std::u16string{};
+      source ? ToString16(source.display_name()) : std::u16string{};
 
   TransmissionRuleDisplay rule;
   rule.node_id = transmission.node_id();
@@ -215,7 +215,8 @@ void TransmissionRuleInspector::ShowRule(const NodeRef& transmission) {
       source ? TransmissionSignalTag(source.type_definition().node_id())
              : std::u16string{});
   rule.endpoint =
-      endpoint ? QString::fromStdU16String(endpoint.display_name()) : QString{};
+      endpoint ? QString::fromStdU16String(ToString16(endpoint.display_name()))
+               : QString{};
   rule.ioa = ioa;
 
   ShowRuleDisplay(rule);

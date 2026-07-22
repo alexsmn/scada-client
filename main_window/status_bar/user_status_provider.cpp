@@ -42,7 +42,7 @@ void UserStatusProvider::Init(const ChangeNotifier& change_notifier) {
 }
 
 std::u16string UserStatusProvider::GetText() const {
-  const std::u16string user = user_node_.display_name();
+  const std::u16string user = ToString16(user_node_.display_name());
   const std::u16string role = RoleLabel();
   return user.empty() ? role : user + u" · " + role;
 }

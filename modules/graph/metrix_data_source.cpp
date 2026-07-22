@@ -251,7 +251,7 @@ void MetrixDataSource::UpdateLimits() {
 }
 
 void MetrixDataSource::OnItemChanged() {
-  title_ = timed_data_.GetTitle();
+  title_ = timed_data_.GetTitle().text;
   UpdateRange();
   UpdateLimits();
 
@@ -285,7 +285,7 @@ void MetrixDataSource::OnPropertyChanged(const PropertySet& properties) {
     OnItemChanged();
 
   if (properties.is_title_changed()) {
-    title_ = timed_data_.GetTitle();
+    title_ = timed_data_.GetTitle().text;
     if (observer_)
       observer_->OnDataSourceItemChanged();
   }
