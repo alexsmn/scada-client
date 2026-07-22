@@ -6,17 +6,31 @@
 
 #include <gtest/gtest.h>
 
+#include <set>
+#include <string>
+
 namespace {
 
 TEST(OverviewPageTest, HasTrendAndActiveAlarmWindows) {
   Page page = MakeOverviewPage();
 
-  ASSERT_EQ(page.GetWindowCount(), 2);
+  ASSERT_EQ(page.GetWindowCount(), 5);
   // A dominant trend and the active-alarm table.
   EXPECT_EQ(page.GetWindow(0).type, "Graph");
   EXPECT_EQ(page.GetWindow(1).type, "EventJournal");
   // The alarm table opens in "Current" mode (unacknowledged/actionable events).
   EXPECT_NE(page.GetWindow(1).FindItem("mode"), nullptr);
+
+  // The Explorer sidebar and its sibling panes. That these dock as one
+  // tabified sidebar rather than opening workspace tabs is a property of the
+  // modules' WIN_SING window infos, which are registered by the running app —
+  // asserted against the real shell in
+  // ScreenshotGenerator.CaptureOverviewPage.
+  std::set<std::string> pane_types;
+  for (int i = 2; i < page.GetWindowCount(); ++i)
+    pane_types.insert(page.GetWindow(i).type);
+  EXPECT_EQ(pane_types,
+            (std::set<std::string>{"Struct", "Favorites", "Portfolio"}));
 
   // The mockup's cockpit split: the trend dominates the top ~two thirds, the
   // alarm strip sits under it.
@@ -40,9 +54,13 @@ TEST(InitialPageTest, ReshellSeedsTheOverviewPage) {
   const Page page = CreateInitialPage();
   scada::aui::SetSeverityTheme(previous);
 
-  ASSERT_EQ(page.GetWindowCount(), 2);
-  EXPECT_EQ(page.GetWindow(0).type, "Graph");
-  EXPECT_EQ(page.GetWindow(1).type, "EventJournal");
+  // The same composition MakeOverviewPage builds — asserted by shape rather
+  // than by a repeated window count, so growing the page does not need this
+  // test edited too.
+  const Page overview = MakeOverviewPage();
+  ASSERT_EQ(page.GetWindowCount(), overview.GetWindowCount());
+  for (int i = 0; i < page.GetWindowCount(); ++i)
+    EXPECT_EQ(page.GetWindow(i).type, overview.GetWindow(i).type);
 }
 
 }  // namespace

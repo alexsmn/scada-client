@@ -218,6 +218,12 @@ MainWindow::MainWindow(MainWindowContext&& context)
     CreateDiagnosticsPanel();
     CreateUserAccessPanel();
     CreateTransmissionRulePanel();
+    // The specialist panels share the Inspector's dock and are each fronted by
+    // their own selection; tabifying leaves the last one added on top, so an
+    // empty specialist panel would greet the operator. Front the Inspector,
+    // which speaks for any selection.
+    if (inspector_dock_)
+      inspector_dock_->raise();
     // Kick off the palette's tag browse in the background so tags are ready by
     // the time the operator first opens the palette.
     if (node_service_) {

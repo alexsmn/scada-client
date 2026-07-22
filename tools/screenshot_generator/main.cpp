@@ -739,12 +739,33 @@ TEST_F(ScreenshotGenerator, CaptureOverviewPage) {
   ASSERT_EQ(main_windows.size(), 1u);
   auto& main_window = main_windows.front();
 
-  // The seeded page carries exactly the Overview pair.
+  // The seeded page carries the Overview pair plus the sidebar panes.
   std::set<std::string> view_names;
   for (OpenedView* view : main_window.opened_views())
     view_names.insert(std::string{view->window_info().name});
   EXPECT_TRUE(view_names.contains("Graph"));
   EXPECT_TRUE(view_names.contains("EventJournal"));
+
+  // The sidebar panes really dock rather than opening as workspace tabs: each
+  // is a WIN_SING pane, which the view manager routes into a dock widget and
+  // tabifies with the others (the dock's tab bar is the pane switcher). This
+  // is the runtime half of OverviewPageTest, which can only assert the page
+  // composition - the window infos are registered by the running app.
+  for (const char* pane : {"Struct", "Favorites", "Portfolio"}) {
+    OpenedView* pane_view = nullptr;
+    for (OpenedView* view : main_window.opened_views()) {
+      if (view->window_info().name == pane) {
+        pane_view = view;
+        break;
+      }
+    }
+    ASSERT_NE(pane_view, nullptr) << pane << " missing from the Overview page";
+    EXPECT_TRUE(pane_view->window_info().is_pane()) << pane;
+    ASSERT_NE(pane_view->view(), nullptr) << pane;
+    EXPECT_NE(qobject_cast<QDockWidget*>(pane_view->view()->parentWidget()),
+              nullptr)
+        << pane << " is not docked - it would open as a workspace tab";
+  }
 
   auto* qmain = dynamic_cast<QWidget*>(&main_window);
   ASSERT_NE(qmain, nullptr);
