@@ -146,6 +146,20 @@ void SaveGraphScreenshot(const ScreenshotSpec& spec,
   // pumping a full capture run accumulates, so it must pump for itself.
   scada::screenshot_generator::PumpEventLoopFor(std::chrono::seconds(1));
 
+  // Drop a time cursor so the legend's "@ cursor" column is populated. Without
+  // one the capture named graph-cursor.png showed no cursor at all and every
+  // row read "—", so the readout shipped unvalidated. Placed at two thirds of
+  // the displayed range: inside the data, clear of the legend overlay at the
+  // pane's top-left.
+  const GraphRange range = graph.horizontal_axis().range();
+  if (range.low() < range.high()) {
+    const GraphCursor& cursor = graph.horizontal_axis().AddCursor(
+        range.low() + (range.high() - range.low()) * 2.0 / 3.0);
+    graph.SelectCursor(&cursor);
+    scada::screenshot_generator::PumpEventLoopFor(
+        std::chrono::milliseconds(100));
+  }
+
   // Render — matches graph_qt's RenderWidget pattern exactly.
   graph.setFixedSize(spec.width, spec.height);
   graph.show();
