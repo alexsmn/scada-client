@@ -8,6 +8,7 @@
 #include "controller/selection_model.h"
 #include "core/selection_command_context.h"
 #include "model/data_items_node_ids.h"
+#include "modules/write/write_availability.h"
 #include "modules/write/write_dialog.h"
 #include "node_service/node_util.h"
 #include "resources/common_resources.h"
@@ -41,22 +42,20 @@ WriteModule::WriteModule(WriteModuleContext&& context)
                                                 node_id, profile_, false});
              });
            },
+       // Both gates read the shared node rule (`GetWriteBlock`), which the
+       // Inspector also uses to tell the operator why control is unavailable.
+       // Split as before: a node that cannot be controlled at all hides the
+       // command, a missing output channel only disables it.
        .enabled_handler =
            [](const SelectionCommandContext& context) {
-             // TODO: Use `scada::AttributeId::UserWriteMask` when available.
-             // Allow writing to all variables. Except for data items: check
-             // an output channel is present.
-             auto node = context.selection.node();
-             return !IsInstanceOf(node, scada::data_items::id::DataItemType) ||
-                    !node[scada::data_items::id::DataItemType_Output]
-                         .value()
-                         .is_null();
+             return GetWriteBlock(context.selection.node()) !=
+                    WriteBlock::kNoOutputChannel;
            },
        .available_handler =
            [this](const SelectionCommandContext& context) {
              return session_service_.HasPrivilege(scada::Privilege::Control) &&
-                    context.selection.node().node_class() ==
-                        scada::NodeClass::Variable;
+                    GetWriteBlock(context.selection.node()) !=
+                        WriteBlock::kNotCommandable;
            }});
 
   selection_commands_.AddCommand(

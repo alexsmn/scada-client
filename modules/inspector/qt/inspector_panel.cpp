@@ -6,8 +6,12 @@
 #include "base/format_time.h"
 #include "common/value_format.h"
 #include "controller/selection_model.h"
+#include "model/data_items_node_ids.h"
 #include "model/node_id_util.h"
 #include "modules/events/event_severity.h"
+#include "modules/inspector/limit_band.h"
+#include "node_service/node_format.h"
+#include "node_service/node_ref.h"
 #include "scada/data_value.h"
 #include "scada/node_id.h"
 #include "scada/qualifier.h"
@@ -65,6 +69,56 @@ QWidget* KeyValueRow(const QString& key,
   layout->addWidget(value_label);
   *value_out = value_label;
   return row;
+}
+
+// Reads the node's configured limit bands into Measurements rows, most severe
+// first, marking the band the current value sits in. Bands the node does not
+// configure are omitted, and a node carrying none renders no limits block at
+// all. Limits are formatted through the node's own value format so they read
+// like the value above them.
+std::vector<InspectorLimitRow> MakeLimitRows(const NodeRef& node,
+                                             const scada::DataValue& current) {
+  if (!node)
+    return {};
+
+  namespace di = scada::data_items::id;
+  const scada::Variant hihi = node[di::AnalogItemType_LimitHiHi].value();
+  const scada::Variant hi = node[di::AnalogItemType_LimitHi].value();
+  const scada::Variant lo = node[di::AnalogItemType_LimitLo].value();
+  const scada::Variant lolo = node[di::AnalogItemType_LimitLoLo].value();
+
+  const auto as_limit =
+      [](const scada::Variant& value) -> std::optional<double> {
+    if (value.is_null())
+      return std::nullopt;
+    return value.get_or(0.0);
+  };
+  const LimitValues limits{.lolo = as_limit(lolo),
+                           .lo = as_limit(lo),
+                           .hi = as_limit(hi),
+                           .hihi = as_limit(hihi)};
+  if (limits.empty())
+    return {};
+
+  const LimitBand band = current.value.is_null()
+                             ? LimitBand::kNormal
+                             : LimitBandFor(current.value.get_or(0.0), limits);
+
+  std::vector<InspectorLimitRow> rows;
+  const auto add = [&](std::string_view label, const scada::Variant& value,
+                       LimitBand limit_band) {
+    if (value.is_null())
+      return;
+    rows.push_back(
+        {.label = Tr(label),
+         .value = QString::fromStdU16String(FormatValue(node, value, {}, 0)),
+         .breached = band == limit_band});
+  };
+  add("HiHi", hihi, LimitBand::kHiHi);
+  add("Hi", hi, LimitBand::kHi);
+  add("Lo", lo, LimitBand::kLo);
+  add("LoLo", lolo, LimitBand::kLoLo);
+  return rows;
 }
 
 }  // namespace
@@ -151,9 +205,20 @@ QWidget* InspectorPanel::BuildElementView() {
   hero_layout->addWidget(quality_);
   layout->addWidget(hero);
 
-  // Measurements section.
+  // Measurements section: the update time, then the node's configured limit
+  // bands so the operator can see which threshold a coloured value crossed
+  // (and how far the normal band reaches) without opening the limits editor.
   layout->addWidget(SectionHeader(Tr("Measurements"), tokens));
   layout->addWidget(KeyValueRow(Tr("Updated"), &updated_, tokens));
+
+  limits_ = new QWidget;
+  limits_->setObjectName(QStringLiteral("inspectorLimits"));
+  auto* limits_layout = new QVBoxLayout{limits_};
+  limits_layout->setContentsMargins(0, 0, 0, 0);
+  limits_layout->setSpacing(0);
+  limits_header_ = SectionHeader(Tr("Limits"), tokens);
+  limits_layout->addWidget(limits_header_);
+  layout->addWidget(limits_);
 
   // Control section.
   layout->addWidget(SectionHeader(Tr("Control"), tokens));
@@ -178,6 +243,15 @@ QWidget* InspectorPanel::BuildElementView() {
   hint->setStyleSheet(
       QStringLiteral("color:%1;font-size:11px;").arg(tokens.fg_subtle.name()));
   layout->addWidget(hint);
+
+  // Why control is unavailable. A greyed button with no explanation leaves the
+  // operator guessing whether the system is broken or they lack the right.
+  control_reason_ = new QLabel;
+  control_reason_->setObjectName(QStringLiteral("inspectorControlReason"));
+  control_reason_->setWordWrap(true);
+  control_reason_->setStyleSheet(
+      QStringLiteral("color:%1;font-size:11px;").arg(tokens.fg_muted.name()));
+  layout->addWidget(control_reason_);
 
   layout->addStretch(1);
   return view;
@@ -292,9 +366,11 @@ void InspectorPanel::ShowSelection(const SelectionModel& selection) {
     const QString source =
         source_node
             ? QString::fromStdU16String(ToString16(source_node.display_name()))
-            : QString::fromStdString(NodeIdToScadaString(event->source_node_id));
+            : QString::fromStdString(
+                  NodeIdToScadaString(event->source_node_id));
     ShowEvent(
-        source, QString::fromStdString(NodeIdToScadaString(event->source_node_id)),
+        source,
+        QString::fromStdString(NodeIdToScadaString(event->source_node_id)),
         QString::fromStdU16String(event->message), event->severity,
         QString::fromStdString(
             FormatTime(event->time, TIME_FORMAT_DATE | TIME_FORMAT_TIME)),
@@ -336,22 +412,25 @@ void InspectorPanel::ShowSelection(const SelectionModel& selection) {
 }
 
 void InspectorPanel::RefreshValue() {
-  QString value_text;
-  InspectorQualityBand band = InspectorQualityBand::kGood;
-  QString updated_text;
+  InspectorElementView element{.title = title_->text(),
+                               .node_id_text = subtitle_->text()};
   if (spec_) {
-    value_text = QString::fromStdU16String(
+    element.value_text = QString::fromStdU16String(
         spec_->GetCurrentString(ValueFormat{FORMAT_QUALITY | FORMAT_UNITS}));
-    band = InspectorQualityBandFor(spec_->current().qualifier);
-    updated_text = QString::fromStdString(
+    element.quality = InspectorQualityBandFor(spec_->current().qualifier);
+    element.updated_text = QString::fromStdString(
         FormatTime(spec_->change_time(), TIME_FORMAT_TIME));
+    element.limits = MakeLimitRows(spec_->node(), spec_->current());
   }
 
-  const bool controllable =
+  element.controllable =
       context_.is_control_enabled && context_.is_control_enabled();
+  // The host explains an unavailable control: it owns the command resolution
+  // and the session, which the panel cannot see.
+  if (!element.controllable && context_.control_reason)
+    element.control_reason = context_.control_reason();
 
-  ShowElement(title_->text(), subtitle_->text(), value_text, band, updated_text,
-              controllable);
+  ShowElement(element);
 }
 
 void InspectorPanel::ShowEvent(const QString& source,
@@ -394,31 +473,65 @@ void InspectorPanel::ShowEvent(const QString& source,
   stack_->setCurrentIndex(2);
 }
 
-void InspectorPanel::ShowElement(const QString& title,
-                                 const QString& node_id_text,
-                                 const QString& value_text,
-                                 InspectorQualityBand quality,
-                                 const QString& updated_text,
-                                 bool controllable) {
+void InspectorPanel::ShowElement(const InspectorElementView& element) {
   const scada::aui::ThemeTokens& tokens = InspectorTokens();
 
-  title_->setText(title);
-  subtitle_->setText(node_id_text);
-  value_->setText(value_text.isEmpty() ? QStringLiteral("—") : value_text);
+  title_->setText(element.title);
+  subtitle_->setText(element.node_id_text);
+  value_->setText(element.value_text.isEmpty() ? QStringLiteral("—")
+                                               : element.value_text);
 
   const QColor pill =
-      quality == InspectorQualityBand::kBad ? tokens.bad : tokens.good;
-  quality_->setText(quality == InspectorQualityBand::kBad ? Tr("Bad")
-                                                          : Tr("Good"));
+      element.quality == InspectorQualityBand::kBad ? tokens.bad : tokens.good;
+  quality_->setText(element.quality == InspectorQualityBand::kBad ? Tr("Bad")
+                                                                  : Tr("Good"));
   quality_->setStyleSheet(
       QStringLiteral("#qualityPill{color:%1;border:1px solid %1;"
                      "border-radius:9px;padding:1px 10px;font-weight:600;}")
           .arg(pill.name()));
 
-  updated_->setText(updated_text.isEmpty() ? QStringLiteral("—")
-                                           : updated_text);
+  updated_->setText(element.updated_text.isEmpty() ? QStringLiteral("—")
+                                                   : element.updated_text);
 
-  control_->setEnabled(controllable);
+  ShowLimits(element.limits);
+
+  control_->setEnabled(element.controllable);
+  control_reason_->setText(element.control_reason);
+  control_reason_->setVisible(!element.controllable &&
+                              !element.control_reason.isEmpty());
 
   stack_->setCurrentIndex(1);
+}
+
+void InspectorPanel::ShowLimits(const std::vector<InspectorLimitRow>& limits) {
+  const scada::aui::ThemeTokens& tokens = InspectorTokens();
+
+  // Rebuild the rows: the set of configured bands belongs to the node, so it
+  // changes with the selection rather than with the value.
+  auto* layout = qobject_cast<QVBoxLayout*>(limits_->layout());
+  while (layout->count() > 1) {
+    QLayoutItem* item = layout->takeAt(1);
+    delete item->widget();
+    delete item;
+  }
+
+  limits_->setVisible(!limits.empty());
+  if (limits.empty())
+    return;
+
+  for (const InspectorLimitRow& limit : limits) {
+    QLabel* value_label = nullptr;
+    QWidget* row = KeyValueRow(limit.label, &value_label, tokens);
+    // The breached band explains the value's colour, so it is named by its own
+    // object name as well as coloured — colour is never the only signal.
+    value_label->setObjectName(limit.breached
+                                   ? QStringLiteral("inspectorLimitBreached")
+                                   : QStringLiteral("inspectorLimitValue"));
+    value_label->setText(limit.value);
+    if (limit.breached) {
+      value_label->setStyleSheet(
+          QStringLiteral("color:%1;font-weight:700;").arg(tokens.bad.name()));
+    }
+    layout->addWidget(row);
+  }
 }

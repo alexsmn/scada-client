@@ -49,9 +49,13 @@ TEST_F(InspectorPanelTest, ShowElementFillsReadoutAndControl) {
   InspectorPanel panel{InspectorPanelContext{
       .is_control_enabled = [&] { return control_enabled; }}};
 
-  panel.ShowElement(QStringLiteral("Q1"), QStringLiteral("ns=2;s=North.Q1"),
-                    QStringLiteral("195.7 A"), InspectorQualityBand::kGood,
-                    QStringLiteral("21:53:58"), /*controllable=*/true);
+  panel.ShowElement(
+      InspectorElementView{.title = QStringLiteral("Q1"),
+                           .node_id_text = QStringLiteral("ns=2;s=North.Q1"),
+                           .value_text = QStringLiteral("195.7 A"),
+                           .quality = InspectorQualityBand::kGood,
+                           .updated_text = QStringLiteral("21:53:58"),
+                           .controllable = true});
 
   auto* stack =
       panel.findChild<QStackedWidget*>(QStringLiteral("inspectorStack"));
@@ -70,9 +74,12 @@ TEST_F(InspectorPanelTest, ShowElementFillsReadoutAndControl) {
 
 TEST_F(InspectorPanelTest, ControlDisabledWhenNotControllable) {
   InspectorPanel panel{InspectorPanelContext{}};
-  panel.ShowElement(QStringLiteral("Bus"), QString{}, QStringLiteral("115 kV"),
-                    InspectorQualityBand::kGood, QStringLiteral("21:53"),
-                    /*controllable=*/false);
+  panel.ShowElement(
+      InspectorElementView{.title = QStringLiteral("Bus"),
+                           .value_text = QStringLiteral("115 kV"),
+                           .quality = InspectorQualityBand::kGood,
+                           .updated_text = QStringLiteral("21:53"),
+                           .controllable = false});
   auto* control =
       panel.findChild<QPushButton*>(QStringLiteral("inspectorControl"));
   ASSERT_NE(control, nullptr);
@@ -81,13 +88,107 @@ TEST_F(InspectorPanelTest, ControlDisabledWhenNotControllable) {
 
 TEST_F(InspectorPanelTest, ClearReturnsToEmptyState) {
   InspectorPanel panel{InspectorPanelContext{}};
-  panel.ShowElement(QStringLiteral("Q1"), QString{}, QStringLiteral("1"),
-                    InspectorQualityBand::kGood, QString{}, false);
+  panel.ShowElement(InspectorElementView{.title = QStringLiteral("Q1"),
+                                         .value_text = QStringLiteral("1")});
   panel.Clear();
   auto* stack =
       panel.findChild<QStackedWidget*>(QStringLiteral("inspectorStack"));
   ASSERT_NE(stack, nullptr);
   EXPECT_EQ(stack->currentIndex(), 0);
+}
+
+// The limits block lists the configured bands and marks the breached one, so
+// the operator can see which threshold a coloured value crossed.
+TEST_F(InspectorPanelTest, LimitRowsMarkTheBreachedBand) {
+  InspectorPanel panel{InspectorPanelContext{}};
+  panel.ShowElement(InspectorElementView{
+      .title = QStringLiteral("Ua"),
+      .value_text = QStringLiteral("10.9"),
+      .limits = {
+          {.label = QStringLiteral("HiHi"), .value = QStringLiteral("11.5")},
+          {.label = QStringLiteral("Hi"),
+           .value = QStringLiteral("10.8"),
+           .breached = true}}});
+
+  auto* limits = panel.findChild<QWidget*>(QStringLiteral("inspectorLimits"));
+  ASSERT_NE(limits, nullptr);
+  EXPECT_FALSE(limits->isHidden());
+
+  // The breached row is identified by its own object name, so the marking does
+  // not depend on colour alone.
+  auto breached =
+      panel.findChildren<QLabel*>(QStringLiteral("inspectorLimitBreached"));
+  ASSERT_EQ(breached.size(), 1);
+  EXPECT_EQ(breached.front()->text(), QStringLiteral("10.8"));
+
+  auto plain =
+      panel.findChildren<QLabel*>(QStringLiteral("inspectorLimitValue"));
+  ASSERT_EQ(plain.size(), 1);
+  EXPECT_EQ(plain.front()->text(), QStringLiteral("11.5"));
+}
+
+// A node with no configured bands renders no limits block at all rather than
+// an empty section.
+TEST_F(InspectorPanelTest, NoLimitsHidesTheBlock) {
+  InspectorPanel panel{InspectorPanelContext{}};
+  panel.ShowElement(InspectorElementView{.title = QStringLiteral("Ua"),
+                                         .value_text = QStringLiteral("10.9")});
+
+  auto* limits = panel.findChild<QWidget*>(QStringLiteral("inspectorLimits"));
+  ASSERT_NE(limits, nullptr);
+  EXPECT_TRUE(limits->isHidden());
+}
+
+// The limit rows belong to the selected node, so switching to a node with
+// fewer bands drops the stale rows instead of accumulating them.
+TEST_F(InspectorPanelTest, LimitRowsRebuildOnSelectionChange) {
+  InspectorPanel panel{InspectorPanelContext{}};
+  panel.ShowElement(InspectorElementView{
+      .limits = {
+          {.label = QStringLiteral("HiHi"), .value = QStringLiteral("11.5")},
+          {.label = QStringLiteral("Hi"), .value = QStringLiteral("10.8")}}});
+  EXPECT_EQ(
+      panel.findChildren<QLabel*>(QStringLiteral("inspectorLimitValue")).size(),
+      2);
+
+  panel.ShowElement(
+      InspectorElementView{.limits = {{.label = QStringLiteral("Lo"),
+                                       .value = QStringLiteral("9.5")}}});
+  auto rows =
+      panel.findChildren<QLabel*>(QStringLiteral("inspectorLimitValue"));
+  ASSERT_EQ(rows.size(), 1);
+  EXPECT_EQ(rows.front()->text(), QStringLiteral("9.5"));
+}
+
+// A disabled Control button explains itself: a greyed control with no reason
+// leaves the operator guessing whether the system is broken or they lack the
+// right.
+TEST_F(InspectorPanelTest, DisabledControlShowsItsReason) {
+  InspectorPanel panel{InspectorPanelContext{}};
+  panel.ShowElement(InspectorElementView{
+      .title = QStringLiteral("Ua"),
+      .controllable = false,
+      .control_reason = QStringLiteral("no output channel")});
+
+  auto* reason =
+      panel.findChild<QLabel*>(QStringLiteral("inspectorControlReason"));
+  ASSERT_NE(reason, nullptr);
+  EXPECT_FALSE(reason->isHidden());
+  EXPECT_EQ(reason->text(), QStringLiteral("no output channel"));
+}
+
+// An available control needs no explanation.
+TEST_F(InspectorPanelTest, EnabledControlHidesTheReason) {
+  InspectorPanel panel{InspectorPanelContext{}};
+  panel.ShowElement(InspectorElementView{
+      .title = QStringLiteral("Ua"),
+      .controllable = true,
+      .control_reason = QStringLiteral("ignored while controllable")});
+
+  auto* reason =
+      panel.findChild<QLabel*>(QStringLiteral("inspectorControlReason"));
+  ASSERT_NE(reason, nullptr);
+  EXPECT_TRUE(reason->isHidden());
 }
 
 // A minimal live datum identified by its formula alone (no backing node) —

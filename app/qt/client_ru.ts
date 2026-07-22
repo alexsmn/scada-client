@@ -463,6 +463,38 @@
         <translation>Измерения</translation>
     </message>
     <message>
+        <source>Limits</source>
+        <translation>Уставки</translation>
+    </message>
+    <message>
+        <source>HiHi</source>
+        <translation>Верхняя аварийная</translation>
+    </message>
+    <message>
+        <source>Hi</source>
+        <translation>Верхняя</translation>
+    </message>
+    <message>
+        <source>Lo</source>
+        <translation>Нижняя</translation>
+    </message>
+    <message>
+        <source>LoLo</source>
+        <translation>Нижняя аварийная</translation>
+    </message>
+    <message>
+        <source>This object cannot be controlled</source>
+        <translation>Объектом нельзя управлять</translation>
+    </message>
+    <message>
+        <source>The signal has no output channel</source>
+        <translation>У сигнала нет канала управления</translation>
+    </message>
+    <message>
+        <source>Controlling requires the Control privilege</source>
+        <translation>Для управления требуется право «Управление»</translation>
+    </message>
+    <message>
         <source>Control…</source>
         <translation>Управление…</translation>
     </message>

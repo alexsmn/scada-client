@@ -14,6 +14,7 @@
 #include "controller/command_ui_registry.h"
 #include "controller/controller.h"
 #include "controller/selection_model.h"
+#include "modules/write/write_availability.h"
 #include "controller/window_info.h"
 #include "device_diagnostics/qt/device_diagnostics_panel.h"
 #include "events/alarm_flood.h"
@@ -705,6 +706,25 @@ void MainWindow::CreateToolbar() {
 
 void MainWindow::SetWindowFlashing(bool flashing) {}
 
+QString MainWindow::ControlUnavailableReason() {
+  // Asked only while the Control button is disabled. The node answers for its
+  // own shape through the same rule the write command's gates use
+  // (GetWriteBlock); the command's only other gate is the session's Control
+  // privilege, so a node that would accept control can be blocked by nothing
+  // else.
+  OpenedView* active = GetActiveView();
+  SelectionModel* selection =
+      active ? active->controller().GetSelectionModel() : nullptr;
+  if (!selection || selection->empty() || selection->multiple())
+    return {};
+
+  const WriteBlock block = GetWriteBlock(selection->node());
+  return QString::fromStdU16String(
+      block != WriteBlock::kNone
+          ? Translate(WriteBlockText(block))
+          : Translate("Controlling requires the Control privilege"));
+}
+
 void MainWindow::CreateInspectorPanel() {
   // The control action reuses the selection-scoped write/control command
   // (ID_WRITE) — the existing two-stage confirm — resolved against the active
@@ -735,6 +755,7 @@ void MainWindow::CreateInspectorPanel() {
             CommandHandler* handler = resolve_write();
             return handler && handler->IsCommandEnabled(ID_WRITE);
           },
+      .control_reason = [this] { return ControlUnavailableReason(); },
       .on_acknowledge =
           [resolve_acknowledge] {
             CommandHandler* handler = resolve_acknowledge();

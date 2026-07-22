@@ -5,6 +5,7 @@
 
 #include <functional>
 #include <memory>
+#include <vector>
 
 namespace scada {
 class NodeId;
@@ -21,6 +22,35 @@ class QStackedWidget;
 enum class InspectorQualityBand { kGood, kBad };
 InspectorQualityBand InspectorQualityBandFor(const scada::Qualifier& qualifier);
 
+// One configured limit band in the Measurements section.
+struct InspectorLimitRow {
+  // The band's short name, already translated ("HiHi", "Lo", …).
+  QString label;
+  // The limit, formatted with the node's own value format.
+  QString value;
+  // Whether the current value sits in this band — the row the operator needs
+  // to see when a value is coloured.
+  bool breached = false;
+};
+
+// The element card's contents. Grouped into a struct rather than a positional
+// parameter list so the widget tests and the capture can fill exactly the
+// parts they exercise.
+struct InspectorElementView {
+  QString title;
+  QString node_id_text;
+  QString value_text;
+  InspectorQualityBand quality = InspectorQualityBand::kGood;
+  QString updated_text;
+  // The node's configured limit bands, most severe first. Empty when the node
+  // configures none, which hides the limits block entirely.
+  std::vector<InspectorLimitRow> limits;
+  bool controllable = false;
+  // Why control is unavailable, shown under the disabled Control button.
+  // Empty when control is available, or when the reason is not known.
+  QString control_reason;
+};
+
 // Action wiring for the Inspector panel.
 struct InspectorPanelContext {
   // Triggers the selection-scoped control/write command — the existing
@@ -28,6 +58,10 @@ struct InspectorPanelContext {
   std::function<void()> on_control;
   // Whether the control command is currently enabled for the active selection.
   std::function<bool()> is_control_enabled;
+  // Why control is unavailable, asked only while it is. The host answers
+  // because it owns the command resolution and the session; the panel just
+  // renders the sentence.
+  std::function<QString()> control_reason;
   // Acknowledges the selected journal event — the journal's own command
   // (the host wires ExecuteCommand(ID_ACKNOWLEDGE_CURRENT) through the
   // shell's command resolution).
@@ -69,12 +103,7 @@ class InspectorPanel : public QWidget {
 
   // Fills the element sections directly. This is the render primitive that
   // ShowSelection drives, and the seam the widget tests exercise.
-  void ShowElement(const QString& title,
-                   const QString& node_id_text,
-                   const QString& value_text,
-                   InspectorQualityBand quality,
-                   const QString& updated_text,
-                   bool controllable);
+  void ShowElement(const InspectorElementView& element);
 
   // Fills the alarm card for a journal-event selection: source identity, the
   // severity band pill, the message, the event time and the acknowledgement
@@ -96,6 +125,8 @@ class InspectorPanel : public QWidget {
   QWidget* BuildEventView();
   // Re-reads spec_ (title/value/quality/updated) into the element view.
   void RefreshValue();
+  // Rebuilds the limits block; hides it when the node configures no bands.
+  void ShowLimits(const std::vector<InspectorLimitRow>& limits);
 
   InspectorPanelContext context_;
 
@@ -111,6 +142,11 @@ class InspectorPanel : public QWidget {
   QLabel* quality_ = nullptr;
   QLabel* updated_ = nullptr;
   QPushButton* control_ = nullptr;
+  QLabel* control_reason_ = nullptr;
+  // The limits block: a section header plus one row per configured band,
+  // hidden wholesale when the node configures none.
+  QWidget* limits_ = nullptr;
+  QLabel* limits_header_ = nullptr;
 
   // Event-card widgets.
   QLabel* event_title_ = nullptr;

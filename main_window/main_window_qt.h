@@ -80,6 +80,9 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   void CreateActivityBar();
   // Opt-in right Inspector dock (backlog 2.6): reflects the active view's
   // selection — identity, live value, control action.
+  // Why the selection-scoped control command is unavailable, for the
+  // Inspector's disabled Control button. Empty when nothing is selected.
+  QString ControlUnavailableReason();
   void CreateInspectorPanel();
   // Opt-in right Device-diagnostics dock (backlog 5.0): reflects a selected
   // device's link status + live traffic/polling counters. Tabified with the

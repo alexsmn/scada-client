@@ -3,9 +3,18 @@
 #include "screenshot_config.h"
 #include "widget_capture.h"
 
+#include "aui/translation.h"
 #include "inspector/qt/inspector_panel.h"
 
 #include <QString>
+
+namespace {
+
+QString Tr(std::string_view text) {
+  return QString::fromStdU16String(Translate(text));
+}
+
+}  // namespace
 
 void SaveInspectorEventScreenshot(const ScreenshotSpec& spec) {
   // A representative journal-row selection: a pending critical comms-loss
@@ -27,15 +36,28 @@ void SaveInspectorEventScreenshot(const ScreenshotSpec& spec) {
 }
 
 void SaveInspectorScreenshot(const ScreenshotSpec& spec) {
-  // A representative Table expression-row selection: a live computed value
-  // identified by its formula, with good quality and a fresh update. The
-  // control action is disabled — an expression is not commandable — which
-  // also documents the disabled affordance.
+  // A representative analog signal selection: a live value with its configured
+  // limit bands, currently above the Hi warning limit — so the capture shows
+  // both the Measurements limits block and the marked breach that explains the
+  // value's colouring. The control action is disabled with its reason, which
+  // documents the disabled affordance.
   InspectorPanel panel{InspectorPanelContext{}};
-  panel.ShowElement(QStringLiteral("Полная мощность"),
-                    QStringLiteral("{TIT.200}+{TIT.201}"),
-                    QStringLiteral("128,7"), InspectorQualityBand::kGood,
-                    QStringLiteral("15:32:20"),
-                    /*controllable=*/false);
+  panel.ShowElement(InspectorElementView{
+      .title = QStringLiteral("Напряжение Ua"),
+      .node_id_text = QStringLiteral("TIT.723"),
+      .value_text = QStringLiteral("10,9 кВ"),
+      .quality = InspectorQualityBand::kGood,
+      .updated_text = QStringLiteral("15:32:20"),
+      // The band labels go through Translate() exactly as the live panel does
+      // (ShowElement takes them already rendered), so the capture shows the
+      // shipped Russian wording rather than the English keys.
+      .limits = {{.label = Tr("HiHi"), .value = QStringLiteral("11,5")},
+                 {.label = Tr("Hi"),
+                  .value = QStringLiteral("10,8"),
+                  .breached = true},
+                 {.label = Tr("Lo"), .value = QStringLiteral("9,5")},
+                 {.label = Tr("LoLo"), .value = QStringLiteral("9,0")}},
+      .controllable = false,
+      .control_reason = Tr("The signal has no output channel")});
   SaveScreenshot(&panel, spec);
 }
