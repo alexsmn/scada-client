@@ -507,6 +507,11 @@
         <source>Nothing is waiting to be acknowledged</source>
         <translation>Нет неквитированных событий</translation>
     </message>
+    <!-- modules/display_frame/qt/display_frame.cpp (bay strips) -->
+    <message>
+        <source>Recent events</source>
+        <translation>Последние события</translation>
+    </message>
     <message>
         <source>Control…</source>
         <translation>Управление…</translation>

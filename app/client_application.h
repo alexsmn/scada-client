@@ -55,6 +55,7 @@ class ControllerRegistry;
 class CoreModule;
 class CreateTree;
 class EventModule;
+class NodeEventProvider;
 class FavoritesModule;
 class FileSystemComponent;
 class MainWindowManager;
@@ -113,6 +114,9 @@ class ClientApplication : private ClientApplicationContext {
     return *timed_data_service_;
   }
   NodeService& node_service() SCADA_LIFETIME_BOUND { return *node_service_; }
+  // The live event source, for surfaces that show the actionable backlog
+  // outside a view (e.g. the display frame's Recent-events strip).
+  NodeEventProvider& node_event_provider() SCADA_LIFETIME_BOUND;
   ControllerRegistry& controller_registry() SCADA_LIFETIME_BOUND {
     return *controller_registry_;
   }

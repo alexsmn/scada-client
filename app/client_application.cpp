@@ -131,6 +131,10 @@ MainWindowManager& ClientApplication::main_window_manager() {
   return main_window_module_->main_window_manager();
 }
 
+NodeEventProvider& ClientApplication::node_event_provider() {
+  return event_module_->node_event_provider();
+}
+
 bool ClientApplication::HasSelectionCommandForTesting(
     unsigned command_id) const {
   return core_module_ &&

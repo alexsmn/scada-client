@@ -494,8 +494,14 @@ TEST_F(ScreenshotGenerator, CaptureDisplay) {
   if (!display_spec || !ShouldCaptureScreenshot(display_spec->filename))
     GTEST_SKIP() << "Display capture not requested";
 
+  // The bay strips need the live services, so the app runs for this capture
+  // exactly as it does for the view captures.
+  WaitForAwaitable(executor_, app_.Start());
+  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
+
   std::filesystem::create_directories(GetOutputDir());
-  SaveDisplayScreenshot(*display_spec, g_config.json);
+  SaveDisplayScreenshot(*display_spec, g_config.json, app_.timed_data_service(),
+                        app_.node_event_provider(), app_.node_service());
 }
 
 TEST_F(ScreenshotGenerator, CaptureMainWindow) {

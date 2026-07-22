@@ -3,6 +3,9 @@
 #include <boost/json/value.hpp>
 
 struct ScreenshotSpec;
+class NodeEventProvider;
+class NodeService;
+class TimedDataService;
 
 // Renders the reshelled substation display — a cross-platform VdsRuntimeWidget
 // wrapped in the DisplayFrame chrome (Live indicator, breadcrumb, zoom / fit /
@@ -15,5 +18,11 @@ struct ScreenshotSpec;
 // system, so this works headless (Qt `offscreen`), which is why it is a valid
 // cross-platform (macOS/Linux) validation of the reshell frame even though the
 // Windows-only Modus/Vidicon ActiveX renderer is not exercised here.
+// The live services back the bay strips below the diagram (the Measurements
+// watch and the Recent-events list); `measurements` names the fixture signals
+// pushed into the watch, standing in for the elements an operator would click.
 void SaveDisplayScreenshot(const ScreenshotSpec& spec,
-                           const boost::json::value& json);
+                           const boost::json::value& json,
+                           TimedDataService& timed_data_service,
+                           NodeEventProvider& node_event_provider,
+                           NodeService& node_service);

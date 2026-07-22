@@ -22,7 +22,9 @@
   "dialog_analog_node_id": "TIT.212",
 
   "_display_comment": "VDS/SDE fixture for the reshelled substation display (CaptureDisplay), relative to this file.",
-  "display": { "path": "fixtures/substation.vds" },
+  "display": { "path": "fixtures/substation.vds",
+               "_measurements_comment": "Signals pushed into the display frame's Measurements strip, standing in for the elements an operator clicks on the diagram.",
+               "measurements": ["TIT.723", "TIT.208", "TIT.200"] },
 
   "nodes": [
     { "id": "TS.100", "browse_name": "M340",                "class": "object", "type_definition": "SCADA.108" },
