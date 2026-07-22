@@ -214,12 +214,12 @@ TEST_F(SummaryModelTest, CellsAreGreyWhileLoading) {
                       TestTimeFromString("15 Nov 2004 13:30:00 UTC"))
                 .cell_color);
 
-  EXPECT_EQ(scada::aui::ColorCode::White,
+  EXPECT_EQ(scada::aui::ColorCode::Transparent,
             GetCellAt(/*column_index=*/0,
                       TestTimeFromString("15 Nov 2004 14:00:00 UTC"))
                 .cell_color);
 
-  EXPECT_EQ(scada::aui::ColorCode::White,
+  EXPECT_EQ(scada::aui::ColorCode::Transparent,
             GetCellAt(/*column_index=*/0,
                       TestTimeFromString("15 Nov 2004 14:30:00 UTC"))
                 .cell_color);
