@@ -4,6 +4,7 @@
 #include "aui/rect.h"
 #include "base/lifetime.h"
 #include "base/time/time.h"
+#include "scada/date_time.h"
 #include "profile/page.h"
 #include "resources/common_resources.h"
 #include "scada/node_id.h"
@@ -89,7 +90,7 @@ class Profile {
   Modus modus;
 
   struct GraphView {
-    scada::base::TimeDelta default_span = std::chrono::hours(1);
+    scada::Duration default_span = std::chrono::hours(1);
     scada::aui::Color default_color = scada::aui::ColorCode::White;
     int default_width = 1;
     bool default_scroll_bar = true;

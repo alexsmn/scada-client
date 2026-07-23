@@ -87,7 +87,7 @@ std::unique_ptr<UiView> VidiconDisplayActiveXView::Init(
         scada::base::win::ScopedBstr(full_path.wstring().c_str()));
 
     /*synchronize_timer_.Start(
-        FROM_HERE, base::TimeDelta::FromMilliseconds(10),
+        FROM_HERE, scada::Duration::FromMilliseconds(10),
                              base::Bind(&VidiconDisplayActiveXView::SynchronizeView,
                                         base::Unretained(this)));*/
   }

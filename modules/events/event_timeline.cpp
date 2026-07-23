@@ -11,7 +11,7 @@ std::vector<EventTimelineEntry> BuildEventTimeline(const scada::Event& event) {
   // `receive_time` is null until the server has processed the event, and
   // equals the raise time when delivery was immediate — in both cases a row
   // would add noise without adding information.
-  if (!scada::base::IsNull(event.receive_time) && event.receive_time != event.time)
+  if (!scada::IsNull(event.receive_time) && event.receive_time != event.time)
     timeline.push_back({EventTimelineStep::kReceived, event.receive_time});
 
   if (event.acked) {
@@ -19,7 +19,7 @@ std::vector<EventTimelineEntry> BuildEventTimeline(const scada::Event& event) {
         {EventTimelineStep::kAcknowledged, event.acknowledged_time});
   } else {
     timeline.push_back(
-        {EventTimelineStep::kAwaitingAcknowledgement, scada::base::kNullTime});
+        {EventTimelineStep::kAwaitingAcknowledgement, scada::kNullTime});
   }
 
   return timeline;

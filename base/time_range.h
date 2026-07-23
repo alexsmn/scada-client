@@ -3,6 +3,7 @@
 #include "base/check.h"
 #include "base/ostream_formatter.h"
 #include "base/time/time.h"
+#include "scada/date_time.h"
 #include "scada/date_time_range.h"
 
 // TODO: Rename.
@@ -18,12 +19,12 @@ struct TimeRange {
                        type != Type::Count);
   }
 
-  TimeRange(scada::base::TimeDelta interval)
+  TimeRange(scada::Duration interval)
       : type{Type::Interval}, interval{interval} {
-    scada::base::Check(interval != scada::base::TimeDelta::zero());
+    scada::base::Check(interval != scada::Duration::zero());
   }
 
-  TimeRange(scada::base::Time start, scada::base::Time end, bool dates = false)
+  TimeRange(scada::DateTime start, scada::DateTime end, bool dates = false)
       : type{Type::Custom}, start{start}, end{end}, dates{dates} {}
 
   bool is_interval() const { return type == Type::Interval; }
@@ -34,18 +35,18 @@ struct TimeRange {
   Type type = Type::Day;
 
   // Only when `type == Type::Custom`.
-  scada::base::Time start = scada::base::kNullTime;
-  scada::base::Time end = scada::base::kNullTime;
+  scada::DateTime start = scada::kNullTime;
+  scada::DateTime end = scada::kNullTime;
   bool dates = false;
 
   // Only when `type == Type::Interval`.
-  scada::base::TimeDelta interval = scada::base::TimeDelta::zero();
+  scada::Duration interval = scada::Duration::zero();
 };
 
 scada::DateTimeRange ToDateTimeRange(const TimeRange& time_range,
-                                     scada::base::Time now);
+                                     scada::DateTime now);
 scada::DateTimeRange ToDateTimeRangeWithOpenRange(const TimeRange& time_range,
-                                                  scada::base::Time now);
+                                                  scada::DateTime now);
 
 std::string ToString(TimeRange::Type type);
 std::string ToString(const TimeRange& time_range);

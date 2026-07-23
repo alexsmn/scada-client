@@ -341,7 +341,7 @@ TEST_F(InspectorPanelTest, AcknowledgedEventDisablesTheAction) {
   event.source_node_id = scada::NodeId{7, 3};
   event.message = u"restored";
   event.acked = true;
-  event.acknowledged_time = scada::base::NowUtc();
+  event.acknowledged_time = scada::Now();
   selection.SelectEvent(event, NodeRef{});
 
   InspectorPanel panel{

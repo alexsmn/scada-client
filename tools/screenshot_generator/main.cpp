@@ -145,7 +145,7 @@ class ScreenshotGenerator : public ::testing::Test {
   AppEnvironment app_env_;
   AnyExecutor executor_ = MakeAnyExecutor(std::make_shared<MessageLoopQt>());
 
-  // Freeze base::NowUtc() at the fixture's `now` for the whole capture
+  // Freeze scada::Now() at the fixture's `now` for the whole capture
   // run, so live-window rendering (table history windows, sparklines,
   // delivered-value timestamps) lines up with the fixture history — which is
   // laid out relative to that instant — and every timestamp in the output is
@@ -154,8 +154,8 @@ class ScreenshotGenerator : public ::testing::Test {
   // timers use the steady clock and keep running normally.
   struct FixtureClock {
     FixtureClock() {
-      const scada::base::Time now = FixtureNow(g_config.json);
-      if (!scada::base::IsNull(now))
+      const scada::DateTime now = FixtureNow(g_config.json);
+      if (!scada::IsNull(now))
         override_.Advance(now - override_.Now());
     }
     scada::base::ScopedMockClockOverride override_;

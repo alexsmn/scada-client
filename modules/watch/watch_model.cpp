@@ -82,7 +82,7 @@ void WatchModel::SetDevice(NodeRef device) {
 
   event_source_.Start(device_.node_id(),
                       ToDateTimeRangeWithOpenRange(
-                          time_range_, /*now=*/scada::base::NowUtc()),
+                          time_range_, /*now=*/scada::Now()),
                       /*delegate=*/*this);
 }
 
@@ -97,7 +97,7 @@ void WatchModel::SetTimeRange(const TimeRange& time_range) {
 
   event_source_.Start(device_.node_id(),
                       ToDateTimeRangeWithOpenRange(
-                          time_range_, /*now=*/scada::base::NowUtc()),
+                          time_range_, /*now=*/scada::Now()),
                       /*delegate=*/*this);
 }
 

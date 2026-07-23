@@ -56,5 +56,5 @@ class TimedDataModel : private TimedDataModelContext,
   TimeRange time_range_;
 
   // Cannot be null.
-  scada::base::Time end_time_ = scada::base::kMaxTime;
+  scada::DateTime end_time_ = scada::kMaxTime;
 };

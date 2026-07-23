@@ -57,7 +57,7 @@ class MetrixPointEnum : public PointEnumerator {
 
   // Time of last returned value. Supposed for detection if current value is
   // duplicate of last historical value.
-  scada::base::Time last_value_time_;
+  scada::DateTime last_value_time_;
 };
 
 bool MetrixPointEnum::Reset(double x_from,
@@ -65,7 +65,7 @@ bool MetrixPointEnum::Reset(double x_from,
                             bool include_left_bound,
                             bool include_right_bound) {
   count_ = 0;
-  last_value_time_ = scada::base::Time();
+  last_value_time_ = scada::DateTime();
   enum_right_bound_ = x_to;
   enum_include_right_bound_ = include_right_bound;
   enum_current_passed_ = false;
@@ -322,8 +322,8 @@ void MetrixDataSource::ScheduleUpdateEarliestTimestamp() {
               co_return;
 
             auto values = co_await node.read_value_history(
-                {.from = scada::base::kMinTime,
-                 .to = scada::base::kMaxTime,
+                {.from = scada::kMinTime,
+                 .to = scada::kMaxTime,
                  .max_count = 1});
             if (!values.ok()) {
               co_return;
@@ -351,7 +351,7 @@ void MetrixDataSource::SetEarliestTimestamp(scada::DateTime timestamp) {
 
 GraphRange MetrixDataSource::GetHorizontalRange() const {
   auto latest_timestamp = GetTimeRange(timed_data_).second;
-  if (scada::base::IsNull(earliest_timestamp_) || scada::base::IsNull(latest_timestamp) ||
+  if (scada::IsNull(earliest_timestamp_) || scada::IsNull(latest_timestamp) ||
       earliest_timestamp_ >= latest_timestamp) {
     return {};
   }

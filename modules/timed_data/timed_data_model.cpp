@@ -17,7 +17,7 @@ TimedDataModel::TimedDataModel(TimedDataModelContext&& context)
   timed_data_.property_change_handler = [this](const PropertySet& properties) {
     if (properties.is_current_changed()) {
       UpdateRows(
-          {timed_data_.current().source_timestamp, scada::base::kMaxTime});
+          {timed_data_.current().source_timestamp, scada::kMaxTime});
     }
   };
 
@@ -30,7 +30,7 @@ TimedDataModel::TimedDataModel(TimedDataModelContext&& context)
       };
 
   timed_data_.ready_handler = [this] {
-    UpdateRows({timed_data_.ready_from(), scada::base::kMaxTime});
+    UpdateRows({timed_data_.ready_from(), scada::kMaxTime});
   };
 
   timed_data_.node_modified_handler = [this] { NotifyModelChanged(); };
@@ -144,7 +144,7 @@ void TimedDataModel::SetFormula(std::string_view formula) {
 
   timed_data_ = timed_data;
   SetTimeRange(time_range_);
-  UpdateRows({scada::base::kMinTime, scada::base::kMaxTime});
+  UpdateRows({scada::kMinTime, scada::kMaxTime});
 }
 
 TimeRange TimedDataModel::GetTimeRange() const {
@@ -158,7 +158,7 @@ void TimedDataModel::SetTimeRange(const TimeRange& time_range) {
   timed_data_.SetRange({start, end});
 
   end_time_ =
-      scada::base::IsNull(time_range.end) ? scada::base::kMaxTime : time_range.end;
+      scada::IsNull(time_range.end) ? scada::kMaxTime : time_range.end;
 
-  UpdateRows({scada::base::kMinTime, end_time_});
+  UpdateRows({scada::kMinTime, end_time_});
 }

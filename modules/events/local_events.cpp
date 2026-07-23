@@ -23,7 +23,7 @@ void LocalEvents::ReportEvent(Severity severity,
     event_id = next_event_id_++;
 
   scada::Event& event = *new scada::Event;
-  event.time = scada::base::NowUtc();
+  event.time = scada::Now();
   event.message = message;
   event.severity = SeverityToEvent(severity);
   event.event_id = event_id;

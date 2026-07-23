@@ -107,13 +107,13 @@ std::string GetJsonString(const boost::json::object& node,
 
 }  // namespace
 
-scada::base::Time FixtureNow(const boost::json::value& json) {
+scada::DateTime FixtureNow(const boost::json::value& json) {
   const auto* jnow = json.as_object().if_contains("now");
   if (!jnow)
-    return scada::base::kNullTime;
+    return scada::kNullTime;
   return scada::base::TimeFromString(std::string(jnow->as_string()),
                                      /*is_local=*/true)
-      .value_or(scada::base::kNullTime);
+      .value_or(scada::kNullTime);
 }
 
 Page MakeScreenshotPage(const std::vector<ScreenshotSpec>& specs,

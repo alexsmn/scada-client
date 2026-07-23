@@ -50,11 +50,11 @@ boost::json::value SaveWindowItem(const WindowItem& item) {
 }  // namespace
 
 template <>
-std::optional<scada::base::Time> FromJson(const boost::json::value& value) {
+std::optional<scada::DateTime> FromJson(const boost::json::value& value) {
   if (!value.is_string())
     return std::nullopt;
 
-  scada::base::Time time;
+  scada::DateTime time;
   if (!Deserialize(std::string_view{value.as_string()}, time))
     return std::nullopt;
 
@@ -79,8 +79,8 @@ std::optional<TimeRange> FromJson(const boost::json::value& value) {
   }
 
   if (auto* interval_value = value.as_object().if_contains("interval")) {
-    auto interval = FromJson<scada::base::TimeDelta>(*interval_value);
-    if (!interval.has_value() || *interval == scada::base::TimeDelta::zero())
+    auto interval = FromJson<scada::Duration>(*interval_value);
+    if (!interval.has_value() || *interval == scada::Duration::zero())
       return std::nullopt;
 
     return TimeRange{*interval};
@@ -92,16 +92,16 @@ std::optional<TimeRange> FromJson(const boost::json::value& value) {
   if (!start_value)
     return std::nullopt;
 
-  auto start = FromJson<scada::base::Time>(*start_value);
+  auto start = FromJson<scada::DateTime>(*start_value);
   if (!start.has_value())
     return std::nullopt;
-  if (scada::base::IsNull(*start))
+  if (scada::IsNull(*start))
     return std::nullopt;
 
-  scada::base::Time end = scada::base::kNullTime;
+  scada::DateTime end = scada::kNullTime;
   auto* end_value = value.as_object().if_contains("end");
   if (end_value && !end_value->is_null()) {
-    auto parsed_end = FromJson<scada::base::Time>(*end_value);
+    auto parsed_end = FromJson<scada::DateTime>(*end_value);
     if (!parsed_end.has_value())
       return std::nullopt;
     end = *parsed_end;
@@ -111,7 +111,7 @@ std::optional<TimeRange> FromJson(const boost::json::value& value) {
 }
 
 template <>
-std::optional<scada::base::TimeDelta> FromJson(
+std::optional<scada::Duration> FromJson(
     const boost::json::value& value) {
   return std::chrono::seconds(
              GetKey<int>(value, "seconds").value_or(0)) +
@@ -127,7 +127,7 @@ boost::json::value ToJson(std::string_view str) {
   return boost::json::value{std::string{str}};
 }
 
-boost::json::value ToJson(scada::base::Time time) {
+boost::json::value ToJson(scada::DateTime time) {
   return boost::json::value{SerializeToString(time)};
 }
 
@@ -138,7 +138,7 @@ boost::json::value ToJson(const TimeRange& time_range) {
   } else if (time_range.type == TimeRange::Type::Custom) {
     result.as_object()["start"] = ToJson(time_range.start);
     result.as_object()["end"] =
-        scada::base::IsNull(time_range.end) || time_range.end == scada::base::kMaxTime
+        scada::IsNull(time_range.end) || time_range.end == scada::kMaxTime
             ? boost::json::value{}
             : ToJson(time_range.end);
     SetKey(result, "dates", time_range.dates);
@@ -148,7 +148,7 @@ boost::json::value ToJson(const TimeRange& time_range) {
   return result;
 }
 
-boost::json::value ToJson(scada::base::TimeDelta duration) {
+boost::json::value ToJson(scada::Duration duration) {
   boost::json::value result{boost::json::object{}};
   auto value = InSeconds(duration);
   if (auto seconds = value % 60)

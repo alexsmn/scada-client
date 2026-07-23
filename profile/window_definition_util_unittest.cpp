@@ -191,7 +191,7 @@ TEST(FromToJson, TimeRange_Interval) {
 }
 
 TEST(FromToJson, TimeRange_CustomOpenEnd) {
-  TimeRange time_range{scada::base::Time{}, scada::base::kNullTime};
+  TimeRange time_range{scada::DateTime{}, scada::kNullTime};
 
   auto json = ToJson(time_range);
   ASSERT_TRUE(json.is_object());
@@ -203,11 +203,11 @@ TEST(FromToJson, TimeRange_CustomOpenEnd) {
 }
 
 TEST(FromToJson, TimeRange_CustomMaxEndIsOpenEnd) {
-  TimeRange time_range{scada::base::Time{},
-                       scada::base::kMaxTime};
+  TimeRange time_range{scada::DateTime{},
+                       scada::kMaxTime};
 
   auto restored = FromJson<TimeRange>(ToJson(time_range));
   ASSERT_TRUE(restored);
   EXPECT_EQ(time_range.start, restored->start);
-  EXPECT_TRUE(scada::base::IsNull(restored->end));
+  EXPECT_TRUE(scada::IsNull(restored->end));
 }

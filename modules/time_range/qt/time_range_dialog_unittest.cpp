@@ -43,8 +43,8 @@ class TimeRangeDialogTest : public testing::Test {
   Profile profile_;
 };
 
-scada::base::Time ToBaseTime(const QDateTime& date_time) {
-  return scada::base::Time{} +
+scada::DateTime ToBaseTime(const QDateTime& date_time) {
+  return scada::DateTime{} +
          std::chrono::milliseconds(
              date_time.toMSecsSinceEpoch());
 }

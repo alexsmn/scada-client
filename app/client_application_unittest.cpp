@@ -408,7 +408,7 @@ TEST_F(ClientApplicationTest, OpensKnownWindows) {
 // starts.
 TEST_F(ClientApplicationTestBase, DisplaysActualDataOnStart) {
   auto node_id = scada::NodeId{1, 1};
-  auto initial_timestamp = scada::base::NowUtc();
+  auto initial_timestamp = scada::Now();
   auto initial_data_value =
       scada::DataValue{"initial-value", /*qualifier=*/{},
                        /*source_timestamp=*/initial_timestamp,

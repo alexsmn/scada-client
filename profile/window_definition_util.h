@@ -9,21 +9,21 @@
 #include <string_view>
 
 template <>
-std::optional<scada::base::Time> FromJson(const boost::json::value& value);
+std::optional<scada::DateTime> FromJson(const boost::json::value& value);
 
 template <>
 std::optional<TimeRange> FromJson(const boost::json::value& value);
 
 template <>
-std::optional<scada::base::TimeDelta> FromJson(const boost::json::value& value);
+std::optional<scada::Duration> FromJson(const boost::json::value& value);
 
 boost::json::value ToJson(std::string_view str);
 
-boost::json::value ToJson(scada::base::Time time);
+boost::json::value ToJson(scada::DateTime time);
 
 boost::json::value ToJson(const TimeRange& time_range);
 
-boost::json::value ToJson(scada::base::TimeDelta duration);
+boost::json::value ToJson(scada::Duration duration);
 
 std::string SaveBlob(std::string_view blob);
 

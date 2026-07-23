@@ -171,7 +171,7 @@ SummaryModel::RowModel::RowModel(SummaryModel& model) : model_(model) {
 }
 
 std::u16string SummaryModel::RowModel::GetTitle(int index) const {
-  scada::base::Time time = model_.GetRowTime(index);
+  scada::DateTime time = model_.GetRowTime(index);
   return UtfConvert<char16_t>(
       FormatTime(time, TIME_FORMAT_DATE | TIME_FORMAT_TIME));
 }
@@ -329,18 +329,18 @@ void SummaryModel::GetCell(scada::aui::GridCell& cell) {
   }
 }
 
-scada::base::Time SummaryModel::GetRowTime(int row) const {
+scada::DateTime SummaryModel::GetRowTime(int row) const {
   scada::base::Check(row >= 0 && row < static_cast<int>(row_count_));
-  scada::base::Check(!scada::base::IsNull(start_time_));
-  scada::base::Check(aggregate_filter_.interval != scada::base::TimeDelta::zero());
+  scada::base::Check(!scada::IsNull(start_time_));
+  scada::base::Check(aggregate_filter_.interval != scada::Duration::zero());
   return start_time_ + aggregate_filter_.interval * row;
 }
 
-int SummaryModel::GetRowForTime(scada::base::Time time) const {
-  scada::base::Check(!scada::base::IsNull(start_time_));
-  scada::base::Check(!scada::base::IsNull(end_time_));
+int SummaryModel::GetRowForTime(scada::DateTime time) const {
+  scada::base::Check(!scada::IsNull(start_time_));
+  scada::base::Check(!scada::IsNull(end_time_));
   scada::base::Check(start_time_ <= end_time_);
-  scada::base::Check(aggregate_filter_.interval != scada::base::TimeDelta::zero());
+  scada::base::Check(aggregate_filter_.interval != scada::Duration::zero());
 
   // |end_time_| defines start of the last interval.
   if (time < start_time_ || time >= end_time_)
@@ -348,7 +348,7 @@ int SummaryModel::GetRowForTime(scada::base::Time time) const {
   if (row_count_ == 0)
     return -1;
 
-  scada::base::TimeDelta delta = time - start_time_;
+  scada::Duration delta = time - start_time_;
   int row = static_cast<int>(delta / aggregate_filter_.interval);
   scada::base::Check(row >= 0 && row < static_cast<int>(row_count_));
   return row;
@@ -407,7 +407,7 @@ void SummaryModel::SetAggregateType(scada::NodeId aggregate_type) {
   SetParams(time_range_, std::move(new_filter));
 }
 
-void SummaryModel::SetInterval(scada::base::TimeDelta interval) {
+void SummaryModel::SetInterval(scada::Duration interval) {
   auto new_filter = aggregate_filter_;
   new_filter.interval = interval;
   SetParams(time_range_, std::move(new_filter));
@@ -418,7 +418,7 @@ void SummaryModel::SetParams(const TimeRange& time_range,
   scada::base::Check(!aggregate_filter.is_null());
 
   auto params = CalculateSummaryModelParams(
-      time_range, aggregate_filter.interval, /*now=*/scada::base::NowUtc());
+      time_range, aggregate_filter.interval, /*now=*/scada::Now());
 
   time_range_ = time_range;
   aggregate_filter_ = std::move(aggregate_filter);

@@ -234,7 +234,7 @@ TEST(EventTableModelUnacknowledgedFilterTest,
 TEST_F(EventTableModelTest, CurrentEvents_AckEvents) {
   Init();
 
-  const auto ack_time = scada::base::NowUtc();
+  const auto ack_time = scada::Now();
   const int ack_count = 10;
 
   std::vector<const scada::Event*> event_ptrs;
@@ -398,7 +398,7 @@ TEST_F(EventJournalAlarmSurfaceTest, ThemedAckCellSaysAnAlarmIsStillPending) {
 TEST_F(EventJournalAlarmSurfaceTest, AnAcknowledgedRowKeepsShowingItsAckTime) {
   scada::Event& event = FirstEvent();
   event.acked = true;
-  event.acknowledged_time = scada::base::NowUtc();
+  event.acknowledged_time = scada::Now();
   Init();
   scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
 
@@ -450,7 +450,7 @@ class EventFloodGroupingTest : public Test {
     for (int i = 0; i < count; ++i) {
       historical_event_model_.AddEvent(
           {.event_id = static_cast<scada::EventId>(first_id + i),
-           .time = scada::base::Time{} +
+           .time = scada::DateTime{} +
                    std::chrono::seconds(i),
            .source_node_id = node_id_,
            .message = message});
@@ -486,7 +486,7 @@ class EventFloodGroupingTest : public Test {
 TEST_F(EventFloodGroupingTest, ALocalizedMessageRendersItsText) {
   historical_event_model_.AddEvent(
       {.event_id = 1,
-       .time = scada::base::Time{},
+       .time = scada::DateTime{},
        .source_node_id = node_id_,
        .message = scada::LocalizedText{"ru", u"Значение в норме"}});
   Rebuild();
@@ -550,7 +550,7 @@ TEST_F(EventFloodGroupingTest, AGroupedRowShowsItsNewestOccurrence) {
 
   ASSERT_EQ(model_.GetRowCount(), 1);
   EXPECT_EQ(model_.event_at(0).time,
-            scada::base::Time{} +
+            scada::DateTime{} +
                 std::chrono::seconds(count - 1));
 }
 

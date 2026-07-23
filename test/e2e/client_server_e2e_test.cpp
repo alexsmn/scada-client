@@ -3,6 +3,7 @@
 
 #include "base/awaitable.h"
 #include "base/time/time.h"
+#include "scada/date_time.h"
 #include "opcua/client/client_session.h"
 #include "opcua_bridge/client_adapters.h"
 #include "scada/attribute_service.h"
@@ -176,8 +177,8 @@ class ProxyOpcUaSession {
   // Mirrors the Qt client's event journal read (HistoricalEventModel):
   // HistoryReadEvents rooted at the Server object. An unset filter (types=0)
   // matches every stored event regardless of type or ack state.
-  scada::HistoryReadEventsResult ReadEventHistory(scada::base::Time from,
-                                                  scada::base::Time to) {
+  scada::HistoryReadEventsResult ReadEventHistory(scada::DateTime from,
+                                                  scada::DateTime to) {
     return Run([this, from, to] {
       return services_.history_service_->HistoryReadEvents(
           scada::NodeId{scada::id::Server}, from, to, scada::EventFilter{});
@@ -396,8 +397,8 @@ TEST_P(ClientServerE2eTest, Events_HistoryReadThroughProxy) {
   // The window must cover the tiers' startup burst of system events (module
   // and device state events raised while the cluster comes up), which is what
   // the historian collects — freeze the start before the tiers exist.
-  const scada::base::Time window_start =
-      scada::base::NowUtc() - std::chrono::minutes(1);
+  const scada::DateTime window_start =
+      scada::Now() - std::chrono::minutes(1);
 
   StartServer();
 
@@ -412,7 +413,7 @@ TEST_P(ClientServerE2eTest, Events_HistoryReadThroughProxy) {
   while (std::chrono::steady_clock::now() < deadline) {
     result = session.ReadEventHistory(
         window_start,
-        scada::base::NowUtc() + std::chrono::minutes(1));
+        scada::Now() + std::chrono::minutes(1));
     if (result.status && !result.events.empty())
       break;
     std::this_thread::sleep_for(std::chrono::milliseconds{500});
@@ -633,7 +634,7 @@ TEST_P(ClientServerE2eTest, Connect_Success_DisplaysHistoricalTimedData) {
   // inside the window. Without this the view's default Day window let
   // client-side live buffering populate the rows and the test passed even
   // when proxy history routing was broken.
-  const int64_t history_window_end = scada::base::EncodeWireMicroseconds(scada::base::NowUtc());
+  const int64_t history_window_end = scada::base::EncodeWireMicroseconds(scada::Now());
   StartClient({"--test-historical-timed-data-file=" +
                    historical_timed_data_file_.string(),
                "--test-historical-timed-data-end=" +

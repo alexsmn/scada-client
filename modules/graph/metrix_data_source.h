@@ -72,7 +72,7 @@ class MetrixDataSource : public GraphDataSource {
   TimedDataSpec timed_data_;
   std::u16string title_;
 
-  scada::DateTime earliest_timestamp_ = scada::base::kNullTime;
+  scada::DateTime earliest_timestamp_ = scada::kNullTime;
   Cancelation update_horizontal_range_cancelation_;
   AnyExecutor executor_;
 };

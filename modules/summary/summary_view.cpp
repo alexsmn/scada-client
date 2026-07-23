@@ -21,7 +21,7 @@ constexpr std::pair<unsigned, scada::NumericId> kAggregateCommands[] = {
     {ID_AGGREGATION_AVG, scada::id::AggregateFunction_Average},
 };
 
-constexpr std::pair<unsigned, scada::base::TimeDelta> kIntervalCommands[] = {
+constexpr std::pair<unsigned, scada::Duration> kIntervalCommands[] = {
     {ID_INTERVAL_1M, std::chrono::minutes(1)},
     {ID_INTERVAL_5M, std::chrono::minutes(5)},
     {ID_INTERVAL_15M, std::chrono::minutes(15)},

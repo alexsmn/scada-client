@@ -432,7 +432,7 @@ void InspectorPanel::ShowSelection(const SelectionModel& selection) {
     for (const events::EventTimelineEntry& entry :
          events::BuildEventTimeline(*event)) {
       timeline.push_back(
-          {.time = scada::base::IsNull(entry.time) ? QString{}
+          {.time = scada::IsNull(entry.time) ? QString{}
                                         : QString::fromStdString(FormatTime(
                                               entry.time, TIME_FORMAT_TIME)),
            .text = Tr(events::EventTimelineStepText(entry.step))});

@@ -8,7 +8,7 @@
 namespace {
 
 scada::DateTime SanitizeTimeBound(scada::DateTime time) {
-  return time == scada::base::kMinTime || time == scada::base::kMaxTime ? scada::base::kNullTime : time;
+  return time == scada::kMinTime || time == scada::kMaxTime ? scada::kNullTime : time;
 }
 
 Awaitable<void> ReadHistoryEventsAsync(AnyExecutor executor,
@@ -47,7 +47,7 @@ void WatchHistoryEventSource::Start(const scada::NodeId& device_id,
                                     Delegate& delegate) {
   cancelation_.Cancel();
 
-  if (device_id.is_null() || time_range.first == scada::base::kMaxTime) {
+  if (device_id.is_null() || time_range.first == scada::kMaxTime) {
     return;
   }
 

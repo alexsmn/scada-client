@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/time/time.h"
+#include "scada/date_time.h"
 #include "scada/data_value.h"
 
 #include <span>
@@ -8,7 +9,7 @@
 
 // The trailing history window a reshell table row observes to feed its
 // sparkline cell (table-watch.html "Trend 1 h").
-inline constexpr scada::base::TimeDelta kSparklineWindow =
+inline constexpr scada::Duration kSparklineWindow =
     std::chrono::hours(1);
 
 // A point in a sparkline's local pixel space (origin top-left, y grows down),

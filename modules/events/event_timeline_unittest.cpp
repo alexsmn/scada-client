@@ -23,7 +23,7 @@ TEST(EventTimelineTest, PendingEventEndsAwaitingAcknowledgement) {
   EXPECT_EQ(timeline[0].step, EventTimelineStep::kRaised);
   EXPECT_EQ(timeline[0].time, At(0));
   EXPECT_EQ(timeline[1].step, EventTimelineStep::kAwaitingAcknowledgement);
-  EXPECT_TRUE(scada::base::IsNull(timeline[1].time));
+  EXPECT_TRUE(scada::IsNull(timeline[1].time));
 }
 
 TEST(EventTimelineTest, AcknowledgedEventEndsAcknowledged) {

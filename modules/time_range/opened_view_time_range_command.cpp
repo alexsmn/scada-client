@@ -23,8 +23,8 @@ std::optional<TimeRange> GetTimeRangeCommand(unsigned command_id) {
     case ID_TIME_RANGE_MONTH:
       return TimeRange::Type::Month;
     case ID_TIME_RANGE_CUSTOM:
-      return TimeRange{/*start=*/scada::base::Time{},
-                       /*end=*/scada::base::Time{}};
+      return TimeRange{/*start=*/scada::DateTime{},
+                       /*end=*/scada::DateTime{}};
     default:
       return std::nullopt;
   }

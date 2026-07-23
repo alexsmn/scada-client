@@ -1,6 +1,7 @@
 #include "events/qt/event_filter_bar.h"
 
 #include "base/time/time.h"
+#include "scada/date_time.h"
 #include "base/time_range.h"
 
 #include <gtest/gtest.h>
@@ -34,8 +35,8 @@ TEST(EventFilterBarPeriodTest, IntervalPresetsMatch) {
 // does not misrepresent it.
 TEST(EventFilterBarPeriodTest, UnmatchedRangeHasNoPreset) {
   TimeRange custom{
-      scada::base::Time{},
-      scada::base::Time{} + std::chrono::hours(3)};
+      scada::DateTime{},
+      scada::DateTime{} + std::chrono::hours(3)};
   EXPECT_EQ(EventPeriodPresetIndex(custom), -1);
 
   EXPECT_EQ(EventPeriodPresetIndex(

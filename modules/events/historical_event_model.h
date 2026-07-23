@@ -47,8 +47,8 @@ class HistoricalEventModel {
 
  private:
   Awaitable<void> UpdateAsync(CancelationRef request_cancelation,
-                              scada::base::Time from,
-                              scada::base::Time to);
+                              scada::DateTime from,
+                              scada::DateTime to);
 
   void OnHistoryReadEventsCompleted(scada::HistoryReadEventsResult&& result);
 
@@ -73,7 +73,7 @@ inline void HistoricalEventModel::Update() {
   historical_events_.clear();
 
   auto [from, to] =
-      ToDateTimeRange(time_range_, /*now=*/scada::base::NowUtc());
+      ToDateTimeRange(time_range_, /*now=*/scada::Now());
 
   BOOST_LOG_TRIVIAL(info) << "Query events from " << FormatTime(from).c_str();
 
@@ -93,8 +93,8 @@ inline void HistoricalEventModel::Update() {
 
 inline Awaitable<void> HistoricalEventModel::UpdateAsync(
     CancelationRef request_cancelation,
-    scada::base::Time from,
-    scada::base::Time to) {
+    scada::DateTime from,
+    scada::DateTime to) {
   auto result = co_await history_service_.HistoryReadEvents(
       scada::id::Server, from, to,
       scada::EventFilter{scada::EventFilter::ACKED});

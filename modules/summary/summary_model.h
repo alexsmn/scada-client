@@ -6,6 +6,7 @@
 #include "aui/models/grid_model.h"
 #include "base/boost_log.h"
 #include "base/time/time.h"
+#include "scada/date_time.h"
 #include "common/node_state.h"
 #include "controller/contents_model.h"
 #include "controller/time_model.h"
@@ -44,8 +45,8 @@ class SummaryModel : private SummaryModelContext,
     return time_range_;
   }
 
-  scada::base::TimeDelta interval() const { return aggregate_filter_.interval; }
-  void SetInterval(scada::base::TimeDelta interval);
+  scada::Duration interval() const { return aggregate_filter_.interval; }
+  void SetInterval(scada::Duration interval);
 
   const scada::NodeId& aggregate_type() const {
     return aggregate_filter_.aggregate_type;
@@ -70,8 +71,8 @@ class SummaryModel : private SummaryModelContext,
   scada::DataValue GetDataValue(int row, int column) const;
   const TimedDataSpec& timed_data(int column) const;
 
-  scada::base::Time GetRowTime(int row) const;
-  int GetRowForTime(scada::base::Time time) const;
+  scada::DateTime GetRowTime(int row) const;
+  int GetRowForTime(scada::DateTime time) const;
 
   // aui::GridModel
   virtual void GetCell(scada::aui::GridCell& cell) override;
@@ -106,9 +107,9 @@ class SummaryModel : private SummaryModelContext,
 
   std::vector<std::unique_ptr<Column>> columns_;
 
-  scada::base::Time start_time_ = scada::base::kNullTime;
+  scada::DateTime start_time_ = scada::kNullTime;
   // |end_time_| defines start of the last interval.
-  scada::base::Time end_time_ = scada::base::kNullTime;
+  scada::DateTime end_time_ = scada::kNullTime;
   TimeRange time_range_;
   scada::AggregateFilter aggregate_filter_;
 

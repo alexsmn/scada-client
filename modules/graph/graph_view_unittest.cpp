@@ -199,7 +199,7 @@ TEST(GraphViewInspectorTest, DeletingSelectedPaneRefreshesSeriesInspector) {
 TEST_F(GraphViewTest, FakeTimedDataRendersLines) {
   // Set up FakeTimedDataService with pre-populated data.
   FakeTimedDataService fake_service;
-  auto now = scada::base::NowUtc();
+  auto now = scada::Now();
 
   auto td = fake_service.AddTimedData("TS.200");
   for (int i = 0; i < 24; ++i) {

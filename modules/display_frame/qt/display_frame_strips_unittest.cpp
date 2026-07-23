@@ -2,6 +2,7 @@
 
 #include "aui/test/app_environment.h"
 #include "base/time/time.h"
+#include "scada/date_time.h"
 #include "events/node_event_provider.h"
 #include "scada/event.h"
 
@@ -48,7 +49,7 @@ scada::Event MakeEvent(scada::EventId id,
   scada::Event event;
   event.event_id = id;
   event.severity = severity;
-  event.time = scada::base::NowUtc();
+  event.time = scada::Now();
   event.message = std::move(message);
   return event;
 }

@@ -380,7 +380,7 @@ void GraphView::OnGraphSelectPane() {
 TimeRange GraphView::GetTimeRange() const {
   auto start =
       scada::base::DecodeDoubleT(graph_->horizontal_axis().range().low());
-  scada::base::Time end;
+  scada::DateTime end;
   if (!graph_->horizontal_axis().time_fit())
     end = scada::base::DecodeDoubleT(
         graph_->horizontal_axis().range().high());
@@ -488,7 +488,7 @@ void GraphView::ToggleZoom() {
 void GraphView::SetTimeRange(const TimeRange& range) {
   bool time_fit = range.type != TimeRange::Type::Custom;
   auto [start_time, end_time] =
-      ToDateTimeRange(range, /*now=*/scada::base::NowUtc());
+      ToDateTimeRange(range, /*now=*/scada::Now());
   double low = scada::base::EncodeDoubleT(start_time);
   double high = time_fit ? graph_->horizontal_axis().scroll_range().high()
                          : scada::base::EncodeDoubleT(end_time);
@@ -522,7 +522,7 @@ void GraphView::OnGraphModified() {
   controller_delegate_.SetModified(true);
 
   // update defaults
-  scada::base::TimeDelta span =
+  scada::Duration span =
       scada::base::DecodeDoubleT(graph_->horizontal_axis().range().high()) -
       scada::base::DecodeDoubleT(graph_->horizontal_axis().range().low());
   if (InSeconds(span) >= 1)

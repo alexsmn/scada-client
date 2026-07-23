@@ -39,7 +39,7 @@ scada::NodeState MakeNodeState(scada::NodeId node_id,
 
 class SummaryModelTest : public Test {
  protected:
-  scada::aui::GridCell GetCellAt(int column_index, scada::base::Time time);
+  scada::aui::GridCell GetCellAt(int column_index, scada::DateTime time);
 
   TestExecutor executor_;
   StaticNodeService node_service_;
@@ -50,7 +50,7 @@ class SummaryModelTest : public Test {
 };
 
 scada::aui::GridCell SummaryModelTest::GetCellAt(int column_index,
-                                                 scada::base::Time time) {
+                                                 scada::DateTime time) {
   int row_index = summary_model_.GetRowForTime(time);
 
   scada::aui::GridCell cell{.row = row_index, .column = column_index};

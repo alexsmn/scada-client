@@ -29,7 +29,7 @@ class LiveTimedData : public BaseTimedData {
  public:
   LiveTimedData() { historical_ = true; }
 
-  void PushCurrent(scada::base::Time timestamp, double value) {
+  void PushCurrent(scada::DateTime timestamp, double value) {
     scada::DataValue data_value{value, scada::Qualifier{},
                                 /*source_timestamp=*/timestamp,
                                 /*server_timestamp=*/timestamp};
