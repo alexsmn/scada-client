@@ -299,7 +299,15 @@ void DeviceDiagnosticsPanel::ShowDevice(const NodeRef& device,
     auto spec =
         std::make_unique<TimedDataSpec>(timed_data_service, child.node_id());
     spec->SetCurrentOnly();
+    // The live current value — the only thing a SetCurrentOnly spec delivers —
+    // arrives as a PROPERTY_CURRENT change through property_change_handler, not
+    // as a buffer update; wiring only update_handler leaves the panel frozen
+    // at whatever it showed when the device was selected, since a current-only
+    // spec produces no buffer updates.
     spec->update_handler = [this](std::span<const scada::DataValue>) {
+      RefreshFromSpecs();
+    };
+    spec->property_change_handler = [this](const PropertySet&) {
       RefreshFromSpecs();
     };
     return spec;
