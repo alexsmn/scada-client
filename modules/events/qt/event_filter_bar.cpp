@@ -71,20 +71,20 @@ Awaitable<std::vector<EventAreaEntry>> BrowseEventAreas(
   co_return areas;
 }
 
-const std::vector<TimeRange>& EventPeriodRanges() {
+const std::vector<scada::RelativeTimeRange>& EventPeriodRanges() {
   // Mirrors the toolbar's ID_TIME_RANGE_* quick-picks so a range set there
   // reflects onto the matching preset here.
-  static const std::vector<TimeRange> ranges = {
-      TimeRange{std::chrono::minutes(15)},
-      TimeRange{std::chrono::hours(1)},
-      TimeRange{TimeRange::Type::Day},
-      TimeRange{TimeRange::Type::Week},
-      TimeRange{TimeRange::Type::Month},
+  static const std::vector<scada::RelativeTimeRange> ranges = {
+      scada::RelativeTimeRange{std::chrono::minutes(15)},
+      scada::RelativeTimeRange{std::chrono::hours(1)},
+      scada::RelativeTimeRange{scada::RelativeTimeRange::Type::Day},
+      scada::RelativeTimeRange{scada::RelativeTimeRange::Type::Week},
+      scada::RelativeTimeRange{scada::RelativeTimeRange::Type::Month},
   };
   return ranges;
 }
 
-int EventPeriodPresetIndex(const TimeRange& range) {
+int EventPeriodPresetIndex(const scada::RelativeTimeRange& range) {
   const auto& ranges = EventPeriodRanges();
   for (size_t i = 0; i < ranges.size(); ++i) {
     if (ranges[i] == range)

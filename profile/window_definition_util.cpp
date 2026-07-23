@@ -2,7 +2,7 @@
 
 #include "base/base64.h"
 #include "base/range_util.h"
-#include "base/time_range.h"
+#include "base/relative_time_range.h"
 #include "base/time_utils.h"
 #include "base/value_util.h"
 #include "controller/window_info.h"
@@ -50,11 +50,11 @@ boost::json::value SaveWindowItem(const WindowItem& item) {
 }  // namespace
 
 template <>
-std::optional<scada::DateTime> FromJson(const boost::json::value& value) {
+std::optional<scada::Time> FromJson(const boost::json::value& value) {
   if (!value.is_string())
     return std::nullopt;
 
-  scada::DateTime time;
+  scada::Time time;
   if (!Deserialize(std::string_view{value.as_string()}, time))
     return std::nullopt;
 
@@ -62,19 +62,19 @@ std::optional<scada::DateTime> FromJson(const boost::json::value& value) {
 }
 
 template <>
-std::optional<TimeRange> FromJson(const boost::json::value& value) {
+std::optional<scada::RelativeTimeRange> FromJson(const boost::json::value& value) {
   if (!value.is_object())
     return std::nullopt;
 
   auto type_str = GetString(value, "type");
   if (!type_str.empty()) {
-    auto type = ParseTimeRangeType(type_str);
-    if (type == TimeRange::Type::Count)
+    auto type = scada::ParseTimeRangeType(type_str);
+    if (type == scada::RelativeTimeRange::Type::Count)
       return std::nullopt;
 
     // Profile JSON is external: bare Interval/Custom types need their
     // payload fields parsed below.
-    if (type != TimeRange::Type::Custom && type != TimeRange::Type::Interval)
+    if (type != scada::RelativeTimeRange::Type::Custom && type != scada::RelativeTimeRange::Type::Interval)
       return type;
   }
 
@@ -83,7 +83,7 @@ std::optional<TimeRange> FromJson(const boost::json::value& value) {
     if (!interval.has_value() || *interval == scada::Duration::zero())
       return std::nullopt;
 
-    return TimeRange{*interval};
+    return scada::RelativeTimeRange{*interval};
   }
 
   // Custom time range.
@@ -92,22 +92,22 @@ std::optional<TimeRange> FromJson(const boost::json::value& value) {
   if (!start_value)
     return std::nullopt;
 
-  auto start = FromJson<scada::DateTime>(*start_value);
+  auto start = FromJson<scada::Time>(*start_value);
   if (!start.has_value())
     return std::nullopt;
   if (scada::IsNull(*start))
     return std::nullopt;
 
-  scada::DateTime end = scada::kNullTime;
+  scada::Time end = scada::kNullTime;
   auto* end_value = value.as_object().if_contains("end");
   if (end_value && !end_value->is_null()) {
-    auto parsed_end = FromJson<scada::DateTime>(*end_value);
+    auto parsed_end = FromJson<scada::Time>(*end_value);
     if (!parsed_end.has_value())
       return std::nullopt;
     end = *parsed_end;
   }
 
-  return TimeRange{*start, end, GetBool(value, "dates", false)};
+  return scada::RelativeTimeRange{*start, end, GetBool(value, "dates", false)};
 }
 
 template <>
@@ -127,15 +127,15 @@ boost::json::value ToJson(std::string_view str) {
   return boost::json::value{std::string{str}};
 }
 
-boost::json::value ToJson(scada::DateTime time) {
+boost::json::value ToJson(scada::Time time) {
   return boost::json::value{SerializeToString(time)};
 }
 
-boost::json::value ToJson(const TimeRange& time_range) {
+boost::json::value ToJson(const scada::RelativeTimeRange& time_range) {
   boost::json::value result{boost::json::object{}};
-  if (time_range.type == TimeRange::Type::Interval) {
+  if (time_range.type == scada::RelativeTimeRange::Type::Interval) {
     result.as_object()["interval"] = ToJson(time_range.interval);
-  } else if (time_range.type == TimeRange::Type::Custom) {
+  } else if (time_range.type == scada::RelativeTimeRange::Type::Custom) {
     result.as_object()["start"] = ToJson(time_range.start);
     result.as_object()["end"] =
         scada::IsNull(time_range.end) || time_range.end == scada::kMaxTime
@@ -178,16 +178,16 @@ std::string RestoreBlob(std::string_view text) {
   return blob;
 }
 
-void SaveTimeRange(WindowDefinition& definition, const TimeRange& time_range) {
-  definition.AddItem("TimeRange").attributes = ToJson(time_range);
+void SaveTimeRange(WindowDefinition& definition, const scada::RelativeTimeRange& time_range) {
+  definition.AddItem("scada::RelativeTimeRange").attributes = ToJson(time_range);
 }
 
-std::optional<TimeRange> RestoreTimeRange(const WindowDefinition& definition) {
-  auto* item = definition.FindItem("TimeRange");
+std::optional<scada::RelativeTimeRange> RestoreTimeRange(const WindowDefinition& definition) {
+  auto* item = definition.FindItem("scada::RelativeTimeRange");
   if (!item)
     return std::nullopt;
 
-  return FromJson<TimeRange>(item->attributes);
+  return FromJson<scada::RelativeTimeRange>(item->attributes);
 }
 
 template <>

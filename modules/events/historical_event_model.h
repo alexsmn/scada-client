@@ -8,7 +8,7 @@
 #include "base/boost_log.h"
 #include "base/cancelation.h"
 #include "base/format_time.h"
-#include "base/time_range.h"
+#include "base/relative_time_range.h"
 #include "scada/event.h"
 #include "scada/history_service.h"
 
@@ -21,12 +21,12 @@ class HistoricalEventModel {
                        scada::HistoryService& history_service)
       : executor_{std::move(executor)}, history_service_{history_service} {}
 
-  void Init(const TimeRange& range) { time_range_ = range; }
+  void Init(const scada::RelativeTimeRange& range) { time_range_ = range; }
 
-  const TimeRange& time_range() const SCADA_LIFETIME_BOUND {
+  const scada::RelativeTimeRange& time_range() const SCADA_LIFETIME_BOUND {
     return time_range_;
   }
-  void SetTimeRange(const TimeRange& range) { time_range_ = range; }
+  void SetTimeRange(const scada::RelativeTimeRange& range) { time_range_ = range; }
 
   const auto& events() const SCADA_LIFETIME_BOUND { return historical_events_; }
 
@@ -47,8 +47,8 @@ class HistoricalEventModel {
 
  private:
   Awaitable<void> UpdateAsync(CancelationRef request_cancelation,
-                              scada::DateTime from,
-                              scada::DateTime to);
+                              scada::Time from,
+                              scada::Time to);
 
   void OnHistoryReadEventsCompleted(scada::HistoryReadEventsResult&& result);
 
@@ -57,7 +57,7 @@ class HistoricalEventModel {
   scada::HistoryService& history_service_;
 
   // Filter.
-  TimeRange time_range_;
+  scada::RelativeTimeRange time_range_;
 
   // Contains only historical events. |rows_| holds pointers on items from
   // it, so it shall not be vector.
@@ -73,7 +73,7 @@ inline void HistoricalEventModel::Update() {
   historical_events_.clear();
 
   auto [from, to] =
-      ToDateTimeRange(time_range_, /*now=*/scada::Now());
+      scada::ToTimeRange(time_range_, /*now=*/scada::Now());
 
   BOOST_LOG_TRIVIAL(info) << "Query events from " << FormatTime(from).c_str();
 
@@ -93,8 +93,8 @@ inline void HistoricalEventModel::Update() {
 
 inline Awaitable<void> HistoricalEventModel::UpdateAsync(
     CancelationRef request_cancelation,
-    scada::DateTime from,
-    scada::DateTime to) {
+    scada::Time from,
+    scada::Time to) {
   auto result = co_await history_service_.HistoryReadEvents(
       scada::id::Server, from, to,
       scada::EventFilter{scada::EventFilter::ACKED});

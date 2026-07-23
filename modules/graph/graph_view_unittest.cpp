@@ -84,11 +84,11 @@ class NodeFakeTimedData final : public FakeTimedData {
   NodeRef node_;
 };
 
-scada::DataValue MakeDataValue(double value, scada::DateTime timestamp) {
+scada::DataValue MakeDataValue(double value, scada::Time timestamp) {
   return {scada::Variant{value}, {}, timestamp, timestamp};
 }
 
-TimedDataSpec MakeTimedDataSpec(NodeRef node, scada::DateTime timestamp) {
+TimedDataSpec MakeTimedDataSpec(NodeRef node, scada::Time timestamp) {
   auto timed_data = std::make_shared<NodeFakeTimedData>(std::move(node));
   timed_data->data_values.push_back(MakeDataValue(1.0, timestamp));
   timed_data->ready_ranges.push_back({timestamp, timestamp});
@@ -119,8 +119,8 @@ TEST_F(GraphViewTest, Test) {
   auto* time_model = graph_view_.GetTimeModel();
   ASSERT_THAT(time_model, NotNull());
 
-  time_model->SetTimeRange(TimeRange::Type::Day);
-  // EXPECT_THAT(time_model->GetTimeRange(), Eq(TimeRange::Type::Day));
+  time_model->SetTimeRange(scada::RelativeTimeRange::Type::Day);
+  // EXPECT_THAT(time_model->GetTimeRange(), Eq(scada::RelativeTimeRange::Type::Day));
 }
 
 TEST_F(GraphViewTest, GraphSetupCommandRegistered) {

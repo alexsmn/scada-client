@@ -119,7 +119,7 @@ std::shared_ptr<TableModelTest::RowContext> TableModelTest::SetFormula() {
   ON_CALL(row_context->timed_data, AddViewObserver(_, _))
       .WillByDefault(Invoke([&view_observers = row_context->view_observers](
                                 TimedDataViewObserver& observer,
-                                const scada::DateTimeRange& range) {
+                                const scada::TimeRange& range) {
         view_observers.AddObserver(&observer);
       }));
 
@@ -145,7 +145,7 @@ std::shared_ptr<TableModelTest::RowContext> TableModelTest::SetFormula() {
   EXPECT_CALL(row_context->timed_data, AddObserver(_));
 
   EXPECT_CALL(row_context->timed_data,
-              AddViewObserver(_, scada::DateTimeRange{scada::kMaxTime,
+              AddViewObserver(_, scada::TimeRange{scada::kMaxTime,
                                                       scada::kMaxTime}));
 
   EXPECT_CALL(row_context->timed_data, IsAlerting());

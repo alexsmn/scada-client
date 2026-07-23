@@ -153,7 +153,7 @@ scada::DataValue MetrixGraph::Legend::GetCurrentValue(
   scada::DataValue value;
   const GraphCursor* cursor = graph().selected_cursor();
   if (cursor && !cursor->axis_->is_vertical()) {
-    scada::DateTime cursor_time =
+    scada::Time cursor_time =
         scada::base::DecodeDoubleT(cursor->position_);
     const scada::DataValue* cursor_value =
         data_source.timed_data().GetValueAt(cursor_time);
@@ -299,8 +299,8 @@ void MetrixGraph::Legend::PaintThemed(QPainter& painter) const {
 
   // The visible range drives the min/max/average aggregates.
   const GraphRange& range = graph().horizontal_axis().range();
-  const scada::DateTime from = scada::base::DecodeDoubleT(range.low());
-  const scada::DateTime to = scada::base::DecodeDoubleT(range.high());
+  const scada::Time from = scada::base::DecodeDoubleT(range.low());
+  const scada::Time to = scada::base::DecodeDoubleT(range.high());
 
   // Header row: column captions, right-aligned over their numeric columns.
   QFont header_font = painter.font();
@@ -376,7 +376,7 @@ QString MetrixGraph::Legend::ValueAtCursorText(
   const GraphCursor* cursor = graph().selected_cursor();
   if (!cursor || cursor->axis_->is_vertical())
     return EmptyCell();
-  const scada::DateTime cursor_time =
+  const scada::Time cursor_time =
       scada::base::DecodeDoubleT(cursor->position_);
   const scada::DataValue* value =
       data_source.timed_data().GetValueAt(cursor_time);

@@ -377,14 +377,14 @@ void GraphView::OnGraphSelectPane() {
   RefreshInspector();
 }
 
-TimeRange GraphView::GetTimeRange() const {
+scada::RelativeTimeRange GraphView::GetTimeRange() const {
   auto start =
       scada::base::DecodeDoubleT(graph_->horizontal_axis().range().low());
-  scada::DateTime end;
+  scada::Time end;
   if (!graph_->horizontal_axis().time_fit())
     end = scada::base::DecodeDoubleT(
         graph_->horizontal_axis().range().high());
-  return TimeRange{start, end};
+  return scada::RelativeTimeRange{start, end};
 }
 
 NodeIdSet GraphView::GetContainedItems() const {
@@ -485,10 +485,10 @@ void GraphView::ToggleZoom() {
   }
 }
 
-void GraphView::SetTimeRange(const TimeRange& range) {
-  bool time_fit = range.type != TimeRange::Type::Custom;
+void GraphView::SetTimeRange(const scada::RelativeTimeRange& range) {
+  bool time_fit = range.type != scada::RelativeTimeRange::Type::Custom;
   auto [start_time, end_time] =
-      ToDateTimeRange(range, /*now=*/scada::Now());
+      scada::ToTimeRange(range, /*now=*/scada::Now());
   double low = scada::base::EncodeDoubleT(start_time);
   double high = time_fit ? graph_->horizontal_axis().scroll_range().high()
                          : scada::base::EncodeDoubleT(end_time);

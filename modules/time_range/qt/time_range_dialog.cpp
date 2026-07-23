@@ -7,13 +7,13 @@
 
 namespace {
 
-QDateTime ToQDateTime(scada::DateTime time) {
-  auto delta = time - scada::DateTime{};
+QDateTime ToQDateTime(scada::Time time) {
+  auto delta = time - scada::Time{};
   return QDateTime::fromMSecsSinceEpoch(InMilliseconds(delta));
 }
 
-scada::DateTime ToTime(QDateTime date_time) {
-  return scada::DateTime{} +
+scada::Time ToTime(QDateTime date_time) {
+  return scada::Time{} +
          std::chrono::milliseconds(
              date_time.toMSecsSinceEpoch());
 }
@@ -26,7 +26,7 @@ class TimeRangeDialog final : public QDialog, private TimeRangeContext {
  public:
   TimeRangeDialog(TimeRangeContext&& context, QWidget* parent = nullptr);
 
-  const TimeRange& time_range() const { return time_range_; }
+  const scada::RelativeTimeRange& time_range() const { return time_range_; }
 
  public Q_SLOTS:
   virtual void accept() override;
@@ -43,7 +43,7 @@ TimeRangeDialog::TimeRangeDialog(TimeRangeContext&& context, QWidget* parent)
 
   ui.timeGroupBox->setChecked(!time_range_.dates);
 
-  auto bounds = ToDateTimeRange(time_range_, /*now=*/scada::Now());
+  auto bounds = scada::ToTimeRange(time_range_, /*now=*/scada::Now());
   auto start = ToQDateTime(bounds.first);
   auto end = ToQDateTime(bounds.second);
 
@@ -59,12 +59,12 @@ void TimeRangeDialog::accept() {
   QDateTime start{ui.startDateEdit->date(), ui.startTimeEdit->time()};
   QDateTime end{ui.endDateEdit->date(), ui.endTimeEdit->time()};
 
-  time_range_ = TimeRange{ToTime(start), ToTime(end), dates};
+  time_range_ = scada::RelativeTimeRange{ToTime(start), ToTime(end), dates};
 
   QDialog::accept();
 }
 
-Awaitable<TimeRange> ShowTimeRangeDialog(DialogService& dialog_service,
+Awaitable<scada::RelativeTimeRange> ShowTimeRangeDialog(DialogService& dialog_service,
                                          TimeRangeContext&& context) {
   auto dialog = std::make_unique<TimeRangeDialog>(
       std::move(context), dialog_service.GetParentWidget());

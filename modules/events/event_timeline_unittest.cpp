@@ -8,7 +8,7 @@
 namespace events {
 namespace {
 
-scada::DateTime At(int second) {
+scada::Time At(int second) {
   return scada::base::DecodeDoubleT(1'700'000'000.0 + second);
 }
 

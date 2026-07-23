@@ -3,7 +3,7 @@
 #include "base/struct_writer.h"
 #include "scada/node_id.h"
 #include "node_service/node_ref.h"
-#include "base/time_range.h"
+#include "base/relative_time_range.h"
 
 #include <optional>
 #include <ostream>
@@ -15,7 +15,7 @@
 struct OpenContext {
   NodeRef node;
   std::vector<scada::NodeId> node_ids;
-  std::optional<TimeRange> time_range;
+  std::optional<scada::RelativeTimeRange> time_range;
 };
 
 inline std::ostream& operator<<(std::ostream& stream,

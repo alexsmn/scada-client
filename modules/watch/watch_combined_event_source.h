@@ -15,7 +15,7 @@ class WatchCombinedEventSource : public WatchEventSource {
   // WatchEventSource
 
   virtual void Start(const scada::NodeId& device_id,
-                     const scada::DateTimeRange& time_range,
+                     const scada::TimeRange& time_range,
                      Delegate& delegate) override {
     for (auto& event_source : event_sources_) {
       event_source->Start(device_id, time_range, delegate);

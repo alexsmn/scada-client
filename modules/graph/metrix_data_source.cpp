@@ -12,19 +12,19 @@
 
 namespace {
 
-std::pair<scada::DateTime, scada::DateTime> GetTimeRange(
+std::pair<scada::Time, scada::Time> GetTimeRange(
     const TimedDataSpec& spec) {
   const auto& values = spec.values();
   return !values.empty()
-             ? std::pair<scada::DateTime,
-                         scada::DateTime>{values.front().source_timestamp,
+             ? std::pair<scada::Time,
+                         scada::Time>{values.front().source_timestamp,
                                           values.back().source_timestamp}
-             : std::pair<scada::DateTime, scada::DateTime>{};
+             : std::pair<scada::Time, scada::Time>{};
 }
 
-scada::DateTime GetLatestTimestamp(const TimedDataSpec& spec) {
+scada::Time GetLatestTimestamp(const TimedDataSpec& spec) {
   const auto& values = spec.values();
-  return !values.empty() ? values.back().source_timestamp : scada::DateTime{};
+  return !values.empty() ? values.back().source_timestamp : scada::Time{};
 }
 
 }  // namespace
@@ -57,7 +57,7 @@ class MetrixPointEnum : public PointEnumerator {
 
   // Time of last returned value. Supposed for detection if current value is
   // duplicate of last historical value.
-  scada::DateTime last_value_time_;
+  scada::Time last_value_time_;
 };
 
 bool MetrixPointEnum::Reset(double x_from,
@@ -65,7 +65,7 @@ bool MetrixPointEnum::Reset(double x_from,
                             bool include_left_bound,
                             bool include_right_bound) {
   count_ = 0;
-  last_value_time_ = scada::DateTime();
+  last_value_time_ = scada::Time();
   enum_right_bound_ = x_to;
   enum_include_right_bound_ = include_right_bound;
   enum_current_passed_ = false;
@@ -165,7 +165,7 @@ void MetrixDataSource::SetTimedData(const TimedDataSpec& spec) {
   OnItemChanged();
 }
 
-void MetrixDataSource::SetRange(const scada::DateTimeRange& range) {
+void MetrixDataSource::SetRange(const scada::TimeRange& range) {
   timed_data_.SetRange(range);
 }
 
@@ -333,12 +333,12 @@ void MetrixDataSource::ScheduleUpdateEarliestTimestamp() {
               co_return;
 
             SetEarliestTimestamp(values->empty()
-                                     ? scada::DateTime{}
+                                     ? scada::Time{}
                                      : values->front().source_timestamp);
           });
 }
 
-void MetrixDataSource::SetEarliestTimestamp(scada::DateTime timestamp) {
+void MetrixDataSource::SetEarliestTimestamp(scada::Time timestamp) {
   if (earliest_timestamp_ == timestamp) {
     return;
   }

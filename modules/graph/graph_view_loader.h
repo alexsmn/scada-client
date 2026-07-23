@@ -82,7 +82,7 @@ struct GraphViewLoader {
   void ReadTimeScale(const WindowItem& item) {
     auto srange = item.GetString("span");
     auto stime = item.GetString("time");
-    scada::DateTime from, to;
+    scada::Time from, to;
     bool time_fit = boost::iequals(stime, "Now");
     if (time_fit || !Deserialize(stime, to)) {
       time_fit = true;
@@ -102,13 +102,13 @@ struct GraphViewLoader {
 
   void FixTimeRange() {
     if (auto time_range = RestoreTimeRange(definition_)) {
-      auto [start, end] = ToDateTimeRange(*time_range, now);
+      auto [start, end] = scada::ToTimeRange(*time_range, now);
       graph_.horizontal_axis().SetRange(
           GraphRange{scada::base::EncodeDoubleT(start), scada::base::EncodeDoubleT(end), GraphRange::TIME});
       graph_.horizontal_axis().SetTimeFit(time_range->type !=
-                                          TimeRange::Type::Custom);
+                                          scada::RelativeTimeRange::Type::Custom);
     } else {
-      scada::DateTime now = scada::Now();
+      scada::Time now = scada::Now();
       graph_.horizontal_axis().SetRange(GraphRange(
           scada::base::EncodeDoubleT(now - profile_.graph_view.default_span),
           scada::base::EncodeDoubleT(now), GraphRange::TIME));
@@ -119,7 +119,7 @@ struct GraphViewLoader {
   const Profile& profile_;
   MetrixGraph& graph_;
   GraphView& graph_view_;
-  scada::DateTime now = scada::Now();
+  scada::Time now = scada::Now();
 
   using PaneMap = std::unordered_map<int, GraphPane*>;
   PaneMap pane_map;

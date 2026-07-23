@@ -41,10 +41,10 @@ void TimedDataModel::Init(const WindowDefinition& window_def) {
     SetFormula(item->GetString("path"));
   }
 
-  SetTimeRange(RestoreTimeRange(window_def).value_or(TimeRange::Type::Day));
+  SetTimeRange(RestoreTimeRange(window_def).value_or(scada::RelativeTimeRange::Type::Day));
 }
 
-void TimedDataModel::UpdateRows(const scada::DateTimeRange& range) {
+void TimedDataModel::UpdateRows(const scada::TimeRange& range) {
   auto new_begin = begin_iterator_;
 
   int new_count = 0;
@@ -147,13 +147,13 @@ void TimedDataModel::SetFormula(std::string_view formula) {
   UpdateRows({scada::kMinTime, scada::kMaxTime});
 }
 
-TimeRange TimedDataModel::GetTimeRange() const {
+scada::RelativeTimeRange TimedDataModel::GetTimeRange() const {
   return time_range_;
 }
 
-void TimedDataModel::SetTimeRange(const TimeRange& time_range) {
+void TimedDataModel::SetTimeRange(const scada::RelativeTimeRange& time_range) {
   time_range_ = time_range;
-  auto [start, end] = ToDateTimeRange(time_range_, clock_.Now());
+  auto [start, end] = scada::ToTimeRange(time_range_, clock_.Now());
 
   timed_data_.SetRange({start, end});
 

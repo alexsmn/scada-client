@@ -51,7 +51,7 @@ std::optional<scada::aui::Color> GetNodeColor(
   return std::nullopt;
 }
 
-std::u16string FormatCellTime(scada::DateTime time) {
+std::u16string FormatCellTime(scada::Time time) {
   if (scada::IsNull(time))
     return std::u16string{};
 

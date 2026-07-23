@@ -8,7 +8,7 @@
 #include "base/awaitable.h"
 #include "base/callback_awaitable.h"
 #include "base/e2e_test_hooks.h"
-#include "base/time_range.h"
+#include "base/relative_time_range.h"
 #include "base/utf_convert.h"
 #include "common/formula_util.h"
 #include "configuration/devices/hardware_tree_view.h"
@@ -671,7 +671,7 @@ Awaitable<void> RunHistoricalTimedDataCheckAsync(
     if (auto end_time = GetE2eHistoricalTimedDataEndTime()) {
       const auto end = scada::base::DecodeWireTime(*end_time);
       SaveTimeRange(definition,
-                    TimeRange{end - std::chrono::hours{1}, end});
+                    scada::RelativeTimeRange{end - std::chrono::hours{1}, end});
     }
     co_await main_window->OpenView(std::move(definition), /*activate=*/true);
   }

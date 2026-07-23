@@ -13,7 +13,7 @@ namespace {
 static const int kHighWaterMarkLines = 10000;
 static const int kLowWaterMarkLines = 9000;
 
-scada::DateTime GetEventTime(const scada::Event& event) {
+scada::Time GetEventTime(const scada::Event& event) {
   return event.time;
 }
 
@@ -81,12 +81,12 @@ void WatchModel::SetDevice(NodeRef device) {
   Clear();
 
   event_source_.Start(device_.node_id(),
-                      ToDateTimeRangeWithOpenRange(
+                      scada::ToTimeRangeWithOpenRange(
                           time_range_, /*now=*/scada::Now()),
                       /*delegate=*/*this);
 }
 
-void WatchModel::SetTimeRange(const TimeRange& time_range) {
+void WatchModel::SetTimeRange(const scada::RelativeTimeRange& time_range) {
   if (time_range_ == time_range) {
     return;
   }
@@ -96,7 +96,7 @@ void WatchModel::SetTimeRange(const TimeRange& time_range) {
   Clear();
 
   event_source_.Start(device_.node_id(),
-                      ToDateTimeRangeWithOpenRange(
+                      scada::ToTimeRangeWithOpenRange(
                           time_range_, /*now=*/scada::Now()),
                       /*delegate=*/*this);
 }

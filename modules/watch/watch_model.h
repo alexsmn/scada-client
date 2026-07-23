@@ -2,7 +2,7 @@
 
 #include "aui/models/table_model.h"
 #include "base/lifetime.h"
-#include "base/time_range.h"
+#include "base/relative_time_range.h"
 #include "modules/watch/watch_event_source.h"
 #include "node_service/node_ref.h"
 #include "scada/event.h"
@@ -28,10 +28,10 @@ class WatchModel : private WatchModelContext,
   const NodeRef& device() const SCADA_LIFETIME_BOUND { return device_; }
   void SetDevice(NodeRef device);
 
-  const TimeRange& time_range() const SCADA_LIFETIME_BOUND {
+  const scada::RelativeTimeRange& time_range() const SCADA_LIFETIME_BOUND {
     return time_range_;
   }
-  void SetTimeRange(const TimeRange& time_range);
+  void SetTimeRange(const scada::RelativeTimeRange& time_range);
 
   bool paused() const { return paused_; }
   void set_paused(bool paused) { paused_ = paused; }
@@ -54,7 +54,7 @@ class WatchModel : private WatchModelContext,
 
   NodeRef device_;
 
-  TimeRange time_range_{std::chrono::minutes(15)};
+  scada::RelativeTimeRange time_range_{std::chrono::minutes(15)};
 
   // Sorted by `scada::Event::time`.
   std::vector<scada::Event> events_;

@@ -3,7 +3,7 @@
 #include "aui/dialog_service.h"
 #include "aui/wt/dialog_stub.h"
 
-Awaitable<TimeRange> ShowTimeRangeDialog(DialogService& dialog_service,
+Awaitable<scada::RelativeTimeRange> ShowTimeRangeDialog(DialogService& dialog_service,
                                          TimeRangeContext&& context) {
-  return scada::aui::wt::MakeUnsupportedDialogAwaitable<TimeRange>();
+  return scada::aui::wt::MakeUnsupportedDialogAwaitable<scada::RelativeTimeRange>();
 }

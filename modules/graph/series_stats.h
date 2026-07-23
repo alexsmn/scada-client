@@ -31,5 +31,5 @@ struct SeriesStats {
 // its qualifier is good and its variant yields a numeric (double-convertible)
 // value.
 SeriesStats ComputeSeriesStats(std::span<const scada::DataValue> values,
-                               scada::DateTime from,
-                               scada::DateTime to);
+                               scada::Time from,
+                               scada::Time to);

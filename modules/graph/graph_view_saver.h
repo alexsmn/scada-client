@@ -8,7 +8,7 @@
 
 struct GraphViewSaver {
   void Save() {
-    scada::DateTime time = scada::base::DecodeDoubleT(
+    scada::Time time = scada::base::DecodeDoubleT(
         graph_.horizontal_axis().range().high());
     scada::Duration span = std::chrono::round<std::chrono::microseconds>(
         std::chrono::duration<double>{graph_.horizontal_axis().range().delta()});

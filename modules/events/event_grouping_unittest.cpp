@@ -15,7 +15,7 @@ scada::NodeId Node(int index) {
 
 scada::Event MakeEvent(int node, std::u16string message, int64_t seconds) {
   return {.event_id = static_cast<scada::EventId>(seconds + 1),
-          .time = scada::DateTime{} +
+          .time = scada::Time{} +
                   std::chrono::seconds(seconds),
           .severity = scada::kSeverityCritical,
           .source_node_id = Node(node),

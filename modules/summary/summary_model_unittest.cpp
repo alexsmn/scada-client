@@ -39,7 +39,7 @@ scada::NodeState MakeNodeState(scada::NodeId node_id,
 
 class SummaryModelTest : public Test {
  protected:
-  scada::aui::GridCell GetCellAt(int column_index, scada::DateTime time);
+  scada::aui::GridCell GetCellAt(int column_index, scada::Time time);
 
   TestExecutor executor_;
   StaticNodeService node_service_;
@@ -50,7 +50,7 @@ class SummaryModelTest : public Test {
 };
 
 scada::aui::GridCell SummaryModelTest::GetCellAt(int column_index,
-                                                 scada::DateTime time) {
+                                                 scada::Time time) {
   int row_index = summary_model_.GetRowForTime(time);
 
   scada::aui::GridCell cell{.row = row_index, .column = column_index};
@@ -112,7 +112,7 @@ TEST_F(SummaryModelTest, AddContainedItemExpandsGroupOnExecutor) {
 TEST_F(SummaryModelTest, HourlySummaryForDayShows24Rows) {
   auto start_time = TestTimeFromString("15 Nov 2004 10:00:00 UTC");
   auto time_range =
-      TimeRange{start_time, start_time + std::chrono::hours(24)};
+      scada::RelativeTimeRange{start_time, start_time + std::chrono::hours(24)};
 
   auto timed_data = timed_data_service_.AddTimedData("item1");
 
@@ -127,7 +127,7 @@ TEST_F(SummaryModelTest, HourlySummaryForDayShows24Rows) {
   // ACT
   summary_model_.Load(WindowDefinition{kSummaryWindowInfo}
                           .AddItem(MakeItem("item1"))
-                          .AddItem("TimeRange", time_range));
+                          .AddItem("scada::RelativeTimeRange", time_range));
 
   EXPECT_EQ(summary_model_.GetTimeRange(), time_range);
   EXPECT_EQ(summary_model_.row_model().GetCount(), 24);
@@ -142,14 +142,14 @@ TEST_F(SummaryModelTest, Load) {
   timed_data_service_.AddTimedData("item1");
   timed_data_service_.AddTimedData("item2");
 
-  auto time_range = TimeRange{TestTimeFromString("15 Nov 2004 12:45:26 UTC"),
+  auto time_range = scada::RelativeTimeRange{TestTimeFromString("15 Nov 2004 12:45:26 UTC"),
                               TestTimeFromString("16 Nov 2004 12:45:26 UTC")};
 
   auto window_def =
       WindowDefinition{kSummaryWindowInfo}
           .AddItem(MakeItem("item1"))
           .AddItem(MakeItem("item2"))
-          .AddItem("TimeRange", time_range)
+          .AddItem("scada::RelativeTimeRange", time_range)
           .AddItem("Interval", std::chrono::minutes(30))
           .AddItem("AggregateType", scada::id::AggregateFunction_Maximum);
 
@@ -181,8 +181,8 @@ TEST_F(SummaryModelTest, Save) {
       WindowDefinition{kSummaryWindowInfo}
           .AddItem(MakeItem("item1"))
           .AddItem(MakeItem("item2"))
-          .AddItem("TimeRange",
-                   TimeRange{TestTimeFromString("15 Nov 2004 12:45:26 UTC"),
+          .AddItem("scada::RelativeTimeRange",
+                   scada::RelativeTimeRange{TestTimeFromString("15 Nov 2004 12:45:26 UTC"),
                              TestTimeFromString("16 Nov 2004 12:45:26 UTC")})
           .AddItem("Interval", std::chrono::minutes(30))
           .AddItem("AggregateType", scada::id::AggregateFunction_Maximum);
@@ -203,8 +203,8 @@ TEST_F(SummaryModelTest, CellsAreGreyWhileLoading) {
   summary_model_.Load(
       WindowDefinition{kSummaryWindowInfo}
           .AddItem(MakeItem("item1"))
-          .AddItem("TimeRange",
-                   TimeRange{TestTimeFromString("15 Nov 2004 12:45:26 UTC"),
+          .AddItem("scada::RelativeTimeRange",
+                   scada::RelativeTimeRange{TestTimeFromString("15 Nov 2004 12:45:26 UTC"),
                              TestTimeFromString("16 Nov 2004 12:45:26 UTC")})
           .AddItem("Interval", std::chrono::minutes(30))
           .AddItem("AggregateType", scada::id::AggregateFunction_Maximum));

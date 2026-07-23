@@ -8,7 +8,7 @@ class Status;
 struct Event;
 }  // namespace scada
 
-struct TimeRange;
+namespace scada { struct RelativeTimeRange; }
 
 class WatchEventSource {
  public:
@@ -25,6 +25,6 @@ class WatchEventSource {
   // If `time_range.first == max`, then show only current events.
   // If `time_range.second != max`, then show only historical events.
   virtual void Start(const scada::NodeId& device_id,
-                     const scada::DateTimeRange& time_range,
+                     const scada::TimeRange& time_range,
                      Delegate& delegate) = 0;
 };

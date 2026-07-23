@@ -33,8 +33,8 @@ class WatchView : protected ControllerContext,
   virtual ExportModel* GetExportModel() override { return this; }
 
   // TimeModel
-  virtual TimeRange GetTimeRange() const override;
-  virtual void SetTimeRange(const TimeRange& time_range) override;
+  virtual scada::RelativeTimeRange GetTimeRange() const override;
+  virtual void SetTimeRange(const scada::RelativeTimeRange& time_range) override;
 
   // ExportModel
   virtual ExportData GetExportData() override;

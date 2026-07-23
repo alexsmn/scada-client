@@ -110,7 +110,7 @@ void BuildGraphFromJson(MetrixGraph& graph, const boost::json::value& json) {
   // Time range (span parsed from "HH:MM:SS"). Anchor "now" to the fixture's
   // frozen clock when present so regenerated axis labels stay stable across
   // runs; LocalHistoryService reads the same key. (The generator fixture also
-  // freezes scada::DateTime at this instant, so the fallback matches.)
+  // freezes scada::Time at this instant, so the fallback matches.)
   auto now = FixtureNow(json);
   if (scada::IsNull(now))
     now = scada::Now();

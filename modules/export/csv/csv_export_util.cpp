@@ -65,7 +65,7 @@ bool Convert(const scada::Variant& source,
       target.Set(source.get<scada::LocalizedText>().text.c_str());
       return true;
     case scada::Variant::DATE_TIME:
-      target.Set(static_cast<DATE>(scada::base::EncodeDoubleT(source.get<scada::DateTime>())));
+      target.Set(static_cast<DATE>(scada::base::EncodeDoubleT(source.get<scada::Time>())));
       return true;
     default:
       // Server value of an unsupported type; skip it.

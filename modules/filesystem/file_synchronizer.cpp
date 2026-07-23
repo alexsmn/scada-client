@@ -29,7 +29,7 @@ std::string DecodeUri(std::string_view str) {
 }
 #endif
 
-std::filesystem::file_time_type ToFileTime(scada::DateTime time) {
+std::filesystem::file_time_type ToFileTime(scada::Time time) {
   if (scada::IsNull(time))
     return std::filesystem::file_time_type{};
   else if (time == scada::kMinTime)
@@ -37,7 +37,7 @@ std::filesystem::file_time_type ToFileTime(scada::DateTime time) {
   else if (time == scada::kMaxTime)
     return std::filesystem::file_time_type::max();
   else {
-    auto delta = time - scada::DateTime{};
+    auto delta = time - scada::Time{};
     return std::filesystem::file_time_type{
         std::chrono::microseconds(delta.count())};
   }
@@ -145,7 +145,7 @@ bool FileSynchronizer::ProcessFileNode(NodeRef node) {
 
   auto last_update_time = ToFileTime(
       node[scada::filesystem::id::FileType_LastUpdateTime].value().get_or(
-          scada::DateTime{}));
+          scada::Time{}));
 
   std::error_code ec;
   auto actual_last_update_time = std::filesystem::last_write_time(path, ec);

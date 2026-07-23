@@ -10,7 +10,7 @@
 
 namespace {
 
-scada::DateTime At(double seconds) {
+scada::Time At(double seconds) {
   return scada::base::DecodeDoubleT(seconds);
 }
 

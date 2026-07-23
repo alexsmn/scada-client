@@ -127,17 +127,17 @@ EventTableModel::EventTableModel(EventTableModelContext&& context)
 
 EventTableModel::~EventTableModel() = default;
 
-void EventTableModel::Init(const TimeRange& range, ItemIds filter_items) {
+void EventTableModel::Init(const scada::RelativeTimeRange& range, ItemIds filter_items) {
   historical_event_model_.Init(range);
   filter_node_ids_ = std::move(filter_items);
   Update();
 }
 
-const TimeRange& EventTableModel::time_range() const {
+const scada::RelativeTimeRange& EventTableModel::time_range() const {
   return historical_event_model_.time_range();
 }
 
-void EventTableModel::SetTimeRange(const TimeRange& range) {
+void EventTableModel::SetTimeRange(const scada::RelativeTimeRange& range) {
   if (historical_event_model_.time_range() == range)
     return;
 
@@ -854,16 +854,16 @@ std::u16string EventTableModel::MakeTitle() const {
     title = Translate("Current Events");
   } else {
     switch (historical_event_model_.time_range().type) {
-      case TimeRange::Type::Day:
+      case scada::RelativeTimeRange::Type::Day:
         title = Translate("Event Journal for Day");
         break;
-      case TimeRange::Type::Week:
+      case scada::RelativeTimeRange::Type::Week:
         title = Translate("Event Journal for Week");
         break;
-      case TimeRange::Type::Month:
+      case scada::RelativeTimeRange::Type::Month:
         title = Translate("Event Journal for Month");
         break;
-      case TimeRange::Type::Custom:
+      case scada::RelativeTimeRange::Type::Custom:
       default:
         title = Translate("Event Journal");  // TODO: Format time range.
         break;

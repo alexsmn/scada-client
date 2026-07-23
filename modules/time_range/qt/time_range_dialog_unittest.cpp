@@ -43,8 +43,8 @@ class TimeRangeDialogTest : public testing::Test {
   Profile profile_;
 };
 
-scada::DateTime ToBaseTime(const QDateTime& date_time) {
-  return scada::DateTime{} +
+scada::Time ToBaseTime(const QDateTime& date_time) {
+  return scada::Time{} +
          std::chrono::milliseconds(
              date_time.toMSecsSinceEpoch());
 }
@@ -52,7 +52,7 @@ scada::DateTime ToBaseTime(const QDateTime& date_time) {
 }  // namespace
 
 TEST_F(TimeRangeDialogTest, AcceptedDialogReturnsSelectedInitialRange) {
-  const TimeRange initial_range{
+  const scada::RelativeTimeRange initial_range{
       ToBaseTime({QDate{2024, 1, 2}, QTime{0, 0}}),
       ToBaseTime({QDate{2024, 1, 3}, QTime{0, 0}}), /*dates=*/true};
 

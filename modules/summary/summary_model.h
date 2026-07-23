@@ -41,7 +41,7 @@ class SummaryModel : private SummaryModelContext,
   explicit SummaryModel(SummaryModelContext&& context);
   ~SummaryModel();
 
-  const TimeRange& time_range() const SCADA_LIFETIME_BOUND {
+  const scada::RelativeTimeRange& time_range() const SCADA_LIFETIME_BOUND {
     return time_range_;
   }
 
@@ -53,7 +53,7 @@ class SummaryModel : private SummaryModelContext,
   }
   void SetAggregateType(scada::NodeId aggregate_type);
 
-  void SetParams(const TimeRange& time_range,
+  void SetParams(const scada::RelativeTimeRange& time_range,
                  scada::AggregateFilter aggregate_filter);
 
   int AddColumn(std::string formula);
@@ -71,8 +71,8 @@ class SummaryModel : private SummaryModelContext,
   scada::DataValue GetDataValue(int row, int column) const;
   const TimedDataSpec& timed_data(int column) const;
 
-  scada::DateTime GetRowTime(int row) const;
-  int GetRowForTime(scada::DateTime time) const;
+  scada::Time GetRowTime(int row) const;
+  int GetRowForTime(scada::Time time) const;
 
   // aui::GridModel
   virtual void GetCell(scada::aui::GridCell& cell) override;
@@ -84,8 +84,8 @@ class SummaryModel : private SummaryModelContext,
   virtual NodeIdSet GetContainedItems() const override;
 
   // TimeModel
-  virtual TimeRange GetTimeRange() const override;
-  virtual void SetTimeRange(const TimeRange& time_range) override;
+  virtual scada::RelativeTimeRange GetTimeRange() const override;
+  virtual void SetTimeRange(const scada::RelativeTimeRange& time_range) override;
 
   // ExportModel
   virtual ExportData GetExportData() override;
@@ -107,10 +107,10 @@ class SummaryModel : private SummaryModelContext,
 
   std::vector<std::unique_ptr<Column>> columns_;
 
-  scada::DateTime start_time_ = scada::kNullTime;
+  scada::Time start_time_ = scada::kNullTime;
   // |end_time_| defines start of the last interval.
-  scada::DateTime end_time_ = scada::kNullTime;
-  TimeRange time_range_;
+  scada::Time end_time_ = scada::kNullTime;
+  scada::RelativeTimeRange time_range_;
   scada::AggregateFilter aggregate_filter_;
 
   size_t row_count_ = 0;

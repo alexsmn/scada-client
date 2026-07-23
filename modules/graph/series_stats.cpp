@@ -3,8 +3,8 @@
 #include <algorithm>
 
 SeriesStats ComputeSeriesStats(std::span<const scada::DataValue> values,
-                               scada::DateTime from,
-                               scada::DateTime to) {
+                               scada::Time from,
+                               scada::Time to) {
   SeriesStats stats;
   double sum = 0.0;
 

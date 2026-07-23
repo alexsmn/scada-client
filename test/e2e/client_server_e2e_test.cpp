@@ -177,8 +177,8 @@ class ProxyOpcUaSession {
   // Mirrors the Qt client's event journal read (HistoricalEventModel):
   // HistoryReadEvents rooted at the Server object. An unset filter (types=0)
   // matches every stored event regardless of type or ack state.
-  scada::HistoryReadEventsResult ReadEventHistory(scada::DateTime from,
-                                                  scada::DateTime to) {
+  scada::HistoryReadEventsResult ReadEventHistory(scada::Time from,
+                                                  scada::Time to) {
     return Run([this, from, to] {
       return services_.history_service_->HistoryReadEvents(
           scada::NodeId{scada::id::Server}, from, to, scada::EventFilter{});
@@ -397,7 +397,7 @@ TEST_P(ClientServerE2eTest, Events_HistoryReadThroughProxy) {
   // The window must cover the tiers' startup burst of system events (module
   // and device state events raised while the cluster comes up), which is what
   // the historian collects — freeze the start before the tiers exist.
-  const scada::DateTime window_start =
+  const scada::Time window_start =
       scada::Now() - std::chrono::minutes(1);
 
   StartServer();

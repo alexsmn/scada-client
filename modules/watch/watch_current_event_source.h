@@ -21,7 +21,7 @@ class WatchCurrentEventSource final : private WatchCurrentEventSourceContext,
 
   // WatchEventSource
   virtual void Start(const scada::NodeId& device_id,
-                     const scada::DateTimeRange& time_range,
+                     const scada::TimeRange& time_range,
                      Delegate& delegate) override;
 
  private:

@@ -107,7 +107,7 @@ std::string GetJsonString(const boost::json::object& node,
 
 }  // namespace
 
-scada::DateTime FixtureNow(const boost::json::value& json) {
+scada::Time FixtureNow(const boost::json::value& json) {
   const auto* jnow = json.as_object().if_contains("now");
   if (!jnow)
     return scada::kNullTime;

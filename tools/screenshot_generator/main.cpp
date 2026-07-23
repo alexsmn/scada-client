@@ -154,7 +154,7 @@ class ScreenshotGenerator : public ::testing::Test {
   // timers use the steady clock and keep running normally.
   struct FixtureClock {
     FixtureClock() {
-      const scada::DateTime now = FixtureNow(g_config.json);
+      const scada::Time now = FixtureNow(g_config.json);
       if (!scada::IsNull(now))
         override_.Advance(now - override_.Now());
     }

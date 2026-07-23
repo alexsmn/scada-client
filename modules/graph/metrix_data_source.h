@@ -18,7 +18,7 @@ class MetrixDataSource : public GraphDataSource {
   virtual ~MetrixDataSource();
 
   void SetTimedData(const TimedDataSpec& spec);
-  void SetRange(const scada::DateTimeRange& range);
+  void SetRange(const scada::TimeRange& range);
 
   bool is_ready() const { return timed_data_.ready(); }
   scada::NodeId node_id() const { return timed_data_.node_id(); }
@@ -62,7 +62,7 @@ class MetrixDataSource : public GraphDataSource {
   void UpdateLimits();
 
   void ScheduleUpdateEarliestTimestamp();
-  void SetEarliestTimestamp(scada::DateTime timestamp);
+  void SetEarliestTimestamp(scada::Time timestamp);
 
   void OnPropertyChanged(const PropertySet& properties);
 
@@ -72,7 +72,7 @@ class MetrixDataSource : public GraphDataSource {
   TimedDataSpec timed_data_;
   std::u16string title_;
 
-  scada::DateTime earliest_timestamp_ = scada::kNullTime;
+  scada::Time earliest_timestamp_ = scada::kNullTime;
   Cancelation update_horizontal_range_cancelation_;
   AnyExecutor executor_;
 };

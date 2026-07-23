@@ -163,7 +163,7 @@ std::optional<OpenContext> TimedDataController::GetOpenContext() const {
     const int row2 = mirror_model_->MapToSource(*p.second);
     const auto& first_data_value = model_->value(std::min(row1, row2));
     const auto& last_data_value = model_->value(std::max(row1, row2));
-    context.time_range = TimeRange{first_data_value.source_timestamp,
+    context.time_range = scada::RelativeTimeRange{first_data_value.source_timestamp,
                                    last_data_value.source_timestamp +
                                        std::chrono::milliseconds(1)};
   }

@@ -2,7 +2,7 @@
 
 #include "base/time/time.h"
 #include "scada/date_time.h"
-#include "base/time_range.h"
+#include "base/relative_time_range.h"
 
 #include <gtest/gtest.h>
 
@@ -23,10 +23,10 @@ TEST(EventFilterBarPeriodTest, FixedRangeReflectsOntoItsPreset) {
 // The 15-minute and hourly interval presets are present and reflect correctly.
 TEST(EventFilterBarPeriodTest, IntervalPresetsMatch) {
   EXPECT_EQ(EventPeriodPresetIndex(
-                TimeRange{std::chrono::minutes(15)}),
+                scada::RelativeTimeRange{std::chrono::minutes(15)}),
             0);
   EXPECT_EQ(
-      EventPeriodPresetIndex(TimeRange{std::chrono::hours(1)}),
+      EventPeriodPresetIndex(scada::RelativeTimeRange{std::chrono::hours(1)}),
       1);
 }
 
@@ -34,13 +34,13 @@ TEST(EventFilterBarPeriodTest, IntervalPresetsMatch) {
 // interval the bar does not offer) reflects as "no preset" (-1) so the selector
 // does not misrepresent it.
 TEST(EventFilterBarPeriodTest, UnmatchedRangeHasNoPreset) {
-  TimeRange custom{
-      scada::DateTime{},
-      scada::DateTime{} + std::chrono::hours(3)};
+  scada::RelativeTimeRange custom{
+      scada::Time{},
+      scada::Time{} + std::chrono::hours(3)};
   EXPECT_EQ(EventPeriodPresetIndex(custom), -1);
 
   EXPECT_EQ(EventPeriodPresetIndex(
-                TimeRange{std::chrono::minutes(42)}),
+                scada::RelativeTimeRange{std::chrono::minutes(42)}),
             -1);
 }
 

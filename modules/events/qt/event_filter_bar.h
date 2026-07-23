@@ -2,7 +2,7 @@
 
 #include "base/any_executor.h"
 #include "base/awaitable.h"
-#include "base/time_range.h"
+#include "base/relative_time_range.h"
 #include "scada/node_id.h"
 
 #include <functional>
@@ -36,12 +36,12 @@ struct EventFilterBarContext {
   bool unacknowledged_only = false;
   unsigned severity_min = 0;
   unsigned severity_max = 0;
-  TimeRange time_range;
+  scada::RelativeTimeRange time_range;
 
   // Invoked on user changes. Any callback may be empty.
   std::function<void(bool)> on_unacknowledged_only;
   std::function<void(unsigned)> on_severity_min;
-  std::function<void(const TimeRange&)> on_time_range;
+  std::function<void(const scada::RelativeTimeRange&)> on_time_range;
 };
 
 // Builds the filter strip. The returned widget owns its controls and invokes
@@ -51,12 +51,12 @@ QWidget* MakeEventFilterBar(EventFilterBarContext context);
 // The fixed period ranges the bar offers, in display order. Mirrors the
 // toolbar's quick-pick ranges so a range set there reflects onto a preset.
 // Exposed for testing.
-const std::vector<TimeRange>& EventPeriodRanges();
+const std::vector<scada::RelativeTimeRange>& EventPeriodRanges();
 
 // Index into `EventPeriodRanges()` whose range equals `range`, or -1 when none
 // matches (an arbitrary/custom range that has no quick-pick). Exposed for
 // testing.
-int EventPeriodPresetIndex(const TimeRange& range);
+int EventPeriodPresetIndex(const scada::RelativeTimeRange& range);
 
 // A top-level area filterable in the journal: an object grouping (a folder or
 // object, not a leaf data item) directly under the address space's DataItems

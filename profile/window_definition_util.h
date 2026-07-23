@@ -1,7 +1,7 @@
 #pragma once
 
 #include <boost/json.hpp>
-#include "base/time_range.h"
+#include "base/relative_time_range.h"
 #include "profile/window_definition.h"
 #include "scada/node_id.h"
 
@@ -9,19 +9,19 @@
 #include <string_view>
 
 template <>
-std::optional<scada::DateTime> FromJson(const boost::json::value& value);
+std::optional<scada::Time> FromJson(const boost::json::value& value);
 
 template <>
-std::optional<TimeRange> FromJson(const boost::json::value& value);
+std::optional<scada::RelativeTimeRange> FromJson(const boost::json::value& value);
 
 template <>
 std::optional<scada::Duration> FromJson(const boost::json::value& value);
 
 boost::json::value ToJson(std::string_view str);
 
-boost::json::value ToJson(scada::DateTime time);
+boost::json::value ToJson(scada::Time time);
 
-boost::json::value ToJson(const TimeRange& time_range);
+boost::json::value ToJson(const scada::RelativeTimeRange& time_range);
 
 boost::json::value ToJson(scada::Duration duration);
 
@@ -29,9 +29,9 @@ std::string SaveBlob(std::string_view blob);
 
 std::string RestoreBlob(std::string_view text);
 
-void SaveTimeRange(WindowDefinition& definition, const TimeRange& time_range);
+void SaveTimeRange(WindowDefinition& definition, const scada::RelativeTimeRange& time_range);
 
-std::optional<TimeRange> RestoreTimeRange(const WindowDefinition& definition);
+std::optional<scada::RelativeTimeRange> RestoreTimeRange(const WindowDefinition& definition);
 
 template <>
 std::optional<WindowItems> FromJson(const boost::json::value& data);

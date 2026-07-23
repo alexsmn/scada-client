@@ -43,7 +43,7 @@ class TableModelAdapterTest : public testing::Test {
   TableModelAdapter adapter_{std::make_shared<StubTableModel>(), MakeColumns()};
 };
 
-// Under a token theme, value (monospace-flagged) and timestamp (DateTime)
+// Under a token theme, value (monospace-flagged) and timestamp (Time)
 // columns render in the fixed-pitch monospace value font so digits stay
 // tabular as they update; other columns keep the default font.
 TEST_F(TableModelAdapterTest, ValueAndTimestampColumnsRenderMonospace) {

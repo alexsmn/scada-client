@@ -3,7 +3,7 @@
 #include "base/any_executor.h"
 
 #include "base/cancelation.h"
-#include "base/time_range.h"
+#include "base/relative_time_range.h"
 #include "modules/watch/watch_event_source.h"
 #include "scada/node_id.h"
 
@@ -23,7 +23,7 @@ class WatchHistoryEventSource : private WatchHistorySourceContext,
 
   // WatchEventSource
   virtual void Start(const scada::NodeId& device_id,
-                     const scada::DateTimeRange& time_range,
+                     const scada::TimeRange& time_range,
                      Delegate& delegate) override;
 
  private:

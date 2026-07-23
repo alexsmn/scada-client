@@ -2,7 +2,7 @@
 
 #include "aui/dialog_service.h"
 #include "aui/grid.h"
-#include "base/time_range.h"
+#include "base/relative_time_range.h"
 #include "ui/common/client_utils.h"
 #include "resources/common_resources.h"
 #include "modules/summary/summary_model.h"
@@ -142,7 +142,7 @@ std::optional<OpenContext> SummaryView::GetOpenContext() const {
     auto [min_row, max_row] = std::minmax_element(rows.begin(), rows.end());
     auto start_time = model_->GetRowTime(*min_row);
     auto end_time = model_->GetRowTime(*max_row) + model_->interval();
-    context.time_range = TimeRange{start_time, end_time};
+    context.time_range = scada::RelativeTimeRange{start_time, end_time};
   }
 
   return context;

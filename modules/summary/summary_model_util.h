@@ -2,7 +2,7 @@
 
 #include "base/check.h"
 #include "base/struct_writer.h"
-#include "base/time_range.h"
+#include "base/relative_time_range.h"
 #include "common/aggregation.h"
 #include "scada/date_time.h"
 
@@ -16,18 +16,18 @@ const size_t kMaxRowCount = 10000;
 struct SummaryModelParams {
   bool operator==(const SummaryModelParams&) const = default;
 
-  scada::DateTime start_time = scada::kNullTime;
-  scada::DateTime end_time = scada::kNullTime;
+  scada::Time start_time = scada::kNullTime;
+  scada::Time end_time = scada::kNullTime;
   size_t row_count;
 };
 
 inline SummaryModelParams CalculateSummaryModelParams(
-    const TimeRange& time_range,
+    const scada::RelativeTimeRange& time_range,
     scada::Duration interval,
-    scada::DateTime now) {
+    scada::Time now) {
   scada::base::Check(interval != scada::Duration::zero());
 
-  auto [start_time, end_time] = ToDateTimeRange(time_range, now);
+  auto [start_time, end_time] = scada::ToTimeRange(time_range, now);
 
   // Align bounds to the aggregation interval.
   auto origin_time = scada::GetLocalAggregateStartTime();

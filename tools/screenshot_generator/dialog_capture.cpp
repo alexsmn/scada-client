@@ -9,7 +9,7 @@
 #include "base/any_executor.h"
 #include "base/boost_log.h"
 #include "base/memory_settings_store.h"
-#include "base/time_range.h"
+#include "base/relative_time_range.h"
 #include "controller/command_manager.h"
 #include "main_window/command_palette_qt.h"
 #include "model/data_items_node_ids.h"
@@ -481,7 +481,7 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
         env.executor,
         ShowTimeRangeDialog(dialog_service,
                             TimeRangeContext{.profile_ = *env.profile,
-                                             .time_range_ = TimeRange{},
+                                             .time_range_ = scada::RelativeTimeRange{},
                                              .time_required_ = false}));
     bool captured = GrabAndCloseVisibleDialogOrReport(spec);
     WaitForDialogCompletion(dialog_lifetime);

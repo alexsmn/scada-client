@@ -29,7 +29,7 @@ class LiveTimedData : public BaseTimedData {
  public:
   LiveTimedData() { historical_ = true; }
 
-  void PushCurrent(scada::DateTime timestamp, double value) {
+  void PushCurrent(scada::Time timestamp, double value) {
     scada::DataValue data_value{value, scada::Qualifier{},
                                 /*source_timestamp=*/timestamp,
                                 /*server_timestamp=*/timestamp};
@@ -59,7 +59,7 @@ TEST_F(TimedDataModelTest, ShowsDataForTheDayByDefault) {
   model_.Init(WindowDefinition{}.AddItem(
       std::move(WindowItem{"Item"}.SetString("path", "item1"))));
 
-  EXPECT_EQ(model_.GetTimeRange(), TimeRange{TimeRange::Type::Day});
+  EXPECT_EQ(model_.GetTimeRange(), scada::RelativeTimeRange{scada::RelativeTimeRange::Type::Day});
   ASSERT_NE(model_.GetRowCount(), 0);
   EXPECT_EQ(model_.GetCellText(/*row=*/0, TimedDataModel::CID_TIME),
             u"15.11.2004 00:11:11.000");
@@ -87,7 +87,7 @@ TEST_F(TimedDataModelTest, LiveUpdateOutsideFrozenWindowIsIgnored) {
   WindowDefinition definition;
   definition.AddItem("Item").SetString("path", "item1");
   SaveTimeRange(definition,
-                TimeRange{TestTimeFromString("15 Nov 2004 09:00:00"),
+                scada::RelativeTimeRange{TestTimeFromString("15 Nov 2004 09:00:00"),
                           TestTimeFromString("15 Nov 2004 09:40:00")});
   model_.Init(definition);
   const int rows = model_.GetRowCount();

@@ -15,7 +15,7 @@ struct ScreenshotSpec;
 // null Time when the fixture does not define one. All fixture history data is
 // laid out relative to this instant; captures anchor time-dependent rendering
 // (the generator clock, graph ranges) to it so output stays deterministic.
-scada::DateTime FixtureNow(const boost::json::value& json);
+scada::Time FixtureNow(const boost::json::value& json);
 
 // Builds a `Page` whose windows map 1:1 to `specs`. The "Graph" entry
 // gets a full `WindowDefinition` from the fixture JSON; everything

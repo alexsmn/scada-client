@@ -181,17 +181,17 @@ TEST(ToJson, WindowDefinition) {
 }
 
 TEST(FromToJson, TimeRange_Day) {
-  TimeRange time_range{TimeRange::Type::Day};
-  EXPECT_EQ(time_range, FromJson<TimeRange>(ToJson(time_range)));
+  scada::RelativeTimeRange time_range{scada::RelativeTimeRange::Type::Day};
+  EXPECT_EQ(time_range, FromJson<scada::RelativeTimeRange>(ToJson(time_range)));
 }
 
 TEST(FromToJson, TimeRange_Interval) {
-  TimeRange time_range{std::chrono::hours(3)};
-  EXPECT_EQ(time_range, FromJson<TimeRange>(ToJson(time_range)));
+  scada::RelativeTimeRange time_range{std::chrono::hours(3)};
+  EXPECT_EQ(time_range, FromJson<scada::RelativeTimeRange>(ToJson(time_range)));
 }
 
 TEST(FromToJson, TimeRange_CustomOpenEnd) {
-  TimeRange time_range{scada::DateTime{}, scada::kNullTime};
+  scada::RelativeTimeRange time_range{scada::Time{}, scada::kNullTime};
 
   auto json = ToJson(time_range);
   ASSERT_TRUE(json.is_object());
@@ -199,14 +199,14 @@ TEST(FromToJson, TimeRange_CustomOpenEnd) {
   ASSERT_TRUE(end);
   EXPECT_TRUE(end->is_null());
 
-  EXPECT_EQ(time_range, FromJson<TimeRange>(json));
+  EXPECT_EQ(time_range, FromJson<scada::RelativeTimeRange>(json));
 }
 
 TEST(FromToJson, TimeRange_CustomMaxEndIsOpenEnd) {
-  TimeRange time_range{scada::DateTime{},
+  scada::RelativeTimeRange time_range{scada::Time{},
                        scada::kMaxTime};
 
-  auto restored = FromJson<TimeRange>(ToJson(time_range));
+  auto restored = FromJson<scada::RelativeTimeRange>(ToJson(time_range));
   ASSERT_TRUE(restored);
   EXPECT_EQ(time_range.start, restored->start);
   EXPECT_TRUE(scada::IsNull(restored->end));

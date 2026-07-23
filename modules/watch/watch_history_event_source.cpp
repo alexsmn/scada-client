@@ -7,13 +7,13 @@
 
 namespace {
 
-scada::DateTime SanitizeTimeBound(scada::DateTime time) {
+scada::Time SanitizeTimeBound(scada::Time time) {
   return time == scada::kMinTime || time == scada::kMaxTime ? scada::kNullTime : time;
 }
 
 Awaitable<void> ReadHistoryEventsAsync(AnyExecutor executor,
                                        NodeRef device,
-                                       scada::DateTimeRange time_range,
+                                       scada::TimeRange time_range,
                                        CancelationRef cancelation,
                                        WatchEventSource::Delegate& delegate) {
   auto events = co_await device.scada_node().read_event_history(
@@ -43,7 +43,7 @@ WatchHistoryEventSource::WatchHistoryEventSource(
     : WatchHistorySourceContext{std::move(context)} {}
 
 void WatchHistoryEventSource::Start(const scada::NodeId& device_id,
-                                    const scada::DateTimeRange& time_range,
+                                    const scada::TimeRange& time_range,
                                     Delegate& delegate) {
   cancelation_.Cancel();
 

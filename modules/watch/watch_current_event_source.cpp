@@ -12,7 +12,7 @@ WatchCurrentEventSource::WatchCurrentEventSource(
     : WatchCurrentEventSourceContext{std::move(context)} {}
 
 void WatchCurrentEventSource::Start(const scada::NodeId& device_id,
-                                    const scada::DateTimeRange& time_range,
+                                    const scada::TimeRange& time_range,
                                     Delegate& delegate) {
   monitored_item_.unsubscribe();
 

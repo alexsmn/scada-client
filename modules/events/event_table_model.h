@@ -16,7 +16,7 @@ class CurrentEventModel;
 class HistoricalEventModel;
 class LocalEventModel;
 class NodeService;
-struct TimeRange;
+namespace scada { struct RelativeTimeRange; }
 
 enum EventColumnId {
   EventColumnSeverity,
@@ -57,7 +57,7 @@ class EventTableModel : public scada::aui::TableModel,
   explicit EventTableModel(EventTableModelContext&& context);
   virtual ~EventTableModel();
 
-  void Init(const TimeRange& range, ItemIds filter_items);
+  void Init(const scada::RelativeTimeRange& range, ItemIds filter_items);
 
   bool current_events() const { return current_events_; }
 
@@ -67,8 +67,8 @@ class EventTableModel : public scada::aui::TableModel,
   }
   bool IsWorking() const;
 
-  const TimeRange& time_range() const;
-  void SetTimeRange(const TimeRange& range);
+  const scada::RelativeTimeRange& time_range() const;
+  void SetTimeRange(const scada::RelativeTimeRange& range);
 
   unsigned severity_min() const { return severity_min_; }
   void SetSeverityMin(unsigned severity);

@@ -27,7 +27,7 @@ TEST(ScadaClientControllerModuleSmoke, TransitiveSurfaces) {
   // scada.client.profile / scada.client.base / scada.client.aui via the
   // export import chain.
   static_assert(std::is_class_v<WindowDefinition>);
-  static_assert(std::is_class_v<TimeRange>);
+  static_assert(std::is_class_v<scada::RelativeTimeRange>);
   static_assert(std::is_class_v<scada::aui::SimpleMenuModel>);
   scada::base::Check(true, "client controller module smoke");
 }

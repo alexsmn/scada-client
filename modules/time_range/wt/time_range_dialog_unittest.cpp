@@ -14,7 +14,7 @@ TEST(WtTimeRangeDialogTest, UnsupportedDialogRejects) {
   auto result = StartAwaitable(
       executor,
       ShowTimeRangeDialog(dialog_service, {.profile_ = profile,
-                                           .time_range_ = TimeRange{},
+                                           .time_range_ = scada::RelativeTimeRange{},
                                            .time_required_ = false}));
 
   EXPECT_THROW(WaitResult(executor, result), std::exception);

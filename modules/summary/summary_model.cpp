@@ -171,7 +171,7 @@ SummaryModel::RowModel::RowModel(SummaryModel& model) : model_(model) {
 }
 
 std::u16string SummaryModel::RowModel::GetTitle(int index) const {
-  scada::DateTime time = model_.GetRowTime(index);
+  scada::Time time = model_.GetRowTime(index);
   return UtfConvert<char16_t>(
       FormatTime(time, TIME_FORMAT_DATE | TIME_FORMAT_TIME));
 }
@@ -272,7 +272,7 @@ int SummaryModel::FindColumn(const scada::NodeId& node_id,
 
 void SummaryModel::Load(const WindowDefinition& definition) {
   const auto time_range =
-      RestoreTimeRange(definition).value_or(TimeRange::Type::Day);
+      RestoreTimeRange(definition).value_or(scada::RelativeTimeRange::Type::Day);
   const auto interval = definition.Get<scada::Duration>("Interval")
                             .value_or(std::chrono::hours(1));
   const scada::NodeId aggregate_type =
@@ -329,14 +329,14 @@ void SummaryModel::GetCell(scada::aui::GridCell& cell) {
   }
 }
 
-scada::DateTime SummaryModel::GetRowTime(int row) const {
+scada::Time SummaryModel::GetRowTime(int row) const {
   scada::base::Check(row >= 0 && row < static_cast<int>(row_count_));
   scada::base::Check(!scada::IsNull(start_time_));
   scada::base::Check(aggregate_filter_.interval != scada::Duration::zero());
   return start_time_ + aggregate_filter_.interval * row;
 }
 
-int SummaryModel::GetRowForTime(scada::DateTime time) const {
+int SummaryModel::GetRowForTime(scada::Time time) const {
   scada::base::Check(!scada::IsNull(start_time_));
   scada::base::Check(!scada::IsNull(end_time_));
   scada::base::Check(start_time_ <= end_time_);
@@ -393,11 +393,11 @@ NodeIdSet SummaryModel::GetContainedItems() const {
   return node_ids;
 }
 
-TimeRange SummaryModel::GetTimeRange() const {
+scada::RelativeTimeRange SummaryModel::GetTimeRange() const {
   return time_range_;
 }
 
-void SummaryModel::SetTimeRange(const TimeRange& time_range) {
+void SummaryModel::SetTimeRange(const scada::RelativeTimeRange& time_range) {
   SetParams(time_range, aggregate_filter_);
 }
 
@@ -413,7 +413,7 @@ void SummaryModel::SetInterval(scada::Duration interval) {
   SetParams(time_range_, std::move(new_filter));
 }
 
-void SummaryModel::SetParams(const TimeRange& time_range,
+void SummaryModel::SetParams(const scada::RelativeTimeRange& time_range,
                              scada::AggregateFilter aggregate_filter) {
   scada::base::Check(!aggregate_filter.is_null());
 
@@ -430,7 +430,7 @@ void SummaryModel::SetParams(const TimeRange& time_range,
                     << LOG_TAG("StartTime", ToString(start_time_))
                     << LOG_TAG("EndTime", ToString(end_time_))
                     << LOG_TAG("RowCount", row_count_)
-                    << LOG_TAG("TimeRange", ToString(time_range_))
+                    << LOG_TAG("scada::RelativeTimeRange", ToString(time_range_))
                     << LOG_TAG("AggregateFilter", ToString(aggregate_filter_));
 
   for (size_t i = 0; i < columns_.size(); ++i)

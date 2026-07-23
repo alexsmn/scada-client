@@ -139,10 +139,10 @@ ExportModel::ExportData WatchView::GetExportData() {
   return TableExportData{*model_, table_->columns()};
 }
 
-TimeRange WatchView::GetTimeRange() const {
+scada::RelativeTimeRange WatchView::GetTimeRange() const {
   return model_->time_range();
 }
 
-void WatchView::SetTimeRange(const TimeRange& time_range) {
+void WatchView::SetTimeRange(const scada::RelativeTimeRange& time_range) {
   model_->SetTimeRange(time_range);
 }

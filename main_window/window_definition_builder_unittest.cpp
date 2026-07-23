@@ -88,7 +88,7 @@ TEST(MakeWindowDefinition, OpenContext_NodeIds_TimeRange) {
                                             scada::NodeId{"NodeId2", 2},
                                             scada::NodeId{"NodeId3", 3}};
 
-  const TimeRange kTimeRange{};
+  const scada::RelativeTimeRange kTimeRange{};
   OpenContext open_context{{}, kNodeIds, kTimeRange};
 
   const auto& window_info = WindowInfo{.title = u"Title"};
@@ -105,7 +105,7 @@ TEST(MakeWindowDefinition, OpenContext_NodeIds_TimeRange) {
               std::move(WindowItem{"Item"}.SetString("path", "{TIT.NodeId2}")))
           .AddItem(std::move(
               WindowItem{"Item"}.SetString("path", "{MODBUS_DEVICES.NodeId3}")))
-          .AddItem(std::move(WindowItem{"TimeRange"}.SetString("type", "Day")));
+          .AddItem(std::move(WindowItem{"scada::RelativeTimeRange"}.SetString("type", "Day")));
 
   EXPECT_EQ(window_definition, kExpectedWindowDefinition);
 }

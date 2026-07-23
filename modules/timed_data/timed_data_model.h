@@ -42,19 +42,19 @@ class TimedDataModel : private TimedDataModelContext,
   virtual void GetCell(scada::aui::TableCell& cell) override;
 
   // TimeModel
-  virtual TimeRange GetTimeRange() const override;
-  virtual void SetTimeRange(const TimeRange& time_range) override;
+  virtual scada::RelativeTimeRange GetTimeRange() const override;
+  virtual void SetTimeRange(const scada::RelativeTimeRange& time_range) override;
 
  private:
-  void UpdateRows(const scada::DateTimeRange& range);
+  void UpdateRows(const scada::TimeRange& range);
 
   TimedDataSpec timed_data_;
 
   size_t begin_iterator_ = 0;
   int count_ = 0;
 
-  TimeRange time_range_;
+  scada::RelativeTimeRange time_range_;
 
   // Cannot be null.
-  scada::DateTime end_time_ = scada::kMaxTime;
+  scada::Time end_time_ = scada::kMaxTime;
 };

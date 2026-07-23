@@ -34,7 +34,7 @@ enum class EventTimelineStep {
 struct EventTimelineEntry {
   EventTimelineStep step;
   // Null for kAwaitingAcknowledgement: it has not happened yet.
-  scada::DateTime time = scada::kNullTime;
+  scada::Time time = scada::kNullTime;
 };
 
 // Builds the lifecycle of `event`, oldest step first. Always starts with

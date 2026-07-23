@@ -19,7 +19,7 @@ TEST(ScadaClientBaseModuleSmoke, SettingsStoresAndUrls) {
 
   static_assert(std::is_class_v<FileSettingsStore>);
   static_assert(std::is_class_v<Blinker>);
-  static_assert(std::is_class_v<TimeRange>);
+  static_assert(std::is_class_v<scada::RelativeTimeRange>);
 }
 
 TEST(ScadaClientBaseModuleSmoke, TransitiveSurfaces) {

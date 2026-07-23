@@ -10,7 +10,7 @@
 #include "controller/time_model.h"
 #include "graph/metrix_graph.h"
 
-struct TimeRange;
+namespace scada { struct RelativeTimeRange; }
 class SeriesInspector;
 
 class GraphView : protected ControllerContext,
@@ -48,8 +48,8 @@ class GraphView : protected ControllerContext,
   virtual NodeIdSet GetContainedItems() const override;
 
   // TimeModel
-  virtual TimeRange GetTimeRange() const override;
-  virtual void SetTimeRange(const TimeRange& time_range) override;
+  virtual scada::RelativeTimeRange GetTimeRange() const override;
+  virtual void SetTimeRange(const scada::RelativeTimeRange& time_range) override;
   virtual bool IsTimeRequired() const override { return true; }
 
  private:

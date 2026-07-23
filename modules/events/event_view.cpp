@@ -322,7 +322,7 @@ std::unique_ptr<UiView> EventView::Init(const WindowDefinition& definition) {
               SetSeverityMin(static_cast<scada::EventSeverity>(severity));
             },
         .on_time_range =
-            [this](const TimeRange& time_range) { SetTimeRange(time_range); },
+            [this](const scada::RelativeTimeRange& time_range) { SetTimeRange(time_range); },
     }));
     // Areas sidebar beside the journal: every top-level area with its
     // unacknowledged count, driving the same area-filter scope the filter
@@ -443,7 +443,7 @@ void EventView::RemoveContainedItem(const scada::NodeId& node_id) {
     NotifyContainedItemChanged(node_id, false);
 }
 
-TimeRange EventView::GetTimeRange() const {
+scada::RelativeTimeRange EventView::GetTimeRange() const {
   return model_->time_range();
 }
 
@@ -451,7 +451,7 @@ CommandHandler* EventView::GetCommandHandler(unsigned command_id) {
   return command_registry_.GetCommandHandler(command_id);
 }
 
-void EventView::SetTimeRange(const TimeRange& time_range) {
+void EventView::SetTimeRange(const scada::RelativeTimeRange& time_range) {
   model_->SetTimeRange(time_range);
   controller_delegate_.SetTitle(MakeTitle());
 }
