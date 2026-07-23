@@ -145,8 +145,8 @@ std::shared_ptr<TableModelTest::RowContext> TableModelTest::SetFormula() {
   EXPECT_CALL(row_context->timed_data, AddObserver(_));
 
   EXPECT_CALL(row_context->timed_data,
-              AddViewObserver(_, scada::DateTimeRange{scada::DateTime::Max(),
-                                                      scada::DateTime::Max()}));
+              AddViewObserver(_, scada::DateTimeRange{scada::base::kMaxTime,
+                                                      scada::base::kMaxTime}));
 
   EXPECT_CALL(row_context->timed_data, IsAlerting());
 
@@ -202,7 +202,7 @@ TEST_F(TableModelTest, ReshellRowObservesTheSparklineWindow) {
   const TableRow* row = table_model_.GetRow(0);
   ASSERT_NE(row, nullptr);
   EXPECT_EQ(row->timed_data().from(),
-            scada::base::Time::Now() - kSparklineWindow);
+            scada::base::NowUtc() - kSparklineWindow);
 
   scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kLegacy);
 }

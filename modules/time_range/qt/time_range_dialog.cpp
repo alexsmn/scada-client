@@ -1,4 +1,5 @@
 #include "modules/time_range/time_range_dialog.h"
+#include "base/time_utils.h"
 
 #include "aui/dialog_service.h"
 #include "aui/qt/dialog_util.h"
@@ -7,13 +8,13 @@
 namespace {
 
 QDateTime ToQDateTime(scada::base::Time time) {
-  auto delta = time - scada::base::Time::UnixEpoch();
-  return QDateTime::fromMSecsSinceEpoch(delta.InMilliseconds());
+  auto delta = time - scada::base::Time{};
+  return QDateTime::fromMSecsSinceEpoch(InMilliseconds(delta));
 }
 
 scada::base::Time ToTime(QDateTime date_time) {
-  return scada::base::Time::UnixEpoch() +
-         scada::base::TimeDelta::FromMilliseconds(
+  return scada::base::Time{} +
+         std::chrono::milliseconds(
              date_time.toMSecsSinceEpoch());
 }
 
@@ -42,7 +43,7 @@ TimeRangeDialog::TimeRangeDialog(TimeRangeContext&& context, QWidget* parent)
 
   ui.timeGroupBox->setChecked(!time_range_.dates);
 
-  auto bounds = ToDateTimeRange(time_range_, /*now=*/scada::base::Time::Now());
+  auto bounds = ToDateTimeRange(time_range_, /*now=*/scada::base::NowUtc());
   auto start = ToQDateTime(bounds.first);
   auto end = ToQDateTime(bounds.second);
 

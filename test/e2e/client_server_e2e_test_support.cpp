@@ -542,7 +542,10 @@ void ClientServerE2eTest::StartCluster() {
   // Owns the history store. In the history test it pull-collects the historized
   // TIT.4 from the edge that serves it (historyCollection.sources — the ADR
   // 0002 subscription model) and files the samples under its own
-  // HasHistoricalDatabase config. Mirrors
+  // HasHistoricalDatabase config. It self-registers with the proxy via OPC UA
+  // RegisterServer2 advertising the "HD" capability, and the proxy's
+  // history-link module routes ALL client HistoryRead/HistoryUpdate to it —
+  // the historian is deliberately NOT an aggregation downstream. Mirrors
   // gcp/free-tier/multitier/configs/historian.json.
   historian_tier_ =
       std::make_unique<ServerTier>(MakeTierContext(GetHistorianExePath()));
@@ -551,11 +554,12 @@ void ClientServerE2eTest::StartCluster() {
   const std::string historian_url = historian_tier_->OpcUaUrl();
 
   // --- Device edges (create + allocate ports now; launched after the historian
-  //     so its historyCollection can reference an edge, while the edges'
-  //     history.endpoint references the historian — the two links cross) ------
+  //     so its historyCollection can reference an edge's already-known URL) ---
   // Each edge is a config client (no local DB) running exactly one driver,
-  // fetching config from the config tier and routing history to the historian,
-  // both as svc. The proxy aggregates them anonymously. Mirrors the GCP
+  // fetching config from the config tier as svc. Edges run NO history module
+  // (ADR 0002): the historian pull-collects from them, and clients read
+  // history back through the proxy's history link to the historian.
+  // The proxy aggregates the edges anonymously. Mirrors the GCP
   // configs/{iec104,modbus,iec61850}.json edges.
   //
   // The modbus edge is aggregated DYNAMICALLY: instead of a static
@@ -585,18 +589,33 @@ void ClientServerE2eTest::StartCluster() {
   // there (any edge would do — all serve the config-derived data items).
   const std::string collect_source_url = iec104_tier_->OpcUaUrl();
 
+  const std::string proxy_opcua_url =
+      "opc.tcp://127.0.0.1:" + std::to_string(opcua_port_);
   std::string historian_sql{kSvcUserSql};
   if (historize_simulated_item_)
     historian_sql += std::string{kHistorizeSimulatedItemSql};
   historian_tier_->Launch(ServerTier::Options{
       .configure =
-          [collect_source_url,
+          [collect_source_url, historian_url, proxy_opcua_url,
            historize = historize_simulated_item_](boost::json::object& json) {
             json.erase("iec60870");
             json.erase("modbus");
             json.erase("iec61850");
             json.erase("filesystem");
             ProvisionSvcPassword(json);
+            // The historian self-registers with the proxy via OPC UA
+            // RegisterServer2, advertising the "HD" (Historical Data)
+            // ServerCapabilityIdentifier (Part 4 §5.4.6, Part 12 Annex D).
+            // The proxy's history-link module links an HD registrant's
+            // history services (and its aggregation reconcile skips it — a
+            // historian owns no address-space namespaces). This is the
+            // discovery path the Windows on-prem deployment wires the
+            // historian with.
+            auto& opcua = json.at("opcua").as_object();
+            opcua["application_uri"] = "urn:e2e:scada:historian";
+            opcua["advertise_url"] = historian_url;
+            opcua["register_with_url"] = proxy_opcua_url;
+            opcua["server_capabilities"] = boost::json::array{"HD"};
             if (historize) {
               json["historyCollection"] = boost::json::object{
                   {"sources", boost::json::array{boost::json::object{
@@ -613,15 +632,13 @@ void ClientServerE2eTest::StartCluster() {
       << "cluster historian tier did not start listening on OPC UA port "
       << historian_tier_->opcua_port();
 
-  const std::string proxy_opcua_url =
-      "opc.tcp://127.0.0.1:" + std::to_string(opcua_port_);
-  auto make_edge_configure = [config_url, historian_url, proxy_opcua_url](
+  auto make_edge_configure = [config_url, proxy_opcua_url](
                                  std::string_view keep_driver,
                                  bool dynamic_registration,
                                  std::string advertise_url) {
-    return [config_url, historian_url, proxy_opcua_url, keep_driver,
-            dynamic_registration, advertise_url = std::move(advertise_url)](
-               boost::json::object& json) {
+    return [config_url, proxy_opcua_url, keep_driver, dynamic_registration,
+            advertise_url =
+                std::move(advertise_url)](boost::json::object& json) {
       for (std::string_view driver : {"iec60870", "modbus", "iec61850"}) {
         if (driver != keep_driver)
           json.erase(driver);
@@ -634,10 +651,9 @@ void ClientServerE2eTest::StartCluster() {
           boost::json::object{{"endpoint", config_url},
                               {"user", std::string{kSvcUser}},
                               {"password", std::string{kSvcPassword}}};
-      json["history"] =
-          boost::json::object{{"endpoint", historian_url},
-                              {"user", std::string{kSvcUser}},
-                              {"password", std::string{kSvcPassword}}};
+      // Edge binaries link no history module (ADR 0002) — a "history" block
+      // here would be dead config, so drop the template's.
+      json.erase("history");
       if (dynamic_registration) {
         // WS-F self-registration: a per-edge application_uri (the registry
         // keys registrations by server URI) and an externally-reachable
@@ -685,7 +701,9 @@ void ClientServerE2eTest::StartCluster() {
             json.erase("modbus");
             json.erase("iec61850");
             json["dataItems"] = boost::json::object{{"enabled", false}};
-            json["history"] = boost::json::object{{"enabled", false}};
+            // No history module in the filesystem tier binary; drop the dead
+            // template block.
+            json.erase("history");
             ProvisionSvcPassword(json);
             // The template's filesystem block stays: it roots the store at this
             // tier's own ${DIR_PARAM}/FileSystem workspace dir.
@@ -701,11 +719,14 @@ void ClientServerE2eTest::StartCluster() {
 
   // --- Proxy (client-facing) -------------------------------------------------
   // Aggregates the edges anonymously (mirrors the GCP proxy.json): iec104 and
-  // iec61850 via static entries, modbus dynamically via RegisterServer. Reuses
-  // the built-in server_ slot on the client-facing ports and keeps workspace_'s
-  // local config DB to authenticate the client's login; data-item module off
-  // and its data-item rows stripped so the aggregated edge namespace is
-  // authoritative.
+  // iec61850 via static entries, modbus dynamically via RegisterServer, plus
+  // the filesystem tier (claim-scoped) as an svc static entry. The historian
+  // is NOT aggregated: it registers with the "HD" capability and the proxy's
+  // history-link module ("historyLink" below) links its history services.
+  // Reuses the built-in server_ slot on the client-facing ports and keeps
+  // workspace_'s local config DB to authenticate the client's login; data-item
+  // module off and its data-item rows stripped so the aggregated edge
+  // namespace is authoritative.
   ExecuteConfigurationSql(MakeServerContextForExe(GetProxyExePath()),
                           workspace_.path(),
                           "PRAGMA foreign_keys=OFF;\n"
@@ -723,22 +744,20 @@ void ClientServerE2eTest::StartCluster() {
   // The file-store downstream. The "namespaces" claim names the tier-exclusive
   // file-instance namespace (FILESYSTEM_FILE). Beyond routing that namespace
   // here, the claim is what SCOPES this downstream: a downstream with any
-  // namespace claim routes single-target services (HistoryRead, monitored
-  // items, Write, Call, NodeManagement) for ONLY its claimed namespaces
+  // namespace claim routes single-target services (monitored items, Write,
+  // Call, NodeManagement) for ONLY its claimed namespaces
   // (RemoteNodeManager::has_namespace_claims → ClaimsProxyNamespace). Without
   // it, the file store falls back to routing every namespace its NamespaceArray
-  // still publishes — which includes the shared "dedicated" data-item/history
+  // still publishes — which includes the shared "dedicated" data-item
   // namespaces every tier keeps (e.g. ns=2 TIT) even though the file store
-  // deleted its data-item rows and owns no history. The proxy would then route
-  // a HistoryRead for an edge-served data item (ns=2;i=4) to the empty file
-  // store instead of an edge that forwards it to the historian, so the readback
-  // returns no rows (DisplaysHistoricalTimedData). The extra "nodes" claim for
-  // the FileSystem root object i=304 lives in the shared SCADA namespace (every
-  // tier serves it) and so cannot be routed by namespace alone — it anchors
-  // top-level AddNodes to this tier. Model-change events are re-raised to the
-  // proxy's clients; the link presents svc, since file create/delete forwarding
-  // needs a non-anonymous downstream session under enforce_permissions. Mirrors
-  // the GCP proxy.json entry.
+  // deleted its data-item rows, so it could capture an edge item's monitored
+  // items or writes. The extra "nodes" claim for the FileSystem root object
+  // i=304 lives in the shared SCADA namespace (every tier serves it) and so
+  // cannot be routed by namespace alone — it anchors top-level AddNodes to
+  // this tier. Model-change events are re-raised to the proxy's clients; the
+  // link presents svc, since file create/delete forwarding needs a
+  // non-anonymous downstream session under enforce_permissions. Mirrors the
+  // GCP proxy.json entry.
   aggregation_servers.push_back(boost::json::object{
       {"endpoint", filesystem_tier_->OpcUaUrl()},
       {"user", std::string{kSvcUser}},
@@ -753,12 +772,28 @@ void ClientServerE2eTest::StartCluster() {
                     server_json.erase("modbus");
                     server_json.erase("iec61850");
                     // The filesystem tier owns the FileSystem subtree; the
-                    // proxy must not run a local file store of its own.
+                    // proxy must not run a local file store of its own. The
+                    // proxy binary also links no history module — history is
+                    // the history-link module's (below).
                     server_json.erase("filesystem");
+                    server_json.erase("history");
                     server_json["dataItems"] =
                         boost::json::object{{"enabled", false}};
                     server_json["aggregation"] =
                         boost::json::object{{"servers", aggregation_servers}};
+                    // History lives in the historian tier, not in the
+                    // namespace-owning edges (edges run no history module), so
+                    // the proxy routes ALL HistoryRead/HistoryUpdate through
+                    // the history-link module. No endpoint: the link is
+                    // discovery-driven — it links the RegisterServer2
+                    // registrant advertising "HD" (the historian above). The
+                    // link presents svc so the historian's permission
+                    // enforcement accepts the forwarded reads.
+                    // (DisplaysHistoricalTimedData reads back through this
+                    // route.)
+                    server_json["historyLink"] = boost::json::object{
+                        {"user", std::string{kSvcUser}},
+                        {"password", std::string{kSvcPassword}}};
                   });
   LaunchProcess(GetProxyExePath(),
                 {"--param=" + (workspace_.path() / "server.json").string()},
@@ -784,6 +819,20 @@ void ClientServerE2eTest::StartCluster() {
           kServerStartTimeout)))
       << "the proxy never aggregated the RegisterServer-registered modbus "
          "edge; see the proxy log in "
+      << server_log_dir_;
+
+  // Likewise wait for the history link: the historian re-sends RegisterServer2
+  // (capability "HD") every 10 s and the history-link module reconciles every
+  // 2 s, so a history read right after startup would otherwise race the link
+  // coming up.
+  ASSERT_TRUE(WaitUntil(
+      [this] {
+        return ContainsInDirectory(server_log_dir_, "Linked historian");
+      },
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          kServerStartTimeout)))
+      << "the proxy never linked the HD-registered historian; see the proxy "
+         "log in "
       << server_log_dir_;
 }
 

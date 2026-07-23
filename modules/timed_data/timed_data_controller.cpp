@@ -165,7 +165,7 @@ std::optional<OpenContext> TimedDataController::GetOpenContext() const {
     const auto& last_data_value = model_->value(std::max(row1, row2));
     context.time_range = TimeRange{first_data_value.source_timestamp,
                                    last_data_value.source_timestamp +
-                                       scada::Duration::FromMilliseconds(1)};
+                                       std::chrono::milliseconds(1)};
   }
 
   return context;

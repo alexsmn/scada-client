@@ -106,9 +106,9 @@ class SummaryModel : private SummaryModelContext,
 
   std::vector<std::unique_ptr<Column>> columns_;
 
-  scada::base::Time start_time_;
+  scada::base::Time start_time_ = scada::base::kNullTime;
   // |end_time_| defines start of the last interval.
-  scada::base::Time end_time_;
+  scada::base::Time end_time_ = scada::base::kNullTime;
   TimeRange time_range_;
   scada::AggregateFilter aggregate_filter_;
 

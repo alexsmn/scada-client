@@ -1,4 +1,5 @@
 #include "test/e2e/client_server_e2e_test_support.h"
+#include "base/time/time_wire_codec.h"
 
 #include "base/awaitable.h"
 #include "base/time/time.h"
@@ -396,7 +397,7 @@ TEST_P(ClientServerE2eTest, Events_HistoryReadThroughProxy) {
   // and device state events raised while the cluster comes up), which is what
   // the historian collects — freeze the start before the tiers exist.
   const scada::base::Time window_start =
-      scada::base::Time::Now() - scada::base::TimeDelta::FromMinutes(1);
+      scada::base::NowUtc() - std::chrono::minutes(1);
 
   StartServer();
 
@@ -411,7 +412,7 @@ TEST_P(ClientServerE2eTest, Events_HistoryReadThroughProxy) {
   while (std::chrono::steady_clock::now() < deadline) {
     result = session.ReadEventHistory(
         window_start,
-        scada::base::Time::Now() + scada::base::TimeDelta::FromMinutes(1));
+        scada::base::NowUtc() + std::chrono::minutes(1));
     if (result.status && !result.events.empty())
       break;
     std::this_thread::sleep_for(std::chrono::milliseconds{500});
@@ -632,7 +633,7 @@ TEST_P(ClientServerE2eTest, Connect_Success_DisplaysHistoricalTimedData) {
   // inside the window. Without this the view's default Day window let
   // client-side live buffering populate the rows and the test passed even
   // when proxy history routing was broken.
-  const int64_t history_window_end = scada::base::Time::Now().ToInternalValue();
+  const int64_t history_window_end = scada::base::EncodeWireMicroseconds(scada::base::NowUtc());
   StartClient({"--test-historical-timed-data-file=" +
                    historical_timed_data_file_.string(),
                "--test-historical-timed-data-end=" +

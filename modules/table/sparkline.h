@@ -9,7 +9,7 @@
 // The trailing history window a reshell table row observes to feed its
 // sparkline cell (table-watch.html "Trend 1 h").
 inline constexpr scada::base::TimeDelta kSparklineWindow =
-    scada::base::TimeDelta::FromHours(1);
+    std::chrono::hours(1);
 
 // A point in a sparkline's local pixel space (origin top-left, y grows down),
 // ready to feed a QPainter polyline (or any renderer).

@@ -73,7 +73,7 @@ inline void HistoricalEventModel::Update() {
   historical_events_.clear();
 
   auto [from, to] =
-      ToDateTimeRange(time_range_, /*now=*/scada::base::Time::Now());
+      ToDateTimeRange(time_range_, /*now=*/scada::base::NowUtc());
 
   BOOST_LOG_TRIVIAL(info) << "Query events from " << FormatTime(from).c_str();
 

@@ -1,3 +1,4 @@
+#include "base/time/time_wire_codec.h"
 #include "graph/metrix_data_source.h"
 
 #include "base/any_executor.h"
@@ -72,12 +73,12 @@ bool MetrixPointEnum::Reset(double x_from,
   const auto& values = timed_data_.values();
 
   current_position_ =
-      LowerBound(values, scada::base::Time::FromDoubleT(x_from));
+      LowerBound(values, scada::base::DecodeDoubleT(x_from));
   if (include_left_bound && current_position_ != 0) {
     --current_position_;
   }
 
-  last_position_ = UpperBound(values, scada::base::Time::FromDoubleT(x_to));
+  last_position_ = UpperBound(values, scada::base::DecodeDoubleT(x_to));
   if (include_right_bound && last_position_ != values.size()) {
     ++last_position_;
   }
@@ -106,7 +107,7 @@ bool MetrixPointEnum::EnumNext(GraphPoint& point) {
   if (current_position_ != last_position_) {
     const auto& data_value = values[current_position_];
     // TODO: Duplicate code block.
-    point.x = data_value.source_timestamp.ToDoubleT();
+    point.x = scada::base::EncodeDoubleT(data_value.source_timestamp);
     point.y = data_value.value.get_or(0.0);
     point.good = data_value.qualifier.good();
     last_value_time_ = data_value.source_timestamp;
@@ -120,7 +121,7 @@ bool MetrixPointEnum::EnumNext(GraphPoint& point) {
       return false;
 
     // TODO: Duplicate code block.
-    point.x = current.source_timestamp.ToDoubleT();
+    point.x = scada::base::EncodeDoubleT(current.source_timestamp);
     point.y = current.value.get_or(0.0);
     point.good = current.qualifier.good();
 
@@ -173,7 +174,7 @@ bool MetrixDataSource::XToData(double& x, scada::DataValue& val) const {
     return false;
 
   if (const auto* value =
-          timed_data_.GetValueAt(scada::base::Time::FromDoubleT(x))) {
+          timed_data_.GetValueAt(scada::base::DecodeDoubleT(x))) {
     val = *value;
     return true;
   } else {
@@ -321,8 +322,8 @@ void MetrixDataSource::ScheduleUpdateEarliestTimestamp() {
               co_return;
 
             auto values = co_await node.read_value_history(
-                {.from = scada::DateTime::Min(),
-                 .to = scada::DateTime::Max(),
+                {.from = scada::base::kMinTime,
+                 .to = scada::base::kMaxTime,
                  .max_count = 1});
             if (!values.ok()) {
               co_return;
@@ -350,11 +351,11 @@ void MetrixDataSource::SetEarliestTimestamp(scada::DateTime timestamp) {
 
 GraphRange MetrixDataSource::GetHorizontalRange() const {
   auto latest_timestamp = GetTimeRange(timed_data_).second;
-  if (earliest_timestamp_.is_null() || latest_timestamp.is_null() ||
+  if (scada::base::IsNull(earliest_timestamp_) || scada::base::IsNull(latest_timestamp) ||
       earliest_timestamp_ >= latest_timestamp) {
     return {};
   }
 
-  return {earliest_timestamp_.ToDoubleT(), latest_timestamp.ToDoubleT(),
+  return {scada::base::EncodeDoubleT(earliest_timestamp_), scada::base::EncodeDoubleT(latest_timestamp),
           GraphRange::TIME};
 }

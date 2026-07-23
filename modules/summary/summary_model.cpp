@@ -274,7 +274,7 @@ void SummaryModel::Load(const WindowDefinition& definition) {
   const auto time_range =
       RestoreTimeRange(definition).value_or(TimeRange::Type::Day);
   const auto interval = definition.Get<scada::Duration>("Interval")
-                            .value_or(scada::Duration::FromHours(1));
+                            .value_or(std::chrono::hours(1));
   const scada::NodeId aggregate_type =
       definition.Get<scada::NodeId>("AggregateType")
           .value_or(scada::id::AggregateFunction_End);
@@ -331,16 +331,16 @@ void SummaryModel::GetCell(scada::aui::GridCell& cell) {
 
 scada::base::Time SummaryModel::GetRowTime(int row) const {
   scada::base::Check(row >= 0 && row < static_cast<int>(row_count_));
-  scada::base::Check(!start_time_.is_null());
-  scada::base::Check(!aggregate_filter_.interval.is_zero());
+  scada::base::Check(!scada::base::IsNull(start_time_));
+  scada::base::Check(aggregate_filter_.interval != scada::base::TimeDelta::zero());
   return start_time_ + aggregate_filter_.interval * row;
 }
 
 int SummaryModel::GetRowForTime(scada::base::Time time) const {
-  scada::base::Check(!start_time_.is_null());
-  scada::base::Check(!end_time_.is_null());
+  scada::base::Check(!scada::base::IsNull(start_time_));
+  scada::base::Check(!scada::base::IsNull(end_time_));
   scada::base::Check(start_time_ <= end_time_);
-  scada::base::Check(!aggregate_filter_.interval.is_zero());
+  scada::base::Check(aggregate_filter_.interval != scada::base::TimeDelta::zero());
 
   // |end_time_| defines start of the last interval.
   if (time < start_time_ || time >= end_time_)
@@ -418,7 +418,7 @@ void SummaryModel::SetParams(const TimeRange& time_range,
   scada::base::Check(!aggregate_filter.is_null());
 
   auto params = CalculateSummaryModelParams(
-      time_range, aggregate_filter.interval, /*now=*/scada::base::Time::Now());
+      time_range, aggregate_filter.interval, /*now=*/scada::base::NowUtc());
 
   time_range_ = time_range;
   aggregate_filter_ = std::move(aggregate_filter);

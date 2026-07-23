@@ -22,13 +22,13 @@ constexpr std::pair<unsigned, scada::NumericId> kAggregateCommands[] = {
 };
 
 constexpr std::pair<unsigned, scada::base::TimeDelta> kIntervalCommands[] = {
-    {ID_INTERVAL_1M, scada::base::TimeDelta::FromMinutes(1)},
-    {ID_INTERVAL_5M, scada::base::TimeDelta::FromMinutes(5)},
-    {ID_INTERVAL_15M, scada::base::TimeDelta::FromMinutes(15)},
-    {ID_INTERVAL_30M, scada::base::TimeDelta::FromMinutes(30)},
-    {ID_INTERVAL_1H, scada::base::TimeDelta::FromHours(1)},
-    {ID_INTERVAL_12H, scada::base::TimeDelta::FromHours(12)},
-    {ID_INTERVAL_1D, scada::base::TimeDelta::FromDays(1)},
+    {ID_INTERVAL_1M, std::chrono::minutes(1)},
+    {ID_INTERVAL_5M, std::chrono::minutes(5)},
+    {ID_INTERVAL_15M, std::chrono::minutes(15)},
+    {ID_INTERVAL_30M, std::chrono::minutes(30)},
+    {ID_INTERVAL_1H, std::chrono::hours(1)},
+    {ID_INTERVAL_12H, std::chrono::hours(12)},
+    {ID_INTERVAL_1D, std::chrono::days(1)},
 };
 
 }  // namespace

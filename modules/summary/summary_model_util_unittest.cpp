@@ -10,8 +10,8 @@ TEST(SummaryModelUtil, CalculateSummaryModelParams) {
   auto params = CalculateSummaryModelParams(
       TimeRange{TestTimeFromString("15 Nov 2004 12:45:26 UTC"),
                 TestTimeFromString("16 Nov 2004 12:45:26 UTC")},
-      /*interval=*/scada::Duration::FromMinutes(30),
-      /*now=*/scada::base::Time::Now());
+      /*interval=*/std::chrono::minutes(30),
+      /*now=*/scada::base::NowUtc());
 
   auto expected_params = SummaryModelParams{
       TestTimeFromString("15 Nov 2004 12:30:00 UTC"),
@@ -26,8 +26,8 @@ TEST(SummaryModelUtil, CalculateSummaryModelParams_DayHourly) {
   auto params = CalculateSummaryModelParams(
       TimeRange{TestTimeFromString("15 Nov 2004 10:00:00 UTC"),
                 TestTimeFromString("16 Nov 2004 10:00:00 UTC")},
-      /*interval=*/scada::Duration::FromHours(1),
-      /*now=*/scada::base::Time::Now());
+      /*interval=*/std::chrono::hours(1),
+      /*now=*/scada::base::NowUtc());
 
   auto expected_params = SummaryModelParams{
       TestTimeFromString("15 Nov 2004 10:00:00 UTC"),
@@ -42,8 +42,8 @@ TEST(SummaryModelUtil, CalculateSummaryModelParams_PriciseBounds) {
   auto params = CalculateSummaryModelParams(
       TimeRange{TestTimeFromString("15 Nov 2004 12:00:00 UTC"),
                 TestTimeFromString("16 Nov 2004 15:00:00 UTC")},
-      /*interval=*/scada::Duration::FromMinutes(30),
-      /*now=*/scada::base::Time::Now());
+      /*interval=*/std::chrono::minutes(30),
+      /*now=*/scada::base::NowUtc());
 
   auto expected_params = SummaryModelParams{
       TestTimeFromString("15 Nov 2004 12:00:00 UTC"),

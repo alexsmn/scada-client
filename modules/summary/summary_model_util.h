@@ -16,8 +16,8 @@ const size_t kMaxRowCount = 10000;
 struct SummaryModelParams {
   bool operator==(const SummaryModelParams&) const = default;
 
-  scada::DateTime start_time;
-  scada::DateTime end_time;
+  scada::DateTime start_time = scada::base::kNullTime;
+  scada::DateTime end_time = scada::base::kNullTime;
   size_t row_count;
 };
 
@@ -25,7 +25,7 @@ inline SummaryModelParams CalculateSummaryModelParams(
     const TimeRange& time_range,
     scada::Duration interval,
     scada::base::Time now) {
-  scada::base::Check(!interval.is_zero());
+  scada::base::Check(interval != scada::base::TimeDelta::zero());
 
   auto [start_time, end_time] = ToDateTimeRange(time_range, now);
 
@@ -49,8 +49,8 @@ inline SummaryModelParams CalculateSummaryModelParams(
   result.end_time = start_time + interval * row_count;
   result.row_count = static_cast<size_t>(row_count);
 
-  scada::base::Check(!result.start_time.is_null());
-  scada::base::Check(!result.end_time.is_null());
+  scada::base::Check(!scada::base::IsNull(result.start_time));
+  scada::base::Check(!scada::base::IsNull(result.end_time));
   scada::base::Check(result.start_time <= result.end_time);
   scada::base::Check(result.row_count <= kMaxRowCount);
 

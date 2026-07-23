@@ -1,5 +1,9 @@
 #pragma once
 
+#include "base/time/time_wire_codec.h"
+
+#include <chrono>
+
 #include "base/time_utils.h"
 #include "profile/profile.h"
 #include "profile/window_definition_util.h"
@@ -82,13 +86,14 @@ struct GraphViewLoader {
     bool time_fit = boost::iequals(stime, "Now");
     if (time_fit || !Deserialize(stime, to)) {
       time_fit = true;
-      to = scada::base::Time::Now();
+      to = scada::base::NowUtc();
     }
-    scada::base::TimeDelta span = scada::base::TimeDelta::FromHours(1);
+    scada::base::TimeDelta span = std::chrono::hours{1};
     Deserialize(srange, span);
     from = to - span;
     graph_.horizontal_axis().SetRange(
-        GraphRange(from.ToDoubleT(), to.ToDoubleT(), GraphRange::TIME));
+        GraphRange(scada::base::EncodeDoubleT(from),
+                   scada::base::EncodeDoubleT(to), GraphRange::TIME));
     graph_.SetHorizontalScrollBarVisible(
         item.GetBool("scrollBar", profile_.graph_view.default_scroll_bar));
     graph_.horizontal_axis().SetTimeFit(time_fit);
@@ -99,14 +104,14 @@ struct GraphViewLoader {
     if (auto time_range = RestoreTimeRange(definition_)) {
       auto [start, end] = ToDateTimeRange(*time_range, now);
       graph_.horizontal_axis().SetRange(
-          GraphRange{start.ToDoubleT(), end.ToDoubleT(), GraphRange::TIME});
+          GraphRange{scada::base::EncodeDoubleT(start), scada::base::EncodeDoubleT(end), GraphRange::TIME});
       graph_.horizontal_axis().SetTimeFit(time_range->type !=
                                           TimeRange::Type::Custom);
     } else {
-      scada::base::Time now = scada::base::Time::Now();
-      graph_.horizontal_axis().SetRange(
-          GraphRange((now - profile_.graph_view.default_span).ToDoubleT(),
-                     now.ToDoubleT(), GraphRange::TIME));
+      scada::base::Time now = scada::base::NowUtc();
+      graph_.horizontal_axis().SetRange(GraphRange(
+          scada::base::EncodeDoubleT(now - profile_.graph_view.default_span),
+          scada::base::EncodeDoubleT(now), GraphRange::TIME));
     }
   }
 
@@ -114,7 +119,7 @@ struct GraphViewLoader {
   const Profile& profile_;
   MetrixGraph& graph_;
   GraphView& graph_view_;
-  scada::base::Time now = scada::base::Time::Now();
+  scada::base::Time now = scada::base::NowUtc();
 
   using PaneMap = std::unordered_map<int, GraphPane*>;
   PaneMap pane_map;

@@ -1,4 +1,5 @@
 #include "main_window/status_bar/session_status_provider.h"
+#include "base/time_utils.h"
 
 #include "base/time/time.h"
 #include "base/u16format.h"
@@ -41,7 +42,7 @@ std::u16string SessionStatusProvider::GetPingText() const {
   return connected
              ? u16format(
                    L"\u0421\u0435\u0440\u0432\u0435\u0440: {} \u043c\u0441",
-                   static_cast<unsigned>(ping_delay.InMilliseconds()))
+                   static_cast<unsigned>(InMilliseconds(ping_delay)))
              : u"\u041d\u0435\u0442 \u043e\u0442\u043a\u043b\u0438\u043a\u0430";
 }
 

@@ -52,7 +52,7 @@ std::optional<scada::aui::Color> GetNodeColor(
 }
 
 std::u16string FormatCellTime(scada::DateTime time) {
-  if (time.is_null())
+  if (scada::base::IsNull(time))
     return std::u16string{};
 
   return UtfConvert<char16_t>(FormatTime(time, g_time_format));
@@ -127,7 +127,7 @@ void TableRow::SetFormula(std::string formula, bool notify_update) {
   // feeding its sparkline cell (the mockup's "Trend 1 h"); the legacy grid
   // stays current-only.
   if (ReshellActive())
-    timed_data_.SetFrom(scada::base::Time::Now() - kSparklineWindow);
+    timed_data_.SetFrom(scada::base::NowUtc() - kSparklineWindow);
 
   SetBlinking(timed_data_.alerting());
 

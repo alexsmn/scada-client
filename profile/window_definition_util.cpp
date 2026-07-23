@@ -80,7 +80,7 @@ std::optional<TimeRange> FromJson(const boost::json::value& value) {
 
   if (auto* interval_value = value.as_object().if_contains("interval")) {
     auto interval = FromJson<scada::base::TimeDelta>(*interval_value);
-    if (!interval.has_value() || interval->is_zero())
+    if (!interval.has_value() || *interval == scada::base::TimeDelta::zero())
       return std::nullopt;
 
     return TimeRange{*interval};
@@ -95,10 +95,10 @@ std::optional<TimeRange> FromJson(const boost::json::value& value) {
   auto start = FromJson<scada::base::Time>(*start_value);
   if (!start.has_value())
     return std::nullopt;
-  if (start->is_null())
+  if (scada::base::IsNull(*start))
     return std::nullopt;
 
-  scada::base::Time end;
+  scada::base::Time end = scada::base::kNullTime;
   auto* end_value = value.as_object().if_contains("end");
   if (end_value && !end_value->is_null()) {
     auto parsed_end = FromJson<scada::base::Time>(*end_value);
@@ -113,13 +113,13 @@ std::optional<TimeRange> FromJson(const boost::json::value& value) {
 template <>
 std::optional<scada::base::TimeDelta> FromJson(
     const boost::json::value& value) {
-  return scada::base::TimeDelta::FromSeconds(
+  return std::chrono::seconds(
              GetKey<int>(value, "seconds").value_or(0)) +
-         scada::base::TimeDelta::FromMinutes(
+         std::chrono::minutes(
              GetKey<int>(value, "minutes").value_or(0)) +
-         scada::base::TimeDelta::FromHours(
+         std::chrono::hours(
              GetKey<int>(value, "hours").value_or(0)) +
-         scada::base::TimeDelta::FromDays(
+         std::chrono::days(
              GetKey<int>(value, "days").value_or(0));
 }
 
@@ -138,7 +138,7 @@ boost::json::value ToJson(const TimeRange& time_range) {
   } else if (time_range.type == TimeRange::Type::Custom) {
     result.as_object()["start"] = ToJson(time_range.start);
     result.as_object()["end"] =
-        time_range.end.is_null() || time_range.end.is_max()
+        scada::base::IsNull(time_range.end) || time_range.end == scada::base::kMaxTime
             ? boost::json::value{}
             : ToJson(time_range.end);
     SetKey(result, "dates", time_range.dates);
@@ -150,7 +150,7 @@ boost::json::value ToJson(const TimeRange& time_range) {
 
 boost::json::value ToJson(scada::base::TimeDelta duration) {
   boost::json::value result{boost::json::object{}};
-  auto value = duration.InSeconds();
+  auto value = InSeconds(duration);
   if (auto seconds = value % 60)
     SetKey(result, "seconds", static_cast<int>(seconds));
   value /= 60;

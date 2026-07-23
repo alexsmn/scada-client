@@ -20,7 +20,7 @@ struct TimeRange {
 
   TimeRange(scada::base::TimeDelta interval)
       : type{Type::Interval}, interval{interval} {
-    scada::base::Check(!interval.is_zero());
+    scada::base::Check(interval != scada::base::TimeDelta::zero());
   }
 
   TimeRange(scada::base::Time start, scada::base::Time end, bool dates = false)
@@ -34,12 +34,12 @@ struct TimeRange {
   Type type = Type::Day;
 
   // Only when `type == Type::Custom`.
-  scada::base::Time start;
-  scada::base::Time end;
+  scada::base::Time start = scada::base::kNullTime;
+  scada::base::Time end = scada::base::kNullTime;
   bool dates = false;
 
   // Only when `type == Type::Interval`.
-  scada::base::TimeDelta interval;
+  scada::base::TimeDelta interval = scada::base::TimeDelta::zero();
 };
 
 scada::DateTimeRange ToDateTimeRange(const TimeRange& time_range,

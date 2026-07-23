@@ -112,12 +112,12 @@ TEST_F(SummaryModelTest, AddContainedItemExpandsGroupOnExecutor) {
 TEST_F(SummaryModelTest, HourlySummaryForDayShows24Rows) {
   auto start_time = TestTimeFromString("15 Nov 2004 10:00:00 UTC");
   auto time_range =
-      TimeRange{start_time, start_time + scada::base::TimeDelta::FromHours(24)};
+      TimeRange{start_time, start_time + std::chrono::hours(24)};
 
   auto timed_data = timed_data_service_.AddTimedData("item1");
 
   for (int i = 0; i < 24; ++i) {
-    auto timestamp = start_time + scada::base::TimeDelta::FromHours(i);
+    auto timestamp = start_time + std::chrono::hours(i);
     timed_data->data_values.emplace_back(/*value=*/i,
                                          /*qualifier=*/scada::Qualifier{},
                                          /*source_timestamp=*/timestamp,
@@ -133,7 +133,7 @@ TEST_F(SummaryModelTest, HourlySummaryForDayShows24Rows) {
   EXPECT_EQ(summary_model_.row_model().GetCount(), 24);
   EXPECT_EQ(summary_model_.GetRowTime(0), start_time);
   EXPECT_EQ(summary_model_.GetRowTime(23),
-            start_time + scada::base::TimeDelta::FromHours(23));
+            start_time + std::chrono::hours(23));
   EXPECT_EQ(summary_model_.GetCellText(/*row=*/0, /*column=*/0), u"0");
   EXPECT_EQ(summary_model_.GetCellText(/*row=*/23, /*column=*/0), u"23");
 }
@@ -150,7 +150,7 @@ TEST_F(SummaryModelTest, Load) {
           .AddItem(MakeItem("item1"))
           .AddItem(MakeItem("item2"))
           .AddItem("TimeRange", time_range)
-          .AddItem("Interval", scada::Duration::FromMinutes(30))
+          .AddItem("Interval", std::chrono::minutes(30))
           .AddItem("AggregateType", scada::id::AggregateFunction_Maximum);
 
   summary_model_.Load(window_def);
@@ -158,7 +158,7 @@ TEST_F(SummaryModelTest, Load) {
   EXPECT_EQ(scada::id::AggregateFunction_Maximum,
             summary_model_.aggregate_type());
 
-  EXPECT_EQ(scada::Duration::FromMinutes(30), summary_model_.interval());
+  EXPECT_EQ(std::chrono::minutes(30), summary_model_.interval());
   EXPECT_EQ(time_range, summary_model_.time_range());
 
   ASSERT_EQ(summary_model_.row_model().GetCount(), 49);  // 30-min interval
@@ -184,7 +184,7 @@ TEST_F(SummaryModelTest, Save) {
           .AddItem("TimeRange",
                    TimeRange{TestTimeFromString("15 Nov 2004 12:45:26 UTC"),
                              TestTimeFromString("16 Nov 2004 12:45:26 UTC")})
-          .AddItem("Interval", scada::Duration::FromMinutes(30))
+          .AddItem("Interval", std::chrono::minutes(30))
           .AddItem("AggregateType", scada::id::AggregateFunction_Maximum);
 
   summary_model_.Load(window_def);
@@ -206,7 +206,7 @@ TEST_F(SummaryModelTest, CellsAreGreyWhileLoading) {
           .AddItem("TimeRange",
                    TimeRange{TestTimeFromString("15 Nov 2004 12:45:26 UTC"),
                              TestTimeFromString("16 Nov 2004 12:45:26 UTC")})
-          .AddItem("Interval", scada::Duration::FromMinutes(30))
+          .AddItem("Interval", std::chrono::minutes(30))
           .AddItem("AggregateType", scada::id::AggregateFunction_Maximum));
 
   EXPECT_EQ(scada::aui::ColorCode::DarkGray,

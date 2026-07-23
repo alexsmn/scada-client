@@ -48,7 +48,7 @@ scada::Event MakeEvent(scada::EventId id,
   scada::Event event;
   event.event_id = id;
   event.severity = severity;
-  event.time = scada::base::Time::Now();
+  event.time = scada::base::NowUtc();
   event.message = std::move(message);
   return event;
 }

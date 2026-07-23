@@ -17,9 +17,9 @@ namespace {
 constexpr scada::NodeId kFileNodeId{9001, 1};
 
 std::filesystem::file_time_type ToFileTime(scada::DateTime time) {
-  auto delta = time - scada::DateTime::UnixEpoch();
+  auto delta = time - scada::base::Time{};
   return std::filesystem::file_time_type{
-      std::chrono::microseconds(delta.InMicroseconds())};
+      std::chrono::microseconds(delta.count())};
 }
 
 std::string ReadFileContents(const std::filesystem::path& path) {
@@ -111,7 +111,7 @@ class FileSynchronizerTest : public Test {
 
 TEST_F(FileSynchronizerTest, DownloadsOutdatedFile) {
   const auto last_update_time =
-      scada::DateTime::UnixEpoch() + scada::Duration::FromSeconds(10);
+      scada::base::Time{} + std::chrono::seconds(10);
   const std::string contents = "downloaded";
   AddFile(last_update_time);
 
@@ -137,7 +137,7 @@ TEST_F(FileSynchronizerTest, DownloadsOutdatedFile) {
 
 TEST_F(FileSynchronizerTest, DownloadFailureDoesNotCreateFile) {
   const auto last_update_time =
-      scada::DateTime::UnixEpoch() + scada::Duration::FromSeconds(10);
+      scada::base::Time{} + std::chrono::seconds(10);
   AddFile(last_update_time);
 
   EXPECT_CALL(attribute_service_, Read(_, _))
@@ -155,7 +155,7 @@ TEST_F(FileSynchronizerTest, DownloadFailureDoesNotCreateFile) {
 
 TEST_F(FileSynchronizerTest, ActualFileSkipsDownload) {
   const auto last_update_time =
-      scada::DateTime::UnixEpoch() + scada::Duration::FromSeconds(10);
+      scada::base::Time{} + std::chrono::seconds(10);
   AddFile(last_update_time);
 
   const std::string contents = "cached";

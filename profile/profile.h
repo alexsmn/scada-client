@@ -89,7 +89,7 @@ class Profile {
   Modus modus;
 
   struct GraphView {
-    scada::base::TimeDelta default_span = scada::base::TimeDelta::FromHours(1);
+    scada::base::TimeDelta default_span = std::chrono::hours(1);
     scada::aui::Color default_color = scada::aui::ColorCode::White;
     int default_width = 1;
     bool default_scroll_bar = true;

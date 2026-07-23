@@ -44,8 +44,8 @@ class TimeRangeDialogTest : public testing::Test {
 };
 
 scada::base::Time ToBaseTime(const QDateTime& date_time) {
-  return scada::base::Time::UnixEpoch() +
-         scada::base::TimeDelta::FromMilliseconds(
+  return scada::base::Time{} +
+         std::chrono::milliseconds(
              date_time.toMSecsSinceEpoch());
 }
 
@@ -67,5 +67,5 @@ TEST_F(TimeRangeDialogTest, AcceptedDialogReturnsSelectedInitialRange) {
   EXPECT_TRUE(selected_range.dates);
   EXPECT_EQ(selected_range.start, initial_range.start);
   EXPECT_EQ(selected_range.end,
-            initial_range.end + scada::base::TimeDelta::FromDays(1));
+            initial_range.end + std::chrono::days(1));
 }

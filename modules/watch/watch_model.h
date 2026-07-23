@@ -54,7 +54,7 @@ class WatchModel : private WatchModelContext,
 
   NodeRef device_;
 
-  TimeRange time_range_ = scada::base::TimeDelta::FromMinutes(15);
+  TimeRange time_range_{std::chrono::minutes(15)};
 
   // Sorted by `scada::Event::time`.
   std::vector<scada::Event> events_;

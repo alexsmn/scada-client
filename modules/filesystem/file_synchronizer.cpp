@@ -30,16 +30,16 @@ std::string DecodeUri(std::string_view str) {
 #endif
 
 std::filesystem::file_time_type ToFileTime(scada::DateTime time) {
-  if (time.is_null())
+  if (scada::base::IsNull(time))
     return std::filesystem::file_time_type{};
-  else if (time.is_min())
+  else if (time == scada::base::kMinTime)
     return std::filesystem::file_time_type::min();
-  else if (time.is_max())
+  else if (time == scada::base::kMaxTime)
     return std::filesystem::file_time_type::max();
   else {
-    auto delta = time - scada::DateTime::UnixEpoch();
+    auto delta = time - scada::base::Time{};
     return std::filesystem::file_time_type{
-        std::chrono::microseconds(delta.InMicroseconds())};
+        std::chrono::microseconds(delta.count())};
   }
 }
 

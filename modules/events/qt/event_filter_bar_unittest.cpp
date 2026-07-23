@@ -22,10 +22,10 @@ TEST(EventFilterBarPeriodTest, FixedRangeReflectsOntoItsPreset) {
 // The 15-minute and hourly interval presets are present and reflect correctly.
 TEST(EventFilterBarPeriodTest, IntervalPresetsMatch) {
   EXPECT_EQ(EventPeriodPresetIndex(
-                TimeRange{scada::base::TimeDelta::FromMinutes(15)}),
+                TimeRange{std::chrono::minutes(15)}),
             0);
   EXPECT_EQ(
-      EventPeriodPresetIndex(TimeRange{scada::base::TimeDelta::FromHours(1)}),
+      EventPeriodPresetIndex(TimeRange{std::chrono::hours(1)}),
       1);
 }
 
@@ -34,12 +34,12 @@ TEST(EventFilterBarPeriodTest, IntervalPresetsMatch) {
 // does not misrepresent it.
 TEST(EventFilterBarPeriodTest, UnmatchedRangeHasNoPreset) {
   TimeRange custom{
-      scada::base::Time::UnixEpoch(),
-      scada::base::Time::UnixEpoch() + scada::base::TimeDelta::FromHours(3)};
+      scada::base::Time{},
+      scada::base::Time{} + std::chrono::hours(3)};
   EXPECT_EQ(EventPeriodPresetIndex(custom), -1);
 
   EXPECT_EQ(EventPeriodPresetIndex(
-                TimeRange{scada::base::TimeDelta::FromMinutes(42)}),
+                TimeRange{std::chrono::minutes(42)}),
             -1);
 }
 

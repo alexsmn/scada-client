@@ -1,3 +1,4 @@
+#include "base/time/time_wire_codec.h"
 #include "modules/events/event_timeline.h"
 
 #include "scada/event.h"
@@ -8,7 +9,7 @@ namespace events {
 namespace {
 
 scada::DateTime At(int second) {
-  return scada::DateTime::FromDoubleT(1'700'000'000.0 + second);
+  return scada::base::DecodeDoubleT(1'700'000'000.0 + second);
 }
 
 // A pending event always states that it is still waiting, so the section never
@@ -22,7 +23,7 @@ TEST(EventTimelineTest, PendingEventEndsAwaitingAcknowledgement) {
   EXPECT_EQ(timeline[0].step, EventTimelineStep::kRaised);
   EXPECT_EQ(timeline[0].time, At(0));
   EXPECT_EQ(timeline[1].step, EventTimelineStep::kAwaitingAcknowledgement);
-  EXPECT_TRUE(timeline[1].time.is_null());
+  EXPECT_TRUE(scada::base::IsNull(timeline[1].time));
 }
 
 TEST(EventTimelineTest, AcknowledgedEventEndsAcknowledged) {

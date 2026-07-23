@@ -1,4 +1,5 @@
 #include "fixture_builder.h"
+#include "base/time/calendar.h"
 
 #include "graph_capture.h"
 #include "screenshot_config.h"
@@ -109,13 +110,10 @@ std::string GetJsonString(const boost::json::object& node,
 scada::base::Time FixtureNow(const boost::json::value& json) {
   const auto* jnow = json.as_object().if_contains("now");
   if (!jnow)
-    return {};
-  scada::base::Time now;
-  if (!scada::base::Time::FromString(std::string(jnow->as_string()).c_str(),
-                                     &now)) {
-    return {};
-  }
-  return now;
+    return scada::base::kNullTime;
+  return scada::base::TimeFromString(std::string(jnow->as_string()),
+                                     /*is_local=*/true)
+      .value_or(scada::base::kNullTime);
 }
 
 Page MakeScreenshotPage(const std::vector<ScreenshotSpec>& specs,

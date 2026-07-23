@@ -16,7 +16,7 @@ void WatchCurrentEventSource::Start(const scada::NodeId& device_id,
                                     Delegate& delegate) {
   monitored_item_.unsubscribe();
 
-  if (!time_range.second.is_max()) {
+  if (time_range.second != scada::base::kMaxTime) {
     return;
   }
 

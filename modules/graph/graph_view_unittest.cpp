@@ -1,3 +1,4 @@
+#include "base/time/time_wire_codec.h"
 #include "graph/graph_view.h"
 
 #include "aui/severity_colors.h"
@@ -198,16 +199,16 @@ TEST(GraphViewInspectorTest, DeletingSelectedPaneRefreshesSeriesInspector) {
 TEST_F(GraphViewTest, FakeTimedDataRendersLines) {
   // Set up FakeTimedDataService with pre-populated data.
   FakeTimedDataService fake_service;
-  auto now = scada::base::Time::Now();
+  auto now = scada::base::NowUtc();
 
   auto td = fake_service.AddTimedData("TS.200");
   for (int i = 0; i < 24; ++i) {
-    auto time = now - scada::base::TimeDelta::FromHours(24 - i);
+    auto time = now - std::chrono::hours(24 - i);
     td->data_values.push_back(
         scada::DataValue{scada::Variant{100.0 + i * 2.0}, {}, time, time});
   }
   td->ready_ranges.push_back(
-      {now - scada::base::TimeDelta::FromHours(24), now});
+      {now - std::chrono::hours(24), now});
 
   // Create a graph with one line using the fake service.
   MetrixGraph graph{MetrixGraphContext{fake_service}};
@@ -216,8 +217,8 @@ TEST_F(GraphViewTest, FakeTimedDataRendersLines) {
   line.SetColor(Qt::blue);
 
   // Set horizontal range to match data.
-  double from = (now - scada::base::TimeDelta::FromHours(24)).ToDoubleT();
-  double to = now.ToDoubleT();
+  double from = scada::base::EncodeDoubleT((now - std::chrono::hours(24)));
+  double to = scada::base::EncodeDoubleT(now);
   graph.horizontal_axis().SetTimeFit(false);
   graph.horizontal_axis().SetRange(GraphRange{from, to, GraphRange::TIME});
 
@@ -282,8 +283,8 @@ TEST(MetrixDataSourceTest, AppliesEarliestTimestampFromHistoryRead) {
   NodeRef node = node_service.Add(
       kTestNodeId, std::make_shared<TestNodeModel>(client.node(kTestNodeId)));
 
-  const auto earliest = scada::DateTime::FromDoubleT(100.0);
-  const auto latest = scada::DateTime::FromDoubleT(200.0);
+  const auto earliest = scada::base::DecodeDoubleT(100.0);
+  const auto latest = scada::base::DecodeDoubleT(200.0);
 
   EXPECT_CALL(history_service, HistoryReadRaw(_))
       .WillOnce(Invoke([&](scada::HistoryReadRawDetails details)
@@ -299,8 +300,8 @@ TEST(MetrixDataSourceTest, AppliesEarliestTimestampFromHistoryRead) {
   Drain(executor);
 
   auto horizontal_range = data_source.GetHorizontalRange();
-  EXPECT_EQ(horizontal_range.low(), earliest.ToDoubleT());
-  EXPECT_EQ(horizontal_range.high(), latest.ToDoubleT());
+  EXPECT_EQ(horizontal_range.low(), scada::base::EncodeDoubleT(earliest));
+  EXPECT_EQ(horizontal_range.high(), scada::base::EncodeDoubleT(latest));
 }
 
 TEST(MetrixDataSourceTest, DropsCanceledEarliestTimestampRead) {
@@ -335,10 +336,10 @@ TEST(MetrixDataSourceTest, DropsCanceledEarliestTimestampRead) {
         co_return second_result;
       }));
 
-  const auto stale_earliest = scada::DateTime::FromDoubleT(50.0);
-  const auto current_earliest = scada::DateTime::FromDoubleT(100.0);
-  const auto first_latest = scada::DateTime::FromDoubleT(200.0);
-  const auto second_latest = scada::DateTime::FromDoubleT(300.0);
+  const auto stale_earliest = scada::base::DecodeDoubleT(50.0);
+  const auto current_earliest = scada::base::DecodeDoubleT(100.0);
+  const auto first_latest = scada::base::DecodeDoubleT(200.0);
+  const auto second_latest = scada::base::DecodeDoubleT(300.0);
 
   MetrixDataSource data_source{executor};
   data_source.SetTimedData(MakeTimedDataSpec(node, first_latest));
@@ -361,6 +362,6 @@ TEST(MetrixDataSourceTest, DropsCanceledEarliestTimestampRead) {
   Drain(executor);
 
   auto horizontal_range = data_source.GetHorizontalRange();
-  EXPECT_EQ(horizontal_range.low(), current_earliest.ToDoubleT());
-  EXPECT_EQ(horizontal_range.high(), second_latest.ToDoubleT());
+  EXPECT_EQ(horizontal_range.low(), scada::base::EncodeDoubleT(current_earliest));
+  EXPECT_EQ(horizontal_range.high(), scada::base::EncodeDoubleT(second_latest));
 }

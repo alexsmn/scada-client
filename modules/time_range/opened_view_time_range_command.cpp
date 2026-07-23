@@ -13,9 +13,9 @@ namespace {
 std::optional<TimeRange> GetTimeRangeCommand(unsigned command_id) {
   switch (command_id) {
     case ID_TIME_RANGE_15M:
-      return scada::base::TimeDelta::FromMinutes(15);
+      return TimeRange{std::chrono::minutes(15)};
     case ID_TIME_RANGE_HOUR:
-      return scada::base::TimeDelta::FromHours(1);
+      return TimeRange{std::chrono::hours(1)};
     case ID_TIME_RANGE_DAY:
       return TimeRange::Type::Day;
     case ID_TIME_RANGE_WEEK:

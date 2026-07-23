@@ -1,13 +1,17 @@
 #pragma once
 
+#include "base/time/time_wire_codec.h"
+
+#include <chrono>
+
 #include "base/time_utils.h"
 
 struct GraphViewSaver {
   void Save() {
-    scada::base::Time time =
-        scada::base::Time::FromDoubleT(graph_.horizontal_axis().range().high());
-    scada::base::TimeDelta span =
-        TimeDeltaFromSecondsF(graph_.horizontal_axis().range().delta());
+    scada::base::Time time = scada::base::DecodeDoubleT(
+        graph_.horizontal_axis().range().high());
+    scada::base::TimeDelta span = std::chrono::round<std::chrono::microseconds>(
+        std::chrono::duration<double>{graph_.horizontal_axis().range().delta()});
 
     // time scale
     {

@@ -1,3 +1,4 @@
+#include "base/time/time_wire_codec.h"
 #include "graph/series_stats.h"
 
 #include "scada/qualifier.h"
@@ -10,7 +11,7 @@
 namespace {
 
 scada::DateTime At(double seconds) {
-  return scada::base::Time::FromDoubleT(seconds);
+  return scada::base::DecodeDoubleT(seconds);
 }
 
 // Builds a good-quality numeric sample at `seconds`.

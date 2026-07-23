@@ -1,3 +1,4 @@
+#include "base/time/time_wire_codec.h"
 #include "graph/metrix_graph.h"
 
 #include "base/format_time.h"
@@ -51,11 +52,13 @@ int GetPercentReady(const TimedDataSpec& timed_data) {
   if (ready_from <= requested_from)
     return 100;
 
-  if (to.is_null() || ready_from.is_null() || requested_from.is_null())
+  if (scada::base::IsNull(to) || scada::base::IsNull(ready_from) || scada::base::IsNull(requested_from))
     return 0;
 
-  auto total = (to - requested_from).InMillisecondsF();
-  auto ready = (to - ready_from).InMillisecondsF();
+  auto total =
+      std::chrono::duration<double, std::milli>(to - requested_from).count();
+  auto ready =
+      std::chrono::duration<double, std::milli>(to - ready_from).count();
 
   if (total < 0 || ready < 0)
     return 0;
@@ -151,7 +154,7 @@ scada::DataValue MetrixGraph::Legend::GetCurrentValue(
   const GraphCursor* cursor = graph().selected_cursor();
   if (cursor && !cursor->axis_->is_vertical()) {
     scada::base::Time cursor_time =
-        scada::base::Time::FromDoubleT(cursor->position_);
+        scada::base::DecodeDoubleT(cursor->position_);
     const scada::DataValue* cursor_value =
         data_source.timed_data().GetValueAt(cursor_time);
     return cursor_value ? *cursor_value : scada::DataValue{};
@@ -296,8 +299,8 @@ void MetrixGraph::Legend::PaintThemed(QPainter& painter) const {
 
   // The visible range drives the min/max/average aggregates.
   const GraphRange& range = graph().horizontal_axis().range();
-  const scada::base::Time from = scada::base::Time::FromDoubleT(range.low());
-  const scada::base::Time to = scada::base::Time::FromDoubleT(range.high());
+  const scada::base::Time from = scada::base::DecodeDoubleT(range.low());
+  const scada::base::Time to = scada::base::DecodeDoubleT(range.high());
 
   // Header row: column captions, right-aligned over their numeric columns.
   QFont header_font = painter.font();
@@ -374,7 +377,7 @@ QString MetrixGraph::Legend::ValueAtCursorText(
   if (!cursor || cursor->axis_->is_vertical())
     return EmptyCell();
   const scada::base::Time cursor_time =
-      scada::base::Time::FromDoubleT(cursor->position_);
+      scada::base::DecodeDoubleT(cursor->position_);
   const scada::DataValue* value =
       data_source.timed_data().GetValueAt(cursor_time);
   if (!value)
@@ -535,10 +538,10 @@ void MetrixGraph::MetrixLine::UpdateTimeRange() {
 
   auto& graph_range = graph().horizontal_axis().range();
 
-  auto from = scada::base::Time::FromDoubleT(graph_range.low());
+  auto from = scada::base::DecodeDoubleT(graph_range.low());
   auto to = graph().horizontal_axis().time_fit()
                 ? kTimedDataCurrentOnly
-                : scada::base::Time::FromDoubleT(graph_range.high());
+                : scada::base::DecodeDoubleT(graph_range.high());
 
   data_source().SetRange({from, to});
 }

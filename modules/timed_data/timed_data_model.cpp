@@ -17,7 +17,7 @@ TimedDataModel::TimedDataModel(TimedDataModelContext&& context)
   timed_data_.property_change_handler = [this](const PropertySet& properties) {
     if (properties.is_current_changed()) {
       UpdateRows(
-          {timed_data_.current().source_timestamp, scada::DateTime::Max()});
+          {timed_data_.current().source_timestamp, scada::base::kMaxTime});
     }
   };
 
@@ -30,7 +30,7 @@ TimedDataModel::TimedDataModel(TimedDataModelContext&& context)
       };
 
   timed_data_.ready_handler = [this] {
-    UpdateRows({timed_data_.ready_from(), scada::DateTime::Max()});
+    UpdateRows({timed_data_.ready_from(), scada::base::kMaxTime});
   };
 
   timed_data_.node_modified_handler = [this] { NotifyModelChanged(); };
@@ -79,7 +79,14 @@ void TimedDataModel::UpdateRows(const scada::DateTimeRange& range) {
     int last = UpperBound(values, range.second);
     first = std::max(first, start);
     last = std::min(last, start + count_);
-    NotifyItemsChanged(first - start, last - first + 1);
+    // The changed range can lie entirely outside the visible window — e.g. a
+    // live update arriving while the view shows a past (frozen) window — in
+    // which case the clamp leaves an empty [first, last) and there is nothing
+    // to notify (NotifyItemsChanged rejects count <= 0). `last` is exclusive
+    // (UpperBound), so the changed row count is last - first.
+    if (first < last) {
+      NotifyItemsChanged(first - start, last - first);
+    }
   }
 }
 
@@ -137,7 +144,7 @@ void TimedDataModel::SetFormula(std::string_view formula) {
 
   timed_data_ = timed_data;
   SetTimeRange(time_range_);
-  UpdateRows({scada::DateTime::Min(), scada::DateTime::Max()});
+  UpdateRows({scada::base::kMinTime, scada::base::kMaxTime});
 }
 
 TimeRange TimedDataModel::GetTimeRange() const {
@@ -151,7 +158,7 @@ void TimedDataModel::SetTimeRange(const TimeRange& time_range) {
   timed_data_.SetRange({start, end});
 
   end_time_ =
-      time_range.end.is_null() ? scada::DateTime::Max() : time_range.end;
+      scada::base::IsNull(time_range.end) ? scada::base::kMaxTime : time_range.end;
 
-  UpdateRows({scada::DateTime::Min(), end_time_});
+  UpdateRows({scada::base::kMinTime, end_time_});
 }

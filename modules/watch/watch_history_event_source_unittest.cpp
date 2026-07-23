@@ -18,8 +18,8 @@ constexpr scada::NodeId kDeviceId{8002, 1};
 scada::Event MakeEvent(scada::EventId event_id) {
   return scada::Event{
       .event_id = event_id,
-      .time = scada::DateTime::UnixEpoch() +
-              scada::Duration::FromSeconds(static_cast<int64_t>(event_id)),
+      .time = scada::base::Time{} +
+              std::chrono::seconds(static_cast<int64_t>(event_id)),
       .message = u"event"};
 }
 
@@ -54,8 +54,8 @@ class WatchHistoryEventSourceTest : public Test {
 }  // namespace
 
 TEST_F(WatchHistoryEventSourceTest, StartDeliversHistoryEvents) {
-  const auto from = scada::DateTime::UnixEpoch() + scada::Duration::FromSeconds(1);
-  const auto to = scada::DateTime::UnixEpoch() + scada::Duration::FromSeconds(2);
+  const auto from = scada::base::Time{} + std::chrono::seconds(1);
+  const auto to = scada::base::Time{} + std::chrono::seconds(2);
 
   EXPECT_CALL(history_service_, HistoryReadEvents(kDeviceId, from, to, _))
       .WillOnce([](scada::NodeId, scada::DateTime, scada::DateTime,
@@ -90,14 +90,14 @@ TEST_F(WatchHistoryEventSourceTest, NewStartCancelsStaleHistoryDelivery) {
       });
 
   source_.Start(kDeviceId,
-                {scada::DateTime::UnixEpoch(),
-                 scada::DateTime::UnixEpoch() + scada::Duration::FromSeconds(1)},
+                {scada::base::Time{},
+                 scada::base::Time{} + std::chrono::seconds(1)},
                 delegate_);
   Drain(executor_);
 
   ASSERT_TRUE(history_read_started);
-  source_.Start(scada::NodeId{}, {scada::DateTime::UnixEpoch(),
-                                  scada::DateTime::UnixEpoch()},
+  source_.Start(scada::NodeId{}, {scada::base::Time{},
+                                  scada::base::Time{}},
                 delegate_);
   result = scada::HistoryReadEventsResult{.status = scada::StatusCode::Good,
                                           .events = {MakeEvent(1)}};
@@ -111,8 +111,8 @@ TEST_F(WatchHistoryEventSourceTest, NewStartCancelsStaleHistoryDelivery) {
 TEST_F(WatchHistoryEventSourceTest, NullDeviceDoesNotReadHistory) {
   EXPECT_CALL(history_service_, HistoryReadEvents(_, _, _, _)).Times(0);
 
-  source_.Start(scada::NodeId{}, {scada::DateTime::UnixEpoch(),
-                                  scada::DateTime::UnixEpoch()},
+  source_.Start(scada::NodeId{}, {scada::base::Time{},
+                                  scada::base::Time{}},
                 delegate_);
   Drain(executor_);
 

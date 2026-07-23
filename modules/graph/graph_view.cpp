@@ -1,4 +1,6 @@
-﻿#include "graph/graph_view.h"
+#include "base/time/time_wire_codec.h"
+#include "base/time_utils.h"
+#include "graph/graph_view.h"
 
 #include "aui/severity_colors.h"
 #include "base/check.h"
@@ -377,10 +379,10 @@ void GraphView::OnGraphSelectPane() {
 
 TimeRange GraphView::GetTimeRange() const {
   auto start =
-      scada::base::Time::FromDoubleT(graph_->horizontal_axis().range().low());
+      scada::base::DecodeDoubleT(graph_->horizontal_axis().range().low());
   scada::base::Time end;
   if (!graph_->horizontal_axis().time_fit())
-    end = scada::base::Time::FromDoubleT(
+    end = scada::base::DecodeDoubleT(
         graph_->horizontal_axis().range().high());
   return TimeRange{start, end};
 }
@@ -486,10 +488,10 @@ void GraphView::ToggleZoom() {
 void GraphView::SetTimeRange(const TimeRange& range) {
   bool time_fit = range.type != TimeRange::Type::Custom;
   auto [start_time, end_time] =
-      ToDateTimeRange(range, /*now=*/scada::base::Time::Now());
-  double low = start_time.ToDoubleT();
+      ToDateTimeRange(range, /*now=*/scada::base::NowUtc());
+  double low = scada::base::EncodeDoubleT(start_time);
   double high = time_fit ? graph_->horizontal_axis().scroll_range().high()
-                         : end_time.ToDoubleT();
+                         : scada::base::EncodeDoubleT(end_time);
   graph_->horizontal_axis().SetRange(GraphRange{low, high, GraphRange::TIME});
   graph_->horizontal_axis().SetTimeFit(time_fit);
 
@@ -521,9 +523,9 @@ void GraphView::OnGraphModified() {
 
   // update defaults
   scada::base::TimeDelta span =
-      scada::base::Time::FromDoubleT(graph_->horizontal_axis().range().high()) -
-      scada::base::Time::FromDoubleT(graph_->horizontal_axis().range().low());
-  if (span.InSeconds() >= 1)
+      scada::base::DecodeDoubleT(graph_->horizontal_axis().range().high()) -
+      scada::base::DecodeDoubleT(graph_->horizontal_axis().range().low());
+  if (InSeconds(span) >= 1)
     profile_.graph_view.default_span = span;
 }
 

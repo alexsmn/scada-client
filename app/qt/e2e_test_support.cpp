@@ -1,4 +1,5 @@
 #include "app/qt/e2e_test_support.h"
+#include "base/time/time_wire_codec.h"
 
 #include "app/client_application.h"
 #include "aui/qt/message_loop_qt.h"
@@ -7,12 +8,13 @@
 #include "base/awaitable.h"
 #include "base/callback_awaitable.h"
 #include "base/e2e_test_hooks.h"
+#include "base/time_range.h"
 #include "base/utf_convert.h"
+#include "common/formula_util.h"
 #include "configuration/devices/hardware_tree_view.h"
 #include "configuration/objects/object_tree_view.h"
 #include "controller/command_handler.h"
 #include "controller/window_info.h"
-#include "common/formula_util.h"
 #include "export/csv/csv_export_util.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
@@ -23,6 +25,7 @@
 #include "profile/page.h"
 #include "profile/profile.h"
 #include "profile/window_definition.h"
+#include "profile/window_definition_util.h"
 #include "resources/common_resources.h"
 #include "scada/status.h"
 #include "timed_data/timed_data_spec.h"
@@ -304,8 +307,9 @@ Awaitable<void> RunObjectTreeLabelsCheckAsync(
     co_await Delay(context.executor, context.poll_interval);
   } while (true);
 
-  WriteObjectTreeLabelsReport(report_path, false, labels,
-                              "timed out waiting for rendered labels to settle");
+  WriteObjectTreeLabelsReport(
+      report_path, false, labels,
+      "timed out waiting for rendered labels to settle");
   co_return;
 }
 
@@ -366,9 +370,9 @@ class HardwareTreeDevicesCheck final
   // Unknown, not Online, deliberately: a device that never routes its status
   // through the proxy reads Unknown, whereas a device that is genuinely not
   // connected reports Offline — a real value that DID route (e.g. the IEC60870
-  // server-side device has no peer and settles Offline). "Every device resolved"
-  // therefore catches the routing gap without asserting connectivity the
-  // loopback fixture does not give every device.
+  // server-side device has no peer and settles Offline). "Every device
+  // resolved" therefore catches the routing gap without asserting connectivity
+  // the loopback fixture does not give every device.
   static bool DeviceResolved(const HardwareTreeDeviceForTesting& device) {
     return device.state != "Unknown";
   }
@@ -648,13 +652,27 @@ Awaitable<void> RunHistoricalTimedDataCheckAsync(
   const auto* window_info = FindWindowInfoByName("TimeVal");
   if (main_window && window_info) {
     // Point the timed-data view at the historized, simulated analog item TIT.4.
-    // TimedDataModel::Init reads the "Item"/"path" formula and defaults to a Day
-    // window, so opening it triggers a historical HistoryRead through the active
-    // backend (and, in MultiProcess, through the proxy's aggregated history).
+    // TimedDataModel::Init reads the "Item"/"path" formula and defaults to a
+    // Day window, so opening it triggers a historical HistoryRead through the
+    // active backend (and, in the Cluster topology, through the proxy's
+    // historian route).
     WindowDefinition definition{*window_info};
     definition.AddItem("Item").SetString(
         "path",
         MakeNodeIdFormula(scada::NodeId{4, scada::NamespaceIndexes::TIT}));
+    // When the harness supplies a window end predating the client's launch,
+    // pin the view to a fixed past window ending there. Live monitored-item
+    // updates all carry source timestamps at or after the client connected
+    // (the simulated item changes every ~1.5 s, so even the initial
+    // notification is newer than the launch time); they fall outside the
+    // window and TimedDataModel excludes them from the row count — rows can
+    // then only come from a HistoryRead answered by the server-side history
+    // store.
+    if (auto end_time = GetE2eHistoricalTimedDataEndTime()) {
+      const auto end = scada::base::DecodeWireTime(*end_time);
+      SaveTimeRange(definition,
+                    TimeRange{end - std::chrono::hours{1}, end});
+    }
     co_await main_window->OpenView(std::move(definition), /*activate=*/true);
   }
 
@@ -668,8 +686,8 @@ Awaitable<void> RunHistoricalTimedDataCheckAsync(
     co_await Delay(executor, 100ms);
   }
 
-  // Timed out with no samples: still emit whatever the view holds (a header-only
-  // CSV) so the failing report is inspectable.
+  // Timed out with no samples: still emit whatever the view holds (a
+  // header-only CSV) so the failing report is inspectable.
   if (auto* view = FindTimedDataView(app))
     WriteTimedDataCsvReport(*view, report_path);
   else

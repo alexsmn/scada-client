@@ -1,3 +1,4 @@
+#include "base/time/time_wire_codec.h"
 #include "graph_capture.h"
 
 #include "fixture_builder.h"
@@ -111,13 +112,13 @@ void BuildGraphFromJson(MetrixGraph& graph, const boost::json::value& json) {
   // runs; LocalHistoryService reads the same key. (The generator fixture also
   // freezes base::Time at this instant, so the fallback matches.)
   auto now = FixtureNow(json);
-  if (now.is_null())
-    now = scada::base::Time::Now();
+  if (scada::base::IsNull(now))
+    now = scada::base::NowUtc();
   auto span_str = std::string(jgraph.at("time_scale").at("span").as_string());
   scada::base::TimeDelta span;
   Deserialize(span_str, span);
-  double from = (now - span).ToDoubleT();
-  double to = now.ToDoubleT();
+  double from = scada::base::EncodeDoubleT((now - span));
+  double to = scada::base::EncodeDoubleT(now);
   graph.horizontal_axis().SetTimeFit(false);
   graph.horizontal_axis().SetRange(
       views::GraphRange{from, to, views::GraphRange::TIME});

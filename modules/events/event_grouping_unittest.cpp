@@ -15,8 +15,8 @@ scada::NodeId Node(int index) {
 
 scada::Event MakeEvent(int node, std::u16string message, int64_t seconds) {
   return {.event_id = static_cast<scada::EventId>(seconds + 1),
-          .time = scada::DateTime::UnixEpoch() +
-                  scada::base::TimeDelta::FromSeconds(seconds),
+          .time = scada::base::Time{} +
+                  std::chrono::seconds(seconds),
           .severity = scada::kSeverityCritical,
           .source_node_id = Node(node),
           .message = std::move(message)};

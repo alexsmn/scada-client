@@ -75,8 +75,8 @@ const std::vector<TimeRange>& EventPeriodRanges() {
   // Mirrors the toolbar's ID_TIME_RANGE_* quick-picks so a range set there
   // reflects onto the matching preset here.
   static const std::vector<TimeRange> ranges = {
-      TimeRange{scada::base::TimeDelta::FromMinutes(15)},
-      TimeRange{scada::base::TimeDelta::FromHours(1)},
+      TimeRange{std::chrono::minutes(15)},
+      TimeRange{std::chrono::hours(1)},
       TimeRange{TimeRange::Type::Day},
       TimeRange{TimeRange::Type::Week},
       TimeRange{TimeRange::Type::Month},
