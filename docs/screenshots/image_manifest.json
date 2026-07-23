@@ -23,7 +23,7 @@
     { "file": "devices-status.png", "tag": "auto-state", "referenced_from": ["client.md"], "notes": "Struct window, status column visible." },
     { "file": "devices-traffic.png", "tag": "auto-state", "referenced_from": ["client/device-watch.md"], "notes": "Log window showing live device traffic." },
     { "file": "display.png", "tag": "manual-modus", "referenced_from": ["client/display.md"], "notes": "Modus schematic; out of scope until fake runtime lands." },
-    { "file": "substation-display.png", "tag": "auto-view", "published": false, "referenced_from": [], "notes": "Reshelled substation display: the DisplayFrame chrome (Live indicator, breadcrumb, zoom/fit/export) around the cross-platform VDS renderer, plus the bay strips below it — the Measurements watch and the Recent-events list, which the capture now supplies live services for (it starts the app like the view captures). Recent events renders fully from the fixture's pending alarms. KNOWN GAP: the Measurements rows list their signals but their Value/Updated cells come up blank — no monitored-item delivery reaches a TimedDataSpec built in a standalone capture widget, the same gap the trend capture hits for its current readout, and it is not fixed by node residency. Stays published:false until that is resolved, since a blank value column would read as broken in the manual. Opt-in UX — run with --theme=dark. Windows-only Modus ActiveX not exercised." },
+    { "file": "substation-display.png", "tag": "reshell-theme", "referenced_from": ["client/workbench.md"], "notes": "Reshelled substation display under --theme: the DisplayFrame chrome (Live indicator, breadcrumb, zoom/fit/export) around the cross-platform VDS renderer, plus the bay strips below it — the Measurements watch (live signal values) and the Recent-events list (the fixture's pending alarms). The Measurements Value/Updated cells now fill: the frame refreshes on the spec's property_change_handler (the PROPERTY_CURRENT delivery path), not only update_handler; CaptureDisplay asserts the value cell is non-empty so that cannot regress silently. The frame is built only under the reshell theme (WrapDisplayInFrame gates on it), hence reshell-theme and the themed ctest. Published from a macOS render pending a Windows re-render; out of current_generator_owned_subset (subset is auto-* only). Windows-only Modus ActiveX not exercised here." },
     { "file": "events-cur.jpg", "tag": "obsolete", "referenced_from": [], "notes": "Superseded by menu-events-log.png." },
     { "file": "firewall.jpg", "tag": "manual-os", "referenced_from": [], "notes": "Windows firewall dialog; OS-level." },
     { "file": "firewall.png", "tag": "manual-os", "referenced_from": [], "notes": "Windows firewall dialog; OS-level." },
@@ -90,11 +90,11 @@
     { "file": "users.png", "tag": "auto-view", "referenced_from": ["dev/users.md"], "notes": "Users window." }
   ],
   "counts": {
-    "auto-view": 11,
+    "auto-view": 10,
     "auto-dialog": 21,
     "auto-menu": 17,
     "auto-state": 5,
-    "reshell-theme": 17,
+    "reshell-theme": 18,
     "manual-diagram": 4,
     "manual-modus": 5,
     "manual-os": 2,

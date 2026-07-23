@@ -476,7 +476,15 @@ void InspectorPanel::ShowSelection(const SelectionModel& selection) {
   // while this element stays selected.
   spec_ = std::make_unique<TimedDataSpec>(source);
   spec_->SetCurrentOnly();
+  // Refresh on either delivery path. The live current value — the only thing a
+  // SetCurrentOnly spec delivers — arrives as a PROPERTY_CURRENT change through
+  // property_change_handler, not as a buffer update; wiring only update_handler
+  // left the readout frozen at whatever it showed when the element was
+  // selected, since a current-only spec produces no buffer updates.
   spec_->update_handler = [this](std::span<const scada::DataValue>) {
+    RefreshValue();
+  };
+  spec_->property_change_handler = [this](const PropertySet&) {
     RefreshValue();
   };
   subtitle_->setText(QString::fromStdString(spec_->formula()));

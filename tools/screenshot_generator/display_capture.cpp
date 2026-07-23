@@ -15,6 +15,9 @@
 #include <QApplication>
 #include <QPixmap>
 #include <QString>
+#include <QTableWidget>
+#include <QTableWidgetItem>
+#include <gtest/gtest.h>
 
 #include <chrono>
 #include <filesystem>
@@ -101,6 +104,20 @@ void SaveDisplayScreenshot(const ScreenshotSpec& spec,
   // the loop after the specs connect — a single processEvents would grab the
   // strip before any value lands.
   scada::screenshot_generator::PumpEventLoopFor(std::chrono::milliseconds(400));
+
+  // Guard the Measurements strip's live-value delivery: the current value
+  // arrives as a PROPERTY_CURRENT change, so the frame must refresh on the
+  // spec's property_change_handler, not only its update_handler (a
+  // current-only spec produces no buffer updates at all). If that regresses
+  // the Value column goes blank again, which the render alone would not catch.
+  if (auto* table = frame->findChild<QTableWidget*>(
+          QStringLiteral("displayMeasurements"));
+      table && table->rowCount() > 0) {
+    QTableWidgetItem* value = table->item(0, 1);
+    EXPECT_TRUE(value && !value->text().isEmpty())
+        << "Measurements strip value cell is blank - the current value did "
+           "not reach the row";
+  }
 
   QPixmap pixmap = frame->grab();
   auto output_path = GetOutputDir() / spec.filename;

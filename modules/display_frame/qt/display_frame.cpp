@@ -315,6 +315,7 @@ QWidget* DisplayFrame::BuildBayStrips() {
     splitter->addWidget(MakeStripPanel(
         Tr("Measurements"), {Tr("Signal"), Tr("Value"), Tr("Updated")}, tokens,
         &measurements_));
+    measurements_->setObjectName(QStringLiteral("displayMeasurements"));
   }
   if (want_events) {
     splitter->addWidget(MakeStripPanel(
@@ -344,14 +345,25 @@ void DisplayFrame::ShowMeasurement(const scada::NodeId& node_id) {
   measurements_->insertRow(row);
   measurement_specs_.push_back(std::move(spec));
 
-  spec_ptr->update_handler = [this,
-                              spec_ptr](std::span<const scada::DataValue>) {
+  // Refresh the row when its data changes. The current value — the only thing
+  // a SetCurrentOnly spec ever delivers — arrives as a PROPERTY_CURRENT change
+  // through property_change_handler, not as a buffer update; wiring only
+  // update_handler (as this once did) left the row blank forever, because
+  // there are no buffer updates in current-only mode. Both are wired so the
+  // strip also stays live if a ranged spec is ever used here.
+  const auto refresh = [this, spec_ptr] {
     for (std::size_t i = 0; i < measurement_specs_.size(); ++i) {
       if (measurement_specs_[i].get() == spec_ptr) {
         RefreshMeasurementRow(static_cast<int>(i), *spec_ptr);
         break;
       }
     }
+  };
+  spec_ptr->update_handler = [refresh](std::span<const scada::DataValue>) {
+    refresh();
+  };
+  spec_ptr->property_change_handler = [refresh](const PropertySet&) {
+    refresh();
   };
 
   RefreshMeasurementRow(row, *spec_ptr);
