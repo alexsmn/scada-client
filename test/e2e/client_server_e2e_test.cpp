@@ -1,12 +1,12 @@
-#include "test/e2e/client_server_e2e_test_support.h"
 #include "base/time/time_wire_codec.h"
+#include "test/e2e/client_server_e2e_test_support.h"
 
 #include "base/awaitable.h"
 #include "base/time/time.h"
-#include "scada/date_time.h"
 #include "opcua/client/client_session.h"
 #include "opcua_bridge/client_adapters.h"
 #include "scada/attribute_service.h"
+#include "scada/date_time.h"
 #include "scada/event.h"
 #include "scada/event_filter.h"
 #include "scada/history_service.h"
@@ -177,8 +177,9 @@ class ProxyOpcUaSession {
   // Mirrors the Qt client's event journal read (HistoricalEventModel):
   // HistoryReadEvents rooted at the Server object. An unset filter (types=0)
   // matches every stored event regardless of type or ack state.
-  scada::HistoryReadEventsResult ReadEventHistory(scada::Time from,
-                                                  scada::Time to) {
+  scada::StatusOr<scada::HistoryReadEventsResult> ReadEventHistory(
+      scada::Time from,
+      scada::Time to) {
     return Run([this, from, to] {
       return services_.history_service_->HistoryReadEvents(
           scada::NodeId{scada::id::Server}, from, to, scada::EventFilter{});
@@ -397,8 +398,7 @@ TEST_P(ClientServerE2eTest, Events_HistoryReadThroughProxy) {
   // The window must cover the tiers' startup burst of system events (module
   // and device state events raised while the cluster comes up), which is what
   // the historian collects — freeze the start before the tiers exist.
-  const scada::Time window_start =
-      scada::Now() - std::chrono::minutes(1);
+  const scada::Time window_start = scada::Now() - std::chrono::minutes(1);
 
   StartServer();
 
@@ -407,20 +407,20 @@ TEST_P(ClientServerE2eTest, Events_HistoryReadThroughProxy) {
 
   // The historian's event subscription and its write batching are
   // asynchronous; poll until stored events come back through the proxy.
-  scada::HistoryReadEventsResult result;
+  scada::StatusOr<scada::HistoryReadEventsResult> result{
+      scada::StatusCode::Bad};
   const auto deadline =
       std::chrono::steady_clock::now() + std::chrono::seconds{30};
   while (std::chrono::steady_clock::now() < deadline) {
-    result = session.ReadEventHistory(
-        window_start,
-        scada::Now() + std::chrono::minutes(1));
-    if (result.status && !result.events.empty())
+    result = session.ReadEventHistory(window_start,
+                                      scada::Now() + std::chrono::minutes(1));
+    if (result.ok() && !result->events.empty())
       break;
     std::this_thread::sleep_for(std::chrono::milliseconds{500});
   }
-  ASSERT_TRUE(result.status) << "HistoryReadEvents via the proxy failed: "
-                             << ::ToString(result.status);
-  ASSERT_FALSE(result.events.empty())
+  ASSERT_TRUE(result.ok()) << "HistoryReadEvents via the proxy failed: "
+                           << ::ToString(result.status());
+  ASSERT_FALSE(result->events.empty())
       << "HistoryReadEvents via the proxy returned no events: the historian "
          "collected no system events from the cluster startup, or the "
          "proxy's history link did not route the read to it";
@@ -430,7 +430,7 @@ TEST_P(ClientServerE2eTest, Events_HistoryReadThroughProxy) {
   // historian's store: a non-empty event id, a resolvable type, a source node,
   // timestamps inside the requested window, and Severity in the OPC UA 1..1000
   // range (Part 5 §6.4.2).
-  for (const scada::Event& event : result.events) {
+  for (const scada::Event& event : result->events) {
     EXPECT_TRUE(event.is_valid())
         << "stored event is not valid; type " << event.event_type_id.ToString();
     EXPECT_FALSE(event.event_type_id.is_null());
@@ -634,7 +634,8 @@ TEST_P(ClientServerE2eTest, Connect_Success_DisplaysHistoricalTimedData) {
   // inside the window. Without this the view's default Day window let
   // client-side live buffering populate the rows and the test passed even
   // when proxy history routing was broken.
-  const int64_t history_window_end = scada::base::EncodeWireMicroseconds(scada::Now());
+  const int64_t history_window_end =
+      scada::base::EncodeWireMicroseconds(scada::Now());
   StartClient({"--test-historical-timed-data-file=" +
                    historical_timed_data_file_.string(),
                "--test-historical-timed-data-end=" +

@@ -26,7 +26,9 @@ class HistoricalEventModel {
   const scada::RelativeTimeRange& time_range() const SCADA_LIFETIME_BOUND {
     return time_range_;
   }
-  void SetTimeRange(const scada::RelativeTimeRange& range) { time_range_ = range; }
+  void SetTimeRange(const scada::RelativeTimeRange& range) {
+    time_range_ = range;
+  }
 
   const auto& events() const SCADA_LIFETIME_BOUND { return historical_events_; }
 
@@ -50,7 +52,8 @@ class HistoricalEventModel {
                               scada::Time from,
                               scada::Time to);
 
-  void OnHistoryReadEventsCompleted(scada::HistoryReadEventsResult&& result);
+  void OnHistoryReadEventsCompleted(
+      scada::StatusOr<scada::HistoryReadEventsResult>&& result);
 
   const AnyExecutor executor_;
 
@@ -72,8 +75,7 @@ class HistoricalEventModel {
 inline void HistoricalEventModel::Update() {
   historical_events_.clear();
 
-  auto [from, to] =
-      scada::ToTimeRange(time_range_, /*now=*/scada::Now());
+  auto [from, to] = scada::ToTimeRange(time_range_, /*now=*/scada::Now());
 
   BOOST_LOG_TRIVIAL(info) << "Query events from " << FormatTime(from).c_str();
 
@@ -106,13 +108,19 @@ inline Awaitable<void> HistoricalEventModel::UpdateAsync(
 }
 
 inline void HistoricalEventModel::OnHistoryReadEventsCompleted(
-    scada::HistoryReadEventsResult&& result) {
+    scada::StatusOr<scada::HistoryReadEventsResult>&& result) {
   scada::base::Check(request_running_);
   // Only acked events were requested, but the server response is external
   // data, so this is not enforced here.
 
-  historical_events_.assign(std::make_move_iterator(result.events.begin()),
-                            std::make_move_iterator(result.events.end()));
+  // A failed read leaves the journal empty, as it did when the status field
+  // was carried alongside an empty event list and never inspected.
+  if (result.ok()) {
+    historical_events_.assign(std::make_move_iterator(result->events.begin()),
+                              std::make_move_iterator(result->events.end()));
+  } else {
+    historical_events_.clear();
+  }
 
   request_running_ = false;
 

@@ -18,15 +18,19 @@ constexpr scada::NodeId kDeviceId{8002, 1};
 scada::Event MakeEvent(scada::EventId event_id) {
   return scada::Event{
       .event_id = event_id,
-      .time = scada::Time{} +
-              std::chrono::seconds(static_cast<int64_t>(event_id)),
+      .time =
+          scada::Time{} + std::chrono::seconds(static_cast<int64_t>(event_id)),
       .message = u"event"};
 }
 
 class RecordingDelegate : public WatchEventSource::Delegate {
  public:
-  void OnEvent(const scada::Event& event) override { events.emplace_back(event); }
-  void OnError(const scada::Status& status) override { errors.emplace_back(status); }
+  void OnEvent(const scada::Event& event) override {
+    events.emplace_back(event);
+  }
+  void OnError(const scada::Status& status) override {
+    errors.emplace_back(status);
+  }
 
   std::vector<scada::Event> events;
   std::vector<scada::Status> errors;
@@ -58,20 +62,18 @@ TEST_F(WatchHistoryEventSourceTest, StartDeliversHistoryEvents) {
   const auto to = scada::Time{} + std::chrono::seconds(2);
 
   EXPECT_CALL(history_service_, HistoryReadEvents(kDeviceId, from, to, _))
-      .WillOnce([](scada::NodeId, scada::Time, scada::Time,
-                   scada::EventFilter)
-                    -> Awaitable<scada::HistoryReadEventsResult> {
-        co_return scada::HistoryReadEventsResult{
-            .status = scada::StatusCode::Good,
-            .events = {MakeEvent(1), MakeEvent(2)}};
-      });
+      .WillOnce(
+          [](scada::NodeId, scada::Time, scada::Time, scada::EventFilter)
+              -> Awaitable<scada::StatusOr<scada::HistoryReadEventsResult>> {
+            co_return scada::HistoryReadEventsResult{
+                .events = {MakeEvent(1), MakeEvent(2)}};
+          });
 
   source_.Start(kDeviceId, {from, to}, delegate_);
   Drain(executor_);
 
-  EXPECT_THAT(delegate_.events,
-              ElementsAre(Field(&scada::Event::event_id, 1),
-                          Field(&scada::Event::event_id, 2)));
+  EXPECT_THAT(delegate_.events, ElementsAre(Field(&scada::Event::event_id, 1),
+                                            Field(&scada::Event::event_id, 2)));
   EXPECT_TRUE(delegate_.errors.empty());
 }
 
@@ -81,26 +83,22 @@ TEST_F(WatchHistoryEventSourceTest, NewStartCancelsStaleHistoryDelivery) {
   bool history_read_started = false;
 
   EXPECT_CALL(history_service_, HistoryReadEvents(kDeviceId, _, _, _))
-      .WillOnce([&](scada::NodeId, scada::Time, scada::Time,
-                    scada::EventFilter)
-                    -> Awaitable<scada::HistoryReadEventsResult> {
-        history_read_started = true;
-        co_await completion.Wait();
-        co_return result;
-      });
+      .WillOnce(
+          [&](scada::NodeId, scada::Time, scada::Time, scada::EventFilter)
+              -> Awaitable<scada::StatusOr<scada::HistoryReadEventsResult>> {
+            history_read_started = true;
+            co_await completion.Wait();
+            co_return result;
+          });
 
   source_.Start(kDeviceId,
-                {scada::Time{},
-                 scada::Time{} + std::chrono::seconds(1)},
+                {scada::Time{}, scada::Time{} + std::chrono::seconds(1)},
                 delegate_);
   Drain(executor_);
 
   ASSERT_TRUE(history_read_started);
-  source_.Start(scada::NodeId{}, {scada::Time{},
-                                  scada::Time{}},
-                delegate_);
-  result = scada::HistoryReadEventsResult{.status = scada::StatusCode::Good,
-                                          .events = {MakeEvent(1)}};
+  source_.Start(scada::NodeId{}, {scada::Time{}, scada::Time{}}, delegate_);
+  result = scada::HistoryReadEventsResult{.events = {MakeEvent(1)}};
   completion.Complete();
   Drain(executor_);
 
@@ -111,9 +109,7 @@ TEST_F(WatchHistoryEventSourceTest, NewStartCancelsStaleHistoryDelivery) {
 TEST_F(WatchHistoryEventSourceTest, NullDeviceDoesNotReadHistory) {
   EXPECT_CALL(history_service_, HistoryReadEvents(_, _, _, _)).Times(0);
 
-  source_.Start(scada::NodeId{}, {scada::Time{},
-                                  scada::Time{}},
-                delegate_);
+  source_.Start(scada::NodeId{}, {scada::Time{}, scada::Time{}}, delegate_);
   Drain(executor_);
 
   EXPECT_TRUE(delegate_.events.empty());
