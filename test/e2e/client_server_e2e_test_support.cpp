@@ -45,7 +45,6 @@ bool IsHideClientWindowEnabled() {
          normalized != "off";
 }
 
-constexpr auto kWaitStep = 100ms;
 constexpr auto kServerStartTimeout = 30s;
 constexpr auto kClientStartTimeout = 30s;
 constexpr auto kServerLogTimeout = 10s;
@@ -210,19 +209,6 @@ std::string RunSqliteScalar(const std::filesystem::path& database_path,
                              database_path.string()};
   }
   return result;
-}
-
-template <class Predicate>
-bool WaitUntil(Predicate&& predicate,
-               std::chrono::milliseconds timeout,
-               std::chrono::milliseconds step = kWaitStep) {
-  auto deadline = std::chrono::steady_clock::now() + timeout;
-  while (std::chrono::steady_clock::now() < deadline) {
-    if (predicate())
-      return true;
-    std::this_thread::sleep_for(step);
-  }
-  return predicate();
 }
 
 }  // namespace
