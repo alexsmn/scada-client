@@ -7,6 +7,21 @@
         <source>Search tags, objects, commands…</source>
         <translation>Поиск объектов, сигналов, команд…</translation>
     </message>
+    <!-- common/common/format.cpp default value-formatting text: the fallback
+         state labels for a two-state item without its own TsFormat labels, and
+         the placeholder for an unresolvable display name. -->
+    <message>
+        <source>On</source>
+        <translation>Вкл</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Откл</translation>
+    </message>
+    <message>
+        <source>#NAME?</source>
+        <translation>#ИМЯ?</translation>
+    </message>
     <!-- main_window/activity_bar section labels + overview_page.cpp -->
     <message>
         <source>Overview</source>

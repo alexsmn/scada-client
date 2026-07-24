@@ -65,8 +65,8 @@ std::u16string WriteModel::GetCurrentValue(bool formatted) const {
 std::vector<std::u16string> WriteModel::GetDiscreteStates() const {
   scada::base::Check(discrete_);
 
-  std::u16string close_label = kDefaultCloseLabel;
-  std::u16string open_label = kDefaultOpenLabel;
+  std::u16string close_label = DefaultCloseLabel();
+  std::u16string open_label = DefaultOpenLabel();
 
   if (auto format = spec_.node().target(scada::data_items::id::HasTsFormat)) {
     close_label = ToString16(

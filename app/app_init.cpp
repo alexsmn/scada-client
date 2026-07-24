@@ -1,10 +1,13 @@
 #include "app/app_init.h"
+
+#include "aui/translation.h"
+#include "common/ui_text.h"
 #include "model/node_id_util.h"
 
 #include "base/boost_log_init.h"
 #include "base/client_paths.h"
-#include "base/program_options.h"
 #include "base/path_service.h"
+#include "base/program_options.h"
 #ifdef _WIN32
 #include "base/win/dump.h"
 #endif
@@ -69,6 +72,10 @@ AppInit::AppInit(int argc, char* argv[]) {
 
   scada::RegisterPathProvider();
   scada::RegisterModelNamespaceResolver();
+  // Shared formatting code (common/format.h) carries English literals; route
+  // them through the client's Qt/Wt translation catalogs. Installed here, but
+  // only called at display time — after InstalledTranslation loads the .qm.
+  scada::SetUiTextTranslator(&Translate);
   client::RegisterPathProvider();
   InitE2eLogPathOverride();
 
