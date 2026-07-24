@@ -132,58 +132,9 @@ std::filesystem::path GetSqliteExePath() {
   return std::filesystem::path{SCADA_E2E_SQLITE3_EXE};
 }
 
-// Resolves SCADA_SERVER_LICENSE_FILE against the *test process* working
-// directory. Each tier is launched with its own temporary workspace as the
-// working directory, so a relative env value would not resolve there and the
-// tier would start unlicensed ("License: No license found").
-std::filesystem::path GetSignedLicensePath() {
-  auto* value = std::getenv("SCADA_SERVER_LICENSE_FILE");
-  if (!value || !*value)
-    return {};
-
-  std::error_code ec;
-  auto absolute = std::filesystem::absolute(std::filesystem::path{value}, ec);
-  return ec ? std::filesystem::path{value} : absolute;
-}
-
-::testing::AssertionResult ValidateSignedLicenseEnv() {
-  const auto license_path = GetSignedLicensePath();
-  if (license_path.empty()) {
-    return ::testing::AssertionFailure()
-           << "SCADA_SERVER_LICENSE_FILE must be set to an external signed "
-              "license JSON before running client/server E2E tests";
-  }
-
-  if (!std::filesystem::exists(license_path)) {
-    return ::testing::AssertionFailure()
-           << "SCADA_SERVER_LICENSE_FILE points to missing license file: "
-           << license_path;
-  }
-
-  return ::testing::AssertionSuccess();
-}
-
-void ConfigureSignedLicense(boost::json::object& server_json) {
-  const auto license_path = GetSignedLicensePath();
-  if (license_path.empty())
-    return;
-
-  boost::json::object license{{"file", license_path.string()}};
-
-  if (auto* require_gcp_binding =
-          std::getenv("SCADA_SERVER_LICENSE_REQUIRE_GCP_BINDING");
-      require_gcp_binding && *require_gcp_binding) {
-    license["require_gcp_binding"] =
-        std::string_view{require_gcp_binding} == "true" ||
-        std::string_view{require_gcp_binding} == "1";
-  }
-
-  server_json["license"] = std::move(license);
-}
-
 // Binds the shared server-process harness (common/test/e2e) to this suite's
-// SCADA_E2E_* paths and its env-var signed license (ConfigureSignedLicense),
-// for the given tier binary.
+// SCADA_E2E_* paths and the shared env-var signed license
+// (ConfigureSignedLicenseFromEnv), for the given tier binary.
 ServerProcessContext MakeServerContextForExe(const std::filesystem::path& exe) {
   return ServerProcessContext{
       .server_exe = exe,
@@ -194,7 +145,7 @@ ServerProcessContext MakeServerContextForExe(const std::filesystem::path& exe) {
       .sqlite_exe = GetSqliteExePath(),
       .configure_license =
           [](boost::json::object& server_json, const std::filesystem::path&) {
-            ConfigureSignedLicense(server_json);
+            ConfigureSignedLicenseFromEnv(server_json);
           },
   };
 }
@@ -379,7 +330,7 @@ void ClientServerE2eTest::WriteServerJson(
   auto server_json_value =
       boost::json::parse(ReadFileOrEmpty(GetServerSettingsTemplatePath()));
   auto& server_json = server_json_value.as_object();
-  ConfigureSignedLicense(server_json);
+  ConfigureSignedLicenseFromEnv(server_json);
   server_json["sessions"] = boost::json::array{
       "tcp;passive;host=0.0.0.0;port=" + std::to_string(remote_port)};
   auto& opcua = server_json["opcua"].is_object()
