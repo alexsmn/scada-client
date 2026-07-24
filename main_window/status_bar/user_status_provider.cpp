@@ -7,7 +7,7 @@
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "profile/profile.h"
-#include "scada/privileges.h"
+#include "scada/access_rights.h"
 #include "scada/session_service.h"
 
 const char* UserRoleKey(bool can_configure, bool can_control) {
@@ -48,10 +48,10 @@ std::u16string UserStatusProvider::GetText() const {
 }
 
 std::u16string UserStatusProvider::RoleLabel() const {
-  // The session exposes privileges, not a role name; UserRoleKey maps them.
-  return Translate(
-      UserRoleKey(session_service_.HasPrivilege(scada::Privilege::Configure),
-                  session_service_.HasPrivilege(scada::Privilege::Control)));
+  // The session exposes access rights, not a role name; UserRoleKey maps them.
+  return Translate(UserRoleKey(
+      session_service_.HasAccessRight(scada::AccessRight::kConfigure),
+      session_service_.HasAccessRight(scada::AccessRight::kControl)));
 }
 
 void UserStatusProvider::UpdateUser() {

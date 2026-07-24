@@ -24,9 +24,9 @@ class QTableWidget;
 // both the selection commands for the highlighted user (Set Password... /
 // Delete, admin-gated) and the CATEGORY_CREATE "New" submenu whose "User" entry
 // runs the existing create command (OpenedViewCreateCommand -> PostInsertTask,
-// parented to the Users folder, gated on the Configure privilege). Reset-
+// parented to the Users folder, gated on the Configure access right). Reset-
 // password is enabled only when a user row is selected; Add-user is always
-// enabled (the create is parent-scoped and privilege-gated at the command).
+// enabled (the create is parent-scoped and access-right-gated at the command).
 // Enable / disable of an account is *not* offered: the client UserType node
 // model has no enabled/disabled attribute (only AccessRights + MultiSessions +
 // profile fields), so there is nothing to toggle; that state is server-side.

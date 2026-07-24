@@ -101,8 +101,8 @@ TEST_F(UsersGridPanelTest, AddUserIsEnabledAndEmitsActionsMenu) {
       add = button;
   }
   ASSERT_NE(add, nullptr);
-  // Add-user is parent-scoped, so it is always enabled (privilege-gated at the
-  // command level) — no user selection required.
+  // Add-user is parent-scoped, so it is always enabled (access-right-gated at
+  // the command level) — no user selection required.
   EXPECT_TRUE(add->isEnabled());
 
   int emitted = 0;

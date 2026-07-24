@@ -1,19 +1,22 @@
 #include "user_access/user_access.h"
 
-#include "scada/privileges.h"
+#include "scada/access_rights.h"
+
+#include <cstdint>
 
 namespace {
 
-bool HasPrivilege(int access_rights, scada::Privilege privilege) {
-  return (access_rights & (1 << static_cast<int>(privilege))) != 0;
+bool Granted(int access_rights, scada::AccessRight right) {
+  return scada::HasAccessRight(static_cast<std::uint32_t>(access_rights),
+                               right);
 }
 
 }  // namespace
 
 UserRole UserRoleFor(int access_rights) {
-  if (HasPrivilege(access_rights, scada::Privilege::Configure))
+  if (Granted(access_rights, scada::AccessRight::kConfigure))
     return UserRole::kAdministrator;
-  if (HasPrivilege(access_rights, scada::Privilege::Control))
+  if (Granted(access_rights, scada::AccessRight::kControl))
     return UserRole::kOperator;
   return UserRole::kObserver;
 }
@@ -34,9 +37,9 @@ std::vector<UserPermission> UserPermissionsFor(int access_rights) {
   return {
       {UserPermissionKind::kView, true},
       {UserPermissionKind::kControl,
-       HasPrivilege(access_rights, scada::Privilege::Control)},
+       Granted(access_rights, scada::AccessRight::kControl)},
       {UserPermissionKind::kConfigure,
-       HasPrivilege(access_rights, scada::Privilege::Configure)},
+       Granted(access_rights, scada::AccessRight::kConfigure)},
   };
 }
 

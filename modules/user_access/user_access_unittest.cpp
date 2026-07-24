@@ -1,6 +1,6 @@
 #include "user_access/user_access.h"
 
-#include "scada/privileges.h"
+#include "scada/access_rights.h"
 
 #include <gtest/gtest.h>
 
@@ -11,9 +11,9 @@ namespace {
 int Access(bool configure, bool control) {
   int bits = 0;
   if (configure)
-    bits |= 1 << static_cast<int>(scada::Privilege::Configure);
+    bits |= scada::AccessRightBit(scada::AccessRight::kConfigure);
   if (control)
-    bits |= 1 << static_cast<int>(scada::Privilege::Control);
+    bits |= scada::AccessRightBit(scada::AccessRight::kControl);
   return bits;
 }
 

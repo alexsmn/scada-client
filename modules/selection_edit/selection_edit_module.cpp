@@ -50,7 +50,7 @@ void DeleteSelection(AnyExecutor executor,
                      NodeService& node_service,
                      TaskManager& task_manager,
                      scada::SessionService& session_service) {
-  if (!session_service.HasPrivilege(scada::Privilege::Configure)) {
+  if (!session_service.HasPermission(scada::Permission::kDeleteNode)) {
     return;
   }
 
@@ -145,7 +145,8 @@ SelectionEditModule::SelectionEditModule(SelectionEditModuleContext&& context)
       .available_handler =
           [&session_service =
                session_service_](const SelectionCommandContext& context) {
-            return session_service.HasPrivilege(scada::Privilege::Configure) &&
+            return session_service.HasAccessRight(
+                       scada::AccessRight::kConfigure) &&
                    !context.selection.empty();
           }});
   selection_commands_.AddCommand(BasicCommand<SelectionCommandContext>{
@@ -164,7 +165,8 @@ SelectionEditModule::SelectionEditModule(SelectionEditModuleContext&& context)
       .available_handler =
           [&session_service =
                session_service_](const SelectionCommandContext& context) {
-            return session_service.HasPrivilege(scada::Privilege::Configure) &&
+            return session_service.HasPermission(
+                       scada::Permission::kDeleteNode) &&
                    !context.selection.empty();
           }});
 }

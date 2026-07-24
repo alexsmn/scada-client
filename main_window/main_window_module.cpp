@@ -449,8 +449,8 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
             .main_window_ = main_window,
             .favourites_ = favourites_,
             .file_cache_ = file_cache_,
-            .admin_ = scada_services_.session_service->HasPrivilege(
-                scada::Privilege::Configure),
+            .admin_ = scada_services_.session_service->HasAccessRight(
+                scada::AccessRight::kConfigure),
             .profile_ = profile_,
             .view_manager_ = view_manager,
             .command_handler_ = global_commands,

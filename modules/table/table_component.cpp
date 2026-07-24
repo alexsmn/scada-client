@@ -99,7 +99,7 @@ TableModule::TableModule(TableModuleContext&& context)
       ID_TABLE_CONFIG, kTableEditorWindowInfo, executor_,
       [&session_service =
            session_service_](const SelectionCommandContext& context) {
-        return session_service.HasPrivilege(scada::Privilege::Configure) &&
+        return session_service.HasAccessRight(scada::AccessRight::kConfigure) &&
                CanCreateSomething(context.selection.node());
       }));
 }

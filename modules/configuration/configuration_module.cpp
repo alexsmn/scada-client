@@ -152,7 +152,7 @@ ConfigurationModule::ConfigurationModule(ConfigurationModuleContext&& context)
            },
        .available_handler =
            [this](const SelectionCommandContext& context) {
-             return session_service_.HasPrivilege(scada::Privilege::Control) &&
+             return session_service_.HasPermission(scada::Permission::kCall) &&
                     IsInstanceOf(context.selection.node(),
                                  scada::data_items::id::DataItemType);
            }});
@@ -180,7 +180,7 @@ void ConfigurationModule::RegisterMethodCommand(
            },
        .available_handler =
            [this](const SelectionCommandContext& context) {
-             return session_service_.HasPrivilege(scada::Privilege::Control) &&
+             return session_service_.HasPermission(scada::Permission::kCall) &&
                     IsInstanceOf(context.selection.node(),
                                  scada::data_items::id::DataItemType);
            }});
@@ -230,8 +230,7 @@ void ConfigurationModule::RegisterEnableDeviceCommand(unsigned command_id,
            },
        .available_handler =
            [this](const SelectionCommandContext& context) {
-             return session_service_.HasPrivilege(
-                        scada::Privilege::Configure) &&
+             return session_service_.HasPermission(scada::Permission::kWrite) &&
                     context.selection
                         .node()[scada::devices::id::DeviceType_Disabled];
            }});

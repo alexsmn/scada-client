@@ -36,7 +36,7 @@ TransmissionModule::TransmissionModule(TransmissionModuleContext&& context)
       ID_TRANSMISSION_VIEW, kTransmissionWindowInfo, executor_,
       [&session_service =
            session_service_](const SelectionCommandContext& context) {
-        return session_service.HasPrivilege(scada::Privilege::Configure) &&
+        return session_service.HasAccessRight(scada::AccessRight::kConfigure) &&
                IsInstanceOf(context.selection.node(),
                             scada::devices::id::DeviceType) &&
                !IsInstanceOf(context.selection.node(),

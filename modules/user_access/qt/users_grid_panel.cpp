@@ -81,7 +81,7 @@ QWidget* UsersGridPanel::BuildHeader() {
   add_user_ = new QPushButton{Tr("Add user")};
   reset_password_ = new QPushButton{Tr("Reset password")};
   // Both reuse the host's view context menu. Add-user (parent-scoped create) is
-  // always enabled — the create is privilege-gated at the command level, and
+  // always enabled — the create is access-right-gated at the command level, and
   // the admin-role hint explains the requirement. Reset-password acts on the
   // highlighted user, so it enables once a row is selected.
   reset_password_->setEnabled(false);

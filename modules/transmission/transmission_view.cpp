@@ -106,7 +106,7 @@ void TransmissionView::SwitchDevice(const scada::NodeId& device_id) {
 }
 
 void TransmissionView::DeleteSelection() {
-  if (!session_service_.HasPrivilege(scada::Privilege::Configure))
+  if (!session_service_.HasPermission(scada::Permission::kDeleteNode))
     return;
 
   for (auto row_index : grid_->GetSelectedRows())

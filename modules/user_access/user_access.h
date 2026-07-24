@@ -3,8 +3,8 @@
 #include <vector>
 
 // The access-rights model for the reshell users-admin RBAC inspector
-// (users-admin.html). The server grants users two privilege bits — Configure
-// and Control (scada::Privilege) — in the AccessRights bitmask; everyone may
+// (users-admin.html). The server grants users two access-right bits — Configure
+// and Control (scada::AccessRight) — in the AccessRights bitmask; everyone may
 // view. These pure helpers derive the coarse role and the permission breakdown
 // from that bitmask, so they are unit-testable without Qt or a node service.
 
@@ -20,8 +20,9 @@ const char* UserRoleLabelKey(UserRole role);
 // A permission shown in the RBAC inspector.
 enum class UserPermissionKind {
   kView,       // browse / live values / trends — always granted.
-  kControl,    // issue commands, write values — scada::Privilege::Control.
-  kConfigure,  // edit hardware / limits / users — scada::Privilege::Configure.
+  kControl,    // issue commands, write values — scada::AccessRight::kControl.
+  kConfigure,  // edit hardware / limits / users —
+               // scada::AccessRight::kConfigure.
 };
 
 struct UserPermission {

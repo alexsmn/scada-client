@@ -57,8 +57,8 @@ inline std::unique_ptr<Controller> ControllerFactoryImpl::CreateController(
   }
 
   if (registrar->window_info().requires_admin_rights() &&
-      !scada_services_.session_service->HasPrivilege(
-          scada::Privilege::Configure)) {
+      !scada_services_.session_service->HasAccessRight(
+          scada::AccessRight::kConfigure)) {
     return nullptr;
   }
 

@@ -99,7 +99,8 @@ std::unique_ptr<UiView> SheetController::Init(
             UpdateEditing();
           })
           .set_enabled_handler([this] {
-            return session_service_.HasPrivilege(scada::Privilege::Configure);
+            return session_service_.HasAccessRight(
+                scada::AccessRight::kConfigure);
           })
           .set_checked_handler([this] { return model_->is_editing(); }));
 

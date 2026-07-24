@@ -53,7 +53,7 @@ WriteModule::WriteModule(WriteModuleContext&& context)
            },
        .available_handler =
            [this](const SelectionCommandContext& context) {
-             return session_service_.HasPrivilege(scada::Privilege::Control) &&
+             return session_service_.HasPermission(scada::Permission::kWrite) &&
                     GetWriteBlock(context.selection.node()) !=
                         WriteBlock::kNotCommandable;
            },
@@ -80,7 +80,7 @@ WriteModule::WriteModule(WriteModuleContext&& context)
            },
        .available_handler =
            [this](const SelectionCommandContext& context) {
-             return session_service_.HasPrivilege(scada::Privilege::Control) &&
+             return session_service_.HasPermission(scada::Permission::kWrite) &&
                     IsInstanceOf(context.selection.node(),
                                  scada::data_items::id::DataItemType);
            }});

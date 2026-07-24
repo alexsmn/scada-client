@@ -33,7 +33,7 @@ NodePropertyModule::NodePropertyModule(NodePropertyModuleContext&& context)
       ID_ITEM_PARAMS, kNodePropertyWindowInfo, executor_,
       [&session_service =
            session_service_](const SelectionCommandContext& context) {
-        return session_service.HasPrivilege(scada::Privilege::Configure) &&
+        return session_service.HasAccessRight(scada::AccessRight::kConfigure) &&
                context.selection.node();
       }));
 }

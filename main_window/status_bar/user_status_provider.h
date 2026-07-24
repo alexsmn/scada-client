@@ -8,7 +8,7 @@
 
 class NodeService;
 
-// Maps the session's two privilege tiers to a coarse role key (an English
+// Maps the session's two access-right tiers to a coarse role key (an English
 // literal for Translate()): Configure ⇒ "Administrator", Control ⇒ "Operator",
 // otherwise "Observer". Pure, for the status strip's user·role cell.
 const char* UserRoleKey(bool can_configure, bool can_control);
@@ -32,7 +32,7 @@ class UserStatusProvider final
  private:
   void UpdateUser();
 
-  // Coarse role label derived from the session's privileges.
+  // Coarse role label derived from the session's access rights.
   std::u16string RoleLabel() const;
 
   AnyExecutor executor_;

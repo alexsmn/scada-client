@@ -82,7 +82,7 @@ void OpenedViewCreateCommand::ExecuteCommand(unsigned command_id) {
 
 bool OpenedViewCreateCommand::CanCreateRecord(
     const scada::NodeId& type_node_id) const {
-  if (!session_service_.HasPrivilege(scada::Privilege::Configure)) {
+  if (!session_service_.HasPermission(scada::Permission::kAddNode)) {
     return false;
   }
 
@@ -98,7 +98,7 @@ bool OpenedViewCreateCommand::CanCreateRecord(
 
 void OpenedViewCreateCommand::CreateRecord(const scada::NodeId& type_node_id,
                                            int tag) {
-  if (!session_service_.HasPrivilege(scada::Privilege::Configure)) {
+  if (!session_service_.HasPermission(scada::Permission::kAddNode)) {
     return;
   }
 

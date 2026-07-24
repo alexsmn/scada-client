@@ -43,7 +43,7 @@ CommandHandler* MainWindowCommandRouter::GetCommandHandler(
       return nullptr;
     }
     if (win_info->requires_admin_rights() &&
-        !session_service_.HasPrivilege(scada::Privilege::Configure)) {
+        !session_service_.HasAccessRight(scada::AccessRight::kConfigure)) {
       return nullptr;
     }
     return this;

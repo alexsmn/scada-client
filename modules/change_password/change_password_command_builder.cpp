@@ -19,21 +19,21 @@ void RegisterChangePasswordCommandActions(
 }
 
 BasicCommand<SelectionCommandContext> ChangePasswordCommandBuilder::Build() {
-  return {
-      .command_id = ID_CHANGE_PASSWORD,
-      .execute_handler =
-          [executor = executor_, &local_events = local_events_,
-           &profile = profile_](const SelectionCommandContext& context) {
-            ShowChangePasswordDialog(
-                context.dialog_service,
-                ChangePasswordContext{context.selection.node(), executor,
-                                      local_events, profile});
-          },
-      .available_handler =
-          [&session_service =
-               session_service_](const SelectionCommandContext& context) {
-            return session_service.HasPrivilege(scada::Privilege::Configure) &&
-                   IsInstanceOf(context.selection.node(),
-                                scada::security::id::UserType);
-          }};
+  return {.command_id = ID_CHANGE_PASSWORD,
+          .execute_handler =
+              [executor = executor_, &local_events = local_events_,
+               &profile = profile_](const SelectionCommandContext& context) {
+                ShowChangePasswordDialog(
+                    context.dialog_service,
+                    ChangePasswordContext{context.selection.node(), executor,
+                                          local_events, profile});
+              },
+          .available_handler =
+              [&session_service =
+                   session_service_](const SelectionCommandContext& context) {
+                return session_service.HasAccessRight(
+                           scada::AccessRight::kConfigure) &&
+                       IsInstanceOf(context.selection.node(),
+                                    scada::security::id::UserType);
+              }};
 }

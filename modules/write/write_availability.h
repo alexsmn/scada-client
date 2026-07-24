@@ -6,7 +6,7 @@ class NodeRef;
 
 // Why a node does not accept the selection-scoped control/write command
 // (ID_WRITE). This is the node-shaped half of the command's gates — the other
-// half is the session's Control privilege, which a node cannot answer for.
+// half is the session's Write permission, which a node cannot answer for.
 // Shared by the command's own handlers and by the Inspector's disabled-control
 // explanation, so the rule and the reason the operator reads never drift.
 enum class WriteBlock {

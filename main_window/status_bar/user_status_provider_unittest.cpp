@@ -6,7 +6,7 @@
 
 namespace {
 
-TEST(UserRoleKeyTest, MapsPrivilegeTiersToRole) {
+TEST(UserRoleKeyTest, MapsAccessRightTiersToRole) {
   // Configure implies the top tier regardless of Control.
   EXPECT_EQ(std::string_view{UserRoleKey(/*can_configure=*/true,
                                          /*can_control=*/true)},
@@ -18,7 +18,7 @@ TEST(UserRoleKeyTest, MapsPrivilegeTiersToRole) {
   EXPECT_EQ(std::string_view{UserRoleKey(/*can_configure=*/false,
                                          /*can_control=*/true)},
             "Operator");
-  // No privileges is read-only.
+  // No access rights is read-only.
   EXPECT_EQ(std::string_view{UserRoleKey(/*can_configure=*/false,
                                          /*can_control=*/false)},
             "Observer");

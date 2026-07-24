@@ -715,8 +715,8 @@ void MainWindow::SetWindowFlashing(bool flashing) {}
 QString MainWindow::ControlUnavailableReason() {
   // Asked only while the Control button is disabled. The node answers for its
   // own shape through the same rule the write command's gates use
-  // (GetWriteBlock); the command's only other gate is the session's Control
-  // privilege, so a node that would accept control can be blocked by nothing
+  // (GetWriteBlock); the command's only other gate is the session's Write
+  // permission, so a node that would accept control can be blocked by nothing
   // else.
   OpenedView* active = GetActiveView();
   SelectionModel* selection =
