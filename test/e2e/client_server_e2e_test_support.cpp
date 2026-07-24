@@ -248,6 +248,50 @@ void ProvisionSvcPassword(boost::json::object& server_json) {
       {"id", 100}, {"password", std::string{kSvcPassword}}});
 }
 
+// OTLP/gRPC endpoint every process of the run exports to, from
+// SCADA_E2E_OTLP_ENDPOINT (e.g. "localhost:4317"). Unset — the CI default —
+// leaves the suite exactly as it was: no traces, no OTLP logs, and the metrics
+// module's exporter aimed nowhere. Set it to inspect a run in a local
+// all-signal viewer; see docs/e2e-client-server.md, "Viewing a run's
+// telemetry".
+std::string GetOtlpEndpoint() {
+  auto* value = std::getenv("SCADA_E2E_OTLP_ENDPOINT");
+  return value ? std::string{value} : std::string{};
+}
+
+// Points one server process's metrics, traces and structured logs at
+// GetOtlpEndpoint(), or leaves `server_json` untouched when it is unset.
+// `service_name` becomes the process's OTel resource identity, so a Cluster
+// run shows up in the viewer as one service per tier rather than six
+// indistinguishable "scada-server" rows.
+void ConfigureTelemetry(boost::json::object& server_json,
+                        std::string_view service_name) {
+  const std::string endpoint = GetOtlpEndpoint();
+  if (endpoint.empty())
+    return;
+
+  // service_name/endpoint are shared by the metric and trace exporters (one
+  // OTLP destination and resource identity per tier — see
+  // scada-server-framework/docs/tracing.md). Ratio 1.0: an E2E run is a
+  // handful of requests, and sampling any of them out would leave holes in
+  // the very waterfall being inspected.
+  server_json["metrics"] = boost::json::object{
+      {"service_name", std::string{service_name}},
+      {"endpoint", endpoint},
+      {"traces",
+       boost::json::object{{"enabled", true}, {"sampling_ratio", 1.0}}}};
+
+  // Structured log export is a nested block of the template's existing "log"
+  // object (which carries the file-sink dir/rotation) — merge, don't replace.
+  auto& log = server_json["log"].is_object()
+                  ? server_json["log"].as_object()
+                  : server_json["log"].emplace_object();
+  log["otlp"] = boost::json::object{{"enabled", true},
+                                    {"service_name", std::string{service_name}},
+                                    {"endpoint", endpoint},
+                                    {"min_severity", "info"}};
+}
+
 int FindAvailablePort() {
   boost::asio::io_context io_context;
   boost::asio::ip::tcp::acceptor acceptor{
@@ -414,6 +458,7 @@ void ClientServerE2eTest::WriteServerJson(
     const std::filesystem::path& ws,
     int remote_port,
     int opcua_port,
+    std::string_view service_name,
     const std::function<void(boost::json::object&)>& configure) {
   auto server_json_value =
       boost::json::parse(ReadFileOrEmpty(GetServerSettingsTemplatePath()));
@@ -428,6 +473,7 @@ void ClientServerE2eTest::WriteServerJson(
   opcua["url"] =
       boost::json::array{"opc.tcp://127.0.0.1:" + std::to_string(opcua_port)};
   opcua["trace"] = "none";
+  ConfigureTelemetry(server_json, service_name);
   if (configure)
     configure(server_json);
   WriteTextFile(ws / "server.json", boost::json::serialize(server_json_value));
@@ -435,7 +481,9 @@ void ClientServerE2eTest::WriteServerJson(
 
 void ClientServerE2eTest::PrepareWorkspace() {
   PrepareServerFilesystem(workspace_.path(), iec61850_port_);
-  WriteServerJson(workspace_.path(), remote_port_, opcua_port_);
+  // SingleTier identity; StartCluster() rewrites this same file as the proxy.
+  WriteServerJson(workspace_.path(), remote_port_, opcua_port_,
+                  "scada-e2e-server");
 
   status_file_ = workspace_.path() / "client-status.txt";
   object_view_values_file_ = workspace_.path() / "object-view-values.txt";
@@ -529,6 +577,7 @@ void ClientServerE2eTest::StartCluster() {
             json.erase("iec61850");
             json.erase("filesystem");
             ProvisionSvcPassword(json);
+            ConfigureTelemetry(json, "scada-e2e-config");
           },
       .iec61850_port = iec61850_port_,
       .extra_config_sql = config_sql,
@@ -603,6 +652,7 @@ void ClientServerE2eTest::StartCluster() {
             json.erase("iec61850");
             json.erase("filesystem");
             ProvisionSvcPassword(json);
+            ConfigureTelemetry(json, "scada-e2e-historian");
             // The historian self-registers with the proxy via OPC UA
             // RegisterServer2, advertising the "HD" (Historical Data)
             // ServerCapabilityIdentifier (Part 4 §5.4.6, Part 12 Annex D).
@@ -654,6 +704,7 @@ void ClientServerE2eTest::StartCluster() {
       // Edge binaries link no history module (ADR 0002) — a "history" block
       // here would be dead config, so drop the template's.
       json.erase("history");
+      ConfigureTelemetry(json, "scada-e2e-" + std::string{keep_driver});
       if (dynamic_registration) {
         // WS-F self-registration: a per-edge application_uri (the registry
         // keys registrations by server URI) and an externally-reachable
@@ -705,6 +756,7 @@ void ClientServerE2eTest::StartCluster() {
             // template block.
             json.erase("history");
             ProvisionSvcPassword(json);
+            ConfigureTelemetry(json, "scada-e2e-filesystem");
             // The template's filesystem block stays: it roots the store at this
             // tier's own ${DIR_PARAM}/FileSystem workspace dir.
           },
@@ -766,35 +818,35 @@ void ClientServerE2eTest::StartCluster() {
        boost::json::array{"http://telecontrol.ru/opcua/filesystem/FileType"}},
       {"nodes", boost::json::array{"ns=7;i=304"}},
       {"forward_events", true}});
-  WriteServerJson(workspace_.path(), remote_port_, opcua_port_,
-                  [&aggregation_servers](boost::json::object& server_json) {
-                    server_json.erase("iec60870");
-                    server_json.erase("modbus");
-                    server_json.erase("iec61850");
-                    // The filesystem tier owns the FileSystem subtree; the
-                    // proxy must not run a local file store of its own. The
-                    // proxy binary also links no history module — history is
-                    // the history-link module's (below).
-                    server_json.erase("filesystem");
-                    server_json.erase("history");
-                    server_json["dataItems"] =
-                        boost::json::object{{"enabled", false}};
-                    server_json["aggregation"] =
-                        boost::json::object{{"servers", aggregation_servers}};
-                    // History lives in the historian tier, not in the
-                    // namespace-owning edges (edges run no history module), so
-                    // the proxy routes ALL HistoryRead/HistoryUpdate through
-                    // the history-link module. No endpoint: the link is
-                    // discovery-driven — it links the RegisterServer2
-                    // registrant advertising "HD" (the historian above). The
-                    // link presents svc so the historian's permission
-                    // enforcement accepts the forwarded reads.
-                    // (DisplaysHistoricalTimedData reads back through this
-                    // route.)
-                    server_json["historyLink"] = boost::json::object{
-                        {"user", std::string{kSvcUser}},
-                        {"password", std::string{kSvcPassword}}};
-                  });
+  WriteServerJson(
+      workspace_.path(), remote_port_, opcua_port_, "scada-e2e-proxy",
+      [&aggregation_servers](boost::json::object& server_json) {
+        server_json.erase("iec60870");
+        server_json.erase("modbus");
+        server_json.erase("iec61850");
+        // The filesystem tier owns the FileSystem subtree; the
+        // proxy must not run a local file store of its own. The
+        // proxy binary also links no history module — history is
+        // the history-link module's (below).
+        server_json.erase("filesystem");
+        server_json.erase("history");
+        server_json["dataItems"] = boost::json::object{{"enabled", false}};
+        server_json["aggregation"] =
+            boost::json::object{{"servers", aggregation_servers}};
+        // History lives in the historian tier, not in the
+        // namespace-owning edges (edges run no history module), so
+        // the proxy routes ALL HistoryRead/HistoryUpdate through
+        // the history-link module. No endpoint: the link is
+        // discovery-driven — it links the RegisterServer2
+        // registrant advertising "HD" (the historian above). The
+        // link presents svc so the historian's permission
+        // enforcement accepts the forwarded reads.
+        // (DisplaysHistoricalTimedData reads back through this
+        // route.)
+        server_json["historyLink"] =
+            boost::json::object{{"user", std::string{kSvcUser}},
+                                {"password", std::string{kSvcPassword}}};
+      });
   LaunchProcess(GetProxyExePath(),
                 {"--param=" + (workspace_.path() / "server.json").string()},
                 workspace_.path(), *job_, server_);
@@ -841,6 +893,16 @@ void ClientServerE2eTest::StartClient(std::vector<std::string> extra_args) {
       "--test-settings-file=" + settings_file_.string(),
       "--test-status-file=" + status_file_.string(),
       "--test-log-dir=" + client_log_dir_.string()};
+  // Client-side telemetry is metrics only today (the client runs no trace sink
+  // and no OTLP log sink — see docs/e2e-client-server.md, "Viewing a run's
+  // telemetry"), so this exports "scada-client" meters and nothing else.
+  if (const std::string otlp_endpoint = GetOtlpEndpoint();
+      !otlp_endpoint.empty()) {
+    args.push_back("--otlp-endpoint=" + otlp_endpoint);
+    // The client's 1-minute default export period outlasts an E2E case, which
+    // would leave "scada-client" absent from the viewer entirely.
+    args.push_back("--otlp-export-interval-ms=2000");
+  }
   args.insert(args.end(), std::make_move_iterator(extra_args.begin()),
               std::make_move_iterator(extra_args.end()));
 

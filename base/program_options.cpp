@@ -27,6 +27,11 @@ void InitProgramOptions(int argc, char* argv[]) {
                                           "Log alias service operations")(
       "node-service-v2", "Use v2 node service")(
       "log-severity", po::value<std::string>(), "Log severity level")(
+      "otlp-endpoint", po::value<std::string>(),
+      "OTLP/gRPC endpoint (host:port) process metrics are exported to; "
+      "unset disables export")(
+      "otlp-export-interval-ms", po::value<std::string>(),
+      "Metric export period in milliseconds (default 60000)")(
       "test-settings-file", po::value<std::string>(),
       "E2E-only login settings file")("test-status-file",
                                       po::value<std::string>(),

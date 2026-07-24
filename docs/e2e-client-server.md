@@ -84,6 +84,65 @@ On failure, the harness prints the preserved temporary workspace path. Inspect
 that directory for `ServerLogs/`, `ClientLogs/`, status marker files, and the
 operator use-case report when that test was running.
 
+## Viewing a run's telemetry
+
+By default the suite exports nothing: assertions read the plain-text logs under
+the preserved workspace, and no process is aimed at a collector. Setting
+`SCADA_E2E_OTLP_ENDPOINT` opts a run into OpenTelemetry export so it can be
+inspected in a viewer instead of grepped:
+
+```sh
+SCADA_E2E_OTLP_ENDPOINT=localhost:4317 \
+  build/macos-local-client/bin/RelWithDebInfo/client_server_e2e_tests \
+  --gtest_filter='*Connect_Success_LoadsObjectTree/OpcUa_Cluster*'
+```
+
+The harness then patches every server process's `server.json` with a `metrics`
+block (`traces.enabled`, `sampling_ratio` 1.0) and a `log.otlp` block, and
+passes `--otlp-endpoint` to the client. Each process gets its own
+`service_name`, so a Cluster run appears as one service per tier:
+
+| Service | Process |
+|---|---|
+| `scada-e2e-server` | the SingleTier server |
+| `scada-e2e-proxy` | the client-facing aggregating proxy |
+| `scada-e2e-config` | the config tier |
+| `scada-e2e-historian` | the historian |
+| `scada-e2e-iec60870` / `-modbus` / `-iec61850` | the device edges |
+| `scada-e2e-filesystem` | the file store |
+| `scada-client` | the Qt client |
+
+Any OTLP/gRPC receiver on that endpoint works — including the Grafana Cloud
+bridge in [`dev/telemetry/`](../../dev/telemetry/README.md), which converts to
+the OTLP/HTTP the hosted gateway requires. All-signal viewers
+([otel-desktop-viewer](https://github.com/CtrlSpice/otel-desktop-viewer), UI on
+`:8000`; [otel-tui](https://github.com/ymtdzzz/otel-tui), terminal) show logs,
+traces and metrics together; Jaeger shows traces only. Note that
+otel-desktop-viewer stores telemetry in memory unless started with `--db`, and
+an E2E run is over in seconds — pass `--db` if you want the run to still be
+there when you go looking.
+
+### Coverage and gaps
+
+A Cluster run produces a genuine cross-tier waterfall: a single trace carries
+the proxy's outbound `opcua.client/Browse` and the edge's inbound
+`opcua.server/Browse`, linked by the traceparent the OPC UA `additionalHeader`
+carries (see
+[`scada-server-framework/docs/tracing.md`](../../scada-server-framework/docs/tracing.md)).
+
+What is **not** covered:
+
+- **The client emits metrics only.** It runs no trace sink and no OTLP log
+  sink, so every waterfall starts at the server and the client's own log
+  records never reach the viewer. Closing this is scoped separately in
+  [`client-telemetry-gaps.md`](client-telemetry-gaps.md).
+- The client's default 60 s export period outlives a test case, so the harness
+  passes `--otlp-export-interval-ms=2000`. Without it `scada-client` is absent
+  from the viewer entirely.
+- The known server-side gaps in `tracing.md` still apply — notably that
+  `HistoryService` carries no `ServiceContext`, so a proxy→historian
+  HistoryRead starts a new trace root rather than continuing the client's.
+
 ## Goals
 
 - Launch the real `server.exe` in a temporary test workspace.

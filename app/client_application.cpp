@@ -68,6 +68,36 @@ scada::ServiceLogParams ReadServiceLogParamsFromCommandLine() {
               client::HasOption("log-service-node-semantics-change-event")};
 }
 
+// OTLP/gRPC collector the process metrics are exported to, from
+// `--otlp-endpoint=<host:port>`. Empty (the default) means no export: an empty
+// endpoint makes the OTLP gRPC exporter log "empty endpoint" and hand back a
+// null channel, so nothing leaves the process. Point it at a local viewer
+// (otel-desktop-viewer, an OTel Collector, Jaeger) to see client metrics.
+std::string ReadOtlpEndpointFromCommandLine() {
+  return client::GetOptionValue("otlp-endpoint");
+}
+
+// Metric export period, from `--otlp-export-interval-ms`. The default suits a
+// long-running desktop session, but it outlives short-lived runs entirely — an
+// E2E case lasts well under a minute, so without shortening this the client
+// exits before its first export and reports nothing. Malformed values fall
+// back to the default rather than failing startup: telemetry cadence must
+// never keep the client from running.
+std::chrono::milliseconds ReadOtlpExportIntervalFromCommandLine() {
+  constexpr std::chrono::milliseconds kDefaultInterval = 1min;
+  const std::string value = client::GetOptionValue("otlp-export-interval-ms");
+  if (value.empty())
+    return kDefaultInterval;
+  try {
+    const long long parsed = std::stoll(value);
+    if (parsed <= 0)
+      return kDefaultInterval;
+    return std::chrono::milliseconds{parsed};
+  } catch (const std::exception&) {
+    return kDefaultInterval;
+  }
+}
+
 }  // namespace
 
 REGISTER_DATA_SERVICES("Scada",
@@ -98,7 +128,8 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
       metrics_runtime_{std::make_unique<scada::metrics::OpenTelemetryMetrics>(
           scada::metrics::OpenTelemetryMetricsOptions{
               .service_name = "scada-client",
-              .export_interval = 1min})},
+              .export_interval = ReadOtlpExportIntervalFromCommandLine(),
+              .endpoint = ReadOtlpEndpointFromCommandLine()})},
       controller_registry_{std::make_unique<ControllerRegistry>()},
       ui_command_registry_{std::make_unique<UiCommandRegistry>()},
       opened_view_command_registry_{

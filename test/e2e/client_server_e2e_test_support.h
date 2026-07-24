@@ -165,10 +165,13 @@ class ClientServerE2eTest : public ::testing::TestWithParam<E2eParam> {
   // Writes `ws`/server.json from the shared template with the given session and
   // OPC UA ports and the signed license, then applies `configure` (when set) to
   // shape the process role (e.g. turn it into an aggregating proxy).
+  // `service_name` is the process's OTel resource identity, used only when
+  // SCADA_E2E_OTLP_ENDPOINT opts the run into telemetry export.
   void WriteServerJson(
       const std::filesystem::path& ws,
       int remote_port,
       int opcua_port,
+      std::string_view service_name,
       const std::function<void(boost::json::object&)>& configure = {});
   // Launches the tier-split cluster: a config tier, the three device edges, a
   // historian, and an aggregating proxy in front of them on the client-facing
