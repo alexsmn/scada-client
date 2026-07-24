@@ -7,6 +7,7 @@
 #include <gmock/gmock.h>
 
 #include "base/debug_util.h"
+#include "scada/co_result.h"
 
 using namespace testing;
 
@@ -22,17 +23,17 @@ TEST(Importer, UnorderedCreatedNodes) {
 
   EXPECT_CALL(task_manager,
               PostInsertTask(Field(&scada::NodeState::node_id, data_group_id)))
-      .WillOnce([&](const scada::NodeState&)
-                    -> Awaitable<scada::StatusOr<scada::NodeId>> {
-        co_return data_group_id;
-      });
+      .WillOnce(
+          [&](const scada::NodeState&) -> scada::CoStatusOr<scada::NodeId> {
+            co_return data_group_id;
+          });
 
   EXPECT_CALL(task_manager,
               PostInsertTask(Field(&scada::NodeState::node_id, data_item_id)))
-      .WillOnce([&](const scada::NodeState&)
-                    -> Awaitable<scada::StatusOr<scada::NodeId>> {
-        co_return data_item_id;
-      });
+      .WillOnce(
+          [&](const scada::NodeState&) -> scada::CoStatusOr<scada::NodeId> {
+            co_return data_item_id;
+          });
 
   ApplyDiffData({.create_nodes = {{.node_id = data_item_id,
                                    .type_definition_id =

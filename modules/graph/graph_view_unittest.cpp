@@ -1,5 +1,5 @@
-#include "base/time/time_wire_codec.h"
 #include "graph/graph_view.h"
+#include "base/time/time_wire_codec.h"
 
 #include "aui/severity_colors.h"
 #include "aui/test/app_environment.h"
@@ -17,6 +17,7 @@
 #include "timed_data/timed_data_service_fake.h"
 
 #include "base/debug_util.h"
+#include "scada/co_result.h"
 
 #include <QImage>
 
@@ -120,7 +121,8 @@ TEST_F(GraphViewTest, Test) {
   ASSERT_THAT(time_model, NotNull());
 
   time_model->SetTimeRange(scada::RelativeTimeRange::Type::Day);
-  // EXPECT_THAT(time_model->GetTimeRange(), Eq(scada::RelativeTimeRange::Type::Day));
+  // EXPECT_THAT(time_model->GetTimeRange(),
+  // Eq(scada::RelativeTimeRange::Type::Day));
 }
 
 TEST_F(GraphViewTest, GraphSetupCommandRegistered) {
@@ -207,8 +209,7 @@ TEST_F(GraphViewTest, FakeTimedDataRendersLines) {
     td->data_values.push_back(
         scada::DataValue{scada::Variant{100.0 + i * 2.0}, {}, time, time});
   }
-  td->ready_ranges.push_back(
-      {now - std::chrono::hours(24), now});
+  td->ready_ranges.push_back({now - std::chrono::hours(24), now});
 
   // Create a graph with one line using the fake service.
   MetrixGraph graph{MetrixGraphContext{fake_service}};
@@ -288,7 +289,7 @@ TEST(MetrixDataSourceTest, AppliesEarliestTimestampFromHistoryRead) {
 
   EXPECT_CALL(history_service, HistoryReadRaw(_))
       .WillOnce(Invoke([&](scada::HistoryReadRawDetails details)
-                           -> Awaitable<scada::StatusOr<scada::HistoryReadRawResult>> {
+                           -> scada::CoStatusOr<scada::HistoryReadRawResult> {
         EXPECT_EQ(details.node_id, kTestNodeId);
         EXPECT_EQ(details.max_count, 1u);
         co_return scada::HistoryReadRawResult{
@@ -322,14 +323,14 @@ TEST(MetrixDataSourceTest, DropsCanceledEarliestTimestampRead) {
 
   EXPECT_CALL(history_service, HistoryReadRaw(_))
       .WillOnce(Invoke([&](scada::HistoryReadRawDetails details)
-                           -> Awaitable<scada::StatusOr<scada::HistoryReadRawResult>> {
+                           -> scada::CoStatusOr<scada::HistoryReadRawResult> {
         EXPECT_EQ(details.node_id, kTestNodeId);
         first_started = true;
         co_await first_completion.Wait();
         co_return first_result;
       }))
       .WillOnce(Invoke([&](scada::HistoryReadRawDetails details)
-                           -> Awaitable<scada::StatusOr<scada::HistoryReadRawResult>> {
+                           -> scada::CoStatusOr<scada::HistoryReadRawResult> {
         EXPECT_EQ(details.node_id, kTestNodeId);
         second_started = true;
         co_await second_completion.Wait();
@@ -362,6 +363,7 @@ TEST(MetrixDataSourceTest, DropsCanceledEarliestTimestampRead) {
   Drain(executor);
 
   auto horizontal_range = data_source.GetHorizontalRange();
-  EXPECT_EQ(horizontal_range.low(), scada::base::EncodeDoubleT(current_earliest));
+  EXPECT_EQ(horizontal_range.low(),
+            scada::base::EncodeDoubleT(current_earliest));
   EXPECT_EQ(horizontal_range.high(), scada::base::EncodeDoubleT(second_latest));
 }

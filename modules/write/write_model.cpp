@@ -8,6 +8,7 @@
 #include "model/data_items_node_ids.h"
 #include "net/net_executor_adapter.h"
 #include "profile/profile.h"
+#include "scada/co_result.h"
 
 namespace {
 // Prepended to the control-command review for the operate stage of a
@@ -219,10 +220,9 @@ void WriteModel::StartWritingHelper() {
   });
 }
 
-Awaitable<void> WriteModel::CompleteWriteAsync(
-    AnyExecutor executor,
-    std::weak_ptr<WriteModel> model,
-    Awaitable<scada::Status> operation) {
+Awaitable<void> WriteModel::CompleteWriteAsync(AnyExecutor executor,
+                                               std::weak_ptr<WriteModel> model,
+                                               scada::CoStatus operation) {
   auto status = co_await std::move(operation);
   if (auto model_ptr = model.lock()) {
     model_ptr->OnWriteComplete(status);

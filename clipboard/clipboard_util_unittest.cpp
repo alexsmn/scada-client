@@ -16,6 +16,7 @@
 #include <gmock/gmock.h>
 
 #include "base/debug_util.h"
+#include "scada/co_result.h"
 
 using namespace testing;
 
@@ -80,9 +81,8 @@ TEST(PasteNodesFromNodeStateRecursive, Test) {
                 .attributes = {.browse_name = "DataItem1",
                                .display_name = u"DataItem1"}}}}}};
 
-  WaitAwaitable(
-      executor,
-      PasteNodesFromNodeStateRecursive(task_manager, scada::NodeState{top_node}));
+  WaitAwaitable(executor, PasteNodesFromNodeStateRecursive(
+                              task_manager, scada::NodeState{top_node}));
 
   auto* storage_root_node = storage.FindNode(scada::data_items::id::DataItems);
   ASSERT_THAT(storage_root_node, NotNull());
@@ -103,10 +103,10 @@ TEST(PasteNodesFromNodeStateRecursive, RejectedInsertPropagates) {
       .attributes = {.browse_name = "Group1", .display_name = u"Group1"}};
 
   EXPECT_CALL(task_manager, PostInsertTask(_))
-      .WillOnce(Invoke([](const scada::NodeState&)
-                           -> Awaitable<scada::StatusOr<scada::NodeId>> {
-        co_return scada::StatusCode::Bad;
-      }));
+      .WillOnce(Invoke(
+          [](const scada::NodeState&) -> scada::CoStatusOr<scada::NodeId> {
+            co_return scada::StatusCode::Bad;
+          }));
 
   WaitAwaitable(executor, PasteNodesFromNodeStateRecursive(
                               task_manager, std::move(node_state)));
@@ -145,7 +145,7 @@ TEST(PasteNodesFromNodeStateRecursive,
 
     EXPECT_CALL(task_manager, PostInsertTask(_))
         .WillOnce(Invoke([&](const scada::NodeState& inserted)
-                             -> Awaitable<scada::StatusOr<scada::NodeId>> {
+                             -> scada::CoStatusOr<scada::NodeId> {
           EXPECT_TRUE(inserted.children.empty());
           EXPECT_THAT(inserted.references, SizeIs(1));
           if (!inserted.references.empty())
@@ -155,7 +155,7 @@ TEST(PasteNodesFromNodeStateRecursive,
 
     EXPECT_CALL(task_manager, PostInsertTask(_))
         .WillOnce(Invoke([&](const scada::NodeState& inserted)
-                             -> Awaitable<scada::StatusOr<scada::NodeId>> {
+                             -> scada::CoStatusOr<scada::NodeId> {
           EXPECT_TRUE(inserted.children.empty());
           EXPECT_EQ(inserted.parent_id, inserted_parent_id);
           EXPECT_EQ(inserted.type_definition_id,
@@ -164,9 +164,9 @@ TEST(PasteNodesFromNodeStateRecursive,
         }));
   }
 
-  EXPECT_NO_THROW(
-      WaitAwaitable(executor, PasteNodesFromNodeStateRecursive(
-                                  task_manager, std::move(node_state))));
+  EXPECT_NO_THROW(WaitAwaitable(
+      executor,
+      PasteNodesFromNodeStateRecursive(task_manager, std::move(node_state))));
 }
 
 #ifdef _WIN32

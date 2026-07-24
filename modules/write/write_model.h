@@ -5,6 +5,7 @@
 #include "aui/dialog_service.h"
 #include "base/awaitable.h"
 #include "modules/write/write_dialog.h"
+#include "scada/co_result.h"
 #include "scada/status.h"
 #include "timed_data/timed_data_spec.h"
 
@@ -49,7 +50,7 @@ class WriteModel : private WriteContext,
 
   static Awaitable<void> CompleteWriteAsync(AnyExecutor executor,
                                             std::weak_ptr<WriteModel> model,
-                                            Awaitable<scada::Status> operation);
+                                            scada::CoStatus operation);
   // Owns `message`/`title` for the lifetime of the confirmation prompt: the
   // RunMessageBox awaitable is created and awaited inside this coroutine, so
   // the string_views it takes stay valid (a prompt created by the caller would

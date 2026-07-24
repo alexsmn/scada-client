@@ -26,6 +26,7 @@
 #include "node_service/node_ref.h"
 #include "node_service/node_service.h"
 #include "profile/profile.h"
+#include "scada/co_result.h"
 #include "scada/data_services_factory.h"
 #include "scada/logging.h"
 #include "scada/node_id.h"
@@ -141,11 +142,11 @@ class NullTransportFactory : public transport::TransportFactory {
   }
 };
 
-Awaitable<scada::Status> RejectTaskManagerCallAsync() {
+scada::CoStatus RejectTaskManagerCallAsync() {
   co_return scada::StatusCode::Bad;
 }
 
-Awaitable<scada::StatusOr<scada::NodeId>> RejectPostInsertTaskAsync() {
+scada::CoStatusOr<scada::NodeId> RejectPostInsertTaskAsync() {
   co_return scada::StatusCode::Bad;
 }
 
@@ -154,30 +155,29 @@ Awaitable<scada::StatusOr<scada::NodeId>> RejectPostInsertTaskAsync() {
 // something slips through.
 class NullTaskManager : public TaskManager {
  public:
-  Awaitable<scada::Status> PostTask(std::u16string_view,
-                                    const TaskLauncher&) override {
+  scada::CoStatus PostTask(std::u16string_view, const TaskLauncher&) override {
     return RejectTaskManagerCallAsync();
   }
-  Awaitable<scada::StatusOr<scada::NodeId>> PostInsertTask(
+  scada::CoStatusOr<scada::NodeId> PostInsertTask(
       const scada::NodeState&) override {
     return RejectPostInsertTaskAsync();
   }
-  Awaitable<scada::Status> PostUpdateTask(const scada::NodeId&,
-                                          scada::NodeAttributes,
-                                          scada::NodeProperties) override {
+  scada::CoStatus PostUpdateTask(const scada::NodeId&,
+                                 scada::NodeAttributes,
+                                 scada::NodeProperties) override {
     return RejectTaskManagerCallAsync();
   }
-  Awaitable<scada::Status> PostDeleteTask(const scada::NodeId&) override {
+  scada::CoStatus PostDeleteTask(const scada::NodeId&) override {
     return RejectTaskManagerCallAsync();
   }
-  Awaitable<scada::Status> PostAddReference(const scada::NodeId&,
-                                            const scada::NodeId&,
-                                            const scada::NodeId&) override {
+  scada::CoStatus PostAddReference(const scada::NodeId&,
+                                   const scada::NodeId&,
+                                   const scada::NodeId&) override {
     return RejectTaskManagerCallAsync();
   }
-  Awaitable<scada::Status> PostDeleteReference(const scada::NodeId&,
-                                               const scada::NodeId&,
-                                               const scada::NodeId&) override {
+  scada::CoStatus PostDeleteReference(const scada::NodeId&,
+                                      const scada::NodeId&,
+                                      const scada::NodeId&) override {
     return RejectTaskManagerCallAsync();
   }
 };
@@ -479,10 +479,11 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
     }
     auto dialog_lifetime = StartDialogAwaitable(
         env.executor,
-        ShowTimeRangeDialog(dialog_service,
-                            TimeRangeContext{.profile_ = *env.profile,
-                                             .time_range_ = scada::RelativeTimeRange{},
-                                             .time_required_ = false}));
+        ShowTimeRangeDialog(
+            dialog_service,
+            TimeRangeContext{.profile_ = *env.profile,
+                             .time_range_ = scada::RelativeTimeRange{},
+                             .time_required_ = false}));
     bool captured = GrabAndCloseVisibleDialogOrReport(spec);
     WaitForDialogCompletion(dialog_lifetime);
     return captured;

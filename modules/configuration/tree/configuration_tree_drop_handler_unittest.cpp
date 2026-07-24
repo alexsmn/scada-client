@@ -10,6 +10,7 @@
 #include "node_service/node_model_mock.h"
 #include "node_service/node_service_mock.h"
 #include "node_service/test/model_node_service.h"
+#include "scada/co_result.h"
 #include "services/create_tree.h"
 #include "services/task_manager_mock.h"
 
@@ -79,12 +80,13 @@ NodeRef MakeTestNodeInService(ModelNodeService& service,
   ON_CALL(*type_model, GetAttribute(scada::AttributeId::NodeId))
       .WillByDefault(Return(options.type_definition_id));
   ON_CALL(*type_model, GetTarget(_, _)).WillByDefault(Return(NodeRef{}));
-  // Each createable type is exposed as an OptionalPlaceholder InstanceDeclaration
-  // child of the type — the standard-modelling replacement for the Creates edge
-  // that CreateTree::CanCreate now reads via GetCreatableChildTypes.
-  const NodeRef optional_placeholder = service.Add(
-      scada::NodeId{scada::id::ModellingRule_OptionalPlaceholder},
-      std::make_shared<NiceMock<MockNodeModel>>());
+  // Each createable type is exposed as an OptionalPlaceholder
+  // InstanceDeclaration child of the type — the standard-modelling replacement
+  // for the Creates edge that CreateTree::CanCreate now reads via
+  // GetCreatableChildTypes.
+  const NodeRef optional_placeholder =
+      service.Add(scada::NodeId{scada::id::ModellingRule_OptionalPlaceholder},
+                  std::make_shared<NiceMock<MockNodeModel>>());
   std::vector<NodeRef> placeholders;
   for (size_t i = 0; i < options.creates.size(); ++i) {
     const NodeRef& creatable_type = options.creates[i];
@@ -95,12 +97,12 @@ NodeRef MakeTestNodeInService(ModelNodeService& service,
     ON_CALL(*placeholder_model,
             GetTarget(scada::NodeId{scada::id::HasTypeDefinition}, true))
         .WillByDefault(Return(creatable_type));
-    placeholders.push_back(service.Add(
-        scada::NodeId{static_cast<scada::NumericId>(90000 + i)},
-        std::move(placeholder_model)));
+    placeholders.push_back(
+        service.Add(scada::NodeId{static_cast<scada::NumericId>(90000 + i)},
+                    std::move(placeholder_model)));
   }
-  ON_CALL(*type_model, GetTargets(scada::NodeId{scada::id::HierarchicalReferences},
-                                  true))
+  ON_CALL(*type_model,
+          GetTargets(scada::NodeId{scada::id::HierarchicalReferences}, true))
       .WillByDefault(Return(placeholders));
 
   ON_CALL(*parent_model, GetFetchStatus())
@@ -177,7 +179,7 @@ TEST_F(ConfigurationTreeDropHandlerTest,
       .WillOnce(Return(dragging_node));
   EXPECT_CALL(task_manager_, PostInsertTask(_))
       .WillOnce([&](const scada::NodeState& node_state)
-                    -> Awaitable<scada::StatusOr<scada::NodeId>> {
+                    -> scada::CoStatusOr<scada::NodeId> {
         EXPECT_EQ(node_state.type_definition_id,
                   scada::data_items::id::DiscreteItemType);
         EXPECT_EQ(node_state.parent_id, data_group_id_);
@@ -218,19 +220,18 @@ TEST_F(ConfigurationTreeDropHandlerTest,
   EXPECT_CALL(node_service_, GetNode(channel_id_))
       .WillOnce(Return(dragging_node));
   EXPECT_CALL(task_manager_, PostUpdateTask(data_item_id_, _, _))
-      .WillOnce(
-          [&](const scada::NodeId&, scada::NodeAttributes attributes,
-              scada::NodeProperties properties) -> Awaitable<scada::Status> {
-            EXPECT_TRUE(attributes.empty());
-            EXPECT_THAT(properties, SizeIs(1));
-            if (!properties.empty()) {
-              EXPECT_EQ(properties[0].first,
-                        scada::data_items::id::DataItemType_Output);
-              EXPECT_EQ(properties[0].second.as_string(),
-                        MakeNodeIdFormula(channel_id_));
-            }
-            co_return scada::StatusCode::Good;
-          });
+      .WillOnce([&](const scada::NodeId&, scada::NodeAttributes attributes,
+                    scada::NodeProperties properties) -> scada::CoStatus {
+        EXPECT_TRUE(attributes.empty());
+        EXPECT_THAT(properties, SizeIs(1));
+        if (!properties.empty()) {
+          EXPECT_EQ(properties[0].first,
+                    scada::data_items::id::DataItemType_Output);
+          EXPECT_EQ(properties[0].second.as_string(),
+                    MakeNodeIdFormula(channel_id_));
+        }
+        co_return scada::StatusCode::Good;
+      });
 
   DropAction action;
   auto handler = MakeHandler();
@@ -261,14 +262,14 @@ TEST_F(ConfigurationTreeDropHandlerTest, MoveDropPostsReferenceCoroutine) {
                 PostDeleteReference(scada::NodeId{scada::id::Organizes},
                                     old_parent_id_, channel_id_))
         .WillOnce([](const scada::NodeId&, const scada::NodeId&,
-                     const scada::NodeId&) -> Awaitable<scada::Status> {
+                     const scada::NodeId&) -> scada::CoStatus {
           co_return scada::StatusCode::Good;
         });
     EXPECT_CALL(task_manager_,
                 PostAddReference(scada::NodeId{scada::id::Organizes},
                                  new_parent_id_, channel_id_))
         .WillOnce([](const scada::NodeId&, const scada::NodeId&,
-                     const scada::NodeId&) -> Awaitable<scada::Status> {
+                     const scada::NodeId&) -> scada::CoStatus {
           co_return scada::StatusCode::Good;
         });
   }

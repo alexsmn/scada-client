@@ -8,6 +8,7 @@
 #include "node_service/static/static_node_service.h"
 #include "profile/profile.h"
 #include "scada/attribute_service_mock.h"
+#include "scada/co_result.h"
 #include "timed_data/timed_data_service_mock.h"
 
 #include <gmock/gmock.h>
@@ -183,12 +184,11 @@ TEST_F(WriteModelTest, FailedWriteReportsErrorThenCompletes) {
   std::optional<scada::StatusOr<std::vector<scada::StatusCode>>> result;
 
   EXPECT_CALL(attribute_service_, Write(_, _))
-      .WillOnce(
-          [&](scada::ServiceContext, std::vector<scada::WriteValue>)
-              -> Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> {
-            co_await completion.Wait();
-            co_return std::move(*result);
-          });
+      .WillOnce([&](scada::ServiceContext, std::vector<scada::WriteValue>)
+                    -> scada::CoStatusOr<std::vector<scada::StatusCode>> {
+        co_await completion.Wait();
+        co_return std::move(*result);
+      });
 
   auto model = CreateModel();
   model->Write(7.0, /*lock=*/false);
@@ -213,12 +213,11 @@ TEST_F(WriteModelTest, DestroyedModelDropsPendingWriteCompletion) {
   std::optional<scada::StatusOr<std::vector<scada::StatusCode>>> result;
 
   EXPECT_CALL(attribute_service_, Write(_, _))
-      .WillOnce(
-          [&](scada::ServiceContext, std::vector<scada::WriteValue>)
-              -> Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> {
-            co_await completion.Wait();
-            co_return std::move(*result);
-          });
+      .WillOnce([&](scada::ServiceContext, std::vector<scada::WriteValue>)
+                    -> scada::CoStatusOr<std::vector<scada::StatusCode>> {
+        co_await completion.Wait();
+        co_return std::move(*result);
+      });
 
   auto model = CreateModel();
   model->Write(9.0, /*lock=*/false);

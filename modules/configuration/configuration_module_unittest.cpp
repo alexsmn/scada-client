@@ -20,6 +20,7 @@
 #include "profile/profile.h"
 #include "resources/common_resources.h"
 #include "scada/client.h"
+#include "scada/co_result.h"
 #include "scada/method_service_mock.h"
 #include "scada/session_service_mock.h"
 #include "services/task_manager_mock.h"
@@ -54,12 +55,12 @@ class FakeOpenedView : public OpenedViewInterface {
 // Mirrors the laziness of the production `TaskManagerImpl`: the launcher runs
 // only when the returned awaitable is awaited. The launcher parameter is taken
 // by value so the coroutine frame owns a copy (CP.53).
-Awaitable<scada::Status> RunLauncherLazily(TaskManager::TaskLauncher launcher) {
+scada::CoStatus RunLauncherLazily(TaskManager::TaskLauncher launcher) {
   co_return co_await launcher();
 }
 
 // A lazy awaitable that flips `executed` only when actually awaited.
-Awaitable<scada::Status> CompleteLazily(bool* executed) {
+scada::CoStatus CompleteLazily(bool* executed) {
   *executed = true;
   co_return scada::StatusCode::Good;
 }

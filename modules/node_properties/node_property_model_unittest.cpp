@@ -18,6 +18,7 @@
 #include "properties/property_context.h"
 #include "properties/property_service.h"
 #include "scada/attribute_service_mock.h"
+#include "scada/co_result.h"
 #include "scada/method_service_mock.h"
 #include "scada/monitored_item_service_mock.h"
 #include "scada/status.h"
@@ -41,7 +42,7 @@ class ControllableNodeFetcher : public v3::NodeFetcher {
                           scada::AddressSpace& address_space)
       : executor_{std::move(executor)}, address_space_{address_space} {}
 
-  Awaitable<scada::StatusOr<scada::NodeState>> FetchNode(
+  scada::CoStatusOr<scada::NodeState> FetchNode(
       const scada::NodeId& node_id) override {
     fetch_requests.emplace_back(node_id, NodeFetchStatus::NodeOnly);
     co_await GetGate(node_id).Wait();
@@ -51,7 +52,7 @@ class ControllableNodeFetcher : public v3::NodeFetcher {
     co_return scada::MakeNodeState(*node);
   }
 
-  Awaitable<scada::StatusOr<scada::ReferenceDescriptions>> FetchChildren(
+  scada::CoStatusOr<scada::ReferenceDescriptions> FetchChildren(
       const scada::NodeId& node_id) override {
     co_return scada::ReferenceDescriptions{};
   }

@@ -17,6 +17,7 @@
 #include "node_service/v3/node_service_impl.h"
 #include "properties/property_context.h"
 #include "properties/property_service.h"
+#include "scada/co_result.h"
 #include "scada/monitored_item_service_mock.h"
 #include "scada/status.h"
 #include "services/task_manager_mock.h"
@@ -43,7 +44,7 @@ class ControllableNodeFetcher : public v3::NodeFetcher {
                           scada::AddressSpace& address_space)
       : executor_{std::move(executor)}, address_space_{address_space} {}
 
-  Awaitable<scada::StatusOr<scada::NodeState>> FetchNode(
+  scada::CoStatusOr<scada::NodeState> FetchNode(
       const scada::NodeId& node_id) override {
     fetch_requests.emplace_back(node_id, NodeFetchStatus::NodeOnly);
     co_await GetGate(node_id).Wait();
@@ -53,7 +54,7 @@ class ControllableNodeFetcher : public v3::NodeFetcher {
     co_return scada::MakeNodeState(*node);
   }
 
-  Awaitable<scada::StatusOr<scada::ReferenceDescriptions>> FetchChildren(
+  scada::CoStatusOr<scada::ReferenceDescriptions> FetchChildren(
       const scada::NodeId& node_id) override {
     co_return scada::ReferenceDescriptions{};
   }
@@ -156,11 +157,11 @@ TEST_F(NodeTableModelTest, NotifiesAfterAsyncBrowseCompletes) {
 // resumes the SetParentNode coroutine and fires model_changed_signal_. A
 // handler — in the app, the grid adapter's endResetModel driving the
 // view/controller teardown — drops the model's last external reference *inside*
-// that dispatch. The coroutine must keep the model alive so the signal (a member
-// of the model) is not freed while boost::signals2::signal::operator() is still
-// iterating its slots. Pre-fix this is a use-after-free; with the coroutine
-// holding a shared_from_this keep-alive the model outlives the notification and
-// is destroyed only when the coroutine frame unwinds.
+// that dispatch. The coroutine must keep the model alive so the signal (a
+// member of the model) is not freed while boost::signals2::signal::operator()
+// is still iterating its slots. Pre-fix this is a use-after-free; with the
+// coroutine holding a shared_from_this keep-alive the model outlives the
+// notification and is destroyed only when the coroutine frame unwinds.
 TEST_F(NodeTableModelTest, SurvivesReentrantRefDropDuringAsyncNotify) {
   auto model = CreateModel(kGroupId);
   std::weak_ptr<NodeTableModel> weak = model;
@@ -173,8 +174,8 @@ TEST_F(NodeTableModelTest, SurvivesReentrantRefDropDuringAsyncNotify) {
           return;
         notified = true;
         model.reset();  // release the last external ref mid-notification
-        // The coroutine's keep-alive must still hold the model here; pre-fix the
-        // model (and this very signal) is already freed.
+        // The coroutine's keep-alive must still hold the model here; pre-fix
+        // the model (and this very signal) is already freed.
         alive_after_reentrant_drop = !weak.expired();
       });
 

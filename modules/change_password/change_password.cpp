@@ -2,19 +2,19 @@
 
 #include "base/awaitable.h"
 #include "base/u16format.h"
-#include "modules/change_password/change_password_dialog.h"
 #include "events/local_event_util.h"
 #include "model/security_node_ids.h"
+#include "modules/change_password/change_password_dialog.h"
 #include "node_service/node_ref.h"
+#include "scada/co_result.h"
 
 namespace {
 
-Awaitable<void> ReportPasswordChangeResultAsync(
-    AnyExecutor executor,
-    Awaitable<scada::Status> call,
-    std::u16string title,
-    LocalEvents& local_events,
-    const Profile& profile) {
+Awaitable<void> ReportPasswordChangeResultAsync(AnyExecutor executor,
+                                                scada::CoStatus call,
+                                                std::u16string title,
+                                                LocalEvents& local_events,
+                                                const Profile& profile) {
   auto status = co_await std::move(call);
   ReportRequestResult(title, status, local_events, profile);
   co_return;
@@ -29,8 +29,7 @@ void ChangePassword(const ChangePasswordContext& context,
       scada::security::id::UserType_ChangePassword, current_password,
       new_password);
   CoSpawn(context.executor_,
-          [executor = context.executor_,
-           call = std::move(call),
+          [executor = context.executor_, call = std::move(call),
            title = u16format(L"Changing password for user {}",
                              ToString16(context.user_.display_name())),
            &local_events = context.local_events_,

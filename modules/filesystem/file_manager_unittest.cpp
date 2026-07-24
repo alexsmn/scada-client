@@ -15,6 +15,7 @@
 #include <gmock/gmock.h>
 
 #include "base/debug_util.h"
+#include "scada/co_result.h"
 
 using namespace testing;
 
@@ -27,11 +28,11 @@ class FileManagerTest : public Test {
   StrictMock<scada::MockAttributeService> attribute_service_;
   StrictMock<scada::MockViewService> view_service_;
 
-  FileManagerImpl file_manager_{FileManagerContext{
-      .executor_ = executor_,
-      .scada_client_ = scada::client{
-          scada::services{.attribute_service = &attribute_service_,
-                          .view_service = &view_service_}}}};
+  FileManagerImpl file_manager_{
+      FileManagerContext{.executor_ = executor_,
+                         .scada_client_ = scada::client{scada::services{
+                             .attribute_service = &attribute_service_,
+                             .view_service = &view_service_}}}};
 
   void WaitDownload(Awaitable<void> awaitable) {
     WaitAwaitable(executor_, std::move(awaitable));
@@ -59,21 +60,19 @@ TEST_F(FileManagerTest, DownloadFileFromServer_SendsExpectedServerRequests) {
   scada::NodeId file_node_id{111, 22};
   std::string file_contents = "hello";
 
-  EXPECT_CALL(
-      attribute_service_,
-      Read(/*context=*/_,
-           /*inputs=*/ElementsAre(scada::ReadValueId{file_node_id})))
-      .WillOnce([&](scada::ServiceContext,
-                    std::vector<scada::ReadValueId>)
-                    -> Awaitable<scada::StatusOr<std::vector<scada::DataValue>>> {
+  EXPECT_CALL(attribute_service_,
+              Read(/*context=*/_,
+                   /*inputs=*/ElementsAre(scada::ReadValueId{file_node_id})))
+      .WillOnce([&](scada::ServiceContext, std::vector<scada::ReadValueId>)
+                    -> scada::CoStatusOr<std::vector<scada::DataValue>> {
         co_return std::vector{scada::MakeReadResult(scada::ByteString(
             std::begin(file_contents), std::end(file_contents)))};
       });
 
-  EXPECT_CALL(view_service_, TranslateBrowsePaths(/*inputs=*/kSomeLongPathBrowse))
+  EXPECT_CALL(view_service_,
+              TranslateBrowsePaths(/*inputs=*/kSomeLongPathBrowse))
       .WillOnce([&](std::vector<scada::BrowsePath>)
-                    -> Awaitable<scada::StatusOr<
-                        std::vector<scada::BrowsePathResult>>> {
+                    -> scada::CoStatusOr<std::vector<scada::BrowsePathResult>> {
         co_return std::vector{scada::BrowsePathResult{
             .targets = {scada::BrowsePathTarget{.target_id = file_node_id}}}};
       });
@@ -90,8 +89,7 @@ TEST_F(FileManagerTest, DownloadFileFromServer_SendsExpectedServerRequests) {
 TEST_F(FileManagerTest, DownloadFileFromServer_TranslateBrowsePathFails) {
   EXPECT_CALL(view_service_, TranslateBrowsePaths(_))
       .WillOnce([](std::vector<scada::BrowsePath>)
-                    -> Awaitable<scada::StatusOr<
-                        std::vector<scada::BrowsePathResult>>> {
+                    -> scada::CoStatusOr<std::vector<scada::BrowsePathResult>> {
         co_return scada::StatusCode::Bad;
       });
 
@@ -99,13 +97,13 @@ TEST_F(FileManagerTest, DownloadFileFromServer_TranslateBrowsePathFails) {
       WaitDownload(file_manager_.DownloadFileFromServer("some/long/path")));
 }
 
-TEST_F(FileManagerTest, DownloadFileFromServer_TranslateBrowsePathReturnsNoTarget) {
+TEST_F(FileManagerTest,
+       DownloadFileFromServer_TranslateBrowsePathReturnsNoTarget) {
   // A successful translate that resolves to zero (or more than one) target
   // must surface as a rejection, not silently succeed.
   EXPECT_CALL(view_service_, TranslateBrowsePaths(_))
       .WillOnce([](std::vector<scada::BrowsePath>)
-                    -> Awaitable<scada::StatusOr<
-                        std::vector<scada::BrowsePathResult>>> {
+                    -> scada::CoStatusOr<std::vector<scada::BrowsePathResult>> {
         co_return std::vector{scada::BrowsePathResult{.targets = {}}};
       });
 
@@ -118,16 +116,14 @@ TEST_F(FileManagerTest, DownloadFileFromServer_ReadFails) {
 
   EXPECT_CALL(view_service_, TranslateBrowsePaths(_))
       .WillOnce([&](std::vector<scada::BrowsePath>)
-                    -> Awaitable<scada::StatusOr<
-                        std::vector<scada::BrowsePathResult>>> {
+                    -> scada::CoStatusOr<std::vector<scada::BrowsePathResult>> {
         co_return std::vector{scada::BrowsePathResult{
             .targets = {scada::BrowsePathTarget{.target_id = file_node_id}}}};
       });
 
   EXPECT_CALL(attribute_service_, Read(_, _))
-      .WillOnce([](scada::ServiceContext,
-                   std::vector<scada::ReadValueId>)
-                    -> Awaitable<scada::StatusOr<std::vector<scada::DataValue>>> {
+      .WillOnce([](scada::ServiceContext, std::vector<scada::ReadValueId>)
+                    -> scada::CoStatusOr<std::vector<scada::DataValue>> {
         co_return scada::StatusCode::Bad;
       });
 
@@ -142,16 +138,14 @@ TEST_F(FileManagerTest, DownloadFileFromServer_WrongValueType) {
 
   EXPECT_CALL(view_service_, TranslateBrowsePaths(_))
       .WillOnce([&](std::vector<scada::BrowsePath>)
-                    -> Awaitable<scada::StatusOr<
-                        std::vector<scada::BrowsePathResult>>> {
+                    -> scada::CoStatusOr<std::vector<scada::BrowsePathResult>> {
         co_return std::vector{scada::BrowsePathResult{
             .targets = {scada::BrowsePathTarget{.target_id = file_node_id}}}};
       });
 
   EXPECT_CALL(attribute_service_, Read(_, _))
-      .WillOnce([](scada::ServiceContext,
-                   std::vector<scada::ReadValueId>)
-                    -> Awaitable<scada::StatusOr<std::vector<scada::DataValue>>> {
+      .WillOnce([](scada::ServiceContext, std::vector<scada::ReadValueId>)
+                    -> scada::CoStatusOr<std::vector<scada::DataValue>> {
         co_return std::vector{
             scada::MakeReadResult(std::string{"not a byte string"})};
       });
@@ -163,6 +157,6 @@ TEST_F(FileManagerTest, DownloadFileFromServer_WrongValueType) {
 TEST_F(FileManagerTest, DownloadFileFromServer_EmptyPathRejected) {
   // An empty path never reaches the server — reject at the coroutine
   // boundary instead of sending a translate-browse-path with no elements.
-  EXPECT_NO_THROW(
-      WaitDownload(file_manager_.DownloadFileFromServer(std::filesystem::path{})));
+  EXPECT_NO_THROW(WaitDownload(
+      file_manager_.DownloadFileFromServer(std::filesystem::path{})));
 }

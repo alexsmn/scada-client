@@ -19,6 +19,7 @@
 #include "node_service/node_util.h"
 #include "profile/profile.h"
 #include "resources/common_resources.h"
+#include "scada/co_result.h"
 #include "scada/session_service.h"
 #include "services/task_manager.h"
 
@@ -35,7 +36,7 @@ static constexpr WindowInfo kNodesWindowInfo = {
     200,           400,     0};
 
 Awaitable<void> ReportMethodCallResultAsync(AnyExecutor executor,
-                                            Awaitable<scada::Status> call,
+                                            scada::CoStatus call,
                                             std::u16string title,
                                             LocalEvents& local_events,
                                             const Profile& profile) {
@@ -137,7 +138,7 @@ ConfigurationModule::ConfigurationModule(ConfigurationModuleContext&& context)
                  [this, node = context.selection.node()]() -> Awaitable<void> {
                    (void)co_await task_manager_.PostTask(
                        u16format(L"Unlocking {}", node.display_name().text),
-                       [node]() -> Awaitable<scada::Status> {
+                       [node]() -> scada::CoStatus {
                          co_return co_await node.scada_node().call(
                              scada::data_items::id::DataItemType_Unlock);
                        });

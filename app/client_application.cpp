@@ -36,6 +36,7 @@
 #include "properties/property_service.h"
 #include "remote/remote_services.h"
 #include "resources/common_resources.h"
+#include "scada/co_result.h"
 #include "scada/service_context.h"
 #include "services/alias_resolver_factory.h"
 #include "services/connection_state_reporter.h"
@@ -177,7 +178,7 @@ bool ClientApplication::HasGlobalCommandForTesting(unsigned command_id) const {
          core_module_->global_commands().FindCommand(command_id) != nullptr;
 }
 
-Awaitable<scada::Status> ClientApplication::SaveProfileToServer(
+scada::CoStatus ClientApplication::SaveProfileToServer(
     scada::NodeId target_user_id) {
   if (!profile_ || !master_data_services_) {
     co_return scada::StatusCode::Bad;

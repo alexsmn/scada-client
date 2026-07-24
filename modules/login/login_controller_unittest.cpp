@@ -5,6 +5,7 @@
 #include "base/memory_settings_store.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
+#include "scada/co_result.h"
 #include "scada/data_services_factory.h"
 #include "scada/session_service_mock.h"
 
@@ -31,7 +32,7 @@ class NullTransportFactory final : public transport::TransportFactory {
 
 class DeferredStatus {
  public:
-  Awaitable<scada::Status> Wait(AnyExecutor executor) {
+  scada::CoStatus Wait(AnyExecutor executor) {
     auto [status] = co_await CallbackToAwaitable<scada::Status>(
         std::move(executor),
         [this](auto callback) { callback_ = std::move(callback); });
@@ -242,8 +243,8 @@ TEST(LoginControllerTest, LoginCompletesAfterSessionConnect) {
   bool completed = false;
 
   EXPECT_CALL(session_service, ConnectStatus(_))
-      .WillOnce([executor, &connect](scada::SessionConnectParams params)
-                    -> Awaitable<scada::Status> {
+      .WillOnce([executor, &connect](
+                    scada::SessionConnectParams params) -> scada::CoStatus {
         EXPECT_EQ(params.host, "scada-host");
         EXPECT_EQ(params.user_name, u"ivan");
         EXPECT_EQ(params.password, u"secret");
@@ -287,10 +288,10 @@ TEST(LoginControllerTest, AutoLoginShowsInfoMessageBeforeCompletion) {
   bool completed = false;
 
   EXPECT_CALL(session_service, ConnectStatus(_))
-      .WillOnce([executor, &connect](
-                    scada::SessionConnectParams) -> Awaitable<scada::Status> {
-        co_return co_await connect.Wait(executor);
-      });
+      .WillOnce(
+          [executor, &connect](scada::SessionConnectParams) -> scada::CoStatus {
+            co_return co_await connect.Wait(executor);
+          });
   EXPECT_CALL(dialog_service,
               RunMessageBox(/*message=*/_, /*title=*/_, MessageBoxMode::Info))
       .WillOnce([executor, &auto_login_message](
@@ -334,10 +335,10 @@ TEST(LoginControllerTest, FailedLoginReportsErrorAfterMessageBox) {
   bool error_reported = false;
 
   EXPECT_CALL(session_service, ConnectStatus(_))
-      .WillOnce([executor, &connect](
-                    scada::SessionConnectParams) -> Awaitable<scada::Status> {
-        co_return co_await connect.Wait(executor);
-      });
+      .WillOnce(
+          [executor, &connect](scada::SessionConnectParams) -> scada::CoStatus {
+            co_return co_await connect.Wait(executor);
+          });
   EXPECT_CALL(dialog_service,
               RunMessageBox(/*message=*/_, /*title=*/_, MessageBoxMode::Error))
       .WillOnce([executor, &error_message](
@@ -376,13 +377,13 @@ TEST(LoginControllerTest, ForceLogoffPromptRetriesConnectWhenAccepted) {
   bool completed = false;
 
   EXPECT_CALL(session_service, ConnectStatus(_))
-      .WillOnce([executor, &first_connect](scada::SessionConnectParams params)
-                    -> Awaitable<scada::Status> {
+      .WillOnce([executor, &first_connect](
+                    scada::SessionConnectParams params) -> scada::CoStatus {
         EXPECT_FALSE(params.allow_remote_logoff);
         co_return co_await first_connect.Wait(executor);
       })
-      .WillOnce([executor, &second_connect](scada::SessionConnectParams params)
-                    -> Awaitable<scada::Status> {
+      .WillOnce([executor, &second_connect](
+                    scada::SessionConnectParams params) -> scada::CoStatus {
         EXPECT_TRUE(params.allow_remote_logoff);
         co_return co_await second_connect.Wait(executor);
       });
@@ -424,10 +425,10 @@ TEST(LoginControllerTest, DestroyedControllerDropsPendingConnectCompletion) {
   bool completed = false;
 
   EXPECT_CALL(session_service, ConnectStatus(_))
-      .WillOnce([executor, &connect](
-                    scada::SessionConnectParams) -> Awaitable<scada::Status> {
-        co_return co_await connect.Wait(executor);
-      });
+      .WillOnce(
+          [executor, &connect](scada::SessionConnectParams) -> scada::CoStatus {
+            co_return co_await connect.Wait(executor);
+          });
 
   auto controller = CreateController(executor, dialog_service, settings_store,
                                      transport_factory);

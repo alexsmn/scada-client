@@ -6,6 +6,7 @@
 #include "base/async_completion.h"
 #include "base/awaitable.h"
 #include "scada/attribute_service.h"
+#include "scada/co_result.h"
 #include "scada/node_management_service.h"
 #include "scada/status.h"
 #include "services/task_manager.h"
@@ -46,22 +47,20 @@ class TaskManagerImpl : private TaskManagerImplContext,
   bool IsRunning() const;
 
   // TaskManager
-  virtual Awaitable<scada::Status> PostTask(
-      std::u16string_view description,
-      const TaskLauncher& launcher) override;
-  virtual Awaitable<scada::StatusOr<scada::NodeId>> PostInsertTask(
+  virtual scada::CoStatus PostTask(std::u16string_view description,
+                                   const TaskLauncher& launcher) override;
+  virtual scada::CoStatusOr<scada::NodeId> PostInsertTask(
       const scada::NodeState& node_state) override;
-  virtual Awaitable<scada::Status> PostUpdateTask(
+  virtual scada::CoStatus PostUpdateTask(
       const scada::NodeId& node_id,
       scada::NodeAttributes attributes,
       scada::NodeProperties properties) override;
-  virtual Awaitable<scada::Status> PostDeleteTask(
-      const scada::NodeId& node_id) override;
-  virtual Awaitable<scada::Status> PostAddReference(
+  virtual scada::CoStatus PostDeleteTask(const scada::NodeId& node_id) override;
+  virtual scada::CoStatus PostAddReference(
       const scada::NodeId& reference_type_id,
       const scada::NodeId& source_id,
       const scada::NodeId& target_id) override;
-  virtual Awaitable<scada::Status> PostDeleteReference(
+  virtual scada::CoStatus PostDeleteReference(
       const scada::NodeId& reference_type_id,
       const scada::NodeId& source_id,
       const scada::NodeId& target_id) override;
@@ -70,7 +69,7 @@ class TaskManagerImpl : private TaskManagerImplContext,
   // A queued task's body. The coroutine runs to completion (or throws); the
   // returned Status drives the single local event written by
   // `ReportRequestCompletion`.
-  using TaskMethod = std::function<Awaitable<scada::Status>()>;
+  using TaskMethod = std::function<scada::CoStatus()>;
 
   struct Task {
     bool IsNull() const { return !method; }
@@ -89,31 +88,30 @@ class TaskManagerImpl : private TaskManagerImplContext,
   // interface contract). Deliberately NOT a coroutine: a lazy coroutine here
   // regressed every call site that discarded the result — the task was never
   // queued. Only the returned result waiter is lazy.
-  Awaitable<scada::Status> PostTaskMethod(std::u16string title,
-                                          TaskMethod method);
+  scada::CoStatus PostTaskMethod(std::u16string title, TaskMethod method);
 
   template <class T>
-  Awaitable<scada::StatusOr<T>> PostTypedTaskMethod(
+  scada::CoStatusOr<T> PostTypedTaskMethod(
       std::u16string title,
-      std::function<Awaitable<scada::StatusOr<T>>()> method);
+      std::function<scada::CoStatusOr<T>()> method);
 
-  [[nodiscard]] static Awaitable<scada::StatusOr<scada::NodeId>> RunInsertTask(
+  [[nodiscard]] static scada::CoStatusOr<scada::NodeId> RunInsertTask(
       std::shared_ptr<TaskManagerImpl> self,
       scada::NodeState node_state);
-  [[nodiscard]] static Awaitable<scada::Status> RunUpdateTask(
+  [[nodiscard]] static scada::CoStatus RunUpdateTask(
       std::shared_ptr<TaskManagerImpl> self,
       scada::NodeId node_id,
       scada::NodeAttributes attributes,
       scada::NodeProperties properties);
-  [[nodiscard]] static Awaitable<scada::Status> RunDeleteTask(
+  [[nodiscard]] static scada::CoStatus RunDeleteTask(
       std::shared_ptr<TaskManagerImpl> self,
       scada::NodeId node_id);
-  [[nodiscard]] static Awaitable<scada::Status> RunAddReferenceTask(
+  [[nodiscard]] static scada::CoStatus RunAddReferenceTask(
       std::shared_ptr<TaskManagerImpl> self,
       scada::NodeId reference_type_id,
       scada::NodeId source_id,
       scada::NodeId target_id);
-  [[nodiscard]] static Awaitable<scada::Status> RunDeleteReferenceTask(
+  [[nodiscard]] static scada::CoStatus RunDeleteReferenceTask(
       std::shared_ptr<TaskManagerImpl> self,
       scada::NodeId reference_type_id,
       scada::NodeId source_id,

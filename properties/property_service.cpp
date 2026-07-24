@@ -11,6 +11,7 @@
 #include "node_service/node_util.h"
 #include "properties/channel_property_definition.h"
 #include "properties/property_defs.h"
+#include "scada/co_result.h"
 
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
@@ -87,7 +88,7 @@ bool IsTypeChainResident(const NodeRef& type_definition) {
 // caller's synchronous walk must run with no suspension point in between —
 // eviction only happens on the service executor, so verified state cannot
 // thrash mid-walk.
-Awaitable<scada::Status> FetchTypeChainResident(NodeRef type_definition) {
+scada::CoStatus FetchTypeChainResident(NodeRef type_definition) {
   constexpr int kMaxResidencyAttempts = 3;
   for (int attempt = 0; attempt < kMaxResidencyAttempts; ++attempt) {
     if (auto status = co_await FetchTypeChainStatus(type_definition); !status)
@@ -101,7 +102,7 @@ Awaitable<scada::Status> FetchTypeChainResident(NodeRef type_definition) {
 // Fetches `parent_node` plus its type chain and re-verifies both stayed
 // resident, so GetChildTypeDefinitions can be called immediately after
 // without tripping its residency preconditions.
-Awaitable<scada::Status> FetchParentAndTypeChainResident(NodeRef parent_node) {
+scada::CoStatus FetchParentAndTypeChainResident(NodeRef parent_node) {
   constexpr int kMaxResidencyAttempts = 3;
   for (int attempt = 0; attempt < kMaxResidencyAttempts; ++attempt) {
     if (auto status = co_await FetchNodeStatus(parent_node); !status)
@@ -111,8 +112,7 @@ Awaitable<scada::Status> FetchParentAndTypeChainResident(NodeRef parent_node) {
         !status) {
       co_return status;
     }
-    if (parent_node.fetched() &&
-        parent_node.type_definition() &&
+    if (parent_node.fetched() && parent_node.type_definition() &&
         IsTypeChainResident(parent_node.type_definition())) {
       co_return scada::StatusCode::Good;
     }
@@ -125,9 +125,9 @@ Awaitable<scada::Status> FetchParentAndTypeChainResident(NodeRef parent_node) {
 // PropertyService
 
 Awaitable<void> PropertyService::GetAllSubtypesPropertiesAsync(
-  AnyExecutor executor,
-  const NodeRef& type_definition,
-  const std::shared_ptr<std::unordered_set<NodeRef>>& property_decls) {
+    AnyExecutor executor,
+    const NodeRef& type_definition,
+    const std::shared_ptr<std::unordered_set<NodeRef>>& property_decls) {
   // Skip on failure rather than walking: GetTypeProperties fail-stops on an
   // unfetched (possibly keep-alive-evicted) chain.
   if (auto status = co_await FetchTypeChainResident(type_definition); !status)
@@ -140,7 +140,7 @@ Awaitable<void> PropertyService::GetAllSubtypesPropertiesAsync(
   }
 }
 
-Awaitable<scada::Status> PropertyService::GetAllSubtypesPropertiesStatusAsync(
+scada::CoStatus PropertyService::GetAllSubtypesPropertiesStatusAsync(
     AnyExecutor executor,
     const NodeRef& type_definition,
     const std::shared_ptr<std::unordered_set<NodeRef>>& property_decls) {
@@ -251,7 +251,7 @@ Awaitable<PropertyDefs> PropertyService::GetChildPropertyDefsAsync(
   co_return GetPropertyDefs(*property_decls);
 }
 
-Awaitable<scada::StatusOr<PropertyDefs>>
+scada::CoStatusOr<PropertyDefs>
 PropertyService::GetChildPropertyDefsStatusAsync(AnyExecutor executor,
                                                  const NodeRef& parent_node) {
   auto property_decls = std::make_shared<std::unordered_set<NodeRef>>();

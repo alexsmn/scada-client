@@ -10,6 +10,7 @@
 #include "base/awaitable.h"
 #include "configuration/configuration_module.h"
 #include "core/default_node_command_registry.h"
+#include "scada/co_result.h"
 #include "scada/data_services_factory.h"
 #include "scada/node_id.h"
 #include "scada/status.h"
@@ -127,7 +128,7 @@ class ClientApplication : private ClientApplicationContext {
 
   // Saves the current profile JSON to the logged-in server user, or to
   // `target_user_id` when provided.
-  [[nodiscard]] Awaitable<scada::Status> SaveProfileToServer(
+  [[nodiscard]] scada::CoStatus SaveProfileToServer(
       scada::NodeId target_user_id = {});
 
   // Load profile and start.

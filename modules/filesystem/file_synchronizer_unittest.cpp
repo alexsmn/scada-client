@@ -6,6 +6,7 @@
 #include "model/filesystem_node_ids.h"
 #include "node_service/static/static_node_service.h"
 #include "scada/attribute_service_mock.h"
+#include "scada/co_result.h"
 
 #include <fstream>
 #include <gmock/gmock.h>
@@ -49,8 +50,7 @@ class ScopedTempDir {
   std::filesystem::path path_;
 };
 
-scada::NodeState MakeType(scada::NodeId node_id,
-                          scada::NodeClass node_class) {
+scada::NodeState MakeType(scada::NodeId node_id, scada::NodeClass node_class) {
   return {.node_id = node_id, .node_class = node_class};
 }
 
@@ -75,8 +75,8 @@ scada::NodeState MakeFileNode(scada::Time last_update_time) {
 class FileSynchronizerTest : public Test {
  protected:
   FileSynchronizerTest()
-      : node_service_{scada::services{.attribute_service =
-                                          &attribute_service_}} {
+      : node_service_{
+            scada::services{.attribute_service = &attribute_service_}} {
     node_service_.Add(MakeType(scada::filesystem::id::FileDirectoryType,
                                scada::NodeClass::ObjectType));
     node_service_.Add(MakeType(scada::filesystem::id::FileType,
@@ -110,8 +110,7 @@ class FileSynchronizerTest : public Test {
 }  // namespace
 
 TEST_F(FileSynchronizerTest, DownloadsOutdatedFile) {
-  const auto last_update_time =
-      scada::Time{} + std::chrono::seconds(10);
+  const auto last_update_time = scada::Time{} + std::chrono::seconds(10);
   const std::string contents = "downloaded";
   AddFile(last_update_time);
 
@@ -120,11 +119,10 @@ TEST_F(FileSynchronizerTest, DownloadsOutdatedFile) {
                    /*inputs=*/ElementsAre(scada::ReadValueId{
                        .node_id = kFileNodeId,
                        .attribute_id = scada::AttributeId::Value})))
-      .WillOnce([&](scada::ServiceContext,
-                    std::vector<scada::ReadValueId>)
-                    -> Awaitable<scada::StatusOr<std::vector<scada::DataValue>>> {
-        co_return std::vector{scada::MakeReadResult(scada::ByteString(
-            contents.begin(), contents.end()))};
+      .WillOnce([&](scada::ServiceContext, std::vector<scada::ReadValueId>)
+                    -> scada::CoStatusOr<std::vector<scada::DataValue>> {
+        co_return std::vector{scada::MakeReadResult(
+            scada::ByteString(contents.begin(), contents.end()))};
       });
 
   StartSynchronizer();
@@ -136,14 +134,12 @@ TEST_F(FileSynchronizerTest, DownloadsOutdatedFile) {
 }
 
 TEST_F(FileSynchronizerTest, DownloadFailureDoesNotCreateFile) {
-  const auto last_update_time =
-      scada::Time{} + std::chrono::seconds(10);
+  const auto last_update_time = scada::Time{} + std::chrono::seconds(10);
   AddFile(last_update_time);
 
   EXPECT_CALL(attribute_service_, Read(_, _))
-      .WillOnce([](scada::ServiceContext,
-                   std::vector<scada::ReadValueId>)
-                    -> Awaitable<scada::StatusOr<std::vector<scada::DataValue>>> {
+      .WillOnce([](scada::ServiceContext, std::vector<scada::ReadValueId>)
+                    -> scada::CoStatusOr<std::vector<scada::DataValue>> {
         co_return scada::StatusCode::Bad;
       });
 
@@ -154,8 +150,7 @@ TEST_F(FileSynchronizerTest, DownloadFailureDoesNotCreateFile) {
 }
 
 TEST_F(FileSynchronizerTest, ActualFileSkipsDownload) {
-  const auto last_update_time =
-      scada::Time{} + std::chrono::seconds(10);
+  const auto last_update_time = scada::Time{} + std::chrono::seconds(10);
   AddFile(last_update_time);
 
   const std::string contents = "cached";

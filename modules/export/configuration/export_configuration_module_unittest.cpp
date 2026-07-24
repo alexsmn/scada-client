@@ -6,7 +6,6 @@
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "common/test/node_state_matcher.h"
-#include "resources/common_resources.h"
 #include "controller/command_registry.h"
 #include "controller/command_ui_registry.h"
 #include "core/global_command_context.h"
@@ -17,6 +16,7 @@
 #include "main_window/main_window_mock.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/static/static_node_service.h"
+#include "resources/common_resources.h"
 #include "services/task_manager_mock.h"
 
 #include <chrono>
@@ -25,6 +25,7 @@
 #include <gmock/gmock.h>
 
 #include "base/debug_util.h"
+#include "scada/co_result.h"
 
 using namespace testing;
 
@@ -36,8 +37,8 @@ auto ReturnAwaitable(T value) {
 }
 
 auto ReturnNodeId(scada::NodeId value) {
-  return [value = std::move(value)](auto&&...)
-             mutable -> Awaitable<scada::StatusOr<scada::NodeId>> {
+  return [value = std::move(value)](
+             auto&&...) mutable -> scada::CoStatusOr<scada::NodeId> {
     co_return std::move(value);
   };
 }
@@ -63,11 +64,12 @@ class ExportConfigurationModuleTest : public Test {
   GlobalCommandContext main_command_context_{.main_window = main_window_,
                                              .dialog_service = dialog_service_};
 
-  ExportConfigurationModule module_{{.executor_ = executor_,
-                                     .node_service_ = node_service_,
-                                     .task_manager_ = task_manager_,
-                                     .global_commands_ = global_commands_,
-                                     .ui_command_registry_ = ui_command_registry_}};
+  ExportConfigurationModule module_{
+      {.executor_ = executor_,
+       .node_service_ = node_service_,
+       .task_manager_ = task_manager_,
+       .global_commands_ = global_commands_,
+       .ui_command_registry_ = ui_command_registry_}};
 
   std::filesystem::path temp_dir_;
 };
@@ -75,11 +77,11 @@ class ExportConfigurationModuleTest : public Test {
 void ExportConfigurationModuleTest::SetUp() {
   node_service_.AddAll(GetScadaNodeStates());
 
-  temp_dir_ = std::filesystem::temp_directory_path() /
-              ("scada_test_" + std::to_string(
-                   std::chrono::steady_clock::now()
-                       .time_since_epoch()
-                       .count()));
+  temp_dir_ =
+      std::filesystem::temp_directory_path() /
+      ("scada_test_" +
+       std::to_string(
+           std::chrono::steady_clock::now().time_since_epoch().count()));
   std::filesystem::create_directories(temp_dir_);
 }
 
@@ -172,9 +174,8 @@ TEST_F(ExportConfigurationModuleTest, ExportCommandWritesFileAndPromptsToOpen) {
   EXPECT_CALL(dialog_service_, SelectSaveFile(/*params=*/_))
       .WillOnce(ReturnAwaitable(export_file_path));
 
-  EXPECT_CALL(dialog_service_,
-              RunMessageBox(/*message=*/_, /*title=*/_,
-                            MessageBoxMode::QuestionYesNo))
+  EXPECT_CALL(dialog_service_, RunMessageBox(/*message=*/_, /*title=*/_,
+                                             MessageBoxMode::QuestionYesNo))
       .WillOnce(ReturnAwaitable(MessageBoxResult::No));
 
   command->execute_handler(main_command_context_);
@@ -183,7 +184,8 @@ TEST_F(ExportConfigurationModuleTest, ExportCommandWritesFileAndPromptsToOpen) {
   EXPECT_TRUE(std::filesystem::exists(export_file_path));
 }
 
-TEST_F(ExportConfigurationModuleTest, ImportCommandOpenFailureShowsErrorDialog) {
+TEST_F(ExportConfigurationModuleTest,
+       ImportCommandOpenFailureShowsErrorDialog) {
   auto* command =
       global_commands_.FindCommand(ID_IMPORT_CONFIGURATION_FROM_EXCEL);
   ASSERT_THAT(command, NotNull());
@@ -192,8 +194,7 @@ TEST_F(ExportConfigurationModuleTest, ImportCommandOpenFailureShowsErrorDialog) 
       .WillOnce(ReturnAwaitable(temp_dir_ / "missing.csv"));
 
   EXPECT_CALL(dialog_service_,
-              RunMessageBox(/*message=*/_, /*title=*/_,
-                            MessageBoxMode::Error))
+              RunMessageBox(/*message=*/_, /*title=*/_, MessageBoxMode::Error))
       .WillOnce(ReturnAwaitable(MessageBoxResult::Ok));
 
   command->execute_handler(main_command_context_);

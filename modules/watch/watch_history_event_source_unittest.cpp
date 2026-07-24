@@ -4,6 +4,7 @@
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "node_service/static/static_node_service.h"
+#include "scada/co_result.h"
 #include "scada/history_service_mock.h"
 
 #include <gmock/gmock.h>
@@ -62,12 +63,11 @@ TEST_F(WatchHistoryEventSourceTest, StartDeliversHistoryEvents) {
   const auto to = scada::Time{} + std::chrono::seconds(2);
 
   EXPECT_CALL(history_service_, HistoryReadEvents(kDeviceId, from, to, _))
-      .WillOnce(
-          [](scada::NodeId, scada::Time, scada::Time, scada::EventFilter)
-              -> Awaitable<scada::StatusOr<scada::HistoryReadEventsResult>> {
-            co_return scada::HistoryReadEventsResult{
-                .events = {MakeEvent(1), MakeEvent(2)}};
-          });
+      .WillOnce([](scada::NodeId, scada::Time, scada::Time, scada::EventFilter)
+                    -> scada::CoStatusOr<scada::HistoryReadEventsResult> {
+        co_return scada::HistoryReadEventsResult{
+            .events = {MakeEvent(1), MakeEvent(2)}};
+      });
 
   source_.Start(kDeviceId, {from, to}, delegate_);
   Drain(executor_);
@@ -83,13 +83,12 @@ TEST_F(WatchHistoryEventSourceTest, NewStartCancelsStaleHistoryDelivery) {
   bool history_read_started = false;
 
   EXPECT_CALL(history_service_, HistoryReadEvents(kDeviceId, _, _, _))
-      .WillOnce(
-          [&](scada::NodeId, scada::Time, scada::Time, scada::EventFilter)
-              -> Awaitable<scada::StatusOr<scada::HistoryReadEventsResult>> {
-            history_read_started = true;
-            co_await completion.Wait();
-            co_return result;
-          });
+      .WillOnce([&](scada::NodeId, scada::Time, scada::Time, scada::EventFilter)
+                    -> scada::CoStatusOr<scada::HistoryReadEventsResult> {
+        history_read_started = true;
+        co_await completion.Wait();
+        co_return result;
+      });
 
   source_.Start(kDeviceId,
                 {scada::Time{}, scada::Time{} + std::chrono::seconds(1)},
