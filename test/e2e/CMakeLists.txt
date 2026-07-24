@@ -33,6 +33,7 @@ endif()
 add_executable(client_server_e2e_tests
   "client_server_e2e_test.cpp"
   "client_server_e2e_test_support.cpp"
+  "${CMAKE_SOURCE_DIR}/common/test/e2e/e2e_cluster.cpp"
   "${CMAKE_SOURCE_DIR}/common/test/e2e/e2e_file_helpers.cpp"
   "${CMAKE_SOURCE_DIR}/common/test/e2e/e2e_process.cpp"
   "${CMAKE_SOURCE_DIR}/common/test/e2e/e2e_server_process.cpp"
