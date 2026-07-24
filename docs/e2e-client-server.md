@@ -166,16 +166,23 @@ The Qt startup path accepts these test-only flags:
 - `--test-log-dir=<path>`
 - `--test-operator-use-cases-file=<path>`
 - `--test-historical-timed-data-file=<path>`
+- `--test-historical-timed-data-end=<time>`
 
 These are only used by the E2E harness.
 
 When `--test-historical-timed-data-file` is present, the client opens the real
-timed-data view on the historized, simulated analog item TIT.4 over its default
-(past) window, waits for the historical HistoryRead to populate rows, and then
+timed-data view on the historized, simulated analog item TIT.4, waits for the
+historical HistoryRead to populate rows, and then
 exports them to the given path using the view's own Export-to-CSV writer (the
 same `ExportToCsv` the `ID_EXPORT_CSV` command runs, minus the interactive
 save-file dialog). The report is a CSV: a header row plus one row per historical
-sample.
+sample. `--test-historical-timed-data-end` (a `scada::base::Time` internal
+value the harness records *before launching the client*) pins the view to a
+fixed past window ending there instead of the default Day window: live
+monitored-item updates all carry timestamps after the client launched, so they
+fall outside the window and only server-stored history (the historian, in the
+Cluster topology) can produce rows — without it the check could pass off
+client-side live buffering even when proxy history routing was broken.
 
 When `--test-log-dir` is present, the client overrides its normal
 `%LOCALAPPDATA%\Telecontrol\SCADA Client\logs` path and writes both component
@@ -284,8 +291,12 @@ Every test is parametrized over two axes — the client backend protocol and the
 - **Cluster** — the real ADR-0001 tier split, standing up six processes: a
   `scada-config` tier owning the configuration namespace; the three device edges
   `scada-iec104` / `scada-modbus` / `scada-iec61850` (each a config client
-  running one driver, fetching config from the config tier and routing history to
-  the historian as the multi-session `svc` user); a `scada-historian`; and a
+  running one driver, fetching config from the config tier as the multi-session
+  `svc` user; edges run no history module); a `scada-historian` that
+  pull-collects from an edge (`historyCollection.sources`) and self-registers
+  with the proxy via RegisterServer2 advertising the `HD` capability, so the
+  proxy's history-link module (`historyLink`, svc) routes client HistoryRead
+  to it (the proxy's aggregation skips HD registrants); and a
   client-facing aggregating `scada-proxy` that aggregates the three edges
   anonymously. The iec104 and iec61850 edges use static `aggregation.servers`
   entries; the modbus edge is aggregated **dynamically** — it self-registers
@@ -319,10 +330,15 @@ carries a comment and skips accordingly):
 
 - **hardware-tree devices** — skipped: the aggregated devices don't yet surface
   as online through the cluster.
-- **historical timed-data** and **nested object-tree labels** — skipped under
-  Cluster: `RemoteConfigurationManager::LoadNodes` doesn't enumerate instances of
-  types with no static parent (AnalogItemType / DiscreteItemType), so data items
-  aren't loaded over remote config. Labels still run under SingleTier.
+- **historical timed-data** — runs only under Cluster (a single device tier
+  owns no history) and asserts *historian-served* rows: the harness freezes
+  the view's window end before launching the client
+  (`--test-historical-timed-data-end`), so live buffering can't populate it —
+  the rows must round-trip edge → historian collection → proxy history link →
+  client.
+- **nested object-tree labels** — skipped under Cluster: the nested
+  station/group DisplayNames don't fully come through the aggregation
+  attribute path yet. Labels still run under SingleTier.
 - **profile save** — skipped under Cluster: the client→proxy→edge→config
   write-through isn't wired yet. Still runs under SingleTier.
 
@@ -423,20 +439,23 @@ Current harness details:
 Expected behavior:
 
 - the harness historizes + simulates TIT.4 before launch (via
-  `EnableSimulatedHistory`), so the server collects a steady stream of samples
-  into the analog historical DB,
-- `server.exe` and `client.exe` complete the same real login/bootstrap path as
+  `EnableSimulatedHistory`), so the historian pull-collects a steady stream of
+  samples into its analog historical DB while the tiers start up,
+- `client.exe` completes the same real login/bootstrap path as
   `Connect_Success`,
-- the client opens the real timed-data view, reads the samples back through the
-  active backend, and exports them via the view's Export-to-CSV writer,
+- the client opens the real timed-data view over a window frozen to end before
+  the client launched (`--test-historical-timed-data-end`), reads the
+  historian's samples back through the active backend, and exports them via
+  the view's Export-to-CSV writer,
 - the exported CSV contains at least one historical data row (beyond the
-  header),
+  header) — necessarily historian-served, since live buffering falls outside
+  the frozen window,
 - the client and server remain alive for the post-connect stability window.
 
-Runs under all four parameters. In multi-process mode the data items — and their
-history — live on the edge, so a passing OPC UA/Remote MultiProcess run also
-proves the aggregating proxy forwards HistoryRead to the downstream edge
-(`RemappingHistoryService`).
+Runs only under the Cluster topology (a single device tier owns no history).
+The data items live on the edges and the stored history on the historian, so a
+passing run proves the proxy's discovery-driven history link (RegisterServer2
+`HD` capability → history-link module → `RemoteHistoryService`) end to end.
 
 ## Process and Timeout Policy
 
