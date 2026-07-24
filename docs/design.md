@@ -40,8 +40,8 @@ generally depend downward.
   <img src="architecture-layers.svg" alt="Architecture layers" width="720">
 </p>
 
-> Source: [`architecture-layers.mmd`](architecture-layers.mmd). Regenerate
-> with `mmdc -i architecture-layers.mmd -o architecture-layers.svg -b transparent`.
+> Source: [`architecture-layers.puml`](architecture-layers.puml). Regenerate
+> with `plantuml -tsvg architecture-layers.puml`.
 
 ### 3.1 Application bootstrap — `app/`
 
@@ -125,8 +125,8 @@ visible page — looks like this:
   <img src="bootstrap-sequence.svg" alt="Bootstrap sequence" width="820">
 </p>
 
-> Source: [`bootstrap-sequence.mmd`](bootstrap-sequence.mmd). Regenerate
-> with `mmdc -i bootstrap-sequence.mmd -o bootstrap-sequence.svg -b transparent`.
+> Source: [`bootstrap-sequence.puml`](bootstrap-sequence.puml). Regenerate
+> with `plantuml -tsvg bootstrap-sequence.puml`.
 
 The always-on cross-process Qt E2E test design for launching the real
 `client.exe` against the real `server.exe` is documented separately in
@@ -211,8 +211,8 @@ constructs them in an order that satisfies the graph:
   <img src="module-graph.svg" alt="Module graph" width="820">
 </p>
 
-> Source: [`module-graph.mmd`](module-graph.mmd). Regenerate with
-> `mmdc -i module-graph.mmd -o module-graph.svg -b transparent`.
+> Source: [`module-graph.puml`](module-graph.puml). Regenerate with
+> `plantuml -tsvg module-graph.puml`.
 
 ### 3.7 Main window and view manager — `main_window/`
 

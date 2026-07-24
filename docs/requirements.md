@@ -36,8 +36,8 @@ components in the source tree.
   <img src="use-cases.svg" alt="Use case diagram" width="820">
 </p>
 
-> Source: [`use-cases.mmd`](use-cases.mmd). Regenerate with
-> `mmdc -i use-cases.mmd -o use-cases.svg -b transparent`.
+> Source: [`use-cases.puml`](use-cases.puml). Regenerate with
+> `plantuml -tsvg use-cases.puml`.
 
 The table that follows expands each use case with the source folder
 that implements it. The columns are read as: identifier, actor, goal,

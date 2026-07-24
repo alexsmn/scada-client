@@ -61,7 +61,7 @@ scada-client/
 ├── docs/                   # Design doc and architecture diagrams
 │   ├── design.md           # High-level architecture and component design
 │   ├── requirements.md     # Use cases and FR/NFR traceability
-│   ├── *.mmd               # Mermaid diagram sources
+│   ├── *.puml              # PlantUML diagram sources
 │   └── *.svg               # Generated diagrams referenced from design.md
 ├── .github/workflows/      # CI: cmake-multi-platform.yml, msbuild.yml
 ├── CMakeLists.txt          # Root CMake build file
@@ -183,13 +183,13 @@ whenever you change or add functionality.** Concretely, that means at
 minimum:
 
 - Adding or removing a top-level module (`*_module.{h,cpp}`) — update the
-  module table and `module-graph.mmd`.
+  module table and `module-graph.puml`.
 - Adding or removing a directory under `client/` that hosts a new layer or
-  domain area — update the layer description and `architecture-layers.mmd`.
+  domain area — update the layer description and `architecture-layers.puml`.
 - Adding or removing a back-end registered with `REGISTER_DATA_SERVICES` —
   update FR-1 in `docs/requirements.md` §3.
 - Changing the bootstrap order in `ClientApplication::PostLogin()` —
-  update `bootstrap-sequence.mmd`.
+  update `bootstrap-sequence.puml`.
 - Adding a new actor-facing capability that isn't covered by an existing
   use case — add a row to the use-case table in `docs/requirements.md` §2
   and a functional requirement in `docs/requirements.md` §3.
@@ -205,48 +205,57 @@ the doc and the code is worse than no doc.
 
 ### Diagrams
 
-Architecture diagrams live next to `design.md` as Mermaid sources:
+Architecture diagrams live next to `design.md` as PlantUML sources:
 
 | File | Renders to | Used in design.md §|
 |---|---|---|
-| `docs/use-cases.mmd` | `use-cases.svg` | `requirements.md` §2 (use cases) |
-| `docs/architecture-layers.mmd` | `architecture-layers.svg` | `design.md` §3 (component overview) |
-| `docs/module-graph.mmd` | `module-graph.svg` | `design.md` §3.6 (domain modules) |
-| `docs/bootstrap-sequence.mmd` | `bootstrap-sequence.svg` | `design.md` §3.1 (startup sequence) |
+| `docs/use-cases.puml` | `use-cases.svg` | `requirements.md` §2 (use cases) |
+| `docs/architecture-layers.puml` | `architecture-layers.svg` | `design.md` §3 (component overview) |
+| `docs/module-graph.puml` | `module-graph.svg` | `design.md` §3.6 (domain modules) |
+| `docs/bootstrap-sequence.puml` | `bootstrap-sequence.svg` | `design.md` §3.1 (startup sequence) |
 
-The `.svg` files are committed alongside the `.mmd` sources so the doc
+The `.svg` files are committed alongside the `.puml` sources so the doc
 renders correctly on GitHub without a build step.
 
 **To update a diagram:**
 
-1. Edit the corresponding `.mmd` file. Mermaid syntax reference:
-   <https://mermaid.js.org/intro/>.
-2. Regenerate the SVG with `mmdc` (mermaid-cli, installed globally via
-   `npm install -g @mermaid-js/mermaid-cli`):
+1. Edit the corresponding `.puml` file. PlantUML syntax reference:
+   <https://plantuml.com/>.
+2. Regenerate the SVG with `plantuml` (macOS: `brew install plantuml`; it
+   brings its own JDK and Graphviz):
 
    ```bash
-   cd client/docs
-   mmdc -i <name>.mmd -o <name>.svg -b transparent
+   plantuml -tsvg client/docs/<name>.puml
    ```
 
-3. Commit both the `.mmd` source *and* the regenerated `.svg`. They must
+3. **Look at the rendered output** before committing — render a PNG
+   (`plantuml -tpng client/docs/<name>.puml -o /tmp`) and open it. Layout
+   collisions and PlantUML warning banners are drawn *into* the image and
+   are invisible in the source.
+4. Commit both the `.puml` source *and* the regenerated `.svg`. They must
    stay in lock-step — never commit one without the other.
 
-**Mermaid quirks worth knowing:**
+**PlantUML conventions worth knowing:**
 
-- Sequence-diagram message text cannot contain `,` `;` `&` HTML entities,
-  or PascalCase identifiers at the very end of a line — the parser
-  interprets them as new statements. Rephrase or split.
-- Flowchart node labels accept HTML (`<b>`, `<i>`, `<br/>`); sequence
-  participant labels do not.
+- Start every diagram with `!include _style.puml` — the shared house style
+  (theme, skinparams, palette variables `$tier`/`$config`/`$store`/`$hazard`/
+  `$external`/`$neutral`/`$proxy`) lives in `docs/_style.puml`. See the
+  superproject `CLAUDE.md`, "PlantUML house style", for the palette table.
+- Colour an activity with `:text; <<$tier>>` **after** the semicolon. The
+  legacy `#RRGGBB:text;` prefix form is deprecated and PlantUML draws a
+  warning banner into the image.
+- `<style>` blocks with stereotype classes silently do nothing under
+  `!theme plain` — colours just don't apply, with no error.
+- A trailing `' comment` on a `!$var = "..."` line is a syntax error; put
+  preprocessor comments on their own lines.
 - Always end the file with a trailing newline.
 
 **To add a new diagram:**
 
-1. Create `docs/<name>.mmd`.
-2. Render it as above.
+1. Create `docs/<name>.puml` starting with `!include _style.puml`.
+2. Render it as above, and look at the PNG.
 3. Reference it from `design.md` with `![alt](<name>.svg)` and a "Source:
-   …" caption pointing back to the `.mmd`.
+   …" caption pointing back to the `.puml`.
 4. Add it to the table above in this section.
 
 ## Build System

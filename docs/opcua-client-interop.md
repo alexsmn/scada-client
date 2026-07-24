@@ -329,9 +329,9 @@ that is exactly why discovery is the entry point.
 
 ![OPC UA client discovery and endpoint-driven security selection](opcua-discovery-flow.svg)
 
-Source: `client/docs/opcua-discovery-flow.mmd`. Regenerate the SVG after editing
-the source with `mmdr -i opcua-discovery-flow.mmd -o opcua-discovery-flow.svg`
-(or `c:\tools\mmdr\mmdr.exe` on Windows); commit the `.mmd` and `.svg` together.
+Source: `client/docs/opcua-discovery-flow.puml`. Regenerate the SVG after editing
+the source with `plantuml -tsvg opcua-discovery-flow.puml`; commit the `.puml` and
+`.svg` together.
 
 ## Work breakdown
 

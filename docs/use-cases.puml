@@ -1,0 +1,48 @@
+@startuml use-cases
+!include _style.puml
+
+title Qt client — use cases by actor
+
+left to right direction
+
+actor "Operator" as Operator $external
+actor "Engineer" as Engineer $external
+actor "Admin" as Admin $external
+
+package "Monitoring & visualization" as Monitoring {
+  usecase "UC-1 Monitor live values" as UC1 $neutral
+  usecase "UC-2 Visualise time-series on a graph" as UC2 $neutral
+  usecase "UC-3 View tables, summaries & sheets" as UC3 $neutral
+  usecase "UC-4 Acknowledge events / alarms" as UC4 $neutral
+  usecase "UC-5 Browse event journals" as UC5 $neutral
+  usecase "UC-6 Watch a custom spreadsheet" as UC6 $neutral
+}
+
+package "Operator tools" as OpTools {
+  usecase "UC-7 Issue control commands" as UC7 $neutral
+  usecase "UC-8 Manage favourites & portfolios" as UC8 $neutral
+  usecase "UC-9 Print / export the active view" as UC9 $neutral
+  usecase "UC-10 Browse server files" as UC10 $neutral
+  usecase "UC-11 View Modus / Vidicon schematics" as UC11 $neutral
+}
+
+package "Configuration" as Config {
+  usecase "UC-12 Edit device parameters, limits & aliases" as UC12 $neutral
+  usecase "UC-13 Bulk-create data items" as UC13 $neutral
+  usecase "UC-14 Export / import configuration" as UC14 $neutral
+  usecase "UC-15 Inspect protocol traffic" as UC15 $neutral
+  usecase "UC-16 Save window layouts & profiles" as UC16 $neutral
+}
+
+package "Administration" as Administration {
+  usecase "UC-17 Authenticate against a back-end" as UC17 $neutral
+  usecase "UC-18 Manage users / passwords" as UC18 $neutral
+  usecase "UC-19 Configure transmission rules" as UC19 $neutral
+}
+
+Operator --> Monitoring
+Operator --> OpTools
+Engineer --> Config
+Admin --> Administration
+
+@enduml

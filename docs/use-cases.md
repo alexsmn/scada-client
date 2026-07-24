@@ -6,8 +6,8 @@ This page is the test-oriented companion to the client use-case diagram.
   <img src="use-cases.svg" alt="Client use-case diagram" width="820">
 </p>
 
-> Source: [`use-cases.mmd`](use-cases.mmd). Regenerate the SVG with
-> `mmdc -i use-cases.mmd -o use-cases.svg -b transparent`.
+> Source: [`use-cases.puml`](use-cases.puml). Regenerate the SVG with
+> `plantuml -tsvg use-cases.puml`.
 
 ## Test Matrix
 

@@ -1,0 +1,37 @@
+@startuml architecture-layers
+!include _style.puml
+
+title Qt client — architecture layers
+
+left to right direction
+
+package "UI surface" as Surface {
+  rectangle "**Platform integrations**\n//modules/modus/, modules/vidicon///\n(Qt + Windows only)" as PLAT $config
+  rectangle "**UI components (~20)**\n//modules/*//" as UI $tier
+  rectangle "**Main window & view manager**\n//main_window///" as MW $tier
+  PLAT --> UI
+  UI --> MW
+}
+
+package "Application logic" as Logic {
+  rectangle "**Controllers / commands**\n//controller///" as CTRL $tier
+  rectangle "**Domain modules**\n//modules/configuration/, modules/events/,//\n//modules/favorites/, modules/portfolio/,//\n//modules/filesystem/, modules/graph/,//\n//modules/export/, modules/print/, properties///" as DOM $tier
+  rectangle "**Profile & persistence**\n//profile///" as PROF $tier
+  CTRL --> DOM
+  DOM --> PROF
+}
+
+package "Data plane & foundation" as Plane {
+  rectangle "**Services & data plane**\n//services/,//\n//common/master_data_services//" as SVC $tier
+  rectangle "**Abstract UI layer**\n//aui///" as AUI $tier
+  rectangle "**Core orchestration**\n//core/, base///" as CORE $tier
+  rectangle "**Application bootstrap**\n//app/, app/qt, app/wt//" as BOOT $tier
+  SVC --> AUI
+  AUI --> CORE
+  CORE --> BOOT
+}
+
+Surface --> Logic
+Logic --> Plane
+
+@enduml
