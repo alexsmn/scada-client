@@ -171,6 +171,10 @@ void TableRow::GetValueCell(TableCellEx& cell) const {
     cell.cell_color = scada::aui::ColorCode::Yellow;
 }
 
+bool TableRow::HasDeliveredValue() const {
+  return QualityFromValue(timed_data_.current()).has_value();
+}
+
 void TableRow::GetQualityCell(TableCellEx& cell) const {
   const std::optional<scada::aui::Quality> quality =
       QualityFromValue(timed_data_.current());
@@ -223,16 +227,24 @@ void TableRow::GetCellEx(TableCellEx& cell) const {
       GetQualityCell(cell);
       break;
 
+    // A timestamp is provenance for a delivered reading. A row that never
+    // received one has none, so these cells stay empty rather than dating a
+    // value that does not exist — the same reason the Value cell is blank and
+    // the quality column reads "No data" (docs/ux/principles.md §5). An
+    // operator reads a printed timestamp as real.
     case TableModel::COLUMN_SOURCE_TIMESTAMP:
-      cell.text = FormatCellTime(timed_data_.current().source_timestamp);
+      if (HasDeliveredValue())
+        cell.text = FormatCellTime(timed_data_.current().source_timestamp);
       break;
 
     case TableModel::COLUMN_SERVER_TIMESTAMP:
-      cell.text = FormatCellTime(timed_data_.current().server_timestamp);
+      if (HasDeliveredValue())
+        cell.text = FormatCellTime(timed_data_.current().server_timestamp);
       break;
 
     case TableModel::COLUMN_CHANGE_TIME:
-      cell.text = FormatCellTime(timed_data_.change_time());
+      if (HasDeliveredValue())
+        cell.text = FormatCellTime(timed_data_.change_time());
       break;
 
     case TableModel::COLUMN_EVENT:

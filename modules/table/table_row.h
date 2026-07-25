@@ -36,6 +36,12 @@ class TableRow : private Blinker {
  private:
   void SetBlinking(bool blinking);
 
+  // True once a reading has actually arrived for this row. False for a row
+  // whose formula resolves to no node, or to a node the server does not have:
+  // the Value cell is empty and the quality column reads "No data". The
+  // timestamp cells follow it, so they never date a value that never came.
+  bool HasDeliveredValue() const;
+
   void GetValueCell(TableCellEx& cell) const;
   void GetQualityCell(TableCellEx& cell) const;
   void GetEventCell(TableCellEx& cell) const;

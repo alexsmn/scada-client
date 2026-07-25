@@ -6,9 +6,11 @@
 #include "base/blinker_mock.h"
 #include "base/observer_list.h"
 #include "base/test/scoped_mock_clock_override.h"
+#include "base/time/calendar.h"
 #include "common/node_state.h"
 #include "events/node_event_provider_mock.h"
 #include "model/data_items_node_ids.h"
+#include "modules/table/quality_mark.h"
 #include "modules/table/sparkline.h"
 #include "modules/table/table_row.h"
 #include "node_service/test/fake_node_service.h"
@@ -226,6 +228,95 @@ TEST_F(TableModelTest, GetValue) {
       .Times(AnyNumber())
       .WillRepeatedly(Return(data_value));
   EXPECT_EQ(value, table_model_.GetCellText(0, TableModel::COLUMN_VALUE));
+}
+
+// A value that carries no timestamp must leave the timestamp columns blank.
+// The delivery path used to hand the table a default-constructed scada::Time
+// — the Unix epoch under std::chrono, which scada::IsNull() does not
+// recognise — and the cells faithfully formatted it as a 1969/1970 date.
+// A fabricated timestamp beside a live value is exactly the honesty failure
+// docs/ux/principles.md §5 forbids, and reads worse than a blank because an
+// operator takes it for real.
+TEST_F(TableModelTest, MissingTimestampsRenderBlank) {
+  const auto& row_context = SetFormula();
+
+  EXPECT_CALL(row_context->timed_data, GetNode()).Times(AnyNumber());
+  EXPECT_CALL(row_context->timed_data, GetDataValue())
+      .Times(AnyNumber())
+      .WillRepeatedly(Return(scada::DataValue{
+          42.0, scada::Qualifier{}, scada::kNullTime, scada::kNullTime}));
+  EXPECT_CALL(row_context->timed_data, GetChangeTime())
+      .Times(AnyNumber())
+      .WillRepeatedly(Return(scada::kNullTime));
+
+  EXPECT_EQ(table_model_.GetCellText(0, TableModel::COLUMN_SOURCE_TIMESTAMP),
+            u"");
+  EXPECT_EQ(table_model_.GetCellText(0, TableModel::COLUMN_SERVER_TIMESTAMP),
+            u"");
+  EXPECT_EQ(table_model_.GetCellText(0, TableModel::COLUMN_CHANGE_TIME), u"");
+}
+
+// A row that never received a reading — its formula resolves to a node the
+// server does not have — must not date the value it does not have. Before the
+// fix the delivery path stamped its own "now" onto the failed read, so the row
+// showed "Нет данных" quality and an empty Value cell beside two fully
+// plausible timestamps.
+TEST_F(TableModelTest, UndeliveredRowRendersNoTimestamps) {
+  const auto& row_context = SetFormula();
+
+  const scada::Time stamp =
+      scada::base::TimeFromString("2026-04-16 15:02:00", /*is_local=*/true)
+          .value_or(scada::kNullTime);
+  ASSERT_FALSE(scada::IsNull(stamp));
+
+  // Nothing delivered: null value and a default (zero) Qualifier, but carrying
+  // the timestamps the local delivery path stamps on a failed read.
+  const scada::DataValue undelivered{scada::Variant{}, scada::Qualifier{},
+                                     stamp, stamp};
+  ASSERT_FALSE(QualityFromValue(undelivered).has_value())
+      << "fixture must model a row that never received a reading";
+
+  EXPECT_CALL(row_context->timed_data, GetNode()).Times(AnyNumber());
+  EXPECT_CALL(row_context->timed_data, GetDataValue())
+      .Times(AnyNumber())
+      .WillRepeatedly(Return(undelivered));
+  EXPECT_CALL(row_context->timed_data, GetChangeTime())
+      .Times(AnyNumber())
+      .WillRepeatedly(Return(stamp));
+
+  EXPECT_EQ(table_model_.GetCellText(0, TableModel::COLUMN_SOURCE_TIMESTAMP),
+            u"");
+  EXPECT_EQ(table_model_.GetCellText(0, TableModel::COLUMN_SERVER_TIMESTAMP),
+            u"");
+  EXPECT_EQ(table_model_.GetCellText(0, TableModel::COLUMN_CHANGE_TIME), u"");
+}
+
+// The complement: a real timestamp still renders.
+TEST_F(TableModelTest, DeliveredTimestampsRender) {
+  const auto& row_context = SetFormula();
+
+  const scada::Time stamp =
+      scada::base::TimeFromString("2026-04-16 15:02:00", /*is_local=*/true)
+          .value_or(scada::kNullTime);
+  ASSERT_FALSE(scada::IsNull(stamp));
+
+  EXPECT_CALL(row_context->timed_data, GetNode()).Times(AnyNumber());
+  EXPECT_CALL(row_context->timed_data, GetDataValue())
+      .Times(AnyNumber())
+      .WillRepeatedly(
+          Return(scada::DataValue{42.0, scada::Qualifier{}, stamp, stamp}));
+  EXPECT_CALL(row_context->timed_data, GetChangeTime())
+      .Times(AnyNumber())
+      .WillRepeatedly(Return(stamp));
+
+  for (int column :
+       {TableModel::COLUMN_SOURCE_TIMESTAMP,
+        TableModel::COLUMN_SERVER_TIMESTAMP, TableModel::COLUMN_CHANGE_TIME}) {
+    const std::u16string text = table_model_.GetCellText(0, column);
+    EXPECT_NE(text.find(u"2026"), std::u16string::npos)
+        << "column " << column << " rendered "
+        << std::string{text.begin(), text.end()};
+  }
 }
 
 TEST_F(TableModelTest, DiscreteOpenValueUsesPaletteTextColor) {
