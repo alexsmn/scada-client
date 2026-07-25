@@ -20,7 +20,20 @@ class VisibleNodeModelTest : public Test {
   VisibleNodeModel model_{timed_data_service_, profile_, node_change_handler_};
 };
 
+// Stands in for a data-variable node: it carries a value quality, so the model
+// paints a status dot for it.
 class TestVisibleNode : public VisibleNode {
+ public:
+  MOCK_METHOD(std::u16string, GetText, (), (const));
+  MOCK_METHOD(bool, IsBad, (), (const));
+  MOCK_METHOD(bool, IsAlerting, (), (const));
+
+  virtual bool HasQuality() const override { return true; }
+};
+
+// Stands in for a group/folder node: it has a Value column (the device state)
+// but no value quality of its own.
+class TestQualitylessVisibleNode : public VisibleNode {
  public:
   MOCK_METHOD(std::u16string, GetText, (), (const));
   MOCK_METHOD(bool, IsBad, (), (const));
@@ -56,6 +69,50 @@ TEST_F(VisibleNodeModelTest, UnresolvedProxyNodeShowsNoStatusDot) {
 
   // Once it speaks for a real value, the good band is honest again.
   EXPECT_TRUE(model_.GetStatusColor(tree_node).has_value());
+
+  proxy_node->SetChangeHandler(nullptr);
+  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kLegacy);
+}
+
+// Regression: a data group (folder) row also gets a VisibleNode — its Value
+// column shows the bound device's connection state as text. That state is not
+// a value quality, but the dot used to be derived from IsBad()/IsAlerting()
+// for every node with a VisibleNode, so folders were painted with a
+// good/bad quality dot. Only data variables get the dot.
+TEST_F(VisibleNodeModelTest, GroupNodeShowsNoStatusDot) {
+  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
+
+  int value = 0;
+  void* tree_node = &value;
+  auto group_node = std::make_shared<NiceMock<TestQualitylessVisibleNode>>();
+  ON_CALL(*group_node, IsBad()).WillByDefault(Return(false));
+  ON_CALL(*group_node, IsAlerting()).WillByDefault(Return(false));
+  model_.SetNode(tree_node, group_node);
+
+  EXPECT_FALSE(model_.GetStatusColor(tree_node).has_value());
+
+  // An offline device colours the Value text, but still claims no quality.
+  ON_CALL(*group_node, IsBad()).WillByDefault(Return(true));
+  EXPECT_FALSE(model_.GetStatusColor(tree_node).has_value());
+
+  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kLegacy);
+}
+
+// A proxy standing in for a group must not manufacture a dot either: it
+// forwards the underlying node's quality claim, and an unattached proxy has
+// none.
+TEST_F(VisibleNodeModelTest, ProxyOverGroupNodeShowsNoStatusDot) {
+  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
+
+  int value = 0;
+  void* tree_node = &value;
+  auto proxy_node = std::make_shared<ProxyVisibleNode>();
+  model_.SetNode(tree_node, proxy_node);
+
+  auto group_node = std::make_shared<NiceMock<TestQualitylessVisibleNode>>();
+  proxy_node->SetUnderlyingNode(group_node);
+
+  EXPECT_FALSE(model_.GetStatusColor(tree_node).has_value());
 
   proxy_node->SetChangeHandler(nullptr);
   scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kLegacy);

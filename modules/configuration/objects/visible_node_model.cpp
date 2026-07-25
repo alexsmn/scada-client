@@ -78,6 +78,12 @@ std::optional<scada::aui::Color> VisibleNodeModel::GetStatusColor(
   if (!node)
     return std::nullopt;  // no live value (folder/object): no status dot
 
+  // Only data variables have a value quality. A group's Value column shows its
+  // device's connection state as text, not a quality, so dotting its folder
+  // icon would claim a quality the row does not have.
+  if (!node->HasQuality())
+    return std::nullopt;
+
   // A row whose node is still resolving has delivered nothing yet. Falling
   // through would paint it green, because the placeholder is neither bad nor
   // alerting — a row with an empty value claiming good quality.
@@ -157,6 +163,10 @@ bool ProxyVisibleNode::IsAlerting() const {
 
 bool ProxyVisibleNode::IsResolved() const {
   return underlying_node_ && underlying_node_->IsResolved();
+}
+
+bool ProxyVisibleNode::HasQuality() const {
+  return underlying_node_ && underlying_node_->HasQuality();
 }
 
 // DataItemVisibleNode
