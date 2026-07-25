@@ -153,6 +153,25 @@ void PopulateFixtureNodes(AddressSpaceImpl& address_space,
     }
   }
 
+  // Every `nodes` entry must be placed somewhere in `tree`: a node without a
+  // parent cannot be created, so it exists nowhere in the address space. That
+  // used to be a silent drop, which let four fully-specified fixture nodes —
+  // and an event referencing one of them — sit unnoticed. Report all of them
+  // at once so a fixture edit is fixed in one pass.
+  std::string orphans;
+  for (const auto& jn : root.at("nodes").as_array()) {
+    auto node_id = ParseJsonChildNodeId(jn.as_object().at("id"));
+    if (parent_map.contains(node_id) || address_space.GetNode(node_id))
+      continue;
+    if (!orphans.empty())
+      orphans += ", ";
+    orphans += NodeIdToScadaString(node_id);
+  }
+  scada::base::Check(orphans.empty(),
+                     "fixture nodes missing a `tree` parent (add them under a "
+                     "parent or delete them from `nodes`): " +
+                         orphans);
+
   GenericNodeFactory factory{address_space};
   std::vector<PendingReference> pending_references;
 
@@ -177,12 +196,11 @@ void PopulateFixtureNodes(AddressSpaceImpl& address_space,
       if (address_space.GetNode(node_id))
         continue;
 
+      // Guaranteed present by the orphan check above.
       auto parent_it = parent_map.find(node_id);
-      if (parent_it == parent_map.end()) {
-        // Orphan instance — drop it; nothing in the running app will
-        // navigate to it.
-        continue;
-      }
+      scada::base::Check(parent_it != parent_map.end(),
+                         "fixture node lost its `tree` parent: " +
+                             NodeIdToScadaString(node_id));
       const auto& parent_id = parent_it->second;
       if (!address_space.GetNode(parent_id)) {
         next.push_back(jn_ptr);
