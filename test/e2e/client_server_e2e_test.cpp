@@ -331,10 +331,9 @@ TEST_P(ClientServerE2eTest, FileSystem_CreateAndDeleteThroughProxy) {
       .parent_id = kFileSystemRoot,
       .node_class = scada::NodeClass::Variable,
       .type_definition_id = kFileTypeId,
-      .attributes = scada::NodeAttributes{}
-                        .set_display_name(scada::LocalizedText{u"upload.txt"})
-                        .set_value(scada::ByteString{kContents.begin(),
-                                                     kContents.end()})});
+      .attributes = scada::NodeAttributes{
+          .display_name = scada::LocalizedText{u"upload.txt"},
+          .value = scada::ByteString{kContents.begin(), kContents.end()}}});
   ASSERT_TRUE(added.ok()) << "AddNodes via the proxy failed: "
                           << ::ToString(added.status());
   ASSERT_EQ(added->size(), 1u);

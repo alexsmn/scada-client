@@ -9,14 +9,6 @@
 #include <gmock/gmock.h>
 
 using namespace testing;
-namespace {
-
-scada::NodeState MakeNodeState(const scada::NodeId& node_id,
-                               scada::NodeClass node_class) {
-  return scada::NodeState{}.set_node_id(node_id).set_node_class(node_class);
-}
-
-}  // namespace
 
 TEST(ClientUtilsTest, ExpandGroupItemIdsAsyncRespectsMaxCount) {
   const scada::NodeId root_id{7000, 1};
@@ -28,16 +20,24 @@ TEST(ClientUtilsTest, ExpandGroupItemIdsAsyncRespectsMaxCount) {
   // root --Organizes--> first
   //      --HasComponent--> group --Organizes--> {second, third}
   FakeNodeService node_service;
-  const NodeRef root =
-      node_service.Add(MakeNodeState(root_id, scada::NodeClass::Object));
-  node_service.Add(MakeNodeState(first_id, scada::NodeClass::Variable)
-                       .set_parent(scada::id::Organizes, root_id));
-  node_service.Add(MakeNodeState(group_id, scada::NodeClass::Object)
-                       .set_parent(scada::id::HasComponent, root_id));
-  node_service.Add(MakeNodeState(second_id, scada::NodeClass::Variable)
-                       .set_parent(scada::id::Organizes, group_id));
-  node_service.Add(MakeNodeState(third_id, scada::NodeClass::Variable)
-                       .set_parent(scada::id::Organizes, group_id));
+  const NodeRef root = node_service.Add(
+      {.node_id = root_id, .node_class = scada::NodeClass::Object});
+  node_service.Add({.node_id = first_id,
+                    .node_class = scada::NodeClass::Variable,
+                    .parent_id = root_id,
+                    .reference_type_id = scada::id::Organizes});
+  node_service.Add({.node_id = group_id,
+                    .node_class = scada::NodeClass::Object,
+                    .parent_id = root_id,
+                    .reference_type_id = scada::id::HasComponent});
+  node_service.Add({.node_id = second_id,
+                    .node_class = scada::NodeClass::Variable,
+                    .parent_id = group_id,
+                    .reference_type_id = scada::id::Organizes});
+  node_service.Add({.node_id = third_id,
+                    .node_class = scada::NodeClass::Variable,
+                    .parent_id = group_id,
+                    .reference_type_id = scada::id::Organizes});
 
   TestExecutor executor;
   auto node_ids =
@@ -50,8 +50,8 @@ TEST(ClientUtilsTest, ExpandGroupItemIdsAsyncRespectsMaxCount) {
 TEST(ClientUtilsTest, ExpandGroupItemIdsAsyncZeroLimitDoesNotFetch) {
   const scada::NodeId root_id{7100, 1};
   FakeNodeService node_service;
-  const NodeRef root =
-      node_service.Add(MakeNodeState(root_id, scada::NodeClass::Object));
+  const NodeRef root = node_service.Add(
+      {.node_id = root_id, .node_class = scada::NodeClass::Object});
   node_service.SetFetchStatus(root_id, NodeFetchStatus::None);
 
   TestExecutor executor;

@@ -1,10 +1,10 @@
 #include "modules/change_password/change_password.h"
 
 #include "base/test/test_executor.h"
+#include "common/node_state.h"
 #include "events/local_events.h"
 #include "model/security_node_ids.h"
 #include "modules/change_password/change_password_dialog.h"
-#include "common/node_state.h"
 #include "node_service/test/fake_node_service.h"
 #include "profile/profile.h"
 #include "scada/client.h"
@@ -24,10 +24,10 @@ constexpr scada::NumericId kUserNodeId = 5001;
 class ChangePasswordTest : public Test {
  protected:
   ChangePasswordTest()
-      : user_node_{node_service_.Add(
-            scada::NodeState{}
-                .set_node_id(scada::NodeId{kUserNodeId, 1})
-                .set_display_name(scada::LocalizedText{u"Operator"}))} {}
+      : user_node_{node_service_.Add(scada::NodeState{
+            .node_id = scada::NodeId{kUserNodeId, 1},
+            .attributes = {.display_name =
+                               scada::LocalizedText{u"Operator"}}})} {}
 
   void PollExecutor() { executor_.Poll(); }
 

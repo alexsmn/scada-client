@@ -231,7 +231,7 @@ TEST(MetrixDataSourceTest, AppliesEarliestTimestampFromHistoryRead) {
   StrictMock<scada::MockHistoryService> history_service;
   scada::services services{.history_service = &history_service};
   FakeNodeService node_service{services};
-  NodeRef node = node_service.Add(scada::NodeState{}.set_node_id(kTestNodeId));
+  NodeRef node = node_service.Add(scada::NodeState{.node_id = kTestNodeId});
 
   const auto earliest = scada::base::DecodeDoubleT(100.0);
   const auto latest = scada::base::DecodeDoubleT(200.0);
@@ -259,7 +259,7 @@ TEST(MetrixDataSourceTest, DropsCanceledEarliestTimestampRead) {
   StrictMock<scada::MockHistoryService> history_service;
   scada::services services{.history_service = &history_service};
   FakeNodeService node_service{services};
-  NodeRef node = node_service.Add(scada::NodeState{}.set_node_id(kTestNodeId));
+  NodeRef node = node_service.Add(scada::NodeState{.node_id = kTestNodeId});
 
   scada::base::AsyncCompletion first_completion{executor};
   scada::base::AsyncCompletion second_completion{executor};

@@ -4,6 +4,7 @@
 #include "base/awaitable.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
+#include "common/node_state.h"
 #include "controller/command_registry.h"
 #include "controller/command_ui_registry.h"
 #include "controller/controller_registry.h"
@@ -15,7 +16,6 @@
 #include "main_window/opened_view/opened_view_interface.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
-#include "common/node_state.h"
 #include "node_service/test/fake_node_service.h"
 #include "profile/profile.h"
 #include "resources/common_resources.h"
@@ -70,10 +70,9 @@ scada::CoStatus CompleteLazily(bool* executed) {
 class ConfigurationModuleTest : public Test {
  protected:
   ConfigurationModuleTest()
-      : command_node_{node_service_.Add(
-            scada::NodeState{}
-                .set_node_id(scada::NodeId{kItemNodeId, 1})
-                .set_display_name(scada::LocalizedText{u"Pump"}))},
+      : command_node_{node_service_.Add(scada::NodeState{
+            .node_id = scada::NodeId{kItemNodeId, 1},
+            .attributes = {.display_name = scada::LocalizedText{u"Pump"}}})},
         selection_{SelectionModelContext{timed_data_service_}},
         configuration_module_{ConfigurationModuleContext{
             .executor_ = executor_,

@@ -6,11 +6,11 @@
 #include "base/blinker_mock.h"
 #include "base/observer_list.h"
 #include "base/test/scoped_mock_clock_override.h"
+#include "common/node_state.h"
 #include "events/node_event_provider_mock.h"
 #include "model/data_items_node_ids.h"
 #include "modules/table/sparkline.h"
 #include "modules/table/table_row.h"
-#include "common/node_state.h"
 #include "node_service/test/fake_node_service.h"
 #include "profile/profile.h"
 #include "timed_data/timed_data_mock.h"
@@ -78,13 +78,12 @@ scada::aui::Color GetTextColor(const TableModel& table_model,
 NodeRef MakeDiscreteItemNode(FakeNodeService& node_service) {
   // The type has no supertype and the item no TsFormat reference, so both
   // resolve to a null NodeRef.
-  node_service.Add(scada::NodeState{}.set_node_id(
-      scada::data_items::id::DiscreteItemType));
+  node_service.Add(
+      scada::NodeState{.node_id = scada::data_items::id::DiscreteItemType});
 
-  return node_service.Add(
-      scada::NodeState{}
-          .set_node_id(scada::NodeId{1, 1})
-          .set_type_definition_id(scada::data_items::id::DiscreteItemType));
+  return node_service.Add(scada::NodeState{
+      .node_id = scada::NodeId{1, 1},
+      .type_definition_id = scada::data_items::id::DiscreteItemType});
 }
 
 }  // namespace
@@ -105,11 +104,11 @@ std::shared_ptr<TableModelTest::RowContext> TableModelTest::SetFormula() {
           }));
 
   ON_CALL(row_context->timed_data, AddViewObserver(_, _))
-      .WillByDefault(Invoke([&view_observers = row_context->view_observers](
-                                TimedDataViewObserver& observer,
-                                const scada::TimeRange& range) {
-        view_observers.AddObserver(&observer);
-      }));
+      .WillByDefault(Invoke(
+          [&view_observers = row_context->view_observers](
+              TimedDataViewObserver& observer, const scada::TimeRange& range) {
+            view_observers.AddObserver(&observer);
+          }));
 
   ON_CALL(row_context->timed_data, RemoveObserver(_))
       .WillByDefault(Invoke(
@@ -132,16 +131,16 @@ std::shared_ptr<TableModelTest::RowContext> TableModelTest::SetFormula() {
 
   EXPECT_CALL(row_context->timed_data, AddObserver(_));
 
-  EXPECT_CALL(row_context->timed_data,
-              AddViewObserver(_, scada::TimeRange{scada::kMaxTime,
-                                                      scada::kMaxTime}));
+  EXPECT_CALL(
+      row_context->timed_data,
+      AddViewObserver(_, scada::TimeRange{scada::kMaxTime, scada::kMaxTime}));
 
   EXPECT_CALL(row_context->timed_data, IsAlerting());
 
   const scada::NodeId node_id{1, 1};
 
   const NodeRef item_node =
-      node_service_.Add(scada::NodeState{}.set_node_id(node_id));
+      node_service_.Add(scada::NodeState{.node_id = node_id});
 
   ON_CALL(row_context->timed_data, GetNode()).WillByDefault(Return(item_node));
 
@@ -187,8 +186,7 @@ TEST_F(TableModelTest, ReshellRowObservesTheSparklineWindow) {
 
   const TableRow* row = table_model_.GetRow(0);
   ASSERT_NE(row, nullptr);
-  EXPECT_EQ(row->timed_data().from(),
-            scada::Now() - kSparklineWindow);
+  EXPECT_EQ(row->timed_data().from(), scada::Now() - kSparklineWindow);
 
   scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kLegacy);
 }

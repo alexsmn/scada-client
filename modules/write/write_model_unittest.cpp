@@ -75,16 +75,15 @@ class WriteModelTest : public Test {
       : node_service_{
             scada::services{.attribute_service = &attribute_service_}},
         dialog_service_{executor_} {
-    node_service_.Add(scada::NodeState{}
-                          .set_node_id(kDataItemTypeId)
-                          .set_node_class(scada::NodeClass::VariableType)
-                          .set_display_name(u"Output type"));
     node_service_.Add(
-        scada::NodeState{}
-            .set_node_id(kDataItemId)
-            .set_node_class(scada::NodeClass::Variable)
-            .set_type_definition_id(kDataItemTypeId)
-            .set_display_name(u"Output")
+        scada::NodeState{.node_id = kDataItemTypeId,
+                         .node_class = scada::NodeClass::VariableType,
+                         .attributes = {.display_name = u"Output type"}});
+    node_service_.Add(
+        scada::NodeState{.node_id = kDataItemId,
+                         .node_class = scada::NodeClass::Variable,
+                         .type_definition_id = kDataItemTypeId,
+                         .attributes = {.display_name = u"Output"}}
             .set_property(scada::data_items::id::DataItemType_OutputTwoStaged,
                           false)
             .set_property(scada::data_items::id::DataItemType_Locked, false));

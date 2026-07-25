@@ -35,7 +35,7 @@ class WriteAvailabilityTest : public testing::Test {
                            type_definition_id,
                            scada::data_items::id::DataItems,
                            scada::id::Organizes,
-                           scada::NodeAttributes{}.set_display_name(u"Signal")};
+                           scada::NodeAttributes{.display_name = u"Signal"}};
     if (output) {
       state.properties.emplace_back(scada::data_items::id::DataItemType_Output,
                                     *output);

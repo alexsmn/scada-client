@@ -37,13 +37,12 @@ NodeRef MakeObjectTreeNode(FakeNodeService& node_service,
                            const scada::NodeId& node_id,
                            NodeFetchStatus fetch_status) {
   node_service.Add(
-      scada::NodeState{}.set_node_id(scada::data_items::id::DataItemType));
+      scada::NodeState{.node_id = scada::data_items::id::DataItemType});
 
-  const NodeRef node = node_service.Add(
-      scada::NodeState{}
-          .set_node_id(node_id)
-          .set_node_class(scada::NodeClass::Variable)
-          .set_type_definition_id(scada::data_items::id::DataItemType));
+  const NodeRef node = node_service.Add(scada::NodeState{
+      .node_id = node_id,
+      .node_class = scada::NodeClass::Variable,
+      .type_definition_id = scada::data_items::id::DataItemType});
   node_service.SetFetchStatus(node_id, fetch_status);
   return node;
 }
@@ -102,23 +101,21 @@ class ObjectTreeModelTest : public ::testing::Test {
   void SetUp() override {
     node_service_.AddAll(GetScadaNodeStates());
 
-    node_service_.Add(
-        scada::NodeState{}
-            .set_node_id(kDataGroupId)
-            .set_node_class(scada::NodeClass::Object)
-            .set_type_definition_id(scada::data_items::id::DataGroupType)
-            .set_parent(scada::id::Organizes,
-                        scada::data_items::id::DataItems));
+    node_service_.Add(scada::NodeState{
+        .node_id = kDataGroupId,
+        .node_class = scada::NodeClass::Object,
+        .type_definition_id = scada::data_items::id::DataGroupType,
+        .parent_id = scada::data_items::id::DataItems,
+        .reference_type_id = scada::id::Organizes});
 
     // Regression setup: object view may receive a data item with object
     // node-class semantics while it still derives from `DataItemType`.
-    node_service_.Add(
-        scada::NodeState{}
-            .set_node_id(kDataItemId)
-            .set_node_class(scada::NodeClass::Object)
-            .set_type_definition_id(scada::data_items::id::DiscreteItemType)
-            .set_parent(scada::id::Organizes,
-                        scada::data_items::id::DataItems));
+    node_service_.Add(scada::NodeState{
+        .node_id = kDataItemId,
+        .node_class = scada::NodeClass::Object,
+        .type_definition_id = scada::data_items::id::DiscreteItemType,
+        .parent_id = scada::data_items::id::DataItems,
+        .reference_type_id = scada::id::Organizes});
 
     model_ = std::make_unique<ObjectTreeModel>(ObjectTreeModelContext{
         executor_,
@@ -160,8 +157,8 @@ class ObjectTreeModelAsyncVisibleNodeTest : public ::testing::Test {
   void InitModel(bool remove_child_on_second_get_children = false) {
     root_node_ = MakeObjectTreeNode(model_service_, scada::id::RootFolder,
                                     NodeFetchStatus::NodeAndChildren);
-    child_node_ = MakeObjectTreeNode(model_service_, kDataItemId,
-                                     NodeFetchStatus::None);
+    child_node_ =
+        MakeObjectTreeNode(model_service_, kDataItemId, NodeFetchStatus::None);
 
     auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
     node_service_tree_ = node_service_tree.get();

@@ -81,14 +81,13 @@ class NodeTableModelTest : public Test {
  protected:
   NodeTableModelTest() {
     GenericNodeFactory factory{address_space_};
-    auto [status, node] = factory.CreateNode(
-        scada::NodeState{}
-            .set_node_id(kGroupId)
-            .set_node_class(scada::NodeClass::Object)
-            .set_type_definition_id(scada::data_items::id::DataGroupType)
-            .set_parent(scada::id::Organizes, scada::data_items::id::DataItems)
-            .set_attributes(
-                scada::NodeAttributes{}.set_display_name(u"Group")));
+    auto [status, node] = factory.CreateNode(scada::NodeState{
+        .node_id = kGroupId,
+        .node_class = scada::NodeClass::Object,
+        .type_definition_id = scada::data_items::id::DataGroupType,
+        .parent_id = scada::data_items::id::DataItems,
+        .reference_type_id = scada::id::Organizes,
+        .attributes = scada::NodeAttributes{}.set_display_name(u"Group")});
     scada::base::Check(status);
     scada::base::Check(node);
 

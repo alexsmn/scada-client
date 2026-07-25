@@ -48,10 +48,10 @@ void NodeGroupModel::SetValue(int index, const std::u16string& value) {
     // TODO: Other attributes.
     switch (prop.attribute_id) {
       case scada::AttributeId::BrowseName:
-        attributes.set_browse_name(ToString(value));
+        attributes.browse_name = ToString(value);
         break;
       case scada::AttributeId::DisplayName:
-        attributes.set_display_name(scada::ToLocalizedText(value));
+        attributes.display_name = scada::ToLocalizedText(value);
         break;
     }
 

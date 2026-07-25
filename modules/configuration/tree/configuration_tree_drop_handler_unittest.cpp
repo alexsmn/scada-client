@@ -3,11 +3,11 @@
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "common/formula_util.h"
+#include "common/node_state.h"
 #include "configuration/tree/configuration_tree_model.h"
 #include "configuration/tree/node_service_tree_mock.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
-#include "common/node_state.h"
 #include "node_service/node_service_mock.h"
 #include "node_service/test/fake_node_service.h"
 #include "scada/co_result.h"
@@ -36,11 +36,11 @@ NodeRef MakeTestNodeInService(FakeNodeService& service,
                               const scada::NodeId& node_id,
                               TestNodeOptions options) {
   if (!options.type_definition_id.is_null())
-    service.Add(scada::NodeState{}.set_node_id(options.type_definition_id));
+    service.Add(scada::NodeState{.node_id = options.type_definition_id});
   if (!options.parent_id.is_null())
-    service.Add(scada::NodeState{}.set_node_id(options.parent_id));
+    service.Add(scada::NodeState{.node_id = options.parent_id});
   if (!options.data_type_id.is_null())
-    service.Add(scada::NodeState{}.set_node_id(options.data_type_id));
+    service.Add(scada::NodeState{.node_id = options.data_type_id});
 
   // Each createable type is exposed as an OptionalPlaceholder
   // InstanceDeclaration child of the type — the standard-modelling replacement
@@ -48,14 +48,14 @@ NodeRef MakeTestNodeInService(FakeNodeService& service,
   // GetCreatableChildTypes. Authored as HasComponent children so the type's
   // HierarchicalReferences query finds them.
   for (size_t i = 0; i < options.creates.size(); ++i) {
-    service.Add(
-        scada::NodeState{}
-            .set_node_id(scada::NodeId{static_cast<scada::NumericId>(90000 + i)})
-            .set_type_definition_id(options.creates[i].node_id())
-            .set_parent(scada::id::HasComponent, options.type_definition_id)
-            .add_reference(scada::ReferenceDescription{
-                scada::id::HasModellingRule, true,
-                scada::NodeId{scada::id::ModellingRule_OptionalPlaceholder}}));
+    service.Add(scada::NodeState{
+        .node_id = scada::NodeId{static_cast<scada::NumericId>(90000 + i)},
+        .type_definition_id = options.creates[i].node_id(),
+        .parent_id = options.type_definition_id,
+        .reference_type_id = scada::id::HasComponent,
+        .references = {
+            {scada::id::HasModellingRule, true,
+             scada::NodeId{scada::id::ModellingRule_OptionalPlaceholder}}}});
   }
 
   scada::NodeAttributes attributes;
@@ -63,11 +63,11 @@ NodeRef MakeTestNodeInService(FakeNodeService& service,
   attributes.display_name = options.display_name;
   attributes.data_type = options.data_type_id;
 
-  scada::NodeState state = scada::NodeState{}
-                               .set_node_id(node_id)
-                               .set_node_class(scada::NodeClass::Object)
-                               .set_type_definition_id(options.type_definition_id)
-                               .set_attributes(attributes);
+  scada::NodeState state =
+      scada::NodeState{.node_id = node_id,
+                       .node_class = scada::NodeClass::Object,
+                       .type_definition_id = options.type_definition_id,
+                       .attributes = attributes};
   if (!options.parent_id.is_null())
     state.set_parent(scada::id::Organizes, options.parent_id);
 

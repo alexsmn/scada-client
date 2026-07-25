@@ -32,7 +32,7 @@ class DiffDataBuilder {
 
     scada::NodeAttributes attrs;
     if (!old_node || old_node->display_name != new_node.display_name) {
-      attrs.set_display_name(new_node.display_name);
+      attrs.display_name = new_node.display_name;
     }
 
     // Props & refs.

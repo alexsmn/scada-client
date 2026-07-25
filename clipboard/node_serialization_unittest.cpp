@@ -19,7 +19,7 @@ TEST(NodeSerialization, DISABLED_NodeToData) {
       scada::data_items::id::DataItemType,
       scada::data_items::id::DataItems,
       scada::id::Organizes,
-      scada::NodeAttributes{}.set_display_name(u"Display Name"),
+      scada::NodeAttributes{.display_name = u"Display Name"},
       scada::NodeProperties{
           {scada::data_items::id::DataItemType_Alias, "Alias"}},
       {},

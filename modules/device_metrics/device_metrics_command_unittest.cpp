@@ -85,7 +85,7 @@ scada::Node* DeviceMetricsCommandTest::CreateDevice(
   auto [status, node] = node_factory.CreateNode(scada::NodeState{
       std::move(node_id), scada::NodeClass::Object, device_type_definition_id,
       scada::devices::id::Devices, scada::id::Organizes,
-      scada::NodeAttributes{}.set_display_name(std::move(display_name))});
+      scada::NodeAttributes{.display_name = std::move(display_name)}});
 
   scada::base::Check(status);
   scada::base::Check(node);
@@ -105,7 +105,7 @@ scada::Node* DeviceMetricsCommandTest::CreateObject(
   auto [status, node] = node_factory.CreateNode(scada::NodeState{
       std::move(node_id), scada::NodeClass::Object, scada::id::BaseObjectType,
       std::move(parent_id), scada::id::Organizes,
-      scada::NodeAttributes{}.set_display_name(std::move(display_name))});
+      scada::NodeAttributes{.display_name = std::move(display_name)}});
 
   scada::base::Check(status);
   scada::base::Check(node);
@@ -185,23 +185,21 @@ TEST_F(DeviceMetricsCommandTest, MakeDeviceMetricsWindowDefinitionAsync) {
   scada::AddReference(address_space_, scada::id::Organizes, device1->id(),
                       device2->id());
 
-  auto window_definition = WaitAwaitable(
-      executor_, MakeDeviceMetricsWindowDefinitionAsync(
-                     executor_,
-                     GetNode(device1->id())));
+  auto window_definition =
+      WaitAwaitable(executor_, MakeDeviceMetricsWindowDefinitionAsync(
+                                   executor_, GetNode(device1->id())));
 
   EXPECT_EQ(window_definition.title, u"Device 1");
 
-  auto header_row =
-      window_definition.items |
-      filtered([](const WindowItem& window_item) {
-        return window_item.name == "SheetCell" &&
-               window_item.GetInt("row", -1) == 1;
-      }) |
-      to_vector;
+  auto header_row = window_definition.items |
+                    filtered([](const WindowItem& window_item) {
+                      return window_item.name == "SheetCell" &&
+                             window_item.GetInt("row", -1) == 1;
+                    }) |
+                    to_vector;
 
-  EXPECT_THAT(header_row, ElementsAre(CellIs(u"Device 1"),
-                                      CellIs(u"Device 2")));
+  EXPECT_THAT(header_row,
+              ElementsAre(CellIs(u"Device 1"), CellIs(u"Device 2")));
 }
 
 TEST_F(DeviceMetricsCommandTest, CollectChildrenAsyncKeepsOnlyMatchingTypes) {
@@ -224,8 +222,7 @@ TEST_F(DeviceMetricsCommandTest, FetchNodePromiseUsesCoroutineBody) {
   const auto* device = CreateDevice({1, device_namespace_index}, u"Device");
 
   auto fetched_node =
-      WaitAwaitable(executor_, FetchNodeAsync(executor_,
-                                              GetNode(device->id()),
+      WaitAwaitable(executor_, FetchNodeAsync(executor_, GetNode(device->id()),
                                               NodeFetchStatus::NodeOnly));
 
   EXPECT_EQ(fetched_node.node_id(), device->id());
@@ -271,8 +268,7 @@ TEST_F(DeviceMetricsCommandTest, CollectNodesRecursiveAsyncUsesCoroutineBody) {
 
 TEST_F(DeviceMetricsCommandTest,
        MakeDeviceMetricsWindowDefinitionRejectsNodeWithoutTypeDefinition) {
-  EXPECT_THROW(WaitAwaitable(
-                   executor_,
-                   MakeDeviceMetricsWindowDefinitionAsync(executor_, NodeRef{})),
+  EXPECT_THROW(WaitAwaitable(executor_, MakeDeviceMetricsWindowDefinitionAsync(
+                                            executor_, NodeRef{})),
                std::runtime_error);
 }

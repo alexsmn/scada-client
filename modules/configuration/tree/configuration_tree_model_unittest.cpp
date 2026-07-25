@@ -4,8 +4,8 @@
 #include "base/async_completion.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
-#include "configuration/tree/node_service_tree_mock.h"
 #include "common/node_state.h"
+#include "configuration/tree/node_service_tree_mock.h"
 #include "node_service/test/fake_node_service.h"
 #include "scada/standard_node_ids.h"
 
@@ -26,7 +26,7 @@ class ConfigurationTreeModelTest : public Test {
   // `node_service_.SetFetchStatus`. The backing service (|node_service_|)
   // outlives every cursor it hands out.
   NodeRef MakeTestNodeRef(const scada::NodeId& node_id) {
-    return node_service_.Add(scada::NodeState{}.set_node_id(node_id));
+    return node_service_.Add(scada::NodeState{.node_id = node_id});
   }
 
   FakeNodeService node_service_;
@@ -215,15 +215,15 @@ TEST_F(ConfigurationTreeModelTest,
 
   // The fetch never completes while the assertion below runs, so the node
   // stays in its "loading" state.
-  const NodeRef child_node = node_service_.Add(
-      scada::NodeState{}.set_node_id(kNodeId1).set_display_name(
-          scada::LocalizedText{u"Loading node"}));
+  const NodeRef child_node = node_service_.Add(scada::NodeState{
+      .node_id = kNodeId1,
+      .attributes = {.display_name = scada::LocalizedText{u"Loading node"}}});
   node_service_.SetFetchStatus(kNodeId1, NodeFetchStatus::NodeOnly);
-  node_service_.SetFetchHandler(
-      kNodeId1, [&](const NodeFetchStatus&) -> Awaitable<void> {
-        delayed_completion.emplace(executor_);
-        co_await delayed_completion->Wait();
-      });
+  node_service_.SetFetchHandler(kNodeId1,
+                                [&](const NodeFetchStatus&) -> Awaitable<void> {
+                                  delayed_completion.emplace(executor_);
+                                  co_await delayed_completion->Wait();
+                                });
 
   EXPECT_CALL(*node_service_tree, GetChildren(_))
       .WillOnce(Return(std::vector<NodeServiceTree::ChildRef>{
@@ -254,8 +254,7 @@ TEST_F(ConfigurationTreeModelTest, RootFetchesChildrenWhenNotPrefetched) {
   node_service_.SetFetchStatus(root_id, NodeFetchStatus::NodeOnly);
   node_service_.SetFetchHandler(
       root_id, [&](const NodeFetchStatus&) -> Awaitable<void> {
-        node_service_.SetFetchStatus(root_id,
-                                     NodeFetchStatus::NodeAndChildren);
+        node_service_.SetFetchStatus(root_id, NodeFetchStatus::NodeAndChildren);
         co_return;
       });
 
@@ -287,11 +286,11 @@ TEST_F(ConfigurationTreeModelTest,
   // waiting tree node is gone.
   const NodeRef child_node = MakeTestNodeRef(kNodeId1);
   node_service_.SetFetchStatus(kNodeId1, NodeFetchStatus::NodeOnly);
-  node_service_.SetFetchHandler(
-      kNodeId1, [&](const NodeFetchStatus&) -> Awaitable<void> {
-        delayed_completion.emplace(executor_);
-        co_await delayed_completion->Wait();
-      });
+  node_service_.SetFetchHandler(kNodeId1,
+                                [&](const NodeFetchStatus&) -> Awaitable<void> {
+                                  delayed_completion.emplace(executor_);
+                                  co_await delayed_completion->Wait();
+                                });
 
   EXPECT_CALL(*node_service_tree, GetChildren(_))
       .WillOnce(Return(std::vector<NodeServiceTree::ChildRef>{
@@ -323,11 +322,11 @@ TEST_F(ConfigurationTreeModelTest,
   // waiting tree node is gone.
   const NodeRef child_node = MakeTestNodeRef(kNodeId1);
   node_service_.SetFetchStatus(kNodeId1, NodeFetchStatus::NodeOnly);
-  node_service_.SetFetchHandler(
-      kNodeId1, [&](const NodeFetchStatus&) -> Awaitable<void> {
-        delayed_completion.emplace(executor_);
-        co_await delayed_completion->Wait();
-      });
+  node_service_.SetFetchHandler(kNodeId1,
+                                [&](const NodeFetchStatus&) -> Awaitable<void> {
+                                  delayed_completion.emplace(executor_);
+                                  co_await delayed_completion->Wait();
+                                });
 
   EXPECT_CALL(*node_service_tree, GetChildren(_))
       .WillOnce(Return(std::vector<NodeServiceTree::ChildRef>{
