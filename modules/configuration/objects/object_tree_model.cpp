@@ -13,6 +13,28 @@ Awaitable<NodeRef> FetchNodeOnlyAsync(AnyExecutor executor, NodeRef node) {
   co_return co_await node.Fetch(NodeFetchStatus::NodeOnly);
 }
 
+// A cyclic or pathological type graph must not spin the walk below forever.
+// Real OPC UA type chains are a handful of hops deep.
+constexpr int kMaxTypeChainHops = 32;
+
+// Fetching the instance is not enough to classify it. IsInstanceOf walks the
+// type definition's supertype chain, and every hop reads a *type* node that may
+// be unfetched or not even resident; an unfetched type reports no supertype, so
+// e.g. an AnalogItemType instance fails the DataItemType test. That test is
+// one-shot — nothing re-runs it — so the row keeps its placeholder, never
+// subscribes, and its Value column stays empty for the rest of the session.
+// Pull the chain in first.
+Awaitable<void> FetchTypeChainAsync(NodeRef node) {
+  NodeRef type = node.type_definition();
+  for (int hop = 0; type && hop < kMaxTypeChainHops; ++hop) {
+    if (!type.fetched())
+      type = co_await type.Fetch(NodeFetchStatus::NodeOnly);
+    if (!type)
+      break;
+    type = type.supertype();
+  }
+}
+
 }  // namespace
 
 class ObjectTreeModel::ObjectTreeNode : public ConfigurationTreeNode {
@@ -152,6 +174,13 @@ Awaitable<void> ObjectTreeModel::CompleteVisibleNodeFetchAsync(
     bool forward_reference) {
   auto fetched_node =
       co_await FetchNodeOnlyAsync(std::move(executor), std::move(node));
+
+  if (lifetime_token.expired()) {
+    co_return;
+  }
+
+  // The classification below reads the type chain; make sure it is there.
+  co_await FetchTypeChainAsync(fetched_node);
 
   if (lifetime_token.expired()) {
     co_return;

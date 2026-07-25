@@ -1,9 +1,9 @@
 ﻿#include "modules/timed_data/timed_data_controller.h"
 
-#include "app/string_const.h"
 #include "aui/dialog_service.h"
 #include "aui/models/mirror_table_model.h"
 #include "aui/table.h"
+#include "aui/translation.h"
 #include "base/time/default_clock.h"
 #include "common/formula_util.h"
 #include "controller/controller_delegate.h"
@@ -21,19 +21,25 @@
 
 namespace {
 
-const scada::aui::TableColumn s_columns[] = {
-    {TimedDataModel::CID_TIME, kSourceTimestampTitle, 150,
-     scada::aui::TableColumn::LEFT,
-     scada::aui::TableColumn::DataType::DateTime},
-    {TimedDataModel::CID_VALUE, kValueTitle, 150,
-     scada::aui::TableColumn::RIGHT, scada::aui::TableColumn::DataType::General,
-     /*monospace=*/true},
-    {TimedDataModel::CID_QUALITY, u"Quality", 65,
-     scada::aui::TableColumn::LEFT},
-    {TimedDataModel::CID_COLLECTION_TIME, kServerTimestampTitle, 150,
-     scada::aui::TableColumn::LEFT,
-     scada::aui::TableColumn::DataType::DateTime},
-};
+// Built per call rather than held in a static table: the headers go through
+// Translate(), which must run after the catalog is installed, not during
+// static initialization.
+std::vector<scada::aui::TableColumn> MakeColumns() {
+  return {
+      {TimedDataModel::CID_TIME, Translate("Source Timestamp"), 150,
+       scada::aui::TableColumn::LEFT,
+       scada::aui::TableColumn::DataType::DateTime},
+      {TimedDataModel::CID_VALUE, Translate("Value"), 150,
+       scada::aui::TableColumn::RIGHT,
+       scada::aui::TableColumn::DataType::General,
+       /*monospace=*/true},
+      {TimedDataModel::CID_QUALITY, Translate("Quality"), 65,
+       scada::aui::TableColumn::LEFT},
+      {TimedDataModel::CID_COLLECTION_TIME, Translate("Server Timestamp"), 150,
+       scada::aui::TableColumn::LEFT,
+       scada::aui::TableColumn::DataType::DateTime},
+  };
+}
 
 struct MirrorTableModelHolder {
   explicit MirrorTableModelHolder(std::shared_ptr<TimedDataModel> model)
@@ -70,9 +76,7 @@ std::unique_ptr<UiView> TimedDataController::Init(
     mirror_model_->SetMirrored(profile_.timed_data.mirrored);
   }
 
-  auto view = std::make_unique<scada::aui::Table>(
-      mirror_model_, std::vector<scada::aui::TableColumn>(std::begin(s_columns),
-                                                          std::end(s_columns)));
+  auto view = std::make_unique<scada::aui::Table>(mirror_model_, MakeColumns());
   view->SetShowGrid(true);
 
   view->SetContextMenuHandler([this](const scada::aui::Point& point) {

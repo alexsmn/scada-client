@@ -1,6 +1,5 @@
 ﻿#include "modules/table/table_view.h"
 
-#include "app/string_const.h"
 #include "aui/dialog_service.h"
 #include "aui/severity_colors.h"
 #include "aui/table.h"
@@ -39,9 +38,9 @@ TableView::TableView(const ControllerContext& context)
   };
 
   std::vector<scada::aui::TableColumn> columns = {
-      {TableModel::COLUMN_TITLE, kDisplayNameAttributeString, 150,
+      {TableModel::COLUMN_TITLE, Translate("Name"), 150,
        scada::aui::TableColumn::LEFT},
-      {TableModel::COLUMN_VALUE, kValueTitle, 100,
+      {TableModel::COLUMN_VALUE, Translate("Value"), 100,
        scada::aui::TableColumn::RIGHT,
        scada::aui::TableColumn::DataType::General,
        /*monospace=*/true},
@@ -61,18 +60,19 @@ TableView::TableView(const ControllerContext& context)
                        scada::aui::TableColumn::LEFT});
   }
 
-  columns.insert(columns.end(),
-                 {{TableModel::COLUMN_SOURCE_TIMESTAMP, kSourceTimestampTitle,
-                   170, scada::aui::TableColumn::LEFT,
-                   scada::aui::TableColumn::DataType::DateTime},
-                  {TableModel::COLUMN_SERVER_TIMESTAMP, kServerTimestampTitle,
-                   170, scada::aui::TableColumn::LEFT,
-                   scada::aui::TableColumn::DataType::DateTime},
-                  {TableModel::COLUMN_CHANGE_TIME, Translate("Change Time"),
-                   170, scada::aui::TableColumn::LEFT,
-                   scada::aui::TableColumn::DataType::DateTime},
-                  {TableModel::COLUMN_EVENT, Translate("Event"), 200,
-                   scada::aui::TableColumn::LEFT}});
+  columns.insert(
+      columns.end(),
+      {{TableModel::COLUMN_SOURCE_TIMESTAMP, Translate("Source Timestamp"), 170,
+        scada::aui::TableColumn::LEFT,
+        scada::aui::TableColumn::DataType::DateTime},
+       {TableModel::COLUMN_SERVER_TIMESTAMP, Translate("Server Timestamp"), 170,
+        scada::aui::TableColumn::LEFT,
+        scada::aui::TableColumn::DataType::DateTime},
+       {TableModel::COLUMN_CHANGE_TIME, Translate("Change Time"), 170,
+        scada::aui::TableColumn::LEFT,
+        scada::aui::TableColumn::DataType::DateTime},
+       {TableModel::COLUMN_EVENT, Translate("Event"), 200,
+        scada::aui::TableColumn::LEFT}});
 
   // cppcheck-suppress noCopyConstructor
   // cppcheck-suppress noOperatorEq

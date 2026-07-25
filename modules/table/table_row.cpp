@@ -172,10 +172,19 @@ void TableRow::GetValueCell(TableCellEx& cell) const {
 }
 
 void TableRow::GetQualityCell(TableCellEx& cell) const {
-  const scada::aui::Quality quality =
-      QualityFromQualifier(timed_data_.current().qualifier);
-  cell.text = QualityLabel(quality);
-  if (auto color = scada::aui::QualityColor(quality))
+  const std::optional<scada::aui::Quality> quality =
+      QualityFromValue(timed_data_.current());
+
+  // No reading has ever arrived — typically a row whose formula resolves to no
+  // node at all. Say so instead of vouching for data that does not exist; the
+  // Value cell beside it is empty for the same reason.
+  if (!quality) {
+    cell.text = Translate("No data");
+    return;
+  }
+
+  cell.text = QualityLabel(*quality);
+  if (auto color = scada::aui::QualityColor(*quality))
     cell.text_color = *color;
 }
 

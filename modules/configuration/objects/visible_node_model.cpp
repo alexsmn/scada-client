@@ -78,6 +78,12 @@ std::optional<scada::aui::Color> VisibleNodeModel::GetStatusColor(
   if (!node)
     return std::nullopt;  // no live value (folder/object): no status dot
 
+  // A row whose node is still resolving has delivered nothing yet. Falling
+  // through would paint it green, because the placeholder is neither bad nor
+  // alerting — a row with an empty value claiming good quality.
+  if (!node->IsResolved())
+    return std::nullopt;
+
   const scada::aui::Quality quality = node->IsBad() ? scada::aui::Quality::kBad
                                       : node->IsAlerting()
                                           ? scada::aui::Quality::kUncertain
@@ -149,6 +155,10 @@ bool ProxyVisibleNode::IsAlerting() const {
   return underlying_node_ && underlying_node_->IsAlerting();
 }
 
+bool ProxyVisibleNode::IsResolved() const {
+  return underlying_node_ && underlying_node_->IsResolved();
+}
+
 // DataItemVisibleNode
 
 DataItemVisibleNode::DataItemVisibleNode(TimedDataService& timed_data_service,
@@ -180,6 +190,14 @@ std::u16string DataItemVisibleNode::GetText() const {
 
 bool DataItemVisibleNode::IsBad() const {
   return spec_.current().qualifier.general_bad();
+}
+
+bool DataItemVisibleNode::IsResolved() const {
+  // Subscribed is not the same as delivered. Until a value arrives the
+  // qualifier is a default zero, which is "not bad" — so falling through would
+  // paint the good band next to an empty cell. Same rule as the Inspector's
+  // quality pill (InspectorQualityBandFor).
+  return !spec_.current().is_null();
 }
 
 bool DataItemVisibleNode::IsAlerting() const {

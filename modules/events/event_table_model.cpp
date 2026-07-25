@@ -871,7 +871,7 @@ std::u16string EventTableModel::MakeTitle() const {
   }
 
   if (severity_min_ || !filter_node_ids_.empty())
-    title += u" (Filter)";
+    title += u" (" + Translate("Filter") + u")";
 
   return title;
 }

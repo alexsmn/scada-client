@@ -1,10 +1,12 @@
 #include "profile/window_definition.h"
 
+#include "aui/translation.h"
 #include "base/format.h"
-#include <boost/algorithm/string/predicate.hpp>
 #include "base/struct_writer.h"
+#include "base/utf_convert.h"
 #include "base/value_util.h"
 #include "controller/window_info.h"
+#include <boost/algorithm/string/predicate.hpp>
 
 #include "base/debug_util.h"
 
@@ -133,7 +135,10 @@ std::u16string WindowDefinition::GetTitle(const WindowInfo& window_info) const {
   if (!title.empty())
     return title;
 
-  std::u16string title{window_info.title};
+  // WindowInfo::title is an English literal in the source; run it through the
+  // translation seam so menu entries built from a definition are localized.
+  std::u16string title =
+      Translate(UtfConvert<char>(std::u16string_view{window_info.title}));
   if (!path.empty())
     title += u": " + path.u16string();
   return title;

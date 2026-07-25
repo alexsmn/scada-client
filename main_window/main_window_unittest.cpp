@@ -1,9 +1,10 @@
 ﻿#include "main_window/main_window.h"
 
 #include "aui/models/simple_menu_model.h"
+#include "aui/models/status_bar_model_impl.h"
 #include "aui/models/status_bar_model_mock.h"
-#include "ui/qt/client_utils_qt.h"
 #include "aui/test/app_environment.h"
+#include "aui/translation.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "controller/action_manager.h"
@@ -20,7 +21,6 @@
 #include "main_window/opened_view/opened_view_command_registry.h"
 #include "main_window/opened_view/opened_view_command_router.h"
 #include "main_window/selection_command_router.h"
-#include "aui/models/status_bar_model_impl.h"
 #include "modules/graph/graph_component.h"
 #include "modules/portfolio/portfolio_module.h"
 #include "modules/summary/summary_component.h"
@@ -30,6 +30,7 @@
 #include "profile/page.h"
 #include "profile/profile.h"
 #include "resources/common_resources.h"
+#include "ui/qt/client_utils_qt.h"
 
 #if defined(UI_QT)
 #include "main_window/main_window_qt.h"
@@ -61,10 +62,10 @@ Awaitable<void> CompleteDownloadAsync() {
 
 class TestMainMenuModel final : public scada::aui::SimpleMenuModel {
  public:
-  TestMainMenuModel()
+  explicit TestMainMenuModel(std::u16string label = u"Top")
       : scada::aui::SimpleMenuModel{nullptr}, submenu_{nullptr} {
     submenu_.AddItem(1, u"Action");
-    AddSubMenu(0, u"Top", &submenu_);
+    AddSubMenu(0, std::move(label), &submenu_);
   }
 
  private:
@@ -399,64 +400,117 @@ TEST_F(MainWindowTest, Close_InvokesQuitHandler) {
 }
 
 #if defined(UI_QT)
-TEST(MainWindowQtTest, MenuBarPopulatesTopLevelMenusImmediately) {
-  MainWindow::SetHideForTesting();
+// Owns everything a bare MainWindow needs so menu-bar tests can vary just the
+// label the main-menu model contributes.
+class MainWindowQtHarness {
+ public:
+  explicit MainWindowQtHarness(std::u16string top_menu_label) {
+    MainWindow::SetHideForTesting();
+    controller_env_.profile_.AddPage({});
+    main_window_.emplace(MainWindowContext{
+        .executor_ = controller_env_.executor_,
+        .ui_command_registry_ = ui_command_registry_,
+        .window_id_ = 111,
+        .node_command_handler_ = node_command_handler_.AsStdFunction(),
+        .file_manager_ = controller_env_.file_manager_,
+        .main_window_manager_ = main_window_manager_,
+        .profile_ = controller_env_.profile_,
+        .opened_view_factory_ = opened_view_factory_.AsStdFunction(),
+        .main_command_router_factory_ =
+            [](MainWindowInterface& main_window,
+               DialogService& dialog_service) {
+              return std::make_unique<CommandHandler>();
+            },
+        .status_bar_model_ = std::make_shared<scada::aui::StatusBarModelImpl>(),
+        .context_menu_factory_ =
+            [](MainWindowInterface& main_window,
+               CommandHandler& global_commands) {
+              return std::make_unique<scada::aui::SimpleMenuModel>(nullptr);
+            },
+        .main_menu_factory_ =
+            [label = std::move(top_menu_label)](
+                MainWindowInterface& main_window, DialogService& dialog_service,
+                ViewManager& view_manager, CommandHandler& global_commands,
+                scada::aui::MenuModel& context_menu_model) {
+              return std::make_unique<TestMainMenuModel>(label);
+            },
+        .connection_info_provider_ = connection_info_provider_.AsStdFunction(),
+        .progress_host_ = progress_host_});
+  }
 
-  AppEnvironment app_env;
-  ControllerEnvironment controller_env;
-  controller_env.profile_.AddPage({});
-  UiCommandRegistry ui_command_registry;
+  ~MainWindowQtHarness() { main_window_->CleanupForTesting(); }
+
+  MainWindow& main_window() { return *main_window_; }
+
+  // Opens `menu` the way Qt does, so the model-driven contents are built.
+  // aboutToShow is a signal, so it cannot be emitted from outside QMenu;
+  // invoking it through the meta-object is the supported equivalent.
+  static void Show(QMenu& menu) {
+    QMetaObject::invokeMethod(&menu, "aboutToShow");
+  }
+
+  static std::vector<QString> TopLevelTitles(const MainWindow& main_window) {
+    std::vector<QString> titles;
+    for (const auto* action : main_window.menuBar()->actions())
+      titles.push_back(action->text());
+    return titles;
+  }
+
+ private:
+  AppEnvironment app_env_;
+  ControllerEnvironment controller_env_;
+  UiCommandRegistry ui_command_registry_;
   StrictMock<MockFunction<void(const NodeCommandContext& context)>>
-      node_command_handler;
+      node_command_handler_;
   StrictMock<MockFunction<std::unique_ptr<MainWindow>(int window_id)>>
-      main_window_factory;
-  StrictMock<MockFunction<void()>> quit_handler;
-  MainWindowManager main_window_manager{
-      {.profile_ = controller_env.profile_,
-       .main_window_factory_ = main_window_factory.AsStdFunction(),
-       .quit_handler_ = quit_handler.AsStdFunction()}};
-  StrictMock<MockFunction<std::unique_ptr<OpenedView>(
-      MainWindow & main_window, WindowDefinition & window_def)>>
-      opened_view_factory;
-  NiceMock<MockFunction<std::string()>> connection_info_provider;
-  ProgressHostImpl progress_host;
+      main_window_factory_;
+  StrictMock<MockFunction<void()>> quit_handler_;
+  MainWindowManager main_window_manager_{
+      {.profile_ = controller_env_.profile_,
+       .main_window_factory_ = main_window_factory_.AsStdFunction(),
+       .quit_handler_ = quit_handler_.AsStdFunction()}};
+  StrictMock<MockFunction<std::unique_ptr<
+      OpenedView>(MainWindow& main_window, WindowDefinition& window_def)>>
+      opened_view_factory_;
+  NiceMock<MockFunction<std::string()>> connection_info_provider_;
+  ProgressHostImpl progress_host_;
+  std::optional<MainWindow> main_window_;
+};
 
-  MainWindow main_window{
-      {.executor_ = controller_env.executor_,
-       .ui_command_registry_ = ui_command_registry,
-       .window_id_ = 111,
-       .node_command_handler_ = node_command_handler.AsStdFunction(),
-       .file_manager_ = controller_env.file_manager_,
-       .main_window_manager_ = main_window_manager,
-       .profile_ = controller_env.profile_,
-       .opened_view_factory_ = opened_view_factory.AsStdFunction(),
-       .main_command_router_factory_ =
-           [](MainWindowInterface& main_window, DialogService& dialog_service) {
-             return std::make_unique<CommandHandler>();
-           },
-       .status_bar_model_ = std::make_shared<scada::aui::StatusBarModelImpl>(),
-       .context_menu_factory_ =
-           [](MainWindowInterface& main_window,
-              CommandHandler& global_commands) {
-             return std::make_unique<scada::aui::SimpleMenuModel>(nullptr);
-           },
-       .main_menu_factory_ =
-           [](MainWindowInterface& main_window, DialogService& dialog_service,
-              ViewManager& view_manager, CommandHandler& global_commands,
-              scada::aui::MenuModel& context_menu_model) {
-             return std::make_unique<TestMainMenuModel>();
-           },
-       .connection_info_provider_ = connection_info_provider.AsStdFunction(),
-       .progress_host_ = progress_host}};
+TEST(MainWindowQtTest, MenuBarPopulatesTopLevelMenusImmediately) {
+  MainWindowQtHarness harness{u"Top"};
 
-  // One model-driven menu plus the appended Settings menu (experimental-UX
-  // toggle). The model menu is first and populates immediately.
-  ASSERT_THAT(main_window.menuBar()->actions(), SizeIs(2));
-  auto* top_menu = main_window.menuBar()->actions().front()->menu();
+  // The model menu plus the fallback Settings menu (experimental-UX toggle),
+  // which is only appended because this model has no Settings menu of its own.
+  ASSERT_THAT(harness.main_window().menuBar()->actions(), SizeIs(2));
+  auto* top_menu = harness.main_window().menuBar()->actions().front()->menu();
   ASSERT_NE(top_menu, nullptr);
   EXPECT_THAT(top_menu->actions(), SizeIs(1));
+}
 
-  main_window.CleanupForTesting();
+TEST(MainWindowQtTest, MenuBarDoesNotDuplicateTheModelDrivenSettingsMenu) {
+  const QString settings_title =
+      QString::fromStdU16String(Translate("Settings"));
+  MainWindowQtHarness harness{Translate("Settings")};
+
+  // Regression: the experimental-UX toggle used to be appended as a second
+  // top-level Translate("Settings") menu, so the menu bar showed two identical
+  // adjacent titles.
+  EXPECT_THAT(MainWindowQtHarness::TopLevelTitles(harness.main_window()),
+              ElementsAre(settings_title));
+
+  auto* settings_menu =
+      harness.main_window().menuBar()->actions().front()->menu();
+  ASSERT_NE(settings_menu, nullptr);
+  MainWindowQtHarness::Show(*settings_menu);
+
+  // ... and the toggle still has to be reachable, inside that one menu.
+  std::vector<QString> item_texts;
+  for (const auto* action : settings_menu->actions())
+    item_texts.push_back(action->text());
+  EXPECT_THAT(
+      item_texts,
+      Contains(QString::fromStdU16String(Translate("Experimental UX"))));
 }
 #endif
 

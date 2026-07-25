@@ -5,10 +5,14 @@ client_module_include_directories(client_vds_runtime PUBLIC
   "${CMAKE_SOURCE_DIR}/common"
 )
 
-client_module_link_libraries(client_vds_runtime PUBLIC
-  client_base
-  client_common
-  Qt6::Core
-  Qt6::Gui
-  Qt6::Widgets
+client_module_link_libraries(client_vds_runtime
+  PUBLIC
+    client_base
+    client_common
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Widgets
+  PRIVATE
+    # Translate() for the operator-facing document/render error messages.
+    aui
 )

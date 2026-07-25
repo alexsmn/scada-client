@@ -60,6 +60,9 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   virtual void OnShowTabPopupMenu(OpenedView& view,
                                   const scada::aui::Point& point) override;
 
+  // BaseMainWindow
+  virtual void OpenPage(const Page& page) override;
+
   // QWidget
   virtual void closeEvent(QCloseEvent* event) override;
 
@@ -67,7 +70,16 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   virtual bool eventFilter(QObject* watched, QEvent* event) override;
 
  private:
+  // Tabs the specialist panels onto the Inspector dock and fronts the
+  // Inspector. Re-applied after every page open, because opening a page
+  // restores a persisted QMainWindow dock state that includes these docks and
+  // would otherwise leave them stacked vertically.
+  void TabifySpecialistDocks();
   void CreateMenuBar();
+  // Appends the experimental-reshell opt-in to an already-built Settings menu.
+  // Called on every aboutToShow because the model-driven menus are rebuilt
+  // from scratch each time they open.
+  void AddExperimentalUxAction(QMenu& menu);
   // Persists the experimental-reshell opt-in (Ux/Experimental) and tells the
   // operator a restart is needed, since theming installs at startup.
   void OnToggleExperimentalUx(bool enabled);

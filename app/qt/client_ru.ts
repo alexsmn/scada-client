@@ -172,6 +172,61 @@
         <source>Quality</source>
         <translation>Достоверность</translation>
     </message>
+    <!-- modules/table, modules/timed_data: grid column headers. These used to
+         be raw u"..." literals in app/string_const.h that never reached the
+         Translate() seam. -->
+    <message>
+        <source>Source Timestamp</source>
+        <translation>Метка времени источника</translation>
+    </message>
+    <message>
+        <source>Server Timestamp</source>
+        <translation>Метка времени сервера</translation>
+    </message>
+    <!-- modules/inspector: the quality pill's third band, for a signal whose
+         value has never been delivered. -->
+    <message>
+        <source>No data</source>
+        <translation>Нет данных</translation>
+    </message>
+    <!-- main_menu / modules/modus: Settings-menu entries. -->
+    <message>
+        <source>Language</source>
+        <translation>Язык</translation>
+    </message>
+    <message>
+        <source>Show Modus topology</source>
+        <translation>Показывать топологию Modus</translation>
+    </message>
+    <message>
+        <source>Use Modus runtime renderer</source>
+        <translation>Использовать модуль отображения Modus</translation>
+    </message>
+    <!-- modules/vds_runtime: operator-facing display document errors. -->
+    <message>
+        <source>No display document is assigned to this window.</source>
+        <translation>Для этого окна не задана мнемосхема.</translation>
+    </message>
+    <message>
+        <source>Cannot open document</source>
+        <translation>Не удалось открыть документ</translation>
+    </message>
+    <message>
+        <source>Cannot read document info</source>
+        <translation>Не удалось прочитать сведения о документе</translation>
+    </message>
+    <message>
+        <source>Cannot render document</source>
+        <translation>Не удалось отобразить документ</translation>
+    </message>
+    <message>
+        <source>Cannot render document: invalid size.</source>
+        <translation>Не удалось отобразить документ: неверный размер.</translation>
+    </message>
+    <message>
+        <source>VDS runtime is not available.</source>
+        <translation>Модуль отображения мнемосхем недоступен.</translation>
+    </message>
     <message>
         <source>Good</source>
         <translation>Достоверно</translation>

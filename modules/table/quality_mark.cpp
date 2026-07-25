@@ -16,3 +16,13 @@ scada::aui::Quality QualityFromQualifier(scada::Qualifier qualifier) {
 
   return scada::aui::Quality::kGood;
 }
+
+std::optional<scada::aui::Quality> QualityFromValue(
+    const scada::DataValue& value) {
+  // Nothing delivered: no value and a zero qualifier. Report no quality at all
+  // rather than letting the zero qualifier fall through to Good.
+  if (value.is_null())
+    return std::nullopt;
+
+  return QualityFromQualifier(value.qualifier);
+}

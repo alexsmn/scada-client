@@ -3,6 +3,7 @@
 #include "aui/test/app_environment.h"
 #include "base/utf_convert.h"
 #include "controller/selection_model.h"
+#include "scada/data_value.h"
 #include "scada/qualifier.h"
 #include "timed_data/base_timed_data.h"
 #include "timed_data/timed_data_service.h"
@@ -27,6 +28,25 @@ TEST(InspectorQualityBandTest, GoodQualifierIsGood) {
 
 TEST(InspectorQualityBandTest, BadQualifierIsBad) {
   const scada::Qualifier bad{scada::Qualifier::BAD};
+  EXPECT_EQ(InspectorQualityBandFor(bad), InspectorQualityBand::kBad);
+}
+
+// Regression: a value that was never delivered carries a default-constructed
+// Qualifier, which is zero and therefore "not BAD". Mapping that through the
+// Qualifier alone reported Good, so a display element bound to a node the
+// server does not have showed a good-quality pill next to an empty readout.
+TEST(InspectorQualityBandTest, NeverDeliveredValueIsUnknown) {
+  EXPECT_EQ(InspectorQualityBandFor(scada::DataValue{}),
+            InspectorQualityBand::kUnknown);
+}
+
+TEST(InspectorQualityBandTest, DeliveredValueKeepsItsQualifierBand) {
+  const scada::DataValue good{42.0, scada::Qualifier{}, scada::kNullTime,
+                              scada::kNullTime};
+  EXPECT_EQ(InspectorQualityBandFor(good), InspectorQualityBand::kGood);
+
+  const scada::DataValue bad{42.0, scada::Qualifier{scada::Qualifier::BAD},
+                             scada::kNullTime, scada::kNullTime};
   EXPECT_EQ(InspectorQualityBandFor(bad), InspectorQualityBand::kBad);
 }
 
@@ -175,6 +195,21 @@ TEST_F(InspectorPanelTest, DisabledControlShowsItsReason) {
   ASSERT_NE(reason, nullptr);
   EXPECT_FALSE(reason->isHidden());
   EXPECT_EQ(reason->text(), QStringLiteral("no output channel"));
+}
+
+// The hint describes what pressing Control does. While control is blocked it
+// would advertise an action the operator cannot take, directly above the
+// sentence explaining why — so it goes away with the action.
+TEST_F(InspectorPanelTest, DisabledControlHidesItsHint) {
+  InspectorPanel panel{InspectorPanelContext{}};
+  panel.ShowElement(InspectorElementView{
+      .title = QStringLiteral("Ua"),
+      .controllable = false,
+      .control_reason = QStringLiteral("no output channel")});
+
+  auto* hint = panel.findChild<QLabel*>(QStringLiteral("inspectorControlHint"));
+  ASSERT_NE(hint, nullptr);
+  EXPECT_TRUE(hint->isHidden());
 }
 
 // An available control needs no explanation.

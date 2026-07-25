@@ -29,7 +29,7 @@ ModusModule::ModusModule(ModusModuleContext&& context)
                                         .title_ = Translate("Options")});
 
   global_commands_.AddCommand(
-      {.title = u"Show Modus topology",
+      {.title = Translate("Show Modus topology"),
        .menu_group = MenuGroup::DISPLAY_SETTINGS,
        .execute_handler =
            [&profile = profile_](const GlobalCommandContext& context) {
@@ -42,7 +42,7 @@ ModusModule::ModusModule(ModusModuleContext&& context)
            }});
 
   global_commands_.AddCommand(
-      {.title = u"Use Modus runtime renderer",
+      {.title = Translate("Use Modus runtime renderer"),
        .menu_group = MenuGroup::DISPLAY_SETTINGS,
        .execute_handler =
            [&profile = profile_](const GlobalCommandContext& context) {

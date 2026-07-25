@@ -24,6 +24,11 @@ class VisibleNode {
   virtual std::u16string GetText() const = 0;
   virtual bool IsBad() const { return false; }
   virtual bool IsAlerting() const { return false; }
+  // Whether this node speaks for a real live value yet. A node that is still
+  // resolving reports no quality at all rather than borrowing the good band —
+  // "not bad" must never be allowed to read as "good" when nothing has been
+  // delivered.
+  virtual bool IsResolved() const { return true; }
 
  protected:
   void NotifyChanged();
@@ -46,6 +51,7 @@ class ProxyVisibleNode final
   virtual std::u16string GetText() const override;
   virtual bool IsBad() const override;
   virtual bool IsAlerting() const override;
+  virtual bool IsResolved() const override;
 
  private:
   std::shared_ptr<VisibleNode> underlying_node_;
@@ -61,6 +67,7 @@ class DataItemVisibleNode final : private Blinker, public VisibleNode {
   virtual std::u16string GetText() const override;
   virtual bool IsBad() const override;
   virtual bool IsAlerting() const override;
+  virtual bool IsResolved() const override;
 
  private:
   void SetAlerting(bool alerting);

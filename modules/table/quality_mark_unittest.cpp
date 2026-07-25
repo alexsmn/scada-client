@@ -1,6 +1,7 @@
 #include "modules/table/quality_mark.h"
 
 #include "aui/severity_colors.h"
+#include "scada/data_value.h"
 #include "scada/qualifier.h"
 
 #include <gtest/gtest.h>
@@ -49,6 +50,35 @@ TEST(QualityMarkTest, BadDominatesUncertain) {
   scada::Qualifier qualifier;
   qualifier.set_stale(true).set_online(false);
   EXPECT_EQ(QualityFromQualifier(qualifier), Quality::kBad);
+}
+
+// Regression: a row bound to a node id the server does not have (the
+// subscription is rejected Bad_WrongNodeId) never receives a value, so its
+// DataValue keeps a default-constructed Qualifier — which is zero, and zero is
+// not BAD. Mapping that through the Qualifier alone reported Good, so the grid
+// showed a green "Достоверно" beside a permanently empty Value cell. Absent
+// data must report no quality at all.
+TEST(QualityMarkTest, NeverDeliveredValueHasNoQuality) {
+  EXPECT_FALSE(QualityFromValue(scada::DataValue{}).has_value());
+}
+
+TEST(QualityMarkTest, DeliveredValueKeepsItsQualifierBand) {
+  const scada::DataValue good{42.0, scada::Qualifier{}, scada::kNullTime,
+                              scada::kNullTime};
+  EXPECT_EQ(QualityFromValue(good), Quality::kGood);
+
+  const scada::DataValue bad{42.0, scada::Qualifier{}.set_bad(true),
+                             scada::kNullTime, scada::kNullTime};
+  EXPECT_EQ(QualityFromValue(bad), Quality::kBad);
+}
+
+// A bad-quality value that carries no number still counts as delivered: the
+// qualifier is non-zero, so the row reports Bad rather than "no data".
+TEST(QualityMarkTest, ValuelessButFlaggedReadingIsDelivered) {
+  const scada::DataValue offline{scada::Variant{},
+                                 scada::Qualifier{}.set_online(false),
+                                 scada::kNullTime, scada::kNullTime};
+  EXPECT_EQ(QualityFromValue(offline), Quality::kBad);
 }
 
 }  // namespace

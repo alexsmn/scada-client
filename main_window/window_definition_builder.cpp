@@ -1,18 +1,19 @@
 #include "window_definition_builder.h"
 
+#include "aui/translation.h"
 #include "base/any_executor.h"
 #include "base/u16format.h"
 #include "base/utf_convert.h"
-#include "ui/common/client_utils.h"
 #include "common/formula_util.h"
-#include "resources/common_resources.h"
-#include "modules/table/table_component.h"
 #include "controller/controller.h"
 #include "controller/window_info.h"
 #include "model/data_items_node_ids.h"
 #include "model/node_id_util.h"
+#include "modules/table/table_component.h"
 #include "node_service/node_ref.h"
 #include "node_service/node_util.h"
+#include "resources/common_resources.h"
+#include "ui/common/client_utils.h"
 
 #if !defined(UI_WT)
 #include "graph/graph_component.h"
@@ -29,8 +30,15 @@ static const WindowInfo& kDefaultWindowInfo = kGraphWindowInfo;
 static const WindowInfo& kDefaultMultiWindowInfo = kTableWindowInfo;
 
 std::u16string MakeTitle(const WindowInfo& window_info, const NodeRef& node) {
-  return u16format(L"{}: {}", window_info.title,
-                    ToString16(node.display_name()));
+  // WindowInfo::title is an English literal in the source ("Table", "Graph").
+  // This composed title is stored on the WindowDefinition and outranks
+  // OpenedView's translating fallback, so translating here is the only place
+  // that keeps the window-type prefix localized — otherwise a Russian client
+  // shows tabs like "Table: Системная база данных".
+  return u16format(
+      L"{}: {}",
+      Translate(UtfConvert<char>(std::u16string_view{window_info.title})),
+      ToString16(node.display_name()));
 }
 
 }  // namespace

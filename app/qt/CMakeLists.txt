@@ -170,10 +170,34 @@ endif()
 
 add_dependencies(client_qt client_qt_copy_translations)
 
+if(APPLE AND TRANSLATIONS_OUT)
+  # InstalledTranslation loads catalogs from QApplication::applicationDirPath()
+  # + "/translations". Inside a bundle that is client.app/Contents/MacOS, not
+  # the bin/<config>/translations dir staged above, so the staged copy is
+  # invisible to the app and every string silently falls back to its
+  # untranslated English source. Mirror the catalogs into the bundle after the
+  # link step (the bundle layout only exists once the executable is written).
+  add_custom_command(TARGET client_qt POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+      "$<TARGET_BUNDLE_CONTENT_DIR:client_qt>/MacOS/translations"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      ${TRANSLATIONS_OUT} ${QTBASE_RU_QM}
+      "$<TARGET_BUNDLE_CONTENT_DIR:client_qt>/MacOS/translations"
+    COMMENT "Copy translations into the client app bundle")
+endif()
+
 if(TRANSLATIONS_OUT)
-  install(FILES ${TRANSLATIONS_OUT} ${QTBASE_RU_QM}
-    DESTINATION "bin/translations"
-    COMPONENT Client)
+  if(APPLE)
+    # Same reason as the POST_BUILD copy above: the installed bundle must carry
+    # its own catalogs, since nothing outside client.app is on the lookup path.
+    install(FILES ${TRANSLATIONS_OUT} ${QTBASE_RU_QM}
+      DESTINATION "client.app/Contents/MacOS/translations"
+      COMPONENT Client)
+  else()
+    install(FILES ${TRANSLATIONS_OUT} ${QTBASE_RU_QM}
+      DESTINATION "bin/translations"
+      COMPONENT Client)
+  endif()
 endif()
 
 install(TARGETS client_qt

@@ -22,6 +22,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
+#include <QScrollArea>
 #include <QStackedWidget>
 #include <QVBoxLayout>
 
@@ -130,6 +131,17 @@ InspectorQualityBand InspectorQualityBandFor(
                          : InspectorQualityBand::kGood;
 }
 
+InspectorQualityBand InspectorQualityBandFor(const scada::DataValue& value) {
+  // DataValue::is_null() means "no value and a zero qualifier" — nothing was
+  // ever delivered for this node. Falling through to the Qualifier mapping
+  // here would report Good, which is how an unresolvable binding (a display
+  // element whose data source names no real node) came to show a good-quality
+  // pill next to an empty readout.
+  if (value.is_null())
+    return InspectorQualityBand::kUnknown;
+  return InspectorQualityBandFor(value.qualifier);
+}
+
 InspectorPanel::InspectorPanel(InspectorPanelContext context, QWidget* parent)
     : QWidget{parent}, context_{std::move(context)} {
   const scada::aui::ThemeTokens& tokens = InspectorTokens();
@@ -140,12 +152,26 @@ InspectorPanel::InspectorPanel(InspectorPanelContext context, QWidget* parent)
   auto* root = new QVBoxLayout{this};
   root->setContentsMargins(0, 0, 0, 0);
 
-  stack_ = new QStackedWidget{this};
+  stack_ = new QStackedWidget;
   stack_->setObjectName(QStringLiteral("inspectorStack"));
   stack_->addWidget(BuildEmptyState());   // index 0
   stack_->addWidget(BuildElementView());  // index 1
   stack_->addWidget(BuildEventView());    // index 2
-  root->addWidget(stack_);
+
+  // Scroll rather than clip. A QStackedLayout's minimum height is the maximum
+  // over all pages — including the hidden ones — and the element/event cards
+  // are tall. Sharing the right dock column with the other panels drives this
+  // widget below that minimum, and the content then spilled under the next
+  // dock's title bar (the Control section disappearing behind "Device
+  // diagnostics"). Inside a resizable scroll area the panel can be squeezed to
+  // any height and the operator can still reach every row.
+  auto* scroll = new QScrollArea{this};
+  scroll->setObjectName(QStringLiteral("inspectorScroll"));
+  scroll->setWidgetResizable(true);
+  scroll->setFrameShape(QFrame::NoFrame);
+  scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  scroll->setWidget(stack_);
+  root->addWidget(scroll);
 
   Clear();
 }
@@ -238,12 +264,13 @@ QWidget* InspectorPanel::BuildElementView() {
       context_.on_control();
   });
   layout->addWidget(control_);
-  auto* hint = new QLabel{
+  control_hint_ = new QLabel{
       Tr("Opens the two-stage command confirm. Actions are logged.")};
-  hint->setWordWrap(true);
-  hint->setStyleSheet(
+  control_hint_->setObjectName(QStringLiteral("inspectorControlHint"));
+  control_hint_->setWordWrap(true);
+  control_hint_->setStyleSheet(
       QStringLiteral("color:%1;font-size:11px;").arg(tokens.fg_subtle.name()));
-  layout->addWidget(hint);
+  layout->addWidget(control_hint_);
 
   // Why control is unavailable. A greyed button with no explanation leaves the
   // operator guessing whether the system is broken or they lack the right.
@@ -499,7 +526,7 @@ void InspectorPanel::RefreshValue() {
   if (spec_) {
     element.value_text = QString::fromStdU16String(
         spec_->GetCurrentString(ValueFormat{FORMAT_QUALITY | FORMAT_UNITS}));
-    element.quality = InspectorQualityBandFor(spec_->current().qualifier);
+    element.quality = InspectorQualityBandFor(spec_->current());
     element.updated_text = QString::fromStdString(
         FormatTime(spec_->change_time(), TIME_FORMAT_TIME));
     element.limits = MakeLimitRows(spec_->node(), spec_->current());
@@ -561,10 +588,19 @@ void InspectorPanel::ShowElement(const InspectorElementView& element) {
   value_->setText(element.value_text.isEmpty() ? QStringLiteral("—")
                                                : element.value_text);
 
-  const QColor pill =
-      element.quality == InspectorQualityBand::kBad ? tokens.bad : tokens.good;
-  quality_->setText(element.quality == InspectorQualityBand::kBad ? Tr("Bad")
-                                                                  : Tr("Good"));
+  // Three bands, three readings. kUnknown is deliberately neutral rather than
+  // alarming: nothing is wrong with the process, the client simply has no
+  // reading — but it must not borrow the good band's colour or wording.
+  QColor pill = tokens.good;
+  QString quality_text = Tr("Good");
+  if (element.quality == InspectorQualityBand::kBad) {
+    pill = tokens.bad;
+    quality_text = Tr("Bad");
+  } else if (element.quality == InspectorQualityBand::kUnknown) {
+    pill = tokens.fg_muted;
+    quality_text = Tr("No data");
+  }
+  quality_->setText(quality_text);
   quality_->setStyleSheet(
       QStringLiteral("#qualityPill{color:%1;border:1px solid %1;"
                      "border-radius:9px;padding:1px 10px;font-weight:600;}")
@@ -576,6 +612,7 @@ void InspectorPanel::ShowElement(const InspectorElementView& element) {
   ShowLimits(element.limits);
 
   control_->setEnabled(element.controllable);
+  control_hint_->setVisible(element.controllable);
   control_reason_->setText(element.control_reason);
   control_reason_->setVisible(!element.controllable &&
                               !element.control_reason.isEmpty());

@@ -88,7 +88,7 @@ std::u16string OpenedView::GetWindowTitle() const {
 void OpenedView::UpdateTitle() {
   std::u16string title = GetWindowTitle();
   if (working_)
-    title += u" [Выполнение]";
+    title += u" [" + Translate("Loading") + u"]";
 
   scada::base::Check(main_window_);
   main_window_->OnViewTitleUpdated(*this, title);

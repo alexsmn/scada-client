@@ -1,5 +1,7 @@
 #include "vds_runtime/qt/vds_runtime_widget.h"
 
+#include "aui/translation.h"
+
 #include <QMouseEvent>
 #include <QPainter>
 
@@ -10,6 +12,10 @@ namespace {
 
 std::string ToUtf8(const std::filesystem::path& path) {
   return path.string();
+}
+
+QString Tr(std::string_view text) {
+  return QString::fromStdU16String(Translate(text));
 }
 
 QString FromUtf8(const char* text) {
@@ -45,6 +51,17 @@ bool VdsRuntimeWidget::Open(const std::filesystem::path& path, int32_t kind) {
     document_ = nullptr;
   }
 
+  // A window definition that names no document resolves to the displays
+  // folder itself. Handing that to the loader produced developer text about an
+  // unsupported empty file extension, naming a directory — nothing an operator
+  // can act on. Diagnose it here instead, before the loader ever sees it.
+  std::error_code ec;
+  if (path.empty() || std::filesystem::is_directory(path, ec)) {
+    error_message_ = Tr("No display document is assigned to this window.");
+    update();
+    return false;
+  }
+
   if (!loader_.is_loaded()) {
     error_message_ = loader_.error_message();
     update();
@@ -55,14 +72,13 @@ bool VdsRuntimeWidget::Open(const std::filesystem::path& path, int32_t kind) {
   const auto utf8_path = ToUtf8(path);
   document_ = loader_.api().open_document(utf8_path.c_str(), kind, &error);
   if (!document_) {
-    error_message_ = FormatError(QStringLiteral("Cannot open document"), error);
+    error_message_ = FormatError(Tr("Cannot open document"), error);
     update();
     return false;
   }
 
   if (!loader_.api().get_document_info(document_, &document_info_, &error)) {
-    error_message_ =
-        FormatError(QStringLiteral("Cannot read document info"), error);
+    error_message_ = FormatError(Tr("Cannot read document info"), error);
     loader_.api().close_document(document_);
     document_ = nullptr;
     update();
@@ -89,11 +105,10 @@ void VdsRuntimeWidget::paintEvent(QPaintEvent*) {
   if (!document_) {
     painter.fillRect(rect(), QColor{255, 255, 255});
     painter.setPen(QColor{160, 0, 0});
-    painter.drawText(rect().adjusted(24, 24, -24, -24),
-                     Qt::AlignCenter | Qt::TextWordWrap,
-                     error_message_.isEmpty()
-                         ? QStringLiteral("VDS runtime is not available.")
-                         : error_message_);
+    painter.drawText(
+        rect().adjusted(24, 24, -24, -24), Qt::AlignCenter | Qt::TextWordWrap,
+        error_message_.isEmpty() ? Tr("VDS runtime is not available.")
+                                 : error_message_);
     return;
   }
 
@@ -106,7 +121,7 @@ void VdsRuntimeWidget::paintEvent(QPaintEvent*) {
     painter.setPen(QColor{160, 0, 0});
     painter.drawText(rect().adjusted(24, 24, -24, -24),
                      Qt::AlignCenter | Qt::TextWordWrap,
-                     QStringLiteral("Cannot render document: invalid size."));
+                     Tr("Cannot render document: invalid size."));
     return;
   }
 
@@ -116,9 +131,9 @@ void VdsRuntimeWidget::paintEvent(QPaintEvent*) {
                                  &error)) {
     painter.fillRect(rect(), QColor{255, 255, 255});
     painter.setPen(QColor{160, 0, 0});
-    painter.drawText(
-        rect().adjusted(24, 24, -24, -24), Qt::AlignCenter | Qt::TextWordWrap,
-        FormatError(QStringLiteral("Cannot render document"), error));
+    painter.drawText(rect().adjusted(24, 24, -24, -24),
+                     Qt::AlignCenter | Qt::TextWordWrap,
+                     FormatError(Tr("Cannot render document"), error));
     return;
   }
 

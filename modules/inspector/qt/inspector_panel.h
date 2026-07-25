@@ -8,6 +8,7 @@
 #include <vector>
 
 namespace scada {
+class DataValue;
 class NodeId;
 class Qualifier;
 }  // namespace scada
@@ -19,8 +20,17 @@ class QStackedWidget;
 
 // The quality band for the Inspector's state-hero pill. A pure mapping so it
 // can be unit-tested without a running QApplication.
-enum class InspectorQualityBand { kGood, kBad };
+//
+// kUnknown is the "nothing has ever been delivered" band. It exists because a
+// default-constructed Qualifier is zero, and zero is *not* BAD — so a value
+// that never arrived is indistinguishable from a good measurement at the
+// Qualifier level. Presenting absent data as good is exactly the failure mode
+// the HMI principles forbid (see client/docs/ux/principles.md).
+enum class InspectorQualityBand { kGood, kBad, kUnknown };
 InspectorQualityBand InspectorQualityBandFor(const scada::Qualifier& qualifier);
+// Prefer this overload wherever a whole DataValue is at hand: it can tell an
+// undelivered value from a good one, which the Qualifier alone cannot.
+InspectorQualityBand InspectorQualityBandFor(const scada::DataValue& value);
 
 // One configured limit band in the Measurements section.
 struct InspectorLimitRow {
@@ -63,7 +73,9 @@ struct InspectorElementView {
   QString title;
   QString node_id_text;
   QString value_text;
-  InspectorQualityBand quality = InspectorQualityBand::kGood;
+  // Defaults to kUnknown so a card filled without a live spec cannot claim
+  // good quality for a readout it never received.
+  InspectorQualityBand quality = InspectorQualityBand::kUnknown;
   QString updated_text;
   // The node's configured limit bands, most severe first. Empty when the node
   // configures none, which hides the limits block entirely.
@@ -157,6 +169,10 @@ class InspectorPanel : public QWidget {
   QLabel* quality_ = nullptr;
   QLabel* updated_ = nullptr;
   QPushButton* control_ = nullptr;
+  // Describes what the Control button does. Hidden while control is
+  // unavailable, where it would only advertise an action the operator cannot
+  // take, directly above the reason it is blocked.
+  QLabel* control_hint_ = nullptr;
   QLabel* control_reason_ = nullptr;
   // The limits block: a section header plus one row per configured band,
   // hidden wholesale when the node configures none.

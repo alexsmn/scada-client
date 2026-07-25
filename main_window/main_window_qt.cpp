@@ -218,12 +218,7 @@ MainWindow::MainWindow(MainWindowContext&& context)
     CreateDiagnosticsPanel();
     CreateUserAccessPanel();
     CreateTransmissionRulePanel();
-    // The specialist panels share the Inspector's dock and are each fronted by
-    // their own selection; tabifying leaves the last one added on top, so an
-    // empty specialist panel would greet the operator. Front the Inspector,
-    // which speaks for any selection.
-    if (inspector_dock_)
-      inspector_dock_->raise();
+    TabifySpecialistDocks();
     // Kick off the palette's tag browse in the background so tags are ready by
     // the time the operator first opens the palette.
     if (node_service_) {
@@ -297,15 +292,29 @@ void MainWindow::CreateMenuBar() {
   auto* menu_bar = new QMenuBar(this);
   setMenuBar(menu_bar);
 
+  const std::u16string settings_label = Translate("Settings");
+  bool has_settings_menu = false;
+
   for (int i = 0; i < main_menu_model_->GetItemCount(); ++i) {
-    auto* submenu = menu_bar->addMenu(
-        QString::fromStdU16String(main_menu_model_->GetLabelAt(i)));
+    const std::u16string label = main_menu_model_->GetLabelAt(i);
+    auto* submenu = menu_bar->addMenu(QString::fromStdU16String(label));
     auto* submenu_model = main_menu_model_->GetSubmenuModelAt(i);
     scada::base::Check(submenu_model);
+    // The experimental-reshell opt-in rides along in the model-driven Settings
+    // menu rather than in a menu of its own: appending a second top-level
+    // Translate("Settings") menu put two identical titles in the menu bar. It
+    // has to be re-added on every aboutToShow because BuildMenu clears the
+    // menu first.
+    const bool is_settings_menu = label == settings_label;
+    has_settings_menu = has_settings_menu || is_settings_menu;
     QObject::connect(submenu, &QMenu::aboutToShow, this,
-                     [submenu, submenu_model] {
+                     [this, submenu, submenu_model, is_settings_menu] {
                        submenu->clear();
                        BuildMenu(*submenu, *submenu_model);
+                       if (is_settings_menu) {
+                         submenu->addSeparator();
+                         AddExperimentalUxAction(*submenu);
+                       }
                      });
 #ifdef __APPLE__
     auto* loading_action = submenu->addAction(tr("Loading..."));
@@ -313,14 +322,21 @@ void MainWindow::CreateMenuBar() {
 #endif
   }
 
-  // A dedicated Settings menu, appended after the model-driven menus, so the
-  // experimental-reshell opt-in is reachable even in the legacy look (the
-  // Ux/Experimental QSetting otherwise has no UI). Written through QSettings so
-  // it round-trips its own key encoding — unlike editing the plist by hand.
-  auto* settings_menu =
-      menuBar()->addMenu(QString::fromStdU16String(Translate("Settings")));
-  auto* ux_action = settings_menu->addAction(
-      QString::fromStdU16String(Translate("Experimental UX")));
+  // Only when the model contributes no Settings menu at all (e.g. a reduced
+  // menu for a restricted user) does the opt-in need a menu of its own — the
+  // Ux/Experimental QSetting otherwise has no UI.
+  if (!has_settings_menu) {
+    auto* settings_menu =
+        menu_bar->addMenu(QString::fromStdU16String(settings_label));
+    AddExperimentalUxAction(*settings_menu);
+  }
+}
+
+void MainWindow::AddExperimentalUxAction(QMenu& menu) {
+  // Read through QSettings so the opt-in round-trips its own key encoding —
+  // unlike editing the plist by hand.
+  auto* ux_action =
+      menu.addAction(QString::fromStdU16String(Translate("Experimental UX")));
   ux_action->setCheckable(true);
   ux_action->setChecked(QSettings{}.value("Ux/Experimental", false).toBool());
   connect(ux_action, &QAction::toggled, this,
@@ -871,6 +887,35 @@ void MainWindow::CreateTransmissionRulePanel() {
   // Shares the right dock; fronted only when a transmission rule is selected.
   if (inspector_dock_)
     tabifyDockWidget(inspector_dock_, dock);
+}
+
+void MainWindow::TabifySpecialistDocks() {
+  if (!inspector_dock_)
+    return;
+
+  // Opening a page restores the page's persisted QMainWindow dock state. These
+  // panels carry permanent object names, so they are part of that blob, and a
+  // state saved while they sat stacked vertically silently undoes the tabify
+  // done when they were created — which is how four title bars ended up
+  // sharing the right column, each one squeezing the panel above it. Re-tabify
+  // after every restore.
+  for (const char* name :
+       {"DeviceDiagnosticsDock", "UserAccessDock", "TransmissionRuleDock"}) {
+    if (auto* dock = findChild<QDockWidget*>(QString::fromLatin1(name));
+        dock && dock != inspector_dock_) {
+      tabifyDockWidget(inspector_dock_, dock);
+    }
+  }
+
+  // Tabifying leaves the last dock added on top, so an empty specialist panel
+  // would greet the operator. Front the Inspector, which speaks for any
+  // selection.
+  inspector_dock_->raise();
+}
+
+void MainWindow::OpenPage(const Page& page) {
+  BaseMainWindow::OpenPage(page);
+  TabifySpecialistDocks();
 }
 
 void MainWindow::OnSelectionChanged() {
