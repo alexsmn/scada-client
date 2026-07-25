@@ -37,6 +37,8 @@ TEST(UserPermissionsForTest, ViewAlwaysGranted) {
 TEST(UserSessionsLabelKeyTest, MapsMultiSessionFlag) {
   EXPECT_EQ(std::string_view{UserSessionsLabelKey(true)}, "Multiple");
   EXPECT_EQ(std::string_view{UserSessionsLabelKey(false)}, "Single");
+  // An unread flag is not "single session".
+  EXPECT_EQ(std::string_view{UserSessionsLabelKey(std::nullopt)}, "No data");
 }
 
 TEST(UserPermissionsForTest, ControlAndConfigureTrackBits) {

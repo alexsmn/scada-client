@@ -23,5 +23,9 @@ if(TARGET client_user_access_qt_unittests)
   target_link_libraries(client_user_access_qt_unittests PRIVATE
     aui_qt
     aui_test_qt
+    # FakeNodeService drives ShowUser end-to-end; it needs the security ids and
+    # NodeState, which the library itself only links privately.
+    scada_model
+    scada_common
   )
 endif()

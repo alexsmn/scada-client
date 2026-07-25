@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <vector>
 
 // The access-rights model for the reshell users-admin RBAC inspector
@@ -10,7 +11,15 @@
 
 // The coarse role tier, mirroring the status strip's UserRoleKey: Configure ⇒
 // Administrator, Control ⇒ Operator, otherwise Observer.
-enum class UserRole { kAdministrator, kOperator, kObserver };
+//
+// kUnknown is the "AccessRights was never delivered" tier, and is never
+// produced by UserRoleFor — only by a caller that could not read the bitmask at
+// all. It exists because an absent bitmask reads as zero, and zero is a
+// perfectly valid bitmask meaning Observer-with-view-only. Rendering an
+// unresolved read as a real role is the failure mode client/docs/ux/
+// principles.md §5 forbids; it is the same defect the Inspector's kUnknown
+// quality band was added for.
+enum class UserRole { kAdministrator, kOperator, kObserver, kUnknown };
 
 UserRole UserRoleFor(int access_rights);
 
@@ -37,5 +46,7 @@ std::vector<UserPermission> UserPermissionsFor(int access_rights);
 const char* UserPermissionLabelKey(UserPermissionKind kind);
 
 // The session-policy label key for the users grid's Sessions column: a user
-// whose MultiSessions flag is set may hold several concurrent sessions.
-const char* UserSessionsLabelKey(bool multi_sessions);
+// whose MultiSessions flag is set may hold several concurrent sessions. An
+// unset optional means the flag could not be read and reads "No data" — false
+// is a real answer ("single session"), so an absent read must not borrow it.
+const char* UserSessionsLabelKey(std::optional<bool> multi_sessions);

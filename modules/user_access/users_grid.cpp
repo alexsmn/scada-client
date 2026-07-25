@@ -7,6 +7,7 @@
 #include "scada/standard_node_ids.h"
 #include "scada/variant.h"
 
+#include <optional>
 #include <set>
 #include <utility>
 
@@ -31,21 +32,33 @@ Awaitable<std::vector<UserGridRow>> BuildUsersGrid(AnyExecutor executor,
     // property.
     co_await child.type_definition().Fetch(NodeFetchStatus::NodeAndChildren);
 
-    scada::Int32 access = 0;
+    // Both reads await their fetch, so a miss here is a genuine absence — the
+    // property does not exist, the fetch failed, or the value arrived in an
+    // unreadable type. Neither may be folded into its "default": zero is a
+    // valid AccessRights (Observer, view only) and false a valid MultiSessions
+    // (single session), so get_or() would turn "we could not read this" into a
+    // confident, plausible, wrong row. Variant::get() reports the difference;
+    // the row then carries kUnknown / nullopt through to the cells. See
+    // docs/ux/principles.md §5.
+    UserRole role = UserRole::kUnknown;
     if (NodeRef rights = child[scada::security::id::UserType_AccessRights]) {
       co_await rights.Fetch(NodeFetchStatus::NodeOnly);
-      access = rights.value().get_or<scada::Int32>(0);
+      scada::Int32 access = 0;
+      if (rights.value().get(access))
+        role = UserRoleFor(access);
     }
 
-    bool multi = false;
+    std::optional<bool> multi;
     if (NodeRef sessions = child[scada::security::id::UserType_MultiSessions]) {
       co_await sessions.Fetch(NodeFetchStatus::NodeOnly);
-      multi = sessions.value().get_or<bool>(false);
+      bool value = false;
+      if (sessions.value().get(value))
+        multi = value;
     }
 
     rows.push_back(UserGridRow{.node_id = child.node_id(),
                                .name = ToString16(child.display_name()),
-                               .role = UserRoleFor(access),
+                               .role = role,
                                .multi_sessions = multi});
   }
   co_return rows;

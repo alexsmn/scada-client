@@ -42,6 +42,8 @@ QColor RoleColor(UserRole role, const scada::aui::ThemeTokens& tokens) {
       return tokens.bad;
     case UserRole::kOperator:
       return tokens.good;
+    case UserRole::kUnknown:
+      return tokens.fg_muted;
     case UserRole::kObserver:
       break;
   }
@@ -53,8 +55,8 @@ QColor RoleColor(UserRole role, const scada::aui::ThemeTokens& tokens) {
 UsersGridPanel::UsersGridPanel(QWidget* parent) : QWidget{parent} {
   const scada::aui::ThemeTokens& tokens = PanelTokens();
   setObjectName(QStringLiteral("usersGridPanel"));
-  setStyleSheet(QStringLiteral("#usersGridPanel{background:%1;}")
-                    .arg(tokens.bg.name()));
+  setStyleSheet(
+      QStringLiteral("#usersGridPanel{background:%1;}").arg(tokens.bg.name()));
 
   auto* root = new QVBoxLayout{this};
   root->setContentsMargins(14, 14, 14, 14);

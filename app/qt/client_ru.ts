@@ -184,7 +184,8 @@
         <translation>Метка времени сервера</translation>
     </message>
     <!-- modules/inspector: the quality pill's third band, for a signal whose
-         value has never been delivered. -->
+         value has never been delivered. Shared with modules/user_access, whose
+         role pill uses it for a user whose AccessRights could not be read. -->
     <message>
         <source>No data</source>
         <translation>Нет данных</translation>

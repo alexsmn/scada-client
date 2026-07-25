@@ -29,6 +29,11 @@ const char* UserRoleLabelKey(UserRole role) {
       return "Operator";
     case UserRole::kObserver:
       return "Observer";
+    case UserRole::kUnknown:
+      // Same wording as the Inspector's third quality band, and already
+      // translated ("Нет данных") — this is the same "nothing was delivered"
+      // reading, not a role the server can grant.
+      return "No data";
   }
   return "Observer";
 }
@@ -55,6 +60,9 @@ const char* UserPermissionLabelKey(UserPermissionKind kind) {
   return "";
 }
 
-const char* UserSessionsLabelKey(bool multi_sessions) {
-  return multi_sessions ? "Multiple" : "Single";
+const char* UserSessionsLabelKey(std::optional<bool> multi_sessions) {
+  // Same wording as the unresolved role, for the same reason.
+  if (!multi_sessions)
+    return "No data";
+  return *multi_sessions ? "Multiple" : "Single";
 }

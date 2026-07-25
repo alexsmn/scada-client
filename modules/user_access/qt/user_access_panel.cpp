@@ -40,13 +40,18 @@ QString Tr(std::string_view text) {
 }
 
 // The role pill's colour, matching users-admin.html: Administrator reads bad
-// (asserted authority, not an alarm), Operator good, Observer muted.
+// (asserted authority, not an alarm), Operator good, Observer muted. kUnknown
+// is deliberately muted rather than alarming — nothing is wrong with the user,
+// the client simply has not read their rights yet — but it must not borrow any
+// real role's colour.
 QColor RolePillColor(UserRole role, const scada::aui::ThemeTokens& tokens) {
   switch (role) {
     case UserRole::kAdministrator:
       return tokens.bad;
     case UserRole::kOperator:
       return tokens.good;
+    case UserRole::kUnknown:
+      return tokens.fg_muted;
     case UserRole::kObserver:
       break;
   }
@@ -137,9 +142,26 @@ void UserAccessPanel::ShowUser(const NodeRef& user) {
     return;
   }
 
-  const scada::Int32 access = user[scada::security::id::UserType_AccessRights]
-                                  .value()
-                                  .get_or<scada::Int32>(0);
+  const QString name =
+      QString::fromStdU16String(ToString16(user.display_name()));
+
+  // This is a synchronous selection handler (see MainWindowQt's selection
+  // routing): it renders whatever is already resident and never fetches, so
+  // AccessRights may not have been read yet. Variant::get() is the honest
+  // predicate — it fails both for a Variant that was never delivered and for
+  // one holding an unreadable type — whereas get_or(0) collapses either into a
+  // zero bitmask, which is indistinguishable from a genuine Observer with only
+  // View granted. Presenting an unresolved read as a real role is exactly the
+  // failure mode docs/ux/principles.md §5 forbids.
+  scada::Int32 access = 0;
+  if (!user[scada::security::id::UserType_AccessRights].value().get(access)) {
+    // No permission rows either: an unresolved bitmask says nothing about the
+    // individual permissions, so drawing them ungranted would be just as false
+    // a claim as drawing them granted. ShowAccess renders an explicit
+    // placeholder for the empty list.
+    ShowAccess(name, UserRole::kUnknown, {});
+    return;
+  }
 
   std::vector<UserPermissionDisplay> permissions;
   for (const UserPermission& permission : UserPermissionsFor(access)) {
@@ -147,8 +169,7 @@ void UserAccessPanel::ShowUser(const NodeRef& user) {
         Tr(UserPermissionLabelKey(permission.kind)), permission.granted});
   }
 
-  ShowAccess(QString::fromStdU16String(ToString16(user.display_name())),
-             UserRoleFor(access), permissions);
+  ShowAccess(name, UserRoleFor(access), permissions);
 }
 
 void UserAccessPanel::ShowAccess(
@@ -171,6 +192,16 @@ void UserAccessPanel::ShowAccess(
     if (QWidget* widget = item->widget())
       widget->deleteLater();
     delete item;
+  }
+  // An empty breakdown means the rights could not be read. Say so with the
+  // Inspector's em-dash placeholder rather than leaving a bare section header,
+  // which reads as a rendering fault.
+  if (permissions.empty()) {
+    auto* placeholder = new QLabel{QStringLiteral("—")};
+    placeholder->setObjectName(QStringLiteral("userPermissionsPlaceholder"));
+    placeholder->setStyleSheet(
+        QStringLiteral("color:%1;padding:4px 0;").arg(tokens.fg_subtle.name()));
+    perms_layout_->addWidget(placeholder);
   }
   for (const UserPermissionDisplay& permission : permissions) {
     auto* row = new QWidget;
