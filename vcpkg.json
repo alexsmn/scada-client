@@ -32,6 +32,7 @@
     "protobuf",
     "pugixml",
     "qtbase",
+    "qtsvg",
     {
       "name": "qttools",
       "platform": "windows"

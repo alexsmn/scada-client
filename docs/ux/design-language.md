@@ -154,11 +154,33 @@ web components so parity discussions use one vocabulary.
 
 ## 6. Iconography
 
-- Line icons, ~1.8 px stroke, 20 px on the rail / 14–15 px inline, monochrome
-  tinted by `currentColor`. The existing `client/res/*.png` action glyphs
-  (acknowledge, execute, write_manual, printer, table…) remain valid; new chrome
-  uses the line set for scalability across DPI.
-- Every actionable icon has a tooltip; icons never carry meaning by colour alone.
+The source set is **[Lucide](https://lucide.dev/)** (ISC — no attribution
+required), authored on a 24 px grid at **stroke 2.0**, round caps and joins,
+`fill="none"`, `stroke="currentColor"` so one file serves dark, light, and
+high-contrast.
+
+| Token | Value |
+|---|---|
+| Grid / `viewBox` | `0 0 24 24` |
+| Stroke width | 2.0 (1.5 is too faint at any size; 2.25 only for a measurably faint 16 px glyph) |
+| Rail / toolbar / menus / tabs | 20 px |
+| Tree and table rows | 16 px |
+| Inspector and dialog headers | 24 px |
+| Colour | `currentColor`, tinted by the consumer — never a literal hex in the file |
+
+Stroke width is baked into each SVG at author time; Qt renders the file as
+authored and cannot restyle it, so a different stroke means a different file.
+
+- Every actionable icon has a tooltip; icons never carry meaning by colour alone
+  (§5 of [`principles.md`](principles.md)). Device state rides on the adjacent
+  status dot, not on a recoloured glyph.
+- The legacy `client/res/*.png` raster glyphs and the magenta-keyed `*.bmp`
+  strips are **superseded** — 16 px only, un-tintable, and licence-encumbered.
+
+> **[`iconography.md`](iconography.md) is authoritative** for the set, the
+> delivery pipeline (`qtsvg` → `.qrc` → `QIcon`), the full command→glyph map,
+> and the procedure for adding or changing an icon. Read it before touching an
+> icon; these tokens are its summary.
 
 ## 7. Retiring native OS widgets
 
