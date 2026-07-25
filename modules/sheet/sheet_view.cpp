@@ -1,7 +1,6 @@
 ﻿#include "modules/sheet/sheet_view.h"
 
 #include "aui/color.h"
-#include "ui/dragdrop/item_drag_data.h"
 #include "aui/grid.h"
 #include "aui/os_exchange_data.h"
 #include "base/utf_convert.h"
@@ -16,6 +15,7 @@
 #include "resources/common_resources.h"
 #include "scada/session_service.h"
 #include "ui/common/client_utils.h"
+#include "ui/dragdrop/item_drag_data.h"
 
 #if defined(UI_QT)
 #include <QColorDialog>
@@ -88,8 +88,8 @@ std::unique_ptr<UiView> SheetController::Init(
     // command); otherwise fall back to the generic item popup. Replaces the
     // Windows-only `IDR_SHEET_POPUP` resource menu.
     controller_delegate_.ShowPopupMenu(
-        model_->is_editing() ? &sheet_menu_model_.model() : nullptr,
-        /*resource_id=*/0, point, true);
+        model_->is_editing() ? &sheet_menu_model_.model() : nullptr, point,
+        true);
   });
 
   command_registry_.AddCommand(

@@ -67,8 +67,8 @@ scada-client/
 ├── CMakeLists.txt          # Root CMake build file
 ├── aui/client_module.cmake # Custom CMake helpers for dual Qt/Wt target creation (aui-owned)
 ├── translation.cmake       # Qt translation support
-├── common.rc               # Windows resource definitions
-├── common_resources.h      # Resource IDs and constants
+├── app/client_icon.rc      # Windows resource script: the app icon, nothing else
+├── resources/              # Command ids (common_resources.h) + icon-strip paths
 ├── client_utils.cpp/.h     # Global utility functions
 ├── tasks.md                # Bug/feature backlog
 └── docs/command-line.md    # Command-line switch documentation

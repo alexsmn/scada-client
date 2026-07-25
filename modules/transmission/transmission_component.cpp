@@ -16,12 +16,8 @@
 #include <utility>
 
 const WindowInfo kTransmissionWindowInfo = {ID_TRANSMISSION_VIEW,
-                                            "Transmission",
-                                            u"Transmission",
-                                            WIN_INS | WIN_DISALLOW_NEW,
-                                            0,
-                                            0,
-                                            0};
+                                            "Transmission", u"Transmission",
+                                            WIN_INS | WIN_DISALLOW_NEW};
 
 REGISTER_CONTROLLER(TransmissionView, kTransmissionWindowInfo);
 

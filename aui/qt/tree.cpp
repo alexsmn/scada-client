@@ -133,8 +133,10 @@ void Tree::SetFilterText(const std::u16string& text) {
   proxy_model_->setFilterFixedString(QString::fromStdU16String(text));
 }
 
-void Tree::LoadIcons(unsigned resource_id, int width, Color mask_color) {
-  model_adapter_->LoadIcons(resource_id, width, mask_color);
+void Tree::LoadIcons(std::string_view resource_path,
+                     int width,
+                     Color mask_color) {
+  model_adapter_->LoadIcons(resource_path, width, mask_color);
 }
 
 void Tree::SelectNode(void* node) {

@@ -20,7 +20,6 @@ struct WindowInfo {
   std::u16string_view title;
   unsigned flags = 0;
   scada::aui::Size size;
-  unsigned menu = 0;
 
   bool is_pane() const { return (flags & WIN_SING) != 0; }
   bool dock_bottom() const { return (flags & WIN_DOCKB) != 0; }

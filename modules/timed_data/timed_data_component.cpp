@@ -13,13 +13,8 @@
 #include <utility>
 
 const WindowInfo kTimedDataWindowInfo = {
-    ID_TIMED_DATA_VIEW,
-    "TimeVal",
-    u"Data",
-    WIN_INS | WIN_DISALLOW_NEW | WIN_CAN_PRINT,
-    0,
-    0,
-    0};
+    ID_TIMED_DATA_VIEW, "TimeVal", u"Data",
+    WIN_INS | WIN_DISALLOW_NEW | WIN_CAN_PRINT};
 
 REGISTER_CONTROLLER(TimedDataController, kTimedDataWindowInfo);
 

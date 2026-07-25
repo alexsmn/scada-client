@@ -53,7 +53,6 @@ void MainWindow::OnSelectionChanged() {
 }
 
 void MainWindow::ShowPopupMenu(scada::aui::MenuModel* merge_menu,
-                               unsigned resource_id,
                                const scada::aui::Point& point,
                                bool right_click) {}
 

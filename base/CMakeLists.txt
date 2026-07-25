@@ -30,6 +30,7 @@ set(CLIENT_UI_COMMON_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/../ui/common/client_utils.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/../ui/common/client_utils.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/../resources/common_resources.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../resources/icon_strips.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/../app/string_const.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/web_util.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/web_util.h"

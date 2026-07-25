@@ -35,7 +35,6 @@ class ControllerDelegate {
   // * `point` is in _screen_ coordinates.
   // * `right_click` should be set if popup is initated by right-click.
   virtual void ShowPopupMenu(scada::aui::MenuModel* merge_menu,
-                             unsigned resource_id,
                              const scada::aui::Point& point,
                              bool right_click) = 0;
 

@@ -69,7 +69,7 @@ std::unique_ptr<UiView> SummaryView::Init(const WindowDefinition& definition) {
   };
 
   grid_->SetContextMenuHandler([this](const scada::aui::Point& point) {
-    controller_delegate_.ShowPopupMenu(nullptr, 0, point, true);
+    controller_delegate_.ShowPopupMenu(nullptr, point, true);
   });
 
   grid_->SetRowHeaderWidth(150);

@@ -184,19 +184,16 @@ void OpenedView::Focus() {
 }
 
 void OpenedView::ShowPopupMenu(scada::aui::MenuModel* merge_menu,
-                               unsigned resource_id,
                                const scada::aui::Point& point,
                                bool right_click) {
   Activate();
 
-  // When the caller supplies its own AUI `merge_menu` it is authoritative and
-  // cross-platform; don't substitute a Windows-only default resource menu.
-  // Callers without a menu model fall back to the view's default resource menu
-  // (and ultimately the generic item popup).
-  if (resource_id == 0 && !merge_menu)
-    resource_id = window_info().menu ? window_info().menu : IDR_ITEM_POPUP;
-
-  popup_menu_handler_(merge_menu, resource_id, point, right_click);
+  // A caller-supplied `merge_menu` carries the view's own commands; the shell
+  // always appends the generic context menu built from the active view's
+  // registered actions. Callers without a menu model get that generic menu
+  // alone (what the legacy Windows-only `IDR_ITEM_POPUP` resource menu, a bare
+  // `<Item>` placeholder, expanded to).
+  popup_menu_handler_(merge_menu, point, right_click);
 }
 
 Awaitable<WindowDefinition> OpenedView::GetOpenWindowDefinition(

@@ -6,6 +6,7 @@
 
 #include <QTreeView>
 #include <set>
+#include <string_view>
 
 class QEvent;
 
@@ -25,7 +26,7 @@ class Tree : public QTreeView {
   void SetRootVisible(bool visible);
   void SetHeaderVisible(bool visible);
 
-  void LoadIcons(unsigned resource_id, int width, Color mask_color);
+  void LoadIcons(std::string_view resource_path, int width, Color mask_color);
 
   std::vector<void*> GetOrderedNodes(void* root, bool checked) const;
 
@@ -91,4 +92,4 @@ class Tree : public QTreeView {
   friend class TreeProxyModel;
 };
 
-}  // namespace aui
+}  // namespace scada::aui

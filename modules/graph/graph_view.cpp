@@ -80,7 +80,7 @@ std::unique_ptr<UiView> GraphView::Init(const WindowDefinition& definition) {
   graph_->set_controller(this);
 
   graph_->SetContextMenuHandler([this](const scada::aui::Point& point) {
-    controller_delegate_.ShowPopupMenu(nullptr, 0, point, true);
+    controller_delegate_.ShowPopupMenu(nullptr, point, true);
   });
 
   command_registry_.AddCommand(

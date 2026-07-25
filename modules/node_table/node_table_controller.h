@@ -7,6 +7,7 @@
 #include "controller/controller.h"
 #include "controller/controller_context.h"
 #include "controller/selection_model.h"
+#include "modules/node_table/node_table_menu_model.h"
 
 namespace scada::aui {
 class Grid;
@@ -44,4 +45,5 @@ class NodeTableController : protected ControllerContext,
   scada::aui::Grid* grid_ = nullptr;
 
   CommandRegistry command_registry_;
+  NodeTableMenuModel menu_model_{command_registry_};
 };

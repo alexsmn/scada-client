@@ -93,7 +93,7 @@ std::unique_ptr<UiView> NodeTableController::Init(
           panel, &UsersGridPanel::ActionsMenuRequested, panel,
           [this](const QPoint& global_pos, bool right_click) {
             // aui::Point is QPoint under UI_QT.
-            controller_delegate_.ShowPopupMenu(nullptr, 0, global_pos,
+            controller_delegate_.ShowPopupMenu(nullptr, global_pos,
                                                right_click);
           });
       // Populate the rows off the construction path; a QPointer guards a late
@@ -145,7 +145,9 @@ std::unique_ptr<UiView> NodeTableController::Init(
   });
 
   grid_->SetContextMenuHandler([this](const scada::aui::Point& point) {
-    controller_delegate_.ShowPopupMenu(nullptr, 0, point, true);
+    // Cross-platform AUI menu model (Windows, macOS, Wt) instead of the
+    // Windows-only `IDR_GRID_POPUP` resource menu.
+    controller_delegate_.ShowPopupMenu(&menu_model_.model(), point, true);
   });
 
   selection_.multiple_handler = [this] {

@@ -4,9 +4,6 @@
 #include "aui/color.h"
 #include "aui/models/tree_model.h"
 #include "base/check.h"
-#include "base/win/scoped_gdi_object.h"
-
-#include <windows.h>
 
 namespace scada::aui {
 
@@ -54,17 +51,10 @@ void TreeModelAdapter::ConnectModel() {
       model_->SubscribeModelReset([this] { OnTreeModelReset(); }));
 }
 
-void TreeModelAdapter::LoadIcons(unsigned resource_id,
+void TreeModelAdapter::LoadIcons(std::string_view resource_path,
                                  int width,
                                  Wt::WColor mask_color) {
-  /* base::win::ScopedBitmap bitmap(
-       ::LoadBitmap(GetModuleHandle(NULL), MAKEINTRESOURCE(resource_id)));
-
-   QPixmap tile = QtWin::fromHBITMAP(bitmap.get());
-   tile.setMask(tile.createMaskFromColor(mask_color));
-
-   for (int x = 0; x < tile.width(); x += width)
-     icons_.emplace_back(QIcon(tile.copy(x, 0, width, tile.height())));*/
+  // Not implemented: the Wt tree renders without per-node icons.
 }
 
 void* TreeModelAdapter::GetNode(const Wt::WModelIndex& index) const {
@@ -297,4 +287,4 @@ void TreeModelAdapter::OnTreeModelReset() {
   // endResetModel();
 }
 
-}  // namespace aui
+}  // namespace scada::aui

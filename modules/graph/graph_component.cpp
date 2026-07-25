@@ -65,8 +65,7 @@ Awaitable<OpenedViewInterface*> OpenDisplayContainingNode(
 
 }  // namespace
 
-const WindowInfo kGraphWindowInfo = {
-    ID_GRAPH_VIEW, "Graph", u"Graph", WIN_INS, 0, 0, IDR_GRAPH_POPUP};
+const WindowInfo kGraphWindowInfo = {ID_GRAPH_VIEW, "Graph", u"Graph", WIN_INS};
 
 REGISTER_CONTROLLER(GraphView, kGraphWindowInfo);
 

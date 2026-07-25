@@ -44,7 +44,6 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   virtual DialogService& GetDialogService() override { return dialog_service_; }
   virtual void SetWindowFlashing(bool flashing) override;
   virtual void ShowPopupMenu(scada::aui::MenuModel* merge_menu,
-                             unsigned resource_id,
                              const scada::aui::Point& point,
                              bool right_click) override;
 

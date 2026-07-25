@@ -4,8 +4,14 @@
         <file>device.png</file>
     </qresource>
     <!-- Toolbar/command action icons, addressable as :/res/<name>.png. Kept in
-         lock-step with the id->path table in aui/qt/client_utils_qt.cpp. -->
+         lock-step with the id->path table in aui/qt/client_utils_qt.cpp.
+         The two .bmp files are horizontal icon strips sliced by aui's
+         LoadIcons() (magenta 255,0,255 is the transparency key); they were
+         Win32 BITMAP resources (IDB_ITEMS / IDB_WIN_TYPES) until the client
+         resource script was dropped. -->
     <qresource prefix="/res">
+        <file>items.bmp</file>
+        <file>wintypes.bmp</file>
         <file>acknowledge_all.png</file>
         <file>chart_curve.png</file>
         <file>copy.png</file>

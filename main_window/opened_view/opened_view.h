@@ -24,7 +24,6 @@ class PrintService;
 struct WindowInfo;
 
 using PopupMenuHandler = std::function<void(scada::aui::MenuModel* merge_menu,
-                                            unsigned resource_id,
                                             const scada::aui::Point& point,
                                             bool right_click)>;
 
@@ -91,7 +90,6 @@ class OpenedView final : private OpenedViewContext,
   virtual void SetTitle(std::u16string_view) override;
   virtual CommandHandler* ResolveViewCommand(unsigned command_id) override;
   virtual void ShowPopupMenu(scada::aui::MenuModel* merge_menu,
-                             unsigned resource_id,
                              const scada::aui::Point& point,
                              bool right_click) override;
   virtual void OpenView(const WindowDefinition& def) override;

@@ -15,6 +15,7 @@
 #include "node_service/node_util.h"
 #include "profile/profile.h"
 #include "resources/common_resources.h"
+#include "resources/icon_strips.h"
 #include "ui/common/client_utils.h"
 
 #if defined(UI_QT)
@@ -94,15 +95,14 @@ TableView::TableView(const ControllerContext& context)
   }
 #endif
 
-  view_->LoadIcons(IDB_ITEMS, 16, scada::aui::Rgba{255, 0, 255});
+  view_->LoadIcons(kItemIconStrip, kIconStripTileWidth, kIconStripMaskColor);
 
   view_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });
 
   view_->SetContextMenuHandler([this](const scada::aui::Point& point) {
     // Cross-platform AUI menu model (Windows, macOS, Wt) instead of the
     // Windows-only `IDR_TABLE_POPUP` resource menu.
-    controller_delegate_.ShowPopupMenu(&table_menu_model_.model(),
-                                       /*resource_id=*/0, point, true);
+    controller_delegate_.ShowPopupMenu(&table_menu_model_.model(), point, true);
   });
 
   view_->SetDoubleClickHandler([this] { OnDoubleClick(); });

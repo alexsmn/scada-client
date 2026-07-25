@@ -130,10 +130,10 @@ void TreeModelAdapter::ConnectModel() {
       model_->SubscribeModelReset([this] { OnTreeModelReset(); }));
 }
 
-void TreeModelAdapter::LoadIcons(unsigned resource_id,
+void TreeModelAdapter::LoadIcons(std::string_view resource_path,
                                  int width,
                                  Color mask_color) {
-  icons_ = ::LoadIcons(resource_id, width, mask_color.qcolor());
+  icons_ = ::LoadIcons(resource_path, width, mask_color.qcolor());
 }
 
 void* TreeModelAdapter::GetNode(const QModelIndex& index) const {

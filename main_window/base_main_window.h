@@ -102,7 +102,6 @@ class BaseMainWindow : protected MainWindowContext,
 
   // TODO: Move to a separate class.
   virtual void ShowPopupMenu(scada::aui::MenuModel* merge_menu,
-                             unsigned resource_id,
                              const scada::aui::Point& point,
                              bool right_click) = 0;
 

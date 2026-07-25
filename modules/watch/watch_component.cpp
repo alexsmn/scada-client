@@ -15,8 +15,8 @@
 
 #include <utility>
 
-const WindowInfo kWatchWindowInfo = {
-    ID_WATCH_VIEW, "Log", u"Watch", WIN_DISALLOW_NEW, 0, 0, 0};
+const WindowInfo kWatchWindowInfo = {ID_WATCH_VIEW, "Log", u"Watch",
+                                     WIN_DISALLOW_NEW};
 
 REGISTER_CONTROLLER(WatchView, kWatchWindowInfo);
 

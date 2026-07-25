@@ -1,33 +1,32 @@
 #pragma once
 
+#include <QBitmap>
 #include <QIcon>
 #include <QPixmap>
+#include <QString>
 
-#ifdef _WIN32
-#include "base/win/scoped_gdi_object.h"
-#include <QBitmap>
-#include <QImage>
-#endif
+#include <string_view>
+#include <vector>
 
-inline std::vector<QIcon> LoadIcons(unsigned resource_id,
+// Slices a horizontal icon strip into `width`-wide tiles.
+//
+// `resource_path` names a Qt resource (":/res/items.bmp") or a filesystem
+// path; `mask_color` is the strip's transparent-key colour. This replaces the
+// former Win32 `LoadBitmap(MAKEINTRESOURCE(id))` lookup, so the same strip
+// renders on every platform instead of only on Windows.
+inline std::vector<QIcon> LoadIcons(std::string_view resource_path,
                                     int width,
                                     QColor mask_color) {
-#ifdef _WIN32
-  scada::base::win::ScopedBitmap bitmap{
-      ::LoadBitmap(GetModuleHandle(NULL), MAKEINTRESOURCE(resource_id))};
+  QPixmap tile{QString::fromUtf8(resource_path.data(),
+                                 static_cast<qsizetype>(resource_path.size()))};
+  if (tile.isNull() || width <= 0)
+    return {};
 
-  QPixmap tile = QPixmap::fromImage(QImage::fromHBITMAP(bitmap.get()));
   tile.setMask(tile.createMaskFromColor(mask_color));
 
   std::vector<QIcon> icons;
-  // TODO: reserve.
+  icons.reserve(static_cast<size_t>((tile.width() + width - 1) / width));
   for (int x = 0; x < tile.width(); x += width)
     icons.emplace_back(QIcon{tile.copy(x, 0, width, tile.height())});
   return icons;
-#else
-  (void)resource_id;
-  (void)width;
-  (void)mask_color;
-  return {};
-#endif
 }

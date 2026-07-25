@@ -113,8 +113,10 @@ Table::~Table() {
   setModel(nullptr);
 }
 
-void Table::LoadIcons(unsigned resource_id, int width, Color mask_color) {
-  model_adapter_->LoadIcons(resource_id, width, mask_color);
+void Table::LoadIcons(std::string_view resource_path,
+                      int width,
+                      Color mask_color) {
+  model_adapter_->LoadIcons(resource_path, width, mask_color);
 }
 
 const std::vector<TableColumn>& Table::columns() const {

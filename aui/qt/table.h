@@ -6,6 +6,7 @@
 #include <boost/json.hpp>
 
 #include <QTableView>
+#include <string_view>
 
 class QSortFilterProxyModel;
 class QEvent;
@@ -50,7 +51,7 @@ class Table : public QTableView {
 
   QWidget* CreateParentIfNecessary() { return this; }
 
-  void LoadIcons(unsigned resource_id, int width, Color mask_color);
+  void LoadIcons(std::string_view resource_path, int width, Color mask_color);
 
   boost::json::value SaveState() const;
   void RestoreState(const boost::json::value& data);
@@ -75,4 +76,4 @@ class Table : public QTableView {
   KeyPressHandler key_press_handler_;
 };
 
-}  // namespace aui
+}  // namespace scada::aui

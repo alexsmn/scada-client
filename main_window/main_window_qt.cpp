@@ -28,7 +28,6 @@
 #include "main_window/opened_view/opened_view.h"
 #include "main_window/overview_page.h"
 #include "main_window/selection_command_router.h"
-#include "main_window/simple_menu_command_handler.h"
 #include "main_window/status_bar/progress_controller_qt.h"
 #include "main_window/tag_search_index.h"
 #include "main_window/view_manager.h"
@@ -67,59 +66,12 @@
 
 #include <unordered_set>
 
-#ifdef _WIN32
-#include <atlapp.h>
-#include <atlbase.h>
-#include <atluser.h>
-#endif
-
 namespace {
 
 inline QKeySequence ToQKeySequence(const Shortcut& shortcut) {
   return QKeySequence{static_cast<int>(shortcut.key_code()) +
                       static_cast<int>(shortcut.modifiers())};
 }
-
-#ifdef _WIN32
-void BuildMenuModel(
-    CMenuHandle menu_handle,
-    scada::aui::MenuModel& context_menu_model,
-    scada::aui::SimpleMenuModel& menu_model,
-    std::vector<std::unique_ptr<scada::aui::MenuModel>>& submenus) {
-  for (int i = 0; i < menu_handle.GetMenuItemCount(); ++i) {
-    wchar_t title[64] = {};
-
-    CMenuItemInfo menu_info;
-    menu_info.fMask |=
-        MIIM_FTYPE | MIIM_ID | MIIM_STRING | MIIM_SUBMENU | MIIM_STATE;
-    menu_info.cch = std::size(title);
-    menu_info.dwTypeData = title;
-    menu_handle.GetMenuItemInfo(i, TRUE, &menu_info);
-
-    if (menu_info.hSubMenu) {
-      auto submenu_model =
-          std::make_unique<scada::aui::SimpleMenuModel>(menu_model.delegate());
-      BuildMenuModel(menu_info.hSubMenu, context_menu_model, *submenu_model,
-                     submenus);
-      menu_model.AddSubMenu(menu_info.wID, UtfConvert<char16_t>(title),
-                            submenu_model.get());
-      submenus.emplace_back(std::move(submenu_model));
-
-    } else if (menu_info.fType & MFT_SEPARATOR) {
-      menu_model.AddSeparator(scada::aui::NORMAL_SEPARATOR);
-
-    } else if (menu_info.fState & MFS_CHECKED) {
-      menu_model.AddCheckItem(menu_info.wID, UtfConvert<char16_t>(title));
-
-    } else if (menu_info.wID == ID_ITEM_COMMANDS) {
-      menu_model.AddInplaceMenu(&context_menu_model);
-
-    } else {
-      menu_model.AddItem(menu_info.wID, UtfConvert<char16_t>(title));
-    }
-  }
-}
-#endif
 
 QRect GetDefaultBounds(const QWidget* window) {
   QScreen* screen =
@@ -1049,43 +1001,10 @@ void MainWindow::closeEvent(QCloseEvent* event) {
 }
 
 void MainWindow::ShowPopupMenu(scada::aui::MenuModel* merge_menu,
-                               unsigned resource_id,
                                const scada::aui::Point& point,
                                bool right_click) {
-  if (resource_id == 0) {
-    QMenu menu;
-    BuildDefaultPopupMenu(menu, merge_menu, *context_menu_model_);
-    menu.exec(point);
-    return;
-  }
-
-  SimpleMenuCommandHandler command_handler{commands()};
-  scada::aui::SimpleMenuModel menu_model{&command_handler};
-  std::vector<std::unique_ptr<scada::aui::MenuModel>> submenus;
-
-#ifdef _WIN32
-  {
-    CMenu resource_menu;
-    resource_menu.LoadMenu(resource_id);
-    BuildMenuModel(resource_menu.GetSubMenu(0), *context_menu_model_,
-                   menu_model, submenus);
-  }
-#else
-  {
-    QMenu menu;
-    BuildDefaultPopupMenu(menu, merge_menu, *context_menu_model_);
-    menu.exec(point);
-    return;
-  }
-#endif
-
   QMenu menu;
-  // TODO: Combine with the same above.
-  if (merge_menu && merge_menu->GetItemCount() != 0) {
-    BuildMenu(menu, *merge_menu);
-    menu.addSeparator();
-  }
-  BuildMenu(menu, menu_model);
+  BuildDefaultPopupMenu(menu, merge_menu, *context_menu_model_);
   menu.exec(point);
 }
 

@@ -9,6 +9,7 @@
 #include "portfolio/portfolio_manager.h"
 #include "portfolio/portfolio_tree_model.h"
 #include "resources/common_resources.h"
+#include "resources/icon_strips.h"
 
 // PortfolioView
 
@@ -27,7 +28,7 @@ std::unique_ptr<UiView> PortfolioView::Init(
     const WindowDefinition& definition) {
   tree_ = new scada::aui::Tree{model_};
   tree_->SetRootVisible(false);
-  tree_->LoadIcons(IDB_ITEMS, 16, scada::aui::Rgba{255, 0, 255});
+  tree_->LoadIcons(kItemIconStrip, kIconStripTileWidth, kIconStripMaskColor);
 
   tree_->SetDoubleClickHandler([this] {
     PortfolioTreeNode* node = model_->AsNode(tree_->GetSelectedNode());
@@ -53,7 +54,7 @@ std::unique_ptr<UiView> PortfolioView::Init(
     // No view-specific static items: the portfolio's node commands are supplied
     // by the generic cross-platform context menu (the former `IDR_PFOLIO_POPUP`
     // carried only the dynamic `<Item>` placeholder).
-    controller_delegate_.ShowPopupMenu(nullptr, /*resource_id=*/0, point, true);
+    controller_delegate_.ShowPopupMenu(nullptr, point, true);
   });
 
   command_registry_.AddCommand(

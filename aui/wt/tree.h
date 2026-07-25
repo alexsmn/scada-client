@@ -6,6 +6,7 @@
 #include "aui/wt/item_delegate.h"
 
 #include <Wt/WTreeView.h>
+#include <string_view>
 
 namespace scada::aui {
 
@@ -21,7 +22,7 @@ class Tree : public Wt::WTreeView {
   void SetRootVisible(bool visible);
   void SetHeaderVisible(bool visible);
 
-  void LoadIcons(unsigned resource_id, int width, Color mask_color);
+  void LoadIcons(std::string_view resource_path, int width, Color mask_color);
 
   std::vector<void*> GetOrderedNodes(void* root, bool checked) const;
 
@@ -76,4 +77,4 @@ class Tree : public Wt::WTreeView {
   friend class TreeProxyModel;
 };
 
-}  // namespace aui
+}  // namespace scada::aui

@@ -55,10 +55,10 @@ void TableModelAdapter::ConnectModel() {
       [this](int first, int count) { OnItemsRemoved(first, count); }));
 }
 
-void TableModelAdapter::LoadIcons(unsigned resource_id,
+void TableModelAdapter::LoadIcons(std::string_view resource_path,
                                   int width,
                                   Color mask_color) {
-  icons_ = ::LoadIcons(resource_id, width, mask_color.qcolor());
+  icons_ = ::LoadIcons(resource_path, width, mask_color.qcolor());
 }
 
 int TableModelAdapter::rowCount(const QModelIndex& parent) const {

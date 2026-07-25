@@ -9,6 +9,7 @@
 
 #include <QAbstractitemmodel>
 #include <memory>
+#include <string_view>
 
 class QIcon;
 
@@ -32,7 +33,7 @@ class TreeModelAdapter : public QAbstractItemModel {
   void SetChecked(void* node, bool checked);
   void SetCheckedNodes(std::set<void*> nodes);
 
-  void LoadIcons(unsigned resource_id, int width, Color mask_color);
+  void LoadIcons(std::string_view resource_path, int width, Color mask_color);
 
   void* GetNode(const QModelIndex& index) const;
   QModelIndex GetNodeIndex(void* node, int column) const;
@@ -112,4 +113,4 @@ class TreeModelAdapter : public QAbstractItemModel {
   DragHandler drag_handler_;
 };
 
-}  // namespace aui
+}  // namespace scada::aui

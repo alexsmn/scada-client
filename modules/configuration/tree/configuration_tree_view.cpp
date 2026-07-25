@@ -3,6 +3,7 @@
 #include "aui/tree.h"
 #include "aui/translation.h"
 #include "resources/common_resources.h"
+#include "resources/icon_strips.h"
 #include "configuration/tree/configuration_tree_drop_handler.h"
 #include "configuration/tree/configuration_tree_model.h"
 #include "controller/controller_delegate.h"
@@ -104,7 +105,8 @@ ConfigurationTreeView::ConfigurationTreeView(
   // cppcheck-suppress noCopyConstructor
   // cppcheck-suppress noOperatorEq
   tree_view_ = new scada::aui::Tree{model_};
-  tree_view_->LoadIcons(IDB_ITEMS, 16, scada::aui::Rgba{255, 0, 255});
+  tree_view_->LoadIcons(kItemIconStrip, kIconStripTileWidth,
+                        kIconStripMaskColor);
   tree_view_->SetRootVisible(true);
   tree_view_->SetSorted(true);
 
@@ -140,7 +142,7 @@ ConfigurationTreeView::ConfigurationTreeView(
     // No view-specific static items: the tree's node commands are supplied by
     // the generic cross-platform context menu (the former `IDR_ITEM_POPUP`
     // carried only the dynamic `<Item>` placeholder).
-    controller_delegate_.ShowPopupMenu(nullptr, /*resource_id=*/0, point, true);
+    controller_delegate_.ShowPopupMenu(nullptr, point, true);
   });
 }
 

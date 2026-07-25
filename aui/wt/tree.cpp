@@ -57,8 +57,10 @@ void Tree::SetSorted(bool sorted) {
     sortByColumn(0, Wt::SortOrder::Ascending);
 }
 
-void Tree::LoadIcons(unsigned resource_id, int width, Color mask_color) {
-  // model_adapter_->LoadIcons(resource_id, width, ToQColor(mask_color));
+void Tree::LoadIcons(std::string_view resource_path,
+                     int width,
+                     Color mask_color) {
+  // model_adapter_->LoadIcons(resource_path, width, ToQColor(mask_color));
 }
 
 void Tree::SelectNode(void* node) {

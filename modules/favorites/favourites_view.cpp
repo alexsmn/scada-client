@@ -3,6 +3,7 @@
 #include "aui/dialog_service.h"
 #include "aui/tree.h"
 #include "resources/common_resources.h"
+#include "resources/icon_strips.h"
 #include "controller/controller_delegate.h"
 #include "base/awaitable.h"
 #include "favorites/favourites_add_url.h"
@@ -23,13 +24,14 @@ FavouritesView::~FavouritesView() {
 std::unique_ptr<UiView> FavouritesView::Init(
     const WindowDefinition& definition) {
   tree_view_ = new scada::aui::Tree{favourites_tree_model_};
-  tree_view_->LoadIcons(IDB_WIN_TYPES, 16, scada::aui::Rgba{255, 0, 255});
+  tree_view_->LoadIcons(kWindowTypeIconStrip, kIconStripTileWidth,
+                        kIconStripMaskColor);
   tree_view_->SetDoubleClickHandler([this] { OpenSelection(); });
   tree_view_->SetContextMenuHandler([this](const scada::aui::Point& point) {
     // Cross-platform AUI menu model (Windows, macOS, Wt) instead of the
     // Windows-only `IDR_FAVOR_POPUP` resource menu.
-    controller_delegate_.ShowPopupMenu(&favourites_menu_model_.model(),
-                                       /*resource_id=*/0, point, true);
+    controller_delegate_.ShowPopupMenu(&favourites_menu_model_.model(), point,
+                                       true);
   });
 
   open_command_.enabled_handler = [this] {

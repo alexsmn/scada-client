@@ -5,6 +5,7 @@
 #include <Wt/WAbstractItemModel.h>
 #include <Wt/WIcon.h>
 #include <memory>
+#include <string_view>
 
 namespace scada::aui {
 
@@ -26,7 +27,9 @@ class TreeModelAdapter : public Wt::WAbstractItemModel {
   void SetChecked(void* node, bool checked);
   void SetCheckedNodes(std::set<void*> nodes);
 
-  void LoadIcons(unsigned resource_id, int width, Wt::WColor mask_color);
+  void LoadIcons(std::string_view resource_path,
+                 int width,
+                 Wt::WColor mask_color);
 
   void* GetNode(const Wt::WModelIndex& index) const;
   Wt::WModelIndex GetNodeIndex(void* node, int column) const;
@@ -80,4 +83,4 @@ class TreeModelAdapter : public Wt::WAbstractItemModel {
   std::set<void*> checked_nodes_;
 };
 
-}  // namespace aui
+}  // namespace scada::aui

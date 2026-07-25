@@ -6,6 +6,7 @@
 #include <QAbstractItemModel>
 #include <boost/signals2/connection.hpp>
 #include <memory>
+#include <string_view>
 #include <vector>
 
 class QIcon;
@@ -29,7 +30,7 @@ class TableModelAdapter : public QAbstractTableModel {
     return columns_;
   }
 
-  void LoadIcons(unsigned resource_id, int width, Color mask_color);
+  void LoadIcons(std::string_view resource_path, int width, Color mask_color);
 
   // QAbstractTableModel
   virtual int rowCount(
@@ -67,4 +68,4 @@ class TableModelAdapter : public QAbstractTableModel {
   std::vector<boost::signals2::scoped_connection> model_connections_;
 };
 
-}  // namespace aui
+}  // namespace scada::aui

@@ -1,10 +1,11 @@
 #pragma once
 
-#include <boost/json.hpp>
 #include "aui/color.h"
 #include "aui/handlers.h"
+#include <boost/json.hpp>
 
 #include <Wt/WTableView.h>
+#include <string_view>
 
 namespace Wt {
 class WSortFilterProxyModel;
@@ -50,7 +51,7 @@ class Table : public Wt::WTableView {
 
   Wt::WWidget* CreateParentIfNecessary() { return this; }
 
-  void LoadIcons(unsigned resource_id, int width, Color mask_color);
+  void LoadIcons(std::string_view resource_path, int width, Color mask_color);
 
   boost::json::value SaveState() const;
   void RestoreState(const boost::json::value& data);
@@ -68,4 +69,4 @@ class Table : public Wt::WTableView {
   KeyPressHandler key_press_handler_;
 };
 
-}  // namespace aui
+}  // namespace scada::aui

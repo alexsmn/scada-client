@@ -83,7 +83,7 @@ std::unique_ptr<UiView> TimedDataController::Init(
     // No view-specific static items: the node commands are supplied by the
     // generic cross-platform context menu (the former `IDR_ITEM_POPUP` carried
     // only the dynamic `<Item>` placeholder).
-    controller_delegate_.ShowPopupMenu(nullptr, /*resource_id=*/0, point, true);
+    controller_delegate_.ShowPopupMenu(nullptr, point, true);
   });
 
 #if defined(UI_QT)
