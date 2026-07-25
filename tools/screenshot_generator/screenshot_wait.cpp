@@ -8,10 +8,19 @@
 #include "node_service/node_ref.h"
 #include "node_service/node_service.h"
 #include "scada/standard_node_ids.h"
+#include "timed_data/timed_data_service_impl.h"
 
 #include <gtest/gtest.h>
 
+#include <QElapsedTimer>
+
 namespace scada::screenshot_generator {
+
+namespace {
+
+constexpr int kPendingDataTimeoutMs = 30'000;
+
+}  // namespace
 
 bool WaitForPendingNodeLoads(NodeService& node_service) {
   try {
@@ -20,6 +29,36 @@ bool WaitForPendingNodeLoads(NodeService& node_service) {
   } catch (...) {
     ADD_FAILURE() << "NodeService pending-node wait failed";
     return true;
+  }
+}
+
+bool WaitForPendingData(NodeService& node_service,
+                        TimedDataService& timed_data_service) {
+  // Only the real service tracks outstanding history; a fake or mock backend
+  // has nothing in flight, so the node wait alone is the whole answer.
+  auto* service = dynamic_cast<TimedDataServiceImpl*>(&timed_data_service);
+
+  QElapsedTimer elapsed;
+  elapsed.start();
+
+  for (;;) {
+    if (!WaitForPendingNodeLoads(node_service))
+      return false;
+
+    if (!service || !service->HasPendingHistory())
+      return true;
+
+    if (elapsed.hasExpired(kPendingDataTimeoutMs)) {
+      ADD_FAILURE() << "Timed data still waiting on history after "
+                    << kPendingDataTimeoutMs / 1000
+                    << "s; the capture would show incomplete trends";
+      return false;
+    }
+
+    // History arrives on the executor + Qt event loop, so give it a turn
+    // before re-testing. A node fetch may also have been queued behind it,
+    // which is why the loop goes back through WaitForPendingNodeLoads.
+    PumpEventLoopFor(std::chrono::milliseconds{50});
   }
 }
 

@@ -19,6 +19,7 @@
 #include <utility>
 
 class NodeService;
+class TimedDataService;
 
 namespace scada::screenshot_generator {
 
@@ -92,6 +93,22 @@ T WaitForAwaitable(AnyExecutor executor, Awaitable<T> awaitable) {
 }
 
 bool WaitForPendingNodeLoads(NodeService& node_service);
+
+// Pumps the event loop until nothing is still loading: no node fetch is in
+// flight and no timed data is waiting on the history it asked for. The two are
+// sequential — an alias resolves via a node fetch, and only then starts its
+// history read — so this alternates between them until both are quiet.
+//
+// Use this instead of pumping for a fixed duration. A fixed pump is a shared
+// budget, so a run capturing many windows settles each one less than a
+// single-window run does, and the same spec renders with or without its
+// per-row trends depending on what else the run contained. Nothing failed when
+// that happened; the incomplete image just shipped.
+//
+// Returns false if the deadline expires with work still outstanding (reported
+// as a test failure).
+bool WaitForPendingData(NodeService& node_service,
+                        TimedDataService& timed_data_service);
 
 // Makes each node in `node_ids` fully resident — its own attributes, its
 // hierarchical children (the analog property bands), its type definition (so

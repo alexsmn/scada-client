@@ -2,6 +2,7 @@
 
 #include "screenshot_config.h"
 #include "screenshot_output.h"
+#include "widget_capture.h"
 #include "screenshot_wait.h"
 
 #include "aui/qt/dialog_service_impl_qt.h"
@@ -220,7 +221,7 @@ bool GrabAndCloseVisibleDialog(const DialogSpec& spec) {
   dialog->repaint();
   QApplication::processEvents();
 
-  QPixmap pixmap = dialog->grab();
+  QPixmap pixmap = GrabWhenSettled(dialog);
   auto path = GetOutputDir() / spec.filename;
   pixmap.save(QString::fromStdString(path.string()));
 

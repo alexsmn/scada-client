@@ -98,6 +98,31 @@ bool WaitUntil(Predicate&& predicate, int timeout_ms = 5000) {
   return true;
 }
 
+// Pulls the data items a spec names (`path` plus `paths`) fully resident, so a
+// capture does not depend on another window in the same run having browsed
+// them first. Non-node paths (formulas, unresolvable ids) simply yield no node
+// id and are skipped.
+void MakeSpecItemsResident(NodeService& node_service,
+                           const ScreenshotSpec& spec) {
+  std::vector<scada::NodeId> node_ids;
+  auto add = [&node_ids](const std::string& path) {
+    if (path.empty())
+      return;
+    scada::NodeId node_id = NodeIdFromScadaString(path);
+    if (!node_id.is_null())
+      node_ids.push_back(std::move(node_id));
+  };
+
+  add(spec.path);
+  for (const auto& path : spec.paths)
+    add(path);
+
+  if (node_ids.empty())
+    return;
+
+  scada::screenshot_generator::FetchNodesResident(node_service, node_ids);
+}
+
 scada::aui::Tree* FindTreeWidget(QWidget* widget) {
   if (!widget)
     return nullptr;
@@ -284,7 +309,17 @@ ScreenshotGenerator::ScreenshotGenerator() {
   // inside ClientApplication browses and reads them through
   // ViewServiceImpl + AttributeServiceImpl on demand.
   PopulateFixtureNodes(address_space_, g_config.json);
-  history_service_.LoadFromJson(g_config.json);
+
+  // Seed history only for nodes that made it into the address space. The
+  // fixture's `nodes` array can declare a node its `tree` never parents, and
+  // PopulateFixtureNodes cannot create such an orphan — without this gate the
+  // history service would still synthesize a series for it, and a table row
+  // bound to that node would paint a convincing sparkline next to a "no data"
+  // quality mark.
+  history_service_.LoadFromJson(
+      g_config.json, [this](const scada::NodeId& node_id) {
+        return address_space_.GetNode(node_id) != nullptr;
+      });
 }
 
 ScreenshotGenerator::~ScreenshotGenerator() {
@@ -309,10 +344,12 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
   }
 
   WaitForAwaitable(executor_, app_.Start());
-  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
 
-  // Let async data loads and model updates complete.
-  scada::screenshot_generator::PumpEventLoopFor(std::chrono::seconds(1));
+  // Wait for the data itself rather than pumping for a fixed second and
+  // hoping: with many windows open that second was split too many ways, and a
+  // view could be grabbed before its trends arrived.
+  ASSERT_TRUE(scada::screenshot_generator::WaitForPendingData(
+      app_.node_service(), app_.timed_data_service()));
 
   const auto& main_windows = app_.main_window_manager().main_windows();
   ASSERT_EQ(main_windows.size(), 1u);
@@ -412,6 +449,23 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
       ADD_FAILURE() << "No QWidget for: " << spec.window_type;
       continue;
     }
+
+    // Make this spec's own items fully resident before grabbing. A row's
+    // display format, engineering units and limit bands are property children
+    // fetched on demand, and TimedData only pulls the item node itself
+    // (NodeOnly) — so a row renders unformatted until something else browses
+    // those children. In a full run the Explorer tree does that incidentally,
+    // which made a capture's correctness depend on which *other* windows the
+    // run happened to include: `--only table.png` rendered Частота as "50"
+    // where a wider run rendered the fixture's "0.00" format as "50.01".
+    // Warming the spec's own nodes makes each capture self-sufficient.
+    MakeSpecItemsResident(app_.node_service(), spec);
+
+    // Those fetches can in turn start history reads (a row's alias resolves,
+    // then asks for its sparkline window), so settle again before grabbing.
+    EXPECT_TRUE(scada::screenshot_generator::WaitForPendingData(
+        app_.node_service(), app_.timed_data_service()))
+        << spec.filename;
 
     // A grid-backed window that renders fewer rows than the fixture defines
     // is a data-path regression (empty users/transmission tables have
@@ -710,7 +764,7 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
   for (int i = 0; i < 10; ++i)
     QApplication::processEvents();
 
-  QPixmap pixmap = qmain->grab();
+  QPixmap pixmap = GrabWhenSettled(qmain);
   pixmap.save(QString::fromStdString(output_image.string()));
 
   MainWindow::SetHideForTesting(true);
@@ -789,7 +843,7 @@ TEST_F(ScreenshotGenerator, CaptureOverviewPage) {
   qmain->show();
   scada::screenshot_generator::PumpEventLoopFor(std::chrono::milliseconds(500));
 
-  QPixmap pixmap = qmain->grab();
+  QPixmap pixmap = GrabWhenSettled(qmain);
   pixmap.save(QString::fromStdString(output_image.string()));
 
   MainWindow::SetHideForTesting(true);

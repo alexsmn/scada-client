@@ -2,6 +2,7 @@
 
 #include "screenshot_config.h"
 #include "screenshot_output.h"
+#include "widget_capture.h"
 #include "screenshot_wait.h"
 
 #include "base/client_paths.h"
@@ -119,7 +120,7 @@ void SaveDisplayScreenshot(const ScreenshotSpec& spec,
            "not reach the row";
   }
 
-  QPixmap pixmap = frame->grab();
+  QPixmap pixmap = GrabWhenSettled(frame);
   auto output_path = GetOutputDir() / spec.filename;
   pixmap.save(QString::fromStdString(output_path.string()));
 }
