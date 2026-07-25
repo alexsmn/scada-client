@@ -3,8 +3,23 @@
 #include "base/any_executor.h"
 
 #include "base/any_executor_timer.h"
+#include "scada/date_time.h"
 
 #include <boost/signals2/signal.hpp>
+
+// How long the blink stays in each of its two states.
+inline constexpr scada::Duration kBlinkHalfPeriod =
+    std::chrono::milliseconds{300};
+
+// The blink state at `time`. Blink phase is a pure function of wall-clock time
+// rather than a free-running toggle, which means every blinker in the process
+// is in phase with every other, the phase does not depend on when the manager
+// happened to be constructed, and anything that freezes the clock
+// (ScopedMockClockOverride — the screenshot generator does exactly this) sees a
+// single, stable state instead of whatever the toggle had reached. A capture
+// whose highlight flipped run to run is not reproducible, and a screenshot
+// diff is the project's visual-regression signal.
+bool BlinkPhaseAt(scada::Time time);
 
 class BlinkerManager {
  public:
@@ -30,7 +45,7 @@ class BlinkerManagerImpl : public BlinkerManager {
  private:
   void Blink();
 
-  bool state_ = false;
+  bool state_ = BlinkPhaseAt(scada::Now());
 
   boost::signals2::signal<void(bool state)> signal_;
 
