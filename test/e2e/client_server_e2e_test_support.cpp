@@ -14,7 +14,9 @@
 #include <cstdlib>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <utility>
 
@@ -173,17 +175,46 @@ int FindAvailablePort() {
   return static_cast<int>(acceptor.local_endpoint().port());
 }
 
-bool CanConnectTcp(int port) {
+bool CanConnectTcp(std::string_view host, std::string_view service) {
   try {
     boost::asio::io_context io_context;
     boost::asio::ip::tcp::resolver resolver{io_context};
     boost::asio::ip::tcp::socket socket{io_context};
-    auto endpoints = resolver.resolve("127.0.0.1", std::to_string(port));
+    auto endpoints = resolver.resolve(host, service);
     boost::asio::connect(socket, endpoints);
     return true;
   } catch (...) {
     return false;
   }
+}
+
+bool CanConnectTcp(int port) {
+  return CanConnectTcp("127.0.0.1", std::to_string(port));
+}
+
+// Splits a "host:port" endpoint. Returns false when there is no port part.
+bool SplitHostPort(std::string_view endpoint,
+                   std::string* host,
+                   std::string* port) {
+  const auto colon = endpoint.rfind(':');
+  if (colon == std::string_view::npos || colon + 1 == endpoint.size())
+    return false;
+  *host = std::string{endpoint.substr(0, colon)};
+  *port = std::string{endpoint.substr(colon + 1)};
+  return true;
+}
+
+bool CanConnectTcpEndpoint(std::string_view endpoint) {
+  std::string host;
+  std::string port;
+  if (!SplitHostPort(endpoint, &host, &port))
+    return false;
+  return CanConnectTcp(host, port);
+}
+
+std::string GetEnvOr(const char* name, std::string fallback) {
+  auto* value = std::getenv(name);
+  return value && *value ? std::string{value} : std::move(fallback);
 }
 
 std::string RunSqliteScalar(const std::filesystem::path& database_path,
@@ -212,6 +243,23 @@ std::string RunSqliteScalar(const std::filesystem::path& database_path,
 }
 
 }  // namespace
+
+const ExternalServerTarget* GetExternalServerTarget() {
+  // Resolved once: the environment cannot change mid-run, and every test asks.
+  static const std::optional<ExternalServerTarget> target =
+      []() -> std::optional<ExternalServerTarget> {
+    auto* host = std::getenv("SCADA_E2E_EXTERNAL_HOST");
+    if (!host || !*host)
+      return std::nullopt;
+    return ExternalServerTarget{
+        .remote_host = host,
+        .opcua_host = GetEnvOr("SCADA_E2E_EXTERNAL_OPCUA_HOST", {}),
+        .user = GetEnvOr("SCADA_E2E_EXTERNAL_USER", "root"),
+        .password = GetEnvOr("SCADA_E2E_EXTERNAL_PASSWORD", {}),
+    };
+  }();
+  return target ? &*target : nullptr;
+}
 
 const std::chrono::seconds kPostConnectStabilityTimeout = 10s;
 const std::string_view kStartupCompletedLog =
@@ -248,6 +296,22 @@ ClientServerE2eTest::ClientServerE2eTest()
 ClientServerE2eTest::~ClientServerE2eTest() = default;
 
 void ClientServerE2eTest::SetUp() {
+  if (const auto* target = GetExternalServerTarget()) {
+    // An external deployment is a fixed topology behind its own client-facing
+    // endpoint: it cannot be re-launched per parameter, so the matrix collapses
+    // to the parameters it can actually serve. The tier split behind an
+    // aggregating proxy is what a deployment is, hence Cluster.
+    if (Topology() != ServerTopology::Cluster)
+      GTEST_SKIP() << "external server target is a deployed cluster; the "
+                      "SingleTier parameter has no external equivalent";
+    if (Protocol() == E2eProtocol::OpcUa && target->opcua_host.empty())
+      GTEST_SKIP() << "external server target exposes no OPC UA endpoint (set "
+                      "SCADA_E2E_EXTERNAL_OPCUA_HOST)";
+    ASSERT_TRUE(std::filesystem::exists(GetClientExePath()));
+    PrepareWorkspace();
+    return;
+  }
+
   ASSERT_TRUE(std::filesystem::exists(GetServerExePath()));
   ASSERT_TRUE(std::filesystem::exists(GetClientExePath()));
   ASSERT_TRUE(std::filesystem::exists(GetServerFixtureDir()));
@@ -333,10 +397,14 @@ void ClientServerE2eTest::WriteServerJson(
 }
 
 void ClientServerE2eTest::PrepareWorkspace() {
-  PrepareServerFilesystem(workspace_.path(), iec61850_port_);
-  // SingleTier identity; StartCluster() rewrites this same file as the proxy.
-  WriteServerJson(workspace_.path(), remote_port_, opcua_port_,
-                  "scada-e2e-server");
+  // Against an external target the workspace holds only the client's scratch
+  // files — there is no local server to lay out a fixture or settings for.
+  if (!UsesExternalServer()) {
+    PrepareServerFilesystem(workspace_.path(), iec61850_port_);
+    // SingleTier identity; StartCluster() rewrites this same file as the proxy.
+    WriteServerJson(workspace_.path(), remote_port_, opcua_port_,
+                    "scada-e2e-server");
+  }
 
   status_file_ = workspace_.path() / "client-status.txt";
   object_view_values_file_ = workspace_.path() / "object-view-values.txt";
@@ -353,16 +421,28 @@ void ClientServerE2eTest::PrepareWorkspace() {
 void ClientServerE2eTest::WriteClientSettings(std::string_view password,
                                               std::string_view user,
                                               std::string_view security_mode) {
-  const auto remote_host =
-      std::string{"localhost:"} + std::to_string(remote_port_);
-  const auto opcua_host =
-      std::string{"127.0.0.1:"} + std::to_string(opcua_port_);
+  auto remote_host = std::string{"localhost:"} + std::to_string(remote_port_);
+  auto opcua_host = std::string{"127.0.0.1:"} + std::to_string(opcua_port_);
+  std::string login_user{user};
+  std::string login_password{password};
+  if (const auto* target = GetExternalServerTarget()) {
+    remote_host = target->remote_host;
+    opcua_host = target->opcua_host;
+    // The deployment owns its own credentials. Substitute them only for the
+    // suite's "correct credentials" login (root with the fixture's empty
+    // password) — a test that deliberately passes wrong credentials, or a
+    // different fixture user, must keep what it asked for.
+    if (user == "root" && password.empty()) {
+      login_user = target->user;
+      login_password = target->password;
+    }
+  }
   boost::json::object root{
       {"ServerType", std::string{GetServerType(Protocol())}},
       {"Host:Scada", remote_host},
       {"Host:OpcUa", opcua_host},
-      {"User", std::string{user}},
-      {"Password", std::string{password}},
+      {"User", login_user},
+      {"Password", login_password},
       {"AutoLogin", true},
   };
   if (!security_mode.empty())
@@ -375,6 +455,22 @@ void ClientServerE2eTest::EnableSimulatedHistory() {
 }
 
 void ClientServerE2eTest::StartServer() {
+  if (const auto* target = GetExternalServerTarget()) {
+    // Nothing to launch — assert instead that the deployment's client-facing
+    // endpoint is actually accepting connections, so an unreachable target
+    // fails here rather than as an opaque client login timeout.
+    const std::string& endpoint = Protocol() == E2eProtocol::OpcUa
+                                      ? target->opcua_host
+                                      : target->remote_host;
+    ASSERT_TRUE(
+        WaitUntil([&endpoint] { return CanConnectTcpEndpoint(endpoint); },
+                  std::chrono::duration_cast<std::chrono::milliseconds>(
+                      kServerStartTimeout)))
+        << "External " << ToString(Protocol()) << " endpoint " << endpoint
+        << " is not accepting connections";
+    return;
+  }
+
   if (Topology() == ServerTopology::Cluster) {
     StartCluster();
     return;
@@ -639,6 +735,17 @@ std::string ClientServerE2eTest::DescribeProcessExit(
 void ClientServerE2eTest::ExpectProcessesRemainRunningFor(
     std::chrono::milliseconds timeout,
     std::string_view context) {
+  if (UsesExternalServer()) {
+    // The deployment's processes are not ours to observe; what this suite can
+    // still assert is that the client survives the window and the endpoint
+    // keeps accepting connections.
+    auto exited = WaitUntil([this] { return !client_.IsRunning(); }, timeout);
+    EXPECT_FALSE(exited) << "Unexpected client exit while " << context << ": "
+                         << DescribeProcessExit(client_, "client");
+    ExpectServerRemainsRunningFor(std::chrono::milliseconds::zero(), context);
+    return;
+  }
+
   auto ok = WaitUntil(
       [this] { return !server_.IsRunning() || !client_.IsRunning(); }, timeout);
   EXPECT_FALSE(ok) << "Unexpected process exit while " << context << ": "
@@ -649,12 +756,31 @@ void ClientServerE2eTest::ExpectProcessesRemainRunningFor(
 void ClientServerE2eTest::ExpectServerRemainsRunningFor(
     std::chrono::milliseconds timeout,
     std::string_view context) {
+  if (const auto* target = GetExternalServerTarget()) {
+    // Liveness of an external deployment is observable only through its
+    // endpoint: wait out the window, then require it to still accept a
+    // connection (a server that died mid-window refuses or times out).
+    const std::string& endpoint = Protocol() == E2eProtocol::OpcUa
+                                      ? target->opcua_host
+                                      : target->remote_host;
+    std::this_thread::sleep_for(timeout);
+    EXPECT_TRUE(CanConnectTcpEndpoint(endpoint))
+        << "External endpoint " << endpoint << " stopped accepting connections "
+        << "while " << context;
+    return;
+  }
+
   auto ok = WaitUntil([this] { return !server_.IsRunning(); }, timeout);
   EXPECT_FALSE(ok) << "Unexpected server exit while " << context << ": "
                    << DescribeProcessExit(server_, "server");
 }
 
 void ClientServerE2eTest::ExpectServerAuthLog() {
+  // The server's logs live on the deployment's host, out of the suite's reach;
+  // the client-side login assertions carry the case instead.
+  if (UsesExternalServer())
+    return;
+
   EXPECT_TRUE(WaitUntil(
       [this] {
         switch (Protocol()) {

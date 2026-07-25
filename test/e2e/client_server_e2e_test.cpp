@@ -259,6 +259,9 @@ TEST_P(ClientServerE2eTest, FileSystem_BrowseAndReadThroughProxy) {
   if (Topology() != ServerTopology::Cluster || Protocol() != E2eProtocol::OpcUa)
     GTEST_SKIP() << "FileSystem aggregation exists in the Cluster topology; "
                     "the direct-session check runs once, under OpcUa";
+  if (UsesExternalServer())
+    GTEST_SKIP() << "asserts against tier workspaces/state the suite owns only "
+                    "when it launches the cluster itself";
 
   StartServer();
 
@@ -297,6 +300,9 @@ TEST_P(ClientServerE2eTest, FileSystem_CreateAndDeleteThroughProxy) {
   if (Topology() != ServerTopology::Cluster || Protocol() != E2eProtocol::OpcUa)
     GTEST_SKIP() << "FileSystem aggregation exists in the Cluster topology; "
                     "the direct-session check runs once, under OpcUa";
+  if (UsesExternalServer())
+    GTEST_SKIP() << "asserts against tier workspaces/state the suite owns only "
+                    "when it launches the cluster itself";
 
   StartServer();
 
@@ -394,6 +400,11 @@ TEST_P(ClientServerE2eTest, Events_HistoryReadThroughProxy) {
   if (Topology() != ServerTopology::Cluster || Protocol() != E2eProtocol::OpcUa)
     GTEST_SKIP() << "event history needs the historian tier behind the proxy; "
                     "the direct-session check runs once, under OpcUa";
+  // ProxyOpcUaSession dials 127.0.0.1 — the direct-session checks only address
+  // a cluster this process launched.
+  if (UsesExternalServer())
+    GTEST_SKIP() << "direct proxy session addresses the locally launched "
+                    "cluster only";
 
   // The window must cover the tiers' startup burst of system events (module
   // and device state events raised while the cluster comes up), which is what
@@ -624,6 +635,12 @@ TEST_P(ClientServerE2eTest, Connect_Success_DisplaysHistoricalTimedData) {
   if (Topology() != ServerTopology::Cluster)
     GTEST_SKIP() << "history needs the historian tier (a single device tier "
                     "owns no history)";
+  // The window this asserts over is created by EnableSimulatedHistory(), which
+  // historizes TIT.4 in the config tier's and historian's DBs before launch —
+  // fixture control the suite does not have over an external deployment.
+  if (UsesExternalServer())
+    GTEST_SKIP() << "historized-item fixture cannot be seeded in an external "
+                    "deployment's config/historian databases";
   WriteClientSettings(/*password=*/"");
   EnableSimulatedHistory();
   StartServer();
@@ -760,8 +777,13 @@ TEST_P(ClientServerE2eTest, Connect_BadPassword) {
   EXPECT_NE(status.find("failure: Bad_WrongLoginCredentials"),
             std::string::npos)
       << "Unexpected client status: " << status;
-  EXPECT_FALSE(ContainsInDirectory(server_log_dir_, "Authorization succeeded"))
-      << "Server should not record successful authorization";
+  // Only meaningful for a locally launched server — an external deployment's
+  // logs are not in the workspace, where the check would pass vacuously.
+  if (!UsesExternalServer()) {
+    EXPECT_FALSE(
+        ContainsInDirectory(server_log_dir_, "Authorization succeeded"))
+        << "Server should not record successful authorization";
+  }
   ExpectServerRemainsRunningFor(
       std::chrono::duration_cast<std::chrono::milliseconds>(
           kPostConnectStabilityTimeout),
@@ -817,8 +839,11 @@ TEST_P(ClientServerE2eTest,
   EXPECT_NE(status.find("failure"), std::string::npos)
       << "Expected the client to report a connection failure; status: "
       << status;
-  EXPECT_FALSE(ContainsInDirectory(server_log_dir_, "OPC UA session activated"))
-      << "Server should not activate a session when security selection fails";
+  if (!UsesExternalServer()) {
+    EXPECT_FALSE(
+        ContainsInDirectory(server_log_dir_, "OPC UA session activated"))
+        << "Server should not activate a session when security selection fails";
+  }
   ExpectServerRemainsRunningFor(
       std::chrono::duration_cast<std::chrono::milliseconds>(
           kPostConnectStabilityTimeout),

@@ -84,6 +84,55 @@ On failure, the harness prints the preserved temporary workspace path. Inspect
 that directory for `ServerLogs/`, `ClientLogs/`, status marker files, and the
 operator use-case report when that test was running.
 
+## Running against an already-deployed cluster
+
+By default the suite is hermetic: it launches every server process itself on
+loopback ports. Setting `SCADA_E2E_EXTERNAL_HOST` instead points the real Qt
+client at a deployment that is already running — the GCP demo cluster, a
+staging VM, an on-prem install — and launches no server at all.
+
+```sh
+SCADA_E2E_EXTERNAL_HOST=<ip>:2000 \
+SCADA_E2E_EXTERNAL_USER=<user> SCADA_E2E_EXTERNAL_PASSWORD=<password> \
+  build/macos-local-client/bin/RelWithDebInfo/client_server_e2e_tests \
+  --gtest_filter='*Remote_Cluster*' --gtest_brief=1
+```
+
+| Variable | Meaning |
+|---|---|
+| `SCADA_E2E_EXTERNAL_HOST` | `host:port` of the native (gRPC) session endpoint. Setting it enables the mode. |
+| `SCADA_E2E_EXTERNAL_OPCUA_HOST` | `host:port` of the OPC UA endpoint. Unset ⇒ the `OpcUa` parameters skip. |
+| `SCADA_E2E_EXTERNAL_USER` | Login user, default `root`. |
+| `SCADA_E2E_EXTERNAL_PASSWORD` | That user's password, default empty. |
+
+The credentials replace only the suite's own "correct credentials" login
+(`root` with the fixture's empty password); a test that deliberately passes
+wrong credentials, or a different fixture user, keeps what it asked for.
+
+What the mode gives up, because the suite owns none of the server side:
+
+- **The parameter matrix collapses.** A deployment is a tier split behind its
+  client-facing endpoint, so the `SingleTier` parameters skip, as do `OpcUa`
+  parameters with no external OPC UA endpoint configured.
+- **Server-side assertions are dropped or re-aimed.** Server auth logs are not
+  readable, so `ExpectServerAuthLog()` returns; process-liveness checks become
+  "the client survived and the endpoint still accepts connections".
+- **Fixture-controlled tests skip.** Anything that seeds or reads the server's
+  config/historian SQLite DBs or a tier workspace — historized timed data, the
+  direct-proxy FileSystem and event-history checks, profile write-through —
+  has no equivalent against someone else's deployment.
+
+What remains is the real coverage this mode exists for: login, object tree and
+values, hardware tree device status, the operator surfaces, and credential
+rejection, against a genuinely deployed cluster.
+
+**Watch for single-session `root`.** The built-in `root` user is hard-coded
+single-session (`configuration_authenticator.cpp`), so a second concurrent
+client — the web demo, or simply the next test case before the previous
+session is reaped — is rejected with `Bad_UserIsAlreadyLoggedOn`. Running the
+cases one at a time, or logging in as a multi-session DB user, avoids the
+false failure.
+
 ## Viewing a run's telemetry
 
 By default the suite exports nothing: assertions read the plain-text logs under

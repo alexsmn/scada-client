@@ -65,6 +65,35 @@ std::string E2eParamName(const E2eParam& param);
 extern const std::chrono::seconds kPostConnectStabilityTimeout;
 extern const std::string_view kStartupCompletedLog;
 
+// An already-running deployment the suite points the client at instead of
+// launching its own server processes — e.g. the GCP demo cluster. Configured
+// entirely through the environment (see GetExternalServerTarget); unset — the
+// default — leaves the suite hermetic and self-launching.
+struct ExternalServerTarget {
+  // "host:port" of the client-facing session endpoint per protocol. An empty
+  // opcua_host means the deployment does not expose OPC UA publicly (the GCP
+  // demo publishes only the native gRPC port), and OpcUa parameters skip.
+  std::string remote_host;
+  std::string opcua_host;
+  // Credentials substituted for the suite's own root/"" login.
+  std::string user;
+  std::string password;
+};
+
+// The external target when SCADA_E2E_EXTERNAL_HOST is set, else nullptr:
+//
+//   SCADA_E2E_EXTERNAL_HOST        host:port of the native (gRPC) endpoint
+//   SCADA_E2E_EXTERNAL_OPCUA_HOST  host:port of the OPC UA endpoint, optional
+//   SCADA_E2E_EXTERNAL_USER        login user, default "root"
+//   SCADA_E2E_EXTERNAL_PASSWORD    password for that user, default empty
+//
+// In this mode the suite launches no server, so every assertion that reads
+// server-side state (process liveness, server logs, the config SQLite DB, tier
+// workspaces) is unavailable; the affected tests skip. What remains is the
+// genuine client-against-a-real-deployment coverage: login, object tree,
+// hardware tree, operator surfaces, and credential rejection.
+const ExternalServerTarget* GetExternalServerTarget();
+
 class ClientServerE2eTest : public ::testing::TestWithParam<E2eParam> {
  protected:
   ClientServerE2eTest();
@@ -75,6 +104,14 @@ class ClientServerE2eTest : public ::testing::TestWithParam<E2eParam> {
 
   E2eProtocol Protocol() const { return GetParam().protocol; }
   ServerTopology Topology() const { return GetParam().topology; }
+
+  // True when the run targets an already-running external deployment instead of
+  // launching its own tiers. Tests whose assertions need server-side state must
+  // GTEST_SKIP() on this from their own body (a skip issued inside a helper
+  // does not stop the caller).
+  bool UsesExternalServer() const {
+    return GetExternalServerTarget() != nullptr;
+  }
 
   void PrepareWorkspace();
   // Writes the client settings file. `security_mode`, when non-empty, sets the
