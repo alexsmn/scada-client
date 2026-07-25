@@ -14,11 +14,15 @@
 #include "scada/node_id.h"
 #include "timed_data/timed_data_spec.h"
 
+#include <gtest/gtest.h>
+
 #include <QApplication>
 #include <QColor>
+#include <QElapsedTimer>
 #include <QPixmap>
 #include <QString>
 
+#include <algorithm>
 #include <chrono>
 #include <map>
 #include <string>
@@ -66,16 +70,51 @@ namespace {
 // resident, and TimedData only fetches the node itself (NodeOnly) — so without
 // this the axes fall back to the data auto-range and the current/limit readouts
 // come up blank. Must run before BuildGraphFromJson().
-void MakeGraphItemNodesResident(NodeService& node_service,
-                                TimedDataService& timed_data_service,
-                                const boost::json::value& json) {
-  std::vector<scada::NodeId> node_ids;
+//
+// The returned probes must be kept alive until after the grab. Residency is
+// bounded and reference-counted, so probes destroyed at the end of this
+// function let the nodes be evicted again before the lines read their
+// properties — which showed up as an occasional capture whose series were
+// correct but whose panes had auto-ranged (no EU band, no limit markers).
+[[nodiscard]] std::vector<TimedDataSpec> MakeGraphItemNodesResident(
+    NodeService& node_service,
+    TimedDataService& timed_data_service,
+    const boost::json::value& json) {
+  std::vector<TimedDataSpec> probes;
   for (const auto& ji : json.at("graph").as_object().at("items").as_array()) {
-    TimedDataSpec probe;
+    TimedDataSpec& probe = probes.emplace_back();
     probe.Connect(timed_data_service, std::string(ji.at("path").as_string()));
+  }
+
+  // Connect() resolves the formula to a node asynchronously, so reading
+  // node_id() straight after it can yield a null id — which FetchNodesResident
+  // silently skips, leaving nothing resident. That is invisible in the output
+  // except as a pane that auto-ranged instead of using its engineering-unit
+  // band, and it only bit the first graph capture of a run (a later one found
+  // the node already resolved), which is exactly the kind of order dependence
+  // these captures must not have.
+  auto ids_resolved = [&probes] {
+    return std::ranges::none_of(probes, [](const TimedDataSpec& probe) {
+      return probe.node_id().is_null();
+    });
+  };
+  QElapsedTimer elapsed;
+  elapsed.start();
+  while (!ids_resolved() && !elapsed.hasExpired(10'000)) {
+    scada::screenshot_generator::PumpEventLoopFor(
+        std::chrono::milliseconds(50));
+  }
+
+  std::vector<scada::NodeId> node_ids;
+  for (const TimedDataSpec& probe : probes)
     node_ids.push_back(probe.node_id());
+  if (!ids_resolved()) {
+    ADD_FAILURE() << "graph item formulas never resolved to node ids; the "
+                     "panes would auto-range instead of using their "
+                     "engineering-unit bands";
   }
   scada::screenshot_generator::FetchNodesResident(node_service, node_ids);
+  return probes;
 }
 
 // Builds the fixture graph — panes, coloured lines and the time range — into
@@ -126,13 +165,66 @@ void BuildGraphFromJson(MetrixGraph& graph, const boost::json::value& json) {
   graph.UpdateData();
 }
 
+// Pumps the event loop until every line has the history it was asked to plot,
+// and reports a failure if that never happens.
+//
+// This replaced a blind one-second pump. A fixed pump is a shared budget: a
+// run capturing many windows settles each one less than a single-window run
+// does, so the same spec rendered differently depending on the size of the
+// `--only` list, and nothing failed when it came up short — the incomplete
+// image just shipped. Waiting on the lines themselves makes the capture
+// independent of what else the run contained.
+//
+// It does not on its own fix a blank trend: the line can hold a full series
+// whose points all sit outside the visible window (see the interval cap in
+// LocalHistoryService::ReadRaw). Hence the failure path — a graph capture
+// that would be blank must fail the run rather than ship.
+bool WaitForGraphSeries(MetrixGraph& graph,
+                        std::chrono::milliseconds timeout) {
+  auto lines_pending = [&graph] {
+    int pending = 0;
+    for (auto* pane : graph.panes()) {
+      for (auto* line : pane->plot().lines()) {
+        MetrixDataSource& source =
+            static_cast<MetrixGraph::MetrixLine*>(line)->data_source();
+        // `is_ready()` alone is not enough: a spec whose requested range is
+        // still the default one reports ready with nothing fetched, which is
+        // exactly the state the blind pump used to grab.
+        if (!source.connected() || !source.is_ready() ||
+            source.timed_data().values().empty()) {
+          ++pending;
+        }
+      }
+    }
+    return pending;
+  };
+
+  QElapsedTimer elapsed;
+  elapsed.start();
+  int pending = lines_pending();
+  while (pending > 0 && !elapsed.hasExpired(timeout.count())) {
+    scada::screenshot_generator::PumpEventLoopFor(
+        std::chrono::milliseconds(50));
+    pending = lines_pending();
+  }
+
+  if (pending > 0) {
+    ADD_FAILURE() << pending << " graph line(s) had no plotted history after "
+                  << timeout.count() << " ms; the capture would be blank";
+    return false;
+  }
+  return true;
+}
+
 }  // namespace
 
 void SaveGraphScreenshot(const ScreenshotSpec& spec,
                          NodeService& node_service,
                          TimedDataService& timed_data_service,
                          const boost::json::value& json) {
-  MakeGraphItemNodesResident(node_service, timed_data_service, json);
+  // Held until after the grab so the nodes stay resident (see the function).
+  std::vector<TimedDataSpec> residency_pins =
+      MakeGraphItemNodesResident(node_service, timed_data_service, json);
 
   MetrixGraph graph{MetrixGraphContext{timed_data_service}};
   BuildGraphFromJson(graph, json);
@@ -145,7 +237,7 @@ void SaveGraphScreenshot(const ScreenshotSpec& spec,
   // the legend current/min/max/average cells and the cursor readout are
   // populated before the grab. A standalone graph doesn't get the incidental
   // pumping a full capture run accumulates, so it must pump for itself.
-  scada::screenshot_generator::PumpEventLoopFor(std::chrono::seconds(1));
+  WaitForGraphSeries(graph, std::chrono::seconds(30));
 
   // Drop a time cursor so the legend's "@ cursor" column is populated. Without
   // one the capture named graph-cursor.png showed no cursor at all and every
@@ -175,7 +267,9 @@ void SaveSeriesInspectorScreenshot(const ScreenshotSpec& spec,
                                    NodeService& node_service,
                                    TimedDataService& timed_data_service,
                                    const boost::json::value& json) {
-  MakeGraphItemNodesResident(node_service, timed_data_service, json);
+  // Held until after the grab so the nodes stay resident (see the function).
+  std::vector<TimedDataSpec> residency_pins =
+      MakeGraphItemNodesResident(node_service, timed_data_service, json);
 
   MetrixGraph graph{MetrixGraphContext{timed_data_service}};
   BuildGraphFromJson(graph, json);
@@ -183,7 +277,7 @@ void SaveSeriesInspectorScreenshot(const ScreenshotSpec& spec,
   // Let the async history/current-value chains settle so the inspector's
   // current, min/max/average and limit rows are populated before the grab
   // (see SaveGraphScreenshot).
-  scada::screenshot_generator::PumpEventLoopFor(std::chrono::seconds(1));
+  WaitForGraphSeries(graph, std::chrono::seconds(30));
 
   // Point at the first pane's series (the first graphed item)
   // deterministically: NewPane() auto-selects the last-created pane, so
