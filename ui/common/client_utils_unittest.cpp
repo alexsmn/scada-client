@@ -3,30 +3,17 @@
 #include "base/any_executor.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
-#include "node_service/node_model_mock.h"
-#include "node_service/test/model_node_service.h"
+#include "common/node_state.h"
+#include "node_service/test/fake_node_service.h"
 
 #include <gmock/gmock.h>
 
 using namespace testing;
 namespace {
 
-std::shared_ptr<NiceMock<MockNodeModel>> MakeNodeModel(
-    const scada::NodeId& node_id,
-    scada::NodeClass node_class,
-    NodeFetchStatus fetch_status = NodeFetchStatus::NodeAndChildren) {
-  auto node_model = std::make_shared<NiceMock<MockNodeModel>>();
-  ON_CALL(*node_model, GetFetchStatus()).WillByDefault(Return(fetch_status));
-  ON_CALL(*node_model, GetStatus())
-      .WillByDefault(Return(scada::StatusCode::Good));
-  ON_CALL(*node_model, GetAttribute(scada::AttributeId::NodeId))
-      .WillByDefault(Return(node_id));
-  ON_CALL(*node_model, GetAttribute(scada::AttributeId::NodeClass))
-      .WillByDefault(Return(static_cast<scada::Int32>(node_class)));
-  ON_CALL(*node_model, Fetch(_))
-      .WillByDefault(
-          [](const NodeFetchStatus&) -> Awaitable<void> { co_return; });
-  return node_model;
+scada::NodeState MakeNodeState(const scada::NodeId& node_id,
+                               scada::NodeClass node_class) {
+  return scada::NodeState{}.set_node_id(node_id).set_node_class(node_class);
 }
 
 }  // namespace
@@ -38,25 +25,19 @@ TEST(ClientUtilsTest, ExpandGroupItemIdsAsyncRespectsMaxCount) {
   const scada::NodeId second_id{7003, 1};
   const scada::NodeId third_id{7004, 1};
 
-  ModelNodeService node_service;
-  auto root_model = MakeNodeModel(root_id, scada::NodeClass::Object);
-  auto first_model = MakeNodeModel(first_id, scada::NodeClass::Variable);
-  auto group_model = MakeNodeModel(group_id, scada::NodeClass::Object);
-  auto second_model = MakeNodeModel(second_id, scada::NodeClass::Variable);
-  auto third_model = MakeNodeModel(third_id, scada::NodeClass::Variable);
-
-  const NodeRef root = node_service.Add(root_id, root_model);
-  const NodeRef first = node_service.Add(first_id, first_model);
-  const NodeRef group = node_service.Add(group_id, group_model);
-  const NodeRef second = node_service.Add(second_id, second_model);
-  const NodeRef third = node_service.Add(third_id, third_model);
-
-  ON_CALL(*root_model, GetTargets(scada::NodeId{scada::id::Organizes}, true))
-      .WillByDefault(Return(std::vector<NodeRef>{first}));
-  ON_CALL(*root_model, GetTargets(scada::NodeId{scada::id::HasComponent}, true))
-      .WillByDefault(Return(std::vector<NodeRef>{group}));
-  ON_CALL(*group_model, GetTargets(scada::NodeId{scada::id::Organizes}, true))
-      .WillByDefault(Return(std::vector<NodeRef>{second, third}));
+  // root --Organizes--> first
+  //      --HasComponent--> group --Organizes--> {second, third}
+  FakeNodeService node_service;
+  const NodeRef root =
+      node_service.Add(MakeNodeState(root_id, scada::NodeClass::Object));
+  node_service.Add(MakeNodeState(first_id, scada::NodeClass::Variable)
+                       .set_parent(scada::id::Organizes, root_id));
+  node_service.Add(MakeNodeState(group_id, scada::NodeClass::Object)
+                       .set_parent(scada::id::HasComponent, root_id));
+  node_service.Add(MakeNodeState(second_id, scada::NodeClass::Variable)
+                       .set_parent(scada::id::Organizes, group_id));
+  node_service.Add(MakeNodeState(third_id, scada::NodeClass::Variable)
+                       .set_parent(scada::id::Organizes, group_id));
 
   TestExecutor executor;
   auto node_ids =
@@ -68,11 +49,10 @@ TEST(ClientUtilsTest, ExpandGroupItemIdsAsyncRespectsMaxCount) {
 
 TEST(ClientUtilsTest, ExpandGroupItemIdsAsyncZeroLimitDoesNotFetch) {
   const scada::NodeId root_id{7100, 1};
-  ModelNodeService node_service;
-  auto root_model =
-      MakeNodeModel(root_id, scada::NodeClass::Object, NodeFetchStatus::None);
-  const NodeRef root = node_service.Add(root_id, root_model);
-  EXPECT_CALL(*root_model, Fetch(_)).Times(0);
+  FakeNodeService node_service;
+  const NodeRef root =
+      node_service.Add(MakeNodeState(root_id, scada::NodeClass::Object));
+  node_service.SetFetchStatus(root_id, NodeFetchStatus::None);
 
   TestExecutor executor;
   auto node_ids =
@@ -80,4 +60,6 @@ TEST(ClientUtilsTest, ExpandGroupItemIdsAsyncZeroLimitDoesNotFetch) {
                                                       /*max_count=*/0));
 
   EXPECT_TRUE(node_ids.empty());
+  // A zero limit must not touch the node at all.
+  EXPECT_TRUE(node_service.fetch_requests(root_id).empty());
 }

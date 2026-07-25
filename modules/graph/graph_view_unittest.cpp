@@ -9,8 +9,7 @@
 #include "graph/metrix_data_source.h"
 #include "graph/metrix_graph.h"
 #include "graph/series_inspector.h"
-#include "node_service/node_model.h"
-#include "node_service/test/model_node_service.h"
+#include "node_service/test/fake_node_service.h"
 #include "resources/common_resources.h"
 #include "scada/client.h"
 #include "scada/history_service_mock.h"
@@ -26,54 +25,6 @@ using namespace testing;
 namespace {
 
 constexpr scada::NodeId kTestNodeId{1, 1};
-
-class TestNodeModel final : public NodeModel {
- public:
-  explicit TestNodeModel(scada::node node) : node_{std::move(node)} {}
-
-  scada::Status GetStatus() const override { return scada::StatusCode::Good; }
-  NodeFetchStatus GetFetchStatus() const override {
-    return NodeFetchStatus::Max;
-  }
-  Awaitable<void> Fetch(
-      const NodeFetchStatus& requested_status) const override {
-    co_return;
-  }
-  void StartFetch(const NodeFetchStatus& requested_status) const override {}
-  scada::Variant GetAttribute(scada::AttributeId attribute_id) const override {
-    return {};
-  }
-  NodeRef GetDataType() const override { return {}; }
-  NodeRef::Reference GetReference(const scada::NodeId& reference_type_id,
-                                  bool forward,
-                                  const scada::NodeId& node_id) const override {
-    return {};
-  }
-  std::vector<NodeRef::Reference> GetReferences(
-      const scada::NodeId& reference_type_id,
-      bool forward) const override {
-    return {};
-  }
-  NodeRef GetTarget(const scada::NodeId& reference_type_id,
-                    bool forward) const override {
-    return {};
-  }
-  std::vector<NodeRef> GetTargets(const scada::NodeId& reference_type_id,
-                                  bool forward) const override {
-    return {};
-  }
-  NodeRef GetAggregate(
-      const scada::NodeId& aggregate_declaration_id) const override {
-    return {};
-  }
-  NodeRef GetChild(const scada::QualifiedName& child_name) const override {
-    return {};
-  }
-  scada::node GetScadaNode() const override { return node_; }
-
- private:
-  scada::node node_;
-};
 
 class NodeFakeTimedData final : public FakeTimedData {
  public:
@@ -279,10 +230,8 @@ TEST(MetrixDataSourceTest, AppliesEarliestTimestampFromHistoryRead) {
   TestExecutor executor;
   StrictMock<scada::MockHistoryService> history_service;
   scada::services services{.history_service = &history_service};
-  scada::client client{services};
-  ModelNodeService node_service;
-  NodeRef node = node_service.Add(
-      kTestNodeId, std::make_shared<TestNodeModel>(client.node(kTestNodeId)));
+  FakeNodeService node_service{services};
+  NodeRef node = node_service.Add(scada::NodeState{}.set_node_id(kTestNodeId));
 
   const auto earliest = scada::base::DecodeDoubleT(100.0);
   const auto latest = scada::base::DecodeDoubleT(200.0);
@@ -309,10 +258,8 @@ TEST(MetrixDataSourceTest, DropsCanceledEarliestTimestampRead) {
   TestExecutor executor;
   StrictMock<scada::MockHistoryService> history_service;
   scada::services services{.history_service = &history_service};
-  scada::client client{services};
-  ModelNodeService node_service;
-  NodeRef node = node_service.Add(
-      kTestNodeId, std::make_shared<TestNodeModel>(client.node(kTestNodeId)));
+  FakeNodeService node_service{services};
+  NodeRef node = node_service.Add(scada::NodeState{}.set_node_id(kTestNodeId));
 
   scada::base::AsyncCompletion first_completion{executor};
   scada::base::AsyncCompletion second_completion{executor};

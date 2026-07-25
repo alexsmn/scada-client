@@ -8,10 +8,9 @@
 #include "configuration/tree/node_service_tree_impl.h"
 #include "configuration/tree/node_service_tree_mock.h"
 #include "model/data_items_node_ids.h"
-#include "node_service/node_model_mock.h"
 #include "node_service/node_service_mock.h"
 #include "node_service/static/static_node_service.h"
-#include "node_service/test/model_node_service.h"
+#include "node_service/test/fake_node_service.h"
 #include "profile/profile.h"
 #include "timed_data/timed_data_service_fake.h"
 #include "timed_data/timed_data_service_mock.h"
@@ -32,37 +31,21 @@ class IconIdsAccessor : public ConfigurationTreeNode {
   static constexpr int kItem = IMAGE_ITEM;
 };
 
-NodeRef MakeObjectTreeNodeModel(ModelNodeService& node_service,
-                                const scada::NodeId& node_id,
-                                NodeFetchStatus fetch_status) {
-  auto node_model = std::make_shared<NiceMock<MockNodeModel>>();
-  auto type_model = std::make_shared<NiceMock<MockNodeModel>>();
+// Registers a DataItemType-typed variable and returns a cursor to it. The
+// type itself has no supertype, so a HasSubtype walk stops there.
+NodeRef MakeObjectTreeNode(FakeNodeService& node_service,
+                           const scada::NodeId& node_id,
+                           NodeFetchStatus fetch_status) {
+  node_service.Add(
+      scada::NodeState{}.set_node_id(scada::data_items::id::DataItemType));
 
-  const NodeRef type_node =
-      node_service.Add(scada::data_items::id::DataItemType, type_model);
-
-  ON_CALL(*node_model, GetFetchStatus()).WillByDefault(Return(fetch_status));
-  ON_CALL(*node_model, Fetch(_))
-      .WillByDefault(
-          [](const NodeFetchStatus&) -> Awaitable<void> { co_return; });
-  ON_CALL(*node_model, GetAttribute(scada::AttributeId::NodeId))
-      .WillByDefault(Return(node_id));
-  ON_CALL(*node_model, GetAttribute(scada::AttributeId::NodeClass))
-      .WillByDefault(
-          Return(static_cast<scada::Int32>(scada::NodeClass::Variable)));
-  ON_CALL(*node_model,
-          GetTarget(scada::NodeId{scada::id::HasTypeDefinition}, true))
-      .WillByDefault(Return(type_node));
-
-  ON_CALL(*type_model, GetAttribute(scada::AttributeId::NodeId))
-      .WillByDefault(Return(scada::data_items::id::DataItemType));
-  ON_CALL(*type_model, Fetch(_))
-      .WillByDefault(
-          [](const NodeFetchStatus&) -> Awaitable<void> { co_return; });
-  ON_CALL(*type_model, GetTarget(scada::NodeId{scada::id::HasSubtype}, false))
-      .WillByDefault(Return(NodeRef{}));
-
-  return node_service.Add(node_id, std::move(node_model));
+  const NodeRef node = node_service.Add(
+      scada::NodeState{}
+          .set_node_id(node_id)
+          .set_node_class(scada::NodeClass::Variable)
+          .set_type_definition_id(scada::data_items::id::DataItemType));
+  node_service.SetFetchStatus(node_id, fetch_status);
+  return node;
 }
 
 // Records node-changed notifications so tests assert on observable events.
@@ -175,10 +158,10 @@ TEST_F(ObjectTreeModelTest, DataItemsUseItemIconEvenWhenNodeClassIsObject) {
 class ObjectTreeModelAsyncVisibleNodeTest : public ::testing::Test {
  protected:
   void InitModel(bool remove_child_on_second_get_children = false) {
-    root_node_ = MakeObjectTreeNodeModel(model_service_, scada::id::RootFolder,
-                                         NodeFetchStatus::NodeAndChildren);
-    child_node_ = MakeObjectTreeNodeModel(model_service_, kDataItemId,
-                                          NodeFetchStatus::None);
+    root_node_ = MakeObjectTreeNode(model_service_, scada::id::RootFolder,
+                                    NodeFetchStatus::NodeAndChildren);
+    child_node_ = MakeObjectTreeNode(model_service_, kDataItemId,
+                                     NodeFetchStatus::None);
 
     auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
     node_service_tree_ = node_service_tree.get();
@@ -224,11 +207,11 @@ class ObjectTreeModelAsyncVisibleNodeTest : public ::testing::Test {
     ASSERT_NE(child_tree_node_, nullptr);
   }
 
+  // Holds the child's fetch open so tests can act while the row is pending.
   void ExpectDelayedFetch() {
-    auto child_model = std::static_pointer_cast<const MockNodeModel>(
-        model_service_.GetModel(child_node_.node_id()));
-    EXPECT_CALL(*child_model, Fetch(NodeFetchStatus::NodeOnly))
-        .WillOnce([this](const NodeFetchStatus&) -> Awaitable<void> {
+    model_service_.SetFetchHandler(
+        child_node_.node_id(),
+        [this](const NodeFetchStatus&) -> Awaitable<void> {
           delayed_fetch_completion_.emplace(executor_);
           co_await delayed_fetch_completion_->Wait();
         });
@@ -236,11 +219,11 @@ class ObjectTreeModelAsyncVisibleNodeTest : public ::testing::Test {
 
   void PollExecutor() { executor_.Poll(); }
 
+  // Publish the loaded status before resuming, so the waiter observes a
+  // fetched node the moment it wakes.
   void CompleteFetch() {
-    auto child_model = std::static_pointer_cast<const MockNodeModel>(
-        model_service_.GetModel(child_node_.node_id()));
-    ON_CALL(*child_model, GetFetchStatus())
-        .WillByDefault(Return(NodeFetchStatus::NodeOnly));
+    model_service_.SetFetchStatus(child_node_.node_id(),
+                                  NodeFetchStatus::NodeOnly);
     delayed_fetch_completion_->Complete();
     PollExecutor();
   }
@@ -249,8 +232,8 @@ class ObjectTreeModelAsyncVisibleNodeTest : public ::testing::Test {
 
   TestExecutor executor_;
   NiceMock<MockNodeService> node_service_;
-  // Backs the cursors produced by MakeObjectTreeNodeModel; must outlive them.
-  ModelNodeService model_service_;
+  // Backs the cursors produced by MakeObjectTreeNode; must outlive them.
+  FakeNodeService model_service_;
   NiceMock<MockTimedDataService> timed_data_service_;
   Profile profile_;
   BlinkerManagerImpl blinker_manager_{executor_};

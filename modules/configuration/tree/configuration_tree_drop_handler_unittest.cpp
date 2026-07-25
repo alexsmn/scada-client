@@ -7,9 +7,9 @@
 #include "configuration/tree/node_service_tree_mock.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
-#include "node_service/node_model_mock.h"
+#include "common/node_state.h"
 #include "node_service/node_service_mock.h"
-#include "node_service/test/model_node_service.h"
+#include "node_service/test/fake_node_service.h"
 #include "scada/co_result.h"
 #include "services/create_tree.h"
 #include "services/task_manager_mock.h"
@@ -31,91 +31,47 @@ struct TestNodeOptions {
 
 // Builds a node (plus its type/parent/data-type neighbours) inside |service|
 // and returns a cursor to it. Each caller passes a dedicated service so the
-// per-node model graphs never share the same node-id map.
-NodeRef MakeTestNodeInService(ModelNodeService& service,
+// per-node graphs never share the same node-id map.
+NodeRef MakeTestNodeInService(FakeNodeService& service,
                               const scada::NodeId& node_id,
                               TestNodeOptions options) {
-  auto node_model = std::make_shared<NiceMock<MockNodeModel>>();
-  auto type_model = std::make_shared<NiceMock<MockNodeModel>>();
-  auto parent_model = std::make_shared<NiceMock<MockNodeModel>>();
-  auto data_type_model = std::make_shared<NiceMock<MockNodeModel>>();
+  if (!options.type_definition_id.is_null())
+    service.Add(scada::NodeState{}.set_node_id(options.type_definition_id));
+  if (!options.parent_id.is_null())
+    service.Add(scada::NodeState{}.set_node_id(options.parent_id));
+  if (!options.data_type_id.is_null())
+    service.Add(scada::NodeState{}.set_node_id(options.data_type_id));
 
-  const NodeRef type_node = service.Add(options.type_definition_id, type_model);
-  const NodeRef parent_node = service.Add(options.parent_id, parent_model);
-  const NodeRef data_type_node =
-      service.Add(options.data_type_id, data_type_model);
-
-  ON_CALL(*node_model, GetFetchStatus())
-      .WillByDefault(Return(NodeFetchStatus::NodeAndChildren));
-  ON_CALL(*node_model, GetAttribute(scada::AttributeId::NodeId))
-      .WillByDefault(Return(node_id));
-  ON_CALL(*node_model, GetAttribute(scada::AttributeId::NodeClass))
-      .WillByDefault(
-          Return(static_cast<scada::Int32>(scada::NodeClass::Object)));
-  ON_CALL(*node_model, GetAttribute(scada::AttributeId::BrowseName))
-      .WillByDefault(Return(options.browse_name));
-  ON_CALL(*node_model, GetAttribute(scada::AttributeId::DisplayName))
-      .WillByDefault(Return(options.display_name));
-  ON_CALL(*node_model, GetTarget(_, _))
-      .WillByDefault(
-          [type_node, parent_node, parent_id = options.parent_id](
-              const scada::NodeId& reference_type_id, bool forward) -> NodeRef {
-            if (forward && reference_type_id == scada::id::HasTypeDefinition) {
-              return type_node;
-            }
-            if (!forward &&
-                reference_type_id == scada::id::HierarchicalReferences &&
-                !parent_id.is_null()) {
-              return parent_node;
-            }
-            return nullptr;
-          });
-  ON_CALL(*node_model, GetDataType())
-      .WillByDefault([data_type_node, data_type_id = options.data_type_id] {
-        return data_type_id.is_null() ? NodeRef{} : data_type_node;
-      });
-
-  ON_CALL(*type_model, GetFetchStatus())
-      .WillByDefault(Return(NodeFetchStatus::NodeAndChildren));
-  ON_CALL(*type_model, GetAttribute(scada::AttributeId::NodeId))
-      .WillByDefault(Return(options.type_definition_id));
-  ON_CALL(*type_model, GetTarget(_, _)).WillByDefault(Return(NodeRef{}));
   // Each createable type is exposed as an OptionalPlaceholder
   // InstanceDeclaration child of the type — the standard-modelling replacement
   // for the Creates edge that CreateTree::CanCreate now reads via
-  // GetCreatableChildTypes.
-  const NodeRef optional_placeholder =
-      service.Add(scada::NodeId{scada::id::ModellingRule_OptionalPlaceholder},
-                  std::make_shared<NiceMock<MockNodeModel>>());
-  std::vector<NodeRef> placeholders;
+  // GetCreatableChildTypes. Authored as HasComponent children so the type's
+  // HierarchicalReferences query finds them.
   for (size_t i = 0; i < options.creates.size(); ++i) {
-    const NodeRef& creatable_type = options.creates[i];
-    auto placeholder_model = std::make_shared<NiceMock<MockNodeModel>>();
-    ON_CALL(*placeholder_model,
-            GetTarget(scada::NodeId{scada::id::HasModellingRule}, true))
-        .WillByDefault(Return(optional_placeholder));
-    ON_CALL(*placeholder_model,
-            GetTarget(scada::NodeId{scada::id::HasTypeDefinition}, true))
-        .WillByDefault(Return(creatable_type));
-    placeholders.push_back(
-        service.Add(scada::NodeId{static_cast<scada::NumericId>(90000 + i)},
-                    std::move(placeholder_model)));
+    service.Add(
+        scada::NodeState{}
+            .set_node_id(scada::NodeId{static_cast<scada::NumericId>(90000 + i)})
+            .set_type_definition_id(options.creates[i].node_id())
+            .set_parent(scada::id::HasComponent, options.type_definition_id)
+            .add_reference(scada::ReferenceDescription{
+                scada::id::HasModellingRule, true,
+                scada::NodeId{scada::id::ModellingRule_OptionalPlaceholder}}));
   }
-  ON_CALL(*type_model,
-          GetTargets(scada::NodeId{scada::id::HierarchicalReferences}, true))
-      .WillByDefault(Return(placeholders));
 
-  ON_CALL(*parent_model, GetFetchStatus())
-      .WillByDefault(Return(NodeFetchStatus::NodeAndChildren));
-  ON_CALL(*parent_model, GetAttribute(scada::AttributeId::NodeId))
-      .WillByDefault(Return(options.parent_id));
+  scada::NodeAttributes attributes;
+  attributes.browse_name = options.browse_name;
+  attributes.display_name = options.display_name;
+  attributes.data_type = options.data_type_id;
 
-  ON_CALL(*data_type_model, GetFetchStatus())
-      .WillByDefault(Return(NodeFetchStatus::NodeAndChildren));
-  ON_CALL(*data_type_model, GetAttribute(scada::AttributeId::NodeId))
-      .WillByDefault(Return(options.data_type_id));
+  scada::NodeState state = scada::NodeState{}
+                               .set_node_id(node_id)
+                               .set_node_class(scada::NodeClass::Object)
+                               .set_type_definition_id(options.type_definition_id)
+                               .set_attributes(attributes);
+  if (!options.parent_id.is_null())
+    state.set_parent(scada::id::Organizes, options.parent_id);
 
-  return service.Add(node_id, std::move(node_model));
+  return service.Add(std::move(state));
 }
 
 class ConfigurationTreeDropHandlerTest : public Test {
@@ -124,7 +80,7 @@ class ConfigurationTreeDropHandlerTest : public Test {
   // stay isolated, and returns a cursor to the built node.
   NodeRef MakeTestNode(const scada::NodeId& node_id, TestNodeOptions options) {
     return MakeTestNodeInService(
-        *node_services_.emplace_back(std::make_unique<ModelNodeService>()),
+        *node_services_.emplace_back(std::make_unique<FakeNodeService>()),
         node_id, std::move(options));
   }
 
@@ -160,7 +116,7 @@ class ConfigurationTreeDropHandlerTest : public Test {
   std::unique_ptr<ConfigurationTreeModel> model_;
   // Backing services for the cursors handed out by MakeTestNode; kept alive
   // for the whole test since NodeRef stores a non-owning service pointer.
-  std::vector<std::unique_ptr<ModelNodeService>> node_services_;
+  std::vector<std::unique_ptr<FakeNodeService>> node_services_;
 };
 
 TEST_F(ConfigurationTreeDropHandlerTest,

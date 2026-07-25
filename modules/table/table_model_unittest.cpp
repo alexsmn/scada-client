@@ -10,8 +10,8 @@
 #include "model/data_items_node_ids.h"
 #include "modules/table/sparkline.h"
 #include "modules/table/table_row.h"
-#include "node_service/node_model_mock.h"
-#include "node_service/test/model_node_service.h"
+#include "common/node_state.h"
+#include "node_service/test/fake_node_service.h"
 #include "profile/profile.h"
 #include "timed_data/timed_data_mock.h"
 #include "timed_data/timed_data_observer.h"
@@ -37,7 +37,7 @@ class TableModelTest : public Test {
   // |RowContext| may outlive local reference.
   std::shared_ptr<RowContext> SetFormula();
 
-  ModelNodeService node_service_;
+  FakeNodeService node_service_;
   StrictMock<MockTimedDataService> timed_data_service_;
   StrictMock<MockNodeEventProvider> node_event_provider_;
   const Profile profile_;
@@ -75,28 +75,16 @@ scada::aui::Color GetTextColor(const TableModel& table_model,
   return cell.text_color;
 }
 
-NodeRef MakeDiscreteItemNode(ModelNodeService& node_service) {
-  auto node_model = std::make_shared<NiceMock<MockNodeModel>>();
-  auto type_model = std::make_shared<NiceMock<MockNodeModel>>();
+NodeRef MakeDiscreteItemNode(FakeNodeService& node_service) {
+  // The type has no supertype and the item no TsFormat reference, so both
+  // resolve to a null NodeRef.
+  node_service.Add(scada::NodeState{}.set_node_id(
+      scada::data_items::id::DiscreteItemType));
 
-  const NodeRef type_node =
-      node_service.Add(scada::data_items::id::DiscreteItemType, type_model);
-
-  ON_CALL(*node_model, GetAttribute(scada::AttributeId::NodeId))
-      .WillByDefault(Return(scada::NodeId{1, 1}));
-  ON_CALL(*node_model,
-          GetTarget(scada::NodeId{scada::id::HasTypeDefinition}, true))
-      .WillByDefault(Return(type_node));
-  ON_CALL(*node_model,
-          GetTarget(scada::NodeId{scada::data_items::id::HasTsFormat}, true))
-      .WillByDefault(Return(NodeRef{}));
-
-  ON_CALL(*type_model, GetAttribute(scada::AttributeId::NodeId))
-      .WillByDefault(Return(scada::data_items::id::DiscreteItemType));
-  ON_CALL(*type_model, GetTarget(scada::NodeId{scada::id::HasSubtype}, false))
-      .WillByDefault(Return(NodeRef{}));
-
-  return node_service.Add(scada::NodeId{1, 1}, node_model);
+  return node_service.Add(
+      scada::NodeState{}
+          .set_node_id(scada::NodeId{1, 1})
+          .set_type_definition_id(scada::data_items::id::DiscreteItemType));
 }
 
 }  // namespace
@@ -152,10 +140,8 @@ std::shared_ptr<TableModelTest::RowContext> TableModelTest::SetFormula() {
 
   const scada::NodeId node_id{1, 1};
 
-  auto item_model = std::make_shared<NiceMock<MockNodeModel>>();
-  ON_CALL(*item_model, GetAttribute(scada::AttributeId::NodeId))
-      .WillByDefault(Return(node_id));
-  const NodeRef item_node = node_service_.Add(node_id, item_model);
+  const NodeRef item_node =
+      node_service_.Add(scada::NodeState{}.set_node_id(node_id));
 
   ON_CALL(row_context->timed_data, GetNode()).WillByDefault(Return(item_node));
 

@@ -4,8 +4,8 @@
 #include "events/local_events.h"
 #include "model/security_node_ids.h"
 #include "modules/change_password/change_password_dialog.h"
-#include "node_service/node_model_mock.h"
-#include "node_service/test/model_node_service.h"
+#include "common/node_state.h"
+#include "node_service/test/fake_node_service.h"
 #include "profile/profile.h"
 #include "scada/client.h"
 #include "scada/method_service_mock.h"
@@ -19,31 +19,25 @@ namespace {
 
 constexpr scada::NumericId kUserNodeId = 5001;
 
-NodeRef MakeUserNode(ModelNodeService& node_service, scada::node scada_node) {
-  auto node_model = std::make_shared<NiceMock<MockNodeModel>>();
-  ON_CALL(*node_model, GetAttribute(scada::AttributeId::NodeId))
-      .WillByDefault(Return(scada::NodeId{kUserNodeId, 1}));
-  ON_CALL(*node_model, GetAttribute(scada::AttributeId::DisplayName))
-      .WillByDefault(Return(scada::LocalizedText{u"Operator"}));
-  ON_CALL(*node_model, GetScadaNode()).WillByDefault(Return(scada_node));
-  return node_service.Add(scada::NodeId{kUserNodeId, 1}, std::move(node_model));
-}
-
 }  // namespace
 
 class ChangePasswordTest : public Test {
  protected:
   ChangePasswordTest()
-      : scada_client_{scada::services{.method_service = &method_service_}},
-        user_node_{MakeUserNode(node_service_,
-                                scada_client_.node({kUserNodeId, 1}))} {}
+      : user_node_{node_service_.Add(
+            scada::NodeState{}
+                .set_node_id(scada::NodeId{kUserNodeId, 1})
+                .set_display_name(scada::LocalizedText{u"Operator"}))} {}
 
   void PollExecutor() { executor_.Poll(); }
 
   TestExecutor executor_;
   StrictMock<scada::MockMethodService> method_service_;
-  scada::client scada_client_;
-  ModelNodeService node_service_;
+  // The fake backs GetScadaNode() with these services, so method calls made
+  // through the node cursor land on |method_service_|. Declared after it so it
+  // outlives nothing it depends on.
+  FakeNodeService node_service_{
+      scada::services{.method_service = &method_service_}};
   NodeRef user_node_;
   LocalEvents local_events_;
   Profile profile_;
