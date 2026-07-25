@@ -88,7 +88,7 @@ class NodePropertyModelTest : public Test {
         .type_definition_id = scada::data_items::id::DataGroupType,
         .parent_id = scada::data_items::id::DataItems,
         .reference_type_id = scada::id::Organizes,
-        .attributes = scada::NodeAttributes{}.set_display_name(u"Group")});
+        .attributes = scada::NodeAttributes{.display_name = u"Group"}});
     scada::base::Check(status);
     scada::base::Check(node);
 

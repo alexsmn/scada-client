@@ -35,8 +35,9 @@ TEST(MakeWindowDefinition, OpenContext_Node) {
   node_service.Add(
       scada::NodeState{.node_id = kNodeId,
                        .node_class = scada::NodeClass::Variable,
-                       .type_definition_id = scada::id::BaseVariableType}
-          .set_display_name(u"Имя в русской локали"));
+                       .type_definition_id = scada::id::BaseVariableType,
+                       .attributes = scada::NodeAttributes{
+                           .display_name = u"Имя в русской локали"}});
 
   OpenContext open_context{node_service.GetNode(kNodeId)};
 

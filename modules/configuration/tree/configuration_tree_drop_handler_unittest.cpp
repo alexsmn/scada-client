@@ -68,8 +68,10 @@ NodeRef MakeTestNodeInService(FakeNodeService& service,
                        .node_class = scada::NodeClass::Object,
                        .type_definition_id = options.type_definition_id,
                        .attributes = attributes};
-  if (!options.parent_id.is_null())
-    state.set_parent(scada::id::Organizes, options.parent_id);
+  if (!options.parent_id.is_null()) {
+    state.parent_id = options.parent_id;
+    state.reference_type_id = scada::id::Organizes;
+  }
 
   return service.Add(std::move(state));
 }

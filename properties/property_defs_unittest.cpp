@@ -168,7 +168,7 @@ PropertyDefsTest::PropertyDefsTest() {
       .type_definition_id = scada::devices::id::Iec60870LinkType,
       .parent_id = scada::devices::id::Devices,
       .reference_type_id = scada::id::Organizes,
-      .attributes = scada::NodeAttributes{}.set_display_name(kLinkDisplayName),
+      .attributes = scada::NodeAttributes{.display_name = kLinkDisplayName},
       .properties = scada::NodeProperties{
           {scada::devices::id::Iec60870LinkType_Mode, scada::Variant{0}}}});
 
@@ -179,8 +179,7 @@ PropertyDefsTest::PropertyDefsTest() {
       .type_definition_id = scada::devices::id::Iec60870DeviceType,
       .parent_id = link_id,
       .reference_type_id = scada::id::Organizes,
-      .attributes =
-          scada::NodeAttributes{}.set_display_name(kDeviceDisplayName)});
+      .attributes = scada::NodeAttributes{.display_name = kDeviceDisplayName}});
 
   // Create Data Group.
   {
