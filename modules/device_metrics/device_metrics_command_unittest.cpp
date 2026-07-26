@@ -91,7 +91,7 @@ scada::Node* DeviceMetricsCommandTest::CreateDevice(
   scada::base::Check(node);
   scada::base::Check(node->type_definition());
 
-  CreateDataVariables(node_factory, node->id(), *node->type_definition());
+  CreateMissingChildren(node_factory, node->id(), *node->type_definition());
 
   return node;
 }
