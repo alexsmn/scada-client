@@ -83,36 +83,34 @@ class WriteModelTest : public Test {
         scada::NodeState{.node_id = kDataItemTypeId,
                          .node_class = scada::NodeClass::VariableType,
                          .attributes = {.display_name = u"Output type"}});
-    node_service_.Add(
-        scada::NodeState{.node_id = kDataItemId,
-                         .node_class = scada::NodeClass::Variable,
-                         .type_definition_id = kDataItemTypeId,
-                         .attributes = {.display_name = u"Output"}}
-            .set_property(scada::data_items::id::DataItemType_OutputTwoStaged,
-                          false)
-            .set_property(scada::data_items::id::DataItemType_Locked, false));
 
     ON_CALL(timed_data_service_, GetFormulaTimedData(_, _))
         .WillByDefault(Return(timed_data_));
-    ON_CALL(*timed_data_, GetNode())
-        .WillByDefault(Return(node_service_.GetNode(kDataItemId)));
+    // Resolved lazily: the item is seeded by CreateModel(), after this
+    // constructor runs, and a NodeRef taken before it exists is null — which
+    // silently made every model read the OutputTwoStaged default.
+    ON_CALL(*timed_data_, GetNode()).WillByDefault(Invoke([this] {
+      return node_service_.GetNode(kDataItemId);
+    }));
     ON_CALL(*timed_data_, GetTitle()).WillByDefault(Return(u"Output"));
   }
 
-  // Re-seeds the item as two-staged. Call before CreateModel(): the model
-  // reads OutputTwoStaged once, at construction.
-  void MakeItemTwoStaged() {
+  // Seeds the data item and builds the model against it.
+  //
+  // The item is seeded here rather than in the constructor because
+  // StaticNodeService::Add is try_emplace-based: adding a node id that already
+  // exists is a SILENT no-op, so OutputTwoStaged cannot be changed after the
+  // fact. The model reads it once, at construction.
+  std::shared_ptr<WriteModel> CreateModel(bool two_staged = false) {
     node_service_.Add(
         scada::NodeState{.node_id = kDataItemId,
                          .node_class = scada::NodeClass::Variable,
                          .type_definition_id = kDataItemTypeId,
                          .attributes = {.display_name = u"Output"}}
             .set_property(scada::data_items::id::DataItemType_OutputTwoStaged,
-                          true)
+                          two_staged)
             .set_property(scada::data_items::id::DataItemType_Locked, false));
-  }
 
-  std::shared_ptr<WriteModel> CreateModel() {
     auto model = std::make_shared<WriteModel>(
         WriteContext{executor_, timed_data_service_, kDataItemId, profile_,
                      /*manual_=*/false});
@@ -173,13 +171,17 @@ TEST_F(WriteModelTest, SuccessfulWriteCompletesAfterAttributeCallback) {
   EXPECT_TRUE(dialog_service_.modes.empty());
 }
 
-// TODO: cover the two-staged path (Select -> confirm -> Operate, and
-// decline -> Cancel). It needs the item seeded with OutputTwoStaged=true
-// BEFORE CreateModel(), and re-seeding the node through this fixture's
-// StaticNodeService after construction does not take effect — the model still
-// reads two_staged_=false. The fixture wants a seed-time parameter rather than
-// a post-hoc override. The server side of these phases is covered by
-// DataItemImpl.Control* and by the iec104 tier E2E.
+// TODO: cover the two-staged path (Select -> confirm -> Operate, and decline
+// -> Cancel). CreateModel(two_staged=true) now seeds it correctly, but a test
+// that drives it HANGS: after the Select's CoSpawn, Drain(executor_) never
+// returns. Suspect the gMock action returning a lazy CoStatusOr<CallResult>
+// awaitable is not being driven by this fixture's TestExecutor — compare
+// AsioTestEnvironment-based suites, where only the asio io_context is polled.
+// Needs a look at how the Call awaitable is scheduled here before the tests
+// are worth having.
+//
+// The server side of these phases IS covered: DataItemImpl.Control* and the
+// iec104 tier E2E (SelectBeforeOperateReachesTheWireInTwoPhases).
 
 TEST_F(WriteModelTest, ControlCommandConfirmationReviewsPresentAndCommand) {
   // control_confirmation defaults to true, so a control write must prompt for
