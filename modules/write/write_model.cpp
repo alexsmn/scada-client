@@ -167,14 +167,15 @@ void WriteModel::OnWriteComplete(const scada::Status& status) {
   completion_handler(true);
 }
 
-std::u16string WriteModel::GetConfirmationMessage(bool second_stage) const {
+std::u16string WriteModel::GetConfirmationMessage(double value,
+                                                  bool second_stage) const {
   // Present the operator what the point reads now and what the command will
   // make it, so an irreversible field action is reviewed — not just answered
   // yes/no — before it is sent (principle §7 in client/docs/ux/principles.md).
   const std::u16string present_str =
       spec_.GetCurrentString(ValueFormat{FORMAT_UNITS});
   const std::u16string command_str =
-      spec_.GetValueString(write_value_, {}, ValueFormat{FORMAT_UNITS});
+      spec_.GetValueString(value, {}, ValueFormat{FORMAT_UNITS});
 
   std::u16string message;
   if (second_stage)
@@ -204,14 +205,15 @@ void WriteModel::StartWriting(bool second_stage) {
   // Request confirmation from the user. The message/title are handed to the
   // coroutine by value so they outlive the RunMessageBox prompt (see the
   // ConfirmAndStartWritingAsync declaration).
-  CoSpawn(executor_,
-          [executor = executor_, model = weak_from_this(),
-           dialog_service = dialog_service_, title = spec_.GetTitle().text,
-           message = GetConfirmationMessage(second_stage)]() mutable {
-            return ConfirmAndStartWritingAsync(
-                std::move(executor), std::move(model), *dialog_service,
-                std::move(message), std::move(title));
-          });
+  CoSpawn(
+      executor_,
+      [executor = executor_, model = weak_from_this(),
+       dialog_service = dialog_service_, title = spec_.GetTitle().text,
+       message = GetConfirmationMessage(write_value_, second_stage)]() mutable {
+        return ConfirmAndStartWritingAsync(
+            std::move(executor), std::move(model), *dialog_service,
+            std::move(message), std::move(title));
+      });
 }
 
 void WriteModel::StartWritingHelper() {

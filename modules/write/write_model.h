@@ -37,6 +37,15 @@ class WriteModel : private WriteContext,
 
   void Write(double value, bool lock);
 
+  // The review an operator answers before `value` is sent: the point's present
+  // reading, the commanded value, and an irreversibility warning.
+  // `second_stage` prefixes the operate half of a select-before-operate
+  // command, where the outstation is already selected and waiting.
+  //
+  // Public so the documentation screenshot generator captures the real prompt
+  // rather than a copy that can drift from it.
+  std::u16string GetConfirmationMessage(double value, bool second_stage) const;
+
   std::function<void()> current_change_handler;
   std::function<void()> condition_change_handler;
   std::function<void()> status_change_handler;
@@ -75,8 +84,6 @@ class WriteModel : private WriteContext,
       DialogService& dialog_service,
       std::u16string message,
       std::u16string title);
-
-  std::u16string GetConfirmationMessage(bool second_stage) const;
 
   DialogService* dialog_service_ = nullptr;
 
