@@ -194,10 +194,13 @@ scada::CoStatus ClientApplication::SaveProfileToServer(
     user_id = std::move(target_user_id);
   }
   auto profile_json = boost::json::serialize(profile_->SaveToValue());
-  auto status = co_await services.method_service->Call(
-      user_id, scada::security::id::UserType_SaveProfile,
-      {scada::String{std::move(profile_json)}, profile_revision_},
-      scada::ServiceContext{});
+  // SaveProfile returns no output arguments; only its status matters here.
+  auto status = (co_await services.method_service->Call(
+                     user_id, scada::security::id::UserType_SaveProfile,
+                     {scada::String{std::move(profile_json)},
+                      profile_revision_},
+                     scada::ServiceContext{}))
+                    .status();
   if (scada::IsGood(status.code())) {
     ++profile_revision_;
   }

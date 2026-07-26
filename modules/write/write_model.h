@@ -48,6 +48,13 @@ class WriteModel : private WriteContext,
   void StartWriting(bool second_stage);
   void StartWritingHelper();
 
+  // The item's Control object (`<item>!Control`), which carries the
+  // Select/Operate/Cancel methods.
+  scada::node ControlNode() const;
+
+  // Releases a selection the operator decided not to act on.
+  void CancelOutstandingSelect();
+
   static Awaitable<void> CompleteWriteAsync(AnyExecutor executor,
                                             std::weak_ptr<WriteModel> model,
                                             scada::CoStatus operation);
@@ -78,6 +85,10 @@ class WriteModel : private WriteContext,
   bool locked_ = false;
   bool writing_ = false;
   bool write_selecting_ = false;
+  // A select has completed and has been neither operated nor cancelled.
+  // Distinct from write_selecting_, which StartWritingHelper clears before the
+  // confirmation prompt is even shown.
+  bool select_outstanding_ = false;
   double write_value_ = 0;
 
   bool has_condition_ = false;

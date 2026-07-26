@@ -6,9 +6,13 @@
 #include "common/format.h"
 #include "common/formula_util.h"
 #include "model/data_items_node_ids.h"
+#include "model/nested_node_ids.h"
+#include "model/node_id_util.h"
 #include "net/net_executor_adapter.h"
 #include "profile/profile.h"
 #include "scada/co_result.h"
+
+#include <tuple>
 
 namespace {
 // Prepended to the control-command review for the operate stage of a
@@ -105,12 +109,11 @@ void WriteModel::Write(double value, bool lock) {
 
   } else if (two_staged_) {
     write_selecting_ = true;
-    scada::WriteFlags flags;
-    flags.set_select();
     CoSpawn(executor_,
             [executor = executor_, model = weak_from_this(),
-             operation = spec_.scada_node().write(
-                 scada::AttributeId::Value, write_value_, flags)]() mutable {
+             operation = ControlNode().call(
+                 scada::data_items::id::DataItemControlType_Select,
+                 write_value_)]() mutable {
               return CompleteWriteAsync(std::move(executor), std::move(model),
                                         std::move(operation));
             });
@@ -152,6 +155,10 @@ void WriteModel::OnWriteComplete(const scada::Status& status) {
   }
 
   if (write_selecting_) {
+    // The select succeeded. From here until the operate is issued or the
+    // operator declines, the outstation holds a selection we are responsible
+    // for releasing.
+    select_outstanding_ = true;
     StartWriting(true);
     return;
   }
@@ -211,13 +218,51 @@ void WriteModel::StartWritingHelper() {
   write_selecting_ = false;
   status_change_handler();
 
-  // Execute actual write.
+  // The operate phase of a two-staged control is a Call on the Control object,
+  // so the server can tell it apart from the select. A one-stage control is an
+  // ordinary value write and stays one.
+  if (two_staged_) {
+    select_outstanding_ = false;
+    CoSpawn(executor_,
+            [executor = executor_, model = weak_from_this(),
+             operation = ControlNode().call(
+                 scada::data_items::id::DataItemControlType_Operate,
+                 write_value_)]() mutable {
+              return CompleteWriteAsync(std::move(executor), std::move(model),
+                                        std::move(operation));
+            });
+    return;
+  }
+
   CoSpawn(executor_, [executor = executor_, model = weak_from_this(),
                       operation = spec_.scada_node().write(
                           scada::AttributeId::Value, write_value_)]() mutable {
     return CompleteWriteAsync(std::move(executor), std::move(model),
                               std::move(operation));
   });
+}
+
+scada::node WriteModel::ControlNode() const {
+  return spec_.node().scada_node(
+      MakeNestedNodeId(spec_.node().node_id(), scada::kControlObjectName));
+}
+
+void WriteModel::CancelOutstandingSelect() {
+  if (!select_outstanding_) {
+    return;
+  }
+  select_outstanding_ = false;
+  // Fire and forget: the operator has already moved on, and a server that
+  // cannot cancel (Bad_NotSupported — no IEC 60870 driver implements one yet)
+  // must not raise an error dialog over it. Leaving it uncancelled would hold
+  // the outstation's selection until its own sboTimeout.
+  CoSpawn(executor_,
+          [operation = ControlNode().call(
+               scada::data_items::id::DataItemControlType_Cancel)]() mutable
+          -> Awaitable<void> {
+            std::ignore = co_await std::move(operation);
+            co_return;
+          });
 }
 
 Awaitable<void> WriteModel::CompleteWriteAsync(AnyExecutor executor,
@@ -243,6 +288,7 @@ Awaitable<void> WriteModel::ConfirmAndStartWritingAsync(
       if (message_box_result == MessageBoxResult::Yes) {
         model_ptr->StartWritingHelper();
       } else {
+        model_ptr->CancelOutstandingSelect();
         model_ptr->writing_ = false;
         model_ptr->completion_handler(false);
       }

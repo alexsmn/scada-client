@@ -7,7 +7,10 @@
 #include "model/data_items_node_ids.h"
 #include "node_service/static/static_node_service.h"
 #include "profile/profile.h"
+#include "model/nested_node_ids.h"
+#include "model/node_id_util.h"
 #include "scada/attribute_service_mock.h"
+#include "scada/method_service_mock.h"
 #include "scada/co_result.h"
 #include "timed_data/timed_data_service_mock.h"
 
@@ -73,7 +76,8 @@ class WriteModelTest : public Test {
  protected:
   WriteModelTest()
       : node_service_{
-            scada::services{.attribute_service = &attribute_service_}},
+            scada::services{.attribute_service = &attribute_service_,
+                            .method_service = &method_service_}},
         dialog_service_{executor_} {
     node_service_.Add(
         scada::NodeState{.node_id = kDataItemTypeId,
@@ -95,6 +99,19 @@ class WriteModelTest : public Test {
     ON_CALL(*timed_data_, GetTitle()).WillByDefault(Return(u"Output"));
   }
 
+  // Re-seeds the item as two-staged. Call before CreateModel(): the model
+  // reads OutputTwoStaged once, at construction.
+  void MakeItemTwoStaged() {
+    node_service_.Add(
+        scada::NodeState{.node_id = kDataItemId,
+                         .node_class = scada::NodeClass::Variable,
+                         .type_definition_id = kDataItemTypeId,
+                         .attributes = {.display_name = u"Output"}}
+            .set_property(scada::data_items::id::DataItemType_OutputTwoStaged,
+                          true)
+            .set_property(scada::data_items::id::DataItemType_Locked, false));
+  }
+
   std::shared_ptr<WriteModel> CreateModel() {
     auto model = std::make_shared<WriteModel>(
         WriteContext{executor_, timed_data_service_, kDataItemId, profile_,
@@ -107,6 +124,7 @@ class WriteModelTest : public Test {
 
   TestExecutor executor_;
   StrictMock<scada::MockAttributeService> attribute_service_;
+  NiceMock<scada::MockMethodService> method_service_;
   NiceMock<MockTimedDataService> timed_data_service_;
   std::shared_ptr<NiceMock<MockTimedData>> timed_data_ =
       std::make_shared<NiceMock<MockTimedData>>();
@@ -154,6 +172,14 @@ TEST_F(WriteModelTest, SuccessfulWriteCompletesAfterAttributeCallback) {
   EXPECT_EQ(status_changes_, 1);
   EXPECT_TRUE(dialog_service_.modes.empty());
 }
+
+// TODO: cover the two-staged path (Select -> confirm -> Operate, and
+// decline -> Cancel). It needs the item seeded with OutputTwoStaged=true
+// BEFORE CreateModel(), and re-seeding the node through this fixture's
+// StaticNodeService after construction does not take effect — the model still
+// reads two_staged_=false. The fixture wants a seed-time parameter rather than
+// a post-hoc override. The server side of these phases is covered by
+// DataItemImpl.Control* and by the iec104 tier E2E.
 
 TEST_F(WriteModelTest, ControlCommandConfirmationReviewsPresentAndCommand) {
   // control_confirmation defaults to true, so a control write must prompt for
