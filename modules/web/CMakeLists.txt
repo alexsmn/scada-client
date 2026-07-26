@@ -1,1 +1,0 @@
-client_component_module(client_component_web CONFIG qt)

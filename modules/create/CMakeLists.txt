@@ -1,7 +1,0 @@
-client_component_module(client_component_create)
-
-client_module_link_libraries(client_component_create PRIVATE
-  client_component_create_service_item
-  client_component_multi_create
-)
-
