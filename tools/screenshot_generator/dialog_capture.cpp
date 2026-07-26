@@ -2,8 +2,8 @@
 
 #include "screenshot_config.h"
 #include "screenshot_output.h"
-#include "widget_capture.h"
 #include "screenshot_wait.h"
+#include "widget_capture.h"
 
 #include "aui/qt/dialog_service_impl_qt.h"
 #include "aui/translation.h"
@@ -24,6 +24,7 @@
 #include "modules/multi_create/multi_create_dialog.h"
 #include "modules/time_range/time_range_dialog.h"
 #include "modules/write/write_dialog.h"
+#include "modules/write/write_model.h"
 #include "node_service/node_ref.h"
 #include "node_service/node_service.h"
 #include "profile/profile.h"
@@ -371,6 +372,49 @@ std::shared_ptr<DialogAwaitableResult<void>> BuildWriteDialog(
   return dialog_lifetime;
 }
 
+// The operate-stage confirmation of a select-before-operate command. The
+// prompt itself comes from a real WriteModel over the same fixture item the
+// write dialogs use, so the capture cannot drift from the shipped wording; it
+// is then shown through the ordinary DialogService question box, which is what
+// StartWriting() does.
+//
+// The select is not actually issued here — a Control-object Call needs a
+// server, and this capture is of the operator's review step, not of the
+// two-phase exchange (that is covered by the iec104 tier E2E and by
+// WriteModelTest.TwoStagedControlSelectsConfirmsThenOperates).
+std::shared_ptr<DialogAwaitableResult<MessageBoxResult>>
+BuildControlConfirmation(DialogEnvironment& env,
+                         DialogServiceImplQt& dialog_service) {
+  if (!env.timed_data_service || !env.profile || !env.node_service) {
+    ADD_FAILURE() << "Control confirmation needs timed_data_service + profile "
+                     "+ node_service in env";
+    return {};
+  }
+  if (!FetchDialogNodeResident(*env.node_service, env.dialog_analog_node_id)) {
+    ADD_FAILURE() << "Control confirmation: fixture node not found";
+    return {};
+  }
+
+  auto model = std::make_shared<WriteModel>(
+      WriteContext{.executor_ = env.executor,
+                   .timed_data_service_ = *env.timed_data_service,
+                   .node_id_ = env.dialog_analog_node_id,
+                   .profile_ = *env.profile,
+                   .manual_ = false});
+  model->set_dialog_service(&dialog_service);
+
+  // A value clear of the fixture reading, so Present and Command differ.
+  constexpr double kCommandedValue = 12.5;
+  auto dialog_lifetime = StartDialogAwaitable(
+      env.executor,
+      dialog_service.RunMessageBox(
+          model->GetConfirmationMessage(kCommandedValue,
+                                        /*second_stage=*/true),
+          model->GetSourceTitle(), MessageBoxMode::QuestionYesNoDefaultNo));
+  PumpEventsFor(std::chrono::milliseconds{200});
+  return dialog_lifetime;
+}
+
 // Registers a representative spread of operator/engineering commands so the
 // palette capture shows a realistic list. Titles go through Translate() (no
 // Cyrillic literals in source); the generator loads no .ts, so they render in
@@ -425,6 +469,13 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
   } else if (spec.kind == "write-remote") {
     auto dialog_lifetime =
         BuildWriteDialog(env, dialog_service, /*manual=*/false);
+    if (!dialog_lifetime)
+      return false;
+    bool captured = GrabAndCloseVisibleDialogOrReport(spec);
+    WaitForDialogCompletion(dialog_lifetime);
+    return captured;
+  } else if (spec.kind == "control-confirm") {
+    auto dialog_lifetime = BuildControlConfirmation(env, dialog_service);
     if (!dialog_lifetime)
       return false;
     bool captured = GrabAndCloseVisibleDialogOrReport(spec);

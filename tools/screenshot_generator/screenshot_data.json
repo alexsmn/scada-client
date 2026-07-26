@@ -291,7 +291,10 @@
   "_dialogs_comment": [
     "Modal-dialog captures. Each entry's `kind` is dispatched in the",
     "CaptureDialogs TEST_F to build the right dialog class with its own",
-    "fixture. Filenames and dimensions track image_manifest.json."
+    "fixture. Filenames and dimensions track image_manifest.json.",
+    "width/height are optional and only resize dialogs that can be resized;",
+    "omit them for self-sizing dialogs such as message boxes, whose layout",
+    "ignores the request anyway."
   ],
   "dialogs": [
     { "kind": "login",        "filename": "client-login.png",            "width": 403, "height": 180 },
@@ -299,6 +302,7 @@
     { "kind": "limits",       "filename": "limits.png",                  "width": 344, "height": 296 },
     { "kind": "write-manual", "filename": "ti-manual-control.png",       "width": 354, "height": 207 },
     { "kind": "write-remote", "filename": "ti-remote-control-enabled.png","width": 354, "height": 207 },
+    { "kind": "control-confirm","filename": "control-select-confirm.png" },
     { "kind": "command-palette","filename": "command-palette.png",         "width": 560, "height": 380 },
     { "kind": "about",          "filename": "about.png",                   "width": 420, "height": 300 },
     { "kind": "change-password","filename": "change-password.png",         "width": 380, "height": 220 },
