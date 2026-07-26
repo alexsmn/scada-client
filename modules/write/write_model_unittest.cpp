@@ -174,11 +174,14 @@ TEST_F(WriteModelTest, SuccessfulWriteCompletesAfterAttributeCallback) {
 // TODO: cover the two-staged path (Select -> confirm -> Operate, and decline
 // -> Cancel). CreateModel(two_staged=true) now seeds it correctly, but a test
 // that drives it HANGS: after the Select's CoSpawn, Drain(executor_) never
-// returns. Suspect the gMock action returning a lazy CoStatusOr<CallResult>
-// awaitable is not being driven by this fixture's TestExecutor — compare
-// AsioTestEnvironment-based suites, where only the asio io_context is polled.
-// Needs a look at how the Call awaitable is scheduled here before the tests
-// are worth having.
+// returns.
+//
+// RULED OUT: a gMock matcher miss. The hang reproduces with a fully permissive
+// Call(_, _, _, _), so the action does run and it is not an unmatched
+// expectation falling back to a default-constructed awaitable. That narrows it
+// to how the returned lazy CoStatusOr<CallResult> is driven — suspect this
+// fixture's TestExecutor never resumes it, the way an AsioTestEnvironment
+// suite stalls anything posted to a standalone TestExecutor nobody polls.
 //
 // The server side of these phases IS covered: DataItemImpl.Control* and the
 // iec104 tier E2E (SelectBeforeOperateReachesTheWireInTwoPhases).
