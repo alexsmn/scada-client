@@ -17,8 +17,9 @@
 //  - the FromJson name: the primary template lives in client/base's
 //    base/json.h and is owned/exported by scada.client.base. The explicit
 //    FromJson<T> specializations declared here (PageLayout in page_layout.h;
-//    base::Time, TimeRange, base::TimeDelta, WindowItems, WindowDefinition in
-//    window_definition_util.h) are kept decl-reachable by the static_assert
+//    scada::Time, scada::RelativeTimeRange, scada::Duration, WindowItems,
+//    WindowDefinition in window_definition_util.h) are kept decl-reachable
+//    by the static_assert
 //    keep-alives below, and the non-template scada::NodeId overload
 //    (window_definition_util.h) is include-only — TUs that call FromJson
 //    unqualified need `import scada.client.base;` (or the textual include)
@@ -37,15 +38,21 @@ export module scada.client.profile;
 
 // Mirror client_profile's PUBLIC link transitivity.
 export import scada.client.aui;
+// scada.client.aui deliberately re-exports only scada.base (aui's sole PUBLIC
+// link — see docs/aui-extraction.md), but this module's own headers expose
+// core vocabulary: window_definition_util.h declares a FromJson returning
+// std::optional<scada::NodeId>, and the keep-alives below name scada::Time /
+// scada::Duration. Import scada.core directly so importers get those types.
+export import scada.core;
 
 // Keep the GMF-attached FromJson<T> explicit-specialization declarations
 // decl-reachable for import-only TUs (the primary template is exported by
 // scada.client.base; if these declarations were discarded, a caller would
 // silently instantiate the undefined primary instead).
 static_assert(sizeof(&::FromJson<PageLayout>) > 0);
-static_assert(sizeof(&::FromJson<scada::base::Time>) > 0);
-static_assert(sizeof(&::FromJson<TimeRange>) > 0);
-static_assert(sizeof(&::FromJson<scada::base::TimeDelta>) > 0);
+static_assert(sizeof(&::FromJson<scada::Time>) > 0);
+static_assert(sizeof(&::FromJson<scada::RelativeTimeRange>) > 0);
+static_assert(sizeof(&::FromJson<scada::Duration>) > 0);
 static_assert(sizeof(&::FromJson<WindowItems>) > 0);
 static_assert(sizeof(&::FromJson<WindowDefinition>) > 0);
 

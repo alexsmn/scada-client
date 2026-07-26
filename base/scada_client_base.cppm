@@ -44,7 +44,7 @@ module;
 #include "base/pool.h"
 #include "base/program_options.h"
 #include "base/settings_store.h"
-#include "base/time_range.h"
+#include "base/relative_time_range.h"
 #include "base/utils.h"
 #include "base/web_util.h"
 
@@ -115,13 +115,11 @@ export {
   using ::RegistrySettingsStore;
 #endif
 
-  // time_range.h (the global operator<< overloads are deliberately not
-  // exported; ToString picks up the transitive scada overloads too — see
-  // the file header comment)
-  using ::ParseTimeRangeType;
-  using ::TimeRange;
-  using ::ToDateTimeRange;
-  using ::ToDateTimeRangeWithOpenRange;
+  // relative_time_range.h — only the ToString overloads stay at global scope
+  // (deliberately, so they do not hide the other global ToString overloads;
+  // see that header's comment). The range type and its helpers moved into
+  // namespace scada and are exported below. The global operator<< overloads
+  // are still deliberately not exported.
   using ::ToString;
 
   // utils.h
@@ -132,3 +130,17 @@ export {
   using ::IsWebUrl;
   using ::MakeFileUrl;
 }  // export
+
+// The chrono migration renamed the old global ::TimeRange to
+// scada::RelativeTimeRange — `TimeRange` now names core's Interval<Time>, a
+// different type — and renamed its converters ToDateTimeRange /
+// ToDateTimeRangeWithOpenRange to ToTimeRange / ToTimeRangeWithOpenRange.
+export namespace scada {
+
+// relative_time_range.h
+using scada::ParseTimeRangeType;
+using scada::RelativeTimeRange;
+using scada::ToTimeRange;
+using scada::ToTimeRangeWithOpenRange;
+
+}  // namespace scada
