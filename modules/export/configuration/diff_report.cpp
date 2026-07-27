@@ -1,4 +1,5 @@
 #include "export/configuration/diff_report.h"
+#include "aui/translation.h"
 
 #include "aui/resource_error.h"
 #include "base/check.h"
@@ -159,7 +160,7 @@ void OpenNotepad(const std::filesystem::path& path) {
                      /*thread_attrs=*/nullptr, /*inherit_handles=*/FALSE,
                      /*create_flags=*/0, /*env=*/nullptr, /*cur_dir=*/nullptr,
                      &startup_info, &raw_process_info)) {
-    throw ResourceError{u"Failed to open Notepad"};
+    throw ResourceError{Translate("Failed to open Notepad")};
   }
 
   scada::base::win::ScopedProcessInformation proc_info{raw_process_info};
@@ -174,7 +175,7 @@ void OpenNotepad(const std::filesystem::path& path) {
   }
   command += "'";
   if (std::system(command.c_str()) != 0) {
-    throw ResourceError{u"Failed to open report"};
+    throw ResourceError{Translate("Failed to open report")};
   }
 #endif
 }

@@ -1,4 +1,5 @@
 #include "export/configuration/export_data_reader.h"
+#include "aui/translation.h"
 
 #include "aui/resource_error.h"
 #include "base/check.h"
@@ -33,7 +34,7 @@ scada::Variant::Type GetBuiltInDataType(const NodeRef& data_type) {
     }
   }
 
-  throw ResourceError{u"Unknown data type"};
+  throw ResourceError{Translate("Unknown data type")};
 }
 
 }  // namespace
@@ -45,7 +46,7 @@ ExportDataReader::ExportDataReader(NodeService& node_service, CsvReader& reader)
 
 ExportData ExportDataReader::Read() {
   if (!reader_.NextRow())
-    throw ResourceError{u"No header row"};
+    throw ResourceError{Translate("No header row")};
 
   // Skip Id, Parent, Type, Name.
   for (int i = 0; i < 4; ++i) {
@@ -69,7 +70,7 @@ ExportData::Property ExportDataReader::ParseProperty(
     std::u16string_view cell) const {
   auto prop_decl_id = ParseReferenceCell(cell);
   if (prop_decl_id.is_null()) {
-    throw ResourceError{u"Invalid column name format"};
+    throw ResourceError{Translate("Invalid column name format")};
   }
 
   auto prop_decl = node_service_.GetNode(prop_decl_id);
@@ -91,13 +92,13 @@ ExportData::Node ExportDataReader::ReadNode(
   // Parent.
   auto parent_id = NodeIdFromScadaString(UtfConvert<char>(ReadCell()));
   if (parent_id.is_null()) {
-    throw ResourceError{u"Group not found"};
+    throw ResourceError{Translate("Group not found")};
   }
 
   // Type.
   auto type_definition = node_service_.GetNode(ParseReferenceCell(ReadCell()));
   if (!type_definition) {
-    throw ResourceError{u"Type not found"};
+    throw ResourceError{Translate("Type not found")};
   }
 
   scada::LocalizedText display_name = ReadCell();
@@ -180,7 +181,7 @@ std::optional<ExportData::PropertyValue> ExportDataReader::ParseReferenceValue(
 std::u16string& ExportDataReader::ReadCell() {
   auto* cell = TryReadCell();
   if (!cell)
-    throw ResourceError(u"Row has fewer cells than expected");
+    throw ResourceError(Translate("Row has fewer cells than expected"));
   return *cell;
 }
 

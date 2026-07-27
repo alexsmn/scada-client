@@ -1,4 +1,5 @@
 #include "base/time/time_wire_codec.h"
+#include "aui/translation.h"
 #include "base/time_utils.h"
 #include "graph/graph_view.h"
 
@@ -349,7 +350,7 @@ std::u16string GraphView::MakeTitle() const {
           ? static_cast<MetrixGraph::MetrixLine*>(
                 graph_->panes().front()->plot().primary_line())
           : nullptr;
-  return line ? line->data_source().title() : u"No item";
+  return line ? line->data_source().title() : Translate("No item");
 }
 
 bool GraphView::IsWorking() const {

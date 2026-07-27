@@ -30,8 +30,14 @@
 
 namespace {
 
-const char16_t kImportTitle[] = u"Import";
-const char16_t kExportTitle[] = u"Export";
+// Message-box titles. Functions, not constants: Translate() reads the
+// installed catalog and so needs a running QApplication.
+std::u16string ImportTitle() {
+  return Translate("Import");
+}
+std::u16string ExportTitle() {
+  return Translate("Export");
+}
 const char kDefaultFileName[] = "configuration.csv";
 
 void OpenWithAssociatedProgram(const std::filesystem::path& path) {
@@ -75,7 +81,7 @@ Awaitable<void> ExportConfigurationCommand::ExportTo(
   SaveExportData(export_data, stream);
 
   auto open_prompt = co_await dialog_service.RunMessageBox(
-      Translate("Export complete. Open the file now?"), kExportTitle,
+      Translate("Export complete. Open the file now?"), ExportTitle(),
       MessageBoxMode::QuestionYesNo);
   if (open_prompt == MessageBoxResult::Yes) {
     OpenWithAssociatedProgram(path);
@@ -86,8 +92,10 @@ Awaitable<void> ExportConfigurationCommand::ExportTo(
 Awaitable<void> ExportConfigurationCommand::Execute(
     DialogService& dialog_service) const {
   co_await FetchTypeSystem(node_service_);
+  // Named local: SaveParams::title is a u16string_view.
+  const std::u16string export_title = ExportTitle();
   auto path = co_await dialog_service.SelectSaveFile(
-      {.title = kExportTitle, .default_path = kDefaultFileName});
+      {.title = export_title, .default_path = kDefaultFileName});
 
   std::exception_ptr resource_error;
   try {
@@ -96,7 +104,7 @@ Awaitable<void> ExportConfigurationCommand::Execute(
     resource_error = std::current_exception();
   }
   if (resource_error) {
-    co_await ShowResourceError<void>(dialog_service, kExportTitle,
+    co_await ShowResourceError<void>(dialog_service, ExportTitle(),
                                      resource_error);
   }
   co_return;
@@ -116,7 +124,7 @@ Awaitable<void> ImportConfigurationCommand::ImportFrom(
   ShowDiffReport(diff, node_service_);
 
   auto apply_prompt = co_await dialog_service.RunMessageBox(
-      Translate("Apply changes?"), kImportTitle,
+      Translate("Apply changes?"), ImportTitle(),
       MessageBoxMode::QuestionYesNoDefaultNo);
   if (apply_prompt == MessageBoxResult::Yes) {
     ApplyDiffData(diff, task_manager_);
@@ -146,7 +154,7 @@ ExportData ImportConfigurationCommand::LoadExportData(
 Awaitable<void> ImportConfigurationCommand::Execute(
     DialogService& dialog_service) const {
   co_await FetchTypeSystem(node_service_);
-  auto path = co_await dialog_service.SelectOpenFile(kImportTitle);
+  auto path = co_await dialog_service.SelectOpenFile(ImportTitle());
 
   std::exception_ptr resource_error;
   try {
@@ -155,7 +163,7 @@ Awaitable<void> ImportConfigurationCommand::Execute(
     resource_error = std::current_exception();
   }
   if (resource_error) {
-    co_await ShowResourceError<void>(dialog_service, kImportTitle,
+    co_await ShowResourceError<void>(dialog_service, ImportTitle(),
                                      resource_error);
   }
   co_return;

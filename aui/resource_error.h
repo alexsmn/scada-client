@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aui/dialog_service.h"
+#include "aui/translation.h"
 #include "base/any_executor.h"
 #include "base/awaitable.h"
 #include "base/lifetime.h"
@@ -35,7 +36,10 @@ inline std::u16string GetResourceErrorMessage(std::exception_ptr e) {
   // Reached for anything that is not a `ResourceError`. The trailing
   // return also satisfies cppcheck's `missingReturn` checker, which does
   // not treat `std::rethrow_exception` as terminating control flow.
-  return u"Error";
+  //
+  // This is shown to the operator in a message box, so it goes through
+  // Translate() like any other UI string.
+  return Translate("Error");
 }
 
 template <typename T>

@@ -1,4 +1,5 @@
 #include "export/csv/csv_export_command.h"
+#include "aui/translation.h"
 
 #include "aui/dialog_service.h"
 
@@ -20,7 +21,11 @@
 
 namespace {
 
-const char16_t kExportTitle[] = u"Export";
+// Message-box title. A function, not a constant: Translate() reads the
+// installed catalog and so needs a running QApplication.
+std::u16string ExportTitle() {
+  return Translate("Export");
+}
 
 std::filesystem::path MakeFileName(std::u16string_view text) {
   auto result = boost::replace_all_copy(std::u16string{text}, u":", u"-");
@@ -59,7 +64,7 @@ class CsvExportCommandRun
   Awaitable<void> RunAsync(std::shared_ptr<CsvExportCommandRun> /*self*/) {
     const std::string_view kCsvExt[] = {"*.csv"};
     const DialogService::Filter kFilters[] = {
-        {u"CSV Files", kCsvExt},
+        {Translate("CSV Files"), kCsvExt},
     };
 
     auto file_name = MakeFileName(window_title_);
@@ -67,8 +72,11 @@ class CsvExportCommandRun
 
     auto csv_export_dir = GetString16(profile_.data(), "csvPath");
 
+    // Named local: SaveParams::title is a u16string_view, so it must not be
+    // bound to a temporary that the struct outlives.
+    const std::u16string export_title = ExportTitle();
     path_ = co_await dialog_service_.SelectSaveFile({
-        .title = kExportTitle,
+        .title = export_title,
         .default_path = csv_export_dir / file_name,
         .filters = kFilters,
     });
@@ -94,7 +102,7 @@ class CsvExportCommandRun
     co_await ExportAsync(params);
 
     auto open_prompt_result = co_await dialog_service_.RunMessageBox(
-        u"Export completed. Open the file now?", kExportTitle,
+        Translate("Export completed. Open the file now?"), ExportTitle(),
         MessageBoxMode::QuestionYesNo);
     if (open_prompt_result == MessageBoxResult::Yes)
       OpenWithAssociatedProgram(path_);
@@ -115,7 +123,7 @@ class CsvExportCommandRun
     }
 
     if (export_exception) {
-      co_await dialog_service_.RunMessageBox(u"Export failed.", kExportTitle,
+      co_await dialog_service_.RunMessageBox(Translate("Export failed."), ExportTitle(),
                                              MessageBoxMode::Error);
       std::rethrow_exception(export_exception);
     }

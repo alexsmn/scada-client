@@ -3,6 +3,29 @@
 <TS version="2.1" language="ru_RU">
 <context>
     <name></name>
+    <!-- Export/import and resource-error messages. All reach the operator
+         through RunMessageBox (ResourceError text via ShowResourceError).
+         Translate() looks up the empty context and lupdate never sees it. -->
+    <message>
+        <source>Error</source>
+        <translation>Ошибка</translation>
+    </message>
+    <message>
+        <source>No item</source>
+        <translation>Нет элемента</translation>
+    </message>
+    <message>
+        <source>Export failed. Please check that Microsoft Excel is installed correctly.</source>
+        <translation>Не удалось выполнить экспорт. Проверьте, что Microsoft Excel установлен корректно.</translation>
+    </message>
+    <message>
+        <source>Failed to open Notepad</source>
+        <translation>Не удалось открыть Блокнот</translation>
+    </message>
+    <message>
+        <source>Failed to open report</source>
+        <translation>Не удалось открыть отчёт</translation>
+    </message>
     <!-- modules/write/write_model.cpp — the control-command review an
          operator answers before an irreversible field action
          (docs/ux/principles.md §7). Goes through Translate(), so it
