@@ -392,32 +392,14 @@ void MainWindow::CreateContextBar() {
   if (severity_tiles_)
     context_bar_->addWidget(severity_tiles_);
 
-  // Context cluster (right): a curated who/where subset of the status-bar panes
-  // (user / connection / server / endpoint) — not the whole status strip. The
-  // alarm counts live in the KPI tiles, so the cluster stays identity/location.
-  const int pane_count = status_bar_model_->GetPaneCount();
-  for (int i = 0; i < pane_count; ++i) {
-    if (!status_bar_model_->IsContextBarPane(i))
-      continue;
-    auto* label = new QLabel(context_bar_);
-    label->setMargin(2);
-    context_panes_.push_back(label);
-    context_pane_indices_.push_back(i);
-    context_bar_->addWidget(label);
-  }
+  // No identity/connection cluster here. Who/where context (user·role,
+  // connection, server latency, endpoint·build) is stated once, in the status
+  // strip — mirroring it in the top bar duplicated four cells verbatim and
+  // costs a place to look without adding a fact (shell.md §3: don't show the
+  // same metric in two prominent places). The top bar carries only alarm state,
+  // which needs pre-attentive prominence.
 
   auto refresh = [this] {
-    for (int k = 0; k < static_cast<int>(context_panes_.size()); ++k) {
-      const int pane = context_pane_indices_[k];
-      context_panes_[k]->setText(
-          QString::fromStdU16String(status_bar_model_->GetPaneText(pane)));
-      const std::optional<scada::aui::Color> color =
-          status_bar_model_->GetPaneColor(pane);
-      context_panes_[k]->setStyleSheet(
-          color ? QStringLiteral("color:%1;font-weight:600;")
-                      .arg(color->qcolor().name())
-                : QString{});
-    }
     if (severity_tiles_)
       severity_tiles_->Refresh();
 

@@ -129,7 +129,9 @@ table.r tr.sel td:first-child{box-shadow:inset 2px 0 0 var(--accent)}
   <div class="topbar">
     <div class="brand"><span class="mark">TC</span>Telecontrol <small>SCADA</small></div>
     <div class="crumb"><b>Configuration</b><span class="sep">/</span>Transmission<span class="sep">/</span><b>ЦУС «Регион»</b></div>
-    <div class="ctxset"><div class="item"><span class="dot good"></span>North substation</div><div class="item mono">Server 0 ms</div><div class="item"><span class="role">Engineer</span></div><div class="item"><span class="avatar">R</span>root</div></div>
+    <!-- Identity/connection context (user·role, site, connection, latency, endpoint)
+         lives in the status strip alone — see docs/ux/shell.md §2.2/§2.7.
+         Do not reintroduce a context cluster here. -->
   </div>
   <div class="main">
     <div class="rail">
@@ -215,6 +217,8 @@ table.r tr.sel td:first-child{box-shadow:inset 2px 0 0 var(--accent)}
   </div>
   <div class="status">
     <div class="cell accent">root · Engineer</div>
+    <div class="cell"><span class="dot good"></span>Connected</div>
+    <div class="cell">Server <span class="mono">0 ms</span></div>
     <div class="cell warn">Unsaved changes</div>
     <div class="cell"><span class="dot good"></span>ЦУС link connected</div>
     <div class="cell">6 rules · 4 active · 1 error</div>

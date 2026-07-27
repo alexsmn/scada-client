@@ -25,8 +25,6 @@ class StatusBarModelImpl final : public StatusBarModel {
     // Optional: supplies the pane's text colour (e.g. a severity indicator).
     StatusColorProvider color_provider;
     int size = -1;
-    // Also surface this pane in the top context bar's curated cluster.
-    bool in_context_bar = false;
   };
 
   using AlarmCountProvider = std::function<int()>;
@@ -49,7 +47,6 @@ class StatusBarModelImpl final : public StatusBarModel {
   virtual int GetPaneSize(int index) const override;
   virtual std::optional<Color> GetPaneColor(int index) const override;
   virtual int GetAlarmCount() const override;
-  virtual bool IsContextBarPane(int index) const override;
   virtual int GetSeverityCount(SeverityLevel level) const override;
   [[nodiscard]] virtual boost::signals2::scoped_connection
   SubscribePanesChanged(const PanesChangedCallback& callback) override;

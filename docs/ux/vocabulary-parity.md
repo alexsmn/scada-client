@@ -39,8 +39,8 @@ classes; verify against those when updating (see Maintenance).
 | Explorer / primary sidebar | `workspace-shell` `WorkspaceSidebar` + `address-space/AddressSpaceTree` | `Explorer` = `ConfigurationTreeView` (`modules/configuration`) | Drift — web *AddressSpaceTree*, desktop *ConfigurationTreeView* |
 | Workspace tabs | `workspace-shell/qt-flexlayout-adapter`, `QtWorkspaceWindow` | `WorkspaceTabs` = `ViewManager` / `OpenedView` tabs | Aligned (concept) |
 | Inspector / secondary pane | `workspace-shell/Panel` + `InsightList` + `EmptyPanel` | `InspectorPanel` (`modules/inspector`) | Drift — web generic *Panel/InsightList*, desktop *InspectorPanel* |
-| Top-bar chips | `workspace-shell/TopBarChips`, `connection-status/ConnectionBadge` | `ContextBar` (`main_window` context bar) | Drift |
-| Status strip | (web folds status into `TopBarChips` / `ConnectionBadge`) | `StatusStrip` = `StatusBarController` (`main_window/status_bar`) | Desktop-distinct |
+| Top-bar alarm state | `alarms/AlarmSeverityTiles` in the top bar | `ContextBar` severity tiles + flood pill (`main_window` context bar) | Aligned (concept) |
+| Identity / connection context | `workspace-shell/TopBarChips`, `connection-status/ConnectionBadge` (in the **top** bar) | `StatusStrip` = `scada::aui::StatusBar` over `StatusBarModel` (`main_window/status_bar`) — in the **bottom** strip | **Deliberate divergence** — same cells, opposite edge (see note below) |
 | Command palette | `commands/CommandPalette` | `MainWindow::ShowCommandPalette` | Aligned |
 | Action toolbar | `commands/WorkspaceActionToolbar`, `CommandOverflow` | context-bar actions (no distinct class yet) | Web-fuller |
 | Brand lockup | `workspace-shell/BrandLockup` | brand cell in `ActivityBar` / context bar | Aligned (concept) |
@@ -101,6 +101,20 @@ dependencies; they are naming conventions for new/renamed classes.
    (`RailButton`, `WorkspaceSidebar`, `Panel`, `TopBarChips`,
    `ConnectionBadge`). This is an accepted granularity difference, not drift to
    fix — recorded so the two shells read as one product.
+6. **Identity/connection context sits at opposite edges — deliberately, and it
+   is not to be "fixed" by mirroring.** Web puts user, connection and endpoint
+   in the top bar (`TopBarChips` + `ConnectionBadge`) and has no bottom strip;
+   desktop puts them in the bottom `StatusStrip` and has no top-bar cluster
+   (`shell.md` §2.2/§2.7). Both shells therefore state each fact **exactly
+   once** — that invariant is the parity, not the pixel position. Desktop
+   briefly carried both (a top-bar cluster mirroring the same status panes) and
+   removed the top-bar copy on **2026-07-26**; do not reintroduce it in the name
+   of matching web, and do not add a bottom strip to web in the name of matching
+   desktop. The concrete shared vocabulary is the **cell set**: user·role,
+   connection state, server latency, endpoint·build.
+
+   If web ever grows a status strip, or desktop ever grows a top-bar identity
+   chip, the change must **move** the cells, not duplicate them.
 
 ## Maintenance
 

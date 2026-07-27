@@ -119,7 +119,9 @@ tr.err td.num{color:var(--bad)}
   <div class="topbar">
     <div class="brand"><span class="mark">TC</span>Telecontrol <small>SCADA</small></div>
     <div class="crumb"><b>Diagnostics</b><span class="sep">/</span>Protocol debugger<span class="sep">/</span><b>КП-02 · IEC 60870-5-104</b></div>
-    <div class="ctxset"><div class="item"><span class="dot good"></span>North substation</div><div class="item mono">Server 0 ms</div><div class="item"><span class="avatar">R</span>root</div></div>
+    <!-- Identity/connection context (user·role, site, connection, latency, endpoint)
+         lives in the status strip alone — see docs/ux/shell.md §2.2/§2.7.
+         Do not reintroduce a context cluster here. -->
   </div>
   <div class="main">
     <div class="rail">
@@ -202,6 +204,8 @@ tr.err td.num{color:var(--bad)}
   </div>
   <div class="status">
     <div class="cell accent">root · Engineer</div>
+    <div class="cell"><span class="dot good"></span>Connected</div>
+    <div class="cell">Server <span class="mono">0 ms</span></div>
     <div class="cell rec"><span class="dot bad"></span>Capturing · KП-02</div>
     <div class="cell">3 402 frames</div>
     <div class="cell">RX 2 271 · TX 1 131</div>

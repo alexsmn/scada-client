@@ -144,14 +144,11 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
 
   std::unique_ptr<ProgressController> progress_controller_;
 
-  // Top context bar (opt-in). Its right-hand cluster mirrors the status-bar
-  // model panes; `context_panes_` are the labels, refreshed on model changes.
+  // Top context bar (opt-in): brand, command/search field, and alarm state.
+  // It deliberately carries no identity/connection cells — those live only in
+  // the status strip (see CreateContextBar).
   QToolBar* context_bar_ = nullptr;
   QLineEdit* command_search_ = nullptr;
-  std::vector<QLabel*> context_panes_;
-  // Status-bar pane index shown by each context_panes_ label (the curated
-  // who/where subset), parallel to context_panes_.
-  std::vector<int> context_pane_indices_;
   // Live severity KPI tiles in the context bar (critical / warning /
   // unacknowledged), refreshed with the status-bar model.
   events::SeverityTileStrip* severity_tiles_ = nullptr;

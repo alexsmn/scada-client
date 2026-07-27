@@ -68,6 +68,12 @@ body{background:var(--bg-strong);color:var(--fg);font-family:var(--font-sans);fo
   border-radius:4px;padding:1px 5px}
 .ctxset{margin-left:auto;display:flex;align-items:center;gap:16px;font-size:12px;color:var(--fg-muted)}
 .ctxset .item{display:flex;align-items:center;gap:6px}
+/* Top-bar severity tiles: calm/muted at zero, severity-coloured while live.
+   The caption always names the number, so colour is never the only cue. */
+.ctxset .tile{display:flex;align-items:center;gap:6px;font-size:12px}
+.ctxset .tile b{font-variant-numeric:tabular-nums;font-weight:700}
+.ctxset .tile.crit{color:var(--sev-critical)}
+.ctxset .tile.warn{color:var(--sev-medium)}
 .dot{width:8px;height:8px;border-radius:50%;flex:none}
 .dot.good{background:var(--good)}.dot.bad{background:var(--bad)}.dot.warn{background:var(--uncertain)}
 .avatar{width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);
@@ -220,11 +226,13 @@ tr.r-low  .sevtag .b{background:var(--sev-low)}tr.r-low .sevtag{color:var(--fg-m
     <div class="brand"><span class="mark">TC</span>Telecontrol <small>SCADA</small></div>
     <div class="cmd"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       Search tags, objects, commands…<span class="kbd">Ctrl K</span></div>
+    <!-- Alarm state only. Identity/connection context (user·role, connection,
+         latency, endpoint) lives in the status strip alone — see shell.md
+         §2.2/§2.7. Do not mirror those cells here. -->
     <div class="ctxset">
-      <div class="item"><span class="dot good"></span>North substation</div>
-      <div class="item mono">Server 0 ms</div>
-      <div class="item"><span class="dot good"></span>Connected</div>
-      <div class="item"><span class="avatar">R</span>root</div>
+      <div class="tile crit">Critical <b>1</b></div>
+      <div class="tile warn">Warning <b>2</b></div>
+      <div class="tile">Unacknowledged <b>3</b></div>
     </div>
   </div>
 
@@ -368,8 +376,11 @@ tr.r-low  .sevtag .b{background:var(--sev-low)}tr.r-low .sevtag{color:var(--fg-m
   </div>
 
   <!-- ===== status strip ===== -->
+  <!-- The sole home for who/where context: site, identity, connection,
+       latency, endpoint. The top bar must not mirror any of these. -->
   <div class="status">
     <div class="cell accent">root · Operator</div>
+    <div class="cell"><span class="dot good"></span>North substation</div>
     <div class="cell"><span class="dot good"></span>Connected</div>
     <div class="cell">Server <span class="mono">0 ms</span></div>
     <div class="cell"><span class="unack"></span>3 unacknowledged</div>

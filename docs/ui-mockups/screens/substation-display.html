@@ -130,12 +130,9 @@ tr.r-low .sevtag .b{background:var(--sev-low)}tr.r-low .sevtag{color:var(--fg-mu
   <div class="topbar">
     <div class="brand"><span class="mark">TC</span>Telecontrol <small>SCADA</small></div>
     <div class="crumb"><b>North substation</b><span class="sep">/</span>110/10 кВ<span class="sep">/</span><b>Секция 1</b></div>
-    <div class="ctxset">
-      <div class="item"><span class="dot good"></span>North substation</div>
-      <div class="item mono">Server 0 ms</div>
-      <div class="item"><span class="dot good"></span>Connected</div>
-      <div class="item"><span class="avatar">R</span>root</div>
-    </div>
+    <!-- Identity/connection context (user·role, site, connection, latency, endpoint)
+         lives in the status strip alone — see docs/ux/shell.md §2.2/§2.7.
+         Do not reintroduce a context cluster here. -->
   </div>
   <div class="main">
     <div class="rail">
@@ -309,6 +306,7 @@ tr.r-low .sevtag .b{background:var(--sev-low)}tr.r-low .sevtag{color:var(--fg-mu
   <div class="status">
     <div class="cell accent">root · Operator</div>
     <div class="cell"><span class="dot good"></span>Connected</div>
+    <div class="cell">Server <span class="mono">0 ms</span></div>
     <div class="cell">Selected <span class="mono" style="color:var(--fg-muted)">Q1</span></div>
     <div class="cell">Bay <span class="mono" style="color:var(--fg-muted)">Секция 1</span></div>
     <div class="sp"></div>

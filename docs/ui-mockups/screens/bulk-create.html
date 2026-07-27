@@ -130,7 +130,9 @@ table.p tr.conflict td{background:var(--uncertain-soft)}
   <div class="topbar">
     <div class="brand"><span class="mark">TC</span>Telecontrol <small>SCADA</small></div>
     <div class="crumb"><b>Configuration</b><span class="sep">/</span>Bulk create data items</div>
-    <div class="ctxset"><div class="item"><span class="dot good"></span>North substation</div><div class="item mono">Server 0 ms</div><div class="item"><span class="role">Engineer</span></div><div class="item"><span class="avatar">R</span>root</div></div>
+    <!-- Identity/connection context (user·role, site, connection, latency, endpoint)
+         lives in the status strip alone — see docs/ux/shell.md §2.2/§2.7.
+         Do not reintroduce a context cluster here. -->
   </div>
   <div class="main">
     <div class="rail">
@@ -216,6 +218,7 @@ table.p tr.conflict td{background:var(--uncertain-soft)}
   </div>
   <div class="status">
     <div class="cell accent">root · Engineer</div>
+    <div class="cell">Server <span class="mono">0 ms</span></div>
     <div class="cell"><span class="dot good"></span>Connected</div>
     <div class="cell">Step 2 of 4</div>
     <div class="cell">23 new · 1 conflict</div>

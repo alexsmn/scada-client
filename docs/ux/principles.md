@@ -144,6 +144,13 @@ state, current user, active-alarm count and highest severity, and current
 selection**. These live in the top context bar and the bottom status strip and
 never scroll away.
 
+Permanently visible means **visible once**, not visible twice. Each of these
+facts has exactly one home: alarm counts and severity in the top bar (where
+colour change must be pre-attentive), identity and connection in the status
+strip (steady, glanceable). Duplicating a fact across both bars does not make it
+more persistent — it spends chrome and gives the operator a second place to
+check. See `shell.md` §2.2/§2.7 for the split and the reason it was corrected.
+
 ## 9. Consistency with the web client
 
 The web client (`web/`) already codifies this doctrine as a VS Code-style

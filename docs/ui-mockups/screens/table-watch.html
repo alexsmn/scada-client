@@ -139,7 +139,9 @@ tr.uncrow td.num{color:var(--uncertain)}
   <div class="topbar">
     <div class="brand"><span class="mark">TC</span>Telecontrol <small>SCADA</small></div>
     <div class="cmd"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search tags, objects, commands…<span class="kbd">Ctrl K</span></div>
-    <div class="ctxset"><div class="item"><span class="dot good"></span>North substation</div><div class="item mono">Server 0 ms</div><div class="item"><span class="dot good"></span>Connected</div><div class="item"><span class="avatar">R</span>root</div></div>
+    <!-- Identity/connection context (user·role, site, connection, latency, endpoint)
+         lives in the status strip alone — see docs/ux/shell.md §2.2/§2.7.
+         Do not reintroduce a context cluster here. -->
   </div>
   <div class="main">
     <div class="rail">
@@ -263,6 +265,7 @@ tr.uncrow td.num{color:var(--uncertain)}
   </div>
   <div class="status">
     <div class="cell accent">root · Operator</div>
+    <div class="cell">Server <span class="mono">0 ms</span></div>
     <div class="cell"><span class="dot good"></span>Connected</div>
     <div class="cell">7 rows</div>
     <div class="cell">Live · 5 s</div>

@@ -140,11 +140,11 @@ web components so parity discussions use one vocabulary.
 | **BrandLockup** | `TC` mark + "Telecontrol SCADA" | top-left of top bar & login |
 | **ActivityBar** | charcoal icon rail, active marker, unread count badge | maps to display Level 1–4 sections |
 | **SidebarPanel / Explorer** | header + filter + tree/list body | object tree with status dots + live values |
-| **OperatorTopBar** | command/search field + context cluster (plant, server, connection, user) | context always visible (§8) |
+| **OperatorTopBar** | command/search field + alarm state (severity tiles, flood pill) | no identity/connection cells — those live only in `StatusStrip` |
 | **WorkspaceTabs** | editor-style tabs for open views | replaces MDI title bars |
 | **Panel** | `header (title · sub · actions) + body` | the one grouping unit; no nesting |
 | **InspectorPanel** | selected-item detail: big read-out, measurements, controls | limits beside live value (§2) |
-| **StatusStrip** | charcoal bottom strip: user/role, connection, latency, alarm summary | never scrolls away |
+| **StatusStrip** | charcoal bottom strip: user/role, connection, latency, endpoint/build, alarm summary | never scrolls away; sole home for persistent context (§8) |
 | **SeverityTile / KPI** | count + label, severity-tinted left border | alarm counts on overview |
 | **EventRow** | severity tag (bar + label) + unack dot + mono value | colour + second cue (§5) |
 | **StatePill** | `Good` / `Active` / quality chip | soft-tinted, text-labelled |

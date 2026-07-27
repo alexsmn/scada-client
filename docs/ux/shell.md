@@ -18,7 +18,7 @@ inspector, and dialogs fall back to native OS chrome.
 
 ```
 ┌────────────────────────────────────────────────────────────────────┐
-│ OperatorTopBar   BrandLockup · Search/Command · plant·server·user   │
+│ OperatorTopBar   BrandLockup · Search/Command · alarm KPI tiles    │
 ├──┬───────────────┬───────────────────────────────────┬─────────────┤
 │A │ Explorer      │ WorkspaceTabs                      │ Inspector   │
 │c │ (object tree, │ ┌───────────────────────────────┐ │ selected    │
@@ -29,7 +29,7 @@ inspector, and dialogs fall back to native OS chrome.
 │a │               │ │ Active alarms / event log     │ │ controls    │
 │r │               │ └───────────────────────────────┘ │             │
 ├──┴───────────────┴───────────────────────────────────┴─────────────┤
-│ StatusStrip  user·role · connection · latency · alarm summary       │
+│ StatusStrip  user·role · connection · latency · endpoint · alarms  │
 └────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -63,9 +63,20 @@ count badge.
 ### 2.2 Top context bar (reworked toolbar)
 
 Replaces the grip toolbar. Left: `BrandLockup`. Centre: a **command/search
-field** (`Ctrl K`) that searches tags, objects, and commands. Right: the
-**persistent context cluster** — plant/site, server round-trip, connection dot,
-current user (principle §8).
+field** (`Ctrl K`) that searches tags, objects, and commands. Right: **alarm
+state only** — the severity KPI tiles (§2.3 of `backlog.md`) and the
+alarm-flood pill.
+
+**No identity/connection cluster here.** Who/where context (user·role,
+connection, server latency, endpoint·build) belongs to the `StatusStrip`
+alone — see §2.7. An earlier revision mirrored those four status panes in the
+top bar as a "persistent context cluster"; it rendered them verbatim in both
+places, which cost the operator a second place to look without adding a fact
+and violated §3's rule against showing one metric in two prominent spots.
+Persistent context (principle §8) is satisfied by the status strip, which never
+scrolls away. The division of labour is: **top bar = what is wrong now**
+(pre-attentive, colour-carrying, changes under alarm), **status strip = where I
+am and what I am connected to** (steady, glanceable, rarely changes).
 
 - Command palette resolves against `GlobalCommandRegistry` +
   `SelectionCommandRegistry` + address-space browse. This is new UI over
@@ -162,10 +173,15 @@ identical, only the drawing backend differs.
 
 ### 2.7 Status strip (reworked status bar)
 
-Charcoal bottom strip mirroring the top context: user·role, connection, server
-latency, **unacknowledged count**, **highest active severity**, endpoint, build.
-Extends the current status bar (`Events / Severity / Connected / Server ms`) with
-the alarm summary and identity cells.
+Charcoal bottom strip, and the **single home** for identity and connection
+context: event count, min-severity filter, **highest active severity**,
+user·role, connection, server latency, endpoint·build. Extends the current
+status bar (`Events / Severity / Connected / Server ms`) with the severity cell
+and the identity cells.
+
+These cells appear **here and nowhere else** — the top bar deliberately does
+not mirror them (§2.2). The strip never scrolls away, so it carries the
+persistent-context duty of principle §8 on its own.
 
 ## 3. Navigation & interaction rules
 
@@ -173,7 +189,9 @@ the alarm summary and identity cells.
   command field are all keyboard-navigable (principle §6; existing Qt focus
   chains preserved). `Ctrl K` opens the command palette.
 - **One dominant surface per tab.** Supporting panels stay compact and
-  scannable; don't duplicate the same metric in two prominent places.
+  scannable; don't duplicate the same metric in two prominent places. The
+  top-bar / status-strip split (§2.2, §2.7) is the worked example: identity and
+  connection are stated once, in the strip.
 - **Selection is global.** Explorer selection → Inspector → per-view "add to
   active table/graph" (already the web policy; mirror on desktop via
   `SelectionCommandRegistry`).

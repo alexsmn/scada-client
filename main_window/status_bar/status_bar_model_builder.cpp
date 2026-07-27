@@ -59,8 +59,7 @@ std::shared_ptr<scada::aui::StatusBarModel> StatusBarModelBuilder::Build() {
   int user_pane_index =
       model->AddPane({.text_provider = std::bind_front(
                           &UserStatusProvider::GetText, user_status_provider),
-                      .size = 160,
-                      .in_context_bar = true});
+                      .size = 160});
 
   user_status_provider->Init(
       [model, user_pane_index] { model->NotifyPanesChanged(user_pane_index); });
@@ -74,20 +73,17 @@ std::shared_ptr<scada::aui::StatusBarModel> StatusBarModelBuilder::Build() {
       model->AddPane({.text_provider = std::bind_front(
                           &SessionStatusProvider::GetConnectionStateText,
                           session_status_provider),
-                      .size = 100,
-                      .in_context_bar = true});
+                      .size = 100});
 
   int ping_pane_index = model->AddPane(
       {.text_provider = std::bind_front(&SessionStatusProvider::GetPingText,
                                         session_status_provider),
-       .size = 120,
-       .in_context_bar = true});
+       .size = 120});
 
   int endpoint_pane_index = model->AddPane(
       {.text_provider = std::bind_front(&SessionStatusProvider::GetEndpointText,
                                         session_status_provider),
-       .size = 200,
-       .in_context_bar = true});
+       .size = 200});
 
   session_status_provider->Init(
       [model, connection_pane_index, ping_pane_index, endpoint_pane_index] {
