@@ -16,224 +16,1313 @@
     "regenerated PNGs don't shift timestamps on every run. Remove it to get",
     "wall-clock-relative data."
   ],
-
   "now": "2026-04-16 15:02:00",
-
   "dialog_analog_node_id": "TIT.212",
-
   "_display_comment": "VDS/SDE fixture for the reshelled substation display (CaptureDisplay), relative to this file.",
-  "display": { "path": "fixtures/substation.vds",
-               "_measurements_comment": "Signals pushed into the display frame's Measurements strip, standing in for the elements an operator clicks on the diagram.",
-               "measurements": ["TIT.723", "TIT.208", "TIT.200"] },
-
-  "nodes": [
-    { "id": "TS.100", "browse_name": "M340",                "class": "object", "type_definition": "SCADA.108" },
-    { "id": "TS.101", "browse_name": "Smart Termo",         "class": "object", "type_definition": "SCADA.118" },
-    { "id": "TS.102", "browse_name": "Диагностика",         "class": "object", "type_definition": "SCADA.115" },
-    { "id": "TS.103", "browse_name": "КП-01 МЭК-60870",     "class": "object", "type_definition": "SCADA.331" },
-    { "id": "TS.104", "browse_name": "КП-02 MODBUS",        "class": "object", "type_definition": "SCADA.118" },
-    { "id": "TS.105", "browse_name": "КП-03 МЭК-61850",     "class": "object", "type_definition": "SCADA.277" },
-    { "id": "TS.9001", "browse_name": "Online",           "class": "variable", "base_value": 0 },
-    { "id": "TS.9002", "browse_name": "Enabled",          "class": "variable", "base_value": 1 },
-    { "id": "TS.9003", "browse_name": "MessagesIn",       "class": "variable", "base_value": 128402 },
-    { "id": "TS.9004", "browse_name": "MessagesOut",      "class": "variable", "base_value": 64118 },
-    { "id": "TS.9005", "browse_name": "BytesIn",          "class": "variable", "base_value": 4213904 },
-    { "id": "TS.9006", "browse_name": "BytesOut",         "class": "variable", "base_value": 1830221 },
-    { "id": "TS.9007", "browse_name": "InterrogateCount", "class": "variable", "base_value": 512 },
-    { "id": "TS.9008", "browse_name": "SyncClockCount",   "class": "variable", "base_value": 288 },
-    { "id": "TS.9101", "browse_name": "Online",           "class": "variable", "base_value": 1 },
-    { "id": "TS.9201", "browse_name": "Disabled",         "class": "variable", "base_value": 1 },
-    { "id": "TS.106", "browse_name": "ЭНИП-2",              "class": "object", "type_definition": "SCADA.115" },
-    { "id": "TS.107", "browse_name": "ЭНМВ-1",              "class": "object", "type_definition": "SCADA.115" },
-    { "id": "TS.108", "browse_name": "Трансформатор T1",    "class": "object", "type_definition": "SCADA.115" },
-    { "id": "TS.109", "browse_name": "КРУ",                 "class": "object", "type_definition": "SCADA.62" },
-    { "id": "TS.110", "browse_name": "КСВ2.0",              "class": "object", "type_definition": "SCADA.62" },
-    { "id": "TS.111", "browse_name": "Мониторинг t",        "class": "object", "type_definition": "SCADA.62" },
-    { "id": "TS.112", "browse_name": "ЭНИП-2 + ЭНМВ-1",     "class": "object", "type_definition": "SCADA.62" },
-    { "id": "TS.113", "browse_name": "ЭСТРА-ПС",            "class": "object", "type_definition": "SCADA.62" },
-    { "id": "TS.114", "browse_name": "ТИ",                  "class": "object", "type_definition": "SCADA.62" },
-    { "id": "TS.115", "browse_name": "ТС",                  "class": "object", "type_definition": "SCADA.62" },
-    { "id": "TS.116", "browse_name": "ТУ",                  "class": "object", "type_definition": "SCADA.62" },
-    { "id": "TS.117", "browse_name": "TS1",                 "class": "object" },
-    { "id": "TS.118", "browse_name": "TS2",                 "class": "object" },
-    { "id": "TS.119", "browse_name": "TS3",                 "class": "object" },
-    { "id": "TS.120", "browse_name": "TC1",                 "class": "object" },
-    { "id": "TS.121", "browse_name": "TC2",                 "class": "object" },
-    { "id": "TS.122", "browse_name": "TC8",                 "class": "object" },
-    { "id": "TS.123", "browse_name": "F",                   "class": "object" },
-    { "id": "TS.124", "browse_name": "T",                   "class": "object" },
-    { "id": "TS.125", "browse_name": "Ua",                  "class": "object" },
-    { "id": "TS.126", "browse_name": "Ub",                  "class": "object" },
-    { "id": "TS.127", "browse_name": "Uc",                  "class": "object" },
-    { "id": "TS.128", "browse_name": "Uab",                 "class": "object" },
-    { "id": "TS.129", "browse_name": "Ubc",                 "class": "object" },
-    { "id": "TS.130", "browse_name": "Uca",                 "class": "object" },
-    { "id": "TIT.200", "browse_name": "Активная мощность",   "class": "variable", "type_definition": "analog_item", "base_value": 125.4, "properties": { "SCADA.158": 110.0,  "SCADA.159": 140.0, "limit_lolo": 113.0, "limit_lo": 118.0, "limit_hi": 133.0, "limit_hihi": 138.0 } },
-    { "id": "TIT.201", "browse_name": "Реактивная мощность", "class": "variable", "type_definition": "analog_item", "base_value": -32.1, "properties": { "SCADA.158": -40.0, "SCADA.159": -20.0 } },
-    { "id": "TIT.202", "browse_name": "Напряжение L1-L2",    "class": "variable", "type_definition": "analog_item", "base_value": 10.52 },
-    { "id": "TIT.203", "browse_name": "Ток L1",              "class": "variable", "type_definition": "analog_item", "base_value": 10.48 },
-    { "id": "TIT.204", "browse_name": "Напряжение L2-L3",    "class": "variable", "type_definition": "analog_item", "base_value": 10.55 },
-    { "id": "TIT.205", "browse_name": "Ток L2",              "class": "variable", "type_definition": "analog_item", "base_value": 302.5 },
-    { "id": "TIT.206", "browse_name": "Ток L3",              "class": "variable", "type_definition": "analog_item", "base_value": 298.1 },
-    { "id": "TIT.207", "browse_name": "Напряжение L3-L1",    "class": "variable", "type_definition": "analog_item", "base_value": 305.7 },
-    { "id": "TIT.208", "browse_name": "Частота",             "class": "variable", "type_definition": "analog_item", "base_value": 50.01, "history_stddev": 0.01, "properties": { "SCADA.158": 49.95, "SCADA.159": 50.05, "display_format": "0.00" } },
-    { "id": "TIT.209", "browse_name": "Коэффициент мощности","class": "variable", "type_definition": "analog_item", "base_value": 0.95 },
-    { "id": "TIT.210", "browse_name": "Суммарная энергия",   "class": "variable", "type_definition": "analog_item", "base_value": 48723 },
-    { "id": "TIT.211", "browse_name": "Температура",         "class": "variable", "type_definition": "analog_item", "base_value": 42.3, "properties": { "display_format": "0.#", "units": "°C" } },
-    { "id": "TIT.212", "browse_name": "Температура нагрева", "class": "variable", "type_definition": "analog_item", "base_value": 41.0, "properties": { "display_format": "0.#", "units": "°C" } },
-
-    { "id": "SCADA.234", "browse_name": "root",          "display_name": "root",           "class": "object", "type_definition": "SCADA.16", "properties": { "SCADA.170": 0, "SCADA.345": false } },
-    { "id": "USER.1",    "browse_name": "Клиент 1",      "display_name": "Руководитель",   "class": "object", "type_definition": "SCADA.16", "properties": { "SCADA.170": 0, "SCADA.345": true } },
-    { "id": "USER.2",    "browse_name": "Клиент 2",      "display_name": "Инженер АСУ",    "class": "object", "type_definition": "SCADA.16", "properties": { "SCADA.170": 1, "SCADA.345": false } },
-    { "id": "USER.3",    "browse_name": "Клиент 3",      "display_name": "Диспетчер 1",    "class": "object", "type_definition": "SCADA.16", "properties": { "SCADA.170": 2, "SCADA.345": false } },
-    { "id": "USER.4",    "browse_name": "Клиент 4",      "display_name": "Диспетчер 2",    "class": "object", "type_definition": "SCADA.16", "properties": { "SCADA.170": 2, "SCADA.345": false } },
-    { "id": "USER.5",    "browse_name": "Клиент 5",      "display_name": "Администратор",  "class": "object", "type_definition": "SCADA.16", "properties": { "SCADA.170": 3, "SCADA.345": false } },
-    { "id": "USER.6",    "browse_name": "Клиент 6",      "display_name": "Клиент 6",       "class": "object", "type_definition": "SCADA.16", "properties": { "SCADA.170": 0, "SCADA.345": false } },
-    { "id": "USER.7",    "browse_name": "Клиент 7",      "display_name": "Клиент 7",       "class": "object", "type_definition": "SCADA.16", "properties": { "SCADA.170": 0, "SCADA.345": false } },
-    { "id": "USER.8",    "browse_name": "Клиент 8",      "display_name": "Клиент 8",       "class": "object", "type_definition": "SCADA.16", "properties": { "SCADA.170": 0, "SCADA.345": false } },
-    { "id": "USER.9",    "browse_name": "Клиент 9",      "display_name": "Клиент 9",       "class": "object", "type_definition": "SCADA.16", "properties": { "SCADA.170": 0, "SCADA.345": false } },
-    { "id": "USER.10",   "browse_name": "Клиент 10",     "display_name": "Клиент 10",      "class": "object", "type_definition": "SCADA.16", "properties": { "SCADA.170": 0, "SCADA.345": false } },
-    { "id": "USER.11",   "browse_name": "root",          "display_name": "root",           "class": "object", "type_definition": "SCADA.16", "properties": { "SCADA.170": 3, "SCADA.345": false } },
-    { "id": "USER.12",   "browse_name": "guest",         "display_name": "guest",          "class": "object", "type_definition": "SCADA.16", "properties": { "SCADA.170": 0, "SCADA.345": true  } },
-
-    { "id": "TS.701", "browse_name": "Канал MODBUS",              "class": "object",   "type_definition": "SCADA.108" },
-    { "id": "TS.702", "browse_name": "Ретрансляция КП-02 MODBUS", "class": "object",   "type_definition": "SCADA.118", "properties": { "SCADA.168": 2 } },
-    { "id": "TS.703", "browse_name": "Ретрансляция КП-05 MODBUS", "class": "object",   "type_definition": "SCADA.118", "properties": { "SCADA.168": 3 } },
-    { "id": "TIT.721", "browse_name": "TC1",                       "class": "variable", "type_definition": "analog_item", "base_value": 1.0,  "properties": { "display_format": "0.#" } },
-    { "id": "TIT.725", "browse_name": "TC2",                       "class": "variable", "type_definition": "analog_item", "base_value": 1.0,  "properties": { "display_format": "0.#" } },
-    { "id": "TIT.722", "browse_name": "TC8",                       "class": "variable", "type_definition": "analog_item", "base_value": 1.0,  "properties": { "display_format": "0.#" } },
-    { "id": "TIT.723", "browse_name": "Ua",                        "class": "variable", "type_definition": "analog_item", "base_value": 10.5, "properties": { "display_format": "0.#" } },
-    { "id": "TIT.724", "browse_name": "Дорасчет Ua среднее",       "class": "variable", "type_definition": "analog_item", "base_value": 10.4, "properties": { "display_format": "0.#" } },
-    { "id": "TS.731", "browse_name": "TX_TC1",                    "class": "object",   "type_definition": "SCADA.342", "properties": { "SCADA.225": 1001, "SCADA.373": "TIT.721" } },
-    { "id": "TS.732", "browse_name": "TX_TC8",                    "class": "object",   "type_definition": "SCADA.342", "properties": { "SCADA.225": 1002, "SCADA.373": "TIT.722" } },
-    { "id": "TS.733", "browse_name": "TX_Ua",                     "class": "object",   "type_definition": "SCADA.342", "properties": { "SCADA.225": 2001, "SCADA.373": "TIT.723" } },
-    { "id": "TS.734", "browse_name": "TX_Ua_AVG",                 "class": "object",   "type_definition": "SCADA.342", "properties": { "SCADA.225": 2002, "SCADA.373": "TIT.724" } },
-    { "id": "TS.735", "browse_name": "TX_TC2",                    "class": "object",   "type_definition": "SCADA.342", "properties": { "SCADA.225": 3001, "SCADA.373": "TIT.725" } },
-    { "id": "TS.736", "browse_name": "TX_Ua",                     "class": "object",   "type_definition": "SCADA.342", "properties": { "SCADA.225": 3002, "SCADA.373": "TIT.723" } },
-
-    { "id": "SCADA.9301", "browse_name": "Синусоида", "class": "object", "type_definition": "SCADA.67", "properties": { "SCADA.172": 0, "SCADA.173": 60,  "SCADA.174": 0,  "SCADA.175": 1000 } },
-    { "id": "SCADA.9302", "browse_name": "Пила",      "class": "object", "type_definition": "SCADA.67", "properties": { "SCADA.172": 1, "SCADA.173": 120, "SCADA.174": 90, "SCADA.175": 1000 } },
-    { "id": "SCADA.9303", "browse_name": "Меандр",    "class": "object", "type_definition": "SCADA.67", "properties": { "SCADA.172": 2, "SCADA.173": 30,  "SCADA.174": 0,  "SCADA.175": 500  } },
-    { "id": "SCADA.9304", "browse_name": "Шум",       "class": "object", "type_definition": "SCADA.67", "properties": { "SCADA.172": 3, "SCADA.173": 10,  "SCADA.174": 0,  "SCADA.175": 2000 } },
-
-    { "id": "SCADA.9401", "browse_name": "Вкл/Откл",           "class": "object", "type_definition": "SCADA.80", "properties": { "SCADA.216": "Вкл",     "SCADA.217": "Откл",      "SCADA.218": 32768,   "SCADA.219": 8421504 } },
-    { "id": "SCADA.9402", "browse_name": "Норма/Авария",       "class": "object", "type_definition": "SCADA.80", "properties": { "SCADA.216": "Норма",   "SCADA.217": "Авария",    "SCADA.218": 32768,   "SCADA.219": 255 } },
-    { "id": "SCADA.9403", "browse_name": "Замкнут/Разомкнут",  "class": "object", "type_definition": "SCADA.80", "properties": { "SCADA.216": "Замкнут", "SCADA.217": "Разомкнут", "SCADA.218": 16711680, "SCADA.219": 8421504 } },
-    { "id": "SCADA.9404", "browse_name": "Работа/Стоп",        "class": "object", "type_definition": "SCADA.80", "properties": { "SCADA.216": "Работа",  "SCADA.217": "Стоп",      "SCADA.218": 32768,   "SCADA.219": 255 } },
-
-    { "id": "SCADA.9501", "browse_name": "Оперативный архив", "class": "object", "type_definition": "SCADA.20", "properties": { "SCADA.171": 90,  "SCADA.244": 1284, "SCADA.245": 4821903, "SCADA.241": 0  } },
-    { "id": "SCADA.9502", "browse_name": "Долговременный",    "class": "object", "type_definition": "SCADA.20", "properties": { "SCADA.171": 730, "SCADA.244": 1284, "SCADA.245": 902144,  "SCADA.241": 12 } },
-    { "id": "SCADA.9503", "browse_name": "События",           "class": "object", "type_definition": "SCADA.20", "properties": { "SCADA.171": 365, "SCADA.244": 512,  "SCADA.245": 60421,   "SCADA.241": 3  } }
-  ],
-
-  "tree": {
-    "84":        ["85", "86"],
-    "85":        ["2253", "87", "SCADA.29", "SCADA.304", "SCADA.12", "SCADA.24", "SCADA.27", "SCADA.28", "SCADA.300", "SCADA.30", "SCADA.329", "SCADA.310"],
-    "87":        ["78"],
-
-    "SCADA.310": ["SCADA.312", "SCADA.313", "SCADA.314", "SCADA.315", "SCADA.316", "SCADA.317", "SCADA.318", "SCADA.319"],
-
-    "SCADA.29":  ["SCADA.16", "SCADA.234", "USER.1", "USER.2", "USER.3", "USER.4", "USER.5", "USER.6", "USER.7", "USER.8", "USER.9", "USER.10", "USER.11", "USER.12"],
-    "SCADA.304": ["SCADA.305", "SCADA.306"],
-    "SCADA.12":  ["SCADA.20", "SCADA.9501", "SCADA.9502", "SCADA.9503"],
-    "SCADA.27":  ["SCADA.80", "SCADA.9401", "SCADA.9402", "SCADA.9403", "SCADA.9404"],
-    "SCADA.28":  ["SCADA.67", "SCADA.9301", "SCADA.9302", "SCADA.9303", "SCADA.9304"],
-    "SCADA.300": ["SCADA.301"],
-
-    "SCADA.24":  ["TS.100", "TS.101", "TS.102", "TS.109", "TS.110", "TS.111", "TS.112", "TS.113", "TIT.721", "TIT.725", "TIT.722", "TIT.723", "TIT.724"],
-    "SCADA.30":  ["TS.103", "TS.104", "TS.105", "TS.106", "TS.107", "TS.108", "TS.701"],
-
-    "TS.100":    ["TS.117", "TS.118", "TS.119"],
-    "TS.101":    ["TS.124"],
-    "TS.102":    ["TS.123"],
-    "TS.103":    ["TS.120", "TS.121", "TS.122", "TS.9001", "TS.9002", "TS.9003", "TS.9004", "TS.9005", "TS.9006", "TS.9007", "TS.9008"],
-    "TS.104":    ["TS.125", "TS.126", "TS.127", "TS.9101"],
-    "TS.701":    ["TS.702", "TS.703"],
-    "TS.702":    ["TS.731", "TS.732", "TS.733", "TS.734"],
-    "TS.703":    ["TS.735", "TS.736"],
-    "TS.105":    ["TS.128", "TS.129", "TS.130", "TS.9201"],
-    "TS.108":    ["TS.124"],
-    "TS.109":    ["TIT.721", "TIT.725", "TIT.722"],
-    "TS.110":    ["TS.125", "TS.126", "TS.127"],
-    "TS.111":    ["TS.128", "TS.129", "TS.130"],
-    "TS.112":    ["TS.106", "TS.107"],
-    "TS.113":    ["TS.114", "TS.115", "TS.116"],
-    "TS.114":    ["TIT.200", "TIT.201", "TIT.209", "TIT.210"],
-    "TS.115":    ["TIT.202", "TIT.203", "TIT.204", "TIT.207"],
-    "TS.116":    ["TIT.205", "TIT.206"],
-    "TS.123":    ["TIT.208"],
-    "TS.124":    ["TIT.211", "TIT.212"]
+  "display": {
+    "path": "fixtures/substation.vds",
+    "_measurements_comment": "Signals pushed into the display frame's Measurements strip, standing in for the elements an operator clicks on the diagram.",
+    "measurements": [
+      "TIT.723",
+      "TIT.208",
+      "TIT.200"
+    ]
   },
-
+  "nodes": [
+    {
+      "id": "TS.100",
+      "browse_name": "M340",
+      "class": "object",
+      "type_definition": "SCADA.108"
+    },
+    {
+      "id": "TS.101",
+      "browse_name": "Smart Termo",
+      "class": "object",
+      "type_definition": "SCADA.118"
+    },
+    {
+      "id": "TS.102",
+      "browse_name": "Диагностика",
+      "class": "object",
+      "type_definition": "SCADA.115"
+    },
+    {
+      "id": "TS.103",
+      "browse_name": "КП-01 МЭК-60870",
+      "class": "object",
+      "type_definition": "SCADA.331"
+    },
+    {
+      "id": "TS.104",
+      "browse_name": "КП-02 MODBUS",
+      "class": "object",
+      "type_definition": "SCADA.118"
+    },
+    {
+      "id": "TS.105",
+      "browse_name": "КП-03 МЭК-61850",
+      "class": "object",
+      "type_definition": "SCADA.277"
+    },
+    {
+      "id": "TS.9001",
+      "browse_name": "Online",
+      "class": "variable",
+      "base_value": 0
+    },
+    {
+      "id": "TS.9002",
+      "browse_name": "Enabled",
+      "class": "variable",
+      "base_value": 1
+    },
+    {
+      "id": "TS.9003",
+      "browse_name": "MessagesIn",
+      "class": "variable",
+      "base_value": 128402
+    },
+    {
+      "id": "TS.9004",
+      "browse_name": "MessagesOut",
+      "class": "variable",
+      "base_value": 64118
+    },
+    {
+      "id": "TS.9005",
+      "browse_name": "BytesIn",
+      "class": "variable",
+      "base_value": 4213904
+    },
+    {
+      "id": "TS.9006",
+      "browse_name": "BytesOut",
+      "class": "variable",
+      "base_value": 1830221
+    },
+    {
+      "id": "TS.9007",
+      "browse_name": "InterrogateCount",
+      "class": "variable",
+      "base_value": 512
+    },
+    {
+      "id": "TS.9008",
+      "browse_name": "SyncClockCount",
+      "class": "variable",
+      "base_value": 288
+    },
+    {
+      "id": "TS.9101",
+      "browse_name": "Online",
+      "class": "variable",
+      "base_value": 1
+    },
+    {
+      "id": "TS.9201",
+      "browse_name": "Disabled",
+      "class": "variable",
+      "base_value": 1
+    },
+    {
+      "id": "TS.106",
+      "browse_name": "ЭНИП-2",
+      "class": "object",
+      "type_definition": "SCADA.115"
+    },
+    {
+      "id": "TS.107",
+      "browse_name": "ЭНМВ-1",
+      "class": "object",
+      "type_definition": "SCADA.115"
+    },
+    {
+      "id": "TS.108",
+      "browse_name": "Трансформатор T1",
+      "class": "object",
+      "type_definition": "SCADA.115"
+    },
+    {
+      "id": "TS.109",
+      "browse_name": "КРУ",
+      "class": "object",
+      "type_definition": "SCADA.62"
+    },
+    {
+      "id": "TS.110",
+      "browse_name": "КСВ2.0",
+      "class": "object",
+      "type_definition": "SCADA.62"
+    },
+    {
+      "id": "TS.111",
+      "browse_name": "Мониторинг t",
+      "class": "object",
+      "type_definition": "SCADA.62"
+    },
+    {
+      "id": "TS.112",
+      "browse_name": "ЭНИП-2 + ЭНМВ-1",
+      "class": "object",
+      "type_definition": "SCADA.62"
+    },
+    {
+      "id": "TS.113",
+      "browse_name": "ЭСТРА-ПС",
+      "class": "object",
+      "type_definition": "SCADA.62"
+    },
+    {
+      "id": "TS.114",
+      "browse_name": "ТИ",
+      "class": "object",
+      "type_definition": "SCADA.62"
+    },
+    {
+      "id": "TS.115",
+      "browse_name": "ТС",
+      "class": "object",
+      "type_definition": "SCADA.62"
+    },
+    {
+      "id": "TS.116",
+      "browse_name": "ТУ",
+      "class": "object",
+      "type_definition": "SCADA.62"
+    },
+    {
+      "id": "TS.117",
+      "browse_name": "TS1",
+      "class": "object"
+    },
+    {
+      "id": "TS.118",
+      "browse_name": "TS2",
+      "class": "object"
+    },
+    {
+      "id": "TS.119",
+      "browse_name": "TS3",
+      "class": "object"
+    },
+    {
+      "id": "TS.120",
+      "browse_name": "TC1",
+      "class": "object"
+    },
+    {
+      "id": "TS.121",
+      "browse_name": "TC2",
+      "class": "object"
+    },
+    {
+      "id": "TS.122",
+      "browse_name": "TC8",
+      "class": "object"
+    },
+    {
+      "id": "TS.123",
+      "browse_name": "F",
+      "class": "object"
+    },
+    {
+      "id": "TS.124",
+      "browse_name": "T",
+      "class": "object"
+    },
+    {
+      "id": "TS.125",
+      "browse_name": "Ua",
+      "class": "object"
+    },
+    {
+      "id": "TS.126",
+      "browse_name": "Ub",
+      "class": "object"
+    },
+    {
+      "id": "TS.127",
+      "browse_name": "Uc",
+      "class": "object"
+    },
+    {
+      "id": "TS.128",
+      "browse_name": "Uab",
+      "class": "object"
+    },
+    {
+      "id": "TS.129",
+      "browse_name": "Ubc",
+      "class": "object"
+    },
+    {
+      "id": "TS.130",
+      "browse_name": "Uca",
+      "class": "object"
+    },
+    {
+      "id": "TIT.200",
+      "browse_name": "Активная мощность",
+      "class": "variable",
+      "type_definition": "analog_item",
+      "base_value": 125.4,
+      "properties": {
+        "SCADA.158": 110.0,
+        "SCADA.159": 140.0,
+        "limit_lolo": 113.0,
+        "limit_lo": 118.0,
+        "limit_hi": 133.0,
+        "limit_hihi": 138.0
+      }
+    },
+    {
+      "id": "TIT.201",
+      "browse_name": "Реактивная мощность",
+      "class": "variable",
+      "type_definition": "analog_item",
+      "base_value": -32.1,
+      "properties": {
+        "SCADA.158": -40.0,
+        "SCADA.159": -20.0
+      }
+    },
+    {
+      "id": "TIT.202",
+      "browse_name": "Напряжение L1-L2",
+      "class": "variable",
+      "type_definition": "analog_item",
+      "base_value": 10.52
+    },
+    {
+      "id": "TIT.203",
+      "browse_name": "Ток L1",
+      "class": "variable",
+      "type_definition": "analog_item",
+      "base_value": 10.48
+    },
+    {
+      "id": "TIT.204",
+      "browse_name": "Напряжение L2-L3",
+      "class": "variable",
+      "type_definition": "analog_item",
+      "base_value": 10.55
+    },
+    {
+      "id": "TIT.205",
+      "browse_name": "Ток L2",
+      "class": "variable",
+      "type_definition": "analog_item",
+      "base_value": 302.5
+    },
+    {
+      "id": "TIT.206",
+      "browse_name": "Ток L3",
+      "class": "variable",
+      "type_definition": "analog_item",
+      "base_value": 298.1
+    },
+    {
+      "id": "TIT.207",
+      "browse_name": "Напряжение L3-L1",
+      "class": "variable",
+      "type_definition": "analog_item",
+      "base_value": 305.7
+    },
+    {
+      "id": "TIT.208",
+      "browse_name": "Частота",
+      "class": "variable",
+      "type_definition": "analog_item",
+      "base_value": 50.01,
+      "history_stddev": 0.01,
+      "properties": {
+        "SCADA.158": 49.95,
+        "SCADA.159": 50.05,
+        "display_format": "0.00"
+      }
+    },
+    {
+      "id": "TIT.209",
+      "browse_name": "Коэффициент мощности",
+      "class": "variable",
+      "type_definition": "analog_item",
+      "base_value": 0.95
+    },
+    {
+      "id": "TIT.210",
+      "browse_name": "Суммарная энергия",
+      "class": "variable",
+      "type_definition": "analog_item",
+      "base_value": 48723
+    },
+    {
+      "id": "TIT.211",
+      "browse_name": "Температура",
+      "class": "variable",
+      "type_definition": "analog_item",
+      "base_value": 42.3,
+      "properties": {
+        "display_format": "0.#",
+        "units": "°C"
+      }
+    },
+    {
+      "id": "TIT.212",
+      "browse_name": "Температура нагрева",
+      "class": "variable",
+      "type_definition": "analog_item",
+      "base_value": 41.0,
+      "properties": {
+        "display_format": "0.#",
+        "units": "°C"
+      }
+    },
+    {
+      "id": "SCADA.234",
+      "browse_name": "root",
+      "display_name": "root",
+      "class": "object",
+      "type_definition": "SCADA.16",
+      "properties": {
+        "SCADA.170": 0,
+        "SCADA.345": false
+      }
+    },
+    {
+      "id": "USER.1",
+      "browse_name": "Клиент 1",
+      "display_name": "Руководитель",
+      "class": "object",
+      "type_definition": "SCADA.16",
+      "properties": {
+        "SCADA.170": 0,
+        "SCADA.345": true
+      }
+    },
+    {
+      "id": "USER.2",
+      "browse_name": "Клиент 2",
+      "display_name": "Инженер АСУ",
+      "class": "object",
+      "type_definition": "SCADA.16",
+      "properties": {
+        "SCADA.170": 1,
+        "SCADA.345": false
+      }
+    },
+    {
+      "id": "USER.3",
+      "browse_name": "Клиент 3",
+      "display_name": "Диспетчер 1",
+      "class": "object",
+      "type_definition": "SCADA.16",
+      "properties": {
+        "SCADA.170": 2,
+        "SCADA.345": false
+      }
+    },
+    {
+      "id": "USER.4",
+      "browse_name": "Клиент 4",
+      "display_name": "Диспетчер 2",
+      "class": "object",
+      "type_definition": "SCADA.16",
+      "properties": {
+        "SCADA.170": 2,
+        "SCADA.345": false
+      }
+    },
+    {
+      "id": "USER.5",
+      "browse_name": "Клиент 5",
+      "display_name": "Администратор",
+      "class": "object",
+      "type_definition": "SCADA.16",
+      "properties": {
+        "SCADA.170": 3,
+        "SCADA.345": false
+      }
+    },
+    {
+      "id": "USER.6",
+      "browse_name": "Клиент 6",
+      "display_name": "Клиент 6",
+      "class": "object",
+      "type_definition": "SCADA.16",
+      "properties": {
+        "SCADA.170": 0,
+        "SCADA.345": false
+      }
+    },
+    {
+      "id": "USER.7",
+      "browse_name": "Клиент 7",
+      "display_name": "Клиент 7",
+      "class": "object",
+      "type_definition": "SCADA.16",
+      "properties": {
+        "SCADA.170": 0,
+        "SCADA.345": false
+      }
+    },
+    {
+      "id": "USER.8",
+      "browse_name": "Клиент 8",
+      "display_name": "Клиент 8",
+      "class": "object",
+      "type_definition": "SCADA.16",
+      "properties": {
+        "SCADA.170": 0,
+        "SCADA.345": false
+      }
+    },
+    {
+      "id": "USER.9",
+      "browse_name": "Клиент 9",
+      "display_name": "Клиент 9",
+      "class": "object",
+      "type_definition": "SCADA.16",
+      "properties": {
+        "SCADA.170": 0,
+        "SCADA.345": false
+      }
+    },
+    {
+      "id": "USER.10",
+      "browse_name": "Клиент 10",
+      "display_name": "Клиент 10",
+      "class": "object",
+      "type_definition": "SCADA.16",
+      "properties": {
+        "SCADA.170": 0,
+        "SCADA.345": false
+      }
+    },
+    {
+      "id": "USER.11",
+      "browse_name": "root",
+      "display_name": "root",
+      "class": "object",
+      "type_definition": "SCADA.16",
+      "properties": {
+        "SCADA.170": 3,
+        "SCADA.345": false
+      }
+    },
+    {
+      "id": "USER.12",
+      "browse_name": "guest",
+      "display_name": "guest",
+      "class": "object",
+      "type_definition": "SCADA.16",
+      "properties": {
+        "SCADA.170": 0,
+        "SCADA.345": true
+      }
+    },
+    {
+      "id": "TS.701",
+      "browse_name": "Канал MODBUS",
+      "class": "object",
+      "type_definition": "SCADA.108"
+    },
+    {
+      "id": "TS.702",
+      "browse_name": "Ретрансляция КП-02 MODBUS",
+      "class": "object",
+      "type_definition": "SCADA.118",
+      "properties": {
+        "SCADA.168": 2
+      }
+    },
+    {
+      "id": "TS.703",
+      "browse_name": "Ретрансляция КП-05 MODBUS",
+      "class": "object",
+      "type_definition": "SCADA.118",
+      "properties": {
+        "SCADA.168": 3
+      }
+    },
+    {
+      "id": "TIT.721",
+      "browse_name": "TC1",
+      "class": "variable",
+      "type_definition": "analog_item",
+      "base_value": 1.0,
+      "properties": {
+        "display_format": "0.#"
+      }
+    },
+    {
+      "id": "TIT.725",
+      "browse_name": "TC2",
+      "class": "variable",
+      "type_definition": "analog_item",
+      "base_value": 1.0,
+      "properties": {
+        "display_format": "0.#"
+      }
+    },
+    {
+      "id": "TIT.722",
+      "browse_name": "TC8",
+      "class": "variable",
+      "type_definition": "analog_item",
+      "base_value": 1.0,
+      "properties": {
+        "display_format": "0.#"
+      }
+    },
+    {
+      "id": "TIT.723",
+      "browse_name": "Ua",
+      "class": "variable",
+      "type_definition": "analog_item",
+      "base_value": 10.5,
+      "properties": {
+        "display_format": "0.#"
+      }
+    },
+    {
+      "id": "TIT.724",
+      "browse_name": "Дорасчет Ua среднее",
+      "class": "variable",
+      "type_definition": "analog_item",
+      "base_value": 10.4,
+      "properties": {
+        "display_format": "0.#"
+      }
+    },
+    {
+      "id": "TS.731",
+      "browse_name": "TX_TC1",
+      "class": "object",
+      "type_definition": "SCADA.342",
+      "properties": {
+        "SCADA.225": 1001,
+        "SCADA.373": "TIT.721"
+      }
+    },
+    {
+      "id": "TS.732",
+      "browse_name": "TX_TC8",
+      "class": "object",
+      "type_definition": "SCADA.342",
+      "properties": {
+        "SCADA.225": 1002,
+        "SCADA.373": "TIT.722"
+      }
+    },
+    {
+      "id": "TS.733",
+      "browse_name": "TX_Ua",
+      "class": "object",
+      "type_definition": "SCADA.342",
+      "properties": {
+        "SCADA.225": 2001,
+        "SCADA.373": "TIT.723"
+      }
+    },
+    {
+      "id": "TS.734",
+      "browse_name": "TX_Ua_AVG",
+      "class": "object",
+      "type_definition": "SCADA.342",
+      "properties": {
+        "SCADA.225": 2002,
+        "SCADA.373": "TIT.724"
+      }
+    },
+    {
+      "id": "TS.735",
+      "browse_name": "TX_TC2",
+      "class": "object",
+      "type_definition": "SCADA.342",
+      "properties": {
+        "SCADA.225": 3001,
+        "SCADA.373": "TIT.725"
+      }
+    },
+    {
+      "id": "TS.736",
+      "browse_name": "TX_Ua",
+      "class": "object",
+      "type_definition": "SCADA.342",
+      "properties": {
+        "SCADA.225": 3002,
+        "SCADA.373": "TIT.723"
+      }
+    },
+    {
+      "id": "SCADA.9301",
+      "browse_name": "Синусоида",
+      "class": "object",
+      "type_definition": "SCADA.67",
+      "properties": {
+        "SCADA.172": 0,
+        "SCADA.173": 60,
+        "SCADA.174": 0,
+        "SCADA.175": 1000
+      }
+    },
+    {
+      "id": "SCADA.9302",
+      "browse_name": "Пила",
+      "class": "object",
+      "type_definition": "SCADA.67",
+      "properties": {
+        "SCADA.172": 1,
+        "SCADA.173": 120,
+        "SCADA.174": 90,
+        "SCADA.175": 1000
+      }
+    },
+    {
+      "id": "SCADA.9303",
+      "browse_name": "Меандр",
+      "class": "object",
+      "type_definition": "SCADA.67",
+      "properties": {
+        "SCADA.172": 2,
+        "SCADA.173": 30,
+        "SCADA.174": 0,
+        "SCADA.175": 500
+      }
+    },
+    {
+      "id": "SCADA.9304",
+      "browse_name": "Шум",
+      "class": "object",
+      "type_definition": "SCADA.67",
+      "properties": {
+        "SCADA.172": 3,
+        "SCADA.173": 10,
+        "SCADA.174": 0,
+        "SCADA.175": 2000
+      }
+    },
+    {
+      "id": "SCADA.9401",
+      "browse_name": "Вкл/Откл",
+      "class": "object",
+      "type_definition": "SCADA.80",
+      "properties": {
+        "SCADA.216": "Вкл",
+        "SCADA.217": "Откл",
+        "SCADA.218": 32768,
+        "SCADA.219": 8421504
+      }
+    },
+    {
+      "id": "SCADA.9402",
+      "browse_name": "Норма/Авария",
+      "class": "object",
+      "type_definition": "SCADA.80",
+      "properties": {
+        "SCADA.216": "Норма",
+        "SCADA.217": "Авария",
+        "SCADA.218": 32768,
+        "SCADA.219": 255
+      }
+    },
+    {
+      "id": "SCADA.9403",
+      "browse_name": "Замкнут/Разомкнут",
+      "class": "object",
+      "type_definition": "SCADA.80",
+      "properties": {
+        "SCADA.216": "Замкнут",
+        "SCADA.217": "Разомкнут",
+        "SCADA.218": 16711680,
+        "SCADA.219": 8421504
+      }
+    },
+    {
+      "id": "SCADA.9404",
+      "browse_name": "Работа/Стоп",
+      "class": "object",
+      "type_definition": "SCADA.80",
+      "properties": {
+        "SCADA.216": "Работа",
+        "SCADA.217": "Стоп",
+        "SCADA.218": 32768,
+        "SCADA.219": 255
+      }
+    },
+    {
+      "id": "SCADA.9501",
+      "browse_name": "Оперативный архив",
+      "class": "object",
+      "type_definition": "SCADA.20",
+      "properties": {
+        "SCADA.171": 90,
+        "SCADA.244": 1284,
+        "SCADA.245": 4821903,
+        "SCADA.241": 0
+      }
+    },
+    {
+      "id": "SCADA.9502",
+      "browse_name": "Долговременный",
+      "class": "object",
+      "type_definition": "SCADA.20",
+      "properties": {
+        "SCADA.171": 730,
+        "SCADA.244": 1284,
+        "SCADA.245": 902144,
+        "SCADA.241": 12
+      }
+    },
+    {
+      "id": "SCADA.9503",
+      "browse_name": "События",
+      "class": "object",
+      "type_definition": "SCADA.20",
+      "properties": {
+        "SCADA.171": 365,
+        "SCADA.244": 512,
+        "SCADA.245": 60421,
+        "SCADA.241": 3
+      }
+    }
+  ],
+  "tree": {
+    "84": [
+      "85",
+      "86"
+    ],
+    "85": [
+      "2253",
+      "87",
+      "SCADA.29",
+      "SCADA.304",
+      "SCADA.12",
+      "SCADA.24",
+      "SCADA.27",
+      "SCADA.28",
+      "SCADA.300",
+      "SCADA.30",
+      "SCADA.329",
+      "SCADA.310"
+    ],
+    "87": [
+      "78"
+    ],
+    "SCADA.310": [
+      "SCADA.312",
+      "SCADA.313",
+      "SCADA.314",
+      "SCADA.315",
+      "SCADA.316",
+      "SCADA.317",
+      "SCADA.318",
+      "SCADA.319"
+    ],
+    "SCADA.29": [
+      "SCADA.16",
+      "SCADA.234",
+      "USER.1",
+      "USER.2",
+      "USER.3",
+      "USER.4",
+      "USER.5",
+      "USER.6",
+      "USER.7",
+      "USER.8",
+      "USER.9",
+      "USER.10",
+      "USER.11",
+      "USER.12"
+    ],
+    "SCADA.304": [
+      "SCADA.305",
+      "SCADA.306"
+    ],
+    "SCADA.12": [
+      "SCADA.20",
+      "SCADA.9501",
+      "SCADA.9502",
+      "SCADA.9503"
+    ],
+    "SCADA.27": [
+      "SCADA.80",
+      "SCADA.9401",
+      "SCADA.9402",
+      "SCADA.9403",
+      "SCADA.9404"
+    ],
+    "SCADA.28": [
+      "SCADA.67",
+      "SCADA.9301",
+      "SCADA.9302",
+      "SCADA.9303",
+      "SCADA.9304"
+    ],
+    "SCADA.300": [
+      "SCADA.301"
+    ],
+    "SCADA.24": [
+      "TS.100",
+      "TS.101",
+      "TS.102",
+      "TS.109",
+      "TS.110",
+      "TS.111",
+      "TS.112",
+      "TS.113",
+      "TIT.721",
+      "TIT.725",
+      "TIT.722",
+      "TIT.723",
+      "TIT.724"
+    ],
+    "SCADA.30": [
+      "TS.103",
+      "TS.104",
+      "TS.105",
+      "TS.106",
+      "TS.107",
+      "TS.108",
+      "TS.701"
+    ],
+    "TS.100": [
+      "TS.117",
+      "TS.118",
+      "TS.119"
+    ],
+    "TS.101": [
+      "TS.124"
+    ],
+    "TS.102": [
+      "TS.123"
+    ],
+    "TS.103": [
+      "TS.120",
+      "TS.121",
+      "TS.122",
+      "TS.9001",
+      "TS.9002",
+      "TS.9003",
+      "TS.9004",
+      "TS.9005",
+      "TS.9006",
+      "TS.9007",
+      "TS.9008"
+    ],
+    "TS.104": [
+      "TS.125",
+      "TS.126",
+      "TS.127",
+      "TS.9101"
+    ],
+    "TS.701": [
+      "TS.702",
+      "TS.703"
+    ],
+    "TS.702": [
+      "TS.731",
+      "TS.732",
+      "TS.733",
+      "TS.734"
+    ],
+    "TS.703": [
+      "TS.735",
+      "TS.736"
+    ],
+    "TS.105": [
+      "TS.128",
+      "TS.129",
+      "TS.130",
+      "TS.9201"
+    ],
+    "TS.108": [
+      "TS.124"
+    ],
+    "TS.109": [
+      "TIT.721",
+      "TIT.725",
+      "TIT.722"
+    ],
+    "TS.110": [
+      "TS.125",
+      "TS.126",
+      "TS.127"
+    ],
+    "TS.111": [
+      "TS.128",
+      "TS.129",
+      "TS.130"
+    ],
+    "TS.112": [
+      "TS.106",
+      "TS.107"
+    ],
+    "TS.113": [
+      "TS.114",
+      "TS.115",
+      "TS.116"
+    ],
+    "TS.114": [
+      "TIT.200",
+      "TIT.201",
+      "TIT.209",
+      "TIT.210"
+    ],
+    "TS.115": [
+      "TIT.202",
+      "TIT.203",
+      "TIT.204",
+      "TIT.207"
+    ],
+    "TS.116": [
+      "TIT.205",
+      "TIT.206"
+    ],
+    "TS.123": [
+      "TIT.208"
+    ],
+    "TS.124": [
+      "TIT.211",
+      "TIT.212"
+    ]
+  },
   "timed_data": [
     {
       "formula": "TIT.200",
       "values": [
-        118.2, 121.5, 124.8, 126.3, 128.1, 130.5, 127.9, 125.4, 123.1, 120.8,
-        119.5, 122.3, 125.7, 128.9, 131.2, 133.0, 130.8, 128.5, 126.2, 123.8,
-        121.4, 119.1, 117.8, 120.6, 123.9, 127.2, 129.5, 131.8, 134.1, 132.3,
-        129.7, 127.0, 124.3, 121.7, 119.4, 122.1, 125.5, 128.8, 131.1, 133.4,
-        130.9, 128.2, 125.6, 123.0, 120.5, 123.3, 126.7, 129.0
+        118.2,
+        121.5,
+        124.8,
+        126.3,
+        128.1,
+        130.5,
+        127.9,
+        125.4,
+        123.1,
+        120.8,
+        119.5,
+        122.3,
+        125.7,
+        128.9,
+        131.2,
+        133.0,
+        130.8,
+        128.5,
+        126.2,
+        123.8,
+        121.4,
+        119.1,
+        117.8,
+        120.6,
+        123.9,
+        127.2,
+        129.5,
+        131.8,
+        134.1,
+        132.3,
+        129.7,
+        127.0,
+        124.3,
+        121.7,
+        119.4,
+        122.1,
+        125.5,
+        128.8,
+        131.1,
+        133.4,
+        130.9,
+        128.2,
+        125.6,
+        123.0,
+        120.5,
+        123.3,
+        126.7,
+        129.0
       ]
     },
     {
       "formula": "TIT.201",
       "values": [
-        -28.5, -29.8, -31.2, -32.6, -34.0, -35.1, -33.8, -32.4, -30.9, -29.5,
-        -28.2, -29.6, -31.0, -32.5, -33.9, -35.3, -34.0, -32.7, -31.3, -29.9,
-        -28.6, -27.3, -28.8, -30.3, -31.8, -33.2, -34.6, -35.8, -34.5, -33.1,
-        -31.7, -30.3, -28.9, -27.6, -29.1, -30.6, -32.1, -33.5, -34.9, -36.0,
-        -34.7, -33.3, -31.9, -30.5, -29.1, -30.4, -31.9, -33.3
+        -28.5,
+        -29.8,
+        -31.2,
+        -32.6,
+        -34.0,
+        -35.1,
+        -33.8,
+        -32.4,
+        -30.9,
+        -29.5,
+        -28.2,
+        -29.6,
+        -31.0,
+        -32.5,
+        -33.9,
+        -35.3,
+        -34.0,
+        -32.7,
+        -31.3,
+        -29.9,
+        -28.6,
+        -27.3,
+        -28.8,
+        -30.3,
+        -31.8,
+        -33.2,
+        -34.6,
+        -35.8,
+        -34.5,
+        -33.1,
+        -31.7,
+        -30.3,
+        -28.9,
+        -27.6,
+        -29.1,
+        -30.6,
+        -32.1,
+        -33.5,
+        -34.9,
+        -36.0,
+        -34.7,
+        -33.3,
+        -31.9,
+        -30.5,
+        -29.1,
+        -30.4,
+        -31.9,
+        -33.3
       ]
     },
     {
       "formula": "TIT.202",
       "values": [
-        10.48, 10.50, 10.52, 10.54, 10.55, 10.53, 10.51, 10.49, 10.47, 10.46,
-        10.48, 10.50, 10.53, 10.55, 10.57, 10.58, 10.56, 10.54, 10.52, 10.50,
-        10.48, 10.46, 10.44, 10.46, 10.49, 10.51, 10.54, 10.56, 10.58, 10.60,
-        10.57, 10.55, 10.53, 10.50, 10.48, 10.46, 10.49, 10.51, 10.54, 10.56,
-        10.58, 10.56, 10.53, 10.51, 10.49, 10.47, 10.50, 10.52
+        10.48,
+        10.5,
+        10.52,
+        10.54,
+        10.55,
+        10.53,
+        10.51,
+        10.49,
+        10.47,
+        10.46,
+        10.48,
+        10.5,
+        10.53,
+        10.55,
+        10.57,
+        10.58,
+        10.56,
+        10.54,
+        10.52,
+        10.5,
+        10.48,
+        10.46,
+        10.44,
+        10.46,
+        10.49,
+        10.51,
+        10.54,
+        10.56,
+        10.58,
+        10.6,
+        10.57,
+        10.55,
+        10.53,
+        10.5,
+        10.48,
+        10.46,
+        10.49,
+        10.51,
+        10.54,
+        10.56,
+        10.58,
+        10.56,
+        10.53,
+        10.51,
+        10.49,
+        10.47,
+        10.5,
+        10.52
       ]
     },
     {
       "formula": "TIT.208",
       "values": [
-        50.01, 50.02, 50.00, 49.99, 49.98, 50.00, 50.01, 50.03, 50.02, 50.00,
-        49.99, 49.98, 50.00, 50.01, 50.02, 50.03, 50.01, 50.00, 49.99, 49.98,
-        49.97, 49.99, 50.00, 50.02, 50.03, 50.01, 50.00, 49.99, 49.98, 50.00,
-        50.01, 50.03, 50.02, 50.00, 49.99, 49.98, 50.00, 50.01, 50.02, 50.03,
-        50.01, 50.00, 49.99, 49.98, 49.97, 49.99, 50.01, 50.02
+        50.01,
+        50.02,
+        50.0,
+        49.99,
+        49.98,
+        50.0,
+        50.01,
+        50.03,
+        50.02,
+        50.0,
+        49.99,
+        49.98,
+        50.0,
+        50.01,
+        50.02,
+        50.03,
+        50.01,
+        50.0,
+        49.99,
+        49.98,
+        49.97,
+        49.99,
+        50.0,
+        50.02,
+        50.03,
+        50.01,
+        50.0,
+        49.99,
+        49.98,
+        50.0,
+        50.01,
+        50.03,
+        50.02,
+        50.0,
+        49.99,
+        49.98,
+        50.0,
+        50.01,
+        50.02,
+        50.03,
+        50.01,
+        50.0,
+        49.99,
+        49.98,
+        49.97,
+        49.99,
+        50.01,
+        50.02
       ]
     }
   ],
-
   "events": [
-    { "id": 1001, "hours_ago": 5.0,    "severity": "normal",   "message": "КП-01 на связи",                                 "node_id": "TS.103", "change_mask": 16 },
-    { "id": 1002, "hours_ago": 4.0,    "severity": "warning",  "message": "Напряжение L1-L2 верхняя уставка (10.8 кВ)",     "node_id": "TIT.202", "change_mask": 4  },
-    { "id": 1003, "hours_ago": 3.0,    "severity": "critical", "message": "КП-02: обрыв связи",                              "node_id": "TS.104", "change_mask": 16 },
-    { "id": 1004, "hours_ago": 2.0,    "severity": "normal",   "message": "КП-02: связь восстановлена",                      "node_id": "TS.104", "change_mask": 16 },
-    { "id": 1005, "hours_ago": 1.0,    "severity": "normal",   "message": "Ручной ввод: Активная мощность = 130.5 МВт",     "node_id": "TIT.200", "change_mask": 32 },
-    { "id": 1006, "hours_ago": 0.5,    "severity": "warning",  "message": "Коэффициент мощности ниже порога (0.87)",         "node_id": "TIT.209", "change_mask": 4  },
-    { "id": 1007, "hours_ago": 0.1667, "severity": "normal",   "message": "Трансформатор T1: температура в норме (42.3\u00B0C)", "node_id": "TIT.211", "change_mask": 1  },
-    { "id": 1008, "hours_ago": 0.75,   "severity": "critical", "message": "КП-03: обрыв связи", "node_id": "TS.105", "change_mask": 16, "acknowledged": false },
-    { "id": 1009, "hours_ago": 0.25,   "severity": "warning",  "message": "Частота ниже уставки (49.97 Гц)", "node_id": "TIT.208", "change_mask": 4, "acknowledged": false }
+    {
+      "id": 1001,
+      "hours_ago": 5.0,
+      "severity": "normal",
+      "message": "КП-01 на связи",
+      "node_id": "TS.103",
+      "change_mask": 16
+    },
+    {
+      "id": 1002,
+      "hours_ago": 4.0,
+      "severity": "warning",
+      "message": "Напряжение L1-L2 верхняя уставка (10.8 кВ)",
+      "node_id": "TIT.202",
+      "change_mask": 4
+    },
+    {
+      "id": 1003,
+      "hours_ago": 3.0,
+      "severity": "critical",
+      "message": "КП-02: обрыв связи",
+      "node_id": "TS.104",
+      "change_mask": 16
+    },
+    {
+      "id": 1004,
+      "hours_ago": 2.0,
+      "severity": "normal",
+      "message": "КП-02: связь восстановлена",
+      "node_id": "TS.104",
+      "change_mask": 16
+    },
+    {
+      "id": 1005,
+      "hours_ago": 1.0,
+      "severity": "normal",
+      "message": "Ручной ввод: Активная мощность = 130.5 МВт",
+      "node_id": "TIT.200",
+      "change_mask": 32
+    },
+    {
+      "id": 1006,
+      "hours_ago": 0.5,
+      "severity": "warning",
+      "message": "Коэффициент мощности ниже порога (0.87)",
+      "node_id": "TIT.209",
+      "change_mask": 4
+    },
+    {
+      "id": 1007,
+      "hours_ago": 0.1667,
+      "severity": "normal",
+      "message": "Трансформатор T1: температура в норме (42.3°C)",
+      "node_id": "TIT.211",
+      "change_mask": 1
+    },
+    {
+      "id": 1008,
+      "hours_ago": 0.75,
+      "severity": "critical",
+      "message": "КП-03: обрыв связи",
+      "node_id": "TS.105",
+      "change_mask": 16,
+      "acknowledged": false
+    },
+    {
+      "id": 1009,
+      "hours_ago": 0.25,
+      "severity": "warning",
+      "message": "Частота ниже уставки (49.97 Гц)",
+      "node_id": "TIT.208",
+      "change_mask": 4,
+      "acknowledged": false
+    }
   ],
-
   "graph": {
     "panes": [
-      { "index": 1, "size": 35, "active": true },
-      { "index": 2, "size": 35 },
-      { "index": 3, "size": 30 }
+      {
+        "index": 1,
+        "size": 35,
+        "active": true
+      },
+      {
+        "index": 2,
+        "size": 35
+      },
+      {
+        "index": 3,
+        "size": 30
+      }
     ],
     "items": [
-      { "path": "TIT.200", "color": "#0000FF", "pane": 1, "dots": true, "stepped": false },
-      { "path": "TIT.201", "color": "#FF0000", "pane": 2, "dots": true, "stepped": false },
-      { "path": "TIT.208", "color": "#FF8C00", "pane": 3, "dots": true, "stepped": false }
+      {
+        "path": "TIT.200",
+        "color": "#0000FF",
+        "pane": 1,
+        "dots": true,
+        "stepped": false
+      },
+      {
+        "path": "TIT.201",
+        "color": "#FF0000",
+        "pane": 2,
+        "dots": true,
+        "stepped": false
+      },
+      {
+        "path": "TIT.208",
+        "color": "#FF8C00",
+        "pane": 3,
+        "dots": true,
+        "stepped": false
+      }
     ],
-    "time_scale": { "time": "Now", "span": "24:00:00", "scroll_bar": true }
+    "time_scale": {
+      "time": "Now",
+      "span": "24:00:00",
+      "scroll_bar": true
+    }
   },
-
   "_screenshots_comment": [
     "Filenames track the docs image names where possible so the output is",
     "a drop-in replacement for the current docs images. Dimensions",
@@ -248,46 +1337,260 @@
     "unused id rather than dropping the row."
   ],
   "screenshots": [
-    { "type": "Graph",          "filename": "graph-cursor.png",        "width": 1024, "height": 901 },
-    { "type": "Graph",          "filename": "limits-chart.png",        "width": 1024, "height": 901 },
-    { "type": "SeriesInspector", "filename": "series-inspector.png",    "width": 290,  "height": 480 },
-    { "type": "DeviceDiagnostics", "filename": "device-diagnostics.png", "width": 300,  "height": 520 },
-    { "type": "UserAccess",     "filename": "users-rbac.png",          "width": 320,  "height": 400 },
-    { "type": "Users",          "filename": "users-admin.png",         "width": 700,  "height": 440, "min_rows": 9 },
-    { "type": "TransmissionRule", "filename": "transmission-rule.png",  "width": 320,  "height": 420 },
-    { "type": "BulkCreate",     "filename": "bulk-create.png",         "width": 560,  "height": 760 },
-    { "type": "SeverityTiles",  "filename": "severity-tiles.png",      "width": 420,  "height": 32 },
-    { "type": "Inspector",      "filename": "inspector-panel.png",     "width": 320,  "height": 420 },
-    { "type": "InspectorEvent", "filename": "inspector-event.png",     "width": 320,  "height": 420 },
-    { "type": "Table",          "filename": "table.png",               "width": 900,  "height": 300,
-      "paths": ["TIT.200", "TIT.201", "TIT.202", "TIT.208", "TIT.211", "TIT.999"] },
-    { "type": "Table",          "filename": "table-workspace.png",     "width": 900,  "height": 340, "min_rows": 6,
-      "paths": ["TIT.200", "TIT.201", "TIT.202", "TIT.208", "TIT.211", "TIT.999"] },
-    { "type": "Summ",           "filename": "summary.png",             "width": 800,  "height": 500 },
-    { "type": "Event",          "filename": "events.png",              "width": 800,  "height": 300 },
-    { "type": "EventJournal",   "filename": "events-log.png",          "width": 800,  "height": 400 },
-    { "type": "EventJournal",   "filename": "events-alarm-surface.png", "width": 800, "height": 400 },
-    { "type": "Log",            "filename": "device-watch.png",        "width": 800,  "height": 400 },
-    { "type": "Nodes",          "filename": "object-tree.png",         "width": 300,  "height": 500 },
-    { "type": "Struct",         "filename": "devices.png",             "width": 300,  "height": 500 },
-    { "type": "Subsystems",     "filename": "hardware-tree.png",       "width": 300,  "height": 500 },
-    { "type": "Users",          "filename": "users.png",               "width": 500,  "height": 302, "min_rows": 13 },
-    { "type": "Params",         "filename": "parameters.png",          "width": 500,  "height": 400 },
-    { "type": "SimulationItems", "filename": "admin-simulation.png",    "width": 560,  "height": 320, "min_rows": 4 },
-    { "type": "Params",         "filename": "admin-formats.png",       "width": 560,  "height": 300, "min_rows": 4 },
-    { "type": "HistoricalDB",   "filename": "admin-historical-dbs.png", "width": 560, "height": 280, "min_rows": 3 },
-    { "type": "NewProps",       "filename": "config-parameters.png",   "width": 640,  "height": 480, "path": "TS.702" },
-    { "type": "NewProps",       "filename": "config-address-map.png",  "width": 640,  "height": 480, "path": "TS.702", "click_object": "addressMapSubtab" },
-    { "type": "NewProps",       "filename": "config-limits.png",       "width": 640,  "height": 480, "path": "TS.114", "click_object": "limitsSubtab" },
-    { "type": "CusTable",       "filename": "sheet.png",               "width": 800,  "height": 400 },
-    { "type": "Favorites",      "filename": "favorites.png",           "width": 300,  "height": 400 },
-    { "type": "FileSystemView", "filename": "files.png",               "width": 300,  "height": 400 },
-    { "type": "TimeVal",        "filename": "data.png",                "width": 800,  "height": 400 },
-    { "type": "Transmission",   "filename": "client-retransmission.png", "path": "TS.702", "width": 763,  "height": 645, "rows": 4 },
-    { "type": "Transmission",   "filename": "transmission-rules.png",   "path": "TS.702", "width": 763,  "height": 645, "rows": 4 },
-    { "type": "Display",        "filename": "substation-display.png",   "width": 1100, "height": 720 }
+    {
+      "type": "Graph",
+      "filename": "graph-cursor.png",
+      "width": 1024,
+      "height": 901
+    },
+    {
+      "type": "Graph",
+      "filename": "limits-chart.png",
+      "width": 1024,
+      "height": 901
+    },
+    {
+      "type": "SeriesInspector",
+      "filename": "series-inspector.png",
+      "width": 290,
+      "height": 480
+    },
+    {
+      "type": "DeviceDiagnostics",
+      "filename": "device-diagnostics.png",
+      "width": 300,
+      "height": 520
+    },
+    {
+      "type": "UserAccess",
+      "filename": "users-rbac.png",
+      "width": 320,
+      "height": 400
+    },
+    {
+      "type": "Users",
+      "filename": "users-admin.png",
+      "width": 700,
+      "height": 440,
+      "min_rows": 9
+    },
+    {
+      "type": "TransmissionRule",
+      "filename": "transmission-rule.png",
+      "width": 320,
+      "height": 420
+    },
+    {
+      "type": "BulkCreate",
+      "filename": "bulk-create.png",
+      "width": 560,
+      "height": 760
+    },
+    {
+      "type": "SeverityTiles",
+      "filename": "severity-tiles.png",
+      "width": 420,
+      "height": 32
+    },
+    {
+      "type": "Inspector",
+      "filename": "inspector-panel.png",
+      "width": 320,
+      "height": 420
+    },
+    {
+      "type": "InspectorEvent",
+      "filename": "inspector-event.png",
+      "width": 320,
+      "height": 420
+    },
+    {
+      "type": "Table",
+      "filename": "table.png",
+      "width": 900,
+      "height": 300,
+      "paths": [
+        "TIT.200",
+        "TIT.201",
+        "TIT.202",
+        "TIT.208",
+        "TIT.211",
+        "TIT.999"
+      ]
+    },
+    {
+      "type": "Table",
+      "filename": "table-workspace.png",
+      "width": 900,
+      "height": 340,
+      "min_rows": 6,
+      "paths": [
+        "TIT.200",
+        "TIT.201",
+        "TIT.202",
+        "TIT.208",
+        "TIT.211",
+        "TIT.999"
+      ]
+    },
+    {
+      "type": "Summ",
+      "filename": "summary.png",
+      "width": 800,
+      "height": 500
+    },
+    {
+      "type": "Event",
+      "filename": "events.png",
+      "width": 800,
+      "height": 300
+    },
+    {
+      "type": "EventJournal",
+      "filename": "events-log.png",
+      "width": 800,
+      "height": 400
+    },
+    {
+      "type": "EventJournal",
+      "filename": "events-alarm-surface.png",
+      "width": 800,
+      "height": 400
+    },
+    {
+      "type": "Log",
+      "filename": "device-watch.png",
+      "width": 800,
+      "height": 400
+    },
+    {
+      "type": "Nodes",
+      "filename": "object-tree.png",
+      "width": 300,
+      "height": 500
+    },
+    {
+      "type": "Struct",
+      "filename": "devices.png",
+      "width": 300,
+      "height": 500
+    },
+    {
+      "type": "Subsystems",
+      "filename": "hardware-tree.png",
+      "width": 300,
+      "height": 500
+    },
+    {
+      "type": "Users",
+      "filename": "users.png",
+      "width": 500,
+      "height": 302,
+      "min_rows": 13
+    },
+    {
+      "type": "Params",
+      "filename": "parameters.png",
+      "width": 500,
+      "height": 400
+    },
+    {
+      "type": "SimulationItems",
+      "filename": "admin-simulation.png",
+      "width": 560,
+      "height": 320,
+      "min_rows": 4
+    },
+    {
+      "type": "Params",
+      "filename": "admin-formats.png",
+      "width": 560,
+      "height": 300,
+      "min_rows": 4
+    },
+    {
+      "type": "HistoricalDB",
+      "filename": "admin-historical-dbs.png",
+      "width": 560,
+      "height": 280,
+      "min_rows": 3
+    },
+    {
+      "type": "NewProps",
+      "filename": "config-parameters.png",
+      "width": 640,
+      "height": 480,
+      "path": "TS.702"
+    },
+    {
+      "type": "NewProps",
+      "filename": "config-address-map.png",
+      "width": 640,
+      "height": 480,
+      "path": "TS.702",
+      "click_object": "addressMapSubtab"
+    },
+    {
+      "type": "NewProps",
+      "filename": "config-limits.png",
+      "width": 640,
+      "height": 480,
+      "path": "TS.114",
+      "click_object": "limitsSubtab"
+    },
+    {
+      "type": "CusTable",
+      "filename": "sheet.png",
+      "width": 800,
+      "height": 400
+    },
+    {
+      "type": "Favorites",
+      "filename": "favorites.png",
+      "width": 300,
+      "height": 400
+    },
+    {
+      "type": "FileSystemView",
+      "filename": "files.png",
+      "width": 300,
+      "height": 400
+    },
+    {
+      "type": "TimeVal",
+      "filename": "data.png",
+      "width": 800,
+      "height": 400
+    },
+    {
+      "type": "Transmission",
+      "filename": "client-retransmission.png",
+      "path": "TS.702",
+      "width": 763,
+      "height": 645,
+      "rows": 4
+    },
+    {
+      "type": "Transmission",
+      "filename": "transmission-rules.png",
+      "path": "TS.702",
+      "width": 763,
+      "height": 645,
+      "rows": 4
+    },
+    {
+      "type": "Display",
+      "filename": "substation-display.png",
+      "width": 1100,
+      "height": 720
+    },
+    {
+      "type": "Debugger",
+      "filename": "debugger.png",
+      "width": 1000,
+      "height": 460
+    }
   ],
-
   "_dialogs_comment": [
     "Modal-dialog captures. Each entry's `kind` is dispatched in the",
     "CaptureDialogs TEST_F to build the right dialog class with its own",
@@ -297,17 +1600,76 @@
     "ignores the request anyway."
   ],
   "dialogs": [
-    { "kind": "login",        "filename": "client-login.png",            "width": 403, "height": 180 },
-    { "kind": "login",        "filename": "workbench-login.png",         "width": 490, "height": 245, "themed_only": true },
-    { "kind": "limits",       "filename": "limits.png",                  "width": 344, "height": 296 },
-    { "kind": "write-manual", "filename": "ti-manual-control.png",       "width": 354, "height": 207 },
-    { "kind": "write-remote", "filename": "ti-remote-control-enabled.png","width": 354, "height": 207 },
-    { "kind": "control-confirm","filename": "control-select-confirm.png" },
-    { "kind": "command-palette","filename": "command-palette.png",         "width": 560, "height": 380 },
-    { "kind": "about",          "filename": "about.png",                   "width": 420, "height": 300 },
-    { "kind": "change-password","filename": "change-password.png",         "width": 380, "height": 220 },
-    { "kind": "time-range",     "filename": "time-range.png",              "width": 420, "height": 320 },
-    { "kind": "multi-create",   "filename": "multi-create.png",            "width": 480, "height": 420 },
-    { "kind": "message-box",    "filename": "message-box.png",             "width": 420, "height": 160 }
+    {
+      "kind": "login",
+      "filename": "client-login.png",
+      "width": 403,
+      "height": 180
+    },
+    {
+      "kind": "login",
+      "filename": "workbench-login.png",
+      "width": 490,
+      "height": 245,
+      "themed_only": true
+    },
+    {
+      "kind": "limits",
+      "filename": "limits.png",
+      "width": 344,
+      "height": 296
+    },
+    {
+      "kind": "write-manual",
+      "filename": "ti-manual-control.png",
+      "width": 354,
+      "height": 207
+    },
+    {
+      "kind": "write-remote",
+      "filename": "ti-remote-control-enabled.png",
+      "width": 354,
+      "height": 207
+    },
+    {
+      "kind": "control-confirm",
+      "filename": "control-select-confirm.png"
+    },
+    {
+      "kind": "command-palette",
+      "filename": "command-palette.png",
+      "width": 560,
+      "height": 380
+    },
+    {
+      "kind": "about",
+      "filename": "about.png",
+      "width": 420,
+      "height": 300
+    },
+    {
+      "kind": "change-password",
+      "filename": "change-password.png",
+      "width": 380,
+      "height": 220
+    },
+    {
+      "kind": "time-range",
+      "filename": "time-range.png",
+      "width": 420,
+      "height": 320
+    },
+    {
+      "kind": "multi-create",
+      "filename": "multi-create.png",
+      "width": 480,
+      "height": 420
+    },
+    {
+      "kind": "message-box",
+      "filename": "message-box.png",
+      "width": 420,
+      "height": 160
+    }
   ]
 }

@@ -43,6 +43,8 @@ add_executable(client_screenshot_generator
   "device_diagnostics_capture.h"
   "dialog_capture.cpp"
   "dialog_capture.h"
+  "debugger_capture.cpp"
+  "debugger_capture.h"
   "fixture_builder.cpp"
   "fixture_builder.h"
   ${SCREENSHOT_GENERATOR_WIN32_RESOURCES}

@@ -1,4 +1,5 @@
 #include "bulk_create_capture.h"
+#include "debugger_capture.h"
 #include "device_diagnostics_capture.h"
 #include "dialog_capture.h"
 #include "display_capture.h"
@@ -363,7 +364,9 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
 
   const auto& main_windows = app_.main_window_manager().main_windows();
   ASSERT_EQ(main_windows.size(), 1u);
-  const MainWindow& main_window = main_windows.front();
+  // Non-const: capturing a sidebar pane means selecting its activity-rail mode
+  // first, the same way an operator would.
+  MainWindow& main_window = const_cast<MainWindow&>(main_windows.front());
 
   int captured = 0;
   // Each non-standalone spec adds its own window to the fixture page (see
@@ -414,6 +417,14 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
       ++captured;
       continue;
     }
+    // The protocol debugger is a --debug-gated window, not a registered view,
+    // so the ordinary view sweep cannot reach it; it is built here over a
+    // fixture request trace.
+    if (spec.window_type == "Debugger") {
+      SaveDebuggerScreenshot(spec);
+      ++captured;
+      continue;
+    }
     // The KPI severity tiles are standalone reshell chrome (the context bar's
     // alarm summary), built from seeded counts with no node service.
     if (spec.window_type == "SeverityTiles") {
@@ -438,6 +449,19 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     // not opened as a page view, so skip it in the view-matching loop.
     if (spec.window_type == "Display")
       continue;
+
+    // A sidebar pane is only on screen while its activity-rail mode is
+    // selected — the rail is authoritative over the left dock (see
+    // main_window/pane_modes.h). Select the owning mode first, exactly as an
+    // operator would, so the pane exists to be captured.
+    if (main_window.SelectPaneModeForPane(spec.window_type)) {
+      // The switch destroyed the previous mode's panes. `used_views` keys on
+      // raw pointers, and a freshly created view can land on a freed address,
+      // so a stale entry would make the new pane look already-consumed. The
+      // set only disambiguates specs that share a window_type within one
+      // layout, so dropping it at a mode boundary loses nothing.
+      used_views.clear();
+    }
 
     OpenedView* view = nullptr;
     for (OpenedView* v : main_window.opened_views()) {
@@ -821,7 +845,8 @@ TEST_F(ScreenshotGenerator, CaptureOverviewPage) {
   // tabifies with the others (the dock's tab bar is the pane switcher). This
   // is the runtime half of OverviewPageTest, which can only assert the page
   // composition - the window infos are registered by the running app.
-  for (const char* pane : {"Struct", "Favorites", "Portfolio"}) {
+  // The Objects mode's panes, which is what the rail selects by default.
+  for (const char* pane : {"Struct", "Portfolio"}) {
     OpenedView* pane_view = nullptr;
     for (OpenedView* view : main_window.opened_views()) {
       if (view->window_info().name == pane) {

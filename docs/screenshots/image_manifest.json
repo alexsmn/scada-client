@@ -1,101 +1,701 @@
 {
   "images": [
-    { "file": "MODBUS_func.png", "tag": "manual-diagram", "referenced_from": ["protocols.md"], "notes": "Modbus function-code table, hand-drawn." },
-    { "file": "client-login.png", "tag": "auto-dialog", "referenced_from": ["getting-started.md"], "notes": "LoginDialog modal shown at startup; rendered by the dialog pipeline." },
-    {"file": "workbench-login.png", "tag": "reshell-theme", "referenced_from": ["client/workbench.md"], "notes": "The same LoginDialog under --theme (backlog 3.1): the reshell chrome wrapped around the .ui form - brand lockup (mark + Sign in + product line) and the 'Connecting to: <backend> · <server>' summary that tracks the fields. Saved under its own name so the legacy client-login.png the getting-started page embeds is never overwritten by a themed render. In the themed-ctest --only list. macOS render pending a Windows re-render; out of current_generator_owned_subset (subset is auto-* only)."},
-    { "file": "command-palette.png", "tag": "auto-dialog", "referenced_from": ["client/workbench.md"], "notes": "Ctrl-K command palette (opt-in UX). Rendered by the dialog pipeline over a fixture command list; regenerate with --theme=dark for the published (workbench) look — the no-theme managed run renders the legacy look, so keep the themed render in img/. Also serves client/docs/ux/shell.md. Published from a macOS render pending a Windows re-render." },
-    {"file": "about.png", "tag": "auto-dialog", "published": false, "referenced_from": [], "notes": "About dialog (Help menu). Capture also guards the ShowSelfOwnedModalDialog regression: the factory used to discard a lazy Awaitable and the dialog never showed. Validation-only; themed look via --theme runs (backlog 3.4)."},
-    {"file": "change-password.png", "tag": "auto-dialog", "published": false, "referenced_from": [], "notes": "Set Password dialog for the fixture administrator (USER.5). Validation-only; themed look via --theme runs (backlog 3.4)."},
-    {"file": "time-range.png", "tag": "auto-dialog", "published": false, "referenced_from": [], "notes": "Custom time-range (period) picker over its default interval range; date edits render the frozen fixture clock. Validation-only; themed look via --theme runs (backlog 3.4)."},
-    {"file": "multi-create.png", "tag": "auto-dialog", "published": false, "referenced_from": [], "notes": "Bulk TS/TI creation dialog under the DataItems root, device combo from the fixture Devices folder. Also guards the ShowSelfOwnedModalDialog regression. Validation-only; themed look via --theme runs (backlog 3.4)."},
-    {"file": "message-box.png", "tag": "auto-dialog", "published": false, "referenced_from": [], "notes": "The shared DialogService::RunMessageBox confirmation (question variant, Yes/No) — the shape the two-stage confirms and apply/discard prompts use. Validation-only; themed look via --theme runs (closes backlog 0.4: stock Qt widgets under the token palette/QSS are the control primitives)."},
-    { "file": "client-retransmission.png", "tag": "auto-view", "referenced_from": ["client.md"], "notes": "Transmission window type." },
-    {"file": "transmission-rules.png", "tag": "reshell-theme", "referenced_from": ["client/workbench.md"], "notes": "The transmission-rules grid under --theme (device TS.702, the same populated fixture as the legacy client-retransmission.png, which keeps rendering unchanged in the no-theme pipeline): themed aui::Grid, and selecting a rule now fills the shell's Transmission-rule inspector. In the themed-ctest --only list. Published from a macOS render pending a Windows re-render; kept out of current_generator_owned_subset (subset is auto-* only)."},
-    { "file": "client-window.png", "tag": "manual-modus", "referenced_from": ["client.md"], "notes": "Docs image is a full main window with a Modus schematic centre; CaptureMainWindow only renders the non-Modus EventJournal + Summ + Struct fallback, so keep this hand-maintained until the fake Modus runtime exists." },
-    {"file": "workbench-window.png", "tag": "reshell-theme", "referenced_from": ["client/workbench.md"], "notes": "The reshelled operator workbench: CaptureMainWindow under --theme renders the full shell (activity rail, context bar with KPI severity tiles, command toolbar, editor tabs over EventJournal/Summ/Struct, the Inspector fronted in the right dock, status strip) and saves it under this name so the legacy client-window.png is never overwritten by a themed render. Fixture pending alarms light the tiles and the journal chrome. Published from a macOS render pending a Windows re-render; kept out of current_generator_owned_subset (subset is auto-* only). STALE (2026-07-26): the context bar no longer carries the identity/connection cluster - user/connection/server/endpoint are in the status strip only - but the published PNG still shows it; re-render on Windows and republish. The manual text in scada-docs client/workbench.md (RU+EN) is already updated."},
-    {"file": "workbench-overview.png", "tag": "reshell-theme", "referenced_from": ["client/workbench.md"], "notes": "The Overview landing cockpit: a fresh page-less profile under the reshell theme boots through CreateInitialPage into MakeOverviewPage - the Explorer sidebar (tabified with its Favorites and Portfolio sibling panes) beside the dominant trend (65%) over the actionable-alarm strip, with the Inspector fronted on the right. Captured via the production seeding path (CaptureOverviewPage), so it guards the reshell initial-page routing too. macOS render pending a Windows re-render; out of current_generator_owned_subset (subset is auto-* only)."},
-    { "file": "control-confirm.jpg", "tag": "obsolete", "referenced_from": [], "notes": "Superseded by t{s,i}-remote-control-confirm.png." },
-    { "file": "control-select-confirm.png", "tag": "auto-dialog", "referenced_from": ["client.md"], "notes": "The operate-stage review of a select-before-operate command: the outstation has accepted the Select and is armed, and the operator is asked to confirm before the Operate goes out (answering no now sends Cancel instead of leaving the selection armed until sboTimeout). Message text comes from the real WriteModel::GetConfirmationMessage(value, second_stage=true) over the fixture analog item, shown through the ordinary DialogService question box, so it cannot drift from the shipped wording. The select itself is not issued — a Control-object Call needs a server; the two-phase exchange is covered by the iec104 tier E2E and WriteModelTest.TwoStagedControlSelectsConfirmsThenOperates. Published from a macOS render pending the Windows update-screenshots review; candidate for current_generator_owned_subset after that review." },
-    { "file": "control-ti.jpg", "tag": "obsolete", "referenced_from": [], "notes": "Superseded by ti-remote-control-enabled.png." },
-    { "file": "control-ts.jpg", "tag": "obsolete", "referenced_from": [], "notes": "Superseded by ts-remote-control-enabled.png." },
-    { "file": "devices-create.png", "tag": "auto-state", "referenced_from": ["dev/devices.md"], "notes": "Struct window, device freshly created." },
-    { "file": "devices-off.png", "tag": "auto-state", "referenced_from": ["dev/devices.md"], "notes": "Struct window, device offline." },
-    { "file": "devices-on.png", "tag": "auto-state", "referenced_from": ["client.md"], "notes": "Struct window, device online." },
-    { "file": "devices-status.png", "tag": "auto-state", "referenced_from": ["client.md"], "notes": "Struct window, status column visible." },
-    { "file": "devices-traffic.png", "tag": "auto-state", "referenced_from": ["client/device-watch.md"], "notes": "Log window showing live device traffic." },
-    { "file": "display.png", "tag": "manual-modus", "referenced_from": ["client/display.md"], "notes": "Modus schematic; out of scope until fake runtime lands." },
-    { "file": "substation-display.png", "tag": "reshell-theme", "referenced_from": ["client/workbench.md"], "notes": "Reshelled substation display under --theme: the DisplayFrame chrome (Live indicator, breadcrumb, zoom/fit/export) around the cross-platform VDS renderer, plus the bay strips below it — the Measurements watch (live signal values) and the Recent-events list (the fixture's pending alarms). The Measurements Value/Updated cells now fill: the frame refreshes on the spec's property_change_handler (the PROPERTY_CURRENT delivery path), not only update_handler; CaptureDisplay asserts the value cell is non-empty so that cannot regress silently. The frame is built only under the reshell theme (WrapDisplayInFrame gates on it), hence reshell-theme and the themed ctest. Published from a macOS render pending a Windows re-render; out of current_generator_owned_subset (subset is auto-* only). Windows-only Modus ActiveX not exercised here." },
-    { "file": "events-cur.jpg", "tag": "obsolete", "referenced_from": [], "notes": "Superseded by menu-events-log.png." },
-    { "file": "firewall.jpg", "tag": "manual-os", "referenced_from": [], "notes": "Windows firewall dialog; OS-level." },
-    { "file": "firewall.png", "tag": "manual-os", "referenced_from": [], "notes": "Windows firewall dialog; OS-level." },
-    { "file": "graph-cursor.png", "tag": "auto-view", "referenced_from": ["client/graph.md"], "notes": "Graph window with a time cursor: the capture now places and selects one (GraphAxis::AddCursor + Graph::SelectCursor) so the themed legend's '@ cursor' column is populated - before that it rendered no cursor at all and every row read '-', despite the file's name. All three series now vary and the legend's Min/Max/Average differ per pane, once a history-service bug was fixed (a read whose upper bound was the current-only sentinel DateTime::Max spread its 48 points across ~285000 years, so all but the first fell outside the window and the series read flat)." },
-    { "file": "series-inspector.png", "tag": "auto-view", "published": false, "referenced_from": [], "notes": "Trend workspace per-series inspector panel (SeriesInspector): colour swatches, display flags, limits, source. Reshell-only chrome, captured under --theme. Limits/quality populate because the capture makes the graphed node resident (FetchGraphNodesResident) before building the panel. Validation-only; not yet published to the manual." },
-    {"file": "inspector-panel.png", "tag": "auto-view", "referenced_from": ["client/workbench.md"], "notes": "Reshell Inspector panel (modules/inspector) standalone: header + node-id subtitle, live-value hero with quality pill, Measurements (Updated + the node's configured limit bands, the breached one marked), and the Control action with its unavailable-reason line (UX 4.3). Filled with an analog signal sitting above its Hi warning limit and carrying no output channel, so both the marked breach and the disabled-control explanation render. Renders the dark tokens regardless of --theme (standalone chrome). Published from a macOS render pending the Windows update-screenshots review; candidate for current_generator_owned_subset after that review."},
-    {"file": "inspector-event.png", "tag": "reshell-theme", "referenced_from": ["client/workbench.md"], "notes": "The Inspector's event (alarm) card for a journal-row selection (UX 2.2): severity band pill (Критично 800), message, event time at the frozen fixture clock, '— pending —' state, the enabled Acknowledge / To-graph actions and the History block (the event's lifecycle: raised, received by the server, awaiting acknowledgement). Standalone chrome but severity colours are theme-gated, hence reshell-theme; in the themed-ctest --only list. Published from a macOS render pending a Windows re-render; kept out of current_generator_owned_subset (subset is auto-* only)."},
-    { "file": "device-diagnostics.png", "tag": "auto-view", "published": false, "referenced_from": [], "notes": "Configuration workbench device-diagnostics inspector (DeviceDiagnostics): link-status hero (up/down/disabled) + live traffic/polling counters from the device's diagnostic child variables (Online/Enabled/MessagesIn/...). Reshell-only chrome (backlog 5.0), captured under --theme against a fixture device (TS.103, link down). Standalone like series-inspector; the capture makes the device resident (FetchNodesResident) so ShowDevice resolves the diagnostic variables and reads their current values. Not yet embedded in a manual page." },
-    { "file": "users-rbac.png", "tag": "auto-view", "published": false, "referenced_from": [], "notes": "Users-admin RBAC inspector (UserAccess): role pill (Administrator/Operator/Observer, derived from the user's AccessRights bitmask) + the three permission rows (view / control / configure) with granted state. Reshell-only chrome (backlog 5.1), captured under --theme against a fixture user (USER.5, AccessRights=3 = full Administrator). Standalone like device-diagnostics; the capture makes the user resident (FetchNodesResident) so ShowUser resolves UserType_AccessRights and reads its value. Not yet embedded in a manual page." },
-    { "file": "transmission-rule.png", "tag": "auto-view", "referenced_from": ["client/workbench.md"], "notes": "Transmission-rules editor inspector (TransmissionRule): the right region of transmission-rules.html for a selected transmission item — source signal + type tag (TS/TI), destination endpoint + IOA, and protocol (Modbus / IEC 60870-5-104 / IEC 61850, from the item's type). Reshell-only chrome (backlog 5.2), captured under --theme against a fixture rule (TS.733 TX_Ua → Modbus IOA 2001). Standalone like users-rbac; the capture makes the rule + its type chain, source and parent endpoint resident so ShowRule resolves the source/endpoint and reads SourceAddress. Read-only in this capture (no shell write path); the mockup's Trigger/Transform/Status/counters are server-side driver concepts absent from the client node model. Not yet embedded in a manual page." },
-    { "file": "bulk-create.png", "tag": "auto-view", "published": false, "referenced_from": [], "notes": "Bulk-create wizard preview (BulkCreate): the naming/addressing step of bulk-create.html — a {n}-token name + NodeId pattern, start/count/step + IOA start/step, and a live preview grid (# / Name / NodeId / IOA / Status) with a 'N new / M conflict' summary. Reshell-only chrome (backlog 5.4), standalone and node-service-free: the capture seeds a demo pattern (TS{n} current, 12 items from IOA 4001) and one existing NodeId (TS8), so row 8 flags as a red 'exists' conflict. Driven by the pure ExpandBulkCreate engine. The actual node creation rides the existing MultiCreateModel::Run (Session.addNodes). Not yet embedded in a manual page." },
-    { "file": "config-parameters.png", "tag": "reshell-theme", "published": false, "referenced_from": [], "notes": "Config workbench tabbed device-parameter editor (NewProps under --theme): DeviceParameterForm over the real PropertyModel, one subtab per property group, Revert/Apply. Theme-gated reshell chrome (backlog 5.0) — rendered only under --theme (the legacy NewProps view is the property grid), so it is excluded from the no-theme managed check and guarded by client_screenshot_check_themed. Fixture device TS.702." },
-    { "file": "config-address-map.png", "tag": "reshell-theme", "published": false, "referenced_from": [], "notes": "Config workbench Address-map subtab (NewProps under --theme, click_object addressMapSubtab): read-only Signal / Type (TS,TI) / IOA / NodeId grid from the device's transmission items. Theme-gated reshell chrome (backlog 5.0); guarded by client_screenshot_check_themed. Fixture device TS.702." },
-    { "file": "config-limits.png", "tag": "reshell-theme", "published": false, "referenced_from": [], "notes": "Config workbench Limits subtab (NewProps under --theme, click_object limitsSubtab): read-only Signal / LoLo / Lo / Hi / HiHi grid of the device's analog items. Theme-gated reshell chrome (backlog 5.0); guarded by client_screenshot_check_themed. Fixture device TS.114." },
-    { "file": "hardware-tree.png", "tag": "reshell-theme", "published": false, "referenced_from": [], "notes": "Hardware explorer under --theme: filter field + per-device good/uncertain/bad status dots (Subsystems / HardwareTreeView). Theme-gated reshell chrome (backlog 5.0/4.2); the legacy view is a bare tree, so it is excluded from the no-theme managed check. Fixture devices KP-01 offline / KP-02 online / KP-03 disabled." },
-            {"file": "object-tree.png", "tag": "reshell-theme", "published": false, "referenced_from": [], "notes": "Object explorer under --theme: per-node quality status dots (backlog 4.1). Theme-gated reshell chrome; the legacy view is a bare tree, so it is excluded from the no-theme managed check."},
-    { "file": "admin-simulation.png", "tag": "reshell-theme", "published": false, "referenced_from": [], "notes": "Simulation-signals admin table (SimulationItems window) under --theme: validates the generic aui::Grid token adoption (backlog 5.1) — flat themed header, hairline gridlines, accent selection — which every node-table admin surface (Formats / Simulation / Historical DBs) shares while keeping inline editing. Needs the SimulationSignals folder + SimulationSignalType added to scada_test_address_space.h and four fixture signals (SCADA.9301-9304). Theme-gated; guarded by client_screenshot_check_themed." },
-    { "file": "admin-formats.png", "tag": "reshell-theme", "published": false, "referenced_from": [], "notes": "TS-format admin table (Params/TsFormats window) under --theme: the themed generic aui::Grid over the TsFormats folder — Name / OpenLabel / CloseLabel (LocalizedText state captions) / OpenColor / CloseColor. Sibling of admin-simulation.png (backlog 5.1). Needs the TsFormats folder + completed TsFormatType declarations in scada_test_address_space.h, four fixture formats (SCADA.9401-9404), and the fixture LocalizedText-label handling. Theme-gated; guarded by client_screenshot_check_themed." },
-    { "file": "admin-historical-dbs.png", "tag": "reshell-theme", "published": false, "referenced_from": [], "notes": "Historical-databases admin table (HistoricalDB window) under --theme: the themed generic aui::Grid over the HistoricalDatabases folder — Name / Depth / PendingTaskCount / ItemCount / WriteValueCount. Third sibling of admin-simulation.png / admin-formats.png (backlog 5.1). Needs the HistoricalDatabases folder + HistoricalDatabaseType (Depth/ItemCount/WriteValueCount/PendingTaskCount) in scada_test_address_space.h and three fixture databases (SCADA.9501-9503). Theme-gated; guarded by client_screenshot_check_themed." },
-    { "file": "events-alarm-surface.png", "tag": "reshell-theme", "referenced_from": ["client/workbench.md"], "notes": "Event journal as an alarm surface (backlog 2.2) under --theme: leading pending-dot column (severity-coloured), the Severity column naming the alarm band (Критично 800 / Предупреждение 600), an unacknowledged row's Acknowledge-Time cell reading '— pending —', and the alarm footer (displayed-backlog summary + Acknowledge-all). Fixture seeds two pending alarms (ids 1008/1009, acknowledged:false). A second EventJournal spec alongside the legacy events-log.png, which keeps rendering the unchanged legacy journal in the no-theme pipeline. Guarded by client_screenshot_check_themed. Published from a macOS render pending a Windows re-render; kept out of current_generator_owned_subset (subset is auto-* only)." },
-    {"file": "table-workspace.png", "tag": "reshell-theme", "referenced_from": ["client/workbench.md"], "notes": "Table workspace under --theme: the reshell TableToolbar (add-signal / delete / move / sort keys; shell To-graph/CSV/Print hide when unresolved) over the operator grid with the Quality column and monospace value/timestamp cells (UX 0.3 + 2.8). Theme-gated (the legacy Table is the bare grid) - regenerate with --theme=dark --only=table-workspace.png; guarded by client_screenshot_check_themed. Published from a macOS render pending a Windows re-render; kept out of current_generator_owned_subset (subset is auto-* only)."},
-    { "file": "severity-tiles.png", "tag": "reshell-theme", "published": false, "referenced_from": [], "notes": "KPI severity tile strip (backlog 2.3): the context bar's Critical / Warning / Unacknowledged tiles rendered by SeverityTileStrip from BuildSeverityTiles() — most severe first, severity-coloured and bold while a count is live, muted at zero; unacknowledged carries no severity colour (workflow state, not severity). Captured standalone from seeded counts (1 critical / 3 warning / 7 unacknowledged) because the fixture holds no unacknowledged alarms, so the in-window tiles would all render zero. Theme-gated reshell chrome — MakeSeverityTileStrip returns nullptr under the legacy theme; guarded by client_screenshot_check_themed." },
-    { "file": "users-admin.png", "tag": "reshell-theme", "published": false, "referenced_from": [], "notes": "Users-admin grid (Users window under --theme): the reshell UsersGridPanel returned by NodeTableController for the Users folder — User / Role (Administrator·bad / Operator·good / Observer·muted) / Sessions (Single·Multiple from MultiSessions), with the count header + 'editing requires Administrator' hint and disabled Add-user / Reset-password affordances. Theme-gated reshell chrome (backlog 5.1); the legacy Users view is the generic node-table grid, so it is excluded from the no-theme managed check and guarded by client_screenshot_check_themed. Row selection drives the shared SelectionModel → the RBAC inspector. Backend/Areas/Status/Last-login from the mockup are server-side, absent from the client node model. Fixture Users folder (13 users)." },
-    { "file": "iec-60870-5-transport.png", "tag": "manual-diagram", "referenced_from": ["dev/devices.md"], "notes": "IEC 60870-5 transport stack diagram." },
-    { "file": "iec-61850-model.png", "tag": "manual-diagram", "referenced_from": ["client.md"], "notes": "IEC 61850 object model diagram." },
-    { "file": "limits-chart.png", "tag": "auto-view", "referenced_from": ["architecture.md"], "notes": "Graph with severity-coloured limit markers drawn (MetrixLine limit styles; TIT.200 carries AnalogItemType_LimitLoLo/Lo/Hi/HiHi in the fixture). SaveGraphScreenshot now makes each graphed node resident (FetchGraphNodesResident) before building the widget, so the node's EU range and limit-band property children are fetched: the axes use the EU range instead of the data auto-range and the limit markers draw. The varying series (same DateTime::Max history fix as graph-cursor.png) now read against the four bands. (The legend 'Current' cell stays blank in the offscreen fixture - the live monitored-item value is not delivered there, a separate gap that also blanks the write dialog's current value.)" },
-    { "file": "limits.png", "tag": "auto-dialog", "referenced_from": ["architecture.md", "client.md"], "notes": "LimitDialog modal." },
-    { "file": "login.png", "tag": "obsolete", "referenced_from": [], "notes": "Superseded by client-login.png." },
-    { "file": "menu-copy-object.png", "tag": "auto-menu", "referenced_from": ["dev/data-items.md"], "notes": "Context menu: copy object." },
-    { "file": "menu-create-object-service.png", "tag": "auto-menu", "referenced_from": ["dev/data-items.md"], "notes": "Context menu: create service object." },
-    { "file": "menu-create-object-ts-ti.png", "tag": "auto-menu", "referenced_from": ["dev/data-items.md"], "notes": "Context menu: create TS/TI." },
-    { "file": "menu-create-object.png", "tag": "auto-menu", "referenced_from": ["dev/data-items.md"], "notes": "Context menu: create object (root)." },
-    { "file": "menu-delete-object.png", "tag": "auto-menu", "referenced_from": ["dev/data-items.md"], "notes": "Context menu: delete object." },
-    { "file": "menu-events-log.png", "tag": "auto-menu", "referenced_from": ["client/events.md"], "notes": "Context menu on event journal row." },
-    { "file": "menu-events.png", "tag": "auto-menu", "referenced_from": ["client.md"], "notes": "Context menu on event row." },
-    { "file": "menu-excel.png", "tag": "auto-menu", "referenced_from": ["dev/excel.md"], "notes": "Context menu: export to Excel." },
-    { "file": "menu-favorites.png", "tag": "auto-menu", "referenced_from": ["client.md"], "notes": "Context menu: favourites." },
-    { "file": "menu-files.png", "tag": "auto-menu", "referenced_from": ["client.md", "dev/server-files.md"], "notes": "Context menu on file view." },
-    { "file": "menu-notepad.png", "tag": "auto-menu", "referenced_from": ["dev/excel.md"], "notes": "Context menu: open in Notepad." },
-    { "file": "menu-parameters-elements-copy.png", "tag": "auto-menu", "referenced_from": ["dev/displays.md"], "notes": "Context menu: copy parameter element." },
-    { "file": "menu-parameters-elements.png", "tag": "auto-menu", "referenced_from": ["dev/displays.md"], "notes": "Context menu: parameter elements." },
-    { "file": "menu-parameters.png", "tag": "auto-menu", "referenced_from": ["dev/data-items.md"], "notes": "Context menu: parameters." },
-    { "file": "menu-scheme.png", "tag": "auto-menu", "referenced_from": ["dev/displays.md"], "notes": "Context menu on schematic." },
-    { "file": "menu-summary.png", "tag": "auto-menu", "referenced_from": ["client/summary.md"], "notes": "Context menu on summary row." },
-    { "file": "modus-f11-breaker.png", "tag": "manual-modus", "referenced_from": ["dev/displays.md"], "notes": "Modus schematic, breaker." },
-    { "file": "modus-f11-bus.png", "tag": "manual-modus", "referenced_from": ["dev/displays.md"], "notes": "Modus schematic, bus." },
-    { "file": "modus-scheme.png", "tag": "manual-modus", "referenced_from": ["dev/displays.md"], "notes": "Modus schematic, overview." },
-    { "file": "structure.png", "tag": "manual-diagram", "referenced_from": ["index.md"], "notes": "System architecture diagram." },
-    { "file": "ti-channel.png", "tag": "auto-dialog", "referenced_from": ["dev/devices.md"], "notes": "Node properties, Channels tab, TI side." },
-    { "file": "ti-delete.png", "tag": "auto-menu", "referenced_from": ["development.md"], "notes": "Context menu: delete TI." },
-    { "file": "ti-element-parameters.png", "tag": "auto-dialog", "referenced_from": ["development.md"], "notes": "Node properties, Element parameters tab." },
-    { "file": "ti-formula.png", "tag": "auto-dialog", "referenced_from": ["formulas.md"], "notes": "Node properties, Formula tab." },
-    { "file": "ti-manual-control.png", "tag": "auto-dialog", "referenced_from": ["client.md"], "notes": "Manual-control dialog, TI side." },
-    { "file": "ti-parameters.png", "tag": "auto-dialog", "referenced_from": ["development.md", "dev/data-items.md"], "notes": "Node properties, TI root." },
-    { "file": "ti-remote-control-confirm.png", "tag": "auto-dialog", "referenced_from": ["client.md"], "notes": "Remote-control confirmation, TI." },
-    { "file": "ti-remote-control-disabled.png", "tag": "auto-dialog", "referenced_from": ["client.md", "dev/data-items.md"], "notes": "Remote-control dialog disabled state, TI." },
-    { "file": "ti-remote-control-enabled.png", "tag": "auto-dialog", "referenced_from": ["client.md", "dev/data-items.md"], "notes": "Remote-control dialog enabled state, TI." },
-    { "file": "ts-channel.png", "tag": "auto-dialog", "referenced_from": ["dev/devices.md"], "notes": "Node properties, Channels tab, TS side." },
-    { "file": "ts-manual-control.png", "tag": "auto-dialog", "referenced_from": ["client.md"], "notes": "Manual-control dialog, TS side." },
-    { "file": "ts-remote-control-confirm.png", "tag": "auto-dialog", "referenced_from": ["client.md"], "notes": "Remote-control confirmation, TS." },
-    { "file": "ts-remote-control-disabled.png", "tag": "auto-dialog", "referenced_from": ["client.md"], "notes": "Remote-control dialog disabled state, TS." },
-    { "file": "ts-remote-control-enabled.png", "tag": "auto-dialog", "referenced_from": ["client.md"], "notes": "Remote-control dialog enabled state, TS." },
-    { "file": "users.jpg", "tag": "obsolete", "referenced_from": [], "notes": "Superseded by users.png." },
-    { "file": "users.png", "tag": "auto-view", "referenced_from": ["dev/users.md"], "notes": "Users window." }
+    {
+      "file": "MODBUS_func.png",
+      "tag": "manual-diagram",
+      "referenced_from": [
+        "protocols.md"
+      ],
+      "notes": "Modbus function-code table, hand-drawn."
+    },
+    {
+      "file": "client-login.png",
+      "tag": "auto-dialog",
+      "referenced_from": [
+        "getting-started.md"
+      ],
+      "notes": "LoginDialog modal shown at startup; rendered by the dialog pipeline."
+    },
+    {
+      "file": "workbench-login.png",
+      "tag": "reshell-theme",
+      "referenced_from": [
+        "client/workbench.md"
+      ],
+      "notes": "The same LoginDialog under --theme (backlog 3.1): the reshell chrome wrapped around the .ui form - brand lockup (mark + Sign in + product line) and the 'Connecting to: <backend> · <server>' summary that tracks the fields. Saved under its own name so the legacy client-login.png the getting-started page embeds is never overwritten by a themed render. In the themed-ctest --only list. macOS render pending a Windows re-render; out of current_generator_owned_subset (subset is auto-* only)."
+    },
+    {
+      "file": "command-palette.png",
+      "tag": "auto-dialog",
+      "referenced_from": [
+        "client/workbench.md"
+      ],
+      "notes": "Ctrl-K command palette (opt-in UX). Rendered by the dialog pipeline over a fixture command list; regenerate with --theme=dark for the published (workbench) look — the no-theme managed run renders the legacy look, so keep the themed render in img/. Also serves client/docs/ux/shell.md. Published from a macOS render pending a Windows re-render."
+    },
+    {
+      "file": "about.png",
+      "tag": "auto-dialog",
+      "published": false,
+      "referenced_from": [],
+      "notes": "About dialog (Help menu). Capture also guards the ShowSelfOwnedModalDialog regression: the factory used to discard a lazy Awaitable and the dialog never showed. Validation-only; themed look via --theme runs (backlog 3.4)."
+    },
+    {
+      "file": "change-password.png",
+      "tag": "auto-dialog",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Set Password dialog for the fixture administrator (USER.5). Validation-only; themed look via --theme runs (backlog 3.4)."
+    },
+    {
+      "file": "time-range.png",
+      "tag": "auto-dialog",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Custom time-range (period) picker over its default interval range; date edits render the frozen fixture clock. Validation-only; themed look via --theme runs (backlog 3.4)."
+    },
+    {
+      "file": "multi-create.png",
+      "tag": "auto-dialog",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Bulk TS/TI creation dialog under the DataItems root, device combo from the fixture Devices folder. Also guards the ShowSelfOwnedModalDialog regression. Validation-only; themed look via --theme runs (backlog 3.4)."
+    },
+    {
+      "file": "message-box.png",
+      "tag": "auto-dialog",
+      "published": false,
+      "referenced_from": [],
+      "notes": "The shared DialogService::RunMessageBox confirmation (question variant, Yes/No) — the shape the two-stage confirms and apply/discard prompts use. Validation-only; themed look via --theme runs (closes backlog 0.4: stock Qt widgets under the token palette/QSS are the control primitives)."
+    },
+    {
+      "file": "client-retransmission.png",
+      "tag": "auto-view",
+      "referenced_from": [
+        "client.md"
+      ],
+      "notes": "Transmission window type."
+    },
+    {
+      "file": "transmission-rules.png",
+      "tag": "reshell-theme",
+      "referenced_from": [
+        "client/workbench.md"
+      ],
+      "notes": "The transmission-rules grid under --theme (device TS.702, the same populated fixture as the legacy client-retransmission.png, which keeps rendering unchanged in the no-theme pipeline): themed aui::Grid, and selecting a rule now fills the shell's Transmission-rule inspector. In the themed-ctest --only list. Published from a macOS render pending a Windows re-render; kept out of current_generator_owned_subset (subset is auto-* only)."
+    },
+    {
+      "file": "client-window.png",
+      "tag": "manual-modus",
+      "referenced_from": [
+        "client.md"
+      ],
+      "notes": "Docs image is a full main window with a Modus schematic centre; CaptureMainWindow only renders the non-Modus EventJournal + Summ + Struct fallback, so keep this hand-maintained until the fake Modus runtime exists."
+    },
+    {
+      "file": "workbench-window.png",
+      "tag": "reshell-theme",
+      "referenced_from": [
+        "client/workbench.md"
+      ],
+      "notes": "The reshelled operator workbench: CaptureMainWindow under --theme renders the full shell (activity rail, context bar with KPI severity tiles, command toolbar, editor tabs over EventJournal/Summ/Struct, the Inspector fronted in the right dock, status strip) and saves it under this name so the legacy client-window.png is never overwritten by a themed render. Fixture pending alarms light the tiles and the journal chrome. Published from a macOS render pending a Windows re-render; kept out of current_generator_owned_subset (subset is auto-* only). STALE (2026-07-26): the context bar no longer carries the identity/connection cluster - user/connection/server/endpoint are in the status strip only - but the published PNG still shows it; re-render on Windows and republish. The manual text in scada-docs client/workbench.md (RU+EN) is already updated."
+    },
+    {
+      "file": "workbench-overview.png",
+      "tag": "reshell-theme",
+      "referenced_from": [
+        "client/workbench.md"
+      ],
+      "notes": "The Overview landing cockpit: a fresh page-less profile under the reshell theme boots through CreateInitialPage into MakeOverviewPage - the Explorer sidebar (tabified with its Favorites and Portfolio sibling panes) beside the dominant trend (65%) over the actionable-alarm strip, with the Inspector fronted on the right. Captured via the production seeding path (CaptureOverviewPage), so it guards the reshell initial-page routing too. macOS render pending a Windows re-render; out of current_generator_owned_subset (subset is auto-* only)."
+    },
+    {
+      "file": "control-confirm.jpg",
+      "tag": "obsolete",
+      "referenced_from": [],
+      "notes": "Superseded by t{s,i}-remote-control-confirm.png."
+    },
+    {
+      "file": "control-select-confirm.png",
+      "tag": "auto-dialog",
+      "referenced_from": [
+        "client.md"
+      ],
+      "notes": "The operate-stage review of a select-before-operate command: the outstation has accepted the Select and is armed, and the operator is asked to confirm before the Operate goes out (answering no now sends Cancel instead of leaving the selection armed until sboTimeout). Message text comes from the real WriteModel::GetConfirmationMessage(value, second_stage=true) over the fixture analog item, shown through the ordinary DialogService question box, so it cannot drift from the shipped wording. The select itself is not issued — a Control-object Call needs a server; the two-phase exchange is covered by the iec104 tier E2E and WriteModelTest.TwoStagedControlSelectsConfirmsThenOperates. Published from a macOS render pending the Windows update-screenshots review; candidate for current_generator_owned_subset after that review."
+    },
+    {
+      "file": "control-ti.jpg",
+      "tag": "obsolete",
+      "referenced_from": [],
+      "notes": "Superseded by ti-remote-control-enabled.png."
+    },
+    {
+      "file": "control-ts.jpg",
+      "tag": "obsolete",
+      "referenced_from": [],
+      "notes": "Superseded by ts-remote-control-enabled.png."
+    },
+    {
+      "file": "devices-create.png",
+      "tag": "auto-state",
+      "referenced_from": [
+        "dev/devices.md"
+      ],
+      "notes": "Struct window, device freshly created."
+    },
+    {
+      "file": "devices-off.png",
+      "tag": "auto-state",
+      "referenced_from": [
+        "dev/devices.md"
+      ],
+      "notes": "Struct window, device offline."
+    },
+    {
+      "file": "devices-on.png",
+      "tag": "auto-state",
+      "referenced_from": [
+        "client.md"
+      ],
+      "notes": "Struct window, device online."
+    },
+    {
+      "file": "devices-status.png",
+      "tag": "auto-state",
+      "referenced_from": [
+        "client.md"
+      ],
+      "notes": "Struct window, status column visible."
+    },
+    {
+      "file": "devices-traffic.png",
+      "tag": "auto-state",
+      "referenced_from": [
+        "client/device-watch.md"
+      ],
+      "notes": "Log window showing live device traffic."
+    },
+    {
+      "file": "display.png",
+      "tag": "manual-modus",
+      "referenced_from": [
+        "client/display.md"
+      ],
+      "notes": "Modus schematic; out of scope until fake runtime lands."
+    },
+    {
+      "file": "substation-display.png",
+      "tag": "reshell-theme",
+      "referenced_from": [
+        "client/workbench.md"
+      ],
+      "notes": "Reshelled substation display under --theme: the DisplayFrame chrome (Live indicator, breadcrumb, zoom/fit/export) around the cross-platform VDS renderer, plus the bay strips below it — the Measurements watch (live signal values) and the Recent-events list (the fixture's pending alarms). The Measurements Value/Updated cells now fill: the frame refreshes on the spec's property_change_handler (the PROPERTY_CURRENT delivery path), not only update_handler; CaptureDisplay asserts the value cell is non-empty so that cannot regress silently. The frame is built only under the reshell theme (WrapDisplayInFrame gates on it), hence reshell-theme and the themed ctest. Published from a macOS render pending a Windows re-render; out of current_generator_owned_subset (subset is auto-* only). Windows-only Modus ActiveX not exercised here."
+    },
+    {
+      "file": "events-cur.jpg",
+      "tag": "obsolete",
+      "referenced_from": [],
+      "notes": "Superseded by menu-events-log.png."
+    },
+    {
+      "file": "firewall.jpg",
+      "tag": "manual-os",
+      "referenced_from": [],
+      "notes": "Windows firewall dialog; OS-level."
+    },
+    {
+      "file": "firewall.png",
+      "tag": "manual-os",
+      "referenced_from": [],
+      "notes": "Windows firewall dialog; OS-level."
+    },
+    {
+      "file": "graph-cursor.png",
+      "tag": "auto-view",
+      "referenced_from": [
+        "client/graph.md"
+      ],
+      "notes": "Graph window with a time cursor: the capture now places and selects one (GraphAxis::AddCursor + Graph::SelectCursor) so the themed legend's '@ cursor' column is populated - before that it rendered no cursor at all and every row read '-', despite the file's name. All three series now vary and the legend's Min/Max/Average differ per pane, once a history-service bug was fixed (a read whose upper bound was the current-only sentinel DateTime::Max spread its 48 points across ~285000 years, so all but the first fell outside the window and the series read flat)."
+    },
+    {
+      "file": "series-inspector.png",
+      "tag": "auto-view",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Trend workspace per-series inspector panel (SeriesInspector): colour swatches, display flags, limits, source. Reshell-only chrome, captured under --theme. Limits/quality populate because the capture makes the graphed node resident (FetchGraphNodesResident) before building the panel. Validation-only; not yet published to the manual."
+    },
+    {
+      "file": "inspector-panel.png",
+      "tag": "auto-view",
+      "referenced_from": [
+        "client/workbench.md"
+      ],
+      "notes": "Reshell Inspector panel (modules/inspector) standalone: header + node-id subtitle, live-value hero with quality pill, Measurements (Updated + the node's configured limit bands, the breached one marked), and the Control action with its unavailable-reason line (UX 4.3). Filled with an analog signal sitting above its Hi warning limit and carrying no output channel, so both the marked breach and the disabled-control explanation render. Renders the dark tokens regardless of --theme (standalone chrome). Published from a macOS render pending the Windows update-screenshots review; candidate for current_generator_owned_subset after that review."
+    },
+    {
+      "file": "inspector-event.png",
+      "tag": "reshell-theme",
+      "referenced_from": [
+        "client/workbench.md"
+      ],
+      "notes": "The Inspector's event (alarm) card for a journal-row selection (UX 2.2): severity band pill (Критично 800), message, event time at the frozen fixture clock, '— pending —' state, the enabled Acknowledge / To-graph actions and the History block (the event's lifecycle: raised, received by the server, awaiting acknowledgement). Standalone chrome but severity colours are theme-gated, hence reshell-theme; in the themed-ctest --only list. Published from a macOS render pending a Windows re-render; kept out of current_generator_owned_subset (subset is auto-* only)."
+    },
+    {
+      "file": "device-diagnostics.png",
+      "tag": "auto-view",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Configuration workbench device-diagnostics inspector (DeviceDiagnostics): link-status hero (up/down/disabled) + live traffic/polling counters from the device's diagnostic child variables (Online/Enabled/MessagesIn/...). Reshell-only chrome (backlog 5.0), captured under --theme against a fixture device (TS.103, link down). Standalone like series-inspector; the capture makes the device resident (FetchNodesResident) so ShowDevice resolves the diagnostic variables and reads their current values. Not yet embedded in a manual page."
+    },
+    {
+      "file": "users-rbac.png",
+      "tag": "auto-view",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Users-admin RBAC inspector (UserAccess): role pill (Administrator/Operator/Observer, derived from the user's AccessRights bitmask) + the three permission rows (view / control / configure) with granted state. Reshell-only chrome (backlog 5.1), captured under --theme against a fixture user (USER.5, AccessRights=3 = full Administrator). Standalone like device-diagnostics; the capture makes the user resident (FetchNodesResident) so ShowUser resolves UserType_AccessRights and reads its value. Not yet embedded in a manual page."
+    },
+    {
+      "file": "transmission-rule.png",
+      "tag": "auto-view",
+      "referenced_from": [
+        "client/workbench.md"
+      ],
+      "notes": "Transmission-rules editor inspector (TransmissionRule): the right region of transmission-rules.html for a selected transmission item — source signal + type tag (TS/TI), destination endpoint + IOA, and protocol (Modbus / IEC 60870-5-104 / IEC 61850, from the item's type). Reshell-only chrome (backlog 5.2), captured under --theme against a fixture rule (TS.733 TX_Ua → Modbus IOA 2001). Standalone like users-rbac; the capture makes the rule + its type chain, source and parent endpoint resident so ShowRule resolves the source/endpoint and reads SourceAddress. Read-only in this capture (no shell write path); the mockup's Trigger/Transform/Status/counters are server-side driver concepts absent from the client node model. Not yet embedded in a manual page."
+    },
+    {
+      "file": "bulk-create.png",
+      "tag": "auto-view",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Bulk-create wizard preview (BulkCreate): the naming/addressing step of bulk-create.html — a {n}-token name + NodeId pattern, start/count/step + IOA start/step, and a live preview grid (# / Name / NodeId / IOA / Status) with a 'N new / M conflict' summary. Reshell-only chrome (backlog 5.4), standalone and node-service-free: the capture seeds a demo pattern (TS{n} current, 12 items from IOA 4001) and one existing NodeId (TS8), so row 8 flags as a red 'exists' conflict. Driven by the pure ExpandBulkCreate engine. The actual node creation rides the existing MultiCreateModel::Run (Session.addNodes). Not yet embedded in a manual page."
+    },
+    {
+      "file": "config-parameters.png",
+      "tag": "reshell-theme",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Config workbench tabbed device-parameter editor (NewProps under --theme): DeviceParameterForm over the real PropertyModel, one subtab per property group, Revert/Apply. Theme-gated reshell chrome (backlog 5.0) — rendered only under --theme (the legacy NewProps view is the property grid), so it is excluded from the no-theme managed check and guarded by client_screenshot_check_themed. Fixture device TS.702."
+    },
+    {
+      "file": "config-address-map.png",
+      "tag": "reshell-theme",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Config workbench Address-map subtab (NewProps under --theme, click_object addressMapSubtab): read-only Signal / Type (TS,TI) / IOA / NodeId grid from the device's transmission items. Theme-gated reshell chrome (backlog 5.0); guarded by client_screenshot_check_themed. Fixture device TS.702."
+    },
+    {
+      "file": "config-limits.png",
+      "tag": "reshell-theme",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Config workbench Limits subtab (NewProps under --theme, click_object limitsSubtab): read-only Signal / LoLo / Lo / Hi / HiHi grid of the device's analog items. Theme-gated reshell chrome (backlog 5.0); guarded by client_screenshot_check_themed. Fixture device TS.114."
+    },
+    {
+      "file": "hardware-tree.png",
+      "tag": "reshell-theme",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Hardware explorer under --theme: filter field + per-device good/uncertain/bad status dots (Subsystems / HardwareTreeView). Theme-gated reshell chrome (backlog 5.0/4.2); the legacy view is a bare tree, so it is excluded from the no-theme managed check. Fixture devices KP-01 offline / KP-02 online / KP-03 disabled."
+    },
+    {
+      "file": "object-tree.png",
+      "tag": "reshell-theme",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Object explorer under --theme: per-node quality status dots (backlog 4.1). Theme-gated reshell chrome; the legacy view is a bare tree, so it is excluded from the no-theme managed check."
+    },
+    {
+      "file": "admin-simulation.png",
+      "tag": "reshell-theme",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Simulation-signals admin table (SimulationItems window) under --theme: validates the generic aui::Grid token adoption (backlog 5.1) — flat themed header, hairline gridlines, accent selection — which every node-table admin surface (Formats / Simulation / Historical DBs) shares while keeping inline editing. Needs the SimulationSignals folder + SimulationSignalType added to scada_test_address_space.h and four fixture signals (SCADA.9301-9304). Theme-gated; guarded by client_screenshot_check_themed."
+    },
+    {
+      "file": "admin-formats.png",
+      "tag": "reshell-theme",
+      "published": false,
+      "referenced_from": [],
+      "notes": "TS-format admin table (Params/TsFormats window) under --theme: the themed generic aui::Grid over the TsFormats folder — Name / OpenLabel / CloseLabel (LocalizedText state captions) / OpenColor / CloseColor. Sibling of admin-simulation.png (backlog 5.1). Needs the TsFormats folder + completed TsFormatType declarations in scada_test_address_space.h, four fixture formats (SCADA.9401-9404), and the fixture LocalizedText-label handling. Theme-gated; guarded by client_screenshot_check_themed."
+    },
+    {
+      "file": "admin-historical-dbs.png",
+      "tag": "reshell-theme",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Historical-databases admin table (HistoricalDB window) under --theme: the themed generic aui::Grid over the HistoricalDatabases folder — Name / Depth / PendingTaskCount / ItemCount / WriteValueCount. Third sibling of admin-simulation.png / admin-formats.png (backlog 5.1). Needs the HistoricalDatabases folder + HistoricalDatabaseType (Depth/ItemCount/WriteValueCount/PendingTaskCount) in scada_test_address_space.h and three fixture databases (SCADA.9501-9503). Theme-gated; guarded by client_screenshot_check_themed."
+    },
+    {
+      "file": "events-alarm-surface.png",
+      "tag": "reshell-theme",
+      "referenced_from": [
+        "client/workbench.md"
+      ],
+      "notes": "Event journal as an alarm surface (backlog 2.2) under --theme: leading pending-dot column (severity-coloured), the Severity column naming the alarm band (Критично 800 / Предупреждение 600), an unacknowledged row's Acknowledge-Time cell reading '— pending —', and the alarm footer (displayed-backlog summary + Acknowledge-all). Fixture seeds two pending alarms (ids 1008/1009, acknowledged:false). A second EventJournal spec alongside the legacy events-log.png, which keeps rendering the unchanged legacy journal in the no-theme pipeline. Guarded by client_screenshot_check_themed. Published from a macOS render pending a Windows re-render; kept out of current_generator_owned_subset (subset is auto-* only)."
+    },
+    {
+      "file": "table-workspace.png",
+      "tag": "reshell-theme",
+      "referenced_from": [
+        "client/workbench.md"
+      ],
+      "notes": "Table workspace under --theme: the reshell TableToolbar (add-signal / delete / move / sort keys; shell To-graph/CSV/Print hide when unresolved) over the operator grid with the Quality column and monospace value/timestamp cells (UX 0.3 + 2.8). Theme-gated (the legacy Table is the bare grid) - regenerate with --theme=dark --only=table-workspace.png; guarded by client_screenshot_check_themed. Published from a macOS render pending a Windows re-render; kept out of current_generator_owned_subset (subset is auto-* only)."
+    },
+    {
+      "file": "severity-tiles.png",
+      "tag": "reshell-theme",
+      "published": false,
+      "referenced_from": [],
+      "notes": "KPI severity tile strip (backlog 2.3): the context bar's Critical / Warning / Unacknowledged tiles rendered by SeverityTileStrip from BuildSeverityTiles() — most severe first, severity-coloured and bold while a count is live, muted at zero; unacknowledged carries no severity colour (workflow state, not severity). Captured standalone from seeded counts (1 critical / 3 warning / 7 unacknowledged) because the fixture holds no unacknowledged alarms, so the in-window tiles would all render zero. Theme-gated reshell chrome — MakeSeverityTileStrip returns nullptr under the legacy theme; guarded by client_screenshot_check_themed."
+    },
+    {
+      "file": "users-admin.png",
+      "tag": "reshell-theme",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Users-admin grid (Users window under --theme): the reshell UsersGridPanel returned by NodeTableController for the Users folder — User / Role (Administrator·bad / Operator·good / Observer·muted) / Sessions (Single·Multiple from MultiSessions), with the count header + 'editing requires Administrator' hint and disabled Add-user / Reset-password affordances. Theme-gated reshell chrome (backlog 5.1); the legacy Users view is the generic node-table grid, so it is excluded from the no-theme managed check and guarded by client_screenshot_check_themed. Row selection drives the shared SelectionModel → the RBAC inspector. Backend/Areas/Status/Last-login from the mockup are server-side, absent from the client node model. Fixture Users folder (13 users)."
+    },
+    {
+      "file": "iec-60870-5-transport.png",
+      "tag": "manual-diagram",
+      "referenced_from": [
+        "dev/devices.md"
+      ],
+      "notes": "IEC 60870-5 transport stack diagram."
+    },
+    {
+      "file": "iec-61850-model.png",
+      "tag": "manual-diagram",
+      "referenced_from": [
+        "client.md"
+      ],
+      "notes": "IEC 61850 object model diagram."
+    },
+    {
+      "file": "limits-chart.png",
+      "tag": "auto-view",
+      "referenced_from": [
+        "architecture.md"
+      ],
+      "notes": "Graph with severity-coloured limit markers drawn (MetrixLine limit styles; TIT.200 carries AnalogItemType_LimitLoLo/Lo/Hi/HiHi in the fixture). SaveGraphScreenshot now makes each graphed node resident (FetchGraphNodesResident) before building the widget, so the node's EU range and limit-band property children are fetched: the axes use the EU range instead of the data auto-range and the limit markers draw. The varying series (same DateTime::Max history fix as graph-cursor.png) now read against the four bands. (The legend 'Current' cell stays blank in the offscreen fixture - the live monitored-item value is not delivered there, a separate gap that also blanks the write dialog's current value.)"
+    },
+    {
+      "file": "limits.png",
+      "tag": "auto-dialog",
+      "referenced_from": [
+        "architecture.md",
+        "client.md"
+      ],
+      "notes": "LimitDialog modal."
+    },
+    {
+      "file": "login.png",
+      "tag": "obsolete",
+      "referenced_from": [],
+      "notes": "Superseded by client-login.png."
+    },
+    {
+      "file": "menu-copy-object.png",
+      "tag": "auto-menu",
+      "referenced_from": [
+        "dev/data-items.md"
+      ],
+      "notes": "Context menu: copy object."
+    },
+    {
+      "file": "menu-create-object-service.png",
+      "tag": "auto-menu",
+      "referenced_from": [
+        "dev/data-items.md"
+      ],
+      "notes": "Context menu: create service object."
+    },
+    {
+      "file": "menu-create-object-ts-ti.png",
+      "tag": "auto-menu",
+      "referenced_from": [
+        "dev/data-items.md"
+      ],
+      "notes": "Context menu: create TS/TI."
+    },
+    {
+      "file": "menu-create-object.png",
+      "tag": "auto-menu",
+      "referenced_from": [
+        "dev/data-items.md"
+      ],
+      "notes": "Context menu: create object (root)."
+    },
+    {
+      "file": "menu-delete-object.png",
+      "tag": "auto-menu",
+      "referenced_from": [
+        "dev/data-items.md"
+      ],
+      "notes": "Context menu: delete object."
+    },
+    {
+      "file": "menu-events-log.png",
+      "tag": "auto-menu",
+      "referenced_from": [
+        "client/events.md"
+      ],
+      "notes": "Context menu on event journal row."
+    },
+    {
+      "file": "menu-events.png",
+      "tag": "auto-menu",
+      "referenced_from": [
+        "client.md"
+      ],
+      "notes": "Context menu on event row."
+    },
+    {
+      "file": "menu-excel.png",
+      "tag": "auto-menu",
+      "referenced_from": [
+        "dev/excel.md"
+      ],
+      "notes": "Context menu: export to Excel."
+    },
+    {
+      "file": "menu-favorites.png",
+      "tag": "auto-menu",
+      "referenced_from": [
+        "client.md"
+      ],
+      "notes": "Context menu: favourites."
+    },
+    {
+      "file": "menu-files.png",
+      "tag": "auto-menu",
+      "referenced_from": [
+        "client.md",
+        "dev/server-files.md"
+      ],
+      "notes": "Context menu on file view."
+    },
+    {
+      "file": "menu-notepad.png",
+      "tag": "auto-menu",
+      "referenced_from": [
+        "dev/excel.md"
+      ],
+      "notes": "Context menu: open in Notepad."
+    },
+    {
+      "file": "menu-parameters-elements-copy.png",
+      "tag": "auto-menu",
+      "referenced_from": [
+        "dev/displays.md"
+      ],
+      "notes": "Context menu: copy parameter element."
+    },
+    {
+      "file": "menu-parameters-elements.png",
+      "tag": "auto-menu",
+      "referenced_from": [
+        "dev/displays.md"
+      ],
+      "notes": "Context menu: parameter elements."
+    },
+    {
+      "file": "menu-parameters.png",
+      "tag": "auto-menu",
+      "referenced_from": [
+        "dev/data-items.md"
+      ],
+      "notes": "Context menu: parameters."
+    },
+    {
+      "file": "menu-scheme.png",
+      "tag": "auto-menu",
+      "referenced_from": [
+        "dev/displays.md"
+      ],
+      "notes": "Context menu on schematic."
+    },
+    {
+      "file": "menu-summary.png",
+      "tag": "auto-menu",
+      "referenced_from": [
+        "client/summary.md"
+      ],
+      "notes": "Context menu on summary row."
+    },
+    {
+      "file": "modus-f11-breaker.png",
+      "tag": "manual-modus",
+      "referenced_from": [
+        "dev/displays.md"
+      ],
+      "notes": "Modus schematic, breaker."
+    },
+    {
+      "file": "modus-f11-bus.png",
+      "tag": "manual-modus",
+      "referenced_from": [
+        "dev/displays.md"
+      ],
+      "notes": "Modus schematic, bus."
+    },
+    {
+      "file": "modus-scheme.png",
+      "tag": "manual-modus",
+      "referenced_from": [
+        "dev/displays.md"
+      ],
+      "notes": "Modus schematic, overview."
+    },
+    {
+      "file": "structure.png",
+      "tag": "manual-diagram",
+      "referenced_from": [
+        "index.md"
+      ],
+      "notes": "System architecture diagram."
+    },
+    {
+      "file": "ti-channel.png",
+      "tag": "auto-dialog",
+      "referenced_from": [
+        "dev/devices.md"
+      ],
+      "notes": "Node properties, Channels tab, TI side."
+    },
+    {
+      "file": "ti-delete.png",
+      "tag": "auto-menu",
+      "referenced_from": [
+        "development.md"
+      ],
+      "notes": "Context menu: delete TI."
+    },
+    {
+      "file": "ti-element-parameters.png",
+      "tag": "auto-dialog",
+      "referenced_from": [
+        "development.md"
+      ],
+      "notes": "Node properties, Element parameters tab."
+    },
+    {
+      "file": "ti-formula.png",
+      "tag": "auto-dialog",
+      "referenced_from": [
+        "formulas.md"
+      ],
+      "notes": "Node properties, Formula tab."
+    },
+    {
+      "file": "ti-manual-control.png",
+      "tag": "auto-dialog",
+      "referenced_from": [
+        "client.md"
+      ],
+      "notes": "Manual-control dialog, TI side."
+    },
+    {
+      "file": "ti-parameters.png",
+      "tag": "auto-dialog",
+      "referenced_from": [
+        "development.md",
+        "dev/data-items.md"
+      ],
+      "notes": "Node properties, TI root."
+    },
+    {
+      "file": "ti-remote-control-confirm.png",
+      "tag": "auto-dialog",
+      "referenced_from": [
+        "client.md"
+      ],
+      "notes": "Remote-control confirmation, TI."
+    },
+    {
+      "file": "ti-remote-control-disabled.png",
+      "tag": "auto-dialog",
+      "referenced_from": [
+        "client.md",
+        "dev/data-items.md"
+      ],
+      "notes": "Remote-control dialog disabled state, TI."
+    },
+    {
+      "file": "ti-remote-control-enabled.png",
+      "tag": "auto-dialog",
+      "referenced_from": [
+        "client.md",
+        "dev/data-items.md"
+      ],
+      "notes": "Remote-control dialog enabled state, TI."
+    },
+    {
+      "file": "ts-channel.png",
+      "tag": "auto-dialog",
+      "referenced_from": [
+        "dev/devices.md"
+      ],
+      "notes": "Node properties, Channels tab, TS side."
+    },
+    {
+      "file": "ts-manual-control.png",
+      "tag": "auto-dialog",
+      "referenced_from": [
+        "client.md"
+      ],
+      "notes": "Manual-control dialog, TS side."
+    },
+    {
+      "file": "ts-remote-control-confirm.png",
+      "tag": "auto-dialog",
+      "referenced_from": [
+        "client.md"
+      ],
+      "notes": "Remote-control confirmation, TS."
+    },
+    {
+      "file": "ts-remote-control-disabled.png",
+      "tag": "auto-dialog",
+      "referenced_from": [
+        "client.md"
+      ],
+      "notes": "Remote-control dialog disabled state, TS."
+    },
+    {
+      "file": "ts-remote-control-enabled.png",
+      "tag": "auto-dialog",
+      "referenced_from": [
+        "client.md"
+      ],
+      "notes": "Remote-control dialog enabled state, TS."
+    },
+    {
+      "file": "users.jpg",
+      "tag": "obsolete",
+      "referenced_from": [],
+      "notes": "Superseded by users.png."
+    },
+    {
+      "file": "users.png",
+      "tag": "auto-view",
+      "referenced_from": [
+        "dev/users.md"
+      ],
+      "notes": "Users window."
+    },
+    {
+      "file": "debugger.png",
+      "tag": "reshell-theme",
+      "referenced_from": [],
+      "notes": "Protocol/request debugger, rendered from a fixture request trace by debugger_capture.cpp. Not a registered view (it is --debug gated), so it has a dedicated capture. Replaces ui-mockups/screens/debugger.html as the visual reference. Not published yet: no manual page embeds it.",
+      "published": false
+    }
   ],
   "counts": {
     "auto-view": 10,
     "auto-dialog": 22,
     "auto-menu": 17,
     "auto-state": 5,
-    "reshell-theme": 18,
+    "reshell-theme": 19,
     "manual-diagram": 4,
     "manual-modus": 5,
     "manual-os": 2,
