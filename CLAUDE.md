@@ -547,6 +547,15 @@ Ordered as: project headers, then third-party/standard headers, separated by bla
   Maintain that file by hand. To get an authoritative string list for a form,
   run `lupdate` over just that form into a scratch `.ts` and merge the result
   in.
+- **Never hard-code a user-facing string as a `u"..."` literal** — it can never
+  be translated, and no other check sees it (`lupdate` does not recognise
+  `Translate()`, and a missing lookup falls back silently to English).
+  `client_untranslated_string_check` (ctest, `tools/check_untranslated_ui_strings.py`)
+  fails on a literal reaching a message box, a `ResourceError`, a file-dialog
+  title or `setWindowTitle`. Note a namespace-scope
+  `const char16_t k…[] = u"…"` *cannot* call `Translate()` at all — it needs a
+  running QApplication — so make such titles functions returning
+  `std::u16string`.
 - A `.ui` form's strings belong to the **form class's context**
   (`uic` emits `QCoreApplication::translate("<FormClass>", ...)`), not the
   empty context. `client_ui_translation_check` (ctest, see

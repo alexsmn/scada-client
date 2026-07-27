@@ -3,6 +3,15 @@
 <TS version="2.1" language="ru_RU">
 <context>
     <name></name>
+    <!-- File-store message-box titles (modules/filesystem). -->
+    <message>
+        <source>Open File</source>
+        <translation>Открыть файл</translation>
+    </message>
+    <message>
+        <source>Add File</source>
+        <translation>Добавить файл</translation>
+    </message>
     <!-- Export/import and resource-error messages. All reach the operator
          through RunMessageBox (ResourceError text via ShowResourceError).
          Translate() looks up the empty context and lupdate never sees it. -->

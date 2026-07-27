@@ -137,6 +137,18 @@ whose final button says "OK" has thrown away the second stage's whole purpose.
 - Labels end with a colon; buttons do not.
 - English in source, Russian via the `.ts` files — see the localisation notes
   in the client `CLAUDE.md`. Standard `QDialogButtonBox` buttons need no entry.
+- **Never hard-code a user-facing string as a `u"..."` literal.** It can then
+  never be translated, and nothing notices: `lupdate` does not recognise
+  `Translate()`, the `.ui` checker only reads forms, and a lookup that finds
+  nothing falls back silently to the English source. This is how the
+  select-before-operate confirmation — the most safety-critical text in the
+  client — shipped in English. `client_untranslated_string_check` (ctest,
+  `tools/check_untranslated_ui_strings.py`) now fails on a literal reaching a
+  message box, a `ResourceError`, a file-dialog title or `setWindowTitle`.
+- A namespace-scope `const char16_t k…[] = u"…"` **cannot** call `Translate()`
+  at all — it reads the installed catalog and so needs a running
+  `QApplication`. Make it a function returning `std::u16string`. That constant
+  form is where the bug hides, so the check resolves constants too.
 
 ## Audit and revision (2026-07-26)
 

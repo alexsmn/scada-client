@@ -9,7 +9,11 @@
 
 namespace {
 
-const char16_t kAddUrl[] = u"Add Web Page";
+// Message-box title. A function, not a constant: Translate() reads the
+// installed catalog and so needs a running QApplication.
+std::u16string AddUrlTitle() {
+  return Translate("Add Web Page");
+}
 
 }  // namespace
 
@@ -37,7 +41,7 @@ Awaitable<void> AddUrlToFavouritesWithPromptAsync(
   co_await dialog_service.RunMessageBox(
       Translate("A valid URL must start with \"http://\" or "
                 "\"https://\"."),
-      kAddUrl, MessageBoxMode::Error);
+      AddUrlTitle(), MessageBoxMode::Error);
   throw std::exception{};
 }
 
@@ -50,7 +54,7 @@ Awaitable<void> AddUrlToFavouritesWithPrompt(
   return AddUrlToFavouritesWithPromptAsync(
       executor, std::move(lifetime_token), dialog_service, favourites,
       [&dialog_service] {
-        return RunPromptDialog(dialog_service, Translate("URL:"), kAddUrl);
+        return RunPromptDialog(dialog_service, Translate("URL:"), AddUrlTitle());
       },
       std::move(selected_node_provider));
 }

@@ -38,7 +38,11 @@
 
 namespace {
 
-const char16_t kFilter[] = u"Filter";
+// Message-box title. A function, not a constant: Translate() reads the
+// installed catalog and so needs a running QApplication.
+std::u16string FilterTitle() {
+  return Translate("Filter");
+}
 
 struct EventTableModelHolder {
   EventTableModelHolder(const ControllerContext& context,
@@ -472,7 +476,7 @@ Awaitable<void> EventView::SelectSeverityAsync() {
   // matching the old ignored asynchronous result.
   auto text =
       co_await RunPromptDialog(dialog_service_, prompt,
-                               /*title=*/kFilter, WideFormat(initial_severity));
+                               /*title=*/FilterTitle(), WideFormat(initial_severity));
 
   // Parse + apply. Preserve the original behavior where a bad value
   // pops up an error message box via `ShowResourceError` and then
@@ -486,7 +490,7 @@ Awaitable<void> EventView::SelectSeverityAsync() {
     parse_error = std::current_exception();
   }
   if (parse_error) {
-    co_await ShowResourceError<void>(dialog_service_, /*title=*/kFilter,
+    co_await ShowResourceError<void>(dialog_service_, /*title=*/FilterTitle(),
                                      parse_error);
   }
   co_return;

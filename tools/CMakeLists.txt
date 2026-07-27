@@ -12,4 +12,13 @@ if(Python3_FOUND)
       "${CMAKE_CURRENT_SOURCE_DIR}/check_ui_translations.py"
       "--client-dir=${CMAKE_CURRENT_SOURCE_DIR}/..")
   set_tests_properties(client_ui_translation_check PROPERTIES TIMEOUT 120)
+
+  # The complementary gap: a user-facing string hard-coded as a u"..." literal
+  # never reaches a .ts at all, so the check above cannot see it and lupdate
+  # does not recognise Translate(). Source-only, so it needs no build.
+  add_test(NAME client_untranslated_string_check
+    COMMAND ${Python3_EXECUTABLE}
+      "${CMAKE_CURRENT_SOURCE_DIR}/check_untranslated_ui_strings.py"
+      "--client-dir=${CMAKE_CURRENT_SOURCE_DIR}/..")
+  set_tests_properties(client_untranslated_string_check PROPERTIES TIMEOUT 120)
 endif()

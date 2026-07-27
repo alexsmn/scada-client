@@ -22,8 +22,14 @@
 
 namespace {
 
-const char16_t kAddFileTitle[] = u"Add File";
-const char16_t kOpenFileTitle[] = u"Open File";
+// Message-box title. A function, not a constant: Translate() reads the
+// installed catalog and so needs a running QApplication.
+std::u16string AddFileTitle() {
+  return Translate("Add File");
+}
+std::u16string OpenFileTitle() {
+  return Translate("Open File");
+}
 
 }  // namespace
 
@@ -46,7 +52,7 @@ Awaitable<void> OpenJsonFileAsync(std::filesystem::path path,
 
   if (!window_def) {
     co_await dialog_service.RunMessageBox(
-        Translate("The file has an invalid format."), kOpenFileTitle,
+        Translate("The file has an invalid format."), OpenFileTitle(),
         MessageBoxMode::Error);
     co_return;
   }
@@ -78,14 +84,14 @@ Awaitable<void> OpenFileCommandImpl::OpenFileAsync(
   auto* window_info = file_type ? FindWindowInfo(file_type->type_id) : nullptr;
   if (!window_info) {
     co_await context.dialog_service.RunMessageBox(
-        Translate("Unknown file type."), kOpenFileTitle, MessageBoxMode::Error);
+        Translate("Unknown file type."), OpenFileTitle(), MessageBoxMode::Error);
     co_return;
   }
 
   co_await file_manager.DownloadFileFromServer(context.file_node, path);
   if (!std::filesystem::exists(GetPublicFilePath(path))) {
     co_await context.dialog_service.RunMessageBox(
-        Translate("Failed to download file."), kOpenFileTitle,
+        Translate("Failed to download file."), OpenFileTitle(),
         MessageBoxMode::Error);
     co_return;
   }
@@ -112,13 +118,13 @@ Awaitable<void> AddFileAsync(NodeRef parent_directory,
                              DialogService& dialog_service,
                              TaskManager& task_manager,
                              AnyExecutor executor) {
-  auto path = co_await dialog_service.SelectOpenFile(kAddFileTitle);
+  auto path = co_await dialog_service.SelectOpenFile(AddFileTitle());
 
   std::ifstream ifs{path, std::ios::binary};
   std::string contents_string{std::istreambuf_iterator<char>{ifs}, {}};
   if (!ifs.is_open()) {
     co_await dialog_service.RunMessageBox(Translate("Failed to read file."),
-                                          kAddFileTitle, MessageBoxMode::Error);
+                                          AddFileTitle(), MessageBoxMode::Error);
     co_return;
   }
 
