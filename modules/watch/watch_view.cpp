@@ -5,8 +5,11 @@
 #include "aui/translation.h"
 #include "base/awaitable.h"
 #include "base/u16format.h"
+#include "base/utf_convert.h"
 #include "controller/controller_delegate.h"
 #include "model/node_id_util.h"
+#include "modules/watch/frame_decode.h"
+#include "modules/watch/frame_decode_tree_model.h"
 #include "modules/watch/watch_model.h"
 #include "modules/watch/watch_model_builder.h"
 #include "net/net_executor_adapter.h"
@@ -15,6 +18,14 @@
 #include "resources/common_resources.h"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <optional>
+#include <string>
+
+#if defined(UI_QT)
+#include "modules/watch/qt/frame_decode_pane.h"
+
+#include <QSplitter>
+#endif
 
 namespace {
 
@@ -93,6 +104,7 @@ std::unique_ptr<UiView> WatchView::Init(const WindowDefinition& definition) {
 
   table_->SetSelectionChangeHandler([this] {
     auto_scroll_ = table_->GetCurrentRow() == model_->GetRowCount() - 1;
+    refresh_decode_pane_();
   });
 
   table_->SetContextMenuHandler([this](const scada::aui::Point& point) {
@@ -123,17 +135,79 @@ std::unique_ptr<UiView> WatchView::Init(const WindowDefinition& definition) {
   command_registry_.AddCommand(
       Command{ID_SAVE_AS}.set_execute_handler([this] { SaveLog(); }));
 
-  command_registry_.AddCommand(
-      Command{ID_CLEAR_ALL}.set_execute_handler([this] { model_->Clear(); }));
+  command_registry_.AddCommand(Command{ID_CLEAR_ALL}.set_execute_handler(
+      [this] {
+        model_->Clear();
+        refresh_decode_pane_();
+      }));
 
+#if defined(UI_QT)
+  return CreateFrameTraceLayout();
+#else
   return std::unique_ptr<UiView>{table_->CreateParentIfNecessary()};
+#endif
 }
+
+#if defined(UI_QT)
+
+// The trace beside the decode pane, as in
+// docs/ui-mockups/screens/device-protocol-trace.html: the selected frame's
+// octets and its decoded field tree. The pane belongs to the frame trace, so
+// it is hidden in the ordinary device log — a permanently empty inspector
+// would be a regression for the common case, which is reading log lines.
+//
+// Composition is Qt-only, the house pattern for this (see table_view.cpp,
+// event_view.cpp): aui has no cross-platform splitter, and the Wt frontend
+// keeps the bare trace it has today.
+std::unique_ptr<UiView> WatchView::CreateFrameTraceLayout() {
+  auto* pane = new FrameDecodePane;
+
+  refresh_decode_pane_ = [this, pane] {
+    pane->setVisible(model_->mode() == WatchMode::kFrameTrace);
+
+    const int row = table_->GetCurrentRow();
+    const WatchModel::Row* selected = model_->FindVisibleRow(row);
+    if (!selected || !selected->frame) {
+      pane->Clear();
+      return;
+    }
+    pane->ShowFrame(MakeDecodeHeader(row, *selected->frame), *selected->frame);
+  };
+  refresh_decode_pane_();
+
+  auto* splitter = new QSplitter{Qt::Horizontal};
+  splitter->addWidget(table_);
+  splitter->addWidget(pane);
+  // The trace is the subject; the pane is detail about one row of it.
+  splitter->setStretchFactor(0, 1);
+  splitter->setStretchFactor(1, 0);
+  return std::unique_ptr<UiView>{splitter};
+}
+
+// The pane's title line: which frame, from when, and how big. The direction and
+// time are read back out of the table rather than reformatted, so the pane
+// cannot disagree with the row it is describing.
+std::u16string WatchView::MakeDecodeHeader(
+    int row,
+    const scada::DeviceFrame& frame) const {
+  std::u16string header = model_->GetCellText(row, 3);
+  if (!header.empty())
+    header += u" · ";
+  header += model_->GetCellText(row, 0);
+  header += u" · " +
+            UtfConvert<char16_t>(std::to_string(frame.raw_data.size())) + u" " +
+            Translate("bytes");
+  return header;
+}
+
+#endif  // defined(UI_QT)
 
 void WatchView::ToggleFrameTrace() {
   model_->SetMode(model_->mode() == WatchMode::kFrameTrace
                       ? WatchMode::kLog
                       : WatchMode::kFrameTrace);
   controller_delegate_.SetTitle(MakeTitle());
+  refresh_decode_pane_();
 }
 
 void WatchView::SaveLog() {

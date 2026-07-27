@@ -354,10 +354,34 @@ must keep producing a usable trace. A row without structured data shows its
 direction from the marker and leaves the decoded columns blank rather than
 guessing values out of the text.
 
+**The decode pane is built** (`modules/watch/qt/frame_decode_pane.{h,cpp}`): a
+`QSplitter` puts it beside the trace, hidden in the ordinary device log because
+a permanently empty inspector would be a regression for the common case. It
+shows the selected frame's header line, its raw octets, and the decoded field
+tree with a byte range on every field — `@1`, `@2-3`, `@10-11` — which is the
+whole reason to open it.
+
+The decode is done **on the client**, in the Qt-free
+`modules/watch/frame_decode.{h,cpp}`, over `RawData` rather than over the
+summary fields the server already extracted: byte offsets can only come from
+the octets. That deliberately duplicates protocol knowledge the driver also has
+— the client cannot link `scada-tier-iec104`, and a wire format for a field tree
+would be a much larger change than a display decoder. It is safe duplication:
+nothing here drives behaviour, so a mislabelled field is a cosmetic defect. It
+decodes the APCI, the ASDU header, and the information objects (including `SQ`
+sequences) for the ~45 type identifications the drivers exchange, with values in
+engineering form and quality flags named. Anything it cannot read — a non-104
+driver, an unknown type, a truncated capture — degrades to showing the octets
+whole. Rendered by `frame_decode_capture.cpp` as `frame-decode-pane.png`.
+
 Still missing against the mockup:
 
-- **No decode pane.** `RawData` crosses the wire, but nothing renders the
-  APCI/ASDU tree or the hex beside it; the raw frame is still just a log line.
+- **No "Mapped node" section.** The pane ends at the information object; the
+  mockup also names the address-space node the IOA maps to, which needs a
+  transmission-map lookup the view does not have.
+- **No filters.** Frame kind, free-text over IOA/type/cause, and errors-only are
+  all unbuilt, as is the per-device capture arming and its `Capturing · КП-02`
+  status cell.
 - Eleven driver sites stay plain log lines by design: timer expiries and
   state-machine notes carry the direction markers but describe no PDU, and a
   trace filtered to real traffic is the point of the mode.

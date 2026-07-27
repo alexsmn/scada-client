@@ -1589,6 +1589,12 @@
       "filename": "debugger.png",
       "width": 1000,
       "height": 460
+    },
+    {
+      "type": "FrameDecode",
+      "filename": "frame-decode-pane.png",
+      "width": 420,
+      "height": 400
     }
   ],
   "_dialogs_comment": [

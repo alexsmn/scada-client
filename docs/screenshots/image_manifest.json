@@ -688,6 +688,13 @@
       "referenced_from": [],
       "notes": "Session-request debugger (client<->server Browse/Read/Call trace), rendered from a fixture trace by debugger_capture.cpp. Not a registered view (it is --debug gated), so it has a dedicated capture. Distinct from the device protocol frame trace in ui-mockups/screens/device-protocol-trace.html, which is unbuilt. Not published yet: no manual page embeds it.",
       "published": false
+    },
+    {
+      "file": "frame-decode-pane.png",
+      "tag": "reshell-theme",
+      "referenced_from": [],
+      "notes": "Device log frame-decode pane: the raw octets and the decoded APCI/ASDU field tree of the selected frame, the right-hand inspector of ui-mockups/screens/device-protocol-trace.html. Rendered from a fixture IEC 60870-5-104 APDU by frame_decode_capture.cpp; inside the client it is the right half of the Watch view's frame-trace mode. Not published yet: no manual page embeds it.",
+      "published": false
     }
   ],
   "counts": {
@@ -695,7 +702,7 @@
     "auto-dialog": 22,
     "auto-menu": 17,
     "auto-state": 5,
-    "reshell-theme": 19,
+    "reshell-theme": 20,
     "manual-diagram": 4,
     "manual-modus": 5,
     "manual-os": 2,

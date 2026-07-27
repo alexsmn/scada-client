@@ -135,6 +135,12 @@ const WatchModel::Row& WatchModel::VisibleRow(int row) const {
   return events_[visible_[row]];
 }
 
+const WatchModel::Row* WatchModel::FindVisibleRow(int row) const {
+  if (row < 0 || row >= static_cast<int>(visible_.size()))
+    return nullptr;
+  return &VisibleRow(row);
+}
+
 DeviceLogDirection WatchModel::DirectionOf(const Row& row) const {
   if (row.frame) {
     switch (row.frame->direction) {

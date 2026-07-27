@@ -46,6 +46,101 @@
         <source>TX</source>
         <translation>TX</translation>
     </message>
+    <!-- Frame-decode pane (modules/watch). APCI, ASDU and the type/cause
+         mnemonics are the standard's own notation and stay as they are; the
+         field labels around them are ordinary UI text. -->
+    <message>
+        <source>APCI</source>
+        <translation>APCI</translation>
+    </message>
+    <message>
+        <source>ASDU</source>
+        <translation>ASDU</translation>
+    </message>
+    <message>
+        <source>Start</source>
+        <translation>Начало</translation>
+    </message>
+    <message>
+        <source>APDU length</source>
+        <translation>Длина APDU</translation>
+    </message>
+    <message>
+        <source>N(S) send</source>
+        <translation>N(S) передача</translation>
+    </message>
+    <message>
+        <source>N(R) recv</source>
+        <translation>N(R) приём</translation>
+    </message>
+    <message>
+        <source>I-format</source>
+        <translation>Формат I</translation>
+    </message>
+    <message>
+        <source>S-format</source>
+        <translation>Формат S</translation>
+    </message>
+    <message>
+        <source>U-format</source>
+        <translation>Формат U</translation>
+    </message>
+    <message>
+        <source>SQ / count</source>
+        <translation>SQ / кол-во</translation>
+    </message>
+    <message>
+        <source>Cause (COT)</source>
+        <translation>Причина (COT)</translation>
+    </message>
+    <message>
+        <source>Originator</source>
+        <translation>Инициатор</translation>
+    </message>
+    <message>
+        <source>Common address</source>
+        <translation>Общий адрес</translation>
+    </message>
+    <message>
+        <source>Information objects</source>
+        <translation>Объекты информации</translation>
+    </message>
+    <message>
+        <source>Command</source>
+        <translation>Команда</translation>
+    </message>
+    <message>
+        <source>Qualifier</source>
+        <translation>Квалификатор</translation>
+    </message>
+    <message>
+        <source>Sequence</source>
+        <translation>Последовательность</translation>
+    </message>
+    <message>
+        <source>Field</source>
+        <translation>Поле</translation>
+    </message>
+    <message>
+        <source>Offset</source>
+        <translation>Смещение</translation>
+    </message>
+    <message>
+        <source>bytes</source>
+        <translation>байт</translation>
+    </message>
+    <message>
+        <source>No frame selected</source>
+        <translation>Кадр не выбран</translation>
+    </message>
+    <message>
+        <source>No octets were captured for this line.</source>
+        <translation>Для этой строки октеты не записаны.</translation>
+    </message>
+    <message>
+        <source>Not an IEC 60870-5-104 APDU.</source>
+        <translation>Не APDU МЭК 60870-5-104.</translation>
+    </message>
     <!-- File-store message-box titles (modules/filesystem). -->
     <message>
         <source>Open File</source>

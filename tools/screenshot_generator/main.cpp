@@ -1,5 +1,6 @@
 #include "bulk_create_capture.h"
 #include "debugger_capture.h"
+#include "frame_decode_capture.h"
 #include "device_diagnostics_capture.h"
 #include "dialog_capture.h"
 #include "display_capture.h"
@@ -422,6 +423,14 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     // fixture request trace.
     if (spec.window_type == "Debugger") {
       SaveDebuggerScreenshot(spec);
+      ++captured;
+      continue;
+    }
+    // The frame-decode pane is the device log's inspector; it is built here
+    // over a fixture APDU because reaching it through WatchView would mean
+    // assembling a full ControllerContext.
+    if (spec.window_type == "FrameDecode") {
+      SaveFrameDecodeScreenshot(spec);
       ++captured;
       continue;
     }

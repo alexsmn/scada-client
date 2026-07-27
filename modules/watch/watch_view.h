@@ -8,7 +8,12 @@
 #include "modules/watch/watch_menu_model.h"
 
 #include <boost/signals2/connection.hpp>
+#include <functional>
 #include <memory>
+
+namespace scada {
+struct DeviceFrame;
+}
 
 namespace scada::aui {
 class Table;
@@ -42,6 +47,16 @@ class WatchView : protected ControllerContext,
  private:
   std::u16string MakeTitle() const;
 
+#if defined(UI_QT)
+  // Builds the trace + decode-pane layout and wires `refresh_decode_pane_`.
+  // Qt-only: aui has no cross-platform splitter, so the Wt frontend keeps the
+  // bare trace (the same split the other composed views make).
+  std::unique_ptr<UiView> CreateFrameTraceLayout();
+
+  std::u16string MakeDecodeHeader(int row,
+                                  const scada::DeviceFrame& frame) const;
+#endif
+
   void ToggleFrameTrace();
 
   void SaveLog();
@@ -53,6 +68,11 @@ class WatchView : protected ControllerContext,
   bool auto_scroll_ = false;
 
   scada::aui::Table* table_ = nullptr;
+
+  // Selection, mode and clear all route through this, so no call site needs to
+  // know whether a decode pane was built. It stays a no-op on the Wt frontend,
+  // which keeps the bare trace.
+  std::function<void()> refresh_decode_pane_ = [] {};
 
   CommandRegistry command_registry_;
 

@@ -47,6 +47,11 @@ class WatchModel : private WatchModelContext,
   };
 
 
+  // The row shown at visible index `row`, or nullptr when `row` is out of
+  // range — which includes "nothing is selected" (-1), so callers need no
+  // separate guard. The decode pane reads the selected frame through this.
+  const Row* FindVisibleRow(int row) const SCADA_LIFETIME_BOUND;
+
   const NodeRef& device() const SCADA_LIFETIME_BOUND { return device_; }
   void SetDevice(NodeRef device);
 
