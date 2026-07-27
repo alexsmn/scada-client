@@ -82,7 +82,7 @@ Rendered, theme-toggleable HTML in
 | `table-watch.html` | Live + historical operator grid — formulas/NodeIds, quality, embedded sparklines, Qt-shaped context menu, row inspector. |
 | `config-workbench.html` | Engineering surface — device/hardware tree, tabbed device parameter editor (IEC 60870 fields, address map), live device-diagnostics inspector. |
 | `users-admin.html` | Admin surface — users grid + RBAC role/permission editor with inherited-vs-explicit grants, admin-gated. |
-| `debugger.html` | Diagnostics — protocol frame trace (IEC 60870) with decoded APCI/ASDU tree + raw hex, direction/error coding. |
+| `device-protocol-trace.html` | **Device log — protocol trace.** IEC 60870 frame trace with decoded APCI/ASDU tree, raw hex and direction/error coding, shown as a mode of the device log view. This is *device* protocol debugging — not the `Debugger` view, which traces client↔server session requests and has its own capture (`debugger.png`). |
 | `transmission-rules.html` | Re-transmission rules grid (source → destination IOA, trigger, transform, status) + rule editor. |
 | `bulk-create.html` | Bulk create-many wizard — stepper, naming/addressing pattern, live preview with conflict resolution. |
 | `login.html` | Themed sign-in with read-only system preview (replaces the native OS dialog). |

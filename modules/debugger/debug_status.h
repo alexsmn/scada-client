@@ -5,8 +5,7 @@
 
 #include <string>
 
-// The status band of a debugger request/response row — the reshell debugger's
-// direction/error colour coding (debugger.html). A running request reads neutral
+// The status band of a debugger request/response row. A running request reads neutral
 // (accent), a succeeded one good, a failed one bad. Pure, so it is unit-testable
 // without Qt.
 enum class DebugStatus { kRunning, kOk, kError };

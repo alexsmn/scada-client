@@ -686,7 +686,7 @@
       "file": "debugger.png",
       "tag": "reshell-theme",
       "referenced_from": [],
-      "notes": "Protocol/request debugger, rendered from a fixture request trace by debugger_capture.cpp. Not a registered view (it is --debug gated), so it has a dedicated capture. Replaces ui-mockups/screens/debugger.html as the visual reference. Not published yet: no manual page embeds it.",
+      "notes": "Session-request debugger (client<->server Browse/Read/Call trace), rendered from a fixture trace by debugger_capture.cpp. Not a registered view (it is --debug gated), so it has a dedicated capture. Distinct from the device protocol frame trace in ui-mockups/screens/device-protocol-trace.html, which is unbuilt. Not published yet: no manual page embeds it.",
       "published": false
     }
   ],

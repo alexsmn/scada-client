@@ -41,11 +41,27 @@ remain dockable and the multi-window profile survives.
 
 ### 2.1 Activity bar (new)
 
-A **native left `QToolBar`** on the far left. Icons are the **display
-hierarchy** (principle §6): **Overview, Alarms, Trends, Substations, Tables**
-on top; **Administration, Settings** pinned at the bottom. The active section
-is shown with the platform's own checked-toolbutton treatment; Alarms carries
-an unacknowledged count badge.
+A **native left `QToolBar`** on the far left, in two groups separated by a
+divider:
+
+1. **Sidebar pane modes** — **Objects, Devices, Files, Nodes**. A mode selects
+   which panes occupy the left sidebar and nothing else: Objects → the object
+   tree + Portfolio, Devices → the hardware tree, Files → Files + Favorites,
+   Nodes → the node tree (admin-only, hidden without the Configure right).
+2. **Pages** — one numbered button per page in the profile, plus a **+** that
+   creates one. Pages are the coarse navigation: each replaces the whole
+   workspace, standing in for the web client's browser tabs. Drag a button to
+   reorder; right-click for Rename / Delete / New.
+
+**The rail never opens a workspace tab and never opens a view.** That is the
+whole point of the vocabulary — it is a mode switcher plus a page switcher, so
+a rail click is always predictable. Surfaces that used to sit here (Alarms,
+Trends, Substations, Tables) are reached from the menu bar and the command
+palette; the unacknowledged-alarm count lives in the top context bar's severity
+tiles and its flood pill.
+
+The two groups carry **independent active markers**, because a pane mode and a
+page are both active at once.
 
 > **Native rework (§9).** The rail was specified as a 52 px charcoal strip with
 > hand-painted 1.8 px glyphs and an `#activityBar` stylesheet. That is a browser
@@ -73,15 +89,29 @@ an unacknowledged count badge.
 >   it must be user-hideable through the standard toolbar context menu, which a
 >   `QToolBar` gives for free and a custom widget does not.
 
-- **New surface.** Backed by `GlobalCommandRegistry` (`core/`): each rail item is
-  a registered top-level command that activates a section (opens/or focuses its
-  default page). The unread badge subscribes to the same alarm-count source the
-  `StatusStrip` uses.
-- **Landed (opt-in).** `main_window/activity_bar_qt.{h,cpp}` builds the charcoal
-  rail; live sections activate their view through `FindWindowInfoByName` →
-  `OpenView` (registry-command backing is the follow-up), and the Alarms badge
-  reads the new `StatusBarModel::GetAlarmCount()` fed from `EventStatusProvider`.
-  Sections with no registered view yet render disabled.
+- **Landed (opt-in).** `main_window/activity_bar_qt.{h,cpp}` builds the rail.
+  The mode → pane-set mapping is `main_window/pane_modes.{h,cpp}` — Qt-free, so
+  the same vocabulary is available to the Wt shell and mirrors the web client's
+  `SIDEBAR_MODES`. Switching a mode closes the panes outside it and opens the
+  ones inside it (`BaseMainWindow::OpenPaneSync`, close-before-open because the
+  view manager tabifies onto the first dock in the area), then fronts the mode's
+  first pane.
+- **The active marker is derived, never a click artifact.**
+  `MainWindow::RefreshPaneModeMarker()` recomputes it from the panes that are
+  actually open, on startup, on every page open, on pane close and on view
+  activation — so a page switch or a manually closed pane cannot leave the rail
+  lying. When the open panes match no mode the marker clears, which is why the
+  button group is non-exclusive.
+- **The mode is a per-window preference** (`MainWindowDef::pane_mode`), not a
+  per-page one: a `Page` already encodes its pane set twice (the `visible` flags
+  and the dock blob), and a third representation would need reconciling on every
+  save. When a page's stored visibility disagrees with the mode, the mode wins
+  and the page is conformed on open — silently and self-healingly.
+- **Pages** come from `main_window/pages/page_switcher.{h,cpp}`, the single
+  source both the rail and the `MainMenuId::Page` menu read. Order is
+  `Page::order`, persisted; drag-and-drop rewrites it, so the menu follows the
+  rail for free. New / Rename / Delete run the registered `ID_PAGE_*` commands
+  rather than reimplementing them.
 - Replaces the role currently played by the `menubar` (File/Edit/View/Window/
   Help) as the *primary* navigation. A conventional menu bar may remain as a
   secondary/keyboard affordance — see §4 open question.
@@ -242,6 +272,55 @@ persistent-context duty of principle §8 on its own.
 > - The one place a token colour survives is the highest-severity cell *if* it
 >   is retained; if it is, it keeps the severity token and gets a text label,
 >   never colour alone (§5).
+
+### 2.8 Device log + protocol trace (extends the Watch view)
+
+The device log — the `Watch` view (`WIN` name `Log`, `modules/watch/`), which
+subscribes to the device-watch event type and already offers Pause / Clear /
+Save — gains a second mode: a **protocol frame trace** for the selected device.
+Mocked in [`../ui-mockups/screens/device-protocol-trace.html`](../ui-mockups/screens/device-protocol-trace.html).
+
+**This is device protocol debugging, and it is not the `Debugger` view.** The
+`Debugger` (`modules/debugger/`, `--debug` gated) traces client↔server *session
+requests* — Browse, Read, Call. The trace specified here decodes the *device*
+link: IEC 60870 APCI/ASDU frames, Modbus PDUs, direction and error coding. The
+two share a vocabulary and nothing else, and the mockup file was previously
+named `debugger.html`, which is why the session debugger's own source comments
+came to cite it. They are separate surfaces.
+
+Why it belongs to the device log rather than a Diagnostics page of its own:
+
+- **The scope is already there.** The log view is scoped to a device; the trace
+  is the same device seen one layer down. Selecting КП-02 should not mean
+  finding a second window and selecting КП-02 again.
+- **It is the same task.** An engineer asking "why is this device not
+  reporting?" reads the log, and the frame trace is the next question, not a
+  different one. §3's alarm discipline argues against scattering one
+  investigation across two places.
+- **It inherits the log's controls.** Pause, Clear and Save-trace already exist
+  on the Watch view and mean the same thing for frames.
+
+Spec:
+
+- A **mode switch within the view** (log ⇄ frame trace), not a separate window.
+  The mockup shows them as two tabs over one device sidebar.
+- Frame columns: time, direction (RX/TX), frame kind (I/S/U), Type ID, Cause,
+  IOA, value, and the send/receive sequence numbers.
+- A **decode pane** for the selected frame: raw hex with the decoded APCI/ASDU
+  tree beside it, each field annotated with its byte offset, ending at the
+  address-space node the object maps to.
+- Filters by frame kind and a free-text filter over IOA / type / cause; an
+  errors-only filter, since that is the reason the view gets opened.
+- **Direction and error coding follow the severity tokens**, not the platform
+  (§9): a link-down or t1 timeout row reads as an alarm.
+- Capture is **per device and off by default** — a frame trace on a busy link is
+  a lot of data, and the mockup's `Capturing · КП-02` status cell exists to make
+  an armed capture impossible to forget.
+
+Not built. The protocol modules own the framing (`scada-tier-iec104`,
+`scada-tier-modbus` in the server; the client sees decoded events), so the first
+question for implementation is where the frames are observed — which is why this
+is recorded as a specification rather than a backlog item with a code path.
 
 ## 3. Navigation & interaction rules
 

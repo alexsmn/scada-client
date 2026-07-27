@@ -2,8 +2,12 @@
 
 struct ScreenshotSpec;
 
-// Renders the protocol/request debugger — debugger.html — and saves it under
+// Renders the session-request debugger and saves it under
 // `GetOutputDir() / spec.filename`.
+//
+// This is the client<->server request trace, not the device protocol frame
+// trace in docs/ui-mockups/screens/device-protocol-trace.html — that is a
+// separate, unbuilt surface planned for the device log view.
 //
 // Standalone like SaveBulkCreateScreenshot: the debugger is not a registered
 // view (no `WindowInfo`), it is a `--debug`-gated window that `Debugger::Open()`

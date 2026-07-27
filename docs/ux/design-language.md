@@ -256,7 +256,7 @@ Rendered, theme-toggleable HTML under
 | `table-watch.html` | live/historical grid: formulas, quality, sparklines, context menu, row inspector |
 | `config-workbench.html` | engineering: hardware tree, tabbed device parameter editor, live device-diagnostics inspector |
 | `users-admin.html` | admin: users grid + RBAC role/permission editor, admin-gated |
-| `debugger.html` | diagnostics: protocol frame trace + decoded APCI/ASDU tree + raw hex |
+| `device-protocol-trace.html` | device log: protocol frame trace + decoded APCI/ASDU tree + raw hex |
 | `transmission-rules.html` | re-transmission rules grid + rule editor (source → destination IOA) |
 | `bulk-create.html` | bulk create-many wizard: stepper, pattern form, live preview + conflict resolution |
 | `login.html` | themed sign-in + read-only system preview |

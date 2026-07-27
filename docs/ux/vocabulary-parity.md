@@ -88,10 +88,14 @@ dependencies; they are naming conventions for new/renamed classes.
    whole flow a *wizard*; the desktop preview panel is one step. Keep the panel
    name for the step, introduce a `BulkCreateWizard` shell when the multi-step
    navigation lands (backlog 5.4 remainder).
-3. **`Debugger` vs `ProtocolDebugger`.** Web is explicit that it traces
-   protocol frames; the desktop `Debugger` traces client↔server session
-   requests (see 5.3 scope note). Keep the desktop name but document the scope
-   difference so the shared noun isn't over-promised.
+3. **`Debugger` vs `ProtocolDebugger` — resolved: they are two surfaces, not
+   one name.** The desktop `Debugger` traces client↔server *session requests*
+   (Browse/Read/Call). Device *protocol* frame decoding is a separate,
+   unbuilt surface specified in [`shell.md`](shell.md) §2.8 as a mode of the
+   device log view. Keep the desktop `Debugger` name for the session trace;
+   when the frame trace is built, that is what the *ProtocolDebugger* noun
+   belongs to. Until then the shared noun would be over-promised on the
+   desktop side, so it is deliberately not claimed.
 4. **`FileSystemView` vs `FileBrowser`, `ConfigurationTreeView` vs
    `AddressSpaceTree`.** Pre-reshell desktop names; rename opportunistically
    when these surfaces are next reshelled, not as a churn-only change.
