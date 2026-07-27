@@ -23,18 +23,7 @@ namespace {
 // The design tokens for the active theme (the bar is only built under a token
 // theme, so the legacy fallback is harmless).
 const scada::aui::ThemeTokens& BarTokens() {
-  scada::aui::Theme theme = scada::aui::Theme::kDark;
-  switch (scada::aui::GetSeverityTheme()) {
-    case scada::aui::SeverityTheme::kLight:
-      theme = scada::aui::Theme::kLight;
-      break;
-    case scada::aui::SeverityTheme::kHighContrast:
-      theme = scada::aui::Theme::kHighContrast;
-      break;
-    default:
-      break;
-  }
-  return scada::aui::GetThemeTokens(theme);
+  return scada::aui::ActiveThemeTokens();
 }
 
 // Labels for the period presets, one per entry in `EventPeriodRanges()`. Kept

@@ -27,20 +27,9 @@ const int kExpandHandleSize = 5;
 // look. The grid consumes aui-owned tokens only, so this stays within aui's
 // allowed dependency set.
 const ThemeTokens* ReshellTokens() {
-  Theme theme = Theme::kDark;
-  switch (GetSeverityTheme()) {
-    case SeverityTheme::kLegacy:
-      return nullptr;
-    case SeverityTheme::kLight:
-      theme = Theme::kLight;
-      break;
-    case SeverityTheme::kHighContrast:
-      theme = Theme::kHighContrast;
-      break;
-    case SeverityTheme::kDark:
-      break;
-  }
-  return &GetThemeTokens(theme);
+  if (GetSeverityTheme() == SeverityTheme::kLegacy)
+    return nullptr;
+  return &ActiveThemeTokens();
 }
 
 GridRange ToUiGridRange(const QItemSelectionRange& range) {

@@ -26,18 +26,7 @@
 namespace {
 
 const scada::aui::ThemeTokens& PanelTokens() {
-  scada::aui::Theme theme = scada::aui::Theme::kDark;
-  switch (scada::aui::GetSeverityTheme()) {
-    case scada::aui::SeverityTheme::kLight:
-      theme = scada::aui::Theme::kLight;
-      break;
-    case scada::aui::SeverityTheme::kHighContrast:
-      theme = scada::aui::Theme::kHighContrast;
-      break;
-    default:
-      break;
-  }
-  return scada::aui::GetThemeTokens(theme);
+  return scada::aui::ActiveThemeTokens();
 }
 
 QString Tr(std::string_view text) {

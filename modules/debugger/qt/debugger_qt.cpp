@@ -27,18 +27,7 @@ namespace {
 // The design tokens for the active reshell theme. The toolbar is only built
 // under a token theme (CreateRequestView gates on it).
 const scada::aui::ThemeTokens& DebuggerTokens() {
-  scada::aui::Theme theme = scada::aui::Theme::kDark;
-  switch (scada::aui::GetSeverityTheme()) {
-    case scada::aui::SeverityTheme::kLight:
-      theme = scada::aui::Theme::kLight;
-      break;
-    case scada::aui::SeverityTheme::kHighContrast:
-      theme = scada::aui::Theme::kHighContrast;
-      break;
-    default:
-      break;
-  }
-  return scada::aui::GetThemeTokens(theme);
+  return scada::aui::ActiveThemeTokens();
 }
 
 QString Tr(std::string_view text) {

@@ -78,18 +78,13 @@ int GetPercentReady(const TimedDataSpec& timed_data) {
 // keeps the historical white chart so the default look is unchanged (the chart
 // chrome is opt-in like the rest of the reshell). See the UX design language at
 // client/docs/ux/design-language.md.
-std::optional<scada::aui::Theme> ReshellChartTheme() {
-  switch (scada::aui::GetSeverityTheme()) {
-    case scada::aui::SeverityTheme::kLegacy:
-      return std::nullopt;
-    case scada::aui::SeverityTheme::kDark:
-      return scada::aui::Theme::kDark;
-    case scada::aui::SeverityTheme::kLight:
-      return scada::aui::Theme::kLight;
-    case scada::aui::SeverityTheme::kHighContrast:
-      return scada::aui::Theme::kHighContrast;
-  }
-  return std::nullopt;
+// The active theme's tokens, or null in the legacy look. Resolved through
+// ActiveThemeTokens() so the chart follows the OS palette under
+// Theme::kSystem instead of a baked light/dark table.
+const scada::aui::ThemeTokens* ReshellChartTokens() {
+  if (scada::aui::GetSeverityTheme() == scada::aui::SeverityTheme::kLegacy)
+    return nullptr;
+  return &scada::aui::ActiveThemeTokens();
 }
 
 // Formats an already-typed data value through the series' own value formatter
@@ -251,7 +246,7 @@ void MetrixGraph::Legend::paintEvent(QPaintEvent* e) {
 }
 
 bool MetrixGraph::Legend::Themed() const {
-  return ReshellChartTheme().has_value();
+  return ReshellChartTokens() != nullptr;
 }
 
 namespace {
@@ -282,8 +277,7 @@ constexpr int kThemedColumnCount =
 }  // namespace
 
 void MetrixGraph::Legend::PaintThemed(QPainter& painter) const {
-  const scada::aui::ThemeTokens& tokens =
-      scada::aui::GetThemeTokens(*ReshellChartTheme());
+  const scada::aui::ThemeTokens& tokens = *ReshellChartTokens();
 
   painter.setRenderHint(QPainter::Antialiasing, true);
 
@@ -504,10 +498,9 @@ MetrixGraph::MetrixGraph(MetrixGraphContext&& context)
   // the graph_qt base, so this single override themes the fill, the axis text
   // and the grid at once without touching the submodule. Gated on the opt-in
   // theme so the legacy chart is untouched.
-  if (std::optional<scada::aui::Theme> theme = ReshellChartTheme()) {
-    const scada::aui::ThemeTokens& tokens = scada::aui::GetThemeTokens(*theme);
+  if (const scada::aui::ThemeTokens* tokens = ReshellChartTokens()) {
     QPalette themed_palette = palette();
-    themed_palette.setColor(backgroundRole(), tokens.surface);
+    themed_palette.setColor(backgroundRole(), tokens->surface);
     setPalette(themed_palette);
   }
 #endif

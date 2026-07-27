@@ -38,18 +38,13 @@ constexpr int kHeaderSwatchH = 3;
 
 // The active reshell theme whose tokens paint the panel, or nullopt under the
 // legacy theme (the panel is opt-in chrome and is not shown there).
-std::optional<scada::aui::Theme> ReshellTheme() {
-  switch (scada::aui::GetSeverityTheme()) {
-    case scada::aui::SeverityTheme::kLegacy:
-      return std::nullopt;
-    case scada::aui::SeverityTheme::kDark:
-      return scada::aui::Theme::kDark;
-    case scada::aui::SeverityTheme::kLight:
-      return scada::aui::Theme::kLight;
-    case scada::aui::SeverityTheme::kHighContrast:
-      return scada::aui::Theme::kHighContrast;
-  }
-  return std::nullopt;
+// The active theme's tokens, or null in the legacy look. Resolved through
+// ActiveThemeTokens() so it follows the OS palette under Theme::kSystem
+// instead of a baked light/dark table.
+const scada::aui::ThemeTokens* ReshellTokens() {
+  if (scada::aui::GetSeverityTheme() == scada::aui::SeverityTheme::kLegacy)
+    return nullptr;
+  return &scada::aui::ActiveThemeTokens();
 }
 
 QFont LabelFont(int pixel_size, bool bold = false) {
@@ -86,10 +81,10 @@ void SeriesInspector::mousePressEvent(QMouseEvent* event) {
 void SeriesInspector::paintEvent(QPaintEvent*) {
   swatch_hits_.clear();
 
-  const std::optional<scada::aui::Theme> theme = ReshellTheme();
-  if (!theme || !line_)
+  const scada::aui::ThemeTokens* active = ReshellTokens();
+  if (!active || !line_)
     return;
-  const scada::aui::ThemeTokens& tokens = scada::aui::GetThemeTokens(*theme);
+  const scada::aui::ThemeTokens& tokens = *active;
   const MetrixDataSource& source = line_->data_source();
 
   QPainter painter(this);

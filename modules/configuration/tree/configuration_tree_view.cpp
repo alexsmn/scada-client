@@ -47,18 +47,7 @@ namespace {
 // token theme (the legacy path returns the bare tree), so the default is
 // harmless.
 const scada::aui::ThemeTokens& ExplorerTokens() {
-  scada::aui::Theme theme = scada::aui::Theme::kDark;
-  switch (scada::aui::GetSeverityTheme()) {
-    case scada::aui::SeverityTheme::kLight:
-      theme = scada::aui::Theme::kLight;
-      break;
-    case scada::aui::SeverityTheme::kHighContrast:
-      theme = scada::aui::Theme::kHighContrast;
-      break;
-    default:
-      break;
-  }
-  return scada::aui::GetThemeTokens(theme);
+  return scada::aui::ActiveThemeTokens();
 }
 
 // Wraps `tree` in a container with a type-to-filter field above it — the

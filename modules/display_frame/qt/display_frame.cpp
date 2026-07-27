@@ -43,18 +43,7 @@ constexpr int kMaxRecentEvents = 50;
 // a token theme (WrapDisplayInFrame gates on it), so the legacy fallback here
 // is harmless. Mirrors the BarTokens() helper in the event filter bar.
 const scada::aui::ThemeTokens& FrameTokens() {
-  scada::aui::Theme theme = scada::aui::Theme::kDark;
-  switch (scada::aui::GetSeverityTheme()) {
-    case scada::aui::SeverityTheme::kLight:
-      theme = scada::aui::Theme::kLight;
-      break;
-    case scada::aui::SeverityTheme::kHighContrast:
-      theme = scada::aui::Theme::kHighContrast;
-      break;
-    default:
-      break;
-  }
-  return scada::aui::GetThemeTokens(theme);
+  return scada::aui::ActiveThemeTokens();
 }
 
 // A translucent "soft" tint of `color` for pill / chip fills, matching the
