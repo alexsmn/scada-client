@@ -19,6 +19,31 @@ The groups (P0 foundations, P1 shell chrome, P2 operator core, P3 dialog
 theming, P4 Explorer/Inspector, P5 engineering) capture dependencies, not a
 required sequence.
 
+> ## ⚠ Direction change (2026-07-26) — read before picking up P0–P5
+>
+> The client now targets a **native OS look and feel**
+> ([`principles.md`](principles.md) §9, [`README.md`](README.md)). Much of
+> P0–P5 was written against the earlier "match the browser client" direction and
+> its *appearance* goals are superseded, even where the item is marked landed.
+> Specifically:
+>
+> - **"No component hard-codes hex" is still right; "components consume the
+>   token QSS" is not.** The target is `QPalette` roles + `QStyle::PixelMetric`.
+>   The token tables survive only for process semantics (severity, quality,
+>   single-line state) and the explicit theme override.
+> - **P3 "dialog theming" inverts.** Item 0.4's goal to "retire native
+>   `QInputDialog`/`QMessageBox` defaults" is now the opposite of what we want —
+>   native dialogs are the desired end state. Do not theme stock dialogs
+>   further; the work is to *stop* overriding them.
+> - **The charcoal rail and charcoal status strip are retired** (1.1, 1.5), and
+>   the alarm count must stop being rendered in three places at once.
+> - The **information architecture** of P0–P5 — which surfaces exist, what data
+>   they show, one-home-per-datum, operator-first ordering — is unaffected and
+>   still the plan. Only the chrome is.
+>
+> New work goes through **P6** below; treat a P0–P5 item as "re-scope to native
+> first" rather than as ready to execute.
+
 ---
 
 ## P0 — Foundations (design system in code)
@@ -96,6 +121,28 @@ required sequence.
 - A **regression unit test** accompanies behavioural changes (per
   `client/CLAUDE.md`), and the relevant `client/docs/screenshots/` image is
   regenerated in the same change.
+
+## P6 — Native look and feel migration
+
+Sequenced: 6.1 unblocks everything else, 6.2–6.3 are the visible wins, 6.4 is
+the long tail. Ship as vertical slices behind the existing opt-in flag, exactly
+as P0–P5 were.
+
+| # | Item | Touches | Dep | Done when |
+|---|---|---|---|---|
+| 6.1 | **Stop forcing Fusion; add a System theme.** `ApplyTheme` currently calls `QApplication::setStyle("Fusion")` unconditionally, overriding `InstalledStyle` and every platform default. Make the platform style the default, keep the `Style` QSetting as an explicit override, and add `Theme::kSystem` that reads `QStyleHints::colorScheme()` and follows it live. | `aui/qt/theme_qt.{h,cpp}`, `app/qt/main.cpp`, `app/qt/installed_style.h` | — | Client starts in the platform style; OS dark/light switch is picked up without restart; explicit dark/light/HC still selectable. |
+| 6.2 | **Shrink `BuildThemeStyleSheet` toward nothing** — ✅ *landed*: all ten rule blocks (menus, tool bars, dock widgets, item views + headers, tabs, status bar, push buttons, inputs/combos, scrollbars) are deleted; ~110 lines of QSS became one rule. What remains is `QPushButton[role="danger"]`, the one case with no `QPalette` role — Qt cannot express "this button does something irreversible". `theme_qt.cpp` records what was removed and why so it cannot creep back, and `StyleSheetDoesNotOverpaintNativeWidgets` fails if any of the selectors returns. Validated by rendering the real Qt window under `--theme=dark`: the palette alone carries the whole theme, and the native dock close/float buttons are back (the old sheet set `titlebar-close-icon:none`). *Note:* `ThemeScope` is now nearly vestigial — `kFull` and `kPaletteOnly` differ only by that one rule; consider retiring the enum and the `Ux/StyleSheet` setting. | `aui/qt/theme_qt.cpp` | 6.1 | `ThemeScope::kFull` and `kPaletteOnly` render near-identically; menus, tabs, buttons and scrollbars are drawn by the platform. |
+| 6.3 | **De-chrome the shell regions.** Activity bar → real `QToolBar` with style metrics and resource icons (`shell.md` §2.1); top bar → no brand lockup, no fixed field width, no `topbar_bg` (§2.2); status strip → plain `QStatusBar`, no charcoal, alarm/severity panes removed (§2.7). | `main_window/activity_bar_qt.*`, `main_window/main_window_qt.cpp`, `main_window/status_bar/` | 6.1 | No region repaints its background; rail scales with DPI and OS font size; the alarm count appears in exactly one place. |
+| 6.4 | **Convert per-widget stylesheets to palette + metrics.** ~105 `setStyleSheet` call sites bake token colours, `font-size:Npx` and radii into widget QSS. Convert by panel, highest count first: `inspector_panel.cpp` (23), `device_parameter_form.cpp` (13), `device_diagnostics_panel.cpp` (10), `transmission_rule_inspector.cpp` (10), `user_access_panel.cpp` (8), `display_frame.cpp` (7), `debugger_qt.cpp` (6). | `modules/*/qt/`, `aui/qt/` | 6.2 | Each converted panel renders correctly under the platform style in OS dark **and** light with no `setStyleSheet` colour/font rules left. |
+| 6.2a | **Match the OS colours, don't imitate them** — ✅ *landed*: under `Theme::kSystem` `ApplyTheme` no longer installs a palette at all (it restores the style's `standardPalette()`), and `GetThemeTokens(kSystem)` derives the chrome tokens — `bg`, `surface`, `surface_muted`, `fg`, `border`, `accent` — from the live `QPalette`, cached on `QPalette::cacheKey()`. `ActiveThemeTokens()` follows the active theme, so the ~23 token-styled surfaces track the desktop before P6.4 converts them. Semantic tokens (severity, quality, single-line) stay fixed, choosing the light or dark ramp by palette lightness. Verified on macOS dark: `style=macos`, `bg #1e1e1e`, `accent #314f78` — the real system highlight. | `aui/qt/theme_qt.cpp` | 6.1 | Window background, surfaces, text and selection colour equal the host palette's; alarm/quality colours do not move. |
+| 6.5 | **React to live palette changes everywhere.** The token layer already re-derives on a palette change (6.2a), but only `Tree`, `Table` and the graph currently *repaint* on `QEvent::ApplicationPaletteChange`; every themed surface needs to, or an OS appearance switch leaves stale widgets until they are recreated. | `aui/qt/`, `modules/*/qt/` | 6.2a | Toggling the OS appearance restyles every open view with no restart and no stale colours. |
+| 6.6 | **Unify the two theme enums.** `Theme` (`theme_qt.h`) and `SeverityTheme` (`severity_colors.h`) are hand-mapped in three places and their colour tables are hand-duplicated; `GetSeverityTheme() != kLegacy` also doubles as the reshell feature flag. Split "is the reshell on" from "which appearance", and derive severity colours from one table. | `aui/severity_colors.*`, `aui/qt/theme_qt.*`, `main_window/` | 6.1 | One appearance enum, one severity table, a separate explicit reshell flag. |
+| 6.7 | **Guard the invariant.** Add a check that fails on new hard-coded colour/font-size QSS in widget code, so the migration cannot silently regress. | `client/tools/` | 6.4 | A new `setStyleSheet` with a hex colour or `font-size:Npx` fails a test with a pointer to the palette role to use. |
+
+**Explicitly out of scope for P6:** the severity/quality/single-line token
+values, which stay fixed and platform-independent by safety requirement
+([`principles.md`](principles.md) §9), and the information architecture of
+P0–P5.
 
 ## Sizing note
 

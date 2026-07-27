@@ -5,30 +5,78 @@
 > from. Rationale is in [`principles.md`](principles.md); layout is in
 > [`shell.md`](shell.md).
 
-These token **values are the client's own source of truth**, deliberately kept
-numerically identical to the web client's design system so the two products
-read as one. When one side changes a token, change the other in the same
-initiative. Do not fork the palette.
+> **Direction change (2026-07-26).** These tokens are no longer a palette to
+> paint the application with. Per [`principles.md`](principles.md) §9 the client
+> takes its **chrome colour from the platform** — the native Qt style and the
+> `QPalette` it honours. The tables below are retained for two narrower jobs:
+>
+> 1. **Process semantics** (severity, quality, single-line equipment state) —
+>    still authoritative, still fixed, deliberately **not** platform-derived.
+>    These are safety signals; see §9 and the exception note there.
+> 2. **The explicit dark / light / high-contrast override**, for control rooms
+>    that standardise on one appearance instead of following the OS.
+>
+> **Surface and text tokens are being retired** in favour of `QPalette` roles.
+> Treat the `--bg` / `--surface` / `--fg` / `--border` rows as a *mapping table*
+> — "which palette role does this surface use" — not as hex to hard-code. New
+> code must not introduce a `setStyleSheet` that bakes one of them in.
 
-> **Implementation.** The Qt token tables, the `QPalette` builder, and the
-> generated QSS live in [`aui/qt/theme_qt.{h,cpp}`](../../aui/qt/theme_qt.h)
-> (`scada::aui::ThemeTokens` / `scada::aui::ApplyTheme`). The hex values there
-> must stay in sync with the tables below. Theming is **opt-in and
-> palette-first**: `app/qt/main.cpp` applies it only when the `Ux/Experimental`
-> QSetting is on, and `ApplyTheme(theme, scope)` can recolour via the palette
-> alone (`ThemeScope::kPaletteOnly`) or add the global stylesheet
-> (`kFull`). See `client/CLAUDE.md` → "UX implementation approach".
+**Under the System theme these tokens *are* the OS colours.** `GetThemeTokens(Theme::kSystem)`
+derives the chrome half of the table from the live `QPalette` — so the ~23
+surfaces that still style themselves from tokens follow the desktop
+automatically, without waiting for the per-widget conversion (P6.4). The
+mapping below is therefore both "what to use in new code" and "what the System
+theme actually does".
+
+One platform caveat is handled in code: `QPalette::AlternateBase` is meant to be
+a barely-there stripe beside `Base`, but the macOS style reports a mid grey
+(`#8e8e8e`) for it. Taken literally that lights up every table header on a dark
+window, so an `AlternateBase` too far from `Base` is ignored in favour of a
+shade derived from `Base`.
+
+**Token → palette role mapping** (use the right-hand column in new code):
+
+| Token | Use instead |
+|---|---|
+| `--bg` | `QPalette::Window` |
+| `--bg-elevated`, `--topbar-bg` | `QPalette::Window` (let the style differentiate toolbars/docks) |
+| `--surface` | `QPalette::Base` |
+| `--surface-muted` | `QPalette::AlternateBase` / `QPalette::Button` |
+| `--rail-bg` | `QPalette::Window` — **the charcoal rail is retired**; a native toolbar does not repaint its background |
+| `--fg` | `QPalette::WindowText` / `QPalette::Text` |
+| `--fg-muted`, `--fg-subtle` | `QPalette::PlaceholderText`, or `WindowText` at reduced opacity |
+| `--border`, `--border-strong` | `QPalette::Mid` / `QPalette::Dark`, or let the style draw the frame |
+| `--accent`, `--accent-soft` | `QPalette::Highlight` / `QPalette::HighlightedText` — **the OS accent colour**, not ours |
+| `--good` / `--uncertain` / `--bad`, severity ramp, `--sl-*` | **keep the token** — process semantics, exempt from the platform |
+
+> **Implementation.** The token tables and the `QPalette` builder live in
+> [`aui/qt/theme_qt.{h,cpp}`](../../aui/qt/theme_qt.h)
+> (`scada::aui::ThemeTokens` / `scada::aui::ApplyTheme`).
+> `BuildThemePalette()` is the part that survives and grows — it carries the
+> entire appearance on its own. `BuildThemeStyleSheet()` has been reduced to a
+> single rule (`QPushButton[role="danger"]`, the one thing with no palette
+> role); its removed blocks are listed in the source so they do not creep back.
+> Every `setStyleSheet` call removed from a widget is progress; every one added
+> needs a reason that `QPalette` and `QStyle::PixelMetric` could not serve.
 
 ## 1. Themes
 
-Three themes ship from one token contract, selected by a `data-theme`
-equivalent (a Qt palette + QSS variable set):
+**System is the default.** The client follows the OS light/dark preference
+(`QStyleHints::colorScheme()`) unless the operator picks an explicit theme:
 
-- **Dark** — the **desktop default** (control-room norm; low glare at night).
-- **Light** — mirrors the **web default**; offered on desktop via toggle.
-- **High contrast** — accessibility / bright-ambient fallback.
+- **System** — *default*. Track the host OS appearance and switch live when the
+  user changes it. On a machine with no preference this resolves to the
+  platform's own default.
+- **Dark** — explicit override. Recommended for control rooms (low glare at
+  night), but no longer forced on every install.
+- **Light** — explicit override.
+- **High contrast** — accessibility / bright-ambient fallback. Where the OS
+  reports its own high-contrast mode, honour that instead.
 
 The operator can switch at runtime; the choice persists in the `Profile`.
+Switching must not require a restart, which means every themed surface has to
+react to `QEvent::ApplicationPaletteChange` — today only `Tree`, `Table` and
+the graph do (`aui/qt/tree.cpp`, `aui/qt/table.cpp`).
 
 ## 2. Colour tokens
 
@@ -50,9 +98,12 @@ Semantic tokens only — **components never hard-code hex**. Grouped by role.
 | `--border` | `rgba(255,255,255,.12)` | `rgba(15,23,42,.12)` | hairlines |
 | `--border-strong` | `rgba(255,255,255,.24)` | `rgba(15,23,42,.22)` | field/control borders |
 
-The **Activity bar and status strip stay charcoal in the light theme too** —
-this is the web's deliberate "deep charcoal rail on a light workspace" signature
-and the single most recognisable shared cue between the two clients.
+> **Retired.** The charcoal-rail-on-light-workspace signature is dropped. A
+> toolbar and a status bar that repaint themselves dark while the rest of the
+> window follows the OS is the most conspicuously non-native thing the client
+> does, and it is exactly what an operator reads as "this is a web page in a
+> window". Under §9 the activity bar and status strip take
+> `QPalette::Window` like any other native chrome, in every theme.
 
 ### Accent & quality
 

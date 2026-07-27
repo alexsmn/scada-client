@@ -127,10 +127,42 @@ Rules of the pipeline:
 
 The client's UX design system lives under [`docs/ux/`](docs/ux/README.md).
 **Read it before adding or restyling any UI**, and follow it rather than
-inventing chrome. The direction is a full reshell to an operator workbench
-(Activity bar → Explorer → workspace tabs → Inspector → status strip),
-visually consistent with the web client, using shared light/dark/high-contrast
-design tokens (desktop defaults to dark).
+inventing chrome.
+
+**The direction is a native desktop look and feel** (agreed 2026-07-26,
+superseding the earlier browser-styled reshell). The client must read as a
+native application on each host OS:
+
+- **Use the platform Qt style** — `windows11`/`windowsvista`, `macos`, or the
+  Linux `QT_QPA_PLATFORMTHEME` style. Do **not** call
+  `QApplication::setStyle("Fusion")`; the platform default wins and the `Style`
+  QSetting is a user override.
+- **Colour through `QPalette` roles**, not stylesheets. Adding a
+  `setStyleSheet` with a baked colour is a regression — there are ~105 such
+  sites and the plan is to remove them (backlog P6), not add more.
+- **Size through `QStyle::PixelMetric`, `QFontMetrics`, `QApplication::font()`.**
+  Never hard-code `font-size:Npx`, fixed widget widths, or hand-tuned radii:
+  they break DPI scaling and the OS font-size accessibility setting.
+- **Follow the OS light/dark preference by default**, with an explicit
+  dark/light/high-contrast override. Theme changes must apply live, which means
+  handling `QEvent::ApplicationPaletteChange`.
+- **Prefer stock Qt widgets in their conventional roles** — `QMenuBar`,
+  `QToolBar`, `QDockWidget`, `QStatusBar`, `QMessageBox`, `QFileDialog`. Native
+  dialogs are the desired end state, not something to theme away.
+- **Exception — process semantics are ours, not the platform's.** Alarm
+  severity, data quality (good/uncertain/bad), and single-line equipment state
+  are functional safety colours (ISA-101, ISA-18.2/EEMUA 191). They keep their
+  fixed token values, must not follow the OS accent, and must not invert with
+  the system theme. Colour is still never the only signal — always pair with a
+  label or shape.
+
+The information architecture from the reshell still stands (Activity bar →
+Explorer → workspace tabs → Inspector → status strip, operator-first, one home
+per datum). It is the *chrome* that becomes native, not the layout.
+
+The HTML mockups in `docs/ui-mockups/` are **layout references only** — their
+appearance predates this direction. Validate implemented UI against real Qt
+widgets via the headless `client_screenshot_generator`, never against the HTML.
 
 - [`docs/ux/principles.md`](docs/ux/principles.md) — HMI/SCADA UX principles
   (High-Performance HMI, ISA-101, ISA-18.2/EEMUA 191 alarms, situational
@@ -162,16 +194,20 @@ build the reshell (decided with the user) is:
 - **Theming is opt-in and palette-first.** The design-token theming
   (`scada::aui::ApplyTheme` in [`aui/qt/theme_qt.h`](aui/qt/theme_qt.h)) is
   **off by default** — it only runs when the `Ux/Experimental` QSetting is true
-  (`app/qt/main.cpp`), so the legacy Fusion look is unchanged for everyone else.
-  Prefer recolouring through `QPalette` (`ThemeScope::kPaletteOnly`) and
-  targeted per-widget styling; the global stylesheet (`kFull`) is additive and
-  must be validated against ActiveX (Modus/Vidicon) and custom-painted widgets
-  (the graph) before it is relied on. Do not make theming unconditional or grow
-  one monolithic global sheet.
-- **Validate by purpose.** Use HTML mockups in `docs/ui-mockups/` for
-  brand-new layouts; validate anything actually implemented against **real Qt
-  widgets** via the headless `client_screenshot_generator` (see
-  `docs/screenshots.md`) — not HTML, which does not match Qt's rendering.
+  (`app/qt/main.cpp`). Prefer recolouring through `QPalette`
+  (`ThemeScope::kPaletteOnly`). The global stylesheet (`kFull`) has been
+  **reduced to a single rule** (backlog P6.2) — everything a native style can
+  draw is now left to it. `BuildThemeStyleSheet` records what was removed and
+  why; a unit test fails if any of those selectors comes back. Never grow the
+  global sheet, and never make it unconditional.
+- **Every removed `setStyleSheet` is progress.** Adding one needs a reason that
+  `QPalette` plus `QStyle::PixelMetric` could not serve — state it in a comment.
+- **Validate by purpose, and validate in both OS appearances.** Use HTML
+  mockups in `docs/ui-mockups/` for information architecture only; validate
+  anything implemented against **real Qt widgets** via the headless
+  `client_screenshot_generator` (see `docs/screenshots.md`) — not HTML, which
+  does not match Qt's rendering. A native-look change is not done until it has
+  been seen under both a light and a dark system theme.
 
 When in doubt about scope or sequence, ask rather than executing the backlog
 top to bottom.

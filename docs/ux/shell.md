@@ -41,11 +41,37 @@ remain dockable and the multi-window profile survives.
 
 ### 2.1 Activity bar (new)
 
-A 52 px charcoal icon rail on the far left, present in every theme. Icons are
-the **display hierarchy** (principle §6): **Overview, Alarms, Trends,
-Substations, Tables** on top; **Administration, Settings** pinned at the bottom.
-The active section carries an accent marker; Alarms carries an unacknowledged
-count badge.
+A **native left `QToolBar`** on the far left. Icons are the **display
+hierarchy** (principle §6): **Overview, Alarms, Trends, Substations, Tables**
+on top; **Administration, Settings** pinned at the bottom. The active section
+is shown with the platform's own checked-toolbutton treatment; Alarms carries
+an unacknowledged count badge.
+
+> **Native rework (§9).** The rail was specified as a 52 px charcoal strip with
+> hand-painted 1.8 px glyphs and an `#activityBar` stylesheet. That is a browser
+> idiom and it is being replaced. The prescription is now:
+>
+> - It is a real `QToolBar` in `Qt::LeftToolBarArea` whose buttons are ordinary
+>   `QToolButton`s with `QAction`s — no custom widget painting the rail.
+> - **No background repaint.** It takes `QPalette::Window` like any other
+>   toolbar; drop the `rail_bg` sheet.
+> - **Sizes come from the style**: `QStyle::PM_ToolBarIconSize` /
+>   `QStyle::PM_LargeIconSize` and `QFontMetrics`, not `kRailWidth = 52`,
+>   `kButtonSize = 44`, `kIconSize = 24`. It must scale with DPI and with the
+>   OS font-size accessibility setting.
+> - **Icons are real `QIcon`s from the resource set** at multiple sizes (see
+>   [`iconography.md`](iconography.md)), not `QPainterPath` glyphs stroked at a
+>   fixed pen width — those blur at fractional scaling and ignore
+>   high-contrast modes.
+> - Active-section marking uses `QAction::setChecked` on an exclusive
+>   `QActionGroup`, so the platform draws the affordance it already teaches its
+>   users.
+> - The badge keeps the **severity token** colour (process semantics are exempt
+>   from the platform, §9), but its text colour comes from the palette.
+> - **Open question for the rework:** whether a native app should have this rail
+>   at all, given it duplicates the menu bar's navigation role (§4). If it stays,
+>   it must be user-hideable through the standard toolbar context menu, which a
+>   `QToolBar` gives for free and a custom widget does not.
 
 - **New surface.** Backed by `GlobalCommandRegistry` (`core/`): each rail item is
   a registered top-level command that activates a section (opens/or focuses its
@@ -77,6 +103,26 @@ Persistent context (principle §8) is satisfied by the status strip, which never
 scrolls away. The division of labour is: **top bar = what is wrong now**
 (pre-attentive, colour-carrying, changes under alarm), **status strip = where I
 am and what I am connected to** (steady, glanceable, rarely changes).
+
+> **Native rework (§9).** The same one-home rule now also settles *which*
+> region owns a datum, on native grounds: a desktop application's steady
+> context belongs in `QStatusBar`, and that is where every platform's users
+> look for it. Additional prescriptions for this bar:
+>
+> - It is a plain `QToolBar` with no background repaint and no `topbar_bg`.
+> - The brand label is dropped. Native applications identify themselves in the
+>   window title and the About dialog, not with an in-window lockup — and the
+>   current one is a hard-coded, space-padded, untranslated literal.
+> - The command/search field keeps its natural `QLineEdit` size hint instead of
+>   a fixed 360 px width, so it tracks the OS font size.
+> - The alarm-flood pill and severity tiles keep their **severity token**
+>   colours (exempt, §9) but must not hard-code their text colour — today the
+>   pill bakes in `#ffffff`.
+> - The alarm count must appear in **one** place. It is currently rendered
+>   three times at once: the status-bar severity panes, these tiles, and the
+>   activity-rail badge. Tiles are the pre-attentive "what is wrong now"
+>   surface and the rail badge is the navigation affordance; the **status bar's
+>   severity panes are the ones to drop**.
 
 - Command palette resolves against `GlobalCommandRegistry` +
   `SelectionCommandRegistry` + address-space browse. This is new UI over
@@ -173,15 +219,29 @@ identical, only the drawing backend differs.
 
 ### 2.7 Status strip (reworked status bar)
 
-Charcoal bottom strip, and the **single home** for identity and connection
-context: event count, min-severity filter, **highest active severity**,
-user·role, connection, server latency, endpoint·build. Extends the current
-status bar (`Events / Severity / Connected / Server ms`) with the severity cell
-and the identity cells.
+A **native `QStatusBar`**, and the **single home** for identity and connection
+context: user·role, connection, server latency, endpoint·build.
 
 These cells appear **here and nowhere else** — the top bar deliberately does
 not mirror them (§2.2). The strip never scrolls away, so it carries the
 persistent-context duty of principle §8 on its own.
+
+> **Native rework (§9).**
+>
+> - **Not charcoal.** It is a `QStatusBar` and takes `QPalette::Window`. A
+>   status bar that repaints itself dark under a light system theme is the
+>   clearest tell that the window is not native.
+> - Cells stay `addPermanentWidget` labels, but drop the fixed pixel widths in
+>   favour of `QFontMetrics`-derived hints so they do not clip at larger OS
+>   font sizes.
+> - **The three alarm/severity panes are removed** (event count, severity
+>   summary, highest active severity). They restate what the top-bar tiles
+>   already show pre-attentively, and §3's alarm discipline argues against
+>   presenting one metric in two prominent places. What remains here is the
+>   steady context that changes rarely.
+> - The one place a token colour survives is the highest-severity cell *if* it
+>   is retained; if it is, it keeps the severity token and gets a text label,
+>   never colour alone (§5).
 
 ## 3. Navigation & interaction rules
 

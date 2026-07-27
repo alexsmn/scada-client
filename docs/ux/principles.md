@@ -151,18 +151,49 @@ strip (steady, glanceable). Duplicating a fact across both bars does not make it
 more persistent — it spends chrome and gives the operator a second place to
 check. See `shell.md` §2.2/§2.7 for the split and the reason it was corrected.
 
-## 9. Consistency with the web client
+## 9. Be a native desktop application
 
-The web client (`web/`) already codifies this doctrine as a VS Code-style
-operator workbench with a mature, theme-aware token system. The desktop client
-adopts **the same design language and the same token values** so an operator
-moving between desktop and browser sees one product. Where the two must differ,
-the difference is **platform-idiomatic, not stylistic**: the desktop keeps
-native window management, dockable panes, and multi-window profiles; the web
-keeps browser navigation and responsive collapse. The **default theme differs
-by context** — desktop defaults to **dark** (control-room norm), web defaults to
-**light** — but both ship the same light/dark/high-contrast token sets and the
-same toggle.
+> Supersedes the earlier "adopt the browser client's design language" position.
+
+This client is a desktop application, and an operator's expectations for it are
+set by the rest of their OS, not by a web page. Chrome that imitates a browser
+workbench costs us the things a native toolkit gives away for free:
+
+- **Learned motor habits.** Native menu placement, keyboard traversal, focus
+  rings, selection colours, right-click behaviour, and scrollbar geometry are
+  already in the operator's fingers. Re-implementing them differently makes a
+  control-room tool slower to use under stress — exactly when §1 says it must
+  be fastest.
+- **Accessibility that already works.** OS font-size and contrast preferences,
+  screen readers, high-contrast modes, and reduced-motion settings are honoured
+  by the platform style. A hand-rolled stylesheet with `font-size:11px` silently
+  opts out of all of them.
+- **DPI and multi-monitor correctness.** Platform metrics scale; fixed pixel
+  constants do not. Control rooms run mixed-DPI video walls.
+- **Trust.** Industrial buyers read a non-native UI as a port or a wrapper. The
+  desktop client is the flagship; it should look like it belongs on the machine.
+
+Concretely: use the **platform Qt style**, colour through **`QPalette`** roles,
+size through **`QStyle::PixelMetric`/`QFontMetrics`**, and **follow the OS
+light/dark preference** by default while still offering an explicit override
+for control rooms that standardise on dark.
+
+**The exception is process semantics.** Alarm severity, data quality, and
+single-line equipment state are functional colours fixed by §3 and §5 and by
+ISA-101 / ISA-18.2 / EEMUA 191. They are *safety* signals, not decoration: they
+must be identical on every machine, must not follow the OS accent colour, and
+must not invert with the system theme. Everything else defers to the platform;
+these do not.
+
+### Relationship to the other front end
+
+The product ships two front ends and they are expected to reach **capability
+parity** — anything an operator or engineer can do in one, they can do in the
+other. They are **not** expected to reach visual parity, and after this
+principle they deliberately will not. What stays shared is **vocabulary**: the
+same concept carries the same name in both, so features, documentation and
+training transfer even though the pixels do not. See
+[`vocabulary-parity.md`](vocabulary-parity.md).
 
 ---
 
@@ -177,5 +208,5 @@ same toggle.
 | §5 Colour + second cue | Severity label + dot + colour together; `?` on bad quality |
 | §6 Hierarchy + style guide | Activity bar / Explorer / tabs / Inspector shell (`shell.md`) |
 | §7 Deliberate control | Two-stage confirm dialog (`control-command`) |
-| §8 Persistent context | Top context bar + bottom status strip (`operator-shell`, `login`) |
-| §9 Web consistency | Shared tokens; dark-default desktop vs light-default web |
+| §8 Persistent context | Status strip is the single home for identity/connection context (`shell.md` §2.7) |
+| §9 Native desktop | Platform style + `QPalette` + platform metrics; OS light/dark followed by default; severity/quality colours exempt (`design-language.md`) |
