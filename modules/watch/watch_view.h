@@ -42,6 +42,8 @@ class WatchView : protected ControllerContext,
  private:
   std::u16string MakeTitle() const;
 
+  void ToggleFrameTrace();
+
   void SaveLog();
 
   void OnItemsAdded(int first, int count);

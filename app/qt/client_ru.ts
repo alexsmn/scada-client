@@ -3,6 +3,25 @@
 <TS version="2.1" language="ru_RU">
 <context>
     <name></name>
+    <!-- Device log frame-trace mode (modules/watch). RX/TX are the
+         protocol-standard direction abbreviations and are kept as-is
+         in Russian, matching the drivers' own #RX:/$TX: markers. -->
+    <message>
+        <source>Frame trace</source>
+        <translation>Трассировка кадров</translation>
+    </message>
+    <message>
+        <source>Dir</source>
+        <translation>Напр.</translation>
+    </message>
+    <message>
+        <source>RX</source>
+        <translation>RX</translation>
+    </message>
+    <message>
+        <source>TX</source>
+        <translation>TX</translation>
+    </message>
     <!-- File-store message-box titles (modules/filesystem). -->
     <message>
         <source>Open File</source>

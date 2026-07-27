@@ -47,6 +47,10 @@ void WatchView::Save(WindowDefinition& definition) {
 
 std::u16string WatchView::MakeTitle() const {
   std::u16string title = ToString16(model_->device().display_name());
+  // The mode is part of the view's identity: a frame trace and a device log
+  // are answering different questions about the same device.
+  if (model_->mode() == WatchMode::kFrameTrace)
+    title += u" \u2014 " + Translate("Frame trace");
   if (model_->paused())
     title += u" [Pause]";
   return title;
@@ -56,6 +60,12 @@ std::unique_ptr<UiView> WatchView::Init(const WindowDefinition& definition) {
   const scada::aui::TableColumn columns[] = {
       {0, Translate("Time"), 100, scada::aui::TableColumn::LEFT,
        scada::aui::TableColumn::DataType::DateTime},
+      // Direction sits beside the time, as in the frame-trace mockup. It is
+      // present in both modes rather than swapped in with the mode, because
+      // aui::Table fixes its columns at construction — and because knowing
+      // which log lines are protocol traffic is useful in the log too. It is
+      // simply blank for unmarked lines.
+      {3, Translate("Dir"), 50, scada::aui::TableColumn::LEFT},
       {1, Translate("Device"), 100, scada::aui::TableColumn::LEFT},
       {2, Translate("Event"), 400, scada::aui::TableColumn::LEFT},
   };
@@ -96,12 +106,26 @@ std::unique_ptr<UiView> WatchView::Init(const WindowDefinition& definition) {
           .set_checked_handler([this] { return model_->paused(); }));
 
   command_registry_.AddCommand(
+      Command{ID_WATCH_FRAME_TRACE}
+          .set_execute_handler([this] { ToggleFrameTrace(); })
+          .set_checked_handler([this] {
+            return model_->mode() == WatchMode::kFrameTrace;
+          }));
+
+  command_registry_.AddCommand(
       Command{ID_SAVE_AS}.set_execute_handler([this] { SaveLog(); }));
 
   command_registry_.AddCommand(
       Command{ID_CLEAR_ALL}.set_execute_handler([this] { model_->Clear(); }));
 
   return std::unique_ptr<UiView>{table_->CreateParentIfNecessary()};
+}
+
+void WatchView::ToggleFrameTrace() {
+  model_->SetMode(model_->mode() == WatchMode::kFrameTrace
+                      ? WatchMode::kLog
+                      : WatchMode::kFrameTrace);
+  controller_delegate_.SetTitle(MakeTitle());
 }
 
 void WatchView::SaveLog() {

@@ -24,6 +24,10 @@ WatchMenuModel::WatchMenuModel(CommandHandler& commands)
   // Pause is a checkable toggle; its check mark tracks the view's paused state
   // through the command registry.
   model_.AddCheckItem(ID_PAUSE, Translate("Pause"));
+  // Frame trace is the view's second mode, not a separate window: it narrows
+  // the same device stream to the lines the drivers marked as protocol
+  // traffic (docs/ux/shell.md §2.8).
+  model_.AddCheckItem(ID_WATCH_FRAME_TRACE, Translate("Frame trace"));
   model_.AddSeparator(scada::aui::NORMAL_SEPARATOR);
   model_.AddItem(ID_SAVE_AS, Translate("Save As..."));
   model_.AddSeparator(scada::aui::NORMAL_SEPARATOR);

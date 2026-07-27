@@ -38,6 +38,10 @@ void RegisterWatchCommandActions(UiCommandRegistry& ui_command_registry) {
   ui_command_registry.AddAction(Action{.command_id_ = ID_PAUSE,
                                        .category_ = CATEGORY_SPECIFIC,
                                        .title_ = Translate("Pause")});
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_WATCH_FRAME_TRACE,
+             .category_ = CATEGORY_SPECIFIC,
+             .title_ = Translate("Frame trace")});
   ui_command_registry.AddAction(Action{.command_id_ = ID_CLEAR_ALL,
                                        .category_ = CATEGORY_EDIT,
                                        .title_ = Translate("Clear")});

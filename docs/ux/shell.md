@@ -317,10 +317,36 @@ Spec:
   a lot of data, and the mockup's `Capturing · КП-02` status cell exists to make
   an armed capture impossible to forget.
 
-Not built. The protocol modules own the framing (`scada-tier-iec104`,
-`scada-tier-modbus` in the server; the client sees decoded events), so the first
-question for implementation is where the frames are observed — which is why this
-is recorded as a specification rather than a backlog item with a code path.
+**Landed (first cut).** The mode itself is built: `Frame trace` is a checkable
+command on the Watch view (`ID_WATCH_FRAME_TRACE`), and `WatchModel` filters the
+same device-watch stream to protocol traffic, with a `Dir` column.
+
+Where the data comes from — the question this section previously left open. The
+drivers already tag protocol traffic as they log it: `#` for something received,
+`$` for something sent
+(`scada-tier-iec104/modules/iec60870/lib/*`, e.g. `"#RX: {} ({} bytes)"` for a
+raw frame, `"$TX: Send write confirmation [...]"` for a command). `DeviceLogger`
+passes the message into the `DeviceWatchEventType` event untouched, so the
+marker survives to the client. `modules/watch/device_log_line.{h,cpp}` reads it.
+**No server change was needed for this cut**, which is why it exists at all.
+
+What it therefore is **not**, yet. `DeviceWatchEventType` is a bare event type
+with no properties of its own — it carries a `LocalizedText` message and nothing
+else. So the trace shows a *marked, direction-tagged log*, not the structured
+frame table this section specifies:
+
+- Type ID, Cause, IOA, value and N(S)/N(R) are **text inside the message**, not
+  columns. They cannot be sorted or filtered on.
+- There is **no decode pane**: the raw hex is one log line and the APCI/ASDU
+  tree does not exist client-side.
+- Only what a driver chose to log is visible. The raw-frame dump is written at
+  the connection layer for RX; there is no equivalent TX dump.
+
+Closing that gap needs the frames to arrive as **data rather than prose**:
+structured properties on `DeviceWatchEventType` (or a sibling event type) in
+`common/model/nodesets/devices.xml`, populated by the framework's device event
+sink and by each protocol tier. That is a cross-repo change and is deliberately
+not started here.
 
 ## 3. Navigation & interaction rules
 

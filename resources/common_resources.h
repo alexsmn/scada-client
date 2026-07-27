@@ -80,6 +80,7 @@
 #define ID_SEVERITY_CUSTOM              169
 #define ID_NEW_PORTFOLIO                171
 #define ID_PAUSE                        172
+#define ID_WATCH_FRAME_TRACE            173
 #define ID_NEW_SERVICE_ITEMS            174
 #define ID_ADD_MULTIPLE_ITEMS           175
 #define ID_VIEW_CURSOR                  176
