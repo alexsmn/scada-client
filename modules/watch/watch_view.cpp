@@ -66,6 +66,12 @@ std::unique_ptr<UiView> WatchView::Init(const WindowDefinition& definition) {
       // which log lines are protocol traffic is useful in the log too. It is
       // simply blank for unmarked lines.
       {3, Translate("Dir"), 50, scada::aui::TableColumn::LEFT},
+      // Decoded frame fields, blank for ordinary log lines. Permanent for the
+      // same reason as Dir: aui::Table fixes its columns at construction, so
+      // they cannot be swapped in with the mode.
+      {4, Translate("Type ID"), 70, scada::aui::TableColumn::RIGHT},
+      {5, Translate("Cause"), 60, scada::aui::TableColumn::RIGHT},
+      {6, Translate("IOA"), 70, scada::aui::TableColumn::RIGHT},
       {1, Translate("Device"), 100, scada::aui::TableColumn::LEFT},
       {2, Translate("Event"), 400, scada::aui::TableColumn::LEFT},
   };

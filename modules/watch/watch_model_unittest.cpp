@@ -24,6 +24,10 @@ class CapturingEventSource : public WatchEventSource {
 
   void Deliver(const scada::Event& event) { delegate_->OnEvent(event); }
 
+  void DeliverFrame(const scada::DeviceFrameEvent& event) {
+    delegate_->OnDeviceFrame(event);
+  }
+
  private:
   Delegate* delegate_ = nullptr;
 };
@@ -47,6 +51,22 @@ class WatchModelTest : public testing::Test {
 
   void Deliver(std::int64_t seconds, std::u16string message) {
     event_source_.Deliver(MakeEvent(seconds, std::move(message)));
+  }
+
+  // A server that reports structured frame data.
+  void DeliverFrame(std::int64_t seconds,
+                    std::u16string message,
+                    scada::Int32 direction,
+                    scada::Int32 type_id = 0,
+                    scada::Int32 cause = 0,
+                    scada::Int32 object_address = 0) {
+    scada::DeviceFrameEvent event;
+    event.base = MakeEvent(seconds, std::move(message));
+    event.frame.direction = direction;
+    event.frame.type_id = type_id;
+    event.frame.cause = cause;
+    event.frame.object_address = object_address;
+    event_source_.DeliverFrame(event);
   }
 
   StaticNodeService node_service_;
@@ -128,6 +148,60 @@ TEST_F(WatchModelTest, ClearEmptiesBothModes) {
   EXPECT_EQ(model_.GetRowCount(), 0);
   model_.SetMode(WatchMode::kLog);
   EXPECT_EQ(model_.GetRowCount(), 0);
+}
+
+
+// The structured path: direction and the decoded columns come from the frame,
+// not from parsing the message back apart.
+TEST_F(WatchModelTest, StructuredFramesPopulateTheDecodedColumns) {
+  DeliverFrame(1, u"M_ME_NC_1 received", scada::DeviceFrame::kInbound,
+               /*type_id=*/13, /*cause=*/1, /*object_address=*/4002);
+
+  ASSERT_EQ(model_.GetRowCount(), 1);
+  EXPECT_EQ(model_.GetCellText(0, 3), u"RX");
+  EXPECT_EQ(model_.GetCellText(0, 4), u"13");
+  EXPECT_EQ(model_.GetCellText(0, 5), u"1");
+  EXPECT_EQ(model_.GetCellText(0, 6), u"4002");
+  // The message needs no marker now, and is shown untouched.
+  EXPECT_EQ(model_.GetCellText(0, 2), u"M_ME_NC_1 received");
+}
+
+// A structured frame is traffic by construction, with no marker to parse.
+TEST_F(WatchModelTest, FrameTraceShowsStructuredFramesWithoutAMarker) {
+  DeliverFrame(1, u"unmarked but structured", scada::DeviceFrame::kOutbound);
+  Deliver(2, u"plain log line");
+
+  model_.SetMode(WatchMode::kFrameTrace);
+  ASSERT_EQ(model_.GetRowCount(), 1);
+  EXPECT_EQ(model_.GetCellText(0, 2), u"unmarked but structured");
+  EXPECT_EQ(model_.GetCellText(0, 3), u"TX");
+}
+
+// Mixed-version deployments: a server older than DeviceFrameEventType still
+// sends prose with #/$ markers, and must keep working.
+TEST_F(WatchModelTest, FallsBackToTheMessageMarkerWithoutStructuredData) {
+  Deliver(1, u"#RX: 68 0C");
+  DeliverFrame(2, u"structured", scada::DeviceFrame::kInbound, 13);
+
+  model_.SetMode(WatchMode::kFrameTrace);
+  ASSERT_EQ(model_.GetRowCount(), 2);
+  EXPECT_EQ(model_.GetCellText(0, 3), u"RX");
+  // The legacy row has no decoded fields to show — they stay blank rather than
+  // being guessed out of the text.
+  EXPECT_EQ(model_.GetCellText(0, 4), u"");
+  EXPECT_EQ(model_.GetCellText(1, 4), u"13");
+}
+
+// Zero is "not applicable", not a value: IOA 0 is not a valid object address
+// and type/cause 0 are unused, so showing "0" would invent data.
+TEST_F(WatchModelTest, UnsetFrameFieldsRenderBlank) {
+  DeliverFrame(1, u"raw frame", scada::DeviceFrame::kInbound);
+
+  ASSERT_EQ(model_.GetRowCount(), 1);
+  EXPECT_EQ(model_.GetCellText(0, 4), u"");
+  EXPECT_EQ(model_.GetCellText(0, 5), u"");
+  EXPECT_EQ(model_.GetCellText(0, 6), u"");
+  EXPECT_EQ(model_.GetCellText(0, 3), u"RX");
 }
 
 }  // namespace

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "scada/date_time_range.h"
+#include "scada/event.h"
 
 namespace scada {
 class NodeId;
@@ -17,6 +18,11 @@ class WatchEventSource {
     virtual ~Delegate() = default;
 
     virtual void OnEvent(const scada::Event& event) = 0;
+    // A device protocol frame. Defaulted to the base event so a delegate that
+    // does not care about frames still receives the log line.
+    virtual void OnDeviceFrame(const scada::DeviceFrameEvent& event) {
+      OnEvent(event.base);
+    }
     virtual void OnError(const scada::Status& status) = 0;
   };
 

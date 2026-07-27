@@ -330,23 +330,28 @@ passes the message into the `DeviceWatchEventType` event untouched, so the
 marker survives to the client. `modules/watch/device_log_line.{h,cpp}` reads it.
 **No server change was needed for this cut**, which is why it exists at all.
 
-What it therefore is **not**, yet. `DeviceWatchEventType` is a bare event type
-with no properties of its own — it carries a `LocalizedText` message and nothing
-else. So the trace shows a *marked, direction-tagged log*, not the structured
-frame table this section specifies:
+**Frames now arrive as data.** `DeviceFrameEventType` (a subtype of
+`DeviceWatchEventType`, so the existing subscription matches it) carries
+Direction, RawData, Format, TypeId, Cause, ObjectAddress and the two sequence
+numbers. The IEC 60870 driver populates it at the ten sites that observe a PDU;
+the trace shows **Type ID, Cause and IOA as sortable columns** rather than text
+inside a message.
 
-- Type ID, Cause, IOA, value and N(S)/N(R) are **text inside the message**, not
-  columns. They cannot be sorted or filtered on.
-- There is **no decode pane**: the raw hex is one log line and the APCI/ASDU
-  tree does not exist client-side.
-- Only what a driver chose to log is visible. The raw-frame dump is written at
-  the connection layer for RX; there is no equivalent TX dump.
+The marker heuristic remains as a **fallback**, not as the primary path: a
+server older than `DeviceFrameEventType` still sends prose with `#`/`$`, and
+must keep producing a usable trace. A row without structured data shows its
+direction from the marker and leaves the decoded columns blank rather than
+guessing values out of the text.
 
-Closing that gap needs the frames to arrive as **data rather than prose**:
-structured properties on `DeviceWatchEventType` (or a sibling event type) in
-`common/model/nodesets/devices.xml`, populated by the framework's device event
-sink and by each protocol tier. That is a cross-repo change and is deliberately
-not started here.
+Still missing against the mockup:
+
+- **No decode pane.** `RawData` crosses the wire, but nothing renders the
+  APCI/ASDU tree or the hex beside it; the raw frame is still just a log line.
+- **N(S)/N(R) are carried but not shown** — the driver does not populate them
+  yet (the sequence numbers live in the APCI, below the ASDU the log sites see).
+- Eleven driver sites stay plain log lines by design: timer expiries and
+  state-machine notes carry the direction markers but describe no PDU, and a
+  trace filtered to real traffic is the point of the mode.
 
 ## 3. Navigation & interaction rules
 

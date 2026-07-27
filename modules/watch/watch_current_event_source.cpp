@@ -5,6 +5,8 @@
 #include "node_service/node_service.h"
 #include "scada/monitoring_parameters.h"
 
+#include <any>
+
 // WatchCurrentEventSource
 
 WatchCurrentEventSource::WatchCurrentEventSource(
@@ -20,7 +22,12 @@ void WatchCurrentEventSource::Start(const scada::NodeId& device_id,
     return;
   }
 
-  monitored_item_.subscribe_system_events(
+  // Subscribes the any-typed stream rather than subscribe_system_events, which
+  // any_casts to scada::Event and would silently drop a DeviceFrameEvent
+  // entirely — not merely its decoded fields, but the log line with it. The
+  // filter still names DeviceWatchEventType: DeviceFrameEventType subtypes it,
+  // so frames arrive without widening the subscription.
+  monitored_item_.subscribe_events(
       node_service_.GetNode(device_id).scada_node(),
       scada::MonitoringParameters{
           .filter =
@@ -28,11 +35,15 @@ void WatchCurrentEventSource::Start(const scada::NodeId& device_id,
                   .of_type = {scada::devices::id::DeviceWatchEventType}}},
       // FIXME: Captures |this|. No sync.
       BindExecutor(executor_, [&delegate](const scada::Status& status,
-                                          const scada::Event& event) {
+                                          const std::any& event) {
         if (!status) {
           delegate.OnError(status);
           return;
         }
-        delegate.OnEvent(event);
+        if (const auto* frame = std::any_cast<scada::DeviceFrameEvent>(&event)) {
+          delegate.OnDeviceFrame(*frame);
+        } else if (const auto* base = std::any_cast<scada::Event>(&event)) {
+          delegate.OnEvent(*base);
+        }
       }));
 }

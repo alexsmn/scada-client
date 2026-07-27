@@ -3,6 +3,19 @@
 <TS version="2.1" language="ru_RU">
 <context>
     <name></name>
+    <!-- Device log frame-trace columns (modules/watch). -->
+    <message>
+        <source>Type ID</source>
+        <translation>Тип</translation>
+    </message>
+    <message>
+        <source>Cause</source>
+        <translation>Причина</translation>
+    </message>
+    <message>
+        <source>IOA</source>
+        <translation>Адрес объекта</translation>
+    </message>
     <!-- Device log frame-trace mode (modules/watch). RX/TX are the
          protocol-standard direction abbreviations and are kept as-is
          in Russian, matching the drivers' own #RX:/$TX: markers. -->

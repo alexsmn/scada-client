@@ -14,16 +14,21 @@ namespace {
 static const int kHighWaterMarkLines = 10000;
 static const int kLowWaterMarkLines = 9000;
 
-scada::Time GetEventTime(const scada::Event& event) {
-  return event.time;
+scada::Time GetEventTime(const WatchModel::Row& row) {
+  return row.event.time;
 }
 
 // Whether `event` belongs in `mode`. The frame trace narrows the same stream to
 // the lines the drivers marked as protocol traffic.
-bool IsVisibleInMode(const scada::Event& event, WatchMode mode) {
+bool IsVisibleInMode(const WatchModel::Row& row, WatchMode mode) {
   if (mode == WatchMode::kLog)
     return true;
-  return IsProtocolTraffic(ClassifyDeviceLogLine(event.message.text));
+  // A structured frame is traffic by construction. Without one, fall back to
+  // the message marker so a server that predates DeviceFrameEventType still
+  // produces a usable trace.
+  if (row.frame)
+    return true;
+  return IsProtocolTraffic(ClassifyDeviceLogLine(row.event.message.text));
 }
 
 }  // namespace
@@ -35,17 +40,23 @@ WatchModel::WatchModel(WatchModelContext&& context)
 
 void WatchModel::OnEvent(const scada::Event& event) {
   if (!paused_)
-    AddLine(event);
+    AddLine(Row{.event = event});
+}
+
+void WatchModel::OnDeviceFrame(const scada::DeviceFrameEvent& event) {
+  if (!paused_)
+    AddLine(Row{.event = event.base, .frame = event.frame});
 }
 
 void WatchModel::OnError(const scada::Status& status) {
   scada::Event event;
   event.message =
       Translate("Subscription interrupted. The device may have been deleted.");
-  AddLine(event);
+  AddLine(Row{.event = std::move(event)});
 }
 
-void WatchModel::AddLine(const scada::Event& event) {
+void WatchModel::AddLine(Row row) {
+  const scada::Event& event = row.event;
   // Events originate from the server (or local error lines); a null time is
   // tolerated by the ordered insert below.
 
@@ -53,12 +64,13 @@ void WatchModel::AddLine(const scada::Event& event) {
   auto same_time_events =
       std::ranges::equal_range(events_, event.time, std::less{}, &GetEventTime);
 
-  for (scada::Event& e : same_time_events) {
+  for (Row& r : same_time_events) {
+    scada::Event& e = r.event;
     if (e.event_id == event.event_id) {
       if (e.receive_time < event.receive_time ||
           (e.receive_time == event.receive_time && e != event)) {
-        e = event;
-        int index = static_cast<int>(&e - events_.data());
+        r = row;
+        int index = static_cast<int>(&r - events_.data());
         NotifyItemsChanged(index, 1);
       }
       return;
@@ -77,7 +89,7 @@ void WatchModel::AddLine(const scada::Event& event) {
       ++i;
   }
 
-  const bool visible = IsVisibleInMode(event, mode_);
+  const bool visible = IsVisibleInMode(row, mode_);
   int visible_index = 0;
   if (visible) {
     visible_index = static_cast<int>(
@@ -86,7 +98,7 @@ void WatchModel::AddLine(const scada::Event& event) {
     NotifyItemsAdding(visible_index, 1);
   }
 
-  events_.emplace(events_.begin() + index, event);
+  events_.emplace(events_.begin() + index, std::move(row));
 
   if (visible) {
     visible_.insert(visible_.begin() + visible_index, index);
@@ -119,8 +131,22 @@ void WatchModel::RebuildVisible() {
   }
 }
 
-const scada::Event& WatchModel::VisibleEvent(int row) const {
+const WatchModel::Row& WatchModel::VisibleRow(int row) const {
   return events_[visible_[row]];
+}
+
+DeviceLogDirection WatchModel::DirectionOf(const Row& row) const {
+  if (row.frame) {
+    switch (row.frame->direction) {
+      case scada::DeviceFrame::kInbound:
+        return DeviceLogDirection::kInbound;
+      case scada::DeviceFrame::kOutbound:
+        return DeviceLogDirection::kOutbound;
+      default:
+        return DeviceLogDirection::kNone;
+    }
+  }
+  return ClassifyDeviceLogLine(row.event.message.text).direction;
 }
 
 void WatchModel::SetMode(WatchMode mode) {
@@ -179,7 +205,7 @@ void WatchModel::SetTimeRange(const scada::RelativeTimeRange& time_range) {
 void WatchModel::SaveLog(const std::filesystem::path& path) {
   std::ofstream str(path);
   for (int i = 0; i < GetRowCount(); ++i) {
-    for (int j = 0; j < 4; j++) {
+    for (int j = 0; j < 7; j++) {
       std::string text = UtfConvert<char>(GetCellText(i, j));
       if (j)
         str << '\t';
@@ -194,7 +220,8 @@ int WatchModel::GetRowCount() {
 }
 
 void WatchModel::GetCell(scada::aui::TableCell& cell) {
-  const scada::Event& event = VisibleEvent(cell.row);
+  const Row& row = VisibleRow(cell.row);
+  const scada::Event& event = row.event;
 
   // TODO: Unify with GetEventColors().
   if (event.severity >= scada::kSeverityCritical) {
@@ -225,7 +252,7 @@ void WatchModel::GetCell(scada::aui::TableCell& cell) {
     }
 
     case 3:
-      switch (ClassifyDeviceLogLine(event.message.text).direction) {
+      switch (DirectionOf(row)) {
         case DeviceLogDirection::kInbound:
           cell.text = Translate("RX");
           break;
@@ -234,6 +261,27 @@ void WatchModel::GetCell(scada::aui::TableCell& cell) {
           break;
         case DeviceLogDirection::kNone:
           break;
+      }
+      break;
+
+    // The decoded frame columns. Blank unless the server sent structured frame
+    // data — an ordinary log line has none, and neither does any server older
+    // than DeviceFrameEventType. Zero means "not applicable" rather than a real
+    // value: IOA 0 is not a valid object address and type/cause 0 are unused.
+    case 4:
+      if (row.frame && row.frame->type_id != 0)
+        cell.text = UtfConvert<char16_t>(std::to_string(row.frame->type_id));
+      break;
+
+    case 5:
+      if (row.frame && row.frame->cause != 0)
+        cell.text = UtfConvert<char16_t>(std::to_string(row.frame->cause));
+      break;
+
+    case 6:
+      if (row.frame && row.frame->object_address != 0) {
+        cell.text =
+            UtfConvert<char16_t>(std::to_string(row.frame->object_address));
       }
       break;
   }

@@ -11,6 +11,7 @@
 
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <vector>
 
 class NodeService;
@@ -35,6 +36,16 @@ class WatchModel : private WatchModelContext,
                    protected WatchEventSource::Delegate {
  public:
   explicit WatchModel(WatchModelContext&& context);
+
+  // One logged line. `frame` is present when the server reported structured
+  // frame data (DeviceFrameEventType); it is absent for ordinary log lines and
+  // for any server that predates it, which is why the marker heuristic in
+  // device_log_line.h is still consulted as a fallback.
+  struct Row {
+    scada::Event event;
+    std::optional<scada::DeviceFrame> frame;
+  };
+
 
   const NodeRef& device() const SCADA_LIFETIME_BOUND { return device_; }
   void SetDevice(NodeRef device);
@@ -61,15 +72,20 @@ class WatchModel : private WatchModelContext,
  protected:
   // WatchEventSource
   virtual void OnEvent(const scada::Event& event) override;
+  virtual void OnDeviceFrame(const scada::DeviceFrameEvent& event) override;
   virtual void OnError(const scada::Status& status) override;
 
  private:
-  void AddLine(const scada::Event& event);
+  void AddLine(Row row);
   // Recomputes `visible_` for the current mode. Cheap enough to run wholesale:
   // the log is already bounded by the time range.
   void RebuildVisible();
   // The event at visible row `row`.
-  const scada::Event& VisibleEvent(int row) const SCADA_LIFETIME_BOUND;
+  const Row& VisibleRow(int row) const SCADA_LIFETIME_BOUND;
+
+  // The direction of `row`: from the structured frame when the server sent one,
+  // otherwise from the message's #/$ marker.
+  DeviceLogDirection DirectionOf(const Row& row) const;
 
   NodeRef device_;
 
@@ -81,7 +97,7 @@ class WatchModel : private WatchModelContext,
   scada::RelativeTimeRange time_range_{std::chrono::minutes(15)};
 
   // Sorted by `scada::Event::time`.
-  std::vector<scada::Event> events_;
+  std::vector<Row> events_;
 
   bool paused_ = false;
 };
