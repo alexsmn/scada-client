@@ -299,4 +299,67 @@ TEST(FrameDecodeTest, RendersACp56TimeTag) {
   EXPECT_EQ(time->length, 7);
 }
 
+
+// The decoder reports the addresses it walked so the view can resolve them; it
+// has no address space of its own.
+TEST(FrameDecodeTest, ReportsTheObjectAddressesItWalked) {
+  EXPECT_EQ(DecodeFrame(MeasurementFrame()).object_addresses,
+            (std::vector<scada::Int32>{4002}));
+
+  // A sequence: one address on the wire, two objects.
+  const FrameDecode sequence = DecodeFrame(Frame({0x68, 0x13, 0xFA, 0x0F, 0x84,
+                                                  0x0C, 0x0B, 0x82, 0x01, 0x00,
+                                                  0x01, 0x00, 0x64, 0x00, 0x00,
+                                                  0x0A, 0x00, 0x00, 0x14, 0x00,
+                                                  0x00}));
+  EXPECT_EQ(sequence.object_addresses, (std::vector<scada::Int32>{100, 101}));
+
+  // S-format carries no objects at all.
+  EXPECT_TRUE(
+      DecodeFrame(Frame({0x68, 0x04, 0x01, 0x00, 0x84, 0x0C})).object_addresses
+          .empty());
+}
+
+TEST(FrameDecodeTest, NamesTheNodeAnObjectMapsTo) {
+  FrameDecode decode = DecodeFrame(MeasurementFrame());
+  const FrameObjectMapping mappings[] = {
+      {.object_address = 4001, .signal = u"ESTRA.I", .node_id = u"ns=2;s=I"},
+      {.object_address = 4002, .signal = u"ESTRA.P", .node_id = u"ns=2;s=P"}};
+
+  AppendMappedNodes(decode, mappings);
+
+  const FrameDecodeNode& group = decode.nodes.back();
+  EXPECT_EQ(group.name, u"Mapped node");
+  ASSERT_EQ(group.children.size(), 1u);
+  EXPECT_EQ(group.children[0].name, u"ESTRA.P");
+  EXPECT_EQ(group.children[0].value, u"ns=2;s=P");
+}
+
+// An address the device reports that the configuration does not know is worth
+// seeing, so it is listed rather than dropped.
+TEST(FrameDecodeTest, ListsAnObjectThatMapsToNothing) {
+  FrameDecode decode = DecodeFrame(MeasurementFrame());
+  const FrameObjectMapping mappings[] = {
+      {.object_address = 4001, .signal = u"ESTRA.I", .node_id = u"ns=2;s=I"}};
+
+  AppendMappedNodes(decode, mappings);
+
+  const FrameDecodeNode& group = decode.nodes.back();
+  ASSERT_EQ(group.children.size(), 1u);
+  EXPECT_EQ(group.children[0].name, u"IOA 4002");
+  EXPECT_FALSE(group.children[0].value.empty());
+  EXPECT_EQ(group.children[0].value.find(u"ns="), std::u16string::npos);
+}
+
+// A frame with no information objects gets no group at all — an empty "Mapped
+// node" heading over an S-format frame would suggest something was missing.
+TEST(FrameDecodeTest, NoMappedNodeGroupWithoutObjects) {
+  FrameDecode decode = DecodeFrame(Frame({0x68, 0x04, 0x01, 0x00, 0x84, 0x0C}));
+  const std::size_t before = decode.nodes.size();
+
+  AppendMappedNodes(decode, {});
+
+  EXPECT_EQ(decode.nodes.size(), before);
+}
+
 }  // namespace

@@ -23,8 +23,12 @@
 
 #if defined(UI_QT)
 #include "modules/watch/qt/frame_decode_pane.h"
+#include "node_properties/device_address_map.h"
 
+#include <QPointer>
 #include <QSplitter>
+
+#include <charconv>
 #endif
 
 namespace {
@@ -163,7 +167,12 @@ std::unique_ptr<UiView> WatchView::CreateFrameTraceLayout() {
   auto* pane = new FrameDecodePane;
 
   refresh_decode_pane_ = [this, pane] {
-    pane->setVisible(model_->mode() == WatchMode::kFrameTrace);
+    const bool tracing = model_->mode() == WatchMode::kFrameTrace;
+    pane->setVisible(tracing);
+    // Here rather than in ToggleFrameTrace so every route into the trace —
+    // toggling it, and the first selection made in it — arms the browse.
+    if (tracing)
+      EnsureAddressMap(pane);
 
     const int row = table_->GetCurrentRow();
     const WatchModel::Row* selected = model_->FindVisibleRow(row);
@@ -182,6 +191,45 @@ std::unique_ptr<UiView> WatchView::CreateFrameTraceLayout() {
   splitter->setStretchFactor(0, 1);
   splitter->setStretchFactor(1, 0);
   return std::unique_ptr<UiView>{splitter};
+}
+
+void WatchView::EnsureAddressMap(FrameDecodePane* pane) {
+  if (address_map_requested_)
+    return;
+  address_map_requested_ = true;
+
+  // QPointer, like the device-parameter form's address-map preview: the browse
+  // outlives a view the operator closes while it is still running.
+  CoSpawn(executor_, [executor = executor_, device = model_->device(),
+                      pane_ptr = QPointer<FrameDecodePane>{
+                          pane}]() mutable -> Awaitable<void> {
+    std::vector<AddressMapRow> rows =
+        co_await BuildDeviceAddressMap(executor, std::move(device));
+    if (!pane_ptr)
+      co_return;
+
+    std::vector<FrameObjectMapping> mappings;
+    mappings.reserve(rows.size());
+    for (const AddressMapRow& row : rows) {
+      // AddressMapRow carries the address as display text; the decoder works
+      // in numbers. A row whose address does not parse is dropped rather than
+      // mapped to 0, which is a real IOA value.
+      const std::string address = UtfConvert<char>(row.ioa);
+      scada::Int32 object_address = 0;
+      const auto parsed =
+          std::from_chars(address.data(), address.data() + address.size(),
+                          object_address);
+      if (parsed.ec != std::errc{} || parsed.ptr != address.data() + address.size())
+        continue;
+      mappings.push_back({.object_address = object_address,
+                          .signal = row.signal,
+                          .node_id = row.node_id});
+    }
+    // Unconditionally, including an empty map: that is what tells the pane the
+    // map has been read, so it can say an address is unmapped.
+    pane_ptr->SetAddressMap(std::move(mappings));
+    co_return;
+  });
 }
 
 // The pane's title line: which frame, from when, and how big. The direction and

@@ -19,6 +19,7 @@ namespace scada::aui {
 class Table;
 }
 
+class FrameDecodePane;
 class WatchModel;
 
 class WatchView : protected ControllerContext,
@@ -55,6 +56,12 @@ class WatchView : protected ControllerContext,
 
   std::u16string MakeDecodeHeader(int row,
                                   const scada::DeviceFrame& frame) const;
+
+  // Reads the device's IOA → node mapping into `pane`, once. Deferred to the
+  // first entry into the frame trace: it browses every transmission item of
+  // the device, which is wasted work for the many sessions that only ever read
+  // the log.
+  void EnsureAddressMap(FrameDecodePane* pane);
 #endif
 
   void ToggleFrameTrace();
@@ -73,6 +80,8 @@ class WatchView : protected ControllerContext,
   // know whether a decode pane was built. It stays a no-op on the Wt frontend,
   // which keeps the bare trace.
   std::function<void()> refresh_decode_pane_ = [] {};
+
+  bool address_map_requested_ = false;
 
   CommandRegistry command_registry_;
 

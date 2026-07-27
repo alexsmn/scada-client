@@ -130,6 +130,14 @@
         <translation>байт</translation>
     </message>
     <message>
+        <source>Mapped node</source>
+        <translation>Привязка</translation>
+    </message>
+    <message>
+        <source>Not in the device&apos;s address map</source>
+        <translation>Нет в карте адресов устройства</translation>
+    </message>
+    <message>
         <source>No frame selected</source>
         <translation>Кадр не выбран</translation>
     </message>

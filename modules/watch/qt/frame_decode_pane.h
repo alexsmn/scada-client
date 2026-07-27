@@ -5,6 +5,8 @@
 #include <QWidget>
 
 #include <memory>
+#include <optional>
+#include <vector>
 
 class FrameDecodeTreeModel;
 class QLabel;
@@ -31,12 +33,23 @@ class FrameDecodePane : public QWidget {
   // The empty state: no row selected, or a selected row that is not a frame.
   void Clear();
 
+  // Supplies the device's IOA → address-space mapping, read asynchronously by
+  // the view. Call it even when the device has none: until it arrives the pane
+  // says nothing about mapping, rather than reporting every object as
+  // unmapped. Re-renders the frame currently on screen.
+  void SetAddressMap(std::vector<FrameObjectMapping> mappings);
+
  private:
   // Installs `decode` in the tree and re-applies the view state a model reset
   // discards.
   void ShowDecode(const FrameDecode& decode);
 
   const std::shared_ptr<FrameDecodeTreeModel> model_;
+
+  // The frame on screen, kept so a late-arriving address map can re-render it.
+  std::optional<scada::DeviceFrame> frame_;
+  std::vector<FrameObjectMapping> mappings_;
+  bool address_map_loaded_ = false;
 
   QLabel* header_ = nullptr;
   QLabel* octets_ = nullptr;

@@ -3,6 +3,7 @@
 #include "aui/translation.h"
 #include "base/utf_convert.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <format>
@@ -455,7 +456,9 @@ void AppendElement(FrameDecodeNode& object,
 // The ASDU, starting at `offset` (the octet after the APCI control field).
 // IEC 60870-5-101 §7.2: type identification, variable structure qualifier,
 // cause of transmission, common address, then the information objects.
-FrameDecodeNode DecodeAsdu(Octets data, size_t offset) {
+FrameDecodeNode DecodeAsdu(Octets data,
+                           size_t offset,
+                           std::vector<scada::Int32>& object_addresses) {
   FrameDecodeNode asdu{.name = Translate("ASDU")};
 
   const int type_id = data[offset];
@@ -538,6 +541,7 @@ FrameDecodeNode DecodeAsdu(Octets data, size_t offset) {
         .length = static_cast<int>((reads_address ? 3 : 0) + element_size)};
     AppendElement(object, data, pos, *type);
     asdu.children.push_back(std::move(object));
+    object_addresses.push_back(static_cast<scada::Int32>(sequence_address));
     pos += element_size;
   }
 
@@ -625,10 +629,31 @@ FrameDecode DecodeFrame(const scada::DeviceFrame& frame) {
   // after the control field. §7.2.1 fixes the ASDU header at six octets.
   const bool has_asdu = (control & 0x01) == 0 && data.size() >= 6 + 6;
   if (has_asdu) {
-    FrameDecodeNode asdu = DecodeAsdu(data, 6);
+    FrameDecodeNode asdu = DecodeAsdu(data, 6, decode.object_addresses);
     decode.summary += u" · " + asdu.value;
     decode.nodes.push_back(std::move(asdu));
   }
 
   return decode;
+}
+
+void AppendMappedNodes(FrameDecode& decode,
+                       std::span<const FrameObjectMapping> mappings) {
+  if (decode.object_addresses.empty())
+    return;
+
+  FrameDecodeNode group{.name = Translate("Mapped node")};
+  for (scada::Int32 address : decode.object_addresses) {
+    const auto found = std::ranges::find(mappings, address,
+                                         &FrameObjectMapping::object_address);
+    if (found != mappings.end()) {
+      group.children.push_back(
+          {.name = found->signal, .value = found->node_id});
+    } else {
+      group.children.push_back(
+          {.name = U16(std::format("IOA {}", address)),
+           .value = Translate("Not in the device's address map")});
+    }
+  }
+  decode.nodes.push_back(std::move(group));
 }

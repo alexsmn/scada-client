@@ -374,11 +374,24 @@ engineering form and quality flags named. Anything it cannot read — a non-104
 driver, an unknown type, a truncated capture — degrades to showing the octets
 whole. Rendered by `frame_decode_capture.cpp` as `frame-decode-pane.png`.
 
+**The mapped-node section is there too** — the question the pane is really
+opened to answer, since an IOA on its own says nothing about which signal moved.
+The decoder reports the object addresses it walked; `WatchView` resolves them
+through `BuildDeviceAddressMap`, which browses the device's transmission items,
+and hands the result to the pane. Three states, kept distinct on purpose: a
+resolved object shows its data item's name against its NodeId; an object the
+configuration does not know is **listed as unmapped** rather than dropped,
+because an address a device is reporting that nothing is bound to is exactly
+what an engineer is hunting; and before the map has been read the section is
+absent entirely, rather than claiming everything is unmapped.
+
+The browse is deferred to the first entry into the frame trace — it walks every
+transmission item of the device, which is wasted work for the many sessions that
+only read the log — and its completion is guarded by a `QPointer`, so closing
+the view mid-browse is safe.
+
 Still missing against the mockup:
 
-- **No "Mapped node" section.** The pane ends at the information object; the
-  mockup also names the address-space node the IOA maps to, which needs a
-  transmission-map lookup the view does not have.
 - **No filters.** Frame kind, free-text over IOA/type/cause, and errors-only are
   all unbuilt, as is the per-device capture arming and its `Capturing · КП-02`
   status cell.

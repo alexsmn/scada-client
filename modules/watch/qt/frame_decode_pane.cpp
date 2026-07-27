@@ -51,15 +51,28 @@ FrameDecodePane::~FrameDecodePane() = default;
 
 void FrameDecodePane::ShowFrame(const std::u16string& header,
                                 const scada::DeviceFrame& frame) {
-  const FrameDecode decode = DecodeFrame(frame);
+  frame_ = frame;
   header_->setText(Qt16(header));
+
+  FrameDecode decode = DecodeFrame(frame);
   // A frame the decoder could not read is precisely the one worth showing raw,
   // so the note replaces the octets only when there are none.
   octets_->setText(Qt16(decode.hex.empty() ? decode.note : decode.hex));
+  if (address_map_loaded_)
+    AppendMappedNodes(decode, mappings_);
   ShowDecode(decode);
 }
 
+void FrameDecodePane::SetAddressMap(std::vector<FrameObjectMapping> mappings) {
+  mappings_ = std::move(mappings);
+  address_map_loaded_ = true;
+  // The map usually arrives after the operator has already selected a frame.
+  if (frame_)
+    ShowFrame(header_->text().toStdU16String(), *frame_);
+}
+
 void FrameDecodePane::Clear() {
+  frame_.reset();
   header_->setText(Qt16(Translate("No frame selected")));
   octets_->clear();
   ShowDecode({});

@@ -42,6 +42,12 @@ void SaveFrameDecodeScreenshot(const ScreenshotSpec& spec) {
                                 u"20 " + Translate("bytes");
 
   auto pane = std::make_unique<FrameDecodePane>();
+  // The device's address map, which the view reads asynchronously from the
+  // transmission items. Seeded here so the capture shows the mapped-node row —
+  // the answer to "which signal is this frame actually about".
+  pane->SetAddressMap({{.object_address = 4002,
+                        .signal = u"ESTRA.P",
+                        .node_id = u"ns=2;s=ESTRA.P"}});
   pane->ShowFrame(header, frame);
   SaveScreenshot(pane.get(), spec);
 }

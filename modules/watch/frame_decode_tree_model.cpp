@@ -52,12 +52,13 @@ void FrameDecodeTreeModel::SetDecode(const FrameDecode& decode) {
 
 int FrameDecodeTreeModel::GetColumnPreferredSize(int column_id) const {
   // Sized for the widest label the decoder produces at its deepest indent
-  // ("Common address" under Object under ASDU) and for a two-ended offset
+  // ("Common address" under Object under ASDU), with room for a data item's
+  // display name in the mapped-node rows, and for a two-ended offset
   // ("@10-11"). Resizing to contents instead does not work here: the tree is
   // built after the view, and QTreeView's content width ignores the indent, so
   // every child row came out elided.
   switch (column_id) {
-    case 0: return 180;
+    case 0: return 200;
     case 1: return 70;
     default: return 0;
   }

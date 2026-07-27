@@ -693,7 +693,7 @@
       "file": "frame-decode-pane.png",
       "tag": "reshell-theme",
       "referenced_from": [],
-      "notes": "Device log frame-decode pane: the raw octets and the decoded APCI/ASDU field tree of the selected frame, the right-hand inspector of ui-mockups/screens/device-protocol-trace.html. Rendered from a fixture IEC 60870-5-104 APDU by frame_decode_capture.cpp; inside the client it is the right half of the Watch view's frame-trace mode. Not published yet: no manual page embeds it.",
+      "notes": "Device log frame-decode pane: the raw octets, the decoded APCI/ASDU field tree with byte offsets, and the address-space node the information object maps to — the right-hand inspector of ui-mockups/screens/device-protocol-trace.html. Rendered from a fixture IEC 60870-5-104 APDU and a seeded address map by frame_decode_capture.cpp; inside the client it is the right half of the Watch view's frame-trace mode. Not published yet: no manual page embeds it.",
       "published": false
     }
   ],
