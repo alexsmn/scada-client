@@ -23,10 +23,13 @@
 
 #if defined(UI_QT)
 #include "modules/watch/qt/frame_decode_pane.h"
+#include "modules/watch/qt/watch_filter_bar.h"
 #include "node_properties/device_address_map.h"
 
+#include <QHBoxLayout>
 #include <QPointer>
 #include <QSplitter>
+#include <QVBoxLayout>
 
 #include <charconv>
 #endif
@@ -190,7 +193,21 @@ std::unique_ptr<UiView> WatchView::CreateFrameTraceLayout() {
   // The trace is the subject; the pane is detail about one row of it.
   splitter->setStretchFactor(0, 1);
   splitter->setStretchFactor(1, 0);
-  return std::unique_ptr<UiView>{splitter};
+
+  auto* container = new QWidget;
+  auto* layout = new QVBoxLayout{container};
+  layout->setContentsMargins(0, 0, 0, 0);
+  layout->setSpacing(0);
+  // Shown in both modes, because the model filters in both: a control that
+  // keeps applying while hidden is a trap, and text-filtering a device log is
+  // useful in itself.
+  layout->addWidget(CreateWatchFilterBar([this](WatchFilter filter) {
+    model_->SetFilter(std::move(filter));
+    // Filtering changes which row is selected, and so what the pane shows.
+    refresh_decode_pane_();
+  }));
+  layout->addWidget(splitter, 1);
+  return std::unique_ptr<UiView>{container};
 }
 
 void WatchView::EnsureAddressMap(FrameDecodePane* pane) {

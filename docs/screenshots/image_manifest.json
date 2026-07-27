@@ -690,6 +690,13 @@
       "published": false
     },
     {
+      "file": "watch-filter-bar.png",
+      "tag": "reshell-theme",
+      "referenced_from": [],
+      "notes": "Device log filter bar: frame kind, errors-only, and free text over the decoded columns — the toolbar of ui-mockups/screens/device-protocol-trace.html. Stock QComboBox/QCheckBox/QLineEdit, so the capture also serves as the native-look check for the strip. Rendered on its own by frame_decode_capture.cpp; inside the client it sits above the trace in both device-log modes. Not published yet: no manual page embeds it.",
+      "published": false
+    },
+    {
       "file": "frame-decode-pane.png",
       "tag": "reshell-theme",
       "referenced_from": [],
@@ -702,7 +709,7 @@
     "auto-dialog": 22,
     "auto-menu": 17,
     "auto-state": 5,
-    "reshell-theme": 20,
+    "reshell-theme": 21,
     "manual-diagram": 4,
     "manual-modus": 5,
     "manual-os": 2,

@@ -390,11 +390,29 @@ transmission item of the device, which is wasted work for the many sessions that
 only read the log — and its completion is guarded by a `QPointer`, so closing
 the view mid-browse is safe.
 
+**The filter bar is built** — frame kind (all / I-format / S+U), errors-only,
+and free text — as `CreateWatchFilterBar` in `modules/watch/qt/`, captured as
+`watch-filter-bar.png`. Stock `QComboBox`/`QCheckBox`/`QLineEdit` with the
+style's own metrics and no stylesheet (§9). Three decisions worth recording:
+
+- **The filter lives in `WatchModel`, not in a proxy over the table.** It is the
+  same `visible_` projection the mode already computes, so filtering, Save-trace
+  and export stay consistent by construction rather than by remembering to keep
+  three code paths in step.
+- **The free text is matched against the rendered columns, not the raw fields**,
+  so what an operator types is matched against what they can see — one IOA, one
+  type id, or a word from the message all work without separate rules. Folding
+  is ASCII-only, which is what those columns hold.
+- **The bar shows in both modes, and the filter applies in both.** A control
+  that keeps applying while hidden is a trap, and text-filtering a plain device
+  log is useful in itself. A row with no APCI format is not a frame of any
+  format, so a kind filter simply admits nothing in the log — predictable, and
+  one combo box away from undone.
+
 Still missing against the mockup:
 
-- **No filters.** Frame kind, free-text over IOA/type/cause, and errors-only are
-  all unbuilt, as is the per-device capture arming and its `Capturing · КП-02`
-  status cell.
+- **No per-device capture arming**, and so no `Capturing · КП-02` status cell.
+  The trace shows whatever the device is already logging.
 - Eleven driver sites stay plain log lines by design: timer expiries and
   state-machine notes carry the direction markers but describe no PDU, and a
   trace filtered to real traffic is the point of the mode.

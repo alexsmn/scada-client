@@ -5,6 +5,9 @@
 
 #include "aui/translation.h"
 #include "modules/watch/qt/frame_decode_pane.h"
+#include "modules/watch/qt/watch_filter_bar.h"
+
+#include <QWidget>
 
 #include <memory>
 
@@ -50,4 +53,10 @@ void SaveFrameDecodeScreenshot(const ScreenshotSpec& spec) {
                         .node_id = u"ns=2;s=ESTRA.P"}});
   pane->ShowFrame(header, frame);
   SaveScreenshot(pane.get(), spec);
+}
+
+void SaveWatchFilterBarScreenshot(const ScreenshotSpec& spec) {
+  // No handler: the capture is of the controls, not of what they drive.
+  std::unique_ptr<QWidget> bar{CreateWatchFilterBar([](WatchFilter) {})};
+  SaveScreenshot(bar.get(), spec);
 }

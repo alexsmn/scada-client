@@ -1591,6 +1591,12 @@
       "height": 460
     },
     {
+      "type": "WatchFilterBar",
+      "filename": "watch-filter-bar.png",
+      "width": 520,
+      "height": 44
+    },
+    {
       "type": "FrameDecode",
       "filename": "frame-decode-pane.png",
       "width": 440,

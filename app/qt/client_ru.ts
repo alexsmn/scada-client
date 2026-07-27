@@ -16,6 +16,28 @@
         <source>IOA</source>
         <translation>Адрес объекта</translation>
     </message>
+    <!-- Device log filter bar (modules/watch). "I-format" / "S/U-format" are
+         the IEC 60870-5-104 §5.1 APCI format names and stay as-is. -->
+    <message>
+        <source>All frames</source>
+        <translation>Все кадры</translation>
+    </message>
+    <message>
+        <source>I-format</source>
+        <translation>Формат I</translation>
+    </message>
+    <message>
+        <source>S/U-format</source>
+        <translation>Формат S/U</translation>
+    </message>
+    <message>
+        <source>Errors only</source>
+        <translation>Только ошибки</translation>
+    </message>
+    <message>
+        <source>Filter by IOA, type or cause</source>
+        <translation>Фильтр по адресу, типу или причине</translation>
+    </message>
     <!-- APCI columns (IEC 60870-5-104 §5.1). N(S)/N(R) is the standard's own
          notation for the send/receive sequence numbers and is not translated,
          like RX/TX below. -->

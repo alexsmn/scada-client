@@ -31,6 +31,36 @@ enum class WatchMode {
   kFrameTrace,
 };
 
+// What the view shows within the current mode. The defaults pass everything,
+// so an unfiltered log is the starting state.
+//
+// The filter applies in both modes rather than only in the frame trace. A
+// filter that keeps applying while its control is hidden is a trap, and
+// text-filtering a device log is useful in its own right; `kind` simply
+// excludes every row that is not a frame of that format.
+struct WatchFilter {
+  // Link-layer format, as the trace mockup's All / I-format / S+U segments.
+  enum class Kind {
+    kAny,
+    // I-format: the frames that carry an ASDU, i.e. actual data.
+    kInformation,
+    // S- and U-format: acknowledgements and link control. Grouped because
+    // neither carries data and both matter for the same question — why the
+    // link is not moving.
+    kSupervisoryAndUnnumbered,
+  };
+
+  bool operator==(const WatchFilter&) const = default;
+
+  Kind kind = Kind::kAny;
+  // Warnings and worse only — usually the reason the view was opened at all.
+  bool errors_only = false;
+  // Substring, matched against every column: IOA, type, cause, the sequence
+  // numbers and the message. Case-insensitive for ASCII, which is what these
+  // columns hold.
+  std::u16string text;
+};
+
 class WatchModel : private WatchModelContext,
                    public scada::aui::TableModel,
                    protected WatchEventSource::Delegate {
@@ -63,6 +93,9 @@ class WatchModel : private WatchModelContext,
   WatchMode mode() const { return mode_; }
   void SetMode(WatchMode mode);
 
+  const WatchFilter& filter() const SCADA_LIFETIME_BOUND { return filter_; }
+  void SetFilter(WatchFilter filter);
+
   bool paused() const { return paused_; }
   void set_paused(bool paused) { paused_ = paused; }
 
@@ -82,6 +115,17 @@ class WatchModel : private WatchModelContext,
 
  private:
   void AddLine(Row row);
+  // The text of one cell, without the row having to be visible — the filter
+  // matches against columns while it is deciding which rows exist, so it
+  // cannot go through GetCell.
+  std::u16string CellText(const Row& row, int column_id) const;
+  // Whether `row` survives the current mode and filter.
+  bool IsVisible(const Row& row) const;
+  bool MatchesFilterText(const Row& row) const;
+  // Swaps the visible row set wholesale, notifying the view. Used by the mode
+  // and filter setters: both are deliberate operator actions on a bounded log,
+  // so a rebuild is cheaper to get right than a diff.
+  void ReplaceVisible();
   // Recomputes `visible_` for the current mode. Cheap enough to run wholesale:
   // the log is already bounded by the time range.
   void RebuildVisible();
@@ -95,6 +139,8 @@ class WatchModel : private WatchModelContext,
   NodeRef device_;
 
   WatchMode mode_ = WatchMode::kLog;
+
+  WatchFilter filter_;
 
   // Indices into `events_` that the current mode shows.
   std::vector<int> visible_;

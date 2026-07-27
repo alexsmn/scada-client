@@ -69,6 +69,23 @@ class WatchModelTest : public testing::Test {
     event_source_.DeliverFrame(event);
   }
 
+  // A frame identified only by its link-layer format, for the kind filter.
+  void DeliverFormat(std::int64_t seconds, std::string format) {
+    scada::DeviceFrameEvent event;
+    event.base = MakeEvent(seconds, u"frame");
+    event.frame.direction = scada::DeviceFrame::kInbound;
+    event.frame.format = std::move(format);
+    event_source_.DeliverFrame(event);
+  }
+
+  void DeliverWithSeverity(std::int64_t seconds,
+                           std::u16string message,
+                           scada::UInt32 severity) {
+    scada::Event event = MakeEvent(seconds, std::move(message));
+    event.severity = severity;
+    event_source_.Deliver(event);
+  }
+
   void DeliverApci(std::int64_t seconds,
                    std::string format,
                    scada::Int32 send_sequence,
@@ -251,6 +268,124 @@ TEST_F(WatchModelTest, UnnumberedAndDecodedRowsHaveNoSequenceNumbers) {
   // No APCI was parsed for the decoded row, so no format either.
   EXPECT_EQ(model_.GetCellText(1, 7), u"");
   EXPECT_EQ(model_.GetCellText(1, 8), u"");
+}
+
+
+// The kind filter, from the trace mockup's All / I-format / S+U segments.
+TEST_F(WatchModelTest, FiltersByFrameKind) {
+  DeliverFormat(1, "I");
+  DeliverFormat(2, "S");
+  DeliverFormat(3, "U");
+
+  model_.SetFilter({.kind = WatchFilter::Kind::kInformation});
+  ASSERT_EQ(model_.GetRowCount(), 1);
+  EXPECT_EQ(model_.GetCellText(0, 7), u"I");
+
+  // S and U are one choice: neither carries data, and both answer the same
+  // question about a link that is not moving.
+  model_.SetFilter({.kind = WatchFilter::Kind::kSupervisoryAndUnnumbered});
+  ASSERT_EQ(model_.GetRowCount(), 2);
+  EXPECT_EQ(model_.GetCellText(0, 7), u"S");
+  EXPECT_EQ(model_.GetCellText(1, 7), u"U");
+
+  model_.SetFilter({});
+  EXPECT_EQ(model_.GetRowCount(), 3);
+}
+
+// A row with no APCI format is not a frame of any format, so no format filter
+// admits it — including the legacy marker rows, which would otherwise slip
+// through a filter that only tested `frame`.
+TEST_F(WatchModelTest, FrameKindFilterExcludesRowsWithoutAFormat) {
+  DeliverFormat(1, "I");
+  Deliver(2, u"#RX: legacy marker line");
+  DeliverFrame(3, u"decoded ASDU", scada::DeviceFrame::kInbound, /*type_id=*/13);
+
+  model_.SetFilter({.kind = WatchFilter::Kind::kInformation});
+  ASSERT_EQ(model_.GetRowCount(), 1);
+  EXPECT_EQ(model_.GetCellText(0, 7), u"I");
+
+  model_.SetFilter({.kind = WatchFilter::Kind::kSupervisoryAndUnnumbered});
+  EXPECT_EQ(model_.GetRowCount(), 0);
+}
+
+TEST_F(WatchModelTest, FiltersToErrorsOnly) {
+  DeliverWithSeverity(1, u"routine", scada::kSeverityNormal);
+  DeliverWithSeverity(2, u"t1 timeout", scada::kSeverityWarning);
+  DeliverWithSeverity(3, u"link down", scada::kSeverityCritical);
+
+  model_.SetFilter({.errors_only = true});
+  ASSERT_EQ(model_.GetRowCount(), 2);
+  EXPECT_EQ(model_.GetCellText(0, 2), u"t1 timeout");
+  EXPECT_EQ(model_.GetCellText(1, 2), u"link down");
+}
+
+// The text filter matches what the operator can see, which is the decoded
+// columns — not just the message. Hunting one IOA is the motivating case.
+TEST_F(WatchModelTest, TextFilterMatchesTheDecodedColumns) {
+  DeliverFrame(1, u"first", scada::DeviceFrame::kInbound, /*type_id=*/13,
+               /*cause=*/1, /*object_address=*/4002);
+  DeliverFrame(2, u"second", scada::DeviceFrame::kInbound, /*type_id=*/45,
+               /*cause=*/6, /*object_address=*/6001);
+
+  model_.SetFilter({.text = u"4002"});
+  ASSERT_EQ(model_.GetRowCount(), 1);
+  EXPECT_EQ(model_.GetCellText(0, 2), u"first");
+
+  // Type id, from a different column.
+  model_.SetFilter({.text = u"45"});
+  ASSERT_EQ(model_.GetRowCount(), 1);
+  EXPECT_EQ(model_.GetCellText(0, 2), u"second");
+
+  // And the message itself.
+  model_.SetFilter({.text = u"FIRST"});
+  ASSERT_EQ(model_.GetRowCount(), 1);
+  EXPECT_EQ(model_.GetCellText(0, 2), u"first");
+}
+
+// The filters compose, and compose with the mode.
+TEST_F(WatchModelTest, FiltersComposeWithEachOtherAndWithTheMode) {
+  DeliverWithSeverity(1, u"#RX: I-format-ish noise", scada::kSeverityWarning);
+  scada::DeviceFrameEvent good;
+  good.base = MakeEvent(2, u"healthy");
+  good.base.severity = scada::kSeverityNormal;
+  good.frame = {.direction = scada::DeviceFrame::kInbound, .format = "I"};
+  event_source_.DeliverFrame(good);
+  scada::DeviceFrameEvent bad;
+  bad.base = MakeEvent(3, u"stalled");
+  bad.base.severity = scada::kSeverityCritical;
+  bad.frame = {.direction = scada::DeviceFrame::kInbound, .format = "I"};
+  event_source_.DeliverFrame(bad);
+
+  model_.SetMode(WatchMode::kFrameTrace);
+  model_.SetFilter(
+      {.kind = WatchFilter::Kind::kInformation, .errors_only = true});
+
+  ASSERT_EQ(model_.GetRowCount(), 1);
+  EXPECT_EQ(model_.GetCellText(0, 2), u"stalled");
+}
+
+// Filtering hides rows; it never discards them.
+TEST_F(WatchModelTest, ClearingTheFilterRestoresEveryRow) {
+  DeliverFormat(1, "I");
+  DeliverFormat(2, "S");
+  model_.SetFilter({.text = u"nothing matches this"});
+  ASSERT_EQ(model_.GetRowCount(), 0);
+
+  model_.SetFilter({});
+  EXPECT_EQ(model_.GetRowCount(), 2);
+}
+
+// Rows arriving while a filter is active are placed by the same predicate,
+// which is where an index-bookkeeping bug would show.
+TEST_F(WatchModelTest, RowsArrivingUnderAFilterAreFiltered) {
+  model_.SetFilter({.kind = WatchFilter::Kind::kInformation});
+  DeliverFormat(1, "I");
+  DeliverFormat(2, "S");
+  DeliverFormat(3, "I");
+
+  ASSERT_EQ(model_.GetRowCount(), 2);
+  EXPECT_EQ(model_.GetCellText(0, 7), u"I");
+  EXPECT_EQ(model_.GetCellText(1, 7), u"I");
 }
 
 }  // namespace

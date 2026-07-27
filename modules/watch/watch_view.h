@@ -62,6 +62,7 @@ class WatchView : protected ControllerContext,
   // the device, which is wasted work for the many sessions that only ever read
   // the log.
   void EnsureAddressMap(FrameDecodePane* pane);
+
 #endif
 
   void ToggleFrameTrace();

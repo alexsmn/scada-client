@@ -2,6 +2,7 @@
 
 #include "aui/translation.h"
 #include "base/format_time.h"
+#include "base/string_util.h"
 #include "base/utf_convert.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
@@ -11,6 +12,9 @@
 
 namespace {
 
+// The columns the model renders; see watch_view.cpp for their titles.
+constexpr int kColumnCount = 9;
+
 static const int kHighWaterMarkLines = 10000;
 static const int kLowWaterMarkLines = 9000;
 
@@ -18,17 +22,24 @@ scada::Time GetEventTime(const WatchModel::Row& row) {
   return row.event.time;
 }
 
-// Whether `event` belongs in `mode`. The frame trace narrows the same stream to
-// the lines the drivers marked as protocol traffic.
-bool IsVisibleInMode(const WatchModel::Row& row, WatchMode mode) {
-  if (mode == WatchMode::kLog)
-    return true;
-  // A structured frame is traffic by construction. Without one, fall back to
-  // the message marker so a server that predates DeviceFrameEventType still
-  // produces a usable trace.
+// Whether the row is protocol traffic. A structured frame is traffic by
+// construction; without one, fall back to the message marker so a server that
+// predates DeviceFrameEventType still produces a usable trace.
+bool IsTraffic(const WatchModel::Row& row) {
   if (row.frame)
     return true;
   return IsProtocolTraffic(ClassifyDeviceLogLine(row.event.message.text));
+}
+
+// Case-insensitive substring test. ASCII folding only: the columns the filter
+// exists for — IOA, type id, cause, sequence numbers — are digits and Latin
+// mnemonics, and folding Cyrillic correctly needs a locale the model has no
+// business carrying.
+bool ContainsFolded(std::u16string_view haystack, std::u16string_view needle) {
+  const auto equal_folded = [](char16_t left, char16_t right) {
+    return ToLowerAscii(left) == ToLowerAscii(right);
+  };
+  return !std::ranges::search(haystack, needle, equal_folded).empty();
 }
 
 }  // namespace
@@ -89,7 +100,7 @@ void WatchModel::AddLine(Row row) {
       ++i;
   }
 
-  const bool visible = IsVisibleInMode(row, mode_);
+  const bool visible = IsVisible(row);
   int visible_index = 0;
   if (visible) {
     visible_index = static_cast<int>(
@@ -126,7 +137,7 @@ void WatchModel::AddLine(Row row) {
 void WatchModel::RebuildVisible() {
   visible_.clear();
   for (int i = 0; i < static_cast<int>(events_.size()); ++i) {
-    if (IsVisibleInMode(events_[i], mode_))
+    if (IsVisible(events_[i]))
       visible_.push_back(i);
   }
 }
@@ -158,15 +169,25 @@ DeviceLogDirection WatchModel::DirectionOf(const Row& row) const {
 void WatchModel::SetMode(WatchMode mode) {
   if (mode_ == mode)
     return;
+  mode_ = mode;
+  ReplaceVisible();
+}
 
-  // Switching mode changes which rows exist, not their contents. Notify the
+void WatchModel::SetFilter(WatchFilter filter) {
+  if (filter_ == filter)
+    return;
+  filter_ = std::move(filter);
+  ReplaceVisible();
+}
+
+void WatchModel::ReplaceVisible() {
+  // Mode and filter change which rows exist, not their contents. Notify the
   // removal of the old row set and the arrival of the new one rather than
-  // trying to diff two filters — the log is bounded, and a mode switch is a
-  // deliberate operator action, not something that happens per event.
+  // trying to diff two predicates — the log is bounded, and both are
+  // deliberate operator actions, not something that happens per event.
   int old_rows = GetRowCount();
   if (old_rows > 0)
     NotifyItemsRemoving(0, old_rows);
-  mode_ = mode;
   RebuildVisible();
   if (old_rows > 0)
     NotifyItemsRemoved(0, old_rows);
@@ -176,6 +197,46 @@ void WatchModel::SetMode(WatchMode mode) {
     NotifyItemsAdding(0, new_rows);
     NotifyItemsAdded(0, new_rows);
   }
+}
+
+bool WatchModel::IsVisible(const Row& row) const {
+  if (mode_ == WatchMode::kFrameTrace && !IsTraffic(row))
+    return false;
+
+  // A row with no APCI format — a plain log line, a decoded-ASDU row, or a
+  // frame from a server that predates the structured event — is not a frame of
+  // any format, so no format filter admits it.
+  const std::string_view format = row.frame ? row.frame->format : "";
+  switch (filter_.kind) {
+    case WatchFilter::Kind::kAny:
+      break;
+    case WatchFilter::Kind::kInformation:
+      if (format != "I")
+        return false;
+      break;
+    case WatchFilter::Kind::kSupervisoryAndUnnumbered:
+      if (format != "S" && format != "U")
+        return false;
+      break;
+  }
+
+  if (filter_.errors_only && row.event.severity < scada::kSeverityWarning)
+    return false;
+
+  if (!filter_.text.empty() && !MatchesFilterText(row))
+    return false;
+
+  return true;
+}
+
+// Matched against the columns rather than the raw fields, so what the operator
+// types is matched against what the operator can see.
+bool WatchModel::MatchesFilterText(const Row& row) const {
+  for (int column = 0; column < kColumnCount; ++column) {
+    if (ContainsFolded(CellText(row, column), filter_.text))
+      return true;
+  }
+  return false;
 }
 
 void WatchModel::SetDevice(NodeRef device) {
@@ -211,7 +272,7 @@ void WatchModel::SetTimeRange(const scada::RelativeTimeRange& time_range) {
 void WatchModel::SaveLog(const std::filesystem::path& path) {
   std::ofstream str(path);
   for (int i = 0; i < GetRowCount(); ++i) {
-    for (int j = 0; j < 9; j++) {
+    for (int j = 0; j < kColumnCount; j++) {
       std::string text = UtfConvert<char>(GetCellText(i, j));
       if (j)
         str << '\t';
@@ -227,43 +288,49 @@ int WatchModel::GetRowCount() {
 
 void WatchModel::GetCell(scada::aui::TableCell& cell) {
   const Row& row = VisibleRow(cell.row);
-  const scada::Event& event = row.event;
 
   // TODO: Unify with GetEventColors().
-  if (event.severity >= scada::kSeverityCritical) {
+  if (row.event.severity >= scada::kSeverityCritical) {
     cell.cell_color = scada::aui::Rgba{248, 105, 107};
-  } else if (event.severity >= scada::kSeverityWarning) {
+  } else if (row.event.severity >= scada::kSeverityWarning) {
     cell.cell_color = scada::aui::Rgba{255, 235, 132};
   }
 
-  switch (cell.column_id) {
+  cell.text = CellText(row, cell.column_id);
+}
+
+std::u16string WatchModel::CellText(const Row& row, int column_id) const {
+  const scada::Event& event = row.event;
+  std::u16string text;
+
+  switch (column_id) {
     case 0:
-      cell.text = UtfConvert<char16_t>(
+      text = UtfConvert<char16_t>(
           FormatTime(event.time, TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
       break;
 
     case 1:
       if (event.source_node_id.is_null())
         break;
-      cell.text = GetDisplayName(node_service_, event.source_node_id).text;
-      if (cell.text.empty())
-        cell.text = u"?";
+      text = GetDisplayName(node_service_, event.source_node_id).text;
+      if (text.empty())
+        text = u"?";
       break;
 
     case 2: {
       // The direction marker is chrome: it is shown in its own column (3), so
       // the message reads without it in both modes.
-      cell.text = std::u16string{ClassifyDeviceLogLine(event.message.text).text};
+      text = std::u16string{ClassifyDeviceLogLine(event.message.text).text};
       break;
     }
 
     case 3:
       switch (DirectionOf(row)) {
         case DeviceLogDirection::kInbound:
-          cell.text = Translate("RX");
+          text = Translate("RX");
           break;
         case DeviceLogDirection::kOutbound:
-          cell.text = Translate("TX");
+          text = Translate("TX");
           break;
         case DeviceLogDirection::kNone:
           break;
@@ -276,17 +343,17 @@ void WatchModel::GetCell(scada::aui::TableCell& cell) {
     // value: IOA 0 is not a valid object address and type/cause 0 are unused.
     case 4:
       if (row.frame && row.frame->type_id != 0)
-        cell.text = UtfConvert<char16_t>(std::to_string(row.frame->type_id));
+        text = UtfConvert<char16_t>(std::to_string(row.frame->type_id));
       break;
 
     case 5:
       if (row.frame && row.frame->cause != 0)
-        cell.text = UtfConvert<char16_t>(std::to_string(row.frame->cause));
+        text = UtfConvert<char16_t>(std::to_string(row.frame->cause));
       break;
 
     case 6:
       if (row.frame && row.frame->object_address != 0) {
-        cell.text =
+        text =
             UtfConvert<char16_t>(std::to_string(row.frame->object_address));
       }
       break;
@@ -298,7 +365,7 @@ void WatchModel::GetCell(scada::aui::TableCell& cell) {
     // decoded-ASDU row that never saw the wire header.
     case 7:
       if (row.frame && !row.frame->format.empty())
-        cell.text = UtfConvert<char16_t>(row.frame->format);
+        text = UtfConvert<char16_t>(row.frame->format);
       break;
 
     case 8:
@@ -307,17 +374,19 @@ void WatchModel::GetCell(scada::aui::TableCell& cell) {
         // S-format has no N(S) and U-format has neither; show only what the
         // format actually carries rather than padding with zeros.
         if (f.format == "I") {
-          cell.text = UtfConvert<char16_t>(std::to_string(f.send_sequence) +
+          text = UtfConvert<char16_t>(std::to_string(f.send_sequence) +
                                            "/" +
                                            std::to_string(f.receive_sequence));
         } else if (f.format == "S") {
-          cell.text =
+          text =
               UtfConvert<char16_t>("\u2014/" +
                                    std::to_string(f.receive_sequence));
         }
       }
       break;
   }
+
+  return text;
 }
 
 void WatchModel::Clear() {
