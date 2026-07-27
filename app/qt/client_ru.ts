@@ -1879,7 +1879,11 @@
          fields. "Закрытый ключ" is the standard Russian PKI term for a private
          key. The browse buttons' "…" is a glyph and is deliberately left
          untranslated (see ALLOWED_UNTRANSLATED in check_ui_translations.py). -->
-    <!-- Reshell sign-in chrome (brand lockup + connection summary). -->
+    <!-- "Sign in" labels the accept button: the dialog names the action rather
+         than the assent (docs/ux/dialogs.md §3). It used to be an in-content
+         heading duplicating the window title, which the native title bar
+         already carries. The subtitle below it went with that heading and is
+         kept only so an older .qm does not lose the string. -->
     <message>
         <source>Sign in</source>
         <translation>Вход в систему</translation>
@@ -2062,8 +2066,8 @@
     <name>WriteDialog</name>
     <message>
         <location filename="../../modules/write/qt/write_dialog.ui" line="20"/>
-        <source>Dialog</source>
-        <translation type="unfinished"></translation>
+        <source>Write value</source>
+        <translation>Запись значения</translation>
     </message>
     <message>
         <location filename="../../modules/write/qt/write_dialog.ui" line="32"/>

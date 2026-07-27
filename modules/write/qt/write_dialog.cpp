@@ -5,6 +5,9 @@
 #include "aui/qt/dialog_util.h"
 #include "ui_write_dialog.h"
 
+#include <QDialogButtonBox>
+#include <QPushButton>
+
 class WriteDialog : public QDialog {
   Q_OBJECT
 
@@ -87,7 +90,7 @@ void WriteDialog::UpdateCurrent() {
 void WriteDialog::UpdateCondition() {
   ui.conditionLabel->setText(model_->IsConditionOk() ? tr("Satisfied")
                                                      : tr("Unsatisfied"));
-  ui.okButton->setEnabled(model_->IsConditionOk());
+  ui.buttonBox->button(QDialogButtonBox::Ok)->setEnabled(model_->IsConditionOk());
 }
 
 void WriteDialog::UpdateStatus() {

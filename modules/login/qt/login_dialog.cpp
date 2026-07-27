@@ -54,6 +54,11 @@ LoginDialog::LoginDialog(AnyExecutor executor,
       completion_{std::move(executor)} {
   ui.setupUi(this);
 
+  // Name the action rather than the assent (docs/ux/dialogs.md §3). The
+  // heading that used to say this lived in the content area over the real
+  // title bar and has been removed, so the button carries the verb.
+  ui.buttonBox->button(QDialogButtonBox::Ok)->setText(tr("Sign in"));
+
   dialog_service_.parent_widget = this;
 
   controller_->completion_handler = [this](DataServices services) {
@@ -140,40 +145,12 @@ void LoginDialog::BuildReshellChrome() {
   if (!root)
     return;
 
-  // Brand lockup: the mark, the action, and what the operator is signing in to.
-  auto* header = new QWidget{this};
-  auto* header_layout = new QHBoxLayout{header};
-  header_layout->setContentsMargins(0, 0, 0, 8);
-  header_layout->setSpacing(10);
-
-  auto* mark = new QLabel{QStringLiteral("TC"), header};
-  mark->setObjectName(QStringLiteral("loginBrandMark"));
-  mark->setAlignment(Qt::AlignCenter);
-  mark->setFixedSize(28, 28);
-  mark->setStyleSheet(
-      QStringLiteral("#loginBrandMark{background:%1;color:%2;border-radius:6px;"
-                     "font-weight:700;}")
-          .arg(tokens.accent.name(), tokens.accent_fg.name()));
-
-  auto* titles = new QWidget{header};
-  auto* titles_layout = new QVBoxLayout{titles};
-  titles_layout->setContentsMargins(0, 0, 0, 0);
-  titles_layout->setSpacing(0);
-  auto* title = new QLabel{tr("Sign in"), titles};
-  title->setStyleSheet(
-      QStringLiteral("color:%1;font-size:14px;font-weight:600;")
-          .arg(tokens.fg.name()));
-  auto* subtitle = new QLabel{tr("Telecontrol SCADA operator client"), titles};
-  subtitle->setObjectName(QStringLiteral("loginBrandSubtitle"));
-  subtitle->setStyleSheet(
-      QStringLiteral("color:%1;font-size:11px;").arg(tokens.fg_subtle.name()));
-  titles_layout->addWidget(title);
-  titles_layout->addWidget(subtitle);
-
-  header_layout->addWidget(mark);
-  header_layout->addWidget(titles);
-  header_layout->addStretch(1);
-  root->insertWidget(0, header);
+  // No heading, no brand lockup: the window already has a real title bar
+  // saying "Login", and the application is identified by the window itself
+  // (docs/ux/dialogs.md §1). Drawing them again is a browser-modal habit — a
+  // modal in a page has no OS chrome and must supply its own; a QDialog does
+  // not, and repeating it cost a third of the dialog's height before the first
+  // field.
 
   // "You are connecting to" — the wrong-server guard. Only the backend and
   // server are shown because they are all this dialog knows before it

@@ -49,6 +49,7 @@ industrial HMI standards.
 | [`design-language.md`](design-language.md) | The semantic vocabulary: which palette role or process-semantic token each surface uses, the themes, and the component primitives. |
 | [`iconography.md`](iconography.md) | The icon set (Lucide, ISC), geometry and size tokens, the `qtsvg` → `.qrc` → `QIcon` pipeline, the full command→glyph map, and how to add or change an icon. |
 | [`shell.md`](shell.md) | The reshelled layout, region by region, mapped onto the **existing** client code; navigation rules; open questions. |
+| [`dialogs.md`](dialogs.md) | Dialog conventions: the title bar *is* the title, `QDialogButtonBox` for platform button order, naming the action, destructive actions, keyboard and modality. |
 | [`vocabulary-parity.md`](vocabulary-parity.md) | Desktop ⇄ web component-name parity matrix (backlog 5.5): shared vocabulary, drift, and reconciliation action items. No cross-repo file dependency. |
 | [`backlog.md`](backlog.md) | Operator-first, module-scoped implementation plan (P0→P5) with acceptance lines. |
 

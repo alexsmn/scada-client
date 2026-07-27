@@ -149,6 +149,11 @@ native application on each host OS:
 - **Prefer stock Qt widgets in their conventional roles** — `QMenuBar`,
   `QToolBar`, `QDockWidget`, `QStatusBar`, `QMessageBox`, `QFileDialog`. Native
   dialogs are the desired end state, not something to theme away.
+- **Dialogs follow [`docs/ux/dialogs.md`](docs/ux/dialogs.md)**. Two rules catch
+  most defects: the OS title bar *is* the title, so never repeat it (or a brand
+  mark) in the content area; and always use `QDialogButtonBox` rather than
+  laying out OK/Cancel by hand — button order is opposite on macOS and Windows,
+  and the box also supplies Qt's own translated labels.
 - **Exception — process semantics are ours, not the platform's.** Alarm
   severity, data quality (good/uncertain/bad), and single-line equipment state
   are functional safety colours (ISA-101, ISA-18.2/EEMUA 191). They keep their
