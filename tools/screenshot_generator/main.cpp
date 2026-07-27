@@ -273,11 +273,18 @@ ScreenshotGenerator::ScreenshotGenerator() {
   if (translator_.load("client_ru", translation_dir))
     QApplication::installTranslator(&translator_);
 
-  // Match the default client style. Set directly rather than through
-  // InstalledStyle for the same QSettings reason: it also writes back
-  // the live style's objectName on destruction, which would let the
-  // second TEST_F pick up whatever QStyleFactory returned instead of
-  // "Fusion".
+  // Pin Fusion for captures. Unlike the client — which runs the platform style
+  // so it looks native (client/docs/ux/principles.md §9) — published
+  // screenshots must be byte-comparable across machines, so they deliberately
+  // do NOT follow the host style. Set directly rather than through
+  // InstalledStyle for the QSettings reason: that also writes back the live
+  // style's objectName on destruction, which would let the second TEST_F pick
+  // up whatever QStyleFactory returned instead of "Fusion".
+  //
+  // Consequence to keep in mind while the native migration runs
+  // (client/docs/ux/backlog.md P6): these captures show the Fusion rendering,
+  // not what an operator sees. Validate native-look changes by running the
+  // real client, not only by diffing generated PNGs.
   QApplication::setStyle("Fusion");
 
   // Optionally render under a UX design-token theme so captures validate the
@@ -285,8 +292,11 @@ ScreenshotGenerator::ScreenshotGenerator() {
   // Fusion base exactly as app/qt/main.cpp does when the experimental UX is on.
   if (const std::string& theme_name = GetScreenshotOptions().theme;
       !theme_name.empty()) {
-    const scada::aui::Theme theme = scada::aui::ThemeFromString(
-        QString::fromStdString(theme_name), scada::aui::Theme::kDark);
+    // Resolve `system` here: a capture must pin one concrete appearance,
+    // never follow the machine that happens to render it.
+    const scada::aui::Theme theme =
+        scada::aui::ResolveTheme(scada::aui::ThemeFromString(
+            QString::fromStdString(theme_name), scada::aui::Theme::kDark));
     scada::aui::ApplyTheme(theme);
     scada::aui::SetSeverityTheme(theme == scada::aui::Theme::kLight
                                      ? scada::aui::SeverityTheme::kLight

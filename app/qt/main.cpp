@@ -130,14 +130,16 @@ int main(int argc, char* argv[]) {
     InstalledTranslation installed_translation{settings};
     InstalledStyle installed_style{settings};
 
-    // Experimental UX design-token theming. Opt-in and off by default so the
-    // legacy Fusion look is unchanged until an operator enables it — the
+    // Experimental UX design-token theming. Opt-in and off by default — the
     // reshell ships as incremental vertical slices, not a big-bang switchover.
-    // When enabled, install the shared tokens over the Fusion base before the
-    // login dialog so pre-login chrome is themed too. `Ux/Theme` picks the
-    // variant (dark default); `Ux/StyleSheet=false` gives palette-first /
-    // palette-only. See client/docs/ux/ and client/CLAUDE.md ("UX
-    // implementation approach").
+    // When enabled, install the tokens over the platform style (chosen just
+    // above by InstalledStyle) before the login dialog so pre-login chrome is
+    // themed too. `Ux/Theme` picks the appearance and defaults to `system`,
+    // which follows the OS light/dark preference — the client is a native
+    // desktop application (client/docs/ux/principles.md §9).
+    // `Ux/StyleSheet=false` gives palette-only, which is the direction of
+    // travel; the generated sheet is being shrunk (backlog P6.2). See
+    // client/docs/ux/ and client/CLAUDE.md ("UX design system").
     // The `SCADA_UX_EXPERIMENTAL` environment variable force-enables the
     // reshell regardless of the stored setting — a reliable escape hatch for
     // demos and for launching the themed shell before a Settings toggle exists
@@ -147,16 +149,20 @@ int main(int argc, char* argv[]) {
         qEnvironmentVariableIsSet("SCADA_UX_EXPERIMENTAL");
     if (ux_experimental) {
       const scada::aui::Theme theme = scada::aui::ThemeFromString(
-          settings.value("Ux/Theme").toString(), scada::aui::Theme::kDark);
+          settings.value("Ux/Theme").toString(), scada::aui::Theme::kSystem);
       const scada::aui::ThemeScope scope =
           settings.value("Ux/StyleSheet", true).toBool()
               ? scada::aui::ThemeScope::kFull
               : scada::aui::ThemeScope::kPaletteOnly;
       scada::aui::ApplyTheme(theme, scope);
-      // Keep event/alarm severity colours on the same single source and theme.
+      // Keep event/alarm severity colours on the same single source and
+      // appearance. `kSystem` has to be resolved first — severity tables are
+      // concrete light/dark/high-contrast ramps.
+      const scada::aui::Theme resolved = scada::aui::ResolveTheme(theme);
       scada::aui::SetSeverityTheme(
-          theme == scada::aui::Theme::kLight ? scada::aui::SeverityTheme::kLight
-          : theme == scada::aui::Theme::kHighContrast
+          resolved == scada::aui::Theme::kLight
+              ? scada::aui::SeverityTheme::kLight
+          : resolved == scada::aui::Theme::kHighContrast
               ? scada::aui::SeverityTheme::kHighContrast
               : scada::aui::SeverityTheme::kDark);
     }

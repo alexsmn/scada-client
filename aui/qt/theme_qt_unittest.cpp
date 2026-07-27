@@ -9,13 +9,16 @@
 #include <QStyle>
 #include <gtest/gtest.h>
 
+#include <cstdlib>
+
 namespace scada::aui {
 namespace {
 
 // The persisted-string form round-trips for every theme, and unknown/empty
 // input falls back to the requested default rather than throwing.
 TEST(ThemeQtTest, StringRoundTrip) {
-  for (Theme theme : {Theme::kDark, Theme::kLight, Theme::kHighContrast}) {
+  for (Theme theme :
+       {Theme::kSystem, Theme::kDark, Theme::kLight, Theme::kHighContrast}) {
     EXPECT_EQ(ThemeFromString(ThemeToString(theme)), theme);
   }
   EXPECT_EQ(ThemeFromString(QStringLiteral("nonsense"), Theme::kLight),
@@ -26,6 +29,10 @@ TEST(ThemeQtTest, StringRoundTrip) {
   EXPECT_EQ(ThemeFromString(QStringLiteral("HC")), Theme::kHighContrast);
   EXPECT_EQ(ThemeFromString(QStringLiteral("high-contrast")),
             Theme::kHighContrast);
+  // "auto" is accepted alongside "system" for following the OS appearance.
+  EXPECT_EQ(ThemeFromString(QStringLiteral("auto")), Theme::kSystem);
+  // Following the OS is the default when nothing is persisted.
+  EXPECT_EQ(ThemeFromString(QString()), Theme::kSystem);
 }
 
 // The three themes are genuinely different surfaces/accents, so switching has a
@@ -40,8 +47,11 @@ TEST(ThemeQtTest, ThemesAreDistinct) {
   EXPECT_NE(light.bg, hc.bg);
   EXPECT_NE(dark.accent, light.accent);
 
-  // The rail stays charcoal (dark) in both the dark and light themes — the
-  // shared "deep charcoal rail" signature. It must not track the light bg.
+  // LEGACY TOKEN. `rail_bg` is a charcoal-in-every-theme value from the
+  // browser-styled reshell. Under the native direction the activity bar and
+  // status strip take QPalette::Window like any other chrome, so this token is
+  // slated for removal with backlog P6.3 — asserted here only to describe the
+  // table as it still stands, not as a property worth preserving.
   EXPECT_NE(light.rail_bg, light.bg);
   EXPECT_TRUE(light.rail_bg.lightness() < light.bg.lightness());
 }
@@ -56,14 +66,39 @@ TEST(ThemeQtTest, PaletteUsesAccentForHighlight) {
   EXPECT_EQ(palette.color(QPalette::Window), dark.bg);
 }
 
-// The stylesheet is generated from the tokens: it is non-empty and actually
-// contains the theme's accent colour (i.e. it is not a static string).
+// The stylesheet is generated from the tokens rather than being a static
+// string: it carries the theme's own destructive-action colour.
 TEST(ThemeQtTest, StyleSheetIsTokenDriven) {
   const ThemeTokens& dark = GetThemeTokens(Theme::kDark);
+  const ThemeTokens& light = GetThemeTokens(Theme::kLight);
   const QString sheet = BuildThemeStyleSheet(dark);
   EXPECT_FALSE(sheet.isEmpty());
-  EXPECT_TRUE(sheet.contains(dark.accent.name()));
-  EXPECT_TRUE(sheet.contains(QStringLiteral("QHeaderView")));
+  EXPECT_TRUE(sheet.contains(dark.bad.name()));
+  EXPECT_NE(BuildThemeStyleSheet(light), sheet);
+}
+
+// Regression guard for the native look and feel (backlog P6.2): the generated
+// sheet must not restyle widgets the platform style already draws. Each of
+// these selectors was removed for a reason recorded in theme_qt.cpp — a
+// re-added rule would silently make the client look identical, and equally
+// foreign, on every OS again.
+TEST(ThemeQtTest, StyleSheetDoesNotOverpaintNativeWidgets) {
+  for (Theme theme : {Theme::kDark, Theme::kLight, Theme::kHighContrast}) {
+    const QString sheet = BuildThemeStyleSheet(GetThemeTokens(theme));
+    for (const char* selector :
+         {"QMenuBar", "QMenu", "QToolBar", "QToolButton", "QDockWidget",
+          "QTreeView", "QTableView", "QListView", "QHeaderView", "QTabWidget",
+          "QTabBar", "QStatusBar", "QLineEdit", "QComboBox", "QScrollBar",
+          "QMainWindow"}) {
+      EXPECT_FALSE(sheet.contains(QLatin1String(selector)))
+          << "theme " << ThemeToString(theme).toStdString()
+          << " re-introduced a rule for " << selector;
+    }
+    // Bare QPushButton styling is gone too; only the role-qualified form
+    // survives, because Qt has no palette role for a destructive action.
+    EXPECT_FALSE(sheet.contains(QStringLiteral("QPushButton{")));
+    EXPECT_TRUE(sheet.contains(QStringLiteral("QPushButton[role=\"danger\"]")));
+  }
 }
 
 // The monospace value font is part of the opt-in token themes: empty under
@@ -85,9 +120,9 @@ TEST(ThemeQtTest, MonoValueFontIsTokenThemeGated) {
   SetSeverityTheme(SeverityTheme::kLegacy);
 }
 
-// ApplyTheme installs the Fusion style plus the token palette and stylesheet on
-// the running application, and can switch themes live.
-TEST(ThemeQtTest, ApplyThemeInstallsPaletteAndStyle) {
+// ApplyTheme installs the token palette and stylesheet on the running
+// application, and can switch themes live.
+TEST(ThemeQtTest, ApplyThemeInstallsPaletteAndStyleSheet) {
   AppEnvironment app_env;
 
   ApplyTheme(Theme::kLight);
@@ -100,15 +135,163 @@ TEST(ThemeQtTest, ApplyThemeInstallsPaletteAndStyle) {
   ApplyTheme(Theme::kDark);
   EXPECT_EQ(qApp->palette().color(QPalette::Window),
             GetThemeTokens(Theme::kDark).bg);
+}
 
-  // While a global stylesheet is installed (kFull), qApp->style() is Qt's
-  // QStyleSheetStyle wrapper whose objectName() is empty, so Fusion cannot be
-  // identified through it. Switching to kPaletteOnly clears the stylesheet,
-  // Qt unwraps back to the base style, and the Fusion install made by the
-  // same ApplyTheme code path becomes directly observable.
+// Regression guard for the native look and feel (client/docs/ux/principles.md
+// §9): ApplyTheme must recolour without touching the widget style. It used to
+// force Fusion unconditionally, which overrode both the platform style — making
+// the client look equally foreign on every OS — and any explicit operator
+// choice restored by InstalledStyle.
+TEST(ThemeQtTest, ApplyThemeDoesNotChangeTheWidgetStyle) {
+  AppEnvironment app_env;
+
+  // Stand in for InstalledStyle having settled the style before theming runs.
+  // Compare against the base style: while a global stylesheet is installed,
+  // qApp->style() is Qt's QStyleSheetStyle wrapper, so read the style back in
+  // the kPaletteOnly state where Qt has unwrapped it again.
   ApplyTheme(Theme::kDark, ThemeScope::kPaletteOnly);
-  EXPECT_TRUE(
-      qApp->style()->objectName().toLower().contains(QStringLiteral("fusion")));
+  const QString style_before = qApp->style()->objectName();
+  ASSERT_FALSE(style_before.isEmpty());
+
+  ApplyTheme(Theme::kLight, ThemeScope::kPaletteOnly);
+  EXPECT_EQ(qApp->style()->objectName(), style_before);
+
+  // ...and the palette still followed the theme, so this is not passing merely
+  // because ApplyTheme did nothing at all.
+  EXPECT_EQ(qApp->palette().color(QPalette::Window),
+            GetThemeTokens(Theme::kLight).bg);
+}
+
+// `kSystem` resolves to the concrete appearance the host OS asks for, for the
+// benefit of callers (like the severity ramp) that need a real light/dark
+// answer rather than "whatever the desktop is".
+TEST(ThemeQtTest, SystemThemeResolvesToAConcreteAppearance) {
+  AppEnvironment app_env;
+
+  const Theme resolved = ResolveSystemTheme();
+  EXPECT_TRUE(resolved == Theme::kLight || resolved == Theme::kDark);
+  EXPECT_EQ(ResolveTheme(Theme::kSystem), resolved);
+
+  // Explicit choices are returned unchanged — following the OS is the default,
+  // not an override of what the operator picked.
+  for (Theme theme : {Theme::kDark, Theme::kLight, Theme::kHighContrast}) {
+    EXPECT_EQ(ResolveTheme(theme), theme);
+  }
+}
+
+// The whole point of `kSystem`: chrome tokens are the host desktop's actual
+// colours, not a look-alike table. Everything a widget paints its background,
+// text, hairlines or selection with must come straight off the live palette.
+TEST(ThemeQtTest, SystemTokensComeFromTheLivePalette) {
+  AppEnvironment app_env;
+
+  QPalette palette;
+  palette.setColor(QPalette::Window, QColor(0x2b, 0x34, 0x41));
+  palette.setColor(QPalette::Base, QColor(0x1e, 0x25, 0x30));
+  palette.setColor(QPalette::AlternateBase, QColor(0x26, 0x2e, 0x3a));
+  palette.setColor(QPalette::WindowText, QColor(0xe8, 0xed, 0xf2));
+  palette.setColor(QPalette::Highlight, QColor(0xd0, 0x50, 0x10));
+  palette.setColor(QPalette::HighlightedText, QColor(0xff, 0xff, 0xff));
+  QApplication::setPalette(palette);
+
+  const ThemeTokens& t = GetThemeTokens(Theme::kSystem);
+  EXPECT_EQ(t.bg, palette.color(QPalette::Window));
+  EXPECT_EQ(t.surface, palette.color(QPalette::Base));
+  EXPECT_EQ(t.surface_muted, palette.color(QPalette::AlternateBase));
+  EXPECT_EQ(t.fg, palette.color(QPalette::WindowText));
+  // The OS accent, including a user-chosen one that matches no theme of ours.
+  EXPECT_EQ(t.accent, palette.color(QPalette::Highlight));
+  EXPECT_EQ(t.accent_fg, palette.color(QPalette::HighlightedText));
+  // The charcoal rail is retired: chrome takes the window colour like the rest.
+  EXPECT_EQ(t.rail_bg, palette.color(QPalette::Window));
+  EXPECT_EQ(t.topbar_bg, palette.color(QPalette::Window));
+
+  // Process semantics do NOT follow the desktop (principles.md §9): alarm,
+  // quality and single-line colours are safety signals with fixed values.
+  const ThemeTokens& dark = GetThemeTokens(Theme::kDark);
+  EXPECT_EQ(t.severity_critical, dark.severity_critical);
+  EXPECT_EQ(t.bad, dark.bad);
+  EXPECT_EQ(t.good, dark.good);
+  EXPECT_EQ(t.sl_live, dark.sl_live);
+}
+
+// AlternateBase is supposed to be a barely-there stripe beside Base, but the
+// macOS style reports a mid grey (#8e8e8e) for it. Taken literally that lights
+// up every table header and inset field on a dark window, so an out-of-range
+// AlternateBase must be ignored in favour of a shade derived from Base.
+TEST(ThemeQtTest, SystemTokensIgnoreAnOutOfRangeAlternateBase) {
+  AppEnvironment app_env;
+
+  QPalette hostile;
+  hostile.setColor(QPalette::Window, QColor(0x1e, 0x1e, 0x1e));
+  hostile.setColor(QPalette::Base, QColor(0x17, 0x17, 0x17));
+  hostile.setColor(QPalette::WindowText, QColor(0xff, 0xff, 0xff));
+  hostile.setColor(QPalette::AlternateBase, QColor(0x8e, 0x8e, 0x8e));
+  QApplication::setPalette(hostile);
+
+  const ThemeTokens& t = GetThemeTokens(Theme::kSystem);
+  EXPECT_NE(t.surface_muted, hostile.color(QPalette::AlternateBase));
+  // It stays an inset shade: near Base, and on the same side as the text.
+  EXPECT_LT(std::abs(t.surface_muted.lightness() -
+                     hostile.color(QPalette::Base).lightness()),
+            40);
+
+  // A sane AlternateBase is still used verbatim — the guard must not override
+  // platforms that report a usable value.
+  QPalette sane = hostile;
+  sane.setColor(QPalette::AlternateBase, QColor(0x1f, 0x1f, 0x1f));
+  QApplication::setPalette(sane);
+  EXPECT_EQ(GetThemeTokens(Theme::kSystem).surface_muted,
+            sane.color(QPalette::AlternateBase));
+}
+
+// An OS appearance change must be picked up without anyone invalidating a
+// cache, and must swing the semantic ramp to the legible variant.
+TEST(ThemeQtTest, SystemTokensFollowAPaletteChange) {
+  AppEnvironment app_env;
+
+  QPalette light;
+  light.setColor(QPalette::Window, QColor(0xf4, 0xf6, 0xf8));
+  light.setColor(QPalette::WindowText, QColor(0x10, 0x14, 0x18));
+  QApplication::setPalette(light);
+  EXPECT_EQ(GetThemeTokens(Theme::kSystem).bg, light.color(QPalette::Window));
+  EXPECT_EQ(GetThemeTokens(Theme::kSystem).severity_critical,
+            GetThemeTokens(Theme::kLight).severity_critical);
+
+  QPalette dark;
+  dark.setColor(QPalette::Window, QColor(0x12, 0x16, 0x1b));
+  dark.setColor(QPalette::WindowText, QColor(0xf0, 0xf3, 0xf6));
+  QApplication::setPalette(dark);
+  EXPECT_EQ(GetThemeTokens(Theme::kSystem).bg, dark.color(QPalette::Window));
+  EXPECT_EQ(GetThemeTokens(Theme::kSystem).severity_critical,
+            GetThemeTokens(Theme::kDark).severity_critical);
+}
+
+// Following the OS means leaving its palette alone. Installing a look-alike
+// palette of our own is what made the client merely resemble the desktop.
+TEST(ThemeQtTest, SystemThemeDoesNotOverwriteThePlatformPalette) {
+  AppEnvironment app_env;
+  // ActiveThemeTokens() hands out the dark table under the legacy severity
+  // theme (reshell off). Mirror what app/qt/main.cpp does when the reshell is
+  // on, so the token seam under test is the live one.
+  SetSeverityTheme(SeverityTheme::kDark);
+
+  ApplyTheme(Theme::kDark, ThemeScope::kPaletteOnly);
+  const QColor themed_bg = qApp->palette().color(QPalette::Window);
+  EXPECT_EQ(themed_bg, GetThemeTokens(Theme::kDark).bg);
+
+  // Switching to system restores the style's own palette...
+  ApplyTheme(Theme::kSystem, ThemeScope::kPaletteOnly);
+  ASSERT_NE(qApp->style(), nullptr);
+  const QPalette standard = qApp->style()->standardPalette();
+  EXPECT_EQ(qApp->palette().color(QPalette::Window),
+            standard.color(QPalette::Window));
+
+  // ...and the tokens the widgets read agree with it, so token-styled surfaces
+  // match the window they sit in rather than the previous explicit theme.
+  EXPECT_EQ(ActiveThemeTokens().bg, qApp->palette().color(QPalette::Window));
+
+  SetSeverityTheme(SeverityTheme::kLegacy);
 }
 
 // Palette-first: kPaletteOnly recolours through the palette but installs no
@@ -121,6 +304,7 @@ TEST(ThemeQtTest, ApplyThemePaletteOnlyInstallsNoStyleSheet) {
             GetThemeTokens(Theme::kDark).bg);
   EXPECT_TRUE(qApp->styleSheet().isEmpty());
 }
+
 
 }  // namespace
 }  // namespace scada::aui

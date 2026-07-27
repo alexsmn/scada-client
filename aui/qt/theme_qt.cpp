@@ -3,8 +3,15 @@
 
 #include "aui/severity_colors.h"
 
+#include "base/no_destructor.h"
+
 #include <QApplication>
+#include <QGuiApplication>
 #include <QString>
+#include <QStyle>
+#include <QStyleHints>
+
+#include <cstdlib>
 
 namespace scada::aui {
 
@@ -116,6 +123,117 @@ ThemeTokens MakeHighContrastTokens() {
 // Formats a colour for a Qt style sheet. Opaque colours use `#RRGGBB`;
 // translucent colours use Qt's `#AARRGGBB` form, which QSS parses natively (its
 // rgba() function's alpha handling is version-dependent, so we avoid it).
+// The appearance ApplyTheme last installed. Kept so ActiveThemeTokens() can
+// hand out the system-derived table when the client is following the OS —
+// GetSeverityTheme() cannot express that, since its light/dark values name
+// concrete ramps rather than "whatever the desktop is". Trivially destructible,
+// so a function-local static is safe here.
+Theme& MutableActiveTheme() {
+  static Theme theme = Theme::kDark;
+  return theme;
+}
+
+Theme ActiveTheme() {
+  return MutableActiveTheme();
+}
+
+// The palette the application is actually painting with right now. Falls back
+// to a default-constructed palette before QApplication exists so the token
+// accessors stay callable from static initialisation and from tests.
+QPalette CurrentPalette() {
+  return QApplication::instance() ? QApplication::palette() : QPalette{};
+}
+
+// Whether a palette reads as a dark appearance. Used to pick which semantic
+// (severity / quality) ramp stays legible against it.
+bool IsDarkPalette(const QPalette& palette) {
+  return palette.color(QPalette::Window).lightness() < 128;
+}
+
+// Linear blend, `t` = 0 gives `a`, 1 gives `b`. Alpha follows the same ramp.
+QColor Mix(const QColor& a, const QColor& b, qreal t) {
+  return QColor::fromRgbF(a.redF() + (b.redF() - a.redF()) * t,
+                          a.greenF() + (b.greenF() - a.greenF()) * t,
+                          a.blueF() + (b.blueF() - a.blueF()) * t,
+                          a.alphaF() + (b.alphaF() - a.alphaF()) * t);
+}
+
+QColor WithAlpha(QColor c, int alpha) {
+  c.setAlpha(alpha);
+  return c;
+}
+
+// Derives the token table from the palette the OS/platform style handed us, so
+// the client's chrome is literally the host's colours rather than a look-alike.
+//
+// Only the *chrome* tokens are derived. The semantic tokens — quality,
+// alarm severity, single-line equipment state — are process signals fixed by
+// ISA-101 / ISA-18.2 (client/docs/ux/principles.md §9) and must not follow the
+// desktop accent colour. They are taken wholesale from the light or dark table,
+// chosen by the palette's own lightness so they stay legible against it.
+ThemeTokens MakeSystemTokens(const QPalette& p) {
+  const bool dark = IsDarkPalette(p);
+  // Start from the matching semantic ramp, then overwrite everything the
+  // platform owns.
+  ThemeTokens t = dark ? MakeDarkTokens() : MakeLightTokens();
+
+  const QColor window = p.color(QPalette::Window);
+  const QColor text = p.color(QPalette::WindowText);
+
+  const QColor base = p.color(QPalette::Base);
+
+  t.bg = window;
+  t.bg_elevated = window;
+  t.surface = base;
+  // AlternateBase is meant to be a barely-there stripe next to Base, but not
+  // every platform treats it that way — the macOS style reports a mid grey
+  // (#8e8e8e) that would light up every table header and inset field on a dark
+  // window. Trust it only when it actually sits near Base; otherwise derive the
+  // inset shade ourselves by nudging Base toward the text colour.
+  const QColor alternate = p.color(QPalette::AlternateBase);
+  constexpr int kMaxInsetDistance = 40;
+  t.surface_muted =
+      std::abs(alternate.lightness() - base.lightness()) <= kMaxInsetDistance
+          ? alternate
+          : Mix(base, text, 0.08);
+  // The charcoal rail/status strip is retired: native chrome takes the window
+  // colour like everything else (client/docs/ux/design-language.md).
+  t.rail_bg = window;
+  t.topbar_bg = window;
+
+  t.fg = text;
+  t.fg_muted = Mix(text, window, 0.30);
+  t.fg_subtle = Mix(text, window, 0.45);
+  t.fg_on_dark = text;
+
+  // Hairlines: the platform's Mid/Dark roles, softened so they read as rules
+  // rather than borders on styles that set them strongly.
+  t.border = WithAlpha(p.color(QPalette::Mid), 110);
+  t.border_strong = p.color(QPalette::Mid);
+
+  // The OS accent — this is the single most recognisable "matches my desktop"
+  // cue, and Qt already exposes it as the highlight roles.
+  t.accent = p.color(QPalette::Highlight);
+  t.accent_fg = p.color(QPalette::HighlightedText);
+  t.accent_soft = WithAlpha(p.color(QPalette::Highlight), dark ? 64 : 40);
+
+  return t;
+}
+
+// The system table, recomputed whenever the application palette changes. Keyed
+// on QPalette::cacheKey() so an OS light/dark switch is picked up on the next
+// read without anyone having to invalidate anything.
+const ThemeTokens& SystemTokens() {
+  static base::NoDestructor<ThemeTokens> tokens;
+  static qint64 cached_key = 0;
+  const QPalette palette = CurrentPalette();
+  if (palette.cacheKey() != cached_key) {
+    cached_key = palette.cacheKey();
+    *tokens = MakeSystemTokens(palette);
+  }
+  return *tokens;
+}
+
 QString Css(const QColor& c) {
   if (c.alpha() == 255) {
     return QString::asprintf("#%02x%02x%02x", c.red(), c.green(), c.blue());
@@ -126,11 +244,36 @@ QString Css(const QColor& c) {
 
 }  // namespace
 
+Theme ResolveSystemTheme() {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+  if (const QStyleHints* hints = QGuiApplication::styleHints()) {
+    switch (hints->colorScheme()) {
+      case Qt::ColorScheme::Light:
+        return Theme::kLight;
+      case Qt::ColorScheme::Dark:
+        return Theme::kDark;
+      case Qt::ColorScheme::Unknown:
+        break;
+    }
+  }
+#endif
+  // No explicit OS preference (or a Qt build without the API): read it off the
+  // palette the platform style actually gave us, which is the thing we are
+  // going to match anyway.
+  return IsDarkPalette(CurrentPalette()) ? Theme::kDark : Theme::kLight;
+}
+
+Theme ResolveTheme(Theme theme) {
+  return theme == Theme::kSystem ? ResolveSystemTheme() : theme;
+}
+
 const ThemeTokens& GetThemeTokens(Theme theme) {
   static const ThemeTokens kDark = MakeDarkTokens();
   static const ThemeTokens kLight = MakeLightTokens();
   static const ThemeTokens kHighContrast = MakeHighContrastTokens();
   switch (theme) {
+    case Theme::kSystem:
+      return SystemTokens();
     case Theme::kLight:
       return kLight;
     case Theme::kHighContrast:
@@ -143,6 +286,9 @@ const ThemeTokens& GetThemeTokens(Theme theme) {
 
 Theme ThemeFromString(const QString& name, Theme fallback) {
   const QString key = name.trimmed().toLower();
+  if (key == QStringLiteral("system") || key == QStringLiteral("auto")) {
+    return Theme::kSystem;
+  }
   if (key == QStringLiteral("dark")) {
     return Theme::kDark;
   }
@@ -158,6 +304,8 @@ Theme ThemeFromString(const QString& name, Theme fallback) {
 
 QString ThemeToString(Theme theme) {
   switch (theme) {
+    case Theme::kSystem:
+      return QStringLiteral("system");
     case Theme::kLight:
       return QStringLiteral("light");
     case Theme::kHighContrast:
@@ -169,18 +317,17 @@ QString ThemeToString(Theme theme) {
 }
 
 const ThemeTokens& ActiveThemeTokens() {
-  Theme theme = Theme::kDark;
-  switch (GetSeverityTheme()) {
-    case SeverityTheme::kLight:
-      theme = Theme::kLight;
-      break;
-    case SeverityTheme::kHighContrast:
-      theme = Theme::kHighContrast;
-      break;
-    default:
-      break;
+  // The reshell is off (legacy severity theme): keep the historical behaviour
+  // of handing standalone chrome the dark tokens regardless.
+  if (GetSeverityTheme() == SeverityTheme::kLegacy) {
+    return GetThemeTokens(Theme::kDark);
   }
-  return GetThemeTokens(theme);
+  // Otherwise follow whatever ApplyTheme installed. This is what carries the
+  // OS colours out to the ~23 call sites that still style themselves from
+  // tokens: under Theme::kSystem they resolve against the live palette instead
+  // of a baked table, so they track the desktop without waiting for the
+  // per-widget stylesheet conversion (backlog P6.4).
+  return GetThemeTokens(ActiveTheme());
 }
 
 std::optional<QFont> MonoValueFont() {
@@ -240,130 +387,70 @@ QPalette BuildThemePalette(const ThemeTokens& t) {
 }
 
 QString BuildThemeStyleSheet(const ThemeTokens& t) {
-  // A single generated sheet styling the shared chrome vocabulary. Kept flat
-  // (thin hairlines, small radii, no bevels) to match the workbench mockups.
-  QString qss;
-  qss +=
-      QStringLiteral(
-          // Menu bar / menus.
-          "QMenuBar{background:%1;color:%2;border-bottom:1px solid %3;}"
-          "QMenuBar::item{background:transparent;padding:4px 9px;}"
-          "QMenuBar::item:selected{background:%4;color:%5;border-radius:4px;}"
-          "QMenu{background:%6;color:%2;border:1px solid %7;padding:4px;}"
-          "QMenu::item{padding:5px 22px;border-radius:4px;}"
-          "QMenu::item:selected{background:%4;color:%5;}"
-          "QMenu::separator{height:1px;background:%3;margin:4px 8px;}")
-          .arg(Css(t.topbar_bg), Css(t.fg), Css(t.border), Css(t.accent),
-               Css(t.accent_fg), Css(t.surface), Css(t.border_strong));
-
-  qss += QStringLiteral(
-             // Tool bars.
-             "QToolBar{background:%1;border-bottom:1px solid %2;spacing:2px;"
-             "padding:2px 6px;}"
-             "QToolButton{color:%3;padding:4px 8px;border-radius:4px;}"
-             "QToolButton:hover{background:%4;}"
-             "QToolButton:pressed,QToolButton:checked{background:%5;color:%6;}"
-             "QToolBar::separator{width:1px;background:%2;margin:0 4px;}")
-             .arg(Css(t.topbar_bg), Css(t.border), Css(t.fg_muted),
-                  Css(t.surface_muted), Css(t.accent_soft), Css(t.fg));
-
-  qss += QStringLiteral(
-             // Dock widgets.
-             "QDockWidget{color:%1;titlebar-close-icon:none;}"
-             "QDockWidget::title{background:%2;padding:4px 8px;"
-             "border-bottom:1px solid %3;}"
-             "QMainWindow::separator{background:%4;width:1px;height:1px;}")
-             .arg(Css(t.fg), Css(t.bg_elevated), Css(t.border), Css(t.border));
-
-  qss +=
-      QStringLiteral(
-          // Item views (trees, tables, lists) and headers.
-          "QTreeView,QTableView,QListView{background:%1;alternate-background-"
-          "color:%2;color:%3;border:1px solid %4;gridline-color:%4;}"
-          "QTreeView::item,QListView::item{padding:2px 4px;}"
-          "QTreeView::item:selected,QTableView::item:selected,"
-          "QListView::item:selected{background:%5;color:%3;}"
-          "QHeaderView::section{background:%2;color:%6;padding:4px 8px;"
-          "border:0;border-right:1px solid %4;border-bottom:1px solid %4;}")
-          .arg(Css(t.surface), Css(t.surface_muted), Css(t.fg), Css(t.border),
-               Css(t.accent_soft), Css(t.fg_subtle));
-
-  qss +=
-      QStringLiteral(
-          // Editor-style workspace tabs: flat and document-mode; the active
-          // tab drops its separators and blends into the content pane with an
-          // accent top marker, inactive tabs sit on the elevated bar.
-          "QTabWidget::pane{border:1px solid %1;background:%2;}"
-          "QTabBar{background:%3;}"
-          "QTabBar::tab{background:%3;color:%4;padding:6px 16px;"
-          "border:0;border-right:1px solid %1;}"
-          "QTabBar::tab:hover{background:%7;color:%5;}"
-          "QTabBar::tab:selected{background:%2;color:%5;"
-          "border-top:2px solid %6;}"
-          "QTabBar::close-button:hover{background:%7;border-radius:3px;}")
-          .arg(Css(t.border), Css(t.bg), Css(t.bg_elevated), Css(t.fg_subtle),
-               Css(t.fg), Css(t.accent), Css(t.surface_muted));
-
-  qss += QStringLiteral(
-             // Dock panels: a slim themed title strip in place of the native OS
-             // title chrome, so panels read as workbench regions, not windows.
-             "QDockWidget{color:%1;}"
-             "QDockWidget::title{background:%2;color:%1;padding:5px 8px;"
-             "border-bottom:1px solid %3;}")
-             .arg(Css(t.fg_subtle), Css(t.surface_muted), Css(t.border));
-
-  qss += QStringLiteral(
-             // Status bar.
-             "QStatusBar{background:%1;color:%2;border-top:1px solid %3;}"
-             "QStatusBar::item{border:0;}")
-             .arg(Css(t.rail_bg), Css(t.fg_subtle), Css(t.border));
-
-  qss +=
-      QStringLiteral(
-          // Push buttons: default (accent), normal, and role=danger.
-          "QPushButton{background:%1;color:%2;border:1px solid %3;"
-          "border-radius:6px;padding:5px 14px;}"
-          "QPushButton:hover{border-color:%4;}"
-          "QPushButton:default{background:%4;color:%5;border-color:%4;}"
-          "QPushButton:disabled{color:%6;}"
-          "QPushButton[role=\"danger\"]{background:%7;color:%5;"
-          "border-color:%7;}")
-          .arg(Css(t.surface_muted), Css(t.fg), Css(t.border_strong),
-               Css(t.accent), Css(t.accent_fg), Css(t.fg_subtle), Css(t.bad));
-
-  qss += QStringLiteral(
-             // Text inputs and combos.
-             "QLineEdit,QPlainTextEdit,QTextEdit,QSpinBox,QDoubleSpinBox,"
-             "QComboBox{background:%1;color:%2;border:1px solid %3;"
-             "border-radius:6px;padding:4px 8px;selection-background-color:%4;}"
-             "QLineEdit:focus,QSpinBox:focus,QDoubleSpinBox:focus,"
-             "QComboBox:focus{border-color:%4;}"
-             "QComboBox QAbstractItemView{background:%5;color:%2;"
-             "border:1px solid %3;selection-background-color:%6;}")
-             .arg(Css(t.bg_elevated), Css(t.fg), Css(t.border_strong),
-                  Css(t.accent), Css(t.surface), Css(t.accent_soft));
-
-  qss +=
-      QStringLiteral(
-          // Thin scrollbars.
-          "QScrollBar:vertical{background:%1;width:10px;margin:0;}"
-          "QScrollBar:horizontal{background:%1;height:10px;margin:0;}"
-          "QScrollBar::handle{background:%2;border-radius:4px;min-height:24px;"
-          "min-width:24px;}"
-          "QScrollBar::handle:hover{background:%3;}"
-          "QScrollBar::add-line,QScrollBar::sub-line{width:0;height:0;}"
-          "QScrollBar::add-page,QScrollBar::sub-page{background:transparent;}")
-          .arg(Css(t.bg_elevated), Css(t.border_strong), Css(t.fg_subtle));
-
-  return qss;
+  // Everything this sheet used to do is now the platform style's job
+  // (client/docs/ux/principles.md §9, backlog P6.2). What remains is only what
+  // QPalette has no way to express.
+  //
+  // Removed, and why — each of these repainted something the native style
+  // already draws correctly, and drew it the same way on every OS:
+  //
+  //   QMenuBar/QMenu      -> Window/Base/Highlight; native menus also bring
+  //                          platform-correct popups, shadows and padding.
+  //   QToolBar/QToolButton-> Window/ButtonText/Highlight; the style already
+  //                          draws hover/pressed/checked affordances.
+  //   QDockWidget         -> the old rule also set `titlebar-close-icon:none`,
+  //                          which silently removed the close button.
+  //   Item views/headers  -> Base/AlternateBase/Text/Highlight (+ Mid for
+  //                          gridlines). Tree/Table already re-derive these
+  //                          per-widget from the live palette.
+  //   QTabWidget/QTabBar  -> the accent-top-marker "editor tab" is a browser
+  //                          idiom; native tabs are what desktop users expect.
+  //   QStatusBar          -> painted itself charcoal in every theme, the most
+  //                          conspicuous non-native cue in the window.
+  //   QPushButton         -> Button/ButtonText, and `:default` is a style state.
+  //   Inputs/combos       -> Base/Text/Highlight; native focus rings are also
+  //                          the ones the OS accessibility settings affect.
+  //   QScrollBar          -> fixed 10px thin bars ignored platform metrics and
+  //                          macOS overlay-scrollbar behaviour.
+  //
+  // Do not re-add any of the above. The bar for a new rule here is that the
+  // effect is impossible through QPalette or QStyle::PixelMetric — and if you
+  // clear it, say so in a comment like these.
+  //
+  // Destructive actions are the one surviving case: Qt has no palette role for
+  // "this button does something irreversible", so it stays a dynamic property
+  // (`button->setProperty("role", "danger")`) resolved here from the semantic
+  // token. It is currently unused — the control/write surfaces that need it
+  // have not been reshelled yet — but it is the sanctioned pattern rather than
+  // dead styling, and it keeps the semantic-token seam honest.
+  return QStringLiteral("QPushButton[role=\"danger\"]{background:%1;color:%2;"
+                        "border-color:%1;}")
+      .arg(Css(t.bad), Css(t.accent_fg));
 }
 
 void ApplyTheme(Theme theme, ThemeScope scope) {
+  MutableActiveTheme() = theme;
+
+  // Deliberately no setStyle() here. The client runs the platform style so it
+  // looks native (client/docs/ux/principles.md §9); forcing Fusion was what
+  // made it look the same — and equally foreign — on every OS. The style is
+  // settled once at startup by InstalledStyle, which also honours an explicit
+  // operator override; a theme change must not stomp it.
+  if (theme == Theme::kSystem) {
+    // Matching the OS means *not* installing a palette of our own: the one the
+    // platform style already produced is the desktop's real colour scheme,
+    // down to the user's accent colour. Overwriting it with a look-alike table
+    // is what made the client merely resemble the host instead of matching it.
+    // Restore the style's standard palette in case an explicit theme was
+    // applied earlier in this session, then let the tokens follow it.
+    if (QStyle* style = QApplication::style()) {
+      QApplication::setPalette(style->standardPalette());
+    }
+  } else {
+    QApplication::setPalette(BuildThemePalette(GetThemeTokens(theme)));
+  }
+
   const ThemeTokens& tokens = GetThemeTokens(theme);
-  // Order matters: setStyle() resets the application palette to the style's
-  // standard palette, so the palette and stylesheet must be installed after.
-  QApplication::setStyle(QStringLiteral("Fusion"));
-  QApplication::setPalette(BuildThemePalette(tokens));
   if (auto* app = qApp) {
     // Palette-first: install the global stylesheet only for kFull. Clearing it
     // for kPaletteOnly keeps a live switch from leaving a stale sheet behind.

@@ -9,11 +9,17 @@
 
 namespace scada::aui {
 
-// The shipped application themes. Dark is the desktop default (control-room
-// norm; low glare at night); Light mirrors the web client default; HighContrast
-// is the accessibility / bright-ambient fallback. See the UX design system at
-// client/docs/ux/design-language.md.
-enum class Theme { kDark, kLight, kHighContrast };
+// The shipped application appearances.
+//
+// `kSystem` is the default: the client is a native desktop application and
+// follows the host OS light/dark preference (client/docs/ux/principles.md §9).
+// The other three are explicit operator overrides for sites that standardise on
+// one appearance — Dark remains the recommended control-room setting, but it is
+// no longer forced. See client/docs/ux/design-language.md §1.
+//
+// `kSystem` never reaches a token table directly; resolve it first with
+// ResolveTheme() / ResolveSystemTheme().
+enum class Theme { kSystem, kDark, kLight, kHighContrast };
 
 // The full semantic colour-token set for one theme. The values are kept
 // numerically identical to the web design system (web/ds-bundle) and to
@@ -60,8 +66,20 @@ struct ThemeTokens {
   QColor sl_open;       // switching device open (neutral, not an alarm)
 };
 
-// Returns the immutable token table for a theme.
+// Returns the immutable token table for a theme. `kSystem` resolves through
+// ResolveSystemTheme() first.
 const ThemeTokens& GetThemeTokens(Theme theme);
+
+// The concrete appearance the host OS is currently asking for: kLight or kDark.
+// Reads QStyleHints::colorScheme(); falls back to kDark where the platform
+// reports no preference or the Qt build predates the API. The OS
+// high-contrast state is not exposed portably by Qt, so kHighContrast is only
+// ever reached by an explicit operator choice.
+Theme ResolveSystemTheme();
+
+// Maps `kSystem` onto the concrete appearance the OS asks for and returns every
+// other theme unchanged. Call this before anything that needs a real palette.
+Theme ResolveTheme(Theme theme);
 
 // The token table matching the active severity theme (the reshell opt-in
 // state set at startup): kLight/kHighContrast map to their tables, everything
@@ -69,9 +87,10 @@ const ThemeTokens& GetThemeTokens(Theme theme);
 // renders the dark tokens regardless — maps to dark.
 const ThemeTokens& ActiveThemeTokens();
 
-// Parses a theme from its persisted QSettings string ("dark" | "light" | "hc"),
-// falling back to `fallback` for unknown/empty input.
-Theme ThemeFromString(const QString& name, Theme fallback = Theme::kDark);
+// Parses a theme from its persisted QSettings string
+// ("system" | "dark" | "light" | "hc"), falling back to `fallback` for
+// unknown/empty input.
+Theme ThemeFromString(const QString& name, Theme fallback = Theme::kSystem);
 
 // Formats a theme as its persisted QSettings string.
 QString ThemeToString(Theme theme);
@@ -84,15 +103,23 @@ QString ThemeToString(Theme theme);
 // opt-in token themes. Requires a QApplication (reads the application font).
 std::optional<QFont> MonoValueFont();
 
-// Builds a Fusion-compatible QPalette from the theme tokens. Fusion honours the
-// palette uniformly across platforms, which native styles do not.
+// Builds a QPalette from the theme tokens. This is the primary, and preferred,
+// way the client colours itself: native styles honour the palette for most
+// roles, and it is the only theming mechanism that survives under the platform
+// style. Prefer extending this over adding stylesheet rules.
 QPalette BuildThemePalette(const ThemeTokens& tokens);
 
-// Builds the application QSS stylesheet from the theme tokens. The sheet styles
-// the shared chrome vocabulary (menu/tool bars, docks, tables, trees, tabs,
-// status bar, buttons, fields, scrollbars) so the whole app reads as one
-// system. Severity/quality accents are exposed through dynamic widget
-// properties (e.g. a QPushButton with `role` == "danger").
+// Builds the application QSS stylesheet from the theme tokens.
+//
+// Deliberately almost empty. Everything a native style can draw is left to the
+// native style (client/docs/ux/principles.md §9); this sheet now carries only
+// what QPalette cannot express — currently just the destructive-action role
+// (`widget->setProperty("role", "danger")`).
+//
+// Do not add rules here. Express colour through BuildThemePalette() and size
+// through QStyle::PixelMetric/QFontMetrics. A rule earns its place only by
+// being impossible through both, and the implementation lists what was removed
+// so it does not creep back.
 QString BuildThemeStyleSheet(const ThemeTokens& tokens);
 
 // How much of the theme to install. Palette-first: `kPaletteOnly` recolours the
@@ -102,13 +129,17 @@ QString BuildThemeStyleSheet(const ThemeTokens& tokens);
 // targeted per-widget styling over growing the global sheet.
 enum class ThemeScope { kPaletteOnly, kFull };
 
-// Applies a theme to the whole application: forces the Fusion style and
-// installs the palette, plus the generated stylesheet when `scope` is `kFull`.
-// Safe to call at runtime to switch themes live. Must run after a QApplication
-// exists.
+// Applies a theme to the whole application: installs the palette, plus the
+// generated stylesheet when `scope` is `kFull`. Safe to call at runtime to
+// switch themes live. Must run after a QApplication exists.
+//
+// Deliberately does NOT change the widget style. The client runs the platform
+// style so it looks native on each OS (client/docs/ux/principles.md §9); the
+// style is chosen once at startup by InstalledStyle, and an operator override
+// must not be silently discarded by a theme change.
 //
 // This is opt-in: nothing calls it unless the operator enables the experimental
-// UX (see app/qt/main.cpp). The legacy Fusion look is unchanged by default.
+// UX (see app/qt/main.cpp).
 void ApplyTheme(Theme theme, ThemeScope scope = ThemeScope::kFull);
 
 }  // namespace scada::aui
