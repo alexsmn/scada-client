@@ -55,14 +55,20 @@ industrial HMI standards.
 
 ## Mockups
 
-> **Caveat: the HTML mockups are layout and information-architecture
-> references, not a visual target.** They were drawn against the earlier
-> browser-styled direction, so their chrome — charcoal rails, custom tabs,
-> pixel radii, web type scale — is explicitly **not** what the Qt client should
-> render. Read them for *what goes where and which data appears*; take the
-> *appearance* from the host platform. Validate anything implemented against
-> real Qt widgets via the headless `client_screenshot_generator`, never against
-> the HTML.
+> **Restyled 2026-07-26 to the native direction.** Their chrome now approximates
+> a neutral platform palette: OS-like window/base greys instead of the old
+> blue-black token set, no charcoal rail or status strip, the system accent for
+> selection, a system font stack, no brand lockup, and dialogs drawn under a real
+> title bar rather than repeating it in their content. Process semantics —
+> severity, quality, single-line equipment state — are unchanged, because those
+> are fixed safety colours ([`principles.md`](principles.md) §9).
+>
+> **They remain approximations, not a visual target.** No HTML can be faithful
+> here: "native" means the appearance is the host platform's, and it differs
+> between macOS and Windows. Read the mockups for *what goes where and which
+> data appears*; take the *appearance* from the platform. Validate anything
+> implemented against real Qt widgets via the headless
+> `client_screenshot_generator`, never against the HTML.
 
 Rendered, theme-toggleable HTML in
 [`../ui-mockups/screens/`](../ui-mockups/screens/):

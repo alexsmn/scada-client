@@ -6,22 +6,22 @@
 <title>Event Journal — Telecontrol SCADA (proposed)</title>
 <style>
 :root,[data-theme='dark']{
-  --font-sans:'Inter','Segoe UI Variable','Segoe UI',system-ui,sans-serif;
+  --font-sans:-apple-system,BlinkMacSystemFont,'Segoe UI Variable','Segoe UI',system-ui,sans-serif;
   --font-mono:'Cascadia Mono','Consolas',ui-monospace,monospace;
-  --bg:#07111b;--bg-elevated:#0b1623;--surface:#0f1925;--surface-muted:#152635;
-  --rail-bg:#06111b;--topbar-bg:#0b1623;--fg:#eef5fb;--fg-muted:#c3d0db;--fg-subtle:#8fa3b4;
-  --border:rgba(255,255,255,.12);--border-strong:rgba(255,255,255,.24);
-  --accent:#77b4f3;--accent-fg:#0b1623;--accent-soft:rgba(119,180,243,.15);
+  --bg:#1e1e1e;--bg-elevated:#1e1e1e;--surface:#171717;--surface-muted:#292929;
+  --rail-bg:#1e1e1e;--topbar-bg:#1e1e1e;--fg:#e6e6e6;--fg-muted:#b4b4b4;--fg-subtle:#8c8c8c;
+  --border:rgba(255,255,255,.10);--border-strong:rgba(255,255,255,.18);
+  --accent:#0a84ff;--accent-fg:#ffffff;--accent-soft:rgba(10,132,255,.22);
   --good:#44c091;--good-soft:rgba(68,192,145,.16);--uncertain:#e6b24b;--bad:#f07168;
   --sev-critical:#e85a52;--sev-critical-soft:rgba(232,90,82,.16);
   --sev-high:#f07168;--sev-high-soft:rgba(240,113,104,.14);
   --sev-medium:#e6b24b;--sev-medium-soft:rgba(230,178,75,.14);
   --sev-low:#77b4f3;--radius-sm:4px;--radius-md:6px;--radius-lg:8px;color-scheme:dark;}
 [data-theme='light']{
-  --bg:#f5f8fb;--bg-elevated:#f8fbfe;--surface:#fff;--surface-muted:#f1f5f9;
-  --rail-bg:#0d1a27;--topbar-bg:#fff;--fg:#111827;--fg-muted:#4b5b6c;--fg-subtle:#6b7b8d;
-  --border:rgba(15,23,42,.12);--border-strong:rgba(15,23,42,.22);
-  --accent:#0f6bff;--accent-fg:#fff;--accent-soft:rgba(15,107,255,.1);
+  --bg:#ececec;--bg-elevated:#ececec;--surface:#ffffff;--surface-muted:#f2f2f2;
+  --rail-bg:#ececec;--topbar-bg:#ececec;--fg:#1d1d1f;--fg-muted:#4a4a4d;--fg-subtle:#6e6e73;
+  --border:rgba(0,0,0,.12);--border-strong:rgba(0,0,0,.22);
+  --accent:#0071e3;--accent-fg:#ffffff;--accent-soft:rgba(0,113,227,.14);
   --good:#14825f;--good-soft:rgba(20,130,95,.12);--uncertain:#b67a17;--bad:#c53d35;
   --sev-critical:#8f241f;--sev-critical-soft:rgba(143,36,31,.1);
   --sev-high:#b7312b;--sev-high-soft:rgba(183,49,43,.1);
@@ -32,9 +32,6 @@ body{background:var(--bg);color:var(--fg);font-family:var(--font-sans);font-size
 .mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
 .app{height:100vh;display:flex;flex-direction:column;overflow:hidden}
 .topbar{height:40px;flex:none;display:flex;align-items:center;gap:14px;padding:0 12px;background:var(--topbar-bg);border-bottom:1px solid var(--border)}
-.brand{display:flex;align-items:center;gap:8px;font-weight:600}
-.brand .mark{width:20px;height:20px;border-radius:5px;background:linear-gradient(135deg,var(--accent),#3f7fd6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700}
-.brand small{color:var(--fg-subtle);font-weight:500}
 .cmd{flex:1;max-width:440px;display:flex;align-items:center;gap:8px;height:26px;padding:0 10px;background:var(--surface-muted);border:1px solid var(--border);border-radius:var(--radius-md);color:var(--fg-subtle);font-size:12.5px}
 .cmd .kbd{margin-left:auto;font-size:10.5px;color:var(--fg-subtle);border:1px solid var(--border);border-radius:4px;padding:1px 5px}
 .ctxset{margin-left:auto;display:flex;align-items:center;gap:16px;font-size:12px;color:var(--fg-muted)}
@@ -45,7 +42,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--font-sans);font-size
 .rail{width:52px;flex:none;background:var(--rail-bg);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:4px}
 .rail .ic{width:38px;height:38px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;color:#8fa3b4;position:relative}
 .rail .ic svg{width:20px;height:20px}
-.rail .ic.active{color:#eef5fb;background:rgba(255,255,255,.06)}
+.rail .ic.active{color:var(--fg);background:rgba(255,255,255,.06)}
 .rail .ic.active::before{content:"";position:absolute;left:-8px;top:8px;bottom:8px;width:2px;border-radius:2px;background:var(--accent)}
 .rail .ic .cnt{position:absolute;top:3px;right:3px;min-width:15px;height:15px;padding:0 3px;border-radius:8px;background:var(--sev-critical);color:#0b1623;font-size:9.5px;font-weight:700;display:flex;align-items:center;justify-content:center}
 .rail .spacer{flex:1}
@@ -125,7 +122,7 @@ tr.r-low .sevtag .b{background:var(--sev-low)}tr.r-low .sevtag{color:var(--fg-mu
 .tl .ev .tx{color:var(--fg-muted)}
 .status{height:24px;flex:none;display:flex;align-items:center;background:var(--rail-bg);border-top:1px solid var(--border);font-size:11.5px;color:var(--fg-subtle)}
 .status .cell{display:flex;align-items:center;gap:6px;padding:0 12px;height:100%;border-right:1px solid var(--border)}
-.status .cell.accent{background:var(--accent);color:var(--accent-fg);font-weight:600}
+.status .cell.accent{font-weight:600}
 .status .sp{flex:1}
 .toggle{position:fixed;right:14px;bottom:34px;z-index:20;display:flex;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
 .toggle button{border:0;background:transparent;color:var(--fg-subtle);font:inherit;font-size:11.5px;padding:4px 12px;border-radius:16px;cursor:pointer}
@@ -134,7 +131,6 @@ tr.r-low .sevtag .b{background:var(--sev-low)}tr.r-low .sevtag{color:var(--fg-mu
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="brand"><span class="mark">TC</span>Telecontrol <small>SCADA</small></div>
     <div class="cmd"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search tags, objects, commands…<span class="kbd">Ctrl K</span></div>
     <!-- Identity/connection context (user·role, site, connection, latency, endpoint)
          lives in the status strip alone — see docs/ux/shell.md §2.2/§2.7.
@@ -249,6 +245,6 @@ tr.r-low .sevtag .b{background:var(--sev-low)}tr.r-low .sevtag{color:var(--fg-mu
     <div class="cell mono">v2.6.0</div>
   </div>
 </div>
-<div class="toggle"><button onclick="t('dark')" id="b-dark" class="on">Dark (Qt default)</button><button onclick="t('light')" id="b-light">Light (web default)</button></div>
+<div class="toggle"><button onclick="t('dark')" id="b-dark" class="on">Dark</button><button onclick="t('light')" id="b-light">Light</button></div>
 <script>function t(m){document.documentElement.setAttribute('data-theme',m);document.getElementById('b-dark').classList.toggle('on',m==='dark');document.getElementById('b-light').classList.toggle('on',m==='light');}</script>
 </body></html>

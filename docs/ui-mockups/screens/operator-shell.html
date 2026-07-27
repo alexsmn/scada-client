@@ -8,17 +8,18 @@
 <style>
 /* =========================================================================
    Shared design tokens — kept 1:1 with web/ds-bundle (_ds_bundle.css).
-   Dark is the Qt default (control room); light mirrors the web default.
+   System is the default: the client follows the OS appearance.
+   Dark and Light are explicit operator overrides.
    ========================================================================= */
 :root, [data-theme='dark']{
-  --font-sans:'Inter','Segoe UI Variable','Segoe UI',system-ui,sans-serif;
+  --font-sans:-apple-system,BlinkMacSystemFont,'Segoe UI Variable','Segoe UI',system-ui,sans-serif;
   --font-mono:'Cascadia Mono','Consolas',ui-monospace,monospace;
-  --bg:#07111b;--bg-elevated:#0b1623;--bg-strong:#060d15;
-  --surface:#0f1925;--surface-strong:#132232;--surface-muted:#152635;
-  --rail-bg:#06111b;--rail-surface:rgba(255,255,255,.06);--topbar-bg:#0b1623;
-  --fg:#eef5fb;--fg-muted:#c3d0db;--fg-subtle:#8fa3b4;--fg-on-dark:#eef5fb;
-  --border:rgba(255,255,255,.12);--border-strong:rgba(255,255,255,.24);
-  --accent:#77b4f3;--accent-fg:#0b1623;--accent-soft:rgba(119,180,243,.15);
+  --bg:#1e1e1e;--bg-elevated:#1e1e1e;--bg-strong:#141414;
+  --surface:#171717;--surface-strong:#202020;--surface-muted:#292929;
+  --rail-bg:#1e1e1e;--rail-surface:rgba(255,255,255,.08);--topbar-bg:#1e1e1e;
+  --fg:#e6e6e6;--fg-muted:#b4b4b4;--fg-subtle:#8c8c8c;--fg-on-dark:#e6e6e6;
+  --border:rgba(255,255,255,.10);--border-strong:rgba(255,255,255,.18);
+  --accent:#0a84ff;--accent-fg:#ffffff;--accent-soft:rgba(10,132,255,.22);
   --good:#44c091;--good-soft:rgba(68,192,145,.16);
   --uncertain:#e6b24b;--uncertain-soft:rgba(230,178,75,.18);
   --bad:#f07168;--bad-soft:rgba(240,113,104,.18);
@@ -30,12 +31,12 @@
   color-scheme:dark;
 }
 [data-theme='light']{
-  --bg:#f5f8fb;--bg-elevated:#f8fbfe;--bg-strong:#0d1a27;
-  --surface:#ffffff;--surface-strong:#ffffff;--surface-muted:#f1f5f9;
-  --rail-bg:#0d1a27;--rail-surface:rgba(255,255,255,.05);--topbar-bg:#ffffff;
-  --fg:#111827;--fg-muted:#4b5b6c;--fg-subtle:#6b7b8d;--fg-on-dark:#eef5fb;
-  --border:rgba(15,23,42,.12);--border-strong:rgba(15,23,42,.22);
-  --accent:#0f6bff;--accent-fg:#ffffff;--accent-soft:rgba(15,107,255,.1);
+  --bg:#ececec;--bg-elevated:#ececec;--bg-strong:#d8d8d8;
+  --surface:#ffffff;--surface-strong:#ffffff;--surface-muted:#f2f2f2;
+  --rail-bg:#ececec;--rail-surface:rgba(0,0,0,.05);--topbar-bg:#ececec;
+  --fg:#1d1d1f;--fg-muted:#4a4a4d;--fg-subtle:#6e6e73;--fg-on-dark:#1d1d1f;
+  --border:rgba(0,0,0,.12);--border-strong:rgba(0,0,0,.22);
+  --accent:#0071e3;--accent-fg:#ffffff;--accent-soft:rgba(0,113,227,.14);
   --good:#14825f;--good-soft:rgba(20,130,95,.12);
   --uncertain:#b67a17;--uncertain-soft:rgba(182,122,23,.14);
   --bad:#c53d35;--bad-soft:rgba(197,61,53,.13);
@@ -57,10 +58,6 @@ body{background:var(--bg-strong);color:var(--fg);font-family:var(--font-sans);fo
 /* ---- top command / context bar ---- */
 .topbar{height:40px;flex:none;display:flex;align-items:center;gap:14px;padding:0 12px;
   background:var(--topbar-bg);border-bottom:1px solid var(--border)}
-.brand{display:flex;align-items:center;gap:8px;font-weight:600;letter-spacing:.01em}
-.brand .mark{width:20px;height:20px;border-radius:5px;background:linear-gradient(135deg,var(--accent),#3f7fd6);
-  display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700}
-.brand small{color:var(--fg-subtle);font-weight:500}
 .cmd{flex:1;max-width:520px;display:flex;align-items:center;gap:8px;height:26px;padding:0 10px;
   background:var(--surface-muted);border:1px solid var(--border);border-radius:var(--radius-md);
   color:var(--fg-subtle);font-size:12.5px}
@@ -206,7 +203,7 @@ tr.r-low  .sevtag .b{background:var(--sev-low)}tr.r-low .sevtag{color:var(--fg-m
 .status{height:24px;flex:none;display:flex;align-items:center;gap:0;background:var(--rail-bg);
   border-top:1px solid var(--border);font-size:11.5px;color:var(--fg-subtle)}
 .status .cell{display:flex;align-items:center;gap:6px;padding:0 12px;height:100%;border-right:1px solid var(--border)}
-.status .cell.accent{background:var(--accent);color:var(--accent-fg);font-weight:600}
+.status .cell.accent{font-weight:600}
 .status .sp{flex:1}
 .status .cell .mono{color:var(--fg-muted)}
 
@@ -223,7 +220,6 @@ tr.r-low  .sevtag .b{background:var(--sev-low)}tr.r-low .sevtag{color:var(--fg-m
 
   <!-- ===== top command / context bar ===== -->
   <div class="topbar">
-    <div class="brand"><span class="mark">TC</span>Telecontrol <small>SCADA</small></div>
     <div class="cmd"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       Search tags, objects, commands…<span class="kbd">Ctrl K</span></div>
     <!-- Alarm state only. Identity/connection context (user·role, connection,
@@ -392,8 +388,8 @@ tr.r-low  .sevtag .b{background:var(--sev-low)}tr.r-low .sevtag{color:var(--fg-m
 </div>
 
 <div class="toggle">
-  <button onclick="t('dark')" id="b-dark" class="on">Dark (Qt default)</button>
-  <button onclick="t('light')" id="b-light">Light (web default)</button>
+  <button onclick="t('dark')" id="b-dark" class="on">Dark</button>
+  <button onclick="t('light')" id="b-light">Light</button>
 </div>
 <script>
 function t(m){document.documentElement.setAttribute('data-theme',m);

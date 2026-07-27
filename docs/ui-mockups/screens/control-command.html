@@ -6,29 +6,37 @@
 <title>Control command — Telecontrol SCADA (proposed)</title>
 <style>
 :root,[data-theme='dark']{
-  --font-sans:'Inter','Segoe UI Variable','Segoe UI',system-ui,sans-serif;
+  --font-sans:-apple-system,BlinkMacSystemFont,'Segoe UI Variable','Segoe UI',system-ui,sans-serif;
   --font-mono:'Cascadia Mono','Consolas',ui-monospace,monospace;
-  --bg:#07111b;--bg-elevated:#0b1623;--surface:#0f1925;--surface-muted:#152635;
-  --fg:#eef5fb;--fg-muted:#c3d0db;--fg-subtle:#8fa3b4;
-  --border:rgba(255,255,255,.12);--border-strong:rgba(255,255,255,.24);
-  --accent:#77b4f3;--accent-fg:#0b1623;--accent-soft:rgba(119,180,243,.15);
+  --bg:#1e1e1e;--bg-elevated:#1e1e1e;--surface:#171717;--surface-muted:#292929;
+  --fg:#e6e6e6;--fg-muted:#b4b4b4;--fg-subtle:#8c8c8c;
+  --border:rgba(255,255,255,.10);--border-strong:rgba(255,255,255,.18);
+  --accent:#0a84ff;--accent-fg:#ffffff;--accent-soft:rgba(10,132,255,.22);
   --good:#44c091;--good-soft:rgba(68,192,145,.16);--bad:#f07168;--bad-soft:rgba(240,113,104,.18);
   --uncertain:#e6b24b;--uncertain-soft:rgba(230,178,75,.18);--radius-md:6px;--radius-lg:8px;color-scheme:dark;}
 [data-theme='light']{
-  --bg:#f5f8fb;--bg-elevated:#f8fbfe;--surface:#fff;--surface-muted:#f1f5f9;
-  --fg:#111827;--fg-muted:#4b5b6c;--fg-subtle:#6b7b8d;
-  --border:rgba(15,23,42,.12);--border-strong:rgba(15,23,42,.22);
-  --accent:#0f6bff;--accent-fg:#fff;--accent-soft:rgba(15,107,255,.1);
+  --bg:#ececec;--bg-elevated:#ececec;--surface:#ffffff;--surface-muted:#f2f2f2;
+  --fg:#1d1d1f;--fg-muted:#4a4a4d;--fg-subtle:#6e6e73;
+  --border:rgba(0,0,0,.12);--border-strong:rgba(0,0,0,.22);
+  --accent:#0071e3;--accent-fg:#ffffff;--accent-soft:rgba(0,113,227,.14);
   --good:#14825f;--good-soft:rgba(20,130,95,.12);--bad:#c53d35;--bad-soft:rgba(197,61,53,.13);
   --uncertain:#b67a17;--uncertain-soft:rgba(182,122,23,.14);color-scheme:light;}
 *{box-sizing:border-box}html,body{margin:0;height:100%}
-body{background:#03080d;color:var(--fg);font-family:var(--font-sans);font-size:13px;
+body{background:var(--bg-strong);color:var(--fg);font-family:var(--font-sans);font-size:13px;
   display:flex;align-items:center;justify-content:center;gap:28px;flex-wrap:wrap;padding:28px;-webkit-font-smoothing:antialiased}
 .mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
-.stagelabel{position:absolute;top:-22px;left:2px;font-size:11px;color:#5b6b7b;font-family:var(--font-mono)}
+.stagelabel{position:absolute;top:-22px;left:2px;font-size:11px;color:var(--fg-subtle);font-family:var(--font-mono)}
 .dlg-wrap{position:relative}
-.dlg{width:400px;background:var(--surface);border:1px solid var(--border);border-radius:12px;
+.dlg{width:400px;background:var(--surface);border:1px solid var(--border);border-radius:10px;
   box-shadow:0 24px 60px rgba(0,0,0,.5);overflow:hidden}
+/* The OS draws the title bar, so neither dialog repeats its title in the
+   content area — docs/ux/dialogs.md §1. The head keeps the icon and the
+   subordinate detail line, which the title bar cannot carry. */
+.titlebar{height:28px;display:flex;align-items:center;justify-content:center;position:relative;
+  background:var(--bg-elevated);border-bottom:1px solid var(--border);
+  font-size:13px;font-weight:500;color:var(--fg-muted)}
+.titlebar .dots{position:absolute;left:9px;display:flex;gap:6px}
+.titlebar .dots i{width:11px;height:11px;border-radius:50%;background:var(--border-strong)}
 .dlg-head{padding:16px 18px 14px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start}
 .dlg-head .ic{width:34px;height:34px;border-radius:9px;background:var(--accent-soft);color:var(--accent);flex:none;
   display:flex;align-items:center;justify-content:center}
@@ -82,8 +90,9 @@ body{background:#03080d;color:var(--fg);font-family:var(--font-sans);font-size:1
 <!-- STAGE 1 — enter value -->
 <div class="dlg-wrap"><div class="stagelabel">Stage 1 — enter value</div>
 <div class="dlg">
+  <div class="titlebar"><span class="dots"><i></i><i></i><i></i></span>Температура нагрева</div>
   <div class="dlg-head"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
-    <div><div class="t">Температура нагрева</div><div class="p">ns=2;s=ЭСТРА-ПС.T &nbsp;·&nbsp; Manual input</div></div></div>
+    <div><div class="p">ns=2;s=ЭСТРА-ПС.T &nbsp;·&nbsp; Manual input</div></div></div>
   <div class="dlg-body">
     <div class="current"><span class="lb">Current</span><span class="val">103.8<span class="un"> °C</span></span><span class="qp">Good</span></div>
     <div class="fl">New value</div>
@@ -97,8 +106,9 @@ body{background:#03080d;color:var(--fg);font-family:var(--font-sans);font-size:1
 <!-- STAGE 2 — confirm control -->
 <div class="dlg-wrap"><div class="stagelabel">Stage 2 — confirm control command</div>
 <div class="dlg">
+  <div class="titlebar"><span class="dots"><i></i><i></i><i></i></span>Breaker Q1</div>
   <div class="dlg-head"><div class="ic" style="background:var(--uncertain-soft);color:var(--uncertain)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
-    <div><div class="t">Confirm control command</div><div class="p">ЭСТРА-ПС · ТУ · Breaker Q1 &nbsp;·&nbsp; ns=2;s=…Q1.Cmd</div></div></div>
+    <div><div class="p">ЭСТРА-ПС · ТУ · Breaker Q1 &nbsp;·&nbsp; ns=2;s=…Q1.Cmd</div></div></div>
   <div class="dlg-body">
     <div class="confirm-banner"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg></span>
       <div class="tx">You are about to send a <b>control command</b> to physical equipment. This action is logged against <b>root</b> and cannot be undone remotely.</div></div>
