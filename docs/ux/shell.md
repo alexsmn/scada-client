@@ -337,6 +337,17 @@ numbers. The IEC 60870 driver populates it at the ten sites that observe a PDU;
 the trace shows **Type ID, Cause and IOA as sortable columns** rather than text
 inside a message.
 
+**The APCI is decoded too.** The sequence numbers live in the APCI header, below
+the ASDU the log sites see, so the connection layer parses the raw APDU it is
+about to write or has just read (`iec_frame::ApplyApci`, over the library's own
+`ParseApdu`) and fills Format and the two sequence numbers. The trace shows them
+as **Fmt** and **N(S)/N(R)**: `2045/1602` for an I-frame, `—/1602` for an
+S-frame, blank for U-format and for decoded-ASDU rows that never saw the wire
+header. Zero is a valid sequence number, so a field the frame did not carry is
+left blank rather than shown as `0`. Frames the parser rejects — the -101 FT1.2
+frames that share the connection layer, or a truncated read — keep their raw
+octets and leave the APCI fields alone.
+
 The marker heuristic remains as a **fallback**, not as the primary path: a
 server older than `DeviceFrameEventType` still sends prose with `#`/`$`, and
 must keep producing a usable trace. A row without structured data shows its
@@ -347,8 +358,6 @@ Still missing against the mockup:
 
 - **No decode pane.** `RawData` crosses the wire, but nothing renders the
   APCI/ASDU tree or the hex beside it; the raw frame is still just a log line.
-- **N(S)/N(R) are carried but not shown** — the driver does not populate them
-  yet (the sequence numbers live in the APCI, below the ASDU the log sites see).
 - Eleven driver sites stay plain log lines by design: timer expiries and
   state-machine notes carry the direction markers but describe no PDU, and a
   trace filtered to real traffic is the point of the mode.

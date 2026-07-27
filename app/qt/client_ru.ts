@@ -16,6 +16,17 @@
         <source>IOA</source>
         <translation>Адрес объекта</translation>
     </message>
+    <!-- APCI columns (IEC 60870-5-104 §5.1). N(S)/N(R) is the standard's own
+         notation for the send/receive sequence numbers and is not translated,
+         like RX/TX below. -->
+    <message>
+        <source>Fmt</source>
+        <translation>Форм.</translation>
+    </message>
+    <message>
+        <source>N(S)/N(R)</source>
+        <translation>N(S)/N(R)</translation>
+    </message>
     <!-- Device log frame-trace mode (modules/watch). RX/TX are the
          protocol-standard direction abbreviations and are kept as-is
          in Russian, matching the drivers' own #RX:/$TX: markers. -->

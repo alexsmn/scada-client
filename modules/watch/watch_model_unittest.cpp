@@ -69,6 +69,19 @@ class WatchModelTest : public testing::Test {
     event_source_.DeliverFrame(event);
   }
 
+  void DeliverApci(std::int64_t seconds,
+                   std::string format,
+                   scada::Int32 send_sequence,
+                   scada::Int32 receive_sequence) {
+    scada::DeviceFrameEvent event;
+    event.base = MakeEvent(seconds, u"raw frame");
+    event.frame.direction = scada::DeviceFrame::kInbound;
+    event.frame.format = std::move(format);
+    event.frame.send_sequence = send_sequence;
+    event.frame.receive_sequence = receive_sequence;
+    event_source_.DeliverFrame(event);
+  }
+
   StaticNodeService node_service_;
   CapturingEventSource event_source_;
   WatchModel model_{WatchModelContext{.node_service_ = node_service_,
@@ -202,6 +215,42 @@ TEST_F(WatchModelTest, UnsetFrameFieldsRenderBlank) {
   EXPECT_EQ(model_.GetCellText(0, 5), u"");
   EXPECT_EQ(model_.GetCellText(0, 6), u"");
   EXPECT_EQ(model_.GetCellText(0, 3), u"RX");
+}
+
+
+// The APCI columns. N(S)/N(R) share a cell because that is how the standard
+// names them and how an engineer reads a stalled send window.
+TEST_F(WatchModelTest, ShowsApciFormatAndSequenceNumbers) {
+  DeliverApci(1, "I", 2045, 1602);
+
+  ASSERT_EQ(model_.GetRowCount(), 1);
+  EXPECT_EQ(model_.GetCellText(0, 7), u"I");
+  EXPECT_EQ(model_.GetCellText(0, 8), u"2045/1602");
+}
+
+// S-format acknowledges without sending, so N(S) does not exist. Showing "0/n"
+// would claim a sequence number the frame never carried — zero is itself a
+// valid N(S).
+TEST_F(WatchModelTest, SupervisoryFramesShowOnlyTheReceiveSequence) {
+  DeliverApci(1, "S", /*send=*/0, /*receive=*/1602);
+
+  ASSERT_EQ(model_.GetRowCount(), 1);
+  EXPECT_EQ(model_.GetCellText(0, 7), u"S");
+  EXPECT_EQ(model_.GetCellText(0, 8), u"\u2014/1602");
+}
+
+// U-format is unnumbered, and a decoded-ASDU row never saw the wire header at
+// all: both leave the sequence cell blank rather than inventing numbers.
+TEST_F(WatchModelTest, UnnumberedAndDecodedRowsHaveNoSequenceNumbers) {
+  DeliverApci(1, "U", 0, 0);
+  DeliverFrame(2, u"decoded ASDU", scada::DeviceFrame::kInbound, /*type_id=*/13);
+
+  ASSERT_EQ(model_.GetRowCount(), 2);
+  EXPECT_EQ(model_.GetCellText(0, 7), u"U");
+  EXPECT_EQ(model_.GetCellText(0, 8), u"");
+  // No APCI was parsed for the decoded row, so no format either.
+  EXPECT_EQ(model_.GetCellText(1, 7), u"");
+  EXPECT_EQ(model_.GetCellText(1, 8), u"");
 }
 
 }  // namespace

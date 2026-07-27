@@ -72,6 +72,8 @@ std::unique_ptr<UiView> WatchView::Init(const WindowDefinition& definition) {
       {4, Translate("Type ID"), 70, scada::aui::TableColumn::RIGHT},
       {5, Translate("Cause"), 60, scada::aui::TableColumn::RIGHT},
       {6, Translate("IOA"), 70, scada::aui::TableColumn::RIGHT},
+      {7, Translate("Fmt"), 45, scada::aui::TableColumn::LEFT},
+      {8, Translate("N(S)/N(R)"), 90, scada::aui::TableColumn::RIGHT},
       {1, Translate("Device"), 100, scada::aui::TableColumn::LEFT},
       {2, Translate("Event"), 400, scada::aui::TableColumn::LEFT},
   };

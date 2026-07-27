@@ -205,7 +205,7 @@ void WatchModel::SetTimeRange(const scada::RelativeTimeRange& time_range) {
 void WatchModel::SaveLog(const std::filesystem::path& path) {
   std::ofstream str(path);
   for (int i = 0; i < GetRowCount(); ++i) {
-    for (int j = 0; j < 7; j++) {
+    for (int j = 0; j < 9; j++) {
       std::string text = UtfConvert<char>(GetCellText(i, j));
       if (j)
         str << '\t';
@@ -282,6 +282,33 @@ void WatchModel::GetCell(scada::aui::TableCell& cell) {
       if (row.frame && row.frame->object_address != 0) {
         cell.text =
             UtfConvert<char16_t>(std::to_string(row.frame->object_address));
+      }
+      break;
+
+    // Link-layer format and the APCI sequence numbers, read from the frame's
+    // own octets at the connection layer. Shown together as N(S)/N(R) because
+    // that is how the standard names them and how an engineer reads a window
+    // stall. Blank when the frame carries no APCI — an -101 frame, or a
+    // decoded-ASDU row that never saw the wire header.
+    case 7:
+      if (row.frame && !row.frame->format.empty())
+        cell.text = UtfConvert<char16_t>(row.frame->format);
+      break;
+
+    case 8:
+      if (row.frame && !row.frame->format.empty()) {
+        const scada::DeviceFrame& f = *row.frame;
+        // S-format has no N(S) and U-format has neither; show only what the
+        // format actually carries rather than padding with zeros.
+        if (f.format == "I") {
+          cell.text = UtfConvert<char16_t>(std::to_string(f.send_sequence) +
+                                           "/" +
+                                           std::to_string(f.receive_sequence));
+        } else if (f.format == "S") {
+          cell.text =
+              UtfConvert<char16_t>("\u2014/" +
+                                   std::to_string(f.receive_sequence));
+        }
       }
       break;
   }
