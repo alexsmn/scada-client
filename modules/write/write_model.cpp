@@ -15,11 +15,6 @@
 #include <tuple>
 
 namespace {
-// Prepended to the control-command review for the operate stage of a
-// select-before-operate command (the device has accepted the select and is
-// ready to execute).
-const char16_t kSecondStagePrefix[] =
-    u"The remote device is ready to execute the command.\n\n";
 }  // namespace
 
 WriteModel::WriteModel(WriteContext&& context)
@@ -178,8 +173,14 @@ std::u16string WriteModel::GetConfirmationMessage(double value,
       spec_.GetValueString(value, {}, ValueFormat{FORMAT_UNITS});
 
   std::u16string message;
-  if (second_stage)
-    message += kSecondStagePrefix;
+  if (second_stage) {
+    // The operate stage of a select-before-operate command: the device has
+    // accepted the select and is waiting. This was a bare u"..." literal, so
+    // it could never be translated — it must go through Translate() like the
+    // rest of the review.
+    message += Translate("The remote device is ready to execute the command.");
+    message += u"\n\n";
+  }
   message += spec_.GetTitle().text;
   message += u"\n\n";
   message += Translate("Present:");

@@ -3,6 +3,26 @@
 <TS version="2.1" language="ru_RU">
 <context>
     <name></name>
+    <!-- modules/write/write_model.cpp — the control-command review an
+         operator answers before an irreversible field action
+         (docs/ux/principles.md §7). Goes through Translate(), so it
+         lives in the empty context and lupdate never sees it. -->
+    <message>
+        <source>The remote device is ready to execute the command.</source>
+        <translation>Устройство готово выполнить команду.</translation>
+    </message>
+    <message>
+        <source>Present:</source>
+        <translation>Текущее:</translation>
+    </message>
+    <message>
+        <source>Command:</source>
+        <translation>Команда:</translation>
+    </message>
+    <message>
+        <source>This control command is sent to physical equipment and cannot be undone remotely. Send it?</source>
+        <translation>Эта команда управления передаётся на оборудование и не может быть отменена дистанционно. Отправить?</translation>
+    </message>
     <message>
         <source>Search tags, objects, commands…</source>
         <translation>Поиск объектов, сигналов, команд…</translation>
