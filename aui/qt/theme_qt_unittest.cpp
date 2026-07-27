@@ -9,6 +9,7 @@
 #include <QStyle>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cstdlib>
 
 namespace scada::aui {
@@ -46,14 +47,48 @@ TEST(ThemeQtTest, ThemesAreDistinct) {
   EXPECT_NE(dark.bg, hc.bg);
   EXPECT_NE(light.bg, hc.bg);
   EXPECT_NE(dark.accent, light.accent);
+}
 
-  // LEGACY TOKEN. `rail_bg` is a charcoal-in-every-theme value from the
-  // browser-styled reshell. Under the native direction the activity bar and
-  // status strip take QPalette::Window like any other chrome, so this token is
-  // slated for removal with backlog P6.3 — asserted here only to describe the
-  // table as it still stands, not as a property worth preserving.
-  EXPECT_NE(light.rail_bg, light.bg);
-  EXPECT_TRUE(light.rail_bg.lightness() < light.bg.lightness());
+// The activity bar and status strip are ordinary chrome: they take the window
+// colour, in every theme. `rail_bg` used to be a charcoal-in-every-theme value
+// from the browser-styled reshell — a near-black strip down a light window,
+// which is exactly what made the client read as a web page. It survives only as
+// a vestigial alias until backlog P6.3 removes it, and `fg_on_dark` with it:
+// with no dark rail left, rail text is just ordinary text.
+TEST(ThemeQtTest, RailIsOrdinaryChromeInEveryTheme) {
+  for (const Theme theme :
+       {Theme::kDark, Theme::kLight, Theme::kHighContrast}) {
+    const ThemeTokens& t = GetThemeTokens(theme);
+    EXPECT_EQ(t.rail_bg, t.bg) << "theme " << static_cast<int>(theme);
+    EXPECT_EQ(t.fg_on_dark, t.fg) << "theme " << static_cast<int>(theme);
+  }
+}
+
+// The chrome carries no hue of its own — colour is reserved for process
+// semantics (severity, quality, equipment state), which is what lets an
+// operator read an alarm tint as meaning something. A tinted window competes
+// with that, and it is also the clearest tell that an application is painting
+// its own idea of light/dark instead of the desktop's.
+//
+// The bar is *imperceptible* hue, not arithmetically zero: the shipped greys
+// are the platform ones and several carry a 2-5/255 channel spread (`#1d1d1f`,
+// `#6e6e73`). The retired blue-tinted values were 20-32 apart (`#07111b` 20,
+// `#111827` 22, `#0d1a27` 26, `#152635` 32), so a threshold of 8 separates the
+// two cases with room on both sides rather than pinning exact hexes here.
+TEST(ThemeQtTest, ChromeSurfacesAndTextAreNeutral) {
+  constexpr int kMaxChannelSpread = 8;
+  for (const Theme theme :
+       {Theme::kDark, Theme::kLight, Theme::kHighContrast}) {
+    const ThemeTokens& t = GetThemeTokens(theme);
+    for (const QColor& c :
+         {t.bg, t.bg_elevated, t.surface, t.surface_muted, t.rail_bg,
+          t.topbar_bg, t.fg, t.fg_muted, t.fg_subtle, t.fg_on_dark}) {
+      const int spread = std::max({c.red(), c.green(), c.blue()}) -
+                         std::min({c.red(), c.green(), c.blue()});
+      EXPECT_LE(spread, kMaxChannelSpread)
+          << c.name().toStdString() << " in theme " << static_cast<int>(theme);
+    }
+  }
 }
 
 // The generated palette exposes the accent as the selection highlight, so
@@ -304,7 +339,6 @@ TEST(ThemeQtTest, ApplyThemePaletteOnlyInstallsNoStyleSheet) {
             GetThemeTokens(Theme::kDark).bg);
   EXPECT_TRUE(qApp->styleSheet().isEmpty());
 }
-
 
 }  // namespace
 }  // namespace scada::aui

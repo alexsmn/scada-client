@@ -576,9 +576,7 @@ void GraphView::ChooseGraphColor() {
 }
 
 void GraphView::SetGraphColor(scada::aui::Color color) {
-  QPalette palette = graph_->palette();
-  palette.setColor(graph_->backgroundRole(), color.qcolor());
-  graph_->setPalette(palette);
+  graph_->SetCanvasColor(color.qcolor());
 }
 
 void GraphView::OnSelectedCursorChanged() {

@@ -22,24 +22,33 @@ namespace {
 // tints) carry an alpha derived from the documented opacity percentage.
 ThemeTokens MakeDarkTokens() {
   ThemeTokens t;
-  // Surfaces.
-  t.bg = QColor(0x07, 0x11, 0x1b);
-  t.bg_elevated = QColor(0x0b, 0x16, 0x23);
-  t.surface = QColor(0x0f, 0x19, 0x25);
-  t.surface_muted = QColor(0x15, 0x26, 0x35);
-  t.rail_bg = QColor(0x06, 0x11, 0x1b);
-  t.topbar_bg = QColor(0x0b, 0x16, 0x23);
+  // Surfaces. Neutral greys, not the blue-tinted charcoals this theme started
+  // with: under the native direction the chrome must not carry a hue of its
+  // own, because hue is reserved for process semantics (severity, quality,
+  // equipment state) — the tokens further down, which stay fixed. The values
+  // match the desktop dark appearances the client sits inside and the mockups
+  // in client/docs/ui-mockups/screens/.
+  t.bg = QColor(0x1e, 0x1e, 0x1e);
+  t.bg_elevated = QColor(0x1e, 0x1e, 0x1e);
+  t.surface = QColor(0x17, 0x17, 0x17);
+  t.surface_muted = QColor(0x29, 0x29, 0x29);
+  // The charcoal rail is retired: the activity bar and status strip are
+  // ordinary chrome and take the window colour like everything else.
+  t.rail_bg = QColor(0x1e, 0x1e, 0x1e);
+  t.topbar_bg = QColor(0x1e, 0x1e, 0x1e);
   // Text.
-  t.fg = QColor(0xee, 0xf5, 0xfb);
-  t.fg_muted = QColor(0xc3, 0xd0, 0xdb);
-  t.fg_subtle = QColor(0x8f, 0xa3, 0xb4);
-  t.fg_on_dark = QColor(0xee, 0xf5, 0xfb);
-  // Lines: rgba(255,255,255,.12) / .24.
-  t.border = QColor(255, 255, 255, 31);
-  t.border_strong = QColor(255, 255, 255, 61);
+  t.fg = QColor(0xe6, 0xe6, 0xe6);
+  t.fg_muted = QColor(0xb4, 0xb4, 0xb4);
+  t.fg_subtle = QColor(0x8c, 0x8c, 0x8c);
+  t.fg_on_dark = QColor(0xe6, 0xe6, 0xe6);
+  // Lines: rgba(255,255,255,.10) / .18.
+  t.border = QColor(255, 255, 255, 26);
+  t.border_strong = QColor(255, 255, 255, 46);
   // Accent and quality.
   t.accent = QColor(0x77, 0xb4, 0xf3);
-  t.accent_fg = QColor(0x0b, 0x16, 0x23);
+  // Text on the accent fill. The accent is a pale blue, so this stays dark —
+  // neutral now, matching the window rather than the retired navy.
+  t.accent_fg = QColor(0x1e, 0x1e, 0x1e);
   t.accent_soft = QColor(119, 180, 243, 38);  // rgba(...,.15)
   t.good = QColor(0x44, 0xc0, 0x91);
   t.uncertain = QColor(0xe6, 0xb2, 0x4b);
@@ -59,19 +68,29 @@ ThemeTokens MakeDarkTokens() {
 
 ThemeTokens MakeLightTokens() {
   ThemeTokens t;
-  t.bg = QColor(0xf5, 0xf8, 0xfb);
-  t.bg_elevated = QColor(0xf8, 0xfb, 0xfe);
+  // Surfaces. Neutral greys for the same reason as the dark table above: the
+  // chrome carries no hue of its own, so hue means process semantics and
+  // nothing else. These replace the faintly blue whites this theme started
+  // with.
+  t.bg = QColor(0xec, 0xec, 0xec);
+  t.bg_elevated = QColor(0xec, 0xec, 0xec);
   t.surface = QColor(0xff, 0xff, 0xff);
-  t.surface_muted = QColor(0xf1, 0xf5, 0xf9);
-  t.rail_bg = QColor(0x0d, 0x1a, 0x27);
-  t.topbar_bg = QColor(0xff, 0xff, 0xff);
-  t.fg = QColor(0x11, 0x18, 0x27);
-  t.fg_muted = QColor(0x4b, 0x5b, 0x6c);
-  t.fg_subtle = QColor(0x6b, 0x7b, 0x8d);
-  t.fg_on_dark = QColor(0xee, 0xf5, 0xfb);
-  // Lines: rgba(15,23,42,.12) / .22.
-  t.border = QColor(15, 23, 42, 31);
-  t.border_strong = QColor(15, 23, 42, 56);
+  t.surface_muted = QColor(0xf2, 0xf2, 0xf2);
+  // The charcoal rail is retired here too — this used to be a near-black
+  // #0d1a27 sitting in a light window, the single most conspicuously
+  // non-native thing the client drew.
+  t.rail_bg = QColor(0xec, 0xec, 0xec);
+  t.topbar_bg = QColor(0xec, 0xec, 0xec);
+  // Text.
+  t.fg = QColor(0x1d, 0x1d, 0x1f);
+  t.fg_muted = QColor(0x4a, 0x4a, 0x4d);
+  t.fg_subtle = QColor(0x6e, 0x6e, 0x73);
+  // With the rail no longer charcoal, "text on the rail" is just the ordinary
+  // foreground; a light value here would now be invisible.
+  t.fg_on_dark = QColor(0x1d, 0x1d, 0x1f);
+  // Lines: rgba(0,0,0,.12) / .22.
+  t.border = QColor(0, 0, 0, 31);
+  t.border_strong = QColor(0, 0, 0, 56);
   t.accent = QColor(0x0f, 0x6b, 0xff);
   t.accent_fg = QColor(0xff, 0xff, 0xff);
   t.accent_soft = QColor(15, 107, 255, 26);  // rgba(...,.1)
@@ -407,8 +426,9 @@ QString BuildThemeStyleSheet(const ThemeTokens& t) {
   //                          idiom; native tabs are what desktop users expect.
   //   QStatusBar          -> painted itself charcoal in every theme, the most
   //                          conspicuous non-native cue in the window.
-  //   QPushButton         -> Button/ButtonText, and `:default` is a style state.
-  //   Inputs/combos       -> Base/Text/Highlight; native focus rings are also
+  //   QPushButton         -> Button/ButtonText, and `:default` is a style
+  //   state. Inputs/combos       -> Base/Text/Highlight; native focus rings are
+  //   also
   //                          the ones the OS accessibility settings affect.
   //   QScrollBar          -> fixed 10px thin bars ignored platform metrics and
   //                          macOS overlay-scrollbar behaviour.
@@ -423,8 +443,9 @@ QString BuildThemeStyleSheet(const ThemeTokens& t) {
   // token. It is currently unused — the control/write surfaces that need it
   // have not been reshelled yet — but it is the sanctioned pattern rather than
   // dead styling, and it keeps the semantic-token seam honest.
-  return QStringLiteral("QPushButton[role=\"danger\"]{background:%1;color:%2;"
-                        "border-color:%1;}")
+  return QStringLiteral(
+             "QPushButton[role=\"danger\"]{background:%1;color:%2;"
+             "border-color:%1;}")
       .arg(Css(t.bad), Css(t.accent_fg));
 }
 

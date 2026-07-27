@@ -31,10 +31,21 @@ struct GraphViewLoader {
   }
 
   void ReadGraph(const WindowItem& item) {
-    if (std::string_view color = item.GetString("bk_color"); !color.empty()) {
-      graph_view_.SetGraphColor(
-          scada::aui::StringToColor(color).native_color());
-    }
+    std::string_view color = item.GetString("bk_color");
+    if (color.empty())
+      return;
+
+    // Profiles saved before the canvas followed QPalette::Base carry a
+    // `bk_color` that was written unconditionally on every save, so a plain
+    // white value is almost certainly the old hardwired canvas rather than a
+    // deliberate choice — restoring it would pin every existing view to white
+    // on a dark desktop. Drop it and let the palette decide; any other value
+    // could only have come from the operator's own colour pick, so honour it.
+    const scada::aui::Color loaded_color = scada::aui::StringToColor(color);
+    if (loaded_color.rgba() == scada::aui::ColorCode::White)
+      return;
+
+    graph_view_.SetGraphColor(loaded_color);
   }
 
   void ReadPane(const WindowItem& item) {

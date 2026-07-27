@@ -22,6 +22,7 @@
 
 #if defined(UI_QT)
 #include <QColor>
+#include <QEvent>
 #include <QPainter>
 #include <QPalette>
 #include <QString>
@@ -73,14 +74,12 @@ int GetPercentReady(const TimedDataSpec& timed_data) {
 }
 
 #if defined(UI_QT)
-// Maps the active reshell severity theme to the palette theme whose design
-// tokens drive the chart chrome. Returns nullopt under the legacy theme, which
-// keeps the historical white chart so the default look is unchanged (the chart
-// chrome is opt-in like the rest of the reshell). See the UX design language at
-// client/docs/ux/design-language.md.
-// The active theme's tokens, or null in the legacy look. Resolved through
-// ActiveThemeTokens() so the chart follows the OS palette under
-// Theme::kSystem instead of a baked light/dark table.
+// The active theme's tokens that drive the chart chrome, or null under the
+// legacy look — where the canvas simply follows QPalette::Base and therefore
+// the host OS appearance, like any other data surface. Resolved through
+// ActiveThemeTokens() so that under Theme::kSystem the tokens are themselves
+// derived from the live palette rather than from a baked light/dark table. See
+// the UX design language at client/docs/ux/design-language.md.
 const scada::aui::ThemeTokens* ReshellChartTokens() {
   if (scada::aui::GetSeverityTheme() == scada::aui::SeverityTheme::kLegacy)
     return nullptr;
@@ -490,25 +489,63 @@ void MetrixGraph::MetrixLine::OnDataSourceDeleted() {
 MetrixGraph::MetrixGraph(MetrixGraphContext&& context)
     : MetrixGraphContext{std::move(context)} {
 #if defined(UI_QT)
-  // The base Graph hardwires a white plot background (its palette background
-  // role is set to Qt::white). Under the reshell themes the trend must instead
-  // read as a dark control-room surface: override the palette background with
-  // the theme's `surface` token so every derived colour follows. background(),
-  // text and grid pens all resolve from palette().color(backgroundRole()) in
-  // the graph_qt base, so this single override themes the fill, the axis text
-  // and the grid at once without touching the submodule. Gated on the opt-in
-  // theme so the legacy chart is untouched.
-  if (const scada::aui::ThemeTokens* tokens = ReshellChartTokens()) {
-    QPalette themed_palette = palette();
-    themed_palette.setColor(backgroundRole(), tokens->surface);
-    setPalette(themed_palette);
-  }
+  ApplyChartPalette();
 #endif
 
   QObject::connect(&update_data_timer_, &QTimer::timeout,
                    [this] { UpdateData(); });
   update_data_timer_.start(50);
 }
+
+#if defined(UI_QT)
+
+void MetrixGraph::changeEvent(QEvent* event) {
+  Graph::changeEvent(event);
+
+  // An OS appearance switch re-derives the theme tokens, but a canvas colour we
+  // set ourselves is a resolved palette entry that Qt will not update for us —
+  // so re-apply it. ApplyChartPalette() returns early once the canvas already
+  // carries the right colour, so the setPalette() inside it cannot recurse
+  // through the QEvent::PaletteChange it emits.
+  if (event->type() == QEvent::ApplicationPaletteChange ||
+      event->type() == QEvent::PaletteChange) {
+    ApplyChartPalette();
+  }
+}
+
+void MetrixGraph::SetCanvasColor(const QColor& color) {
+  canvas_color_overridden_ = true;
+
+  QPalette pinned_palette = palette();
+  pinned_palette.setColor(backgroundRole(), color);
+  setPalette(pinned_palette);
+}
+
+void MetrixGraph::ApplyChartPalette() {
+  // The base Graph canvas takes QPalette::Base, so by default the chart follows
+  // the host OS appearance like any other data surface. An *explicit* theme
+  // (Dark/Light/High contrast, as opposed to Theme::kSystem) is the authority
+  // over the platform, so paint its `surface` token onto the background role
+  // instead. background_color(), text_color() and grid_pen() all resolve from
+  // palette().color(backgroundRole()) in the graph_qt base, so this single
+  // override themes the fill, the axis text and the grid at once without
+  // touching the submodule. Under kSystem the token is itself derived from the
+  // live QPalette, which makes this a no-op.
+  //
+  // An operator-pinned canvas outranks both: they asked for that exact colour.
+  if (canvas_color_overridden_)
+    return;
+
+  const scada::aui::ThemeTokens* tokens = ReshellChartTokens();
+  if (!tokens || palette().color(backgroundRole()) == tokens->surface)
+    return;
+
+  QPalette themed_palette = palette();
+  themed_palette.setColor(backgroundRole(), tokens->surface);
+  setPalette(themed_palette);
+}
+
+#endif  // defined(UI_QT)
 
 void MetrixGraph::UpdateCurBox() {
 #if defined(UI_QT)

@@ -226,6 +226,74 @@ TEST_F(GraphViewTest, NewColorSkipsLowContrastColorOnDarkBackground) {
   EXPECT_GT(color.red() + color.green() + color.blue(), 120);
 }
 
+namespace {
+
+// Returns the persisted canvas colour, or nullopt when the view did not write
+// one — which is how "this chart follows the palette" is represented on disk.
+std::optional<std::string> SavedCanvasColor(const WindowDefinition& def) {
+  for (const auto& item : def.items) {
+    if (!item.name_is("Graph"))
+      continue;
+    if (std::string_view color = item.GetString("bk_color"); !color.empty())
+      return std::string{color};
+  }
+  return std::nullopt;
+}
+
+}  // namespace
+
+// A canvas that merely follows QPalette::Base must not be persisted: the
+// previous code wrote `bk_color` on every save, so the first save froze the
+// view to whatever appearance it happened to be saved under.
+TEST_F(GraphViewTest, SaveOmitsCanvasColorThatFollowsThePalette) {
+  WindowDefinition def;
+  graph_view_.Save(def);
+
+  EXPECT_EQ(SavedCanvasColor(def), std::nullopt);
+}
+
+TEST_F(GraphViewTest, SavePersistsOperatorChosenCanvasColor) {
+  graph_view_.SetGraphColor(QColor{20, 30, 40});
+
+  WindowDefinition def;
+  graph_view_.Save(def);
+
+  ASSERT_TRUE(SavedCanvasColor(def).has_value());
+  EXPECT_EQ(scada::aui::StringToColor(*SavedCanvasColor(def)).qcolor(),
+            QColor(20, 30, 40));
+}
+
+// Legacy profiles carry a `bk_color` of white that nobody chose — it is the old
+// hardwired canvas. Restoring it would pin every existing view to white on a
+// dark desktop, so it is dropped and the palette decides.
+TEST_F(GraphViewTest, LegacyWhiteCanvasColorIsNotRestored) {
+  WindowDefinition loaded;
+  loaded.AddItem("Graph").SetString(
+      "bk_color", scada::aui::ColorToString(QColor{Qt::white}));
+  GraphView view{env_.MakeControllerContext()};
+  std::unique_ptr<UiView> ui_view = view.Init(loaded);
+
+  WindowDefinition saved;
+  view.Save(saved);
+
+  EXPECT_EQ(SavedCanvasColor(saved), std::nullopt);
+}
+
+TEST_F(GraphViewTest, DeliberateCanvasColorSurvivesALoadSaveRoundTrip) {
+  WindowDefinition loaded;
+  loaded.AddItem("Graph").SetString(
+      "bk_color", scada::aui::ColorToString(QColor{10, 12, 16}));
+  GraphView view{env_.MakeControllerContext()};
+  std::unique_ptr<UiView> ui_view = view.Init(loaded);
+
+  WindowDefinition saved;
+  view.Save(saved);
+
+  ASSERT_TRUE(SavedCanvasColor(saved).has_value());
+  EXPECT_EQ(scada::aui::StringToColor(*SavedCanvasColor(saved)).qcolor(),
+            QColor(10, 12, 16));
+}
+
 TEST(MetrixDataSourceTest, AppliesEarliestTimestampFromHistoryRead) {
   TestExecutor executor;
   StrictMock<scada::MockHistoryService> history_service;

@@ -32,14 +32,20 @@ struct ThemeTokens {
   QColor bg_elevated;    // sidebars, tab bar, dialog footers
   QColor surface;        // panels, cards, dialogs, input views
   QColor surface_muted;  // table headers, inset fields, buttons
-  QColor rail_bg;        // activity bar & status strip (charcoal in all themes)
-  QColor topbar_bg;      // top context bar / menu bar
+  // Vestigial. The charcoal rail is retired: the activity bar and status strip
+  // are ordinary chrome, so this equals `bg` in every theme and in the
+  // system-derived table. Kept only so its consumers need not change ahead of
+  // backlog P6.3, which removes it; do not reintroduce a distinct value.
+  QColor rail_bg;    // activity bar & status strip
+  QColor topbar_bg;  // top context bar / menu bar
 
   // Text.
-  QColor fg;          // primary text
-  QColor fg_muted;    // secondary text
-  QColor fg_subtle;   // labels, captions, placeholders
-  QColor fg_on_dark;  // text that always sits on the charcoal rail
+  QColor fg;         // primary text
+  QColor fg_muted;   // secondary text
+  QColor fg_subtle;  // labels, captions, placeholders
+  // Vestigial, like `rail_bg`: with no charcoal rail left to sit on, this is
+  // just `fg`. Retired together with `rail_bg`.
+  QColor fg_on_dark;
 
   // Lines.
   QColor border;         // hairlines

@@ -140,6 +140,33 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
 
   void UpdateData();
 
+#if defined(UI_QT)
+  // Pins the plot canvas to an operator-chosen colour. Unlike the default
+  // canvas — which is QPalette::Base and therefore follows the host OS
+  // appearance — a colour set here survives both an OS light/dark switch and
+  // the theme tokens, because it was asked for deliberately.
+  void SetCanvasColor(const QColor& color);
+
+  // Whether SetCanvasColor() pinned the canvas. Only an overridden canvas is
+  // worth persisting into the window definition; a canvas that merely follows
+  // the palette must not be written out, or it would freeze the appearance the
+  // profile happened to be saved under.
+  bool canvas_color_overridden() const { return canvas_color_overridden_; }
+
+  // QWidget
+  virtual void changeEvent(QEvent* event) override;
+#endif
+
  private:
+#if defined(UI_QT)
+  // Applies the explicit theme's canvas colour, if a theme override is active
+  // and the operator has not pinned a colour of their own. A no-op when the
+  // canvas already carries the right colour, so it is safe to call from
+  // changeEvent().
+  void ApplyChartPalette();
+
+  bool canvas_color_overridden_ = false;
+#endif
+
   QTimer update_data_timer_;
 };

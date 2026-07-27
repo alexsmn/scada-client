@@ -32,9 +32,16 @@ struct GraphViewSaver {
 
     SaveTimeRange(definition_, graph_view_.GetTimeRange());
 
-    definition_.AddItem("Graph").SetString(
-        "bk_color", scada::aui::ColorToString(
-                        graph_.palette().color(graph_.backgroundRole())));
+    // Only an operator-pinned canvas colour is persisted. A canvas that simply
+    // follows QPalette::Base must not be written out: the stored value would be
+    // whatever appearance the profile happened to be saved under, and the
+    // loader would then pin the chart to it forever — the view would stop
+    // following the OS the first time it was saved.
+    if (graph_.canvas_color_overridden()) {
+      definition_.AddItem("Graph").SetString(
+          "bk_color", scada::aui::ColorToString(
+                          graph_.palette().color(graph_.backgroundRole())));
+    }
   }
 
   void SavePane(const GraphPane& pane) {

@@ -41,6 +41,7 @@ shade derived from `Base`.
 | `--bg` | `QPalette::Window` |
 | `--bg-elevated`, `--topbar-bg` | `QPalette::Window` (let the style differentiate toolbars/docks) |
 | `--surface` | `QPalette::Base` |
+| trend plot canvas | `QPalette::Base` — a chart canvas is a data surface like a table or tree view, **not** a tinted signal surface |
 | `--surface-muted` | `QPalette::AlternateBase` / `QPalette::Button` |
 | `--rail-bg` | `QPalette::Window` — **the charcoal rail is retired**; a native toolbar does not repaint its background |
 | `--fg` | `QPalette::WindowText` / `QPalette::Text` |
@@ -76,7 +77,23 @@ shade derived from `Base`.
 The operator can switch at runtime; the choice persists in the `Profile`.
 Switching must not require a restart, which means every themed surface has to
 react to `QEvent::ApplicationPaletteChange` — today only `Tree`, `Table` and
-the graph do (`aui/qt/tree.cpp`, `aui/qt/table.cpp`).
+the trend chart do (`aui/qt/tree.cpp`, `aui/qt/table.cpp`,
+`third_party/graph_qt/graph.cpp` + `modules/graph/metrix_graph.cpp`). Every
+other surface still needs converting.
+
+Two things the chart conversion showed, both of which generalise:
+
+- **Children that inherit the palette are repainted for free.** `GraphPane`,
+  `GraphPlot` and `GraphAxis` all resolve their colours from `Graph` rather than
+  from their own palettes, yet they still repaint correctly, because Qt
+  propagates a palette change down to every child that has not set one of its
+  own. Give a child its own palette and that stops — which is what
+  `GraphRenderingTest.PaletteChangeRepaintsChildren` guards.
+- **A colour written with `setPalette()` does not follow the OS afterwards** —
+  it is a resolved entry, so the widget stops inheriting that role. Anything
+  that paints a token onto a role (as the explicit Dark/Light themes do) has to
+  re-apply it on `ApplicationPaletteChange`, and must first check whether the
+  operator pinned a colour of their own.
 
 ## 2. Colour tokens
 
@@ -84,26 +101,46 @@ Semantic tokens only — **components never hard-code hex**. Grouped by role.
 
 ### Surfaces & text
 
+**The chrome is neutral grey in every theme, deliberately.** It used to be
+blue-tinted throughout — charcoals like `#07111b` … `#152635` in dark, faint
+blue whites like `#f5f8fb` in light. Hue in the chrome competes with the only
+thing allowed to carry hue, process semantics, and a tinted window is the tell
+that an application is painting its own idea of light/dark rather than sitting
+inside the desktop's. Every surface and text token below is fully desaturated,
+and `ThemeQtTest.ChromeSurfacesAndTextAreNeutral` keeps it that way. The values
+match the mockups in [`../ui-mockups/screens/`](../ui-mockups/screens/).
+
 | Token | Dark | Light | Role |
 |---|---|---|---|
-| `--bg` | `#07111b` | `#f5f8fb` | app background |
-| `--bg-elevated` | `#0b1623` | `#f8fbfe` | sidebars, tab bar, dialog footers |
-| `--surface` | `#0f1925` | `#ffffff` | panels, cards, dialogs |
-| `--surface-muted` | `#152635` | `#f1f5f9` | table headers, inset fields |
-| `--rail-bg` | `#06111b` | `#0d1a27` | Activity bar & status strip (charcoal in **both** themes) |
-| `--topbar-bg` | `#0b1623` | `#ffffff` | top context bar |
-| `--fg` | `#eef5fb` | `#111827` | primary text |
-| `--fg-muted` | `#c3d0db` | `#4b5b6c` | secondary text |
-| `--fg-subtle` | `#8fa3b4` | `#6b7b8d` | labels, captions |
-| `--border` | `rgba(255,255,255,.12)` | `rgba(15,23,42,.12)` | hairlines |
-| `--border-strong` | `rgba(255,255,255,.24)` | `rgba(15,23,42,.22)` | field/control borders |
+| `--bg` | `#1e1e1e` | `#ececec` | app background |
+| `--bg-elevated` | `#1e1e1e` | `#ececec` | sidebars, tab bar, dialog footers |
+| `--surface` | `#171717` | `#ffffff` | panels, cards, dialogs |
+| `--surface-muted` | `#292929` | `#f2f2f2` | table headers, inset fields |
+| `--rail-bg` | `#1e1e1e` | `#ececec` | Activity bar & status strip — now just `--bg`; see Retired below |
+| `--topbar-bg` | `#1e1e1e` | `#ececec` | top context bar |
+| `--fg` | `#e6e6e6` | `#1d1d1f` | primary text |
+| `--fg-muted` | `#b4b4b4` | `#4a4a4d` | secondary text |
+| `--fg-subtle` | `#8c8c8c` | `#6e6e73` | labels, captions |
+| `--border` | `rgba(255,255,255,.10)` | `rgba(0,0,0,.12)` | hairlines |
+| `--border-strong` | `rgba(255,255,255,.18)` | `rgba(0,0,0,.22)` | field/control borders |
 
 > **Retired.** The charcoal-rail-on-light-workspace signature is dropped. A
 > toolbar and a status bar that repaint themselves dark while the rest of the
 > window follows the OS is the most conspicuously non-native thing the client
 > does, and it is exactly what an operator reads as "this is a web page in a
 > window". Under §9 the activity bar and status strip take
-> `QPalette::Window` like any other native chrome, in every theme.
+> `QPalette::Window` like any other native chrome, in every theme. `--rail-bg`
+> and its companion `--fg-on-dark` are now aliases of `--bg` and `--fg`; they
+> survive only until backlog P6.3 deletes them, and
+> `ThemeQtTest.RailIsOrdinaryChromeInEveryTheme` stops a distinct value from
+> creeping back.
+
+> **Accent is not covered by this.** `--accent` stays `#77b4f3` / `#0f6bff`
+> rather than the mockups' `#0a84ff` / `#0071e3`. Under the System theme the
+> accent comes from `QPalette::Highlight` — the operator's own desktop accent —
+> so the value in these two explicit tables is only a stand-in for a machine
+> with no preference, and matching one platform's blue exactly would be a false
+> precision.
 
 ### Accent & quality
 
