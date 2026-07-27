@@ -632,17 +632,18 @@ void MainWindow::SetPaneMode(PaneModeId id) {
         OpenPaneSync(*info, /*activate=*/false);
     }
 
-    // Front the mode's own subject, not whichever pane Qt tabified last.
-    if (!mode.pane_types.empty()) {
-      if (OpenedViewInterface* primary =
-              FindViewByType(mode.pane_types.front())) {
-        ActivateView(*primary);
-      }
-    }
+    FrontPrimaryPane(mode);
   }
 
   GetPrefs().pane_mode = std::string{mode.key};
   RefreshPaneModeMarker();
+}
+
+void MainWindow::FrontPrimaryPane(const PaneMode& mode) {
+  if (mode.pane_types.empty())
+    return;
+  if (OpenedViewInterface* primary = FindViewByType(mode.pane_types.front()))
+    ActivateView(*primary);
 }
 
 void MainWindow::ApplyPaneModeToCurrentWindow() {
@@ -1052,6 +1053,14 @@ void MainWindow::OpenPage(const Page& page) {
   }
 
   TabifySpecialistDocks();
+
+  // The restored dock blob carries whichever pane was fronted when the page was
+  // last saved, which need not be the mode's subject — a page saved while
+  // Portfolio was on top reopens showing Portfolio, not Objects. Re-assert it
+  // after TabifySpecialistDocks, which raises the Inspector and so must not be
+  // the last thing to touch dock stacking.
+  if (activity_bar_)
+    FrontPrimaryPane(GetPaneMode(ActivePaneMode()));
 
   // Every page switch funnels through here — the Pages menu, the Pages pane,
   // the page commands, and the startup restore — so this is the one place the

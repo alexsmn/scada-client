@@ -145,6 +145,11 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // Re-derives the rail's active marker and per-mode availability from the
   // panes that are actually open, so the marker cannot go stale.
   void RefreshPaneModeMarker();
+  // Raises the mode's own subject — the first pane it declares — above its
+  // tabified siblings. Needed on a mode switch, where Qt would otherwise leave
+  // whichever dock it tabified last on top, and on a page open, where the
+  // restored dock blob carries the previously-fronted tab.
+  void FrontPrimaryPane(const PaneMode& mode);
   // Opens an address-space tag (from the palette) in a table view.
   void OpenTag(const scada::NodeId& node_id, const std::u16string& title);
   // Opens the Ctrl-K command palette over every registered command, optionally
