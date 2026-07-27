@@ -5,6 +5,10 @@
 #include "modules/multi_create/multi_create_model.h"
 #include "ui_multi_create_dialog.h"
 
+#include <QPushButton>
+
+#include <QDialogButtonBox>
+
 class MultiCreateDialog final : public QDialog {
   Q_OBJECT
 
@@ -30,6 +34,9 @@ MultiCreateDialog::MultiCreateDialog(std::unique_ptr<MultiCreateModel> model,
                                      QWidget* parent)
     : QDialog{parent}, model_{std::move(model)} {
   ui.setupUi(this);
+
+  // Name the action rather than the assent (docs/ux/dialogs.md §3).
+  ui.buttonBox->button(QDialogButtonBox::Ok)->setText(tr("Create"));
 
   SetAutoName();
   connect(ui.namePrefixLineEdit, &QLineEdit::textEdited,

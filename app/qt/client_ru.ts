@@ -1594,6 +1594,12 @@
 </context>
 <context>
     <name>AddFavouritesDialog</name>
+        <!-- Accept button: names the action, not the assent
+             (docs/ux/dialogs.md §3). -->
+    <message>
+        <source>Add</source>
+        <translation>Добавить</translation>
+    </message>
     <message>
         <location filename="../../modules/favourites/qt/add_favourites_dialog.cpp" line="21"/>
         <source>(No Folder)</source>
@@ -1665,6 +1671,12 @@
 </context>
 <context>
     <name>CreateServiceItemDialog</name>
+        <!-- Accept button: names the action, not the assent
+             (docs/ux/dialogs.md §3). -->
+    <message>
+        <source>Create</source>
+        <translation>Создать</translation>
+    </message>
     <message>
         <location filename="../../modules/create_service_item/qt/create_service_item.ui" line="14"/>
         <source>Create Service Items</source>
@@ -1688,6 +1700,12 @@
 </context>
 <context>
     <name>CsvExportDialog</name>
+        <!-- Accept button: names the action, not the assent
+             (docs/ux/dialogs.md §3). -->
+    <message>
+        <source>Export</source>
+        <translation>Экспортировать</translation>
+    </message>
     <!-- The dialog's strings belong to this context: uic emits
          QCoreApplication::translate("CsvExportDialog", ...) for a .ui, and the
          QMessageBox calls in csv_export_dialog.cpp use tr(). They previously
@@ -1834,6 +1852,12 @@
 </context>
 <context>
     <name>LimitDialog</name>
+        <!-- Accept button: names the action, not the assent
+             (docs/ux/dialogs.md §3). -->
+    <message>
+        <source>Apply</source>
+        <translation>Применить</translation>
+    </message>
     <message>
         <location filename="../../modules/limits/qt/limit_dialog.ui" line="33"/>
         <source>Critical Limits</source>
@@ -1961,6 +1985,12 @@
 </context>
 <context>
     <name>MultiCreateDialog</name>
+        <!-- Accept button: names the action, not the assent
+             (docs/ux/dialogs.md §3). -->
+    <message>
+        <source>Create</source>
+        <translation>Создать</translation>
+    </message>
     <message>
         <location filename="../../modules/multi_create/qt/multi_create_dialog.ui" line="20"/>
         <source>Multiple Create</source>
@@ -2064,6 +2094,18 @@
 </context>
 <context>
     <name>WriteDialog</name>
+        <!-- Accept button: names the action, not the assent
+             (docs/ux/dialogs.md §3). -->
+    <message>
+        <source>Write</source>
+        <translation>Записать</translation>
+    </message>
+        <!-- Accept button: names the action, not the assent
+             (docs/ux/dialogs.md §3). -->
+    <message>
+        <source>Execute</source>
+        <translation>Выполнить</translation>
+    </message>
     <message>
         <location filename="../../modules/write/qt/write_dialog.ui" line="20"/>
         <source>Write value</source>

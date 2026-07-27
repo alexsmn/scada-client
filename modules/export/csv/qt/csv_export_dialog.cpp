@@ -1,5 +1,9 @@
 #include "ui_csv_export_dialog.h"
 
+#include <QPushButton>
+
+#include <QDialogButtonBox>
+
 #include "aui/dialog_service.h"
 #include "aui/qt/dialog_util.h"
 #include "base/value_util.h"
@@ -36,6 +40,9 @@ CsvExportDialog::CsvExportDialog(const CsvExportParams& params,
                                  QWidget* parent)
     : QDialog{parent}, params_{params} {
   ui.setupUi(this);
+
+  // Name the action rather than the assent (docs/ux/dialogs.md §3).
+  ui.buttonBox->button(QDialogButtonBox::Ok)->setText(tr("Export"));
 
   // Only the views that group rows can expand them; for every other export the
   // choice would be meaningless, so it is not offered.

@@ -35,6 +35,15 @@ WriteDialog::WriteDialog(std::shared_ptr<WriteModel> model, QWidget* parent)
     : QDialog{parent}, model_{std::move(model)} {
   ui.setupUi(this);
 
+  // Name the action rather than the assent (docs/ux/dialogs.md §3). This one
+  // matters most: for a control command the accept button is the second half
+  // of a two-stage confirm (principles.md §7), and "OK" throws that away by
+  // asking the operator to re-read the title to learn what they are agreeing
+  // to. Manual entry writes a value into the point; a command is executed on
+  // a device, so the two are labelled differently.
+  ui.buttonBox->button(QDialogButtonBox::Ok)
+      ->setText(model_->manual() ? tr("Write") : tr("Execute"));
+
   dialog_service_.parent_widget = this;
   model_->set_dialog_service(&dialog_service_);
 

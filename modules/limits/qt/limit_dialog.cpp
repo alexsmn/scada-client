@@ -5,6 +5,10 @@
 #include "aui/dialog_service.h"
 #include "ui_limit_dialog.h"
 
+#include <QPushButton>
+
+#include <QDialogButtonBox>
+
 class LimitDialog : public QDialog {
   Q_OBJECT
 
@@ -26,6 +30,9 @@ class LimitDialog : public QDialog {
 LimitDialog::LimitDialog(std::unique_ptr<LimitModel> model, QWidget* parent)
     : QDialog{parent}, model_{std::move(model)} {
   ui.setupUi(this);
+
+  // Name the action rather than the assent (docs/ux/dialogs.md §3).
+  ui.buttonBox->button(QDialogButtonBox::Ok)->setText(tr("Apply"));
 
   ui.descriptionLabel->setText(
       QString::fromStdU16String(model_->GetSourceTitle()));

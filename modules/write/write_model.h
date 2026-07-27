@@ -19,6 +19,10 @@ class WriteModel : private WriteContext,
   }
 
   bool discrete() const { return discrete_; }
+  // True when the operator is entering a value into the point by hand, false
+  // when this is a command sent out to a device. The two read differently to
+  // an operator and are labelled differently (docs/ux/dialogs.md §3).
+  bool manual() const { return manual_; }
   bool lock_allowed() const { return manual_; }
   bool locked() const { return locked_; }
   bool has_condition() const { return has_condition_; }

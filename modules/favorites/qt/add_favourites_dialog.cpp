@@ -5,6 +5,10 @@
 #include "aui/dialog_service.h"
 #include "ui_add_favourites_dialog.h"
 
+#include <QPushButton>
+
+#include <QDialogButtonBox>
+
 class AddFavouritesDialog : public QDialog, private AddFavouritesContext {
   Q_OBJECT
 
@@ -27,6 +31,9 @@ AddFavouritesDialog::AddFavouritesDialog(AddFavouritesContext&& context,
                                          QWidget* parent)
     : QDialog{parent}, AddFavouritesContext{std::move(context)} {
   ui.setupUi(this);
+
+  // Name the action rather than the assent (docs/ux/dialogs.md §3).
+  ui.buttonBox->button(QDialogButtonBox::Ok)->setText(tr("Add"));
 
   ui.nameLineEdit->setText(QString::fromStdU16String(window_def_.title));
 

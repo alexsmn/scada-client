@@ -4,6 +4,10 @@
 #include "aui/dialog_service.h"
 #include "ui_create_service_item.h"
 
+#include <QPushButton>
+
+#include <QDialogButtonBox>
+
 class CreateServiceItemDialog final : public QDialog {
   Q_OBJECT
 
@@ -29,6 +33,9 @@ CreateServiceItemDialog::CreateServiceItemDialog(
     QWidget* parent)
     : QDialog{parent}, model_{std::move(model)} {
   ui.setupUi(this);
+
+  // Name the action rather than the assent (docs/ux/dialogs.md §3).
+  ui.buttonBox->button(QDialogButtonBox::Ok)->setText(tr("Create"));
 
   connect(ui.deviceComboBox, QOverload<int>::of(&QComboBox::activated),
           [this](int index) {
