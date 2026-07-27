@@ -1,78 +1,162 @@
 #pragma once
 
+#include "main_window/pane_modes.h"
+
+#include <QPoint>
 #include <QWidget>
 
 #include <functional>
+#include <optional>
 #include <string>
 #include <vector>
 
 class QToolButton;
-class QButtonGroup;
+class QVBoxLayout;
 class QIcon;
+class QDragEnterEvent;
+class QDragMoveEvent;
+class QDropEvent;
+class QEvent;
 
-// Left activity rail — opt-in reshell chrome (backlog 1.1). A charcoal column
-// of section buttons that activate the operator's primary surfaces (Overview,
-// Alarms, Trends, Substations, Tables; Administration and Settings pinned at
-// the bottom). The active section carries an accent marker; the Alarms section
-// carries an unacknowledged-alarm count badge. Sections whose backing view does
-// not exist yet are shown disabled with a tooltip, so the rail reads as the
-// full navigation model without pretending every surface is ready.
+// Left activity rail — opt-in reshell chrome. A charcoal column in two groups,
+// separated by a divider:
+//
+//  - the sidebar's pane modes (Objects, Devices, Files, Nodes), which select
+//    which panes occupy the left sidebar;
+//  - the profile's pages, numbered 1..N, plus a "+" that creates one. Pages
+//    stand in for the web client's browser tabs: each replaces the whole
+//    workspace.
+//
+// The rail never opens a workspace tab. The two groups carry independent
+// markers, because a pane mode and a page are both active at once. Both markers
+// are projections of real state (see MainWindow::RefreshPaneModeMarker), not a
+// record of the last click, so neither can go stale when a page switch or a
+// manual pane close changes what is on screen.
 class ActivityBar : public QWidget {
   Q_OBJECT
 
  public:
-  // Dedicated rail glyph drawn for a section. Kept independent of the view
-  // command icons (which are toolbar-shaped) so the rail reads as a coherent,
+  // Dedicated rail glyph drawn for a mode. Kept independent of the view command
+  // icons (which are toolbar-shaped) so the rail reads as a coherent,
   // workbench-style icon set.
   enum class Icon {
     kNone,
-    kOverview,
-    kAlarms,
-    kTrends,
-    kSubstations,
-    kTables,
-    kAdministration,
-    kSettings,
+    kObjects,
+    kDevices,
+    kFiles,
+    kNodes,
+    kNewPage,
   };
 
-  // One rail entry. `window_info_name` is the view type the section activates
-  // (empty / unknown => the section is disabled). `icon_kind` selects the
-  // dedicated glyph (falls back to the label's first letter when kNone).
-  // `is_alarms` marks the single section that shows the unread badge;
-  // `pinned_bottom` sinks the entry to the bottom group.
-  struct Section {
-    std::string window_info_name;
+  // One rail entry. `icon_kind` selects the dedicated glyph and falls back to
+  // the label's first letter when kNone.
+  struct Mode {
+    PaneModeId id = PaneModeId::kObjects;
     std::u16string label;
     Icon icon_kind = Icon::kNone;
-    bool enabled = true;
-    bool is_alarms = false;
-    bool pinned_bottom = false;
   };
 
-  // Invoked when the user activates a section, with its `window_info_name`.
-  using ActivateCallback = std::function<void(const std::string&)>;
+  // One page button. Rendered as its 1-based position, with `title` as the
+  // tooltip — page titles are arbitrary and will not fit a 52 px rail.
+  struct PageButton {
+    int page_id = 0;
+    std::u16string title;
+    // Another main window already has this page open, so activating it would
+    // be refused. Shown disabled rather than letting the operator find out
+    // through a message box.
+    bool opened_elsewhere = false;
+  };
+
+  // Invoked when the user picks a mode.
+  using ActivateCallback = std::function<void(PaneModeId)>;
+  // Invoked when the user picks a page button.
+  using ActivatePageCallback = std::function<void(int page_id)>;
+  // Invoked for the "+" button.
+  using NewPageCallback = std::function<void()>;
+  // Invoked on a right-click over a page button, with a global position for the
+  // context menu.
+  using PageContextMenuCallback =
+      std::function<void(int page_id, const QPoint& global_pos)>;
+  // Invoked when a page button is dragged to a new slot. `new_index` is
+  // 0-based within the pages group.
+  using ReorderPageCallback = std::function<void(int page_id, int new_index)>;
 
   ActivityBar(QWidget* parent,
-              std::vector<Section> sections,
+              std::vector<Mode> modes,
               ActivateCallback on_activate);
   ~ActivityBar() override;
 
-  // Sets the Alarms unread badge; 0 hides it.
-  void SetAlarmCount(int count);
+  // Marks `mode` as active, or clears the marker entirely when nothing is
+  // passed — which is what happens when the open panes match no mode.
+  void SetActiveMode(std::optional<PaneModeId> mode);
 
-  // Marks the section backing `window_info_name` as active (accent marker).
-  void SetActiveSection(const std::string& window_info_name);
+  // Shows or hides a mode's button. Used for the admin-gated Nodes mode: a
+  // hidden button says "not yours", where a disabled one would promise a
+  // surface that is merely unfinished.
+  void SetModeAvailable(PaneModeId mode, bool available);
+
+  // Wires the pages group. Separate from the constructor because pages arrive
+  // from the profile, which the window reads after the rail is built.
+  void SetPageCallbacks(ActivatePageCallback on_activate_page,
+                        NewPageCallback on_new_page,
+                        PageContextMenuCallback on_page_context_menu,
+                        ReorderPageCallback on_reorder_page);
+
+  // Rebuilds the pages group. Cheap; the window calls it whenever a page is
+  // opened, added, renamed or deleted.
+  void SetPages(std::vector<PageButton> pages);
+
+  // Marks the open page, or clears the page marker when `page_id` names none.
+  void SetActivePage(int page_id);
+
+  // The drop index a page dragged to `local_y` (in rail coordinates) would land
+  // at. Exposed for tests, which cannot synthesize a real drag.
+  int PageDropIndexForY(int local_y) const;
+
+ protected:
+  // QWidget — the rail is the drop target for page reordering. Accepting the
+  // drop on the container rather than on each button means the gap between
+  // buttons, and the area past the last one, are valid drop positions too.
+  void dragEnterEvent(QDragEnterEvent* event) override;
+  void dragMoveEvent(QDragMoveEvent* event) override;
+  void dropEvent(QDropEvent* event) override;
+
+  // QObject — starts a drag from a page button once the mouse has moved far
+  // enough. Filtered rather than subclassed so the page buttons stay ordinary
+  // QToolButtons.
+  bool eventFilter(QObject* watched, QEvent* event) override;
 
  private:
-  void RefreshAlarmsButton();
+  // Builds one rail button with the shared sizing and glyph treatment.
+  QToolButton* MakeButton(const QIcon& icon, const QString& tooltip);
 
   struct Item {
-    Section section;
+    Mode mode;
+    QToolButton* button = nullptr;
+  };
+
+  struct PageItem {
+    PageButton page;
     QToolButton* button = nullptr;
   };
 
   std::vector<Item> items_;
   ActivateCallback on_activate_;
-  QButtonGroup* group_ = nullptr;
-  int alarm_count_ = 0;
+  ActivatePageCallback on_activate_page_;
+  NewPageCallback on_new_page_;
+  PageContextMenuCallback on_page_context_menu_;
+  ReorderPageCallback on_reorder_page_;
+
+  std::vector<PageItem> page_items_;
+  int active_page_id_ = 0;
+
+  // The pages group's own layout, so SetPages can rebuild just that section.
+  QVBoxLayout* pages_layout_ = nullptr;
+  QWidget* pages_divider_ = nullptr;
+  QToolButton* new_page_button_ = nullptr;
+
+  // Where a left-press landed on a page button, so eventFilter can tell a
+  // click from the start of a drag.
+  QPoint drag_press_pos_;
+  int drag_page_id_ = 0;
 };

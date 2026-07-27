@@ -32,6 +32,7 @@ void LoadMainWindowDef(MainWindowDef& main_window,
   main_window.toolbar = GetBool(data, "toolbar", true);
   main_window.status_bar = GetBool(data, "statusBar", true);
   main_window.page_id = GetInt(data, "page", 0);
+  main_window.pane_mode = GetString(data, "paneMode", "");
 }
 
 }  // namespace
@@ -179,6 +180,8 @@ boost::json::value Profile::SerializeToValue() const {
       SetKey(wine, "toolbar", main_window.toolbar);
       SetKey(wine, "statusBar", main_window.status_bar);
       SetKey(wine, "page", main_window.page_id);
+      if (!main_window.pane_mode.empty())
+        SetKey(wine, "paneMode", main_window.pane_mode);
       list.emplace_back(std::move(wine));
     }
     data.as_object()["windows"] = std::move(list);
@@ -265,6 +268,15 @@ Page& Profile::AddPage(const Page& page) {
 
   Page& new_page = iter->second;
   new_page.id = page_id;
+
+  // Land a new page at the end of the operator's order rather than wherever
+  // its id happens to sort. `order` is only meaningful once something has been
+  // reordered, so leave it 0 while every page is still unordered.
+  int max_order = 0;
+  for (const auto& [existing_id, existing] : pages)
+    max_order = std::max(max_order, existing.order);
+  if (max_order != 0)
+    new_page.order = max_order + 1;
 
   if (new_page.title.empty()) {
     new_page.title = Translate("Page ") + WideFormat(page_id);

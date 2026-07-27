@@ -38,6 +38,7 @@ Page& Page::operator=(const Page& source) {
 void Page::Load(const boost::json::value& data) {
   id = GetInt(data, "id");
   title = GetString16(data, "title");
+  order = GetInt(data, "order", 0);
 
   if (const auto* winse = GetList(data, "windows")) {
     for (auto& win : *winse) {
@@ -76,6 +77,8 @@ boost::json::value Page::Save(bool current) const {
     SetKey(result, "id", id);
   if (!title.empty())
     SetKey(result, "title", title);
+  if (order)
+    SetKey(result, "order", order);
 
   boost::json::array windows;
   windows.reserve(GetWindowCount());

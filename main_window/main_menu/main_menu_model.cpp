@@ -188,66 +188,32 @@ bool FavouritesMenuModel::IsEnabledAt(int index) const {
 // PageMenuModel
 
 PageMenuModel::PageMenuModel(const MainMenuContext& context)
-    : MainMenuContext{context}, scada::aui::SimpleMenuModel{nullptr} {}
+    : MainMenuContext{context},
+      scada::aui::SimpleMenuModel{nullptr},
+      page_switcher_{PageSwitcherContext{
+          .executor_ = context.executor_,
+          .profile_ = context.profile_,
+          .main_window_ = context.main_window_,
+          .main_window_manager_ = context.main_window_manager_,
+          .dialog_service_ = context.dialog_service_}} {}
 
 void PageMenuModel::MenuWillShow() {
   Clear();
 
   active_index_ = -1;
+  entries_ = page_switcher_.ListPages();
 
-  int index = 0;
-  for (const auto& [page_id, page] : profile_.pages) {
-    AddRadioItem(0, page.title, 0);
-    if (main_window_.GetCurrentPage().id == page_id) {
+  for (int index = 0; index < static_cast<int>(entries_.size()); ++index) {
+    AddRadioItem(0, entries_[index].title, 0);
+    if (entries_[index].current)
       active_index_ = index;
-    }
-    ++index;
   }
 }
 
 void PageMenuModel::ActivatedAt(int index) {
-  auto p = profile_.pages.begin();
-  std::advance(p, index);
-  OpenPage(p->second);
-}
-
-void PageMenuModel::OpenPage(const Page& page) {
-  const Page& current_page = main_window_.GetCurrentPage();
-
-  // check revert page
-  bool revert = page.id == current_page.id;
-  if (!revert) {
-    OpenPageHelper(page, false);
+  if (index < 0 || index >= static_cast<int>(entries_.size()))
     return;
-  }
-
-  std::u16string title = current_page.GetTitle();
-  std::u16string message = u16format(L"Return to saved page {}?", title);
-  CoSpawn(executor_, cancelation_,
-          [this, page_ptr = &page,
-           message = std::move(message)]() -> Awaitable<void> {
-            auto message_box_result = co_await dialog_service_.RunMessageBox(
-                message, {}, MessageBoxMode::QuestionYesNo);
-            if (message_box_result == MessageBoxResult::Yes)
-              OpenPageHelper(*page_ptr, true);
-            co_return;
-          });
-}
-
-void PageMenuModel::OpenPageHelper(const Page& page, bool revert) {
-  // Don't allow to open same page in different windows.
-  if (!revert && main_window_manager_.IsPageOpened(page.id)) {
-    dialog_service_.RunMessageBox(
-        Translate("The specified page is open in another window."), {},
-        MessageBoxMode::Info);
-    return;
-  }
-
-  if (!revert) {
-    main_window_.SaveCurrentPage();
-  }
-
-  main_window_.OpenPage(page);
+  page_switcher_.ActivatePage(entries_[index].page_id);
 }
 
 bool PageMenuModel::IsItemCheckedAt(int index) const {

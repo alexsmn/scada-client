@@ -9,7 +9,3 @@
 // trend and the alarm surface. Constructed in code (Qt-free) so it can be
 // opened without a saved profile and unit-tested for its structure.
 Page MakeOverviewPage();
-
-// The activity-rail section id that opens the Overview page (not a WindowInfo
-// name — the rail routes it to the page instead of OpenView).
-inline constexpr char kOverviewSectionId[] = "@overview";

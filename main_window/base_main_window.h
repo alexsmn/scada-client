@@ -83,6 +83,10 @@ class BaseMainWindow : protected MainWindowContext,
   OpenedViewInterface* FindViewByType(
       std::string_view window_type) const override;
   void OpenPane(const WindowInfo& window_info, bool activate);
+  // Like OpenPane, but the pane is open by the time the call returns. Use it
+  // when the order of several pane opens matters — dock tabification depends on
+  // it. See the implementation for why skipping the coroutine is safe.
+  void OpenPaneSync(const WindowInfo& window_info, bool activate);
   void ClosePane(const WindowInfo& window_info);
 
   virtual DialogService& GetDialogService() = 0;

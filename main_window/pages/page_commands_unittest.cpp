@@ -180,6 +180,25 @@ class PageMenuModelTest : public Test {
                                 .ui_command_registry_ = ui_command_registry_};
 };
 
+// The page list now goes through PageSwitcher, which names pages with
+// Page::GetTitle(). A page with no explicit title used to render as a blank
+// menu row because the model read the raw `title` field.
+TEST_F(PageMenuModelTest, UntitledPageShowsItsSynthesizedTitle) {
+  Page page_def;
+  Page& page = profile_.AddPage(page_def);
+  page.title.clear();
+  page.AddWindow(WindowDefinition{std::string_view{"Graph"}});
+
+  EXPECT_CALL(main_window_, GetCurrentPage()).WillRepeatedly(ReturnRef(page));
+
+  PageMenuModel menu{menu_context_};
+  menu.MenuWillShow();
+
+  ASSERT_EQ(menu.GetItemCount(), 1);
+  EXPECT_FALSE(menu.GetLabelAt(0).empty());
+  EXPECT_EQ(menu.GetLabelAt(0), page.GetTitle());
+}
+
 TEST_F(PageMenuModelTest, RevertCurrentPageConfirmedOpensSavedPage) {
   Page page_def;
   page_def.title = u"Saved";

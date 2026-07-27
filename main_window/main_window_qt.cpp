@@ -6,6 +6,7 @@
 #include "aui/qt/status_bar.h"
 #include "aui/severity_colors.h"
 #include "aui/translation.h"
+#include "base/auto_reset.h"
 #include "base/awaitable.h"
 #include "base/check.h"
 #include "base/utf_convert.h"
@@ -14,7 +15,6 @@
 #include "controller/command_ui_registry.h"
 #include "controller/controller.h"
 #include "controller/selection_model.h"
-#include "modules/write/write_availability.h"
 #include "controller/window_info.h"
 #include "device_diagnostics/qt/device_diagnostics_panel.h"
 #include "events/alarm_flood.h"
@@ -27,6 +27,7 @@
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
 #include "main_window/overview_page.h"
+#include "main_window/pages/page_switcher.h"
 #include "main_window/selection_command_router.h"
 #include "main_window/status_bar/progress_controller_qt.h"
 #include "main_window/tag_search_index.h"
@@ -34,6 +35,7 @@
 #include "main_window/window_definition_builder.h"
 #include "model/devices_node_ids.h"
 #include "model/security_node_ids.h"
+#include "modules/write/write_availability.h"
 #include "node_service/node_util.h"
 #include "profile/profile.h"
 #include "profile/window_definition.h"
@@ -53,6 +55,7 @@
 #include <QLabel>
 #include <QLayout>
 #include <QLineEdit>
+#include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QScreen>
@@ -64,6 +67,7 @@
 #include <QToolBar>
 #include <QToolButton>
 
+#include <ranges>
 #include <unordered_set>
 
 namespace {
@@ -165,6 +169,7 @@ MainWindow::MainWindow(MainWindowContext&& context)
   // is enabled.
   if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy) {
     CreateActivityBar();
+    WireRailPages();
     CreateContextBar();
     CreateInspectorPanel();
     CreateDiagnosticsPanel();
@@ -201,6 +206,10 @@ MainWindow::MainWindow(MainWindowContext&& context)
   Init(*view_manager_);
   RebuildMenuBar();
 
+  // Init() opened the restored page, which conformed it to the active mode.
+  // Bring the rail in line with what is actually on screen.
+  RefreshPaneModeMarker();
+
   action_changed_connection_ = ui_command_registry_.action_manager().Subscribe(
       [this](Action& action, ActionChangeMask change_mask) {
         OnActionChanged(action, change_mask);
@@ -228,6 +237,11 @@ void MainWindow::UpdateTitle() {
       QString::fromStdU16String(view_manager_->current_page().GetTitle());
   QString title = tr("%1 (Server: %2)").arg(page).arg(server);
   setWindowTitle(title);
+
+  // Renaming a page ends here (PageCommands -> SetCurrentPageTitle ->
+  // UpdateTitle) and nowhere else, so this is the hook that keeps the Pages
+  // list's label in step. PageCommands does not raise a profile change.
+  RefreshRailPages();
 }
 
 void MainWindow::CreateMenuBar() {
@@ -432,50 +446,36 @@ void MainWindow::CreateContextBar() {
   addToolBarBreak(Qt::TopToolBarArea);
 }
 
-void MainWindow::CreateActivityBar() {
-  // Section spec: label (English, Translate()'d), the WindowInfo name it opens
-  // (empty => no view yet, shown disabled), and rail placement. Alarms carries
-  // the unread badge; Administration/Settings pin to the bottom.
-  struct SectionSpec {
-    const char* label;
-    std::string_view window_info_name;
-    ActivityBar::Icon icon = ActivityBar::Icon::kNone;
-    bool is_alarms = false;
-    bool pinned_bottom = false;
-  };
-  const SectionSpec specs[] = {
-      {"Overview", kOverviewSectionId, ActivityBar::Icon::kOverview},
-      {"Alarms", "EventJournal", ActivityBar::Icon::kAlarms,
-       /*is_alarms=*/true},
-      {"Trends", "Graph", ActivityBar::Icon::kTrends},
-      {"Substations", "Modus", ActivityBar::Icon::kSubstations},
-      {"Tables", "Table", ActivityBar::Icon::kTables},
-      {"Administration", "", ActivityBar::Icon::kAdministration, false,
-       /*pinned_bottom=*/true},
-      {"Settings", "", ActivityBar::Icon::kSettings, false,
-       /*pinned_bottom=*/true},
-  };
+namespace {
 
-  std::vector<ActivityBar::Section> sections;
-  for (const SectionSpec& spec : specs) {
-    ActivityBar::Section section;
-    section.label = Translate(spec.label);
-    section.window_info_name = std::string{spec.window_info_name};
-    section.icon_kind = spec.icon;
-    section.is_alarms = spec.is_alarms;
-    section.pinned_bottom = spec.pinned_bottom;
-    // A section is live only if it opens the Overview page or its view type is
-    // registered; otherwise it is shown disabled (with a "coming soon"
-    // tooltip).
-    section.enabled = spec.window_info_name == kOverviewSectionId ||
-                      (!spec.window_info_name.empty() &&
-                       FindWindowInfoByName(spec.window_info_name) != nullptr);
-    sections.push_back(std::move(section));
+// The rail glyph for each mode. Kept beside the mode table rather than in it,
+// so pane_modes stays Qt-free and usable from the Wt shell.
+ActivityBar::Icon ModeIconKind(PaneModeId id) {
+  switch (id) {
+    case PaneModeId::kObjects:
+      return ActivityBar::Icon::kObjects;
+    case PaneModeId::kDevices:
+      return ActivityBar::Icon::kDevices;
+    case PaneModeId::kFiles:
+      return ActivityBar::Icon::kFiles;
+    case PaneModeId::kNodes:
+      return ActivityBar::Icon::kNodes;
+  }
+  return ActivityBar::Icon::kNone;
+}
+
+}  // namespace
+
+void MainWindow::CreateActivityBar() {
+  std::vector<ActivityBar::Mode> modes;
+  for (const PaneMode& mode : GetPaneModes()) {
+    modes.push_back(ActivityBar::Mode{.id = mode.id,
+                                      .label = Translate(mode.label),
+                                      .icon_kind = ModeIconKind(mode.id)});
   }
 
-  activity_bar_ = new ActivityBar(
-      this, std::move(sections),
-      [this](const std::string& name) { ActivateSection(name); });
+  activity_bar_ = new ActivityBar(this, std::move(modes),
+                                  [this](PaneModeId id) { SetPaneMode(id); });
 
   auto* rail = new QToolBar(this);
   rail->setObjectName(QStringLiteral("ActivityRail"));
@@ -484,36 +484,226 @@ void MainWindow::CreateActivityBar() {
   rail->setContextMenuPolicy(Qt::PreventContextMenu);
   rail->addWidget(activity_bar_);
   addToolBar(Qt::LeftToolBarArea, rail);
-
-  // The alarm badge tracks the same unacknowledged count as the status strip,
-  // which refreshes the status-bar model on every event change.
-  auto refresh_badge = [this] {
-    activity_bar_->SetAlarmCount(status_bar_model_->GetAlarmCount());
-  };
-  refresh_badge();
-  activity_bar_connection_ = status_bar_model_->SubscribePanesChanged(
-      [refresh_badge](int, int) { refresh_badge(); });
 }
 
-void MainWindow::OpenOverviewPage() {
-  OpenPage(MakeOverviewPage());
+void MainWindow::WireRailPages() {
+  page_switcher_ = std::make_unique<PageSwitcher>(
+      PageSwitcherContext{.executor_ = executor_,
+                          .profile_ = profile_,
+                          .main_window_ = *this,
+                          .main_window_manager_ = main_window_manager_,
+                          .dialog_service_ = dialog_service_});
+
+  activity_bar_->SetPageCallbacks(
+      [this](int page_id) { page_switcher_->ActivatePage(page_id); },
+      [this] { ExecutePageCommand(ID_PAGE_NEW); },
+      [this](int page_id, const QPoint& global_pos) {
+        ShowPageContextMenu(page_id, global_pos);
+      },
+      [this](int page_id, int new_index) {
+        page_switcher_->ReorderPage(page_id, new_index);
+        // The Page menu reads the same ordered list, so it follows without
+        // any further wiring.
+        RefreshRailPages();
+      });
+
+  RefreshRailPages();
 }
 
-void MainWindow::ActivateSection(const std::string& window_info_name) {
-  if (window_info_name == kOverviewSectionId) {
-    OpenOverviewPage();
-    activity_bar_->SetActiveSection(window_info_name);
+void MainWindow::RefreshRailPages() {
+  if (!activity_bar_ || !page_switcher_)
     return;
+
+  std::vector<ActivityBar::PageButton> buttons;
+  int active_page_id = 0;
+  for (const PageEntry& entry : page_switcher_->ListPages()) {
+    buttons.push_back(
+        ActivityBar::PageButton{.page_id = entry.page_id,
+                                .title = entry.title,
+                                .opened_elsewhere = entry.opened_elsewhere});
+    if (entry.current)
+      active_page_id = entry.page_id;
   }
 
-  const WindowInfo* info = FindWindowInfoByName(window_info_name);
-  if (!info)
+  activity_bar_->SetPages(std::move(buttons));
+  activity_bar_->SetActivePage(active_page_id);
+}
+
+void MainWindow::ExecutePageCommand(unsigned command_id) {
+  // Route through the shell's command resolution rather than reimplementing
+  // New / Rename / Delete: PageCommands owns them, and the Page menu and the
+  // Ctrl-K palette reach them the same way.
+  if (CommandHandler* handler = ResolveViewCommand(command_id)) {
+    if (handler->IsCommandEnabled(command_id))
+      handler->ExecuteCommand(command_id);
+  }
+}
+
+void MainWindow::ShowPageContextMenu(int page_id, const QPoint& global_pos) {
+  QMenu menu{this};
+
+  // Rename and Delete act on the *current* page (that is what ID_PAGE_RENAME
+  // and ID_PAGE_DELETE mean), so switch to the right-clicked page first when
+  // it is not already open. Anything else would silently rename the wrong one.
+  const bool is_current = page_id == current_page().id;
+
+  auto add = [&](unsigned command_id, const char* label, bool enabled) {
+    QAction* action =
+        menu.addAction(QString::fromStdU16String(Translate(label)));
+    action->setEnabled(enabled);
+    connect(action, &QAction::triggered, this,
+            [this, command_id] { ExecutePageCommand(command_id); });
+  };
+
+  add(ID_PAGE_RENAME, "Rename", is_current);
+  add(ID_PAGE_DELETE, "Delete", is_current);
+  menu.addSeparator();
+  add(ID_PAGE_NEW, "New page", true);
+
+  menu.exec(global_pos);
+}
+
+bool MainWindow::SelectPaneModeForPane(std::string_view window_type) {
+  const PaneMode* mode = FindPaneModeOwningPaneType(window_type);
+  if (!mode)
+    return false;
+  SetPaneMode(mode->id);
+  return true;
+}
+
+PaneModeId MainWindow::ActivePaneMode() {
+  const std::string& key = GetPrefs().pane_mode;
+  if (const PaneMode* mode = FindPaneModeByKey(key)) {
+    // A profile can carry a mode the current user may not open. Fall back
+    // rather than presenting an empty sidebar with no way out.
+    if (!mode->requires_admin || IsPaneModeAvailable(mode->id))
+      return mode->id;
+    return PaneModeId::kObjects;
+  }
+  // No mode recorded — this profile predates the rail. Infer one from the page
+  // so the operator keeps the panes they had.
+  return InferPaneModeFromPage(current_page());
+}
+
+bool MainWindow::IsPaneModeAvailable(PaneModeId id) {
+  const PaneMode& mode = GetPaneMode(id);
+  if (!mode.requires_admin)
+    return true;
+  // Ask the same resolution the menus use, so the rail and the More menu agree
+  // by construction: a WIN_REQUIRES_ADMIN view resolves to no handler without
+  // the Configure right (MainWindowCommandRouter::GetCommandHandler).
+  for (std::string_view pane_type : mode.pane_types) {
+    const WindowInfo* info = FindWindowInfoByName(pane_type);
+    if (!info || !commands().GetCommandHandler(info->command_id))
+      return false;
+  }
+  return true;
+}
+
+void MainWindow::SetPaneMode(PaneModeId id) {
+  if (!IsPaneModeAvailable(id))
     return;
-  CoSpawn(executor_,
-          [this, def = WindowDefinition{*info}]() mutable -> Awaitable<void> {
-            co_await OpenView(def, /*make_active=*/true);
-          });
-  activity_bar_->SetActiveSection(window_info_name);
+
+  const PaneMode& mode = GetPaneMode(id);
+
+  // What the sidebar shows right now, in the rail's vocabulary.
+  std::vector<std::string_view> open_panes;
+  for (std::string_view pane_type : GetModeOwnedPaneTypes()) {
+    if (FindViewByType(pane_type))
+      open_panes.push_back(pane_type);
+  }
+
+  const PaneModeDelta delta = ComputePaneModeDelta(mode, open_panes);
+
+  {
+    // Closing and opening panes fires OnViewClosed / OnActiveViewChanged; let
+    // the switch finish before re-deriving the marker from a half-applied set.
+    scada::base::AutoReset<bool> applying{&applying_pane_mode_, true};
+
+    // Close first, then open in declared order — AddDockView tabifies onto the
+    // first dock already in the area, so opening early would tab the new panes
+    // onto ones that are about to disappear.
+    for (std::string_view pane_type : delta.to_close) {
+      if (const WindowInfo* info = FindWindowInfoByName(pane_type))
+        ClosePane(*info);
+    }
+    for (std::string_view pane_type : delta.to_open) {
+      if (const WindowInfo* info = FindWindowInfoByName(pane_type))
+        OpenPaneSync(*info, /*activate=*/false);
+    }
+
+    // Front the mode's own subject, not whichever pane Qt tabified last.
+    if (!mode.pane_types.empty()) {
+      if (OpenedViewInterface* primary =
+              FindViewByType(mode.pane_types.front())) {
+        ActivateView(*primary);
+      }
+    }
+  }
+
+  GetPrefs().pane_mode = std::string{mode.key};
+  RefreshPaneModeMarker();
+}
+
+void MainWindow::ApplyPaneModeToCurrentWindow() {
+  if (!activity_bar_)
+    return;
+  SetPaneMode(ActivePaneMode());
+}
+
+void MainWindow::RefreshPaneModeMarker() {
+  if (!activity_bar_)
+    return;
+
+  for (const PaneMode& mode : GetPaneModes())
+    activity_bar_->SetModeAvailable(mode.id, IsPaneModeAvailable(mode.id));
+
+  std::vector<std::string_view> open_panes;
+  for (std::string_view pane_type : GetModeOwnedPaneTypes()) {
+    if (FindViewByType(pane_type))
+      open_panes.push_back(pane_type);
+  }
+
+  // An exact match is the honest answer; anything else and the sidebar is not
+  // showing a mode, so the rail must not claim one.
+  for (const PaneMode& mode : GetPaneModes()) {
+    if (mode.pane_types.size() != open_panes.size())
+      continue;
+    if (std::ranges::equal(mode.pane_types, open_panes)) {
+      activity_bar_->SetActiveMode(mode.id);
+      return;
+    }
+  }
+
+  // Partial match: fall back to the mode owning whatever pane is active, so a
+  // manually closed sibling still leaves the rail pointing somewhere true.
+  if (OpenedView* active = GetActiveView()) {
+    if (const PaneMode* mode =
+            FindPaneModeOwningPaneType(active->window_info().name)) {
+      activity_bar_->SetActiveMode(mode->id);
+      return;
+    }
+  }
+
+  activity_bar_->SetActiveMode(std::nullopt);
+}
+
+void MainWindow::OnViewClosed(OpenedView& view) {
+  const bool was_owned_pane =
+      FindPaneModeOwningPaneType(view.window_info().name) != nullptr;
+  BaseMainWindow::OnViewClosed(view);
+  if (was_owned_pane && !applying_pane_mode_ &&
+      !view_manager_->is_closing_page()) {
+    RefreshPaneModeMarker();
+  }
+}
+
+void MainWindow::OnActiveViewChanged(OpenedView* view) {
+  BaseMainWindow::OnActiveViewChanged(view);
+  if (!applying_pane_mode_ && view &&
+      FindPaneModeOwningPaneType(view->window_info().name)) {
+    RefreshPaneModeMarker();
+  }
 }
 
 void MainWindow::OpenTag(const scada::NodeId& node_id,
@@ -848,8 +1038,27 @@ void MainWindow::TabifySpecialistDocks() {
 }
 
 void MainWindow::OpenPage(const Page& page) {
-  BaseMainWindow::OpenPage(page);
+  if (activity_bar_) {
+    // Conform the page to the active mode BEFORE the view manager builds it.
+    // ViewManager::OpenPage creates every visible window and only then restores
+    // the dock-state blob, so a pane opened afterwards would sit outside the
+    // restored layout at Qt's default width.
+    Page conformed = page;
+    ApplyPaneModeToPage(conformed, GetPaneMode(ActivePaneMode()));
+    BaseMainWindow::OpenPage(conformed);
+  } else {
+    // Legacy theme: no rail, so the page's own pane set is authoritative.
+    BaseMainWindow::OpenPage(page);
+  }
+
   TabifySpecialistDocks();
+
+  // Every page switch funnels through here — the Pages menu, the Pages pane,
+  // the page commands, and the startup restore — so this is the one place the
+  // marker has to be re-derived, and the one place the page list is known to
+  // be stale (New and Delete both end in an OpenPage).
+  RefreshRailPages();
+  RefreshPaneModeMarker();
 }
 
 void MainWindow::OnSelectionChanged() {

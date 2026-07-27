@@ -24,6 +24,11 @@ struct MainWindowDef {
   int page_id = 0;
   bool toolbar = true;
   bool status_bar = true;
+  // The activity rail's selected left-pane mode, as a `PaneMode::key`. Empty
+  // means "never chosen" — the window infers one from the page it opens.
+  // Stored as a string, not an enum, so a value written by another build
+  // degrades to the default instead of selecting the wrong mode.
+  std::string pane_mode;
 };
 
 class Profile {

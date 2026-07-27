@@ -134,6 +134,13 @@ scada::aui::ViewManagerViewInfo ViewManager::GetComponentViewInfo(
 #endif
       .dock = window_info.is_pane(),
       .dock_bottom = window_info.dock_bottom(),
+      // Subsystems is the one pane that never tabifies onto its neighbours.
+      // Under the reshell this is a no-op — the activity rail's Devices mode
+      // shows Subsystems alone, so there is nothing to tab onto. It still
+      // matters for the legacy default page (pages/initial_page.cpp), where
+      // Objects+Portfolio and Subsystems form two stacked left columns
+      // precisely because this pane refuses to join their tab bar. Generalize
+      // to a WIN_NO_TABIFY flag if a second such pane ever appears.
       .tabify_existing_dock = window_info.command_id != ID_HARDWARE_VIEW};
 }
 

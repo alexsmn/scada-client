@@ -31,6 +31,12 @@ class Page {
 
   int id = 0;
   std::u16string title;
+  // The page's position in the activity rail and the Page menu. Explicit
+  // because `Profile::pages` is keyed by id, which cannot express an order the
+  // operator can rearrange. 0 means "never ordered" — those sort after the
+  // ordered ones, by id, so a profile written before reordering existed keeps
+  // its historical order.
+  int order = 0;
 
   PageLayout layout;
 

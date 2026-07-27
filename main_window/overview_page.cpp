@@ -19,14 +19,15 @@ Page MakeOverviewPage() {
   alarms_definition.AddItem("mode", "Current");
   WindowDefinition& alarms = page.AddWindow(alarms_definition);
 
-  // The Explorer sidebar and its sibling panes. These are `WIN_SING` panes, so
-  // the view manager docks them (`ViewManagerViewInfo::dock`) and tabifies
-  // them together rather than opening them as workspace tabs — the sidebar is
-  // the pane host, with the dock's tab bar as its pane switcher. The Explorer
-  // is added first because tabifying keeps the first pane fronted, and the
-  // Explorer is the one an operator lands on.
+  // The sidebar, seeded with the activity rail's default Objects mode. These
+  // are `WIN_SING` panes, so the view manager docks them
+  // (`ViewManagerViewInfo::dock`) and tabifies them together rather than
+  // opening them as workspace tabs. The object tree is added first because
+  // tabifying keeps the first pane fronted, and it is the one an operator
+  // lands on. Panes of the other modes are deliberately absent: the rail
+  // conforms the page to the active mode on open (see pane_modes.h), so
+  // listing them here would only create definitions it immediately hides.
   page.AddWindow(WindowDefinition{std::string_view{"Struct"}});
-  page.AddWindow(WindowDefinition{std::string_view{"Favorites"}});
   page.AddWindow(WindowDefinition{std::string_view{"Portfolio"}});
 
   // The mockup's cockpit proportions: the trend dominates (~two thirds of the

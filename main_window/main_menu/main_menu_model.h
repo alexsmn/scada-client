@@ -6,6 +6,7 @@
 #include "base/cancelation.h"
 #include "controller/command_registry.h"
 #include "filesystem/file_cache.h"
+#include "main_window/pages/page_switcher.h"
 
 #include <filesystem>
 #include <string_view>
@@ -88,12 +89,14 @@ class PageMenuModel : private MainMenuContext,
   virtual bool IsItemCheckedAt(int index) const override;
 
  private:
-  void OpenPage(const Page& page);
-  void OpenPageHelper(const Page& page, bool revert);
+  // The page list and the switching policy, shared with the activity rail's
+  // Pages pane so both surfaces behave identically.
+  PageSwitcher page_switcher_;
 
+  // The list as of the last MenuWillShow(), so ActivatedAt() resolves an index
+  // to a page id without re-walking the profile.
+  std::vector<PageEntry> entries_;
   int active_index_ = -1;
-
-  Cancelation cancelation_;
 };
 
 class WindowMenuModel : private MainMenuContext,

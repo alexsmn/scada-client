@@ -3,6 +3,8 @@
 #include "aui/qt/dialog_service_impl_qt.h"
 #include "controller/action_manager.h"
 #include "main_window/base_main_window.h"
+#include "main_window/pages/page_switcher.h"
+#include "main_window/pane_modes.h"
 
 #include <QMainWindow>
 
@@ -18,6 +20,7 @@ class NodeId;
 }
 
 class ActivityBar;
+class PageSwitcher;
 class DeviceDiagnosticsPanel;
 class InspectorPanel;
 class UserAccessPanel;
@@ -28,6 +31,7 @@ class QDockWidget;
 class QLabel;
 class QLineEdit;
 class QMenu;
+class QPoint;
 class QToolBar;
 class QWidget;
 class ProgressController;
@@ -39,6 +43,16 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
  public:
   explicit MainWindow(MainWindowContext&& context);
   ~MainWindow();
+
+  // Switches the left sidebar to `mode`: closes the panes that do not belong
+  // to it, opens the ones that do, fronts the first, and records the choice in
+  // the window's profile preferences. Public because selecting a pane's mode
+  // is how any caller — the rail, or the screenshot generator capturing that
+  // pane — brings it on screen.
+  void SetPaneMode(PaneModeId mode);
+  // Selects the mode that owns `window_type`, if any. Returns false when no
+  // mode claims it (a workspace view, or the bottom-docked Events pane).
+  bool SelectPaneModeForPane(std::string_view window_type);
 
   // BaseMainWindow
   virtual DialogService& GetDialogService() override { return dialog_service_; }
@@ -58,6 +72,10 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // ViewManagerDelegate
   virtual void OnShowTabPopupMenu(OpenedView& view,
                                   const scada::aui::Point& point) override;
+  // Both re-derive the rail marker: closing a pane by hand or activating a
+  // different one changes which mode the sidebar is actually showing.
+  virtual void OnViewClosed(OpenedView& view) override;
+  virtual void OnActiveViewChanged(OpenedView* view) override;
 
   // BaseMainWindow
   virtual void OpenPage(const Page& page) override;
@@ -87,7 +105,8 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // Opt-in top context bar (brand + command/search + live context cluster).
   // Only built when the experimental UX is enabled; see main.cpp.
   void CreateContextBar();
-  // Opt-in left activity rail (backlog 1.1): section navigation + alarm badge.
+  // Opt-in left activity rail (backlog 1.1): selects which panes occupy the
+  // left sidebar. It never opens a workspace tab and never switches the page.
   void CreateActivityBar();
   // Opt-in right Inspector dock (backlog 2.6): reflects the active view's
   // selection — identity, live value, control action.
@@ -104,10 +123,28 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // Opt-in right Transmission-rule dock: reflects a selected transmission item
   // (source → destination IOA). Tabified with the Inspector dock.
   void CreateTransmissionRulePanel();
-  // Opens the section's default view and marks it active on the rail.
-  void ActivateSection(const std::string& window_info_name);
-  // Opens the operator Overview page (from the rail's Overview section).
-  void OpenOverviewPage();
+  // Wires the rail's pages group: the page buttons, the "+" that creates one,
+  // and the per-page context menu.
+  void WireRailPages();
+  // Rebuilds the rail's page buttons and re-marks the open page.
+  void RefreshRailPages();
+  // Rename / Delete for `page_id`, plus New — the same registered ID_PAGE_*
+  // commands the Page menu uses.
+  void ShowPageContextMenu(int page_id, const QPoint& global_pos);
+  // Runs a registered page command through the shell's command resolution.
+  void ExecutePageCommand(unsigned command_id);
+  // Brings the current page's panes into line with the active mode, without
+  // touching the persisted choice. Called on every page open.
+  void ApplyPaneModeToCurrentWindow();
+  // The mode the window is currently in, resolved from the profile preference
+  // and falling back to what the open page looks like.
+  PaneModeId ActivePaneMode();
+  // Whether the current user may open `id`. Admin-gated modes resolve through
+  // the same command router the menus use, so both agree by construction.
+  bool IsPaneModeAvailable(PaneModeId id);
+  // Re-derives the rail's active marker and per-mode availability from the
+  // panes that are actually open, so the marker cannot go stale.
+  void RefreshPaneModeMarker();
   // Opens an address-space tag (from the palette) in a table view.
   void OpenTag(const scada::NodeId& node_id, const std::u16string& title);
   // Opens the Ctrl-K command palette over every registered command, optionally
@@ -156,9 +193,14 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   QLabel* flood_indicator_ = nullptr;
   boost::signals2::scoped_connection context_bar_connection_;
 
-  // Left activity rail (opt-in). Its alarm badge follows the status-bar model.
+  // Left activity rail (opt-in). Selects the sidebar's pane mode.
   ActivityBar* activity_bar_ = nullptr;
-  boost::signals2::scoped_connection activity_bar_connection_;
+  // The page list and switching policy behind the rail's pages group, shared
+  // with the Page main menu so both obey the same rules.
+  std::unique_ptr<PageSwitcher> page_switcher_;
+  // Guards RefreshPaneModeMarker against the pane close/activate notifications
+  // that SetPaneMode itself provokes while it is mid-switch.
+  bool applying_pane_mode_ = false;
 
   // Right Inspector dock (opt-in). Updated from OnSelectionChanged with the
   // active view's SelectionModel.

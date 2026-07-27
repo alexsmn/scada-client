@@ -176,6 +176,18 @@ void BaseMainWindow::OpenPane(const WindowInfo& window_info, bool activate) {
               -> Awaitable<void> { co_await OpenView(window_def, activate); });
 }
 
+void BaseMainWindow::OpenPaneSync(const WindowInfo& window_info,
+                                  bool activate) {
+  // Panes never carry a `path`, so OpenViewAsync's only suspension point
+  // (DownloadFileFromServer) is skipped for them and the coroutine is pure
+  // overhead. Going straight to the view manager makes the call ordered:
+  // opening two panes through OpenPane leaves their dock order at the mercy of
+  // executor scheduling, and the view manager tabifies onto whichever dock it
+  // finds first.
+  view_manager_->OpenView(WindowDefinition{window_info}, activate,
+                          /*after_view=*/nullptr);
+}
+
 void BaseMainWindow::ClosePane(const WindowInfo& window_info) {
   auto* opened_view = view_manager_->FindViewByType(window_info.name);
   if (opened_view) {
