@@ -125,6 +125,73 @@ void MakeSpecItemsResident(NodeService& node_service,
   scada::screenshot_generator::FetchNodesResident(node_service, node_ids);
 }
 
+// Seeds the device-log lines the fixture's `device_log` block defines as event
+// notifications on the device, so the Log capture renders a real session
+// instead of an empty grid. A `frame` object makes the line arrive as a
+// DeviceFrameEvent, which is what fills the decoded columns; without one it is
+// a plain log line, the shape an older server sends.
+void SeedDeviceLog(const boost::json::value& root,
+                   scada::LocalMonitoredItemService& monitored_item_service) {
+  const auto* block = root.as_object().if_contains("device_log");
+  if (!block)
+    return;
+
+  const scada::NodeId device_id = NodeIdFromScadaString(
+      std::string_view(block->at("device").as_string()));
+  const scada::Time now = scada::Now();
+
+  for (const auto& jl : block->at("lines").as_array()) {
+    scada::Event event;
+    event.event_id = 1;
+    const double seconds_ago = jl.at("seconds_ago").to_number<double>();
+    event.time = now - std::chrono::round<std::chrono::microseconds>(
+                           std::chrono::duration<double>{seconds_ago});
+    event.receive_time = event.time;
+    event.source_node_id = device_id;
+    event.event_type_id = scada::devices::id::DeviceWatchEventType;
+    event.message = scada::LocalizedText{UtfConvert<char16_t>(
+        std::string(jl.at("message").as_string()))};
+    event.severity = scada::kSeverityMin;
+    if (const auto* js = jl.as_object().if_contains("severity")) {
+      const std::string_view severity = js->as_string();
+      if (severity == "warning")
+        event.severity = scada::kSeverityWarning;
+      else if (severity == "error")
+        event.severity = scada::kSeverityCritical;
+    }
+
+    const auto* jf = jl.as_object().if_contains("frame");
+    if (!jf) {
+      monitored_item_service.AddEvent(device_id, std::any{std::move(event)});
+      continue;
+    }
+
+    event.event_type_id = scada::devices::id::DeviceFrameEventType;
+
+    scada::DeviceFrame frame;
+    const std::string_view direction = jf->at("direction").as_string();
+    frame.direction = direction == "tx" ? scada::DeviceFrame::kOutbound
+                                        : scada::DeviceFrame::kInbound;
+    const auto read = [jf](std::string_view name) -> scada::Int32 {
+      const auto* value = jf->as_object().if_contains(name);
+      return value ? static_cast<scada::Int32>(value->to_number<std::int64_t>())
+                   : 0;
+    };
+    if (const auto* jfmt = jf->as_object().if_contains("format"))
+      frame.format = std::string(jfmt->as_string());
+    frame.type_id = read("type_id");
+    frame.cause = read("cause");
+    frame.object_address = read("object_address");
+    frame.send_sequence = read("send_sequence");
+    frame.receive_sequence = read("receive_sequence");
+
+    monitored_item_service.AddEvent(
+        device_id,
+        std::any{scada::DeviceFrameEvent{.base = std::move(event),
+                                         .frame = std::move(frame)}});
+  }
+}
+
 scada::aui::Tree* FindTreeWidget(QWidget* widget) {
   if (!widget)
     return nullptr;
@@ -332,6 +399,8 @@ ScreenshotGenerator::ScreenshotGenerator() {
       g_config.json, [this](const scada::NodeId& node_id) {
         return address_space_.GetNode(node_id) != nullptr;
       });
+
+  SeedDeviceLog(g_config.json, monitored_item_service_);
 }
 
 ScreenshotGenerator::~ScreenshotGenerator() {

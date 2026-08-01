@@ -1460,8 +1460,10 @@
     {
       "type": "Log",
       "filename": "device-watch.png",
-      "width": 800,
-      "height": 400
+      "width": 1160,
+      "height": 360,
+      "path": "TS.103",
+      "rows": 12
     },
     {
       "type": "Nodes",
@@ -1683,5 +1685,128 @@
       "width": 420,
       "height": 160
     }
-  ]
+  ],
+  "_device_log_comment": "Device-log lines for the Log (device watch) capture, delivered as event notifications on `device`. An entry with a `frame` object arrives as a DeviceFrameEventType event and fills the decoded columns; one without is a plain log line, which is also what an older server sends - the #/$ marker then drives the direction column through the client's fallback.",
+  "device_log": {
+    "device": "TS.103",
+    "lines": [
+      {
+        "seconds_ago": 14.0,
+        "severity": "normal",
+        "message": "Соединение установлено"
+      },
+      {
+        "seconds_ago": 13.4,
+        "severity": "normal",
+        "message": "$TX: 68 04 07 00 00 00 (6 байт)",
+        "frame": {
+          "direction": "tx",
+          "format": "U"
+        }
+      },
+      {
+        "seconds_ago": 13.2,
+        "severity": "normal",
+        "message": "#RX: 68 04 0B 00 00 00 (6 байт)",
+        "frame": {
+          "direction": "rx",
+          "format": "U"
+        }
+      },
+      {
+        "seconds_ago": 12.0,
+        "severity": "normal",
+        "message": "M_ME_NC_1 получен",
+        "frame": {
+          "direction": "rx",
+          "format": "I",
+          "type_id": 13,
+          "cause": 3,
+          "object_address": 4001,
+          "send_sequence": 2044,
+          "receive_sequence": 1602
+        }
+      },
+      {
+        "seconds_ago": 11.6,
+        "severity": "normal",
+        "message": "M_ME_NC_1 получен",
+        "frame": {
+          "direction": "rx",
+          "format": "I",
+          "type_id": 13,
+          "cause": 3,
+          "object_address": 4002,
+          "send_sequence": 2045,
+          "receive_sequence": 1602
+        }
+      },
+      {
+        "seconds_ago": 11.2,
+        "severity": "normal",
+        "message": "Подтверждение приёма",
+        "frame": {
+          "direction": "tx",
+          "format": "S",
+          "receive_sequence": 2046
+        }
+      },
+      {
+        "seconds_ago": 10.4,
+        "severity": "normal",
+        "message": "M_SP_NA_1 получен",
+        "frame": {
+          "direction": "rx",
+          "format": "I",
+          "type_id": 1,
+          "cause": 3,
+          "object_address": 1001,
+          "send_sequence": 2046,
+          "receive_sequence": 1602
+        }
+      },
+      {
+        "seconds_ago": 9.8,
+        "severity": "normal",
+        "message": "C_SC_NA_1 отправлен",
+        "frame": {
+          "direction": "tx",
+          "format": "I",
+          "type_id": 45,
+          "cause": 6,
+          "object_address": 6001,
+          "send_sequence": 1602,
+          "receive_sequence": 2047
+        }
+      },
+      {
+        "seconds_ago": 9.2,
+        "severity": "normal",
+        "message": "C_SC_NA_1 подтверждён",
+        "frame": {
+          "direction": "rx",
+          "format": "I",
+          "type_id": 45,
+          "cause": 7,
+          "object_address": 6001,
+          "send_sequence": 2047,
+          "receive_sequence": 1603
+        }
+      },
+      {
+        "seconds_ago": 4.0,
+        "severity": "warning",
+        "message": "Истёк таймаут t1, отправлен TESTFR",
+        "frame": {
+          "direction": "tx",
+          "format": "U"
+        }
+      },
+      {
+        "seconds_ago": 2.0,
+        "severity": "error",
+        "message": "Нет ответа на TESTFR — связь потеряна"
+      }
+    ]
+  }
 }

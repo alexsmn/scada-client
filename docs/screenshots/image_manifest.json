@@ -246,6 +246,13 @@
       "notes": "Configuration workbench device-diagnostics inspector (DeviceDiagnostics): link-status hero (up/down/disabled) + live traffic/polling counters from the device's diagnostic child variables (Online/Enabled/MessagesIn/...). Reshell-only chrome (backlog 5.0), captured under --theme against a fixture device (TS.103, link down). Standalone like series-inspector; the capture makes the device resident (FetchNodesResident) so ShowDevice resolves the diagnostic variables and reads their current values. Not yet embedded in a manual page."
     },
     {
+      "file": "device-watch.png",
+      "tag": "auto-view",
+      "referenced_from": [],
+      "notes": "Device log (Watch view) for КП-01: the filter bar over a seeded IEC 60870-5-104 session — decoded Dir/Type/Cause/IOA/Fmt/N(S)/N(R) columns, plus a t1 timeout and a link loss carrying their severity colours. Rendered from the fixture's `device_log` block, delivered as event notifications by the generator's fake monitored-item service; the `rows` guard is 12 (11 seeded lines plus the one `events` entry sourced on this device). Was an empty grid for months because nothing bound a device to the view and nothing seeded events. Not published yet: no manual page embeds it.",
+      "published": false
+    },
+    {
       "file": "users-rbac.png",
       "tag": "auto-view",
       "published": false,
@@ -705,7 +712,7 @@
     }
   ],
   "counts": {
-    "auto-view": 10,
+    "auto-view": 11,
     "auto-dialog": 22,
     "auto-menu": 17,
     "auto-state": 5,

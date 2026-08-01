@@ -147,10 +147,15 @@ std::unique_ptr<UiView> WatchView::Init(const WindowDefinition& definition) {
       // they cannot be swapped in with the mode.
       {4, Translate("Type ID"), 70, scada::aui::TableColumn::RIGHT},
       {5, Translate("Cause"), 60, scada::aui::TableColumn::RIGHT},
-      {6, Translate("IOA"), 70, scada::aui::TableColumn::RIGHT},
+      // 90, not 70: the Russian header ("Адрес") plus a five-digit object
+      // address does not fit the narrower column, and a clipped header is
+      // what the device-watch capture caught.
+      {6, Translate("IOA"), 90, scada::aui::TableColumn::RIGHT},
       {7, Translate("Fmt"), 45, scada::aui::TableColumn::LEFT},
       {8, Translate("N(S)/N(R)"), 90, scada::aui::TableColumn::RIGHT},
-      {1, Translate("Device"), 100, scada::aui::TableColumn::LEFT},
+      // Device names carry their protocol ("КП-01 МЭК-60870"), which 100 px
+      // elides to uselessness.
+      {1, Translate("Device"), 150, scada::aui::TableColumn::LEFT},
       {2, Translate("Event"), 400, scada::aui::TableColumn::LEFT},
   };
 

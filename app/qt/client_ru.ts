@@ -14,7 +14,9 @@
     </message>
     <message>
         <source>IOA</source>
-        <translation>Адрес объекта</translation>
+        <!-- Short on purpose: it is a column header beside Тип and Причина,
+             where "Адрес" is unambiguous, and the full "Адрес объекта" clips. -->
+        <translation>Адрес</translation>
     </message>
     <!-- Device log filter bar (modules/watch). "I-format" / "S/U-format" are
          the IEC 60870-5-104 §5.1 APCI format names and stay as-is. -->
