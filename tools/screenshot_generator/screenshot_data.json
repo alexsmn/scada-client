@@ -1443,19 +1443,22 @@
       "type": "Event",
       "filename": "events.png",
       "width": 800,
-      "height": 300
+      "height": 300,
+      "min_rows": 2
     },
     {
       "type": "EventJournal",
       "filename": "events-log.png",
       "width": 800,
-      "height": 400
+      "height": 400,
+      "min_rows": 9
     },
     {
       "type": "EventJournal",
       "filename": "events-alarm-surface.png",
       "width": 800,
-      "height": 400
+      "height": 400,
+      "min_rows": 9
     },
     {
       "type": "Log",

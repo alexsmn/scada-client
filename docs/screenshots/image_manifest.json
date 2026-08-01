@@ -331,6 +331,20 @@
       "notes": "Historical-databases admin table (HistoricalDB window) under --theme: the themed generic aui::Grid over the HistoricalDatabases folder — Name / Depth / PendingTaskCount / ItemCount / WriteValueCount. Third sibling of admin-simulation.png / admin-formats.png (backlog 5.1). Needs the HistoricalDatabases folder + HistoricalDatabaseType (Depth/ItemCount/WriteValueCount/PendingTaskCount) in scada_test_address_space.h and three fixture databases (SCADA.9501-9503). Theme-gated; guarded by client_screenshot_check_themed."
     },
     {
+      "file": "events.png",
+      "tag": "auto-view",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Current-events panel (the docked Event window, EventView with is_panel=true) — the unacked-only surface, as distinct from the EventJournal history in events-log.png. Renders the fixture's two pending alarms (ids 1008/1009, acknowledged:false); every other fixture event defaults to acked and is deliberately absent. Untagged until 2026-08-01, so the managed-image gate skipped it and the on-disk render sat stale from before those pending alarms existed — showing a header row over an empty body. min_rows:2 on the fixture spec now fails the capture if the unacked path stops delivering. Validation-only."
+    },
+    {
+      "file": "events-log.png",
+      "tag": "auto-view",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Legacy event journal (the EventJournal window, EventView with is_panel=false) in the no-theme pipeline — history over the fixture's nine events, acked and pending alike, as distinct from the unacked-only panel in events.png and the themed alarm surface in events-alarm-surface.png. Untagged until 2026-08-01, so the managed-image gate skipped it and the on-disk render sat stale; unlike events.png its content was never wrong, since the journal shows acked history the fixture has always had. Validation-only."
+    },
+    {
       "file": "events-alarm-surface.png",
       "tag": "reshell-theme",
       "referenced_from": [
@@ -712,7 +726,7 @@
     }
   ],
   "counts": {
-    "auto-view": 11,
+    "auto-view": 13,
     "auto-dialog": 22,
     "auto-menu": 17,
     "auto-state": 5,
