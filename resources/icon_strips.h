@@ -4,17 +4,16 @@
 
 #include <string_view>
 
-// Qt resource paths of the horizontal icon strips the tree/table views slice
-// through `aui::Tree::LoadIcons` / `aui::Table::LoadIcons`. Kept in lock-step
-// with res/client.qrc.
+// The last horizontal icon strip, sliced through `aui::Tree::LoadIcons`. Kept
+// in lock-step with res/client.qrc.
 //
-// These were Win32 `BITMAP` resources (IDB_ITEMS / IDB_WIN_TYPES) in the
-// client resource script until it was dropped; serving them from the Qt
-// resource file makes the icons render on every platform rather than only on
-// Windows.
-
-// Node-class icons for address-space trees and tables (16x16 tiles).
-inline constexpr std::string_view kItemIconStrip = ":/res/items.bmp";
+// It was a Win32 `BITMAP` resource (IDB_WIN_TYPES) in the client resource
+// script until that was dropped; serving it from the Qt resource file makes
+// the icons render on every platform rather than only on Windows.
+//
+// `items.bmp` is gone — every consumer now renders the Lucide glyphs below
+// (docs/ux/iconography.md §5.2). This one outlives it only because the
+// favourites tree has not been converted.
 
 // Window-type icons for the favourites tree (16-wide tiles).
 inline constexpr std::string_view kWindowTypeIconStrip = ":/res/wintypes.bmp";
@@ -22,9 +21,11 @@ inline constexpr std::string_view kWindowTypeIconStrip = ":/res/wintypes.bmp";
 // Tile width of every strip above, in pixels.
 inline constexpr int kIconStripTileWidth = 16;
 
-// The Lucide glyphs that replace `items.bmp` for the address-space trees,
-// indexed by `ConfigurationTreeNode::IMAGE_*` so the models' tile-index
-// contract is unchanged (docs/ux/iconography.md §5.2).
+// The Lucide glyphs that replaced `items.bmp`, indexed by
+// `ConfigurationTreeNode::IMAGE_*` so the models' tile-index contract is
+// unchanged (docs/ux/iconography.md §5.2). Shared by the address-space trees,
+// the table view and the portfolio — the table only ever asks for
+// IMAGE_ITEM, and the portfolio for IMAGE_FOLDER / IMAGE_ITEM.
 //
 // Note the four device tiles and the two subsystem tiles collapse onto one
 // glyph each. State moved out of the artwork and onto the status dot the

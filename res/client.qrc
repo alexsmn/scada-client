@@ -5,12 +5,12 @@
     </qresource>
     <!-- Toolbar/command action icons, addressable as :/res/<name>.png. Kept in
          lock-step with the id->path table in aui/qt/client_utils_qt.cpp.
-         The two .bmp files are horizontal icon strips sliced by aui's
-         LoadIcons() (magenta 255,0,255 is the transparency key); they were
-         Win32 BITMAP resources (IDB_ITEMS / IDB_WIN_TYPES) until the client
-         resource script was dropped. -->
+         wintypes.bmp is the last horizontal icon strip sliced by aui's
+         LoadIcons() (magenta 255,0,255 is the transparency key); it was a
+         Win32 BITMAP resource (IDB_WIN_TYPES) until the client resource
+         script was dropped. items.bmp is retired — its consumers render the
+         Lucide glyphs under /icons instead. -->
     <qresource prefix="/res">
-        <file>items.bmp</file>
         <file>wintypes.bmp</file>
         <file>acknowledge_all.png</file>
         <file>chart_curve.png</file>

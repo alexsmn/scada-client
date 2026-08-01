@@ -221,10 +221,16 @@ returns them; they are dead slots inherited from the bitmap era. They are kept
 mapped rather than dropped so the enum and the table stay aligned; retiring the
 enum values is a separate cleanup.
 
-Still on the strip: the **table view** and the **portfolio**, which call
-`LoadIcons(kItemIconStrip, …)` directly, and the **favourites** tree, which uses
-`wintypes.bmp`. `res/items.bmp` and `res/wintypes.bmp` therefore stay for now —
-§7's "retire the assets" step lands with the last of those.
+The **table view** and the **portfolio** followed (2026-08-01), through the
+same seam on `aui::Table`. That was the last consumer of `res/items.bmp`, so
+the strip is **deleted** — the first of §7's retirements. The table only ever
+asks for `IMAGE_ITEM` and the portfolio for `IMAGE_FOLDER`/`IMAGE_ITEM`, so
+both fall inside the same table.
+
+Still on a strip: the **favourites** tree, which slices `wintypes.bmp` for its
+window-type tiles (`table`, `chart-spline`, `folder` per §5.2). `res/icons/`
+carries the ISC licence; the repo-root `NOTICE` §7 asks for lands with that
+last swap, when there is a single set left to name.
 
 ## 6. How to add or change an icon
 

@@ -95,7 +95,7 @@ TableView::TableView(const ControllerContext& context)
   }
 #endif
 
-  view_->LoadIcons(kItemIconStrip, kIconStripTileWidth, kIconStripMaskColor);
+  view_->LoadGlyphs(kItemGlyphs, kTreeGlyphSize);
 
   view_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });
 

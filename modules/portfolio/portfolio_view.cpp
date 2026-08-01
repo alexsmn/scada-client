@@ -28,7 +28,7 @@ std::unique_ptr<UiView> PortfolioView::Init(
     const WindowDefinition& definition) {
   tree_ = new scada::aui::Tree{model_};
   tree_->SetRootVisible(false);
-  tree_->LoadIcons(kItemIconStrip, kIconStripTileWidth, kIconStripMaskColor);
+  tree_->LoadGlyphs(kItemGlyphs, kTreeGlyphSize);
 
   tree_->SetDoubleClickHandler([this] {
     PortfolioTreeNode* node = model_->AsNode(tree_->GetSelectedNode());

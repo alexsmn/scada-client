@@ -1,5 +1,6 @@
 
 #include "aui/qt/tree.h"
+#include "aui/qt/image_util.h"
 
 #include "aui/color.h"
 #include "aui/models/tree_model.h"
@@ -145,17 +146,8 @@ void Tree::LoadGlyphs(std::span<const std::string_view> resource_paths,
                              devicePixelRatioF());
 }
 
-// Row glyphs mark *kind*, never state — state rides the status dot
-// (docs/ux/iconography.md §5.2) — so they take the muted text colour rather
-// than competing with the label. Derived from the live palette so one asset
-// serves every theme.
 Color Tree::GlyphTint() const {
-  QColor tint = palette().color(QPalette::Text);
-  tint.setAlphaF(0.7);
-  return Rgba{static_cast<unsigned char>(tint.red()),
-              static_cast<unsigned char>(tint.green()),
-              static_cast<unsigned char>(tint.blue()),
-              static_cast<unsigned char>(tint.alpha())};
+  return GlyphTintFor(palette());
 }
 
 void Tree::SelectNode(void* node) {

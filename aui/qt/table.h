@@ -6,6 +6,7 @@
 #include <boost/json.hpp>
 
 #include <QTableView>
+#include <span>
 #include <string_view>
 
 class QSortFilterProxyModel;
@@ -52,6 +53,11 @@ class Table : public QTableView {
   QWidget* CreateParentIfNecessary() { return this; }
 
   void LoadIcons(std::string_view resource_path, int width, Color mask_color);
+
+  // Loads cell glyphs from SVG resources instead of a sliced bitmap strip,
+  // tinted to follow the palette and re-tinted when the theme changes
+  // (docs/ux/iconography.md §5.2).
+  void LoadGlyphs(std::span<const std::string_view> resource_paths, int size);
 
   boost::json::value SaveState() const;
   void RestoreState(const boost::json::value& data);

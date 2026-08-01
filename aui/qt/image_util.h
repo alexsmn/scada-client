@@ -1,7 +1,10 @@
 #pragma once
 
+#include "aui/color.h"
+
 #include <QBitmap>
 #include <QColor>
+#include <QPalette>
 #include <QIcon>
 #include <QPainter>
 #include <QPixmap>
@@ -89,4 +92,18 @@ inline std::vector<QIcon> LoadTintedGlyphs(
   for (std::string_view path : resource_paths)
     icons.push_back(LoadTintedGlyph(path, size, tint, device_pixel_ratio));
   return icons;
+}
+
+// The colour row glyphs are rendered in, from a live palette.
+//
+// Row glyphs mark *kind*, never state — state rides the status dot
+// (docs/ux/iconography.md §5.2) — so they take a muted text colour rather than
+// competing with the label they sit beside.
+inline scada::aui::Color GlyphTintFor(const QPalette& palette) {
+  QColor tint = palette.color(QPalette::Text);
+  tint.setAlphaF(0.7);
+  return scada::aui::Rgba{static_cast<unsigned char>(tint.red()),
+                          static_cast<unsigned char>(tint.green()),
+                          static_cast<unsigned char>(tint.blue()),
+                          static_cast<unsigned char>(tint.alpha())};
 }
