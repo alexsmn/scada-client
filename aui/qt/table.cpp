@@ -8,12 +8,14 @@
 #include "base/check.h"
 #include "base/value_util.h"
 
+#include <QAction>
 #include <QClipboard>
 #include <QEvent>
 #include <QFontMetrics>
 #include <QGuiApplication>
 #include <QHeaderView>
 #include <QKeyEvent>
+#include <QMenu>
 #include <QPalette>
 #include <QSortFilterProxyModel>
 
@@ -104,9 +106,21 @@ Table::Table(std::shared_ptr<TableModel> model,
   setShowGrid(false);
   setSelectionBehavior(SelectRows);
   ApplyThemePalette();
+
+  // Choosing columns is a header right-click on every desktop table an
+  // operator already uses; there is no reason to invent a different affordance.
+  horizontalHeader()->setContextMenuPolicy(Qt::CustomContextMenu);
+  connect(horizontalHeader(), &QWidget::customContextMenuRequested, this,
+          [this](const QPoint& position) { ShowColumnMenu(position); });
+
   connect(horizontalHeader(), &QHeaderView::sectionResized,
           [this](int index, int old_size, int new_size) {
-            model_adapter_->columns()[index].width = new_size;
+            // Hiding a section reports a resize to zero. Recording that would
+            // destroy the column's width, so it comes back as an ungrabbable
+            // sliver — and SaveState would persist the zero. Only a real
+            // resize updates the stored width.
+            if (new_size > 0)
+              model_adapter_->columns()[index].width = new_size;
           });
 }
 
@@ -175,6 +189,8 @@ void Table::OpenEditor(int row) {
 boost::json::value Table::SaveState() const {
   boost::json::value data{boost::json::object{}};
   auto& header = *horizontalHeader();
+  // Hoisted: the local `columns` below shadows the columns() accessor.
+  const std::vector<TableColumn>& table_columns = columns();
   boost::json::array columns;
   for (int i = 0;; ++i) {
     int index = header.logicalIndex(i);
@@ -182,7 +198,15 @@ boost::json::value Table::SaveState() const {
       break;
     boost::json::value column{boost::json::object{}};
     SetKey(column, "ix", index);
-    SetKey(column, "size", header.sectionSize(index));
+    // A hidden section reports size 0, which would restore as a zero-width
+    // column the operator cannot grab. Record the size it will have when shown
+    // again, and carry the hidden flag separately.
+    const bool hidden = header.isSectionHidden(index);
+    SetKey(column, "size",
+           hidden ? DefaultColumnWidth(table_columns[index])
+                  : header.sectionSize(index));
+    if (hidden)
+      SetKey(column, "hidden", 1);
     columns.emplace_back(std::move(column));
   }
   data.as_object()["columns"] = std::move(columns);
@@ -197,12 +221,83 @@ void Table::RestoreState(const boost::json::value& data) {
       int index = GetInt(column, "ix");
       int size = GetInt(column, "size");
       header.resizeSection(index, size);
+      header.setSectionHidden(index, GetInt(column, "hidden") != 0);
       header.swapSections(header.visualIndex(index), visual_index);
       ++visual_index;
     }
     for (; visual_index < header.count(); ++visual_index)
       header.hideSection(header.logicalIndex(visual_index));
   }
+}
+
+int Table::ColumnSection(int column_id) const {
+  const std::vector<TableColumn>& table_columns = columns();
+  for (size_t i = 0; i < table_columns.size(); ++i) {
+    if (table_columns[i].id == column_id)
+      return static_cast<int>(i);
+  }
+  return -1;
+}
+
+bool Table::IsColumnVisible(int column_id) const {
+  const int section = ColumnSection(column_id);
+  return section != -1 && !horizontalHeader()->isSectionHidden(section);
+}
+
+void Table::SetColumnVisible(int column_id, bool visible) {
+  const int section = ColumnSection(column_id);
+  if (section == -1)
+    return;
+
+  // Refuse to hide the last one. The header context menu is the only way to
+  // bring a column back, and a header with no sections has nothing to
+  // right-click — the table would be unrecoverable without editing the
+  // profile by hand.
+  if (!visible && VisibleColumnCount() <= 1)
+    return;
+
+  QHeaderView& header = *horizontalHeader();
+  header.setSectionHidden(section, !visible);
+
+  // A section can come back at zero width — Qt restores the size it had when
+  // hidden, and a column hidden before it was ever laid out (restored from a
+  // profile, say) had none. A zero-width column is invisible and too thin to
+  // grab, so it would look like the show had failed.
+  if (visible && header.sectionSize(section) == 0)
+    header.resizeSection(section, DefaultColumnWidth(columns()[section]));
+}
+
+int Table::VisibleColumnCount() const {
+  const QHeaderView& header = *horizontalHeader();
+  int visible = 0;
+  for (int section = 0; section < header.count(); ++section) {
+    if (!header.isSectionHidden(section))
+      ++visible;
+  }
+  return visible;
+}
+
+void Table::ShowColumnMenu(const QPoint& position) {
+  QMenu menu;
+  const std::vector<TableColumn>& table_columns = columns();
+  const bool last_one_left = VisibleColumnCount() <= 1;
+
+  for (const TableColumn& column : table_columns) {
+    QAction* action = menu.addAction(QString::fromStdU16String(column.title));
+    action->setCheckable(true);
+    const bool visible = IsColumnVisible(column.id);
+    action->setChecked(visible);
+    // The last visible column stays checked and disabled rather than silently
+    // ignoring the click, so the refusal is visible instead of mysterious.
+    action->setEnabled(!visible || !last_one_left);
+    const int column_id = column.id;
+    connect(action, &QAction::toggled, this,
+            [this, column_id](bool checked) {
+              SetColumnVisible(column_id, checked);
+            });
+  }
+
+  menu.exec(horizontalHeader()->mapToGlobal(position));
 }
 
 QModelIndex Table::RowToIndex(int row) const {

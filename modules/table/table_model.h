@@ -37,9 +37,15 @@ class TableModel : private TableModelContext, public scada::aui::TableModel {
     // the row's trailing history window (no cell text). Appended for the same
     // saved-state stability reason.
     COLUMN_SPARKLINE,
+    // What the row is bound to: its NodeId, or the expression for a computed
+    // row. This is what tells an engineer where a value comes from — the job
+    // a present/absent row icon used to do silently and without a label
+    // (docs/ui-mockups/screens/table-watch.html shows it as its own column).
+    // Appended for the same saved-state stability reason.
+    COLUMN_SOURCE,
 
     COLUMN_FIRST = COLUMN_TITLE,
-    COLUMN_LAST = COLUMN_SPARKLINE,
+    COLUMN_LAST = COLUMN_SOURCE,
   };
 
   explicit TableModel(TableModelContext&& context);

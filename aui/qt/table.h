@@ -5,6 +5,7 @@
 #include "base/lifetime.h"
 #include <boost/json.hpp>
 
+#include <QPoint>
 #include <QTableView>
 #include <span>
 #include <string_view>
@@ -62,6 +63,12 @@ class Table : public QTableView {
   boost::json::value SaveState() const;
   void RestoreState(const boost::json::value& data);
 
+  // Shows or hides one column by its `TableColumn::id`. Hiding every column is
+  // refused — the header context menu is the only way back, and an empty
+  // header offers nothing to right-click.
+  void SetColumnVisible(int column_id, bool visible);
+  bool IsColumnVisible(int column_id) const;
+
   void CopyToClipbard();
 
  protected:
@@ -71,6 +78,15 @@ class Table : public QTableView {
 
  private:
   void ApplyThemePalette();
+
+  // The header's right-click menu: one checkable entry per column, the
+  // conventional desktop idiom for choosing them.
+  void ShowColumnMenu(const QPoint& position);
+
+  // Visual position of `column_id`, or -1.
+  int ColumnSection(int column_id) const;
+
+  int VisibleColumnCount() const;
 
   QModelIndex RowToIndex(int row) const;
   int IndexToRow(const QModelIndex& index) const;

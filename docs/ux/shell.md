@@ -198,6 +198,25 @@ restyled to editor tabs and the per-window native title chrome is dropped.
 - Other tabs (trend, journal, table, sheet) are the existing views rendered
   inside the new tab chrome.
 
+**The table's `Source` column** (2026-08-01) shows what each row is bound to —
+a NodeId, or the `=`-prefixed expression for a computed row — as
+[`table-watch.html`](../ui-mockups/screens/table-watch.html) draws it. It
+replaced a row icon that encoded the same thing by *its own presence*: a kind
+glyph doing a state job, with no label and no colour, which principles.md §5
+rules out. Every row in a table is a data item, so the glyph distinguished
+nothing anyway; what varies is where the value comes from, and that now reads
+as text. An unresolvable row shows the binding it was asked for beside "No
+data", which the missing icon never said.
+
+**Columns are choosable** from the header's right-click menu — the idiom every
+desktop table already uses — with the state saved in the window definition. Two
+rules worth keeping: the last visible column cannot be hidden (the menu is the
+only way back, and a header with no sections has nothing to right-click, so its
+entry is shown checked and disabled rather than silently ignoring the click),
+and hiding a column must not destroy its width. Qt reports hiding as a resize
+to zero, which the view was recording as the column's new width — so a hidden
+column came back as an ungrabbable sliver.
+
 ### 2.5 Inspector (new)
 
 A ~308 px right panel driven by the current selection: a large mono read-out

@@ -73,7 +73,13 @@ TableView::TableView(const ControllerContext& context)
         scada::aui::TableColumn::LEFT,
         scada::aui::TableColumn::DataType::DateTime},
        {TableModel::COLUMN_EVENT, Translate("Event"), 200,
-        scada::aui::TableColumn::LEFT}});
+        scada::aui::TableColumn::LEFT},
+       // What the row is bound to — a NodeId, or the expression for a
+       // computed row. Monospace because it is an identifier, not prose.
+       {TableModel::COLUMN_SOURCE, Translate("Source"), 220,
+        scada::aui::TableColumn::LEFT,
+        scada::aui::TableColumn::DataType::General,
+        /*monospace=*/true}});
 
   // cppcheck-suppress noCopyConstructor
   // cppcheck-suppress noOperatorEq

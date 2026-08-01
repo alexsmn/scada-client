@@ -216,7 +216,15 @@ void TableRow::GetCellEx(TableCellEx& cell) const {
   switch (cell.column_id) {
     case TableModel::COLUMN_TITLE:
       cell.text = GetTitle();
-      cell.icon_index = !timed_data_.node_id().is_null() ? 1 : -1;
+      // No icon. Every row in a table is a data item, so a kind glyph
+      // distinguishes nothing; the one this used to draw encoded *state*
+      // (bound vs unbound) through its own presence, which is a signal with
+      // no label and no colour — principles.md §5. What the row is bound to
+      // now has its own readable column, COLUMN_SOURCE.
+      break;
+
+    case TableModel::COLUMN_SOURCE:
+      cell.text = UtfConvert<char16_t>(GetFormula());
       break;
 
     case TableModel::COLUMN_VALUE:

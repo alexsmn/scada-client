@@ -88,6 +88,48 @@ NodeRef MakeDiscreteItemNode(FakeNodeService& node_service) {
       .type_definition_id = scada::data_items::id::DiscreteItemType});
 }
 
+
+// The Source column is what tells an engineer where a value comes from — the
+// job the row icon used to do by its own presence, silently and without a
+// label (docs/ui-mockups/screens/table-watch.html gives it a column).
+TEST_F(TableModelTest, SourceColumnShowsWhatTheRowIsBoundTo) {
+  const auto& row_context = SetFormula();
+  // Cell rendering consults the row's current value for its colours.
+  EXPECT_CALL(row_context->timed_data, GetDataValue()).Times(AnyNumber());
+
+  // The leading "=" is how the client spells a computed row, which is exactly
+  // the distinction this column exists to make visible: an expression, not a
+  // NodeId.
+  EXPECT_EQ(u"=formula",
+            table_model_.GetCellText(0, TableModel::COLUMN_SOURCE));
+}
+
+// The trailing empty row is bound to nothing, and says so by being empty
+// rather than by lacking a mark.
+TEST_F(TableModelTest, SourceColumnIsEmptyForTheUnboundRow) {
+  ASSERT_EQ(1, table_model_.GetRowCount());
+
+  EXPECT_EQ(u"", table_model_.GetCellText(0, TableModel::COLUMN_SOURCE));
+}
+
+// Every row is a data item, so a kind glyph distinguishes nothing; the one
+// this used to draw encoded state through its presence, which principles.md §5
+// rules out.
+TEST_F(TableModelTest, TitleCellCarriesNoIcon) {
+  const auto& row_context = SetFormula();
+  EXPECT_CALL(row_context->timed_data, GetDataValue()).Times(AnyNumber());
+
+  const std::u16string title = u"Title";
+  EXPECT_CALL(row_context->timed_data, GetTitle()).WillOnce(Return(title));
+
+  TableCellEx cell = {};
+  cell.row = 0;
+  cell.column_id = TableModel::COLUMN_TITLE;
+  table_model_.GetCellEx(cell);
+
+  EXPECT_EQ(cell.icon_index, -1);
+}
+
 }  // namespace
 
 TableModelTest::TableModelTest() {
@@ -210,8 +252,8 @@ TEST_F(TableModelTest, GetTitle) {
 
   const std::u16string title = u"Title";
   EXPECT_CALL(row_context->timed_data, GetTitle()).WillOnce(Return(title));
-  // For icon index.
-  EXPECT_CALL(row_context->timed_data, GetNode());
+  // No GetNode() expectation: the title cell used to ask for the row's node
+  // only to decide whether to draw an icon, and it no longer draws one.
   EXPECT_EQ(title, table_model_.GetCellText(0, TableModel::COLUMN_TITLE));
 }
 

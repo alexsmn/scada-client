@@ -40,6 +40,12 @@
         <source>Filter by IOA, type or cause</source>
         <translation>Фильтр по адресу, типу или причине</translation>
     </message>
+    <!-- Table view: what a row is bound to — a NodeId, or the expression for
+         a computed row (modules/table). -->
+    <message>
+        <source>Source</source>
+        <translation>Источник</translation>
+    </message>
     <!-- Status strip: an armed frame capture (main_window/status_bar). -->
     <message>
         <source>Capturing</source>

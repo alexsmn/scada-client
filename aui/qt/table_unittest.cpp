@@ -91,5 +91,62 @@ TEST_F(TableTest, FollowsALaterApplicationPaletteChange) {
             QApplication::palette().color(QPalette::Window));
 }
 
+
+// Column visibility. The header right-click menu is the operator-facing form;
+// this is the API under it.
+TEST_F(TableTest, ColumnsCanBeHiddenAndShown) {
+  Table table{std::make_shared<StubTableModel>(), MakeColumns()};
+
+  EXPECT_TRUE(table.IsColumnVisible(kTimeColumn));
+  table.SetColumnVisible(kTimeColumn, false);
+  EXPECT_FALSE(table.IsColumnVisible(kTimeColumn));
+
+  table.SetColumnVisible(kTimeColumn, true);
+  EXPECT_TRUE(table.IsColumnVisible(kTimeColumn));
+}
+
+// Hiding the last one is refused: the header context menu is the only way to
+// bring a column back, and a header with no sections has nothing to
+// right-click — the table would be unrecoverable short of editing the profile.
+TEST_F(TableTest, TheLastVisibleColumnCannotBeHidden) {
+  Table table{std::make_shared<StubTableModel>(), MakeColumns()};
+
+  table.SetColumnVisible(kValueColumn, false);
+  table.SetColumnVisible(kTimeColumn, false);
+  ASSERT_TRUE(table.IsColumnVisible(kTitleColumn));
+
+  table.SetColumnVisible(kTitleColumn, false);
+
+  EXPECT_TRUE(table.IsColumnVisible(kTitleColumn));
+}
+
+// A hidden column has to survive save/restore, or it comes back every time the
+// view is reopened.
+TEST_F(TableTest, HiddenColumnsSurviveSaveAndRestore) {
+  Table saved{std::make_shared<StubTableModel>(), MakeColumns()};
+  saved.SetColumnVisible(kValueColumn, false);
+
+  Table restored{std::make_shared<StubTableModel>(), MakeColumns()};
+  restored.RestoreState(saved.SaveState());
+
+  EXPECT_FALSE(restored.IsColumnVisible(kValueColumn));
+  EXPECT_TRUE(restored.IsColumnVisible(kTitleColumn));
+  EXPECT_TRUE(restored.IsColumnVisible(kTimeColumn));
+}
+
+// A hidden section reports width 0. Restoring that verbatim would bring the
+// column back as an ungrabbable sliver.
+TEST_F(TableTest, AHiddenColumnRestoresWithAUsableWidth) {
+  Table saved{std::make_shared<StubTableModel>(), MakeColumns()};
+  saved.SetColumnVisible(kValueColumn, false);
+
+  Table restored{std::make_shared<StubTableModel>(), MakeColumns()};
+  restored.RestoreState(saved.SaveState());
+  restored.SetColumnVisible(kValueColumn, true);
+
+  EXPECT_TRUE(restored.IsColumnVisible(kValueColumn));
+  EXPECT_GT(restored.columnWidth(kValueColumn), 0);
+}
+
 }  // namespace
 }  // namespace scada::aui

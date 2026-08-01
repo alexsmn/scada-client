@@ -1407,7 +1407,7 @@
     {
       "type": "Table",
       "filename": "table.png",
-      "width": 900,
+      "width": 1230,
       "height": 300,
       "paths": [
         "TIT.200",
@@ -1421,7 +1421,7 @@
     {
       "type": "Table",
       "filename": "table-workspace.png",
-      "width": 900,
+      "width": 1460,
       "height": 340,
       "min_rows": 6,
       "paths": [
