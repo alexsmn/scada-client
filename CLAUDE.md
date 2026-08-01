@@ -165,9 +165,21 @@ The information architecture from the reshell still stands (Activity bar →
 Explorer → workspace tabs → Inspector → status strip, operator-first, one home
 per datum). It is the *chrome* that becomes native, not the layout.
 
-The HTML mockups in `docs/ui-mockups/` are **layout references only** — their
-appearance predates this direction. Validate implemented UI against real Qt
-widgets via the headless `client_screenshot_generator`, never against the HTML.
+The HTML mockups in [`docs/ui-mockups/screens/`](docs/ui-mockups/screens/) are
+**the north star for information architecture** — which surfaces exist, what
+each one shows, and what the operator can act on there. They were restyled to
+this native direction on 2026-07-26, but they remain approximations of it and
+are **not a visual target**: "native" means the appearance is the host
+platform's, and it differs between macOS and Windows. Read them for *what goes
+where and which data appears*; take the *appearance* from the platform, and
+validate implemented UI against real Qt widgets via the headless
+`client_screenshot_generator`, never against the HTML. See
+[`docs/ux/README.md`](docs/ux/README.md) → Mockups for the full caveat.
+
+That architecture is the **product's**, not just this client's — the web client
+implements the same one, rendered in its own idiom. The cross-client obligation
+that goes with it is recorded in the superproject `CLAUDE.md`, not here (this
+repo must stay standalone).
 
 - [`docs/ux/principles.md`](docs/ux/principles.md) — HMI/SCADA UX principles
   (High-Performance HMI, ISA-101, ISA-18.2/EEMUA 191 alarms, situational
@@ -180,9 +192,10 @@ widgets via the headless `client_screenshot_generator`, never against the HTML.
 - [`docs/ux/backlog.md`](docs/ux/backlog.md) — the surface catalogue and
   dependency notes. Treat it as a **menu of slices, not a fixed waterfall**
   (see the implementation approach below).
-- Rendered, theme-toggleable mockups (the visual source of truth) live in
-  [`docs/ui-mockups/screens/`](docs/ui-mockups/screens/) — operator and
-  engineering surfaces, each with a light/dark toggle.
+- Rendered, theme-toggleable mockups live in
+  [`docs/ui-mockups/screens/`](docs/ui-mockups/screens/) — operator,
+  engineering and admin surfaces, each with a light/dark toggle. They are the
+  architecture reference described above, not a visual target.
 
 ### UX implementation approach
 
@@ -207,9 +220,9 @@ build the reshell (decided with the user) is:
   global sheet, and never make it unconditional.
 - **Every removed `setStyleSheet` is progress.** Adding one needs a reason that
   `QPalette` plus `QStyle::PixelMetric` could not serve — state it in a comment.
-- **Validate by purpose, and validate in both OS appearances.** Use HTML
-  mockups in `docs/ui-mockups/` for information architecture only; validate
-  anything implemented against **real Qt widgets** via the headless
+- **Validate by purpose, and validate in both OS appearances.** Use the HTML
+  mockups in `docs/ui-mockups/screens/` for information architecture only;
+  validate anything implemented against **real Qt widgets** via the headless
   `client_screenshot_generator` (see `docs/screenshots.md`) — not HTML, which
   does not match Qt's rendering. A native-look change is not done until it has
   been seen under both a light and a dark system theme.
