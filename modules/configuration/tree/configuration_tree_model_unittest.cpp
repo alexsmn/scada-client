@@ -3,7 +3,9 @@
 #include "configuration/tree/configuration_tree_node.h"
 #include "resources/icon_strips.h"
 
-#include <QFile>
+#include <filesystem>
+#include <fstream>
+#include <iterator>
 
 #include "aui/translation.h"
 #include "base/async_completion.h"
@@ -400,20 +402,40 @@ TEST(ConfigurationTreeGlyphs, WindowTypeTableCoversTheFavouriteKinds) {
   EXPECT_NE(kWindowTypeGlyphs[0], kWindowTypeGlyphs[1]);
 }
 
-// Every mapped path must actually resolve through the Qt resource system. The
-// tables above only check the shape of the strings; a typo, or a glyph missing
-// from res/client.qrc, still yields a null icon and a silently blank row.
-TEST(ConfigurationTreeGlyphs, EveryMappedGlyphResolves) {
-  for (std::string_view path : kItemGlyphs) {
-    EXPECT_TRUE(QFile::exists(QString::fromUtf8(
-        path.data(), static_cast<qsizetype>(path.size()))))
-        << path;
-  }
-  for (std::string_view path : kWindowTypeGlyphs) {
-    EXPECT_TRUE(QFile::exists(QString::fromUtf8(
-        path.data(), static_cast<qsizetype>(path.size()))))
-        << path;
-  }
+// Every mapped path must name an asset that exists and is listed in the
+// resource file. The tables above only check the shape of the strings; a typo,
+// or a glyph missing from res/client.qrc, yields a null icon and a silently
+// blank row — and neither shows up until someone looks at the UI.
+//
+// Checked against the source tree rather than the compiled resource, because
+// this test target does not link res/client.qrc.
+TEST(ConfigurationTreeGlyphs, EveryMappedGlyphIsShipped) {
+  // .../client/modules/configuration/tree/<this file>
+  const std::filesystem::path client_root = std::filesystem::path{__FILE__}
+                                                .parent_path()
+                                                .parent_path()
+                                                .parent_path()
+                                                .parent_path();
+  std::ifstream qrc_stream{client_root / "res" / "client.qrc"};
+  ASSERT_TRUE(qrc_stream) << "res/client.qrc is missing";
+  const std::string qrc{std::istreambuf_iterator<char>{qrc_stream},
+                        std::istreambuf_iterator<char>{}};
+
+  const auto check = [&](std::string_view resource_path) {
+    constexpr std::string_view kPrefix = ":/";
+    ASSERT_TRUE(resource_path.starts_with(kPrefix)) << resource_path;
+    const std::string relative{resource_path.substr(kPrefix.size())};
+
+    EXPECT_TRUE(std::filesystem::exists(client_root / "res" / relative))
+        << relative << " is mapped but not in res/";
+    EXPECT_NE(qrc.find("<file>" + relative + "</file>"), std::string::npos)
+        << relative << " is mapped but not listed in res/client.qrc";
+  };
+
+  for (std::string_view path : kItemGlyphs)
+    check(path);
+  for (std::string_view path : kWindowTypeGlyphs)
+    check(path);
 }
 
 // State moved out of the artwork and onto the status dot, so the four device

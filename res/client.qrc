@@ -29,11 +29,13 @@
     <!-- Lucide (ISC, res/icons/LICENSE): 24px grid, stroke 2, round caps,
          stroke="currentColor" so one file serves dark, light and
          high-contrast. Tint is applied by the consumer, never baked into the
-         file (docs/ux/iconography.md §4). Keep alphabetical. -->
+         file (docs/client/ux/iconography.md §4). Keep alphabetical. -->
     <qresource prefix="/">
+        <file>icons/chart-spline.svg</file>
         <file>icons/folder.svg</file>
         <file>icons/network.svg</file>
         <file>icons/router.svg</file>
+        <file>icons/table.svg</file>
         <file>icons/variable.svg</file>
     </qresource>
 </RCC>
