@@ -1,5 +1,8 @@
 #include "configuration/tree/configuration_tree_model.h"
 
+#include "configuration/tree/configuration_tree_node.h"
+#include "resources/icon_strips.h"
+
 #include "aui/translation.h"
 #include "base/async_completion.h"
 #include "base/test/awaitable_test.h"
@@ -352,3 +355,50 @@ TEST_F(ConfigurationTreeModelTest,
   Drain(executor_);
   EXPECT_EQ(0, model_->GetChildCount(root));
 }
+
+namespace {
+
+// The IMAGE_* tile indices are protected; expose them the way the object-tree
+// test already does.
+struct GlyphIndices : ConfigurationTreeNode {
+  using ConfigurationTreeNode::IMAGE_COUNT;
+  using ConfigurationTreeNode::IMAGE_DEVICE;
+  using ConfigurationTreeNode::IMAGE_DEVICE_DISABLED;
+  using ConfigurationTreeNode::IMAGE_DEVICE_RUNNING;
+  using ConfigurationTreeNode::IMAGE_DEVICE_STOPPED;
+  using ConfigurationTreeNode::IMAGE_FOLDER;
+  using ConfigurationTreeNode::IMAGE_SUBSYSTEM_RUNNING;
+  using ConfigurationTreeNode::IMAGE_SUBSYSTEM_STOPPED;
+};
+
+// The glyph table is indexed by those tile indices, inherited from the sliced
+// bitmap strip it replaced. A short table would silently hand rows a null
+// icon; a long one means an enum value was dropped without its glyph.
+TEST(ConfigurationTreeGlyphs, TableCoversEveryImageIndex) {
+  EXPECT_EQ(std::size(kItemGlyphs),
+            static_cast<std::size_t>(GlyphIndices::IMAGE_COUNT));
+  for (std::string_view path : kItemGlyphs) {
+    EXPECT_TRUE(path.starts_with(":/icons/")) << path;
+    EXPECT_TRUE(path.ends_with(".svg")) << path;
+  }
+}
+
+// State moved out of the artwork and onto the status dot, so the four device
+// tiles and the two subsystem tiles collapse onto one glyph each — the point
+// of the conversion, and what keeps colour from being the sole carrier of
+// meaning (docs/ux/principles.md §5).
+TEST(ConfigurationTreeGlyphs, DeviceAndSubsystemStatesShareOneGlyph) {
+  EXPECT_EQ(kItemGlyphs[GlyphIndices::IMAGE_DEVICE_RUNNING],
+            kItemGlyphs[GlyphIndices::IMAGE_DEVICE_STOPPED]);
+  EXPECT_EQ(kItemGlyphs[GlyphIndices::IMAGE_DEVICE_RUNNING],
+            kItemGlyphs[GlyphIndices::IMAGE_DEVICE]);
+  EXPECT_EQ(kItemGlyphs[GlyphIndices::IMAGE_DEVICE_RUNNING],
+            kItemGlyphs[GlyphIndices::IMAGE_DEVICE_DISABLED]);
+  EXPECT_EQ(kItemGlyphs[GlyphIndices::IMAGE_SUBSYSTEM_RUNNING],
+            kItemGlyphs[GlyphIndices::IMAGE_SUBSYSTEM_STOPPED]);
+  // A folder is not a device.
+  EXPECT_NE(kItemGlyphs[GlyphIndices::IMAGE_FOLDER],
+            kItemGlyphs[GlyphIndices::IMAGE_DEVICE]);
+}
+
+}  // namespace

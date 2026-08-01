@@ -139,6 +139,25 @@ void Tree::LoadIcons(std::string_view resource_path,
   model_adapter_->LoadIcons(resource_path, width, mask_color);
 }
 
+void Tree::LoadGlyphs(std::span<const std::string_view> resource_paths,
+                      int size) {
+  model_adapter_->LoadGlyphs(resource_paths, size, GlyphTint(),
+                             devicePixelRatioF());
+}
+
+// Row glyphs mark *kind*, never state — state rides the status dot
+// (docs/ux/iconography.md §5.2) — so they take the muted text colour rather
+// than competing with the label. Derived from the live palette so one asset
+// serves every theme.
+Color Tree::GlyphTint() const {
+  QColor tint = palette().color(QPalette::Text);
+  tint.setAlphaF(0.7);
+  return Rgba{static_cast<unsigned char>(tint.red()),
+              static_cast<unsigned char>(tint.green()),
+              static_cast<unsigned char>(tint.blue()),
+              static_cast<unsigned char>(tint.alpha())};
+}
+
 void Tree::SelectNode(void* node) {
   selectionModel()->select(GetIndex(node, 0),
                            QItemSelectionModel::ClearAndSelect);
@@ -206,6 +225,9 @@ void Tree::changeEvent(QEvent* event) {
     case QEvent::PaletteChange:
     case QEvent::StyleChange:
       ApplyThemePalette();
+      // The glyphs are rendered in a palette colour, so a theme change has to
+      // re-render them; an SVG icon cannot be recoloured after the fact.
+      model_adapter_->RetintGlyphs(GlyphTint(), devicePixelRatioF());
       break;
     default:
       break;

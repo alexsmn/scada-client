@@ -134,6 +134,30 @@ void TreeModelAdapter::LoadIcons(std::string_view resource_path,
                                  int width,
                                  Color mask_color) {
   icons_ = ::LoadIcons(resource_path, width, mask_color.qcolor());
+  glyph_paths_.clear();
+}
+
+void TreeModelAdapter::LoadGlyphs(
+    std::span<const std::string_view> resource_paths,
+    int size,
+    Color tint,
+    qreal device_pixel_ratio) {
+  glyph_paths_.assign(resource_paths.begin(), resource_paths.end());
+  glyph_size_ = size;
+  icons_ = ::LoadTintedGlyphs(resource_paths, size, tint.qcolor(),
+                              device_pixel_ratio);
+}
+
+void TreeModelAdapter::RetintGlyphs(Color tint, qreal device_pixel_ratio) {
+  if (glyph_paths_.empty())
+    return;
+
+  std::vector<std::string_view> paths;
+  paths.reserve(glyph_paths_.size());
+  for (const std::string& path : glyph_paths_)
+    paths.emplace_back(path);
+  icons_ = ::LoadTintedGlyphs(paths, glyph_size_, tint.qcolor(),
+                              device_pixel_ratio);
 }
 
 void* TreeModelAdapter::GetNode(const QModelIndex& index) const {

@@ -94,8 +94,7 @@ ConfigurationTreeView::ConfigurationTreeView(
   // cppcheck-suppress noCopyConstructor
   // cppcheck-suppress noOperatorEq
   tree_view_ = new scada::aui::Tree{model_};
-  tree_view_->LoadIcons(kItemIconStrip, kIconStripTileWidth,
-                        kIconStripMaskColor);
+  tree_view_->LoadGlyphs(kItemGlyphs, kTreeGlyphSize);
   tree_view_->SetRootVisible(true);
   tree_view_->SetSorted(true);
 

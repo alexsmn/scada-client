@@ -50,6 +50,10 @@ class ConfigurationTreeNode
     IMAGE_SUBSYSTEM_STOPPED,
     IMAGE_DEVICE,
     IMAGE_DEVICE_DISABLED,
+    // Number of tile indices, so the glyph table that resolves them
+    // (`kItemGlyphs`) can be checked for coverage rather than silently
+    // handing a row a null icon.
+    IMAGE_COUNT,
   };
 
   void Changed();

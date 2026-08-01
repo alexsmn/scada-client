@@ -9,7 +9,10 @@
 
 #include <QAbstractitemmodel>
 #include <memory>
+#include <span>
+#include <string>
 #include <string_view>
+#include <vector>
 
 class QIcon;
 
@@ -34,6 +37,18 @@ class TreeModelAdapter : public QAbstractItemModel {
   void SetCheckedNodes(std::set<void*> nodes);
 
   void LoadIcons(std::string_view resource_path, int width, Color mask_color);
+
+  // Loads row glyphs from SVG resources, tinted with `tint`, keeping index
+  // order so it is a drop-in for the sliced-strip form above. The paths are
+  // retained so RetintGlyphs() can re-render them when the theme changes.
+  void LoadGlyphs(std::span<const std::string_view> resource_paths,
+                  int size,
+                  Color tint,
+                  qreal device_pixel_ratio);
+
+  // Re-renders the glyphs last passed to LoadGlyphs() in `tint`. No-op when
+  // the adapter carries a bitmap strip instead, which cannot be recoloured.
+  void RetintGlyphs(Color tint, qreal device_pixel_ratio);
 
   void* GetNode(const QModelIndex& index) const;
   QModelIndex GetNodeIndex(void* node, int column) const;
@@ -104,6 +119,11 @@ class TreeModelAdapter : public QAbstractItemModel {
   std::vector<boost::signals2::scoped_connection> model_connections_;
 
   std::vector<QIcon> icons_;
+
+  // Retained so a theme change can re-render the glyphs in the new tint; empty
+  // when the adapter carries a bitmap strip, which cannot be recoloured.
+  std::vector<std::string> glyph_paths_;
+  int glyph_size_ = 0;
 
   bool checkable_ = false;
   CheckedHandler checked_handler_;

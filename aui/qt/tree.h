@@ -6,6 +6,7 @@
 
 #include <QTreeView>
 #include <set>
+#include <span>
 #include <string_view>
 
 class QEvent;
@@ -27,6 +28,12 @@ class Tree : public QTreeView {
   void SetHeaderVisible(bool visible);
 
   void LoadIcons(std::string_view resource_path, int width, Color mask_color);
+
+  // Loads row glyphs from SVG resources instead of a sliced bitmap strip,
+  // tinted to follow the palette and re-tinted when the theme changes. Index
+  // order is the models' existing "tile index" contract, so this is a drop-in
+  // for LoadIcons (docs/ux/iconography.md §5.2).
+  void LoadGlyphs(std::span<const std::string_view> resource_paths, int size);
 
   std::vector<void*> GetOrderedNodes(void* root, bool checked) const;
 
@@ -80,6 +87,9 @@ class Tree : public QTreeView {
 
  private:
   void ApplyThemePalette();
+
+  // The colour row glyphs are rendered in, from the live palette.
+  Color GlyphTint() const;
 
   void* GetNode(const QModelIndex& index) const;
   QModelIndex GetIndex(void* node, int column_id) const;

@@ -6,7 +6,7 @@
 > here. Rationale for the visual rules: [`principles.md`](principles.md) §5
 > (colour is never the sole carrier of meaning).
 >
-> Last verified against code: 2026-07-25.
+> Last verified against code: 2026-08-01.
 
 ## 1. Why this document exists
 
@@ -111,18 +111,23 @@ without Qt's SVG icon-engine plugin, which ships in the Qt Svg module, not
 - superproject [`vcpkg.json`](../../../vcpkg.json) — under the `client`
   feature, `"platform": "windows | osx"` (mirroring `qtbase`)
 
-Still to wire when the first SVG icon lands (deliberately *not* done ahead of
-time, so the configure does not hard-fail on Qt installs that predate the
-manifest change):
+Wired when the first SVG icons landed (2026-08-01):
 
-- `find_package(Qt6 REQUIRED COMPONENTS Widgets Svg)` in
-  [`client/CMakeLists.txt`](../../CMakeLists.txt) and a `Qt6::Svg`
-  link, so `windeployqt`/`macdeployqt` pick the plugin up.
-- Static builds additionally need the plugin imported explicitly
-  (`Qt6::QSvgIconPlugin`).
+- `find_package(Qt6 REQUIRED COMPONENTS Svg Widgets)` in
+  [`client/CMakeLists.txt`](../../CMakeLists.txt) and
+  [`aui/CMakeLists.txt`](../../aui/CMakeLists.txt), with `Qt6::Svg` on
+  `aui_qt`'s public link line so `windeployqt`/`macdeployqt` pick the plugin
+  up.
+- Static builds still need the plugin imported explicitly
+  (`Qt6::QSvgIconPlugin`) — not done, because this tree builds Qt shared.
 
-Tint is applied by the consumer, not the file: recolour via `QPalette` /
-`ThemeTokens` the way `SectionIcon` does, so one asset serves every theme.
+Tint is applied by the consumer, not the file — and it has to be, because
+`stroke="currentColor"` means nothing to Qt's SVG renderer, which resolves it
+to black. `LoadTintedGlyph` ([`aui/qt/image_util.h`](../../aui/qt/image_util.h))
+renders the glyph to a transparent pixmap and recolours it through
+`CompositionMode_SourceIn`, which keeps the stroke's antialiasing and replaces
+only its colour. It renders at the device pixel ratio, so a 16 px row glyph is
+crisp on a HiDPI display instead of upscaled — defect 1 of §1.
 
 ## 5. Icon map
 
@@ -165,16 +170,16 @@ The strips are horizontal bitmaps sliced by tile index
 [`modules/configuration/tree/configuration_tree_node.h`](../../modules/configuration/tree/configuration_tree_node.h)
 and from `FavouritesWindowNode::GetIcon`.
 
-| Strip / index | Constant | Meaning | Lucide |
-|---|---|---|---|
-| `items` 0 | `IMAGE_FOLDER` | object / data folder | `folder` |
-| `items` 1 | `IMAGE_ITEM` | OPC UA variable / data item | `variable` |
-| `items` 2 | `IMAGE_DEVICE_RUNNING` | device online | `router` + good dot |
-| `items` 3 | `IMAGE_DEVICE_STOPPED` | device offline | `router` + bad dot |
-| `items` 4 | `IMAGE_SUBSYSTEM_RUNNING` | channel online | `network` + good dot |
-| `items` 5 | `IMAGE_SUBSYSTEM_STOPPED` | channel offline | `network` + bad dot |
-| `items` 6 | `IMAGE_DEVICE` | device, state unknown | `router` |
-| `items` 7 | `IMAGE_DEVICE_DISABLED` | device disabled | `router` + uncertain dot |
+| Strip / index | Constant | Meaning | Lucide | State |
+|---|---|---|---|---|
+| `items` 0 | `IMAGE_FOLDER` | object / data folder | `folder` | ✅ |
+| `items` 1 | `IMAGE_ITEM` | OPC UA variable / data item | `variable` | ✅ |
+| `items` 2 | `IMAGE_DEVICE_RUNNING` | device online | `router` + good dot | ✅ |
+| `items` 3 | `IMAGE_DEVICE_STOPPED` | device offline | `router` + bad dot | ✅ |
+| `items` 4 | `IMAGE_SUBSYSTEM_RUNNING` | channel online | `network` + good dot | ✅ unreached |
+| `items` 5 | `IMAGE_SUBSYSTEM_STOPPED` | channel offline | `network` + bad dot | ✅ unreached |
+| `items` 6 | `IMAGE_DEVICE` | device, state unknown | `router` | ✅ |
+| `items` 7 | `IMAGE_DEVICE_DISABLED` | device disabled | `router` + uncertain dot | ✅ |
 | `wintypes` 0 | — | favourite: table window | `table` |
 | `wintypes` 1 | — | favourite: graph window | `chart-spline` |
 | `wintypes` 2 | — | favourite: folder | `folder` |
@@ -200,9 +205,26 @@ question. Note that even there, *device* rows use a status dot and no icon. So
 the rule across both surfaces is: **state is a dot, never artwork; an icon
 marks kind, and only where kind is not already obvious.**
 
-That leaves the strips consumed by `"Nodes"`, `"Subsystems"`, the table view
-and the portfolio — the conversion above still has to happen, on a smaller
-surface.
+**The `"Nodes"` and `"Subsystems"` trees are converted** (2026-08-01). They load
+`kItemGlyphs` from `resources/icon_strips.h` through `Tree::LoadGlyphs`, which
+renders each SVG at the row size times the device pixel ratio and tints it from
+the live palette — so one asset serves every theme, and a theme change
+re-renders it (an SVG icon cannot be recoloured after the fact).
+
+The tile-index contract is deliberately unchanged: `kItemGlyphs` is indexed by
+`ConfigurationTreeNode::IMAGE_*`, so no model moved. What changed is what an
+index resolves to. `ConfigurationTreeGlyphs.TableCoversEveryImageIndex` fails
+if the table and the enum drift apart, which is why `IMAGE_COUNT` now exists.
+
+The two `IMAGE_SUBSYSTEM_*` slots are **mapped but unreached** — no model
+returns them; they are dead slots inherited from the bitmap era. They are kept
+mapped rather than dropped so the enum and the table stay aligned; retiring the
+enum values is a separate cleanup.
+
+Still on the strip: the **table view** and the **portfolio**, which call
+`LoadIcons(kItemIconStrip, …)` directly, and the **favourites** tree, which uses
+`wintypes.bmp`. `res/items.bmp` and `res/wintypes.bmp` therefore stay for now —
+§7's "retire the assets" step lands with the last of those.
 
 ## 6. How to add or change an icon
 
@@ -260,9 +282,9 @@ Qt's SVG icon engine renders the file as authored.
 |---|---|
 | `qtsvg` in both vcpkg manifests | ✅ done (2026-07-25) |
 | Set, geometry, and map agreed | ✅ this document |
-| CMake `Qt6::Svg` component + link | ⬜ lands with the first SVG icon (§4) |
+| CMake `Qt6::Svg` component + link | ✅ done (2026-08-01) |
 | Action icons (§5.1) — 18 glyphs, one table | ⬜ |
-| Tree strips (§5.2) — needs `LoadIcons` → glyph+tint | ⬜ larger, do second |
+| Tree strips (§5.2) — needs `LoadIcons` → glyph+tint | 🟡 `Nodes`/`Subsystems` done (2026-08-01); table view, portfolio, favourites remain |
 | `activity_bar_qt.cpp` hand-drawn glyphs → SVG assets | ⬜ optional; converges the two paths |
 | `NOTICE` + retire `res/*.png`, `res/*.bmp`, `res/settings/` | ⬜ with the last swap |
 
