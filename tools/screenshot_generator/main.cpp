@@ -38,6 +38,8 @@
 #include "base/test/scoped_mock_clock_override.h"
 #include "base/test/scoped_path_override.h"
 #include "controller/window_info.h"
+#include "favorites/favourites.h"
+#include "profile/window_definition.h"
 #include "events/qt/event_filter_bar.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
@@ -189,6 +191,29 @@ void SeedDeviceLog(const boost::json::value& root,
         device_id,
         std::any{scada::DeviceFrameEvent{.base = std::move(event),
                                          .frame = std::move(frame)}});
+  }
+}
+
+// Seeds the Favorites pane from the fixture's `favourites` block. The pane
+// renders whatever the profile holds, and the generator starts from an empty
+// one — so without this the capture is a blank panel, which is how it shipped
+// for months.
+void SeedFavourites(const boost::json::value& root, Favourites& favourites) {
+  const auto* block = root.as_object().if_contains("favourites");
+  if (!block)
+    return;
+
+  for (const auto& jf : block->at("folders").as_array()) {
+    const std::u16string name = UtfConvert<char16_t>(
+        std::string(jf.at("name").as_string()));
+    const Page& folder = favourites.GetOrAddFolder(name);
+
+    for (const auto& jw : jf.at("windows").as_array()) {
+      WindowDefinition window{std::string(jw.at("type").as_string())};
+      window.title =
+          UtfConvert<char16_t>(std::string(jw.at("title").as_string()));
+      favourites.Add(window, folder);
+    }
   }
 }
 
@@ -426,6 +451,10 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
 
   WaitForAwaitable(executor_, app_.Start());
 
+  // After Start, because the favourites store is built during post-login. The
+  // pane's model subscribes to additions, so rows added now still reach it.
+  SeedFavourites(g_config.json, app_.favourites());
+
   // Wait for the data itself rather than pumping for a fixed second and
   // hoping: with many windows open that second was split too many ways, and a
   // view could be grabbed before its trends arrived.
@@ -597,6 +626,15 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
         if (table->model())
           max_rows = std::max(max_rows, table->model()->rowCount());
       }
+      // Tree-backed windows count their top-level rows. Without this a tree
+      // capture can go empty as silently as a grid one — which is exactly how
+      // the favourites pane shipped blank.
+      if (const scada::aui::Tree* tree = FindTreeWidget(widget)) {
+        if (tree->model()) {
+          max_rows = std::max(
+              max_rows, tree->model()->rowCount(tree->rootIndex()));
+        }
+      }
       if (spec.min_rows > 0) {
         EXPECT_GE(max_rows, spec.min_rows)
             << spec.filename << ": the " << spec.window_type
@@ -632,6 +670,18 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
       } else {
         ADD_FAILURE() << "click_object not found: " << spec.click_object
                       << " in " << spec.window_type;
+      }
+    }
+
+    // A collapsed tree captures its folders and hides everything the capture
+    // is about, so a tree-backed spec can ask for every row.
+    if (spec.expand) {
+      if (scada::aui::Tree* tree = FindTreeWidget(widget)) {
+        tree->expandAll();
+        QApplication::processEvents();
+      } else {
+        ADD_FAILURE() << spec.filename << ": expand was requested but "
+                      << spec.window_type << " has no tree";
       }
     }
 

@@ -58,6 +58,7 @@ class CoreModule;
 class CreateTree;
 class EventModule;
 class NodeEventProvider;
+class Favourites;
 class FavoritesModule;
 class FileSystemComponent;
 class MainWindowManager;
@@ -119,6 +120,10 @@ class ClientApplication : private ClientApplicationContext {
   // The live event source, for surfaces that show the actionable backlog
   // outside a view (e.g. the display frame's Recent-events strip).
   NodeEventProvider& node_event_provider() SCADA_LIFETIME_BOUND;
+  // The saved-window store behind the Favorites pane. Exposed so the
+  // screenshot generator can seed it: the pane renders whatever the profile
+  // holds, and with an empty profile it captures an empty panel.
+  Favourites& favourites() SCADA_LIFETIME_BOUND;
   ControllerRegistry& controller_registry() SCADA_LIFETIME_BOUND {
     return *controller_registry_;
   }

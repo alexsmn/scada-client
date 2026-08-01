@@ -1,6 +1,13 @@
 {
   "images": [
     {
+      "file": "favorites.png",
+      "tag": "auto-view",
+      "referenced_from": [],
+      "notes": "Favorites pane: saved windows in two folders, showing all three window-type glyphs — folder, table and chart-spline (Lucide). Seeded from the fixture's `favourites` block, expanded via the spec's `expand` flag and guarded at min_rows 2; it rendered as a blank panel for months because nothing seeded the store and no guard noticed. Not published yet: no manual page embeds it.",
+      "published": false
+    },
+    {
       "file": "MODBUS_func.png",
       "tag": "manual-diagram",
       "referenced_from": [
@@ -726,7 +733,7 @@
     }
   ],
   "counts": {
-    "auto-view": 13,
+    "auto-view": 14,
     "auto-dialog": 22,
     "auto-menu": 17,
     "auto-state": 5,

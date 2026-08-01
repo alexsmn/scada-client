@@ -1553,7 +1553,9 @@
       "type": "Favorites",
       "filename": "favorites.png",
       "width": 300,
-      "height": 400
+      "height": 400,
+      "expand": true,
+      "min_rows": 2
     },
     {
       "type": "FileSystemView",
@@ -1809,6 +1811,37 @@
         "seconds_ago": 2.0,
         "severity": "error",
         "message": "Нет ответа на TESTFR — связь потеряна"
+      }
+    ]
+  },
+  "_favourites_comment": "Saved windows for the Favorites pane. `type` is the registered window-type name (Table, Graph, ...) — it is what FavouritesWindowNode::GetIcon maps to a glyph, so a fixture with both kinds is what proves the table and graph icons differ. Entries with no folder sit at the root.",
+  "favourites": {
+    "folders": [
+      {
+        "name": "Смены",
+        "windows": [
+          {
+            "type": "Table",
+            "title": "Активные мощности"
+          },
+          {
+            "type": "Graph",
+            "title": "Напряжения КРУ"
+          }
+        ]
+      },
+      {
+        "name": "Подстанция «Северная»",
+        "windows": [
+          {
+            "type": "Table",
+            "title": "ЭСТРА-ПС · телеизмерения"
+          },
+          {
+            "type": "Graph",
+            "title": "Частота и переток"
+          }
+        ]
       }
     ]
   }

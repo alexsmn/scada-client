@@ -31,6 +31,9 @@ struct ScreenshotSpec {
   // Optional: objectName of a child button to click before grabbing (e.g. a
   // subtab), so a capture can show a non-default tab of a multi-tab view.
   std::string click_object;
+  // Expand every row of a tree-backed window before grabbing. A collapsed
+  // tree captures its folders and hides everything the capture is about.
+  bool expand = false;
 };
 
 // Configuration for a single modal-dialog capture. `kind` is the
