@@ -108,6 +108,7 @@ void MainWindowModuleTest::SetUp() {
       .timed_data_service_ = controller_env_.timed_data_service_,
       .node_service_ = controller_env_.node_service_,
       .portfolio_manager_ = portfolio_module_.portfolio_manager(),
+      .frame_capture_registry_ = controller_env_.frame_capture_registry_,
       .local_events_ = event_module_.local_events(),
       .favourites_ = favorites_module.favourites(),
       .file_cache_ = controller_env_.file_cache_,

@@ -38,6 +38,11 @@
         <source>Filter by IOA, type or cause</source>
         <translation>Фильтр по адресу, типу или причине</translation>
     </message>
+    <!-- Status strip: an armed frame capture (main_window/status_bar). -->
+    <message>
+        <source>Capturing</source>
+        <translation>Идёт захват</translation>
+    </message>
     <!-- APCI columns (IEC 60870-5-104 §5.1). N(S)/N(R) is the standard's own
          notation for the send/receive sequence numbers and is not translated,
          like RX/TX below. -->

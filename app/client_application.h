@@ -13,6 +13,7 @@
 #include "scada/co_result.h"
 #include "scada/data_services_factory.h"
 #include "scada/node_id.h"
+#include "services/frame_capture_registry.h"
 #include "scada/status.h"
 #include "timed_data/timed_data_service.h"
 
@@ -185,6 +186,11 @@ class ClientApplication : private ClientApplicationContext {
   std::unique_ptr<PrintModule> print_module_;
   std::unique_ptr<Speech> speech_;
   std::unique_ptr<BlinkerManager> blinker_manager_;
+  // Which devices this session has armed for frame capture. Plain member, not
+  // a unique_ptr: it is pure state with no dependencies, and it must outlive
+  // both the controllers that arm and the status strip that reports.
+  FrameCaptureRegistry frame_capture_registry_;
+
   std::unique_ptr<CreateTree> create_tree_;
   std::unique_ptr<PropertyService> property_service_;
 

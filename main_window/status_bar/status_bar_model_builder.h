@@ -12,6 +12,7 @@ namespace scada {
 class SessionService;
 }
 
+class FrameCaptureRegistry;
 class LocalEvents;
 class NodeEventProvider;
 class NodeService;
@@ -27,4 +28,5 @@ struct StatusBarModelBuilder {
   LocalEvents& local_events_;
   NodeService& node_service_;
   Profile& profile_;
+  FrameCaptureRegistry& frame_capture_registry_;
 };

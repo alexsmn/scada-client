@@ -48,6 +48,12 @@ class WatchView : protected ControllerContext,
  private:
   std::u16string MakeTitle() const;
 
+  // Arms or disarms the device's frame capture: writes its FrameCapture
+  // variable and updates the status-strip registry. Both halves matter — the
+  // write is what stops the device raising an event per frame, the registry is
+  // what stops the operator forgetting they left it running.
+  void SetCaptureArmed(bool armed);
+
 #if defined(UI_QT)
   // Builds the trace + decode-pane layout and wires `refresh_decode_pane_`.
   // Qt-only: aui has no cross-platform splitter, so the Wt frontend keeps the
@@ -83,6 +89,9 @@ class WatchView : protected ControllerContext,
   std::function<void()> refresh_decode_pane_ = [] {};
 
   bool address_map_requested_ = false;
+
+  // What we last asked the server for, so teardown only disarms what it armed.
+  bool capture_armed_ = false;
 
   CommandRegistry command_registry_;
 

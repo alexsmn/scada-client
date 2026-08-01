@@ -20,6 +20,7 @@ class Controller;
 class ControllerDelegate;
 class DialogService;
 class FileCache;
+class FrameCaptureRegistry;
 class NodeEventProvider;
 class NodeService;
 class Profile;
@@ -43,6 +44,7 @@ struct ControllerFactoryImpl {
   BlinkerManager& blinker_manager_;
   PropertyService& property_service_;
   CreateTree& create_tree_;
+  FrameCaptureRegistry& frame_capture_registry_;
 };
 
 inline std::unique_ptr<Controller> ControllerFactoryImpl::CreateController(
@@ -67,5 +69,5 @@ inline std::unique_ptr<Controller> ControllerFactoryImpl::CreateController(
       node_event_provider_, *scada_services_.history_service,
       *scada_services_.monitored_item_service, timed_data_service_,
       node_service_, file_cache_, profile_, dialog_service, blinker_manager_,
-      create_tree_, property_service_});
+      create_tree_, property_service_, frame_capture_registry_});
 }

@@ -7,15 +7,18 @@
 #include "base/u16format.h"
 #include "base/utf_convert.h"
 #include "controller/controller_delegate.h"
+#include "model/devices_node_ids.h"
 #include "model/node_id_util.h"
 #include "modules/watch/frame_decode.h"
 #include "modules/watch/frame_decode_tree_model.h"
 #include "modules/watch/watch_model.h"
 #include "modules/watch/watch_model_builder.h"
 #include "net/net_executor_adapter.h"
+#include "node_service/node_ref.h"
 #include "node_service/node_service.h"
 #include "profile/window_definition.h"
 #include "resources/common_resources.h"
+#include "services/frame_capture_registry.h"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <optional>
@@ -55,7 +58,36 @@ WatchView::WatchView(const ControllerContext& context)
       model_{WatchModelBuilder{executor_, context.node_service_}
                  .CreateWatchModel()} {}
 
-WatchView::~WatchView() = default;
+WatchView::~WatchView() {
+  // A capture must not outlive the view that armed it: the operator has closed
+  // the only thing that was reading the frames.
+  if (capture_armed_)
+    SetCaptureArmed(false);
+}
+
+// The device's arming switch lives in its address space
+// (devices::id::DeviceType_FrameCapture), so this is an ordinary value write.
+void WatchView::SetCaptureArmed(bool armed) {
+  if (capture_armed_ == armed)
+    return;
+  capture_armed_ = armed;
+
+  const NodeRef device = model_->device();
+  frame_capture_registry_.SetArmed(
+      device.node_id(), ToString16(device.display_name()), armed);
+
+  if (NodeRef capture = device[scada::devices::id::DeviceType_FrameCapture]) {
+    // Fire and forget. A server too old to know the variable answers
+    // Bad_WrongNodeId, and an operator who opened a trace must not get a modal
+    // over it — the trace is simply empty, which is the visible symptom
+    // anyway.
+    CoSpawn(executor_, [node = capture.scada_node(),
+                        armed]() mutable -> Awaitable<void> {
+      co_await node.write_value(armed);
+      co_return;
+    });
+  }
+}
 
 void WatchView::Save(WindowDefinition& definition) {
   WindowItem& item = definition.AddItem("Item");
@@ -271,6 +303,10 @@ void WatchView::ToggleFrameTrace() {
   model_->SetMode(model_->mode() == WatchMode::kFrameTrace
                       ? WatchMode::kLog
                       : WatchMode::kFrameTrace);
+  // Entering the trace is exactly when the frames become worth producing, and
+  // leaving it is when they stop being. Here rather than in the Qt-only pane
+  // wiring so the Wt frontend arms too.
+  SetCaptureArmed(model_->mode() == WatchMode::kFrameTrace);
   controller_delegate_.SetTitle(MakeTitle());
   refresh_decode_pane_();
 }

@@ -19,6 +19,7 @@ class EventDispatcher;
 class Favourites;
 class FileCache;
 class FileManager;
+class FrameCaptureRegistry;
 class LocalEvents;
 class MainWindow;
 class MainWindowManager;
@@ -55,6 +56,7 @@ struct MainWindowModuleContext {
   PrintService* print_service_;
   PortfolioManager& portfolio_manager_;
   LocalEvents& local_events_;
+  FrameCaptureRegistry& frame_capture_registry_;
   Favourites& favourites_;
   FileCache& file_cache_;
   FileManager& file_manager_;

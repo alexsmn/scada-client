@@ -15,6 +15,7 @@ class DialogService;
 class NodeEventProvider;
 class ExportModel;
 class FileCache;
+class FrameCaptureRegistry;
 class NodeService;
 class Profile;
 class PropertyService;
@@ -37,4 +38,5 @@ struct ControllerContext {
   BlinkerManager& blinker_manager_;
   CreateTree& create_tree_;
   PropertyService& property_service_;
+  FrameCaptureRegistry& frame_capture_registry_;
 };

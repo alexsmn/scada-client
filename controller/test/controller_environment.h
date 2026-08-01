@@ -8,6 +8,7 @@
 #include "base/test/test_executor.h"
 #include "controller/command_registry.h"
 #include "controller/controller_context.h"
+#include "services/frame_capture_registry.h"
 #include "controller/controller_delegate_mock.h"
 #include "controller/controller_registry.h"
 #include "controller/window_info.h"
@@ -63,7 +64,8 @@ struct ControllerEnvironment {
             .dialog_service_ = dialog_service_,
             .blinker_manager_ = blinker_manager_,
             .create_tree_ = create_tree_,
-            .property_service_ = property_service_};
+            .property_service_ = property_service_,
+            .frame_capture_registry_ = frame_capture_registry_};
   }
 
   // NOTE: Consider `ControllerTest`.
@@ -91,6 +93,7 @@ struct ControllerEnvironment {
   testing::NiceMock<MockDialogService> dialog_service_;
   testing::NiceMock<MockBlinkerManager> blinker_manager_;
   CreateTree create_tree_;
+  FrameCaptureRegistry frame_capture_registry_;
   PropertyService property_service_;
 
   inline static const WindowInfo kFakeWindowInfo{.name = "fake"};

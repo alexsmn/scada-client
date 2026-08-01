@@ -2,6 +2,7 @@
 
 #include "aui/models/status_bar_model_impl.h"
 #include "events/node_event_provider.h"
+#include "main_window/status_bar/capture_status_provider.h"
 #include "main_window/status_bar/event_status_provider.h"
 #include "main_window/status_bar/session_status_provider.h"
 #include "main_window/status_bar/user_status_provider.h"
@@ -49,6 +50,23 @@ std::shared_ptr<scada::aui::StatusBarModel> StatusBarModelBuilder::Build() {
     model->NotifyPanesChanged(event_count_pane_index);
     model->NotifyPanesChanged(severity_pane_index);
     model->NotifyPanesChanged(highest_severity_pane_index);
+  });
+
+  // An armed frame capture. Placed before the user pane so it sits next to the
+  // alarm cells — it is a "something is running" state, not an identity.
+
+  auto capture_status_provider =
+      std::make_shared<CaptureStatusProvider>(frame_capture_registry_);
+
+  int capture_pane_index = model->AddPane(
+      {.text_provider = std::bind_front(&CaptureStatusProvider::GetText,
+                                        capture_status_provider),
+       .color_provider = std::bind_front(&CaptureStatusProvider::GetColor,
+                                         capture_status_provider),
+       .size = 160});
+
+  capture_status_provider->Init([model, capture_pane_index] {
+    model->NotifyPanesChanged(capture_pane_index);
   });
 
   // User.

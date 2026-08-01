@@ -409,10 +409,42 @@ style's own metrics and no stylesheet (§9). Three decisions worth recording:
   format, so a kind filter simply admits nothing in the log — predictable, and
   one combo box away from undone.
 
+**Capture is armed per device, and off by default.** This is the one part of
+the trace that is not client-side: until it landed, every driver raised an
+event for every frame it saw, on every device, forever — the flood the mockup's
+`Capturing · КП-02` cell exists to make visible.
+
+- The switch is a **runtime writable Boolean** on the device,
+  `devices::id::DeviceType_FrameCapture` (ns=1;i=374), gating
+  `DeviceLogger::WriteFrame` in the framework. Runtime, not configuration:
+  arming is a debugging action taken for minutes, a persisted switch would keep
+  a busy link flooding long after the engineer went home, and writing a config
+  property tears the device down and rebuilds it — dropping the very link being
+  debugged. A tier restart disarms everything, which is the safe direction.
+- **`WriteFrame` gates the whole line**, not just its decoded fields. That call
+  means "this line is one protocol frame", and a per-frame line is exactly what
+  an unarmed device must not emit. Ordinary log lines go through `Write()` and
+  are never gated — a link going down must still reach an operator who armed
+  nothing. The visible consequence: **the device log no longer carries
+  `#RX:`/`$TX:` dumps until someone opens the trace.**
+- The Watch view arms on entering the frame trace and disarms on leaving it or
+  closing, and the write is fire-and-forget: a server too old to know the
+  variable answers `Bad_WrongNodeId`, and an operator who opened a trace must
+  not get a modal about it — an empty trace is the visible symptom anyway.
+- The **`Capturing · КП-02` status cell** is driven by `FrameCaptureRegistry`
+  (`services/`), this client's own list of what it armed — not a subscription
+  to the server's variables, which would mean subscribing to every device in
+  the address space to notice one armed elsewhere. One armed device is named;
+  several are counted, because naming only the first would read as "that one
+  device", which is exactly the capture that then gets forgotten.
+
 Still missing against the mockup:
 
-- **No per-device capture arming**, and so no `Capturing · КП-02` status cell.
-  The trace shows whatever the device is already logging.
+- **Nothing disarms a capture whose client vanished.** The flag is process
+  state on the tier, so a client that crashes while armed leaves the device
+  producing frames until the tier restarts. A lease — the arming session
+  renewing, the tier disarming on expiry — is the fix, and needs a session
+  seam the devices module does not have today.
 - Eleven driver sites stay plain log lines by design: timer expiries and
   state-machine notes carry the direction markers but describe no PDU, and a
   trace filtered to real traffic is the point of the mode.
