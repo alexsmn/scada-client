@@ -111,8 +111,11 @@ Rules of the pipeline:
   screenshots follow the "Adding a new auto-screenshot" flow in
   `docs/ops/client-screenshots.md` (fixture entry + capture spec + manifest row);
   hand-captured images still get a `manual-*` manifest row.
-- **Publishing is gated.** `cmake --workflow --preset update-screenshots-dev`
-  (Windows) regenerates the local gallery `screenshots/` (gitignored)
+- **The gallery is tracked, publishing is gated.** `screenshots/` — PNGs
+  included — is committed, so a UI change lands as a reviewable image diff.
+  Publishing to the manual is a separate, narrower step:
+  `cmake --workflow --preset update-screenshots-dev`
+  (Windows) regenerates the gallery
   and copies only the manifest's `current_generator_owned_subset` into
   scada-docs `img/`; review with `git diff img/` there. An image graduates
   into that subset only after its rendering is reviewed against the page
