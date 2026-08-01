@@ -1,6 +1,7 @@
 #include "events/event_module.h"
 
 #include <algorithm>
+#include <optional>
 
 #include "aui/translation.h"
 #include "base/any_executor.h"
@@ -57,15 +58,31 @@ EventModule::EventModule(EventModuleContext&& context)
           .executor_ = executor_, .logger_ = logger_, .services_ = services_}
           .Build();
 
-  // TODO: Checked cast.
-  unsigned severity_min = GetInt(profile_.data(), "severityMin",
-                                 static_cast<unsigned>(scada::kSeverityMin));
   // Profiles written before ADR 0005 phase 1 stored the 0-100 severity
   // scale; the severityScale marker (written below) distinguishes them.
   // Rescale so a saved filter keeps its meaning instead of silently
   // loosening on the 1-1000 scale.
-  if (GetInt(profile_.data(), "severityScale", 100) != 1000) {
-    severity_min = std::clamp(severity_min * 10, 1u, 1000u);
+  //
+  // Only a threshold the profile actually STORED may be rescaled. An absent
+  // severityMin is not an old-scale 1 — it means the user never chose a
+  // threshold, so the default applies unchanged on whichever scale it is
+  // read as. Rescaling the default instead turned "show everything" into
+  // "hide everything below severity 10", which silently swallowed the
+  // severity-1 device-watch stream (kSeverityMin; the IEC-104 frame events
+  // are raised at it) while leaving alarms visible — the migration tightened
+  // a filter that had never been set, the opposite of its purpose.
+  unsigned severity_min = static_cast<unsigned>(scada::kSeverityMin);
+  if (const std::optional<int> stored =
+          GetKey<int>(profile_.data(), "severityMin")) {
+    // Clamp before scaling so a corrupt or hand-edited profile cannot
+    // overflow the multiply.
+    int value = std::clamp(*stored, 0, static_cast<int>(scada::kSeverityMax));
+    if (GetInt(profile_.data(), "severityScale", 100) != 1000) {
+      value *= 10;
+    }
+    severity_min = static_cast<unsigned>(
+        std::clamp(value, static_cast<int>(scada::kSeverityMin),
+                   static_cast<int>(scada::kSeverityMax)));
   }
   event_fetcher_->SetSeverityMin(
       static_cast<scada::EventSeverity>(severity_min));
