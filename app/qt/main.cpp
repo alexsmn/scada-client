@@ -136,10 +136,10 @@ int main(int argc, char* argv[]) {
     // above by InstalledStyle) before the login dialog so pre-login chrome is
     // themed too. `Ux/Theme` picks the appearance and defaults to `system`,
     // which follows the OS light/dark preference — the client is a native
-    // desktop application (client/docs/ux/principles.md §9).
+    // desktop application (docs/client/ux/principles.md §9).
     // `Ux/StyleSheet=false` gives palette-only, which is the direction of
     // travel; the generated sheet is being shrunk (backlog P6.2). See
-    // client/docs/ux/ and client/CLAUDE.md ("UX design system").
+    // docs/client/ux/ and client/CLAUDE.md ("UX design system").
     // The `SCADA_UX_EXPERIMENTAL` environment variable force-enables the
     // reshell regardless of the stored setting — a reliable escape hatch for
     // demos and for launching the themed shell before a Settings toggle exists

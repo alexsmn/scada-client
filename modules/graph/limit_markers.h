@@ -8,7 +8,7 @@
 // The four analog-limit bands an AnalogItem can carry (AnalogItemType_Limit*),
 // ordered low → high. The outer bands (LoLo/HiHi) are alarm thresholds; the
 // inner bands (Lo/Hi) are warnings. Drawn as horizontal markers on the trend
-// pane — see the reshell mockup client/docs/ui-mockups/screens/trend.html.
+// pane — see the reshell mockup docs/product/ui-mockups/screens/trend.html.
 enum class LimitKind { kLoLo, kLo, kHi, kHiHi };
 
 // A single configured limit selected for display.

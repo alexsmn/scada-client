@@ -22,7 +22,7 @@
 namespace {
 
 // Panel geometry (device-independent pixels), tracking the reshell mockup
-// client/docs/ui-mockups/screens/trend.html (.insp / .insec / .row / .swatch).
+// docs/product/ui-mockups/screens/trend.html (.insp / .insec / .row / .swatch).
 constexpr int kWidth = 290;
 constexpr int kPadX = 14;
 constexpr int kHeaderH = 44;  // title bar height

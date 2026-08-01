@@ -221,7 +221,7 @@ std::unique_ptr<UiView> WatchView::Init(const WindowDefinition& definition) {
 #if defined(UI_QT)
 
 // The trace beside the decode pane, as in
-// docs/ui-mockups/screens/device-protocol-trace.html: the selected frame's
+// docs/product/ui-mockups/screens/device-protocol-trace.html: the selected frame's
 // octets and its decoded field tree. The pane belongs to the frame trace, so
 // it is hidden in the ordinary device log — a permanently empty inspector
 // would be a regression for the common case, which is reading log lines.

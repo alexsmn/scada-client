@@ -54,7 +54,7 @@ LoginDialog::LoginDialog(AnyExecutor executor,
       completion_{std::move(executor)} {
   ui.setupUi(this);
 
-  // Name the action rather than the assent (docs/ux/dialogs.md §3). The
+  // Name the action rather than the assent (docs/client/ux/dialogs.md §3). The
   // heading that used to say this lived in the content area over the real
   // title bar and has been removed, so the button carries the verb.
   ui.buttonBox->button(QDialogButtonBox::Ok)->setText(tr("Sign in"));
@@ -147,7 +147,7 @@ void LoginDialog::BuildReshellChrome() {
 
   // No heading, no brand lockup: the window already has a real title bar
   // saying "Login", and the application is identified by the window itself
-  // (docs/ux/dialogs.md §1). Drawing them again is a browser-modal habit — a
+  // (docs/client/ux/dialogs.md §1). Drawing them again is a browser-modal habit — a
   // modal in a page has no OS chrome and must supply its own; a QDialog does
   // not, and repeating it cost a third of the dialog's height before the first
   // field.

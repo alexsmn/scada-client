@@ -17,7 +17,7 @@ Registered as a ctest test by tools/screenshot_generator/CMakeLists.txt;
 run manually with:
 
     python3 check_screenshots.py --generator <path-to-binary> \
-        --data screenshot_data.json --image-manifest ../../docs/screenshots/image_manifest.json
+        --data screenshot_data.json --image-manifest ../../screenshots/image_manifest.json
 """
 
 import argparse

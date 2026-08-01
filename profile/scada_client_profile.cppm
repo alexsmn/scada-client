@@ -39,7 +39,7 @@ export module scada.client.profile;
 // Mirror client_profile's PUBLIC link transitivity.
 export import scada.client.aui;
 // scada.client.aui deliberately re-exports only scada.base (aui's sole PUBLIC
-// link — see docs/aui-extraction.md), but this module's own headers expose
+// link — see docs/client/aui-extraction.md), but this module's own headers expose
 // core vocabulary: window_definition_util.h declares a FromJson returning
 // std::optional<scada::NodeId>, and the keep-alives below name scada::Time /
 // scada::Duration. Import scada.core directly so importers get those types.

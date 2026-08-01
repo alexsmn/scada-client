@@ -6,6 +6,7 @@
 #include "aui/wt/item_delegate.h"
 
 #include <Wt/WTreeView.h>
+#include <span>
 #include <string_view>
 
 namespace scada::aui {
@@ -22,7 +23,11 @@ class Tree : public Wt::WTreeView {
   void SetRootVisible(bool visible);
   void SetHeaderVisible(bool visible);
 
-  void LoadIcons(std::string_view resource_path, int width, Color mask_color);
+  // Row glyphs, for parity with the Qt frontend so the shared views compile.
+  // Not rendered: this frontend has never drawn row icons, and serving SVG
+  // assets to a browser is a different delivery problem from Qt's icon
+  // engine.
+  void LoadGlyphs(std::span<const std::string_view> resource_paths, int size);
 
   std::vector<void*> GetOrderedNodes(void* root, bool checked) const;
 

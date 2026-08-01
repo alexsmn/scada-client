@@ -2,7 +2,7 @@
 # wrappers. Slated for extraction into its own repository, so this file works
 # both as a subdirectory of the client build (through
 # FindScadaClientAui.cmake) and as a standalone top-level project. See
-# ../docs/aui-extraction.md for the dependency contract.
+# docs/client/aui-extraction.md for the dependency contract.
 
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   cmake_minimum_required(VERSION 3.25)
@@ -65,7 +65,7 @@ client_module_include_directories(aui PUBLIC "..")
 # component libraries (graph_qt, view_manager_qt — declared below for the Qt
 # flavor); everything else it needs is Qt (aui_qt) or Wt (aui_wt). Do not add
 # links to client-repo modules here — invert the dependency instead (see
-# docs/aui-extraction.md).
+# docs/client/aui-extraction.md).
 client_module_link_libraries(aui PUBLIC
   scada_base
 )

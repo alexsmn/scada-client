@@ -119,7 +119,7 @@ test fixture supports a fake Modus runtime.
 PR / commit):
 
 1. **Inventory and tag.** Walk `scada-docs/img/*` and maintain a
-   manifest at `client/docs/screenshots/image_manifest.json` tagging each
+   manifest at `client/screenshots/image_manifest.json` tagging each
    file with one of `auto-view`, `auto-dialog`, `auto-menu`,
    `auto-state`, `manual-diagram`, `manual-modus`, `manual-os`, or
    `obsolete`. The manifest is the source of truth for what the
@@ -193,7 +193,7 @@ PR / commit):
     artifact for human review.
 
 12. **Document the workflow.** Add a "Regenerating screenshots"
-    section to `docs/requirements.md` §FR-21 and to scada-docs `CLAUDE.md`
+    section to `docs/client/requirements.md` §FR-21 and to scada-docs `CLAUDE.md`
     explaining how to run the generator, where the manifest lives,
     what's auto vs. manual, and how to add a new auto-screenshot.
 

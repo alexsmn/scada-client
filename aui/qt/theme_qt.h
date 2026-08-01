@@ -12,10 +12,10 @@ namespace scada::aui {
 // The shipped application appearances.
 //
 // `kSystem` is the default: the client is a native desktop application and
-// follows the host OS light/dark preference (client/docs/ux/principles.md §9).
+// follows the host OS light/dark preference (docs/client/ux/principles.md §9).
 // The other three are explicit operator overrides for sites that standardise on
 // one appearance — Dark remains the recommended control-room setting, but it is
-// no longer forced. See client/docs/ux/design-language.md §1.
+// no longer forced. See docs/client/ux/design-language.md §1.
 //
 // `kSystem` never reaches a token table directly; resolve it first with
 // ResolveTheme() / ResolveSystemTheme().
@@ -23,7 +23,7 @@ enum class Theme { kSystem, kDark, kLight, kHighContrast };
 
 // The full semantic colour-token set for one theme. The values are kept
 // numerically identical to the web design system (web/ds-bundle) and to
-// client/docs/ux/design-language.md so the desktop and web clients read as one
+// docs/client/ux/design-language.md so the desktop and web clients read as one
 // product. Components must consume these tokens (via the palette or the
 // generated stylesheet) rather than hard-coding colours.
 struct ThemeTokens {
@@ -103,7 +103,7 @@ QString ThemeToString(Theme theme);
 
 // The monospace font for values, NodeIds, timestamps, and measurements — the
 // design-system `--font-mono` stack (Cascadia Mono → Consolas → ui-monospace;
-// client/docs/ux/design-language.md §3), sized like the application font so it
+// docs/client/ux/design-language.md §3), sized like the application font so it
 // sits inline with UI text. Returns std::nullopt under the legacy severity
 // theme so the default look is unchanged: monospace numerals are part of the
 // opt-in token themes. Requires a QApplication (reads the application font).
@@ -118,7 +118,7 @@ QPalette BuildThemePalette(const ThemeTokens& tokens);
 // Builds the application QSS stylesheet from the theme tokens.
 //
 // Deliberately almost empty. Everything a native style can draw is left to the
-// native style (client/docs/ux/principles.md §9); this sheet now carries only
+// native style (docs/client/ux/principles.md §9); this sheet now carries only
 // what QPalette cannot express — currently just the destructive-action role
 // (`widget->setProperty("role", "danger")`).
 //
@@ -140,7 +140,7 @@ enum class ThemeScope { kPaletteOnly, kFull };
 // switch themes live. Must run after a QApplication exists.
 //
 // Deliberately does NOT change the widget style. The client runs the platform
-// style so it looks native on each OS (client/docs/ux/principles.md §9); the
+// style so it looks native on each OS (docs/client/ux/principles.md §9); the
 // style is chosen once at startup by InstalledStyle, and an operator override
 // must not be silently discarded by a theme change.
 //

@@ -15,36 +15,13 @@
 #include <string_view>
 #include <vector>
 
-// Slices a horizontal icon strip into `width`-wide tiles.
-//
-// `resource_path` names a Qt resource (":/res/items.bmp") or a filesystem
-// path; `mask_color` is the strip's transparent-key colour. This replaces the
-// former Win32 `LoadBitmap(MAKEINTRESOURCE(id))` lookup, so the same strip
-// renders on every platform instead of only on Windows.
-inline std::vector<QIcon> LoadIcons(std::string_view resource_path,
-                                    int width,
-                                    QColor mask_color) {
-  QPixmap tile{QString::fromUtf8(resource_path.data(),
-                                 static_cast<qsizetype>(resource_path.size()))};
-  if (tile.isNull() || width <= 0)
-    return {};
-
-  tile.setMask(tile.createMaskFromColor(mask_color));
-
-  std::vector<QIcon> icons;
-  icons.reserve(static_cast<size_t>((tile.width() + width - 1) / width));
-  for (int x = 0; x < tile.width(); x += width)
-    icons.emplace_back(QIcon{tile.copy(x, 0, width, tile.height())});
-  return icons;
-}
-
 // Renders one Lucide SVG resource into a `size`-square icon painted in `tint`.
 //
 // The files carry `stroke="currentColor"`, which Qt's SVG renderer has no
 // notion of — it resolves to black. So the glyph is rendered to a transparent
 // pixmap and recoloured through it (`SourceIn` keeps the stroke's coverage,
 // including its antialiasing, and replaces the colour). That is what
-// docs/ux/iconography.md §4 means by "tint is applied by the consumer, not the
+// docs/client/ux/iconography.md §4 means by "tint is applied by the consumer, not the
 // file": one asset serves dark, light and high-contrast.
 //
 // Rendered at the device pixel ratio, so a 16 px row glyph stays crisp on a
@@ -97,7 +74,7 @@ inline std::vector<QIcon> LoadTintedGlyphs(
 // The colour row glyphs are rendered in, from a live palette.
 //
 // Row glyphs mark *kind*, never state — state rides the status dot
-// (docs/ux/iconography.md §5.2) — so they take a muted text colour rather than
+// (docs/client/ux/iconography.md §5.2) — so they take a muted text colour rather than
 // competing with the label they sit beside.
 inline scada::aui::Color GlyphTintFor(const QPalette& palette) {
   QColor tint = palette.color(QPalette::Text);

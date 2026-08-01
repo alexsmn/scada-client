@@ -58,11 +58,7 @@ scada-client/
 ├── web/                    # Web component
 ├── res/                    # Resources and settings
 ├── test/                   # Integration tests and display tester
-├── docs/                   # Design doc and architecture diagrams
-│   ├── design.md           # High-level architecture and component design
-│   ├── requirements.md     # Use cases and FR/NFR traceability
-│   ├── *.puml              # PlantUML diagram sources
-│   └── *.svg               # Generated diagrams referenced from design.md
+├── screenshots/            # Doc screenshot gallery + image_manifest.json
 ├── .github/workflows/      # CI: cmake-multi-platform.yml, msbuild.yml
 ├── CMakeLists.txt          # Root CMake build file
 ├── aui/client_module.cmake # Custom CMake helpers for dual Qt/Wt target creation (aui-owned)
@@ -70,16 +66,31 @@ scada-client/
 ├── app/client_icon.rc      # Windows resource script: the app icon, nothing else
 ├── resources/              # Command ids (common_resources.h) + icon-strip paths
 ├── client_utils.cpp/.h     # Global utility functions
-├── tasks.md                # Bug/feature backlog
-└── docs/command-line.md    # Command-line switch documentation
+└── tasks.md                # Bug/feature backlog
 ```
 
 ## Documentation
 
-The high-level design document lives at `docs/design.md`. It captures the
-layered component architecture, all grounded in concrete source files. Use
-`docs/requirements.md` for use cases, functional requirements, and
-non-functional requirements. Treat both as living documents, not snapshots.
+**The client's design docs live in the superproject, not in this repo.** Only
+the generated screenshot gallery (`screenshots/`) is repo-owned; every
+prose doc and diagram moved to `/scada/docs/` so the Qt and web clients share
+one documentation tree. Paths below are relative to the superproject root and
+resolve only in the sibling checkout under `/scada`.
+
+- `docs/client/design.md` — layered component architecture, grounded in
+  concrete source files
+- `docs/client/requirements.md` — use cases, functional and non-functional
+  requirements
+- `docs/client/ux/` — the UX design system (see "UX design system" below)
+- `docs/client/command-line.md` — command-line switch documentation
+- `docs/client/aui-extraction.md`, `docs/client/telemetry-gaps.md`,
+  `docs/client/opcua-client-interop.md`, `docs/client/chromium-deps.md`
+- `docs/ops/client-build.md`, `docs/ops/client-cxx-modules.md`,
+  `docs/ops/client-screenshots.md`, `docs/ops/e2e-client-server.md`
+- `docs/diagrams/client-*.puml` / `.svg` — the client architecture diagrams
+- `docs/product/ui-mockups/` — the shared Qt ⇄ web screen mockups
+
+Treat `design.md` and `requirements.md` as living documents, not snapshots.
 
 ### Doc screenshots and the web manual
 
@@ -89,25 +100,25 @@ its UI images are rendered offline by
 `client/tools/screenshot_generator/` from the JSON fixture
 `screenshot_data.json` — they are **build artifacts, not hand captures**.
 The authoritative design/workflow doc is
-[`docs/screenshots.md`](docs/screenshots.md); the source of truth for every
+[`docs/ops/client-screenshots.md`](../docs/ops/client-screenshots.md); the source of truth for every
 manual image (tag, referencing pages, publish subset) is
-[`docs/screenshots/image_manifest.json`](docs/screenshots/image_manifest.json).
+[`screenshots/image_manifest.json`](screenshots/image_manifest.json).
 
 Rules of the pipeline:
 
 - **Manifest first.** Every image added to, retagged in, or removed from
   the manual gets its manifest entry updated in the same change. New
   screenshots follow the "Adding a new auto-screenshot" flow in
-  `docs/screenshots.md` (fixture entry + capture spec + manifest row);
+  `docs/ops/client-screenshots.md` (fixture entry + capture spec + manifest row);
   hand-captured images still get a `manual-*` manifest row.
 - **Publishing is gated.** `cmake --workflow --preset update-screenshots-dev`
-  (Windows) regenerates the local gallery `docs/screenshots/` (gitignored)
+  (Windows) regenerates the local gallery `screenshots/` (gitignored)
   and copies only the manifest's `current_generator_owned_subset` into
   scada-docs `img/`; review with `git diff img/` there. An image graduates
   into that subset only after its rendering is reviewed against the page
   that embeds it.
 - **Validate consistency** after touching images, the manifest, or manual
-  pages: `python3 docs/screenshots/validate_image_manifest.py` (auto-finds
+  pages: `python3 screenshots/validate_image_manifest.py` (auto-finds
   a sibling scada-docs checkout, or pass `--docs-repo`).
 - **When UI changes, regenerate.** A diff in the generated PNGs is the
   visual-regression signal; refresh the published copies in the same
@@ -120,12 +131,12 @@ Rules of the pipeline:
   `referenced_from` in sync. Reshell (opt-in) features are documented on
   `client/workbench.md` (Экспериментальный интерфейс).
 - **macOS runs are for validation only** (offscreen platform + hermetic
-  `HOME`; see "Running on macOS" in `docs/screenshots.md`); published
+  `HOME`; see "Running on macOS" in `docs/ops/client-screenshots.md`); published
   images come from the Windows pipeline so fonts stay consistent.
 
 ### UX design system
 
-The client's UX design system lives under [`docs/ux/`](docs/ux/README.md).
+The client's UX design system lives under [`docs/client/ux/`](../docs/client/ux/README.md).
 **Read it before adding or restyling any UI**, and follow it rather than
 inventing chrome.
 
@@ -149,7 +160,7 @@ native application on each host OS:
 - **Prefer stock Qt widgets in their conventional roles** — `QMenuBar`,
   `QToolBar`, `QDockWidget`, `QStatusBar`, `QMessageBox`, `QFileDialog`. Native
   dialogs are the desired end state, not something to theme away.
-- **Dialogs follow [`docs/ux/dialogs.md`](docs/ux/dialogs.md)**. Two rules catch
+- **Dialogs follow [`docs/client/ux/dialogs.md`](../docs/client/ux/dialogs.md)**. Two rules catch
   most defects: the OS title bar *is* the title, so never repeat it (or a brand
   mark) in the content area; and always use `QDialogButtonBox` rather than
   laying out OK/Cancel by hand — button order is opposite on macOS and Windows,
@@ -165,7 +176,7 @@ The information architecture from the reshell still stands (Activity bar →
 Explorer → workspace tabs → Inspector → status strip, operator-first, one home
 per datum). It is the *chrome* that becomes native, not the layout.
 
-The HTML mockups in [`docs/ui-mockups/screens/`](docs/ui-mockups/screens/) are
+The HTML mockups in [`docs/product/ui-mockups/screens/`](../docs/product/ui-mockups/screens/) are
 **the north star for information architecture** — which surfaces exist, what
 each one shows, and what the operator can act on there. They were restyled to
 this native direction on 2026-07-26, but they remain approximations of it and
@@ -174,26 +185,26 @@ platform's, and it differs between macOS and Windows. Read them for *what goes
 where and which data appears*; take the *appearance* from the platform, and
 validate implemented UI against real Qt widgets via the headless
 `client_screenshot_generator`, never against the HTML. See
-[`docs/ux/README.md`](docs/ux/README.md) → Mockups for the full caveat.
+[`docs/client/ux/README.md`](../docs/client/ux/README.md) → Mockups for the full caveat.
 
 That architecture is the **product's**, not just this client's — the web client
 implements the same one, rendered in its own idiom. The cross-client obligation
 that goes with it is recorded in the superproject `CLAUDE.md`, not here (this
 repo must stay standalone).
 
-- [`docs/ux/principles.md`](docs/ux/principles.md) — HMI/SCADA UX principles
+- [`docs/client/ux/principles.md`](../docs/client/ux/principles.md) — HMI/SCADA UX principles
   (High-Performance HMI, ISA-101, ISA-18.2/EEMUA 191 alarms, situational
   awareness, colour rules) with citations. The *why* behind every UI decision.
-- [`docs/ux/design-language.md`](docs/ux/design-language.md) — the shared
+- [`docs/client/ux/design-language.md`](../docs/client/ux/design-language.md) — the shared
   design tokens (exact colour/type/spacing values) and component primitives.
   Components must consume tokens; never hard-code hex.
-- [`docs/ux/shell.md`](docs/ux/shell.md) — the reshelled layout mapped onto the
+- [`docs/client/ux/shell.md`](../docs/client/ux/shell.md) — the reshelled layout mapped onto the
   existing `main_window/` / registries / `modules/` code.
-- [`docs/ux/backlog.md`](docs/ux/backlog.md) — the surface catalogue and
+- [`docs/client/ux/backlog.md`](../docs/client/ux/backlog.md) — the surface catalogue and
   dependency notes. Treat it as a **menu of slices, not a fixed waterfall**
   (see the implementation approach below).
 - Rendered, theme-toggleable mockups live in
-  [`docs/ui-mockups/screens/`](docs/ui-mockups/screens/) — operator,
+  [`docs/product/ui-mockups/screens/`](../docs/product/ui-mockups/screens/) — operator,
   engineering and admin surfaces, each with a light/dark toggle. They are the
   architecture reference described above, not a visual target.
 
@@ -221,9 +232,9 @@ build the reshell (decided with the user) is:
 - **Every removed `setStyleSheet` is progress.** Adding one needs a reason that
   `QPalette` plus `QStyle::PixelMetric` could not serve — state it in a comment.
 - **Validate by purpose, and validate in both OS appearances.** Use the HTML
-  mockups in `docs/ui-mockups/screens/` for information architecture only;
+  mockups in `docs/product/ui-mockups/screens/` for information architecture only;
   validate anything implemented against **real Qt widgets** via the headless
-  `client_screenshot_generator` (see `docs/screenshots.md`) — not HTML, which
+  `client_screenshot_generator` (see `docs/ops/client-screenshots.md`) — not HTML, which
   does not match Qt's rendering. A native-look change is not done until it has
   been seen under both a light and a dark system theme.
 
@@ -232,41 +243,45 @@ top to bottom.
 
 ### When to update the docs
 
-**Update `docs/design.md`, `docs/requirements.md`, and the relevant diagram
+**Update `docs/client/design.md`, `docs/client/requirements.md`, and the relevant diagram
 whenever you change or add functionality.** Concretely, that means at
 minimum:
 
 - Adding or removing a top-level module (`*_module.{h,cpp}`) — update the
-  module table and `module-graph.puml`.
+  module table and `docs/diagrams/client-module-graph.puml`.
 - Adding or removing a directory under `client/` that hosts a new layer or
-  domain area — update the layer description and `architecture-layers.puml`.
+  domain area — update the layer description and
+  `docs/diagrams/client-architecture-layers.puml`.
 - Adding or removing a back-end registered with `REGISTER_DATA_SERVICES` —
-  update FR-1 in `docs/requirements.md` §3.
+  update FR-1 in `docs/client/requirements.md` §3.
 - Changing the bootstrap order in `ClientApplication::PostLogin()` —
-  update `bootstrap-sequence.puml`.
+  update `docs/diagrams/client-bootstrap-sequence.puml`.
 - Adding a new actor-facing capability that isn't covered by an existing
-  use case — add a row to the use-case table in `docs/requirements.md` §2
-  and a functional requirement in `docs/requirements.md` §3.
+  use case — add a row to the use-case table in `docs/client/requirements.md` §2
+  and a functional requirement in `docs/client/requirements.md` §3.
 - Removing a use case (deleting a feature) — strike the row in §2 and the
   matching FR.
 - Changing a design token, component primitive, or a shell region — update the
-  matching `docs/ux/` doc **and** the affected mockup in
-  `docs/ui-mockups/screens/` in the same change, then regenerate the touched
-  `docs/screenshots/` image once the code lands.
+  matching `docs/client/ux/` doc **and** the affected mockup in
+  `docs/product/ui-mockups/screens/` in the same change, then regenerate the touched
+  `screenshots/` image once the code lands.
 
 If you cannot tell whether a change affects the doc, ask. Drift between
 the doc and the code is worse than no doc.
 
 ### Diagrams
 
-Architecture diagrams live next to `design.md` as PlantUML sources:
+Architecture diagrams live in the superproject's shared `docs/diagrams/`
+tree, prefixed `client-` to distinguish them from the server ones. Paths in
+this section are relative to the superproject root.
 
-| File | Renders to | Used in design.md §|
+| File | Renders to | Used in |
 |---|---|---|
-| `docs/use-cases.puml` | `use-cases.svg` | `requirements.md` §2 (use cases) |
-| `docs/architecture-layers.puml` | `architecture-layers.svg` | `design.md` §3 (component overview) |
-| `docs/module-graph.puml` | `module-graph.svg` | `design.md` §3.6 (domain modules) |
-| `docs/bootstrap-sequence.puml` | `bootstrap-sequence.svg` | `design.md` §3.1 (startup sequence) |
+| `docs/diagrams/client-use-cases.puml` | `client-use-cases.svg` | `docs/client/requirements.md` §2 (use cases) |
+| `docs/diagrams/client-architecture-layers.puml` | `client-architecture-layers.svg` | `docs/client/design.md` §3 (component overview) |
+| `docs/diagrams/client-module-graph.puml` | `client-module-graph.svg` | `docs/client/design.md` §3.6 (domain modules) |
+| `docs/diagrams/client-bootstrap-sequence.puml` | `client-bootstrap-sequence.svg` | `docs/client/design.md` §3.1 (startup sequence) |
+| `docs/diagrams/client-opcua-discovery-flow.puml` | `client-opcua-discovery-flow.svg` | `docs/client/opcua-client-interop.md` |
 
 The `.svg` files are committed alongside the `.puml` sources so the doc
 renders correctly on GitHub without a build step.
@@ -279,11 +294,11 @@ renders correctly on GitHub without a build step.
    brings its own JDK and Graphviz):
 
    ```bash
-   plantuml -tsvg client/docs/<name>.puml
+   plantuml -tsvg docs/diagrams/client-<name>.puml
    ```
 
 3. **Look at the rendered output** before committing — render a PNG
-   (`plantuml -tpng client/docs/<name>.puml -o /tmp`) and open it. Layout
+   (`plantuml -tpng docs/diagrams/client-<name>.puml -o /tmp`) and open it. Layout
    collisions and PlantUML warning banners are drawn *into* the image and
    are invisible in the source.
 4. Commit both the `.puml` source *and* the regenerated `.svg`. They must
@@ -293,7 +308,7 @@ renders correctly on GitHub without a build step.
 
 - Start every diagram with `!include _style.puml` — the shared house style
   (theme, skinparams, palette variables `$tier`/`$config`/`$store`/`$hazard`/
-  `$external`/`$neutral`/`$proxy`) lives in `docs/_style.puml`. See the
+  `$external`/`$neutral`/`$proxy`) lives in `docs/diagrams/_style.puml`. See the
   superproject `CLAUDE.md`, "PlantUML house style", for the palette table.
 - Colour an activity with `:text; <<$tier>>` **after** the semicolon. The
   legacy `#RRGGBB:text;` prefix form is deprecated and PlantUML draws a
@@ -306,10 +321,12 @@ renders correctly on GitHub without a build step.
 
 **To add a new diagram:**
 
-1. Create `docs/<name>.puml` starting with `!include _style.puml`.
+1. Create `docs/diagrams/client-<name>.puml` starting with
+   `!include _style.puml`.
 2. Render it as above, and look at the PNG.
-3. Reference it from `design.md` with `![alt](<name>.svg)` and a "Source:
-   …" caption pointing back to the `.puml`.
+3. Reference it from `docs/client/design.md` with
+   `![alt](../diagrams/client-<name>.svg)` and a "Source: …" caption pointing
+   back to the `.puml`.
 4. Add it to the table above in this section.
 
 ## Build System
@@ -387,7 +404,7 @@ With `-DSCADA_CXX_MODULES=ON` (default OFF, build unchanged when OFF), the
 client library layers expose named-module facades (`scada.client.base`,
 `scada.client.aui`, `scada.client.controller`, ...) following the core/common
 facade design. The client set is Qt-flavored — only the `_qt` targets are
-facaded; the wt flavor stays header-based. See `docs/cxx-modules.md` for the
+facaded; the wt flavor stays header-based. See `docs/ops/client-cxx-modules.md` for the
 module map, exclusions, and presets, and `core/docs/cxx-modules.md` for the
 underlying design and consumer rules.
 
@@ -644,7 +661,7 @@ Logging-related switches (pass as `--switch-name`):
     `aui/` — invert the dependency instead (keep the generic seam in aui,
     move the client-coupled piece to its consumer). Its allowed dependency
     set is `scada_base`, `graph_qt`, `view_manager_qt`, Qt/Wt — see
-    `docs/aui-extraction.md`.
+    `docs/client/aui-extraction.md`.
 
 11. **Modus/Vidicon ActiveX parameter names** — Never rename OLESTR parameter names in `modules/modus/` (e.g., `"ключ_привязки"`, `"положение"`, `"уставки"`). These Russian-language identifiers are part of the external Vidicon ActiveX protocol interface and must remain unchanged.
 

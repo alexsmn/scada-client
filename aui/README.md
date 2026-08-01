@@ -17,7 +17,7 @@ CMake project, in preparation for extraction into its own repository.
 - **Qt 6** (`aui_qt`) and/or **Wt** (`aui_wt`).
 
 Nothing else: aui must stay free of scada-client and scada-common couplings.
-See the client repo's `docs/aui-extraction.md` for the dependency contract.
+See the client repo's `docs/client/aui-extraction.md` for the dependency contract.
 
 This directory also owns `client_module.cmake` — the helper that creates the
 dual `<name>_qt` / `<name>_wt` targets — which the scada-client build reuses.

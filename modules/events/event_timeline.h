@@ -13,7 +13,7 @@ namespace events {
 
 // A step in a selected event's lifecycle, shown in the Inspector's History
 // section (see the reshell mockup
-// client/docs/ui-mockups/screens/event-journal.html).
+// docs/product/ui-mockups/screens/event-journal.html).
 //
 // Only steps the event itself records are offered. The mockup also shows a
 // "Notified: operator console, sound" row, which has no backing in the event

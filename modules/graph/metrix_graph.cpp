@@ -79,7 +79,7 @@ int GetPercentReady(const TimedDataSpec& timed_data) {
 // the host OS appearance, like any other data surface. Resolved through
 // ActiveThemeTokens() so that under Theme::kSystem the tokens are themselves
 // derived from the live palette rather than from a baked light/dark table. See
-// the UX design language at client/docs/ux/design-language.md.
+// the UX design language at docs/client/ux/design-language.md.
 const scada::aui::ThemeTokens* ReshellChartTokens() {
   if (scada::aui::GetSeverityTheme() == scada::aui::SeverityTheme::kLegacy)
     return nullptr;

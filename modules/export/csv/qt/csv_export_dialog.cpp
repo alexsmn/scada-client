@@ -41,7 +41,7 @@ CsvExportDialog::CsvExportDialog(const CsvExportParams& params,
     : QDialog{parent}, params_{params} {
   ui.setupUi(this);
 
-  // Name the action rather than the assent (docs/ux/dialogs.md §3).
+  // Name the action rather than the assent (docs/client/ux/dialogs.md §3).
   ui.buttonBox->button(QDialogButtonBox::Ok)->setText(tr("Export"));
 
   // Only the views that group rows can expand them; for every other export the

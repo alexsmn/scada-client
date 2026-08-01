@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Consistency check between image_manifest.json and the scada-docs repo.
 
-The manifest (client/docs/screenshots/image_manifest.json) is the source of
+The manifest (client/screenshots/image_manifest.json) is the source of
 truth for every image the web manual ships. This script verifies:
 
   1. Bijection: every file in scada-docs img/ has a manifest entry, and every
@@ -15,7 +15,7 @@ truth for every image the web manual ships. This script verifies:
 
 Run it after changing the manifest, the images, or any manual page:
 
-    python3 client/docs/screenshots/validate_image_manifest.py \
+    python3 client/screenshots/validate_image_manifest.py \
         --docs-repo ../scada-docs
 
 Exit code 0 = consistent, 1 = violations found (each printed on stderr).

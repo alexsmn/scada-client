@@ -9,7 +9,7 @@ class QWidget;
 
 // Inputs for the journal's alarm-footer strip (Qt): the mockup's "N
 // unacknowledged · highest Critical" summary plus the Acknowledge-all action
-// (the events surface of client/docs/ui-mockups/screens/operator-shell.html).
+// (the events surface of docs/product/ui-mockups/screens/operator-shell.html).
 //
 // The strip re-reads `summary` whenever `model` notifies a change, so the
 // count tracks arrivals, acknowledgements and refilters. `acknowledge_all`

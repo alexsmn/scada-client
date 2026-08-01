@@ -160,7 +160,7 @@ ServerProcessContext MakeServerContext() {
 // SCADA_E2E_OTLP_ENDPOINT (e.g. "localhost:4317"). Unset — the CI default —
 // leaves the suite exactly as it was: no traces, no OTLP logs, and the metrics
 // module's exporter aimed nowhere. Set it to inspect a run in a local
-// all-signal viewer; see docs/e2e-client-server.md, "Viewing a run's
+// all-signal viewer; see docs/ops/e2e-client-server.md, "Viewing a run's
 // telemetry".
 std::string GetOtlpEndpoint() {
   auto* value = std::getenv("SCADA_E2E_OTLP_ENDPOINT");
@@ -568,7 +568,7 @@ void ClientServerE2eTest::StartClient(std::vector<std::string> extra_args) {
       "--test-status-file=" + status_file_.string(),
       "--test-log-dir=" + client_log_dir_.string()};
   // Client-side telemetry is metrics only today (the client runs no trace sink
-  // and no OTLP log sink — see docs/e2e-client-server.md, "Viewing a run's
+  // and no OTLP log sink — see docs/ops/e2e-client-server.md, "Viewing a run's
   // telemetry"), so this exports "scada-client" meters and nothing else.
   if (const std::string otlp_endpoint = GetOtlpEndpoint();
       !otlp_endpoint.empty()) {

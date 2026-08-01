@@ -35,7 +35,7 @@ WriteDialog::WriteDialog(std::shared_ptr<WriteModel> model, QWidget* parent)
     : QDialog{parent}, model_{std::move(model)} {
   ui.setupUi(this);
 
-  // Name the action rather than the assent (docs/ux/dialogs.md §3). This one
+  // Name the action rather than the assent (docs/client/ux/dialogs.md §3). This one
   // matters most: for a control command the accept button is the second half
   // of a two-stage confirm (principles.md §7), and "OK" throws that away by
   // asking the operator to re-read the title to learn what they are agreeing

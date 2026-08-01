@@ -188,7 +188,7 @@ TEST(ThemeQtTest, ApplyThemeInstallsPaletteAndStyleSheet) {
             GetThemeTokens(Theme::kDark).bg);
 }
 
-// Regression guard for the native look and feel (client/docs/ux/principles.md
+// Regression guard for the native look and feel (docs/client/ux/principles.md
 // §9): ApplyTheme must recolour without touching the widget style. It used to
 // force Fusion unconditionally, which overrode both the platform style — making
 // the client look equally foreign on every OS — and any explicit operator

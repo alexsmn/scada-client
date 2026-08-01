@@ -14,7 +14,7 @@ struct TableColumn {
   Alignment alignment = LEFT;
   DataType data_type = DataType::General;
   // Render the column's cells in the design-system monospace value font
-  // (`--font-mono`, client/docs/ux/design-language.md §3) so digits stay
+  // (`--font-mono`, docs/client/ux/design-language.md §3) so digits stay
   // tabular as values update. Timestamp columns (`DataType::DateTime`) render
   // monospace implicitly; set this for value / NodeId / measurement columns.
   // Only takes effect under the opt-in token themes — the legacy look keeps

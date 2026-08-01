@@ -40,7 +40,7 @@ struct DeviceDiagnosticRow {
 };
 
 // The reshell Device Diagnostics inspector — the right region of
-// client/docs/ui-mockups/screens/config-workbench.html. For a selected device
+// docs/product/ui-mockups/screens/config-workbench.html. For a selected device
 // it shows a link-status hero (up / down / disabled), live traffic and polling
 // counters, and a Metrics-trend action.
 //

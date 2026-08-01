@@ -38,7 +38,7 @@ endif()
 if(BUILD_CLIENT_QT)
   # Svg: QIcon cannot load an SVG without Qt's qsvgicon icon-engine plugin,
   # which ships in the Qt Svg module rather than qtbase. The tree/table glyphs
-  # are Lucide SVGs (docs/ux/iconography.md §4), so the link is what makes
+  # are Lucide SVGs (docs/client/ux/iconography.md §4), so the link is what makes
   # windeployqt/macdeployqt carry the plugin.
   find_package(Qt6 REQUIRED COMPONENTS Svg Widgets)
   find_package(Qt6 COMPONENTS LinguistTools QUIET)

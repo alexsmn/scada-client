@@ -3,6 +3,8 @@
 #include "configuration/tree/configuration_tree_node.h"
 #include "resources/icon_strips.h"
 
+#include <QFile>
+
 #include "aui/translation.h"
 #include "base/async_completion.h"
 #include "base/test/awaitable_test.h"
@@ -383,10 +385,41 @@ TEST(ConfigurationTreeGlyphs, TableCoversEveryImageIndex) {
   }
 }
 
+// The favourites tree's own table, indexed by FavouritesWindowNode::GetIcon
+// (0 table window, 1 graph window, 2 folder). A favourite of any other view
+// type returns -1 and shows no glyph, which is why the table has no default
+// entry and its size is exactly three.
+TEST(ConfigurationTreeGlyphs, WindowTypeTableCoversTheFavouriteKinds) {
+  ASSERT_EQ(std::size(kWindowTypeGlyphs), 3u);
+  for (std::string_view path : kWindowTypeGlyphs) {
+    EXPECT_TRUE(path.starts_with(":/icons/")) << path;
+    EXPECT_TRUE(path.ends_with(".svg")) << path;
+  }
+  // A saved table window and a saved graph window must not look alike — the
+  // glyph is the only thing distinguishing them in the list.
+  EXPECT_NE(kWindowTypeGlyphs[0], kWindowTypeGlyphs[1]);
+}
+
+// Every mapped path must actually resolve through the Qt resource system. The
+// tables above only check the shape of the strings; a typo, or a glyph missing
+// from res/client.qrc, still yields a null icon and a silently blank row.
+TEST(ConfigurationTreeGlyphs, EveryMappedGlyphResolves) {
+  for (std::string_view path : kItemGlyphs) {
+    EXPECT_TRUE(QFile::exists(QString::fromUtf8(
+        path.data(), static_cast<qsizetype>(path.size()))))
+        << path;
+  }
+  for (std::string_view path : kWindowTypeGlyphs) {
+    EXPECT_TRUE(QFile::exists(QString::fromUtf8(
+        path.data(), static_cast<qsizetype>(path.size()))))
+        << path;
+  }
+}
+
 // State moved out of the artwork and onto the status dot, so the four device
 // tiles and the two subsystem tiles collapse onto one glyph each — the point
 // of the conversion, and what keeps colour from being the sole carrier of
-// meaning (docs/ux/principles.md §5).
+// meaning (docs/client/ux/principles.md §5).
 TEST(ConfigurationTreeGlyphs, DeviceAndSubsystemStatesShareOneGlyph) {
   EXPECT_EQ(kItemGlyphs[GlyphIndices::IMAGE_DEVICE_RUNNING],
             kItemGlyphs[GlyphIndices::IMAGE_DEVICE_STOPPED]);

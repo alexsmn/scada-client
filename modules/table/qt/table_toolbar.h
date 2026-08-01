@@ -59,5 +59,5 @@ class TableToolbar : public QWidget {
 };
 
 // Builds the themed toolbar, or returns null under the legacy theme — the bar
-// is opt-in reshell chrome (client/docs/ux/backlog.md 2.8).
+// is opt-in reshell chrome (docs/client/ux/backlog.md 2.8).
 TableToolbar* MakeTableToolbar(TableToolbarContext context);

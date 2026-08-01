@@ -20,7 +20,7 @@ namespace scada::aui {
 namespace {
 
 // Builds the three token tables from the exact values in
-// client/docs/ux/design-language.md. Semi-transparent tokens (borders, soft
+// docs/client/ux/design-language.md. Semi-transparent tokens (borders, soft
 // tints) carry an alpha derived from the documented opacity percentage.
 ThemeTokens MakeDarkTokens() {
   ThemeTokens t;
@@ -29,7 +29,7 @@ ThemeTokens MakeDarkTokens() {
   // own, because hue is reserved for process semantics (severity, quality,
   // equipment state) — the tokens further down, which stay fixed. The values
   // match the desktop dark appearances the client sits inside and the mockups
-  // in client/docs/ui-mockups/screens/.
+  // in docs/product/ui-mockups/screens/.
   t.bg = QColor(0x1e, 0x1e, 0x1e);
   t.bg_elevated = QColor(0x1e, 0x1e, 0x1e);
   t.surface = QColor(0x17, 0x17, 0x17);
@@ -189,7 +189,7 @@ QColor WithAlpha(QColor c, int alpha) {
 //
 // Only the *chrome* tokens are derived. The semantic tokens — quality,
 // alarm severity, single-line equipment state — are process signals fixed by
-// ISA-101 / ISA-18.2 (client/docs/ux/principles.md §9) and must not follow the
+// ISA-101 / ISA-18.2 (docs/client/ux/principles.md §9) and must not follow the
 // desktop accent colour. They are taken wholesale from the light or dark table,
 // chosen by the palette's own lightness so they stay legible against it.
 ThemeTokens MakeSystemTokens(const QPalette& p) {
@@ -218,7 +218,7 @@ ThemeTokens MakeSystemTokens(const QPalette& p) {
           ? alternate
           : Mix(base, text, 0.08);
   // The charcoal rail/status strip is retired: native chrome takes the window
-  // colour like everything else (client/docs/ux/design-language.md).
+  // colour like everything else (docs/client/ux/design-language.md).
   t.rail_bg = window;
   t.topbar_bg = window;
 
@@ -473,7 +473,7 @@ QPalette BuildThemePalette(const ThemeTokens& t) {
 
 QString BuildThemeStyleSheet(const ThemeTokens& t) {
   // Everything this sheet used to do is now the platform style's job
-  // (client/docs/ux/principles.md §9, backlog P6.2). What remains is only what
+  // (docs/client/ux/principles.md §9, backlog P6.2). What remains is only what
   // QPalette has no way to express.
   //
   // Removed, and why — each of these repainted something the native style
@@ -519,7 +519,7 @@ QString BuildThemeStyleSheet(const ThemeTokens& t) {
   // matches its chrome, which leaves the indicator fill identical to the row.
   //
   // An unchecked box is the whole affordance for "you may add this signal to
-  // the active table" (docs/ui-mockups/screens/trend.html draws it as an
+  // the active table" (docs/product/ui-mockups/screens/trend.html draws it as an
   // always-present bordered box), so it has to clear WCAG 2.2 SC 1.4.11's 3:1.
   //
   // Deliberately scoped to `::indicator` and to the *unchecked* state only.
@@ -542,7 +542,7 @@ void ApplyTheme(Theme theme, ThemeScope scope) {
   MutableActiveTheme() = theme;
 
   // Deliberately no setStyle() here. The client runs the platform style so it
-  // looks native (client/docs/ux/principles.md §9); forcing Fusion was what
+  // looks native (docs/client/ux/principles.md §9); forcing Fusion was what
   // made it look the same — and equally foreign — on every OS. The style is
   // settled once at startup by InstalledStyle, which also honours an explicit
   // operator override; a theme change must not stomp it.

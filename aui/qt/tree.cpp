@@ -134,12 +134,6 @@ void Tree::SetFilterText(const std::u16string& text) {
   proxy_model_->setFilterFixedString(QString::fromStdU16String(text));
 }
 
-void Tree::LoadIcons(std::string_view resource_path,
-                     int width,
-                     Color mask_color) {
-  model_adapter_->LoadIcons(resource_path, width, mask_color);
-}
-
 void Tree::LoadGlyphs(std::span<const std::string_view> resource_paths,
                       int size) {
   model_adapter_->LoadGlyphs(resource_paths, size, GlyphTint(),

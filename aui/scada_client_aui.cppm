@@ -5,7 +5,7 @@
 // module fragment includes them, the purview re-exports names with
 // `export using`. `export import scada.base` mirrors aui's sole PUBLIC link
 // (scada_base); aui deliberately has no other project dependency — it is
-// slated for extraction into its own repository (see docs/aui-extraction.md).
+// slated for extraction into its own repository (see docs/client/aui-extraction.md).
 //
 // The facade covers the Qt flavor (compiled with aui_qt's flags, so UI_QT is
 // defined); the wt flavor stays header-only and is not facaded. The

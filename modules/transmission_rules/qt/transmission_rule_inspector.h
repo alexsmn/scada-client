@@ -26,7 +26,7 @@ struct TransmissionRuleDisplay {
 };
 
 // The reshell transmission rule editor — the right region of
-// client/docs/ui-mockups/screens/transmission-rules.html. For a selected
+// docs/product/ui-mockups/screens/transmission-rules.html. For a selected
 // transmission item it shows the source signal, the destination endpoint and
 // IOA (editable, staged behind Revert/Apply), and the protocol.
 //

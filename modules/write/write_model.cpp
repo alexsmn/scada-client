@@ -166,7 +166,7 @@ std::u16string WriteModel::GetConfirmationMessage(double value,
                                                   bool second_stage) const {
   // Present the operator what the point reads now and what the command will
   // make it, so an irreversible field action is reviewed — not just answered
-  // yes/no — before it is sent (principle §7 in client/docs/ux/principles.md).
+  // yes/no — before it is sent (principle §7 in docs/client/ux/principles.md).
   const std::u16string present_str =
       spec_.GetCurrentString(ValueFormat{FORMAT_UNITS});
   const std::u16string command_str =

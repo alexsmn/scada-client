@@ -36,8 +36,6 @@ class TreeModelAdapter : public QAbstractItemModel {
   void SetChecked(void* node, bool checked);
   void SetCheckedNodes(std::set<void*> nodes);
 
-  void LoadIcons(std::string_view resource_path, int width, Color mask_color);
-
   // Loads row glyphs from SVG resources, tinted with `tint`, keeping index
   // order so it is a drop-in for the sliced-strip form above. The paths are
   // retained so RetintGlyphs() can re-render them when the theme changes.

@@ -10,7 +10,7 @@ struct ThemeTokens;
 // device's or conductor's state to the `sl_*` design tokens so the renderer
 // colours breakers, disconnectors, busbars and conductors consistently,
 // independent of the authored drawing. See
-// client/docs/ux/design-language.md §2 "Single-line diagram semantics".
+// docs/client/ux/design-language.md §2 "Single-line diagram semantics".
 //
 // This is the renderer-agnostic client-side half of backlog 2.7: the mapping is
 // pure and unit-tested here; feeding the resulting colours into a renderer is

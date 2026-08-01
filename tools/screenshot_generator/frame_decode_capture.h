@@ -3,7 +3,7 @@
 struct ScreenshotSpec;
 
 // Renders the device log's frame-decode pane — the right-hand inspector of
-// docs/ui-mockups/screens/device-protocol-trace.html — over a fixture
+// docs/product/ui-mockups/screens/device-protocol-trace.html — over a fixture
 // IEC 60870-5-104 APDU, and saves it under `GetOutputDir() / spec.filename`.
 //
 // Standalone, like SaveSeverityTilesScreenshot: the pane is built directly and

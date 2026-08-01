@@ -63,7 +63,7 @@ struct DisplayFrameContext {
 // export control — and, when live-data sources are supplied, the bay strips
 // below the diagram: a Measurements watch (the elements the operator selects)
 // and a Recent-events list (reusing the event surface). Matches
-// client/docs/ui-mockups/screens/substation-display.html. The diagram geometry
+// docs/product/ui-mockups/screens/substation-display.html. The diagram geometry
 // is unchanged: the frame only hosts the renderer in a scrollable viewport
 // whose zoom scales the rendered page.
 //

@@ -71,9 +71,8 @@ const std::vector<TableColumn>& Table::columns() const {
   return model_adapter_->columns();
 }
 
-void Table::LoadIcons(std::string_view resource_path,
-                      int width,
-                      Color mask_color) {}
+void Table::LoadGlyphs(std::span<const std::string_view> resource_paths,
+                       int size) {}
 
 int Table::GetCurrentRow() const {
   auto indexes = selectedIndexes();

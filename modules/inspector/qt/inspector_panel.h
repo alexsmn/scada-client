@@ -25,7 +25,7 @@ class QStackedWidget;
 // default-constructed Qualifier is zero, and zero is *not* BAD — so a value
 // that never arrived is indistinguishable from a good measurement at the
 // Qualifier level. Presenting absent data as good is exactly the failure mode
-// the HMI principles forbid (see client/docs/ux/principles.md).
+// the HMI principles forbid (see docs/client/ux/principles.md).
 enum class InspectorQualityBand { kGood, kBad, kUnknown };
 InspectorQualityBand InspectorQualityBandFor(const scada::Qualifier& qualifier);
 // Prefer this overload wherever a whole DataValue is at hand: it can tell an
@@ -113,7 +113,7 @@ struct InspectorPanelContext {
 
 // The reshell Inspector: a right-hand panel that reflects the active view's
 // current selection — identity, live value + quality, and the control action —
-// matching client/docs/ui-mockups/screens/substation-display.html.
+// matching docs/product/ui-mockups/screens/substation-display.html.
 //
 // Selection flows in through ShowSelection(): a display element click selects a
 // TimedDataSpec on the active view's SelectionModel, the main window routes the

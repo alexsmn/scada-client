@@ -19,7 +19,7 @@ struct UserPermissionDisplay {
 };
 
 // The reshell users-admin RBAC inspector — the right region of
-// client/docs/ui-mockups/screens/users-admin.html. For a selected user it shows
+// docs/product/ui-mockups/screens/users-admin.html. For a selected user it shows
 // the identity, a coarse role pill (Administrator / Operator / Observer) and the
 // permission breakdown (View / Control / Configure — granted or not), derived
 // from the user's AccessRights bitmask.

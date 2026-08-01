@@ -91,7 +91,7 @@ NodeRef MakeDiscreteItemNode(FakeNodeService& node_service) {
 
 // The Source column is what tells an engineer where a value comes from — the
 // job the row icon used to do by its own presence, silently and without a
-// label (docs/ui-mockups/screens/table-watch.html gives it a column).
+// label (docs/product/ui-mockups/screens/table-watch.html gives it a column).
 TEST_F(TableModelTest, SourceColumnShowsWhatTheRowIsBoundTo) {
   const auto& row_context = SetFormula();
   // Cell rendering consults the row's current value for its colours.
@@ -277,7 +277,7 @@ TEST_F(TableModelTest, GetValue) {
 // — the Unix epoch under std::chrono, which scada::IsNull() does not
 // recognise — and the cells faithfully formatted it as a 1969/1970 date.
 // A fabricated timestamp beside a live value is exactly the honesty failure
-// docs/ux/principles.md §5 forbids, and reads worse than a blank because an
+// docs/client/ux/principles.md §5 forbids, and reads worse than a blank because an
 // operator takes it for real.
 TEST_F(TableModelTest, MissingTimestampsRenderBlank) {
   const auto& row_context = SetFormula();

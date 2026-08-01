@@ -19,7 +19,7 @@ class QPushButton;
 class QStackedWidget;
 
 // The reshell device-parameter editor — the center workspace of
-// client/docs/ui-mockups/screens/config-workbench.html. It presents an
+// docs/product/ui-mockups/screens/config-workbench.html. It presents an
 // aui::PropertyModel as a subtabbed form (one tab per top-level property group;
 // loose leaf properties fall under a "General" tab), with a Revert / Apply bar
 // and a dirty indicator.

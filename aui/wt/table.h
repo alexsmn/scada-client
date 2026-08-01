@@ -5,6 +5,7 @@
 #include <boost/json.hpp>
 
 #include <Wt/WTableView.h>
+#include <span>
 #include <string_view>
 
 namespace Wt {
@@ -51,7 +52,11 @@ class Table : public Wt::WTableView {
 
   Wt::WWidget* CreateParentIfNecessary() { return this; }
 
-  void LoadIcons(std::string_view resource_path, int width, Color mask_color);
+  // Row glyphs, for parity with the Qt frontend so the shared views compile.
+  // Not rendered: this frontend has never drawn row icons, and serving SVG
+  // assets to a browser is a different delivery problem from Qt's icon
+  // engine.
+  void LoadGlyphs(std::span<const std::string_view> resource_paths, int size);
 
   boost::json::value SaveState() const;
   void RestoreState(const boost::json::value& data);

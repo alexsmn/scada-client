@@ -55,13 +55,6 @@ void TableModelAdapter::ConnectModel() {
       [this](int first, int count) { OnItemsRemoved(first, count); }));
 }
 
-void TableModelAdapter::LoadIcons(std::string_view resource_path,
-                                  int width,
-                                  Color mask_color) {
-  icons_ = ::LoadIcons(resource_path, width, mask_color.qcolor());
-  glyph_paths_.clear();
-}
-
 void TableModelAdapter::LoadGlyphs(
     std::span<const std::string_view> resource_paths,
     int size,

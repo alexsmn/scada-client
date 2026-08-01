@@ -105,7 +105,7 @@ QWidget* Debugger::CreateRequestView(QWidget* parent) {
   // Reshell: a themed trace toolbar (Pause / Clear / filter / Save) above the
   // request trace + detail. NOTE this view traces client<->server *session
   // requests*; the device *protocol* frame trace in
-  // docs/ui-mockups/screens/device-protocol-trace.html is a different
+  // docs/product/ui-mockups/screens/device-protocol-trace.html is a different
   // surface, planned as a mode of the device log view.
   const scada::aui::ThemeTokens& tokens = DebuggerTokens();
   auto* container = new QWidget{parent};

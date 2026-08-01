@@ -9,7 +9,7 @@ class NodeId;
 }
 
 // Pure, node-service-free helpers backing the reshell transmission-rules
-// editor (client/docs/ui-mockups/screens/transmission-rules.html). They map the
+// editor (docs/product/ui-mockups/screens/transmission-rules.html). They map the
 // bits of a transmission rule the client node model actually exposes — the
 // protocol (from the item's type), the source signal kind, and a compact
 // source-to-address summary — into display strings. Unit-testable without Qt or

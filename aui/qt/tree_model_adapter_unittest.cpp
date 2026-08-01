@@ -75,7 +75,7 @@ TEST_F(TreeModelAdapterTest, LegacyThemeKeepsTheDefaultFont) {
 
 // A checkable tree supplies Qt::CheckStateRole so the platform style draws an
 // indicator on every row, checked or not — the shape
-// docs/ui-mockups/screens/trend.html specifies, where an unchecked `.cb` is
+// docs/product/ui-mockups/screens/trend.html specifies, where an unchecked `.cb` is
 // still a visible box. A tree that is not checkable supplies nothing, so no
 // indicator column is reserved.
 TEST_F(TreeModelAdapterTest, CheckStateIsSuppliedOnlyWhenCheckable) {

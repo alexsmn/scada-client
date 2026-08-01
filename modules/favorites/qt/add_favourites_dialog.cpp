@@ -32,7 +32,7 @@ AddFavouritesDialog::AddFavouritesDialog(AddFavouritesContext&& context,
     : QDialog{parent}, AddFavouritesContext{std::move(context)} {
   ui.setupUi(this);
 
-  // Name the action rather than the assent (docs/ux/dialogs.md §3).
+  // Name the action rather than the assent (docs/client/ux/dialogs.md §3).
   ui.buttonBox->button(QDialogButtonBox::Ok)->setText(tr("Add"));
 
   ui.nameLineEdit->setText(QString::fromStdU16String(window_def_.title));

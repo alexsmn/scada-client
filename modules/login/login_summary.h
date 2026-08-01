@@ -5,7 +5,7 @@
 
 // The sign-in card's "what am I about to connect to" line, composed from the
 // dialog's own selection (see the reshell mockup
-// client/docs/ui-mockups/screens/login.html, "System preview").
+// docs/product/ui-mockups/screens/login.html, "System preview").
 //
 // Only what the dialog genuinely knows before authenticating is shown — the
 // chosen backend and server. Reachability, round-trip and plant status from

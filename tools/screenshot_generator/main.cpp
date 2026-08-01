@@ -343,7 +343,7 @@ ScreenshotGenerator::ScreenshotGenerator() {
     QApplication::installTranslator(&translator_);
 
   // Pin Fusion for captures. Unlike the client — which runs the platform style
-  // so it looks native (client/docs/ux/principles.md §9) — published
+  // so it looks native (docs/client/ux/principles.md §9) — published
   // screenshots must be byte-comparable across machines, so they deliberately
   // do NOT follow the host style. Set directly rather than through
   // InstalledStyle for the QSettings reason: that also writes back the live
@@ -351,7 +351,7 @@ ScreenshotGenerator::ScreenshotGenerator() {
   // up whatever QStyleFactory returned instead of "Fusion".
   //
   // Consequence to keep in mind while the native migration runs
-  // (client/docs/ux/backlog.md P6): these captures show the Fusion rendering,
+  // (docs/client/ux/backlog.md P6): these captures show the Fusion rendering,
   // not what an operator sees. Validate native-look changes by running the
   // real client, not only by diffing generated PNGs.
   QApplication::setStyle("Fusion");

@@ -8,7 +8,7 @@
 
 // Aggregate statistics for one trend series over the visible time range, shown
 // in the trend value grid's Min / Max / Average columns (see the reshell mockup
-// client/docs/ui-mockups/screens/trend.html).
+// docs/product/ui-mockups/screens/trend.html).
 //
 // Only good-quality, numeric samples contribute: bad-quality samples (comms
 // loss / failed) and non-numeric values are excluded so a dropout cannot

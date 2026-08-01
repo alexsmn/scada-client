@@ -52,7 +52,7 @@ const scada::aui::ThemeTokens& ExplorerTokens() {
 
 // Wraps `tree` in a container with a type-to-filter field above it — the
 // Explorer "Filter" search box from the reshell mockups
-// (client/docs/ui-mockups/screens/config-workbench.html). Ownership of `tree`
+// (docs/product/ui-mockups/screens/config-workbench.html). Ownership of `tree`
 // transfers into the returned container via Qt parent-child, preserving the
 // caller-owns-the-returned-view contract.
 std::unique_ptr<UiView> WrapExplorerWithFilter(scada::aui::Tree* tree) {

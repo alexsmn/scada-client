@@ -15,7 +15,7 @@ class QMouseEvent;
 class QPaintEvent;
 
 // The trend workspace's per-series inspector panel (see the reshell mockup
-// client/docs/ui-mockups/screens/trend.html). Surfaces the selected series'
+// docs/product/ui-mockups/screens/trend.html). Surfaces the selected series'
 // colour, display flags (own pane / dots / stepped), configured limit bands and
 // data source, and lets the operator recolour it.
 //

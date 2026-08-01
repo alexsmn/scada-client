@@ -137,7 +137,7 @@ if(Python3_FOUND)
       "${CMAKE_CURRENT_SOURCE_DIR}/check_screenshots.py"
       "--generator=$<TARGET_FILE:client_screenshot_generator>"
       "--data=${CMAKE_CURRENT_SOURCE_DIR}/screenshot_data.json"
-      "--image-manifest=${CMAKE_CURRENT_SOURCE_DIR}/../../docs/screenshots/image_manifest.json"
+      "--image-manifest=${CMAKE_CURRENT_SOURCE_DIR}/../../screenshots/image_manifest.json"
       "--out=${CMAKE_CURRENT_BINARY_DIR}/screenshot_check"
   )
   set_tests_properties(client_screenshot_check PROPERTIES TIMEOUT 300)
@@ -154,7 +154,7 @@ endif()
 # config-limits at TS.702's form (no Limits subtab). The generator is a gtest
 # binary, so any ADD_FAILURE (e.g. "click_object not found") returns non-zero
 # and fails ctest. Keep this --only list in sync with the reshell-theme entries
-# in docs/screenshots/image_manifest.json.
+# in screenshots/image_manifest.json.
 add_test(NAME client_screenshot_check_themed
   COMMAND ${CMAKE_COMMAND} -E env QT_QPA_PLATFORM=offscreen
     $<TARGET_FILE:client_screenshot_generator>
@@ -165,10 +165,10 @@ add_test(NAME client_screenshot_check_themed
 set_tests_properties(client_screenshot_check_themed PROPERTIES TIMEOUT 300)
 
 # After the executable links, run it and drop the PNGs into
-# client/docs/screenshots/ so the local docs gallery stays in sync on
-# every build. Requires a desktop session (see docs/screenshots.md
+# client/screenshots/ so the local docs gallery stays in sync on
+# every build. Requires a desktop session (see docs/ops/client-screenshots.md
 # "Native window frames").
-set(SCREENSHOT_DOCS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../docs/screenshots")
+set(SCREENSHOT_DOCS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../screenshots")
 
 # On macOS force the offscreen platform: the local gallery is
 # validation-only there (published images come from Windows), and cocoa
@@ -187,6 +187,6 @@ add_custom_command(TARGET client_screenshot_generator POST_BUILD
   COMMAND ${SCREENSHOT_POST_BUILD_LAUNCHER} $<TARGET_FILE:client_screenshot_generator>
     "--out=${SCREENSHOT_DOCS_DIR}"
     "--image-manifest=${SCREENSHOT_DOCS_DIR}/image_manifest.json"
-  COMMENT "Rendering screenshots into docs/screenshots/"
+  COMMENT "Rendering screenshots into screenshots/"
   VERBATIM
 )

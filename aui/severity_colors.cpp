@@ -29,7 +29,7 @@ constexpr ThemeTable kLegacy{
     .warning = {.background = {255, 235, 132}, .text = {}, .has_text = false},
 };
 
-// Token themes: values from client/docs/ux/design-language.md — unacknowledged
+// Token themes: values from docs/client/ux/design-language.md — unacknowledged
 // maps to the `good` token, critical to `severity-critical`, warning to
 // `severity-medium`. The bright dark-theme fills carry dark text; the dark
 // light/high-contrast fills carry light text.
@@ -72,7 +72,7 @@ constexpr ThemeTable kHighContrast{
 };
 
 // Solid severity ramp (for text / dots / bars) per token theme: warning maps to
-// severity-medium, critical to severity-critical (client/docs/ux/
+// severity-medium, critical to severity-critical (docs/client/ux/
 // design-language.md). Legacy has no solid ramp — those cues were never
 // coloured — so SeverityColor returns nothing there.
 struct SolidRamp {
@@ -88,7 +88,7 @@ constexpr SolidRamp kHcSolid{.warning = {255, 255, 0},
                              .critical = {255, 107, 107}};
 
 // Quality ramp (Explorer status dots) per token theme — the good/uncertain/bad
-// tokens from client/docs/ux/design-language.md. Legacy has no ramp (the dots
+// tokens from docs/client/ux/design-language.md. Legacy has no ramp (the dots
 // are opt-in), so QualityColor returns nothing there.
 struct QualityRamp {
   Rgba good;

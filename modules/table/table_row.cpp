@@ -238,7 +238,7 @@ void TableRow::GetCellEx(TableCellEx& cell) const {
     // A timestamp is provenance for a delivered reading. A row that never
     // received one has none, so these cells stay empty rather than dating a
     // value that does not exist — the same reason the Value cell is blank and
-    // the quality column reads "No data" (docs/ux/principles.md §5). An
+    // the quality column reads "No data" (docs/client/ux/principles.md §5). An
     // operator reads a printed timestamp as real.
     case TableModel::COLUMN_SOURCE_TIMESTAMP:
       if (HasDeliveredValue())

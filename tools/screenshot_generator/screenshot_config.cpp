@@ -22,9 +22,9 @@ std::filesystem::path GetImageManifestPath() {
 
   for (const auto& candidate : {
            std::filesystem::path{__FILE__}.parent_path() /
-               "../../docs/screenshots/image_manifest.json",
+               "../../screenshots/image_manifest.json",
            std::filesystem::current_path() /
-               "client/docs/screenshots/image_manifest.json",
+               "client/screenshots/image_manifest.json",
            std::filesystem::current_path() / "image_manifest.json",
        }) {
     if (std::filesystem::exists(candidate))

@@ -78,7 +78,7 @@ class UsersGridTest : public ::testing::Test {
 // Regression: an AccessRights that was never delivered used to be folded into a
 // zero bitmask by get_or<Int32>(0). Zero is a valid bitmask meaning Observer
 // with view only, so the grid stated a role it had never read — the same defect
-// the RBAC panel carried, and the one docs/ux/principles.md §5 forbids.
+// the RBAC panel carried, and the one docs/client/ux/principles.md §5 forbids.
 TEST_F(UsersGridTest, UndeliveredAccessRightsDoesNotReadAsObserver) {
   AddUser(1, scada::Variant{}, scada::Variant{true});
 

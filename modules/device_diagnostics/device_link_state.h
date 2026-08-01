@@ -1,7 +1,7 @@
 #pragma once
 
 // The connection band for a device's diagnostics hero, mirroring the
-// link-status hero in client/docs/ui-mockups/screens/config-workbench.html. A
+// link-status hero in docs/product/ui-mockups/screens/config-workbench.html. A
 // pure mapping so it can be unit-tested without a running QApplication.
 enum class DeviceLinkBand {
   kUp,        // enabled and online — the link is up (good).

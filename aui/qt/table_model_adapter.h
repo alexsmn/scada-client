@@ -33,8 +33,6 @@ class TableModelAdapter : public QAbstractTableModel {
     return columns_;
   }
 
-  void LoadIcons(std::string_view resource_path, int width, Color mask_color);
-
   // Loads cell glyphs from SVG resources, tinted with `tint`, keeping index
   // order so it is a drop-in for the sliced-strip form above.
   void LoadGlyphs(std::span<const std::string_view> resource_paths,

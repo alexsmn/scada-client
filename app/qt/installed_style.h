@@ -8,7 +8,7 @@
 // Installs the widget style for the application lifetime and persists an
 // explicit operator choice.
 //
-// The client is a native desktop application (client/docs/ux/principles.md §9),
+// The client is a native desktop application (docs/client/ux/principles.md §9),
 // so the default is the *platform* style — `windows11`/`windowsvista` on
 // Windows, `macos` on macOS, the QT_QPA_PLATFORMTHEME style on Linux. We reach
 // that by simply not calling setStyle() at all, which leaves the style Qt

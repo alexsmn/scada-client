@@ -27,12 +27,10 @@ class Tree : public QTreeView {
   void SetRootVisible(bool visible);
   void SetHeaderVisible(bool visible);
 
-  void LoadIcons(std::string_view resource_path, int width, Color mask_color);
-
-  // Loads row glyphs from SVG resources instead of a sliced bitmap strip,
-  // tinted to follow the palette and re-tinted when the theme changes. Index
-  // order is the models' existing "tile index" contract, so this is a drop-in
-  // for LoadIcons (docs/ux/iconography.md §5.2).
+  // Loads row glyphs from SVG resources, tinted to follow the palette and
+  // re-tinted when the theme changes. Index order is the models' "tile index"
+  // contract, inherited from the bitmap strips this replaced
+  // (docs/client/ux/iconography.md §5.2).
   void LoadGlyphs(std::span<const std::string_view> resource_paths, int size);
 
   std::vector<void*> GetOrderedNodes(void* root, bool checked) const;

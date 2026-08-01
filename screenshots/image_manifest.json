@@ -30,7 +30,7 @@
       "referenced_from": [
         "client/workbench.md"
       ],
-      "notes": "Ctrl-K command palette (opt-in UX). Rendered by the dialog pipeline over a fixture command list; regenerate with --theme=dark for the published (workbench) look — the no-theme managed run renders the legacy look, so keep the themed render in img/. Also serves client/docs/ux/shell.md. Published from a macOS render pending a Windows re-render."
+      "notes": "Ctrl-K command palette (opt-in UX). Rendered by the dialog pipeline over a fixture command list; regenerate with --theme=dark for the published (workbench) look — the no-theme managed run renders the legacy look, so keep the themed render in img/. Also serves docs/client/ux/shell.md. Published from a macOS render pending a Windows re-render."
     },
     {
       "file": "about.png",

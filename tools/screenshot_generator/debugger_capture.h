@@ -6,7 +6,7 @@ struct ScreenshotSpec;
 // `GetOutputDir() / spec.filename`.
 //
 // This is the client<->server request trace, not the device protocol frame
-// trace in docs/ui-mockups/screens/device-protocol-trace.html — that is a
+// trace in docs/product/ui-mockups/screens/device-protocol-trace.html — that is a
 // separate, unbuilt surface planned for the device log view.
 //
 // Standalone like SaveBulkCreateScreenshot: the debugger is not a registered

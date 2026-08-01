@@ -21,7 +21,7 @@ QString Qt16(const std::u16string& text) {
 FrameDecodePane::FrameDecodePane(QWidget* parent)
     : QWidget{parent}, model_{std::make_shared<FrameDecodeTreeModel>()} {
   // Default layout margins on purpose: they come from the platform style, so
-  // the pane keeps the host OS's spacing (client/docs/ux/principles.md §9).
+  // the pane keeps the host OS's spacing (docs/client/ux/principles.md §9).
   auto* layout = new QVBoxLayout{this};
 
   header_ = new QLabel;

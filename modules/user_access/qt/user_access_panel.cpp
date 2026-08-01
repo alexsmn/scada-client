@@ -141,7 +141,7 @@ void UserAccessPanel::ShowUser(const NodeRef& user) {
   // one holding an unreadable type — whereas get_or(0) collapses either into a
   // zero bitmask, which is indistinguishable from a genuine Observer with only
   // View granted. Presenting an unresolved read as a real role is exactly the
-  // failure mode docs/ux/principles.md §5 forbids.
+  // failure mode docs/client/ux/principles.md §5 forbids.
   scada::Int32 access = 0;
   if (!user[scada::security::id::UserType_AccessRights].value().get(access)) {
     // No permission rows either: an unresolved bitmask says nothing about the

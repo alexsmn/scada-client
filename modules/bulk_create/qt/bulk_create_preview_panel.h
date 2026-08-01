@@ -13,7 +13,7 @@ class QSpinBox;
 class QTableWidget;
 
 // The reshell bulk-create wizard's Naming/Addressing step — the center of
-// client/docs/ui-mockups/screens/bulk-create.html. It edits a `{n}`-token
+// docs/product/ui-mockups/screens/bulk-create.html. It edits a `{n}`-token
 // naming + addressing pattern (name template, NodeId template, start index,
 // count, index step, IOA start/step) and shows a **live preview** grid
 // (# / Name / NodeId / IOA / Status) that re-expands on every edit, flagging

@@ -34,7 +34,7 @@ CreateServiceItemDialog::CreateServiceItemDialog(
     : QDialog{parent}, model_{std::move(model)} {
   ui.setupUi(this);
 
-  // Name the action rather than the assent (docs/ux/dialogs.md §3).
+  // Name the action rather than the assent (docs/client/ux/dialogs.md §3).
   ui.buttonBox->button(QDialogButtonBox::Ok)->setText(tr("Create"));
 
   connect(ui.deviceComboBox, QOverload<int>::of(&QComboBox::activated),

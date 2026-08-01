@@ -17,7 +17,7 @@ class Tree;
 
 // The decode pane beside the frame trace: a header line naming the selected
 // frame, its raw octets, and the decoded field tree with byte offsets — the
-// right-hand inspector of docs/ui-mockups/screens/device-protocol-trace.html.
+// right-hand inspector of docs/product/ui-mockups/screens/device-protocol-trace.html.
 //
 // A widget rather than a few lines inside WatchView so that the headless
 // screenshot generator can build and render the real pane; WatchView itself

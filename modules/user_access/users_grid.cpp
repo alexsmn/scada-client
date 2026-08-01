@@ -39,7 +39,7 @@ Awaitable<std::vector<UserGridRow>> BuildUsersGrid(AnyExecutor executor,
     // (single session), so get_or() would turn "we could not read this" into a
     // confident, plausible, wrong row. Variant::get() reports the difference;
     // the row then carries kUnknown / nullopt through to the cells. See
-    // docs/ux/principles.md §5.
+    // docs/client/ux/principles.md §5.
     UserRole role = UserRole::kUnknown;
     if (NodeRef rights = child[scada::security::id::UserType_AccessRights]) {
       co_await rights.Fetch(NodeFetchStatus::NodeOnly);

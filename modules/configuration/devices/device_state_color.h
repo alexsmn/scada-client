@@ -8,7 +8,7 @@
 class NodeRef;
 
 // The hardware-tree status-dot quality for a device's connection state — the
-// dots in client/docs/ui-mockups/screens/config-workbench.html's Hardware
+// dots in docs/product/ui-mockups/screens/config-workbench.html's Hardware
 // explorer. Online reads good, Offline reads bad, Disabled reads uncertain
 // (present but not polled, not an alarm), and Unknown gets no dot. Pure, so it
 // is unit-testable without Qt; the caller resolves the colour through

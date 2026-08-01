@@ -51,12 +51,6 @@ void TreeModelAdapter::ConnectModel() {
       model_->SubscribeModelReset([this] { OnTreeModelReset(); }));
 }
 
-void TreeModelAdapter::LoadIcons(std::string_view resource_path,
-                                 int width,
-                                 Wt::WColor mask_color) {
-  // Not implemented: the Wt tree renders without per-node icons.
-}
-
 void* TreeModelAdapter::GetNode(const Wt::WModelIndex& index) const {
   base::Check(index.isValid());
   return index.internalPointer();

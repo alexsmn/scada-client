@@ -27,10 +27,6 @@ class TreeModelAdapter : public Wt::WAbstractItemModel {
   void SetChecked(void* node, bool checked);
   void SetCheckedNodes(std::set<void*> nodes);
 
-  void LoadIcons(std::string_view resource_path,
-                 int width,
-                 Wt::WColor mask_color);
-
   void* GetNode(const Wt::WModelIndex& index) const;
   Wt::WModelIndex GetNodeIndex(void* node, int column) const;
 

@@ -6,7 +6,7 @@
 #include <vector>
 
 // Pure, node-service-free engine backing the reshell bulk-create wizard
-// (client/docs/ui-mockups/screens/bulk-create.html). It expands a naming /
+// (docs/product/ui-mockups/screens/bulk-create.html). It expands a naming /
 // addressing pattern with `{n}`-style tokens into the wizard's live-preview
 // rows and flags the ones that collide with existing nodes. Unit-testable
 // without Qt or a node service.

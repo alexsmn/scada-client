@@ -11,7 +11,7 @@ struct ScreenshotOptions {
   std::unordered_set<std::string> only_filenames;
   // Optional design-token theme to render captures under ("dark"|"light"|"hc").
   // Empty means the legacy Fusion look. Used to validate the UX reshell against
-  // real Qt widgets (see client/docs/ux/ and client/CLAUDE.md).
+  // real Qt widgets (see docs/client/ux/ and client/CLAUDE.md).
   std::string theme;
 };
 

@@ -136,7 +136,7 @@ class ObjectTreeModelTest : public ::testing::Test {
 // The operator's tree carries no per-row artwork: containers and data items
 // are already told apart by the twisty and the indentation, and the one thing
 // that varies between rows — live quality — rides the status dot instead
-// (docs/ux/principles.md §5, docs/ui-mockups/screens/operator-shell.html).
+// (docs/client/ux/principles.md §5, docs/product/ui-mockups/screens/operator-shell.html).
 TEST_F(ObjectTreeModelTest, RowsCarryNoIcon) {
   auto* data_group_node = model_->FindFirstTreeNode(kDataGroupId);
   auto* data_item_node = model_->FindFirstTreeNode(kDataItemId);

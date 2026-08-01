@@ -16,7 +16,7 @@
 // produced by UserRoleFor — only by a caller that could not read the bitmask at
 // all. It exists because an absent bitmask reads as zero, and zero is a
 // perfectly valid bitmask meaning Observer-with-view-only. Rendering an
-// unresolved read as a real role is the failure mode client/docs/ux/
+// unresolved read as a real role is the failure mode docs/client/ux/
 // principles.md §5 forbids; it is the same defect the Inspector's kUnknown
 // quality band was added for.
 enum class UserRole { kAdministrator, kOperator, kObserver, kUnknown };

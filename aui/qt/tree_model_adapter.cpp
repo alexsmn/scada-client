@@ -130,13 +130,6 @@ void TreeModelAdapter::ConnectModel() {
       model_->SubscribeModelReset([this] { OnTreeModelReset(); }));
 }
 
-void TreeModelAdapter::LoadIcons(std::string_view resource_path,
-                                 int width,
-                                 Color mask_color) {
-  icons_ = ::LoadIcons(resource_path, width, mask_color.qcolor());
-  glyph_paths_.clear();
-}
-
 void TreeModelAdapter::LoadGlyphs(
     std::span<const std::string_view> resource_paths,
     int size,

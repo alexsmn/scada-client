@@ -9,7 +9,7 @@ namespace scada::aui {
 // The active severity colour theme for event/alarm surfaces. `kLegacy` keeps
 // the historical hardcoded colours so the default UI is unchanged; the token
 // themes use the shared design-system severity ramp
-// (client/docs/ux/design-language.md). Set once at startup from the same opt-in
+// (docs/client/ux/design-language.md). Set once at startup from the same opt-in
 // as the palette theme
 // (`app/qt/main.cpp`); defaults to `kLegacy`.
 enum class SeverityTheme { kLegacy, kDark, kLight, kHighContrast };

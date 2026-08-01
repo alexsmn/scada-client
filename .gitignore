@@ -2,8 +2,8 @@ build/
 CMakeUserPresets.json
 .claude/
 *.aps
-docs/screenshots/
-!docs/screenshots/
-docs/screenshots/*
-!docs/screenshots/image_manifest.json
-!docs/screenshots/validate_image_manifest.py
+screenshots/
+!screenshots/
+screenshots/*
+!screenshots/image_manifest.json
+!screenshots/validate_image_manifest.py
