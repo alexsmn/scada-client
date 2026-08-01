@@ -7,3 +7,8 @@ screenshots/
 screenshots/*
 !screenshots/image_manifest.json
 !screenshots/validate_image_manifest.py
+
+# macOS Finder metadata. Committed by accident and untracked on 2026-08-01;
+# a bare pattern matches at every depth, which is what is wanted — these
+# appear in whichever directory Finder happens to open.
+.DS_Store
