@@ -85,6 +85,13 @@ if(TARGET client_main_window_qt_unittests)
     client_core
     client_properties_qt
   )
+  # The activity rail renders its section glyphs from res/icons/*.svg
+  # (docs/client/ux/iconography.md §5.3), so the resource has to be in this
+  # binary or every rail icon is null. A separate exe from the app, so no
+  # duplicate qInitResources_client.
+  set_target_properties(client_main_window_qt_unittests PROPERTIES AUTORCC ON)
+  target_sources(client_main_window_qt_unittests PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../res/client.qrc")
 endif()
 
 if(TARGET client_main_window_wt_unittests)

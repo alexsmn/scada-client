@@ -1,5 +1,7 @@
 #include "main_window/activity_bar_qt.h"
 
+#include "aui/qt/image_util.h"
+
 #include "aui/qt/theme_qt.h"
 #include "aui/severity_colors.h"
 #include "aui/translation.h"
@@ -15,6 +17,8 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QPen>
+
+#include <string_view>
 #include <QPixmap>
 #include <QToolButton>
 #include <QVBoxLayout>
@@ -50,77 +54,36 @@ const scada::aui::ThemeTokens& RailTokens() {
   return scada::aui::GetThemeTokens(theme);
 }
 
-// Draws the dedicated line glyph for a section within `r` (a square icon box)
-// using the already-configured pen. Simple 2px vector marks, so they stay crisp
-// on the charcoal rail at any DPI without shipping raster assets.
-void DrawModeGlyph(QPainter& p, ActivityBar::Icon kind, const QRectF& r) {
-  const qreal x = r.x(), y = r.y(), w = r.width(), h = r.height();
+// The Lucide glyph for a rail section (docs/client/ux/iconography.md §5.3).
+//
+// These were hand-drawn QPainterPath marks at a 1.8 px pen — someone
+// reimplementing Feather/Lucide geometry in C++ because there was no set to
+// draw from. There is one now, so the rail reads from the same assets as
+// everything else: one stroke weight, one grid, and glyphs that stay crisp at
+// fractional scaling instead of a pen width chosen for 24 px.
+std::string_view ModeGlyph(ActivityBar::Icon kind) {
   switch (kind) {
-    case ActivityBar::Icon::kObjects: {
-      // Tree: a root node with a spine dropping to two children. The child
-      // nodes are drawn as filled dots — three bare horizontal branches off a
-      // vertical spine render as a capital "E" at 24 px.
-      const qreal spine_x = x + w * 0.26;
-      const qreal dot = w * 0.09;
-      const qreal root_y = y + h * 0.2;
-      const qreal mid_y = y + h * 0.52;
-      const qreal low_y = y + h * 0.8;
-
-      p.drawEllipse(QPointF(spine_x, root_y), dot, dot);
-      p.drawLine(QPointF(spine_x, root_y + dot), QPointF(spine_x, low_y));
-      p.drawLine(QPointF(spine_x, mid_y), QPointF(x + w * 0.6, mid_y));
-      p.drawLine(QPointF(spine_x, low_y), QPointF(x + w * 0.6, low_y));
-      p.drawEllipse(QPointF(x + w * 0.68, mid_y), dot, dot);
-      p.drawEllipse(QPointF(x + w * 0.68, low_y), dot, dot);
-      break;
-    }
-    case ActivityBar::Icon::kDevices: {
-      // Schematic: top busbar feeding a node (transformer-ish circle).
-      p.drawLine(QPointF(x + w * 0.15, y + h * 0.22),
-                 QPointF(x + w * 0.85, y + h * 0.22));
-      p.drawLine(QPointF(x + w * 0.5, y + h * 0.22),
-                 QPointF(x + w * 0.5, y + h * 0.45));
-      p.drawEllipse(QRectF(x + w * 0.32, y + h * 0.45, w * 0.36, h * 0.36));
-      break;
-    }
-    case ActivityBar::Icon::kFiles: {
-      // Folder: tab along the top edge, then the body.
-      QPainterPath folder;
-      folder.moveTo(x + w * 0.14, y + h * 0.76);
-      folder.lineTo(x + w * 0.14, y + h * 0.26);
-      folder.lineTo(x + w * 0.42, y + h * 0.26);
-      folder.lineTo(x + w * 0.5, y + h * 0.38);
-      folder.lineTo(x + w * 0.86, y + h * 0.38);
-      folder.lineTo(x + w * 0.86, y + h * 0.76);
-      folder.closeSubpath();
-      p.drawPath(folder);
-      break;
-    }
-    case ActivityBar::Icon::kNodes: {
-      // Node graph: three vertices joined by two edges. Deliberately distinct
-      // from kDevices, which has a single circle under a busbar.
-      const QPointF top{x + w * 0.5, y + h * 0.22};
-      const QPointF left{x + w * 0.22, y + h * 0.74};
-      const QPointF right{x + w * 0.78, y + h * 0.74};
-      p.drawLine(top, left);
-      p.drawLine(top, right);
-      const qreal radius = w * 0.11;
-      p.drawEllipse(top, radius, radius);
-      p.drawEllipse(left, radius, radius);
-      p.drawEllipse(right, radius, radius);
-      break;
-    }
-    case ActivityBar::Icon::kNewPage: {
-      // Plus sign — "add a page", matching the web client's new-tab affordance.
-      p.drawLine(QPointF(x + w * 0.5, y + h * 0.22),
-                 QPointF(x + w * 0.5, y + h * 0.78));
-      p.drawLine(QPointF(x + w * 0.22, y + h * 0.5),
-                 QPointF(x + w * 0.78, y + h * 0.5));
-      break;
-    }
+    // A tree of objects, which is what the pane shows.
+    case ActivityBar::Icon::kObjects:
+      return ":/icons/folder-tree.svg";
+    // The same noun the hardware tree uses for a device (§5.2), so the rail
+    // and the pane it opens agree.
+    case ActivityBar::Icon::kDevices:
+      return ":/icons/router.svg";
+    // `files`, not `folder`: a folder is the container glyph inside the trees,
+    // and this is a section of files rather than one folder.
+    case ActivityBar::Icon::kFiles:
+      return ":/icons/files.svg";
+    // Vertices joined by edges — the address space, and deliberately distinct
+    // from the single device mark above.
+    case ActivityBar::Icon::kNodes:
+      return ":/icons/waypoints.svg";
+    case ActivityBar::Icon::kNewPage:
+      return ":/icons/plus.svg";
     case ActivityBar::Icon::kNone:
-      break;
+      return {};
   }
+  return {};
 }
 
 // A rail button icon that always shows something: the dedicated section glyph,
@@ -132,17 +95,11 @@ QIcon ModeIcon(const ActivityBar::Mode& mode, const QColor& fg) {
   QPainter painter{&pixmap};
   painter.setRenderHint(QPainter::Antialiasing);
 
-  if (mode.icon_kind != ActivityBar::Icon::kNone) {
-    QPen pen{fg};
-    pen.setWidthF(1.8);
-    pen.setJoinStyle(Qt::RoundJoin);
-    pen.setCapStyle(Qt::RoundCap);
-    painter.setPen(pen);
-    painter.setBrush(Qt::NoBrush);
-    // Inset so the 2px stroke stays inside the box.
-    DrawModeGlyph(painter, mode.icon_kind,
-                  QRectF(2, 2, kIconSize - 4, kIconSize - 4));
-    return QIcon{pixmap};
+  if (const std::string_view glyph = ModeGlyph(mode.icon_kind);
+      !glyph.empty()) {
+    painter.end();
+    return LoadTintedGlyph(glyph, kIconSize, fg,
+                           qApp ? qApp->devicePixelRatio() : 1.0);
   }
 
   painter.setPen(fg);

@@ -14,11 +14,14 @@
         <file>icons/copy.svg</file>
         <file>icons/file-clock.svg</file>
         <file>icons/file-pen.svg</file>
+        <file>icons/files.svg</file>
+        <file>icons/folder-tree.svg</file>
         <file>icons/folder.svg</file>
         <file>icons/lock-open.svg</file>
         <file>icons/logs.svg</file>
         <file>icons/network.svg</file>
         <file>icons/pencil-line.svg</file>
+        <file>icons/plus.svg</file>
         <file>icons/printer.svg</file>
         <file>icons/radio-tower.svg</file>
         <file>icons/router.svg</file>
@@ -27,6 +30,7 @@
         <file>icons/trash-2.svg</file>
         <file>icons/triangle-alert.svg</file>
         <file>icons/variable.svg</file>
+        <file>icons/waypoints.svg</file>
         <file>icons/workflow.svg</file>
         <file>icons/zap.svg</file>
     </qresource>
