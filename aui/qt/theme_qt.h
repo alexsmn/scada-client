@@ -139,13 +139,44 @@ enum class ThemeScope { kPaletteOnly, kFull };
 // generated stylesheet when `scope` is `kFull`. Safe to call at runtime to
 // switch themes live. Must run after a QApplication exists.
 //
+// Also settles the severity/quality ramp (aui/severity_colors.h) to match, so
+// the process-semantic colours can never disagree with the chrome they sit on.
+// Callers used to do that mapping themselves and there were three copies of it.
+//
+// Under `kSystem` the theme keeps following the OS for the rest of the session:
+// a desktop light/dark switch re-resolves the tokens and the ramp live.
+//
 // Deliberately does NOT change the widget style. The client runs the platform
 // style so it looks native on each OS (docs/client/ux/principles.md §9); the
 // style is chosen once at startup by InstalledStyle, and an operator override
 // must not be silently discarded by a theme change.
 //
 // This is opt-in: nothing calls it unless the operator enables the experimental
-// UX (see app/qt/main.cpp).
+// UX (Settings → Colour scheme, restored at startup by InstalledAppearance).
 void ApplyTheme(Theme theme, ThemeScope scope = ThemeScope::kFull);
+
+// Returns the application to the untouched platform look: the current style's
+// standard palette, no global stylesheet, and the legacy severity ramp. This is
+// the inverse of ApplyTheme() and the "Classic" row of Settings → Colour
+// scheme.
+//
+// Restores the *style's* palette rather than a snapshot taken before the first
+// ApplyTheme(): nothing else in the client sets an application palette, so the
+// two are identical at startup, and the style's own palette stays correct even
+// if the operator changed the widget style while a theme was installed.
+//
+// Safe to call when no theme is installed — it then does nothing, so it cannot
+// stomp a palette the client never owned.
+void ClearTheme();
+
+// Whether a theme is currently installed. False before the first ApplyTheme()
+// and after ClearTheme(). This — not the QSetting — is what the Colour scheme
+// menu checks: the setting records what the client started with, while this
+// records what the operator is actually looking at.
+bool IsThemeInstalled();
+
+// The appearance ApplyTheme last installed, `kSystem` while it is following the
+// OS. Only meaningful while IsThemeInstalled().
+Theme ActiveTheme();
 
 }  // namespace scada::aui

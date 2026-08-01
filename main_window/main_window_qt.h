@@ -93,13 +93,6 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // would otherwise leave them stacked vertically.
   void TabifySpecialistDocks();
   void CreateMenuBar();
-  // Appends the experimental-reshell opt-in to an already-built Settings menu.
-  // Called on every aboutToShow because the model-driven menus are rebuilt
-  // from scratch each time they open.
-  void AddExperimentalUxAction(QMenu& menu);
-  // Persists the experimental-reshell opt-in (Ux/Experimental) and tells the
-  // operator a restart is needed, since theming installs at startup.
-  void OnToggleExperimentalUx(bool enabled);
   void CreateToolbar();
   void CreateStatusBar();
   // Opt-in top context bar (brand + command/search + live context cluster).

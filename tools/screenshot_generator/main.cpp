@@ -66,6 +66,9 @@
 #include <QLayout>
 #include <QLibraryInfo>
 #include <QLocale>
+#include <QMainWindow>
+#include <QMenu>
+#include <QMenuBar>
 #include <QPixmap>
 #include <QSettings>
 #include <QStandardItem>
@@ -383,20 +386,17 @@ ScreenshotGenerator::ScreenshotGenerator() {
 
   // Optionally render under a UX design-token theme so captures validate the
   // reshell against real Qt widgets (--theme=dark|light|hc). Applied over the
-  // Fusion base exactly as app/qt/main.cpp does when the experimental UX is on.
+  // Fusion base exactly as the client does when the experimental UX is on (see
+  // app/qt/installed_appearance.h). ApplyTheme settles the severity/quality
+  // ramp to match; this used to repeat that mapping by hand.
   if (const std::string& theme_name = GetScreenshotOptions().theme;
       !theme_name.empty()) {
     // Resolve `system` here: a capture must pin one concrete appearance,
-    // never follow the machine that happens to render it.
-    const scada::aui::Theme theme =
-        scada::aui::ResolveTheme(scada::aui::ThemeFromString(
-            QString::fromStdString(theme_name), scada::aui::Theme::kDark));
-    scada::aui::ApplyTheme(theme);
-    scada::aui::SetSeverityTheme(theme == scada::aui::Theme::kLight
-                                     ? scada::aui::SeverityTheme::kLight
-                                 : theme == scada::aui::Theme::kHighContrast
-                                     ? scada::aui::SeverityTheme::kHighContrast
-                                     : scada::aui::SeverityTheme::kDark);
+    // never follow the machine that happens to render it. Resolving also stops
+    // ApplyTheme installing the system-following watcher, which would let the
+    // host desktop change a capture mid-run.
+    scada::aui::ApplyTheme(scada::aui::ResolveTheme(scada::aui::ThemeFromString(
+        QString::fromStdString(theme_name), scada::aui::Theme::kDark)));
   }
 
   // Render offscreen. `widget->grab()` renders the Qt widget tree to a
@@ -1013,6 +1013,89 @@ TEST_F(ScreenshotGenerator, CaptureOverviewPage) {
 
   QPixmap pixmap = GrabWhenSettled(qmain);
   pixmap.save(QString::fromStdString(output_image.string()));
+
+  MainWindow::SetHideForTesting(true);
+}
+
+// Settings → Colour scheme, the operator-facing switch for the experimental UX
+// themes. Captured in the *default* (untheme'd) run on purpose: the operator
+// who needs this image is the one still on Classic, looking for how to turn the
+// reshell on.
+//
+// The menu bar is model-driven and rebuilt on every aboutToShow, so this walks
+// the same path a real click does — emit aboutToShow, let BuildMenu populate,
+// then grab the populated submenu.
+TEST_F(ScreenshotGenerator, CaptureColourSchemeMenu) {
+  constexpr const char* kFilename = "colour-scheme-menu.png";
+  if (!ShouldCaptureScreenshot(kFilename))
+    GTEST_SKIP() << kFilename << " not requested";
+  if (!GetScreenshotOptions().theme.empty())
+    GTEST_SKIP() << kFilename << " is captured untheme'd only";
+
+  MainWindow::SetHideForTesting(false);
+
+  const auto output_dir = GetOutputDir();
+  std::filesystem::create_directories(output_dir);
+
+  WaitForAwaitable(executor_, app_.Start());
+  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
+  for (int i = 0; i < 20; ++i)
+    QApplication::processEvents();
+
+  const auto& main_windows = app_.main_window_manager().main_windows();
+  ASSERT_EQ(main_windows.size(), 1u);
+  auto* qmain = dynamic_cast<QMainWindow*>(&main_windows.front());
+  ASSERT_NE(qmain, nullptr);
+  qmain->show();
+
+  // Find and populate the Settings menu.
+  QMenuBar* menu_bar = qmain->menuBar();
+  ASSERT_NE(menu_bar, nullptr);
+  QMenu* settings_menu = nullptr;
+  const auto settings_title = QString::fromStdU16String(Translate("Settings"));
+  for (QAction* action : menu_bar->actions()) {
+    if (action->menu() && action->text() == settings_title)
+      settings_menu = action->menu();
+  }
+  ASSERT_NE(settings_menu, nullptr) << "no Settings menu in the menu bar";
+  emit settings_menu->aboutToShow();
+
+  // ...then its Colour scheme submenu, which BuildMenu populates on its own
+  // aboutToShow.
+  QMenu* scheme_menu = nullptr;
+  const auto scheme_title =
+      QString::fromStdU16String(Translate("Colour scheme"));
+  for (QAction* action : settings_menu->actions()) {
+    if (action->menu() && action->text() == scheme_title)
+      scheme_menu = action->menu();
+  }
+  ASSERT_NE(scheme_menu, nullptr)
+      << "Settings has no Colour scheme submenu — the appearance switch is "
+         "unreachable";
+  emit scheme_menu->aboutToShow();
+  for (int i = 0; i < 10; ++i)
+    QApplication::processEvents();
+
+  // Guard the contents, not just that a menu exists: an empty or single-row
+  // menu would still render a plausible-looking image.
+  int checkable_rows = 0;
+  int checked_rows = 0;
+  for (const QAction* action : scheme_menu->actions()) {
+    if (action->isSeparator())
+      continue;
+    if (action->isCheckable())
+      ++checkable_rows;
+    if (action->isChecked())
+      ++checked_rows;
+  }
+  EXPECT_EQ(checkable_rows, 5) << "expected Classic plus the four appearances";
+  EXPECT_EQ(checked_rows, 1) << "a radio group must show exactly one selection";
+
+  scheme_menu->ensurePolished();
+  scheme_menu->adjustSize();
+  QPixmap menu_pixmap = GrabWhenSettled(scheme_menu);
+  ASSERT_FALSE(menu_pixmap.isNull());
+  menu_pixmap.save(QString::fromStdString((output_dir / kFilename).string()));
 
   MainWindow::SetHideForTesting(true);
 }

@@ -480,9 +480,10 @@ class MainWindowQtHarness {
 TEST(MainWindowQtTest, MenuBarPopulatesTopLevelMenusImmediately) {
   MainWindowQtHarness harness{u"Top"};
 
-  // The model menu plus the fallback Settings menu (experimental-UX toggle),
-  // which is only appended because this model has no Settings menu of its own.
-  ASSERT_THAT(harness.main_window().menuBar()->actions(), SizeIs(2));
+  // Exactly the menus the model contributes. The appearance opt-in used to add
+  // a fallback Settings menu here; it now lives in the menu model itself
+  // (AppearanceMenuModel), so MainWindow no longer appends anything.
+  ASSERT_THAT(harness.main_window().menuBar()->actions(), SizeIs(1));
   auto* top_menu = harness.main_window().menuBar()->actions().front()->menu();
   ASSERT_NE(top_menu, nullptr);
   EXPECT_THAT(top_menu->actions(), SizeIs(1));
@@ -495,22 +496,10 @@ TEST(MainWindowQtTest, MenuBarDoesNotDuplicateTheModelDrivenSettingsMenu) {
 
   // Regression: the experimental-UX toggle used to be appended as a second
   // top-level Translate("Settings") menu, so the menu bar showed two identical
-  // adjacent titles.
+  // adjacent titles. Removing the fallback removed the whole class of bug, but
+  // the menu bar must still show exactly what the model asked for.
   EXPECT_THAT(MainWindowQtHarness::TopLevelTitles(harness.main_window()),
               ElementsAre(settings_title));
-
-  auto* settings_menu =
-      harness.main_window().menuBar()->actions().front()->menu();
-  ASSERT_NE(settings_menu, nullptr);
-  MainWindowQtHarness::Show(*settings_menu);
-
-  // ... and the toggle still has to be reachable, inside that one menu.
-  std::vector<QString> item_texts;
-  for (const auto* action : settings_menu->actions())
-    item_texts.push_back(action->text());
-  EXPECT_THAT(
-      item_texts,
-      Contains(QString::fromStdU16String(Translate("Experimental UX"))));
 }
 #endif
 

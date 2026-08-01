@@ -47,7 +47,6 @@
 #include "user_access/qt/user_access_panel.h"
 
 #include <QAction>
-#include <QApplication>
 #include <QDockWidget>
 #include <QEvent>
 #include <QGuiApplication>
@@ -57,12 +56,9 @@
 #include <QLineEdit>
 #include <QMenu>
 #include <QMenuBar>
-#include <QMessageBox>
 #include <QScreen>
-#include <QSettings>
 #include <QShortcut>
 #include <QStatusBar>
-#include <QStyleFactory>
 #include <QTabWidget>
 #include <QToolBar>
 #include <QToolButton>
@@ -164,9 +160,13 @@ MainWindow::MainWindow(MainWindowContext&& context)
 
   CreateMenuBar();
   // Opt-in top context bar, on its own row above the command toolbar. Gated on
-  // the active UX theme, which both the app (app/qt/main.cpp) and the headless
-  // screenshot generator set together with the palette when the experimental UX
-  // is enabled.
+  // the active UX theme, which both the app (app/qt/installed_appearance.h) and
+  // the headless screenshot generator set together with the palette when the
+  // experimental UX is enabled.
+  //
+  // Read once, here: this chrome is structural, so Settings → Colour scheme can
+  // recolour a running client but cannot add or remove these widgets — it says
+  // so when the operator crosses that boundary (see AppearanceMenuModel).
   if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy) {
     CreateActivityBar();
     WireRailPages();
@@ -245,78 +245,27 @@ void MainWindow::UpdateTitle() {
 }
 
 void MainWindow::CreateMenuBar() {
-  /*auto* settings_menu = new QMenu(tr("Settings"), this);
-  auto* style_menu = new QMenu(tr("Style"), this);
-  for (auto& style : QStyleFactory::keys())
-    style_menu->addAction(style,
-                          [this, style] { QApplication::setStyle(style); });
-  settings_menu->addMenu(style_menu);*/
-
   main_menu_model_ = main_menu_factory_(*this, dialog_service_, *view_manager_,
                                         *commands_, *context_menu_model_);
 
   auto* menu_bar = new QMenuBar(this);
   setMenuBar(menu_bar);
 
-  const std::u16string settings_label = Translate("Settings");
-  bool has_settings_menu = false;
-
   for (int i = 0; i < main_menu_model_->GetItemCount(); ++i) {
     const std::u16string label = main_menu_model_->GetLabelAt(i);
     auto* submenu = menu_bar->addMenu(QString::fromStdU16String(label));
     auto* submenu_model = main_menu_model_->GetSubmenuModelAt(i);
     scada::base::Check(submenu_model);
-    // The experimental-reshell opt-in rides along in the model-driven Settings
-    // menu rather than in a menu of its own: appending a second top-level
-    // Translate("Settings") menu put two identical titles in the menu bar. It
-    // has to be re-added on every aboutToShow because BuildMenu clears the
-    // menu first.
-    const bool is_settings_menu = label == settings_label;
-    has_settings_menu = has_settings_menu || is_settings_menu;
     QObject::connect(submenu, &QMenu::aboutToShow, this,
-                     [this, submenu, submenu_model, is_settings_menu] {
+                     [submenu, submenu_model] {
                        submenu->clear();
                        BuildMenu(*submenu, *submenu_model);
-                       if (is_settings_menu) {
-                         submenu->addSeparator();
-                         AddExperimentalUxAction(*submenu);
-                       }
                      });
 #ifdef __APPLE__
     auto* loading_action = submenu->addAction(tr("Loading..."));
     loading_action->setEnabled(false);
 #endif
   }
-
-  // Only when the model contributes no Settings menu at all (e.g. a reduced
-  // menu for a restricted user) does the opt-in need a menu of its own — the
-  // Ux/Experimental QSetting otherwise has no UI.
-  if (!has_settings_menu) {
-    auto* settings_menu =
-        menu_bar->addMenu(QString::fromStdU16String(settings_label));
-    AddExperimentalUxAction(*settings_menu);
-  }
-}
-
-void MainWindow::AddExperimentalUxAction(QMenu& menu) {
-  // Read through QSettings so the opt-in round-trips its own key encoding —
-  // unlike editing the plist by hand.
-  auto* ux_action =
-      menu.addAction(QString::fromStdU16String(Translate("Experimental UX")));
-  ux_action->setCheckable(true);
-  ux_action->setChecked(QSettings{}.value("Ux/Experimental", false).toBool());
-  connect(ux_action, &QAction::toggled, this,
-          [this](bool enabled) { OnToggleExperimentalUx(enabled); });
-}
-
-void MainWindow::OnToggleExperimentalUx(bool enabled) {
-  QSettings settings;
-  settings.setValue("Ux/Experimental", enabled);
-  settings.sync();
-  QMessageBox::information(
-      this, QString::fromStdU16String(Translate("Experimental UX")),
-      QString::fromStdU16String(
-          Translate("Restart the client to apply the interface change.")));
 }
 
 void MainWindow::RebuildMenuBar() {

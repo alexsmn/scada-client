@@ -7,6 +7,7 @@
 
 #include <QApplication>
 #include <QGuiApplication>
+#include <QObject>
 #include <QString>
 #include <QStyle>
 #include <QStyleHints>
@@ -154,8 +155,36 @@ Theme& MutableActiveTheme() {
   return theme;
 }
 
-Theme ActiveTheme() {
-  return MutableActiveTheme();
+// Whether ApplyTheme() currently owns the application palette. Distinct from
+// MutableActiveTheme(), which keeps its last value so ActiveThemeTokens() has a
+// table to hand out either way; this is the flag ClearTheme() clears and the
+// Appearance menu reads. Trivially destructible, like the theme above.
+bool& MutableThemeInstalled() {
+  static bool installed = false;
+  return installed;
+}
+
+// The scope of the last ApplyTheme(), so a live OS light/dark switch can
+// re-apply exactly what the operator asked for rather than assuming kFull.
+ThemeScope& MutableActiveScope() {
+  static ThemeScope scope = ThemeScope::kFull;
+  return scope;
+}
+
+// The severity/quality ramp matching a resolved (never kSystem) appearance.
+// The ramps name concrete light/dark tables, so this must be handed a resolved
+// theme.
+SeverityTheme SeverityThemeFor(Theme resolved) {
+  switch (resolved) {
+    case Theme::kLight:
+      return SeverityTheme::kLight;
+    case Theme::kHighContrast:
+      return SeverityTheme::kHighContrast;
+    case Theme::kSystem:
+    case Theme::kDark:
+      break;
+  }
+  return SeverityTheme::kDark;
 }
 
 // The palette the application is actually painting with right now. Falls back
@@ -335,6 +364,14 @@ QString ThemeToString(Theme theme) {
       break;
   }
   return QStringLiteral("dark");
+}
+
+Theme ActiveTheme() {
+  return MutableActiveTheme();
+}
+
+bool IsThemeInstalled() {
+  return MutableThemeInstalled();
 }
 
 const ThemeTokens& ActiveThemeTokens() {
@@ -538,8 +575,44 @@ QString BuildThemeStyleSheet(const ThemeTokens& t) {
       .arg(Css(t.bad), Css(t.accent_fg), Css(frame), Css(t.surface_muted));
 }
 
+namespace {
+
+// Keeps a `kSystem` theme following the desktop for the rest of the session.
+//
+// Without this the client resolved the OS appearance exactly once, at startup:
+// switching macOS to dark left the tokens, the severity ramp and the mono
+// numerals on the light tables until the next launch. Connected on the first
+// ApplyTheme(), which is necessarily after QApplication exists.
+void EnsureSystemThemeWatcher() {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+  static const base::NoDestructor<QObject> context;
+  static bool connected = false;
+  if (connected)
+    return;
+  QStyleHints* hints = QGuiApplication::styleHints();
+  if (!hints)
+    return;
+  connected = true;
+  QObject::connect(
+      hints, &QStyleHints::colorSchemeChanged, context.get(),
+      [](Qt::ColorScheme) {
+        // Only while we are actually following the OS — an
+        // explicit Dark/Light/High-contrast choice is the
+        // operator's and must survive a desktop switch.
+        if (MutableThemeInstalled() && MutableActiveTheme() == Theme::kSystem) {
+          ApplyTheme(Theme::kSystem, MutableActiveScope());
+        }
+      });
+#endif
+}
+
+}  // namespace
+
 void ApplyTheme(Theme theme, ThemeScope scope) {
   MutableActiveTheme() = theme;
+  MutableActiveScope() = scope;
+  MutableThemeInstalled() = true;
+  EnsureSystemThemeWatcher();
 
   // Deliberately no setStyle() here. The client runs the platform style so it
   // looks native (docs/client/ux/principles.md §9); forcing Fusion was what
@@ -567,6 +640,42 @@ void ApplyTheme(Theme theme, ThemeScope scope) {
     app->setStyleSheet(scope == ThemeScope::kFull ? BuildThemeStyleSheet(tokens)
                                                   : QString());
   }
+
+  // Last, so the resolve below reads the palette we just installed: under
+  // kSystem, ResolveTheme() falls back to reading the live palette. Keeping the
+  // ramp here rather than at the call sites is what stops the chrome and the
+  // process-semantic colours drifting apart.
+  SetSeverityTheme(SeverityThemeFor(ResolveTheme(theme)));
+}
+
+void ClearTheme() {
+  // Never touch the palette when we do not own it: with the reshell off, the
+  // application palette belongs to the platform style and overwriting it with
+  // standardPalette() would discard, for instance, the user's accent colour.
+  if (!MutableThemeInstalled())
+    return;
+
+  MutableThemeInstalled() = false;
+  // Back to the value ActiveThemeTokens() hands out with the reshell off. It
+  // reads the dark table under the legacy ramp regardless, but leaving a stale
+  // light/high-contrast value here would be a trap for anything added later.
+  MutableActiveTheme() = Theme::kDark;
+  MutableActiveScope() = ThemeScope::kFull;
+
+  // Sheet first, palette second, and the order is load-bearing: while a global
+  // stylesheet is installed, QApplication::style() is Qt's QStyleSheetStyle
+  // wrapper rather than the platform style, so standardPalette() would be read
+  // off the wrapper. Clearing the sheet unwraps it first.
+  if (auto* app = qApp) {
+    app->setStyleSheet(QString());
+  }
+  if (QStyle* style = QApplication::style()) {
+    QApplication::setPalette(style->standardPalette());
+  }
+  // The legacy ramp is what makes the quality dots, severity marks and mono
+  // numerals disappear again — they are opt-in parts of the token themes, and
+  // several of them test GetSeverityTheme() directly.
+  SetSeverityTheme(SeverityTheme::kLegacy);
 }
 
 }  // namespace scada::aui

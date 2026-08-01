@@ -360,13 +360,36 @@
         <source>Settings</source>
         <translation>Настройки</translation>
     </message>
+    <!-- main_window/main_menu/main_menu_model.cpp: Settings -> Colour scheme,
+         the experimental UX design-token themes. Deliberately not "Appearance",
+         which Translate() already maps to "Вид" for the series inspector. -->
     <message>
-        <source>Experimental UX</source>
-        <translation>Экспериментальный интерфейс</translation>
+        <source>Colour scheme</source>
+        <translation>Цветовая схема</translation>
     </message>
     <message>
-        <source>Restart the client to apply the interface change.</source>
-        <translation>Перезапустите клиент, чтобы применить изменение интерфейса.</translation>
+        <source>Classic</source>
+        <translation>Классическое</translation>
+    </message>
+    <message>
+        <source>Follow system</source>
+        <translation>Как в системе</translation>
+    </message>
+    <message>
+        <source>Dark</source>
+        <translation>Тёмное</translation>
+    </message>
+    <message>
+        <source>Light</source>
+        <translation>Светлое</translation>
+    </message>
+    <message>
+        <source>High contrast</source>
+        <translation>Высокая контрастность</translation>
+    </message>
+    <message>
+        <source>The colours have changed. The workbench layout — activity bar, context bar and Inspector — follows when the client is restarted.</source>
+        <translation>Цвета изменены. Компоновка рабочей среды — панель разделов, контекстная панель и Инспектор — изменится после перезапуска клиента.</translation>
     </message>
     <!-- main_window/status_bar/event_status_provider.cpp
          + modules/events/qt/severity_tile_strip.cpp (KPI severity tiles) -->

@@ -10,6 +10,11 @@
 
 #include <filesystem>
 #include <string_view>
+#include <vector>
+
+#if defined(UI_QT)
+#include "aui/qt/theme_qt.h"
+#endif
 
 class CommandHandler;
 class DialogService;
@@ -139,6 +144,59 @@ class StyleMenuModel : public scada::aui::SimpleMenuModel {
   virtual bool IsItemCheckedAt(int index) const override;
 };
 
+// Settings → Colour scheme: the experimental UX design-token themes, offered
+// the same way Settings → Style offers widget styles — radio rows that take
+// effect live, with no dialog and no restart.
+//
+// Deliberately a sibling of the Style menu rather than extra rows inside it.
+// The reshell is not a QStyle: it is a QPalette (plus a near-empty stylesheet)
+// layered *over* whichever platform style is active, so the two are orthogonal
+// and listing them together would falsely present them as alternatives.
+//
+// Checked state comes from the theme module, not from QSettings: the setting
+// records what the client started with, the module what the operator is
+// actually looking at, and only the second is right for a checkmark once the
+// menu can switch it mid-session. Persistence is InstalledAppearance's job
+// (app/qt), matching how StyleMenuModel leaves the `Style` key to
+// InstalledStyle.
+//
+// Colour switches live and completely. Crossing between Classic and a theme
+// does not: MainWindow builds the reshell chrome (activity bar, context bar,
+// Inspector and the specialist docks) once, in its constructor, gated on the
+// active theme — so that half of the change lands on restart and the menu says
+// so rather than leaving the operator to notice.
+class AppearanceMenuModel : private MainMenuContext,
+                            public scada::aui::SimpleMenuModel {
+ public:
+  explicit AppearanceMenuModel(const MainMenuContext& context);
+
+  // views::MenuModel
+  virtual void ActivatedAt(int index) override;
+  virtual bool IsItemCheckedAt(int index) const override;
+
+ private:
+  // Explains that the workbench chrome follows on restart. Shown only when the
+  // Classic↔theme boundary is crossed — a switch between two themes is fully
+  // live, and prompting there would be noise.
+  void NotifyShellFollowsOnRestart();
+
+  // What a row selects, held parallel to the model's items so the separator
+  // occupies an index here too and cannot shift the mapping. Keeping the
+  // meaning out of the label also keeps it independent of translation.
+  struct Row {
+    enum class Kind {
+      kSeparator,
+      kClassic,  // no theme installed: the untouched platform look
+      kTheme,
+    };
+
+    Kind kind = Kind::kSeparator;
+    scada::aui::Theme theme = scada::aui::Theme::kSystem;
+  };
+
+  std::vector<Row> rows_;
+};
+
 #endif  // defined(UI_QT)
 
 class MainMenuModel final : private MainMenuContext,
@@ -168,6 +226,7 @@ class MainMenuModel final : private MainMenuContext,
   scada::aui::SimpleMenuModel window_submenu_;
 #if defined(UI_QT)
   StyleMenuModel style_submenu_;
+  AppearanceMenuModel appearance_submenu_;
   scada::aui::SimpleMenuModel language_submenu_;
 #endif
   scada::aui::SimpleMenuModel settings_submenu_;

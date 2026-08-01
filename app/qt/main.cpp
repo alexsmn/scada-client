@@ -1,13 +1,12 @@
 #include "app/app_init.h"
 #include "app/client_application.h"
 #include "app/qt/e2e_test_support.h"
+#include "app/qt/installed_appearance.h"
 #include "app/qt/installed_style.h"
 #include "app/qt/installed_translation.h"
 #include "app/qt/startup_flow.h"
 #include "app/startup_exception.h"
 #include "aui/qt/message_loop_qt.h"
-#include "aui/qt/theme_qt.h"
-#include "aui/severity_colors.h"
 #include "base/any_executor.h"
 #include "base/any_executor_timer.h"
 #include "base/boost_log.h"
@@ -130,42 +129,11 @@ int main(int argc, char* argv[]) {
     InstalledTranslation installed_translation{settings};
     InstalledStyle installed_style{settings};
 
-    // Experimental UX design-token theming. Opt-in and off by default — the
-    // reshell ships as incremental vertical slices, not a big-bang switchover.
-    // When enabled, install the tokens over the platform style (chosen just
-    // above by InstalledStyle) before the login dialog so pre-login chrome is
-    // themed too. `Ux/Theme` picks the appearance and defaults to `system`,
-    // which follows the OS light/dark preference — the client is a native
-    // desktop application (docs/client/ux/principles.md §9).
-    // `Ux/StyleSheet=false` gives palette-only, which is the direction of
-    // travel; the generated sheet is being shrunk (backlog P6.2). See
-    // docs/client/ux/ and client/CLAUDE.md ("UX design system").
-    // The `SCADA_UX_EXPERIMENTAL` environment variable force-enables the
-    // reshell regardless of the stored setting — a reliable escape hatch for
-    // demos and for launching the themed shell before a Settings toggle exists
-    // (the `Ux/Experimental` QSetting has no UI yet).
-    const bool ux_experimental =
-        settings.value("Ux/Experimental", false).toBool() ||
-        qEnvironmentVariableIsSet("SCADA_UX_EXPERIMENTAL");
-    if (ux_experimental) {
-      const scada::aui::Theme theme = scada::aui::ThemeFromString(
-          settings.value("Ux/Theme").toString(), scada::aui::Theme::kSystem);
-      const scada::aui::ThemeScope scope =
-          settings.value("Ux/StyleSheet", true).toBool()
-              ? scada::aui::ThemeScope::kFull
-              : scada::aui::ThemeScope::kPaletteOnly;
-      scada::aui::ApplyTheme(theme, scope);
-      // Keep event/alarm severity colours on the same single source and
-      // appearance. `kSystem` has to be resolved first — severity tables are
-      // concrete light/dark/high-contrast ramps.
-      const scada::aui::Theme resolved = scada::aui::ResolveTheme(theme);
-      scada::aui::SetSeverityTheme(
-          resolved == scada::aui::Theme::kLight
-              ? scada::aui::SeverityTheme::kLight
-          : resolved == scada::aui::Theme::kHighContrast
-              ? scada::aui::SeverityTheme::kHighContrast
-              : scada::aui::SeverityTheme::kDark);
-    }
+    // Experimental UX design-token theming, restored from the operator's
+    // Settings → Colour scheme choice and persisted again on exit. Opt-in and
+    // off by default; see installed_appearance.h for the settings it reads and
+    // docs/client/ux/ plus client/CLAUDE.md ("UX design system") for the why.
+    InstalledAppearance installed_appearance{settings};
 
     // `QApplication` must be created.
     auto executor = MakeAnyExecutor(std::make_shared<MessageLoopQt>());

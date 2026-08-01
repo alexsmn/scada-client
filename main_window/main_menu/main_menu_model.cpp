@@ -304,6 +304,88 @@ bool StyleMenuModel::IsItemCheckedAt(int index) const {
                                       style, Qt::CaseInsensitive) == 0;
 }
 
+// AppearanceMenuModel
+
+AppearanceMenuModel::AppearanceMenuModel(const MainMenuContext& context)
+    : MainMenuContext{context}, scada::aui::SimpleMenuModel{nullptr} {
+  // One radio group: the platform look and the token themes are alternatives,
+  // and "Classic" is the shipped default rather than an escape hatch, so it
+  // leads. The rule below it separates "no theme" from the themes without
+  // implying a second group.
+  AddRadioItem(0, Translate("Classic"), 0);
+  rows_.push_back({.kind = Row::Kind::kClassic});
+
+  AddSeparator(scada::aui::NORMAL_SEPARATOR);
+  rows_.push_back({.kind = Row::Kind::kSeparator});
+
+  // `kSystem` first, and named for what it does: it is the default appearance
+  // once the reshell is on, because the client is a native desktop application
+  // and follows the host light/dark preference (docs/client/ux/principles.md
+  // §9). High contrast is only ever reached by choosing it — Qt exposes no
+  // portable OS high-contrast signal.
+  const std::pair<std::u16string, scada::aui::Theme> kThemes[] = {
+      {Translate("Follow system"), scada::aui::Theme::kSystem},
+      {Translate("Dark"), scada::aui::Theme::kDark},
+      {Translate("Light"), scada::aui::Theme::kLight},
+      {Translate("High contrast"), scada::aui::Theme::kHighContrast},
+  };
+  for (const auto& [label, theme] : kThemes) {
+    AddRadioItem(0, label, 0);
+    rows_.push_back({.kind = Row::Kind::kTheme, .theme = theme});
+  }
+}
+
+void AppearanceMenuModel::ActivatedAt(int index) {
+  scada::base::Check(index >= 0 && index < static_cast<int>(rows_.size()));
+  const Row& row = rows_[index];
+  if (row.kind == Row::Kind::kSeparator) {
+    // Not selectable: BuildMenu turns separators into QMenu separators, which
+    // carry no action to trigger.
+    return;
+  }
+
+  const bool was_installed = scada::aui::IsThemeInstalled();
+  if (row.kind == Row::Kind::kClassic) {
+    scada::aui::ClearTheme();
+  } else {
+    // Scope deliberately left at the default: `Ux/StyleSheet` is an expert
+    // escape hatch read once at startup, not something a menu row toggles.
+    scada::aui::ApplyTheme(row.theme);
+  }
+
+  if (scada::aui::IsThemeInstalled() != was_installed) {
+    NotifyShellFollowsOnRestart();
+  }
+}
+
+void AppearanceMenuModel::NotifyShellFollowsOnRestart() {
+  CoSpawn(executor_, [this]() -> Awaitable<void> {
+    co_await dialog_service_.RunMessageBox(
+        Translate("The colours have changed. The workbench layout — activity "
+                  "bar, context bar and Inspector — follows when the client is "
+                  "restarted."),
+        Translate("Colour scheme"), MessageBoxMode::Info);
+  });
+}
+
+bool AppearanceMenuModel::IsItemCheckedAt(int index) const {
+  scada::base::Check(index >= 0 && index < static_cast<int>(rows_.size()));
+  const Row& row = rows_[index];
+  const bool installed = scada::aui::IsThemeInstalled();
+  switch (row.kind) {
+    case Row::Kind::kSeparator:
+      return false;
+    case Row::Kind::kClassic:
+      return !installed;
+    case Row::Kind::kTheme:
+      // Compare against the theme as chosen, not as resolved: while following
+      // the system, "Follow system" is the checked row — checking "Dark"
+      // because the desktop happens to be dark would misreport the choice.
+      return installed && scada::aui::ActiveTheme() == row.theme;
+  }
+  return false;
+}
+
 #endif  // defined(UI_QT)
 
 // MainMenuModel
@@ -324,6 +406,7 @@ MainMenuModel::MainMenuModel(const MainMenuContext& context)
       trash_menu_{context},
       window_submenu_{this},
 #if defined(UI_QT)
+      appearance_submenu_{context},
       language_submenu_{this},
 #endif
       settings_submenu_{this},
@@ -384,6 +467,10 @@ void MainMenuModel::Rebuild() {
   settings_submenu_.AddSubMenu(0, Translate("Language"), &language_submenu_);
   settings_submenu_.AddSeparator(scada::aui::NORMAL_SEPARATOR);
   settings_submenu_.AddSubMenu(0, Translate("Style"), &style_submenu_);
+  // Next to Style, not inside it: the appearance themes layer over the widget
+  // style rather than replacing it (see AppearanceMenuModel).
+  settings_submenu_.AddSubMenu(0, Translate("Colour scheme"),
+                               &appearance_submenu_);
 #endif
 
   AddSubMenu(0, Translate("Settings"), &settings_submenu_);

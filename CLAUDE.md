@@ -230,8 +230,17 @@ build the reshell (decided with the user) is:
   at once.
 - **Theming is opt-in and palette-first.** The design-token theming
   (`scada::aui::ApplyTheme` in [`aui/qt/theme_qt.h`](aui/qt/theme_qt.h)) is
-  **off by default** — it only runs when the `Ux/Experimental` QSetting is true
-  (`app/qt/main.cpp`). Prefer recolouring through `QPalette`
+  **off by default**. The operator picks it in **Settings → Colour scheme**
+  (`AppearanceMenuModel` in `main_window/main_menu/`), a radio menu alongside
+  Settings → Style that applies live; `ClearTheme()` is its inverse and takes
+  the client back to the untouched platform look. The choice is restored and
+  persisted by `InstalledAppearance` (`app/qt/installed_appearance.h`) from the
+  `Ux/Experimental` + `Ux/Theme` QSettings — the menu is the only way in, so
+  don't add a second one (a `SCADA_UX_EXPERIMENTAL` env override existed only
+  while there was no UI, and was dropped with it).
+  `ApplyTheme`/`ClearTheme` own the severity ramp too — never set
+  `SetSeverityTheme` alongside them, which is how three copies of that mapping
+  drifted. Prefer recolouring through `QPalette`
   (`ThemeScope::kPaletteOnly`). The global stylesheet (`kFull`) has been
   **reduced to a single rule** (backlog P6.2) — everything a native style can
   draw is now left to it. `BuildThemeStyleSheet` records what was removed and

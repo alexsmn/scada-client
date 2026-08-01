@@ -36,10 +36,12 @@ std::vector<TableColumn> MakeColumns() {
 class TableTest : public testing::Test {
  protected:
   void TearDown() override {
+    // The palette and the severity ramp are application state; leaving a themed
+    // one installed would silently change every later test in this binary.
+    // ClearTheme resets both — this used to be two calls, and after ApplyTheme
+    // took over the ramp the second one undid the first.
+    ClearTheme();
     SetSeverityTheme(SeverityTheme::kLegacy);
-    // The palette is application state; leaving a themed one installed would
-    // silently change every later test in this binary.
-    ApplyTheme(Theme::kSystem, ThemeScope::kPaletteOnly);
   }
 
   AppEnvironment app_env_;
@@ -90,7 +92,6 @@ TEST_F(TableTest, FollowsALaterApplicationPaletteChange) {
   EXPECT_EQ(table.palette().color(QPalette::Base),
             QApplication::palette().color(QPalette::Window));
 }
-
 
 // Column visibility. The header right-click menu is the operator-facing form;
 // this is the API under it.
