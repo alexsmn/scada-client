@@ -25,6 +25,18 @@ Lucide
   time by the consumer, never edited.
 
 
+Bespoke
+-------
+
+  Files:    res/icons/app-mark.svg, res/icons/app-mark-small.svg,
+            res/client.icns, res/client.ico
+  Licence:  same as this repository
+
+  The application mark, drawn for this product rather than taken from an icon
+  set (docs/client/ux/iconography.md §5.4). The .icns and .ico are generated
+  from the two SVGs.
+
+
 Retired
 -------
 

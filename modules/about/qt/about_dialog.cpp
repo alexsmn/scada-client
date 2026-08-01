@@ -5,6 +5,8 @@
 #include "project.h"
 #include "resources/common_resources.h"
 #include "ui/qt/client_utils_qt.h"
+
+#include <QIcon>
 #include "ui_about_dialog.h"
 
 #include <QApplication>
@@ -17,9 +19,12 @@ class AboutDialog : public QDialog {
   explicit AboutDialog(QWidget* parent = nullptr) : QDialog(parent) {
     ui.setupUi(this);
 
-    // 64 px: the About dialog's icon is a header mark, not a toolbar glyph
-    // (docs/client/ux/iconography.md §3).
-    ui.icon->setPixmap(LoadPixmap(ID_APPLICATION, 64));
+    // The product's own mark, not a command glyph. It is the one place in the
+    // UI that should show what the app *is*, and it is deliberately not routed
+    // through LoadPixmap: that path tints to a single palette colour, which
+    // would flatten a coloured brand asset (iconography.md §5.4).
+    ui.icon->setPixmap(QIcon{QStringLiteral(":/icons/app-mark.svg")}.pixmap(64,
+                                                                           64));
 
     auto version = tr("Version %1").arg(PROJECT_VERSION_DOTTED_STRING);
     auto organization_name = tr("Telecontrol");

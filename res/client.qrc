@@ -7,6 +7,8 @@
          high-contrast. Tint is applied by the consumer, never baked into the
          file (docs/client/ux/iconography.md §4). Keep alphabetical. -->
     <qresource prefix="/">
+        <file>icons/app-mark-small.svg</file>
+        <file>icons/app-mark.svg</file>
         <file>icons/chart-spline.svg</file>
         <file>icons/check-check.svg</file>
         <file>icons/clipboard-list.svg</file>
