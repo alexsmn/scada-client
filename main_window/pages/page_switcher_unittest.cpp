@@ -231,4 +231,74 @@ TEST_F(PageSwitcherTest, ActivatingAnUnknownPageIdDoesNothing) {
   Drain(executor_);
 }
 
+TEST_F(PageSwitcherTest, SetPageIconStoresTheKeyAndListsIt) {
+  Page& page = AddPage(u"Alarms");
+  EXPECT_CALL(main_window_, GetCurrentPage()).WillRepeatedly(ReturnRef(page));
+
+  PageSwitcher switcher = MakeSwitcher();
+  switcher.SetPageIcon(page.id, "alarms");
+
+  EXPECT_EQ(page.icon, "alarms");
+  ASSERT_EQ(switcher.ListPages().size(), 1u);
+  EXPECT_EQ(switcher.ListPages()[0].icon, "alarms");
+}
+
+TEST_F(PageSwitcherTest, SetPageIconRejectsAKeyThisBuildCannotDraw) {
+  Page& page = AddPage(u"Alarms");
+  EXPECT_CALL(main_window_, GetCurrentPage()).WillRepeatedly(ReturnRef(page));
+  page.icon = "alarms";
+
+  PageSwitcher switcher = MakeSwitcher();
+  switcher.SetPageIcon(page.id, "not-a-glyph");
+
+  // Persisting a key the rail cannot draw would leave the page rendering as
+  // its ordinal with nothing to explain why, so the old key survives.
+  EXPECT_EQ(page.icon, "alarms");
+}
+
+TEST_F(PageSwitcherTest, SetPageIconWithAnEmptyKeyClearsTheIcon) {
+  Page& page = AddPage(u"Alarms");
+  EXPECT_CALL(main_window_, GetCurrentPage()).WillRepeatedly(ReturnRef(page));
+  page.icon = "alarms";
+
+  PageSwitcher switcher = MakeSwitcher();
+  switcher.SetPageIcon(page.id, {});
+
+  EXPECT_TRUE(page.icon.empty());
+}
+
+// Page's copy constructor and assignment operator listed their members by
+// hand, and `order` was never added to either when reordering landed — so
+// copying a page silently reset its rail position to "unordered". `icon` would
+// have gone the same way. Everything that round-trips a page through a copy
+// (Profile::AddPage, duplication) depends on this.
+TEST(PageTest, CopyingKeepsOrderAndIcon) {
+  Page source;
+  source.title = u"Trends";
+  source.icon = "trend";
+  source.order = 4;
+
+  const Page copied{source};
+  EXPECT_EQ(copied.icon, "trend");
+  EXPECT_EQ(copied.order, 4);
+
+  Page assigned;
+  assigned = source;
+  EXPECT_EQ(assigned.icon, "trend");
+  EXPECT_EQ(assigned.order, 4);
+}
+
+// Profile::AddPage lands a new page at the end of the operator's order, so it
+// assigns `order` itself rather than trusting the source's. The icon is the
+// operator's choice and is carried across untouched.
+TEST_F(PageSwitcherTest, AddingAPageKeepsItsIcon) {
+  Page source;
+  source.title = u"Trends";
+  source.icon = "trend";
+
+  const Page& added = profile_.AddPage(source);
+
+  EXPECT_EQ(added.icon, "trend");
+}
+
 }  // namespace

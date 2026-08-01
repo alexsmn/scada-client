@@ -1,8 +1,10 @@
 #include "main_window/activity_bar_qt.h"
 
 #include "aui/test/app_environment.h"
+#include "main_window/page_icons.h"
 
 #include <QApplication>
+#include <QImage>
 #include <QToolButton>
 
 #include <gtest/gtest.h>
@@ -132,14 +134,65 @@ TEST_F(ActivityBarTest, HidingTheActiveModeClearsItsMarker) {
 
 // Pages numbered by rail position: titles are arbitrary and will not fit a
 // 52 px rail, so the number is the label and the title is the tooltip.
-TEST_F(ActivityBarTest, PagesRenderAsNumberedButtonsWithTitleTooltips) {
+TEST_F(ActivityBarTest, PageTooltipCarriesTheOrdinalAndTheTitle) {
   ActivityBar bar{nullptr, MakeModes(), {}};
   bar.SetPages(MakePages());
 
   const std::vector<QToolButton*> pages = PageButtons(bar);
   ASSERT_EQ(pages.size(), 3u);
-  EXPECT_EQ(pages[0]->toolTip(), "Overview");
-  EXPECT_EQ(pages[1]->toolTip(), "Trends");
+  // The button shows an icon, so the tooltip is the only place the ordinal
+  // (which names the shortcut) and the title are legible.
+  EXPECT_EQ(pages[0]->toolTip(), "1 · Overview");
+  EXPECT_EQ(pages[1]->toolTip(), "2 · Trends");
+}
+
+TEST_F(ActivityBarTest, PageWithAnIconRendersItRatherThanTheOrdinal) {
+  ActivityBar bar{nullptr, MakeModes(), {}};
+  bar.SetPages({{.page_id = 1, .title = u"Alarms", .icon_key = "alarms"},
+                {.page_id = 2, .title = u"Plain"}});
+
+  const std::vector<QToolButton*> pages = PageButtons(bar);
+  ASSERT_EQ(pages.size(), 2u);
+  // Both draw something; what matters is that they draw something *different*
+  // — otherwise the icon silently fell back to the ordinal.
+  EXPECT_NE(pages[0]->icon().pixmap(24, 24).toImage(),
+            pages[1]->icon().pixmap(24, 24).toImage());
+}
+
+TEST_F(ActivityBarTest, UnknownPageIconFallsBackToTheOrdinal) {
+  ActivityBar bar{nullptr, MakeModes(), {}};
+  // A profile written by a newer build can name an icon this one cannot draw.
+  // It must degrade to the numbered button, not to a blank one.
+  bar.SetPages({{.page_id = 1, .title = u"Future", .icon_key = "not-a-glyph"},
+                {.page_id = 2, .title = u"Plain"}});
+
+  const std::vector<QToolButton*> pages = PageButtons(bar);
+  ASSERT_EQ(pages.size(), 2u);
+  EXPECT_FALSE(pages[0]->icon().pixmap(24, 24).isNull());
+  // Page 2's own ordinal differs, so compare against a rail whose first page
+  // has no icon at all: same slot, same ordinal, so the images must match.
+  ActivityBar plain{nullptr, MakeModes(), {}};
+  plain.SetPages({{.page_id = 1, .title = u"Future"}});
+  EXPECT_EQ(pages[0]->icon().pixmap(24, 24).toImage(),
+            PageButtons(plain)[0]->icon().pixmap(24, 24).toImage());
+}
+
+TEST_F(ActivityBarTest, EveryPickablePageIconHasAGlyph) {
+  // page_icons.h offers the operator a list; the rail maps each key to a
+  // Lucide asset. A key added to one and not the other would draw the ordinal
+  // for ever with nothing to say why, so hold the two in step here.
+  ActivityBar unknown{nullptr, MakeModes(), {}};
+  unknown.SetPages({{.page_id = 1, .title = u"X", .icon_key = "not-a-glyph"}});
+  const QImage ordinal =
+      PageButtons(unknown)[0]->icon().pixmap(24, 24).toImage();
+
+  for (const PageIcon& icon : GetPageIcons()) {
+    ActivityBar bar{nullptr, MakeModes(), {}};
+    bar.SetPages(
+        {{.page_id = 1, .title = u"X", .icon_key = std::string{icon.key}}});
+    EXPECT_NE(PageButtons(bar)[0]->icon().pixmap(24, 24).toImage(), ordinal)
+        << "page icon key '" << icon.key << "' has no glyph in the rail";
+  }
 }
 
 TEST_F(ActivityBarTest, PageOpenedInAnotherWindowIsDisabled) {
@@ -228,8 +281,11 @@ TEST_F(ActivityBarTest, PageDropIndexFollowsButtonMidpoints) {
   const std::vector<QToolButton*> pages = PageButtons(bar);
   ASSERT_EQ(pages.size(), 3u);
 
-  const auto midpoint = [](QToolButton* button) {
-    return button->geometry().y() + button->geometry().height() / 2;
+  // In rail coordinates, which is what PageDropIndexForY takes. The buttons
+  // are children of the pages band, so their own geometry() is offset by the
+  // band's position — reading it directly puts every drop a slot out.
+  const auto midpoint = [&bar](QToolButton* button) {
+    return button->mapTo(&bar, QPoint{0, 0}).y() + button->height() / 2;
   };
 
   EXPECT_EQ(bar.PageDropIndexForY(midpoint(pages[0]) - 4), 0);

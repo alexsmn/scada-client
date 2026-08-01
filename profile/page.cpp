@@ -14,7 +14,14 @@ const size_t kMaxTitleLength = 30;
 // Page
 
 Page::Page(const Page& source)
-    : id{source.id}, title{source.title}, layout{source.layout} {
+    : id{source.id},
+      title{source.title},
+      // `order` and `icon` are copied here and in operator= below. `order` was
+      // omitted from both when it was added, so copying a page silently reset
+      // its rail position to "unordered".
+      order{source.order},
+      icon{source.icon},
+      layout{source.layout} {
   windows_.reserve(source.windows_.size());
   for (auto& w : source.windows_)
     windows_.emplace_back(std::make_unique<WindowDefinition>(*w));
@@ -24,6 +31,8 @@ Page& Page::operator=(const Page& source) {
   if (&source != this) {
     id = source.id;
     title = source.title;
+    order = source.order;
+    icon = source.icon;
     layout = source.layout;
 
     windows_.clear();
@@ -39,6 +48,7 @@ void Page::Load(const boost::json::value& data) {
   id = GetInt(data, "id");
   title = GetString16(data, "title");
   order = GetInt(data, "order", 0);
+  icon = std::string{GetString(data, "icon")};
 
   if (const auto* winse = GetList(data, "windows")) {
     for (auto& win : *winse) {
@@ -79,6 +89,8 @@ boost::json::value Page::Save(bool current) const {
     SetKey(result, "title", title);
   if (order)
     SetKey(result, "order", order);
+  if (!icon.empty())
+    SetKey(result, "icon", icon);
 
   boost::json::array windows;
   windows.reserve(GetWindowCount());

@@ -27,6 +27,7 @@
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
 #include "main_window/overview_page.h"
+#include "main_window/page_icons.h"
 #include "main_window/pages/page_switcher.h"
 #include "main_window/selection_command_router.h"
 #include "main_window/status_bar/progress_controller_qt.h"
@@ -469,6 +470,7 @@ void MainWindow::RefreshRailPages() {
     buttons.push_back(
         ActivityBar::PageButton{.page_id = entry.page_id,
                                 .title = entry.title,
+                                .icon_key = entry.icon,
                                 .opened_elsewhere = entry.opened_elsewhere});
     if (entry.current)
       active_page_id = entry.page_id;
@@ -486,6 +488,25 @@ void MainWindow::ExecutePageCommand(unsigned command_id) {
     if (handler->IsCommandEnabled(command_id))
       handler->ExecuteCommand(command_id);
   }
+}
+
+std::string MainWindow::PageIconFor(int page_id) const {
+  if (!page_switcher_)
+    return {};
+  for (const PageEntry& entry : page_switcher_->ListPages()) {
+    if (entry.page_id == page_id)
+      return entry.icon;
+  }
+  return {};
+}
+
+void MainWindow::SetPageIcon(int page_id, std::string_view key) {
+  if (!page_switcher_)
+    return;
+  page_switcher_->SetPageIcon(page_id, key);
+  // The rail reads the icon from the profile, so redraw the buttons rather
+  // than mutating the one that was clicked — same path a rename takes.
+  RefreshRailPages();
 }
 
 void MainWindow::ShowPageContextMenu(int page_id, const QPoint& global_pos) {
@@ -506,6 +527,33 @@ void MainWindow::ShowPageContextMenu(int page_id, const QPoint& global_pos) {
 
   add(ID_PAGE_RENAME, "Rename", is_current);
   add(ID_PAGE_DELETE, "Delete", is_current);
+
+  // The icon is a property of the page, not of the current one, so unlike
+  // Rename and Delete it acts on the right-clicked page directly — no need to
+  // switch to it first, and no reason to disable it when another page is open.
+  QMenu* icon_menu =
+      menu.addMenu(QString::fromStdU16String(Translate("Icon")));
+  const std::string current_icon = PageIconFor(page_id);
+
+  QAction* none_action =
+      icon_menu->addAction(QString::fromStdU16String(Translate("None")));
+  none_action->setCheckable(true);
+  none_action->setChecked(current_icon.empty());
+  connect(none_action, &QAction::triggered, this, [this, page_id] {
+    SetPageIcon(page_id, {});
+  });
+  icon_menu->addSeparator();
+
+  for (const PageIcon& icon : GetPageIcons()) {
+    QAction* action =
+        icon_menu->addAction(QString::fromStdU16String(Translate(icon.label)));
+    action->setCheckable(true);
+    action->setChecked(current_icon == icon.key);
+    const std::string key{icon.key};
+    connect(action, &QAction::triggered, this,
+            [this, page_id, key] { SetPageIcon(page_id, key); });
+  }
+
   menu.addSeparator();
   add(ID_PAGE_NEW, "New page", true);
 

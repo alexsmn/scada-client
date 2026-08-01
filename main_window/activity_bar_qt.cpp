@@ -33,6 +33,9 @@ namespace {
 constexpr char kPageDragMimeType[] = "application/x-scada-rail-page";
 
 constexpr int kRailWidth = 52;
+// Inset of the page buttons inside their band. Enough that the band reads as a
+// container around them rather than as a stripe behind them.
+constexpr int kBandPadding = 3;
 constexpr int kButtonSize = 44;
 constexpr int kIconSize = 24;
 
@@ -83,6 +86,45 @@ std::string_view ModeGlyph(ActivityBar::Icon kind) {
     case ActivityBar::Icon::kNone:
       return {};
   }
+  return {};
+}
+
+// The Lucide glyph for a page icon key (`main_window/page_icons.h`). Every key
+// in `GetPageIcons()` must have an arm here; `activity_bar_unittest.cpp` holds
+// the two in step. Returns empty for an unknown key, which is what makes a
+// profile written by a newer build fall back to the ordinal instead of drawing
+// a blank button.
+std::string_view PageGlyph(std::string_view key) {
+  if (key == "overview")
+    return ":/icons/workflow.svg";
+  // The alarm mark is the ISA-18.2 triangle, the same shape the severity chips
+  // use — a page of alarms should be recognisable as such at a glance.
+  if (key == "alarms")
+    return ":/icons/triangle-alert.svg";
+  if (key == "trend")
+    return ":/icons/chart-spline.svg";
+  // A substation is a node in the network, not a single device: `network`
+  // rather than the `router` mark the Devices mode uses.
+  if (key == "substation")
+    return ":/icons/network.svg";
+  if (key == "table")
+    return ":/icons/table.svg";
+  if (key == "objects")
+    return ":/icons/folder-tree.svg";
+  if (key == "devices")
+    return ":/icons/router.svg";
+  // A log of frames over time, distinct from the device mark above.
+  if (key == "devicelog")
+    return ":/icons/logs.svg";
+  // Re-transmission forwards a value on to somewhere else.
+  if (key == "transmission")
+    return ":/icons/radio-tower.svg";
+  if (key == "files")
+    return ":/icons/files.svg";
+  if (key == "report")
+    return ":/icons/clipboard-list.svg";
+  if (key == "settings")
+    return ":/icons/settings.svg";
   return {};
 }
 
@@ -173,21 +215,24 @@ ActivityBar::ActivityBar(QWidget* parent,
     });
   }
 
-  // Divider between the two groups: pane modes select what fills the sidebar,
-  // pages replace the whole workspace. Different granularity, so they read as
-  // separate groups rather than one undifferentiated column.
-  pages_divider_ = new QWidget{this};
-  pages_divider_->setObjectName(QStringLiteral("railDivider"));
-  pages_divider_->setFixedHeight(1);
-  pages_divider_->setFixedWidth(kRailWidth - 16);
-  layout->addSpacing(6);
-  layout->addWidget(pages_divider_, 0, Qt::AlignHCenter);
-  layout->addSpacing(6);
+  // The pages group sits on its own band. A pane mode and a page are active at
+  // the same time and the two markers are drawn identically, so something has
+  // to say which is which; a plain divider left them reading as one column
+  // with two selections. The band groups the pages instead — same marker, but
+  // it lands inside a container that is visibly the page group.
+  pages_band_ = new QWidget{this};
+  pages_band_->setObjectName(QStringLiteral("railPagesBand"));
+  pages_band_->setAutoFillBackground(true);
+
+  auto* band_layout = new QVBoxLayout{pages_band_};
+  band_layout->setContentsMargins(kBandPadding, kBandPadding, kBandPadding,
+                                  kBandPadding);
+  band_layout->setSpacing(2);
 
   pages_layout_ = new QVBoxLayout;
   pages_layout_->setContentsMargins(0, 0, 0, 0);
   pages_layout_->setSpacing(2);
-  layout->addLayout(pages_layout_);
+  band_layout->addLayout(pages_layout_);
 
   new_page_button_ =
       MakeButton(TextIcon(QStringLiteral("+"), tokens.fg_on_dark),
@@ -198,7 +243,13 @@ ActivityBar::ActivityBar(QWidget* parent,
     if (on_new_page_)
       on_new_page_();
   });
-  layout->addWidget(new_page_button_, 0, Qt::AlignHCenter);
+  band_layout->addWidget(new_page_button_, 0, Qt::AlignHCenter);
+
+  layout->addSpacing(6);
+  layout->addWidget(pages_band_, 0, Qt::AlignHCenter);
+  layout->addSpacing(6);
+
+  ApplyBandPalette();
 
   layout->addStretch(1);
 
@@ -206,6 +257,35 @@ ActivityBar::ActivityBar(QWidget* parent,
 }
 
 ActivityBar::~ActivityBar() = default;
+
+void ActivityBar::ApplyBandPalette() {
+  if (!pages_band_)
+    return;
+
+  // Derived from the rail's own window colour rather than a baked value, so the
+  // band follows the platform palette and the OS light/dark preference without
+  // a stylesheet: lighter on a dark palette, darker on a light one. Deriving it
+  // also means it stays correct under the high-contrast palette, where a fixed
+  // tint would either vanish or shout.
+  const QColor base = palette().color(QPalette::Window);
+  const QColor band =
+      base.lightness() < 128 ? base.lighter(128) : base.darker(107);
+
+  QPalette band_palette = pages_band_->palette();
+  band_palette.setColor(QPalette::Window, band);
+  pages_band_->setPalette(band_palette);
+}
+
+void ActivityBar::changeEvent(QEvent* event) {
+  QWidget::changeEvent(event);
+  // Theme changes must apply live (docs/client/ux/README.md), and the band is
+  // computed from the palette rather than read from it, so nothing recomputes
+  // it for us.
+  if (event->type() == QEvent::PaletteChange ||
+      event->type() == QEvent::ApplicationPaletteChange) {
+    ApplyBandPalette();
+  }
+}
 
 QToolButton* ActivityBar::MakeButton(const QIcon& icon,
                                      const QString& tooltip) {
@@ -250,10 +330,16 @@ void ActivityBar::SetPageCallbacks(ActivatePageCallback on_activate_page,
 int ActivityBar::PageDropIndexForY(int local_y) const {
   // Land before the first button whose midpoint is below the cursor; past the
   // last midpoint the page goes to the end.
+  //
+  // `local_y` is in rail coordinates but the buttons are children of the pages
+  // band, so their own geometry is relative to that band. Map through instead
+  // of reading geometry().y() directly — the two spaces differ by the band's
+  // offset, which is exactly the kind of drift that makes a drop land one slot
+  // out.
   int index = 0;
   for (const PageItem& item : page_items_) {
     const int midpoint =
-        item.button->geometry().y() + item.button->geometry().height() / 2;
+        item.button->mapTo(this, QPoint{0, 0}).y() + item.button->height() / 2;
     if (local_y < midpoint)
       return index;
     ++index;
@@ -361,15 +447,28 @@ void ActivityBar::SetPages(std::vector<PageButton> pages) {
 
   for (std::size_t index = 0; index < pages.size(); ++index) {
     const PageButton& page = pages[index];
-    // Numbered by rail position, not by page id: the operator counts buttons,
-    // and profile ids have gaps once pages are deleted.
-    QToolButton* button =
-        MakeButton(TextIcon(QString::number(index + 1), tokens.fg_on_dark),
-                   QString::fromStdU16String(page.title));
+    // The ordinal is by rail position, not by page id: the operator counts
+    // buttons, and profile ids have gaps once pages are deleted.
+    const QString ordinal = QString::number(index + 1);
+    // Icon first, ordinal as the fallback. An unknown key lands here too, so a
+    // profile from a newer build degrades to the old numbered button rather
+    // than to a blank one.
+    const std::string_view glyph = PageGlyph(page.icon_key);
+    QIcon icon =
+        glyph.empty()
+            ? TextIcon(ordinal, tokens.fg_on_dark)
+            : LoadTintedGlyph(glyph, kIconSize, tokens.fg_on_dark,
+                              qApp ? qApp->devicePixelRatio() : 1.0);
+
+    // `2 · Alarms` — the ordinal names the Ctrl+N shortcut and the title says
+    // what the page holds, neither of which fits on the button itself.
+    const QString label = ordinal + QStringLiteral(" · ") +
+                          QString::fromStdU16String(page.title);
+    QToolButton* button = MakeButton(icon, label);
     if (page.opened_elsewhere) {
       button->setEnabled(false);
       button->setToolTip(
-          QString::fromStdU16String(page.title) + QStringLiteral(" — ") +
+          label + QStringLiteral(" — ") +
           QString::fromStdU16String(Translate("open in another window")));
     }
     button->setContextMenuPolicy(Qt::CustomContextMenu);

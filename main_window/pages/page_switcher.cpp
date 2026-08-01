@@ -6,6 +6,7 @@
 #include "base/u16format.h"
 #include "main_window/main_window_interface.h"
 #include "main_window/main_window_manager.h"
+#include "main_window/page_icons.h"
 #include "profile/profile.h"
 
 #include <algorithm>
@@ -31,7 +32,8 @@ std::vector<PageEntry> PageSwitcher::ListPages() const {
         .current = current,
         .opened_elsewhere =
             !current && main_window_manager_.IsPageOpened(page_id),
-        .order = page.order});
+        .order = page.order,
+        .icon = page.icon});
   }
 
   // Unordered pages (order == 0) sort last, by id, so a profile written before
@@ -73,6 +75,22 @@ void PageSwitcher::ReorderPage(int page_id, int new_index) {
       page->second.order = static_cast<int>(index) + 1;
   }
 
+  profile_.NotifyChange();
+}
+
+void PageSwitcher::SetPageIcon(int page_id, std::string_view key) {
+  auto page = profile_.pages.find(page_id);
+  if (page == profile_.pages.end())
+    return;
+
+  // Empty clears the icon; anything else has to be a key this build can draw.
+  if (!key.empty() && !IsPageIconKey(key))
+    return;
+
+  if (page->second.icon == key)
+    return;
+
+  page->second.icon = std::string{key};
   profile_.NotifyChange();
 }
 

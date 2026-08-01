@@ -37,6 +37,12 @@ class Page {
   // ordered ones, by id, so a profile written before reordering existed keeps
   // its historical order.
   int order = 0;
+  // The operator's chosen rail icon, as a `PageIcon::key`
+  // (`main_window/page_icons.h`). Empty means none was chosen, and the rail
+  // falls back to drawing the page's position — which is also what happens for
+  // a key this build does not know, so a profile written by a newer build
+  // still opens.
+  std::string icon;
 
   PageLayout layout;
 

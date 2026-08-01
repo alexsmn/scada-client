@@ -13,6 +13,8 @@ class SeverityTileStrip;
 }
 
 #include <boost/signals2/connection.hpp>
+#include <string>
+#include <string_view>
 #include <vector>
 
 namespace scada {
@@ -124,6 +126,13 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // Rename / Delete for `page_id`, plus New — the same registered ID_PAGE_*
   // commands the Page menu uses.
   void ShowPageContextMenu(int page_id, const QPoint& global_pos);
+
+  // The rail icon currently set on `page_id`, or empty when it has none. Read
+  // back from the profile rather than cached, so the context menu's check mark
+  // cannot disagree with what the rail draws.
+  std::string PageIconFor(int page_id) const;
+  // Sets `page_id`'s rail icon and redraws the rail. Empty `key` clears it.
+  void SetPageIcon(int page_id, std::string_view key);
   // Runs a registered page command through the shell's command resolution.
   void ExecutePageCommand(unsigned command_id);
   // Brings the current page's panes into line with the active mode, without

@@ -56,11 +56,15 @@ class ActivityBar : public QWidget {
     Icon icon_kind = Icon::kNone;
   };
 
-  // One page button. Rendered as its 1-based position, with `title` as the
-  // tooltip — page titles are arbitrary and will not fit a 52 px rail.
+  // One page button. Rendered as the operator's chosen icon, falling back to
+  // the 1-based position when no icon is set or the key is unknown. The
+  // tooltip carries both — `2 · Alarms` — because titles are arbitrary and
+  // will not fit a 52 px rail, and the ordinal still names the shortcut.
   struct PageButton {
     int page_id = 0;
     std::u16string title;
+    // A `PageIcon::key` (`main_window/page_icons.h`), or empty for none.
+    std::string icon_key;
     // Another main window already has this page open, so activating it would
     // be refused. Shown disabled rather than letting the operator find out
     // through a message box.
@@ -126,9 +130,16 @@ class ActivityBar : public QWidget {
   // QToolButtons.
   bool eventFilter(QObject* watched, QEvent* event) override;
 
+  // QWidget — recomputes the pages band when the palette changes, so a live
+  // theme switch does not leave the band tinted for the previous one.
+  void changeEvent(QEvent* event) override;
+
  private:
   // Builds one rail button with the shared sizing and glyph treatment.
   QToolButton* MakeButton(const QIcon& icon, const QString& tooltip);
+
+  // Recomputes the pages band's fill from the current palette.
+  void ApplyBandPalette();
 
   struct Item {
     Mode mode;
@@ -152,7 +163,9 @@ class ActivityBar : public QWidget {
 
   // The pages group's own layout, so SetPages can rebuild just that section.
   QVBoxLayout* pages_layout_ = nullptr;
-  QWidget* pages_divider_ = nullptr;
+  // The container the pages group sits on. Its fill is what distinguishes a
+  // page marker from a pane-mode marker, since both are drawn the same way.
+  QWidget* pages_band_ = nullptr;
   QToolButton* new_page_button_ = nullptr;
 
   // Where a left-press landed on a page button, so eventFilter can tell a

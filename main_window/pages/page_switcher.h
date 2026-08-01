@@ -26,6 +26,9 @@ struct PageEntry {
   bool opened_elsewhere = false;
   // The page's sort key (Page::order). 0 means the page predates reordering.
   int order = 0;
+  // The page's chosen rail icon (`Page::icon`), a `PageIcon::key`. Empty when
+  // the operator has not picked one.
+  std::string icon;
 };
 
 struct PageSwitcherContext {
@@ -54,6 +57,12 @@ class PageSwitcher : private PageSwitcherContext {
   // Moves `page_id` to `new_index` in the list above and renumbers the rest.
   // A no-op when the id is unknown or already at that index.
   void ReorderPage(int page_id, int new_index);
+
+  // Sets `page_id`'s rail icon to a `PageIcon::key`, or clears it when `key` is
+  // empty. A no-op when the id is unknown. Rejects a key this build cannot
+  // draw, so a typo cannot persist a page that renders as its ordinal for ever
+  // with no way to tell why.
+  void SetPageIcon(int page_id, std::string_view key);
 
   // Switches to `page_id`. Activating the page that is already open is a
   // revert: it asks for confirmation and then re-opens the persisted copy,
