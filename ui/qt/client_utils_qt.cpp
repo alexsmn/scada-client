@@ -4,12 +4,15 @@
 #include "aui/qt/image_util.h"
 #include "resources/common_resources.h"
 
+#include <QAction>
+#include <QActionGroup>
 #include <QApplication>
 #include <QMenu>
 #include <QPalette>
 #include <QString>
 
 #include <array>
+#include <map>
 #include <string_view>
 #include <utility>
 
@@ -44,11 +47,78 @@ constexpr std::array<std::pair<unsigned, std::string_view>, 17> kIconResources{{
     {ID_APPLICATION, ":/icons/settings.svg"},
 }};
 
+// Marks the exclusive QActionGroups BuildMenu creates for radio items, so a
+// rebuild discards its own predecessors and leaves alone any group a caller
+// parented to the same menu.
+QString RadioGroupObjectName() {
+  return QStringLiteral("scada.BuildMenu.radioGroup");
+}
+
+// The exclusive groups created while building one QMenu, keyed by the model
+// that owns the radio item and that model's own group id. The model is part of
+// the key because an in-place submenu is merged into the *same* QMenu, and its
+// group 0 is a different group from the parent's group 0.
+using RadioGroups =
+    std::map<std::pair<const scada::aui::MenuModel*, int>, QActionGroup*>;
+
+QActionGroup& RadioGroupFor(QMenu& menu,
+                            const scada::aui::MenuModel& model,
+                            int group_id,
+                            RadioGroups& radio_groups) {
+  QActionGroup*& group = radio_groups[{&model, group_id}];
+  if (!group) {
+    // Parented to the menu so it outlives this call and dies with it.
+    // Exclusive by default, which is the property Qt keys the radio indicator
+    // off — see the call site.
+    group = new QActionGroup{&menu};
+    group->setObjectName(RadioGroupObjectName());
+  }
+  return *group;
+}
+
+// Drops the groups left behind by the previous build of |menu|. BuildMenu is
+// re-run on every aboutToShow and QMenu::clear() deletes the actions but not
+// the groups, so without this they accumulate for the life of the menu.
+// Actions are unlinked first: ~QActionGroup does not clear the back-pointer
+// its actions hold, and ~QAction dereferences it.
+void DiscardRadioGroups(QMenu& menu) {
+  const QString name = RadioGroupObjectName();
+  for (QActionGroup* group :
+       menu.findChildren<QActionGroup*>(Qt::FindDirectChildrenOnly)) {
+    if (group->objectName() != name)
+      continue;
+    for (QAction* action : group->actions())
+      group->removeAction(action);
+    delete group;
+  }
+}
+
+void AppendMenuItems(QMenu& menu,
+                     scada::aui::MenuModel& model,
+                     const std::unordered_set<int>* skip_command_ids,
+                     RadioGroups& radio_groups);
+
 }  // namespace
 
 void BuildMenu(QMenu& menu,
                scada::aui::MenuModel& model,
                const std::unordered_set<int>* skip_command_ids) {
+  DiscardRadioGroups(menu);
+
+  RadioGroups radio_groups;
+  AppendMenuItems(menu, model, skip_command_ids, radio_groups);
+}
+
+namespace {
+
+// Appends |model|'s items to |menu|. Split from BuildMenu so an in-place
+// submenu, which lands in the same QMenu, can share the caller's radio groups
+// rather than restarting them (and rather than re-running the per-menu
+// cleanup, which would delete the groups just created).
+void AppendMenuItems(QMenu& menu,
+                     scada::aui::MenuModel& model,
+                     const std::unordered_set<int>* skip_command_ids,
+                     RadioGroups& radio_groups) {
   model.MenuWillShow();
 
   for (int i = 0; i < model.GetItemCount(); ++i) {
@@ -73,8 +143,9 @@ void BuildMenu(QMenu& menu,
         break;
 
       case scada::aui::MenuModel::TYPE_INPLACE_MENU:
-        if (auto* inplace_model = model.GetSubmenuModelAt(i))
-          BuildMenu(menu, *inplace_model, skip_command_ids);
+        if (auto* inplace_model = model.GetSubmenuModelAt(i)) {
+          AppendMenuItems(menu, *inplace_model, skip_command_ids, radio_groups);
+        }
         break;
 
       default: {
@@ -103,6 +174,15 @@ void BuildMenu(QMenu& menu,
           action->setCheckable(true);
           action->setChecked(model.IsItemCheckedAt(i));
         }
+        // Checkable alone gets a check box, which reads as "an independent
+        // toggle". Qt only draws the radio indicator that means "pick one" for
+        // an action belonging to an exclusive QActionGroup (QMenu sets
+        // QStyleOptionMenuItem::Exclusive off actionGroup()->isExclusive()),
+        // so a radio item has to join one.
+        if (item_type == scada::aui::MenuModel::TYPE_RADIO) {
+          action->setActionGroup(
+              &RadioGroupFor(menu, model, model.GetGroupIdAt(i), radio_groups));
+        }
         QObject::connect(action, &QAction::triggered,
                          [&model, i] { model.ActivatedAt(i); });
         break;
@@ -110,6 +190,8 @@ void BuildMenu(QMenu& menu,
     }
   }
 }
+
+}  // namespace
 
 QPixmap LoadPixmap(unsigned resource_id, int size) {
   for (const auto& [id, path] : kIconResources) {

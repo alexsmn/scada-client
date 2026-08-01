@@ -5,10 +5,11 @@
 #include "resources/common_resources.h"
 
 #include <QAction>
-#include <QPalette>
-#include <QImage>
+#include <QActionGroup>
 #include <QApplication>
+#include <QImage>
 #include <QMenu>
+#include <QPalette>
 #include <QPixmap>
 #include <QSize>
 #include <gtest/gtest.h>
@@ -188,6 +189,117 @@ TEST_F(BuildMenuReasonTest, DisabledEntryWithoutReasonShowsNoTooltip) {
   ASSERT_EQ(menu.actions().size(), 1);
   EXPECT_FALSE(menu.actions().front()->isEnabled());
   EXPECT_FALSE(menu.toolTipsVisible());
+}
+
+// Radio rows used to be built exactly like check rows — setCheckable(true) and
+// nothing else — so Settings → Style, Settings → Colour scheme, Page and
+// Window all rendered as a column of check boxes with one ticked, reading as
+// independent toggles rather than "pick one". Qt only draws the radio
+// indicator for an action in an exclusive QActionGroup.
+class BuildMenuRadioTest : public ::testing::Test {
+ protected:
+  // Counts the action groups BuildMenu parented to |menu|, which is how a
+  // rebuild leak would show up.
+  static int GroupCount(const QMenu& menu) {
+    return static_cast<int>(
+        menu.findChildren<QActionGroup*>(Qt::FindDirectChildrenOnly).size());
+  }
+
+  AppEnvironment app_env_;
+  ReasonMenuModel::Delegate delegate_;
+};
+
+TEST_F(BuildMenuRadioTest, RadioItemsShareOneExclusiveGroup) {
+  delegate_.enabled = true;
+  ReasonMenuModel model{delegate_};
+  model.AddRadioItem(1, u"Light", 0);
+  model.AddRadioItem(2, u"Dark", 0);
+
+  QMenu menu;
+  BuildMenu(menu, model);
+
+  ASSERT_EQ(menu.actions().size(), 2);
+  QAction* first = menu.actions().at(0);
+  QAction* second = menu.actions().at(1);
+  ASSERT_NE(first->actionGroup(), nullptr);
+  EXPECT_EQ(first->actionGroup(), second->actionGroup());
+  EXPECT_TRUE(first->actionGroup()->isExclusive());
+  EXPECT_TRUE(first->isCheckable());
+  EXPECT_TRUE(second->isCheckable());
+}
+
+// A separator between radio rows does not start a new group: Colour scheme
+// puts one between Classic and the themes, and they are still one choice.
+TEST_F(BuildMenuRadioTest, ASeparatorDoesNotSplitTheGroup) {
+  delegate_.enabled = true;
+  ReasonMenuModel model{delegate_};
+  model.AddRadioItem(1, u"Classic", 0);
+  model.AddSeparator(scada::aui::NORMAL_SEPARATOR);
+  model.AddRadioItem(2, u"System", 0);
+
+  QMenu menu;
+  BuildMenu(menu, model);
+
+  ASSERT_EQ(menu.actions().size(), 3);
+  EXPECT_EQ(GroupCount(menu), 1);
+  EXPECT_EQ(menu.actions().at(0)->actionGroup(),
+            menu.actions().at(2)->actionGroup());
+}
+
+// Check rows keep their check box — the fix must not turn every toggle into a
+// radio.
+TEST_F(BuildMenuRadioTest, CheckItemsGetNoGroup) {
+  delegate_.enabled = true;
+  ReasonMenuModel model{delegate_};
+  model.AddCheckItem(1, u"Show grid");
+
+  QMenu menu;
+  BuildMenu(menu, model);
+
+  ASSERT_EQ(menu.actions().size(), 1);
+  EXPECT_TRUE(menu.actions().front()->isCheckable());
+  EXPECT_EQ(menu.actions().front()->actionGroup(), nullptr);
+  EXPECT_EQ(GroupCount(menu), 0);
+}
+
+// An in-place submenu is merged into the same QMenu, so its group id 0 must
+// not be confused with the host model's group id 0 — otherwise two unrelated
+// choices become mutually exclusive.
+TEST_F(BuildMenuRadioTest, AnInplaceSubmenuGetsItsOwnGroup) {
+  delegate_.enabled = true;
+  ReasonMenuModel host{delegate_};
+  ReasonMenuModel inplace{delegate_};
+  inplace.AddRadioItem(3, u"Metric", 0);
+  host.AddRadioItem(1, u"Light", 0);
+  host.AddInplaceMenu(&inplace);
+
+  QMenu menu;
+  BuildMenu(menu, host);
+
+  ASSERT_EQ(menu.actions().size(), 2);
+  ASSERT_NE(menu.actions().at(0)->actionGroup(), nullptr);
+  ASSERT_NE(menu.actions().at(1)->actionGroup(), nullptr);
+  EXPECT_NE(menu.actions().at(0)->actionGroup(),
+            menu.actions().at(1)->actionGroup());
+  EXPECT_EQ(GroupCount(menu), 2);
+}
+
+// The main menu rebuilds itself on every aboutToShow. QMenu::clear() deletes
+// the actions but not the groups, so each build has to discard the previous
+// one's rather than pile them up for the life of the menu.
+TEST_F(BuildMenuRadioTest, RebuildingDoesNotAccumulateGroups) {
+  delegate_.enabled = true;
+  ReasonMenuModel model{delegate_};
+  model.AddRadioItem(1, u"Light", 0);
+  model.AddRadioItem(2, u"Dark", 0);
+
+  QMenu menu;
+  for (int i = 0; i < 3; ++i) {
+    menu.clear();
+    BuildMenu(menu, model);
+    ASSERT_EQ(menu.actions().size(), 2);
+    EXPECT_EQ(GroupCount(menu), 1) << "after build " << i;
+  }
 }
 
 }  // namespace
