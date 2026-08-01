@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/any_executor_timer.h"
 #include "controller/command_registry.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
@@ -49,10 +50,17 @@ class WatchView : protected ControllerContext,
   std::u16string MakeTitle() const;
 
   // Arms or disarms the device's frame capture: writes its FrameCapture
-  // variable and updates the status-strip registry. Both halves matter — the
-  // write is what stops the device raising an event per frame, the registry is
-  // what stops the operator forgetting they left it running.
+  // variable, starts or stops the renewal, and updates the status-strip
+  // registry. All three matter — the write is what stops the device raising an
+  // event per frame, the renewal is what keeps it going while the trace is
+  // open, and the registry is what stops the operator forgetting they left it
+  // running.
   void SetCaptureArmed(bool armed);
+
+  // The bare write, without the surrounding state. Also the renewal: the
+  // server holds the arming as a lease, and re-writing `true` is how a client
+  // says it is still there.
+  void WriteCaptureArmed(bool armed);
 
 #if defined(UI_QT)
   // Builds the trace + decode-pane layout and wires `refresh_decode_pane_`.
@@ -92,6 +100,12 @@ class WatchView : protected ControllerContext,
 
   // What we last asked the server for, so teardown only disarms what it armed.
   bool capture_armed_ = false;
+
+  // Renews the server-side capture lease while the trace is open. Far more
+  // often than the lease needs (FrameCaptureLease::kDuration is minutes), so a
+  // single missed renewal — a busy executor, a slow round trip — never blinks
+  // the capture off mid-trace.
+  AnyExecutorTimer capture_renewal_timer_;
 
   CommandRegistry command_registry_;
 

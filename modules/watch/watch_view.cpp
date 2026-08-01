@@ -39,6 +39,13 @@
 
 namespace {
 
+// How often an open trace re-arms the device. Deliberately far below the
+// server's lease (FrameCaptureLease::kDuration, minutes): the two are in
+// separate repos and cannot share a constant, so the client renews often
+// enough that the exact server value does not matter. Shortening the server
+// lease below this would start blinking captures off mid-trace.
+constexpr std::chrono::seconds kCaptureRenewalInterval{60};
+
 Awaitable<void> SaveLogAsync(AnyExecutor executor,
                              DialogService& dialog_service,
                              std::shared_ptr<WatchModel> model,
@@ -56,7 +63,8 @@ Awaitable<void> SaveLogAsync(AnyExecutor executor,
 WatchView::WatchView(const ControllerContext& context)
     : ControllerContext{context},
       model_{WatchModelBuilder{executor_, context.node_service_}
-                 .CreateWatchModel()} {}
+                 .CreateWatchModel()},
+      capture_renewal_timer_{executor_} {}
 
 WatchView::~WatchView() {
   // A capture must not outlive the view that armed it: the operator has closed
@@ -65,8 +73,6 @@ WatchView::~WatchView() {
     SetCaptureArmed(false);
 }
 
-// The device's arming switch lives in its address space
-// (devices::id::DeviceType_FrameCapture), so this is an ordinary value write.
 void WatchView::SetCaptureArmed(bool armed) {
   if (capture_armed_ == armed)
     return;
@@ -76,17 +82,37 @@ void WatchView::SetCaptureArmed(bool armed) {
   frame_capture_registry_.SetArmed(
       device.node_id(), ToString16(device.display_name()), armed);
 
-  if (NodeRef capture = device[scada::devices::id::DeviceType_FrameCapture]) {
-    // Fire and forget. A server too old to know the variable answers
-    // Bad_WrongNodeId, and an operator who opened a trace must not get a modal
-    // over it — the trace is simply empty, which is the visible symptom
-    // anyway.
-    CoSpawn(executor_, [node = capture.scada_node(),
-                        armed]() mutable -> Awaitable<void> {
-      co_await node.write_value(armed);
-      co_return;
-    });
+  WriteCaptureArmed(armed);
+
+  // The server holds the arming as a lease, so a trace left open outlives it
+  // unless the client keeps saying it is there. Disarming stops the renewal
+  // first, so no in-flight tick can re-arm what we just released.
+  if (armed) {
+    capture_renewal_timer_.StartRepeating(
+        kCaptureRenewalInterval, [this] { WriteCaptureArmed(true); });
+  } else {
+    capture_renewal_timer_.Stop();
   }
+}
+
+// The device's arming switch lives in its address space
+// (devices::id::DeviceType_FrameCapture), so this is an ordinary value write.
+void WatchView::WriteCaptureArmed(bool armed) {
+  const NodeRef capture =
+      model_->device()[scada::devices::id::DeviceType_FrameCapture];
+  if (!capture)
+    return;
+
+  // Fire and forget. A server too old to know the variable answers
+  // Bad_WrongNodeId, and an operator who opened a trace must not get a modal
+  // over it — the trace is simply empty, which is the visible symptom anyway.
+  // A failed renewal needs no handling either: the lease lapses, the frames
+  // stop, and the next tick re-arms if the server has come back.
+  CoSpawn(executor_, [node = capture.scada_node(),
+                      armed]() mutable -> Awaitable<void> {
+    co_await node.write_value(armed);
+    co_return;
+  });
 }
 
 void WatchView::Save(WindowDefinition& definition) {

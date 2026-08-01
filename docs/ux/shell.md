@@ -427,10 +427,27 @@ event for every frame it saw, on every device, forever — the flood the mockup'
   are never gated — a link going down must still reach an operator who armed
   nothing. The visible consequence: **the device log no longer carries
   `#RX:`/`$TX:` dumps until someone opens the trace.**
+- **Arming is a lease, not a latch.** The tier holds it as a deadline
+  (`FrameCaptureLease`, five minutes) and the Watch view re-arms every minute
+  while its trace is open; a client that crashes mid-trace simply stops
+  renewing and the device goes quiet on its own. **Renewal is the same write as
+  arming** — no second service, no session registry, and a client that knows
+  how to arm needs nothing more to keep a capture alive.
+- A deadline rather than a timer on the tier: nothing to cancel when the device
+  tears down, nothing to leak, and the one place expiry has to take effect
+  (`WriteFrame`) is already asking. The knowing cost is that nothing pushes a
+  data change when a lease lapses, so a subscriber to the variable can read
+  `true` for up to one lease period after the arming client vanished — the
+  frames themselves stop at the deadline, which is what the lease is for.
+- The two intervals live in separate repos and cannot share a constant, so the
+  client renews far more often than the lease needs; shortening the server
+  lease below the client's minute would start blinking captures off mid-trace.
 - The Watch view arms on entering the frame trace and disarms on leaving it or
   closing, and the write is fire-and-forget: a server too old to know the
   variable answers `Bad_WrongNodeId`, and an operator who opened a trace must
-  not get a modal about it — an empty trace is the visible symptom anyway.
+  not get a modal about it — an empty trace is the visible symptom anyway. A
+  failed *renewal* needs no handling either: the lease lapses, the frames stop,
+  and the next tick re-arms if the server has come back.
 - The **`Capturing · КП-02` status cell** is driven by `FrameCaptureRegistry`
   (`services/`), this client's own list of what it armed — not a subscription
   to the server's variables, which would mean subscribing to every device in
@@ -440,11 +457,6 @@ event for every frame it saw, on every device, forever — the flood the mockup'
 
 Still missing against the mockup:
 
-- **Nothing disarms a capture whose client vanished.** The flag is process
-  state on the tier, so a client that crashes while armed leaves the device
-  producing frames until the tier restarts. A lease — the arming session
-  renewing, the tier disarming on expiry — is the fix, and needs a session
-  seam the devices module does not have today.
 - Eleven driver sites stay plain log lines by design: timer expiries and
   state-machine notes carry the direction markers but describe no PDU, and a
   trace filtered to real traffic is the point of the mode.
