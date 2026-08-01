@@ -1,30 +1,6 @@
 <RCC>
     <qresource prefix="/">
         <file>client.ico</file>
-        <file>device.png</file>
-    </qresource>
-    <!-- Toolbar/command action icons, addressable as :/res/<name>.png. Kept in
-         lock-step with the id->path table in aui/qt/client_utils_qt.cpp.
-         The magenta-keyed .bmp strips are gone: every tree and table row
-         glyph now comes from the Lucide SVGs under /icons. -->
-    <qresource prefix="/res">
-        <file>acknowledge_all.png</file>
-        <file>chart_curve.png</file>
-        <file>copy.png</file>
-        <file>delete.png</file>
-        <file>display.png</file>
-        <file>doc_table.png</file>
-        <file>event_view.png</file>
-        <file>events3.png</file>
-        <file>execute.png</file>
-        <file>paste.png</file>
-        <file>printer.png</file>
-        <file>record_editor.png</file>
-        <file>summary.png</file>
-        <file>table.png</file>
-        <file>unlock.png</file>
-        <file>write_manual.png</file>
-        <file>settings/settings64-32bit.png</file>
     </qresource>
     <!-- Lucide (ISC, res/icons/LICENSE): 24px grid, stroke 2, round caps,
          stroke="currentColor" so one file serves dark, light and
@@ -32,10 +8,26 @@
          file (docs/client/ux/iconography.md §4). Keep alphabetical. -->
     <qresource prefix="/">
         <file>icons/chart-spline.svg</file>
+        <file>icons/check-check.svg</file>
+        <file>icons/clipboard-list.svg</file>
+        <file>icons/clipboard-paste.svg</file>
+        <file>icons/copy.svg</file>
+        <file>icons/file-clock.svg</file>
+        <file>icons/file-pen.svg</file>
         <file>icons/folder.svg</file>
+        <file>icons/lock-open.svg</file>
+        <file>icons/logs.svg</file>
         <file>icons/network.svg</file>
+        <file>icons/pencil-line.svg</file>
+        <file>icons/printer.svg</file>
+        <file>icons/radio-tower.svg</file>
         <file>icons/router.svg</file>
+        <file>icons/settings.svg</file>
         <file>icons/table.svg</file>
+        <file>icons/trash-2.svg</file>
+        <file>icons/triangle-alert.svg</file>
         <file>icons/variable.svg</file>
+        <file>icons/workflow.svg</file>
+        <file>icons/zap.svg</file>
     </qresource>
 </RCC>

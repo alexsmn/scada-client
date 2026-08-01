@@ -17,7 +17,9 @@ class AboutDialog : public QDialog {
   explicit AboutDialog(QWidget* parent = nullptr) : QDialog(parent) {
     ui.setupUi(this);
 
-    ui.icon->setPixmap(LoadPixmap(ID_APPLICATION));
+    // 64 px: the About dialog's icon is a header mark, not a toolbar glyph
+    // (docs/client/ux/iconography.md §3).
+    ui.icon->setPixmap(LoadPixmap(ID_APPLICATION, 64));
 
     auto version = tr("Version %1").arg(PROJECT_VERSION_DOTTED_STRING);
     auto organization_name = tr("Telecontrol");

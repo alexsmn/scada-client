@@ -1,11 +1,14 @@
 
 #include "aui/qt/item_delegate.h"
 
+#include "aui/qt/image_util.h"
+
 #include "base/check.h"
 
 #include <QAction>
 #include <QComboBox>
 #include <QLineEdit>
+#include <QPalette>
 #include <QPushButton>
 
 namespace scada::aui {
@@ -30,7 +33,12 @@ QWidget* ItemDelegate::createEditor(QWidget* parent,
     case EditData::EditorType::BUTTON: {
       auto* line_edit = new QLineEdit{parent};
       line_edit->setFrame(false);
-      QIcon icon{":/device.png"};
+      // Tinted from the editor's palette so the button reads as chrome in
+      // every theme (docs/client/ux/iconography.md §5.1).
+      const QIcon icon = LoadTintedGlyph(
+          ":/icons/radio-tower.svg", 16,
+          line_edit->palette().color(QPalette::Text),
+          line_edit->devicePixelRatioF());
       auto* action = line_edit->addAction(icon, QLineEdit::TrailingPosition);
       if (button_handler_) {
         connect(action, &QAction::triggered,

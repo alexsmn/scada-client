@@ -13,7 +13,9 @@ Lucide
   Licence:  ISC — full text in res/icons/LICENSE
   Upstream: https://lucide.dev/ (https://github.com/lucide-icons/lucide)
 
-  Every tree and table row glyph. ISC requires no attribution in the product
+  Every icon the client draws: command and toolbar actions, tree and table row
+  glyphs, and the About dialog's header mark. ISC requires no attribution in
+  the product
   UI, but the notice must travel with copies of the files, which is what
   res/icons/LICENSE is for. A subset of Lucide is Feather-derived and MIT
   (© 2013-present Cole Bemis); the same applies.
@@ -23,23 +25,10 @@ Lucide
   time by the consumer, never edited.
 
 
-Still to retire
----------------
+Retired
+-------
 
-The following predate the Lucide set and are still shipped. They are listed
-here because we ship them, not because the attribution below discharges the
-obligation — that is closed by removing them, which iconography.md §5.1 and §8
-track.
-
-  Files:    res/*.png (17 command/toolbar icons)
-  Lineage:  Silk icon set, CC-BY 2.5 (attribution and a link are required)
-  Upstream: http://www.famfamfam.com/lab/icons/silk/
-
-  Files:    res/settings/settings*.png
-  Lineage:  Flaticon free tier (credit required in an about/credits screen)
-  Upstream: recorded in res/settings/source.txt
-
-  Neither requirement is met in the product UI today. The Silk-lineage icons
-  are keyed by command id in ui/qt/client_utils_qt.cpp and are the subject of
-  iconography.md §5.1; when they and the settings icons are converted, delete
-  this section along with the files.
+The Silk-lineage command icons (CC-BY 2.5) and the Flaticon settings icons
+carried attribution requirements the product UI never met. They were deleted on
+2026-08-01 when the last of them was converted, which is what actually closes
+that gap — the client no longer ships an asset it cannot account for.

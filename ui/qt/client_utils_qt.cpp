@@ -1,9 +1,12 @@
 #include "ui/qt/client_utils_qt.h"
 
 #include "aui/models/menu_model.h"
+#include "aui/qt/image_util.h"
 #include "resources/common_resources.h"
 
+#include <QApplication>
 #include <QMenu>
+#include <QPalette>
 #include <QString>
 
 #include <array>
@@ -12,10 +15,9 @@
 
 namespace {
 
-// Maps an integer command/action resource id to the Qt resource path of its
-// icon (packaged in res/client.qrc under the "/res" prefix). This is the
-// cross-platform replacement for the former Win32 FindResource("PNG") lookup,
-// and must stay in lock-step with client.qrc and common_resources.h.
+// Maps an integer command/action resource id to the Lucide glyph that draws
+// it (docs/client/ux/iconography.md §5.1). Must stay in lock-step with
+// res/client.qrc and common_resources.h.
 //
 // NOTE: the table is keyed by the raw numeric id. common_resources.h reuses
 // numeric values across unrelated symbols; the ids below (the ones actually
@@ -23,23 +25,23 @@ namespace {
 // .image_id_ that happens to share a number with one of these would silently
 // resolve to the wrong icon.
 constexpr std::array<std::pair<unsigned, std::string_view>, 17> kIconResources{{
-    {ID_GRAPH_VIEW, ":/res/chart_curve.png"},
-    {ID_MODUS_VIEW, ":/res/display.png"},
-    {ID_TABLE_VIEW, ":/res/table.png"},
-    {IDB_SUMMARY, ":/res/summary.png"},
-    {ID_EVENT_VIEW, ":/res/event_view.png"},
-    {IDB_OPEN_EVENTS, ":/res/events3.png"},
-    {IDB_TIMED_DATA, ":/res/doc_table.png"},
-    {IDB_RECORD_EDITOR, ":/res/record_editor.png"},
-    {IDB_PRINTER, ":/res/printer.png"},
-    {IDB_WRITE, ":/res/execute.png"},
-    {IDB_WRITE_MANUAL, ":/res/write_manual.png"},
-    {IDB_UNLOCK, ":/res/unlock.png"},
-    {IDB_COPY, ":/res/copy.png"},
-    {IDB_PASTE, ":/res/paste.png"},
-    {IDB_DELETE, ":/res/delete.png"},
-    {IDB_ACKNOWLEDGE_ALL, ":/res/acknowledge_all.png"},
-    {ID_APPLICATION, ":/res/settings/settings64-32bit.png"},
+    {ID_GRAPH_VIEW, ":/icons/chart-spline.svg"},
+    {ID_MODUS_VIEW, ":/icons/workflow.svg"},
+    {ID_TABLE_VIEW, ":/icons/table.svg"},
+    {IDB_SUMMARY, ":/icons/clipboard-list.svg"},
+    {ID_EVENT_VIEW, ":/icons/triangle-alert.svg"},
+    {IDB_OPEN_EVENTS, ":/icons/logs.svg"},
+    {IDB_TIMED_DATA, ":/icons/file-clock.svg"},
+    {IDB_RECORD_EDITOR, ":/icons/file-pen.svg"},
+    {IDB_PRINTER, ":/icons/printer.svg"},
+    {IDB_WRITE, ":/icons/zap.svg"},
+    {IDB_WRITE_MANUAL, ":/icons/pencil-line.svg"},
+    {IDB_UNLOCK, ":/icons/lock-open.svg"},
+    {IDB_COPY, ":/icons/copy.svg"},
+    {IDB_PASTE, ":/icons/clipboard-paste.svg"},
+    {IDB_DELETE, ":/icons/trash-2.svg"},
+    {IDB_ACKNOWLEDGE_ALL, ":/icons/check-check.svg"},
+    {ID_APPLICATION, ":/icons/settings.svg"},
 }};
 
 }  // namespace
@@ -109,10 +111,25 @@ void BuildMenu(QMenu& menu,
   }
 }
 
-QPixmap LoadPixmap(unsigned resource_id) {
+QPixmap LoadPixmap(unsigned resource_id, int size) {
   for (const auto& [id, path] : kIconResources) {
-    if (id == resource_id)
-      return QPixmap(QString::fromUtf8(path.data(), path.size()));
+    if (id != resource_id)
+      continue;
+    // Tinted from the application palette, because the files carry
+    // stroke="currentColor" and Qt's SVG renderer resolves that to black.
+    // Rendered at the requested size times the device pixel ratio, so a
+    // toolbar glyph is drawn rather than upscaled from a 16 px raster.
+    //
+    // The tint is taken when the icon is built, which is when the action is
+    // created. A live theme switch therefore leaves already-built toolbar
+    // actions on the old tint until they are rebuilt — menus rebuild
+    // themselves on aboutToShow, toolbars do not. Acceptable while the theme
+    // is settled at startup; if live switching becomes real, this wants a
+    // QIconEngine that re-renders per palette.
+    return LoadTintedGlyph(path, size,
+                           QApplication::palette().color(QPalette::WindowText),
+                           qApp ? qApp->devicePixelRatio() : 1.0)
+        .pixmap(size, size);
   }
   return {};
 }
