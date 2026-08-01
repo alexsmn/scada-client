@@ -113,6 +113,11 @@ Rules of the pipeline:
   hand-captured images still get a `manual-*` manifest row.
 - **The gallery is tracked, publishing is gated.** `screenshots/` — PNGs
   included — is committed, so a UI change lands as a reviewable image diff.
+  **Not yet a verified Windows baseline**, though: the images tracked at the
+  outset were committed with their provenance unestablished and at least 12 are
+  macOS renders, so the first Windows regeneration rewrites an unknown number
+  of them as platform churn. Read `docs/ops/client-screenshots.md` before
+  treating a diff here as a UI change.
   Publishing to the manual is a separate, narrower step:
   `cmake --workflow --preset update-screenshots-dev`
   (Windows) regenerates the gallery
