@@ -36,17 +36,6 @@ constexpr int kToggleH = 18;
 constexpr int kHeaderSwatchW = 12;
 constexpr int kHeaderSwatchH = 3;
 
-// The active reshell theme whose tokens paint the panel, or nullopt under the
-// legacy theme (the panel is opt-in chrome and is not shown there).
-// The active theme's tokens, or null in the legacy look. Resolved through
-// ActiveThemeTokens() so it follows the OS palette under Theme::kSystem
-// instead of a baked light/dark table.
-const scada::aui::ThemeTokens* ReshellTokens() {
-  if (scada::aui::GetSeverityTheme() == scada::aui::SeverityTheme::kLegacy)
-    return nullptr;
-  return &scada::aui::ActiveThemeTokens();
-}
-
 QFont LabelFont(int pixel_size, bool bold = false) {
   QFont font;
   font.setPixelSize(pixel_size);
@@ -81,10 +70,15 @@ void SeriesInspector::mousePressEvent(QMouseEvent* event) {
 void SeriesInspector::paintEvent(QPaintEvent*) {
   swatch_hits_.clear();
 
-  const scada::aui::ThemeTokens* active = ReshellTokens();
-  if (!active || !line_)
+  if (!line_)
     return;
-  const scada::aui::ThemeTokens& tokens = *active;
+  // Tokens come from ActiveThemeTokens(), which maps the legacy theme onto the
+  // dark table on purpose: the panel must paint whoever built it. Gating the
+  // paint on the reshell theme instead left the standalone offscreen capture
+  // (series-inspector.png) blank in every un-themed generator run, because the
+  // capture builds the widget directly rather than through GraphView — which
+  // is where the opt-in gate belongs, and already lives.
+  const scada::aui::ThemeTokens& tokens = scada::aui::ActiveThemeTokens();
   const MetrixDataSource& source = line_->data_source();
 
   QPainter painter(this);

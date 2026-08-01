@@ -149,6 +149,48 @@ TEST(GraphViewInspectorTest, DeletingSelectedPaneRefreshesSeriesInspector) {
   EXPECT_THAT(inspector->line(), IsNull());
 }
 
+// Regression: the panel used to skip painting entirely under the legacy
+// severity theme, so anything that builds it directly — the doc-screenshot
+// capture SaveSeriesInspectorScreenshot does exactly that — got a blank image
+// out of every un-themed generator run, which is how series-inspector.png
+// shipped empty. The opt-in gate belongs to GraphView (which only creates the
+// panel under the reshell theme); a panel someone built must paint.
+TEST(GraphViewInspectorTest, SeriesInspectorPaintsUnderLegacyTheme) {
+  AppEnvironment app_env;
+
+  const scada::aui::SeverityTheme previous_theme =
+      scada::aui::GetSeverityTheme();
+  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kLegacy);
+
+  FakeTimedDataService fake_service;
+  MetrixGraph graph{MetrixGraphContext{fake_service}};
+  MetrixGraph::MetrixLine& line = graph.NewLine("TS.200", graph.NewPane());
+  line.SetColor(Qt::blue);
+
+  SeriesInspector inspector;
+  inspector.SetLine(&line);
+  inspector.resize(inspector.sizeHint());
+  const QImage image = inspector.grab().toImage();
+
+  scada::aui::SetSeverityTheme(previous_theme);
+
+  // The panel is custom-painted, so "it rendered" is "the pixels are not one
+  // flat colour": a returned-early paintEvent leaves the untouched widget
+  // background, which is uniform.
+  ASSERT_FALSE(image.isNull());
+  bool varies = false;
+  for (int y = 0; y < image.height() && !varies; ++y) {
+    for (int x = 0; x < image.width(); ++x) {
+      if (image.pixelColor(x, y) != image.pixelColor(0, 0)) {
+        varies = true;
+        break;
+      }
+    }
+  }
+  EXPECT_TRUE(varies) << "SeriesInspector painted nothing under the legacy "
+                         "theme; the standalone capture would be blank";
+}
+
 TEST_F(GraphViewTest, FakeTimedDataRendersLines) {
   // Set up FakeTimedDataService with pre-populated data.
   FakeTimedDataService fake_service;

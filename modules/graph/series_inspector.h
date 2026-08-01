@@ -19,11 +19,13 @@ class QPaintEvent;
 // colour, display flags (own pane / dots / stepped), configured limit bands and
 // data source, and lets the operator recolour it.
 //
-// Reshell-only chrome: it is themed from the active design tokens and is shown
-// only under the opt-in reshell theme (GetSeverityTheme() != kLegacy), like the
-// rest of the trend cockpit. Custom-painted in the same spirit as the graph's
-// themed legend, with a small set of clickable regions hit-tested in
-// mousePressEvent.
+// Reshell-only chrome: `GraphView` surfaces it only under the opt-in reshell
+// theme (GetSeverityTheme() != kLegacy), like the rest of the trend cockpit.
+// The gate is the host's, not the panel's — the panel always paints from
+// ActiveThemeTokens() (dark under the legacy theme), so a standalone build of
+// it, as the doc-screenshot capture does, renders regardless. Custom-painted in
+// the same spirit as the graph's themed legend, with a small set of clickable
+// regions hit-tested in mousePressEvent.
 class SeriesInspector : public QWidget {
  public:
   explicit SeriesInspector(QWidget* parent = nullptr);

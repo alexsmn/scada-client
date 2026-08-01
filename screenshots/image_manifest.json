@@ -224,10 +224,10 @@
     },
     {
       "file": "series-inspector.png",
-      "tag": "auto-view",
+      "tag": "reshell-theme",
       "published": false,
       "referenced_from": [],
-      "notes": "Trend workspace per-series inspector panel (SeriesInspector): colour swatches, display flags, limits, source. Reshell-only chrome, captured under --theme. Limits/quality populate because the capture makes the graphed node resident (FetchGraphNodesResident) before building the panel. Validation-only; not yet published to the manual."
+      "notes": "Trend workspace per-series inspector panel (SeriesInspector): colour swatches, display flags, limits, source. Standalone reshell chrome, but the limit-band values are severity-coloured and SeverityColor() returns nothing under the legacy theme — so, like inspector-event.png, it is reshell-theme and rides client_screenshot_check_themed rather than the default no-theme pipeline. It was auto-view until 2026-08-01, which is how it came to be tracked blank: the panel used to skip painting entirely under the legacy theme, so whichever un-themed run went last overwrote the themed render with an empty 290x480 image (fixed in series_inspector.cpp; regression test GraphViewInspectorTest.SeriesInspectorPaintsUnderLegacyTheme). Limits/quality populate because the capture makes the graphed node resident (FetchGraphNodesResident) before building the panel. Validation-only; not yet published to the manual."
     },
     {
       "file": "inspector-panel.png",
@@ -742,11 +742,11 @@
     }
   ],
   "counts": {
-    "auto-view": 14,
+    "auto-view": 13,
     "auto-dialog": 22,
     "auto-menu": 18,
     "auto-state": 5,
-    "reshell-theme": 21,
+    "reshell-theme": 22,
     "manual-diagram": 4,
     "manual-modus": 5,
     "manual-os": 2,
