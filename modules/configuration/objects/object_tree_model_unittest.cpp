@@ -23,14 +23,6 @@ using namespace testing;
 
 namespace {
 
-class IconIdsAccessor : public ConfigurationTreeNode {
- public:
-  using ConfigurationTreeNode::ConfigurationTreeNode;
-
-  static constexpr int kFolder = IMAGE_FOLDER;
-  static constexpr int kItem = IMAGE_ITEM;
-};
-
 // Registers a DataItemType-typed variable and returns a cursor to it. The
 // type itself has no supertype, so a HasSubtype walk stops there.
 NodeRef MakeObjectTreeNode(FakeNodeService& node_service,
@@ -141,15 +133,19 @@ class ObjectTreeModelTest : public ::testing::Test {
   std::unique_ptr<ObjectTreeModel> model_;
 };
 
-TEST_F(ObjectTreeModelTest, DataItemsUseItemIconEvenWhenNodeClassIsObject) {
+// The operator's tree carries no per-row artwork: containers and data items
+// are already told apart by the twisty and the indentation, and the one thing
+// that varies between rows — live quality — rides the status dot instead
+// (docs/ux/principles.md §5, docs/ui-mockups/screens/operator-shell.html).
+TEST_F(ObjectTreeModelTest, RowsCarryNoIcon) {
   auto* data_group_node = model_->FindFirstTreeNode(kDataGroupId);
   auto* data_item_node = model_->FindFirstTreeNode(kDataItemId);
 
   ASSERT_NE(data_group_node, nullptr);
   ASSERT_NE(data_item_node, nullptr);
 
-  EXPECT_EQ(data_group_node->GetIcon(), IconIdsAccessor::kFolder);
-  EXPECT_EQ(data_item_node->GetIcon(), IconIdsAccessor::kItem);
+  EXPECT_EQ(data_group_node->GetIcon(), scada::aui::kNoIcon);
+  EXPECT_EQ(data_item_node->GetIcon(), scada::aui::kNoIcon);
 }
 
 class ObjectTreeModelAsyncVisibleNodeTest : public ::testing::Test {

@@ -10,6 +10,10 @@
 
 namespace scada::aui {
 
+// GetIcon's "this row has no icon" answer. A tree whose rows are told apart by
+// indentation and the twisty alone returns this for every node.
+inline constexpr int kNoIcon = -1;
+
 class TreeModel {
  public:
   using NodeRangeCallback =
@@ -65,7 +69,7 @@ class TreeModel {
   virtual std::u16string GetText(void* node, int column_id) {
     return std::u16string();
   }
-  virtual int GetIcon(void* node) { return -1; }
+  virtual int GetIcon(void* node) { return kNoIcon; }
   virtual Color GetTextColor(void* node, int column_id) {
     return ColorCode::Transparent;
   }

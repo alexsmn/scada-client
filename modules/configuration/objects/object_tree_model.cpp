@@ -48,11 +48,20 @@ class ObjectTreeModel::ObjectTreeNode : public ConfigurationTreeNode {
 
   virtual void OnModelChanged() override { Changed(); }
 
-  virtual int GetIcon() const override {
-    return IsInstanceOf(node(), scada::data_items::id::DataItemType)
-               ? IMAGE_ITEM
-               : IMAGE_FOLDER;
-  }
+  // No icon. The Objects explorer is the operator's tree, and there every row
+  // is either a container or a data item — a distinction the twisty and the
+  // indentation already make. A per-row glyph would only repeat it, while the
+  // one thing that varies, live quality, rides the status dot
+  // (VisibleNodeModel::GetStatusColor) as docs/ux/principles.md §5 requires:
+  // state is a dot, never artwork. This is what
+  // docs/ui-mockups/screens/operator-shell.html shows — its rows carry no icon
+  // element at all, unlike the engineering tree in config-workbench.html,
+  // which mixes links, devices and signals at one level and still needs a kind
+  // glyph.
+  //
+  // Overridden rather than left to the base, which classifies by node class
+  // and always yields a glyph. HardwareTreeModel keeps that behaviour.
+  virtual int GetIcon() const override { return scada::aui::kNoIcon; }
 };
 
 ObjectTreeModel::ObjectTreeModel(ObjectTreeModelContext&& context)

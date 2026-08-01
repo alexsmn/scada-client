@@ -185,6 +185,25 @@ provides, which is both the §3 colour rule and one fewer asset to keep in sync.
 This is why replacing the strips is a larger job than replacing the action
 icons: it converts `LoadIcons`' "tile index" contract into "glyph + tint".
 
+**The Objects explorer (`"Struct"`) has opted out of tree icons entirely** —
+`ObjectTreeModel::ObjectTreeNode::GetIcon` returns `scada::aui::kNoIcon`. Every
+row there is a container or a data item, a distinction the twisty and the
+indentation already make, so a glyph could only repeat it; the one thing that
+varies between rows, live quality, rides the status dot. This is what
+[`ui-mockups/screens/operator-shell.html`](../ui-mockups/screens/operator-shell.html)
+shows: its rows carry no icon element at all.
+
+The engineering trees keep theirs, and the mockups agree — the hardware tree in
+[`config-workbench.html`](../ui-mockups/screens/config-workbench.html) mixes
+links, devices and signals at one level, where a kind glyph still answers a
+question. Note that even there, *device* rows use a status dot and no icon. So
+the rule across both surfaces is: **state is a dot, never artwork; an icon
+marks kind, and only where kind is not already obvious.**
+
+That leaves the strips consumed by `"Nodes"`, `"Subsystems"`, the table view
+and the portfolio — the conversion above still has to happen, on a smaller
+surface.
+
 ## 6. How to add or change an icon
 
 1. **Pick a stock Lucide name.** Search <https://lucide.dev/icons/>. Prefer an

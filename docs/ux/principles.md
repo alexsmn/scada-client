@@ -185,6 +185,25 @@ must be identical on every machine, must not follow the OS accent colour, and
 must not invert with the system theme. Everything else defers to the platform;
 these do not.
 
+**Deferring to the platform does not mean accepting an invisible control.**
+The bar for a stylesheet rule is that no palette role or style metric can reach
+the effect — and once in a while that is genuinely the case. The worked
+example: Fusion fills a checkbox indicator from `QPalette::Base` and derives
+its outline from `Window.darker(140)`, which on a dark window *darkens* to
+`#151515`. Measured against the row it was 1.08:1, and no role — `Mid`, `Dark`,
+`Shadow` — reaches it. Item views made it worse, because they fold `Window`
+into `Base` so a grid matches its chrome, leaving the indicator fill identical
+to the row. An unchecked box whose frame is its whole affordance has to clear
+WCAG 2.2 SC 1.4.11's 3:1, so `BuildThemeStyleSheet` carries a rule scoped to
+`::indicator:unchecked` — the smallest thing that fixes it, leaving the
+platform's own tick and accent fill for `:checked`.
+
+Two habits make that safe rather than a foothold: keep the rule scoped to the
+sub-control (never the widget), and **assert the rendered result, not the
+token** — `ThemeQtTest.RenderedCheckBoxIndicatorIsVisible` grabs a real
+`QCheckBox` and measures its pixels, because palette arithmetic could not see
+this defect at all.
+
 ### Relationship to the other front end
 
 The product ships two front ends and they are expected to reach **capability

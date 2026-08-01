@@ -11,6 +11,8 @@
 #include <QStyle>
 #include <QStyleHints>
 
+#include <algorithm>
+#include <cmath>
 #include <cstdlib>
 
 namespace scada::aui {
@@ -363,6 +365,63 @@ std::optional<QFont> MonoValueFont() {
   return font;
 }
 
+// Composites `c` over `backdrop` and returns the opaque result.
+//
+// A QPalette entry has to be opaque. The `border` tokens are deliberately
+// translucent whites (rgba(255,255,255,.10/.18)) because CSS composites a
+// hairline over whatever is behind it; hand the same brush to a QStyle and it
+// paints a control frame at whatever alpha over whatever backdrop it happens
+// to have, which is how the dark theme ended up with an unchecked checkbox
+// indicator at 1.3:1 against its row.
+QColor Flatten(const QColor& backdrop, const QColor& c) {
+  const qreal a = c.alphaF();
+  return QColor::fromRgbF(backdrop.redF() * (1 - a) + c.redF() * a,
+                          backdrop.greenF() * (1 - a) + c.greenF() * a,
+                          backdrop.blueF() * (1 - a) + c.blueF() * a);
+}
+
+// WCAG relative luminance (WCAG 2.2 §Relative luminance).
+qreal RelativeLuminance(const QColor& c) {
+  const auto channel = [](qreal v) {
+    return v <= 0.03928 ? v / 12.92 : std::pow((v + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * channel(c.redF()) + 0.7152 * channel(c.greenF()) +
+         0.0722 * channel(c.blueF());
+}
+
+qreal ContrastRatio(const QColor& a, const QColor& b) {
+  const qreal la = RelativeLuminance(a);
+  const qreal lb = RelativeLuminance(b);
+  return (std::max(la, lb) + 0.05) / (std::min(la, lb) + 0.05);
+}
+
+// The minimum contrast a control frame must reach against the surface behind
+// it — WCAG 2.2 SC 1.4.11 Non-text Contrast,
+// https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html. An
+// unchecked checkbox is the worst case: its whole affordance is the frame.
+constexpr qreal kNonTextContrast = 3.0;
+
+// Returns `c` lightened or darkened just far enough to reach `ratio` against
+// `against`, moving away from it. Returns `c` unchanged when it already does.
+QColor EnsureContrast(const QColor& c, const QColor& against, qreal ratio) {
+  if (ContrastRatio(c, against) >= ratio)
+    return c;
+  // Step towards whichever end of the range is further from `against`, so a
+  // dark theme brightens and a light theme darkens.
+  const bool lighten = RelativeLuminance(against) < 0.5;
+  QColor best = c;
+  for (int step = 1; step <= 255; ++step) {
+    const int delta = lighten ? step : -step;
+    const QColor candidate{std::clamp(c.red() + delta, 0, 255),
+                           std::clamp(c.green() + delta, 0, 255),
+                           std::clamp(c.blue() + delta, 0, 255)};
+    best = candidate;
+    if (ContrastRatio(candidate, against) >= ratio)
+      break;
+  }
+  return best;
+}
+
 QPalette BuildThemePalette(const ThemeTokens& t) {
   QPalette p;
 
@@ -387,13 +446,20 @@ QPalette BuildThemePalette(const ThemeTokens& t) {
   p.setColor(QPalette::Link, t.accent);
   p.setColor(QPalette::LinkVisited, t.accent);
 
-  // Frame shading, derived from the token surfaces so Fusion's bevels read as
-  // flat hairlines rather than default grey.
-  p.setColor(QPalette::Light, t.surface_muted);
-  p.setColor(QPalette::Midlight, t.surface_muted);
-  p.setColor(QPalette::Mid, t.border_strong);
-  p.setColor(QPalette::Dark, t.bg_elevated);
-  p.setColor(QPalette::Shadow, t.rail_bg);
+  // Frame shading, derived from the token surfaces so the bevels read as flat
+  // hairlines rather than default grey. Flattened against the window because a
+  // palette entry must be opaque (see Flatten), and lifted to the non-text
+  // contrast floor because these are the roles a style draws control frames
+  // from — the unchecked checkbox indicator among them.
+  p.setColor(QPalette::Light, Flatten(t.bg, t.surface_muted));
+  p.setColor(QPalette::Midlight, Flatten(t.bg, t.surface_muted));
+  p.setColor(QPalette::Mid,
+             EnsureContrast(Flatten(t.bg, t.border_strong), t.bg,
+                            kNonTextContrast));
+  p.setColor(QPalette::Dark,
+             EnsureContrast(Flatten(t.bg, t.border_strong), t.bg,
+                            kNonTextContrast));
+  p.setColor(QPalette::Shadow, Flatten(t.bg, t.rail_bg));
 
   // Disabled group: dim the text/foreground roles.
   p.setColor(QPalette::Disabled, QPalette::WindowText, t.fg_subtle);
@@ -443,10 +509,33 @@ QString BuildThemeStyleSheet(const ThemeTokens& t) {
   // token. It is currently unused — the control/write surfaces that need it
   // have not been reshelled yet — but it is the sanctioned pattern rather than
   // dead styling, and it keeps the semantic-token seam honest.
+  //
+  // The *unchecked* checkbox indicator is the second, and it clears the bar
+  // above: no palette role reaches it. Fusion fills the indicator from `Base`
+  // and derives its outline from `Window.darker(140)`, which on a dark window
+  // darkens to #151515 — measured at 1.08:1 against the row, present but not
+  // perceivable, and unreachable by Mid/Dark or any other role. Item views
+  // make it worse: SetDefaultItemColors folds Window into Base so a grid
+  // matches its chrome, which leaves the indicator fill identical to the row.
+  //
+  // An unchecked box is the whole affordance for "you may add this signal to
+  // the active table" (docs/ui-mockups/screens/trend.html draws it as an
+  // always-present bordered box), so it has to clear WCAG 2.2 SC 1.4.11's 3:1.
+  //
+  // Deliberately scoped to `::indicator` and to the *unchecked* state only.
+  // The sub-control is the smallest thing that fixes it; leaving `:checked`
+  // alone keeps the platform's own tick and accent fill, which are correct
+  // already. No width/height either — the indicator keeps the style's
+  // PM_IndicatorWidth so it still follows platform metrics and DPI.
+  const QColor frame =
+      EnsureContrast(Flatten(t.bg, t.border_strong), t.bg, kNonTextContrast);
   return QStringLiteral(
              "QPushButton[role=\"danger\"]{background:%1;color:%2;"
-             "border-color:%1;}")
-      .arg(Css(t.bad), Css(t.accent_fg));
+             "border-color:%1;}"
+             "QCheckBox::indicator:unchecked,"
+             "QAbstractItemView::indicator:unchecked{"
+             "border:1px solid %3;border-radius:3px;background:%4;}")
+      .arg(Css(t.bad), Css(t.accent_fg), Css(frame), Css(t.surface_muted));
 }
 
 void ApplyTheme(Theme theme, ThemeScope scope) {

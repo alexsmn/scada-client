@@ -17,7 +17,18 @@ class StubTreeModel : public TreeModel {
  public:
   virtual void* GetRoot() override { return &root_; }
   virtual int GetColumnCount() const override { return 2; }
-  virtual void* GetParent(void* node) override { return nullptr; }
+  virtual void* GetParent(void* node) override {
+    return node == &child_ ? &root_ : nullptr;
+  }
+  // One child, so a test can index a row that is not the root — the root is
+  // deliberately never checkable.
+  virtual int GetChildCount(void* parent) override {
+    return parent == &root_ ? 1 : 0;
+  }
+  virtual void* GetChild(void* parent, int index) override { return &child_; }
+  virtual bool HasChildren(void* parent) const override {
+    return parent == const_cast<int*>(&root_);
+  }
   virtual std::u16string GetText(void* node, int column_id) override {
     return u"1.5";
   }
@@ -27,6 +38,7 @@ class StubTreeModel : public TreeModel {
 
  private:
   int root_ = 0;
+  int child_ = 1;
 };
 
 class TreeModelAdapterTest : public testing::Test {
@@ -60,4 +72,27 @@ TEST_F(TreeModelAdapterTest, LegacyThemeKeepsTheDefaultFont) {
 }
 
 }  // namespace
+
+// A checkable tree supplies Qt::CheckStateRole so the platform style draws an
+// indicator on every row, checked or not — the shape
+// docs/ui-mockups/screens/trend.html specifies, where an unchecked `.cb` is
+// still a visible box. A tree that is not checkable supplies nothing, so no
+// indicator column is reserved.
+TEST_F(TreeModelAdapterTest, CheckStateIsSuppliedOnlyWhenCheckable) {
+  // The root row never carries a box; use its child.
+  const QModelIndex index = adapter_.index(0, 0, adapter_.index(0, 0));
+
+  EXPECT_FALSE(adapter_.data(index, Qt::CheckStateRole).isValid());
+
+  adapter_.SetCheckable(true);
+  const QVariant checked = adapter_.data(index, Qt::CheckStateRole);
+  ASSERT_TRUE(checked.isValid()) << "an unchecked row still needs its box";
+  EXPECT_EQ(checked.toInt(), Qt::Unchecked);
+
+  // And turning it back off withdraws it. Tree::SetShowChecks used to ignore
+  // its argument and enable checks whatever it was passed.
+  adapter_.SetCheckable(false);
+  EXPECT_FALSE(adapter_.data(index, Qt::CheckStateRole).isValid());
+}
+
 }  // namespace scada::aui

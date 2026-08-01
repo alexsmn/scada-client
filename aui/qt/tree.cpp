@@ -217,7 +217,7 @@ void Tree::SetSelectionChangedHandler(SelectionChangedHandler handler) {
 }
 
 void Tree::SetShowChecks(bool show) {
-  model_adapter_->SetCheckable(true);
+  model_adapter_->SetCheckable(show);
 }
 
 void Tree::SetCheckedHandler(TreeCheckedHandler handler) {

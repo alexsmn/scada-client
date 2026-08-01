@@ -33,7 +33,7 @@ class TreeNode {
   }
 
   virtual std::u16string GetText(int column_id) const = 0;
-  virtual int GetIcon() const { return -1; }
+  virtual int GetIcon() const { return kNoIcon; }
 
   virtual void SetText(int column_id, const std::u16string& title) {}
   virtual bool IsEditable(int column_id) const { return false; }

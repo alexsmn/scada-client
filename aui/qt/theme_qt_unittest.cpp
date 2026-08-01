@@ -5,11 +5,15 @@
 #include "aui/test/app_environment.h"
 
 #include <QApplication>
+#include <QCheckBox>
+#include <QImage>
 #include <QPalette>
 #include <QStyle>
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <cmath>
+#include <map>
 #include <cstdlib>
 
 namespace scada::aui {
@@ -125,6 +129,9 @@ TEST(ThemeQtTest, StyleSheetDoesNotOverpaintNativeWidgets) {
           "QTreeView", "QTableView", "QListView", "QHeaderView", "QTabWidget",
           "QTabBar", "QStatusBar", "QLineEdit", "QComboBox", "QScrollBar",
           "QMainWindow"}) {
+      // `QAbstractItemView::indicator:unchecked` is allowed below; these are
+      // the concrete view classes, whose bare selectors would repaint the
+      // whole widget.
       EXPECT_FALSE(sheet.contains(QLatin1String(selector)))
           << "theme " << ThemeToString(theme).toStdString()
           << " re-introduced a rule for " << selector;
@@ -133,6 +140,15 @@ TEST(ThemeQtTest, StyleSheetDoesNotOverpaintNativeWidgets) {
     // survives, because Qt has no palette role for a destructive action.
     EXPECT_FALSE(sheet.contains(QStringLiteral("QPushButton{")));
     EXPECT_TRUE(sheet.contains(QStringLiteral("QPushButton[role=\"danger\"]")));
+
+    // The one sanctioned sub-control exception: the unchecked checkbox
+    // indicator, which no palette role reaches (see theme_qt.cpp). It must
+    // stay scoped to `::indicator:unchecked` — a bare QCheckBox rule, or one
+    // that also claims `:checked`, would take the platform's tick and accent
+    // fill with it.
+    EXPECT_TRUE(sheet.contains(QStringLiteral("::indicator:unchecked")));
+    EXPECT_FALSE(sheet.contains(QStringLiteral("QCheckBox{")));
+    EXPECT_FALSE(sheet.contains(QStringLiteral("indicator:checked")));
   }
 }
 
@@ -341,4 +357,100 @@ TEST(ThemeQtTest, ApplyThemePaletteOnlyInstallsNoStyleSheet) {
 }
 
 }  // namespace
+
+// WCAG 2.2 SC 1.4.11: a control frame needs 3:1 against the surface behind it.
+double RelativeLuminanceOf(const QColor& c) {
+  const auto channel = [](double v) {
+    return v <= 0.03928 ? v / 12.92 : std::pow((v + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * channel(c.redF()) + 0.7152 * channel(c.greenF()) +
+         0.0722 * channel(c.blueF());
+}
+
+double ContrastOf(const QColor& a, const QColor& b) {
+  const double la = RelativeLuminanceOf(a);
+  const double lb = RelativeLuminanceOf(b);
+  return (std::max(la, lb) + 0.05) / (std::min(la, lb) + 0.05);
+}
+
+// The roles a QStyle draws control frames from. An unchecked checkbox is the
+// worst case — the frame is its entire affordance — and the dark theme used to
+// render it at 1.3:1, which is present but not perceivable.
+TEST(ThemeQtTest, ControlFrameRolesMeetNonTextContrast) {
+  for (Theme theme : {Theme::kDark, Theme::kLight, Theme::kHighContrast}) {
+    const QPalette p = BuildThemePalette(GetThemeTokens(theme));
+    const QColor window = p.color(QPalette::Window);
+    for (QPalette::ColorRole role : {QPalette::Mid, QPalette::Dark}) {
+      EXPECT_GE(ContrastOf(p.color(role), window), 3.0)
+          << "theme " << static_cast<int>(theme) << ", role "
+          << static_cast<int>(role) << ": a control frame an operator cannot "
+             "see is not a control";
+    }
+  }
+}
+
+// A palette entry has to be opaque: the border tokens are translucent whites,
+// and a style handed a semi-transparent brush composites it over whatever
+// backdrop it happens to have.
+TEST(ThemeQtTest, PaletteEntriesAreOpaque) {
+  for (Theme theme : {Theme::kDark, Theme::kLight, Theme::kHighContrast}) {
+    const QPalette p = BuildThemePalette(GetThemeTokens(theme));
+    for (int role = 0; role < QPalette::NColorRoles; ++role) {
+      const auto color_role = static_cast<QPalette::ColorRole>(role);
+      EXPECT_EQ(p.color(color_role).alpha(), 255)
+          << "theme " << static_cast<int>(theme) << ", role " << role;
+    }
+  }
+}
+
+
+// The rendered check: palette arithmetic is not enough, because the thing that
+// was broken — Fusion deriving the indicator outline from Window.darker(140) —
+// is invisible to it. Grab a real QCheckBox and measure the pixels.
+//
+// The unchecked box is the worst case: its frame is the entire affordance, so
+// it has to clear WCAG 2.2 SC 1.4.11's 3:1. The checked box is measured too,
+// to catch a rule that fixes the empty state by swallowing the platform's tick.
+double RenderedContrast(bool checked) {
+  QCheckBox box;
+  box.setChecked(checked);
+  box.resize(60, 24);
+  const QImage image =
+      box.grab().toImage().convertToFormat(QImage::Format_RGB32);
+  std::map<QRgb, int> histogram;
+  for (int y = 0; y < image.height(); ++y) {
+    for (int x = 0; x < image.width(); ++x)
+      ++histogram[image.pixel(x, y)];
+  }
+  QRgb background = 0;
+  int most = 0;
+  for (const auto& [color, count] : histogram) {
+    if (count > most) {
+      most = count;
+      background = color;
+    }
+  }
+  double best = 1.0;
+  for (const auto& [color, count] : histogram) {
+    // Ignore stray antialiasing pixels; a frame covers more than a handful.
+    if (color != background && count > 4)
+      best = std::max(best, ContrastOf(QColor{color}, QColor{background}));
+  }
+  return best;
+}
+
+TEST(ThemeQtTest, RenderedCheckBoxIndicatorIsVisible) {
+  AppEnvironment app_env;
+  for (Theme theme : {Theme::kDark, Theme::kLight, Theme::kHighContrast}) {
+    ApplyTheme(theme, ThemeScope::kFull);
+    EXPECT_GE(RenderedContrast(/*checked=*/false), 3.0)
+        << "theme " << ThemeToString(theme).toStdString()
+        << ": an unchecked box an operator cannot see is not a control";
+    EXPECT_GE(RenderedContrast(/*checked=*/true), 3.0)
+        << "theme " << ThemeToString(theme).toStdString()
+        << ": the checked state lost its tick";
+  }
+  ApplyTheme(Theme::kSystem, ThemeScope::kPaletteOnly);
+}
+
 }  // namespace scada::aui
