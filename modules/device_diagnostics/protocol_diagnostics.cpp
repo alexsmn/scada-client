@@ -35,9 +35,16 @@ constexpr std::array<ProtocolField, 9> kIec60870LinkFields{{
      "SendTimeoutExpired", "t1 timeout", ProtocolValueShape::kFlag},
 }};
 
+// "Reconnect now" from the mockup. It sits on the LINK, not the device: several
+// devices share one TCP connection, and a per-device Reconnect would let any of
+// them drop the link out from under its siblings while looking device-local.
+constexpr ProtocolLinkAction kIec60870Reconnect{
+    scada::devices::id::Iec60870LinkType_Reconnect, "Reconnect",
+    "Reconnect now", "Your account cannot issue control commands on this link"};
+
 constexpr std::array<ProtocolDiagnostics, 1> kRegistry{{
     {"Iec60870DeviceType", "Iec60870LinkType", "Link (IEC 60870-5-104)",
-     kIec60870LinkFields},
+     kIec60870LinkFields, kIec60870Reconnect},
 }};
 
 }  // namespace

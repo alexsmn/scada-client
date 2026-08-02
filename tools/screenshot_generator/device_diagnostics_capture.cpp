@@ -34,9 +34,19 @@ void SaveDeviceDiagnosticsScreenshot(const ScreenshotSpec& spec,
 
   // Demo actions so the capture shows the Actions row (the app wires these to
   // real device commands; here they are inert but enabled).
+  //
+  // "Reconnect now" is deliberately NOT in this list. Since ADR 0007 it is the
+  // protocol registry's link action — an OPC UA Method on the device's parent
+  // link, offered only when that link exists — so hard-coding its label here
+  // would put a button in the manual that the app does not show for this
+  // device. The call path below is wired inert so the capture takes the same
+  // route the app does; this fixture parents КП-01 straight onto the Devices
+  // folder, so no link resolves and the panel omits both the link section and
+  // its action. Modelling a link in the fixture is what would bring them back.
   DeviceDiagnosticsPanelContext context;
-  for (std::string_view label : {"Metrics trend", "Reconnect", "Open log"})
+  for (std::string_view label : {"Metrics trend", "Open log"})
     context.actions.push_back(DiagnosticAction{.label = Translate(label)});
+  context.call_link_method = [](const NodeRef&, const scada::NodeId&) {};
   DeviceDiagnosticsPanel panel{std::move(context)};
   panel.ShowDevice(device, timed_data_service);
 

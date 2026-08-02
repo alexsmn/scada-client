@@ -22,6 +22,7 @@
 
 #include <array>
 #include <cmath>
+#include <optional>
 #include <span>
 #include <string_view>
 #include <utility>
@@ -262,8 +263,27 @@ QWidget* DeviceDiagnosticsPanel::BuildContent() {
   rows_layout_->setSpacing(0);
   layout->addWidget(rows_host);
 
-  // Actions section: one button per context action.
+  // Actions section. Its buttons are (re)built per selection, because the
+  // protocol's link action exists only for some devices.
   layout->addWidget(SectionHeader(Tr("Actions"), tokens));
+  auto* actions_host = new QWidget;
+  actions_layout_ = new QVBoxLayout{actions_host};
+  actions_layout_->setContentsMargins(0, 0, 0, 0);
+  actions_layout_->setSpacing(6);
+  layout->addWidget(actions_host);
+
+  layout->addStretch(1);
+  return view;
+}
+
+void DeviceDiagnosticsPanel::RebuildActionButtons() {
+  if (!actions_layout_)
+    return;
+
+  const scada::aui::ThemeTokens& tokens = PanelTokens();
+  ClearLayout(actions_layout_);
+  action_widgets_.clear();
+
   const QString action_style =
       QStringLiteral(
           "QPushButton{background:%1;color:%2;border:1px solid %3;"
@@ -271,25 +291,67 @@ QWidget* DeviceDiagnosticsPanel::BuildContent() {
           "QPushButton:disabled{color:%4;}")
           .arg(tokens.surface_muted.name(), tokens.fg.name(),
                tokens.border_strong.name(), tokens.fg_subtle.name());
-  for (const DiagnosticAction& action : context_.actions) {
+
+  auto add = [&](const DiagnosticAction& action) {
     auto* button = new QPushButton{QString::fromStdU16String(action.label)};
     button->setStyleSheet(action_style);
     connect(button, &QPushButton::clicked, this, [execute = action.execute] {
       if (execute)
         execute();
     });
-    action_buttons_.push_back(button);
-    layout->addWidget(button);
-  }
+    actions_layout_->addWidget(button);
 
-  layout->addStretch(1);
-  return view;
+    QLabel* reason = nullptr;
+    if (!action.disabled_reason.empty()) {
+      reason = new QLabel{QString::fromStdU16String(action.disabled_reason)};
+      reason->setWordWrap(true);
+      reason->setStyleSheet(QStringLiteral("color:%1;font-size:10.5px;")
+                                .arg(tokens.fg_subtle.name()));
+      reason->setVisible(false);
+      actions_layout_->addWidget(reason);
+    }
+
+    action_widgets_.push_back(ActionWidgets{button, reason});
+  };
+
+  for (const DiagnosticAction& action : link_actions_)
+    add(action);
+  for (const DiagnosticAction& action : context_.actions)
+    add(action);
+}
+
+std::optional<DiagnosticAction> DeviceDiagnosticsPanel::MakeLinkAction(
+    const ProtocolLinkAction& action,
+    const NodeRef& link) {
+  if (action.label.empty() || !link)
+    return std::nullopt;
+
+  // No call path wired means the panel would be drawing a button that could
+  // never do anything, with no reason an operator could act on. Omit it.
+  if (!context_.call_link_method)
+    return std::nullopt;
+
+  return DiagnosticAction{
+      .label = Translate(action.label),
+      .execute =
+          [this, link, method_id = action.method_id] {
+            context_.call_link_method(link, method_id);
+          },
+      // Mirrors the method node's UserExecutable (OPC UA Part 3 §5.7.1): the
+      // server computes the same predicate from the same session rights and
+      // stays the authority, so this only decides whether the operator is
+      // offered a live button or an explained one.
+      .is_enabled =
+          [this] { return !context_.can_call || context_.can_call(); },
+      .disabled_reason = Translate(action.denied_reason)};
 }
 
 void DeviceDiagnosticsPanel::Clear() {
   online_spec_.reset();
   enabled_spec_.reset();
   readings_.clear();
+  link_actions_.clear();
+  RebuildActionButtons();
   if (stack_)
     stack_->setCurrentIndex(0);
 }
@@ -303,6 +365,7 @@ void DeviceDiagnosticsPanel::ShowDevice(const NodeRef& device,
   readings_.clear();
   link_readings_.clear();
   link_section_label_.clear();
+  link_actions_.clear();
 
   if (!device) {
     Clear();
@@ -390,10 +453,20 @@ void DeviceDiagnosticsPanel::ShowDevice(const NodeRef& device,
           link_readings_.push_back(
               Reading{Tr(field.label), node, std::move(spec), field.shape});
         }
+
+        // The link's action rides on the same resolved link, and only on it:
+        // the method acts on the TCP connection, so without a link there is
+        // nothing to reconnect and the button is omitted rather than drawn
+        // dead.
+        if (std::optional<DiagnosticAction> action =
+                MakeLinkAction(protocol->link_action, link)) {
+          link_actions_.push_back(*std::move(action));
+        }
       }
     }
   }
 
+  RebuildActionButtons();
   RefreshFromSpecs();
 }
 
@@ -435,9 +508,22 @@ void DeviceDiagnosticsPanel::RefreshFromSpecs() {
 }
 
 void DeviceDiagnosticsPanel::RefreshActions() {
-  for (size_t i = 0; i < action_buttons_.size(); ++i) {
-    const DiagnosticAction& action = context_.actions[i];
-    action_buttons_[i]->setEnabled(!action.is_enabled || action.is_enabled());
+  // Parallel to how RebuildActionButtons laid them out: link actions first,
+  // then the host's device-wide ones.
+  auto action_at = [this](size_t i) -> const DiagnosticAction& {
+    return i < link_actions_.size()
+               ? link_actions_[i]
+               : context_.actions[i - link_actions_.size()];
+  };
+
+  for (size_t i = 0; i < action_widgets_.size(); ++i) {
+    const DiagnosticAction& action = action_at(i);
+    const bool enabled = !action.is_enabled || action.is_enabled();
+    action_widgets_[i].button->setEnabled(enabled);
+    // The reason appears only while the control is dead, which is the only
+    // time an operator needs to be told why.
+    if (action_widgets_[i].reason)
+      action_widgets_[i].reason->setVisible(!enabled);
   }
 }
 

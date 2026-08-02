@@ -85,6 +85,34 @@ TEST(ProtocolDiagnosticsTest, StateAndFlagFieldsDeclareTheirShape) {
   EXPECT_EQ(shape_of("SendSequenceNumber"), ProtocolValueShape::kCount);
 }
 
+// "Reconnect now" from the mockup. It is a Method ON THE LINK — the APCI and
+// the TCP connection belong to the link, and several devices share one, so a
+// per-device Reconnect would let any of them drop the link out from under its
+// siblings.
+TEST(ProtocolDiagnosticsTest, Iec60870DeclaresTheReconnectLinkAction) {
+  const ProtocolDiagnostics* entry =
+      ProtocolDiagnosticsFor("Iec60870DeviceType");
+  ASSERT_TRUE(entry);
+  EXPECT_EQ(entry->link_action.method_id,
+            scada::NodeId{scada::devices::id::Iec60870LinkType_Reconnect});
+  EXPECT_EQ(entry->link_action.browse_name, "Reconnect");
+  EXPECT_FALSE(entry->link_action.label.empty());
+}
+
+// A disabled control must state a reason an operator can act on, so an action
+// that can be refused must carry one. An entry with a label and no reason
+// would render a dead button with nothing to explain it — the exact failure
+// this rule exists to prevent.
+TEST(ProtocolDiagnosticsTest, EveryLinkActionCarriesADeniedReason) {
+  const ProtocolDiagnostics* entry =
+      ProtocolDiagnosticsFor("Iec60870DeviceType");
+  ASSERT_TRUE(entry);
+  if (entry->link_action.label.empty())
+    return;  // no action declared; nothing to explain.
+  EXPECT_FALSE(entry->link_action.denied_reason.empty());
+  EXPECT_FALSE(entry->link_action.method_id.is_null());
+}
+
 TEST(ProtocolDiagnosticsTest, LinkStateLabelsMatchTheTransportConstants) {
   EXPECT_EQ(Iec60870LinkStateLabel(0), "Closed");
   EXPECT_EQ(Iec60870LinkStateLabel(0x0002), "Starting");

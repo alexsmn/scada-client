@@ -106,6 +106,74 @@ TEST_F(DeviceDiagnosticsPanelTest, ActionsRenderTrackEnablementAndExecute) {
   EXPECT_TRUE(clicked);
 }
 
+// Mockup authoring rule 6: a disabled control states a reason an operator can
+// act on. The reason appears only while the control is dead — a permanent
+// caption under a working button is noise.
+TEST_F(DeviceDiagnosticsPanelTest, DisabledActionShowsItsReason) {
+  bool enabled = false;
+  DeviceDiagnosticsPanelContext context;
+  context.actions.push_back(DiagnosticAction{
+      .label = u"Reconnect now",
+      .execute = [] {},
+      .is_enabled = [&enabled] { return enabled; },
+      .disabled_reason = u"Your account cannot issue control commands"});
+  DeviceDiagnosticsPanel panel{std::move(context)};
+
+  panel.ShowDiagnostics(QStringLiteral("RTU-02"), QString{},
+                        DeviceLinkBand::kUp, QString{}, {});
+
+  const auto find_reason = [&panel]() -> QLabel* {
+    for (QLabel* label : panel.findChildren<QLabel*>()) {
+      if (label->text() ==
+          QStringLiteral("Your account cannot issue control commands"))
+        return label;
+    }
+    return nullptr;
+  };
+
+  // isVisibleTo, not isVisible: the panel is never shown in a widget test, so
+  // isVisible() is false for every child regardless of the flag under test.
+  QLabel* reason = find_reason();
+  ASSERT_NE(reason, nullptr);
+  EXPECT_TRUE(reason->isVisibleTo(&panel));
+
+  enabled = true;
+  panel.ShowDiagnostics(QStringLiteral("RTU-02"), QString{},
+                        DeviceLinkBand::kUp, QString{}, {});
+  EXPECT_FALSE(reason->isVisibleTo(&panel));
+}
+
+// The three ways a link action resolves to NO button rather than a dead one.
+// "This build cannot call methods" and "this device has no link" are not
+// reasons an operator can act on, so they are absences, not explanations.
+TEST_F(DeviceDiagnosticsPanelTest, LinkActionIsOmittedWhenItCouldNotWork) {
+  const ProtocolDiagnostics* protocol =
+      ProtocolDiagnosticsFor("Iec60870DeviceType");
+  ASSERT_TRUE(protocol);
+
+  // No method-call path wired by the host.
+  {
+    DeviceDiagnosticsPanel panel{DeviceDiagnosticsPanelContext{}};
+    EXPECT_FALSE(panel.MakeLinkAction(protocol->link_action, NodeRef{}));
+  }
+
+  // Call path wired, but the device has no link to act on.
+  {
+    DeviceDiagnosticsPanelContext context;
+    context.call_link_method = [](const NodeRef&, const scada::NodeId&) {};
+    DeviceDiagnosticsPanel panel{std::move(context)};
+    EXPECT_FALSE(panel.MakeLinkAction(protocol->link_action, NodeRef{}));
+  }
+
+  // A protocol that declares no action contributes no button either.
+  {
+    DeviceDiagnosticsPanelContext context;
+    context.call_link_method = [](const NodeRef&, const scada::NodeId&) {};
+    DeviceDiagnosticsPanel panel{std::move(context)};
+    EXPECT_FALSE(panel.MakeLinkAction(ProtocolLinkAction{}, NodeRef{}));
+  }
+}
+
 TEST_F(DeviceDiagnosticsPanelTest, ClearReturnsToEmptyState) {
   DeviceDiagnosticsPanel panel{DeviceDiagnosticsPanelContext{}};
   panel.ShowDiagnostics(QStringLiteral("RTU-02"), QString{}, DeviceLinkBand::kUp,

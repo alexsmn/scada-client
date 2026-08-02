@@ -1073,10 +1073,17 @@ void MainWindow::CreateInspectorPanel() {
 }
 
 void MainWindow::CreateDiagnosticsPanel() {
-  // Each action reuses a selection-scoped device command, resolved against the
-  // active selection exactly like the toolbar/menu path — Metrics trend
-  // (ID_OPEN_DEVICE_METRICS), Reconnect (ID_ITEM_ENABLE re-enables the device),
-  // and Open log (ID_OPEN_EVENTS opens the event journal).
+  // The device-wide actions each reuse a selection-scoped device command,
+  // resolved against the active selection exactly like the toolbar/menu path —
+  // Metrics trend (ID_OPEN_DEVICE_METRICS) and Open log (ID_OPEN_EVENTS, which
+  // opens the event journal).
+  //
+  // "Reconnect now" is NOT one of them. It used to be wired to ID_ITEM_ENABLE,
+  // which re-enables a disabled device and is a different action wearing the
+  // mockup's label. It is now the protocol registry's link action: an OPC UA
+  // Method on the device's parent LINK (ADR 0007), supplied per device by the
+  // panel itself, because only some protocols have one and only some devices
+  // have a link.
   auto make_action = [this](unsigned command_id,
                             std::u16string label) -> DiagnosticAction {
     auto resolve = [this, command_id]() -> CommandHandler* {
@@ -1094,15 +1101,19 @@ void MainWindow::CreateDiagnosticsPanel() {
             [resolve, command_id] {
               CommandHandler* handler = resolve();
               return handler && handler->IsCommandEnabled(command_id);
-            }};
+            },
+        // These are gated by the selection, not by a right, so the reason an
+        // operator can act on is to change what is selected.
+        .disabled_reason =
+            Translate("Not available for the current selection")};
   };
 
   DeviceDiagnosticsPanelContext context;
   context.actions.push_back(
       make_action(ID_OPEN_DEVICE_METRICS, Translate("Metrics trend")));
-  context.actions.push_back(
-      make_action(ID_ITEM_ENABLE, Translate("Reconnect")));
   context.actions.push_back(make_action(ID_OPEN_EVENTS, Translate("Open log")));
+  context.call_link_method = call_node_method_;
+  context.can_call = has_call_permission_;
 
   diagnostics_ = MakeDeviceDiagnosticsPanel(std::move(context));
   if (!diagnostics_)

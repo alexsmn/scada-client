@@ -5,6 +5,7 @@
 #include "core/node_command_context.h"
 #include "main_window/opened_view/opened_view_factory.h"
 
+#include <functional>
 #include <memory>
 #include <string>
 
@@ -13,12 +14,17 @@ class MenuModel;
 class StatusBarModel;
 }  // namespace scada::aui
 
+namespace scada {
+class NodeId;
+}
+
 class ActionManager;
 class CommandHandler;
 class DialogService;
 class FileManager;
 class MainWindowInterface;
 class MainWindowManager;
+class NodeRef;
 class NodeService;
 class Profile;
 class ProgressHost;
@@ -64,4 +70,18 @@ struct MainWindowContext {
   // Optional: the address-space service, used by the command palette's tag
   // search. Null in minimal/test contexts that do not exercise tag search.
   NodeService* node_service_ = nullptr;
+
+  // Optional: calls an OPC UA Method on a node, reporting progress and result
+  // through the task manager. Used by the device-diagnostics panel's
+  // protocol link action (ADR 0007's Reconnect). Null in minimal/test
+  // contexts, and the panel then draws no such button at all rather than a
+  // dead one.
+  std::function<void(const NodeRef& node, const scada::NodeId& method_id)>
+      call_node_method_;
+
+  // Optional: whether this session holds the OPC UA Call permission
+  // (PermissionType.Call, Part 3 §8.55). Null means "assume it does". The
+  // server is the authority regardless; this only decides whether a control
+  // button is offered live or disabled with its reason.
+  std::function<bool()> has_call_permission_;
 };

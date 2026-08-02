@@ -32,10 +32,13 @@
 #include "main_window/status_bar/status_bar_model_builder.h"
 #include "main_window/window_definition_builder.h"
 #include "modules/node_properties/node_property_component.h"
+#include "node_service/node_ref.h"
 #include "profile/profile.h"
 #include "resources/common_resources.h"
+#include "scada/co_result.h"
 #include "scada/session_service.h"
 #include "services/speech_service.h"
+#include "services/task_manager.h"
 
 #if defined(UI_QT)
 #include "main_window/main_window_qt.h"
@@ -494,6 +497,31 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
     return scada_services_.session_service->GetHostName();
   };
 
+  // The method-call path the device-diagnostics panel's link action rides on.
+  // Routed through the task manager, like every other client-initiated call, so
+  // the operator sees progress and a result rather than a button that appears
+  // to do nothing while an asynchronous reconnect runs.
+  auto call_node_method = [this](const NodeRef& node,
+                                 const scada::NodeId& method_id) {
+    // PostTask returns a lazy awaitable — spawn it detached so the task
+    // actually runs; the task manager reports completion itself.
+    CoSpawn(
+        executor_,
+        [this, node, method_id,
+         title = ToString16(node.display_name())]() mutable -> Awaitable<void> {
+          (void)co_await task_manager_.PostTask(
+              std::move(title), [node, method_id]() -> scada::CoStatus {
+                co_return co_await node.scada_node().call(method_id);
+              });
+        });
+  };
+
+  auto has_call_permission = [this] {
+    scada::base::Check(scada_services_.session_service);
+    return scada_services_.session_service->HasPermission(
+        scada::Permission::kCall);
+  };
+
   return MainWindowContext{
       executor_, ui_command_registry_, window_id, node_command_handler_,
       file_manager_, *main_window_manager_, profile_,
@@ -501,7 +529,8 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
       std::bind_front(&MainWindowModule::CreateOpenedView, this),
       main_command_router_factory, selection_command_router_,
       std::move(status_bar_model), context_menu_factory, main_menu_factory,
-      connection_info_provider, progress_host_, &node_service_};
+      connection_info_provider, progress_host_, &node_service_,
+      std::move(call_node_method), std::move(has_call_permission)};
 }
 
 void MainWindowModule::OnEvents(bool has_events) {

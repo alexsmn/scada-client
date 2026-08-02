@@ -9,6 +9,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <vector>
 
 class TimedDataService;
@@ -19,18 +20,46 @@ class QPushButton;
 class QStackedWidget;
 class QVBoxLayout;
 
-// One button in the diagnostics panel's Actions section — wired by the host to a
-// device command (Metrics trend / Reconnect / Open log). `execute` runs it;
-// `is_enabled` gates the button (empty → always enabled).
+// One button in the diagnostics panel's Actions section — wired by the host to
+// a device command (Metrics trend / Open log) or supplied per device by the
+// protocol registry (Reconnect now). `execute` runs it; `is_enabled` gates the
+// button (empty → always enabled).
 struct DiagnosticAction {
   std::u16string label;
   std::function<void()> execute;
   std::function<bool()> is_enabled;
+  // Rendered under the button while it is disabled. A disabled control must
+  // state a reason an operator can act on, so leaving this empty means the
+  // action is one whose unavailability is self-evident from the selection —
+  // never "we did not implement it".
+  std::u16string disabled_reason;
 };
 
 // Action wiring for the diagnostics panel.
 struct DeviceDiagnosticsPanelContext {
+  // Actions that apply to any device, wired once by the host.
   std::vector<DiagnosticAction> actions;
+
+  // Calls an OPC UA Method on the selected device's PARENT LINK — the seam for
+  // the protocol registry's link action (ADR 0007's Reconnect). The panel
+  // resolves which link and which method; the host owns the call path, error
+  // reporting and progress.
+  //
+  // Unset means the host offers no method-call path, and the panel then draws
+  // NO link-action button at all. That is deliberate: "this build cannot call
+  // methods" is not a reason an operator can act on, so it is not worth a
+  // disabled button. Lacking the Call permission is different — that is
+  // explained, below.
+  std::function<void(const NodeRef& link, const scada::NodeId& method_id)>
+      call_link_method;
+
+  // Whether this session holds the OPC UA Call permission (PermissionType.Call,
+  // Part 3 §8.55). This is the client-side reading of the method node's
+  // UserExecutable attribute (Part 3 §5.7.1) — the server computes the same
+  // predicate from the same session rights, and remains the authority: a call
+  // that slips past this answers Bad_UserAccessDenied. Unset means "assume
+  // yes".
+  std::function<bool()> can_call;
 };
 
 // One diagnostic reading rendered as a "Label   Value" row.
@@ -81,13 +110,30 @@ class DeviceDiagnosticsPanel : public QWidget {
                        const QString& band_detail,
                        const std::vector<DeviceDiagnosticRow>& rows);
 
+  // The registry's link action for the selected device, bound to `link` — the
+  // panel's decision procedure for whether that button exists at all, exposed
+  // so it can be exercised without a live node service.
+  //
+  // Returns nullopt when the protocol declares no action, when the device has
+  // no link (there is nothing to act on), or when the host wired no
+  // method-call path. All three mean "no button", never "dead button".
+  std::optional<DiagnosticAction> MakeLinkAction(
+      const ProtocolLinkAction& action,
+      const NodeRef& link);
+
  private:
   QWidget* BuildEmptyState();
   QWidget* BuildContent();
   // Recomputes the band + rows from the live specs and re-renders.
   void RefreshFromSpecs();
-  // Re-queries each action's is_enabled and updates its button.
+  // Re-queries each action's is_enabled and updates its button and its
+  // disabled-reason line.
   void RefreshActions();
+  // (Re)creates the action buttons for `link_actions_` followed by
+  // `context_.actions`. Called whenever the selection changes, because the
+  // link action is per device: it exists only for a registered protocol whose
+  // parent link resolved.
+  void RebuildActionButtons();
 
   DeviceDiagnosticsPanelContext context_;
 
@@ -118,6 +164,10 @@ class DeviceDiagnosticsPanel : public QWidget {
   // the section is omitted rather than drawn empty.
   std::vector<Reading> link_readings_;
   QString link_section_label_;
+  // The selected device's link action, when its protocol declares one. Rebuilt
+  // per selection, and drawn BEFORE the host's device-wide actions so the
+  // Actions section reads in the mockup's order.
+  std::vector<DiagnosticAction> link_actions_;
 
   QStackedWidget* stack_ = nullptr;  // [0] empty state, [1] content.
   QLabel* name_ = nullptr;
@@ -126,8 +176,14 @@ class DeviceDiagnosticsPanel : public QWidget {
   QLabel* hero_status_ = nullptr;
   QLabel* hero_detail_ = nullptr;
   QVBoxLayout* rows_layout_ = nullptr;  // owns the current DeviceDiagnosticRow widgets.
-  // One button per context action, parallel to context_.actions.
-  std::vector<QPushButton*> action_buttons_;
+  QVBoxLayout* actions_layout_ = nullptr;  // owns the current action widgets.
+  // One entry per rendered action, in the order link_actions_ then
+  // context_.actions. The reason label is null when the action supplies none.
+  struct ActionWidgets {
+    QPushButton* button = nullptr;
+    QLabel* reason = nullptr;
+  };
+  std::vector<ActionWidgets> action_widgets_;
 };
 
 // Builds a DeviceDiagnosticsPanel under the reshell UX theme

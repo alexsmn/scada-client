@@ -42,6 +42,26 @@ struct ProtocolField {
   ProtocolValueShape shape = ProtocolValueShape::kCount;
 };
 
+// An OPC UA Method on the link that the panel offers as a button.
+//
+// A Method, not a writable parameter: it has no value to hold, it acts on the
+// live connection, and it is gated by the OPC UA Call permission
+// (PermissionType.Call, Part 3 §8.55) rather than by the parameter form's Write
+// gate. Those are different rights, and conflating them would let a session
+// that may edit configuration issue control actions.
+struct ProtocolLinkAction {
+  // Declaration id of the Method on the link type. Resolved against the
+  // instance the same way the fields are, so a differing namespace index
+  // (ADR 0003) cannot break it.
+  scada::NodeId method_id;
+  std::string_view browse_name;
+  std::string_view label;  // English; translated at render time.
+  // Shown under the button when the session may not call it. A disabled
+  // control must state a reason an operator can act on — "unimplemented" is
+  // not one, and a dead button with no explanation is worse than no button.
+  std::string_view denied_reason;
+};
+
 // What a registered protocol contributes to the panel.
 struct ProtocolDiagnostics {
   // BrowseName of the device type this entry answers for.
@@ -57,6 +77,10 @@ struct ProtocolDiagnostics {
   // of them will show the same numbers because it is the same link.
   std::string_view section_label;
   std::span<const ProtocolField> link_fields;
+  // The protocol's link action, if it has one. `label` empty means none — a
+  // protocol whose links cannot be commanded contributes no button rather than
+  // a disabled one.
+  ProtocolLinkAction link_action;
 };
 
 // The entry for a device type's BrowseName, or null when unregistered.
