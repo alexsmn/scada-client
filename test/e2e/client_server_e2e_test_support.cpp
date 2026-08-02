@@ -705,20 +705,35 @@ std::filesystem::path ClientServerE2eTest::ServerConfigDatabasePath() const {
   return ws / "Configuration" / "configuration.sqlite3";
 }
 
+// The profile lives on the account's UserExtensionType row, keyed by the
+// account NAME (the standard user model has no room for a client profile, and
+// the extension outlives the UserType folder). These helpers still take the
+// UserType id, because that is what a test knows, and join through the name.
+namespace {
+
+std::string ProfileColumnForUser(const std::filesystem::path& database,
+                                 int user_id,
+                                 std::string_view column) {
+  return RunSqliteScalar(
+      database,
+      std::string{"SELECT COALESCE(e."} + std::string{column} +
+          ", '') FROM UserExtensionType e JOIN UserType u"
+          " ON u.DisplayName = e.DisplayName WHERE u.ID = " +
+          std::to_string(user_id) + ";");
+}
+
+}  // namespace
+
 std::string ClientServerE2eTest::ReadUserProfileJsonFromServerDatabase(
     int user_id) {
-  return RunSqliteScalar(
-      ServerConfigDatabasePath(),
-      "SELECT COALESCE(ProfileJson, '') FROM UserType WHERE ID = " +
-          std::to_string(user_id) + ";");
+  return ProfileColumnForUser(ServerConfigDatabasePath(), user_id,
+                              "ProfileJson");
 }
 
 std::string ClientServerE2eTest::ReadUserProfileRevisionFromServerDatabase(
     int user_id) {
-  return RunSqliteScalar(
-      ServerConfigDatabasePath(),
-      "SELECT COALESCE(ProfileRevision, '') FROM UserType WHERE ID = " +
-          std::to_string(user_id) + ";");
+  return ProfileColumnForUser(ServerConfigDatabasePath(), user_id,
+                              "ProfileRevision");
 }
 
 std::string ClientServerE2eTest::DescribeProcessExit(
