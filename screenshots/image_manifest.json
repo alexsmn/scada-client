@@ -18,6 +18,7 @@
     {
       "file": "client-login.png",
       "tag": "auto-dialog",
+      "publish_theme": "dark",
       "referenced_from": [
         "getting-started.md"
       ],
@@ -77,6 +78,7 @@
     {
       "file": "client-retransmission.png",
       "tag": "auto-view",
+      "publish_theme": "dark",
       "referenced_from": [
         "client.md"
       ],
@@ -109,10 +111,11 @@
     {
       "file": "settings-dialog.png",
       "tag": "auto-dialog",
+      "publish_theme": "legacy",
       "referenced_from": [
         "client/workbench.md"
       ],
-      "notes": "The preferences dialog, from CaptureSettingsDialog. Rendered from the Settings MenuModel rather than a hand-built form, so the capture shows exactly what the shell assembles — the framework toggles, every module's MainMenuId::Settings contribution, and the Language / Style / Colour scheme choice rows. Replaces colour-scheme-menu.png, whose submenu no longer exists. The capture guards contents as well as existence: a row offering Classic plus the four appearances must be present, because Colour scheme is how the operator turns the reshell on and it must not become unreachable. NOT YET A WINDOWS RENDER (2026-08-02): produced on macOS while the dialog was built — re-render on Windows before publishing."
+      "notes": "The preferences dialog, from CaptureSettingsDialog. Rendered from the Settings MenuModel rather than a hand-built form, so the capture shows exactly what the shell assembles — the framework toggles, every module's MainMenuId::Settings contribution, and the Language / Style / Colour scheme choice rows. Replaces colour-scheme-menu.png, whose submenu no longer exists. The capture guards contents as well as existence: a row offering Classic plus the four appearances must be present, because Colour scheme is how the operator turns the reshell on and it must not become unreachable. publish_theme is `legacy` — the only published image that is: CaptureSettingsDialog skips under --theme by design, because the operator who needs this image is the one still on Classic looking for how to turn the reshell on, and a dark render would show the appearance they do not have yet. NOT YET A WINDOWS RENDER (2026-08-02): produced on macOS while the dialog was built — re-render on Windows before publishing."
     },
     {
       "file": "workbench-window.png",
@@ -233,6 +236,7 @@
     {
       "file": "graph-cursor.png",
       "tag": "auto-view",
+      "publish_theme": "dark",
       "referenced_from": [
         "client/graph.md"
       ],
@@ -791,6 +795,7 @@
     {
       "file": "users.png",
       "tag": "auto-view",
+      "publish_theme": "dark",
       "referenced_from": [
         "dev/users.md"
       ],

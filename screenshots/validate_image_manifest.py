@@ -12,6 +12,8 @@ truth for every image the web manual ships. This script verifies:
   3. The per-tag "counts" block matches the entries.
   4. "obsolete" entries are referenced by no page at all (RU or EN).
   5. current_generator_owned_subset entries exist and carry an auto-* tag.
+  6. publish_theme, where present, is a known theme and sits on a published
+     entry (it drives the themed publish pass and is dead data elsewhere).
 
 Run it after changing the manifest, the images, or any manual page:
 
@@ -32,6 +34,11 @@ IMAGE_REF_RE = re.compile(r"img/([\w.\-]+\.(?:png|jpe?g|gif|svg))")
 
 # Non-content markdown that may mention image names without embedding them.
 EXCLUDED_PAGES = {"CLAUDE.md", "README.md", "tasks.md"}
+
+# Themes a published image can be rendered under. "dark" is the default for
+# the published subset (the manual reads as one product); "legacy" is the
+# documented opt-out for an image whose whole point is the non-reshell client.
+PUBLISH_THEMES = {"dark", "legacy"}
 
 
 def find_default_docs_repo(manifest_path: Path) -> Path | None:
@@ -138,13 +145,35 @@ def main() -> int:
             )
 
     # 5. Publish subset sanity.
-    for name in manifest.get("current_generator_owned_subset", []):
+    published_subset = manifest.get("current_generator_owned_subset", [])
+    for name in published_subset:
         entry = entries.get(name)
         if entry is None:
             errors.append(f"publish subset entry {name} not in manifest")
         elif not entry["tag"].startswith("auto-"):
             errors.append(
                 f"publish subset entry {name} has non-auto tag {entry['tag']}"
+            )
+
+    # 6. publish_theme is meaningful only on published images, and only the
+    #    generator's two themes exist. The field drives the themed second pass
+    #    in tools/screenshot_generator/CMakeLists.txt: published images render
+    #    dark unless the entry opts out with "legacy". Carried on an
+    #    unpublished entry it reads as policy but changes nothing, which is
+    #    worse than absent.
+    for name, entry in sorted(entries.items()):
+        publish_theme = entry.get("publish_theme")
+        if publish_theme is None:
+            continue
+        if publish_theme not in PUBLISH_THEMES:
+            errors.append(
+                f"{name}: publish_theme {publish_theme!r} is not one of "
+                f"{sorted(PUBLISH_THEMES)}"
+            )
+        if name not in published_subset:
+            errors.append(
+                f"{name}: publish_theme is set but the image is not in "
+                f"current_generator_owned_subset, so nothing reads it"
             )
 
     for error in errors:

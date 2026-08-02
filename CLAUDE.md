@@ -128,7 +128,11 @@ Rules of the pipeline:
   and copies only the manifest's `current_generator_owned_subset` into
   scada-docs `img/`; review with `git diff img/` there. An image graduates
   into that subset only after its rendering is reviewed against the page
-  that embeds it.
+  that embeds it. **Published images render dark** — the gallery pass is
+  legacy-themed, then a second `--theme=dark` pass re-renders the published
+  subset on top, so the manual reads as one product. An image that cannot
+  render themed opts out with `"publish_theme": "legacy"` plus a reason, or
+  the regeneration fails by name; see `docs/ops/client-screenshots.md`.
 - **Validate consistency** after touching images, the manifest, or manual
   pages: `python3 screenshots/validate_image_manifest.py` (auto-finds
   a sibling scada-docs checkout, or pass `--docs-repo`).

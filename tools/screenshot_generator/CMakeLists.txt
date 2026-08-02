@@ -193,11 +193,97 @@ else()
   set(SCREENSHOT_CAPTURE_LAUNCHER)
 endif()
 
+# The published images render dark; the rest of the gallery stays legacy.
+#
+# Both themes are kept on purpose (decided 2026-08-02). The default no-theme
+# run remains the regression net for the non-reshell client — that is what an
+# operator on Classic actually sees — while the handful of images the web
+# manual ships render under the reshell tokens, so the manual reads as one
+# consistent product instead of alternating light and dark page to page.
+#
+# Which files those are is data, not a list to keep in sync by hand: an image
+# is published iff it is in `current_generator_owned_subset`, and it renders
+# dark unless its manifest entry says `"publish_theme": "legacy"`. Read at
+# configure time, so a manifest edit re-runs CMake (CMAKE_CONFIGURE_DEPENDS
+# below) rather than silently publishing the old set.
+set(SCREENSHOT_IMAGE_MANIFEST "${SCREENSHOT_DOCS_DIR}/image_manifest.json")
+# Collapse the `../..` in SCREENSHOT_DOCS_DIR: CMAKE_CONFIGURE_DEPENDS matches
+# on the path it is given, so an unnormalized one can miss the re-configure.
+get_filename_component(SCREENSHOT_IMAGE_MANIFEST
+  "${SCREENSHOT_IMAGE_MANIFEST}" ABSOLUTE)
+set_property(DIRECTORY APPEND PROPERTY
+  CMAKE_CONFIGURE_DEPENDS "${SCREENSHOT_IMAGE_MANIFEST}")
+file(READ "${SCREENSHOT_IMAGE_MANIFEST}" screenshot_manifest_json)
+
+# Map each published filename onto its publish theme. CMake's JSON support has
+# no lookup-by-value, so this scans the images array per published file; the
+# subset is single digits and the array under a hundred, so the cost is noise.
+set(SCREENSHOT_PUBLISH_DARK)
+string(JSON published_count LENGTH
+  "${screenshot_manifest_json}" current_generator_owned_subset)
+string(JSON manifest_image_count LENGTH "${screenshot_manifest_json}" images)
+if(published_count GREATER 0)
+  math(EXPR published_last "${published_count} - 1")
+  math(EXPR manifest_image_last "${manifest_image_count} - 1")
+  foreach(published_index RANGE ${published_last})
+    string(JSON published_file GET "${screenshot_manifest_json}"
+      current_generator_owned_subset ${published_index})
+
+    # Absent `publish_theme` means dark: the manual's default is the reshell
+    # look, and an exemption has to be written down to take effect.
+    set(publish_theme "dark")
+    foreach(image_index RANGE ${manifest_image_last})
+      string(JSON entry_file GET "${screenshot_manifest_json}"
+        images ${image_index} file)
+      if(entry_file STREQUAL published_file)
+        string(JSON entry_theme ERROR_VARIABLE entry_theme_error
+          GET "${screenshot_manifest_json}" images ${image_index} publish_theme)
+        if(NOT entry_theme_error)
+          set(publish_theme "${entry_theme}")
+        endif()
+        break()
+      endif()
+    endforeach()
+
+    if(publish_theme STREQUAL "dark")
+      list(APPEND SCREENSHOT_PUBLISH_DARK "${published_file}")
+    endif()
+  endforeach()
+endif()
+
+# Second pass: re-render just those files under the theme and copy them over
+# the legacy versions the first pass wrote. Order matters — the full run has to
+# go first, or it would paint the published images back to legacy. The pass
+# renders into the build tree and copy_themed_captures.cmake does the copy, so
+# a capture that skips under --theme fails the target instead of leaving the
+# legacy render in place; see that script's header.
+set(screenshot_dark_publish_pass)
+if(SCREENSHOT_PUBLISH_DARK)
+  list(JOIN SCREENSHOT_PUBLISH_DARK "," screenshot_publish_dark_only)
+  set(screenshot_publish_dark_dir
+    "${CMAKE_CURRENT_BINARY_DIR}/screenshot_publish_dark")
+  set(screenshot_dark_publish_pass
+    COMMAND ${CMAKE_COMMAND} -E rm -rf "${screenshot_publish_dark_dir}"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${screenshot_publish_dark_dir}"
+    COMMAND ${SCREENSHOT_CAPTURE_LAUNCHER}
+      $<TARGET_FILE:client_screenshot_generator>
+      "--theme=dark"
+      "--only=${screenshot_publish_dark_only}"
+      "--out=${screenshot_publish_dark_dir}"
+      "--image-manifest=${SCREENSHOT_IMAGE_MANIFEST}"
+    COMMAND ${CMAKE_COMMAND}
+      -DSCADA_THEMED_SRC_DIR=${screenshot_publish_dark_dir}
+      -DSCADA_THEMED_DEST_DIR=${SCREENSHOT_DOCS_DIR}
+      -DSCADA_THEMED_FILES=${screenshot_publish_dark_only}
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/copy_themed_captures.cmake")
+endif()
+
 add_custom_target(regenerate_client_screenshots
   COMMAND ${CMAKE_COMMAND} -E make_directory "${SCREENSHOT_DOCS_DIR}"
   COMMAND ${SCREENSHOT_CAPTURE_LAUNCHER} $<TARGET_FILE:client_screenshot_generator>
     "--out=${SCREENSHOT_DOCS_DIR}"
-    "--image-manifest=${SCREENSHOT_DOCS_DIR}/image_manifest.json"
+    "--image-manifest=${SCREENSHOT_IMAGE_MANIFEST}"
+  ${screenshot_dark_publish_pass}
   COMMENT "Rendering screenshots into client/screenshots/"
   VERBATIM
   USES_TERMINAL
