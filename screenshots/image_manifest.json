@@ -410,6 +410,13 @@
       "notes": "KPI severity tile strip (backlog 2.3): the context bar's Critical / Warning / Unacknowledged tiles rendered by SeverityTileStrip from BuildSeverityTiles() — most severe first, severity-coloured and bold while a count is live, muted at zero; unacknowledged carries no severity colour (workflow state, not severity). Captured standalone from seeded counts (1 critical / 3 warning / 7 unacknowledged) because the fixture holds no unacknowledged alarms, so the in-window tiles would all render zero. Theme-gated reshell chrome — MakeSeverityTileStrip returns nullptr under the legacy theme; guarded by client_screenshot_check_themed."
     },
     {
+      "file": "command-field.png",
+      "tag": "reshell-theme",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Top context bar command/search field (shell.md §2.2): the command palette's entry point, drawn by CommandField as a read-only QLineEdit with a leading Lucide magnifier tinted from QPalette::PlaceholderText and a trailing shortcut hint in the platform's own key notation (⌘K on macOS, Ctrl+K on Windows). Captured standalone, like severity-tiles.png, because the field is chrome rather than a view; built with the same prompt and shortcut MainWindow::CreateContextBar() gives it. Everything is sized in font/style metrics, so a diff here that only changes the field's width is usually a font difference, not a UI change. Theme-gated reshell chrome — the capture is a no-op under the legacy theme; guarded by client_screenshot_check_themed."
+    },
+    {
       "file": "users-admin.png",
       "tag": "reshell-theme",
       "published": false,
@@ -781,7 +788,7 @@
     "auto-dialog": 22,
     "auto-menu": 18,
     "auto-state": 5,
-    "reshell-theme": 22,
+    "reshell-theme": 23,
     "manual-diagram": 4,
     "manual-modus": 5,
     "manual-os": 2,

@@ -4,6 +4,7 @@
 #include "aui/models/simple_menu_model.h"
 #include "aui/models/status_bar_model.h"
 #include "aui/qt/status_bar.h"
+#include "aui/qt/theme_qt.h"
 #include "aui/severity_colors.h"
 #include "aui/translation.h"
 #include "base/auto_reset.h"
@@ -22,6 +23,7 @@
 #include "filesystem/file_cache.h"
 #include "inspector/qt/inspector_panel.h"
 #include "main_window/activity_bar_qt.h"
+#include "main_window/command_field_qt.h"
 #include "main_window/command_palette_qt.h"
 #include "main_window/main_window_command_router.h"
 #include "main_window/main_window_manager.h"
@@ -51,10 +53,8 @@
 #include <QDockWidget>
 #include <QEvent>
 #include <QGuiApplication>
-#include <QKeyEvent>
 #include <QLabel>
 #include <QLayout>
-#include <QLineEdit>
 #include <QMenu>
 #include <QMenuBar>
 #include <QScreen>
@@ -301,28 +301,27 @@ void MainWindow::CreateContextBar() {
   context_bar_->setFloatable(false);
   context_bar_->setContextMenuPolicy(Qt::PreventContextMenu);
 
-  // Brand lockup (left).
-  auto* brand = new QLabel(context_bar_);
-  brand->setText(QStringLiteral("  Telecontrol SCADA  "));
-  brand->setStyleSheet(QStringLiteral("font-weight:700;"));
-  context_bar_->addWidget(brand);
-
+  // No brand lockup. A native application identifies itself in the window
+  // title and the About dialog, not with an in-window mark — and the one that
+  // stood here was a hard-coded, space-padded, untranslatable literal
+  // (docs/client/ux/shell.md §2.2, native rework).
   auto* left_spacer = new QWidget(context_bar_);
   left_spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
   context_bar_->addWidget(left_spacer);
 
-  // Command/search entry point (centre). Read-only: it is an affordance that
-  // opens the command palette (click or Ctrl+K); typing happens in the palette.
-  command_search_ = new QLineEdit(context_bar_);
-  command_search_->setPlaceholderText(
-      QString::fromStdU16String(Translate("Search tags, objects, commands…")));
-  command_search_->setReadOnly(true);
-  command_search_->setFixedWidth(360);
-  command_search_->installEventFilter(this);
+  // Command/search entry point (centre). It owns no text: clicking it, or
+  // typing into it, opens the command palette, which is where the typing
+  // happens. The field draws the magnifier and the shortcut hint itself.
+  const QKeySequence palette_key{Qt::CTRL | Qt::Key_K};
+  command_search_ = new CommandField(
+      context_bar_,
+      QString::fromStdU16String(Translate("Search tags, objects, commands…")),
+      palette_key, [this](const QString& initial_text) {
+        ShowCommandPalette(initial_text);
+      });
   context_bar_->addWidget(command_search_);
 
-  auto* palette_shortcut =
-      new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_K), this);
+  auto* palette_shortcut = new QShortcut(palette_key, this);
   connect(palette_shortcut, &QShortcut::activated, this,
           [this] { ShowCommandPalette(); });
 
@@ -380,11 +379,19 @@ void MainWindow::CreateContextBar() {
               .arg(alarm_count));
       const std::optional<scada::aui::Color> color =
           scada::aui::SeverityColor(scada::aui::SeverityLevel::kCritical);
-      // White reads on the saturated critical fill across every theme.
+      // A stylesheet, not the palette: the pill is a rounded fill, and
+      // border-radius is one of the few things QPalette cannot express.
+      //
+      // The fill is a process-semantic colour, fixed by ISA-18.2 and exempt
+      // from platform styling — but the text on it is derived from the fill
+      // rather than baked. The dark and light critical tokens differ enough in
+      // luminance that one constant cannot serve both, which the previous
+      // hard-coded #ffffff did not account for.
+      const QColor fill = color ? color->qcolor() : QColor{0xe8, 0x5a, 0x52};
       flood_indicator_->setStyleSheet(
           QStringLiteral(
-              "background:%1;color:#ffffff;border-radius:9px;font-weight:700;")
-              .arg(color ? color->qcolor().name() : QStringLiteral("#e85a52")));
+              "background:%1;color:%2;border-radius:9px;font-weight:700;")
+              .arg(fill.name(), scada::aui::ReadableTextOn(fill).name()));
     }
   };
   refresh();
@@ -743,31 +750,6 @@ void MainWindow::ShowCommandPalette(const QString& initial_text) {
   palette->show();
   palette->raise();
   palette->activateWindow();
-}
-
-bool MainWindow::eventFilter(QObject* watched, QEvent* event) {
-  if (watched != command_search_)
-    return QMainWindow::eventFilter(watched, event);
-
-  // Clicking the read-only context-bar search field opens the command palette.
-  if (event->type() == QEvent::MouseButtonRelease) {
-    ShowCommandPalette();
-    return true;
-  }
-  // Typing a printable character opens the palette seeded with it, so the
-  // field reads as a real search box even though the palette owns the input.
-  if (event->type() == QEvent::KeyPress) {
-    auto* key_event = static_cast<QKeyEvent*>(event);
-    const QString text = key_event->text();
-    const bool has_command_modifier =
-        key_event->modifiers() &
-        (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier);
-    if (!has_command_modifier && !text.isEmpty() && text.at(0).isPrint()) {
-      ShowCommandPalette(text);
-      return true;
-    }
-  }
-  return QMainWindow::eventFilter(watched, event);
 }
 
 void MainWindow::CreateToolbar() {

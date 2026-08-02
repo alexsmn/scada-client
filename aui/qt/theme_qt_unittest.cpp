@@ -481,6 +481,25 @@ TEST(ThemeQtTest, ControlFrameRolesMeetNonTextContrast) {
   }
 }
 
+// Text on a process-semantic fill (the alarm-flood pill, a quality-coloured
+// cell) cannot take its colour from the palette, because the fill does not
+// either. It must still be legible on every severity token in every theme — the
+// flood pill used to bake in #ffffff, which the light theme's amber and the
+// dark theme's medium band do not carry.
+TEST(ThemeQtTest, ReadableTextOnSeverityFillsIsLegible) {
+  for (Theme theme : {Theme::kDark, Theme::kLight, Theme::kHighContrast}) {
+    const ThemeTokens& t = GetThemeTokens(theme);
+    for (const QColor& fill :
+         {t.severity_critical, t.severity_high, t.severity_medium,
+          t.severity_low, t.good, t.uncertain, t.bad}) {
+      // WCAG 2.2 SC 1.4.3 at large/bold text: 3:1. The pill is bold and short.
+      EXPECT_GE(ContrastOf(ReadableTextOn(fill), fill), 3.0)
+          << "theme " << ThemeToString(theme).toStdString() << ", fill "
+          << fill.name().toStdString();
+    }
+  }
+}
+
 // A palette entry has to be opaque: the border tokens are translucent whites,
 // and a style handed a semi-transparent brush composites it over whatever
 // backdrop it happens to have.

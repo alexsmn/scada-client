@@ -1452,6 +1452,12 @@
       "height": 32
     },
     {
+      "type": "CommandField",
+      "filename": "command-field.png",
+      "width": 460,
+      "height": 34
+    },
+    {
       "type": "Inspector",
       "filename": "inspector-panel.png",
       "width": 320,

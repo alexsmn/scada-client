@@ -432,6 +432,13 @@ qreal ContrastRatio(const QColor& a, const QColor& b) {
   return (std::max(la, lb) + 0.05) / (std::min(la, lb) + 0.05);
 }
 
+QColor ReadableTextOn(const QColor& fill) {
+  const QColor black{Qt::black};
+  const QColor white{Qt::white};
+  return ContrastRatio(white, fill) >= ContrastRatio(black, fill) ? white
+                                                                  : black;
+}
+
 // The minimum contrast a control frame must reach against the surface behind
 // it — WCAG 2.2 SC 1.4.11 Non-text Contrast,
 // https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html. An

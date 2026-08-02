@@ -36,6 +36,8 @@ add_executable(client_screenshot_generator
   "bulk_create_capture.h"
   "severity_tiles_capture.cpp"
   "severity_tiles_capture.h"
+  "command_field_capture.cpp"
+  "command_field_capture.h"
   "inspector_capture.cpp"
   "inspector_capture.h"
   "transmission_rule_capture.h"
@@ -159,7 +161,7 @@ add_test(NAME client_screenshot_check_themed
   COMMAND ${CMAKE_COMMAND} -E env QT_QPA_PLATFORM=offscreen
     $<TARGET_FILE:client_screenshot_generator>
     "--theme=dark"
-    "--only=config-parameters.png,config-address-map.png,config-limits.png,hardware-tree.png,object-tree.png,users-admin.png,admin-simulation.png,admin-formats.png,admin-historical-dbs.png,severity-tiles.png,events-alarm-surface.png,table-workspace.png,workbench-window.png,workbench-overview.png,workbench-login.png,substation-display.png,inspector-event.png,transmission-rules.png,series-inspector.png"
+    "--only=config-parameters.png,config-address-map.png,config-limits.png,hardware-tree.png,object-tree.png,users-admin.png,admin-simulation.png,admin-formats.png,admin-historical-dbs.png,severity-tiles.png,command-field.png,events-alarm-surface.png,table-workspace.png,workbench-window.png,workbench-overview.png,workbench-login.png,substation-display.png,inspector-event.png,transmission-rules.png,series-inspector.png"
     "--out=${CMAKE_CURRENT_BINARY_DIR}/screenshot_check_themed"
 )
 set_tests_properties(client_screenshot_check_themed PROPERTIES TIMEOUT 300)

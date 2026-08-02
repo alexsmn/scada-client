@@ -1,4 +1,5 @@
 #include "bulk_create_capture.h"
+#include "command_field_capture.h"
 #include "debugger_capture.h"
 #include "device_diagnostics_capture.h"
 #include "dialog_capture.h"
@@ -579,6 +580,14 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     // alarm summary), built from seeded counts with no node service.
     if (spec.window_type == "SeverityTiles") {
       SaveSeverityTilesScreenshot(spec);
+      ++captured;
+      continue;
+    }
+    // The command/search field is standalone reshell chrome (the context bar's
+    // palette entry point), built with the same prompt and shortcut the window
+    // gives it.
+    if (spec.window_type == "CommandField") {
+      SaveCommandFieldScreenshot(spec);
       ++captured;
       continue;
     }

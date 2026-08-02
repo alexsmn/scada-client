@@ -109,6 +109,17 @@ QString ThemeToString(Theme theme);
 // opt-in token themes. Requires a QApplication (reads the application font).
 std::optional<QFont> MonoValueFont();
 
+// The text colour to use on top of `fill` — whichever of black or white is
+// further from it, by WCAG relative luminance.
+//
+// For the handful of places that paint text on a *process-semantic* fill (an
+// alarm-severity pill, a value cell coloured by quality): those fills are fixed
+// by ISA-101/ISA-18.2 and do not follow the palette, so the text on them cannot
+// come from the palette either — but it must not be a baked constant, which is
+// how a white-on-amber pill at 1.9:1 got shipped. Everything else takes its
+// text colour from QPalette.
+QColor ReadableTextOn(const QColor& fill);
+
 // Builds a QPalette from the theme tokens. This is the primary, and preferred,
 // way the client colours itself: native styles honour the palette for most
 // roles, and it is the only theming mechanism that survives under the platform

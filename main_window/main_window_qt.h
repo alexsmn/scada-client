@@ -22,6 +22,7 @@ class NodeId;
 }
 
 class ActivityBar;
+class CommandField;
 class PageSwitcher;
 class DeviceDiagnosticsPanel;
 class InspectorPanel;
@@ -31,7 +32,6 @@ class TagSearchIndex;
 class QAction;
 class QDockWidget;
 class QLabel;
-class QLineEdit;
 class QMenu;
 class QPoint;
 class QToolBar;
@@ -85,9 +85,6 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // QWidget
   virtual void closeEvent(QCloseEvent* event) override;
 
-  // QObject
-  virtual bool eventFilter(QObject* watched, QEvent* event) override;
-
  private:
   // Tabs the specialist panels onto the Inspector dock and fronts the
   // Inspector. Re-applied after every page open, because opening a page
@@ -97,7 +94,7 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   void CreateMenuBar();
   void CreateToolbar();
   void CreateStatusBar();
-  // Opt-in top context bar (brand + command/search + live context cluster).
+  // Opt-in top context bar: the command/search field and alarm state.
   // Only built when the experimental UX is enabled; see main.cpp.
   void CreateContextBar();
   // Opt-in left activity rail (backlog 1.1): selects which panes occupy the
@@ -188,11 +185,12 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
 
   std::unique_ptr<ProgressController> progress_controller_;
 
-  // Top context bar (opt-in): brand, command/search field, and alarm state.
-  // It deliberately carries no identity/connection cells — those live only in
-  // the status strip (see CreateContextBar).
+  // Top context bar (opt-in): the command/search field and alarm state. It
+  // deliberately carries neither a brand mark nor identity/connection cells —
+  // the window title names the application and the status strip owns who/where
+  // (see CreateContextBar).
   QToolBar* context_bar_ = nullptr;
-  QLineEdit* command_search_ = nullptr;
+  CommandField* command_search_ = nullptr;
   // Live severity KPI tiles in the context bar (critical / warning /
   // unacknowledged), refreshed with the status-bar model.
   events::SeverityTileStrip* severity_tiles_ = nullptr;
