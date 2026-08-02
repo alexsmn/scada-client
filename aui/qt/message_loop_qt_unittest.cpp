@@ -47,14 +47,19 @@ TEST_F(MessageLoopQtTest, RunsAnImmediateTask) {
 // The point of the rewrite: a posted task is delivered by a wakeup event, so it
 // runs on the next turn of the event loop rather than waiting for a tick. The
 // old polled pump could not beat its own 10 ms period.
+//
+// Asserted through the dispatch mechanism rather than a stopwatch:
+// sendPostedEvents() delivers the posted event queue and *only* that - it never
+// fires a QTimer. So a task that runs here reached the loop by a wakeup event,
+// which is the actual claim; a polled pump would leave `ran` false no matter
+// how long the machine was given. An elapsed-time bound would say the same
+// thing only on an unloaded machine.
 TEST_F(MessageLoopQtTest, ImmediateTaskDoesNotWaitForATimerTick) {
-  QElapsedTimer elapsed;
-  elapsed.start();
   bool ran = false;
   loop_.PostDelayedTask({}, [&ran] { ran = true; });
 
-  ASSERT_TRUE(PumpUntil([&ran] { return ran; }));
-  EXPECT_LT(elapsed.elapsed(), 10);
+  QCoreApplication::sendPostedEvents(&loop_);
+  EXPECT_TRUE(ran);
 }
 
 TEST_F(MessageLoopQtTest, RunsTasksInPostOrder) {
