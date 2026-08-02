@@ -1,5 +1,7 @@
 #include "device_diagnostics/qt/device_diagnostics_panel.h"
 
+#include "base/time_utils.h"
+
 #include "aui/qt/theme_qt.h"
 #include "aui/severity_colors.h"
 #include "aui/translation.h"
@@ -10,6 +12,7 @@
 #include "scada/variant.h"
 #include "timed_data/timed_data_spec.h"
 
+#include <QDateTime>
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -118,6 +121,40 @@ const std::array<DiagnosticDescriptor, 6>& CounterDescriptors() {
        "Clock syncs"},
   }};
   return descriptors;
+}
+
+// Renders a reading by its declared shape. Falls through to FormatCount --
+// including its em-dash for an absent value -- so an unmeasured round trip and a
+// link that has never connected read as "no reading" rather than 0 ms and 1970.
+QString FormatShaped(const scada::Variant& value, ProtocolValueShape shape) {
+  switch (shape) {
+    case ProtocolValueShape::kState:
+      if (scada::Int32 state; value.get(state))
+        return Tr(Iec60870LinkStateLabel(state));
+      return {};
+    case ProtocolValueShape::kFlag:
+      // A t1 flag reads as a condition. "true" makes an operator remember which
+      // boolean means trouble.
+      if (bool flag; value.get(flag))
+        return flag ? Tr("expired") : Tr("ok");
+      return {};
+    case ProtocolValueShape::kDuration:
+      if (double ms; value.get(ms))
+        return QStringLiteral("%1 ms").arg(std::llround(ms));
+      return {};
+    case ProtocolValueShape::kTime:
+      // The zero instant is not a reading: a link that has never connected has
+      // no last-connected time, and rendering the epoch would show 1970.
+      if (scada::Time stamp; value.get(stamp) && stamp != scada::Time{}) {
+        return QDateTime::fromMSecsSinceEpoch(
+                   InMilliseconds(stamp - scada::Time{}))
+            .toString(Qt::TextDate);
+      }
+      return {};
+    case ProtocolValueShape::kCount:
+      break;
+  }
+  return FormatCount(value);
 }
 
 // Resolves a device's diagnostic child. The live app models these as aggregate
@@ -264,6 +301,8 @@ void DeviceDiagnosticsPanel::ShowDevice(const NodeRef& device,
   online_node_ = {};
   enabled_node_ = {};
   readings_.clear();
+  link_readings_.clear();
+  link_section_label_.clear();
 
   if (!device) {
     Clear();
@@ -318,6 +357,43 @@ void DeviceDiagnosticsPanel::ShowDevice(const NodeRef& device,
     readings_.push_back(Reading{Tr(descriptor.label), node, std::move(spec)});
   }
 
+  // The device's PARENT LINK, when its protocol is registered (ADR 0007). In
+  // -104 the APCI belongs to the TCP connection and several devices share one,
+  // so these rows are the link's and are labelled as such.
+  link_readings_.clear();
+  link_section_label_.clear();
+  if (NodeRef type = device.type_definition()) {
+    if (const ProtocolDiagnostics* protocol =
+            ProtocolDiagnosticsFor(type.browse_name().name())) {
+      NodeRef link = device.parent();
+      // The parent must actually BE a link. A flat model parents devices onto
+      // the Devices folder, and reading link members off a folder finds none --
+      // which would draw the section entirely as em-dashes instead of omitting
+      // it.
+      NodeRef link_type = link ? link.type_definition() : NodeRef{};
+      if (link_type && link_type.browse_name().name() == protocol->link_type) {
+        link_section_label_ = Tr(protocol->section_label);
+        for (const ProtocolField& field : protocol->link_fields) {
+          NodeRef node = ResolveDiagnosticChild(link, field.declaration_id,
+                                                field.browse_name);
+          if (!node)
+            continue;
+          auto spec =
+              std::make_unique<TimedDataSpec>(timed_data_service, node.node_id());
+          spec->SetCurrentOnly();
+          spec->update_handler = [this](std::span<const scada::DataValue>) {
+            RefreshFromSpecs();
+          };
+          spec->property_change_handler = [this](const PropertySet&) {
+            RefreshFromSpecs();
+          };
+          link_readings_.push_back(
+              Reading{Tr(field.label), node, std::move(spec), field.shape});
+        }
+      }
+    }
+  }
+
   RefreshFromSpecs();
 }
 
@@ -339,7 +415,17 @@ void DeviceDiagnosticsPanel::RefreshFromSpecs() {
     detail = Tr("device is not polled");
 
   std::vector<DeviceDiagnosticRow> rows;
-  rows.reserve(readings_.size());
+  rows.reserve(readings_.size() + link_readings_.size() + 1);
+  if (!link_readings_.empty()) {
+    rows.push_back(DeviceDiagnosticRow{link_section_label_, {}, /*bad=*/false,
+                                       /*heading=*/true});
+    for (const Reading& reading : link_readings_) {
+      QString value =
+          FormatShaped(CurrentValue(reading.spec.get(), reading.node),
+                       reading.shape);
+      rows.push_back(DeviceDiagnosticRow{reading.label, value, /*bad=*/false});
+    }
+  }
   for (const Reading& reading : readings_) {
     QString value = FormatCount(CurrentValue(reading.spec.get(), reading.node));
     rows.push_back(DeviceDiagnosticRow{reading.label, value, /*bad=*/false});
@@ -382,6 +468,15 @@ void DeviceDiagnosticsPanel::ShowDiagnostics(
 
   ClearLayout(rows_layout_);
   for (const DeviceDiagnosticRow& row : rows) {
+    if (row.heading) {
+      auto* caption = new QLabel{row.label};
+      caption->setStyleSheet(
+          QStringLiteral("color:%1;font-size:10px;font-weight:600;"
+                         "text-transform:uppercase;margin-top:6px;")
+              .arg(tokens.fg_subtle.name()));
+      rows_layout_->addWidget(caption);
+      continue;
+    }
     auto* row_widget = new QWidget;
     auto* row_layout = new QHBoxLayout{row_widget};
     row_layout->setContentsMargins(0, 3, 0, 3);

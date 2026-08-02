@@ -1,6 +1,7 @@
 #pragma once
 
 #include "device_diagnostics/device_link_state.h"
+#include "device_diagnostics/protocol_diagnostics.h"
 #include "node_service/node_ref.h"
 
 #include <QString>
@@ -37,6 +38,10 @@ struct DeviceDiagnosticRow {
   QString label;
   QString value;
   bool bad = false;  // renders the value in the bad/alarm colour.
+  // A section heading rather than a reading: rendered as a subdued caption with
+  // no value. Kept as a row so the render primitive stays one flat list and the
+  // widget tests that drive it directly are unaffected.
+  bool heading = false;
 };
 
 // The reshell Device Diagnostics inspector — the right region of
@@ -94,6 +99,9 @@ class DeviceDiagnosticsPanel : public QWidget {
     QString label;
     NodeRef node;
     std::unique_ptr<TimedDataSpec> spec;
+    // How the raw value is turned into text; counters are plain numbers, a link
+    // state is a word, a t1 flag is a condition.
+    ProtocolValueShape shape = ProtocolValueShape::kCount;
   };
 
   QString device_name_;
@@ -105,6 +113,11 @@ class DeviceDiagnosticsPanel : public QWidget {
   std::unique_ptr<TimedDataSpec> online_spec_;
   std::unique_ptr<TimedDataSpec> enabled_spec_;
   std::vector<Reading> readings_;
+  // The selected device's PARENT LINK readings, when its protocol is registered
+  // (ADR 0007). Empty for an unregistered protocol or a device with no link, so
+  // the section is omitted rather than drawn empty.
+  std::vector<Reading> link_readings_;
+  QString link_section_label_;
 
   QStackedWidget* stack_ = nullptr;  // [0] empty state, [1] content.
   QLabel* name_ = nullptr;
