@@ -284,17 +284,17 @@
     },
     {
       "file": "roles.png",
-      "tag": "auto-view",
+      "tag": "reshell-theme",
       "published": false,
       "referenced_from": [],
-      "notes": "The Roles view: every Role of Server.ServerCapabilities.RoleSet with the accounts it is granted to, read via the identity mapping rules (Part 18 4.4.3). Admin-gated (WIN_REQUIRES_ADMIN), read-only. KNOWN FIXTURE GAP: Members renders 'None' for every Role. The RoleSet and its Roles browse correctly - the capture shows both - but the identity-rule rows the fixture projects under them do not come back from the client browse, so no membership reaches the view. The read path itself is unit-tested against FakeNodeService (role_membership_unittest.cpp); it is the offline fixture's rule projection that is unproven. Fix that before publishing this image. The manual prose for this surface is written (scada-docs client/workbench.md + en/ mirror, #administration); the image is NOT embedded yet because the published set must come from the WINDOWS pipeline - a macOS render differs by font alone and would commit as churn. Embed it on the next Windows regeneration, set published:true and add it to current_generator_owned_subset."
+      "notes": "The Roles view: every Role of Server.ServerCapabilities.RoleSet with the accounts it is granted to, read via the identity mapping rules (Part 18 4.4.3). Admin-gated (WIN_REQUIRES_ADMIN), read-only. THEME-GATED, so reshell-theme rather than auto-view: MakeRolesGridPanel() returns nullptr under the legacy theme (the whole user_access panel family does), so RolesView::Init builds no widget, OpenedView::Init throws 'Can't create widget', and the view never opens. Tagged auto-view until 2026-08-02, which made every default-pipeline run fail this capture - the admin gate was NOT the cause, the session holds Configure. To publish it, the panel factory must first drop its legacy gate (the publish subset admits auto-* only). KNOWN FIXTURE GAP: Members renders 'None' for every Role. The RoleSet and its Roles browse correctly - the capture shows both - but the identity-rule rows the fixture projects under them do not come back from the client browse, so no membership reaches the view. The read path itself is unit-tested against FakeNodeService (role_membership_unittest.cpp); it is the offline fixture's rule projection that is unproven. Fix that before publishing this image. The manual prose for this surface is written (scada-docs client/workbench.md + en/ mirror, #administration); the image is NOT embedded yet because the published set must come from the WINDOWS pipeline - a macOS render differs by font alone and would commit as churn. Embed it on the next Windows regeneration, set published:true and add it to current_generator_owned_subset."
     },
     {
       "file": "password-policy.png",
-      "tag": "auto-view",
+      "tag": "reshell-theme",
       "published": false,
       "referenced_from": [],
-      "notes": "The Password policy view: what the server publishes on the UserManagement object (OPC UA Part 18 5.2.2) - the length range, the required character classes, and the deployment's own wording of the rule, shown verbatim. Read-only; the policy is server configuration. The fixture configures no policy, so the capture shows the unconstrained case (Any length, nothing required) - which is a REAL state and deliberately distinct from 'No data', the unreadable case that also suppresses every requirement row. The manual prose for this surface is written (scada-docs client/workbench.md + en/ mirror, #administration); the image is NOT embedded yet because the published set must come from the WINDOWS pipeline - a macOS render differs by font alone and would commit as churn. Embed it on the next Windows regeneration, set published:true and add it to current_generator_owned_subset."
+      "notes": "The Password policy view: what the server publishes on the UserManagement object (OPC UA Part 18 5.2.2) - the length range, the required character classes, and the deployment's own wording of the rule, shown verbatim. Read-only; the policy is server configuration. THEME-GATED, so reshell-theme rather than auto-view: MakePasswordPolicyPanel() returns nullptr under the legacy theme, so the view builds no widget and never opens - same gate and same 2026-08-02 retag as roles.png. The fixture configures no policy, so the capture shows the unconstrained case (Any length, nothing required) - which is a REAL state and deliberately distinct from 'No data', the unreadable case that also suppresses every requirement row. The manual prose for this surface is written (scada-docs client/workbench.md + en/ mirror, #administration); the image is NOT embedded yet because the published set must come from the WINDOWS pipeline - a macOS render differs by font alone and would commit as churn. Embed it on the next Windows regeneration, set published:true and add it to current_generator_owned_subset."
     },
     {
       "file": "audit-log.png",
@@ -829,12 +829,12 @@
     "auto-dialog": 23,
     "auto-menu": 17,
     "auto-state": 5,
-    "auto-view": 21,
+    "auto-view": 19,
     "manual-diagram": 4,
     "manual-modus": 5,
     "manual-os": 2,
     "obsolete": 7,
-    "reshell-theme": 25
+    "reshell-theme": 27
   },
   "current_generator_owned_subset": [
     "client-login.png",

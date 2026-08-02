@@ -273,7 +273,15 @@ OpenedView* ViewManager::CreateView(WindowDefinition& def,
   std::unique_ptr<OpenedView> opened_view;
   try {
     opened_view = delegate_.OnCreateView(def);
-  } catch (const std::exception&) {
+  } catch (const std::exception& e) {
+    // Log it: this is the one place a view can fail to open with no trace at
+    // all. `OpenedView::Init` throws for both "no controller for this command"
+    // (unregistered type, or an admin gate the session does not pass) and "the
+    // controller built no widget", and swallowing that silently leaves a page
+    // simply missing a window. The screenshot generator's "Window type not
+    // found" failures were this, invisible for want of one line.
+    BOOST_LOG_TRIVIAL(error)
+        << "Failed to create view " << def.type << ": " << e.what();
     return nullptr;
   }
 
