@@ -17,6 +17,7 @@
 #include "export/configuration/export_configuration_module.h"
 #include "export/csv/csv_export_module.h"
 #include "export/excel/excel_export_module.h"
+#include "administration/administration_module.h"
 #include "favorites/favorites_module.h"
 #include "filesystem/filesystem_component.h"
 #include "main_window/main_window_module.h"
@@ -378,6 +379,14 @@ void ClientApplication::CreateFeatureComponents(const PostLoginContext& ctx) {
       .controller_registry_ = *controller_registry_,
       .ui_command_registry_ = *ui_command_registry_});
   shutdown_stack_.Push([this] { favorites_module_.reset(); });
+
+  // The rail's Administration mode pane. Registered unconditionally; the
+  // WIN_REQUIRES_ADMIN flag on its WindowInfo is what hides the mode from a
+  // session without the Configure right.
+  administration_module_ =
+      std::make_unique<AdministrationModule>(AdministrationModuleContext{
+          .controller_registry_ = *controller_registry_});
+  shutdown_stack_.Push([this] { administration_module_.reset(); });
 
   portfolio_module_ = std::make_unique<PortfolioModule>(PortfolioModuleContext{
       *node_service_, *profile_, *controller_registry_, *ui_command_registry_});

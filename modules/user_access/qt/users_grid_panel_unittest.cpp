@@ -19,9 +19,21 @@ class UsersGridPanelTest : public ::testing::Test {
 
   static std::vector<UserGridRow> SampleRows() {
     return {
-        {scada::NodeId{234, 1}, u"root", UserRole::kObserver, false},
-        {scada::NodeId{2, 1}, u"engineer", UserRole::kAdministrator, false},
-        {scada::NodeId{3, 1}, u"dispatcher", UserRole::kOperator, true},
+        {.name = u"root",
+         .roles = std::vector<AccountRole>{{scada::NodeId{15716, 0}, u"ConfigureAdmin"}},
+         .node_id = scada::NodeId{234, 1}},
+        {.name = u"engineer",
+         .description = u"Commissioning",
+         .user_configuration = scada::UserConfiguration::kDisabled,
+         .roles = std::vector<AccountRole>{{scada::NodeId{16036, 0}, u"Engineer"},
+                                   {scada::NodeId{15680, 0}, u"Operator"}},
+         .node_id = scada::NodeId{2, 1}},
+        // No Role at all, and a role set that could not be read — the two
+        // states the column must not conflate.
+        {.name = u"dispatcher",
+         .roles = std::vector<AccountRole>{},
+         .node_id = scada::NodeId{3, 1}},
+        {.name = u"unknown", .roles = std::nullopt, .node_id = scada::NodeId{4, 1}},
     };
   }
 };
@@ -32,15 +44,20 @@ TEST_F(UsersGridPanelTest, ShowRowsPopulatesGridAndCount) {
 
   auto* grid = panel.findChild<QTableWidget*>(QStringLiteral("usersGrid"));
   ASSERT_NE(grid, nullptr);
-  EXPECT_EQ(grid->rowCount(), 3);
+  EXPECT_EQ(grid->rowCount(), 4);
   EXPECT_EQ(grid->item(1, 0)->text(), QStringLiteral("engineer"));
-  EXPECT_EQ(grid->item(1, 1)->text(), QStringLiteral("Administrator"));
-  EXPECT_EQ(grid->item(2, 2)->text(), QStringLiteral("Multiple"));
-  EXPECT_EQ(grid->item(0, 2)->text(), QStringLiteral("Single"));
+  EXPECT_EQ(grid->item(1, 1)->text(), QStringLiteral("Commissioning"));
+  // Every Role the account holds, not a single derived label.
+  EXPECT_EQ(grid->item(1, 2)->text(), QStringLiteral("Engineer, Operator"));
+  EXPECT_EQ(grid->item(1, 3)->text(), QStringLiteral("Disabled"));
+  EXPECT_EQ(grid->item(0, 3)->text(), QStringLiteral("Enabled"));
+  // "holds no Role" and "we could not read the Roles" render differently.
+  EXPECT_EQ(grid->item(2, 2)->text(), QStringLiteral("None"));
+  EXPECT_EQ(grid->item(3, 2)->text(), QStringLiteral("No data"));
 
   auto* title = panel.findChild<QLabel*>(QStringLiteral("usersTitle"));
   ASSERT_NE(title, nullptr);
-  EXPECT_TRUE(title->text().contains(QStringLiteral("3")));
+  EXPECT_TRUE(title->text().contains(QStringLiteral("4")));
 }
 
 TEST_F(UsersGridPanelTest, SelectingARowEmitsUserActivated) {

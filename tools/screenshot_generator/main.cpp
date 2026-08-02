@@ -1,3 +1,4 @@
+#include "administration_capture.h"
 #include "bulk_create_capture.h"
 #include "command_field_capture.h"
 #include "debugger_capture.h"
@@ -452,6 +453,9 @@ ScreenshotGenerator::ScreenshotGenerator() {
   // inside ClientApplication browses and reads them through
   // ViewServiceImpl + AttributeServiceImpl on demand.
   PopulateFixtureNodes(address_space_, g_config.json);
+  // The Users grid reads the standard model; project the fixture's accounts
+  // onto it so the capture is not an empty grid.
+  ProjectFixtureUsersOntoStandardModel(address_space_, g_config.json);
 
   // Seed history only for nodes that made it into the address space. The
   // fixture's `nodes` array can declare a node its `tree` never parents, and
@@ -533,10 +537,18 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
       ++captured;
       continue;
     }
+    // The Administration explorer is the left region of users-admin.html. It
+    // derives its rows from the shell's command resolution, which the headless
+    // generator has no shell for, so the capture supplies the section set.
+    if (spec.window_type == "Administration") {
+      SaveAdministrationScreenshot(spec);
+      ++captured;
+      continue;
+    }
     // The users-admin RBAC inspector is standalone reshell chrome (the right
     // region of users-admin.html), built from a fixture user.
     if (spec.window_type == "UserAccess") {
-      SaveUserAccessScreenshot(spec, app_.node_service());
+      SaveUserAccessScreenshot(spec, app_.node_service(), executor_);
       ++captured;
       continue;
     }

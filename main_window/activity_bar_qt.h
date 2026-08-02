@@ -45,6 +45,7 @@ class ActivityBar : public QWidget {
     kDevices,
     kFiles,
     kNodes,
+    kAdministration,
     kNewPage,
   };
 

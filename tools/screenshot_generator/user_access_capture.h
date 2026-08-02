@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 struct ScreenshotSpec;
 class NodeService;
 
@@ -12,4 +14,5 @@ class NodeService;
 // ShowUser with the real node service, then grabs the widget — exercising the
 // real AccessRights read + role/permission derivation.
 void SaveUserAccessScreenshot(const ScreenshotSpec& spec,
-                              NodeService& node_service);
+                              NodeService& node_service,
+                              AnyExecutor executor);

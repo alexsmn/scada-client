@@ -54,6 +54,7 @@ class CreateTree;
 class EventModule;
 class NodeEventProvider;
 class Favourites;
+class AdministrationModule;
 class FavoritesModule;
 class FileSystemComponent;
 class MainWindowManager;
@@ -182,6 +183,7 @@ class ClientApplication : private ClientApplicationContext {
   std::shared_ptr<TaskManager> task_manager_;
   std::unique_ptr<PortfolioModule> portfolio_module_;
   std::unique_ptr<FavoritesModule> favorites_module_;
+  std::unique_ptr<AdministrationModule> administration_module_;
   std::unique_ptr<PrintModule> print_module_;
   std::unique_ptr<Speech> speech_;
   std::unique_ptr<BlinkerManager> blinker_manager_;

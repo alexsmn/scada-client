@@ -18,6 +18,7 @@ enum class PaneModeId {
   kDevices,
   kFiles,
   kNodes,
+  kAdministration,
 };
 
 // One rail mode. `pane_types` holds `WindowInfo::name` values in the order they

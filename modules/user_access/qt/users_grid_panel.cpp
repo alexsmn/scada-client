@@ -23,20 +23,43 @@ QString Tr(std::string_view text) {
   return QString::fromStdU16String(Translate(text));
 }
 
-// The role cell's colour, matching the RBAC inspector's pill: Administrator
-// reads bad (asserted authority, not an alarm), Operator good, Observer muted.
-QColor RoleColor(UserRole role, const scada::aui::ThemeTokens& tokens) {
-  switch (role) {
-    case UserRole::kAdministrator:
-      return tokens.bad;
-    case UserRole::kOperator:
-      return tokens.good;
-    case UserRole::kUnknown:
-      return tokens.fg_muted;
-    case UserRole::kObserver:
-      break;
+// The Roles cell. An account with no Role is a plain authenticated user who
+// may only look, which is a real state and reads muted; a role set that could
+// not be READ says so instead, because rendering it as "no roles" would state
+// a fact the client does not have (docs/client/ux/principles.md §5).
+QString RolesText(const std::optional<std::vector<AccountRole>>& roles) {
+  if (!roles) {
+    return Tr("No data");
   }
-  return tokens.fg_subtle;
+  if (roles->empty()) {
+    return Tr("None");
+  }
+  QStringList names;
+  for (const AccountRole& role : *roles) {
+    names << QString::fromStdU16String(role.name);
+  }
+  return names.join(QStringLiteral(", "));
+}
+
+QColor RolesColor(const std::optional<std::vector<AccountRole>>& roles,
+                  const scada::aui::ThemeTokens& tokens) {
+  if (!roles) {
+    return tokens.fg_muted;
+  }
+  // Holding any Role is authority worth seeing at a glance; holding none is
+  // the quiet default.
+  return roles->empty() ? tokens.fg_subtle : tokens.fg;
+}
+
+// Disabled is the one account state an administrator scans for, so it carries
+// the bad token — an account that cannot authenticate is a fact, not an alarm,
+// but it must not read as ordinary.
+QColor StatusColor(scada::UserConfiguration user_configuration,
+                   const scada::aui::ThemeTokens& tokens) {
+  return scada::HasUserConfiguration(user_configuration,
+                                     scada::UserConfiguration::kDisabled)
+             ? tokens.bad
+             : tokens.good;
 }
 
 }  // namespace
@@ -103,8 +126,9 @@ QWidget* UsersGridPanel::BuildHeader() {
 QWidget* UsersGridPanel::BuildGrid() {
   grid_ = new QTableWidget;
   grid_->setObjectName(QStringLiteral("usersGrid"));
-  grid_->setColumnCount(3);
-  grid_->setHorizontalHeaderLabels({Tr("User"), Tr("Role"), Tr("Sessions")});
+  grid_->setColumnCount(4);
+  grid_->setHorizontalHeaderLabels(
+      {Tr("User"), Tr("Description"), Tr("Roles"), Tr("Status")});
   grid_->verticalHeader()->setVisible(false);
   grid_->setEditTriggers(QAbstractItemView::NoEditTriggers);
   grid_->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -133,13 +157,17 @@ void UsersGridPanel::ShowRows(const std::vector<UserGridRow>& rows) {
     auto* name = new QTableWidgetItem(QString::fromStdU16String(row.name));
     grid_->setItem(i, 0, name);
 
-    auto* role = new QTableWidgetItem(Tr(UserRoleLabelKey(row.role)));
-    role->setForeground(RoleColor(row.role, tokens));
-    grid_->setItem(i, 1, role);
+    grid_->setItem(
+        i, 1, new QTableWidgetItem(QString::fromStdU16String(row.description)));
 
-    auto* sessions =
-        new QTableWidgetItem(Tr(UserSessionsLabelKey(row.multi_sessions)));
-    grid_->setItem(i, 2, sessions);
+    auto* roles = new QTableWidgetItem(RolesText(row.roles));
+    roles->setForeground(RolesColor(row.roles, tokens));
+    grid_->setItem(i, 2, roles);
+
+    auto* status =
+        new QTableWidgetItem(Tr(UserStatusLabelKey(row.user_configuration)));
+    status->setForeground(StatusColor(row.user_configuration, tokens));
+    grid_->setItem(i, 3, status);
   }
 }
 

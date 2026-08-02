@@ -97,15 +97,21 @@ std::unique_ptr<UiView> NodeTableController::Init(
                                                right_click);
           });
       // Populate the rows off the construction path; a QPointer guards a late
-      // completion against a destroyed panel.
+      // completion against a destroyed panel. The accounts come from the
+      // standard UserManagement object rather than from this view's parent
+      // folder — the folder is only what routed us here.
       CoSpawn(executor_,
-              [executor = executor_, folder = model_->parent_node(),
+              [executor = executor_, &node_service = node_service_,
                panel_ptr = QPointer<UsersGridPanel>{panel}]() mutable
               -> Awaitable<void> {
-                std::vector<UserGridRow> rows =
-                    co_await BuildUsersGrid(executor, std::move(folder));
-                if (panel_ptr)
-                  panel_ptr->ShowRows(rows);
+                auto rows = co_await BuildUsersGrid(executor, node_service);
+                if (panel_ptr) {
+                  // nullopt is "the account list could not be read" — which a
+                  // non-administrator gets by design (Part 18 §5.2.1). Showing
+                  // an empty grid instead would say the server has no users.
+                  panel_ptr->ShowRows(rows ? *rows
+                                           : std::vector<UserGridRow>{});
+                }
                 co_return;
               });
       return std::unique_ptr<UiView>{panel};

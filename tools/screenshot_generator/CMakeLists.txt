@@ -30,6 +30,7 @@ add_executable(client_screenshot_generator
   "display_capture.cpp"
   "display_capture.h"
   "device_diagnostics_capture.cpp"
+  "administration_capture.cpp"
   "user_access_capture.cpp"
   "transmission_rule_capture.cpp"
   "bulk_create_capture.cpp"
@@ -41,6 +42,7 @@ add_executable(client_screenshot_generator
   "inspector_capture.cpp"
   "inspector_capture.h"
   "transmission_rule_capture.h"
+  "administration_capture.h"
   "user_access_capture.h"
   "device_diagnostics_capture.h"
   "dialog_capture.cpp"
@@ -80,6 +82,7 @@ target_link_libraries(client_screenshot_generator PRIVATE
   client_display_frame_qt
   client_device_diagnostics_qt
   client_inspector_qt
+  client_administration_qt
   client_user_access_qt
   client_component_transmission_qt
   client_transmission_rules_qt
@@ -161,7 +164,7 @@ add_test(NAME client_screenshot_check_themed
   COMMAND ${CMAKE_COMMAND} -E env QT_QPA_PLATFORM=offscreen
     $<TARGET_FILE:client_screenshot_generator>
     "--theme=dark"
-    "--only=config-parameters.png,config-address-map.png,config-limits.png,hardware-tree.png,object-tree.png,users-admin.png,admin-simulation.png,admin-formats.png,admin-historical-dbs.png,severity-tiles.png,command-field.png,events-alarm-surface.png,table-workspace.png,workbench-window.png,workbench-overview.png,workbench-login.png,substation-display.png,inspector-event.png,transmission-rules.png,series-inspector.png"
+    "--only=administration-explorer.png,config-parameters.png,config-address-map.png,config-limits.png,hardware-tree.png,object-tree.png,users-admin.png,admin-simulation.png,admin-formats.png,admin-historical-dbs.png,severity-tiles.png,command-field.png,events-alarm-surface.png,table-workspace.png,workbench-window.png,workbench-overview.png,workbench-login.png,substation-display.png,inspector-event.png,transmission-rules.png,series-inspector.png"
     "--out=${CMAKE_CURRENT_BINARY_DIR}/screenshot_check_themed"
 )
 set_tests_properties(client_screenshot_check_themed PROPERTIES TIMEOUT 300)

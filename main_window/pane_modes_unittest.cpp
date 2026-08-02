@@ -37,13 +37,26 @@ TEST(PaneModesTest, ObjectsModeListsStructAndPortfolio) {
   EXPECT_FALSE(mode.requires_admin);
 }
 
-TEST(PaneModesTest, NodesModeRequiresAdmin) {
+TEST(PaneModesTest, AdminModesRequireAdmin) {
   EXPECT_TRUE(GetPaneMode(PaneModeId::kNodes).requires_admin);
+  EXPECT_TRUE(GetPaneMode(PaneModeId::kAdministration).requires_admin);
   // Nothing else does — a mode the operator cannot reach is a hole in the rail.
   for (const PaneMode& mode : GetPaneModes()) {
-    if (mode.id != PaneModeId::kNodes)
+    if (mode.id != PaneModeId::kNodes &&
+        mode.id != PaneModeId::kAdministration) {
       EXPECT_FALSE(mode.requires_admin) << mode.key;
+    }
   }
+}
+
+// The rail mode is only as reachable as its pane: MainWindow::
+// IsPaneModeAvailable hides a mode whose panes resolve no command handler, and
+// the router refuses a WIN_REQUIRES_ADMIN command without the Configure right.
+// Naming the wrong pane here would silently show the mode to everyone.
+TEST(PaneModesTest, AdministrationModeOwnsTheAdministrationPane) {
+  const PaneMode& mode = GetPaneMode(PaneModeId::kAdministration);
+  EXPECT_EQ(mode.key, "administration");
+  EXPECT_EQ(mode.pane_types, (std::vector<std::string_view>{"Administration"}));
 }
 
 TEST(PaneModesTest, EveryOwnedPaneBelongsToExactlyOneMode) {

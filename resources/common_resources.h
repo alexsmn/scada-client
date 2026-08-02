@@ -16,6 +16,8 @@
 #define ID_HARDWARE_VIEW                108
 #define ID_WIN_RENAME                   108
 #define ID_USERS_VIEW                   109
+// The Administration explorer pane (the rail's Administration mode).
+#define ID_ADMINISTRATION_VIEW          135
 #define ID_ACKNOWLEDGE_CURRENT          110
 #define ID_ACKNOWLEDGE_ALL              111
 #define ID_SHEET_VIEW                   112
@@ -132,6 +134,11 @@
 #define ID_OK                           1012
 #define ID_CANCEL                       1013
 #define ID_HISTORICAL_DB_VIEW           2017
+// The RoleSet: every Role and the accounts it is granted to (OPC UA Part 18
+// §4.4.1). Role membership is the stored authorization model.
+#define ID_ROLES_VIEW                   2018
+// The password policy the server publishes (OPC UA Part 18 §5.2.2).
+#define ID_PASSWORD_POLICY_VIEW         2019
 #define ID_GRAPH_ZOOM                   4001
 #define ID_EXPORT_CONFIGURATION_TO_EXCEL 4022
 #define ID_IMPORT_CONFIGURATION_FROM_EXCEL 4023

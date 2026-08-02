@@ -427,6 +427,8 @@ ActivityBar::Icon ModeIconKind(PaneModeId id) {
       return ActivityBar::Icon::kFiles;
     case PaneModeId::kNodes:
       return ActivityBar::Icon::kNodes;
+    case PaneModeId::kAdministration:
+      return ActivityBar::Icon::kAdministration;
   }
   return ActivityBar::Icon::kNone;
 }
@@ -1119,7 +1121,9 @@ void MainWindow::OnSelectionChanged() {
       // clears.
       if (selection && !selection->empty() && !selection->multiple() &&
           IsInstanceOf(selection->node(), scada::security::id::UserType)) {
-        user_access_->ShowUser(selection->node());
+        // The node carries the account's NAME; the panel reads the Roles
+        // themselves from the RoleSet.
+        user_access_->ShowUser(selection->node(), *node_service_, executor_);
       } else {
         user_access_->Clear();
       }

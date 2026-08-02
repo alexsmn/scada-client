@@ -22,11 +22,23 @@ BasicCommand<SelectionCommandContext> ChangePasswordCommandBuilder::Build() {
   return {.command_id = ID_CHANGE_PASSWORD,
           .execute_handler =
               [executor = executor_, &local_events = local_events_,
-               &profile = profile_](const SelectionCommandContext& context) {
+               &profile = profile_, &session_service = session_service_,
+               &node_service = node_service_](
+                  const SelectionCommandContext& context) {
+                // Self vs. administrator reset selects the standard method
+                // (Part 18 §5.2.8 vs §5.2.7) and the form.
+                const bool self_service =
+                    context.selection.node().node_id() ==
+                    session_service.GetUserId();
                 ShowChangePasswordDialog(
                     context.dialog_service,
-                    ChangePasswordContext{context.selection.node(), executor,
-                                          local_events, profile});
+                    ChangePasswordContext{
+                        .user_ = context.selection.node(),
+                        .executor_ = executor,
+                        .local_events_ = local_events,
+                        .profile_ = profile,
+                        .node_service_ = &node_service,
+                        .self_service_ = self_service});
               },
           .available_handler =
               [&session_service =

@@ -1510,6 +1510,94 @@
         <translation>Пользователи</translation>
     </message>
     <message>
+        <source>Description</source>
+        <translation>Описание</translation>
+    </message>
+    <message>
+        <source>Roles</source>
+        <translation>Роли</translation>
+    </message>
+    <message>
+        <source>Members</source>
+        <translation>Участники</translation>
+    </message>
+    <message>
+        <source>Password policy</source>
+        <translation>Политика паролей</translation>
+    </message>
+    <message>
+        <source>Length</source>
+        <translation>Длина</translation>
+    </message>
+    <message>
+        <source>Any length</source>
+        <translation>Любая длина</translation>
+    </message>
+    <message>
+        <source>Must contain</source>
+        <translation>Должен содержать</translation>
+    </message>
+    <message>
+        <source>Upper-case letter</source>
+        <translation>Заглавную букву</translation>
+    </message>
+    <message>
+        <source>Lower-case letter</source>
+        <translation>Строчную букву</translation>
+    </message>
+    <message>
+        <source>Digit</source>
+        <translation>Цифру</translation>
+    </message>
+    <message>
+        <source>Special character</source>
+        <translation>Специальный символ</translation>
+    </message>
+    <message>
+        <source>The password policy could not be read.</source>
+        <translation>Не удалось прочитать политику паролей.</translation>
+    </message>
+    <message>
+        <source>The password is too short</source>
+        <translation>Пароль слишком короткий</translation>
+    </message>
+    <message>
+        <source>The password is too long</source>
+        <translation>Пароль слишком длинный</translation>
+    </message>
+    <message>
+        <source>The password needs an upper-case letter</source>
+        <translation>В пароле нужна заглавная буква</translation>
+    </message>
+    <message>
+        <source>The password needs a lower-case letter</source>
+        <translation>В пароле нужна строчная буква</translation>
+    </message>
+    <message>
+        <source>The password needs a digit</source>
+        <translation>В пароле нужна цифра</translation>
+    </message>
+    <message>
+        <source>The password needs a special character</source>
+        <translation>В пароле нужен специальный символ</translation>
+    </message>
+    <message>
+        <source>Standard role</source>
+        <translation>Стандартная</translation>
+    </message>
+    <message>
+        <source>Custom role</source>
+        <translation>Произвольная</translation>
+    </message>
+    <message>
+        <source>Enabled</source>
+        <translation>Включено</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>Нет</translation>
+    </message>
+    <message>
         <source>Databases</source>
         <translation>Базы данных</translation>
     </message>

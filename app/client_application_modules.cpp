@@ -122,6 +122,7 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
             .local_events_ = context.local_events_,
             .profile_ = context.profile_,
             .session_service_ = *context.scada_services_.session_service,
+            .node_service_ = context.node_service_,
             .selection_commands_ = context.selection_commands_,
             .ui_command_registry_ = context.ui_command_registry_}));
     context.singletons_.emplace(

@@ -7,6 +7,7 @@ template <class T>
 class BasicCommandRegistry;
 
 class LocalEvents;
+class NodeService;
 class Profile;
 class UiCommandRegistry;
 struct SelectionCommandContext;
@@ -16,6 +17,7 @@ struct ChangePasswordModuleContext {
   LocalEvents& local_events_;
   Profile& profile_;
   scada::SessionService& session_service_;
+  NodeService& node_service_;
   BasicCommandRegistry<SelectionCommandContext>& selection_commands_;
   UiCommandRegistry& ui_command_registry_;
 };

@@ -13,20 +13,20 @@
 #include <array>
 
 void SaveUserAccessScreenshot(const ScreenshotSpec& spec,
-                              NodeService& node_service) {
-  // USER.5 "Администратор" carries AccessRights = 3 (Configure + Control), i.e.
-  // the Administrator role with every permission granted — the mockup's user.
+                              NodeService& node_service,
+                              AnyExecutor executor) {
+  // USER.5 "Администратор" — the mockup's user. The panel reads its Roles from
+  // the RoleSet; the node supplies only the account NAME they are matched by.
   const scada::NodeId user_id = NodeIdFromScadaString("USER.5");
 
-  // Make the user (its type + AccessRights property) resident so ShowUser can
-  // resolve the AccessRights aggregate and read its value.
+  // Make the user resident so the panel can read its display name.
   const std::array<scada::NodeId, 1> ids{user_id};
   scada::screenshot_generator::FetchNodesResident(node_service, ids);
 
   NodeRef user = node_service.GetNode(user_id);
 
   UserAccessPanel panel;
-  panel.ShowUser(user);
+  panel.ShowUser(user, node_service, executor);
 
   SaveScreenshot(&panel, spec);
 }

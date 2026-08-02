@@ -28,6 +28,7 @@ client_module_link_libraries(client_main_window PRIVATE
   # TODO: Remove. Use dependecy injection.
   client_export_csv
   client_export_excel
+  client_administration
   client_favorites
   client_filesystem
   client_portfolio

@@ -13,9 +13,16 @@ class QPushButton;
 class QTableWidget;
 
 // The reshell users-admin grid — the main region of users-admin.html. It lists
-// the users (identity + coarse role + session policy) in a themed table, with a
-// header carrying the count and the "editing requires Administrator" hint.
-// Selecting a row emits UserActivated so the host can drive the RBAC inspector.
+// every account (name, description, the Roles it holds, and whether it is
+// enabled) in a themed table, with a header carrying the count and the
+// "editing requires Administrator" hint. Selecting a row emits UserActivated
+// so the host can drive the RBAC inspector.
+//
+// The rows come from the OPC UA standard user model — one Read of
+// UserManagement.Users joined against the RoleSet membership rules (see
+// users_grid.h). The Roles column is the authorization model itself, not a
+// label derived from the retired access-rights bitmask, so revoking a Role is
+// visible here.
 //
 // Actions reuse the existing commands: a right-click on the grid, the
 // Reset-password button, or the Add-user button emits ActionsMenuRequested so
@@ -27,9 +34,10 @@ class QTableWidget;
 // parented to the Users folder, gated on the Configure access right). Reset-
 // password is enabled only when a user row is selected; Add-user is always
 // enabled (the create is parent-scoped and access-right-gated at the command).
-// Enable / disable of an account is *not* offered: the client UserType node
-// model has no enabled/disabled attribute (only AccessRights + MultiSessions +
-// profile fields), so there is nothing to toggle; that state is server-side.
+// Enable / disable of an account is SHOWN (the Status column, from the Part 18
+// UserConfigurationMask) but not yet editable from here: the standard
+// ModifyUser call that would toggle it is not wired to a command, so offering
+// a toggle would promise a write the panel cannot make.
 //
 // It is returned as the Users view under the reshell theme (see
 // NodeTableController); UiView is a QWidget, so the panel is the view.
@@ -47,7 +55,9 @@ class UsersGridPanel : public QWidget {
   const std::vector<UserGridRow>& rows() const { return rows_; }
 
  Q_SIGNALS:
-  // Emitted when the operator activates (selects) a user row.
+  // Emitted when the operator activates (selects) a user row. Carries the
+  // account's UserType node, which the shell routes to the RBAC inspector —
+  // the node is a carrier for the account's NAME, not a source of rights.
   void UserActivated(const scada::NodeId& user_id);
 
   // Emitted when the operator asks for the selected user's actions — a

@@ -81,6 +81,10 @@ std::string_view ModeGlyph(ActivityBar::Icon kind) {
     // from the single device mark above.
     case ActivityBar::Icon::kNodes:
       return ":/icons/waypoints.svg";
+    // A shield carrying a person: the security surface, and the same mark the
+    // admin screen uses for the pane mode (users-admin.html).
+    case ActivityBar::Icon::kAdministration:
+      return ":/icons/shield-user.svg";
     case ActivityBar::Icon::kNewPage:
       return ":/icons/plus.svg";
     case ActivityBar::Icon::kNone:

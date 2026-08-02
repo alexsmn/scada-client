@@ -1421,6 +1421,12 @@
       "height": 520
     },
     {
+      "type": "Administration",
+      "filename": "administration-explorer.png",
+      "width": 214,
+      "height": 400
+    },
+    {
       "type": "UserAccess",
       "filename": "users-rbac.png",
       "width": 320,
@@ -1432,6 +1438,19 @@
       "width": 700,
       "height": 440,
       "min_rows": 9
+    },
+    {
+      "type": "Roles",
+      "filename": "roles.png",
+      "width": 700,
+      "height": 300,
+      "min_rows": 2
+    },
+    {
+      "type": "PasswordPolicy",
+      "filename": "password-policy.png",
+      "width": 420,
+      "height": 300
     },
     {
       "type": "TransmissionRule",
@@ -1627,27 +1646,129 @@
         90
       ],
       "cells": [
-        {"row": 1, "col": 1, "text": "ЭСТРА-ПС — сводное табло", "color": "#FFDCE6F1"},
-        {"row": 1, "col": 2, "text": "", "color": "#FFDCE6F1"},
-        {"row": 1, "col": 3, "text": "", "color": "#FFDCE6F1"},
-        {"row": 3, "col": 1, "text": "Параметр", "color": "#FFEFEFEF"},
-        {"row": 3, "col": 2, "text": "Значение", "align": "center", "color": "#FFEFEFEF"},
-        {"row": 3, "col": 3, "text": "Ед. изм.", "align": "center", "color": "#FFEFEFEF"},
-        {"row": 4, "col": 1, "text": "Активная мощность"},
-        {"row": 4, "col": 2, "text": "=TIT.200", "align": "right"},
-        {"row": 4, "col": 3, "text": "МВт", "align": "center"},
-        {"row": 5, "col": 1, "text": "Реактивная мощность"},
-        {"row": 5, "col": 2, "text": "=TIT.201", "align": "right"},
-        {"row": 5, "col": 3, "text": "Мвар", "align": "center"},
-        {"row": 6, "col": 1, "text": "Напряжение L1-L2"},
-        {"row": 6, "col": 2, "text": "=TIT.202", "align": "right"},
-        {"row": 6, "col": 3, "text": "кВ", "align": "center"},
-        {"row": 7, "col": 1, "text": "Частота"},
-        {"row": 7, "col": 2, "text": "=TIT.208", "align": "right"},
-        {"row": 7, "col": 3, "text": "Гц", "align": "center"},
-        {"row": 8, "col": 1, "text": "Температура T1"},
-        {"row": 8, "col": 2, "text": "=TIT.211", "align": "right"},
-        {"row": 8, "col": 3, "text": "°C", "align": "center"}
+        {
+          "row": 1,
+          "col": 1,
+          "text": "ЭСТРА-ПС — сводное табло",
+          "color": "#FFDCE6F1"
+        },
+        {
+          "row": 1,
+          "col": 2,
+          "text": "",
+          "color": "#FFDCE6F1"
+        },
+        {
+          "row": 1,
+          "col": 3,
+          "text": "",
+          "color": "#FFDCE6F1"
+        },
+        {
+          "row": 3,
+          "col": 1,
+          "text": "Параметр",
+          "color": "#FFEFEFEF"
+        },
+        {
+          "row": 3,
+          "col": 2,
+          "text": "Значение",
+          "align": "center",
+          "color": "#FFEFEFEF"
+        },
+        {
+          "row": 3,
+          "col": 3,
+          "text": "Ед. изм.",
+          "align": "center",
+          "color": "#FFEFEFEF"
+        },
+        {
+          "row": 4,
+          "col": 1,
+          "text": "Активная мощность"
+        },
+        {
+          "row": 4,
+          "col": 2,
+          "text": "=TIT.200",
+          "align": "right"
+        },
+        {
+          "row": 4,
+          "col": 3,
+          "text": "МВт",
+          "align": "center"
+        },
+        {
+          "row": 5,
+          "col": 1,
+          "text": "Реактивная мощность"
+        },
+        {
+          "row": 5,
+          "col": 2,
+          "text": "=TIT.201",
+          "align": "right"
+        },
+        {
+          "row": 5,
+          "col": 3,
+          "text": "Мвар",
+          "align": "center"
+        },
+        {
+          "row": 6,
+          "col": 1,
+          "text": "Напряжение L1-L2"
+        },
+        {
+          "row": 6,
+          "col": 2,
+          "text": "=TIT.202",
+          "align": "right"
+        },
+        {
+          "row": 6,
+          "col": 3,
+          "text": "кВ",
+          "align": "center"
+        },
+        {
+          "row": 7,
+          "col": 1,
+          "text": "Частота"
+        },
+        {
+          "row": 7,
+          "col": 2,
+          "text": "=TIT.208",
+          "align": "right"
+        },
+        {
+          "row": 7,
+          "col": 3,
+          "text": "Гц",
+          "align": "center"
+        },
+        {
+          "row": 8,
+          "col": 1,
+          "text": "Температура T1"
+        },
+        {
+          "row": 8,
+          "col": 2,
+          "text": "=TIT.211",
+          "align": "right"
+        },
+        {
+          "row": 8,
+          "col": 3,
+          "text": "°C",
+          "align": "center"
+        }
       ]
     },
     {

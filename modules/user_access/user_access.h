@@ -1,37 +1,32 @@
 #pragma once
 
+#include "scada/authorization.h"
+#include "user_access/role_membership.h"
+
 #include <optional>
+#include <span>
 #include <vector>
 
-// The access-rights model for the reshell users-admin RBAC inspector
-// (users-admin.html). The server grants users two access-right bits — Configure
-// and Control (scada::AccessRight) — in the AccessRights bitmask; everyone may
-// view. These pure helpers derive the coarse role and the permission breakdown
-// from that bitmask, so they are unit-testable without Qt or a node service.
-
-// The coarse role tier, mirroring the status strip's UserRoleKey: Configure ⇒
-// Administrator, Control ⇒ Operator, otherwise Observer.
+// The access-rights model for the users-admin RBAC inspector
+// (users-admin.html).
 //
-// kUnknown is the "AccessRights was never delivered" tier, and is never
-// produced by UserRoleFor — only by a caller that could not read the bitmask at
-// all. It exists because an absent bitmask reads as zero, and zero is a
-// perfectly valid bitmask meaning Observer-with-view-only. Rendering an
-// unresolved read as a real role is the failure mode docs/client/ux/
-// principles.md §5 forbids; it is the same defect the Inspector's kUnknown
-// quality band was added for.
-enum class UserRole { kAdministrator, kOperator, kObserver, kUnknown };
+// Authorization is ROLE-based: a session's rights come from the Roles its
+// identity mapping rules grant (OPC UA Part 18 §4.4.1), and the two-bit
+// `UserType.AccessRights` mask this file used to read is vestigial — the
+// server does not consult it, so a client that still derived a role from it
+// would keep showing "Administrator" for an account whose Role had been
+// revoked. These helpers derive the permission breakdown from the granted
+// Roles instead, through the SAME default role→permission map the server
+// enforces with (`scada::DefaultPermissionsForRole`), so the inspector and
+// the server cannot disagree about what an account may do.
 
-UserRole UserRoleFor(int access_rights);
-
-// The role's label key (an English literal for Translate()).
-const char* UserRoleLabelKey(UserRole role);
-
-// A permission shown in the RBAC inspector.
+// A permission shown in the RBAC inspector. These are the coarse capabilities
+// an operator reasons about, each backed by a concrete OPC UA PermissionType
+// bit rather than by a client-invented tier.
 enum class UserPermissionKind {
-  kView,       // browse / live values / trends — always granted.
-  kControl,    // issue commands, write values — scada::AccessRight::kControl.
-  kConfigure,  // edit hardware / limits / users —
-               // scada::AccessRight::kConfigure.
+  kView,       // Browse + Read: see the address space and live values.
+  kControl,    // Write + Call: issue commands and write values.
+  kConfigure,  // AddNode + DeleteNode: change the configuration.
 };
 
 struct UserPermission {
@@ -39,14 +34,26 @@ struct UserPermission {
   bool granted;
 };
 
-// The permission breakdown for an AccessRights bitmask, in display order.
-std::vector<UserPermission> UserPermissionsFor(int access_rights);
+// The permission breakdown implied by the Roles an account holds, in display
+// order.
+//
+// An account holding NO Role yields every permission ungranted, which is
+// correct and not a guess: without a Role the server grants nothing beyond
+// what an anonymous session gets.
+std::vector<UserPermission> PermissionsForRoles(
+    std::span<const AccountRole> roles);
+
+// The union of the default permissions of `roles`. Roles the server publishes
+// that are not well-known contribute nothing here — their permissions are a
+// per-namespace policy the client cannot see (Part 3 §5.2.9), so claiming
+// anything about them would be invention.
+scada::Permission EffectivePermissions(std::span<const AccountRole> roles);
 
 // The permission's label key (an English literal for Translate()).
 const char* UserPermissionLabelKey(UserPermissionKind kind);
 
-// The session-policy label key for the users grid's Sessions column: a user
-// whose MultiSessions flag is set may hold several concurrent sessions. An
-// unset optional means the flag could not be read and reads "No data" — false
-// is a real answer ("single session"), so an absent read must not borrow it.
+// The session-policy label key for a Sessions cell: a user whose MultiSessions
+// flag is set may hold several concurrent sessions. An unset optional means
+// the flag could not be read and reads "No data" — false is a real answer
+// ("single session"), so an absent read must not borrow it.
 const char* UserSessionsLabelKey(std::optional<bool> multi_sessions);

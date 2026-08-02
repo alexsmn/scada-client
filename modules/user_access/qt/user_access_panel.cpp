@@ -1,10 +1,12 @@
 #include "user_access/qt/user_access_panel.h"
 
+#include "base/awaitable.h"
 #include "aui/qt/theme_qt.h"
 #include "aui/severity_colors.h"
 #include "aui/translation.h"
 #include "model/security_node_ids.h"
 #include "node_service/node_ref.h"
+#include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "scada/basic_types.h"
 #include "scada/variant.h"
@@ -28,23 +30,16 @@ QString Tr(std::string_view text) {
   return QString::fromStdU16String(Translate(text));
 }
 
-// The role pill's colour, matching users-admin.html: Administrator reads bad
-// (asserted authority, not an alarm), Operator good, Observer muted. kUnknown
-// is deliberately muted rather than alarming — nothing is wrong with the user,
-// the client simply has not read their rights yet — but it must not borrow any
-// real role's colour.
-QColor RolePillColor(UserRole role, const scada::aui::ThemeTokens& tokens) {
-  switch (role) {
-    case UserRole::kAdministrator:
-      return tokens.bad;
-    case UserRole::kOperator:
-      return tokens.good;
-    case UserRole::kUnknown:
-      return tokens.fg_muted;
-    case UserRole::kObserver:
-      break;
+// The permission rows for the Roles an account holds, already translated.
+std::vector<UserPermissionDisplay> MakePermissionDisplays(
+    std::span<const AccountRole> roles) {
+  std::vector<UserPermissionDisplay> displays;
+  for (const UserPermission& permission : PermissionsForRoles(roles)) {
+    displays.push_back(
+        UserPermissionDisplay{Tr(UserPermissionLabelKey(permission.kind)),
+                              permission.granted});
   }
-  return tokens.fg_subtle;
+  return displays;
 }
 
 }  // namespace
@@ -89,18 +84,29 @@ QWidget* UserAccessPanel::BuildContent() {
   layout->setContentsMargins(14, 14, 14, 14);
   layout->setSpacing(12);
 
-  // Header: user name + role pill.
+  // Header: account name, then the Roles it holds. A list rather than one
+  // pill: an account can hold several Roles, and collapsing them into a single
+  // tier is exactly the fiction the access-rights bitmask used to tell.
   auto* header = new QHBoxLayout;
   name_ = new QLabel;
   name_->setStyleSheet(
       QStringLiteral("color:%1;font-size:14px;font-weight:600;")
           .arg(tokens.fg.name()));
-  role_ = new QLabel;
-  role_->setObjectName(QStringLiteral("userRolePill"));
   header->addWidget(name_);
   header->addStretch(1);
-  header->addWidget(role_);
   layout->addLayout(header);
+
+  auto* roles_header = new QLabel{Tr("Roles")};
+  roles_header->setStyleSheet(
+      QStringLiteral("color:%1;font-size:10px;font-weight:600;"
+                     "text-transform:uppercase;letter-spacing:.5px;")
+          .arg(tokens.fg_subtle.name()));
+  layout->addWidget(roles_header);
+
+  roles_ = new QLabel;
+  roles_->setObjectName(QStringLiteral("userRoles"));
+  roles_->setWordWrap(true);
+  layout->addWidget(roles_);
 
   // Permissions section (rows rebuilt per user).
   auto* perms_header = new QLabel{Tr("Permissions")};
@@ -121,11 +127,14 @@ QWidget* UserAccessPanel::BuildContent() {
 }
 
 void UserAccessPanel::Clear() {
+  pending_name_.clear();
   if (stack_)
     stack_->setCurrentIndex(0);
 }
 
-void UserAccessPanel::ShowUser(const NodeRef& user) {
+void UserAccessPanel::ShowUser(const NodeRef& user,
+                               NodeService& node_service,
+                               AnyExecutor executor) {
   if (!user || !IsInstanceOf(user, scada::security::id::UserType)) {
     Clear();
     return;
@@ -133,48 +142,78 @@ void UserAccessPanel::ShowUser(const NodeRef& user) {
 
   const QString name =
       QString::fromStdU16String(ToString16(user.display_name()));
+  pending_name_ = name;
 
-  // This is a synchronous selection handler (see MainWindowQt's selection
-  // routing): it renders whatever is already resident and never fetches, so
-  // AccessRights may not have been read yet. Variant::get() is the honest
-  // predicate — it fails both for a Variant that was never delivered and for
-  // one holding an unreadable type — whereas get_or(0) collapses either into a
-  // zero bitmask, which is indistinguishable from a genuine Observer with only
-  // View granted. Presenting an unresolved read as a real role is exactly the
-  // failure mode docs/client/ux/principles.md §5 forbids.
-  scada::Int32 access = 0;
-  if (!user[scada::security::id::UserType_AccessRights].value().get(access)) {
-    // No permission rows either: an unresolved bitmask says nothing about the
-    // individual permissions, so drawing them ungranted would be just as false
-    // a claim as drawing them granted. ShowAccess renders an explicit
-    // placeholder for the empty list.
-    ShowAccess(name, UserRole::kUnknown, {});
+  // Show the account at once with its Roles unresolved, then fill them. The
+  // shell's selection handler is synchronous, and the RoleSet needs a browse.
+  ShowAccount(name, std::nullopt);
+
+  CoSpawn(executor, [this, name, &node_service, executor,
+                     token = std::weak_ptr<int>{lifetime_token_}]()
+                        -> Awaitable<void> {
+            auto roles = co_await ReadRoleMemberships(executor, node_service);
+            // Dropped if the panel died, or if a newer selection has since
+            // replaced this one — a stale fill would attribute one account's
+            // Roles to another.
+            if (token.expired() || pending_name_ != name) {
+              co_return;
+            }
+            std::optional<std::vector<AccountRole>> account_roles;
+            if (roles) {
+              auto by_account = RolesByAccount(*roles);
+              auto i = by_account.find(name.toStdU16String());
+              account_roles = i != by_account.end()
+                                  ? i->second
+                                  : std::vector<AccountRole>{};
+            }
+            ShowAccount(name, account_roles);
+            co_return;
+          });
+}
+
+void UserAccessPanel::ShowAccount(
+    const QString& name,
+    const std::optional<std::vector<AccountRole>>& roles) {
+  if (name.isEmpty()) {
+    Clear();
     return;
   }
 
-  std::vector<UserPermissionDisplay> permissions;
-  for (const UserPermission& permission : UserPermissionsFor(access)) {
-    permissions.push_back(UserPermissionDisplay{
-        Tr(UserPermissionLabelKey(permission.kind)), permission.granted});
+  // An unreadable RoleSet says nothing about the account's Roles, and
+  // therefore nothing about its permissions either — so neither is drawn.
+  // Rendering "no roles" or a row of denied permissions would both be claims
+  // the client cannot support (docs/client/ux/principles.md §5).
+  if (!roles) {
+    ShowAccess(name, {}, {});
+    return;
   }
 
-  ShowAccess(name, UserRoleFor(access), permissions);
+  QStringList role_names;
+  for (const AccountRole& role : *roles) {
+    role_names << QString::fromStdU16String(role.name);
+  }
+  ShowAccess(name, role_names, MakePermissionDisplays(*roles));
 }
 
 void UserAccessPanel::ShowAccess(
     const QString& name,
-    UserRole role,
+    const QStringList& roles,
     const std::vector<UserPermissionDisplay>& permissions) {
   const scada::aui::ThemeTokens& tokens = PanelTokens();
 
   name_->setText(name);
 
-  const QColor pill = RolePillColor(role, tokens);
-  role_->setText(Tr(UserRoleLabelKey(role)));
-  role_->setStyleSheet(
-      QStringLiteral("#userRolePill{color:%1;border:1px solid %1;"
-                     "border-radius:9px;padding:1px 10px;font-weight:600;}")
-          .arg(pill.name()));
+  // Three distinct states, and they must not be conflated: unknown (nothing
+  // was read), none (read, and the account holds no Role — a real and
+  // ordinary state), and the list itself.
+  if (roles.isEmpty()) {
+    roles_->setText(permissions.empty() ? Tr("No data") : Tr("None"));
+    roles_->setStyleSheet(
+        QStringLiteral("color:%1;").arg(tokens.fg_subtle.name()));
+  } else {
+    roles_->setText(roles.join(QStringLiteral(", ")));
+    roles_->setStyleSheet(QStringLiteral("color:%1;").arg(tokens.fg.name()));
+  }
 
   // Rebuild the permission rows.
   while (QLayoutItem* item = perms_layout_->takeAt(0)) {

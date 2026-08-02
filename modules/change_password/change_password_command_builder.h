@@ -11,6 +11,7 @@ class SessionService;
 }
 
 class LocalEvents;
+class NodeService;
 class Profile;
 class UiCommandRegistry;
 
@@ -21,6 +22,9 @@ struct ChangePasswordCommandBuilder {
   LocalEvents& local_events_;
   Profile& profile_;
   scada::SessionService& session_service_;
+  // The standard methods live on the UserManagement object, so the command
+  // needs the service to resolve it (the per-user node no longer carries them).
+  NodeService& node_service_;
 };
 
 void RegisterChangePasswordCommandActions(

@@ -14,6 +14,7 @@ ChangePasswordModule::ChangePasswordModule(
       ChangePasswordCommandBuilder{.executor_ = executor_,
                                    .local_events_ = local_events_,
                                    .profile_ = profile_,
-                                   .session_service_ = session_service_}
+                                   .session_service_ = session_service_,
+                                   .node_service_ = node_service_}
           .Build());
 }

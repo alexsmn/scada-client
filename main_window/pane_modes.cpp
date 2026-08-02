@@ -38,6 +38,16 @@ const std::vector<PaneMode>& PaneModeTable() {
            .label = "Nodes",
            .pane_types = {"Nodes"},
            .requires_admin = true},
+          // The admin surfaces the "More" menu used to be the only way into:
+          // users, access rights and the configuration tables that carry
+          // WIN_REQUIRES_ADMIN. Admin-gated the same way Nodes is — hidden
+          // rather than disabled, so an operator is never shown a door they
+          // cannot open.
+          {.id = PaneModeId::kAdministration,
+           .key = "administration",
+           .label = "Administration",
+           .pane_types = {"Administration"},
+           .requires_admin = true},
       }};
   return *modes;
 }

@@ -11,9 +11,11 @@ client_module_link_libraries(client_user_access
     Qt6::Widgets
     # NodeRef appears in the public panel header.
     node_service
+    # RolesView derives from Controller and registers itself.
+    controller
   PRIVATE
     aui
-    # UserType / UserType_AccessRights ids.
+    # UserType / RoleType / IdentityMappingRuleType ids.
     scada_model
 )
 

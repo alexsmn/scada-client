@@ -32,3 +32,18 @@ Page MakeScreenshotPage(const std::vector<ScreenshotSpec>& specs,
 // are skipped — they already exist in ScadaTestAddressSpace.
 void PopulateFixtureNodes(AddressSpaceImpl& address_space,
                           const boost::json::value& json);
+
+// Projects the fixture's UserType instances onto the OPC UA standard user
+// model, which is what the Users grid actually reads: the
+// UserManagement.Users property (Part 18 §5.2.2) and the RoleSet membership
+// rules that carry each account's Roles.
+//
+// Derived from the same instances rather than authored separately, so the
+// fixture keeps ONE source of truth — and derived the same way the server's
+// one-shot migration is (an account's AccessRights bits become membership of
+// Operator and/or ConfigureAdmin), so the capture shows what a migrated
+// deployment really looks like.
+//
+// Must run after PopulateFixtureNodes.
+void ProjectFixtureUsersOntoStandardModel(AddressSpaceImpl& address_space,
+                                          const boost::json::value& json);
