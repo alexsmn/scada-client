@@ -28,7 +28,6 @@ class HelloApplication : public Wt::WApplication {
       MakeAnyExecutor(std::make_shared<MessageLoopWt>(io_context_));
 
   ClientApplication client_application_{ClientApplicationContext{
-      .io_context_ = io_context_,
       .executor_ = executor_,
       .login_handler_ = [this](DataServicesContext&& services_context) {
         return ExecuteLoginDialog(executor_, *root(),

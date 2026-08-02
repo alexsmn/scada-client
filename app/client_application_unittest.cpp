@@ -243,7 +243,6 @@ class ClientApplicationTest : public ClientApplicationTestBase {
   void StartApp() { Wait(app_.Start()); }
 
   ClientApplication app_{ClientApplicationContext{
-      .io_context_ = io_context_,
       .executor_ = executor_,
       .login_handler_ = login_handler_.AsStdFunction(),
       .node_service_override_ = node_service_override_,
@@ -415,7 +414,6 @@ TEST_F(ClientApplicationTestBase, DisplaysActualDataOnStart) {
                        /*server_timestamp=*/initial_timestamp};
 
   ClientApplication app{ClientApplicationContext{
-      .io_context_ = io_context_,
       .executor_ = executor_,
       .login_handler_ = login_handler_.AsStdFunction(),
       .timed_data_service_override_ =
@@ -503,7 +501,6 @@ TEST_F(ClientApplicationConfiguratorTest,
       };
 
   ClientApplication app{ClientApplicationContext{
-      .io_context_ = io_context_,
       .executor_ = executor_,
       .login_handler_ = login_handler_.AsStdFunction(),
       .node_service_override_ = node_service_override_,

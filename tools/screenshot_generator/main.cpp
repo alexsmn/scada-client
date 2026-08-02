@@ -80,7 +80,6 @@
 #include <QTranslator>
 #include <QTreeView>
 #include <QVBoxLayout>
-#include <boost/asio/io_context.hpp>
 #include <gtest/gtest.h>
 
 #include <set>
@@ -261,9 +260,8 @@ class ScreenshotGenerator : public ::testing::Test {
   ~ScreenshotGenerator();
 
  protected:
-  boost::asio::io_context io_context_;
-  // QApplication must exist before MessageLoopQt — the latter wires a
-  // QTimer in its ctor — so app_env_ is declared first.
+  // QApplication must exist before MessageLoopQt — the latter posts wakeup
+  // events through it — so app_env_ is declared first.
   AppEnvironment app_env_;
   AnyExecutor executor_ = MakeAnyExecutor(std::make_shared<MessageLoopQt>());
 
@@ -327,7 +325,6 @@ class ScreenshotGenerator : public ::testing::Test {
   scada::base::ScopedPathOverride private_dir_override_{client::DIR_PRIVATE};
 
   ClientApplication app_{ClientApplicationContext{
-      .io_context_ = io_context_,
       .executor_ = executor_,
       .login_handler_ = [this](DataServicesContext&&)
           -> Awaitable<std::optional<DataServices>> {

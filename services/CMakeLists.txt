@@ -8,6 +8,20 @@ client_module_link_libraries(client_services PUBLIC
   transport
 )
 
+if(APPLE)
+  # Objective-C++ shim behind `AppNapSuppressor` (see app_nap_suppressor.h).
+  # It gets its own target for two reasons: `client_services_*` reuses
+  # scada_base's C++ precompiled header, which cannot be applied to an
+  # Objective-C++ translation unit; and `scada_module()` only globs *.cpp/*.h,
+  # so a .mm left in this directory would be silently dropped from the build.
+  enable_language(OBJCXX)
+  add_library(client_app_nap_mac STATIC app_nap_suppressor_mac.mm)
+  target_include_directories(client_app_nap_mac
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/..")
+  target_link_libraries(client_app_nap_mac PUBLIC "-framework Foundation")
+  client_module_link_libraries(client_services PUBLIC client_app_nap_mac)
+endif()
+
 # C++20 module facade (Qt flavor only; the wt flavor stays header-based).
 if(TARGET client_services_qt)
   scada_add_module_facade(client_services_qt FILES scada_client_services.cppm

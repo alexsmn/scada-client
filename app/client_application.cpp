@@ -39,6 +39,7 @@
 #include "scada/co_result.h"
 #include "scada/service_context.h"
 #include "services/alias_resolver_factory.h"
+#include "services/app_nap_suppressor.h"
 #include "services/connection_state_reporter.h"
 #include "services/create_tree.h"
 #include "services/speech_service_impl.h"
@@ -326,6 +327,14 @@ void ClientApplication::CreateUserServices(const PostLoginContext& ctx) {
           .session_service_ = *ctx.audited_scada_services.session_service,
           .local_events_ = event_module_->local_events()});
   shutdown_stack_.Push([this] { connection_state_reporter_.reset(); });
+
+  // Held for the whole logged-in lifetime rather than only while
+  // `IsConnected()` — the reconnect backoff in `ConnectionStateReporter` runs on
+  // the same stallable timer, so releasing the assertion on a dropped session
+  // would leave the client unable to reconnect until someone raised its window.
+  // No-op off macOS; see services/app_nap_suppressor.h.
+  app_nap_suppressor_ = std::make_unique<AppNapSuppressor>();
+  shutdown_stack_.Push([this] { app_nap_suppressor_.reset(); });
 
   write_service_ = std::make_unique<WriteServiceImpl>(
       WriteServiceImplContext{.executor_ = executor_,

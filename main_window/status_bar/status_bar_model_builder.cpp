@@ -84,8 +84,8 @@ std::shared_ptr<scada::aui::StatusBarModel> StatusBarModelBuilder::Build() {
 
   // Connection state and pings.
 
-  auto session_status_provider =
-      std::make_shared<SessionStatusProvider>(executor_, session_service_);
+  auto session_status_provider = std::make_shared<SessionStatusProvider>(
+      executor_, session_service_, local_events_);
 
   int connection_pane_index =
       model->AddPane({.text_provider = std::bind_front(
@@ -96,7 +96,11 @@ std::shared_ptr<scada::aui::StatusBarModel> StatusBarModelBuilder::Build() {
   int ping_pane_index = model->AddPane(
       {.text_provider = std::bind_front(&SessionStatusProvider::GetPingText,
                                         session_status_provider),
-       .size = 120});
+       .color_provider = std::bind_front(&SessionStatusProvider::GetPingColor,
+                                         session_status_provider),
+       // Wider than the bare "<server>: N ms" it used to hold: a stalled
+       // session appends a marker, and the number grows into five digits.
+       .size = 180});
 
   int endpoint_pane_index = model->AddPane(
       {.text_provider = std::bind_front(&SessionStatusProvider::GetEndpointText,

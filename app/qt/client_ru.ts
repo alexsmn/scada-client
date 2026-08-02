@@ -51,6 +51,25 @@
         <source>Capturing</source>
         <translation>Идёт захват</translation>
     </message>
+    <!-- Status strip: the ping cell when the round trip crosses the stall
+         threshold, and the local events that announce the stall and its end
+         (main_window/status_bar/session_status_provider.cpp). -->
+    <message>
+        <source>no response</source>
+        <translation>нет ответа</translation>
+    </message>
+    <message>
+        <source>The server has not answered a ping for </source>
+        <translation>Сервер не отвечает на опрос уже </translation>
+    </message>
+    <message>
+        <source> ms. Either the connection is degraded, or the client itself has stopped running: the operating system can suspend a client whose window is not visible, which halts data and events, not only the display.</source>
+        <translation> мс. Либо ухудшилось соединение, либо остановился сам клиент: операционная система может приостановить клиент, окно которого не видно, и тогда прекращается приём данных и событий, а не только обновление экрана.</translation>
+    </message>
+    <message>
+        <source>The server is answering again.</source>
+        <translation>Сервер снова отвечает.</translation>
+    </message>
     <!-- APCI columns (IEC 60870-5-104 §5.1). N(S)/N(R) is the standard's own
          notation for the send/receive sequence numbers and is not translated,
          like RX/TX below. -->

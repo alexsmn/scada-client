@@ -40,17 +40,12 @@ class ShutdownStack {
   std::stack<std::function<void()>> actions_;
 };
 
-namespace boost {
-namespace asio {
-class io_context;
-}
-}  // namespace boost
-
 namespace transport {
 class TransportFactory;
 }
 
 class ActionManager;
+class AppNapSuppressor;
 class BlinkerManager;
 class ConnectionStateReporter;
 class ControllerRegistry;
@@ -81,7 +76,6 @@ class OpenTelemetryMetrics;
 }
 
 struct ClientApplicationContext {
-  boost::asio::io_context& io_context_;
   const AnyExecutor executor_;
 
   // TODO: Remove the `DataServicesContext` parameter.
@@ -202,6 +196,11 @@ class ClientApplication : private ClientApplicationContext {
   std::unique_ptr<WriteService> write_service_;
 
   std::unique_ptr<ConnectionStateReporter> connection_state_reporter_;
+
+  // Keeps macOS App Nap from coalescing the Qt event loop that dispatches every
+  // completion handler (services/app_nap_suppressor.h). Held for the logged-in
+  // lifetime; a no-op on other platforms.
+  std::unique_ptr<AppNapSuppressor> app_nap_suppressor_;
 
   std::unique_ptr<MainWindowModule> main_window_module_;
 

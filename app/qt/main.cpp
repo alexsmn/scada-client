@@ -25,7 +25,6 @@
 #include <QIcon>
 #include <QSettings>
 #include <QTimer>
-#include <boost/asio/io_context.hpp>
 #include <cstdlib>
 #include <exception>
 #include <memory>
@@ -138,12 +137,11 @@ int main(int argc, char* argv[]) {
     // `QApplication` must be created.
     auto executor = MakeAnyExecutor(std::make_shared<MessageLoopQt>());
 
-    boost::asio::io_context io_context;
-    AnyExecutorTimer io_context_poll{executor};
-    io_context_poll.StartRepeating(10ms, [&io_context] { io_context.poll(); });
-
+    // There is deliberately no `io_context` here. The client's sockets and
+    // timers are built on `executor`, and asio services them on a thread it
+    // spawns itself for the executor's `execution_context`; a local io_context
+    // would have nothing registered on it. See docs/client/message-loop.md §1.
     ClientApplication app{ClientApplicationContext{
-        .io_context_ = io_context,
         .executor_ = executor,
         .login_handler_ = [executor](DataServicesContext&& services_context) {
           return ExecuteLoginDialog(executor, std::move(services_context));

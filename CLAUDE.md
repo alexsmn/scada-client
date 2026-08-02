@@ -81,6 +81,10 @@ resolve only in the sibling checkout under `/scada`.
   concrete source files
 - `docs/client/requirements.md` — use cases, functional and non-functional
   requirements
+- `docs/client/message-loop.md` — how the client schedules async work: the
+  event-driven `MessageLoopQt` pump, the asio I/O thread behind `AnyExecutor`,
+  and the macOS App Nap freeze that made all of it visible. Read it before
+  changing anything about scheduling, `MessageLoopQt`, or executors.
 - `docs/client/ux/` — the UX design system (see "UX design system" below)
 - `docs/client/command-line.md` — command-line switch documentation
 - `docs/client/aui-extraction.md`, `docs/client/telemetry-gaps.md`,
