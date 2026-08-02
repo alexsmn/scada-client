@@ -9,6 +9,7 @@
 #include "frame_decode_capture.h"
 #include "graph_capture.h"
 #include "inspector_capture.h"
+#include "authenticated_attribute_service.h"
 #include "screenshot_config.h"
 #include "screenshot_modules.h"
 #include "screenshot_options.h"
@@ -345,6 +346,19 @@ class ScreenshotGenerator : public ::testing::Test {
   SyncAttributeServiceImpl sync_attribute_service_{
       AttributeServiceImplContext{address_space_}};
   AttributeServiceImpl attribute_service_{sync_attribute_service_};
+  // The client passes an empty ServiceContext and a real server fills in the
+  // session's identity. There is no server here, so an empty context reads as
+  // anonymous and every permission-gated attribute is refused. Supply the
+  // administrator identity the fixtures depict; see the header for why this
+  // belongs to the fixture rather than to the client.
+  //
+  // Deliberately NOT installed into `services_`: changing the identity for
+  // every read also changes UserAccessLevel narrowing, and with it any capture
+  // that draws a writability affordance. It is handed only to the capture that
+  // needs an administrator — the RBAC inspector, which cannot read the role ->
+  // permission map without one.
+  AuthenticatedAttributeService authenticated_attribute_service_{
+      attribute_service_};
   SyncViewServiceImpl sync_view_service_{
       ViewServiceImplContext{address_space_}};
   ViewServiceImpl view_service_{sync_view_service_};
@@ -563,8 +577,8 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     // The users-admin RBAC inspector is standalone reshell chrome (the right
     // region of users-admin.html), built from a fixture user.
     if (spec.window_type == "UserAccess") {
-      SaveUserAccessScreenshot(spec, app_.node_service(), attribute_service_,
-                               executor_);
+      SaveUserAccessScreenshot(spec, app_.node_service(),
+                               authenticated_attribute_service_, executor_);
       ++captured;
       continue;
     }
