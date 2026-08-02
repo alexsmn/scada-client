@@ -379,6 +379,42 @@
         <source>Settings</source>
         <translation>Настройки</translation>
     </message>
+    <!-- main_window/main_window_qt.cpp + pages/page_commands.cpp: the activity
+         rail's page context menu. "Open page", "Move up"/"Move down" and
+         "Delete page" are rail-only; "Duplicate" is also a Page-menu command. -->
+    <message>
+        <source>Open page</source>
+        <translation>Открыть страницу</translation>
+    </message>
+    <message>
+        <source>Duplicate</source>
+        <translation>Дублировать</translation>
+    </message>
+    <message>
+        <source>Move up</source>
+        <translation>Переместить вверх</translation>
+    </message>
+    <message>
+        <source>Move down</source>
+        <translation>Переместить вниз</translation>
+    </message>
+    <message>
+        <source>Delete page</source>
+        <translation>Удалить страницу</translation>
+    </message>
+    <!-- Suffix appended to a duplicated page's title: "Обзор — копия". -->
+    <message>
+        <source>copy</source>
+        <translation>копия</translation>
+    </message>
+    <!-- main_window/main_menu/main_menu_model.cpp: the single Settings menu
+         item that opens the preferences dialog (SettingsDialog). The ellipsis
+         is the platform convention for "this opens a dialog" and is kept in
+         the translation. -->
+    <message>
+        <source>Settings...</source>
+        <translation>Настройки...</translation>
+    </message>
     <!-- main_window/main_menu/main_menu_model.cpp: Settings -> Colour scheme,
          the experimental UX design-token themes. Deliberately not "Appearance",
          which Translate() already maps to "Вид" for the series inspector. -->

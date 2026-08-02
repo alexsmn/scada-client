@@ -9,6 +9,7 @@
 #include <QApplication>
 #include <QDrag>
 #include <QDragEnterEvent>
+#include <QDragLeaveEvent>
 #include <QDropEvent>
 #include <QFont>
 #include <QIcon>
@@ -18,10 +19,10 @@
 #include <QPainterPath>
 #include <QPen>
 
-#include <string_view>
 #include <QPixmap>
 #include <QToolButton>
 #include <QVBoxLayout>
+#include <string_view>
 
 #include <algorithm>
 #include <ranges>
@@ -38,6 +39,9 @@ constexpr int kRailWidth = 52;
 constexpr int kBandPadding = 3;
 constexpr int kButtonSize = 44;
 constexpr int kIconSize = 24;
+// The drag drop-line. Thin enough to read as a boundary between two buttons
+// rather than as a slot of its own.
+constexpr int kDropIndicatorHeight = 2;
 
 // The design-token set for the active theme. The rail is only built when a
 // token theme is active (see MainWindow), so mapping the legacy case to dark is
@@ -87,6 +91,13 @@ std::string_view ModeGlyph(ActivityBar::Icon kind) {
       return ":/icons/shield-user.svg";
     case ActivityBar::Icon::kNewPage:
       return ":/icons/plus.svg";
+    // The pinned utilities. `settings` is the same cog the page-icon picker
+    // offers, and `user` the same person mark the admin surfaces use, so the
+    // foot reads as part of the same set rather than as borrowed chrome.
+    case ActivityBar::Icon::kSettings:
+      return ":/icons/settings.svg";
+    case ActivityBar::Icon::kUsers:
+      return ":/icons/user.svg";
     case ActivityBar::Icon::kNone:
       return {};
   }
@@ -205,6 +216,7 @@ ActivityBar::ActivityBar(QWidget* parent,
   auto* layout = new QVBoxLayout{this};
   layout->setContentsMargins(0, 6, 0, 6);
   layout->setSpacing(2);
+  root_layout_ = layout;
 
   for (const Mode& mode : modes) {
     QToolButton* button = MakeButton(ModeIcon(mode, tokens.fg_on_dark),
@@ -357,11 +369,64 @@ void ActivityBar::dragEnterEvent(QDragEnterEvent* event) {
 }
 
 void ActivityBar::dragMoveEvent(QDragMoveEvent* event) {
-  if (event->mimeData()->hasFormat(QLatin1String{kPageDragMimeType}))
-    event->acceptProposedAction();
+  if (!event->mimeData()->hasFormat(QLatin1String{kPageDragMimeType}))
+    return;
+  event->acceptProposedAction();
+  ShowDropIndicator(event->position().toPoint().y());
+}
+
+void ActivityBar::dragLeaveEvent(QDragLeaveEvent* event) {
+  QWidget::dragLeaveEvent(event);
+  HideDropIndicator();
+}
+
+void ActivityBar::ShowDropIndicator(int local_y) {
+  if (page_items_.empty())
+    return;
+
+  if (!drop_indicator_) {
+    // A free-floating child positioned by geometry, deliberately NOT a widget
+    // in the pages layout: inserting it there would shift the buttons, which
+    // shifts the midpoints PageDropIndexForY reads, which moves the line — a
+    // feedback loop that makes the indicator oscillate under a still cursor.
+    drop_indicator_ = new QWidget{this};
+    drop_indicator_->setObjectName(QStringLiteral("railDropIndicator"));
+    drop_indicator_->setAutoFillBackground(true);
+    drop_indicator_->setAttribute(Qt::WA_TransparentForMouseEvents);
+
+    QPalette indicator_palette = drop_indicator_->palette();
+    indicator_palette.setColor(QPalette::Window, RailTokens().accent);
+    drop_indicator_->setPalette(indicator_palette);
+  }
+
+  // The boundary the page would land on: the top edge of the button now in
+  // that slot, or the bottom edge of the last one when it would go to the end.
+  const int index = PageDropIndexForY(local_y);
+  const bool past_last = index >= static_cast<int>(page_items_.size());
+  const QToolButton* anchor =
+      past_last ? page_items_.back().button : page_items_[index].button;
+  const QPoint anchor_top_left = anchor->mapTo(this, QPoint{0, 0});
+  const int y =
+      past_last ? anchor_top_left.y() + anchor->height() : anchor_top_left.y();
+
+  // Centred on the boundary rather than sitting below it, so the line reads as
+  // the gap between two buttons and not as a rule belonging to one of them.
+  drop_indicator_->setGeometry(anchor_top_left.x(),
+                               y - kDropIndicatorHeight / 2, anchor->width(),
+                               kDropIndicatorHeight);
+  drop_indicator_->raise();
+  drop_indicator_->show();
+}
+
+void ActivityBar::HideDropIndicator() {
+  if (drop_indicator_)
+    drop_indicator_->hide();
 }
 
 void ActivityBar::dropEvent(QDropEvent* event) {
+  // Whatever the drop turns out to be, the line has done its job.
+  HideDropIndicator();
+
   const QByteArray payload =
       event->mimeData()->data(QLatin1String{kPageDragMimeType});
   if (payload.isEmpty())
@@ -458,16 +523,15 @@ void ActivityBar::SetPages(std::vector<PageButton> pages) {
     // profile from a newer build degrades to the old numbered button rather
     // than to a blank one.
     const std::string_view glyph = PageGlyph(page.icon_key);
-    QIcon icon =
-        glyph.empty()
-            ? TextIcon(ordinal, tokens.fg_on_dark)
-            : LoadTintedGlyph(glyph, kIconSize, tokens.fg_on_dark,
-                              qApp ? qApp->devicePixelRatio() : 1.0);
+    QIcon icon = glyph.empty()
+                     ? TextIcon(ordinal, tokens.fg_on_dark)
+                     : LoadTintedGlyph(glyph, kIconSize, tokens.fg_on_dark,
+                                       qApp ? qApp->devicePixelRatio() : 1.0);
 
     // `2 · Alarms` — the ordinal names the Ctrl+N shortcut and the title says
     // what the page holds, neither of which fits on the button itself.
-    const QString label = ordinal + QStringLiteral(" · ") +
-                          QString::fromStdU16String(page.title);
+    const QString label =
+        ordinal + QStringLiteral(" · ") + QString::fromStdU16String(page.title);
     QToolButton* button = MakeButton(icon, label);
     if (page.opened_elsewhere) {
       button->setEnabled(false);
@@ -501,4 +565,49 @@ void ActivityBar::SetActivePage(int page_id) {
   active_page_id_ = page_id;
   for (const PageItem& item : page_items_)
     item.button->setChecked(item.page.page_id == page_id);
+}
+
+void ActivityBar::SetUtilities(std::vector<Utility> utilities,
+                               ActivateUtilityCallback on_activate_utility) {
+  on_activate_utility_ = std::move(on_activate_utility);
+
+  const scada::aui::ThemeTokens& tokens = RailTokens();
+
+  // Appended after the stretch the constructor added, which is what pins the
+  // group to the foot however tall the pages group grows.
+  for (const Utility& utility : utilities) {
+    QToolButton* button = MakeButton(
+        ModeIcon(Mode{.label = utility.label, .icon_kind = utility.icon_kind},
+                 tokens.fg_on_dark),
+        QString::fromStdU16String(utility.label));
+    root_layout_->addWidget(button, 0, Qt::AlignHCenter);
+
+    const int utility_id = utility.utility_id;
+    connect(button, &QToolButton::clicked, this, [this, utility_id] {
+      if (on_activate_utility_)
+        on_activate_utility_(utility_id);
+    });
+
+    utility_items_.emplace_back(UtilityItem{utility, button});
+  }
+}
+
+void ActivityBar::SetUtilityAvailable(int utility_id, bool available) {
+  for (const UtilityItem& item : utility_items_) {
+    if (item.utility.utility_id != utility_id)
+      continue;
+    item.button->setVisible(available);
+    // Same rule as a hidden mode: the rail must not claim a surface the
+    // operator cannot see.
+    if (!available)
+      item.button->setChecked(false);
+    return;
+  }
+}
+
+void ActivityBar::SetActiveUtility(std::optional<int> utility_id) {
+  for (const UtilityItem& item : utility_items_) {
+    item.button->setChecked(utility_id &&
+                            item.utility.utility_id == *utility_id);
+  }
 }

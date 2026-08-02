@@ -408,6 +408,7 @@ MainMenuModel::MainMenuModel(const MainMenuContext& context)
 #if defined(UI_QT)
       appearance_submenu_{context},
       language_submenu_{this},
+      settings_menu_{this},
 #endif
       settings_submenu_{this},
       help_submenu_{this} {
@@ -471,9 +472,22 @@ void MainMenuModel::Rebuild() {
   // style rather than replacing it (see AppearanceMenuModel).
   settings_submenu_.AddSubMenu(0, Translate("Colour scheme"),
                                &appearance_submenu_);
-#endif
 
+  // The Qt shell shows the toggles in a preferences dialog, so its Settings
+  // menu holds one item that opens it. `settings_submenu_` is still fully
+  // populated above — it is the description SettingsDialog renders — it is
+  // just not what gets mounted, so the toggles reach the operator from exactly
+  // one place. A top-level menu-bar entry has to be a menu (CreateMenuBar
+  // requires a submenu model for every one), which is why this is a one-item
+  // menu rather than a bare item.
+  settings_menu_.Clear();
+  settings_menu_.AddItem(ID_SETTINGS_DIALOG, Translate("Settings..."));
+  AddSubMenu(0, Translate("Settings"), &settings_menu_);
+#else
+  // The Wt shell has no preferences dialog, so it keeps the toggles in the
+  // menu.
   AddSubMenu(0, Translate("Settings"), &settings_submenu_);
+#endif
 
   AddMenuContributions(help_submenu_, ui_command_registry_, commands_,
                        MainMenuId::Help, admin_);

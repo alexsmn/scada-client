@@ -26,6 +26,7 @@
 #include "main_window/breadcrumb_qt.h"
 #include "main_window/command_field_qt.h"
 #include "main_window/command_palette_qt.h"
+#include "main_window/main_menu/main_menu_model.h"
 #include "main_window/main_window_command_router.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
@@ -33,6 +34,7 @@
 #include "main_window/page_icons.h"
 #include "main_window/pages/page_switcher.h"
 #include "main_window/selection_command_router.h"
+#include "main_window/settings_dialog_qt.h"
 #include "main_window/status_bar/progress_controller_qt.h"
 #include "main_window/tag_search_index.h"
 #include "main_window/view_manager.h"
@@ -211,6 +213,9 @@ MainWindow::MainWindow(MainWindowContext&& context)
   // Init() opened the restored page, which conformed it to the active mode.
   // Bring the rail in line with what is actually on screen.
   RefreshPaneModeMarker();
+  // The first pass that can see a populated command registry, so it is also
+  // what decides whether the admin-gated Users utility is offered at all.
+  RefreshUtilityMarker();
 
   action_changed_connection_ = ui_command_registry_.action_manager().Subscribe(
       [this](Action& action, ActionChangeMask change_mask) {
@@ -433,6 +438,19 @@ ActivityBar::Icon ModeIconKind(PaneModeId id) {
   return ActivityBar::Icon::kNone;
 }
 
+// The pinned utilities at the foot of the rail. A dedicated enumeration rather
+// than the command ids themselves, because those numeric values are reused
+// across unrelated symbols (see resources/common_resources.h) and a rail id is
+// compared, not dispatched.
+enum class RailUtility {
+  kSettings,
+  kUsers,
+};
+
+constexpr int RailUtilityId(RailUtility utility) {
+  return static_cast<int>(utility);
+}
+
 }  // namespace
 
 void MainWindow::CreateActivityBar() {
@@ -445,6 +463,27 @@ void MainWindow::CreateActivityBar() {
 
   activity_bar_ = new ActivityBar(this, std::move(modes),
                                   [this](PaneModeId id) { SetPaneMode(id); });
+
+  // The third rail zone (activity-rail.html). Settings opens the preferences
+  // dialog and Users the account list — both in the current page, so neither
+  // disturbs the page marker.
+  activity_bar_->SetUtilities(
+      {ActivityBar::Utility{.utility_id = RailUtilityId(RailUtility::kSettings),
+                            .label = Translate("Settings"),
+                            .icon_kind = ActivityBar::Icon::kSettings},
+       ActivityBar::Utility{.utility_id = RailUtilityId(RailUtility::kUsers),
+                            .label = Translate("Users"),
+                            .icon_kind = ActivityBar::Icon::kUsers}},
+      [this](int utility_id) {
+        switch (static_cast<RailUtility>(utility_id)) {
+          case RailUtility::kSettings:
+            ExecuteShellCommand(ID_SETTINGS_DIALOG);
+            return;
+          case RailUtility::kUsers:
+            ExecuteShellCommand(ID_USERS_VIEW);
+            return;
+        }
+      });
 
   auto* rail = new QToolBar(this);
   rail->setObjectName(QStringLiteral("ActivityRail"));
@@ -465,7 +504,7 @@ void MainWindow::WireRailPages() {
 
   activity_bar_->SetPageCallbacks(
       [this](int page_id) { page_switcher_->ActivatePage(page_id); },
-      [this] { ExecutePageCommand(ID_PAGE_NEW); },
+      [this] { ExecuteShellCommand(ID_PAGE_NEW); },
       [this](int page_id, const QPoint& global_pos) {
         ShowPageContextMenu(page_id, global_pos);
       },
@@ -499,7 +538,7 @@ void MainWindow::RefreshRailPages() {
   activity_bar_->SetActivePage(active_page_id);
 }
 
-void MainWindow::ExecutePageCommand(unsigned command_id) {
+void MainWindow::ExecuteShellCommand(unsigned command_id) {
   // Route through the shell's command resolution rather than reimplementing
   // New / Rename / Delete: PageCommands owns them, and the Page menu and the
   // Ctrl-K palette reach them the same way.
@@ -541,26 +580,58 @@ void MainWindow::ShowPageContextMenu(int page_id, const QPoint& global_pos) {
         menu.addAction(QString::fromStdU16String(Translate(label)));
     action->setEnabled(enabled);
     connect(action, &QAction::triggered, this,
-            [this, command_id] { ExecutePageCommand(command_id); });
+            [this, command_id] { ExecuteShellCommand(command_id); });
   };
 
+  // Opening the right-clicked page is the menu's primary action, so it leads
+  // and is bold. Absent when that page is already open — "Open page" on the
+  // page you are looking at would mean the revert, which is not what the
+  // reader would expect from it.
+  const std::vector<PageEntry> pages = page_switcher_->ListPages();
+  const auto entry = std::ranges::find(pages, page_id, &PageEntry::page_id);
+  if (!is_current && entry != pages.end() && !entry->opened_elsewhere) {
+    QAction* open =
+        menu.addAction(QString::fromStdU16String(Translate("Open page")));
+    connect(open, &QAction::triggered, this,
+            [this, page_id] { page_switcher_->ActivatePage(page_id); });
+    menu.setDefaultAction(open);
+    menu.addSeparator();
+  }
+
   add(ID_PAGE_RENAME, "Rename", is_current);
-  add(ID_PAGE_DELETE, "Delete", is_current);
+  add(ID_PAGE_DUPLICATE, "Duplicate", is_current);
+
+  // Reordering acts on the right-clicked page directly, the way the icon
+  // submenu does: moving a page does not require having it open, and forcing a
+  // switch first would be a worse way to rearrange a list. Each end of the list
+  // disables its own direction rather than silently doing nothing.
+  const int index =
+      entry == pages.end() ? -1 : static_cast<int>(entry - pages.begin());
+  auto add_move = [&](const char* label, int target, bool enabled) {
+    QAction* action =
+        menu.addAction(QString::fromStdU16String(Translate(label)));
+    action->setEnabled(enabled);
+    connect(action, &QAction::triggered, this, [this, page_id, target] {
+      page_switcher_->ReorderPage(page_id, target);
+      RefreshRailPages();
+    });
+  };
+  add_move("Move up", index - 1, index > 0);
+  add_move("Move down", index + 1,
+           index >= 0 && index + 1 < static_cast<int>(pages.size()));
 
   // The icon is a property of the page, not of the current one, so unlike
   // Rename and Delete it acts on the right-clicked page directly — no need to
   // switch to it first, and no reason to disable it when another page is open.
-  QMenu* icon_menu =
-      menu.addMenu(QString::fromStdU16String(Translate("Icon")));
+  QMenu* icon_menu = menu.addMenu(QString::fromStdU16String(Translate("Icon")));
   const std::string current_icon = PageIconFor(page_id);
 
   QAction* none_action =
       icon_menu->addAction(QString::fromStdU16String(Translate("None")));
   none_action->setCheckable(true);
   none_action->setChecked(current_icon.empty());
-  connect(none_action, &QAction::triggered, this, [this, page_id] {
-    SetPageIcon(page_id, {});
-  });
+  connect(none_action, &QAction::triggered, this,
+          [this, page_id] { SetPageIcon(page_id, {}); });
   icon_menu->addSeparator();
 
   for (const PageIcon& icon : GetPageIcons()) {
@@ -572,6 +643,11 @@ void MainWindow::ShowPageContextMenu(int page_id, const QPoint& global_pos) {
     connect(action, &QAction::triggered, this,
             [this, page_id, key] { SetPageIcon(page_id, key); });
   }
+
+  // Delete sits last, behind its own separator: the destructive item is kept
+  // away from the ones above it so it is not reached by muscle memory.
+  menu.addSeparator();
+  add(ID_PAGE_DELETE, "Delete page", is_current);
 
   menu.addSeparator();
   add(ID_PAGE_NEW, "New page", true);
@@ -705,6 +781,46 @@ void MainWindow::RefreshPaneModeMarker() {
   activity_bar_->SetActiveMode(std::nullopt);
 }
 
+void MainWindow::ShowSettingsDialog() {
+  // The shell holds its menu as the MenuModel interface, and the settings
+  // items are a detail of the real model. A test harness can install a
+  // different one, so this asks rather than asserts: no menu model of ours
+  // means no preferences to render, which is a shell without settings, not a
+  // bug to panic on.
+  auto* menu_model = dynamic_cast<MainMenuModel*>(main_menu_model_.get());
+  if (!menu_model)
+    return;
+
+  // Modal to this window. Preferences are per-profile and apply live, so a
+  // second one open beside the first would show two views of one state.
+  SettingsDialog dialog{this, menu_model->settings_model()};
+  dialog.exec();
+}
+
+void MainWindow::RefreshUtilityMarker() {
+  if (!activity_bar_)
+    return;
+
+  // Users is admin-only, resolved through the same command router the menus
+  // use so the rail cannot offer a door the shell would refuse to open. Done
+  // here rather than once at construction: the rail is built before the
+  // modules finish registering their views, so a one-shot check would read a
+  // registry that is not populated yet and hide the button for everyone.
+  activity_bar_->SetUtilityAvailable(
+      RailUtilityId(RailUtility::kUsers),
+      ResolveViewCommand(ID_USERS_VIEW) != nullptr);
+
+  // Only Users can ever be marked. Settings opens a modal dialog, which is not
+  // a thing the workspace can be showing — so its button is an action, and an
+  // action never carries a marker.
+  OpenedView* active = GetActiveView();
+  const bool users_active =
+      active && active->window_info().name == std::string_view{"Users"};
+  activity_bar_->SetActiveUtility(
+      users_active ? std::optional{RailUtilityId(RailUtility::kUsers)}
+                   : std::nullopt);
+}
+
 void MainWindow::OnViewClosed(OpenedView& view) {
   const bool was_owned_pane =
       FindPaneModeOwningPaneType(view.window_info().name) != nullptr;
@@ -721,6 +837,7 @@ void MainWindow::OnActiveViewChanged(OpenedView* view) {
       FindPaneModeOwningPaneType(view->window_info().name)) {
     RefreshPaneModeMarker();
   }
+  RefreshUtilityMarker();
   RefreshBreadcrumb();
 }
 
@@ -738,13 +855,13 @@ void MainWindow::RefreshBreadcrumb() {
   // several would be a quiet lie about what the view is pointed at.
   QString subject;
   if (selection && !selection->empty() && !selection->multiple()) {
-    subject = QString::fromStdU16String(
-        ToString16(selection->node().display_name()));
+    subject =
+        QString::fromStdU16String(ToString16(selection->node().display_name()));
   }
 
   const Breadcrumb::Segment segments[] = {
-      {.label = QString::fromStdU16String(
-           view_manager_->current_page().GetTitle()),
+      {.label =
+           QString::fromStdU16String(view_manager_->current_page().GetTitle()),
        .strong = true},
       {.label = active ? QString::fromStdU16String(active->GetWindowTitle())
                        : QString{}},

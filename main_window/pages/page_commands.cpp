@@ -61,6 +61,17 @@ PageCommands::PageCommands(PageCommandsContext&& context)
          context.main_window.DeleteCurrentPage();
        }});
 
+  global_commands_.AddCommand(
+      {.command_id = ID_PAGE_DUPLICATE,
+       .title = Translate("Duplicate"),
+       .execute_handler = [this](const GlobalCommandContext& context) {
+         DuplicateCurrentPage(context);
+       }});
+
+  ui_command_registry_.AddMenuItem({.menu_id = MainMenuId::Page,
+                                    .order = 250,
+                                    .command_id = ID_PAGE_DUPLICATE});
+
   ui_command_registry_.AddMenuItem(
       {.menu_id = MainMenuId::Page, .order = 100, .command_id = ID_PAGE_NEW});
   ui_command_registry_.AddMenuItem({.menu_id = MainMenuId::Page,
@@ -69,6 +80,24 @@ PageCommands::PageCommands(PageCommandsContext&& context)
   ui_command_registry_.AddMenuItem({.menu_id = MainMenuId::Page,
                                     .order = 300,
                                     .command_id = ID_PAGE_RENAME});
+}
+
+void PageCommands::DuplicateCurrentPage(const GlobalCommandContext& context) {
+  // Save first, so the copy carries what is on screen rather than what was last
+  // persisted — duplicating a page the operator has just rearranged and getting
+  // the old layout would be indistinguishable from a bug.
+  context.main_window.SaveCurrentPage();
+
+  Page copy = context.main_window.GetCurrentPage();
+  // AddPage assigns the id and the order; clearing the id here keeps the copy
+  // from looking briefly like the original to anything reading it in between.
+  copy.id = 0;
+  copy.order = 0;
+  copy.title = context.main_window.GetCurrentPage().GetTitle() + u" — " +
+               Translate("copy");
+
+  Page& duplicate = profile_.AddPage(copy);
+  context.main_window.OpenPage(duplicate);
 }
 
 void PageCommands::RenameCurrentPage(const GlobalCommandContext& context) {

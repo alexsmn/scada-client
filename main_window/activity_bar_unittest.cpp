@@ -37,11 +37,32 @@ std::vector<QToolButton*> Buttons(const ActivityBar& bar) {
   return all;
 }
 
-// Just the page buttons, identified by their numeric tooltips being page
-// titles — they are everything after the four modes and the "+".
-std::vector<QToolButton*> PageButtons(const ActivityBar& bar) {
+// Just the page buttons: everything after the four modes and the "+", minus
+// any pinned utilities, which SetUtilities appends at the very end.
+std::vector<QToolButton*> PageButtons(const ActivityBar& bar,
+                                      std::size_t utility_count = 0) {
   std::vector<QToolButton*> all = AllButtons(bar);
-  return std::vector<QToolButton*>{all.begin() + 5, all.end()};
+  return std::vector<QToolButton*>{all.begin() + 5, all.end() - utility_count};
+}
+
+// The two pinned utilities, using the same ids the window assigns them.
+constexpr int kSettingsUtility = 0;
+constexpr int kUsersUtility = 1;
+
+std::vector<ActivityBar::Utility> MakeUtilities() {
+  return {
+      {kSettingsUtility, u"Settings", ActivityBar::Icon::kSettings},
+      {kUsersUtility, u"Users", ActivityBar::Icon::kUsers},
+  };
+}
+
+// Just the pinned-utility buttons. SetUtilities appends them after everything
+// else, so they are the tail — sliced from the end rather than by an absolute
+// index, which would have to change every time another button is added above.
+std::vector<QToolButton*> UtilityButtons(const ActivityBar& bar,
+                                         std::size_t count) {
+  std::vector<QToolButton*> all = AllButtons(bar);
+  return std::vector<QToolButton*>{all.end() - count, all.end()};
 }
 
 std::vector<ActivityBar::PageButton> MakePages() {
@@ -291,6 +312,106 @@ TEST_F(ActivityBarTest, PageDropIndexFollowsButtonMidpoints) {
   EXPECT_EQ(bar.PageDropIndexForY(midpoint(pages[0]) - 4), 0);
   EXPECT_EQ(bar.PageDropIndexForY(midpoint(pages[0]) + 4), 1);
   EXPECT_EQ(bar.PageDropIndexForY(midpoint(pages[2]) + 4), 3);
+}
+
+// The drop-line is what tells the operator which slot a dragged page will land
+// in. It is positioned by geometry rather than inserted into the pages layout,
+// because inserting it would shift the buttons whose midpoints decide the slot
+// — a feedback loop that makes the line oscillate under a motionless cursor.
+TEST_F(ActivityBarTest, DropIndicatorSitsOnTheBoundaryItWouldDropInto) {
+  ActivityBar bar{nullptr, MakeModes(), {}};
+  bar.SetPages(MakePages());
+  bar.resize(52, 600);
+  bar.show();
+  QApplication::processEvents();
+
+  const std::vector<QToolButton*> pages = PageButtons(bar);
+  ASSERT_EQ(pages.size(), 3u);
+
+  const auto top_of = [&bar](QToolButton* button) {
+    return button->mapTo(&bar, QPoint{0, 0}).y();
+  };
+  const auto midpoint = [&](QToolButton* button) {
+    return top_of(button) + button->height() / 2;
+  };
+
+  // Above the first midpoint the page lands in slot 0, so the line sits on the
+  // first button's top edge.
+  bar.ShowDropIndicatorForTest(midpoint(pages[0]) - 4);
+  const QWidget* line = bar.findChild<QWidget*>("railDropIndicator");
+  ASSERT_NE(line, nullptr);
+  EXPECT_TRUE(line->isVisible());
+  EXPECT_NEAR(line->geometry().center().y(), top_of(pages[0]), 2);
+
+  // Past the last midpoint it lands at the end, so the line moves to the last
+  // button's bottom edge rather than staying on a button's top.
+  bar.ShowDropIndicatorForTest(midpoint(pages[2]) + 4);
+  EXPECT_NEAR(line->geometry().center().y(),
+              top_of(pages[2]) + pages[2]->height(), 2);
+}
+
+TEST_F(ActivityBarTest, ClickingAUtilityRequestsIt) {
+  std::vector<int> activated;
+  ActivityBar bar{nullptr, MakeModes(), {}};
+  bar.SetUtilities(MakeUtilities(),
+                   [&](int utility_id) { activated.push_back(utility_id); });
+
+  const std::vector<QToolButton*> utilities = UtilityButtons(bar, 2);
+  ASSERT_EQ(utilities.size(), 2u);
+
+  utilities[1]->click();
+
+  EXPECT_EQ(activated, (std::vector<int>{kUsersUtility}));
+}
+
+TEST_F(ActivityBarTest, SetUtilityAvailableHidesTheButton) {
+  ActivityBar bar{nullptr, MakeModes(), {}};
+  bar.SetUtilities(MakeUtilities(), {});
+  bar.show();
+  QApplication::processEvents();
+
+  bar.SetUtilityAvailable(kUsersUtility, false);
+
+  const std::vector<QToolButton*> utilities = UtilityButtons(bar, 2);
+  EXPECT_TRUE(utilities[0]->isVisible());
+  EXPECT_FALSE(utilities[1]->isVisible());
+}
+
+// A hidden button must not keep the marker, or the rail claims a surface the
+// operator cannot see. Same rule the admin-gated modes follow.
+TEST_F(ActivityBarTest, HidingTheActiveUtilityClearsItsMarker) {
+  ActivityBar bar{nullptr, MakeModes(), {}};
+  bar.SetUtilities(MakeUtilities(), {});
+  bar.SetActiveUtility(kUsersUtility);
+  ASSERT_TRUE(UtilityButtons(bar, 2)[1]->isChecked());
+
+  bar.SetUtilityAvailable(kUsersUtility, false);
+
+  EXPECT_FALSE(UtilityButtons(bar, 2)[1]->isChecked());
+}
+
+// A utility opens a view in the current page rather than replacing the
+// workspace, so its marker coexists with the page and mode markers instead of
+// clearing them.
+TEST_F(ActivityBarTest, UtilityMarkerIsIndependentOfTheModeAndPageMarkers) {
+  ActivityBar bar{nullptr, MakeModes(), {}};
+  bar.SetPages(MakePages());
+  bar.SetUtilities(MakeUtilities(), {});
+
+  bar.SetActiveMode(PaneModeId::kDevices);
+  bar.SetActivePage(7);
+  bar.SetActiveUtility(kUsersUtility);
+
+  EXPECT_TRUE(Buttons(bar)[1]->isChecked());
+  EXPECT_TRUE(PageButtons(bar, 2)[0]->isChecked());
+  EXPECT_TRUE(UtilityButtons(bar, 2)[1]->isChecked());
+
+  // And clearing one leaves the others alone.
+  bar.SetActiveUtility(std::nullopt);
+
+  EXPECT_TRUE(Buttons(bar)[1]->isChecked());
+  EXPECT_TRUE(PageButtons(bar, 2)[0]->isChecked());
+  EXPECT_FALSE(UtilityButtons(bar, 2)[1]->isChecked());
 }
 
 TEST_F(ActivityBarTest, EveryModeRendersItsDedicatedGlyph) {

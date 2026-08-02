@@ -135,8 +135,30 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   std::string PageIconFor(int page_id) const;
   // Sets `page_id`'s rail icon and redraws the rail. Empty `key` clears it.
   void SetPageIcon(int page_id, std::string_view key);
-  // Runs a registered page command through the shell's command resolution.
-  void ExecutePageCommand(unsigned command_id);
+  // Runs a registered command through the shell's command resolution, doing
+  // nothing when it does not resolve or is disabled. The rail's pages, its
+  // pinned utilities and the page context menu all reach their commands this
+  // way, so none of them can drift from what the menus and the Ctrl-K palette
+  // do.
+  void ExecuteShellCommand(unsigned command_id);
+  // MainWindowInterface — opens the preferences dialog over this window,
+  // rendering the Settings items the main menu model assembled.
+  void ShowSettingsDialog() override;
+
+ public:
+  // The shell's menu model. Exposed for the screenshot generator, which builds
+  // the preferences dialog from the same description the menu item does rather
+  // than re-deriving its contents — a capture that assembled its own form
+  // would document a dialog the client does not ship.
+  scada::aui::MenuModel* main_menu_model() SCADA_LIFETIME_BOUND {
+    return main_menu_model_.get();
+  }
+
+ private:
+  // Re-derives the pinned-utility marker from the active view. A utility opens
+  // a view in the current page rather than owning shell state, so the marker
+  // is a projection of what the workspace is showing, like the mode marker.
+  void RefreshUtilityMarker();
   // Brings the current page's panes into line with the active mode, without
   // touching the persisted choice. Called on every page open.
   void ApplyPaneModeToCurrentWindow();

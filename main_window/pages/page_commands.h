@@ -36,4 +36,8 @@ class PageCommands : private PageCommandsContext {
 
  private:
   void RenameCurrentPage(const GlobalCommandContext& context);
+  // Copies the current page — layout, windows and icon — into a new one and
+  // opens it. The copy is taken after saving, so it carries what is on screen
+  // rather than what was last persisted.
+  void DuplicateCurrentPage(const GlobalCommandContext& context);
 };

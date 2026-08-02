@@ -42,9 +42,11 @@
 #include "controller/window_info.h"
 #include "events/qt/event_filter_bar.h"
 #include "favorites/favourites.h"
+#include "main_window/main_menu/main_menu_model.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
+#include "main_window/settings_dialog_qt.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/node_id_util.h"
@@ -62,6 +64,7 @@
 #include <QAction>
 #include <QApplication>
 #include <QCheckBox>
+#include <QComboBox>
 #include <QDockWidget>
 #include <QElapsedTimer>
 #include <QHeaderView>
@@ -79,6 +82,7 @@
 #include <QTableView>
 #include <QTemporaryDir>
 #include <QToolBar>
+#include <QToolButton>
 #include <QTranslator>
 #include <QTreeView>
 #include <QVBoxLayout>
@@ -1119,6 +1123,69 @@ TEST_F(ScreenshotGenerator, CaptureOverviewPage) {
   MainWindow::SetHideForTesting(true);
 }
 
+// The activity rail on its own — the manual documents it as a surface in its
+// own right, and a 1920px window shot cannot show a 52px column legibly.
+//
+// Captured with several pages so the middle band reads as a group rather than
+// as one button, which is the whole point of the band.
+TEST_F(ScreenshotGenerator, CaptureActivityRail) {
+  constexpr const char* kFilename = "workbench-activity-rail.png";
+  if (GetScreenshotOptions().theme.empty())
+    GTEST_SKIP() << "the activity rail is reshell chrome, themed runs only";
+  if (!ShouldCaptureScreenshot(kFilename))
+    GTEST_SKIP() << kFilename << " not requested";
+
+  MainWindow::SetHideForTesting(false);
+
+  auto output_dir = GetOutputDir();
+  std::filesystem::create_directories(output_dir);
+
+  {
+    Profile profile;
+    // Three pages, each with an icon, so the band shows the operator's own
+    // glyphs rather than a column of ordinals.
+    for (const auto& [title, icon] :
+         {std::pair{u"Overview", "overview"}, std::pair{u"Alarms", "alarms"},
+          std::pair{u"Trends", "trend"}}) {
+      Page page;
+      page.title = title;
+      page.icon = icon;
+      page.AddWindow(WindowDefinition{"Struct"});
+      profile.AddPage(page);
+    }
+    profile.Save();
+  }
+
+  WaitForAwaitable(executor_, app_.Start());
+  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
+  for (int i = 0; i < 20; ++i)
+    QApplication::processEvents();
+
+  const auto& main_windows = app_.main_window_manager().main_windows();
+  ASSERT_EQ(main_windows.size(), 1u);
+  auto* qmain = dynamic_cast<QWidget*>(&main_windows.front());
+  ASSERT_NE(qmain, nullptr);
+  qmain->resize(1920, 1080);
+  qmain->show();
+  for (int i = 0; i < 20; ++i)
+    QApplication::processEvents();
+
+  auto* rail = qmain->findChild<QWidget*>("activityBar");
+  ASSERT_NE(rail, nullptr) << "the reshell rail is not in the window";
+
+  // The three zones must all be present, or the image documents a rail that
+  // is missing one and nothing would say so.
+  const QList<QToolButton*> buttons = rail->findChildren<QToolButton*>();
+  EXPECT_GE(buttons.size(), 3 + 3 + 1 + 1)
+      << "expected pane modes, three pages, the '+' and at least one utility";
+
+  const QPixmap frame = GrabWhenSettled(rail);
+  ASSERT_FALSE(frame.isNull());
+  ASSERT_TRUE(
+      frame.save(QString::fromStdString((output_dir / kFilename).string())))
+      << "could not write " << kFilename;
+}
+
 // Settings → Colour scheme, the operator-facing switch for the experimental UX
 // themes. Captured in the *default* (untheme'd) run on purpose: the operator
 // who needs this image is the one still on Classic, looking for how to turn the
@@ -1127,8 +1194,8 @@ TEST_F(ScreenshotGenerator, CaptureOverviewPage) {
 // The menu bar is model-driven and rebuilt on every aboutToShow, so this walks
 // the same path a real click does — emit aboutToShow, let BuildMenu populate,
 // then grab the populated submenu.
-TEST_F(ScreenshotGenerator, CaptureColourSchemeMenu) {
-  constexpr const char* kFilename = "colour-scheme-menu.png";
+TEST_F(ScreenshotGenerator, CaptureSettingsDialog) {
+  constexpr const char* kFilename = "settings-dialog.png";
   if (!ShouldCaptureScreenshot(kFilename))
     GTEST_SKIP() << kFilename << " not requested";
   if (!GetScreenshotOptions().theme.empty())
@@ -1150,7 +1217,10 @@ TEST_F(ScreenshotGenerator, CaptureColourSchemeMenu) {
   ASSERT_NE(qmain, nullptr);
   qmain->show();
 
-  // Find and populate the Settings menu.
+  // The menu now carries one item that opens the dialog, so the reachability
+  // this used to guard on the Colour scheme submenu is guarded here instead:
+  // Colour scheme is how the operator turns the reshell on, and it must not
+  // become unreachable.
   QMenuBar* menu_bar = qmain->menuBar();
   ASSERT_NE(menu_bar, nullptr);
   QMenu* settings_menu = nullptr;
@@ -1161,45 +1231,51 @@ TEST_F(ScreenshotGenerator, CaptureColourSchemeMenu) {
   }
   ASSERT_NE(settings_menu, nullptr) << "no Settings menu in the menu bar";
   emit settings_menu->aboutToShow();
-
-  // ...then its Colour scheme submenu, which BuildMenu populates on its own
-  // aboutToShow.
-  QMenu* scheme_menu = nullptr;
-  const auto scheme_title =
-      QString::fromStdU16String(Translate("Colour scheme"));
-  for (QAction* action : settings_menu->actions()) {
-    if (action->menu() && action->text() == scheme_title)
-      scheme_menu = action->menu();
-  }
-  ASSERT_NE(scheme_menu, nullptr)
-      << "Settings has no Colour scheme submenu — the appearance switch is "
-         "unreachable";
-  emit scheme_menu->aboutToShow();
   for (int i = 0; i < 10; ++i)
     QApplication::processEvents();
 
-  // Guard the contents, not just that a menu exists: an empty or single-row
-  // menu would still render a plausible-looking image.
-  int checkable_rows = 0;
-  int checked_rows = 0;
-  for (const QAction* action : scheme_menu->actions()) {
-    if (action->isSeparator())
-      continue;
-    if (action->isCheckable())
-      ++checkable_rows;
-    if (action->isChecked())
-      ++checked_rows;
+  QAction* open_dialog = nullptr;
+  const auto item_title = QString::fromStdU16String(Translate("Settings..."));
+  for (QAction* action : settings_menu->actions()) {
+    if (!action->isSeparator() && action->text() == item_title)
+      open_dialog = action;
   }
-  EXPECT_EQ(checkable_rows, 5) << "expected Classic plus the four appearances";
-  EXPECT_EQ(checked_rows, 1) << "a radio group must show exactly one selection";
+  ASSERT_NE(open_dialog, nullptr)
+      << "Settings has no Settings... item - the preferences dialog, and with "
+         "it the appearance switch, is unreachable";
 
-  scheme_menu->ensurePolished();
-  scheme_menu->adjustSize();
-  QPixmap menu_pixmap = GrabWhenSettled(scheme_menu);
-  ASSERT_FALSE(menu_pixmap.isNull());
-  menu_pixmap.save(QString::fromStdString((output_dir / kFilename).string()));
+  // Build the dialog the same way the menu item and the rail's pinned utility
+  // both do, rather than re-deriving its contents here.
+  auto* qmain_window = dynamic_cast<MainWindow*>(&main_windows.front());
+  ASSERT_NE(qmain_window, nullptr);
+  auto* menu_model =
+      dynamic_cast<MainMenuModel*>(qmain_window->main_menu_model());
+  ASSERT_NE(menu_model, nullptr);
+  SettingsDialog dialog{qmain, menu_model->settings_model()};
+  dialog.ensurePolished();
+  dialog.adjustSize();
+  dialog.show();
+  for (int i = 0; i < 10; ++i)
+    QApplication::processEvents();
 
-  MainWindow::SetHideForTesting(true);
+  // Guard the contents, not just that a dialog exists: an empty form would
+  // still render a plausible-looking image. Colour scheme is the row that
+  // matters most, so it is named rather than counted.
+  const QList<QComboBox*> combos = dialog.findChildren<QComboBox*>();
+  const QList<QCheckBox*> checks = dialog.findChildren<QCheckBox*>();
+  EXPECT_GE(combos.size(), 1) << "expected Language / Style / Colour scheme";
+  EXPECT_GT(checks.size(), 0) << "expected the preference toggles";
+  bool has_appearances = false;
+  for (const QComboBox* combo : combos) {
+    if (combo->count() == 5)
+      has_appearances = true;
+  }
+  EXPECT_TRUE(has_appearances)
+      << "no row offers Classic plus the four appearances";
+
+  QPixmap dialog_pixmap = GrabWhenSettled(&dialog);
+  ASSERT_FALSE(dialog_pixmap.isNull());
+  dialog_pixmap.save(QString::fromStdString((output_dir / kFilename).string()));
 }
 
 // Regression test for a stack overflow that fires during `app_.Start()`

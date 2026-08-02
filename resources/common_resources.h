@@ -190,6 +190,17 @@
 #define ID_PAGE_NEW                     34122
 #define ID_OPT_SPEECH                   34123
 #define ID_UNACKNOWLEDGED_ONLY          34124
+// Opens the preferences dialog. Reached from Settings > Settings... and from
+// the activity rail's pinned Settings utility, which share this one command so
+// the two entry points cannot diverge.
+#define ID_SETTINGS_DIALOG              34125
+// The rest of the rail's page context menu. Page-scoped rather than reusing
+// ID_MOVE_UP / ID_MOVE_DOWN, whose numeric values (127/128) already belong to
+// unrelated item commands.
+#define ID_PAGE_OPEN                    34126
+#define ID_PAGE_DUPLICATE               34127
+#define ID_PAGE_MOVE_UP                 34128
+#define ID_PAGE_MOVE_DOWN               34129
 #define ID_NEW                          40000
 #define ID_NEW_DISPLAY_0                40100
 #define ID_NEW_REPORT_0                 40200

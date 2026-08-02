@@ -350,6 +350,17 @@ void RegisterMainWindowCommandActions(
       ID_EVENT_PLAY_SOUND, Translate("Sound Alarm on Event"), profile,
       &Profile::event_play_sound));
 
+  // One command behind both entry points — the Settings menu item and the
+  // activity rail's pinned Settings utility — so the two cannot drift. It also
+  // puts the dialog in the Ctrl-K palette, which every other shell command is
+  // already reachable from.
+  global_commands.AddCommand(
+      {.command_id = ID_SETTINGS_DIALOG,
+       .title = Translate("Settings..."),
+       .execute_handler = [](const GlobalCommandContext& context) {
+         context.main_window.ShowSettingsDialog();
+       }});
+
   ui_command_registry.AddMenuItem({.menu_id = MainMenuId::Settings,
                                    .order = 200,
                                    .command_id = ID_WRITE_CONFIRMATION,

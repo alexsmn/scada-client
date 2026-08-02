@@ -205,6 +205,14 @@ class MainMenuModel final : private MainMenuContext,
  public:
   explicit MainMenuModel(const MainMenuContext& context);
 
+#if defined(UI_QT)
+  // The Settings items, which the Qt shell renders as a dialog rather than a
+  // submenu (see SettingsDialog). Still assembled here, from the command
+  // registry and every module's contribution, so the dialog and the Wt shell's
+  // menu are built from one description.
+  scada::aui::MenuModel& settings_model() { return settings_submenu_; }
+#endif
+
  private:
   void Rebuild();
 
@@ -228,6 +236,10 @@ class MainMenuModel final : private MainMenuContext,
   StyleMenuModel style_submenu_;
   AppearanceMenuModel appearance_submenu_;
   scada::aui::SimpleMenuModel language_submenu_;
+  // What the menu bar actually mounts under Qt: one item opening the
+  // preferences dialog. The toggles themselves live in settings_submenu_,
+  // which the dialog renders.
+  scada::aui::SimpleMenuModel settings_menu_;
 #endif
   scada::aui::SimpleMenuModel settings_submenu_;
   scada::aui::SimpleMenuModel help_submenu_;
