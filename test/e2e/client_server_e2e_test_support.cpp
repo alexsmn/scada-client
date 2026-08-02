@@ -416,6 +416,7 @@ void ClientServerE2eTest::PrepareWorkspace() {
   settings_file_ = workspace_.path() / "client-settings.json";
   server_log_dir_ = workspace_.path() / "Logs";
   client_log_dir_ = workspace_.path() / "ClientLogs";
+  client_data_dir_ = workspace_.path() / "ClientData";
 }
 
 void ClientServerE2eTest::WriteClientSettings(std::string_view password,
@@ -566,7 +567,14 @@ void ClientServerE2eTest::StartClient(std::vector<std::string> extra_args) {
   std::vector<std::string> args{
       "--test-settings-file=" + settings_file_.string(),
       "--test-status-file=" + status_file_.string(),
-      "--test-log-dir=" + client_log_dir_.string()};
+      "--test-log-dir=" + client_log_dir_.string(),
+      // Isolate the client's own data directory. Without this the run reads
+      // and WRITES the developer's per-user profile.json, whose saved
+      // `paneMode` decides which panes the shell docks — so whichever mode a
+      // developer last left the client in silently changed what these
+      // assertions saw, and a run could overwrite their saved workspace. The
+      // file cache lives in the same directory and follows.
+      "--test-data-dir=" + client_data_dir_.string()};
   // Client-side telemetry is metrics only today (the client runs no trace sink
   // and no OTLP log sink — see docs/ops/e2e-client-server.md, "Viewing a run's
   // telemetry"), so this exports "scada-client" meters and nothing else.

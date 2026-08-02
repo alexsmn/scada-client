@@ -166,6 +166,9 @@ class ClientServerE2eTest : public ::testing::TestWithParam<E2eParam> {
   std::filesystem::path settings_file_;
   std::filesystem::path server_log_dir_;
   std::filesystem::path client_log_dir_;
+  // The client's isolated profile / file-cache directory for this run. Kept
+  // inside the workspace so it is preserved with the logs on failure.
+  std::filesystem::path client_data_dir_;
 
   ChildProcess server_;
   ChildProcess client_;

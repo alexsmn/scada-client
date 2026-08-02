@@ -55,7 +55,11 @@ void InitProgramOptions(int argc, char* argv[]) {
       "test-profile-save-file", po::value<std::string>(),
       "E2E-only profile save report file")(
       "test-profile-save-user-id", po::value<std::string>(),
-      "E2E-only profile save target user node ID");
+      "E2E-only profile save target user node ID")(
+      "test-data-dir", po::value<std::string>(),
+      "E2E-only client data directory. Overrides the per-user profile and "
+      "file-cache location so a run cannot read or write the developer's own "
+      "client settings");
 
   auto& vm = GetVariablesMap();
   po::store(po::command_line_parser(argc, argv)
