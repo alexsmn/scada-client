@@ -65,9 +65,13 @@ scada-client/
 ├── translation.cmake       # Qt translation support
 ├── app/client_icon.rc      # Windows resource script: the app icon, nothing else
 ├── resources/              # Command ids (common_resources.h) + icon-strip paths
-├── client_utils.cpp/.h     # Global utility functions
-└── tasks.md                # Bug/feature backlog
+└── client_utils.cpp/.h     # Global utility functions
 ```
+
+**The client backlog is not in this repo.** Like the design docs, it moved to
+the superproject: the whole tree now shares one `tasks.md` at `/scada/tasks.md`,
+and client-only work lives in its **Client** section. Do not re-create
+`client/tasks.md`.
 
 ## Documentation
 
