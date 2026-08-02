@@ -15,22 +15,20 @@
 // `UserType.AccessRights` mask this file used to read is vestigial — the
 // server does not consult it, so a client that still derived a role from it
 // would keep showing "Administrator" for an account whose Role had been
-// revoked. These helpers derive the permission breakdown from the granted
-// Roles instead, through the SAME default role→permission map the server
-// enforces with (`scada::DefaultPermissionsForRole`), so the inspector and
-// the server cannot disagree about what an account may do.
-
-// A permission shown in the RBAC inspector. These are the coarse capabilities
-// an operator reasons about, each backed by a concrete OPC UA PermissionType
-// bit rather than by a client-invented tier.
-enum class UserPermissionKind {
-  kView,       // Browse + Read: see the address space and live values.
-  kControl,    // Write + Call: issue commands and write values.
-  kConfigure,  // AddNode + DeleteNode: change the configuration.
-};
+// revoked.
+//
+// This client does not know what a Role grants and must not: it READS the
+// server's role → permission map off the RolePermissions attribute
+// (`ReadServerRolePermissions`, OPC UA Part 3 §5.2.9) and each AccountRole
+// arrives carrying its published grant. A local copy of that map is what would
+// let the inspector tell an operator that an account may do something the
+// server will refuse — the same class of lie the retired AccessRights bitmask
+// told.
 
 struct UserPermission {
-  UserPermissionKind kind;
+  // The coarse capability, defined once in core (`scada::Capability`) because
+  // both clients present the same three.
+  scada::Capability kind;
   bool granted;
 };
 
@@ -43,14 +41,14 @@ struct UserPermission {
 std::vector<UserPermission> PermissionsForRoles(
     std::span<const AccountRole> roles);
 
-// The union of the default permissions of `roles`. Roles the server publishes
-// that are not well-known contribute nothing here — their permissions are a
-// per-namespace policy the client cannot see (Part 3 §5.2.9), so claiming
-// anything about them would be invention.
+// The union of the grants the server published for `roles`. A Role the server
+// published no grant for contributes nothing — that is a custom (group) Role,
+// whose permissions are a per-namespace policy the client cannot see (Part 3
+// §5.2.9), so claiming anything about it would be invention.
 scada::Permission EffectivePermissions(std::span<const AccountRole> roles);
 
-// The permission's label key (an English literal for Translate()).
-const char* UserPermissionLabelKey(UserPermissionKind kind);
+// The capability's label key (an English literal for Translate()).
+const char* UserPermissionLabelKey(scada::Capability kind);
 
 // The session-policy label key for a Sessions cell: a user whose MultiSessions
 // flag is set may hold several concurrent sessions. An unset optional means

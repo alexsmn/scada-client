@@ -52,6 +52,7 @@ inline std::unique_ptr<Controller> ControllerFactoryImpl::CreateController(
     ControllerDelegate& delegate,
     DialogService& dialog_service) {
   scada::base::Check(scada_services_.session_service);
+  scada::base::Check(scada_services_.attribute_service);
 
   auto* registrar = GetControllerRegistrar(command_id);
   if (!registrar) {
@@ -68,6 +69,7 @@ inline std::unique_ptr<Controller> ControllerFactoryImpl::CreateController(
       executor_, delegate, task_manager_, *scada_services_.session_service,
       node_event_provider_, *scada_services_.history_service,
       *scada_services_.monitored_item_service, timed_data_service_,
-      node_service_, file_cache_, profile_, dialog_service, blinker_manager_,
-      create_tree_, property_service_, frame_capture_registry_});
+      node_service_, *scada_services_.attribute_service, file_cache_, profile_,
+      dialog_service, blinker_manager_, create_tree_, property_service_,
+      frame_capture_registry_});
 }

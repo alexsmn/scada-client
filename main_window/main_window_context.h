@@ -15,6 +15,7 @@ class StatusBarModel;
 }  // namespace scada::aui
 
 namespace scada {
+class AttributeService;
 class NodeId;
 }
 
@@ -70,6 +71,13 @@ struct MainWindowContext {
   // Optional: the address-space service, used by the command palette's tag
   // search. Null in minimal/test contexts that do not exercise tag search.
   NodeService* node_service_ = nullptr;
+
+  // Optional: raw attribute reads, for attributes `NodeService` does not
+  // fetch. The RBAC inspector needs it to read the server's role -> permission
+  // map (the RolePermissions attribute, OPC UA Part 3 §5.2.9) rather than
+  // carry its own copy of it. Null in minimal/test contexts, and the panel
+  // then reports the permissions as unknown rather than assuming a map.
+  scada::AttributeService* attribute_service_ = nullptr;
 
   // Optional: calls an OPC UA Method on a node, reporting progress and result
   // through the task manager. Used by the device-diagnostics panel's

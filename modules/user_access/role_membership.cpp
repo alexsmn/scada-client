@@ -5,8 +5,10 @@
 #include "node_service/node_ref.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
+#include "scada/attribute_service.h"
 #include "scada/authorization.h"
 #include "scada/basic_types.h"
+#include "scada/role_permission_encoding.h"
 #include "scada/standard_node_ids.h"
 #include "scada/variant.h"
 
@@ -16,6 +18,19 @@ namespace {
 
 const scada::NodeId kRoleSet{scada::id::Server_ServerCapabilities_RoleSet,
                              scada::NamespaceIndexes::NS0};
+
+// The Server object. Its RolePermissions attribute carries no per-node
+// override, so it publishes the server-wide default map (OPC UA Part 3
+// §5.2.9) — which is precisely "what each Role grants on this server".
+//
+// There is deliberately no vendor property for this: OPC UA models grants
+// per node (§5.2.9) and per namespace (Part 5 §6.3.13), never on RoleType,
+// whose properties are Identities / Applications / Endpoints (Part 18 §4.4).
+// So the standard way to ask "what does this Role grant" is to read the
+// RolePermissions of a node, and the Server object is the natural anchor for
+// the server-wide answer.
+const scada::NodeId kServerObject{scada::id::Server,
+                                  scada::NamespaceIndexes::NS0};
 
 bool IsWellKnownRole(const scada::NodeId& node_id) {
   for (const scada::WellKnownRole role :
@@ -30,6 +45,19 @@ bool IsWellKnownRole(const scada::NodeId& node_id) {
     }
   }
   return false;
+}
+
+// The published grant for `role_id`, or nullopt when the server published no
+// entry for it.
+std::optional<scada::Permission> PublishedGrant(
+    std::span<const scada::RolePermissionType> published,
+    const scada::NodeId& role_id) {
+  for (const scada::RolePermissionType& entry : published) {
+    if (entry.role_id == role_id) {
+      return entry.permissions;
+    }
+  }
+  return std::nullopt;
 }
 
 // The account name a rule grants to, or nullopt when the rule names something
@@ -66,9 +94,30 @@ Awaitable<std::optional<std::u16string>> ReadRuleCriteria(NodeRef rule) {
 
 }  // namespace
 
+Awaitable<std::optional<std::vector<scada::RolePermissionType>>>
+ReadServerRolePermissions(scada::AttributeService& attribute_service) {
+  const scada::DataValue value = co_await scada::Read(
+      attribute_service, scada::ServiceContext{},
+      scada::ReadValueId{kServerObject,
+                         scada::AttributeId::RolePermissions});
+  if (!scada::IsGood(value.status_code)) {
+    co_return std::nullopt;
+  }
+  co_return scada::DecodeRolePermissions(value.value);
+}
+
 Awaitable<std::optional<std::vector<RoleMembership>>> ReadRoleMemberships(
     AnyExecutor executor,
-    NodeService& node_service) {
+    NodeService& node_service,
+    scada::AttributeService& attribute_service) {
+  // What each Role grants comes from the server, not from this client. Without
+  // it there is nothing truthful to say about any Role, so the whole read
+  // reports unknown rather than falling back to an assumed map.
+  const auto published = co_await ReadServerRolePermissions(attribute_service);
+  if (!published) {
+    co_return std::nullopt;
+  }
+
   NodeRef role_set = node_service.GetNode(kRoleSet);
   if (!role_set) {
     co_return std::nullopt;
@@ -79,9 +128,11 @@ Awaitable<std::optional<std::vector<RoleMembership>>> ReadRoleMemberships(
   for (NodeRef& role : role_set.targets(scada::id::HierarchicalReferences)) {
     co_await role.Fetch(NodeFetchStatus::NodeAndChildren);
 
-    RoleMembership membership{.node_id = role.node_id(),
-                              .name = ToString16(role.display_name()),
-                              .well_known = IsWellKnownRole(role.node_id())};
+    RoleMembership membership{
+        .node_id = role.node_id(),
+        .name = ToString16(role.display_name()),
+        .well_known = IsWellKnownRole(role.node_id()),
+        .permissions = PublishedGrant(*published, role.node_id())};
     for (NodeRef& rule : role.targets(scada::id::HierarchicalReferences)) {
       if (auto member = co_await ReadRuleCriteria(rule)) {
         if (std::ranges::find(membership.members, *member) ==
@@ -110,7 +161,7 @@ std::map<std::u16string, std::vector<AccountRole>> RolesByAccount(
       std::vector<AccountRole>& held = by_account[member];
       if (std::ranges::find(held, role.node_id, &AccountRole::node_id) ==
           held.end()) {
-        held.push_back(AccountRole{role.node_id, role.name});
+        held.push_back(AccountRole{role.node_id, role.name, role.permissions});
       }
     }
   }

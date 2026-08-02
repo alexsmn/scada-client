@@ -12,6 +12,10 @@
 #include <optional>
 #include <vector>
 
+namespace scada {
+class AttributeService;
+}
+
 class QLabel;
 class QStackedWidget;
 class QVBoxLayout;
@@ -30,9 +34,10 @@ struct UserPermissionDisplay {
 // It shows ROLES, not a derived tier. Authorization is role-based (OPC UA
 // Part 18 §4.4.1) and the old two-bit AccessRights mask is vestigial, so a
 // pill reading "Administrator" off that mask would keep asserting authority
-// for an account whose Role had been revoked. The permissions come from the
-// same default role→permission map the server enforces with, so the panel and
-// the server cannot disagree.
+// for an account whose Role had been revoked. What each Role grants is READ
+// from the server (the RolePermissions attribute, Part 3 §5.2.9) rather than
+// held in a client-side table, so the panel cannot come to disagree with what
+// the server enforces.
 //
 // Selection flows in through ShowUser(): the shell routes a UserType-node
 // selection here. The node is used ONLY for the account's name — the standard
@@ -49,15 +54,19 @@ class UserAccessPanel : public QWidget {
   ~UserAccessPanel() override;
 
   // Reflects `user` (expected to be a UserType instance), reading its Roles
-  // from the RoleSet through `node_service`. A null / non-user node clears.
+  // from the RoleSet through `node_service` and what those Roles grant through
+  // `attribute_service`. A null / non-user node clears.
   //
   // The read is asynchronous, so the panel shows the account immediately with
   // its Roles pending, then fills them. Until they arrive the Roles read "No
   // data" and NO permission row is drawn — an unresolved role set says nothing
   // about the individual permissions, so drawing them ungranted would be as
   // false a claim as drawing them granted (docs/client/ux/principles.md §5).
+  // The same holds if the server's role → permission map cannot be read: the
+  // panel reports unknown rather than assuming what a Role means.
   void ShowUser(const NodeRef& user,
                 NodeService& node_service,
+                scada::AttributeService& attribute_service,
                 AnyExecutor executor);
 
   // Reflects an account by name, with its Roles already resolved. `roles` is

@@ -10,6 +10,7 @@
 #include "scada/standard_node_ids.h"
 #include "scada/user_management_encoding.h"
 #include "scada/variant.h"
+#include "user_access/test/fake_role_permissions_service.h"
 
 #include <gtest/gtest.h>
 
@@ -84,12 +85,14 @@ class UsersGridTest : public ::testing::Test {
   std::optional<std::vector<UserGridRow>> Build() {
     return RunAwaitable(
         io_, [this]() -> Awaitable<std::optional<std::vector<UserGridRow>>> {
-          co_return co_await BuildUsersGrid(io_.get_executor(), node_service_);
+          co_return co_await BuildUsersGrid(io_.get_executor(), node_service_,
+                                            attribute_service_);
         });
   }
 
   boost::asio::io_context io_;
   FakeNodeService node_service_;
+  FakeRolePermissionsService attribute_service_;
 };
 
 // The whole account list arrives in one Read — no per-user Browse.

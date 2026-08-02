@@ -563,7 +563,8 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     // The users-admin RBAC inspector is standalone reshell chrome (the right
     // region of users-admin.html), built from a fixture user.
     if (spec.window_type == "UserAccess") {
-      SaveUserAccessScreenshot(spec, app_.node_service(), executor_);
+      SaveUserAccessScreenshot(spec, app_.node_service(), attribute_service_,
+                               executor_);
       ++captured;
       continue;
     }

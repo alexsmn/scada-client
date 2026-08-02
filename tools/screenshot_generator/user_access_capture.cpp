@@ -14,6 +14,7 @@
 
 void SaveUserAccessScreenshot(const ScreenshotSpec& spec,
                               NodeService& node_service,
+                              scada::AttributeService& attribute_service,
                               AnyExecutor executor) {
   // USER.5 "Администратор" — the mockup's user. The panel reads its Roles from
   // the RoleSet; the node supplies only the account NAME they are matched by.
@@ -26,7 +27,7 @@ void SaveUserAccessScreenshot(const ScreenshotSpec& spec,
   NodeRef user = node_service.GetNode(user_id);
 
   UserAccessPanel panel;
-  panel.ShowUser(user, node_service, executor);
+  panel.ShowUser(user, node_service, attribute_service, executor);
 
   SaveScreenshot(&panel, spec);
 }

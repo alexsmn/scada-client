@@ -3,6 +3,7 @@
 #include "base/any_executor.h"
 
 namespace scada {
+class AttributeService;
 class MonitoredItemService;
 class HistoryService;
 class SessionService;
@@ -32,6 +33,11 @@ struct ControllerContext {
   scada::MonitoredItemService& monitored_item_service_;
   TimedDataService& timed_data_service_;
   NodeService& node_service_;
+  // Raw attribute reads, for the attributes `NodeService` does not fetch. Its
+  // per-node fetch covers BrowseName/DisplayName/NodeClass/DataType/Value
+  // only, so anything else — RolePermissions, for one — has to be read
+  // directly rather than added to the cost of every node fetch.
+  scada::AttributeService& attribute_service_;
   FileCache& file_cache_;
   Profile& profile_;
   DialogService& dialog_service_;

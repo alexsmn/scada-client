@@ -1246,12 +1246,17 @@ void MainWindow::OnSelectionChanged() {
     }
     if (user_access_) {
       // A single user-node selection fills the RBAC panel; anything else
-      // clears.
+      // clears. Without an attribute service there is no way to read what the
+      // Roles grant, and the panel must not fall back to assuming a map — so
+      // the selection clears rather than showing an invented breakdown.
       if (selection && !selection->empty() && !selection->multiple() &&
+          attribute_service_ &&
           IsInstanceOf(selection->node(), scada::security::id::UserType)) {
         // The node carries the account's NAME; the panel reads the Roles
-        // themselves from the RoleSet.
-        user_access_->ShowUser(selection->node(), *node_service_, executor_);
+        // themselves from the RoleSet, and what they grant from the server's
+        // published RolePermissions.
+        user_access_->ShowUser(selection->node(), *node_service_,
+                               *attribute_service_, executor_);
       } else {
         user_access_->Clear();
       }

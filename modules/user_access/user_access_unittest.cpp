@@ -9,12 +9,16 @@
 
 namespace {
 
+// A Role as the SERVER published it: its id plus the grant that came back on
+// the RolePermissions map. `DefaultPermissionsForRole` stands in for the
+// server here — in the client it is only ever the wire that supplies this.
 AccountRole Role(scada::WellKnownRole role, std::u16string name) {
-  return AccountRole{scada::WellKnownRoleId(role), std::move(name)};
+  return AccountRole{scada::WellKnownRoleId(role), std::move(name),
+                     scada::DefaultPermissionsForRole(role)};
 }
 
 bool GrantedFor(const std::vector<UserPermission>& permissions,
-                UserPermissionKind kind) {
+                scada::Capability kind) {
   for (const UserPermission& permission : permissions) {
     if (permission.kind == kind) {
       return permission.granted;
@@ -30,9 +34,9 @@ bool GrantedFor(const std::vector<UserPermission>& permissions,
 TEST(UserAccess, NoRolesGrantsNothing) {
   const auto permissions = PermissionsForRoles({});
 
-  EXPECT_FALSE(GrantedFor(permissions, UserPermissionKind::kView));
-  EXPECT_FALSE(GrantedFor(permissions, UserPermissionKind::kControl));
-  EXPECT_FALSE(GrantedFor(permissions, UserPermissionKind::kConfigure));
+  EXPECT_FALSE(GrantedFor(permissions, scada::Capability::kView));
+  EXPECT_FALSE(GrantedFor(permissions, scada::Capability::kControl));
+  EXPECT_FALSE(GrantedFor(permissions, scada::Capability::kConfigure));
 }
 
 TEST(UserAccess, ObserverMayViewOnly) {
@@ -41,9 +45,9 @@ TEST(UserAccess, ObserverMayViewOnly) {
 
   const auto permissions = PermissionsForRoles(roles);
 
-  EXPECT_TRUE(GrantedFor(permissions, UserPermissionKind::kView));
-  EXPECT_FALSE(GrantedFor(permissions, UserPermissionKind::kControl));
-  EXPECT_FALSE(GrantedFor(permissions, UserPermissionKind::kConfigure));
+  EXPECT_TRUE(GrantedFor(permissions, scada::Capability::kView));
+  EXPECT_FALSE(GrantedFor(permissions, scada::Capability::kControl));
+  EXPECT_FALSE(GrantedFor(permissions, scada::Capability::kConfigure));
 }
 
 TEST(UserAccess, OperatorMayControlButNotConfigure) {
@@ -52,9 +56,9 @@ TEST(UserAccess, OperatorMayControlButNotConfigure) {
 
   const auto permissions = PermissionsForRoles(roles);
 
-  EXPECT_TRUE(GrantedFor(permissions, UserPermissionKind::kView));
-  EXPECT_TRUE(GrantedFor(permissions, UserPermissionKind::kControl));
-  EXPECT_FALSE(GrantedFor(permissions, UserPermissionKind::kConfigure));
+  EXPECT_TRUE(GrantedFor(permissions, scada::Capability::kView));
+  EXPECT_TRUE(GrantedFor(permissions, scada::Capability::kControl));
+  EXPECT_FALSE(GrantedFor(permissions, scada::Capability::kConfigure));
 }
 
 TEST(UserAccess, ConfigureAdminMayConfigure) {
@@ -62,7 +66,7 @@ TEST(UserAccess, ConfigureAdminMayConfigure) {
       Role(scada::WellKnownRole::kConfigureAdmin, u"ConfigureAdmin")};
 
   EXPECT_TRUE(GrantedFor(PermissionsForRoles(roles),
-                         UserPermissionKind::kConfigure));
+                         scada::Capability::kConfigure));
 }
 
 // Several Roles union, they do not override — which is exactly why the
@@ -75,23 +79,24 @@ TEST(UserAccess, MultipleRolesUnionTheirPermissions) {
 
   const auto permissions = PermissionsForRoles(roles);
 
-  EXPECT_TRUE(GrantedFor(permissions, UserPermissionKind::kView));
-  EXPECT_TRUE(GrantedFor(permissions, UserPermissionKind::kControl));
-  EXPECT_TRUE(GrantedFor(permissions, UserPermissionKind::kConfigure));
+  EXPECT_TRUE(GrantedFor(permissions, scada::Capability::kView));
+  EXPECT_TRUE(GrantedFor(permissions, scada::Capability::kControl));
+  EXPECT_TRUE(GrantedFor(permissions, scada::Capability::kConfigure));
 }
 
 // A custom (group) Role's permissions are a per-namespace policy the client
-// cannot read (Part 3 §5.2.9), so it contributes nothing rather than being
-// guessed at.
+// cannot read (Part 3 §5.2.9), so the server publishes no grant for it and it
+// contributes nothing rather than being guessed at.
 TEST(UserAccess, CustomRoleContributesNothing) {
   const std::vector<AccountRole> roles = {
-      AccountRole{scada::NodeId{7, scada::NamespaceIndexes::ROLE}, u"Shift A"}};
+      AccountRole{scada::NodeId{7, scada::NamespaceIndexes::ROLE}, u"Shift A",
+                  std::nullopt}};
 
   const auto permissions = PermissionsForRoles(roles);
 
-  EXPECT_FALSE(GrantedFor(permissions, UserPermissionKind::kView));
-  EXPECT_FALSE(GrantedFor(permissions, UserPermissionKind::kControl));
-  EXPECT_FALSE(GrantedFor(permissions, UserPermissionKind::kConfigure));
+  EXPECT_FALSE(GrantedFor(permissions, scada::Capability::kView));
+  EXPECT_FALSE(GrantedFor(permissions, scada::Capability::kControl));
+  EXPECT_FALSE(GrantedFor(permissions, scada::Capability::kConfigure));
 }
 
 // The client's coarse capabilities are backed by the same map the server

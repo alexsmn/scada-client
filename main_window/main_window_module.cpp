@@ -530,7 +530,8 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
       main_command_router_factory, selection_command_router_,
       std::move(status_bar_model), context_menu_factory, main_menu_factory,
       connection_info_provider, progress_host_, &node_service_,
-      std::move(call_node_method), std::move(has_call_permission)};
+      scada_services_.attribute_service, std::move(call_node_method),
+      std::move(has_call_permission)};
 }
 
 void MainWindowModule::OnEvents(bool has_events) {

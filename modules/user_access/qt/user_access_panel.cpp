@@ -134,6 +134,7 @@ void UserAccessPanel::Clear() {
 
 void UserAccessPanel::ShowUser(const NodeRef& user,
                                NodeService& node_service,
+                               scada::AttributeService& attribute_service,
                                AnyExecutor executor) {
   if (!user || !IsInstanceOf(user, scada::security::id::UserType)) {
     Clear();
@@ -148,10 +149,11 @@ void UserAccessPanel::ShowUser(const NodeRef& user,
   // shell's selection handler is synchronous, and the RoleSet needs a browse.
   ShowAccount(name, std::nullopt);
 
-  CoSpawn(executor, [this, name, &node_service, executor,
+  CoSpawn(executor, [this, name, &node_service, &attribute_service, executor,
                      token = std::weak_ptr<int>{lifetime_token_}]()
                         -> Awaitable<void> {
-            auto roles = co_await ReadRoleMemberships(executor, node_service);
+            auto roles = co_await ReadRoleMemberships(executor, node_service,
+                                                      attribute_service);
             // Dropped if the panel died, or if a newer selection has since
             // replaced this one — a stale fill would attribute one account's
             // Roles to another.

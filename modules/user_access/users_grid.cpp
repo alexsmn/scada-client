@@ -48,7 +48,8 @@ Awaitable<std::map<std::u16string, scada::NodeId>> ReadUserNodeIds(
 
 Awaitable<std::optional<std::vector<UserGridRow>>> BuildUsersGrid(
     AnyExecutor executor,
-    NodeService& node_service) {
+    NodeService& node_service,
+    scada::AttributeService& attribute_service) {
   NodeRef users_property = node_service.GetNode(kUsersProperty);
   if (!users_property) {
     co_return std::nullopt;
@@ -66,7 +67,8 @@ Awaitable<std::optional<std::vector<UserGridRow>>> BuildUsersGrid(
 
   // Role membership is the shared authorization source; the Roles view reads
   // the same list (role_membership.h).
-  auto roles_read = co_await ReadRoleMemberships(executor, node_service);
+  auto roles_read =
+      co_await ReadRoleMemberships(executor, node_service, attribute_service);
   std::optional<std::map<std::u16string, std::vector<AccountRole>>>
       memberships;
   if (roles_read) {

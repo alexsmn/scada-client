@@ -22,6 +22,7 @@
 #include "profile/profile.h"
 #include "profile/window_definition.h"
 #include "properties/property_service.h"
+#include "scada/attribute_service_mock.h"
 #include "scada/history_service_mock.h"
 #include "scada/method_service_mock.h"
 #include "scada/monitored_item_service_mock.h"
@@ -43,7 +44,8 @@ struct ControllerEnvironment {
   }
 
   scada::services services() {
-    return {.monitored_item_service = &monitored_item_service_,
+    return {.attribute_service = &attribute_service_,
+            .monitored_item_service = &monitored_item_service_,
             .method_service = &method_service_,
             .history_service = &history_service_,
             .session_service = &session_service_};
@@ -59,6 +61,7 @@ struct ControllerEnvironment {
             .monitored_item_service_ = monitored_item_service_,
             .timed_data_service_ = timed_data_service_,
             .node_service_ = node_service_,
+            .attribute_service_ = attribute_service_,
             .file_cache_ = file_cache_,
             .profile_ = profile_,
             .dialog_service_ = dialog_service_,
@@ -73,6 +76,7 @@ struct ControllerEnvironment {
 
   TestExecutor executor_;
 
+  testing::NiceMock<scada::MockAttributeService> attribute_service_;
   testing::NiceMock<scada::MockSessionService> session_service_;
   testing::NiceMock<scada::MockHistoryService> history_service_;
   testing::NiceMock<scada::MockMethodService> method_service_;

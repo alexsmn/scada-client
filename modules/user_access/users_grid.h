@@ -10,6 +10,10 @@
 #include <string>
 #include <vector>
 
+namespace scada {
+class AttributeService;
+}
+
 class NodeService;
 
 // One row of the users-admin grid (the main region of users-admin.html).
@@ -59,7 +63,8 @@ struct UserGridRow {
 // nullopt.
 Awaitable<std::optional<std::vector<UserGridRow>>> BuildUsersGrid(
     AnyExecutor executor,
-    NodeService& node_service);
+    NodeService& node_service,
+    scada::AttributeService& attribute_service);
 
 // The label for an account's Status cell, as an English literal for
 // Translate(): a disabled account may not authenticate.

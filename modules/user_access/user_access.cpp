@@ -1,35 +1,19 @@
 #include "user_access/user_access.h"
 
-namespace {
-
-bool Has(scada::Permission permissions, scada::Permission wanted) {
-  return (permissions & wanted) == wanted;
-}
-
-}  // namespace
-
 scada::Permission EffectivePermissions(std::span<const AccountRole> roles) {
+  // A plain union of what the SERVER published for each held Role (OPC UA
+  // Part 3 §4.9: effective permissions are the OR across the roles a caller
+  // holds). There is no map here to go stale — a Role carries its own grant,
+  // read from the server's RolePermissions.
+  //
+  // A Role with no published grant contributes nothing. That is a custom
+  // (group) Role, whose permissions are a per-namespace policy (§5.2.9) this
+  // client cannot read; guessing would make the inspector over- or understate
+  // what the account may do.
   scada::Permission permissions = scada::Permission::kNone;
   for (const AccountRole& role : roles) {
-    // A Role the server publishes that is not one of the eight well-known ones
-    // is a custom (group) Role, and its permissions are a per-namespace policy
-    // (Part 3 §5.2.9) the client cannot read. Contributing nothing for it is
-    // the honest choice: the alternative is to guess, and the inspector would
-    // then under- or over-state what the account may do.
-    if (!scada::IsWellKnownRoleId(role.node_id)) {
-      continue;
-    }
-    for (const scada::WellKnownRole known :
-         {scada::WellKnownRole::kAnonymous,
-          scada::WellKnownRole::kAuthenticatedUser,
-          scada::WellKnownRole::kObserver, scada::WellKnownRole::kOperator,
-          scada::WellKnownRole::kEngineer, scada::WellKnownRole::kSupervisor,
-          scada::WellKnownRole::kConfigureAdmin,
-          scada::WellKnownRole::kSecurityAdmin}) {
-      if (scada::WellKnownRoleId(known) == role.node_id) {
-        permissions = permissions | scada::DefaultPermissionsForRole(known);
-        break;
-      }
+    if (role.permissions) {
+      permissions |= *role.permissions;
     }
   }
   return permissions;
@@ -39,26 +23,25 @@ std::vector<UserPermission> PermissionsForRoles(
     std::span<const AccountRole> roles) {
   const scada::Permission permissions = EffectivePermissions(roles);
   // Each coarse capability is backed by the concrete PermissionType bits the
-  // server checks for that operation, so a row cannot claim a capability the
-  // server would refuse.
-  return {
-      {UserPermissionKind::kView,
-       Has(permissions, scada::Permission::kBrowse | scada::Permission::kRead)},
-      {UserPermissionKind::kControl,
-       Has(permissions, scada::Permission::kWrite | scada::Permission::kCall)},
-      {UserPermissionKind::kConfigure,
-       Has(permissions,
-           scada::Permission::kAddNode | scada::Permission::kDeleteNode)},
-  };
+  // server checks for that operation (scada::RequiredPermissions), so a row
+  // cannot claim a capability the server would refuse.
+  std::vector<UserPermission> result;
+  for (const scada::Capability capability :
+       {scada::Capability::kView, scada::Capability::kControl,
+        scada::Capability::kConfigure}) {
+    result.push_back(
+        UserPermission{capability, scada::Grants(permissions, capability)});
+  }
+  return result;
 }
 
-const char* UserPermissionLabelKey(UserPermissionKind kind) {
+const char* UserPermissionLabelKey(scada::Capability kind) {
   switch (kind) {
-    case UserPermissionKind::kView:
+    case scada::Capability::kView:
       return "View & monitor";
-    case UserPermissionKind::kControl:
+    case scada::Capability::kControl:
       return "Control & manual input";
-    case UserPermissionKind::kConfigure:
+    case scada::Capability::kConfigure:
       return "Configure & administer";
   }
   return "";

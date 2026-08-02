@@ -102,9 +102,11 @@ std::unique_ptr<UiView> NodeTableController::Init(
       // folder — the folder is only what routed us here.
       CoSpawn(executor_,
               [executor = executor_, &node_service = node_service_,
+               &attribute_service = attribute_service_,
                panel_ptr = QPointer<UsersGridPanel>{panel}]() mutable
               -> Awaitable<void> {
-                auto rows = co_await BuildUsersGrid(executor, node_service);
+                auto rows = co_await BuildUsersGrid(executor, node_service,
+                                                    attribute_service);
                 if (panel_ptr) {
                   // nullopt is "the account list could not be read" — which a
                   // non-administrator gets by design (Part 18 §5.2.1). Showing

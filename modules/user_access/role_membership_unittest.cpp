@@ -8,6 +8,7 @@
 #include "scada/authorization.h"
 #include "scada/node_id.h"
 #include "scada/standard_node_ids.h"
+#include "user_access/test/fake_role_permissions_service.h"
 
 #include <gtest/gtest.h>
 
@@ -62,12 +63,14 @@ class RoleMembershipTest : public ::testing::Test {
     return RunAwaitable(
         io_, [this]() -> Awaitable<std::optional<std::vector<RoleMembership>>> {
           co_return co_await ReadRoleMemberships(io_.get_executor(),
-                                                 node_service_);
+                                                 node_service_,
+                                                 attribute_service_);
         });
   }
 
   boost::asio::io_context io_;
   FakeNodeService node_service_;
+  FakeRolePermissionsService attribute_service_;
 };
 
 TEST_F(RoleMembershipTest, ReadsEachRoleAndItsMembers) {
@@ -140,6 +143,64 @@ TEST_F(RoleMembershipTest, EmptyRoleSetIsUnknownNotEmpty) {
   AddRoleSet();
 
   EXPECT_FALSE(Read().has_value());
+}
+
+// Each Role carries what the SERVER says it grants, read off the published
+// RolePermissions map. This is what lets the client drop its own copy of that
+// map — and therefore what stops it stating something the server contradicts.
+TEST_F(RoleMembershipTest, RolesCarryTheServerPublishedGrant) {
+  AddRoleSet();
+  const scada::NodeId op =
+      scada::WellKnownRoleId(scada::WellKnownRole::kOperator);
+  AddRole(op, u"Operator");
+
+  const auto roles = Read();
+
+  ASSERT_TRUE(roles.has_value());
+  ASSERT_EQ(roles->size(), 1u);
+  EXPECT_EQ((*roles)[0].permissions,
+            scada::DefaultPermissionsForRole(scada::WellKnownRole::kOperator));
+}
+
+// A custom (group) Role has no entry in the published map — its grants are a
+// per-namespace policy (Part 3 §5.2.9) — so it carries none, rather than a
+// guess.
+TEST_F(RoleMembershipTest, CustomRoleCarriesNoGrant) {
+  AddRoleSet();
+  AddRole(scada::NodeId{7, scada::NamespaceIndexes::ROLE}, u"Shift A");
+
+  const auto roles = Read();
+
+  ASSERT_TRUE(roles.has_value());
+  ASSERT_EQ(roles->size(), 1u);
+  EXPECT_FALSE((*roles)[0].permissions.has_value());
+}
+
+// Without the server's map there is nothing truthful to say about what any
+// Role means, so the whole read reports unknown. Falling back to an assumed
+// map is precisely the failure this design removes.
+TEST(RoleMembershipMapUnreadable, UnreadableRoleMapIsUnknownNotAssumed) {
+  boost::asio::io_context io;
+  FakeNodeService node_service;
+  FakeRolePermissionsService attribute_service{std::nullopt};
+
+  node_service.Add(
+      scada::NodeState{.node_id = kRoleSet,
+                       .node_class = scada::NodeClass::Object});
+  node_service.Add(scada::NodeState{
+      .node_id = scada::WellKnownRoleId(scada::WellKnownRole::kOperator),
+      .node_class = scada::NodeClass::Object,
+      .parent_id = kRoleSet,
+      .reference_type_id = scada::id::Organizes,
+      .attributes = {.display_name = u"Operator"}});
+
+  const auto roles = RunAwaitable(
+      io, [&]() -> Awaitable<std::optional<std::vector<RoleMembership>>> {
+        co_return co_await ReadRoleMemberships(io.get_executor(), node_service,
+                                               attribute_service);
+      });
+
+  EXPECT_FALSE(roles.has_value());
 }
 
 // The per-user inversion both the Users grid and the RBAC inspector consume.

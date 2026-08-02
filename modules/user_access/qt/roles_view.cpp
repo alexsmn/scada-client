@@ -26,9 +26,11 @@ std::unique_ptr<UiView> RolesView::Init(const WindowDefinition& definition) {
   // Populate off the construction path; a QPointer guards a late completion
   // against a destroyed panel.
   CoSpawn(executor_, [executor = executor_, &node_service = node_service_,
+                      &attribute_service = attribute_service_,
                       panel_ptr = QPointer<RolesGridPanel>{panel}]() mutable
           -> Awaitable<void> {
-    auto roles = co_await ReadRoleMemberships(executor, node_service);
+    auto roles =
+        co_await ReadRoleMemberships(executor, node_service, attribute_service);
     if (panel_ptr) {
       panel_ptr->ShowRoles(roles);
     }
