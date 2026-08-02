@@ -38,9 +38,10 @@ client_module_link_libraries(client_main_window PRIVATE
 
 # Qt.
 
-list(APPEND CMAKE_MODULE_PATH
-  "${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/view_manager_qt"
-)
+# ViewManagerQt is resolved through CMAKE_MODULE_PATH, which the consuming
+# build supplies — the superproject lists it alongside the other first-party
+# dependencies. Reaching out of this repository by relative path would work
+# here and break in the published `client`, which has no sibling third_party/.
 if(TARGET client_main_window_qt)
   find_package(ViewManagerQt REQUIRED)
 
