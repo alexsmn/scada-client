@@ -1,0 +1,281 @@
+#include "configuration/objects/visible_node_model.h"
+
+#include "aui/severity_colors.h"
+#include "base/check.h"
+#include "configuration/tree/configuration_tree_model.h"
+#include "model/data_items_node_ids.h"
+#include "profile/profile.h"
+#include "services/device_state_notifier.h"
+#include "timed_data/timed_data_property.h"
+
+VisibleNodeModel::VisibleNodeModel(TimedDataService& timed_data_service,
+                                   Profile& profile,
+                                   NodeChangeHandler node_change_handler)
+    : timed_data_service_{timed_data_service},
+      profile_{profile},
+      node_change_handler_{std::move(node_change_handler)} {}
+
+VisibleNodeModel::~VisibleNodeModel() {
+  for (auto& p : nodes_)
+    p.second->SetChangeHandler(nullptr);
+}
+
+void VisibleNodeModel::SetNode(void* tree_node,
+                               std::shared_ptr<VisibleNode> node) {
+  auto i = nodes_.find(tree_node);
+  if (i != nodes_.end()) {
+    if (node == i->second)
+      return;
+
+    i->second->SetChangeHandler(nullptr);
+    nodes_.erase(i);
+  }
+
+  if (!node)
+    return;
+
+  node->change_handler_ = [this, tree_node] {
+    node_change_handler_(tree_node);
+  };
+
+  nodes_[tree_node] = std::move(node);
+
+  node_change_handler_(tree_node);
+}
+
+bool VisibleNodeModel::HasNode(void* tree_node,
+                               const std::shared_ptr<VisibleNode>& node) const {
+  auto i = nodes_.find(tree_node);
+  return i != nodes_.end() && i->second == node;
+}
+
+std::u16string VisibleNodeModel::GetText(void* tree_node) {
+  auto* node = GetNode(tree_node);
+  if (!node)
+    return std::u16string();
+  return node->GetText();
+}
+
+scada::aui::Color VisibleNodeModel::GetTextColor(void* tree_node) {
+  auto* node = GetNode(tree_node);
+  if (!node || node->IsBad())
+    return profile_.bad_value_color;
+
+  return scada::aui::ColorCode::Transparent;
+}
+
+scada::aui::Color VisibleNodeModel::GetBackgroundColor(void* tree_node) {
+  auto* node = GetNode(tree_node);
+  if (node && node->IsAlerting())
+    return profile_.alarm_color;
+
+  return scada::aui::ColorCode::Transparent;
+}
+
+std::optional<scada::aui::Color> VisibleNodeModel::GetStatusColor(
+    void* tree_node) {
+  const VisibleNode* node = GetNode(tree_node);
+  if (!node)
+    return std::nullopt;  // no live value (folder/object): no status dot
+
+  // Only data variables have a value quality. A group's Value column shows its
+  // device's connection state as text, not a quality, so dotting its folder
+  // icon would claim a quality the row does not have.
+  if (!node->HasQuality())
+    return std::nullopt;
+
+  // A row whose node is still resolving has delivered nothing yet. Falling
+  // through would paint it green, because the placeholder is neither bad nor
+  // alerting — a row with an empty value claiming good quality.
+  if (!node->IsResolved())
+    return std::nullopt;
+
+  const scada::aui::Quality quality = node->IsBad() ? scada::aui::Quality::kBad
+                                      : node->IsAlerting()
+                                          ? scada::aui::Quality::kUncertain
+                                          : scada::aui::Quality::kGood;
+  return scada::aui::QualityColor(quality);
+}
+
+const VisibleNode* VisibleNodeModel::GetNode(void* tree_node) const {
+  if (!tree_node)
+    return nullptr;
+
+  auto i = nodes_.find(static_cast<ConfigurationTreeNode*>(tree_node));
+  if (i == nodes_.end())
+    return nullptr;
+
+  return i->second.get();
+}
+
+// VisibleNode
+
+VisibleNode::~VisibleNode() {
+  scada::base::Check(!change_handler_);
+}
+
+void VisibleNode::SetChangeHandler(ChangeHandler change_handler) {
+  change_handler_ = std::move(change_handler);
+}
+
+void VisibleNode::NotifyChanged() {
+  if (change_handler_)
+    change_handler_();
+}
+
+// ProxyVisibleNode
+
+ProxyVisibleNode::~ProxyVisibleNode() {
+  if (underlying_node_)
+    underlying_node_->SetChangeHandler(nullptr);
+}
+
+void ProxyVisibleNode::SetUnderlyingNode(std::shared_ptr<VisibleNode> node) {
+  if (underlying_node_ == node)
+    return;
+
+  if (underlying_node_)
+    underlying_node_->SetChangeHandler(nullptr);
+
+  underlying_node_ = std::move(node);
+
+  if (underlying_node_) {
+    underlying_node_->SetChangeHandler([weak_ptr = weak_from_this()] {
+      if (auto ptr = weak_ptr.lock())
+        ptr->NotifyChanged();
+    });
+  }
+
+  NotifyChanged();
+}
+
+std::u16string ProxyVisibleNode::GetText() const {
+  return underlying_node_ ? underlying_node_->GetText() : std::u16string{};
+}
+
+bool ProxyVisibleNode::IsBad() const {
+  return underlying_node_ && underlying_node_->IsBad();
+}
+
+bool ProxyVisibleNode::IsAlerting() const {
+  return underlying_node_ && underlying_node_->IsAlerting();
+}
+
+bool ProxyVisibleNode::IsResolved() const {
+  return underlying_node_ && underlying_node_->IsResolved();
+}
+
+bool ProxyVisibleNode::HasQuality() const {
+  return underlying_node_ && underlying_node_->HasQuality();
+}
+
+// DataItemVisibleNode
+
+DataItemVisibleNode::DataItemVisibleNode(TimedDataService& timed_data_service,
+                                         BlinkerManager& blinker_manager,
+                                         NodeRef node)
+    : Blinker{blinker_manager} {
+  spec_.property_change_handler = [this](const PropertySet& properties) {
+    if (properties.is_current_changed())
+      NotifyChanged();
+  };
+
+  spec_.event_change_handler = [this] { SetAlerting(spec_.alerting()); };
+
+  spec_.Connect(timed_data_service, node);
+
+  SetAlerting(spec_.alerting());
+
+  NotifyChanged();
+}
+
+void DataItemVisibleNode::OnBlink(bool state) {
+  scada::base::Check(alerting_);
+  NotifyChanged();
+}
+
+std::u16string DataItemVisibleNode::GetText() const {
+  return spec_.GetCurrentString(ValueFormat{FORMAT_DEFAULT});
+}
+
+bool DataItemVisibleNode::IsBad() const {
+  return spec_.current().qualifier.general_bad();
+}
+
+bool DataItemVisibleNode::IsResolved() const {
+  // Subscribed is not the same as delivered. Until a value arrives the
+  // qualifier is a default zero, which is "not bad" — so falling through would
+  // paint the good band next to an empty cell. Same rule as the Inspector's
+  // quality pill (InspectorQualityBandFor).
+  return !spec_.current().is_null();
+}
+
+bool DataItemVisibleNode::IsAlerting() const {
+  return alerting_ && Blinker::GetState();
+}
+
+void DataItemVisibleNode::SetAlerting(bool alerting) {
+  if (alerting == alerting_)
+    return;
+
+  alerting_ = alerting;
+
+  if (alerting_)
+    Blinker::Start();
+  else
+    Blinker::Stop();
+
+  NotifyChanged();
+}
+
+// DataGroupVisibleNode
+
+DataGroupVisibleNode::DataGroupVisibleNode(TimedDataService& timed_data_service,
+                                           NodeRef node)
+    : timed_data_service_{timed_data_service},
+      node_{node},
+      model_changed_connection_{node_.SubscribeModelChanged(
+          [this](const scada::ModelChangeEvent& event) {
+            OnModelChanged(event);
+          })} {
+  UpdateDevice();
+}
+
+DataGroupVisibleNode::~DataGroupVisibleNode() = default;
+
+std::u16string DataGroupVisibleNode::GetText() const {
+  return device_state_notifier_ ? std::u16string{ToLocalizedString(
+                                      device_state_notifier_->device_state())}
+                                : std::u16string{};
+}
+
+bool DataGroupVisibleNode::IsBad() const {
+  return device_state_notifier_ &&
+         device_state_notifier_->device_state() != DeviceState::Online;
+}
+
+void DataGroupVisibleNode::UpdateDevice() {
+  auto device = node_.target(scada::data_items::id::HasDevice);
+
+  if (device_ == device)
+    return;
+
+  device_state_notifier_.reset();
+
+  device_ = std::move(device);
+
+  if (device_) {
+    device_state_notifier_ = std::make_unique<DeviceStateNotifier>(
+        timed_data_service_, device_, [this] { NotifyChanged(); });
+  }
+
+  NotifyChanged();
+}
+
+void DataGroupVisibleNode::OnModelChanged(
+    const scada::ModelChangeEvent& event) {
+  if (event.verb & (scada::ModelChangeEvent::ReferenceAdded |
+                    scada::ModelChangeEvent::ReferenceDeleted)) {
+    UpdateDevice();
+  }
+}

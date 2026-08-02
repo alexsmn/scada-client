@@ -1,0 +1,190 @@
+#!/usr/bin/env python3
+"""Checks that user-facing strings are not hard-coded as `u"..."` literals.
+
+The failure this exists to prevent: a string that reaches the operator is
+written as a raw UTF-16 literal instead of going through `Translate()`, so it
+can never be translated — and *nothing* notices. `lupdate` does not recognise
+`Translate()`, so it never reports the string as missing; the `.ui` checker
+only reads Designer forms; and a lookup that finds no entry silently falls back
+to the English source. The result renders in English inside an otherwise
+Russian client, indefinitely.
+
+That is not hypothetical. The select-before-operate confirmation — the most
+safety-critical text in the client — shipped in English because its preamble
+was a bare `u"..."` literal. The configuration import/export path had sixteen
+more, of which *eleven already had finished Russian translations* sitting
+unused in `client_ru.ts`: the catalog entries were fine, the code simply never
+asked for them.
+
+How it checks:
+
+  * It looks only at arguments actually reaching a user-facing sink (see
+    `SINKS`) — a message box, a resource error, a file-dialog title, a window
+    title. Scanning every literal in the tree would drown in protocol strings,
+    node-id paths and format specifiers.
+  * It resolves `char16_t` constants, because that is how the bug hides: a
+    namespace-scope `const char16_t kExportTitle[] = u"Export";` *cannot* call
+    `Translate()` (which reads the installed catalog and needs a running
+    QApplication), so the constant form is the tempting wrong answer.
+  * Adjacent literals are joined, so a wrapped `u"a " u"b"` is judged whole.
+  * A literal with no letters (punctuation, separators, glyphs) is ignored.
+
+Usage:
+    python3 client/tools/check_untranslated_ui_strings.py [--client-dir DIR]
+"""
+
+import argparse
+import pathlib
+import re
+import sys
+
+# Calls whose string arguments are shown to the operator. Each entry is the
+# spelling to search for and the opening delimiter of its argument list.
+SINKS = (
+    "RunMessageBox",
+    "ResourceError",
+    "ShowResourceError",
+    "SelectOpenFile",
+    "SelectSaveFile",
+    "setWindowTitle",
+)
+
+# Literals that are deliberately NOT translated, with the reason. A string may
+# only be listed here because translating it would be *wrong* — not because
+# nobody has got round to it; use KNOWN_GAPS for that.
+ALLOWED_UNTRANSLATED = {
+    # Nothing yet. The data-interchange strings that must stay English
+    # (export_data_writer.cpp column headers, kNodeIdTitle) are not reached by
+    # any sink, so they never appear here in the first place.
+}
+
+# Strings that *should* be translated but are not yet. This list must only ever
+# shrink: it records pre-existing gaps so the check can be enforced today,
+# without pretending they are fine. Adding to it is a review conversation, not
+# a fix.
+KNOWN_GAPS = {
+    # Empty. The export/import message boxes were the last entries here.
+}
+
+# Files whose strings never reach an operator.
+EXCLUDED_DIR_PARTS = ("test", "tools")
+EXCLUDED_NAME_PARTS = ("_unittest.", "_mock.", "_test.")
+
+LITERAL = re.compile(r'u"((?:[^"\\]|\\.)*)"')
+# `const char16_t kFoo[] = u"...";`, the form that cannot call Translate().
+CONSTANT = re.compile(
+    r'(?:const|constexpr)\s+char16_t\s+(\w+)\s*\[\s*\]\s*=\s*((?:\s*u"(?:[^"\\]|\\.)*")+)\s*;'
+)
+HAS_LETTER = re.compile(r"[A-Za-zЀ-ӿ]")
+
+
+def is_excluded(path: pathlib.Path, client_dir: pathlib.Path) -> bool:
+    rel = path.relative_to(client_dir)
+    if any(part in EXCLUDED_DIR_PARTS for part in rel.parts[:-1]):
+        return True
+    return any(part in path.name for part in EXCLUDED_NAME_PARTS)
+
+
+def join_literals(text: str) -> str:
+    """Concatenates the adjacent u"..." pieces in `text`, as the compiler does."""
+    return "".join(m.group(1) for m in LITERAL.finditer(text))
+
+
+def argument_region(text: str, open_index: int) -> str:
+    """Returns the balanced (...) or {...} region starting at `open_index`."""
+    opener = text[open_index]
+    closer = {"(": ")", "{": "}"}[opener]
+    depth = 0
+    i = open_index
+    while i < len(text):
+        c = text[i]
+        if c == '"':  # skip string literals so their parens do not count
+            i += 1
+            while i < len(text) and text[i] != '"':
+                i += 2 if text[i] == "\\" else 1
+        elif c == opener:
+            depth += 1
+        elif c == closer:
+            depth -= 1
+            if depth == 0:
+                return text[open_index + 1 : i]
+        i += 1
+    return ""
+
+
+def scan_file(path: pathlib.Path, client_dir: pathlib.Path):
+    """Yields (line, sink, text, via_constant) for each untranslated literal."""
+    source = path.read_text("utf-8", "replace")
+    constants = {
+        m.group(1): join_literals(m.group(2)) for m in CONSTANT.finditer(source)
+    }
+
+    for sink in SINKS:
+        for m in re.finditer(r"\b" + sink + r"\b\s*(?:<[^<>]*>\s*)?([({])", source):
+            region = argument_region(source, m.end() - 1)
+            if not region:
+                continue
+            line = source[: m.start()].count("\n") + 1
+
+            for text in (join_literals(region),) if LITERAL.search(region) else ():
+                if text and HAS_LETTER.search(text):
+                    yield line, sink, text, None
+
+            # The constant form: an identifier resolving to a literal.
+            for name in re.findall(r"\b(\w+)\b", region):
+                text = constants.get(name)
+                if text and HAS_LETTER.search(text):
+                    yield line, sink, text, name
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--client-dir", default=str(pathlib.Path(__file__).resolve().parents[1]))
+    args = parser.parse_args()
+
+    client_dir = pathlib.Path(args.client_dir).resolve()
+    if not (client_dir / "modules").is_dir():
+        print(f"skipped: {client_dir} does not look like the client tree")
+        return 0
+
+    findings, allowed, gaps = [], 0, 0
+    scanned = 0
+    for path in sorted(client_dir.rglob("*")):
+        if path.suffix not in (".cpp", ".h") or is_excluded(path, client_dir):
+            continue
+        scanned += 1
+        rel = path.relative_to(client_dir).as_posix()
+        for line, sink, text, via in scan_file(path, client_dir):
+            if (rel, text) in ALLOWED_UNTRANSLATED:
+                allowed += 1
+            elif (rel, text) in KNOWN_GAPS:
+                gaps += 1
+            else:
+                findings.append((rel, line, sink, text, via))
+
+    if findings:
+        print(f"{len(findings)} user-facing string(s) cannot be translated:\n")
+        for rel, line, sink, text, via in findings:
+            shown = text if len(text) <= 68 else text[:65] + "..."
+            through = f" (via the constant {via})" if via else ""
+            print(f"  {rel}:{line}: {sink}{through}")
+            print(f'      u"{shown}"')
+        print(
+            "\nWrap the string in Translate(\"...\") and add it to the *empty*\n"
+            "context of app/qt/client_ru.ts — Translate() looks up with an empty\n"
+            "context, and lupdate cannot see the call, so the entry is added by\n"
+            "hand. A namespace-scope char16_t constant cannot call Translate()\n"
+            "at all (it needs a running QApplication); make it a function."
+        )
+        return 1
+
+    print(
+        f"OK: no untranslatable user-facing strings "
+        f"({scanned} file(s) scanned, {len(SINKS)} sink(s); "
+        f"{allowed} allowed, {gaps} known gap(s))."
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

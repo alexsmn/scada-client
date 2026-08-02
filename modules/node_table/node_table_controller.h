@@ -1,0 +1,49 @@
+#pragma once
+
+#ifdef _WIN32
+#include "base/win/dragdrop.h"
+#endif
+#include "controller/command_registry.h"
+#include "controller/controller.h"
+#include "controller/controller_context.h"
+#include "controller/selection_model.h"
+#include "modules/node_table/node_table_menu_model.h"
+
+namespace scada::aui {
+class Grid;
+}
+
+class NodeTableModel;
+
+class NodeTableController : protected ControllerContext,
+                            public Controller
+#ifdef _WIN32
+                            ,
+                            public DataObject
+#endif
+{
+ public:
+  NodeTableController(const ControllerContext& context,
+                      const NodeRef& parent_node);
+  virtual ~NodeTableController();
+
+  // Controller events
+  virtual std::unique_ptr<UiView> Init(
+      const WindowDefinition& definition) override;
+  virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
+  virtual void Save(WindowDefinition& definition) override;
+  virtual NodeRef GetRootNode() const override;
+  virtual SelectionModel* GetSelectionModel() override { return &selection_; }
+  virtual bool IsWorking() const override;
+
+ private:
+  void SetSorting(const scada::NodeId& property_id);
+
+  SelectionModel selection_{{timed_data_service_}};
+
+  const std::shared_ptr<NodeTableModel> model_;
+  scada::aui::Grid* grid_ = nullptr;
+
+  CommandRegistry command_registry_;
+  NodeTableMenuModel menu_model_{command_registry_};
+};

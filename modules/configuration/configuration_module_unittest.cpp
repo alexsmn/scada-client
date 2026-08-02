@@ -1,0 +1,203 @@
+#include "configuration/configuration_module.h"
+
+#include "aui/dialog_service_mock.h"
+#include "base/awaitable.h"
+#include "base/test/awaitable_test.h"
+#include "base/test/test_executor.h"
+#include "common/node_state.h"
+#include "controller/command_registry.h"
+#include "controller/command_ui_registry.h"
+#include "controller/controller_registry.h"
+#include "controller/selection_model.h"
+#include "controller/window_info.h"
+#include "core/selection_command_context.h"
+#include "events/local_events.h"
+#include "main_window/main_window_mock.h"
+#include "main_window/opened_view/opened_view_interface.h"
+#include "model/data_items_node_ids.h"
+#include "model/devices_node_ids.h"
+#include "node_service/test/fake_node_service.h"
+#include "profile/profile.h"
+#include "resources/common_resources.h"
+#include "scada/client.h"
+#include "scada/co_result.h"
+#include "scada/method_service_mock.h"
+#include "scada/session_service_mock.h"
+#include "services/task_manager_mock.h"
+#include "timed_data/timed_data_service_fake.h"
+
+#include <gmock/gmock.h>
+
+using namespace testing;
+
+namespace {
+
+constexpr scada::NumericId kItemNodeId = 6001;
+
+class FakeOpenedView : public OpenedViewInterface {
+ public:
+  const WindowInfo& GetWindowInfo() const override { return window_info_; }
+  std::u16string GetWindowTitle() const override { return {}; }
+  void SetWindowTitle(std::u16string_view title) override {}
+  WindowDefinition Save() override { return {}; }
+  ContentsModel* GetContents() override { return nullptr; }
+  void Select(const scada::NodeId& node_id) override {}
+
+  Awaitable<WindowDefinition> GetOpenWindowDefinition(
+      const WindowInfo* window_info) const override {
+    co_return WindowDefinition{*window_info};
+  }
+
+ private:
+  WindowInfo window_info_;
+};
+
+// Mirrors the laziness of the production `TaskManagerImpl`: the launcher runs
+// only when the returned awaitable is awaited. The launcher parameter is taken
+// by value so the coroutine frame owns a copy (CP.53).
+scada::CoStatus RunLauncherLazily(TaskManager::TaskLauncher launcher) {
+  co_return co_await launcher();
+}
+
+// A lazy awaitable that flips `executed` only when actually awaited.
+scada::CoStatus CompleteLazily(bool* executed) {
+  *executed = true;
+  co_return scada::StatusCode::Good;
+}
+
+}  // namespace
+
+class ConfigurationModuleTest : public Test {
+ protected:
+  ConfigurationModuleTest()
+      : command_node_{node_service_.Add(scada::NodeState{
+            .node_id = scada::NodeId{kItemNodeId, 1},
+            .attributes = {.display_name = scada::LocalizedText{u"Pump"}}})},
+        selection_{SelectionModelContext{timed_data_service_}},
+        configuration_module_{ConfigurationModuleContext{
+            .executor_ = executor_,
+            .controller_registry_ = controller_registry_,
+            .profile_ = profile_,
+            .node_service_tree_factory_ = {},
+            .session_service_ = session_service_,
+            .local_events_ = local_events_,
+            .task_manager_ = task_manager_,
+            .selection_commands_ = selection_commands_,
+            .ui_command_registry_ = ui_command_registry_}} {
+    selection_.SelectNode(command_node_);
+  }
+
+  SelectionCommandContext MakeCommandContext() {
+    return {.selection = selection_,
+            .dialog_service = dialog_service_,
+            .main_window = main_window_,
+            .opened_view = opened_view_};
+  }
+
+  void ExecuteCommand(unsigned command_id) {
+    auto* command = selection_commands_.FindCommand(command_id);
+    ASSERT_NE(command, nullptr);
+    auto context = MakeCommandContext();
+    command->execute_handler(context);
+  }
+
+  void ExecuteInterrogateCommand() { ExecuteCommand(ID_DEV1_REFR); }
+
+  void DrainExecutor() { Drain(executor_); }
+
+  TestExecutor executor_;
+  StrictMock<scada::MockMethodService> method_service_;
+  // The fake backs GetScadaNode() with these services, so method calls made
+  // through the node cursor land on |method_service_|.
+  FakeNodeService node_service_{
+      scada::services{.method_service = &method_service_}};
+  NodeRef command_node_;
+  FakeTimedDataService timed_data_service_;
+  BasicCommandRegistry<SelectionCommandContext> selection_commands_;
+  UiCommandRegistry ui_command_registry_;
+  ControllerRegistry controller_registry_;
+  NiceMock<scada::MockSessionService> session_service_;
+  Profile profile_;
+  LocalEvents local_events_;
+  NiceMock<MockTaskManager> task_manager_;
+  SelectionModel selection_;
+  NiceMock<MockDialogService> dialog_service_;
+  NiceMock<MockMainWindow> main_window_;
+  FakeOpenedView opened_view_;
+  ConfigurationModule configuration_module_;
+};
+
+// Regression: ID_UNLOCK_ITEM discarded the lazy awaitable returned by
+// `TaskManager::PostTask`, so the posted task never ran and the unlock method
+// was never called.
+TEST_F(ConfigurationModuleTest, UnlockCommandRunsPostedTask) {
+  EXPECT_CALL(task_manager_, PostTask(_, _))
+      .WillOnce(Invoke(
+          [](std::u16string_view, const TaskManager::TaskLauncher& launcher) {
+            return RunLauncherLazily(launcher);
+          }));
+  EXPECT_CALL(method_service_,
+              Call(scada::NodeId{kItemNodeId, 1},
+                   scada::data_items::id::DataItemType_Unlock, IsEmpty(), _))
+      .WillOnce(Invoke([](auto, auto, auto, auto) {
+        return scada::MakeMethodCallResult(scada::StatusCode::Good);
+      }));
+
+  ExecuteCommand(ID_UNLOCK_ITEM);
+  DrainExecutor();
+}
+
+// Regression: ID_ITEM_ENABLE / ID_ITEM_DISABLE discarded the lazy awaitable
+// returned by `TaskManager::PostUpdateTask`, so the update never ran.
+TEST_F(ConfigurationModuleTest, EnableCommandRunsPostedUpdateTask) {
+  bool executed = false;
+  EXPECT_CALL(task_manager_,
+              PostUpdateTask(scada::NodeId{kItemNodeId, 1}, _, _))
+      .WillOnce(Invoke([&](const scada::NodeId&, scada::NodeAttributes,
+                           scada::NodeProperties properties) {
+        EXPECT_THAT(properties,
+                    ElementsAre(Pair(scada::devices::id::DeviceType_Disabled,
+                                     scada::Variant{false})));
+        return CompleteLazily(&executed);
+      }));
+
+  ExecuteCommand(ID_ITEM_ENABLE);
+  DrainExecutor();
+
+  EXPECT_TRUE(executed);
+}
+
+TEST_F(ConfigurationModuleTest, ReportsMethodCallSuccessAfterCompletion) {
+  EXPECT_CALL(method_service_,
+              Call(scada::NodeId{kItemNodeId, 1},
+                   scada::devices::id::DeviceType_Interrogate, IsEmpty(), _))
+      .WillOnce(Invoke([](auto, auto, auto, auto) {
+        return scada::MakeMethodCallResult(scada::StatusCode::Good);
+      }));
+
+  ExecuteInterrogateCommand();
+  DrainExecutor();
+
+  ASSERT_EQ(local_events_.events().size(), 1);
+  const auto& event = *local_events_.events().front();
+  EXPECT_EQ(event.severity, scada::kSeverityNormal);
+  EXPECT_NE(event.message.text.find(u"Pump"), std::u16string::npos);
+}
+
+TEST_F(ConfigurationModuleTest, ReportsMethodCallFailureAfterCompletion) {
+  EXPECT_CALL(method_service_,
+              Call(scada::NodeId{kItemNodeId, 1},
+                   scada::devices::id::DeviceType_Interrogate, IsEmpty(), _))
+      .WillOnce(Invoke([](auto, auto, auto, auto) {
+        return scada::MakeMethodCallResult(
+            scada::StatusCode::Bad_WrongMethodId);
+      }));
+
+  ExecuteInterrogateCommand();
+  DrainExecutor();
+
+  ASSERT_EQ(local_events_.events().size(), 1);
+  const auto& event = *local_events_.events().front();
+  EXPECT_EQ(event.severity, scada::kSeverityCritical);
+  EXPECT_NE(event.message.text.find(u"Pump"), std::u16string::npos);
+}

@@ -1,0 +1,32 @@
+#pragma once
+
+#include "aui/models/header_model.h"
+
+namespace scada::aui {
+
+class FixedRowModel : public HeaderModel {
+ public:
+  class Delegate {
+   public:
+    virtual int GetRowCount() = 0;
+    virtual std::u16string GetRowTitle(int index);
+  };
+
+  explicit FixedRowModel(Delegate& delegate);
+
+  void set_row_height(int height) { row_height_ = height; }
+
+  void NotifyModelChanged() { aui::HeaderModel::NotifyModelChanged(); }
+
+  // aui::HeaderModel
+  virtual int GetCount() const override;
+  virtual int GetSize(int index) const override;
+  virtual std::u16string GetTitle(int index) const override;
+
+ private:
+  Delegate& delegate_;
+
+  int row_height_ = 17;
+};
+
+}  // namespace aui

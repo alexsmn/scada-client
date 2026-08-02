@@ -1,0 +1,78 @@
+#pragma once
+
+#include "aui/key_codes.h"
+#include "controller/command_registry.h"
+#include "controller/contents_model.h"
+#include "controller/controller.h"
+#include "controller/controller_context.h"
+#include "controller/selection_model.h"
+#include "export/export_model.h"
+#include "modules/table/table_menu_model.h"
+#include "resources/common_resources.h"
+
+namespace scada::aui {
+class Table;
+}
+
+class TableModel;
+class TableToolbar;
+
+class TableView : protected ControllerContext,
+                  public Controller,
+                  public ContentsModel,
+                  public ExportModel {
+ public:
+  explicit TableView(const ControllerContext& context);
+  virtual ~TableView();
+
+  void DeleteSelection();
+
+  // Controller
+  virtual std::unique_ptr<UiView> Init(
+      const WindowDefinition& definition) override;
+  virtual void Save(WindowDefinition& definition) override;
+  virtual SelectionModel* GetSelectionModel() override { return &selection_; }
+  virtual ContentsModel* GetContentsModel() override { return this; }
+  virtual ExportModel* GetExportModel() override { return this; }
+  virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
+
+  // ContentsModel
+  virtual void AddContainedItem(const scada::NodeId& node_id,
+                                unsigned flags) override;
+  virtual void RemoveContainedItem(const scada::NodeId& node_id) override;
+  virtual NodeIdSet GetContainedItems() const override;
+
+  // ExportModel
+  virtual ExportData GetExportData() override;
+
+ private:
+  void MoveRow(bool up);
+
+  NodeIdSet GetMultipleSelection();
+
+  void OnSelectionChanged();
+  void OnDoubleClick();
+  bool OnKeyPressed(scada::aui::KeyCode key_code);
+
+  SelectionModel selection_{{timed_data_service_}};
+
+  const std::shared_ptr<TableModel> model_;
+
+  scada::aui::Table* view_ = nullptr;
+
+  // Themed reshell toolbar above the grid (Qt only; null in the legacy look).
+  TableToolbar* toolbar_ = nullptr;
+
+  CommandRegistry command_registry_;
+  Command& delete_command_ = command_registry_.AddCommand(ID_DELETE);
+  Command& rename_command_ = command_registry_.AddCommand(ID_RENAME);
+  Command& move_up_command_ = command_registry_.AddCommand(ID_MOVE_UP);
+  Command& move_down_command_ = command_registry_.AddCommand(ID_MOVE_DOWN);
+  Command& sort_name_command_ = command_registry_.AddCommand(ID_SORT_NAME);
+  Command& sort_channel_command_ =
+      command_registry_.AddCommand(ID_SORT_CHANNEL);
+
+  // Cross-platform context menu, backed by `command_registry_`. Declared after
+  // it so the registry outlives the menu's delegate.
+  TableMenuModel table_menu_model_{command_registry_};
+};

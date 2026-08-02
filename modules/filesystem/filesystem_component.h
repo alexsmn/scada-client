@@ -1,0 +1,75 @@
+#pragma once
+
+#include "base/any_executor.h"
+#include "base/lifetime.h"
+
+#include "filesystem/filesystem_commands.h"
+#include "scada/client.h"
+
+#include <memory>
+
+namespace scada {
+class AttributeService;
+class NodeId;
+class ViewService;
+}  // namespace scada
+
+template <typename T>
+class BasicCommandRegistry;
+
+class CreateTree;
+class DefaultNodeCommandRegistry;
+class FileCache;
+class FileManager;
+class FileRegistry;
+class FileSynchronizer;
+class NodeService;
+class TaskManager;
+class UiCommandRegistry;
+struct SelectionCommandContext;
+struct GlobalCommandContext;
+
+struct FileSystemComponentContext {
+  // Needed by `FileManagerImpl` so its coroutine internals have an
+  // executor to resume on after asynchronous filesystem work.
+  const AnyExecutor executor_;
+  NodeService& node_service_;
+  TaskManager& task_manager_;
+  CreateTree& create_tree_;
+  DefaultNodeCommandRegistry& default_node_commands_;
+  BasicCommandRegistry<GlobalCommandContext>& global_commands_;
+  UiCommandRegistry& ui_command_registry_;
+  scada::client scada_client_;
+};
+
+// TODO: Rename to `FilesystemModule`.
+class FileSystemComponent : private FileSystemComponentContext {
+ public:
+  explicit FileSystemComponent(FileSystemComponentContext&& context);
+  ~FileSystemComponent();
+
+  FileRegistry& file_registry() SCADA_LIFETIME_BOUND { return *file_registry_; }
+  FileCache& file_cache() SCADA_LIFETIME_BOUND { return *file_cache_; }
+  FileManager& file_manager() SCADA_LIFETIME_BOUND { return *file_manager_; }
+
+  void set_selection_commands(
+      BasicCommandRegistry<SelectionCommandContext>* selection_commands) {
+    selection_commands_ = selection_commands;
+  }
+
+  // Must be called after:
+  // - All file types are registered.
+  // - `set_selection_commands` is called.
+  void StartUp();
+
+ private:
+  void AddFileCommand(unsigned command_id,
+                      const scada::NodeId& type_definition_id);
+
+  BasicCommandRegistry<SelectionCommandContext>* selection_commands_ = nullptr;
+
+  std::unique_ptr<FileRegistry> file_registry_;
+  std::unique_ptr<FileCache> file_cache_;
+  std::unique_ptr<FileManager> file_manager_;
+  std::unique_ptr<FileSynchronizer> file_synchronizer_;
+};

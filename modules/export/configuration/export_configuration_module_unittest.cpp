@@ -1,0 +1,213 @@
+#include "export_configuration_module.h"
+
+#include "address_space/test/test_scada_node_states.h"
+#include "aui/dialog_service_mock.h"
+#include "base/csv_writer.h"
+#include "base/test/awaitable_test.h"
+#include "base/test/test_executor.h"
+#include "common/test/node_state_matcher.h"
+#include "controller/command_registry.h"
+#include "controller/command_ui_registry.h"
+#include "core/global_command_context.h"
+#include "diff_data.h"
+#include "diff_report.h"
+#include "export_data.h"
+#include "export_data_writer.h"
+#include "main_window/main_window_mock.h"
+#include "model/data_items_node_ids.h"
+#include "node_service/static/static_node_service.h"
+#include "resources/common_resources.h"
+#include "services/task_manager_mock.h"
+
+#include <chrono>
+#include <filesystem>
+#include <fstream>
+#include <gmock/gmock.h>
+
+#include "base/debug_util.h"
+#include "scada/co_result.h"
+
+using namespace testing;
+
+template <class T>
+auto ReturnAwaitable(T value) {
+  return [value = std::move(value)](auto&&...) mutable -> Awaitable<T> {
+    co_return std::move(value);
+  };
+}
+
+auto ReturnNodeId(scada::NodeId value) {
+  return [value = std::move(value)](
+             auto&&...) mutable -> scada::CoStatusOr<scada::NodeId> {
+    co_return std::move(value);
+  };
+}
+
+class ExportConfigurationModuleTest : public Test {
+ public:
+  void SetUp() override;
+  void TearDown() override;
+
+ protected:
+  std::filesystem::path WriteExportDataToTempFile(
+      const ExportData& export_data) const;
+
+  StaticNodeService node_service_;
+  TestExecutor executor_;
+  StrictMock<MockTaskManager> task_manager_;
+  BasicCommandRegistry<GlobalCommandContext> global_commands_;
+  UiCommandRegistry ui_command_registry_;
+
+  StrictMock<MockMainWindow> main_window_;
+  StrictMock<MockDialogService> dialog_service_;
+
+  GlobalCommandContext main_command_context_{.main_window = main_window_,
+                                             .dialog_service = dialog_service_};
+
+  ExportConfigurationModule module_{
+      {.executor_ = executor_,
+       .node_service_ = node_service_,
+       .task_manager_ = task_manager_,
+       .global_commands_ = global_commands_,
+       .ui_command_registry_ = ui_command_registry_}};
+
+  std::filesystem::path temp_dir_;
+};
+
+void ExportConfigurationModuleTest::SetUp() {
+  node_service_.AddAll(GetScadaNodeStates());
+
+  temp_dir_ =
+      std::filesystem::temp_directory_path() /
+      ("scada_test_" +
+       std::to_string(
+           std::chrono::steady_clock::now().time_since_epoch().count()));
+  std::filesystem::create_directories(temp_dir_);
+}
+
+void ExportConfigurationModuleTest::TearDown() {
+  std::filesystem::remove_all(temp_dir_);
+}
+
+TEST_F(ExportConfigurationModuleTest, Construct_RegistersCommands) {
+  EXPECT_TRUE(global_commands_.FindCommand(ID_IMPORT_CONFIGURATION_FROM_EXCEL));
+  EXPECT_TRUE(global_commands_.FindCommand(ID_EXPORT_CONFIGURATION_TO_EXCEL));
+}
+
+TEST_F(ExportConfigurationModuleTest, ImportCommand) {
+  ExportData export_data{
+      .props = {{.prop_decl_id =
+                     scada::data_items::id::DiscreteItemType_Inversion,
+                 .display_name = u"Inversion"},
+                {.prop_decl_id =
+                     scada::data_items::id::AnalogItemType_DisplayFormat,
+                 .display_name = u"Display Format"}},
+      .nodes = {{.node_id = {1, scada::NamespaceIndexes::TS},
+                 .parent_id = scada::data_items::id::DataItems,
+                 .type_display_name = u"DiscreteItemType",
+                 .type_id = scada::data_items::id::DiscreteItemType,
+                 .display_name = u"TS 1",
+                 .property_values =
+                     {{.prop_decl_id =
+                           scada::data_items::id::DiscreteItemType_Inversion,
+                       .value = true}}},
+                {.node_id = {1, scada::NamespaceIndexes::TIT},
+                 .parent_id = scada::data_items::id::DataItems,
+                 .type_display_name = u"AnalogItemType",
+                 .type_id = scada::data_items::id::AnalogItemType,
+                 .display_name = u"TIT 1",
+                 .property_values = {
+                     {.prop_decl_id =
+                          scada::data_items::id::AnalogItemType_DisplayFormat,
+                      .value = "#####"}}}}};
+
+  std::filesystem::path export_file_path =
+      WriteExportDataToTempFile(export_data);
+
+  auto* command =
+      global_commands_.FindCommand(ID_IMPORT_CONFIGURATION_FROM_EXCEL);
+  ASSERT_THAT(command, NotNull());
+
+  EXPECT_CALL(dialog_service_, SelectOpenFile(/*title=*/_))
+      .WillOnce(ReturnAwaitable(export_file_path));
+
+  EXPECT_CALL(dialog_service_,
+              RunMessageBox(/*message=*/_, /*title=*/_,
+                            MessageBoxMode::QuestionYesNoDefaultNo))
+      .WillOnce(ReturnAwaitable(MessageBoxResult::Yes));
+
+  EXPECT_CALL(
+      task_manager_,
+      PostInsertTask(NodeStateIs(scada::NodeState{
+          .node_id = {1, scada::NamespaceIndexes::TS},
+          .type_definition_id = scada::data_items::id::DiscreteItemType,
+          .parent_id = scada::data_items::id::DataItems,
+          .attributes = {.display_name = u"TS 1"},
+          .properties = {{scada::data_items::id::DiscreteItemType_Inversion,
+                          true}}})))
+      .WillOnce(ReturnNodeId(scada::NodeId{1, scada::NamespaceIndexes::TS}));
+
+  EXPECT_CALL(
+      task_manager_,
+      PostInsertTask(NodeStateIs(scada::NodeState{
+          .node_id = {1, scada::NamespaceIndexes::TIT},
+          .type_definition_id = scada::data_items::id::AnalogItemType,
+          .parent_id = scada::data_items::id::DataItems,
+          .attributes = {.display_name = u"TIT 1"},
+          .properties = {{scada::data_items::id::AnalogItemType_DisplayFormat,
+                          "#####"}}})))
+      .WillOnce(ReturnNodeId(scada::NodeId{1, scada::NamespaceIndexes::TIT}));
+
+  ScopedImportReportSuppressor import_report_suppressor;
+
+  command->execute_handler(main_command_context_);
+  Drain(executor_);
+}
+
+TEST_F(ExportConfigurationModuleTest, ExportCommandWritesFileAndPromptsToOpen) {
+  const auto export_file_path = temp_dir_ / "configuration.csv";
+
+  auto* command =
+      global_commands_.FindCommand(ID_EXPORT_CONFIGURATION_TO_EXCEL);
+  ASSERT_THAT(command, NotNull());
+
+  EXPECT_CALL(dialog_service_, SelectSaveFile(/*params=*/_))
+      .WillOnce(ReturnAwaitable(export_file_path));
+
+  EXPECT_CALL(dialog_service_, RunMessageBox(/*message=*/_, /*title=*/_,
+                                             MessageBoxMode::QuestionYesNo))
+      .WillOnce(ReturnAwaitable(MessageBoxResult::No));
+
+  command->execute_handler(main_command_context_);
+  Drain(executor_);
+
+  EXPECT_TRUE(std::filesystem::exists(export_file_path));
+}
+
+TEST_F(ExportConfigurationModuleTest,
+       ImportCommandOpenFailureShowsErrorDialog) {
+  auto* command =
+      global_commands_.FindCommand(ID_IMPORT_CONFIGURATION_FROM_EXCEL);
+  ASSERT_THAT(command, NotNull());
+
+  EXPECT_CALL(dialog_service_, SelectOpenFile(/*title=*/_))
+      .WillOnce(ReturnAwaitable(temp_dir_ / "missing.csv"));
+
+  EXPECT_CALL(dialog_service_,
+              RunMessageBox(/*message=*/_, /*title=*/_, MessageBoxMode::Error))
+      .WillOnce(ReturnAwaitable(MessageBoxResult::Ok));
+
+  command->execute_handler(main_command_context_);
+  Drain(executor_);
+}
+
+std::filesystem::path ExportConfigurationModuleTest::WriteExportDataToTempFile(
+    const ExportData& export_data) const {
+  std::filesystem::path export_file_path = temp_dir_ / "export_file.csv";
+
+  std::ofstream stream{export_file_path};
+  CsvWriter csv_writer{stream};
+  WriteExportData(export_data, csv_writer);
+
+  return export_file_path;
+}

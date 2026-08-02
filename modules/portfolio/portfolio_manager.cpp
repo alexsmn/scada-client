@@ -1,0 +1,142 @@
+﻿#include "portfolio/portfolio_manager.h"
+
+#include "aui/translation.h"
+#include "base/boost_log.h"
+#include "base/check.h"
+#include "base/u16format.h"
+#include "base/utf_convert.h"
+#include "model/node_id_util.h"
+#include "model/scada_node_ids.h"
+#include "node_service/node_service.h"
+#include "portfolio/portfolio.h"
+#include "scada/event.h"
+
+PortfolioManager::PortfolioManager(PortfolioManagerContext&& context)
+    : PortfolioManagerContext{std::move(context)},
+      model_changed_connection_{node_service_.SubscribeModelChanged(
+          [this](const scada::ModelChangeEvent& event) {
+            OnModelChanged(event);
+          })},
+      node_semantic_changed_connection_{
+          node_service_.SubscribeNodeSemanticChanged(
+              [this](const scada::NodeId& node_id) {
+                OnNodeSemanticChanged(node_id);
+              })} {}
+
+PortfolioManager::~PortfolioManager() = default;
+
+void PortfolioManager::OnModelChanged(const scada::ModelChangeEvent& event) {
+  if (event.verb & scada::ModelChangeEvent::NodeDeleted)
+    DeleteNode(event.node_id);
+  else if (event.verb & scada::ModelChangeEvent::NodeAdded)
+    UpdateNode(event.node_id);
+}
+
+void PortfolioManager::OnNodeSemanticChanged(const scada::NodeId& node_id) {
+  UpdateNode(node_id);
+}
+
+void PortfolioManager::UpdateNode(const scada::NodeId& node_id) {
+  for (auto& portfolio : portfolios) {
+    if (portfolio.items.find(node_id) != portfolio.items.end()) {
+      for (auto* events : portfolio_events)
+        events->Portfolio_OnUpdateItem(portfolio, node_id);
+    }
+  }
+}
+
+void PortfolioManager::DeleteNode(const scada::NodeId& node_id) {
+  for (Portfolios::iterator i = portfolios.begin(); i != portfolios.end();
+       ++i) {
+    Portfolio& portfolio = *i;
+    if (portfolio.items.erase(node_id)) {
+      std::string item_path = NodeIdToScadaString(node_id);
+      BOOST_LOG_TRIVIAL(info)
+          << "Portfolio " << UtfConvert<char>(portfolio.name) << ": "
+          << "Item " << item_path << " is removed";
+
+      for (PortfolioEventsSet::iterator ei = portfolio_events.begin();
+           ei != portfolio_events.end(); ++ei)
+        (*ei)->Portfolio_OnDeleteItem(portfolio, node_id);
+    }
+  }
+}
+
+void PortfolioManager::Subscribe(PortfolioEvents& events) {
+  portfolio_events.insert(&events);
+}
+
+void PortfolioManager::Unsubscribe(PortfolioEvents& events) {
+  portfolio_events.erase(&events);
+}
+
+PortfolioManager::Portfolios::iterator PortfolioManager::Find(
+    const Portfolio& portfolio) {
+  for (Portfolios::iterator i = portfolios.begin(); i != portfolios.end(); ++i)
+    if (&*i == &portfolio)
+      return i;
+  return portfolios.end();
+}
+
+PortfolioManager::Portfolios::iterator PortfolioManager::Find(
+    std::u16string_view name) {
+  for (Portfolios::iterator i = portfolios.begin(); i != portfolios.end(); ++i)
+    if (i->name == name)
+      return i;
+  return portfolios.end();
+}
+
+Portfolio& PortfolioManager::New() {
+  const auto mask = Translate("Portfolio");
+
+  std::u16string name = mask;
+  int id = 2;
+  while (Find(name) != portfolios.end())
+    name = u16format(L"{} {}", mask, id++);
+
+  portfolios.push_back(Portfolio());
+  Portfolio& portfolio = portfolios.back();
+  portfolio.name = name;
+
+  for (auto* events : portfolio_events)
+    events->Portfolio_OnUpdate(portfolio);
+
+  return portfolio;
+}
+
+void PortfolioManager::Rename(const Portfolio& portfolio,
+                              std::u16string_view name) {
+  scada::base::Check(Find(portfolio) != portfolios.end());
+
+  Portfolio& p = const_cast<Portfolio&>(portfolio);
+  p.name.assign(name.data(), name.size());
+
+  for (auto* events : portfolio_events)
+    events->Portfolio_OnUpdate(p);
+}
+
+void PortfolioManager::Delete(const Portfolio& portfolio) {
+  Portfolios::iterator p = Find(portfolio);
+  scada::base::Check(p != portfolios.end());
+  for (auto* events : portfolio_events)
+    events->Portfolio_OnDelete(const_cast<Portfolio&>(portfolio));
+  portfolios.erase(p);
+}
+
+void PortfolioManager::AddItem(const Portfolio& portfolio,
+                               const scada::NodeId& item) {
+  Portfolio& p = const_cast<Portfolio&>(portfolio);
+  p.items.insert(item);
+
+  for (auto* events : portfolio_events)
+    events->Portfolio_OnUpdateItem(p, item);
+}
+
+void PortfolioManager::DeleteItem(const Portfolio& portfolio,
+                                  const scada::NodeId& item) {
+  Portfolio& p = const_cast<Portfolio&>(portfolio);
+  p.items.erase(item);
+
+  for (auto* events : portfolio_events)
+    events->Portfolio_OnDeleteItem(p, item);
+}

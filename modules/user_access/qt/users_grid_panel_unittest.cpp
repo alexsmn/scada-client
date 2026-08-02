@@ -1,0 +1,142 @@
+#include "user_access/qt/users_grid_panel.h"
+
+#include "aui/test/app_environment.h"
+#include "scada/node_id.h"
+
+#include <gtest/gtest.h>
+
+#include <QLabel>
+#include <QPushButton>
+#include <QTableWidget>
+
+#include <optional>
+
+namespace {
+
+class UsersGridPanelTest : public ::testing::Test {
+ protected:
+  AppEnvironment app_env_;
+
+  static std::vector<UserGridRow> SampleRows() {
+    return {
+        {.name = u"root",
+         .roles = std::vector<AccountRole>{{scada::NodeId{15716, 0}, u"ConfigureAdmin"}},
+         .node_id = scada::NodeId{234, 1}},
+        {.name = u"engineer",
+         .description = u"Commissioning",
+         .user_configuration = scada::UserConfiguration::kDisabled,
+         .roles = std::vector<AccountRole>{{scada::NodeId{16036, 0}, u"Engineer"},
+                                   {scada::NodeId{15680, 0}, u"Operator"}},
+         .node_id = scada::NodeId{2, 1}},
+        // No Role at all, and a role set that could not be read — the two
+        // states the column must not conflate.
+        {.name = u"dispatcher",
+         .roles = std::vector<AccountRole>{},
+         .node_id = scada::NodeId{3, 1}},
+        {.name = u"unknown", .roles = std::nullopt, .node_id = scada::NodeId{4, 1}},
+    };
+  }
+};
+
+TEST_F(UsersGridPanelTest, ShowRowsPopulatesGridAndCount) {
+  UsersGridPanel panel;
+  panel.ShowRows(SampleRows());
+
+  auto* grid = panel.findChild<QTableWidget*>(QStringLiteral("usersGrid"));
+  ASSERT_NE(grid, nullptr);
+  EXPECT_EQ(grid->rowCount(), 4);
+  EXPECT_EQ(grid->item(1, 0)->text(), QStringLiteral("engineer"));
+  EXPECT_EQ(grid->item(1, 1)->text(), QStringLiteral("Commissioning"));
+  // Every Role the account holds, not a single derived label.
+  EXPECT_EQ(grid->item(1, 2)->text(), QStringLiteral("Engineer, Operator"));
+  EXPECT_EQ(grid->item(1, 3)->text(), QStringLiteral("Disabled"));
+  EXPECT_EQ(grid->item(0, 3)->text(), QStringLiteral("Enabled"));
+  // "holds no Role" and "we could not read the Roles" render differently.
+  EXPECT_EQ(grid->item(2, 2)->text(), QStringLiteral("None"));
+  EXPECT_EQ(grid->item(3, 2)->text(), QStringLiteral("No data"));
+
+  auto* title = panel.findChild<QLabel*>(QStringLiteral("usersTitle"));
+  ASSERT_NE(title, nullptr);
+  EXPECT_TRUE(title->text().contains(QStringLiteral("4")));
+}
+
+TEST_F(UsersGridPanelTest, SelectingARowEmitsUserActivated) {
+  UsersGridPanel panel;
+  panel.ShowRows(SampleRows());
+
+  std::optional<scada::NodeId> activated;
+  QObject::connect(&panel, &UsersGridPanel::UserActivated,
+                   [&](const scada::NodeId& id) { activated = id; });
+
+  auto* grid = panel.findChild<QTableWidget*>(QStringLiteral("usersGrid"));
+  ASSERT_NE(grid, nullptr);
+  grid->selectRow(1);
+
+  ASSERT_TRUE(activated.has_value());
+  EXPECT_EQ(*activated, (scada::NodeId{2, 1}));
+}
+
+TEST_F(UsersGridPanelTest, ResetPasswordFollowsSelectionAndEmitsActionsMenu) {
+  UsersGridPanel panel;
+  panel.ShowRows(SampleRows());
+
+  const QList<QPushButton*> buttons = panel.findChildren<QPushButton*>();
+  QPushButton* reset = nullptr;
+  for (QPushButton* button : buttons) {
+    if (button->text() == QStringLiteral("Reset password"))
+      reset = button;
+  }
+  ASSERT_NE(reset, nullptr);
+  // Disabled until a user is selected.
+  EXPECT_FALSE(reset->isEnabled());
+
+  auto* grid = panel.findChild<QTableWidget*>(QStringLiteral("usersGrid"));
+  ASSERT_NE(grid, nullptr);
+  grid->selectRow(1);
+  EXPECT_TRUE(reset->isEnabled());
+
+  bool right_click = true;
+  int emitted = 0;
+  QObject::connect(&panel, &UsersGridPanel::ActionsMenuRequested,
+                   [&](const QPoint&, bool rc) {
+                     ++emitted;
+                     right_click = rc;
+                   });
+  reset->click();
+  EXPECT_EQ(emitted, 1);
+  EXPECT_FALSE(right_click);  // the button path, not a right-click.
+}
+
+TEST_F(UsersGridPanelTest, AddUserIsEnabledAndEmitsActionsMenu) {
+  UsersGridPanel panel;
+  panel.ShowRows(SampleRows());
+
+  const QList<QPushButton*> buttons = panel.findChildren<QPushButton*>();
+  QPushButton* add = nullptr;
+  for (QPushButton* button : buttons) {
+    if (button->text() == QStringLiteral("Add user"))
+      add = button;
+  }
+  ASSERT_NE(add, nullptr);
+  // Add-user is parent-scoped, so it is always enabled (access-right-gated at
+  // the command level) — no user selection required.
+  EXPECT_TRUE(add->isEnabled());
+
+  int emitted = 0;
+  QObject::connect(&panel, &UsersGridPanel::ActionsMenuRequested,
+                   [&](const QPoint&, bool) { ++emitted; });
+  add->click();
+  EXPECT_EQ(emitted, 1);
+}
+
+TEST_F(UsersGridPanelTest, EmptyRowsClearsGrid) {
+  UsersGridPanel panel;
+  panel.ShowRows(SampleRows());
+  panel.ShowRows({});
+
+  auto* grid = panel.findChild<QTableWidget*>(QStringLiteral("usersGrid"));
+  ASSERT_NE(grid, nullptr);
+  EXPECT_EQ(grid->rowCount(), 0);
+}
+
+}  // namespace

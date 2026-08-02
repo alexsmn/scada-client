@@ -1,0 +1,112 @@
+﻿#include "window_definition_builder.h"
+
+#include "base/test/awaitable_test.h"
+#include "base/test/test_executor.h"
+#include "common/formula_util.h"
+#include "resources/common_resources.h"
+#include "controller/open_context.h"
+#include "controller/window_info.h"
+#include "node_service/static/static_node_service.h"
+
+#include <gmock/gmock.h>
+
+using namespace testing;
+
+namespace {
+
+scada::NodeState MakeNodeState(scada::NodeId node_id,
+                               scada::NodeClass node_class,
+                               scada::NodeId type_definition_id,
+                               scada::NodeId parent_id = {},
+                               scada::NodeId reference_type_id = {}) {
+  return {.node_id = std::move(node_id),
+          .node_class = node_class,
+          .type_definition_id = std::move(type_definition_id),
+          .parent_id = std::move(parent_id),
+          .reference_type_id = std::move(reference_type_id)};
+}
+
+}  // namespace
+
+TEST(MakeWindowDefinition, OpenContext_Node) {
+  const scada::NodeId kNodeId{"NodeId", 1};
+
+  StaticNodeService node_service;
+  node_service.Add(
+      scada::NodeState{.node_id = kNodeId,
+                       .node_class = scada::NodeClass::Variable,
+                       .type_definition_id = scada::id::BaseVariableType,
+                       .attributes = scada::NodeAttributes{
+                           .display_name = u"Имя в русской локали"}});
+
+  OpenContext open_context{node_service.GetNode(kNodeId)};
+
+  const auto& window_info = WindowInfo{.title = u"Журнал событий"};
+
+  TestExecutor executor;
+  auto window_definition = WaitAwaitable(
+      executor, MakeWindowDefinitionAsync(executor, &window_info, open_context));
+
+  const auto kExpectedWindowDefinition =
+      WindowDefinition{window_info}
+          .set_title(u"Журнал событий: Имя в русской локали")
+          .AddItem(
+              std::move(WindowItem{"Item"}.SetString("path", "{TS.NodeId}")));
+
+  EXPECT_EQ(window_definition, kExpectedWindowDefinition);
+}
+
+TEST(MakeWindowDefinition, AsyncExpandsGroupItemsOnExecutor) {
+  const scada::NodeId group_id{1, 1};
+  const scada::NodeId item_id{2, 1};
+
+  StaticNodeService node_service;
+  node_service.Add(MakeNodeState(group_id, scada::NodeClass::Object,
+                                 scada::id::BaseObjectType));
+  node_service.Add(MakeNodeState(item_id, scada::NodeClass::Variable,
+                                 scada::id::BaseVariableType, group_id,
+                                 scada::id::Organizes));
+
+  TestExecutor executor;
+  const auto& window_info = WindowInfo{.title = u"Title"};
+
+  auto window_definition = WaitAwaitable(
+      executor,
+      MakeWindowDefinitionAsync(executor, &window_info,
+                                node_service.GetNode(group_id),
+                                /*expand_groups=*/true));
+
+  const auto kExpectedWindowDefinition =
+      WindowDefinition{window_info}
+          .set_title(u"Title: ")
+          .AddItem(std::move(WindowItem{"Item"}.SetString("path", "TS.2")));
+
+  EXPECT_EQ(window_definition, kExpectedWindowDefinition);
+}
+
+TEST(MakeWindowDefinition, OpenContext_NodeIds_TimeRange) {
+  const std::vector<scada::NodeId> kNodeIds{scada::NodeId{"NodeId1", 1},
+                                            scada::NodeId{"NodeId2", 2},
+                                            scada::NodeId{"NodeId3", 3}};
+
+  const scada::RelativeTimeRange kTimeRange{};
+  OpenContext open_context{{}, kNodeIds, kTimeRange};
+
+  const auto& window_info = WindowInfo{.title = u"Title"};
+
+  TestExecutor executor;
+  auto window_definition = WaitAwaitable(
+      executor, MakeWindowDefinitionAsync(executor, &window_info, open_context));
+
+  const auto kExpectedWindowDefinition =
+      WindowDefinition{window_info}
+          .AddItem(
+              std::move(WindowItem{"Item"}.SetString("path", "{TS.NodeId1}")))
+          .AddItem(
+              std::move(WindowItem{"Item"}.SetString("path", "{TIT.NodeId2}")))
+          .AddItem(std::move(
+              WindowItem{"Item"}.SetString("path", "{MODBUS_DEVICES.NodeId3}")))
+          .AddItem(std::move(WindowItem{"scada::RelativeTimeRange"}.SetString("type", "Day")));
+
+  EXPECT_EQ(window_definition, kExpectedWindowDefinition);
+}

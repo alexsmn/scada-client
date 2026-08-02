@@ -1,0 +1,46 @@
+Telecontrol SCADA Client — third-party asset notices
+====================================================
+
+This file records the third-party icon assets shipped in this repository, as
+required by docs/client/ux/iconography.md §7. Source-code dependencies are
+declared in vcpkg.json and carry their own notices.
+
+
+Lucide
+------
+
+  Files:    res/icons/*.svg
+  Licence:  ISC — full text in res/icons/LICENSE
+  Upstream: https://lucide.dev/ (https://github.com/lucide-icons/lucide)
+
+  Every icon the client draws: command and toolbar actions, tree and table row
+  glyphs, and the About dialog's header mark. ISC requires no attribution in
+  the product
+  UI, but the notice must travel with copies of the files, which is what
+  res/icons/LICENSE is for. A subset of Lucide is Feather-derived and MIT
+  (© 2013-present Cole Bemis); the same applies.
+
+  The files are used verbatim, at the geometry Lucide publishes (24 px grid,
+  stroke 2, round caps, stroke="currentColor"). They are recoloured at render
+  time by the consumer, never edited.
+
+
+Bespoke
+-------
+
+  Files:    res/icons/app-mark.svg, res/icons/app-mark-small.svg,
+            res/client.icns, res/client.ico
+  Licence:  same as this repository
+
+  The application mark, drawn for this product rather than taken from an icon
+  set (docs/client/ux/iconography.md §5.4). The .icns and .ico are generated
+  from the two SVGs.
+
+
+Retired
+-------
+
+The Silk-lineage command icons (CC-BY 2.5) and the Flaticon settings icons
+carried attribution requirements the product UI never met. They were deleted on
+2026-08-01 when the last of them was converted, which is what actually closes
+that gap — the client no longer ships an asset it cannot account for.

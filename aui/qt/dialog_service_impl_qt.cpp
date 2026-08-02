@@ -1,0 +1,148 @@
+#include "aui/qt/dialog_service_impl_qt.h"
+
+#include "aui/qt/dialog_util.h"
+#include "base/check.h"
+
+#include <QAbstractButton>
+#include <QFileDialog>
+#include <QMessageBox>
+
+namespace {
+
+std::string JoinStrings(std::span<const std::string_view> strings,
+                        char separator) {
+  if (strings.empty())
+    return {};
+
+  auto result = std::string{strings[0]};
+  for (size_t i = 1; i < strings.size(); ++i) {
+    result += separator;
+    result.append(strings[i].data(), strings[i].size());
+  }
+  return result;
+}
+
+QString MakeFilter(const DialogService::Filter& filter) {
+  scada::base::Check(!filter.extensions.empty());
+
+  QString result = QString::fromUtf16(filter.title.data(), filter.title.size());
+  result += " (";
+  result += QString::fromStdString(JoinStrings(filter.extensions, ' '));
+  result += ')';
+
+  return result;
+}
+
+QString MakeFilter(std::span<const DialogService::Filter> filters) {
+  if (filters.empty())
+    return {};
+
+  QString result = MakeFilter(filters[0]);
+  for (auto i = std::next(filters.begin()); i != filters.end(); ++i) {
+    result += ";;";
+    result += MakeFilter(*i);
+  }
+
+  return result;
+}
+
+MessageBoxResult MapQtMessageBoxResult(int result) {
+  switch (result) {
+    case QMessageBox::Yes:
+      return MessageBoxResult::Yes;
+    case QMessageBox::No:
+      return MessageBoxResult::No;
+    case QMessageBox::Ok:
+      return MessageBoxResult::Ok;
+    case QMessageBox::Cancel:
+      return MessageBoxResult::Cancel;
+    default:
+      return MessageBoxResult::Ok;
+  }
+}
+
+}  // namespace
+
+Awaitable<MessageBoxResult> DialogServiceImplQt::RunMessageBox(
+    std::u16string_view message,
+    std::u16string_view title,
+    MessageBoxMode mode) {
+  auto message_box = std::make_unique<QMessageBox>(parent_widget);
+  message_box->setModal(true);
+  message_box->setText(QString::fromUtf16(message.data(), message.size()));
+  message_box->setWindowTitle(QString::fromUtf16(title.data(), title.size()));
+
+  switch (mode) {
+    case MessageBoxMode::Info:
+      message_box->setIcon(QMessageBox::Information);
+      break;
+
+    case MessageBoxMode::Error:
+      message_box->setIcon(QMessageBox::Critical);
+      break;
+
+    case MessageBoxMode::QuestionYesNo:
+    case MessageBoxMode::QuestionYesNoDefaultNo:
+      message_box->setIcon(QMessageBox::Question);
+      message_box->setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+      break;
+
+    default:
+      scada::base::NotReached();
+  }
+
+  if (mode == MessageBoxMode::QuestionYesNoDefaultNo)
+    message_box->setDefaultButton(QMessageBox::No);
+
+  return StartFinishedModalDialog(
+      std::move(message_box),
+      [](QMessageBox& /*message_box*/, int result) {
+        return MapQtMessageBoxResult(result);
+      });
+}
+
+UiView* DialogServiceImplQt::GetDialogOwningWindow() const {
+  return nullptr;
+}
+
+UiView* DialogServiceImplQt::GetParentWidget() const {
+  return parent_widget;
+}
+
+Awaitable<std::filesystem::path> DialogServiceImplQt::SelectOpenFile(
+    std::u16string_view title) {
+  auto caption = QString::fromUtf16(title.data(), title.size());
+  auto dialog =
+      std::make_unique<QFileDialog>(parent_widget, std::move(caption));
+  dialog->setAcceptMode(QFileDialog::AcceptOpen);
+  return StartMappedModalDialog(std::move(dialog), [](QFileDialog& dialog) {
+    auto files = dialog.selectedFiles();
+    if (files.size() != 1) {
+      // Unexpected.
+      throw std::exception{};
+    }
+    return std::filesystem::path{files.at(0).toStdU16String()};
+  });
+}
+
+Awaitable<std::filesystem::path> DialogServiceImplQt::SelectSaveFile(
+    const SaveParams& params) {
+  auto caption = QString::fromUtf16(params.title.data(), params.title.size());
+
+  auto dialog =
+      std::make_unique<QFileDialog>(parent_widget, std::move(caption));
+  dialog->setAcceptMode(QFileDialog::AcceptSave);
+  dialog->setFileMode(QFileDialog::AnyFile);
+  dialog->setDirectory(
+      QString::fromStdU16String(params.default_path.u16string()));
+  dialog->selectNameFilter(MakeFilter(params.filters));
+
+  return StartMappedModalDialog(std::move(dialog), [](QFileDialog& dialog) {
+    auto files = dialog.selectedFiles();
+    if (files.size() != 1) {
+      // Unexpected.
+      throw std::exception{};
+    }
+    return std::filesystem::path{files.at(0).toStdU16String()};
+  });
+}

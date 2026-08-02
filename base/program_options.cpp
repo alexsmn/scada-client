@@ -1,0 +1,89 @@
+#include "base/program_options.h"
+
+namespace client {
+
+namespace {
+boost::program_options::variables_map& GetVariablesMap() {
+  static boost::program_options::variables_map vm;
+  return vm;
+}
+}  // namespace
+
+void InitProgramOptions(int argc, char* argv[]) {
+  namespace po = boost::program_options;
+
+  po::options_description desc;
+  desc.add_options()("debug", "Enable debug mode")(
+      "excel", "Enable Excel export")("locale", po::value<std::string>(),
+                                      "Application locale")(
+      "verbose-logging", "Enable verbose logging")(
+      "log-service-read", "Log service read operations")(
+      "log-service-browse", "Log service browse operations")(
+      "log-service-history", "Log service history operations")(
+      "log-service-event", "Log service event operations")(
+      "log-service-model-change-event", "Log model change events")(
+      "log-service-node-semantics-change-event",
+      "Log node semantics change events")("log-alias-service",
+                                          "Log alias service operations")(
+      "node-service-v2", "Use v2 node service")(
+      "log-severity", po::value<std::string>(), "Log severity level")(
+      "otlp-endpoint", po::value<std::string>(),
+      "OTLP/gRPC endpoint (host:port) process metrics are exported to; "
+      "unset disables export")(
+      "otlp-export-interval-ms", po::value<std::string>(),
+      "Metric export period in milliseconds (default 60000)")(
+      "test-settings-file", po::value<std::string>(),
+      "E2E-only login settings file")("test-status-file",
+                                      po::value<std::string>(),
+                                      "E2E-only login status marker file")(
+      "test-log-dir", po::value<std::string>(),
+      "E2E-only client log and dump directory")(
+      "test-operator-use-cases-file", po::value<std::string>(),
+      "E2E-only operator use-case coverage report file")(
+      "test-object-view-values-file", po::value<std::string>(),
+      "E2E-only object view values report file")(
+      "test-object-tree-labels-file", po::value<std::string>(),
+      "E2E-only object tree labels report file")(
+      "test-hardware-tree-devices-file", po::value<std::string>(),
+      "E2E-only hardware tree devices report file")(
+      "test-historical-timed-data-file", po::value<std::string>(),
+      "E2E-only historical timed-data view report file")(
+      "test-historical-timed-data-end", po::value<std::string>(),
+      "E2E-only end of the historical timed-data window "
+      "(scada::Time internal value); makes the view read a fixed past "
+      "window so only server-side history can populate it")(
+      "test-profile-save-file", po::value<std::string>(),
+      "E2E-only profile save report file")(
+      "test-profile-save-user-id", po::value<std::string>(),
+      "E2E-only profile save target user node ID")(
+      "test-data-dir", po::value<std::string>(),
+      "E2E-only client data directory. Overrides the per-user profile and "
+      "file-cache location so a run cannot read or write the developer's own "
+      "client settings");
+
+  auto& vm = GetVariablesMap();
+  po::store(po::command_line_parser(argc, argv)
+                .options(desc)
+                .allow_unregistered()
+                .run(),
+            vm);
+  po::notify(vm);
+}
+
+bool HasOption(std::string_view name) {
+  return GetVariablesMap().count(std::string{name}) > 0;
+}
+
+std::string GetOptionValue(std::string_view name) {
+  auto& vm = GetVariablesMap();
+  auto it = vm.find(std::string{name});
+  if (it == vm.end())
+    return {};
+  try {
+    return it->second.as<std::string>();
+  } catch (...) {
+    return {};
+  }
+}
+
+}  // namespace client

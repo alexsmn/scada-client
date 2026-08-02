@@ -1,0 +1,241 @@
+#include "main_window/pages/page_commands.h"
+
+#include "aui/dialog_service_mock.h"
+#include "aui/test/app_environment.h"
+#include "aui/models/simple_menu_model.h"
+#include "base/test/awaitable_test.h"
+#include "base/test/test_executor.h"
+#include "controller/command_registry.h"
+#include "controller/command_ui_registry.h"
+#include "core/global_command_context.h"
+#include "favorites/favourites.h"
+#include "filesystem/file_cache.h"
+#include "filesystem/file_registry.h"
+#include "main_window/main_menu/main_menu_model.h"
+#include "main_window/main_window.h"
+#include "main_window/main_window_manager.h"
+#include "main_window/main_window_mock.h"
+#include "main_window/view_manager.h"
+#include "main_window/view_manager_delegate.h"
+#include "profile/profile.h"
+
+#include <gmock/gmock.h>
+#include <QMainWindow>
+
+#include <chrono>
+
+using namespace testing;
+
+namespace {
+
+class DummyViewManagerDelegate : public ViewManagerDelegate {
+ public:
+  std::unique_ptr<OpenedView> OnCreateView(
+      WindowDefinition& definition) override {
+    return nullptr;
+  }
+  void OnViewClosed(OpenedView& view) override {}
+  void OnActiveViewChanged(OpenedView* view) override {}
+  void OnShowTabPopupMenu(OpenedView& view,
+                          const scada::aui::Point& point) override {}
+};
+
+Awaitable<std::u16string> ReturnTitleAsync(std::u16string title) {
+  co_return title;
+}
+
+Awaitable<std::u16string> RejectTitleAsync() {
+  throw std::exception{};
+  co_return std::u16string{};
+}
+
+Awaitable<MessageBoxResult> ReturnMessageBoxResultAsync(
+    MessageBoxResult result) {
+  co_return result;
+}
+
+}  // namespace
+
+class PageCommandsTest : public Test {
+ protected:
+  TestExecutor executor_;
+  BasicCommandRegistry<GlobalCommandContext> commands_;
+  Profile profile_;
+
+  StrictMock<MockFunction<std::unique_ptr<MainWindow>(int window_id)>>
+      main_window_factory_;
+
+  StrictMock<MockFunction<void()>> quit_handler_;
+
+  MainWindowManager main_window_manager_{{profile_,
+                                          main_window_factory_.AsStdFunction(),
+                                          quit_handler_.AsStdFunction()}};
+
+  StrictMock<MockMainWindow> main_window_;
+  StrictMock<MockDialogService> dialog_service_;
+  UiCommandRegistry ui_command_registry_;
+  StrictMock<MockFunction<Awaitable<std::u16string>(
+      DialogService& dialog_service,
+      std::u16string current_title)>>
+      rename_prompt_runner_;
+
+  GlobalCommandContext command_context_{.main_window = main_window_,
+                                      .dialog_service = dialog_service_};
+
+  PageCommands page_commands_{
+      {executor_, commands_, ui_command_registry_, profile_,
+       main_window_manager_, rename_prompt_runner_.AsStdFunction()}};
+};
+
+TEST_F(PageCommandsTest, DeletePage) {
+  auto* command = commands_.FindCommand(ID_PAGE_DELETE);
+  ASSERT_THAT(command, NotNull());
+
+  EXPECT_CALL(main_window_, DeleteCurrentPage());
+
+  command->execute_handler(command_context_);
+}
+
+TEST_F(PageCommandsTest, RenamePageAcceptedUpdatesCurrentPageTitle) {
+  Page page;
+  page.title = u"Old title";
+
+  auto* command = commands_.FindCommand(ID_PAGE_RENAME);
+  ASSERT_THAT(command, NotNull());
+
+  EXPECT_CALL(main_window_, GetCurrentPage()).WillOnce(ReturnRef(page));
+  EXPECT_CALL(rename_prompt_runner_,
+              Call(Ref(dialog_service_), std::u16string{u"Old title"}))
+      .WillOnce([](DialogService&, std::u16string) {
+        return ReturnTitleAsync(u"New title");
+      });
+
+  bool renamed = false;
+  EXPECT_CALL(main_window_, SetCurrentPageTitle(std::u16string_view{u"New title"}))
+      .WillOnce([&renamed](std::u16string_view) { renamed = true; });
+
+  command->execute_handler(command_context_);
+  Drain(executor_);
+
+  EXPECT_TRUE(renamed);
+}
+
+TEST_F(PageCommandsTest, RenamePageRejectedDoesNotUpdateCurrentPageTitle) {
+  Page page;
+  page.title = u"Old title";
+
+  auto* command = commands_.FindCommand(ID_PAGE_RENAME);
+  ASSERT_THAT(command, NotNull());
+
+  EXPECT_CALL(main_window_, GetCurrentPage()).WillOnce(ReturnRef(page));
+  EXPECT_CALL(rename_prompt_runner_,
+              Call(Ref(dialog_service_), std::u16string{u"Old title"}))
+      .WillOnce([](DialogService&, std::u16string) {
+        return RejectTitleAsync();
+      });
+  EXPECT_CALL(main_window_, SetCurrentPageTitle(_)).Times(0);
+
+  command->execute_handler(command_context_);
+  Drain(executor_);
+}
+
+class PageMenuModelTest : public Test {
+ protected:
+  AppEnvironment app_env_;
+  TestExecutor executor_;
+  Profile profile_;
+
+  StrictMock<MockFunction<std::unique_ptr<MainWindow>(int window_id)>>
+      main_window_factory_;
+  StrictMock<MockFunction<void()>> quit_handler_;
+  MainWindowManager main_window_manager_{{profile_,
+                                          main_window_factory_.AsStdFunction(),
+                                          quit_handler_.AsStdFunction()}};
+
+  StrictMock<MockMainWindow> main_window_;
+  StrictMock<MockDialogService> dialog_service_;
+  Favourites favourites_;
+  FileRegistry file_registry_;
+  FileCache file_cache_{file_registry_};
+  DummyViewManagerDelegate view_manager_delegate_;
+  QMainWindow qt_main_window_;
+  ViewManager view_manager_{qt_main_window_, view_manager_delegate_};
+  CommandHandler command_handler_;
+  scada::aui::SimpleMenuModel context_menu_{nullptr};
+  BasicCommandRegistry<GlobalCommandContext> commands_;
+  UiCommandRegistry ui_command_registry_;
+
+  MainMenuContext menu_context_{.executor_ = executor_,
+                                .main_window_manager_ = main_window_manager_,
+                                .main_window_ = main_window_,
+                                .favourites_ = favourites_,
+                                .file_cache_ = file_cache_,
+                                .admin_ = false,
+                                .profile_ = profile_,
+                                .view_manager_ = view_manager_,
+                                .command_handler_ = command_handler_,
+                                .dialog_service_ = dialog_service_,
+                                .context_menu_model_ = context_menu_,
+                                .commands_ = commands_,
+                                .ui_command_registry_ = ui_command_registry_};
+};
+
+// The page list now goes through PageSwitcher, which names pages with
+// Page::GetTitle(). A page with no explicit title used to render as a blank
+// menu row because the model read the raw `title` field.
+TEST_F(PageMenuModelTest, UntitledPageShowsItsSynthesizedTitle) {
+  Page page_def;
+  Page& page = profile_.AddPage(page_def);
+  page.title.clear();
+  page.AddWindow(WindowDefinition{std::string_view{"Graph"}});
+
+  EXPECT_CALL(main_window_, GetCurrentPage()).WillRepeatedly(ReturnRef(page));
+
+  PageMenuModel menu{menu_context_};
+  menu.MenuWillShow();
+
+  ASSERT_EQ(menu.GetItemCount(), 1);
+  EXPECT_FALSE(menu.GetLabelAt(0).empty());
+  EXPECT_EQ(menu.GetLabelAt(0), page.GetTitle());
+}
+
+TEST_F(PageMenuModelTest, RevertCurrentPageConfirmedOpensSavedPage) {
+  Page page_def;
+  page_def.title = u"Saved";
+  Page& page = profile_.AddPage(page_def);
+
+  EXPECT_CALL(main_window_, GetCurrentPage())
+      .WillRepeatedly(ReturnRef(page));
+  EXPECT_CALL(dialog_service_,
+              RunMessageBox(/*message=*/_, /*title=*/_,
+                            MessageBoxMode::QuestionYesNo))
+      .WillOnce([](std::u16string_view, std::u16string_view, MessageBoxMode) {
+        return ReturnMessageBoxResultAsync(MessageBoxResult::Yes);
+      });
+  EXPECT_CALL(main_window_, OpenPage(Ref(page)));
+
+  PageMenuModel menu{menu_context_};
+  menu.MenuWillShow();
+  menu.ActivatedAt(0);
+  Drain(executor_);
+}
+
+TEST_F(PageMenuModelTest, RevertCurrentPageCanceledDoesNotOpenPage) {
+  Page page_def;
+  page_def.title = u"Saved";
+  Page& page = profile_.AddPage(page_def);
+
+  EXPECT_CALL(main_window_, GetCurrentPage())
+      .WillRepeatedly(ReturnRef(page));
+  EXPECT_CALL(dialog_service_,
+              RunMessageBox(/*message=*/_, /*title=*/_,
+                            MessageBoxMode::QuestionYesNo))
+      .WillOnce([](std::u16string_view, std::u16string_view, MessageBoxMode) {
+        return ReturnMessageBoxResultAsync(MessageBoxResult::No);
+      });
+
+  PageMenuModel menu{menu_context_};
+  menu.MenuWillShow();
+  menu.ActivatedAt(0);
+  Drain(executor_);
+}

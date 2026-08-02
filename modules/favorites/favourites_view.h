@@ -1,0 +1,59 @@
+#pragma once
+
+#include "base/awaitable.h"
+#include "controller/command_registry.h"
+#include "controller/controller.h"
+#include "controller/controller_context.h"
+#include "modules/favorites/favourites_view_menu_model.h"
+#include "resources/common_resources.h"
+
+#include <memory>
+
+namespace scada::aui {
+class Tree;
+}
+
+class Favourites;
+class FavouritesTreeModel;
+class WindowDefinition;
+
+class FavouritesView final : protected ControllerContext, public Controller {
+ public:
+  FavouritesView(const ControllerContext& context, Favourites& favorites);
+  ~FavouritesView();
+
+  // Controller events
+  virtual std::unique_ptr<UiView> Init(
+      const WindowDefinition& definition) override;
+  virtual void Save(WindowDefinition& definition) override;
+  virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
+
+ private:
+  void OpenSelection();
+  void DeleteSelection();
+
+#if !defined(UI_WT)
+  void AddUrl();
+#endif
+
+  Favourites& favourites_;
+  std::shared_ptr<void> lifetime_token_ = std::make_shared<int>(0);
+
+  const std::shared_ptr<FavouritesTreeModel> favourites_tree_model_;
+
+  scada::aui::Tree* tree_view_ = nullptr;
+
+  CommandRegistry command_registry_;
+  Command& open_command_ = command_registry_.AddCommand(ID_OPEN);
+  Command& rename_command_ = command_registry_.AddCommand(ID_RENAME);
+  Command& delete_command_ = command_registry_.AddCommand(ID_DELETE);
+
+#if !defined(UI_WT)
+  Command& add_url_command_ =
+      command_registry_.AddCommand(ID_FAVOURITES_ADD_URL);
+#endif
+
+  // Cross-platform context menu, backed by `command_registry_`. Declared after
+  // it so the registry outlives the menu's delegate.
+  FavouritesViewMenuModel favourites_menu_model_{command_registry_};
+};

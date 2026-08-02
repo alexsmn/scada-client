@@ -1,0 +1,102 @@
+#include "aui/qt/message_loop_qt.h"
+#include "base/client_paths.h"
+#include "base/test/test_executor.h"
+#include "filesystem/file_cache.h"
+#include "filesystem/file_registry.h"
+#include "modus/modus_component.h"
+#include "modus/qt/modus_view.h"
+#include "profile/profile.h"
+#include "profile/window_definition.h"
+#include "services/atl_module.h"
+#include "test/display_tester/qt/display_tester_state.h"
+#include "test/display_tester/qt/display_tester_window.h"
+
+#include <QApplication>
+#include <atlbase.h>
+
+struct State : DisplayTesterState {
+  AnyExecutor executor = TestExecutor{};
+  AliasResolver alias_resolver = [](std::string_view alias,
+                                    const AliasResolveCallback& callback) {};
+  FileRegistry file_registry;
+  FileCache file_cache{file_registry};
+  Profile profile;
+};
+
+std::unique_ptr<QWidget> CreateModusView(State& state,
+                                         const WindowDefinition& definition) {
+  auto modus_view =
+      std::make_unique<ModusView>(scada::modus::ModusDocumentContext{
+          .executor_ = state.executor,
+          .alias_resolver_ = state.alias_resolver,
+          .timed_data_service_ = state.timed_data_service,
+          .file_cache_ = state.file_cache,
+          .profile_ = state.profile,
+          .title_callback_ = [](const std::u16string& title) {},
+          .navigation_callback_ = [](std::u16string_view hyperlink) {},
+          .selection_callback_ = [](const TimedDataSpec& selection) {},
+          .context_menu_callback_ = [](const scada::aui::Point& point) {},
+          .enable_internal_render_callback_ = [] {}});
+
+  modus_view->Open(definition);
+
+  return modus_view;
+}
+
+std::unique_ptr<QWidget> CreateModusViewFromPath(
+    State& state,
+    const std::filesystem::path& path) {
+  WindowDefinition definition{kModusWindowInfo};
+  definition.path =
+      !path.empty()
+          ? path
+          : std::filesystem::path{
+                R"(c:\ProgramData\Telecontrol\SCADA Client\main.sde)"};
+
+  return CreateModusView(state, definition);
+}
+
+DummyAtlModule _Module;
+
+int main(int argc, char* argv[]) {
+  client::RegisterPathProvider();
+
+  QApplication qapp(argc, argv);
+  auto executor = MakeAnyExecutor(std::make_shared<MessageLoopQt>());
+  State state;
+
+  DisplayTesterWindow tester_window{
+      state, std::bind_front(&CreateModusViewFromPath, std::ref(state))};
+
+  WindowDefinition definition{kModusWindowInfo};
+
+  tester_window.toolbar->addAction("Setup", [&] {
+    if (tester_window.opened_view) {
+      static_cast<ModusView*>(tester_window.opened_view)->ShowSetupDialog();
+    }
+  });
+
+  tester_window.toolbar->addAction("Toolbar", [&] {
+    if (tester_window.opened_view) {
+      static_cast<ModusView*>(tester_window.opened_view)
+          ->SetToolbarVisible(
+              !static_cast<ModusView*>(tester_window.opened_view)
+                   ->IsToolbarVisible());
+    }
+  });
+
+  tester_window.toolbar->addAction("Save", [&] {
+    if (tester_window.opened_view) {
+      definition = WindowDefinition{kModusWindowInfo};
+      static_cast<ModusView*>(tester_window.opened_view)->Save(definition);
+    }
+  });
+
+  tester_window.toolbar->addAction("Load", [&] {
+    tester_window.AddView(*CreateModusView(state, definition));
+  });
+
+  tester_window.show();
+
+  return QApplication::exec();
+}

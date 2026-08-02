@@ -1,0 +1,202 @@
+#include "export/configuration/diff_report.h"
+#include "aui/translation.h"
+
+#include "aui/resource_error.h"
+#include "base/check.h"
+#include "base/path_service.h"
+#include "base/utf_convert.h"
+#ifdef _WIN32
+#include "base/win/scoped_process_information.h"
+#include "base/win/win_util2.h"
+#endif
+#include "common/node_state.h"
+#include "export/configuration/diff_data.h"
+#include "model/node_id_util.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
+
+#include <filesystem>
+#include <fstream>
+#include <sstream>
+#ifndef _WIN32
+#include <cstdlib>
+#include <string>
+#endif
+
+class u16ostream {
+ public:
+  u16ostream& operator<<(std::u16string_view value) {
+    buffer_.append(value);
+    return *this;
+  }
+
+  u16ostream& operator<<(const std::u16string& value) {
+    buffer_.append(value);
+    return *this;
+  }
+
+  u16ostream& operator<<(const char16_t* value) {
+    buffer_.append(value);
+    return *this;
+  }
+
+  u16ostream& operator<<(char16_t value) {
+    buffer_.push_back(value);
+    return *this;
+  }
+
+  const std::u16string& str() const { return buffer_; }
+
+ private:
+  std::u16string buffer_;
+};
+
+bool s_import_report_enabled = true;
+
+ScopedImportReportSuppressor::ScopedImportReportSuppressor() {
+  s_import_report_enabled = false;
+}
+
+ScopedImportReportSuppressor ::~ScopedImportReportSuppressor() {
+  s_import_report_enabled = true;
+}
+
+void PrintProps(NodeService& node_service,
+                std::span<const scada::NodeProperty> props,
+                u16ostream& report) {
+  for (const auto& [prop_decl_id, value] : props) {
+    const auto& prop = node_service.GetNode(prop_decl_id);
+    report << u"  " << ToString16(prop.display_name()) << u" = "
+           << ToString16(value) << u'\n';
+  }
+}
+
+void PrintRefs(NodeService& node_service,
+               std::span<const DiffData::Reference> refs,
+               u16ostream& report) {
+  for (const auto& r : refs) {
+    auto target_name = r.add_target_id.is_null()
+                           ? u"(None)"
+                           : GetDisplayName(node_service, r.add_target_id);
+    report << ToString16(GetDisplayName(node_service, r.reference_type_id))
+           << u" = " << ToString16(target_name) << u'\n';
+  }
+}
+
+void PrintRefs(NodeService& node_service,
+               std::span<const scada::ReferenceDescription> refs,
+               u16ostream& report) {
+  for (const auto& r : refs) {
+    scada::base::Check(!r.reference_type_id.is_null());
+    scada::base::Check(!r.node_id.is_null());
+    auto ref_name = GetDisplayName(node_service, r.reference_type_id);
+    auto target_name = GetDisplayName(node_service, r.node_id);
+    report << ToString16(ref_name) << u" = " << ToString16(target_name)
+           << u'\n';
+  }
+}
+
+const char16_t kDiffReportHeader[] =
+    uR"(Please verify the changes below are correct. If the listed changes do not match
+your expectations, answer No to the question that will appear after closing this window.
+
+WARNING: Incorrect use of this operation may lead to configuration loss.)";
+
+void PrintDiffReport(u16ostream& report,
+                     const DiffData& diff,
+                     NodeService& node_service) {
+  report << kDiffReportHeader << u'\n' << u'\n';
+
+  for (auto& node_state : diff.create_nodes) {
+    auto type_definition = node_service.GetNode(node_state.type_definition_id);
+    report << u"Create: " << ToString16(type_definition.display_name())
+           << u'\n';
+    if (!node_state.node_id.is_null()) {
+      report << u"  Id = "
+             << UtfConvert<char16_t>(NodeIdToScadaString(node_state.node_id))
+             << u'\n';
+    }
+    report << u"  Parent = "
+           << UtfConvert<char16_t>(NodeIdToScadaString(node_state.parent_id))
+           << u'\n';
+    report << u"  Name = " << ToString16(node_state.attributes.display_name)
+           << u'\n';
+    PrintProps(node_service, node_state.properties, report);
+    PrintRefs(node_service, node_state.references, report);
+  }
+
+  for (auto& p : diff.modify_nodes) {
+    auto node = node_service.GetNode(p.id);
+    report << u"Modify: " << ToString16(node.display_name()) << u'\n';
+    if (!p.attrs.browse_name.empty())
+      report << u"  Name = " << ToString16(p.attrs.browse_name) << u'\n';
+    PrintProps(node_service, p.props, report);
+    PrintRefs(node_service, p.refs, report);
+  }
+
+  for (auto& p : diff.delete_nodes) {
+    auto node = node_service.GetNode(p);
+    report << u"Delete: " << ToString16(node.display_name()) << u'\n';
+  }
+}
+
+void OpenNotepad(const std::filesystem::path& path) {
+#ifdef _WIN32
+  std::filesystem::path system_path;
+  if (!scada::base::PathService::Get(scada::base::DIR_WINDOWS, &system_path)) {
+    return;
+  }
+
+  std::wstring command_line =
+      std::format(L"\"{}\" {}",
+                  (system_path / "notepad.exe").wstring(), path.wstring());
+
+  STARTUPINFO startup_info = {sizeof(startup_info)};
+  PROCESS_INFORMATION raw_process_info = {};
+
+  if (!CreateProcess(/*app_name=*/nullptr,
+                     const_cast<LPTSTR>(command_line.c_str()),
+                     /*proc_attrs=*/nullptr,
+                     /*thread_attrs=*/nullptr, /*inherit_handles=*/FALSE,
+                     /*create_flags=*/0, /*env=*/nullptr, /*cur_dir=*/nullptr,
+                     &startup_info, &raw_process_info)) {
+    throw ResourceError{Translate("Failed to open Notepad")};
+  }
+
+  scada::base::win::ScopedProcessInformation proc_info{raw_process_info};
+  ::WaitForSingleObject(proc_info.process_handle(), INFINITE);
+#else
+  std::string command = "open -W '";
+  for (char ch : path.string()) {
+    if (ch == '\'')
+      command += "'\\''";
+    else
+      command += ch;
+  }
+  command += "'";
+  if (std::system(command.c_str()) != 0) {
+    throw ResourceError{Translate("Failed to open report")};
+  }
+#endif
+}
+
+void ShowDiffReport(const DiffData& diff, NodeService& node_service) {
+  if (!s_import_report_enabled) {
+    return;
+  }
+
+  auto temp_dir = std::filesystem::temp_directory_path();
+
+  auto report_path = temp_dir / "report.txt";
+
+  u16ostream report;
+  PrintDiffReport(report, diff, node_service);
+
+  std::ofstream report_file{report_path, std::ios::binary};
+  constexpr char kUtf8Bom[] = "\xEF\xBB\xBF";
+  report_file.write(kUtf8Bom, sizeof(kUtf8Bom) - 1);
+  auto utf8_report = UtfConvert<char>(report.str());
+  report_file << utf8_report;
+
+  OpenNotepad(report_path);
+}

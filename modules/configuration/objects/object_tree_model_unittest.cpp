@@ -1,0 +1,290 @@
+#include "configuration/objects/object_tree_model.h"
+
+#include "address_space/test/test_scada_node_states.h"
+#include "base/async_completion.h"
+#include "base/blinker.h"
+#include "base/test/test_executor.h"
+#include "common/node_state.h"
+#include "configuration/tree/node_service_tree_impl.h"
+#include "configuration/tree/node_service_tree_mock.h"
+#include "model/data_items_node_ids.h"
+#include "node_service/node_service_mock.h"
+#include "node_service/static/static_node_service.h"
+#include "node_service/test/fake_node_service.h"
+#include "profile/profile.h"
+#include "timed_data/timed_data_service_fake.h"
+#include "timed_data/timed_data_service_mock.h"
+
+#include <gmock/gmock.h>
+
+#include <optional>
+
+using namespace testing;
+
+namespace {
+
+// Registers a DataItemType-typed variable and returns a cursor to it. The
+// type itself has no supertype, so a HasSubtype walk stops there.
+NodeRef MakeObjectTreeNode(FakeNodeService& node_service,
+                           const scada::NodeId& node_id,
+                           NodeFetchStatus fetch_status) {
+  node_service.Add(
+      scada::NodeState{.node_id = scada::data_items::id::DataItemType});
+
+  const NodeRef node = node_service.Add(scada::NodeState{
+      .node_id = node_id,
+      .node_class = scada::NodeClass::Variable,
+      .type_definition_id = scada::data_items::id::DataItemType});
+  node_service.SetFetchStatus(node_id, fetch_status);
+  return node;
+}
+
+// Records node-changed notifications so tests assert on observable events.
+class CountingTreeModelObserver {
+ public:
+  void Connect(scada::aui::TreeModel& model) {
+    connection_ = model.SubscribeNodeChanged(
+        [this](void* node) { changed_nodes.push_back(node); });
+  }
+
+  std::vector<void*> changed_nodes;
+
+ private:
+  boost::signals2::scoped_connection connection_;
+};
+
+class StaticVisibleNode : public VisibleNode {
+ public:
+  explicit StaticVisibleNode(std::u16string text) : text_{std::move(text)} {}
+
+  std::u16string GetText() const override { return text_; }
+
+ private:
+  std::u16string text_;
+};
+
+class TestObjectTreeModel : public ObjectTreeModel {
+ public:
+  using ObjectTreeModel::ObjectTreeModel;
+
+  int fetched_visible_node_count() const { return fetched_visible_node_count_; }
+
+ protected:
+  std::shared_ptr<VisibleNode> CreateFetchedVisibleNode(
+      const NodeRef& node) override {
+    ++fetched_visible_node_count_;
+    return std::make_shared<StaticVisibleNode>(u"Fetched");
+  }
+
+ private:
+  int fetched_visible_node_count_ = 0;
+};
+
+}  // namespace
+
+class ObjectTreeModelTest : public ::testing::Test {
+ protected:
+  ObjectTreeModelTest()
+      : node_service_tree_factory_{[](NodeServiceTreeImplContext&& context) {
+          return std::make_unique<NodeServiceTreeImpl>(std::move(context));
+        }},
+        blinker_manager_{executor_} {}
+
+  void SetUp() override {
+    node_service_.AddAll(GetScadaNodeStates());
+
+    node_service_.Add(scada::NodeState{
+        .node_id = kDataGroupId,
+        .node_class = scada::NodeClass::Object,
+        .type_definition_id = scada::data_items::id::DataGroupType,
+        .parent_id = scada::data_items::id::DataItems,
+        .reference_type_id = scada::id::Organizes});
+
+    // Regression setup: object view may receive a data item with object
+    // node-class semantics while it still derives from `DataItemType`.
+    node_service_.Add(scada::NodeState{
+        .node_id = kDataItemId,
+        .node_class = scada::NodeClass::Object,
+        .type_definition_id = scada::data_items::id::DiscreteItemType,
+        .parent_id = scada::data_items::id::DataItems,
+        .reference_type_id = scada::id::Organizes});
+
+    model_ = std::make_unique<ObjectTreeModel>(ObjectTreeModelContext{
+        executor_,
+        node_service_,
+        node_service_.GetNode(scada::data_items::id::DataItems),
+        timed_data_service_,
+        profile_,
+        blinker_manager_,
+        node_service_tree_factory_,
+    });
+    model_->Init();
+  }
+
+  static inline const scada::NodeId kDataGroupId{1001, 1};
+  static inline const scada::NodeId kDataItemId{1002, 1};
+
+  TestExecutor executor_;
+  StaticNodeService node_service_;
+  FakeTimedDataService timed_data_service_;
+  Profile profile_;
+  NodeServiceTreeFactory node_service_tree_factory_;
+  BlinkerManagerImpl blinker_manager_;
+  std::unique_ptr<ObjectTreeModel> model_;
+};
+
+// The operator's tree carries no per-row artwork: containers and data items
+// are already told apart by the twisty and the indentation, and the one thing
+// that varies between rows — live quality — rides the status dot instead
+// (docs/client/ux/principles.md §5, docs/product/ui-mockups/screens/operator-shell.html).
+TEST_F(ObjectTreeModelTest, RowsCarryNoIcon) {
+  auto* data_group_node = model_->FindFirstTreeNode(kDataGroupId);
+  auto* data_item_node = model_->FindFirstTreeNode(kDataItemId);
+
+  ASSERT_NE(data_group_node, nullptr);
+  ASSERT_NE(data_item_node, nullptr);
+
+  EXPECT_EQ(data_group_node->GetIcon(), scada::aui::kNoIcon);
+  EXPECT_EQ(data_item_node->GetIcon(), scada::aui::kNoIcon);
+}
+
+class ObjectTreeModelAsyncVisibleNodeTest : public ::testing::Test {
+ protected:
+  void InitModel(bool remove_child_on_second_get_children = false) {
+    root_node_ = MakeObjectTreeNode(model_service_, scada::id::RootFolder,
+                                    NodeFetchStatus::NodeAndChildren);
+    child_node_ =
+        MakeObjectTreeNode(model_service_, kDataItemId, NodeFetchStatus::None);
+
+    auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
+    node_service_tree_ = node_service_tree.get();
+
+    EXPECT_CALL(*node_service_tree_, SetObserver(_))
+        .WillOnce([this](NodeServiceTree::Observer* observer) {
+          node_service_tree_observer_ = observer;
+        });
+    EXPECT_CALL(*node_service_tree_, GetRoot()).WillOnce(Return(root_node_));
+
+    auto child_refs = std::vector<NodeServiceTree::ChildRef>{
+        {.reference_type_id = scada::id::Organizes, .child_node = child_node_}};
+    if (remove_child_on_second_get_children) {
+      EXPECT_CALL(*node_service_tree_, GetChildren(_))
+          .WillOnce(Return(child_refs))
+          .WillOnce(Return(std::vector<NodeServiceTree::ChildRef>{}));
+    } else {
+      EXPECT_CALL(*node_service_tree_, GetChildren(_))
+          .WillOnce(Return(child_refs));
+    }
+
+    auto node_service_tree_holder =
+        std::make_shared<std::unique_ptr<NodeServiceTree>>(
+            std::move(node_service_tree));
+    node_service_tree_factory_ =
+        [node_service_tree_holder](NodeServiceTreeImplContext&&) mutable {
+          return std::move(*node_service_tree_holder);
+        };
+
+    model_ = std::make_unique<TestObjectTreeModel>(ObjectTreeModelContext{
+        executor_,
+        node_service_,
+        root_node_,
+        timed_data_service_,
+        profile_,
+        blinker_manager_,
+        node_service_tree_factory_,
+    });
+    observer_.Connect(*model_);
+    model_->Init();
+
+    child_tree_node_ = model_->GetChild(model_->GetRoot(), 0);
+    ASSERT_NE(child_tree_node_, nullptr);
+  }
+
+  // Holds the child's fetch open so tests can act while the row is pending.
+  void ExpectDelayedFetch() {
+    model_service_.SetFetchHandler(
+        child_node_.node_id(),
+        [this](const NodeFetchStatus&) -> Awaitable<void> {
+          delayed_fetch_completion_.emplace(executor_);
+          co_await delayed_fetch_completion_->Wait();
+        });
+  }
+
+  void PollExecutor() { executor_.Poll(); }
+
+  // Publish the loaded status before resuming, so the waiter observes a
+  // fetched node the moment it wakes.
+  void CompleteFetch() {
+    model_service_.SetFetchStatus(child_node_.node_id(),
+                                  NodeFetchStatus::NodeOnly);
+    delayed_fetch_completion_->Complete();
+    PollExecutor();
+  }
+
+  static inline const scada::NodeId kDataItemId{2001, 1};
+
+  TestExecutor executor_;
+  NiceMock<MockNodeService> node_service_;
+  // Backs the cursors produced by MakeObjectTreeNode; must outlive them.
+  FakeNodeService model_service_;
+  NiceMock<MockTimedDataService> timed_data_service_;
+  Profile profile_;
+  BlinkerManagerImpl blinker_manager_{executor_};
+  NodeServiceTreeFactory node_service_tree_factory_;
+  MockNodeServiceTree* node_service_tree_ = nullptr;
+  NodeServiceTree::Observer* node_service_tree_observer_ = nullptr;
+  CountingTreeModelObserver observer_;
+  NodeRef root_node_;
+  NodeRef child_node_;
+  void* child_tree_node_ = nullptr;
+  std::optional<scada::base::AsyncCompletion> delayed_fetch_completion_;
+  std::unique_ptr<TestObjectTreeModel> model_;
+};
+
+TEST_F(ObjectTreeModelAsyncVisibleNodeTest,
+       DelayedVisibleNodeFetchUpdatesProxyWhenRowStillVisible) {
+  InitModel();
+  ExpectDelayedFetch();
+
+  model_->SetNodeVisible(child_tree_node_, true);
+  PollExecutor();
+  ASSERT_TRUE(delayed_fetch_completion_.has_value());
+  EXPECT_EQ(model_->fetched_visible_node_count(), 0);
+  EXPECT_TRUE(model_->GetText(child_tree_node_, 1).empty());
+
+  CompleteFetch();
+  EXPECT_EQ(model_->fetched_visible_node_count(), 1);
+  EXPECT_EQ(model_->GetText(child_tree_node_, 1), u"Fetched");
+}
+
+TEST_F(ObjectTreeModelAsyncVisibleNodeTest,
+       DelayedVisibleNodeFetchAfterRowHiddenDoesNotUpdateProxy) {
+  InitModel();
+  ExpectDelayedFetch();
+
+  model_->SetNodeVisible(child_tree_node_, true);
+  PollExecutor();
+  ASSERT_TRUE(delayed_fetch_completion_.has_value());
+
+  model_->SetNodeVisible(child_tree_node_, false);
+  CompleteFetch();
+  EXPECT_EQ(model_->fetched_visible_node_count(), 0);
+  EXPECT_TRUE(model_->GetText(child_tree_node_, 1).empty());
+}
+
+TEST_F(ObjectTreeModelAsyncVisibleNodeTest,
+       DelayedVisibleNodeFetchAfterTreeNodeRemovalDoesNotUpdateProxy) {
+  InitModel(/*remove_child_on_second_get_children=*/true);
+  ExpectDelayedFetch();
+
+  model_->SetNodeVisible(child_tree_node_, true);
+  PollExecutor();
+  ASSERT_TRUE(delayed_fetch_completion_.has_value());
+
+  ASSERT_NE(node_service_tree_observer_, nullptr);
+  node_service_tree_observer_->OnNodeChildrenChanged(scada::id::RootFolder);
+  ASSERT_EQ(model_->GetChildCount(model_->GetRoot()), 0);
+
+  CompleteFetch();
+  EXPECT_EQ(model_->fetched_visible_node_count(), 0);
+}

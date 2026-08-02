@@ -1,0 +1,401 @@
+﻿#include "modules/node_table/node_table_model.h"
+
+#include "app/string_const.h"
+#include "aui/translation.h"
+#include "base/any_executor_dispatch.h"
+#include "base/awaitable.h"
+#include "base/boost_log.h"
+#include "base/check.h"
+#include "base/range_util.h"
+#include "base/utf_convert.h"
+#include "base/utils.h"
+#include "model/node_id_util.h"
+#include "model/scada_node_ids.h"
+#include "node_service/node_awaitable.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
+#include "properties/property_definition.h"
+#include "properties/property_service.h"
+#include "scada/event.h"
+#include "services/task_manager.h"
+
+#include <boost/range/adaptor/transformed.hpp>
+
+using namespace std::chrono_literals;
+
+namespace {
+
+const char16_t kFetching[] = u"Loading...";
+const auto kParentReferenceTypeId = scada::id::Organizes;
+const auto kSortDelay = 300ms;
+const scada::aui::Color kReadOnlyCellColor = scada::aui::Rgba{0xF0, 0xF0, 0xF0};
+
+void LogLoadFailure(const scada::Status& status) {
+  BOOST_LOG_TRIVIAL(error) << "NodeTableModel startup load failed"
+                           << " | Status = " << ToString(status);
+}
+
+}  // namespace
+
+NodeTableModel::NodeTableModel(AnyExecutor executor,
+                               PropertyService& property_service,
+                               PropertyContext&& context)
+    : PropertyContext{std::move(context)},
+      executor_{std::move(executor)},
+      property_service_{property_service} {
+  row_model_.set_row_height(19);
+}
+
+NodeTableModel::~NodeTableModel() = default;
+
+void NodeTableModel::SetParentNode(const NodeRef& parent_node) {
+  cancelation_.Cancel();
+
+  parent_node_ = parent_node;
+
+  // Keep the model alive for the whole coroutine, including its synchronous
+  // Notify*/UpdateRows dispatch. Without this, a late fetch completing during
+  // teardown resumes the coroutine and fires model_changed_signal_; a handler
+  // (the grid adapter's endReset -> view/controller teardown) can drop the last
+  // external ref *inside* that dispatch, freeing the model — and its signal —
+  // while boost::signals2::signal::operator() is still iterating slots, a
+  // use-after-free. The captured shared_ptr defers destruction until the
+  // coroutine frame unwinds, outside any notification.
+  CoSpawn(executor_, cancelation_,
+          [this, self = shared_from_this(), parent_node,
+           cancelation = cancelation_.ref()]() mutable -> Awaitable<void> {
+            auto executor = executor_;
+            auto property_defs =
+                co_await property_service_.GetChildPropertyDefsStatusAsync(
+                    executor, parent_node_);
+            if (cancelation.canceled()) {
+              co_return;
+            }
+            if (!property_defs.ok()) {
+              if (cancelation.canceled()) {
+                co_return;
+              }
+              loading_ = false;
+              LogLoadFailure(property_defs.status());
+              NotifyModelChanged();
+              co_return;
+            }
+            UpdateColumns(*property_defs);
+            auto fetch_status = co_await FetchChildrenStatus(parent_node);
+            if (cancelation.canceled()) {
+              co_return;
+            }
+            if (!fetch_status) {
+              loading_ = false;
+              LogLoadFailure(fetch_status);
+              NotifyModelChanged();
+              co_return;
+            }
+            UpdateRows();
+          });
+}
+
+int NodeTableModel::GetRowCount() {
+  return loading_ ? 1 : static_cast<int>(rows_.size());
+}
+
+std::u16string NodeTableModel::GetRowTitle(int row) {
+  if (loading_)
+    return {};
+
+  return UtfConvert<char16_t>(NodeIdToScadaString(rows_[row].node.node_id()));
+}
+
+void NodeTableModel::GetCell(scada::aui::GridCell& cell) {
+  if (loading_) {
+    cell.text = kFetching;
+    cell.cell_color = kReadOnlyCellColor;
+    return;
+  }
+
+  scada::base::Check(cell.row >= 0 &&
+                     cell.row < static_cast<int>(rows_.size()));
+  scada::base::Check(cell.column >= 0 &&
+                     cell.column < column_model_.GetCount());
+
+  const auto& node = rows_[cell.row].node;
+  const auto& column = columns_[cell.column];
+
+  if (column.attr_id == scada::AttributeId::NodeId) {
+    cell.text = UtfConvert<char16_t>(NodeIdToScadaString(node.node_id()));
+    cell.cell_color = kReadOnlyCellColor;
+  } else if (column.attr_id == scada::AttributeId::BrowseName)
+    cell.text = UtfConvert<char16_t>(node.browse_name().name());
+  else if (column.attr_id == scada::AttributeId::DisplayName)
+    cell.text = ToString16(node.display_name());
+  else if (column.prop_def->IsReadOnly(node,
+                                       column.property_declaration.node_id()))
+    cell.cell_color = kReadOnlyCellColor;
+  else
+    cell.text = column.prop_def->GetText(*this, node,
+                                         column.property_declaration.node_id());
+}
+
+bool NodeTableModel::SetCellText(int row,
+                                 int column,
+                                 const std::u16string& text) {
+  // Row index comes from the grid edit path; the check below handles
+  // out-of-range values gracefully.
+  if (row < 0 || row >= static_cast<int>(rows_.size()))
+    return false;
+
+  const auto& node = rows_[row].node;
+
+  if (const auto& c = columns_[column];
+      c.attr_id == scada::AttributeId::BrowseName) {
+    task_manager_.PostUpdateTask(node.node_id(),
+                                 {.browse_name = UtfConvert<char>(text)}, {});
+  } else if (c.attr_id == scada::AttributeId::DisplayName) {
+    task_manager_.PostUpdateTask(
+        node.node_id(), {.display_name = scada::ToLocalizedText(text)}, {});
+  } else {
+    c.prop_def->SetText(*this, node, c.property_declaration.node_id(), text);
+  }
+
+  return true;
+}
+
+scada::aui::EditData NodeTableModel::GetEditData(int row, int column) {
+  const auto& node = rows_[row].node;
+  scada::base::Check(node);
+
+  const auto& c = columns_[column];
+  if (c.attr_id == scada::AttributeId::NodeId)
+    return {.editor_type = scada::aui::EditData::EditorType::NONE};
+
+  if (c.attr_id == scada::AttributeId::BrowseName ||
+      c.attr_id == scada::AttributeId::DisplayName)
+    return {.editor_type = scada::aui::EditData::EditorType::TEXT};
+
+  return c.prop_def->GetPropertyEditor(*this, node,
+                                       c.property_declaration.node_id());
+}
+
+void NodeTableModel::UpdateRows() {
+  loading_ = false;
+
+  auto nodes = parent_node_.targets(kParentReferenceTypeId);
+
+  rows_.clear();
+  for (const auto& node : nodes) {
+    auto& row = rows_.emplace_back(node);
+    FetchRow(row);
+  }
+
+  // Subscribe only when nodes are loaded.
+  model_changed_connection_ = node_service_.SubscribeModelChanged(
+      [this](const scada::ModelChangeEvent& event) { OnModelChanged(event); });
+  node_semantic_changed_connection_ =
+      node_service_.SubscribeNodeSemanticChanged(
+          [this](const scada::NodeId& node_id) {
+            OnNodeSemanticChanged(node_id);
+          });
+
+  Sort();
+  NotifyModelChanged();
+}
+
+int NodeTableModel::FindRowIndex(const scada::NodeId& node_id) const {
+  for (size_t i = 0; i < rows_.size(); i++) {
+    const auto& node = rows_[i].node;
+    // E.g. TS format can update.
+    if (node.node_id() == node_id) {
+      return static_cast<int>(i);
+    }
+  }
+  return -1;
+}
+
+std::vector<std::pair<int, int>> NodeTableModel::FindUpdatedRanges(
+    const scada::NodeId& node_id) const {
+  std::vector<std::pair<int /*first*/, int /*last*/>> results;
+  for (int i = 0; i < static_cast<int>(rows_.size()); i++) {
+    const auto& row = rows_[i];
+    // E.g. TS format can update.
+    if (row.node.node_id() == node_id ||
+        std::ranges::find(row.additional_targets, node_id) !=
+            row.additional_targets.end()) {
+      if (!results.empty() && results.back().second + 1 == i) {
+        results.back().second = i;
+      } else {
+        results.emplace_back(i, i);
+      }
+    }
+  }
+  return results;
+}
+
+void NodeTableModel::FetchRow(Row& row) const {
+  // Children included: the property columns read the row's property instance
+  // nodes (GetAggregate -> GetChild), and v3 node fetches no longer browse
+  // Aggregates inline — property children only arrive with a children fetch.
+  row.node.StartFetch(NodeFetchStatus::NodeAndChildren);
+
+  row.additional_targets.clear();
+  std::ranges::for_each(columns_, [&](const auto& column) {
+    if (column.prop_def) {
+      column.prop_def->GetAdditionalTargets(
+          row.node, column.property_declaration.node_id(),
+          row.additional_targets);
+    }
+  });
+
+  std::ranges::for_each(row.additional_targets, [&](const auto& target_id) {
+    node_service_.GetNode(target_id).StartFetch();
+  });
+}
+
+void NodeTableModel::Update(const NodeRef& node) {
+  if (int ix = FindRowIndex(node.node_id()); ix != -1) {
+    FetchRow(rows_[ix]);
+    NotifyRowsChanged(ix, 1);
+  } else {
+    auto& row = rows_.emplace_back(node);
+    FetchRow(row);
+    NotifyRowsAdded(static_cast<int>(rows_.size()) - 1, 1);
+  }
+
+  ScheduleSort();
+}
+
+void NodeTableModel::Delete(const scada::NodeId& node_id) {
+  if (int ix = FindRowIndex(node_id); ix != -1) {
+    rows_.erase(rows_.begin() + ix);
+    NotifyModelChanged();
+  }
+}
+
+bool NodeTableModel::IsMatchingNode(const NodeRef& node) const {
+  auto parent_ref = node.inverse_reference(scada::id::HierarchicalReferences);
+  return parent_ref.target == parent_node_ &&
+         IsSubtypeOf(parent_ref.reference_type, kParentReferenceTypeId);
+}
+
+void NodeTableModel::OnModelChanged(const scada::ModelChangeEvent& event) {
+  if (event.verb & scada::ModelChangeEvent::NodeDeleted) {
+    Delete(event.node_id);
+    return;
+  }
+
+  auto node = node_service_.GetNode(event.node_id);
+  if (IsMatchingNode(node))
+    Update(node);
+  else
+    Delete(event.node_id);
+}
+
+void NodeTableModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
+  auto node = node_service_.GetNode(node_id);
+  if (IsMatchingNode(node))
+    Update(node);
+
+  UpdatedReferencingNodes(node_id);
+}
+
+void NodeTableModel::UpdatedReferencingNodes(const scada::NodeId& node_id) {
+  if (auto ranges = FindUpdatedRanges(node_id); !ranges.empty()) {
+    for (const auto& [first, last] : ranges) {
+      NotifyRowsChanged(first, last - first + 1);
+    }
+    ScheduleSort();
+  }
+}
+
+void NodeTableModel::Sort() {
+  sort_needed_ = false;
+
+  if (sort_property_id_.is_null())
+    return;
+
+  struct CompareRows {
+    bool operator()(const Row& left, const Row& right) const {
+      const auto a = ToString16(left.node[property_id].value());
+      const auto b = ToString16(right.node[property_id].value());
+      return HumanCompareText(a, b) < 0;
+    }
+
+    const scada::NodeId property_id;
+  };
+
+  std::ranges::sort(rows_, CompareRows{sort_property_id_});
+
+  NotifyModelChanged();
+}
+
+void NodeTableModel::ScheduleSort() {
+  if (sort_property_id_.is_null())
+    return;
+
+  sort_needed_ = true;
+
+  if (sort_scheduled_)
+    return;
+
+  sort_scheduled_ = true;
+
+  PostDelayedTask(executor_, kSortDelay,
+                  cancelation_.Bind([this]() { ScheduleSortHelper(); }));
+}
+
+void NodeTableModel::ScheduleSortHelper() {
+  sort_scheduled_ = false;
+
+  if (sort_needed_)
+    Sort();
+}
+
+void NodeTableModel::UpdateColumns(const PropertyDefs& property_defs) {
+  columns_.clear();
+
+  std::vector<scada::aui::TableColumn> columns;
+
+  columns.reserve(property_defs.size() + 2);
+
+  // Browse name
+  {
+    columns_.emplace_back(scada::AttributeId::BrowseName);
+    columns.emplace_back(static_cast<int>(columns.size()),
+                         Translate("Browse Name"), 75,
+                         scada::aui::TableColumn::LEFT);
+  }
+
+  // Display name
+  {
+    columns_.emplace_back(scada::AttributeId::DisplayName);
+    columns.emplace_back(static_cast<int>(columns.size()), Translate("Name"),
+                         75, scada::aui::TableColumn::LEFT);
+  }
+
+  auto AddProp = [this, &columns](const NodeRef& property_declaration,
+                                  const PropertyDefinition& def) {
+    columns_.emplace_back(scada::AttributeId::Value, property_declaration,
+                          &def);
+    int width = def.width() ? def.width() : 75;
+    auto title = def.GetTitle(*this, property_declaration);
+    columns.emplace_back(static_cast<int>(columns.size()), title, width,
+                         def.alignment());
+  };
+
+  for (const auto& prop : property_defs) {
+    if (const auto* hier_prop = prop.second->AsHierarchical()) {
+      for (const auto& p : hier_prop->children())
+        AddProp(prop.first, *p);
+    } else {
+      AddProp(prop.first, *prop.second);
+    }
+  }
+  column_model_.SetColumns(columns.size(), columns.data());
+}
+
+void NodeTableModel::SetSorting(const scada::NodeId& property_id) {
+  if (sort_property_id_ == property_id)
+    return;
+
+  sort_property_id_ = property_id;
+  Sort();
+}

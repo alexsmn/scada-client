@@ -1,0 +1,55 @@
+﻿#include "modules/node_table/node_table_component.h"
+
+#include "controller/controller_registry.h"
+#include "model/data_items_node_ids.h"
+#include "model/history_node_ids.h"
+#include "model/scada_node_ids.h"
+#include "model/security_node_ids.h"
+#include "modules/node_table/node_table_controller.h"
+#include "node_service/node_service.h"
+
+// NodeTableControllerImpl
+
+template <scada::NumericId kNodeId>
+class NodeTableControllerImpl : public NodeTableController {
+ public:
+  explicit NodeTableControllerImpl(const ControllerContext& context)
+      : NodeTableController(context, GetParentNode(context.node_service_)) {}
+
+ private:
+  static NodeRef GetParentNode(NodeService& node_service) {
+    return kNodeId != 0 ? node_service.GetNode(scada::NodeId{
+                              kNodeId, scada::NamespaceIndexes::SCADA})
+                        : nullptr;
+  }
+};
+
+const WindowInfo kTableEditorWindowInfo = {
+    ID_TABLE_EDITOR, "TableEditor", u"Configuration",
+    WIN_DISALLOW_NEW | WIN_REQUIRES_ADMIN};
+
+const WindowInfo kTsFormatsWindowInfo = {ID_TS_FORMATS_VIEW, "Params",
+                                         u"Formats", WIN_REQUIRES_ADMIN};
+
+const WindowInfo kUsersWindowInfo = {ID_USERS_VIEW, "Users", u"Users",
+                                     WIN_REQUIRES_ADMIN};
+
+const WindowInfo kSimulationSignalsWindowInfo = {
+    ID_SIMULATION_ITEMS_VIEW, "SimulationItems", u"Simulated Signals",
+    WIN_REQUIRES_ADMIN};
+
+const WindowInfo kHistoricalDatabasesWindowInfo = {
+    ID_HISTORICAL_DB_VIEW, "HistoricalDB", u"Databases", WIN_REQUIRES_ADMIN};
+
+REGISTER_CONTROLLER(NodeTableControllerImpl<0>, kTableEditorWindowInfo);
+REGISTER_CONTROLLER(
+    NodeTableControllerImpl<scada::data_items::numeric_id::TsFormats>,
+    kTsFormatsWindowInfo);
+REGISTER_CONTROLLER(NodeTableControllerImpl<scada::security::numeric_id::Users>,
+                    kUsersWindowInfo);
+REGISTER_CONTROLLER(
+    NodeTableControllerImpl<scada::data_items::numeric_id::SimulationSignals>,
+    kSimulationSignalsWindowInfo);
+REGISTER_CONTROLLER(
+    NodeTableControllerImpl<scada::history::numeric_id::HistoricalDatabases>,
+    kHistoricalDatabasesWindowInfo);

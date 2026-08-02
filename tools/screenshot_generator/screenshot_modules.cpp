@@ -1,0 +1,23 @@
+#include "screenshot_modules.h"
+
+#include "configuration/configuration_module.h"
+#include "modules/node_service_progress_tracker/node_service_progress_tracker.h"
+
+ClientApplicationModuleConfigurator MakeScreenshotModules() {
+  return [](ClientApplicationModuleContext& context) {
+    context.singletons_.emplace(
+        std::make_shared<ConfigurationModule>(ConfigurationModuleContext{
+            .executor_ = context.executor_,
+            .controller_registry_ = context.controller_registry_,
+            .profile_ = context.profile_,
+            .node_service_tree_factory_ = context.node_service_tree_factory_,
+            .session_service_ = *context.scada_services_.session_service,
+            .local_events_ = context.local_events_,
+            .task_manager_ = context.task_manager_,
+            .selection_commands_ = context.selection_commands_,
+            .ui_command_registry_ = context.ui_command_registry_}));
+
+    context.singletons_.emplace(std::make_shared<NodeServiceProgressTracker>(
+        context.executor_, context.node_service_, context.progress_host_));
+  };
+}

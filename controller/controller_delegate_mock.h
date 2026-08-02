@@ -1,0 +1,42 @@
+#pragma once
+
+#include <gmock/gmock.h>
+
+#include "controller_delegate.h"
+
+class MockControllerDelegate : public ControllerDelegate {
+ public:
+  MOCK_METHOD(void, SetTitle, (std::u16string_view title), (override));
+
+  MOCK_METHOD(void,
+              ShowPopupMenu,
+              (scada::aui::MenuModel * merge_menu,
+               const scada::aui::Point& point,
+               bool right_click),
+              (override));
+
+  MOCK_METHOD(void, SetModified, (bool modified), (override));
+
+  MOCK_METHOD(void, Close, (), (override));
+
+  MOCK_METHOD(void, OpenView, (const WindowDefinition& def), (override));
+
+  MOCK_METHOD(void,
+              ExecuteDefaultNodeCommand,
+              (const NodeRef& node),
+              (override));
+
+  MOCK_METHOD(ContentsModel*, GetActiveContentsModel, (), (override));
+
+  MOCK_METHOD(boost::signals2::scoped_connection,
+              SubscribeContentsChanged,
+              (const ContentsChangedCallback& callback),
+              (override));
+
+  MOCK_METHOD(boost::signals2::scoped_connection,
+              SubscribeContainedItemChanged,
+              (const ContainedItemChangedCallback& callback),
+              (override));
+
+  MOCK_METHOD(void, Focus, (), (override));
+};

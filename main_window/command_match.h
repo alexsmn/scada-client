@@ -1,0 +1,27 @@
+#pragma once
+
+#include <span>
+#include <string>
+#include <vector>
+
+// One selectable command in the palette. `title` is what the user reads and
+// searches; `detail` (e.g. a keyboard shortcut) is shown right-aligned and is
+// ignored by matching. Kept Qt-free so the matching logic can be unit-tested
+// without a running UI.
+struct CommandEntry {
+  unsigned command_id = 0;
+  std::u16string title;
+  std::u16string detail;
+};
+
+// Case- and script-folds a string for search matching: ASCII A-Z and Cyrillic
+// А-Я/Ё are lowered so a query matches regardless of case.
+std::u16string FoldForSearch(std::u16string_view text);
+
+// Returns the entries whose folded title contains the folded `query`, best
+// matches first: titles that start with the query rank above interior matches,
+// then by match position, then shorter titles, then title order. An empty
+// query keeps every entry, ordered alphabetically by title.
+std::vector<CommandEntry> RankCommandMatches(
+    std::span<const CommandEntry> entries,
+    std::u16string_view query);

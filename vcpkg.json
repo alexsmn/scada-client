@@ -1,0 +1,46 @@
+{
+  "name": "scada-client",
+  "version": "2.6.0",
+  "description": "Telecontrol SCADA Client for industrial monitoring and control",
+  "license": "Apache-2.0",
+  "dependencies": [
+    "abseil",
+    "boost-algorithm",
+    "boost-asio",
+    "boost-beast",
+    "boost-circular-buffer",
+    "boost-date-time",
+    "boost-endian",
+    "boost-json",
+    "boost-locale",
+    "boost-log",
+    "boost-range",
+    "boost-regex",
+    "boost-signals2",
+    "boost-system",
+    "boost-uuid",
+    "grpc",
+    "gtest",
+    "icu",
+    {
+      "name": "opentelemetry-cpp",
+      "features": [
+        "otlp-grpc"
+      ]
+    },
+    "openssl",
+    "protobuf",
+    "pugixml",
+    "qtbase",
+    "qtsvg",
+    {
+      "name": "qttools",
+      "platform": "windows"
+    },
+    "wt",
+    {
+      "name": "qtactiveqt",
+      "platform": "windows"
+    }
+  ]
+}

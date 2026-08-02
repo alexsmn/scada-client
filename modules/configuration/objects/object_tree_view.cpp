@@ -1,0 +1,291 @@
+﻿#include "configuration/objects/object_tree_view.h"
+
+#include "aui/tree.h"
+#include "configuration/objects/object_tree_model.h"
+#include "configuration/tree/configuration_tree_drop_handler.h"
+#include "controller/contents_model.h"
+#include "controller/controller_delegate.h"
+#include "model/data_items_node_ids.h"
+#include "node_service/node_format.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
+#include "profile/profile.h"
+#include "ui/common/client_utils.h"
+
+namespace {
+
+ConfigurationTreeNode* FindFirstValueTreeNode(ConfigurationTreeNode& node) {
+  if (IsInstanceOf(node.node(), scada::data_items::id::DataItemType))
+    return &node;
+
+  if (node.CanFetchMore())
+    node.FetchMore();
+
+  for (int i = 0; i < node.GetChildCount(); ++i) {
+    if (auto* value_node = FindFirstValueTreeNode(node.GetChild(i)))
+      return value_node;
+  }
+
+  return nullptr;
+}
+
+}  // namespace
+
+ObjectTreeView::ObjectTreeView(
+    const ControllerContext& context,
+    const NodeServiceTreeFactory& node_service_tree_factory)
+    : ConfigurationTreeView{
+          context,
+          CreateConfigurationTreeModel(context, node_service_tree_factory),
+          CreateTreeDropHandler(context)} {
+  tree_view().SetHeaderVisible(true);
+  tree_view().SetShowChecks(true);
+
+  tree_view().SetExpandedHandler([this](void* node, bool expanded) {
+    UpdateNodesVisibility(*static_cast<ConfigurationTreeNode*>(node), expanded);
+  });
+
+  tree_view().SetCheckedHandler([this](void* node, bool checked) {
+    ConfigurationTreeNode* n = reinterpret_cast<ConfigurationTreeNode*>(node);
+    auto* contents_model = controller_delegate_.GetActiveContentsModel();
+    if (contents_model) {
+      // Objects must be added in the order as they are listed in the tree view.
+      auto node_ids =
+          GetVariableNodeIds(tree_view().GetOrderedNodes(n, !checked));
+      for (auto& node_id : node_ids) {
+        if (checked)
+          contents_model->AddContainedItem(node_id, ContentsModel::APPEND);
+        else
+          contents_model->RemoveContainedItem(node_id);
+      }
+    }
+  });
+
+  model_connections_.push_back(controller_delegate_.SubscribeContentsChanged(
+      [this](const NodeIdSet& node_ids) { OnContentsChanged(node_ids); }));
+  model_connections_.push_back(
+      controller_delegate_.SubscribeContainedItemChanged(
+          [this](const scada::NodeId& item_id, bool added) {
+            OnContainedItemChanged(item_id, added);
+          }));
+
+  model_connections_.push_back(model().SubscribeNodeChanged(
+      [this](void* node) { OnTreeNodeChanged(node); }));
+  model_connections_.push_back(
+      model().SubscribeNodesAdded([this](void* parent, int start, int count) {
+        OnTreeNodesAdded(parent, start, count);
+      }));
+  model_connections_.push_back(model().SubscribeNodesDeleting(
+      [this](void* parent, int start, int count) {
+        OnTreeNodesDeleting(parent, start, count);
+      }));
+  model_connections_.push_back(
+      model().SubscribeModelResetting([this] { OnTreeModelResetting(); }));
+}
+
+ObjectTreeView::~ObjectTreeView() = default;
+
+std::optional<std::u16string> ObjectTreeView::GetFirstValueTextForTesting() {
+  if (!value_node_for_testing_) {
+    auto* root = model().root();
+    if (!root)
+      return std::nullopt;
+
+    value_node_for_testing_ = FindFirstValueTreeNode(*root);
+    if (!value_node_for_testing_)
+      return std::nullopt;
+
+    value_node_change_count_for_testing_ = 0;
+    model().SetNodeVisible(value_node_for_testing_, true);
+  }
+
+  auto value_text = model().GetText(value_node_for_testing_, /*column_id=*/1);
+  if (!value_text.empty() && value_node_change_count_for_testing_ != 0)
+    return value_text;
+
+  auto node = value_node_for_testing_->node();
+  if (!node.fetched())
+    return std::nullopt;
+
+  value_text =
+      FormatValue(node, node.value(), scada::Qualifier{}, FORMAT_DEFAULT);
+  if (value_text.empty())
+    return std::nullopt;
+
+  return value_text;
+}
+
+std::vector<std::u16string> ObjectTreeView::GetExpandedLabelPathForTesting(
+    int levels) {
+  auto* node = model().root();
+  std::vector<std::u16string> labels;
+  if (!node)
+    return labels;
+
+  auto expand_path = [&](auto& self, ConfigurationTreeNode& current,
+                         int depth) -> bool {
+    if (current.CanFetchMore())
+      current.FetchMore();
+
+    tree_view().ExpandNode(&current);
+    if (&current != model().root())
+      model().SetNodeVisible(&current, true);
+    labels.emplace_back(model().GetText(&current, /*column_id=*/0));
+
+    if (depth == levels)
+      return true;
+
+    for (int i = 0; i < current.GetChildCount(); ++i) {
+      const auto previous_size = labels.size();
+      if (self(self, current.GetChild(i), depth + 1))
+        return true;
+      labels.resize(previous_size);
+    }
+
+    return false;
+  };
+
+  expand_path(expand_path, *node, /*depth=*/0);
+
+  return labels;
+}
+
+// static
+std::shared_ptr<ConfigurationTreeModel>
+ObjectTreeView::CreateConfigurationTreeModel(
+    const ControllerContext& context,
+    const NodeServiceTreeFactory& node_service_tree_factory) {
+  auto model = std::make_shared<ObjectTreeModel>(ObjectTreeModelContext{
+      context.executor_,
+      context.node_service_,
+      context.node_service_.GetNode(scada::data_items::id::DataItems),
+      context.timed_data_service_,
+      context.profile_,
+      context.blinker_manager_,
+      node_service_tree_factory,
+  });
+  model->Init();
+  return model;
+}
+
+// static
+std::unique_ptr<ConfigurationTreeDropHandler>
+ObjectTreeView::CreateTreeDropHandler(const ControllerContext& context) {
+  return std::make_unique<ConfigurationTreeDropHandler>(
+      ConfigurationTreeDropHandlerContext{
+          context.executor_, context.node_service_, context.task_manager_,
+          context.create_tree_});
+}
+
+ObjectTreeModel& ObjectTreeView::model() {
+  return static_cast<ObjectTreeModel&>(ConfigurationTreeView::model());
+}
+
+void ObjectTreeView::UpdateNodesVisibility(ConfigurationTreeNode& parent_node,
+                                           bool expanded) {
+  for (int i = 0; i < parent_node.GetChildCount(); ++i) {
+    auto& child = parent_node.GetChild(i);
+    model().SetNodeVisible(&child, expanded);
+    if (tree_view().IsExpanded(&child, false))
+      UpdateNodesVisibility(child, expanded);
+  }
+}
+
+void ObjectTreeView::OnTreeNodeChanged(void* node) {
+  if (node == value_node_for_testing_)
+    ++value_node_change_count_for_testing_;
+}
+
+void ObjectTreeView::OnTreeNodesAdded(void* parent, int start, int count) {
+  auto& parent_node = *model().AsNode(parent);
+  if (tree_view().IsExpanded(&parent_node, true)) {
+    for (int i = 0; i < count; ++i) {
+      auto& child = parent_node.GetChild(start + i);
+      model().SetNodeVisible(&child, true);
+    }
+  }
+}
+
+void ObjectTreeView::OnTreeNodesDeleting(void* parent, int start, int count) {
+  auto& parent_node = *model().AsNode(parent);
+  if (tree_view().IsExpanded(&parent_node, true)) {
+    for (int i = 0; i < count; ++i) {
+      auto& child = parent_node.GetChild(start + i);
+      model().SetNodeVisible(&child, false);
+    }
+  }
+
+  for (int i = 0; i < count; ++i) {
+    auto& child = parent_node.GetChild(start + i);
+    tree_view().SetChecked(&child, false);
+  }
+}
+
+void ObjectTreeView::OnTreeModelResetting() {
+  auto* root_node = model().root();
+  if (root_node)
+    UpdateNodesVisibility(*root_node, false);
+}
+
+void ObjectTreeView::OnContentsChanged(const NodeIdSet& node_ids) {
+  std::set<void*> checked_nodes;
+
+  std::vector<void*> pending_nodes;
+  pending_nodes.reserve(node_ids.size());
+  for (const auto& node_id : node_ids) {
+    auto nodes = model().FindTreeNodes(node_id);
+    pending_nodes.insert(pending_nodes.end(), nodes.begin(), nodes.end());
+  }
+
+  std::unordered_map<void* /*parent*/, int /*checked_child_count*/>
+      parent_checks;
+
+  while (!pending_nodes.empty()) {
+    // Allow adding nulls for performance and remove it then.
+    for (auto* node : pending_nodes)
+      ++parent_checks[model().GetParent(node)];
+    parent_checks.erase(nullptr);
+
+    checked_nodes.insert(pending_nodes.begin(), pending_nodes.end());
+    pending_nodes.clear();
+
+    for (auto [parent, checked_child_count] : parent_checks) {
+      int child_count = model().GetChildCount(parent);
+      if (child_count == checked_child_count)
+        pending_nodes.emplace_back(parent);
+    }
+    parent_checks.clear();
+  }
+
+  tree_view().SetCheckedNodes(std::move(checked_nodes));
+}
+
+void ObjectTreeView::OnContainedItemChanged(const scada::NodeId& node_id,
+                                            bool added) {
+  auto nodes = model().FindTreeNodes(node_id);
+  for (void* node : nodes) {
+    while (node && tree_view().IsChecked(node) != added) {
+      tree_view().SetChecked(node, added);
+
+      auto* parent = model().GetParent(node);
+      if (!parent)
+        break;
+
+      if (added) {
+        bool all_children_checked = true;
+        for (int j = 0; j < model().GetChildCount(parent); ++j) {
+          auto* child = model().GetChild(parent, j);
+          if (!tree_view().IsChecked(child)) {
+            all_children_checked = false;
+            break;
+          }
+        }
+
+        if (!all_children_checked)
+          break;
+      }
+
+      node = parent;
+    }
+  }
+}

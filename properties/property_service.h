@@ -1,0 +1,48 @@
+#pragma once
+
+#include "base/any_executor.h"
+#include "base/awaitable.h"
+#include "node_service/node_ref.h"
+#include "scada/co_result.h"
+#include "scada/status_or.h"
+
+#include <unordered_set>
+#include <vector>
+
+class PropertyDefinition;
+
+using PropertyDefs =
+    std::vector<std::pair<NodeRef /*prop_decl*/, const PropertyDefinition*>>;
+
+class PropertyService {
+ public:
+  PropertyService() = default;
+  explicit PropertyService(AnyExecutor) {}
+
+  const PropertyDefinition* GetPropertyDef(const NodeRef& prop_decl);
+
+  PropertyDefs GetTypePropertyDefs(const NodeRef& type_definition);
+
+  Awaitable<PropertyDefs> GetChildPropertyDefsAsync(AnyExecutor executor,
+                                                    const NodeRef& parent_node);
+  scada::CoStatusOr<PropertyDefs> GetChildPropertyDefsStatusAsync(
+      AnyExecutor executor,
+      const NodeRef& parent_node);
+
+  // Returns property declarations and forward reference types.
+  void GetTypeProperties(const NodeRef& type_definition,
+                         std::unordered_set<NodeRef>& property_declarations);
+
+ private:
+  Awaitable<void> GetAllSubtypesPropertiesAsync(
+      AnyExecutor executor,
+      const NodeRef& type_definition,
+      const std::shared_ptr<std::unordered_set<NodeRef>>& property_decls);
+  scada::CoStatus GetAllSubtypesPropertiesStatusAsync(
+      AnyExecutor executor,
+      const NodeRef& type_definition,
+      const std::shared_ptr<std::unordered_set<NodeRef>>& property_decls);
+
+  PropertyDefs GetPropertyDefs(
+      const std::unordered_set<NodeRef>& property_decls);
+};

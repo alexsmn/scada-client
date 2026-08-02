@@ -1,0 +1,9 @@
+client_module(client_configuration_nodes )
+
+client_module_link_libraries(client_configuration_nodes PUBLIC
+  client_controller
+)
+
+client_module_link_libraries(client_configuration_nodes PRIVATE
+  client_configuration_tree
+)

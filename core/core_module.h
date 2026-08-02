@@ -1,0 +1,41 @@
+#pragma once
+
+#include "base/any_executor.h"
+#include "base/lifetime.h"
+#include "controller/command_registry.h"
+#include "core/global_command_context.h"
+#include "core/selection_command_context.h"
+
+#include <memory>
+#include <stack>
+
+class ProgressHost;
+class Tracer;
+
+class CoreModule {
+ public:
+  explicit CoreModule(AnyExecutor executor);
+  ~CoreModule();
+
+  Tracer& tracer() SCADA_LIFETIME_BOUND { return *tracer_; }
+
+  BasicCommandRegistry<GlobalCommandContext>& global_commands() {
+    return global_commands_;
+  }
+
+  BasicCommandRegistry<SelectionCommandContext>& selection_commands() {
+    return selection_commands_;
+  }
+
+  ProgressHost& progress_host() SCADA_LIFETIME_BOUND { return *progress_host_; }
+
+ private:
+  std::stack<std::shared_ptr<void>> singletons_;
+
+  std::unique_ptr<Tracer> tracer_;
+
+  BasicCommandRegistry<GlobalCommandContext> global_commands_;
+  BasicCommandRegistry<SelectionCommandContext> selection_commands_;
+
+  std::unique_ptr<ProgressHost> progress_host_;
+};

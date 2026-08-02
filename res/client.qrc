@@ -1,0 +1,42 @@
+<RCC>
+    <qresource prefix="/">
+        <file>client.ico</file>
+    </qresource>
+    <!-- Lucide (ISC, res/icons/LICENSE): 24px grid, stroke 2, round caps,
+         stroke="currentColor" so one file serves dark, light and
+         high-contrast. Tint is applied by the consumer, never baked into the
+         file (docs/client/ux/iconography.md §4). Keep alphabetical. -->
+    <qresource prefix="/">
+        <file>icons/app-mark-small.svg</file>
+        <file>icons/app-mark.svg</file>
+        <file>icons/chart-spline.svg</file>
+        <file>icons/check-check.svg</file>
+        <file>icons/clipboard-list.svg</file>
+        <file>icons/clipboard-paste.svg</file>
+        <file>icons/copy.svg</file>
+        <file>icons/file-clock.svg</file>
+        <file>icons/file-pen.svg</file>
+        <file>icons/files.svg</file>
+        <file>icons/folder-tree.svg</file>
+        <file>icons/folder.svg</file>
+        <file>icons/lock-open.svg</file>
+        <file>icons/logs.svg</file>
+        <file>icons/network.svg</file>
+        <file>icons/pencil-line.svg</file>
+        <file>icons/plus.svg</file>
+        <file>icons/printer.svg</file>
+        <file>icons/radio-tower.svg</file>
+        <file>icons/router.svg</file>
+        <file>icons/search.svg</file>
+        <file>icons/settings.svg</file>
+        <file>icons/shield-user.svg</file>
+        <file>icons/table.svg</file>
+        <file>icons/trash-2.svg</file>
+        <file>icons/triangle-alert.svg</file>
+        <file>icons/user.svg</file>
+        <file>icons/variable.svg</file>
+        <file>icons/waypoints.svg</file>
+        <file>icons/workflow.svg</file>
+        <file>icons/zap.svg</file>
+    </qresource>
+</RCC>
