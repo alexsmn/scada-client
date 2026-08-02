@@ -2,6 +2,8 @@
 
 #include "aui/color.h"
 
+#include <optional>
+
 namespace scada::aui {
 
 struct TableColumn {
@@ -32,6 +34,11 @@ struct GridCell {
   // (read-only grey, blink yellow, user formats).
   Color text_color = ColorCode::Transparent;
   Color cell_color = ColorCode::Transparent;
+  // Horizontal alignment for this cell alone. Unset — the usual case — means
+  // the cell follows its column (`HeaderModel::GetAlignment`). Only a model
+  // whose cells carry their own formatting sets it; the spreadsheet does,
+  // because alignment there is a per-cell property the operator chooses.
+  std::optional<TableColumn::Alignment> alignment;
 };
 
 }  // namespace scada::aui

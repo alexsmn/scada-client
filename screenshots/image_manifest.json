@@ -80,7 +80,7 @@
       "referenced_from": [
         "client.md"
       ],
-      "notes": "Transmission window type."
+      "notes": "Transmission window type. Re-rendered 2026-08-01: the address column is right-aligned now that the grid adapter converts an aui alignment to Qt's own flags — it used to hand Qt the enum raw, so every aui::Grid rendered left-aligned."
     },
     {
       "file": "transmission-rules.png",
@@ -104,7 +104,7 @@
       "referenced_from": [
         "client/workbench.md"
       ],
-      "notes": "The reshelled operator workbench: CaptureMainWindow under --theme renders the full shell (activity rail, context bar with KPI severity tiles, command toolbar, editor tabs over EventJournal/Summ/Struct, the Inspector fronted in the right dock, status strip) and saves it under this name so the legacy client-window.png is never overwritten by a themed render. Fixture pending alarms light the tiles and the journal chrome. Published from a macOS render pending a Windows re-render; kept out of current_generator_owned_subset (subset is auto-* only). STALE (2026-07-26): the context bar no longer carries the identity/connection cluster - user/connection/server/endpoint are in the status strip only - but the published PNG still shows it; re-render on Windows and republish. The manual text in scada-docs client/workbench.md (RU+EN) is already updated."
+      "notes": "The reshelled operator workbench: CaptureMainWindow under --theme renders the full shell (activity rail, context bar with KPI severity tiles, command toolbar, editor tabs over EventJournal/Summ/Struct, the Inspector fronted in the right dock, status strip) and saves it under this name so the legacy client-window.png is never overwritten by a themed render. Fixture pending alarms light the tiles and the journal chrome. Published from a macOS render pending a Windows re-render; kept out of current_generator_owned_subset (subset is auto-* only). STALE (2026-08-01): the status strip's ping cell widened (120 -> 180) and now appends a \"no response\" marker once the ping round trip crosses 3 s (macOS App Nap fix, docs/client/message-loop.md), which shifts the endpoint cell beside it; fold this into the same pending Windows re-render. STALE (2026-07-26): the context bar no longer carries the identity/connection cluster - user/connection/server/endpoint are in the status strip only - but the published PNG still shows it; re-render on Windows and republish. The manual text in scada-docs client/workbench.md (RU+EN) is already updated."
     },
     {
       "file": "workbench-overview.png",
@@ -256,7 +256,7 @@
       "file": "device-watch.png",
       "tag": "auto-view",
       "referenced_from": [],
-      "notes": "Device log (Watch view) for КП-01: the filter bar over a seeded IEC 60870-5-104 session — decoded Dir/Type/Cause/IOA/Fmt/N(S)/N(R) columns, plus a t1 timeout and a link loss carrying their severity colours. Rendered from the fixture's `device_log` block, delivered as event notifications by the generator's fake monitored-item service; the `rows` guard is 12 (11 seeded lines plus the one `events` entry sourced on this device). Was an empty grid for months because nothing bound a device to the view and nothing seeded events. Not published yet: no manual page embeds it.",
+      "notes": "Device log (Watch view) for КП-01: the filter bar over a seeded IEC 60870-5-104 session — decoded Dir/Type/Cause/IOA/Fmt/N(S)/N(R) columns, plus a t1 timeout and a link loss carrying their severity colours. Rendered from the fixture's `device_log` block, delivered as event notifications by the generator's fake monitored-item service; the `rows` guard is 12 (11 seeded lines plus the one `events` entry sourced on this device). Was an empty grid for months because nothing bound a device to the view and nothing seeded events. Not published yet: no manual page embeds it. Re-rendered 2026-08-01 with the aui alignment fix: table rows are vertically centred (the adapter returned the horizontal flag alone, which Qt reads as AlignTop).",
       "published": false
     },
     {
@@ -336,6 +336,41 @@
       "published": false,
       "referenced_from": [],
       "notes": "Historical-databases admin table (HistoricalDB window) under --theme: the themed generic aui::Grid over the HistoricalDatabases folder — Name / Depth / PendingTaskCount / ItemCount / WriteValueCount. Third sibling of admin-simulation.png / admin-formats.png (backlog 5.1). Needs the HistoricalDatabases folder + HistoricalDatabaseType (Depth/ItemCount/WriteValueCount/PendingTaskCount) in scada_test_address_space.h and three fixture databases (SCADA.9501-9503). Theme-gated; guarded by client_screenshot_check_themed."
+    },
+    {
+      "file": "sheet.png",
+      "tag": "auto-view",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Custom table (the CusTable window, SheetModel) — the free-form spreadsheet: literal labels beside '=<formula>' cells bound to live values, with a coloured title and header band. Untagged until 2026-08-01, so the managed-image gate skipped it, and the render was a blank grid: a sheet's content lives in its saved window as SheetCell/Column items, which no fixture spec could express. The spec now carries `cells` and `column_widths` (see screenshot_data.json), and the capture is guarded by a filled-cell count — a sheet's row and column counts do not move when its content vanishes, so only counting cells that rendered text can see it go empty. Column headers (A/B/C) and row numbers are deliberately absent: sheet_view.cpp shows them only in edit mode. A live cell renders its item's display format (Температура shows 42.3; Активная мощность has no format and shows 125). That exposed a third bug: a formula cell cached the text it formatted when the sheet opened, and nothing notifies when an item's format arrives, so `--only sheet.png` rendered raw values where a full run rendered formatted ones — and a real sheet opened before its nodes loaded stayed unformatted for the life of the window. Formula cells now format on read (SheetCell::GetDisplayText), and the two renders agree. Populating this capture found a teardown crash: ~SheetCell erases itself from SheetModel::blinking_cells_, which was declared after `cells_` and so destroyed before them — closing a sheet holding one blinking cell segfaulted in std::set::erase, reachable by any user whose custom table binds a cell to a live value. Fixed by declaration order, with a regression test in sheet_model_unittest.cpp. It also found the alignment bug this capture now demonstrates: per-cell alignment was parsed, stored and offered in the context menu but never reached the screen, because GridCell carried no alignment and the grid adapter handed Qt the aui enum raw — so every aui::Grid in the client rendered left-aligned whatever its columns asked for. Fixed in grid_model_adapter.cpp + GridCell, with tests in grid_model_adapter_unittest.cpp; summary.png and client-retransmission.png changed with it. macOS render pending a Windows re-render; validation-only."
+    },
+    {
+      "file": "devices.png",
+      "tag": "auto-view",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Objects explorer (the Struct window, ObjectTreeModel) — the operator's device/signal tree, collapsed to its top level. Untagged until 2026-08-01, so the managed-image gate skipped it and the on-disk render sat two UI generations stale: it still showed the retired items.bmp glyphs (yellow folders, blue variable icons) from before both the Lucide SVG migration and the deliberate removal of per-row icons from this tree (ObjectTreeModel::ObjectTreeNode::GetIcon returns kNoIcon — principles.md §5, state is a dot, never artwork). Only the root row keeps a glyph. macOS render pending a Windows re-render; validation-only."
+    },
+    {
+      "file": "files.png",
+      "tag": "auto-view",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Files view (FileSystemView) — the server's file store as a tree: directories typed FileDirectoryType, files typed FileType, expanded. Untagged until 2026-08-01, so the managed-image gate skipped it, and the fixture defined no file nodes at all — the view rendered its single root row, which no row count could catch (hence min_columns' sibling fix: the tree row check now counts materialized descendants, not just top-level rows, and runs after the expand step). The fixture's file store is described under `_filesystem_comment` in screenshot_data.json; it also needed FileDirectoryType added to the shared ScadaTestAddressSpace and FileType corrected there from ObjectType to VariableType, which is what filesystem.xml declares. The expand step settles pending node loads and expands twice: the tree's leaf test resolves a node's type definition lazily, so on the first pass every file still drew an expand twisty. macOS render pending a Windows re-render; validation-only."
+    },
+    {
+      "file": "data.png",
+      "tag": "auto-view",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Data view (the TimeVal window, TimedDataModel) — one item's raw history as a value table (source timestamp / value / quality / server timestamp). Untagged until 2026-08-01, so the managed-image gate skipped it, and the fixture spec named no item — TimedDataModel::Init takes its series from a single Item/path — so it rendered its header row over an empty body. Now seeded with TIT.211 (Температура) and guarded by min_rows:10. Width trimmed 800 -> 560 to match the view's own fixed columns (150/150/65/150 in MakeColumns); those widths also clip the two timestamp columns and the Quality header, which is the view's sizing, not the capture's. macOS render pending a Windows re-render; validation-only."
+    },
+    {
+      "file": "summary.png",
+      "tag": "auto-view",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Summary grid (the Summ window, SummaryModel over aui::Grid): one column per configured data item against a fixed time axis — hourly aggregate rows over the fixture day, four items across two devices (ЭСТРА-ПС active/reactive power, Трансформатор T1 temperature, Диагностика frequency). Untagged until 2026-08-01, so the managed-image gate skipped it and the on-disk render sat stale — and the fixture spec configured no items at all, so it showed its 16 time rows beside a blank body, an empty capture the min_rows guard cannot see (the summary's data is in its columns). The spec now carries min_columns:4, which fails the capture if the items stop reaching the grid, plus column_width:240 (at 1120 px wide) so each header renders the item's full display path instead of an elided fragment. Values are right-aligned as of 2026-08-01: the grid adapter used to hand Qt the aui alignment enum raw, so every aui::Grid rendered left-aligned no matter what its columns asked for. macOS render pending a Windows re-render; validation-only, not published to the manual (scada-docs client/summary.md embeds only menu-summary.png)."
     },
     {
       "file": "events.png",
@@ -708,7 +743,7 @@
       "referenced_from": [
         "dev/users.md"
       ],
-      "notes": "Users window."
+      "notes": "Users window. Re-rendered 2026-08-01 with the aui alignment fix; the only visible change is that rows are vertically centred, Qt's own item-view default."
     },
     {
       "file": "debugger.png",
@@ -742,7 +777,7 @@
     }
   ],
   "counts": {
-    "auto-view": 13,
+    "auto-view": 18,
     "auto-dialog": 22,
     "auto-menu": 18,
     "auto-state": 5,

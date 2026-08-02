@@ -8,6 +8,20 @@
 #include <string>
 #include <vector>
 
+// One cell of a spreadsheet-backed view (`CusTable`), matching a `SheetCell`
+// item in a saved `WindowDefinition`. `text` is either a literal label or a
+// `"=<formula>"` binding, which is what makes the cell show a live value.
+// Coordinates are 1-based, as the profile stores them.
+struct SheetCellSpec {
+  int row = 0;
+  int column = 0;
+  std::string text;
+  // "left" (default), "center" or "right".
+  std::string align;
+  // Cell background as `#AARRGGBB`; an alpha of 0 reads as "no colour".
+  std::string color;
+};
+
 // Configuration for a single main-window view capture. Matches one row
 // in the `screenshots:` array of `screenshot_data.json`.
 struct ScreenshotSpec {
@@ -18,6 +32,20 @@ struct ScreenshotSpec {
   // items (Table, Watch) seed one row per entry so the capture shows a
   // populated grid instead of an empty view.
   std::vector<std::string> paths;
+  // Optional per-item column width, in pixels, for views that store one per
+  // data item (Summ, Sheet). 0 leaves the view's own default. The summary's
+  // 100 px default truncates a column title down to a fragment of the node's
+  // full display path, so a capture whose headers must be readable pins a
+  // wider column here rather than shipping elided headers.
+  int column_width = 0;
+  // Per-column widths, in pixels, for a view that stores them individually
+  // (`Sheet`) — entry i sets column i. Use `column_width` when one width fits
+  // every column.
+  std::vector<int> column_widths;
+  // Cells of a spreadsheet-backed view. A `CusTable` capture has nothing to
+  // show without them: the view starts as an empty sheet, and its content is
+  // whatever the saved window holds.
+  std::vector<SheetCellSpec> cells;
   int width = 800;
   int height = 600;
   // Minimum number of grid rows the rendered window must show. 0 disables
@@ -28,6 +56,12 @@ struct ScreenshotSpec {
   // Exact grid row count ("rows" in the JSON): additionally catches rows
   // leaking IN from outside the captured scope, not just an empty grid.
   int exact_rows = 0;
+  // Minimum number of grid columns the rendered window must show. 0 disables
+  // the check. The row-count checks above cannot see a grid whose columns come
+  // from the fixture rather than its rows: the summary renders one column per
+  // configured data item over a fixed time axis, so it kept its full set of
+  // time rows while showing no data at all, and shipped that way.
+  int min_columns = 0;
   // Optional: objectName of a child button to click before grabbing (e.g. a
   // subtab), so a capture can show a non-default tab of a multi-tab view.
   std::string click_object;

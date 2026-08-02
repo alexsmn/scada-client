@@ -40,6 +40,12 @@ bool SheetCell::SetFormula(std::u16string formula) {
   return true;
 }
 
+std::u16string SheetCell::GetDisplayText() const {
+  if (timed_data_.connected())
+    return timed_data_.GetCurrentString(ValueFormat{0});
+  return text_;
+}
+
 void SheetCell::UpdateTextFromFormula() {
   text_ = timed_data_.GetCurrentString(ValueFormat{0});
   NotifyChanged();

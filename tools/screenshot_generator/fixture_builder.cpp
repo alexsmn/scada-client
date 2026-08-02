@@ -130,10 +130,35 @@ Page MakeScreenshotPage(const std::vector<ScreenshotSpec>& specs,
       page.AddWindow(MakeGraphDefinition(json));
     else {
       WindowDefinition window{spec.window_type};
+      auto add_item = [&spec, &window](const std::string& item_path) {
+        WindowItem& item = window.AddItem("Item");
+        item.SetString("path", item_path);
+        if (spec.column_width > 0)
+          item.SetInt("width", spec.column_width);
+      };
       if (!spec.path.empty())
-        window.AddItem("Item").SetString("path", spec.path);
+        add_item(spec.path);
       for (const auto& item_path : spec.paths)
-        window.AddItem("Item").SetString("path", item_path);
+        add_item(item_path);
+
+      // A spreadsheet view keeps its content in the saved window, one item per
+      // cell — there is no node path to seed it from.
+      for (const auto& cell : spec.cells) {
+        WindowItem& item = window.AddItem("SheetCell");
+        item.SetInt("row", cell.row);
+        item.SetInt("col", cell.column);
+        item.SetString("text", cell.text);
+        if (!cell.align.empty())
+          item.SetString("align", cell.align);
+        if (!cell.color.empty())
+          item.SetString("color", cell.color);
+      }
+      for (size_t i = 0; i < spec.column_widths.size(); ++i) {
+        WindowItem& item = window.AddItem("Column");
+        item.SetInt("ix", static_cast<int>(i) + 1);
+        item.SetInt("width", spec.column_widths[i]);
+      }
+
       page.AddWindow(std::move(window));
     }
   }

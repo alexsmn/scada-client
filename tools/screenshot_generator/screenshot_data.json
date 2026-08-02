@@ -18,6 +18,7 @@
   ],
   "now": "2026-04-16 15:02:00",
   "dialog_analog_node_id": "TIT.212",
+  "_filesystem_comment": "The file store the Files view (FileSystemView) lists: instance nodes under the FileSystem folder (SCADA.304), directories typed FileDirectoryType (SCADA.305) and files typed FileType (SCADA.306). Ids follow what the server's MakeNodeId produces — a string id in the FILESYSTEM_FILE namespace holding the URL-escaped path, hence the %2F in a nested entry. Without these the view renders its root row and nothing else, which is how files.png shipped.",
   "_display_comment": "VDS/SDE fixture for the reshelled substation display (CaptureDisplay), relative to this file.",
   "display": {
     "path": "fixtures/substation.vds",
@@ -786,6 +787,54 @@
         "SCADA.245": 60421,
         "SCADA.241": 3
       }
+    },
+    {
+      "id": "FILESYSTEM_FILE.config",
+      "browse_name": "config",
+      "class": "object",
+      "type_definition": "SCADA.305"
+    },
+    {
+      "id": "FILESYSTEM_FILE.config%2Fiec104.cfg",
+      "browse_name": "iec104.cfg",
+      "class": "variable",
+      "type_definition": "SCADA.306"
+    },
+    {
+      "id": "FILESYSTEM_FILE.config%2Fmodbus.cfg",
+      "browse_name": "modbus.cfg",
+      "class": "variable",
+      "type_definition": "SCADA.306"
+    },
+    {
+      "id": "FILESYSTEM_FILE.reports",
+      "browse_name": "reports",
+      "class": "object",
+      "type_definition": "SCADA.305"
+    },
+    {
+      "id": "FILESYSTEM_FILE.reports%2Fdaily-load.csv",
+      "browse_name": "daily-load.csv",
+      "class": "variable",
+      "type_definition": "SCADA.306"
+    },
+    {
+      "id": "FILESYSTEM_FILE.reports%2F2026-04-15.csv",
+      "browse_name": "2026-04-15.csv",
+      "class": "variable",
+      "type_definition": "SCADA.306"
+    },
+    {
+      "id": "FILESYSTEM_FILE.device-map.xml",
+      "browse_name": "device-map.xml",
+      "class": "variable",
+      "type_definition": "SCADA.306"
+    },
+    {
+      "id": "FILESYSTEM_FILE.server.log",
+      "browse_name": "server.log",
+      "class": "variable",
+      "type_definition": "SCADA.306"
     }
   ],
   "tree": {
@@ -837,8 +886,18 @@
       "USER.12"
     ],
     "SCADA.304": [
-      "SCADA.305",
-      "SCADA.306"
+      "FILESYSTEM_FILE.config",
+      "FILESYSTEM_FILE.reports",
+      "FILESYSTEM_FILE.device-map.xml",
+      "FILESYSTEM_FILE.server.log"
+    ],
+    "FILESYSTEM_FILE.config": [
+      "FILESYSTEM_FILE.config%2Fiec104.cfg",
+      "FILESYSTEM_FILE.config%2Fmodbus.cfg"
+    ],
+    "FILESYSTEM_FILE.reports": [
+      "FILESYSTEM_FILE.reports%2Fdaily-load.csv",
+      "FILESYSTEM_FILE.reports%2F2026-04-15.csv"
     ],
     "SCADA.12": [
       "SCADA.20",
@@ -1436,8 +1495,16 @@
     {
       "type": "Summ",
       "filename": "summary.png",
-      "width": 800,
-      "height": 500
+      "width": 1120,
+      "height": 500,
+      "column_width": 240,
+      "min_columns": 4,
+      "paths": [
+        "TIT.200",
+        "TIT.201",
+        "TIT.211",
+        "TIT.208"
+      ]
     },
     {
       "type": "Event",
@@ -1547,7 +1614,35 @@
       "type": "CusTable",
       "filename": "sheet.png",
       "width": 800,
-      "height": 400
+      "height": 400,
+      "column_widths": [
+        220,
+        110,
+        90
+      ],
+      "cells": [
+        {"row": 1, "col": 1, "text": "ЭСТРА-ПС — сводное табло", "color": "#FFDCE6F1"},
+        {"row": 1, "col": 2, "text": "", "color": "#FFDCE6F1"},
+        {"row": 1, "col": 3, "text": "", "color": "#FFDCE6F1"},
+        {"row": 3, "col": 1, "text": "Параметр", "color": "#FFEFEFEF"},
+        {"row": 3, "col": 2, "text": "Значение", "align": "center", "color": "#FFEFEFEF"},
+        {"row": 3, "col": 3, "text": "Ед. изм.", "align": "center", "color": "#FFEFEFEF"},
+        {"row": 4, "col": 1, "text": "Активная мощность"},
+        {"row": 4, "col": 2, "text": "=TIT.200", "align": "right"},
+        {"row": 4, "col": 3, "text": "МВт", "align": "center"},
+        {"row": 5, "col": 1, "text": "Реактивная мощность"},
+        {"row": 5, "col": 2, "text": "=TIT.201", "align": "right"},
+        {"row": 5, "col": 3, "text": "Мвар", "align": "center"},
+        {"row": 6, "col": 1, "text": "Напряжение L1-L2"},
+        {"row": 6, "col": 2, "text": "=TIT.202", "align": "right"},
+        {"row": 6, "col": 3, "text": "кВ", "align": "center"},
+        {"row": 7, "col": 1, "text": "Частота"},
+        {"row": 7, "col": 2, "text": "=TIT.208", "align": "right"},
+        {"row": 7, "col": 3, "text": "Гц", "align": "center"},
+        {"row": 8, "col": 1, "text": "Температура T1"},
+        {"row": 8, "col": 2, "text": "=TIT.211", "align": "right"},
+        {"row": 8, "col": 3, "text": "°C", "align": "center"}
+      ]
     },
     {
       "type": "Favorites",
@@ -1561,13 +1656,17 @@
       "type": "FileSystemView",
       "filename": "files.png",
       "width": 300,
-      "height": 400
+      "height": 400,
+      "expand": true,
+      "min_rows": 9
     },
     {
       "type": "TimeVal",
       "filename": "data.png",
-      "width": 800,
-      "height": 400
+      "width": 560,
+      "height": 400,
+      "path": "TIT.211",
+      "min_rows": 10
     },
     {
       "type": "Transmission",

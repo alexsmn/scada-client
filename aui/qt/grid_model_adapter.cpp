@@ -68,11 +68,6 @@ int GridModelAdapter::columnCount(const QModelIndex& parent) const {
 }
 
 QVariant GridModelAdapter::data(const QModelIndex& index, int role) const {
-  switch (role) {
-    case Qt::TextAlignmentRole:
-      return column_model_->GetAlignment(index.column());
-  }
-
   GridCell cell;
   cell.row = index.row();
   cell.column = index.column();
@@ -105,6 +100,18 @@ QVariant GridModelAdapter::data(const QModelIndex& index, int role) const {
       if (!is_transparent(cell.cell_color))
         return cell.cell_color.qcolor();
       return themed ? QVariant() : QColor{Qt::white};
+    case Qt::TextAlignmentRole:
+      // The cell's own alignment wins over its column's. Qt needs its own
+      // flags here: this used to hand back the aui enum raw, which Qt reads as
+      // a flag mask — LEFT(0) meant "no alignment", and RIGHT and CENTER came
+      // out as AlignLeft and AlignRight. Every grid in the client was
+      // effectively left-aligned, including the summary's right-aligned value
+      // columns, and the spreadsheet's per-cell alignment had nowhere to go at
+      // all.
+      return QVariant::fromValue(
+          AuiAligmentToQt(cell.alignment.value_or(
+              column_model_->GetAlignment(index.column()))) |
+          Qt::AlignVCenter);
     default:
       return QVariant();
   }

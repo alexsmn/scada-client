@@ -23,10 +23,22 @@ class StubGridModel : public GridModel {
     cell.text = u"42";
     cell.text_color = text_color;
     cell.cell_color = cell_color;
+    cell.alignment = alignment;
   }
 
   Color text_color = ColorCode::Transparent;
   Color cell_color = ColorCode::Transparent;
+  std::optional<TableColumn::Alignment> alignment;
+};
+
+// A column header whose alignment the test controls.
+class StubColumnModel : public ColumnHeaderModel {
+ public:
+  virtual TableColumn::Alignment GetAlignment(int index) const override {
+    return alignment;
+  }
+
+  TableColumn::Alignment alignment = TableColumn::LEFT;
 };
 
 class GridModelAdapterTest : public testing::Test {
@@ -45,8 +57,8 @@ class GridModelAdapterTest : public testing::Test {
   std::shared_ptr<StubGridModel> model_ = std::make_shared<StubGridModel>();
   std::shared_ptr<ColumnHeaderModel> rows_ =
       std::make_shared<ColumnHeaderModel>();
-  std::shared_ptr<ColumnHeaderModel> columns_ =
-      std::make_shared<ColumnHeaderModel>();
+  std::shared_ptr<StubColumnModel> columns_ =
+      std::make_shared<StubColumnModel>();
   GridModelAdapter adapter_{model_, rows_, columns_};
 };
 
@@ -89,6 +101,35 @@ TEST_F(GridModelAdapterTest, ThemedExplicitBackgroundDerivesContrastingText) {
 
   model_->cell_color = Rgba{0x20, 0x20, 0x20};  // dark
   EXPECT_EQ(Data(Qt::ForegroundRole).value<QColor>(), QColor{Qt::white});
+}
+
+// A column's alignment reaches Qt as Qt's own flags. Regression: the adapter
+// returned the aui enum raw, and Qt read it as a flag mask — LEFT(0) became
+// "no alignment" and RIGHT(1)/CENTER(2) became AlignLeft/AlignRight, so every
+// grid in the client rendered left-aligned regardless of what its columns
+// asked for.
+TEST_F(GridModelAdapterTest, ColumnAlignmentReachesQtAsQtFlags) {
+  columns_->alignment = TableColumn::RIGHT;
+  EXPECT_EQ(Data(Qt::TextAlignmentRole).toInt(),
+            static_cast<int>(Qt::AlignRight | Qt::AlignVCenter));
+
+  columns_->alignment = TableColumn::CENTER;
+  EXPECT_EQ(Data(Qt::TextAlignmentRole).toInt(),
+            static_cast<int>(Qt::AlignHCenter | Qt::AlignVCenter));
+
+  columns_->alignment = TableColumn::LEFT;
+  EXPECT_EQ(Data(Qt::TextAlignmentRole).toInt(),
+            static_cast<int>(Qt::AlignLeft | Qt::AlignVCenter));
+}
+
+// A cell may override its column — how the spreadsheet's per-cell alignment
+// reaches the screen. Regression: GridCell carried no alignment, so the
+// sheet's stored formats were silently dropped at render time.
+TEST_F(GridModelAdapterTest, CellAlignmentOverridesItsColumn) {
+  columns_->alignment = TableColumn::LEFT;
+  model_->alignment = TableColumn::RIGHT;
+  EXPECT_EQ(Data(Qt::TextAlignmentRole).toInt(),
+            static_cast<int>(Qt::AlignRight | Qt::AlignVCenter));
 }
 
 }  // namespace

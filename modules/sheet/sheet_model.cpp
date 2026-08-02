@@ -6,6 +6,23 @@
 #include "modules/sheet/sheet_cell.h"
 #include "profile/window_definition.h"
 
+namespace {
+
+// The sheet stores alignment as the DT_* flags its formats and saved windows
+// have always used; the grid speaks TableColumn::Alignment.
+scada::aui::TableColumn::Alignment SheetAlignmentToAui(unsigned char align) {
+  switch (align) {
+    case DT_RIGHT:
+      return scada::aui::TableColumn::RIGHT;
+    case DT_CENTER:
+      return scada::aui::TableColumn::CENTER;
+    default:
+      return scada::aui::TableColumn::LEFT;
+  }
+}
+
+}  // namespace
+
 // SheetColumnModel -----------------------------------------------------------
 
 std::u16string SheetColumnModel::GetTitle(int index) const {
@@ -139,7 +156,10 @@ void SheetModel::GetCell(scada::aui::GridCell& cell) {
   if (!c)
     return;
 
-  cell.text = editing_ ? c->formula() : c->text();
+  cell.text = editing_ ? c->formula() : c->GetDisplayText();
+
+  if (c->format_)
+    cell.alignment = SheetAlignmentToAui(c->format_->align);
 
   if (c->format_ && c->format_->color != scada::aui::ColorCode::Transparent)
     cell.cell_color = c->format_->color;

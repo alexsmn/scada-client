@@ -115,12 +115,34 @@ void ScreenshotConfig::Load(const std::filesystem::path& path) {
       for (const auto& p : item_paths->as_array())
         spec.paths.emplace_back(p.as_string());
     }
+    if (const auto* column_width = js.as_object().if_contains("column_width"))
+      spec.column_width = static_cast<int>(column_width->as_int64());
+    if (const auto* widths = js.as_object().if_contains("column_widths")) {
+      for (const auto& w : widths->as_array())
+        spec.column_widths.push_back(static_cast<int>(w.as_int64()));
+    }
+    if (const auto* cells = js.as_object().if_contains("cells")) {
+      for (const auto& jc : cells->as_array()) {
+        const auto& cell = jc.as_object();
+        SheetCellSpec sheet_cell;
+        sheet_cell.row = static_cast<int>(cell.at("row").as_int64());
+        sheet_cell.column = static_cast<int>(cell.at("col").as_int64());
+        sheet_cell.text = std::string(cell.at("text").as_string());
+        if (const auto* align = cell.if_contains("align"))
+          sheet_cell.align = std::string(align->as_string());
+        if (const auto* color = cell.if_contains("color"))
+          sheet_cell.color = std::string(color->as_string());
+        spec.cells.push_back(std::move(sheet_cell));
+      }
+    }
     spec.width = static_cast<int>(js.at("width").as_int64());
     spec.height = static_cast<int>(js.at("height").as_int64());
     if (const auto* min_rows = js.as_object().if_contains("min_rows"))
       spec.min_rows = static_cast<int>(min_rows->as_int64());
     if (const auto* rows = js.as_object().if_contains("rows"))
       spec.exact_rows = static_cast<int>(rows->as_int64());
+    if (const auto* min_columns = js.as_object().if_contains("min_columns"))
+      spec.min_columns = static_cast<int>(min_columns->as_int64());
     if (const auto* click_object = js.as_object().if_contains("click_object"))
       spec.click_object = std::string(click_object->as_string());
     if (const auto* expand = js.as_object().if_contains("expand"))

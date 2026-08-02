@@ -74,8 +74,8 @@ void TableModelAdapter::RetintGlyphs(Color tint, qreal device_pixel_ratio) {
   paths.reserve(glyph_paths_.size());
   for (const std::string& path : glyph_paths_)
     paths.emplace_back(path);
-  icons_ = ::LoadTintedGlyphs(paths, glyph_size_, tint.qcolor(),
-                              device_pixel_ratio);
+  icons_ =
+      ::LoadTintedGlyphs(paths, glyph_size_, tint.qcolor(), device_pixel_ratio);
 }
 
 int TableModelAdapter::rowCount(const QModelIndex& parent) const {
@@ -91,7 +91,13 @@ QVariant TableModelAdapter::data(const QModelIndex& index, int role) const {
 
   switch (role) {
     case Qt::TextAlignmentRole:
-      return AuiAligmentToQt(column.alignment);
+      // Horizontal from the column, vertical always centred — Qt's own default
+      // for item views, and what the grid adapter renders. Returning the
+      // horizontal flag alone leaves the vertical bits zero, which Qt reads as
+      // AlignTop, so table rows sat a pixel higher than grid rows throughout
+      // the client.
+      return QVariant::fromValue(AuiAligmentToQt(column.alignment) |
+                                 Qt::AlignVCenter);
     case Qt::ToolTipRole:
       return QString::fromStdU16String(
           model_->GetTooltip(index.row(), column.id));

@@ -83,10 +83,15 @@ class SheetModel : private SheetModelContext,
 
   int row_count_ = 0;
   int column_count_ = 0;
-  std::vector<std::unique_ptr<SheetCell>> cells_;
 
   typedef std::set<SheetCell*> CellSet;
+  // Declared before `cells_` so it is destroyed after them: ~SheetCell calls
+  // SetBlinking(false), which erases the cell from this set. With the set
+  // declared second it was already gone by then, and tearing down a sheet
+  // holding one blinking cell segfaulted in std::set::erase.
   CellSet blinking_cells_;
+
+  std::vector<std::unique_ptr<SheetCell>> cells_;
 
   bool editing_ = false;
 

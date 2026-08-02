@@ -39,6 +39,11 @@ class TableModelAdapterTest : public testing::Test {
     return adapter_.data(adapter_.index(0, column), Qt::FontRole);
   }
 
+  int AlignmentFor(ColumnId column) {
+    return adapter_.data(adapter_.index(0, column), Qt::TextAlignmentRole)
+        .toInt();
+  }
+
   AppEnvironment app_env_;
   TableModelAdapter adapter_{std::make_shared<StubTableModel>(), MakeColumns()};
 };
@@ -64,6 +69,17 @@ TEST_F(TableModelAdapterTest, ValueAndTimestampColumnsRenderMonospace) {
 TEST_F(TableModelAdapterTest, LegacyThemeKeepsTheDefaultFont) {
   for (ColumnId column : {kTitleColumn, kValueColumn, kTimeColumn})
     EXPECT_FALSE(FontFor(column).isValid());
+}
+
+// A column's alignment carries its vertical half too. Regression: the adapter
+// returned the horizontal flag alone, leaving the vertical bits zero — which
+// Qt reads as AlignTop, so every table row sat a pixel higher than the same
+// row in a grid.
+TEST_F(TableModelAdapterTest, ColumnAlignmentIsVerticallyCentred) {
+  EXPECT_EQ(AlignmentFor(kTitleColumn),
+            static_cast<int>(Qt::AlignLeft | Qt::AlignVCenter));
+  EXPECT_EQ(AlignmentFor(kValueColumn),
+            static_cast<int>(Qt::AlignRight | Qt::AlignVCenter));
 }
 
 }  // namespace

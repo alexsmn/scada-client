@@ -1,10 +1,10 @@
 #include "bulk_create_capture.h"
 #include "debugger_capture.h"
-#include "frame_decode_capture.h"
 #include "device_diagnostics_capture.h"
 #include "dialog_capture.h"
 #include "display_capture.h"
 #include "fixture_builder.h"
+#include "frame_decode_capture.h"
 #include "graph_capture.h"
 #include "inspector_capture.h"
 #include "screenshot_config.h"
@@ -38,9 +38,8 @@
 #include "base/test/scoped_mock_clock_override.h"
 #include "base/test/scoped_path_override.h"
 #include "controller/window_info.h"
-#include "favorites/favourites.h"
-#include "profile/window_definition.h"
 #include "events/qt/event_filter_bar.h"
+#include "favorites/favourites.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
@@ -53,6 +52,7 @@
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "profile/profile.h"
+#include "profile/window_definition.h"
 #include "timed_data/timed_data_service.h"
 
 #include <QAbstractButton>
@@ -82,6 +82,7 @@
 #include <QVBoxLayout>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <set>
 
 namespace {
@@ -122,6 +123,14 @@ void MakeSpecItemsResident(NodeService& node_service,
   add(spec.path);
   for (const auto& path : spec.paths)
     add(path);
+  // A spreadsheet names its items nowhere else: its live cells are
+  // "=<formula>" text. Without warming them the sheet renders a raw value
+  // where a fuller run — one where another window happened to browse the same
+  // node — renders the item's display format.
+  for (const auto& cell : spec.cells) {
+    if (cell.text.starts_with('='))
+      add(cell.text.substr(1));
+  }
 
   if (node_ids.empty())
     return;
@@ -140,8 +149,8 @@ void SeedDeviceLog(const boost::json::value& root,
   if (!block)
     return;
 
-  const scada::NodeId device_id = NodeIdFromScadaString(
-      std::string_view(block->at("device").as_string()));
+  const scada::NodeId device_id =
+      NodeIdFromScadaString(std::string_view(block->at("device").as_string()));
   const scada::Time now = scada::Now();
 
   for (const auto& jl : block->at("lines").as_array()) {
@@ -153,8 +162,8 @@ void SeedDeviceLog(const boost::json::value& root,
     event.receive_time = event.time;
     event.source_node_id = device_id;
     event.event_type_id = scada::devices::id::DeviceWatchEventType;
-    event.message = scada::LocalizedText{UtfConvert<char16_t>(
-        std::string(jl.at("message").as_string()))};
+    event.message = scada::LocalizedText{
+        UtfConvert<char16_t>(std::string(jl.at("message").as_string()))};
     event.severity = scada::kSeverityMin;
     if (const auto* js = jl.as_object().if_contains("severity")) {
       const std::string_view severity = js->as_string();
@@ -190,9 +199,8 @@ void SeedDeviceLog(const boost::json::value& root,
     frame.receive_sequence = read("receive_sequence");
 
     monitored_item_service.AddEvent(
-        device_id,
-        std::any{scada::DeviceFrameEvent{.base = std::move(event),
-                                         .frame = std::move(frame)}});
+        device_id, std::any{scada::DeviceFrameEvent{
+                       .base = std::move(event), .frame = std::move(frame)}});
   }
 }
 
@@ -206,8 +214,8 @@ void SeedFavourites(const boost::json::value& root, Favourites& favourites) {
     return;
 
   for (const auto& jf : block->at("folders").as_array()) {
-    const std::u16string name = UtfConvert<char16_t>(
-        std::string(jf.at("name").as_string()));
+    const std::u16string name =
+        UtfConvert<char16_t>(std::string(jf.at("name").as_string()));
     const Page& folder = favourites.GetOrAddFolder(name);
 
     for (const auto& jw : jf.at("windows").as_array()) {
@@ -232,6 +240,39 @@ scada::aui::Tree* FindTreeWidget(QWidget* widget) {
   }
 
   return nullptr;
+}
+
+// The grid widget a view renders into, itself or the first one below it.
+QTableView* FindGridWidget(QWidget* widget) {
+  if (!widget)
+    return nullptr;
+  if (auto* table = qobject_cast<QTableView*>(widget))
+    return table;
+  return widget->findChild<QTableView*>();
+}
+
+// Cells of a grid model whose display text is not empty.
+int CountFilledCells(const QAbstractItemModel& model) {
+  int filled = 0;
+  for (int row = 0; row < model.rowCount(); ++row) {
+    for (int column = 0; column < model.columnCount(); ++column) {
+      if (!model.index(row, column).data(Qt::DisplayRole).toString().isEmpty())
+        ++filled;
+    }
+  }
+  return filled;
+}
+
+// Rows a tree model has materialized under `parent`, descendants included.
+// Reads `rowCount` only — a lazy tree fetches through `canFetchMore`/
+// `fetchMore`, so counting never pulls in rows the capture would not show.
+int CountLoadedRows(const QAbstractItemModel& model,
+                    const QModelIndex& parent) {
+  const int count = model.rowCount(parent);
+  int total = count;
+  for (int row = 0; row < count; ++row)
+    total += CountLoadedRows(model, model.index(row, 0, parent));
+  return total;
 }
 
 }  // namespace
@@ -610,27 +651,52 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
         app_.node_service(), app_.timed_data_service()))
         << spec.filename;
 
+    // A collapsed tree captures its folders and hides everything the capture
+    // is about, so a tree-backed spec can ask for every row. Done before the
+    // row check below, which must count what the capture will actually show:
+    // a lazy tree has only materialized its root until something expands it.
+    if (spec.expand) {
+      if (scada::aui::Tree* tree = FindTreeWidget(widget)) {
+        tree->expandAll();
+        QApplication::processEvents();
+        // expandAll fetches the next level lazily, so each newly shown row can
+        // start its own child browse; settle those before counting or grabbing.
+        EXPECT_TRUE(WaitForPendingNodeLoads(app_.node_service()))
+            << spec.filename;
+        tree->expandAll();
+        QApplication::processEvents();
+      } else {
+        ADD_FAILURE() << spec.filename << ": expand was requested but "
+                      << spec.window_type << " has no tree";
+      }
+    }
+
     // A grid-backed window that renders fewer rows than the fixture defines
     // is a data-path regression (empty users/transmission tables have
     // shipped as "successful" captures before) — fail loudly instead of
     // silently saving a bare frame.
-    if (spec.min_rows > 0 || spec.exact_rows > 0) {
+    if (spec.min_rows > 0 || spec.exact_rows > 0 || spec.min_columns > 0) {
       int max_rows = 0;
+      int max_columns = 0;
       QList<QTableView*> tables = widget->findChildren<QTableView*>();
       if (auto* table = qobject_cast<QTableView*>(widget))
         tables.prepend(table);
       for (const QTableView* table : tables) {
-        if (table->model())
+        if (table->model()) {
           max_rows = std::max(max_rows, table->model()->rowCount());
-      }
-      // Tree-backed windows count their top-level rows. Without this a tree
-      // capture can go empty as silently as a grid one — which is exactly how
-      // the favourites pane shipped blank.
-      if (const scada::aui::Tree* tree = FindTreeWidget(widget)) {
-        if (tree->model()) {
-          max_rows = std::max(
-              max_rows, tree->model()->rowCount(tree->rootIndex()));
+          max_columns = std::max(max_columns, table->model()->columnCount());
         }
+      }
+      // Tree-backed windows count every row they have materialized, not just
+      // the top level. Without this a tree capture can go empty as silently as
+      // a grid one — which is exactly how the favourites pane shipped blank —
+      // and a top-level-only count says nothing about a tree whose single root
+      // row is the shell and whose content is its children (the Files view,
+      // where an empty file store still shows one row).
+      if (const scada::aui::Tree* tree = FindTreeWidget(widget)) {
+        if (tree->model())
+          max_rows = std::max(
+              max_rows, CountLoadedRows(*tree->model(), tree->rootIndex()));
       }
       if (spec.min_rows > 0) {
         EXPECT_GE(max_rows, spec.min_rows)
@@ -646,6 +712,36 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
             << spec.filename << ": the " << spec.window_type
             << " grid row count does not match the fixture";
       }
+      // A column-per-item grid (the summary) goes empty without losing a
+      // single row, so the row checks above cannot see it.
+      if (spec.min_columns > 0) {
+        EXPECT_GE(max_columns, spec.min_columns)
+            << spec.filename << ": the " << spec.window_type
+            << " grid rendered fewer columns than the fixture configures - the "
+               "capture would show its axis and no data";
+      }
+    }
+
+    // A spreadsheet is a fixed grid of mostly-empty cells, so neither its row
+    // nor its column count moves when its content goes missing — an empty
+    // sheet and a full one are the same shape. Count the cells that actually
+    // rendered text instead, against the ones the fixture writes. A cell bound
+    // to a live value ("=<formula>") that resolves to nothing counts as
+    // missing, which is the point.
+    if (!spec.cells.empty()) {
+      const auto expected = std::ranges::count_if(
+          spec.cells,
+          [](const SheetCellSpec& cell) { return !cell.text.empty(); });
+      int filled = 0;
+      if (auto* table = FindGridWidget(widget)) {
+        if (const QAbstractItemModel* model = table->model())
+          filled = CountFilledCells(*model);
+      }
+      EXPECT_GE(filled, expected)
+          << spec.filename << ": the " << spec.window_type << " sheet rendered "
+          << filled << " non-empty cells, fewer than the " << expected
+          << " the fixture writes - the capture would be a blank "
+             "grid";
     }
 
     // Optionally click a named child (e.g. a subtab button) so the capture
@@ -667,18 +763,6 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
       } else {
         ADD_FAILURE() << "click_object not found: " << spec.click_object
                       << " in " << spec.window_type;
-      }
-    }
-
-    // A collapsed tree captures its folders and hides everything the capture
-    // is about, so a tree-backed spec can ask for every row.
-    if (spec.expand) {
-      if (scada::aui::Tree* tree = FindTreeWidget(widget)) {
-        tree->expandAll();
-        QApplication::processEvents();
-      } else {
-        ADD_FAILURE() << spec.filename << ": expand was requested but "
-                      << spec.window_type << " has no tree";
       }
     }
 
