@@ -37,6 +37,16 @@ constexpr WindowInfo kEventJournalWindowInfo = {
     .title = u"Event Journal",
     .flags = WIN_INS | WIN_CAN_PRINT};
 
+// The audit trail: the same journal, scoped to the AuditEventType subtree.
+// Admin-gated, because it records who administered accounts and roles — the
+// server restricts that surface to administrators, and the trail of it belongs
+// behind the same gate.
+constexpr WindowInfo kAuditLogWindowInfo = {
+    .command_id = ID_AUDIT_LOG_VIEW,
+    .name = "AuditLog",
+    .title = u"Audit log",
+    .flags = WIN_INS | WIN_CAN_PRINT | WIN_REQUIRES_ADMIN};
+
 Awaitable<void> OpenWindowDefinition(
     std::string_view mode,
     MainWindowInterface& main_window,
@@ -101,6 +111,15 @@ EventModule::EventModule(EventModuleContext&& context)
       [&local_events = *local_events_](const ControllerContext& context) {
         return std::make_unique<EventView>(context, local_events,
                                            /*is_panel=*/false);
+      });
+
+  // Same view, scoped to the audit trail.
+  controller_registry_.AddControllerFactory(
+      kAuditLogWindowInfo,
+      [&local_events = *local_events_](const ControllerContext& context) {
+        return std::make_unique<EventView>(context, local_events,
+                                           /*is_panel=*/false,
+                                           /*audit_only=*/true);
       });
 
   profile_.RegisterSerializer([this](boost::json::value& data) {

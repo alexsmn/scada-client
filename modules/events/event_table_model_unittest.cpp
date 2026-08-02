@@ -1,6 +1,7 @@
 #include "events/event_table_model.h"
 
 #include "base/test/test_executor.h"
+#include "events/audit_events.h"
 #include "events/alarm_flood.h"
 #include "events/current_event_model.h"
 #include "events/event_grouping.h"
@@ -228,6 +229,71 @@ TEST(EventTableModelUnacknowledgedFilterTest,
 
   // Back off: the acknowledged event returns.
   model.SetUnacknowledgedOnly(false);
+  EXPECT_EQ(model.GetRowCount(), 3);
+}
+
+// The Audit log is this journal scoped to the AuditEventType subtree. The
+// filter must be exact in both directions: an ordinary process event in the
+// trail makes it not an audit log, and a stored audit event missing from it
+// makes the trail incomplete while still reading as complete.
+TEST_F(EventTableModelTest, HistoricalEvents_AuditOnlyFilter) {
+  TestExecutor executor;
+
+  StaticNodeService node_service;
+  const scada::NodeId node_id{1, scada::NamespaceIndexes::TIT};
+  node_service.Add(
+      {.node_id = node_id,
+       .type_definition_id = scada::data_items::id::AnalogItemType,
+       .attributes = {.browse_name = "n1", .display_name = u"N1"}});
+
+  NiceMock<MockNodeEventProvider> node_event_provider;
+  NodeEventProvider::EventContainer empty_current;
+  ON_CALL(node_event_provider, unacked_events())
+      .WillByDefault(ReturnRef(empty_current));
+  CurrentEventModel current_event_model{node_event_provider};
+
+  NiceMock<scada::MockHistoryService> history_service;
+  HistoricalEventModel historical_event_model{executor, history_service};
+  LocalEvents local_events;
+  LocalEventModel local_event_model{local_events};
+
+  EventTableModel model{{.executor_ = executor,
+                         .node_service_ = node_service,
+                         .current_event_model_ = current_event_model,
+                         .historical_event_model_ = historical_event_model,
+                         .local_event_model_ = local_event_model,
+                         .current_events_ = false}};
+
+  const auto ns0 = [](scada::NumericId id) {
+    return scada::NodeId{id, scada::NamespaceIndexes::NS0};
+  };
+  historical_event_model.AddEvent(
+      {.event_type_id = ns0(scada::id::SystemEventType),
+       .event_id = 1,
+       .source_node_id = node_id});
+  historical_event_model.AddEvent(
+      {.event_type_id = ns0(scada::id::AuditUpdateMethodEventType),
+       .event_id = 2,
+       .source_node_id = node_id});
+  historical_event_model.AddEvent(
+      {.event_type_id = ns0(scada::id::AuditActivateSessionEventType),
+       .event_id = 3,
+       .source_node_id = node_id});
+
+  historical_event_model.refilter_now();
+  EXPECT_EQ(model.GetRowCount(), 3);
+
+  model.SetAuditOnly(true);
+  ASSERT_EQ(model.GetRowCount(), 2);
+  for (int row = 0; row < model.GetRowCount(); ++row) {
+    EXPECT_TRUE(IsAuditEventType(model.event_at(row).event_type_id));
+  }
+
+  // Acknowledgement has no meaning for an audit trail, so the audit scope must
+  // not silently imply the unacknowledged-only filter as well.
+  EXPECT_FALSE(model.unacknowledged_only());
+
+  model.SetAuditOnly(false);
   EXPECT_EQ(model.GetRowCount(), 3);
 }
 

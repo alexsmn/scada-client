@@ -1335,6 +1335,42 @@
       "node_id": "TIT.208",
       "change_mask": 4,
       "acknowledged": false
+    },
+    {
+      "id": 1101,
+      "hours_ago": 0.4,
+      "severity": "normal",
+      "message": "AddIdentity ivanov",
+      "node_id": "USER.3",
+      "change_mask": 8,
+      "event_type": 2127
+    },
+    {
+      "id": 1102,
+      "hours_ago": 1.1,
+      "severity": "normal",
+      "message": "ModifyUser petrov",
+      "node_id": "USER.4",
+      "change_mask": 8,
+      "event_type": 2127
+    },
+    {
+      "id": 1103,
+      "hours_ago": 2.3,
+      "severity": "warning",
+      "message": "RemoveUser kozlov — Bad_UserAccessDenied",
+      "node_id": "USER.5",
+      "change_mask": 8,
+      "event_type": 2127
+    },
+    {
+      "id": 1104,
+      "hours_ago": 3.0,
+      "severity": "normal",
+      "message": "Вход в систему: ivanov",
+      "node_id": "USER.3",
+      "change_mask": 8,
+      "event_type": 2075
     }
   ],
   "graph": {
@@ -1451,6 +1487,12 @@
       "filename": "password-policy.png",
       "width": 420,
       "height": 300
+    },
+    {
+      "type": "AuditLog",
+      "filename": "audit-log.png",
+      "width": 1100,
+      "height": 280
     },
     {
       "type": "TransmissionRule",

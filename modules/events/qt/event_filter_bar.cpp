@@ -97,16 +97,18 @@ QWidget* MakeEventFilterBar(EventFilterBarContext context) {
   layout->setContentsMargins(10, 5, 10, 5);
   layout->setSpacing(12);
 
-  auto* unacknowledged = new QCheckBox{
-      QString::fromStdU16String(Translate("Unacknowledged only")), bar};
-  unacknowledged->setObjectName(QStringLiteral("unacknowledgedOnly"));
-  unacknowledged->setChecked(context.unacknowledged_only);
-  QObject::connect(unacknowledged, &QCheckBox::toggled, bar,
-                   [callback = context.on_unacknowledged_only](bool checked) {
-                     if (callback)
-                       callback(checked);
-                   });
-  layout->addWidget(unacknowledged);
+  if (context.show_unacknowledged_only) {
+    auto* unacknowledged = new QCheckBox{
+        QString::fromStdU16String(Translate("Unacknowledged only")), bar};
+    unacknowledged->setObjectName(QStringLiteral("unacknowledgedOnly"));
+    unacknowledged->setChecked(context.unacknowledged_only);
+    QObject::connect(unacknowledged, &QCheckBox::toggled, bar,
+                     [callback = context.on_unacknowledged_only](bool checked) {
+                       if (callback)
+                         callback(checked);
+                     });
+    layout->addWidget(unacknowledged);
+  }
 
   layout->addWidget(
       new QLabel{QString::fromStdU16String(Translate("Min. severity")), bar});

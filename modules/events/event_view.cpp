@@ -87,9 +87,11 @@ scada::EventSeverity ParseSeverity(std::u16string_view str) {
 
 EventView::EventView(const ControllerContext& context,
                      LocalEvents& local_events,
-                     bool is_panel)
+                     bool is_panel,
+                     bool audit_only)
     : ControllerContext{context},
       is_panel_{is_panel},
+      audit_only_{audit_only},
       local_events_{local_events},
       model_{CreateEventTableModel(context, local_events, is_panel)} {
   const scada::aui::TableColumn kEventViewColumns[] = {
@@ -272,6 +274,12 @@ std::unique_ptr<UiView> EventView::Init(const WindowDefinition& definition) {
         mode->attributes.as_string() == "Current") {
       model_->SetUnacknowledgedOnly(true);
     }
+    // The Audit log is this journal scoped to the AuditEventType subtree.
+    // Deliberately NOT also unacknowledged-only: an audit trail records what
+    // happened, and acknowledgement has no meaning for it.
+    if (audit_only_) {
+      model_->SetAuditOnly(true);
+    }
     if (auto time_range = RestoreTimeRange(definition))
       model_->SetTimeRange(*time_range);
   }
@@ -314,6 +322,9 @@ std::unique_ptr<UiView> EventView::Init(const WindowDefinition& definition) {
     layout->addWidget(MakeEventFilterBar(EventFilterBarContext{
         .executor = executor_,
         .node_service = node_service_,
+        // The audit log hides the unacknowledged-only toggle for the same
+        // reason it hides the footer: acknowledgement has no meaning here.
+        .show_unacknowledged_only = !audit_only_,
         .unacknowledged_only = model_->unacknowledged_only(),
         .severity_min = model_->severity_min(),
         .severity_max = scada::kSeverityMax,
@@ -347,12 +358,19 @@ std::unique_ptr<UiView> EventView::Init(const WindowDefinition& definition) {
     layout->addWidget(body, 1);
     // Alarm footer: the displayed backlog summary plus Acknowledge-all, so
     // the journal's actionable state and the action on it sit together.
-    layout->addWidget(MakeAlarmFooter(AlarmFooterContext{
-        .model = *model_,
-        .summary = [this] { return model_->GetAlarmSummary(); },
-        .acknowledge_all = [this]() -> CommandHandler* {
-          return command_registry_.GetCommandHandler(ID_ACKNOWLEDGE_ALL);
-        }}));
+    //
+    // Omitted on the audit log. An audit entry records that something
+    // happened; there is nothing to acknowledge, and offering the action —
+    // or an unacknowledged backlog count over a trail that has none — would
+    // describe the surface as something it is not.
+    if (!audit_only_) {
+      layout->addWidget(MakeAlarmFooter(AlarmFooterContext{
+          .model = *model_,
+          .summary = [this] { return model_->GetAlarmSummary(); },
+          .acknowledge_all = [this]() -> CommandHandler* {
+            return command_registry_.GetCommandHandler(ID_ACKNOWLEDGE_ALL);
+          }}));
+    }
     return std::unique_ptr<UiView>{container};
   }
 #endif

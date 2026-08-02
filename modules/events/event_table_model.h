@@ -79,6 +79,15 @@ class EventTableModel : public scada::aui::TableModel,
   bool unacknowledged_only() const { return unacknowledged_only_; }
   void SetUnacknowledgedOnly(bool value);
 
+  // When set, the journal shows ONLY the audit trail — the AuditEventType
+  // subtree (see events/audit_events.h). This is what makes an Audit log view
+  // possible: the same journal, scoped to the events that record who did what.
+  //
+  // It is a filter over what was fetched, not a narrowing of the fetch, so it
+  // cannot hide an event the journal would otherwise have shown.
+  bool audit_only() const { return audit_only_; }
+  void SetAuditOnly(bool value);
+
   const ItemIds& filter_items() const SCADA_LIFETIME_BOUND {
     return filter_node_ids_;
   }
@@ -218,6 +227,7 @@ class EventTableModel : public scada::aui::TableModel,
   // Filter.
   unsigned severity_min_ = 0;
   bool unacknowledged_only_ = false;
+  bool audit_only_ = false;
   ItemIds filter_node_ids_;
 
   // Rows displayed in grid.

@@ -1,5 +1,7 @@
 ﻿#include "events/event_table_model.h"
 
+#include "events/audit_events.h"
+
 #include "aui/severity_colors.h"
 #include "aui/translation.h"
 #include "base/check.h"
@@ -297,6 +299,9 @@ bool EventTableModel::PassesFilters(const scada::Event& event,
     return false;
 
   if (unacknowledged_only_ && event.acked)
+    return false;
+
+  if (audit_only_ && !IsAuditEventType(event.event_type_id))
     return false;
 
   if (!include_area_filter || filter_node_ids_.empty())
@@ -685,6 +690,13 @@ void EventTableModel::SetSeverityMin(unsigned severity) {
     return;
 
   severity_min_ = severity;
+  RefilterNow();
+}
+
+void EventTableModel::SetAuditOnly(bool value) {
+  if (audit_only_ == value)
+    return;
+  audit_only_ = value;
   RefilterNow();
 }
 

@@ -281,6 +281,13 @@
       "notes": "The Password policy view: what the server publishes on the UserManagement object (OPC UA Part 18 5.2.2) - the length range, the required character classes, and the deployment's own wording of the rule, shown verbatim. Read-only; the policy is server configuration. The fixture configures no policy, so the capture shows the unconstrained case (Any length, nothing required) - which is a REAL state and deliberately distinct from 'No data', the unreadable case that also suppresses every requirement row. The manual prose for this surface is written (scada-docs client/workbench.md + en/ mirror, #administration); the image is NOT embedded yet because the published set must come from the WINDOWS pipeline - a macOS render differs by font alone and would commit as churn. Embed it on the next Windows regeneration, set published:true and add it to current_generator_owned_subset."
     },
     {
+      "file": "audit-log.png",
+      "tag": "auto-view",
+      "published": false,
+      "referenced_from": [],
+      "notes": "The Audit log view: the event journal scoped to the AuditEventType subtree (see client/modules/events/audit_events.h). Admin-gated. The capture demonstrates the filter rather than asserting it - the fixture seeds 13 events of which 4 carry audit types, and only those 4 appear. Acknowledgement chrome is deliberately absent (no unacknowledged-only toggle, no Acknowledge-all footer): an audit entry records that something happened, and there is nothing to acknowledge. The refused call renders in the warning band, which is the row an operator is looking for. NOT published: the published set comes from the WINDOWS pipeline; embed on the next regeneration."
+    },
+    {
       "file": "users-rbac.png",
       "tag": "auto-view",
       "published": false,
@@ -405,7 +412,7 @@
       "tag": "auto-view",
       "published": false,
       "referenced_from": [],
-      "notes": "Legacy event journal (the EventJournal window, EventView with is_panel=false) in the no-theme pipeline — history over the fixture's nine events, acked and pending alike, as distinct from the unacked-only panel in events.png and the themed alarm surface in events-alarm-surface.png. Untagged until 2026-08-01, so the managed-image gate skipped it and the on-disk render sat stale; unlike events.png its content was never wrong, since the journal shows acked history the fixture has always had. Validation-only."
+      "notes": "Legacy event journal (the EventJournal window, EventView with is_panel=false) in the no-theme pipeline — history over the fixture's nine events, acked and pending alike, as distinct from the unacked-only panel in events.png and the themed alarm surface in events-alarm-surface.png. Untagged until 2026-08-01, so the managed-image gate skipped it and the on-disk render sat stale; unlike events.png its content was never wrong, since the journal shows acked history the fixture has always had. Validation-only. Re-rendered 2026-08-01: the fixture now seeds four AUDIT events (AddIdentity / ModifyUser / a refused RemoveUser / a session activation), so they appear here interleaved with the process events. That is correct - the journal is every event and the Audit log view is a scoped subset of it - but it does mean an OPERATOR's journal shows administrative entries. Worth a product decision if that is unwanted; the behaviour is not new (session-activation audits were already stored), the fixture just makes it visible."
     },
     {
       "file": "events-alarm-surface.png",
@@ -805,7 +812,7 @@
     }
   ],
   "counts": {
-    "auto-view": 20,
+    "auto-view": 21,
     "auto-dialog": 22,
     "auto-menu": 18,
     "auto-state": 5,

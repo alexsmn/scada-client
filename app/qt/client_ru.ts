@@ -1526,6 +1526,10 @@
         <translation>Политика паролей</translation>
     </message>
     <message>
+        <source>Audit log</source>
+        <translation>Журнал аудита</translation>
+    </message>
+    <message>
         <source>Length</source>
         <translation>Длина</translation>
     </message>

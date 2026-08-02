@@ -139,6 +139,8 @@
 #define ID_ROLES_VIEW                   2018
 // The password policy the server publishes (OPC UA Part 18 §5.2.2).
 #define ID_PASSWORD_POLICY_VIEW         2019
+// The audit trail: the event journal scoped to the AuditEventType subtree.
+#define ID_AUDIT_LOG_VIEW               2020
 #define ID_GRAPH_ZOOM                   4001
 #define ID_EXPORT_CONFIGURATION_TO_EXCEL 4022
 #define ID_IMPORT_CONFIGURATION_FROM_EXCEL 4023

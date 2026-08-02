@@ -33,6 +33,10 @@ struct EventFilterBarContext {
   NodeService& node_service;
 
   // Current filter state reflected in the controls.
+  // False hides the unacknowledged-only toggle entirely. The audit log sets
+  // it: acknowledgement has no meaning for a trail of what happened, so the
+  // control would describe the surface as something it is not.
+  bool show_unacknowledged_only = true;
   bool unacknowledged_only = false;
   unsigned severity_min = 0;
   unsigned severity_max = 0;

@@ -27,9 +27,14 @@ class EventView : protected ControllerContext,
                   public TimeModel,
                   public ExportModel {
  public:
+  // `audit_only` scopes the journal to the AuditEventType subtree — the Audit
+  // log view. It is a constructor flag rather than a window "mode" because the
+  // audit log IS a distinct view: its own WindowInfo, its own command, and
+  // admin-gated, unlike the journal's Current/historical modes.
   EventView(const ControllerContext& context,
             LocalEvents& local_events,
-            bool is_panel);
+            bool is_panel,
+            bool audit_only = false);
   virtual ~EventView();
 
   bool CanAcknowledgeSelection() const;
@@ -75,6 +80,7 @@ class EventView : protected ControllerContext,
   bool OnKeyPressed(scada::aui::KeyCode key_code);
 
   const bool is_panel_;
+  const bool audit_only_ = false;
 
   LocalEvents& local_events_;
 
