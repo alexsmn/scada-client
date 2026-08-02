@@ -23,6 +23,7 @@
 #include "filesystem/file_cache.h"
 #include "inspector/qt/inspector_panel.h"
 #include "main_window/activity_bar_qt.h"
+#include "main_window/breadcrumb_qt.h"
 #include "main_window/command_field_qt.h"
 #include "main_window/command_palette_qt.h"
 #include "main_window/main_window_command_router.h"
@@ -243,6 +244,8 @@ void MainWindow::UpdateTitle() {
   // UpdateTitle) and nowhere else, so this is the hook that keeps the Pages
   // list's label in step. PageCommands does not raise a profile change.
   RefreshRailPages();
+  // Same hook, same reason: the breadcrumb's first segment is the page title.
+  RefreshBreadcrumb();
 }
 
 void MainWindow::CreateMenuBar() {
@@ -305,6 +308,13 @@ void MainWindow::CreateContextBar() {
   // title and the About dialog, not with an in-window mark — and the one that
   // stood here was a hard-coded, space-padded, untranslatable literal
   // (docs/client/ux/shell.md §2.2, native rework).
+  // Where the workspace is: page → view → selected object. The left slot the
+  // brand lockup vacated, which is the slot `config-workbench.html` draws a
+  // breadcrumb in. It coexists with the command field rather than replacing it
+  // — shell.md §2.2 — because the two answer different questions.
+  breadcrumb_ = new Breadcrumb(context_bar_);
+  context_bar_->addWidget(breadcrumb_);
+
   auto* left_spacer = new QWidget(context_bar_);
   left_spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
   context_bar_->addWidget(left_spacer);
@@ -709,6 +719,36 @@ void MainWindow::OnActiveViewChanged(OpenedView* view) {
       FindPaneModeOwningPaneType(view->window_info().name)) {
     RefreshPaneModeMarker();
   }
+  RefreshBreadcrumb();
+}
+
+void MainWindow::RefreshBreadcrumb() {
+  if (!breadcrumb_)
+    return;
+
+  // Page and view are the path; the selected object is the subject. Only the
+  // ends are emphasised — the middle is context, per the mockup screens.
+  OpenedView* active = GetActiveView();
+  SelectionModel* selection =
+      active ? active->controller().GetSelectionModel() : nullptr;
+
+  // A multiple selection has no single subject to name, and naming the first of
+  // several would be a quiet lie about what the view is pointed at.
+  QString subject;
+  if (selection && !selection->empty() && !selection->multiple()) {
+    subject = QString::fromStdU16String(
+        ToString16(selection->node().display_name()));
+  }
+
+  const Breadcrumb::Segment segments[] = {
+      {.label = QString::fromStdU16String(
+           view_manager_->current_page().GetTitle()),
+       .strong = true},
+      {.label = active ? QString::fromStdU16String(active->GetWindowTitle())
+                       : QString{}},
+      {.label = subject, .strong = true},
+  };
+  breadcrumb_->SetSegments(segments);
 }
 
 void MainWindow::OpenTag(const scada::NodeId& node_id,
@@ -1050,6 +1090,9 @@ void MainWindow::OpenPage(const Page& page) {
 }
 
 void MainWindow::OnSelectionChanged() {
+  // The breadcrumb's last segment is the selection, so it moves with it.
+  RefreshBreadcrumb();
+
   if (inspector_ || diagnostics_ || user_access_ || transmission_rule_) {
     OpenedView* active = GetActiveView();
     SelectionModel* selection =

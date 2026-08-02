@@ -22,6 +22,7 @@ class NodeId;
 }
 
 class ActivityBar;
+class Breadcrumb;
 class CommandField;
 class PageSwitcher;
 class DeviceDiagnosticsPanel;
@@ -97,6 +98,10 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // Opt-in top context bar: the command/search field and alarm state.
   // Only built when the experimental UX is enabled; see main.cpp.
   void CreateContextBar();
+  // Re-derives the context bar's breadcrumb: page → active view → selected
+  // object. Cheap and idempotent, so it is called from every hook that can move
+  // any of the three rather than trying to work out which one moved.
+  void RefreshBreadcrumb();
   // Opt-in left activity rail (backlog 1.1): selects which panes occupy the
   // left sidebar. It never opens a workspace tab and never switches the page.
   void CreateActivityBar();
@@ -191,6 +196,10 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // (see CreateContextBar).
   QToolBar* context_bar_ = nullptr;
   CommandField* command_search_ = nullptr;
+  // Where the workspace is (page → view → selection), in the bar's left slot.
+  // Refreshed from the three places the path can move: UpdateTitle (page),
+  // OnActiveViewChanged (view) and OnSelectionChanged (subject).
+  Breadcrumb* breadcrumb_ = nullptr;
   // Live severity KPI tiles in the context bar (critical / warning /
   // unacknowledged), refreshed with the status-bar model.
   events::SeverityTileStrip* severity_tiles_ = nullptr;
