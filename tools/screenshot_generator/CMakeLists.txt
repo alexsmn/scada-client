@@ -169,10 +169,16 @@ add_test(NAME client_screenshot_check_themed
 )
 set_tests_properties(client_screenshot_check_themed PROPERTIES TIMEOUT 300)
 
-# After the executable links, run it and drop the PNGs into
-# client/screenshots/ so the local docs gallery stays in sync on
-# every build. Requires a desktop session (see docs/ops/client-screenshots.md
-# "Native window frames").
+# Regenerating the tracked gallery is an explicit request, never a build side
+# effect. `client/screenshots/` is committed (a UI change lands as a reviewable
+# image diff), and this used to be a POST_BUILD step that rewrote those PNGs on
+# every link — so any build of any client target dirtied tracked files, in
+# whatever worktree happened to be building. On macOS the renders differ from
+# the Windows baseline anyway (offscreen Qt rasterizes with the host's fonts),
+# so the churn was never a real UI diff, only noise that risked being committed
+# as one. Regeneration now rides the `regenerate_client_screenshots` target,
+# and the smoke path stays covered on every build by the two ctest tests above,
+# which render into the build tree.
 set(SCREENSHOT_DOCS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../screenshots")
 
 # On macOS force the offscreen platform: the local gallery is
@@ -181,17 +187,19 @@ set(SCREENSHOT_DOCS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../screenshots")
 # dispatch, wedging the build at 100% CPU. Windows keeps the native
 # platform so the published gallery renders with real fonts.
 if(APPLE)
-  set(SCREENSHOT_POST_BUILD_LAUNCHER
+  set(SCREENSHOT_CAPTURE_LAUNCHER
       ${CMAKE_COMMAND} -E env QT_QPA_PLATFORM=offscreen)
 else()
-  set(SCREENSHOT_POST_BUILD_LAUNCHER)
+  set(SCREENSHOT_CAPTURE_LAUNCHER)
 endif()
 
-add_custom_command(TARGET client_screenshot_generator POST_BUILD
+add_custom_target(regenerate_client_screenshots
   COMMAND ${CMAKE_COMMAND} -E make_directory "${SCREENSHOT_DOCS_DIR}"
-  COMMAND ${SCREENSHOT_POST_BUILD_LAUNCHER} $<TARGET_FILE:client_screenshot_generator>
+  COMMAND ${SCREENSHOT_CAPTURE_LAUNCHER} $<TARGET_FILE:client_screenshot_generator>
     "--out=${SCREENSHOT_DOCS_DIR}"
     "--image-manifest=${SCREENSHOT_DOCS_DIR}/image_manifest.json"
-  COMMENT "Rendering screenshots into screenshots/"
+  COMMENT "Rendering screenshots into client/screenshots/"
   VERBATIM
+  USES_TERMINAL
 )
+add_dependencies(regenerate_client_screenshots client_screenshot_generator)
