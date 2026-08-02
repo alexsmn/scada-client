@@ -400,6 +400,17 @@ ScreenshotGenerator::ScreenshotGenerator() {
   // QApplication via AppEnvironment, and QTranslator registrations
   // don't survive across QApplication instances.
   QLocale::setDefault(QLocale{QLocale::Russian, QLocale::Russia});
+
+  // Record that choice where the client reads it back. `GetSelectedLocaleName`
+  // (main_window/main_window_module.cpp) falls back to `QLocale::system()` when
+  // the setting is absent, and the hermetic settings tree above is empty on
+  // every run — so the Language row rendered whatever locale the CAPTURING
+  // MACHINE happened to use while the labels beside it were always Russian.
+  // That is how settings-dialog.png shipped reading "Язык: English". Pinning it
+  // makes the rendered locale a property of the fixture rather than of the host,
+  // which is the same reason the style below is pinned to Fusion.
+  QSettings{}.setValue("LocaleName", "ru_RU");
+
   const auto translation_dir =
       QApplication::applicationDirPath() + "/translations";
   // Qt's own catalog first (standard Yes/No/Cancel buttons, spin/date
@@ -1272,6 +1283,21 @@ TEST_F(ScreenshotGenerator, CaptureSettingsDialog) {
   }
   EXPECT_TRUE(has_appearances)
       << "no row offers Classic plus the four appearances";
+
+  // The Language row must agree with the labels around it. It reads the locale
+  // back from QSettings, which the fixture pins; without that pin it fell
+  // through to the host's system locale and the published image read
+  // "Язык: English" beside a form of Russian labels.
+  bool language_matches_labels = false;
+  const auto russian = QString::fromStdU16String(Translate("Russian"));
+  for (const QComboBox* combo : combos) {
+    if (combo->currentText() == russian)
+      language_matches_labels = true;
+  }
+  EXPECT_TRUE(language_matches_labels)
+      << "Language does not read " << russian.toStdString()
+      << " - the capture is showing the host machine's locale, so this image "
+         "renders differently depending on who generates it";
 
   QPixmap dialog_pixmap = GrabWhenSettled(&dialog);
   ASSERT_FALSE(dialog_pixmap.isNull());

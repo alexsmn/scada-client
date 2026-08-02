@@ -422,6 +422,20 @@
         <source>Colour scheme</source>
         <translation>Цветовая схема</translation>
     </message>
+    <!-- main_window/main_window_module.cpp: Settings -> Language. Both entries
+         were missing entirely, so a Russian client listed its own languages as
+         "English" and "Russian" - the settings dialog rendered "Язык: Russian"
+         beside a form of Russian labels. Named in Russian rather than as
+         autonyms ("English"/"Русский") to match every other row of the dialog,
+         which is translated rather than shown in its own locale. -->
+    <message>
+        <source>English</source>
+        <translation>Английский</translation>
+    </message>
+    <message>
+        <source>Russian</source>
+        <translation>Русский</translation>
+    </message>
     <message>
         <source>Classic</source>
         <translation>Классическое</translation>
@@ -999,6 +1013,18 @@
     <message>
         <source>Reconnect</source>
         <translation>Переподключить</translation>
+    </message>
+    <message>
+        <source>Reconnect now</source>
+        <translation>Переподключить сейчас</translation>
+    </message>
+    <message>
+        <source>Your account cannot issue control commands on this link</source>
+        <translation>Учётная запись не имеет права управления этой связью</translation>
+    </message>
+    <message>
+        <source>Not available for the current selection</source>
+        <translation>Недоступно для текущего выделения</translation>
     </message>
     <message>
         <source>Open log</source>
