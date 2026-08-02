@@ -27,29 +27,23 @@ if(APPLE)
   set(SCADA_E2E_SQLITE3_EXE "${SCADA_E2E_SQLITE3_PROGRAM}")
 else()
   set(SCADA_E2E_SQLITE3_EXE
-      "${SCADA_COMMON_SOURCE_DIR}/test/e2e/fixtures/sqlite3.exe")
+      "${SCADA_E2E_BUNDLED_SQLITE3}")
 endif()
 
 add_executable(client_server_e2e_tests
   "client_server_e2e_test.cpp"
   "client_server_e2e_test_support.cpp"
-  "${SCADA_COMMON_SOURCE_DIR}/test/e2e/e2e_cluster.cpp"
-  "${SCADA_COMMON_SOURCE_DIR}/test/e2e/e2e_file_helpers.cpp"
-  "${SCADA_COMMON_SOURCE_DIR}/test/e2e/e2e_process.cpp"
-  "${SCADA_COMMON_SOURCE_DIR}/test/e2e/e2e_server_process.cpp"
-  "${SCADA_COMMON_SOURCE_DIR}/test/e2e/iec61850_test_server.cpp"
 )
 
 target_precompile_headers(client_server_e2e_tests REUSE_FROM scada_base)
-
-target_include_directories(client_server_e2e_tests PRIVATE
-  "${SCADA_COMMON_SOURCE_DIR}"
-)
 
 target_link_libraries(client_server_e2e_tests PRIVATE
   base_unittest
   client_base
   iec61850pp
+  # The shared cluster harness: its sources, its include root and the paths to
+  # common's own fixtures all travel with the target.
+  scada_e2e_harness
   # Direct OPC UA sessions to the cluster proxy (the FileSystem read/write
   # tests exercise the aggregation seam without driving the Qt client).
   scada_opcua_bridge
@@ -68,10 +62,6 @@ target_compile_definitions(client_server_e2e_tests PRIVATE
   SCADA_E2E_IEC61850_EXE="$<TARGET_FILE:scada-iec61850>"
   SCADA_E2E_FILESYSTEM_EXE="$<TARGET_FILE:scada-filesystem>"
   SCADA_E2E_CLIENT_EXE="$<TARGET_FILE:client_qt>"
-  SCADA_E2E_SERVER_FIXTURE_DIR="${SCADA_COMMON_SOURCE_DIR}/test/e2e/fixtures/server-data"
-  SCADA_E2E_SERVER_SETTINGS_TEMPLATE="${SCADA_COMMON_SOURCE_DIR}/test/e2e/fixtures/server-settings.json"
-  SCADA_E2E_CONFIGURATION_BASE_SQL="${SCADA_COMMON_SOURCE_DIR}/test/e2e/fixtures/configuration-base.sql"
-  SCADA_E2E_CONFIGURATION_FIXTURE_SQL="${SCADA_COMMON_SOURCE_DIR}/test/e2e/fixtures/configuration-fixture.sql"
   SCADA_E2E_SQLITE3_EXE="${SCADA_E2E_SQLITE3_EXE}"
 )
 
