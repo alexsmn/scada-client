@@ -421,7 +421,6 @@ Not managed by vcpkg:
 
 | Option | Default | Description |
 | ------ | ------- | ----------- |
-| `BUILD_MODUS` | `ON` | Build Modus module (requires Modus SDK) |
 | `BUILD_OPC` | `ON` | Build Classic OPC modules in scada-common (Windows only) |
 | `BUILD_VIDICON` | `ON` | Build Vidicon modules in scada-common (Windows only) |
 
@@ -443,11 +442,11 @@ GitHub Actions workflow (`.github/workflows/cmake-multi-platform.yml`) triggered
 
 **Matrix:** Windows x64, Windows x86, Ubuntu GCC, Ubuntu Clang.
 
-**How it works:** CI checks out dependency repos (`scada-core`, `scada-common`, `transport`, `chromebase`, `express`, `graph-qt`, `opcuapp`, `UA-AnsiC`) as sibling directories and uses `cmake --preset ninja` with `-D` overrides for `CMAKE_MODULE_PATH` and other settings. Modules requiring proprietary SDKs (`BUILD_MODUS=OFF`, `BUILD_OPC=OFF`, `BUILD_VIDICON=OFF`) are disabled. The legacy promise dependency is resolved by `scada-core`, not by the client preset.
+**How it works:** CI checks out dependency repos (`scada-core`, `scada-common`, `transport`, `chromebase`, `express`, `graph-qt`, `opcuapp`, `UA-AnsiC`) as sibling directories and uses `cmake --preset ninja` with `-D` overrides for `CMAKE_MODULE_PATH` and other settings. Modules requiring proprietary SDKs (`BUILD_OPC=OFF`, `BUILD_VIDICON=OFF`) are disabled. The legacy promise dependency is resolved by `scada-core`, not by the client preset.
 
 ```bash
 # CI build commands (for reference):
-cmake --preset ninja -DCMAKE_MODULE_PATH="..." -DBUILD_MODUS=OFF ...
+cmake --preset ninja -DCMAKE_MODULE_PATH="..." -DBUILD_OPC=OFF ...
 cmake --build build/ninja --config RelWithDebInfo
 ctest --test-dir build/ninja --build-config RelWithDebInfo --output-on-failure
 ```

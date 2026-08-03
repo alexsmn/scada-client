@@ -70,7 +70,6 @@ add_subdirectory(controller)
 add_subdirectory(services)
 add_subdirectory(web)
 add_subdirectory(properties)
-option(BUILD_MODUS "Build Modus module (requires Modus and Schematic SDKs)" ON)
 
 file(GLOB_RECURSE PATHS CONFIGURE_DEPENDS
   "*.cpp"
