@@ -7,40 +7,47 @@
     "abseil",
     "boost-algorithm",
     "boost-asio",
+    "boost-assert",
     "boost-beast",
     "boost-circular-buffer",
+    "boost-container-hash",
     "boost-date-time",
     "boost-endian",
     "boost-json",
     "boost-locale",
     "boost-log",
+    "boost-mpl",
+    "boost-process",
+    "boost-program-options",
+    "boost-random",
     "boost-range",
     "boost-regex",
     "boost-signals2",
+    "boost-smart-ptr",
     "boost-system",
     "boost-uuid",
     "grpc",
     "gtest",
     "icu",
+    "openssl",
     {
       "name": "opentelemetry-cpp",
       "features": [
         "otlp-grpc"
       ]
     },
-    "openssl",
     "protobuf",
     "pugixml",
+    {
+      "name": "qtactiveqt",
+      "platform": "windows"
+    },
     "qtbase",
     "qtsvg",
     {
       "name": "qttools",
       "platform": "windows"
     },
-    "wt",
-    {
-      "name": "qtactiveqt",
-      "platform": "windows"
-    }
+    "wt"
   ]
 }
