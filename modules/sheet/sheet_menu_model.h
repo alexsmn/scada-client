@@ -11,7 +11,7 @@ class CommandHandler;
 // This mirrors the view-specific portion of the legacy Windows-only
 // `IDR_SHEET_POPUP` resource menu -- the "Color..." command `SheetController`
 // contributes while editing -- as an `aui::MenuModel`, so it renders
-// identically on Windows, macOS and Wt through the shared menu-model path
+// identically on Windows and macOS through the shared menu-model path
 // instead of a `CMenu::LoadMenu` that only exists on Windows. The node-specific
 // commands the resource menu carried via its `<Item>` placeholder are supplied
 // by the generic context menu the shell appends.

@@ -1,6 +1,6 @@
 #[[
   client_module(name
-    [CONFIG qt wt ...]
+    [CONFIG qt ...]
   )
 ]]
 function(client_target_use_base_pch TARGET_NAME)

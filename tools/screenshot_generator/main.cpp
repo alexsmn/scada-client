@@ -504,8 +504,6 @@ ScreenshotGenerator::~ScreenshotGenerator() {
   WaitForAwaitable(executor_, app_.Quit());
 }
 
-#if !defined(UI_WT)
-
 TEST_F(ScreenshotGenerator, CaptureAllWindows) {
   auto output_dir = GetOutputDir();
   std::filesystem::create_directories(output_dir);
@@ -1454,5 +1452,3 @@ TEST_F(ScreenshotGenerator, CaptureDialogs) {
   std::cout << "Captured " << captured << "/" << g_config.dialogs.size()
             << " dialogs to " << output_dir.string() << std::endl;
 }
-
-#endif

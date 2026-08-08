@@ -42,10 +42,9 @@ class MainWindowInterface {
 
   // Opens the preferences dialog. Reached from Settings > Settings... and from
   // the activity rail's pinned Settings utility, which share this one command
-  // so the two entry points cannot diverge. Defaulted rather than pure: the
-  // preferences surface is a desktop dialog, and the Wt shell has none — it
-  // keeps offering the toggles as menu items, so it wants no-op here rather
-  // than an override that does nothing.
+  // so the two entry points cannot diverge. Defaulted rather than pure so an
+  // implementation with no preferences surface — a test double, or a build
+  // without the Qt UI config — need not override it.
   virtual void ShowSettingsDialog() {}
 
  protected:

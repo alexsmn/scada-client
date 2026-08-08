@@ -9,7 +9,7 @@ client_module_link_libraries(client_controller PUBLIC
   timed_data
 )
 
-# C++20 module facade (Qt flavor only; the wt flavor stays header-based).
+# C++20 module facade.
 if(TARGET client_controller_qt)
   scada_add_module_facade(client_controller_qt FILES scada_client_controller.cppm
     IMPORTS
