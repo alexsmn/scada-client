@@ -19,7 +19,13 @@ endif()
 # options when building standalone.
 if(NOT DEFINED CLIENT_UI_CONFIGS)
   option(BUILD_CLIENT_QT "Build the Qt flavor (aui_qt)" ON)
-  option(BUILD_CLIENT_WT "Build the Wt flavor (aui_wt)" ON)
+  # OFF: the Wt flavour does not compile. modules/events/event_view.cpp calls
+# scada::aui::GetSeverityTheme, which the reshell added to the Qt flavour and
+# never to this one, and a Wt-only configure additionally references the
+# Qt-only client_properties_transport_qt. It has no preset, no CI job and no
+# row in the Qt/web parity matrix — the shipped web client is web/. Slated for
+# removal; see tasks.md.
+option(BUILD_CLIENT_WT "Build the Wt flavor (aui_wt)" OFF)
 
   set(CLIENT_UI_CONFIGS)
   if(BUILD_CLIENT_QT)
