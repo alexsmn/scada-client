@@ -12,3 +12,12 @@ if(TARGET client_controller_test_qt)
     client_services_qt
   )
 endif()
+
+if(TARGET client_controller_test_wt)
+  target_link_libraries(client_controller_test_wt PUBLIC
+    client_events_wt
+    client_filesystem_wt
+    client_portfolio_wt
+    client_services_wt
+  )
+endif()

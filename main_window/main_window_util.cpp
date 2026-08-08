@@ -20,7 +20,9 @@
 #include "ui/common/client_utils.h"
 #include "window_definition_builder.h"
 
+#if !defined(UI_WT)
 #include "graph/graph_component.h"
+#endif
 
 Awaitable<void> OpenView(MainWindowInterface* main_window,
                          const WindowDefinition& window_def,
@@ -35,8 +37,10 @@ const WindowInfo& GetDefaultNodeWindowInfo(
     scada::aui::KeyModifiers key_modifiers) {
   if (IsInstanceOf(node, scada::data_items::id::DataGroupType))
     return kTableWindowInfo;
+#if !defined(UI_WT)
   else if (IsInstanceOf(node, scada::data_items::id::DataItemType))
     return kGraphWindowInfo;
+#endif
   else if (IsInstanceOf(node, scada::devices::id::DeviceType))
     return kWatchWindowInfo;
   else

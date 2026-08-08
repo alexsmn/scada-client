@@ -9,6 +9,10 @@
 
 #if defined(UI_QT)
 class QWidget;
+#elif defined(UI_WT)
+namespace Wt {
+class WWidget;
+}
 #endif
 
 enum class MessageBoxMode {

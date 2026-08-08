@@ -5,6 +5,11 @@ if(TARGET client_component_transmission_qt)
     client_ui_common_qt
   )
 endif()
+if(TARGET client_component_transmission_wt)
+  target_link_libraries(client_component_transmission_wt PRIVATE
+    client_ui_common_wt
+  )
+endif()
 
 # UTs
 

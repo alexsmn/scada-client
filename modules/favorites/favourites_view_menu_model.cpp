@@ -25,8 +25,12 @@ FavouritesViewMenuModel::FavouritesViewMenuModel(CommandHandler& commands)
     : delegate_{commands}, model_{&delegate_} {
   model_.AddItem(ID_OPEN, Translate("Open"));
   model_.AddSeparator(scada::aui::NORMAL_SEPARATOR);
+#if !defined(UI_WT)
+  // The favourites view only registers the add-web-page command on Qt; keep the
+  // menu entry in lockstep so the Wt build has no dangling command id.
   model_.AddItem(ID_FAVOURITES_ADD_URL, Translate("Add Web Page..."));
   model_.AddSeparator(scada::aui::NORMAL_SEPARATOR);
+#endif
   model_.AddItem(ID_RENAME, Translate("Rename"));
   model_.AddItem(ID_DELETE, Translate("Delete"));
 }

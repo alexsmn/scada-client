@@ -2,6 +2,8 @@
 
 #if defined(UI_QT)
 #include <qnamespace.h>
+#elif defined(UI_WT)
+#include <Wt/WGlobal.h>
 #endif
 
 namespace scada::aui {
@@ -27,6 +29,27 @@ constexpr KeyModifier AltModifier = Qt::AltModifier;
 
 using KeyModifiers = Qt::KeyboardModifiers;
 
+#elif defined(UI_WT)
+/*enum class KeyCode : int {
+  Escape = Wt::Key::Escape,
+  Enter = Wt::Key::Enter,
+  Delete = Wt::Key::Delete,
+  Up = Wt::Key::Up,
+  Down = Wt::Key::Down,
+};*/
+using KeyCode = Wt::Key;
+
+// Wt flags are too restrictive. &, |= are not supported.
+using KeyModifier = unsigned;
+
+constexpr KeyModifier ShiftModifier =
+    static_cast<unsigned>(Wt::KeyboardModifier::Shift);
+constexpr KeyModifier ControlModifier =
+    static_cast<unsigned>(Wt::KeyboardModifier::Control);
+constexpr KeyModifier AltModifier =
+    static_cast<unsigned>(Wt::KeyboardModifier::Alt);
+
+using KeyModifiers = unsigned;
 #endif
 
 }  // namespace aui

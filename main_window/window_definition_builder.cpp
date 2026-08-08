@@ -15,11 +15,17 @@
 #include "resources/common_resources.h"
 #include "ui/common/client_utils.h"
 
+#if !defined(UI_WT)
 #include "graph/graph_component.h"
+#endif
 
 namespace {
 
+#if defined(UI_WT)
+static const WindowInfo& kDefaultWindowInfo = kTableWindowInfo;
+#else
 static const WindowInfo& kDefaultWindowInfo = kGraphWindowInfo;
+#endif
 
 static const WindowInfo& kDefaultMultiWindowInfo = kTableWindowInfo;
 

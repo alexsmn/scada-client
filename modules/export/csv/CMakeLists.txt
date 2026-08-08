@@ -14,3 +14,6 @@ client_module_link_libraries(client_export_csv PRIVATE
 if(TARGET client_export_csv_qt_unittests)
   target_link_libraries(client_export_csv_qt_unittests PRIVATE aui_qt)
 endif()
+if(TARGET client_export_csv_wt_unittests)
+  target_link_libraries(client_export_csv_wt_unittests PRIVATE aui_wt)
+endif()
