@@ -8,7 +8,9 @@
 #include <QTemporaryDir>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
+#include <cstddef>
 #include <string>
 
 namespace scada::aui {
@@ -21,6 +23,34 @@ constexpr char kGlyph[] =
     R"( viewBox="0 0 24 24" fill="none" stroke="currentColor")"
     R"( stroke-width="2" stroke-linecap="round" stroke-linejoin="round">)"
     R"(<path d="M3 3 L21 21"/></svg>)";
+
+// The bounding box of the glyph's drawn pixels, expressed as a fraction of the
+// icon's extent so renders at different device pixel ratios are comparable.
+// Returned as left/top/right/bottom, all in [0, 1].
+std::array<double, 4> NormalizedInkBounds(const QIcon& icon,
+                                          int size,
+                                          qreal device_pixel_ratio) {
+  const QImage image =
+      icon.pixmap(QSize{size, size}, device_pixel_ratio).toImage();
+  int left = image.width();
+  int top = image.height();
+  int right = -1;
+  int bottom = -1;
+  for (int y = 0; y < image.height(); ++y) {
+    for (int x = 0; x < image.width(); ++x) {
+      if (qAlpha(image.pixel(x, y)) <= 128)
+        continue;
+      left = std::min(left, x);
+      right = std::max(right, x);
+      top = std::min(top, y);
+      bottom = std::max(bottom, y);
+    }
+  }
+  EXPECT_GE(right, 0) << "nothing was drawn";
+  const double w = image.width();
+  const double h = image.height();
+  return {left / w, top / h, (right + 1) / w, (bottom + 1) / h};
+}
 
 class TintedGlyphTest : public testing::Test {
  protected:
@@ -68,9 +98,8 @@ TEST_F(TintedGlyphTest, RendersTheGlyphInTheRequestedTint) {
 TEST_F(TintedGlyphTest, TheSameAssetServesASecondTheme) {
   const std::string path = WriteGlyph("glyph.svg", kGlyph);
 
-  const QImage dark = LoadTintedGlyph(path, 16, QColor{230, 230, 230})
-                          .pixmap(16, 16)
-                          .toImage();
+  const QImage dark =
+      LoadTintedGlyph(path, 16, QColor{230, 230, 230}).pixmap(16, 16).toImage();
   const QImage light =
       LoadTintedGlyph(path, 16, QColor{30, 30, 30}).pixmap(16, 16).toImage();
 
@@ -93,6 +122,34 @@ TEST_F(TintedGlyphTest, RendersAtTheDevicePixelRatio) {
   // pinning; what matters here is that the detail was rendered, not upscaled.
   ASSERT_FALSE(icon.availableSizes().isEmpty());
   EXPECT_EQ(icon.availableSizes().first(), QSize(32, 32));
+}
+
+// A higher device pixel ratio buys resolution, never a bigger glyph: the drawn
+// artwork must occupy the same fraction of the icon at every ratio.
+//
+// Regression test. QPainter takes *logical* coordinates and applies the
+// pixmap's device pixel ratio itself, so a destination rect given in device
+// pixels scaled the glyph by the ratio twice — at dpr 2 it was drawn at double
+// size and clipped by the pixmap, which showed up as toolbar icons that were a
+// zoomed crop overflowing their button. Only the ratio-1 case was ever right,
+// so a check on the icon's pixel dimensions alone (above) cannot see this.
+TEST_F(TintedGlyphTest, ADeviceRatioChangesResolutionNotGeometry) {
+  const std::string path = WriteGlyph("glyph.svg", kGlyph);
+
+  const std::array<double, 4> at_1x = NormalizedInkBounds(
+      LoadTintedGlyph(path, 16, QColor{255, 255, 255}, /*dpr=*/1.0), 16, 1.0);
+  const std::array<double, 4> at_2x = NormalizedInkBounds(
+      LoadTintedGlyph(path, 16, QColor{255, 255, 255}, /*dpr=*/2.0), 16, 2.0);
+
+  // The glyph's own margin: the stroke spans 2..22 of a 24 viewBox, so it must
+  // stay clear of the icon's edge rather than run into it.
+  EXPECT_LT(at_2x[2], 0.97) << "the glyph is clipped against the icon's edge";
+  EXPECT_LT(at_2x[3], 0.97) << "the glyph is clipped against the icon's edge";
+
+  // One logical pixel of tolerance, for the rounding the two rasters differ by.
+  constexpr double kTolerance = 1.0 / 16;
+  for (size_t i = 0; i < at_1x.size(); ++i)
+    EXPECT_NEAR(at_2x[i], at_1x[i], kTolerance) << "edge " << i;
 }
 
 // A missing or unparseable resource yields a null icon, which consumers
