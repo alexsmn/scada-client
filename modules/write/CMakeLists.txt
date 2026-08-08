@@ -7,8 +7,3 @@ if(TARGET client_component_write_qt_unittests)
     node_service
   )
 endif()
-if(TARGET client_component_write_wt_unittests)
-  target_link_libraries(client_component_write_wt_unittests PRIVATE
-    node_service
-  )
-endif()

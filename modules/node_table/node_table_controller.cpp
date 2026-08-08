@@ -153,7 +153,7 @@ std::unique_ptr<UiView> NodeTableController::Init(
   });
 
   grid_->SetContextMenuHandler([this](const scada::aui::Point& point) {
-    // Cross-platform AUI menu model (Windows, macOS, Wt) instead of the
+    // Cross-platform AUI menu model (Windows, macOS) instead of the
     // Windows-only `IDR_GRID_POPUP` resource menu.
     controller_delegate_.ShowPopupMenu(&menu_model_.model(), point, true);
   });

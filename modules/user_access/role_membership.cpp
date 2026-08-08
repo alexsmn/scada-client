@@ -2,6 +2,7 @@
 
 #include "base/utf_convert.h"
 #include "model/security_node_ids.h"
+#include "node_service/node_awaitable.h"
 #include "node_service/node_ref.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
@@ -67,6 +68,19 @@ Awaitable<std::optional<std::u16string>> ReadRuleCriteria(NodeRef rule) {
   if (!IsInstanceOf(rule, scada::security::id::IdentityMappingRuleType)) {
     co_return std::nullopt;
   }
+
+  // The property lookups below go through the TYPE, not the instance:
+  // `rule[<declaration id>]` resolves by walking
+  // `type_definition.targets(Aggregates)` for the declaration and then mapping
+  // its browse name onto an instance child (`NodeModelImpl::GetAggregate`).
+  // Fetching the rule alone leaves the type's children unfetched, so the
+  // declaration is never found and BOTH lookups return a null NodeRef — which
+  // reads here as "the rule names no user" and renders as a server whose Roles
+  // have no members at all. Fetch the chain first.
+  //
+  // This is invisible to a StaticNodeService-based test, which resolves the
+  // declaration whether or not anything fetched the type.
+  co_await FetchTypeChainStatus(rule.type_definition());
 
   scada::Int32 criteria_type = 0;
   if (NodeRef type_node =

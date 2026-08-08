@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Telecontrol SCADA Client is a C++ industrial monitoring and control application (version 2.6.0). It provides remote device monitoring, real-time and historical data viewing, event/alarm journaling, and device configuration management. The application supports multiple industrial protocols (SCADA/Telecontrol, OPC UA, Vidicon, Modus) and ships with dual UI frontends: Qt 5 (desktop) and Wt (web).
+Telecontrol SCADA Client is a C++ industrial monitoring and control application (version 2.6.0). It provides remote device monitoring, real-time and historical data viewing, event/alarm journaling, and device configuration management. The application supports multiple industrial protocols (SCADA/Telecontrol, OPC UA, Vidicon, Modus) and ships a Qt desktop frontend. (A second Wt web frontend existed until 2026-08-08; the web client is the separate `web/` app in the superproject, not a second backend of this one.)
 
 Licensed under Apache 2.0.
 
@@ -10,15 +10,13 @@ Licensed under Apache 2.0.
 
 ```
 scada-client/
-├── app/                    # Application entry points (qt/ and wt/ subdirs)
+├── app/                    # Application entry point (qt/ subdir)
 │   ├── qt/                 # Qt desktop application main()
-│   ├── wt/                 # Wt web application main()
 │   ├── client_application.h/.cpp  # Core application orchestrator
 │   └── ...
 ├── aui/                    # Abstract UI layer (platform-agnostic models)
 │   ├── models/             # Grid, tree, table data models
 │   ├── qt/                 # Qt-specific UI implementations
-│   ├── wt/                 # Wt-specific UI implementations
 │   └── test/
 ├── base/                   # Foundation utilities (command line, blinker, JSON, filesystem)
 ├── clipboard/              # Clipboard and node serialization
@@ -61,7 +59,7 @@ scada-client/
 ├── screenshots/            # Doc screenshot gallery + image_manifest.json
 ├── .github/workflows/      # CI: cmake-multi-platform.yml, msbuild.yml
 ├── CMakeLists.txt          # Root CMake build file
-├── aui/client_module.cmake # Custom CMake helpers for dual Qt/Wt target creation (aui-owned)
+├── aui/client_module.cmake # Custom CMake helpers for `_qt` target creation (aui-owned)
 ├── translation.cmake       # Qt translation support
 ├── app/client_icon.rc      # Windows resource script: the app icon, nothing else
 ├── resources/              # Command ids (common_resources.h) + icon-strip paths
@@ -392,11 +390,11 @@ msbuild /m /p:Configuration=Release .
 
 ### Custom CMake Module System
 
-The `aui/client_module.cmake` file (owned by aui, which is slated for extraction into its own repository; the client gets it via `find_package(ScadaClientAui)`) defines helper functions for the dual Qt/Wt build architecture. Every module creates two targets (`<name>_qt` and `<name>_wt`) automatically:
+The `aui/client_module.cmake` file (owned by aui, which is slated for extraction into its own repository; the client gets it via `find_package(ScadaClientAui)`) defines helper functions for the flavoured build architecture. It is written against a `CLIENT_UI_CONFIGS` list; Qt is the only entry, so every module creates one target (`<name>_qt`) automatically:
 
-- `client_module(name)` — Creates both Qt and Wt library targets
-- `client_module_sources(name PUBLIC|PRIVATE dirs...)` — Adds sources from directories (auto-includes `dir/qt/` and `dir/wt/` subdirs)
-- `client_module_link_libraries(name PUBLIC|PRIVATE libs...)` — Links libraries, auto-resolving `_qt`/`_wt` suffixed targets
+- `client_module(name)` — Creates the Qt library target
+- `client_module_sources(name PUBLIC|PRIVATE dirs...)` — Adds sources from directories (auto-includes the `dir/qt/` subdir)
+- `client_module_link_libraries(name PUBLIC|PRIVATE libs...)` — Links libraries, auto-resolving `_qt` suffixed targets
 - `client_module_include_directories(name PUBLIC|PRIVATE dirs...)` — Adds include directories
 
 Qt targets get `AUTOMOC`, `AUTOUIC`, `AUTORCC` enabled and `.ts` translation files processed automatically.
@@ -408,7 +406,6 @@ Managed via `vcpkg.json` manifest:
 - **Qt 6** — `qtbase` (Widgets, PrintSupport), `qttools` (LinguistTools), `qtactiveqt` (Windows)
 - **Boost** — `boost-asio`, `boost-beast`, `boost-signals2`, `boost-locale`, `boost-range`, `boost-algorithm`
 - **Google Test** — `gtest`
-- **Wt** — `wt` (web framework for alternative UI)
 
 Not managed by vcpkg:
 
@@ -430,8 +427,8 @@ The `vidicon` client module is automatically skipped when `scada_common_opc` and
 With `-DSCADA_CXX_MODULES=ON` (default OFF, build unchanged when OFF), the
 client library layers expose named-module facades (`scada.client.base`,
 `scada.client.aui`, `scada.client.controller`, ...) following the core/common
-facade design. The client set is Qt-flavored — only the `_qt` targets are
-facaded; the wt flavor stays header-based. See `docs/ops/client-cxx-modules.md` for the
+facade design. The facades are compiled against the `_qt` targets' flags, so
+`UI_QT` is defined in every BMI. See `docs/ops/client-cxx-modules.md` for the
 module map, exclusions, and presets, and `core/docs/cxx-modules.md` for the
 underlying design and consumer rules.
 
@@ -512,14 +509,13 @@ REGISTER_CONTROLLER(MyController, my_window_info);
 
 Or dynamically via `ControllerRegistry::AddControllerFactory()`.
 
-### Platform Abstraction (Qt/Wt)
+### Platform Abstraction
 
 Each module that has UI splits code into:
-- **Shared model code** — in the module root directory
+- **Shared model code** — in the module root directory, free of any widget toolkit
 - **`qt/` subdirectory** — Qt-specific implementation
-- **`wt/` subdirectory** — Wt-specific implementation
 
-The `UI_WT` preprocessor macro distinguishes builds. Modus and Vidicon modules are Qt-only (`#if !defined(UI_WT)`).
+`aui_qt` publishes the `UI_QT` define, and a handful of sites still guard on it. That split is what keeps the models unit-testable without a `QApplication`; keep new model code on the toolkit-free side of it.
 
 ## Coding Conventions
 
@@ -692,7 +688,7 @@ Logging-related switches (pass as `--switch-name`):
 
 1. **New modules** should follow the Context + private inheritance pattern. Define a `*Context` struct, have the module privately inherit from it, and accept `Context&&` in the constructor.
 
-2. **New UI components** need both `qt/` and `wt/` subdirectories. Shared logic goes in the module root; platform-specific code goes in the respective subdirectory. Use `client_module()` in CMake.
+2. **New UI components** keep their toolkit-specific code in a `qt/` subdirectory; shared logic goes in the module root. Use `client_module()` in CMake.
 
 3. **New controllers** should be registered via `REGISTER_CONTROLLER(ControllerClass, window_info)` or dynamically through `ControllerRegistry`.
 
@@ -706,14 +702,14 @@ Logging-related switches (pass as `--switch-name`):
 
 8. **Destruction order matters** — `ClientApplication::~ClientApplication()` resets members in a specific order to respect dependency chains. Follow this pattern when adding new modules.
 
-9. **Conditional compilation** — Use `#if !defined(UI_WT)` to guard Qt-only features (Modus, Vidicon, etc.).
+9. **Conditional compilation** — `#if defined(UI_QT)` guards code that needs the Qt UI config; `#if defined(_WIN32)` guards Windows-only code such as the Modus/Vidicon ActiveX paths.
 
 13. **`aui/` is slated for extraction into its own repository.** Never add
     includes of client-repo headers (`profile/`, `resources/`, `ui/`,
     `modules/`, `main_window/`, …) or scada-common dependencies inside
     `aui/` — invert the dependency instead (keep the generic seam in aui,
     move the client-coupled piece to its consumer). Its allowed dependency
-    set is `scada_base`, `graph_qt`, `view_manager_qt`, Qt/Wt — see
+    set is `scada_base`, `graph_qt`, `view_manager_qt`, Qt — see
     `docs/client/aui-extraction.md`.
 
 11. **Modus/Vidicon ActiveX parameter names** — Never rename OLESTR parameter names in `modules/modus/` (e.g., `"ключ_привязки"`, `"положение"`, `"уставки"`). These Russian-language identifiers are part of the external Vidicon ActiveX protocol interface and must remain unchanged.

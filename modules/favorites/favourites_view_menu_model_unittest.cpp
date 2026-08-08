@@ -53,12 +53,8 @@ TEST(FavouritesViewMenuModelTest, ContainsExpectedItems) {
     EXPECT_EQ(model.GetTypeAt(index), MenuModel::TYPE_COMMAND);
   }
 
-#if !defined(UI_WT)
   // Add-web-page is a Qt-only command; the entry must track it.
   EXPECT_GE(IndexOfCommand(model, ID_FAVOURITES_ADD_URL), 0);
-#else
-  EXPECT_LT(IndexOfCommand(model, ID_FAVOURITES_ADD_URL), 0);
-#endif
 }
 
 TEST(FavouritesViewMenuModelTest, ReflectsDisabledState) {

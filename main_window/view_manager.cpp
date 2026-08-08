@@ -10,10 +10,6 @@
 #include "profile/window_definition.h"
 #include "resources/common_resources.h"
 
-#if defined(UI_WT)
-#include <wt/WApplication.h>
-#endif
-
 #include <algorithm>
 
 #if defined(UI_QT)
@@ -38,26 +34,12 @@ ViewManager::ViewManager(QMainWindow& main_window, ViewManagerDelegate& delegate
           delegate_.OnShowTabPopupMenu(*view, point);
       });
 }
-#elif defined(UI_WT)
-ViewManager::ViewManager(ViewManagerDelegate& delegate)
-    : delegate_{delegate}, current_page_{std::make_unique<Page>()} {
-  component_.SetCloseViewHandler([this](scada::aui::ViewManagerViewId view_id) {
-    if (auto* view = FindViewByComponentId(view_id))
-      CloseView(*view);
-  });
-}
 #endif
 
 ViewManager::~ViewManager() {
   // Page must be closed before destruction, as closing calls delegate.
   scada::base::Check(views_.empty());
 }
-
-#if defined(UI_WT)
-Wt::WLayout& ViewManager::root_layout() {
-  return component_.root_layout();
-}
-#endif
 
 OpenedView* ViewManager::GetActiveView() {
   auto view_id = component_.GetActiveViewId();
@@ -82,11 +64,7 @@ void ViewManager::ActivateView(const OpenedView& view) {
 }
 
 void ViewManager::CloseView(OpenedView& view) {
-  if (component_.RemoveView(GetComponentViewId(view))) {
-#if defined(UI_WT)
-    view.ReleaseView();
-#endif
-  }
+  component_.RemoveView(GetComponentViewId(view));
   DestroyView(view);
 }
 
@@ -95,10 +73,6 @@ void ViewManager::SplitView(OpenedView& view, bool vertically) {
 }
 
 void ViewManager::OpenLayout(Page& page, const PageLayout& layout) {
-#if defined(UI_WT)
-  Wt::WApplication::UpdateLock update_lock{Wt::WApplication::instance()};
-#endif
-
   auto views = GetComponentViewInfos();
   auto component_layout = ToComponentLayout(layout);
   component_.OpenLayout(views, component_layout);

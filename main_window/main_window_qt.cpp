@@ -421,7 +421,7 @@ void MainWindow::CreateContextBar() {
 namespace {
 
 // The rail glyph for each mode. Kept beside the mode table rather than in it,
-// so pane_modes stays Qt-free and usable from the Wt shell.
+// so pane_modes stays Qt-free.
 ActivityBar::Icon ModeIconKind(PaneModeId id) {
   switch (id) {
     case PaneModeId::kObjects:

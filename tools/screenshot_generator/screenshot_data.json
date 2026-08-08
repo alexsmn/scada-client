@@ -18,6 +18,21 @@
   ],
   "now": "2026-04-16 15:02:00",
   "dialog_analog_node_id": "TIT.212",
+  "_login_comment": [
+    "Accounts offered by the login dialog's user combo. The capture seeds these",
+    "into a hermetic settings store instead of reading the real per-user list,",
+    "so client-login.png never leaks the capturing machine's accounts. The first",
+    "entry is also the pre-selected user."
+  ],
+  "login_user_list": [
+    "root",
+    "Диспетчер 1",
+    "Инженер АСУ",
+    "Диспетчер",
+    "Руководитель",
+    "Инженер",
+    "АСУ"
+  ],
   "_filesystem_comment": "The file store the Files view (FileSystemView) lists: instance nodes under the FileSystem folder (SCADA.304), directories typed FileDirectoryType (SCADA.305) and files typed FileType (SCADA.306). Ids follow what the server's MakeNodeId produces — a string id in the FILESYSTEM_FILE namespace holding the URL-escaped path, hence the %2F in a nested entry. Without these the view renders its root row and nothing else, which is how files.png shipped.",
   "_display_comment": "VDS/SDE fixture for the reshelled substation display (CaptureDisplay), relative to this file.",
   "display": {
@@ -376,7 +391,11 @@
       "base_value": 41.0,
       "properties": {
         "display_format": "0.#",
-        "units": "°C"
+        "units": "°C",
+        "limit_lolo": -25.0,
+        "limit_lo": -10.0,
+        "limit_hi": 70.0,
+        "limit_hihi": 90.0
       }
     },
     {
@@ -1891,7 +1910,8 @@
       "kind": "login",
       "filename": "client-login.png",
       "width": 403,
-      "height": 180
+      "height": 180,
+      "expand_combo": "userNameComboBox"
     },
     {
       "kind": "login",

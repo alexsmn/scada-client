@@ -1,6 +1,5 @@
 // scada.client.profile — named C++20 module facade over the client/profile
-// headers (Qt flavor only, built for client_profile_qt; the wt flavor stays
-// header-only).
+// headers (built for client_profile_qt).
 //
 // Same design and rules as scada.base (see core/base/scada_base.cppm and
 // core/docs/cxx-modules.md): headers stay the source of truth, the global

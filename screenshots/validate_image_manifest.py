@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Consistency check between image_manifest.json and the scada-docs repo.
+"""Consistency check between image_manifest.json and the user manual.
 
-The manifest (client/screenshots/image_manifest.json) is the source of
-truth for every image the web manual ships. This script verifies:
+The manual is the `scada-docs/` tree of this repository (it was a sibling
+repository until the 2026-08-08 graft). The manifest
+(client/screenshots/image_manifest.json) is the source of truth for every image
+the manual ships. This script verifies:
 
   1. Bijection: every file in scada-docs img/ has a manifest entry, and every
      manifest entry not marked "published": false exists in img/.
@@ -17,8 +19,7 @@ truth for every image the web manual ships. This script verifies:
 
 Run it after changing the manifest, the images, or any manual page:
 
-    python3 client/screenshots/validate_image_manifest.py \
-        --docs-repo ../scada-docs
+    python3 client/screenshots/validate_image_manifest.py
 
 Exit code 0 = consistent, 1 = violations found (each printed on stderr).
 """
@@ -42,11 +43,23 @@ PUBLISH_THEMES = {"dark", "legacy"}
 
 
 def find_default_docs_repo(manifest_path: Path) -> Path | None:
-    scada_root = manifest_path.resolve().parents[3]
-    for candidate in (scada_root / "scada-docs", scada_root.parent / "scada-docs"):
-        if (candidate / "img").is_dir():
-            return candidate
-    return None
+    """Locate the manual: scada-docs/ in this repository, and nowhere else.
+
+    Deliberately does NOT fall back to a `../scada-docs` sibling. The manual was
+    a separate repository until 2026-08-08, and a frozen pre-graft checkout still
+    sits beside the monorepo on the machine where it was developed; validating
+    against that copy would pass while the tree that actually ships drifted. Two
+    trees named scada-docs is precisely the case worth failing on.
+
+    The manifest lives at <root>/client/screenshots/image_manifest.json, so the
+    repository root is parents[2]. It was parents[3] until this was corrected —
+    right when the manifest was one directory deeper, one above the root after it
+    moved, and harmless only for as long as the sibling it then resolved to was
+    the live manual.
+    """
+    root = manifest_path.resolve().parents[2]
+    candidate = root / "scada-docs"
+    return candidate if (candidate / "img").is_dir() else None
 
 
 def collect_references(docs_repo: Path) -> dict[str, set[str]]:
@@ -75,8 +88,7 @@ def main() -> int:
         "--docs-repo",
         type=Path,
         default=None,
-        help="Path to the scada-docs checkout (default: <scada>/scada-docs "
-        "or a sibling of the scada repo)",
+        help="Path to the manual tree (default: scada-docs/ in this repository)",
     )
     args = parser.parse_args()
 

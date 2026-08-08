@@ -14,7 +14,6 @@ A C++ industrial SCADA (Supervisory Control and Data Acquisition) client applica
 - Print and print preview
 - Graph/chart visualization
 - Protocol support: SCADA/Telecontrol, OPC UA, Vidicon, Modus
-- Dual UI: Qt 5 desktop application and Wt web application
 
 ## Prerequisites
 
@@ -24,7 +23,6 @@ A C++ industrial SCADA (Supervisory Control and Data Acquisition) client applica
 - Qt 6 (Widgets, LinguistTools, PrintSupport; ActiveQt on Windows)
 - Boost (ASIO, Beast, Signals2, Locale, Range, Algorithm)
 - Google Test
-- Wt (web UI framework)
 - OPC UA SDK (via `third_party/opc`)
 - Windows SDK / ATL (Windows only, for Modus and COM support)
 
@@ -73,7 +71,7 @@ Dependency repos (`scada-core`, `scada-common`, `transport`, etc.) are checked o
 
 ```
 scada-client/
-├── app/                # Application entry points (qt/ and wt/ subdirs)
+├── app/                # Application entry point (qt/ subdir)
 ├── aui/                # Abstract UI layer (platform-agnostic models)
 ├── base/               # Foundation utilities
 ├── clipboard/          # Clipboard and node serialization
@@ -100,7 +98,7 @@ scada-client/
 └── test/               # Integration tests
 ```
 
-Modules with UI code contain `qt/` and `wt/` subdirectories for platform-specific implementations. The custom `client_module.cmake` build system creates dual targets (`<name>_qt` and `<name>_wt`) automatically for each module.
+Modules with UI code keep their toolkit-specific implementations in a `qt/` subdirectory. The custom `client_module.cmake` build system creates the `<name>_qt` target automatically for each module.
 
 ## Architecture
 
