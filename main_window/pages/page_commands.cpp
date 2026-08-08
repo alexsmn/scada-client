@@ -33,8 +33,8 @@ PageCommands::PageCommands(PageCommandsContext&& context)
   if (!rename_prompt_runner_) {
     rename_prompt_runner_ = [](DialogService& dialog_service,
                                std::u16string current_title) {
-      return RunPromptDialog(dialog_service, u"Имя:", u"Переименование",
-                             current_title);
+      return RunPromptDialog(dialog_service, Translate("Name:"),
+                             Translate("Rename Page"), current_title);
     };
   }
 

@@ -73,17 +73,16 @@ std::optional<scada::Duration> SessionStatusProvider::PingDelay() const {
 std::u16string SessionStatusProvider::GetConnectionStateText() const {
   scada::Duration ping_delay;
   auto connected = session_service_.IsConnected(&ping_delay);
-  return connected ? u"\u041f\u043e\u0434\u043a\u043b\u044e\u0447\u0435\u043d"
-                   : u"\u041e\u0442\u043a\u043b\u044e\u0447\u0435\u043d";
+  return connected ? Translate("Connected") : Translate("Disconnected");
 }
 
 std::u16string SessionStatusProvider::GetPingText() const {
   const std::optional<scada::Duration> ping_delay = PingDelay();
   if (!ping_delay)
-    return u"\u041d\u0435\u0442 \u043e\u0442\u043a\u043b\u0438\u043a\u0430";
+    return Translate("No response");
 
   std::u16string text =
-      u16format(L"\u0421\u0435\u0440\u0432\u0435\u0440: {} \u043c\u0441",
+      u16format(Translate("Server: {} ms"),
                 static_cast<unsigned>(InMilliseconds(*ping_delay)));
   // The colour cue below resolves to nothing under the legacy severity theme
   // (the default), so the marker has to be in the text as well for the pane to

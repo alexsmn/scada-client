@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Checks that user-facing strings are not hard-coded as `u"..."` literals.
+r"""Checks that user-facing strings are not hard-coded as `u"..."` literals.
 
 The failure this exists to prevent: a string that reaches the operator is
 written as a raw UTF-16 literal instead of going through `Translate()`, so it
@@ -16,7 +16,9 @@ more, of which *eleven already had finished Russian translations* sitting
 unused in `client_ru.ts`: the catalog entries were fine, the code simply never
 asked for them.
 
-How it checks:
+Two independent rules run over the tree.
+
+**Rule 1 — untranslated strings at a user-facing sink.**
 
   * It looks only at arguments actually reaching a user-facing sink (see
     `SINKS`) — a message box, a resource error, a file-dialog title, a window
@@ -28,6 +30,21 @@ How it checks:
     QApplication), so the constant form is the tempting wrong answer.
   * Adjacent literals are joined, so a wrapped `u"a " u"b"` is judged whole.
   * A literal with no letters (punctuation, separators, glyphs) is ignored.
+
+**Rule 2 — no Cyrillic in a string literal, anywhere.**
+
+Rule 1 only sees the six sinks, so it is blind to the larger population: a
+status-strip cell, a menu caption, a grid placeholder. Those never reach a
+message box, so a Russian literal sits there permanently untranslatable and
+nothing complains. Rule 2 closes that by inverting the test — instead of asking
+"does this sink get a literal", it asks "does any literal contain Russian",
+which is decidable without knowing where the string goes.
+
+It reads *literals only*, not comments: Russian in a comment is documentation
+(`command_match.cpp` documents the Cyrillic case-folding range; `watch_view.cpp`
+justifies a column width by the header text "Адрес") and is entirely correct.
+`\uXXXX` escapes are decoded first, since escaping is how the literals hid from
+a naive grep for Cyrillic in the first place.
 
 Usage:
     python3 client/tools/check_untranslated_ui_strings.py [--client-dir DIR]
@@ -64,6 +81,22 @@ ALLOWED_UNTRANSLATED = {
 # a fix.
 KNOWN_GAPS = {
     # Empty. The export/import message boxes were the last entries here.
+}
+
+# Directories whose Cyrillic literals are not UI text and must stay as they are.
+# Rule 2 only; rule 1's sinks are absent from these files anyway.
+ALLOWED_CYRILLIC_DIRS = {
+    # External interface, not our text. These OLESTR names and state strings are
+    # the Vidicon Modus 6.30 ActiveX protocol's own identifiers — renaming one
+    # breaks the binding at runtime, which is why client/CLAUDE.md forbids it.
+    "modules/modus/activex": "Vidicon ActiveX protocol identifiers",
+}
+
+# Individual Cyrillic literals that are not UI text, keyed by (path, decoded
+# text) exactly as ALLOWED_UNTRANSLATED is. Same bar: only when translating
+# would be *wrong*.
+ALLOWED_CYRILLIC = {
+    # Nothing yet.
 }
 
 # Files whose strings never reach an operator.
@@ -137,6 +170,69 @@ def scan_file(path: pathlib.Path, client_dir: pathlib.Path):
                     yield line, sink, text, name
 
 
+CYRILLIC = re.compile(r"[Ѐ-ӿ]")
+# `\uXXXX`, `\xXX` and the escaped backslash, which must be consumed as one
+# token so `\\u0410` is not mistaken for an escape.
+ESCAPE = re.compile(r"\\(?:u([0-9A-Fa-f]{4})|x([0-9A-Fa-f]{1,4})|(.))")
+
+
+def decode_escapes(text: str) -> str:
+    """Resolves the escapes that can hide a Cyrillic character in a literal."""
+
+    def one(m: re.Match) -> str:
+        if m.group(1) or m.group(2):
+            return chr(int(m.group(1) or m.group(2), 16))
+        return m.group(3)
+
+    return ESCAPE.sub(one, text)
+
+
+def iter_literals(source: str):
+    """Yields (line, text) for every string/char literal outside a comment.
+
+    Hand-written rather than regex-driven because the two constructs this must
+    tell apart — a literal and a comment — can each contain the other's opening
+    delimiter, and a scanner that gets that backwards either misses real
+    literals or reports Russian prose in a comment as a defect.
+    """
+    i, line, n = 0, 1, len(source)
+    while i < n:
+        c = source[i]
+        if c == "\n":
+            line += 1
+            i += 1
+        elif source.startswith("//", i):
+            i = source.find("\n", i)
+            if i < 0:
+                return
+        elif source.startswith("/*", i):
+            end = source.find("*/", i + 2)
+            end = n if end < 0 else end + 2
+            line += source.count("\n", i, end)
+            i = end
+        elif c in ('"', "'"):
+            start_line, start = line, i + 1
+            i += 1
+            while i < n and source[i] != c:
+                if source[i] == "\\":
+                    i += 1
+                elif source[i] == "\n":  # unterminated; keep the count honest
+                    line += 1
+                i += 1
+            yield start_line, source[start:i]
+            i += 1
+        else:
+            i += 1
+
+
+def scan_file_for_cyrillic(path: pathlib.Path, rel: str):
+    """Yields (line, text) for each literal carrying Cyrillic characters."""
+    for line, raw in iter_literals(path.read_text("utf-8", "replace")):
+        text = decode_escapes(raw)
+        if CYRILLIC.search(text):
+            yield line, text
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--client-dir", default=str(pathlib.Path(__file__).resolve().parents[1]))
@@ -148,6 +244,7 @@ def main() -> int:
         return 0
 
     findings, allowed, gaps = [], 0, 0
+    cyrillic, cyrillic_allowed = [], 0
     scanned = 0
     for path in sorted(client_dir.rglob("*")):
         if path.suffix not in (".cpp", ".h") or is_excluded(path, client_dir):
@@ -161,6 +258,29 @@ def main() -> int:
                 gaps += 1
             else:
                 findings.append((rel, line, sink, text, via))
+
+        directory = rel.rsplit("/", 1)[0]
+        for line, text in scan_file_for_cyrillic(path, rel):
+            if directory in ALLOWED_CYRILLIC_DIRS or (rel, text) in ALLOWED_CYRILLIC:
+                cyrillic_allowed += 1
+            else:
+                cyrillic.append((rel, line, text))
+
+    if cyrillic:
+        print(f"{len(cyrillic)} literal(s) carry Russian text:\n")
+        for rel, line, text in cyrillic:
+            shown = text if len(text) <= 68 else text[:65] + "..."
+            print(f'  {rel}:{line}: "{shown}"')
+        print(
+            "\nA Russian literal can never be translated and no other check\n"
+            "sees it. Replace it with Translate(\"<English source>\") and add the\n"
+            "Russian to the *empty* context of app/qt/client_ru.ts by hand —\n"
+            "lupdate cannot see Translate(), so it will not add the entry.\n"
+            "Russian in a *comment* is fine and is not reported; if a literal is\n"
+            "an external protocol identifier rather than UI text, add it to\n"
+            "ALLOWED_CYRILLIC with the reason."
+        )
+        return 1
 
     if findings:
         print(f"{len(findings)} user-facing string(s) cannot be translated:\n")
@@ -179,9 +299,10 @@ def main() -> int:
         return 1
 
     print(
-        f"OK: no untranslatable user-facing strings "
+        f"OK: no untranslatable user-facing strings and no Russian literals "
         f"({scanned} file(s) scanned, {len(SINKS)} sink(s); "
-        f"{allowed} allowed, {gaps} known gap(s))."
+        f"{allowed} allowed, {gaps} known gap(s), "
+        f"{cyrillic_allowed} allowed Cyrillic literal(s))."
     )
     return 0
 

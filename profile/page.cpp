@@ -1,5 +1,6 @@
 ﻿#include "profile/page.h"
 
+#include "aui/translation.h"
 #include "base/check.h"
 #include "base/utils.h"
 #include "base/value_util.h"
@@ -124,7 +125,7 @@ std::u16string Page::GetTitle() const {
   }
 
   if (title.empty())
-    title = u"(Пустой)";
+    title = Translate("(Empty)");
 
   return title;
 }

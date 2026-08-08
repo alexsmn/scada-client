@@ -1,5 +1,6 @@
 #include "device_state_notifier.h"
 
+#include "aui/translation.h"
 #include "base/check.h"
 #include "base/debug_util.h"
 #include "model/node_id_util.h"
@@ -12,13 +13,11 @@ std::string ToString(DeviceState device_state) {
   return kStrings[static_cast<size_t>(device_state)];
 }
 
-std::u16string_view ToLocalizedString(DeviceState device_state) {
-  static const std::u16string_view kStrings[] = {
-      u"", u"\u041e\u0442\u043a\u043b\u044e\u0447\u0435\u043d\u043e",
-      u"\u041d\u0435\u0442 \u0441\u0432\u044f\u0437\u0438",
-      u"\u0415\u0441\u0442\u044c \u0441\u0432\u044f\u0437\u044c"};
+std::u16string ToLocalizedString(DeviceState device_state) {
+  static const char* kStrings[] = {"", "Disabled", "Offline", "Online"};
   static_assert(std::size(kStrings) == static_cast<size_t>(DeviceState::Count));
-  return kStrings[static_cast<size_t>(device_state)];
+  const char* text = kStrings[static_cast<size_t>(device_state)];
+  return *text ? Translate(text) : std::u16string{};
 }
 
 // DeviceStateNotifier

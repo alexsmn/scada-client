@@ -614,6 +614,21 @@ Ordered as: project headers, then third-party/standard headers, separated by bla
   `const char16_t k…[] = u"…"` *cannot* call `Translate()` at all — it needs a
   running QApplication — so make such titles functions returning
   `std::u16string`.
+- **Never write Russian in a string literal.** The same check's second rule
+  fails on Cyrillic in *any* client string literal, decoding `\uXXXX` escapes
+  first (escaping is how these hid from a grep). It exists because the sink
+  rule above only sees six call shapes and is blind to the larger
+  population — a status-strip cell, a menu caption, a grid placeholder never
+  reach a message box, so a Russian literal sat in each of them permanently
+  untranslatable. Russian in a **comment** is fine and is not reported;
+  `modules/modus/activex/` is allowlisted because those OLESTR names are the
+  Vidicon ActiveX protocol's own identifiers.
+  Two habits keep the sweep honest: pick an English source string that is not
+  already in the empty context of `client_ru.ts` with a *different* Russian
+  translation (`Translate()` has no context to disambiguate with — this is why
+  the tab context menu says `To Favourites` rather than reusing
+  `Add to Favourites`), and preserve the Russian exactly as it displayed, so
+  the change is invisible to the operator and to the screenshot gallery.
 - A `.ui` form's strings belong to the **form class's context**
   (`uic` emits `QCoreApplication::translate("<FormClass>", ...)`), not the
   empty context. `client_ui_translation_check` (ctest, see

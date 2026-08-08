@@ -283,7 +283,7 @@ TEST_F(PropertyDefsTest, DeviceChoiceHandler_LoadsChoicesFromCoroutine) {
   Drain(executor);
 
   EXPECT_TRUE(completed);
-  EXPECT_THAT(choices, IsSupersetOf({std::u16string{kChoiceNone},
+  EXPECT_THAT(choices, IsSupersetOf({ChoiceNone(),
                                      u16format(L"{} : {}", kLinkDisplayName,
                                                kDeviceDisplayName)}));
 }

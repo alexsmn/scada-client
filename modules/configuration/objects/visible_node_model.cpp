@@ -244,9 +244,9 @@ DataGroupVisibleNode::DataGroupVisibleNode(TimedDataService& timed_data_service,
 DataGroupVisibleNode::~DataGroupVisibleNode() = default;
 
 std::u16string DataGroupVisibleNode::GetText() const {
-  return device_state_notifier_ ? std::u16string{ToLocalizedString(
-                                      device_state_notifier_->device_state())}
-                                : std::u16string{};
+  return device_state_notifier_
+             ? ToLocalizedString(device_state_notifier_->device_state())
+             : std::u16string{};
 }
 
 bool DataGroupVisibleNode::IsBad() const {

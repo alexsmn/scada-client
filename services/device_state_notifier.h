@@ -40,4 +40,7 @@ class DeviceStateNotifier {
 
 std::string ToString(DeviceState device_state);
 
-std::u16string_view ToLocalizedString(DeviceState device_state);
+// The state as the operator sees it. Returns by value rather than a view: the
+// text comes from the translation catalog, which has no stable storage to
+// point at. Empty for `Unknown` — an unknown state says nothing worth showing.
+std::u16string ToLocalizedString(DeviceState device_state);

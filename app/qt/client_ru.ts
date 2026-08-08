@@ -1993,6 +1993,79 @@
         <source>Color...</source>
         <translation>Цвет...</translation>
     </message>
+    <!-- Status strip: session pane (main_window/status_bar). -->
+    <message>
+        <source>Connected</source>
+        <translation>Подключен</translation>
+    </message>
+    <message>
+        <source>Disconnected</source>
+        <translation>Отключен</translation>
+    </message>
+    <message>
+        <source>No response</source>
+        <translation>Нет отклика</translation>
+    </message>
+    <message>
+        <source>Server: {} ms</source>
+        <!-- {} is the round-trip time; std::format, so the brace pair must
+             survive translation intact. -->
+        <translation>Сервер: {} мс</translation>
+    </message>
+    <!-- Status strip: event pane (main_window/status_bar). -->
+    <message>
+        <source>Events: {}</source>
+        <translation>События: {}</translation>
+    </message>
+    <message>
+        <source>No events</source>
+        <translation>Нет событий</translation>
+    </message>
+    <message>
+        <source>Severity: {}</source>
+        <translation>Важность: {}</translation>
+    </message>
+    <!-- Workspace tab context menu (main_window/tab_popup_menu.h). Deliberately
+         shorter than the Favourites menu's own "Добавить в избранное" — a tab
+         context menu is read at a glance, so it keeps the short caption and
+         therefore needs a source string of its own. -->
+    <message>
+        <source>To Favourites</source>
+        <translation>В избранное</translation>
+    </message>
+    <!-- Page rename prompt (main_window/pages/page_commands.cpp). The dialog
+         title is the act, not the verb; the Page menu's own ID_PAGE_RENAME
+         command keeps the imperative "Переименовать" under "Rename". -->
+    <message>
+        <source>Rename Page</source>
+        <translation>Переименование</translation>
+    </message>
+    <!-- Page with no windows in it (profile/page.cpp). -->
+    <message>
+        <source>(Empty)</source>
+        <translation>(Пустой)</translation>
+    </message>
+    <!-- Property editor placeholder choices (properties/). Both are sentinels
+         as well as labels: the property's SetText compares the edited text
+         against the same call, so the two sides move together. -->
+    <message>
+        <source>&lt;None&gt;</source>
+        <translation>&lt;Нет&gt;</translation>
+    </message>
+    <message>
+        <source>&lt;Default&gt;</source>
+        <translation>&lt;Стандартный&gt;</translation>
+    </message>
+    <!-- Device runtime state in the object tree (services/device_state_notifier.cpp).
+         "Disabled" is already translated above, for the device property. -->
+    <message>
+        <source>Offline</source>
+        <translation>Нет связи</translation>
+    </message>
+    <message>
+        <source>Online</source>
+        <translation>Есть связь</translation>
+    </message>
 </context>
 <context>
     <name>AboutDialog</name>

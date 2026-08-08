@@ -22,8 +22,10 @@
 //  - TaskManager (forward-declared in property_context.h): owned by
 //    scada.client.services.
 //
-// kChoiceNone (property_util.h) is declared `extern const`, so it has
-// external linkage and IS exported (unlike plain namespace-scope consts).
+// ChoiceNone() (property_util.h) is a function, so it has external linkage and
+// IS exported. It used to be an `extern const` for the same reason; it became a
+// function when its text moved into the translation catalog, which a
+// namespace-scope const cannot reach (no QApplication at static-init time).
 
 module;
 
@@ -66,7 +68,7 @@ export {
 
   // property_util.h
   using ::FindNodeByNameAndType;
-  using ::kChoiceNone;
+  using ::ChoiceNone;
   using ::MakeAsyncChoiceHandler;
   using ::SetTextHelper;
 }  // export

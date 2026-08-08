@@ -14,7 +14,7 @@ namespace scada_client_properties_module {
 namespace {
 
 TEST(ScadaClientPropertiesModuleSmoke, PropertiesSurface) {
-  EXPECT_FALSE(kChoiceNone.empty());
+  EXPECT_FALSE(ChoiceNone().empty());
 
   static_assert(std::is_class_v<PropertyService>);
   static_assert(std::is_class_v<PropertyContext>);

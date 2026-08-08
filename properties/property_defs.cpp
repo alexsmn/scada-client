@@ -1,6 +1,7 @@
 ﻿#include "properties/property_defs.h"
 
 #include "aui/color.h"
+#include "aui/translation.h"
 #include "base/awaitable.h"
 #include "base/utf_convert.h"
 #include "properties/transport/transport_dialog.h"
@@ -15,7 +16,12 @@
 
 namespace {
 
-const char16_t kDefaultColorString[] = u"<Стандартный>";
+// The "use the palette default" choice, and the label `GetText` returns for
+// an out-of-range colour index. A function, not a namespace-scope constant:
+// the text is translated, and there is no QApplication at static-init time.
+std::u16string DefaultColorString() {
+  return Translate("<Default>");
+}
 
 NodeRef GetTargetTypeDefinition(const NodeRef& type_definition,
                                 const scada::NodeId& reference_type_id) {
@@ -43,7 +49,7 @@ std::u16string ReferencePropertyDefinition::GetText(
   if (auto target = node.target(prop_decl_id))
     return ToString16(target.display_name());
   else
-    return std::u16string{kChoiceNone};
+    return ChoiceNone();
 }
 
 void ReferencePropertyDefinition::SetText(const PropertyContext& context,
@@ -56,7 +62,7 @@ void ReferencePropertyDefinition::SetText(const PropertyContext& context,
     return;
 
   NodeRef target;
-  if (text != kChoiceNone) {
+  if (text != ChoiceNone()) {
     target = FindNodeByNameAndType(
         context.node_service_.GetNode(scada::id::ObjectsFolder), text,
         target_type_definition.node_id());
@@ -231,7 +237,7 @@ std::u16string ColorPropertyDefinition::GetText(
       color_index < static_cast<int>(scada::aui::GetColorCount()))
     return std::u16string{scada::aui::GetColorName(color_index)};
   else
-    return kDefaultColorString;
+    return DefaultColorString();
 }
 
 void ColorPropertyDefinition::SetText(const PropertyContext& context,
@@ -252,7 +258,7 @@ scada::aui::EditData ColorPropertyDefinition::GetPropertyEditor(
     const scada::NodeId& prop_decl_id) const {
   scada::aui::EditData result{scada::aui::EditData::EditorType::DROPDOWN};
   result.choices.reserve(1 + scada::aui::GetColorCount());
-  result.choices.emplace_back(kDefaultColorString);
+  result.choices.emplace_back(DefaultColorString());
   for (size_t i = 0; i < scada::aui::GetColorCount(); i++)
     result.choices.emplace_back(scada::aui::GetColorName(i));
   return result;

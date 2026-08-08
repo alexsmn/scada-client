@@ -9,7 +9,12 @@
 
 struct PropertyContext;
 
-extern const std::u16string_view kChoiceNone;
+// The "no target selected" choice offered by a reference property, and the
+// sentinel `SetText` compares the edited text against to detect it. A function
+// rather than a constant because the text is translated, and a namespace-scope
+// constant would be initialised before there is a QApplication to translate
+// against.
+std::u16string ChoiceNone();
 
 void SetTextHelper(const PropertyContext& context,
                    const NodeRef& node,

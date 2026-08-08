@@ -1,5 +1,6 @@
 #include "properties/property_util.h"
 
+#include "aui/translation.h"
 #include "base/awaitable.h"
 #include "base/range_util.h"
 #include "base/string_util.h"
@@ -40,7 +41,9 @@ Awaitable<void> FetchNodeNamesRecursiveAsync(
 
 }  // namespace
 
-const std::u16string_view kChoiceNone = u"<\u041d\u0435\u0442>";
+std::u16string ChoiceNone() {
+  return Translate("<None>");
+}
 
 void SetTextHelper(const PropertyContext& context,
                    const NodeRef& node,
@@ -81,7 +84,7 @@ scada::aui::EditData::AsyncChoiceHandler MakeAsyncChoiceHandler(
     const scada::NodeId& type_definition_id) {
   return [executor = std::move(executor), parent, type_definition_id](
              const scada::aui::EditData::AsyncChoiceCallback& callback) {
-    callback({std::u16string{kChoiceNone}}, false);
+    callback({ChoiceNone()}, false);
     CoSpawn(executor, [executor, parent, type_definition_id,
                        callback]() -> Awaitable<void> {
       co_await FetchNodeNamesRecursiveAsync(executor, parent, type_definition_id,
