@@ -167,14 +167,6 @@ std::string GetOtlpEndpoint() {
   return value ? std::string{value} : std::string{};
 }
 
-int FindAvailablePort() {
-  boost::asio::io_context io_context;
-  boost::asio::ip::tcp::acceptor acceptor{
-      io_context,
-      boost::asio::ip::tcp::endpoint{boost::asio::ip::tcp::v4(), 0}};
-  return static_cast<int>(acceptor.local_endpoint().port());
-}
-
 bool CanConnectTcp(std::string_view host, std::string_view service) {
   try {
     boost::asio::io_context io_context;
@@ -320,18 +312,16 @@ void ClientServerE2eTest::SetUp() {
   ASSERT_TRUE(std::filesystem::exists(GetConfigurationFixtureSqlPath()));
   ASSERT_TRUE(ValidateSignedLicenseEnv());
 
-  remote_port_ = FindAvailablePort();
-  opcua_port_ = FindAvailablePort();
-  while (opcua_port_ == remote_port_)
-    opcua_port_ = FindAvailablePort();
-  iec61850_port_ = FindAvailablePort();
-  while (iec61850_port_ == remote_port_ || iec61850_port_ == opcua_port_)
-    iec61850_port_ = FindAvailablePort();
-  // Reserve the client-facing (proxy / single-tier) ports and the IEC 61850
-  // port so the shared PortPool hands the cluster tiers distinct ports in
-  // Cluster mode.
-  for (int port : {remote_port_, opcua_port_, iec61850_port_})
-    ports_.Reserve(port);
+  // Every port this run uses — the client-facing (proxy / single-tier) pair,
+  // the IEC 61850 test server's, and in Cluster mode each tier's — comes from
+  // the one pool, so they are distinct from each other AND claimed against any
+  // other E2E process on the machine for as long as `ports_` lives. Two
+  // checkouts running their suites at once is the case that needs the second
+  // half: the tier binds its port seconds after the harness picked it, and
+  // nothing but the claim owns it in between.
+  remote_port_ = ports_.Allocate();
+  opcua_port_ = ports_.Allocate();
+  iec61850_port_ = ports_.Allocate();
   PrepareWorkspace();
 
   iec61850_server_ = std::make_unique<Iec61850TestServer>(iec61850_port_);
@@ -465,8 +455,7 @@ void ClientServerE2eTest::StartServer() {
                                       : target->remote_host;
     ASSERT_TRUE(
         WaitUntil([&endpoint] { return CanConnectTcpEndpoint(endpoint); },
-                  std::chrono::duration_cast<std::chrono::milliseconds>(
-                      kServerStartTimeout)))
+                  Timeout(kServerStartTimeout)))
         << "External " << ToString(Protocol()) << " endpoint " << endpoint
         << " is not accepting connections";
     return;
@@ -490,8 +479,7 @@ void ClientServerE2eTest::StartServer() {
 
   const int port = GetProtocolPort();
   ASSERT_TRUE(WaitUntil([port] { return CanConnectTcp(port); },
-                        std::chrono::duration_cast<std::chrono::milliseconds>(
-                            kServerStartTimeout)))
+                        Timeout(kServerStartTimeout)))
       << "Server did not start listening on " << ToString(Protocol())
       << " port " << port;
 }
@@ -552,8 +540,7 @@ void ClientServerE2eTest::StartCluster() {
 
   const int port = GetProtocolPort();
   ASSERT_TRUE(WaitUntil([port] { return CanConnectTcp(port); },
-                        std::chrono::duration_cast<std::chrono::milliseconds>(
-                            kServerStartTimeout)))
+                        Timeout(kServerStartTimeout)))
       << "cluster proxy did not start listening on " << ToString(Protocol())
       << " port " << port;
 
@@ -595,8 +582,22 @@ void ClientServerE2eTest::StartClient(std::vector<std::string> extra_args) {
     extra_env.emplace_back("QT_QPA_PLATFORM", "offscreen");
   }
 
+  // The client must run FROM the build output directory — that is where its
+  // DLLs and relative paths resolve — but that directory is shared by every
+  // concurrent run of this suite out of one build tree, and on macOS it is
+  // inside the .app bundle, so the default capture wrote process.stderr.log
+  // there and two runs overwrote each other's. That file matters: it is the
+  // only place a Qt failure the client dies too early to log lands (see
+  // docs/ops/e2e-client-server.md, "The client must link the offscreen platform
+  // plugin").
+  //
+  // ClientProcess/ rather than the workspace root, which is the SERVER's
+  // workdir and therefore already holds the tier's own process.stderr.log — and
+  // rather than ClientLogs/, which ContainsInDirectory scans whole for the
+  // startup-completed and object-tree needles. Raw stderr in there would make
+  // those assertions depend on what Qt happens to print.
   LaunchProcess(GetClientExePath(), args, GetClientExePath().parent_path(),
-                *job_, client_, extra_env);
+                *job_, client_, extra_env, workspace_.path() / "ClientProcess");
 }
 
 std::string ClientServerE2eTest::WaitForStatus() {
@@ -604,8 +605,7 @@ std::string ClientServerE2eTest::WaitForStatus() {
       [this] {
         return std::filesystem::exists(status_file_) || !client_.IsRunning();
       },
-      std::chrono::duration_cast<std::chrono::milliseconds>(
-          kClientStartTimeout));
+      Timeout(kClientStartTimeout));
   EXPECT_TRUE(ok) << "Timed out waiting for client status file";
   return ReadFileOrEmpty(status_file_);
 }
@@ -616,8 +616,7 @@ bool ClientServerE2eTest::WaitForStartupOrStatus() {
         return ContainsInDirectory(client_log_dir_, kStartupCompletedLog) ||
                std::filesystem::exists(status_file_) || !client_.IsRunning();
       },
-      std::chrono::duration_cast<std::chrono::milliseconds>(
-          kClientStartTimeout));
+      Timeout(kClientStartTimeout));
 }
 
 bool ClientServerE2eTest::WaitForObjectTreeReady() {
@@ -626,8 +625,7 @@ bool ClientServerE2eTest::WaitForObjectTreeReady() {
         auto child_count = FindLoggedObjectTreeChildCount(client_log_dir_);
         return (child_count && *child_count > 0) || !client_.IsRunning();
       },
-      std::chrono::duration_cast<std::chrono::milliseconds>(
-          kObjectTreeLoadTimeout));
+      Timeout(kObjectTreeLoadTimeout));
 }
 
 std::string ClientServerE2eTest::WaitForObjectViewValuesReport() {
@@ -636,8 +634,7 @@ std::string ClientServerE2eTest::WaitForObjectViewValuesReport() {
         return std::filesystem::exists(object_view_values_file_) ||
                !client_.IsRunning();
       },
-      std::chrono::duration_cast<std::chrono::milliseconds>(
-          kObjectViewValuesTimeout));
+      Timeout(kObjectViewValuesTimeout));
   EXPECT_TRUE(ok) << "Timed out waiting for object-view values report";
   return ReadFileOrEmpty(object_view_values_file_);
 }
@@ -648,8 +645,7 @@ std::string ClientServerE2eTest::WaitForObjectTreeLabelsReport() {
         return std::filesystem::exists(object_tree_labels_file_) ||
                !client_.IsRunning();
       },
-      std::chrono::duration_cast<std::chrono::milliseconds>(
-          kObjectTreeLabelsTimeout));
+      Timeout(kObjectTreeLabelsTimeout));
   EXPECT_TRUE(ok) << "Timed out waiting for object-tree labels report";
   return ReadFileOrEmpty(object_tree_labels_file_);
 }
@@ -660,8 +656,7 @@ std::string ClientServerE2eTest::WaitForHardwareTreeDevicesReport() {
         return std::filesystem::exists(hardware_tree_devices_file_) ||
                !client_.IsRunning();
       },
-      std::chrono::duration_cast<std::chrono::milliseconds>(
-          kHardwareTreeDevicesTimeout));
+      Timeout(kHardwareTreeDevicesTimeout));
   EXPECT_TRUE(ok) << "Timed out waiting for hardware-tree devices report";
   return ReadFileOrEmpty(hardware_tree_devices_file_);
 }
@@ -672,8 +667,7 @@ std::string ClientServerE2eTest::WaitForOperatorUseCasesReport() {
         return std::filesystem::exists(operator_use_cases_file_) ||
                !client_.IsRunning();
       },
-      std::chrono::duration_cast<std::chrono::milliseconds>(
-          kOperatorUseCasesTimeout));
+      Timeout(kOperatorUseCasesTimeout));
   EXPECT_TRUE(ok) << "Timed out waiting for operator use-case report";
   return ReadFileOrEmpty(operator_use_cases_file_);
 }
@@ -684,8 +678,7 @@ std::string ClientServerE2eTest::WaitForProfileSaveReport() {
         return std::filesystem::exists(profile_save_file_) ||
                !client_.IsRunning();
       },
-      std::chrono::duration_cast<std::chrono::milliseconds>(
-          kProfileSaveTimeout));
+      Timeout(kProfileSaveTimeout));
   EXPECT_TRUE(ok) << "Timed out waiting for profile-save report";
   return ReadFileOrEmpty(profile_save_file_);
 }
@@ -696,8 +689,7 @@ std::string ClientServerE2eTest::WaitForHistoricalTimedDataReport() {
         return std::filesystem::exists(historical_timed_data_file_) ||
                !client_.IsRunning();
       },
-      std::chrono::duration_cast<std::chrono::milliseconds>(
-          kHistoricalTimedDataTimeout));
+      Timeout(kHistoricalTimedDataTimeout));
   EXPECT_TRUE(ok) << "Timed out waiting for historical timed-data report";
   return ReadFileOrEmpty(historical_timed_data_file_);
 }
@@ -723,11 +715,10 @@ std::string ProfileColumnForUser(const std::filesystem::path& database,
                                  int user_id,
                                  std::string_view column) {
   return RunSqliteScalar(
-      database,
-      std::string{"SELECT COALESCE(e."} + std::string{column} +
-          ", '') FROM UserExtensionType e JOIN UserType u"
-          " ON u.DisplayName = e.DisplayName WHERE u.ID = " +
-          std::to_string(user_id) + ";");
+      database, std::string{"SELECT COALESCE(e."} + std::string{column} +
+                    ", '') FROM UserExtensionType e JOIN UserType u"
+                    " ON u.DisplayName = e.DisplayName WHERE u.ID = " +
+                    std::to_string(user_id) + ";");
 }
 
 }  // namespace
@@ -818,7 +809,7 @@ void ClientServerE2eTest::ExpectServerAuthLog() {
         }
         return false;
       },
-      std::chrono::duration_cast<std::chrono::milliseconds>(kServerLogTimeout)))
+      Timeout(kServerLogTimeout)))
       << "Server logs did not record a successful session in "
       << server_log_dir_;
 }
