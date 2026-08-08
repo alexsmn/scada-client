@@ -20,20 +20,20 @@
     "boost-uuid",
     "grpc",
     "gtest",
-    "nspr",
+    "openssl",
     {
       "name": "opentelemetry-cpp",
       "features": [
         "otlp-grpc"
       ]
     },
-    "openssl",
     "protobuf",
-    "qtbase",
-    "wt",
     {
       "name": "qtactiveqt",
       "platform": "windows"
-    }
+    },
+    "qtbase",
+    "qtsvg",
+    "wt"
   ]
 }
