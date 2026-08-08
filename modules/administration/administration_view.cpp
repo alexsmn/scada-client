@@ -4,7 +4,9 @@
 #include "controller/command_handler.h"
 #include "controller/controller_delegate.h"
 
+#if !defined(UI_WT)
 #include "administration/qt/administration_panel.h"
+#endif
 
 AdministrationView::AdministrationView(const ControllerContext& context)
     : ControllerContext{context} {}
@@ -13,6 +15,7 @@ AdministrationView::~AdministrationView() = default;
 
 std::unique_ptr<UiView> AdministrationView::Init(
     const WindowDefinition& definition) {
+#if !defined(UI_WT)
   auto panel = std::make_unique<AdministrationPanel>();
 
   // Availability is the shell's own answer, asked through the same resolution
@@ -37,4 +40,7 @@ std::unique_ptr<UiView> AdministrationView::Init(
                    });
 
   return std::unique_ptr<UiView>{panel.release()};
+#else
+  return nullptr;
+#endif
 }

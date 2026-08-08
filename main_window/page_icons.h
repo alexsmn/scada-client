@@ -17,9 +17,8 @@
 // An unknown key — a profile written by a newer build — degrades to the
 // ordinal, which is why there is no "unknown icon" glyph.
 //
-// Qt-free on purpose: `Page` persists the key, so the vocabulary stays
-// readable without a UI toolkit. The key → asset mapping lives with the Qt
-// rail.
+// Qt-free on purpose: `Page` persists the key and the Wt shell can read the
+// same vocabulary. The key → asset mapping lives with the Qt rail.
 struct PageIcon {
   // Persisted in the profile. Never reuse a key for a different meaning.
   std::string_view key;

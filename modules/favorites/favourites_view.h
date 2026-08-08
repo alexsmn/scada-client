@@ -32,7 +32,9 @@ class FavouritesView final : protected ControllerContext, public Controller {
   void OpenSelection();
   void DeleteSelection();
 
+#if !defined(UI_WT)
   void AddUrl();
+#endif
 
   Favourites& favourites_;
   std::shared_ptr<void> lifetime_token_ = std::make_shared<int>(0);
@@ -46,8 +48,10 @@ class FavouritesView final : protected ControllerContext, public Controller {
   Command& rename_command_ = command_registry_.AddCommand(ID_RENAME);
   Command& delete_command_ = command_registry_.AddCommand(ID_DELETE);
 
+#if !defined(UI_WT)
   Command& add_url_command_ =
       command_registry_.AddCommand(ID_FAVOURITES_ADD_URL);
+#endif
 
   // Cross-platform context menu, backed by `command_registry_`. Declared after
   // it so the registry outlives the menu's delegate.

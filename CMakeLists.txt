@@ -20,14 +20,20 @@ endif()
 enable_testing()
 
 option(BUILD_CLIENT_QT "Build the Qt desktop client" ON)
+# OFF: the Wt flavour does not compile. modules/events/event_view.cpp calls
+# scada::aui::GetSeverityTheme, which the reshell added to the Qt flavour and
+# never to this one, and a Wt-only configure additionally references the
+# Qt-only client_properties_transport_qt. It has no preset, no CI job and no
+# row in the Qt/web parity matrix — the shipped web client is web/. Slated for
+# removal; see tasks.md.
+option(BUILD_CLIENT_WT "Build the Wt web client" OFF)
 
-# Qt is the only UI flavour. The Wt one was deleted — it had not compiled since
-# the reshell, had no preset and no CI job, and the shipped web client is the
-# separate `web/` workspace. CLIENT_UI_CONFIGS survives the removal because
-# client_module() is written against it; it is a one-element list today.
 set(CLIENT_UI_CONFIGS)
 if(BUILD_CLIENT_QT)
   list(APPEND CLIENT_UI_CONFIGS qt)
+endif()
+if(BUILD_CLIENT_WT)
+  list(APPEND CLIENT_UI_CONFIGS wt)
 endif()
 if(NOT CLIENT_UI_CONFIGS)
   message(FATAL_ERROR "At least one client UI must be enabled")
@@ -104,12 +110,16 @@ foreach(PATH ${PATHS})
   IF(${PATH} MATCHES "_unittest" OR ${PATH} MATCHES "/test/")
     IF(${PATH} MATCHES "/qt/")
       LIST(APPEND UNITTESTS_QT ${PATH})
+    ELSEIF(${PATH} MATCHES "/wt/")
+      LIST(APPEND UNITTESTS_WT ${PATH})
     ELSE()
       LIST(APPEND UNITTESTS ${PATH})
     ENDIF()
   ELSE()
     IF(${PATH} MATCHES "/qt/")
       LIST(APPEND SOURCES_QT ${PATH})
+    ELSEIF(${PATH} MATCHES "/wt/")
+      LIST(APPEND SOURCES_WT ${PATH})
     ELSE()
       LIST(APPEND SOURCES ${PATH})
     ENDIF()
@@ -145,9 +155,13 @@ endif()
 
 set(CLIENT_COMPONENT_MODULES)
 set(CLIENT_QT_COMPONENT_TARGETS)
+set(CLIENT_WT_COMPONENT_TARGETS)
 foreach(component_name IN LISTS CLIENT_COMPONENTS)
   list(APPEND CLIENT_COMPONENT_MODULES client_component_${component_name})
   list(APPEND CLIENT_QT_COMPONENT_TARGETS client_component_${component_name}_qt)
+  if(NOT component_name STREQUAL "web")
+    list(APPEND CLIENT_WT_COMPONENT_TARGETS client_component_${component_name}_wt)
+  endif()
 endforeach()
 
 add_subdirectory(modules)

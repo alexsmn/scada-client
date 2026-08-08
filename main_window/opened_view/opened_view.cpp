@@ -17,6 +17,8 @@
 
 #if defined(UI_QT)
 #include <QWidget>
+#elif defined(UI_WT)
+#include <Wt/WWidget.h>
 #endif
 
 using namespace std::chrono_literals;

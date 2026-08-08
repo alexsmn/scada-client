@@ -71,6 +71,13 @@ if(TARGET client_main_window_qt)
   client_qt_translations(client_main_window_qt "main_window_ru_qt.ts")
 endif()
 
+# Wt.
+
+# TODO: Remove dependency on `client_wt_lib`.
+if(TARGET client_main_window_wt)
+  target_link_libraries(client_main_window_wt PRIVATE client_wt_lib)
+endif()
+
 # UTs.
 
 if(TARGET client_main_window_qt_unittests)
@@ -87,4 +94,13 @@ if(TARGET client_main_window_qt_unittests)
   set_target_properties(client_main_window_qt_unittests PROPERTIES AUTORCC ON)
   target_sources(client_main_window_qt_unittests PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/../res/client.qrc")
+endif()
+
+if(TARGET client_main_window_wt_unittests)
+  target_link_libraries(client_main_window_wt_unittests PRIVATE
+    aui_test_wt
+    client_controller_test_wt
+    client_core
+    client_properties_wt
+  )
 endif()

@@ -5,10 +5,10 @@
 // module fragment includes them, the purview re-exports names with
 // `export using`. `export import scada.base` mirrors aui's sole PUBLIC link
 // (scada_base); aui deliberately has no other project dependency — it is
-// slated for extraction into its own repository (see
-// docs/client/aui-extraction.md).
+// slated for extraction into its own repository (see docs/client/aui-extraction.md).
 //
-// The facade is compiled with aui_qt's flags, so UI_QT is defined. The
+// The facade covers the Qt flavor (compiled with aui_qt's flags, so UI_QT is
+// defined); the wt flavor stays header-only and is not facaded. The
 // platform-agnostic wrapper headers (grid.h, table.h, tree.h, key_codes.h,
 // color.h) transitively pull their aui/qt/ implementations — the aui-owned
 // names they define (aui::Grid, aui::Table, aui::Tree, aui::Color, ...) ARE
@@ -17,9 +17,11 @@
 // ItemDelegate, TreeProxyModel) are NOT.
 //
 // Not included (documented exclusions):
-//  - aui/qt/*.h directly (the platform implementation layer; reached only
-//    transitively through the wrapper headers above);
+//  - aui/qt/*.h and aui/wt/*.h directly (platform implementation layers;
+//    reached only transitively through the wrapper headers above);
 //  - color_win.h (Windows-only; color.h self-includes it under _WIN32);
+//  - rect_internal.h (internal implementation header, aui::internal, wt-only
+//    include path);
 //  - dialog_service_mock.h, models/status_bar_model_mock.h,
 //    models/tree_model_mock.h (test mocks);
 //  - graph.h, view_manager.h: thin wrappers over the external graph_qt /
