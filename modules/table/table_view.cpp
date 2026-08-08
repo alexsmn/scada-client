@@ -106,7 +106,7 @@ TableView::TableView(const ControllerContext& context)
   view_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });
 
   view_->SetContextMenuHandler([this](const scada::aui::Point& point) {
-    // Cross-platform AUI menu model (Windows, macOS, Wt) instead of the
+    // Cross-platform AUI menu model (Windows, macOS) instead of the
     // Windows-only `IDR_TABLE_POPUP` resource menu.
     controller_delegate_.ShowPopupMenu(&table_menu_model_.model(), point, true);
   });

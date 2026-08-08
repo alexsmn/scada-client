@@ -55,7 +55,10 @@
 #include "node_service/node_awaitable.h"
 #include "node_service/node_ref.h"
 #include "node_service/node_service.h"
+#include "base/utf_convert.h"
+#include "model/security_node_ids.h"
 #include "node_service/node_util.h"
+#include "user_access/role_membership.h"
 #include "profile/profile.h"
 #include "profile/window_definition.h"
 #include "timed_data/timed_data_service.h"
@@ -87,6 +90,7 @@
 #include <QTranslator>
 #include <QTreeView>
 #include <QVBoxLayout>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <algorithm>
@@ -504,8 +508,6 @@ ScreenshotGenerator::~ScreenshotGenerator() {
   WaitForAwaitable(executor_, app_.Quit());
 }
 
-#if !defined(UI_WT)
-
 TEST_F(ScreenshotGenerator, CaptureAllWindows) {
   auto output_dir = GetOutputDir();
   std::filesystem::create_directories(output_dir);
@@ -579,6 +581,29 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     if (spec.window_type == "UserAccess") {
       SaveUserAccessScreenshot(spec, app_.node_service(),
                                authenticated_attribute_service_, executor_);
+      ++captured;
+      continue;
+    }
+    // The Roles view needs the same administrator identity: its grid is built
+    // from the server's published role -> permission map, which an anonymous
+    // session may not read. Opened as an ordinary view it rendered "Roles · no
+    // data" and saved an empty grid.
+    if (spec.window_type == "Roles") {
+      SaveRolesScreenshot(spec, app_.node_service(),
+                          authenticated_attribute_service_, executor_);
+      ++captured;
+      continue;
+    }
+    // The users-admin grid joins its Roles column from the same RoleSet read,
+    // so it needs the same identity — through the view path every account's
+    // Roles cell read "Нет данных". Only under `--theme`: the legacy
+    // `users.png` is the classic administration view, not this panel (which
+    // `MakeUsersGridPanel` does not build outside the reshell at all), and it
+    // must keep going through the profile page.
+    if (spec.window_type == "Users" &&
+        !GetScreenshotOptions().theme.empty()) {
+      SaveUsersGridScreenshot(spec, app_.node_service(),
+                              authenticated_attribute_service_, executor_);
       ++captured;
       continue;
     }
@@ -729,26 +754,64 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     if (spec.min_rows > 0 || spec.exact_rows > 0 || spec.min_columns > 0) {
       int max_rows = 0;
       int max_columns = 0;
-      QList<QTableView*> tables = widget->findChildren<QTableView*>();
-      if (auto* table = qobject_cast<QTableView*>(widget))
-        tables.prepend(table);
-      for (const QTableView* table : tables) {
-        if (table->model()) {
-          max_rows = std::max(max_rows, table->model()->rowCount());
-          max_columns = std::max(max_columns, table->model()->columnCount());
+      const auto count_grid = [&] {
+        max_rows = 0;
+        max_columns = 0;
+        QList<QTableView*> tables = widget->findChildren<QTableView*>();
+        if (auto* table = qobject_cast<QTableView*>(widget))
+          tables.prepend(table);
+        for (const QTableView* table : tables) {
+          if (table->model()) {
+            max_rows = std::max(max_rows, table->model()->rowCount());
+            max_columns = std::max(max_columns, table->model()->columnCount());
+          }
         }
+        // Tree-backed windows count every row they have materialized, not just
+        // the top level. Without this a tree capture can go empty as silently
+        // as a grid one — which is exactly how the favourites pane shipped
+        // blank — and a top-level-only count says nothing about a tree whose
+        // single root row is the shell and whose content is its children (the
+        // Files view, where an empty file store still shows one row).
+        if (const scada::aui::Tree* tree = FindTreeWidget(widget)) {
+          if (tree->model())
+            max_rows = std::max(
+                max_rows, CountLoadedRows(*tree->model(), tree->rootIndex()));
+        }
+      };
+
+      // A panel that fills itself from its own async read is not populated at
+      // this point, and nothing above waits for it: WaitForPendingData only
+      // sees work the node service has already been asked for, and a view that
+      // CoSpawns its read at construction has not necessarily issued it yet
+      // when we get here. The Roles panel does exactly that
+      // (client/modules/user_access/qt/roles_view.cpp) and counted 0 rows
+      // against a fixture that defines two — failing the check AND saving an
+      // empty capture, since the grab below happens after this.
+      //
+      // So settle before judging: pump until the spec's own expectation is
+      // met, then assert. A genuinely empty grid still fails, one second
+      // later. This cannot paper over a row *leak* (the exact_rows case), for
+      // which the wait stops at the first satisfying count and the assertion
+      // below is unchanged.
+      // PumpEventLoopFor, not the processEvents-based WaitUntil above: the
+      // population lands as a MessageLoopQt-scheduled continuation, and on
+      // macOS the processEvents forms do not fire timers on a drained queue
+      // (see screenshot_wait.h).
+      constexpr int kGridSettleTimeoutMs = 10'000;
+      QElapsedTimer settle;
+      settle.start();
+      for (;;) {
+        count_grid();
+        const bool satisfied =
+            (spec.min_rows == 0 || max_rows >= spec.min_rows) &&
+            (spec.exact_rows == 0 || max_rows == spec.exact_rows) &&
+            (spec.min_columns == 0 || max_columns >= spec.min_columns);
+        if (satisfied || settle.elapsed() >= kGridSettleTimeoutMs)
+          break;
+        scada::screenshot_generator::PumpEventLoopFor(
+            std::chrono::milliseconds{50});
       }
-      // Tree-backed windows count every row they have materialized, not just
-      // the top level. Without this a tree capture can go empty as silently as
-      // a grid one — which is exactly how the favourites pane shipped blank —
-      // and a top-level-only count says nothing about a tree whose single root
-      // row is the shell and whose content is its children (the Files view,
-      // where an empty file store still shows one row).
-      if (const scada::aui::Tree* tree = FindTreeWidget(widget)) {
-        if (tree->model())
-          max_rows = std::max(
-              max_rows, CountLoadedRows(*tree->model(), tree->rootIndex()));
-      }
+
       if (spec.min_rows > 0) {
         EXPECT_GE(max_rows, spec.min_rows)
             << spec.filename << ": the " << spec.window_type
@@ -1419,6 +1482,80 @@ TEST_F(ScreenshotGenerator, DestinationRailEnumeratesTransmissionDevices) {
     EXPECT_FALSE(device.name.empty());
 }
 
+// The fixture accounts that carry `right`, by display name — the same
+// projection `fixture_builder.cpp` makes when it creates the identity mapping
+// rules. Derived from the fixture JSON rather than written out, both because
+// the names are Russian (which may not appear in a client string literal) and
+// so the expectation cannot drift from the fixture it describes.
+std::vector<std::u16string> FixtureAccountsWith(scada::AccessRight right) {
+  namespace sec = scada::security::id;
+  const std::string rights_key = NodeIdToScadaString(sec::UserType_AccessRights);
+
+  std::vector<std::u16string> names;
+  for (const auto& node : g_config.json.at("nodes").as_array()) {
+    const auto& object = node.as_object();
+    const auto* type = object.if_contains("type_definition");
+    if (!type || !type->is_string() ||
+        NodeIdFromScadaString(std::string_view{type->as_string()}) !=
+            sec::UserType) {
+      continue;
+    }
+    const auto* display = object.if_contains("display_name");
+    if (!display || !display->is_string())
+      continue;
+
+    std::int64_t access_rights = 0;
+    if (const auto* properties = object.if_contains("properties");
+        properties && properties->is_object()) {
+      if (const auto* value = properties->as_object().if_contains(rights_key);
+          value && value->is_number()) {
+        access_rights = value->to_number<std::int64_t>();
+      }
+    }
+    if (access_rights & scada::AccessRightBit(right))
+      names.push_back(UtfConvert<char16_t>(std::string{display->as_string()}));
+  }
+  return names;
+}
+
+// Role membership must survive the real node model, not just a static fake.
+//
+// `ReadRoleMemberships` resolves each rule's Criteria through the TYPE's
+// property declarations, so the type chain has to be fetched first. It was
+// not, and against the real address space both property lookups returned a
+// null NodeRef — every Role came back with no members, which is what
+// `roles.png` and the managed `users-admin.png` documented. The module's own
+// unit tests could not see it: a StaticNodeService resolves the declaration
+// whether or not anything fetched the type.
+TEST_F(ScreenshotGenerator, RolesEnumerateTheirMembers) {
+  WaitForAwaitable(executor_, app_.Start());
+  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
+
+  const std::optional<std::vector<RoleMembership>> roles =
+      WaitForAwaitable(executor_, ReadRoleMemberships(
+                                      executor_, app_.node_service(),
+                                      authenticated_attribute_service_));
+  ASSERT_TRUE(roles.has_value());
+
+  const auto members_of = [&roles](scada::WellKnownRole role) {
+    const scada::NodeId id = scada::WellKnownRoleId(role);
+    auto i = std::ranges::find(*roles, id, &RoleMembership::node_id);
+    return i != roles->end() ? i->members : std::vector<std::u16string>{};
+  };
+
+  const std::vector<std::u16string> control =
+      FixtureAccountsWith(scada::AccessRight::kControl);
+  const std::vector<std::u16string> configure =
+      FixtureAccountsWith(scada::AccessRight::kConfigure);
+  ASSERT_FALSE(control.empty());
+  ASSERT_FALSE(configure.empty());
+
+  EXPECT_THAT(members_of(scada::WellKnownRole::kOperator),
+              testing::UnorderedElementsAreArray(control));
+  EXPECT_THAT(members_of(scada::WellKnownRole::kConfigureAdmin),
+              testing::UnorderedElementsAreArray(configure));
+}
+
 TEST_F(ScreenshotGenerator, CaptureDialogs) {
   auto output_dir = GetOutputDir();
   std::filesystem::create_directories(output_dir);
@@ -1454,5 +1591,3 @@ TEST_F(ScreenshotGenerator, CaptureDialogs) {
   std::cout << "Captured " << captured << "/" << g_config.dialogs.size()
             << " dialogs to " << output_dir.string() << std::endl;
 }
-
-#endif
