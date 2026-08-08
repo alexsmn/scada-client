@@ -19,8 +19,6 @@ struct Rgba {
 
 #if defined(UI_QT)
 #include "aui/qt/color_qt.h"
-#elif defined(UI_WT)
-#include "aui/wt/color_wt.h"
 #endif
 
 #if defined(_WIN32)

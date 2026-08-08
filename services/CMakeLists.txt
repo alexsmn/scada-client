@@ -22,7 +22,7 @@ if(APPLE)
   client_module_link_libraries(client_services PUBLIC client_app_nap_mac)
 endif()
 
-# C++20 module facade (Qt flavor only; the wt flavor stays header-based).
+# C++20 module facade.
 if(TARGET client_services_qt)
   scada_add_module_facade(client_services_qt FILES scada_client_services.cppm
     IMPORTS aui_qt_module scada_common_module)
@@ -48,14 +48,4 @@ if(TARGET client_services_qt_unittests)
       "$<$<CONFIG:RelWithDebInfo>:/PDB:NONE>"
     )
   endif()
-endif()
-
-if(TARGET client_services_wt_unittests)
-  target_link_libraries(client_services_wt_unittests PRIVATE
-    address_space
-    client_core
-    client_events_wt
-    client_profile_wt
-    node_service
-  )
 endif()

@@ -27,7 +27,7 @@ std::unique_ptr<UiView> FavouritesView::Init(
   tree_view_->LoadGlyphs(kWindowTypeGlyphs, kTreeGlyphSize);
   tree_view_->SetDoubleClickHandler([this] { OpenSelection(); });
   tree_view_->SetContextMenuHandler([this](const scada::aui::Point& point) {
-    // Cross-platform AUI menu model (Windows, macOS, Wt) instead of the
+    // Cross-platform AUI menu model (Windows, macOS) instead of the
     // Windows-only `IDR_FAVOR_POPUP` resource menu.
     controller_delegate_.ShowPopupMenu(&favourites_menu_model_.model(), point,
                                        true);
@@ -53,9 +53,7 @@ std::unique_ptr<UiView> FavouritesView::Init(
   delete_command_.enabled_handler = selection_enabled_handler;
   delete_command_.execute_handler = [this] { DeleteSelection(); };
 
-#if !defined(UI_WT)
   add_url_command_.execute_handler = [this] { AddUrl(); };
-#endif
 
   return std::unique_ptr<UiView>{tree_view_};
 }
@@ -84,7 +82,6 @@ CommandHandler* FavouritesView::GetCommandHandler(unsigned command_id) {
   return command_registry_.GetCommandHandler(command_id);
 }
 
-#if !defined(UI_WT)
 void FavouritesView::AddUrl() {
   CoSpawn(executor_,
           [executor = executor_, lifetime_token = std::weak_ptr<void>{
@@ -99,4 +96,3 @@ void FavouritesView::AddUrl() {
                 });
           });
 }
-#endif

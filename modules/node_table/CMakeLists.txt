@@ -16,10 +16,3 @@ if(TARGET client_component_node_table_qt_unittests)
     node_service_v3
   )
 endif()
-if(TARGET client_component_node_table_wt_unittests)
-  target_link_libraries(client_component_node_table_wt_unittests PRIVATE
-    address_space
-    client_properties_wt
-    node_service_v3
-  )
-endif()

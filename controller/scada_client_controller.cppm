@@ -1,6 +1,5 @@
 // scada.client.controller — named C++20 module facade over the
-// client/controller headers (Qt flavor only, built for client_controller_qt;
-// the wt flavor stays header-only).
+// client/controller headers (built for client_controller_qt).
 //
 // Same design and rules as scada.base (see core/base/scada_base.cppm and
 // core/docs/cxx-modules.md): headers stay the source of truth, the global

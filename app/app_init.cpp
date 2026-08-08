@@ -73,7 +73,7 @@ AppInit::AppInit(int argc, char* argv[]) {
   scada::RegisterPathProvider();
   scada::RegisterModelNamespaceResolver();
   // Shared formatting code (common/format.h) carries English literals; route
-  // them through the client's Qt/Wt translation catalogs. Installed here, but
+  // them through the client's Qt translation catalogs. Installed here, but
   // only called at display time — after InstalledTranslation loads the .qm.
   scada::SetUiTextTranslator(&Translate);
   client::RegisterPathProvider();

@@ -10,8 +10,8 @@ class CommandHandler;
 //
 // This mirrors the legacy Windows-only `IDR_GRID_POPUP` resource menu for the
 // commands `NodeTableController` contributes (rename and the sort-by submenu)
-// as an `aui::MenuModel`, so the same menu renders identically on Windows,
-// macOS and Wt through the shared menu-model path instead of a
+// as an `aui::MenuModel`, so the same menu renders identically on Windows
+// and macOS through the shared menu-model path instead of a
 // `CMenu::LoadMenu` that only exists on Windows. The node-specific commands the
 // resource menu carried via its `<Item>` placeholder are supplied by the
 // generic context menu the shell appends.
