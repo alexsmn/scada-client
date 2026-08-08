@@ -22,3 +22,18 @@ void SaveUserAccessScreenshot(const ScreenshotSpec& spec,
                               NodeService& node_service,
                               scada::AttributeService& attribute_service,
                               AnyExecutor executor);
+
+// Renders the Roles view — every Role of the RoleSet and the accounts it is
+// granted to — and saves it under `GetOutputDir() / spec.filename`.
+//
+// Standalone for the same reason as SaveUserAccessScreenshot, and it is the
+// reason rather than a convenience: reading the published role -> permission
+// map needs the ReadRolePermissions permission (OPC UA Part 3 §5.2.9), and the
+// generator's ordinary session is anonymous. Opened through the client's view
+// path the panel therefore rendered "no data" — correctly, but the capture
+// documented an empty grid. Driving it here with the administrator identity
+// the fixture depicts is what a real server would have supplied.
+void SaveRolesScreenshot(const ScreenshotSpec& spec,
+                         NodeService& node_service,
+                         scada::AttributeService& attribute_service,
+                         AnyExecutor executor);

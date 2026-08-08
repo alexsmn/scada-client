@@ -124,6 +124,18 @@ set_target_properties(client_screenshot_generator PROPERTIES
   AUTOMOC ON
 )
 
+# This generator only ever runs on the offscreen platform — every ctest
+# registration below and the macOS gallery run set QT_QPA_PLATFORM=offscreen —
+# but with a static Qt only the host's default platform plugins are linked in
+# (cocoa on macOS, windows on Windows). Without naming it here the executable
+# aborts in QApplication's constructor with `Could not find the Qt platform
+# plugin "offscreen"`, so the checks below fail having captured nothing. Same
+# requirement, same fix as `client_qt` (client/app/qt/CMakeLists.txt).
+if(COMMAND qt_import_plugins AND TARGET Qt6::QOffscreenIntegrationPlugin)
+  qt_import_plugins(client_screenshot_generator
+    INCLUDE Qt6::QOffscreenIntegrationPlugin)
+endif()
+
 if(MSVC)
   target_link_options(client_screenshot_generator PRIVATE
     $<$<CONFIG:Debug>:/DEBUG:NONE>

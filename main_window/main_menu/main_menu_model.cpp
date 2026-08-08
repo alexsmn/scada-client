@@ -484,8 +484,8 @@ void MainMenuModel::Rebuild() {
   settings_menu_.AddItem(ID_SETTINGS_DIALOG, Translate("Settings..."));
   AddSubMenu(0, Translate("Settings"), &settings_menu_);
 #else
-  // Without the Qt UI config there is no preferences dialog, so the toggles
-  // stay in the menu.
+  // The Wt shell has no preferences dialog, so it keeps the toggles in the
+  // menu.
   AddSubMenu(0, Translate("Settings"), &settings_submenu_);
 #endif
 

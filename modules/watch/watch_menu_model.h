@@ -10,7 +10,7 @@ class CommandHandler;
 // This mirrors the legacy Windows-only `IDR_LOG_POPUP` resource menu for the
 // commands `WatchView` contributes (a checkable pause toggle, save-as and
 // clear) as an `aui::MenuModel`, so the same menu renders identically on
-// Windows and macOS through the shared menu-model path instead of a
+// Windows, macOS and Wt through the shared menu-model path instead of a
 // `CMenu::LoadMenu` that only exists on Windows.
 //
 // Checked/enabled state and command execution are delegated to the supplied

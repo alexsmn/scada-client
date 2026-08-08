@@ -21,6 +21,9 @@ class OSExchangeData;
 #if defined(UI_QT)
 class QLineEdit;
 class QWidget;
+#elif defined(UI_WT)
+class WContainerWidget;
+class WLineEdit;
 #endif
 
 class SheetModel;
@@ -64,6 +67,9 @@ class SheetController : protected ControllerContext,
 #if defined(UI_QT)
   QWidget* contents_view_ = nullptr;
   QLineEdit* formula_row_ = nullptr;
+#elif defined(UI_WT)
+  Wt::WContainerWidget* contents_view_ = nullptr;
+  Wt::WLineEdit* formula_row_ = nullptr;
 #endif
 
   scada::aui::Grid* grid_ = nullptr;

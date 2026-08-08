@@ -19,11 +19,16 @@ class QMainWindow;
 class ViewManagerDelegate;
 class WindowDefinition;
 struct WindowInfo;
+namespace Wt {
+class WLayout;
+}
 
 class ViewManager {
  public:
 #if defined(UI_QT)
   ViewManager(QMainWindow& main_window, ViewManagerDelegate& delegate);
+#elif defined(UI_WT)
+  explicit ViewManager(ViewManagerDelegate& delegate);
 #endif
 
   virtual ~ViewManager();
@@ -57,6 +62,10 @@ class ViewManager {
   void SetViewTitle(OpenedView& view, const std::u16string& title);
 
   void SplitView(OpenedView& view, bool vertically);
+
+#if defined(UI_WT)
+  Wt::WLayout& root_layout();
+#endif
 
  protected:
   void SetActiveView(OpenedView* view);

@@ -8,9 +8,14 @@
 #include "node_service/node_ref.h"
 #include "node_service/node_service.h"
 #include "scada/node_id.h"
+#include "user_access/qt/roles_grid_panel.h"
 #include "user_access/qt/user_access_panel.h"
+#include "user_access/role_membership.h"
+
+#include <gtest/gtest.h>
 
 #include <array>
+#include <memory>
 
 void SaveUserAccessScreenshot(const ScreenshotSpec& spec,
                               NodeService& node_service,
@@ -30,4 +35,26 @@ void SaveUserAccessScreenshot(const ScreenshotSpec& spec,
   panel.ShowUser(user, node_service, attribute_service, executor);
 
   SaveScreenshot(&panel, spec);
+}
+
+void SaveRolesScreenshot(const ScreenshotSpec& spec,
+                         NodeService& node_service,
+                         scada::AttributeService& attribute_service,
+                         AnyExecutor executor) {
+  // The panel is reshell chrome and does not exist in the legacy look, so a
+  // no-theme run has nothing to render rather than something to fix.
+  std::unique_ptr<RolesGridPanel> panel{MakeRolesGridPanel()};
+  if (!panel) {
+    ADD_FAILURE() << spec.filename
+                  << ": the Roles panel exists only under the reshell theme; "
+                     "capture it with --theme";
+    return;
+  }
+
+  // Await the read instead of spawning it: the view path spawns and the
+  // capture then raced it, grabbing a grid that had not been filled yet.
+  panel->ShowRoles(scada::screenshot_generator::WaitForAwaitable(
+      executor, ReadRoleMemberships(executor, node_service, attribute_service)));
+
+  SaveScreenshot(panel.get(), spec);
 }

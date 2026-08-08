@@ -178,7 +178,7 @@ std::unique_ptr<UiView> WatchView::Init(const WindowDefinition& definition) {
   });
 
   table_->SetContextMenuHandler([this](const scada::aui::Point& point) {
-    // Cross-platform AUI menu model (Windows, macOS) instead of the
+    // Cross-platform AUI menu model (Windows, macOS, Wt) instead of the
     // Windows-only `IDR_LOG_POPUP` resource menu.
     controller_delegate_.ShowPopupMenu(&watch_menu_model_.model(), point, true);
   });
@@ -221,15 +221,14 @@ std::unique_ptr<UiView> WatchView::Init(const WindowDefinition& definition) {
 #if defined(UI_QT)
 
 // The trace beside the decode pane, as in
-// docs/product/ui-mockups/screens/device-protocol-trace.html: the selected
-// frame's octets and its decoded field tree. The pane belongs to the frame
-// trace, so it is hidden in the ordinary device log — a permanently empty
-// inspector would be a regression for the common case, which is reading log
-// lines.
+// docs/product/ui-mockups/screens/device-protocol-trace.html: the selected frame's
+// octets and its decoded field tree. The pane belongs to the frame trace, so
+// it is hidden in the ordinary device log — a permanently empty inspector
+// would be a regression for the common case, which is reading log lines.
 //
 // Composition is Qt-only, the house pattern for this (see table_view.cpp,
-// event_view.cpp): aui has no cross-platform splitter, so the layout is built
-// against Qt directly.
+// event_view.cpp): aui has no cross-platform splitter, and the Wt frontend
+// keeps the bare trace it has today.
 std::unique_ptr<UiView> WatchView::CreateFrameTraceLayout() {
   auto* pane = new FrameDecodePane;
 
@@ -337,7 +336,7 @@ void WatchView::ToggleFrameTrace() {
                       : WatchMode::kFrameTrace);
   // Entering the trace is exactly when the frames become worth producing, and
   // leaving it is when they stop being. Here rather than in the Qt-only pane
-  // wiring, so arming does not depend on whether the pane was built.
+  // wiring so the Wt frontend arms too.
   SetCaptureArmed(model_->mode() == WatchMode::kFrameTrace);
   controller_delegate_.SetTitle(MakeTitle());
   refresh_decode_pane_();
