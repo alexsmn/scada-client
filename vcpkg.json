@@ -29,6 +29,7 @@
     "grpc",
     "gtest",
     "icu",
+    "lunasvg",
     "openssl",
     {
       "name": "opentelemetry-cpp",
@@ -43,7 +44,6 @@
       "platform": "windows"
     },
     "qtbase",
-    "qtsvg",
     {
       "name": "qttools",
       "platform": "windows"

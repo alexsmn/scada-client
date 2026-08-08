@@ -9,7 +9,9 @@
 #include <QPainter>
 #include <QPixmap>
 #include <QString>
-#include <QSvgRenderer>
+#include <QFile>
+
+#include <lunasvg.h>
 
 #include <span>
 #include <string_view>
@@ -33,22 +35,45 @@ inline QIcon LoadTintedGlyph(std::string_view resource_path,
                              qreal device_pixel_ratio = 1.0) {
   const QString path = QString::fromUtf8(
       resource_path.data(), static_cast<qsizetype>(resource_path.size()));
-  QSvgRenderer renderer{path};
-  if (!renderer.isValid() || size <= 0)
+  if (size <= 0)
+    return {};
+
+  // The glyphs are Qt resources (":/..."), which lunasvg cannot open by path,
+  // so the bytes are read out first. lunasvg is used rather than Qt's own SVG
+  // module because qtsvg's vcpkg build shells out to `xcodebuild` and so needs
+  // a full Xcode; lunasvg is pure C++ and was the only Qt dependency standing
+  // between the client and a standalone build from its export.
+  QFile file{path};
+  if (!file.open(QIODevice::ReadOnly))
+    return {};
+  const QByteArray svg = file.readAll();
+  const auto document =
+      lunasvg::Document::loadFromData(svg.constData(),
+                                      static_cast<size_t>(svg.size()));
+  if (!document)
     return {};
 
   const qreal dpr = device_pixel_ratio > 0 ? device_pixel_ratio : 1.0;
-  QPixmap pixmap{QSize{size, size} * dpr};
+  const int px = qRound(size * dpr);
+  QPixmap pixmap{QSize{px, px}};
   pixmap.setDevicePixelRatio(dpr);
   pixmap.fill(Qt::transparent);
 
+  // Rendered at device pixels, then drawn into the logical rect: same crispness
+  // guarantee the QSvgRenderer path gave, kept explicit now that the rasteriser
+  // no longer knows about Qt's device pixel ratio.
+  lunasvg::Bitmap bitmap = document->renderToBitmap(px, px);
+  if (!bitmap.valid())
+    return {};
+  const QImage glyph{bitmap.data(), px, px, static_cast<qsizetype>(bitmap.stride()),
+                     QImage::Format_ARGB32_Premultiplied};
+
   QPainter painter{&pixmap};
   painter.setRenderHint(QPainter::Antialiasing);
-  renderer.render(&painter, QRectF{0, 0, static_cast<qreal>(size),
-                                   static_cast<qreal>(size)});
+  painter.drawImage(QRectF{0, 0, static_cast<qreal>(px), static_cast<qreal>(px)},
+                    glyph);
   painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-  painter.fillRect(QRectF{0, 0, static_cast<qreal>(size),
-                          static_cast<qreal>(size)},
+  painter.fillRect(QRectF{0, 0, static_cast<qreal>(px), static_cast<qreal>(px)},
                    tint);
   painter.end();
 

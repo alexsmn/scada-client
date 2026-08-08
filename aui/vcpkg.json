@@ -20,6 +20,7 @@
     "boost-uuid",
     "grpc",
     "gtest",
+    "lunasvg",
     "openssl",
     {
       "name": "opentelemetry-cpp",
@@ -33,7 +34,6 @@
       "platform": "windows"
     },
     "qtbase",
-    "qtsvg",
     "wt"
   ]
 }

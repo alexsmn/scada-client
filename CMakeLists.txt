@@ -36,11 +36,14 @@ endif()
 # Required for `AUTOMOC`, `AUTOUIC`, and `AUTORCC` added to all
 # `client_module` targets.
 if(BUILD_CLIENT_QT)
-  # Svg: QIcon cannot load an SVG without Qt's qsvgicon icon-engine plugin,
-  # which ships in the Qt Svg module rather than qtbase. The tree/table glyphs
-  # are Lucide SVGs (docs/client/ux/iconography.md §4), so the link is what makes
-  # windeployqt/macdeployqt carry the plugin.
-  find_package(Qt6 REQUIRED COMPONENTS Svg Widgets)
+  # No Svg component. The qsvgicon icon-engine plugin is only needed when QIcon
+  # is asked to load an .svg itself; nothing here does. The tree/table Lucide
+  # glyphs (docs/client/ux/iconography.md §4) are rasterised by lunasvg inside aui
+  # and reach QIcon as an already-rendered QPixmap, so windeployqt/macdeployqt
+  # have no plugin to carry. qtsvg's vcpkg build shells out to `xcodebuild` and
+  # needs a full Xcode; it was the last dependency keeping the client from
+  # building standalone from its export.
+  find_package(Qt6 REQUIRED COMPONENTS Widgets)
   find_package(Qt6 COMPONENTS LinguistTools QUIET)
 endif()
 

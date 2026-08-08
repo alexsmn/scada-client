@@ -48,7 +48,8 @@ endif()
 # client_module() enables AUTOMOC/AUTOUIC/AUTORCC on Qt targets, so Qt must be
 # found before target creation when building standalone.
 if("qt" IN_LIST CLIENT_UI_CONFIGS)
-  find_package(Qt6 REQUIRED COMPONENTS Svg Widgets)
+  find_package(Qt6 REQUIRED COMPONENTS Widgets)
+  find_package(lunasvg CONFIG REQUIRED)
 endif()
 
 client_module(aui)
@@ -78,10 +79,10 @@ if(TARGET aui_qt)
   target_compile_features(aui_qt PUBLIC cxx_std_23)
 
   target_link_libraries(aui_qt PUBLIC
-    # Svg: Tree/Table render their row glyphs from Lucide SVG resources, and
-    # QIcon needs Qt's qsvgicon icon-engine plugin to load one. It lives in the
-    # Svg module, not qtbase.
-    Qt6::Svg
+    # Lucide row glyphs are rasterised by lunasvg rather than Qt6::Svg:
+    # qtsvg's vcpkg build requires full Xcode, and this was the last
+    # dependency keeping the client from building standalone.
+    lunasvg::lunasvg
     Qt6::Widgets
   )
 
