@@ -2683,5 +2683,270 @@
         <source>Incorrect floating point value.</source>
         <translation>Указано некорректное значение с плавающей точкой.</translation>
     </message>
+    <!-- Status-code descriptions (core/scada/status.cpp). These moved out of
+         the C++ table into this catalog; the English there is the lookup key, so
+         a server with no catalog renders the English and the client renders the
+         Russian these entries preserve verbatim. -->
+    <message>
+        <source>Operation completed successfully</source>
+        <translation>Операция выполнена успешно</translation>
+    </message>
+    <message>
+        <source>Operation in progress</source>
+        <translation>Операция выполняется</translation>
+    </message>
+    <message>
+        <source>The lock was not changed</source>
+        <translation>Блокировка не была изменена</translation>
+    </message>
+    <message>
+        <source>Wrong user name or password</source>
+        <translation>Неверное имя пользователя или пароль</translation>
+    </message>
+    <message>
+        <source>A session for this user is already open</source>
+        <translation>Сессия данного пользователя уже установлена</translation>
+    </message>
+    <message>
+        <source>Protocol version is not supported</source>
+        <translation>Версия протокола не поддерживается</translation>
+    </message>
+    <message>
+        <source>Another command is already running</source>
+        <translation>В данный момент выполняется другая команда</translation>
+    </message>
+    <message>
+        <source>Wrong node identifier</source>
+        <translation>Неправильный идентификатор узла</translation>
+    </message>
+    <message>
+        <source>Wrong device identifier</source>
+        <translation>Неправильный идентификатор устройства</translation>
+    </message>
+    <message>
+        <source>Not connected</source>
+        <translation>Соединение не установлено</translation>
+    </message>
+    <message>
+        <source>Session closed because this user connected again</source>
+        <translation>Сессия разорвана из-за повторного подключения данного пользователя</translation>
+    </message>
+    <message>
+        <source>Operation aborted after the wait timed out</source>
+        <translation>Операция прервана по истечении времени ожидания</translation>
+    </message>
+    <message>
+        <source>Cannot delete the object because dependent objects exist</source>
+        <translation>Невозможно удалить объект из-за наличия зависимых объектов</translation>
+    </message>
+    <message>
+        <source>Session closed because the server stopped</source>
+        <translation>Сессия разорвана из-за остановки сервера</translation>
+    </message>
+    <message>
+        <source>The command is not supported by this object</source>
+        <translation>Команда не поддерживается данным объектом</translation>
+    </message>
+    <message>
+        <source>Cannot delete a user from a session that user opened</source>
+        <translation>Невозможно удалить пользователя из открытой им сессии</translation>
+    </message>
+    <message>
+        <source>An object with this identifier already exists</source>
+        <translation>Объект с таким идентификатором уже существует</translation>
+    </message>
+    <message>
+        <source>File version is not supported</source>
+        <translation>Версия файла не поддерживается</translation>
+    </message>
+    <message>
+        <source>Wrong object type</source>
+        <translation>Неправильный тип объекта</translation>
+    </message>
+    <message>
+        <source>Wrong parent object identifier</source>
+        <translation>Неправильный идентификатор родительского объекта</translation>
+    </message>
+    <message>
+        <source>Not logged on</source>
+        <translation>Авторизация не выполнена</translation>
+    </message>
+    <message>
+        <source>Wrong subscription number</source>
+        <translation>Неправильный номер подписки</translation>
+    </message>
+    <message>
+        <source>Wrong index</source>
+        <translation>Неправильный индекс</translation>
+    </message>
+    <message>
+        <source>Wrong IEC 60870-5 ASDU type</source>
+        <translation>Неправильный тип ASDU протокола МЭК-60870</translation>
+    </message>
+    <message>
+        <source>Wrong IEC 60870-5 cause of transmission</source>
+        <translation>Неправильная причина передачи протокола МЭК-60870</translation>
+    </message>
+    <message>
+        <source>Wrong IEC 60870-5 device address</source>
+        <translation>Неправильный адрес устройства протокола МЭК-60870</translation>
+    </message>
+    <message>
+        <source>Wrong IEC 60870-5 information object address</source>
+        <translation>Неправильный адрес объекта протокола МЭК-60870</translation>
+    </message>
+    <message>
+        <source>IEC 60870-5 protocol error</source>
+        <translation>Ошибка протокола МЭК-60870</translation>
+    </message>
+    <message>
+        <source>Wrong command arguments</source>
+        <translation>Неправильные аргументы команды</translation>
+    </message>
+    <message>
+        <source>Cannot convert the string to a value of this type</source>
+        <translation>Невозможно преобразовать строку в значение данного типа</translation>
+    </message>
+    <message>
+        <source>String is too long</source>
+        <translation>Слишком длинная строка</translation>
+    </message>
+    <message>
+        <source>Wrong object attribute</source>
+        <translation>Неправильный атрибут объекта</translation>
+    </message>
+    <message>
+        <source>Wrong reference type</source>
+        <translation>Неправильный тип ссылки</translation>
+    </message>
+    <message>
+        <source>Wrong node class</source>
+        <translation>Неправильный класс узла</translation>
+    </message>
+    <message>
+        <source>IEC 61850 protocol error</source>
+        <translation>Ошибка протокола МЭК-61850</translation>
+    </message>
+    <message>
+        <source>The request is empty</source>
+        <translation>Запрос пуст</translation>
+    </message>
+    <message>
+        <source>Name not found</source>
+        <translation>Имя не найдено</translation>
+    </message>
+    <message>
+        <source>Wrong monitored item number</source>
+        <translation>Неправильный номер элемента мониторинга</translation>
+    </message>
+    <message>
+        <source>The requested message is no longer available</source>
+        <translation>Запрошенное сообщение больше недоступно</translation>
+    </message>
+    <message>
+        <source>Invalid client application signature</source>
+        <translation>Неверная подпись приложения клиента</translation>
+    </message>
+    <message>
+        <source>Too many operations in the request</source>
+        <translation>Слишком много операций в запросе</translation>
+    </message>
+    <message>
+        <source>Too many monitored items in the request</source>
+        <translation>Слишком много элементов мониторинга в запросе</translation>
+    </message>
+    <message>
+        <source>Unknown message sequence number</source>
+        <translation>Неизвестный порядковый номер сообщения</translation>
+    </message>
+    <message>
+        <source>The browse continuation point limit is exhausted</source>
+        <translation>Исчерпан лимит точек продолжения просмотра</translation>
+    </message>
+    <message>
+        <source>Wrong TimestampsToReturn value</source>
+        <translation>Неправильное значение TimestampsToReturn</translation>
+    </message>
+    <message>
+        <source>Unknown view identifier</source>
+        <translation>Неизвестный идентификатор представления</translation>
+    </message>
+    <message>
+        <source>Invalid history request parameters</source>
+        <translation>Недопустимые параметры запроса истории</translation>
+    </message>
+    <message>
+        <source>The session has no subscriptions</source>
+        <translation>Для сессии нет подписок</translation>
+    </message>
+    <message>
+        <source>Not enough rights to perform the operation</source>
+        <translation>Недостаточно прав для выполнения операции</translation>
+    </message>
+    <message>
+        <source>Operation is not supported</source>
+        <translation>Операция не поддерживается</translation>
+    </message>
+    <message>
+        <source>The license has expired</source>
+        <translation>Срок действия лицензии истёк</translation>
+    </message>
+    <message>
+        <source>No value received from the data source yet</source>
+        <translation>Значение от источника данных ещё не получено</translation>
+    </message>
+    <message>
+        <source>The value is out of range and will not be stored</source>
+        <translation>Значение недопустимо и не будет сохранено</translation>
+    </message>
+    <!-- Data-quality flags, rendered as a space-separated run
+         (core/scada/qualifier.cpp). Kept abbreviated exactly as before: the
+         strip sits in a narrow grid cell. -->
+    <message>
+        <source>Bad quality</source>
+        <translation>Недост</translation>
+    </message>
+    <message>
+        <source>Backup</source>
+        <translation>Резерв</translation>
+    </message>
+    <message>
+        <source>No link</source>
+        <translation>НетСвязи</translation>
+    </message>
+    <message>
+        <source>Manual</source>
+        <translation>Ручной</translation>
+    </message>
+    <message>
+        <source>Misconfigured</source>
+        <translation>НеСконф</translation>
+    </message>
+    <message>
+        <source>Simulated</source>
+        <translation>Эмулирован</translation>
+    </message>
+    <message>
+        <source>Sporadic</source>
+        <translation>Спорадика</translation>
+    </message>
+    <message>
+        <source>Stale</source>
+        <translation>Устарел</translation>
+    </message>
+    <message>
+        <source>Failed</source>
+        <translation>Ошибка</translation>
+    </message>
+    <!-- Boolean value labels (core/scada/variant.cpp,
+         Variant::TrueLabel/FalseLabel). -->
+    <message>
+        <source>Yes</source>
+        <translation>Да</translation>
+    </message>
+    <message>
+        <source>No</source>
+        <translation>Нет</translation>
+    </message>
 </context>
 </TS>

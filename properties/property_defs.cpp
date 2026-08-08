@@ -4,11 +4,11 @@
 #include "aui/translation.h"
 #include "base/awaitable.h"
 #include "base/utf_convert.h"
-#include "properties/transport/transport_dialog.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/node_service.h"
 #include "properties/property_context.h"
 #include "properties/property_util.h"
+#include "properties/transport/transport_dialog.h"
 #include "scada/node_management_service.h"
 #include "services/task_manager.h"
 
@@ -115,8 +115,8 @@ std::u16string BoolPropertyDefinition::GetText(
     return std::u16string();
 
   auto bool_value = prop.value().get_or(false);
-  return bool_value ? std::u16string{scada::Variant::kTrueString}
-                    : std::u16string{scada::Variant::kFalseString};
+  return bool_value ? scada::Variant::TrueLabel()
+                    : scada::Variant::FalseLabel();
 }
 
 scada::aui::EditData BoolPropertyDefinition::GetPropertyEditor(
@@ -124,8 +124,7 @@ scada::aui::EditData BoolPropertyDefinition::GetPropertyEditor(
     const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
   scada::aui::EditData result{scada::aui::EditData::EditorType::DROPDOWN};
-  result.choices = {std::u16string{scada::Variant::kFalseString},
-                    std::u16string{scada::Variant::kTrueString}};
+  result.choices = {scada::Variant::FalseLabel(), scada::Variant::TrueLabel()};
   return result;
 }
 
@@ -213,13 +212,12 @@ void TransportPropertyDefinition::HandleEditButton(
   auto text = GetText(context, node, prop_decl_id);
 
   transport::TransportString transport_string{UtfConvert<char>(text)};
-  CoSpawn(context.executor_,
-          [context, node, prop_decl_id,
-           transport_string = std::move(transport_string)]()
-              -> Awaitable<void> {
-        auto updated_transport_string =
-            co_await ShowTransportDialog(context.dialog_service_,
-                                         transport_string);
+  CoSpawn(
+      context.executor_,
+      [context, node, prop_decl_id,
+       transport_string = std::move(transport_string)]() -> Awaitable<void> {
+        auto updated_transport_string = co_await ShowTransportDialog(
+            context.dialog_service_, transport_string);
         auto text = UtfConvert<char16_t>(updated_transport_string.ToString());
         SetTextHelper(context, node, prop_decl_id, text);
       });

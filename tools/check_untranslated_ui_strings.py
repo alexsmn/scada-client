@@ -46,6 +46,15 @@ justifies a column width by the header text "Адрес") and is entirely correc
 `\uXXXX` escapes are decoded first, since escaping is how the literals hid from
 a naive grep for Cyrillic in the first place.
 
+Rule 2 also runs over `core/` and `common/` (see `SHARED_ROOTS`), because the
+client is not where operator-facing text ends. A status description, a quality
+flag and a boolean label are all produced down there and rendered verbatim by
+the client; before `TranslateUiText` (`core/base/ui_text.h`) existed they were
+Russian literals with no seam to translate them through, which is precisely the
+condition this rule detects. Those trees are optional — the client repo is
+published standalone, where they are absent — so the check skips whichever it
+cannot find rather than failing.
+
 Usage:
     python3 client/tools/check_untranslated_ui_strings.py [--client-dir DIR]
 """
@@ -96,7 +105,48 @@ ALLOWED_CYRILLIC_DIRS = {
 # text) exactly as ALLOWED_UNTRANSLATED is. Same bar: only when translating
 # would be *wrong*.
 ALLOWED_CYRILLIC = {
-    # Nothing yet.
+    # Wire data, not UI text. A configuration export writes the *localized*
+    # boolean label, so files exported by a Russian client — and every file
+    # exported before the labels went through TranslateUiText — carry these
+    # words. Import has to keep recognising them. See the comment on
+    # ParseBoolLabel.
+    ("common/common/format.cpp", "Да"): "legacy exported BOOL spelling",
+    ("common/common/format.cpp", "Нет"): "legacy exported BOOL spelling",
+    # A character class for the expression lexer, not text shown to anyone: it
+    # lists the letters an identifier may contain (scada_expression.cpp).
+    (
+        "common/common/scada_expression.cpp",
+        "абвгдеёжзийклмнопрстуфхцчшщьыъэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШ",
+    ): "identifier character class",
+    ("common/common/scada_expression.cpp", "ЩЬЫЪЭЮЯ"): "identifier character class",
+}
+
+# The shared libraries below the client, scanned by rule 2 only. They produce
+# operator-facing text too — a status description, a quality flag, a boolean
+# label — and it reaches the client through `TranslateUiText`
+# (`core/base/ui_text.h`), so a Russian literal here is exactly as
+# untranslatable as one in the client. They are optional: the client repo is
+# published standalone, where these directories do not exist.
+#
+# Rule 1 does not apply — none of the six sinks exist below the UI layer.
+SHARED_ROOTS = ("core", "common")
+
+# Parts of SHARED_ROOTS not yet swept, with what each still needs decided. This
+# list must only ever shrink; it is KNOWN_GAPS for rule 2.
+SHARED_CYRILLIC_GAPS = {
+    # Single-glyph quality modifiers rendered inline in a tree label ("[НР] …").
+    # Translating them needs a catalog key per glyph, and Translate() has no
+    # disambiguation context, so a one-letter source would collide with every
+    # other one-letter source. Needs the glyph vocabulary decided first.
+    "common/node_service/node_format.cpp": "quality-modifier glyphs",
+    "common/address_space/node_format.cpp": "quality-modifier glyphs",
+    # OPC UA standard node display names, served over the wire by a process
+    # that installs no translator — routing them through TranslateUiText would
+    # make the server send English, changing what operators see, with nothing
+    # on the client side to translate it back.
+    "common/address_space/standard_address_space.cpp": "wire-served display names",
+    # Windows API failure text, on a path that has no translator installed.
+    "core/base/win/format_hresult.cpp": "OS error fallback",
 }
 
 # Files whose strings never reach an operator.
@@ -244,7 +294,7 @@ def main() -> int:
         return 0
 
     findings, allowed, gaps = [], 0, 0
-    cyrillic, cyrillic_allowed = [], 0
+    cyrillic, cyrillic_allowed, cyrillic_gaps = [], 0, 0
     scanned = 0
     for path in sorted(client_dir.rglob("*")):
         if path.suffix not in (".cpp", ".h") or is_excluded(path, client_dir):
@@ -265,6 +315,28 @@ def main() -> int:
                 cyrillic_allowed += 1
             else:
                 cyrillic.append((rel, line, text))
+
+    # Rule 2 over the shared libraries. Paths are reported relative to the
+    # superproject (`core/…`, `common/…`) so they cannot be confused with the
+    # client-relative ones above.
+    shared_scanned = 0
+    for root_name in SHARED_ROOTS:
+        root = client_dir.parent / root_name
+        if not root.is_dir():
+            continue
+        for path in sorted(root.rglob("*")):
+            if path.suffix not in (".cpp", ".h", ".cppm") or is_excluded(path, root):
+                continue
+            shared_scanned += 1
+            rel = f"{root_name}/{path.relative_to(root).as_posix()}"
+            for line, text in scan_file_for_cyrillic(path, rel):
+                if rel in SHARED_CYRILLIC_GAPS:
+                    cyrillic_gaps += 1
+                elif (rel, text) in ALLOWED_CYRILLIC:
+                    cyrillic_allowed += 1
+                else:
+                    cyrillic.append((rel, line, text))
+    scanned += shared_scanned
 
     if cyrillic:
         print(f"{len(cyrillic)} literal(s) carry Russian text:\n")
@@ -300,9 +372,10 @@ def main() -> int:
 
     print(
         f"OK: no untranslatable user-facing strings and no Russian literals "
-        f"({scanned} file(s) scanned, {len(SINKS)} sink(s); "
-        f"{allowed} allowed, {gaps} known gap(s), "
-        f"{cyrillic_allowed} allowed Cyrillic literal(s))."
+        f"({scanned} file(s) scanned, {shared_scanned} of them shared; "
+        f"{len(SINKS)} sink(s); {allowed} allowed, {gaps} known gap(s), "
+        f"{cyrillic_allowed} allowed Cyrillic literal(s), "
+        f"{cyrillic_gaps} literal(s) in not-yet-swept shared files)."
     )
     return 0
 

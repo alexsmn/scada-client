@@ -629,6 +629,17 @@ Ordered as: project headers, then third-party/standard headers, separated by bla
   the tab context menu says `To Favourites` rather than reusing
   `Add to Favourites`), and preserve the Russian exactly as it displayed, so
   the change is invisible to the operator and to the screenshot gallery.
+- **The same rule now covers `core/` and `common/`, which is where the rest of
+  the operator's text comes from.** Status-code descriptions, data-quality
+  flags and the boolean Yes/No labels are produced below the client and
+  rendered by it verbatim; they carry English sources and go through
+  `scada::TranslateUiText` (`core/base/ui_text.h`), whose translator the client
+  installs in `AppInit`. Their Russian lives in `app/qt/client_ru.ts` like
+  everything else, so adding a status code means adding a catalog entry.
+  Without a translator installed — every server tier, and every unit test — the
+  English source renders, and that is the intended behaviour, not a fallback.
+  These trees are optional to the check: this repo publishes standalone, so it
+  skips whichever of them is absent.
 - A `.ui` form's strings belong to the **form class's context**
   (`uic` emits `QCoreApplication::translate("<FormClass>", ...)`), not the
   empty context. `client_ui_translation_check` (ctest, see

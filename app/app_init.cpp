@@ -1,7 +1,7 @@
 #include "app/app_init.h"
 
 #include "aui/translation.h"
-#include "common/ui_text.h"
+#include "base/ui_text.h"
 #include "model/node_id_util.h"
 
 #include "base/boost_log_init.h"
