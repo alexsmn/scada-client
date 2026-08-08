@@ -6,3 +6,10 @@ if(TARGET client_component_selection_edit_qt)
     client_ui_common_qt
   )
 endif()
+
+if(TARGET client_component_selection_edit_wt)
+  target_link_libraries(client_component_selection_edit_wt PRIVATE
+    client_clipboard
+    client_ui_common_wt
+  )
+endif()

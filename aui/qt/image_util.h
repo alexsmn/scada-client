@@ -4,12 +4,12 @@
 
 #include <QBitmap>
 #include <QColor>
-#include <QFile>
+#include <QPalette>
 #include <QIcon>
 #include <QPainter>
-#include <QPalette>
 #include <QPixmap>
 #include <QString>
+#include <QFile>
 
 #include <lunasvg.h>
 
@@ -23,8 +23,8 @@
 // notion of — it resolves to black. So the glyph is rendered to a transparent
 // pixmap and recoloured through it (`SourceIn` keeps the stroke's coverage,
 // including its antialiasing, and replaces the colour). That is what
-// docs/client/ux/iconography.md §4 means by "tint is applied by the consumer,
-// not the file": one asset serves dark, light and high-contrast.
+// docs/client/ux/iconography.md §4 means by "tint is applied by the consumer, not the
+// file": one asset serves dark, light and high-contrast.
 //
 // Rendered at the device pixel ratio, so a 16 px row glyph stays crisp on a
 // HiDPI display instead of being upscaled from 16 physical pixels the way the
@@ -47,8 +47,9 @@ inline QIcon LoadTintedGlyph(std::string_view resource_path,
   if (!file.open(QIODevice::ReadOnly))
     return {};
   const QByteArray svg = file.readAll();
-  const auto document = lunasvg::Document::loadFromData(
-      svg.constData(), static_cast<size_t>(svg.size()));
+  const auto document =
+      lunasvg::Document::loadFromData(svg.constData(),
+                                      static_cast<size_t>(svg.size()));
   if (!document)
     return {};
 
@@ -64,22 +65,16 @@ inline QIcon LoadTintedGlyph(std::string_view resource_path,
   lunasvg::Bitmap bitmap = document->renderToBitmap(px, px);
   if (!bitmap.valid())
     return {};
-  const QImage glyph{bitmap.data(), px, px,
-                     static_cast<qsizetype>(bitmap.stride()),
+  const QImage glyph{bitmap.data(), px, px, static_cast<qsizetype>(bitmap.stride()),
                      QImage::Format_ARGB32_Premultiplied};
-
-  // The destination is in *logical* units, not device pixels: QPainter reads
-  // the pixmap's device pixel ratio and scales by it itself. Passing `px` here
-  // multiplies by the ratio a second time, so on a HiDPI display the glyph is
-  // drawn dpr times too large and clipped against the pixmap — which is how a
-  // 24 px toolbar icon came out as a zoomed crop that overflowed its button.
-  const QRectF target{0, 0, static_cast<qreal>(size), static_cast<qreal>(size)};
 
   QPainter painter{&pixmap};
   painter.setRenderHint(QPainter::Antialiasing);
-  painter.drawImage(target, glyph);
+  painter.drawImage(QRectF{0, 0, static_cast<qreal>(px), static_cast<qreal>(px)},
+                    glyph);
   painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-  painter.fillRect(target, tint);
+  painter.fillRect(QRectF{0, 0, static_cast<qreal>(px), static_cast<qreal>(px)},
+                   tint);
   painter.end();
 
   return QIcon{pixmap};
@@ -104,8 +99,8 @@ inline std::vector<QIcon> LoadTintedGlyphs(
 // The colour row glyphs are rendered in, from a live palette.
 //
 // Row glyphs mark *kind*, never state — state rides the status dot
-// (docs/client/ux/iconography.md §5.2) — so they take a muted text colour
-// rather than competing with the label they sit beside.
+// (docs/client/ux/iconography.md §5.2) — so they take a muted text colour rather than
+// competing with the label they sit beside.
 inline scada::aui::Color GlyphTintFor(const QPalette& palette) {
   QColor tint = palette.color(QPalette::Text);
   tint.setAlphaF(0.7);

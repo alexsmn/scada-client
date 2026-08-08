@@ -1,5 +1,6 @@
 // scada.client.services — named C++20 module facade over the
-// client_services_qt headers.
+// client_services_qt headers (the Qt flavor; the wt flavor stays
+// header-only).
 //
 // Same design and rules as scada.base (see core/base/scada_base.cppm and
 // core/docs/cxx-modules.md): headers stay the source of truth, the global

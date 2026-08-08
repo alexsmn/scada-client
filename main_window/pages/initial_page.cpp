@@ -41,6 +41,7 @@ Page CreateInitialPage() {
   events_def.size = {800, 600};
   events_def.visible = false;
 
+#if !defined(UI_WT)
   // Graph with server CPU usage.
   WindowDefinition& graph_def = page.AddWindow(
       WindowDefinition(/*kGraphWindowInfo*/ GetWindowInfo(ID_GRAPH_VIEW)));
@@ -53,6 +54,7 @@ Page CreateInitialPage() {
     item.SetString("path", path);
     item.SetInt("dots", 0);
   }*/
+#endif
 
   // Table with top 10 tss.
   WindowDefinition& table_def = page.AddWindow(
@@ -74,7 +76,9 @@ Page CreateInitialPage() {
   PageLayoutBlock& left_block = main.top();
 
   central_block.central = true;
+#if !defined(UI_WT)
   central_block.add(graph_def.id);
+#endif
   central_block.add(table_def.id);
   central_block.active_window = central_block.wins.front();
 

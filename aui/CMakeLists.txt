@@ -1,4 +1,4 @@
-# The abstract UI layer: platform-agnostic models plus the Qt view
+# The abstract UI layer: platform-agnostic models plus the Qt/Wt view
 # wrappers. Slated for extraction into its own repository, so this file works
 # both as a subdirectory of the client build (through
 # FindScadaClientAui.cmake) and as a standalone top-level project. See
@@ -14,16 +14,25 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   enable_testing()
 endif()
 
-# UI configuration: a consuming project (the client root) defines
-# CLIENT_UI_CONFIGS before adding aui; derive it from BUILD_CLIENT_QT when
-# building standalone. Qt is the only flavour — the Wt one was deleted, see
-# the client root CMakeLists.
+# Dual-UI configuration: a consuming project (the client root) defines
+# CLIENT_UI_CONFIGS before adding aui; derive it from the BUILD_CLIENT_*
+# options when building standalone.
 if(NOT DEFINED CLIENT_UI_CONFIGS)
   option(BUILD_CLIENT_QT "Build the Qt flavor (aui_qt)" ON)
+  # OFF: the Wt flavour does not compile. modules/events/event_view.cpp calls
+# scada::aui::GetSeverityTheme, which the reshell added to the Qt flavour and
+# never to this one, and a Wt-only configure additionally references the
+# Qt-only client_properties_transport_qt. It has no preset, no CI job and no
+# row in the Qt/web parity matrix — the shipped web client is web/. Slated for
+# removal; see tasks.md.
+option(BUILD_CLIENT_WT "Build the Wt flavor (aui_wt)" OFF)
 
   set(CLIENT_UI_CONFIGS)
   if(BUILD_CLIENT_QT)
     list(APPEND CLIENT_UI_CONFIGS qt)
+  endif()
+  if(BUILD_CLIENT_WT)
+    list(APPEND CLIENT_UI_CONFIGS wt)
   endif()
   if(NOT CLIENT_UI_CONFIGS)
     message(FATAL_ERROR "At least one aui UI flavor must be enabled")
@@ -36,7 +45,7 @@ if(NOT COMMAND scada_module OR NOT TARGET scada_base)
   find_package(ScadaCore REQUIRED)
 endif()
 
-# aui owns the flavoured _qt target helpers (client_module() and friends); the
+# aui owns the dual _qt/_wt target helpers (client_module() and friends); the
 # client repo and any other consumer reuse them from here.
 if(NOT COMMAND client_module)
   include("${CMAKE_CURRENT_LIST_DIR}/client_module.cmake")
@@ -61,7 +70,7 @@ client_module_include_directories(aui PUBLIC "..")
 # layer, slated for extraction into its own repository. Its project
 # dependencies are scada_base (core/base utilities) and the standalone view
 # component libraries (graph_qt, view_manager_qt — declared below for the Qt
-# flavor); everything else it needs is Qt (aui_qt). Do not add
+# flavor); everything else it needs is Qt (aui_qt) or Wt (aui_wt). Do not add
 # links to client-repo modules here — invert the dependency instead (see
 # docs/client/aui-extraction.md).
 client_module_link_libraries(aui PUBLIC
@@ -103,12 +112,26 @@ if(TARGET aui_qt)
     view_manager_qt
   )
 
-  # C++20 module facade.
+  # C++20 module facade (Qt flavor only; the wt flavor stays header-based).
   scada_add_module_facade(aui_qt FILES scada_client_aui.cppm
     IMPORTS scada_base_module)
   if(SCADA_CXX_MODULES)
     add_subdirectory(module_test)
   endif()
+endif()
+
+# WT
+
+if(TARGET aui_wt)
+  target_compile_definitions(aui_wt PUBLIC UI_WT)
+
+  target_compile_features(aui_wt PUBLIC cxx_std_23)
+
+  find_package(wt CONFIG REQUIRED)
+
+  target_link_libraries(aui_wt PUBLIC
+    Wt::Wt
+  )
 endif()
 
 # Subs.

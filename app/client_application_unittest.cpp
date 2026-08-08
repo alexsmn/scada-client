@@ -294,6 +294,9 @@ TEST(ShutdownStackTest, RunsSinglePushedAction) {
   EXPECT_TRUE(ran);
 }
 
+// TODO: Enable Wt tests once `QTabWidget::removeTab` stops returning null.
+#if !defined(UI_WT)
+
 TEST_F(ClientApplicationTest, LoginFailed) {
   EXPECT_CALL(login_handler_, Call(/*services_context=*/_))
       .WillOnce(Invoke([](DataServicesContext&&)
@@ -516,3 +519,5 @@ TEST_F(ClientApplicationConfiguratorTest,
 
   Wait(app.Quit());
 }
+
+#endif

@@ -9,3 +9,9 @@ if(TARGET client_component_change_password_qt_unittests)
     client_core
   )
 endif()
+
+if(TARGET client_component_change_password_wt_unittests)
+  target_link_libraries(client_component_change_password_wt_unittests PRIVATE
+    client_core
+  )
+endif()
