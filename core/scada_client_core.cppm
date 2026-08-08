@@ -8,11 +8,10 @@
 //
 // UI-config requirement: node_command_context.h (and through it
 // default_node_command_registry.h) includes aui/key_codes.h, whose contents
-// exist only under UI_QT or UI_WT (aui::KeyModifiers is Qt::KeyboardModifiers
-// under UI_QT). The facade target must therefore be compiled with the UI
-// config macro visible — link aui_qt (which publishes UI_QT) or aui_wt —
-// exactly like client_core's UI consumers; a bare scada_base-only target
-// cannot compile this GMF.
+// exist only under UI_QT (aui::KeyModifiers is Qt::KeyboardModifiers). The
+// facade target must therefore be compiled with the UI config macro visible —
+// link aui_qt, which publishes UI_QT — exactly like client_core's UI
+// consumers; a bare scada_base-only target cannot compile this GMF.
 //
 // Deliberate exclusions (include the header textually where needed):
 //  - Names owned by other libraries that these headers merely pull in
@@ -20,7 +19,7 @@
 //    (::BasicCommand, ::BasicCommandRegistry, ::Command, ::CommandRegistry,
 //    ::CommandHandler, ::MenuGroup, ::UnaryFunction, ::UnaryFunctionImpl,
 //    ::CreateUniqueCommandId) and aui/key_codes.h (aui::KeyCode,
-//    aui::KeyModifier(s), the modifier constants — mostly Qt/Wt aliases).
+//    aui::KeyModifier(s), the modifier constants — mostly Qt aliases).
 //    They belong to the controller and aui libraries and stay include-only
 //    until those libraries get facades of their own.
 //  - Foreign types that these headers only forward-declare (::Tracer,

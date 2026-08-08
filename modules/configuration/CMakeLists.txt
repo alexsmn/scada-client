@@ -19,7 +19,3 @@ client_module_link_libraries(client_configuration PRIVATE
 if(TARGET client_configuration_qt)
   target_link_libraries(client_configuration_qt PRIVATE client_events_qt)
 endif()
-
-if(TARGET client_configuration_wt)
-  target_link_libraries(client_configuration_wt PRIVATE client_events_wt)
-endif()

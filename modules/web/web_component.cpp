@@ -19,7 +19,7 @@ void RegisterWebCommands(
     AnyExecutor executor,
     BasicCommandRegistry<GlobalCommandContext>& global_commands,
     UiCommandRegistry& ui_command_registry) {
-#if defined(_WIN32) && !defined(UI_WT)
+#if defined(_WIN32)
   global_commands.AddCommand(
       {.command_id = ID_HELP_MANUAL,
        .title = Translate("Documentation"),

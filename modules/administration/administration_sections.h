@@ -7,8 +7,8 @@
 // surface (`docs/product/ui-mockups/screens/users-admin.html`).
 //
 // Qt-free on purpose, like `main_window/pane_modes.h`: the vocabulary is the
-// product's, so the Wt shell and the web client can describe the same sections
-// in the same words.
+// product's, so this client and the web client describe the same sections in
+// the same words.
 
 // One section. Activating it opens the workspace view registered under
 // `command_id` — the section list navigates, it never renders the surface

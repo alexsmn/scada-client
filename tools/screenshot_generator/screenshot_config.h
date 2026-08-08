@@ -81,6 +81,10 @@ struct DialogSpec {
   // kind have both a legacy and a reshell capture without either run
   // overwriting the other's image.
   bool themed_only = false;
+  // objectName of a QComboBox to drop open before grabbing. The open list is
+  // a separate top-level window, so the capture composes it onto the dialog
+  // and the saved image is taller than `height`.
+  std::string expand_combo;
 };
 
 // Screenshot-generator fixture, loaded once from `screenshot_data.json`.
@@ -91,6 +95,12 @@ struct ScreenshotConfig {
   std::vector<ScreenshotSpec> screenshots;
   std::vector<DialogSpec> dialogs;
   scada::NodeId dialog_analog_node_id;
+  // Accounts the login dialog offers in its user combo ("login_user_list").
+  // Fixture data rather than a literal in the capture: these are the operator
+  // names the manual's login page shows, and they are Russian — which belongs
+  // in the fixture next to the rest of the fixture's Russian, not in client
+  // source. The first entry is also seeded as the pre-selected user.
+  std::vector<std::string> login_user_list;
 
   // Reads `path` and populates the fields. Uses `ASSERT_*` on failure
   // so a bad fixture fails the test suite before any TEST_F runs.
