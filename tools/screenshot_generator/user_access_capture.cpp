@@ -10,7 +10,9 @@
 #include "scada/node_id.h"
 #include "user_access/qt/roles_grid_panel.h"
 #include "user_access/qt/user_access_panel.h"
+#include "user_access/qt/users_grid_panel.h"
 #include "user_access/role_membership.h"
+#include "user_access/users_grid.h"
 
 #include <gtest/gtest.h>
 
@@ -35,6 +37,31 @@ void SaveUserAccessScreenshot(const ScreenshotSpec& spec,
   panel.ShowUser(user, node_service, attribute_service, executor);
 
   SaveScreenshot(&panel, spec);
+}
+
+void SaveUsersGridScreenshot(const ScreenshotSpec& spec,
+                             NodeService& node_service,
+                             scada::AttributeService& attribute_service,
+                             AnyExecutor executor) {
+  std::unique_ptr<UsersGridPanel> panel{MakeUsersGridPanel()};
+  if (!panel) {
+    ADD_FAILURE() << spec.filename
+                  << ": the users grid exists only under the reshell theme; "
+                     "capture it with --theme";
+    return;
+  }
+
+  const std::optional<std::vector<UserGridRow>> rows =
+      scada::screenshot_generator::WaitForAwaitable(
+          executor, BuildUsersGrid(executor, node_service, attribute_service));
+  if (rows) {
+    panel->ShowRows(*rows);
+  } else {
+    ADD_FAILURE() << spec.filename
+                  << ": the users grid could not be read at all";
+  }
+
+  SaveScreenshot(panel.get(), spec);
 }
 
 void SaveRolesScreenshot(const ScreenshotSpec& spec,

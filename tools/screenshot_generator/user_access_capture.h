@@ -37,3 +37,14 @@ void SaveRolesScreenshot(const ScreenshotSpec& spec,
                          NodeService& node_service,
                          scada::AttributeService& attribute_service,
                          AnyExecutor executor);
+
+// Renders the users-admin grid — every account, its status, and the Roles it
+// holds — and saves it under `GetOutputDir() / spec.filename`.
+//
+// Standalone for the same reason as SaveRolesScreenshot: the Roles column is
+// joined from the same RoleSet read, which an anonymous session may not
+// perform. Through the view path every account's Roles cell read "no data".
+void SaveUsersGridScreenshot(const ScreenshotSpec& spec,
+                             NodeService& node_service,
+                             scada::AttributeService& attribute_service,
+                             AnyExecutor executor);
