@@ -10,7 +10,7 @@ class CommandHandler;
 // This mirrors the legacy Windows-only `IDR_TABLE_POPUP` resource menu for the
 // commands `TableView` contributes (rename, move up/down, delete row and the
 // sort-by submenu) as an `aui::MenuModel`, so the same menu renders identically
-// on Windows, macOS and Wt through the shared menu-model path instead of a
+// on Windows and macOS through the shared menu-model path instead of a
 // `CMenu::LoadMenu` that only exists on Windows. Commands the view does not own
 // (e.g. the global "Acknowledge All") are intentionally left to the generic
 // context menu the shell appends.

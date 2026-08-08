@@ -150,7 +150,7 @@ EventView::EventView(const ControllerContext& context,
 #endif
 
   table_->SetContextMenuHandler([this](const scada::aui::Point& point) {
-    // Show the event view's own AUI menu model (works on Windows, macOS and Wt)
+    // Show the event view's own AUI menu model (works on Windows and macOS)
     // rather than the Windows-only `IDR_EVENT_POPUP` resource menu.
     controller_delegate_.ShowPopupMenu(&event_menu_model_.model(), point, true);
   });

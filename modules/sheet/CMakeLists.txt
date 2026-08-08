@@ -7,8 +7,3 @@ if(TARGET client_component_sheet_qt_unittests)
     scada_common
   )
 endif()
-if(TARGET client_component_sheet_wt_unittests)
-  target_link_libraries(client_component_sheet_wt_unittests PRIVATE
-    scada_common
-  )
-endif()

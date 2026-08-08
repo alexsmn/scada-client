@@ -24,7 +24,7 @@
       "referenced_from": [
         "getting-started.md"
       ],
-      "notes": "LoginDialog modal shown at startup; rendered by the dialog pipeline."
+      "notes": "LoginDialog modal shown at startup; rendered by the dialog pipeline. The user combo is captured OPEN, listing the seven operator accounts from the fixture's login_user_list (previously one hard-coded 'root' in a closed combo). Opening it is not just showPopup(): a combo popup is its own top-level window, so the capture composes the popup's grab onto the dialog's (expand_combo in the dialog spec) - which also makes this image wider than its spec width."
     },
     {
       "file": "workbench-login.png",
@@ -312,7 +312,7 @@
       "published": false,
       "parity_key": "roles",
       "referenced_from": [],
-      "notes": "The Roles view: every Role of Server.ServerCapabilities.RoleSet with the accounts it is granted to, read via the identity mapping rules (Part 18 4.4.3). Admin-gated (WIN_REQUIRES_ADMIN), read-only. THEME-GATED, so reshell-theme rather than auto-view: MakeRolesGridPanel() returns nullptr under the legacy theme (the whole user_access panel family does), so RolesView::Init builds no widget, OpenedView::Init throws 'Can't create widget', and the view never opens. Tagged auto-view until 2026-08-02, which made every default-pipeline run fail this capture - the admin gate was NOT the cause, the session holds Configure. To publish it, the panel factory must first drop its legacy gate (the publish subset admits auto-* only). KNOWN FIXTURE GAP: Members renders 'None' for every Role. The RoleSet and its Roles browse correctly - the capture shows both - but the identity-rule rows the fixture projects under them do not come back from the client browse, so no membership reaches the view. The read path itself is unit-tested against FakeNodeService (role_membership_unittest.cpp); it is the offline fixture's rule projection that is unproven. Fix that before publishing this image. The manual prose for this surface is written (scada-docs client/workbench.md + en/ mirror, #administration); the image is NOT embedded yet because the published set must come from the WINDOWS pipeline - a macOS render differs by font alone and would commit as churn. Embed it on the next Windows regeneration, set published:true and add it to current_generator_owned_subset."
+      "notes": "The Roles view: every Role of Server.ServerCapabilities.RoleSet with the accounts it is granted to, read via the identity mapping rules (Part 18 4.4.3). Admin-gated (WIN_REQUIRES_ADMIN), read-only. THEME-GATED, so reshell-theme rather than auto-view: MakeRolesGridPanel() returns nullptr under the legacy theme (the whole user_access panel family does), so RolesView::Init builds no widget, OpenedView::Init throws 'Can't create widget', and the view never opens. Tagged auto-view until 2026-08-02, which made every default-pipeline run fail this capture - the admin gate was NOT the cause, the session holds Configure. To publish it, the panel factory must first drop its legacy gate (the publish subset admits auto-* only). KNOWN FIXTURE GAP: Members renders 'None' for every Role. The RoleSet and its Roles browse correctly - the capture shows both - but the identity-rule rows the fixture projects under them do not come back from the client browse, so no membership reaches the view. The read path itself is unit-tested against FakeNodeService (role_membership_unittest.cpp); it is the offline fixture's rule projection that is unproven. Fix that before publishing this image. The manual prose for this surface is written (scada-docs client/workbench.md + en/ mirror, #administration); the image is NOT embedded yet because the published set must come from the WINDOWS pipeline - a macOS render differs by font alone and would commit as churn. Embed it on the next Windows regeneration, set published:true and add it to current_generator_owned_subset. CAPTURED STANDALONE since 2026-08-08 (SaveRolesScreenshot / SaveUsersGridScreenshot in user_access_capture.cpp), not through the view path: the grid is built from the server's published role->permission map, which needs ReadRolePermissions, and the generator's ordinary session is anonymous - so the view-path capture rendered 'No data' over an empty grid. AuthenticatedAttributeService supplies the administrator identity for these captures only. The member/role columns were additionally empty until a client fix the same day (ReadRoleMemberships did not fetch the rule type's chain, so no identity mapping rule read back); the tracked PNG still predates both and will change on the next Windows regeneration."
     },
     {
       "file": "password-policy.png",
@@ -336,7 +336,7 @@
       "published": false,
       "parity_key": "user-access",
       "referenced_from": [],
-      "notes": "The users-admin RBAC inspector (right region of users-admin.html) for the fixture's Администратор. Rewritten 2026-08-01 onto the ROLE model: it lists the Roles the account holds and derives the permission breakdown from them through the same default role->permission map the server enforces with, replacing the coarse Administrator/Operator/Observer pill that read the retired AccessRights bitmask - a pill that would have kept asserting authority for an account whose Role had been revoked. Three states stay distinct: the Roles list, 'None' (holds no Role - real, and grants nothing), and 'No data' (the RoleSet could not be read, which also suppresses every permission row). KNOWN FIXTURE GAP: this capture shows 'None' because the fixture's identity rules do not reach the client browse (same gap as roles.png); against a real server the account's Roles appear here. SECOND FIXTURE FACT, easy to trip over: the panel now READS what each Role grants from the server (the RolePermissions attribute, Part 3 5.2.9) instead of carrying its own map, and that attribute requires ReadRolePermissions. The generator wires the real attribute service straight into the client, so the client's empty ServiceContext -- which a real server would have replaced with the session's identity -- reads as ANONYMOUS and the attribute is refused, collapsing the whole panel to 'No data'. AuthenticatedAttributeService supplies the administrator identity for this capture only; do not widen it to the generator's other services, which would change UserAccessLevel narrowing and with it every writability affordance."
+      "notes": "The users-admin RBAC inspector (right region of users-admin.html) for the fixture's Администратор. Rewritten 2026-08-01 onto the ROLE model: it lists the Roles the account holds and derives the permission breakdown from them through the same default role->permission map the server enforces with, replacing the coarse Administrator/Operator/Observer pill that read the retired AccessRights bitmask - a pill that would have kept asserting authority for an account whose Role had been revoked. Three states stay distinct: the Roles list, 'None' (holds no Role - real, and grants nothing), and 'No data' (the RoleSet could not be read, which also suppresses every permission row). The Roles list is real as of 2026-08-08: this capture shows Operator, ConfigureAdmin. It showed 'None' until then, which was a CLIENT bug rather than a fixture gap - ReadRoleMemberships resolved a rule's Criteria through the type's property declarations without fetching the type chain, so every rule read back empty against the real node model (regression test: ScreenshotGenerator.RolesEnumerateTheirMembers). SECOND FIXTURE FACT, easy to trip over: the panel now READS what each Role grants from the server (the RolePermissions attribute, Part 3 5.2.9) instead of carrying its own map, and that attribute requires ReadRolePermissions. The generator wires the real attribute service straight into the client, so the client's empty ServiceContext -- which a real server would have replaced with the session's identity -- reads as ANONYMOUS and the attribute is refused, collapsing the whole panel to 'No data'. AuthenticatedAttributeService supplies the administrator identity for this capture only; do not widen it to the generator's other services, which would change UserAccessLevel narrowing and with it every writability affordance."
     },
     {
       "file": "transmission-rule.png",
@@ -515,7 +515,7 @@
       "published": false,
       "parity_key": "users",
       "referenced_from": [],
-      "notes": "Users-admin grid (Users window under --theme): the reshell UsersGridPanel returned by NodeTableController for the Users folder — User / Role (Administrator·bad / Operator·good / Observer·muted) / Sessions (Single·Multiple from MultiSessions), with the count header + 'editing requires Administrator' hint and disabled Add-user / Reset-password affordances. Theme-gated reshell chrome (backlog 5.1); the legacy Users view is the generic node-table grid, so it is excluded from the no-theme managed check and guarded by client_screenshot_check_themed. Row selection drives the shared SelectionModel → the RBAC inspector. Backend/Areas/Status/Last-login from the mockup are server-side, absent from the client node model. Fixture Users folder (13 users). The manual prose for this surface is written (scada-docs client/workbench.md + en/ mirror, #administration); the image is NOT embedded yet because the published set must come from the WINDOWS pipeline - a macOS render differs by font alone and would commit as churn. Embed it on the next Windows regeneration, set published:true and add it to current_generator_owned_subset."
+      "notes": "Users-admin grid (Users window under --theme): the reshell UsersGridPanel returned by NodeTableController for the Users folder — User / Role (Administrator·bad / Operator·good / Observer·muted) / Sessions (Single·Multiple from MultiSessions), with the count header + 'editing requires Administrator' hint and disabled Add-user / Reset-password affordances. Theme-gated reshell chrome (backlog 5.1); the legacy Users view is the generic node-table grid, so it is excluded from the no-theme managed check and guarded by client_screenshot_check_themed. Row selection drives the shared SelectionModel → the RBAC inspector. Backend/Areas/Status/Last-login from the mockup are server-side, absent from the client node model. Fixture Users folder (13 users). The manual prose for this surface is written (scada-docs client/workbench.md + en/ mirror, #administration); the image is NOT embedded yet because the published set must come from the WINDOWS pipeline - a macOS render differs by font alone and would commit as churn. Embed it on the next Windows regeneration, set published:true and add it to current_generator_owned_subset. CAPTURED STANDALONE since 2026-08-08 (SaveRolesScreenshot / SaveUsersGridScreenshot in user_access_capture.cpp), not through the view path: the grid is built from the server's published role->permission map, which needs ReadRolePermissions, and the generator's ordinary session is anonymous - so the view-path capture rendered 'No data' over an empty grid. AuthenticatedAttributeService supplies the administrator identity for these captures only. The member/role columns were additionally empty until a client fix the same day (ReadRoleMemberships did not fetch the rule type's chain, so no identity mapping rule read back); the tracked PNG still predates both and will change on the next Windows regeneration."
     },
     {
       "file": "iec-60870-5-transport.png",
@@ -540,7 +540,7 @@
       "referenced_from": [
         "architecture.md"
       ],
-      "notes": "Graph with severity-coloured limit markers drawn (MetrixLine limit styles; TIT.200 carries AnalogItemType_LimitLoLo/Lo/Hi/HiHi in the fixture). SaveGraphScreenshot now makes each graphed node resident (FetchGraphNodesResident) before building the widget, so the node's EU range and limit-band property children are fetched: the axes use the EU range instead of the data auto-range and the limit markers draw. The varying series (same DateTime::Max history fix as graph-cursor.png) now read against the four bands. (The legend 'Current' cell stays blank in the offscreen fixture - the live monitored-item value is not delivered there, a separate gap that also blanks the write dialog's current value.)"
+      "notes": "Graph with severity-coloured limit markers drawn (MetrixLine limit styles; TIT.200 carries AnalogItemType_LimitLoLo/Lo/Hi/HiHi in the fixture). SaveGraphScreenshot now makes each graphed node resident (FetchGraphNodesResident) before building the widget, so the node's EU range and limit-band property children are fetched: the axes use the EU range instead of the data auto-range and the limit markers draw. The varying series (same DateTime::Max history fix as graph-cursor.png) now read against the four bands. (The legend 'Current' cell stays blank in the offscreen fixture. That is a graph-legend gap only - it no longer blanks the write dialogs, whose current value renders via LocalMonitoredItemService.)"
     },
     {
       "file": "limits.png",
@@ -550,7 +550,7 @@
         "architecture.md",
         "client.md"
       ],
-      "notes": "LimitDialog modal."
+      "notes": "LimitDialog modal, rendered over TIT.212 ('Температура нагрева'). Its four bands now come from that node's AnalogItemType_Limit{LoLo,Lo,Hi,HiHi} properties - Аварийные 90 / -25, Уставки 70 / -10, matching the manual's image; the node carried none before, so every field captured empty. ScreenshotGenerator.LimitDialogNodeCarriesItsBands pins the values, since a blank dialog satisfies the existence-and-dimensions check."
     },
     {
       "file": "login.png",
@@ -560,27 +560,27 @@
     },
     {
       "file": "menu-copy-object.png",
-      "tag": "auto-menu",
+      "tag": "manual-annotated",
       "referenced_from": [
         "dev/data-items.md"
       ],
-      "notes": "Context menu: copy object."
+      "notes": "Not a menu despite the name (audited 2026-08-08): a full main window — object tree plus a Table workspace — with the toolbar's Copy button showing its hover TOOLTIP («Копировать»). The subject is the tooltip, which no fixture spec can stage, so regenerating this as an auto-view would drop the one thing the image is for."
     },
     {
       "file": "menu-create-object-service.png",
-      "tag": "auto-menu",
+      "tag": "auto-dialog",
       "referenced_from": [
         "dev/data-items.md"
       ],
-      "notes": "Context menu: create service object."
+      "notes": "Not a menu despite the name (audited 2026-08-08): the modal «Создание сервисных объектов» dialog — a device combo over the list of service items it would create. No generator dialog kind covers it yet, so it is owed as an auto-dialog, not as menu rendering."
     },
     {
       "file": "menu-create-object-ts-ti.png",
-      "tag": "auto-menu",
+      "tag": "auto-dialog",
       "referenced_from": [
         "dev/data-items.md"
       ],
-      "notes": "Context menu: create TS/TI."
+      "notes": "Not a menu despite the name (audited 2026-08-08): the modal «Создание серии объектов» bulk-create dialog. The generator already renders that dialog as multi-create.png (dialogs kind `multi-create`), so what is owed here is a docs-side re-point, not a new capture — the two differ only in fixture content (this one seeds 9 ТИТ on MODBUS RTU : SmartTermo)."
     },
     {
       "file": "menu-create-object.png",
@@ -588,7 +588,7 @@
       "referenced_from": [
         "dev/data-items.md"
       ],
-      "notes": "Context menu: create object (root)."
+      "notes": "A true QMenu popup (audited 2026-08-08): the object-tree context menu on a folder object, with the «Создать» submenu open — so a capture needs submenu support, not just one popup. Six of the nine remaining auto-menu rows are context menus like this, which have no fixture-driven pipeline; see the auto-menu task."
     },
     {
       "file": "menu-delete-object.png",
@@ -596,23 +596,23 @@
       "referenced_from": [
         "dev/data-items.md"
       ],
-      "notes": "Context menu: delete object."
+      "notes": "A true QMenu popup (audited 2026-08-08): the object-tree context menu on a data item, «Удалить» highlighted. Carries disabled rows (Квитировать, Снять блокировку) and a «Устройство» submenu arrow, so the capture has to reproduce enablement state, not just the item list."
     },
     {
       "file": "menu-events-log.png",
-      "tag": "auto-menu",
+      "tag": "auto-view",
       "referenced_from": [
         "client/events.md"
       ],
-      "notes": "Context menu on event journal row."
+      "notes": "Not a menu despite the name (audited 2026-08-08): a plain EventJournal window («Журнал событий за месяц») with no popup anywhere in it. The generator already renders that view as events-log.png, so what is owed is a docs-side re-point, not a capture."
     },
     {
       "file": "menu-events.png",
-      "tag": "auto-menu",
+      "tag": "manual-annotated",
       "referenced_from": [
         "client.md"
       ],
-      "notes": "Context menu on event row."
+      "notes": "Not a menu despite the name (audited 2026-08-08): an Events view strip (1263x180) whose subject is the STATUS BAR beneath it — «Диспетчер 1», «Подключен», «Отклик: 0 мс» each carry a red underline drawn on top of the capture. The annotations are editorial, added after the grab, so the image cannot be regenerated by the generator however good the fixture gets. Its event rows are the canonical ones the fixture event-log gap is measured against."
     },
     {
       "file": "menu-excel.png",
@@ -620,32 +620,32 @@
       "referenced_from": [
         "dev/excel.md"
       ],
-      "notes": "Context menu: export to Excel."
+      "notes": "A true QMenu popup, but a MENU-BAR one, not a context menu (audited 2026-08-08): the «Далее» menu open over the object tree, checkable view rows above «Экспорт конфигурации в Excel...». Menu-bar menus are already capturable — walk menuBar()->actions() and emit aboutToShow() before grabbing; see \"auto-menu — a menu popup\" in docs/ops/client-screenshots.md."
     },
     {
       "file": "menu-favorites.png",
-      "tag": "auto-menu",
+      "tag": "auto-view",
       "referenced_from": [
         "client.md"
       ],
-      "notes": "Context menu: favourites."
+      "notes": "Not a menu despite the name (audited 2026-08-08): the Favourites panel with its toolbar, no popup anywhere. The generator already renders that view as favorites.png (spec type `Favorites`), so what is owed is a docs-side re-point, not a capture — though this one is framed with the window title bar and toolbar, which the standalone panel capture omits."
     },
     {
       "file": "menu-files.png",
-      "tag": "auto-menu",
+      "tag": "auto-view",
       "referenced_from": [
         "client.md",
         "dev/server-files.md"
       ],
-      "notes": "Context menu on file view."
+      "notes": "Not a menu despite the name (audited 2026-08-08): the Files panel listing .xsde schematics, no popup anywhere. The generator already renders that view as files.png (spec type `FileSystemView`), so what is owed is a docs-side re-point, not a capture."
     },
     {
       "file": "menu-notepad.png",
-      "tag": "auto-menu",
+      "tag": "manual-os",
       "referenced_from": [
         "dev/excel.md"
       ],
-      "notes": "Context menu: open in Notepad."
+      "notes": "Not a menu, and not the client at all (audited 2026-08-08): a third-party text editor showing the exported configuration CSV, syntax-highlighted. Out of scope for the generator for the same reason as the other manual-os images — it is another application's window."
     },
     {
       "file": "menu-parameters-elements-copy.png",
@@ -653,7 +653,7 @@
       "referenced_from": [
         "dev/displays.md"
       ],
-      "notes": "Context menu: copy parameter element."
+      "notes": "A true QMenu popup (audited 2026-08-08): the context menu on the configuration table (Конфигурация: ЭНИП-2 + ЭНМВ-1) over a three-row selection, «Копировать» highlighted. Anchored to a grid, not the object tree, so a menu-rendering helper has to reach the table's own command set as well."
     },
     {
       "file": "menu-parameters-elements.png",
@@ -661,7 +661,7 @@
       "referenced_from": [
         "dev/displays.md"
       ],
-      "notes": "Context menu: parameter elements."
+      "notes": "A true QMenu popup (audited 2026-08-08): the object-tree context menu on a folder object, «Параметры элементов» highlighted. Same popup shape as menu-create-object.png with the submenu closed."
     },
     {
       "file": "menu-parameters.png",
@@ -669,7 +669,7 @@
       "referenced_from": [
         "dev/data-items.md"
       ],
-      "notes": "Context menu: parameters."
+      "notes": "A true QMenu popup (audited 2026-08-08): the object-tree context menu on a data item, «Параметры» highlighted, with the disabled Квитировать / Снять блокировку rows and the «Устройство» submenu arrow."
     },
     {
       "file": "menu-scheme.png",
@@ -677,7 +677,7 @@
       "referenced_from": [
         "dev/displays.md"
       ],
-      "notes": "Context menu on schematic."
+      "notes": "A true QMenu popup, but a MENU-BAR one, not a context menu (audited 2026-08-08): the «Схема» menu listing the configured schematic displays. Capturable with the documented aboutToShow() pattern, but its contents are fixture data — the list is whatever displays the fixture defines, and the docs image shows 17 of them."
     },
     {
       "file": "menu-summary.png",
@@ -685,7 +685,7 @@
       "referenced_from": [
         "client/summary.md"
       ],
-      "notes": "Context menu on summary row."
+      "notes": "A true QMenu popup, but a TOOLBAR one, not a context menu (audited 2026-08-08): the Summary view's «Функция» tool-button dropdown, seven checkable aggregate rows with Минимум checked. Reachable the same way a menu-bar menu is (the QToolButton owns a QMenu), so it belongs with the two menu-bar rows rather than with the six context menus."
     },
     {
       "file": "modus-f11-breaker.png",
@@ -733,7 +733,7 @@
       "referenced_from": [
         "development.md"
       ],
-      "notes": "Context menu: delete TI."
+      "notes": "A true QMenu popup (audited 2026-08-08): the configuration-table context menu (Конфигурация: Smart Termo) over a three-row ТИТ selection, «Удалить» highlighted. Same grid-anchored shape as menu-parameters-elements-copy.png; the filename has no menu- prefix, so an audit that keys off the name misses it."
     },
     {
       "file": "ti-element-parameters.png",
@@ -758,7 +758,7 @@
       "referenced_from": [
         "client.md"
       ],
-      "notes": "Manual-control dialog, TI side."
+      "notes": "Manual-control dialog, TI side. Verified 2026-08-08 to render the node display name ('Температура нагрева'), the current value ('41 °C') and the engineering unit beside the new-value combo - the three things this capture was recorded as missing. The docs original additionally pre-fills the new value with 25; ours leaves it empty."
     },
     {
       "file": "ti-parameters.png",
@@ -794,7 +794,7 @@
         "client.md",
         "dev/data-items.md"
       ],
-      "notes": "Remote-control dialog enabled state, TI."
+      "notes": "Remote-control dialog enabled state, TI. Title, current value and unit render (verified 2026-08-08). Still missing against the docs original: the 'Условие: Выполнено' row, which needs a DataItemType_OutputCondition on the fixture node."
     },
     {
       "file": "ts-channel.png",
@@ -901,13 +901,14 @@
     }
   ],
   "counts": {
-    "auto-dialog": 23,
-    "auto-menu": 17,
+    "auto-dialog": 25,
+    "auto-menu": 9,
     "auto-state": 5,
-    "auto-view": 21,
+    "auto-view": 24,
+    "manual-annotated": 2,
     "manual-diagram": 4,
     "manual-modus": 5,
-    "manual-os": 2,
+    "manual-os": 3,
     "obsolete": 7,
     "reshell-theme": 27
   },

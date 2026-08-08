@@ -64,8 +64,8 @@ class WatchView : protected ControllerContext,
 
 #if defined(UI_QT)
   // Builds the trace + decode-pane layout and wires `refresh_decode_pane_`.
-  // Qt-only: aui has no cross-platform splitter, so the Wt frontend keeps the
-  // bare trace (the same split the other composed views make).
+  // Qt-only: aui has no cross-platform splitter, so the layout is built
+  // against Qt directly (the same split the other composed views make).
   std::unique_ptr<UiView> CreateFrameTraceLayout();
 
   std::u16string MakeDecodeHeader(int row,
@@ -92,8 +92,8 @@ class WatchView : protected ControllerContext,
   scada::aui::Table* table_ = nullptr;
 
   // Selection, mode and clear all route through this, so no call site needs to
-  // know whether a decode pane was built. It stays a no-op on the Wt frontend,
-  // which keeps the bare trace.
+  // know whether a decode pane was built. It stays a no-op when there is
+  // none.
   std::function<void()> refresh_decode_pane_ = [] {};
 
   bool address_map_requested_ = false;

@@ -1,5 +1,6 @@
 #include "dialog_capture.h"
 
+#include "null_task_manager.h"
 #include "screenshot_config.h"
 #include "screenshot_output.h"
 #include "screenshot_wait.h"
@@ -11,6 +12,7 @@
 #include "base/boost_log.h"
 #include "base/memory_settings_store.h"
 #include "base/relative_time_range.h"
+#include "base/utf_convert.h"
 #include "controller/command_manager.h"
 #include "main_window/command_palette_qt.h"
 #include "model/data_items_node_ids.h"
@@ -35,9 +37,12 @@
 #include "services/task_manager.h"
 #include "timed_data/timed_data_service.h"
 
+#include <QAbstractItemView>
 #include <QApplication>
+#include <QComboBox>
 #include <QDialog>
 #include <QElapsedTimer>
+#include <QPainter>
 #include <QPixmap>
 #include <QString>
 #include <QWidget>
@@ -144,46 +149,6 @@ class NullTransportFactory : public transport::TransportFactory {
   }
 };
 
-scada::CoStatus RejectTaskManagerCallAsync() {
-  co_return scada::StatusCode::Bad;
-}
-
-scada::CoStatusOr<scada::NodeId> RejectPostInsertTaskAsync() {
-  co_return scada::StatusCode::Bad;
-}
-
-// Dummy TaskManager. We never press OK on captured dialogs, so no
-// task is ever posted. Each method still rejects through a coroutine in case
-// something slips through.
-class NullTaskManager : public TaskManager {
- public:
-  scada::CoStatus PostTask(std::u16string_view, const TaskLauncher&) override {
-    return RejectTaskManagerCallAsync();
-  }
-  scada::CoStatusOr<scada::NodeId> PostInsertTask(
-      const scada::NodeState&) override {
-    return RejectPostInsertTaskAsync();
-  }
-  scada::CoStatus PostUpdateTask(const scada::NodeId&,
-                                 scada::NodeAttributes,
-                                 scada::NodeProperties) override {
-    return RejectTaskManagerCallAsync();
-  }
-  scada::CoStatus PostDeleteTask(const scada::NodeId&) override {
-    return RejectTaskManagerCallAsync();
-  }
-  scada::CoStatus PostAddReference(const scada::NodeId&,
-                                   const scada::NodeId&,
-                                   const scada::NodeId&) override {
-    return RejectTaskManagerCallAsync();
-  }
-  scada::CoStatus PostDeleteReference(const scada::NodeId&,
-                                      const scada::NodeId&,
-                                      const scada::NodeId&) override {
-    return RejectTaskManagerCallAsync();
-  }
-};
-
 // Makes the dialog's target node fully resident — attributes, property
 // children, and the type-definition chain — so synchronous property reads
 // (engineering units, limit bands, control flags) resolve when the dialog
@@ -192,6 +157,63 @@ bool FetchDialogNodeResident(NodeService& node_service,
                              const scada::NodeId& node_id) {
   return scada::screenshot_generator::FetchNodesResident(
       node_service, std::span<const scada::NodeId>{&node_id, 1});
+}
+
+// Grabs `dialog` with the drop-down of the combo box named `combo_object`
+// open, composing the two into one pixmap.
+//
+// Qt gives a combo popup its own top-level window (`view()->window()`, a
+// Qt::Popup frame), so `dialog->grab()` renders the widget tree with the list
+// closed however the combo was opened — calling showPopup() before the grab
+// is not enough, and that is why the login capture shipped a closed combo.
+// The composed image is the union of the two windows' geometries, which means
+// it is taller than the spec's `height` whenever the list hangs below the
+// dialog, exactly as the manual's login image shows it.
+QPixmap GrabDialogWithComboPopupOpen(QDialog* dialog,
+                                     const std::string& combo_object) {
+  auto* combo = dialog->findChild<QComboBox*>(
+      QString::fromStdString(combo_object), Qt::FindChildrenRecursively);
+  if (!combo) {
+    ADD_FAILURE() << "expand_combo: no QComboBox named " << combo_object
+                  << " in " << dialog->metaObject()->className();
+    return GrabWhenSettled(dialog);
+  }
+
+  combo->showPopup();
+  QWidget* popup = combo->view() ? combo->view()->window() : nullptr;
+  PumpEventsUntil([popup] { return popup && popup->isVisible(); },
+                  std::chrono::seconds{2});
+
+  QPixmap dialog_pixmap = GrabWhenSettled(dialog);
+  if (!popup || !popup->isVisible()) {
+    ADD_FAILURE() << "expand_combo: " << combo_object
+                  << " popup never became visible";
+    return dialog_pixmap;
+  }
+
+  const QPixmap popup_pixmap = GrabWhenSettled(popup);
+  const QRect dialog_rect{dialog->mapToGlobal(QPoint{0, 0}), dialog->size()};
+  const QRect popup_rect{popup->mapToGlobal(QPoint{0, 0}), popup->size()};
+  const QRect bounds = dialog_rect.united(popup_rect);
+
+  const qreal ratio = dialog_pixmap.devicePixelRatio();
+  QPixmap composed{QSize{static_cast<int>(bounds.width() * ratio),
+                         static_cast<int>(bounds.height() * ratio)}};
+  composed.setDevicePixelRatio(ratio);
+  // The union can leave uncovered corners when the popup is wider than the
+  // dialog (or vice versa); fill rather than leave them undefined.
+  composed.fill(dialog->palette().color(dialog->backgroundRole()));
+  {
+    QPainter painter{&composed};
+    painter.drawPixmap(dialog_rect.topLeft() - bounds.topLeft(), dialog_pixmap);
+    painter.drawPixmap(popup_rect.topLeft() - bounds.topLeft(), popup_pixmap);
+  }
+
+  // Leave the combo closed: the popup is a top-level widget, and the next
+  // capture's scan for a visible dialog walks that same list.
+  combo->hidePopup();
+  QApplication::processEvents();
+  return composed;
 }
 
 // Scans top-level widgets for a visible QDialog, resizes it to the
@@ -222,7 +244,9 @@ bool GrabAndCloseVisibleDialog(const DialogSpec& spec) {
   dialog->repaint();
   QApplication::processEvents();
 
-  QPixmap pixmap = GrabWhenSettled(dialog);
+  QPixmap pixmap = spec.expand_combo.empty() ? GrabWhenSettled(dialog)
+                                             : GrabDialogWithComboPopupOpen(
+                                                   dialog, spec.expand_combo);
   auto path = GetOutputDir() / spec.filename;
   pixmap.save(QString::fromStdString(path.string()));
 
@@ -285,9 +309,22 @@ BuildLoginDialog(DialogEnvironment& env,
   // server addresses from the registry / per-user settings file, so on a
   // used dev box the capture would leak the real server address. Seed an
   // in-memory store with the state the docs image shows instead.
+  //
+  // The accounts come from the fixture's `login_user_list` and are joined the
+  // way LoginController stores them — comma-separated, since it reads the
+  // setting back through its own ParseListString.
   auto settings_store = std::make_shared<MemorySettingsStore>();
-  settings_store->SetString16("User", u"root");
-  settings_store->SetString16("UserList", u"root");
+  std::u16string user_list;
+  for (const auto& user : env.login_user_list) {
+    if (!user_list.empty())
+      user_list += u',';
+    user_list += UtfConvert<char16_t>(user);
+  }
+  settings_store->SetString16(
+      "User", env.login_user_list.empty()
+                  ? std::u16string{}
+                  : UtfConvert<char16_t>(env.login_user_list.front()));
+  settings_store->SetString16("UserList", user_list);
   settings_store->SetString("Host", "127.0.0.1");
   auto dialog_lifetime = StartDialogAwaitable(
       env.executor,
@@ -301,9 +338,10 @@ BuildLoginDialog(DialogEnvironment& env,
 // TaskManager for the (never-taken) write path. We pull the configured
 // dialog analog node out of the fixture; in the current fixture that is
 // "Температура нагрева", the analog node the docs images target. The
-// resident fetch below resolves property reads, so limit fields render
-// whenever the fixture node carries limit_{lolo,lo,hi,hihi} properties
-// (the current dialog node intentionally has none).
+// resident fetch below resolves property reads, so the four limit fields
+// render from that node's limit_{lolo,lo,hi,hihi} properties — a node
+// without them captures an empty dialog, which is how limits.png shipped
+// blank.
 std::shared_ptr<DialogAwaitableResult<void>> BuildLimitsDialog(
     DialogEnvironment& env,
     NullTaskManager& task_manager,

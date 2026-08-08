@@ -1,6 +1,5 @@
 // scada.client.properties — named C++20 module facade over the
-// client_properties_qt headers (the Qt flavor; the wt flavor stays
-// header-only).
+// client_properties_qt headers.
 //
 // Same design and rules as scada.base (see core/base/scada_base.cppm and
 // core/docs/cxx-modules.md): headers stay the source of truth, the global

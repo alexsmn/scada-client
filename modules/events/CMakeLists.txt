@@ -21,11 +21,3 @@ if(TARGET client_events_qt_unittests)
     aui_test_qt
   )
 endif()
-
-
-if(TARGET client_events_wt_unittests)
-  target_link_libraries(client_events_wt_unittests PRIVATE
-    aui_test_wt
-    client_controller_test_wt
-  )
-endif()

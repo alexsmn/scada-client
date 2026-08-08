@@ -5,6 +5,8 @@
 #include "scada/node_id.h"
 
 #include <memory>
+#include <string>
+#include <vector>
 
 struct DialogSpec;
 class NodeService;
@@ -29,6 +31,9 @@ struct DialogEnvironment {
   Profile* profile = nullptr;
   // Analog item node used by the limits/write dialog screenshots.
   scada::NodeId dialog_analog_node_id;
+  // Accounts seeded into the login dialog's user combo, first entry
+  // pre-selected. Comes from the fixture's `login_user_list`.
+  std::vector<std::string> login_user_list;
 };
 
 // Builds and shows the dialog identified by `spec.kind`, then grabs a
