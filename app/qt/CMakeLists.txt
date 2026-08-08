@@ -86,17 +86,6 @@ set_target_properties(client_qt PROPERTIES AUTORCC ON)
 target_precompile_headers(client_qt REUSE_FROM scada_base)
 target_link_libraries(client_qt PUBLIC client_qt_app_shared)
 set_property(TARGET client_qt PROPERTY OUTPUT_NAME "client")
-# With a static Qt only the platform plugins Qt considers default for the host
-# are linked in — cocoa on macOS, windows on Windows. The offscreen platform is
-# not one of them, but the client/server E2E suite runs the client with
-# QT_QPA_PLATFORM=offscreen by default (SCADA_E2E_HIDE_CLIENT_WINDOW), so
-# without this the client aborts at QApplication construction with "Could not
-# find the Qt platform plugin \"offscreen\"" before it writes a single log line
-# — every E2E case that launches the client fails identically. The screenshot
-# generator renders offscreen for the same reason.
-if(COMMAND qt_import_plugins AND TARGET Qt6::QOffscreenIntegrationPlugin)
-  qt_import_plugins(client_qt INCLUDE Qt6::QOffscreenIntegrationPlugin)
-endif()
 if(APPLE)
   set(CLIENT_MACOS_ICON "${CMAKE_CURRENT_SOURCE_DIR}/../../res/client.icns")
   target_sources(client_qt PRIVATE "${CLIENT_MACOS_ICON}")

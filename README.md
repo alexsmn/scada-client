@@ -14,6 +14,7 @@ A C++ industrial SCADA (Supervisory Control and Data Acquisition) client applica
 - Print and print preview
 - Graph/chart visualization
 - Protocol support: SCADA/Telecontrol, OPC UA, Vidicon, Modus
+- Dual UI: Qt 5 desktop application and Wt web application
 
 ## Prerequisites
 
@@ -23,6 +24,7 @@ A C++ industrial SCADA (Supervisory Control and Data Acquisition) client applica
 - Qt 6 (Widgets, LinguistTools, PrintSupport; ActiveQt on Windows)
 - Boost (ASIO, Beast, Signals2, Locale, Range, Algorithm)
 - Google Test
+- Wt (web UI framework)
 - OPC UA SDK (via `third_party/opc`)
 - Windows SDK / ATL (Windows only, for Modus and COM support)
 
@@ -30,15 +32,22 @@ A C++ industrial SCADA (Supervisory Control and Data Acquisition) client applica
 
 ### CMake Presets (Recommended)
 
-The shared `CMakePresets.json` defines a `ninja` configure preset (Ninja Multi-Config). Developers create a `CMakeUserPresets.json` (git-ignored) with local paths, MSVC environment, and dev presets that inherit from `ninja`. See `CMakeUserPresets.json.template` for the template.
-
 ```bash
-cmake --preset ninja-dev                    # Configure (once)
-cmake --build --preset release-dev          # Build (RelWithDebInfo)
-cmake --build --preset debug-dev            # Build (Debug)
-ctest --preset test-release-dev             # Test (RelWithDebInfo)
-ctest --preset test-debug-dev               # Test (Debug)
+cmake --preset ninja                 # Configure
+cmake --build --preset release       # Build (or: debug, relwithdebinfo)
+ctest --preset test-release          # Test (or: test-debug)
 ```
+
+Every product in the SCADA tree carries this same preset set (ADR 0011), so the
+commands do not change from one to the next. Set `VCPKG_ROOT` in the
+environment; everything else machine-specific — toolchain paths, ccache,
+cppcheck, and on Windows the MSVC include/lib directories — lives in one
+`.scada-local.cmake` beside `build-support/`, shared by every product. There is
+no per-repo `CMakeUserPresets.json` any more.
+
+The client consumes five products — `common`, `core`, `opcuapp`, `graph_qt` and
+`view_manager_qt`. In a standalone checkout they sit beside it and the resolver
+in `build-support/` finds them there.
 
 ### MSBuild (Windows)
 
@@ -64,7 +73,7 @@ Dependency repos (`scada-core`, `scada-common`, `transport`, etc.) are checked o
 
 ```
 scada-client/
-├── app/                # Application entry point (qt/ subdir)
+├── app/                # Application entry points (qt/ and wt/ subdirs)
 ├── aui/                # Abstract UI layer (platform-agnostic models)
 ├── base/               # Foundation utilities
 ├── clipboard/          # Clipboard and node serialization
@@ -91,7 +100,7 @@ scada-client/
 └── test/               # Integration tests
 ```
 
-Modules with UI code keep their toolkit-specific implementations in a `qt/` subdirectory. The custom `client_module.cmake` build system creates the `<name>_qt` target automatically for each module.
+Modules with UI code contain `qt/` and `wt/` subdirectories for platform-specific implementations. The custom `client_module.cmake` build system creates dual targets (`<name>_qt` and `<name>_wt`) automatically for each module.
 
 ## Architecture
 

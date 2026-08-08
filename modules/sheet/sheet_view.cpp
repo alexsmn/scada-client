@@ -21,6 +21,13 @@
 #include <QColorDialog>
 #include <QLayout>
 #include <QLineEdit>
+#elif defined(UI_WT)
+#pragma warning(push)
+#pragma warning(disable : 4251 4275)
+#include <wt/WContainerWidget.h>
+#include <wt/WLineEdit.h>
+#include <wt/WVBoxLayout.h>
+#pragma warning(pop)
 #endif
 
 const int kFormulaRowHeight = 20;
@@ -61,6 +68,17 @@ std::unique_ptr<UiView> SheetController::Init(
   contents_view_ = new QWidget;
   contents_view_->setLayout(layout);
 
+#elif defined(UI_WT)
+  formula_row_ = new Wt::WLineEdit;
+
+  auto layout = std::make_unique<Wt::WVBoxLayout>();
+  layout->setContentsMargins(0, 0, 0, 0);
+  layout->setSpacing(0);
+  layout->addWidget(std::unique_ptr<Wt::WWidget>(formula_row_));
+  layout->addWidget(std::unique_ptr<Wt::WWidget>(grid_), 1);
+
+  contents_view_ = new Wt::WContainerWidget;
+  contents_view_->setLayout(std::move(layout));
 #endif
 
   grid_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });
@@ -173,6 +191,8 @@ void SheetController::OnFormulaEdited() {
 
 #if defined(UI_QT)
   const auto& text = formula_row_->text().toStdU16String();
+#elif defined(UI_WT)
+  const auto& text = formula_row_->text();
 #endif
 
   if (model_->SetCellText(current_index.row, current_index.column, text))

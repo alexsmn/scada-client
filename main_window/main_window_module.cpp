@@ -44,6 +44,12 @@
 #include "main_window/main_window_qt.h"
 #include <QApplication>
 #include <QSettings>
+#elif defined(UI_WT)
+#include "main_window/main_window_wt.h"
+#endif
+
+#if defined(UI_WT)
+#include <wt/WApplication.h>
 #endif
 
 namespace {
@@ -51,6 +57,13 @@ namespace {
 #if defined(UI_QT)
 std::unique_ptr<MainWindow> CreateMainWindow(MainWindowContext&& context) {
   return std::make_unique<MainWindow>(std::move(context));
+}
+#elif defined(UI_WT)
+std::unique_ptr<MainWindow> CreateMainWindow(MainWindowContext&& context) {
+  scada::base::Check(Wt::WApplication::instance());
+  scada::base::Check(Wt::WApplication::instance()->root());
+  return std::make_unique<MainWindow>(*Wt::WApplication::instance()->root(),
+                                      std::move(context));
 }
 #endif
 

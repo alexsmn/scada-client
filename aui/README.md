@@ -1,8 +1,8 @@
 # SCADA Client AUI
 
 The abstract UI layer of the Telecontrol SCADA client: platform-agnostic
-models (tables, trees, grids, menus, properties) plus thin Qt view wrappers,
-built as the `aui_qt` target.
+models (tables, trees, grids, menus, properties) plus thin Qt and Wt view
+wrappers, built as the dual `aui_qt` / `aui_wt` targets.
 
 This directory works both as a subdirectory of the scada-client build
 (consumed through `FindScadaClientAui.cmake`) and as a standalone top-level
@@ -14,15 +14,13 @@ CMake project, in preparation for extraction into its own repository.
   CMake machinery. Found via `FindScadaCore.cmake` on `CMAKE_MODULE_PATH`.
 - **graph_qt**, **view_manager_qt** — standalone view component libraries
   wrapped by `aui/qt/graph.h` and `aui/view_manager.h` (Qt flavor only).
-- **Qt 6** (`aui_qt`).
+- **Qt 6** (`aui_qt`) and/or **Wt** (`aui_wt`).
 
 Nothing else: aui must stay free of scada-client and scada-common couplings.
 See the client repo's `docs/client/aui-extraction.md` for the dependency contract.
 
 This directory also owns `client_module.cmake` — the helper that creates the
-`<name>_qt` targets — which the scada-client build reuses. It is written
-against a `CLIENT_UI_CONFIGS` list; Qt is the only entry since the Wt flavour
-was deleted.
+dual `<name>_qt` / `<name>_wt` targets — which the scada-client build reuses.
 
 ## Building standalone
 
@@ -37,8 +35,9 @@ cmake --build --preset ninja-release
 ctest --preset ninja-release
 ```
 
-`BUILD_CLIENT_QT` (default `ON`) selects the flavor; inside a consuming
-project the `CLIENT_UI_CONFIGS` variable set by that project wins.
+`BUILD_CLIENT_QT` / `BUILD_CLIENT_WT` (both default `ON`) select the flavors;
+inside a consuming project the `CLIENT_UI_CONFIGS` variable set by that
+project wins.
 
 ## Tests
 

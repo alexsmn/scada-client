@@ -11,7 +11,6 @@
 #include "base/any_executor_timer.h"
 #include "base/boost_log.h"
 #include "base/e2e_test_hooks.h"
-#include "base/program_options.h"
 #ifdef _WIN32
 #include "base/win/gdiplus_initializer.h"
 #endif
@@ -25,7 +24,6 @@
 #include <QApplication>
 #include <QIcon>
 #include <QSettings>
-#include <QString>
 #include <QTimer>
 #include <cstdlib>
 #include <exception>
@@ -98,30 +96,6 @@ void LogStartupException(std::exception_ptr exception) {
   }
 }
 
-// Redirects QSettings into `--test-data-dir` when the E2E harness supplied one.
-//
-// The default QSettings location is per-user and therefore shared by every
-// client on the machine: the registry under HKCU\Software\Telecontrol on
-// Windows, a preferences plist on macOS. Two E2E runs from two checkouts open
-// the same one, and so does the developer's own client. It is the same hazard
-// `--test-data-dir` already closes for profile.json and the file cache
-// (client_paths.cpp) — the store here holds `Style`, `Ux/Experimental` and
-// `Ux/Theme`, so whichever colour scheme somebody last picked interactively
-// decides what an offscreen E2E client renders.
-//
-// An INI file inside the run's own workspace makes the store per-run,
-// disposable with the workspace, and readable next to the logs when a run is
-// preserved.
-void InitE2eSettingsOverride() {
-  const std::string test_data_dir = client::GetOptionValue("test-data-dir");
-  if (test_data_dir.empty())
-    return;
-
-  QSettings::setDefaultFormat(QSettings::IniFormat);
-  QSettings::setPath(QSettings::IniFormat, QSettings::UserScope,
-                     QString::fromStdString(test_data_dir));
-}
-
 }  // namespace
 
 int main(int argc, char* argv[]) {
@@ -149,8 +123,6 @@ int main(int argc, char* argv[]) {
         QObject::tr("Telecontrol SCADA Client"));
     QApplication::setWindowIcon(QIcon{":/client.ico"});
     QApplication::setQuitOnLastWindowClosed(false);
-
-    InitE2eSettingsOverride();
 
     QSettings settings;
     InstalledTranslation installed_translation{settings};

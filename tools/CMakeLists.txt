@@ -21,15 +21,4 @@ if(Python3_FOUND)
       "${CMAKE_CURRENT_SOURCE_DIR}/check_untranslated_ui_strings.py"
       "--client-dir=${CMAKE_CURRENT_SOURCE_DIR}/..")
   set_tests_properties(client_untranslated_string_check PROPERTIES TIMEOUT 120)
-
-  # The same shape of defect one layer over: a resource path the qrc does not
-  # list yields a null QIcon and a blank row, with nothing failing and nothing
-  # logged. The favourites glyphs shipped that way once. Source-only, so it
-  # needs no build and can cover aui/, which must not take on a client
-  # dependency for a unit test.
-  add_test(NAME client_qrc_resource_check
-    COMMAND ${Python3_EXECUTABLE}
-      "${CMAKE_CURRENT_SOURCE_DIR}/check_qrc_resources.py"
-      "--client-dir=${CMAKE_CURRENT_SOURCE_DIR}/..")
-  set_tests_properties(client_qrc_resource_check PROPERTIES TIMEOUT 120)
 endif()

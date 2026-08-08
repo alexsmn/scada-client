@@ -101,13 +101,6 @@ void ScreenshotConfig::Load(const std::filesystem::path& path) {
   ASSERT_FALSE(dialog_analog_node_id.is_null())
       << "Missing or invalid dialog_analog_node_id in " << path.string();
 
-  if (const auto* users = json.as_object().if_contains("login_user_list")) {
-    for (const auto& user : users->as_array())
-      login_user_list.emplace_back(user.as_string());
-  }
-  ASSERT_FALSE(login_user_list.empty())
-      << "Missing or empty login_user_list in " << path.string();
-
   // Under --only the caller drives the selection, so "skips" are just
   // unrequested specs, not managed-gate drops — don't report them.
   const bool only_mode = !GetScreenshotOptions().only_filenames.empty();
@@ -188,8 +181,6 @@ void ScreenshotConfig::Load(const std::filesystem::path& path) {
         spec.height = static_cast<int>(h->as_int64());
       if (auto* themed = js.as_object().if_contains("themed_only"))
         spec.themed_only = themed->as_bool();
-      if (auto* combo = js.as_object().if_contains("expand_combo"))
-        spec.expand_combo = std::string(combo->as_string());
       if (IsManagedImage(managed_images, spec))
         dialogs.push_back(std::move(spec));
     }

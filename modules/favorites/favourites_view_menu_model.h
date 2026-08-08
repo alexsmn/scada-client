@@ -9,9 +9,10 @@ class CommandHandler;
 //
 // This mirrors the legacy Windows-only `IDR_FAVOR_POPUP` resource menu for the
 // commands `FavouritesView` contributes (open, add web page, rename and delete)
-// as an `aui::MenuModel`, so the same menu renders identically on Windows and
-// macOS through the shared menu-model path instead of a `CMenu::LoadMenu`
-// that only exists on Windows.
+// as an `aui::MenuModel`, so the same menu renders identically on Windows,
+// macOS and Wt through the shared menu-model path instead of a
+// `CMenu::LoadMenu` that only exists on Windows. The add-web-page entry is
+// Qt-only, matching the command the view registers.
 //
 // The class is named `FavouritesViewMenuModel` to avoid clashing with the main
 // menu's unrelated `FavouritesMenuModel`.

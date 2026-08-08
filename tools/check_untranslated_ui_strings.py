@@ -150,7 +150,13 @@ SHARED_CYRILLIC_GAPS = {
 }
 
 # Files whose strings never reach an operator.
-EXCLUDED_DIR_PARTS = ("test", "tools")
+# "build" is here because a product's build tree now lives inside its own
+# source tree (ADR 0011), and vcpkg installs its headers under it — so this
+# source-only check was reading Qt's own qlocale_p.h and reporting the
+# Cyrillic literal in it as an untranslated client string. Under the
+# superproject build the output went somewhere else entirely and nothing
+# here ever saw it.
+EXCLUDED_DIR_PARTS = ("build", "test", "tools")
 EXCLUDED_NAME_PARTS = ("_unittest.", "_mock.", "_test.")
 
 LITERAL = re.compile(r'u"((?:[^"\\]|\\.)*)"')

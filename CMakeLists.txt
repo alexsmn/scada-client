@@ -3,31 +3,55 @@ if(POLICY CMP0167)
   cmake_policy(SET CMP0167 NEW)
 endif()
 
+# The shared build-support kit (ADR 0011): at this product's root in an export,
+# at the tree root in the monorepo. Before project(), so the machine config it
+# reads can still set the vcpkg variables the toolchain consumes there.
+set(_scada_dir "${CMAKE_CURRENT_SOURCE_DIR}")
+while(NOT EXISTS "${_scada_dir}/build-support/ScadaProducts.cmake")
+  get_filename_component(_scada_parent "${_scada_dir}" DIRECTORY)
+  if(_scada_parent STREQUAL _scada_dir)
+    message(FATAL_ERROR
+      "build-support/ not found above ${CMAKE_CURRENT_SOURCE_DIR}")
+  endif()
+  set(_scada_dir "${_scada_parent}")
+endwhile()
+include("${_scada_dir}/build-support/ScadaProducts.cmake")
+include("${_scada_dir}/build-support/ScadaProductBase.cmake")
+unset(_scada_dir)
+unset(_scada_parent)
+
+scada_product_prologue()
+
 project(scada-client
   VERSION 2.6.0
   LANGUAGES CXX
 )
 
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+scada_product_base()
 
-if(WIN32)
-  add_definitions(
-    -D_MSVC_STL_HARDENING
-  )
-endif()
+# The products this one consumes. `common` and `opcuapp` are the client's own;
+# `core`, `graph_qt` and `view_manager_qt` are aui's — aui is added as a
+# subdirectory of this build, so its find_package calls read THIS directory's
+# module path, not one of its own.
+scada_find_products(common core opcuapp graph_qt view_manager_qt)
 
 enable_testing()
 
 option(BUILD_CLIENT_QT "Build the Qt desktop client" ON)
+# OFF: the Wt flavour does not compile. modules/events/event_view.cpp calls
+# scada::aui::GetSeverityTheme, which the reshell added to the Qt flavour and
+# never to this one, and a Wt-only configure additionally references the
+# Qt-only client_properties_transport_qt. It has no preset, no CI job and no
+# row in the Qt/web parity matrix — the shipped web client is web/. Slated for
+# removal; see tasks.md.
+option(BUILD_CLIENT_WT "Build the Wt web client" OFF)
 
-# Qt is the only UI flavour. The Wt one was deleted — it had not compiled since
-# the reshell, had no preset and no CI job, and the shipped web client is the
-# separate `web/` workspace. CLIENT_UI_CONFIGS survives the removal because
-# client_module() is written against it; it is a one-element list today.
 set(CLIENT_UI_CONFIGS)
 if(BUILD_CLIENT_QT)
   list(APPEND CLIENT_UI_CONFIGS qt)
+endif()
+if(BUILD_CLIENT_WT)
+  list(APPEND CLIENT_UI_CONFIGS wt)
 endif()
 if(NOT CLIENT_UI_CONFIGS)
   message(FATAL_ERROR "At least one client UI must be enabled")
@@ -104,12 +128,16 @@ foreach(PATH ${PATHS})
   IF(${PATH} MATCHES "_unittest" OR ${PATH} MATCHES "/test/")
     IF(${PATH} MATCHES "/qt/")
       LIST(APPEND UNITTESTS_QT ${PATH})
+    ELSEIF(${PATH} MATCHES "/wt/")
+      LIST(APPEND UNITTESTS_WT ${PATH})
     ELSE()
       LIST(APPEND UNITTESTS ${PATH})
     ENDIF()
   ELSE()
     IF(${PATH} MATCHES "/qt/")
       LIST(APPEND SOURCES_QT ${PATH})
+    ELSEIF(${PATH} MATCHES "/wt/")
+      LIST(APPEND SOURCES_WT ${PATH})
     ELSE()
       LIST(APPEND SOURCES ${PATH})
     ENDIF()
@@ -145,9 +173,13 @@ endif()
 
 set(CLIENT_COMPONENT_MODULES)
 set(CLIENT_QT_COMPONENT_TARGETS)
+set(CLIENT_WT_COMPONENT_TARGETS)
 foreach(component_name IN LISTS CLIENT_COMPONENTS)
   list(APPEND CLIENT_COMPONENT_MODULES client_component_${component_name})
   list(APPEND CLIENT_QT_COMPONENT_TARGETS client_component_${component_name}_qt)
+  if(NOT component_name STREQUAL "web")
+    list(APPEND CLIENT_WT_COMPONENT_TARGETS client_component_${component_name}_wt)
+  endif()
 endforeach()
 
 add_subdirectory(modules)

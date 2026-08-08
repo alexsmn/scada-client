@@ -34,6 +34,8 @@
 
 #if defined(UI_QT)
 #include "main_window/main_window_qt.h"
+#elif defined(UI_WT)
+#include "main_window/main_window_wt.h"
 #endif
 
 #include <gmock/gmock.h>
@@ -43,6 +45,8 @@
 #include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
+#elif defined(UI_WT)
+#include <wt/WContainerWidget.h>
 #endif
 
 #include "base/debug_util.h"
@@ -290,6 +294,10 @@ class MainWindowTest : public Test {
 
   ProgressHostImpl progress_host_;
 
+#if defined(UI_WT)
+  Wt::WContainerWidget container_;
+#endif
+
   std::optional<MainWindow> main_window_;
 
   static const int kWindowId = 111;
@@ -304,6 +312,8 @@ MainWindowTest::MainWindowTest() {
 
 #if defined(UI_QT)
   main_window_.emplace(MakeMainWindowContext());
+#elif defined(UI_WT)
+  main_window_.emplace(container_, MakeMainWindowContext());
 #endif
 }
 
