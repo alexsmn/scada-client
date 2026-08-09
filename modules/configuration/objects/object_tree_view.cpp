@@ -58,6 +58,11 @@ ObjectTreeView::ObjectTreeView(
         else
           contents_model->RemoveContainedItem(node_id);
       }
+      // The mark follows the contents, and the contents report only *changes*:
+      // adding an item the view already holds is silently a no-op, so a mark
+      // that had drifted would otherwise be uncorrectable — clicking it would
+      // do nothing at all. Re-derive every mark from what the view holds now.
+      SetContents(contents_model->GetContainedItems());
     }
   });
 
@@ -204,6 +209,54 @@ void ObjectTreeView::OnTreeNodesAdded(void* parent, int start, int count) {
       model().SetNodeVisible(&child, true);
     }
   }
+
+  // Seed the new nodes' marks from the contents. Without this a node never
+  // gets one: the tree is materialized lazily, so a page that restored its
+  // contents at login did so before any of these nodes existed, and
+  // OnContentsChanged — which resolves contents through FindTreeNodes — could
+  // only see the nodes that happened to exist at that moment. Nothing else
+  // reconciles a node that appears later, so every mark for a restored page
+  // stayed clear while the table listed exactly those items.
+  //
+  // Children arrive one at a time (ConfigurationTreeModel::UpdateChildTreeNodes
+  // adds them in a loop), so an ancestor is re-derived here against a partially
+  // materialized set. That is correct on convergence — the last child's
+  // notification settles it — and no repaint happens inside the loop.
+  if (contents_.empty())
+    return;
+
+  for (int i = 0; i < count; ++i) {
+    auto& child = parent_node.GetChild(start + i);
+    tree_view().SetChecked(&child, IsCheckedByContents(&child, contents_));
+  }
+  SyncCheckedState(parent, contents_);
+}
+
+bool ObjectTreeView::IsCheckedByContents(void* node,
+                                         const NodeIdSet& contents) {
+  auto& tree_node = *static_cast<ConfigurationTreeNode*>(node);
+  if (contents.contains(tree_node.node().node_id()))
+    return true;
+
+  // A node that holds no value of its own is marked exactly when everything
+  // under it is. Children carry settled marks by the time this runs, so it
+  // reads them rather than recursing.
+  const int child_count = model().GetChildCount(node);
+  if (child_count == 0)
+    return false;
+
+  for (int i = 0; i < child_count; ++i) {
+    if (!tree_view().IsChecked(model().GetChild(node, i)))
+      return false;
+  }
+  return true;
+}
+
+void ObjectTreeView::SyncCheckedState(void* node, const NodeIdSet& contents) {
+  tree_view().SetChecked(node, IsCheckedByContents(node, contents));
+  for (void* parent = model().GetParent(node); parent;
+       parent = model().GetParent(parent))
+    tree_view().SetChecked(parent, IsCheckedByContents(parent, contents));
 }
 
 void ObjectTreeView::OnTreeNodesDeleting(void* parent, int start, int count) {
@@ -228,6 +281,13 @@ void ObjectTreeView::OnTreeModelResetting() {
 }
 
 void ObjectTreeView::OnContentsChanged(const NodeIdSet& node_ids) {
+  SetContents(node_ids);
+}
+
+void ObjectTreeView::SetContents(NodeIdSet contents) {
+  contents_ = std::move(contents);
+
+  const NodeIdSet& node_ids = contents_;
   std::set<void*> checked_nodes;
 
   std::vector<void*> pending_nodes;
@@ -262,6 +322,13 @@ void ObjectTreeView::OnContentsChanged(const NodeIdSet& node_ids) {
 
 void ObjectTreeView::OnContainedItemChanged(const scada::NodeId& node_id,
                                             bool added) {
+  // Keep what the marks mean in step with the view, so a node materialized
+  // later is seeded against the current contents and not a stale snapshot.
+  if (added)
+    contents_.insert(node_id);
+  else
+    contents_.erase(node_id);
+
   auto nodes = model().FindTreeNodes(node_id);
   for (void* node : nodes) {
     while (node && tree_view().IsChecked(node) != added) {

@@ -35,6 +35,25 @@ class ObjectTreeView : public ConfigurationTreeView {
   void OnContentsChanged(const NodeIdSet& node_ids);
   void OnContainedItemChanged(const scada::NodeId& item_id, bool added);
 
+  // Adopts `contents` as what the marks must show, and re-derives every mark
+  // in the materialized tree from it.
+  void SetContents(NodeIdSet contents);
+
+  // Whether `node`'s mark should be set, under the rule SetContents applies to
+  // the whole tree: the contents hold the node itself, or the node has
+  // children and all of them are marked.
+  bool IsCheckedByContents(void* node, const NodeIdSet& contents);
+
+  // Re-derives the marks of `node` and of every ancestor from `contents`.
+  void SyncCheckedState(void* node, const NodeIdSet& contents);
+
+  // What the marks currently mean: the contents last reported to this tree.
+  // Held rather than fetched on demand because the tree has to seed a node the
+  // moment it materializes, and `GetActiveContentsModel()` is null until a
+  // content view is activated — which is exactly the state a freshly restored
+  // page is in.
+  NodeIdSet contents_;
+
   static std::shared_ptr<ConfigurationTreeModel> CreateConfigurationTreeModel(
       const ControllerContext& context,
       const NodeServiceTreeFactory& node_service_tree_factory);
