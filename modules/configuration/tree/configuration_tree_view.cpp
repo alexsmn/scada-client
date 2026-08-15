@@ -210,6 +210,9 @@ DragData ConfigurationTreeView::GetDragData(
     return {};
 
   DragData drag_data;
-  ItemDragData{std::move(node_id)}.Save(drag_data);
+  // Named local rather than `ItemDragData{...}.Save(...)`: cppcheck 2.21
+  // mis-reads that shape as an access of the moved-from `node_id`.
+  ItemDragData item_drag_data{std::move(node_id)};
+  item_drag_data.Save(drag_data);
   return drag_data;
 }

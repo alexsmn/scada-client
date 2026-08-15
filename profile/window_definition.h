@@ -124,7 +124,11 @@ std::ostream& operator<<(std::ostream& stream,
 template <class T>
 inline WindowDefinition& WindowDefinition::AddItem(std::string&& name,
                                                    T&& value) {
-  auto window_item = WindowItem{std::move(name)}.Set(std::forward<T>(value));
+  // Constructed as a named local rather than as `WindowItem{...}.Set(...)`:
+  // Set returns a reference, so the temporary form copy-constructs the local
+  // from it, and cppcheck 2.21 also mis-reads that shape as accessMoved.
+  WindowItem window_item{std::move(name)};
+  window_item.Set(std::forward<T>(value));
   AddItem(std::move(window_item));
   return *this;
 }

@@ -37,7 +37,13 @@ void AliasService::Resolve(std::string_view alias,
   auto node_id = ResolveNow(alias_string);
   auto status_code =
       node_id.is_null() ? scada::StatusCode::Bad : scada::StatusCode::Good;
-  callback(status_code, std::move(node_id));
+  // Passed by reference, not moved: AliasResolveCallback's second parameter is
+  // `const scada::NodeId&`. A `std::move` here would bind the xvalue to that
+  // const reference and move nothing, so it only misstates what happens -- and
+  // in OnFetchCompleted below, where one resolution feeds several callbacks, it
+  // would become a real defect the day the signature took the id by value
+  // (NodeId's move constructor nulls its source; see core/scada/node_id.h).
+  callback(status_code, node_id);
 }
 
 void AliasService::OnFetchCompleted() {
@@ -52,8 +58,10 @@ void AliasService::OnFetchCompleted() {
     auto node_id = ResolveNow(alias);
     auto status_code =
         node_id.is_null() ? scada::StatusCode::Bad : scada::StatusCode::Good;
+    // One resolved id delivered to every callback waiting on this alias; see
+    // the note in Resolve above for why it is not moved.
     for (const auto& callback : callbacks)
-      callback(status_code, std::move(node_id));
+      callback(status_code, node_id);
   }
 
   pending_aliases_.clear();
