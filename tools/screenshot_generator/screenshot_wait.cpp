@@ -3,6 +3,7 @@
 
 #include "base/any_executor.h"
 #include "base/thread_executor.h"
+#include "model/data_items_node_ids.h"
 #include "node_service/node_awaitable.h"
 #include "node_service/node_fetch_status.h"
 #include "node_service/node_ref.h"
@@ -97,6 +98,57 @@ bool FetchNodesResident(NodeService& node_service,
       types.push_back(std::move(type));
     for (const NodeRef& child : node.targets(scada::id::HierarchicalReferences))
       child.StartFetch(NodeFetchStatus::NodeOnly);
+  }
+
+  // Wave 2b: the targets of the node's linking references, and their own
+  // property children. Waves 1 and 2 reach only what hangs beneath the node,
+  // and a linked node is a peer rather than a child — a discrete item's
+  // HasTsFormat names a TsFormat node elsewhere in the tree, whose OpenLabel
+  // and CloseLabel are property children of *it*. Without this wave the
+  // reference resolves but both labels read back as empty LocalizedText, so
+  // the control dialog renders a two-item combo of blank rows beside a
+  // current value that fell back to the built-in «On»/«Off» — a configured
+  // item that looks unconfigured rather than an obviously broken capture.
+  //
+  // The reference types are named one by one on purpose. Asking for the
+  // NonHierarchicalReferences supertype finds nothing here: NodeModelImpl
+  // resolves the subtype relation statically only for namespace-0 reference
+  // types, and falls back to an address-space walk that yields false while the
+  // custom type's own node is unfetched — which it is, at this point in the
+  // run. Add the reference type here when a capture needs another link
+  // followed.
+  static constexpr scada::NodeId kLinkedReferenceTypes[] = {
+      scada::data_items::id::HasTsFormat,
+  };
+  std::vector<NodeRef> linked;
+  for (const scada::NodeId& id : node_ids) {
+    if (id.is_null())
+      continue;
+    NodeRef node = node_service.GetNode(id);
+    if (!node)
+      continue;
+    for (const scada::NodeId& reference_type : kLinkedReferenceTypes) {
+      if (NodeRef target = node.target(reference_type))
+        linked.push_back(std::move(target));
+    }
+  }
+  if (!linked.empty()) {
+    for (const NodeRef& target : linked)
+      target.StartFetch(NodeFetchStatus::NodeAndChildren);
+    if (!WaitForPendingNodeLoads(node_service))
+      return false;
+    for (const NodeRef& target : linked) {
+      for (const NodeRef& child :
+           target.targets(scada::id::HierarchicalReferences))
+        child.StartFetch(NodeFetchStatus::NodeOnly);
+      // A linked node's properties resolve through its own type's aggregate
+      // declarations exactly as the subject node's do, so its type joins the
+      // supertype walk below. Fetching the node and its children is not
+      // enough on its own: `format[TsFormatType_OpenLabel]` asks TsFormatType
+      // for the declaration, and an unfetched type reports no aggregates.
+      if (NodeRef type = target.type_definition())
+        types.push_back(std::move(type));
+    }
   }
 
   // Wave 3: the rest of the type's supertype chain, one level per round.

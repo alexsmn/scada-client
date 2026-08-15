@@ -36,6 +36,7 @@
 #include "scada/node_id.h"
 #include "services/task_manager.h"
 #include "timed_data/timed_data_service.h"
+#include "timed_data/timed_data_spec.h"
 
 #include <QAbstractItemView>
 #include <QApplication>
@@ -370,10 +371,12 @@ std::shared_ptr<DialogAwaitableResult<void>> BuildLimitsDialog(
 // Write dialog family. `manual` picks between "Manual Input" (TI
 // manual override) and "Control" (remote device control). `node_id` comes
 // from `screenshot_data.json` — the spec's own `node`, or the fixture-wide
-// analog TI node the docs images use. The model treats it as continuous (not
-// discrete) because no HasTsFormat reference is wired up, which matches the
-// ti-*-control docs images. The ts- variants will render identically until the
-// fixture grows a proper TS (with logical / discrete semantics).
+// analog TI node the docs images use. Which of the two dialogs the model
+// builds is the node's doing, not the kind's: WriteModel asks
+// TimedDataSpec::logical(), so an AnalogItemType node renders the editable
+// numeric field with its engineering unit (the ti-* captures) and a
+// DiscreteItemType node renders the read-only two-state combo labelled from
+// its HasTsFormat target (the ts-* captures, whose specs name TS.201/TS.202).
 //
 // After show() we pump events aggressively: the real TimedDataServiceImpl
 // fulfils the current value through an async subscribe+read chain routed
@@ -399,6 +402,19 @@ std::shared_ptr<DialogAwaitableResult<void>> BuildWriteDialog(
     ADD_FAILURE() << "WriteDialog: failed to fetch configured fixture node";
     return {};
   }
+  // Warm the item's current value before the dialog exists. WriteDialog reads
+  // the discrete state once, in its constructor, and only ever refreshes the
+  // "Current value:" label afterwards — so a value that lands later leaves the
+  // combo showing GetCurrentDiscreteState()'s get_or(true) default beside a
+  // label that has since corrected itself, and the dialog proposes the state
+  // it is already in. Whether that happened used to depend on whether an
+  // earlier capture in the same run had already subscribed to the same item:
+  // ts-remote-control-enabled.png rendered correctly only because
+  // ts-manual-control.png names the same node and ran first.
+  TimedDataSpec warm_up{*env.timed_data_service, node_id};
+  PumpEventsUntil([&warm_up] { return !warm_up.current().value.is_null(); },
+                  std::chrono::seconds{2});
+
   WriteContext context{.executor_ = env.executor,
                        .timed_data_service_ = *env.timed_data_service,
                        .node_id_ = node_id,

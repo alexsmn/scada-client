@@ -768,7 +768,7 @@
       "referenced_from": [
         "client.md"
       ],
-      "notes": "Manual-control dialog, TI side. Verified 2026-08-08 to render the node display name ('Температура нагрева'), the current value ('41 °C') and the engineering unit beside the new-value combo - the three things this capture was recorded as missing. The docs original additionally pre-fills the new value with 25; ours leaves it empty."
+      "notes": "Manual-control dialog, TI side. Verified 2026-08-08 to render the node display name ('Температура нагрева'), the current value ('41 °C') and the engineering unit beside the new-value combo - the three things this capture was recorded as missing. The new-value box was empty until 2026-08-15 — the current value had not arrived by the time WriteDialog's constructor seeded the field — and now pre-fills 41, which is why this row joined the set of tracked captures the generator no longer reproduces. The docs original pre-fills a distinct value, 25; whether to seed one is still open."
     },
     {
       "file": "ti-parameters.png",
@@ -795,7 +795,7 @@
         "client.md",
         "dev/data-items.md"
       ],
-      "notes": "Remote-control dialog disabled state, TI. Renders from the fixture since 2026-08-15: the `write-remote` dialog spec carries a `node` override naming TIT.213 (\u00abТемпература масла\u00bb), whose DataItemType_OutputCondition formula `TIT.211 > 70` evaluates false over the fixture data, so the condition row reads unsatisfied and the Execute button is disabled. The override exists because one node cannot render both this and ti-remote-control-enabled.png in a single run. ScreenshotGenerator.DisabledControlDialogNodeConditionIsUnsatisfied asserts both the override and the falsy evaluation \u2014 the structural check only asserts the PNG exists, so a dropped override would ship the enabled dialog under this name. The tracked gallery has no PNG for it yet: the Qt gallery is a Windows baseline and this was verified on macOS."
+      "notes": "Remote-control dialog disabled state, TI. Renders from the fixture since 2026-08-15: the `write-remote` dialog spec carries a `node` override naming TIT.213 (\u00abТемпература масла\u00bb), whose DataItemType_OutputCondition formula `TIT.211 > 70` evaluates false over the fixture data, so the condition row reads unsatisfied and the Execute button is disabled. The override exists because one node cannot render both this and ti-remote-control-enabled.png in a single run. ScreenshotGenerator.DisabledControlDialogNodeConditionIsUnsatisfied asserts both the override and the falsy evaluation \u2014 the structural check only asserts the PNG exists, so a dropped override would ship the enabled dialog under this name. Its new-value box also pre-fills 58 as of 2026-08-15: BuildWriteDialog warms the item's subscription before building the dialog, so this capture no longer depends on an earlier capture in the same run having subscribed to the node first — which is the only reason ti-remote-control-enabled.png ever showed its 41. The tracked gallery has no PNG for it yet: the Qt gallery is a Windows baseline and this was verified on macOS."
     },
     {
       "file": "ti-remote-control-enabled.png",
@@ -818,10 +818,11 @@
     {
       "file": "ts-manual-control.png",
       "tag": "auto-dialog",
+      "parity_key": "write",
       "referenced_from": [
         "client.md"
       ],
-      "notes": "Manual-control dialog, TS side."
+      "notes": "Manual-control dialog, TS side. Renders from the fixture since 2026-08-15: the `write-manual` spec's `node` override names TS.201 («Силовой выключатель»), a DiscreteItemType in the TS namespace under ЭСТРА-ПС › ТС. The kind is the same one ti-manual-control.png uses — WriteModel picks the discrete dialog from the node alone (TimedDataSpec::logical()), so this capture is the read-only two-state combo labelled from the node's HasTsFormat target (SCADA.9401 «Вкл/Откл») with no engineering-unit field. Before that the three ts-* rows had no dialog spec at all. Pinned by ScreenshotGenerator.DiscreteControlDialogsRenderTheirTsFormatStates, which asserts the override, the discrete branch and non-empty state labels — the structural check only asserts the PNG exists, so a lost override would ship the analog TI dialog under a TS name. The tracked gallery has no PNG for it yet: the Qt gallery is a Windows baseline and this was verified on macOS."
     },
     {
       "file": "ts-remote-control-confirm.png",
@@ -834,18 +835,20 @@
     {
       "file": "ts-remote-control-disabled.png",
       "tag": "auto-dialog",
+      "parity_key": "write",
       "referenced_from": [
         "client.md"
       ],
-      "notes": "Remote-control dialog disabled state, TS."
+      "notes": "Remote-control dialog disabled state, TS. Renders from the fixture since 2026-08-15 over TS.202 («Секционный выключатель»), whose DataItemType_OutputCondition formula `TIT.211 > 70` evaluates false, so the condition row reads unsatisfied and Execute is disabled — the same two-node split TIT.212/TIT.213 make on the analog side, for the same reason: one node cannot render both variants in a single run. The tracked gallery has no PNG for it yet (Windows baseline; verified on macOS)."
     },
     {
       "file": "ts-remote-control-enabled.png",
       "tag": "auto-dialog",
+      "parity_key": "write",
       "referenced_from": [
         "client.md"
       ],
-      "notes": "Remote-control dialog enabled state, TS."
+      "notes": "Remote-control dialog enabled state, TS. Renders from the fixture since 2026-08-15 over TS.201, whose condition `TIT.211 < 70` holds. Current value «Вкл» with the combo pre-selecting «Откл»: WriteModel deliberately proposes the opposite state, which is the direction the docs original shows. That pre-selection is read once, in WriteDialog's constructor, so the capture pre-warms the item's TimedDataService subscription before building the dialog — without it the rendered combo depended on whether an earlier capture in the same run had already subscribed to the same node. The tracked gallery has no PNG for it yet (Windows baseline; verified on macOS)."
     },
     {
       "file": "users.jpg",

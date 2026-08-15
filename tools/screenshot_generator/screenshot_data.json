@@ -413,6 +413,39 @@
       }
     },
     {
+      "_comment": "The fixture's only discrete data items, and the reason the ts-*-control captures render the TS dialog instead of a second copy of the TI one: WriteModel takes its discrete branch from TimedDataSpec::logical(), which tests DiscreteItemType, and its two state labels from the HasTsFormat (SCADA.154) target. They live in the TS namespace, which is DiscreteItemType's own (namespaces.csv), under the ЭСТРА-ПС «ТС» folder. base_value 0 reads back as the format's OpenLabel («Вкл»), and the combo pre-selects the opposite state («Откл») — the current-then-command direction the docs originals show. TS.201 is the satisfied-condition node, `TIT.211 < 70` being true over the fixture data; TS.202 is its unsatisfied sibling, the same split TIT.212/TIT.213 make on the analog side.",
+      "id": "TS.201",
+      "browse_name": "Силовой выключатель",
+      "class": "variable",
+      "type_definition": "discrete_item",
+      "base_value": 0,
+      "properties": {
+        "SCADA.148": "TIT.211 < 70"
+      },
+      "references": [
+        {
+          "type": "SCADA.154",
+          "target": "SCADA.9401"
+        }
+      ]
+    },
+    {
+      "id": "TS.202",
+      "browse_name": "Секционный выключатель",
+      "class": "variable",
+      "type_definition": "discrete_item",
+      "base_value": 0,
+      "properties": {
+        "SCADA.148": "TIT.211 > 70"
+      },
+      "references": [
+        {
+          "type": "SCADA.154",
+          "target": "SCADA.9401"
+        }
+      ]
+    },
+    {
       "id": "SCADA.234",
       "browse_name": "root",
       "display_name": "root",
@@ -1066,7 +1099,9 @@
       "TIT.202",
       "TIT.203",
       "TIT.204",
-      "TIT.207"
+      "TIT.207",
+      "TS.201",
+      "TS.202"
     ],
     "TS.116": [
       "TIT.205",
@@ -1965,6 +2000,27 @@
       "kind": "write-remote",
       "filename": "ti-remote-control-disabled.png",
       "node": "TIT.213",
+      "width": 354,
+      "height": 207
+    },
+    {
+      "kind": "write-manual",
+      "filename": "ts-manual-control.png",
+      "node": "TS.201",
+      "width": 354,
+      "height": 207
+    },
+    {
+      "kind": "write-remote",
+      "filename": "ts-remote-control-enabled.png",
+      "node": "TS.201",
+      "width": 354,
+      "height": 207
+    },
+    {
+      "kind": "write-remote",
+      "filename": "ts-remote-control-disabled.png",
+      "node": "TS.202",
       "width": 354,
       "height": 207
     },

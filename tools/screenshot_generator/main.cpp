@@ -43,6 +43,7 @@
 #include "base/test/scoped_mock_clock_override.h"
 #include "base/test/scoped_path_override.h"
 #include "base/utf_convert.h"
+#include "common/format.h"
 #include "controller/window_info.h"
 #include "events/qt/event_filter_bar.h"
 #include "favorites/favourites.h"
@@ -1957,6 +1958,121 @@ TEST_F(ScreenshotGenerator, DisabledControlDialogNodeConditionIsUnsatisfied) {
   EXPECT_FALSE(model->IsConditionOk())
       << "the condition formula must evaluate falsy over the fixture data, so "
          "the dialog reads Not satisfied and its OK button is disabled";
+}
+
+// The TS captures are the same two dialog kinds as the TI ones over a
+// different node, so nothing in the spec says which of the two dialogs will be
+// built: WriteModel decides from the node alone, taking its discrete branch
+// from TimedDataSpec::logical() (a DiscreteItemType test) and its two state
+// labels from the node's HasTsFormat target. Both halves are invisible to
+// check_screenshots.py, which only asserts the PNG exists — a lost `node`
+// override, a node that stopped being a DiscreteItemType, or a dropped
+// HasTsFormat reference each still produce a file, and it would be the analog
+// TI dialog, or the untranslated «On»/«Off» fallback, under a ts-* name. That
+// is exactly how these three shipped before 2026-08-15.
+TEST_F(ScreenshotGenerator, DiscreteControlDialogsRenderTheirTsFormatStates) {
+  // Read the specs straight out of the fixture rather than from
+  // g_config.dialogs: that vector is filtered by the managed-image gate and by
+  // --only, and the themed ctest run passes --only.
+  struct DiscreteCapture {
+    std::string_view filename;
+    bool manual = false;
+    // What the node's DataItemType_OutputCondition must evaluate to. The
+    // enabled and disabled control captures are two nodes precisely because
+    // one node cannot read both ways in a single run.
+    bool condition_ok = false;
+  };
+  const DiscreteCapture kCaptures[] = {
+      {.filename = "ts-manual-control.png", .manual = true},
+      {.filename = "ts-remote-control-enabled.png", .condition_ok = true},
+      {.filename = "ts-remote-control-disabled.png", .condition_ok = false},
+  };
+
+  WaitForAwaitable(executor_, app_.Start());
+  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
+
+  for (const auto& capture : kCaptures) {
+    SCOPED_TRACE(capture.filename);
+
+    const boost::json::value* dialog = nullptr;
+    for (const auto& js : g_config.json.at("dialogs").as_array()) {
+      if (js.at("filename").as_string() == capture.filename)
+        dialog = &js;
+    }
+    ASSERT_NE(dialog, nullptr) << "the fixture lost this discrete capture";
+
+    const auto* node = dialog->as_object().if_contains("node");
+    ASSERT_NE(node, nullptr)
+        << "a TS capture needs its own node: falling back to the fixture-wide "
+           "dialog_analog_node_id renders the analog TI dialog under a TS name";
+    const scada::NodeId node_id =
+        NodeIdFromScadaString(std::string_view(node->as_string()));
+    ASSERT_NE(node_id, g_config.dialog_analog_node_id);
+
+    ASSERT_TRUE(scada::screenshot_generator::FetchNodesResident(
+        app_.node_service(), std::span<const scada::NodeId>{&node_id, 1}));
+
+    Profile profile;
+    auto model = std::make_shared<WriteModel>(
+        WriteContext{.executor_ = executor_,
+                     .timed_data_service_ = app_.timed_data_service(),
+                     .node_id_ = node_id,
+                     .profile_ = profile,
+                     .manual_ = capture.manual});
+
+    ASSERT_TRUE(model->discrete())
+        << "the node is not a DiscreteItemType, so the dialog offers an "
+           "editable numeric field with engineering units — the TI dialog";
+
+    // Both failure shapes matter and they look nothing alike. A HasTsFormat
+    // reference that does not resolve at all leaves the built-in «On»/«Off»
+    // fallback; one that resolves to a node whose label properties are not
+    // resident reads back empty, and WriteModel has no per-label fallback, so
+    // the combo renders two blank rows — a configured item looking
+    // unconfigured. The second is what shipped before FetchNodesResident grew
+    // its linked-reference wave.
+    const auto states = model->GetDiscreteStates();
+    ASSERT_EQ(states.size(), 2u);
+    EXPECT_FALSE(states[0].empty())
+        << "the open-state label read back empty: the HasTsFormat target's "
+           "label properties are not resident";
+    EXPECT_FALSE(states[1].empty())
+        << "the close-state label read back empty: the HasTsFormat target's "
+           "label properties are not resident";
+    EXPECT_NE(states[0], states[1])
+        << "both states carry the same label, so the operator cannot tell "
+           "which one they are commanding";
+    EXPECT_NE(states[0], DefaultOpenLabel())
+        << "the open-state label fell back to the built-in default, so the "
+           "node's HasTsFormat reference no longer resolves";
+    EXPECT_NE(states[1], DefaultCloseLabel())
+        << "the close-state label fell back to the built-in default, so the "
+           "node's HasTsFormat reference no longer resolves";
+
+    // The current value and the condition both arrive over
+    // TimedDataService, so they land on a later turn of the loop.
+    scada::screenshot_generator::PumpEventLoopFor(
+        std::chrono::milliseconds{500});
+
+    // base_value 0 in the fixture. The combo pre-selects the opposite state
+    // (WriteModel inverts deliberately: a command proposes the other state),
+    // so index 1 here means the value was delivered — an undelivered value
+    // defaults to true and lands on index 0.
+    EXPECT_EQ(model->GetCurrentDiscreteState(), 1)
+        << "the fixture value did not reach the dialog, so the pre-selected "
+           "state is the get_or default rather than the node's";
+
+    if (capture.manual)
+      continue;
+
+    EXPECT_TRUE(model->has_condition())
+        << "without a DataItemType_OutputCondition the dialog renders no "
+           "condition row at all, which is neither control variant";
+    EXPECT_EQ(model->IsConditionOk(), capture.condition_ok)
+        << "the condition formula must evaluate " << capture.condition_ok
+        << " over the fixture data for this capture to be the state it is "
+           "named after";
+  }
 }
 
 TEST_F(ScreenshotGenerator, CaptureDialogs) {
