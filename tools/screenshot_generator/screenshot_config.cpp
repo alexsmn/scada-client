@@ -156,8 +156,8 @@ void ScreenshotConfig::Load(const std::filesystem::path& path) {
     spec.height = static_cast<int>(js.at("height").as_int64());
     if (const auto* min_rows = js.as_object().if_contains("min_rows"))
       spec.min_rows = static_cast<int>(min_rows->as_int64());
-    if (const auto* rows = js.as_object().if_contains("rows"))
-      spec.exact_rows = static_cast<int>(rows->as_int64());
+    if (const auto* exact_rows = js.as_object().if_contains("exact_rows"))
+      spec.exact_rows = static_cast<int>(exact_rows->as_int64());
     if (const auto* min_columns = js.as_object().if_contains("min_columns"))
       spec.min_columns = static_cast<int>(min_columns->as_int64());
     if (const auto* click_object = js.as_object().if_contains("click_object"))

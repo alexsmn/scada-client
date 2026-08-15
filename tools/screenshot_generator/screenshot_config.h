@@ -69,8 +69,8 @@ struct ScreenshotSpec {
   // so a data-path regression fails the capture instead of silently saving
   // an empty frame.
   int min_rows = 0;
-  // Exact grid row count ("rows" in the JSON): additionally catches rows
-  // leaking IN from outside the captured scope, not just an empty grid.
+  // Exact grid row count: additionally catches rows leaking IN from outside
+  // the captured scope, not just an empty grid.
   int exact_rows = 0;
   // Minimum number of grid columns the rendered window must show. 0 disables
   // the check. The row-count checks above cannot see a grid whose columns come
