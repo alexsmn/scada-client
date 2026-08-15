@@ -13,7 +13,9 @@ the manual ships. This script verifies:
      _data/i18n_pages.yml and deliberately not listed in the manifest.
   3. The per-tag "counts" block matches the entries.
   4. "obsolete" entries are referenced by no page at all (RU or EN).
-  5. current_generator_owned_subset entries exist and carry an auto-* tag.
+  5. current_generator_owned_subset entries exist and are generator-owned
+     (an auto-* tag, or reshell-theme for a capture whose content only
+     appears under --theme).
   6. publish_theme, where present, is a known theme and sits on a published
      entry (it drives the themed publish pass and is dead data elsewhere).
 
@@ -32,6 +34,18 @@ import sys
 from pathlib import Path
 
 IMAGE_REF_RE = re.compile(r"img/([\w.\-]+\.(?:png|jpe?g|gif|svg))")
+
+# Tags whose images the generator produces, and which may therefore be
+# published. `auto-*` was the whole set until hardware-tree.png was published
+# (2026-08-15): its status dots exist only under --theme, so it carries
+# `reshell-theme` rather than `auto-view` and the narrower check rejected it.
+# The predicate this rule wants is "not hand-captured", which both satisfy.
+GENERATED_TAGS = {"reshell-theme"}
+
+
+def is_generator_owned(tag: str) -> bool:
+    return tag.startswith("auto-") or tag in GENERATED_TAGS
+
 
 # Non-content markdown that may mention image names without embedding them.
 EXCLUDED_PAGES = {"CLAUDE.md", "README.md", "tasks.md"}
@@ -162,9 +176,10 @@ def main() -> int:
         entry = entries.get(name)
         if entry is None:
             errors.append(f"publish subset entry {name} not in manifest")
-        elif not entry["tag"].startswith("auto-"):
+        elif not is_generator_owned(entry["tag"]):
             errors.append(
-                f"publish subset entry {name} has non-auto tag {entry['tag']}"
+                f"publish subset entry {name} has non-generated tag "
+                f"{entry['tag']}"
             )
 
     # 6. publish_theme is meaningful only on published images, and only the

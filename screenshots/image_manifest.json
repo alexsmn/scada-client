@@ -181,35 +181,27 @@
     },
     {
       "file": "devices-off.png",
-      "tag": "auto-state",
-      "referenced_from": [
-        "dev/devices.md"
-      ],
-      "notes": "The Оборудование (Subsystems) tree as dev/devices.md opens the chapter with; the devices happen to be offline, which is where the filename comes from — the figure is not about the state. The generator already renders this window as `hardware-tree.png`, with the fixture's three link states (Online / Offline / Disabled) as status dots in one image, so what is left here is a docs-side re-point, not a capture to write. Re-checked 2026-08-15 (tasks.md 39, subtask 8)."
+      "tag": "obsolete",
+      "referenced_from": [],
+      "notes": "Retired 2026-08-15: dev/devices.md now embeds `hardware-tree.png`, which is the same window rendered by the generator. The legacy figure showed the devices offline, which is where the filename came from — the figure was never about the state."
     },
     {
       "file": "devices-on.png",
-      "tag": "manual-annotated",
-      "referenced_from": [
-        "client.md"
-      ],
-      "notes": "NOT a Struct-window state capture. A composite of the objects tree and an open parameters form with the group's Устройство combo popped up, with two red underlines drawn on top — hand annotation the generator cannot produce. client.md uses it to point at where a group's device is bound. Retagged from auto-state 2026-08-15; splitting the figure into a generated capture plus prose call-outs is the open question in tasks.md 39, subtask 8."
+      "tag": "obsolete",
+      "referenced_from": [],
+      "notes": "Retired 2026-08-15: client.md now embeds `devices.png`. The legacy figure was a composite of the object tree and a parameters form with two red underlines drawn on top; the generator cannot draw the annotation, and the prose beside it already says what the arrows pointed at."
     },
     {
       "file": "devices-status.png",
-      "tag": "auto-state",
-      "referenced_from": [
-        "client.md"
-      ],
-      "notes": "The Оборудование tree beside the *Метрики* sheet for the selected device — client.md's \"Статусы устройств\". The right-hand half now renders as `device-metrics.png` (capture type DeviceMetrics, added 2026-08-15); the left half is `hardware-tree.png`. Two panes in one legacy figure, so replacing it means re-pointing the page at both, or composing them — the open item in tasks.md 39, subtask 8."
+      "tag": "obsolete",
+      "referenced_from": [],
+      "notes": "Retired 2026-08-15: client.md now embeds the two panes separately — `hardware-tree.png` for the status dots and `device-metrics.png` for the Метрики sheet the legacy figure showed beside it."
     },
     {
       "file": "devices-traffic.png",
-      "tag": "auto-state",
-      "referenced_from": [
-        "client/device-watch.md"
-      ],
-      "notes": "The whole main window around the Наблюдение (Watch) view — the same content the generator renders as `device-watch.png`, plus menu bar, toolbar and the hardware tree. Not a device-state capture. A docs-side re-point onto `device-watch.png` (or onto `workbench-window.png` if the chrome is the point) rather than a capture to write; see tasks.md 39, subtask 8."
+      "tag": "obsolete",
+      "referenced_from": [],
+      "notes": "Retired 2026-08-15: client/device-watch.md now embeds `device-watch.png`. The legacy figure wrapped the same view in the whole main window."
     },
     {
       "file": "display.png",
@@ -293,18 +285,23 @@
     {
       "file": "device-metrics.png",
       "tag": "auto-view",
-      "published": false,
+      "published": true,
       "parity_key": "device-diagnostics",
-      "referenced_from": [],
-      "notes": "The device Metrics sheet — what *Метрики* on a device's context menu opens (client.md, \"Статусы устройств\"), and the Qt half of the web's DeviceMetrics component. Rendered for the fixture's КП-01 (TS.103, an IEC 60870-5-104 RTU): the row labels are the DeviceType data-variable declarations (Связь, Включено, Принято/Отправлено сообщений и байт, Число синхронизаций времени, Число полных опросов) and each cell is an `=NodeId` formula the sheet resolves live. Not a window type of its own — DeviceMetricsModule builds a CusTable WindowDefinition from resolved NodeRefs, which do not exist when MakeScreenshotPage assembles the profile page, so the capture opens its own view. Legacy-themed and not yet embedded in a manual page: it is half of what devices-status.png shows, and replacing that figure is still open (tasks.md 39, subtask 8). Booleans render 0/1 and byte counters in scientific notation, unlike the legacy capture's Да/Нет and plain integers — a real formatting gap, filed separately."
+      "referenced_from": [
+        "client.md"
+      ],
+      "notes": "The device Metrics sheet — what *Метрики* on a device's context menu opens (client.md, \"Статусы устройств\"), and the Qt half of the web's DeviceMetrics component. Rendered for the fixture's КП-01 (TS.103, an IEC 60870-5-104 RTU): the row labels are the DeviceType data-variable declarations (Связь, Включено, Принято/Отправлено сообщений и байт, Число синхронизаций времени, Число полных опросов) and each cell is an `=NodeId` formula the sheet resolves live. Not a window type of its own — DeviceMetricsModule builds a CusTable WindowDefinition from resolved NodeRefs, which do not exist when MakeScreenshotPage assembles the profile page, so the capture opens its own view. Legacy-themed and not yet embedded in a manual page: it is half of what devices-status.png shows, and replacing that figure is still open (tasks.md 39, subtask 8). Booleans render 0/1 and byte counters in scientific notation, unlike the legacy capture's Да/Нет and plain integers — a real formatting gap, filed separately. Published 2026-08-15 as the Метрики half of `devices-status.png`. Opted out of the dark publish pass with publish_theme=legacy because it cannot render themed: the sheet paints its header cells from a hard-coded Rgba{227,227,227} and its body cells white, so under --theme only the frame and scrollbars darken and the result is white cells in a black window. Filed as its own backlog entry; flip this to dark once the sheet takes its colour from the palette.",
+      "publish_theme": "legacy"
     },
     {
       "file": "device-watch.png",
       "tag": "auto-view",
       "parity_key": "watch",
-      "referenced_from": [],
-      "notes": "Device log (Watch view) for КП-01: the filter bar over a seeded IEC 60870-5-104 session — decoded Dir/Type/Cause/IOA/Fmt/N(S)/N(R) columns, plus a t1 timeout and a link loss carrying their severity colours. Rendered from the fixture's `device_log` block, delivered as event notifications by the generator's fake monitored-item service; the `rows` guard is 12 (11 seeded lines plus the one `events` entry sourced on this device). Was an empty grid for months because nothing bound a device to the view and nothing seeded events. Not published yet: no manual page embeds it. Re-rendered 2026-08-01 with the aui alignment fix: table rows are vertically centred (the adapter returned the horizontal flag alone, which Qt reads as AlignTop).",
-      "published": false
+      "referenced_from": [
+        "client/device-watch.md"
+      ],
+      "notes": "Device log (Watch view) for КП-01: the filter bar over a seeded IEC 60870-5-104 session — decoded Dir/Type/Cause/IOA/Fmt/N(S)/N(R) columns, plus a t1 timeout and a link loss carrying their severity colours. Rendered from the fixture's `device_log` block, delivered as event notifications by the generator's fake monitored-item service; the `rows` guard is 12 (11 seeded lines plus the one `events` entry sourced on this device). Was an empty grid for months because nothing bound a device to the view and nothing seeded events. Not published yet: no manual page embeds it. Re-rendered 2026-08-01 with the aui alignment fix: table rows are vertically centred (the adapter returned the horizontal flag alone, which Qt reads as AlignTop). Published 2026-08-15 in place of `devices-traffic.png`, which showed this same view inside the whole main window; the chrome around it is `workbench-window.png`'s subject, not this page's. Re-rendered dark for the published subset.",
+      "published": true
     },
     {
       "file": "administration-explorer.png",
@@ -390,10 +387,13 @@
     {
       "file": "hardware-tree.png",
       "tag": "reshell-theme",
-      "published": false,
+      "published": true,
       "parity_key": "devices",
-      "referenced_from": [],
-      "notes": "Hardware explorer under --theme: filter field + per-device good/uncertain/bad status dots (Subsystems / HardwareTreeView). Theme-gated reshell chrome (backlog 5.0/4.2); the legacy view is a bare tree, so it is excluded from the no-theme managed check. Fixture devices KP-01 offline / KP-02 online / KP-03 disabled."
+      "referenced_from": [
+        "client.md",
+        "dev/devices.md"
+      ],
+      "notes": "Hardware explorer under --theme: filter field + per-device good/uncertain/bad status dots (Subsystems / HardwareTreeView). Theme-gated reshell chrome (backlog 5.0/4.2); the legacy view is a bare tree, so it is excluded from the no-theme managed check. Fixture devices KP-01 offline / KP-02 online / KP-03 disabled. Published 2026-08-15: it replaced `devices-off.png` in dev/devices.md and the tree half of `devices-status.png` in client.md — both legacy captures of this same window. Dark, like the rest of the published subset, and the status dots exist only under --theme, so this image cannot be published legacy."
     },
     {
       "file": "object-tree.png",
@@ -438,10 +438,12 @@
     {
       "file": "devices.png",
       "tag": "auto-view",
-      "published": false,
+      "published": true,
       "parity_key": "object-tree",
-      "referenced_from": [],
-      "notes": "Objects explorer (the Struct window, ObjectTreeModel) — the operator's device/signal tree, collapsed to its top level. Untagged until 2026-08-01, so the managed-image gate skipped it and the on-disk render sat two UI generations stale: it still showed the retired items.bmp glyphs (yellow folders, blue variable icons) from before both the Lucide SVG migration and the deliberate removal of per-row icons from this tree (ObjectTreeModel::ObjectTreeNode::GetIcon returns kNoIcon — principles.md §5, state is a dot, never artwork). Only the root row keeps a glyph. macOS render pending a Windows re-render; validation-only."
+      "referenced_from": [
+        "client.md"
+      ],
+      "notes": "Objects explorer (the Struct window, ObjectTreeModel) — the operator's device/signal tree, collapsed to its top level. Untagged until 2026-08-01, so the managed-image gate skipped it and the on-disk render sat two UI generations stale: it still showed the retired items.bmp glyphs (yellow folders, blue variable icons) from before both the Lucide SVG migration and the deliberate removal of per-row icons from this tree (ObjectTreeModel::ObjectTreeNode::GetIcon returns kNoIcon — principles.md §5, state is a dot, never artwork). Only the root row keeps a glyph. macOS render pending a Windows re-render; validation-only. Published 2026-08-15 in place of `devices-on.png`, the hand-annotated composite client.md used for the object panel. What the annotation pointed at — binding a device in the group's parameters — the surrounding prose already states, but the replacement does NOT show a group's link state in the Значение column: nothing in the fixture binds a device to a group, so that column renders empty. Filed as its own backlog entry. Re-rendered dark for the published subset."
     },
     {
       "file": "files.png",
@@ -911,19 +913,22 @@
   "counts": {
     "auto-dialog": 25,
     "auto-menu": 10,
-    "auto-state": 3,
     "auto-view": 25,
-    "manual-annotated": 3,
+    "manual-annotated": 2,
     "manual-diagram": 4,
     "manual-modus": 5,
     "manual-os": 3,
-    "obsolete": 7,
+    "obsolete": 11,
     "reshell-theme": 27
   },
   "current_generator_owned_subset": [
     "client-login.png",
     "client-retransmission.png",
+    "device-metrics.png",
+    "device-watch.png",
+    "devices.png",
     "graph-cursor.png",
+    "hardware-tree.png",
     "settings-dialog.png",
     "users.png"
   ]
