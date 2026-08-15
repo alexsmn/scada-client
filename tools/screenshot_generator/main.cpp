@@ -631,14 +631,16 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
       ++captured;
       continue;
     }
+    // The device-log filter bar is a strip of stock widgets, built here on its
+    // own rather than reached through WatchView.
+    if (spec.window_type == "WatchFilterBar") {
+      SaveWatchFilterBarScreenshot(spec);
+      ++captured;
+      continue;
+    }
     // The frame-decode pane is the device log's inspector; it is built here
     // over a fixture APDU because reaching it through WatchView would mean
     // assembling a full ControllerContext.
-    if (spec.window_type == "WatchFilterBar") {
-      SaveWatchFilterBarScreenshot(spec);
-      continue;
-    }
-
     if (spec.window_type == "FrameDecode") {
       SaveFrameDecodeScreenshot(spec);
       ++captured;
