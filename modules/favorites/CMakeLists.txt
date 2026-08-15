@@ -8,5 +8,10 @@ client_module_link_libraries(client_favorites PRIVATE
 )
 
 if(TARGET client_favorites_qt_unittests)
-  target_link_libraries(client_favorites_qt_unittests PRIVATE aui_qt)
+  # The add-to-favourites regression test needs a QApplication (aui_test_qt).
+  target_link_libraries(client_favorites_qt_unittests PRIVATE
+    aui_qt
+    aui_test_qt
+    client_controller_qt
+  )
 endif()

@@ -1,5 +1,6 @@
 #include "app/client_application.h"
 
+#include "administration/administration_module.h"
 #include "aui/translation.h"
 #include "base/any_executor.h"
 #include "base/blinker.h"
@@ -17,7 +18,6 @@
 #include "export/configuration/export_configuration_module.h"
 #include "export/csv/csv_export_module.h"
 #include "export/excel/excel_export_module.h"
-#include "administration/administration_module.h"
 #include "favorites/favorites_module.h"
 #include "filesystem/filesystem_component.h"
 #include "main_window/main_window_module.h"
@@ -201,12 +201,12 @@ scada::CoStatus ClientApplication::SaveProfileToServer(
   }
   auto profile_json = boost::json::serialize(profile_->SaveToValue());
   // SaveProfile returns no output arguments; only its status matters here.
-  auto status = (co_await services.method_service->Call(
-                     user_id, scada::security::id::UserType_SaveProfile,
-                     {scada::String{std::move(profile_json)},
-                      profile_revision_},
-                     scada::ServiceContext{}))
-                    .status();
+  auto status =
+      (co_await services.method_service->Call(
+           user_id, scada::security::id::UserType_SaveProfile,
+           {scada::String{std::move(profile_json)}, profile_revision_},
+           scada::ServiceContext{}))
+          .status();
   if (scada::IsGood(status.code())) {
     ++profile_revision_;
   }
@@ -330,10 +330,10 @@ void ClientApplication::CreateUserServices(const PostLoginContext& ctx) {
   shutdown_stack_.Push([this] { connection_state_reporter_.reset(); });
 
   // Held for the whole logged-in lifetime rather than only while
-  // `IsConnected()` — the reconnect backoff in `ConnectionStateReporter` runs on
-  // the same stallable timer, so releasing the assertion on a dropped session
-  // would leave the client unable to reconnect until someone raised its window.
-  // No-op off macOS; see services/app_nap_suppressor.h.
+  // `IsConnected()` — the reconnect backoff in `ConnectionStateReporter` runs
+  // on the same stallable timer, so releasing the assertion on a dropped
+  // session would leave the client unable to reconnect until someone raised its
+  // window. No-op off macOS; see services/app_nap_suppressor.h.
   app_nap_suppressor_ = std::make_unique<AppNapSuppressor>();
   shutdown_stack_.Push([this] { app_nap_suppressor_.reset(); });
 
@@ -374,6 +374,7 @@ void ClientApplication::CreateFeatureComponents(const PostLoginContext& ctx) {
           .scada_client_ = ctx.scada_client});
 
   favorites_module_ = std::make_unique<FavoritesModule>(FavoritesModuleContext{
+      .executor_ = executor_,
       .profile_ = *profile_,
       .global_commands_ = core_module_->global_commands(),
       .controller_registry_ = *controller_registry_,

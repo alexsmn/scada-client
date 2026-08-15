@@ -1,8 +1,8 @@
 #include "modules/write/write_dialog.h"
 
-#include "modules/write/write_model.h"
 #include "aui/qt/dialog_service_impl_qt.h"
 #include "aui/qt/dialog_util.h"
+#include "modules/write/write_model.h"
 #include "ui_write_dialog.h"
 
 #include <QDialogButtonBox>
@@ -35,10 +35,10 @@ WriteDialog::WriteDialog(std::shared_ptr<WriteModel> model, QWidget* parent)
     : QDialog{parent}, model_{std::move(model)} {
   ui.setupUi(this);
 
-  // Name the action rather than the assent (docs/client/ux/dialogs.md §3). This one
-  // matters most: for a control command the accept button is the second half
-  // of a two-stage confirm (principles.md §7), and "OK" throws that away by
-  // asking the operator to re-read the title to learn what they are agreeing
+  // Name the action rather than the assent (docs/client/ux/dialogs.md §3). This
+  // one matters most: for a control command the accept button is the second
+  // half of a two-stage confirm (principles.md §7), and "OK" throws that away
+  // by asking the operator to re-read the title to learn what they are agreeing
   // to. Manual entry writes a value into the point; a command is executed on
   // a device, so the two are labelled differently.
   ui.buttonBox->button(QDialogButtonBox::Ok)
@@ -99,7 +99,8 @@ void WriteDialog::UpdateCurrent() {
 void WriteDialog::UpdateCondition() {
   ui.conditionLabel->setText(model_->IsConditionOk() ? tr("Satisfied")
                                                      : tr("Unsatisfied"));
-  ui.buttonBox->button(QDialogButtonBox::Ok)->setEnabled(model_->IsConditionOk());
+  ui.buttonBox->button(QDialogButtonBox::Ok)
+      ->setEnabled(model_->IsConditionOk());
 }
 
 void WriteDialog::UpdateStatus() {
@@ -131,7 +132,7 @@ void WriteDialog::accept() {
 }
 
 Awaitable<void> ExecuteWriteDialog(DialogService& dialog_service,
-                                   WriteContext&& context) {
+                                   WriteContext context) {
   auto model = std::make_shared<WriteModel>(std::move(context));
   auto dialog =
       std::make_unique<WriteDialog>(model, dialog_service.GetParentWidget());

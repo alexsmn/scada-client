@@ -1,8 +1,8 @@
 #include "modules/limits/limit_dialog.h"
 
-#include "modules/limits/limit_model.h"
-#include "aui/qt/dialog_util.h"
 #include "aui/dialog_service.h"
+#include "aui/qt/dialog_util.h"
+#include "modules/limits/limit_model.h"
 #include "ui_limit_dialog.h"
 
 #include <QPushButton>
@@ -56,7 +56,7 @@ void LimitDialog::accept() {
 }
 
 Awaitable<void> ShowLimitsDialog(DialogService& dialog_service,
-                                 LimitDialogContext&& context) {
+                                 LimitDialogContext context) {
   auto model = std::make_unique<LimitModel>(std::move(context));
   auto dialog = std::make_unique<LimitDialog>(std::move(model),
                                               dialog_service.GetParentWidget());

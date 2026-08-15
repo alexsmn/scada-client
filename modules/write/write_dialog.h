@@ -20,5 +20,8 @@ struct WriteContext {
   const bool manual_ = false;
 };
 
+// The context is taken **by value**: this returns a lazy awaitable, and a
+// coroutine does not copy reference parameters into its frame, so an rvalue
+// reference here would dangle the moment the callee became a coroutine.
 Awaitable<void> ExecuteWriteDialog(DialogService& dialog_service,
-                                   WriteContext&& context);
+                                   WriteContext context);

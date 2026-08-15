@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/any_executor.h"
 #include "base/lifetime.h"
 
 #include <memory>
@@ -14,6 +15,7 @@ class UiCommandRegistry;
 struct GlobalCommandContext;
 
 struct FavoritesModuleContext {
+  AnyExecutor executor_;
   Profile& profile_;
   BasicCommandRegistry<GlobalCommandContext>& global_commands_;
   ControllerRegistry& controller_registry_;

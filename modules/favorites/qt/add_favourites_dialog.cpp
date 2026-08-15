@@ -1,8 +1,8 @@
 ﻿#include "favorites/add_favourites_dialog.h"
 
-#include "favorites/favourites.h"
-#include "aui/qt/dialog_util.h"
 #include "aui/dialog_service.h"
+#include "aui/qt/dialog_util.h"
+#include "favorites/favourites.h"
 #include "ui_add_favourites_dialog.h"
 
 #include <QPushButton>
@@ -55,7 +55,7 @@ void AddFavouritesDialog::accept() {
 }
 
 Awaitable<void> ShowAddFavouritesDialog(DialogService& dialog_service,
-                                        AddFavouritesContext&& context) {
+                                        AddFavouritesContext context) {
   auto dialog = std::make_unique<AddFavouritesDialog>(
       std::move(context), dialog_service.GetParentWidget());
   co_await StartModalDialog(std::move(dialog));

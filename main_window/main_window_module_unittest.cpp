@@ -71,7 +71,8 @@ class MainWindowModuleTest : public Test {
        .ui_command_registry_ = ui_command_registry_}};
 
   FavoritesModule favorites_module{
-      {.profile_ = controller_env_.profile_,
+      {.executor_ = controller_env_.executor_,
+       .profile_ = controller_env_.profile_,
        .global_commands_ = controller_env_.global_commands_,
        .controller_registry_ = controller_env_.controller_registry_,
        .ui_command_registry_ = ui_command_registry_}};
@@ -108,8 +109,8 @@ void MainWindowModuleTest::SetUp() {
       .timed_data_service_ = controller_env_.timed_data_service_,
       .node_service_ = controller_env_.node_service_,
       .portfolio_manager_ = portfolio_module_.portfolio_manager(),
-      .frame_capture_registry_ = controller_env_.frame_capture_registry_,
       .local_events_ = event_module_.local_events(),
+      .frame_capture_registry_ = controller_env_.frame_capture_registry_,
       .favourites_ = favorites_module.favourites(),
       .file_cache_ = controller_env_.file_cache_,
       .file_manager_ = controller_env_.file_manager_,

@@ -1,6 +1,7 @@
 #include "favorites/favorites_module.h"
 
 #include "aui/translation.h"
+#include "base/awaitable.h"
 #include "controller/action.h"
 #include "controller/command_registry.h"
 #include "controller/command_ui_registry.h"
@@ -74,8 +75,13 @@ FavoritesModule::FavoritesModule(FavoritesModuleContext&& context)
             auto definition = view->Save();
             definition.title = view->GetWindowTitle();
 
-            ShowAddFavouritesDialog(context.dialog_service,
-                                    {*favourites_, std::move(definition)});
+            // `ShowAddFavouritesDialog` returns a lazy awaitable — spawn it
+            // detached so the dialog actually opens.
+            CoSpawn(executor_, [this, &dialog_service = context.dialog_service,
+                                definition = std::move(definition)]() mutable {
+              return ShowAddFavouritesDialog(
+                  dialog_service, {*favourites_, std::move(definition)});
+            });
           }));
   ui_command_registry_.AddMenuItem({.menu_id = MainMenuId::Window,
                                     .order = 210,
