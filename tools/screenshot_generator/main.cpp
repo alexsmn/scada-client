@@ -556,141 +556,109 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
   // form, whose Limits subtab does not exist).
   std::set<const OpenedView*> used_views;
   for (const auto& spec : g_config.screenshots) {
-    // The series inspector is standalone chrome, not a window on the page —
-    // build it from the graph fixture instead of looking up an opened view.
-    if (spec.window_type == "SeriesInspector") {
-      SaveSeriesInspectorScreenshot(spec, app_.node_service(),
-                                    app_.timed_data_service(), g_config.json);
-      ++captured;
-      continue;
-    }
-    // The device-diagnostics panel is standalone reshell chrome (the right
-    // region of config-workbench.html), built from a fixture device rather than
-    // an opened page view.
-    if (spec.window_type == "DeviceDiagnostics") {
-      SaveDeviceDiagnosticsScreenshot(spec, app_.node_service(),
+    // Standalone captures dispatch on `capture` — the screenshots-side twin of
+    // `DialogSpec::kind`. Each builds its own fixture instead of grabbing an
+    // opened view, and `MakeScreenshotPage` keeps every one of them off the
+    // profile page.
+    if (!spec.capture.empty()) {
+      if (spec.capture == "series-inspector") {
+        // The series inspector is standalone chrome, not a window on the page —
+        // build it from the graph fixture instead of looking up an opened view.
+        SaveSeriesInspectorScreenshot(spec, app_.node_service(),
                                       app_.timed_data_service(), g_config.json);
+      } else if (spec.capture == "device-diagnostics") {
+        // The device-diagnostics panel is standalone reshell chrome (the right
+        // region of config-workbench.html), built from a fixture device rather
+        // than an opened page view.
+        SaveDeviceDiagnosticsScreenshot(spec, app_.node_service(),
+                                        app_.timed_data_service(),
+                                        g_config.json);
+      } else if (spec.capture == "device-metrics") {
+        // The device Metrics sheet is a CusTable whose cells
+        // DeviceMetricsModule derives from the device's type-definition data
+        // variables, so it can only be built once the node service has resolved
+        // the device — after the profile page was assembled. It opens its own
+        // view here.
+        SaveDeviceMetricsScreenshot(spec, main_window, app_.node_service(),
+                                    app_.timed_data_service(), executor_);
+      } else if (spec.capture == "administration") {
+        // The Administration explorer is the left region of users-admin.html.
+        // It derives its rows from the shell's command resolution, which the
+        // headless generator has no shell for, so the capture supplies the
+        // section set.
+        SaveAdministrationScreenshot(spec);
+      } else if (spec.capture == "user-access") {
+        // The users-admin RBAC inspector is standalone reshell chrome (the
+        // right region of users-admin.html), built from a fixture user.
+        SaveUserAccessScreenshot(spec, app_.node_service(),
+                                 authenticated_attribute_service_, executor_);
+      } else if (spec.capture == "roles") {
+        // The Roles view needs the same administrator identity: its grid is
+        // built from the server's published role -> permission map, which an
+        // anonymous session may not read. Opened as an ordinary view it
+        // rendered "Roles · no data" and saved an empty grid.
+        SaveRolesScreenshot(spec, app_.node_service(),
+                            authenticated_attribute_service_, executor_);
+      } else if (spec.capture == "users-grid") {
+        // The users-admin grid joins its Roles column from the same RoleSet
+        // read, so it needs the same identity — through the view path every
+        // account's Roles cell read "Нет данных". This is the reshell panel,
+        // not the legacy `users.png` Users window, which is a `type` spec and
+        // keeps going through the profile page. `MakeUsersGridPanel` returns
+        // nothing outside the reshell, so an unthemed run says so rather than
+        // saving the legacy view under this filename.
+        SaveUsersGridScreenshot(spec, app_.node_service(),
+                                authenticated_attribute_service_, executor_);
+      } else if (spec.capture == "transmission-rule") {
+        // The transmission-rule inspector is standalone reshell chrome (the
+        // right region of transmission-rules.html), built from a fixture
+        // transmission item.
+        SaveTransmissionRuleScreenshot(spec, app_.node_service());
+      } else if (spec.capture == "bulk-create") {
+        // The bulk-create preview is standalone reshell chrome (the center of
+        // bulk-create.html), built from a demo pattern with no node service.
+        SaveBulkCreateScreenshot(spec);
+      } else if (spec.capture == "debugger") {
+        // The protocol debugger is a --debug-gated window, not a registered
+        // view, so the ordinary view sweep cannot reach it; it is built here
+        // over a fixture request trace.
+        SaveDebuggerScreenshot(spec);
+      } else if (spec.capture == "watch-filter-bar") {
+        // The device-log filter bar is a strip of stock widgets, built here on
+        // its own rather than reached through WatchView.
+        SaveWatchFilterBarScreenshot(spec);
+      } else if (spec.capture == "frame-decode") {
+        // The frame-decode pane is the device log's inspector; it is built here
+        // over a fixture APDU because reaching it through WatchView would mean
+        // assembling a full ControllerContext.
+        SaveFrameDecodeScreenshot(spec);
+      } else if (spec.capture == "severity-tiles") {
+        // The KPI severity tiles are standalone reshell chrome (the context
+        // bar's alarm summary), built from seeded counts with no node service.
+        SaveSeverityTilesScreenshot(spec);
+      } else if (spec.capture == "command-field") {
+        // The command/search field is standalone reshell chrome (the context
+        // bar's palette entry point), built with the same prompt and shortcut
+        // the window gives it.
+        SaveCommandFieldScreenshot(spec);
+      } else if (spec.capture == "inspector") {
+        // The Inspector is standalone reshell chrome (the right-hand selection
+        // panel), filled with a representative expression-row selection.
+        SaveInspectorScreenshot(spec);
+      } else if (spec.capture == "inspector-event") {
+        // The Inspector's event (alarm) card for a journal-row selection.
+        SaveInspectorEventScreenshot(spec);
+      } else if (spec.capture == "display") {
+        // The substation display needs a DisplayFrame of its own and is
+        // rendered by the CaptureDisplay TEST_F; nothing to grab here.
+        continue;
+      } else {
+        ADD_FAILURE() << spec.filename << ": unknown capture: " << spec.capture;
+        continue;
+      }
       ++captured;
       continue;
     }
-    // The device Metrics sheet is a CusTable whose cells DeviceMetricsModule
-    // derives from the device's type-definition data variables, so it can only
-    // be built once the node service has resolved the device — after the
-    // profile page was assembled. It opens its own view here.
-    if (spec.window_type == "DeviceMetrics") {
-      SaveDeviceMetricsScreenshot(spec, main_window, app_.node_service(),
-                                  app_.timed_data_service(), executor_);
-      ++captured;
-      continue;
-    }
-    // The Administration explorer is the left region of users-admin.html. It
-    // derives its rows from the shell's command resolution, which the headless
-    // generator has no shell for, so the capture supplies the section set.
-    if (spec.window_type == "Administration") {
-      SaveAdministrationScreenshot(spec);
-      ++captured;
-      continue;
-    }
-    // The users-admin RBAC inspector is standalone reshell chrome (the right
-    // region of users-admin.html), built from a fixture user.
-    if (spec.window_type == "UserAccess") {
-      SaveUserAccessScreenshot(spec, app_.node_service(),
-                               authenticated_attribute_service_, executor_);
-      ++captured;
-      continue;
-    }
-    // The Roles view needs the same administrator identity: its grid is built
-    // from the server's published role -> permission map, which an anonymous
-    // session may not read. Opened as an ordinary view it rendered "Roles · no
-    // data" and saved an empty grid.
-    if (spec.window_type == "Roles") {
-      SaveRolesScreenshot(spec, app_.node_service(),
-                          authenticated_attribute_service_, executor_);
-      ++captured;
-      continue;
-    }
-    // The users-admin grid joins its Roles column from the same RoleSet read,
-    // so it needs the same identity — through the view path every account's
-    // Roles cell read "Нет данных". Only under `--theme`: the legacy
-    // `users.png` is the classic administration view, not this panel (which
-    // `MakeUsersGridPanel` does not build outside the reshell at all), and it
-    // must keep going through the profile page.
-    if (spec.window_type == "Users" && !GetScreenshotOptions().theme.empty()) {
-      SaveUsersGridScreenshot(spec, app_.node_service(),
-                              authenticated_attribute_service_, executor_);
-      ++captured;
-      continue;
-    }
-    // The transmission-rule inspector is standalone reshell chrome (the right
-    // region of transmission-rules.html), built from a fixture transmission
-    // item.
-    if (spec.window_type == "TransmissionRule") {
-      SaveTransmissionRuleScreenshot(spec, app_.node_service());
-      ++captured;
-      continue;
-    }
-    // The bulk-create preview is standalone reshell chrome (the center of
-    // bulk-create.html), built from a demo pattern with no node service.
-    if (spec.window_type == "BulkCreate") {
-      SaveBulkCreateScreenshot(spec);
-      ++captured;
-      continue;
-    }
-    // The protocol debugger is a --debug-gated window, not a registered view,
-    // so the ordinary view sweep cannot reach it; it is built here over a
-    // fixture request trace.
-    if (spec.window_type == "Debugger") {
-      SaveDebuggerScreenshot(spec);
-      ++captured;
-      continue;
-    }
-    // The device-log filter bar is a strip of stock widgets, built here on its
-    // own rather than reached through WatchView.
-    if (spec.window_type == "WatchFilterBar") {
-      SaveWatchFilterBarScreenshot(spec);
-      ++captured;
-      continue;
-    }
-    // The frame-decode pane is the device log's inspector; it is built here
-    // over a fixture APDU because reaching it through WatchView would mean
-    // assembling a full ControllerContext.
-    if (spec.window_type == "FrameDecode") {
-      SaveFrameDecodeScreenshot(spec);
-      ++captured;
-      continue;
-    }
-    // The KPI severity tiles are standalone reshell chrome (the context bar's
-    // alarm summary), built from seeded counts with no node service.
-    if (spec.window_type == "SeverityTiles") {
-      SaveSeverityTilesScreenshot(spec);
-      ++captured;
-      continue;
-    }
-    // The command/search field is standalone reshell chrome (the context bar's
-    // palette entry point), built with the same prompt and shortcut the window
-    // gives it.
-    if (spec.window_type == "CommandField") {
-      SaveCommandFieldScreenshot(spec);
-      ++captured;
-      continue;
-    }
-    // The Inspector is standalone reshell chrome (the right-hand selection
-    // panel), filled with a representative expression-row selection.
-    if (spec.window_type == "Inspector") {
-      SaveInspectorScreenshot(spec);
-      ++captured;
-      continue;
-    }
-    // The Inspector's event (alarm) card for a journal-row selection.
-    if (spec.window_type == "InspectorEvent") {
-      SaveInspectorEventScreenshot(spec);
-      ++captured;
-      continue;
-    }
-    // The substation display is rendered standalone (CaptureDisplay) — it is
-    // not opened as a page view, so skip it in the view-matching loop.
-    if (spec.window_type == "Display")
-      continue;
 
     // A sidebar pane is only on screen while its activity-rail mode is
     // selected — the rail is authoritative over the left dock (see
@@ -918,7 +886,7 @@ TEST_F(ScreenshotGenerator, CaptureDisplay) {
   // paints without the Windows-only Modus/Vidicon ActiveX host.
   const ScreenshotSpec* display_spec = nullptr;
   for (const auto& spec : g_config.screenshots) {
-    if (spec.window_type == "Display") {
+    if (spec.capture == "display") {
       display_spec = &spec;
       break;
     }

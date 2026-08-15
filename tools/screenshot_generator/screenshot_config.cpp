@@ -114,8 +114,18 @@ void ScreenshotConfig::Load(const std::filesystem::path& path) {
   std::vector<std::string> skipped_screenshots;
   for (const auto& js : json.at("screenshots").as_array()) {
     ScreenshotSpec spec;
-    spec.window_type = std::string(js.at("type").as_string());
+    if (const auto* window_type = js.as_object().if_contains("type"))
+      spec.window_type = std::string(window_type->as_string());
+    if (const auto* capture = js.as_object().if_contains("capture"))
+      spec.capture = std::string(capture->as_string());
     spec.filename = std::string(js.at("filename").as_string());
+    // Exactly one of the two: `type` puts the spec on the profile page,
+    // `capture` dispatches a standalone routine. Carrying both would leave a
+    // window on the page that no capture ever grabs; carrying neither leaves
+    // the spec with nothing to render.
+    ASSERT_NE(spec.window_type.empty(), spec.capture.empty())
+        << "Screenshot " << spec.filename << " in " << path.string()
+        << " needs exactly one of \"type\" and \"capture\"";
     if (const auto* item_path = js.as_object().if_contains("path"))
       spec.path = std::string(item_path->as_string());
     if (const auto* item_paths = js.as_object().if_contains("paths")) {

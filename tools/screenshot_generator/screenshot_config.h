@@ -24,8 +24,24 @@ struct SheetCellSpec {
 
 // Configuration for a single main-window view capture. Matches one row
 // in the `screenshots:` array of `screenshot_data.json`.
+//
+// A row carries either `type` or `capture`, never both:
+//
+//   `type` names a registered `WindowInfo` — the spec becomes a window on the
+//   generator's profile page and is grabbed from the opened view.
+//
+//   `capture` names a standalone capture routine dispatched in the
+//   CaptureAllWindows TEST_F, the same way `DialogSpec::kind` is dispatched in
+//   `dialog_capture.cpp`. Such a spec never reaches the profile page: most
+//   name chrome that has no registered window type at all, and the few that do
+//   (the Administration explorer, Roles, the users-admin grid) still need a
+//   bespoke fixture — an authenticated identity, or a panel the shell builds
+//   only under `--theme`.
 struct ScreenshotSpec {
+  // Registered window type; empty when `capture` drives this spec.
   std::string window_type;
+  // Standalone capture key; empty when `window_type` drives this spec.
+  std::string capture;
   std::string filename;
   std::string path;
   // Optional multiple item paths/formulas. Views that hold a list of data

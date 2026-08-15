@@ -1494,6 +1494,13 @@
     "size is a reasonable default. The image manifest reference",
     "column maps each filename to the markdown page(s) that embed it.",
     "",
+    "Every row carries exactly one of `type` and `capture`, and Load asserts",
+    "it. `type` is a registered WindowInfo name: the row becomes a window on",
+    "the generator's profile page. `capture` is a standalone capture key,",
+    "dispatched in CaptureAllWindows the way `kind` is in the dialogs array,",
+    "and such a row never reaches the page. Keep capture keys kebab-case so",
+    "the two can never be confused for each other.",
+    "",
     "The sixth path of both Table captures (\"TIT.999\") is deliberately a node",
     "id that appears in neither `nodes` nor `tree`, so the row renders the",
     "\"Нет данных\" (no data) state the manual documents. Keep it nonexistent —",
@@ -1514,19 +1521,19 @@
       "height": 901
     },
     {
-      "type": "SeriesInspector",
+      "capture": "series-inspector",
       "filename": "series-inspector.png",
       "width": 290,
       "height": 480
     },
     {
-      "type": "DeviceDiagnostics",
+      "capture": "device-diagnostics",
       "filename": "device-diagnostics.png",
       "width": 300,
       "height": 520
     },
     {
-      "type": "DeviceMetrics",
+      "capture": "device-metrics",
       "filename": "device-metrics.png",
       "path": "TS.103",
       "width": 430,
@@ -1534,26 +1541,26 @@
       "min_rows": 8
     },
     {
-      "type": "Administration",
+      "capture": "administration",
       "filename": "administration-explorer.png",
       "width": 214,
       "height": 400
     },
     {
-      "type": "UserAccess",
+      "capture": "user-access",
       "filename": "users-rbac.png",
       "width": 320,
       "height": 400
     },
     {
-      "type": "Users",
+      "capture": "users-grid",
       "filename": "users-admin.png",
       "width": 700,
       "height": 440,
       "min_rows": 9
     },
     {
-      "type": "Roles",
+      "capture": "roles",
       "filename": "roles.png",
       "width": 700,
       "height": 300,
@@ -1572,37 +1579,37 @@
       "height": 280
     },
     {
-      "type": "TransmissionRule",
+      "capture": "transmission-rule",
       "filename": "transmission-rule.png",
       "width": 320,
       "height": 420
     },
     {
-      "type": "BulkCreate",
+      "capture": "bulk-create",
       "filename": "bulk-create.png",
       "width": 560,
       "height": 760
     },
     {
-      "type": "SeverityTiles",
+      "capture": "severity-tiles",
       "filename": "severity-tiles.png",
       "width": 420,
       "height": 32
     },
     {
-      "type": "CommandField",
+      "capture": "command-field",
       "filename": "command-field.png",
       "width": 460,
       "height": 34
     },
     {
-      "type": "Inspector",
+      "capture": "inspector",
       "filename": "inspector-panel.png",
       "width": 320,
       "height": 420
     },
     {
-      "type": "InspectorEvent",
+      "capture": "inspector-event",
       "filename": "inspector-event.png",
       "width": 320,
       "height": 420
@@ -1931,25 +1938,25 @@
       "rows": 4
     },
     {
-      "type": "Display",
+      "capture": "display",
       "filename": "substation-display.png",
       "width": 1100,
       "height": 720
     },
     {
-      "type": "Debugger",
+      "capture": "debugger",
       "filename": "debugger.png",
       "width": 1000,
       "height": 460
     },
     {
-      "type": "WatchFilterBar",
+      "capture": "watch-filter-bar",
       "filename": "watch-filter-bar.png",
       "width": 520,
       "height": 44
     },
     {
-      "type": "FrameDecode",
+      "capture": "frame-decode",
       "filename": "frame-decode-pane.png",
       "width": 440,
       "height": 440

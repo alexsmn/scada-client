@@ -125,14 +125,14 @@ Page MakeScreenshotPage(const std::vector<ScreenshotSpec>& specs,
                         const boost::json::value& json) {
   Page page;
   for (const auto& spec : specs) {
-    // The substation display and the device-diagnostics panel are rendered
-    // standalone (CaptureDisplay / DeviceDiagnostics); they have no registered
-    // page view type, so keep them off the profile page. The device metrics
-    // sheet does have one (CusTable), but its cells are derived from resolved
-    // NodeRefs that do not exist yet here, so it is opened from the capture.
-    if (spec.window_type == "Display" ||
-        spec.window_type == "DeviceDiagnostics" ||
-        spec.window_type == "DeviceMetrics")
+    // A `capture` spec is rendered standalone by its own routine, so it never
+    // belongs on the page. Most name chrome with no registered window type at
+    // all: adding a WindowDefinition for one only made ViewManager::OpenView
+    // log "Window type not found" and return nullptr. The few that do name a
+    // real type still build their own fixture (an authenticated identity, or
+    // NodeRefs that only resolve after the page is assembled), so the page view
+    // would sit there unused.
+    if (!spec.capture.empty())
       continue;
     if (spec.window_type == "Graph")
       page.AddWindow(MakeGraphDefinition(json));
