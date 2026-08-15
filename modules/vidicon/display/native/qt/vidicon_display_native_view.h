@@ -21,6 +21,10 @@ class VidiconClient;
 }
 
 struct VidiconDisplayNativeViewContext {
+  // An unparseable object address is reported through a message box, which is
+  // a lazy awaitable and needs an executor to be spawned on. See
+  // `aui/show_message_box.h`.
+  const AnyExecutor executor_;
   TimedDataService& timed_data_service_;
   ControllerDelegate& controller_delegate_;
   DialogService& dialog_service_;

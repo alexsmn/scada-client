@@ -68,6 +68,12 @@ import sys
 # spelling to search for and the opening delimiter of its argument list.
 SINKS = (
     "RunMessageBox",
+    # The fire-and-forget wrapper over RunMessageBox (aui/show_message_box.h),
+    # for callers that are not coroutines. It is as much a message box as the
+    # awaitable one, so a literal reaching it is the same defect; without this
+    # entry, moving a call site onto the wrapper would silently drop it out of
+    # this check.
+    "ShowMessageBox",
     "ResourceError",
     "ShowResourceError",
     "SelectOpenFile",

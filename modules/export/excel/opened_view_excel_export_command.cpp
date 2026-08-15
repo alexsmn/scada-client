@@ -2,6 +2,7 @@
 #include "aui/translation.h"
 
 #include "aui/dialog_service.h"
+#include "aui/show_message_box.h"
 #include "base/check.h"
 #include "base/excel.h"
 #include "base/program_options.h"
@@ -40,9 +41,9 @@ void OpenedViewExcelExportCommand::ExecuteCommand(unsigned command_id) {
     excel.SetVisible();
 
   } catch (HRESULT /*err*/) {
-    dialog_service_.RunMessageBox(
-        Translate("Export failed. Please check that Microsoft Excel is "
-                  "installed correctly."),
-        Translate("Export"), MessageBoxMode::Error);
+    ShowMessageBox(executor_, dialog_service_,
+                   Translate("Export failed. Please check that Microsoft Excel "
+                             "is installed correctly."),
+                   Translate("Export"), MessageBoxMode::Error);
   }
 }

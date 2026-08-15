@@ -1,6 +1,7 @@
 #include "main_window/pages/page_switcher.h"
 
 #include "aui/dialog_service.h"
+#include "aui/show_message_box.h"
 #include "aui/translation.h"
 #include "base/awaitable.h"
 #include "base/u16format.h"
@@ -126,9 +127,9 @@ void PageSwitcher::ActivatePage(int page_id) {
 void PageSwitcher::OpenPageHelper(const Page& page, bool revert) {
   // Don't allow to open same page in different windows.
   if (!revert && main_window_manager_.IsPageOpened(page.id)) {
-    dialog_service_.RunMessageBox(
-        Translate("The specified page is open in another window."), {},
-        MessageBoxMode::Info);
+    ShowMessageBox(executor_, dialog_service_,
+                   Translate("The specified page is open in another window."),
+                   /*title=*/{}, MessageBoxMode::Info);
     return;
   }
 

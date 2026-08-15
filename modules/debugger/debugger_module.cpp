@@ -1,6 +1,7 @@
 ﻿#include "debugger_module.h"
 
 #include "aui/dialog_service.h"
+#include "aui/show_message_box.h"
 #include "aui/translation.h"
 #include "base/boost_log.h"
 #include "base/program_options.h"
@@ -84,7 +85,7 @@ void DebuggerModule::DumpDebugInfo(const SelectionCommandContext& context) {
   BOOST_LOG_TRIVIAL(warning) << "Clipboard is not supported";
 #endif
 
-  context.dialog_service.RunMessageBox(
-      Translate("Debug information copied to clipboard."), {},
-      MessageBoxMode::Info);
+  ShowMessageBox(executor_, context.dialog_service,
+                 Translate("Debug information copied to clipboard."),
+                 /*title=*/{}, MessageBoxMode::Info);
 }

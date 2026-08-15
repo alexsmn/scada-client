@@ -5,7 +5,9 @@
 #include "aui/test/recording_table_model_observer.h"
 #include "base/blinker_mock.h"
 #include "base/observer_list.h"
+#include "base/test/awaitable_test.h"
 #include "base/test/scoped_mock_clock_override.h"
+#include "base/test/test_executor.h"
 #include "base/time/calendar.h"
 #include "common/node_state.h"
 #include "events/node_event_provider_mock.h"
@@ -39,6 +41,7 @@ class TableModelTest : public Test {
   // |RowContext| may outlive local reference.
   std::shared_ptr<RowContext> SetFormula();
 
+  TestExecutor executor_;
   FakeNodeService node_service_;
   StrictMock<MockTimedDataService> timed_data_service_;
   StrictMock<MockNodeEventProvider> node_event_provider_;
@@ -48,7 +51,7 @@ class TableModelTest : public Test {
   StrictMock<MockFunction<void(const scada::NodeId& item_id, bool added)>>
       item_changed_;
 
-  TableModel table_model_{TableModelContext{timed_data_service_,
+  TableModel table_model_{TableModelContext{executor_, timed_data_service_,
                                             node_event_provider_, profile_,
                                             dialog_service_, blinker_manager_}};
 
@@ -87,7 +90,6 @@ NodeRef MakeDiscreteItemNode(FakeNodeService& node_service) {
       .node_id = scada::NodeId{1, 1},
       .type_definition_id = scada::data_items::id::DiscreteItemType});
 }
-
 
 // The Source column is what tells an engineer where a value comes from — the
 // job the row icon used to do by its own presence, silently and without a
@@ -277,8 +279,8 @@ TEST_F(TableModelTest, GetValue) {
 // — the Unix epoch under std::chrono, which scada::IsNull() does not
 // recognise — and the cells faithfully formatted it as a 1969/1970 date.
 // A fabricated timestamp beside a live value is exactly the honesty failure
-// docs/client/ux/principles.md §5 forbids, and reads worse than a blank because an
-// operator takes it for real.
+// docs/client/ux/principles.md §5 forbids, and reads worse than a blank because
+// an operator takes it for real.
 TEST_F(TableModelTest, MissingTimestampsRenderBlank) {
   const auto& row_context = SetFormula();
 
@@ -409,4 +411,38 @@ TEST_F(TableModelTest, ValueBlinking) {
   EXPECT_CALL(blinker_manager_, GetState()).WillOnce(Return(true));
   EXPECT_EQ(scada::aui::Color{scada::aui::ColorCode::Yellow},
             GetCellColor(table_model_, 0, TableModel::COLUMN_VALUE));
+}
+
+// A lazy awaitable that records only when it is actually awaited. Asserting
+// that the mock was *called* would not catch this bug: the call happens either
+// way, and only awaiting the returned awaitable runs the coroutine body that
+// shows the box. Same shape as `CompleteLazily` in
+// `modules/configuration/configuration_module_unittest.cpp`.
+namespace {
+
+Awaitable<MessageBoxResult> ShowLazily(bool* shown) {
+  *shown = true;
+  co_return MessageBoxResult::Ok;
+}
+
+}  // namespace
+
+// Regression: `SetCellText` reported an invalid formula with a bare
+// `RunMessageBox(...)`. That returns a lazy awaitable, so the discarded
+// coroutine never ran and no box appeared — the cell edit was rejected in
+// total silence, which reads to an operator as a dead grid.
+TEST_F(TableModelTest, InvalidFormulaShowsMessageBox) {
+  EXPECT_CALL(timed_data_service_, GetFormulaTimedData(_, _))
+      .WillOnce(Throw(std::runtime_error{"bad formula"}));
+
+  bool shown = false;
+  EXPECT_CALL(dialog_service_, RunMessageBox(_, _, MessageBoxMode::Error))
+      .WillOnce(Invoke([&](std::u16string_view, std::u16string_view,
+                           MessageBoxMode) { return ShowLazily(&shown); }));
+
+  EXPECT_FALSE(
+      table_model_.SetCellText(0, TableModel::COLUMN_TITLE, u"=nonsense"));
+  Drain(executor_);
+
+  EXPECT_TRUE(shown);
 }

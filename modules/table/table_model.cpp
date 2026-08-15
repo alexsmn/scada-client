@@ -1,6 +1,7 @@
 ﻿#include "modules/table/table_model.h"
 
 #include "aui/dialog_service.h"
+#include "aui/show_message_box.h"
 #include "aui/translation.h"
 #include "base/check.h"
 #include "base/time/time.h"
@@ -246,8 +247,8 @@ bool TableModel::SetCellText(int row,
     text2.erase(0, 1);
 
   if (!SetFormula(row, text2)) {
-    dialog_service_.RunMessageBox(Translate("Invalid expression."), {},
-                                  MessageBoxMode::Error);
+    ShowMessageBox(executor_, dialog_service_, Translate("Invalid expression."),
+                   /*title=*/{}, MessageBoxMode::Error);
     return false;
   }
 

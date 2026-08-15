@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/any_executor.h"
 #include "common/node_state.h"
 #include "modules/table/table_types.h"
 
@@ -13,6 +14,10 @@ class TableRow;
 class TimedDataService;
 
 struct TableModelContext {
+  // `SetCellText` reports an invalid formula through a message box, which is
+  // a lazy awaitable and needs an executor to be spawned on. See
+  // `aui/show_message_box.h`.
+  const AnyExecutor executor_;
   TimedDataService& timed_data_service_;
   NodeEventProvider& node_event_provider_;
   const Profile& profile_;
@@ -40,8 +45,8 @@ class TableModel : private TableModelContext, public scada::aui::TableModel {
     // What the row is bound to: its NodeId, or the expression for a computed
     // row. This is what tells an engineer where a value comes from — the job
     // a present/absent row icon used to do silently and without a label
-    // (docs/product/ui-mockups/screens/table-watch.html shows it as its own column).
-    // Appended for the same saved-state stability reason.
+    // (docs/product/ui-mockups/screens/table-watch.html shows it as its own
+    // column). Appended for the same saved-state stability reason.
     COLUMN_SOURCE,
 
     COLUMN_FIRST = COLUMN_TITLE,

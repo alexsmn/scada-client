@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/any_executor.h"
 #include "controller/command_handler.h"
 
 #include <functional>
@@ -10,6 +11,10 @@ class ExportModel;
 using ExcelExportModelGetter = std::function<ExportModel*()>;
 
 struct OpenedViewExcelExportCommandContext {
+  // The Excel failure is reported through a message box, which is a lazy
+  // awaitable and needs an executor to be spawned on. See
+  // `aui/show_message_box.h`.
+  const AnyExecutor executor_;
   DialogService& dialog_service_;
   ExcelExportModelGetter export_model_getter_;
 };

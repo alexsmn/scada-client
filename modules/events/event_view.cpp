@@ -4,6 +4,7 @@
 #include "aui/models/table_column.h"
 #include "aui/prompt_dialog.h"
 #include "aui/resource_error.h"
+#include "aui/show_message_box.h"
 #include "aui/table.h"
 #include "aui/translation.h"
 #include "base/awaitable.h"
@@ -336,7 +337,9 @@ std::unique_ptr<UiView> EventView::Init(const WindowDefinition& definition) {
               SetSeverityMin(static_cast<scada::EventSeverity>(severity));
             },
         .on_time_range =
-            [this](const scada::RelativeTimeRange& time_range) { SetTimeRange(time_range); },
+            [this](const scada::RelativeTimeRange& time_range) {
+              SetTimeRange(time_range);
+            },
     }));
     // Areas sidebar beside the journal: every top-level area with its
     // unacknowledged count, driving the same area-filter scope the filter
@@ -416,8 +419,8 @@ void EventView::ExportToExcel() {
   // Expanded for the same reason as GetExportData() above.
   int rows = expanded_model_.GetRowCount();
   if (!rows) {
-    dialog_service_.RunMessageBox(Translate("No data to export."),
-                                  Translate("Export"), MessageBoxMode::Info);
+    ShowMessageBox(executor_, dialog_service_, Translate("No data to export."),
+                   Translate("Export"), MessageBoxMode::Info);
     return;
   }
 
@@ -443,8 +446,8 @@ void EventView::ExportToExcel() {
     excel.SetVisible();
 
   } catch (HRESULT /*err*/) {
-    dialog_service_.RunMessageBox(Translate("Export error."),
-                                  Translate("Export"), MessageBoxMode::Error);
+    ShowMessageBox(executor_, dialog_service_, Translate("Export error."),
+                   Translate("Export"), MessageBoxMode::Error);
   }
 }
 
@@ -492,9 +495,9 @@ Awaitable<void> EventView::SelectSeverityAsync() {
 
   // Wait for the prompt dialog. A user cancel surfaces as a rejection here,
   // matching the old ignored asynchronous result.
-  auto text =
-      co_await RunPromptDialog(dialog_service_, prompt,
-                               /*title=*/FilterTitle(), WideFormat(initial_severity));
+  auto text = co_await RunPromptDialog(dialog_service_, prompt,
+                                       /*title=*/FilterTitle(),
+                                       WideFormat(initial_severity));
 
   // Parse + apply. Preserve the original behavior where a bad value
   // pops up an error message box via `ShowResourceError` and then

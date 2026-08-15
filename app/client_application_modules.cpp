@@ -148,6 +148,7 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
     if (modules.debugger) {
       context.singletons_.emplace(
           std::make_shared<DebuggerModule>(DebuggerModuleContext{
+              .executor_ = context.executor_,
               .session_service_ = *context.scada_services_.session_service,
               .global_commands_ = context.global_commands_,
               .selection_commands_ = context.selection_commands_,

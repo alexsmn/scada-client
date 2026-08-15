@@ -1,6 +1,7 @@
 ﻿#include "vidicon/display/native/qt/vidicon_display_native_view.h"
 
 #include "aui/dialog_service.h"
+#include "aui/show_message_box.h"
 #include "controller/controller_delegate.h"
 #include "controller/selection_model.h"
 #include "display_frame/qt/display_frame.h"
@@ -107,11 +108,12 @@ void VidiconDisplayNativeView::OpenWriteWin(const QString& data_source,
   }
 
   if (node_id.is_null()) {
-    dialog_service_.RunMessageBox(
-        QString::fromWCharArray(L"Invalid Vidicon object address: %1.")
-            .arg(data_source)
-            .toStdU16String(),
-        /*title*/ {}, MessageBoxMode::Error);
+    ShowMessageBox(executor_, dialog_service_,
+                   QString::fromWCharArray(L"Invalid Vidicon object address: "
+                                           L"%1.")
+                       .arg(data_source)
+                       .toStdU16String(),
+                   /*title=*/{}, MessageBoxMode::Error);
     return;
   }
 

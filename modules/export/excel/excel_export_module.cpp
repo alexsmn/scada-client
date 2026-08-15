@@ -17,6 +17,7 @@ ExcelExportModule::ExcelExportModule(ExcelExportModuleContext&& context)
       [](const OpenedViewCommandFactoryContext& context) {
         return std::make_unique<OpenedViewExcelExportCommand>(
             OpenedViewExcelExportCommandContext{
+                .executor_ = context.executor_,
                 .dialog_service_ = context.dialog_service_,
                 .export_model_getter_ = context.export_model_getter_});
       });

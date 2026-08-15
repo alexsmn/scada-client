@@ -13,6 +13,7 @@ VidiconModule::VidiconModule(VidiconModuleContext&& context)
       kVidiconDisplayWindowInfo, [this](const ControllerContext& context) {
         return std::make_unique<VidiconDisplayNativeView>(
             VidiconDisplayNativeViewContext{
+                .executor_ = context.executor_,
                 .timed_data_service_ = context.timed_data_service_,
                 .controller_delegate_ = context.controller_delegate_,
                 .dialog_service_ = context.dialog_service_,
