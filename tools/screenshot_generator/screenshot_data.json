@@ -400,6 +400,19 @@
       }
     },
     {
+      "_comment": "Second controllable analog, sibling of TIT.212, whose output condition is NOT met: TIT.211 sits at 42.3, so `TIT.211 > 70` evaluates false and the control dialog renders its condition row as unsatisfied with OK disabled. It is a separate node because one node cannot render the satisfied and unsatisfied variants in a single run; the ti-remote-control-disabled.png dialog spec names it through `node`.",
+      "id": "TIT.213",
+      "browse_name": "Температура масла",
+      "class": "variable",
+      "type_definition": "analog_item",
+      "base_value": 58.0,
+      "properties": {
+        "display_format": "0.#",
+        "units": "°C",
+        "SCADA.148": "TIT.211 > 70"
+      }
+    },
+    {
       "id": "SCADA.234",
       "browse_name": "root",
       "display_name": "root",
@@ -1064,7 +1077,8 @@
     ],
     "TS.124": [
       "TIT.211",
-      "TIT.212"
+      "TIT.212",
+      "TIT.213"
     ]
   },
   "timed_data": [
@@ -1944,6 +1958,13 @@
     {
       "kind": "write-remote",
       "filename": "ti-remote-control-enabled.png",
+      "width": 354,
+      "height": 207
+    },
+    {
+      "kind": "write-remote",
+      "filename": "ti-remote-control-disabled.png",
+      "node": "TIT.213",
       "width": 354,
       "height": 207
     },

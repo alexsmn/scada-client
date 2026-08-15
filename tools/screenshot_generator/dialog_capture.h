@@ -29,7 +29,9 @@ struct DialogEnvironment {
   // write path (never taken in capture mode), but still needs a valid
   // reference at construction time.
   Profile* profile = nullptr;
-  // Analog item node used by the limits/write dialog screenshots.
+  // Analog item node the limits/write dialog screenshots default to. A
+  // DialogSpec may name its own node instead ("node" in the fixture), which
+  // is how two captures of one kind can show two states of the same dialog.
   scada::NodeId dialog_analog_node_id;
   // Accounts seeded into the login dialog's user combo, first entry
   // pre-selected. Comes from the fixture's `login_user_list`.

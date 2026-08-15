@@ -190,6 +190,13 @@ void ScreenshotConfig::Load(const std::filesystem::path& path) {
         spec.themed_only = themed->as_bool();
       if (auto* combo = js.as_object().if_contains("expand_combo"))
         spec.expand_combo = std::string(combo->as_string());
+      if (auto* node = js.as_object().if_contains("node")) {
+        spec.node_id =
+            NodeIdFromScadaString(std::string_view(node->as_string()));
+        ASSERT_FALSE(spec.node_id.is_null())
+            << "Invalid node override on dialog " << spec.filename << " in "
+            << path.string();
+      }
       if (IsManagedImage(managed_images, spec))
         dialogs.push_back(std::move(spec));
     }

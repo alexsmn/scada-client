@@ -85,6 +85,14 @@ struct DialogSpec {
   // a separate top-level window, so the capture composes it onto the dialog
   // and the saved image is taller than `height`.
   std::string expand_combo;
+  // Node this capture operates on ("node" in the JSON), overriding the
+  // fixture-wide `dialog_analog_node_id` for the node-driven kinds (limits,
+  // write-manual, write-remote, control-confirm). Null means "use the
+  // fixture-wide node". Two captures of one kind can differ only in the state
+  // of their target — the satisfied and unsatisfied variants of the control
+  // dialog's output condition are the same dialog over two nodes — and a
+  // single fixture-wide node cannot render both in one run.
+  scada::NodeId node_id;
 };
 
 // Screenshot-generator fixture, loaded once from `screenshot_data.json`.

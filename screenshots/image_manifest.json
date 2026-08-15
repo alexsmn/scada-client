@@ -790,11 +790,12 @@
     {
       "file": "ti-remote-control-disabled.png",
       "tag": "auto-dialog",
+      "parity_key": "write",
       "referenced_from": [
         "client.md",
         "dev/data-items.md"
       ],
-      "notes": "Remote-control dialog disabled state, TI."
+      "notes": "Remote-control dialog disabled state, TI. Renders from the fixture since 2026-08-15: the `write-remote` dialog spec carries a `node` override naming TIT.213 (\u00abТемпература масла\u00bb), whose DataItemType_OutputCondition formula `TIT.211 > 70` evaluates false over the fixture data, so the condition row reads unsatisfied and the Execute button is disabled. The override exists because one node cannot render both this and ti-remote-control-enabled.png in a single run. ScreenshotGenerator.DisabledControlDialogNodeConditionIsUnsatisfied asserts both the override and the falsy evaluation \u2014 the structural check only asserts the PNG exists, so a dropped override would ship the enabled dialog under this name. The tracked gallery has no PNG for it yet: the Qt gallery is a Windows baseline and this was verified on macOS."
     },
     {
       "file": "ti-remote-control-enabled.png",

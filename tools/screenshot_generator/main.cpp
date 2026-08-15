@@ -1887,6 +1887,59 @@ TEST_F(ScreenshotGenerator, ControlDialogNodeCarriesItsOutputCondition) {
          "the dialog reads Satisfied and its OK button is enabled";
 }
 
+// The mirror of the test above, for the capture that shows the dialog refusing
+// the command. ti-remote-control-disabled.png is the same `write-remote` kind
+// over a different node — the fixture cannot make one node's condition read
+// both ways in a single run — so the whole capture rests on the dialog spec's
+// `node` override reaching a node whose formula is falsy. Neither half is
+// visible to check_screenshots.py, which only asserts the PNG exists: an
+// override silently dropped, or a formula that quietly became true, would
+// still produce a file, and it would be the enabled dialog under the disabled
+// dialog's name.
+TEST_F(ScreenshotGenerator, DisabledControlDialogNodeConditionIsUnsatisfied) {
+  // Read the spec straight out of the fixture rather than from
+  // g_config.dialogs: that vector is filtered by the managed-image gate and by
+  // --only, and the themed ctest run passes --only.
+  const boost::json::value* dialog = nullptr;
+  for (const auto& js : g_config.json.at("dialogs").as_array()) {
+    if (js.at("filename").as_string() == "ti-remote-control-disabled.png")
+      dialog = &js;
+  }
+  ASSERT_NE(dialog, nullptr)
+      << "the fixture lost the disabled control-dialog capture";
+
+  const auto* node = dialog->as_object().if_contains("node");
+  ASSERT_NE(node, nullptr)
+      << "the disabled variant needs its own node: sharing the fixture-wide "
+         "dialog_analog_node_id renders the enabled dialog instead";
+  const scada::NodeId node_id =
+      NodeIdFromScadaString(std::string_view(node->as_string()));
+  ASSERT_NE(node_id, g_config.dialog_analog_node_id);
+
+  WaitForAwaitable(executor_, app_.Start());
+  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
+  ASSERT_TRUE(scada::screenshot_generator::FetchNodesResident(
+      app_.node_service(), std::span<const scada::NodeId>{&node_id, 1}));
+
+  Profile profile;
+  auto model = std::make_shared<WriteModel>(
+      WriteContext{.executor_ = executor_,
+                   .timed_data_service_ = app_.timed_data_service(),
+                   .node_id_ = node_id,
+                   .profile_ = profile,
+                   .manual_ = false});
+
+  EXPECT_TRUE(model->has_condition())
+      << "without a DataItemType_OutputCondition the dialog renders no "
+         "condition row at all, which is neither variant";
+
+  scada::screenshot_generator::PumpEventLoopFor(std::chrono::milliseconds{500});
+
+  EXPECT_FALSE(model->IsConditionOk())
+      << "the condition formula must evaluate falsy over the fixture data, so "
+         "the dialog reads Not satisfied and its OK button is disabled";
+}
+
 TEST_F(ScreenshotGenerator, CaptureDialogs) {
   auto output_dir = GetOutputDir();
   std::filesystem::create_directories(output_dir);

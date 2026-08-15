@@ -335,27 +335,28 @@ BuildLoginDialog(DialogEnvironment& env,
 }
 
 // Limits dialog: needs a NodeRef to an analog variable plus a
-// TaskManager for the (never-taken) write path. We pull the configured
-// dialog analog node out of the fixture; in the current fixture that is
-// "Температура нагрева", the analog node the docs images target. The
-// resident fetch below resolves property reads, so the four limit fields
-// render from that node's limit_{lolo,lo,hi,hihi} properties — a node
+// TaskManager for the (never-taken) write path. `node_id` is the spec's own
+// target or, absent one, the fixture-wide dialog analog node; in the current
+// fixture that is "Температура нагрева", the analog node the docs images
+// target. The resident fetch below resolves property reads, so the four limit
+// fields render from that node's limit_{lolo,lo,hi,hihi} properties — a node
 // without them captures an empty dialog, which is how limits.png shipped
 // blank.
 std::shared_ptr<DialogAwaitableResult<void>> BuildLimitsDialog(
     DialogEnvironment& env,
+    const scada::NodeId& node_id,
     NullTaskManager& task_manager,
     DialogServiceImplQt& dialog_service) {
   if (!env.node_service) {
     ADD_FAILURE() << "LimitsDialog needs a node_service in DialogEnvironment";
     return {};
   }
-  auto node = env.node_service->GetNode(env.dialog_analog_node_id);
+  auto node = env.node_service->GetNode(node_id);
   if (!node) {
     ADD_FAILURE() << "LimitsDialog: configured fixture node not found";
     return {};
   }
-  if (!FetchDialogNodeResident(*env.node_service, env.dialog_analog_node_id)) {
+  if (!FetchDialogNodeResident(*env.node_service, node_id)) {
     ADD_FAILURE() << "LimitsDialog: failed to fetch configured fixture node";
     return {};
   }
@@ -367,11 +368,11 @@ std::shared_ptr<DialogAwaitableResult<void>> BuildLimitsDialog(
 }
 
 // Write dialog family. `manual` picks between "Manual Input" (TI
-// manual override) and "Control" (remote device control). Target node
-// is configured in `screenshot_data.json` — the analog TI node the docs
-// images use. The model treats it as continuous (not discrete) because
-// no HasTsFormat reference is wired up, which matches the ti-*-control
-// docs images. The ts- variants will render identically until the
+// manual override) and "Control" (remote device control). `node_id` comes
+// from `screenshot_data.json` — the spec's own `node`, or the fixture-wide
+// analog TI node the docs images use. The model treats it as continuous (not
+// discrete) because no HasTsFormat reference is wired up, which matches the
+// ti-*-control docs images. The ts- variants will render identically until the
 // fixture grows a proper TS (with logical / discrete semantics).
 //
 // After show() we pump events aggressively: the real TimedDataServiceImpl
@@ -381,6 +382,7 @@ std::shared_ptr<DialogAwaitableResult<void>> BuildLimitsDialog(
 // the "Current value:" label blank in the grab.
 std::shared_ptr<DialogAwaitableResult<void>> BuildWriteDialog(
     DialogEnvironment& env,
+    const scada::NodeId& node_id,
     DialogServiceImplQt& dialog_service,
     bool manual) {
   if (!env.timed_data_service || !env.profile || !env.node_service) {
@@ -388,24 +390,22 @@ std::shared_ptr<DialogAwaitableResult<void>> BuildWriteDialog(
                      "node_service in env";
     return {};
   }
-  auto node = env.node_service->GetNode(env.dialog_analog_node_id);
+  auto node = env.node_service->GetNode(node_id);
   if (!node) {
     ADD_FAILURE() << "WriteDialog: configured fixture node not found";
     return {};
   }
-  if (!FetchDialogNodeResident(*env.node_service, env.dialog_analog_node_id)) {
+  if (!FetchDialogNodeResident(*env.node_service, node_id)) {
     ADD_FAILURE() << "WriteDialog: failed to fetch configured fixture node";
     return {};
   }
-  auto dialog_lifetime = StartDialogAwaitable(
-      env.executor,
-      ExecuteWriteDialog(
-          dialog_service,
-          WriteContext{.executor_ = env.executor,
+  WriteContext context{.executor_ = env.executor,
                        .timed_data_service_ = *env.timed_data_service,
-                       .node_id_ = env.dialog_analog_node_id,
+                       .node_id_ = node_id,
                        .profile_ = *env.profile,
-                       .manual_ = manual}));
+                       .manual_ = manual};
+  auto dialog_lifetime = StartDialogAwaitable(
+      env.executor, ExecuteWriteDialog(dialog_service, std::move(context)));
   PumpEventsFor(std::chrono::milliseconds{200});
   return dialog_lifetime;
 }
@@ -422,13 +422,14 @@ std::shared_ptr<DialogAwaitableResult<void>> BuildWriteDialog(
 // WriteModelTest.TwoStagedControlSelectsConfirmsThenOperates).
 std::shared_ptr<DialogAwaitableResult<MessageBoxResult>>
 BuildControlConfirmation(DialogEnvironment& env,
+                         const scada::NodeId& node_id,
                          DialogServiceImplQt& dialog_service) {
   if (!env.timed_data_service || !env.profile || !env.node_service) {
     ADD_FAILURE() << "Control confirmation needs timed_data_service + profile "
                      "+ node_service in env";
     return {};
   }
-  if (!FetchDialogNodeResident(*env.node_service, env.dialog_analog_node_id)) {
+  if (!FetchDialogNodeResident(*env.node_service, node_id)) {
     ADD_FAILURE() << "Control confirmation: fixture node not found";
     return {};
   }
@@ -436,7 +437,7 @@ BuildControlConfirmation(DialogEnvironment& env,
   auto model = std::make_shared<WriteModel>(
       WriteContext{.executor_ = env.executor,
                    .timed_data_service_ = *env.timed_data_service,
-                   .node_id_ = env.dialog_analog_node_id,
+                   .node_id_ = node_id,
                    .profile_ = *env.profile,
                    .manual_ = false});
   model->set_dialog_service(&dialog_service);
@@ -481,6 +482,11 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
   DialogServiceImplQt dialog_service;  // parent_widget = nullptr
   auto logger = std::make_shared<BoostLogger>(LOG_NAME("Screenshot"));
 
+  // A spec may name its own target node; otherwise every node-driven kind
+  // shares the fixture-wide one.
+  const scada::NodeId dialog_node_id =
+      spec.node_id.is_null() ? env.dialog_analog_node_id : spec.node_id;
+
   if (spec.kind == "login") {
     auto dialog_lifetime = BuildLoginDialog(env, transport_factory, logger);
     bool captured = GrabAndCloseVisibleDialogOrReport(spec);
@@ -490,7 +496,8 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
     WaitForDialogCompletion(dialog_lifetime);
     return captured;
   } else if (spec.kind == "limits") {
-    auto dialog_lifetime = BuildLimitsDialog(env, task_manager, dialog_service);
+    auto dialog_lifetime =
+        BuildLimitsDialog(env, dialog_node_id, task_manager, dialog_service);
     if (!dialog_lifetime)
       return false;
     bool captured = GrabAndCloseVisibleDialogOrReport(spec);
@@ -498,7 +505,7 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
     return captured;
   } else if (spec.kind == "write-manual") {
     auto dialog_lifetime =
-        BuildWriteDialog(env, dialog_service, /*manual=*/true);
+        BuildWriteDialog(env, dialog_node_id, dialog_service, /*manual=*/true);
     if (!dialog_lifetime)
       return false;
     bool captured = GrabAndCloseVisibleDialogOrReport(spec);
@@ -506,14 +513,15 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
     return captured;
   } else if (spec.kind == "write-remote") {
     auto dialog_lifetime =
-        BuildWriteDialog(env, dialog_service, /*manual=*/false);
+        BuildWriteDialog(env, dialog_node_id, dialog_service, /*manual=*/false);
     if (!dialog_lifetime)
       return false;
     bool captured = GrabAndCloseVisibleDialogOrReport(spec);
     WaitForDialogCompletion(dialog_lifetime);
     return captured;
   } else if (spec.kind == "control-confirm") {
-    auto dialog_lifetime = BuildControlConfirmation(env, dialog_service);
+    auto dialog_lifetime =
+        BuildControlConfirmation(env, dialog_node_id, dialog_service);
     if (!dialog_lifetime)
       return false;
     bool captured = GrabAndCloseVisibleDialogOrReport(spec);
