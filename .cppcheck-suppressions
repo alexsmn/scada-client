@@ -1,0 +1,43 @@
+// System include paths are not passed to cppcheck.
+missingIncludeSystem
+
+// Some suppressions only match in specific platform/configuration combos.
+unmatchedSuppression
+
+// Single translation unit analysis reports false positives for functions
+// used across translation units.
+unusedFunction
+
+// Conflicts with project's coding style.
+useStlAlgorithm
+
+// GoogleTest macros inside namespaces: cppcheck's parser cannot follow
+// TEST_F/TYPED_TEST expanded inside a named namespace and reports the closing
+// brace as a syntax error. `core/cppcheck-suppressions.txt` and
+// `common/.cppcheck-suppressions` suppress this id globally for the same
+// reason. 102 of them here, which is every `error:` this product would
+// otherwise report but one.
+syntaxError
+
+// Qt's moc vocabulary. `Q_SLOTS` in a dialog's private section is not known to
+// cppcheck without Qt's own library configuration (`--library=qt`), which the
+// build does not pass. `core` and `common` suppress the same id for ATL's
+// BEGIN_SINK_MAP and Boost's macros.
+unknownMacro
+
+// Two shapes, neither of which cppcheck can see through, and there is no
+// narrower id than `missingReturn` for either:
+//
+//   - Coroutines are not modelled, so `Awaitable<void> F() { (void)co_await
+//     ...; }` reads as a non-void function that falls off the end. Same
+//     rationale as `common/.cppcheck-suppressions`; ~250 such bodies here.
+//   - `[[noreturn]]` on a function declared in a CONSUMED product is invisible,
+//     because a standalone `client` checkout has no `core/` to include -- so
+//     `base/check.h` does not resolve and `scada::base::NotReached()` looks
+//     like an ordinary call. `controller/controller_fake.h:17` is the current
+//     instance; expect more as `#include "base/..."` spreads.
+//
+// A genuine missing return in an ordinary function is hidden by this, which is
+// the accepted cost until cppcheck models coroutines and the export layout
+// gives the analysis job its sibling checkouts (ADR 0011 phase 9).
+missingReturn

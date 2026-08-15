@@ -1,0 +1,110 @@
+# CI for scada-client, which runs on the published export at
+# github.com/alexsmn/scada-client.
+#
+# STATIC ANALYSIS ONLY, DELIBERATELY. There is no build job because a public
+# runner cannot assemble one: a standalone client build resolves the products it
+# consumes as sibling checkouts (ADR 0011), and `net` — which client reaches
+# through `common` and `core` — is `published = false` in
+# tools/export/products.toml with a local destination. It would also need Qt,
+# which is a multi-hour vcpkg source build on a runner with no binary cache.
+# The workflow this replaced tried anyway: it cloned the pre-monorepo repos and
+# hand-assembled CMAKE_MODULE_PATH across sibling checkouts, took 4–6h per run,
+# and last ran in Feb 2026 because it triggered on `release/2.5` while
+# export.py publishes the default branch. A build job comes back when the
+# consumed products are published, not before.
+#
+# cppcheck here is the same configuration the build runs — see
+# `scada_configure_cppcheck()` in build-support/ScadaProductBase.cmake, which
+# reads this product's own .cppcheck-suppressions.
+
+name: CI
+
+on:
+  push:
+    branches: [ "main", "release/**" ]
+  pull_request:
+    branches: [ "main", "release/**" ]
+
+env:
+  # Pinned, and built from source below rather than installed from apt. See the
+  # "Build cppcheck" step for why the distro package will not do.
+  CPPCHECK_VERSION: "2.21.0"
+
+jobs:
+  analyze:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Cache cppcheck
+      id: cache-cppcheck
+      uses: actions/cache@v4
+      with:
+        path: ~/cppcheck
+        key: cppcheck-${{ env.CPPCHECK_VERSION }}-${{ runner.os }}
+
+    # ubuntu-latest is Ubuntu 24.04, whose `cppcheck` package is 2.13 — eight
+    # releases behind, and it disagrees with a developer's local cppcheck in
+    # both directions. Measured against this tree on 2026-08-15, same flags and
+    # same suppressions: 2.13 reports 2 errors and 39 findings, 2.21 reports 0
+    # errors and 314. The two errors are `danglingTempReference` at
+    # modules/debugger/debugger_module.cpp:42-43, which 2.13 gets wrong —
+    # BasicCommandRegistry::AddCommand returns a reference into its
+    # `command_map_` and MenuContribution holds its `title` and `command_id` by
+    # value, so nothing dangles — and which 2.19 and later do not report. The
+    # 314 is mostly `uninitMemberVarNoCtor`, a check 2.13 does not have at all.
+    # Running the distro package would therefore gate the job on a false
+    # positive while hiding a whole category, so the version is pinned instead.
+    #
+    # FILESDIR is baked in at configure time from CMAKE_INSTALL_PREFIX, so the
+    # cache must restore to the same path it was built for.
+    - name: Build cppcheck ${{ env.CPPCHECK_VERSION }}
+      if: steps.cache-cppcheck.outputs.cache-hit != 'true'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake g++ python3
+        git clone --depth 1 --branch "$CPPCHECK_VERSION" \
+          https://github.com/danmar/cppcheck.git /tmp/cppcheck-src
+        cmake -S /tmp/cppcheck-src -B /tmp/cppcheck-src/build \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX="$HOME/cppcheck" \
+          -DUSE_MATCHCOMPILER=ON
+        cmake --build /tmp/cppcheck-src/build -j"$(nproc)"
+        cmake --install /tmp/cppcheck-src/build
+
+    - name: Run cppcheck
+      run: |
+        "$HOME/cppcheck/bin/cppcheck" --version
+
+        "$HOME/cppcheck/bin/cppcheck" \
+          --enable=warning,performance,portability \
+          --suppressions-list=.cppcheck-suppressions \
+          --inline-suppr \
+          --std=c++20 \
+          -j2 \
+          -I . \
+          --output-file=cppcheck-report.txt \
+          app/ aui/ base/ clipboard/ controller/ core/ main_window/ \
+          modules/ profile/ properties/ resources/ services/ test/ tools/ ui/ \
+          2>&1 || true
+
+        cat cppcheck-report.txt
+
+        # Errors gate; warnings are reported but do not fail the job. cppcheck's
+        # own --error-exitcode cannot express that split — it fires on any
+        # finding — so the severity is read back out of the report.
+        if grep -q "error:" cppcheck-report.txt; then
+          echo "::error::cppcheck found errors"
+          exit 1
+        fi
+
+    - name: Upload cppcheck report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: cppcheck-report
+        path: cppcheck-report.txt
+        retention-days: 7

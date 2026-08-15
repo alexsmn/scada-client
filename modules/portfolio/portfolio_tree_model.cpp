@@ -9,14 +9,13 @@ void PortfolioTreeNode::SetText(int column_id, const std::u16string& title) {
   if (!is_portfolio())
     return;
 
-  portfolio_manager_.Rename(portfolio_, title.c_str());
+  portfolio_manager_.Rename(portfolio(), title.c_str());
 }
 
 PortfolioTreeModel::PortfolioTreeModel(NodeService& node_service,
                                        PortfolioManager& portfolio_manager)
     : node_service_{node_service}, portfolio_manager_{portfolio_manager} {
-  set_root(std::make_unique<PortfolioTreeNode>(
-      portfolio_manager_, *static_cast<Portfolio*>(nullptr)));
+  set_root(std::make_unique<PortfolioTreeNode>(portfolio_manager_));
 
   PortfolioManager::Portfolios& list = portfolio_manager_.portfolios;
   for (PortfolioManager::Portfolios::const_iterator i = list.begin();

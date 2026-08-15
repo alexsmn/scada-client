@@ -57,6 +57,8 @@ scada-client/
 ├── res/                    # Resources and settings
 ├── test/                   # Integration tests and display tester
 ├── screenshots/            # Doc screenshot gallery + image_manifest.json
+├── .github/workflows/      # CI: ci.yml (cppcheck only; see CI/CD below)
+├── .cppcheck-suppressions  # This product's own cppcheck suppressions
 ├── CMakeLists.txt          # Root CMake build file
 ├── aui/client_module.cmake # Custom CMake helpers for `_qt` target creation (aui-owned)
 ├── translation.cmake       # Qt translation support
@@ -433,18 +435,49 @@ underlying design and consumer rules.
 
 ## CI/CD
 
-GitHub Actions workflow (`.github/workflows/cmake-multi-platform.yml`) triggered on pushes/PRs to `release/2.5`.
+GitHub Actions workflow (`.github/workflows/ci.yml`), which runs on the
+published export at `github.com/alexsmn/scada-client`. It triggers on push/PR to
+`main` and `release/**` — the old workflow triggered on `release/2.5`, which
+`export.py` does not publish, so it last ran in Feb 2026.
 
-**Matrix:** Windows x64, Windows x86, Ubuntu GCC, Ubuntu Clang.
+**Static analysis only, and there is no build job.** A public runner cannot
+assemble one: a standalone client build resolves its consumed products as
+sibling checkouts (ADR 0011), and `net` — reached through `common` and `core` —
+is `published = false` in `tools/export/products.toml`. It would also need Qt,
+which is a multi-hour vcpkg source build with no binary cache. A build job comes
+back when the consumed products are published, not before.
 
-**How it works:** CI checks out the consumed products (`common`, `core`, `opcuapp`, `graph_qt`, `view_manager_qt`, and in turn `express` and `net`) as sibling directories named after themselves, and runs `cmake --preset ninja`. The resolver in `build-support/` finds them; there is no `CMAKE_MODULE_PATH` to override. Modules requiring proprietary SDKs (`BUILD_OPC=OFF`, `BUILD_VIDICON=OFF`) are disabled.
+The `analyze` job runs the same cppcheck configuration the build runs — see
+`scada_configure_cppcheck()` in `build-support/ScadaProductBase.cmake` — against
+this product's own `.cppcheck-suppressions`. `error:` findings gate the job;
+warnings are uploaded as an artifact and do not.
 
-```bash
-# CI build commands (for reference):
-cmake --preset ninja -DBUILD_OPC=OFF -DBUILD_VIDICON=OFF
-cmake --build --preset relwithdebinfo
-ctest --preset test-release
-```
+**The job builds a pinned cppcheck (`CPPCHECK_VERSION` in the workflow, 2.21.0)
+from source and caches it, rather than installing the distro package.** That is
+not gold-plating: `ubuntu-latest` is Ubuntu 24.04, whose package is 2.13, eight
+releases behind, and it disagrees with a developer's local cppcheck in both
+directions. Measured 2026-08-15 over the whole client tree, same flags, same
+suppressions:
+
+| cppcheck | Errors | Total findings |
+|---|---|---|
+| 2.13 (Ubuntu 24.04 package) | 2 | 39 |
+| 2.19 (Ubuntu 26.04 package) | 0 | 41 |
+| 2.21 (pinned; local and CI) | 0 | 314 |
+
+2.13's two errors are `danglingTempReference` at
+`modules/debugger/debugger_module.cpp:42-43`, which it gets wrong and 2.19+ do
+not report: `BasicCommandRegistry::AddCommand` returns a reference into its
+`command_map_`, and `MenuContribution` holds its `title` and `command_id` by
+value, so nothing dangles. Meanwhile 2.13 has no `uninitMemberVarNoCtor` check
+at all — 273 of 2.21's 314 — so it would have gated the job on a false positive
+while hiding a whole category. `core` and `common` still run the distro package
+and carry that exposure; see the backlog.
+
+**When comparing counts, say which cppcheck produced them**, and reproduce a CI
+result with the pinned version rather than whatever is on your machine. Note
+that `docker run ubuntu:latest` is no longer the runner — that tag is 26.04 now;
+`ubuntu:24.04` is what `ubuntu-latest` resolves to.
 
 ## Architecture
 
