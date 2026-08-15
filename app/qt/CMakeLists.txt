@@ -146,19 +146,25 @@ if(COMMAND qt_add_translation)
   # for deployed installs where Qt's own translations path does not exist.
   set(QTBASE_RU_QM
     "${QT6_INSTALL_PREFIX}/${QT6_INSTALL_TRANSLATIONS}/qtbase_ru.qm")
+  # A miss here used to be a STATUS line that silently dropped the catalog from
+  # STAGED_TRANSLATIONS, which is how the client and every published capture
+  # shipped English Qt chrome on all platforms: `qttranslations` was named in
+  # no product manifest, so the port was never installed and this lookup never
+  # resolved. The port is now in `client/vcpkg.json`'s `$direct`, so an absent
+  # catalog means a broken toolchain rather than an ordinary deployment.
   if(NOT EXISTS "${QTBASE_RU_QM}")
-    message(STATUS
-      "qtbase_ru.qm not found at ${QTBASE_RU_QM}; Qt base translations will "
-      "not be staged next to the client.")
-    set(QTBASE_RU_QM "")
+    message(FATAL_ERROR
+      "qtbase_ru.qm not found at ${QTBASE_RU_QM}. The vcpkg `qttranslations` "
+      "port provides it and is declared in client/vcpkg.json; a missing "
+      "catalog means the Qt translations were not installed into this build "
+      "tree. Re-run `cmake --preset ninja` in client/ to resolve the manifest.")
   endif()
 
+  # Both catalogs are unconditional now that a missing qtbase_ru.qm is a
+  # configure error above.
   set(STAGED_TRANSLATIONS
-    "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/translations/client_ru.qm")
-  if(QTBASE_RU_QM)
-    list(APPEND STAGED_TRANSLATIONS
-      "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/translations/qtbase_ru.qm")
-  endif()
+    "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/translations/client_ru.qm"
+    "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/translations/qtbase_ru.qm")
 
   add_custom_command(
     OUTPUT ${STAGED_TRANSLATIONS}

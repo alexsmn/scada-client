@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/boost_log.h"
 #include "base/program_options.h"
 
 #include <QApplication>
@@ -32,6 +33,16 @@ class InstalledTranslation {
         qtbase_translator_.load(qtbase_translation_name,
                                 local_translation_dir)) {
       QApplication::installTranslator(&qtbase_translator_);
+    } else {
+      // Not fatal — a user running an unsupported locale legitimately has no
+      // catalog. It is logged because the failure is otherwise invisible: the
+      // app keeps running and renders translated client strings over English
+      // standard buttons, which reads as a UI bug rather than a missing file.
+      BOOST_LOG_TRIVIAL(warning)
+          << "Qt base catalog " << qtbase_translation_name.toStdString()
+          << ".qm not found in " << global_translation_dir.toStdString()
+          << " or " << local_translation_dir.toStdString()
+          << "; standard Qt chrome will render in English.";
     }
 
     const auto qt_translation_name = "qt_" + locale_name;

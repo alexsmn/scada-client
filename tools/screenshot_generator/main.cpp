@@ -440,10 +440,29 @@ ScreenshotGenerator::ScreenshotGenerator() {
   // chrome), mirroring InstalledTranslation: prefer Qt's installed
   // translations dir, fall back to the staged app dir. Installed before the
   // client catalog so the client strings win on conflicts.
+  // A missing Qt base catalog is a hard failure for the same reason a missing
+  // client catalog is: it silently corrupts every published image. This used
+  // to be a bare `if (load)`, which is how `message-box.png` could render
+  // «Применить изменения?» over buttons reading Yes/No and still pass both
+  // screenshot checks. The cause was that `qttranslations` appeared in no
+  // product manifest at all, so the port was never installed on any platform
+  // and `app/qt/CMakeLists.txt`'s staging lookup missed — unlike the
+  // `client_ru` outage below, which was Windows-gated, this one shipped mixed
+  // -language chrome through the Windows publish channel too.
   if (qtbase_translator_.load(
           "qtbase_ru", QLibraryInfo::path(QLibraryInfo::TranslationsPath)) ||
       qtbase_translator_.load("qtbase_ru", translation_dir)) {
     QApplication::installTranslator(&qtbase_translator_);
+  } else {
+    ADD_FAILURE()
+        << "qtbase_ru.qm not found in "
+        << QLibraryInfo::path(QLibraryInfo::TranslationsPath).toStdString()
+        << " or " << translation_dir.toStdString()
+        << "; standard Qt chrome (QMessageBox buttons, spin/date "
+           "widgets) would render English inside otherwise-Russian "
+           "captures. The vcpkg `qttranslations` port is most likely "
+           "missing from this build — see "
+           "docs/ops/client-screenshots.md.";
   }
   // A missing client catalog is a hard failure, not a silent fall-through to
   // English. This used to be a bare `if (load)`, which is how a macOS build
