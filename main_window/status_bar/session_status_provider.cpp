@@ -64,14 +64,18 @@ void SessionStatusProvider::Poll() {
 }
 
 std::optional<scada::Duration> SessionStatusProvider::PingDelay() const {
-  scada::Duration ping_delay;
+  // Value-initialized on purpose: a `scada::Duration` left default-initialized
+  // holds an uninitialized rep, so an implementation that returns `true`
+  // without writing the out-parameter would otherwise put a random millisecond
+  // count in the ping cell and announce a phantom stall.
+  scada::Duration ping_delay{};
   if (!session_service_.IsConnected(&ping_delay))
     return std::nullopt;
   return ping_delay;
 }
 
 std::u16string SessionStatusProvider::GetConnectionStateText() const {
-  scada::Duration ping_delay;
+  scada::Duration ping_delay{};
   auto connected = session_service_.IsConnected(&ping_delay);
   return connected ? Translate("Connected") : Translate("Disconnected");
 }
