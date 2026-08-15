@@ -57,6 +57,7 @@
 #include "model/security_node_ids.h"
 #include "modules/limits/limit_model.h"
 #include "modules/transmission/transmission_devices.h"
+#include "modules/write/write_model.h"
 #include "node_service/node_awaitable.h"
 #include "node_service/node_ref.h"
 #include "node_service/node_service.h"
@@ -1848,6 +1849,42 @@ TEST_F(ScreenshotGenerator, LimitDialogNodeCarriesItsBands) {
   EXPECT_EQ(limits.hi, u"70");
   EXPECT_EQ(limits.lo, u"-10");
   EXPECT_EQ(limits.lolo, u"-25");
+}
+
+// The control dialog's condition row exists only when the target node carries
+// a DataItemType_OutputCondition formula, and it reads "Satisfied" only when
+// that formula evaluates truthy over live data. Both are fixture properties
+// and both are invisible to the PNG comparison — the row's absence just makes
+// the dialog shorter — so assert them here: without this the fixture could
+// silently lose the property and ti-remote-control-enabled.png would go back
+// to missing the row the docs original shows.
+TEST_F(ScreenshotGenerator, ControlDialogNodeCarriesItsOutputCondition) {
+  WaitForAwaitable(executor_, app_.Start());
+  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
+
+  const scada::NodeId node_id = g_config.dialog_analog_node_id;
+  ASSERT_TRUE(scada::screenshot_generator::FetchNodesResident(
+      app_.node_service(), std::span<const scada::NodeId>{&node_id, 1}));
+
+  Profile profile;
+  auto model = std::make_shared<WriteModel>(
+      WriteContext{.executor_ = executor_,
+                   .timed_data_service_ = app_.timed_data_service(),
+                   .node_id_ = node_id,
+                   .profile_ = profile,
+                   .manual_ = false});
+
+  EXPECT_TRUE(model->has_condition())
+      << "the fixture node lost its DataItemType_OutputCondition; the control "
+         "dialog would render without its condition row";
+
+  // The condition subscribes through TimedDataService like any other item, so
+  // its first value arrives on a later turn of the loop.
+  scada::screenshot_generator::PumpEventLoopFor(std::chrono::milliseconds{500});
+
+  EXPECT_TRUE(model->IsConditionOk())
+      << "the condition formula must evaluate truthy over the fixture data, so "
+         "the dialog reads Satisfied and its OK button is enabled";
 }
 
 TEST_F(ScreenshotGenerator, CaptureDialogs) {

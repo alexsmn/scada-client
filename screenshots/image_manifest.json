@@ -804,7 +804,7 @@
         "client.md",
         "dev/data-items.md"
       ],
-      "notes": "Remote-control dialog enabled state, TI. Title, current value and unit render (verified 2026-08-08). Still missing against the docs original: the 'Условие: Выполнено' row, which needs a DataItemType_OutputCondition on the fixture node."
+      "notes": "Remote-control dialog enabled state, TI. Title, current value, unit and the 'Условие: Выполнено' row all render (2026-08-15). The condition is TIT.212's DataItemType_OutputCondition, the formula `TIT.211 < 70`, evaluated live through TimedDataService; ScreenshotGenerator.ControlDialogNodeCarriesItsOutputCondition asserts both halves, since a lost property would only make the dialog shorter rather than fail the capture."
     },
     {
       "file": "ts-channel.png",

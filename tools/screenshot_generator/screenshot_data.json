@@ -395,7 +395,8 @@
         "limit_lolo": -25.0,
         "limit_lo": -10.0,
         "limit_hi": 70.0,
-        "limit_hihi": 90.0
+        "limit_hihi": 90.0,
+        "SCADA.148": "TIT.211 < 70"
       }
     },
     {
