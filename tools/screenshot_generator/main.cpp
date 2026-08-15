@@ -1807,8 +1807,8 @@ TEST_F(ScreenshotGenerator, LimitDialogNodeCarriesItsBands) {
       app_.node_service(), std::span<const scada::NodeId>{&node_id, 1}));
 
   NullTaskManager task_manager;
-  LimitModel model{
-      LimitDialogContext{app_.node_service().GetNode(node_id), task_manager}};
+  LimitModel model{LimitDialogContext{
+      executor_, app_.node_service().GetNode(node_id), task_manager}};
 
   EXPECT_FALSE(model.GetSourceTitle().empty())
       << "the dialog's source title is the node display name";

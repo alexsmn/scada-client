@@ -28,7 +28,8 @@ LimitsModule::LimitsModule(LimitsModuleContext&& context)
              // so the dialog actually opens.
              CoSpawn(executor_, [this, &dialog_service = context.dialog_service,
                                  node = context.selection.node()]() {
-               return ShowLimitsDialog(dialog_service, {node, task_manager_});
+               return ShowLimitsDialog(dialog_service,
+                                       {executor_, node, task_manager_});
              });
            },
        .available_handler =

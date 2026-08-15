@@ -1,9 +1,11 @@
 #include "limit_model.h"
 
+#include "base/awaitable.h"
 #include "base/format.h"
 #include "common/format.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/node_format.h"
+#include "scada/co_result.h"
 #include "services/task_manager.h"
 
 LimitModel::LimitModel(LimitDialogContext&& context)
@@ -43,5 +45,19 @@ void LimitModel::WriteLimits(const Limits& limits) {
   properties.emplace_back(scada::data_items::id::AnalogItemType_LimitHiHi,
                           limit_hihi);
 
-  task_manager_.PostUpdateTask(node_.node_id(), {}, properties);
+  // `PostUpdateTask` returns a lazy awaitable — spawn it detached so the
+  // update actually runs. Discarded, it never starts, and the operator's edits
+  // are silently dropped while the dialog closes as if they had been written.
+  // Same defect as the one fixed for ID_ITEM_ENABLE/ID_ITEM_DISABLE in
+  // `modules/configuration/configuration_module.cpp`.
+  // Captures the TaskManager by reference and nothing else from `*this`: the
+  // dialog destroys its LimitModel on accept(), so a coroutine holding `this`
+  // would run against a freed model. The task manager is module-scoped and
+  // outlives it.
+  CoSpawn(executor_,
+          [&task_manager = task_manager_, node_id = node_.node_id(),
+           properties = std::move(properties)]() mutable -> Awaitable<void> {
+            (void)co_await task_manager.PostUpdateTask(
+                node_id, /*attributes=*/{}, std::move(properties));
+          });
 }

@@ -363,7 +363,8 @@ std::shared_ptr<DialogAwaitableResult<void>> BuildLimitsDialog(
   }
   auto dialog_lifetime = StartDialogAwaitable(
       env.executor,
-      ShowLimitsDialog(dialog_service, LimitDialogContext{node, task_manager}));
+      ShowLimitsDialog(dialog_service,
+                       LimitDialogContext{env.executor, node, task_manager}));
   QApplication::processEvents();
   return dialog_lifetime;
 }
