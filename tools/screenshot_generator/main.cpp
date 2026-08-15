@@ -445,8 +445,26 @@ ScreenshotGenerator::ScreenshotGenerator() {
       qtbase_translator_.load("qtbase_ru", translation_dir)) {
     QApplication::installTranslator(&qtbase_translator_);
   }
-  if (translator_.load("client_ru", translation_dir))
+  // A missing client catalog is a hard failure, not a silent fall-through to
+  // English. This used to be a bare `if (load)`, which is how a macOS build
+  // could render every capture in English chrome and still pass both
+  // `client_screenshot_check` and `client_screenshot_check_themed` — they
+  // assert existence and dimensions, never text, so nothing in the suite could
+  // see it. The cause was a `"platform": "windows"` gate on `qttools` in
+  // `client/vcpkg.json`, so no non-Windows build had `lrelease` to produce
+  // `client_ru.qm` at all; `client_qt_copy_translations` degraded to an echo.
+  // The generator depends on that target, so by the time this runs the catalog
+  // must be staged — if it is not, the toolchain is broken in a way that
+  // silently corrupts every published image.
+  if (translator_.load("client_ru", translation_dir)) {
     QApplication::installTranslator(&translator_);
+  } else {
+    ADD_FAILURE() << "client_ru.qm not found in "
+                  << translation_dir.toStdString()
+                  << "; captures would render English chrome. The Qt "
+                     "LinguistTools (vcpkg `qttools`) are most likely missing "
+                     "from this build — see docs/ops/client-screenshots.md.";
+  }
 
   // Pin Fusion for captures. Unlike the client — which runs the platform style
   // so it looks native (docs/client/ux/principles.md §9) — published
