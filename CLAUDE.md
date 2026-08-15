@@ -125,11 +125,17 @@ Rules of the pipeline:
   macOS renders, so the first Windows regeneration rewrites an unknown number
   of them as platform churn. Read `docs/ops/client-screenshots.md` before
   treating a diff here as a UI change.
-  Publishing to the manual is a separate, narrower step:
-  `cmake --workflow --preset update-screenshots-dev`
-  (Windows) regenerates the gallery
-  and copies only the manifest's `current_generator_owned_subset` into
-  scada-docs `img/`; review with `git diff img/` there. An image graduates
+  Publishing to the manual is a separate, narrower step, and since ADR 0011 it
+  is **two commands**: `cmake --build --preset relwithdebinfo -t
+  regenerate_client_screenshots` here, then
+  `cmake -DSCADA_SCREENSHOT_SRC_DIR=client/screenshots
+  -DSCADA_DOCS_IMG_DIR=scada-docs/img -P cmake/update_screenshots.cmake` from
+  the superproject root. The first regenerates the gallery; the second copies
+  only the manifest's `current_generator_owned_subset` into scada-docs `img/`.
+  The `update-screenshots-dev` workflow preset that used to do both is gone,
+  and nothing now enforces that the regenerate ran first — a publish on its own
+  silently republishes the previous render. Review with `git diff` on the
+  manual's `img/`. An image graduates
   into that subset only after its rendering is reviewed against the page
   that embeds it. **Published images render dark** — the gallery pass is
   legacy-themed, then a second `--theme=dark` pass re-renders the published
