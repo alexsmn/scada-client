@@ -1472,8 +1472,8 @@ void SaveMenuCapture(QMenu* menu, const char* filename) {
   std::filesystem::create_directories(output_dir);
   const QPixmap pixmap = GrabWhenSettled(menu);
   ASSERT_FALSE(pixmap.isNull()) << filename << " grabbed an empty pixmap";
-  ASSERT_TRUE(pixmap.save(
-      QString::fromStdString((output_dir / filename).string())))
+  ASSERT_TRUE(
+      pixmap.save(QString::fromStdString((output_dir / filename).string())))
       << "could not write " << filename;
 }
 
@@ -1573,9 +1573,9 @@ TEST_F(ScreenshotGenerator, CaptureSummaryFunctionMenu) {
   // Activate the Summary view explicitly. The toolbar resolves every row
   // through `ResolveViewCommand`, which asks the *active* view — and a window
   // shown offscreen never receives the focus that would make one active, so
-  // without this the seven rows exist but resolve no handler, and `UpdateAction`
-  // hides them all. The menu still renders: seven invisible rows grab as an
-  // empty popup.
+  // without this the seven rows exist but resolve no handler, and
+  // `UpdateAction` hides them all. The menu still renders: seven invisible rows
+  // grab as an empty popup.
   auto& main_window = app_.main_window_manager().main_windows().front();
   OpenedView* summary_view = nullptr;
   for (OpenedView* view : main_window.opened_views()) {
@@ -1590,8 +1590,7 @@ TEST_F(ScreenshotGenerator, CaptureSummaryFunctionMenu) {
   auto* toolbar = qmain->findChild<QToolBar*>("CommandToolbar");
   ASSERT_NE(toolbar, nullptr) << "no command toolbar in the main window";
 
-  const auto function_title =
-      QString::fromStdU16String(Translate("Function"));
+  const auto function_title = QString::fromStdU16String(Translate("Function"));
   QMenu* menu = nullptr;
   for (QToolButton* button : toolbar->findChildren<QToolButton*>()) {
     if (button->text() == function_title && button->menu())

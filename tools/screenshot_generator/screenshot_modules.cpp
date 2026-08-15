@@ -42,8 +42,8 @@ ClientApplicationModuleConfigurator MakeScreenshotModules() {
     // Summary view still opens and still answers those command ids — its own
     // registry holds the handlers — but nothing declares them to the toolbar,
     // so the button does not exist.
-    context.singletons_.emplace(std::make_shared<SummaryModule>(
-        SummaryModuleContext{
+    context.singletons_.emplace(
+        std::make_shared<SummaryModule>(SummaryModuleContext{
             .executor_ = context.executor_,
             .selection_commands_ = context.selection_commands_,
             .ui_command_registry_ = context.ui_command_registry_}));
