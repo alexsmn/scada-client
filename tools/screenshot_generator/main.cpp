@@ -1921,13 +1921,28 @@ TEST_F(ScreenshotGenerator, DisabledControlDialogNodeConditionIsUnsatisfied) {
   ASSERT_TRUE(scada::screenshot_generator::FetchNodesResident(
       app_.node_service(), std::span<const scada::NodeId>{&node_id, 1}));
 
+  const scada::NodeId enabled_node_id = g_config.dialog_analog_node_id;
+  ASSERT_TRUE(scada::screenshot_generator::FetchNodesResident(
+      app_.node_service(),
+      std::span<const scada::NodeId>{&enabled_node_id, 1}));
+
   Profile profile;
-  auto model = std::make_shared<WriteModel>(
-      WriteContext{.executor_ = executor_,
-                   .timed_data_service_ = app_.timed_data_service(),
-                   .node_id_ = node_id,
-                   .profile_ = profile,
-                   .manual_ = false});
+  auto make_model = [&](const scada::NodeId& id) {
+    return std::make_shared<WriteModel>(
+        WriteContext{.executor_ = executor_,
+                     .timed_data_service_ = app_.timed_data_service(),
+                     .node_id_ = id,
+                     .profile_ = profile,
+                     .manual_ = false});
+  };
+  // Both nodes, in one run and over one pump. IsConditionOk() also reads false
+  // before the first value lands, so the disabled expectation on its own would
+  // pass on a condition that never evaluated at all — a subscription that
+  // failed, a formula that did not parse, a pump too short to matter. The
+  // enabled node is the control: it shares the service and the pump, so it
+  // reads true only if conditions really are being evaluated in this run.
+  auto model = make_model(node_id);
+  auto enabled_model = make_model(enabled_node_id);
 
   EXPECT_TRUE(model->has_condition())
       << "without a DataItemType_OutputCondition the dialog renders no "
@@ -1935,6 +1950,10 @@ TEST_F(ScreenshotGenerator, DisabledControlDialogNodeConditionIsUnsatisfied) {
 
   scada::screenshot_generator::PumpEventLoopFor(std::chrono::milliseconds{500});
 
+  EXPECT_TRUE(enabled_model->IsConditionOk())
+      << "the control for this test: if the enabled node's condition does not "
+         "read true either, conditions are not being evaluated at all and the "
+         "expectation below proves nothing";
   EXPECT_FALSE(model->IsConditionOk())
       << "the condition formula must evaluate falsy over the fixture data, so "
          "the dialog reads Not satisfied and its OK button is disabled";
