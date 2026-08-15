@@ -30,6 +30,8 @@ add_executable(client_screenshot_generator
   "display_capture.cpp"
   "display_capture.h"
   "device_diagnostics_capture.cpp"
+  "device_metrics_capture.cpp"
+  "device_metrics_capture.h"
   "administration_capture.cpp"
   "user_access_capture.cpp"
   "transmission_rule_capture.cpp"

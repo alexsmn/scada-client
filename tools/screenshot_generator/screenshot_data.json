@@ -1476,6 +1476,14 @@
       "height": 520
     },
     {
+      "type": "DeviceMetrics",
+      "filename": "device-metrics.png",
+      "path": "TS.103",
+      "width": 430,
+      "height": 200,
+      "min_rows": 8
+    },
+    {
       "type": "Administration",
       "filename": "administration-explorer.png",
       "width": 214,

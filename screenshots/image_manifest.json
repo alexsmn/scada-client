@@ -173,11 +173,11 @@
     },
     {
       "file": "devices-create.png",
-      "tag": "auto-state",
+      "tag": "auto-menu",
       "referenced_from": [
         "dev/devices.md"
       ],
-      "notes": "Struct window, device freshly created."
+      "notes": "NOT a device-state capture, despite the auto-state tag it carried until 2026-08-15: the image is the hardware tree with the object context menu open on its *Создать* submenu (Направление МЭК-101/104, Устройство МЭК-61850, Направление MODBUS). It is the `menu-create-object` capture of the auto-menu group, and it is blocked on the same context-menu helper as the other six there — see tasks.md 39, subtask 7."
     },
     {
       "file": "devices-off.png",
@@ -185,15 +185,15 @@
       "referenced_from": [
         "dev/devices.md"
       ],
-      "notes": "Struct window, device offline."
+      "notes": "The Оборудование (Subsystems) tree as dev/devices.md opens the chapter with; the devices happen to be offline, which is where the filename comes from — the figure is not about the state. The generator already renders this window as `hardware-tree.png`, with the fixture's three link states (Online / Offline / Disabled) as status dots in one image, so what is left here is a docs-side re-point, not a capture to write. Re-checked 2026-08-15 (tasks.md 39, subtask 8)."
     },
     {
       "file": "devices-on.png",
-      "tag": "auto-state",
+      "tag": "manual-annotated",
       "referenced_from": [
         "client.md"
       ],
-      "notes": "Struct window, device online."
+      "notes": "NOT a Struct-window state capture. A composite of the objects tree and an open parameters form with the group's Устройство combo popped up, with two red underlines drawn on top — hand annotation the generator cannot produce. client.md uses it to point at where a group's device is bound. Retagged from auto-state 2026-08-15; splitting the figure into a generated capture plus prose call-outs is the open question in tasks.md 39, subtask 8."
     },
     {
       "file": "devices-status.png",
@@ -201,7 +201,7 @@
       "referenced_from": [
         "client.md"
       ],
-      "notes": "Struct window, status column visible."
+      "notes": "The Оборудование tree beside the *Метрики* sheet for the selected device — client.md's \"Статусы устройств\". The right-hand half now renders as `device-metrics.png` (capture type DeviceMetrics, added 2026-08-15); the left half is `hardware-tree.png`. Two panes in one legacy figure, so replacing it means re-pointing the page at both, or composing them — the open item in tasks.md 39, subtask 8."
     },
     {
       "file": "devices-traffic.png",
@@ -209,7 +209,7 @@
       "referenced_from": [
         "client/device-watch.md"
       ],
-      "notes": "Log window showing live device traffic."
+      "notes": "The whole main window around the Наблюдение (Watch) view — the same content the generator renders as `device-watch.png`, plus menu bar, toolbar and the hardware tree. Not a device-state capture. A docs-side re-point onto `device-watch.png` (or onto `workbench-window.png` if the chrome is the point) rather than a capture to write; see tasks.md 39, subtask 8."
     },
     {
       "file": "display.png",
@@ -289,6 +289,14 @@
       "parity_key": "device-diagnostics",
       "referenced_from": [],
       "notes": "Configuration workbench device-diagnostics inspector (DeviceDiagnostics): link-status hero (up/down/disabled) + live traffic/polling counters from the device's diagnostic child variables (Online/Enabled/MessagesIn/...). Reshell-only chrome (backlog 5.0), captured under --theme against a fixture device (TS.103, link down). Standalone like series-inspector; the capture makes the device resident (FetchNodesResident) so ShowDevice resolves the diagnostic variables and reads their current values. Not yet embedded in a manual page."
+    },
+    {
+      "file": "device-metrics.png",
+      "tag": "auto-view",
+      "published": false,
+      "parity_key": "device-diagnostics",
+      "referenced_from": [],
+      "notes": "The device Metrics sheet — what *Метрики* on a device's context menu opens (client.md, \"Статусы устройств\"), and the Qt half of the web's DeviceMetrics component. Rendered for the fixture's КП-01 (TS.103, an IEC 60870-5-104 RTU): the row labels are the DeviceType data-variable declarations (Связь, Включено, Принято/Отправлено сообщений и байт, Число синхронизаций времени, Число полных опросов) and each cell is an `=NodeId` formula the sheet resolves live. Not a window type of its own — DeviceMetricsModule builds a CusTable WindowDefinition from resolved NodeRefs, which do not exist when MakeScreenshotPage assembles the profile page, so the capture opens its own view. Legacy-themed and not yet embedded in a manual page: it is half of what devices-status.png shows, and replacing that figure is still open (tasks.md 39, subtask 8). Booleans render 0/1 and byte counters in scientific notation, unlike the legacy capture's Да/Нет and plain integers — a real formatting gap, filed separately."
     },
     {
       "file": "device-watch.png",
@@ -902,10 +910,10 @@
   ],
   "counts": {
     "auto-dialog": 25,
-    "auto-menu": 9,
-    "auto-state": 5,
-    "auto-view": 24,
-    "manual-annotated": 2,
+    "auto-menu": 10,
+    "auto-state": 3,
+    "auto-view": 25,
+    "manual-annotated": 3,
     "manual-diagram": 4,
     "manual-modus": 5,
     "manual-os": 3,

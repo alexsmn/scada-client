@@ -127,9 +127,12 @@ Page MakeScreenshotPage(const std::vector<ScreenshotSpec>& specs,
   for (const auto& spec : specs) {
     // The substation display and the device-diagnostics panel are rendered
     // standalone (CaptureDisplay / DeviceDiagnostics); they have no registered
-    // page view type, so keep them off the profile page.
+    // page view type, so keep them off the profile page. The device metrics
+    // sheet does have one (CusTable), but its cells are derived from resolved
+    // NodeRefs that do not exist yet here, so it is opened from the capture.
     if (spec.window_type == "Display" ||
-        spec.window_type == "DeviceDiagnostics")
+        spec.window_type == "DeviceDiagnostics" ||
+        spec.window_type == "DeviceMetrics")
       continue;
     if (spec.window_type == "Graph")
       page.AddWindow(MakeGraphDefinition(json));

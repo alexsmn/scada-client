@@ -4,6 +4,7 @@
 #include "command_field_capture.h"
 #include "debugger_capture.h"
 #include "device_diagnostics_capture.h"
+#include "device_metrics_capture.h"
 #include "dialog_capture.h"
 #include "display_capture.h"
 #include "fixture_builder.h"
@@ -567,6 +568,16 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     if (spec.window_type == "DeviceDiagnostics") {
       SaveDeviceDiagnosticsScreenshot(spec, app_.node_service(),
                                       app_.timed_data_service(), g_config.json);
+      ++captured;
+      continue;
+    }
+    // The device Metrics sheet is a CusTable whose cells DeviceMetricsModule
+    // derives from the device's type-definition data variables, so it can only
+    // be built once the node service has resolved the device — after the
+    // profile page was assembled. It opens its own view here.
+    if (spec.window_type == "DeviceMetrics") {
+      SaveDeviceMetricsScreenshot(spec, main_window, app_.node_service(),
+                                  app_.timed_data_service(), executor_);
       ++captured;
       continue;
     }
