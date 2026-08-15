@@ -68,7 +68,7 @@ class BaseMainWindow : protected MainWindowContext,
   SubscribeContainedItemChanged(const ContainedItemChangedCallback& callback);
 
   // MainWindow
-  virtual int GetMainWindowId() const { return window_id(); }
+  virtual int GetMainWindowId() const override { return window_id(); }
   virtual const Page& GetCurrentPage() const override { return current_page(); }
   virtual void OpenPage(const Page& page) override;
   virtual void SetCurrentPageTitle(std::u16string_view title) override;
