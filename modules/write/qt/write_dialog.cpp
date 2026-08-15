@@ -117,9 +117,12 @@ void WriteDialog::accept() {
     bool ok = false;
     value = ui.valueComboBox->currentText().toDouble(&ok);
     if (!ok) {
-      dialog_service_.RunMessageBox(
-          tr("Incorrect floating point value.").toStdU16String(), {},
-          MessageBoxMode::Error);
+      // Through the model, which owns the executor the message box has to be
+      // spawned on: RunMessageBox is lazy, and calling it here discarded the
+      // awaitable, so the box never appeared and the dialog just refused to
+      // close.
+      model_->ReportInputError(
+          tr("Incorrect floating point value.").toStdU16String());
       return;
     }
   }

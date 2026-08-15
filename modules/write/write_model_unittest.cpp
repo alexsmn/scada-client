@@ -353,3 +353,38 @@ TEST_F(WriteModelTest, DestroyedModelDropsPendingWriteCompletion) {
   EXPECT_FALSE(completion_.has_value());
   EXPECT_TRUE(dialog_service_.modes.empty());
 }
+
+// Regression: WriteDialog::accept used to call RunMessageBox directly and
+// discard the returned awaitable. It is lazy, so the coroutine never started,
+// no box was ever shown, and an unparseable entry left the dialog refusing to
+// close with nothing on screen to explain why. Asserting on the recorded box
+// is what proves the awaitable actually ran — the pre-fix code records
+// nothing here.
+TEST_F(WriteModelTest, ReportedInputErrorReachesTheOperator) {
+  auto model = CreateModel();
+
+  model->ReportInputError(u"Incorrect floating point value.");
+  Drain(executor_);
+
+  ASSERT_THAT(dialog_service_.modes, ElementsAre(MessageBoxMode::Error));
+  EXPECT_EQ(dialog_service_.messages.at(0), u"Incorrect floating point value.");
+  // The window title, so the box is attributable to this dialog rather than
+  // arriving bare.
+  EXPECT_EQ(dialog_service_.titles.at(0), model->GetWindowTitle());
+}
+
+// Rejected input is not a completed write: nothing is sent to the point and
+// the dialog must stay open, which is what completion_handler(true) would
+// close. ReportWriteErrorAsync deliberately does complete — this path must
+// not share that behaviour.
+TEST_F(WriteModelTest, ReportedInputErrorNeitherWritesNorCompletes) {
+  auto model = CreateModel();
+
+  // attribute_service_ is a StrictMock, so any Write would fail the test.
+  model->ReportInputError(u"Incorrect floating point value.");
+  Drain(executor_);
+  dialog_service_.CompleteMessageBox();
+  Drain(executor_);
+
+  EXPECT_FALSE(completion_.has_value());
+}

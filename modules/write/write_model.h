@@ -41,6 +41,16 @@ class WriteModel : private WriteContext,
 
   void Write(double value, bool lock);
 
+  // Tells the operator why the value they typed was refused, and leaves the
+  // dialog open so they can correct it. Nothing is written and
+  // `completion_handler` is not called: this reports input the dialog rejected
+  // before any value reached the point, which is not a completed write.
+  //
+  // Lives on the model rather than in the dialog because showing a message box
+  // means awaiting a lazy awaitable, and the model is what holds the executor
+  // to spawn it on.
+  void ReportInputError(std::u16string message);
+
   // The review an operator answers before `value` is sent: the point's present
   // reading, the commanded value, and an irreversibility warning.
   // `second_stage` prefixes the operate half of a select-before-operate
@@ -88,6 +98,12 @@ class WriteModel : private WriteContext,
       DialogService& dialog_service,
       std::u16string message,
       std::u16string title);
+  // Owns `message`/`title` for the lifetime of the prompt, for the same reason
+  // ConfirmAndStartWritingAsync does. Unlike ReportWriteErrorAsync this
+  // completes nothing when the box is dismissed — there is no write in flight.
+  static Awaitable<void> ShowInputErrorAsync(DialogService& dialog_service,
+                                             std::u16string message,
+                                             std::u16string title);
 
   DialogService* dialog_service_ = nullptr;
 

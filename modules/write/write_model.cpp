@@ -301,6 +301,33 @@ Awaitable<void> WriteModel::ConfirmAndStartWritingAsync(
   co_return;
 }
 
+void WriteModel::ReportInputError(std::u16string message) {
+  if (!dialog_service_)
+    return;
+
+  // RunMessageBox returns a *lazy* awaitable: discarded, the coroutine body
+  // never starts and no box is ever shown. The caller that used to drop it
+  // (WriteDialog::accept) left the dialog refusing to close with no
+  // explanation at all.
+  CoSpawn(executor_,
+          [dialog_service = dialog_service_, message = std::move(message),
+           title = GetWindowTitle()]() mutable {
+            return ShowInputErrorAsync(*dialog_service, std::move(message),
+                                       std::move(title));
+          });
+}
+
+Awaitable<void> WriteModel::ShowInputErrorAsync(DialogService& dialog_service,
+                                                std::u16string message,
+                                                std::u16string title) {
+  try {
+    co_await dialog_service.RunMessageBox(message, title,
+                                          MessageBoxMode::Error);
+  } catch (...) {
+  }
+  co_return;
+}
+
 Awaitable<void> WriteModel::ReportWriteErrorAsync(
     AnyExecutor executor,
     std::function<void(bool ok)> completion_handler,
