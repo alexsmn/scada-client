@@ -57,7 +57,6 @@ scada-client/
 ├── res/                    # Resources and settings
 ├── test/                   # Integration tests and display tester
 ├── screenshots/            # Doc screenshot gallery + image_manifest.json
-├── .github/workflows/      # CI: cmake-multi-platform.yml, msbuild.yml
 ├── CMakeLists.txt          # Root CMake build file
 ├── aui/client_module.cmake # Custom CMake helpers for `_qt` target creation (aui-owned)
 ├── translation.cmake       # Qt translation support
