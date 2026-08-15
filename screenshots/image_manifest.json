@@ -579,10 +579,11 @@
     {
       "file": "menu-create-object-service.png",
       "tag": "auto-dialog",
+      "parity_key": "create-service-item",
       "referenced_from": [
         "dev/data-items.md"
       ],
-      "notes": "Not a menu despite the name (audited 2026-08-08): the modal «Создание сервисных объектов» dialog — a device combo over the list of service items it would create. No generator dialog kind covers it yet, so it is owed as an auto-dialog, not as menu rendering."
+      "notes": "Not a menu despite the name (audited 2026-08-08): the modal «Создание сервисных объектов» dialog — a device combo over the list of service items it would create. Rendered by the screenshot generator since 2026-08-15 (dialog kind `create-service-item`); the component list is the selected device's HasComponent data variables, which the fixture states explicitly because a fixture child is otherwise wired by Organizes alone and the list would render empty. Not yet in `current_generator_owned_subset`: swapping the generated render in for the legacy scada-docs image is subtask 13 (bulk replace), which is reviewed a batch at a time."
     },
     {
       "file": "menu-create-object-ts-ti.png",

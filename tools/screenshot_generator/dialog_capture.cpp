@@ -20,6 +20,7 @@
 #include "model/node_id_util.h"
 #include "modules/about/about_dialog.h"
 #include "modules/change_password/change_password_dialog.h"
+#include "modules/create_service_item/create_service_item_dialog.h"
 #include "modules/events/local_events.h"
 #include "modules/limits/limit_dialog.h"
 #include "modules/login/login_dialog.h"
@@ -37,12 +38,14 @@
 #include "services/task_manager.h"
 #include "timed_data/timed_data_service.h"
 #include "timed_data/timed_data_spec.h"
+#include "ui/common/client_utils.h"
 
 #include <QAbstractItemView>
 #include <QApplication>
 #include <QComboBox>
 #include <QDialog>
 #include <QElapsedTimer>
+#include <QListWidget>
 #include <QPainter>
 #include <QPixmap>
 #include <QString>
@@ -471,6 +474,49 @@ BuildControlConfirmation(DialogEnvironment& env,
   return dialog_lifetime;
 }
 
+// Fails when the dialog waiting to be grabbed shows an empty list.
+//
+// An empty list is the failure mode this generator cannot see by itself: the
+// capture still writes a well-formed PNG of exactly the spec's dimensions, so
+// `check_screenshots.py` passes and the blank image ships — which is how
+// limits.png shipped with every field empty. The service-object dialog carries
+// the same risk in a sharper form. Its component list is the selected device's
+// HasComponent data variables, and the fixture has to state those references
+// explicitly (`references` in screenshot_data.json); a device wired only by
+// Organizes, which is the fixture's default, yields a populated device combo
+// above a completely empty list.
+bool ReportIfDialogListEmpty(const DialogSpec& spec) {
+  QDialog* dialog = nullptr;
+  for (QWidget* w : QApplication::topLevelWidgets()) {
+    if (!w->isVisible())
+      continue;
+    if (auto* d = qobject_cast<QDialog*>(w)) {
+      dialog = d;
+      break;
+    }
+  }
+  if (!dialog) {
+    ADD_FAILURE() << "No visible dialog to check the list of, kind: "
+                  << spec.kind;
+    return false;
+  }
+
+  auto* list =
+      dialog->findChild<QListWidget*>(QString{}, Qt::FindChildrenRecursively);
+  if (!list) {
+    ADD_FAILURE() << "No QListWidget in " << dialog->metaObject()->className()
+                  << " for kind: " << spec.kind;
+    return false;
+  }
+  if (list->count() == 0) {
+    ADD_FAILURE() << "Empty list in " << dialog->metaObject()->className()
+                  << " for kind: " << spec.kind
+                  << " - the capture would ship a blank dialog";
+    return false;
+  }
+  return true;
+}
+
 // Registers a representative spread of operator/engineering commands so the
 // palette capture shows a realistic list. Titles go through Translate() (no
 // Cyrillic literals in source); the generator loads no .ts, so they render in
@@ -629,6 +675,52 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
                           MultiCreateContext{*env.node_service, task_manager,
                                              scada::data_items::id::DataItems});
     QApplication::processEvents();
+    return GrabAndCloseVisibleDialogOrReport(spec);
+  } else if (spec.kind == "create-service-item") {
+    // Service-object creation under the DataItems root - the modal the object
+    // tree opens as «Создание сервисных объектов». The device combo fills from
+    // the fixture's Devices folder and the component list from the selected
+    // device's data variables; the insert path (PostInsertTask) is never taken.
+    if (!env.node_service) {
+      ADD_FAILURE() << "CreateServiceItemDialog needs a node_service";
+      return false;
+    }
+    if (!FetchDialogNodeResident(*env.node_service,
+                                 scada::devices::id::Devices)) {
+      ADD_FAILURE() << "CreateServiceItemDialog: Devices folder not found";
+      return false;
+    }
+    // A second wave for the devices themselves. FetchNodesResident makes the
+    // node it is given and that node's children resident, so fetching the
+    // Devices folder yields the device instances but not their components -
+    // and CreateServiceItemModel reads its component list off the device, one
+    // level further down, in its constructor. Without this the dialog renders
+    // its combo over an empty list.
+    std::vector<scada::NodeId> device_ids;
+    for (const auto& [name, device] :
+         GetNamedNodes(env.node_service->GetNode(scada::devices::id::Devices),
+                       scada::devices::id::DeviceType)) {
+      device_ids.push_back(device.node_id());
+    }
+    if (device_ids.empty()) {
+      ADD_FAILURE() << "CreateServiceItemDialog: no devices under the Devices "
+                       "folder";
+      return false;
+    }
+    if (!scada::screenshot_generator::FetchNodesResident(*env.node_service,
+                                                         device_ids)) {
+      ADD_FAILURE() << "CreateServiceItemDialog: failed to fetch devices";
+      return false;
+    }
+
+    ShowCreateServiceItemDialog(
+        dialog_service, CreateServiceItemContext{
+                            .node_service_ = *env.node_service,
+                            .task_manager_ = task_manager,
+                            .parent_id_ = scada::data_items::id::DataItems});
+    QApplication::processEvents();
+    if (!ReportIfDialogListEmpty(spec))
+      return false;
     return GrabAndCloseVisibleDialogOrReport(spec);
   } else {
     ADD_FAILURE() << "Unknown dialog kind: " << spec.kind;

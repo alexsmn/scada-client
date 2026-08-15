@@ -64,22 +64,39 @@
       "type_definition": "SCADA.115"
     },
     {
+      "_comment": "The device's diagnostic variables are wired a second time as HasComponent (NS0.47), on top of the Organizes edge the `tree` block gives every fixture child. A real device instance carries its data variables as components, and GetDataVariables (common/node_service/node_util.cpp) reads HasComponent and nothing else - so the service-object dialog, which lists a device's components, renders an empty list against an Organizes-only fixture. The Organizes edge stays: it is what puts these variables in the object tree.",
       "id": "TS.103",
       "browse_name": "КП-01 МЭК-60870",
       "class": "object",
-      "type_definition": "SCADA.331"
+      "type_definition": "SCADA.331",
+      "references": [
+        { "type": "NS0.47", "target": "TS.9001" },
+        { "type": "NS0.47", "target": "TS.9002" },
+        { "type": "NS0.47", "target": "TS.9003" },
+        { "type": "NS0.47", "target": "TS.9004" },
+        { "type": "NS0.47", "target": "TS.9005" },
+        { "type": "NS0.47", "target": "TS.9006" },
+        { "type": "NS0.47", "target": "TS.9007" },
+        { "type": "NS0.47", "target": "TS.9008" }
+      ]
     },
     {
       "id": "TS.104",
       "browse_name": "КП-02 MODBUS",
       "class": "object",
-      "type_definition": "SCADA.118"
+      "type_definition": "SCADA.118",
+      "references": [
+        { "type": "NS0.47", "target": "TS.9101" }
+      ]
     },
     {
       "id": "TS.105",
       "browse_name": "КП-03 МЭК-61850",
       "class": "object",
-      "type_definition": "SCADA.277"
+      "type_definition": "SCADA.277",
+      "references": [
+        { "type": "NS0.47", "target": "TS.9201" }
+      ]
     },
     {
       "id": "TS.9001",
@@ -2064,6 +2081,13 @@
       "filename": "multi-create.png",
       "width": 480,
       "height": 420
+    },
+    {
+      "_comment": "The «Создание сервисных объектов» modal, which the object tree opens on a folder and which the manual embeds as menu-create-object.png's sibling. Distinct from multi-create above: that one builds a series of new TS/TI from a naming pattern, this one mirrors an existing device's diagnostic variables into service data items, so its list is the device's components rather than a generated range. The size is the form's own designed geometry (create_service_item.ui).",
+      "kind": "create-service-item",
+      "filename": "menu-create-object-service.png",
+      "width": 364,
+      "height": 326
     },
     {
       "kind": "message-box",
