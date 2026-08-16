@@ -375,6 +375,62 @@ struct GlyphIndices : ConfigurationTreeNode {
   using ConfigurationTreeNode::IMAGE_SUBSYSTEM_STOPPED;
 };
 
+// Task 117. The `[Loading]` suffix used to report only the *children* fetch,
+// so a row whose own attributes had not arrived looked settled while showing
+// nothing but a fallback display name. The ctor deliberately does not fetch
+// (stack-overflow reason in its comment), so that state is routine, not rare.
+TEST_F(ConfigurationTreeModelTest, UnfetchedNodeReportsLoading) {
+  auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
+  EXPECT_CALL(*node_service_tree, GetChildren(_))
+      .WillOnce(Return(std::vector<NodeServiceTree::ChildRef>{
+          {.reference_type_id = scada::id::Organizes,
+           .child_node = MakeTestNodeRef(kNodeId1)}}));
+
+  node_service_.SetFetchStatus(kNodeId1, NodeFetchStatus::None);
+
+  InitModel(std::move(node_service_tree));
+
+  auto* child = model_->GetChild(model_->GetRoot(), 0);
+  EXPECT_NE(model_->GetText(child, 0).find(u"[Loading]"), std::u16string::npos);
+}
+
+// The complement, so the suffix cannot simply be unconditional: a node that
+// has been fetched, and whose children nobody asked for, is quiet.
+TEST_F(ConfigurationTreeModelTest, FetchedNodeDoesNotReportLoading) {
+  auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
+  EXPECT_CALL(*node_service_tree, GetChildren(_))
+      .WillOnce(Return(std::vector<NodeServiceTree::ChildRef>{
+          {.reference_type_id = scada::id::Organizes,
+           .child_node = MakeTestNodeRef(kNodeId1)}}));
+
+  InitModel(std::move(node_service_tree));
+
+  auto* child = model_->GetChild(model_->GetRoot(), 0);
+  EXPECT_EQ(model_->GetText(child, 0).find(u"[Loading]"), std::u16string::npos);
+}
+
+// The suffix clears once the node arrives, which is what makes it a progress
+// report rather than a permanent label. A completed fetch notifies semantic
+// change; the model turns that into a repaint.
+TEST_F(ConfigurationTreeModelTest, LoadingClearsWhenTheNodeIsFetched) {
+  auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
+  EXPECT_CALL(*node_service_tree, GetChildren(_))
+      .WillOnce(Return(std::vector<NodeServiceTree::ChildRef>{
+          {.reference_type_id = scada::id::Organizes,
+           .child_node = MakeTestNodeRef(kNodeId1)}}));
+
+  node_service_.SetFetchStatus(kNodeId1, NodeFetchStatus::None);
+
+  InitModel(std::move(node_service_tree));
+
+  auto* child = model_->GetChild(model_->GetRoot(), 0);
+  ASSERT_NE(model_->GetText(child, 0).find(u"[Loading]"), std::u16string::npos);
+
+  node_service_.SetFetchStatus(kNodeId1, NodeFetchStatus::Max);
+
+  EXPECT_EQ(model_->GetText(child, 0).find(u"[Loading]"), std::u16string::npos);
+}
+
 // The glyph table is indexed by those tile indices, inherited from the sliced
 // bitmap strip it replaced. A short table would silently hand rows a null
 // icon; a long one means an enum value was dropped without its glyph.

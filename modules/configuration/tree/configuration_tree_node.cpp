@@ -60,7 +60,17 @@ int ConfigurationTreeNode::AddChildren() {
 std::u16string ConfigurationTreeNode::GetText(int column_id) const {
   auto text = ToString16(node_.display_name());
 
-  if (children_requested_ && !children_loaded_)
+  // Two separate waits, and the row should announce either. The node's own
+  // attributes may not have arrived yet — the ctor deliberately does not fetch
+  // (see its comment), so a row can be on screen carrying nothing but the
+  // fallback display name — or the child list may be in flight after an
+  // expand. Only the second was reported, which left the more visible case
+  // silent: a freshly materialized row looked settled while still showing a
+  // placeholder for its name.
+  //
+  // The suffix clears on its own: a completed fetch notifies semantic change,
+  // which reaches the model as OnNodeSemanticsChanged and repaints the row.
+  if (!node_.fetched() || (children_requested_ && !children_loaded_))
     text += u" [" + Translate("Loading") + u"]";
 
   return text;
@@ -104,17 +114,17 @@ void ConfigurationTreeNode::FetchMore() {
     return;
   }
 
-  CoSpawn(model_.executor_,
-          [executor = model_.executor_, lifetime_token = model_.GetLifetimeToken(),
-           model = &model_, node = node_, node_id = node_.node_id(),
-           reference_type_id = reference_type_id_,
-           forward_reference = forward_reference_]() mutable
-              -> Awaitable<void> {
-            co_await ConfigurationTreeNode::CompleteFetchMoreAsync(
-                std::move(executor), std::move(lifetime_token), *model,
-                std::move(node), std::move(node_id),
-                std::move(reference_type_id), forward_reference);
-          });
+  CoSpawn(
+      model_.executor_,
+      [executor = model_.executor_, lifetime_token = model_.GetLifetimeToken(),
+       model = &model_, node = node_, node_id = node_.node_id(),
+       reference_type_id = reference_type_id_,
+       forward_reference = forward_reference_]() mutable -> Awaitable<void> {
+        co_await ConfigurationTreeNode::CompleteFetchMoreAsync(
+            std::move(executor), std::move(lifetime_token), *model,
+            std::move(node), std::move(node_id), std::move(reference_type_id),
+            forward_reference);
+      });
 }
 
 Awaitable<void> ConfigurationTreeNode::CompleteFetchMoreAsync(
@@ -141,9 +151,9 @@ Awaitable<void> ConfigurationTreeNode::CompleteFetchMoreAsync(
     co_return;
   }
 
-  LOG_INFO(model.logger_)
-      << "Children fetched callback begin"
-      << LOG_TAG("NodeId", NodeIdToScadaString(fetched_node.node_id()));
+  LOG_INFO(model.logger_) << "Children fetched callback begin"
+                          << LOG_TAG("NodeId", NodeIdToScadaString(
+                                                   fetched_node.node_id()));
 
   tree_node->children_loaded_ = true;
   const auto added_child_count = tree_node->AddChildren();
