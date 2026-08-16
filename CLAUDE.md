@@ -129,13 +129,17 @@ Rules of the pipeline:
   is **two commands**: `cmake --build --preset relwithdebinfo -t
   regenerate_client_screenshots` here, then
   `cmake -DSCADA_SCREENSHOT_SRC_DIR=client/screenshots
-  -DSCADA_DOCS_IMG_DIR=scada-docs/img -P cmake/update_screenshots.cmake` from
+  -DSCADA_DOCS_IMG_DIR=scada-docs/img
+  -DSCADA_SCREENSHOT_GENERATOR=<path to the generator binary>
+  -P cmake/update_screenshots.cmake` from
   the superproject root. The first regenerates the gallery; the second copies
   only the manifest's `current_generator_owned_subset` into scada-docs `img/`.
-  The `update-screenshots-dev` workflow preset that used to do both is gone,
-  and nothing now enforces that the regenerate ran first — a publish on its own
-  silently republishes the previous render. Review with `git diff` on the
-  manual's `img/`. An image graduates
+  The `update-screenshots-dev` workflow preset that used to do both is gone.
+  **Pass `SCADA_SCREENSHOT_GENERATOR`** — it is what enforces the order the
+  deleted target used to: the publish refuses when a PNG is older than the
+  generator that should have produced it. Without it the publish only warns,
+  and a publish on its own silently republishes the previous render. Review
+  with `git diff` on the manual's `img/`. An image graduates
   into that subset only after its rendering is reviewed against the page
   that embeds it. **Published images render dark** — the gallery pass is
   legacy-themed, then a second `--theme=dark` pass re-renders the published
