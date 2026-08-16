@@ -340,20 +340,41 @@ class ScreenshotGenerator : public ::testing::Test {
     // native implementation, and macOS does (QCocoaMessageDialog, since Qt
     // 6.2): the box then becomes an NSAlert, which is not a QDialog, not in
     // `QApplication::topLevelWidgets()`, and not reachable by `reject()`. On
-    // the cocoa platform that turned the two `RunMessageBox` specs —
-    // `control-confirm` and `message-box` — into a capture the grab could
-    // never find and a modal the run could never dismiss; depending on
-    // timing the suite then hung inside `QCocoaMessageDialog::show` or
-    // segfaulted on the second one, in both cases never reaching the specs
-    // behind it. The sanctioned macOS run sets QT_QPA_PLATFORM=offscreen,
-    // whose theme offers no native dialogs, so the defect was invisible to
-    // both ctest nets and only showed up when someone ran the binary bare.
+    // the cocoa platform that turned the `control-confirm` and `message-box`
+    // kinds — the two that go through `RunMessageBox` — into a capture the
+    // grab could never find and a modal the run could never dismiss;
+    // depending on timing the suite then hung inside
+    // `QCocoaMessageDialog::show` or segfaulted on the next one, in both
+    // cases never reaching the specs behind it. Both ctest nets run
+    // offscreen, whose theme offers no native dialogs at all, so neither
+    // could see it — only a bare run on a Mac reproduced it.
     //
     // Pinning the attribute is the same decision as pinning the Fusion style
     // below: a published capture must be a property of the fixture, not of
     // the host. Note this is deliberately NOT what the client does — there,
     // native dialogs are the desired end state (docs/client/ux/dialogs.md).
     QCoreApplication::setAttribute(Qt::AA_DontUseNativeDialogs);
+
+    // On macOS, render offscreen unless the caller insisted otherwise. Cocoa
+    // is not a supported way to produce this gallery — captures come out at
+    // the display's devicePixelRatio and in the host's light/dark appearance,
+    // so nothing compares to the tracked images — and the way that presents
+    // is not "wrong pixels" but a run that wedges: a full-suite cocoa run
+    // stalled indefinitely in `CaptureDialogs` once in two attempts
+    // (2026-08-16), which is the event-dispatch livelock the CMake
+    // regeneration target already forces offscreen to avoid. Defaulting it
+    // here covers the invocation neither the ctest nets nor that target go
+    // through — someone running the binary by hand, which has now cost two
+    // sessions a diagnosis.
+    //
+    // Windows deliberately keeps its native platform: that is where the
+    // published gallery is rendered, with real fonts. And an explicit
+    // QT_QPA_PLATFORM still wins here, so previewing on screen stays possible
+    // for anyone who asks for it on purpose.
+#if defined(Q_OS_MACOS)
+    if (qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM"))
+      qputenv("QT_QPA_PLATFORM", "offscreen");
+#endif
 
     InitScreenshotOptions();
     g_config.Load(GetDataFilePath());
