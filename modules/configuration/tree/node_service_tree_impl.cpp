@@ -26,10 +26,16 @@ NodeRef NodeServiceTreeImpl::GetRoot() const {
 }
 
 bool NodeServiceTreeImpl::HasChildren(const NodeRef& node) const {
+  // `node` is an instance, so the leaf test has to go through its type
+  // definition. `IsSubtypeOf` walks HasSubtype, which only type nodes carry —
+  // handing it an instance made every comparison false, so the whole
+  // `leaf_type_definition_ids_` mechanism was dead and every TS/TIT row (and
+  // every file row) offered an expander onto nothing. `IsMatchingNode` below
+  // has always resolved the type definition first; this now matches it.
   return std::ranges::none_of(
       leaf_type_definition_ids_,
       [&node](const scada::NodeId& leaf_type_definition_id) {
-        return IsSubtypeOf(node, leaf_type_definition_id);
+        return IsInstanceOf(node, leaf_type_definition_id);
       });
 }
 
