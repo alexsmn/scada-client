@@ -25,6 +25,8 @@ add_executable(client_screenshot_generator
   "screenshot_modules.h"
   "widget_capture.cpp"
   "widget_capture.h"
+  "view_capture.cpp"
+  "view_capture.h"
   "graph_capture.cpp"
   "graph_capture.h"
   "display_capture.cpp"
