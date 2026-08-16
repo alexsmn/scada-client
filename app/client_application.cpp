@@ -173,6 +173,10 @@ Favourites& ClientApplication::favourites() {
   return favorites_module_->favourites();
 }
 
+LocalEvents& ClientApplication::local_events() {
+  return event_module_->local_events();
+}
+
 bool ClientApplication::HasSelectionCommandForTesting(
     unsigned command_id) const {
   return core_module_ &&

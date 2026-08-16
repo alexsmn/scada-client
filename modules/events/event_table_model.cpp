@@ -27,7 +27,10 @@ using namespace std::chrono_literals;
 
 namespace {
 
-const char16_t kLocalEventSource[] = u"Local Event";
+// The object a client-side event is attributed to, in place of the node
+// display name a server event resolves. Translated: it is the only cell text
+// in this column an operator ever sees that is not a node's own name, and as
+// a bare u"" literal it rendered English in a Russian journal.
 
 void GetEventColors(const scada::Event& event,
                     scada::aui::Color& text_color,
@@ -129,7 +132,8 @@ EventTableModel::EventTableModel(EventTableModelContext&& context)
 
 EventTableModel::~EventTableModel() = default;
 
-void EventTableModel::Init(const scada::RelativeTimeRange& range, ItemIds filter_items) {
+void EventTableModel::Init(const scada::RelativeTimeRange& range,
+                           ItemIds filter_items) {
   historical_event_model_.Init(range);
   filter_node_ids_ = std::move(filter_items);
   Update();
@@ -213,7 +217,7 @@ void EventTableModel::GetEventCell(const Row& row,
       if (row.node)
         cell.text = GetFullDisplayName(row.node);
       else if (row.type == LOCAL_EVENT)
-        cell.text = kLocalEventSource;
+        cell.text = Translate("Local Event");
       break;
     case EventColumnMessage:
       // A flood group carries its occurrence count here, so a chattering source

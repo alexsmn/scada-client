@@ -1349,6 +1349,22 @@
       ]
     }
   ],
+  "_local_events_comment": "Client-side events, reported through LocalEvents. The journal renders these with the object «Локальное событие» rather than a node display name, which is what the manual's event-journal pages show. severity is info | warning | error.",
+  "local_events": [
+    {
+      "severity": "info",
+      "message": "Связь с сервером установлена"
+    },
+    {
+      "severity": "error",
+      "message": "Разрыв связи с сервером 10.0.1.166"
+    },
+    {
+      "severity": "info",
+      "message": "Связь с сервером установлена"
+    }
+  ],
+  "_events_comment": "severity is either a band literal (normal/warning/critical) or a raw OPC UA severity in 1..1000; the numeric form exists because three literals cannot name a value that sits deliberately between the bands. These are server history events — the client-side ones the manual shows under the object «Локальное событие» are seeded from the separate local_events array below.",
   "events": [
     {
       "id": 1001,

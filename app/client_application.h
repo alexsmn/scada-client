@@ -13,8 +13,8 @@
 #include "scada/co_result.h"
 #include "scada/data_services_factory.h"
 #include "scada/node_id.h"
-#include "services/frame_capture_registry.h"
 #include "scada/status.h"
+#include "services/frame_capture_registry.h"
 #include "timed_data/timed_data_service.h"
 
 #include <functional>
@@ -54,6 +54,7 @@ class CreateTree;
 class EventModule;
 class NodeEventProvider;
 class Favourites;
+class LocalEvents;
 class AdministrationModule;
 class FavoritesModule;
 class FileSystemComponent;
@@ -119,6 +120,11 @@ class ClientApplication : private ClientApplicationContext {
   // screenshot generator can seed it: the pane renders whatever the profile
   // holds, and with an empty profile it captures an empty panel.
   Favourites& favourites() SCADA_LIFETIME_BOUND;
+  // Client-side events (connection established/lost, and the like). Exposed
+  // for the same reason as favourites(): nothing reports one in an offline
+  // fixture, so the journal's «Local Event» rows — the ones the manual's
+  // event-journal pages are built around — never appear unless seeded.
+  LocalEvents& local_events() SCADA_LIFETIME_BOUND;
   ControllerRegistry& controller_registry() SCADA_LIFETIME_BOUND {
     return *controller_registry_;
   }

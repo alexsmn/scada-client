@@ -1,8 +1,9 @@
 #include "events/event_table_model.h"
+#include "aui/translation.h"
 
 #include "base/test/test_executor.h"
-#include "events/audit_events.h"
 #include "events/alarm_flood.h"
+#include "events/audit_events.h"
 #include "events/current_event_model.h"
 #include "events/event_grouping.h"
 #include "events/event_severity.h"
@@ -516,8 +517,7 @@ class EventFloodGroupingTest : public Test {
     for (int i = 0; i < count; ++i) {
       historical_event_model_.AddEvent(
           {.event_id = static_cast<scada::EventId>(first_id + i),
-           .time = scada::Time{} +
-                   std::chrono::seconds(i),
+           .time = scada::Time{} + std::chrono::seconds(i),
            .source_node_id = node_id_,
            .message = message});
     }
@@ -561,6 +561,22 @@ TEST_F(EventFloodGroupingTest, ALocalizedMessageRendersItsText) {
   scada::aui::TableCell cell{.row = 0, .column_id = EventColumnMessage};
   model_.GetCell(cell);
   EXPECT_EQ(cell.text, u"Значение в норме");
+}
+
+// A client-side event has no source node to name, so the object column carries
+// the local-event label instead of an empty cell. It is a translated string:
+// as a bare u"Local Event" literal it rendered English in a Russian journal,
+// where the manual shows «Локальное событие».
+TEST_F(EventFloodGroupingTest, ALocalEventIsAttributedToTheLocalEventSource) {
+  local_events_.ReportEvent(LocalEvents::SEV_ERROR,
+                            scada::LocalizedText{u"Разрыв связи с сервером"});
+  Rebuild();
+
+  ASSERT_EQ(model_.GetRowCount(), 1);
+  scada::aui::TableCell cell{.row = 0, .column_id = EventColumnItem};
+  model_.GetCell(cell);
+  EXPECT_EQ(cell.text, Translate("Local Event"));
+  EXPECT_FALSE(cell.text.empty());
 }
 
 // Below the flood threshold nothing changes: a quiet journal is a plain list,
@@ -616,8 +632,7 @@ TEST_F(EventFloodGroupingTest, AGroupedRowShowsItsNewestOccurrence) {
 
   ASSERT_EQ(model_.GetRowCount(), 1);
   EXPECT_EQ(model_.event_at(0).time,
-            scada::Time{} +
-                std::chrono::seconds(count - 1));
+            scada::Time{} + std::chrono::seconds(count - 1));
 }
 
 // The live rows collapse too. Local events are the handle: they are

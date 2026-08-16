@@ -565,6 +565,11 @@
         <source>Bad</source>
         <translation>Недостоверно</translation>
     </message>
+    <!-- modules/events/event_table_model.cpp -->
+    <message>
+        <source>Local Event</source>
+        <translation>Локальное событие</translation>
+    </message>
     <!-- main_window/status_bar/user_status_provider.cpp -->
     <message>
         <source>Administrator</source>

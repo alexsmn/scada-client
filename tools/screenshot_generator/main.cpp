@@ -56,6 +56,7 @@
 #include "model/devices_node_ids.h"
 #include "model/node_id_util.h"
 #include "model/security_node_ids.h"
+#include "modules/events/local_events.h"
 #include "modules/limits/limit_model.h"
 #include "modules/transmission/transmission_devices.h"
 #include "modules/write/write_model.h"
@@ -242,6 +243,29 @@ void SeedFavourites(const boost::json::value& root, Favourites& favourites) {
           UtfConvert<char16_t>(std::string(jw.at("title").as_string()));
       favourites.Add(window, folder);
     }
+  }
+}
+
+// Reports the fixture's client-side events, which is the only way a
+// `LOCAL_EVENT` row reaches the journal: nothing in an offline fixture loses a
+// server connection, so the «Local Event» object the manual's event-journal
+// pages show never appeared in a generated capture. Absent key: nothing
+// reported, same as before.
+void SeedLocalEvents(const boost::json::value& root,
+                     LocalEvents& local_events) {
+  const auto* block = root.as_object().if_contains("local_events");
+  if (!block)
+    return;
+
+  for (const auto& je : block->as_array()) {
+    const std::string_view severity{je.at("severity").as_string()};
+    const LocalEvents::Severity level =
+        severity == "error"     ? LocalEvents::SEV_ERROR
+        : severity == "warning" ? LocalEvents::SEV_WARNING
+                                : LocalEvents::SEV_INFO;
+    local_events.ReportEvent(level,
+                             scada::LocalizedText{UtfConvert<char16_t>(
+                                 std::string(je.at("message").as_string()))});
   }
 }
 
@@ -578,6 +602,7 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
   // After Start, because the favourites store is built during post-login. The
   // pane's model subscribes to additions, so rows added now still reach it.
   SeedFavourites(g_config.json, app_.favourites());
+  SeedLocalEvents(g_config.json, app_.local_events());
 
   // Wait for the data itself rather than pumping for a fixed second and
   // hoping: with many windows open that second was split too many ways, and a
