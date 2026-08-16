@@ -77,6 +77,7 @@
 #include <QDockWidget>
 #include <QElapsedTimer>
 #include <QHeaderView>
+#include <QLabel>
 #include <QLayout>
 #include <QLibraryInfo>
 #include <QLocale>
@@ -87,6 +88,7 @@
 #include <QSettings>
 #include <QStandardItem>
 #include <QStandardItemModel>
+#include <QStatusBar>
 #include <QString>
 #include <QTableView>
 #include <QTemporaryDir>
@@ -544,6 +546,12 @@ ScreenshotGenerator::ScreenshotGenerator() {
       });
 
   SeedDeviceLog(g_config.json, monitored_item_service_);
+
+  // Sign the session in as a fixture account. Must follow PopulateFixtureNodes:
+  // the status strip resolves this id against the address space to read a
+  // display name, and an id naming a node that does not exist yet renders the
+  // same empty cell as the null id it replaces.
+  session_service_.SetUserId(g_config.session_user_node_id);
 }
 
 ScreenshotGenerator::~ScreenshotGenerator() {
@@ -1496,6 +1504,63 @@ void SaveMenuCapture(QMenu* menu, const char* filename) {
 }
 
 }  // namespace
+
+// The status strip must name the signed-in operator, not just their role.
+// `LocalSessionService` reports a null user id by default, and
+// `UserStatusProvider::GetText()` falls back to the bare role label when the
+// id resolves to a node with no display name — so the user cell rendered
+// "Администратор" alone and the fixture looked signed in as nobody. Asserted
+// against the live widget tree rather than the rendered pixels, because this
+// capture has no `screenshot_data.json` spec for check_screenshots.py to
+// verify dimensions against.
+TEST_F(ScreenshotGenerator, StatusBarNamesTheSignedInUser) {
+  MainWindow::SetHideForTesting(false);
+
+  {
+    Profile profile;
+    Page page;
+    page.AddWindow(WindowDefinition{"Struct"});
+    profile.AddPage(page);
+    profile.Save();
+  }
+
+  WaitForAwaitable(executor_, app_.Start());
+  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
+
+  QMainWindow* qmain = ShowMainWindowForMenuCapture(app_);
+  ASSERT_NE(qmain, nullptr);
+
+  auto* status_bar = qmain->findChild<QStatusBar*>();
+  ASSERT_NE(status_bar, nullptr);
+
+  // The display name of the account `session_user_node_id` names. Read from
+  // the fixture rather than written here, so renaming the account cannot leave
+  // this test asserting a name nothing renders.
+  QString expected_user;
+  for (const auto& node : g_config.json.at("nodes").as_array()) {
+    const auto& object = node.as_object();
+    if (scada::NodeIdFromScadaString(std::string_view(
+            object.at("id").as_string())) == g_config.session_user_node_id) {
+      expected_user = QString::fromStdString(
+          std::string(object.at("display_name").as_string()));
+      break;
+    }
+  }
+  ASSERT_FALSE(expected_user.isEmpty())
+      << "session_user_node_id names no fixture node with a display_name";
+
+  bool found = false;
+  for (const QLabel* pane : status_bar->findChildren<QLabel*>()) {
+    if (pane->text().contains(expected_user)) {
+      found = true;
+      break;
+    }
+  }
+  EXPECT_TRUE(found) << "no status-bar pane names the signed-in user "
+                     << expected_user.toStdString();
+
+  MainWindow::SetHideForTesting(true);
+}
 
 // The More menu, whose subject in the manual is the "Export configuration to
 // Excel..." row it ends with (dev/excel.md). The rows above it are the

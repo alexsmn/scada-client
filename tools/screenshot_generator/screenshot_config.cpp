@@ -101,6 +101,14 @@ void ScreenshotConfig::Load(const std::filesystem::path& path) {
   ASSERT_FALSE(dialog_analog_node_id.is_null())
       << "Missing or invalid dialog_analog_node_id in " << path.string();
 
+  if (const auto* node_id =
+          json.as_object().if_contains("session_user_node_id")) {
+    session_user_node_id =
+        NodeIdFromScadaString(std::string_view(node_id->as_string()));
+  }
+  ASSERT_FALSE(session_user_node_id.is_null())
+      << "Missing or invalid session_user_node_id in " << path.string();
+
   if (const auto* users = json.as_object().if_contains("login_user_list")) {
     for (const auto& user : users->as_array())
       login_user_list.emplace_back(user.as_string());

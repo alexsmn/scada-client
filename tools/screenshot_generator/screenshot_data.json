@@ -18,6 +18,8 @@
   ],
   "now": "2026-04-16 15:02:00",
   "dialog_analog_node_id": "TIT.212",
+  "_session_user_comment": "The account the fixture session is signed in as; the status strip resolves it to a display name for its user cell.",
+  "session_user_node_id": "USER.3",
   "_login_comment": [
     "Accounts offered by the login dialog's user combo. The capture seeds these",
     "into a hermetic settings store instead of reading the real per-user list,",

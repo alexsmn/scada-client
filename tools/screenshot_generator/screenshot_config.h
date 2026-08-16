@@ -127,6 +127,13 @@ struct ScreenshotConfig {
   std::vector<ScreenshotSpec> screenshots;
   std::vector<DialogSpec> dialogs;
   scada::NodeId dialog_analog_node_id;
+  // The user the fixture's session is signed in as ("session_user_node_id").
+  // `LocalSessionService` reports a null id by default, so the status strip's
+  // user cell resolved to nothing and rendered a bare role label; naming a
+  // fixture user here is what puts an operator name in it. Fixture data rather
+  // than a literal in the capture, for the same reason `login_user_list` is:
+  // the name is Russian and belongs next to the rest of the fixture's Russian.
+  scada::NodeId session_user_node_id;
   // Accounts the login dialog offers in its user combo ("login_user_list").
   // Fixture data rather than a literal in the capture: these are the operator
   // names the manual's login page shows, and they are Russian — which belongs
