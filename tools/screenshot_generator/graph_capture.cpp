@@ -1,5 +1,5 @@
-#include "base/time/time_wire_codec.h"
 #include "graph_capture.h"
+#include "base/time/time_wire_codec.h"
 
 #include "fixture_builder.h"
 #include "screenshot_config.h"
@@ -60,6 +60,34 @@ WindowDefinition MakeGraphDefinition(const boost::json::value& json) {
 
 namespace {
 
+// Returns the graph configuration a capture plots: the fixture's top-level
+// `graphs` entry the spec names, or the fixture-wide `graph` object when it
+// names none.
+//
+// A capture that plots the shared object renders the shared picture. That is
+// how `graph-cursor.png` and `limits-chart.png` came to be the same file byte
+// for byte: the two specs differed only in `filename`, so each was a superset
+// of both subjects — a cursor the limits capture never asked for, limit bands
+// the cursor capture never asked for — and neither illustrated its own.
+const boost::json::object& ResolveGraphConfig(const ScreenshotSpec& spec,
+                                              const boost::json::value& json) {
+  const auto& root = json.as_object();
+  if (spec.graph_config.empty())
+    return root.at("graph").as_object();
+
+  const auto* graphs = root.if_contains("graphs");
+  const auto* config =
+      graphs ? graphs->as_object().if_contains(spec.graph_config) : nullptr;
+  if (!config) {
+    ADD_FAILURE() << "screenshot " << spec.filename << " names graph config \""
+                  << spec.graph_config
+                  << "\", which the fixture's `graphs` "
+                     "object does not define";
+    return root.at("graph").as_object();
+  }
+  return config->as_object();
+}
+
 // Resolves each graphed item's node id from its timed-data formula and makes
 // those nodes fully resident (own attributes + property children) via the
 // node service, before any line is built. MetrixDataSource reads the EU range,
@@ -79,9 +107,9 @@ namespace {
 [[nodiscard]] std::vector<TimedDataSpec> MakeGraphItemNodesResident(
     NodeService& node_service,
     TimedDataService& timed_data_service,
-    const boost::json::value& json) {
+    const boost::json::object& graph) {
   std::vector<TimedDataSpec> probes;
-  for (const auto& ji : json.at("graph").as_object().at("items").as_array()) {
+  for (const auto& ji : graph.at("items").as_array()) {
     TimedDataSpec& probe = probes.emplace_back();
     probe.Connect(timed_data_service, std::string(ji.at("path").as_string()));
   }
@@ -118,11 +146,12 @@ namespace {
 }
 
 // Builds the fixture graph — panes, coloured lines and the time range — into
-// `graph` from the JSON `graph` section, and pulls the timed data. Shared by
-// the full-graph and series-inspector captures.
-void BuildGraphFromJson(MetrixGraph& graph, const boost::json::value& json) {
-  const auto& jgraph = json.at("graph").as_object();
-
+// `graph` from the resolved graph configuration `jgraph`, and pulls the timed
+// data. `json` is the whole fixture, read for the frozen clock alone. Shared
+// by the full-graph and series-inspector captures.
+void BuildGraphFromJson(MetrixGraph& graph,
+                        const boost::json::object& jgraph,
+                        const boost::json::value& json) {
   // Panes.
   std::map<int, MetrixGraph::MetrixPane*> pane_map;
   for (const auto& jp : jgraph.at("panes").as_array()) {
@@ -179,8 +208,7 @@ void BuildGraphFromJson(MetrixGraph& graph, const boost::json::value& json) {
 // whose points all sit outside the visible window (see the interval cap in
 // LocalHistoryService::ReadRaw). Hence the failure path — a graph capture
 // that would be blank must fail the run rather than ship.
-bool WaitForGraphSeries(MetrixGraph& graph,
-                        std::chrono::milliseconds timeout) {
+bool WaitForGraphSeries(MetrixGraph& graph, std::chrono::milliseconds timeout) {
   auto lines_pending = [&graph] {
     int pending = 0;
     for (auto* pane : graph.panes()) {
@@ -222,12 +250,14 @@ void SaveGraphScreenshot(const ScreenshotSpec& spec,
                          NodeService& node_service,
                          TimedDataService& timed_data_service,
                          const boost::json::value& json) {
+  const boost::json::object& jgraph = ResolveGraphConfig(spec, json);
+
   // Held until after the grab so the nodes stay resident (see the function).
   std::vector<TimedDataSpec> residency_pins =
-      MakeGraphItemNodesResident(node_service, timed_data_service, json);
+      MakeGraphItemNodesResident(node_service, timed_data_service, jgraph);
 
   MetrixGraph graph{MetrixGraphContext{timed_data_service}};
-  BuildGraphFromJson(graph, json);
+  BuildGraphFromJson(graph, jgraph, json);
 
   for (auto* pane : graph.panes())
     static_cast<MetrixGraph::MetrixPane*>(pane)->ShowLegend(true);
@@ -244,8 +274,14 @@ void SaveGraphScreenshot(const ScreenshotSpec& spec,
   // row read "—", so the readout shipped unvalidated. Placed at two thirds of
   // the displayed range: inside the data, clear of the legend overlay at the
   // pane's top-left.
+  //
+  // Opt-in per graph configuration: a capture whose subject is something else
+  // (the limit bands) draws a cursor line and a cursor time label across its
+  // picture for no reason, and a cursor in every graph capture is half of why
+  // the two of them used to render identically.
+  const auto* jcursor = jgraph.if_contains("cursor");
   const GraphRange range = graph.horizontal_axis().range();
-  if (range.low() < range.high()) {
+  if (jcursor && jcursor->as_bool() && range.low() < range.high()) {
     const GraphCursor& cursor = graph.horizontal_axis().AddCursor(
         range.low() + (range.high() - range.low()) * 2.0 / 3.0);
     graph.SelectCursor(&cursor);
@@ -267,12 +303,14 @@ void SaveSeriesInspectorScreenshot(const ScreenshotSpec& spec,
                                    NodeService& node_service,
                                    TimedDataService& timed_data_service,
                                    const boost::json::value& json) {
+  const boost::json::object& jgraph = ResolveGraphConfig(spec, json);
+
   // Held until after the grab so the nodes stay resident (see the function).
   std::vector<TimedDataSpec> residency_pins =
-      MakeGraphItemNodesResident(node_service, timed_data_service, json);
+      MakeGraphItemNodesResident(node_service, timed_data_service, jgraph);
 
   MetrixGraph graph{MetrixGraphContext{timed_data_service}};
-  BuildGraphFromJson(graph, json);
+  BuildGraphFromJson(graph, jgraph, json);
 
   // Let the async history/current-value chains settle so the inspector's
   // current, min/max/average and limit rows are populated before the grab

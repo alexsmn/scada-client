@@ -1504,6 +1504,83 @@
       "scroll_bar": true
     }
   },
+  "_graphs_comment": [
+    "Per-capture graph configurations, named by a screenshot row's `graph`",
+    "key. A row that names none plots the fixture-wide `graph` object above,",
+    "which is also what the profile page's Graph window and the series",
+    "inspector render.",
+    "",
+    "A capture that plots the shared object renders the shared picture:",
+    "graph-cursor.png and limits-chart.png were two rows differing only in",
+    "`filename`, and shipped as the same file byte for byte. Give a capture",
+    "its own configuration here rather than adding a second row against the",
+    "shared one.",
+    "",
+    "The optional `cursor` flag places and selects a time cursor at two",
+    "thirds of the displayed range. It belongs to the configuration, not to",
+    "every graph capture: a cursor line drawn across the limits capture",
+    "illustrates nothing it is about."
+  ],
+  "graphs": {
+    "cursor": {
+      "panes": [
+        {
+          "index": 1,
+          "size": 50,
+          "active": true
+        },
+        {
+          "index": 2,
+          "size": 50
+        }
+      ],
+      "items": [
+        {
+          "path": "TIT.201",
+          "color": "#FF0000",
+          "pane": 1,
+          "dots": true,
+          "stepped": false
+        },
+        {
+          "path": "TIT.208",
+          "color": "#FF8C00",
+          "pane": 2,
+          "dots": true,
+          "stepped": false
+        }
+      ],
+      "time_scale": {
+        "time": "Now",
+        "span": "24:00:00",
+        "scroll_bar": true
+      },
+      "cursor": true
+    },
+    "limits": {
+      "panes": [
+        {
+          "index": 1,
+          "size": 100,
+          "active": true
+        }
+      ],
+      "items": [
+        {
+          "path": "TIT.200",
+          "color": "#0000FF",
+          "pane": 1,
+          "dots": true,
+          "stepped": false
+        }
+      ],
+      "time_scale": {
+        "time": "Now",
+        "span": "24:00:00",
+        "scroll_bar": true
+      }
+    }
+  },
   "_screenshots_comment": [
     "Filenames track the docs image names where possible so the output is",
     "a drop-in replacement for the current docs images. Dimensions",
@@ -1527,12 +1604,14 @@
   "screenshots": [
     {
       "type": "Graph",
+      "graph": "cursor",
       "filename": "graph-cursor.png",
       "width": 1024,
       "height": 901
     },
     {
       "type": "Graph",
+      "graph": "limits",
       "filename": "limits-chart.png",
       "width": 1024,
       "height": 901

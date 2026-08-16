@@ -13,6 +13,15 @@ test suite instead of being discovered the next time someone refreshes the
 web manual. Content-level checks (non-empty tables) live in the generator
 itself.
 
+It also fails a run in which two captures produced identical bytes, which
+is one capture rendering another's picture under its own name. That shipped
+for as long as the gallery has been tracked: graph-cursor.png and
+limits-chart.png were two fixture rows differing only in `filename`, so
+both plotted the one shared graph configuration and were the same file.
+Nothing could see it — an image that renders is an image that passes, the
+capture-review sheet only ever pairs a Qt capture against a web one, and
+two captures of one capability are supposed to differ.
+
 Registered as a ctest test by tools/screenshot_generator/CMakeLists.txt;
 run manually with:
 
@@ -21,6 +30,7 @@ run manually with:
 """
 
 import argparse
+import hashlib
 import json
 import os
 import struct
@@ -38,6 +48,20 @@ def png_dimensions(path: Path) -> tuple[int, int]:
         raise ValueError(f"{path} is not a PNG")
     width, height = struct.unpack(">II", header[16:24])
     return width, height
+
+
+def duplicate_renders(paths: list[Path]) -> list[list[Path]]:
+    """Groups produced captures by content digest, returning the collisions.
+
+    Byte equality is the whole test: two captures of one capability are
+    meant to be different views of it, so an exact match is never a near
+    miss to be tolerated — it is one spec rendering the other's picture.
+    """
+    by_digest: dict[str, list[Path]] = {}
+    for path in paths:
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        by_digest.setdefault(digest, []).append(path)
+    return [group for group in by_digest.values() if len(group) > 1]
 
 
 def main() -> int:
@@ -95,6 +119,7 @@ def main() -> int:
         (s, False) for s in data.get("dialogs", [])
     ]
     errors = []
+    produced = []
     checked = 0
     for spec, exact_dims in specs:
         filename = spec["filename"]
@@ -105,6 +130,7 @@ def main() -> int:
             errors.append(f"{filename}: not produced")
             continue
         checked += 1
+        produced.append(path)
         width = spec.get("width")
         height = spec.get("height")
         if exact_dims and width and height:
@@ -114,6 +140,13 @@ def main() -> int:
                     f"{filename}: {actual[0]}x{actual[1]}, spec says "
                     f"{width}x{height}"
                 )
+
+    for group in duplicate_renders(produced):
+        names = ", ".join(sorted(p.name for p in group))
+        errors.append(
+            f"identical bytes, so one of them renders the other's picture: "
+            f"{names}"
+        )
 
     for error in errors:
         print(f"error: {error}", file=sys.stderr)

@@ -84,6 +84,14 @@ struct ScreenshotSpec {
   // Expand every row of a tree-backed window before grabbing. A collapsed
   // tree captures its folders and hides everything the capture is about.
   bool expand = false;
+  // Name of the graph configuration this capture plots ("graph" in the JSON),
+  // resolved against the fixture's top-level `graphs` object. Empty means the
+  // fixture-wide `graph` object. Two `Graph` captures illustrate different
+  // things — a time cursor and its legend readout, severity-coloured limit
+  // bands — and while both read one shared configuration they rendered the
+  // same picture twice, byte for byte, so neither image showed its own
+  // subject.
+  std::string graph_config;
 };
 
 // Configuration for a single modal-dialog capture. `kind` is the

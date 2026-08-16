@@ -164,6 +164,8 @@ void ScreenshotConfig::Load(const std::filesystem::path& path) {
       spec.click_object = std::string(click_object->as_string());
     if (const auto* expand = js.as_object().if_contains("expand"))
       spec.expand = expand->as_bool();
+    if (const auto* graph_config = js.as_object().if_contains("graph"))
+      spec.graph_config = std::string(graph_config->as_string());
     if (IsManagedImage(managed_images, spec))
       screenshots.push_back(std::move(spec));
     else if (!only_mode)
