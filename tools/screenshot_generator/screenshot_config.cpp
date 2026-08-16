@@ -217,6 +217,10 @@ void ScreenshotConfig::Load(const std::filesystem::path& path) {
             << "Invalid node override on dialog " << spec.filename << " in "
             << path.string();
       }
+      if (auto* second = js.as_object().if_contains("second_stage"))
+        spec.second_stage = second->as_bool();
+      if (auto* value = js.as_object().if_contains("command_value"))
+        spec.command_value = value->to_number<double>();
       if (IsManagedImage(managed_images, spec))
         dialogs.push_back(std::move(spec));
     }

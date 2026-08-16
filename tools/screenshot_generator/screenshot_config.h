@@ -5,6 +5,7 @@
 #include "scada/node_id.h"
 
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -117,6 +118,19 @@ struct DialogSpec {
   // dialog's output condition are the same dialog over two nodes — and a
   // single fixture-wide node cannot render both in one run.
   scada::NodeId node_id;
+  // Renders the operate stage of a select-before-operate command
+  // ("second_stage" in the JSON) rather than the ordinary one-shot control
+  // review. The two differ by a leading "the remote device is ready" line,
+  // which WriteModel::GetConfirmationMessage adds — so this selects between
+  // the two prompts the operator actually sees, not between two renderings of
+  // one prompt.
+  bool second_stage = false;
+  // Value the command would write ("command_value" in the JSON). Absent means
+  // the capture's own default. It has to be per-spec because the confirmation
+  // quotes Present and Command side by side: a value that coincides with the
+  // fixture reading renders a review of a no-op, and a discrete item's states
+  // are not on the same scale as an analog one's engineering units.
+  std::optional<double> command_value;
 };
 
 // Screenshot-generator fixture, loaded once from `screenshot_data.json`.

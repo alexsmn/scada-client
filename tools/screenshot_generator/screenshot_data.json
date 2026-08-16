@@ -2146,8 +2146,22 @@
       "height": 207
     },
     {
+      "_comment": "The operate stage of a select-before-operate command: the outstation has accepted the Select and is armed, so the prompt carries the extra «remote device is ready» line. second_stage is stated rather than left to the default because it is what distinguishes this capture from the two ordinary control reviews below.",
       "kind": "control-confirm",
-      "filename": "control-select-confirm.png"
+      "filename": "control-select-confirm.png",
+      "second_stage": true
+    },
+    {
+      "_comment": "The ordinary one-shot control review on an analog point, over the fixture-wide TIT.212 (41 °C). No second_stage, so the prompt is the one an operator sees for a direct command rather than for the operate half of an SBO exchange. The commanded value is the capture default, clear of the reading so Present and Command differ.",
+      "kind": "control-confirm",
+      "filename": "ti-remote-control-confirm.png"
+    },
+    {
+      "_comment": "The same review on a discrete point, which is a different prompt rather than a differently-sized copy: WriteModel takes its discrete branch from TimedDataSpec::logical() and quotes the HasTsFormat state labels instead of engineering units. TS.201 reads base_value 0, which GetCurrentDiscreteState inverts into state 1, the OpenLabel «Вкл» — so the command is raw 1, which inverts to state 0, the CloseLabel «Откл». command_value is the raw state and not an index into the labels — raw 0 would command «Вкл» over a present «Вкл», the no-op BuildControlConfirmation now asserts against.",
+      "kind": "control-confirm",
+      "filename": "ts-remote-control-confirm.png",
+      "node": "TS.201",
+      "command_value": 1
     },
     {
       "kind": "command-palette",

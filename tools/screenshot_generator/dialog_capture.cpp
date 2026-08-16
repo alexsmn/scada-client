@@ -430,20 +430,24 @@ std::shared_ptr<DialogAwaitableResult<void>> BuildWriteDialog(
   return dialog_lifetime;
 }
 
-// The operate-stage confirmation of a select-before-operate command. The
-// prompt itself comes from a real WriteModel over the same fixture item the
-// write dialogs use, so the capture cannot drift from the shipped wording; it
-// is then shown through the ordinary DialogService question box, which is what
-// StartWriting() does.
+// The operator's review of a control command. The prompt itself comes from a
+// real WriteModel over a fixture item, so the capture cannot drift from the
+// shipped wording; it is then shown through the ordinary DialogService
+// question box, which is what StartWriting() does.
 //
-// The select is not actually issued here — a Control-object Call needs a
-// server, and this capture is of the operator's review step, not of the
+// `second_stage` picks which of the two prompts is rendered: the ordinary
+// one-shot review, or the operate stage of a select-before-operate command,
+// which GetConfirmationMessage prefixes with "the remote device is ready".
+// The select is not actually issued in either case — a Control-object Call
+// needs a server, and this capture is of the review step, not of the
 // two-phase exchange (that is covered by the iec104 tier E2E and by
 // WriteModelTest.TwoStagedControlSelectsConfirmsThenOperates).
 std::shared_ptr<DialogAwaitableResult<MessageBoxResult>>
 BuildControlConfirmation(DialogEnvironment& env,
                          const scada::NodeId& node_id,
-                         DialogServiceImplQt& dialog_service) {
+                         DialogServiceImplQt& dialog_service,
+                         bool second_stage,
+                         std::optional<double> command_value) {
   if (!env.timed_data_service || !env.profile || !env.node_service) {
     ADD_FAILURE() << "Control confirmation needs timed_data_service + profile "
                      "+ node_service in env";
@@ -453,6 +457,15 @@ BuildControlConfirmation(DialogEnvironment& env,
     ADD_FAILURE() << "Control confirmation: fixture node not found";
     return {};
   }
+  // Warm the item's current value before the model exists, for the reason
+  // BuildWriteDialog documents: the review quotes the present reading, and
+  // WriteModel resolves it once. Without this the prompt shows
+  // GetCurrentDiscreteState()'s get_or(true) default rather than the fixture
+  // reading — and on a two-state item that default *is* one of the two
+  // states, so the review renders a plausible no-op instead of failing.
+  TimedDataSpec warm_up{*env.timed_data_service, node_id};
+  PumpEventsUntil([&warm_up] { return !warm_up.current().value.is_null(); },
+                  std::chrono::seconds{2});
 
   auto model = std::make_shared<WriteModel>(
       WriteContext{.executor_ = env.executor,
@@ -462,14 +475,45 @@ BuildControlConfirmation(DialogEnvironment& env,
                    .manual_ = false});
   model->set_dialog_service(&dialog_service);
 
-  // A value clear of the fixture reading, so Present and Command differ.
-  constexpr double kCommandedValue = 12.5;
+  // Default: a value clear of the analog fixture reading, so Present and
+  // Command differ. A discrete item overrides it — its states are not on the
+  // same scale — as does any capture wanting a particular commanded value.
+  constexpr double kDefaultCommandedValue = 12.5;
+  const double commanded = command_value.value_or(kDefaultCommandedValue);
+
+  // The review exists so the operator can compare what the point reads now
+  // against what the command makes it, so a capture whose two halves coincide
+  // documents nothing. On a discrete item an out-of-range state is the
+  // sharper version of the same fault: it has no label, so the prompt quotes
+  // empty text and the capture still writes a well-formed PNG that
+  // `check_screenshots.py` accepts — the `limits.png` failure mode again.
+  if (model->discrete()) {
+    // `commanded` is the item's raw value, which is not an index into
+    // GetDiscreteStates(): WriteModel labels a state by inverting the raw
+    // value (`get_or(true) ? 0 : 1`), so raw 0 is the *second* label. Compare
+    // in index space, or the check silently passes the very case it exists to
+    // catch — raw 0 against a present index of 1 looks like a difference and
+    // renders «Вкл» commanding «Вкл».
+    if (commanded != 0 && commanded != 1) {
+      ADD_FAILURE() << "Control confirmation: a discrete item's command_value "
+                       "is a raw state, so it must be 0 or 1, not "
+                    << commanded;
+      return {};
+    }
+    const int commanded_state = commanded != 0 ? 0 : 1;
+    if (commanded_state == model->GetCurrentDiscreteState()) {
+      ADD_FAILURE() << "Control confirmation: commanded state equals the "
+                       "present one, so the review would show a no-op";
+      return {};
+    }
+  }
+
+  const std::u16string message =
+      model->GetConfirmationMessage(commanded, second_stage);
   auto dialog_lifetime = StartDialogAwaitable(
       env.executor,
-      dialog_service.RunMessageBox(
-          model->GetConfirmationMessage(kCommandedValue,
-                                        /*second_stage=*/true),
-          model->GetSourceTitle(), MessageBoxMode::QuestionYesNoDefaultNo));
+      dialog_service.RunMessageBox(message, model->GetSourceTitle(),
+                                   MessageBoxMode::QuestionYesNoDefaultNo));
   PumpEventsFor(std::chrono::milliseconds{200});
   return dialog_lifetime;
 }
@@ -584,7 +628,8 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
     return captured;
   } else if (spec.kind == "control-confirm") {
     auto dialog_lifetime =
-        BuildControlConfirmation(env, dialog_node_id, dialog_service);
+        BuildControlConfirmation(env, dialog_node_id, dialog_service,
+                                 spec.second_stage, spec.command_value);
     if (!dialog_lifetime)
       return false;
     bool captured = GrabAndCloseVisibleDialogOrReport(spec);

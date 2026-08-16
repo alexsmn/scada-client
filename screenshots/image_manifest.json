@@ -783,10 +783,11 @@
     {
       "file": "ti-remote-control-confirm.png",
       "tag": "auto-dialog",
+      "parity_key": "write",
       "referenced_from": [
         "client.md"
       ],
-      "notes": "Remote-control confirmation, TI."
+      "notes": "The operator's review of a direct control command on an analog point, from the control-confirm dialog kind over the fixture-wide TIT.212: present 41 °C beside a commanded 12.5 °C, then the irreversibility warning. The prompt is WriteModel::GetConfirmationMessage itself rather than a copy, so it cannot drift from the shipped wording. Distinct from control-select-confirm.png, which is the same kind with second_stage set and therefore carries the extra «remote device is ready» line. ScreenshotGenerator.ControlConfirmationsReviewARealChange asserts the quoted present and commanded values differ — a command that formats to the present reading still writes a well-formed PNG."
     },
     {
       "file": "ti-remote-control-disabled.png",
@@ -828,10 +829,11 @@
     {
       "file": "ts-remote-control-confirm.png",
       "tag": "auto-dialog",
+      "parity_key": "write",
       "referenced_from": [
         "client.md"
       ],
-      "notes": "Remote-control confirmation, TS."
+      "notes": "The same review on a discrete point, which is a different prompt rather than a resized copy: WriteModel takes its discrete branch from TimedDataSpec::logical() and quotes the HasTsFormat state labels instead of engineering units. TS.201 reads «Вкл» and the command is «Откл». The spec's command_value is the item's raw state, not an index into the labels — WriteModel inverts (get_or(true) ? 0 : 1), so raw 0 would command the state the point is already in. BuildControlConfirmation also warms the TimedDataService subscription first, for the reason the write dialogs do: an unarrived value reads back as the get_or default, which on a two-state item is itself a valid state and renders a plausible no-op. ScreenshotGenerator.ControlConfirmationsReviewARealChange asserts against exactly that."
     },
     {
       "file": "ts-remote-control-disabled.png",
