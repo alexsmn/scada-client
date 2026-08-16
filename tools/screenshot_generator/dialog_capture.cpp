@@ -583,6 +583,20 @@ void RegisterSampleCommands(CommandManager& manager) {
 }  // namespace
 
 bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
+  // Everything below grabs a QDialog out of `QApplication::topLevelWidgets()`
+  // and closes it with `reject()`, so a dialog that the platform theme takes
+  // over is both uncapturable and undismissable. The fixture pins
+  // AA_DontUseNativeDialogs for exactly that reason (see SetUpTestSuite in
+  // main.cpp); say so here rather than leaving the next person with a hung or
+  // segfaulting run to diagnose.
+  if (!QCoreApplication::testAttribute(Qt::AA_DontUseNativeDialogs)) {
+    ADD_FAILURE() << "AA_DontUseNativeDialogs is not set: QMessageBox and "
+                     "QFileDialog would become native modals the capture can "
+                     "neither grab nor close (kind: "
+                  << spec.kind << ")";
+    return false;
+  }
+
   // Per-call stubs — cheap to construct, no shared state.
   NullTransportFactory transport_factory;
   NullTaskManager task_manager;

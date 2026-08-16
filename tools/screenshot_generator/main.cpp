@@ -335,6 +335,26 @@ class ScreenshotGenerator : public ::testing::Test {
                        settings_dir->path());
     QSettings::setDefaultFormat(QSettings::IniFormat);
 
+    // Every dialog a capture grabs must be a Qt widget. QMessageBox and
+    // QFileDialog hand themselves to the platform theme when one offers a
+    // native implementation, and macOS does (QCocoaMessageDialog, since Qt
+    // 6.2): the box then becomes an NSAlert, which is not a QDialog, not in
+    // `QApplication::topLevelWidgets()`, and not reachable by `reject()`. On
+    // the cocoa platform that turned the two `RunMessageBox` specs —
+    // `control-confirm` and `message-box` — into a capture the grab could
+    // never find and a modal the run could never dismiss; depending on
+    // timing the suite then hung inside `QCocoaMessageDialog::show` or
+    // segfaulted on the second one, in both cases never reaching the specs
+    // behind it. The sanctioned macOS run sets QT_QPA_PLATFORM=offscreen,
+    // whose theme offers no native dialogs, so the defect was invisible to
+    // both ctest nets and only showed up when someone ran the binary bare.
+    //
+    // Pinning the attribute is the same decision as pinning the Fusion style
+    // below: a published capture must be a property of the fixture, not of
+    // the host. Note this is deliberately NOT what the client does — there,
+    // native dialogs are the desired end state (docs/client/ux/dialogs.md).
+    QCoreApplication::setAttribute(Qt::AA_DontUseNativeDialogs);
+
     InitScreenshotOptions();
     g_config.Load(GetDataFilePath());
   }
