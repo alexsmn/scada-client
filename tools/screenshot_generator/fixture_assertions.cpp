@@ -15,6 +15,7 @@
 #include "authenticated_attribute_service.h"
 #include "base/utf_convert.h"
 #include "common/format.h"
+#include "configuration/objects/visible_node_model.h"
 #include "events/qt/event_filter_bar.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
@@ -35,6 +36,7 @@
 #include "scada/status.h"
 #include "scada/variant.h"
 #include "screenshot_wait.h"
+#include "services/device_state_notifier.h"
 #include "user_access/role_membership.h"
 
 #include <QApplication>
@@ -559,5 +561,78 @@ TEST_F(ScreenshotGenerator, DiscreteControlDialogsRenderTheirTsFormatStates) {
         << "the condition formula must evaluate " << capture.condition_ok
         << " over the fixture data for this capture to be the state it is "
            "named after";
+  }
+}
+
+// A data group's Value column shows the link state of the device bound to it,
+// and the binding is a fixture property no rendered image can be checked
+// against: with no HasDevice reference `DataGroupVisibleNode::GetText()`
+// returns the empty string, so every group row renders a blank cell and the
+// capture still passes check_screenshots.py — which asserts existence,
+// dimensions and pairwise distinctness, never text. That is how devices.png
+// came to sit beside client.md's sentence «Для групп отображается состояние
+// связи с устройством, привязанного к группе» while illustrating nothing.
+//
+// The state has to be read, not just bound: DeviceStateNotifier addresses the
+// device's runtime components as MakeNestedNodeId(device, "Online"), an id no
+// fixture node carries, and reaches the fixture's free-standing TS.xxxx
+// variable only because GetMutableNestedNode decomposes a nested id back into
+// a browse-name child walk (common/address_space/address_space_util.cpp). So
+// the assertion is on the rendered text rather than on the reference: a
+// resolution path that stopped working would leave the reference in place and
+// the cell blank, and the PNG would still be perfectly valid.
+TEST_F(ScreenshotGenerator, DataGroupShowsItsDeviceLinkState) {
+  WaitForAwaitable(executor_, app_.Start());
+  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
+
+  // Read the bound groups out of the fixture rather than naming one here, so
+  // renaming or re-binding the group cannot leave this test asserting a
+  // binding nothing carries.
+  std::vector<scada::NodeId> bound_groups;
+  for (const auto& node : FixtureConfig().json.at("nodes").as_array()) {
+    const auto& object = node.as_object();
+    const auto* references = object.if_contains("references");
+    if (!references)
+      continue;
+    for (const auto& reference : references->as_array()) {
+      if (NodeIdFromScadaString(
+              std::string_view(reference.as_object().at("type").as_string())) ==
+          scada::data_items::id::HasDevice) {
+        bound_groups.push_back(NodeIdFromScadaString(
+            std::string_view(object.at("id").as_string())));
+      }
+    }
+  }
+  ASSERT_FALSE(bound_groups.empty())
+      << "no fixture group carries a HasDevice reference, so the object "
+         "tree's Value column is blank on every group row";
+
+  ASSERT_TRUE(scada::screenshot_generator::FetchNodesResident(
+      app_.node_service(), bound_groups));
+
+  for (const scada::NodeId& group_id : bound_groups) {
+    SCOPED_TRACE(NodeIdToScadaString(group_id));
+
+    NodeRef group = app_.node_service().GetNode(group_id);
+    ASSERT_TRUE(group);
+    ASSERT_TRUE(IsInstanceOf(group, scada::data_items::id::DataGroupType))
+        << "only a DataGroupType instance gets a DataGroupVisibleNode; on any "
+           "other node the HasDevice reference is dead weight";
+
+    DataGroupVisibleNode visible_node{app_.timed_data_service(), group};
+
+    // The device's Online component is subscribed through TimedDataService, so
+    // its first value lands on a later turn of the loop.
+    scada::screenshot_generator::PumpEventLoopFor(
+        std::chrono::milliseconds{500});
+
+    EXPECT_EQ(visible_node.GetText(), ToLocalizedString(DeviceState::Online))
+        << "the group reads «"
+        << QString::fromStdU16String(visible_node.GetText()).toStdString()
+        << "». An empty cell means the state never resolved — either the "
+           "HasDevice target is unreachable, or its Online component is not "
+           "at MakeNestedNodeId(device, \"Online\") where the notifier looks. "
+           "The fixture binds the online device on purpose: hardware-tree.png "
+           "is what shows the offline and disabled states.";
   }
 }

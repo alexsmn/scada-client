@@ -197,10 +197,14 @@
       "type_definition": "SCADA.62"
     },
     {
+      "_comment": "The one fixture group bound to a device. client.md's object-panel section says a group shows the link state of the device attached to it, and the Value column renders DeviceStateNotifier's reading of the HasDevice target - so without this reference the column is blank on every group and the figure no longer illustrates the sentence beside it. КП-02 is the online device (base_value 1), so the group reads «Есть связь»; binding КП-01 instead would read «Нет связи», which is the state hardware-tree.png already shows.",
       "id": "TS.112",
       "browse_name": "ЭНИП-2 + ЭНМВ-1",
       "class": "object",
-      "type_definition": "SCADA.62"
+      "type_definition": "SCADA.62",
+      "references": [
+        { "type": "SCADA.328", "target": "TS.104" }
+      ]
     },
     {
       "id": "TS.113",

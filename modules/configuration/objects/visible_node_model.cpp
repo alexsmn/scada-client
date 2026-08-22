@@ -261,15 +261,46 @@ void DataGroupVisibleNode::UpdateDevice() {
     return;
 
   device_state_notifier_.reset();
+  device_fetched_connection_.disconnect();
 
   device_ = std::move(device);
 
-  if (device_) {
-    device_state_notifier_ = std::make_unique<DeviceStateNotifier>(
-        timed_data_service_, device_, [this] { NotifyChanged(); });
-  }
+  if (device_)
+    WatchDeviceState();
 
   NotifyChanged();
+}
+
+void DataGroupVisibleNode::WatchDeviceState() {
+  // DeviceStateNotifier requires a *fetched* node — it reads the device's node
+  // id to build its component ids, and asserts residency rather than silently
+  // monitoring nothing. A HasDevice target routinely is not fetched here: the
+  // group lives in the Objects tree and its device lives under Devices, which
+  // that tree never browses, so `target()` resolves the reference and hands
+  // back a node carrying no state. Constructing the notifier on it panicked
+  // the client outright, which is why no group in the screenshot fixture had
+  // ever been bound to a device.
+  //
+  // Fetching NodeOnly is enough: the notifier addresses the runtime components
+  // by constructed node id rather than by browsing them.
+  if (device_.fetched()) {
+    device_state_notifier_ = std::make_unique<DeviceStateNotifier>(
+        timed_data_service_, device_, [this] { NotifyChanged(); });
+    return;
+  }
+
+  device_fetched_connection_ =
+      device_.SubscribeNodeFetched([this](const NodeFetchedEvent&) {
+        if (device_state_notifier_ || !device_.fetched())
+          return;
+        device_state_notifier_ = std::make_unique<DeviceStateNotifier>(
+            timed_data_service_, device_, [this] { NotifyChanged(); });
+        NotifyChanged();
+      });
+
+  // Subscribe before starting: a synchronous service (the screenshot fixture,
+  // the unit tests) completes the fetch inside this call.
+  device_.StartFetch(NodeFetchStatus::NodeOnly);
 }
 
 void DataGroupVisibleNode::OnModelChanged(

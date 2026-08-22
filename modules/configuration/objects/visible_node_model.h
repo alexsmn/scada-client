@@ -101,6 +101,10 @@ class DataGroupVisibleNode final : public VisibleNode {
 
  private:
   void UpdateDevice();
+  // Starts watching `device_`'s runtime state, fetching the node first if it
+  // is not resident yet. Separate from UpdateDevice because the fetch can
+  // complete later, and this is what runs on both paths.
+  void WatchDeviceState();
 
   void OnModelChanged(const scada::ModelChangeEvent& event);
 
@@ -111,6 +115,7 @@ class DataGroupVisibleNode final : public VisibleNode {
   std::unique_ptr<DeviceStateNotifier> device_state_notifier_;
 
   boost::signals2::scoped_connection model_changed_connection_;
+  boost::signals2::scoped_connection device_fetched_connection_;
 };
 
 class VisibleNodeModel {
