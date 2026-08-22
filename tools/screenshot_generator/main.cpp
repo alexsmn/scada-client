@@ -43,6 +43,7 @@
 #include "base/no_destructor.h"
 #include "base/test/scoped_mock_clock_override.h"
 #include "base/test/scoped_path_override.h"
+#include "base/ui_text.h"
 #include "base/utf_convert.h"
 #include "common/format.h"
 #include "controller/window_info.h"
@@ -67,6 +68,9 @@
 #include "node_service/node_util.h"
 #include "profile/profile.h"
 #include "profile/window_definition.h"
+#include "scada/qualifier.h"
+#include "scada/status.h"
+#include "scada/variant.h"
 #include "timed_data/timed_data_service.h"
 #include "user_access/role_membership.h"
 
@@ -104,6 +108,8 @@
 
 #include <algorithm>
 #include <set>
+#include <string>
+#include <string_view>
 
 namespace {
 
@@ -463,6 +469,19 @@ ScreenshotGenerator::ScreenshotGenerator() {
                      "LinguistTools (vcpkg `qttools`) are most likely missing "
                      "from this build — see docs/ops/client-screenshots.md.";
   }
+
+  // Route shared code's operator-facing text through those catalogs. Status
+  // descriptions, data-quality flags and boolean value labels are produced
+  // below `common/` (core/scada/{status,qualifier,variant}.cpp) and reach the
+  // UI through `scada::TranslateUiText`, which returns its English argument
+  // verbatim until a translator is installed. The client installs one in
+  // `AppInit` — but the generator is a gtest binary and has no `main()` of its
+  // own, so `AppInit` never runs here and every such string rendered English
+  // no matter what the catalog said. Third instance of this defect shape in
+  // this constructor, and the worst-behaved: the two above at least fail
+  // loudly now, while this one had no signal at all until
+  // `TranslatedUiTextResolvesToRussian` (task 376).
+  scada::SetUiTextTranslator(&Translate);
 
   // Pin Fusion for captures. Unlike the client — which runs the platform style
   // so it looks native (docs/client/ux/principles.md §9) — published
@@ -1423,6 +1442,53 @@ TEST_F(ScreenshotGenerator, StatusBarNamesTheSignedInUser) {
                      << expected_user.toStdString();
 
   MainWindow::SetHideForTesting(true);
+}
+
+// Operator-facing text that shared code produces — status-code descriptions,
+// data-quality flags, boolean value labels — reaches the UI through
+// `scada::TranslateUiText`, whose installed translator is the client's
+// `Translate()`. That looks up in the *empty* translation context, deliberately
+// (client/aui/qt/translation_qt.cpp says why), so those entries have to sit in
+// the empty context of `client_ru.ts`. Filed under the class that happens to
+// display them, the lookup misses and the English source renders inside the
+// Russian UI — with the translation present and correct all along.
+//
+// Nothing else in this pipeline can see that. The capture still renders, still
+// matches its spec dimensions, and still differs from no other capture, so
+// `check_screenshots.py` passes; it surfaces only as an unexplained image diff
+// against the tracked gallery. Task 376 was exactly this, and it had swallowed
+// the whole `core/scada/status.cpp` table plus `qualifier.cpp` and
+// `variant.cpp` — 64 entries.
+//
+// One string per source, asserted to have left ASCII behind rather than
+// asserted equal to its Russian: Cyrillic literals do not belong in this
+// tree's sources, and the fallback this guards against is by definition the
+// ASCII source text.
+TEST_F(ScreenshotGenerator, TranslatedUiTextResolvesToRussian) {
+  const auto is_translated = [](std::u16string_view text) {
+    return !text.empty() && std::any_of(text.begin(), text.end(),
+                                        [](char16_t c) { return c > 0x7f; });
+  };
+
+  // core/scada/status.cpp — rendered in the object table's status column.
+  const std::u16string status =
+      ::ToString16(scada::StatusCode::Bad_WrongNodeId);
+  EXPECT_TRUE(is_translated(status))
+      << "status description fell back to its English source: "
+      << QString::fromStdU16String(status).toStdString();
+
+  // core/scada/qualifier.cpp — the quality strip beside a value.
+  const std::u16string quality =
+      ::ToString16(scada::Qualifier().set_sporadic(true));
+  EXPECT_TRUE(is_translated(quality))
+      << "quality flag fell back to its English source: "
+      << QString::fromStdU16String(quality).toStdString();
+
+  // core/scada/variant.cpp — how a boolean value prints.
+  const std::u16string boolean = scada::Variant::TrueLabel();
+  EXPECT_TRUE(is_translated(boolean))
+      << "boolean label fell back to its English source: "
+      << QString::fromStdU16String(boolean).toStdString();
 }
 
 // The More menu, whose subject in the manual is the "Export configuration to
