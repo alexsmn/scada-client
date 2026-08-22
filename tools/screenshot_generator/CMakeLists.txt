@@ -162,6 +162,17 @@ if(Python3_FOUND)
       "--out=${CMAKE_CURRENT_BINARY_DIR}/screenshot_check"
   )
   set_tests_properties(client_screenshot_check PROPERTIES TIMEOUT 300)
+
+  # The owed-set query the check above reports with — which manifest-managed
+  # rows no capture in this generator produces. Its own tests, because the
+  # figure it replaces was derived by hand and was wrong twice in the same
+  # direction: a capture rendering from a filename hardcoded in C++ rather than
+  # named in the fixture went on being counted as owed. Runs in milliseconds
+  # and needs no build: the cases carry their own manifest and sources.
+  add_test(NAME client_screenshot_owed_tests
+    COMMAND ${Python3_EXECUTABLE}
+      "${CMAKE_CURRENT_SOURCE_DIR}/test_check_screenshots.py")
+  set_tests_properties(client_screenshot_owed_tests PROPERTIES TIMEOUT 120)
 endif()
 
 # Themed reshell-capture regression net. The structural check above renders the

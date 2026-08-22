@@ -22,17 +22,25 @@ Nothing could see it — an image that renders is an image that passes, the
 capture-review sheet only ever pairs a Qt capture against a web one, and
 two captures of one capability are supposed to differ.
 
+It also reports the **owed set**: manifest rows the docs pipeline manages
+(`auto-*`) that no capture in this generator produces. That is the remaining
+work of task 39, and it is reported rather than failed on — a non-zero count is
+the backlog, not a regression. `--report-owed` prints it without running the
+generator at all, so the backlog can cite a command instead of a number that
+goes stale (it went stale twice; see task 374).
+
 Registered as a ctest test by tools/screenshot_generator/CMakeLists.txt;
 run manually with:
 
-    python3 check_screenshots.py --generator <path-to-binary> \
-        --data screenshot_data.json --image-manifest ../../screenshots/image_manifest.json
+    python3 check_screenshots.py --generator <path-to-binary>
+    python3 check_screenshots.py --report-owed      # no build needed
 """
 
 import argparse
 import hashlib
 import json
 import os
+import re
 import struct
 import subprocess
 import sys
@@ -64,11 +72,78 @@ def duplicate_renders(paths: list[Path]) -> list[list[Path]]:
     return [group for group in by_digest.values() if len(group) > 1]
 
 
+def hardcoded_capture_filenames(source_dir: Path) -> set[str]:
+    """PNG names written straight into the generator's C++ sources.
+
+    Not every capture comes from screenshot_data.json: the standalone ones
+    (`CaptureSettingsDialog`, `CaptureMoreMenu`, …) name their file in a
+    `constexpr const char* kFilename` beside the test. A row rendered that way
+    is not owed, and reading the manifest alone reports it as if it were —
+    which is exactly how the count in task 39 was wrong about
+    settings-dialog.png for months.
+    """
+    names: set[str] = set()
+    for path in sorted(source_dir.glob("*.cpp")) + sorted(source_dir.glob("*.h")):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        names.update(re.findall(r'"([\w.\-]+\.png)"', text))
+    return names
+
+
+def owed_captures(
+    manifest: dict, data: dict, source_dir: Path
+) -> dict[str, list[str]]:
+    """Manifest-managed rows no capture in this generator produces, by tag.
+
+    "Managed" is the `auto-*` prefix, the same predicate the existence check
+    below and validate_image_manifest.py use. `reshell-theme` rows are
+    deliberately excluded: they are generator-owned but rendered by the themed
+    pass, so they are never owed.
+    """
+    rendered = {
+        spec["filename"]
+        for key in ("screenshots", "dialogs")
+        for spec in data.get(key, [])
+    } | hardcoded_capture_filenames(source_dir)
+
+    owed: dict[str, list[str]] = {}
+    for entry in manifest["images"]:
+        if not entry["tag"].startswith("auto-"):
+            continue
+        if entry["file"] in rendered:
+            continue
+        owed.setdefault(entry["tag"], []).append(entry["file"])
+    return {tag: sorted(files) for tag, files in sorted(owed.items())}
+
+
+def print_owed(owed: dict[str, list[str]]) -> None:
+    total = sum(len(files) for files in owed.values())
+    print(f"{total} manifest-managed capture(s) owed by the generator")
+    for tag, files in owed.items():
+        print(f"  {tag} ({len(files)}): {', '.join(files)}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--generator", type=Path, required=True)
-    parser.add_argument("--data", type=Path, required=True)
-    parser.add_argument("--image-manifest", type=Path, required=True)
+    here = Path(__file__).resolve().parent
+    parser.add_argument(
+        "--generator",
+        type=Path,
+        help="client_screenshot_generator binary (not needed with "
+        "--report-owed)",
+    )
+    parser.add_argument(
+        "--data", type=Path, default=here / "screenshot_data.json"
+    )
+    parser.add_argument(
+        "--image-manifest",
+        type=Path,
+        default=here / ".." / ".." / "screenshots" / "image_manifest.json",
+    )
+    parser.add_argument(
+        "--report-owed",
+        action="store_true",
+        help="Print the owed set and exit, without running the generator",
+    )
     parser.add_argument(
         "--out",
         type=Path,
@@ -76,6 +151,17 @@ def main() -> int:
         help="Render directory (default: a fresh temp dir)",
     )
     args = parser.parse_args()
+
+    data = json.loads(args.data.read_text(encoding="utf-8"))
+    manifest = json.loads(args.image_manifest.read_text(encoding="utf-8"))
+    owed = owed_captures(manifest, data, Path(__file__).resolve().parent)
+
+    if args.report_owed:
+        print_owed(owed)
+        return 0
+
+    if args.generator is None:
+        parser.error("--generator is required unless --report-owed is given")
 
     out_dir = args.out or Path(tempfile.mkdtemp(prefix="screenshot-check-"))
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -104,8 +190,6 @@ def main() -> int:
         )
         return 1
 
-    data = json.loads(args.data.read_text(encoding="utf-8"))
-    manifest = json.loads(args.image_manifest.read_text(encoding="utf-8"))
     managed = {
         e["file"] for e in manifest["images"] if e["tag"].startswith("auto-")
     }
@@ -151,6 +235,9 @@ def main() -> int:
     for error in errors:
         print(f"error: {error}", file=sys.stderr)
     print(f"{checked} captures checked in {out_dir}, {len(errors)} error(s)")
+    # Reported, never failed on: the owed set is the remaining work of task 39,
+    # so a non-zero count is the backlog rather than a regression.
+    print_owed(owed)
     return 1 if errors else 0
 
 
