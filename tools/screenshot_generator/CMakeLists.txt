@@ -55,8 +55,11 @@ add_executable(client_screenshot_generator
   "debugger_capture.h"
   "frame_decode_capture.cpp"
   "frame_decode_capture.h"
+  "fixture_assertions.cpp"
   "fixture_builder.cpp"
   "fixture_builder.h"
+  "screenshot_fixture.cpp"
+  "screenshot_fixture.h"
   ${SCREENSHOT_GENERATOR_WIN32_RESOURCES}
   "${CMAKE_CURRENT_SOURCE_DIR}/../../modules/opcua_services/opcua_services_module.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/../../modules/opcua_services/opcua_services_module.h"
