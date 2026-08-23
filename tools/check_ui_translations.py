@@ -62,6 +62,17 @@ accidental repeat it is deleting the later copy.
 
 This rule needs no `lupdate`, so it runs even where Qt LinguistTools is absent.
 
+**Rule 6 — every `tr("...")` in a `.cpp` has a translation that ships.**
+
+The gap between rules 1 and 3: rule 1 reads `.ui` forms, rule 3 reads
+`Translate()` literals, and a plain `tr()` in C++ is neither. The context is the
+enclosing Q_OBJECT class, so a message filed under the wrong name ships and is
+never found — `tr()` falls back to the English source exactly as a missing entry
+would. That is what made the main window's title render "Page 1 (Server: ...)"
+inside a Russian client: its catalog said `MainWindowQt`, after the file, while
+the class is `MainWindow`. lupdate is asked for the context rather than the rule
+being re-derived here.
+
 **Rule 5 — every parked entry still matches something in the tree.**
 
 ALLOWED_UNTRANSLATED, KNOWN_GAPS and TRANSLATE_GAPS are keyed on strings
@@ -393,18 +404,78 @@ def report_duplicate_sources(ts_files):
     return len(collisions)
 
 
-def extract_ui_strings(ui_files, lupdate):
-    """Runs lupdate over `ui_files` and returns context -> set of sources."""
+def extract_ui_strings(sources, lupdate):
+    """Runs lupdate over `sources` and returns context -> set of sources.
+
+    Works on `.ui` forms (rule 1) and on `.cpp` (rule 6) alike — lupdate infers
+    the context either way, which is the whole point of asking it rather than
+    re-deriving the rule that a `tr()` context is the enclosing Q_OBJECT class.
+    """
     with tempfile.TemporaryDirectory() as directory:
-        scratch = pathlib.Path(directory) / "ui_strings.ts"
+        scratch = pathlib.Path(directory) / "extracted.ts"
         completed = subprocess.run(
-            [lupdate, *[str(path) for path in ui_files], "-ts", str(scratch)],
+            [lupdate, *[str(path) for path in sources], "-ts", str(scratch)],
             capture_output=True, text=True)
         if completed.returncode != 0 or not scratch.exists():
             print("lupdate failed:\n" + completed.stdout + completed.stderr,
                   file=sys.stderr)
             sys.exit(2)
         return parse_ts(scratch, active_only=False)
+
+
+def report_tr_gaps(cpp_files, ts_files, lupdate):
+    """Rule 6. Returns the number of `tr()` strings with no shipping message.
+
+    The blind spot the other rules leave between them: rule 1 reads `.ui` forms
+    and rule 3 reads `Translate()` literals, so a plain `tr("...")` in a `.cpp`
+    is seen by neither. Two defects lived there until 2026-08-23, and both were
+    invisible for the same reason.
+
+    The first is the one that motivates asking lupdate rather than matching on a
+    name. `main_window_ru_qt.ts` filed its messages under context
+    `MainWindowQt` — the *file's* name; the class is `MainWindow` — so the
+    window title rendered "Page 1 (Server: ...)" in English inside an otherwise
+    Russian client. Nobody could have noticed while that catalog shipped
+    nowhere (task 384), and once it did ship, nothing checked the context.
+
+    The second is a string that was never in any catalog: `Loading...`, in two
+    unrelated classes (`MainWindow`'s macOS-only submenu placeholder and
+    `ItemDelegate`'s combo box), each needing its own context.
+
+    Note the docstring above warns that lupdate over the tree would produce
+    "thousands of false positives". That is true of *refreshing* the catalog —
+    it would mark every `Translate()` string vanished — but not of reading it:
+    lupdate cannot see `Translate()` at all, so what it returns here is exactly
+    the `tr()` calls and nothing else. Measured at 30 strings over 509 files.
+    """
+    expected = extract_ui_strings(cpp_files, lupdate)
+
+    shipped = {}
+    for path in ts_files:
+        for context, sources in parse_ts(path, active_only=True).items():
+            shipped.setdefault(context, set()).update(sources)
+
+    missing = [(context, source)
+               for context, sources in sorted(expected.items())
+               for source in sorted(sources)
+               if source not in shipped.get(context, set())]
+
+    total = sum(len(sources) for sources in expected.values())
+    print(f"Checked {total} tr() string(s) from {len(cpp_files)} .cpp file(s).")
+    if not missing:
+        return 0
+
+    print(f"\n{len(missing)} tr() string(s) have no translation that would "
+          f"reach the .qm, so they render English:", file=sys.stderr)
+    for context, source in missing:
+        print(f"  [{context or 'no context'}] {source!r}", file=sys.stderr)
+    print("\nAdd each to app/qt/client_ru.ts under the context named above — "
+          "which is the enclosing Q_OBJECT class, not the file name, and is "
+          "reported here by lupdate rather than guessed. A message filed under "
+          "the wrong context ships and is never found: tr() looks up by "
+          "context, so it falls back to the English source exactly as a "
+          "missing entry would.", file=sys.stderr)
+    return len(missing)
 
 
 def main():
@@ -483,6 +554,10 @@ def main():
             if key in ALLOWED_UNTRANSLATED or key in KNOWN_GAPS:
                 continue
             missing.append(key)
+
+    if report_tr_gaps(cpp_files, ts_files, lupdate):
+        return 1
+    print("OK: every tr() string has a translation that ships.")
 
     total = sum(len(sources) for sources in expected.values())
     print(f"Checked {total} string(s) from {len(ui_files)} .ui file(s) against "

@@ -3089,7 +3089,15 @@
     </message>
 </context>
 <context>
-    <name>MainWindowQt</name>
+    <name>ItemDelegate</name>
+    <message>
+        <location filename="../../aui/qt/item_delegate.cpp" line="107"/>
+        <source>Loading...</source>
+        <translation>Загрузка...</translation>
+    </message>
+</context>
+<context>
+    <name>MainWindow</name>
     <message>
         <location filename="../../main_window/main_window_qt.cpp" line="245"/>
         <source>%1 (Server: %2)</source>
@@ -3099,6 +3107,11 @@
         <location filename="../../main_window/main_window_qt.cpp" line="946"/>
         <source>Toolbar</source>
         <translation>Панель инструментов</translation>
+    </message>
+    <message>
+        <location filename="../../main_window/main_window_qt.cpp" line="274"/>
+        <source>Loading...</source>
+        <translation>Загрузка...</translation>
     </message>
 </context>
 <context>
