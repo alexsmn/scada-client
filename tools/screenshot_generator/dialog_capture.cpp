@@ -529,6 +529,57 @@ BuildControlConfirmation(DialogEnvironment& env,
 // explicitly (`references` in screenshot_data.json); a device wired only by
 // Organizes, which is the fixture's default, yields a populated device combo
 // above a completely empty list.
+// Selects the combo entry whose text contains `needle`, for a dialog whose
+// default selection is a collation accident rather than a choice. Reports and
+// returns false when there is no such entry, so a renamed or re-parented
+// fixture device fails the capture instead of quietly documenting another one.
+bool SelectDeviceInDialogCombo(const DialogSpec& spec,
+                               std::u16string_view needle) {
+  QDialog* dialog = nullptr;
+  for (QWidget* w : QApplication::topLevelWidgets()) {
+    if (!w->isVisible())
+      continue;
+    if (auto* d = qobject_cast<QDialog*>(w)) {
+      dialog = d;
+      break;
+    }
+  }
+  if (!dialog) {
+    ADD_FAILURE() << "No visible dialog to select a device in, kind: "
+                  << spec.kind;
+    return false;
+  }
+
+  auto* combo =
+      dialog->findChild<QComboBox*>(QString{}, Qt::FindChildrenRecursively);
+  if (!combo) {
+    ADD_FAILURE() << "No QComboBox in " << dialog->metaObject()->className()
+                  << " for kind: " << spec.kind;
+    return false;
+  }
+
+  const QString text = QString::fromStdU16String(std::u16string{needle});
+  const int index = combo->findText(text, Qt::MatchContains);
+  if (index < 0) {
+    QStringList seen;
+    for (int i = 0; i < combo->count(); ++i)
+      seen << combo->itemText(i);
+    ADD_FAILURE() << "No combo entry containing " << text.toStdString()
+                  << " for kind: " << spec.kind
+                  << " | entries=" << seen.join(QLatin1String(", ")).toStdString();
+    return false;
+  }
+  combo->setCurrentIndex(index);
+  // ...and say so the way a click does. The dialog listens on
+  // QComboBox::activated, which Qt emits only for user interaction, so
+  // setCurrentIndex alone moves the combo's text and leaves the list below it
+  // showing the previous device's components — a capture that contradicts
+  // itself in one image.
+  emit combo->activated(index);
+  QApplication::processEvents();
+  return true;
+}
+
 bool ReportIfDialogListEmpty(const DialogSpec& spec) {
   QDialog* dialog = nullptr;
   for (QWidget* w : QApplication::topLevelWidgets()) {
@@ -772,12 +823,47 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
       return false;
     }
 
+    // A third wave, because devices nest. GetNamedNodes recurses through
+    // anything that is itself a DeviceType instance — and a LINK is one
+    // (devices.xml derives LinkType from DeviceType) — so an RTU parented under
+    // its link is a level below what the wave above could even enumerate: the
+    // link's children were not resident when the list was built. Re-enumerating
+    // now finds them, and fetching them brings in the components the model
+    // reads in its constructor. Without this the combo silently drops every
+    // device that hangs under a link, which is how a real address space is
+    // shaped.
+    std::vector<scada::NodeId> nested_ids;
+    for (const auto& [name, device] :
+         GetNamedNodes(env.node_service->GetNode(scada::devices::id::Devices),
+                       scada::devices::id::DeviceType)) {
+      if (std::ranges::find(device_ids, device.node_id()) == device_ids.end())
+        nested_ids.push_back(device.node_id());
+    }
+    if (!nested_ids.empty() &&
+        !scada::screenshot_generator::FetchNodesResident(*env.node_service,
+                                                         nested_ids)) {
+      ADD_FAILURE() << "CreateServiceItemDialog: failed to fetch nested "
+                       "devices";
+      return false;
+    }
+
     ShowCreateServiceItemDialog(
         dialog_service, CreateServiceItemContext{
                             .node_service_ = *env.node_service,
                             .task_manager_ = task_manager,
                             .parent_id_ = scada::data_items::id::DataItems});
     QApplication::processEvents();
+
+    // Point the combo at the RTU with a full set of diagnostic variables. The
+    // dialog opens on whichever device sorts first, and that is not a fixed
+    // device: since the -104 RTU was parented under its link (2026-08-23) its
+    // name is link-qualified, which sorts it below a device carrying a single
+    // `Online` — so the image documented "mirror the device's components" with
+    // a one-row list. Choosing the device here keeps what the image teaches
+    // independent of how the fixture's names happen to collate.
+    if (!SelectDeviceInDialogCombo(spec, u"КП-01 МЭК-60870"))
+      return false;
+
     if (!ReportIfDialogListEmpty(spec))
       return false;
     return GrabAndCloseVisibleDialogOrReport(spec);

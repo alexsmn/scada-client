@@ -43,11 +43,18 @@ void SaveDeviceDiagnosticsScreenshot(const ScreenshotSpec& spec,
   for (std::string_view label : {"Metrics trend", "Open log"})
     context.actions.push_back(DiagnosticAction{.label = Translate(label)});
   context.call_link_method = [](const NodeRef&, const scada::NodeId&) {};
-  // Wired the way the shell wires it. Until 2026-08-23 this capture made the
-  // device resident itself and the panel did not, which is what kept the defect
-  // invisible: measured that day, dropping the capture's own fetch left the
-  // counters byte-identical and took «Переподключить» off the image — so the
-  // link action the published image advertises was one no operator could reach.
+  // Wired the way the shell wires it, so this image renders through the same
+  // seam the operator's selection does.
+  //
+  // Whether the panel *needs* it is a question this fixture cannot answer, and
+  // saying so is the point: with the link modelled (2026-08-23) the section
+  // renders byte-identically with the handler removed, because every structure
+  // read here resolves against an in-process address space where a fetch
+  // completes within the pump. A real client fetches over the wire, where the
+  // same read can return nothing and repair itself only if something redraws.
+  // The panel's contract — ask before reading the link — is pinned by
+  // DeviceDiagnosticsPanelTest.LoadsTheDeviceBeforeReadingItsLink instead,
+  // which does not depend on that timing.
   context.load = [executor](const NodeRef& node, std::function<void()> redraw) {
     CoSpawn(executor, [node, redraw = std::move(redraw)]() -> Awaitable<void> {
       co_await FetchDeviceDiagnostics(node);

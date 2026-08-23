@@ -280,7 +280,7 @@
       "published": false,
       "parity_key": "device-diagnostics",
       "referenced_from": [],
-      "notes": "Configuration workbench device-diagnostics inspector (DeviceDiagnostics): link-status hero (up/down/disabled) + live traffic/polling counters from the device's diagnostic child variables (Online/Enabled/MessagesIn/...). Reshell-only chrome (backlog 5.0), captured under --theme against a fixture device (TS.103, link down). Standalone like series-inspector; the capture makes the device resident (FetchNodesResident) so ShowDevice resolves the diagnostic variables and reads their current values. Not yet embedded in a manual page."
+      "notes": "Configuration workbench device-diagnostics inspector (DeviceDiagnostics): link-status hero (up/down/disabled), then the PROTOCOL LINK section and the device's own traffic/polling counters. Reshell-only chrome (backlog 5.0), captured under --theme against a fixture device (TS.103). Standalone like series-inspector; the capture wires the same load handler the shell wires and lets the panel fetch what it reads, rather than making the device resident on its behalf. Grew from 300x520 to 320x660 on 2026-08-23, when the fixture gained the Iec60870LinkType link TS.103 hangs under: until then no device in the gallery had a link, so ADR 0007's nine APCI rows, the section heading and the Reconnect action were rendered by no capture at all - and the tracked image still showed a Reconnect button the generator had stopped producing. The link is Running while the RTU is silent (t1 expired, two frames unacknowledged), which is the state the hero's `device is not responding` describes. Not yet embedded in a manual page."
     },
     {
       "file": "device-metrics.png",
