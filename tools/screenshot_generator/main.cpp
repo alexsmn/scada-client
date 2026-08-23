@@ -490,16 +490,17 @@ void SelectSignalForInspector(MainWindow& main_window,
                       << " | page=" << stack->currentIndex()
                       << " | value=" << value->text().toStdString();
 
-  // The card's Measurements limits block is deliberately NOT asserted, and its
-  // absence from the image is not a capture defect: a selection alone never
-  // makes a node's limit bands readable. `MakeLimitRows` reads them off the
-  // node's property children, TimedData fetches the node alone (see
-  // FetchNodesResident in screenshot_wait.h), and nothing in the selection path
-  // asks for the rest — measured here on 2026-08-23, the block stays hidden
-  // through a five-second pumped wait and appears immediately once the node is
-  // made resident by hand. Forcing that in the capture would document a card
-  // the operator's own click does not produce, so the image shows what the
-  // click shows. Tracked as task 452.
+  // The Measurements limits block arrives on its own schedule: the bands are
+  // property children, so the panel asks the shell to fetch them
+  // (InspectorPanelContext::load_limits) and redraws when they land. Asserting
+  // it is the point — a card that renders a live value with no limits beside it
+  // is what principles.md §2 exists to prevent, and it is exactly what this
+  // capture published until the fetch was wired.
+  auto* limits = window.findChild<QWidget*>("inspectorLimits");
+  ASSERT_NE(limits, nullptr);
+  EXPECT_TRUE(WaitUntil([&] { return limits->isVisible(); }))
+      << "Inspector limits block stayed hidden: the node's limit bands never "
+         "became readable";
 }
 
 }  // namespace

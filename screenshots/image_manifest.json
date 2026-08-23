@@ -258,12 +258,12 @@
     },
     {
       "file": "inspector-panel.png",
-      "tag": "auto-view",
+      "tag": "reshell-theme",
       "parity_key": "inspector",
       "referenced_from": [
         "client/workbench.md"
       ],
-      "notes": "Reshell Inspector panel (modules/inspector) standalone: header + node-id subtitle, live-value hero with quality pill, Measurements (Updated + the node's configured limit bands, the breached one marked), and the Control action with its unavailable-reason line (UX 4.3). Filled with an analog signal sitting above its Hi warning limit and carrying no output channel, so both the marked breach and the disabled-control explanation render. Renders the dark tokens regardless of --theme (standalone chrome). Published from a macOS render pending the Windows update-screenshots review; candidate for current_generator_owned_subset after that review."
+      "notes": "Reshell Inspector panel (modules/inspector) standalone: header + node-id subtitle, live-value hero with quality pill, Measurements (Updated + the node's configured limit bands, the breached one marked), and the Control action with its unavailable-reason line (UX 4.3). Filled with an analog signal sitting above its Hi warning limit and carrying no output channel, so both the marked breach and the disabled-control explanation render. The panel paints the reshell's dark tokens whatever the host palette is, which is why this was `reshell-theme` from 2026-08-23: as `auto-view` it was rendered by the legacy no-theme pass onto a light window, and the tracked bytes (verified byte-identical to a fresh legacy render that day) showed the title, the update time and three of the four limit values as light grey on light grey - the card's data was present and unreadable. Its two siblings had already been moved for the same class of reason (inspector-event.png and series-inspector.png, both severity-coloured), so this is the third instance rather than a new rule. In the themed-ctest --only list. Published from a macOS render pending the Windows update-screenshots review; candidate for current_generator_owned_subset after that review."
     },
     {
       "file": "inspector-event.png",
@@ -920,13 +920,13 @@
   "counts": {
     "auto-dialog": 25,
     "auto-menu": 10,
-    "auto-view": 25,
+    "auto-view": 24,
     "manual-annotated": 2,
     "manual-diagram": 4,
     "manual-modus": 5,
     "manual-os": 3,
     "obsolete": 11,
-    "reshell-theme": 27
+    "reshell-theme": 28
   },
   "current_generator_owned_subset": [
     "client-login.png",
