@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Checks that every string in a Qt Designer form has a translation that ships.
+"""Checks that translations in the client's .ts catalogs actually ship.
+
+Two independent rules run.
+
+**Rule 1 — every string in a Qt Designer form has a translation that ships.**
 
 The failure this exists to prevent: a `.ui` string's translation drifts into the
 wrong context (or gets marked `vanished`) and silently stops shipping, so the
@@ -21,6 +25,21 @@ custom `Translate()` helper, which `lupdate` cannot see; running it over the
 whole tree would report thousands of false positives and, worse, tempt someone
 into a full `lupdate` refresh that would mark every one of those strings
 `vanished`. See KNOWN_GAPS for strings that are legitimately absent.
+
+**Rule 2 — no two shipping messages in one context share a source string.**
+
+`lrelease` keeps one entry per (context, source) and silently drops the rest
+(`Warning: dropping duplicate messages`), so for a duplicated pair one
+translation never ships — and *which* one wins is a property of file order, not
+of intent. The empty context is where this bites, because `Translate()` looks
+up by source with no context to disambiguate with: ten sources were duplicated
+there, and `New` carried both «Создание» (the CATEGORY_NEW menu group) and
+«Новый» (the New-graph/page actions), so the three action call sites rendered
+the group label. The fix for a genuine clash of meanings is two distinct source
+strings, the way `To Favourites` was split from `Add to Favourites`; for an
+accidental repeat it is deleting the later copy.
+
+This rule needs no `lupdate`, so it runs even where Qt LinguistTools is absent.
 
 Usage:
     python3 client/tools/check_ui_translations.py [--client-dir DIR]
@@ -100,6 +119,62 @@ def parse_ts(path, active_only):
     return result
 
 
+def find_duplicate_sources(path):
+    """Lists (context, source, [translations]) duplicated among shipping entries.
+
+    Deliberately separate from `parse_ts`, which returns sets and so cannot see
+    a duplicate at all. `vanished`/`obsolete` copies are skipped: `lrelease`
+    drops those anyway, so they are not what collides.
+    """
+    duplicates = []
+    text = path.read_text(encoding="utf-8")
+    for context in re.finditer(r"<context>\s*<name>(.*?)</name>(.*?)</context>",
+                               text, re.S):
+        name = context.group(1)
+        seen = {}
+        for message in re.finditer(r"<message[^>]*>(.*?)</message>",
+                                   context.group(2), re.S):
+            body = message.group(1)
+            source = re.search(r"<source>(.*?)</source>", body, re.S)
+            translation = re.search(
+                r"<translation([^>]*)>(.*?)</translation>", body, re.S)
+            if not source or not translation:
+                continue
+            attributes, value = translation.group(1), translation.group(2)
+            if "vanished" in attributes or "obsolete" in attributes:
+                continue
+            seen.setdefault(html.unescape(source.group(1)), []).append(
+                html.unescape(value))
+        for source, translations in seen.items():
+            if len(translations) > 1:
+                duplicates.append((name, source, translations))
+    return duplicates
+
+
+def report_duplicate_sources(ts_files):
+    """Rule 2. Returns the number of colliding (context, source) pairs."""
+    collisions = []
+    for path in ts_files:
+        for context, source, translations in find_duplicate_sources(path):
+            collisions.append((path, context, source, translations))
+    if not collisions:
+        return 0
+
+    print(f"\n{len(collisions)} source string(s) are duplicated inside one "
+          f"context, so lrelease keeps one entry and drops the rest:",
+          file=sys.stderr)
+    for path, context, source, translations in collisions:
+        label = context or "(empty context)"
+        print(f"  {path.name} [{label}] {source!r}: "
+              + ", ".join(repr(value) for value in translations),
+              file=sys.stderr)
+    print("\nWhich copy survives is file order, not intent. If the copies mean "
+          "different things, give them distinct source strings (Translate() has "
+          "no context to disambiguate with); if they are an accidental repeat, "
+          "delete the later one.", file=sys.stderr)
+    return len(collisions)
+
+
 def extract_ui_strings(ui_files, lupdate):
     """Runs lupdate over `ui_files` and returns context -> set of sources."""
     with tempfile.TemporaryDirectory() as directory:
@@ -120,13 +195,6 @@ def main():
                         default=pathlib.Path(__file__).resolve().parent.parent)
     args = parser.parse_args()
 
-    lupdate = shutil.which("lupdate")
-    if not lupdate:
-        # Matches the build, which also degrades gracefully without Qt
-        # LinguistTools rather than failing.
-        print("lupdate not found; skipping the .ui translation check.")
-        return 0
-
     client_dir = args.client_dir
     ui_files = sorted(path for path in client_dir.rglob("*.ui")
                       if "build" not in path.parts)
@@ -136,6 +204,21 @@ def main():
         print(f"No .ui ({len(ui_files)}) or .ts ({len(ts_files)}) files under "
               f"{client_dir}", file=sys.stderr)
         return 2
+
+    # Rule 2 first: it needs no lupdate, so it must not sit behind the skip
+    # below or it would silently stop running wherever Qt LinguistTools is
+    # absent — which is the same "reports OK while blind" failure the rule
+    # itself guards against.
+    if report_duplicate_sources(ts_files):
+        return 1
+    print(f"OK: no duplicated source strings in {len(ts_files)} .ts file(s).")
+
+    lupdate = shutil.which("lupdate")
+    if not lupdate:
+        # Matches the build, which also degrades gracefully without Qt
+        # LinguistTools rather than failing.
+        print("lupdate not found; skipping the .ui translation check.")
+        return 0
 
     expected = extract_ui_strings(ui_files, lupdate)
 

@@ -128,10 +128,6 @@
         <translation>N(R) приём</translation>
     </message>
     <message>
-        <source>I-format</source>
-        <translation>Формат I</translation>
-    </message>
-    <message>
         <source>S-format</source>
         <translation>Формат S</translation>
     </message>
@@ -646,10 +642,6 @@
         <translation>Выберите правило ретрансляции для редактирования</translation>
     </message>
     <message>
-        <source>Source</source>
-        <translation>Источник</translation>
-    </message>
-    <message>
         <source>Destination</source>
         <translation>Назначение</translation>
     </message>
@@ -780,9 +772,12 @@
         <source>Loading</source>
         <translation>Загрузка</translation>
     </message>
-    <!-- action_manager.cpp: category titles -->
+    <!-- action_manager.cpp: category titles. "Create new" rather than "New":
+         the category is a menu group label and takes «Создание», while the
+         three Translate("New") action call sites take «Новый». One source
+         cannot carry both — Translate() has no disambiguating context. -->
     <message>
-        <source>New</source>
+        <source>Create new</source>
         <translation>Создание</translation>
     </message>
     <message>
@@ -885,10 +880,6 @@
         <translation>Принято сервером</translation>
     </message>
     <message>
-        <source>Acknowledged</source>
-        <translation>Квитировано</translation>
-    </message>
-    <message>
         <source>Awaiting acknowledgement</source>
         <translation>Ожидает квитирования</translation>
     </message>
@@ -937,14 +928,6 @@
     <message>
         <source>Control…</source>
         <translation>Управление…</translation>
-    </message>
-    <message>
-        <source>Good</source>
-        <translation>Достоверно</translation>
-    </message>
-    <message>
-        <source>Bad</source>
-        <translation>Недостоверно</translation>
     </message>
     <!-- modules/device_diagnostics/qt/device_diagnostics_panel.cpp + main_window (Device diagnostics dock) -->
     <message>
@@ -1010,10 +993,6 @@
     <message>
         <source>Address map</source>
         <translation>Карта адресов</translation>
-    </message>
-    <message>
-        <source>Limits</source>
-        <translation>Уставки</translation>
     </message>
     <message>
         <source>Reconnect</source>
@@ -1198,10 +1177,6 @@
         <source>Limits...</source>
         <translation>Уставки...</translation>
     </message>
-    <message>
-        <source>Limits</source>
-        <translation>Уставки</translation>
-    </message>
     <!-- actions.cpp: device actions -->
     <message>
         <source>Poll Device</source>
@@ -1249,10 +1224,6 @@
     <message>
         <source>Disable</source>
         <translation>Отключить</translation>
-    </message>
-    <message>
-        <source>Pause</source>
-        <translation>Пауза</translation>
     </message>
     <!-- actions.cpp: view actions -->
     <message>
@@ -1434,10 +1405,6 @@
     <message>
         <source>Delete</source>
         <translation>Удалить</translation>
-    </message>
-    <message>
-        <source>Clear</source>
-        <translation>Очистить</translation>
     </message>
     <!-- main_menu_model.cpp -->
     <message>
@@ -1743,10 +1710,6 @@
     <message>
         <source>Style</source>
         <translation>Стиль</translation>
-    </message>
-    <message>
-        <source>Settings</source>
-        <translation>Настройки</translation>
     </message>
     <message>
         <source>Documentation</source>

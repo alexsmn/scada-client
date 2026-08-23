@@ -19,19 +19,22 @@ GroupedActions GroupCommands(ActionManager& action_manager,
 
 std::u16string GetCommandCategoryTitle(CommandCategory category) {
   static const char* const kTitles[] = {
-      "New",       // CATEGORY_NEW
-      "Open",      // CATEGORY_OPEN
-      "Item",      // CATEGORY_ITEM
-      "Device",    // CATEGORY_DEVICE
-      "Options",   // CATEGORY_SETUP
-      "Export",    // CATEGORY_EXPORT
-      "Misc",      // CATEGORY_SPECIFIC
-      "Window",    // CATEGORY_VIEW
-      "Period",    // CATEGORY_PERIOD
-      "Create",    // CATEGORY_CREATE
-      "Edit",      // CATEGORY_EDIT,
-      "Function",  // CATEGORY_AGGREGATION
-      "Interval",  // CATEGORY_INTERVAL
+      // "Create new", not "New": the category title takes «Создание» while
+      // the Translate("New") action titles take «Новый», and Translate() looks
+      // up by source with no context to separate the two.
+      "Create new",  // CATEGORY_NEW
+      "Open",        // CATEGORY_OPEN
+      "Item",        // CATEGORY_ITEM
+      "Device",      // CATEGORY_DEVICE
+      "Options",     // CATEGORY_SETUP
+      "Export",      // CATEGORY_EXPORT
+      "Misc",        // CATEGORY_SPECIFIC
+      "Window",      // CATEGORY_VIEW
+      "Period",      // CATEGORY_PERIOD
+      "Create",      // CATEGORY_CREATE
+      "Edit",        // CATEGORY_EDIT,
+      "Function",    // CATEGORY_AGGREGATION
+      "Interval",    // CATEGORY_INTERVAL
   };
   static_assert(std::size(kTitles) == static_cast<size_t>(CATEGORY_COUNT));
   scada::base::Check(category >= 0 && category < std::size(kTitles));
