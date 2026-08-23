@@ -148,7 +148,7 @@ def main() -> int:
     # lists all shrink by the string being *fixed*, which is exactly when the
     # entry stops matching and nothing says so. On its first run it found a
     # real one, ("WriteDialog", "Dialog") in the sibling checker.
-    matched = ("KNOWN_GAPS", ("modules/x/x.cpp", "still here"))
+    matched = ("LITERAL_KNOWN_GAPS", ("modules/x/x.cpp", "still here"))
     # Its report goes to stdout by design; swallow it so this test's own
     # result is the only thing the run prints.
     with contextlib.redirect_stdout(io.StringIO()):
@@ -159,8 +159,8 @@ def main() -> int:
 
     # ...and must stay quiet when every entry matched, or it is unusable.
     every = {(name, key) for name, entries in (
-        ("ALLOWED_UNTRANSLATED", checker.ALLOWED_UNTRANSLATED),
-        ("KNOWN_GAPS", checker.KNOWN_GAPS),
+        ("LITERAL_ALLOWED_UNTRANSLATED", checker.LITERAL_ALLOWED_UNTRANSLATED),
+        ("LITERAL_KNOWN_GAPS", checker.LITERAL_KNOWN_GAPS),
         ("ALLOWED_CYRILLIC", checker.ALLOWED_CYRILLIC),
         ("ALLOWED_CYRILLIC_DIRS", checker.ALLOWED_CYRILLIC_DIRS),
         ("SHARED_CYRILLIC_GAPS", checker.SHARED_CYRILLIC_GAPS),
@@ -173,16 +173,44 @@ def main() -> int:
     # Getting this wrong would fail the check on exactly the layout ADR 0011
     # exists to support.
     shared_only = {(name, key) for name, entries in (
-        ("ALLOWED_UNTRANSLATED", checker.ALLOWED_UNTRANSLATED),
-        ("KNOWN_GAPS", checker.KNOWN_GAPS),
+        ("LITERAL_ALLOWED_UNTRANSLATED", checker.LITERAL_ALLOWED_UNTRANSLATED),
+        ("LITERAL_KNOWN_GAPS", checker.LITERAL_KNOWN_GAPS),
         ("ALLOWED_CYRILLIC_DIRS", checker.ALLOWED_CYRILLIC_DIRS),
     ) for key in entries}
-    shared_only |= {("ALLOWED_CYRILLIC", key) for key in checker.ALLOWED_CYRILLIC
-                    if key[0].split("/", 1)[0] not in checker.SHARED_ROOTS}
+    shared_only |= {("ALLOWED_CYRILLIC", key)
+                    for key in checker.ALLOWED_CYRILLIC
+                    if not key[0].startswith("//")}
     if checker.report_stale_entries(shared_only, []) != 0:
         failures.append("rule 4 reported shared-root keys with no shared roots")
 
-    total = len(DIALOG_SINK_CASES) + len(DISPLAY_CASES) + len(QUIET_CASES) + 5
+    # Rule 4, the half task 459 fixed: a key is client-relative or shared, and
+    # the two must be tellable apart. `client/core/` exists, so before the
+    # shared scan's keys grew their `//` prefix a client key reading
+    # "core/x.cpp" looked exactly like a superproject one and was skipped
+    # whenever the shared roots were absent — a parked entry silently exempt
+    # from the rule, on precisely the standalone-export layout the skip exists
+    # to serve. Both directions are pinned, because a fix that reported
+    # everything would pass the first assertion alone.
+    for key, roots, want_stale, what in (
+        (("core/x.cpp", "gone"), [], True,
+         "a client key under client/core/ with no shared roots"),
+        (("//core/x.cpp", "gone"), [], False,
+         "a shared key with no shared roots"),
+        (("//core/x.cpp", "gone"), ["core"], True,
+         "a shared key with its root scanned"),
+    ):
+        checker.LITERAL_KNOWN_GAPS[key] = "test fixture"
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                stale = checker.report_stale_entries(every, roots)
+        finally:
+            del checker.LITERAL_KNOWN_GAPS[key]
+        if bool(stale) != want_stale:
+            verdict = "was not reported" if want_stale else "was reported"
+            failures.append(f"rule 4: {what} {verdict}")
+
+    total = (len(DIALOG_SINK_CASES) + len(DISPLAY_CASES) + len(QUIET_CASES)
+             + 5 + 3)
     if failures:
         print(f"{len(failures)} of {total} case(s) failed:\n")
         for failure in failures:

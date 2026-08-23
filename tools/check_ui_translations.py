@@ -24,7 +24,7 @@ Scope is deliberately `.ui` files only. Most client UI strings go through the
 custom `Translate()` helper, which `lupdate` cannot see; running it over the
 whole tree would report thousands of false positives and, worse, tempt someone
 into a full `lupdate` refresh that would mark every one of those strings
-`vanished`. See KNOWN_GAPS for strings that are legitimately absent.
+`vanished`. See UI_FORM_KNOWN_GAPS for strings that are legitimately absent.
 
 **Rule 3 — every `Translate("...")` literal has a translation that ships.**
 
@@ -75,11 +75,21 @@ being re-derived here.
 
 **Rule 5 — every parked entry still matches something in the tree.**
 
-ALLOWED_UNTRANSLATED, KNOWN_GAPS and TRANSLATE_GAPS are keyed on strings
-expected to be *found*, and all three may only shrink. Fix the string and the
-entry stops matching in silence, so the list overstates the debt while covering
-none of the code that replaced it. The sibling rule in
-`check_untranslated_ui_strings.py` guards that file's four lists.
+UI_FORM_ALLOWED_UNTRANSLATED, UI_FORM_KNOWN_GAPS and TRANSLATE_GAPS are
+keyed on strings expected to be *found*, and all three may only shrink. Fix
+the string and the entry stops matching in silence, so the list overstates the
+debt while covering none of the code that replaced it. The sibling rule in
+`check_untranslated_ui_strings.py` guards that file's five lists.
+
+**A note on the names.** The two lists here are keyed on
+`(ui_context, source_string)` — the pair lupdate extracts from a `.ui` form —
+and carry the `UI_FORM_` prefix to say so. `check_untranslated_ui_strings.py`
+sits in the same directory and holds lists for the same purpose keyed on
+`(source_path, literal_text)`, prefixed `LITERAL_` there. Until 2026-08-23
+both pairs were spelled `ALLOWED_UNTRANSLATED` and `KNOWN_GAPS`, so a grep for
+either name returned two dicts with incompatible contents and nothing said
+which file an entry belonged in — a mistake that parks a key where it matches
+nothing, which both files' stale-entry rules now report as a hard failure.
 
 Usage:
     python3 client/tools/check_ui_translations.py [--client-dir DIR]
@@ -96,8 +106,8 @@ import tempfile
 
 # Strings that are deliberately not translated, with the reason. A string may
 # only be listed here because translating it would be *wrong* — not because
-# nobody has got round to it; use KNOWN_GAPS for that.
-ALLOWED_UNTRANSLATED = {
+# nobody has got round to it; use UI_FORM_KNOWN_GAPS for that.
+UI_FORM_ALLOWED_UNTRANSLATED = {
     ("CsvExportDialog", ","): "Literal delimiter character; CsvExportDialog::"
                               "accept() parses the item as a single character.",
     ("CsvExportDialog", '"'): "Literal quote character; parsed as a single "
@@ -123,7 +133,7 @@ ALLOWED_UNTRANSLATED = {
 # shrink: it records pre-existing gaps so the check can be enforced today,
 # without pretending they are fine. Adding to it is a review conversation, not
 # a fix.
-KNOWN_GAPS = {
+UI_FORM_KNOWN_GAPS = {
     # Empty, and worth keeping that way: the login dialog's TLS strings were the
     # last entries here.
 }
@@ -181,7 +191,7 @@ def parse_ts(path, active_only):
     return result
 
 
-# Rule 3's KNOWN_GAPS: `Translate("...")` call sites with no shipping entry in
+# Rule 3's gap list: `Translate("...")` call sites with no shipping entry in
 # the empty context, so they render their English source inside the Russian
 # client. Same bar as the lists above — this must only ever shrink, and an
 # addition is a review conversation.
@@ -312,12 +322,13 @@ def report_stale_entries(expected, calls):
     """Rule 5. Returns the number of parked entries that match nothing.
 
     The sibling of rule 4 in check_untranslated_ui_strings.py, and it exists
-    for the same reason: ALLOWED_UNTRANSLATED, KNOWN_GAPS and TRANSLATE_GAPS
-    are each keyed on something expected to be *found* — a (context, source)
-    pair lupdate extracts from a .ui form, or a Translate() literal in the
-    tree — and each is documented as a list that may only shrink. Fix the
-    string and the entry stops matching silently, leaving the list overstating
-    the debt while covering none of the code that replaced it.
+    for the same reason: UI_FORM_ALLOWED_UNTRANSLATED, UI_FORM_KNOWN_GAPS
+    and TRANSLATE_GAPS are each keyed on something expected to be *found* —
+    a (context, source) pair lupdate extracts from a .ui form, or a
+    Translate() literal in the tree — and each is documented as a list that
+    may only shrink. Fix the string and the entry stops matching silently,
+    leaving the list overstating the debt while covering none of the code that
+    replaced it.
 
     `expected` is lupdate's extraction, so this can only judge the two .ui
     lists when lupdate ran; the caller passes None otherwise and they are
@@ -327,9 +338,10 @@ def report_stale_entries(expected, calls):
     if expected is not None:
         pairs = {(context, source)
                  for context, sources in expected.items() for source in sources}
-        stale += [("ALLOWED_UNTRANSLATED", key)
-                  for key in ALLOWED_UNTRANSLATED if key not in pairs]
-        stale += [("KNOWN_GAPS", key) for key in KNOWN_GAPS if key not in pairs]
+        stale += [("UI_FORM_ALLOWED_UNTRANSLATED", key)
+                  for key in UI_FORM_ALLOWED_UNTRANSLATED if key not in pairs]
+        stale += [("UI_FORM_KNOWN_GAPS", key)
+                  for key in UI_FORM_KNOWN_GAPS if key not in pairs]
     stale += [("TRANSLATE_GAPS", source)
               for source in TRANSLATE_GAPS if source not in calls]
     if not stale:
@@ -551,7 +563,7 @@ def main():
             key = (context, source)
             if source in shipped.get(context, set()):
                 continue
-            if key in ALLOWED_UNTRANSLATED or key in KNOWN_GAPS:
+            if key in UI_FORM_ALLOWED_UNTRANSLATED or key in UI_FORM_KNOWN_GAPS:
                 continue
             missing.append(key)
 
@@ -563,10 +575,11 @@ def main():
     print(f"Checked {total} string(s) from {len(ui_files)} .ui file(s) against "
           f"{len(ts_files)} .ts file(s).")
 
-    if KNOWN_GAPS:
-        print(f"{len(KNOWN_GAPS)} known gap(s) still awaiting translation "
-              f"(see KNOWN_GAPS in {pathlib.Path(__file__).name}):")
-        for context, source in sorted(KNOWN_GAPS):
+    if UI_FORM_KNOWN_GAPS:
+        print(f"{len(UI_FORM_KNOWN_GAPS)} known gap(s) still awaiting "
+              f"translation (see UI_FORM_KNOWN_GAPS in "
+              f"{pathlib.Path(__file__).name}):")
+        for context, source in sorted(UI_FORM_KNOWN_GAPS):
             print(f"  {context}: {source!r}")
 
     if not missing:

@@ -105,7 +105,7 @@ narrows the blind spot; it does not close it.
 
 **Rule 4 — every parked entry still matches something in the tree.**
 
-`ALLOWED_UNTRANSLATED`, `KNOWN_GAPS`, `ALLOWED_CYRILLIC`,
+`LITERAL_ALLOWED_UNTRANSLATED`, `LITERAL_KNOWN_GAPS`, `ALLOWED_CYRILLIC`,
 `ALLOWED_CYRILLIC_DIRS` and `SHARED_CYRILLIC_GAPS` are all keyed on a literal
 expected to be *found*, and all documented as lists that may only shrink. When
 the literal is fixed the entry stops matching in silence — the check still
@@ -113,8 +113,20 @@ passes, the list still claims the debt, and it now covers none of the code that
 replaced the string. Rule 4 is the arithmetic nobody was doing: the summary
 already counted *matched* gaps, so it printed "5 known gap(s)" over a
 thirteen-entry dict and the discrepancy went unread. Entries keyed on
-`core/`/`common/` are skipped when those roots are absent, which is the
+`//core/`/`//common/` are skipped when those roots are absent, which is the
 standalone client export.
+
+**How the keys are spelled, and why it is not cosmetic.** A path key from the
+client scan is client-relative (`modules/graph/metrix_graph.cpp`); one from the
+shared scan carries a leading `//` (`//core/base/win/format_hresult.cpp`).
+Without the prefix the two are indistinguishable, because `client/core/`
+exists — so a client file under it and a superproject one produce the same key,
+and the skip above would exempt the client entry from rule 4 as well. The
+two `LITERAL_`-prefixed lists likewise say what they are keyed on:
+`check_ui_translations.py` sits in the same directory and holds lists for the
+same purpose keyed on `(ui_context, source_string)`, prefixed `UI_FORM_` there.
+Both spellings date from 2026-08-23 (task 459); before it, all four dicts were
+called `ALLOWED_UNTRANSLATED` and `KNOWN_GAPS`.
 
 Usage:
     python3 client/tools/check_untranslated_ui_strings.py [--client-dir DIR]
@@ -144,8 +156,8 @@ SINKS = (
 
 # Literals that are deliberately NOT translated, with the reason. A string may
 # only be listed here because translating it would be *wrong* — not because
-# nobody has got round to it; use KNOWN_GAPS for that.
-ALLOWED_UNTRANSLATED = {
+# nobody has got round to it; use LITERAL_KNOWN_GAPS for that.
+LITERAL_ALLOWED_UNTRANSLATED = {
     # The data-interchange strings that must stay English
     # (export_data_writer.cpp column headers, kNodeIdTitle) are not reached by
     # any sink, so they never appear here in the first place.
@@ -164,7 +176,7 @@ ALLOWED_UNTRANSLATED = {
 # shrink: it records pre-existing gaps so the check can be enforced today,
 # without pretending they are fine. Adding to it is a review conversation, not
 # a fix.
-KNOWN_GAPS = {
+LITERAL_KNOWN_GAPS = {
     # The export/import message boxes that used to be here are fixed. Every
     # entry below was invisible until 2026-08-22, when the literal pattern
     # learned the `L"..."`, plain `"..."` and raw `R"(...)"` forms and rule 3
@@ -197,23 +209,26 @@ ALLOWED_CYRILLIC_DIRS = {
 }
 
 # Individual Cyrillic literals that are not UI text, keyed by (path, decoded
-# text) exactly as ALLOWED_UNTRANSLATED is. Same bar: only when translating
-# would be *wrong*.
+# text) exactly as LITERAL_ALLOWED_UNTRANSLATED is. Same bar: only when
+# translating would be *wrong*. This is the one list holding keys from both
+# scans, so it is also the one where the `//` prefix matters: a bare path is
+# client-relative, a `//`-prefixed one is under SHARED_ROOTS.
 ALLOWED_CYRILLIC = {
     # Wire data, not UI text. A configuration export writes the *localized*
     # boolean label, so files exported by a Russian client — and every file
     # exported before the labels went through TranslateUiText — carry these
     # words. Import has to keep recognising them. See the comment on
     # ParseBoolLabel.
-    ("common/common/format.cpp", "Да"): "legacy exported BOOL spelling",
-    ("common/common/format.cpp", "Нет"): "legacy exported BOOL spelling",
+    ("//common/common/format.cpp", "Да"): "legacy exported BOOL spelling",
+    ("//common/common/format.cpp", "Нет"): "legacy exported BOOL spelling",
     # A character class for the expression lexer, not text shown to anyone: it
     # lists the letters an identifier may contain (scada_expression.cpp).
     (
-        "common/common/scada_expression.cpp",
+        "//common/common/scada_expression.cpp",
         "абвгдеёжзийклмнопрстуфхцчшщьыъэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШ",
     ): "identifier character class",
-    ("common/common/scada_expression.cpp", "ЩЬЫЪЭЮЯ"): "identifier character class",
+    ("//common/common/scada_expression.cpp",
+     "ЩЬЫЪЭЮЯ"): "identifier character class",
 }
 
 # The shared libraries below the client, scanned by rule 2 only. They produce
@@ -227,21 +242,22 @@ ALLOWED_CYRILLIC = {
 SHARED_ROOTS = ("core", "common")
 
 # Parts of SHARED_ROOTS not yet swept, with what each still needs decided. This
-# list must only ever shrink; it is KNOWN_GAPS for rule 2.
+# list must only ever shrink; it is LITERAL_KNOWN_GAPS for rule 2.
 SHARED_CYRILLIC_GAPS = {
     # Single-glyph quality modifiers rendered inline in a tree label ("[НР] …").
     # Translating them needs a catalog key per glyph, and Translate() has no
     # disambiguation context, so a one-letter source would collide with every
     # other one-letter source. Needs the glyph vocabulary decided first.
-    "common/node_service/node_format.cpp": "quality-modifier glyphs",
-    "common/address_space/node_format.cpp": "quality-modifier glyphs",
+    "//common/node_service/node_format.cpp": "quality-modifier glyphs",
+    "//common/address_space/node_format.cpp": "quality-modifier glyphs",
     # OPC UA standard node display names, served over the wire by a process
     # that installs no translator — routing them through TranslateUiText would
     # make the server send English, changing what operators see, with nothing
     # on the client side to translate it back.
-    "common/address_space/standard_address_space.cpp": "wire-served display names",
+    "//common/address_space/standard_address_space.cpp":
+        "wire-served display names",
     # Windows API failure text, on a path that has no translator installed.
-    "core/base/win/format_hresult.cpp": "OS error fallback",
+    "//core/base/win/format_hresult.cpp": "OS error fallback",
 }
 
 # Files whose strings never reach an operator.
@@ -563,19 +579,21 @@ def report_stale_entries(used, shared_roots_present):
     which roots it actually scanned.
     """
     def scanned(key):
-        # Note `client/core/` exists, so a client-relative key starting "core/"
-        # is indistinguishable from a superproject one — the comment on the
-        # shared scan claiming the two namespaces cannot be confused predates
-        # that directory. The consequence here is a false *negative* in the
-        # standalone export only (such a key would be skipped rather than
-        # reported), which is the safe direction; task 459 carries the fix.
+        # A shared-tree key is spelled `//core/…`; a client-relative one never
+        # begins with `//`. Testing the prefix rather than the first path
+        # component is what makes the two tellable apart at all —
+        # `client/core/` exists, so before the prefix a key reading "core/…"
+        # could have come from either scan and this test silently skipped the
+        # client one too (task 459).
         path = key if isinstance(key, str) else key[0]
-        root = path.split("/", 1)[0]
-        return root not in SHARED_ROOTS or root in shared_roots_present
+        if not path.startswith("//"):
+            return True
+        root = path[2:].split("/", 1)[0]
+        return root in shared_roots_present
 
     lists = (
-        ("ALLOWED_UNTRANSLATED", ALLOWED_UNTRANSLATED),
-        ("KNOWN_GAPS", KNOWN_GAPS),
+        ("LITERAL_ALLOWED_UNTRANSLATED", LITERAL_ALLOWED_UNTRANSLATED),
+        ("LITERAL_KNOWN_GAPS", LITERAL_KNOWN_GAPS),
         ("ALLOWED_CYRILLIC", ALLOWED_CYRILLIC),
         ("ALLOWED_CYRILLIC_DIRS", ALLOWED_CYRILLIC_DIRS),
         ("SHARED_CYRILLIC_GAPS", SHARED_CYRILLIC_GAPS),
@@ -629,24 +647,24 @@ def main() -> int:
         scanned += 1
         rel = path.relative_to(client_dir).as_posix()
         for line, sink, text, via in scan_file(path, client_dir):
-            if (rel, text) in ALLOWED_UNTRANSLATED:
+            if (rel, text) in LITERAL_ALLOWED_UNTRANSLATED:
                 allowed += 1
-                used.add(("ALLOWED_UNTRANSLATED", (rel, text)))
-            elif (rel, text) in KNOWN_GAPS:
+                used.add(("LITERAL_ALLOWED_UNTRANSLATED", (rel, text)))
+            elif (rel, text) in LITERAL_KNOWN_GAPS:
                 gaps += 1
-                used.add(("KNOWN_GAPS", (rel, text)))
+                used.add(("LITERAL_KNOWN_GAPS", (rel, text)))
             else:
                 findings.append((rel, line, sink, text, via))
 
         for line, sink, text in scan_file_for_display_literals(
             path.read_text("utf-8", "replace")
         ):
-            if (rel, text) in ALLOWED_UNTRANSLATED:
+            if (rel, text) in LITERAL_ALLOWED_UNTRANSLATED:
                 allowed += 1
-                used.add(("ALLOWED_UNTRANSLATED", (rel, text)))
-            elif (rel, text) in KNOWN_GAPS:
+                used.add(("LITERAL_ALLOWED_UNTRANSLATED", (rel, text)))
+            elif (rel, text) in LITERAL_KNOWN_GAPS:
                 gaps += 1
-                used.add(("KNOWN_GAPS", (rel, text)))
+                used.add(("LITERAL_KNOWN_GAPS", (rel, text)))
             else:
                 displayed.append((rel, line, sink, text))
 
@@ -662,8 +680,11 @@ def main() -> int:
                 cyrillic.append((rel, line, text))
 
     # Rule 2 over the shared libraries. Paths are reported relative to the
-    # superproject (`core/…`, `common/…`) so they cannot be confused with the
-    # client-relative ones above.
+    # superproject and carry a leading `//` (`//core/…`, `//common/…`) so
+    # they cannot be confused with the client-relative ones above. The `//` is not
+    # decoration: `client/core/` exists, so without it a client file under it
+    # and a superproject one yield the same key, and no lookup in any of the
+    # parked lists could tell them apart (task 459).
     shared_scanned = 0
     shared_roots_present = []
     for root_name in SHARED_ROOTS:
@@ -675,7 +696,7 @@ def main() -> int:
             if path.suffix not in (".cpp", ".h", ".cppm") or is_excluded(path, root):
                 continue
             shared_scanned += 1
-            rel = f"{root_name}/{path.relative_to(root).as_posix()}"
+            rel = f"//{root_name}/{path.relative_to(root).as_posix()}"
             for line, text in scan_file_for_cyrillic(path, rel):
                 if rel in SHARED_CYRILLIC_GAPS:
                     cyrillic_gaps += 1
@@ -725,7 +746,7 @@ def main() -> int:
             "u8\"...\", a raw R\"(...)\" and a bare \"...\" are all reported, because\n"
             "each has shipped this defect. If the literal is a filename, a URL\n"
             "or a protocol token rather than words an operator reads, add it to\n"
-            "ALLOWED_UNTRANSLATED with the reason."
+            "LITERAL_ALLOWED_UNTRANSLATED with the reason."
         )
         return 1
 
