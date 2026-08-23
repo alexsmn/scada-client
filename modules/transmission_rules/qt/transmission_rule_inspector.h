@@ -49,10 +49,22 @@ class TransmissionRuleInspector : public QWidget {
   // to the write path (TaskManager::PostUpdateTask).
   using ApplyHandler = std::function<void(const scada::NodeId&, scada::Int32)>;
 
+  // Asked to make `transmission` readable, then to call `redraw`.
+  //
+  // The inspector asks rather than fetching: a rule reads in two hops and a
+  // selection makes neither resident (see FetchTransmissionRule in
+  // modules/transmission_rules/transmission_rule_fetch.h), and the fetch needs
+  // the host's executor. Unwired, ShowRule renders whatever happens to be
+  // resident — which for a rule the operator just selected is a source-less
+  // rule at IOA 0.
+  using LoadHandler =
+      std::function<void(const NodeRef&, std::function<void()> redraw)>;
+
   explicit TransmissionRuleInspector(QWidget* parent = nullptr);
   ~TransmissionRuleInspector() override;
 
   void SetApplyHandler(ApplyHandler handler);
+  void SetLoadHandler(LoadHandler handler);
 
   // Reflects `transmission` (expected to be a TransmissionItemType instance):
   // reads its source, endpoint, protocol and IOA. A null / non-transmission
@@ -89,6 +101,10 @@ class TransmissionRuleInspector : public QWidget {
   scada::NodeId rule_id_;
   scada::Int32 live_ioa_ = 0;
   ApplyHandler apply_handler_;
+  LoadHandler load_handler_;
+  // The rule the last load was asked for, so a reply that arrives after the
+  // operator moved on is dropped instead of redrawing another rule's card.
+  scada::NodeId loading_id_;
 };
 
 // Builds a TransmissionRuleInspector under the reshell UX theme

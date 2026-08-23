@@ -1,6 +1,9 @@
 #include "device_diagnostics/qt/device_diagnostics_panel.h"
 
 #include "aui/test/app_environment.h"
+#include "aui/translation.h"
+#include "node_service/test/fake_node_service.h"
+#include "timed_data/timed_data_service.h"
 
 #include <gtest/gtest.h>
 
@@ -182,6 +185,141 @@ TEST_F(DeviceDiagnosticsPanelTest, ClearReturnsToEmptyState) {
   auto* stack = panel.findChild<QStackedWidget*>();
   ASSERT_NE(stack, nullptr);
   EXPECT_EQ(stack->currentIndex(), 0);
+}
+
+// The panel reads its link rows off the device's PARENT — whether it draws a
+// link section at all is decided by comparing the parent type's browse name
+// against the protocol's — and a selection makes the parent no more resident
+// than the Inspector's limit bands. An unasked-for device therefore loses its
+// link section and its Reconnect action, on a device that has a link. The panel
+// asks its host to load the device now, and redraws when it lands.
+//
+// The load's arrival is modelled the way the address space actually behaves:
+// the parent link is not resolvable until the load runs.
+TEST_F(DeviceDiagnosticsPanelTest, LoadsTheDeviceBeforeReadingItsLink) {
+  constexpr scada::NodeId kDevice{103, 12};
+  constexpr scada::NodeId kDeviceType{331, 12};
+  constexpr scada::NodeId kLink{50, 12};
+  constexpr scada::NodeId kLinkType{332, 12};
+
+  class NoTimedData : public TimedDataService {
+   public:
+    std::shared_ptr<TimedData> GetNodeTimedData(
+        const scada::NodeId&,
+        const scada::AggregateFilter&) override {
+      return nullptr;
+    }
+    std::shared_ptr<TimedData> GetFormulaTimedData(
+        std::string_view,
+        const scada::AggregateFilter&) override {
+      return nullptr;
+    }
+  } timed_data;
+
+  FakeNodeService nodes;
+  nodes.Add(scada::NodeState{
+      .node_id = kDeviceType,
+      .node_class = scada::NodeClass::ObjectType,
+      .attributes = {.browse_name = scada::QualifiedName{"Iec60870DeviceType"}}});
+  // Registered parentless: the state the device is in before anything fetched
+  // it, in which the panel can find no link.
+  nodes.Add(scada::NodeState{.node_id = kDevice,
+                             .node_class = scada::NodeClass::Object,
+                             .type_definition_id = kDeviceType,
+                             .attributes = {.display_name = u"КП-01"}});
+
+  DeviceDiagnosticsPanelContext context;
+  context.call_link_method = [](const NodeRef&, const scada::NodeId&) {};
+  NodeRef asked;
+  std::function<void()> redraw;
+  context.load = [&](const NodeRef& device, std::function<void()> done) {
+    asked = device;
+    redraw = std::move(done);
+  };
+  DeviceDiagnosticsPanel panel{std::move(context)};
+
+  panel.ShowDevice(nodes.GetNode(kDevice), timed_data);
+
+  EXPECT_EQ(asked.node_id(), kDevice)
+      << "the panel read the device's link without asking for it first";
+  ASSERT_TRUE(redraw);
+  EXPECT_TRUE(panel.findChildren<QPushButton*>().empty())
+      << "a link action appeared before the link was resolvable";
+
+  // The load lands: the device turns out to hang under a protocol link.
+  nodes.Add(scada::NodeState{
+      .node_id = kLinkType,
+      .node_class = scada::NodeClass::ObjectType,
+      .attributes = {.browse_name = scada::QualifiedName{"Iec60870LinkType"}}});
+  nodes.Add(scada::NodeState{.node_id = kLink,
+                             .node_class = scada::NodeClass::Object,
+                             .type_definition_id = kLinkType,
+                             .attributes = {.display_name = u"Link"}});
+  nodes.Add(scada::NodeState{.node_id = kDevice,
+                             .node_class = scada::NodeClass::Object,
+                             .type_definition_id = kDeviceType,
+                             .parent_id = kLink,
+                             .reference_type_id = scada::id::Organizes,
+                             .attributes = {.display_name = u"КП-01"}});
+  redraw();
+
+  const auto buttons = panel.findChildren<QPushButton*>();
+  ASSERT_EQ(buttons.size(), 1)
+      << "the link action did not appear once the link resolved";
+  EXPECT_EQ(buttons.front()->text(),
+            QString::fromStdU16String(Translate("Reconnect now")));
+}
+
+// A reply for a device the operator has moved off must not repaint the rows.
+TEST_F(DeviceDiagnosticsPanelTest, StaleLoadReplyIsIgnored) {
+  constexpr scada::NodeId kFirst{103, 12};
+  constexpr scada::NodeId kSecond{104, 12};
+  constexpr scada::NodeId kDeviceType{331, 12};
+
+  class NoTimedData : public TimedDataService {
+   public:
+    std::shared_ptr<TimedData> GetNodeTimedData(
+        const scada::NodeId&,
+        const scada::AggregateFilter&) override {
+      return nullptr;
+    }
+    std::shared_ptr<TimedData> GetFormulaTimedData(
+        std::string_view,
+        const scada::AggregateFilter&) override {
+      return nullptr;
+    }
+  } timed_data;
+
+  FakeNodeService nodes;
+  nodes.Add(scada::NodeState{.node_id = kDeviceType,
+                             .node_class = scada::NodeClass::ObjectType});
+  for (const scada::NodeId& id : {kFirst, kSecond}) {
+    nodes.Add(scada::NodeState{.node_id = id,
+                               .node_class = scada::NodeClass::Object,
+                               .type_definition_id = kDeviceType,
+                               .attributes = {.display_name = u"device"}});
+  }
+
+  DeviceDiagnosticsPanelContext context;
+  int loads = 0;
+  std::function<void()> first_redraw;
+  context.load = [&](const NodeRef& device, std::function<void()> done) {
+    ++loads;
+    if (device.node_id() == kFirst)
+      first_redraw = std::move(done);
+  };
+  DeviceDiagnosticsPanel panel{std::move(context)};
+
+  panel.ShowDevice(nodes.GetNode(kFirst), timed_data);
+  panel.ShowDevice(nodes.GetNode(kSecond), timed_data);
+  EXPECT_EQ(loads, 2);
+
+  ASSERT_TRUE(first_redraw);
+  first_redraw();
+
+  // No third load: a stale reply that re-entered ShowDevice would have asked
+  // again for the first device.
+  EXPECT_EQ(loads, 2);
 }
 
 }  // namespace

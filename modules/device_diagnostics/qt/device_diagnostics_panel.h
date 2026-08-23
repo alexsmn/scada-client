@@ -60,6 +60,17 @@ struct DeviceDiagnosticsPanelContext {
   // that slips past this answers Bad_UserAccessDenied. Unset means "assume
   // yes".
   std::function<bool()> can_call;
+
+  // Asked to make `device` and its parent link readable, then to call `redraw`.
+  //
+  // The panel asks rather than fetching: it resolves its rows by walking the
+  // device's children and its parent's type, none of which a selection makes
+  // resident (see FetchDeviceDiagnostics in
+  // modules/device_diagnostics/device_diagnostics_fetch.h), and the fetch needs
+  // the host's executor. Unwired, the counters still render — they are usually
+  // browsed already — but the link section and its Reconnect action are
+  // silently dropped on a device that has a link.
+  std::function<void(const NodeRef& device, std::function<void()> redraw)> load;
 };
 
 // One diagnostic reading rendered as a "Label   Value" row.
@@ -151,6 +162,9 @@ class DeviceDiagnosticsPanel : public QWidget {
   };
 
   QString device_name_;
+  // The device the last load was asked for, so a reply that arrives after the
+  // operator moved on is dropped instead of redrawing another device's rows.
+  scada::NodeId loading_id_;
   QString device_type_;
   // The booleans that drive the hero band; the nodes are null when the device
   // omits them.

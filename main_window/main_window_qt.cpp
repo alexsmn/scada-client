@@ -41,7 +41,9 @@
 #include "main_window/window_definition_builder.h"
 #include "model/devices_node_ids.h"
 #include "model/security_node_ids.h"
+#include "modules/device_diagnostics/device_diagnostics_fetch.h"
 #include "modules/inspector/limit_band.h"
+#include "modules/transmission_rules/transmission_rule_fetch.h"
 #include "modules/write/write_availability.h"
 #include "node_service/node_util.h"
 #include "profile/profile.h"
@@ -1127,6 +1129,17 @@ void MainWindow::CreateDiagnosticsPanel() {
   context.actions.push_back(make_action(ID_OPEN_EVENTS, Translate("Open log")));
   context.call_link_method = call_node_method_;
   context.can_call = has_call_permission_;
+  // The panel's rows come from the device's children and its parent link, which
+  // a selection makes no more resident here than it does for the Inspector's
+  // limit bands — and an unfetched parent costs the operator the Reconnect
+  // action on a device whose link is down.
+  context.load = [this](const NodeRef& device, std::function<void()> redraw) {
+    CoSpawn(executor_,
+            [device, redraw = std::move(redraw)]() -> Awaitable<void> {
+              co_await FetchDeviceDiagnostics(device);
+              redraw();
+            });
+  };
 
   diagnostics_ = MakeDeviceDiagnosticsPanel(std::move(context));
   if (!diagnostics_)
@@ -1162,6 +1175,19 @@ void MainWindow::CreateTransmissionRulePanel() {
   transmission_rule_ = MakeTransmissionRuleInspector();
   if (!transmission_rule_)
     return;
+
+  // Same bargain as the Inspector's limit bands: the panel reads a rule the
+  // selection has not made resident — here in two hops, the second one a NodeId
+  // property naming a peer node — so the shell owns the fetch and the panel
+  // asks for it.
+  transmission_rule_->SetLoadHandler(
+      [this](const NodeRef& rule, std::function<void()> redraw) {
+        CoSpawn(executor_,
+                [rule, redraw = std::move(redraw)]() -> Awaitable<void> {
+                  co_await FetchTransmissionRule(rule);
+                  redraw();
+                });
+      });
 
   auto* dock = new QDockWidget(
       QString::fromStdU16String(Translate("Transmission rule")), this);

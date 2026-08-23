@@ -16,6 +16,7 @@
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QPointer>
 #include <QPushButton>
 #include <QStackedWidget>
 #include <QVBoxLayout>
@@ -370,6 +371,25 @@ void DeviceDiagnosticsPanel::ShowDevice(const NodeRef& device,
   if (!device) {
     Clear();
     return;
+  }
+
+  // Ask for what the rows are read from. The counters usually resolve without
+  // it — the tree has browsed the device by the time it can be selected — but
+  // the link section is decided by the parent's *type* browse name, which a
+  // selection never makes resident, so an unasked-for device silently loses its
+  // link rows and its Reconnect action. Guarded by the id so the redraw
+  // re-enters once, and so a reply for a device the operator has moved off is
+  // dropped rather than repainting another device's counters.
+  if (context_.load && loading_id_ != device.node_id()) {
+    loading_id_ = device.node_id();
+    const QPointer<DeviceDiagnosticsPanel> alive{this};
+    // The service is captured by pointer and outlives the panel: the shell owns
+    // both, and every live spec this panel holds already refers to it.
+    context_.load(device, [this, alive, device,
+                           service = &timed_data_service] {
+      if (alive && loading_id_ == device.node_id())
+        ShowDevice(device, *service);
+    });
   }
 
   device_name_ = QString::fromStdU16String(ToString16(device.display_name()));

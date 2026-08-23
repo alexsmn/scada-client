@@ -16,6 +16,7 @@
 #include <QIntValidator>
 #include <QLabel>
 #include <QLineEdit>
+#include <QPointer>
 #include <QPushButton>
 #include <QStackedWidget>
 #include <QVBoxLayout>
@@ -68,6 +69,10 @@ TransmissionRuleInspector::~TransmissionRuleInspector() = default;
 
 void TransmissionRuleInspector::SetApplyHandler(ApplyHandler handler) {
   apply_handler_ = std::move(handler);
+}
+
+void TransmissionRuleInspector::SetLoadHandler(LoadHandler handler) {
+  load_handler_ = std::move(handler);
 }
 
 QWidget* TransmissionRuleInspector::BuildEmptyState() {
@@ -167,13 +172,38 @@ QWidget* TransmissionRuleInspector::BuildContent() {
 
 void TransmissionRuleInspector::Clear() {
   rule_id_ = scada::NodeId{};
+  // Not loading_id_: Clear() is also how a not-yet-resident rule leaves
+  // ShowRule while its load is still in flight, and forgetting the id there
+  // would make the reply look stale and drop the redraw the load was for.
   if (stack_)
     stack_->setCurrentIndex(0);
 }
 
 void TransmissionRuleInspector::ShowRule(const NodeRef& transmission) {
-  if (!transmission ||
-      !IsInstanceOf(transmission, scada::devices::id::TransmissionItemType)) {
+  if (!transmission) {
+    Clear();
+    return;
+  }
+
+  // Ask before looking, and before the type test below: a rule reads in two
+  // hops and a selection makes neither resident, so an unasked-for rule renders
+  // as "— → 0" — no source, no signal tag, IOA 0, a configured rule looking
+  // unconfigured. Measured 2026-08-23 by rendering the panel without the fetch
+  // its capture had been doing on its behalf.
+  //
+  // Guarded by the id so the redraw below re-enters exactly once, and so a
+  // reply for a rule the operator has since moved off is dropped rather than
+  // repainting the card with another rule's source.
+  if (load_handler_ && loading_id_ != transmission.node_id()) {
+    loading_id_ = transmission.node_id();
+    const QPointer<TransmissionRuleInspector> alive{this};
+    load_handler_(transmission, [this, alive, rule = transmission] {
+      if (alive && loading_id_ == rule.node_id())
+        ShowRule(rule);
+    });
+  }
+
+  if (!IsInstanceOf(transmission, scada::devices::id::TransmissionItemType)) {
     Clear();
     return;
   }
