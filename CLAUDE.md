@@ -683,6 +683,27 @@ Ordered as: project headers, then third-party/standard headers, separated by bla
   `tools/check_ui_translations.py`) fails the build when a form string has no
   translation that would reach the `.qm`; it also records the deliberate
   exclusions and the remaining untranslated strings.
+- **The same check has two more rules, and both run without `lupdate`** (they
+  read the sources and the catalogs, so they must not inherit the skip that a
+  missing Qt LinguistTools causes):
+  - **No two shipping messages in one context may share a source.** `lrelease`
+    keeps one entry per (context, source) and drops the rest, so a duplicated
+    pair loses one translation and *which* one is file order rather than
+    intent. Ten sources were duplicated in the empty context until 2026-08-22;
+    `New` carried both «Создание» (the `CATEGORY_NEW` group) and «Новый» (the
+    New-graph/page actions), so all three actions rendered the group label.
+    Fix a genuine clash of meanings with two distinct sources; delete the later
+    copy when it is an accidental repeat.
+  - **Every `Translate("literal")` must have a translation that ships.**
+    `Translate()` falls back to the source on a miss, so a call site whose
+    string never reached `client_ru.ts` renders English and nothing says so.
+    This is the third of three ways the same defect hides — the other two being
+    a bare literal (the check above) and a `.ui` string in the wrong context —
+    and it is the one that catches a translated call site drifting from its
+    entry, since renaming the source in the code silently stops matching.
+    `TRANSLATE_GAPS` parks the 22 call sites already in that state (task 442).
+    Adjacent literals are joined before lookup, because `clang-format` splits
+    any sentence long enough to matter.
 
 ## Testing
 
