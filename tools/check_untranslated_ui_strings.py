@@ -568,7 +568,7 @@ def report_stale_entries(used, shared_roots_present):
         # shared scan claiming the two namespaces cannot be confused predates
         # that directory. The consequence here is a false *negative* in the
         # standalone export only (such a key would be skipped rather than
-        # reported), which is the safe direction; task 457 carries the fix.
+        # reported), which is the safe direction; task 459 carries the fix.
         path = key if isinstance(key, str) else key[0]
         root = path.split("/", 1)[0]
         return root not in SHARED_ROOTS or root in shared_roots_present
