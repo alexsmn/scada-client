@@ -158,46 +158,11 @@ KNOWN_GAPS = {
     # started reading Qt's display calls. None of them is new breakage: each
     # has been shipping in English inside the Russian client, unreported.
     #
-    # This list must only ever shrink. Draining it is task 419.
-
-    # --- the `u16format(L"...")` family: a wide literal formatted at the
-    # throw site, so neither the literal nor the format was ever translatable.
-    (
-        "modules/events/event_view.cpp",
-        "Enter a number from {} to {}.",
-    ): "u16format(L\"...\") severity-filter validation",
-    (
-        "modules/export/configuration/excel_configuration_commands.cpp",
-        "Error importing row {}, column {}: {}.",
-    ): 'u16format(L"...") import error',
-    (
-        "modules/export/configuration/export_data_reader.cpp",
-        "Property {} not found",
-    ): 'u16format(L"...") import error',
-    (
-        "modules/export/configuration/export_data_reader.cpp",
-        "Cannot convert value \'{}\' to type \'{}\'",
-    ): 'u16format(L"...") import error',
-    # --- plain literals at a window title or a tab.
-    (
-        "modules/graph/graph_setup_dialog.cpp",
-        "Graph Setup",
-    ): "operator dialog title",
-    ("modules/debugger/qt/debugger_qt.cpp", "Debugger"): "debugger window title",
-    ("modules/debugger/qt/debugger_qt.cpp", "Requests"): "debugger tab label",
-
-    # --- a raw-string HTML block painted into the Modus placeholder. Whole
-    # paragraphs of English, and the form that hid it best: a raw literal, so
-    # even the widened pattern reported its two href values until it learned
-    # `R"(...)"`. Translating it means splitting the prose out of the markup.
-    (
-        "modules/modus/qt/modus_view.cpp",
-        '<html><body> <p>The Modus ActiveXeme component used to display Modus '
-        'schematics is missing.</p> <p>Download the free version of the '
-        'component from the <a href="https://swman.ru">manufacturer\'s '
-        'website</a> or enable the experimental <a href="#internal-render">'
-        'built-in rendering</a>.</p> </body></html>',
-    ): "Modus placeholder, prose inside markup",
+    # This list must only ever shrink. Task 425 drained nine of the fourteen
+    # on 2026-08-22 — the u16format(L"...") family, the two window titles and
+    # the tab label, the Modus placeholder, and task 351's Vidicon address —
+    # each by wrapping the string in Translate() and adding the message to
+    # client_ru.ts. What is left is task 418's, below, and only that.
 
     # --- task 418: the trend legend value grid, a file-scope table the paint
     # loop indexes. Note the source strings are short and generic, so settle

@@ -4,10 +4,10 @@
 #include "aui/severity_colors.h"
 #include "aui/table.h"
 #include "aui/translation.h"
-#include "resources/common_resources.h"
+#include "controller/command_registry.h"
 #include "modules/debugger/debugger_context.h"
 #include "modules/debugger/request_table_model.h"
-#include "controller/command_registry.h"
+#include "resources/common_resources.h"
 #include "scada/session_service.h"
 
 #include <QFileDialog>
@@ -53,8 +53,9 @@ Debugger::Debugger(DebuggerContext&& context)
 
 void Debugger::Open() {
   QTabWidget* window = new QTabWidget;
-  window->setWindowTitle("Debugger");
-  window->addTab(CreateRequestView(window), "Requests");
+  window->setWindowTitle(QString::fromStdU16String(Translate("Debugger")));
+  window->addTab(CreateRequestView(window),
+                 QString::fromStdU16String(Translate("Requests")));
 
   QObject::connect(window, &QWidget::close, &QObject::deleteLater);
   window->show();
@@ -110,8 +111,8 @@ QWidget* Debugger::CreateRequestView(QWidget* parent) {
   const scada::aui::ThemeTokens& tokens = DebuggerTokens();
   auto* container = new QWidget{parent};
   container->setObjectName(QStringLiteral("debuggerView"));
-  container->setStyleSheet(QStringLiteral("#debuggerView{background:%1;}")
-                               .arg(tokens.bg.name()));
+  container->setStyleSheet(
+      QStringLiteral("#debuggerView{background:%1;}").arg(tokens.bg.name()));
   auto* layout = new QVBoxLayout{container};
   layout->setContentsMargins(0, 0, 0, 0);
   layout->setSpacing(0);
@@ -127,8 +128,9 @@ QWidget* Debugger::CreateRequestView(QWidget* parent) {
   bar->setSpacing(8);
 
   const QString button_style =
-      QStringLiteral("QPushButton{background:%1;color:%2;border:1px solid %3;"
-                     "border-radius:4px;padding:4px 12px;}")
+      QStringLiteral(
+          "QPushButton{background:%1;color:%2;border:1px solid %3;"
+          "border-radius:4px;padding:4px 12px;}")
           .arg(tokens.surface_muted.name(), tokens.fg.name(),
                tokens.border_strong.name());
 

@@ -1,7 +1,9 @@
 ﻿#include "modus/qt/modus_view.h"
 
+#include "aui/translation.h"
 #include "base/awaitable.h"
 #include "base/check.h"
+#include "base/u16format.h"
 #include "filesystem/file_util.h"
 #include "modus/activex/modus.h"
 #include "profile/window_definition.h"
@@ -121,13 +123,22 @@ void ModusView::OpenPlaceholder() {
 
   QLabel* placeholder = new QLabel{this};
   placeholder->setTextFormat(Qt::RichText);
-  placeholder->setText(
-      QString::fromWCharArray(LR"(<html><body>
-    <p>The Modus ActiveXeme component used to display Modus schematics is missing.</p>
-    <p>Download the free version of the component
-      from the <a href="https://swman.ru">manufacturer's website</a> or enable
-      the experimental <a href="#internal-render">built-in rendering</a>.</p>
-    </body></html>)"));
+  // Prose and markup are separated so the prose can be translated: the block
+  // used to be one raw literal, which made it untranslatable whole and would
+  // otherwise make a translator responsible for the <a href> targets. Each
+  // link's caption is its own string, substituted into the sentence.
+  const std::u16string website =
+      u16format(uR"(<a href="https://swman.ru">{}</a>)",
+                Translate("manufacturer's website"));
+  const std::u16string built_in = u16format(
+      uR"(<a href="#internal-render">{}</a>)", Translate("built-in rendering"));
+  placeholder->setText(QString::fromStdU16String(u16format(
+      uR"(<html><body><p>{}</p><p>{}</p></body></html>)",
+      Translate("The Modus ActiveXeme component used to display Modus "
+                "schematics is missing."),
+      u16format(Translate("Download the free version of the component from the "
+                          "{} or enable the experimental {}."),
+                website, built_in))));
   placeholder->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
   placeholder->setWordWrap(true);
   placeholder->setTextInteractionFlags(Qt::TextBrowserInteraction);

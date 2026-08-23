@@ -1,6 +1,7 @@
 #include "graph/graph_setup_dialog.h"
 
 #include "aui/dialog_service.h"
+#include "aui/translation.h"
 
 #include <QComboBox>
 #include <QDialog>
@@ -28,7 +29,7 @@ class GraphSetupDialogQt final : public QDialog {
  public:
   GraphSetupDialogQt(const GraphSetupDialog& setup, QWidget* parent)
       : QDialog{parent} {
-    setWindowTitle("Graph Setup");
+    setWindowTitle(ToQString(Translate("Graph Setup")));
 
     color_combo_ = new QComboBox{this};
     for (int i = 0; i < static_cast<int>(scada::aui::GetColorCount()); ++i) {

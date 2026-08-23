@@ -74,7 +74,7 @@ std::shared_ptr<EventTableModel> CreateEventTableModel(
 scada::EventSeverity ParseSeverity(std::u16string_view str) {
   unsigned severity = 0;
   if (!Parse(str, severity) || severity > scada::kSeverityMax) {
-    throw ResourceError{u16format(L"Enter a number from {} to {}.",
+    throw ResourceError{u16format(Translate("Enter a number from {} to {}."),
                                   scada::kSeverityMin, scada::kSeverityMax)};
   }
 

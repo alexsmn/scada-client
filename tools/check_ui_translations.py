@@ -100,7 +100,22 @@ KNOWN_GAPS = {
 
 # A `Translate("literal")` call. Only a literal argument is checkable: a call
 # taking a variable is resolved at runtime and says nothing about the catalog.
-TRANSLATE_CALL = re.compile(r'Translate\(\s*"((?:[^"\\]|\\.)*)"\s*\)')
+#
+# Adjacent literals are one string in C++ and must be joined here, because
+# clang-format splits any sentence long enough to matter across lines — a
+# pattern that only matched a single literal would quietly stop seeing exactly
+# the strings most likely to be missing.
+TRANSLATE_CALL = re.compile(
+    r'Translate\(\s*((?:"(?:[^"\\]|\\.)*"\s*)+)\)')
+STRING_PIECE = re.compile(r'"((?:[^"\\]|\\.)*)"')
+C_ESCAPES = {'\\n': '\n', '\\t': '\t', '\\"': '"', "\\'": "'",
+             '\\\\': '\\'}
+
+
+def literal_text(argument):
+    """Joins the adjacent string literals in `argument` into their C++ value."""
+    joined = "".join(STRING_PIECE.findall(argument))
+    return re.sub(r'\\[nt"\'\\\\]', lambda m: C_ESCAPES[m.group(0)], joined)
 
 
 def parse_ts(path, active_only):
@@ -142,8 +157,13 @@ def parse_ts(path, active_only):
 # have more. Measured 2026-08-22: 21 of 332 Translate() literals.
 #
 # Two thirds are the graph component's setup menu, which suggests one omission
-# rather than twenty; task 437 carries the work of draining this.
+# rather than twenty; task 442 carries the work of draining this.
 TRANSLATE_GAPS = {
+    # Invisible until the pattern learned to join adjacent literals: this one
+    # carries escaped quotes, so clang-format had split it and the
+    # single-literal form matched neither half.
+    'A valid URL must start with "http://" or "https://".':
+        "modules/favorites/favourites_add_url.cpp",
     'Add Pane':
         "modules/graph/graph_component.cpp",
     'Alias':
@@ -195,7 +215,7 @@ def find_translate_literals(cpp_files):
     for path in cpp_files:
         text = path.read_text(encoding="utf-8", errors="replace")
         for match in TRANSLATE_CALL.finditer(text):
-            calls.setdefault(match.group(1), set()).add(path)
+            calls.setdefault(literal_text(match.group(1)), set()).add(path)
     return calls
 
 

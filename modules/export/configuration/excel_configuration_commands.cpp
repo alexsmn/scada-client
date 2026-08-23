@@ -3,11 +3,11 @@
 #include "export/configuration/excel_configuration_commands.h"
 
 #include "aui/dialog_service.h"
-#include "aui/translation.h"
 #include "aui/resource_error.h"
+#include "aui/translation.h"
+#include "base/any_executor.h"
 #include "base/csv_reader.h"
 #include "base/csv_writer.h"
-#include "base/any_executor.h"
 #include "base/u16format.h"
 #ifdef _WIN32
 #include "base/win/win_util2.h"
@@ -146,7 +146,7 @@ ExportData ImportConfigurationCommand::LoadExportData(
 
   } catch (const ResourceError& e) {
     throw ResourceError{u16format(
-        L"Error importing row {}, column {}: {}.",
+        Translate("Error importing row {}, column {}: {}."),
         csv_reader.row_index(), csv_reader.cell_index(), e.message())};
   }
 }

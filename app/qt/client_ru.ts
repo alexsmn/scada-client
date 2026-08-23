@@ -775,6 +775,32 @@
         <source>Invalid Vidicon object address: {}.</source>
         <translation>Неверный адрес объекта Видикон: {}.</translation>
     </message>
+    <!-- modules/modus/qt/modus_view.cpp: shown in place of the schematic when
+         the ActiveX component is absent. Prose only — the markup and the two
+         <a href> targets stay in the code, and each link caption is its own
+         message so it can be substituted into the sentence below. -->
+    <message>
+        <source>The Modus ActiveXeme component used to display Modus schematics is missing.</source>
+        <translation>Компонент Modus ActiveXeme для отображения мнемосхем Modus не установлен.</translation>
+    </message>
+    <message>
+        <source>Download the free version of the component from the {} or enable the experimental {}.</source>
+        <translation>Загрузите бесплатную версию компонента с {} или включите экспериментальное {}.</translation>
+    </message>
+    <message>
+        <source>manufacturer&apos;s website</source>
+        <translation>сайта производителя</translation>
+    </message>
+    <message>
+        <source>built-in rendering</source>
+        <translation>встроенное отображение</translation>
+    </message>
+    <!-- modules/events/event_view.cpp: the severity filter box rejects a value
+         outside the range. -->
+    <message>
+        <source>Enter a number from {} to {}.</source>
+        <translation>Введите число от {} до {}.</translation>
+    </message>
     <message>
         <source>Loading</source>
         <translation>Загрузка</translation>
@@ -1130,6 +1156,11 @@
     <message>
         <source>Graph</source>
         <translation>График</translation>
+    </message>
+    <!-- modules/graph/graph_setup_dialog.cpp: the dialog's own title. -->
+    <message>
+        <source>Graph Setup</source>
+        <translation>Настройка графика</translation>
     </message>
     <message>
         <source>Data</source>
@@ -1530,6 +1561,12 @@
         <source>Cannot convert value &apos;{}&apos; to type &apos;{}&apos;</source>
         <translation>Невозможно преобразовать значение &apos;{}&apos; как тип &apos;{}&apos;</translation>
     </message>
+    <!-- modules/export/configuration/excel_configuration_commands.cpp: wraps
+         whichever reader error above it was thrown, with the CSV position. -->
+    <message>
+        <source>Error importing row {}, column {}: {}.</source>
+        <translation>Ошибка импорта строки {}, столбца {}: {}.</translation>
+    </message>
     <message>
         <source>Row has fewer cells than expected</source>
         <translation>Количество ячеек в строке меньше ожидаемого</translation>
@@ -1891,6 +1928,11 @@
     <message>
         <source>Debugger</source>
         <translation>Отладчик</translation>
+    </message>
+    <!-- modules/debugger/qt/debugger_qt.cpp: the debugger window's only tab. -->
+    <message>
+        <source>Requests</source>
+        <translation>Запросы</translation>
     </message>
     <message>
         <source>Debug information copied to clipboard.</source>

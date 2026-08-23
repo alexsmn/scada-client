@@ -123,9 +123,9 @@ std::optional<ExportData::PropertyValue> ExportDataReader::ReadProperty(
     const scada::NodeId& prop_decl_id) {
   auto prop_decl = node_service_.GetNode(prop_decl_id);
   if (!prop_decl) {
-    throw ResourceError{u16format(
-        L"Property {} not found",
-        UtfConvert<char16_t>(NodeIdToScadaString(prop_decl_id)))};
+    throw ResourceError{
+        u16format(Translate("Property {} not found"),
+                  UtfConvert<char16_t>(NodeIdToScadaString(prop_decl_id)))};
   }
 
   // The type system must be prefeteched before import starts.
@@ -149,9 +149,9 @@ std::optional<ExportData::PropertyValue> ExportDataReader::ParsePropertyValue(
   scada::Variant new_value;
   auto data_type = GetBuiltInDataType(prop_decl.data_type());
   if (!StringToValue(string_value, data_type, new_value)) {
-    throw ResourceError{u16format(
-        L"Cannot convert value '{}' to type '{}'",
-        std::u16string{string_value}, ToString(data_type))};
+    throw ResourceError{
+        u16format(Translate("Cannot convert value '{}' to type '{}'"),
+                  std::u16string{string_value}, ToString(data_type))};
   }
 
   if (new_value.is_null()) {
