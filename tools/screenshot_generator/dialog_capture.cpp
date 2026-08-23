@@ -565,8 +565,8 @@ bool SelectDeviceInDialogCombo(const DialogSpec& spec,
     for (int i = 0; i < combo->count(); ++i)
       seen << combo->itemText(i);
     ADD_FAILURE() << "No combo entry containing " << text.toStdString()
-                  << " for kind: " << spec.kind
-                  << " | entries=" << seen.join(QLatin1String(", ")).toStdString();
+                  << " for kind: " << spec.kind << " | entries="
+                  << seen.join(QLatin1String(", ")).toStdString();
     return false;
   }
   combo->setCurrentIndex(index);
@@ -839,9 +839,8 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
       if (std::ranges::find(device_ids, device.node_id()) == device_ids.end())
         nested_ids.push_back(device.node_id());
     }
-    if (!nested_ids.empty() &&
-        !scada::screenshot_generator::FetchNodesResident(*env.node_service,
-                                                         nested_ids)) {
+    if (!nested_ids.empty() && !scada::screenshot_generator::FetchNodesResident(
+                                   *env.node_service, nested_ids)) {
       ADD_FAILURE() << "CreateServiceItemDialog: failed to fetch nested "
                        "devices";
       return false;

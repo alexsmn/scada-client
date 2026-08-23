@@ -31,14 +31,13 @@ void SaveTransmissionRuleScreenshot(const ScreenshotSpec& spec,
   // that, so a rule an operator selected rendered "— → 0" — no source, no
   // signal tag, IOA 0. The panel asks for its own data now, and driving it
   // through that same seam is what keeps this image a true one.
-  inspector.SetLoadHandler(
-      [executor](const NodeRef& rule, std::function<void()> redraw) {
-        CoSpawn(executor,
-                [rule, redraw = std::move(redraw)]() -> Awaitable<void> {
-                  co_await FetchTransmissionRule(rule);
-                  redraw();
-                });
-      });
+  inspector.SetLoadHandler([executor](const NodeRef& rule,
+                                      std::function<void()> redraw) {
+    CoSpawn(executor, [rule, redraw = std::move(redraw)]() -> Awaitable<void> {
+      co_await FetchTransmissionRule(rule);
+      redraw();
+    });
+  });
   inspector.ShowRule(node_service.GetNode(rule_id));
 
   // The load is asynchronous now, so let it land before the grab.

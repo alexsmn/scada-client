@@ -63,9 +63,8 @@ class FetchLimitBandsTest : public ::testing::Test {
   static constexpr scada::NodeId kBaseType{801, 12};
 
   void Run(NodeRef item) {
-    RunAwaitable(io_, [item]() -> Awaitable<void> {
-      co_await FetchLimitBands(item);
-    });
+    RunAwaitable(
+        io_, [item]() -> Awaitable<void> { co_await FetchLimitBands(item); });
   }
 
   boost::asio::io_context io_;
@@ -78,16 +77,14 @@ TEST_F(FetchLimitBandsTest, FetchesTheItemItsTypeChainAndEveryBand) {
   nodes_.Add(scada::NodeState{.node_id = kItemType,
                               .node_class = scada::NodeClass::VariableType,
                               .supertype_id = kBaseType});
-  const NodeRef item = nodes_.Add(
-      scada::NodeState{
-          .node_id = kItem,
-          .node_class = scada::NodeClass::Variable,
-          .type_definition_id = kItemType,
-          .properties = {
-              {scada::data_items::id::AnalogItemType_LimitHiHi, 90.0},
-              {scada::data_items::id::AnalogItemType_LimitHi, 80.0},
-              {scada::data_items::id::AnalogItemType_LimitLo, 20.0},
-              {scada::data_items::id::AnalogItemType_LimitLoLo, 10.0}}});
+  const NodeRef item = nodes_.Add(scada::NodeState{
+      .node_id = kItem,
+      .node_class = scada::NodeClass::Variable,
+      .type_definition_id = kItemType,
+      .properties = {{scada::data_items::id::AnalogItemType_LimitHiHi, 90.0},
+                     {scada::data_items::id::AnalogItemType_LimitHi, 80.0},
+                     {scada::data_items::id::AnalogItemType_LimitLo, 20.0},
+                     {scada::data_items::id::AnalogItemType_LimitLoLo, 10.0}}});
 
   Run(item);
 

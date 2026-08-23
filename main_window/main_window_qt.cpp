@@ -1072,11 +1072,11 @@ void MainWindow::CreateInspectorPanel() {
       // and hands the panel a redraw.
       .load_limits =
           [this](const NodeRef& node, std::function<void()> redraw) {
-            CoSpawn(executor_, [node, redraw = std::move(redraw)]()
-                                   -> Awaitable<void> {
-              co_await FetchLimitBands(node);
-              redraw();
-            });
+            CoSpawn(executor_,
+                    [node, redraw = std::move(redraw)]() -> Awaitable<void> {
+                      co_await FetchLimitBands(node);
+                      redraw();
+                    });
           }});
 
   auto* dock =
@@ -1180,14 +1180,13 @@ void MainWindow::CreateTransmissionRulePanel() {
   // selection has not made resident — here in two hops, the second one a NodeId
   // property naming a peer node — so the shell owns the fetch and the panel
   // asks for it.
-  transmission_rule_->SetLoadHandler(
-      [this](const NodeRef& rule, std::function<void()> redraw) {
-        CoSpawn(executor_,
-                [rule, redraw = std::move(redraw)]() -> Awaitable<void> {
-                  co_await FetchTransmissionRule(rule);
-                  redraw();
-                });
-      });
+  transmission_rule_->SetLoadHandler([this](const NodeRef& rule,
+                                            std::function<void()> redraw) {
+    CoSpawn(executor_, [rule, redraw = std::move(redraw)]() -> Awaitable<void> {
+      co_await FetchTransmissionRule(rule);
+      redraw();
+    });
+  });
 
   auto* dock = new QDockWidget(
       QString::fromStdU16String(Translate("Transmission rule")), this);

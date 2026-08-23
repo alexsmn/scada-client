@@ -172,15 +172,14 @@ TEST_F(TransmissionRuleInspectorTest, LoadsTheRuleBeforeJudgingItsType) {
   ASSERT_TRUE(redraw);
 
   // The load lands: the rule becomes recognisable and readable.
-  nodes.Add(scada::NodeState{.node_id = kRuleType,
-                             .node_class = scada::NodeClass::ObjectType,
-                             .supertype_id =
-                                 scada::devices::id::TransmissionItemType});
   nodes.Add(scada::NodeState{
-      .node_id = kEndpoint,
-      .node_class = scada::NodeClass::Object,
-      .type_definition_id = kRuleType,
-      .attributes = {.display_name = u"Retranslation"}});
+      .node_id = kRuleType,
+      .node_class = scada::NodeClass::ObjectType,
+      .supertype_id = scada::devices::id::TransmissionItemType});
+  nodes.Add(scada::NodeState{.node_id = kEndpoint,
+                             .node_class = scada::NodeClass::Object,
+                             .type_definition_id = kRuleType,
+                             .attributes = {.display_name = u"Retranslation"}});
   nodes.Add(scada::NodeState{.node_id = kSource,
                              .node_class = scada::NodeClass::Variable,
                              .type_definition_id = kRuleType,

@@ -411,7 +411,8 @@ TEST_F(InspectorPanelTest, LimitsLoadForANodeSelection) {
 
   EXPECT_FALSE(limits->isHidden());
   EXPECT_EQ(
-      panel.findChildren<QLabel*>(QStringLiteral("inspectorLimitValue")).size() +
+      panel.findChildren<QLabel*>(QStringLiteral("inspectorLimitValue"))
+              .size() +
           panel.findChildren<QLabel*>(QStringLiteral("inspectorLimitBreached"))
               .size(),
       4);

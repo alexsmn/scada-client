@@ -144,9 +144,8 @@ constexpr StandaloneCapture kStandaloneCaptures[] = {
     // than an opened page view.
     {"device-diagnostics",
      +[](const StandaloneCaptureContext& c) {
-       SaveDeviceDiagnosticsScreenshot(c.spec, c.node_service,
-                                       c.timed_data_service, c.json,
-                                       c.executor);
+       SaveDeviceDiagnosticsScreenshot(
+           c.spec, c.node_service, c.timed_data_service, c.json, c.executor);
      }},
     // The device Metrics sheet is a CusTable whose cells DeviceMetricsModule
     // derives from the device's type-definition data variables, so it can only
@@ -424,7 +423,8 @@ QModelIndex FindTreeRowByPath(scada::aui::Tree& tree,
                     .toString();
       }
       ADD_FAILURE() << "Explorer row not found: " << name.toStdString()
-                    << " | siblings=" << seen.join(QLatin1String(", ")).toStdString();
+                    << " | siblings="
+                    << seen.join(QLatin1String(", ")).toStdString();
       return {};
     }
 

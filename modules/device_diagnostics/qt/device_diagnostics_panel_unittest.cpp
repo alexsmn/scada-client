@@ -217,10 +217,10 @@ TEST_F(DeviceDiagnosticsPanelTest, LoadsTheDeviceBeforeReadingItsLink) {
   } timed_data;
 
   FakeNodeService nodes;
-  nodes.Add(scada::NodeState{
-      .node_id = kDeviceType,
-      .node_class = scada::NodeClass::ObjectType,
-      .attributes = {.browse_name = scada::QualifiedName{"Iec60870DeviceType"}}});
+  nodes.Add(scada::NodeState{.node_id = kDeviceType,
+                             .node_class = scada::NodeClass::ObjectType,
+                             .attributes = {.browse_name = scada::QualifiedName{
+                                                "Iec60870DeviceType"}}});
   // Registered parentless: the state the device is in before anything fetched
   // it, in which the panel can find no link.
   nodes.Add(scada::NodeState{.node_id = kDevice,

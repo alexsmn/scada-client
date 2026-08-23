@@ -391,8 +391,7 @@ void DeviceDiagnosticsPanel::ShowDevice(const NodeRef& device,
     const QPointer<DeviceDiagnosticsPanel> alive{this};
     // The service is captured by pointer and outlives the panel: the shell owns
     // both, and every live spec this panel holds already refers to it.
-    context_.load(device, [this, alive, device,
-                           service = &timed_data_service] {
+    context_.load(device, [this, alive, device, service = &timed_data_service] {
       if (alive && loading_id_ == device.node_id())
         ShowDevice(device, *service);
     });
