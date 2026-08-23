@@ -59,6 +59,8 @@
 #include <QDockWidget>
 #include <QElapsedTimer>
 #include <QHeaderView>
+#include <QItemSelectionModel>
+#include <QLabel>
 #include <QLayout>
 #include <QLibraryInfo>
 #include <QLocale>
@@ -66,6 +68,7 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QPixmap>
+#include <QStackedWidget>
 #include <QStandardItem>
 #include <QStandardItemModel>
 #include <QString>
@@ -78,7 +81,9 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <array>
 #include <set>
+#include <span>
 #include <string>
 #include <string_view>
 
@@ -378,6 +383,127 @@ TEST_F(ScreenshotGenerator, CaptureDisplay) {
                         app_.node_service());
 }
 
+namespace {
+
+// Walks the Explorer tree from its visible root down `path` (one display name
+// per level), fetching and expanding each level on the way, and returns the
+// index of the last name. The rows are lazily loaded, so a level has to be
+// fetched and settled before the next name can be looked for.
+//
+// An invalid index means a step was not found, and the failure names the level
+// and the rows it did see: the caller uses this to put a selection on screen,
+// and a silently missed row would publish the state the selection exists to
+// replace.
+QModelIndex FindTreeRowByPath(scada::aui::Tree& tree,
+                              NodeService& node_service,
+                              std::span<const QString> path) {
+  QModelIndex parent = tree.rootIndex();
+  for (size_t level = 0; level < path.size(); ++level) {
+    const QString& name = path[level];
+    QModelIndex found;
+    const bool level_has_name = WaitUntil([&] {
+      if (tree.model()->canFetchMore(parent))
+        tree.model()->fetchMore(parent);
+      for (int row = 0; row < tree.model()->rowCount(parent); ++row) {
+        const QModelIndex index = tree.model()->index(row, 0, parent);
+        if (index.data(Qt::DisplayRole).toString() == name) {
+          found = index;
+          return true;
+        }
+      }
+      return false;
+    });
+
+    if (!level_has_name) {
+      QStringList seen;
+      for (int row = 0; row < tree.model()->rowCount(parent); ++row) {
+        seen << tree.model()
+                    ->index(row, 0, parent)
+                    .data(Qt::DisplayRole)
+                    .toString();
+      }
+      ADD_FAILURE() << "Explorer row not found: " << name.toStdString()
+                    << " | siblings=" << seen.join(QLatin1String(", ")).toStdString();
+      return {};
+    }
+
+    // Expanding fetches the next level; the leaf is left as the operator would
+    // leave it, so selecting a signal does not open a branch under it.
+    if (level + 1 < path.size()) {
+      tree.expand(found);
+      if (!WaitForPendingNodeLoads(node_service))
+        return {};
+    }
+    parent = found;
+  }
+  return parent;
+}
+
+// Puts a selection on screen for the workbench capture, because the Inspector
+// is a panel that shows the current one (docs/client/ux/shell.md §2.5) and an
+// unselected shell renders it as its "select an item" placeholder — so the
+// published hero documented the panel with the one state that says nothing
+// about what it holds.
+//
+// The selection is made the way the shell's own flow makes one ("Selection is
+// global": Explorer selection → Inspector): activate the Explorer, then select
+// the row. Everything downstream is the live path —
+// ConfigurationTreeView::UpdateSelection → SelectionModel →
+// MainWindow::OnSelectionChanged → InspectorPanel::ShowSelection — so the
+// capture exercises that wiring rather than filling the panel by hand, which is
+// what the standalone inspector-panel.png does.
+void SelectSignalForInspector(MainWindow& main_window,
+                              OpenedView& explorer_view,
+                              scada::aui::Tree& tree,
+                              NodeService& node_service,
+                              QWidget& window) {
+  // Активная мощность is an analog item under the fixture's telemetry folder,
+  // and it is the signal two of the journal rows are about — so the window
+  // shows one story rather than two.
+  const std::array<QString, 3> inspected_path = {
+      QStringLiteral("ЭСТРА-ПС"), QStringLiteral("ТИ"),
+      QStringLiteral("Активная мощность")};
+  const QModelIndex inspected =
+      FindTreeRowByPath(tree, node_service, inspected_path);
+  ASSERT_TRUE(inspected.isValid());
+
+  main_window.ActivateView(explorer_view);
+  tree.scrollTo(inspected);
+  tree.selectionModel()->setCurrentIndex(
+      inspected,
+      QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+
+  // The card fills in two steps — ShowSelection switches to the element page
+  // synchronously, and the readout arrives with the value — so wait for the
+  // second one. A "—" readout is the failure this guards: it means the panel is
+  // on screen holding nothing, which is the state the selection was made to
+  // avoid.
+  auto* stack = window.findChild<QStackedWidget*>("inspectorStack");
+  ASSERT_NE(stack, nullptr);
+  auto* value = window.findChild<QLabel*>("inspectorValue");
+  ASSERT_NE(value, nullptr);
+  const bool filled = WaitUntil([&] {
+    return stack->currentIndex() == 1 && !value->text().isEmpty() &&
+           value->text() != QStringLiteral("—");
+  });
+  EXPECT_TRUE(filled) << "Inspector did not fill for the Explorer selection"
+                      << " | page=" << stack->currentIndex()
+                      << " | value=" << value->text().toStdString();
+
+  // The card's Measurements limits block is deliberately NOT asserted, and its
+  // absence from the image is not a capture defect: a selection alone never
+  // makes a node's limit bands readable. `MakeLimitRows` reads them off the
+  // node's property children, TimedData fetches the node alone (see
+  // FetchNodesResident in screenshot_wait.h), and nothing in the selection path
+  // asks for the rest — measured here on 2026-08-23, the block stays hidden
+  // through a five-second pumped wait and appears immediately once the node is
+  // made resident by hand. Forcing that in the capture would document a card
+  // the operator's own click does not produce, so the image shows what the
+  // click shows. Tracked as task 452.
+}
+
+}  // namespace
+
 TEST_F(ScreenshotGenerator, CaptureMainWindow) {
   // Under --theme the same capture renders the reshelled operator workbench
   // (activity rail, context bar with the severity tiles, editor tabs, status
@@ -451,10 +577,14 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
 
   scada::aui::Tree* tree = nullptr;
   QDockWidget* tree_dock = nullptr;
+  // Kept for the selection below: the Inspector reads the *active* view's
+  // selection, so the Explorer has to be activated as well as clicked in.
+  OpenedView* struct_view = nullptr;
   for (OpenedView* view : main_window.opened_views()) {
     if (view->window_info().name != "Struct")
       continue;
 
+    struct_view = view;
     tree = FindTreeWidget(view->view());
     tree_dock = qobject_cast<QDockWidget*>(view->view()->parentWidget());
     break;
@@ -581,6 +711,17 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
     }
     return true;
   }));
+  for (int i = 0; i < 10; ++i)
+    QApplication::processEvents();
+
+  // The Inspector is reshell chrome, so only the themed render has one to
+  // fill; the legacy pass renders client-window.png, which has no such panel.
+  ASSERT_NE(struct_view, nullptr);
+  if (!GetScreenshotOptions().theme.empty()) {
+    SelectSignalForInspector(main_window, *struct_view, *tree,
+                             app_.node_service(), *qmain);
+  }
+
   for (int i = 0; i < 10; ++i)
     QApplication::processEvents();
 
