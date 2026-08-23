@@ -74,6 +74,19 @@ QUIET_CASES = (
     ("Translate() call", 'void f(){ setWindowTitle(Translate("Device Setup")); }'),
     ("Tr() per-file wrapper", 'void f(){ b->setToolTip(Tr("Zoom out")); }'),
     ("Qt tr() call", 'void f(){ setWindowTitle(tr("Device Setup")); }'),
+    # The whole mark-for-translation macro family, not just the one spelling
+    # this tree uses today. A checker that knows QT_TRANSLATE_NOOP and reports
+    # QT_TR_NOOP as a defect would repeat, in miniature, the bug it was fixed
+    # for.
+    ("QT_TR_NOOP macro", 'void f(){ setWindowTitle(QT_TR_NOOP("Device Setup")); }'),
+    (
+        "QT_TRANSLATE_NOOP macro",
+        'void f(){ setWindowTitle(QT_TRANSLATE_NOOP("Ctx", "Device Setup")); }',
+    ),
+    (
+        "QT_TRANSLATE_NOOP3 macro",
+        'void f(){ setWindowTitle(QT_TRANSLATE_NOOP3("Ctx", "Device Setup", "c")); }',
+    ),
     ("markup and placeholders only", 'void f(){ l->setText("<p>%1</p>"); }'),
     (
         "literal table in a file that paints nothing",

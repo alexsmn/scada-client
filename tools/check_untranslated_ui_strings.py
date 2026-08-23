@@ -320,9 +320,22 @@ CONSTANT = re.compile(
 #
 # The lookbehind excludes a member or qualified call — `x.tr(`, `Foo::tr(` —
 # from being taken as a bare `tr(`.
-TRANSLATORS = ("Translate", "TranslateUiText", "Tr", "tr", "QT_TRANSLATE_NOOP")
+TRANSLATORS = ("Translate", "TranslateUiText", "Tr", "tr")
+
+# Qt's mark-for-translation macros, as a family rather than as the one spelling
+# this tree happens to use today (`QT_TRANSLATE_NOOP`, 4 sites). Naming just
+# that one would repeat in miniature the bug this whole check was fixed for: a
+# pattern that knows one form of a construct and reports every sibling form as
+# a defect. Covers QT_TR_NOOP, QT_TR_N_NOOP, QT_TRANSLATE_NOOP,
+# QT_TRANSLATE_NOOP3, QT_TRANSLATE_N_NOOP3 and the _UTF8 variants.
+QT_NOOP_MACRO = r"QT_TR(?:ANSLATE)?(?:_N)?_NOOP\d?(?:_UTF8)?"
+
 TRANSLATOR_CALL = re.compile(
-    r"(?<![A-Za-z0-9_:.>])(?:" + "|".join(TRANSLATORS) + r")\s*\("
+    r"(?<![A-Za-z0-9_:.>])(?:"
+    + "|".join(TRANSLATORS)
+    + "|"
+    + QT_NOOP_MACRO
+    + r")\s*\("
 )
 
 HAS_LETTER = re.compile(r"[A-Za-zЀ-ӿ]")
