@@ -103,6 +103,19 @@ a literal that reaches a widget through a function call, a member or a
 container is not findable by reading source with regular expressions. Rule 3
 narrows the blind spot; it does not close it.
 
+**Rule 4 — every parked entry still matches something in the tree.**
+
+`ALLOWED_UNTRANSLATED`, `KNOWN_GAPS`, `ALLOWED_CYRILLIC`,
+`ALLOWED_CYRILLIC_DIRS` and `SHARED_CYRILLIC_GAPS` are all keyed on a literal
+expected to be *found*, and all documented as lists that may only shrink. When
+the literal is fixed the entry stops matching in silence — the check still
+passes, the list still claims the debt, and it now covers none of the code that
+replaced the string. Rule 4 is the arithmetic nobody was doing: the summary
+already counted *matched* gaps, so it printed "5 known gap(s)" over a
+thirteen-entry dict and the discrepancy went unread. Entries keyed on
+`core/`/`common/` are skipped when those roots are absent, which is the
+standalone client export.
+
 Usage:
     python3 client/tools/check_untranslated_ui_strings.py [--client-dir DIR]
 """
@@ -528,6 +541,64 @@ def scan_file_for_cyrillic(path: pathlib.Path, rel: str):
             yield line, text
 
 
+def report_stale_entries(used, shared_roots_present):
+    """Rule 4. Returns the number of parked entries that matched nothing.
+
+    Every list in this file is keyed on a literal expected to be *found* in the
+    tree, and each is documented as one that "must only ever shrink". But when
+    the literal is finally fixed the entry simply stops matching: nothing
+    fails, nothing prints, and the list goes on claiming a debt that is paid
+    while covering none of the code that replaced it. That is the same "reports
+    OK while blind" failure the lists' own comments say they exist to prevent —
+    task 425 left eight stale entries behind and only a hand sweep found them.
+
+    The information was already here: the summary line counts *matched* gaps,
+    so it printed "5 known gap(s)" over a thirteen-entry dict and no one had
+    reason to compare the two numbers. This compares them.
+
+    `shared_roots_present` is why this is not a two-line function. `core/` and
+    `common/` are absent when the client is built from its published standalone
+    export, so every key naming them goes unmatched for a reason that is not
+    staleness. Those keys are skipped rather than reported, and the caller says
+    which roots it actually scanned.
+    """
+    def scanned(key):
+        path = key if isinstance(key, str) else key[0]
+        root = path.split("/", 1)[0]
+        return root not in SHARED_ROOTS or root in shared_roots_present
+
+    lists = (
+        ("ALLOWED_UNTRANSLATED", ALLOWED_UNTRANSLATED),
+        ("KNOWN_GAPS", KNOWN_GAPS),
+        ("ALLOWED_CYRILLIC", ALLOWED_CYRILLIC),
+        ("ALLOWED_CYRILLIC_DIRS", ALLOWED_CYRILLIC_DIRS),
+        ("SHARED_CYRILLIC_GAPS", SHARED_CYRILLIC_GAPS),
+    )
+    stale = [(name, key) for name, entries in lists for key in entries
+             if scanned(key) and (name, key) not in used]
+    if not stale:
+        return 0
+
+    print(f"{len(stale)} parked entr(y/ies) match nothing in the tree:\n")
+    for name, key in stale:
+        if isinstance(key, str):
+            print(f"  {name}[{key!r}]")
+        else:
+            rel, text = key
+            shown = text if len(text) <= 60 else text[:57] + "..."
+            print(f'  {name}[({rel!r}, "{shown}")]')
+    print(
+        "\nEach of these lists is keyed on a literal expected to be found in\n"
+        "the tree, and each must only ever shrink. An entry that matches\n"
+        "nothing has already shrunk — the string was fixed, renamed or\n"
+        "deleted — so delete the entry. Until you do, the list overstates the\n"
+        "debt and, worse, covers none of the code that replaced the string.\n"
+        "If the entry is still wanted, its key no longer describes anything\n"
+        "real; re-key it against the literal that is actually there."
+    )
+    return 1
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--client-dir", default=str(pathlib.Path(__file__).resolve().parents[1]))
@@ -542,6 +613,10 @@ def main() -> int:
     displayed = []
     cyrillic, cyrillic_allowed, cyrillic_gaps = [], 0, 0
     scanned = 0
+    # Rule 4's evidence: the parked key each match consumed. A key that
+    # matches nothing is an entry describing a literal the tree no longer has,
+    # which is silent over-statement of the debt — see report_stale_entries().
+    used = set()
     for path in sorted(client_dir.rglob("*")):
         if path.suffix not in (".cpp", ".h") or is_excluded(path, client_dir):
             continue
@@ -550,8 +625,10 @@ def main() -> int:
         for line, sink, text, via in scan_file(path, client_dir):
             if (rel, text) in ALLOWED_UNTRANSLATED:
                 allowed += 1
+                used.add(("ALLOWED_UNTRANSLATED", (rel, text)))
             elif (rel, text) in KNOWN_GAPS:
                 gaps += 1
+                used.add(("KNOWN_GAPS", (rel, text)))
             else:
                 findings.append((rel, line, sink, text, via))
 
@@ -560,15 +637,21 @@ def main() -> int:
         ):
             if (rel, text) in ALLOWED_UNTRANSLATED:
                 allowed += 1
+                used.add(("ALLOWED_UNTRANSLATED", (rel, text)))
             elif (rel, text) in KNOWN_GAPS:
                 gaps += 1
+                used.add(("KNOWN_GAPS", (rel, text)))
             else:
                 displayed.append((rel, line, sink, text))
 
         directory = rel.rsplit("/", 1)[0]
         for line, text in scan_file_for_cyrillic(path, rel):
-            if directory in ALLOWED_CYRILLIC_DIRS or (rel, text) in ALLOWED_CYRILLIC:
+            if directory in ALLOWED_CYRILLIC_DIRS:
                 cyrillic_allowed += 1
+                used.add(("ALLOWED_CYRILLIC_DIRS", directory))
+            elif (rel, text) in ALLOWED_CYRILLIC:
+                cyrillic_allowed += 1
+                used.add(("ALLOWED_CYRILLIC", (rel, text)))
             else:
                 cyrillic.append((rel, line, text))
 
@@ -576,10 +659,12 @@ def main() -> int:
     # superproject (`core/…`, `common/…`) so they cannot be confused with the
     # client-relative ones above.
     shared_scanned = 0
+    shared_roots_present = []
     for root_name in SHARED_ROOTS:
         root = client_dir.parent / root_name
         if not root.is_dir():
             continue
+        shared_roots_present.append(root_name)
         for path in sorted(root.rglob("*")):
             if path.suffix not in (".cpp", ".h", ".cppm") or is_excluded(path, root):
                 continue
@@ -588,8 +673,10 @@ def main() -> int:
             for line, text in scan_file_for_cyrillic(path, rel):
                 if rel in SHARED_CYRILLIC_GAPS:
                     cyrillic_gaps += 1
+                    used.add(("SHARED_CYRILLIC_GAPS", rel))
                 elif (rel, text) in ALLOWED_CYRILLIC:
                     cyrillic_allowed += 1
+                    used.add(("ALLOWED_CYRILLIC", (rel, text)))
                 else:
                     cyrillic.append((rel, line, text))
     scanned += shared_scanned
@@ -634,6 +721,9 @@ def main() -> int:
             "or a protocol token rather than words an operator reads, add it to\n"
             "ALLOWED_UNTRANSLATED with the reason."
         )
+        return 1
+
+    if report_stale_entries(used, shared_roots_present):
         return 1
 
     print(

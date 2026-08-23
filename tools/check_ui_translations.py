@@ -62,6 +62,14 @@ accidental repeat it is deleting the later copy.
 
 This rule needs no `lupdate`, so it runs even where Qt LinguistTools is absent.
 
+**Rule 5 — every parked entry still matches something in the tree.**
+
+ALLOWED_UNTRANSLATED, KNOWN_GAPS and TRANSLATE_GAPS are keyed on strings
+expected to be *found*, and all three may only shrink. Fix the string and the
+entry stops matching in silence, so the list overstates the debt while covering
+none of the code that replaced it. The sibling rule in
+`check_untranslated_ui_strings.py` guards that file's four lists.
+
 Usage:
     python3 client/tools/check_ui_translations.py [--client-dir DIR]
 """
@@ -85,8 +93,10 @@ ALLOWED_UNTRANSLATED = {
                               "character, same as the delimiter above.",
     # Design-time placeholder text, overwritten before the form is shown —
     # verified against the code that fills each one, not assumed from the name.
-    ("WriteDialog", "Dialog"): "Default form title; WriteDialog's constructor "
-                               "calls setWindowTitle() from the model.",
+    # A `("WriteDialog", "Dialog")` entry sat here until 2026-08-23: the form's
+    # default title, replaced by "Write value" in 57a4f116e, so the key had
+    # been describing nothing since. Rule 5 found it on its first run, which is
+    # the whole argument for rule 5.
     ("WriteDialog", "(Description)"): "Filled by ui.descriptionLabel->setText().",
     ("WriteDialog", "(Value)"): "Filled by ui.currentValueLabel->setText().",
     ("WriteDialog", "(Condition)"): "Filled by ui.conditionLabel->setText().",
@@ -278,6 +288,46 @@ def report_unshipped_catalogs(ts_files, client_dir):
     return len(orphans)
 
 
+def report_stale_entries(expected, calls):
+    """Rule 5. Returns the number of parked entries that match nothing.
+
+    The sibling of rule 4 in check_untranslated_ui_strings.py, and it exists
+    for the same reason: ALLOWED_UNTRANSLATED, KNOWN_GAPS and TRANSLATE_GAPS
+    are each keyed on something expected to be *found* — a (context, source)
+    pair lupdate extracts from a .ui form, or a Translate() literal in the
+    tree — and each is documented as a list that may only shrink. Fix the
+    string and the entry stops matching silently, leaving the list overstating
+    the debt while covering none of the code that replaced it.
+
+    `expected` is lupdate's extraction, so this can only judge the two .ui
+    lists when lupdate ran; the caller passes None otherwise and they are
+    skipped rather than reported wholesale.
+    """
+    stale = []
+    if expected is not None:
+        pairs = {(context, source)
+                 for context, sources in expected.items() for source in sources}
+        stale += [("ALLOWED_UNTRANSLATED", key)
+                  for key in ALLOWED_UNTRANSLATED if key not in pairs]
+        stale += [("KNOWN_GAPS", key) for key in KNOWN_GAPS if key not in pairs]
+    stale += [("TRANSLATE_GAPS", source)
+              for source in TRANSLATE_GAPS if source not in calls]
+    if not stale:
+        return 0
+
+    print(f"\n{len(stale)} parked entr(y/ies) match nothing in the tree:",
+          file=sys.stderr)
+    for name, key in stale:
+        print(f"  {name}[{key!r}]", file=sys.stderr)
+    print("\nEach of these lists is keyed on a string expected to be found — a "
+          ".ui form's (context, source) pair, or a Translate() literal — and "
+          "each must only ever shrink. An entry matching nothing has already "
+          "shrunk: delete it. Until then the list claims a debt that is paid "
+          "and covers none of the code that replaced the string.",
+          file=sys.stderr)
+    return len(stale)
+
+
 def find_duplicate_sources(path):
     """Lists (context, source, [translations]) duplicated among shipping entries.
 
@@ -388,14 +438,25 @@ def main():
         return 1
     print("OK: every other Translate() string has a translation that ships.")
 
+    calls = find_translate_literals(cpp_files)
     lupdate = shutil.which("lupdate")
     if not lupdate:
+        # The .ui lists cannot be judged without lupdate's extraction, but
+        # TRANSLATE_GAPS can: it is keyed on Translate() literals, which this
+        # file reads itself.
+        if report_stale_entries(None, calls):
+            return 1
+        print("OK: no stale TRANSLATE_GAPS entries.")
         # Matches the build, which also degrades gracefully without Qt
         # LinguistTools rather than failing.
         print("lupdate not found; skipping the .ui translation check.")
         return 0
 
     expected = extract_ui_strings(ui_files, lupdate)
+
+    if report_stale_entries(expected, calls):
+        return 1
+    print("OK: every parked entry still matches something in the tree.")
 
     shipped = {}
     for path in ts_files:

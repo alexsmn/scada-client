@@ -17,6 +17,8 @@ Source-only and dependency-free, like the checker it covers. Run it directly or
 through ctest as `client_untranslated_string_check_test`.
 """
 
+import contextlib
+import io
 import pathlib
 import sys
 import tempfile
@@ -141,7 +143,46 @@ def main() -> int:
             if noise:
                 failures.append(f"false positive on {name}: {noise}")
 
-    total = len(DIALOG_SINK_CASES) + len(DISPLAY_CASES) + len(QUIET_CASES) + 2
+    # Rule 4: a parked entry whose literal is gone must be reported, not
+    # silently ignored. This is the failure the rule was written for — the
+    # lists all shrink by the string being *fixed*, which is exactly when the
+    # entry stops matching and nothing says so. On its first run it found a
+    # real one, ("WriteDialog", "Dialog") in the sibling checker.
+    matched = ("KNOWN_GAPS", ("modules/x/x.cpp", "still here"))
+    # Its report goes to stdout by design; swallow it so this test's own
+    # result is the only thing the run prints.
+    with contextlib.redirect_stdout(io.StringIO()):
+        stale = checker.report_stale_entries({matched},
+                                             list(checker.SHARED_ROOTS))
+    if stale == 0:
+        failures.append("rule 4 missed: every parked entry unmatched")
+
+    # ...and must stay quiet when every entry matched, or it is unusable.
+    every = {(name, key) for name, entries in (
+        ("ALLOWED_UNTRANSLATED", checker.ALLOWED_UNTRANSLATED),
+        ("KNOWN_GAPS", checker.KNOWN_GAPS),
+        ("ALLOWED_CYRILLIC", checker.ALLOWED_CYRILLIC),
+        ("ALLOWED_CYRILLIC_DIRS", checker.ALLOWED_CYRILLIC_DIRS),
+        ("SHARED_CYRILLIC_GAPS", checker.SHARED_CYRILLIC_GAPS),
+    ) for key in entries}
+    if checker.report_stale_entries(every, list(checker.SHARED_ROOTS)) != 0:
+        failures.append("rule 4 false positive: all entries matched")
+
+    # The standalone client export has no core/ or common/, so keys naming them
+    # go unmatched for a reason that is not staleness and must not be reported.
+    # Getting this wrong would fail the check on exactly the layout ADR 0011
+    # exists to support.
+    shared_only = {(name, key) for name, entries in (
+        ("ALLOWED_UNTRANSLATED", checker.ALLOWED_UNTRANSLATED),
+        ("KNOWN_GAPS", checker.KNOWN_GAPS),
+        ("ALLOWED_CYRILLIC_DIRS", checker.ALLOWED_CYRILLIC_DIRS),
+    ) for key in entries}
+    shared_only |= {("ALLOWED_CYRILLIC", key) for key in checker.ALLOWED_CYRILLIC
+                    if key[0].split("/", 1)[0] not in checker.SHARED_ROOTS}
+    if checker.report_stale_entries(shared_only, []) != 0:
+        failures.append("rule 4 reported shared-root keys with no shared roots")
+
+    total = len(DIALOG_SINK_CASES) + len(DISPLAY_CASES) + len(QUIET_CASES) + 5
     if failures:
         print(f"{len(failures)} of {total} case(s) failed:\n")
         for failure in failures:
