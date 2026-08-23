@@ -1039,6 +1039,84 @@
         <source>Your account cannot issue control commands on this link</source>
         <translation>Учётная запись не имеет права управления этой связью</translation>
     </message>
+    <!-- The IEC 60870-5-104 link section: its heading, its nine APCI rows and
+         the two value vocabularies they render (link state, t1 flag). These
+         reach Translate() as ProtocolField/ProtocolDiagnostics table fields
+         rather than as literals at the call site, so no catalog check could see
+         them and no capture rendered them - the fixture had no link until
+         2026-08-23, and the section is drawn only for a device that has one.
+         The sequence-counter names keep the IEC 60870-5-104 V(S)/V(R) notation,
+         which is the standard's own and is not translated. -->
+    <message>
+        <source>Link (IEC 60870-5-104)</source>
+        <translation>Канал (МЭК 60870-5-104)</translation>
+    </message>
+    <message>
+        <source>State</source>
+        <translation>Состояние</translation>
+    </message>
+    <message>
+        <source>Last connected</source>
+        <translation>Последнее подключение</translation>
+    </message>
+    <message>
+        <source>Round-trip</source>
+        <translation>Время отклика</translation>
+    </message>
+    <message>
+        <source>Send seq V(S)</source>
+        <translation>Счётчик передачи V(S)</translation>
+    </message>
+    <message>
+        <source>Recv seq V(R)</source>
+        <translation>Счётчик приёма V(R)</translation>
+    </message>
+    <message>
+        <source>Acknowledged to</source>
+        <translation>Подтверждено до</translation>
+    </message>
+    <message>
+        <source>Unacknowledged frames</source>
+        <translation>Неподтверждённых кадров</translation>
+    </message>
+    <message>
+        <source>Retransmits in window</source>
+        <translation>Повторов в окне</translation>
+    </message>
+    <message>
+        <source>t1 timeout</source>
+        <translation>Таймаут t1</translation>
+    </message>
+    <!-- Iec60870LinkStateLabel: the APCI state names. -->
+    <message>
+        <source>Starting</source>
+        <translation>Запуск</translation>
+    </message>
+    <message>
+        <source>Running</source>
+        <translation>Работает</translation>
+    </message>
+    <message>
+        <source>Test</source>
+        <translation>Тест</translation>
+    </message>
+    <message>
+        <source>Closed</source>
+        <translation>Закрыт</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>Неизвестно</translation>
+    </message>
+    <!-- The t1 flag reads as a condition rather than as true/false. -->
+    <message>
+        <source>expired</source>
+        <translation>истёк</translation>
+    </message>
+    <message>
+        <source>ok</source>
+        <translation>норма</translation>
+    </message>
     <message>
         <source>Not available for the current selection</source>
         <translation>Недоступно для текущего выделения</translation>

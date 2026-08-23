@@ -1,5 +1,7 @@
 #include "device_diagnostics/qt/device_diagnostics_panel.h"
 
+#include "base/format_time.h"
+
 #include "base/time_utils.h"
 
 #include "aui/qt/theme_qt.h"
@@ -148,9 +150,13 @@ QString FormatShaped(const scada::Variant& value, ProtocolValueShape shape) {
       // The zero instant is not a reading: a link that has never connected has
       // no last-connected time, and rendering the epoch would show 1970.
       if (scada::Time stamp; value.get(stamp) && stamp != scada::Time{}) {
-        return QDateTime::fromMSecsSinceEpoch(
-                   InMilliseconds(stamp - scada::Time{}))
-            .toString(Qt::TextDate);
+        // The client's own format, not Qt::TextDate. Qt's renders the C locale
+        // ("Thu Apr 16 14:48:12 2026") in the middle of an otherwise Russian
+        // panel, and disagrees with every other timestamp the operator sees —
+        // the event journal, the Inspector's alarm card and this panel's own
+        // device log all go through FormatTime.
+        return QString::fromStdString(
+            FormatTime(stamp, TIME_FORMAT_DATE | TIME_FORMAT_TIME));
       }
       return {};
     case ProtocolValueShape::kCount:
