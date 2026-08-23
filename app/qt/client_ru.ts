@@ -2361,6 +2361,115 @@
         <source>No</source>
         <translation>Нет</translation>
     </message>
+    <!-- modules/graph/graph_component.cpp
+         The graph's own View, Setup and Edit menus. Registered together in
+         RegisterGraphCommandActions(); a `short_title_` is the compact
+         label the toolbar uses, which is why several come in pairs. -->
+    <message>
+        <source>Legend</source>
+        <translation>Легенда</translation>
+    </message>
+    <message>
+        <source>Dots</source>
+        <translation>Точки</translation>
+    </message>
+    <message>
+        <source>Steps</source>
+        <translation>Ступенчато</translation>
+    </message>
+    <message>
+        <source>Scroll Bar</source>
+        <translation>Полоса прокрутки</translation>
+    </message>
+    <message>
+        <source>Scroll to Now</source>
+        <translation>Прокрутить к текущему времени</translation>
+    </message>
+    <message>
+        <source>Now</source>
+        <translation>Сейчас</translation>
+    </message>
+    <message>
+        <source>Line Color...</source>
+        <translation>Цвет линии...</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>Цвет</translation>
+    </message>
+    <message>
+        <source>Graph Setup...</source>
+        <translation>Настройка графика...</translation>
+    </message>
+    <message>
+        <source>Setup</source>
+        <translation>Настройка</translation>
+    </message>
+    <message>
+        <source>Background Color...</source>
+        <translation>Цвет фона...</translation>
+    </message>
+    <message>
+        <source>Background</source>
+        <translation>Фон</translation>
+    </message>
+    <message>
+        <source>Add Pane</source>
+        <translation>Добавить область</translation>
+    </message>
+    <message>
+        <source>Delete Pane</source>
+        <translation>Удалить область</translation>
+    </message>
+    <!-- main_window/activity_bar_qt.cpp
+         The activity rail. `open in another window` is a tooltip suffix, joined
+         to the page label with an em dash, so it is lower-case and
+         continues that sentence rather than starting one. -->
+    <message>
+        <source>New page</source>
+        <translation>Новая страница</translation>
+    </message>
+    <message>
+        <source>open in another window</source>
+        <translation>открыта в другом окне</translation>
+    </message>
+    <!-- main_window/main_window_module.cpp
+         `Speech` toggles Profile::speech_enabled — spoken event announcements,
+         named the way its sibling options are rather than by the noun. -->
+    <message>
+        <source>Speech</source>
+        <translation>Речевое оповещение</translation>
+    </message>
+    <message>
+        <source>Restart the application to apply the new language now?</source>
+        <translation>Перезапустить приложение, чтобы применить новый язык?</translation>
+    </message>
+    <!-- main_window/main_window_qt.cpp
+         The page context menu's icon submenu. -->
+    <message>
+        <source>Icon</source>
+        <translation>Значок</translation>
+    </message>
+    <!-- modules/node_table/node_table_menu_model.cpp
+         A Sort-by key, alongside `None` and `Channel`. -->
+    <message>
+        <source>Alias</source>
+        <translation>Псевдоним</translation>
+    </message>
+    <!-- modules/filesystem/filesystem_commands.cpp
+         Distinct from `Failed to download file from server.` above: this one
+         reports that the downloaded file is not on disk afterwards. -->
+    <message>
+        <source>Failed to download file.</source>
+        <translation>Не удалось загрузить файл.</translation>
+    </message>
+    <!-- modules/favorites/favourites_add_url.cpp
+         The scheme check behind Add Web Page. The quoted schemes are literal
+         and stay in both languages. -->
+    <message>
+        <source>A valid URL must start with "http://" or "https://".</source>
+        <translation>URL должен начинаться с "http://" или "https://".</translation>
+    </message>
 </context>
 <context>
     <name>AboutDialog</name>

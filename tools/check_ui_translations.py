@@ -163,59 +163,13 @@ def parse_ts(path, active_only):
 # Rule 3's KNOWN_GAPS: `Translate("...")` call sites with no shipping entry in
 # the empty context, so they render their English source inside the Russian
 # client. Same bar as the lists above — this must only ever shrink, and an
-# addition is a review conversation. Each is mapped to one call site; several
-# have more. Measured 2026-08-22: 21 of 332 Translate() literals.
+# addition is a review conversation.
 #
-# Two thirds are the graph component's setup menu, which suggests one omission
-# rather than twenty; task 442 carries the work of draining this.
+# Empty, and it took a drain to get here: twenty-two entries were parked when
+# the rule was written on 2026-08-22, fourteen of them the graph component's
+# setup menu — one omission rather than fourteen decisions, which is why they
+# went in a single pass (task 442).
 TRANSLATE_GAPS = {
-    # Invisible until the pattern learned to join adjacent literals: this one
-    # carries escaped quotes, so clang-format had split it and the
-    # single-literal form matched neither half.
-    'A valid URL must start with "http://" or "https://".':
-        "modules/favorites/favourites_add_url.cpp",
-    'Add Pane':
-        "modules/graph/graph_component.cpp",
-    'Alias':
-        "modules/node_table/node_table_menu_model.cpp",
-    'Background':
-        "modules/graph/graph_component.cpp",
-    'Background Color...':
-        "modules/graph/graph_component.cpp",
-    'Color':
-        "modules/graph/graph_component.cpp",
-    'Delete Pane':
-        "modules/graph/graph_component.cpp",
-    'Dots':
-        "modules/graph/graph_component.cpp",
-    'Failed to download file.':
-        "modules/filesystem/filesystem_commands.cpp",
-    'Graph Setup...':
-        "modules/graph/graph_component.cpp",
-    'Icon':
-        "main_window/main_window_qt.cpp",
-    'Legend':
-        "modules/graph/graph_component.cpp",
-    'Line Color...':
-        "modules/graph/graph_component.cpp",
-    'New page':
-        "main_window/activity_bar_qt.cpp",
-    'Now':
-        "modules/graph/graph_component.cpp",
-    'Restart the application to apply the new language now?':
-        "main_window/main_window_module.cpp",
-    'Scroll Bar':
-        "modules/graph/graph_component.cpp",
-    'Scroll to Now':
-        "modules/graph/graph_component.cpp",
-    'Setup':
-        "modules/graph/graph_component.cpp",
-    'Speech':
-        "main_window/main_window_module.cpp",
-    'Steps':
-        "modules/graph/graph_component.cpp",
-    'open in another window':
-        "main_window/activity_bar_qt.cpp",
 }
 
 
