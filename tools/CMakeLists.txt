@@ -13,14 +13,23 @@ if(Python3_FOUND)
       "--client-dir=${CMAKE_CURRENT_SOURCE_DIR}/..")
   set_tests_properties(client_ui_translation_check PROPERTIES TIMEOUT 120)
 
-  # The complementary gap: a user-facing string hard-coded as a u"..." literal
-  # never reaches a .ts at all, so the check above cannot see it and lupdate
-  # does not recognise Translate(). Source-only, so it needs no build.
+  # The complementary gap: a user-facing string hard-coded as a literal never
+  # reaches a .ts at all, so the check above cannot see it and lupdate does not
+  # recognise Translate(). Source-only, so it needs no build.
   add_test(NAME client_untranslated_string_check
     COMMAND ${Python3_EXECUTABLE}
       "${CMAKE_CURRENT_SOURCE_DIR}/check_untranslated_ui_strings.py"
       "--client-dir=${CMAKE_CURRENT_SOURCE_DIR}/..")
   set_tests_properties(client_untranslated_string_check PROPERTIES TIMEOUT 120)
+
+  # ...and a test for that checker, because its own failure mode is silence: a
+  # regex that stops matching makes it report OK over a tree full of the defect
+  # rather than fail. It shipped exactly that way, matching only u"..." while
+  # L"...", plain "..." at a Qt widget and raw R"(...)" blocks went unseen.
+  add_test(NAME client_untranslated_string_check_test
+    COMMAND ${Python3_EXECUTABLE}
+      "${CMAKE_CURRENT_SOURCE_DIR}/check_untranslated_ui_strings_test.py")
+  set_tests_properties(client_untranslated_string_check_test PROPERTIES TIMEOUT 120)
 
   # The same shape of defect one layer over: a resource path the qrc does not
   # list yields a null QIcon and a blank row, with nothing failing and nothing

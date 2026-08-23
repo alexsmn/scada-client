@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-r"""Checks that user-facing strings are not hard-coded as `u"..."` literals.
+r"""Checks that user-facing strings are not hard-coded as string literals.
 
 The failure this exists to prevent: a string that reaches the operator is
 written as a raw UTF-16 literal instead of going through `Translate()`, so it
@@ -16,7 +16,22 @@ more, of which *eleven already had finished Russian translations* sitting
 unused in `client_ru.ts`: the catalog entries were fine, the code simply never
 asked for them.
 
-Two independent rules run over the tree.
+**Every literal form counts, not just `u"..."`.** Until 2026-08-22 the
+literal pattern was `u"..."` alone, which made the check blind to two forms
+that ship the same defect and had each done so: a wide `L"..."` — the shape
+`u16format(L"Property {} not found", ...)` uses, five call sites of it — and a
+plain `"..."` handed to a Qt widget, `setWindowTitle("Graph Setup")`. Both read
+as ordinary code and neither was reported. The pattern now accepts the
+`u8`/`u`/`U`/`L` prefixes and none, which is what a C++ string literal actually
+is.
+
+That widening is only usable together with the next paragraph: a plain `"..."`
+is also how a *correctly* translated string is spelled, since `Translate("...")`
+takes one. So before a region is judged, every `Translate(...)`-family call in
+it is blanked out, and only what remains is a finding. Without that step the
+widened pattern reports 40 correct call sites and nothing else.
+
+Three independent rules run over the tree.
 
 **Rule 1 — untranslated strings at a user-facing sink.**
 
@@ -24,12 +39,18 @@ Two independent rules run over the tree.
     `SINKS`) — a message box, a resource error, a file-dialog title, a window
     title. Scanning every literal in the tree would drown in protocol strings,
     node-id paths and format specifiers.
-  * It resolves `char16_t` constants, because that is how the bug hides: a
+  * It resolves character-array constants, because that is how the bug hides: a
     namespace-scope `const char16_t kExportTitle[] = u"Export";` *cannot* call
     `Translate()` (which reads the installed catalog and needs a running
     QApplication), so the constant form is the tempting wrong answer.
-  * Adjacent literals are joined, so a wrapped `u"a " u"b"` is judged whole.
-  * A literal with no letters (punctuation, separators, glyphs) is ignored.
+  * Adjacent literals are joined, so a wrapped `u"a " u"b"` is judged whole —
+    *adjacent* meaning nothing but whitespace between them. Literals in
+    different arguments are judged separately; joining those produced
+    nonsense findings like `"No data to export.Export"`, a message and a
+    dialog title welded together.
+  * A literal that is nothing but markup or format placeholders is ignored,
+    so `about_dialog.cpp`'s `"<p>&copy; %3 <a href='%4'>%5</a></p>"` is not a
+    finding while `"Property {} not found"` is.
 
 **Rule 2 — no Cyrillic in a string literal, anywhere.**
 
@@ -54,6 +75,33 @@ Russian literals with no seam to translate them through, which is precisely the
 condition this rule detects. Those trees are optional — the client repo is
 published standalone, where they are absent — so the check skips whichever it
 cannot find rather than failing.
+
+**Rule 3 — no untranslated literal at a Qt text-display API.**
+
+Rule 1's six sinks are all *dialogs*. A string painted onto a widget reaches
+the operator just as surely and passes none of them: the trend legend's column
+headers rendered `Current / Min / Max / Average / @ cursor` in English inside
+the Russian client for as long as that legend existed, because
+`metrix_graph.cpp` contains no message box and so no rule-1 sink at all.
+
+So rule 3 inverts the same way rule 2 did, one layer over: instead of asking
+"does a dialog get a literal", it asks "does a literal reach anything that
+*draws text*" — `QT_TEXT_SINKS` below. Scoped that way it is quiet: 5 findings
+across the client, where the same widening applied without the scope would
+report thousands.
+
+It has a second half, for the shape that defeats every use-site rule. The
+legend's headers are not passed to `drawText` — a *table* of them sits at file
+scope and the paint loop indexes it (`QString::fromUtf8(column.header)`), so
+no amount of reading the call site finds a literal there. `LITERAL_TABLE`
+therefore also reports a file-scope `k…[] = {…}` initialiser holding
+letter-bearing literals, but only in a file that draws text at all. That
+conjunct is what keeps it precise: two hits tree-wide, one of them the legend.
+
+Note that data flow any longer than that is out of reach and always will be —
+a literal that reaches a widget through a function call, a member or a
+container is not findable by reading source with regular expressions. Rule 3
+narrows the blind spot; it does not close it.
 
 Usage:
     python3 client/tools/check_untranslated_ui_strings.py [--client-dir DIR]
@@ -85,9 +133,18 @@ SINKS = (
 # only be listed here because translating it would be *wrong* — not because
 # nobody has got round to it; use KNOWN_GAPS for that.
 ALLOWED_UNTRANSLATED = {
-    # Nothing yet. The data-interchange strings that must stay English
+    # The data-interchange strings that must stay English
     # (export_data_writer.cpp column headers, kNodeIdTitle) are not reached by
     # any sink, so they never appear here in the first place.
+    #
+    # A default *filename*, not a title. It reaches SelectSaveFile through
+    # `default_path`, and this check cannot tell one field of the params struct
+    # from another; the file the operator saves must keep its extension and its
+    # ASCII name whatever language the client is in.
+    (
+        "modules/export/configuration/excel_configuration_commands.cpp",
+        "configuration.csv",
+    ): "default filename, not a title",
 }
 
 # Strings that *should* be translated but are not yet. This list must only ever
@@ -95,7 +152,67 @@ ALLOWED_UNTRANSLATED = {
 # without pretending they are fine. Adding to it is a review conversation, not
 # a fix.
 KNOWN_GAPS = {
-    # Empty. The export/import message boxes were the last entries here.
+    # The export/import message boxes that used to be here are fixed. Every
+    # entry below was invisible until 2026-08-22, when the literal pattern
+    # learned the `L"..."`, plain `"..."` and raw `R"(...)"` forms and rule 3
+    # started reading Qt's display calls. None of them is new breakage: each
+    # has been shipping in English inside the Russian client, unreported.
+    #
+    # This list must only ever shrink. Draining it is task 419.
+
+    # --- the `u16format(L"...")` family: a wide literal formatted at the
+    # throw site, so neither the literal nor the format was ever translatable.
+    (
+        "modules/events/event_view.cpp",
+        "Enter a number from {} to {}.",
+    ): "u16format(L\"...\") severity-filter validation",
+    (
+        "modules/export/configuration/excel_configuration_commands.cpp",
+        "Error importing row {}, column {}: {}.",
+    ): 'u16format(L"...") import error',
+    (
+        "modules/export/configuration/export_data_reader.cpp",
+        "Property {} not found",
+    ): 'u16format(L"...") import error',
+    (
+        "modules/export/configuration/export_data_reader.cpp",
+        "Cannot convert value \'{}\' to type \'{}\'",
+    ): 'u16format(L"...") import error',
+    # Task 351. Needs Translate() plus a format, not a bare literal.
+    (
+        "modules/vidicon/display/native/qt/vidicon_display_native_view.cpp",
+        "Invalid Vidicon object address: %1.",
+    ): "task 351",
+
+    # --- plain literals at a window title or a tab.
+    (
+        "modules/graph/graph_setup_dialog.cpp",
+        "Graph Setup",
+    ): "operator dialog title",
+    ("modules/debugger/qt/debugger_qt.cpp", "Debugger"): "debugger window title",
+    ("modules/debugger/qt/debugger_qt.cpp", "Requests"): "debugger tab label",
+
+    # --- a raw-string HTML block painted into the Modus placeholder. Whole
+    # paragraphs of English, and the form that hid it best: a raw literal, so
+    # even the widened pattern reported its two href values until it learned
+    # `R"(...)"`. Translating it means splitting the prose out of the markup.
+    (
+        "modules/modus/qt/modus_view.cpp",
+        '<html><body> <p>The Modus ActiveXeme component used to display Modus '
+        'schematics is missing.</p> <p>Download the free version of the '
+        'component from the <a href="https://swman.ru">manufacturer\'s '
+        'website</a> or enable the experimental <a href="#internal-render">'
+        'built-in rendering</a>.</p> </body></html>',
+    ): "Modus placeholder, prose inside markup",
+
+    # --- task 418: the trend legend value grid, a file-scope table the paint
+    # loop indexes. Note the source strings are short and generic, so settle
+    # the catalog collision (task 152) before translating them.
+    ("modules/graph/metrix_graph.cpp", "Current"): "task 418",
+    ("modules/graph/metrix_graph.cpp", "Min"): "task 418",
+    ("modules/graph/metrix_graph.cpp", "Max"): "task 418",
+    ("modules/graph/metrix_graph.cpp", "Average"): "task 418",
+    ("modules/graph/metrix_graph.cpp", "@ cursor"): "task 418",
 }
 
 # Directories whose Cyrillic literals are not UI text and must stay as they are.
@@ -165,12 +282,55 @@ SHARED_CYRILLIC_GAPS = {
 EXCLUDED_DIR_PARTS = ("build", "test", "tools")
 EXCLUDED_NAME_PARTS = ("_unittest.", "_mock.", "_test.")
 
-LITERAL = re.compile(r'u"((?:[^"\\]|\\.)*)"')
-# `const char16_t kFoo[] = u"...";`, the form that cannot call Translate().
-CONSTANT = re.compile(
-    r'(?:const|constexpr)\s+char16_t\s+(\w+)\s*\[\s*\]\s*=\s*((?:\s*u"(?:[^"\\]|\\.)*")+)\s*;'
+# Any C++ string literal, whatever its encoding prefix, raw ones included. The
+# lookbehind keeps the tail of an identifier from being read as a prefix, so
+# `foo"x"` (a user-defined literal or a macro paste, never a plain string) is
+# not matched.
+#
+# The raw alternative has to come first and has to be here rather than handled
+# separately: a raw string's body routinely contains quotes of its own, so a
+# scanner that does not know the form reads *those* as the literals. That is
+# not hypothetical — `modus_view.cpp` paints a raw-string HTML block, and the
+# first version of this widening reported its two `href` values while missing
+# the English paragraph they sit in.
+LITERAL = re.compile(
+    r'(?<![A-Za-z0-9_])(?:u8|u|U|L)?'
+    r'(?:R"([^()\\\s]{0,16})\((.*?)\)\1"'
+    r'|"((?:[^"\\]|\\.)*)")',
+    re.S,
 )
+
+
+def literal_text(match: re.Match) -> str:
+    """The body of a LITERAL match, raw or ordinary."""
+    return match.group(2) if match.group(2) is not None else match.group(3)
+
+# `const char16_t kFoo[] = u"...";` and its narrow/wide siblings — the form
+# that cannot call Translate().
+CONSTANT = re.compile(
+    r"(?:const|constexpr)\s+(?:char|char8_t|char16_t|char32_t|wchar_t)\s+(\w+)"
+    r'\s*\[\s*\]\s*=\s*((?:\s*(?:u8|u|U|L)?"(?:[^"\\]|\\.)*")+)\s*;'
+)
+
+# The ways this tree spells "translate me". `Translate()` is the real one;
+# `Tr()` is a per-file `QString` wrapper over it that several Qt views define
+# in an anonymous namespace (164 call sites), and `tr()`/`QT_TRANSLATE_NOOP()`
+# are Qt's own. A literal inside any of them is correct code, and the widened
+# LITERAL above would otherwise report every one of them.
+#
+# The lookbehind excludes a member or qualified call — `x.tr(`, `Foo::tr(` —
+# from being taken as a bare `tr(`.
+TRANSLATORS = ("Translate", "TranslateUiText", "Tr", "tr", "QT_TRANSLATE_NOOP")
+TRANSLATOR_CALL = re.compile(
+    r"(?<![A-Za-z0-9_:.>])(?:" + "|".join(TRANSLATORS) + r")\s*\("
+)
+
 HAS_LETTER = re.compile(r"[A-Za-zЀ-ӿ]")
+
+# Markup and format placeholders. A literal made only of these carries no
+# operator-readable words, so it is not a translation gap: HTML scaffolding,
+# `%1`-style Qt placeholders, `{}`-style std::format ones, HTML entities.
+MARKUP_ONLY = re.compile(r"<[^<>]*>|\{[^{}]*\}|%\d+|%[sdfl]|&\w+;")
 
 
 def is_excluded(path: pathlib.Path, client_dir: pathlib.Path) -> bool:
@@ -181,8 +341,57 @@ def is_excluded(path: pathlib.Path, client_dir: pathlib.Path) -> bool:
 
 
 def join_literals(text: str) -> str:
-    """Concatenates the adjacent u"..." pieces in `text`, as the compiler does."""
-    return "".join(m.group(1) for m in LITERAL.finditer(text))
+    """Concatenates every literal in `text`. For a single expression only."""
+    return "".join(literal_text(m) for m in LITERAL.finditer(text))
+
+
+def literal_groups(text: str):
+    """Yields each run of *adjacent* literals in `text`, concatenated.
+
+    The compiler joins `"a " "b"` into one string, so they must be judged as
+    one — but only when nothing separates them. Two literals in different
+    arguments are two strings, and welding them together produced findings
+    that quoted text no operator ever sees.
+    """
+    group, end = "", None
+    for m in LITERAL.finditer(text):
+        if end is not None and text[end : m.start()].strip():
+            yield group
+            group = ""
+        group += literal_text(m)
+        end = m.end()
+    if group:
+        yield group
+
+
+def blank_translator_calls(text: str) -> str:
+    """Replaces every `Translate(...)`-family call in `text` with blanks.
+
+    A literal inside one is correct code. Blanking rather than deleting keeps
+    every remaining offset — and so every reported line number — intact.
+    """
+    while True:
+        m = TRANSLATOR_CALL.search(text)
+        if not m:
+            return text
+        body = argument_region(text, m.end() - 1)
+        end = m.end() + len(body)
+        text = text[: m.start()] + " " * (end - m.start() + 1) + text[end + 1 :]
+
+
+def normalize(text: str) -> str:
+    """Collapses whitespace runs, so a wrapped literal keys and prints as one.
+
+    A raw-string HTML block carries its source indentation, which would
+    otherwise make both the allow/gap key and the printed finding depend on how
+    the code happens to be formatted.
+    """
+    return " ".join(text.split())
+
+
+def is_operator_text(text: str) -> bool:
+    """True when `text` carries words an operator would read."""
+    return bool(text) and bool(HAS_LETTER.search(MARKUP_ONLY.sub("", text)))
 
 
 def argument_region(text: str, open_index: int) -> str:
@@ -220,16 +429,68 @@ def scan_file(path: pathlib.Path, client_dir: pathlib.Path):
             if not region:
                 continue
             line = source[: m.start()].count("\n") + 1
+            untranslated = blank_translator_calls(region)
 
-            for text in (join_literals(region),) if LITERAL.search(region) else ():
-                if text and HAS_LETTER.search(text):
-                    yield line, sink, text, None
+            for text in literal_groups(untranslated):
+                if is_operator_text(text):
+                    yield line, sink, normalize(text), None
 
             # The constant form: an identifier resolving to a literal.
-            for name in re.findall(r"\b(\w+)\b", region):
+            for name in re.findall(r"\b(\w+)\b", untranslated):
                 text = constants.get(name)
-                if text and HAS_LETTER.search(text):
-                    yield line, sink, text, name
+                if is_operator_text(text or ""):
+                    yield line, sink, normalize(text), name
+
+
+# Qt calls that put text in front of the operator without going anywhere near a
+# dialog — rule 3's sinks. Deliberately a short list of calls whose *whole
+# purpose* is to display words: a wider net (addItem, setData, setProperty)
+# picks up model plumbing and object names and stops being readable.
+QT_TEXT_SINKS = (
+    "drawText",
+    "setText",
+    "setPlaceholderText",
+    "setToolTip",
+    "setStatusTip",
+    "addTab",
+    "setTabText",
+    "setTitle",
+    "setHeaderData",
+)
+
+# A file-scope `const … kName[] = { … };` initialiser. Rule 3 reports one whose
+# elements are operator-readable words, because a table indexed by a paint loop
+# is out of reach of every use-site rule — see the module docstring.
+LITERAL_TABLE = re.compile(
+    r"(?:const|constexpr)\s[\w:<>,\s*&]*?\b(k\w+)\s*\[\s*\]\s*=\s*\{"
+)
+
+
+def scan_file_for_display_literals(source: str):
+    """Yields (line, sink, text) for each untranslated literal shown by Qt."""
+    draws_text = False
+
+    for sink in QT_TEXT_SINKS:
+        for m in re.finditer(r"\b" + sink + r"\b\s*(?:<[^<>]*>\s*)?([({])", source):
+            draws_text = True
+            region = argument_region(source, m.end() - 1)
+            if not region:
+                continue
+            line = source[: m.start()].count("\n") + 1
+            for text in literal_groups(blank_translator_calls(region)):
+                if is_operator_text(text):
+                    yield line, sink, normalize(text)
+
+    # The table form. Only in a file that draws text at all: the same
+    # initialiser elsewhere is a protocol table, an id list or a lookup, and
+    # reporting those would drown the rule.
+    if not draws_text:
+        return
+    for m in LITERAL_TABLE.finditer(source):
+        body = argument_region(source, m.end() - 1)
+        for text in literal_groups(body):
+            if is_operator_text(text):
+                yield source[: m.start()].count("\n") + 1, m.group(1), normalize(text)
 
 
 CYRILLIC = re.compile(r"[Ѐ-ӿ]")
@@ -306,6 +567,7 @@ def main() -> int:
         return 0
 
     findings, allowed, gaps = [], 0, 0
+    displayed = []
     cyrillic, cyrillic_allowed, cyrillic_gaps = [], 0, 0
     scanned = 0
     for path in sorted(client_dir.rglob("*")):
@@ -320,6 +582,16 @@ def main() -> int:
                 gaps += 1
             else:
                 findings.append((rel, line, sink, text, via))
+
+        for line, sink, text in scan_file_for_display_literals(
+            path.read_text("utf-8", "replace")
+        ):
+            if (rel, text) in ALLOWED_UNTRANSLATED:
+                allowed += 1
+            elif (rel, text) in KNOWN_GAPS:
+                gaps += 1
+            else:
+                displayed.append((rel, line, sink, text))
 
         directory = rel.rsplit("/", 1)[0]
         for line, text in scan_file_for_cyrillic(path, rel):
@@ -366,26 +638,37 @@ def main() -> int:
         )
         return 1
 
-    if findings:
-        print(f"{len(findings)} user-facing string(s) cannot be translated:\n")
+    if findings or displayed:
+        total = len(findings) + len(displayed)
+        print(f"{total} user-facing string(s) cannot be translated:\n")
         for rel, line, sink, text, via in findings:
             shown = text if len(text) <= 68 else text[:65] + "..."
             through = f" (via the constant {via})" if via else ""
             print(f"  {rel}:{line}: {sink}{through}")
-            print(f'      u"{shown}"')
+            print(f'      "{shown}"')
+        for rel, line, sink, text in displayed:
+            shown = text if len(text) <= 68 else text[:65] + "..."
+            print(f"  {rel}:{line}: {sink} (shown by Qt, rule 3)")
+            print(f'      "{shown}"')
         print(
             "\nWrap the string in Translate(\"...\") and add it to the *empty*\n"
             "context of app/qt/client_ru.ts — Translate() looks up with an empty\n"
             "context, and lupdate cannot see the call, so the entry is added by\n"
-            "hand. A namespace-scope char16_t constant cannot call Translate()\n"
-            "at all (it needs a running QApplication); make it a function."
+            "hand. A namespace-scope character-array constant cannot call\n"
+            "Translate() at all (it needs a running QApplication); make it a\n"
+            "function. The encoding prefix makes no difference: L\"...\",\n"
+            "u8\"...\", a raw R\"(...)\" and a bare \"...\" are all reported, because\n"
+            "each has shipped this defect. If the literal is a filename, a URL\n"
+            "or a protocol token rather than words an operator reads, add it to\n"
+            "ALLOWED_UNTRANSLATED with the reason."
         )
         return 1
 
     print(
         f"OK: no untranslatable user-facing strings and no Russian literals "
         f"({scanned} file(s) scanned, {shared_scanned} of them shared; "
-        f"{len(SINKS)} sink(s); {allowed} allowed, {gaps} known gap(s), "
+        f"{len(SINKS)} dialog sink(s) and {len(QT_TEXT_SINKS)} display "
+        f"sink(s); {allowed} allowed, {gaps} known gap(s), "
         f"{cyrillic_allowed} allowed Cyrillic literal(s), "
         f"{cyrillic_gaps} literal(s) in not-yet-swept shared files)."
     )
