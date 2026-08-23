@@ -134,7 +134,7 @@ void ModusView::OpenPlaceholder() {
       uR"(<a href="#internal-render">{}</a>)", Translate("built-in rendering"));
   placeholder->setText(QString::fromStdU16String(u16format(
       uR"(<html><body><p>{}</p><p>{}</p></body></html>)",
-      Translate("The Modus ActiveXeme component used to display Modus "
+      Translate("The Modus ActiveX component used to display Modus "
                 "schematics is missing."),
       u16format(Translate("Download the free version of the component from the "
                           "{} or enable the experimental {}."),

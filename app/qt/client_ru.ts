@@ -780,8 +780,8 @@
          <a href> targets stay in the code, and each link caption is its own
          message so it can be substituted into the sentence below. -->
     <message>
-        <source>The Modus ActiveXeme component used to display Modus schematics is missing.</source>
-        <translation>Компонент Modus ActiveXeme для отображения мнемосхем Modus не установлен.</translation>
+        <source>The Modus ActiveX component used to display Modus schematics is missing.</source>
+        <translation>Компонент Modus ActiveX для отображения мнемосхем Modus не установлен.</translation>
     </message>
     <message>
         <source>Download the free version of the component from the {} or enable the experimental {}.</source>

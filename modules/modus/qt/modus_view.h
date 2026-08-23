@@ -9,7 +9,7 @@
 
 class QAxWidget;
 
-// Native Modus ActiveXeme viewer.
+// Native Modus ActiveX viewer.
 class ModusView : public QWidget,
                   public ModusViewWrapper,
                   private scada::modus::ModusDocumentContext {
