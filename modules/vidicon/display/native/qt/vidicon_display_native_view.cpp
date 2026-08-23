@@ -2,6 +2,8 @@
 
 #include "aui/dialog_service.h"
 #include "aui/show_message_box.h"
+#include "aui/translation.h"
+#include "base/u16format.h"
 #include "controller/controller_delegate.h"
 #include "controller/selection_model.h"
 #include "display_frame/qt/display_frame.h"
@@ -108,11 +110,11 @@ void VidiconDisplayNativeView::OpenWriteWin(const QString& data_source,
   }
 
   if (node_id.is_null()) {
+    // A translated format, so Translate() wraps the format string and
+    // u16format substitutes into the result — not the other way round.
     ShowMessageBox(executor_, dialog_service_,
-                   QString::fromWCharArray(L"Invalid Vidicon object address: "
-                                           L"%1.")
-                       .arg(data_source)
-                       .toStdU16String(),
+                   u16format(Translate("Invalid Vidicon object address: {}."),
+                             data_source.toStdU16String()),
                    /*title=*/{}, MessageBoxMode::Error);
     return;
   }

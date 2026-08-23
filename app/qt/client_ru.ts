@@ -768,6 +768,13 @@
         <source>Vidicon</source>
         <translation>Видикон</translation>
     </message>
+    <!-- modules/vidicon/display/native/qt/vidicon_display_native_view.cpp:
+         the object under the cursor carries an address the node-id parser
+         rejects. A format, so the placeholder is {} rather than %1. -->
+    <message>
+        <source>Invalid Vidicon object address: {}.</source>
+        <translation>Неверный адрес объекта Видикон: {}.</translation>
+    </message>
     <message>
         <source>Loading</source>
         <translation>Загрузка</translation>

@@ -26,6 +26,17 @@ whole tree would report thousands of false positives and, worse, tempt someone
 into a full `lupdate` refresh that would mark every one of those strings
 `vanished`. See KNOWN_GAPS for strings that are legitimately absent.
 
+**Rule 3 — every `Translate("...")` literal has a translation that ships.**
+
+`Translate()` looks up by source in the *empty* context and falls back to the
+source when the lookup misses, so a call site whose string was never added to
+`client_ru.ts` renders English in the Russian client and nothing says so —
+`lupdate` cannot see `Translate()`, and rule 1 only reads `.ui` forms. This is
+the third of three ways the same defect hides, and the one that catches a
+newly translated call site drifting away from its catalog entry: rename the
+source in the code and the entry stops matching, silently. TRANSLATE_GAPS
+parks the call sites that were already in that state.
+
 **Rule 2 — no two shipping messages in one context share a source string.**
 
 `lrelease` keeps one entry per (context, source) and silently drops the rest
@@ -87,6 +98,11 @@ KNOWN_GAPS = {
 }
 
 
+# A `Translate("literal")` call. Only a literal argument is checkable: a call
+# taking a variable is resolved at runtime and says nothing about the catalog.
+TRANSLATE_CALL = re.compile(r'Translate\(\s*"((?:[^"\\]|\\.)*)"\s*\)')
+
+
 def parse_ts(path, active_only):
     """Maps context -> set of source strings in a .ts file.
 
@@ -117,6 +133,101 @@ def parse_ts(path, active_only):
                     continue
             result.setdefault(name, set()).add(source_text)
     return result
+
+
+# Rule 3's KNOWN_GAPS: `Translate("...")` call sites with no shipping entry in
+# the empty context, so they render their English source inside the Russian
+# client. Same bar as the lists above — this must only ever shrink, and an
+# addition is a review conversation. Each is mapped to one call site; several
+# have more. Measured 2026-08-22: 21 of 332 Translate() literals.
+#
+# Two thirds are the graph component's setup menu, which suggests one omission
+# rather than twenty; task 437 carries the work of draining this.
+TRANSLATE_GAPS = {
+    'Add Pane':
+        "modules/graph/graph_component.cpp",
+    'Alias':
+        "modules/node_table/node_table_menu_model.cpp",
+    'Background':
+        "modules/graph/graph_component.cpp",
+    'Background Color...':
+        "modules/graph/graph_component.cpp",
+    'Color':
+        "modules/graph/graph_component.cpp",
+    'Delete Pane':
+        "modules/graph/graph_component.cpp",
+    'Dots':
+        "modules/graph/graph_component.cpp",
+    'Failed to download file.':
+        "modules/filesystem/filesystem_commands.cpp",
+    'Graph Setup...':
+        "modules/graph/graph_component.cpp",
+    'Icon':
+        "main_window/main_window_qt.cpp",
+    'Legend':
+        "modules/graph/graph_component.cpp",
+    'Line Color...':
+        "modules/graph/graph_component.cpp",
+    'New page':
+        "main_window/activity_bar_qt.cpp",
+    'Now':
+        "modules/graph/graph_component.cpp",
+    'Restart the application to apply the new language now?':
+        "main_window/main_window_module.cpp",
+    'Scroll Bar':
+        "modules/graph/graph_component.cpp",
+    'Scroll to Now':
+        "modules/graph/graph_component.cpp",
+    'Setup':
+        "modules/graph/graph_component.cpp",
+    'Speech':
+        "main_window/main_window_module.cpp",
+    'Steps':
+        "modules/graph/graph_component.cpp",
+    'open in another window':
+        "main_window/activity_bar_qt.cpp",
+}
+
+
+def find_translate_literals(cpp_files):
+    """Maps a `Translate("...")` source string -> the files that call it."""
+    calls = {}
+    for path in cpp_files:
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for match in TRANSLATE_CALL.finditer(text):
+            calls.setdefault(match.group(1), set()).add(path)
+    return calls
+
+
+def report_translate_gaps(cpp_files, ts_files, client_dir):
+    """Rule 3. Returns the number of call sites with no shipping translation."""
+    shipped = set()
+    for path in ts_files:
+        # Translate() always looks up in the empty context; a form context is
+        # rule 1's business and cannot satisfy a Translate() call.
+        shipped |= parse_ts(path, active_only=True).get("", set())
+
+    calls = find_translate_literals(cpp_files)
+    missing = sorted(source for source in calls
+                     if source not in shipped and source not in TRANSLATE_GAPS)
+
+    print(f"Checked {len(calls)} Translate() literal(s) from "
+          f"{len(cpp_files)} .cpp file(s); "
+          f"{len(TRANSLATE_GAPS)} known gap(s).")
+    if not missing:
+        return 0
+
+    print(f"\n{len(missing)} Translate() string(s) have no translation that "
+          f"would reach the .qm, so they render English:", file=sys.stderr)
+    for source in missing:
+        where = sorted(path.relative_to(client_dir).as_posix()
+                       for path in calls[source])[0]
+        print(f"  {source!r}  ({where})", file=sys.stderr)
+    print("\nAdd the message to the empty context of app/qt/client_ru.ts — "
+          "Translate() looks up by source there and falls back to the English "
+          "source on a miss, which is why nothing else notices.",
+          file=sys.stderr)
+    return len(missing)
 
 
 def find_duplicate_sources(path):
@@ -212,6 +323,14 @@ def main():
     if report_duplicate_sources(ts_files):
         return 1
     print(f"OK: no duplicated source strings in {len(ts_files)} .ts file(s).")
+
+    # Rule 3, for the same reason: it reads the catalogs and the sources, and
+    # needs no lupdate.
+    cpp_files = sorted(path for path in client_dir.rglob("*.cpp")
+                       if "build" not in path.parts)
+    if report_translate_gaps(cpp_files, ts_files, client_dir):
+        return 1
+    print("OK: every other Translate() string has a translation that ships.")
 
     lupdate = shutil.which("lupdate")
     if not lupdate:

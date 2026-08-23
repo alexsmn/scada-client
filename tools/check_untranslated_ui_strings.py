@@ -178,12 +178,6 @@ KNOWN_GAPS = {
         "modules/export/configuration/export_data_reader.cpp",
         "Cannot convert value \'{}\' to type \'{}\'",
     ): 'u16format(L"...") import error',
-    # Task 351. Needs Translate() plus a format, not a bare literal.
-    (
-        "modules/vidicon/display/native/qt/vidicon_display_native_view.cpp",
-        "Invalid Vidicon object address: %1.",
-    ): "task 351",
-
     # --- plain literals at a window title or a tab.
     (
         "modules/graph/graph_setup_dialog.cpp",
