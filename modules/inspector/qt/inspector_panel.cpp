@@ -21,6 +21,7 @@
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QPointer>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QStackedWidget>
@@ -515,6 +516,27 @@ void InspectorPanel::ShowSelection(const SelectionModel& selection) {
     RefreshValue();
   };
   subtitle_->setText(QString::fromStdString(spec_->formula()));
+
+  // Ask the host for the node's limit bands. RefreshValue below reads whatever
+  // is resident *now*, which for a node the operator just clicked is nothing —
+  // the bands are property children and the selection fetched only the node —
+  // so without this the Measurements block renders the update time and stops
+  // there.
+  if (context_.load_limits) {
+    if (const NodeRef node = spec_->node()) {
+      // Guarded twice, because the fetch outlives the call: by the panel still
+      // existing, and by the selection still being the one that asked. A reply
+      // for a node the operator has since moved off would repaint the card with
+      // another signal's bands.
+      const QPointer<InspectorPanel> alive{this};
+      const scada::NodeId requested = node.node_id();
+      context_.load_limits(node, [this, alive, requested] {
+        if (!alive || !spec_ || spec_->node().node_id() != requested)
+          return;
+        RefreshValue();
+      });
+    }
+  }
 
   RefreshValue();
   stack_->setCurrentIndex(1);

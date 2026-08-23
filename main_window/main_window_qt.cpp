@@ -41,6 +41,7 @@
 #include "main_window/window_definition_builder.h"
 #include "model/devices_node_ids.h"
 #include "model/security_node_ids.h"
+#include "modules/inspector/limit_band.h"
 #include "modules/write/write_availability.h"
 #include "node_service/node_util.h"
 #include "profile/profile.h"
@@ -1062,6 +1063,18 @@ void MainWindow::CreateInspectorPanel() {
           [resolve_open_graph] {
             CommandHandler* handler = resolve_open_graph();
             return handler && handler->IsCommandEnabled(ID_OPEN_GRAPH);
+          },
+      // The panel reads the limit bands but cannot fetch them: they hang off
+      // the selected node as property children, and nothing a selection does
+      // makes them resident. The shell owns the executor, so it owns the fetch
+      // and hands the panel a redraw.
+      .load_limits =
+          [this](const NodeRef& node, std::function<void()> redraw) {
+            CoSpawn(executor_, [node, redraw = std::move(redraw)]()
+                                   -> Awaitable<void> {
+              co_await FetchLimitBands(node);
+              redraw();
+            });
           }});
 
   auto* dock =

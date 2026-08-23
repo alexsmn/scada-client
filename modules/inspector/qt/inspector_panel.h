@@ -12,6 +12,7 @@ class DataValue;
 class NodeId;
 class Qualifier;
 }  // namespace scada
+class NodeRef;
 class SelectionModel;
 class TimedDataSpec;
 class QLabel;
@@ -106,6 +107,15 @@ struct InspectorPanelContext {
   // Opens the selected event's source in a graph — the selection-scoped
   // ID_OPEN_GRAPH command over the event's source node.
   std::function<void()> on_go_to_source;
+  // Makes the selected node's limit bands readable, then calls `redraw`.
+  //
+  // The panel asks rather than fetching: the bands live on the node's property
+  // children, which a selection never makes resident (see FetchLimitBands in
+  // modules/inspector/limit_band.h), and the fetch needs the host's executor.
+  // Unwired, the Measurements block simply stays hidden — which is what every
+  // operator selection produced until this existed.
+  std::function<void(const NodeRef& node, std::function<void()> redraw)>
+      load_limits;
   // Whether the source can be opened (the source node resolved and the graph
   // command accepts the selection).
   std::function<bool()> is_go_to_source_enabled;

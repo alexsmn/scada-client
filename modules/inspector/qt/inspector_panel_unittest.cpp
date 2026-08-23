@@ -3,6 +3,8 @@
 #include "aui/test/app_environment.h"
 #include "base/utf_convert.h"
 #include "controller/selection_model.h"
+#include "model/data_items_node_ids.h"
+#include "node_service/test/fake_node_service.h"
 #include "scada/data_value.h"
 #include "scada/qualifier.h"
 #include "timed_data/base_timed_data.h"
@@ -315,6 +317,156 @@ TEST_F(InspectorPanelTest, FormulaRowSelectionFillsTheInspector) {
       panel.findChild<QLabel*>(QStringLiteral("inspectorSubtitle"));
   ASSERT_NE(subtitle, nullptr);
   EXPECT_EQ(subtitle->text(), QStringLiteral("{TIT.200}+{TIT.201}"));
+}
+
+// A node-backed live datum — the shape of an Explorer selection, where the
+// readout ticks over a real node and the card's limit bands are that node's
+// property children.
+class NodeTimedData : public BaseTimedData {
+ public:
+  explicit NodeTimedData(NodeRef node) : node_{std::move(node)} {}
+
+  virtual NodeRef GetNode() const override { return node_; }
+  virtual std::string GetFormula(bool aliases) const override {
+    return node_.node_id().ToString();
+  }
+  virtual scada::LocalizedText GetTitle() const override {
+    return node_.display_name();
+  }
+
+ private:
+  const NodeRef node_;
+};
+
+class NodeTimedDataService : public TimedDataService {
+ public:
+  explicit NodeTimedDataService(NodeService& nodes) : nodes_{nodes} {}
+
+  virtual std::shared_ptr<TimedData> GetNodeTimedData(
+      const scada::NodeId& node_id,
+      const scada::AggregateFilter& aggregation) override {
+    return std::make_shared<NodeTimedData>(nodes_.GetNode(node_id));
+  }
+  virtual std::shared_ptr<TimedData> GetFormulaTimedData(
+      std::string_view formula,
+      const scada::AggregateFilter& aggregation) override {
+    return nullptr;
+  }
+
+ private:
+  NodeService& nodes_;
+};
+
+// Regression: the limit bands are the selected node's property children, and
+// nothing a selection does makes them resident — TimedData fetches the node
+// alone. The panel read them straight through, got four empty Variants, and
+// concluded the node configured no limits, so the Measurements block was hidden
+// for every node an operator selected; the only cards that ever showed it were
+// the ones a test or a capture filled by hand. The panel now asks its host to
+// load them and redraws when they land.
+TEST_F(InspectorPanelTest, LimitsLoadForANodeSelection) {
+  constexpr scada::NodeId kItem{700, 12};
+  constexpr scada::NodeId kItemType{800, 12};
+
+  FakeNodeService nodes;
+  nodes.Add(scada::NodeState{.node_id = kItemType,
+                             .node_class = scada::NodeClass::VariableType});
+  // Registered without its bands: what the panel can read before the fetch.
+  nodes.Add(scada::NodeState{.node_id = kItem,
+                             .node_class = scada::NodeClass::Variable,
+                             .type_definition_id = kItemType,
+                             .attributes = {.display_name = u"Ua"}});
+
+  NodeTimedDataService service{nodes};
+  SelectionModel selection{{service}};
+
+  NodeRef asked;
+  std::function<void()> redraw;
+  InspectorPanel panel{InspectorPanelContext{
+      .load_limits = [&](const NodeRef& node, std::function<void()> done) {
+        asked = node;
+        redraw = std::move(done);
+      }}};
+
+  selection.SelectNode(nodes.GetNode(kItem));
+  panel.ShowSelection(selection);
+
+  auto* limits = panel.findChild<QWidget*>(QStringLiteral("inspectorLimits"));
+  ASSERT_NE(limits, nullptr);
+  EXPECT_TRUE(limits->isHidden());
+  EXPECT_EQ(asked.node_id(), kItem);
+  ASSERT_TRUE(redraw);
+
+  // The fetch lands: the bands become readable, and the host redraws.
+  nodes.Add(scada::NodeState{
+      .node_id = kItem,
+      .node_class = scada::NodeClass::Variable,
+      .type_definition_id = kItemType,
+      .attributes = {.display_name = u"Ua"},
+      .properties = {{scada::data_items::id::AnalogItemType_LimitHiHi, 11.5},
+                     {scada::data_items::id::AnalogItemType_LimitHi, 10.8},
+                     {scada::data_items::id::AnalogItemType_LimitLo, 9.5},
+                     {scada::data_items::id::AnalogItemType_LimitLoLo, 9.0}}});
+  redraw();
+
+  EXPECT_FALSE(limits->isHidden());
+  EXPECT_EQ(
+      panel.findChildren<QLabel*>(QStringLiteral("inspectorLimitValue")).size() +
+          panel.findChildren<QLabel*>(QStringLiteral("inspectorLimitBreached"))
+              .size(),
+      4);
+}
+
+// A reply that arrives after the operator has moved on must not repaint the
+// card with the previous signal's bands.
+TEST_F(InspectorPanelTest, StaleLimitsReplyIsIgnored) {
+  constexpr scada::NodeId kFirst{700, 12};
+  constexpr scada::NodeId kSecond{701, 12};
+  constexpr scada::NodeId kItemType{800, 12};
+
+  FakeNodeService nodes;
+  nodes.Add(scada::NodeState{.node_id = kItemType,
+                             .node_class = scada::NodeClass::VariableType});
+  nodes.Add(scada::NodeState{.node_id = kFirst,
+                             .node_class = scada::NodeClass::Variable,
+                             .type_definition_id = kItemType,
+                             .attributes = {.display_name = u"Ua"}});
+  nodes.Add(scada::NodeState{.node_id = kSecond,
+                             .node_class = scada::NodeClass::Variable,
+                             .type_definition_id = kItemType,
+                             .attributes = {.display_name = u"Ub"}});
+
+  NodeTimedDataService service{nodes};
+  SelectionModel selection{{service}};
+
+  std::function<void()> first_redraw;
+  InspectorPanel panel{InspectorPanelContext{
+      .load_limits = [&](const NodeRef& node, std::function<void()> done) {
+        if (node.node_id() == kFirst)
+          first_redraw = std::move(done);
+      }}};
+
+  selection.SelectNode(nodes.GetNode(kFirst));
+  panel.ShowSelection(selection);
+  selection.SelectNode(nodes.GetNode(kSecond));
+  panel.ShowSelection(selection);
+
+  // The first node's bands arrive late.
+  nodes.Add(scada::NodeState{
+      .node_id = kFirst,
+      .node_class = scada::NodeClass::Variable,
+      .type_definition_id = kItemType,
+      .attributes = {.display_name = u"Ua"},
+      .properties = {{scada::data_items::id::AnalogItemType_LimitHi, 10.8}}});
+  ASSERT_TRUE(first_redraw);
+  first_redraw();
+
+  auto* limits = panel.findChild<QWidget*>(QStringLiteral("inspectorLimits"));
+  ASSERT_NE(limits, nullptr);
+  EXPECT_TRUE(limits->isHidden());
+  auto* title = panel.findChild<QLabel*>(QStringLiteral("inspectorSubtitle"));
+  ASSERT_NE(title, nullptr);
+  EXPECT_EQ(title->text(), QString::fromStdString(kSecond.ToString()));
 }
 
 // A journal-event selection shows the alarm card: the severity band pill
