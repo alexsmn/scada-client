@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include <boost/json/value.hpp>
 
 struct ScreenshotSpec;
@@ -19,4 +21,5 @@ class TimedDataService;
 void SaveDeviceDiagnosticsScreenshot(const ScreenshotSpec& spec,
                                      NodeService& node_service,
                                      TimedDataService& timed_data_service,
-                                     const boost::json::value& json);
+                                     const boost::json::value& json,
+                                     AnyExecutor executor);

@@ -145,7 +145,8 @@ constexpr StandaloneCapture kStandaloneCaptures[] = {
     {"device-diagnostics",
      +[](const StandaloneCaptureContext& c) {
        SaveDeviceDiagnosticsScreenshot(c.spec, c.node_service,
-                                       c.timed_data_service, c.json);
+                                       c.timed_data_service, c.json,
+                                       c.executor);
      }},
     // The device Metrics sheet is a CusTable whose cells DeviceMetricsModule
     // derives from the device's type-definition data variables, so it can only
@@ -196,7 +197,7 @@ constexpr StandaloneCapture kStandaloneCaptures[] = {
     // item.
     {"transmission-rule",
      +[](const StandaloneCaptureContext& c) {
-       SaveTransmissionRuleScreenshot(c.spec, c.node_service);
+       SaveTransmissionRuleScreenshot(c.spec, c.node_service, c.executor);
      }},
     // The bulk-create preview is standalone reshell chrome (the center of
     // bulk-create.html), built from a demo pattern with no node service.

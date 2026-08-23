@@ -4,58 +4,45 @@
 #include "screenshot_wait.h"
 #include "widget_capture.h"
 
-#include "model/devices_node_ids.h"
 #include "model/node_id_util.h"
 #include "node_service/node_ref.h"
 #include "node_service/node_service.h"
 #include "scada/node_id.h"
 #include "transmission_rules/qt/transmission_rule_inspector.h"
+#include "transmission_rules/transmission_rule_fetch.h"
 
-#include <array>
-#include <vector>
+#include <chrono>
+#include <functional>
+#include <utility>
 
 void SaveTransmissionRuleScreenshot(const ScreenshotSpec& spec,
-                                    NodeService& node_service) {
+                                    NodeService& node_service,
+                                    AnyExecutor executor) {
   // TS.733 "TX_Ua" retransmits the analog source Ua to Modbus IOA 2001 under
   // the retransmission device TS.702 — the mockup's kind of rule (source → IOA)
   // rendered from real fixture data.
   const scada::NodeId rule_id = NodeIdFromScadaString("TS.733");
 
-  // Wave 1: the rule + its children (the Address/SourceNode property instances) and
-  // its direct type.
-  scada::screenshot_generator::FetchNodesResident(node_service,
-                                                  std::array{rule_id});
-
-  NodeRef rule = node_service.GetNode(rule_id);
-
-  // Wave 2: the full type chain (the Address/SourceNode declarations
-  // live on the TransmissionItemType supertype, so operator[](declaration)
-  // needs the chain's declarations resident), plus the parent endpoint
-  // (destination device name).
-  std::vector<scada::NodeId> extra;
-  for (NodeRef type = rule.type_definition(); type; type = type.supertype())
-    extra.push_back(type.node_id());
-  if (NodeRef parent = rule.parent())
-    extra.push_back(parent.node_id());
-  scada::screenshot_generator::FetchNodesResident(node_service, extra);
-
-  rule = node_service.GetNode(rule_id);
-
-  // Wave 3: the source data item (display name + signal tag). The source link
-  // is the SourceNode NodeId property (transmission OPC UA alignment,
-  // phase 4), readable only now that the chain's declarations are resident.
-  if (scada::NodeId source_id =
-          rule[scada::devices::id::TransmissionItemType_SourceNode]
-              .value()
-              .get_or(scada::NodeId{});
-      !source_id.is_null()) {
-    scada::screenshot_generator::FetchNodesResident(node_service,
-                                                    std::array{source_id});
-    rule = node_service.GetNode(rule_id);
-  }
-
   TransmissionRuleInspector inspector;
-  inspector.ShowRule(rule);
+  // Wired the way the shell wires it, and for the reason the shell needs it.
+  // Until 2026-08-23 this capture ran three FetchNodesResident waves of its own
+  // and then handed ShowRule an already-resident rule, which made the published
+  // image a claim about a panel nobody could reach: the shell fetched none of
+  // that, so a rule an operator selected rendered "— → 0" — no source, no
+  // signal tag, IOA 0. The panel asks for its own data now, and driving it
+  // through that same seam is what keeps this image a true one.
+  inspector.SetLoadHandler(
+      [executor](const NodeRef& rule, std::function<void()> redraw) {
+        CoSpawn(executor,
+                [rule, redraw = std::move(redraw)]() -> Awaitable<void> {
+                  co_await FetchTransmissionRule(rule);
+                  redraw();
+                });
+      });
+  inspector.ShowRule(node_service.GetNode(rule_id));
+
+  // The load is asynchronous now, so let it land before the grab.
+  scada::screenshot_generator::PumpEventLoopFor(std::chrono::seconds(1));
 
   SaveScreenshot(&inspector, spec);
 }
