@@ -101,6 +101,82 @@
       ]
     },
     {
+      "_comment": "The IEC 60870-5-104 LINK the -104 RTU hangs under, and the only one in the fixture. It exists so the device-diagnostics panel's link half renders at all: ADR 0007 moved the APCI counters and the Reconnect method onto the link, because several devices share one TCP connection, and ProtocolDiagnosticsFor decides whether to draw that section by comparing the PARENT's type browse name against Iec60870LinkType. Until this node existed, КП-01 parented straight onto the Devices folder, the parent read as a FolderType, and nine ProtocolField rows, the section heading and ADR 0007's Reconnect action were unrendered by any capture in the gallery. The readings tell one story with the device's own: the link is Running and its TCP connection is up, but t1 has expired with two frames unacknowledged - the case where the transport is fine and the RTU is silent, which is what the device hero's `device is not responding` means, and why Reconnect is the remedy offered.",
+      "id": "TS.50",
+      "browse_name": "Iec104Link",
+      "display_name": "Канал МЭК-104",
+      "class": "object",
+      "type_definition": "SCADA.124",
+      "references": [
+        {"type": "NS0.47", "target": "TS.9301"},
+        {"type": "NS0.47", "target": "TS.9302"},
+        {"type": "NS0.47", "target": "TS.9303"},
+        {"type": "NS0.47", "target": "TS.9304"},
+        {"type": "NS0.47", "target": "TS.9305"},
+        {"type": "NS0.47", "target": "TS.9306"},
+        {"type": "NS0.47", "target": "TS.9307"},
+        {"type": "NS0.47", "target": "TS.9308"},
+        {"type": "NS0.47", "target": "TS.9309"}
+      ]
+    },
+    {
+      "_comment": "The APCI state, read as an Int32 and named through Iec60870LinkStateLabel: 0x0004 is Running. An integer literal on purpose - FormatShaped asks the value for an Int32, and a double answers with a blank row rather than a wrong one.",
+      "id": "TS.9301",
+      "browse_name": "LinkState",
+      "class": "variable",
+      "base_value": 4
+    },
+    {
+      "id": "TS.9302",
+      "browse_name": "LastConnected",
+      "class": "variable",
+      "base_time": "2026-04-16 14:48:12"
+    },
+    {
+      "id": "TS.9303",
+      "browse_name": "RoundTripTime",
+      "class": "variable",
+      "base_value": 18.4
+    },
+    {
+      "id": "TS.9304",
+      "browse_name": "SendSequenceNumber",
+      "class": "variable",
+      "base_value": 1042
+    },
+    {
+      "id": "TS.9305",
+      "browse_name": "ReceiveSequenceNumber",
+      "class": "variable",
+      "base_value": 987
+    },
+    {
+      "_comment": "Two behind V(S): the two frames the silent RTU has not acknowledged.",
+      "id": "TS.9306",
+      "browse_name": "AcknowledgedSequenceNumber",
+      "class": "variable",
+      "base_value": 1040
+    },
+    {
+      "id": "TS.9307",
+      "browse_name": "UnacknowledgedFrames",
+      "class": "variable",
+      "base_value": 2
+    },
+    {
+      "id": "TS.9308",
+      "browse_name": "InflightRetransmits",
+      "class": "variable",
+      "base_value": 1
+    },
+    {
+      "_comment": "A boolean literal, so FormatShaped's kFlag branch reads it and renders the condition (expired) rather than the word true.",
+      "id": "TS.9309",
+      "browse_name": "SendTimeoutExpired",
+      "class": "variable",
+      "base_value": true
+    },
+    {
       "id": "TS.9001",
       "browse_name": "Online",
       "class": "variable",
@@ -1027,7 +1103,7 @@
       "TIT.724"
     ],
     "SCADA.30": [
-      "TS.103",
+      "TS.50",
       "TS.104",
       "TS.105",
       "TS.106",
@@ -1045,6 +1121,18 @@
     ],
     "TS.102": [
       "TS.123"
+    ],
+    "TS.50": [
+      "TS.103",
+      "TS.9301",
+      "TS.9302",
+      "TS.9303",
+      "TS.9304",
+      "TS.9305",
+      "TS.9306",
+      "TS.9307",
+      "TS.9308",
+      "TS.9309"
     ],
     "TS.103": [
       "TS.120",
@@ -1431,10 +1519,11 @@
       "height": 480
     },
     {
+      "_comment": "Taller than the 520 it asked for until 2026-08-23: the fixture gained the IEC 60870-5-104 link the RTU hangs under, so the panel now draws its link section - nine APCI rows plus a heading - above the device's own counters. The width follows the widest of those rows.",
       "capture": "device-diagnostics",
       "filename": "device-diagnostics.png",
-      "width": 300,
-      "height": 520
+      "width": 320,
+      "height": 660
     },
     {
       "capture": "device-metrics",

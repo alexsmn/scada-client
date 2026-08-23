@@ -284,8 +284,23 @@ void PopulateFixtureNodes(AddressSpaceImpl& address_space,
       state.attributes.display_name = display_name;
 
       if (is_variable) {
-        if (const auto* bv = jn.as_object().if_contains("base_value"))
-          state.attributes.value = scada::Variant{bv->to_number<double>()};
+        // Typed, not coerced to a double. A diagnostic variable's *shape* is
+        // part of what reads it: the device-diagnostics panel asks a link state
+        // for an Int32 and a t1 flag for a bool (FormatShaped), and a double
+        // answers neither — the row renders blank rather than wrong, which is
+        // the harder kind of empty to notice. JSON already distinguishes 4 from
+        // 4.0, so the fixture can say which it means.
+        if (const auto* bv = jn.as_object().if_contains("base_value")) {
+          if (auto value = ParseJsonVariant(*bv))
+            state.attributes.value = std::move(*value);
+        } else if (const auto* bt = jn.as_object().if_contains("base_time")) {
+          // DateTime has no JSON literal of its own, so a time-valued variable
+          // spells its value the way the fixture's `now` does.
+          if (auto stamp = scada::base::TimeFromString(
+                  std::string(bt->as_string()), /*is_local=*/true)) {
+            state.attributes.value = scada::Variant{*stamp};
+          }
+        }
       }
 
       if (const auto* properties = jn.as_object().if_contains("properties")) {
