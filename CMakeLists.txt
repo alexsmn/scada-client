@@ -65,8 +65,6 @@ if(BUILD_CLIENT_QT)
   find_package(Qt6 COMPONENTS LinguistTools QUIET)
 endif()
 
-include(translation.cmake)
-
 find_package(ScadaCommon REQUIRED)
 
 # aui is slated for extraction into its own repository — consume it through

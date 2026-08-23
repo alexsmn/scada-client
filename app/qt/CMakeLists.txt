@@ -126,15 +126,15 @@ if(COMMAND scada_add_windows_version_info)
     ORIGINAL_FILENAME "client.exe")
 endif()
 
-client_qt_translations(client_qt "app_ru.ts")
-
 # Translations
-
-add_custom_command(
-  OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/client_ru.ts"
-  DEPENDS ${CLIENT_QT_TRANSLATIONS}
-  COMMAND "lconvert -i ${CLIENT_QT_TRANSLATIONS} -o ${CMAKE_CURRENT_BINARY_DIR}/client_ru.ts"
-  COMMENT "Merge all translation files into ${CMAKE_CURRENT_BINARY_DIR}/client_ru.ts")
+#
+# `client_ru.ts` is the client's whole catalog, deliberately: it is the only
+# .ts file qt_add_translation() compiles, so a message in any other file never
+# reaches client_ru.qm. Three such files existed until 2026-08-23 (task 384) —
+# their translations were correct, present, and unreachable — and a per-module
+# registration macro plus an lconvert merge existed to combine them, both dead.
+# The check in tools/check_ui_translations.py now fails if a second .ts file
+# appears, so this stays a single-catalog arrangement by construction.
 
 find_package(Qt6 COMPONENTS LinguistTools QUIET)
 if(COMMAND qt_add_translation)

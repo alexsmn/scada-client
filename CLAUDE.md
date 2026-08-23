@@ -61,7 +61,7 @@ scada-client/
 ├── .cppcheck-suppressions  # This product's own cppcheck suppressions
 ├── CMakeLists.txt          # Root CMake build file
 ├── aui/client_module.cmake # Custom CMake helpers for `_qt` target creation (aui-owned)
-├── translation.cmake       # Qt translation support
+├── app/qt/client_ru.ts     # The whole Russian catalog; the only .ts that ships
 ├── app/client_icon.rc      # Windows resource script: the app icon, nothing else
 ├── resources/              # Command ids (common_resources.h) + icon-strip paths
 └── client_utils.cpp/.h     # Global utility functions

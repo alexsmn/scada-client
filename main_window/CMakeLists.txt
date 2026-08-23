@@ -67,8 +67,6 @@ if(TARGET client_main_window_qt)
   else()
     target_compile_definitions(client_main_window_qt PUBLIC CLIENT_HAS_MODUS=0)
   endif()
-
-  client_qt_translations(client_main_window_qt "main_window_ru_qt.ts")
 endif()
 
 # UTs.

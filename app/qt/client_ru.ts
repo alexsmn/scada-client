@@ -2979,4 +2979,73 @@
         <translation>Указано некорректное значение с плавающей точкой.</translation>
     </message>
 </context>
+<context>
+    <name>MainWindowQt</name>
+    <message>
+        <location filename="../../main_window/main_window_qt.cpp" line="245"/>
+        <source>%1 (Server: %2)</source>
+        <translation>%1 (Сервер: %2)</translation>
+    </message>
+    <message>
+        <location filename="../../main_window/main_window_qt.cpp" line="946"/>
+        <source>Toolbar</source>
+        <translation>Панель инструментов</translation>
+    </message>
+</context>
+<context>
+    <name>QObject</name>
+    <message>
+        <location filename="main.cpp" line="149"/>
+        <source>Telecontrol SCADA Client</source>
+        <translation>Клиент ОИК Телеконтроль</translation>
+    </message>
+</context>
+<context>
+    <name>TransportDialog</name>
+    <message>
+        <location filename="../../properties/transport/qt/transport_dialog.ui" line="14"/>
+        <source>Transport</source>
+        <translation>Транспорт</translation>
+    </message>
+    <message>
+        <source>Type:</source>
+        <translation>Тип:</translation>
+    </message>
+    <message>
+        <source>Host:</source>
+        <translation>Хост:</translation>
+    </message>
+    <message>
+        <source>Port:</source>
+        <translation>Порт:</translation>
+    </message>
+    <message>
+        <source>Flow Control:</source>
+        <translation>Управление потоком:</translation>
+    </message>
+    <message>
+        <source>Stop Bits:</source>
+        <translation>Стоповые биты:</translation>
+    </message>
+    <message>
+        <source>Bit Count:</source>
+        <translation>Биты данных:</translation>
+    </message>
+    <message>
+        <source>Parity:</source>
+        <translation>Четность:</translation>
+    </message>
+    <message>
+        <source>Baud Rate:</source>
+        <translation>Скорость (бод):</translation>
+    </message>
+    <message>
+        <source>OK</source>
+        <translation>ОК</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Отмена</translation>
+    </message>
+</context>
 </TS>

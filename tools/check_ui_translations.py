@@ -37,6 +37,16 @@ newly translated call site drifting away from its catalog entry: rename the
 source in the code and the entry stops matching, silently. TRANSLATE_GAPS
 parks the call sites that were already in that state.
 
+**Rule 4 — every `.ts` file under the client is one that reaches the `.qm`.**
+
+The other three rules read *every* `.ts` file they can find, so a catalog that
+nothing compiles has its translations counted as shipping — a translation that
+is present, correct and unreachable, invisible to the check written to find
+exactly that. Three files were in that state until 2026-08-23; the transport
+dialog's eleven labels among them, rendering English inside the Russian client
+while the `.ts` sat there looking translated. `qt_add_translation()` in
+`app/qt/CMakeLists.txt` is the authority for what ships.
+
 **Rule 2 — no two shipping messages in one context share a source string.**
 
 `lrelease` keeps one entry per (context, source) and silently drops the rest
@@ -250,6 +260,70 @@ def report_translate_gaps(cpp_files, ts_files, client_dir):
     return len(missing)
 
 
+# The one catalog that reaches the .qm. `qt_add_translation()` in
+# app/qt/CMakeLists.txt compiles exactly the files named to it, so a .ts file
+# it does not name is unreachable however correct its contents are.
+SHIPPED_CATALOG_CMAKE = "app/qt/CMakeLists.txt"
+QT_ADD_TRANSLATION = re.compile(
+    r'qt_add_translation\(\s*\w+\s+((?:"[^"]+\.ts"\s*)+)\)')
+
+
+def find_shipped_catalogs(client_dir):
+    """The .ts files app/qt/CMakeLists.txt actually compiles, as paths."""
+    cmake = client_dir / SHIPPED_CATALOG_CMAKE
+    if not cmake.exists():
+        return None
+    text = cmake.read_text(encoding="utf-8")
+    shipped = set()
+    for call in QT_ADD_TRANSLATION.finditer(text):
+        for name in re.findall(r'"([^"]+\.ts)"', call.group(1)):
+            shipped.add((cmake.parent / name).resolve())
+    return shipped
+
+
+def report_unshipped_catalogs(ts_files, client_dir):
+    """Rule 4. Returns the number of .ts files that never reach the .qm.
+
+    The failure this exists to prevent: a translation that is present, correct,
+    and unreachable. Three catalogs sat in that state until 2026-08-23 —
+    `app_ru.ts`, `main_window_ru_qt.ts` and `transport_dialog_ru.ts`, eleven of
+    whose messages were the transport dialog's labels, so an operator
+    configuring a serial device read them in English inside the Russian client.
+    A dead lconvert merge was supposed to combine them and never ran.
+
+    Nothing else can see this. Rules 1-3 read *every* .ts file under the client
+    and so treat an orphan's translations as shipping, which is precisely how
+    the gap stayed invisible to the check written to find gaps.
+    """
+    shipped = find_shipped_catalogs(client_dir)
+    if shipped is None:
+        print(f"{SHIPPED_CATALOG_CMAKE} not found; skipping the catalog "
+              f"reachability check.", file=sys.stderr)
+        return 0
+    if not shipped:
+        print(f"\nNo qt_add_translation() call naming a .ts file was found in "
+              f"{SHIPPED_CATALOG_CMAKE}, so nothing would compile a catalog "
+              f"at all.", file=sys.stderr)
+        return 1
+
+    orphans = sorted(path.relative_to(client_dir).as_posix()
+                     for path in ts_files if path.resolve() not in shipped)
+    if not orphans:
+        return 0
+
+    print(f"\n{len(orphans)} .ts file(s) are never compiled into the .qm, so "
+          f"every translation in them renders as its English source:",
+          file=sys.stderr)
+    for name in orphans:
+        print(f"  {name}", file=sys.stderr)
+    print(f"\nMove the messages into a catalog that "
+          f"{SHIPPED_CATALOG_CMAKE}'s qt_add_translation() names and delete "
+          f"the orphan, or add the file to that call. Do not leave it in "
+          f"place: the other rules here read every .ts file under the client "
+          f"and would report its contents as shipping.", file=sys.stderr)
+    return len(orphans)
+
+
 def find_duplicate_sources(path):
     """Lists (context, source, [translations]) duplicated among shipping entries.
 
@@ -336,7 +410,15 @@ def main():
               f"{client_dir}", file=sys.stderr)
         return 2
 
-    # Rule 2 first: it needs no lupdate, so it must not sit behind the skip
+    # Rule 4 first: it decides whether the files the other rules are about to
+    # read are files that ship. A green run of rules 1-3 over an unreachable
+    # catalog is exactly the "reports OK while blind" failure they exist to
+    # prevent, so this must not sit behind them.
+    if report_unshipped_catalogs(ts_files, client_dir):
+        return 1
+    print(f"OK: all {len(ts_files)} .ts file(s) are compiled into the .qm.")
+
+    # Rule 2 next: it needs no lupdate, so it must not sit behind the skip
     # below or it would silently stop running wherever Qt LinguistTools is
     # absent — which is the same "reports OK while blind" failure the rule
     # itself guards against.
