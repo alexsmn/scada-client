@@ -176,6 +176,14 @@ if(Python3_FOUND)
     COMMAND ${Python3_EXECUTABLE}
       "${CMAKE_CURRENT_SOURCE_DIR}/test_check_screenshots.py")
   set_tests_properties(client_screenshot_owed_tests PROPERTIES TIMEOUT 120)
+
+  # Capture provenance (task 434). Like the owed-set tests: milliseconds, no
+  # build, no Qt, no generator binary - each case builds its own manifest and
+  # images, and the git-dependent checks run against a throwaway repository.
+  add_test(NAME client_screenshot_provenance_tests
+    COMMAND ${Python3_EXECUTABLE}
+      "${CMAKE_CURRENT_SOURCE_DIR}/test_capture_provenance.py")
+  set_tests_properties(client_screenshot_provenance_tests PROPERTIES TIMEOUT 120)
 endif()
 
 # Themed reshell-capture regression net. The structural check above renders the
@@ -308,12 +316,29 @@ if(SCREENSHOT_PUBLISH_DARK)
       -P "${CMAKE_CURRENT_SOURCE_DIR}/copy_themed_captures.cmake")
 endif()
 
+# Record, per regenerated image, the commit and platform it was captured at
+# (task 434). A screenshot is a claim about the tree that produced it, and until
+# this ran nothing in the pipeline recorded which tree that was — so a stale
+# capture was silent and the gallery still read as a baseline. The stamp goes
+# last, after both render passes, so it sees the bytes that were actually
+# published; it rewrites only rows whose digest changed, because an unchanged
+# image is still the output of the older commit already recorded against it.
+if(Python3_FOUND)
+  set(screenshot_provenance_stamp
+    COMMAND ${Python3_EXECUTABLE}
+      "${CMAKE_CURRENT_SOURCE_DIR}/capture_provenance.py"
+      "--stamp"
+      "--image-manifest=${SCREENSHOT_IMAGE_MANIFEST}"
+      "--images-dir=${SCREENSHOT_DOCS_DIR}")
+endif()
+
 add_custom_target(regenerate_client_screenshots
   COMMAND ${CMAKE_COMMAND} -E make_directory "${SCREENSHOT_DOCS_DIR}"
   COMMAND ${SCREENSHOT_CAPTURE_LAUNCHER} $<TARGET_FILE:client_screenshot_generator>
     "--out=${SCREENSHOT_DOCS_DIR}"
     "--image-manifest=${SCREENSHOT_IMAGE_MANIFEST}"
   ${screenshot_dark_publish_pass}
+  ${screenshot_provenance_stamp}
   COMMENT "Rendering screenshots into client/screenshots/"
   VERBATIM
   USES_TERMINAL
