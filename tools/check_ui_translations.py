@@ -228,8 +228,11 @@ def report_translate_gaps(cpp_files, ts_files, client_dir):
 # app/qt/CMakeLists.txt compiles exactly the files named to it, so a .ts file
 # it does not name is unreachable however correct its contents are.
 SHIPPED_CATALOG_CMAKE = "app/qt/CMakeLists.txt"
+# CMake takes an argument quoted or bare, and both forms are ordinary here, so
+# match either — a check that fails on valid code is a check someone switches
+# off.
 QT_ADD_TRANSLATION = re.compile(
-    r'qt_add_translation\(\s*\w+\s+((?:"[^"]+\.ts"\s*)+)\)')
+    r'qt_add_translation\(\s*\w+\s+((?:"?[^\s")]+\.ts"?\s*)+)\)')
 
 
 def find_shipped_catalogs(client_dir):
@@ -240,13 +243,16 @@ def find_shipped_catalogs(client_dir):
     text = cmake.read_text(encoding="utf-8")
     shipped = set()
     for call in QT_ADD_TRANSLATION.finditer(text):
-        for name in re.findall(r'"([^"]+\.ts)"', call.group(1)):
+        for name in re.findall(r'"?([^\s")]+\.ts)"?', call.group(1)):
             shipped.add((cmake.parent / name).resolve())
     return shipped
 
 
 def report_unshipped_catalogs(ts_files, client_dir):
-    """Rule 4. Returns the number of .ts files that never reach the .qm.
+    """Rule 4. Returns the count of .ts files that never reach the .qm.
+
+    Returns None — not 0 — when it could not tell, so the caller prints
+    "SKIPPED" rather than this rule's OK line over a tree it never read.
 
     The failure this exists to prevent: a translation that is present, correct,
     and unreachable. Three catalogs sat in that state until 2026-08-23 —
@@ -261,9 +267,12 @@ def report_unshipped_catalogs(ts_files, client_dir):
     """
     shipped = find_shipped_catalogs(client_dir)
     if shipped is None:
-        print(f"{SHIPPED_CATALOG_CMAKE} not found; skipping the catalog "
-              f"reachability check.", file=sys.stderr)
-        return 0
+        # Returning 0 here would print this rule's OK line over a tree it never
+        # looked at — the exact failure the rule exists to prevent, one level
+        # up. Say it skipped instead.
+        print(f"SKIPPED: {SHIPPED_CATALOG_CMAKE} not found, so which catalogs "
+              f"ship is unknown.", file=sys.stderr)
+        return None
     if not shipped:
         print(f"\nNo qt_add_translation() call naming a .ts file was found in "
               f"{SHIPPED_CATALOG_CMAKE}, so nothing would compile a catalog "
@@ -418,9 +427,11 @@ def main():
     # read are files that ship. A green run of rules 1-3 over an unreachable
     # catalog is exactly the "reports OK while blind" failure they exist to
     # prevent, so this must not sit behind them.
-    if report_unshipped_catalogs(ts_files, client_dir):
+    unshipped = report_unshipped_catalogs(ts_files, client_dir)
+    if unshipped:
         return 1
-    print(f"OK: all {len(ts_files)} .ts file(s) are compiled into the .qm.")
+    if unshipped is not None:
+        print(f"OK: all {len(ts_files)} .ts file(s) are compiled into the .qm.")
 
     # Rule 2 next: it needs no lupdate, so it must not sit behind the skip
     # below or it would silently stop running wherever Qt LinguistTools is
