@@ -111,10 +111,6 @@ void AddIec60870TestTypes(AddressSpaceImpl& address_space) {
           scada::NodeAttributes{.browse_name = "Iec60870DeviceType",
                                 .display_name = u"Устройство МЭК-60870"},
       .supertype_id = dev::DeviceType});
-
-  // HasDevice reference type (GenericNodeFactory cannot create ReferenceType).
-  address_space.AddStaticNode<scada::ReferenceType>(
-      scada::data_items::id::HasDevice, "HasDevice");
 }
 
 }  // namespace

@@ -206,27 +206,6 @@ void PopulateFixtureNodes(AddressSpaceImpl& address_space,
                      "parent or delete them from `nodes`): " +
                          orphans);
 
-  // HasDevice, the reference that binds a data group to the device whose link
-  // state its Value column shows. ScadaTestAddressSpace enumerates the SCADA
-  // reference types its own consumers needed and this is not among them, and
-  // GenericNodeFactory cannot create a ReferenceType, so the `references`
-  // block below would panic in AddReference on an unknown type. Added with the
-  // HasSubtype edge to NonHierarchicalReferences for the reason
-  // ScadaTestAddressSpace gives: fetchers browse that supertype with
-  // include-subtypes, so an unparented reference type silently drops its
-  // references from fetch results — the reference would exist and
-  // `node.target(HasDevice)` would still read null.
-  if (!address_space.GetNode(scada::data_items::id::HasDevice)) {
-    address_space.AddStaticNode<scada::ReferenceType>(
-        scada::data_items::id::HasDevice, "HasDevice");
-    scada::AddReference(
-        address_space,
-        scada::NodeId{scada::id::HasSubtype, scada::NamespaceIndexes::NS0},
-        scada::NodeId{scada::id::NonHierarchicalReferences,
-                      scada::NamespaceIndexes::NS0},
-        scada::data_items::id::HasDevice);
-  }
-
   GenericNodeFactory factory{address_space};
   std::vector<PendingReference> pending_references;
 
