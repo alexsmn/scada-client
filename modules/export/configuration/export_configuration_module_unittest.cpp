@@ -18,8 +18,8 @@
 #include "node_service/static/static_node_service.h"
 #include "resources/common_resources.h"
 #include "services/task_manager_mock.h"
+#include "test/scoped_temp_dir.h"
 
-#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <gmock/gmock.h>
@@ -46,11 +46,14 @@ auto ReturnNodeId(scada::NodeId value) {
 class ExportConfigurationModuleTest : public Test {
  public:
   void SetUp() override;
-  void TearDown() override;
 
  protected:
   std::filesystem::path WriteExportDataToTempFile(
       const ExportData& export_data) const;
+
+  // First member: the fixture's files live under it, and members are destroyed
+  // in reverse declaration order.
+  ScopedTempDir temp_dir_{"scada_export_configuration_test"};
 
   StaticNodeService node_service_;
   TestExecutor executor_;
@@ -70,23 +73,10 @@ class ExportConfigurationModuleTest : public Test {
        .task_manager_ = task_manager_,
        .global_commands_ = global_commands_,
        .ui_command_registry_ = ui_command_registry_}};
-
-  std::filesystem::path temp_dir_;
 };
 
 void ExportConfigurationModuleTest::SetUp() {
   node_service_.AddAll(GetScadaNodeStates());
-
-  temp_dir_ =
-      std::filesystem::temp_directory_path() /
-      ("scada_test_" +
-       std::to_string(
-           std::chrono::steady_clock::now().time_since_epoch().count()));
-  std::filesystem::create_directories(temp_dir_);
-}
-
-void ExportConfigurationModuleTest::TearDown() {
-  std::filesystem::remove_all(temp_dir_);
 }
 
 TEST_F(ExportConfigurationModuleTest, Construct_RegistersCommands) {
@@ -165,7 +155,7 @@ TEST_F(ExportConfigurationModuleTest, ImportCommand) {
 }
 
 TEST_F(ExportConfigurationModuleTest, ExportCommandWritesFileAndPromptsToOpen) {
-  const auto export_file_path = temp_dir_ / "configuration.csv";
+  const auto export_file_path = temp_dir_.path() / "configuration.csv";
 
   auto* command =
       global_commands_.FindCommand(ID_EXPORT_CONFIGURATION_TO_EXCEL);
@@ -191,7 +181,7 @@ TEST_F(ExportConfigurationModuleTest,
   ASSERT_THAT(command, NotNull());
 
   EXPECT_CALL(dialog_service_, SelectOpenFile(/*title=*/_))
-      .WillOnce(ReturnAwaitable(temp_dir_ / "missing.csv"));
+      .WillOnce(ReturnAwaitable(temp_dir_.path() / "missing.csv"));
 
   EXPECT_CALL(dialog_service_,
               RunMessageBox(/*message=*/_, /*title=*/_, MessageBoxMode::Error))
@@ -203,7 +193,7 @@ TEST_F(ExportConfigurationModuleTest,
 
 std::filesystem::path ExportConfigurationModuleTest::WriteExportDataToTempFile(
     const ExportData& export_data) const {
-  std::filesystem::path export_file_path = temp_dir_ / "export_file.csv";
+  std::filesystem::path export_file_path = temp_dir_.path() / "export_file.csv";
 
   std::ofstream stream{export_file_path};
   CsvWriter csv_writer{stream};

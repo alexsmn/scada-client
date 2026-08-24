@@ -7,6 +7,7 @@
 #include "node_service/static/static_node_service.h"
 #include "scada/attribute_service_mock.h"
 #include "scada/co_result.h"
+#include "test/scoped_temp_dir.h"
 
 #include <fstream>
 #include <gmock/gmock.h>
@@ -28,27 +29,6 @@ std::string ReadFileContents(const std::filesystem::path& path) {
   EXPECT_TRUE(input.is_open());
   return std::string{std::istreambuf_iterator<char>{input}, {}};
 }
-
-class ScopedTempDir {
- public:
-  ScopedTempDir()
-      : path_{std::filesystem::temp_directory_path() /
-              std::filesystem::path{"file_synchronizer_unittest"}} {
-    std::error_code ec;
-    std::filesystem::remove_all(path_, ec);
-    std::filesystem::create_directories(path_, ec);
-  }
-
-  ~ScopedTempDir() {
-    std::error_code ec;
-    std::filesystem::remove_all(path_, ec);
-  }
-
-  const std::filesystem::path& path() const { return path_; }
-
- private:
-  std::filesystem::path path_;
-};
 
 scada::NodeState MakeType(scada::NodeId node_id, scada::NodeClass node_class) {
   return {.node_id = node_id, .node_class = node_class};
@@ -100,7 +80,7 @@ class FileSynchronizerTest : public Test {
         .root_dir_ = temp_dir_.path()});
   }
 
-  ScopedTempDir temp_dir_;
+  ScopedTempDir temp_dir_{"scada_file_synchronizer_test"};
   TestExecutor executor_;
   StrictMock<scada::MockAttributeService> attribute_service_;
   StaticNodeService node_service_;

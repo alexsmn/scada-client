@@ -2,10 +2,10 @@
 
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
+#include "test/scoped_temp_dir.h"
 
 #include <gtest/gtest.h>
 
-#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <optional>
@@ -27,21 +27,6 @@ Awaitable<OperatorUseCaseSmokeResult> MakeSmokeResultAsync(
 }
 
 class E2eTestSupportTest : public testing::Test {
- public:
-  void SetUp() override {
-    report_path_ =
-        std::filesystem::temp_directory_path() /
-        ("scada_operator_use_cases_" +
-         std::to_string(
-             std::chrono::steady_clock::now().time_since_epoch().count()) +
-         ".txt");
-  }
-
-  void TearDown() override {
-    std::error_code ec;
-    std::filesystem::remove(report_path_, ec);
-  }
-
  protected:
   OperatorUseCaseSmokeContext MakeContext() {
     return OperatorUseCaseSmokeContext{
@@ -77,8 +62,13 @@ class E2eTestSupportTest : public testing::Test {
     };
   }
 
+  // First: the report file lives under it, and members are destroyed in
+  // reverse declaration order.
+  ScopedTempDir temp_dir_{"scada_operator_use_cases"};
+  const std::filesystem::path report_path_ =
+      temp_dir_.path() / "operator_use_cases.txt";
+
   TestExecutor executor_;
-  std::filesystem::path report_path_;
   std::vector<std::string> opened_windows_;
 };
 

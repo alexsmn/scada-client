@@ -7,8 +7,8 @@
 #include "base/value_util.h"
 #include "export/export_model.h"
 #include "profile/profile.h"
+#include "test/scoped_temp_dir.h"
 
-#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <gmock/gmock.h>
@@ -57,18 +57,6 @@ class TestExportModel : public ExportModel {
 };
 
 class CsvExportCommandTest : public Test {
- public:
-  void SetUp() override {
-    temp_dir_ =
-        std::filesystem::temp_directory_path() /
-        ("scada_csv_export_test_" +
-         std::to_string(
-             std::chrono::steady_clock::now().time_since_epoch().count()));
-    std::filesystem::create_directories(temp_dir_);
-  }
-
-  void TearDown() override { std::filesystem::remove_all(temp_dir_); }
-
  protected:
   Awaitable<void> Run() {
     return RunCsvExport({.executor_ = executor_,
@@ -85,6 +73,10 @@ class CsvExportCommandTest : public Test {
             std::istreambuf_iterator<char>{}};
   }
 
+  // First member: the exported files live under it, and members are destroyed
+  // in reverse declaration order.
+  ScopedTempDir temp_dir_{"scada_csv_export_test"};
+
   TestExecutor executor_;
   StrictMock<MockDialogService> dialog_service_;
   Profile profile_;
@@ -93,13 +85,12 @@ class CsvExportCommandTest : public Test {
       [](DialogService&, Profile&, bool) -> Awaitable<CsvExportParams> {
     co_return CsvExportParams{};
   };
-  std::filesystem::path temp_dir_;
 };
 
 }  // namespace
 
 TEST_F(CsvExportCommandTest, WritesCsvAndPromptsToOpen) {
-  const auto export_file_path = temp_dir_ / "export.csv";
+  const auto export_file_path = temp_dir_.path() / "export.csv";
 
   EXPECT_CALL(dialog_service_, SelectSaveFile(_))
       .WillOnce([&](const DialogService::SaveParams& params)
@@ -125,7 +116,7 @@ TEST_F(CsvExportCommandTest, WritesCsvAndPromptsToOpen) {
 }
 
 TEST_F(CsvExportCommandTest, ExportFailureShowsErrorDialogAndRejects) {
-  const auto export_file_path = temp_dir_ / "export.csv";
+  const auto export_file_path = temp_dir_.path() / "export.csv";
   export_model_.throw_on_export = true;
 
   EXPECT_CALL(dialog_service_, SelectSaveFile(_))
@@ -161,7 +152,7 @@ TEST_F(CsvExportCommandTest, RejectedSaveDialogStopsExportFlow) {
 }
 
 TEST_F(CsvExportCommandTest, RejectedExportDialogStopsBeforeWritingFile) {
-  const auto export_file_path = temp_dir_ / "export.csv";
+  const auto export_file_path = temp_dir_.path() / "export.csv";
   show_csv_export_dialog_ = [](DialogService&, Profile&,
                                bool) -> Awaitable<CsvExportParams> {
     return ThrowAwaitable<CsvExportParams>(
