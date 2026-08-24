@@ -13,6 +13,7 @@
 #include "main_window/main_window_mock.h"
 #include "main_window/opened_view/opened_view_interface.h"
 #include "resources/common_resources.h"
+#include "test/fake_opened_view.h"
 
 #include <gmock/gmock.h>
 
@@ -48,31 +49,6 @@ namespace {
 // `event_module` `AddOpenCommand` migration only needs a way to feed a
 // pre-resolved `WindowDefinition` into the coroutine; everything else is
 // inert.
-class FakeOpenedView : public OpenedViewInterface {
- public:
-  FakeOpenedView(WindowDefinition open_def, WindowInfo info)
-      : open_def_{std::move(open_def)}, info_{std::move(info)} {}
-
-  const WindowInfo& GetWindowInfo() const override { return info_; }
-  std::u16string GetWindowTitle() const override { return {}; }
-  void SetWindowTitle(std::u16string_view) override {}
-  WindowDefinition Save() override { return {}; }
-  ContentsModel* GetContents() override { return nullptr; }
-  void Select(const scada::NodeId&) override {}
-
-  Awaitable<WindowDefinition> GetOpenWindowDefinition(
-      const WindowInfo* /*window_info*/) const override {
-    ++open_definition_await_count;
-    co_return open_def_;
-  }
-
-  mutable int open_definition_await_count = 0;
-
- private:
-  const WindowDefinition open_def_;
-  const WindowInfo info_;
-};
-
 }  // namespace
 
 // Regression coverage for the `AddOpenCommand` coroutine path: dispatching

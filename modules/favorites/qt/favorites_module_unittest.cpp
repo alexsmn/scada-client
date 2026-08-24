@@ -14,6 +14,7 @@
 #include "main_window/opened_view/opened_view_interface.h"
 #include "profile/profile.h"
 #include "resources/common_resources.h"
+#include "test/fake_opened_view.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -27,30 +28,13 @@ namespace {
 
 constexpr std::u16string_view kViewTitle = u"Substation 1";
 
-// A plain view the Add-to-Favourites command will accept: not a pane, and it
-// saves to a definition carrying |kViewTitle|.
-class FakeOpenedView : public OpenedViewInterface {
- public:
-  const WindowInfo& GetWindowInfo() const override { return window_info_; }
-  std::u16string GetWindowTitle() const override {
-    return std::u16string{kViewTitle};
-  }
-  void SetWindowTitle(std::u16string_view title) override {}
-  WindowDefinition Save() override { return {}; }
-  ContentsModel* GetContents() override { return nullptr; }
-  void Select(const scada::NodeId& node_id) override {}
-
-  Awaitable<WindowDefinition> GetOpenWindowDefinition(
-      const WindowInfo* window_info) const override {
-    co_return WindowDefinition{*window_info};
-  }
-
- private:
-  WindowInfo window_info_;
-};
-
 class FavoritesModuleTest : public Test {
  protected:
+  // The Add-to-Favourites command saves the active view under its window
+  // title, so the fake has to carry one for the store assertion to have
+  // anything to match.
+  FavoritesModuleTest() { opened_view_.SetWindowTitle(kViewTitle); }
+
   // Executes ID_VIEW_ADD_TO_FAVOURITES and lets the spawned coroutine run far
   // enough to put the dialog on screen.
   void ExecuteAddToFavouritesCommand() {

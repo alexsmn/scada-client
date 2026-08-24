@@ -24,6 +24,7 @@
 #include "scada/method_service_mock.h"
 #include "scada/session_service_mock.h"
 #include "services/task_manager_mock.h"
+#include "test/fake_opened_view.h"
 #include "timed_data/timed_data_service_fake.h"
 
 #include <gmock/gmock.h>
@@ -33,24 +34,6 @@ using namespace testing;
 namespace {
 
 constexpr scada::NumericId kItemNodeId = 6001;
-
-class FakeOpenedView : public OpenedViewInterface {
- public:
-  const WindowInfo& GetWindowInfo() const override { return window_info_; }
-  std::u16string GetWindowTitle() const override { return {}; }
-  void SetWindowTitle(std::u16string_view title) override {}
-  WindowDefinition Save() override { return {}; }
-  ContentsModel* GetContents() override { return nullptr; }
-  void Select(const scada::NodeId& node_id) override {}
-
-  Awaitable<WindowDefinition> GetOpenWindowDefinition(
-      const WindowInfo* window_info) const override {
-    co_return WindowDefinition{*window_info};
-  }
-
- private:
-  WindowInfo window_info_;
-};
 
 // Mirrors the laziness of the production `TaskManagerImpl`: the launcher runs
 // only when the returned awaitable is awaited. The launcher parameter is taken
