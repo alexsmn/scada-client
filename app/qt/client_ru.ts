@@ -1592,6 +1592,22 @@
         <translation>Объекты</translation>
     </message>
     <message>
+        <source>Devices</source>
+        <translation>Устройства</translation>
+    </message>
+    <message>
+        <source>Substation</source>
+        <translation>Подстанция</translation>
+    </message>
+    <message>
+        <source>Device log</source>
+        <translation>Журнал устройства</translation>
+    </message>
+    <message>
+        <source>Report</source>
+        <translation>Отчет</translation>
+    </message>
+    <message>
         <source>Subsystems</source>
         <translation>Оборудование</translation>
     </message>
