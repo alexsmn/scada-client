@@ -157,7 +157,7 @@ TEST_F(ModusVdsRuntimeTest, ARealRuntimeRendersADocumentWithoutError) {
     // Verified 2026-08-25 against designer/build/ninja/bin/Debug. Note that
     // run printed a wall of objc duplicate-class warnings — the runtime dylib
     // carries its own Qt, and loading it into a Qt host registers QNSWindow
-    // and friends twice. Whether the *shipped* runtime does that is task 483.
+    // and friends twice. Whether the *shipped* runtime does that is task 485.
   }
 
   scada::base::PathService::Override(client::DIR_INSTALL, runtime_dir);

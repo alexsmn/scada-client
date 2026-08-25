@@ -10,12 +10,12 @@ namespace {
 
 using std::filesystem::path;
 
-// NOTE (task 479): every function under test here is currently **unreachable**
+// NOTE: every function under test here is currently **unreachable**
 // from the running client — a tree-wide search on 2026-08-25 found no caller of
 // any of them. They are compiled into `client_modus_qt` and called by nothing,
 // having been left behind when `224210f46` routed Modus through the VDS runtime
 // and `qt/modus_view{,2}.cpp` were dropped from the build. These tests describe
-// what the code does today so the decision recorded in task 481 — wire it back
+// what the code does today so the decision recorded in task 483 — wire it back
 // up or delete it — is taken against measured behaviour rather than a reading
 // of the source. Two of the behaviours below are defects, and are marked.
 
@@ -105,7 +105,7 @@ TEST_F(IsModus2Test, TheExtensionOverridesEvenAnExplicitVersion) {
   EXPECT_FALSE(IsModus2(definition, profile_));
 }
 
-// DEFECT (task 481): `MakeModusFilePath` resolves a hyperlink against the
+// DEFECT (task 483): `MakeModusFilePath` resolves a hyperlink against the
 // current display's directory and normalises the result — and then hands it to
 // `FullFilePathToPublic`, which is `path.filename()`. Every one of these cases
 // therefore collapses to a bare filename, and the directory logic above it can

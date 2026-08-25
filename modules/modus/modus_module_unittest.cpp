@@ -170,12 +170,12 @@ TEST_F(ModusModuleTest, TopologyCommandTracksAndTogglesTheProfileFlag) {
   EXPECT_FALSE(command->checked_handler(context));
 }
 
-// DEFECT (task 481): this command toggles and persists `profile.modus.modus2`,
+// DEFECT (task 483): this command toggles and persists `profile.modus.modus2`,
 // and **nothing reads it**. Its only reader is `IsModus2` in
 // `modules/modus/modus_util.cpp`, which is itself uncalled from anywhere in the
 // tree (measured 2026-08-25). So the operator gets a checkable menu item that
 // changes no rendering. The toggle is pinned here as it behaves today; whether
-// the fix is to wire the flag up or to withdraw the command is task 481.
+// the fix is to wire the flag up or to withdraw the command is task 483.
 TEST_F(ModusModuleTest, RuntimeRendererCommandTogglesAFlagNothingConsumes) {
   InstallModule();
 
