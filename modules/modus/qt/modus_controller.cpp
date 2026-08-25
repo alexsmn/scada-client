@@ -10,9 +10,13 @@
 #include <QScrollArea>
 
 #include <exception>
+#include <string>
+#include <utility>
 
 namespace {
 
+// The production runtime view: one object that is both the Qt widget the
+// window embeds and the `ModusViewWrapper` the controller drives.
 class ModusVdsRuntimeView final : public VdsRuntimeWidget,
                                   public ModusViewWrapper {
  public:
@@ -36,43 +40,56 @@ class ModusVdsRuntimeView final : public VdsRuntimeWidget,
 
 }  // namespace
 
-ModusController::ModusController(const ControllerContext& context)
-    : ControllerContext{context} {}
+ModusController::ModusController(const ControllerContext& context,
+                                 RuntimeViewFactory runtime_view_factory)
+    : ControllerContext{context},
+      runtime_view_factory_{std::move(runtime_view_factory)} {}
 
 ModusController::~ModusController() = default;
 
-QWidget* ModusController::CreateRuntimeView() {
+ModusController::RuntimeView ModusController::CreateVdsRuntimeView() {
   auto* runtime_view = new ModusVdsRuntimeView;
 
   runtime_view->set_selection_callback([this](const QString& data_source) {
-    if (data_source.isEmpty())
-      return;
-
-    try {
-      selection_.SelectTimedData(
-          TimedDataSpec{timed_data_service_,
-                        scada::NodeId::FromString(data_source.toStdString())});
-    } catch (const std::exception&) {
-      selection_.Clear();
-    }
+    SelectDataSource(data_source.toStdString());
   });
 
-  runtime_view->set_double_click_callback(
-      [this] { selection_.timed_data().Acknowledge(); });
-
-  wrapper_ = runtime_view;
+  runtime_view->set_double_click_callback([this] { AcknowledgeSelection(); });
 
   auto* scroll_area = new QScrollArea;
   scroll_area->setWidget(runtime_view);
   scroll_area->setStyleSheet("background-color: white;");
 
-  return scroll_area;
+  return {.widget = scroll_area, .wrapper = runtime_view};
+}
+
+void ModusController::SelectDataSource(std::string_view data_source) {
+  if (data_source.empty())
+    return;
+
+  try {
+    selection_.SelectTimedData(
+        TimedDataSpec{timed_data_service_,
+                      scada::NodeId::FromString(std::string{data_source})});
+  } catch (const std::exception&) {
+    selection_.Clear();
+  }
+}
+
+void ModusController::AcknowledgeSelection() {
+  selection_.timed_data().Acknowledge();
 }
 
 std::unique_ptr<UiView> ModusController::Init(
     const WindowDefinition& definition) {
-  std::unique_ptr<QWidget> result;
-  result.reset(CreateRuntimeView());
+  const RuntimeView runtime_view = runtime_view_factory_
+                                       ? runtime_view_factory_(*this)
+                                       : CreateVdsRuntimeView();
+
+  wrapper_ = runtime_view.wrapper;
+
+  std::unique_ptr<UiView> result;
+  result.reset(runtime_view.widget);
 
   wrapper_->Open(definition);
 
