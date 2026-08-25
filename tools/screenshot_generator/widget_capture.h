@@ -18,6 +18,10 @@ class QWidget;
 // Reports a test failure (and returns the last frame) if the widget never
 // stops changing, which would mean something is animating independently of the
 // generator's frozen clock.
+//
+// The give-up point is a number of frames compared, not an elapsed time, so a
+// loaded machine makes this slower but never makes it fail. See kMaxFrames in
+// settle_loop.h.
 QPixmap GrabWhenSettled(QWidget* widget);
 
 // Resizes `widget` to the spec dimensions, waits for it to settle, grabs a

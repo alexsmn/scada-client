@@ -3,6 +3,7 @@
 #include "screenshot_config.h"
 #include "screenshot_output.h"
 #include "screenshot_wait.h"
+#include "settle_loop.h"
 
 #include <gtest/gtest.h>
 
@@ -15,48 +16,42 @@
 
 #include <chrono>
 
-namespace {
-
-// Consecutive identical frames that count as settled, and the event-loop time
-// between them.
-constexpr int kSettledFrames = 3;
-constexpr auto kFrameInterval = std::chrono::milliseconds{120};
-constexpr auto kSettleTimeout = std::chrono::seconds{10};
-
-}  // namespace
-
 // Works only because nothing in a capture animates on its own: blink phase is
 // derived from the clock (see BlinkPhaseAt) and the generator freezes the
 // clock, so a widget that stops changing has genuinely finished.
+//
+// The loop itself is RunSettleLoop, which bounds the wait by frames compared
+// rather than by elapsed time — see the comment on kMaxFrames for why that
+// distinction is the difference between a capture that fails under load and
+// one that merely takes longer.
 QPixmap GrabWhenSettled(QWidget* widget) {
+  namespace sg = scada::screenshot_generator;
+
   QElapsedTimer elapsed;
   elapsed.start();
 
-  QImage previous;
   QPixmap pixmap;
-  int settled = 0;
+  const sg::SettleResult result = sg::RunSettleLoop(
+      [&] {
+        widget->repaint();
+        pixmap = widget->grab();
+        return pixmap.toImage();
+      },
+      [] { sg::PumpEventLoopFor(sg::kFrameInterval); });
 
-  for (;;) {
-    widget->repaint();
-    pixmap = widget->grab();
-
-    QImage frame = pixmap.toImage();
-    settled = (!previous.isNull() && frame == previous) ? settled + 1 : 0;
-    previous = std::move(frame);
-
-    if (settled >= kSettledFrames)
-      return pixmap;
-
-    if (elapsed.hasExpired(std::chrono::milliseconds{kSettleTimeout}.count())) {
-      ADD_FAILURE() << "Widget never stopped changing within "
-                    << kSettleTimeout.count()
-                    << "s; the capture is not reproducible. Something is "
-                       "animating independently of the frozen fixture clock.";
-      return pixmap;
-    }
-
-    scada::screenshot_generator::PumpEventLoopFor(kFrameInterval);
+  if (!result.settled) {
+    ADD_FAILURE()
+        << "Widget never stopped changing over " << result.frames << " frames ("
+        << elapsed.elapsed()
+        << " ms). The capture is not reproducible: something is changing "
+           "independently of the frozen fixture clock, or data is still "
+           "arriving. Machine load is NOT the cause — the budget is counted "
+           "in frames, not seconds — but it does inflate that wall time, so a "
+           "figure far above "
+        << sg::kMaxFrames * sg::kFrameInterval.count()
+        << " ms means the run was heavily loaded as well.";
   }
+  return pixmap;
 }
 
 void SaveScreenshot(QWidget* widget, const ScreenshotSpec& spec) {
@@ -66,9 +61,9 @@ void SaveScreenshot(QWidget* widget, const ScreenshotSpec& spec) {
   // On-page views are laid-out children (docked / tabbed), so resize() alone is
   // immediately overridden by the parent layout and grab() captures the
   // layout-controlled size rather than the requested spec size — a sparse page
-  // (e.g. a --only run with few windows) tiles them narrow. Detach the widget to
-  // a top-level for the grab so the requested dimensions stick, then restore its
-  // parent so the widget tree is left as we found it.
+  // (e.g. a --only run with few windows) tiles them narrow. Detach the widget
+  // to a top-level for the grab so the requested dimensions stick, then restore
+  // its parent so the widget tree is left as we found it.
   QWidget* const parent = widget->parentWidget();
   const bool was_visible = widget->isVisible();
   if (parent)

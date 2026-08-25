@@ -150,6 +150,39 @@ if(MSVC)
     $<$<CONFIG:Debug>:/PDB:NONE>)
 endif()
 
+# Unit tests for the generator's own logic.
+#
+# `client/CMakeLists.txt` globs the client tree for `*_unittest.cpp` but
+# explicitly excludes `/client/tools/`, because each tool manages its own
+# sources. Nothing here defined a test target, so until 2026-08-25 every
+# `*_unittest.cpp` under this directory was compiled by nothing at all --
+# `screenshot_wait_unittest.cpp` had four cases that had never run. A test
+# file that no target builds looks exactly like a passing one, so keep this
+# target in step when adding another.
+#
+# Deliberately linked against `base_unittest` alone (gtest plus its main) and
+# nothing Qt: what it covers is the settle loop's budget arithmetic, which is
+# Qt-free on purpose so it can be tested without a widget, an event loop, or a
+# machine that happens to be idle.
+add_executable(client_screenshot_generator_unittests
+  "settle_loop_unittest.cpp"
+)
+
+target_link_libraries(client_screenshot_generator_unittests PRIVATE
+  base_unittest
+)
+
+target_include_directories(client_screenshot_generator_unittests PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+include(GoogleTest)
+gtest_discover_tests(client_screenshot_generator_unittests
+  DISCOVERY_MODE PRE_TEST PROPERTIES TIMEOUT 60)
+
+set_property(TARGET client_screenshot_generator_unittests PROPERTY FOLDER
+  ${scada_client_folder})
+
 # Structural regression net: run the generator on the Qt offscreen
 # platform into a scratch dir and verify every manifest-managed capture
 # exists with spec-exact dimensions (see check_screenshots.py). Rides
