@@ -82,7 +82,7 @@ class MainWindowModuleTest : public Test {
 
   MainWindow* main_window_ = nullptr;
 
-  static const int kWindowId = 111;
+  static constexpr int kWindowId = 111;
 };
 
 void MainWindowModuleTest::SetUp() {

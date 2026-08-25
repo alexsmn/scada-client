@@ -292,7 +292,7 @@ class MainWindowTest : public Test {
 
   std::optional<MainWindow> main_window_;
 
-  static const int kWindowId = 111;
+  static constexpr int kWindowId = 111;
 };
 
 MainWindowTest::MainWindowTest() {
