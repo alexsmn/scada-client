@@ -48,7 +48,10 @@ SettingsDialog::SettingsDialog(QWidget* parent, scada::aui::MenuModel& model)
   // Dynamic models populate here; without it Language and the module
   // contributions would render empty.
   model.MenuWillShow();
-  BuildSection(model, layout);
+  bool pending_rule = false;
+  BuildSection(model, layout, pending_rule);
+  // Any rule still owed here introduced nothing and is dropped: the trailing
+  // case of the same rule FlushPendingRule applies between sections.
 
   layout->addStretch(1);
 
@@ -63,47 +66,69 @@ SettingsDialog::SettingsDialog(QWidget* parent, scada::aui::MenuModel& model)
 
 SettingsDialog::~SettingsDialog() = default;
 
+void SettingsDialog::FlushPendingRule(QVBoxLayout* layout, bool& pending_rule) {
+  if (!pending_rule)
+    return;
+  pending_rule = false;
+
+  // Nothing precedes it, so it would divide the first control from the title
+  // bar rather than from another group.
+  if (layout->count() == 0)
+    return;
+
+  auto* rule = new QFrame{this};
+  rule->setFrameShape(QFrame::HLine);
+  rule->setFrameShadow(QFrame::Sunken);
+  layout->addWidget(rule);
+}
+
 void SettingsDialog::BuildSection(scada::aui::MenuModel& model,
-                                  QVBoxLayout* layout) {
+                                  QVBoxLayout* layout,
+                                  bool& pending_rule) {
   for (int index = 0; index < model.GetItemCount(); ++index) {
     if (!IsRenderable(model, index))
       continue;
 
     switch (model.GetTypeAt(index)) {
-      case MenuModel::TYPE_SEPARATOR: {
+      case MenuModel::TYPE_SEPARATOR:
         // The menu's grouping is meaningful — it is what separates the window
         // toggles from the event ones — so it survives as a rule rather than
-        // being flattened away.
-        auto* rule = new QFrame{this};
-        rule->setFrameShape(QFrame::HLine);
-        rule->setFrameShadow(QFrame::Sunken);
-        layout->addWidget(rule);
+        // being flattened away. Recorded rather than drawn: see
+        // `FlushPendingRule`. Consecutive separators collapse into one, which
+        // is what the menu does with them too.
+        pending_rule = true;
         break;
-      }
 
       case MenuModel::TYPE_CHECK:
       case MenuModel::TYPE_RADIO:
+        FlushPendingRule(layout, pending_rule);
         AddCheckRow(model, index, layout);
         break;
 
       case MenuModel::TYPE_SUBMENU:
+        FlushPendingRule(layout, pending_rule);
         AddChoiceRow(model, index, layout);
         break;
 
       case MenuModel::TYPE_INPLACE_MENU:
         // Contributes its items to this section rather than a group of its
-        // own, which is what "in-place" means in the menu too.
+        // own, which is what "in-place" means in the menu too — including the
+        // pending rule, which its first control discharges and an empty one
+        // leaves for whatever follows.
         if (MenuModel* inplace = model.GetSubmenuModelAt(index)) {
           inplace->MenuWillShow();
-          BuildSection(*inplace, layout);
+          BuildSection(*inplace, layout, pending_rule);
         }
         break;
 
       case MenuModel::TYPE_COMMAND:
       case MenuModel::TYPE_BUTTON_ITEM:
         // A plain command in a preferences list is an action, not a
-        // preference. None exists today; rendering it as a checkbox would
-        // misreport it, so it is deliberately skipped rather than guessed at.
+        // preference; rendering it as a checkbox would misreport it, so it is
+        // deliberately skipped. `ID_VIEW_PUBLIC_FOLDER` ("Open Displays
+        // Folder") is one, and it is registered with `separator_before`, so
+        // skipping it must not leave that rule standing in front of the next
+        // module's group — which is why the rule waits for a control instead.
         break;
     }
   }

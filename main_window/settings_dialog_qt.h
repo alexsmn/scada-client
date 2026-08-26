@@ -37,7 +37,21 @@ class SettingsDialog : public QDialog {
   // Renders `model`'s items into `layout`. Recurses through in-place menus,
   // which contribute their items to the enclosing section rather than a group
   // of their own.
-  void BuildSection(scada::aui::MenuModel& model, QVBoxLayout* layout);
+  //
+  // `pending_rule` carries a separator the model asked for but that has not
+  // been drawn yet, and is shared across the recursion so an in-place menu can
+  // discharge one raised before it. See `FlushPendingRule`.
+  void BuildSection(scada::aui::MenuModel& model,
+                    QVBoxLayout* layout,
+                    bool& pending_rule);
+
+  // Draws a separator that is still owed, if one is and if it would actually
+  // divide something. Separators are deferred rather than drawn where they
+  // appear because the dialog does not render every item the menu does — a
+  // plain command is skipped — so a rule can turn out to introduce a group
+  // that is entirely absent. Delaying it until a control follows means a rule
+  // is only ever drawn between two things the operator can see.
+  void FlushPendingRule(QVBoxLayout* layout, bool& pending_rule);
 
   // Renders a submenu of mutually exclusive choices (Language, Style, Colour
   // scheme) as a labelled combo box. A submenu is the menu vocabulary for "pick
