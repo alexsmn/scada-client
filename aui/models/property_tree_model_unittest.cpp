@@ -2,6 +2,7 @@
 
 #include "aui/models/property_model.h"
 
+#include <boost/signals2/connection.hpp>
 #include <gtest/gtest.h>
 
 #include <memory>
@@ -25,15 +26,31 @@ class FakeGroup : public PropertyGroup {
   void AddProperty(std::u16string name,
                    std::u16string value,
                    EditData::EditorType editor_type) {
-    entries_.push_back({std::move(name), std::move(value),
-                        EditData{.editor_type = editor_type}});
+    entries_.push_back({.name = std::move(name),
+                        .value = std::move(value),
+                        .edit = EditData{.editor_type = editor_type},
+                        .type = ItemType::Property});
+  }
+
+  // Adds a nested group and hands back a reference to it, so a test can drive
+  // a change against a group that is not the root. The subgroup is owned
+  // through a `unique_ptr`, so the reference survives `entries_` reallocating.
+  FakeGroup& AddSubgroup(std::u16string name) {
+    auto subgroup = std::make_unique<FakeGroup>();
+    FakeGroup& ref = *subgroup;
+    entries_.push_back({.name = std::move(name),
+                        .subgroup = std::move(subgroup),
+                        .type = ItemType::Group});
+    return ref;
   }
 
   int GetCount() const override { return static_cast<int>(entries_.size()); }
-  PropertyGroup* GetSubgroup(int) const override { return nullptr; }
+  PropertyGroup* GetSubgroup(int i) const override {
+    return entries_[i].subgroup.get();
+  }
   std::u16string GetName(int i) const override { return entries_[i].name; }
   std::u16string GetValue(int i) const override { return entries_[i].value; }
-  ItemType GetType(int) const override { return ItemType::Property; }
+  ItemType GetType(int i) const override { return entries_[i].type; }
   bool IsInherited(int) const override { return false; }
   void SetValue(int i, const std::u16string& value) override {
     entries_[i].value = value;
@@ -46,6 +63,8 @@ class FakeGroup : public PropertyGroup {
     std::u16string name;
     std::u16string value;
     EditData edit;
+    std::unique_ptr<FakeGroup> subgroup;
+    ItemType type = ItemType::Property;
   };
 
   std::vector<Entry> entries_;
@@ -111,6 +130,65 @@ TEST_F(PropertyTreeModelTest, NameColumnIsNeitherEditableNorGreyed) {
     EXPECT_EQ(Item(index).GetTextColor(kNameColumn),
               Color{ColorCode::Transparent});
   }
+}
+
+// A root property and a nested group holding one of its own, which is the
+// shape `FindGroupNodeHelper` has to walk.
+class NestedPropertyTreeModelTest : public testing::Test {
+ protected:
+  NestedPropertyTreeModelTest() {
+    auto root = std::make_unique<FakeGroup>();
+    root->AddProperty(u"Name", u"Pump 1", EditData::EditorType::TEXT);
+    FakeGroup& limits = root->AddSubgroup(u"Limits");
+    limits.AddProperty(u"EuHi", u"100", EditData::EditorType::TEXT);
+    nested_ = &limits;
+    root_group_ = root.get();
+    model_ = std::make_unique<FakeModel>(std::move(root));
+    tree_model_ = std::make_unique<PropertyTreeModel>(*model_);
+    connection_ = tree_model_->SubscribeNodeChanged(
+        [this](void* node) { changed_.push_back(node); });
+  }
+
+  FakeGroup* nested_ = nullptr;
+  FakeGroup* root_group_ = nullptr;
+  std::vector<void*> changed_;
+  std::unique_ptr<FakeModel> model_;
+  std::unique_ptr<PropertyTreeModel> tree_model_;
+  boost::signals2::scoped_connection connection_;
+};
+
+// The regression: `FindGroupNodeHelper` ignored the `parent` it was handed and
+// re-derived the root instead, and its loop body did not depend on the loop
+// variable -- so no child was ever examined. A change inside a subgroup found
+// no node, `PropertiesChanged` returned early, and the nested row kept its
+// stale text until something repopulated the whole tree.
+TEST_F(NestedPropertyTreeModelTest, ChangeInNestedGroupReachesTheNestedNode) {
+  model_->properties_changed_handler(*nested_, 0, 1);
+
+  PropertyTreeNode& nested_node = tree_model_->root()->GetChild(1);
+  ASSERT_EQ(nested_node.GetChildCount(), 1);
+  ASSERT_EQ(changed_.size(), 1u);
+  EXPECT_EQ(changed_[0], &nested_node.GetChild(0));
+}
+
+// The root-level path worked before only because the old loop happened to
+// match on its first iteration; keep it covered now that the walk is real.
+TEST_F(NestedPropertyTreeModelTest, ChangeInRootGroupReachesTheRootRow) {
+  model_->properties_changed_handler(*root_group_, 0, 1);
+
+  ASSERT_EQ(changed_.size(), 1u);
+  EXPECT_EQ(changed_[0], &tree_model_->root()->GetChild(0));
+}
+
+// A group that is not in this tree must find nothing rather than reporting the
+// root, which is what the old helper did whenever the root happened to match.
+TEST_F(NestedPropertyTreeModelTest, ChangeInAnUnrelatedGroupEmitsNothing) {
+  FakeGroup stranger;
+  stranger.AddProperty(u"EuLo", u"0", EditData::EditorType::TEXT);
+
+  model_->properties_changed_handler(stranger, 0, 1);
+
+  EXPECT_TRUE(changed_.empty());
 }
 
 }  // namespace

@@ -142,11 +142,21 @@ PropertyGroupTreeNode* PropertyTreeModel::FindGroupNode(PropertyGroup& group) {
 PropertyGroupTreeNode* PropertyTreeModel::FindGroupNodeHelper(
     PropertyGroup& group,
     PropertyGroupTreeNode& parent) {
-  auto* node = root()->AsGroup();
-  for (int i = 0; i < node->GetChildCount(); ++i) {
-    if (&node->property_group == &group)
-      return node;
+  // Depth-first over `parent`'s subtree. A group can be nested to any depth --
+  // `PropertyGroupTreeNode::Update` builds a child node for every subgroup --
+  // so a search that only looked at the root would refresh top-level rows and
+  // silently leave a nested property showing stale text.
+  if (&parent.property_group == &group)
+    return &parent;
+
+  for (int i = 0; i < parent.GetChildCount(); ++i) {
+    auto* subgroup = parent.GetChild(i).AsGroup();
+    if (!subgroup)
+      continue;
+    if (auto* found = FindGroupNodeHelper(group, *subgroup))
+      return found;
   }
+
   return nullptr;
 }
 
