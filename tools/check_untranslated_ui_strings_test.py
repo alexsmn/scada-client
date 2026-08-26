@@ -69,6 +69,16 @@ DISPLAY_CASES = (
         'const Col kCols[] = {{"Current", 1}, {"Average", 2}};\n'
         "void f(QPainter& p){ p.drawText(r, 0, QString::fromUtf8(kCols[0].name)); }",
     ),
+    (
+        # The exemption below keys on the *field* that reaches Translate().
+        # A file that translates some other member must not launder this
+        # table's baked strings through it.
+        "table baked while a different member is translated",
+        "struct Col { const char* name; const char* hint; };\n"
+        'const Col kCols[] = {{"Current", "h"}};\n'
+        "void f(QPainter& p){ p.drawText(r, 0, QString::fromUtf8(c.name));\n"
+        "  p.drawText(r, 0, QString::fromStdU16String(Translate(c.caption))); }",
+    ),
 )
 
 # Correct code, or text no operator reads. None may produce a finding.
@@ -93,6 +103,18 @@ QUIET_CASES = (
     (
         "literal table in a file that paints nothing",
         'const char* kIds[] = {"ns=2;s=Tag.A", "Alpha"};',
+    ),
+    (
+        # Task 418's fix, and the shape rule 3 must stop reporting: the table
+        # holds English *sources* looked up through Translate() at paint time.
+        # Rule 7 of check_ui_translations.py is what then requires each of
+        # them to have an entry that ships, so the string is not unguarded --
+        # it has changed which check owns it.
+        "table of sources looked up through Translate()",
+        "struct Col { const char* name; int width; };\n"
+        'const Col kCols[] = {{"Current", 1}, {"Average", 2}};\n'
+        "void f(QPainter& p){\n"
+        "  p.drawText(r, 0, QString::fromStdU16String(Translate(c.name))); }",
     ),
     ("literal that reaches no sink at all", 'void f(){ send("HELLO SERVER"); }'),
     ("literal with no letters", 'void f(){ setWindowTitle(" - "); }'),

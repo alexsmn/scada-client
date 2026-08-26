@@ -81,8 +81,9 @@ cannot find rather than failing.
 Rule 1's six sinks are all *dialogs*. A string painted onto a widget reaches
 the operator just as surely and passes none of them: the trend legend's column
 headers rendered `Current / Min / Max / Average / @ cursor` in English inside
-the Russian client for as long as that legend existed, because
-`metrix_graph.cpp` contains no message box and so no rule-1 sink at all.
+the Russian client from the day that legend landed until 2026-08-25, because
+`metrix_graph.cpp` contains no message box and so no rule-1 sink at all. Task
+418 was that finding; this rule is what produced it.
 
 So rule 3 inverts the same way rule 2 did, one layer over: instead of asking
 "does a dialog get a literal", it asks "does a literal reach anything that
@@ -92,11 +93,23 @@ report thousands.
 
 It has a second half, for the shape that defeats every use-site rule. The
 legend's headers are not passed to `drawText` — a *table* of them sits at file
-scope and the paint loop indexes it (`QString::fromUtf8(column.header)`), so
-no amount of reading the call site finds a literal there. `LITERAL_TABLE`
-therefore also reports a file-scope `k…[] = {…}` initialiser holding
-letter-bearing literals, but only in a file that draws text at all. That
-conjunct is what keeps it precise: two hits tree-wide, one of them the legend.
+scope and the paint loop indexes it, so no amount of reading the call site
+finds a literal there. `LITERAL_TABLE` therefore also reports a file-scope
+`k…[] = {…}` initialiser holding letter-bearing literals, but only in a file
+that draws text at all. That conjunct is what keeps it precise: two hits
+tree-wide, one of them the legend.
+
+**A table of sources is not a finding, and telling the two apart is the pair
+of checks, not this one.** Once 418 routed the headers through `Translate()`
+the literals stayed exactly where they were — a table of *English sources* now,
+which is correct code that this rule cannot distinguish from baked output by
+looking at the table. `table_holds_sources` is the discriminator: a table whose
+element struct declares a field that reaches `Translate()` in the same file is
+skipped. What makes that safe is that the strings do not become unguarded, they
+change owner — rule 7 of `check_ui_translations.py` resolves the very same
+member back to the very same table and requires each literal to have an entry
+that ships. Exactly the condition that silences this rule is the one that arms
+that one.
 
 Note that data flow any longer than that is out of reach and always will be —
 a literal that reaches a widget through a function call, a member or a
@@ -187,16 +200,9 @@ LITERAL_KNOWN_GAPS = {
     # on 2026-08-22 — the u16format(L"...") family, the two window titles and
     # the tab label, the Modus placeholder, and task 351's Vidicon address —
     # each by wrapping the string in Translate() and adding the message to
-    # client_ru.ts. What is left is task 418's, below, and only that.
+    # client_ru.ts. Task 418 drained the last five on 2026-08-25 (the trend
+    # legend's value-grid headers), which is why the dict is now empty.
 
-    # --- task 418: the trend legend value grid, a file-scope table the paint
-    # loop indexes. Note the source strings are short and generic, so settle
-    # the catalog collision (task 152) before translating them.
-    ("modules/graph/metrix_graph.cpp", "Current"): "task 418",
-    ("modules/graph/metrix_graph.cpp", "Min"): "task 418",
-    ("modules/graph/metrix_graph.cpp", "Max"): "task 418",
-    ("modules/graph/metrix_graph.cpp", "Average"): "task 418",
-    ("modules/graph/metrix_graph.cpp", "@ cursor"): "task 418",
 }
 
 # Directories whose Cyrillic literals are not UI text and must stay as they are.
@@ -461,10 +467,46 @@ QT_TEXT_SINKS = (
 
 # A file-scope `const … kName[] = { … };` initialiser. Rule 3 reports one whose
 # elements are operator-readable words, because a table indexed by a paint loop
-# is out of reach of every use-site rule — see the module docstring.
+# is out of reach of every use-site rule — see the module docstring. The element
+# type is captured as well, so a table of *sources* can be told apart from a
+# table of baked display strings.
 LITERAL_TABLE = re.compile(
-    r"(?:const|constexpr)\s[\w:<>,\s*&]*?\b(k\w+)\s*\[\s*\]\s*=\s*\{"
+    r"(?:const|constexpr)\s+([\w:]+)[\w:<>,\s*&]*?\b(k\w+)\s*\[\s*\]\s*=\s*\{"
 )
+
+# `Translate(column.header)` / `Tr(row->label)` — a member reaching the
+# translator. Spelled the same way as TRANSLATE_MEMBER in the sibling checker,
+# whose rule 7 is what then requires these strings to ship.
+TRANSLATED_MEMBER = re.compile(
+    r"\b(?:Translate|Tr)\(\s*\w+\s*(?:\.|->)\s*(\w+)\s*\)")
+
+
+def table_holds_sources(source: str, type_name: str) -> bool:
+    """True when `type_name` declares a field that reaches Translate() here.
+
+    A table whose members are looked up through Translate() holds English
+    *sources*, not baked output, so it is correct code and not a rule 3
+    finding — the strings are translatable, and the sibling checker's rule 7
+    is what requires each of them to have an entry that ships.
+
+    Keying on the field name rather than proving the data flow is deliberate:
+    the flow runs from a file-scope table through a paint loop, which is the
+    shape no regular expression can follow. The pair of checks is what makes
+    it safe -- this one stops reporting only in the same condition that makes
+    the other one start.
+    """
+    members = set(TRANSLATED_MEMBER.findall(source))
+    if not members:
+        return False
+    struct = re.search(r"\bstruct\s+" + re.escape(type_name) + r"\s*\{",
+                       source)
+    if not struct:
+        return False
+    body = argument_region(source, struct.end() - 1)
+    if not body:
+        return False
+    return any(re.search(r"\b" + re.escape(name) + r"\s*;", body)
+               for name in members)
 
 
 def scan_file_for_display_literals(source: str):
@@ -488,10 +530,12 @@ def scan_file_for_display_literals(source: str):
     if not draws_text:
         return
     for m in LITERAL_TABLE.finditer(source):
+        if table_holds_sources(source, m.group(1)):
+            continue
         body = argument_region(source, m.end() - 1)
         for text in literal_groups(body):
             if is_operator_text(text):
-                yield source[: m.start()].count("\n") + 1, m.group(1), normalize(text)
+                yield source[: m.start()].count("\n") + 1, m.group(2), normalize(text)
 
 
 CYRILLIC = re.compile(r"[Ѐ-ӿ]")

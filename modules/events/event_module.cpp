@@ -188,9 +188,14 @@ EventModule::EventModule(EventModuleContext&& context)
                                         .category_ = CATEGORY_VIEW,
                                         .title_ = Translate("Event Panel"),
                                         .image_id_ = ID_EVENT_VIEW});
+  // "Current events", not "Current": the source has to differ from the trend
+  // legend's own `Current` column, because Translate() looks up by source with
+  // no context to tell a period filter from a value column (task 418). The
+  // persisted mode key is the separate, untranslated literal "Current" in
+  // overview_page.cpp and event_view.cpp, and is deliberately not touched.
   ui_command_registry_.AddAction(Action{.command_id_ = ID_CURRENT_EVENTS,
                                         .category_ = CATEGORY_PERIOD,
-                                        .title_ = Translate("Current"),
+                                        .title_ = Translate("Current events"),
                                         .flags_ = Action::CHECKABLE});
 
   ui_command_registry_.AddMenuItem({.menu_id = MainMenuId::More,

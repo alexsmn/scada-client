@@ -310,6 +310,29 @@
         <translation>Поток тревог</translation>
     </message>
     <!-- modules/graph series inspector + limit markers (2.4 trend workspace) -->
+    <!-- modules/graph/metrix_graph.cpp: the trend legend's value grid. The
+         column headers are painted from kThemedColumns and looked up per
+         paint, so a language switch re-renders them. `Average` is not here:
+         it reuses the summary view's own «Среднее» below, which is the same
+         meaning. `Current` was freed for this column by giving the events
+         period filter the source `Current events` (task 418). Kept short:
+         the numeric cells are 68 px and drawText does not elide. -->
+    <message>
+        <source>Current</source>
+        <translation>Текущее</translation>
+    </message>
+    <message>
+        <source>Min</source>
+        <translation>Мин</translation>
+    </message>
+    <message>
+        <source>Max</source>
+        <translation>Макс</translation>
+    </message>
+    <message>
+        <source>@ cursor</source>
+        <translation>Курсор</translation>
+    </message>
     <message>
         <source>Series</source>
         <translation>Серия</translation>
@@ -1388,7 +1411,7 @@
     </message>
     <!-- actions.cpp: period actions -->
     <message>
-        <source>Current</source>
+        <source>Current events</source>
         <translation>Текущие</translation>
     </message>
     <message>

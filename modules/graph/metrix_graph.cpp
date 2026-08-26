@@ -260,7 +260,12 @@ constexpr int kThemedSwatchGap = 8;    // gap between swatch and name
 constexpr int kThemedNumColW = 68;     // width of a numeric column
 constexpr int kThemedCursorColW = 78;  // width of the wider "@ cursor" column
 
-// The five numeric columns to the right of the series name.
+// The five numeric columns to the right of the series name. `header` is an
+// English *source*: it is looked up through Translate() at paint time rather
+// than baked, so a language switch re-renders the header row. Declaring it
+// `const char*` is also what lets rule 7 of check_ui_translations.py resolve
+// the strings back to this table -- the painter passes a member, so no rule
+// that reads call-site literals can see them (task 418).
 struct ThemedColumn {
   const char* header;
   int width;
@@ -305,7 +310,7 @@ void MetrixGraph::Legend::PaintThemed(QPainter& painter) const {
     for (const ThemedColumn& column : kThemedColumns) {
       const QRect cell{left, kThemedPad, column.width, kThemedHeader};
       painter.drawText(cell, Qt::AlignRight | Qt::AlignVCenter,
-                       QString::fromUtf8(column.header));
+                       QString::fromStdU16String(Translate(column.header)));
       left += column.width;
     }
   }
