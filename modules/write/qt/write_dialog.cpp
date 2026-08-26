@@ -5,7 +5,9 @@
 #include "modules/write/write_model.h"
 #include "ui_write_dialog.h"
 
+#include <QComboBox>
 #include <QDialogButtonBox>
+#include <QLineEdit>
 #include <QPushButton>
 
 class WriteDialog : public QDialog {
@@ -20,6 +22,7 @@ class WriteDialog : public QDialog {
 
  private:
   void UpdateCurrent();
+  void SeedValueControl();
   void UpdateCondition();
   void UpdateStatus();
 
@@ -27,6 +30,9 @@ class WriteDialog : public QDialog {
 
   const std::shared_ptr<WriteModel> model_;
   DialogServiceImplQt dialog_service_;
+  // Set once the operator picks or types a value, after which the dialog stops
+  // proposing one of its own.
+  bool value_touched_ = false;
 };
 
 #include "write_dialog.moc"
@@ -68,12 +74,19 @@ WriteDialog::WriteDialog(std::shared_ptr<WriteModel> model, QWidget* parent)
   if (model_->discrete()) {
     for (const auto& state : model_->GetDiscreteStates())
       ui.valueComboBox->addItem(QString::fromStdU16String(state));
-    ui.valueComboBox->setCurrentIndex(model_->GetCurrentDiscreteState());
-
   } else {
-    ui.valueComboBox->setCurrentText(
-        QString::fromStdU16String(model_->GetCurrentValue(false)));
     ui.unitLabel->setText(QString::fromStdU16String(model_->GetAnalogUnits()));
+  }
+
+  // Both signals fire only for operator action, which is what makes them
+  // usable as the "leave it alone from now on" trigger: setCurrentIndex() and
+  // setCurrentText() do not emit `activated`, and a programmatic text change
+  // emits editTextChanged() rather than QLineEdit::textEdited().
+  connect(ui.valueComboBox, &QComboBox::activated, this,
+          [this] { value_touched_ = true; });
+  if (auto* line_edit = ui.valueComboBox->lineEdit()) {
+    connect(line_edit, &QLineEdit::textEdited, this,
+            [this] { value_touched_ = true; });
   }
 
   model_->current_change_handler = [this] { UpdateCurrent(); };
@@ -94,6 +107,30 @@ WriteDialog::WriteDialog(std::shared_ptr<WriteModel> model, QWidget* parent)
 void WriteDialog::UpdateCurrent() {
   ui.currentValueLabel->setText(
       QString::fromStdU16String(model_->GetCurrentValue(true)));
+  SeedValueControl();
+}
+
+// Proposes a new value from the item's present reading, and keeps proposing it
+// until the operator picks or types one of their own.
+//
+// The reading arrives over TimedDataService a turn or more after the dialog is
+// built, so seeding only in the constructor left the operator looking at an
+// empty analog box, or — worse on the discrete side — at
+// GetCurrentDiscreteState()'s `get_or(true)` default, which proposes the state
+// the item is already in while the "Current value:" label corrects itself to
+// the other one. Re-seeding on every change closes that window; stopping once
+// `value_touched_` is set keeps a value that ticks in from silently replacing a
+// deliberate selection, which would be the worse failure of the two.
+void WriteDialog::SeedValueControl() {
+  if (value_touched_)
+    return;
+
+  if (model_->discrete()) {
+    ui.valueComboBox->setCurrentIndex(model_->GetCurrentDiscreteState());
+  } else {
+    ui.valueComboBox->setCurrentText(
+        QString::fromStdU16String(model_->GetCurrentValue(false)));
+  }
 }
 
 void WriteDialog::UpdateCondition() {
