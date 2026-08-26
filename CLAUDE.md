@@ -592,18 +592,24 @@ Ordered as: project headers, then third-party/standard headers, separated by bla
 #include <stack>
 ```
 
-### Modern C++ (C++17+)
+### Modern C++ (C++23)
+
+The client builds at **C++23** — `client/CMakeLists.txt` calls
+`scada_product_base()` with no `CXX_STANDARD`, and that default is 23. This
+heading said "C++17+" until 2026-08-26, which undersold it by two standards
+and mislabelled three of the entries below; C++20 features are marked.
 
 - Smart pointers throughout (`std::unique_ptr`, `std::shared_ptr`) — no raw `new`/`delete`
-- Designated initializers for context structs: `.field_ = value`
+- Designated initializers for context structs: `.field_ = value` (**C++20** —
+  `-std=c++17 -pedantic-errors` rejects them, verified 2026-08-26)
 - `std::optional<T>` for optional return values
 - `std::string_view` for non-owning string parameters
-- `std::ranges` and `std::views` for range pipelines
+- `std::ranges` and `std::views` for range pipelines (**C++20**)
 - Structured bindings
 - `[[nodiscard]]` on functions returning promises/important values
 - `= delete` for non-copyable classes
 - `std::function` for callbacks
-- `std::bind_front` for partial application
+- `std::bind_front` for partial application (**C++20**)
 - Move semantics for context passing: `explicit Module(Context&& context)`
 - `using namespace std::chrono_literals` for duration literals (`1min`)
 
