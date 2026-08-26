@@ -77,6 +77,89 @@ bool NoHardwareTreeDeviceUnknown(std::string_view report) {
   return device_count > 0;
 }
 
+// How many tree levels the report settled, counting `label[0]`, `label[1]`, ...
+// from the top and stopping at the first index that is absent or empty.
+//
+// This is the structural half of the object-tree assertion. The named-label
+// check below is a *fixture* assertion: it pins the labels the hermetic
+// fixture's own dataset produces, which is exactly what makes it the
+// regression guard there. Against an already-running deployment those names
+// are someone else's data -- the GCP demo settles four levels ending in
+// `Дорасчеты / БСК-10 Сумма фаз` -- so the property worth asserting is that
+// the tree expanded to depth at all, which is what this counts. Each level is
+// a round trip whose result the next level needs, so depth is still the
+// throughput signal the case was written for.
+int CountSettledObjectTreeLabels(std::string_view report) {
+  std::istringstream stream{std::string{report}};
+  std::vector<std::string> lines;
+  std::string line;
+  while (std::getline(stream, line))
+    lines.push_back(std::move(line));
+
+  int depth = 0;
+  for (;; ++depth) {
+    const std::string prefix = "label[" + std::to_string(depth) + "]=";
+    auto it = std::find_if(lines.begin(), lines.end(),
+                           [&prefix](const std::string& candidate) {
+                             return candidate.starts_with(prefix);
+                           });
+    // Absent, or present but empty: the tree stopped settling here.
+    if (it == lines.end() || it->size() == prefix.size())
+      return depth;
+  }
+}
+
+// The depth the object tree is expected to reach. Four levels is what both the
+// hermetic fixture and the GCP demo settle, and it is deep enough that the
+// round-trip throughput the case guards is actually exercised.
+constexpr int kExpectedObjectTreeDepth = 4;
+
+// These need no server, so they run in a build configured without tier
+// binaries -- which is the point of that mode existing.
+TEST(ObjectTreeLabelsReportTest, CountsConsecutiveSettledLevels) {
+  EXPECT_EQ(CountSettledObjectTreeLabels(
+                "object-tree-labels: ok\n"
+                "detail\n"
+                "label[0]=All objects\n"
+                "label[1]=Substation\n"
+                "label[2]=Group\n"
+                "label[3]=Breaker\n"),
+            4);
+}
+
+// The regression this case exists for: a deployment's own dataset settles the
+// same four levels under entirely different names. Asserting the fixture's
+// names failed here on data, not on behaviour.
+TEST(ObjectTreeLabelsReportTest, CountsDepthRegardlessOfLabelText) {
+  EXPECT_EQ(CountSettledObjectTreeLabels("label[0]=Root\n"
+                                         "label[1]=Feeder 110\n"
+                                         "label[2]=Derived\n"
+                                         "label[3]=BSK-10 phase sum\n"),
+            4);
+}
+
+// "A report with label[0] and nothing below it means the tree never expanded
+// at all" -- the failure mode the case was written to catch must still fail.
+TEST(ObjectTreeLabelsReportTest, StopsAtTheFirstUnsettledLevel) {
+  EXPECT_EQ(CountSettledObjectTreeLabels("label[0]=All objects\n"), 1);
+  EXPECT_EQ(CountSettledObjectTreeLabels("label[0]=All objects\n"
+                                         "label[1]=\n"
+                                         "label[2]=Group\n"),
+            1);
+  // A gap is not settled either, however much follows it.
+  EXPECT_EQ(CountSettledObjectTreeLabels("label[0]=All objects\n"
+                                         "label[2]=Group\n"
+                                         "label[3]=Breaker\n"),
+            1);
+}
+
+TEST(ObjectTreeLabelsReportTest, CountsNothingInAReportWithNoLabels) {
+  EXPECT_EQ(CountSettledObjectTreeLabels(""), 0);
+  EXPECT_EQ(CountSettledObjectTreeLabels("object-tree-labels: failure\n"
+                                         "no tree\n"),
+            0);
+}
+
 bool ProfileJsonContainsPageTitle(std::string_view profile_json,
                                   std::string_view page_title) {
   auto value = boost::json::parse(profile_json);
@@ -540,13 +623,24 @@ TEST_P(ClientServerE2eTest, Connect_Success_ExpandsObjectTreeLabels) {
 
   const auto report = WaitForObjectTreeLabelsReport();
   ASSERT_NE(report.find("object-tree-labels: ok"), std::string::npos) << report;
-  for (std::string_view expected_label :
-       {"label[0]=Все объекты", "label[1]=Отрадная 110 КВ", "label[2]=ТС",
-        "label[3]=МВ-35 У"}) {
-    EXPECT_NE(report.find(expected_label), std::string::npos)
-        << "Missing expected object tree label " << expected_label
-        << " in report:\n"
+  if (UsesExternalServer()) {
+    // A deployment carries its own dataset, so the fixture's names are not a
+    // property of a working client. Assert the structure instead: four levels
+    // deep and every one of them settled. See CountSettledObjectTreeLabels.
+    EXPECT_GE(CountSettledObjectTreeLabels(report), kExpectedObjectTreeDepth)
+        << "Object tree did not expand " << kExpectedObjectTreeDepth
+        << " settled levels against the external deployment; a report with "
+           "label[0] and nothing below it means it never expanded at all:\n"
         << report;
+  } else {
+    for (std::string_view expected_label :
+         {"label[0]=Все объекты", "label[1]=Отрадная 110 КВ", "label[2]=ТС",
+          "label[3]=МВ-35 У"}) {
+      EXPECT_NE(report.find(expected_label), std::string::npos)
+          << "Missing expected object tree label " << expected_label
+          << " in report:\n"
+          << report;
+    }
   }
 
   ExpectServerAuthLog();
@@ -601,11 +695,19 @@ TEST_P(ClientServerE2eTest, Connect_Success_ExpandsHardwareTreeDevices) {
   const auto report = WaitForHardwareTreeDevicesReport();
   ASSERT_NE(report.find("hardware-tree-devices: ok"), std::string::npos)
       << report;
-  for (std::string_view protocol : {"MODBUS", "IEC60870", "IEC61850"}) {
-    EXPECT_TRUE(HasActiveHardwareTreeDevice(report, protocol))
-        << "Hardware tree device for " << protocol
-        << " was not active in report:\n"
-        << report;
+  if (!UsesExternalServer()) {
+    // Which protocols are present is the fixture's own topology: it stands up
+    // one live device of each. A deployment runs whatever it runs -- the GCP
+    // demo's four devices are all IEC60870 -- so requiring a fixed protocol set
+    // there fails on dataset rather than on behaviour. The "no Unknown" check
+    // below is the part that holds against any deployment, and it is the
+    // stronger of the two.
+    for (std::string_view protocol : {"MODBUS", "IEC60870", "IEC61850"}) {
+      EXPECT_TRUE(HasActiveHardwareTreeDevice(report, protocol))
+          << "Hardware tree device for " << protocol
+          << " was not active in report:\n"
+          << report;
+    }
   }
   // Every device — of every protocol — must have a resolved runtime status
   // (never Unknown), not just one active per protocol. This is the actual
