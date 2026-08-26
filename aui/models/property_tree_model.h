@@ -40,11 +40,18 @@ class PropertyItemTreeNode : public PropertyTreeNode {
  public:
   PropertyItemTreeNode(PropertyGroup& property_group, int index);
 
+  // Whether the value cell accepts an edit. The group answers with an
+  // `EditData` whose editor type is NONE for a property it will not write, so
+  // that is the single source of truth for both the edit flag and the greyed
+  // rendering below.
+  bool IsModifiable() const;
+
   // aui::TreeNode
   virtual std::u16string GetText(int column_id) const override;
   virtual void SetText(int column_id, const std::u16string& text) override;
   virtual bool IsEditable(int column_id) const override;
   virtual bool IsSelectable(int column_id) const override;
+  virtual aui::Color GetTextColor(int column_id) const override;
   virtual aui::EditData GetEditData(int column_id) const override;
   virtual void HandleEditButton(int column_id) const override;
 
@@ -73,4 +80,4 @@ class PropertyTreeModel : public aui::TreeNodeModel<PropertyTreeNode> {
   PropertyModel& property_model_;
 };
 
-}  // namespace aui
+}  // namespace scada::aui

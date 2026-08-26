@@ -67,12 +67,27 @@ void PropertyItemTreeNode::SetText(int column_id, const std::u16string& text) {
   property_group.SetValue(index, text);
 }
 
+bool PropertyItemTreeNode::IsModifiable() const {
+  return property_group.GetEditData(index).editor_type !=
+         EditData::EditorType::NONE;
+}
+
 bool PropertyItemTreeNode::IsEditable(int column_id) const {
-  return column_id == 1;
+  return column_id == 1 && IsModifiable();
 }
 
 bool PropertyItemTreeNode::IsSelectable(int column_id) const {
   return column_id == 1;
+}
+
+aui::Color PropertyItemTreeNode::GetTextColor(int column_id) const {
+  // A property the group will not write is drawn grey, so a read-only
+  // attribute reads as read-only instead of as an edit that did nothing. The
+  // name column keeps the default colour: it is never editable in any row, so
+  // greying it would say nothing about this row in particular.
+  if (column_id == 1 && !IsModifiable())
+    return aui::ColorCode::Gray;
+  return PropertyTreeNode::GetTextColor(column_id);
 }
 
 aui::EditData PropertyItemTreeNode::GetEditData(int column_id) const {
@@ -146,4 +161,4 @@ void PropertyTreeModel::PropertiesChanged(PropertyGroup& group,
     TreeNodeChanged(&node->GetChild(first + i));
 }
 
-}  // namespace aui
+}  // namespace scada::aui

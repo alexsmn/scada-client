@@ -65,8 +65,19 @@ void NodeGroupModel::SetValue(int index, const std::u16string& value) {
 
 scada::aui::EditData NodeGroupModel::GetEditData(int index) const {
   auto& prop = properties[index];
-  if (!prop.def)
-    return {};
+  if (!prop.def) {
+    // A plain attribute is modifiable only where SetValue above actually
+    // writes it. Every other attribute used to be offered a text editor whose
+    // result SetValue dropped on the floor, so the operator retyped a
+    // NodeClass or a TypeDefinition and saw it revert with no explanation.
+    switch (prop.attribute_id) {
+      case scada::AttributeId::BrowseName:
+      case scada::AttributeId::DisplayName:
+        return {};
+      default:
+        return {.editor_type = scada::aui::EditData::EditorType::NONE};
+    }
+  }
 
   return prop.def->GetPropertyEditor(property_model_, property_model_.node_,
                                      prop.prop_decl_id);
