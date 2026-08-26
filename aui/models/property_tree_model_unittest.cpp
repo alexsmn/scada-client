@@ -107,7 +107,7 @@ class PropertyTreeModelTest : public testing::Test {
 TEST_F(PropertyTreeModelTest, WritablePropertyIsEditableAndKeepsDefaultColor) {
   EXPECT_TRUE(Item(0).IsModifiable());
   EXPECT_TRUE(Item(0).IsEditable(kValueColumn));
-  EXPECT_EQ(Item(0).GetTextColor(kValueColumn), Color{ColorCode::Transparent});
+  EXPECT_EQ(Item(0).GetColorRole(kValueColumn), ColorRole::Default);
 }
 
 // The regression: a property the group reports as NONE used to be handed a
@@ -118,8 +118,20 @@ TEST_F(PropertyTreeModelTest, UnwritablePropertyIsNotEditable) {
   EXPECT_FALSE(Item(1).IsEditable(kValueColumn));
 }
 
-TEST_F(PropertyTreeModelTest, UnwritablePropertyValueIsGrey) {
-  EXPECT_EQ(Item(1).GetTextColor(kValueColumn), Color{ColorCode::Gray});
+// The value cell asks for `Disabled` rather than naming a grey. A literal
+// mid-grey ignores the platform theme and reads wrong on a dark palette; the
+// Qt adapter resolves this role against `QPalette`, which follows the OS.
+TEST_F(PropertyTreeModelTest, UnwritablePropertyValueIsDisabled) {
+  EXPECT_EQ(Item(1).GetColorRole(kValueColumn), ColorRole::Disabled);
+}
+
+// The models must not answer a role *and* a literal colour -- the adapter
+// consults the role first, so a literal left behind here would be dead code
+// that looks live.
+TEST_F(PropertyTreeModelTest, UnwritablePropertyNamesNoLiteralColour) {
+  EXPECT_EQ(Item(1).GetTextColor(kValueColumn), Color{ColorCode::Transparent});
+  EXPECT_EQ(Item(1).GetBackgroundColor(kValueColumn),
+            Color{ColorCode::Transparent});
 }
 
 // The name column is never editable in any row, so greying it would say
@@ -127,8 +139,7 @@ TEST_F(PropertyTreeModelTest, UnwritablePropertyValueIsGrey) {
 TEST_F(PropertyTreeModelTest, NameColumnIsNeitherEditableNorGreyed) {
   for (int index = 0; index < 2; ++index) {
     EXPECT_FALSE(Item(index).IsEditable(kNameColumn));
-    EXPECT_EQ(Item(index).GetTextColor(kNameColumn),
-              Color{ColorCode::Transparent});
+    EXPECT_EQ(Item(index).GetColorRole(kNameColumn), ColorRole::Default);
   }
 }
 
@@ -148,6 +159,8 @@ class NestedPropertyTreeModelTest : public testing::Test {
     connection_ = tree_model_->SubscribeNodeChanged(
         [this](void* node) { changed_.push_back(node); });
   }
+
+  static constexpr int kNameColumn = 0;
 
   FakeGroup* nested_ = nullptr;
   FakeGroup* root_group_ = nullptr;
@@ -189,6 +202,34 @@ TEST_F(NestedPropertyTreeModelTest, ChangeInAnUnrelatedGroupEmitsNothing) {
   model_->properties_changed_handler(stranger, 0, 1);
 
   EXPECT_TRUE(changed_.empty());
+}
+
+// A category row heads the rows under it and used to name white-on-grey
+// outright, which ignored the platform theme. It now asks for `Header` and
+// lets the Qt adapter take the heading colours from `QPalette`. A plain
+// group is not a heading and keeps the view's own colours.
+TEST_F(NestedPropertyTreeModelTest, CategoryAsksForTheHeaderRole) {
+  PropertyGroupTreeNode* root_node = tree_model_->root()->AsGroup();
+  ASSERT_NE(root_node, nullptr);
+  EXPECT_EQ(root_node->type, PropertyGroup::ItemType::Category);
+  EXPECT_EQ(root_node->GetColorRole(kNameColumn), ColorRole::Header);
+
+  PropertyGroupTreeNode* group_node =
+      tree_model_->root()->GetChild(1).AsGroup();
+  ASSERT_NE(group_node, nullptr);
+  EXPECT_EQ(group_node->type, PropertyGroup::ItemType::Group);
+  EXPECT_EQ(group_node->GetColorRole(kNameColumn), ColorRole::Default);
+}
+
+// Same reasoning as the property rows: a role and a literal colour must not
+// both be answered, or the adapter's precedence hides one of them.
+TEST_F(NestedPropertyTreeModelTest, CategoryNamesNoLiteralColour) {
+  PropertyGroupTreeNode* root_node = tree_model_->root()->AsGroup();
+  ASSERT_NE(root_node, nullptr);
+  EXPECT_EQ(root_node->GetTextColor(kNameColumn),
+            Color{ColorCode::Transparent});
+  EXPECT_EQ(root_node->GetBackgroundColor(kNameColumn),
+            Color{ColorCode::Transparent});
 }
 
 }  // namespace

@@ -37,16 +37,13 @@ std::u16string PropertyGroupTreeNode::GetText(int column_id) const {
   return column_id == 0 ? title : std::u16string{};
 }
 
-aui::Color PropertyGroupTreeNode::GetTextColor(int column_id) const {
+aui::ColorRole PropertyGroupTreeNode::GetColorRole(int column_id) const {
+  // A category row heads the rows beneath it. It used to name white-on-grey
+  // outright, which ignored the platform theme and inverted badly on a dark
+  // palette; the adapter now takes the heading colours from `QPalette`.
   if (type == PropertyGroup::ItemType::Category)
-    return aui::ColorCode::White;
-  return PropertyTreeNode::GetTextColor(column_id);
-}
-
-aui::Color PropertyGroupTreeNode::GetBackgroundColor(int column_id) const {
-  if (type == PropertyGroup::ItemType::Category)
-    return aui::ColorCode::Gray;
-  return PropertyTreeNode::GetBackgroundColor(column_id);
+    return aui::ColorRole::Header;
+  return PropertyTreeNode::GetColorRole(column_id);
 }
 
 // PropertyItemTreeNode
@@ -80,14 +77,15 @@ bool PropertyItemTreeNode::IsSelectable(int column_id) const {
   return column_id == 1;
 }
 
-aui::Color PropertyItemTreeNode::GetTextColor(int column_id) const {
-  // A property the group will not write is drawn grey, so a read-only
+aui::ColorRole PropertyItemTreeNode::GetColorRole(int column_id) const {
+  // A property the group will not write is drawn as disabled, so a read-only
   // attribute reads as read-only instead of as an edit that did nothing. The
   // name column keeps the default colour: it is never editable in any row, so
-  // greying it would say nothing about this row in particular.
+  // greying it would say nothing about this row in particular -- which is also
+  // why the adapter cannot infer the role from `IsEditable` for us.
   if (column_id == 1 && !IsModifiable())
-    return aui::ColorCode::Gray;
-  return PropertyTreeNode::GetTextColor(column_id);
+    return aui::ColorRole::Disabled;
+  return PropertyTreeNode::GetColorRole(column_id);
 }
 
 aui::EditData PropertyItemTreeNode::GetEditData(int column_id) const {

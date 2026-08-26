@@ -49,6 +49,12 @@ class TreeNode {
     return ColorCode::Transparent;
   }
 
+  // See `TreeModel::GetColorRole`. Answer with this or with the two colour
+  // accessors above, not both.
+  virtual ColorRole GetColorRole(int column_id) const {
+    return ColorRole::Default;
+  }
+
   virtual bool HasChildren() const { return true; }
 
   virtual bool CanFetchMore() const { return false; }
@@ -181,6 +187,9 @@ class TreeNodeModel : public TreeModel {
   virtual Color GetBackgroundColor(void* node, int column_id) override {
     return AsNode(node)->GetBackgroundColor(column_id);
   }
+  virtual ColorRole GetColorRole(void* node, int column_id) override {
+    return AsNode(node)->GetColorRole(column_id);
+  }
   virtual bool HasChildren(void* parent) const override {
     return AsNode(parent)->HasChildren();
   }
@@ -193,4 +202,4 @@ class TreeNodeModel : public TreeModel {
   std::unique_ptr<NodeType> root_;
 };
 
-}  // namespace aui
+}  // namespace scada::aui

@@ -14,6 +14,26 @@ namespace scada::aui {
 // indentation and the twisty alone returns this for every node.
 inline constexpr int kNoIcon = -1;
 
+// What a cell's colouring *means*, as opposed to which RGB value to paint.
+//
+// A model lives in toolkit-free code and cannot reach a `QPalette`, so naming
+// a literal colour was the only way it could grey a cell -- and a fixed
+// mid-grey does not follow the OS theme and reads wrong on a dark palette
+// (docs/client/ux/README.md). A role lets the model say *disabled* and leaves
+// the resolution to the toolkit adapter, which does have the palette.
+//
+// This is deliberately not a way to express process semantics. Alarm state and
+// data quality are ISA-101/ISA-18.2 signals with fixed values that must not
+// follow the platform theme; those stay `Color`, supplied from the profile.
+enum class ColorRole {
+  // The view's own colours. The model is not asking for anything.
+  Default,
+  // A cell whose value this row will not accept an edit for.
+  Disabled,
+  // A heading row that groups the rows beneath it.
+  Header,
+};
+
 class TreeModel {
  public:
   using NodeRangeCallback =
@@ -75,6 +95,14 @@ class TreeModel {
   }
   virtual Color GetBackgroundColor(void* node, int column_id) {
     return ColorCode::Transparent;
+  }
+
+  // The meaning behind this cell's colouring, for an adapter that can resolve
+  // it against the platform palette. Consulted before `GetTextColor` and
+  // `GetBackgroundColor`, so a model answers with one or the other and never
+  // both. Default: the view's own colours.
+  virtual ColorRole GetColorRole(void* node, int column_id) {
+    return ColorRole::Default;
   }
 
   // Optional status-indicator colour for a node (e.g. a quality dot drawn on

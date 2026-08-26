@@ -8,9 +8,11 @@
 #include "aui/qt/theme_qt.h"
 #include "base/check.h"
 
+#include <QApplication>
 #include <QIcon>
 #include <QMimeData>
 #include <QPainter>
+#include <QPalette>
 #include <QPixmap>
 #include <QSize>
 
@@ -20,6 +22,40 @@ namespace {
 
 bool IsTransparent(Color color) {
   return color.rgba().a == 0;
+}
+
+// Resolves a model's `ColorRole` into the platform's own colours.
+//
+// This is the seam the toolkit-free models cannot cross for themselves: they
+// can say *disabled* or *header*, and the palette -- which follows the OS
+// light/dark theme and the user's accessibility settings -- decides what that
+// looks like. Returns an unset `QVariant` for `Default`, leaving the view's
+// own colour alone.
+QVariant RoleForeground(ColorRole role) {
+  const QPalette& palette = QApplication::palette();
+  switch (role) {
+    case ColorRole::Disabled:
+      return palette.color(QPalette::Disabled, QPalette::Text);
+    case ColorRole::Header:
+      return palette.color(QPalette::Normal, QPalette::ButtonText);
+    case ColorRole::Default:
+      return QVariant{};
+  }
+  return QVariant{};
+}
+
+QVariant RoleBackground(ColorRole role) {
+  const QPalette& palette = QApplication::palette();
+  switch (role) {
+    case ColorRole::Header:
+      return palette.color(QPalette::Normal, QPalette::Button);
+    // A disabled cell is greyed by its text colour alone; tinting the row
+    // behind it as well would read as a selection.
+    case ColorRole::Disabled:
+    case ColorRole::Default:
+      return QVariant{};
+  }
+  return QVariant{};
 }
 
 // The pixmap for a tree icon at its loaded size (icons are loaded at a single
@@ -149,8 +185,8 @@ void TreeModelAdapter::RetintGlyphs(Color tint, qreal device_pixel_ratio) {
   paths.reserve(glyph_paths_.size());
   for (const std::string& path : glyph_paths_)
     paths.emplace_back(path);
-  icons_ = ::LoadTintedGlyphs(paths, glyph_size_, tint.qcolor(),
-                              device_pixel_ratio);
+  icons_ =
+      ::LoadTintedGlyphs(paths, glyph_size_, tint.qcolor(), device_pixel_ratio);
 }
 
 void* TreeModelAdapter::GetNode(const QModelIndex& index) const {
@@ -237,10 +273,21 @@ QVariant TreeModelAdapter::data(const QModelIndex& index, int role) const {
     case Qt::EditRole:
       return QString::fromStdU16String(model_->GetText(node, index.column()));
     case Qt::ForegroundRole: {
+      // A model answers with a role or with a literal colour, never both, so
+      // the order here only decides which question is asked first. The models
+      // that still name a literal colour are asserting a process semantic
+      // (alarm state, data quality) with a fixed value that must not follow
+      // the platform theme; they leave the role at `Default` and fall through.
+      const ColorRole role = model_->GetColorRole(node, index.column());
+      if (role != ColorRole::Default)
+        return RoleForeground(role);
       auto color = model_->GetTextColor(node, index.column());
       return IsTransparent(color) ? QVariant{} : color.qcolor();
     }
     case Qt::BackgroundRole: {
+      const ColorRole role = model_->GetColorRole(node, index.column());
+      if (role != ColorRole::Default)
+        return RoleBackground(role);
       auto color = model_->GetBackgroundColor(node, index.column());
       return IsTransparent(color) ? QVariant{} : color.qcolor();
     }

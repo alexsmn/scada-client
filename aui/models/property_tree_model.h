@@ -26,8 +26,7 @@ class PropertyGroupTreeNode : public PropertyTreeNode {
 
   // aui::TreeNode
   virtual std::u16string GetText(int column_id) const override;
-  virtual aui::Color GetTextColor(int column_id) const override;
-  virtual aui::Color GetBackgroundColor(int column_id) const override;
+  virtual aui::ColorRole GetColorRole(int column_id) const override;
   virtual bool IsSelectable(int column_id) const override { return false; }
 
   PropertyGroup& property_group;
@@ -51,7 +50,7 @@ class PropertyItemTreeNode : public PropertyTreeNode {
   virtual void SetText(int column_id, const std::u16string& text) override;
   virtual bool IsEditable(int column_id) const override;
   virtual bool IsSelectable(int column_id) const override;
-  virtual aui::Color GetTextColor(int column_id) const override;
+  virtual aui::ColorRole GetColorRole(int column_id) const override;
   virtual aui::EditData GetEditData(int column_id) const override;
   virtual void HandleEditButton(int column_id) const override;
 
