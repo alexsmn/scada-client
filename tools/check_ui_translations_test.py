@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Behaviour tests for rule 7 of `check_ui_translations.py`.
+"""Behaviour tests for rules 7 and 8 of `check_ui_translations.py`.
 
 Rule 7 resolves a `Translate(x.label)` call back to the table the member is
 read from, so its failure mode is the one every checker in this directory
@@ -13,6 +13,15 @@ positional initialiser form.
 The negatives matter as much: the rule reaches across translation units, so an
 over-broad match sweeps in unrelated structs. Two pin that. `label` is declared
 by seventeen structs in this tree and only eight of them hold English sources.
+
+Rule 8 is rule 7 one indirection over — it resolves `Tr(WriteBlockText(b))`
+back to the `switch` the function returns from — and it has the same failure
+mode and the same need for negatives. Its own traps are the ones the tree
+sprang while it was written: a namespace-qualified call site whose definition
+carries no qualifier, a literal reached through a conditional rather than a
+bare `return "...";`, a header declaration that must not resolve to an empty
+body, and a `QString`-returning function, which is already-translated output
+and not a catalog question.
 
 Source-only and dependency-free, like the checker it covers. Run it directly or
 through ctest as `client_ui_translation_check_test`.
@@ -122,6 +131,111 @@ CASES = (
 )
 
 
+# --- Rule 8 ------------------------------------------------------------------
+
+# The caller, in every case below: `Tr(<call>)` is what makes the function a
+# display function at all, so a case that leaves it out is negative by that.
+CALLER = 'QString Row(Block b){ return Tr(WriteBlockText(b)); }'
+
+# (name, sources, expected source strings).
+CALL_CASES = (
+    (
+        "switch in another translation unit",
+        {
+            "text.cpp": 'std::string_view WriteBlockText(Block b){'
+                        ' switch (b) { case Block::kNo: return "Not commandable";'
+                        ' case Block::kOff: return "Offline"; } return {}; }',
+            "panel.cpp": CALLER,
+        },
+        {"Not commandable", "Offline"},
+    ),
+    (
+        "const char* return type",
+        {
+            "text.cpp": 'const char* WriteBlockText(Block b){ return "Disabled"; }',
+            "panel.cpp": CALLER,
+        },
+        {"Disabled"},
+    ),
+    (
+        # `events::EventTimelineStepText` is spelled qualified at its call site
+        # and bare at its definition. Keying on the trailing identifier is what
+        # lets the two meet; before it did, the rule silently saw nothing here.
+        "namespace-qualified call site, unqualified definition",
+        {
+            "step.cpp": 'std::string_view WriteBlockText(Step s){ return "Raised"; }',
+            "panel.cpp": 'QString R(Step s){ return Tr(events::WriteBlockText(s)); }',
+        },
+        {"Raised"},
+    ),
+    (
+        # `UserSessionsLabelKey` returns `*multi ? "Multiple" : "Single"`, so a
+        # rule matching only `return "...";` would see neither string.
+        "both arms of a conditional return",
+        {
+            "text.cpp": 'const char* WriteBlockText(bool on){'
+                        ' return on ? "Multiple" : "Single"; }',
+            "panel.cpp": CALLER,
+        },
+        {"Multiple", "Single"},
+    ),
+    (
+        # Already-translated output, not a source: the file-local
+        # `QString Tr(std::string_view)` helper is itself this shape, and
+        # reading it as a display function would report every call site.
+        "QString return type is not a source",
+        {
+            "text.cpp": 'QString WriteBlockText(Block b){ return "Offline"; }',
+            "panel.cpp": CALLER,
+        },
+        set(),
+    ),
+    (
+        # A declaration ends at its `;` and carries no literals. Resolving the
+        # name against it would report the function as translated-with-nothing,
+        # which reads as covered.
+        "header declaration alone resolves to nothing",
+        {
+            # The next `{` in the file belongs to whatever follows the
+            # declaration, so a matcher that only looks for a brace attaches
+            # the wrong body -- and reports its strings under this name.
+            "text.h": 'std::string_view WriteBlockText(Block b);\n'
+                      'QString Other(){ return "Wrong body"; }',
+            "panel.cpp": CALLER,
+        },
+        set(),
+    ),
+    (
+        "a commented-out return is not a shipping source",
+        {
+            "text.cpp": 'std::string_view WriteBlockText(Block b){'
+                        ' // return "Retired";\n return "Offline"; }',
+            "panel.cpp": CALLER,
+        },
+        {"Offline"},
+    ),
+    (
+        # Only returned literals are display strings. A log line or a lookup
+        # key in the same body is not one, and sweeping it in would park
+        # non-UI strings in the catalog.
+        "a literal that is not returned is not a source",
+        {
+            "text.cpp": 'std::string_view WriteBlockText(Block b){'
+                        ' Log("write blocked"); return "Offline"; }',
+            "panel.cpp": CALLER,
+        },
+        {"Offline"},
+    ),
+    (
+        "no caller means no display function",
+        {
+            "text.cpp": 'std::string_view WriteBlockText(Block b){ return "Offline"; }',
+        },
+        set(),
+    ),
+)
+
+
 def main():
     failures = []
 
@@ -162,14 +276,38 @@ def main():
     if unresolved:
         failures.append(f"resolved member still reported: {unresolved}")
 
-    total = len(CASES) + 3
+    for name, files, expected in CALL_CASES:
+        sources = {pathlib.Path(n): text for n, text in files.items()}
+        rows, _ = checker.find_call_sources(sources)
+        found = {row[3] for row in rows}
+        if found != expected:
+            failures.append(f"rule 8 / {name}: found {sorted(found)}, "
+                            f"expected {sorted(expected)}")
+
+    # The blind-spot half, rule 8's version. A function called inside
+    # Translate() whose source this cannot read is the defect, not an
+    # exemption -- the same bar rule 7 sets for an unresolved member.
+    sources = {pathlib.Path("panel.cpp"):
+               'QString R(Block b){ return Tr(WriteBlockText(b)); }'}
+    _, unresolved = checker.find_call_sources(sources)
+    if unresolved != ["WriteBlockText"]:
+        failures.append(f"rule 8: unresolved call not reported: {unresolved}")
+
+    # ...and must stay quiet once the definition is readable.
+    sources[pathlib.Path("text.cpp")] = (
+        'std::string_view WriteBlockText(Block b){ return "Offline"; }')
+    _, unresolved = checker.find_call_sources(sources)
+    if unresolved:
+        failures.append(f"rule 8: resolved call still reported: {unresolved}")
+
+    total = len(CASES) + len(CALL_CASES) + 5
     if failures:
         print(f"{len(failures)} of {total} case(s) failed:\n")
         for failure in failures:
             print(f"  {failure}")
         return 1
 
-    print(f"OK: {total} rule 7 behaviour case(s) pass.")
+    print(f"OK: {total} rule 7 and 8 behaviour case(s) pass.")
     return 0
 
 

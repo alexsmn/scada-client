@@ -90,6 +90,29 @@ source, and every literal a table puts in it must have a shipping entry. A
 member that resolves to no such field is reported rather than skipped — being
 unable to read the source is the defect, not an exemption from it.
 
+**Rule 8 — every string a *function* returns into `Translate()` has one
+that ships.**
+
+The sibling of rule 7, one indirection over. Rule 7 resolves `Tr(field.label)`
+back to the table the member is initialised from; this resolves
+`Tr(WriteBlockText(block))` back to the `switch` the function returns from.
+Both are display strings that reach `Translate()` without ever appearing as a
+literal at the call site, so rule 3 cannot see either, and the sibling
+checker's literal-table rule fires only in a file that draws text — which the
+translation unit holding the `switch` routinely is not.
+
+Nine call sites in this tree are of this shape, reaching seven functions whose
+literals sit in `switch` statements in seven other files. All 24 strings ship,
+so this rule was written over a net that was already whole; it exists so the
+next such function is covered when it is written rather than after it renders
+English. Task 469 recorded six of the seven — `UserRoleKey`
+(`main_window/status_bar/user_status_provider.cpp`) was found by the rule
+itself, which is the argument for having it.
+
+A function whose definition this cannot find, or that returns `QString` rather
+than a source, is reported for the same reason rule 7 reports an unresolved
+member: being unable to read the source is the defect, not an exemption.
+
 **Rule 5 — every parked entry still matches something in the tree.**
 
 UI_FORM_ALLOWED_UNTRANSLATED, UI_FORM_KNOWN_GAPS and TRANSLATE_GAPS are
@@ -587,6 +610,199 @@ def report_table_translations(cpp_files, ts_files, client_dir):
 
     return len(missing) + len(unresolved) + len(unknown)
 
+
+# Rule 8's gap list: strings a function returns into Translate() with no
+# shipping entry. Same bar as every list above — it must only ever shrink, and
+# an addition is a review conversation. Rule 5 does not read it, for the reason
+# TABLE_TRANSLATE_GAPS gives.
+CALL_TRANSLATE_GAPS = {
+    # Empty. The rule found none on its first run: all 24 strings behind the
+    # tree's nine such call sites already ship. The rule was written over a
+    # whole net on purpose — see its comment below.
+}
+
+
+# --- Rule 8 -----------------------------------------------------------------
+#
+# `Tr(WriteBlockText(block))` is not a literal and not a member, so neither
+# rule 3 nor rule 7 can see the string it looks up. The literals sit in a
+# `switch` in another translation unit, and the sibling checker cannot see them
+# either: its literal-table rule fires only in a file that draws text, and the
+# file holding the `switch` usually draws nothing. Rule 7 closed this seam for
+# the table form; this closes it for the function form.
+#
+#   1. Collect the function names called as the argument of Translate()/Tr().
+#   2. Find each one's *definition*, requiring a source-string return type.
+#   3. Require every literal it returns to have a shipping entry, exactly as
+#      rule 3 requires it of a literal call site.
+#
+# A name that resolves to no such definition is reported rather than skipped,
+# on rule 7's principle: being unable to read the source is the whole defect.
+
+# `Tr(WriteBlockText(block))` — the call form rules 3 and 7 both skip.
+#
+# Named FUNCTION_CALL rather than CALL because rule 3 already owns
+# TRANSLATE_CALL, for `Translate("literal")`. Shadowing it costs nothing at
+# import and silently rewrites what rule 3 matches: while this rule was being
+# written, rule 3 went from 349 literals to 1 and still reported a result.
+#
+# A qualifier is matched and then dropped, because one call site spells its
+# function `events::EventTimelineStepText` while the definition sits in that
+# namespace under its bare name. Keying on the trailing identifier is what lets
+# the two meet; it also means two functions of one name in different namespaces
+# would be read as one, which no call site in this tree does and which would
+# over-report rather than under-report if one did.
+TRANSLATE_FUNCTION_CALL = re.compile(
+    r"\b(?:Translate|Tr)\(\s*(?:[A-Za-z_]\w*\s*::\s*)*([A-Za-z_]\w*)\s*\(")
+
+# A function returning an English *source*. The return type carries the meaning
+# it does in rule 7: a `QString` return is already-translated output, so it is
+# not a catalog question — which is also what keeps the file-local `Tr` helper
+# itself, `QString Tr(std::string_view)`, from being read as a display function.
+SOURCE_STRING_RETURN = re.compile(
+    r"(?:std::string_view|const\s+char\s*\*|char\s+const\s*\*)\s+"
+    r"([A-Za-z_]\w*)\s*\(")
+
+# The whole return expression, so a literal reached through a conditional is
+# read too: `UserSessionsLabelKey` returns `*multi ? "Multiple" : "Single"`,
+# and a rule matching only `return "...";` would see neither string.
+RETURN_EXPRESSION = re.compile(r"\breturn\b([^;]*);")
+
+
+def balanced_parens(text, open_index):
+    """The index of the `)` closing the `(` at `open_index`, or None.
+
+    String literals are skipped rather than scanned, for the reason
+    `balanced_braces` skips them: a parenthesis inside one must not unbalance
+    the walk.
+    """
+    depth, i, n = 0, open_index, len(text)
+    while i < n:
+        c = text[i]
+        if c == '"':
+            i += 1
+            while i < n and text[i] != '"':
+                i += 2 if text[i] == "\\" else 1
+        elif c == "(":
+            depth += 1
+        elif c == ")":
+            depth -= 1
+            if depth == 0:
+                return i
+        i += 1
+    return None
+
+
+def source_string_functions(sources):
+    """Maps function name -> [(path, line, [source strings it returns])].
+
+    Only *definitions* are read: a declaration in a header ends at its `;` and
+    carries no literals, so matching it would resolve the name against an empty
+    body and report the function as translated-with-nothing.
+    """
+    found = {}
+    for path, text in sources.items():
+        for match in SOURCE_STRING_RETURN.finditer(text):
+            close = balanced_parens(text, match.end() - 1)
+            if close is None:
+                continue
+            # `noexcept`, a trailing `const`, and nothing else in this tree sit
+            # between the parameter list and the body; a `;` first means this
+            # was a declaration.
+            tail = text[close + 1:close + 40]
+            brace = tail.find("{")
+            if brace < 0 or ";" in tail[:brace]:
+                continue
+            body, _ = balanced_braces(text, close + 1 + brace)
+            if body is None:
+                continue
+            # Comments are dropped from the body only, so a commented-out
+            # `return "..."` is not read as a shipping source. The reported
+            # line comes from the definition, so the offsets this shifts do
+            # not matter.
+            body = CPP_COMMENT.sub(" ", body)
+            literals = []
+            for statement in RETURN_EXPRESSION.finditer(body):
+                for piece in STRING_PIECE.finditer(statement.group(1)):
+                    literals.append(literal_text(piece.group(0)))
+            line = text[:match.start()].count("\n") + 1
+            found.setdefault(match.group(1), []).append((path, line, literals))
+    return found
+
+
+def find_call_sources(sources):
+    """(rows, unresolved) for every literal a function returns into Translate().
+
+    A row is (path, line, function, source). `unresolved` holds the names
+    called inside Translate() that no readable definition returns a source
+    string for — reported rather than skipped, on rule 7's principle.
+    """
+    called = set()
+    for text in sources.values():
+        called |= set(TRANSLATE_FUNCTION_CALL.findall(text))
+
+    definitions = source_string_functions(sources)
+    rows, unresolved = [], []
+    for name in sorted(called):
+        if name not in definitions:
+            unresolved.append(name)
+            continue
+        for path, line, literals in definitions[name]:
+            for source in literals:
+                rows.append((path, line, name, source))
+    return sorted(set(rows)), unresolved
+
+
+def report_call_translations(ts_files, client_dir):
+    """Rule 8. Returns the number of findings."""
+    sources = {}
+    for path in client_dir.rglob("*"):
+        if path.suffix not in (".cpp", ".h") or "build" in path.parts:
+            continue
+        excluded = ("_unittest.", "_test.", "_mock.")
+        if any(part in path.name for part in excluded):
+            continue
+        sources[path] = path.read_text(encoding="utf-8", errors="replace")
+
+    shipped = set()
+    for path in ts_files:
+        shipped |= parse_ts(path, active_only=True).get("", set())
+
+    rows, unresolved = find_call_sources(sources)
+    # An empty source is `return {};`'s neighbour in a switch that covers every
+    # enumerator -- unreachable text rather than an untranslated string.
+    missing = [row for row in rows if row[3]
+               and row[3] not in shipped
+               and row[3] not in CALL_TRANSLATE_GAPS]
+
+    print(f"Checked {len(rows)} string(s) returned into Translate() by "
+          f"{len({row[2] for row in rows})} function(s); "
+          f"{len(CALL_TRANSLATE_GAPS)} known gap(s).")
+
+    if unresolved:
+        print(f"\n{len(unresolved)} function(s) called inside Translate() have "
+              f"no definition returning a source string:", file=sys.stderr)
+        for name in unresolved:
+            print(f"  {name}()", file=sys.stderr)
+        print("\nDeclare it as returning `std::string_view` or `const char*` "
+              "in a file this can read, or the strings it returns are outside "
+              "every translation check — the seam task 466's eleven English "
+              "strings shipped through, one indirection over.", file=sys.stderr)
+
+    if missing:
+        print(f"\n{len(missing)} string(s) returned into Translate() have no "
+              f"translation that would ship, so they render English:",
+              file=sys.stderr)
+        for path, line, name, source in missing:
+            where = path.relative_to(client_dir).as_posix()
+            print(f"  {source!r}  ({where}:{line}, {name}())", file=sys.stderr)
+        print("\nAdd each to the empty context of app/qt/client_ru.ts. The "
+              "call site passes a call, so rule 3 cannot see the string and "
+              "neither can lupdate.", file=sys.stderr)
+
+    return len(missing) + len(unresolved)
+
+
 # The one catalog that reaches the .qm. `qt_add_translation()` in
 # app/qt/CMakeLists.txt compiles exactly the files named to it, so a .ts file
 # it does not name is unreachable however correct its contents are.
@@ -879,6 +1095,12 @@ def main():
     if report_table_translations(cpp_files, ts_files, client_dir):
         return 1
     print("OK: every table string reaching Translate() has one that ships.")
+
+    # Rule 8, immediately after rule 7: same seam, one indirection over, and it
+    # needs no lupdate either.
+    if report_call_translations(ts_files, client_dir):
+        return 1
+    print("OK: every string returned into Translate() has one that ships.")
 
     calls = find_translate_literals(cpp_files)
     lupdate = shutil.which("lupdate")

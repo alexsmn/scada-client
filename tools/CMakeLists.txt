@@ -13,11 +13,13 @@ if(Python3_FOUND)
       "--client-dir=${CMAKE_CURRENT_SOURCE_DIR}/..")
   set_tests_properties(client_ui_translation_check PROPERTIES TIMEOUT 120)
 
-  # ...and a test for rule 7, which reaches across translation units to
-  # resolve a `Translate(x.label)` back to the table the member is read from.
-  # It has to recognise four spellings of a table in two initialiser forms, so
-  # a pattern that stops matching leaves it reporting OK over exactly the seam
-  # task 466's eleven English strings shipped through.
+  # ...and a test for rules 7 and 8, which reach across translation units to
+  # resolve a `Translate(x.label)` back to the table the member is read from,
+  # and a `Translate(F(x))` back to the switch the function returns from.
+  # Between them they must recognise four spellings of a table in two
+  # initialiser forms, and a definition that may be qualified at its call site,
+  # so a pattern that stops matching leaves them reporting OK over exactly the
+  # seam task 466's eleven English strings shipped through.
   add_test(NAME client_ui_translation_check_test
     COMMAND ${Python3_EXECUTABLE}
       "${CMAKE_CURRENT_SOURCE_DIR}/check_ui_translations_test.py")
