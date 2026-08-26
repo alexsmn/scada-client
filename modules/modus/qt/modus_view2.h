@@ -1,9 +1,9 @@
 #pragma once
 
-#include "modus/libmodus/modus_binding2.h"
-#include "modus/modus_view_wrapper.h"
 #include "libmodus/gfx/gfx.h"
 #include "libmodus/render/renderer_delegate.h"
+#include "modus/libmodus/modus_binding2.h"
+#include "modus/modus_view_wrapper.h"
 #include "timed_data/timed_data_spec.h"
 
 #include <functional>
@@ -16,7 +16,7 @@ class Element;
 class Renderer;
 class Scheme;
 class Shape;
-}  // namespace modus
+}  // namespace scada::modus
 
 class ModusBinding2;
 class TimedDataService;
@@ -52,7 +52,8 @@ class ModusView2 : public QWidget,
   }
 
   // ModusViewWrapper
-  virtual void Open(const WindowDefinition& definition) override;
+  virtual void Open(const WindowDefinition& definition,
+                    int32_t document_kind) override;
   virtual void Save(WindowDefinition& definition) override;
   virtual std::filesystem::path GetPath() const override;
   virtual bool ShowContainedItem(const scada::NodeId& item_id) override;

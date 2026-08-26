@@ -55,7 +55,8 @@ void ModusView::SetToolbarVisible(bool visible) {
   }
 }
 
-void ModusView::Open(const WindowDefinition& definition) {
+void ModusView::Open(const WindowDefinition& definition,
+                     int32_t document_kind) {
   scada::base::Check(!document_);
 
   path_ = GetPublicFilePath(definition.path);

@@ -170,13 +170,12 @@ TEST_F(ModusModuleTest, TopologyCommandTracksAndTogglesTheProfileFlag) {
   EXPECT_FALSE(command->checked_handler(context));
 }
 
-// DEFECT (task 483): this command toggles and persists `profile.modus.modus2`,
-// and **nothing reads it**. Its only reader is `IsModus2` in
-// `modules/modus/modus_util.cpp`, which is itself uncalled from anywhere in the
-// tree (measured 2026-08-25). So the operator gets a checkable menu item that
-// changes no rendering. The toggle is pinned here as it behaves today; whether
-// the fix is to wire the flag up or to withdraw the command is task 483.
-TEST_F(ModusModuleTest, RuntimeRendererCommandTogglesAFlagNothingConsumes) {
+// Task 483 wired this flag up: `profile.modus.modus2` is read by `IsModus2`,
+// which `DocumentKindFor` calls and `ModusController::Init` passes to the
+// runtime as the document kind. What this case covers is the command's own
+// contract — that it toggles and reports the flag; that the flag reaches the
+// renderer is covered by `ModusControllerTest`'s `InitOpensAn*` cases.
+TEST_F(ModusModuleTest, RuntimeRendererCommandTogglesTheVersionTwoFlag) {
   InstallModule();
 
   const auto* command = FindGlobalCommand(u"Use Modus runtime renderer");

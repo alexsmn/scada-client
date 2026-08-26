@@ -1,5 +1,6 @@
 #include "modus/modus_util.h"
 
+#include "common/vds_runtime_api.h"
 #include "profile/profile.h"
 #include "profile/window_definition.h"
 
@@ -10,14 +11,12 @@ namespace {
 
 using std::filesystem::path;
 
-// NOTE: every function under test here is currently **unreachable**
-// from the running client — a tree-wide search on 2026-08-25 found no caller of
-// any of them. They are compiled into `client_modus_qt` and called by nothing,
-// having been left behind when `224210f46` routed Modus through the VDS runtime
-// and `qt/modus_view{,2}.cpp` were dropped from the build. These tests describe
-// what the code does today so the decision recorded in task 483 — wire it back
-// up or delete it — is taken against measured behaviour rather than a reading
-// of the source. Two of the behaviours below are defects, and are marked.
+// Task 483 settled the question this file used to record: the version-2
+// renderer is a live product direction, so these functions are wired up rather
+// than deleted. `IsModus2` is now reached in production through
+// `DocumentKindFor`, which `ModusController::Init` calls to choose the document
+// kind it opens the runtime with, and the two path defects the previous
+// revision pinned are fixed below rather than described.
 
 TEST(IsModusFilePathTest, AcceptsBothModusExtensionsRegardlessOfCase) {
   EXPECT_TRUE(IsModusFilePath("scheme.sde"));
@@ -105,35 +104,75 @@ TEST_F(IsModus2Test, TheExtensionOverridesEvenAnExplicitVersion) {
   EXPECT_FALSE(IsModus2(definition, profile_));
 }
 
-// DEFECT (task 483): `MakeModusFilePath` resolves a hyperlink against the
-// current display's directory and normalises the result — and then hands it to
-// `FullFilePathToPublic`, which is `path.filename()`. Every one of these cases
-// therefore collapses to a bare filename, and the directory logic above it can
-// never be observed. A hyperlink to `../other/scheme.sde` resolves to
-// `scheme.sde`, which reopens the wrong file whenever two directories hold the
-// same name. These tests pin the collapse rather than the intent.
-TEST(MakeModusFilePathTest, ARelativeHyperlinkCollapsesToItsBareFilename) {
+// `MakeModusFilePath` resolves a hyperlink against the current display's
+// directory and returns a public-relative path. Until task 483 it passed the
+// result through `FullFilePathToPublic`, which was `path.filename()`, so every
+// case below collapsed to a bare filename and the directory logic above it
+// could never be observed — a hyperlink to `../other/scheme.sde` opened
+// whichever `scheme.sde` the public root happened to hold.
+TEST(MakeModusFilePathTest,
+     ARelativeHyperlinkResolvesAgainstTheDisplaysDirectory) {
   const auto result = MakeModusFilePath("target.sde", "schemes/current.sde");
 
   ASSERT_TRUE(result.has_value());
-  EXPECT_EQ(*result, path{"target.sde"});
+  EXPECT_EQ(*result, path{"schemes/target.sde"});
 }
 
-TEST(MakeModusFilePathTest, ADirectoryTraversalIsNormalisedThenDiscarded) {
+TEST(MakeModusFilePathTest, ADirectoryTraversalIsNormalisedAndKept) {
   const auto result =
       MakeModusFilePath("../other/target.sde", "schemes/current.sde");
 
   ASSERT_TRUE(result.has_value());
-  // Intent: "other/target.sde". Actual: the directory is dropped.
-  EXPECT_EQ(*result, path{"target.sde"});
+  EXPECT_EQ(*result, path{"other/target.sde"});
 }
 
-TEST(MakeModusFilePathTest, AnAbsoluteHyperlinkAlsoCollapses) {
-  const auto result =
-      MakeModusFilePath("/var/schemes/target.sde", "schemes/current.sde");
+// The traversal above stays inside the public directory. One that escapes it is
+// not addressable as a public path, and opening the same-named file that
+// happens to sit in the public root — which is what the old collapse did — is
+// the behaviour this rejects.
+TEST(MakeModusFilePathTest, AHyperlinkEscapingThePublicDirectoryIsRejected) {
+  EXPECT_FALSE(
+      MakeModusFilePath("../../secrets/target.sde", "schemes/current.sde"));
+
+  EXPECT_FALSE(MakeModusFilePath("../target.sde", "current.sde"));
+}
+
+TEST(MakeModusFilePathTest, ASiblingHyperlinkKeepsAMultiLevelDirectory) {
+  const auto result = MakeModusFilePath("sub/target.sde", "a/b/current.sde");
 
   ASSERT_TRUE(result.has_value());
-  EXPECT_EQ(*result, path{"target.sde"});
+  EXPECT_EQ(*result, path{"a/b/sub/target.sde"});
+}
+
+// `DocumentKindFor` is the seam that carries the version-2 choice to the
+// renderer; `ModusController::Init` passes its result to the runtime instead of
+// TC_VDS_RUNTIME_DOCUMENT_KIND_AUTO. It follows `IsModus2` exactly, which is
+// what makes the «Use Modus runtime renderer» command observable.
+class DocumentKindForTest : public testing::Test {
+ public:
+  Profile profile_;
+};
+
+TEST_F(DocumentKindForTest, AnXsdeDocumentFollowsTheProfileFlag) {
+  WindowDefinition definition;
+  definition.path = "scheme.xsde";
+
+  profile_.modus.modus2 = true;
+  EXPECT_EQ(DocumentKindFor(definition, profile_),
+            TC_VDS_RUNTIME_DOCUMENT_KIND_XSDE);
+
+  profile_.modus.modus2 = false;
+  EXPECT_EQ(DocumentKindFor(definition, profile_),
+            TC_VDS_RUNTIME_DOCUMENT_KIND_SDE);
+}
+
+TEST_F(DocumentKindForTest, AnSdeDocumentIsVersionOneWhateverTheProfileSays) {
+  WindowDefinition definition;
+  definition.path = "scheme.sde";
+
+  profile_.modus.modus2 = true;
+  EXPECT_EQ(DocumentKindFor(definition, profile_),
+            TC_VDS_RUNTIME_DOCUMENT_KIND_SDE);
 }
 
 }  // namespace

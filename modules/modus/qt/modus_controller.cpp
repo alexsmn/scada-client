@@ -3,6 +3,7 @@
 #include "controller/selection_model.h"
 #include "filesystem/file_util.h"
 #include "modus/modus_component.h"
+#include "modus/modus_util.h"
 #include "modus/modus_view_wrapper.h"
 #include "profile/window_definition.h"
 #include "vds_runtime/qt/vds_runtime_widget.h"
@@ -23,9 +24,10 @@ class ModusVdsRuntimeView final : public VdsRuntimeWidget,
   explicit ModusVdsRuntimeView(QWidget* parent = nullptr)
       : VdsRuntimeWidget{parent} {}
 
-  void Open(const WindowDefinition& definition) override {
+  void Open(const WindowDefinition& definition,
+            int32_t document_kind) override {
     path_ = GetPublicFilePath(definition.path);
-    VdsRuntimeWidget::Open(path_, TC_VDS_RUNTIME_DOCUMENT_KIND_AUTO);
+    VdsRuntimeWidget::Open(path_, document_kind);
   }
 
   void Save(WindowDefinition&) override {}
@@ -91,7 +93,7 @@ std::unique_ptr<UiView> ModusController::Init(
   std::unique_ptr<UiView> result;
   result.reset(runtime_view.widget);
 
-  wrapper_->Open(definition);
+  wrapper_->Open(definition, DocumentKindFor(definition, profile_));
 
   return result;
 }

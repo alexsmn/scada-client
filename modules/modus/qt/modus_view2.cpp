@@ -38,7 +38,8 @@ ModusBinding2* ModusView2::GetBinding(scada::modus::Shape* shape) const {
   return i == bindings_.end() ? nullptr : i->second.get();
 }
 
-void ModusView2::Open(const WindowDefinition& definition) {
+void ModusView2::Open(const WindowDefinition& definition,
+                      int32_t document_kind) {
   path_ = GetPublicFilePath(definition.path);
 
   auto& master_library = ModusModule2::GetInstance()->master_library();

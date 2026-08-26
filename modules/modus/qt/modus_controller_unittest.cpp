@@ -1,6 +1,7 @@
 #include "modus/qt/modus_controller.h"
 
 #include "aui/test/app_environment.h"
+#include "common/vds_runtime_api.h"
 #include "controller/test/controller_environment.h"
 #include "modus/modus_view_wrapper.h"
 #include "profile/window_definition.h"
@@ -11,6 +12,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <cstdint>
 #include <memory>
 #include <vector>
 
@@ -26,8 +28,10 @@ using testing::NotNull;
 // what the controller asked of the wrapper instead.
 class FakeModusViewWrapper final : public ModusViewWrapper {
  public:
-  void Open(const WindowDefinition& definition) override {
+  void Open(const WindowDefinition& definition,
+            int32_t document_kind) override {
     opened_paths_.push_back(definition.path);
+    opened_kinds_.push_back(document_kind);
   }
 
   void Save(WindowDefinition& definition) override { ++save_count_; }
@@ -47,6 +51,7 @@ class FakeModusViewWrapper final : public ModusViewWrapper {
   const std::vector<std::filesystem::path>& opened_paths() const {
     return opened_paths_;
   }
+  const std::vector<int32_t>& opened_kinds() const { return opened_kinds_; }
   int save_count() const { return save_count_; }
   const std::vector<scada::NodeId>& shown_items() const { return shown_items_; }
 
@@ -54,6 +59,7 @@ class FakeModusViewWrapper final : public ModusViewWrapper {
   std::filesystem::path path_;
   bool show_contained_item_result_ = false;
   std::vector<std::filesystem::path> opened_paths_;
+  std::vector<int32_t> opened_kinds_;
   int save_count_ = 0;
   std::vector<scada::NodeId> shown_items_;
 };
@@ -201,6 +207,58 @@ TEST_F(ModusControllerTest, NoCommandsAreRegisteredYet) {
   controller.Init(WindowDefinition{});
 
   EXPECT_THAT(controller.GetCommandHandler(0), IsNull());
+}
+
+// Task 483: the «Use Modus runtime renderer» command used to toggle a profile
+// flag that nothing read, so it changed no rendering. `Init` now derives the
+// document kind from the definition and the profile and passes it to the
+// runtime, which is what makes the operator's choice reach the renderer.
+TEST_F(ModusControllerTest,
+       InitOpensAnXsdeWithTheVersionTwoKindWhenTheFlagIsSet) {
+  controller_env_.profile_.modus.modus2 = true;
+  ModusController controller = MakeController();
+
+  WindowDefinition definition;
+  definition.path = "schemes/substation.xsde";
+
+  std::unique_ptr<UiView> view = controller.Init(definition);
+  ASSERT_THAT(view, NotNull());
+
+  EXPECT_THAT(wrapper_.opened_kinds(),
+              testing::ElementsAre(TC_VDS_RUNTIME_DOCUMENT_KIND_XSDE));
+}
+
+TEST_F(ModusControllerTest,
+       InitOpensAnXsdeWithTheVersionOneKindWhenTheFlagIsClear) {
+  controller_env_.profile_.modus.modus2 = false;
+  ModusController controller = MakeController();
+
+  WindowDefinition definition;
+  definition.path = "schemes/substation.xsde";
+
+  std::unique_ptr<UiView> view = controller.Init(definition);
+  ASSERT_THAT(view, NotNull());
+
+  EXPECT_THAT(wrapper_.opened_kinds(),
+              testing::ElementsAre(TC_VDS_RUNTIME_DOCUMENT_KIND_SDE));
+}
+
+// An `.sde` is version 1 whatever the profile says, so the flag must not reach
+// it. This is the case that would regress if `DocumentKindFor` were reduced to
+// reading the profile alone.
+TEST_F(ModusControllerTest,
+       InitOpensAnSdeWithTheVersionOneKindEvenWithTheFlagSet) {
+  controller_env_.profile_.modus.modus2 = true;
+  ModusController controller = MakeController();
+
+  WindowDefinition definition;
+  definition.path = "schemes/substation.sde";
+
+  std::unique_ptr<UiView> view = controller.Init(definition);
+  ASSERT_THAT(view, NotNull());
+
+  EXPECT_THAT(wrapper_.opened_kinds(),
+              testing::ElementsAre(TC_VDS_RUNTIME_DOCUMENT_KIND_SDE));
 }
 
 }  // namespace
