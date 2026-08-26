@@ -1,5 +1,6 @@
 #include "limits/limit_model.h"
 
+#include "aui/dialog_service.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "common/node_state.h"
@@ -25,6 +26,37 @@ scada::CoStatus CompleteLazily(bool* executed) {
   co_return scada::StatusCode::Good;
 }
 
+// Records the boxes the model raises, so "the operator was told" is an
+// observable fact rather than an inference from the status code.
+class RecordingDialogService : public DialogService {
+ public:
+  UiView* GetDialogOwningWindow() const override { return nullptr; }
+  UiView* GetParentWidget() const override { return nullptr; }
+
+  Awaitable<MessageBoxResult> RunMessageBox(std::u16string_view message,
+                                            std::u16string_view title,
+                                            MessageBoxMode mode) override {
+    messages.emplace_back(message);
+    modes.emplace_back(mode);
+    co_return MessageBoxResult::Ok;
+  }
+
+  Awaitable<std::filesystem::path> SelectOpenFile(
+      std::u16string_view title) override {
+    throw std::exception{};
+    co_return std::filesystem::path{};
+  }
+
+  Awaitable<std::filesystem::path> SelectSaveFile(
+      const SaveParams& params) override {
+    throw std::exception{};
+    co_return std::filesystem::path{};
+  }
+
+  std::vector<std::u16string> messages;
+  std::vector<MessageBoxMode> modes;
+};
+
 class LimitModelTest : public Test {
  protected:
   LimitModelTest()
@@ -34,9 +66,13 @@ class LimitModelTest : public Test {
             .properties =
                 {{scada::data_items::id::AnalogItemType_LimitLo, 10.0},
                  {scada::data_items::id::AnalogItemType_LimitHi, 90.0}}})},
-        model_{LimitDialogContext{.executor_ = executor_,
-                                  .node_ = item_node_,
-                                  .task_manager_ = task_manager_}} {}
+        model_{std::make_shared<LimitModel>(
+            LimitDialogContext{.executor_ = executor_,
+                               .node_ = item_node_,
+                               .task_manager_ = task_manager_})} {
+    model_->set_dialog_service(&dialog_service_);
+    model_->completion_handler = [this](bool ok) { completion_ = ok; };
+  }
 
   void DrainExecutor() { Drain(executor_); }
 
@@ -44,7 +80,11 @@ class LimitModelTest : public Test {
   FakeNodeService node_service_;
   NodeRef item_node_;
   NiceMock<MockTaskManager> task_manager_;
-  LimitModel model_;
+  RecordingDialogService dialog_service_;
+  // The model outlives the post it spawns — the dialog stays open until the
+  // write reports — so it is shared_ptr-held and holds a weak_ptr internally.
+  std::shared_ptr<LimitModel> model_;
+  std::optional<bool> completion_;
 };
 
 // Regression for the defect this fixture was written for: `WriteLimits`
@@ -72,7 +112,7 @@ TEST_F(LimitModelTest, WriteLimitsRunsPostedUpdateTask) {
         return CompleteLazily(&executed);
       }));
 
-  model_.WriteLimits({.lo = u"5", .hi = u"95", .lolo = u"1", .hihi = u"99"});
+  model_->WriteLimits({.lo = u"5", .hi = u"95", .lolo = u"1", .hihi = u"99"});
   DrainExecutor();
 
   EXPECT_TRUE(executed);
@@ -93,10 +133,88 @@ TEST_F(LimitModelTest, WriteLimitsClearsEmptiedBands) {
         return CompleteLazily(&executed);
       }));
 
-  model_.WriteLimits({.lo = u"5", .hi = u"95", .lolo = u"", .hihi = u"99"});
+  model_->WriteLimits({.lo = u"5", .hi = u"95", .lolo = u"", .hihi = u"99"});
   DrainExecutor();
 
   EXPECT_TRUE(executed);
+}
+
+// A lazy awaitable that reports a refused write, so the model has a real
+// failure status to react to rather than a fabricated one.
+scada::CoStatus FailLazily(scada::StatusCode status_code) {
+  co_return status_code;
+}
+
+// Regression for task 128: `WriteLimits` discarded the write's status, so a
+// refused edit was indistinguishable from a written one — the dialog closed on
+// both, and the bands the operator typed were silently not in effect.
+TEST_F(LimitModelTest, RefusedWriteIsReportedToTheOperator) {
+  EXPECT_CALL(task_manager_, PostUpdateTask(_, _, _))
+      .WillOnce(Invoke([](const scada::NodeId&, scada::NodeAttributes,
+                          scada::NodeProperties) {
+        return FailLazily(scada::StatusCode::Bad_UserAccessDenied);
+      }));
+
+  model_->WriteLimits({.lo = u"5", .hi = u"95", .lolo = u"1", .hihi = u"99"});
+  DrainExecutor();
+
+  EXPECT_THAT(dialog_service_.messages, SizeIs(1));
+  EXPECT_THAT(dialog_service_.modes, ElementsAre(MessageBoxMode::Error));
+}
+
+// The other half of the same entry, and the one an operator notices: the dialog
+// must stay open on the values they typed. `completion_handler(false)` is what
+// keeps it there — completing with true would close it, which is what the write
+// dialog still does after reporting its own errors.
+TEST_F(LimitModelTest, RefusedWriteLeavesTheDialogOpen) {
+  EXPECT_CALL(task_manager_, PostUpdateTask(_, _, _))
+      .WillOnce(Invoke([](const scada::NodeId&, scada::NodeAttributes,
+                          scada::NodeProperties) {
+        return FailLazily(scada::StatusCode::Bad_UserAccessDenied);
+      }));
+
+  model_->WriteLimits({.lo = u"5", .hi = u"95", .lolo = u"1", .hihi = u"99"});
+  DrainExecutor();
+
+  ASSERT_TRUE(completion_.has_value());
+  EXPECT_FALSE(*completion_);
+}
+
+// A written edit still closes the dialog, and reports nothing. Without this the
+// fix above could "pass" by never completing at all, which would strand the
+// operator on a dialog whose Apply button no longer does anything.
+TEST_F(LimitModelTest, SuccessfulWriteCompletesWithoutReporting) {
+  bool executed = false;
+  EXPECT_CALL(task_manager_, PostUpdateTask(_, _, _))
+      .WillOnce(Invoke([&executed](const scada::NodeId&, scada::NodeAttributes,
+                                   scada::NodeProperties) {
+        return CompleteLazily(&executed);
+      }));
+
+  model_->WriteLimits({.lo = u"5", .hi = u"95", .lolo = u"1", .hihi = u"99"});
+  DrainExecutor();
+
+  ASSERT_TRUE(completion_.has_value());
+  EXPECT_TRUE(*completion_);
+  EXPECT_THAT(dialog_service_.messages, IsEmpty());
+}
+
+// Apply held down must not queue four writes of the same bands: a second post
+// while the first is in flight would race two completions onto one dialog.
+TEST_F(LimitModelTest, SecondApplyWhileWritingIsIgnored) {
+  EXPECT_CALL(task_manager_, PostUpdateTask(_, _, _))
+      .WillOnce(Invoke([](const scada::NodeId&, scada::NodeAttributes,
+                          scada::NodeProperties) {
+        return FailLazily(scada::StatusCode::Bad_UserAccessDenied);
+      }));
+
+  const LimitModel::Limits limits{
+      .lo = u"5", .hi = u"95", .lolo = u"1", .hihi = u"99"};
+  model_->WriteLimits(limits);
+  model_->WriteLimits(limits);
+  DrainExecutor();
+
+  EXPECT_THAT(dialog_service_.messages, SizeIs(1));
 }
 
 }  // namespace
