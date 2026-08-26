@@ -29,17 +29,24 @@
 //     std::filesystem::create_directories(temp_dir_);
 //
 // is wrong in ways that compound. The salt is a clock reading, so uniqueness is
-// a probability rather than a fact. `create_directories` succeeds just as
-// happily on a directory that already exists, so a collision is silent — two
+// a probability rather than a fact. The create call's return value is
+// *ignored*, and an already-existing directory is reported through that return
+// rather than by a failure, so a collision is silent — two
 // fixtures share one tree and the failure surfaces as an unexplained assertion
 // somewhere else. And fixtures reusing the same prefix had only that clock
 // reading keeping them apart from each other rather than merely from
 // themselves. A fixed path is the same bug with the probability set to one.
 //
 // Here the PID separates concurrent processes — which is what `ctest -j` and
-// two checkouts testing at once produce — and `create_directory`, which reports
-// whether it created the directory or merely found it, separates fixtures
-// within one process by walking the suffix until it wins.
+// two checkouts testing at once produce — and *checking what the create call
+// returned* separates fixtures within one process, by walking the suffix until
+// it wins a directory it actually created. None of that is a fact about which
+// function to call: for a leaf whose parent exists, `create_directory` and
+// `create_directories` behave identically on an already-existing directory —
+// both return `false`, and neither throws, in the `error_code` and throwing
+// overloads alike (compiled against libc++ and run, 2026-08-26). Reading the
+// result is the whole defence, and a reader who takes the lesson to be the
+// choice of function will write the same bug with the other name.
 //
 // Declare it BEFORE any member that opens a file inside it. Members are
 // destroyed in reverse declaration order, so a ScopedTempDir declared last is
