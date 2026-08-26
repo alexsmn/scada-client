@@ -130,7 +130,11 @@ std::unique_ptr<UiView> NodePropertyController::Init(
                               QAbstractItemView::EditTrigger::SelectedClicked);
   tree_view_->setColumnWidth(0, 200);
   tree_view_->setAlternatingRowColors(true);
-  tree_view_->expandAll();
+  // Not expandAll(): NodePropertyModel fetches the node and its type chain
+  // before it has any properties, and only then repopulates the tree — so an
+  // expandAll() here would run against an empty tree and every group would
+  // come up collapsed on open.
+  tree_view_->ExpandAllWhenPopulated();
 #endif
 
   if (auto* state = definition.FindItem("State"))

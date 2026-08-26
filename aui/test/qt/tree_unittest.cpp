@@ -49,6 +49,27 @@ MakeColoredTreeModel() {
       std::move(root));
 }
 
+// A model that starts with nothing under its root, the way one backed by an
+// async fetch does. Populate() adds a group carrying a child, with the
+// surrounding notifications.
+class LateFilledTreeModel : public scada::aui::TreeNodeModel<TestTreeNode> {
+ public:
+  LateFilledTreeModel()
+      : scada::aui::TreeNodeModel<TestTreeNode>{
+            std::make_unique<TestTreeNode>(u"Root")} {}
+
+  void Populate() {
+    auto group = std::make_unique<TestTreeNode>(u"Group");
+    group->Add(0, std::make_unique<TestTreeNode>(u"Child"));
+    Add(*root(), root()->GetChildCount(), std::move(group));
+  }
+
+  void Clear() {
+    if (root()->GetChildCount() != 0)
+      Remove(*root(), 0, root()->GetChildCount());
+  }
+};
+
 }  // namespace
 
 TEST(TreeTest, VisibleRootStaysDecoratedAndExpanded) {
@@ -182,4 +203,55 @@ TEST(TreeTest, SetFilterTextKeepsAncestorsOfDeeperMatches) {
                 .data(Qt::DisplayRole)
                 .toString(),
             QStringLiteral("Child"));
+}
+
+// The regression behind task 126: the node-properties tree called expandAll()
+// while its model was still empty — NodePropertyModel fetches the node and its
+// type chain before it has any properties — so every group that arrived a
+// moment later came up collapsed and stayed that way.
+TEST(TreeTest, ExpandAllWhenPopulatedExpandsRowsThatArriveLater) {
+  AppEnvironment app_env;
+
+  auto model = std::make_shared<LateFilledTreeModel>();
+  scada::aui::Tree tree{model};
+
+  tree.ExpandAllWhenPopulated();
+  ASSERT_EQ(tree.model()->rowCount(tree.rootIndex()), 0);
+
+  model->Populate();
+
+  const auto group_index = tree.model()->index(0, 0, tree.rootIndex());
+  ASSERT_TRUE(group_index.isValid());
+  EXPECT_TRUE(tree.isExpanded(group_index));
+}
+
+TEST(TreeTest, ExpandAllWhenPopulatedExpandsRowsThatArePresentAlready) {
+  AppEnvironment app_env;
+
+  auto model = std::make_shared<LateFilledTreeModel>();
+  model->Populate();
+  scada::aui::Tree tree{model};
+
+  tree.ExpandAllWhenPopulated();
+
+  EXPECT_TRUE(tree.isExpanded(tree.model()->index(0, 0, tree.rootIndex())));
+}
+
+// One-shot: it is "expand on first open", not "keep re-expanding". A later
+// repopulation must not overrule a group the operator has since collapsed.
+TEST(TreeTest, ExpandAllWhenPopulatedDoesNotReExpandOnALaterRepopulation) {
+  AppEnvironment app_env;
+
+  auto model = std::make_shared<LateFilledTreeModel>();
+  scada::aui::Tree tree{model};
+
+  tree.ExpandAllWhenPopulated();
+  model->Populate();
+  ASSERT_TRUE(tree.isExpanded(tree.model()->index(0, 0, tree.rootIndex())));
+
+  tree.collapse(tree.model()->index(0, 0, tree.rootIndex()));
+  model->Clear();
+  model->Populate();
+
+  EXPECT_FALSE(tree.isExpanded(tree.model()->index(0, 0, tree.rootIndex())));
 }

@@ -318,6 +318,25 @@ void Tree::SetRowHeight(int row_height) {
   model_adapter_->row_height = row_height;
 }
 
+void Tree::ExpandAllWhenPopulated() {
+  if (populated_connection_)
+    return;
+
+  // Rows may already be present when the model is filled synchronously, in
+  // which case there is nothing to wait for.
+  if (model()->rowCount(rootIndex()) != 0) {
+    expandAll();
+    return;
+  }
+
+  populated_connection_ = connect(model(), &QAbstractItemModel::rowsInserted,
+                                  this, [this](const QModelIndex&, int, int) {
+                                    expandAll();
+                                    disconnect(populated_connection_);
+                                    populated_connection_ = {};
+                                  });
+}
+
 boost::json::value Tree::SaveState() const {
   boost::json::value data{boost::json::object{}};
   auto& header = *this->header();
@@ -367,4 +386,4 @@ void Tree::SetDropHandler(DropHandler handler) {
   model_adapter_->drop_handler = std::move(handler);
 }
 
-}  // namespace aui
+}  // namespace scada::aui

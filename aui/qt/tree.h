@@ -73,6 +73,14 @@ class Tree : public QTreeView {
   void SetDragHandler(std::vector<std::string> mime_types, DragHandler handler);
   void SetDropHandler(DropHandler handler);
 
+  // Expands every row the first time the model delivers any, then stops
+  // watching. `expandAll()` alone is not enough for a tree whose model is
+  // filled asynchronously: called at construction it runs against an empty
+  // tree and expands nothing, and the rows that arrive afterwards come up
+  // collapsed. One-shot on purpose — a later repopulation must not overrule a
+  // group the operator has since collapsed.
+  void ExpandAllWhenPopulated();
+
   boost::json::value SaveState() const;
   void RestoreState(const boost::json::value& data);
 
@@ -96,6 +104,9 @@ class Tree : public QTreeView {
   std::unique_ptr<TreeProxyModel> proxy_model_;
 
   std::unique_ptr<ItemDelegate> item_delegate_;
+
+  // Held so ExpandAllWhenPopulated can disconnect itself after it fires.
+  QMetaObject::Connection populated_connection_;
 
   friend class TreeProxyModel;
 };
