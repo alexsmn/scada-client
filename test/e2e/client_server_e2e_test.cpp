@@ -117,13 +117,12 @@ constexpr int kExpectedObjectTreeDepth = 4;
 // These need no server, so they run in a build configured without tier
 // binaries -- which is the point of that mode existing.
 TEST(ObjectTreeLabelsReportTest, CountsConsecutiveSettledLevels) {
-  EXPECT_EQ(CountSettledObjectTreeLabels(
-                "object-tree-labels: ok\n"
-                "detail\n"
-                "label[0]=All objects\n"
-                "label[1]=Substation\n"
-                "label[2]=Group\n"
-                "label[3]=Breaker\n"),
+  EXPECT_EQ(CountSettledObjectTreeLabels("object-tree-labels: ok\n"
+                                         "detail\n"
+                                         "label[0]=All objects\n"
+                                         "label[1]=Substation\n"
+                                         "label[2]=Group\n"
+                                         "label[3]=Breaker\n"),
             4);
 }
 
