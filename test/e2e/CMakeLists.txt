@@ -58,14 +58,27 @@ if(NOT _scada_e2e_from_targets)
     foreach(_var IN LISTS _scada_e2e_missing_tiers)
       string(APPEND _scada_e2e_hint "\n    -D${_var}=<path>")
     endforeach()
+    # NOT a return(). External-target mode (SCADA_E2E_EXTERNAL_HOST) launches no
+    # server at all, so building the suite to test a deployment used to cost
+    # seven tier product builds whose output was never executed -- ~9 minutes of
+    # compiling for binaries nobody ran. The target is produced either way; the
+    # parameters that DO need a tier process skip at runtime instead, carrying
+    # this same text. A tier path that is set but wrong is still a hard error
+    # above: that is a mistake, whereas absence is now a supported mode.
     message(STATUS
-      "client_server_e2e_tests: skipped, this build has no tier binaries.\n"
+      "client_server_e2e_tests: built without tier binaries. The hermetic "
+      "parameters will skip at runtime;\n"
+      "  external-target runs (SCADA_E2E_EXTERNAL_HOST) are unaffected.\n"
       "  The suite drives real tier processes, which are separate products "
       "(ADR 0011).\n"
-      "  Build them, then re-configure naming each one:${_scada_e2e_hint}")
-    return()
+      "  To run them, build the tiers and re-configure naming each "
+      "one:${_scada_e2e_hint}")
   endif()
 endif()
+
+# What the runtime skip needs to name. Empty in a build that has its tiers --
+# the hermetic parameters then run as they always did.
+string(REPLACE ";" " " SCADA_E2E_MISSING_TIER_VARS "${_scada_e2e_missing_tiers}")
 
 # One place decides where each tier binary comes from, so the compile
 # definitions below read the same either way.
@@ -141,6 +154,9 @@ target_compile_definitions(client_server_e2e_tests PRIVATE
   SCADA_E2E_FILESYSTEM_EXE="${_scada_e2e_exe_FILESYSTEM}"
   SCADA_E2E_CLIENT_EXE="$<TARGET_FILE:client_qt>"
   SCADA_E2E_SQLITE3_EXE="${SCADA_E2E_SQLITE3_EXE}"
+  # Empty unless this build has no tier binaries; the hermetic parameters read
+  # it to skip with the same explanation the configure printed.
+  SCADA_E2E_MISSING_TIER_VARS="${SCADA_E2E_MISSING_TIER_VARS}"
 )
 
 # Only the in-build tiers are build dependencies. Binaries named by path were

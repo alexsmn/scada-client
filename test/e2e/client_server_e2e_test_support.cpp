@@ -110,6 +110,14 @@ std::filesystem::path GetClientExePath() {
   return std::filesystem::path{SCADA_E2E_CLIENT_EXE};
 }
 
+// The SCADA_E2E_<TIER>_EXE variables this build was configured without,
+// space-separated; empty when it has them all. A tier is a separate product
+// with its own build tree (ADR 0011), so a client build can legitimately have
+// none of them -- external-target runs launch no server and need none.
+std::string_view GetMissingTierVars() {
+  return SCADA_E2E_MISSING_TIER_VARS;
+}
+
 std::filesystem::path GetServerFixtureDir() {
   return std::filesystem::path{SCADA_E2E_SERVER_FIXTURE_DIR};
 }
@@ -302,6 +310,23 @@ void ClientServerE2eTest::SetUp() {
     ASSERT_TRUE(std::filesystem::exists(GetClientExePath()));
     PrepareWorkspace();
     return;
+  }
+
+  // Everything below launches real tier processes. External-target mode has
+  // already returned, so if this build was configured without tier binaries
+  // there is nothing left for this parameter to run -- skip, rather than fail
+  // an exists() assertion on an empty path. The configure printed the same
+  // explanation; repeating it here is what lets a build made purely to test a
+  // deployment stop paying for seven tier products it never executes.
+  if (!GetMissingTierVars().empty()) {
+    GTEST_SKIP()
+        << "this build has no tier binaries, so the hermetic parameters "
+           "cannot launch a server. The suite drives real tier processes, "
+           "which are separate products (ADR 0011). Build them, then "
+           "re-configure naming each one: "
+        << GetMissingTierVars()
+        << ". To test an already-running deployment instead, set "
+           "SCADA_E2E_EXTERNAL_HOST -- that mode needs no tier binaries.";
   }
 
   ASSERT_TRUE(std::filesystem::exists(GetServerExePath()));
