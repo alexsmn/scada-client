@@ -13,7 +13,8 @@
 #include <algorithm>
 
 #if defined(UI_QT)
-ViewManager::ViewManager(QMainWindow& main_window, ViewManagerDelegate& delegate)
+ViewManager::ViewManager(QMainWindow& main_window,
+                         ViewManagerDelegate& delegate)
     : delegate_{delegate},
       current_page_{std::make_unique<Page>()},
       component_{main_window} {
@@ -46,8 +47,7 @@ OpenedView* ViewManager::GetActiveView() {
   return view_id ? FindViewByComponentId(*view_id) : nullptr;
 }
 
-void ViewManager::SetViewTitle(OpenedView& view,
-                               const std::u16string& title) {
+void ViewManager::SetViewTitle(OpenedView& view, const std::u16string& title) {
   component_.SetViewTitle(GetComponentViewId(view), title);
 }
 
@@ -84,11 +84,10 @@ void ViewManager::SaveLayout(PageLayout& layout) {
 }
 
 void ViewManager::AddView(OpenedView& view) {
-  component_.AddView(
-      GetComponentViewInfo(view),
-      active_view_ ? std::optional{
-                         GetComponentViewId(*active_view_)}
-                   : std::nullopt);
+  component_.AddView(GetComponentViewInfo(view),
+                     active_view_
+                         ? std::optional{GetComponentViewId(*active_view_)}
+                         : std::nullopt);
 }
 
 scada::aui::ViewManagerViewId ViewManager::GetComponentViewId(
@@ -210,6 +209,23 @@ OpenedView* ViewManager::FindViewByID(int id) const {
 
 bool ViewManager::IsViewAdded(OpenedView& opened_view) const {
   return std::ranges::find(added_views_, &opened_view) != added_views_.end();
+}
+
+std::string_view ViewManager::GetSingleItemPath(const WindowDefinition& def) {
+  const WindowItem* item = def.FindItem("Item");
+  return item ? item->GetString("path") : std::string_view{};
+}
+
+OpenedView* ViewManager::FindViewByTypeAndItem(
+    std::string_view window_type,
+    std::string_view item_path) const {
+  for (auto* view : views_) {
+    if (view->window_info().name == window_type &&
+        GetSingleItemPath(view->window_def()) == item_path) {
+      return view;
+    }
+  }
+  return nullptr;
 }
 
 OpenedView* ViewManager::FindViewByType(std::string_view window_type) const {
@@ -349,9 +365,24 @@ OpenedView* ViewManager::OpenView(const WindowDefinition& def,
         break;
       }
     }
+
+  } else if (window_info->single_item()) {
+    // A single-item window is bound to one node, so opening it again for the
+    // same node means the operator wants the one they already have — a second
+    // identical tab is never what was asked for. Panes are deduplicated above
+    // by type alone; here the node is part of the identity, so two different
+    // nodes still get two windows.
+    if (auto* opened_view =
+            FindViewByTypeAndItem(window_info->name, GetSingleItemPath(def))) {
+      if (activate) {
+        ActivateView(*opened_view);
+      }
+      return opened_view;
+    }
   }
 
-  BOOST_LOG_TRIVIAL(info) << "Open window " << std::u16string{window_info->title};
+  BOOST_LOG_TRIVIAL(info) << "Open window "
+                          << std::u16string{window_info->title};
 
   if (!window_def) {
     window_def = &current_page().AddWindow(def);

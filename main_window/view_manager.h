@@ -37,6 +37,16 @@ class ViewManager {
 
   OpenedView* FindViewByType(std::string_view window_type) const;
 
+  // The view of `window_type` already showing `item_path`, or null. Used to
+  // deduplicate WIN_SINGLE_ITEM windows, whose identity is the pair rather
+  // than the type alone.
+  OpenedView* FindViewByTypeAndItem(std::string_view window_type,
+                                    std::string_view item_path) const;
+
+  // The node path a single-item window is bound to; empty when the definition
+  // carries no item.
+  static std::string_view GetSingleItemPath(const WindowDefinition& def);
+
   OpenedView* CreateView(WindowDefinition& def,
                          const OpenedView* after_view = nullptr);
 
