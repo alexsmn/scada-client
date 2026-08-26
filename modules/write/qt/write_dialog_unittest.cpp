@@ -66,10 +66,10 @@ class WriteDialogSeedTest : public Test {
     // resolved NodeRef, and an unresolvable type definition reads as "not a
     // discrete item" rather than as an error — which silently puts the dialog
     // on its analog branch, with an editable box and no state labels at all.
-    node_service_.Add(scada::NodeState{
-        .node_id = scada::data_items::id::DiscreteItemType,
-        .node_class = scada::NodeClass::VariableType,
-        .attributes = {.display_name = u"Discrete item"}});
+    node_service_.Add(
+        scada::NodeState{.node_id = scada::data_items::id::DiscreteItemType,
+                         .node_class = scada::NodeClass::VariableType,
+                         .attributes = {.display_name = u"Discrete item"}});
 
     // DiscreteItemType is what WriteModel reads to take its discrete branch
     // (TimedDataSpec::logical), which is the branch that renders a combo of
@@ -83,9 +83,9 @@ class WriteDialogSeedTest : public Test {
 
   std::shared_ptr<scada::aui::qt::test::AwaitableResult<void>> ShowDialog() {
     return scada::aui::qt::test::StartAwaitable(ExecuteWriteDialog(
-        dialog_service_, WriteContext{executor_, timed_data_service_,
-                                      kDataItemId, profile_,
-                                      /*manual_=*/true}));
+        dialog_service_,
+        WriteContext{executor_, timed_data_service_, kDataItemId, profile_,
+                     /*manual_=*/true}));
   }
 
   // StartOwnedModalDialog destroys the dialog through deleteLater(), which
@@ -102,8 +102,8 @@ class WriteDialogSeedTest : public Test {
   // Delivers the item's current reading, the way a subscription would.
   void DeliverCurrentValue(bool value) {
     timed_data_->UpdateData(scada::DataValue{scada::Variant{value},
-                                             scada::Qualifier{},
-                                             scada::Time{}, scada::Time{}});
+                                             scada::Qualifier{}, scada::Time{},
+                                             scada::Time{}});
   }
 
   AppEnvironment app_env_;

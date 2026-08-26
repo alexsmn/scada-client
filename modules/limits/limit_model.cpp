@@ -100,9 +100,8 @@ void LimitModel::OnWriteComplete(const scada::Status& status) {
                       dialog_service = dialog_service_,
                       message = ToString16(status) + u'.',
                       title = GetWindowTitle()]() mutable {
-    return ReportWriteErrorAsync(std::move(completion_handler),
-                                 *dialog_service, std::move(message),
-                                 std::move(title));
+    return ReportWriteErrorAsync(std::move(completion_handler), *dialog_service,
+                                 std::move(message), std::move(title));
   });
 }
 
