@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Checks that translations in the client's .ts catalogs actually ship.
 
-Two independent rules run.
+Eight independent rules run. They are documented below in the order they were
+written rather than by number, because each was added for a defect the ones
+before it could not see, and that order is the argument for having them all.
 
 **Rule 1 — every string in a Qt Designer form has a translation that ships.**
 
