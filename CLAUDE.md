@@ -704,6 +704,26 @@ Ordered as: project headers, then third-party/standard headers, separated by bla
     `TRANSLATE_GAPS` parks the 22 call sites already in that state (task 442).
     Adjacent literals are joined before lookup, because `clang-format` splits
     any sentence long enough to matter.
+- **Two further rules catch the shapes where the string never appears at the
+  call site**, which is where new code trips it. `Translate()` is routinely
+  handed a *variable*, so no rule that reads call-site literals can see the
+  string it will look up:
+  - **A table** — `Translate(column.header)`, with a file-scope `constexpr`
+    table of headers indexed by a paint loop, usually in another translation
+    unit. Rule 7 resolves the member back to the table and requires every
+    literal in it to ship. Eleven English strings shipped inside the Russian
+    device-diagnostics panel through this seam (task 466).
+  - **A function** — `Translate(WriteBlockText(block))`, with the literals in a
+    `switch` somewhere else. Rule 8 resolves the call back to the definition
+    and requires every string it returns to ship (task 469).
+
+  Both are correct code and neither needs avoiding: declare the member or the
+  return type as `const char*` or `std::string_view` so it is an English
+  *source*, and add the strings to `client_ru.ts`. A `QString` there means
+  already-translated output and is not a catalog question. What the rules will
+  not tolerate is a source they cannot read — a function or member they cannot
+  resolve is reported rather than skipped, because being unable to see the
+  string is the defect.
 
 ## Testing
 
