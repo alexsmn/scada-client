@@ -162,6 +162,31 @@ TEST_F(TreeModelAdapterTest, LegacyThemeKeepsTheDefaultFont) {
   EXPECT_FALSE(FontFor(1).isValid());
 }
 
+// A leaf must say so at the item, not only through hasChildren(). QTreeView
+// caches hasChildren per laid-out row and refreshes it from dataChanged only
+// for column 0, whereas it reads Qt::ItemNeverHasChildren live — in
+// hasVisibleChildren, in layout() and in expand(). Without the flag a data-item
+// row could keep an expander the model no longer claims.
+TEST_F(TreeModelAdapterTest, LeafRowsCarryItemNeverHasChildren) {
+  const QModelIndex root = adapter_.index(0, 0);
+  const QModelIndex leaf = adapter_.index(0, 0, root);
+
+  EXPECT_FALSE(adapter_.flags(root).testFlag(Qt::ItemNeverHasChildren))
+      << "a row the model says has children must stay expandable";
+  EXPECT_TRUE(adapter_.flags(leaf).testFlag(Qt::ItemNeverHasChildren));
+}
+
+// The flag is per row, not per column: it is derived from the node, and Qt only
+// consults column 0, so the two must not disagree about the same node.
+TEST_F(TreeModelAdapterTest, ItemNeverHasChildrenIsTheSameInEveryColumn) {
+  const QModelIndex root = adapter_.index(0, 0);
+
+  EXPECT_EQ(adapter_.flags(adapter_.index(0, 0, root))
+                .testFlag(Qt::ItemNeverHasChildren),
+            adapter_.flags(adapter_.index(0, 1, root))
+                .testFlag(Qt::ItemNeverHasChildren));
+}
+
 }  // namespace
 
 // A checkable tree supplies Qt::CheckStateRole so the platform style draws an

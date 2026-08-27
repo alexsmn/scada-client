@@ -40,6 +40,11 @@ class NodeServiceTreeImpl : public NodeServiceTree,
   void OnModelChanged(const scada::ModelChangeEvent& event);
   void OnNodeSemanticChanged(const scada::NodeId& node_id);
 
+  // True when `reference_filter_` follows nothing but forward `Organizes`,
+  // which is what makes the NodeClass leaf rule in `HasChildren` sound. Cached
+  // because the filter is const and the rule is consulted on every paint.
+  const bool follows_only_forward_organizes_;
+
   Observer* observer_ = nullptr;
 
   boost::signals2::scoped_connection model_changed_connection_;

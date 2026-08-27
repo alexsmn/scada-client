@@ -372,6 +372,17 @@ Qt::ItemFlags TreeModelAdapter::flags(const QModelIndex& index) const {
   flags.setFlag(Qt::ItemIsDropEnabled,
                 !supported_mime_types_.empty() && drop_handler);
 
+  // Say leaf-ness at the item, not only through hasChildren(). QTreeView caches
+  // the answer per laid-out row (`QTreeViewItem::hasChildren`) and refreshes it
+  // from dataChanged only for column 0, so a row materialized by a layout pass
+  // rather than by a change notification can keep an expander the model no
+  // longer claims. Qt::ItemNeverHasChildren is checked ahead of that cache in
+  // every place it matters — QTreeViewPrivate::hasVisibleChildren and
+  // ::layout(), and QTreeView::expand(), which then refuses to open the row —
+  // and it is read live from flags(), never stored, so it stays as dynamic as
+  // hasChildren() itself.
+  flags.setFlag(Qt::ItemNeverHasChildren, !model_->HasChildren(node));
+
   return flags;
 }
 
