@@ -707,9 +707,51 @@ and mislabelled three of the entries below; C++20 features are marked.
     a bare literal (the check above) and a `.ui` string in the wrong context —
     and it is the one that catches a translated call site drifting from its
     entry, since renaming the source in the code silently stops matching.
-    `TRANSLATE_GAPS` parks the 22 call sites already in that state (task 442).
+    `TRANSLATE_GAPS` is the park for call sites already in that state and is
+    **empty** — the 22 it held when the rule was written drained in one pass
+    (task 442), fourteen of them the graph component's setup menu, which was
+    one omission rather than fourteen decisions. Adding to it is a review
+    conversation, not a fix.
     Adjacent literals are joined before lookup, because `clang-format` splits
     any sentence long enough to matter.
+- **Design-time placeholder text in a `.ui` takes `notr="true"`, not a parked
+  entry.** A label whose text a `setText()` overwrites before the form is shown
+  — the write dialog's `(Description)`, `(Value)`, `(Condition)`, `(Status)`
+  and `units`, the limit dialog's `(Description)` — is not a string anyone will
+  ever translate, and leaving it extractable buys a permanent
+  `Ignored N untranslated source text(s)` from `lrelease` plus an entry in
+  `UI_FORM_ALLOWED_UNTRANSLATED` that has to stay true one file away from the
+  form. `notr="true"` on the property is Qt's own way to say it: `lupdate`
+  stops extracting the string, `uic` emits `QString::fromUtf8` instead of
+  `QCoreApplication::translate`, and nothing is left to park. Six were
+  converted on 2026-08-27 (task 385), and the compiled catalog did not change
+  by a byte.
+- **Every message in the catalog must be one `lrelease` compiles** (rule 10).
+  `vanished`, `obsolete`, `unfinished` and an empty translation are all
+  dropped, and `lrelease` says so on every build where nobody reads it: an
+  unfinished entry is a string that renders English, and a dead copy of a live
+  source is the duplicate warning, which is indistinguishable in the output
+  from the real collision the rule above exists for — so the noise is what
+  stops anyone reading either. Twenty such messages sat in `client_ru.ts` until
+  2026-08-27. The rule reads the `.ts` rather than `lrelease`'s stdout, so it
+  needs no LinguistTools, and it has **no parked list on purpose**: translate
+  the string, `notr="true"` the property, or delete the message.
+- **A compiled catalog must be copied by a rule that depends on the `.qm`, not
+  on the link** (rule 9). `app/qt/CMakeLists.txt` stages `client_ru.qm` and
+  `qtbase_ru.qm` twice — to `bin/<Config>/translations`, which the screenshot
+  generator reads, and on macOS into `client.app/Contents/MacOS/translations`,
+  which is the *only* path `InstalledTranslation` finds inside a bundle. The
+  bundle copy was an `add_custom_command(TARGET client_qt POST_BUILD ...)`
+  until 2026-08-27, and POST_BUILD fires only when the target **relinks**:
+  editing `client_ru.ts` regenerates the `.qm` and re-stages it without
+  relinking anything, so the bundle kept the previous catalog and a translation
+  change was invisible to the running app until something forced a link
+  (measured 2026-08-23: 55318 bytes against a fresh 55458). Both copies are now
+  `add_custom_command(OUTPUT ...)` + a target + `add_dependencies()`, and rule
+  9 fails on any POST_BUILD command in that file that names a catalog. Note the
+  OUTPUT spells the bundle path out: an OUTPUT is evaluated with no target in
+  scope, so `$<TARGET_BUNDLE_CONTENT_DIR:client_qt>` there fails the generate
+  step outright.
 - **Two further rules catch the shapes where the string never appears at the
   call site**, which is where new code trips it. `Translate()` is routinely
   handed a *variable*, so no rule that reads call-site literals can see the
