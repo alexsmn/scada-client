@@ -149,6 +149,23 @@ class SettingsMenuFixture : public ::testing::Test {
   SimpleMenuModel appearance_{&delegate_};
 };
 
+// **What else covers this file, measured rather than assumed.** Emptying
+// `BuildSettingsCatalog` and running the whole client suite fails 25 tests here
+// and one elsewhere: `ScreenshotGenerator.CaptureSettingsPanel`, whose content
+// assertions (a search field, more than one category, more than one scope tab,
+// an action row) reject an empty surface. That capture is the **only** exercise
+// of this catalogue against the real `MainMenuModel` and the real commands --
+// everything below drives a `SimpleMenuModel` over `FakeDelegate`. After a fake
+// in this very file was found reporting radio rows as independent toggles, that
+// distinction is worth keeping: a fake can be wrong in a way no test built on
+// it can see, and the capture is the guard that does not share the assumption.
+//
+// Three tests here correctly do NOT fail on an empty catalogue, and should not
+// be "fixed" to: `CatalogDescribesEverySettingsMenuCommand` asks the opposite
+// question (does the menu publish anything the catalogue misses), and the
+// panel's two overlay-mechanics tests are about geometry and dismissal, which
+// hold for a surface with no rows on it.
+
 // The contract in the direction that matters most: a preference a module adds
 // to the Settings menu reaches the operator only once the catalogue describes
 // it, so an undescribed command is a row that would silently not exist.

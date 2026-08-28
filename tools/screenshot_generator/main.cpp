@@ -971,6 +971,15 @@ TEST_F(ScreenshotGenerator, CaptureSettingsPanel) {
 
   // The three things that make this a surface rather than the dialog it
   // replaced, and that no other capture in the gallery shows.
+  //
+  // These also carry weight beyond the image: this is the only place the
+  // settings catalogue is exercised against the real `MainMenuModel` and the
+  // real registered commands. `client_settings_qt_unittests` drives a
+  // `SimpleMenuModel` over a fake delegate, and a fake there was once found
+  // reporting a radio group as independent toggles -- a failure no test built
+  // on that fake could distinguish from a real one. Measured 2026-08-28: with
+  // `BuildSettingsCatalog` stubbed to return nothing, this test and 25 unit
+  // tests fail and nothing else in the client suite notices.
   EXPECT_NE(panel->search_field(), nullptr);
   EXPECT_GT(panel->category_list()->count(), 1)
       << "the table of contents lists no categories";
