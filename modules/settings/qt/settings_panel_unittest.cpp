@@ -268,6 +268,84 @@ TEST_F(SettingsPanelTest, EscapeAndTheCloseButtonBothDismissIt) {
   EXPECT_TRUE(panel->isHidden());
 }
 
+// **The panel reserves space for a strip whose height is one of its own rows.**
+// `Status Bar` is a `window`-scoped setting on this surface, so an operator can
+// switch off the very strip the overlay stops above — and hiding a `QStatusBar`
+// does not resize the window, so nothing the panel watches would fire. Until
+// the panel said so, the inset went stale the moment the row was used: a band
+// of exposed workbench below the panel, or a strip drawn under it.
+//
+// The panel cannot fix this itself, and deliberately does not try: it knows
+// nothing about `QStatusBar` — the shell measures the strip and hands the
+// number in. So the contract is that the panel reports having applied
+// something and the shell re-supplies the inset, which is what this asserts.
+TEST_F(SettingsPanelTest, ApplyingASettingLetsTheShellRestateTheInset) {
+  QWidget host;
+  host.resize(1000, 700);
+  auto* panel = new SettingsPanel{&host, settings_};
+
+  // Stands in for MainWindow::ShowSettings's measurement of the status strip:
+  // 24px while Status Bar is on, nothing once it is off.
+  int strip = 24;
+  QObject::connect(panel, &SettingsPanel::SettingApplied, panel,
+                   [panel, &strip] { panel->SetBottomInset(strip); });
+
+  panel->Open(strip);
+  ASSERT_EQ(panel->geometry(), QRect(0, 0, 1000, 700 - 24));
+
+  strip = 0;
+  auto* box =
+      Row(*panel, QStringLiteral("status-bar"))->findChild<QCheckBox*>();
+  ASSERT_NE(box, nullptr);
+  box->click();
+
+  EXPECT_EQ(delegate_.executed(), (std::vector<int>{ID_VIEW_STATUS_BAR}));
+  EXPECT_EQ(panel->geometry(), QRect(0, 0, 1000, 700));
+}
+
+// Every control reports, not just the toggles: an action can move the strip
+// too, and a choice certainly can — a longer locale changes what the strip
+// draws, and a widget style changes its metrics.
+TEST_F(SettingsPanelTest, EveryKindOfControlReportsThatItApplied) {
+  SettingsPanel panel{nullptr, settings_};
+  int applied = 0;
+  QObject::connect(&panel, &SettingsPanel::SettingApplied, &panel,
+                   [&applied] { ++applied; });
+
+  Row(panel, QStringLiteral("toolbar"))->findChild<QCheckBox*>()->click();
+  EXPECT_EQ(applied, 1);
+
+  Row(panel, QStringLiteral("open-displays-folder"))
+      ->findChild<QPushButton*>()
+      ->click();
+  EXPECT_EQ(applied, 2);
+
+  auto* combo =
+      Row(panel, QStringLiteral("colour-scheme"))->findChild<QComboBox*>();
+  combo->setCurrentIndex(combo->findText(QStringLiteral("Dark")));
+  emit combo->activated(combo->currentIndex());
+  EXPECT_EQ(applied, 3);
+}
+
+// Restating the inset is not reopening: it must not steal focus back from
+// whatever the operator was using, and must not rebuild the controls under
+// their pointer.
+TEST_F(SettingsPanelTest, RestatingTheInsetDisturbsNothingElse) {
+  QWidget host;
+  host.resize(800, 600);
+  auto* panel = new SettingsPanel{&host, settings_};
+  panel->Open(24);
+
+  QWidget* before = Row(*panel, QStringLiteral("toolbar"));
+  panel->search_field()->clearFocus();
+
+  panel->SetBottomInset(40);
+
+  EXPECT_EQ(panel->geometry(), QRect(0, 0, 800, 600 - 40));
+  EXPECT_NE(panel->focusWidget(), panel->search_field());
+  EXPECT_EQ(Row(*panel, QStringLiteral("toolbar")), before);
+}
+
 // Reopening re-reads the menu: a module can have registered a contribution, and
 // the session's rights can have changed, since the panel was last on screen.
 TEST_F(SettingsPanelTest, ReopeningPicksUpAMenuThatChangedMeanwhile) {

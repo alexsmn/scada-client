@@ -73,6 +73,15 @@ class SettingsPanel : public QWidget {
   // reaching for a `QStatusBar` it has no business knowing about.
   void Open(int bottom_inset);
 
+  // Restates the reserved strip without reopening — no catalogue reload, no
+  // focus change, no rebuilt controls.
+  //
+  // The shell calls this from `SettingApplied`, because the strip's height is
+  // itself one of the settings on this surface: `Status Bar` is a `window`
+  // -scoped row, and switching it off does not resize the window, so nothing
+  // the panel watches would notice. See `SettingApplied`.
+  void SetBottomInset(int bottom_inset);
+
   // The search box, the scope tabs and the table of contents, exposed for the
   // tests and the screenshot generator so neither has to reach in by
   // `objectName`.
@@ -84,6 +93,17 @@ class SettingsPanel : public QWidget {
   // because "which rows survived" is what almost every assertion about this
   // surface is really about.
   const std::vector<SettingRow>& visible_rows() const { return visible_rows_; }
+
+ signals:
+  // A control activated its command. The panel has already re-read the model,
+  // so this is not about the control's own state — it is for the shell, which
+  // may have to restate something the panel cannot see for itself.
+  //
+  // Today that is exactly one thing: the bottom inset. `Status Bar` and
+  // `Toolbar` are rows on this surface that change the chrome underneath it,
+  // and a locale or widget-style change moves the strip's metrics too, so the
+  // shell re-measures and calls `SetBottomInset`.
+  void SettingApplied();
 
  protected:
   // QWidget — Escape closes, which is what every other transient surface in the

@@ -153,6 +153,13 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // client does not ship.
   void ShowSettings() override;
 
+ private:
+  // The height the Settings overlay must leave for the status strip, or 0 when
+  // the strip is switched off. Re-measured rather than cached: `Status Bar` is
+  // a row on that very surface.
+  int StatusStripInset() const;
+
+ public:
   // The shell's menu model. Exposed for the screenshot generator for the same
   // reason.
   scada::aui::MenuModel* main_menu_model() SCADA_LIFETIME_BOUND {

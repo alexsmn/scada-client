@@ -189,13 +189,21 @@ void SettingsPanel::Open(int bottom_inset) {
   search_field_->setFocus(Qt::OtherFocusReason);
 }
 
+void SettingsPanel::SetBottomInset(int bottom_inset) {
+  bottom_inset_ = bottom_inset;
+  FitToParent();
+}
+
 void SettingsPanel::FitToParent() {
   QWidget* host = parentWidget();
   if (!host)
     return;
   // Everything above the reserved strip. The strip is the status bar, which
   // stays visible because it reports the session, the connection and the
-  // server — none of which stops being true while preferences are open.
+  // server — none of which stops being true while preferences are open. Its
+  // height is whatever the shell last stated: `Status Bar` is a row on this
+  // surface, so the strip can come and go while the panel is covering the
+  // window (see `SetBottomInset`).
   const int height = std::max(0, host->height() - bottom_inset_);
   setGeometry(0, 0, host->width(), height);
 }
@@ -377,6 +385,9 @@ QWidget* SettingsPanel::CreateChoiceControl(const SettingRow& row,
             // widget, and Language re-translates every string on it, so the
             // panel is rebuilt rather than left showing what it was built from.
             ReloadCatalog();
+            // After the rebuild: the shell re-measures against the strings and
+            // metrics the choice just installed, not the ones it replaced.
+            emit SettingApplied();
           });
 
   return combo;
@@ -401,9 +412,10 @@ QCheckBox* SettingsPanel::CreateToggleControl(const SettingRow& row,
   // command refused or the profile clamped the value.
   MenuModel* model = row.model;
   const int index = row.index;
-  connect(box, &QCheckBox::clicked, this, [model, index, box] {
+  connect(box, &QCheckBox::clicked, this, [this, model, index, box] {
     model->ActivatedAt(index);
     box->setChecked(model->IsItemCheckedAt(index));
+    emit SettingApplied();
   });
 
   return box;
@@ -416,8 +428,10 @@ QWidget* SettingsPanel::CreateActionControl(const SettingRow& row,
 
   MenuModel* model = row.model;
   const int index = row.index;
-  connect(button, &QPushButton::clicked, this,
-          [model, index] { model->ActivatedAt(index); });
+  connect(button, &QPushButton::clicked, this, [this, model, index] {
+    model->ActivatedAt(index);
+    emit SettingApplied();
+  });
 
   return button;
 }

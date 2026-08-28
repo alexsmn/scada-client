@@ -794,17 +794,28 @@ void MainWindow::ShowSettings() {
   if (!menu_model)
     return;
 
-  if (!settings_panel_)
+  if (!settings_panel_) {
     settings_panel_ = new SettingsPanel{this, menu_model->settings_model()};
+    // Re-measure whenever a setting is applied. `Status Bar` and `Toolbar` are
+    // rows on that surface, so an operator can switch off the very strip the
+    // panel stops above — and hiding a `QStatusBar` re-lays this window out
+    // without resizing it, so nothing the panel watches for itself would
+    // notice. A choice row can move the strip too: a locale changes what it
+    // draws and a widget style changes its metrics.
+    connect(settings_panel_, &SettingsPanel::SettingApplied, this,
+            [this] { settings_panel_->SetBottomInset(StatusStripInset()); });
+  }
 
-  // The status strip stays visible under the panel — it reports the session,
-  // the connection and the server, none of which stops being true while
-  // preferences are open. Its height is asked for at open time rather than
-  // cached: Status Bar is itself one of the settings on the panel, so the strip
-  // can disappear while the panel is covering the window.
-  const int reserved =
-      statusBar() && statusBar()->isVisible() ? statusBar()->height() : 0;
-  settings_panel_->Open(reserved);
+  settings_panel_->Open(StatusStripInset());
+}
+
+int MainWindow::StatusStripInset() const {
+  // The strip stays visible under the panel — it reports the session, the
+  // connection and the server, none of which stops being true while
+  // preferences are open. Zero when the operator has switched it off, which
+  // hands the panel the whole window.
+  const QStatusBar* strip = statusBar();
+  return strip && strip->isVisible() ? strip->height() : 0;
 }
 
 void MainWindow::RefreshUtilityMarker() {
