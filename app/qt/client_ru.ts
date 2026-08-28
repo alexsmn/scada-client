@@ -2601,10 +2601,6 @@
         <translation>ОК</translation>
     </message>
     <message>
-        <source>Cancel</source>
-        <translation type="vanished">Отмена</translation>
-    </message>
-    <message>
         <location filename="../../modules/about/qt/about_dialog.cpp" line="22"/>
         <source>Version %1</source>
         <translation>Версия %1</translation>
@@ -2793,85 +2789,9 @@
         <source>Write one row per event. When the journal collapses repeated alarms during a flood, an unchecked box exports the collapsed rows as shown, with their counts.</source>
         <translation>Записывать по одной строке на событие. Когда журнал сворачивает повторяющиеся тревоги при их потоке, снятый флажок выгружает свёрнутые строки как показано, вместе со счётчиками.</translation>
     </message>
-    <message>
-        <source>New and repeated password do not match.</source>
-        <translation type="obsolete">Новый и повторенный пароль не совпадают.</translation>
-    </message>
-    <message>
-        <source>Change Password</source>
-        <translation type="obsolete">Смена пароля</translation>
-    </message>
-    <message>
-        <source>Current:</source>
-        <translation type="obsolete">Текущий:</translation>
-    </message>
-    <message>
-        <source>New:</source>
-        <translation type="obsolete">Новый:</translation>
-    </message>
-    <message>
-        <source>Repeat:</source>
-        <translation type="obsolete">Повтор:</translation>
-    </message>
-    <message>
-        <source>CSV parameters</source>
-        <translation type="vanished">Параметры CSV</translation>
-    </message>
-    <message>
-        <source>Encoding:</source>
-        <translation type="vanished">Кодировка:</translation>
-    </message>
-    <message>
-        <source>Delimiter:</source>
-        <translation type="vanished">Разделитель:</translation>
-    </message>
-    <message>
-        <source>Quote:</source>
-        <translation type="vanished">Кавычки:</translation>
-    </message>
-    <message>
-        <source>System</source>
-        <translation type="vanished">Системная</translation>
-    </message>
-    <message>
-        <source>Unicode (UTF-8)</source>
-        <translation type="vanished">Юникод (UTF-8)</translation>
-    </message>
-    <message>
-        <source>Tab</source>
-        <translation type="vanished">Табуляция</translation>
-    </message>
-    <message>
-        <source>Space</source>
-        <translation type="vanished">Пробел</translation>
-    </message>
-    <message>
-        <source>OK</source>
-        <translation type="vanished">ОК</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">Отмена</translation>
-    </message>
-    <message>
-        <source>Please enter a symbol for the delimiter or choose one from the drop-down list.</source>
-        <translation type="vanished">Пожалуйста, укажите одиночный символ разделителя или выберите из списка.</translation>
-    </message>
-    <message>
-        <source>Please enter a symbol for the quote or choose one from the drop-down list.</source>
-        <translation type="vanished">Пожалуйста, укажите одиночный символ кавычки или выберите из списка.</translation>
-    </message>
 </context>
 <context>
     <name>Dialog</name>
-    <message>
-        <source>OK</source>
-        <translation type="obsolete">ОК</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="obsolete">Отмена</translation>
-    </message>
 </context>
 <context>
     <name>LimitDialog</name>
@@ -2903,11 +2823,6 @@
         <location filename="../../modules/limits/qt/limit_dialog.ui" line="74"/>
         <source>Limits</source>
         <translation>Уставки</translation>
-    </message>
-    <message>
-        <location filename="../../modules/limits/qt/limit_dialog.ui" line="23"/>
-        <source>(Description)</source>
-        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../modules/limits/qt/limit_dialog.ui" line="145"/>
@@ -3135,11 +3050,6 @@
         <translation>Запись значения</translation>
     </message>
     <message>
-        <location filename="../../modules/write/qt/write_dialog.ui" line="32"/>
-        <source>(Description)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <location filename="../../modules/write/qt/write_dialog.ui" line="44"/>
         <source>Current value:</source>
         <translation>Текущее значение:</translation>
@@ -3150,11 +3060,6 @@
         <translation>Новое значение:</translation>
     </message>
     <message>
-        <location filename="../../modules/write/qt/write_dialog.ui" line="76"/>
-        <source>units</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <location filename="../../modules/write/qt/write_dialog.ui" line="86"/>
         <source>Lock:</source>
         <translation>Блокировка:</translation>
@@ -3163,21 +3068,6 @@
         <location filename="../../modules/write/qt/write_dialog.ui" line="96"/>
         <source>Condition:</source>
         <translation>Условие:</translation>
-    </message>
-    <message>
-        <location filename="../../modules/write/qt/write_dialog.ui" line="103"/>
-        <source>(Condition)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../modules/write/qt/write_dialog.ui" line="110"/>
-        <source>(Value)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../modules/write/qt/write_dialog.ui" line="136"/>
-        <source>(Status)</source>
-        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../modules/write/qt/write_dialog.ui" line="156"/>

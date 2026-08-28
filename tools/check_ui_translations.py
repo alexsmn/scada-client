@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Checks that translations in the client's .ts catalogs actually ship.
 
-Nine independent rules run. They are documented below in the order they were
+Ten independent rules run. They are documented below in the order they were
 written rather than by number, because each was added for a defect the ones
 before it could not see, and that order is the argument for having them all.
 
@@ -63,6 +63,23 @@ strings, the way `To Favourites` was split from `Add to Favourites`; for an
 accidental repeat it is deleting the later copy.
 
 This rule needs no `lupdate`, so it runs even where Qt LinguistTools is absent.
+
+**Rule 10 — every message in a shipping catalog reaches the `.qm`.**
+
+Rule 2's complement, in the same file. Rule 2 asks which of two active copies
+of a source wins; this asks whether a message ships at all. `lrelease` drops
+`vanished`, `obsolete`, `unfinished` and empty translations, and says so on
+every build — "Ignored 6 untranslated source text(s)" was in the client's
+build output from before 2026-08-16 until 2026-08-27, and no check read it.
+All six turned out to be design-time `.ui` placeholder text that `uic`
+overwrites before the form is shown, so the repair was `notr="true"` on the
+property rather than a translation. The dead copies are the other half: twelve
+`vanished` duplicates of live `CsvExportDialog` strings made lrelease's
+duplicate warning permanent noise, which is what stops anyone reading the line
+that mattered.
+
+This reads the `.ts` rather than lrelease's stdout — the same answer, with no
+dependency on LinguistTools being present or on the wording of its warnings.
 
 **Rule 6 — every `tr("...")` in a `.cpp` has a translation that ships.**
 
@@ -167,19 +184,15 @@ UI_FORM_ALLOWED_UNTRANSLATED = {
                               "accept() parses the item as a single character.",
     ("CsvExportDialog", '"'): "Literal quote character; parsed as a single "
                               "character, same as the delimiter above.",
-    # Design-time placeholder text, overwritten before the form is shown —
-    # verified against the code that fills each one, not assumed from the name.
-    # A `("WriteDialog", "Dialog")` entry sat here until 2026-08-23: the form's
-    # default title, replaced by "Write value" in 57a4f116e, so the key had
-    # been describing nothing since. Rule 5 found it on its first run, which is
-    # the whole argument for rule 5.
-    ("WriteDialog", "(Description)"): "Filled by ui.descriptionLabel->setText().",
-    ("WriteDialog", "(Value)"): "Filled by ui.currentValueLabel->setText().",
-    ("WriteDialog", "(Condition)"): "Filled by ui.conditionLabel->setText().",
-    ("WriteDialog", "(Status)"): "Filled by ui.statusLabel->setText().",
-    ("WriteDialog", "units"): "Filled by ui.unitLabel->setText() from the "
-                              "node's engineering units.",
-    ("LimitDialog", "(Description)"): "Filled by ui.descriptionLabel->setText().",
+    # Design-time placeholder text used to be parked here — the write and limit
+    # dialogs' "(Description)", "(Value)", "(Condition)", "(Status)" and
+    # "units", each overwritten by a setText() before the form is shown. They
+    # were removed on 2026-08-27 in favour of `notr="true"` on the property in
+    # the .ui itself, which is Qt's own way of saying a form string is not for
+    # translation: lupdate then never extracts them, so there is nothing left
+    # to park, nothing for lrelease to report as untranslated, and no second
+    # place where the fact has to stay true. A parked entry only ever said the
+    # same thing one file further from the form.
     ("LoginDialog", "\u2026"): "Ellipsis glyph on the certificate/private-key "
                                "browse buttons; the same in every language.",
 }
@@ -1066,6 +1079,82 @@ def report_duplicate_sources(ts_files):
     return len(collisions)
 
 
+def find_dropped_messages(path):
+    """Every <message> in `path` that lrelease would not compile.
+
+    Yields (context, source, reason). The three `type` values and an empty
+    translation are the whole of what lrelease drops, which is why this reads
+    the .ts rather than lrelease's stdout: the same answer, with no dependency
+    on Qt LinguistTools being installed or on the wording of its warnings.
+    """
+    text = path.read_text(encoding="utf-8")
+    for context in re.finditer(r"<context>\s*<name>(.*?)</name>(.*?)</context>",
+                               text, re.S):
+        name = context.group(1)
+        for message in re.finditer(r"<message[^>]*>(.*?)</message>",
+                                   context.group(2), re.S):
+            body = message.group(1)
+            source = re.search(r"<source>(.*?)</source>", body, re.S)
+            if not source:
+                continue
+            source_text = html.unescape(source.group(1))
+            translation = re.search(
+                r"<translation([^>]*)>(.*?)</translation>", body, re.S)
+            if not translation:
+                yield name, source_text, "no <translation> element"
+                continue
+            attributes, value = translation.group(1), translation.group(2)
+            for state in ("vanished", "obsolete", "unfinished"):
+                if state in attributes:
+                    yield name, source_text, f'type="{state}"'
+                    break
+            else:
+                if not value.strip():
+                    yield name, source_text, "empty translation"
+
+
+def report_dropped_messages(ts_files):
+    """Rule 10. Returns the number of messages lrelease would not compile.
+
+    The failure this exists to prevent is two-sided, and lrelease reports both
+    on every build where nobody reads them. An `unfinished` or empty entry is a
+    string that renders English — six sat in the catalog from before 2026-08-16
+    until 2026-08-27, all of them design-time `.ui` placeholder text that
+    should never have been extracted at all. A `vanished` or `obsolete` copy of
+    a source that is still live is the duplicate warning: harmless in itself,
+    because lrelease drops it either way, but it is indistinguishable in the
+    output from the collision rule 2 exists for, so the noise is what stops
+    anyone reading either.
+
+    Rule 2 is the deliberate complement and skips exactly these entries: it
+    reports two *active* messages colliding, where which one ships is file
+    order rather than intent. This one reports a message that ships not at all.
+
+    There is no parked list on purpose. The three ways out are all repairs:
+    translate it, mark the form property `notr="true"` so lupdate stops
+    extracting a string that was never for translation, or delete the message.
+    A list here would be a fourth way that leaves the string rendering English.
+    """
+    dropped = []
+    for path in ts_files:
+        for context, source, reason in find_dropped_messages(path):
+            dropped.append((path, context, source, reason))
+    if not dropped:
+        return 0
+
+    print(f"\n{len(dropped)} message(s) are in a shipping catalog but would "
+          f"not be compiled into the .qm:", file=sys.stderr)
+    for path, context, source, reason in dropped:
+        label = context or "(empty context)"
+        print(f"  {path.name} [{label}] {source!r}: {reason}", file=sys.stderr)
+    print("\nlrelease drops all of these and says so on every build "
+          "(\"Ignored N untranslated source text(s)\", \"dropping duplicate "
+          "messages\"), where nothing reads it. Translate the string, mark the "
+          ".ui property notr=\"true\" if it is design-time placeholder text, or "
+          "delete the message.", file=sys.stderr)
+    return len(dropped)
+
+
 def extract_ui_strings(sources, lupdate):
     """Runs lupdate over `sources` and returns context -> set of sources.
 
@@ -1173,6 +1262,13 @@ def main():
     if report_duplicate_sources(ts_files):
         return 1
     print(f"OK: no duplicated source strings in {len(ts_files)} .ts file(s).")
+
+    # Rule 10 beside rule 2: same file, and the complementary question. Rule 2
+    # asks which of two active copies wins; this asks whether a message ships
+    # at all. Needs no lupdate either.
+    if report_dropped_messages(ts_files):
+        return 1
+    print(f"OK: every message in {len(ts_files)} .ts file(s) reaches the .qm.")
 
     # Rule 3, for the same reason: it reads the catalogs and the sources, and
     # needs no lupdate.

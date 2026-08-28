@@ -32,6 +32,11 @@ it was written for, and the defect is invisible everywhere else: the catalog
 is compiled, staged and correct, and only the copy the running app reads is
 stale.
 
+Rule 10 is here for the same reason as rule 9 and one more: it has no parked
+list, so every one of its cases is either a repair or a report, and a pattern
+that stops matching leaves a catalog full of strings that render English while
+the file still looks translated.
+
 Source-only and dependency-free, like the checker it covers. Run it directly or
 through ctest as `client_ui_translation_check_test`.
 """
@@ -294,6 +299,74 @@ add_custom_command(TARGET client_qt POST_BUILD
 )
 
 
+# Rule 10. Each case is one .ts file and the number of messages in it that
+# lrelease would not compile.
+RULE10_CASES = (
+    (
+        "a translated message ships",
+        '''<TS><context><name>WriteDialog</name>
+<message><source>Write value</source>
+<translation>\u0417\u0430\u043f\u0438\u0441\u044c</translation></message>
+</context></TS>''',
+        0,
+    ),
+    (
+        "the six that shipped English: unfinished and empty",
+        '''<TS><context><name>WriteDialog</name>
+<message><source>(Status)</source>
+<translation type="unfinished"></translation></message>
+</context></TS>''',
+        1,
+    ),
+    (
+        "an empty translation with no type attribute is dropped too",
+        '''<TS><context><name>WriteDialog</name>
+<message><source>units</source><translation></translation></message>
+</context></TS>''',
+        1,
+    ),
+    (
+        "the vanished duplicates behind the permanent lrelease warning",
+        '''<TS><context><name>CsvExportDialog</name>
+<message><source>Tab</source>
+<translation>\u0422\u0430\u0431</translation></message>
+<message><source>Tab</source>
+<translation type="vanished">\u0422\u0430\u0431</translation></message>
+</context></TS>''',
+        1,
+    ),
+    (
+        "obsolete counts the same, and both contexts are reported",
+        '''<TS><context><name>Dialog</name>
+<message><source>OK</source>
+<translation type="obsolete">\u041e\u041a</translation></message>
+</context><context><name>AboutDialog</name>
+<message><source>Cancel</source>
+<translation type="vanished">\u041e\u0442\u043c\u0435\u043d\u0430</translation></message>
+</context></TS>''',
+        2,
+    ),
+)
+
+
+def run_rule10_cases():
+    """Returns a list of failure descriptions for RULE10_CASES."""
+    failures = []
+    for name, ts_text, expected in RULE10_CASES:
+        with tempfile.TemporaryDirectory() as temp:
+            path = pathlib.Path(temp) / "client_ru.ts"
+            path.write_text(ts_text, encoding="utf-8")
+            stderr, sys.stderr = sys.stderr, io.StringIO()
+            try:
+                found = checker.report_dropped_messages([path])
+            finally:
+                sys.stderr = stderr
+        if found != expected:
+            failures.append(f"rule 10 / {name}: reported {found}, "
+                            f"expected {expected}")
+    return failures
+
+
 def run_rule9_cases():
     """Returns a list of failure descriptions for RULE9_CASES."""
     failures = []
@@ -381,15 +454,17 @@ def main():
         failures.append(f"rule 8: resolved call still reported: {unresolved}")
 
     failures.extend(run_rule9_cases())
+    failures.extend(run_rule10_cases())
 
-    total = len(CASES) + len(CALL_CASES) + len(RULE9_CASES) + 5
+    total = (len(CASES) + len(CALL_CASES) + len(RULE9_CASES)
+             + len(RULE10_CASES) + 5)
     if failures:
         print(f"{len(failures)} of {total} case(s) failed:\n")
         for failure in failures:
             print(f"  {failure}")
         return 1
 
-    print(f"OK: {total} rule 7, 8 and 9 behaviour case(s) pass.")
+    print(f"OK: {total} rule 7, 8, 9 and 10 behaviour case(s) pass.")
     return 0
 
 
