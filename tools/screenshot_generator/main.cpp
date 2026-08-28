@@ -1010,6 +1010,23 @@ TEST_F(ScreenshotGenerator, CaptureSettingsPanel) {
       << " - the capture is showing the host machine's locale, so this image "
          "renders differently depending on who generates it";
 
+  // **A capture that failed its content checks must not publish an image.**
+  // Every guard above is `EXPECT` rather than `ASSERT` on purpose, so one bad
+  // render reports all of its problems at once instead of stopping at the
+  // first — but `EXPECT` does not stop the test, so without this the save ran
+  // anyway and a regeneration overwrote the tracked gallery PNG with the very
+  // render the assertions had just rejected. Red test, bad file, and the file
+  // is what gets committed.
+  //
+  // An empty settings surface is the case that makes this matter: it lays out
+  // perfectly, so nothing about the image looks wrong (`capture.mjs` in the web
+  // generator says the same thing about its own empty states, and backlog 583
+  // is the Qt instance).
+  ASSERT_FALSE(HasFailure())
+      << "refusing to write " << kFilename
+      << ": the surface failed its content checks above, and an image of it "
+         "would document a Settings page the client does not ship";
+
   QPixmap panel_pixmap = GrabWhenSettled(panel);
   ASSERT_FALSE(panel_pixmap.isNull());
   panel_pixmap.save(QString::fromStdString((output_dir / kFilename).string()));
