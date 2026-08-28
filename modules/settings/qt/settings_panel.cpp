@@ -384,9 +384,18 @@ QWidget* SettingsPanel::CreateChoiceControl(const SettingRow& row,
             // Colour scheme and Style change the application's look under this
             // widget, and Language re-translates every string on it, so the
             // panel is rebuilt rather than left showing what it was built from.
+            //
+            // **That rebuild deletes this combo — the sender — from inside its
+            // own emission**, three calls down in `RebuildRows`, so nothing
+            // here shows it. It is safe: Qt reference-counts a sender's
+            // connection list across `activate`, which is why deleting the
+            // sender in a slot is supported rather than merely tolerated. What
+            // is not safe is touching `combo` after this line, so nothing does
+            // — `child` is read before the rebuild for that reason.
             ReloadCatalog();
-            // After the rebuild: the shell re-measures against the strings and
-            // metrics the choice just installed, not the ones it replaced.
+            // After the rebuild, not before: the shell re-measures against the
+            // strings and metrics the choice just installed, not the ones it
+            // replaced.
             emit SettingApplied();
           });
 

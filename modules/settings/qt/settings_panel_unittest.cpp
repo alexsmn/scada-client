@@ -12,6 +12,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
+#include <QPointer>
 #include <QPushButton>
 #include <QResizeEvent>
 #include <QTabBar>
@@ -45,17 +46,42 @@ class FakeDelegate : public SimpleMenuModel::Delegate {
   }
   void ExecuteCommand(int command_id) override {
     executed_.push_back(command_id);
+    // A checkable menu item toggles; a member of a radio group *selects*, and
+    // the difference is not cosmetic here. Modelling a choice submenu as a set
+    // of independent toggles leaves the previously-selected row checked too,
+    // and `CheckedChild` then returns whichever comes first — so a combo
+    // rebuilt after a choice reads the option the operator just moved away
+    // from. That looks exactly like the panel reporting before it rebuilt,
+    // which is what a fake with the wrong semantics costs: it does not weaken
+    // an assertion, it inverts one.
+    if (const std::set<int>* group = GroupOf(command_id)) {
+      for (int member : *group)
+        checked_.erase(member);
+      checked_.insert(command_id);
+      return;
+    }
     if (!checked_.erase(command_id))
       checked_.insert(command_id);
   }
 
   void SetChecked(int command_id) { checked_.insert(command_id); }
   void Disable(int command_id) { disabled_.insert(command_id); }
+  // Declares `ids` mutually exclusive, the way a choice submenu's rows are.
+  void AddRadioGroup(std::set<int> ids) { groups_.push_back(std::move(ids)); }
   const std::vector<int>& executed() const { return executed_; }
 
  private:
+  const std::set<int>* GroupOf(int command_id) const {
+    for (const std::set<int>& group : groups_) {
+      if (group.contains(command_id))
+        return &group;
+    }
+    return nullptr;
+  }
+
   std::set<int> checked_;
   std::set<int> disabled_;
+  std::vector<std::set<int>> groups_;
   std::vector<int> executed_;
 };
 
@@ -73,6 +99,9 @@ class SettingsPanelTest : public ::testing::Test {
     appearance_.AddCheckItem(kClassic, u"Classic");
     appearance_.AddSeparator(scada::aui::NORMAL_SEPARATOR);
     appearance_.AddCheckItem(kDark, u"Dark");
+    // The real AppearanceMenuModel and StyleMenuModel report exactly one
+    // checked row; the fake has to as well or the combo lags a step behind.
+    delegate_.AddRadioGroup({kClassic, kDark});
     settings_.AddSubMenu(ID_SETTINGS_APPEARANCE, u"Colour scheme",
                          &appearance_);
   }
@@ -325,6 +354,79 @@ TEST_F(SettingsPanelTest, EveryKindOfControlReportsThatItApplied) {
   combo->setCurrentIndex(combo->findText(QStringLiteral("Dark")));
   emit combo->activated(combo->currentIndex());
   EXPECT_EQ(applied, 3);
+}
+
+// **Ordering, not just occurrence.** The two tests above pin that the signal
+// fires; this pins where. A choice row reloads the catalogue before reporting,
+// so the shell re-measures against the strings and metrics the choice just
+// installed — a locale changes what the strip draws, a widget style changes its
+// metrics. Emitting first would have the shell measure the outgoing appearance,
+// which is right often enough to look correct and wrong exactly when it
+// matters.
+TEST_F(SettingsPanelTest, AChoiceRebuildsBeforeItReportsThatItApplied) {
+  delegate_.SetChecked(kClassic);
+  SettingsPanel panel{nullptr, settings_};
+
+  QPointer<QComboBox> clicked =
+      Row(panel, QStringLiteral("colour-scheme"))->findChild<QComboBox*>();
+  ASSERT_FALSE(clicked.isNull());
+
+  // The observation has to be one that can ONLY be true after the rebuild.
+  // Reading the combo's text is not: the test sets the index before emitting
+  // `activated`, so the pre-rebuild control already reads "Dark" and the
+  // assertion passes whichever order the panel used. Whether the clicked
+  // control has been destroyed yet cannot be faked that way.
+  bool rebuilt_before_report = false;
+  QString seen_on_report;
+  QObject::connect(
+      &panel, &SettingsPanel::SettingApplied, &panel,
+      [this, &panel, &clicked, &rebuilt_before_report, &seen_on_report] {
+        rebuilt_before_report = clicked.isNull();
+        auto* rebuilt = Row(panel, QStringLiteral("colour-scheme"))
+                            ->findChild<QComboBox*>();
+        seen_on_report =
+            rebuilt ? rebuilt->currentText() : QStringLiteral("<no combo>");
+      });
+
+  clicked->setCurrentIndex(clicked->findText(QStringLiteral("Dark")));
+  emit clicked->activated(clicked->currentIndex());
+
+  EXPECT_TRUE(rebuilt_before_report)
+      << "the shell was told a setting applied while the panel still showed "
+         "the appearance it was replacing";
+  EXPECT_EQ(seen_on_report, QStringLiteral("Dark"));
+}
+
+// The same rebuild destroys the combo that is mid-emission, which is safe but
+// invisible — the deletion is three calls down inside `ReloadCatalog`, so
+// nothing at the connect site shows it. Activating twice runs that path twice
+// and uses the replacement, which is what would fall over if the rebuild ever
+// stopped being safe to do from inside the sender's own signal.
+TEST_F(SettingsPanelTest, ActivatingAChoiceTwiceUsesTheRebuiltControl) {
+  delegate_.SetChecked(kClassic);
+  SettingsPanel panel{nullptr, settings_};
+
+  auto activate = [this, &panel](const QString& option) {
+    auto* combo =
+        Row(panel, QStringLiteral("colour-scheme"))->findChild<QComboBox*>();
+    ASSERT_NE(combo, nullptr);
+    combo->setCurrentIndex(combo->findText(option));
+    emit combo->activated(combo->currentIndex());
+  };
+
+  QPointer<QComboBox> first =
+      Row(panel, QStringLiteral("colour-scheme"))->findChild<QComboBox*>();
+  activate(QStringLiteral("Dark"));
+  // The control that was clicked is gone, replaced by one built from the model
+  // as it now reads.
+  EXPECT_TRUE(first.isNull());
+
+  activate(QStringLiteral("Classic"));
+  EXPECT_EQ(delegate_.executed(), (std::vector<int>{kDark, kClassic}));
+  EXPECT_EQ(Row(panel, QStringLiteral("colour-scheme"))
+                ->findChild<QComboBox*>()
+                ->currentText(),
+            QStringLiteral("Classic"));
 }
 
 // Restating the inset is not reopening: it must not steal focus back from
