@@ -5,9 +5,9 @@
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "base/value_util.h"
+#include "common/test/scoped_temp_dir.h"
 #include "export/export_model.h"
 #include "profile/profile.h"
-#include "test/scoped_temp_dir.h"
 
 #include <filesystem>
 #include <fstream>
@@ -75,7 +75,7 @@ class CsvExportCommandTest : public Test {
 
   // First member: the exported files live under it, and members are destroyed
   // in reverse declaration order.
-  ScopedTempDir temp_dir_{"scada_csv_export_test"};
+  scada::ScopedTempDir temp_dir_{"scada_csv_export_test"};
 
   TestExecutor executor_;
   StrictMock<MockDialogService> dialog_service_;

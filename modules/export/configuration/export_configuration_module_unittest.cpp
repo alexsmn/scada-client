@@ -6,6 +6,7 @@
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "common/test/node_state_matcher.h"
+#include "common/test/scoped_temp_dir.h"
 #include "controller/command_registry.h"
 #include "controller/command_ui_registry.h"
 #include "core/global_command_context.h"
@@ -18,7 +19,6 @@
 #include "node_service/static/static_node_service.h"
 #include "resources/common_resources.h"
 #include "services/task_manager_mock.h"
-#include "test/scoped_temp_dir.h"
 
 #include <filesystem>
 #include <fstream>
@@ -53,7 +53,7 @@ class ExportConfigurationModuleTest : public Test {
 
   // First member: the fixture's files live under it, and members are destroyed
   // in reverse declaration order.
-  ScopedTempDir temp_dir_{"scada_export_configuration_test"};
+  scada::ScopedTempDir temp_dir_{"scada_export_configuration_test"};
 
   StaticNodeService node_service_;
   TestExecutor executor_;

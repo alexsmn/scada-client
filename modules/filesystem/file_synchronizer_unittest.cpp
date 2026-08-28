@@ -3,11 +3,11 @@
 #include "base/boost_log.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
+#include "common/test/scoped_temp_dir.h"
 #include "model/filesystem_node_ids.h"
 #include "node_service/static/static_node_service.h"
 #include "scada/attribute_service_mock.h"
 #include "scada/co_result.h"
-#include "test/scoped_temp_dir.h"
 
 #include <fstream>
 #include <gmock/gmock.h>
@@ -80,7 +80,7 @@ class FileSynchronizerTest : public Test {
         .root_dir_ = temp_dir_.path()});
   }
 
-  ScopedTempDir temp_dir_{"scada_file_synchronizer_test"};
+  scada::ScopedTempDir temp_dir_{"scada_file_synchronizer_test"};
   TestExecutor executor_;
   StrictMock<scada::MockAttributeService> attribute_service_;
   StaticNodeService node_service_;

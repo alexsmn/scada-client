@@ -1,10 +1,10 @@
 #include "aui/test/app_environment.h"
 #include "base/client_paths.h"
 #include "base/path_service.h"
+#include "common/test/scoped_temp_dir.h"
 #include "controller/test/controller_environment.h"
 #include "modus/qt/modus_controller.h"
 #include "profile/window_definition.h"
-#include "test/scoped_temp_dir.h"
 
 #include <QColor>
 #include <QImage>
@@ -85,8 +85,8 @@ class ModusVdsRuntimeTest : public testing::Test {
   }
 
   // Declared before anything that opens a file inside them.
-  ScopedTempDir public_dir_{"scada_modus_public"};
-  ScopedTempDir install_dir_{"scada_modus_install"};
+  scada::ScopedTempDir public_dir_{"scada_modus_public"};
+  scada::ScopedTempDir install_dir_{"scada_modus_install"};
 
   AppEnvironment app_env_;
   ControllerEnvironment controller_env_;

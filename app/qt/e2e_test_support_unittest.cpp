@@ -2,7 +2,7 @@
 
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
-#include "test/scoped_temp_dir.h"
+#include "common/test/scoped_temp_dir.h"
 
 #include <gtest/gtest.h>
 
@@ -64,7 +64,7 @@ class E2eTestSupportTest : public testing::Test {
 
   // First: the report file lives under it, and members are destroyed in
   // reverse declaration order.
-  ScopedTempDir temp_dir_{"scada_operator_use_cases"};
+  scada::ScopedTempDir temp_dir_{"scada_operator_use_cases"};
   const std::filesystem::path report_path_ =
       temp_dir_.path() / "operator_use_cases.txt";
 
