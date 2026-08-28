@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Checks that translations in the client's .ts catalogs actually ship.
 
-Eight independent rules run. They are documented below in the order they were
+Nine independent rules run. They are documented below in the order they were
 written rather than by number, because each was added for a defect the ones
 before it could not see, and that order is the argument for having them all.
 
@@ -114,6 +114,19 @@ itself, which is the argument for having it.
 A function whose definition this cannot find, or that returns `QString` rather
 than a source, is reported for the same reason rule 7 reports an unresolved
 member: being unable to read the source is the defect, not an exemption.
+
+**Rule 9 — every catalog copy is driven by the `.qm`, not by the link.**
+
+Every rule above asks whether a translation is *in* the catalog. This asks
+whether the catalog reaches the place the running app reads. On macOS that is
+`client.app/Contents/MacOS/translations`, and the copy into it was an
+`add_custom_command(TARGET client_qt POST_BUILD ...)` until 2026-08-27 —
+POST_BUILD fires only when the target relinks, and editing `client_ru.ts`
+relinks nothing, so the bundle kept the previous catalog while the `.ts`, the
+`.qm` and the staged copy were all correct. Measured 2026-08-23: 55318 bytes
+in the bundle against a fresh 55458. Rule 4 is the nearest neighbour and asks
+the opposite question — which catalogs get compiled, not where they are put
+afterwards.
 
 **Rule 5 — every parked entry still matches something in the tree.**
 
@@ -878,6 +891,83 @@ def report_unshipped_catalogs(ts_files, client_dir):
     return len(orphans)
 
 
+# A POST_BUILD custom command attached to the client executable. POST_BUILD
+# runs only when the target *relinks*, so a translation-only edit never
+# reaches whatever it copies. Matched loosely — any TARGET/POST_BUILD pair in
+# one add_custom_command call — because the failure is the mechanism, not a
+# spelling of it.
+POST_BUILD_COMMAND = re.compile(
+    r'add_custom_command\s*\(\s*TARGET\s+\w+[^)]*?\bPOST_BUILD\b',
+    re.DOTALL)
+# The catalogs those commands are forbidden to carry.
+CATALOG_TOKENS = ("TRANSLATIONS_OUT", "QTBASE_RU_QM", ".qm")
+
+
+def report_link_driven_catalog_copies(client_dir):
+    """Rule 9. Returns the number of catalog copies driven by the link.
+
+    The failure this exists to prevent: a catalog that is correct, compiled,
+    staged — and stale wherever the running app actually reads it. The macOS
+    bundle copy was an `add_custom_command(TARGET client_qt POST_BUILD ...)`
+    until 2026-08-27, and POST_BUILD fires only when the target relinks. A
+    `.ts` edit regenerates `client_ru.qm` and re-stages it without relinking
+    anything, so `client.app/Contents/MacOS/translations` — the only path
+    `InstalledTranslation` reads inside a bundle — kept whatever catalog the
+    last link had left there. Measured 2026-08-23: 55318 bytes against a fresh
+    55458, missing both new messages, and `touch app/qt/main.cpp` "fixed" it.
+
+    Nothing else here can see it. Every other rule reads the `.ts` and the
+    sources, and by all of them the translation is present and shipping; the
+    file it is shipping *into* is the part no rule looked at. Rule 4 is the
+    nearest neighbour and asks the opposite question — which catalogs the
+    build compiles, not where it puts them once compiled.
+
+    The fix is the shape `client_qt_copy_translations` already had: an
+    `add_custom_command(OUTPUT ...)` with the `.qm` files in `DEPENDS`, plus a
+    target, so the build system can see what the copy is actually made of.
+    """
+    cmake = client_dir / SHIPPED_CATALOG_CMAKE
+    if not cmake.exists():
+        print(f"SKIPPED: {SHIPPED_CATALOG_CMAKE} not found, so how the "
+              f"catalogs are copied is unknown.", file=sys.stderr)
+        return None
+
+    text = cmake.read_text(encoding="utf-8")
+    offenders = []
+    for match in POST_BUILD_COMMAND.finditer(text):
+        body = text[match.start():balanced_parens_end(text, match.start())]
+        if any(token in body for token in CATALOG_TOKENS):
+            line = text.count("\n", 0, match.start()) + 1
+            offenders.append(line)
+
+    if not offenders:
+        return 0
+
+    print(f"\n{len(offenders)} translation copy/copies in "
+          f"{SHIPPED_CATALOG_CMAKE} are driven by the link rather than by the "
+          f"catalogs:", file=sys.stderr)
+    for line in offenders:
+        print(f"  {SHIPPED_CATALOG_CMAKE}:{line}", file=sys.stderr)
+    print("\nPOST_BUILD runs only when the target relinks, so a .ts-only edit "
+          "leaves the copy stale and the running app reads the previous "
+          "catalog. Use add_custom_command(OUTPUT ...) with the .qm files in "
+          "DEPENDS plus a target, the way client_qt_copy_translations does, "
+          "and add_dependencies() it onto client_qt.", file=sys.stderr)
+    return len(offenders)
+
+
+def balanced_parens_end(text, start):
+    """Index just past the `)` closing the call whose `(` follows `start`.
+
+    Falls back to the end of the file when the walk cannot close the call, so
+    an unmatched parenthesis makes this rule over-read rather than skip: a
+    missed offender is the failure it exists to prevent.
+    """
+    open_index = text.index("(", start)
+    close_index = balanced_parens(text, open_index)
+    return len(text) if close_index is None else close_index + 1
+
+
 def report_stale_entries(expected, calls):
     """Rule 5. Returns the number of parked entries that match nothing.
 
@@ -1091,6 +1181,16 @@ def main():
     if report_translate_gaps(cpp_files, ts_files, client_dir):
         return 1
     print("OK: every other Translate() string has a translation that ships.")
+
+    # Rule 9 next: it reads app/qt/CMakeLists.txt only, needs no lupdate, and
+    # asks where the compiled catalogs are copied to — the one question every
+    # other rule here assumes an answer to.
+    link_driven = report_link_driven_catalog_copies(client_dir)
+    if link_driven:
+        return 1
+    if link_driven is not None:
+        print("OK: every catalog copy is driven by the .qm files, not by the "
+              "link.")
 
     # Rule 7, immediately after rule 3: it answers the same question about the
     # call sites rule 3 has to skip, and needs no lupdate either.

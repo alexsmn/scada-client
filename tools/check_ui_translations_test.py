@@ -23,12 +23,23 @@ bare `return "...";`, a header declaration that must not resolve to an empty
 body, and a `QString`-returning function, which is already-translated output
 and not a catalog question.
 
+Rule 9 is covered here for a different reason: it is the only rule that reads
+CMake rather than C++ or XML, and the shape it forbids —
+`add_custom_command(TARGET client_qt POST_BUILD ...)` copying a catalog —
+looks exactly like the shape it permits until you notice which keyword drives
+it. A pattern that stops matching leaves the rule green over the very defect
+it was written for, and the defect is invisible everywhere else: the catalog
+is compiled, staged and correct, and only the copy the running app reads is
+stale.
+
 Source-only and dependency-free, like the checker it covers. Run it directly or
 through ctest as `client_ui_translation_check_test`.
 """
 
+import io
 import pathlib
 import sys
+import tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
@@ -236,6 +247,75 @@ CALL_CASES = (
 )
 
 
+# Rule 9. Each case is one app/qt/CMakeLists.txt and the number of link-driven
+# catalog copies it should report.
+RULE9_CASES = (
+    (
+        "the shipped shape: OUTPUT plus a target, catalogs in DEPENDS",
+        '''qt_add_translation(TRANSLATIONS_OUT "client_ru.ts")
+add_custom_command(
+  OUTPUT ${BUNDLE_TRANSLATIONS}
+  DEPENDS ${TRANSLATIONS_OUT} ${QTBASE_RU_QM}
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    ${TRANSLATIONS_OUT} ${QTBASE_RU_QM} "${BUNDLE_TRANSLATIONS_DIR}")
+add_custom_target(client_qt_copy_bundle_translations
+  DEPENDS ${BUNDLE_TRANSLATIONS})
+''',
+        0,
+    ),
+    (
+        "the defect: POST_BUILD copying the catalogs",
+        '''qt_add_translation(TRANSLATIONS_OUT "client_ru.ts")
+add_custom_command(TARGET client_qt POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    ${TRANSLATIONS_OUT} ${QTBASE_RU_QM}
+    "$<TARGET_BUNDLE_CONTENT_DIR:client_qt>/MacOS/translations")
+''',
+        1,
+    ),
+    (
+        "a POST_BUILD naming a .qm by path rather than by variable",
+        '''qt_add_translation(TRANSLATIONS_OUT "client_ru.ts")
+add_custom_command(TARGET client_qt POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${CMAKE_BINARY_DIR}/client_ru.qm" "${BUNDLE}/translations")
+''',
+        1,
+    ),
+    (
+        "a POST_BUILD that has nothing to do with catalogs stays allowed",
+        '''qt_add_translation(TRANSLATIONS_OUT "client_ru.ts")
+add_custom_command(TARGET client_qt POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${ICON}" "$<TARGET_BUNDLE_CONTENT_DIR:client_qt>/Resources")
+''',
+        0,
+    ),
+)
+
+
+def run_rule9_cases():
+    """Returns a list of failure descriptions for RULE9_CASES."""
+    failures = []
+    for name, cmake_text, expected in RULE9_CASES:
+        with tempfile.TemporaryDirectory() as temp:
+            root = pathlib.Path(temp)
+            cmake = root / checker.SHIPPED_CATALOG_CMAKE
+            cmake.parent.mkdir(parents=True)
+            cmake.write_text(cmake_text, encoding="utf-8")
+            # The positive cases print the rule's own diagnosis, which is the
+            # expected result here rather than output anyone should read.
+            stderr, sys.stderr = sys.stderr, io.StringIO()
+            try:
+                found = checker.report_link_driven_catalog_copies(root)
+            finally:
+                sys.stderr = stderr
+        if found != expected:
+            failures.append(f"rule 9 / {name}: reported {found}, "
+                            f"expected {expected}")
+    return failures
+
+
 def main():
     failures = []
 
@@ -300,14 +380,16 @@ def main():
     if unresolved:
         failures.append(f"rule 8: resolved call still reported: {unresolved}")
 
-    total = len(CASES) + len(CALL_CASES) + 5
+    failures.extend(run_rule9_cases())
+
+    total = len(CASES) + len(CALL_CASES) + len(RULE9_CASES) + 5
     if failures:
         print(f"{len(failures)} of {total} case(s) failed:\n")
         for failure in failures:
             print(f"  {failure}")
         return 1
 
-    print(f"OK: {total} rule 7 and 8 behaviour case(s) pass.")
+    print(f"OK: {total} rule 7, 8 and 9 behaviour case(s) pass.")
     return 0
 
 

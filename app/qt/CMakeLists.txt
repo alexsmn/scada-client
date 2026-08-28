@@ -192,15 +192,44 @@ if(APPLE AND TRANSLATIONS_OUT)
   # + "/translations". Inside a bundle that is client.app/Contents/MacOS, not
   # the bin/<config>/translations dir staged above, so the staged copy is
   # invisible to the app and every string silently falls back to its
-  # untranslated English source. Mirror the catalogs into the bundle after the
-  # link step (the bundle layout only exists once the executable is written).
-  add_custom_command(TARGET client_qt POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory
-      "$<TARGET_BUNDLE_CONTENT_DIR:client_qt>/MacOS/translations"
+  # untranslated English source. Mirror the catalogs into the bundle.
+  #
+  # Driven by the catalogs, not by the link. This was a POST_BUILD command
+  # until 2026-08-27, and POST_BUILD runs only when the target *relinks*: a
+  # .ts edit regenerates the .qm and re-stages it to bin/<Config>/translations
+  # without relinking client_qt, so the bundle — the only path the running app
+  # reads — kept whatever catalog the last link left there, and the change was
+  # invisible to the running app until something forced a relink. Mirroring
+  # client_qt_copy_translations above puts the .qm files in DEPENDS, where the
+  # build system can see them.
+  # The bundle path is spelled out rather than taken from
+  # $<TARGET_BUNDLE_CONTENT_DIR:client_qt>, because an add_custom_command
+  # OUTPUT is evaluated with no target in scope and a target-dependent
+  # generator expression there fails the generate step outright ("No target
+  # client_qt"). $<CONFIG> is fine — it is the one genex OUTPUT documents. The
+  # two facts this reconstructs are both set in this file: OUTPUT_NAME is
+  # "client", so the bundle is client.app, and CMAKE_RUNTIME_OUTPUT_DIRECTORY
+  # is where scada_product_base() puts it.
+  set(BUNDLE_TRANSLATIONS_DIR
+    "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/client.app/Contents/MacOS/translations")
+  set(BUNDLE_TRANSLATIONS
+    "${BUNDLE_TRANSLATIONS_DIR}/client_ru.qm"
+    "${BUNDLE_TRANSLATIONS_DIR}/qtbase_ru.qm")
+
+  add_custom_command(
+    OUTPUT ${BUNDLE_TRANSLATIONS}
+    DEPENDS ${TRANSLATIONS_OUT} ${QTBASE_RU_QM}
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${BUNDLE_TRANSLATIONS_DIR}"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      ${TRANSLATIONS_OUT} ${QTBASE_RU_QM}
-      "$<TARGET_BUNDLE_CONTENT_DIR:client_qt>/MacOS/translations"
+      ${TRANSLATIONS_OUT} ${QTBASE_RU_QM} "${BUNDLE_TRANSLATIONS_DIR}"
     COMMENT "Copy translations into the client app bundle")
+
+  add_custom_target(client_qt_copy_bundle_translations
+    DEPENDS ${BUNDLE_TRANSLATIONS})
+  # Runs before the link rather than after it. The bundle layout does not have
+  # to exist yet: make_directory above creates Contents/MacOS/translations, and
+  # the linker then writes the executable beside it.
+  add_dependencies(client_qt client_qt_copy_bundle_translations)
 endif()
 
 if(TRANSLATIONS_OUT)
