@@ -206,10 +206,11 @@ class MainMenuModel final : private MainMenuContext,
   explicit MainMenuModel(const MainMenuContext& context);
 
 #if defined(UI_QT)
-  // The Settings items, which the Qt shell renders as a dialog rather than a
-  // submenu (see SettingsDialog). Still assembled here, from the command
-  // registry and every module's contribution, so the dialog and the menu
-  // fallback are built from one description.
+  // The Settings items, which the Qt shell renders as a full-window surface
+  // rather than a submenu (see `main_window/settings_view_qt.h`). Still
+  // assembled here, from the command registry and every module's contribution,
+  // so the surface and the menu fallback are built from one description --
+  // `settings_catalog.cpp` joins its rows to exactly these items.
   scada::aui::MenuModel& settings_model() { return settings_submenu_; }
 #endif
 

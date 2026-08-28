@@ -342,13 +342,13 @@ void RegisterMainWindowCommandActions(
 
   // One command behind both entry points — the Settings menu item and the
   // activity rail's pinned Settings utility — so the two cannot drift. It also
-  // puts the dialog in the Ctrl-K palette, which every other shell command is
+  // puts the surface in the Ctrl-K palette, which every other shell command is
   // already reachable from.
   global_commands.AddCommand(
-      {.command_id = ID_SETTINGS_DIALOG,
+      {.command_id = ID_SETTINGS,
        .title = Translate("Settings..."),
        .execute_handler = [](const GlobalCommandContext& context) {
-         context.main_window.ShowSettingsDialog();
+         context.main_window.ShowSettings();
        }});
 
   ui_command_registry.AddMenuItem({.menu_id = MainMenuId::Settings,

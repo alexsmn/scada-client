@@ -465,27 +465,33 @@ void MainMenuModel::Rebuild() {
   language_submenu_.Clear();
   AddMenuContributions(language_submenu_, ui_command_registry_, commands_,
                        MainMenuId::Language, admin_);
-  settings_submenu_.AddSubMenu(0, Translate("Language"), &language_submenu_);
+  // The three choice submenus carry command ids, which nothing dispatches -- a
+  // submenu is opened, never executed. They exist so `settings_catalog.cpp` can
+  // name a choice row by command id, the way it names every other row, rather
+  // than by its position among the submenus or by a translated label.
+  settings_submenu_.AddSubMenu(ID_SETTINGS_LANGUAGE, Translate("Language"),
+                               &language_submenu_);
   settings_submenu_.AddSeparator(scada::aui::NORMAL_SEPARATOR);
-  settings_submenu_.AddSubMenu(0, Translate("Style"), &style_submenu_);
+  settings_submenu_.AddSubMenu(ID_SETTINGS_STYLE, Translate("Style"),
+                               &style_submenu_);
   // Next to Style, not inside it: the appearance themes layer over the widget
   // style rather than replacing it (see AppearanceMenuModel).
-  settings_submenu_.AddSubMenu(0, Translate("Colour scheme"),
-                               &appearance_submenu_);
+  settings_submenu_.AddSubMenu(
+      ID_SETTINGS_APPEARANCE, Translate("Colour scheme"), &appearance_submenu_);
 
-  // The Qt shell shows the toggles in a preferences dialog, so its Settings
-  // menu holds one item that opens it. `settings_submenu_` is still fully
-  // populated above — it is the description SettingsDialog renders — it is
-  // just not what gets mounted, so the toggles reach the operator from exactly
-  // one place. A top-level menu-bar entry has to be a menu (CreateMenuBar
-  // requires a submenu model for every one), which is why this is a one-item
-  // menu rather than a bare item.
+  // The Qt shell shows the toggles on the full-window Settings surface, so its
+  // Settings menu holds one item that opens it. `settings_submenu_` is still
+  // fully populated above — it is the description `settings_catalog.cpp` joins
+  // its rows to — it is just not what gets mounted, so the toggles reach the
+  // operator from exactly one place. A top-level menu-bar entry has to be a
+  // menu (CreateMenuBar requires a submenu model for every one), which is why
+  // this is a one-item menu rather than a bare item.
   settings_menu_.Clear();
-  settings_menu_.AddItem(ID_SETTINGS_DIALOG, Translate("Settings..."));
+  settings_menu_.AddItem(ID_SETTINGS, Translate("Settings..."));
   AddSubMenu(0, Translate("Settings"), &settings_menu_);
 #else
-  // Without the Qt UI config there is no preferences dialog, so the toggles
-  // stay in the menu.
+  // Without the Qt UI config there is no Settings surface, so the toggles stay
+  // in the menu.
   AddSubMenu(0, Translate("Settings"), &settings_submenu_);
 #endif
 

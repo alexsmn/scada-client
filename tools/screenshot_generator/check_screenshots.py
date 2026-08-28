@@ -76,7 +76,7 @@ def hardcoded_capture_filenames(source_dir: Path) -> set[str]:
     """PNG names written straight into the generator's C++ sources.
 
     Not every capture comes from screenshot_data.json: the standalone ones
-    (`CaptureSettingsDialog`, `CaptureMoreMenu`, …) name their file in a
+    (`CaptureSettingsPanel`, `CaptureMoreMenu`, …) name their file in a
     `constexpr const char* kFilename` beside the test. A row rendered that way
     is not owed, and reading the manifest alone reports it as if it were —
     which is exactly how the count in task 39 was wrong about

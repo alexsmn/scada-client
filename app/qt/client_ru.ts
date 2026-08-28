@@ -2587,6 +2587,120 @@
         <source>A valid URL must start with "http://" or "https://".</source>
         <translation>URL должен начинаться с "http://" или "https://".</translation>
     </message>
+    <!-- modules/settings — the Settings surface (the preferences overlay that
+         replaced the modal SettingsDialog on 2026-08-28). The row TITLES are
+         the commands' own and are translated with those commands elsewhere in
+         this context; what is new here is everything the menu model could not
+         carry: the category headings, the storage-scope names, the sentence
+         under each row, and the panel's own chrome. -->
+    <message>
+        <source>Search settings</source>
+        <translation>Поиск настроек</translation>
+    </message>
+    <message>
+        <source>Close Settings</source>
+        <translation>Закрыть настройки</translation>
+    </message>
+    <message>
+        <source>Settings: %1 · Actions: %2</source>
+        <translation>Настроек: %1 · Действий: %2</translation>
+    </message>
+    <!-- Category headings. `Appearance` and `Control` are already in this
+         context, from the command titles they are named after. -->
+    <message>
+        <source>Events &amp; alarms</source>
+        <translation>События и аварии</translation>
+    </message>
+    <message>
+        <source>Workspace</source>
+        <translation>Рабочая область</translation>
+    </message>
+    <message>
+        <source>Displays</source>
+        <translation>Мнемосхемы</translation>
+    </message>
+    <!-- Storage scopes: the chip on each row and the tabs above the list.
+         Named from the operator's side of the question — "will this follow
+         me?" — rather than after the store that answers it. -->
+    <message>
+        <source>This client</source>
+        <translation>Этот клиент</translation>
+    </message>
+    <message>
+        <source>Profile</source>
+        <translation>Профиль</translation>
+    </message>
+    <message>
+        <source>This window</source>
+        <translation>Это окно</translation>
+    </message>
+    <message>
+        <source>Action</source>
+        <translation>Действие</translation>
+    </message>
+    <message>
+        <source>Where this value is stored, and so what it follows.</source>
+        <translation>Где хранится это значение — и, соответственно, за чем оно следует.</translation>
+    </message>
+    <!-- The sentence under each row. Every row carries one: a preference whose
+         effect cannot be stated in a sentence is one the operator cannot make
+         a decision about. -->
+    <message>
+        <source>Language of the operator interface. Stored on this machine, so it does not follow the account to another workstation — or to the web client.</source>
+        <translation>Язык интерфейса оператора. Хранится на этом компьютере, поэтому не переносится вместе с учётной записью на другое рабочее место — и не переносится в веб-клиент.</translation>
+    </message>
+    <message>
+        <source>Follow system, Dark, Light or High contrast, plus Classic — the untouched platform look, which is the absence of a theme rather than one more of them. Crossing that boundary relays the workbench chrome on restart, and says so.</source>
+        <translation>Как в системе, Тёмная, Светлая или Высококонтрастная, а также Классическая — исходный вид платформы, то есть отсутствие темы, а не ещё одна из них. Переход через эту границу перестраивает оформление рабочего места при следующем запуске, о чём программа предупреждает.</translation>
+    </message>
+    <message>
+        <source>The platform style controls are drawn with. The colour scheme layers over it rather than replacing it, which is why the two are separate settings.</source>
+        <translation>Стиль платформы, которым отрисовываются элементы управления. Цветовая схема накладывается поверх него, а не заменяет его — поэтому это две отдельные настройки.</translation>
+    </message>
+    <message>
+        <source>Play the annunciator tone while an event stands unacknowledged. One key on both clients, so a choice made in either reaches the other. It silences the tone only: the banner and the severity colours are ISA-18.2 signals and stay unconditional.</source>
+        <translation>Подавать звуковой сигнал, пока событие не квитировано. Ключ общий для обоих клиентов, поэтому выбор, сделанный в одном, действует и в другом. Отключается только звук: баннер и цвета важности — сигналы по ISA-18.2 и выводятся всегда.</translation>
+    </message>
+    <message>
+        <source>Raise the event view when an event arrives.</source>
+        <translation>Открывать окно событий при поступлении события.</translation>
+    </message>
+    <message>
+        <source>Drop an event from the view once it has been acknowledged.</source>
+        <translation>Убирать событие из окна после квитирования.</translation>
+    </message>
+    <message>
+        <source>Flash the window in the taskbar when an event arrives.</source>
+        <translation>Мигать окном на панели задач при поступлении события.</translation>
+    </message>
+    <message>
+        <source>Confirm before sending a control command. The web client confirms every control unconditionally, so it publishes no switch rather than one that is always on.</source>
+        <translation>Запрашивать подтверждение перед отправкой команды управления. Веб-клиент запрашивает подтверждение всегда, поэтому не показывает переключатель вместо того, который постоянно включён.</translation>
+    </message>
+    <message>
+        <source>Report a successful control command back to the operator.</source>
+        <translation>Сообщать оператору об успешном выполнении команды управления.</translation>
+    </message>
+    <message>
+        <source>Show the view toolbar in this window. Per main window, not per account, so a second window keeps its own answer.</source>
+        <translation>Показывать панель инструментов в этом окне. Настройка относится к главному окну, а не к учётной записи, поэтому второе окно сохраняет собственное значение.</translation>
+    </message>
+    <message>
+        <source>Show the status strip in this window.</source>
+        <translation>Показывать строку состояния в этом окне.</translation>
+    </message>
+    <message>
+        <source>Draw the Modus topology layer over the display.</source>
+        <translation>Отображать слой топологии Modus поверх мнемосхемы.</translation>
+    </message>
+    <message>
+        <source>Render Modus displays with the runtime renderer instead of the ActiveX control.</source>
+        <translation>Отображать мнемосхемы Modus встроенным модулем отображения вместо элемента ActiveX.</translation>
+    </message>
+    <message>
+        <source>Open the folder displays are stored in. An action, not a preference — which is why the preferences dialog dropped it, since a command drawn as a checkbox would misreport it. A full-window surface has room to keep it beside the two switches it belongs with.</source>
+        <translation>Открыть папку, в которой хранятся мнемосхемы. Это действие, а не настройка — поэтому окно настроек его не показывало: команда, нарисованная флажком, вводила бы в заблуждение. На полноэкранной странице для неё есть место рядом с двумя переключателями, к которым она относится.</translation>
+    </message>
 </context>
 <context>
     <name>AboutDialog</name>

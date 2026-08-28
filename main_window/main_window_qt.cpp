@@ -34,7 +34,6 @@
 #include "main_window/page_icons.h"
 #include "main_window/pages/page_switcher.h"
 #include "main_window/selection_command_router.h"
-#include "main_window/settings_dialog_qt.h"
 #include "main_window/status_bar/progress_controller_qt.h"
 #include "main_window/tag_search_index.h"
 #include "main_window/view_manager.h"
@@ -50,6 +49,7 @@
 #include "profile/window_definition.h"
 #include "resources/common_resources.h"
 #include "scada/standard_node_ids.h"
+#include "settings/qt/settings_panel.h"
 #include "transmission_rules/qt/transmission_rule_inspector.h"
 #include "ui/common/client_utils.h"
 #include "ui/qt/client_utils_qt.h"
@@ -468,8 +468,8 @@ void MainWindow::CreateActivityBar() {
                                   [this](PaneModeId id) { SetPaneMode(id); });
 
   // The third rail zone (activity-rail.html). Settings opens the preferences
-  // dialog and Users the account list — both in the current page, so neither
-  // disturbs the page marker.
+  // overlay over the whole workbench and Users the account list in the current
+  // page, so neither disturbs the page marker.
   activity_bar_->SetUtilities(
       {ActivityBar::Utility{.utility_id = RailUtilityId(RailUtility::kSettings),
                             .label = Translate("Settings"),
@@ -480,7 +480,7 @@ void MainWindow::CreateActivityBar() {
       [this](int utility_id) {
         switch (static_cast<RailUtility>(utility_id)) {
           case RailUtility::kSettings:
-            ExecuteShellCommand(ID_SETTINGS_DIALOG);
+            ExecuteShellCommand(ID_SETTINGS);
             return;
           case RailUtility::kUsers:
             ExecuteShellCommand(ID_USERS_VIEW);
@@ -784,20 +784,27 @@ void MainWindow::RefreshPaneModeMarker() {
   activity_bar_->SetActiveMode(std::nullopt);
 }
 
-void MainWindow::ShowSettingsDialog() {
-  // The shell holds its menu as the MenuModel interface, and the settings
-  // items are a detail of the real model. A test harness can install a
-  // different one, so this asks rather than asserts: no menu model of ours
-  // means no preferences to render, which is a shell without settings, not a
-  // bug to panic on.
+void MainWindow::ShowSettings() {
+  // The shell holds its menu as the MenuModel interface, and the settings items
+  // are a detail of the real model. A test harness can install a different one,
+  // so this asks rather than asserts: no menu model of ours means no
+  // preferences to describe, which is a shell without settings, not a bug to
+  // panic on.
   auto* menu_model = dynamic_cast<MainMenuModel*>(main_menu_model_.get());
   if (!menu_model)
     return;
 
-  // Modal to this window. Preferences are per-profile and apply live, so a
-  // second one open beside the first would show two views of one state.
-  SettingsDialog dialog{this, menu_model->settings_model()};
-  dialog.exec();
+  if (!settings_panel_)
+    settings_panel_ = new SettingsPanel{this, menu_model->settings_model()};
+
+  // The status strip stays visible under the panel — it reports the session,
+  // the connection and the server, none of which stops being true while
+  // preferences are open. Its height is asked for at open time rather than
+  // cached: Status Bar is itself one of the settings on the panel, so the strip
+  // can disappear while the panel is covering the window.
+  const int reserved =
+      statusBar() && statusBar()->isVisible() ? statusBar()->height() : 0;
+  settings_panel_->Open(reserved);
 }
 
 void MainWindow::RefreshUtilityMarker() {
@@ -813,9 +820,10 @@ void MainWindow::RefreshUtilityMarker() {
       RailUtilityId(RailUtility::kUsers),
       ResolveViewCommand(ID_USERS_VIEW) != nullptr);
 
-  // Only Users can ever be marked. Settings opens a modal dialog, which is not
-  // a thing the workspace can be showing — so its button is an action, and an
-  // action never carries a marker.
+  // Only Users can ever be marked. Settings opens an overlay that covers the
+  // rail, so a marker on its own button could never be seen while it was
+  // true — the marker is a projection of what the workspace is showing, and
+  // while Settings is up the workspace is not showing.
   OpenedView* active = GetActiveView();
   const bool users_active =
       active && active->window_info().name == std::string_view{"Users"};

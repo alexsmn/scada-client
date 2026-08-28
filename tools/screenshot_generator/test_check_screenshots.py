@@ -59,7 +59,7 @@ class OwedCapturesTest(unittest.TestCase):
 
     def test_a_row_hardcoded_in_the_generator_is_not_owed(self) -> None:
         # The regression the count kept getting wrong: settings-dialog.png
-        # renders from CaptureSettingsDialog, which names its file in C++ and
+        # renders from CaptureSettingsPanel, which names its file in C++ and
         # not in the fixture, and was reported owed for months.
         self.write_source(
             '  constexpr const char* kFilename = "settings-dialog.png";\n'

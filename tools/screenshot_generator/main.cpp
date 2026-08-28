@@ -35,7 +35,6 @@
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
-#include "main_window/settings_dialog_qt.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/node_id_util.h"
@@ -48,6 +47,7 @@
 #include "node_service/node_util.h"
 #include "profile/profile.h"
 #include "profile/window_definition.h"
+#include "settings/qt/settings_panel.h"
 #include "timed_data/timed_data_service.h"
 
 #include <QAbstractButton>
@@ -63,6 +63,7 @@
 #include <QLabel>
 #include <QLayout>
 #include <QLibraryInfo>
+#include <QListWidget>
 #include <QLocale>
 #include <QMainWindow>
 #include <QMenu>
@@ -876,15 +877,23 @@ TEST_F(ScreenshotGenerator, CaptureActivityRail) {
       << "could not write " << kFilename;
 }
 
-// Settings → Colour scheme, the operator-facing switch for the experimental UX
-// themes. Captured in the *default* (untheme'd) run on purpose: the operator
-// who needs this image is the one still on Classic, looking for how to turn the
-// reshell on.
+// The Settings surface, and with it the operator-facing switch for the
+// experimental UX themes. Captured in the *default* (untheme'd) run on
+// purpose: the operator who needs this image is the one still on Classic,
+// looking for how to turn the reshell on.
 //
-// The menu bar is model-driven and rebuilt on every aboutToShow, so this walks
-// the same path a real click does — emit aboutToShow, let BuildMenu populate,
-// then grab the populated submenu.
-TEST_F(ScreenshotGenerator, CaptureSettingsDialog) {
+// It grabs the panel the shell builds rather than a form assembled here, for
+// the reason the dialog capture did before it: a capture that re-derived the
+// preferences would document a surface the client does not ship. The panel is
+// an overlay over the main window and takes its rows from the same
+// `MainMenuId::Settings` model the menu is built from, so what is grabbed is
+// what the operator sees.
+//
+// The filename still says `dialog`. The surface stopped being one on
+// 2026-08-28 and the manual pages that embed this image still describe the
+// dialog, so renaming the file here would break those pages before anything
+// could fix them — see the manifest note and backlog 628.
+TEST_F(ScreenshotGenerator, CaptureSettingsPanel) {
   constexpr const char* kFilename = "settings-dialog.png";
   if (!ShouldCaptureScreenshot(kFilename))
     GTEST_SKIP() << kFilename << " not requested";
@@ -907,7 +916,7 @@ TEST_F(ScreenshotGenerator, CaptureSettingsDialog) {
   ASSERT_NE(qmain, nullptr);
   qmain->show();
 
-  // The menu now carries one item that opens the dialog, so the reachability
+  // The menu now carries one item that opens the surface, so the reachability
   // this used to guard on the Colour scheme submenu is guarded here instead:
   // Colour scheme is how the operator turns the reshell on, and it must not
   // become unreachable.
@@ -924,35 +933,32 @@ TEST_F(ScreenshotGenerator, CaptureSettingsDialog) {
   for (int i = 0; i < 10; ++i)
     QApplication::processEvents();
 
-  QAction* open_dialog = nullptr;
+  QAction* open_settings = nullptr;
   const auto item_title = QString::fromStdU16String(Translate("Settings..."));
   for (QAction* action : settings_menu->actions()) {
     if (!action->isSeparator() && action->text() == item_title)
-      open_dialog = action;
+      open_settings = action;
   }
-  ASSERT_NE(open_dialog, nullptr)
-      << "Settings has no Settings... item - the preferences dialog, and with "
+  ASSERT_NE(open_settings, nullptr)
+      << "Settings has no Settings... item - the preferences surface, and with "
          "it the appearance switch, is unreachable";
 
-  // Build the dialog the same way the menu item and the rail's pinned utility
-  // both do, rather than re-deriving its contents here.
-  auto* qmain_window = dynamic_cast<MainWindow*>(&main_windows.front());
-  ASSERT_NE(qmain_window, nullptr);
-  auto* menu_model =
-      dynamic_cast<MainMenuModel*>(qmain_window->main_menu_model());
-  ASSERT_NE(menu_model, nullptr);
-  SettingsDialog dialog{qmain, menu_model->settings_model()};
-  dialog.ensurePolished();
-  dialog.adjustSize();
-  dialog.show();
+  // Opened the way the menu item and the rail's pinned utility both open it,
+  // rather than by constructing a panel here.
+  auto* main_window = dynamic_cast<MainWindow*>(&main_windows.front());
+  ASSERT_NE(main_window, nullptr);
+  main_window->ShowSettings();
   for (int i = 0; i < 10; ++i)
     QApplication::processEvents();
 
-  // Guard the contents, not just that a dialog exists: an empty form would
-  // still render a plausible-looking image. Colour scheme is the row that
-  // matters most, so it is named rather than counted.
-  const QList<QComboBox*> combos = dialog.findChildren<QComboBox*>();
-  const QList<QCheckBox*> checks = dialog.findChildren<QCheckBox*>();
+  auto* panel = qmain->findChild<SettingsPanel*>();
+  ASSERT_NE(panel, nullptr) << "ShowSettings did not build the panel";
+  EXPECT_FALSE(panel->isHidden());
+
+  // Guard the contents, not just that a panel exists: an empty surface would
+  // still render a plausible-looking image.
+  const QList<QComboBox*> combos = panel->findChildren<QComboBox*>();
+  const QList<QCheckBox*> checks = panel->findChildren<QCheckBox*>();
   EXPECT_GE(combos.size(), 1) << "expected Language / Style / Colour scheme";
   EXPECT_GT(checks.size(), 0) << "expected the preference toggles";
   bool has_appearances = false;
@@ -962,6 +968,23 @@ TEST_F(ScreenshotGenerator, CaptureSettingsDialog) {
   }
   EXPECT_TRUE(has_appearances)
       << "no row offers Classic plus the four appearances";
+
+  // The three things that make this a surface rather than the dialog it
+  // replaced, and that no other capture in the gallery shows.
+  EXPECT_NE(panel->search_field(), nullptr);
+  EXPECT_GT(panel->category_list()->count(), 1)
+      << "the table of contents lists no categories";
+  EXPECT_GT(panel->scope_tabs()->count(), 1)
+      << "expected All plus a tab per storage scope";
+
+  // Backlog 554: `Open Displays Folder` is an action the preferences dialog
+  // had to skip, and the Displays category on this surface is where it landed.
+  // A capture that stopped showing it would be that entry silently reopening.
+  const bool has_displays_action =
+      std::ranges::any_of(panel->visible_rows(), [](const SettingRow& row) {
+        return row.control == SettingControl::kAction;
+      });
+  EXPECT_TRUE(has_displays_action) << "no action row on the surface";
 
   // The Language row must agree with the labels around it. It reads the locale
   // back from QSettings, which the fixture pins; without that pin it fell
@@ -978,9 +1001,9 @@ TEST_F(ScreenshotGenerator, CaptureSettingsDialog) {
       << " - the capture is showing the host machine's locale, so this image "
          "renders differently depending on who generates it";
 
-  QPixmap dialog_pixmap = GrabWhenSettled(&dialog);
-  ASSERT_FALSE(dialog_pixmap.isNull());
-  dialog_pixmap.save(QString::fromStdString((output_dir / kFilename).string()));
+  QPixmap panel_pixmap = GrabWhenSettled(panel);
+  ASSERT_FALSE(panel_pixmap.isNull());
+  panel_pixmap.save(QString::fromStdString((output_dir / kFilename).string()));
 }
 
 // Menu-popup captures (the `auto-menu` manifest tag).

@@ -190,10 +190,11 @@
 #define ID_PAGE_NEW                     34122
 #define ID_OPT_SPEECH                   34123
 #define ID_UNACKNOWLEDGED_ONLY          34124
-// Opens the preferences dialog. Reached from Settings > Settings... and from
-// the activity rail's pinned Settings utility, which share this one command so
-// the two entry points cannot diverge.
-#define ID_SETTINGS_DIALOG              34125
+// Opens the Settings surface. Reached from Settings > Settings... and from the
+// activity rail's pinned Settings utility, which share this one command so the
+// two entry points cannot diverge -- and, because it is a registered command,
+// from the Ctrl-K palette like every other shell command.
+#define ID_SETTINGS                     34125
 // The rest of the rail's page context menu. Page-scoped rather than reusing
 // ID_MOVE_UP / ID_MOVE_DOWN, whose numeric values (127/128) already belong to
 // unrelated item commands.
@@ -201,6 +202,21 @@
 #define ID_PAGE_DUPLICATE               34127
 #define ID_PAGE_MOVE_UP                 34128
 #define ID_PAGE_MOVE_DOWN               34129
+// The three mutually exclusive choices on the Settings surface. They are
+// submenus in the menu vocabulary and combo boxes on the surface, and they
+// carry ids only so `main_window/settings_catalog.cpp` can name them the way it
+// names every other row -- by command id -- rather than by position or by a
+// translated label. Nothing dispatches them: a submenu is opened, never
+// executed.
+#define ID_SETTINGS_LANGUAGE            34130
+#define ID_SETTINGS_STYLE               34131
+#define ID_SETTINGS_APPEARANCE          34132
+// The two Modus display preferences. They were registered with no id at all
+// until the Settings surface needed to name them, which made
+// `BasicCommandRegistry::AddCommand` mint a dynamic one -- fine for a menu that
+// only ever dispatches what it drew, useless as a join key.
+#define ID_MODUS_TOPOLOGY               34133
+#define ID_MODUS_RUNTIME_RENDERER       34134
 #define ID_NEW                          40000
 #define ID_NEW_DISPLAY_0                40100
 #define ID_NEW_REPORT_0                 40200

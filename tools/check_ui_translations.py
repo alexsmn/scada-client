@@ -379,8 +379,25 @@ SOURCE_STRING_TYPES = ("constchar*", "charconst*", "std::string_view")
 # with the reason rather than parking its strings in TABLE_TRANSLATE_GAPS,
 # which is for a string that *should* be translated and is not.
 NON_DISPLAY_STRUCTS = {
-    # Empty. Nothing in the tree has needed it yet: every struct the rule
-    # currently reaches holds strings an operator reads.
+    # The E2E operator-use-case table (app/qt/e2e_test_support.{h,cpp}). Its
+    # `description` is the name of a use case in a test report -- "issue
+    # control commands" -- and reaches no UI; only its *id* is ever shown, and
+    # only in a failure message the developer reads.
+    #
+    # It is here because this rule keys on the field NAME and not on the type,
+    # so the first production table to pass a `description` member to
+    # `Translate()` pulls in every struct in the tree declaring a source-string
+    # field of that name. `settings_catalog.cpp`'s did on 2026-08-28, and this
+    # struct is what came with it. That is the rule working as designed -- a
+    # call site names a member, never a type -- and this list is the seam it
+    # was designed with.
+    #
+    # Name -> reason, which is the shape `check_ui_translations_test.py` pins.
+    # It read as a set while it was empty, because `{}` with nothing but
+    # comments in it is an empty *dict*; the first entry is what settles which
+    # it was meant to be, and an exclusion is worth nothing without its reason.
+    "OperatorUseCaseSmokeCheck":
+        "E2E use-case ids, reported to a developer and never rendered",
 }
 
 

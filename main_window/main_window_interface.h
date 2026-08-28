@@ -40,12 +40,19 @@ class MainWindowInterface {
 
   // Preferences.
 
-  // Opens the preferences dialog. Reached from Settings > Settings... and from
-  // the activity rail's pinned Settings utility, which share this one command
-  // so the two entry points cannot diverge. Defaulted rather than pure so an
-  // implementation with no preferences surface — a test double, or a build
-  // without the Qt UI config — need not override it.
-  virtual void ShowSettingsDialog() {}
+  // Opens the Settings surface over this window. Reached from Settings >
+  // Settings... and from the activity rail's pinned Settings utility, which
+  // share this one command so the two entry points cannot diverge.
+  //
+  // A surface rather than a dialog, and an overlay rather than a workspace tab:
+  // it covers the whole workbench below the status strip — rail, Explorer,
+  // tab strip and the bottom events dock — and closing it puts nothing back,
+  // because it moved nothing. See `settings/qt/settings_panel.h`.
+  //
+  // Defaulted rather than pure so an implementation with no preferences
+  // surface — a test double, or a build without the Qt UI config — need not
+  // override it.
+  virtual void ShowSettings() {}
 
  protected:
   ~MainWindowInterface() = default;

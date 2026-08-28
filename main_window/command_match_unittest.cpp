@@ -24,12 +24,6 @@ std::vector<std::u16string> Titles(const std::vector<CommandEntry>& entries) {
   return titles;
 }
 
-TEST(FoldForSearchTest, LowersAsciiAndCyrillic) {
-  EXPECT_EQ(FoldForSearch(u"Save AS"), u"save as");
-  EXPECT_EQ(FoldForSearch(u"Температура"), u"температура");
-  EXPECT_EQ(FoldForSearch(u"ЁЛКА"), u"ёлка");
-}
-
 TEST(RankCommandMatchesTest, EmptyQueryKeepsAllAlphabetically) {
   std::vector<CommandEntry> ranked = RankCommandMatches(
       Entries({{1, u"Gamma"}, {2, u"alpha"}, {3, u"Beta"}}), u"");

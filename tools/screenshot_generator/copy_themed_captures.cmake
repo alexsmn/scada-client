@@ -3,7 +3,7 @@
 #
 # The dark pass renders into a scratch dir rather than straight over the
 # gallery for one reason: a capture can decline to render under --theme (see
-# CaptureSettingsDialog, which skips by design), and when it does the generator
+# CaptureSettingsPanel, which skips by design), and when it does the generator
 # exits 0 having written nothing. Rendering in place would then leave the
 # legacy PNG from the first pass sitting there, and the manual would ship one
 # light image among the dark ones with no error anywhere — the same class of

@@ -38,6 +38,7 @@ class QPoint;
 class QToolBar;
 class QWidget;
 class ProgressController;
+class SettingsPanel;
 class ViewManager;
 
 class MainWindow final : public QMainWindow, public BaseMainWindow {
@@ -141,15 +142,19 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // way, so none of them can drift from what the menus and the Ctrl-K palette
   // do.
   void ExecuteShellCommand(unsigned command_id);
-  // MainWindowInterface — opens the preferences dialog over this window,
-  // rendering the Settings items the main menu model assembled.
-  void ShowSettingsDialog() override;
 
  public:
-  // The shell's menu model. Exposed for the screenshot generator, which builds
-  // the preferences dialog from the same description the menu item does rather
-  // than re-deriving its contents — a capture that assembled its own form
-  // would document a dialog the client does not ship.
+  // MainWindowInterface — raises the Settings overlay over this window,
+  // creating it on first use. See `SettingsPanel`.
+  //
+  // Public for the screenshot generator, which opens the surface the way the
+  // menu item and the rail utility do rather than constructing a panel of its
+  // own — a capture that assembled its own form would document a surface the
+  // client does not ship.
+  void ShowSettings() override;
+
+  // The shell's menu model. Exposed for the screenshot generator for the same
+  // reason.
   scada::aui::MenuModel* main_menu_model() SCADA_LIFETIME_BOUND {
     return main_menu_model_.get();
   }
@@ -211,6 +216,12 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   std::unique_ptr<scada::aui::MenuModel> main_menu_model_;
 
   std::unique_ptr<ProgressController> progress_controller_;
+
+  // The Settings overlay, created on first use and kept afterwards so reopening
+  // it is instant and so it keeps the operator's search text and scope tab.
+  // Parented to this window and raised over everything below the status strip;
+  // it is never in a layout, so it disturbs nothing it covers.
+  SettingsPanel* settings_panel_ = nullptr;
 
   // Top context bar (opt-in): the command/search field and alarm state. It
   // deliberately carries neither a brand mark nor identity/connection cells —

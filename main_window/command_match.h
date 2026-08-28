@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aui/text_fold.h"
+
 #include <span>
 #include <string>
 #include <vector>
@@ -14,9 +16,9 @@ struct CommandEntry {
   std::u16string detail;
 };
 
-// Case- and script-folds a string for search matching: ASCII A-Z and Cyrillic
-// А-Я/Ё are lowered so a query matches regardless of case.
-std::u16string FoldForSearch(std::u16string_view text);
+// `FoldForSearch` moved to `aui/text_fold.h` when the Settings surface's search
+// box needed the same folding; it is re-exported through this include so the
+// palette's callers and its tests did not have to move with it.
 
 // Returns the entries whose folded title contains the folded `query`, best
 // matches first: titles that start with the query rank above interior matches,

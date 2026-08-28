@@ -43,6 +43,7 @@ scada-client/
 │   ├── opcua_services/
 │   ├── portfolio/          # Portfolio management
 │   ├── print/              # Print and print preview
+│   ├── settings/           # Preferences surface (overlay over the main window)
 │   ├── vidicon/            # Vidicon protocol integration (Qt only)
 │   └── ...                 # (select_item, node_properties, node_table, etc.)
 ├── controller/             # MVC controller layer, view management, command registry
