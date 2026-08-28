@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -111,9 +112,36 @@ class SettingsPanelTest : public ::testing::Test {
 
   // The row widget carrying `id`, or null when the panel is not drawing it.
   // Rows are found by `objectName`, which is the catalogue's stable handle
-  // rather than a translated title.
+  // rather than a translated title. Nullable, for the tests that assert a row
+  // is *absent*.
   QWidget* Row(const SettingsPanel& panel, const QString& id) {
     return panel.findChild<QWidget*>(id);
+  }
+
+  // The row, or a failure. For every test that reads one.
+  //
+  // Dereferencing `Row` directly aborts the whole executable on a miss, and
+  // every test after it then reports nothing at all -- no failure line, no
+  // summary, which reads as if those tests do not exist rather than as if they
+  // failed. That is a different silence from a vacuous pass and a worse one:
+  // an empty catalogue used to take this binary down at the fifth test and
+  // leave the other twenty-four unaccounted for. Throwing gives gtest a
+  // failure it can attribute and lets the suite finish.
+  QWidget& RequireRow(const SettingsPanel& panel, const QString& id) {
+    QWidget* row = Row(panel, id);
+    if (!row)
+      throw std::runtime_error("no settings row " + id.toStdString());
+    return *row;
+  }
+
+  // The row's control, or a failure, for the same reason.
+  template <class Control>
+  Control& RequireControl(const SettingsPanel& panel, const QString& id) {
+    auto* control = RequireRow(panel, id).findChild<Control*>();
+    if (!control)
+      throw std::runtime_error("settings row " + id.toStdString() +
+                               " draws no control of the expected kind");
+    return *control;
   }
 
   std::vector<std::string> VisibleIds(const SettingsPanel& panel) {
@@ -136,14 +164,13 @@ class SettingsPanelTest : public ::testing::Test {
 TEST_F(SettingsPanelTest, EveryRowCarriesATitleAChipADescriptionAndAControl) {
   SettingsPanel panel{nullptr, settings_};
 
-  QWidget* sound = Row(panel, QStringLiteral("sound-on-events"));
-  ASSERT_NE(sound, nullptr);
+  QWidget& sound = RequireRow(panel, QStringLiteral("sound-on-events"));
   // A toggle's title is its checkbox's label.
-  const QList<QCheckBox*> boxes = sound->findChildren<QCheckBox*>();
+  const QList<QCheckBox*> boxes = sound.findChildren<QCheckBox*>();
   ASSERT_EQ(boxes.size(), 1);
   EXPECT_EQ(boxes.front()->text(), QStringLiteral("Sound Alarm on Event"));
 
-  const QList<QLabel*> labels = sound->findChildren<QLabel*>();
+  const QList<QLabel*> labels = sound.findChildren<QLabel*>();
   QStringList texts;
   for (const QLabel* label : labels)
     texts << label->text();
@@ -160,17 +187,15 @@ TEST_F(SettingsPanelTest, AChoiceRowOffersItsSubmenuAndActivatesTheChoice) {
   delegate_.SetChecked(kClassic);
   SettingsPanel panel{nullptr, settings_};
 
-  QWidget* row = Row(panel, QStringLiteral("colour-scheme"));
-  ASSERT_NE(row, nullptr);
-  auto* combo = row->findChild<QComboBox*>();
-  ASSERT_NE(combo, nullptr);
+  QComboBox& combo =
+      RequireControl<QComboBox>(panel, QStringLiteral("colour-scheme"));
   // The separator inside the submenu is not an option, and does not shift what
   // a selection activates.
-  EXPECT_EQ(combo->count(), 2);
-  EXPECT_EQ(combo->currentText(), QStringLiteral("Classic"));
+  EXPECT_EQ(combo.count(), 2);
+  EXPECT_EQ(combo.currentText(), QStringLiteral("Classic"));
 
-  combo->setCurrentIndex(combo->findText(QStringLiteral("Dark")));
-  emit combo->activated(combo->currentIndex());
+  combo.setCurrentIndex(combo.findText(QStringLiteral("Dark")));
+  emit combo.activated(combo.currentIndex());
   EXPECT_EQ(delegate_.executed(), (std::vector<int>{kDark}));
 }
 
@@ -179,13 +204,12 @@ TEST_F(SettingsPanelTest, AChoiceRowOffersItsSubmenuAndActivatesTheChoice) {
 TEST_F(SettingsPanelTest, TogglingARowActivatesItsCommand) {
   SettingsPanel panel{nullptr, settings_};
 
-  auto* box = Row(panel, QStringLiteral("toolbar"))->findChild<QCheckBox*>();
-  ASSERT_NE(box, nullptr);
-  EXPECT_FALSE(box->isChecked());
+  QCheckBox& box = RequireControl<QCheckBox>(panel, QStringLiteral("toolbar"));
+  EXPECT_FALSE(box.isChecked());
 
-  box->click();
+  box.click();
   EXPECT_EQ(delegate_.executed(), (std::vector<int>{ID_VIEW_TOOLBAR}));
-  EXPECT_TRUE(box->isChecked());
+  EXPECT_TRUE(box.isChecked());
 }
 
 // Task 554's other half: the action the preferences dialog had to skip is a
@@ -193,16 +217,15 @@ TEST_F(SettingsPanelTest, TogglingARowActivatesItsCommand) {
 TEST_F(SettingsPanelTest, TheDisplaysActionIsAButtonThatRunsItsCommand) {
   SettingsPanel panel{nullptr, settings_};
 
-  QWidget* row = Row(panel, QStringLiteral("open-displays-folder"));
-  ASSERT_NE(row, nullptr);
-  auto* button = row->findChild<QPushButton*>();
-  ASSERT_NE(button, nullptr);
-  EXPECT_EQ(button->text(), QStringLiteral("Open Displays Folder"));
+  QWidget& row = RequireRow(panel, QStringLiteral("open-displays-folder"));
+  QPushButton& button = RequireControl<QPushButton>(
+      panel, QStringLiteral("open-displays-folder"));
+  EXPECT_EQ(button.text(), QStringLiteral("Open Displays Folder"));
   // Not a checkbox, which is what drawing it as a preference would have made
   // it and why the dialog dropped it instead.
-  EXPECT_TRUE(row->findChildren<QCheckBox*>().isEmpty());
+  EXPECT_TRUE(row.findChildren<QCheckBox*>().isEmpty());
 
-  button->click();
+  button.click();
   EXPECT_EQ(delegate_.executed(), (std::vector<int>{ID_VIEW_PUBLIC_FOLDER}));
 }
 
@@ -323,10 +346,7 @@ TEST_F(SettingsPanelTest, ApplyingASettingLetsTheShellRestateTheInset) {
   ASSERT_EQ(panel->geometry(), QRect(0, 0, 1000, 700 - 24));
 
   strip = 0;
-  auto* box =
-      Row(*panel, QStringLiteral("status-bar"))->findChild<QCheckBox*>();
-  ASSERT_NE(box, nullptr);
-  box->click();
+  RequireControl<QCheckBox>(*panel, QStringLiteral("status-bar")).click();
 
   EXPECT_EQ(delegate_.executed(), (std::vector<int>{ID_VIEW_STATUS_BAR}));
   EXPECT_EQ(panel->geometry(), QRect(0, 0, 1000, 700));
@@ -341,18 +361,17 @@ TEST_F(SettingsPanelTest, EveryKindOfControlReportsThatItApplied) {
   QObject::connect(&panel, &SettingsPanel::SettingApplied, &panel,
                    [&applied] { ++applied; });
 
-  Row(panel, QStringLiteral("toolbar"))->findChild<QCheckBox*>()->click();
+  RequireControl<QCheckBox>(panel, QStringLiteral("toolbar")).click();
   EXPECT_EQ(applied, 1);
 
-  Row(panel, QStringLiteral("open-displays-folder"))
-      ->findChild<QPushButton*>()
-      ->click();
+  RequireControl<QPushButton>(panel, QStringLiteral("open-displays-folder"))
+      .click();
   EXPECT_EQ(applied, 2);
 
-  auto* combo =
-      Row(panel, QStringLiteral("colour-scheme"))->findChild<QComboBox*>();
-  combo->setCurrentIndex(combo->findText(QStringLiteral("Dark")));
-  emit combo->activated(combo->currentIndex());
+  QComboBox& combo =
+      RequireControl<QComboBox>(panel, QStringLiteral("colour-scheme"));
+  combo.setCurrentIndex(combo.findText(QStringLiteral("Dark")));
+  emit combo.activated(combo.currentIndex());
   EXPECT_EQ(applied, 3);
 }
 
@@ -368,8 +387,7 @@ TEST_F(SettingsPanelTest, AChoiceRebuildsBeforeItReportsThatItApplied) {
   SettingsPanel panel{nullptr, settings_};
 
   QPointer<QComboBox> clicked =
-      Row(panel, QStringLiteral("colour-scheme"))->findChild<QComboBox*>();
-  ASSERT_FALSE(clicked.isNull());
+      &RequireControl<QComboBox>(panel, QStringLiteral("colour-scheme"));
 
   // The observation has to be one that can ONLY be true after the rebuild.
   // Reading the combo's text is not: the test sets the index before emitting
@@ -407,15 +425,14 @@ TEST_F(SettingsPanelTest, ActivatingAChoiceTwiceUsesTheRebuiltControl) {
   SettingsPanel panel{nullptr, settings_};
 
   auto activate = [this, &panel](const QString& option) {
-    auto* combo =
-        Row(panel, QStringLiteral("colour-scheme"))->findChild<QComboBox*>();
-    ASSERT_NE(combo, nullptr);
-    combo->setCurrentIndex(combo->findText(option));
-    emit combo->activated(combo->currentIndex());
+    QComboBox& combo =
+        RequireControl<QComboBox>(panel, QStringLiteral("colour-scheme"));
+    combo.setCurrentIndex(combo.findText(option));
+    emit combo.activated(combo.currentIndex());
   };
 
   QPointer<QComboBox> first =
-      Row(panel, QStringLiteral("colour-scheme"))->findChild<QComboBox*>();
+      &RequireControl<QComboBox>(panel, QStringLiteral("colour-scheme"));
   activate(QStringLiteral("Dark"));
   // The control that was clicked is gone, replaced by one built from the model
   // as it now reads.
@@ -423,9 +440,8 @@ TEST_F(SettingsPanelTest, ActivatingAChoiceTwiceUsesTheRebuiltControl) {
 
   activate(QStringLiteral("Classic"));
   EXPECT_EQ(delegate_.executed(), (std::vector<int>{kDark, kClassic}));
-  EXPECT_EQ(Row(panel, QStringLiteral("colour-scheme"))
-                ->findChild<QComboBox*>()
-                ->currentText(),
+  EXPECT_EQ(RequireControl<QComboBox>(panel, QStringLiteral("colour-scheme"))
+                .currentText(),
             QStringLiteral("Classic"));
 }
 
@@ -438,11 +454,11 @@ TEST_F(SettingsPanelTest, RestatingTheInsetDisturbsNothingElse) {
   auto* panel = new SettingsPanel{&host, settings_};
   panel->Open(24);
 
-  QWidget* before = Row(*panel, QStringLiteral("toolbar"));
-  // Without this the last assertion compares null to null and passes for a
-  // panel that drew no rows at all -- the setup silently not happening, which
-  // is the one thing an equality between two lookups cannot report.
-  ASSERT_NE(before, nullptr);
+  // `RequireRow` rather than `Row`: the last assertion compares the two
+  // lookups, and null equals null, so it would pass for a panel that drew no
+  // rows at all -- the setup silently not happening, which is the one thing an
+  // equality between two lookups cannot report.
+  QWidget* before = &RequireRow(*panel, QStringLiteral("toolbar"));
   panel->search_field()->clearFocus();
 
   panel->SetBottomInset(40);
@@ -473,11 +489,10 @@ TEST_F(SettingsPanelTest, ADisabledCommandExplainsItself) {
   delegate_.Disable(ID_EVENT_PLAY_SOUND);
   SettingsPanel panel{nullptr, settings_};
 
-  auto* box =
-      Row(panel, QStringLiteral("sound-on-events"))->findChild<QCheckBox*>();
-  ASSERT_NE(box, nullptr);
-  EXPECT_FALSE(box->isEnabled());
-  EXPECT_EQ(box->toolTip(), QStringLiteral("no reason to enable it"));
+  QCheckBox& box =
+      RequireControl<QCheckBox>(panel, QStringLiteral("sound-on-events"));
+  EXPECT_FALSE(box.isEnabled());
+  EXPECT_EQ(box.toolTip(), QStringLiteral("no reason to enable it"));
 }
 
 }  // namespace

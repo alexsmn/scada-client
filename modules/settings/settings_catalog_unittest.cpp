@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <map>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -112,10 +113,26 @@ class SettingsMenuFixture : public ::testing::Test {
 
   std::vector<SettingRow> Catalog() { return BuildSettingsCatalog(settings_); }
 
+  // Nullable, for the tests that assert a row is *absent*.
   const SettingRow* Find(const std::vector<SettingRow>& rows,
                          std::string_view id) {
     auto i = std::ranges::find(rows, id, &SettingRow::id);
     return i == rows.end() ? nullptr : &*i;
+  }
+
+  // For the tests that read a row. Dereferencing `Find` directly would abort
+  // the whole executable on a miss, and every test after it would report
+  // nothing at all -- no failure line, no summary, which reads as if those
+  // tests do not exist rather than as if they failed. That is a different
+  // silence from a vacuous pass and a worse one, and it is what an empty
+  // catalogue used to produce here. Throwing instead gives gtest a failure it
+  // can attribute and lets the rest of the suite run.
+  const SettingRow& Require(const std::vector<SettingRow>& rows,
+                            std::string_view id) {
+    const SettingRow* row = Find(rows, id);
+    if (!row)
+      throw std::runtime_error("no catalogue row " + std::string{id});
+    return *row;
   }
 
   std::vector<std::string> Ids(const std::vector<SettingRow>& rows) {
@@ -168,10 +185,8 @@ TEST_F(SettingsMenuFixture, RowsAreInScreenOrderNotMenuOrder) {
 // different things about the same preference.
 TEST_F(SettingsMenuFixture, TitlesComeFromTheMenuRatherThanTheCatalog) {
   const std::vector<SettingRow> rows = Catalog();
-  ASSERT_NE(Find(rows, "flash-window"), nullptr);
-  EXPECT_EQ(Find(rows, "flash-window")->title, u"Flash Main Window on Event");
-  ASSERT_NE(Find(rows, "colour-scheme"), nullptr);
-  EXPECT_EQ(Find(rows, "colour-scheme")->title, u"Colour scheme");
+  EXPECT_EQ(Require(rows, "flash-window").title, u"Flash Main Window on Event");
+  EXPECT_EQ(Require(rows, "colour-scheme").title, u"Colour scheme");
 }
 
 // Every row carries a sentence. A preference whose effect cannot be stated is
@@ -192,11 +207,11 @@ TEST_F(SettingsMenuFixture, EveryRowCarriesADescription) {
 // the event options follow the account, and the window chrome is per window.
 TEST_F(SettingsMenuFixture, ScopesMatchWhereTheValueIsActuallyStored) {
   const std::vector<SettingRow> rows = Catalog();
-  EXPECT_EQ(Find(rows, "widget-style")->scope, SettingScope::kClient);
-  EXPECT_EQ(Find(rows, "sound-on-events")->scope, SettingScope::kProfile);
-  EXPECT_EQ(Find(rows, "toolbar")->scope, SettingScope::kWindow);
-  EXPECT_EQ(Find(rows, "status-bar")->scope, SettingScope::kWindow);
-  EXPECT_EQ(Find(rows, "open-displays-folder")->scope, SettingScope::kAction);
+  EXPECT_EQ(Require(rows, "widget-style").scope, SettingScope::kClient);
+  EXPECT_EQ(Require(rows, "sound-on-events").scope, SettingScope::kProfile);
+  EXPECT_EQ(Require(rows, "toolbar").scope, SettingScope::kWindow);
+  EXPECT_EQ(Require(rows, "status-bar").scope, SettingScope::kWindow);
+  EXPECT_EQ(Require(rows, "open-displays-folder").scope, SettingScope::kAction);
 }
 
 // Task 554's other half. `Open Displays Folder` is a command, which the
@@ -205,13 +220,12 @@ TEST_F(SettingsMenuFixture, ScopesMatchWhereTheValueIsActuallyStored) {
 // belongs to.
 TEST_F(SettingsMenuFixture, TheDisplaysActionHasAPlace) {
   const std::vector<SettingRow> rows = Catalog();
-  const SettingRow* action = Find(rows, "open-displays-folder");
-  ASSERT_NE(action, nullptr);
-  EXPECT_EQ(action->category, SettingCategory::kDisplays);
-  EXPECT_EQ(action->control, SettingControl::kAction);
+  const SettingRow& action = Require(rows, "open-displays-folder");
+  EXPECT_EQ(action.category, SettingCategory::kDisplays);
+  EXPECT_EQ(action.control, SettingControl::kAction);
 
   // And activating it runs the command rather than toggling anything.
-  action->model->ActivatedAt(action->index);
+  action.model->ActivatedAt(action.index);
   EXPECT_EQ(delegate_.executed(), (std::vector<int>{ID_VIEW_PUBLIC_FOLDER}));
 }
 
