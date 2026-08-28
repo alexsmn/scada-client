@@ -177,7 +177,13 @@ TEST_F(SettingsMenuFixture, TitlesComeFromTheMenuRatherThanTheCatalog) {
 // Every row carries a sentence. A preference whose effect cannot be stated is
 // one the operator cannot make a decision about.
 TEST_F(SettingsMenuFixture, EveryRowCarriesADescription) {
-  for (const SettingRow& row : Catalog())
+  const std::vector<SettingRow> rows = Catalog();
+  // A per-row assertion in a loop reports nothing when there are no rows, so
+  // this test would be green against a catalogue that came back empty -- the
+  // failure it is least able to notice and the one that would matter most.
+  ASSERT_EQ(rows.size(), SettingsCatalogCommandIds().size());
+
+  for (const SettingRow& row : rows)
     EXPECT_FALSE(row.description.empty()) << row.id;
 }
 
@@ -224,6 +230,9 @@ TEST_F(SettingsMenuFixture, ACommandTheShellDoesNotPublishHasNoRow) {
 // contribution stays hidden rather than becoming a control the shell refuses.
 TEST_F(SettingsMenuFixture, AHiddenItemDrawsNoRow) {
   delegate_.Hide(ID_EVENT_FLASH_WINDOW);
+  // Falsifiable because `TitlesComeFromTheMenuRatherThanTheCatalog` asserts the
+  // same `Find` call on the same id is non-null with the row visible: a lookup
+  // that could never find anything would fail there rather than passing here.
   EXPECT_EQ(Find(Catalog(), "flash-window"), nullptr);
 }
 

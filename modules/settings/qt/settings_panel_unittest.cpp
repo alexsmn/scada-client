@@ -439,6 +439,10 @@ TEST_F(SettingsPanelTest, RestatingTheInsetDisturbsNothingElse) {
   panel->Open(24);
 
   QWidget* before = Row(*panel, QStringLiteral("toolbar"));
+  // Without this the last assertion compares null to null and passes for a
+  // panel that drew no rows at all -- the setup silently not happening, which
+  // is the one thing an equality between two lookups cannot report.
+  ASSERT_NE(before, nullptr);
   panel->search_field()->clearFocus();
 
   panel->SetBottomInset(40);
