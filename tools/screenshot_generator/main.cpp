@@ -1022,6 +1022,17 @@ TEST_F(ScreenshotGenerator, CaptureSettingsPanel) {
   // perfectly, so nothing about the image looks wrong (`capture.mjs` in the web
   // generator says the same thing about its own empty states, and backlog 583
   // is the Qt instance).
+  // What was measured, and what follows rather than being measured: with the
+  // catalogue emptied, `client_screenshot_check` fails and writes no
+  // `settings-dialog.png` into the build directory it is given. That the
+  // *tracked gallery* is likewise protected follows from `--out` being a
+  // parameter -- the check passes a build path, `regenerate_client_screenshots`
+  // passes `client/screenshots` -- and not from a run, because running
+  // regeneration to find out would rewrite ~68 tracked PNGs as macOS renders in
+  // a checkout other sessions are working in. Stated this way because the
+  // commit that added the guard said "the tracked gallery was untouched
+  // throughout", which was true of a run that could not have touched it either
+  // way and so evidenced nothing.
   ASSERT_FALSE(HasFailure())
       << "refusing to write " << kFilename
       << ": the surface failed its content checks above, and an image of it "
