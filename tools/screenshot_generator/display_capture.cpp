@@ -1,4 +1,5 @@
 #include "display_capture.h"
+#include "publish_guard.h"
 
 #include "screenshot_config.h"
 #include "screenshot_output.h"
@@ -62,6 +63,8 @@ void SaveDisplayScreenshot(const ScreenshotSpec& spec,
                            TimedDataService& timed_data_service,
                            NodeEventProvider& node_event_provider,
                            NodeService& node_service) {
+  CapturePublishGuard publish_guard{spec.filename};
+
   // The VDS runtime dylib is loaded from the client install dir. The generator
   // never sets base::DIR_EXE, so point client::DIR_INSTALL at the binary dir
   // (where the dylib is co-located) so the renderer resolves it and paints the
@@ -122,5 +125,8 @@ void SaveDisplayScreenshot(const ScreenshotSpec& spec,
 
   QPixmap pixmap = GrabWhenSettled(frame);
   auto output_path = GetOutputDir() / spec.filename;
+  if (!publish_guard.ShouldPublish())
+    return;
+
   pixmap.save(QString::fromStdString(output_path.string()));
 }

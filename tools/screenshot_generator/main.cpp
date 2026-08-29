@@ -21,6 +21,7 @@
 #include "transmission_rule_capture.h"
 #include "user_access_capture.h"
 #include "view_capture.h"
+#include "publish_guard.h"
 #include "widget_capture.h"
 
 #include "app/client_application.h"
@@ -524,6 +525,7 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
   auto output_dir = GetOutputDir();
   std::filesystem::create_directories(output_dir);
   const auto output_image = output_dir / filename;
+  CapturePublishGuard publish_guard{filename};
 
   {
     Profile profile;
@@ -728,6 +730,11 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
   for (int i = 0; i < 10; ++i)
     QApplication::processEvents();
 
+  if (!publish_guard.ShouldPublish()) {
+    MainWindow::SetHideForTesting(true);
+    return;
+  }
+
   QPixmap pixmap = GrabWhenSettled(qmain);
   pixmap.save(QString::fromStdString(output_image.string()));
 
@@ -751,6 +758,7 @@ TEST_F(ScreenshotGenerator, CaptureOverviewPage) {
   auto output_dir = GetOutputDir();
   std::filesystem::create_directories(output_dir);
   const auto output_image = output_dir / filename;
+  CapturePublishGuard publish_guard{filename};
 
   // Deliberately no saved profile: the page-less boot is the state under test.
   WaitForAwaitable(executor_, app_.Start());
@@ -808,6 +816,11 @@ TEST_F(ScreenshotGenerator, CaptureOverviewPage) {
   qmain->show();
   scada::screenshot_generator::PumpEventLoopFor(std::chrono::milliseconds(500));
 
+  if (!publish_guard.ShouldPublish()) {
+    MainWindow::SetHideForTesting(true);
+    return;
+  }
+
   QPixmap pixmap = GrabWhenSettled(qmain);
   pixmap.save(QString::fromStdString(output_image.string()));
 
@@ -830,6 +843,7 @@ TEST_F(ScreenshotGenerator, CaptureActivityRail) {
 
   auto output_dir = GetOutputDir();
   std::filesystem::create_directories(output_dir);
+  CapturePublishGuard publish_guard{kFilename};
 
   {
     Profile profile;
@@ -870,6 +884,9 @@ TEST_F(ScreenshotGenerator, CaptureActivityRail) {
   EXPECT_GE(buttons.size(), 3 + 3 + 1 + 1)
       << "expected pane modes, three pages, the '+' and at least one utility";
 
+  if (!publish_guard.ShouldPublish())
+    return;
+
   const QPixmap frame = GrabWhenSettled(rail);
   ASSERT_FALSE(frame.isNull());
   ASSERT_TRUE(
@@ -904,6 +921,7 @@ TEST_F(ScreenshotGenerator, CaptureSettingsPanel) {
 
   const auto output_dir = GetOutputDir();
   std::filesystem::create_directories(output_dir);
+  CapturePublishGuard publish_guard{kFilename};
 
   WaitForAwaitable(executor_, app_.Start());
   ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
@@ -1033,10 +1051,8 @@ TEST_F(ScreenshotGenerator, CaptureSettingsPanel) {
   // commit that added the guard said "the tracked gallery was untouched
   // throughout", which was true of a run that could not have touched it either
   // way and so evidenced nothing.
-  ASSERT_FALSE(HasFailure())
-      << "refusing to write " << kFilename
-      << ": the surface failed its content checks above, and an image of it "
-         "would document a Settings page the client does not ship";
+  if (!publish_guard.ShouldPublish())
+    return;
 
   QPixmap panel_pixmap = GrabWhenSettled(panel);
   ASSERT_FALSE(panel_pixmap.isNull());
@@ -1098,7 +1114,9 @@ int CountMenuRows(const QMenu& menu) {
 
 // Lays the populated menu out at its natural size and writes it to
 // `GetOutputDir() / filename`.
-void SaveMenuCapture(QMenu* menu, const char* filename) {
+void SaveMenuCapture(QMenu* menu,
+                     const char* filename,
+                     const CapturePublishGuard& publish_guard) {
   menu->ensurePolished();
   menu->adjustSize();
   for (int i = 0; i < 10; ++i)
@@ -1106,6 +1124,10 @@ void SaveMenuCapture(QMenu* menu, const char* filename) {
 
   const auto output_dir = GetOutputDir();
   std::filesystem::create_directories(output_dir);
+
+  if (!publish_guard.ShouldPublish())
+    return;
+
   const QPixmap pixmap = GrabWhenSettled(menu);
   ASSERT_FALSE(pixmap.isNull()) << filename << " grabbed an empty pixmap";
   ASSERT_TRUE(
@@ -1141,6 +1163,7 @@ TEST_F(ScreenshotGenerator, CaptureMoreMenu) {
 
   WaitForAwaitable(executor_, app_.Start());
   ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
+  CapturePublishGuard publish_guard{kFilename};
 
   QMainWindow* qmain = ShowMainWindowForMenuCapture(app_);
   ASSERT_NE(qmain, nullptr);
@@ -1167,7 +1190,7 @@ TEST_F(ScreenshotGenerator, CaptureMoreMenu) {
          "administrator identity the manual's image depicts";
   EXPECT_GT(checkable_rows, 0) << "no checkable view rows above the export row";
 
-  SaveMenuCapture(menu, kFilename);
+  SaveMenuCapture(menu, kFilename, publish_guard);
 }
 
 // The Summary view's Function dropdown: the seven aggregate functions, one of
@@ -1241,6 +1264,8 @@ TEST_F(ScreenshotGenerator, CaptureSummaryFunctionMenu) {
   for (int i = 0; i < 10; ++i)
     QApplication::processEvents();
 
+  CapturePublishGuard publish_guard{kFilename};
+
   // Seven aggregate functions: First, Last, Count, Minimum, Maximum, Sum,
   // Average (see RegisterSummaryCommandActions). A row that stopped being
   // checkable, or a menu that resolved no checked row, would still render.
@@ -1264,7 +1289,7 @@ TEST_F(ScreenshotGenerator, CaptureSummaryFunctionMenu) {
   EXPECT_EQ(checked_rows, 1)
       << "expected exactly one aggregate function to read as selected";
 
-  SaveMenuCapture(menu, kFilename);
+  SaveMenuCapture(menu, kFilename, publish_guard);
 }
 
 // A control review is worth capturing only if it reviews a change. The

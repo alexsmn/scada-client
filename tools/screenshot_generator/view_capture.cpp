@@ -1,6 +1,7 @@
 #include "view_capture.h"
 
 #include "graph_capture.h"
+#include "publish_guard.h"
 #include "screenshot_wait.h"
 #include "widget_capture.h"
 
@@ -113,6 +114,11 @@ scada::aui::Tree* FindTreeWidget(QWidget* widget) {
 bool CaptureViewSpec(const ScreenshotSpec& spec,
                      const ViewCaptureContext& context,
                      std::set<const OpenedView*>& used_views) {
+  // Built first, so it precedes every row/column/fill assertion below. This
+  // is the whole sweep's guard: CaptureAllWindows renders dozens of specs
+  // inside one TEST_F, and each spec's content checks live here.
+  CapturePublishGuard publish_guard{spec.filename};
+
   // A sidebar pane is only on screen while its activity-rail mode is
   // selected — the rail is authoritative over the left dock (see
   // main_window/pane_modes.h). Select the owning mode first, exactly as an
@@ -315,6 +321,9 @@ bool CaptureViewSpec(const ScreenshotSpec& spec,
                     << spec.window_type;
     }
   }
+
+  if (!publish_guard.ShouldPublish())
+    return false;
 
   if (spec.window_type == "Graph") {
     // Render graph standalone — hidden main windows don't lay out

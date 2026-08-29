@@ -25,6 +25,8 @@ add_executable(client_screenshot_generator
   "screenshot_modules.h"
   "widget_capture.cpp"
   "widget_capture.h"
+  "publish_guard.cpp"
+  "publish_guard.h"
   "view_capture.cpp"
   "view_capture.h"
   "graph_capture.cpp"
@@ -161,11 +163,13 @@ endif()
 # target in step when adding another.
 #
 # Deliberately linked against `base_unittest` alone (gtest plus its main) and
-# nothing Qt: what it covers is the settle loop's budget arithmetic, which is
-# Qt-free on purpose so it can be tested without a widget, an event loop, or a
-# machine that happens to be idle.
+# nothing Qt: what it covers is the settle loop's budget arithmetic and the
+# publish guard's failure-count scoping, both Qt-free on purpose so they can be
+# tested without a widget, an event loop, or a machine that happens to be idle.
 add_executable(client_screenshot_generator_unittests
   "settle_loop_unittest.cpp"
+  "publish_guard.cpp"
+  "publish_guard_unittest.cpp"
 )
 
 target_link_libraries(client_screenshot_generator_unittests PRIVATE

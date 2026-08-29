@@ -1,4 +1,5 @@
 #include "user_access_capture.h"
+#include "publish_guard.h"
 
 #include "screenshot_config.h"
 #include "screenshot_wait.h"
@@ -43,6 +44,8 @@ void SaveUsersGridScreenshot(const ScreenshotSpec& spec,
                              NodeService& node_service,
                              scada::AttributeService& attribute_service,
                              AnyExecutor executor) {
+  CapturePublishGuard publish_guard{spec.filename};
+
   std::unique_ptr<UsersGridPanel> panel{MakeUsersGridPanel()};
   if (!panel) {
     ADD_FAILURE() << spec.filename
@@ -61,6 +64,9 @@ void SaveUsersGridScreenshot(const ScreenshotSpec& spec,
                   << ": the users grid could not be read at all";
   }
 
+  if (!publish_guard.ShouldPublish())
+    return;
+
   SaveScreenshot(panel.get(), spec);
 }
 
@@ -68,6 +74,8 @@ void SaveRolesScreenshot(const ScreenshotSpec& spec,
                          NodeService& node_service,
                          scada::AttributeService& attribute_service,
                          AnyExecutor executor) {
+  CapturePublishGuard publish_guard{spec.filename};
+
   // The panel is reshell chrome and does not exist in the legacy look, so a
   // no-theme run has nothing to render rather than something to fix.
   std::unique_ptr<RolesGridPanel> panel{MakeRolesGridPanel()};

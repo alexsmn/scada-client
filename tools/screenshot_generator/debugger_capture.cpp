@@ -1,4 +1,5 @@
 #include "debugger_capture.h"
+#include "publish_guard.h"
 
 #include "screenshot_config.h"
 #include "widget_capture.h"
@@ -108,6 +109,8 @@ QWidget* FindDebuggerWindow() {
 }  // namespace
 
 void SaveDebuggerScreenshot(const ScreenshotSpec& spec) {
+  CapturePublishGuard publish_guard{spec.filename};
+
   FixtureSessionDebugger session_debugger;
   ::testing::NiceMock<scada::MockSessionService> session_service;
   ON_CALL(session_service, GetSessionDebugger())
@@ -137,6 +140,9 @@ void SaveDebuggerScreenshot(const ScreenshotSpec& spec) {
     else
       ADD_FAILURE() << "no aui::Table in the debugger window to select";
   }
+
+  if (!publish_guard.ShouldPublish())
+    return;
 
   SaveScreenshot(window, spec);
 

@@ -1,4 +1,6 @@
 #include "graph_capture.h"
+
+#include "publish_guard.h"
 #include "base/time/time_wire_codec.h"
 
 #include "fixture_builder.h"
@@ -250,6 +252,8 @@ void SaveGraphScreenshot(const ScreenshotSpec& spec,
                          NodeService& node_service,
                          TimedDataService& timed_data_service,
                          const boost::json::value& json) {
+  CapturePublishGuard publish_guard{spec.filename};
+
   const boost::json::object& jgraph = ResolveGraphConfig(spec, json);
 
   // Held until after the grab so the nodes stay resident (see the function).
@@ -296,6 +300,9 @@ void SaveGraphScreenshot(const ScreenshotSpec& spec,
 
   QPixmap pixmap = graph.grab();
   auto output_path = GetOutputDir() / spec.filename;
+  if (!publish_guard.ShouldPublish())
+    return;
+
   pixmap.save(QString::fromStdString(output_path.string()));
 }
 

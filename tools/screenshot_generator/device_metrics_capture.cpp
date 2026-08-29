@@ -1,4 +1,5 @@
 #include "device_metrics_capture.h"
+#include "publish_guard.h"
 
 #include "screenshot_config.h"
 #include "screenshot_wait.h"
@@ -24,6 +25,8 @@ void SaveDeviceMetricsScreenshot(const ScreenshotSpec& spec,
                                  NodeService& node_service,
                                  TimedDataService& timed_data_service,
                                  AnyExecutor executor) {
+  CapturePublishGuard publish_guard{spec.filename};
+
   const scada::NodeId device_id = NodeIdFromScadaString(spec.path);
   if (device_id.is_null()) {
     ADD_FAILURE() << spec.filename << ": no device path in the spec";
@@ -95,6 +98,9 @@ void SaveDeviceMetricsScreenshot(const ScreenshotSpec& spec,
   EXPECT_TRUE(scada::screenshot_generator::WaitForPendingData(
       node_service, timed_data_service))
       << spec.filename;
+
+  if (!publish_guard.ShouldPublish())
+    return;
 
   SaveScreenshot(view->view(), spec);
 }

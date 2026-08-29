@@ -1,6 +1,7 @@
 #include "dialog_capture.h"
 
 #include "null_task_manager.h"
+#include "publish_guard.h"
 #include "screenshot_config.h"
 #include "screenshot_output.h"
 #include "screenshot_wait.h"
@@ -267,7 +268,12 @@ bool GrabAndCloseVisibleDialog(const DialogSpec& spec) {
   return true;
 }
 
-bool GrabAndCloseVisibleDialogOrReport(const DialogSpec& spec) {
+bool GrabAndCloseVisibleDialogOrReport(const DialogSpec& spec,
+                                       const CapturePublishGuard& guard) {
+  // Checked here rather than at each of the twelve per-kind branches: this is
+  // the one funnel every dialog capture passes through on its way to a save.
+  if (!guard.ShouldPublish())
+    return false;
   if (GrabAndCloseVisibleDialog(spec))
     return true;
   std::ostringstream widgets;
@@ -634,6 +640,12 @@ void RegisterSampleCommands(CommandManager& manager) {
 }  // namespace
 
 bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
+  // Built before the per-kind setup below, so it precedes every assertion
+  // those branches make. One guard per dialog, not per sweep: CaptureDialogs
+  // runs this for every spec in the fixture, and a test-wide check would let
+  // the first bad dialog suppress the rest of the gallery.
+  CapturePublishGuard publish_guard{spec.filename};
+
   // Everything below grabs a QDialog out of `QApplication::topLevelWidgets()`
   // and closes it with `reject()`, so a dialog that the platform theme takes
   // over is both uncapturable and undismissable. The fixture pins
@@ -661,7 +673,7 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
 
   if (spec.kind == "login") {
     auto dialog_lifetime = BuildLoginDialog(env, transport_factory, logger);
-    bool captured = GrabAndCloseVisibleDialogOrReport(spec);
+    bool captured = GrabAndCloseVisibleDialogOrReport(spec, publish_guard);
     // Wait for the dialog coroutine to finish (reject() resolves it and the
     // dialog deleteLater's itself) before the per-call stubs above go out of
     // scope.
@@ -672,7 +684,7 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
         BuildLimitsDialog(env, dialog_node_id, task_manager, dialog_service);
     if (!dialog_lifetime)
       return false;
-    bool captured = GrabAndCloseVisibleDialogOrReport(spec);
+    bool captured = GrabAndCloseVisibleDialogOrReport(spec, publish_guard);
     WaitForDialogCompletion(dialog_lifetime);
     return captured;
   } else if (spec.kind == "write-manual") {
@@ -680,7 +692,7 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
         BuildWriteDialog(env, dialog_node_id, dialog_service, /*manual=*/true);
     if (!dialog_lifetime)
       return false;
-    bool captured = GrabAndCloseVisibleDialogOrReport(spec);
+    bool captured = GrabAndCloseVisibleDialogOrReport(spec, publish_guard);
     WaitForDialogCompletion(dialog_lifetime);
     return captured;
   } else if (spec.kind == "write-remote") {
@@ -688,7 +700,7 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
         BuildWriteDialog(env, dialog_node_id, dialog_service, /*manual=*/false);
     if (!dialog_lifetime)
       return false;
-    bool captured = GrabAndCloseVisibleDialogOrReport(spec);
+    bool captured = GrabAndCloseVisibleDialogOrReport(spec, publish_guard);
     WaitForDialogCompletion(dialog_lifetime);
     return captured;
   } else if (spec.kind == "control-confirm") {
@@ -697,7 +709,7 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
                                  spec.second_stage, spec.command_value);
     if (!dialog_lifetime)
       return false;
-    bool captured = GrabAndCloseVisibleDialogOrReport(spec);
+    bool captured = GrabAndCloseVisibleDialogOrReport(spec, publish_guard);
     WaitForDialogCompletion(dialog_lifetime);
     return captured;
   } else if (spec.kind == "command-palette") {
@@ -712,13 +724,13 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
     palette->setAttribute(Qt::WA_DeleteOnClose);
     palette->show();
     QApplication::processEvents();
-    return GrabAndCloseVisibleDialogOrReport(spec);
+    return GrabAndCloseVisibleDialogOrReport(spec, publish_guard);
   } else if (spec.kind == "about") {
     // Eagerly-shown self-owned modal; the generic grab rejects it and the
     // dialog deleteLater's itself.
     ShowAboutDialog(dialog_service);
     QApplication::processEvents();
-    return GrabAndCloseVisibleDialogOrReport(spec);
+    return GrabAndCloseVisibleDialogOrReport(spec, publish_guard);
   } else if (spec.kind == "change-password") {
     // Set Password for the fixture administrator (USER.5, the same user the
     // users-rbac capture shows). LocalEvents only collects the (never-fired)
@@ -740,7 +752,7 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
                               .local_events_ = local_events,
                               .profile_ = *env.profile});
     QApplication::processEvents();
-    return GrabAndCloseVisibleDialogOrReport(spec);
+    return GrabAndCloseVisibleDialogOrReport(spec, publish_guard);
   } else if (spec.kind == "time-range") {
     // The journal/graph period picker over its default (interval) range; the
     // date edits render the frozen fixture clock, so output is deterministic.
@@ -755,7 +767,7 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
             TimeRangeContext{.profile_ = *env.profile,
                              .time_range_ = scada::RelativeTimeRange{},
                              .time_required_ = false}));
-    bool captured = GrabAndCloseVisibleDialogOrReport(spec);
+    bool captured = GrabAndCloseVisibleDialogOrReport(spec, publish_guard);
     WaitForDialogCompletion(dialog_lifetime);
     return captured;
   } else if (spec.kind == "message-box") {
@@ -766,7 +778,7 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
         env.executor, dialog_service.RunMessageBox(
                           Translate("Apply changes?"), Translate("Import"),
                           MessageBoxMode::QuestionYesNo));
-    bool captured = GrabAndCloseVisibleDialogOrReport(spec);
+    bool captured = GrabAndCloseVisibleDialogOrReport(spec, publish_guard);
     WaitForDialogCompletion(dialog_lifetime);
     return captured;
   } else if (spec.kind == "multi-create") {
@@ -785,7 +797,7 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
                           MultiCreateContext{*env.node_service, task_manager,
                                              scada::data_items::id::DataItems});
     QApplication::processEvents();
-    return GrabAndCloseVisibleDialogOrReport(spec);
+    return GrabAndCloseVisibleDialogOrReport(spec, publish_guard);
   } else if (spec.kind == "create-service-item") {
     // Service-object creation under the DataItems root - the modal the object
     // tree opens as «Создание сервисных объектов». The device combo fills from
@@ -865,7 +877,7 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
 
     if (!ReportIfDialogListEmpty(spec))
       return false;
-    return GrabAndCloseVisibleDialogOrReport(spec);
+    return GrabAndCloseVisibleDialogOrReport(spec, publish_guard);
   } else {
     ADD_FAILURE() << "Unknown dialog kind: " << spec.kind;
     return false;
