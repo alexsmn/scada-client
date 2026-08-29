@@ -1,9 +1,9 @@
 #include "graph_capture.h"
 
-#include "publish_guard.h"
 #include "base/time/time_wire_codec.h"
 
 #include "fixture_builder.h"
+#include "publish_guard.h"
 #include "screenshot_config.h"
 #include "screenshot_output.h"
 #include "screenshot_wait.h"

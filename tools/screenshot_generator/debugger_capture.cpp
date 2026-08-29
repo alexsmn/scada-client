@@ -1,6 +1,6 @@
 #include "debugger_capture.h"
-#include "publish_guard.h"
 
+#include "publish_guard.h"
 #include "screenshot_config.h"
 #include "widget_capture.h"
 

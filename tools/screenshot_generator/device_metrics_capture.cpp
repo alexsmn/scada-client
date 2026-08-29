@@ -1,6 +1,6 @@
 #include "device_metrics_capture.h"
-#include "publish_guard.h"
 
+#include "publish_guard.h"
 #include "screenshot_config.h"
 #include "screenshot_wait.h"
 #include "widget_capture.h"

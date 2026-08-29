@@ -11,6 +11,7 @@
 #include "graph_capture.h"
 #include "inspector_capture.h"
 #include "null_task_manager.h"
+#include "publish_guard.h"
 #include "screenshot_config.h"
 #include "screenshot_fixture.h"
 #include "screenshot_modules.h"
@@ -21,7 +22,6 @@
 #include "transmission_rule_capture.h"
 #include "user_access_capture.h"
 #include "view_capture.h"
-#include "publish_guard.h"
 #include "widget_capture.h"
 
 #include "app/client_application.h"
