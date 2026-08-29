@@ -24,6 +24,18 @@ class Tree : public QTreeView {
   explicit Tree(std::shared_ptr<TreeModel> model);
   ~Tree();
 
+  // Shows or hides the row for the model's single top-level node.
+  //
+  // Hidden (the default) makes that node the view's root: its children become
+  // the top level and no row is drawn for the node itself. That is what an
+  // Explorer pane whose whole subject is one subtree wants — the pane already
+  // names the node, so its row says the same thing a second time, and the
+  // screen mockups draw such a tree with no root row at all
+  // (docs/product/ui-mockups/screens/config-workbench.html starts the hardware
+  // tree at the device groups under a `Hardware` pane head).
+  //
+  // The cost is that the node stops being a clickable row, so a view that
+  // hides it must keep its commands reachable some other way.
   void SetRootVisible(bool visible);
   void SetHeaderVisible(bool visible);
 
@@ -94,6 +106,10 @@ class Tree : public QTreeView {
  private:
   void ApplyThemePalette();
 
+  // Puts `root_visible_` into effect on the view. Re-run on every model reset,
+  // which drops the persistent root index a hidden root depends on.
+  void ApplyRootVisible();
+
   // The colour row glyphs are rendered in, from the live palette.
   Color GlyphTint() const;
 
@@ -107,6 +123,11 @@ class Tree : public QTreeView {
 
   // Held so ExpandAllWhenPopulated can disconnect itself after it fires.
   QMetaObject::Connection populated_connection_;
+
+  // Last SetRootVisible request. A hidden root is held by a
+  // QPersistentModelIndex that a model reset kills, so the state has to be
+  // remembered and re-applied rather than set once.
+  bool root_visible_ = false;
 
   friend class TreeProxyModel;
 };

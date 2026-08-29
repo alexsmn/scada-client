@@ -29,6 +29,9 @@ class TreeProxyModel : public QSortFilterProxyModel {
   // QSortFilterProxyModel
   virtual bool lessThan(const QModelIndex& source_left,
                         const QModelIndex& source_right) const override;
+  virtual bool filterAcceptsRow(
+      int source_row,
+      const QModelIndex& source_parent) const override;
 
  private:
   Tree& tree_;
@@ -38,6 +41,20 @@ class TreeProxyModel : public QSortFilterProxyModel {
 void TreeProxyModel::SetCompareHandler(TreeCompareHandler handler) {
   compare_handler_ = std::move(handler);
   invalidateFilter();
+}
+
+// The model's one top-level row is the tree's root, and it is never filtered
+// out. Two reasons, and the second is a correctness one: dropping it hides the
+// whole tree anyway, since every other row descends from it; and
+// Tree::SetRootVisible(false) makes it the view's root index, a
+// QPersistentModelIndex that a removal invalidates for good — so a filter that
+// matched nothing would bring the root row back the moment it was cleared.
+// Rows below it filter normally, recursion included.
+bool TreeProxyModel::filterAcceptsRow(int source_row,
+                                      const QModelIndex& source_parent) const {
+  if (!source_parent.isValid())
+    return true;
+  return QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent);
 }
 
 bool TreeProxyModel::lessThan(const QModelIndex& source_left,
@@ -103,6 +120,10 @@ Tree::Tree(std::shared_ptr<TreeModel> model)
   setModel(proxy_model_.get());
 
   SetRootVisible(false);
+  // A reset invalidates every index, the root index above among them, so it
+  // has to be set again — see TreeTest.HiddenRootStaysHiddenAcrossAModelReset.
+  connect(proxy_model_.get(), &QAbstractItemModel::modelReset, this,
+          &Tree::ApplyRootVisible);
 
   // https://stackoverflow.com/questions/26011291/initial-width-of-column-in-qtableview-via-model
   // If you need to initialize column widths based on Qt::SizeHintRole you need
@@ -245,13 +266,21 @@ void Tree::SetCheckedNodes(std::set<void*> nodes) {
 }
 
 void Tree::SetRootVisible(bool visible) {
-  if (visible) {
+  root_visible_ = visible;
+  ApplyRootVisible();
+}
+
+void Tree::ApplyRootVisible() {
+  if (root_visible_) {
     setRootIndex({});
     // A visible root still needs the branch decoration; otherwise the
     // top-level node loses its expander and only the root row is shown.
     setRootIsDecorated(true);
     expand(model()->index(0, 0));
   } else {
+    // Re-read the index rather than trusting the stored one: this also runs
+    // after a model reset, which invalidates the QPersistentModelIndex
+    // QTreeView keeps. Leaving it invalid silently re-exposes the root row.
     setRootIndex(model()->index(0, 0));
     setRootIsDecorated(true);
   }

@@ -35,7 +35,7 @@
     "Инженер",
     "АСУ"
   ],
-  "_filesystem_comment": "The file store the Files view (FileSystemView) lists: instance nodes under the FileSystem folder (SCADA.304), directories typed FileDirectoryType (SCADA.305) and files typed FileType (SCADA.306). Ids follow what the server's MakeNodeId produces — a string id in the FILESYSTEM_FILE namespace holding the URL-escaped path, hence the %2F in a nested entry. Without these the view renders its root row and nothing else, which is how files.png shipped.",
+  "_filesystem_comment": "The file store the Files view (FileSystemView) lists: instance nodes under the FileSystem folder (SCADA.304), directories typed FileDirectoryType (SCADA.305) and files typed FileType (SCADA.306). Ids follow what the server's MakeNodeId produces — a string id in the FILESYSTEM_FILE namespace holding the URL-escaped path, hence the %2F in a nested entry. Without these the view renders nothing at all, which is how files.png shipped. The floor below counts one fewer row than the store holds entries did until 2026-08-29, when the Explorer trees stopped drawing a row for their root: the count starts at the view's root index, so the root row is no longer among the rows counted.",
   "_display_comment": "VDS/SDE fixture for the reshelled substation display (CaptureDisplay), relative to this file.",
   "display": {
     "path": "fixtures/substation.vds",
@@ -1904,7 +1904,7 @@
       "width": 300,
       "height": 400,
       "expand": true,
-      "min_rows": 9
+      "min_rows": 8
     },
     {
       "type": "TimeVal",

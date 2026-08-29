@@ -607,7 +607,11 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
   for (int i = 0; i < 10; ++i)
     QApplication::processEvents();
 
-  QModelIndex root_index = tree->model()->index(0, 0, tree->rootIndex());
+  // The Explorer tree already roots itself at the synthetic tree root, so its
+  // rootIndex IS the node whose children are the object rows — do not descend
+  // another level or the capture would show one branch instead of the tree.
+  // The fallback covers a tree that has not had its root index applied.
+  QModelIndex root_index = tree->rootIndex();
   if (!root_index.isValid())
     root_index = tree->model()->index(0, 0);
   ASSERT_TRUE(root_index.isValid());
@@ -616,9 +620,8 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
     tree->model()->fetchMore(root_index);
   ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
 
-  // For the screenshot we want the object rows, not the synthetic tree root.
-  // Making the fetched root the view root sidesteps the "expanded root with
-  // empty child viewport" state that Qt sometimes gets into here.
+  // Re-asserted rather than assumed: this also sidesteps the "expanded root
+  // with empty child viewport" state that Qt sometimes gets into here.
   tree->setRootIndex(root_index);
   tree->setRootIsDecorated(true);
   tree->expand(tree->rootIndex());

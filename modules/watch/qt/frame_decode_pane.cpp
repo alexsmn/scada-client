@@ -80,10 +80,11 @@ void FrameDecodePane::Clear() {
 
 void FrameDecodePane::ShowDecode(const FrameDecode& decode) {
   model_->SetDecode(decode);
-  // Re-hiding the root is not redundant: Tree::SetRootVisible(false) works by
-  // setting the view's root index, and a model reset drops it — without this
-  // every decode after the first draws an empty root row above the tree.
-  tree_->SetRootVisible(false);
+  // No re-hiding of the root here any more: Tree::SetRootVisible(false) works
+  // by setting the view's root index, which a model reset drops, and `Tree`
+  // now restores it itself on every reset (aui/qt/tree.cpp, pinned by
+  // TreeTest.HiddenRootStaysHiddenAcrossAModelReset). Before that, every
+  // decode after the first drew an empty root row above the tree.
   // The tree is short and the point is to read it at a glance; nothing is
   // served by making the operator open every group.
   tree_->expandAll();

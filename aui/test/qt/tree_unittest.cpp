@@ -68,6 +68,16 @@ class LateFilledTreeModel : public scada::aui::TreeNodeModel<TestTreeNode> {
     if (root()->GetChildCount() != 0)
       Remove(*root(), 0, root()->GetChildCount());
   }
+
+  // Replaces the whole tree the way a model backed by one payload at a time
+  // does (`modules/watch/frame_decode_tree_model.cpp` is the one in the
+  // client): every index the view holds is invalidated.
+  void Reset() {
+    TreeModelResetting();
+    set_root(std::make_unique<TestTreeNode>(u"Root"));
+    TreeModelReset();
+    Populate();
+  }
 };
 
 }  // namespace
@@ -82,6 +92,50 @@ TEST(TreeTest, VisibleRootStaysDecoratedAndExpanded) {
   ASSERT_TRUE(root_index.isValid());
   EXPECT_TRUE(tree.rootIsDecorated());
   EXPECT_TRUE(tree.isExpanded(root_index));
+}
+
+// A hidden root is the view's root index, which a model reset invalidates. Left
+// unrestored, the root row reappears above the tree — which is what every
+// decode after the first drew in the protocol-trace pane before the pane
+// re-hid it by hand.
+TEST(TreeTest, HiddenRootStaysHiddenAcrossAModelReset) {
+  AppEnvironment app_env;
+
+  auto model = std::make_shared<LateFilledTreeModel>();
+  model->Populate();
+  scada::aui::Tree tree{model};
+  ASSERT_TRUE(tree.rootIndex().isValid());
+  // The root's children are the top level: one group, not one root row.
+  ASSERT_EQ(tree.model()->rowCount(tree.rootIndex()), 1);
+
+  model->Reset();
+
+  EXPECT_TRUE(tree.rootIndex().isValid());
+  EXPECT_EQ(tree.model()->rowCount(tree.rootIndex()), 1);
+  EXPECT_EQ(tree.model()
+                ->index(0, 0, tree.rootIndex())
+                .data(Qt::DisplayRole)
+                .toString(),
+            QStringLiteral("Group"));
+}
+
+// The model's single top-level row is the tree's root and is never filtered
+// away: it is the hidden root's persistent index, and losing it to a filter
+// that matched nothing would bring the root row back once the filter cleared.
+TEST(TreeTest, RootSurvivesAFilterThatMatchesNothing) {
+  AppEnvironment app_env;
+
+  scada::aui::Tree tree{MakeTreeModel()};
+  const auto root_index = tree.rootIndex();
+  ASSERT_TRUE(root_index.isValid());
+
+  tree.SetFilterText(u"nothing matches this");
+  EXPECT_TRUE(tree.rootIndex().isValid());
+  EXPECT_EQ(tree.model()->rowCount(tree.rootIndex()), 0);
+
+  tree.SetFilterText(u"");
+  EXPECT_EQ(tree.rootIndex(), root_index);
+  EXPECT_EQ(tree.model()->rowCount(tree.rootIndex()), 3);
 }
 
 TEST(TreeTest, GetChildNodesReturnsModelNodesInViewOrder) {

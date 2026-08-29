@@ -95,7 +95,20 @@ ConfigurationTreeView::ConfigurationTreeView(
   // cppcheck-suppress noOperatorEq
   tree_view_ = new scada::aui::Tree{model_};
   tree_view_->LoadGlyphs(kItemGlyphs, kTreeGlyphSize);
-  tree_view_->SetRootVisible(true);
+  // No root row (Tree's default): every pane built on this view is a dock
+  // whose title already names the tree's root, so the row repeated it. Against
+  // the shipped nodesets the Files pane read "Файлы" in its title bar and
+  // "Файлы" again on its first row, and Objects and Subsystems differed from
+  // their titles only by "Все". (The screenshot fixture names the file root
+  // "Файловая система", so files.png showed a milder version of the same
+  // thing than an operator did.)
+  // The screen mockups draw a single-subject Explorer tree with no root row:
+  // docs/product/ui-mockups/screens/config-workbench.html starts the hardware
+  // tree at the device groups directly under the `Hardware` pane head.
+  //
+  // The root stays reachable as a selection: UpdateSelection() below maps an
+  // empty selection onto it, so the tree's own context menu and every
+  // selection-driven command still act on the root when nothing is picked.
   tree_view_->SetSorted(true);
 
   tree_view_->SetFocusHandler([this] { controller_delegate_.Focus(); });

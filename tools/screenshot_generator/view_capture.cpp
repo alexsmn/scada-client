@@ -212,8 +212,13 @@ bool CaptureViewSpec(const ScreenshotSpec& spec,
       // the top level. Without this a tree capture can go empty as silently
       // as a grid one — which is exactly how the favourites pane shipped
       // blank — and a top-level-only count says nothing about a tree whose
-      // single root row is the shell and whose content is its children (the
-      // Files view, where an empty file store still shows one row).
+      // content sits below its top row.
+      //
+      // Counted from the view's root index, so the row for a hidden root is
+      // not counted — which every Explorer tree now has. A pane whose store
+      // is empty therefore counts 0 rather than the 1 its root row used to
+      // contribute, and that is the honest number: the capture would be
+      // blank.
       if (const scada::aui::Tree* tree = FindTreeWidget(widget)) {
         if (tree->model())
           max_rows = std::max(
