@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for the screenshot check's owed-set query.
+"""Tests for the screenshot check's coverage reporting.
 
 The owed set is "manifest rows the docs pipeline manages that this generator
 does not produce" — the remaining work of task 39. It was derived by hand for
@@ -123,6 +123,84 @@ class HardcodedFilenamesTest(unittest.TestCase):
         )
         self.assertEqual(
             check.hardcoded_capture_filenames(self.sources), {"real.png"}
+        )
+
+
+
+class UncheckedCapturesTest(unittest.TestCase):
+    """What a clean run is *not* evidence about.
+
+    The check verifies the `auto-*` rows the fixture names, prints "N captures
+    checked, 0 error(s)", and used to stop there -- so a pass over well under
+    half the gallery read as a verdict on all of it. These pin the three sets
+    that sit outside the checked one, because each is invisible in a different
+    way and only one of them was ever reported.
+    """
+
+    def setUp(self) -> None:
+        self._temp = tempfile.TemporaryDirectory(prefix="scada_unchecked_test_")
+        self.sources = Path(self._temp.name)
+        self.addCleanup(self._temp.cleanup)
+
+    def write_source(self, text: str) -> None:
+        (self.sources / "some_capture.cpp").write_text(text, encoding="utf-8")
+
+    def unchecked(self, images, data, checked) -> dict[str, list[str]]:
+        return check.unchecked_captures(images, data, self.sources, set(checked))
+
+    def test_a_checked_row_is_not_reported(self) -> None:
+        self.write_source("")
+        data = {"screenshots": [{"filename": "table.png"}]}
+        self.assertEqual(
+            self.unchecked(manifest(("table.png", "auto-view")), data, {"table.png"}),
+            {},
+        )
+
+    # The set that fell through both reports: the generator writes it, so the
+    # owed query correctly excludes it, and no fixture spec names it, so the
+    # dimension pass never looks at it either.
+    def test_a_hardcoded_row_the_fixture_does_not_name_is_produced_unchecked(
+        self,
+    ) -> None:
+        self.write_source('constexpr const char* kFilename = "settings-dialog.png";')
+        self.assertEqual(
+            self.unchecked(manifest(("settings-dialog.png", "auto-dialog")), {}, set()),
+            {"produced-unchecked": ["settings-dialog.png"]},
+        )
+
+    # An owed row is already reported as owed; repeating it here would say the
+    # backlog twice and bury the set that nothing else mentions.
+    def test_an_owed_row_is_left_to_the_owed_report(self) -> None:
+        self.write_source("// nothing renders anything here\n")
+        self.assertEqual(
+            self.unchecked(manifest(("menu-parameters.png", "auto-menu")), {}, set()),
+            {},
+        )
+
+    # A fixture spec that did not appear is an error, not a silent gap, so it
+    # must not be quietly re-filed as something this pass merely skipped.
+    def test_a_fixture_row_that_failed_to_appear_is_left_to_the_error(self) -> None:
+        self.write_source("")
+        data = {"screenshots": [{"filename": "table.png"}]}
+        self.assertEqual(
+            self.unchecked(manifest(("table.png", "auto-view")), data, set()), {}
+        )
+
+    # reshell-theme rows are outside the auto-* set entirely, so neither the
+    # checked count nor the owed count ever mentioned them -- 28 captures with
+    # no structural coverage at all, invisible in every line the check printed.
+    def test_a_reshell_theme_row_is_reported_as_themed_only(self) -> None:
+        self.write_source("")
+        self.assertEqual(
+            self.unchecked(manifest(("object-tree.png", "reshell-theme")), {}, set()),
+            {"themed-only": ["object-tree.png"]},
+        )
+
+    # A hand-maintained image is not the generator's to check or to owe.
+    def test_an_unmanaged_row_is_not_reported(self) -> None:
+        self.write_source("")
+        self.assertEqual(
+            self.unchecked(manifest(("architecture.png", "manual")), {}, set()), {}
         )
 
 

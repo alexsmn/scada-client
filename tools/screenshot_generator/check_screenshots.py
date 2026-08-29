@@ -22,6 +22,16 @@ Nothing could see it — an image that renders is an image that passes, the
 capture-review sheet only ever pairs a Qt capture against a web one, and
 two captures of one capability are supposed to differ.
 
+It reports its own **scope**, because it does not cover the gallery and a
+clean run reads as though it does. The summary line carries a denominator, and
+beneath it the rows this pass verified nothing about: the ones produced from a
+filename hardcoded in the C++ (no fixture spec to check them against) and the
+`reshell-theme` ones, which `client_screenshot_check_themed` renders by running
+the generator directly, applying none of the checks in this file. Until
+2026-08-29 both sets were invisible in every line printed here -- the first
+because it is excluded from the owed query on the correct grounds that the
+generator does produce it, the second because it is not `auto-*` at all.
+
 It also reports the **owed set**: manifest rows the docs pipeline manages
 (`auto-*`) that no capture in this generator produces. That is the remaining
 work of task 39, and it is reported rather than failed on — a non-zero count is
@@ -122,6 +132,71 @@ def print_owed(owed: dict[str, list[str]]) -> None:
         print(f"  {tag} ({len(files)}): {', '.join(files)}")
 
 
+def unchecked_captures(
+    manifest: dict, data: dict, source_dir: Path, checked: set[str]
+) -> dict[str, list[str]]:
+    """Manifest rows this pass verified nothing about, by why.
+
+    A clean run says "N captures checked, 0 error(s)" and reads as a verdict on
+    the gallery. It is not: this pass checks the `auto-*` rows the fixture
+    names, and three disjoint sets sit outside that without anything saying so.
+
+    - `owed` -- no capture in the generator produces them. Reported already,
+      and not a regression (task 39's remaining work).
+    - `produced-unchecked` -- rendered from a filename hardcoded in the
+      generator's C++ rather than named in screenshot_data.json. The generator
+      writes them, so they are not owed; there is no spec to compare
+      dimensions against, so they are not checked either, and they fell
+      through both reports silently.
+    - `themed-only` -- `reshell-theme` rows, outside the `auto-*` set
+      entirely. They are rendered by the separate `client_screenshot_check_themed`
+      ctest, which runs the generator directly and applies none of the checks
+      in this file: no existence check, no dimensions, no duplicate-bytes
+      check. So they have rendering coverage and no structural coverage.
+    """
+    rendered_by_fixture = {
+        spec["filename"]
+        for key in ("screenshots", "dialogs")
+        for spec in data.get(key, [])
+    }
+    hardcoded = hardcoded_capture_filenames(source_dir)
+
+    out: dict[str, list[str]] = {}
+    for entry in manifest["images"]:
+        tag = entry["tag"]
+        name = entry["file"]
+        if tag == "reshell-theme":
+            out.setdefault("themed-only", []).append(name)
+            continue
+        if not tag.startswith("auto-"):
+            continue
+        if name in checked:
+            continue
+        if name in rendered_by_fixture or name not in hardcoded:
+            # Owed, or a fixture spec that failed to appear -- both already
+            # reported, as the owed set and as an error respectively.
+            continue
+        out.setdefault("produced-unchecked", []).append(name)
+    return {kind: sorted(files) for kind, files in sorted(out.items())}
+
+
+def print_unchecked(unchecked: dict[str, list[str]]) -> None:
+    """Says what a clean run is *not* evidence about."""
+    explanation = {
+        "produced-unchecked": (
+            "produced from a filename hardcoded in the generator's C++, so no "
+            "fixture spec exists to check them against"
+        ),
+        "themed-only": (
+            "reshell-theme rows, rendered by client_screenshot_check_themed, "
+            "which applies none of the checks above"
+        ),
+    }
+    for kind, files in unchecked.items():
+        print(f"  {kind} ({len(files)}) -- {explanation[kind]}:")
+        print(f"    {', '.join(files)}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     here = Path(__file__).resolve().parent
@@ -204,7 +279,7 @@ def main() -> int:
     ]
     errors = []
     produced = []
-    checked = 0
+    checked_names: set[str] = set()
     for spec, exact_dims in specs:
         filename = spec["filename"]
         if filename not in managed:
@@ -213,7 +288,7 @@ def main() -> int:
         if not path.is_file():
             errors.append(f"{filename}: not produced")
             continue
-        checked += 1
+        checked_names.add(filename)
         produced.append(path)
         width = spec.get("width")
         height = spec.get("height")
@@ -234,9 +309,22 @@ def main() -> int:
 
     for error in errors:
         print(f"error: {error}", file=sys.stderr)
-    print(f"{checked} captures checked in {out_dir}, {len(errors)} error(s)")
+
+    # The denominator is the point: "39 captures checked, 0 error(s)" reads as
+    # a verdict on the gallery, and this pass covers well under half of it.
+    checked = len(checked_names)
+    print(
+        f"{checked} of {len(managed)} manifest-managed captures checked in "
+        f"{out_dir}, {len(errors)} error(s)"
+    )
+    unchecked = unchecked_captures(
+        manifest, data, Path(__file__).resolve().parent, checked_names
+    )
+    if unchecked or owed:
+        print("what this run is not evidence about:")
     # Reported, never failed on: the owed set is the remaining work of task 39,
     # so a non-zero count is the backlog rather than a regression.
+    print_unchecked(unchecked)
     print_owed(owed)
     return 1 if errors else 0
 
