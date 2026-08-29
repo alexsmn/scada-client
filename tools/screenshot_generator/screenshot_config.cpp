@@ -228,6 +228,13 @@ void ScreenshotConfig::Load(const std::filesystem::path& path) {
 }
 
 std::filesystem::path GetDataFilePath() {
+  // An explicit `--data` wins outright. Without it the search below resolves
+  // the source tree's own fixture, so a run pointed at an edited copy silently
+  // rendered the tracked one instead (backlog 631).
+  const auto& options = GetScreenshotOptions();
+  if (!options.data_file.empty())
+    return options.data_file.lexically_normal();
+
   for (auto candidate : {
            std::filesystem::path{__FILE__}.parent_path() /
                "screenshot_data.json",

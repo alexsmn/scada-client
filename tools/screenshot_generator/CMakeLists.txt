@@ -162,18 +162,22 @@ endif()
 # file that no target builds looks exactly like a passing one, so keep this
 # target in step when adding another.
 #
-# Deliberately linked against `base_unittest` alone (gtest plus its main) and
-# nothing Qt: what it covers is the settle loop's budget arithmetic and the
-# publish guard's failure-count scoping, both Qt-free on purpose so they can be
-# tested without a widget, an event loop, or a machine that happens to be idle.
+# Deliberately nothing Qt: what it covers is the settle loop's budget
+# arithmetic, the publish guard's failure-count scoping and the command-line
+# parser, all Qt-free on purpose so they can be tested without a widget, an
+# event loop, or a machine that happens to be idle. `Boost::program_options` is
+# the one non-gtest link, and it is there because the parser is what it tests.
 add_executable(client_screenshot_generator_unittests
   "settle_loop_unittest.cpp"
   "publish_guard.cpp"
   "publish_guard_unittest.cpp"
+  "screenshot_options.cpp"
+  "screenshot_options_unittest.cpp"
 )
 
 target_link_libraries(client_screenshot_generator_unittests PRIVATE
   base_unittest
+  Boost::program_options
 )
 
 target_include_directories(client_screenshot_generator_unittests PRIVATE
