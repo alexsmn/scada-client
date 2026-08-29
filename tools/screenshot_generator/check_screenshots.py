@@ -26,11 +26,18 @@ It reports its own **scope**, because it does not cover the gallery and a
 clean run reads as though it does. The summary line carries a denominator, and
 beneath it the rows this pass verified nothing about: the ones produced from a
 filename hardcoded in the C++ (no fixture spec to check them against) and the
-`reshell-theme` ones, which `client_screenshot_check_themed` renders by running
-the generator directly, applying none of the checks in this file. Until
-2026-08-29 both sets were invisible in every line printed here -- the first
-because it is excluded from the owed query on the correct grounds that the
-generator does produce it, the second because it is not `auto-*` at all.
+`reshell-theme` ones, which are covered by `client_screenshot_check_themed`
+instead. Until 2026-08-29 both sets were invisible in every line printed here --
+the first because it is excluded from the owed query on the correct grounds that
+the generator does produce it, the second because it is not `auto-*` at all.
+
+`--theme` runs the themed half: it selects the `reshell-theme` rows *from the
+manifest* and applies every check below to them. That is what
+`client_screenshot_check_themed` now invokes. It used to run the generator
+directly off a `--only` list hand-written in CMakeLists.txt, so the only thing
+that could fail was an ADD_FAILURE inside the binary -- and the list had drifted
+three names behind the manifest, leaving debugger.png, frame-decode-pane.png and
+watch-filter-bar.png rendered by nothing at all (backlog 630).
 
 It also reports the **owed set**: manifest rows the docs pipeline manages
 (`auto-*`) that no capture in this generator produces. That is the remaining
@@ -125,6 +132,20 @@ def owed_captures(
     return {tag: sorted(files) for tag, files in sorted(owed.items())}
 
 
+def themed_captures(manifest: dict) -> list[str]:
+    """The `reshell-theme` rows: captures that exist only under `--theme`.
+
+    Derived from the manifest, never listed by hand. `client_screenshot_check_themed`
+    carried its own 25-name `--only` list in CMakeLists.txt with a comment asking
+    for it to be kept in sync, which is exactly how it drifted three names behind:
+    debugger.png, frame-decode-pane.png and watch-filter-bar.png were tagged
+    `reshell-theme` in the manifest and rendered by nothing at all (backlog 630).
+    """
+    return sorted(
+        e["file"] for e in manifest["images"] if e["tag"] == "reshell-theme"
+    )
+
+
 def print_owed(owed: dict[str, list[str]]) -> None:
     total = sum(len(files) for files in owed.values())
     print(f"{total} manifest-managed capture(s) owed by the generator")
@@ -149,10 +170,14 @@ def unchecked_captures(
       dimensions against, so they are not checked either, and they fell
       through both reports silently.
     - `themed-only` -- `reshell-theme` rows, outside the `auto-*` set
-      entirely. They are rendered by the separate `client_screenshot_check_themed`
-      ctest, which runs the generator directly and applies none of the checks
-      in this file: no existence check, no dimensions, no duplicate-bytes
-      check. So they have rendering coverage and no structural coverage.
+      entirely. They are covered by the separate `client_screenshot_check_themed`
+      ctest, which since 2026-08-29 runs *this file* under `--theme` and so
+      applies the same existence, dimension and duplicate-bytes checks
+      (backlog 630). Until then it drove the generator directly off a
+      hand-written `--only` list and asserted nothing structural, and the list
+      was three names short, so those three were rendered by nothing at all.
+      They are still listed here because this pass does not cover them --
+      "checked elsewhere", not "unchecked".
     """
     rendered_by_fixture = {
         spec["filename"]
@@ -188,8 +213,9 @@ def print_unchecked(unchecked: dict[str, list[str]]) -> None:
             "fixture spec exists to check them against"
         ),
         "themed-only": (
-            "reshell-theme rows, rendered by client_screenshot_check_themed, "
-            "which applies none of the checks above"
+            "reshell-theme rows, outside this pass entirely -- covered by "
+            "client_screenshot_check_themed, which since 2026-08-29 applies "
+            "these same checks to all of them"
         ),
     }
     for kind, files in unchecked.items():
@@ -225,6 +251,12 @@ def main() -> int:
         default=None,
         help="Render directory (default: a fresh temp dir)",
     )
+    parser.add_argument(
+        "--theme",
+        default=None,
+        help="Check the reshell-theme rows under this theme (dark|light|hc) "
+        "instead of the auto-* set. The row list comes from the manifest.",
+    )
     args = parser.parse_args()
 
     data = json.loads(args.data.read_text(encoding="utf-8"))
@@ -244,13 +276,19 @@ def main() -> int:
     env = dict(os.environ)
     env["QT_QPA_PLATFORM"] = "offscreen"
 
+    themed = themed_captures(manifest) if args.theme else []
+    command = [
+        str(args.generator),
+        f"--out={out_dir}",
+        f"--image-manifest={args.image_manifest}",
+        f"--data={args.data}",
+    ]
+    if args.theme:
+        command += [f"--theme={args.theme}", f"--only={','.join(themed)}"]
+
     try:
         result = subprocess.run(
-            [
-                str(args.generator),
-                f"--out={out_dir}",
-                f"--image-manifest={args.image_manifest}",
-            ],
+            command,
             env=env,
             cwd=args.generator.parent,
             timeout=240,
@@ -265,9 +303,13 @@ def main() -> int:
         )
         return 1
 
-    managed = {
-        e["file"] for e in manifest["images"] if e["tag"].startswith("auto-")
-    }
+    managed = (
+        set(themed)
+        if args.theme
+        else {
+            e["file"] for e in manifest["images"] if e["tag"].startswith("auto-")
+        }
+    )
 
     # Dimensions are enforced for view captures only: SaveScreenshot hard-
     # resizes the widget, so spec dims are exact on every platform. Dialogs
@@ -300,6 +342,19 @@ def main() -> int:
                     f"{width}x{height}"
                 )
 
+    # A themed row is checked whether or not the fixture names it: over half of
+    # them are standalone captures whose filename is hardcoded in the C++, and
+    # the existence check is the whole point for those — the three rows this
+    # pass was extended to cover were rendered by nothing, which no dimension
+    # check could ever have said.
+    for filename in sorted(set(managed) - checked_names) if args.theme else []:
+        path = out_dir / filename
+        if not path.is_file():
+            errors.append(f"{filename}: not produced")
+            continue
+        checked_names.add(filename)
+        produced.append(path)
+
     for group in duplicate_renders(produced):
         names = ", ".join(sorted(p.name for p in group))
         errors.append(
@@ -313,6 +368,13 @@ def main() -> int:
     # The denominator is the point: "39 captures checked, 0 error(s)" reads as
     # a verdict on the gallery, and this pass covers well under half of it.
     checked = len(checked_names)
+    if args.theme:
+        print(
+            f"{checked} of {len(managed)} reshell-theme captures checked under "
+            f"--theme={args.theme} in {out_dir}, {len(errors)} error(s)"
+        )
+        return 1 if errors else 0
+
     print(
         f"{checked} of {len(managed)} manifest-managed captures checked in "
         f"{out_dir}, {len(errors)} error(s)"

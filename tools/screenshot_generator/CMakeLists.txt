@@ -235,18 +235,32 @@ endif()
 # (hardware-tree, object-tree). Render them together under --theme so a
 # regression fails the suite — in particular the per-spec view-selection bug
 # where every "NewProps" spec re-grabbed the first opened view, pointing
-# config-limits at TS.702's form (no Limits subtab). The generator is a gtest
-# binary, so any ADD_FAILURE (e.g. "click_object not found") returns non-zero
-# and fails ctest. Keep this --only list in sync with the reshell-theme entries
-# in screenshots/image_manifest.json.
-add_test(NAME client_screenshot_check_themed
-  COMMAND ${CMAKE_COMMAND} -E env QT_QPA_PLATFORM=offscreen
-    $<TARGET_FILE:client_screenshot_generator>
-    "--theme=dark"
-    "--only=administration-explorer.png,config-parameters.png,config-address-map.png,config-limits.png,hardware-tree.png,object-tree.png,users-admin.png,admin-simulation.png,admin-formats.png,admin-historical-dbs.png,severity-tiles.png,command-field.png,events-alarm-surface.png,table-workspace.png,workbench-window.png,workbench-overview.png,workbench-activity-rail.png,workbench-login.png,substation-display.png,inspector-event.png,inspector-panel.png,transmission-rules.png,series-inspector.png,roles.png,password-policy.png"
-    "--out=${CMAKE_CURRENT_BINARY_DIR}/screenshot_check_themed"
-)
-set_tests_properties(client_screenshot_check_themed PROPERTIES TIMEOUT 300)
+# config-limits at TS.702's form (no Limits subtab).
+#
+# This runs through check_screenshots.py rather than the generator directly,
+# which is what makes it a check rather than a render (backlog 630). Driving
+# the binary meant the only thing that could fail was an ADD_FAILURE inside it:
+# a themed capture that silently stopped being produced, rendered at the wrong
+# size, or duplicated another's bytes passed. It now gets the same existence,
+# spec-dimension and duplicate-bytes checks as the pass above.
+#
+# The row list is DERIVED from the "reshell-theme" tag in image_manifest.json,
+# never written here. The hand-written --only list this replaced asked in a
+# comment to be kept in sync and was three names behind the manifest, so
+# debugger.png, frame-decode-pane.png and watch-filter-bar.png were rendered by
+# nothing at all.
+if(Python3_FOUND)
+  add_test(NAME client_screenshot_check_themed
+    COMMAND ${Python3_EXECUTABLE}
+      "${CMAKE_CURRENT_SOURCE_DIR}/check_screenshots.py"
+      "--generator=$<TARGET_FILE:client_screenshot_generator>"
+      "--data=${CMAKE_CURRENT_SOURCE_DIR}/screenshot_data.json"
+      "--image-manifest=${CMAKE_CURRENT_SOURCE_DIR}/../../screenshots/image_manifest.json"
+      "--theme=dark"
+      "--out=${CMAKE_CURRENT_BINARY_DIR}/screenshot_check_themed"
+  )
+  set_tests_properties(client_screenshot_check_themed PROPERTIES TIMEOUT 300)
+endif()
 
 # Regenerating the tracked gallery is an explicit request, never a build side
 # effect. `client/screenshots/` is committed (a UI change lands as a reviewable

@@ -4,10 +4,11 @@
 #include "screenshot_config.h"
 #include "widget_capture.h"
 
+#include "aui/qt/table.h"
+#include "aui/translation.h"
 #include "modules/debugger/debugger_context.h"
 #include "modules/debugger/qt/debugger_qt.h"
 #include "scada/session_debugger.h"
-#include "aui/qt/table.h"
 #include "scada/session_service_mock.h"
 
 #include <QApplication>
@@ -61,12 +62,14 @@ void ReplayFixtureTrace(FixtureSessionDebugger& debugger) {
        "References: 14"},
       {2, Phase::Running, "Read", "NodeId: ns=2;s=KPY.TC1.I, Attribute: Value",
        ""},
-      {2, Phase::Succeeded, "Read", "NodeId: ns=2;s=KPY.TC1.I, Attribute: Value",
+      {2, Phase::Succeeded, "Read",
+       "NodeId: ns=2;s=KPY.TC1.I, Attribute: Value",
        "Value: 195.7 A, Quality: Good"},
       {3, Phase::Running, "CreateMonitoredItems",
        "SubscriptionId: 4, Items: 12", ""},
       {3, Phase::Succeeded, "CreateMonitoredItems",
-       "SubscriptionId: 4, Items: 12", "Created: 12, Revised interval: 1000 ms"},
+       "SubscriptionId: 4, Items: 12",
+       "Created: 12, Revised interval: 1000 ms"},
       {4, Phase::Running, "HistoryRead",
        "NodeId: ns=2;s=ESTRA.T, Range: last 24 h", ""},
       {4, Phase::Failed, "HistoryRead",
@@ -96,10 +99,17 @@ void ReplayFixtureTrace(FixtureSessionDebugger& debugger) {
 
 // `Debugger::Open()` creates its window unparented and shows it, so the capture
 // has to find it rather than being handed it.
+//
+// The title is matched through `Translate()`, the same call
+// `Debugger::Open()` sets it with. Comparing against the English literal
+// matched nothing once the client shipped its Russian catalog — the window is
+// titled «Отладчик» — so the capture found no window, the publish guard
+// refused to write the image, and nothing noticed for as long as the themed
+// ctest rendered a hand-written list this row was missing from (backlog 630).
 QWidget* FindDebuggerWindow() {
+  const QString title = QString::fromStdU16String(Translate("Debugger"));
   for (QWidget* widget : QApplication::topLevelWidgets()) {
-    if (qobject_cast<QTabWidget*>(widget) &&
-        widget->windowTitle() == QStringLiteral("Debugger")) {
+    if (qobject_cast<QTabWidget*>(widget) && widget->windowTitle() == title) {
       return widget;
     }
   }

@@ -204,5 +204,71 @@ class UncheckedCapturesTest(unittest.TestCase):
         )
 
 
+class ThemedCaptureSelectionTest(unittest.TestCase):
+    """The themed pass's row list, which used to be written out by hand.
+
+    `client_screenshot_check_themed` carried a 25-name `--only` list in
+    CMakeLists.txt beside a comment asking for it to be kept in sync with the
+    manifest. It was three names behind, so debugger.png, frame-decode-pane.png
+    and watch-filter-bar.png were rendered by nothing at all -- and because that
+    ctest asserted nothing structural, nothing could say so (backlog 630).
+    Deriving the list is the fix; these cases are what stop it being unpicked.
+    """
+
+    def test_selects_every_reshell_theme_row(self) -> None:
+        self.assertEqual(
+            check.themed_captures(
+                manifest(
+                    ("object-tree.png", "reshell-theme"),
+                    ("debugger.png", "reshell-theme"),
+                )
+            ),
+            ["debugger.png", "object-tree.png"],
+        )
+
+    def test_excludes_every_other_tag(self) -> None:
+        # auto-* belongs to the default pass and `manual` to nobody here.
+        self.assertEqual(
+            check.themed_captures(
+                manifest(
+                    ("table.png", "auto-view"),
+                    ("client-login.png", "auto-dialog"),
+                    ("architecture.png", "manual"),
+                )
+            ),
+            [],
+        )
+
+    def test_is_sorted_so_the_only_list_is_stable(self) -> None:
+        # The list becomes a --only argument; an unstable order would churn.
+        self.assertEqual(
+            check.themed_captures(
+                manifest(
+                    ("z.png", "reshell-theme"),
+                    ("a.png", "reshell-theme"),
+                    ("m.png", "reshell-theme"),
+                )
+            ),
+            ["a.png", "m.png", "z.png"],
+        )
+
+    def test_tracks_the_real_manifest_rather_than_a_copied_list(self) -> None:
+        # The regression itself: whatever the tree's manifest tags today is
+        # what the themed pass renders, with nothing to keep in sync by hand.
+        import json
+
+        here = Path(__file__).resolve().parent
+        real = json.loads(
+            (here / ".." / ".." / "screenshots" / "image_manifest.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        expected = sorted(
+            e["file"] for e in real["images"] if e["tag"] == "reshell-theme"
+        )
+        self.assertEqual(check.themed_captures(real), expected)
+        self.assertTrue(expected, "the manifest should carry reshell-theme rows")
+
+
 if __name__ == "__main__":
     unittest.main()
