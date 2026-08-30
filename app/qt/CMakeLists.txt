@@ -232,6 +232,41 @@ if(APPLE AND TRANSLATIONS_OUT)
   add_dependencies(client_qt client_qt_copy_bundle_translations)
 endif()
 
+# Convenience launcher
+#
+# CMake presets cannot run anything: there is no "run" preset kind, and a
+# workflow step may only be configure, build, test or package
+# (https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html; a
+# {"type":"run"} step is rejected as `Invalid preset` by cmake 4.4.2, verified
+# 2026-08-30). A quick launch command therefore has to be a target reached
+# through the build preset that already exists:
+#
+#   cmake --build --preset relwithdebinfo --target run
+#
+# $<TARGET_FILE:client_qt> resolves per configuration, so this one target
+# serves all three build presets instead of needing one apiece. The name is
+# deliberately the bare `run`, matching designer/editor/CMakeLists.txt, so the
+# command reads the same from whichever product directory you are in; that is
+# safe only because no product this one composes defines a target by that name,
+# and a collision would be a hard configure error rather than a silent one.
+#
+# WORKING_DIRECTORY is the executable's own directory, because that is where
+# the build stages what the app reads at runtime -- bin/<Config>/translations
+# above, and the Qt plugin set beside the binary on Windows. On macOS it
+# resolves to client.app/Contents/MacOS, which is where the bundle catalogs are
+# mirrored and what QApplication::applicationDirPath() reports.
+#
+# On macOS this runs the bundle's inner executable rather than `open`ing the
+# .app, which keeps stdout/stderr attached to the terminal that started it.
+add_custom_target(run
+  COMMAND "$<TARGET_FILE:client_qt>"
+  WORKING_DIRECTORY "$<TARGET_FILE_DIR:client_qt>"
+  USES_TERMINAL
+  VERBATIM)
+# add_custom_target's own DEPENDS takes files; a target dependency is
+# add_dependencies.
+add_dependencies(run client_qt)
+
 if(TRANSLATIONS_OUT)
   if(APPLE)
     # Same reason as the POST_BUILD copy above: the installed bundle must carry
