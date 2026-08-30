@@ -38,8 +38,19 @@ void Breadcrumb::SetSegments(std::span<const Segment> segments) {
   std::vector<Segment> next;
   next.reserve(segments.size());
   for (const Segment& segment : segments) {
-    if (!segment.label.isEmpty())
-      next.push_back(segment);
+    if (segment.label.isEmpty())
+      continue;
+    // A step that repeats the one before it states nothing twice. The path is
+    // page / view / subject, and for a view named after what it is pointed at
+    // the last two coincide: a Graph tab on one series takes its title from
+    // that series (`GraphView::MakeTitle`), which is the same display name the
+    // subject reads. The emphasis is merged rather than dropped, so the
+    // surviving step keeps the subject's weight.
+    if (!next.empty() && next.back().label == segment.label) {
+      next.back().strong = next.back().strong || segment.strong;
+      continue;
+    }
+    next.push_back(segment);
   }
   if (next == segments_)
     return;
@@ -69,7 +80,8 @@ void Breadcrumb::Rebuild() {
   for (std::size_t i = 0; i < segments_.size(); ++i) {
     if (i > 0) {
       auto* separator = new QLabel(kSeparator, this);
-      // Quiet, like the middle steps: the separator is punctuation, not content.
+      // Quiet, like the middle steps: the separator is punctuation, not
+      // content.
       separator->setForegroundRole(QPalette::PlaceholderText);
       layout_->addWidget(separator);
     }

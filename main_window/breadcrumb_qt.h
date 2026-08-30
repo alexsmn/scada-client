@@ -53,6 +53,9 @@ class Breadcrumb : public QWidget {
   // Replaces the whole path. Empty labels are dropped, so a caller can pass a
   // fixed-arity path and let the absent steps fall away — a view with no
   // selection simply has no third segment rather than a dangling separator.
+  // A step repeating the one before it is dropped the same way, for the same
+  // reason: a view named after the object it is pointed at would otherwise
+  // print that name twice in a row.
   void SetSegments(std::span<const Segment> segments);
 
   // The path as rendered, separators included, for tests and accessibility.
@@ -60,7 +63,8 @@ class Breadcrumb : public QWidget {
 
  protected:
   // QWidget — re-elides against the granted width. Elision cannot be decided at
-  // SetSegments time because the layout has not yet said how much room there is.
+  // SetSegments time because the layout has not yet said how much room there
+  // is.
   void resizeEvent(QResizeEvent* event) override;
   // QWidget — a font or palette change invalidates the elision and the
   // de-emphasis, both of which are derived rather than stored.

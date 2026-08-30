@@ -65,6 +65,47 @@ TEST_F(BreadcrumbTest, DropsEmptySteps) {
   EXPECT_EQ(ValueLabels(breadcrumb).size(), 2u);
 }
 
+// A view named after the object it is pointed at makes the last two steps the
+// same word — a Graph tab on one series takes its title from that series, and
+// the subject reads the same display name. Printing it twice states nothing
+// twice, so the repeat collapses and the survivor keeps the subject's weight.
+TEST_F(BreadcrumbTest, CollapsesAStepThatRepeatsTheOneBeforeIt) {
+  Breadcrumb breadcrumb{nullptr};
+  breadcrumb.resize(600, 24);
+  const std::array segments = {
+      Breadcrumb::Segment{.label = QStringLiteral("Page 1"), .strong = true},
+      Breadcrumb::Segment{.label = QStringLiteral("Feeder current")},
+      Breadcrumb::Segment{.label = QStringLiteral("Feeder current"),
+                          .strong = true},
+  };
+  breadcrumb.SetSegments(segments);
+
+  EXPECT_EQ(breadcrumb.Text(), QStringLiteral("Page 1 / Feeder current"));
+  const std::vector<QLabel*> labels = ValueLabels(breadcrumb);
+  ASSERT_EQ(labels.size(), 2u);
+  EXPECT_TRUE(labels[1]->font().bold());
+}
+
+// Only a *neighbouring* repeat is noise. The same name at both ends of the path
+// is a real path — a page named after the object a view is pointed at — and
+// dropping either end would lose a step.
+TEST_F(BreadcrumbTest, KeepsARepeatThatIsNotAdjacent) {
+  Breadcrumb breadcrumb{nullptr};
+  breadcrumb.resize(600, 24);
+  const std::array segments = {
+      Breadcrumb::Segment{.label = QStringLiteral("Feeder current"),
+                          .strong = true},
+      Breadcrumb::Segment{.label = QStringLiteral("Graph")},
+      Breadcrumb::Segment{.label = QStringLiteral("Feeder current"),
+                          .strong = true},
+  };
+  breadcrumb.SetSegments(segments);
+
+  EXPECT_EQ(breadcrumb.Text(),
+            QStringLiteral("Feeder current / Graph / Feeder current"));
+  EXPECT_EQ(ValueLabels(breadcrumb).size(), 3u);
+}
+
 // Emphasis is a font weight taken from the widget's own font, never a colour
 // or a stylesheet — that is what lets the OS theme and text-size setting reach
 // it (shell.md §9).

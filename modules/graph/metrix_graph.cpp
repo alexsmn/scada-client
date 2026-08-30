@@ -1,5 +1,5 @@
-#include "base/time/time_wire_codec.h"
 #include "graph/metrix_graph.h"
+#include "base/time/time_wire_codec.h"
 
 #include "base/format_time.h"
 #include "base/minute_time.h"
@@ -29,49 +29,6 @@
 #endif
 
 namespace {
-
-template <class TimedVQMap, class Iter, typename Arg>
-void GetDrawRange(TimedVQMap& values, Arg x1, Arg x2, Iter& begin, Iter& end) {
-  begin = end = values.begin();
-  while (end != values.end()) {
-    const Arg& x = end->first;
-    if (x <= x1)
-      begin = end;  // start from point previous to first visible
-    else if (x >= x2) {
-      end++;  // end by first invisible point
-      break;
-    }
-    end++;
-  }
-}
-
-int GetPercentReady(const TimedDataSpec& timed_data) {
-  auto to = timed_data.current().source_timestamp;
-  auto ready_from = timed_data.ready_from();
-  auto requested_from = timed_data.from();
-
-  if (ready_from <= requested_from)
-    return 100;
-
-  if (scada::IsNull(to) || scada::IsNull(ready_from) || scada::IsNull(requested_from))
-    return 0;
-
-  auto total =
-      std::chrono::duration<double, std::milli>(to - requested_from).count();
-  auto ready =
-      std::chrono::duration<double, std::milli>(to - ready_from).count();
-
-  if (total < 0 || ready < 0)
-    return 0;
-
-  if (total <= ready)
-    return 100;
-
-  if (std::abs(total) < std::numeric_limits<decltype(total)>::epsilon())
-    return 1000;
-
-  return static_cast<int>(ready / total * 100);
-}
 
 #if defined(UI_QT)
 // The active theme's tokens that drive the chart chrome, or null under the
@@ -147,8 +104,7 @@ scada::DataValue MetrixGraph::Legend::GetCurrentValue(
   scada::DataValue value;
   const GraphCursor* cursor = graph().selected_cursor();
   if (cursor && !cursor->axis_->is_vertical()) {
-    scada::Time cursor_time =
-        scada::base::DecodeDoubleT(cursor->position_);
+    scada::Time cursor_time = scada::base::DecodeDoubleT(cursor->position_);
     const scada::DataValue* cursor_value =
         data_source.timed_data().GetValueAt(cursor_time);
     return cursor_value ? *cursor_value : scada::DataValue{};
@@ -172,10 +128,6 @@ std::u16string MetrixGraph::Legend::GetText(const MetrixDataSource& data_source,
       auto data_value = GetCurrentValue(data_source);
       return UtfConvert<char16_t>(FormatTime(data_value.source_timestamp));
     }
-    case 3: {
-      auto percent = GetPercentReady(data_source.timed_data());
-      return UtfConvert<char16_t>(std::to_string(percent) + '%');
-    }
     default:
       return {};
   }
@@ -189,14 +141,17 @@ int MetrixGraph::Legend::GetColumnWidth(int column_id) const {
       return 80;
     case 2:
       return 150;
-    case 3:
-      return 50;
     default:
       return 0;
   }
 }
 
 int MetrixGraph::Legend::GetColumnCount() const {
+  // Title, value, timestamp — the three arms GetText() and GetColumnWidth()
+  // answer. A fourth "percent ready" column was written in 2018 (110ee10ef)
+  // beside a count that has always been 3, so it never rendered; it was deleted
+  // rather than enabled, because the themed value grid this legend became under
+  // an opt-in theme has no such column either (see PaintThemed).
   return 3;
 }
 
@@ -374,8 +329,7 @@ QString MetrixGraph::Legend::ValueAtCursorText(
   const GraphCursor* cursor = graph().selected_cursor();
   if (!cursor || cursor->axis_->is_vertical())
     return EmptyCell();
-  const scada::Time cursor_time =
-      scada::base::DecodeDoubleT(cursor->position_);
+  const scada::Time cursor_time = scada::base::DecodeDoubleT(cursor->position_);
   const scada::DataValue* value =
       data_source.timed_data().GetValueAt(cursor_time);
   if (!value)
