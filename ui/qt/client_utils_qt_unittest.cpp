@@ -1,20 +1,29 @@
 #include "ui/qt/client_utils_qt.h"
 
 #include "aui/models/simple_menu_model.h"
+#include "aui/qt/image_util.h"
 #include "aui/test/app_environment.h"
 #include "resources/common_resources.h"
 
 #include <QAction>
 #include <QActionGroup>
 #include <QApplication>
+#include <QColor>
+#include <QDir>
+#include <QFileInfo>
 #include <QImage>
 #include <QMenu>
 #include <QPalette>
 #include <QPixmap>
 #include <QSize>
+#include <QString>
+#include <QStringList>
 #include <gtest/gtest.h>
 
 #include <array>
+#include <filesystem>
+#include <set>
+#include <string>
 #include <utility>
 
 namespace {
@@ -91,6 +100,98 @@ TEST_F(ClientUtilsQtTest, IconsAreTintedFromThePalette) {
     }
   }
   EXPECT_TRUE(found) << "nothing was drawn";
+}
+
+// The set of glyphs actually shipped in res/client.qrc, read out of the
+// compiled resource (client_qt_unittests links it: see app/qt/CMakeLists.txt).
+QStringList ShippedGlyphResourcePaths() {
+  QStringList paths;
+  const QDir dir{QStringLiteral(":/icons")};
+  for (const QString& name : dir.entryList(QStringList{QStringLiteral("*.svg")},
+                                           QDir::Files, QDir::Name)) {
+    paths.append(dir.filePath(name));
+  }
+  return paths;
+}
+
+// The fraction of the icon box carrying ink, as [0, 1]. A glyph lunasvg cannot
+// draw returns 0 here while still yielding a perfectly valid, perfectly empty
+// pixmap.
+double InkCoverage(const QIcon& icon, int size) {
+  const QImage image = icon.pixmap(QSize{size, size}, 1.0).toImage();
+  if (image.isNull())
+    return 0.0;
+  int ink = 0;
+  for (int y = 0; y < image.height(); ++y) {
+    for (int x = 0; x < image.width(); ++x) {
+      if (qAlpha(image.pixel(x, y)) > 128)
+        ++ink;
+    }
+  }
+  return static_cast<double>(ink) / (image.width() * image.height());
+}
+
+// Every shipped glyph must rasterise to something. The two qrc guards
+// elsewhere (ConfigurationTreeGlyphs.EveryMappedGlyphIsShipped, and
+// EveryToolbarIconLoadsAtTheRequestedSize above) prove a mapped path is
+// registered and present; neither proves the bytes behind it *draw*. lunasvg
+// returns a valid, empty bitmap for an element it does not support, so such a
+// glyph renders blank with nothing failing — the regression class the
+// rasteriser swap introduced the risk of, and the one §6 of
+// docs/client/ux/iconography.md re-opens every time an icon is added.
+//
+// Driven off the resource directory rather than off kIconResources/kItemGlyphs
+// so a glyph added to res/ is covered the day it lands: the hand-check this
+// replaces was performed against 31 files and the set had already grown to 32.
+//
+// Deliberately not a golden-image test. The two rasterisers differ by up to
+// 3.2% on identical input, so a pixel baseline cannot separate a lunasvg
+// version bump from a real defect (backlog 156). Non-empty ink can.
+TEST_F(ClientUtilsQtTest, EveryShippedGlyphRasterisesToInk) {
+  const QStringList glyphs = ShippedGlyphResourcePaths();
+
+  // Without this the loop below is vacuous — which is the exact failure shape
+  // the test exists to catch, one level up.
+  ASSERT_FALSE(glyphs.isEmpty())
+      << ":/icons is empty; res/client.qrc is not linked into this binary";
+
+  for (const QString& path : glyphs) {
+    const QIcon icon =
+        LoadTintedGlyph(path.toStdString(), 24, QColor{Qt::black});
+    ASSERT_FALSE(icon.isNull()) << path.toStdString() << " did not load";
+    EXPECT_GT(InkCoverage(icon, 24), 0.0)
+        << path.toStdString()
+        << " rasterises blank: lunasvg parsed it and drew nothing";
+  }
+}
+
+// A glyph on disk that nobody listed in res/client.qrc is absent from the
+// binary, so the test above would not see it and the UI would draw nothing for
+// it. Compares the two sets rather than counting, so the failure names the
+// file.
+TEST_F(ClientUtilsQtTest, EveryGlyphOnDiskIsInTheResource) {
+  // .../client/ui/qt/<this file>
+  const std::filesystem::path icons_dir = std::filesystem::path{__FILE__}
+                                              .parent_path()
+                                              .parent_path()
+                                              .parent_path() /
+                                          "res" / "icons";
+  ASSERT_TRUE(std::filesystem::is_directory(icons_dir)) << icons_dir.string();
+
+  std::set<std::string> on_disk;
+  for (const auto& entry : std::filesystem::directory_iterator{icons_dir}) {
+    if (entry.path().extension() == ".svg")
+      on_disk.insert(entry.path().filename().string());
+  }
+
+  std::set<std::string> in_resource;
+  for (const QString& path : ShippedGlyphResourcePaths())
+    in_resource.insert(QFileInfo{path}.fileName().toStdString());
+
+  for (const std::string& name : on_disk) {
+    EXPECT_TRUE(in_resource.contains(name))
+        << name << " is in res/icons/ but not listed in res/client.qrc";
+  }
 }
 
 TEST_F(ClientUtilsQtTest, ApplicationIconLoads) {
