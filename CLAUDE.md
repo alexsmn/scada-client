@@ -71,7 +71,7 @@ scada-client/
 **The client backlog is not in this repo.** Like the design docs, it moved to
 the superproject: the whole tree now shares one `tasks.md` at `/scada/tasks.md`,
 and client-only work lives in its **Client** section. Do not re-create
-`client/tasks.md`.
+`client/tasks.md` <!-- doc-citations: absent -->.
 
 ## Documentation
 
