@@ -5,12 +5,15 @@
 
 #include <QApplication>
 #include <QImage>
+#include <QMainWindow>
+#include <QMenu>
 #include <QRegularExpression>
 #include <QStyle>
 #include <QToolButton>
 
 #include <gtest/gtest.h>
 
+#include <memory>
 #include <optional>
 #include <vector>
 
@@ -26,10 +29,21 @@ std::vector<ActivityBar::Mode> MakeModes() {
 }
 
 // Every rail button, in creation order: the four pane modes, then the "+",
-// then the page buttons (SetPages appends them after construction).
+// then the page buttons (SetPages inserts them before the "+"'s action, but
+// their widgets are created later, so creation order still puts them last).
+//
+// Filtered by `defaultAction()`, which is what separates the rail's own
+// buttons from the `QToolBarExtension` that `QToolBar` creates for itself and
+// parents alongside them. That extension is a QToolButton subclass and comes
+// back *first* from findChildren, so an unfiltered list shifts every index
+// here by one and the assertions below quietly describe the wrong buttons.
 std::vector<QToolButton*> AllButtons(const ActivityBar& bar) {
-  const QList<QToolButton*> found = bar.findChildren<QToolButton*>();
-  return {found.begin(), found.end()};
+  std::vector<QToolButton*> buttons;
+  for (QToolButton* button : bar.findChildren<QToolButton*>()) {
+    if (button->defaultAction())
+      buttons.push_back(button);
+  }
+  return buttons;
 }
 
 // Just the pane-mode buttons.
@@ -289,6 +303,32 @@ TEST_F(ActivityBarTest, ActiveMarkerFillIsDistinctFromItsAccentEdge) {
   const QRegularExpressionMatch match = checked.match(bar.styleSheet());
   ASSERT_TRUE(match.hasMatch()) << bar.styleSheet().toStdString();
   EXPECT_NE(match.captured(1), match.captured(2));
+}
+
+// The whole point of the rail being a real QToolBar rather than a custom
+// widget inside one: QMainWindow offers every toolbar and dock in its own
+// context menu, so the operator can put the rail away. Before the conversion
+// the containing toolbar set `Qt::PreventContextMenu` and the rail was the one
+// piece of chrome that could not be hidden at all.
+//
+// Asserted through `createPopupMenu()` — the same menu a right-click builds —
+// rather than by synthesizing a click, and by the rail's window title, which
+// is the label QMainWindow puts in it.
+TEST_F(ActivityBarTest, TheRailIsOfferedInTheWindowsToolbarMenu) {
+  QMainWindow window;
+  auto* bar = new ActivityBar{nullptr, MakeModes(), {}};
+  bar->setWindowTitle(QStringLiteral("Activity bar"));
+  window.addToolBar(Qt::LeftToolBarArea, bar);
+
+  const std::unique_ptr<QMenu> menu{window.createPopupMenu()};
+  ASSERT_NE(menu, nullptr);
+
+  const QList<QAction*> actions = menu->actions();
+  const bool offered = std::ranges::any_of(actions, [](const QAction* action) {
+    return action->text() == QStringLiteral("Activity bar");
+  });
+  EXPECT_TRUE(offered) << "the rail is not listed in the toolbar menu, so it "
+                          "cannot be hidden";
 }
 
 // A pane mode and a page are active at the same time, so the two groups carry

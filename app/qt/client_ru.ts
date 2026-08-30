@@ -398,6 +398,15 @@
         <source>Settings</source>
         <translation>Настройки</translation>
     </message>
+    <!-- main_window/main_window_qt.cpp: the activity rail's own name, which is
+         the label QMainWindow shows for it in the show/hide toolbars context
+         menu. Matches the published manual, which calls the rail
+         «Панель разделов» (scada-docs/client/workbench.md, anchor
+         #activity-bar) rather than a literal rendering of "activity bar". -->
+    <message>
+        <source>Activity bar</source>
+        <translation>Панель разделов</translation>
+    </message>
     <!-- main_window/main_window_qt.cpp + pages/page_commands.cpp: the activity
          rail's page context menu. "Open page", "Move up"/"Move down" and
          "Delete page" are rail-only; "Duplicate" is also a Page-menu command. -->

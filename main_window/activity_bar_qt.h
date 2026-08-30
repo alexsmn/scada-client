@@ -3,16 +3,15 @@
 #include "main_window/pane_modes.h"
 
 #include <QPoint>
-#include <QWidget>
+#include <QToolBar>
 
 #include <functional>
 #include <optional>
 #include <string>
 #include <vector>
 
-class QFrame;
+class QAction;
 class QToolButton;
-class QVBoxLayout;
 class QIcon;
 class QDragEnterEvent;
 class QDragLeaveEvent;
@@ -20,8 +19,9 @@ class QDragMoveEvent;
 class QDropEvent;
 class QEvent;
 
-// Left activity rail — opt-in reshell chrome. A charcoal column in three
-// zones, top to bottom (docs/product/ui-mockups/screens/activity-rail.html):
+// Left activity rail — opt-in reshell chrome. A real `QToolBar` of `QAction`s
+// in `Qt::LeftToolBarArea`, in three zones, top to bottom
+// (docs/product/ui-mockups/screens/activity-rail.html):
 //
 //  - the sidebar's pane modes (Objects, Devices, Files, Nodes), which select
 //    which panes occupy the left sidebar;
@@ -38,7 +38,17 @@ class QEvent;
 // of real state (see MainWindow::RefreshPaneModeMarker), not a record of the
 // last click, so none can go stale when a page switch or a manual pane close
 // changes what is on screen.
-class ActivityBar : public QWidget {
+//
+// **A QToolBar of QActions, but still stylesheet-painted** — the partial of
+// shell.md §9, and the split is deliberate. Being a real toolbar of real
+// actions is what makes the rail hideable through the standard toolbar context
+// menu and its modes reachable as commands. Handing the *painting* to the
+// platform style as well, which §9 also asked for, was measured and rejected:
+// the style draws a checked action as a neutral rounded highlight with no
+// accent, and a separator as a faint dotted line — losing both the VS Code
+// active marker and the separator contrast this rail is required to have. So
+// the structure is native and the marker and separator keep their sheet.
+class ActivityBar : public QToolBar {
   Q_OBJECT
 
  public:
@@ -177,11 +187,16 @@ class ActivityBar : public QWidget {
   void changeEvent(QEvent* event) override;
 
  private:
-  // Builds one rail button with the shared sizing and glyph treatment.
-  QToolButton* MakeButton(const QIcon& icon, const QString& tooltip);
+  // Builds one rail action with the shared glyph treatment.
+  QAction* MakeAction(const QIcon& icon, const QString& tooltip);
 
-  // Recomputes the pages separator's colour from the current palette.
-  void ApplySeparatorColour();
+  // The tool button the toolbar made for `action`. Null before the toolbar has
+  // laid the action out; every caller here runs after that.
+  QToolButton* ButtonFor(const QAction* action) const;
+
+  // Rebuilds the rail's stylesheet from the current palette and tokens. Holds
+  // the marker and the separator, so a live theme switch has to re-run it.
+  void ApplyStyleSheet();
 
   // Moves the drag drop-line to the slot `local_y` would drop into, creating
   // it on first use. Without it the drop slot is invisible until the page has
@@ -193,17 +208,17 @@ class ActivityBar : public QWidget {
 
   struct Item {
     Mode mode;
-    QToolButton* button = nullptr;
+    QAction* action = nullptr;
   };
 
   struct PageItem {
     PageButton page;
-    QToolButton* button = nullptr;
+    QAction* action = nullptr;
   };
 
   struct UtilityItem {
     Utility utility;
-    QToolButton* button = nullptr;
+    QAction* action = nullptr;
   };
 
   std::vector<Item> items_;
@@ -218,27 +233,21 @@ class ActivityBar : public QWidget {
 
   std::vector<UtilityItem> utility_items_;
   ActivateUtilityCallback on_activate_utility_;
-  // The rail's own layout, so SetUtilities can append the foot group after the
-  // stretch the constructor put in.
-  QVBoxLayout* root_layout_ = nullptr;
 
-  // Sizes taken from the platform style at construction (see RailIconSize),
-  // so the rail tracks DPI and the OS text-size setting instead of the fixed
-  // 52/44/24 it used to carry.
-  int icon_size_ = 16;
-  int button_size_ = 28;
-  int band_inset_ = 2;
+  // Re-entry guard for ApplyStyleSheet: setting the sheet on this widget
+  // delivers a PaletteChange back to it, which would otherwise recompute the
+  // sheet again, without end.
+  bool applying_style_sheet_ = false;
 
-  // The pages group's own layout, so SetPages can rebuild just that section.
-  QVBoxLayout* pages_layout_ = nullptr;
-  // The container the pages group sits in. Purely structural since 2026-08-30
-  // — nothing paints it; the separator below is what distinguishes a page
-  // marker from a pane-mode marker.
-  QWidget* pages_band_ = nullptr;
-  // The rule between the pane modes and the pages. The Qt client separates the
-  // two groups with this; the web client uses a band instead (shell.md §2.1).
-  QFrame* pages_separator_ = nullptr;
-  QToolButton* new_page_button_ = nullptr;
+  // The rule between the pane modes and the pages, as a toolbar separator
+  // painted by the rail's own sheet. The Qt client separates the two groups
+  // with this; the web client uses a band instead (shell.md §2.1).
+  QAction* separator_action_ = nullptr;
+  // The "+", and the expanding spacer that pins the utilities to the foot.
+  // New pages are inserted before the "+", so both are also the anchors
+  // SetPages rebuilds against.
+  QAction* new_page_action_ = nullptr;
+  QAction* spacer_action_ = nullptr;
 
   // Where a left-press landed on a page button, so eventFilter can tell a
   // click from the start of a drag.

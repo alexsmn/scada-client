@@ -489,13 +489,23 @@ void MainWindow::CreateActivityBar() {
         }
       });
 
-  auto* rail = new QToolBar(this);
-  rail->setObjectName(QStringLiteral("ActivityRail"));
-  rail->setMovable(false);
-  rail->setFloatable(false);
-  rail->setContextMenuPolicy(Qt::PreventContextMenu);
-  rail->addWidget(activity_bar_);
-  addToolBar(Qt::LeftToolBarArea, rail);
+  // The rail IS the toolbar now (shell.md §9, partial), rather than a custom
+  // widget stuffed into one. Two consequences worth naming:
+  //
+  // Its context menu is deliberately left at the default. The wrapper this
+  // replaced set `Qt::PreventContextMenu`, which meant the standard
+  // "show/hide toolbar" menu QMainWindow offers for every toolbar and dock
+  // could not be reached — the rail was the one piece of chrome an operator
+  // could not put away. Being a real toolbar is what makes that free, and
+  // suppressing the menu again would throw away the main reason for the
+  // conversion. Page buttons keep their own `CustomContextMenu`, so a
+  // right-click on a page still gets the page menu rather than this one.
+  //
+  // The window's own title is what `windowTitle` shows; the toolbar needs one
+  // too, because that is the label QMainWindow puts in that menu.
+  activity_bar_->setWindowTitle(
+      QString::fromStdU16String(Translate("Activity bar")));
+  addToolBar(Qt::LeftToolBarArea, activity_bar_);
 }
 
 void MainWindow::WireRailPages() {

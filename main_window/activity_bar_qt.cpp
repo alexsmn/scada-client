@@ -54,8 +54,21 @@ constexpr char kPageDragMimeType[] = "application/x-scada-rail-page";
 // *ink*, which is what "the same as VS Code" means to look at, and it is also
 // the smaller icon that was asked for first.
 constexpr int kRailWidth = 48;
-constexpr int kButtonSize = 48;
+constexpr int kButtonWidth = 48;
 constexpr int kIconSize = 20;
+// Shorter than it is wide, and that is the point. VS Code's item is a 48
+// square around a 24 glyph — half the box is the glyph. Ours draws a 20 glyph
+// (see above: the same nominal size in an icon font puts less ink on screen
+// than an edge-to-edge SVG), so a 48-tall item left proportionally far more
+// air above and below than VS Code shows, and the column read as stacked
+// slabs rather than a list of marks. Keeping VS Code's glyph-to-item ratio
+// vertically is what fixes it; the width stays 48 because that is the rail.
+constexpr int kButtonHeight = kIconSize * 2;
+// The rail's own right edge. VS Code draws one — `.activitybar.bordered:before`
+// is `border-right-width: 1px` — and without it the rail and the Explorer
+// beside it are the *same* colour: both measured #1e1e1e on the dark theme
+// 2026-08-30, with nothing between them, so the two surfaces ran together.
+constexpr int kRailEdgeWidth = 1;
 // VS Code's active-item indicator. Ours was 3px.
 constexpr int kActiveMarkerWidth = 2;
 // The pages band spans the rail's full width, because a 48px button leaves no
@@ -224,51 +237,32 @@ QIcon TextIcon(const QString& text, const QColor& fg, int icon_size) {
 ActivityBar::ActivityBar(QWidget* parent,
                          std::vector<Mode> modes,
                          ActivateCallback on_activate)
-    : QWidget{parent}, on_activate_{std::move(on_activate)} {
+    : QToolBar{parent}, on_activate_{std::move(on_activate)} {
   setObjectName(QStringLiteral("activityBar"));
-  setFixedWidth(kRailWidth);
+  setOrientation(Qt::Vertical);
+  setIconSize({kIconSize, kIconSize});
+  // Fixed rather than draggable: the rail is a fixed edge of the workbench,
+  // and a movable toolbar would also grow a drag handle the design has no room
+  // for. Hiding it stays available — QMainWindow's toolbar context menu lists
+  // a toolbar whether or not it is movable, which is the whole point of being
+  // one (shell.md §9).
+  setMovable(false);
+  setFloatable(false);
+  // The edge is drawn outside the 48px of button, so the buttons keep VS
+  // Code's width and the rule sits beside them.
+  setFixedWidth(kRailWidth + kRailEdgeWidth);
   setAcceptDrops(true);
 
-  const scada::aui::ThemeTokens& tokens = RailTokens();
-  // Charcoal rail with token-driven active/hover states; the checked (active)
-  // button gets an accent left-marker and a soft accent fill.
-  setStyleSheet(
-      QStringLiteral(
-          "#activityBar { background: %1; }"
-          "#activityBar QToolButton { border: none; border-left: %5px solid "
-          "transparent; background: transparent; }"
-          "#activityBar QToolButton:hover { background: %2; }"
-          "#activityBar QToolButton:checked { border-left: %5px solid %3; "
-          "background: %4; }"
-          "#railDivider { background: %2; }")
-          .arg(tokens.rail_bg.name(), tokens.surface_muted.name(),
-               tokens.accent.name(),
-               // HexArgb, because `accent_soft` carries an alpha (.15 dark,
-               // .10 light, and a derived one under the system palette) that
-               // the default #RRGGBB name() drops. Dropped, the active marker
-               // renders as a solid accent block at ~6.7x its intended
-               // strength — the loudest thing in the rail, where the design
-               // asks for a tint under the accent edge. Every other consumer
-               // of this token already names it this way (`aui/qt/grid.cpp`,
-               // `modules/table/qt/table_toolbar.cpp`,
-               // `modules/events/qt/area_sidebar.cpp`).
-               tokens.accent_soft.name(QColor::HexArgb))
-          .arg(kActiveMarkerWidth));
+  ApplyStyleSheet();
 
-  auto* layout = new QVBoxLayout{this};
-  layout->setContentsMargins(0, 6, 0, 6);
-  layout->setSpacing(2);
-  root_layout_ = layout;
+  const scada::aui::ThemeTokens& tokens = RailTokens();
 
   for (const Mode& mode : modes) {
-    QToolButton* button =
-        MakeButton(ModeIcon(mode, tokens.fg_on_dark, kIconSize),
-                   QString::fromStdU16String(mode.label));
-    layout->addWidget(button, 0, Qt::AlignHCenter);
-
+    QAction* action = MakeAction(ModeIcon(mode, tokens.fg_on_dark, kIconSize),
+                                 QString::fromStdU16String(mode.label));
     const PaneModeId id = mode.id;
-    items_.emplace_back(Item{mode, button});
-    connect(button, &QToolButton::clicked, this, [this, id] {
+    items_.emplace_back(Item{mode, action});
+    connect(action, &QAction::triggered, this, [this, id] {
       if (on_activate_)
         on_activate_(id);
     });
@@ -288,64 +282,33 @@ ActivityBar::ActivityBar(QWidget* parent,
   // spends all its contrast on one line instead of spreading it over a region,
   // which is why it wins here and why the mockup's band, drawn at a larger
   // scale, does not transfer.
-  //
-  // This is a deliberate Qt-vs-web divergence of the kind the parity rule
-  // expects — same information architecture, each realm drawn in its own
-  // idiom — not drift to reconcile.
-  pages_separator_ = new QFrame{this};
-  pages_separator_->setObjectName(QStringLiteral("railPagesSeparator"));
-  pages_separator_->setFrameShape(QFrame::NoFrame);
-  pages_separator_->setFixedHeight(kSeparatorThickness);
+  separator_action_ = addSeparator();
 
-  pages_band_ = new QWidget{this};
-  pages_band_->setObjectName(QStringLiteral("railPagesBand"));
-
-  auto* band_layout = new QVBoxLayout{pages_band_};
-  // No inset: with nothing painted behind them the page buttons must line up
-  // with the mode buttons exactly, or the rail looks accidentally ragged.
-  band_layout->setContentsMargins(0, 0, 0, 0);
-  band_layout->setSpacing(2);
-
-  pages_layout_ = new QVBoxLayout;
-  pages_layout_->setContentsMargins(0, 0, 0, 0);
-  pages_layout_->setSpacing(2);
-  band_layout->addLayout(pages_layout_);
-
-  // The Lucide `plus`, not the literal character: the rail reads from one
-  // icon set (docs/client/ux/iconography.md §5.3, which has keyed `kNewPage`
-  // to that glyph since the set landed), and a drawn `+` sat at a different
-  // weight and on a different grid from every button above it. The web
-  // client's rail draws the same stroke plus, and so does
-  // activity-rail.html's `.ic.add`.
-  new_page_button_ =
-      MakeButton(ModeIcon(Mode{.label = u"+", .icon_kind = Icon::kNewPage},
+  new_page_action_ =
+      MakeAction(ModeIcon(Mode{.label = u"+", .icon_kind = Icon::kNewPage},
                           tokens.fg_on_dark, kIconSize),
                  QString::fromStdU16String(Translate("New page")));
   // The "+" is an action, not a destination — it must never carry a marker.
-  new_page_button_->setCheckable(false);
-  connect(new_page_button_, &QToolButton::clicked, this, [this] {
+  new_page_action_->setCheckable(false);
+  connect(new_page_action_, &QAction::triggered, this, [this] {
     if (on_new_page_)
       on_new_page_();
   });
-  band_layout->addWidget(new_page_button_, 0, Qt::AlignHCenter);
 
-  layout->addSpacing(kBandGap);
-  layout->addWidget(pages_separator_);
-  layout->addSpacing(kBandGap);
-  layout->addWidget(pages_band_, 0, Qt::AlignHCenter);
-
-  ApplySeparatorColour();
-
-  layout->addStretch(1);
+  // The stretch that pins the utilities to the foot however tall the pages
+  // group grows. A toolbar has no addStretch(), so it is an expanding widget.
+  auto* spacer = new QWidget{this};
+  spacer->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+  spacer_action_ = addWidget(spacer);
 
   SetPages({});
 }
 
 ActivityBar::~ActivityBar() = default;
 
-void ActivityBar::ApplySeparatorColour() {
-  if (!pages_separator_)
-    return;
+void ActivityBar::ApplyStyleSheet() {
+  applying_style_sheet_ = true;
+  const scada::aui::ThemeTokens& tokens = RailTokens();
 
   // Derived from the rail's own window colour so it follows the platform
   // palette, the OS light/dark preference and the high-contrast palette, where
@@ -354,59 +317,102 @@ void ActivityBar::ApplySeparatorColour() {
   // Pitched hard. Two earlier attempts put this line 18 and then 49 levels
   // above the rail and both were reported invisible in the running client, so
   // the factor here is chosen to clear that by a wide margin rather than to be
-  // tasteful: on the dark theme's #1e1e1e rail it lands near 130.
+  // tasteful: on the dark theme's #1e1e1e rail it lands near 130. The platform
+  // style's own separator — a faint dotted line — is fainter still, which is
+  // why this stays in the sheet rather than being handed to the style with the
+  // rest of §9.
   const QColor base = palette().color(QPalette::Window);
   const QColor rule =
       base.lightness() < 128 ? base.lighter(430) : base.darker(190);
 
-  // A stylesheet, not a palette + autoFillBackground. The rail itself carries
-  // a stylesheet, and Qt's stylesheet style then takes over background
-  // painting for its children, so a palette-set Window colour on this frame is
-  // silently ignored — it rendered at 41 instead of the 129 the same
-  // derivation produces standalone, which is how a correctly computed colour
-  // still came out invisible.
-  pages_separator_->setStyleSheet(
-      QStringLiteral("#railPagesSeparator { background: %1; }")
-          .arg(rule.name()));
+  // Marker and separator only. Everything structural — the toolbar itself, its
+  // hiding, its actions — is now the platform's (shell.md §9, partial).
+  setStyleSheet(
+      QStringLiteral(
+          "#activityBar { background: %1; border: none; "
+          "border-right: %9px solid %5; spacing: 2px; }"
+          // Both side borders are reserved, and only the left one is ever
+          // coloured. A marker drawn as a left border alone steals its width
+          // from the content box on one side only, which pushed every glyph
+          // 1px right of the rail's centre (measured 24.5 against 23.5,
+          // 2026-08-30) — visible as a rail whose icons sit off-axis.
+          "#activityBar QToolButton { border: none; "
+          "border-left: %6px solid transparent; "
+          "border-right: %6px solid transparent; background: transparent; "
+          "min-width: %7px; min-height: %8px; }"
+          "#activityBar QToolButton:hover { background: %2; }"
+          "#activityBar QToolButton:checked { border-left: %6px solid %3; "
+          "background: %4; }"
+          "#activityBar::separator { background: %5; height: 1px; "
+          "margin: %10px 0; }")
+          .arg(tokens.rail_bg.name(), tokens.surface_muted.name(),
+               tokens.accent.name(),
+               // HexArgb, because `accent_soft` carries an alpha (.15 dark,
+               // .10 light, and a derived one under the system palette) that
+               // the default #RRGGBB name() drops. Dropped, the active marker
+               // renders as a solid accent block at ~6.7x its intended
+               // strength — and byte-identical to the accent edge drawn over
+               // it, so the edge vanishes. Every other consumer of this token
+               // already names it this way (`aui/qt/grid.cpp`).
+               tokens.accent_soft.name(QColor::HexArgb), rule.name())
+          .arg(kActiveMarkerWidth)
+          .arg(kButtonWidth - 2 * kActiveMarkerWidth)
+          .arg(kButtonHeight)
+          .arg(kRailEdgeWidth)
+          .arg(kBandGap));
+  applying_style_sheet_ = false;
 }
 
 void ActivityBar::changeEvent(QEvent* event) {
-  QWidget::changeEvent(event);
-  // Theme changes must apply live (docs/client/ux/README.md), and the rule is
-  // computed from the palette rather than read from it, so nothing recomputes
-  // it for us.
+  QToolBar::changeEvent(event);
+  // Theme changes must apply live (docs/client/ux/README.md), and the marker
+  // and rule are computed from the palette rather than read from it, so
+  // nothing recomputes them for us.
+  //
+  // The guard is load-bearing, not defensive. The sheet is now set on the rail
+  // itself rather than on a child, and `setStyleSheet` delivers a PaletteChange
+  // to the widget it is set on — so without this the recompute re-enters
+  // itself and recurses until the stack is gone. It crashed every run in the
+  // constructor until 2026-08-30, before a single test body executed.
+  if (applying_style_sheet_)
+    return;
   if (event->type() == QEvent::PaletteChange ||
       event->type() == QEvent::ApplicationPaletteChange) {
-    ApplySeparatorColour();
+    ApplyStyleSheet();
   }
 }
 
-QToolButton* ActivityBar::MakeButton(const QIcon& icon,
-                                     const QString& tooltip) {
-  auto* button = new QToolButton{this};
-  button->setCheckable(true);
-  button->setAutoRaise(true);
-  button->setFixedSize(kButtonSize, kButtonSize);
-  button->setIconSize({kIconSize, kIconSize});
-  button->setIcon(icon);
-  button->setToolTip(tooltip);
-  return button;
+QAction* ActivityBar::MakeAction(const QIcon& icon, const QString& tooltip) {
+  QAction* action = addAction(icon, QString{});
+  action->setCheckable(true);
+  action->setToolTip(tooltip);
+  return action;
+}
+
+QToolButton* ActivityBar::ButtonFor(const QAction* action) const {
+  return qobject_cast<QToolButton*>(
+      widgetForAction(const_cast<QAction*>(action)));
 }
 
 void ActivityBar::SetActiveMode(std::optional<PaneModeId> mode) {
   for (const Item& item : items_)
-    item.button->setChecked(mode && item.mode.id == *mode);
+    item.action->setChecked(mode && item.mode.id == *mode);
 }
 
 void ActivityBar::SetModeAvailable(PaneModeId mode, bool available) {
   for (const Item& item : items_) {
     if (item.mode.id != mode)
       continue;
-    item.button->setVisible(available);
+    item.action->setVisible(available);
+    // The action drives the toolbar, but the widget only follows on the next
+    // layout pass — which has not happened on a rail that is not yet shown. Set
+    // it directly too, so hiding takes effect immediately either way.
+    if (QToolButton* button = ButtonFor(item.action))
+      button->setVisible(available);
     // A hidden button must not keep the marker: the rail would claim a mode
     // the operator cannot see.
     if (!available)
-      item.button->setChecked(false);
+      item.action->setChecked(false);
     return;
   }
 }
@@ -432,8 +438,11 @@ int ActivityBar::PageDropIndexForY(int local_y) const {
   // out.
   int index = 0;
   for (const PageItem& item : page_items_) {
+    const QToolButton* button = ButtonFor(item.action);
+    if (!button)
+      continue;
     const int midpoint =
-        item.button->mapTo(this, QPoint{0, 0}).y() + item.button->height() / 2;
+        button->mapTo(this, QPoint{0, 0}).y() + button->height() / 2;
     if (local_y < midpoint)
       return index;
     ++index;
@@ -454,7 +463,7 @@ void ActivityBar::dragMoveEvent(QDragMoveEvent* event) {
 }
 
 void ActivityBar::dragLeaveEvent(QDragLeaveEvent* event) {
-  QWidget::dragLeaveEvent(event);
+  QToolBar::dragLeaveEvent(event);
   HideDropIndicator();
 }
 
@@ -481,8 +490,10 @@ void ActivityBar::ShowDropIndicator(int local_y) {
   // that slot, or the bottom edge of the last one when it would go to the end.
   const int index = PageDropIndexForY(local_y);
   const bool past_last = index >= static_cast<int>(page_items_.size());
-  const QToolButton* anchor =
-      past_last ? page_items_.back().button : page_items_[index].button;
+  const QToolButton* anchor = ButtonFor(past_last ? page_items_.back().action
+                                                  : page_items_[index].action);
+  if (!anchor)
+    return;
   const QPoint anchor_top_left = anchor->mapTo(this, QPoint{0, 0});
   const int y =
       past_last ? anchor_top_left.y() + anchor->height() : anchor_top_left.y();
@@ -532,12 +543,13 @@ void ActivityBar::dropEvent(QDropEvent* event) {
 bool ActivityBar::eventFilter(QObject* watched, QEvent* event) {
   auto* button = qobject_cast<QToolButton*>(watched);
   if (!button)
-    return QWidget::eventFilter(watched, event);
+    return QToolBar::eventFilter(watched, event);
 
-  const auto page = std::ranges::find(
-      page_items_, button, [](const PageItem& item) { return item.button; });
+  const auto page = std::ranges::find_if(
+      page_items_,
+      [&](const PageItem& item) { return ButtonFor(item.action) == button; });
   if (page == page_items_.end())
-    return QWidget::eventFilter(watched, event);
+    return QToolBar::eventFilter(watched, event);
 
   if (event->type() == QEvent::MouseButtonPress) {
     auto* mouse = static_cast<QMouseEvent*>(event);
@@ -574,19 +586,25 @@ bool ActivityBar::eventFilter(QObject* watched, QEvent* event) {
   if (event->type() == QEvent::MouseButtonRelease)
     drag_page_id_ = 0;
 
-  return QWidget::eventFilter(watched, event);
+  return QToolBar::eventFilter(watched, event);
 }
 
 void ActivityBar::SetPages(std::vector<PageButton> pages) {
   for (const PageItem& item : page_items_) {
-    pages_layout_->removeWidget(item.button);
-    // Reparent before deleteLater(): SetPages can run from a page button's own
-    // clicked handler (activate -> OpenPage -> refresh), so the widget cannot
-    // be deleted synchronously — but until the deferred delete runs it would
-    // still be a child of the rail, still painted, and still found by
-    // findChildren. Detaching now makes the rebuild take effect immediately.
-    item.button->setParent(nullptr);
-    item.button->deleteLater();
+    // Detach the button before deferring its deletion. `removeAction` drops
+    // the action but leaves the button the toolbar built for it parented until
+    // the event loop runs, and until then it is still a child, still painted,
+    // and still found by findChildren — measured 2026-08-30, a rebuild from
+    // three pages to four left seven buttons on the rail. Deleting
+    // synchronously is not an option: SetPages can run from a page button's
+    // own handler (activate -> OpenPage -> refresh).
+    QToolButton* button = ButtonFor(item.action);
+    removeAction(item.action);
+    if (button) {
+      button->setParent(nullptr);
+      button->deleteLater();
+    }
+    item.action->deleteLater();
   }
   page_items_.clear();
 
@@ -610,39 +628,47 @@ void ActivityBar::SetPages(std::vector<PageButton> pages) {
     // what the page holds, neither of which fits on the button itself.
     const QString label =
         ordinal + QStringLiteral(" · ") + QString::fromStdU16String(page.title);
-    QToolButton* button = MakeButton(icon, label);
+
+    // Inserted before the "+", so the pages stay between the separator and the
+    // "+" however often this is rebuilt.
+    auto* action = new QAction{icon, QString{}, this};
+    action->setCheckable(true);
+    action->setToolTip(label);
     if (page.opened_elsewhere) {
-      button->setEnabled(false);
-      button->setToolTip(
+      action->setEnabled(false);
+      action->setToolTip(
           label + QStringLiteral(" — ") +
           QString::fromStdU16String(Translate("open in another window")));
     }
-    button->setContextMenuPolicy(Qt::CustomContextMenu);
-    button->installEventFilter(this);
+    insertAction(new_page_action_, action);
 
     const int page_id = page.page_id;
-    connect(button, &QToolButton::clicked, this, [this, page_id] {
+    connect(action, &QAction::triggered, this, [this, page_id] {
       if (on_activate_page_)
         on_activate_page_(page_id);
     });
-    connect(button, &QToolButton::customContextMenuRequested, this,
-            [this, button, page_id](const QPoint& pos) {
-              if (on_page_context_menu_)
-                on_page_context_menu_(page_id, button->mapToGlobal(pos));
-            });
 
-    pages_layout_->addWidget(button, 0, Qt::AlignHCenter);
-    page_items_.emplace_back(PageItem{page, button});
+    if (QToolButton* button = ButtonFor(action)) {
+      button->setContextMenuPolicy(Qt::CustomContextMenu);
+      button->installEventFilter(this);
+      connect(button, &QToolButton::customContextMenuRequested, this,
+              [this, button, page_id](const QPoint& pos) {
+                if (on_page_context_menu_)
+                  on_page_context_menu_(page_id, button->mapToGlobal(pos));
+              });
+    }
+
+    page_items_.emplace_back(PageItem{page, action});
   }
 
-  // Re-assert the marker: the buttons it referred to were just destroyed.
+  // Re-assert the marker: the actions it referred to were just destroyed.
   SetActivePage(active_page_id_);
 }
 
 void ActivityBar::SetActivePage(int page_id) {
   active_page_id_ = page_id;
   for (const PageItem& item : page_items_)
-    item.button->setChecked(item.page.page_id == page_id);
+    item.action->setChecked(item.page.page_id == page_id);
 }
 
 void ActivityBar::SetUtilities(std::vector<Utility> utilities,
@@ -651,22 +677,21 @@ void ActivityBar::SetUtilities(std::vector<Utility> utilities,
 
   const scada::aui::ThemeTokens& tokens = RailTokens();
 
-  // Appended after the stretch the constructor added, which is what pins the
-  // group to the foot however tall the pages group grows.
+  // Appended after the expanding spacer the constructor added, which is what
+  // pins the group to the foot however tall the pages group grows.
   for (const Utility& utility : utilities) {
-    QToolButton* button = MakeButton(
+    QAction* action = MakeAction(
         ModeIcon(Mode{.label = utility.label, .icon_kind = utility.icon_kind},
                  tokens.fg_on_dark, kIconSize),
         QString::fromStdU16String(utility.label));
-    root_layout_->addWidget(button, 0, Qt::AlignHCenter);
 
     const int utility_id = utility.utility_id;
-    connect(button, &QToolButton::clicked, this, [this, utility_id] {
+    connect(action, &QAction::triggered, this, [this, utility_id] {
       if (on_activate_utility_)
         on_activate_utility_(utility_id);
     });
 
-    utility_items_.emplace_back(UtilityItem{utility, button});
+    utility_items_.emplace_back(UtilityItem{utility, action});
   }
 }
 
@@ -674,18 +699,20 @@ void ActivityBar::SetUtilityAvailable(int utility_id, bool available) {
   for (const UtilityItem& item : utility_items_) {
     if (item.utility.utility_id != utility_id)
       continue;
-    item.button->setVisible(available);
+    item.action->setVisible(available);
+    if (QToolButton* button = ButtonFor(item.action))
+      button->setVisible(available);
     // Same rule as a hidden mode: the rail must not claim a surface the
     // operator cannot see.
     if (!available)
-      item.button->setChecked(false);
+      item.action->setChecked(false);
     return;
   }
 }
 
 void ActivityBar::SetActiveUtility(std::optional<int> utility_id) {
   for (const UtilityItem& item : utility_items_) {
-    item.button->setChecked(utility_id &&
+    item.action->setChecked(utility_id &&
                             item.utility.utility_id == *utility_id);
   }
 }
