@@ -1,20 +1,41 @@
 #include "main_window/event_dispatcher.h"
 
 #include "base/any_executor_dispatch.h"
-#include "resources/common_resources.h"
+#include "controller/action_manager.h"
 #include "events/local_events.h"
 #include "events/node_event_provider.h"
-#include "controller/action_manager.h"
 #include "profile/profile.h"
+#include "resources/common_resources.h"
 
 #if defined(_WIN32)
 #include <mmsystem.h>
+#else
+#include <QApplication>
 #endif
 
-using namespace std::chrono_literals;
 namespace {
-const auto kDelay = 300ms;
+
+// The platform's audible annunciator. Windows loops a system alias for as long
+// as the alarm stands, so it takes both edges; everywhere else the tone is
+// one-shot on the rising edge, because Qt Widgets offers no looping system
+// sound — `QSoundEffect` lives in Qt Multimedia, which this client does not
+// depend on. So on those platforms there is nothing to stop on the falling
+// edge, and the annunciation that lasts until acknowledgement remains the
+// status-bar count rather than the tone.
+void PlayAlarmSound(bool playing) {
+#if defined(_WIN32)
+  if (playing)
+    PlaySound((LPCTSTR)SND_ALIAS_SYSTEMEXCLAMATION, nullptr,
+              SND_ALIAS_ID | SND_ASYNC | SND_LOOP);
+  else
+    PlaySound(nullptr, nullptr, 0);
+#else
+  if (playing)
+    QApplication::beep();
+#endif
 }
+
+}  // namespace
 
 EventDispatcher::EventDispatcher(EventDispatcherContext&& context)
     : EventDispatcherContext{std::move(context)} {
@@ -43,9 +64,9 @@ void EventDispatcher::OnAllEventsAcknowledged() {
 void EventDispatcher::ShowEventsDelayed(bool added) {
   if (!showing_events_) {
     showing_events_ = true;
-    PostDelayedTask(
-        executor_, kDelay,
-        cancelation_.Bind([this] { ShowEvents(showing_events_added_); }));
+    PostDelayedTask(executor_, event_debounce_, cancelation_.Bind([this] {
+      ShowEvents(showing_events_added_);
+    }));
   }
   showing_events_added_ = added;
 }
@@ -67,16 +88,15 @@ void EventDispatcher::ShowEvents(bool added) {
 
   events_handler_(has_events);
 
-#if defined(_WIN32)
+  // The audible annunciator. The latch is platform-independent so that the
+  // option means the same thing everywhere; only the emission below differs.
   bool play_sound = has_events && profile_.event_play_sound;
   if (playing_alarm_sound_ != play_sound) {
     playing_alarm_sound_ = play_sound;
 
-    if (playing_alarm_sound_)
-      PlaySound((LPCTSTR)SND_ALIAS_SYSTEMEXCLAMATION, nullptr,
-                SND_ALIAS_ID | SND_ASYNC | SND_LOOP);
+    if (alarm_sound_handler_)
+      alarm_sound_handler_(playing_alarm_sound_);
     else
-      PlaySound(nullptr, nullptr, 0);
+      PlayAlarmSound(playing_alarm_sound_);
   }
-#endif
 }

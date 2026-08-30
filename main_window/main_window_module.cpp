@@ -417,9 +417,12 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
   main_window_manager_->Init();
 
   event_dispatcher_ = std::make_unique<EventDispatcher>(EventDispatcherContext{
-      executor_, node_event_provider_, local_events_, profile_,
-      [this](bool has_events) { OnEvents(has_events); },
-      ui_command_registry_.action_manager()});
+      .executor_ = executor_,
+      .node_event_provider_ = node_event_provider_,
+      .local_events_ = local_events_,
+      .profile_ = profile_,
+      .events_handler_ = [this](bool has_events) { OnEvents(has_events); },
+      .action_manager_ = ui_command_registry_.action_manager()});
 
   singletons_.emplace(std::make_shared<PageCommands>(
       PageCommandsContext{executor_, global_commands_, ui_command_registry_,
