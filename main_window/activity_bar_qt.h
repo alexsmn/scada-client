@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+class QFrame;
 class QToolButton;
 class QVBoxLayout;
 class QIcon;
@@ -26,8 +27,8 @@ class QEvent;
 //    which panes occupy the left sidebar;
 //  - the profile's pages, numbered 1..N, plus a "+" that creates one. Pages
 //    stand in for the web client's browser tabs: each replaces the whole
-//    workspace. They sit on their own band, which is what keeps a page marker
-//    from reading as a mode;
+//    workspace. A separator above them is what keeps a page marker from
+//    reading as a mode — the web client uses a band there instead;
 //  - a stretch, then the pinned utilities (Settings, and Users for an admin
 //    session) at the foot.
 //
@@ -67,7 +68,7 @@ class ActivityBar : public QWidget {
   // One page button. Rendered as the operator's chosen icon, falling back to
   // the 1-based position when no icon is set or the key is unknown. The
   // tooltip carries both — `2 · Alarms` — because titles are arbitrary and
-  // will not fit a 52 px rail, and the ordinal still names the shortcut.
+  // will not fit a 48 px rail, and the ordinal still names the shortcut.
   struct PageButton {
     int page_id = 0;
     std::u16string title;
@@ -171,16 +172,16 @@ class ActivityBar : public QWidget {
   // QToolButtons.
   bool eventFilter(QObject* watched, QEvent* event) override;
 
-  // QWidget — recomputes the pages band when the palette changes, so a live
-  // theme switch does not leave the band tinted for the previous one.
+  // QWidget — recomputes the pages separator when the palette changes, so a
+  // live theme switch does not leave the rule coloured for the previous one.
   void changeEvent(QEvent* event) override;
 
  private:
   // Builds one rail button with the shared sizing and glyph treatment.
   QToolButton* MakeButton(const QIcon& icon, const QString& tooltip);
 
-  // Recomputes the pages band's fill from the current palette.
-  void ApplyBandPalette();
+  // Recomputes the pages separator's colour from the current palette.
+  void ApplySeparatorColour();
 
   // Moves the drag drop-line to the slot `local_y` would drop into, creating
   // it on first use. Without it the drop slot is invisible until the page has
@@ -221,11 +222,22 @@ class ActivityBar : public QWidget {
   // stretch the constructor put in.
   QVBoxLayout* root_layout_ = nullptr;
 
+  // Sizes taken from the platform style at construction (see RailIconSize),
+  // so the rail tracks DPI and the OS text-size setting instead of the fixed
+  // 52/44/24 it used to carry.
+  int icon_size_ = 16;
+  int button_size_ = 28;
+  int band_inset_ = 2;
+
   // The pages group's own layout, so SetPages can rebuild just that section.
   QVBoxLayout* pages_layout_ = nullptr;
-  // The container the pages group sits on. Its fill is what distinguishes a
-  // page marker from a pane-mode marker, since both are drawn the same way.
+  // The container the pages group sits in. Purely structural since 2026-08-30
+  // — nothing paints it; the separator below is what distinguishes a page
+  // marker from a pane-mode marker.
   QWidget* pages_band_ = nullptr;
+  // The rule between the pane modes and the pages. The Qt client separates the
+  // two groups with this; the web client uses a band instead (shell.md §2.1).
+  QFrame* pages_separator_ = nullptr;
   QToolButton* new_page_button_ = nullptr;
 
   // Where a left-press landed on a page button, so eventFilter can tell a

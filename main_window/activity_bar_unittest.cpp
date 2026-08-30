@@ -6,6 +6,7 @@
 #include <QApplication>
 #include <QImage>
 #include <QRegularExpression>
+#include <QStyle>
 #include <QToolButton>
 
 #include <gtest/gtest.h>
@@ -283,7 +284,7 @@ TEST_F(ActivityBarTest, ActiveMarkerFillIsDistinctFromItsAccentEdge) {
   ActivityBar bar{nullptr, MakeModes(), {}};
 
   const QRegularExpression checked{
-      QStringLiteral(":checked \\{ border-left: 3px solid (#[0-9a-fA-F]+); "
+      QStringLiteral(":checked \\{ border-left: \\d+px solid (#[0-9a-fA-F]+); "
                      "background: (#[0-9a-fA-F]+); \\}")};
   const QRegularExpressionMatch match = checked.match(bar.styleSheet());
   ASSERT_TRUE(match.hasMatch()) << bar.styleSheet().toStdString();

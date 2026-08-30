@@ -12,6 +12,7 @@
 #include <QDragLeaveEvent>
 #include <QDropEvent>
 #include <QFont>
+#include <QFrame>
 #include <QIcon>
 #include <QMimeData>
 #include <QMouseEvent>
@@ -20,6 +21,7 @@
 #include <QPen>
 
 #include <QPixmap>
+#include <QStyle>
 #include <QToolButton>
 #include <QVBoxLayout>
 #include <string_view>
@@ -33,12 +35,41 @@ namespace {
 // somewhere else in the app can never be mistaken for a page.
 constexpr char kPageDragMimeType[] = "application/x-scada-rail-page";
 
-constexpr int kRailWidth = 52;
-// Inset of the page buttons inside their band. Enough that the band reads as a
-// container around them rather than as a stripe behind them.
-constexpr int kBandPadding = 3;
-constexpr int kButtonSize = 44;
-constexpr int kIconSize = 24;
+// The rail's geometry matches VS Code's activity bar on macOS, which is what
+// the user asked for. Read out of the shipped app rather than from memory —
+// `/Applications/Visual Studio
+// Code.app/Contents/Resources/app/out/vs/workbench/
+// workbench.desktop.main.css`, verified 2026-08-30:
+//
+//   --activity-bar-width:        48px   (rail, and each action's width)
+//   --activity-bar-action-height:48px   (so an item is a 48 square)
+//   --activity-bar-icon-size:    24px   (codicon font-size)
+//   active item indicator:       border-left: 2px solid, top 0, height 100%
+//
+// **The icon is 20 here, not 24, and that is deliberate.** VS Code's 24 is a
+// *font-size* for a codicon, and an icon font leaves bearing inside the em box
+// — the drawn ink is nearer 18-19px. Our Lucide glyphs are SVGs that use the
+// full 24px viewBox edge to edge, so rendering them at 24 puts noticeably more
+// ink on screen than VS Code shows at the same nominal number. 20 matches the
+// *ink*, which is what "the same as VS Code" means to look at, and it is also
+// the smaller icon that was asked for first.
+constexpr int kRailWidth = 48;
+constexpr int kButtonSize = 48;
+constexpr int kIconSize = 20;
+// VS Code's active-item indicator. Ours was 3px.
+constexpr int kActiveMarkerWidth = 2;
+// The pages band spans the rail's full width, because a 48px button leaves no
+// room to inset it. It separates by rule and fill rather than by being a box,
+// so the rules do the work a box outline would have done.
+constexpr int kBandPadding = 2;
+// The rule between the mode group and the pages group. 1px is what a
+// native separator is; the contrast, not the thickness, is what makes it
+// read (see ApplySeparatorColour).
+constexpr int kSeparatorThickness = 1;
+// Air above and below the band. Contrast alone left the two groups touching;
+// the gap is what makes them read as two groups rather than one banded list.
+constexpr int kBandGap = 8;
+
 // The drag drop-line. Thin enough to read as a boundary between two buttons
 // rather than as a slot of its own.
 constexpr int kDropIndicatorHeight = 2;
@@ -146,8 +177,8 @@ std::string_view PageGlyph(std::string_view key) {
 // A rail button icon that always shows something: the dedicated section glyph,
 // or a charcoal-friendly glyph of the label's first letter when the section has
 // no dedicated icon.
-QIcon ModeIcon(const ActivityBar::Mode& mode, const QColor& fg) {
-  QPixmap pixmap{kIconSize, kIconSize};
+QIcon ModeIcon(const ActivityBar::Mode& mode, const QColor& fg, int icon_size) {
+  QPixmap pixmap{icon_size, icon_size};
   pixmap.fill(Qt::transparent);
   QPainter painter{&pixmap};
   painter.setRenderHint(QPainter::Antialiasing);
@@ -155,13 +186,13 @@ QIcon ModeIcon(const ActivityBar::Mode& mode, const QColor& fg) {
   if (const std::string_view glyph = ModeGlyph(mode.icon_kind);
       !glyph.empty()) {
     painter.end();
-    return LoadTintedGlyph(glyph, kIconSize, fg,
+    return LoadTintedGlyph(glyph, icon_size, fg,
                            qApp ? qApp->devicePixelRatio() : 1.0);
   }
 
   painter.setPen(fg);
   QFont font = painter.font();
-  font.setPixelSize(kIconSize - 6);
+  font.setPixelSize(icon_size * 3 / 4);
   font.setBold(true);
   painter.setFont(font);
   const QString glyph =
@@ -173,15 +204,15 @@ QIcon ModeIcon(const ActivityBar::Mode& mode, const QColor& fg) {
 }
 
 // A rail button icon showing `text` — used for the numbered page buttons,
-// whose titles are arbitrary and cannot fit a 52 px rail.
-QIcon TextIcon(const QString& text, const QColor& fg) {
-  QPixmap pixmap{kIconSize, kIconSize};
+// whose titles are arbitrary and cannot fit a 48 px rail.
+QIcon TextIcon(const QString& text, const QColor& fg, int icon_size) {
+  QPixmap pixmap{icon_size, icon_size};
   pixmap.fill(Qt::transparent);
   QPainter painter{&pixmap};
   painter.setRenderHint(QPainter::Antialiasing);
   painter.setPen(fg);
   QFont font = painter.font();
-  font.setPixelSize(kIconSize - 8);
+  font.setPixelSize(icon_size * 2 / 3);
   font.setBold(true);
   painter.setFont(font);
   painter.drawText(pixmap.rect(), Qt::AlignCenter, text);
@@ -204,10 +235,10 @@ ActivityBar::ActivityBar(QWidget* parent,
   setStyleSheet(
       QStringLiteral(
           "#activityBar { background: %1; }"
-          "#activityBar QToolButton { border: none; border-left: 3px solid "
+          "#activityBar QToolButton { border: none; border-left: %5px solid "
           "transparent; background: transparent; }"
           "#activityBar QToolButton:hover { background: %2; }"
-          "#activityBar QToolButton:checked { border-left: 3px solid %3; "
+          "#activityBar QToolButton:checked { border-left: %5px solid %3; "
           "background: %4; }"
           "#railDivider { background: %2; }")
           .arg(tokens.rail_bg.name(), tokens.surface_muted.name(),
@@ -221,7 +252,8 @@ ActivityBar::ActivityBar(QWidget* parent,
                // of this token already names it this way (`aui/qt/grid.cpp`,
                // `modules/table/qt/table_toolbar.cpp`,
                // `modules/events/qt/area_sidebar.cpp`).
-               tokens.accent_soft.name(QColor::HexArgb)));
+               tokens.accent_soft.name(QColor::HexArgb))
+          .arg(kActiveMarkerWidth));
 
   auto* layout = new QVBoxLayout{this};
   layout->setContentsMargins(0, 6, 0, 6);
@@ -229,8 +261,9 @@ ActivityBar::ActivityBar(QWidget* parent,
   root_layout_ = layout;
 
   for (const Mode& mode : modes) {
-    QToolButton* button = MakeButton(ModeIcon(mode, tokens.fg_on_dark),
-                                     QString::fromStdU16String(mode.label));
+    QToolButton* button =
+        MakeButton(ModeIcon(mode, tokens.fg_on_dark, kIconSize),
+                   QString::fromStdU16String(mode.label));
     layout->addWidget(button, 0, Qt::AlignHCenter);
 
     const PaneModeId id = mode.id;
@@ -241,18 +274,36 @@ ActivityBar::ActivityBar(QWidget* parent,
     });
   }
 
-  // The pages group sits on its own band. A pane mode and a page are active at
-  // the same time and the two markers are drawn identically, so something has
-  // to say which is which; a plain divider left them reading as one column
-  // with two selections. The band groups the pages instead — same marker, but
-  // it lands inside a container that is visibly the page group.
+  // A pane mode and a page are active at the same time and the two markers are
+  // drawn identically, so something has to say which is which. **In the Qt
+  // client that is a separator; the web client keeps the band** (see
+  // docs/client/ux/shell.md §2.1).
+  //
+  // The band was tried here first, twice, and it does not carry at this rail's
+  // density. Measured on the dark theme 2026-08-30: as a fill alone it stood
+  // 8/255 off the rail, and strengthened to a fill plus 1px rules it was still
+  // only 15 off with the rules 34 above the fill — legible in a magnified crop
+  // and not legible in the running client, which is the only test that counts.
+  // A 48px-wide tint has too little area to register as a container. A rule
+  // spends all its contrast on one line instead of spreading it over a region,
+  // which is why it wins here and why the mockup's band, drawn at a larger
+  // scale, does not transfer.
+  //
+  // This is a deliberate Qt-vs-web divergence of the kind the parity rule
+  // expects — same information architecture, each realm drawn in its own
+  // idiom — not drift to reconcile.
+  pages_separator_ = new QFrame{this};
+  pages_separator_->setObjectName(QStringLiteral("railPagesSeparator"));
+  pages_separator_->setFrameShape(QFrame::NoFrame);
+  pages_separator_->setFixedHeight(kSeparatorThickness);
+
   pages_band_ = new QWidget{this};
   pages_band_->setObjectName(QStringLiteral("railPagesBand"));
-  pages_band_->setAutoFillBackground(true);
 
   auto* band_layout = new QVBoxLayout{pages_band_};
-  band_layout->setContentsMargins(kBandPadding, kBandPadding, kBandPadding,
-                                  kBandPadding);
+  // No inset: with nothing painted behind them the page buttons must line up
+  // with the mode buttons exactly, or the rail looks accidentally ragged.
+  band_layout->setContentsMargins(0, 0, 0, 0);
   band_layout->setSpacing(2);
 
   pages_layout_ = new QVBoxLayout;
@@ -268,7 +319,7 @@ ActivityBar::ActivityBar(QWidget* parent,
   // activity-rail.html's `.ic.add`.
   new_page_button_ =
       MakeButton(ModeIcon(Mode{.label = u"+", .icon_kind = Icon::kNewPage},
-                          tokens.fg_on_dark),
+                          tokens.fg_on_dark, kIconSize),
                  QString::fromStdU16String(Translate("New page")));
   // The "+" is an action, not a destination — it must never carry a marker.
   new_page_button_->setCheckable(false);
@@ -278,11 +329,12 @@ ActivityBar::ActivityBar(QWidget* parent,
   });
   band_layout->addWidget(new_page_button_, 0, Qt::AlignHCenter);
 
-  layout->addSpacing(6);
+  layout->addSpacing(kBandGap);
+  layout->addWidget(pages_separator_);
+  layout->addSpacing(kBandGap);
   layout->addWidget(pages_band_, 0, Qt::AlignHCenter);
-  layout->addSpacing(6);
 
-  ApplyBandPalette();
+  ApplySeparatorColour();
 
   layout->addStretch(1);
 
@@ -291,32 +343,41 @@ ActivityBar::ActivityBar(QWidget* parent,
 
 ActivityBar::~ActivityBar() = default;
 
-void ActivityBar::ApplyBandPalette() {
-  if (!pages_band_)
+void ActivityBar::ApplySeparatorColour() {
+  if (!pages_separator_)
     return;
 
-  // Derived from the rail's own window colour rather than a baked value, so the
-  // band follows the platform palette and the OS light/dark preference without
-  // a stylesheet: lighter on a dark palette, darker on a light one. Deriving it
-  // also means it stays correct under the high-contrast palette, where a fixed
-  // tint would either vanish or shout.
+  // Derived from the rail's own window colour so it follows the platform
+  // palette, the OS light/dark preference and the high-contrast palette, where
+  // a baked value would either vanish or shout.
+  //
+  // Pitched hard. Two earlier attempts put this line 18 and then 49 levels
+  // above the rail and both were reported invisible in the running client, so
+  // the factor here is chosen to clear that by a wide margin rather than to be
+  // tasteful: on the dark theme's #1e1e1e rail it lands near 130.
   const QColor base = palette().color(QPalette::Window);
-  const QColor band =
-      base.lightness() < 128 ? base.lighter(128) : base.darker(107);
+  const QColor rule =
+      base.lightness() < 128 ? base.lighter(430) : base.darker(190);
 
-  QPalette band_palette = pages_band_->palette();
-  band_palette.setColor(QPalette::Window, band);
-  pages_band_->setPalette(band_palette);
+  // A stylesheet, not a palette + autoFillBackground. The rail itself carries
+  // a stylesheet, and Qt's stylesheet style then takes over background
+  // painting for its children, so a palette-set Window colour on this frame is
+  // silently ignored — it rendered at 41 instead of the 129 the same
+  // derivation produces standalone, which is how a correctly computed colour
+  // still came out invisible.
+  pages_separator_->setStyleSheet(
+      QStringLiteral("#railPagesSeparator { background: %1; }")
+          .arg(rule.name()));
 }
 
 void ActivityBar::changeEvent(QEvent* event) {
   QWidget::changeEvent(event);
-  // Theme changes must apply live (docs/client/ux/README.md), and the band is
+  // Theme changes must apply live (docs/client/ux/README.md), and the rule is
   // computed from the palette rather than read from it, so nothing recomputes
   // it for us.
   if (event->type() == QEvent::PaletteChange ||
       event->type() == QEvent::ApplicationPaletteChange) {
-    ApplyBandPalette();
+    ApplySeparatorColour();
   }
 }
 
@@ -541,7 +602,7 @@ void ActivityBar::SetPages(std::vector<PageButton> pages) {
     // than to a blank one.
     const std::string_view glyph = PageGlyph(page.icon_key);
     QIcon icon = glyph.empty()
-                     ? TextIcon(ordinal, tokens.fg_on_dark)
+                     ? TextIcon(ordinal, tokens.fg_on_dark, kIconSize)
                      : LoadTintedGlyph(glyph, kIconSize, tokens.fg_on_dark,
                                        qApp ? qApp->devicePixelRatio() : 1.0);
 
@@ -595,7 +656,7 @@ void ActivityBar::SetUtilities(std::vector<Utility> utilities,
   for (const Utility& utility : utilities) {
     QToolButton* button = MakeButton(
         ModeIcon(Mode{.label = utility.label, .icon_kind = utility.icon_kind},
-                 tokens.fg_on_dark),
+                 tokens.fg_on_dark, kIconSize),
         QString::fromStdU16String(utility.label));
     root_layout_->addWidget(button, 0, Qt::AlignHCenter);
 
