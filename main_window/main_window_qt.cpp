@@ -56,6 +56,7 @@
 #include "user_access/qt/user_access_panel.h"
 
 #include <QAction>
+#include <QApplication>
 #include <QDockWidget>
 #include <QEvent>
 #include <QGuiApplication>
@@ -1011,7 +1012,27 @@ void MainWindow::CreateToolbar() {
   addToolBar(Qt::TopToolBarArea, toolbar_);
 }
 
-void MainWindow::SetWindowFlashing(bool flashing) {}
+void MainWindow::SetWindowFlashing(bool flashing) {
+  // MainWindowModule::OnEvents calls in on every event dispatch, so act on the
+  // edge rather than re-asking on each one.
+  if (window_flashing_ == flashing) {
+    return;
+  }
+  window_flashing_ = flashing;
+  if (!flashing) {
+    // Deliberately nothing. Qt offers no public cancel — QWindow::alert sets
+    // the platform alert state, and only activation or the duration timer
+    // clears it — and none is needed: the alert is already suppressed while the
+    // window is active, so the operator ends it by the same act that shows them
+    // the events.
+    return;
+  }
+  // No-op while this window is the active one, which is what makes it an
+  // attention request rather than a decoration. Duration 0 means "until the
+  // operator activates the window".
+  // https://doc.qt.io/qt-6/qapplication.html#alert
+  QApplication::alert(this, /*msec=*/0);
+}
 
 QString MainWindow::ControlUnavailableReason() {
   // Asked only while the Control button is disabled. The node answers for its

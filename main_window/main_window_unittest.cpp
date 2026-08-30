@@ -491,6 +491,29 @@ TEST(MainWindowQtTest, MenuBarDoesNotDuplicateTheModelDrivenSettingsMenu) {
   EXPECT_THAT(MainWindowQtHarness::TopLevelTitles(harness.main_window()),
               ElementsAre(settings_title));
 }
+
+// Regression: SetWindowFlashing was an empty body, so «Flash Main Window on
+// Event» was a live Settings checkbox an operator could tick for nothing
+// (backlog 636). What this pins is that the request is acted on and latched.
+// It cannot reach the taskbar entry itself: QApplication::alert hands the state
+// to QPlatformWindow, Qt exposes no way to read it back, and the harness hides
+// the window, so there is no platform window to alert in the first place. The
+// call is still made — it is inert here rather than skipped.
+TEST(MainWindowQtTest, WindowFlashingFollowsTheRequestedState) {
+  MainWindowQtHarness harness{u"Top"};
+
+  EXPECT_FALSE(harness.main_window().IsWindowFlashing());
+
+  harness.main_window().SetWindowFlashing(true);
+  EXPECT_TRUE(harness.main_window().IsWindowFlashing());
+
+  // OnEvents calls in on every event dispatch, so the repeat must be harmless.
+  harness.main_window().SetWindowFlashing(true);
+  EXPECT_TRUE(harness.main_window().IsWindowFlashing());
+
+  harness.main_window().SetWindowFlashing(false);
+  EXPECT_FALSE(harness.main_window().IsWindowFlashing());
+}
 #endif
 
 // TODO: Generalize this test for all UIs.

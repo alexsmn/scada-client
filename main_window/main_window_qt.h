@@ -61,6 +61,12 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // BaseMainWindow
   virtual DialogService& GetDialogService() override { return dialog_service_; }
   virtual void SetWindowFlashing(bool flashing) override;
+  // Whether the window is currently asking for the operator's attention.
+  // Qt owns the alert itself and exposes no way to read it back — the platform
+  // alert state lives behind QPlatformWindow — so the request is mirrored here.
+  // It is the requested state, not the state of the taskbar entry: the platform
+  // drops the alert on activation without telling us.
+  bool IsWindowFlashing() const { return window_flashing_; }
   virtual void ShowPopupMenu(scada::aui::MenuModel* merge_menu,
                              const scada::aui::Point& point,
                              bool right_click) override;
@@ -255,6 +261,9 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // Guards RefreshPaneModeMarker against the pane close/activate notifications
   // that SetPaneMode itself provokes while it is mid-switch.
   bool applying_pane_mode_ = false;
+  // Mirrors the last state asked for through SetWindowFlashing, so the alert is
+  // raised on the rising edge only. OnEvents calls in on every event dispatch.
+  bool window_flashing_ = false;
 
   // Right Inspector dock (opt-in). Updated from OnSelectionChanged with the
   // active view's SelectionModel.
