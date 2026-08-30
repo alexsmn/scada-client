@@ -262,6 +262,36 @@ if(Python3_FOUND)
   set_tests_properties(client_screenshot_check_themed PROPERTIES TIMEOUT 300)
 endif()
 
+# Without an interpreter the four checks above register nothing, and a suite
+# that checked no capture at all reports green. That is the shape
+# `scada_orphan_unittests_check` exists for one level up: a test that never runs
+# looks exactly like a passing one, and it is invisible precisely on the hosts
+# that need telling. So say it as a failure rather than as silence.
+#
+# A failing placeholder rather than a hard configure error: the client must
+# still build on a host with no Python, and this is a gap in *verification*, not
+# in the build. Deliberately not decided by whether this workstation has an
+# interpreter (backlog 632).
+#
+# The script is generated into the build tree rather than tracked, so the reason
+# lives here beside the guard it explains instead of in a second file that can
+# drift from it.
+if(NOT Python3_FOUND)
+  set(screenshot_no_python_script
+    "${CMAKE_CURRENT_BINARY_DIR}/screenshot_checks_unavailable.cmake")
+  file(WRITE "${screenshot_no_python_script}"
+    "message(FATAL_ERROR\n"
+    "  \"No Python 3 interpreter was found when this build tree was \"\n"
+    "  \"configured, so client_screenshot_check, \"\n"
+    "  \"client_screenshot_check_themed, client_screenshot_owed_tests and \"\n"
+    "  \"client_screenshot_provenance_tests were not registered and no \"\n"
+    "  \"screenshot has been checked. Install Python 3 and re-configure; \"\n"
+    "  \"this test exists so their absence is loud rather than silent \"\n"
+    "  \"(backlog 632).\")\n")
+  add_test(NAME client_screenshot_checks_unavailable
+    COMMAND ${CMAKE_COMMAND} -P "${screenshot_no_python_script}")
+endif()
+
 # Regenerating the tracked gallery is an explicit request, never a build side
 # effect. `client/screenshots/` is committed (a UI change lands as a reviewable
 # image diff), and this used to be a POST_BUILD step that rewrote those PNGs on
