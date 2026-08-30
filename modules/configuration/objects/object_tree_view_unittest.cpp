@@ -1,0 +1,267 @@
+#include "configuration/objects/object_tree_view.h"
+
+#include "address_space/test/test_scada_node_states.h"
+#include "aui/qt/tree.h"
+#include "aui/test/app_environment.h"
+#include "configuration/tree/configuration_tree_model.h"
+#include "configuration/tree/configuration_tree_node.h"
+#include "configuration/tree/node_service_tree_impl.h"
+#include "controller/contents_model.h"
+#include "controller/controller_delegate.h"
+#include "controller/test/controller_environment.h"
+#include "model/data_items_node_ids.h"
+#include "node_service/static/static_node_service.h"
+#include "profile/window_definition.h"
+#include "timed_data/timed_data_service_fake.h"
+
+#include <gmock/gmock.h>
+
+#include <memory>
+#include <utility>
+
+using namespace testing;
+
+namespace {
+
+// The contents of a data view, as the tree's check marks describe them. Real
+// enough to answer GetContainedItems(), which is what the view re-derives every
+// mark from, rather than a mock recording the calls that got it there.
+class FakeContentsModel : public ContentsModel {
+ public:
+  void AddContainedItem(const scada::NodeId& node_id, unsigned flags) override {
+    contained_.insert(node_id);
+  }
+
+  void RemoveContainedItem(const scada::NodeId& node_id) override {
+    contained_.erase(node_id);
+  }
+
+  NodeIdSet GetContainedItems() const override { return contained_; }
+
+  // Publishes `contents` the way the shell does when a data view reports its
+  // whole set — SetActiveDataView's path, and the one a page restore never
+  // reaches (backlog 123).
+  void PublishContents(NodeIdSet contents) {
+    contained_ = std::move(contents);
+    NotifyContentsChanged(contained_);
+  }
+
+ private:
+  NodeIdSet contained_;
+};
+
+// Owns real signals so a test can publish contents, instead of a mock whose
+// Subscribe* would swallow the callback the view needs to receive.
+class FakeControllerDelegate : public ControllerDelegate {
+ public:
+  FakeControllerDelegate() {
+    contents_.contents_changed_handler = [this](const NodeIdSet& contents) {
+      contents_changed_(contents);
+    };
+    contents_.contained_item_changed_handler =
+        [this](const scada::NodeId& item_id, bool added) {
+          contained_item_changed_(item_id, added);
+        };
+  }
+
+  FakeContentsModel& contents() { return contents_; }
+
+  // ControllerDelegate
+  void SetTitle(std::u16string_view title) override {}
+  void ShowPopupMenu(scada::aui::MenuModel* merge_menu,
+                     const scada::aui::Point& point,
+                     bool right_click) override {}
+  void SetModified(bool modified) override {}
+  void Close() override {}
+  void OpenView(const WindowDefinition& def) override {}
+  void ExecuteDefaultNodeCommand(const NodeRef& node) override {}
+  void Focus() override {}
+
+  ContentsModel* GetActiveContentsModel() override { return &contents_; }
+
+  boost::signals2::scoped_connection SubscribeContentsChanged(
+      const ContentsChangedCallback& callback) override {
+    return contents_changed_.connect(callback);
+  }
+
+  boost::signals2::scoped_connection SubscribeContainedItemChanged(
+      const ContainedItemChangedCallback& callback) override {
+    return contained_item_changed_.connect(callback);
+  }
+
+ private:
+  FakeContentsModel contents_;
+  boost::signals2::signal<void(const NodeIdSet&)> contents_changed_;
+  boost::signals2::signal<void(const scada::NodeId&, bool)>
+      contained_item_changed_;
+};
+
+// Exposes the two protected accessors so a test can read the marks the view
+// applied. Both are what the view itself uses; nothing here reaches past them.
+class TestObjectTreeView : public ObjectTreeView {
+ public:
+  using ConfigurationTreeView::model;
+  using ConfigurationTreeView::tree_view;
+  using ObjectTreeView::ObjectTreeView;
+};
+
+}  // namespace
+
+// The marks are seeded when a node materializes, not only when contents
+// change. A restored page publishes its contents before the lazily built tree
+// holds any of the nodes they name, so a view that only reacts to the
+// contents-changed notification leaves every box clear while the table lists
+// exactly those items (client e7de1bdb8, which shipped without this test —
+// backlog 124).
+class ObjectTreeViewTest : public Test {
+ protected:
+  ObjectTreeViewTest()
+      : node_service_tree_factory_{[](NodeServiceTreeImplContext&& context) {
+          return std::make_unique<NodeServiceTreeImpl>(std::move(context));
+        }} {}
+
+  void SetUp() override {
+    node_service_.AddAll(GetScadaNodeStates());
+
+    node_service_.Add(scada::NodeState{
+        .node_id = kGroupId,
+        .node_class = scada::NodeClass::Object,
+        .type_definition_id = scada::data_items::id::DataGroupType,
+        .parent_id = scada::data_items::id::DataItems,
+        .reference_type_id = scada::id::Organizes});
+
+    for (const scada::NodeId& item_id : {kItem1Id, kItem2Id}) {
+      node_service_.Add(scada::NodeState{
+          .node_id = item_id,
+          .node_class = scada::NodeClass::Variable,
+          .type_definition_id = scada::data_items::id::DataItemType,
+          .parent_id = kGroupId,
+          .reference_type_id = scada::id::Organizes});
+    }
+
+    view_ = std::make_unique<TestObjectTreeView>(MakeContext(),
+                                                 node_service_tree_factory_);
+    ui_view_ = view_->Init(WindowDefinition{});
+    ASSERT_THAT(ui_view_, NotNull());
+  }
+
+  ControllerContext MakeContext() {
+    return {.executor_ = env_.executor_,
+            .controller_delegate_ = delegate_,
+            .task_manager_ = env_.task_manager_,
+            .session_service_ = env_.session_service_,
+            .node_event_provider_ = env_.node_event_provider_,
+            .history_service_ = env_.history_service_,
+            .monitored_item_service_ = env_.monitored_item_service_,
+            .timed_data_service_ = timed_data_service_,
+            .node_service_ = node_service_,
+            .attribute_service_ = env_.attribute_service_,
+            .file_cache_ = env_.file_cache_,
+            .profile_ = env_.profile_,
+            .dialog_service_ = env_.dialog_service_,
+            .blinker_manager_ = env_.blinker_manager_,
+            .create_tree_ = env_.create_tree_,
+            .property_service_ = env_.property_service_,
+            .frame_capture_registry_ = env_.frame_capture_registry_};
+  }
+
+  // Materializes one level below `node`. The tree is lazy, so until this runs
+  // the children simply do not exist — which is the state a restored page
+  // publishes its contents into.
+  void Materialize(ConfigurationTreeNode& node) {
+    if (node.CanFetchMore())
+      node.FetchMore();
+    env_.executor_.Poll();
+  }
+
+  void MaterializeWholeTree() {
+    ASSERT_THAT(view_->model().root(), NotNull());
+    Materialize(*view_->model().root());
+    ConfigurationTreeNode* group = view_->model().FindFirstTreeNode(kGroupId);
+    ASSERT_THAT(group, NotNull());
+    Materialize(*group);
+  }
+
+  bool IsCheckedById(const scada::NodeId& node_id) {
+    ConfigurationTreeNode* node = view_->model().FindFirstTreeNode(node_id);
+    EXPECT_THAT(node, NotNull()) << "node " << node_id.ToString();
+    return node && view_->tree_view().IsChecked(node);
+  }
+
+  static inline const scada::NodeId kGroupId{2001, 1};
+  static inline const scada::NodeId kItem1Id{2002, 1};
+  static inline const scada::NodeId kItem2Id{2003, 1};
+
+  AppEnvironment app_env_;
+  ControllerEnvironment env_;
+  FakeControllerDelegate delegate_;
+  StaticNodeService node_service_;
+  FakeTimedDataService timed_data_service_;
+  NodeServiceTreeFactory node_service_tree_factory_;
+  std::unique_ptr<TestObjectTreeView> view_;
+  std::unique_ptr<UiView> ui_view_;
+};
+
+// The regression. Contents arrive first — the page restore case — and the rows
+// they name are created afterwards. Before the fix nothing reconciled a node
+// that appeared later, so both items came up clear.
+TEST_F(ObjectTreeViewTest, NodesMaterializedAfterContentsComeUpMarked) {
+  delegate_.contents().PublishContents(NodeIdSet{kItem1Id, kItem2Id});
+
+  // Nothing is materialized yet, so the publish above could not have marked
+  // anything: the seeding has to happen on the way in.
+  ASSERT_THAT(view_->model().FindFirstTreeNode(kItem1Id), IsNull());
+
+  MaterializeWholeTree();
+
+  EXPECT_TRUE(IsCheckedById(kItem1Id));
+  EXPECT_TRUE(IsCheckedById(kItem2Id));
+}
+
+// A container is marked exactly when everything under it is, and that rule has
+// to survive the same ordering: the group's own mark is derived from children
+// that did not exist when the contents were published.
+TEST_F(ObjectTreeViewTest, AContainerWhoseItemsAreAllContainedComesUpMarked) {
+  delegate_.contents().PublishContents(NodeIdSet{kItem1Id, kItem2Id});
+
+  MaterializeWholeTree();
+
+  EXPECT_TRUE(IsCheckedById(kGroupId));
+}
+
+// The other half of that rule, and the one an over-eager seeding would break:
+// a container holding an item nobody asked for is not marked.
+TEST_F(ObjectTreeViewTest, AContainerWithAnUncontainedItemStaysClear) {
+  delegate_.contents().PublishContents(NodeIdSet{kItem1Id});
+
+  MaterializeWholeTree();
+
+  EXPECT_TRUE(IsCheckedById(kItem1Id));
+  EXPECT_FALSE(IsCheckedById(kItem2Id));
+  EXPECT_FALSE(IsCheckedById(kGroupId));
+}
+
+// With no contents at all every box is clear — the seeding must not invent a
+// mark for a node it knows nothing about. Without this the tests above pass
+// against a view that simply marks everything.
+TEST_F(ObjectTreeViewTest, NodesMaterializedWithNoContentsStayClear) {
+  MaterializeWholeTree();
+
+  EXPECT_FALSE(IsCheckedById(kItem1Id));
+  EXPECT_FALSE(IsCheckedById(kItem2Id));
+  EXPECT_FALSE(IsCheckedById(kGroupId));
+}
+
+// The already-materialized direction still works: contents published against a
+// tree that is fully built mark it through SetContents rather than through the
+// nodes-added seam.
+TEST_F(ObjectTreeViewTest, ContentsPublishedAfterTheTreeIsBuiltMarkIt) {
+  MaterializeWholeTree();
+  ASSERT_FALSE(IsCheckedById(kItem1Id));
+
+  delegate_.contents().PublishContents(NodeIdSet{kItem1Id, kItem2Id});
+
+  EXPECT_TRUE(IsCheckedById(kItem1Id));
+  EXPECT_TRUE(IsCheckedById(kItem2Id));
+  EXPECT_TRUE(IsCheckedById(kGroupId));
+}
