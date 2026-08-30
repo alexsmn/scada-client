@@ -2557,6 +2557,14 @@
         <source>Speech</source>
         <translation>Речевое оповещение</translation>
     </message>
+    <!-- main_window/event_dispatcher.cpp
+         What `Speech` actually says, once, as the unacknowledged-events edge
+         rises. Kept to a short phrase: it is spoken over whatever the operator
+         is doing, and SAPI interrupts itself on the next one. -->
+    <message>
+        <source>Unacknowledged alarm</source>
+        <translation>Неквитированное событие</translation>
+    </message>
     <message>
         <source>Restart the application to apply the new language now?</source>
         <translation>Перезапустить приложение, чтобы применить новый язык?</translation>

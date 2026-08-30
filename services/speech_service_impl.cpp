@@ -43,11 +43,14 @@ Speech::Speech() {
 
 Speech::~Speech() {}
 
-void Speech::Speak(const std::wstring_view& text) {
+void Speech::Speak(std::u16string_view text) {
   if (!voice_)
     return;
 
-  voice_->Speak(const_cast<LPWSTR>(std::wstring{text}.c_str()),
+  // `wchar_t` is 16 bits here, so this widens element for element and leaves
+  // any surrogate pair intact.
+  std::wstring wide{text.begin(), text.end()};
+  voice_->Speak(const_cast<LPWSTR>(wide.c_str()),
                 SPF_ASYNC | SPF_PURGEBEFORESPEAK, nullptr);
 }
 
@@ -57,6 +60,6 @@ Speech::Speech() = default;
 
 Speech::~Speech() = default;
 
-void Speech::Speak(const std::wstring_view& text) {}
+void Speech::Speak(std::u16string_view text) {}
 
 #endif

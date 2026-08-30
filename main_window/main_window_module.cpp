@@ -377,6 +377,15 @@ void RegisterMainWindowCommandActions(
                                    .order = 330,
                                    .command_id = ID_EVENT_PLAY_SOUND,
                                    .checkable = true});
+  // Beside the tone, because they are the two annunciators of the same edge.
+  // The command carries its own enabled-predicate — `speech_service.is_ok()` —
+  // so on a build with no voice the item is drawn disabled rather than absent,
+  // which is the honest signal: the option exists, this platform cannot serve
+  // it.
+  ui_command_registry.AddMenuItem({.menu_id = MainMenuId::Settings,
+                                   .order = 340,
+                                   .command_id = ID_OPT_SPEECH,
+                                   .checkable = true});
 }
 
 }  // namespace
@@ -422,7 +431,8 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
       .local_events_ = local_events_,
       .profile_ = profile_,
       .events_handler_ = [this](bool has_events) { OnEvents(has_events); },
-      .action_manager_ = ui_command_registry_.action_manager()});
+      .action_manager_ = ui_command_registry_.action_manager(),
+      .speech_service_ = &speech_service_});
 
   singletons_.emplace(std::make_shared<PageCommands>(
       PageCommandsContext{executor_, global_commands_, ui_command_registry_,

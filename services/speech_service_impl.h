@@ -23,7 +23,7 @@ class Speech final : public SpeechService {
 #endif
   }
 
-  void Speak(const std::wstring_view& text) override;
+  void Speak(std::u16string_view text) override;
 
  private:
 #ifdef _WIN32

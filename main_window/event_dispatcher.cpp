@@ -1,11 +1,13 @@
 #include "main_window/event_dispatcher.h"
 
+#include "aui/translation.h"
 #include "base/any_executor_dispatch.h"
 #include "controller/action_manager.h"
 #include "events/local_events.h"
 #include "events/node_event_provider.h"
 #include "profile/profile.h"
 #include "resources/common_resources.h"
+#include "services/speech_service.h"
 
 #if defined(_WIN32)
 #include <mmsystem.h>
@@ -98,5 +100,21 @@ void EventDispatcher::ShowEvents(bool added) {
       alarm_sound_handler_(playing_alarm_sound_);
     else
       PlayAlarmSound(playing_alarm_sound_);
+  }
+
+  // The spoken announcement takes the same *has unacknowledged events* edge,
+  // but a latch of its own: «Speech» and «Sound Alarm on Event» are separate
+  // options, and folding them together would leave speech silent whenever the
+  // tone was switched off. It speaks only as the alarm arrives — there is
+  // nothing to say once the last event is acknowledged, and repeating it on
+  // every dispatch would talk over the operator. Whether there is a voice at
+  // all is the service's to answer; there is none on a non-Windows build.
+  if (announced_alarm_ != has_events) {
+    announced_alarm_ = has_events;
+
+    if (announced_alarm_ && profile_.speech_enabled && speech_service_ &&
+        speech_service_->is_ok()) {
+      speech_service_->Speak(Translate("Unacknowledged alarm"));
+    }
   }
 }

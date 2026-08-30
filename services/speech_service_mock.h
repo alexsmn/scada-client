@@ -7,5 +7,5 @@
 class MockSpeechService : public SpeechService {
  public:
   MOCK_METHOD(bool, is_ok, (), (const override));
-  MOCK_METHOD(void, Speak, (const std::wstring_view& text), (override));
+  MOCK_METHOD(void, Speak, (std::u16string_view text), (override));
 };

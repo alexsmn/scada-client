@@ -16,6 +16,7 @@
 #include "modules/web/web_component.h"
 #include "portfolio/portfolio_module.h"
 #include "profile/profile.h"
+#include "resources/common_resources.h"
 #include "services/speech_service_mock.h"
 
 #include <gmock/gmock.h>
@@ -194,4 +195,16 @@ TEST_F(MainWindowModuleTest, DeleteCurrentPage_NotLast) {
 
   EXPECT_THAT(controller_env_.profile_.pages, SizeIs(1));
   EXPECT_EQ(main_window_->current_page().id, another_page_id);
+}
+
+// «Speech» reached no menu until 2026-08-29: `MakeProfileOptionCommand` gave it
+// no `menu_group`, so it never entered the Settings model and `SettingsDialog`,
+// which renders that model and nothing else, had nothing to draw. It sits
+// beside the alarm tone because the two are the annunciators of the same edge.
+TEST_F(MainWindowModuleTest, SpeechOptionLivesUnderSettings) {
+  const auto contributions =
+      ui_command_registry_.GetMenuContributions(MainMenuId::Settings);
+
+  EXPECT_THAT(contributions,
+              Contains(Field(&MenuContribution::command_id, ID_OPT_SPEECH)));
 }
