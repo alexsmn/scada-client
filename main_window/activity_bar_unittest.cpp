@@ -5,6 +5,7 @@
 
 #include <QApplication>
 #include <QImage>
+#include <QRegularExpression>
 #include <QToolButton>
 
 #include <gtest/gtest.h>
@@ -248,6 +249,45 @@ TEST_F(ActivityBarTest, NewPageButtonRequestsANewPage) {
   AllButtons(bar)[4]->click();
 
   EXPECT_EQ(new_pages, 1);
+}
+
+// The "+" is a Lucide glyph like every other mark on the rail, not a drawn
+// character. It was the literal `+` until 2026-08-30, which put it at a
+// different stroke weight and on a different grid from the buttons above it —
+// `iconography.md` §5.3 had keyed `kNewPage` to `plus` since the set landed,
+// and nothing read it.
+TEST_F(ActivityBarTest, NewPageButtonDrawsTheGlyphNotTheCharacter) {
+  ActivityBar bar{nullptr, MakeModes(), {}};
+  // A rail section asked for `kNewPage` draws the Lucide `plus` at the rail's
+  // one size and tint. The "+" must be that exact image. Asserting merely that
+  // it differs from the drawn character would prove nothing: the two text
+  // paths use different point sizes, so they differ either way.
+  ActivityBar glyph{
+      nullptr,
+      {{PaneModeId::kObjects, u"New page", ActivityBar::Icon::kNewPage}},
+      {}};
+
+  EXPECT_FALSE(AllButtons(bar)[4]->icon().pixmap(24, 24).isNull());
+  EXPECT_EQ(AllButtons(bar)[4]->icon().pixmap(24, 24).toImage(),
+            AllButtons(glyph)[0]->icon().pixmap(24, 24).toImage());
+}
+
+// The active marker is an accent edge drawn over a soft tint. `accent_soft`
+// shares its RGB with `accent` in three of the four themes — dark, light, and
+// the system-derived table — and is distinguished from it *only* by its alpha,
+// so naming it as the default #RRGGBB made the fill byte-identical to the
+// edge: a solid accent slab with no edge discernible on it, at ~6.7x the
+// intended strength. Assert the two are different colours, which is the
+// property the marker needs and the one the dropped alpha destroyed.
+TEST_F(ActivityBarTest, ActiveMarkerFillIsDistinctFromItsAccentEdge) {
+  ActivityBar bar{nullptr, MakeModes(), {}};
+
+  const QRegularExpression checked{
+      QStringLiteral(":checked \\{ border-left: 3px solid (#[0-9a-fA-F]+); "
+                     "background: (#[0-9a-fA-F]+); \\}")};
+  const QRegularExpressionMatch match = checked.match(bar.styleSheet());
+  ASSERT_TRUE(match.hasMatch()) << bar.styleSheet().toStdString();
+  EXPECT_NE(match.captured(1), match.captured(2));
 }
 
 // A pane mode and a page are active at the same time, so the two groups carry

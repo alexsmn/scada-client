@@ -211,7 +211,17 @@ ActivityBar::ActivityBar(QWidget* parent,
           "background: %4; }"
           "#railDivider { background: %2; }")
           .arg(tokens.rail_bg.name(), tokens.surface_muted.name(),
-               tokens.accent.name(), tokens.accent_soft.name()));
+               tokens.accent.name(),
+               // HexArgb, because `accent_soft` carries an alpha (.15 dark,
+               // .10 light, and a derived one under the system palette) that
+               // the default #RRGGBB name() drops. Dropped, the active marker
+               // renders as a solid accent block at ~6.7x its intended
+               // strength — the loudest thing in the rail, where the design
+               // asks for a tint under the accent edge. Every other consumer
+               // of this token already names it this way (`aui/qt/grid.cpp`,
+               // `modules/table/qt/table_toolbar.cpp`,
+               // `modules/events/qt/area_sidebar.cpp`).
+               tokens.accent_soft.name(QColor::HexArgb)));
 
   auto* layout = new QVBoxLayout{this};
   layout->setContentsMargins(0, 6, 0, 6);
@@ -250,8 +260,15 @@ ActivityBar::ActivityBar(QWidget* parent,
   pages_layout_->setSpacing(2);
   band_layout->addLayout(pages_layout_);
 
+  // The Lucide `plus`, not the literal character: the rail reads from one
+  // icon set (docs/client/ux/iconography.md §5.3, which has keyed `kNewPage`
+  // to that glyph since the set landed), and a drawn `+` sat at a different
+  // weight and on a different grid from every button above it. The web
+  // client's rail draws the same stroke plus, and so does
+  // activity-rail.html's `.ic.add`.
   new_page_button_ =
-      MakeButton(TextIcon(QStringLiteral("+"), tokens.fg_on_dark),
+      MakeButton(ModeIcon(Mode{.label = u"+", .icon_kind = Icon::kNewPage},
+                          tokens.fg_on_dark),
                  QString::fromStdU16String(Translate("New page")));
   // The "+" is an action, not a destination — it must never carry a marker.
   new_page_button_->setCheckable(false);
