@@ -1031,15 +1031,15 @@ void MainWindow::OpenTag(const scada::NodeId& node_id,
 //
 // Deliberately not called from the constructor, which is where it used to run.
 // That browse walks the Organizes hierarchy under ObjectsFolder one node per
-// await (TagSearchIndex::BrowseNodeAsync), and it started before any pane
-// existed — so its work was queued at NodeFetcherImpl first and the Explorer's
-// trees came second. That ordering decides which of them the operator waits
-// for: the fetcher runs a FIFO by request order, admits two requests at a time,
-// and a browse enqueues every child it returned under its *parent's* sequence
-// number (common/node_service/node_fetcher_impl.cpp), so an earlier walk keeps
-// landing in front of a later tree. Starting after the page is open puts the
-// trees' first levels ahead of the walk instead, which is the order the
-// operator is actually looking at.
+// await (TagSearchIndex::BrowseNodeAsync), and starting it before any pane
+// existed put a continuous stream of Read/Browse round trips on the session
+// for the whole of the operator's first wait — the one the Explorer's trees are
+// already spending on their own serial per-child fetch
+// (docs/client/message-loop.md §10). Nothing here is a queue: v3's fetcher
+// spawns each fetch as its own coroutine and caps nothing, so this is
+// concurrent load rather than starvation, and deferring it is a smaller win
+// than it first appeared. It is still the right order — speculative work goes
+// after the surfaces the operator is looking at, not before them.
 //
 // It stays a background browse: nothing waits on it, and the palette starts it
 // itself if it is somehow still unstarted.
