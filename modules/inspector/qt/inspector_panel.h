@@ -124,6 +124,9 @@ struct InspectorPanelContext {
   // Opens the selected event's source in a graph — the selection-scoped
   // ID_OPEN_GRAPH command over the event's source node.
   std::function<void()> on_go_to_source;
+  // Whether the source can be opened (the source node resolved and the graph
+  // command accepts the selection).
+  std::function<bool()> is_go_to_source_enabled;
   // Makes the selected node's limit bands readable, then calls `redraw`.
   //
   // The panel asks rather than fetching: the bands live on the node's property
@@ -133,9 +136,6 @@ struct InspectorPanelContext {
   // operator selection produced until this existed.
   std::function<void(const NodeRef& node, std::function<void()> redraw)>
       load_limits;
-  // Whether the source can be opened (the source node resolved and the graph
-  // command accepts the selection).
-  std::function<bool()> is_go_to_source_enabled;
   // Recolours the plotted series the series section is showing. The host
   // resolves the active view's SeriesModel at call time, exactly as the command
   // handlers above are resolved, so the panel never holds a view pointer.

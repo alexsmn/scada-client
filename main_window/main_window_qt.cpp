@@ -19,7 +19,7 @@
 #include "controller/series_model.h"
 #include "controller/window_info.h"
 #include "device_diagnostics/qt/device_diagnostics_panel.h"
-#include "events/alarm_flood.h"
+#include "events/alarm_escalation.h"
 #include "events/qt/severity_tile_strip.h"
 #include "filesystem/file_cache.h"
 #include "inspector/qt/inspector_panel.h"
@@ -61,6 +61,7 @@
 #include <QDockWidget>
 #include <QEvent>
 #include <QGuiApplication>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QLayout>
 #include <QMenu>
@@ -69,6 +70,7 @@
 #include <QShortcut>
 #include <QStatusBar>
 #include <QTabWidget>
+#include <QTimer>
 #include <QToolBar>
 #include <QToolButton>
 
@@ -229,7 +231,7 @@ MainWindow::MainWindow(MainWindowContext&& context)
   change_profile_connection_ = profile_.AddChangeObserver([this] {
     const MainWindowDef& prefs = GetPrefs();
     statusBar()->setVisible(prefs.status_bar);
-    toolbar_->setVisible(prefs.toolbar);
+    toolbar_->setVisible(ShouldShowCommandToolbar());
   });
 }
 
@@ -306,12 +308,67 @@ void MainWindow::CreateStatusBar() {
       std::make_unique<ProgressController>(*status_bar, progress_host_);
 }
 
+namespace {
+
+// The annunciator's flash period. Slow enough to read the caption through,
+// fast enough to be pre-attentive; ISA-18.2 asks for a flash rate in this
+// region for an unacknowledged alarm.
+constexpr int kAnnunciatorFlashInterval = 700;
+
+}  // namespace
+
+// Paints the annunciator chip for the current phase of its flash.
+//
+// Both phases are severity-critical (a process-semantic colour, exempt from
+// platform styling, §9) and differ in *fill*: the quiet phase is an outline —
+// the mockup's `.ann` treatment, which distinguishes it from the flood pill's
+// solid fill — and the lit phase fills. The caption keeps critical-token
+// contrast in both, derived rather than baked, for the same reason the flood
+// pill derives its text colour.
+//
+// A stylesheet rather than the palette, on the same grounds as the flood pill:
+// the chip is a rounded fill with a border, and QPalette expresses neither.
+void MainWindow::StyleAnnunciator() {
+  const std::optional<scada::aui::Color> color =
+      scada::aui::SeverityColor(scada::aui::SeverityLevel::kCritical);
+  const QColor accent = color ? color->qcolor() : QColor{0xe8, 0x5a, 0x52};
+
+  if (annunciator_flash_on_) {
+    annunciator_indicator_->setStyleSheet(
+        QStringLiteral("background:%1;color:%2;border:1px solid %1;"
+                       "border-radius:9px;font-weight:700;")
+            .arg(accent.name(), scada::aui::ReadableTextOn(accent).name()));
+  } else {
+    annunciator_indicator_->setStyleSheet(
+        QStringLiteral("background:transparent;color:%1;border:1px solid %1;"
+                       "border-radius:9px;font-weight:700;")
+            .arg(accent.name()));
+  }
+}
+
 void MainWindow::CreateContextBar() {
   context_bar_ = new QToolBar(this);
   context_bar_->setObjectName(QStringLiteral("ContextBar"));
   context_bar_->setMovable(false);
   context_bar_->setFloatable(false);
   context_bar_->setContextMenuPolicy(Qt::PreventContextMenu);
+
+  // Three slots, as `operator-shell.html` lays the bar out: breadcrumb left,
+  // command field centre, alarm state right. Each side is a container of its
+  // own rather than "content plus a spacer" — the spacers this replaced sat
+  // *between* the content, so the field's position was a function of what the
+  // two sides happened to hold rather than of the bar. Which slot a widget
+  // belongs to is now stated by the code, not implied by insertion order.
+  //
+  // Note this makes the field's placement architecturally right without making
+  // it pixel-centred: the columns start from their children's size hints, so a
+  // wide alarm cluster still shifts the field. Exact centring is the mockup's
+  // own idiom (equal `1fr` grid columns) and appearance is the platform's here
+  // — see client/CLAUDE.md, "the mockups are not a visual target".
+  auto* left_slot = new QWidget(context_bar_);
+  auto* left_layout = new QHBoxLayout(left_slot);
+  left_layout->setContentsMargins(0, 0, 0, 0);
+  left_slot->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
   // No brand lockup. A native application identifies itself in the window
   // title and the About dialog, not with an in-window mark — and the one that
@@ -321,12 +378,10 @@ void MainWindow::CreateContextBar() {
   // brand lockup vacated, which is the slot `config-workbench.html` draws a
   // breadcrumb in. It coexists with the command field rather than replacing it
   // — shell.md §2.2 — because the two answer different questions.
-  breadcrumb_ = new Breadcrumb(context_bar_);
-  context_bar_->addWidget(breadcrumb_);
-
-  auto* left_spacer = new QWidget(context_bar_);
-  left_spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-  context_bar_->addWidget(left_spacer);
+  breadcrumb_ = new Breadcrumb(left_slot);
+  left_layout->addWidget(breadcrumb_);
+  left_layout->addStretch();
+  context_bar_->addWidget(left_slot);
 
   // Command/search entry point (centre). It owns no text: clicking it, or
   // typing into it, opens the command palette, which is where the typing
@@ -344,16 +399,45 @@ void MainWindow::CreateContextBar() {
   connect(palette_shortcut, &QShortcut::activated, this,
           [this] { ShowCommandPalette(); });
 
-  auto* right_spacer = new QWidget(context_bar_);
-  right_spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-  context_bar_->addWidget(right_spacer);
+  // Right slot: alarm state alone. The escalation ladder's two rungs first,
+  // then the per-severity tiles — shell-chrome.html draws the chips ahead of
+  // the tiles, because a chip states that the operator must act now where a
+  // tile states a count.
+  auto* right_slot = new QWidget(context_bar_);
+  auto* right_layout = new QHBoxLayout(right_slot);
+  right_layout->setContentsMargins(0, 0, 0, 0);
+  right_slot->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  right_layout->addStretch();
 
-  // Alarm-flood escalation pill (hidden unless a flood is active), left of the
-  // per-severity tiles so it reads as the dominant state during a flood.
-  flood_indicator_ = new QLabel(context_bar_);
+  // Rung 1 — the ISA-18.2 annunciator: any unacknowledged critical alarm.
+  // Hidden until one stands. Below the flood threshold this is the *only*
+  // thing that marks a critical alarm nobody has taken; before it existed, one
+  // such alarm read as a tile going from 0 to 1 and nothing else.
+  annunciator_indicator_ = new QLabel(right_slot);
+  annunciator_indicator_->setMargin(2);
+  annunciator_indicator_->setVisible(false);
+  right_layout->addWidget(annunciator_indicator_);
+
+  // Flashing is part of the signal, not decoration (ISA-18.2): a standing
+  // unacknowledged critical must keep asserting itself. The timer runs only
+  // while the rung is lit, and the two phases differ in fill rather than in
+  // presence — a chip that blinks out entirely can be missed in the dark half
+  // of its own cycle.
+  annunciator_flash_ = new QTimer(this);
+  annunciator_flash_->setInterval(kAnnunciatorFlashInterval);
+  connect(annunciator_flash_, &QTimer::timeout, this, [this] {
+    annunciator_flash_on_ = !annunciator_flash_on_;
+    StyleAnnunciator();
+  });
+
+  // Rung 2 — alarm-flood escalation pill (hidden unless a flood is active),
+  // left of the per-severity tiles so it reads as the dominant state during a
+  // flood. A flood outranks a single critical, so it is drawn solid where the
+  // annunciator is drawn as an outline.
+  flood_indicator_ = new QLabel(right_slot);
   flood_indicator_->setMargin(2);
   flood_indicator_->setVisible(false);
-  context_bar_->addWidget(flood_indicator_);
+  right_layout->addWidget(flood_indicator_);
 
   // Live severity KPI tiles (backlog 2.3): critical / warning / unacknowledged,
   // ordered and coloured by the shared tile builder. Opt-in — the factory
@@ -370,9 +454,10 @@ void MainWindow::CreateContextBar() {
                 scada::aui::SeverityLevel::kWarning),
             .unacknowledged = status_bar_model_->GetAlarmCount()};
       },
-      context_bar_);
+      right_slot);
   if (severity_tiles_)
-    context_bar_->addWidget(severity_tiles_);
+    right_layout->addWidget(severity_tiles_);
+  context_bar_->addWidget(right_slot);
 
   // No identity/connection cluster here. Who/where context (user·role,
   // connection, server latency, endpoint·build) is stated once, in the status
@@ -385,11 +470,38 @@ void MainWindow::CreateContextBar() {
     if (severity_tiles_)
       severity_tiles_->Refresh();
 
+    // Both rungs come from one reduction of one set of counts, so the chips
+    // and the tiles beside them can never disagree about the same alarms.
+    const int alarm_count = status_bar_model_->GetAlarmCount();
+    const events::SeverityTileCounts counts{
+        .critical = status_bar_model_->GetSeverityCount(
+            scada::aui::SeverityLevel::kCritical),
+        .warning = status_bar_model_->GetSeverityCount(
+            scada::aui::SeverityLevel::kWarning),
+        .unacknowledged = alarm_count};
+    const events::AlarmEscalation escalation = events::EscalationFor(counts);
+
+    // Annunciation: the chip states the condition rather than restating the
+    // count, because the `Critical N` tile is right beside it — the same
+    // division the web client settled on when its ladder moved into the bar.
+    annunciator_indicator_->setVisible(escalation.annunciating);
+    if (escalation.annunciating) {
+      annunciator_indicator_->setText(QStringLiteral(" %1 ").arg(
+          QString::fromStdU16String(Translate("Unacknowledged critical"))));
+      StyleAnnunciator();
+      if (!annunciator_flash_->isActive())
+        annunciator_flash_->start();
+    } else {
+      annunciator_flash_->stop();
+      // So the next lit phase starts from the same place every time rather
+      // than from wherever the previous alarm left the cycle.
+      annunciator_flash_on_ = false;
+    }
+
     // Flood escalation: a single prominent state pill when the unacknowledged
     // count crosses the flood threshold, so a flood reads as a state, not a
     // scroll.
-    const int alarm_count = status_bar_model_->GetAlarmCount();
-    const bool flood = events::IsAlarmFlood(alarm_count);
+    const bool flood = escalation.flooding;
     flood_indicator_->setVisible(flood);
     if (flood) {
       flood_indicator_->setText(
@@ -967,6 +1079,18 @@ void MainWindow::ShowCommandPalette(const QString& initial_text) {
   palette->activateWindow();
 }
 
+bool MainWindow::ShouldShowCommandToolbar() const {
+  // The reshelled chrome answers this on its own: the context bar took the
+  // grip toolbar's role, and a client showing both draws three stacked rows of
+  // chrome where the screens draw one. The commands the toolbar carried are all
+  // still reachable — the menu bar, the node context menu and the Ctrl-K
+  // palette resolve the same registered ids — so this hides a duplicate
+  // surface rather than a capability.
+  if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy)
+    return false;
+  return GetPrefs().toolbar;
+}
+
 void MainWindow::CreateToolbar() {
   auto& command_manager = ui_command_registry_.command_manager();
   for (auto* command_info : command_manager.commands()) {
@@ -998,7 +1122,7 @@ void MainWindow::CreateToolbar() {
 
   toolbar_ = new QToolBar(this);
   toolbar_->setObjectName(QStringLiteral("CommandToolbar"));
-  toolbar_->setVisible(GetPrefs().toolbar);
+  toolbar_->setVisible(ShouldShowCommandToolbar());
   toolbar_->setWindowTitle(tr("Toolbar"));
   // Icon-only buttons, sized to the 16px source icons so the toolbar stays
   // compact (the platform default icon size is larger and would upscale the

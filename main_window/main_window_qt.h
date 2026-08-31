@@ -38,6 +38,7 @@ class QDockWidget;
 class QLabel;
 class QMenu;
 class QPoint;
+class QTimer;
 class QToolBar;
 class QWidget;
 class ProgressController;
@@ -104,6 +105,15 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   void TabifySpecialistDocks();
   void CreateMenuBar();
   void CreateToolbar();
+  // Whether the legacy command toolbar belongs on screen.
+  //
+  // Under the reshelled chrome it does not, whatever the `Toolbar` preference
+  // says: shell.md §2.2 gives that role to the top context bar ("Replaces the
+  // grip toolbar"), and the two shipped stacked — menu bar, context bar and
+  // grip toolbar, three rows where every mockup screen draws one. The
+  // preference still governs the legacy look, where the grip toolbar is the
+  // only toolbar there is.
+  bool ShouldShowCommandToolbar() const;
   void CreateStatusBar();
   // Opt-in top context bar: the command/search field and alarm state.
   // Only built when the experimental UX is enabled; see main.cpp.
@@ -112,6 +122,10 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // object. Cheap and idempotent, so it is called from every hook that can move
   // any of the three rather than trying to work out which one moved.
   void RefreshBreadcrumb();
+  // Repaints the annunciator chip for the current phase of its flash. Called
+  // by the flash timer and whenever the rung lights, so the chip is never left
+  // showing the previous alarm's phase.
+  void StyleAnnunciator();
   // Opt-in left activity rail (backlog 1.1): selects which panes occupy the
   // left sidebar. It never opens a workspace tab and never switches the page.
   void CreateActivityBar();
@@ -262,6 +276,16 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // Live severity KPI tiles in the context bar (critical / warning /
   // unacknowledged), refreshed with the status-bar model.
   events::SeverityTileStrip* severity_tiles_ = nullptr;
+  // The escalation ladder's two rungs (events/alarm_escalation.h), ahead of the
+  // tiles as shell-chrome.html draws them. Independent conditions, so either,
+  // both or neither can be visible.
+  //
+  // Annunciator: at least one unacknowledged critical alarm (ISA-18.2). It
+  // flashes while lit, which `annunciator_flash_` drives; the audible half is
+  // EventDispatcher's and is already platform-independent.
+  QLabel* annunciator_indicator_ = nullptr;
+  QTimer* annunciator_flash_ = nullptr;
+  bool annunciator_flash_on_ = false;
   // Alarm-flood escalation pill; visible only while a flood is active.
   QLabel* flood_indicator_ = nullptr;
   boost::signals2::scoped_connection context_bar_connection_;

@@ -24,6 +24,16 @@ std::vector<QLabel*> ValueLabels(const Breadcrumb& breadcrumb) {
   return labels;
 }
 
+// The complement of ValueLabels: the punctuation between the steps.
+std::vector<QLabel*> SeparatorLabels(const Breadcrumb& breadcrumb) {
+  std::vector<QLabel*> separators;
+  for (QLabel* label : breadcrumb.findChildren<QLabel*>()) {
+    if (label->toolTip().isEmpty())
+      separators.push_back(label);
+  }
+  return separators;
+}
+
 class BreadcrumbTest : public ::testing::Test {
  protected:
   // Per-test QApplication; see ActivityBarTest for why it is never static.
@@ -173,6 +183,101 @@ TEST_F(BreadcrumbTest, ElidesAgainstTheGrantedWidth) {
   // Whatever survives must fit, or elision has not done its job.
   const QFontMetrics metrics{narrow[0]->font()};
   EXPECT_LE(metrics.horizontalAdvance(narrow_text), 160);
+}
+
+// Regression: the breadcrumb has to *ask* for the room its path needs.
+//
+// Every step label is `QSizePolicy::Ignored` — that is what stops their
+// full-string hints becoming a floor the widget cannot shrink below — but an
+// Ignored child contributes nothing to its parent's hint either. The widget's
+// own hint therefore collapsed to the separators alone, a QToolBar handed it
+// ~15px of a 1920px bar, every step elided away, and the context bar drew a
+// bare `/ /`. Asserting against the separator-only width is the point: a hint
+// that merely exists would pass a `> 0` check.
+TEST_F(BreadcrumbTest, SizeHintAsksForTheWholePath) {
+  Breadcrumb breadcrumb{nullptr};
+  const std::array segments = {
+      Breadcrumb::Segment{.label = QStringLiteral("Substation South"),
+                          .strong = true},
+      Breadcrumb::Segment{.label = QStringLiteral("Parameters")},
+      Breadcrumb::Segment{.label = QStringLiteral("Feeder bay 12"),
+                          .strong = true},
+  };
+  breadcrumb.SetSegments(segments);
+
+  const QFontMetrics metrics{breadcrumb.font()};
+  const int separators_only =
+      metrics.horizontalAdvance(QStringLiteral(" / ")) * 2;
+  EXPECT_GT(breadcrumb.sizeHint().width(), separators_only);
+  // Bold steps are wider than the quiet measurement of the same text, so the
+  // whole-path advance is a lower bound rather than the answer.
+  EXPECT_GE(breadcrumb.sizeHint().width(),
+            metrics.horizontalAdvance(breadcrumb.Text()));
+
+  // And it tracks the path rather than being a constant.
+  const int wide_hint = breadcrumb.sizeHint().width();
+  const std::array shorter = {
+      Breadcrumb::Segment{.label = QStringLiteral("A"), .strong = true},
+  };
+  breadcrumb.SetSegments(shorter);
+  EXPECT_LT(breadcrumb.sizeHint().width(), wide_hint);
+}
+
+// sizeHint and the elision have to agree, or the breadcrumb asks for a width
+// and then truncates inside it. Given exactly the room it requested, every step
+// must render in full.
+TEST_F(BreadcrumbTest, GivenTheWidthItAsksForNothingElides) {
+  Breadcrumb breadcrumb{nullptr};
+  const std::array segments = {
+      Breadcrumb::Segment{.label = QStringLiteral("Page 1"), .strong = true},
+      Breadcrumb::Segment{.label = QStringLiteral("Objects")},
+      Breadcrumb::Segment{.label = QStringLiteral("Feeder bay 12"),
+                          .strong = true},
+  };
+  breadcrumb.SetSegments(segments);
+  breadcrumb.resize(breadcrumb.sizeHint());
+
+  const std::vector<QLabel*> labels = ValueLabels(breadcrumb);
+  ASSERT_EQ(labels.size(), 3u);
+  for (std::size_t i = 0; i < labels.size(); ++i)
+    EXPECT_EQ(labels[i]->text(), labels[i]->toolTip()) << "step " << i;
+}
+
+// Regression: below the useful width the whole slot goes empty, punctuation
+// included. Blanking only the steps left the separators drawn — a bar saying
+// `/ /` claims there is a path and then declines to name it, which is exactly
+// the dangling separator this component promises never to render.
+TEST_F(BreadcrumbTest, TooNarrowHidesThePunctuationWithTheSteps) {
+  Breadcrumb breadcrumb{nullptr};
+  const std::array segments = {
+      Breadcrumb::Segment{.label = QStringLiteral("Substation South"),
+                          .strong = true},
+      Breadcrumb::Segment{.label = QStringLiteral("Parameters")},
+      Breadcrumb::Segment{.label = QStringLiteral("Feeder bay 12"),
+                          .strong = true},
+  };
+  breadcrumb.resize(1200, 24);
+  breadcrumb.SetSegments(segments);
+
+  const std::vector<QLabel*> separators = SeparatorLabels(breadcrumb);
+  ASSERT_EQ(separators.size(), 2u);
+  for (QLabel* separator : separators)
+    EXPECT_FALSE(separator->isHidden());
+
+  // `isHidden` rather than `isVisible`: the widget has no shown parent in a
+  // unit test, so isVisible() is false either way and would assert nothing.
+  breadcrumb.resize(24, 24);
+  for (QLabel* label : ValueLabels(breadcrumb))
+    EXPECT_TRUE(label->text().isEmpty());
+  for (QLabel* separator : separators)
+    EXPECT_TRUE(separator->isHidden());
+
+  // And it comes back — the branch is a width response, not a one-way latch.
+  breadcrumb.resize(1200, 24);
+  for (QLabel* label : ValueLabels(breadcrumb))
+    EXPECT_FALSE(label->text().isEmpty());
+  for (QLabel* separator : separators)
+    EXPECT_FALSE(separator->isHidden());
 }
 
 }  // namespace

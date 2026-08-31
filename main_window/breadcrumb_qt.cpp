@@ -1,10 +1,16 @@
 #include "main_window/breadcrumb_qt.h"
 
 #include <QEvent>
+#include <QFont>
 #include <QFontMetrics>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QMargins>
 #include <QResizeEvent>
+#include <QSize>
+#include <QtGlobal>
+
+#include <vector>
 
 namespace {
 
@@ -26,11 +32,24 @@ Breadcrumb::Breadcrumb(QWidget* parent) : QWidget(parent) {
   // none — spacing here would double it, and unlike the separator's spaces it
   // would not scale with the font.
   layout_->setSpacing(0);
+  // The layout must not push a minimum size onto this widget. Its default
+  // constraint does exactly that for a non-window widget, and since the steps
+  // are laid out at explicit widths that minimum is "whatever the path
+  // currently occupies" — which the bar could then never shrink, so no resize
+  // would arrive and no re-elision would happen. The widget states its own
+  // floor in minimumSizeHint(), and it is zero.
+  layout_->setSizeConstraint(QLayout::SetNoConstraint);
   // The breadcrumb yields space to the rest of the bar: it elides, where the
   // command field and the severity tiles cannot usefully shrink. The explicit
   // zero minimum is what makes that true — without it the layout's own minimum
   // (the sum of the labels') becomes a floor the widget cannot go below.
-  setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+  //
+  // `Maximum` rather than `Ignored`: the widget wants at most its untruncated
+  // path (sizeHint) and will give up any of it. `Ignored` said the opposite —
+  // that the hint means nothing — and a toolbar duly gave the breadcrumb its
+  // minimum, which is this same zero. Every step then elided away and the bar
+  // drew the separators alone.
+  setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
   setMinimumWidth(0);
 }
 
@@ -69,9 +88,9 @@ QString Breadcrumb::Text() const {
 }
 
 void Breadcrumb::Rebuild() {
-  // Tear down the previous row wholesale. Reusing labels would mean tracking
-  // which of them are separators, for no measurable gain on a path this short.
+  // Tear down the previous row wholesale. Cheap on a path this short.
   labels_.clear();
+  separators_.clear();
   while (QLayoutItem* item = layout_->takeAt(0)) {
     delete item->widget();
     delete item;
@@ -83,18 +102,23 @@ void Breadcrumb::Rebuild() {
       // Quiet, like the middle steps: the separator is punctuation, not
       // content.
       separator->setForegroundRole(QPalette::PlaceholderText);
+      separators_.push_back(separator);
       layout_->addWidget(separator);
     }
 
     auto* label = new QLabel(this);
-    // The label must not make its text width a layout minimum. A QLabel's
-    // default size hint is the full string, and QHBoxLayout treats that as a
-    // floor — so the breadcrumb could not shrink below its longest path, the
-    // elision below never fired, and in the toolbar it shoved the command field
-    // aside instead of getting out of the way. Elision is computed here, so the
-    // hint is not wanted.
-    label->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
-    label->setMinimumWidth(0);
+    // Each step is given an explicit width by ApplyElision, so the layout
+    // allocates nothing here.
+    //
+    // Letting it allocate is what the two previous attempts did, and neither
+    // policy can work: a QLabel's minimumSizeHint is its full string, so
+    // anything that respects hints makes the longest path a floor the
+    // breadcrumb cannot shrink below; and `Ignored`, which zeroes that floor,
+    // also zeroes the hint, leaving the layout to split the row *equally* with
+    // no idea what each step needs — a long step clipped to a third of the
+    // widget while a short one sat in slack it could not use. Sizing each
+    // label to the text it ended up with settles both, because the text has
+    // already been fitted to the width the widget was granted.
     if (segments_[i].strong) {
       QFont bold = font();
       bold.setBold(true);
@@ -108,38 +132,133 @@ void Breadcrumb::Rebuild() {
     labels_.push_back(label);
     layout_->addWidget(label);
   }
+  // The steps are fixed-width, so the stretch is the only elastic item and it
+  // simply parks the slack on the right — the path left-aligns in its slot.
   layout_->addStretch();
 
+  // Settle the parent's layout before eliding, rather than eliding against the
+  // width the previous path was given.
+  //
+  // updateGeometry() only *posts* a layout request, so without this the first
+  // ApplyElision runs one pass behind: a path that has just grown is fitted
+  // into the old, narrower slot and comes out truncated, and only the next
+  // resize puts it right. A running client hides that behind the following
+  // event cycle; the headless screenshot generator grabs the frame in between,
+  // which is how it kept rendering a fully-elided breadcrumb inside a slot
+  // with room to spare.
+  updateGeometry();
+  if (QWidget* parent = parentWidget()) {
+    if (QLayout* parent_layout = parent->layout())
+      parent_layout->activate();
+  }
   ApplyElision();
   setVisible(!segments_.empty());
+}
+
+QFont Breadcrumb::StepFont(const Segment& segment) const {
+  QFont step = font();
+  step.setBold(segment.strong);
+  return step;
+}
+
+int Breadcrumb::SeparatorWidth() const {
+  if (segments_.size() < 2)
+    return 0;
+  return QFontMetrics{font()}.horizontalAdvance(kSeparator) *
+         static_cast<int>(segments_.size() - 1);
+}
+
+std::vector<int> Breadcrumb::NaturalWidths() const {
+  std::vector<int> widths(segments_.size());
+  for (std::size_t i = 0; i < segments_.size(); ++i) {
+    widths[i] = QFontMetrics{StepFont(segments_[i])}.horizontalAdvance(
+        segments_[i].label);
+  }
+  return widths;
+}
+
+QSize Breadcrumb::sizeHint() const {
+  int width = SeparatorWidth();
+  for (int natural : NaturalWidths())
+    width += natural;
+
+  const QMargins margins = contentsMargins();
+  return QSize{
+      width + margins.left() + margins.right(),
+      QFontMetrics{font()}.height() + margins.top() + margins.bottom()};
+}
+
+QSize Breadcrumb::minimumSizeHint() const {
+  const QMargins margins = contentsMargins();
+  return QSize{
+      0, QFontMetrics{font()}.height() + margins.top() + margins.bottom()};
 }
 
 void Breadcrumb::ApplyElision() {
   if (labels_.empty())
     return;
 
-  // Width the steps may share, once the separators have taken theirs. Measured
-  // per label rather than assumed, because a bold step is wider than a quiet
-  // one at the same character count.
-  const int separator_width =
-      QFontMetrics{font()}.horizontalAdvance(kSeparator) *
-      static_cast<int>(labels_.size() - 1);
-  const int available = width() - separator_width;
+  // Width the steps may share, once the separators have taken theirs.
+  const int available = width() - SeparatorWidth();
   if (available < kMinimumUsefulWidth) {
-    for (QLabel* label : labels_)
+    // Blanking the steps is not enough on its own: the separators are content
+    // of their own, and a bar drawing `/ /` with nothing between the slashes
+    // claims there is a path and then declines to name it. Hide the punctuation
+    // with the steps so the slot goes honestly empty — which is what the
+    // comment on kMinimumUsefulWidth has always said this branch does.
+    for (QLabel* label : labels_) {
       label->setText(QString{});
+      label->setFixedWidth(0);
+    }
+    for (QLabel* separator : separators_)
+      separator->setVisible(false);
+    return;
+  }
+  for (QLabel* separator : separators_)
+    separator->setVisible(true);
+
+  // What each step would need in full — from the same measurement sizeHint()
+  // uses, so the two cannot disagree about whether the path fits. They did
+  // when this read `labels_[i]->font()` instead: a label resolves its font
+  // from its parent chain once shown, which is not always the font sizeHint
+  // measured with, and a few pixels of drift is the difference between "the
+  // path fits" and eliding inside the width the widget just asked for.
+  const std::vector<int> natural = NaturalWidths();
+  int wanted = 0;
+  for (int step : natural)
+    wanted += step;
+
+  // The whole path fits: draw it. This case has to be checked rather than
+  // fallen into, because the share-out below is a *response to shortage* and
+  // an even one truncates inside a width that was never short. That is not
+  // hypothetical — sizeHint() asks the layout for exactly `wanted`, so the
+  // common case is landing on precisely this boundary, and the even split
+  // spent a short step's slack on nothing while eliding the long step beside
+  // it: `Page 1 / Objects / Feeder bay 12` rendered as `Page 1 / Objects /
+  // Fee… 12` in the width it had just asked for.
+  if (wanted <= available) {
+    for (std::size_t i = 0; i < labels_.size(); ++i) {
+      labels_[i]->setText(segments_[i].label);
+      labels_[i]->setFixedWidth(natural[i]);
+    }
     return;
   }
 
-  // Share what is left evenly. An even split is not the cleverest policy — a
-  // long device name beside two short steps would rather have the slack — but
-  // it is the one that cannot starve a step to nothing, which is what matters
-  // when every step is a name the operator is trying to read.
-  const int per_label = available / static_cast<int>(labels_.size());
+  // Genuinely short, so every step gives up something — in proportion to what
+  // it asked for, which is the property the even split was reaching for. A
+  // long device name beside two short steps keeps the slack it needs, and no
+  // step is starved to nothing, because a share of a positive width is
+  // positive.
   for (std::size_t i = 0; i < labels_.size(); ++i) {
-    const QFontMetrics metrics{labels_[i]->font()};
-    labels_[i]->setText(
-        metrics.elidedText(segments_[i].label, Qt::ElideMiddle, per_label));
+    const int budget = wanted > 0
+                           ? static_cast<int>(static_cast<qint64>(available) *
+                                              natural[i] / wanted)
+                           : 0;
+    const QFontMetrics metrics{StepFont(segments_[i])};
+    const QString elided =
+        metrics.elidedText(segments_[i].label, Qt::ElideMiddle, budget);
+    labels_[i]->setText(elided);
+    labels_[i]->setFixedWidth(metrics.horizontalAdvance(elided));
   }
 }
 

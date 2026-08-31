@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QFont>
 #include <QWidget>
 
 #include <span>
@@ -61,6 +62,25 @@ class Breadcrumb : public QWidget {
   // The path as rendered, separators included, for tests and accessibility.
   QString Text() const;
 
+  // QWidget — the untruncated path's width, so a layout that asks how much room
+  // the breadcrumb wants is told the truth.
+  //
+  // This is load-bearing rather than cosmetic. The step labels are
+  // `QSizePolicy::Ignored` (see Rebuild), which is what stops their full-string
+  // size hints becoming a floor the breadcrumb cannot shrink below — but an
+  // Ignored child contributes nothing to the parent's hint either, so without
+  // this override the whole widget's hint collapsed to the separators alone.
+  // A `QToolBar` then handed it ~15px of a 1920px bar, every step elided to
+  // nothing, and the bar drew a bare `/ /`.
+  QSize sizeHint() const override;
+  // QWidget — zero, so the bar can always take the room back.
+  //
+  // The steps are laid out at explicit widths (see ApplyElision), which would
+  // otherwise make the layout's own minimum a floor equal to whatever the path
+  // currently occupies — and a widget that cannot be shrunk is never asked to
+  // re-elide, so the floor would ratchet up with the longest path ever shown.
+  QSize minimumSizeHint() const override;
+
  protected:
   // QWidget — re-elides against the granted width. Elision cannot be decided at
   // SetSegments time because the layout has not yet said how much room there
@@ -77,9 +97,25 @@ class Breadcrumb : public QWidget {
   // Applies elision to the current labels for the given available width.
   void ApplyElision();
 
+  // One measurement, shared by sizeHint() and ApplyElision() so they cannot
+  // disagree about whether the path fits the width the widget asked for.
+  // Derived from this widget's own font plus the step's `strong` flag, never
+  // from a label's resolved font — a label resolves from its parent chain once
+  // shown, and the drift is enough to elide inside an exactly-sufficient width.
+  QFont StepFont(const Segment& segment) const;
+  // Total width of the separators between the current steps; 0 for a path of
+  // fewer than two.
+  int SeparatorWidth() const;
+  // What each step would need to render untruncated, in path order.
+  std::vector<int> NaturalWidths() const;
+
   std::vector<Segment> segments_;
   QHBoxLayout* layout_ = nullptr;
-  // The value labels, in path order, parallel to `segments_`. Separators are
-  // owned by the layout and need no tracking.
+  // The value labels, in path order, parallel to `segments_`.
   std::vector<QLabel*> labels_;
+  // The separator labels, one fewer than `labels_`. Tracked rather than left to
+  // the layout because the too-narrow case has to hide them: a separator is
+  // punctuation, and punctuation with nothing on either side of it states
+  // less than an empty bar does.
+  std::vector<QLabel*> separators_;
 };

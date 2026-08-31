@@ -304,7 +304,14 @@
         <source>tag</source>
         <translation>тег</translation>
     </message>
-    <!-- main_window/main_window_qt.cpp (alarm-flood pill) -->
+    <!-- main_window/main_window_qt.cpp (the context bar's escalation ladder:
+         the annunciator chip and the alarm-flood pill). The annunciator names
+         the condition and not the count, because the `Критично N` tile states
+         the count right beside it. -->
+    <message>
+        <source>Unacknowledged critical</source>
+        <translation>Неквитированная критичная</translation>
+    </message>
     <message>
         <source>Alarm flood</source>
         <translation>Поток тревог</translation>
