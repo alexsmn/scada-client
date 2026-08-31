@@ -201,6 +201,17 @@ void LoginDialog::reject() {
   if (client::IsE2eTestMode()) {
     client::ReportE2eStatusIfUnset("canceled");
   }
+
+  // Close the dialog *before* completing. Completing resumes the startup
+  // coroutine, which on cancel throws LoginCanceled and ends in
+  // QCoreApplication::quit() (client::RunQtStartupFlow). On macOS a visible
+  // modal dialog keeps QCocoaEventDispatcher inside an AppKit modal session
+  // (-[NSApplication runModalSession:]), and a quit issued from inside that
+  // session is lost when the session ends: the process drops back into the
+  // main event loop with no window and never exits. Hiding first ends the
+  // modal session, so the quit reaches the loop that is actually running.
+  QDialog::reject();
+
   Complete(std::nullopt);
 }
 
