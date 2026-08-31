@@ -81,36 +81,48 @@ class ExplorerFilterField : public QLineEdit {
     // revealing it later cannot make the field -- and the tree under it --
     // jump by the frame width.
     setFixedHeight(sizeHint().height());
-    setFrame(false);
+    UpdateQuietState();
 
     connect(this, &QLineEdit::textChanged, this,
-            [this] { UpdateFrameVisibility(); });
+            [this] { UpdateQuietState(); });
   }
 
  protected:
   void enterEvent(QEnterEvent* event) override {
     QLineEdit::enterEvent(event);
-    UpdateFrameVisibility();
+    UpdateQuietState();
   }
   void leaveEvent(QEvent* event) override {
     QLineEdit::leaveEvent(event);
-    UpdateFrameVisibility();
+    UpdateQuietState();
   }
   void focusInEvent(QFocusEvent* event) override {
     QLineEdit::focusInEvent(event);
-    UpdateFrameVisibility();
+    UpdateQuietState();
   }
   void focusOutEvent(QFocusEvent* event) override {
     QLineEdit::focusOutEvent(event);
-    UpdateFrameVisibility();
+    UpdateQuietState();
   }
 
  private:
-  void UpdateFrameVisibility() {
-    const bool wanted = hasFocus() || underMouse() || !text().isEmpty();
-    if (wanted != hasFrame())
-      setFrame(wanted);
+  // Frame only. The fill is deliberately left alone: it is drawn neither from
+  // this widget's QPalette::Base nor from anything else reachable here --
+  // verified by setting Base to pure red under the token theme and seeing the
+  // field render unchanged. So the idle field keeps the theme's input surface,
+  // which is DARKER than the pane and therefore recedes; what made the old
+  // field shout was a *lighter* fill plus a bright outline, and both are gone.
+  // Chasing an exact match would mean a stylesheet, which is the thing this
+  // replaced.
+  void UpdateQuietState() {
+    const bool active = hasFocus() || underMouse() || !text().isEmpty();
+    if (active == active_)
+      return;
+    active_ = active;
+    setFrame(active);
   }
+
+  bool active_ = true;
 };
 
 // Wraps `tree` in a container with the filter field above it -- the Explorer
@@ -128,12 +140,25 @@ std::unique_ptr<UiView> WrapExplorerWithFilter(scada::aui::Tree* tree) {
   // runs to the pane edge, which is what every sidebar on the screens shows.
   // So the inset goes on a row of its own rather than on the shared layout,
   // and it comes from the style's layout metrics rather than the mockup's px.
-  const QStyle* style = container->style();
-  const int horizontal = style->pixelMetric(QStyle::PM_LayoutLeftMargin);
-  const int vertical = style->pixelMetric(QStyle::PM_LayoutTopMargin);
+  // Inset from the FONT, not from PM_LayoutLeftMargin. That metric is the
+  // margin for a dialog's outer edge -- 12px a side under the macOS style,
+  // measured -- which around a 21px field is more surround than control, and
+  // it was what made the idle field read as a heavy block. Half a line height
+  // is the unit here: it tracks the OS font-size setting, which is the reason
+  // the native rule asks for a metric rather than a px constant, and it is
+  // roughly the proportion the screens draw (8-10px beside a 24px row). The
+  // bottom is tighter than the top because the tree follows immediately.
+  // Half a line beside the field, a quarter above and below it. The vertical
+  // budget is what shows: the field is only ~21px tall, so a 12px surround --
+  // PM_LayoutLeftMargin, the dialog-edge metric, measured under the macOS
+  // style -- is more chrome than control and pushes the tree down by more than
+  // the field occupies. Measured against the rendered pane: the tree's header
+  // starts at y=30 here, against y=32 for the stylesheet this replaced and
+  // y=42 for a first attempt that used the dialog metric on every side.
+  const int line = container->fontMetrics().height();
 
   auto* filter_row = new QHBoxLayout;
-  filter_row->setContentsMargins(horizontal, vertical, horizontal, vertical);
+  filter_row->setContentsMargins(line / 2, line / 4, line / 2, line / 4);
 
   auto* filter = new ExplorerFilterField{container.get()};
   filter->setObjectName(QStringLiteral("explorerFilter"));
