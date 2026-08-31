@@ -1,21 +1,22 @@
 ﻿#include "configuration/tree/configuration_tree_view.h"
 
-#include "aui/tree.h"
 #include "aui/translation.h"
-#include "resources/common_resources.h"
-#include "resources/icon_strips.h"
+#include "aui/tree.h"
 #include "configuration/tree/configuration_tree_drop_handler.h"
 #include "configuration/tree/configuration_tree_model.h"
 #include "controller/controller_delegate.h"
-#include "ui/dragdrop/item_drag_data.h"
 #include "node_service/node_util.h"
 #include "profile/window_definition.h"
+#include "resources/common_resources.h"
+#include "resources/icon_strips.h"
+#include "ui/dragdrop/item_drag_data.h"
 
 #if defined(UI_QT)
-#include "aui/qt/theme_qt.h"
 #include "aui/severity_colors.h"
 
+#include <QHBoxLayout>
 #include <QLineEdit>
+#include <QStyle>
 #include <QVBoxLayout>
 #include <QWidget>
 #endif
@@ -51,40 +52,98 @@ int CompareNodes(const NodeRef& a, const NodeRef& b) {
 #if defined(UI_QT)
 namespace {
 
-// The active reshell theme's tokens. The filter field is only built under a
-// token theme (the legacy path returns the bare tree), so the default is
-// harmless.
-const scada::aui::ThemeTokens& ExplorerTokens() {
-  return scada::aui::ActiveThemeTokens();
-}
+// The Explorer's type-to-filter field.
+//
+// It draws no frame while the tree is unfiltered. An empty filter changes
+// nothing about what the operator is looking at, so it should read as an
+// affordance and no more -- the placeholder alone, in
+// QPalette::PlaceholderText. The frame appears exactly when the field is being
+// used or is changing what the tree shows: on hover, on focus, or while it
+// holds text. That keeps it discoverable without giving a control that is doing
+// nothing the same weight as the data below it (docs/client/ux/principles.md --
+// chrome must not compete with process data).
+//
+// Everything here is the platform's. The frame is QLineEdit's own, the
+// placeholder colour is the palette's, and the inset comes from the style's
+// layout metrics. The previous version set a stylesheet with baked token
+// colours, a hand-tuned radius and px padding, transcribed from the mockup's
+// CSS -- which is the one thing the screens are not for: they are the
+// information-architecture reference, and appearance is the host platform's
+// (docs/client/ux/README.md, and the native direction agreed 2026-07-26).
+class ExplorerFilterField : public QLineEdit {
+ public:
+  explicit ExplorerFilterField(QWidget* parent) : QLineEdit{parent} {
+    setClearButtonEnabled(true);
+    setPlaceholderText(QString::fromStdU16String(Translate("Filter")));
+    setAttribute(Qt::WA_Hover, true);
 
-// Wraps `tree` in a container with a type-to-filter field above it — the
-// Explorer "Filter" search box from the reshell mockups
+    // Pin the height to the framed size before dropping the frame, so
+    // revealing it later cannot make the field -- and the tree under it --
+    // jump by the frame width.
+    setFixedHeight(sizeHint().height());
+    setFrame(false);
+
+    connect(this, &QLineEdit::textChanged, this,
+            [this] { UpdateFrameVisibility(); });
+  }
+
+ protected:
+  void enterEvent(QEnterEvent* event) override {
+    QLineEdit::enterEvent(event);
+    UpdateFrameVisibility();
+  }
+  void leaveEvent(QEvent* event) override {
+    QLineEdit::leaveEvent(event);
+    UpdateFrameVisibility();
+  }
+  void focusInEvent(QFocusEvent* event) override {
+    QLineEdit::focusInEvent(event);
+    UpdateFrameVisibility();
+  }
+  void focusOutEvent(QFocusEvent* event) override {
+    QLineEdit::focusOutEvent(event);
+    UpdateFrameVisibility();
+  }
+
+ private:
+  void UpdateFrameVisibility() {
+    const bool wanted = hasFocus() || underMouse() || !text().isEmpty();
+    if (wanted != hasFrame())
+      setFrame(wanted);
+  }
+};
+
+// Wraps `tree` in a container with the filter field above it -- the Explorer
+// "Filter" box the screens draw over every sidebar tree
 // (docs/product/ui-mockups/screens/config-workbench.html). Ownership of `tree`
 // transfers into the returned container via Qt parent-child, preserving the
 // caller-owns-the-returned-view contract.
 std::unique_ptr<UiView> WrapExplorerWithFilter(scada::aui::Tree* tree) {
-  const scada::aui::ThemeTokens& tokens = ExplorerTokens();
   auto container = std::make_unique<QWidget>();
   auto* layout = new QVBoxLayout{container.get()};
   layout->setContentsMargins(0, 0, 0, 0);
   layout->setSpacing(0);
 
-  auto* filter = new QLineEdit;
+  // The field is inset, the tree is not: the tree is the pane's content and
+  // runs to the pane edge, which is what every sidebar on the screens shows.
+  // So the inset goes on a row of its own rather than on the shared layout,
+  // and it comes from the style's layout metrics rather than the mockup's px.
+  const QStyle* style = container->style();
+  const int horizontal = style->pixelMetric(QStyle::PM_LayoutLeftMargin);
+  const int vertical = style->pixelMetric(QStyle::PM_LayoutTopMargin);
+
+  auto* filter_row = new QHBoxLayout;
+  filter_row->setContentsMargins(horizontal, vertical, horizontal, vertical);
+
+  auto* filter = new ExplorerFilterField{container.get()};
   filter->setObjectName(QStringLiteral("explorerFilter"));
-  filter->setClearButtonEnabled(true);
-  filter->setPlaceholderText(QString::fromStdU16String(Translate("Filter")));
-  filter->setStyleSheet(
-      QStringLiteral("QLineEdit{background:%1;border:1px solid %2;"
-                     "border-radius:4px;padding:4px 8px;margin:6px 8px;"
-                     "color:%3;}")
-          .arg(tokens.surface_muted.name(), tokens.border.name(),
-               tokens.fg.name()));
   QObject::connect(filter, &QLineEdit::textChanged, tree,
                    [tree](const QString& text) {
                      tree->SetFilterText(text.toStdU16String());
                    });
-  layout->addWidget(filter);
+  filter_row->addWidget(filter);
+
+  layout->addLayout(filter_row);
   layout->addWidget(tree);
   return container;
 }

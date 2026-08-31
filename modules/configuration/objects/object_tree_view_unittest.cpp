@@ -2,6 +2,7 @@
 
 #include "address_space/test/test_scada_node_states.h"
 #include "aui/qt/tree.h"
+#include "aui/severity_colors.h"
 #include "aui/test/app_environment.h"
 #include "configuration/tree/configuration_tree_model.h"
 #include "configuration/tree/configuration_tree_node.h"
@@ -13,6 +14,8 @@
 #include "node_service/static/static_node_service.h"
 #include "profile/window_definition.h"
 #include "timed_data/timed_data_service_fake.h"
+
+#include <QLineEdit>
 
 #include <gmock/gmock.h>
 
@@ -264,4 +267,60 @@ TEST_F(ObjectTreeViewTest, ContentsPublishedAfterTheTreeIsBuiltMarkIt) {
   EXPECT_TRUE(IsCheckedById(kItem1Id));
   EXPECT_TRUE(IsCheckedById(kItem2Id));
   EXPECT_TRUE(IsCheckedById(kGroupId));
+}
+
+// The Explorer's filter field, which only exists under a token theme (the
+// legacy path returns the bare tree), so the theme is set before the view is
+// built and restored afterwards.
+class ObjectTreeViewFilterTest : public ObjectTreeViewTest {
+ protected:
+  ObjectTreeViewFilterTest() {
+    scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
+  }
+  ~ObjectTreeViewFilterTest() override {
+    scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kLegacy);
+  }
+
+  QLineEdit* Filter() const {
+    return ui_view_->findChild<QLineEdit*>(QStringLiteral("explorerFilter"));
+  }
+};
+
+// An empty filter changes nothing about what the operator sees, so the field
+// must not carry a frame while it is unused -- it was a filled, outlined pill
+// at full contrast, the loudest thing in the pane. The frame is the signal
+// that the field is doing something.
+TEST_F(ObjectTreeViewFilterTest, FilterDrawsNoFrameUntilItHasText) {
+  QLineEdit* filter = Filter();
+  ASSERT_THAT(filter, NotNull());
+
+  EXPECT_FALSE(filter->hasFrame());
+
+  filter->setText(QStringLiteral("КРУ"));
+  EXPECT_TRUE(filter->hasFrame());
+
+  filter->clear();
+  EXPECT_FALSE(filter->hasFrame());
+}
+
+// Its height must not move when the frame appears, or the tree under it jumps
+// as the operator types the first character.
+TEST_F(ObjectTreeViewFilterTest, FilterHeightIsStableAcrossTheFrame) {
+  QLineEdit* filter = Filter();
+  ASSERT_THAT(filter, NotNull());
+
+  const int unframed = filter->height();
+  filter->setText(QStringLiteral("x"));
+  EXPECT_EQ(filter->height(), unframed);
+}
+
+// The field is the platform's, not a transcription of the mockup's CSS. A
+// stylesheet here is the regression this replaced: baked token colours, a
+// hand-tuned radius and px padding, none of which follow the host theme or the
+// OS font-size setting (docs/client/ux/README.md, native direction).
+TEST_F(ObjectTreeViewFilterTest, FilterCarriesNoStyleSheet) {
+  QLineEdit* filter = Filter();
+  ASSERT_THAT(filter, NotNull());
+
+  EXPECT_TRUE(filter->styleSheet().isEmpty());
 }
