@@ -23,7 +23,7 @@ A C++ industrial SCADA (Supervisory Control and Data Acquisition) client applica
 - Qt 6 (Widgets, LinguistTools, PrintSupport; ActiveQt on Windows)
 - Boost (ASIO, Beast, Signals2, Locale, Range, Algorithm)
 - Google Test
-- OPC UA SDK (via `third_party/opc`)
+- OPC UA SDK (the `opcuapp` product, `third_party/opcuapp`)
 - Windows SDK / ATL (Windows only, for Modus and COM support)
 
 ## Building
@@ -166,21 +166,39 @@ Add to the `discovery.json` when possible:
 
 ## Screenshot Generator
 
-The screenshot generator (`app/screenshot_generator.cpp`) captures PNG screenshots of
-client window types using an offscreen Qt renderer. It is built as a GTest fixture inside
-`client_qt_unittests`.
+The screenshot generator captures PNG screenshots of client window types using
+an offscreen Qt renderer. It lives in [`tools/screenshot_generator/`](tools/screenshot_generator)
+and builds as its **own executable**, `client_screenshot_generator` — it is not
+part of `client_qt_unittests`, though it still uses GTest to drive the captures,
+so `--gtest_filter` selects among them.
 
 ### Running
 
 ```bash
-# Capture all screenshots to the default ./screenshots/ directory:
-client_qt_unittests --gtest_filter="ScreenshotGenerator.*"
-
-# Specify a custom output directory:
-client_qt_unittests --gtest_filter="ScreenshotGenerator.*" --screenshot-dir=path/to/output
+cmake --build --preset release --target client_screenshot_generator
+cd build/ninja/bin/Release
+QT_QPA_PLATFORM=offscreen ./client_screenshot_generator --out=path/to/output
 ```
 
-### Available tests
+`--out` is required. `QT_QPA_PLATFORM=offscreen` is not optional on a headless
+host. Nothing rebuilds the generator for you, so build it before reading any
+change in its output as a regression.
+
+| Option | Meaning |
+|---|---|
+| `--out=<dir>` | Output directory (required) |
+| `--image-manifest=<path>` | Path to `screenshots/image_manifest.json` |
+| `--data=<path>` | Fixture to drive, instead of the source tree's `screenshot_data.json` |
+| `--only=<names>` | Comma/semicolon/newline-separated filenames to capture |
+| `--theme=<name>` | Render under a design-token theme: `dark`, `light` or `hc` |
+
+An unrecognised option is rejected rather than ignored — everything but
+`--gtest_*` must be one of the above.
+
+### Available captures
+
+`--gtest_filter` selects among the `ScreenshotGenerator.*` captures; the two
+broadest are:
 
 | Test               | Output                                                                        |
 |--------------------|-------------------------------------------------------------------------------|

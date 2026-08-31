@@ -421,7 +421,8 @@ Managed via `vcpkg.json` manifest:
 
 Not managed by vcpkg:
 
-- **OPC UA SDK** — Industrial protocol (via `third_party/opc`)
+- **OPC UA SDK** — Industrial protocol (the `opcuapp` product at
+  `third_party/opcuapp`, resolved by name through `scada_find_products`, not by path)
 - **Modus 6.30** — ActiveX/COM library (Windows/Qt only, via `${deps}/modus`)
 - **Windows SDK / ATL** — COM/ActiveX support (Windows only)
 
