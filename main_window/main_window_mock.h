@@ -6,6 +6,21 @@
 
 class MockMainWindow : public MainWindowInterface {
  public:
+  MockMainWindow() {
+    using namespace testing;
+
+    // A default-constructed `boost::asio::awaitable` -- gmock's fallback for a
+    // return type it knows nothing about -- holds a null frame, and its
+    // `await_ready()` still reports false, so co_awaiting it segfaults in
+    // `await_suspend` inside the *awaiting* coroutine. Hand back an
+    // already-complete awaitable instead. Same reason as the defaults in
+    // `MockNodeService` and `MockFileManager`.
+    ON_CALL(*this, OpenView(_, _))
+        .WillByDefault(
+            [](const WindowDefinition&,
+               bool) -> Awaitable<OpenedViewInterface*> { co_return nullptr; });
+  }
+
   MOCK_METHOD(int, GetMainWindowId, (), (const override));
 
   // Pages.
