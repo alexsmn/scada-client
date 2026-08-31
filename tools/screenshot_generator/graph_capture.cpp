@@ -10,8 +10,9 @@
 #include "widget_capture.h"
 
 #include "base/time_utils.h"
+#include "controller/selection_model.h"
 #include "graph/metrix_graph.h"
-#include "graph/series_inspector.h"
+#include "inspector/qt/inspector_panel.h"
 #include "profile/window_definition.h"
 #include "scada/node_id.h"
 #include "timed_data/timed_data_spec.h"
@@ -319,20 +320,41 @@ void SaveSeriesInspectorScreenshot(const ScreenshotSpec& spec,
   MetrixGraph graph{MetrixGraphContext{timed_data_service}};
   BuildGraphFromJson(graph, jgraph, json);
 
-  // Let the async history/current-value chains settle so the inspector's
-  // current, min/max/average and limit rows are populated before the grab
-  // (see SaveGraphScreenshot).
+  // Let the async history/current-value chains settle so the readout and the
+  // quality pill are populated before the grab (see SaveGraphScreenshot).
   WaitForGraphSeries(graph, std::chrono::seconds(30));
 
   // Point at the first pane's series (the first graphed item)
   // deterministically: NewPane() auto-selects the last-created pane, so
   // graph.primary_line() would otherwise follow the bottom pane rather than the
   // top one.
-  SeriesInspector inspector;
-  if (!graph.panes().empty()) {
-    inspector.SetLine(
-        static_cast<MetrixGraph::MetrixPane*>(graph.panes().front())
-            ->primary_line());
+  MetrixGraph::MetrixLine* line =
+      graph.panes().empty()
+          ? nullptr
+          : static_cast<MetrixGraph::MetrixPane*>(graph.panes().front())
+                ->primary_line();
+
+  // The series' presentation is the shell Inspector's since 2026-08-30 — the
+  // Graph tab no longer carries an inspector of its own. So this renders the
+  // Inspector as a chart selection fills it: the element card from the series'
+  // own live spec, through the same SelectionModel the shell routes, plus the
+  // series section underneath.
+  //
+  // No `load_limits` is wired and the Measurements bands still render:
+  // MakeGraphItemNodesResident above already made the graphed node resident,
+  // property children included, so MakeLimitRows reads them straight off the
+  // node. That fetch handler is for a selection the shell made from a tree,
+  // which never makes them resident on its own.
+  InspectorPanel panel{InspectorPanelContext{}};
+  SelectionModel selection{SelectionModelContext{timed_data_service}};
+  if (line) {
+    selection.SelectTimedData(line->data_source().timed_data());
+    panel.ShowSelection(selection);
+    panel.ShowSeries(
+        InspectorSeriesView{.color = line->color(),
+                            .own_pane = line->plot().lines().size() == 1,
+                            .dots = line->dots_shown(),
+                            .stepped = line->stepped()});
   }
-  SaveScreenshot(&inspector, spec);
+  SaveScreenshot(&panel, spec);
 }

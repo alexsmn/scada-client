@@ -16,6 +16,7 @@
 #include "controller/command_ui_registry.h"
 #include "controller/controller.h"
 #include "controller/selection_model.h"
+#include "controller/series_model.h"
 #include "controller/window_info.h"
 #include "device_diagnostics/qt/device_diagnostics_panel.h"
 #include "events/alarm_flood.h"
@@ -1063,6 +1064,24 @@ QString MainWindow::ControlUnavailableReason() {
           : Translate("Controlling requires the Control privilege"));
 }
 
+SeriesModel* MainWindow::ActiveSeriesModel() {
+  OpenedView* active = GetActiveView();
+  return active ? active->controller().GetSeriesModel() : nullptr;
+}
+
+std::optional<InspectorSeriesView> MainWindow::ActiveSeriesView() {
+  SeriesModel* series = ActiveSeriesModel();
+  if (!series || !series->HasSeries())
+    return std::nullopt;
+
+  return InspectorSeriesView{
+      .color = series->GetSeriesColor().qcolor(),
+      .own_pane = series->IsSeriesOnOwnPane(),
+      .dots = series->AreSeriesDotsShown(),
+      .stepped = series->IsSeriesStepped(),
+  };
+}
+
 void MainWindow::CreateInspectorPanel() {
   // The control action reuses the selection-scoped write/control command
   // (ID_WRITE) — the existing two-stage confirm — resolved against the active
@@ -1127,6 +1146,18 @@ void MainWindow::CreateInspectorPanel() {
                       co_await FetchLimitBands(node);
                       redraw();
                     });
+          },
+      // The series swatch is the panel's one writing field. Resolved against
+      // the active view at click time, like the command handlers above, so the
+      // panel holds no view pointer and a view closing under it is a no-op.
+      .on_series_color_chosen =
+          [this](QColor color) {
+            if (SeriesModel* series = ActiveSeriesModel()) {
+              series->SetSeriesColor(scada::aui::Color{color});
+              // SetSeriesColor notifies through change_handler, which lands
+              // back in OnSelectionChanged and re-reads the section — so the
+              // ring follows the click without a second path.
+            }
           }});
 
   auto* dock =
@@ -1320,6 +1351,11 @@ void MainWindow::OnSelectionChanged() {
         inspector_->ShowSelection(*selection);
       else
         inspector_->Clear();
+      // The plotted-series section, for a view that plots something. Every
+      // other view supplies no SeriesModel and the section stays absent — an
+      // absent section rather than an empty one, because "this view has no
+      // series" is not a fact about the selection worth a row.
+      inspector_->ShowSeries(ActiveSeriesView());
     }
     if (diagnostics_) {
       // Only a single device selection carries diagnostics; anything else

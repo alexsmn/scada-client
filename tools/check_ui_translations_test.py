@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Behaviour tests for rules 7 and 8 of `check_ui_translations.py`.
+"""Behaviour tests for rules 3, 7, 8, 9 and 10 of `check_ui_translations.py`.
 
 Rule 7 resolves a `Translate(x.label)` call back to the table the member is
 read from, so its failure mode is the one every checker in this directory
@@ -36,6 +36,12 @@ Rule 10 is here for the same reason as rule 9 and one more: it has no parked
 list, so every one of its cases is either a repair or a report, and a pattern
 that stops matching leaves a catalog full of strings that render English while
 the file still looks translated.
+
+Rule 3's literal collector is covered for the reason the wrapper existed: it
+matched `Translate("...")` only, while sixteen Qt panels reach the catalog
+through a file-local `Tr()` of their own, so 146 call sites were unchecked and
+three of them were shipping English. A pattern that stops seeing the wrapper
+puts them back, silently.
 
 Source-only and dependency-free, like the checker it covers. Run it directly or
 through ctest as `client_ui_translation_check_test`.
@@ -349,6 +355,43 @@ RULE10_CASES = (
 )
 
 
+# (name, source text, expected source strings) for rule 3's literal collector.
+RULE3_CASES = (
+    ("plain Translate",
+     'auto t = Translate("Measurements");',
+     {"Measurements"}),
+    ("file-local Tr wrapper",
+     'QString Tr(std::string_view t){ return Translate(t); }\n'
+     'auto s = Tr("Current colour");',
+     {"Current colour"}),
+    ("adjacent literals are one string",
+     'auto t = Tr("Opens the two-stage command confirm. "\n'
+     '            "Actions are logged.");',
+     {"Opens the two-stage command confirm. Actions are logged."}),
+    # A member argument is rule 7's business and says nothing about the catalog
+    # here; a longer identifier ending in `Tr` is not the wrapper at all.
+    ("member argument is not a literal",
+     'Draw(Tr(row.label));',
+     set()),
+    ("identifier ending in Tr does not match",
+     'auto s = FormatStr("Not a catalog string");',
+     set()),
+)
+
+
+def run_rule3_cases(tmp_root):
+    """Returns a list of failure descriptions for RULE3_CASES."""
+    failures = []
+    for index, (name, text, expected) in enumerate(RULE3_CASES):
+        path = tmp_root / f"case{index}.cpp"
+        path.write_text(text, encoding="utf-8")
+        found = set(checker.find_translate_literals([path]))
+        if found != expected:
+            failures.append(f"rule 3 / {name}: found {sorted(found)}, "
+                            f"expected {sorted(expected)}")
+    return failures
+
+
 def run_rule10_cases():
     """Returns a list of failure descriptions for RULE10_CASES."""
     failures = []
@@ -453,18 +496,21 @@ def main():
     if unresolved:
         failures.append(f"rule 8: resolved call still reported: {unresolved}")
 
+    with tempfile.TemporaryDirectory() as temp:
+        failures.extend(run_rule3_cases(pathlib.Path(temp)))
+
     failures.extend(run_rule9_cases())
     failures.extend(run_rule10_cases())
 
-    total = (len(CASES) + len(CALL_CASES) + len(RULE9_CASES)
-             + len(RULE10_CASES) + 5)
+    total = (len(CASES) + len(CALL_CASES) + len(RULE3_CASES)
+             + len(RULE9_CASES) + len(RULE10_CASES) + 5)
     if failures:
         print(f"{len(failures)} of {total} case(s) failed:\n")
         for failure in failures:
             print(f"  {failure}")
         return 1
 
-    print(f"OK: {total} rule 7, 8, 9 and 10 behaviour case(s) pass.")
+    print(f"OK: {total} rule 3, 7, 8, 9 and 10 behaviour case(s) pass.")
     return 0
 
 

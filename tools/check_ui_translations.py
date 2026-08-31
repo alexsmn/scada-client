@@ -214,8 +214,23 @@ UI_FORM_KNOWN_GAPS = {
 # clang-format splits any sentence long enough to matter across lines — a
 # pattern that only matched a single literal would quietly stop seeing exactly
 # the strings most likely to be missing.
+#
+# `Tr(` is matched too, and that is not a nicety: sixteen Qt panels define the
+# identical file-local wrapper
+#
+#     QString Tr(std::string_view text) {
+#       return QString::fromStdU16String(Translate(text));
+#     }
+#
+# and reach the catalog only through it, so a pattern naming `Translate` alone
+# was blind to 146 call sites — every string in the Inspector, the RBAC panels,
+# the device diagnostics, the parameter form and the bulk-create preview. Three
+# of them (`Info`, `Loading…`, `NodeId`) had been shipping English inside the
+# Russian build with nothing to say so, and were found only when a fourth was
+# added on 2026-08-30. The lookbehind keeps the wrapper from also matching a
+# longer identifier that happens to end in `Tr`.
 TRANSLATE_CALL = re.compile(
-    r'Translate\(\s*((?:"(?:[^"\\]|\\.)*"\s*)+)\)')
+    r'(?<![A-Za-z0-9_])(?:Translate|Tr)\(\s*((?:"(?:[^"\\]|\\.)*"\s*)+)\)')
 STRING_PIECE = re.compile(r'"((?:[^"\\]|\\.)*)"')
 C_ESCAPES = {'\\n': '\n', '\\t': '\t', '\\"': '"', "\\'": "'",
              '\\\\': '\\'}

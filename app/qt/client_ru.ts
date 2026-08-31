@@ -338,6 +338,22 @@
         <translation>Серия</translation>
     </message>
     <message>
+        <source>Current colour</source>
+        <translation>Текущий цвет</translation>
+    </message>
+    <message>
+        <source>Info</source>
+        <translation>Информация</translation>
+    </message>
+    <message>
+        <source>Loading…</source>
+        <translation>Загрузка…</translation>
+    </message>
+    <message>
+        <source>NodeId</source>
+        <translation>Идентификатор узла</translation>
+    </message>
+    <message>
         <source>Colour</source>
         <translation>Цвет</translation>
     </message>

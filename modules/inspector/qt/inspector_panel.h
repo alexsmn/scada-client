@@ -1,10 +1,12 @@
 #pragma once
 
+#include <QColor>
 #include <QString>
 #include <QWidget>
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace scada {
@@ -87,6 +89,21 @@ struct InspectorElementView {
   QString control_reason;
 };
 
+// The plotted-series section's contents, for a selection made in a chart view.
+// Everything the old in-tab series panel also showed — identity, limit bands,
+// node and quality — the element card above it already renders from the
+// selection, so this carries only what is not derivable from the node: how the
+// series is drawn.
+struct InspectorSeriesView {
+  // The colour the series is plotted in; the matching palette swatch is ringed.
+  QColor color;
+  // Read-outs, not controls: the operator toggles these through the chart's own
+  // commands, and the section reports what they currently are.
+  bool own_pane = false;
+  bool dots = false;
+  bool stepped = false;
+};
+
 // Action wiring for the Inspector panel.
 struct InspectorPanelContext {
   // Triggers the selection-scoped control/write command — the existing
@@ -119,6 +136,10 @@ struct InspectorPanelContext {
   // Whether the source can be opened (the source node resolved and the graph
   // command accepts the selection).
   std::function<bool()> is_go_to_source_enabled;
+  // Recolours the plotted series the series section is showing. The host
+  // resolves the active view's SeriesModel at call time, exactly as the command
+  // handlers above are resolved, so the panel never holds a view pointer.
+  std::function<void(QColor)> on_series_color_chosen;
 };
 
 // The reshell Inspector: a right-hand panel that reflects the active view's
@@ -154,6 +175,12 @@ class InspectorPanel : public QWidget {
   // behind ShowSelection's event branch and the widget tests / capture.
   void ShowEvent(const InspectorEventView& event);
 
+  // Shows or hides the plotted-series section of the element card. The host
+  // calls this after ShowSelection with the active view's SeriesModel read out,
+  // or with nullopt for a view that plots nothing — which is every view but the
+  // chart, so the section is absent by default rather than empty.
+  void ShowSeries(const std::optional<InspectorSeriesView>& series);
+
  private:
   QWidget* BuildEmptyState();
   QWidget* BuildElementView();
@@ -162,6 +189,9 @@ class InspectorPanel : public QWidget {
   void RefreshValue();
   // Rebuilds the limits block; hides it when the node configures no bands.
   void ShowLimits(const std::vector<InspectorLimitRow>& limits);
+  // Builds the plotted-series section: the palette swatch row and the display
+  // flags. Hidden until ShowSeries fills it.
+  QWidget* BuildSeriesSection();
   // Rebuilds the event card's History block.
   void ShowTimeline(const std::vector<InspectorTimelineRow>& timeline);
 
@@ -188,6 +218,14 @@ class InspectorPanel : public QWidget {
   // hidden wholesale when the node configures none.
   QWidget* limits_ = nullptr;
   QLabel* limits_header_ = nullptr;
+
+  // The plotted-series block: palette swatches plus the display flags, hidden
+  // wholesale unless the active view supplies a series.
+  QWidget* series_ = nullptr;
+  QWidget* series_swatches_ = nullptr;
+  QLabel* series_own_pane_ = nullptr;
+  QLabel* series_dots_ = nullptr;
+  QLabel* series_stepped_ = nullptr;
 
   // Event-card widgets.
   QLabel* event_title_ = nullptr;

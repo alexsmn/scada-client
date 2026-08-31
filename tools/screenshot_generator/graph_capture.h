@@ -22,10 +22,13 @@ void SaveGraphScreenshot(const ScreenshotSpec& spec,
                          TimedDataService& timed_data_service,
                          const boost::json::value& json);
 
-// Renders the trend workspace's per-series inspector panel standalone: builds
-// the fixture graph, points a `SeriesInspector` at the first series and saves
-// it under `GetOutputDir() / spec.filename`. Reshell-only chrome, so the caller
-// should apply a `--theme`.
+// Renders the Inspector as a chart selection fills it: builds the fixture
+// graph, routes its first series through a SelectionModel into the shell
+// Inspector — element card plus the plotted-series section — and saves the
+// panel under `GetOutputDir() / spec.filename`. Reshell-only chrome, so the
+// caller should apply a `--theme`. The Graph tab carried an inspector of its
+// own until 2026-08-30; the series rows moved into this one, which is the
+// single right-hand column the trend screens draw.
 void SaveSeriesInspectorScreenshot(const ScreenshotSpec& spec,
                                    NodeService& node_service,
                                    TimedDataService& timed_data_service,

@@ -1,5 +1,6 @@
 #include "inspector/qt/inspector_panel.h"
 
+#include "aui/color.h"
 #include "aui/qt/theme_qt.h"
 #include "aui/severity_colors.h"
 #include "aui/translation.h"
@@ -19,6 +20,7 @@
 #include "timed_data/timed_data_spec.h"
 
 #include <QFrame>
+#include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPointer>
@@ -248,6 +250,9 @@ QWidget* InspectorPanel::BuildElementView() {
   limits_layout->addWidget(limits_header_);
   layout->addWidget(limits_);
 
+  series_ = BuildSeriesSection();
+  layout->addWidget(series_);
+
   // Control section.
   layout->addWidget(SectionHeader(Tr("Control"), tokens));
   control_ = new QPushButton{Tr("Control…")};
@@ -437,6 +442,10 @@ void InspectorPanel::Clear() {
   spec_.reset();
   if (stack_)
     stack_->setCurrentIndex(0);
+  // The series section belongs to a selection, not to the panel: leaving it
+  // filled would let the next element card open reporting the previous view's
+  // series until the host got round to saying otherwise.
+  ShowSeries(std::nullopt);
 }
 
 void InspectorPanel::ShowSelection(const SelectionModel& selection) {
@@ -460,9 +469,10 @@ void InspectorPanel::ShowSelection(const SelectionModel& selection) {
     for (const events::EventTimelineEntry& entry :
          events::BuildEventTimeline(*event)) {
       timeline.push_back(
-          {.time = scada::IsNull(entry.time) ? QString{}
-                                        : QString::fromStdString(FormatTime(
-                                              entry.time, TIME_FORMAT_TIME)),
+          {.time = scada::IsNull(entry.time)
+                       ? QString{}
+                       : QString::fromStdString(
+                             FormatTime(entry.time, TIME_FORMAT_TIME)),
            .text = Tr(events::EventTimelineStepText(entry.step))});
     }
 
@@ -562,6 +572,112 @@ void InspectorPanel::RefreshValue() {
     element.control_reason = context_.control_reason();
 
   ShowElement(element);
+}
+
+QWidget* InspectorPanel::BuildSeriesSection() {
+  const scada::aui::ThemeTokens& tokens = InspectorTokens();
+
+  auto* series = new QWidget;
+  series->setObjectName(QStringLiteral("inspectorSeries"));
+  auto* layout = new QVBoxLayout{series};
+  layout->setContentsMargins(0, 0, 0, 0);
+  layout->setSpacing(0);
+  layout->addWidget(SectionHeader(Tr("Series"), tokens));
+
+  // The palette, one clickable swatch per colour, wrapping at the panel's
+  // width. The same set GraphView::NewColor picks from, so what the Inspector
+  // offers and what the chart assigns are one palette rather than two.
+  series_swatches_ = new QWidget;
+  series_swatches_->setObjectName(QStringLiteral("inspectorSeriesSwatches"));
+  auto* swatches = new QGridLayout{series_swatches_};
+  swatches->setContentsMargins(0, 6, 0, 6);
+  swatches->setSpacing(6);
+  constexpr int kSwatchesPerRow = 8;
+  const std::size_t color_count = scada::aui::GetColorCount();
+  int swatch_index = 0;
+  for (std::size_t i = 0; i < color_count; ++i) {
+    const scada::aui::Color entry = scada::aui::GetColor(static_cast<int>(i));
+    // Transparent is in the palette but is not a colour a series can be drawn
+    // in — picking it would hide the line rather than recolour it, which is
+    // why GraphView::NewColor skips it when it assigns one.
+    if (entry == scada::aui::Color{scada::aui::ColorCode::Transparent})
+      continue;
+    const QColor color = entry.qcolor();
+    auto* swatch = new QPushButton;
+    swatch->setObjectName(QStringLiteral("inspectorSeriesSwatch"));
+    swatch->setFixedSize(22, 22);
+    swatch->setCursor(Qt::PointingHandCursor);
+    // The colour is the button's meaning, so it is also its accessible name --
+    // a grid of identical unlabelled squares is unusable by keyboard or reader.
+    swatch->setAccessibleName(QString::fromStdU16String(
+        std::u16string{scada::aui::GetColorName(static_cast<int>(i))}));
+    swatch->setToolTip(swatch->accessibleName());
+    // Kept for the fill below, which has to find the swatch matching the
+    // series' current colour without re-deriving this layout.
+    swatch->setProperty("seriesColor", color);
+    connect(swatch, &QPushButton::clicked, this, [this, color] {
+      if (context_.on_series_color_chosen)
+        context_.on_series_color_chosen(color);
+    });
+    swatches->addWidget(swatch, swatch_index / kSwatchesPerRow,
+                        swatch_index % kSwatchesPerRow);
+    ++swatch_index;
+  }
+  layout->addWidget(series_swatches_);
+
+  // Display flags. Read-outs rather than switches: they are toggled by the
+  // chart's own commands, and a control here would be a second way to write
+  // something the view already owns.
+  layout->addWidget(KeyValueRow(Tr("Own pane"), &series_own_pane_, tokens));
+  layout->addWidget(KeyValueRow(Tr("Show dots"), &series_dots_, tokens));
+  layout->addWidget(KeyValueRow(Tr("Stepped"), &series_stepped_, tokens));
+
+  series->setVisible(false);
+  return series;
+}
+
+void InspectorPanel::ShowSeries(
+    const std::optional<InspectorSeriesView>& series) {
+  if (!series_)
+    return;
+
+  if (!series) {
+    series_->setVisible(false);
+    return;
+  }
+
+  // Ring the swatch the series is currently drawn in. Comparing rgb() rather
+  // than the QColor keeps a colour that arrived through a QPalette or a saved
+  // profile -- same channels, possibly a different spec -- matching the
+  // palette entry it came from.
+  const auto* tokens = &InspectorTokens();
+  // Compared with alpha (`rgba()`, not `rgb()`): the palette's Transparent and
+  // Black differ in nothing else, so dropping alpha makes a black series match
+  // both. The first match wins in any case, so exactly one swatch is ever
+  // marked.
+  bool marked = false;
+  for (QPushButton* swatch : series_swatches_->findChildren<QPushButton*>(
+           QStringLiteral("inspectorSeriesSwatch"))) {
+    const QColor color = swatch->property("seriesColor").value<QColor>();
+    const bool active = !marked && color.rgba() == series->color.rgba();
+    marked = marked || active;
+    swatch->setStyleSheet(
+        QStringLiteral(
+            "QPushButton{background:%1;border:%2;border-radius:4px;}")
+            .arg(color.name(),
+                 active ? QStringLiteral("2px solid %1").arg(tokens->fg.name())
+                        : QStringLiteral("none")));
+    // Colour is never the only signal, and a ring is not one a screen reader
+    // can see: the active swatch says so in words as well.
+    swatch->setAccessibleDescription(active ? Tr("Current colour") : QString{});
+  }
+
+  const QString yes = Tr("Yes");
+  const QString no = Tr("No");
+  series_own_pane_->setText(series->own_pane ? yes : no);
+  series_dots_->setText(series->dots ? yes : no);
+  series_stepped_->setText(series->stepped ? yes : no);
+  series_->setVisible(true);
 }
 
 void InspectorPanel::ShowEvent(const InspectorEventView& event) {

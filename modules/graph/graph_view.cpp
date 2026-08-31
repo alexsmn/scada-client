@@ -1,9 +1,8 @@
-#include "base/time/time_wire_codec.h"
-#include "aui/translation.h"
-#include "base/time_utils.h"
 #include "graph/graph_view.h"
+#include "aui/translation.h"
+#include "base/time/time_wire_codec.h"
+#include "base/time_utils.h"
 
-#include "aui/severity_colors.h"
 #include "base/check.h"
 #include "common/formula_util.h"
 #include "controller/controller_delegate.h"
@@ -11,7 +10,6 @@
 #include "graph/graph_setup_dialog.h"
 #include "graph/graph_view_loader.h"
 #include "graph/graph_view_saver.h"
-#include "graph/series_inspector.h"
 #include "modules/time_range/time_range_dialog.h"
 #include "node_service/node_service.h"
 #include "resources/common_resources.h"
@@ -21,9 +19,7 @@
 
 #if defined(UI_QT)
 #include <QColorDialog>
-#include <QHBoxLayout>
 #include <QScrollBar>
-#include <QWidget>
 #endif
 
 namespace {
@@ -168,37 +164,54 @@ std::unique_ptr<UiView> GraphView::Init(const WindowDefinition& definition) {
           .set_checked_handler(
               [this] { return graph_->horizontal_scroll_bar_visible(); }));
 
-#if defined(UI_QT)
-  // Under the opt-in reshell theme, surface the series inspector beside the
-  // chart (trend.html). Legacy keeps the bare graph so the default UI is
-  // unchanged.
-  if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy) {
-    auto container = std::make_unique<QWidget>();
-    auto* layout = new QHBoxLayout(container.get());
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(0);
-    layout->addWidget(graph_, 1);
-
-    inspector_ = new SeriesInspector();
-    inspector_->on_color_chosen = [this](QColor color) {
-      if (MetrixGraph::MetrixLine* line = GetConfigurableLine()) {
-        line->SetColor(color);
-        controller_delegate_.SetModified(true);
-        RefreshInspector();
-      }
-    };
-    layout->addWidget(inspector_);
-    RefreshInspector();
-    return container;
-  }
-#endif
-
+  // The series' colour and display flags are the shell Inspector's to render,
+  // through GetSeriesModel() — this view returns the bare chart. It carried a
+  // SeriesInspector of its own down the right edge until 2026-08-30, which put
+  // two inspectors on screen naming the same series where trend.html draws one.
   return std::unique_ptr<UiView>{graph_};
 }
 
-void GraphView::RefreshInspector() {
-  if (inspector_)
-    inspector_->SetLine(GetConfigurableLine());
+// GraphView — SeriesModel
+
+bool GraphView::HasSeries() const {
+  return GetConfigurableLine() != nullptr;
+}
+
+scada::aui::Color GraphView::GetSeriesColor() const {
+  MetrixGraph::MetrixLine* line = GetConfigurableLine();
+  return line ? scada::aui::Color{line->color()}
+              : scada::aui::Color{scada::aui::ColorCode::Transparent};
+}
+
+void GraphView::SetSeriesColor(scada::aui::Color color) {
+  MetrixGraph::MetrixLine* line = GetConfigurableLine();
+  if (!line)
+    return;
+
+  line->SetColor(color.qcolor());
+  controller_delegate_.SetModified(true);
+  NotifySeriesChanged();
+}
+
+bool GraphView::IsSeriesOnOwnPane() const {
+  MetrixGraph::MetrixLine* line = GetConfigurableLine();
+  // "Own pane" is true when the series is alone in its pane.
+  return line && line->plot().lines().size() == 1;
+}
+
+bool GraphView::AreSeriesDotsShown() const {
+  MetrixGraph::MetrixLine* line = GetConfigurableLine();
+  return line && line->dots_shown();
+}
+
+bool GraphView::IsSeriesStepped() const {
+  MetrixGraph::MetrixLine* line = GetConfigurableLine();
+  return line && line->stepped();
+}
+
+void GraphView::NotifySeriesChanged() {
+  if (change_handler)
+    change_handler();
 }
 
 bool GraphView::FindColor(scada::aui::Color color) const {
@@ -266,11 +279,11 @@ void GraphView::DeleteSelectedPane() {
   ClearPane(*pane);
   graph_->DeletePane(*pane);
 
-  // ClearPane/DeletePane frees the pane's lines, one of which the series
-  // inspector may still point at (the SelectPane above refreshed it while the
-  // doomed pane still existed). Re-derive its line from the now-current pane —
-  // the same post-mutation refresh RemoveContainedItem does — so a subsequent
-  // repaint does not dereference a freed line.
+  // ClearPane/DeletePane frees the pane's lines, one of which the Inspector's
+  // series section may still be reporting (the SelectPane above refreshed it
+  // while the doomed pane still existed). Re-derive from the now-current pane —
+  // the same post-mutation refresh RemoveContainedItem does — so the next read
+  // of this model does not reach a freed line.
   OnGraphSelectPane();
 
   controller_delegate_.SetModified(true);
@@ -375,7 +388,7 @@ void GraphView::OnGraphSelectPane() {
   else
     selection_.Clear();
 
-  RefreshInspector();
+  NotifySeriesChanged();
 }
 
 scada::RelativeTimeRange GraphView::GetTimeRange() const {
@@ -383,8 +396,7 @@ scada::RelativeTimeRange GraphView::GetTimeRange() const {
       scada::base::DecodeDoubleT(graph_->horizontal_axis().range().low());
   scada::Time end;
   if (!graph_->horizontal_axis().time_fit())
-    end = scada::base::DecodeDoubleT(
-        graph_->horizontal_axis().range().high());
+    end = scada::base::DecodeDoubleT(graph_->horizontal_axis().range().high());
   return scada::RelativeTimeRange{start, end};
 }
 
@@ -469,6 +481,7 @@ void GraphView::ToggleLineProperty(unsigned command_id) {
   }
 
   controller_delegate_.SetModified(true);
+  NotifySeriesChanged();
 }
 
 void GraphView::ToggleZoom() {
@@ -488,8 +501,7 @@ void GraphView::ToggleZoom() {
 
 void GraphView::SetTimeRange(const scada::RelativeTimeRange& range) {
   bool time_fit = range.type != scada::RelativeTimeRange::Type::Custom;
-  auto [start_time, end_time] =
-      scada::ToTimeRange(range, /*now=*/scada::Now());
+  auto [start_time, end_time] = scada::ToTimeRange(range, /*now=*/scada::Now());
   double low = scada::base::EncodeDoubleT(start_time);
   double high = time_fit ? graph_->horizontal_axis().scroll_range().high()
                          : scada::base::EncodeDoubleT(end_time);
@@ -507,7 +519,7 @@ void GraphView::OnLineItemChanged(GraphLine& line) {
   auto node_id = metrix_line.data_source().node_id();
   NotifyContainedItemChanged(node_id, true);
 
-  RefreshInspector();
+  NotifySeriesChanged();
 }
 
 void GraphView::UndoZoom() {
@@ -539,6 +551,7 @@ void GraphView::ChooseLineColor() {
   QColor new_color = QColorDialog::getColor(line->color(), graph_);
   if (new_color.isValid()) {
     line->SetColor(new_color);
+    NotifySeriesChanged();
   }
 #endif
 }
@@ -561,6 +574,7 @@ void GraphView::SetupLine() {
     line->SetColor(setup.color.qcolor());
     line->SetLineWeight(setup.line_weight_);
     controller_delegate_.SetModified(true);
+    NotifySeriesChanged();
   }
 }
 

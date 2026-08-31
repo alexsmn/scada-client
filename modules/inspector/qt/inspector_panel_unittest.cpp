@@ -1,5 +1,6 @@
 #include "inspector/qt/inspector_panel.h"
 
+#include "aui/color.h"
 #include "aui/test/app_environment.h"
 #include "base/utf_convert.h"
 #include "controller/selection_model.h"
@@ -18,6 +19,7 @@
 #include <QStackedWidget>
 
 #include <memory>
+#include <optional>
 #include <string>
 
 namespace {
@@ -163,6 +165,92 @@ TEST_F(InspectorPanelTest, NoLimitsHidesTheBlock) {
 
 // The limit rows belong to the selected node, so switching to a node with
 // fewer bands drops the stale rows instead of accumulating them.
+// The series section belongs to a view that plots something. Every other view
+// supplies no series, and the section is then absent rather than empty — an
+// "Own pane: No" row about a selection that is not on a chart says nothing.
+TEST_F(InspectorPanelTest, SeriesSectionIsAbsentWithoutASeries) {
+  InspectorPanel panel{InspectorPanelContext{}};
+  panel.ShowElement(InspectorElementView{.title = QStringLiteral("Ua")});
+
+  auto* series = panel.findChild<QWidget*>(QStringLiteral("inspectorSeries"));
+  ASSERT_NE(series, nullptr);
+  EXPECT_TRUE(series->isHidden());
+}
+
+// What the Graph tab's own inspector used to draw down the right edge of the
+// chart, before the two panels were folded into one (2026-08-30): the colour
+// the series is plotted in, and its display flags.
+TEST_F(InspectorPanelTest, SeriesSectionReportsThePresentation) {
+  InspectorPanel panel{InspectorPanelContext{}};
+  panel.ShowElement(InspectorElementView{.title = QStringLiteral("Ua")});
+  // Red: a colour the series can actually be drawn in. Palette entry 0 is
+  // Transparent, which the section deliberately does not offer.
+  const QColor plotted = scada::aui::Color{scada::aui::ColorCode::Red}.qcolor();
+  panel.ShowSeries(InspectorSeriesView{
+      .color = plotted, .own_pane = true, .dots = false, .stepped = true});
+
+  auto* series = panel.findChild<QWidget*>(QStringLiteral("inspectorSeries"));
+  ASSERT_NE(series, nullptr);
+  EXPECT_FALSE(series->isHidden());
+
+  // A swatch per offerable palette colour, and the plotted one says in words
+  // that it is the current one — a ring is not a signal a reader can see.
+  const auto swatches =
+      panel.findChildren<QPushButton*>(QStringLiteral("inspectorSeriesSwatch"));
+  // Every palette colour but Transparent, which would hide the line.
+  ASSERT_EQ(static_cast<std::size_t>(swatches.size()),
+            scada::aui::GetColorCount() - 1);
+  for (const QPushButton* swatch : swatches) {
+    EXPECT_NE(swatch->property("seriesColor").value<QColor>().alpha(), 0);
+  }
+  int described = 0;
+  for (const QPushButton* swatch : swatches) {
+    if (!swatch->accessibleDescription().isEmpty()) {
+      ++described;
+      EXPECT_EQ(swatch->property("seriesColor").value<QColor>().rgba(),
+                plotted.rgba());
+    }
+  }
+  EXPECT_EQ(described, 1);
+}
+
+// The swatch is the panel's one writing field, and it writes through the host
+// rather than through a view pointer of its own.
+TEST_F(InspectorPanelTest, SeriesSwatchAsksTheHostToRecolour) {
+  std::optional<QColor> chosen;
+  InspectorPanel panel{InspectorPanelContext{
+      .on_series_color_chosen = [&chosen](QColor color) { chosen = color; }}};
+  panel.ShowElement(InspectorElementView{.title = QStringLiteral("Ua")});
+  panel.ShowSeries(InspectorSeriesView{
+      .color = scada::aui::Color{scada::aui::ColorCode::Red}.qcolor()});
+
+  const auto swatches =
+      panel.findChildren<QPushButton*>(QStringLiteral("inspectorSeriesSwatch"));
+  ASSERT_GT(swatches.size(), 1);
+  QPushButton* second = swatches[1];
+  second->click();
+
+  ASSERT_TRUE(chosen.has_value());
+  EXPECT_EQ(chosen->rgb(),
+            second->property("seriesColor").value<QColor>().rgb());
+}
+
+// The section describes a selection, not the panel: clearing must take it with
+// the rest, or the next element card opens still reporting the chart's series.
+TEST_F(InspectorPanelTest, ClearHidesTheSeriesSection) {
+  InspectorPanel panel{InspectorPanelContext{}};
+  panel.ShowElement(InspectorElementView{.title = QStringLiteral("Ua")});
+  panel.ShowSeries(InspectorSeriesView{
+      .color = scada::aui::Color{scada::aui::ColorCode::Red}.qcolor()});
+  auto* series = panel.findChild<QWidget*>(QStringLiteral("inspectorSeries"));
+  ASSERT_NE(series, nullptr);
+  ASSERT_FALSE(series->isHidden());
+
+  panel.Clear();
+
+  EXPECT_TRUE(series->isHidden());
+}
+
 TEST_F(InspectorPanelTest, LimitRowsRebuildOnSelectionChange) {
   InspectorPanel panel{InspectorPanelContext{}};
   panel.ShowElement(InspectorElementView{

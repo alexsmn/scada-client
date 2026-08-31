@@ -1515,8 +1515,8 @@
     {
       "capture": "series-inspector",
       "filename": "series-inspector.png",
-      "width": 290,
-      "height": 480
+      "width": 320,
+      "height": 560
     },
     {
       "_comment": "Taller than the 520 it asked for until 2026-08-23: the fixture gained the IEC 60870-5-104 link the RTU hangs under, so the panel now draws its link section - nine APCI rows plus a heading - above the device's own counters. The width follows the widest of those rows.",

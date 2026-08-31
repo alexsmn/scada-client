@@ -8,7 +8,6 @@
 #include "controller/test/controller_environment.h"
 #include "graph/metrix_data_source.h"
 #include "graph/metrix_graph.h"
-#include "graph/series_inspector.h"
 #include "node_service/test/fake_node_service.h"
 #include "resources/common_resources.h"
 #include "scada/client.h"
@@ -116,27 +115,22 @@ TEST_F(GraphViewTest, NewLineUsesDefaultLineWidth) {
 }
 
 // Regression: deleting the selected pane frees its lines, one of which the
-// reshell series inspector may point at. DeleteSelectedPane must re-derive the
-// inspector's line afterwards (it used to leave a dangling pointer that the
-// next repaint dereferenced — a use-after-free). Standalone (not the fixture)
-// so the reshell theme is active during Init, which is when the inspector is
-// created.
-TEST(GraphViewInspectorTest, DeletingSelectedPaneRefreshesSeriesInspector) {
+// series model may still be reporting. DeleteSelectedPane must re-derive from
+// the now-current pane (it used to leave the in-tab inspector holding a
+// dangling pointer that the next repaint dereferenced — a use-after-free).
+// The series surface moved into the shell Inspector on 2026-08-30, so the
+// guarantee is now stated on the model: after the delete there is no series,
+// and reading one must not reach the freed line.
+TEST(GraphViewSeriesModelTest, DeletingSelectedPaneClearsTheSeries) {
   AppEnvironment app_env;
   ControllerEnvironment env;
 
-  const scada::aui::SeverityTheme previous_theme =
-      scada::aui::GetSeverityTheme();
-  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
   GraphView view{env.MakeControllerContext()};
   WindowDefinition def;
   std::unique_ptr<UiView> ui = view.Init(def);
-  scada::aui::SetSeverityTheme(previous_theme);
 
   view.AddContainedItem(kTestNodeId, 0);
-
-  SeriesInspector* inspector = view.inspector();
-  ASSERT_THAT(inspector, NotNull());  // reshell theme => inspector exists
+  EXPECT_TRUE(view.HasSeries());
 
   // Delete the selected pane via its command (DeleteSelectedPane is private).
   CommandHandler* delete_handler = view.GetCommandHandler(ID_GRAPH_DELETE_PANE);
@@ -144,51 +138,60 @@ TEST(GraphViewInspectorTest, DeletingSelectedPaneRefreshesSeriesInspector) {
   ASSERT_TRUE(delete_handler->IsCommandEnabled(ID_GRAPH_DELETE_PANE));
   delete_handler->ExecuteCommand(ID_GRAPH_DELETE_PANE);
 
-  // No panes remain, so the inspector's line must be cleared — not left
-  // pointing at a freed line.
-  EXPECT_THAT(inspector->line(), IsNull());
+  EXPECT_FALSE(view.HasSeries());
 }
 
-// Regression: the panel used to skip painting entirely under the legacy
-// severity theme, so anything that builds it directly — the doc-screenshot
-// capture SaveSeriesInspectorScreenshot does exactly that — got a blank image
-// out of every un-themed generator run, which is how series-inspector.png
-// shipped empty. The opt-in gate belongs to GraphView (which only creates the
-// panel under the reshell theme); a panel someone built must paint.
-TEST(GraphViewInspectorTest, SeriesInspectorPaintsUnderLegacyTheme) {
+// The series model is what the shell Inspector renders, so the colour it
+// reports has to be the line's — and a write through it has to reach the line
+// and say so, since nothing else tells the Inspector to re-read.
+TEST(GraphViewSeriesModelTest, SetSeriesColorRecoloursTheLineAndNotifies) {
   AppEnvironment app_env;
+  ControllerEnvironment env;
 
-  const scada::aui::SeverityTheme previous_theme =
-      scada::aui::GetSeverityTheme();
-  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kLegacy);
+  GraphView view{env.MakeControllerContext()};
+  WindowDefinition def;
+  std::unique_ptr<UiView> ui = view.Init(def);
+  view.AddContainedItem(kTestNodeId, 0);
+  ASSERT_TRUE(view.HasSeries());
 
-  FakeTimedDataService fake_service;
-  MetrixGraph graph{MetrixGraphContext{fake_service}};
-  MetrixGraph::MetrixLine& line = graph.NewLine("TS.200", graph.NewPane());
-  line.SetColor(Qt::blue);
+  int notifications = 0;
+  view.change_handler = [&notifications] { ++notifications; };
 
-  SeriesInspector inspector;
-  inspector.SetLine(&line);
-  inspector.resize(inspector.sizeHint());
-  const QImage image = inspector.grab().toImage();
+  const scada::aui::Color chosen{QColor{Qt::magenta}};
+  view.SetSeriesColor(chosen);
 
-  scada::aui::SetSeverityTheme(previous_theme);
+  EXPECT_EQ(view.GetSeriesColor(), chosen);
+  EXPECT_EQ(notifications, 1);
+}
 
-  // The panel is custom-painted, so "it rendered" is "the pixels are not one
-  // flat colour": a returned-early paintEvent leaves the untouched widget
-  // background, which is uniform.
-  ASSERT_FALSE(image.isNull());
-  bool varies = false;
-  for (int y = 0; y < image.height() && !varies; ++y) {
-    for (int x = 0; x < image.width(); ++x) {
-      if (image.pixelColor(x, y) != image.pixelColor(0, 0)) {
-        varies = true;
-        break;
-      }
-    }
-  }
-  EXPECT_TRUE(varies) << "SeriesInspector painted nothing under the legacy "
-                         "theme; the standalone capture would be blank";
+// Toggling a display flag through the view's own command changes what the
+// Inspector should be showing, and no selection moves when it does — so the
+// model has to announce it or the section goes stale. The starting state is
+// read rather than assumed: a new line takes graph_qt's defaults (dots and
+// stepped both on), and this test is about the flip, not about those.
+TEST(GraphViewSeriesModelTest, DisplayFlagCommandsNotifyTheHost) {
+  AppEnvironment app_env;
+  ControllerEnvironment env;
+
+  GraphView view{env.MakeControllerContext()};
+  WindowDefinition def;
+  std::unique_ptr<UiView> ui = view.Init(def);
+  view.AddContainedItem(kTestNodeId, 0);
+  ASSERT_TRUE(view.HasSeries());
+  const bool dots_before = view.AreSeriesDotsShown();
+
+  int notifications = 0;
+  view.change_handler = [&notifications] { ++notifications; };
+
+  CommandHandler* dots = view.GetCommandHandler(ID_GRAPH_DOTS);
+  ASSERT_THAT(dots, NotNull());
+  ASSERT_TRUE(dots->IsCommandEnabled(ID_GRAPH_DOTS));
+  dots->ExecuteCommand(ID_GRAPH_DOTS);
+
+  EXPECT_EQ(view.AreSeriesDotsShown(), !dots_before);
+  EXPECT_EQ(notifications, 1);
+  // One series, alone in its pane — which is what the section reports.
+  EXPECT_TRUE(view.IsSeriesOnOwnPane());
 }
 
 TEST_F(GraphViewTest, FakeTimedDataRendersLines) {

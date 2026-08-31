@@ -9,6 +9,7 @@
 #include "controller/contents_model.h"
 #include "controller/controller.h"
 #include "controller/selection_model.h"
+#include "controller/series_model.h"
 #include "controller/window_info.h"
 #include "filesystem/file_manager.h"
 #include "main_window/main_window_manager.h"
@@ -147,6 +148,9 @@ void BaseMainWindow::SetActiveView(OpenedView* view) {
             active_view_->controller().GetSelectionModel()) {
       selection_model->change_handler = nullptr;
     }
+    if (auto* series_model = active_view_->controller().GetSeriesModel()) {
+      series_model->change_handler = nullptr;
+    }
     selection_command_router_->SetContext(nullptr, nullptr, nullptr, nullptr);
   }
 
@@ -160,6 +164,14 @@ void BaseMainWindow::SetActiveView(OpenedView* view) {
 
     if (selection_model) {
       selection_model->change_handler = [this] { OnSelectionChanged(); };
+    }
+
+    // A view that plots something announces a recolour or a display-flag
+    // toggle here, because neither moves the selection — and the Inspector's
+    // series section would otherwise go stale until something else did.
+    // Same refresh as a selection change: one place reads all the panels.
+    if (auto* series_model = active_view_->controller().GetSeriesModel()) {
+      series_model->change_handler = [this] { OnSelectionChanged(); };
     }
   }
 

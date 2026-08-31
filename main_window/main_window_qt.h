@@ -13,6 +13,7 @@ class SeverityTileStrip;
 }
 
 #include <boost/signals2/connection.hpp>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -27,6 +28,8 @@ class CommandField;
 class PageSwitcher;
 class DeviceDiagnosticsPanel;
 class InspectorPanel;
+struct InspectorSeriesView;
+class SeriesModel;
 class UserAccessPanel;
 class TransmissionRuleInspector;
 class TagSearchIndex;
@@ -118,6 +121,13 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // Inspector's disabled Control button. Empty when nothing is selected.
   QString ControlUnavailableReason();
   void CreateInspectorPanel();
+  // The active view's plotted-series model, or null for a view that plots
+  // nothing (every view but the chart). Resolved per call rather than cached:
+  // a view can close between a click and its handler.
+  SeriesModel* ActiveSeriesModel();
+  // That model read out for the Inspector's series section, or nullopt when
+  // there is no series to describe.
+  std::optional<InspectorSeriesView> ActiveSeriesView();
   // Opt-in right Device-diagnostics dock (backlog 5.0): reflects a selected
   // device's link status + live traffic/polling counters. Tabified with the
   // Inspector dock.

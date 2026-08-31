@@ -7,16 +7,19 @@
 #include "controller/controller.h"
 #include "controller/controller_context.h"
 #include "controller/selection_model.h"
+#include "controller/series_model.h"
 #include "controller/time_model.h"
 #include "graph/metrix_graph.h"
 
-namespace scada { struct RelativeTimeRange; }
-class SeriesInspector;
+namespace scada {
+struct RelativeTimeRange;
+}
 
 class GraphView : protected ControllerContext,
                   public Controller,
                   public ContentsModel,
                   public TimeModel,
+                  public SeriesModel,
                   private Graph::Controller {
  public:
   explicit GraphView(const ControllerContext& context);
@@ -35,11 +38,17 @@ class GraphView : protected ControllerContext,
   virtual SelectionModel* GetSelectionModel() override { return &selection_; }
   virtual ContentsModel* GetContentsModel() override { return this; }
   virtual TimeModel* GetTimeModel() override { return this; }
+  virtual SeriesModel* GetSeriesModel() override { return this; }
 
-  // The reshell series inspector (null when the reshell theme is off / not
-  // built). Exposed for tests to observe that the inspector's line pointer is
-  // refreshed after the graph mutates.
-  SeriesInspector* inspector() const { return inspector_; }
+  // SeriesModel — the configurable series' presentation, rendered by the shell
+  // Inspector. `GetConfigurableLine()` is what "the" series means here: the
+  // selected pane's primary line, falling back to the first pane that has one.
+  virtual bool HasSeries() const override;
+  virtual scada::aui::Color GetSeriesColor() const override;
+  virtual void SetSeriesColor(scada::aui::Color color) override;
+  virtual bool IsSeriesOnOwnPane() const override;
+  virtual bool AreSeriesDotsShown() const override;
+  virtual bool IsSeriesStepped() const override;
 
   // ContentsModel
   virtual void AddContainedItem(const scada::NodeId& node_id,
@@ -49,7 +58,8 @@ class GraphView : protected ControllerContext,
 
   // TimeModel
   virtual scada::RelativeTimeRange GetTimeRange() const override;
-  virtual void SetTimeRange(const scada::RelativeTimeRange& time_range) override;
+  virtual void SetTimeRange(
+      const scada::RelativeTimeRange& time_range) override;
   virtual bool IsTimeRequired() const override { return true; }
 
  private:
@@ -57,9 +67,10 @@ class GraphView : protected ControllerContext,
 
   void DeleteSelectedPane();
 
-  // Points the reshell series inspector at the currently configurable series
-  // (no-op when the inspector is absent, i.e. under the legacy theme).
-  void RefreshInspector();
+  // Tells the host that the configurable series or its presentation moved, so
+  // the Inspector's series section re-reads this model. A no-op until a host
+  // wires SeriesModel::change_handler.
+  void NotifySeriesChanged();
 
   MetrixGraph::MetrixLine* GetConfigurableLine() const;
 
@@ -88,10 +99,6 @@ class GraphView : protected ControllerContext,
   SelectionModel selection_{{timed_data_service_}};
 
   MetrixGraph* graph_ = nullptr;
-
-  // Reshell-only per-series inspector shown beside the chart; null under the
-  // legacy theme. Owned by the returned container widget (Qt parent), not here.
-  SeriesInspector* inspector_ = nullptr;
 
   GraphRange prezoom_horizontal_range_;
 

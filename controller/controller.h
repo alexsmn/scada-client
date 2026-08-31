@@ -10,6 +10,7 @@ class CommandHandler;
 class ContentsModel;
 class ExportModel;
 class SelectionModel;
+class SeriesModel;
 class TimeModel;
 class WindowDefinition;
 
@@ -35,6 +36,10 @@ class Controller {
   virtual ContentsModel* GetContentsModel() { return nullptr; }
 
   virtual TimeModel* GetTimeModel() { return nullptr; }
+
+  // The plotted series the view currently has configurable, for the shell
+  // Inspector's series section. Null for a view that plots nothing.
+  virtual SeriesModel* GetSeriesModel() { return nullptr; }
 
   virtual ExportModel* GetExportModel() { return nullptr; }
 
