@@ -5,7 +5,9 @@
 #include "base/time/time.h"
 #include "opcua/client/client_session.h"
 #include "opcua_bridge/client_adapters.h"
+#include "remote/remote_services.h"
 #include "scada/attribute_service.h"
+#include "scada/data_services_factory.h"
 #include "scada/date_time.h"
 #include "scada/event.h"
 #include "scada/event_filter.h"
@@ -181,6 +183,13 @@ bool ProfileJsonContainsPageTitle(std::string_view profile_json,
 // model namespace; file/directory instances carry string ids in the
 // file-instance namespace the proxy claims to the filesystem tier.
 const scada::NodeId kFileSystemRoot{304, 7};
+
+// The hardware tree root — `Devices` in common/model/nodesets/devices.xml, at
+// the runtime SCADA namespace. Written as a literal for the same reason
+// kFileSystemRoot is: the generated model headers are not on this target's
+// include path, and adding them for one constant would grow the E2E target's
+// dependencies to reach a number the nodeset fixes.
+const scada::NodeId kDevicesRoot{30, 7};
 const scada::NodeId kFileTypeId{306, 7};
 constexpr scada::NamespaceIndex kFileInstanceNs = 24;
 
@@ -294,6 +303,133 @@ class ProxyOpcUaSession {
   ::DataServices services_;
   bool connected_ = false;
 };
+
+// The same in-process client stack over the NATIVE (gRPC) session instead of
+// OPC UA — `CreateRemoteServices`, which is what `REGISTER_DATA_SERVICES
+// ("Scada", ...)` gives the running client. It exists so a service can be
+// exercised over BOTH transports in one test: the two endpoints are wired to
+// the same `root_node_management_service()` in the framework's
+// `module_install_common.cpp`, and the only way to keep that true is to check
+// it rather than to read it.
+class ProxyRemoteSession {
+ private:
+  template <class Fn>
+  auto Run(Fn&& fn) {
+    using Result = typename std::invoke_result_t<Fn>::value_type;
+    if constexpr (std::is_void_v<Result>) {
+      RunAwaitable(io_, std::forward<Fn>(fn));
+    } else {
+      std::optional<Result> result;
+      RunAwaitable(io_,
+                   [&]() -> Awaitable<void> { result.emplace(co_await fn()); });
+      return std::move(*result);
+    }
+  }
+
+ public:
+  ProxyRemoteSession()
+      : transport_factory_{transport::CreateTransportFactory()} {
+    CreateRemoteServices(
+        DataServicesContext{
+            .logger = std::make_shared<BoostLogger>(LOG_NAME("E2eRemote")),
+            .executor = io_.get_executor(),
+            .transport_factory = *transport_factory_},
+        services_);
+  }
+
+  ~ProxyRemoteSession() {
+    if (connected_)
+      Run([this] { return services_.session_service_->Disconnect(); });
+  }
+
+  scada::Status Connect(int remote_port) {
+    auto status = Run([this, remote_port] {
+      return services_.session_service_->ConnectStatus(
+          scada::SessionConnectParams{
+              // A native connection string is a transport::TransportString,
+              // not host:port -- the client composes one from its `Host:Scada`
+              // setting. Loopback is pinned to 127.0.0.1 for the reason
+              // network_test_environment.h records: an unresolved empty host
+              // never connects on macOS.
+              .connection_string = "TCP;Active;Host=127.0.0.1;Port=" +
+                                   std::to_string(remote_port),
+              .user_name = u"root",
+              .password = {}});
+    });
+    connected_ = static_cast<bool>(status);
+    return status;
+  }
+
+  scada::StatusOr<std::vector<scada::AddNodesResult>> AddNode(
+      scada::AddNodesItem item) {
+    return Run([this, &item] {
+      std::vector<scada::AddNodesItem> items;
+      items.push_back(std::move(item));
+      return services_.node_management_service_->AddNodes(
+          scada::ServiceContext{}, std::move(items));
+    });
+  }
+
+  scada::StatusOr<std::vector<scada::StatusCode>> DeleteNode(
+      const scada::NodeId& node_id) {
+    return Run([this, &node_id] {
+      return services_.node_management_service_->DeleteNodes(
+          scada::ServiceContext{},
+          {scada::DeleteNodesItem{.node_id = node_id}});
+    });
+  }
+
+ private:
+  boost::asio::io_context io_;
+  std::shared_ptr<transport::TransportFactory> transport_factory_;
+  ::DataServices services_;
+  bool connected_ = false;
+};
+
+// A transmission destination in the fixture, discovered rather than hard-coded:
+// a device is a destination because its type declares a `<TransmissionItem>`
+// placeholder, and a real server materialises that declaration onto every
+// instance — so the placeholder is visible as a child, and its TypeDefinition
+// names the rule type the device takes.
+struct TransmissionDestination {
+  scada::NodeId device_id;
+  scada::NodeId item_type_id;
+  std::u16string device_name;
+};
+
+// Depth-first walk of the Devices tree looking for the first destination.
+// Two levels is enough for the fixture (a link owns its devices) and bounds a
+// walk that would otherwise be unbounded on a real address space.
+std::optional<TransmissionDestination> FindTransmissionDestination(
+    ProxyOpcUaSession& session,
+    const scada::NodeId& root,
+    int depth = 2) {
+  auto result = session.BrowseChildren(root);
+  if (!result.ok() || result->empty())
+    return std::nullopt;
+  for (const auto& reference : result->front().references) {
+    if (reference.node_class != scada::NodeClass::Object)
+      continue;
+    // Is this one a destination? Its placeholder child names the rule type.
+    auto children = session.BrowseChildren(reference.node_id);
+    if (children.ok() && !children->empty()) {
+      for (const auto& child : children->front().references) {
+        if (child.browse_name.name() == "<TransmissionItem>") {
+          return TransmissionDestination{
+              .device_id = reference.node_id,
+              .item_type_id = child.type_definition,
+              .device_name = reference.display_name.text};
+        }
+      }
+    }
+    if (depth > 1) {
+      if (auto nested = FindTransmissionDestination(session, reference.node_id,
+                                                    depth - 1))
+        return nested;
+    }
+  }
+  return std::nullopt;
+}
 
 // True if a Browse of the FileSystem root lists a file whose string node id in
 // the file-instance namespace equals `name`; fills `node_id` with the match.
@@ -468,6 +604,163 @@ TEST_P(ClientServerE2eTest, FileSystem_CreateAndDeleteThroughProxy) {
   EXPECT_FALSE(std::filesystem::exists(file_path))
       << "DeleteNodes via the proxy did not remove the file from the "
          "filesystem tier's disk";
+}
+
+/**
+ * Adding a transmission rule, over BOTH transports, asserting they agree.
+ *
+ * The invariant under test is not "the add is refused" — that is a property of
+ * this topology's aggregation credentials and will change when someone fixes
+ * them (backlog 702). It is that **the two client transports get the same
+ * answer**, which is the thing the framework's wiring promises and the thing a
+ * reader would otherwise have to take on trust: `module_install_common.cpp`
+ * hands the OPC UA module and the native `sessions` module the same
+ * `core_module.root_node_management_service()`, so both meet one permission
+ * check in `RootNodeManager::AddNodes`. The Qt client's own add path
+ * (`TaskManagerImpl::RunInsertTask`) calls that service over the native
+ * session, which is what `ProxyRemoteSession` exercises here.
+ *
+ * Written because the web client's add was measured as refused
+ * (Bad_UserAccessDenied) against dev/local-cluster while the Qt path was only
+ * ever *argued* to behave the same, from reading the wiring. The argument was
+ * sound and it was still an argument; this makes it a run. First result,
+ * 2026-08-31: both transports refuse with 0x8030 Bad_UserAccessDenied, and the
+ * native session returns Good for the FileSystem control in the same body — so
+ * the agreement is measured and is not an artefact of a broken session. See
+ * parity finding V33.
+ *
+ * Deliberately asserts EQUALITY rather than a status value, so it keeps its
+ * meaning after the fix: when the edge aggregation stops being anonymous both
+ * sides should turn Good together, and this test then guards against exactly
+ * one of them doing so.
+ *
+ * Two things this cost to get right, both worth knowing before editing it.
+ * `root` is single-session (the server logs MultiSessions = 0), so the two
+ * sessions cannot overlap — hence the scopes. And a native connection string is
+ * a transport::TransportString ("TCP;Active;Host=...;Port=..."), not the
+ * host:port the client settings file carries; the host:port form connects to
+ * nothing and reads as a server fault.
+ */
+TEST_P(ClientServerE2eTest, Transmission_AddRuleAgreesAcrossTransports) {
+  if (Topology() != ServerTopology::Cluster || Protocol() != E2eProtocol::OpcUa)
+    GTEST_SKIP() << "opens both a native and an OPC UA session itself, so it "
+                    "runs once — under OpcUa_Cluster";
+  if (UsesExternalServer())
+    GTEST_SKIP() << "adds a node to the deployment's configuration; scoped to "
+                    "the cluster this suite owns";
+
+  StartServer();
+
+  // `root` is single-session (the server logs MultiSessions = 0 for it), so the
+  // two transports cannot be connected at once — the second login is refused
+  // outright, which reads as a test bug rather than as the policy it is. Each
+  // session therefore gets its own scope and disconnects before the next one
+  // opens.
+  std::optional<TransmissionDestination> destination;
+  scada::StatusCode opcua_status{};
+  scada::StatusCode remote_status{};
+
+  const auto make_item = [&destination](std::u16string_view name) {
+    return scada::AddNodesItem{.parent_id = destination->device_id,
+                               .node_class = scada::NodeClass::Object,
+                               .type_definition_id = destination->item_type_id,
+                               .attributes = scada::NodeAttributes{
+                                   .display_name = scada::LocalizedText{name}}};
+  };
+
+  {
+    ProxyOpcUaSession opcua_session;
+    ASSERT_TRUE(opcua_session.Connect(opcua_port_));
+
+    // The edges' address spaces reach the proxy asynchronously after startup,
+    // so the destination is not there the instant the proxy accepts a session.
+    const auto deadline =
+        std::chrono::steady_clock::now() + std::chrono::seconds{20};
+    while (!destination && std::chrono::steady_clock::now() < deadline) {
+      destination = FindTransmissionDestination(opcua_session, kDevicesRoot);
+      if (!destination)
+        std::this_thread::sleep_for(std::chrono::milliseconds{250});
+    }
+    ASSERT_TRUE(destination.has_value())
+        << "no transmission destination under Devices: the fixture has no "
+           "device whose type declares a <TransmissionItem> placeholder, so "
+           "this test has nothing to add a rule to";
+    ASSERT_FALSE(destination->item_type_id.is_null())
+        << "the <TransmissionItem> placeholder carried no TypeDefinition, so "
+           "the rule type is unknown";
+
+    auto added = opcua_session.AddNode(make_item(u"E2eRuleOpcUa"));
+    ASSERT_TRUE(added.ok())
+        << "OPC UA AddNodes call failed: " << ::ToString(added.status());
+    ASSERT_EQ(added->size(), 1u);
+    opcua_status = added->front().status_code;
+    // Clean up before comparing, so a disagreement does not also leak a node
+    // into the fixture's configuration.
+    if (scada::IsGood(opcua_status))
+      (void)opcua_session.DeleteNode(added->front().added_node_id);
+  }
+
+  {
+    ProxyRemoteSession remote_session;
+    ASSERT_TRUE(remote_session.Connect(remote_port_))
+        << "the native session could not log in after the OPC UA one closed";
+
+    // POSITIVE CONTROL, and the test is close to worthless without it. The
+    // assertion below is that the two transports AGREE, and "both refused"
+    // satisfies that just as well when the native session is simply broken —
+    // an unauthenticated session, a wrong endpoint, a transport that never
+    // reaches the server. So first prove this session can get Good out of
+    // AddNodes at all, using the one route the suite already knows works: a
+    // file under the FileSystem root, whose aggregation link presents `svc`.
+    // Measured 2026-08-31: this returns Good while the transmission add on the
+    // same session returns Bad_UserAccessDenied, which is what makes the
+    // agreement below evidence rather than a coincidence.
+    {
+      constexpr std::string_view kProbe = "native transport control";
+      auto control = remote_session.AddNode(scada::AddNodesItem{
+          .parent_id = kFileSystemRoot,
+          .node_class = scada::NodeClass::Variable,
+          .type_definition_id = kFileTypeId,
+          .attributes = scada::NodeAttributes{
+              .display_name = scada::LocalizedText{u"native-control.txt"},
+              .value = scada::ByteString{kProbe.begin(), kProbe.end()}}});
+      ASSERT_TRUE(control.ok()) << "native AddNodes control call failed: "
+                                << ::ToString(control.status());
+      ASSERT_EQ(control->size(), 1u);
+      ASSERT_TRUE(scada::IsGood(control->front().status_code))
+          << "the native session cannot add a node anywhere (status "
+          << static_cast<std::uint32_t>(control->front().status_code)
+          << "), so it proves nothing about the transmission add below";
+      (void)remote_session.DeleteNode(control->front().added_node_id);
+    }
+
+    auto added = remote_session.AddNode(make_item(u"E2eRuleRemote"));
+    ASSERT_TRUE(added.ok())
+        << "native AddNodes call failed: " << ::ToString(added.status());
+    ASSERT_EQ(added->size(), 1u);
+    remote_status = added->front().status_code;
+    if (scada::IsGood(remote_status))
+      (void)remote_session.DeleteNode(added->front().added_node_id);
+  }
+
+  EXPECT_EQ(static_cast<std::uint32_t>(remote_status),
+            static_cast<std::uint32_t>(opcua_status))
+      << "the two client transports disagree about adding a transmission rule "
+         "to "
+      << destination->device_id.ToString()
+      << " — native=" << static_cast<std::uint32_t>(remote_status)
+      << " opcua=" << static_cast<std::uint32_t>(opcua_status)
+      << ". They are wired to the same root node-management service, so a "
+         "difference means the endpoint modules have stopped sharing it.";
+
+  // Record what the shared answer currently is. Not asserted: it is set by the
+  // deployment's aggregation credentials, not by the client (backlog 702).
+  if (!scada::IsGood(remote_status)) {
+    GTEST_LOG_(INFO) << "both transports refuse the add with status "
+                     << static_cast<std::uint32_t>(remote_status)
+                     << " (expected on a topology whose proxy aggregates its "
+                        "edges anonymously — see V33)";
+  }
 }
 
 TEST_P(ClientServerE2eTest, Events_HistoryReadThroughProxy) {

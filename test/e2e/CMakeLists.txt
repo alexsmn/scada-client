@@ -138,6 +138,12 @@ target_link_libraries(client_server_e2e_tests PRIVATE
   # Direct OPC UA sessions to the cluster proxy (the FileSystem read/write
   # tests exercise the aggregation seam without driving the Qt client).
   scada_opcua_bridge
+  # The NATIVE (gRPC) client session -- CreateRemoteServices, the backend the
+  # running client registers as "Scada". The transmission-add test drives both
+  # transports in one body to check they still meet the same node-management
+  # service, which is a property of the framework's wiring and not something a
+  # single-protocol test can see.
+  scada_core_remote
   transport
 )
 
