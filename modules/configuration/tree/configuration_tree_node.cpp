@@ -25,7 +25,11 @@ ConfigurationTreeNode::ConfigurationTreeNode(ConfigurationTreeModel& model,
       reference_type_id_{std::move(reference_type_id)},
       forward_reference_{forward_reference},
       node_{std::move(node)} {
-  model_.tree_node_map_.emplace(node_.node_id(), this);
+  // A loading placeholder stands for no node and carries a null NodeRef.
+  // Registering it would file it under the null node id, where it would sit
+  // ahead of every real row in FindFirstTreeNode's ordered lookup.
+  if (node_)
+    model_.tree_node_map_.emplace(node_.node_id(), this);
 
   // Do not fetch here. Node fetch-status updates are reported back to
   // the tree as synthetic reference changes; creating a tree node and
@@ -36,6 +40,10 @@ ConfigurationTreeNode::ConfigurationTreeNode(ConfigurationTreeModel& model,
 }
 
 ConfigurationTreeNode::~ConfigurationTreeNode() {
+  // Never registered — see the ctor.
+  if (!node_)
+    return;
+
   auto [first, last] = model_.tree_node_map_.equal_range(node_.node_id());
   auto i =
       std::find_if(first, last, [this](auto& p) { return p.second == this; });
@@ -125,6 +133,12 @@ void ConfigurationTreeNode::FetchMore() {
             std::move(node), std::move(node_id), std::move(reference_type_id),
             forward_reference);
       });
+
+  // Only the root needs a stand-in: every other row is on screen already and
+  // says "[Loading]" in its own text (GetText above), whereas the root's row is
+  // not drawn at all.
+  if (!parent())
+    model_.SetLoadingPlaceholder(*this, true);
 }
 
 Awaitable<void> ConfigurationTreeNode::CompleteFetchMoreAsync(
@@ -156,6 +170,9 @@ Awaitable<void> ConfigurationTreeNode::CompleteFetchMoreAsync(
                                                    fetched_node.node_id()));
 
   tree_node->children_loaded_ = true;
+  // Down before the real rows go up, so AddChildren's indices start at 0 and
+  // the two are never on screen together.
+  model.SetLoadingPlaceholder(*tree_node, false);
   const auto added_child_count = tree_node->AddChildren();
   tree_node->Changed();
 
@@ -186,4 +203,51 @@ std::u16string ConfigurationTreeRootNode::GetText(int column_id) const {
 
 int ConfigurationTreeRootNode::GetIcon() const {
   return IMAGE_FOLDER;
+}
+
+// ConfigurationTreeLoadingNode
+
+ConfigurationTreeLoadingNode::ConfigurationTreeLoadingNode(
+    ConfigurationTreeModel& model)
+    : ConfigurationTreeNode{model, {}, /*forward_reference=*/true, NodeRef{}} {}
+
+bool ConfigurationTreeLoadingNode::IsLoadingPlaceholder() const {
+  return true;
+}
+
+std::u16string ConfigurationTreeLoadingNode::GetText(int column_id) const {
+  // Column 0 only. The Objects tree's second column is its live Value, which
+  // this row has none of, and ObjectTreeModel routes that column past the node
+  // anyway.
+  return column_id == 0 ? Translate("Loading") + u"\u2026" : std::u16string{};
+}
+
+int ConfigurationTreeLoadingNode::GetIcon() const {
+  // No glyph: the base class classifies by node class, and this row has no
+  // node to classify.
+  return scada::aui::kNoIcon;
+}
+
+bool ConfigurationTreeLoadingNode::HasChildren() const {
+  return false;
+}
+
+bool ConfigurationTreeLoadingNode::CanFetchMore() const {
+  // The base answers `!children_requested_`, i.e. true, and its FetchMore
+  // would then Check() on this row's null NodeRef and panic. Nothing to fetch
+  // here in any case.
+  return false;
+}
+
+bool ConfigurationTreeLoadingNode::IsSelectable(int column_id) const {
+  // Selecting it would publish a null node to every selection-driven command.
+  return false;
+}
+
+scada::aui::ColorRole ConfigurationTreeLoadingNode::GetColorRole(
+    int column_id) const {
+  // A themed muted colour rather than a literal one: this row is chrome, not a
+  // process semantic, so it follows the platform theme like the rest of the Qt
+  // client's chrome does.
+  return scada::aui::ColorRole::Disabled;
 }

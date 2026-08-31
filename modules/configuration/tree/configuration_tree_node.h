@@ -33,6 +33,12 @@ class ConfigurationTreeNode
   }
   bool forward_reference() const { return forward_reference_; }
 
+  // True for the stand-in row a root draws while its own first level is still
+  // in flight — see ConfigurationTreeLoadingNode. Such a row stands for no
+  // node, so it is registered in neither the model's node map nor anything
+  // that looks a row up by node id.
+  virtual bool IsLoadingPlaceholder() const { return false; }
+
   // TreeNode
   virtual std::u16string GetText(int column_id) const override;
   virtual int GetIcon() const override;
@@ -95,4 +101,32 @@ class ConfigurationTreeRootNode : public ConfigurationTreeNode {
   // TreeNode
   virtual std::u16string GetText(int column_id) const override;
   virtual int GetIcon() const override;
+};
+
+// The row a root shows in place of the children it is still waiting for.
+//
+// Every ConfigurationTreeView hides its root row — the dock's title already
+// names the root, see the ctor comment in configuration_tree_view.cpp — and the
+// "[Loading]" suffix ConfigurationTreeNode::GetText appends is part of that
+// row's text. So from the moment the root's first level is requested until it
+// arrives there is nothing on screen at all, and a slow server is
+// indistinguishable from an empty folder. This row is that missing feedback.
+//
+// It stands for no node: its NodeRef is null, which every NodeRef accessor
+// answers safely, and it offers neither children nor a fetch of its own, so a
+// walk that recurses through the tree stops at it rather than trying to expand
+// a row with nothing behind it.
+class ConfigurationTreeLoadingNode : public ConfigurationTreeNode {
+ public:
+  explicit ConfigurationTreeLoadingNode(ConfigurationTreeModel& model);
+
+  virtual bool IsLoadingPlaceholder() const override;
+
+  // TreeNode
+  virtual std::u16string GetText(int column_id) const override;
+  virtual int GetIcon() const override;
+  virtual bool HasChildren() const override;
+  virtual bool CanFetchMore() const override;
+  virtual bool IsSelectable(int column_id) const override;
+  virtual scada::aui::ColorRole GetColorRole(int column_id) const override;
 };

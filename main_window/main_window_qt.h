@@ -206,6 +206,9 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   void FrontPrimaryPane(const PaneMode& mode);
   // Opens an address-space tag (from the palette) in a table view.
   void OpenTag(const scada::NodeId& node_id, const std::u16string& title);
+  // Starts the command palette's address-space browse. See the definition for
+  // why it must not run before the first page is open.
+  void StartTagSearchBrowse();
   // Opens the Ctrl-K command palette over every registered command, optionally
   // seeded with `initial_text` (type-to-search from the context-bar field).
   void ShowCommandPalette(const QString& initial_text = QString());

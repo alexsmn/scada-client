@@ -431,6 +431,185 @@ TEST_F(ConfigurationTreeModelTest, LoadingClearsWhenTheNodeIsFetched) {
   EXPECT_EQ(model_->GetText(child, 0).find(u"[Loading]"), std::u16string::npos);
 }
 
+// The root's own row is the one row that says "[Loading]" for the first level,
+// and no ConfigurationTreeView draws it — Tree hides its root, so the dock
+// title does not read twice (configuration_tree_view.cpp). That left the pane
+// empty, with nothing to tell a slow server from an empty folder, for as long
+// as the first level took. The placeholder row is the whole of that feedback.
+TEST_F(ConfigurationTreeModelTest, PendingFirstLevelShowsAPlaceholderRow) {
+  auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
+  std::optional<scada::base::AsyncCompletion> delayed_completion;
+
+  // The root arrives without its children, and its fetch stays suspended until
+  // the test releases it — the window this row exists for.
+  const scada::NodeId root_id{scada::id::RootFolder};
+  node_service_.SetFetchStatus(root_id, NodeFetchStatus::NodeOnly);
+  node_service_.SetFetchHandler(
+      root_id, [&](const NodeFetchStatus&) -> Awaitable<void> {
+        delayed_completion.emplace(executor_);
+        co_await delayed_completion->Wait();
+        node_service_.SetFetchStatus(root_id, NodeFetchStatus::NodeAndChildren);
+      });
+
+  EXPECT_CALL(*node_service_tree, GetChildren(_))
+      .WillOnce(Return(std::vector<NodeServiceTree::ChildRef>{
+          {.reference_type_id = scada::id::Organizes,
+           .child_node = MakeTestNodeRef(kNodeId1)}}));
+
+  InitModel(std::move(node_service_tree), root_node_);
+  Drain(executor_);
+
+  auto* root = model_->GetRoot();
+  ASSERT_EQ(1, model_->GetChildCount(root));
+  auto* placeholder =
+      static_cast<ConfigurationTreeNode*>(model_->GetChild(root, 0));
+  ASSERT_TRUE(placeholder->IsLoadingPlaceholder());
+  EXPECT_EQ(model_->GetText(placeholder, 0), Translate("Loading") + u"\u2026");
+
+  ASSERT_TRUE(delayed_completion.has_value());
+  delayed_completion->Complete();
+  Drain(executor_);
+
+  // Down again the moment the real rows go up, and the two are never both on
+  // screen: one child, and it is the fetched one.
+  ASSERT_EQ(1, model_->GetChildCount(root));
+  auto* child = static_cast<ConfigurationTreeNode*>(model_->GetChild(root, 0));
+  EXPECT_FALSE(child->IsLoadingPlaceholder());
+  EXPECT_EQ(child->node().node_id(), kNodeId1);
+}
+
+// A root whose children were prefetched never waits, so it must not flash a
+// row saying it did.
+TEST_F(ConfigurationTreeModelTest, PrefetchedFirstLevelShowsNoPlaceholderRow) {
+  auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
+  EXPECT_CALL(*node_service_tree, GetChildren(_))
+      .WillOnce(Return(std::vector<NodeServiceTree::ChildRef>{
+          {.reference_type_id = scada::id::Organizes,
+           .child_node = MakeTestNodeRef(kNodeId1)}}));
+
+  InitModel(std::move(node_service_tree));
+  Drain(executor_);
+
+  auto* root = model_->GetRoot();
+  ASSERT_EQ(1, model_->GetChildCount(root));
+  EXPECT_FALSE(static_cast<ConfigurationTreeNode*>(model_->GetChild(root, 0))
+                   ->IsLoadingPlaceholder());
+}
+
+// The row stands for no node, and a walk that recurses through the tree must
+// stop at it rather than try to open it. CanFetchMore is the sharp one: the
+// base class answers `!children_requested_`, i.e. true, and its FetchMore
+// would then Check() this row's null NodeRef and take the client down.
+TEST_F(ConfigurationTreeModelTest, LoadingPlaceholderOffersNothingToExpand) {
+  auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
+  std::optional<scada::base::AsyncCompletion> delayed_completion;
+
+  const scada::NodeId root_id{scada::id::RootFolder};
+  node_service_.SetFetchStatus(root_id, NodeFetchStatus::NodeOnly);
+  node_service_.SetFetchHandler(root_id,
+                                [&](const NodeFetchStatus&) -> Awaitable<void> {
+                                  delayed_completion.emplace(executor_);
+                                  co_await delayed_completion->Wait();
+                                });
+
+  InitModel(std::move(node_service_tree), root_node_);
+  Drain(executor_);
+
+  auto* root = model_->GetRoot();
+  ASSERT_EQ(1, model_->GetChildCount(root));
+  auto* placeholder = model_->GetChild(root, 0);
+  ASSERT_TRUE(
+      static_cast<ConfigurationTreeNode*>(placeholder)->IsLoadingPlaceholder());
+
+  EXPECT_FALSE(model_->HasChildren(placeholder));
+  EXPECT_FALSE(model_->CanFetchMore(placeholder));
+  EXPECT_EQ(0, model_->GetChildCount(placeholder));
+  // Selecting it would publish a null node to every selection-driven command.
+  EXPECT_FALSE(model_->IsSelectable(placeholder, 0));
+  EXPECT_EQ(scada::aui::kNoIcon, model_->GetIcon(placeholder));
+
+  ASSERT_TRUE(delayed_completion.has_value());
+  delayed_completion->Complete();
+  Drain(executor_);
+}
+
+// UpdateChildTreeNodes sweeps out rows that answer to no browse target, which
+// is exactly what the placeholder is — so an ordinary model-change event
+// arriving mid-fetch used to be able to take the only feedback down and leave
+// the pane blank again for the rest of the wait.
+TEST_F(ConfigurationTreeModelTest, ModelChangeWhilePendingKeepsThePlaceholder) {
+  auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
+  std::optional<scada::base::AsyncCompletion> delayed_completion;
+
+  const scada::NodeId root_id{scada::id::RootFolder};
+  node_service_.SetFetchStatus(root_id, NodeFetchStatus::NodeOnly);
+  node_service_.SetFetchHandler(root_id,
+                                [&](const NodeFetchStatus&) -> Awaitable<void> {
+                                  delayed_completion.emplace(executor_);
+                                  co_await delayed_completion->Wait();
+                                });
+
+  InitModel(std::move(node_service_tree), root_node_);
+  Drain(executor_);
+  ASSERT_NE(observer_, nullptr);
+
+  auto* root = model_->GetRoot();
+  ASSERT_EQ(1, model_->GetChildCount(root));
+
+  // Still nothing browsable under the root — GetChildren answers {} by default.
+  observer_->OnNodeChildrenChanged(root_id);
+
+  ASSERT_EQ(1, model_->GetChildCount(root));
+  EXPECT_TRUE(static_cast<ConfigurationTreeNode*>(model_->GetChild(root, 0))
+                  ->IsLoadingPlaceholder());
+
+  ASSERT_TRUE(delayed_completion.has_value());
+  delayed_completion->Complete();
+  Drain(executor_);
+}
+
+// The complement: when real rows do arrive by that route, the stand-in has
+// nothing left to stand for and must go, rather than sitting under them
+// claiming a fetch is still running.
+TEST_F(ConfigurationTreeModelTest,
+       ChildrenArrivingByModelChangeRetireThePlaceholder) {
+  auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
+  std::optional<scada::base::AsyncCompletion> delayed_completion;
+
+  const scada::NodeId root_id{scada::id::RootFolder};
+  node_service_.SetFetchStatus(root_id, NodeFetchStatus::NodeOnly);
+  node_service_.SetFetchHandler(root_id,
+                                [&](const NodeFetchStatus&) -> Awaitable<void> {
+                                  delayed_completion.emplace(executor_);
+                                  co_await delayed_completion->Wait();
+                                });
+
+  EXPECT_CALL(*node_service_tree, GetChildren(_))
+      .WillRepeatedly(Return(std::vector<NodeServiceTree::ChildRef>{
+          {.reference_type_id = scada::id::Organizes,
+           .child_node = MakeTestNodeRef(kNodeId1)}}));
+
+  InitModel(std::move(node_service_tree), root_node_);
+  Drain(executor_);
+  ASSERT_NE(observer_, nullptr);
+
+  auto* root = model_->GetRoot();
+  ASSERT_EQ(1, model_->GetChildCount(root));
+  ASSERT_TRUE(static_cast<ConfigurationTreeNode*>(model_->GetChild(root, 0))
+                  ->IsLoadingPlaceholder());
+
+  observer_->OnNodeChildrenChanged(root_id);
+
+  ASSERT_EQ(1, model_->GetChildCount(root));
+  auto* child = static_cast<ConfigurationTreeNode*>(model_->GetChild(root, 0));
+  EXPECT_FALSE(child->IsLoadingPlaceholder());
+  EXPECT_EQ(child->node().node_id(), kNodeId1);
+
+  ASSERT_TRUE(delayed_completion.has_value());
+  delayed_completion->Complete();
+  Drain(executor_);
+}
+
 // The glyph table is indexed by those tile indices, inherited from the sliced
 // bitmap strip it replaced. A short table would silently hand rows a null
 // icon; a long one means an enum value was dropped without its glyph.

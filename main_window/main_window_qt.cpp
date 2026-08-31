@@ -185,12 +185,11 @@ MainWindow::MainWindow(MainWindowContext&& context)
     CreateUserAccessPanel();
     CreateTransmissionRulePanel();
     TabifySpecialistDocks();
-    // Kick off the palette's tag browse in the background so tags are ready by
-    // the time the operator first opens the palette.
+    // The palette's tag index is built here but deliberately NOT started here
+    // — see StartTagSearchBrowse(), called once the first page is open.
     if (node_service_) {
       tag_search_index_ = std::make_unique<TagSearchIndex>(
           executor_, *node_service_, scada::id::ObjectsFolder);
-      tag_search_index_->EnsurePopulated();
     }
   }
   CreateToolbar();
@@ -916,12 +915,35 @@ void MainWindow::OpenTag(const scada::NodeId& node_id,
           });
 }
 
+// Starts the command palette's one-time address-space browse.
+//
+// Deliberately not called from the constructor, which is where it used to run.
+// That browse walks the Organizes hierarchy under ObjectsFolder one node per
+// await (TagSearchIndex::BrowseNodeAsync), and it started before any pane
+// existed — so its work was queued at NodeFetcherImpl first and the Explorer's
+// trees came second. That ordering decides which of them the operator waits
+// for: the fetcher runs a FIFO by request order, admits two requests at a time,
+// and a browse enqueues every child it returned under its *parent's* sequence
+// number (common/node_service/node_fetcher_impl.cpp), so an earlier walk keeps
+// landing in front of a later tree. Starting after the page is open puts the
+// trees' first levels ahead of the walk instead, which is the order the
+// operator is actually looking at.
+//
+// It stays a background browse: nothing waits on it, and the palette starts it
+// itself if it is somehow still unstarted.
+void MainWindow::StartTagSearchBrowse() {
+  if (tag_search_index_)
+    tag_search_index_->EnsurePopulated();
+}
+
 void MainWindow::ShowCommandPalette(const QString& initial_text) {
   // Address-space tags as extra palette entries; activating one opens it in a
-  // table view. The browse was started at construction, so tags() is usually
-  // already populated here (empty on the very first open of a fresh session).
+  // table view. The browse normally started when the first page opened, so
+  // tags() is usually already populated here — but start it from here too, so
+  // the palette works on its own terms if no page ever opened.
   std::vector<CommandPalette::ExtraItem> extras;
   if (tag_search_index_) {
+    StartTagSearchBrowse();
     const std::u16string tag_detail = Translate("tag");
     for (const TagSearchIndex::Tag& tag : tag_search_index_->tags()) {
       extras.push_back({tag.name, tag_detail,
@@ -1336,6 +1358,10 @@ void MainWindow::OpenPage(const Page& page) {
   // be stale (New and Delete both end in an OpenPage).
   RefreshRailPages();
   RefreshPaneModeMarker();
+
+  // The page's panes exist now, so every tree in it has queued its own first
+  // level. Only now may the palette's browse start.
+  StartTagSearchBrowse();
 }
 
 void MainWindow::OnSelectionChanged() {

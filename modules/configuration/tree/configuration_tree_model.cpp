@@ -20,6 +20,16 @@ inline bool DoesChildExist(std::span<const NodeServiceTree::ChildRef> children,
       });
 }
 
+// Index of `parent`'s loading placeholder row, or -1 when it has none. There is
+// at most one.
+int FindLoadingPlaceholder(const ConfigurationTreeNode& parent) {
+  for (int i = 0; i < parent.GetChildCount(); ++i) {
+    if (parent.GetChild(i).IsLoadingPlaceholder())
+      return i;
+  }
+  return -1;
+}
+
 }  // namespace
 
 // ConfigurationTreeModel
@@ -70,6 +80,13 @@ void ConfigurationTreeModel::UpdateChildTreeNodes(
   // Delete missing targets.
   for (int i = 0; i < parent_tree_node.GetChildCount();) {
     const auto& tree_node = parent_tree_node.GetChild(i);
+    // The placeholder answers to no target, so this sweep would always find it
+    // missing and take down the one row saying the fetch is still running.
+    // SetLoadingPlaceholder owns it; leave it alone here.
+    if (tree_node.IsLoadingPlaceholder()) {
+      ++i;
+      continue;
+    }
     bool exists =
         DoesChildExist(children, tree_node.reference_type_id(),
                        tree_node.forward_reference(), tree_node.node());
@@ -90,14 +107,34 @@ void ConfigurationTreeModel::UpdateChildTreeNodes(
     }
   }
 
+  // Real rows arrived by another route than the fetch this node is waiting on
+  // (a model change, typically), so the stand-in has nothing left to stand for.
+  if (added_child_count != 0)
+    SetLoadingPlaceholder(parent_tree_node, false);
+
   LOG_INFO(logger_) << "Child tree nodes updated"
-                    << LOG_TAG("NodeId",
-                               NodeIdToScadaString(
-                                   parent_tree_node.node().node_id()))
+                    << LOG_TAG("NodeId", NodeIdToScadaString(
+                                             parent_tree_node.node().node_id()))
                     << LOG_TAG("PreviousChildCount", child_count_before)
                     << LOG_TAG("RemovedChildCount", removed_child_count)
                     << LOG_TAG("AddedChildCount", added_child_count)
-                    << LOG_TAG("TotalChildCount", parent_tree_node.GetChildCount());
+                    << LOG_TAG("TotalChildCount",
+                               parent_tree_node.GetChildCount());
+}
+
+void ConfigurationTreeModel::SetLoadingPlaceholder(
+    ConfigurationTreeNode& parent_tree_node,
+    bool present) {
+  const int index = FindLoadingPlaceholder(parent_tree_node);
+  if (present == (index >= 0))
+    return;
+
+  if (present) {
+    Add(parent_tree_node, parent_tree_node.GetChildCount(),
+        std::make_unique<ConfigurationTreeLoadingNode>(*this));
+  } else {
+    Remove(parent_tree_node, index);
+  }
 }
 
 void ConfigurationTreeModel::DeleteTreeNodes(const scada::NodeId& node_id) {

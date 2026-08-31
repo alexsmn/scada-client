@@ -27,8 +27,16 @@ int CompareNodes(const NodeRef& a, const NodeRef& b) {
     return !!a < !!b ? 1 : -1;
   if (a.fetched() != b.fetched())
     return a.fetched() < b.fetched() ? 1 : -1;
-  const auto& ta = a.type_definition().node_id();
-  const auto& tb = b.type_definition().node_id();
+  // Hold the type-definition cursors, don't bind references into them.
+  // type_definition() returns a NodeRef by value and node_id() is
+  // SCADA_LIFETIME_BOUND to it, so a `const auto&` here dangled from the end of
+  // its own full-expression — and both are read further down, which made this
+  // comparator sort the Explorer's rows on freed memory. Clang says so
+  // (-Wdangling); the annotation is what lets it.
+  const NodeRef type_a = a.type_definition();
+  const NodeRef type_b = b.type_definition();
+  const scada::NodeId& ta = type_a.node_id();
+  const scada::NodeId& tb = type_b.node_id();
   bool fa = a.node_class() != scada::NodeClass::Variable;
   bool fb = b.node_class() != scada::NodeClass::Variable;
   if (fa != fb)

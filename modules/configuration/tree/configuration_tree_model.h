@@ -58,6 +58,12 @@ class ConfigurationTreeModel
   void UpdateChildTreeNodes(const scada::NodeId& parent_id);
   void UpdateChildTreeNodes(ConfigurationTreeNode& parent_tree_node);
 
+  // Puts up or takes down `parent_tree_node`'s loading placeholder row so it is
+  // present exactly when `present` says. Idempotent, and the only thing that
+  // owns that row — see ConfigurationTreeLoadingNode for what it is for.
+  void SetLoadingPlaceholder(ConfigurationTreeNode& parent_tree_node,
+                             bool present);
+
   void DeleteTreeNodes(const scada::NodeId& node_id);
 
   // NodeServiceTree::Observer
