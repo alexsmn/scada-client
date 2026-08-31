@@ -19,7 +19,7 @@ class NodeService;
 // complementing the right-click context menu (`EventMenuModel`). It hosts an
 // "Unacknowledged only" toggle, a minimum-severity control and a Period
 // selector; the area scope lives in the Areas sidebar beside the journal
-// (`MakeEventAreaSidebar`). It is opt-in reshell chrome; the caller gates it
+// (`MakeEventAreaSidebar`). The caller gates it
 // on the active UX theme and only builds it for the full historical journal
 // (where the time range is meaningful), not the docked current-events panel.
 //

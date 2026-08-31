@@ -170,29 +170,22 @@ MainWindow::MainWindow(MainWindowContext&& context)
   AttachViewManager(*view_manager_);
 
   CreateMenuBar();
-  // Opt-in top context bar, on its own row above the command toolbar. Gated on
-  // the active UX theme, which both the app (app/qt/installed_appearance.h) and
-  // the headless screenshot generator set together with the palette when the
-  // experimental UX is enabled.
-  //
-  // Read once, here: this chrome is structural, so Settings → Colour scheme can
-  // recolour a running client but cannot add or remove these widgets — it says
-  // so when the operator crosses that boundary (see AppearanceMenuModel).
-  if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy) {
-    CreateActivityBar();
-    WireRailPages();
-    CreateContextBar();
-    CreateInspectorPanel();
-    CreateDiagnosticsPanel();
-    CreateUserAccessPanel();
-    CreateTransmissionRulePanel();
-    TabifySpecialistDocks();
-    // The palette's tag index is built here but deliberately NOT started here
-    // — see StartTagSearchBrowse(), called once the first page is open.
-    if (node_service_) {
-      tag_search_index_ = std::make_unique<TagSearchIndex>(
-          executor_, *node_service_, scada::id::ObjectsFolder);
-    }
+  // The workbench chrome: activity rail, top context bar, Inspector and the
+  // specialist docks (shell.md §2). Structural rather than cosmetic, so
+  // Settings → Colour scheme recolours it but never adds or removes it.
+  CreateActivityBar();
+  WireRailPages();
+  CreateContextBar();
+  CreateInspectorPanel();
+  CreateDiagnosticsPanel();
+  CreateUserAccessPanel();
+  CreateTransmissionRulePanel();
+  TabifySpecialistDocks();
+  // The palette's tag index is built here but deliberately NOT started here —
+  // see StartTagSearchBrowse(), called once the first page is open.
+  if (node_service_) {
+    tag_search_index_ = std::make_unique<TagSearchIndex>(
+        executor_, *node_service_, scada::id::ObjectsFolder);
   }
   CreateToolbar();
   CreateStatusBar();
@@ -231,7 +224,7 @@ MainWindow::MainWindow(MainWindowContext&& context)
   change_profile_connection_ = profile_.AddChangeObserver([this] {
     const MainWindowDef& prefs = GetPrefs();
     statusBar()->setVisible(prefs.status_bar);
-    toolbar_->setVisible(ShouldShowCommandToolbar());
+    toolbar_->setVisible(GetPrefs().toolbar);
   });
 }
 
@@ -440,8 +433,7 @@ void MainWindow::CreateContextBar() {
   right_layout->addWidget(flood_indicator_);
 
   // Live severity KPI tiles (backlog 2.3): critical / warning / unacknowledged,
-  // ordered and coloured by the shared tile builder. Opt-in — the factory
-  // returns nothing under the legacy theme.
+  // ordered and coloured by the shared tile builder.
   severity_tiles_ = events::MakeSeverityTileStrip(
       [this] {
         // The status-bar model exposes the counts as separate aggregates; the
@@ -1079,18 +1071,6 @@ void MainWindow::ShowCommandPalette(const QString& initial_text) {
   palette->activateWindow();
 }
 
-bool MainWindow::ShouldShowCommandToolbar() const {
-  // The reshelled chrome answers this on its own: the context bar took the
-  // grip toolbar's role, and a client showing both draws three stacked rows of
-  // chrome where the screens draw one. The commands the toolbar carried are all
-  // still reachable — the menu bar, the node context menu and the Ctrl-K
-  // palette resolve the same registered ids — so this hides a duplicate
-  // surface rather than a capability.
-  if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy)
-    return false;
-  return GetPrefs().toolbar;
-}
-
 void MainWindow::CreateToolbar() {
   auto& command_manager = ui_command_registry_.command_manager();
   for (auto* command_info : command_manager.commands()) {
@@ -1122,7 +1102,7 @@ void MainWindow::CreateToolbar() {
 
   toolbar_ = new QToolBar(this);
   toolbar_->setObjectName(QStringLiteral("CommandToolbar"));
-  toolbar_->setVisible(ShouldShowCommandToolbar());
+  toolbar_->setVisible(GetPrefs().toolbar);
   toolbar_->setWindowTitle(tr("Toolbar"));
   // Icon-only buttons, sized to the 16px source icons so the toolbar stays
   // compact (the platform default icon size is larger and would upscale the
@@ -1462,7 +1442,8 @@ void MainWindow::OpenPage(const Page& page) {
     ApplyPaneModeToPage(conformed, GetPaneMode(ActivePaneMode()));
     BaseMainWindow::OpenPage(conformed);
   } else {
-    // Legacy theme: no rail, so the page's own pane set is authoritative.
+    // No rail yet (a page opened before the chrome is built), so the page's own
+    // pane set is authoritative.
     BaseMainWindow::OpenPage(page);
   }
 

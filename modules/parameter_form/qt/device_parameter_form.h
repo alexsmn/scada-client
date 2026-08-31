@@ -27,11 +27,12 @@ class QStackedWidget;
 // Edits are staged (ParameterStaging), not written live: typing into a field
 // records a pending edit; Apply replays the staged edits through the model's
 // SetValue — the existing write path — and Revert discards them. This is the
-// mockup's unsaved-changes model, layered over the same PropertyModel the legacy
-// property grid uses, so writes, editors and refresh all go through one place.
+// mockup's unsaved-changes model, layered over the same PropertyModel the
+// legacy property grid uses, so writes, editors and refresh all go through one
+// place.
 //
 // Opt-in: build this only under the reshell UX theme (see
-// MakeDeviceParameterForm); the legacy look keeps the property grid.
+// MakeDeviceParameterForm).
 class DeviceParameterForm : public QWidget {
   Q_OBJECT
 
@@ -50,20 +51,20 @@ class DeviceParameterForm : public QWidget {
   void Revert();
 
   // Supplies the device's address-map rows. When non-empty, an extra read-only
-  // "Address map" tab is shown after the property-group tabs (config-workbench's
-  // address-map preview). Passing an empty list removes the tab. Safe to call
-  // repeatedly as the async browse streams rows in.
+  // "Address map" tab is shown after the property-group tabs
+  // (config-workbench's address-map preview). Passing an empty list removes the
+  // tab. Safe to call repeatedly as the async browse streams rows in.
   void SetAddressMap(std::vector<AddressMapRow> rows);
 
   // Supplies the device's limits rows (analog signals + LoLo/Lo/Hi/HiHi bands).
-  // When non-empty, a read-only "Limits" tab is shown after the address-map tab.
-  // An empty list removes the tab.
+  // When non-empty, a read-only "Limits" tab is shown after the address-map
+  // tab. An empty list removes the tab.
   void SetLimits(std::vector<LimitRow> rows);
 
  private:
   // One rendered field: the (group, index) it writes to and its editor. The
-  // editor is a QLineEdit (TEXT / BUTTON / read-only) or a QComboBox (DROPDOWN),
-  // chosen from the model's EditData for that property.
+  // editor is a QLineEdit (TEXT / BUTTON / read-only) or a QComboBox
+  // (DROPDOWN), chosen from the model's EditData for that property.
   struct Field {
     scada::aui::PropertyGroup* group = nullptr;
     int index = 0;
@@ -115,9 +116,6 @@ class DeviceParameterForm : public QWidget {
   std::vector<Field> fields_;
 };
 
-// Builds a DeviceParameterForm under the reshell UX theme
-// (scada::aui::GetSeverityTheme() != SeverityTheme::kLegacy); returns nullptr in
-// the legacy look so the host keeps the property grid. Ownership transfers to
-// the caller.
+// Builds a DeviceParameterForm. Ownership transfers to the caller.
 DeviceParameterForm* MakeDeviceParameterForm(scada::aui::PropertyModel& model,
                                              QString title);

@@ -150,8 +150,8 @@ class DeviceDiagnosticsPanel : public QWidget {
 
   // One live counter reading resolved from the device. The spec drives live
   // updates; `node` supplies the Value-attribute snapshot used when the
-  // monitored-item value has not been delivered yet (e.g. right after selection,
-  // or in the headless capture).
+  // monitored-item value has not been delivered yet (e.g. right after
+  // selection, or in the headless capture).
   struct Reading {
     QString label;
     NodeRef node;
@@ -189,7 +189,8 @@ class DeviceDiagnosticsPanel : public QWidget {
   QFrame* hero_ = nullptr;
   QLabel* hero_status_ = nullptr;
   QLabel* hero_detail_ = nullptr;
-  QVBoxLayout* rows_layout_ = nullptr;  // owns the current DeviceDiagnosticRow widgets.
+  QVBoxLayout* rows_layout_ =
+      nullptr;  // owns the current DeviceDiagnosticRow widgets.
   QVBoxLayout* actions_layout_ = nullptr;  // owns the current action widgets.
   // One entry per rendered action, in the order link_actions_ then
   // context_.actions. The reason label is null when the action supplies none.
@@ -200,9 +201,6 @@ class DeviceDiagnosticsPanel : public QWidget {
   std::vector<ActionWidgets> action_widgets_;
 };
 
-// Builds a DeviceDiagnosticsPanel under the reshell UX theme
-// (scada::aui::GetSeverityTheme() != SeverityTheme::kLegacy); returns nullptr in
-// the legacy look so the host adds no diagnostics dock. Ownership transfers to
-// the caller.
+// Builds a DeviceDiagnosticsPanel. Ownership transfers to the caller.
 DeviceDiagnosticsPanel* MakeDeviceDiagnosticsPanel(
     DeviceDiagnosticsPanelContext context);

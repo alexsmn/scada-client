@@ -43,10 +43,9 @@ class EventStatusProvider final : private EventObserver {
   // the live severity KPI tiles.
   int GetSeverityCount(scada::aui::SeverityLevel level) const;
 
-  // The worst active (unacknowledged) alarm shown as a coloured indicator. Both
-  // are empty/none under the legacy theme, so the default status bar is
-  // unchanged; under the opt-in token themes they surface the highest severity
-  // and its colour (from the severity single source).
+  // The worst active (unacknowledged) alarm, as a label and a colour from the
+  // severity single source. Both are empty when nothing is asserted — a calm
+  // status strip says nothing rather than saying "normal".
   std::u16string GetHighestSeverityText() const;
   std::optional<scada::aui::Color> GetHighestSeverityColor() const;
 

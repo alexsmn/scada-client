@@ -17,8 +17,5 @@ void SaveSeverityTilesScreenshot(const ScreenshotSpec& spec) {
 
   std::unique_ptr<events::SeverityTileStrip> strip{
       events::MakeSeverityTileStrip([counts] { return counts; })};
-  if (!strip)
-    return;  // legacy theme: the strip is reshell chrome and does not exist
-
   SaveScreenshot(strip.get(), spec);
 }

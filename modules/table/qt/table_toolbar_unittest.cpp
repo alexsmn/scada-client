@@ -1,6 +1,5 @@
 #include "modules/table/qt/table_toolbar.h"
 
-#include "aui/severity_colors.h"
 #include "aui/test/app_environment.h"
 #include "controller/command_handler.h"
 #include "resources/common_resources.h"
@@ -38,23 +37,12 @@ QToolButton* CommandButton(TableToolbar& bar, unsigned command_id) {
 
 class TableToolbarTest : public testing::Test {
  protected:
-  void TearDown() override {
-    scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kLegacy);
-  }
-
   AppEnvironment app_env_;
 };
-
-// The toolbar is opt-in reshell chrome: the legacy theme builds none.
-TEST_F(TableToolbarTest, LegacyThemeBuildsNoToolbar) {
-  EXPECT_EQ(MakeTableToolbar({}), nullptr);
-}
 
 // A resolved command shows as a button and executes through its handler; a
 // command nothing resolves (unavailable in this session) hides its button.
 TEST_F(TableToolbarTest, ButtonsFollowResolutionAndExecute) {
-  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
-
   FakeCommandHandler handler;
   std::unique_ptr<TableToolbar> bar{MakeTableToolbar(TableToolbarContext{
       .resolve_command = [&](unsigned command_id) -> CommandHandler* {
@@ -77,8 +65,6 @@ TEST_F(TableToolbarTest, ButtonsFollowResolutionAndExecute) {
 
 // Refresh() re-reads enablement, and a disabled button does not execute.
 TEST_F(TableToolbarTest, RefreshTracksEnablement) {
-  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
-
   FakeCommandHandler handler;
   std::unique_ptr<TableToolbar> bar{MakeTableToolbar(
       TableToolbarContext{.resolve_command = [&](unsigned) -> CommandHandler* {
@@ -100,8 +86,6 @@ TEST_F(TableToolbarTest, RefreshTracksEnablement) {
 
 // The sort-key buttons mirror the handler's checked state.
 TEST_F(TableToolbarTest, SortKeysMirrorCheckedState) {
-  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
-
   FakeCommandHandler handler;
   std::unique_ptr<TableToolbar> bar{MakeTableToolbar(
       TableToolbarContext{.resolve_command = [&](unsigned) -> CommandHandler* {
@@ -120,8 +104,6 @@ TEST_F(TableToolbarTest, SortKeysMirrorCheckedState) {
 
 // Add-signal is the view's own affordance and fires its callback directly.
 TEST_F(TableToolbarTest, AddSignalFiresCallback) {
-  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
-
   bool added = false;
   std::unique_ptr<TableToolbar> bar{MakeTableToolbar(
       TableToolbarContext{.on_add_signal = [&] { added = true; }})};

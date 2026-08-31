@@ -29,8 +29,8 @@ std::vector<LimitMarker> ComputeLimitMarkers(double lolo,
                                              double unknown);
 
 // The design-ramp severity for a band, used to colour the marker under the
-// opt-in severity theme: the outer bands (LoLo/HiHi) resolve to Critical
-// (alarm), the inner bands (Lo/Hi) to Warning.
+// severity theme: the outer bands (LoLo/HiHi) resolve to Critical (alarm), the
+// inner bands (Lo/Hi) to Warning.
 scada::aui::SeverityLevel SeverityOf(LimitKind kind);
 
 // A short English caption key for a band ("Alarm high", "Warning low", …),

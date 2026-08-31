@@ -2,16 +2,16 @@
 
 #include "aui/grid.h"
 #include "aui/models/header_model.h"
-#include "ui/common/client_utils.h"
-#include "resources/common_resources.h"
-#include "modules/node_table/node_table_model.h"
 #include "controller/controller_delegate.h"
 #include "model/data_items_node_ids.h"
 #include "model/node_id_util.h"
+#include "modules/node_table/node_table_model.h"
 #include "node_service/node_service.h"
 #include "profile/profile.h"
 #include "remote/session_proxy.h"
+#include "resources/common_resources.h"
 #include "services/task_manager.h"
+#include "ui/common/client_utils.h"
 
 #include <span>
 
@@ -54,8 +54,7 @@ NodeTableController::NodeTableController(const ControllerContext& context,
           executor_,
           property_service_,
           PropertyContext{context.executor_, context.node_service_,
-                          context.task_manager_,
-                          context.dialog_service_})} {
+                          context.task_manager_, context.dialog_service_})} {
   if (parent_node)
     model_->SetParentNode(parent_node);
 }
@@ -73,13 +72,13 @@ std::unique_ptr<UiView> NodeTableController::Init(
   model_->SetSorting(profile_.node_table.default_sort_property_id);
 
 #if defined(UI_QT)
-  // Under the reshell UX theme, the Users administration table renders as the
-  // themed UsersGridPanel (backlog 5.1) instead of the generic grid. Gated on
-  // the parent being the Users folder so every other node table keeps the grid.
-  if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy &&
-      model_->parent_node() &&
+  // The Users administration table renders as the themed UsersGridPanel
+  // (backlog 5.1) instead of the generic grid. Gated on the parent being the
+  // Users folder so every other node table keeps the grid.
+  if (model_->parent_node() &&
       model_->parent_node().node_id() == scada::security::id::Users) {
-    if (UsersGridPanel* panel = MakeUsersGridPanel()) {
+    {
+      UsersGridPanel* panel = MakeUsersGridPanel();
       // Selecting a user row drives the shared SelectionModel, so the RBAC
       // inspector (UserAccessPanel) fills exactly as it does from the grid.
       QObject::connect(panel, &UsersGridPanel::UserActivated, panel,
@@ -89,33 +88,32 @@ std::unique_ptr<UiView> NodeTableController::Init(
       // A row's actions (Set Password... / New / Delete) reuse the existing
       // selection commands: pop the standard context menu for the selected
       // user, exactly as the generic grid does.
-      QObject::connect(
-          panel, &UsersGridPanel::ActionsMenuRequested, panel,
-          [this](const QPoint& global_pos, bool right_click) {
-            // aui::Point is QPoint under UI_QT.
-            controller_delegate_.ShowPopupMenu(nullptr, global_pos,
-                                               right_click);
-          });
+      QObject::connect(panel, &UsersGridPanel::ActionsMenuRequested, panel,
+                       [this](const QPoint& global_pos, bool right_click) {
+                         // aui::Point is QPoint under UI_QT.
+                         controller_delegate_.ShowPopupMenu(nullptr, global_pos,
+                                                            right_click);
+                       });
       // Populate the rows off the construction path; a QPointer guards a late
       // completion against a destroyed panel. The accounts come from the
       // standard UserManagement object rather than from this view's parent
       // folder — the folder is only what routed us here.
-      CoSpawn(executor_,
-              [executor = executor_, &node_service = node_service_,
-               &attribute_service = attribute_service_,
-               panel_ptr = QPointer<UsersGridPanel>{panel}]() mutable
-              -> Awaitable<void> {
-                auto rows = co_await BuildUsersGrid(executor, node_service,
-                                                    attribute_service);
-                if (panel_ptr) {
-                  // nullopt is "the account list could not be read" — which a
-                  // non-administrator gets by design (Part 18 §5.2.1). Showing
-                  // an empty grid instead would say the server has no users.
-                  panel_ptr->ShowRows(rows ? *rows
-                                           : std::vector<UserGridRow>{});
-                }
-                co_return;
-              });
+      CoSpawn(
+          executor_,
+          [executor = executor_, &node_service = node_service_,
+           &attribute_service = attribute_service_,
+           panel_ptr =
+               QPointer<UsersGridPanel>{panel}]() mutable -> Awaitable<void> {
+            auto rows = co_await BuildUsersGrid(executor, node_service,
+                                                attribute_service);
+            if (panel_ptr) {
+              // nullopt is "the account list could not be read" — which a
+              // non-administrator gets by design (Part 18 §5.2.1). Showing
+              // an empty grid instead would say the server has no users.
+              panel_ptr->ShowRows(rows ? *rows : std::vector<UserGridRow>{});
+            }
+            co_return;
+          });
       return std::unique_ptr<UiView>{panel};
     }
   }

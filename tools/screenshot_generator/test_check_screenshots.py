@@ -69,15 +69,12 @@ class OwedCapturesTest(unittest.TestCase):
         )
 
     def test_unmanaged_tags_are_never_owed(self) -> None:
-        # Hand-captured and themed rows are not the generator's debt:
-        # `manual-*` is captured by a person, and `reshell-theme` is rendered
-        # by the themed pass rather than by the run this script checks.
+        # A hand-captured image is not the generator's debt: a person takes it.
         self.write_source("")
         self.assertEqual(
             self.owed(
                 manifest(
                     ("client-window.png", "manual-modus"),
-                    ("hardware-tree.png", "reshell-theme"),
                     ("menu-notepad.png", "manual-os"),
                 ),
                 {},
@@ -130,11 +127,11 @@ class HardcodedFilenamesTest(unittest.TestCase):
 class UncheckedCapturesTest(unittest.TestCase):
     """What a clean run is *not* evidence about.
 
-    The check verifies the `auto-*` rows the fixture names, prints "N captures
-    checked, 0 error(s)", and used to stop there -- so a pass over well under
-    half the gallery read as a verdict on all of it. These pin the three sets
-    that sit outside the checked one, because each is invisible in a different
-    way and only one of them was ever reported.
+    The check compares the `auto-*` rows the fixture names against their specs,
+    prints "N captures checked, 0 error(s)", and used to stop there -- so a pass
+    over well under half the gallery read as a verdict on all of it. These pin
+    the sets that sit outside the dimension-checked one, because each is
+    invisible in a different way and only one of them was ever reported.
     """
 
     def setUp(self) -> None:
@@ -186,16 +183,6 @@ class UncheckedCapturesTest(unittest.TestCase):
             self.unchecked(manifest(("table.png", "auto-view")), data, set()), {}
         )
 
-    # reshell-theme rows are outside the auto-* set entirely, so neither the
-    # checked count nor the owed count ever mentioned them -- 28 captures with
-    # no structural coverage at all, invisible in every line the check printed.
-    def test_a_reshell_theme_row_is_reported_as_themed_only(self) -> None:
-        self.write_source("")
-        self.assertEqual(
-            self.unchecked(manifest(("object-tree.png", "reshell-theme")), {}, set()),
-            {"themed-only": ["object-tree.png"]},
-        )
-
     # A hand-maintained image is not the generator's to check or to owe.
     def test_an_unmanaged_row_is_not_reported(self) -> None:
         self.write_source("")
@@ -204,70 +191,76 @@ class UncheckedCapturesTest(unittest.TestCase):
         )
 
 
-class ThemedCaptureSelectionTest(unittest.TestCase):
-    """The themed pass's row list, which used to be written out by hand.
+class HardcodedCaptureCoverageTest(unittest.TestCase):
+    """Existence coverage for managed rows the fixture does not name.
 
-    `client_screenshot_check_themed` carried a 25-name `--only` list in
-    CMakeLists.txt beside a comment asking for it to be kept in sync with the
-    manifest. It was three names behind, so debugger.png, frame-decode-pane.png
-    and watch-filter-bar.png were rendered by nothing at all -- and because that
-    ctest asserted nothing structural, nothing could say so (backlog 630).
-    Deriving the list is the fix; these cases are what stop it being unpicked.
+    These were the `reshell-theme` rows, rendered by a second ctest off a
+    25-name `--only` list hand-written in CMakeLists.txt beside a comment asking
+    for it to be kept in sync. It was three names behind, so debugger.png,
+    frame-decode-pane.png and watch-filter-bar.png were rendered by nothing at
+    all, and that ctest asserted nothing structural, so nothing could say so
+    (backlog 630). With the opt-in theme gone the rows are ordinary `auto-*`
+    ones and the single pass covers them -- by scanning the generator's own
+    sources for the filenames, so there is still no list to keep in sync.
     """
 
-    def test_selects_every_reshell_theme_row(self) -> None:
+    def setUp(self) -> None:
+        self._temp = tempfile.TemporaryDirectory(prefix="scada_hardcoded_test_")
+        self.sources = Path(self._temp.name)
+        self.addCleanup(self._temp.cleanup)
+
+    def write_source(self, text: str) -> None:
+        (self.sources / "some_capture.cpp").write_text(text, encoding="utf-8")
+
+    def test_finds_a_filename_written_in_the_c_plus_plus(self) -> None:
+        self.write_source(
+            'constexpr const char* kFilename = "workbench-activity-rail.png";'
+        )
         self.assertEqual(
-            check.themed_captures(
-                manifest(
-                    ("object-tree.png", "reshell-theme"),
-                    ("debugger.png", "reshell-theme"),
-                )
-            ),
-            ["debugger.png", "object-tree.png"],
+            check.hardcoded_capture_filenames(self.sources),
+            {"workbench-activity-rail.png"},
         )
 
-    def test_excludes_every_other_tag(self) -> None:
-        # auto-* belongs to the default pass and `manual` to nobody here.
+    def test_finds_every_such_filename_in_one_file(self) -> None:
+        self.write_source(
+            'auto a = "debugger.png";\nauto b = "frame-decode-pane.png";\n'
+        )
         self.assertEqual(
-            check.themed_captures(
-                manifest(
-                    ("table.png", "auto-view"),
-                    ("client-login.png", "auto-dialog"),
-                    ("architecture.png", "manual"),
-                )
-            ),
-            [],
+            check.hardcoded_capture_filenames(self.sources),
+            {"debugger.png", "frame-decode-pane.png"},
         )
 
-    def test_is_sorted_so_the_only_list_is_stable(self) -> None:
-        # The list becomes a --only argument; an unstable order would churn.
-        self.assertEqual(
-            check.themed_captures(
-                manifest(
-                    ("z.png", "reshell-theme"),
-                    ("a.png", "reshell-theme"),
-                    ("m.png", "reshell-theme"),
-                )
-            ),
-            ["a.png", "m.png", "z.png"],
-        )
-
-    def test_tracks_the_real_manifest_rather_than_a_copied_list(self) -> None:
-        # The regression itself: whatever the tree's manifest tags today is
-        # what the themed pass renders, with nothing to keep in sync by hand.
+    def test_the_three_rows_that_were_rendered_by_nothing_are_now_covered(
+        self,
+    ) -> None:
+        # The regression itself: each is a manifest-managed row the fixture may
+        # or may not name, and every one of them must be reachable from the
+        # generator's own sources or the single pass would go back to missing
+        # them.
         import json
 
         here = Path(__file__).resolve().parent
-        real = json.loads(
-            (here / ".." / ".." / "screenshots" / "image_manifest.json").read_text(
-                encoding="utf-8"
-            )
+        manifest_path = here / ".." / ".." / "screenshots" / "image_manifest.json"
+        real = json.loads(manifest_path.read_text(encoding="utf-8"))
+        managed = {
+            e["file"] for e in real["images"] if e["tag"].startswith("auto-")
+        }
+        data = json.loads(
+            (here / "screenshot_data.json").read_text(encoding="utf-8")
         )
-        expected = sorted(
-            e["file"] for e in real["images"] if e["tag"] == "reshell-theme"
-        )
-        self.assertEqual(check.themed_captures(real), expected)
-        self.assertTrue(expected, "the manifest should carry reshell-theme rows")
+        named = {
+            spec["filename"]
+            for key in ("screenshots", "dialogs")
+            for spec in data.get(key, [])
+        }
+        reachable = named | check.hardcoded_capture_filenames(here)
+        for filename in (
+            "debugger.png",
+            "frame-decode-pane.png",
+            "watch-filter-bar.png",
+        ):
+            self.assertIn(filename, managed)
+            self.assertIn(filename, reachable)
 
 
 if __name__ == "__main__":

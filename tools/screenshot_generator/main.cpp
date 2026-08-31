@@ -183,11 +183,9 @@ constexpr StandaloneCapture kStandaloneCaptures[] = {
      }},
     // The users-admin grid joins its Roles column from the same RoleSet read,
     // so it needs the same identity — through the view path every account's
-    // Roles cell read "Нет данных". This is the reshell panel, not the legacy
+    // Roles cell read "Нет данных". This is the standalone panel, not the
     // `users.png` Users window, which is a `type` spec and keeps going through
-    // the profile page. `MakeUsersGridPanel` returns nothing outside the
-    // reshell, so an unthemed run says so rather than saving the legacy view
-    // under this filename.
+    // the profile page.
     {"users-grid",
      +[](const StandaloneCaptureContext& c) {
        SaveUsersGridScreenshot(c.spec, c.node_service,
@@ -509,14 +507,12 @@ void SelectSignalForInspector(MainWindow& main_window,
 }  // namespace
 
 TEST_F(ScreenshotGenerator, CaptureMainWindow) {
-  // Under --theme the same capture renders the reshelled operator workbench
-  // (activity rail, context bar with the severity tiles, editor tabs, status
-  // strip) and is published as its own image, so the legacy client-window.png
-  // (hand-maintained for the manual until the fake Modus runtime exists) is
-  // never overwritten by a themed render.
-  const char* filename = GetScreenshotOptions().theme.empty()
-                             ? "client-window.png"
-                             : "workbench-window.png";
+  // The operator workbench: activity rail, context bar with the severity
+  // tiles, editor tabs, status strip. Saved under its own name so the
+  // hand-maintained `client-window.png` — which shows a Modus display and stays
+  // a manual capture until the fake Modus runtime exists — is never overwritten
+  // by a generated render.
+  constexpr const char* filename = "workbench-window.png";
   if (!ShouldCaptureScreenshot(filename))
     GTEST_SKIP() << filename << " not requested";
 
@@ -567,7 +563,7 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
   // every command carries an icon (many are image_id == 0, text-only), so we
   // assert that the pipeline produced icons, not that every action has one;
   // exhaustive per-id coverage lives in ClientUtilsQtTest.
-  // Target the command toolbar specifically: the opt-in reshell adds other
+  // Target the command toolbar specifically: the workbench chrome adds other
   // toolbars (activity rail, context bar) that carry no command icons.
   auto* toolbar = qmain->findChild<QToolBar*>("CommandToolbar");
   ASSERT_NE(toolbar, nullptr);
@@ -722,13 +718,9 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
   for (int i = 0; i < 10; ++i)
     QApplication::processEvents();
 
-  // The Inspector is reshell chrome, so only the themed render has one to
-  // fill; the legacy pass renders client-window.png, which has no such panel.
   ASSERT_NE(struct_view, nullptr);
-  if (!GetScreenshotOptions().theme.empty()) {
-    SelectSignalForInspector(main_window, *struct_view, *tree,
-                             app_.node_service(), *qmain);
-  }
+  SelectSignalForInspector(main_window, *struct_view, *tree,
+                           app_.node_service(), *qmain);
 
   for (int i = 0; i < 10; ++i)
     QApplication::processEvents();
@@ -744,15 +736,13 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
   MainWindow::SetHideForTesting(true);
 }
 
-// The Overview landing cockpit: a fresh (page-less) profile under the reshell
-// theme boots through the production seeding path — BaseMainWindow falls back
-// to CreateInitialPage, which returns MakeOverviewPage under the theme — so
-// the capture guards the reshell initial-page routing and the page's
-// dominant-trend/alarm-strip split, not a hand-assembled page.
+// The Overview landing cockpit: a fresh (page-less) profile boots through the
+// production seeding path — BaseMainWindow falls back to CreateInitialPage,
+// which returns MakeOverviewPage — so the capture guards the initial-page
+// routing and the page's dominant-trend/alarm-strip split, not a
+// hand-assembled page.
 TEST_F(ScreenshotGenerator, CaptureOverviewPage) {
   const char* filename = "workbench-overview.png";
-  if (GetScreenshotOptions().theme.empty())
-    GTEST_SKIP() << "the Overview landing seeds only under the reshell theme";
   if (!ShouldCaptureScreenshot(filename))
     GTEST_SKIP() << filename << " not requested";
 
@@ -837,8 +827,6 @@ TEST_F(ScreenshotGenerator, CaptureOverviewPage) {
 // as one button, which is the whole point of the band.
 TEST_F(ScreenshotGenerator, CaptureActivityRail) {
   constexpr const char* kFilename = "workbench-activity-rail.png";
-  if (GetScreenshotOptions().theme.empty())
-    GTEST_SKIP() << "the activity rail is reshell chrome, themed runs only";
   if (!ShouldCaptureScreenshot(kFilename))
     GTEST_SKIP() << kFilename << " not requested";
 
@@ -897,10 +885,7 @@ TEST_F(ScreenshotGenerator, CaptureActivityRail) {
       << "could not write " << kFilename;
 }
 
-// The Settings surface, and with it the operator-facing switch for the
-// experimental UX themes. Captured in the *default* (untheme'd) run on
-// purpose: the operator who needs this image is the one still on Classic,
-// looking for how to turn the reshell on.
+// The Settings surface, and with it the operator-facing Colour scheme choice.
 //
 // It grabs the panel the shell builds rather than a form assembled here, for
 // the reason the dialog capture did before it: a capture that re-derived the
@@ -917,8 +902,6 @@ TEST_F(ScreenshotGenerator, CaptureSettingsPanel) {
   constexpr const char* kFilename = "settings-dialog.png";
   if (!ShouldCaptureScreenshot(kFilename))
     GTEST_SKIP() << kFilename << " not requested";
-  if (!GetScreenshotOptions().theme.empty())
-    GTEST_SKIP() << kFilename << " is captured untheme'd only";
 
   MainWindow::SetHideForTesting(false);
 
@@ -939,7 +922,7 @@ TEST_F(ScreenshotGenerator, CaptureSettingsPanel) {
 
   // The menu now carries one item that opens the surface, so the reachability
   // this used to guard on the Colour scheme submenu is guarded here instead:
-  // Colour scheme is how the operator turns the reshell on, and it must not
+  // Colour scheme is how the operator picks an appearance, and it must not
   // become unreachable.
   QMenuBar* menu_bar = qmain->menuBar();
   ASSERT_NE(menu_bar, nullptr);
@@ -984,11 +967,10 @@ TEST_F(ScreenshotGenerator, CaptureSettingsPanel) {
   EXPECT_GT(checks.size(), 0) << "expected the preference toggles";
   bool has_appearances = false;
   for (const QComboBox* combo : combos) {
-    if (combo->count() == 5)
+    if (combo->count() == 4)
       has_appearances = true;
   }
-  EXPECT_TRUE(has_appearances)
-      << "no row offers Classic plus the four appearances";
+  EXPECT_TRUE(has_appearances) << "no row offers the four appearances";
 
   // The three things that make this a surface rather than the dialog it
   // replaced, and that no other capture in the gallery shows.
@@ -1149,8 +1131,6 @@ TEST_F(ScreenshotGenerator, CaptureMoreMenu) {
   constexpr const char* kFilename = "menu-excel.png";
   if (!ShouldCaptureScreenshot(kFilename))
     GTEST_SKIP() << kFilename << " not requested";
-  if (!GetScreenshotOptions().theme.empty())
-    GTEST_SKIP() << kFilename << " is captured untheme'd only";
 
   MainWindow::SetHideForTesting(false);
 
@@ -1211,8 +1191,6 @@ TEST_F(ScreenshotGenerator, CaptureSummaryFunctionMenu) {
   constexpr const char* kFilename = "menu-summary.png";
   if (!ShouldCaptureScreenshot(kFilename))
     GTEST_SKIP() << kFilename << " not requested";
-  if (!GetScreenshotOptions().theme.empty())
-    GTEST_SKIP() << kFilename << " is captured untheme'd only";
 
   MainWindow::SetHideForTesting(false);
 
@@ -1407,13 +1385,7 @@ TEST_F(ScreenshotGenerator, CaptureDialogs) {
       .login_user_list = FixtureConfig().login_user_list};
 
   int captured = 0;
-  const bool themed = !GetScreenshotOptions().theme.empty();
   for (const auto& spec : FixtureConfig().dialogs) {
-    // A themed-only spec is the reshell twin of a legacy capture (see
-    // workbench-login.png): rendering it without the theme would save the
-    // legacy dialog under the reshell name.
-    if (spec.themed_only && !themed)
-      continue;
     if (CaptureDialog(spec, env))
       ++captured;
   }

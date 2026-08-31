@@ -249,15 +249,15 @@ ScreenshotGenerator::ScreenshotGenerator() {
   }
   // A missing client catalog is a hard failure, not a silent fall-through to
   // English. This used to be a bare `if (load)`, which is how a macOS build
-  // could render every capture in English chrome and still pass both
-  // `client_screenshot_check` and `client_screenshot_check_themed` — they
-  // assert existence and dimensions, never text, so nothing in the suite could
-  // see it. The cause was a `"platform": "windows"` gate on `qttools` in
-  // `client/vcpkg.json`, so no non-Windows build had `lrelease` to produce
-  // `client_ru.qm` at all; `client_qt_copy_translations` degraded to an echo.
-  // The generator depends on that target, so by the time this runs the catalog
-  // must be staged — if it is not, the toolchain is broken in a way that
-  // silently corrupts every published image.
+  // could render every capture in English chrome and still pass
+  // `client_screenshot_check` — it asserts existence and dimensions, never
+  // text, so nothing in the suite could see it. The cause was a `"platform":
+  // "windows"` gate on `qttools` in `client/vcpkg.json`, so no non-Windows
+  // build had `lrelease` to produce `client_ru.qm` at all;
+  // `client_qt_copy_translations` degraded to an echo. The generator depends on
+  // that target, so by the time this runs the catalog must be staged — if it is
+  // not, the toolchain is broken in a way that silently corrupts every
+  // published image.
   if (translator_.load("client_ru", translation_dir)) {
     QApplication::installTranslator(&translator_);
   } else {
@@ -295,20 +295,19 @@ ScreenshotGenerator::ScreenshotGenerator() {
   // real client, not only by diffing generated PNGs.
   QApplication::setStyle("Fusion");
 
-  // Optionally render under a UX design-token theme so captures validate the
-  // reshell against real Qt widgets (--theme=dark|light|hc). Applied over the
-  // Fusion base exactly as the client does when the experimental UX is on (see
-  // app/qt/installed_appearance.h). ApplyTheme settles the severity/quality
-  // ramp to match; this used to repeat that mapping by hand.
-  if (const std::string& theme_name = GetScreenshotOptions().theme;
-      !theme_name.empty()) {
-    // Resolve `system` here: a capture must pin one concrete appearance,
-    // never follow the machine that happens to render it. Resolving also stops
-    // ApplyTheme installing the system-following watcher, which would let the
-    // host desktop change a capture mid-run.
-    scada::aui::ApplyTheme(scada::aui::ResolveTheme(scada::aui::ThemeFromString(
-        QString::fromStdString(theme_name), scada::aui::Theme::kDark)));
-  }
+  // Render under the design-token appearance `--theme` names (dark by
+  // default), applied over the Fusion base exactly as the client applies it
+  // over the platform style (see app/qt/installed_appearance.h). ApplyTheme
+  // settles the severity/quality ramp to match; this used to repeat that
+  // mapping by hand.
+  //
+  // Resolve `system` here: a capture must pin one concrete appearance, never
+  // follow the machine that happens to render it. Resolving also stops
+  // ApplyTheme installing the system-following watcher, which would let the
+  // host desktop change a capture mid-run.
+  scada::aui::ApplyTheme(scada::aui::ResolveTheme(scada::aui::ThemeFromString(
+      QString::fromStdString(GetScreenshotOptions().theme),
+      scada::aui::Theme::kDark)));
 
   // Render offscreen. `widget->grab()` renders the Qt widget tree to a
   // QPixmap without needing the window to be on-screen — so this

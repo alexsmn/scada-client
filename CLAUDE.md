@@ -142,11 +142,12 @@ Rules of the pipeline:
   and a publish on its own silently republishes the previous render. Review
   with `git diff` on the manual's `img/`. An image graduates
   into that subset only after its rendering is reviewed against the page
-  that embeds it. **Published images render dark** — the gallery pass is
-  legacy-themed, then a second `--theme=dark` pass re-renders the published
-  subset on top, so the manual reads as one product. An image that cannot
-  render themed opts out with `"publish_theme": "legacy"` plus a reason, or
-  the regeneration fails by name; see `docs/ops/client-screenshots.md`.
+  that embeds it. **One pass renders the whole gallery**, under the
+  design-token appearance the generator defaults to (dark). It used to take
+  two — a light "Classic" pass plus a `--theme=dark` pass over the published
+  subset, arbitrated by a `publish_theme` manifest field — until the client
+  stopped shipping an un-themed appearance; see
+  `docs/ops/client-screenshots.md`.
 - **Validate consistency** after touching images, the manifest, or manual
   pages: `python3 screenshots/validate_image_manifest.py` (auto-finds
   a sibling scada-docs checkout, or pass `--docs-repo`).
@@ -158,8 +159,8 @@ Rules of the pipeline:
   description in the same effort.** Add/extend the scada-docs page (Russian
   canonical + the `en/` mirror + `_data/i18n_pages.yml`) describing the
   behaviour, embed the capture, and keep the manifest row's
-  `referenced_from` in sync. Reshell (opt-in) features are documented on
-  `client/workbench.md` (Экспериментальный интерфейс).
+  `referenced_from` in sync. Workbench-shell features are documented on
+  `client/workbench.md` (Рабочее место оператора).
 - **macOS runs are for validation only** (offscreen platform + hermetic
   `HOME`; see "Running on macOS" in `docs/ops/client-screenshots.md`); published
   images come from the Windows pipeline so fonts stay consistent.
@@ -250,18 +251,24 @@ build the reshell (decided with the user) is:
   structure (Activity bar → Explorer → workspace tabs → Inspector → status
   strip) remains the target; slices converge on it rather than landing it all
   at once.
-- **Theming is opt-in and palette-first.** The design-token theming
-  (`scada::aui::ApplyTheme` in [`aui/qt/theme_qt.h`](aui/qt/theme_qt.h)) is
-  **off by default**. The operator picks it in **Settings → Colour scheme**
-  (`AppearanceMenuModel` in `main_window/main_menu/`), a radio menu alongside
-  Settings → Style that applies live; `ClearTheme()` is its inverse and takes
-  the client back to the untouched platform look. The choice is restored and
-  persisted by `InstalledAppearance` (`app/qt/installed_appearance.h`) from the
-  `Ux/Experimental` + `Ux/Theme` QSettings — the menu is the only way in, so
-  don't add a second one (a `SCADA_UX_EXPERIMENTAL` env override existed only
-  while there was no UI, and was dropped with it).
-  `ApplyTheme`/`ClearTheme` own the severity ramp too — never set
-  `SetSeverityTheme` alongside them, which is how three copies of that mapping
+- **Theming is palette-first, and no longer opt-in.** The design-token theming
+  (`scada::aui::ApplyTheme` in [`aui/qt/theme_qt.h`](aui/qt/theme_qt.h)) is the
+  only appearance the client has. `InstalledAppearance`
+  (`app/qt/installed_appearance.h`) applies it unconditionally at startup, from
+  the `Ux/Theme` QSetting — `system` by default, so the client follows the host
+  OS light/dark preference. The operator changes it in **Settings → Colour
+  scheme** (`AppearanceMenuModel` in `main_window/main_menu/`), a radio menu
+  alongside Settings → Style that applies live and in full.
+  **`SeverityTheme::kLegacy`, `ClearTheme()`, `IsThemeInstalled()` and the
+  `Ux/Experimental` gate were removed on 2026-08-31.** If you find a
+  `GetSeverityTheme() != kLegacy` in an old doc or diff, that was the
+  "is the reshell on" feature flag, and it is gone: the ~50 surfaces it gated
+  are built unconditionally, and `GetSeverityTheme()` now answers "which
+  appearance" and nothing else. Do not reintroduce a "no theme" state to make a
+  widget's `paintEvent` conditional — a widget decides how to draw, its host
+  decides whether to build it.
+  `ApplyTheme` owns the severity ramp too — never set `SetSeverityTheme`
+  alongside it, which is how three copies of that mapping
   drifted. Prefer recolouring through `QPalette`
   (`ThemeScope::kPaletteOnly`). The global stylesheet (`kFull`) has been
   **reduced to a single rule** (backlog P6.2) — everything a native style can

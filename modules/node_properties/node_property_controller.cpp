@@ -49,15 +49,15 @@ std::unique_ptr<UiView> NodePropertyController::Init(
       std::move(node));
 
 #if defined(UI_QT)
-  // Reshell: present the properties as the subtabbed device-parameter form
-  // (Revert / Apply, dirty tracking) instead of the legacy property grid.
-  // Opt-in on the active UX theme; the legacy look keeps the grid below.
-  if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy) {
+  // Present the properties as the subtabbed device-parameter form (Revert /
+  // Apply, dirty tracking) rather than a raw property grid.
+  {
     node_deleted_connection_ = property_model_->node_deleted.connect(
         [this] { controller_delegate_.Close(); });
-    if (DeviceParameterForm* form = MakeDeviceParameterForm(
-            *property_model_, QString::fromStdU16String(ToString16(
-                                  property_model_->node().display_name())))) {
+    {
+      DeviceParameterForm* form = MakeDeviceParameterForm(
+          *property_model_, QString::fromStdU16String(ToString16(
+                                property_model_->node().display_name())));
       // Populate the address-map preview from the device's transmission items,
       // off the construction path. Guarded by a QPointer so a late completion
       // cannot touch a destroyed form.

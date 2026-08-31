@@ -309,11 +309,8 @@ QVariant TreeModelAdapter::data(const QModelIndex& index, int role) const {
     case Qt::FontRole:
       // Value/timestamp columns render in the design-system monospace font so
       // digits stay tabular as they update (design-language.md §3).
-      // `MonoValueFont` is empty under the legacy theme, keeping the default.
-      if (model_->IsMonospaceColumn(index.column())) {
-        if (std::optional<QFont> font = MonoValueFont())
-          return *font;
-      }
+      if (model_->IsMonospaceColumn(index.column()))
+        return MonoValueFont();
       return QVariant();
     case Qt::SizeHintRole:
       return QSize{-1, row_height};

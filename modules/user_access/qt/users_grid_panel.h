@@ -39,7 +39,7 @@ class QTableWidget;
 // ModifyUser call that would toggle it is not wired to a command, so offering
 // a toggle would promise a write the panel cannot make.
 //
-// It is returned as the Users view under the reshell theme (see
+// It is returned as the Users view (see
 // NodeTableController); UiView is a QWidget, so the panel is the view.
 class UsersGridPanel : public QWidget {
   Q_OBJECT
@@ -80,7 +80,5 @@ class UsersGridPanel : public QWidget {
   std::vector<UserGridRow> rows_;
 };
 
-// Builds a UsersGridPanel under the reshell UX theme
-// (scada::aui::GetSeverityTheme() != SeverityTheme::kLegacy); returns nullptr in
-// the legacy look. Ownership transfers to the caller.
+// Builds a UsersGridPanel. Ownership transfers to the caller.
 UsersGridPanel* MakeUsersGridPanel();

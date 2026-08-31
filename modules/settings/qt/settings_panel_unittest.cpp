@@ -97,17 +97,20 @@ class SettingsPanelTest : public ::testing::Test {
                            u"Flash Main Window on Event");
     settings_.AddItem(ID_VIEW_PUBLIC_FOLDER, u"Open Displays Folder");
 
-    appearance_.AddCheckItem(kClassic, u"Classic");
+    // A separator inside the submenu on purpose: Colour scheme itself carries
+    // none any more, but other choice submenus do, and the panel must not
+    // render one as an option or let it shift what a selection activates.
+    appearance_.AddCheckItem(kSystem, u"Follow system");
     appearance_.AddSeparator(scada::aui::NORMAL_SEPARATOR);
     appearance_.AddCheckItem(kDark, u"Dark");
     // The real AppearanceMenuModel and StyleMenuModel report exactly one
     // checked row; the fake has to as well or the combo lags a step behind.
-    delegate_.AddRadioGroup({kClassic, kDark});
+    delegate_.AddRadioGroup({kSystem, kDark});
     settings_.AddSubMenu(ID_SETTINGS_APPEARANCE, u"Colour scheme",
                          &appearance_);
   }
 
-  static constexpr int kClassic = 90010;
+  static constexpr int kSystem = 90011;
   static constexpr int kDark = 90012;
 
   // The row widget carrying `id`, or null when the panel is not drawing it.
@@ -184,7 +187,7 @@ TEST_F(SettingsPanelTest, EveryRowCarriesATitleAChipADescriptionAndAControl) {
 // A choice is a submenu in the menu vocabulary and a combo on the surface —
 // the same translation the dialog made, kept because it is the right one.
 TEST_F(SettingsPanelTest, AChoiceRowOffersItsSubmenuAndActivatesTheChoice) {
-  delegate_.SetChecked(kClassic);
+  delegate_.SetChecked(kSystem);
   SettingsPanel panel{nullptr, settings_};
 
   QComboBox& combo =
@@ -192,7 +195,7 @@ TEST_F(SettingsPanelTest, AChoiceRowOffersItsSubmenuAndActivatesTheChoice) {
   // The separator inside the submenu is not an option, and does not shift what
   // a selection activates.
   EXPECT_EQ(combo.count(), 2);
-  EXPECT_EQ(combo.currentText(), QStringLiteral("Classic"));
+  EXPECT_EQ(combo.currentText(), QStringLiteral("Follow system"));
 
   combo.setCurrentIndex(combo.findText(QStringLiteral("Dark")));
   emit combo.activated(combo.currentIndex());
@@ -383,7 +386,7 @@ TEST_F(SettingsPanelTest, EveryKindOfControlReportsThatItApplied) {
 // which is right often enough to look correct and wrong exactly when it
 // matters.
 TEST_F(SettingsPanelTest, AChoiceRebuildsBeforeItReportsThatItApplied) {
-  delegate_.SetChecked(kClassic);
+  delegate_.SetChecked(kSystem);
   SettingsPanel panel{nullptr, settings_};
 
   QPointer<QComboBox> clicked =
@@ -421,7 +424,7 @@ TEST_F(SettingsPanelTest, AChoiceRebuildsBeforeItReportsThatItApplied) {
 // and uses the replacement, which is what would fall over if the rebuild ever
 // stopped being safe to do from inside the sender's own signal.
 TEST_F(SettingsPanelTest, ActivatingAChoiceTwiceUsesTheRebuiltControl) {
-  delegate_.SetChecked(kClassic);
+  delegate_.SetChecked(kSystem);
   SettingsPanel panel{nullptr, settings_};
 
   auto activate = [this, &panel](const QString& option) {
@@ -438,11 +441,11 @@ TEST_F(SettingsPanelTest, ActivatingAChoiceTwiceUsesTheRebuiltControl) {
   // as it now reads.
   EXPECT_TRUE(first.isNull());
 
-  activate(QStringLiteral("Classic"));
-  EXPECT_EQ(delegate_.executed(), (std::vector<int>{kDark, kClassic}));
+  activate(QStringLiteral("Follow system"));
+  EXPECT_EQ(delegate_.executed(), (std::vector<int>{kDark, kSystem}));
   EXPECT_EQ(RequireControl<QComboBox>(panel, QStringLiteral("colour-scheme"))
                 .currentText(),
-            QStringLiteral("Classic"));
+            QStringLiteral("Follow system"));
 }
 
 // Restating the inset is not reopening: it must not steal focus back from

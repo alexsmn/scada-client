@@ -105,9 +105,9 @@ void LogStartupException(std::exception_ptr exception) {
 // Windows, a preferences plist on macOS. Two E2E runs from two checkouts open
 // the same one, and so does the developer's own client. It is the same hazard
 // `--test-data-dir` already closes for profile.json and the file cache
-// (client_paths.cpp) — the store here holds `Style`, `Ux/Experimental` and
-// `Ux/Theme`, so whichever colour scheme somebody last picked interactively
-// decides what an offscreen E2E client renders.
+// (client_paths.cpp) — the store here holds `Style` and `Ux/Theme`, so
+// whichever colour scheme somebody last picked interactively decides what an
+// offscreen E2E client renders.
 //
 // An INI file inside the run's own workspace makes the store per-run,
 // disposable with the workspace, and readable next to the logs when a run is

@@ -49,7 +49,7 @@ class GridModelAdapterTest : public testing::Test {
     rows_->SetColumnCount(1, 100);
   }
 
-  void TearDown() override { SetSeverityTheme(SeverityTheme::kLegacy); }
+  void TearDown() override { SetSeverityTheme(SeverityTheme::kDark); }
 
   QVariant Data(int role) { return adapter_.data(adapter_.index(0, 0), role); }
 
@@ -62,18 +62,10 @@ class GridModelAdapterTest : public testing::Test {
   GridModelAdapter adapter_{model_, rows_, columns_};
 };
 
-// The legacy look stays pixel-identical: unstyled cells render the historical
-// black-on-white defaults.
-TEST_F(GridModelAdapterTest, LegacyUnstyledCellsRenderBlackOnWhite) {
-  EXPECT_EQ(Data(Qt::ForegroundRole).value<QColor>(), QColor{Qt::black});
-  EXPECT_EQ(Data(Qt::BackgroundRole).value<QColor>(), QColor{Qt::white});
-}
-
-// Under the reshell theme, unstyled cells fall through to the theme palette
-// (regression: the hardcoded white/black defaults left every grid surface -
-// transmission rules, node tables - white under the dark theme).
-TEST_F(GridModelAdapterTest, ThemedUnstyledCellsFallThroughToThePalette) {
-  SetSeverityTheme(SeverityTheme::kDark);
+// Unstyled cells fall through to the theme palette. Regression: the adapter
+// used to answer hardcoded white/black defaults, which left every grid
+// surface — transmission rules, node tables — white under a dark theme.
+TEST_F(GridModelAdapterTest, UnstyledCellsFallThroughToThePalette) {
   EXPECT_FALSE(Data(Qt::ForegroundRole).isValid());
   EXPECT_FALSE(Data(Qt::BackgroundRole).isValid());
 }

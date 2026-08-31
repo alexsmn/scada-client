@@ -84,11 +84,6 @@ scada::aui::SeverityLevel EventStatusProvider::HighestUnackedLevel() const {
 }
 
 std::u16string EventStatusProvider::GetHighestSeverityText() const {
-  // Keep the legacy status bar untouched: the coloured highest-severity cell is
-  // part of the opt-in token themes only.
-  if (scada::aui::GetSeverityTheme() == scada::aui::SeverityTheme::kLegacy)
-    return {};
-
   // Empty when calm: no active alarm, nothing to shout about.
   return events::SeverityLevelLabel(HighestUnackedLevel());
 }

@@ -33,7 +33,7 @@ std::vector<TableColumn> MakeColumns() {
 
 class TableModelAdapterTest : public testing::Test {
  protected:
-  void TearDown() override { SetSeverityTheme(SeverityTheme::kLegacy); }
+  void TearDown() override { SetSeverityTheme(SeverityTheme::kDark); }
 
   QVariant FontFor(ColumnId column) {
     return adapter_.data(adapter_.index(0, column), Qt::FontRole);
@@ -63,12 +63,6 @@ TEST_F(TableModelAdapterTest, ValueAndTimestampColumnsRenderMonospace) {
   const QVariant time_font = FontFor(kTimeColumn);
   ASSERT_TRUE(time_font.isValid());
   EXPECT_TRUE(time_font.value<QFont>().fixedPitch());
-}
-
-// The legacy look is unchanged: no column supplies a custom font.
-TEST_F(TableModelAdapterTest, LegacyThemeKeepsTheDefaultFont) {
-  for (ColumnId column : {kTitleColumn, kValueColumn, kTimeColumn})
-    EXPECT_FALSE(FontFor(column).isValid());
 }
 
 // A column's alignment carries its vertical half too. Regression: the adapter

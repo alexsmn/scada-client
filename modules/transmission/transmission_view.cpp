@@ -66,10 +66,9 @@ std::unique_ptr<UiView> TransmissionView::Init(
       Command{ID_DELETE}.set_execute_handler([this] { DeleteSelection(); }));
 
 #if defined(UI_QT)
-  // Opt-in destination rail beside the grid: every transmission-capable
-  // device with its rule count, switching which device's rules the grid
-  // shows. Reshell chrome only.
-  if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy) {
+  // The destination rail beside the grid: every transmission-capable device
+  // with its rule count, switching which device's rules the grid shows.
+  {
     auto* container = new QWidget;
     auto* layout = new QHBoxLayout{container};
     layout->setContentsMargins(0, 0, 0, 0);

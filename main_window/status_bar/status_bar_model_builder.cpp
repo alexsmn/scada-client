@@ -26,7 +26,7 @@ std::shared_ptr<scada::aui::StatusBarModel> StatusBarModelBuilder::Build() {
        .size = 100});
 
   // Highest active alarm severity, coloured from the severity single source.
-  // Empty under the legacy theme, so the default status bar is unchanged.
+  // Empty when nothing is asserted.
   int highest_severity_pane_index = model->AddPane(
       {.text_provider = std::bind_front(
            &EventStatusProvider::GetHighestSeverityText, event_status_provider),

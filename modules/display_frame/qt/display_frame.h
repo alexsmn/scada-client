@@ -68,7 +68,7 @@ struct DisplayFrameContext {
 // whose zoom scales the rendered page.
 //
 // Opt-in: construct this only under the reshell UX theme (see
-// WrapDisplayInFrame); the legacy look keeps the bare renderer.
+// WrapDisplayInFrame).
 class DisplayFrame : public QWidget, private EventObserver {
   Q_OBJECT
 
@@ -129,11 +129,8 @@ class DisplayFrame : public QWidget, private EventObserver {
   bool fit_ = true;
 };
 
-// Wraps `diagram` in a DisplayFrame when the reshell UX theme is active
-// (scada::aui::GetSeverityTheme() != SeverityTheme::kLegacy). Otherwise returns
-// `diagram` unchanged so the legacy build keeps the bare renderer. Ownership of
-// the returned widget transfers to the caller; the returned frame owns
-// `diagram`.
+// Wraps `diagram` in a DisplayFrame. Ownership of the returned widget
+// transfers to the caller; the returned frame owns `diagram`.
 QWidget* WrapDisplayInFrame(VdsRuntimeWidget* diagram,
                             QString breadcrumb,
                             DisplayFrameContext data_context);

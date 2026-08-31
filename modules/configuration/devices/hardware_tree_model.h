@@ -26,12 +26,11 @@ class HardwareTreeModel : public ConfigurationTreeModel {
   virtual ~HardwareTreeModel();
 
   TimedDataService& timed_data_service() { return timed_data_service_; }
-  std::optional<DeviceState> GetDeviceStateForTesting(
-      void* tree_node) const;
+  std::optional<DeviceState> GetDeviceStateForTesting(void* tree_node) const;
 
   // aui::TreeModel: the reshell hardware-tree status dot. Returns the
   // device-state colour (Online/Offline/Disabled) for a device node under the
-  // token theme, or nullopt (no dot) for non-device nodes and the legacy theme.
+  // active theme, or nullopt (no dot) for non-device and unknown-state nodes.
   virtual std::optional<scada::aui::Color> GetStatusColor(
       void* tree_node) override;
 

@@ -247,10 +247,8 @@ std::unique_ptr<UiView> ConfigurationTreeView::Init(
     tree_view_->RestoreState(state->attributes);
 
 #if defined(UI_QT)
-  // Reshell: a type-to-filter field above the Explorer tree. Opt-in on the
-  // active UX theme; the legacy look keeps the bare tree.
-  if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy)
-    return WrapExplorerWithFilter(tree_view_);
+  // A type-to-filter field above the Explorer tree.
+  return WrapExplorerWithFilter(tree_view_);
 #endif
 
   return std::unique_ptr<UiView>{tree_view_};

@@ -269,18 +269,9 @@ TEST_F(ObjectTreeViewTest, ContentsPublishedAfterTheTreeIsBuiltMarkIt) {
   EXPECT_TRUE(IsCheckedById(kGroupId));
 }
 
-// The Explorer's filter field, which only exists under a token theme (the
-// legacy path returns the bare tree), so the theme is set before the view is
-// built and restored afterwards.
+// The Explorer's filter field.
 class ObjectTreeViewFilterTest : public ObjectTreeViewTest {
  protected:
-  ObjectTreeViewFilterTest() {
-    scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
-  }
-  ~ObjectTreeViewFilterTest() override {
-    scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kLegacy);
-  }
-
   QLineEdit* Filter() const {
     return ui_view_->findChild<QLineEdit*>(QStringLiteral("explorerFilter"));
   }

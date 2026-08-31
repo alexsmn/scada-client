@@ -100,7 +100,7 @@ ScreenshotOptions ParseScreenshotOptions(std::span<const std::string> args) {
       "only", po::value(&only),
       "Comma/semicolon/newline-separated filenames to capture")(
       "theme", po::value(&theme),
-      "Design-token theme to render under: dark|light|hc (default: legacy)");
+      "Design-token appearance to render under: dark|light|hc (default: dark)");
 
   // `allow_unregistered` is what lets `--gtest_*` reach gtest untouched. It is
   // also what silently swallowed a misspelt or non-existent flag, so the

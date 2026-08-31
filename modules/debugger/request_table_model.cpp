@@ -2,8 +2,8 @@
 
 #include "aui/severity_colors.h"
 #include "base/format.h"
-#include "base/utf_convert.h"
 #include "base/time_utils.h"
+#include "base/utf_convert.h"
 #include "modules/debugger/debug_status.h"
 #include "scada/session_service.h"
 
@@ -38,9 +38,9 @@ int RequestTableModel::GetRowCount() {
 void RequestTableModel::GetCell(scada::aui::TableCell& cell) {
   const auto& request = requests_[visible_[cell.row]];
 
-  // Status colouring, opt-in on the reshell theme (transparent under legacy):
-  // failed requests read bad, running ones uncertain, succeeded ones default.
-  if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy) {
+  // Status colouring: failed requests read bad, running ones uncertain,
+  // succeeded ones default.
+  {
     std::optional<scada::aui::Color> color;
     switch (DebugStatusFor(request.phase)) {
       case DebugStatus::kError:
@@ -69,8 +69,8 @@ void RequestTableModel::GetCell(scada::aui::TableCell& cell) {
     case 3:
       if (request.finish_time != RequestTime{}) {
         auto duration = request.finish_time - request.start_time;
-        cell.text =
-            UtfConvert<char16_t>(std::format("{} ms", InMilliseconds(duration)));
+        cell.text = UtfConvert<char16_t>(
+            std::format("{} ms", InMilliseconds(duration)));
       }
       break;
     case 4:

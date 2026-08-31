@@ -32,7 +32,7 @@
 
 namespace {
 
-// The design tokens for the active reshell theme. The panel is only built under
+// The design tokens for the active theme. The panel is only built under
 // a token theme (the factory gates on it), so the legacy fallback is harmless.
 const scada::aui::ThemeTokens& PanelTokens() {
   return scada::aui::ActiveThemeTokens();
@@ -128,8 +128,9 @@ const std::array<DiagnosticDescriptor, 6>& CounterDescriptors() {
 }
 
 // Renders a reading by its declared shape. Falls through to FormatCount --
-// including its em-dash for an absent value -- so an unmeasured round trip and a
-// link that has never connected read as "no reading" rather than 0 ms and 1970.
+// including its em-dash for an absent value -- so an unmeasured round trip and
+// a link that has never connected read as "no reading" rather than 0 ms and
+// 1970.
 QString FormatShaped(const scada::Variant& value, ProtocolValueShape shape) {
   switch (shape) {
     case ProtocolValueShape::kState:
@@ -466,8 +467,8 @@ void DeviceDiagnosticsPanel::ShowDevice(const NodeRef& device,
                                                 field.browse_name);
           if (!node)
             continue;
-          auto spec =
-              std::make_unique<TimedDataSpec>(timed_data_service, node.node_id());
+          auto spec = std::make_unique<TimedDataSpec>(timed_data_service,
+                                                      node.node_id());
           spec->SetCurrentOnly();
           spec->update_handler = [this](std::span<const scada::DataValue>) {
             RefreshFromSpecs();
@@ -515,12 +516,13 @@ void DeviceDiagnosticsPanel::RefreshFromSpecs() {
   std::vector<DeviceDiagnosticRow> rows;
   rows.reserve(readings_.size() + link_readings_.size() + 1);
   if (!link_readings_.empty()) {
-    rows.push_back(DeviceDiagnosticRow{link_section_label_, {}, /*bad=*/false,
+    rows.push_back(DeviceDiagnosticRow{link_section_label_,
+                                       {},
+                                       /*bad=*/false,
                                        /*heading=*/true});
     for (const Reading& reading : link_readings_) {
-      QString value =
-          FormatShaped(CurrentValue(reading.spec.get(), reading.node),
-                       reading.shape);
+      QString value = FormatShaped(
+          CurrentValue(reading.spec.get(), reading.node), reading.shape);
       rows.push_back(DeviceDiagnosticRow{reading.label, value, /*bad=*/false});
     }
   }
@@ -612,7 +614,5 @@ void DeviceDiagnosticsPanel::ShowDiagnostics(
 
 DeviceDiagnosticsPanel* MakeDeviceDiagnosticsPanel(
     DeviceDiagnosticsPanelContext context) {
-  if (scada::aui::GetSeverityTheme() == scada::aui::SeverityTheme::kLegacy)
-    return nullptr;
   return new DeviceDiagnosticsPanel(std::move(context));
 }

@@ -47,19 +47,14 @@ TableView::TableView(const ControllerContext& context)
        /*monospace=*/true},
   };
 
-  // Reshell-only quality mark and per-row mini-trend columns, placed next to
-  // the value exactly as in table-watch.html. Gated on the opt-in token theme
-  // so the legacy grid is unchanged (the good/uncertain/bad tokens only exist
-  // under the token themes; `QualityColor` returns nothing under kLegacy
-  // anyway).
-  [[maybe_unused]] int sparkline_column = -1;
-  if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy) {
-    columns.push_back({TableModel::COLUMN_QUALITY, Translate("Quality"), 110,
-                       scada::aui::TableColumn::LEFT});
-    sparkline_column = static_cast<int>(columns.size());
-    columns.push_back({TableModel::COLUMN_SPARKLINE, Translate("Trend"), 120,
-                       scada::aui::TableColumn::LEFT});
-  }
+  // The quality mark and per-row mini-trend columns, placed next to the value
+  // exactly as in table-watch.html.
+  columns.push_back({TableModel::COLUMN_QUALITY, Translate("Quality"), 110,
+                     scada::aui::TableColumn::LEFT});
+  [[maybe_unused]] const int sparkline_column =
+      static_cast<int>(columns.size());
+  columns.push_back({TableModel::COLUMN_SPARKLINE, Translate("Trend"), 120,
+                     scada::aui::TableColumn::LEFT});
 
   columns.insert(
       columns.end(),
@@ -172,9 +167,9 @@ std::unique_ptr<UiView> TableView::Init(const WindowDefinition& definition) {
   }
 
 #if defined(UI_QT)
-  // Opt-in reshell toolbar: the discoverable surfacing of the grid's row
+  // The toolbar: the discoverable surfacing of the grid's row
   // commands (table-watch.html), complementing the right-click context menu.
-  // MakeTableToolbar returns null under the legacy theme, keeping the bare
+  // The table toolbar sits above the grid (backlog 2.8); it used to be the bare
   // grid.
   toolbar_ = MakeTableToolbar(TableToolbarContext{
       .resolve_command = [this](unsigned command_id) -> CommandHandler* {

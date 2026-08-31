@@ -123,7 +123,5 @@ void TableToolbar::Refresh() {
 }
 
 TableToolbar* MakeTableToolbar(TableToolbarContext context) {
-  if (scada::aui::GetSeverityTheme() == scada::aui::SeverityTheme::kLegacy)
-    return nullptr;
   return new TableToolbar{std::move(context)};
 }

@@ -126,11 +126,10 @@ LoginDialog::LoginDialog(AnyExecutor executor,
 
   QApplication::instance()->installEventFilter(this);
 
-  // Opt-in reshell chrome, wrapped around the existing form rather than
+  // Workbench chrome, wrapped around the existing form rather than
   // restructuring the .ui: this dialog is the one surface every user must get
-  // through, so the legacy layout stays byte-identical when the theme is off.
-  if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy)
-    BuildReshellChrome();
+  // through, so the form itself stays untouched.
+  BuildReshellChrome();
 
   if (controller_->auto_login) {
     ui.passwordLineEdit->setText(
@@ -147,10 +146,10 @@ void LoginDialog::BuildReshellChrome() {
 
   // No heading, no brand lockup: the window already has a real title bar
   // saying "Login", and the application is identified by the window itself
-  // (docs/client/ux/dialogs.md §1). Drawing them again is a browser-modal habit — a
-  // modal in a page has no OS chrome and must supply its own; a QDialog does
-  // not, and repeating it cost a third of the dialog's height before the first
-  // field.
+  // (docs/client/ux/dialogs.md §1). Drawing them again is a browser-modal habit
+  // — a modal in a page has no OS chrome and must supply its own; a QDialog
+  // does not, and repeating it cost a third of the dialog's height before the
+  // first field.
 
   // "You are connecting to" — the wrong-server guard. Only the backend and
   // server are shown because they are all this dialog knows before it

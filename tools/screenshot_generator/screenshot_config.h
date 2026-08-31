@@ -36,8 +36,7 @@ struct SheetCellSpec {
 //   `dialog_capture.cpp`. Such a spec never reaches the profile page: most
 //   name chrome that has no registered window type at all, and the few that do
 //   (the Administration explorer, Roles, the users-admin grid) still need a
-//   bespoke fixture — an authenticated identity, or a panel the shell builds
-//   only under `--theme`.
+//   bespoke fixture, such as an authenticated identity.
 struct ScreenshotSpec {
   // Registered window type; empty when `capture` drives this spec.
   std::string window_type;
@@ -102,10 +101,6 @@ struct DialogSpec {
   std::string filename;
   int width = 0;
   int height = 0;
-  // Renders only under --theme ("themed_only" in the JSON). Lets one dialog
-  // kind have both a legacy and a reshell capture without either run
-  // overwriting the other's image.
-  bool themed_only = false;
   // objectName of a QComboBox to drop open before grabbing. The open list is
   // a separate top-level window, so the capture composes it onto the dialog
   // and the saved image is taller than `height`.

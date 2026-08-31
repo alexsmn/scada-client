@@ -1,6 +1,5 @@
 #include "modules/device_metrics/device_metrics_command.h"
 
-#include "aui/color.h"
 #include "aui/translation.h"
 #include "base/awaitable.h"
 #include "common/formula_util.h"
@@ -61,7 +60,16 @@ WindowDefinition MakeDeviceMetricsWindowDefinitionSync(
     cell.SetInt("width", 200);
   }
 
-  const scada::aui::Color kHeaderColor = scada::aui::Rgba{227, 227, 227};
+  // Header cells carry no baked fill. They used to be painted
+  // Rgba{227, 227, 227}, and a colour set here is *window definition* data —
+  // it is serialised into the page and read back whatever appearance the
+  // client is running, so the band survived into the dark and high-contrast
+  // themes as a light stripe and made the sheet the one capture that could not
+  // be rendered themed at all. Unstyled cells fall through to the theme
+  // palette (GridModelAdapter), which is what every other grid in the client
+  // does. Giving the sheet a real header-cell *style* — a semantic flag the
+  // view resolves against the palette, rather than an operator cell colour —
+  // is a sheet-model change, filed separately.
 
   // Header.
   auto data_variable_decls = CollectVariables(devices) | to_vector;
@@ -70,7 +78,6 @@ WindowDefinition MakeDeviceMetricsWindowDefinitionSync(
     cell.SetInt("row", i + 2);
     cell.SetInt("col", 1);
     cell.SetString("text", ToString16(data_variable_decls[i].display_name()));
-    cell.SetString("color", scada::aui::ColorToString(kHeaderColor));
     cell.SetString("align", "right");
   }
 
@@ -84,7 +91,6 @@ WindowDefinition MakeDeviceMetricsWindowDefinitionSync(
       cell.SetInt("row", 1);
       cell.SetInt("col", i + 2);
       cell.SetString("text", ToString16(device.display_name()));
-      cell.SetString("color", scada::aui::ColorToString(kHeaderColor));
     }
 
     // Metric cells.

@@ -99,13 +99,9 @@ EventView::EventView(const ControllerContext& context,
       {EventColumnTime, Translate("Time"), 150, scada::aui::TableColumn::LEFT,
        scada::aui::TableColumn::DataType::DateTime},
       {EventColumnItem, Translate("Item"), 170, scada::aui::TableColumn::LEFT},
-      // Wide enough for the named alarm band under the reshell theme, which
-      // spells the severity out instead of leaving colour as its only signal;
-      // the legacy journal keeps the narrow numeric column.
-      {EventColumnSeverity, Translate("Severity"),
-       scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy
-           ? 165
-           : 45,
+      // Wide enough for the named alarm band, which spells the severity out
+      // instead of leaving colour as its only signal.
+      {EventColumnSeverity, Translate("Severity"), 165,
        scada::aui::TableColumn::RIGHT},
       {EventColumnValue, Translate("Value"), 100,
        scada::aui::TableColumn::RIGHT,
@@ -130,24 +126,18 @@ EventView::EventView(const ControllerContext& context,
   // The exports carry the journal's record columns; the leading pending-dot
   // marker added below is display chrome and stays out of them.
   export_columns_ = columns;
-  // Reshell-only leading pending marker: a severity-coloured dot on every
-  // unacknowledged row (see EventColumnUnacked), first so the actionable rows
-  // read at a glance.
-  const bool reshell =
-      scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy;
-  if (reshell) {
-    columns.insert(columns.begin(), {EventColumnUnacked, u"", 28,
-                                     scada::aui::TableColumn::CENTER});
-  }
+  // Leading pending marker: a severity-coloured dot on every unacknowledged row
+  // (see EventColumnUnacked), first so the actionable rows read at a glance.
+  columns.insert(columns.begin(), {EventColumnUnacked, u"", 28,
+                                   scada::aui::TableColumn::CENTER});
 
   // cppcheck-suppress noCopyConstructor
   // cppcheck-suppress noOperatorEq
   table_ = new scada::aui::Table{model_, std::move(columns), true};
 
 #if defined(UI_QT)
-  // Newest-first on the Time column (which the dot column precedes under the
-  // reshell theme).
-  table_->sortByColumn(reshell ? 1 : 0, Qt::DescendingOrder);
+  // Newest-first on the Time column, which the leading dot column precedes.
+  table_->sortByColumn(1, Qt::DescendingOrder);
 #endif
 
   table_->SetContextMenuHandler([this](const scada::aui::Point& point) {
@@ -296,12 +286,10 @@ std::unique_ptr<UiView> EventView::Init(const WindowDefinition& definition) {
     controller_delegate_.SetTitle(MakeTitle());
 
 #if defined(UI_QT)
-  // Opt-in journal filter bar: discoverable reshell chrome for the filters,
-  // complementing the right-click context menu (which is now cross-platform via
-  // `event_menu_model_`). Only on the full journal, not the docked panel, and
-  // only under the reshell theme.
-  if (!is_panel_ &&
-      scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy) {
+  // The journal filter bar: discoverable chrome for the filters, complementing
+  // the right-click context menu (which is cross-platform via
+  // `event_menu_model_`). Only on the full journal, not the docked panel.
+  if (!is_panel_) {
     auto* container = new QWidget;
     auto* layout = new QVBoxLayout{container};
     layout->setContentsMargins(0, 0, 0, 0);

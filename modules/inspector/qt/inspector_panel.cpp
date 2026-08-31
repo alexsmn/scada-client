@@ -34,8 +34,7 @@
 
 namespace {
 
-// The design tokens for the active reshell theme (dark regardless when the
-// panel is built standalone, e.g. for a capture).
+// The design tokens for the active theme.
 const scada::aui::ThemeTokens& InspectorTokens() {
   return scada::aui::ActiveThemeTokens();
 }
@@ -421,10 +420,8 @@ void InspectorPanel::ShowTimeline(
     auto* time =
         new QLabel{step.time.isEmpty() ? QStringLiteral("—") : step.time};
     time->setObjectName(QStringLiteral("inspectorTimelineTime"));
-    // Mono so the times form a readable column; nullopt under the legacy
-    // look, where the panel is not built anyway.
-    if (const std::optional<QFont> mono = scada::aui::MonoValueFont())
-      time->setFont(*mono);
+    // Mono so the times form a readable column.
+    time->setFont(scada::aui::MonoValueFont());
     time->setStyleSheet(QStringLiteral("color:%1;font-size:11px;")
                             .arg(tokens.fg_subtle.name()));
     auto* text = new QLabel{step.text};

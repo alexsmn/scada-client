@@ -54,13 +54,11 @@ bool TableProxyModel::lessThan(const QModelIndex& source_left,
 int DefaultColumnWidth(const TableColumn& column) {
   if (!column.monospace && column.data_type != TableColumn::DataType::DateTime)
     return column.width;
-  const std::optional<QFont> mono = MonoValueFont();
-  if (!mono)
-    return column.width;
   const QString sample = QStringLiteral("00.00.0000 00:00:00.000");
   const int ui_advance =
       QFontMetrics{QGuiApplication::font()}.horizontalAdvance(sample);
-  const int mono_advance = QFontMetrics{*mono}.horizontalAdvance(sample);
+  const int mono_advance =
+      QFontMetrics{MonoValueFont()}.horizontalAdvance(sample);
   if (ui_advance <= 0 || mono_advance <= ui_advance)
     return column.width;
   return column.width * mono_advance / ui_advance;
@@ -285,10 +283,9 @@ void Table::ShowColumnMenu(const QPoint& position) {
     // ignoring the click, so the refusal is visible instead of mysterious.
     action->setEnabled(!visible || !last_one_left);
     const int column_id = column.id;
-    connect(action, &QAction::toggled, this,
-            [this, column_id](bool checked) {
-              SetColumnVisible(column_id, checked);
-            });
+    connect(action, &QAction::toggled, this, [this, column_id](bool checked) {
+      SetColumnVisible(column_id, checked);
+    });
   }
 
   menu.exec(horizontalHeader()->mapToGlobal(position));

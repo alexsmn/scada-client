@@ -104,11 +104,9 @@ QVariant TableModelAdapter::data(const QModelIndex& index, int role) const {
     case Qt::FontRole:
       // Value and timestamp columns render in the design-system monospace
       // font so digits stay tabular as they update (design-language.md §3).
-      // `MonoValueFont` is empty under the legacy theme, keeping the default.
       if (column.monospace ||
           column.data_type == TableColumn::DataType::DateTime) {
-        if (std::optional<QFont> font = MonoValueFont())
-          return *font;
+        return MonoValueFont();
       }
       return QVariant();
   }

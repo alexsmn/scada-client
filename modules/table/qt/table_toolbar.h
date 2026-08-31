@@ -58,6 +58,6 @@ class TableToolbar : public QWidget {
   std::vector<CommandButton> command_buttons_;
 };
 
-// Builds the themed toolbar, or returns null under the legacy theme — the bar
-// is opt-in reshell chrome (docs/client/ux/backlog.md 2.8).
+// Builds the table toolbar (docs/client/ux/backlog.md 2.8). Ownership
+// transfers to the caller.
 TableToolbar* MakeTableToolbar(TableToolbarContext context);

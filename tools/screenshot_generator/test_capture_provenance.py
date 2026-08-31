@@ -37,8 +37,8 @@ def manifest_with(*rows: dict) -> dict:
 
 
 class GeneratorOwnership(unittest.TestCase):
-    def test_auto_tags_and_reshell_theme_are_owned(self):
-        for tag in ("auto-view", "auto-dialog", "auto-menu", "reshell-theme"):
+    def test_auto_tags_are_owned(self):
+        for tag in ("auto-view", "auto-dialog", "auto-menu"):
             self.assertTrue(cp.is_generator_owned(tag), tag)
 
     def test_hand_captured_tags_are_not(self):

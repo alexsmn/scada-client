@@ -24,7 +24,7 @@
 
 namespace {
 
-// The design tokens for the active reshell theme. The toolbar is only built
+// The design tokens for the active theme. The toolbar is only built
 // under a token theme (CreateRequestView gates on it).
 const scada::aui::ThemeTokens& DebuggerTokens() {
   return scada::aui::ActiveThemeTokens();
@@ -99,11 +99,7 @@ QWidget* Debugger::CreateRequestView(QWidget* parent) {
         }
       });
 
-  // Legacy look: the bare splitter, as before.
-  if (scada::aui::GetSeverityTheme() == scada::aui::SeverityTheme::kLegacy)
-    return splitter;
-
-  // Reshell: a themed trace toolbar (Pause / Clear / filter / Save) above the
+  // A themed trace toolbar (Pause / Clear / filter / Save) above the
   // request trace + detail. NOTE this view traces client<->server *session
   // requests*; the device *protocol* frame trace in
   // docs/product/ui-mockups/screens/device-protocol-trace.html is a different

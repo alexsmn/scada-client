@@ -63,12 +63,10 @@ constexpr std::array kDescriptors = {
         .scope = SettingScope::kClient,
         .control = SettingControl::kChoice,
         .description =
-            "Follow system, Dark, Light or High contrast, plus Classic — the "
-            "untouched platform look, which is the absence of a theme rather "
-            "than "
-            "one more of them. Crossing that boundary relays the workbench "
-            "chrome "
-            "on restart, and says so.",
+            "Follow system, Dark, Light or High contrast. The choice applies "
+            "live and in full. Alarm severity, data quality and switchgear "
+            "state keep their fixed values whichever scheme is picked: those "
+            "are safety signals, not styling.",
     },
     SettingDescriptor{
         .command_id = ID_SETTINGS_STYLE,
@@ -149,8 +147,9 @@ constexpr std::array kDescriptors = {
         .scope = SettingScope::kWindow,
         .control = SettingControl::kToggle,
         .description =
-            "Show the view toolbar in this window. Per main window, not per "
-            "account, so a second window keeps its own answer.",
+            "Show the grip command toolbar in this window. Off by default — "
+            "the context bar carries the same commands — and per main window, "
+            "not per account, so a second window keeps its own answer.",
     },
     SettingDescriptor{
         .command_id = ID_VIEW_STATUS_BAR,

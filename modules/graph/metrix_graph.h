@@ -44,16 +44,9 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
 
    private:
     scada::DataValue GetCurrentValue(const MetrixDataSource& data_source) const;
-    std::u16string GetText(const MetrixDataSource& data_source,
-                           int column_id) const;
-    int GetColumnWidth(int column_id) const;
-    int GetColumnCount() const;
 
 #if defined(UI_QT)
-    // Whether the reshell value-grid look is active (opt-in themes only). When
-    // false the legend keeps its historical compact three-column look.
-    bool Themed() const;
-    // The reshell value-grid readout: per-series swatch + name and
+    // The value-grid readout: per-series swatch + name and
     // current/min/max/average/at-cursor columns (see trend.html). `ThemedSize`
     // is the size that layout requires for it.
     void PaintThemed(QPainter& painter) const;
@@ -62,11 +55,6 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
     // empty-cell placeholder when no horizontal cursor is set.
     QString ValueAtCursorText(const MetrixDataSource& data_source) const;
 #endif
-
-    static const int MARGX = 5;    // margin inside legend
-    static const int MARGY = 5;    // margin inside legend
-    static const int INDENTX = 2;  // distance between columns
-    static const int ROW = 13;     // legend row height
 
     mutable int title_width_ = 0;
   };
@@ -120,8 +108,6 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
    private:
     // Recomputes the per-band limit marker styles from the data source's limits
     // and the active severity theme, then pushes them to the base GraphLine.
-    // Under the legacy theme SeverityColor yields nothing, so the bands keep
-    // the historical series colour with no caption.
     void UpdateLimitStyles();
   };
 

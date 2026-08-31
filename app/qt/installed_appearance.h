@@ -5,21 +5,17 @@
 #include <QSettings>
 #include <QString>
 
-#include <optional>
-
 // Restores the operator's appearance choice at startup and persists a runtime
 // change on exit — the theme counterpart of InstalledStyle, and deliberately
 // shaped like it.
 //
-// The experimental UX design-token theming is opt-in and off by default: the
-// reshell ships as incremental vertical slices, not a big-bang switchover. When
-// enabled, the tokens go on over the platform style (chosen just before by
+// The tokens go on over the platform style (chosen just before by
 // InstalledStyle) before the login dialog, so pre-login chrome is themed too.
+// There is no un-themed appearance: an operator who has never chosen one
+// follows the host OS light/dark preference (docs/client/ux/principles.md §9).
 //
 // Settings read here, all under `Ux/`:
 //
-// - `Experimental` (bool) — the opt-in itself. Settings → Colour scheme is the
-//   only UI that writes it.
 // - `Theme` (string) — "system" (the default, follows the OS), "dark",
 //   "light" or "hc".
 // - `StyleSheet` (bool) — false gives palette-only, the direction of travel
@@ -31,45 +27,30 @@
 class InstalledAppearance {
  public:
   explicit InstalledAppearance(QSettings& settings) : settings_{settings} {
-    if (settings.value("Ux/Experimental", false).toBool()) {
-      const scada::aui::Theme theme = scada::aui::ThemeFromString(
-          settings.value("Ux/Theme").toString(), scada::aui::Theme::kSystem);
-      const scada::aui::ThemeScope scope =
-          settings.value("Ux/StyleSheet", true).toBool()
-              ? scada::aui::ThemeScope::kFull
-              : scada::aui::ThemeScope::kPaletteOnly;
-      // ApplyTheme settles the severity/quality ramp to match; it used to be a
-      // second, hand-written mapping here.
-      scada::aui::ApplyTheme(theme, scope);
-    }
-    installed_ = CurrentChoice();
+    const scada::aui::Theme theme = scada::aui::ThemeFromString(
+        settings.value("Ux/Theme").toString(), scada::aui::Theme::kSystem);
+    const scada::aui::ThemeScope scope =
+        settings.value("Ux/StyleSheet", true).toBool()
+            ? scada::aui::ThemeScope::kFull
+            : scada::aui::ThemeScope::kPaletteOnly;
+    // ApplyTheme settles the severity/quality ramp to match; it used to be a
+    // second, hand-written mapping here.
+    scada::aui::ApplyTheme(theme, scope);
+    installed_ = scada::aui::ActiveTheme();
   }
 
   ~InstalledAppearance() {
-    const std::optional<scada::aui::Theme> current = CurrentChoice();
+    // Read from the theme module rather than from QSettings so it reflects what
+    // the operator actually sees — which, once Settings → Colour scheme can
+    // switch it mid-session, is the only thing worth persisting.
+    const scada::aui::Theme current = scada::aui::ActiveTheme();
     if (current == installed_) {
       return;
     }
-    settings_.setValue("Ux/Experimental", current.has_value());
-    // Leave `Ux/Theme` alone when switching off, so turning the reshell back on
-    // returns to the appearance the operator had picked rather than the
-    // default.
-    if (current) {
-      settings_.setValue("Ux/Theme", scada::aui::ThemeToString(*current));
-    }
+    settings_.setValue("Ux/Theme", scada::aui::ThemeToString(current));
   }
 
  private:
-  // The live appearance: nullopt when no theme is installed (the platform
-  // look). Read from the theme module rather than from QSettings so it reflects
-  // what the operator actually sees — which, once the menu can switch it
-  // mid-session, is the only thing worth persisting.
-  static std::optional<scada::aui::Theme> CurrentChoice() {
-    return scada::aui::IsThemeInstalled()
-               ? std::optional<scada::aui::Theme>{scada::aui::ActiveTheme()}
-               : std::nullopt;
-  }
-
   QSettings& settings_;
-  std::optional<scada::aui::Theme> installed_;
+  scada::aui::Theme installed_ = scada::aui::Theme::kSystem;
 };

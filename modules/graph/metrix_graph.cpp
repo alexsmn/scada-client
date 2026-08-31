@@ -31,16 +31,12 @@
 namespace {
 
 #if defined(UI_QT)
-// The active theme's tokens that drive the chart chrome, or null under the
-// legacy look — where the canvas simply follows QPalette::Base and therefore
-// the host OS appearance, like any other data surface. Resolved through
+// The active theme's tokens that drive the chart chrome. Resolved through
 // ActiveThemeTokens() so that under Theme::kSystem the tokens are themselves
 // derived from the live palette rather than from a baked light/dark table. See
 // the UX design language at docs/client/ux/design-language.md.
-const scada::aui::ThemeTokens* ReshellChartTokens() {
-  if (scada::aui::GetSeverityTheme() == scada::aui::SeverityTheme::kLegacy)
-    return nullptr;
-  return &scada::aui::ActiveThemeTokens();
+const scada::aui::ThemeTokens& ChartTokens() {
+  return scada::aui::ActiveThemeTokens();
 }
 
 // Formats an already-typed data value through the series' own value formatter
@@ -113,48 +109,6 @@ scada::DataValue MetrixGraph::Legend::GetCurrentValue(
   }
 }
 
-std::u16string MetrixGraph::Legend::GetText(const MetrixDataSource& data_source,
-                                            int column_id) const {
-  switch (column_id) {
-    case 0: {
-      return data_source.title();
-    }
-    case 1: {
-      auto data_value = GetCurrentValue(data_source);
-      return u"= " + data_source.timed_data().GetValueString(
-                         data_value.value, data_value.qualifier);
-    }
-    case 2: {
-      auto data_value = GetCurrentValue(data_source);
-      return UtfConvert<char16_t>(FormatTime(data_value.source_timestamp));
-    }
-    default:
-      return {};
-  }
-}
-
-int MetrixGraph::Legend::GetColumnWidth(int column_id) const {
-  switch (column_id) {
-    case 0:
-      return title_width_;
-    case 1:
-      return 80;
-    case 2:
-      return 150;
-    default:
-      return 0;
-  }
-}
-
-int MetrixGraph::Legend::GetColumnCount() const {
-  // Title, value, timestamp — the three arms GetText() and GetColumnWidth()
-  // answer. A fourth "percent ready" column was written in 2018 (110ee10ef)
-  // beside a count that has always been 3, so it never rendered; it was deleted
-  // rather than enabled, because the themed value grid this legend became under
-  // an opt-in theme has no such column either (see PaintThemed).
-  return 3;
-}
-
 void MetrixGraph::Legend::Update() {
 #if defined(UI_QT)
   title_width_ = 0;
@@ -173,34 +127,7 @@ void MetrixGraph::Legend::Update() {
 #if defined(UI_QT)
 void MetrixGraph::Legend::paintEvent(QPaintEvent* e) {
   QPainter painter(this);
-
-  if (Themed()) {
-    PaintThemed(painter);
-    return;
-  }
-
-  //	dc.Rectangle(rect.left, rect.top, rect.right + 1, rect.bottom + 1);
-
-  int top = MARGY;
-  for (auto* graph_line : plot().lines()) {
-    MetrixLine& line = static_cast<MetrixLine&>(*graph_line);
-    auto& data_source = static_cast<MetrixDataSource&>(line.data_source());
-
-    int left = MARGX;
-    for (int i = 0; i < GetColumnCount(); ++i) {
-      auto text = QString::fromStdU16String(GetText(data_source, i));
-      int width = GetColumnWidth(i);
-      QRect rect{left, top, width, ROW};
-      painter.drawText(rect, Qt::AlignLeft | Qt::AlignVCenter, text);
-      left += width + INDENTX;
-    }
-
-    top += ROW;
-  }
-}
-
-bool MetrixGraph::Legend::Themed() const {
-  return ReshellChartTokens() != nullptr;
+  PaintThemed(painter);
 }
 
 namespace {
@@ -236,7 +163,7 @@ constexpr int kThemedColumnCount =
 }  // namespace
 
 void MetrixGraph::Legend::PaintThemed(QPainter& painter) const {
-  const scada::aui::ThemeTokens& tokens = *ReshellChartTokens();
+  const scada::aui::ThemeTokens& tokens = ChartTokens();
 
   painter.setRenderHint(QPainter::Antialiasing, true);
 
@@ -352,17 +279,7 @@ QSize MetrixGraph::Legend::ThemedSize() const {
 
 #if defined(UI_QT)
 QSize MetrixGraph::Legend::sizeHint() const {
-  if (Themed())
-    return ThemedSize();
-
-  int total_width = MARGX * 2;
-  for (int i = 0; i < GetColumnCount(); ++i)
-    total_width += GetColumnWidth(i);
-  total_width += INDENTX * (GetColumnCount() - 1);
-
-  int total_height = MARGY * 2 + plot().lines().size() * ROW;
-
-  return QSize{total_width, total_height};
+  return ThemedSize();
 }
 #endif
 
@@ -419,8 +336,8 @@ void MetrixGraph::MetrixLine::UpdateLimitStyles() {
   for (const LimitMarker& marker : markers) {
     const std::optional<scada::aui::Color> color =
         scada::aui::SeverityColor(SeverityOf(marker.kind));
-    // Legacy theme: SeverityColor yields nothing, so leave the band with its
-    // default (series colour, no caption) — the historical look is unchanged.
+    // Defensive: every real LimitKind maps to Warning or Critical, so this
+    // only fires on a band with no severity at all.
     if (!color)
       continue;
 
@@ -495,12 +412,12 @@ void MetrixGraph::ApplyChartPalette() {
   if (canvas_color_overridden_)
     return;
 
-  const scada::aui::ThemeTokens* tokens = ReshellChartTokens();
-  if (!tokens || palette().color(backgroundRole()) == tokens->surface)
+  const scada::aui::ThemeTokens& tokens = ChartTokens();
+  if (palette().color(backgroundRole()) == tokens.surface)
     return;
 
   QPalette themed_palette = palette();
-  themed_palette.setColor(backgroundRole(), tokens->surface);
+  themed_palette.setColor(backgroundRole(), tokens.surface);
   setPalette(themed_palette);
 }
 

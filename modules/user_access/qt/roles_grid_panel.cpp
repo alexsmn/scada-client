@@ -105,14 +105,15 @@ void RolesGridPanel::ShowRoles(
   }
 
   roles_ = *roles;
-  title_->setText(QStringLiteral("%1 · %2").arg(Tr("Roles")).arg(roles_.size()));
+  title_->setText(
+      QStringLiteral("%1 · %2").arg(Tr("Roles")).arg(roles_.size()));
 
   grid_->setRowCount(static_cast<int>(roles_.size()));
   for (int i = 0; i < static_cast<int>(roles_.size()); ++i) {
     const RoleMembership& role = roles_[i];
 
-    grid_->setItem(
-        i, 0, new QTableWidgetItem(QString::fromStdU16String(role.name)));
+    grid_->setItem(i, 0,
+                   new QTableWidgetItem(QString::fromStdU16String(role.name)));
 
     auto* members = new QTableWidgetItem(MembersText(role.members));
     members->setForeground(role.members.empty() ? tokens.fg_subtle : tokens.fg);
@@ -123,15 +124,13 @@ void RolesGridPanel::ShowRoles(
     // Role-specific source strings rather than a bare "Standard"/"Custom":
     // the existing "Custom" translation is masculine and would not agree with
     // the feminine "роль".
-    auto* kind = new QTableWidgetItem(
-        role.well_known ? Tr("Standard role") : Tr("Custom role"));
+    auto* kind = new QTableWidgetItem(role.well_known ? Tr("Standard role")
+                                                      : Tr("Custom role"));
     kind->setForeground(tokens.fg_muted);
     grid_->setItem(i, 2, kind);
   }
 }
 
 RolesGridPanel* MakeRolesGridPanel() {
-  if (scada::aui::GetSeverityTheme() == scada::aui::SeverityTheme::kLegacy)
-    return nullptr;
   return new RolesGridPanel;
 }

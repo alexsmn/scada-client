@@ -143,17 +143,26 @@ TableModelTest::~TableModelTest() = default;
 std::shared_ptr<TableModelTest::RowContext> TableModelTest::SetFormula() {
   auto row_context = std::make_shared<RowContext>();
 
+  // Both adds are idempotent, matching the real implementations:
+  // `BaseTimedData::AddObserver` and `BasicTimedDataBuffer::AddObserver` each
+  // test `HasObserver` first, and `AliasTimedData` keeps its deferred observers
+  // in a `std::set`. `ObserverList::AddObserver` panics on a duplicate, so a
+  // mock that re-registers blindly fails a call sequence production tolerates —
+  // which is what a row re-ranging an already-connected spec does every time it
+  // sets a formula.
   ON_CALL(row_context->timed_data, AddObserver(_))
       .WillByDefault(Invoke(
           [&observers = row_context->observers](TimedDataObserver& observer) {
-            observers.AddObserver(&observer);
+            if (!observers.HasObserver(&observer))
+              observers.AddObserver(&observer);
           }));
 
   ON_CALL(row_context->timed_data, AddViewObserver(_, _))
       .WillByDefault(Invoke(
           [&view_observers = row_context->view_observers](
               TimedDataViewObserver& observer, const scada::TimeRange& range) {
-            view_observers.AddObserver(&observer);
+            if (!view_observers.HasObserver(&observer))
+              view_observers.AddObserver(&observer);
           }));
 
   ON_CALL(row_context->timed_data, RemoveObserver(_))
@@ -175,11 +184,20 @@ std::shared_ptr<TableModelTest::RowContext> TableModelTest::SetFormula() {
       .WillOnce(Return(
           std::shared_ptr<TimedData>{row_context, &row_context->timed_data}));
 
-  EXPECT_CALL(row_context->timed_data, AddObserver(_));
+  // Twice: once from `Connect`, once from the `SetFrom` that opens the row's
+  // trailing sparkline window. Both are idempotent, so the count is an
+  // implementation detail rather than the behaviour under test.
+  EXPECT_CALL(row_context->timed_data, AddObserver(_)).Times(AnyNumber());
 
+  // The row registers two view ranges: current-only from `Connect`, then the
+  // trailing history window its sparkline cell is drawn from. The second is
+  // what makes the row historical at all, so it is asserted rather than merely
+  // permitted.
   EXPECT_CALL(
       row_context->timed_data,
       AddViewObserver(_, scada::TimeRange{scada::kMaxTime, scada::kMaxTime}));
+  EXPECT_CALL(row_context->timed_data,
+              AddViewObserver(_, Pair(Lt(scada::kMaxTime), scada::kMaxTime)));
 
   EXPECT_CALL(row_context->timed_data, IsAlerting());
 
@@ -210,11 +228,10 @@ std::shared_ptr<TableModelTest::RowContext> TableModelTest::SetFormula() {
   return row_context;
 }
 
-// Under the reshell theme a new row also observes a trailing history window
-// feeding its sparkline cell; the legacy grid stays current-only (covered by
+// A new row also observes a trailing history window feeding its sparkline
+// cell, on top of the current value (covered by
 // the {Max, Max} view-observer expectation in the SetFormula helper).
-TEST_F(TableModelTest, ReshellRowObservesTheSparklineWindow) {
-  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
+TEST_F(TableModelTest, ARowObservesTheSparklineWindow) {
   const scada::base::ScopedMockClockOverride clock;
 
   struct NiceRowContext {
@@ -233,8 +250,6 @@ TEST_F(TableModelTest, ReshellRowObservesTheSparklineWindow) {
   const TableRow* row = table_model_.GetRow(0);
   ASSERT_NE(row, nullptr);
   EXPECT_EQ(row->timed_data().from(), scada::Now() - kSparklineWindow);
-
-  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kLegacy);
 }
 
 TEST_F(TableModelTest, SetFormula) {

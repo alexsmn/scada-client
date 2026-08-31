@@ -88,9 +88,8 @@ std::u16string SessionStatusProvider::GetPingText() const {
   std::u16string text =
       u16format(Translate("Server: {} ms"),
                 static_cast<unsigned>(InMilliseconds(*ping_delay)));
-  // The colour cue below resolves to nothing under the legacy severity theme
-  // (the default), so the marker has to be in the text as well for the pane to
-  // say anything an operator can read.
+  // Colour is never the only signal (principles.md §1), so the stall marker
+  // goes in the text as well as in the pane's colour cue.
   if (*ping_delay >= kPingStallThreshold)
     text += u" \u00b7 " + Translate("no response");
   return text;

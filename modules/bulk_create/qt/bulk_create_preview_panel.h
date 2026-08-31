@@ -64,7 +64,5 @@ class BulkCreatePreviewPanel : public QWidget {
   std::vector<BulkCreatePreviewRow> rows_;
 };
 
-// Builds a BulkCreatePreviewPanel under the reshell UX theme
-// (scada::aui::GetSeverityTheme() != SeverityTheme::kLegacy); returns nullptr in
-// the legacy look. Ownership transfers to the caller.
+// Builds a BulkCreatePreviewPanel. Ownership transfers to the caller.
 BulkCreatePreviewPanel* MakeBulkCreatePreviewPanel();

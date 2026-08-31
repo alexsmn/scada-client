@@ -1,6 +1,5 @@
 #include "events/qt/severity_tile_strip.h"
 
-#include "aui/severity_colors.h"
 #include "aui/test/app_environment.h"
 
 #include <gtest/gtest.h>
@@ -26,27 +25,11 @@ bool TileIsAsserted(const SeverityTileStrip& strip, int index) {
 
 class SeverityTileStripTest : public ::testing::Test {
  protected:
-  void SetUp() override {
-    scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
-  }
-  void TearDown() override {
-    scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kLegacy);
-  }
-
   // Qt requires a QApplication before any QWidget; destroyed with the fixture.
   AppEnvironment app_env_;
 };
 
-// The strip is opt-in reshell chrome: the legacy look must be unchanged, so the
-// factory hands back nothing at all rather than an empty widget.
-TEST_F(SeverityTileStripTest, LegacyThemeBuildsNoStrip) {
-  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kLegacy);
-
-  EXPECT_EQ(MakeSeverityTileStrip([] { return SeverityTileCounts{}; }),
-            nullptr);
-}
-
-TEST_F(SeverityTileStripTest, TokenThemeBuildsTheTiles) {
+TEST_F(SeverityTileStripTest, TheFactoryBuildsTheTiles) {
   std::unique_ptr<SeverityTileStrip> strip{MakeSeverityTileStrip([] {
     return SeverityTileCounts{.critical = 3, .warning = 2, .unacknowledged = 5};
   })};

@@ -14,7 +14,8 @@ class QWidget;
 
 // Inputs for the journal's Areas sidebar (Qt): the mockup's left rail listing
 // "All areas" plus the top-level areas, each with its unacknowledged count,
-// driving the journal's area filter. Opt-in reshell chrome; the journal only.
+// driving the journal's area filter. The full journal only, not the docked
+// panel.
 //
 // The sidebar is decoupled from the journal model behind callbacks so the
 // widget is testable: `browse_areas` enumerates the areas asynchronously

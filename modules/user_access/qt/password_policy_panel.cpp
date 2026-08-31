@@ -33,10 +33,9 @@ QString LengthText(const PasswordPolicy& policy) {
         .arg(static_cast<int>(policy.min_length))
         .arg(static_cast<int>(policy.max_length));
   }
-  return has_min ? QStringLiteral("≥ %1").arg(
-                       static_cast<int>(policy.min_length))
-                 : QStringLiteral("≤ %1").arg(
-                       static_cast<int>(policy.max_length));
+  return has_min
+             ? QStringLiteral("≥ %1").arg(static_cast<int>(policy.min_length))
+             : QStringLiteral("≤ %1").arg(static_cast<int>(policy.max_length));
 }
 
 }  // namespace
@@ -161,7 +160,5 @@ void PasswordPolicyPanel::ShowPolicy(
 }
 
 PasswordPolicyPanel* MakePasswordPolicyPanel() {
-  if (scada::aui::GetSeverityTheme() == scada::aui::SeverityTheme::kLegacy)
-    return nullptr;
   return new PasswordPolicyPanel;
 }

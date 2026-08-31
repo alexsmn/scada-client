@@ -155,15 +155,6 @@ Theme& MutableActiveTheme() {
   return theme;
 }
 
-// Whether ApplyTheme() currently owns the application palette. Distinct from
-// MutableActiveTheme(), which keeps its last value so ActiveThemeTokens() has a
-// table to hand out either way; this is the flag ClearTheme() clears and the
-// Appearance menu reads. Trivially destructible, like the theme above.
-bool& MutableThemeInstalled() {
-  static bool installed = false;
-  return installed;
-}
-
 // The scope of the last ApplyTheme(), so a live OS light/dark switch can
 // re-apply exactly what the operator asked for rather than assuming kFull.
 ThemeScope& MutableActiveScope() {
@@ -370,27 +361,16 @@ Theme ActiveTheme() {
   return MutableActiveTheme();
 }
 
-bool IsThemeInstalled() {
-  return MutableThemeInstalled();
-}
-
 const ThemeTokens& ActiveThemeTokens() {
-  // The reshell is off (legacy severity theme): keep the historical behaviour
-  // of handing standalone chrome the dark tokens regardless.
-  if (GetSeverityTheme() == SeverityTheme::kLegacy) {
-    return GetThemeTokens(Theme::kDark);
-  }
-  // Otherwise follow whatever ApplyTheme installed. This is what carries the
-  // OS colours out to the ~23 call sites that still style themselves from
-  // tokens: under Theme::kSystem they resolve against the live palette instead
-  // of a baked table, so they track the desktop without waiting for the
-  // per-widget stylesheet conversion (backlog P6.4).
+  // Follow whatever ApplyTheme installed. This is what carries the OS colours
+  // out to the ~23 call sites that still style themselves from tokens: under
+  // Theme::kSystem they resolve against the live palette instead of a baked
+  // table, so they track the desktop without waiting for the per-widget
+  // stylesheet conversion (backlog P6.4).
   return GetThemeTokens(ActiveTheme());
 }
 
-std::optional<QFont> MonoValueFont() {
-  if (GetSeverityTheme() == SeverityTheme::kLegacy)
-    return std::nullopt;
+QFont MonoValueFont() {
   QFont font = QApplication::font();
   // The design-language `--font-mono` stack (design-language.md §3), with the
   // common macOS/Linux monospace faces standing in for `ui-monospace`.
@@ -497,12 +477,10 @@ QPalette BuildThemePalette(const ThemeTokens& t) {
   // from — the unchecked checkbox indicator among them.
   p.setColor(QPalette::Light, Flatten(t.bg, t.surface_muted));
   p.setColor(QPalette::Midlight, Flatten(t.bg, t.surface_muted));
-  p.setColor(QPalette::Mid,
-             EnsureContrast(Flatten(t.bg, t.border_strong), t.bg,
-                            kNonTextContrast));
-  p.setColor(QPalette::Dark,
-             EnsureContrast(Flatten(t.bg, t.border_strong), t.bg,
-                            kNonTextContrast));
+  p.setColor(QPalette::Mid, EnsureContrast(Flatten(t.bg, t.border_strong), t.bg,
+                                           kNonTextContrast));
+  p.setColor(QPalette::Dark, EnsureContrast(Flatten(t.bg, t.border_strong),
+                                            t.bg, kNonTextContrast));
   p.setColor(QPalette::Shadow, Flatten(t.bg, t.rail_bg));
 
   // Disabled group: dim the text/foreground roles.
@@ -563,8 +541,9 @@ QString BuildThemeStyleSheet(const ThemeTokens& t) {
   // matches its chrome, which leaves the indicator fill identical to the row.
   //
   // An unchecked box is the whole affordance for "you may add this signal to
-  // the active table" (docs/product/ui-mockups/screens/trend.html draws it as an
-  // always-present bordered box), so it has to clear WCAG 2.2 SC 1.4.11's 3:1.
+  // the active table" (docs/product/ui-mockups/screens/trend.html draws it as
+  // an always-present bordered box), so it has to clear WCAG 2.2 SC 1.4.11's
+  // 3:1.
   //
   // Deliberately scoped to `::indicator` and to the *unchecked* state only.
   // The sub-control is the smallest thing that fixes it; leaving `:checked`
@@ -600,16 +579,15 @@ void EnsureSystemThemeWatcher() {
   if (!hints)
     return;
   connected = true;
-  QObject::connect(
-      hints, &QStyleHints::colorSchemeChanged, context.get(),
-      [](Qt::ColorScheme) {
-        // Only while we are actually following the OS — an
-        // explicit Dark/Light/High-contrast choice is the
-        // operator's and must survive a desktop switch.
-        if (MutableThemeInstalled() && MutableActiveTheme() == Theme::kSystem) {
-          ApplyTheme(Theme::kSystem, MutableActiveScope());
-        }
-      });
+  QObject::connect(hints, &QStyleHints::colorSchemeChanged, context.get(),
+                   [](Qt::ColorScheme) {
+                     // Only while we are actually following the OS — an
+                     // explicit Dark/Light/High-contrast choice is the
+                     // operator's and must survive a desktop switch.
+                     if (MutableActiveTheme() == Theme::kSystem) {
+                       ApplyTheme(Theme::kSystem, MutableActiveScope());
+                     }
+                   });
 #endif
 }
 
@@ -618,7 +596,6 @@ void EnsureSystemThemeWatcher() {
 void ApplyTheme(Theme theme, ThemeScope scope) {
   MutableActiveTheme() = theme;
   MutableActiveScope() = scope;
-  MutableThemeInstalled() = true;
   EnsureSystemThemeWatcher();
 
   // Deliberately no setStyle() here. The client runs the platform style so it
@@ -653,36 +630,6 @@ void ApplyTheme(Theme theme, ThemeScope scope) {
   // ramp here rather than at the call sites is what stops the chrome and the
   // process-semantic colours drifting apart.
   SetSeverityTheme(SeverityThemeFor(ResolveTheme(theme)));
-}
-
-void ClearTheme() {
-  // Never touch the palette when we do not own it: with the reshell off, the
-  // application palette belongs to the platform style and overwriting it with
-  // standardPalette() would discard, for instance, the user's accent colour.
-  if (!MutableThemeInstalled())
-    return;
-
-  MutableThemeInstalled() = false;
-  // Back to the value ActiveThemeTokens() hands out with the reshell off. It
-  // reads the dark table under the legacy ramp regardless, but leaving a stale
-  // light/high-contrast value here would be a trap for anything added later.
-  MutableActiveTheme() = Theme::kDark;
-  MutableActiveScope() = ThemeScope::kFull;
-
-  // Sheet first, palette second, and the order is load-bearing: while a global
-  // stylesheet is installed, QApplication::style() is Qt's QStyleSheetStyle
-  // wrapper rather than the platform style, so standardPalette() would be read
-  // off the wrapper. Clearing the sheet unwraps it first.
-  if (auto* app = qApp) {
-    app->setStyleSheet(QString());
-  }
-  if (QStyle* style = QApplication::style()) {
-    QApplication::setPalette(style->standardPalette());
-  }
-  // The legacy ramp is what makes the quality dots, severity marks and mono
-  // numerals disappear again — they are opt-in parts of the token themes, and
-  // several of them test GetSeverityTheme() directly.
-  SetSeverityTheme(SeverityTheme::kLegacy);
 }
 
 }  // namespace scada::aui

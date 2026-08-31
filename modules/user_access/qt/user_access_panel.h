@@ -100,7 +100,5 @@ class UserAccessPanel : public QWidget {
   QVBoxLayout* perms_layout_ = nullptr;  // owns the current permission rows.
 };
 
-// Builds a UserAccessPanel under the reshell UX theme
-// (scada::aui::GetSeverityTheme() != SeverityTheme::kLegacy); returns nullptr in
-// the legacy look. Ownership transfers to the caller.
+// Builds a UserAccessPanel. Ownership transfers to the caller.
 UserAccessPanel* MakeUserAccessPanel();

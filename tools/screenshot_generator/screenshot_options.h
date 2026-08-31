@@ -15,10 +15,10 @@ struct ScreenshotOptions {
   // writing to the fixture other sessions share.
   std::filesystem::path data_file;
   std::unordered_set<std::string> only_filenames;
-  // Optional design-token theme to render captures under ("dark"|"light"|"hc").
-  // Empty means the legacy Fusion look. Used to validate the UX reshell against
-  // real Qt widgets (see docs/client/ux/ and client/CLAUDE.md).
-  std::string theme;
+  // The design-token appearance to render captures under: "dark" (the
+  // default), "light" or "hc". Every capture renders under one — there is no
+  // un-themed appearance (see docs/client/ux/ and client/CLAUDE.md).
+  std::string theme = "dark";
 };
 
 // Parses `args` (the command line without argv[0]) into an options struct.

@@ -58,13 +58,6 @@ std::u16string FormatCellTime(scada::Time time) {
   return UtfConvert<char16_t>(FormatTime(time, g_time_format));
 }
 
-// True when the opt-in reshell token theme is active; the quality-mark chrome
-// (quality column, token value colouring) is gated on it so the legacy grid is
-// unchanged.
-bool ReshellActive() {
-  return scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy;
-}
-
 // The short, translated label shown in the quality column so quality is never
 // signalled by colour alone (backlog cross-cutting acceptance).
 std::u16string QualityLabel(scada::aui::Quality quality) {
@@ -123,11 +116,9 @@ void TableRow::SetFormula(std::string formula, bool notify_update) {
 
   timed_data_.Connect(model_.timed_data_service(), formula_);
 
-  // Under the reshell theme each row also observes a trailing history window
-  // feeding its sparkline cell (the mockup's "Trend 1 h"); the legacy grid
-  // stays current-only.
-  if (ReshellActive())
-    timed_data_.SetFrom(scada::Now() - kSparklineWindow);
+  // Each row also observes a trailing history window feeding its sparkline cell
+  // (the mockup's "Trend 1 h").
+  timed_data_.SetFrom(scada::Now() - kSparklineWindow);
 
   SetBlinking(timed_data_.alerting());
 
@@ -188,8 +179,7 @@ void TableRow::GetQualityCell(TableCellEx& cell) const {
   }
 
   cell.text = QualityLabel(*quality);
-  if (auto color = scada::aui::QualityColor(*quality))
-    cell.text_color = *color;
+  cell.text_color = scada::aui::QualityColor(*quality);
 }
 
 void TableRow::GetEventCell(TableCellEx& cell) const {
@@ -260,24 +250,15 @@ void TableRow::GetCellEx(TableCellEx& cell) const {
       break;
   }
 
-  // Colour the row's data cells by quality. The quality column paints its own
-  // colour (above); the title stays neutral. Under the reshell token theme use
-  // the shared good/uncertain/bad ramp (uncertain rows read amber, bad rows
-  // red, matching table-watch.html); otherwise keep the legacy single
-  // bad-value colour so the default grid is unchanged.
+  // Colour the row's data cells by quality, from the shared good/uncertain/bad
+  // ramp — uncertain rows read amber, bad rows red, matching table-watch.html.
+  // The quality column paints its own colour (above); the title stays neutral.
   if (cell.column_id != TableModel::COLUMN_TITLE &&
       cell.column_id != TableModel::COLUMN_QUALITY) {
-    const auto& data_value = timed_data_.current();
-    if (ReshellActive()) {
-      const scada::aui::Quality quality =
-          QualityFromQualifier(data_value.qualifier);
-      if (quality != scada::aui::Quality::kGood) {
-        if (auto color = scada::aui::QualityColor(quality))
-          cell.text_color = *color;
-      }
-    } else if (data_value.qualifier.general_bad()) {
-      cell.text_color = model_.profile_.bad_value_color;
-    }
+    const scada::aui::Quality quality =
+        QualityFromQualifier(timed_data_.current().qualifier);
+    if (quality != scada::aui::Quality::kGood)
+      cell.text_color = scada::aui::QualityColor(quality);
   }
 }
 

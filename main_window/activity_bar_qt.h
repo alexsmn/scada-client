@@ -19,7 +19,7 @@ class QDragMoveEvent;
 class QDropEvent;
 class QEvent;
 
-// Left activity rail — opt-in reshell chrome. A real `QToolBar` of `QAction`s
+// Left activity rail. A real `QToolBar` of `QAction`s
 // in `Qt::LeftToolBarArea`, in three zones, top to bottom
 // (docs/product/ui-mockups/screens/activity-rail.html):
 //

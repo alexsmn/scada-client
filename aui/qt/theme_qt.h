@@ -5,8 +5,6 @@
 #include <QPalette>
 #include <QString>
 
-#include <optional>
-
 namespace scada::aui {
 
 // The shipped application appearances.
@@ -87,10 +85,10 @@ Theme ResolveSystemTheme();
 // other theme unchanged. Call this before anything that needs a real palette.
 Theme ResolveTheme(Theme theme);
 
-// The token table matching the active severity theme (the reshell opt-in
-// state set at startup): kLight/kHighContrast map to their tables, everything
-// else — including the legacy theme, for standalone reshell chrome that
-// renders the dark tokens regardless — maps to dark.
+// The token table for the appearance ApplyTheme last installed, resolved
+// through the OS when that appearance is `kSystem`. This is what carries the
+// desktop colours out to the call sites that still style themselves from
+// tokens rather than from the palette (backlog P6.4).
 const ThemeTokens& ActiveThemeTokens();
 
 // Parses a theme from its persisted QSettings string
@@ -104,10 +102,9 @@ QString ThemeToString(Theme theme);
 // The monospace font for values, NodeIds, timestamps, and measurements — the
 // design-system `--font-mono` stack (Cascadia Mono → Consolas → ui-monospace;
 // docs/client/ux/design-language.md §3), sized like the application font so it
-// sits inline with UI text. Returns std::nullopt under the legacy severity
-// theme so the default look is unchanged: monospace numerals are part of the
-// opt-in token themes. Requires a QApplication (reads the application font).
-std::optional<QFont> MonoValueFont();
+// sits inline with UI text. Requires a QApplication (reads the application
+// font).
+QFont MonoValueFont();
 
 // The text colour to use on top of `fill` — whichever of black or white is
 // further from it, by WCAG relative luminance.
@@ -148,7 +145,8 @@ enum class ThemeScope { kPaletteOnly, kFull };
 
 // Applies a theme to the whole application: installs the palette, plus the
 // generated stylesheet when `scope` is `kFull`. Safe to call at runtime to
-// switch themes live. Must run after a QApplication exists.
+// switch themes live. Must run after a QApplication exists, and must run before
+// any chrome is built — there is no un-themed appearance to fall back to.
 //
 // Also settles the severity/quality ramp (aui/severity_colors.h) to match, so
 // the process-semantic colours can never disagree with the chrome they sit on.
@@ -162,32 +160,13 @@ enum class ThemeScope { kPaletteOnly, kFull };
 // style is chosen once at startup by InstalledStyle, and an operator override
 // must not be silently discarded by a theme change.
 //
-// This is opt-in: nothing calls it unless the operator enables the experimental
-// UX (Settings → Colour scheme, restored at startup by InstalledAppearance).
+// Called once at startup by InstalledAppearance, and again by Settings → Colour
+// scheme whenever the operator picks a different appearance.
 void ApplyTheme(Theme theme, ThemeScope scope = ThemeScope::kFull);
 
-// Returns the application to the untouched platform look: the current style's
-// standard palette, no global stylesheet, and the legacy severity ramp. This is
-// the inverse of ApplyTheme() and the "Classic" row of Settings → Colour
-// scheme.
-//
-// Restores the *style's* palette rather than a snapshot taken before the first
-// ApplyTheme(): nothing else in the client sets an application palette, so the
-// two are identical at startup, and the style's own palette stays correct even
-// if the operator changed the widget style while a theme was installed.
-//
-// Safe to call when no theme is installed — it then does nothing, so it cannot
-// stomp a palette the client never owned.
-void ClearTheme();
-
-// Whether a theme is currently installed. False before the first ApplyTheme()
-// and after ClearTheme(). This — not the QSetting — is what the Colour scheme
-// menu checks: the setting records what the client started with, while this
-// records what the operator is actually looking at.
-bool IsThemeInstalled();
-
 // The appearance ApplyTheme last installed, `kSystem` while it is following the
-// OS. Only meaningful while IsThemeInstalled().
+// OS. `kDark` before the first ApplyTheme(), which only unit tests and static
+// initialisation ever observe.
 Theme ActiveTheme();
 
 }  // namespace scada::aui

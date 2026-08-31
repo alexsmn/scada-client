@@ -199,7 +199,5 @@ void UsersGridPanel::OnContextMenuRequested(const QPoint& pos) {
 }
 
 UsersGridPanel* MakeUsersGridPanel() {
-  if (scada::aui::GetSeverityTheme() == scada::aui::SeverityTheme::kLegacy)
-    return nullptr;
   return new UsersGridPanel;
 }

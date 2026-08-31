@@ -4,9 +4,9 @@
 #include "aui/rect.h"
 #include "base/lifetime.h"
 #include "base/time/time.h"
-#include "scada/date_time.h"
 #include "profile/page.h"
 #include "resources/common_resources.h"
+#include "scada/date_time.h"
 #include "scada/node_id.h"
 
 #include <boost/json.hpp>
@@ -22,7 +22,7 @@ struct MainWindowDef {
   scada::aui::Rect bounds;
   State state = State::kNormal;
   int page_id = 0;
-  bool toolbar = true;
+  bool toolbar = false;
   bool status_bar = true;
   // The activity rail's selected left-pane mode, as a `PaneMode::key`. Empty
   // means "never chosen" — the window infers one from the page it opens.

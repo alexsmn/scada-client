@@ -1659,13 +1659,6 @@
     },
     {
       "type": "EventJournal",
-      "filename": "events-log.png",
-      "width": 800,
-      "height": 400,
-      "min_rows": 9
-    },
-    {
-      "type": "EventJournal",
       "filename": "events-alarm-surface.png",
       "width": 800,
       "height": 400,
@@ -1700,7 +1693,7 @@
     {
       "type": "Users",
       "filename": "users.png",
-      "width": 500,
+      "width": 740,
       "height": 302,
       "min_rows": 13
     },
@@ -1923,14 +1916,6 @@
       "exact_rows": 4
     },
     {
-      "type": "Transmission",
-      "filename": "transmission-rules.png",
-      "path": "TS.702",
-      "width": 763,
-      "height": 645,
-      "exact_rows": 4
-    },
-    {
       "capture": "display",
       "filename": "substation-display.png",
       "width": 1100,
@@ -1967,16 +1952,15 @@
     {
       "kind": "login",
       "filename": "client-login.png",
-      "width": 403,
-      "height": 180,
+      "width": 490,
+      "height": 245,
       "expand_combo": "userNameComboBox"
     },
     {
       "kind": "login",
       "filename": "workbench-login.png",
       "width": 490,
-      "height": 245,
-      "themed_only": true
+      "height": 245
     },
     {
       "kind": "limits",

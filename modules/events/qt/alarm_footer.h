@@ -23,6 +23,6 @@ struct AlarmFooterContext {
   std::function<CommandHandler*()> acknowledge_all;
 };
 
-// Builds the footer strip. Opt-in reshell chrome: the caller gates it on the
+// Builds the footer strip. The caller gates it on the
 // active UX theme (the journal only, not the docked panel).
 QWidget* MakeAlarmFooter(AlarmFooterContext context);

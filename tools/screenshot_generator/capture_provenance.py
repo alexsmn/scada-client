@@ -50,12 +50,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-# Tags whose images the generator produces. Kept in step with
-# validate_image_manifest.py's GENERATED_TAGS / is_generator_owned: a
-# hand-captured image has no capture commit to record, so provenance applies to
-# generated images only.
-GENERATED_TAGS = {"reshell-theme"}
-
 # Tracked paths whose content can change what a capture renders. Used only to
 # decide the `dirty` flag: this repository is a shared checkout in which
 # several sessions hold unrelated edits at once, so "the worktree is dirty" is
@@ -65,7 +59,16 @@ RENDER_PATHS = ("client", "common", "core")
 
 
 def is_generator_owned(tag: str) -> bool:
-    return tag.startswith("auto-") or tag in GENERATED_TAGS
+    """Whether the generator produces this image, so it has provenance to record.
+
+    Kept in step with validate_image_manifest.py's predicate of the same name: a
+    hand-captured image has no capture commit to record, so stamping one would
+    invent provenance rather than record it. `auto-*` is the whole set — a
+    second tag, `reshell-theme`, sat beside it for the captures that existed
+    only under the opt-in design-token theme, and went with that opt-in on
+    2026-08-31.
+    """
+    return tag.startswith("auto-")
 
 
 def platform_name() -> str:

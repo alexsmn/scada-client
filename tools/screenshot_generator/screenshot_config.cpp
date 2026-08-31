@@ -67,8 +67,8 @@ template <class Spec>
 bool IsManagedImage(const std::unordered_set<std::string>& managed_images,
                     const Spec& spec) {
   // An explicit --only list overrides the managed-image gate: the caller named
-  // exactly what to capture, which is how reshell / not-yet-published surfaces
-  // (absent from the published manifest) are validated headless, e.g.
+  // exactly what to capture, which is how not-yet-published surfaces (absent
+  // from the published manifest) are validated headless, e.g.
   //   client_screenshot_generator --theme=dark \
   //       --only hardware-tree.png,config-parameters.png --out <dir>
   // Without this, an unmanaged spec is dropped even when named on --only, so it
@@ -206,8 +206,6 @@ void ScreenshotConfig::Load(const std::filesystem::path& path) {
         spec.width = static_cast<int>(w->as_int64());
       if (auto* h = js.as_object().if_contains("height"))
         spec.height = static_cast<int>(h->as_int64());
-      if (auto* themed = js.as_object().if_contains("themed_only"))
-        spec.themed_only = themed->as_bool();
       if (auto* combo = js.as_object().if_contains("expand_combo"))
         spec.expand_combo = std::string(combo->as_string());
       if (auto* node = js.as_object().if_contains("node")) {

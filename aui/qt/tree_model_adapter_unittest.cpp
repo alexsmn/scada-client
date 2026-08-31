@@ -134,7 +134,7 @@ TEST_F(TreeModelAdapterColorTest, LiteralProcessColorSurvivesTheRoleLookup) {
 
 class TreeModelAdapterTest : public testing::Test {
  protected:
-  void TearDown() override { SetSeverityTheme(SeverityTheme::kLegacy); }
+  void TearDown() override { SetSeverityTheme(SeverityTheme::kDark); }
 
   QVariant FontFor(int column) {
     return adapter_.data(adapter_.index(0, column), Qt::FontRole);
@@ -154,12 +154,6 @@ TEST_F(TreeModelAdapterTest, MonospaceColumnRendersMonospaceUnderTokenTheme) {
   const QVariant value_font = FontFor(1);
   ASSERT_TRUE(value_font.isValid());
   EXPECT_TRUE(value_font.value<QFont>().fixedPitch());
-}
-
-// The legacy look is unchanged: no column supplies a custom font.
-TEST_F(TreeModelAdapterTest, LegacyThemeKeepsTheDefaultFont) {
-  EXPECT_FALSE(FontFor(0).isValid());
-  EXPECT_FALSE(FontFor(1).isValid());
 }
 
 // A leaf must say so at the item, not only through hasChildren(). QTreeView

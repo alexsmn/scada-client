@@ -80,10 +80,6 @@ void SeverityTileStrip::Refresh() {
 
 SeverityTileStrip* MakeSeverityTileStrip(SeverityTileCountsProvider counts,
                                          QWidget* parent) {
-  // Opt-in: the KPI tiles are reshell chrome, absent from the legacy look.
-  if (scada::aui::GetSeverityTheme() == scada::aui::SeverityTheme::kLegacy)
-    return nullptr;
-
   return new SeverityTileStrip{std::move(counts), parent};
 }
 

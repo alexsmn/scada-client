@@ -154,23 +154,15 @@ TEST(ThemeQtTest, StyleSheetDoesNotOverpaintNativeWidgets) {
   }
 }
 
-// The monospace value font is part of the opt-in token themes: empty under
-// the legacy severity theme, and a fixed-pitch monospace-hinted font — sized
-// like the application font — under a token theme.
-TEST(ThemeQtTest, MonoValueFontIsTokenThemeGated) {
+// The monospace value font is a fixed-pitch monospace-hinted font, sized like
+// the application font so it sits inline with UI text.
+TEST(ThemeQtTest, MonoValueFontIsFixedPitchAtTheApplicationSize) {
   AppEnvironment app_env;
 
-  SetSeverityTheme(SeverityTheme::kLegacy);
-  EXPECT_FALSE(MonoValueFont().has_value());
-
-  SetSeverityTheme(SeverityTheme::kDark);
-  const std::optional<QFont> font = MonoValueFont();
-  ASSERT_TRUE(font.has_value());
-  EXPECT_TRUE(font->fixedPitch());
-  EXPECT_EQ(font->styleHint(), QFont::Monospace);
-  EXPECT_EQ(font->pointSize(), QApplication::font().pointSize());
-
-  SetSeverityTheme(SeverityTheme::kLegacy);
+  const QFont font = MonoValueFont();
+  EXPECT_TRUE(font.fixedPitch());
+  EXPECT_EQ(font.styleHint(), QFont::Monospace);
+  EXPECT_EQ(font.pointSize(), QApplication::font().pointSize());
 }
 
 // ApplyTheme installs the token palette and stylesheet on the running
@@ -324,9 +316,6 @@ TEST(ThemeQtTest, SystemTokensFollowAPaletteChange) {
 // palette of our own is what made the client merely resemble the desktop.
 TEST(ThemeQtTest, SystemThemeDoesNotOverwriteThePlatformPalette) {
   AppEnvironment app_env;
-  // ActiveThemeTokens() hands out the dark table under the legacy severity
-  // theme (reshell off); ApplyTheme moves the ramp off legacy for us, so the
-  // token seam under test is the live one.
   ApplyTheme(Theme::kDark, ThemeScope::kPaletteOnly);
   const QColor themed_bg = qApp->palette().color(QPalette::Window);
   EXPECT_EQ(themed_bg, GetThemeTokens(Theme::kDark).bg);
@@ -341,73 +330,44 @@ TEST(ThemeQtTest, SystemThemeDoesNotOverwriteThePlatformPalette) {
   // ...and the tokens the widgets read agree with it, so token-styled surfaces
   // match the window they sit in rather than the previous explicit theme.
   EXPECT_EQ(ActiveThemeTokens().bg, qApp->palette().color(QPalette::Window));
-
-  ClearTheme();
 }
 
-// ClearTheme is ApplyTheme's inverse: the "Classic" row of Settings →
-// Appearance has to leave the application indistinguishable from one that never
-// enabled the reshell, or switching off would strand the operator with a
-// half-themed client until restart.
-TEST(ThemeQtTest, ClearThemeRestoresThePlatformLook) {
+// Switching appearance is complete, not additive: nothing of the previous one
+// survives. This used to be three tests around `ClearTheme()`, the inverse
+// ApplyTheme had while the client still shipped an un-themed "Classic" look.
+TEST(ThemeQtTest, SwitchingAppearanceLeavesNothingOfThePreviousOne) {
   AppEnvironment app_env;
-  ASSERT_NE(qApp->style(), nullptr);
-  const QPalette pristine = qApp->palette();
-  ASSERT_TRUE(qApp->styleSheet().isEmpty());
-  ASSERT_FALSE(IsThemeInstalled());
 
   ApplyTheme(Theme::kHighContrast, ThemeScope::kFull);
-  ASSERT_TRUE(IsThemeInstalled());
-  ASSERT_NE(qApp->palette().color(QPalette::Window),
-            pristine.color(QPalette::Window));
+  const QColor hc_bg = qApp->palette().color(QPalette::Window);
   ASSERT_FALSE(qApp->styleSheet().isEmpty());
-  ASSERT_NE(GetSeverityTheme(), SeverityTheme::kLegacy);
+  ASSERT_EQ(GetSeverityTheme(), SeverityTheme::kHighContrast);
 
-  ClearTheme();
+  ApplyTheme(Theme::kDark, ThemeScope::kPaletteOnly);
 
-  EXPECT_FALSE(IsThemeInstalled());
+  EXPECT_EQ(ActiveTheme(), Theme::kDark);
+  EXPECT_NE(qApp->palette().color(QPalette::Window), hc_bg);
   EXPECT_EQ(qApp->palette().color(QPalette::Window),
-            pristine.color(QPalette::Window));
+            GetThemeTokens(Theme::kDark).bg);
+  // The ramp follows the chrome, so the severity marks can never disagree with
+  // the surface they sit on.
+  EXPECT_EQ(GetSeverityTheme(), SeverityTheme::kDark);
+  // kPaletteOnly must not leave the previous appearance's sheet behind.
   EXPECT_TRUE(qApp->styleSheet().isEmpty());
-  // The ramp is what makes the quality dots, severity marks and monospace
-  // numerals opt-in; leaving it set would keep half the reshell visible.
-  EXPECT_EQ(GetSeverityTheme(), SeverityTheme::kLegacy);
-  EXPECT_EQ(MonoValueFont(), std::nullopt);
 }
 
-// Switching off must not be one-way, and must not degrade: the Appearance menu
-// lets an operator flip between Classic and a theme as often as they like.
-TEST(ThemeQtTest, ThemeCanBeReappliedAfterClearing) {
+// Switching must not be one-way, and must not degrade: Settings → Colour
+// scheme lets an operator flip between appearances as often as they like.
+TEST(ThemeQtTest, AnAppearanceCanBeReappliedAfterAnother) {
   AppEnvironment app_env;
 
   ApplyTheme(Theme::kDark, ThemeScope::kPaletteOnly);
   const QColor dark_bg = qApp->palette().color(QPalette::Window);
-  ClearTheme();
+  ApplyTheme(Theme::kLight, ThemeScope::kPaletteOnly);
   ApplyTheme(Theme::kDark, ThemeScope::kPaletteOnly);
 
-  EXPECT_TRUE(IsThemeInstalled());
   EXPECT_EQ(ActiveTheme(), Theme::kDark);
   EXPECT_EQ(qApp->palette().color(QPalette::Window), dark_bg);
-
-  ClearTheme();
-}
-
-// ClearTheme with nothing installed must not touch the palette: with the
-// reshell off the application palette belongs to the platform style, and
-// overwriting it with standardPalette() would discard, for instance, the user's
-// accent colour.
-TEST(ThemeQtTest, ClearThemeIsANoOpWhenNoThemeIsInstalled) {
-  AppEnvironment app_env;
-
-  QPalette customized = qApp->palette();
-  customized.setColor(QPalette::Window, QColor(0x12, 0x34, 0x56));
-  QApplication::setPalette(customized);
-  ASSERT_FALSE(IsThemeInstalled());
-
-  ClearTheme();
-
-  EXPECT_EQ(qApp->palette().color(QPalette::Window), QColor(0x12, 0x34, 0x56));
-  QApplication::setPalette(qApp->style()->standardPalette());
 }
 
 // ApplyTheme owns the severity/quality ramp, so the process-semantic colours
@@ -433,8 +393,6 @@ TEST(ThemeQtTest, ApplyThemeSettlesTheSeverityRamp) {
   EXPECT_EQ(GetSeverityTheme(), ResolveSystemTheme() == Theme::kLight
                                     ? SeverityTheme::kLight
                                     : SeverityTheme::kDark);
-
-  ClearTheme();
 }
 
 // Palette-first: kPaletteOnly recolours through the palette but installs no
@@ -475,7 +433,8 @@ TEST(ThemeQtTest, ControlFrameRolesMeetNonTextContrast) {
     for (QPalette::ColorRole role : {QPalette::Mid, QPalette::Dark}) {
       EXPECT_GE(ContrastOf(p.color(role), window), 3.0)
           << "theme " << static_cast<int>(theme) << ", role "
-          << static_cast<int>(role) << ": a control frame an operator cannot "
+          << static_cast<int>(role)
+          << ": a control frame an operator cannot "
              "see is not a control";
     }
   }
@@ -513,7 +472,6 @@ TEST(ThemeQtTest, PaletteEntriesAreOpaque) {
     }
   }
 }
-
 
 // The rendered check: palette arithmetic is not enough, because the thing that
 // was broken — Fusion deriving the indicator outline from Window.darker(140) —
@@ -561,7 +519,6 @@ TEST(ThemeQtTest, RenderedCheckBoxIndicatorIsVisible) {
         << "theme " << ThemeToString(theme).toStdString()
         << ": the checked state lost its tick";
   }
-  ClearTheme();
 }
 
 }  // namespace scada::aui

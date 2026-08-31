@@ -110,16 +110,14 @@ QWidget* BulkCreatePreviewPanel::BuildPreview() {
   preview_ = new QTableWidget;
   preview_->setObjectName(QStringLiteral("previewGrid"));
   preview_->setColumnCount(5);
-  preview_->setHorizontalHeaderLabels({QStringLiteral("#"), Tr("Name"),
-                                       Tr("NodeId"), Tr("IOA"), Tr("Status")});
+  preview_->setHorizontalHeaderLabels(
+      {QStringLiteral("#"), Tr("Name"), Tr("NodeId"), Tr("IOA"), Tr("Status")});
   preview_->verticalHeader()->setVisible(false);
   preview_->setEditTriggers(QAbstractItemView::NoEditTriggers);
   preview_->setSelectionMode(QAbstractItemView::NoSelection);
   preview_->horizontalHeader()->setStretchLastSection(true);
-  preview_->horizontalHeader()->setSectionResizeMode(1,
-                                                     QHeaderView::Stretch);
-  preview_->horizontalHeader()->setSectionResizeMode(2,
-                                                     QHeaderView::Stretch);
+  preview_->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+  preview_->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
   layout->addWidget(preview_);
 
   return host;
@@ -145,7 +143,8 @@ void BulkCreatePreviewPanel::SetExistingNodeIds(
 
 void BulkCreatePreviewPanel::SetParams(const BulkCreateParams& params) {
   name_template_->setText(QString::fromStdU16String(params.name_template));
-  node_id_template_->setText(QString::fromStdU16String(params.node_id_template));
+  node_id_template_->setText(
+      QString::fromStdU16String(params.node_id_template));
   start_index_->setValue(params.start_index);
   count_->setValue(params.count);
   index_step_->setValue(params.index_step);
@@ -172,7 +171,8 @@ void BulkCreatePreviewPanel::Refresh() {
     set_cell(2, QString::fromStdU16String(row.node_id));
     set_cell(3, QString::number(row.ioa));
 
-    auto* status = new QTableWidgetItem(row.conflict ? Tr("exists") : Tr("new"));
+    auto* status =
+        new QTableWidgetItem(row.conflict ? Tr("exists") : Tr("new"));
     if (row.conflict)
       status->setForeground(tokens.bad);
     else
@@ -182,9 +182,7 @@ void BulkCreatePreviewPanel::Refresh() {
 
   const BulkCreateSummary summary = SummarizeBulkCreate(rows_);
   // e.g. "23 new · 1 conflict".
-  QString text = QStringLiteral("%1 %2")
-                     .arg(summary.new_count)
-                     .arg(Tr("new"));
+  QString text = QStringLiteral("%1 %2").arg(summary.new_count).arg(Tr("new"));
   if (summary.conflict_count > 0) {
     text += QStringLiteral(" · %1 %2")
                 .arg(summary.conflict_count)
@@ -194,7 +192,5 @@ void BulkCreatePreviewPanel::Refresh() {
 }
 
 BulkCreatePreviewPanel* MakeBulkCreatePreviewPanel() {
-  if (scada::aui::GetSeverityTheme() == scada::aui::SeverityTheme::kLegacy)
-    return nullptr;
   return new BulkCreatePreviewPanel;
 }

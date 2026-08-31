@@ -107,7 +107,5 @@ class TransmissionRuleInspector : public QWidget {
   scada::NodeId loading_id_;
 };
 
-// Builds a TransmissionRuleInspector under the reshell UX theme
-// (scada::aui::GetSeverityTheme() != SeverityTheme::kLegacy); returns nullptr in
-// the legacy look. Ownership transfers to the caller.
+// Builds a TransmissionRuleInspector. Ownership transfers to the caller.
 TransmissionRuleInspector* MakeTransmissionRuleInspector();

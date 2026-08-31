@@ -104,19 +104,17 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // would otherwise leave them stacked vertically.
   void TabifySpecialistDocks();
   void CreateMenuBar();
+  // Builds the grip command toolbar. It is off by default and stays that way
+  // unless the operator turns the `Toolbar` preference on: shell.md §2.2 gives
+  // that role to the top context bar ("Replaces the grip toolbar"), and the two
+  // shown together draw three stacked rows of chrome — menu bar, context bar
+  // and grip toolbar — where every mockup screen draws one. Every command it
+  // carries stays reachable from the menu bar, the node context menu and the
+  // Ctrl-K palette, so leaving it off hides a duplicate surface rather than a
+  // capability.
   void CreateToolbar();
-  // Whether the legacy command toolbar belongs on screen.
-  //
-  // Under the reshelled chrome it does not, whatever the `Toolbar` preference
-  // says: shell.md §2.2 gives that role to the top context bar ("Replaces the
-  // grip toolbar"), and the two shipped stacked — menu bar, context bar and
-  // grip toolbar, three rows where every mockup screen draws one. The
-  // preference still governs the legacy look, where the grip toolbar is the
-  // only toolbar there is.
-  bool ShouldShowCommandToolbar() const;
   void CreateStatusBar();
-  // Opt-in top context bar: the command/search field and alarm state.
-  // Only built when the experimental UX is enabled; see main.cpp.
+  // The top context bar: the command/search field and alarm state.
   void CreateContextBar();
   // Re-derives the context bar's breadcrumb: page → active view → selected
   // object. Cheap and idempotent, so it is called from every hook that can move
@@ -126,10 +124,10 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // by the flash timer and whenever the rung lights, so the chip is never left
   // showing the previous alarm's phase.
   void StyleAnnunciator();
-  // Opt-in left activity rail (backlog 1.1): selects which panes occupy the
+  // The left activity rail (backlog 1.1): selects which panes occupy the
   // left sidebar. It never opens a workspace tab and never switches the page.
   void CreateActivityBar();
-  // Opt-in right Inspector dock (backlog 2.6): reflects the active view's
+  // The right Inspector dock (backlog 2.6): reflects the active view's
   // selection — identity, live value, control action.
   // Why the selection-scoped control command is unavailable, for the
   // Inspector's disabled Control button. Empty when nothing is selected.
@@ -142,13 +140,13 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // That model read out for the Inspector's series section, or nullopt when
   // there is no series to describe.
   std::optional<InspectorSeriesView> ActiveSeriesView();
-  // Opt-in right Device-diagnostics dock (backlog 5.0): reflects a selected
+  // The right Device-diagnostics dock (backlog 5.0): reflects a selected
   // device's link status + live traffic/polling counters. Tabified with the
   // Inspector dock.
   void CreateDiagnosticsPanel();
-  // Opt-in right RBAC dock: reflects a selected user's role + permissions.
+  // The right RBAC dock: reflects a selected user's role + permissions.
   void CreateUserAccessPanel();
-  // Opt-in right Transmission-rule dock: reflects a selected transmission item
+  // The right Transmission-rule dock: reflects a selected transmission item
   // (source → destination IOA). Tabified with the Inspector dock.
   void CreateTransmissionRulePanel();
   // Wires the rail's pages group: the page buttons, the "+" that creates one,
@@ -263,7 +261,7 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // it is never in a layout, so it disturbs nothing it covers.
   SettingsPanel* settings_panel_ = nullptr;
 
-  // Top context bar (opt-in): the command/search field and alarm state. It
+  // Top context bar: the command/search field and alarm state. It
   // deliberately carries neither a brand mark nor identity/connection cells —
   // the window title names the application and the status strip owns who/where
   // (see CreateContextBar).
@@ -290,7 +288,7 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   QLabel* flood_indicator_ = nullptr;
   boost::signals2::scoped_connection context_bar_connection_;
 
-  // Left activity rail (opt-in). Selects the sidebar's pane mode.
+  // Left activity rail. Selects the sidebar's pane mode.
   ActivityBar* activity_bar_ = nullptr;
   // The page list and switching policy behind the rail's pages group, shared
   // with the Page main menu so both obey the same rules.
@@ -302,27 +300,27 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // raised on the rising edge only. OnEvents calls in on every event dispatch.
   bool window_flashing_ = false;
 
-  // Right Inspector dock (opt-in). Updated from OnSelectionChanged with the
+  // Right Inspector dock. Updated from OnSelectionChanged with the
   // active view's SelectionModel.
   InspectorPanel* inspector_ = nullptr;
   // The Inspector's host dock, kept so the Device-diagnostics dock can tabify
   // onto it.
   QDockWidget* inspector_dock_ = nullptr;
 
-  // Right Device-diagnostics dock (opt-in). Filled from OnSelectionChanged when
+  // Right Device-diagnostics dock. Filled from OnSelectionChanged when
   // the active view's selection is a device; cleared otherwise.
   DeviceDiagnosticsPanel* diagnostics_ = nullptr;
 
-  // Right RBAC dock (opt-in). Filled from OnSelectionChanged when a user node
+  // Right RBAC dock. Filled from OnSelectionChanged when a user node
   // is selected.
   UserAccessPanel* user_access_ = nullptr;
 
-  // Right Transmission-rule dock (opt-in). Filled from OnSelectionChanged when
+  // Right Transmission-rule dock. Filled from OnSelectionChanged when
   // the selection is a transmission item; cleared otherwise.
   TransmissionRuleInspector* transmission_rule_ = nullptr;
 
-  // Flat tag index for the command palette's tag search (opt-in; null when the
-  // reshell is off or no node service is available).
+  // Flat tag index for the command palette's tag search (null when no node
+  // service is available).
   std::unique_ptr<TagSearchIndex> tag_search_index_;
 
   boost::signals2::scoped_connection change_profile_connection_;

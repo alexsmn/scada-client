@@ -10,10 +10,10 @@
 #include <QComboBox>
 #include <QFormLayout>
 #include <QHBoxLayout>
+#include <QHeaderView>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
-#include <QHeaderView>
 #include <QScrollArea>
 #include <QSignalBlocker>
 #include <QStackedWidget>
@@ -31,7 +31,7 @@ namespace {
 
 using scada::aui::PropertyGroup;
 
-// The design tokens for the active reshell theme. The form is only built under a
+// The design tokens for the active theme. The form is only built under a
 // token theme (the factory gates on it), so the legacy fallback is harmless.
 const scada::aui::ThemeTokens& FormTokens() {
   return scada::aui::ActiveThemeTokens();
@@ -159,8 +159,8 @@ QWidget* DeviceParameterForm::BuildSectionPage(
     // from the property's EditData, seeded with its current value.
     QWidget* editor = CreateFieldEditor(group, index);
     Field field{&group, index, editor};
-    // A pending edit for this field shows the staged value; blocked so it is not
-    // re-registered as an edit.
+    // A pending edit for this field shows the staged value; blocked so it is
+    // not re-registered as an edit.
     if (const std::u16string* staged = staging_.Get(FieldKey(field)))
       SetEditorText(field, QString::fromStdU16String(*staged));
     ConnectFieldEditor(field);
@@ -183,8 +183,9 @@ QWidget* DeviceParameterForm::CreateFieldEditor(PropertyGroup& group,
   const scada::aui::ThemeTokens& tokens = FormTokens();
   const QString value = QString::fromStdU16String(group.GetValue(index));
   const QString box_style =
-      QStringLiteral("background:%1;color:%2;border:1px solid %3;"
-                     "border-radius:6px;padding:5px 10px;")
+      QStringLiteral(
+          "background:%1;color:%2;border:1px solid %3;"
+          "border-radius:6px;padding:5px 10px;")
           .arg(tokens.bg_elevated.name(), tokens.fg.name(),
                tokens.border_strong.name());
 
@@ -194,10 +195,9 @@ QWidget* DeviceParameterForm::CreateFieldEditor(PropertyGroup& group,
       auto* combo = new QComboBox;
       combo->setEditable(true);
       combo->setInsertPolicy(QComboBox::NoInsert);
-      combo->setStyleSheet(
-          QStringLiteral("QComboBox{%1}").arg(box_style));
+      combo->setStyleSheet(QStringLiteral("QComboBox{%1}").arg(box_style));
       if (edit_data.async_choice_handler) {
-        // Populate asynchronously (mirrors the legacy grid's delegate): the
+        // Populate asynchronously (as the property grid's delegate does): the
         // handler streams choices in behind a trailing "Loading…" row. Guard
         // against the combo being destroyed before the callback fires.
         combo->addItem(Tr("Loading…"));
@@ -227,10 +227,9 @@ QWidget* DeviceParameterForm::CreateFieldEditor(PropertyGroup& group,
       auto* line = new QLineEdit;
       line->setStyleSheet(QStringLiteral("QLineEdit{%1}").arg(box_style));
       line->setText(value);
-      QAction* action = line->addAction(
-          QApplication::style()->standardIcon(
-              QStyle::SP_FileDialogDetailedView),
-          QLineEdit::TrailingPosition);
+      QAction* action = line->addAction(QApplication::style()->standardIcon(
+                                            QStyle::SP_FileDialogDetailedView),
+                                        QLineEdit::TrailingPosition);
       PropertyGroup* group_ptr = &group;
       connect(action, &QAction::triggered, this,
               [group_ptr, index] { group_ptr->HandleEditButton(index); });
@@ -447,12 +446,12 @@ QWidget* DeviceParameterForm::BuildLimitsPage() {
   table->setRowCount(static_cast<int>(limits_.size()));
   for (int row = 0; row < static_cast<int>(limits_.size()); ++row) {
     const LimitRow& data = limits_[row];
-    FillGridRow(table, row,
-                {QString::fromStdU16String(data.signal),
-                 QString::fromStdU16String(data.lolo),
-                 QString::fromStdU16String(data.lo),
-                 QString::fromStdU16String(data.hi),
-                 QString::fromStdU16String(data.hihi)});
+    FillGridRow(
+        table, row,
+        {QString::fromStdU16String(data.signal),
+         QString::fromStdU16String(data.lolo),
+         QString::fromStdU16String(data.lo), QString::fromStdU16String(data.hi),
+         QString::fromStdU16String(data.hihi)});
   }
   return table;
 }
@@ -506,7 +505,5 @@ void DeviceParameterForm::Revert() {
 
 DeviceParameterForm* MakeDeviceParameterForm(scada::aui::PropertyModel& model,
                                              QString title) {
-  if (scada::aui::GetSeverityTheme() == scada::aui::SeverityTheme::kLegacy)
-    return nullptr;
   return new DeviceParameterForm(model, std::move(title));
 }

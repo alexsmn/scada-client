@@ -302,6 +302,17 @@ MainWindowTest::MainWindowTest() {
   // There are no registered controllers.
   controller_env_.profile_.AddPage({});
 
+  // The activity rail conforms every opened page to the active pane mode, so
+  // opening one asks the factory for that mode's panes (Objects, Portfolio)
+  // whatever the page itself holds. That is the shell's own doing rather than
+  // anything a test here drives, so it is permitted by default; a test that
+  // cares about a particular view still says so with its own EXPECT_CALL, which
+  // gMock matches ahead of this one.
+  EXPECT_CALL(opened_view_factory_, Call(_, _))
+      .Times(AnyNumber())
+      .WillRepeatedly(
+          Invoke([](MainWindow&, WindowDefinition&) { return nullptr; }));
+
 #if defined(UI_QT)
   main_window_.emplace(MakeMainWindowContext());
 #endif
@@ -397,6 +408,12 @@ class MainWindowQtHarness {
   explicit MainWindowQtHarness(std::u16string top_menu_label) {
     MainWindow::SetHideForTesting();
     controller_env_.profile_.AddPage({});
+    // The activity rail conforms the opened page to the active pane mode, so
+    // the shell asks for that mode's panes whatever the page itself holds.
+    EXPECT_CALL(opened_view_factory_, Call(_, _))
+        .Times(AnyNumber())
+        .WillRepeatedly(
+            Invoke([](MainWindow&, WindowDefinition&) { return nullptr; }));
     main_window_.emplace(MainWindowContext{
         .executor_ = controller_env_.executor_,
         .ui_command_registry_ = ui_command_registry_,

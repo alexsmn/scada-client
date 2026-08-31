@@ -37,35 +37,21 @@ void GetEventColors(const scada::Event& event,
                     scada::aui::Color& back_color) {
   // The colours themselves come from the single severity source, so they follow
   // the active theme and stay in step with every other severity surface.
+  //
+  // Severity owns the row colour; acknowledgement is carried by the leading dot
+  // column, the "— pending —" acknowledge-time cell and the alarm footer.
+  // Classifying unacknowledged first — as the journal did before it had those
+  // three — painted every pending row green, including a pending *critical*
+  // alarm, which reads as "normal" and spends saturated colour on something
+  // that is not a severity: both against principles.md §1 ("reserve bright
+  // colour exclusively for abnormal conditions") and §5, which describes the
+  // intended design as "a red alarm row also carries a severity label and an
+  // unacknowledged dot".
   std::optional<scada::aui::EventBackground> background;
-
-  if (scada::aui::GetSeverityTheme() != scada::aui::SeverityTheme::kLegacy) {
-    // Severity owns the row colour; acknowledgement is carried by the leading
-    // dot column, the "— pending —" acknowledge-time cell and the alarm
-    // footer. Classifying unacknowledged first (as the legacy branch below
-    // does) painted every pending row green — including a pending *critical*
-    // alarm — which reads as "normal" and spends saturated colour on
-    // something that is not a severity: both against principles.md §1
-    // ("reserve bright colour exclusively for abnormal conditions") and §5,
-    // which describes the intended design as "a red alarm row also carries a
-    // severity label and an unacknowledged dot".
-    if (event.severity >= scada::kSeverityCritical) {
-      background = scada::aui::EventBackground::kCritical;
-    } else if (event.severity >= scada::kSeverityWarning) {
-      background = scada::aui::EventBackground::kWarning;
-    }
-
-  } else {
-    // The legacy journal has no dot column, no pending cell and no footer, so
-    // the green background is its *only* unacknowledged signal — dropping it
-    // there would lose information rather than fix a miscue. Unchanged.
-    if (!event.acked) {
-      background = scada::aui::EventBackground::kUnacknowledged;
-    } else if (event.severity >= scada::kSeverityCritical) {
-      background = scada::aui::EventBackground::kCritical;
-    } else if (event.severity >= scada::kSeverityWarning) {
-      background = scada::aui::EventBackground::kWarning;
-    }
+  if (event.severity >= scada::kSeverityCritical) {
+    background = scada::aui::EventBackground::kCritical;
+  } else if (event.severity >= scada::kSeverityWarning) {
+    background = scada::aui::EventBackground::kWarning;
   }
 
   if (!background)
@@ -74,8 +60,7 @@ void GetEventColors(const scada::Event& event,
   const scada::aui::EventRowColors colors =
       scada::aui::EventRowColorsFor(*background);
   back_color = colors.background;
-  if (colors.text)
-    text_color = *colors.text;
+  text_color = colors.text;
 }
 
 template <class T>
@@ -203,13 +188,12 @@ void EventTableModel::GetEventCell(const Row& row,
       break;
     case EventColumnSeverity:
       cell.text = WideFormat(event.severity);
-      // Under the reshell theme, name the band as well as the number: an
+      // Name the band as well as the number: an
       // operator triaging a journal reads "Critical", not 80, and naming it
       // means the row's severity no longer depends on its colour alone.
       if (const std::u16string label =
               events::EventSeverityLabel(event.severity);
-          !label.empty() && scada::aui::GetSeverityTheme() !=
-                                scada::aui::SeverityTheme::kLegacy) {
+          !label.empty()) {
         cell.text = label + u" " + cell.text;
       }
       break;
@@ -256,10 +240,7 @@ void EventTableModel::GetEventCell(const Row& row,
       // say so outright — the journal is an alarm surface, and a pending
       // response is its most actionable state.
       if (!event.acked) {
-        if (scada::aui::GetSeverityTheme() !=
-            scada::aui::SeverityTheme::kLegacy) {
-          cell.text = Translate("— pending —");
-        }
+        cell.text = Translate("— pending —");
         break;
       }
       cell.text = UtfConvert<char16_t>(

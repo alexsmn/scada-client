@@ -47,12 +47,6 @@ void SaveUsersGridScreenshot(const ScreenshotSpec& spec,
   CapturePublishGuard publish_guard{spec.filename};
 
   std::unique_ptr<UsersGridPanel> panel{MakeUsersGridPanel()};
-  if (!panel) {
-    ADD_FAILURE() << spec.filename
-                  << ": the users grid exists only under the reshell theme; "
-                     "capture it with --theme";
-    return;
-  }
 
   const std::optional<std::vector<UserGridRow>> rows =
       scada::screenshot_generator::WaitForAwaitable(
@@ -76,20 +70,13 @@ void SaveRolesScreenshot(const ScreenshotSpec& spec,
                          AnyExecutor executor) {
   CapturePublishGuard publish_guard{spec.filename};
 
-  // The panel is reshell chrome and does not exist in the legacy look, so a
-  // no-theme run has nothing to render rather than something to fix.
   std::unique_ptr<RolesGridPanel> panel{MakeRolesGridPanel()};
-  if (!panel) {
-    ADD_FAILURE() << spec.filename
-                  << ": the Roles panel exists only under the reshell theme; "
-                     "capture it with --theme";
-    return;
-  }
 
   // Await the read instead of spawning it: the view path spawns and the
   // capture then raced it, grabbing a grid that had not been filled yet.
   panel->ShowRoles(scada::screenshot_generator::WaitForAwaitable(
-      executor, ReadRoleMemberships(executor, node_service, attribute_service)));
+      executor,
+      ReadRoleMemberships(executor, node_service, attribute_service)));
 
   SaveScreenshot(panel.get(), spec);
 }

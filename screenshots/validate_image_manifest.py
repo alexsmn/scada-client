@@ -14,10 +14,9 @@ the manual ships. This script verifies:
   3. The per-tag "counts" block matches the entries.
   4. "obsolete" entries are referenced by no page at all (RU or EN).
   5. current_generator_owned_subset entries exist and are generator-owned
-     (an auto-* tag, or reshell-theme for a capture whose content only
-     appears under --theme).
-  6. publish_theme, where present, is a known theme and sits on a published
-     entry (it drives the themed publish pass and is dead data elsewhere).
+     (an auto-* tag).
+  6. No entry carries publish_theme. It named which of two render passes
+     produced a published image, and there is only one pass now.
 
 Run it after changing the manifest, the images, or any manual page:
 
@@ -35,26 +34,20 @@ from pathlib import Path
 
 IMAGE_REF_RE = re.compile(r"img/([\w.\-]+\.(?:png|jpe?g|gif|svg))")
 
-# Tags whose images the generator produces, and which may therefore be
-# published. `auto-*` was the whole set until hardware-tree.png was published
-# (2026-08-15): its status dots exist only under --theme, so it carries
-# `reshell-theme` rather than `auto-view` and the narrower check rejected it.
-# The predicate this rule wants is "not hand-captured", which both satisfy.
-GENERATED_TAGS = {"reshell-theme"}
-
-
 def is_generator_owned(tag: str) -> bool:
-    return tag.startswith("auto-") or tag in GENERATED_TAGS
+    """Whether the generator produces this image, and it may be published.
+
+    `auto-*` is the whole set. A second tag, `reshell-theme`, used to sit
+    beside it for captures that existed only under the opt-in design-token
+    theme — hardware-tree.png's status dots, the config-workbench subtabs, the
+    panels the shell built only when the theme was on. There is no opt-in any
+    more, so those are ordinary `auto-view` / `auto-dialog` rows.
+    """
+    return tag.startswith("auto-")
 
 
 # Non-content markdown that may mention image names without embedding them.
 EXCLUDED_PAGES = {"CLAUDE.md", "README.md", "tasks.md"}
-
-# Themes a published image can be rendered under. "dark" is the default for
-# the published subset (the manual reads as one product); "legacy" is the
-# documented opt-out for an image whose whole point is the non-reshell client.
-PUBLISH_THEMES = {"dark", "legacy"}
-
 
 def find_default_docs_repo(manifest_path: Path) -> Path | None:
     """Locate the manual: scada-docs/ in this repository, and nowhere else.
@@ -182,25 +175,17 @@ def main() -> int:
                 f"{entry['tag']}"
             )
 
-    # 6. publish_theme is meaningful only on published images, and only the
-    #    generator's two themes exist. The field drives the themed second pass
-    #    in tools/screenshot_generator/CMakeLists.txt: published images render
-    #    dark unless the entry opts out with "legacy". Carried on an
-    #    unpublished entry it reads as policy but changes nothing, which is
-    #    worse than absent.
+    # 6. publish_theme is retired. It chose between two render passes — a
+    #    default pass that rendered the un-themed "Classic" client and a second
+    #    `--theme=dark` pass over the published subset — and named the opt-out
+    #    for an image that could not render themed. There is one pass now, so
+    #    the field reads as policy and changes nothing, which is worse than
+    #    absent.
     for name, entry in sorted(entries.items()):
-        publish_theme = entry.get("publish_theme")
-        if publish_theme is None:
-            continue
-        if publish_theme not in PUBLISH_THEMES:
+        if "publish_theme" in entry:
             errors.append(
-                f"{name}: publish_theme {publish_theme!r} is not one of "
-                f"{sorted(PUBLISH_THEMES)}"
-            )
-        if name not in published_subset:
-            errors.append(
-                f"{name}: publish_theme is set but the image is not in "
-                f"current_generator_owned_subset, so nothing reads it"
+                f"{name}: publish_theme is retired — there is one render pass "
+                f"and one appearance; delete the field"
             )
 
     for error in errors:

@@ -50,35 +50,20 @@ class DummyViewManagerDelegate : public ViewManagerDelegate {
 // one is to stand up the real collaborators.
 class AppearanceMenuModelTest : public Test {
  protected:
-  AppearanceMenuModelTest() {
-    // Crossing the Classic↔theme boundary explains that the workbench chrome
-    // follows on restart. Give it a real coroutine to await rather than the
-    // default-constructed Awaitable a bare NiceMock would return.
-    ON_CALL(dialog_service_, RunMessageBox(_, _, _))
-        .WillByDefault([](std::u16string_view, std::u16string_view,
-                          MessageBoxMode) -> Awaitable<MessageBoxResult> {
-          co_return MessageBoxResult::Ok;
-        });
-  }
-
   void TearDown() override {
-    // The theme is application state; leaving one installed would change every
-    // later test in this binary.
-    scada::aui::ClearTheme();
+    // The theme is application state; leaving an explicitly chosen one behind
+    // would change every later test in this binary.
+    scada::aui::ApplyTheme(scada::aui::Theme::kSystem,
+                           scada::aui::ThemeScope::kPaletteOnly);
   }
 
-  // The model index of the row selecting `theme`, or the "Classic" row when
-  // `theme` is unset. Looked up rather than hard-coded so the tests do not
-  // silently pass against a reordered menu.
-  int IndexOf(std::optional<scada::aui::Theme> theme) {
+  // The model index of the row selecting `theme`. Looked up rather than
+  // hard-coded so the tests do not silently pass against a reordered menu.
+  int IndexOf(scada::aui::Theme theme) {
+    scada::aui::ApplyTheme(theme, scada::aui::ThemeScope::kPaletteOnly);
     for (int i = 0; i < menu_.GetItemCount(); ++i) {
       if (menu_.GetTypeAt(i) != scada::aui::MenuModel::TYPE_RADIO)
         continue;
-      if (theme) {
-        scada::aui::ApplyTheme(*theme, scada::aui::ThemeScope::kPaletteOnly);
-      } else {
-        scada::aui::ClearTheme();
-      }
       if (menu_.IsItemCheckedAt(i))
         return i;
     }
@@ -126,19 +111,18 @@ class AppearanceMenuModelTest : public Test {
   AppearanceMenuModel menu_{menu_context_};
 };
 
-// The menu offers the platform look plus each shipped appearance, as one radio
-// group — they are alternatives, not independent toggles.
-TEST_F(AppearanceMenuModelTest, OffersClassicAndEveryShippedAppearance) {
+// The menu offers each shipped appearance as one radio group — they are
+// alternatives, not independent toggles. There is no sixth "Classic" row: the
+// un-themed platform look was removed on 2026-08-31, and with it the only state
+// in which no appearance was installed.
+TEST_F(AppearanceMenuModelTest, OffersEveryShippedAppearanceAndNothingElse) {
   int radio_rows = 0;
   for (int i = 0; i < menu_.GetItemCount(); ++i) {
     if (menu_.GetTypeAt(i) == scada::aui::MenuModel::TYPE_RADIO)
       ++radio_rows;
   }
-  EXPECT_EQ(radio_rows, 5);
+  EXPECT_EQ(radio_rows, 4);
 
-  // Every appearance is reachable, and Classic is a row of its own rather than
-  // an absence of selection.
-  EXPECT_NE(IndexOf(std::nullopt), -1);
   for (scada::aui::Theme theme :
        {scada::aui::Theme::kSystem, scada::aui::Theme::kDark,
         scada::aui::Theme::kLight, scada::aui::Theme::kHighContrast}) {
@@ -153,30 +137,17 @@ TEST_F(AppearanceMenuModelTest, OffersClassicAndEveryShippedAppearance) {
 TEST_F(AppearanceMenuModelTest, ActivatingARowThemesTheLiveApplication) {
   const int dark_row = IndexOf(scada::aui::Theme::kDark);
   ASSERT_NE(dark_row, -1);
-  scada::aui::ClearTheme();
-  ASSERT_FALSE(scada::aui::IsThemeInstalled());
+  scada::aui::ApplyTheme(scada::aui::Theme::kLight,
+                         scada::aui::ThemeScope::kPaletteOnly);
 
   menu_.ActivatedAt(dark_row);
 
-  EXPECT_TRUE(scada::aui::IsThemeInstalled());
   EXPECT_EQ(scada::aui::ActiveTheme(), scada::aui::Theme::kDark);
   EXPECT_EQ(qApp->palette().color(QPalette::Window),
             scada::aui::GetThemeTokens(scada::aui::Theme::kDark).bg);
-}
-
-// ...and Classic takes it back off, live. Switching off used to be impossible
-// without restarting, which is what made the old checkbox ask for one.
-TEST_F(AppearanceMenuModelTest, ActivatingClassicRemovesTheThemeLive) {
-  const int classic_row = IndexOf(std::nullopt);
-  ASSERT_NE(classic_row, -1);
-  scada::aui::ApplyTheme(scada::aui::Theme::kHighContrast);
-  ASSERT_TRUE(scada::aui::IsThemeInstalled());
-
-  menu_.ActivatedAt(classic_row);
-
-  EXPECT_FALSE(scada::aui::IsThemeInstalled());
-  EXPECT_TRUE(qApp->styleSheet().isEmpty());
-  EXPECT_EQ(scada::aui::GetSeverityTheme(), scada::aui::SeverityTheme::kLegacy);
+  // The severity ramp follows, so the process-semantic colours cannot disagree
+  // with the chrome they sit on.
+  EXPECT_EQ(scada::aui::GetSeverityTheme(), scada::aui::SeverityTheme::kDark);
 }
 
 // The checkmark reports the appearance as *chosen*, not as resolved. While
@@ -195,19 +166,13 @@ TEST_F(AppearanceMenuModelTest, FollowSystemIsCheckedRatherThanItsResolution) {
   EXPECT_FALSE(menu_.IsItemCheckedAt(light_row));
 }
 
-// Exactly one row is checked in every state, including with no theme
-// installed — a radio group showing nothing selected reads as broken.
+// Exactly one row is checked in every state — a radio group showing nothing
+// selected reads as broken.
 TEST_F(AppearanceMenuModelTest, ExactlyOneRowIsCheckedInEveryState) {
-  const std::vector<std::optional<scada::aui::Theme>> kStates = {
-      std::nullopt, scada::aui::Theme::kSystem, scada::aui::Theme::kDark,
-      scada::aui::Theme::kLight, scada::aui::Theme::kHighContrast};
-
-  for (const auto& state : kStates) {
-    if (state) {
-      scada::aui::ApplyTheme(*state, scada::aui::ThemeScope::kPaletteOnly);
-    } else {
-      scada::aui::ClearTheme();
-    }
+  for (const scada::aui::Theme state :
+       {scada::aui::Theme::kSystem, scada::aui::Theme::kDark,
+        scada::aui::Theme::kLight, scada::aui::Theme::kHighContrast}) {
+    scada::aui::ApplyTheme(state, scada::aui::ThemeScope::kPaletteOnly);
     int checked = 0;
     for (int i = 0; i < menu_.GetItemCount(); ++i) {
       if (menu_.GetTypeAt(i) == scada::aui::MenuModel::TYPE_RADIO &&
@@ -215,32 +180,30 @@ TEST_F(AppearanceMenuModelTest, ExactlyOneRowIsCheckedInEveryState) {
         ++checked;
       }
     }
-    EXPECT_EQ(checked, 1)
-        << "state "
-        << (state ? scada::aui::ThemeToString(*state).toStdString()
-                  : std::string{"classic"});
+    EXPECT_EQ(checked, 1) << "state "
+                          << scada::aui::ThemeToString(state).toStdString();
   }
 }
 
-// The separator between Classic and the token themes must not shift the
-// row→appearance mapping: the model indices BuildMenu hands back to
-// ActivatedAt() count separators too.
-TEST_F(AppearanceMenuModelTest, SeparatorDoesNotShiftTheRowMapping) {
-  int separators = 0;
-  for (int i = 0; i < menu_.GetItemCount(); ++i) {
-    if (menu_.GetTypeAt(i) == scada::aui::MenuModel::TYPE_SEPARATOR)
-      ++separators;
-  }
-  ASSERT_EQ(separators, 1);
-
-  // Activating past the separator still selects the appearance its own row
-  // names, and the separator itself is inert.
-  for (scada::aui::Theme theme :
-       {scada::aui::Theme::kDark, scada::aui::Theme::kLight,
-        scada::aui::Theme::kHighContrast}) {
+// Every row is selectable and selects the appearance its own row names. The
+// menu carried a separator — between "Classic" and the themes — until
+// 2026-08-31, and the row→appearance mapping had to survive it because the
+// model indices BuildMenu hands back to ActivatedAt() count separators too.
+// It carries none now, which is exactly why this asserts on the mapping rather
+// than on the separator: a row that stops naming its own appearance is the
+// defect, whether or not anything sits between the rows.
+TEST_F(AppearanceMenuModelTest, EveryRowSelectsTheAppearanceItNames) {
+  for (const scada::aui::Theme theme :
+       {scada::aui::Theme::kSystem, scada::aui::Theme::kDark,
+        scada::aui::Theme::kLight, scada::aui::Theme::kHighContrast}) {
     const int row = IndexOf(theme);
     ASSERT_NE(row, -1);
-    scada::aui::ClearTheme();
+    // Move somewhere else first, so a row that selects nothing at all cannot
+    // pass by leaving the appearance IndexOf() just installed in place.
+    scada::aui::ApplyTheme(theme == scada::aui::Theme::kLight
+                               ? scada::aui::Theme::kDark
+                               : scada::aui::Theme::kLight,
+                           scada::aui::ThemeScope::kPaletteOnly);
     menu_.ActivatedAt(row);
     EXPECT_EQ(scada::aui::ActiveTheme(), theme);
   }

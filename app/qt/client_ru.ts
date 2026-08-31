@@ -488,10 +488,6 @@
         <translation>Русский</translation>
     </message>
     <message>
-        <source>Classic</source>
-        <translation>Классическое</translation>
-    </message>
-    <message>
         <source>Follow system</source>
         <translation>Как в системе</translation>
     </message>
@@ -506,10 +502,6 @@
     <message>
         <source>High contrast</source>
         <translation>Высокая контрастность</translation>
-    </message>
-    <message>
-        <source>The colours have changed. The workbench layout — activity bar, context bar and Inspector — follows when the client is restarted.</source>
-        <translation>Цвета изменены. Компоновка рабочей среды — панель разделов, контекстная панель и Инспектор — изменится после перезапуска клиента.</translation>
     </message>
     <!-- main_window/status_bar/event_status_provider.cpp
          + modules/events/qt/severity_tile_strip.cpp (KPI severity tiles) -->
@@ -2690,8 +2682,8 @@
         <translation>Язык интерфейса оператора. Хранится на этом компьютере, поэтому не переносится вместе с учётной записью на другое рабочее место — и не переносится в веб-клиент.</translation>
     </message>
     <message>
-        <source>Follow system, Dark, Light or High contrast, plus Classic — the untouched platform look, which is the absence of a theme rather than one more of them. Crossing that boundary relays the workbench chrome on restart, and says so.</source>
-        <translation>Как в системе, Тёмная, Светлая или Высококонтрастная, а также Классическая — исходный вид платформы, то есть отсутствие темы, а не ещё одна из них. Переход через эту границу перестраивает оформление рабочего места при следующем запуске, о чём программа предупреждает.</translation>
+        <source>Follow system, Dark, Light or High contrast. The choice applies live and in full. Alarm severity, data quality and switchgear state keep their fixed values whichever scheme is picked: those are safety signals, not styling.</source>
+        <translation>Как в системе, Тёмная, Светлая или Высококонтрастная. Выбор применяется сразу и полностью. Цвета важности тревог, качества данных и состояния коммутационных аппаратов не зависят от схемы: это функциональная сигнализация, а не оформление.</translation>
     </message>
     <message>
         <source>The platform style controls are drawn with. The colour scheme layers over it rather than replacing it, which is why the two are separate settings.</source>
@@ -2722,8 +2714,8 @@
         <translation>Сообщать оператору об успешном выполнении команды управления.</translation>
     </message>
     <message>
-        <source>Show the view toolbar in this window. Per main window, not per account, so a second window keeps its own answer.</source>
-        <translation>Показывать панель инструментов в этом окне. Настройка относится к главному окну, а не к учётной записи, поэтому второе окно сохраняет собственное значение.</translation>
+        <source>Show the grip command toolbar in this window. Off by default — the context bar carries the same commands — and per main window, not per account, so a second window keeps its own answer.</source>
+        <translation>Показывать панель инструментов с командами в этом окне. По умолчанию выключена — те же команды доступны в контекстной панели. Настройка относится к главному окну, а не к учётной записи, поэтому второе окно сохраняет собственное значение.</translation>
     </message>
     <message>
         <source>Show the status strip in this window.</source>

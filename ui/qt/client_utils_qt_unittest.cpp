@@ -329,14 +329,17 @@ TEST_F(BuildMenuRadioTest, RadioItemsShareOneExclusiveGroup) {
   EXPECT_TRUE(second->isCheckable());
 }
 
-// A separator between radio rows does not start a new group: Colour scheme
-// puts one between Classic and the themes, and they are still one choice.
+// A separator between radio rows does not start a new group: a rule drawn
+// inside one choice is punctuation, not a second choice. Grouping is keyed by
+// (model, group id) rather than by a run of adjacent rows, which is what makes
+// that true. Colour scheme was the motivating case, with a rule between
+// "Classic" and the themes, until Classic was removed on 2026-08-31.
 TEST_F(BuildMenuRadioTest, ASeparatorDoesNotSplitTheGroup) {
   delegate_.enabled = true;
   ReasonMenuModel model{delegate_};
-  model.AddRadioItem(1, u"Classic", 0);
+  model.AddRadioItem(1, u"Follow system", 0);
   model.AddSeparator(scada::aui::NORMAL_SEPARATOR);
-  model.AddRadioItem(2, u"System", 0);
+  model.AddRadioItem(2, u"Dark", 0);
 
   QMenu menu;
   BuildMenu(menu, model);

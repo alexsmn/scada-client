@@ -1,9 +1,9 @@
 #include "user_access/qt/user_access_panel.h"
 
-#include "base/awaitable.h"
 #include "aui/qt/theme_qt.h"
 #include "aui/severity_colors.h"
 #include "aui/translation.h"
+#include "base/awaitable.h"
 #include "model/security_node_ids.h"
 #include "node_service/node_ref.h"
 #include "node_service/node_service.h"
@@ -35,9 +35,8 @@ std::vector<UserPermissionDisplay> MakePermissionDisplays(
     std::span<const AccountRole> roles) {
   std::vector<UserPermissionDisplay> displays;
   for (const UserPermission& permission : PermissionsForRoles(roles)) {
-    displays.push_back(
-        UserPermissionDisplay{Tr(UserPermissionLabelKey(permission.kind)),
-                              permission.granted});
+    displays.push_back(UserPermissionDisplay{
+        Tr(UserPermissionLabelKey(permission.kind)), permission.granted});
   }
   return displays;
 }
@@ -149,9 +148,9 @@ void UserAccessPanel::ShowUser(const NodeRef& user,
   // shell's selection handler is synchronous, and the RoleSet needs a browse.
   ShowAccount(name, std::nullopt);
 
-  CoSpawn(executor, [this, name, &node_service, &attribute_service, executor,
-                     token = std::weak_ptr<int>{lifetime_token_}]()
-                        -> Awaitable<void> {
+  CoSpawn(executor,
+          [this, name, &node_service, &attribute_service, executor,
+           token = std::weak_ptr<int>{lifetime_token_}]() -> Awaitable<void> {
             auto roles = co_await ReadRoleMemberships(executor, node_service,
                                                       attribute_service);
             // Dropped if the panel died, or if a newer selection has since
@@ -264,7 +263,5 @@ void UserAccessPanel::ShowAccess(
 }
 
 UserAccessPanel* MakeUserAccessPanel() {
-  if (scada::aui::GetSeverityTheme() == scada::aui::SeverityTheme::kLegacy)
-    return nullptr;
   return new UserAccessPanel;
 }

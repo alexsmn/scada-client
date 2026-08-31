@@ -15,7 +15,7 @@ class QWidget;
 
 // Inputs for the Transmission view's destination rail (Qt): the mockup's left
 // rail listing every transmission-capable device with its rule count, driving
-// which device's rules the grid shows. Opt-in reshell chrome.
+// which device's rules the grid shows.
 //
 // The rail is decoupled from the view behind callbacks so the widget is
 // testable: `browse` enumerates the devices asynchronously

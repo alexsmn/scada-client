@@ -32,8 +32,7 @@ FrameDecodePane::FrameDecodePane(QWidget* parent)
   octets_ = new QLabel;
   octets_->setWordWrap(true);
   octets_->setTextInteractionFlags(Qt::TextSelectableByMouse);
-  if (std::optional<QFont> mono = scada::aui::MonoValueFont())
-    octets_->setFont(*mono);
+  octets_->setFont(scada::aui::MonoValueFont());
 
   tree_ = new scada::aui::Tree{model_};
   // No header: three columns whose meaning is evident from the rows ("@6" is

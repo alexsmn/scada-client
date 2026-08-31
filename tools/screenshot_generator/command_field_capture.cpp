@@ -12,11 +12,6 @@
 #include <memory>
 
 void SaveCommandFieldScreenshot(const ScreenshotSpec& spec) {
-  // Opt-in reshell chrome, like the severity tiles: the legacy look has no
-  // context bar to put this in.
-  if (scada::aui::GetSeverityTheme() == scada::aui::SeverityTheme::kLegacy)
-    return;
-
   // The same prompt and shortcut MainWindow::CreateContextBar() builds it with,
   // so the capture cannot drift from the shipped field.
   auto field = std::make_unique<CommandField>(

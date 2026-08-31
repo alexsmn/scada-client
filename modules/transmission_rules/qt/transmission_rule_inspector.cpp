@@ -315,7 +315,5 @@ void TransmissionRuleInspector::OnApply() {
 }
 
 TransmissionRuleInspector* MakeTransmissionRuleInspector() {
-  if (scada::aui::GetSeverityTheme() == scada::aui::SeverityTheme::kLegacy)
-    return nullptr;
   return new TransmissionRuleInspector;
 }

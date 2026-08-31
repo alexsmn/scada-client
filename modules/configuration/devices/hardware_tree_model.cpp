@@ -157,7 +157,7 @@ std::optional<scada::aui::Color> HardwareTreeModel::GetStatusColor(
   std::optional<scada::aui::Quality> quality =
       DeviceStateQuality(device_tree_node->device_state());
   if (!quality)
-    return std::nullopt;  // Unknown state, or the legacy theme via QualityColor.
+    return std::nullopt;  // Unknown state: no dot.
   return scada::aui::QualityColor(*quality);
 }
 

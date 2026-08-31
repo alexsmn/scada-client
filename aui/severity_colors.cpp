@@ -4,77 +4,43 @@ namespace scada::aui {
 
 namespace {
 
-// One event-row class under one theme: a background fill and an optional text
-// colour (`has_fg` == false keeps the widget's default text colour, as the
-// legacy look did).
+// One event-row class under one theme: a background fill and the text colour
+// that reads on it.
 struct Slot {
   Rgba background;
   Rgba text;
-  bool has_text;
 };
 
 struct ThemeTable {
-  Slot unacknowledged;
   Slot critical;
   Slot warning;
 };
 
-// Legacy: the exact historical event-row colours (see the pre-token
-// GetEventColors). Kept so the default, opt-in-off UI is pixel-unchanged.
-constexpr ThemeTable kLegacy{
-    .unacknowledged = {.background = {99, 190, 123},
-                       .text = {},
-                       .has_text = false},
-    .critical = {.background = {248, 105, 107}, .text = {}, .has_text = false},
-    .warning = {.background = {255, 235, 132}, .text = {}, .has_text = false},
-};
-
-// Token themes: values from docs/client/ux/design-language.md — unacknowledged
-// maps to the `good` token, critical to `severity-critical`, warning to
-// `severity-medium`. The bright dark-theme fills carry dark text; the dark
-// light/high-contrast fills carry light text.
+// Values from docs/client/ux/design-language.md — critical maps to
+// `severity-critical`, warning to `severity-medium`. The bright dark-theme
+// fills carry dark text; the dark light/high-contrast fills carry light text.
 constexpr Rgba kDarkText{11, 22, 35};      // #0b1623
 constexpr Rgba kLightText{255, 255, 255};  // #ffffff
 constexpr Rgba kHcText{0, 0, 0};           // #000000
 
 constexpr ThemeTable kDark{
-    .unacknowledged = {.background = {68, 192, 145},
-                       .text = kDarkText,
-                       .has_text = true},
-    .critical = {.background = {232, 90, 82},
-                 .text = kDarkText,
-                 .has_text = true},
-    .warning = {.background = {230, 178, 75},
-                .text = kDarkText,
-                .has_text = true},
+    .critical = {.background = {232, 90, 82}, .text = kDarkText},
+    .warning = {.background = {230, 178, 75}, .text = kDarkText},
 };
 
 constexpr ThemeTable kLight{
-    .unacknowledged = {.background = {20, 130, 95},
-                       .text = kLightText,
-                       .has_text = true},
-    .critical = {.background = {143, 36, 31},
-                 .text = kLightText,
-                 .has_text = true},
-    .warning = {.background = {193, 138, 36},
-                .text = kLightText,
-                .has_text = true},
+    .critical = {.background = {143, 36, 31}, .text = kLightText},
+    .warning = {.background = {193, 138, 36}, .text = kLightText},
 };
 
 constexpr ThemeTable kHighContrast{
-    .unacknowledged = {.background = {0, 255, 122},
-                       .text = kHcText,
-                       .has_text = true},
-    .critical = {.background = {255, 107, 107},
-                 .text = kHcText,
-                 .has_text = true},
-    .warning = {.background = {255, 255, 0}, .text = kHcText, .has_text = true},
+    .critical = {.background = {255, 107, 107}, .text = kHcText},
+    .warning = {.background = {255, 255, 0}, .text = kHcText},
 };
 
 // Solid severity ramp (for text / dots / bars) per token theme: warning maps to
 // severity-medium, critical to severity-critical (docs/client/ux/
-// design-language.md). Legacy has no solid ramp — those cues were never
-// coloured — so SeverityColor returns nothing there.
+// design-language.md).
 struct SolidRamp {
   Rgba warning;
   Rgba critical;
@@ -87,9 +53,8 @@ constexpr SolidRamp kLightSolid{.warning = {193, 138, 36},
 constexpr SolidRamp kHcSolid{.warning = {255, 255, 0},
                              .critical = {255, 107, 107}};
 
-// Quality ramp (Explorer status dots) per token theme — the good/uncertain/bad
-// tokens from docs/client/ux/design-language.md. Legacy has no ramp (the dots
-// are opt-in), so QualityColor returns nothing there.
+// Quality ramp (Explorer status dots) per theme — the good/uncertain/bad
+// tokens from docs/client/ux/design-language.md.
 struct QualityRamp {
   Rgba good;
   Rgba uncertain;
@@ -106,64 +71,56 @@ constexpr QualityRamp kHcQuality{.good = {0, 255, 122},
                                  .uncertain = {255, 255, 0},
                                  .bad = {255, 107, 107}};
 
-const QualityRamp* QualityRampFor(SeverityTheme theme) {
+const QualityRamp& QualityRampFor(SeverityTheme theme) {
   switch (theme) {
-    case SeverityTheme::kDark:
-      return &kDarkQuality;
     case SeverityTheme::kLight:
-      return &kLightQuality;
+      return kLightQuality;
     case SeverityTheme::kHighContrast:
-      return &kHcQuality;
-    case SeverityTheme::kLegacy:
+      return kHcQuality;
+    case SeverityTheme::kDark:
       break;
   }
-  return nullptr;
+  return kDarkQuality;
 }
 
-const SolidRamp* SolidRampFor(SeverityTheme theme) {
+const SolidRamp& SolidRampFor(SeverityTheme theme) {
   switch (theme) {
-    case SeverityTheme::kDark:
-      return &kDarkSolid;
     case SeverityTheme::kLight:
-      return &kLightSolid;
+      return kLightSolid;
     case SeverityTheme::kHighContrast:
-      return &kHcSolid;
-    case SeverityTheme::kLegacy:
+      return kHcSolid;
+    case SeverityTheme::kDark:
       break;
   }
-  return nullptr;
+  return kDarkSolid;
 }
 
 // Function-local static (not a namespace-scope global) holds the active theme.
 SeverityTheme& CurrentTheme() {
-  static SeverityTheme theme = SeverityTheme::kLegacy;
+  static SeverityTheme theme = SeverityTheme::kDark;
   return theme;
 }
 
 const ThemeTable& TableFor(SeverityTheme theme) {
   switch (theme) {
-    case SeverityTheme::kDark:
-      return kDark;
     case SeverityTheme::kLight:
       return kLight;
     case SeverityTheme::kHighContrast:
       return kHighContrast;
-    case SeverityTheme::kLegacy:
+    case SeverityTheme::kDark:
       break;
   }
-  return kLegacy;
+  return kDark;
 }
 
 const Slot& SlotFor(const ThemeTable& table, EventBackground background) {
   switch (background) {
-    case EventBackground::kCritical:
-      return table.critical;
     case EventBackground::kWarning:
       return table.warning;
-    case EventBackground::kUnacknowledged:
+    case EventBackground::kCritical:
       break;
   }
-  return table.unacknowledged;
+  return table.critical;
 }
 
 }  // namespace
@@ -178,35 +135,28 @@ SeverityTheme GetSeverityTheme() {
 
 EventRowColors EventRowColorsFor(EventBackground background) {
   const Slot& slot = SlotFor(TableFor(CurrentTheme()), background);
-  EventRowColors colors{.background = Color{slot.background}};
-  if (slot.has_text)
-    colors.text = Color{slot.text};
-  return colors;
+  return {.background = Color{slot.background}, .text = Color{slot.text}};
 }
 
 std::optional<Color> SeverityColor(SeverityLevel level) {
   if (level == SeverityLevel::kNone)
     return std::nullopt;
-  const SolidRamp* ramp = SolidRampFor(CurrentTheme());
-  if (!ramp)
-    return std::nullopt;  // legacy: severity cues are not coloured
-  return Color{level == SeverityLevel::kCritical ? ramp->critical
-                                                 : ramp->warning};
+  const SolidRamp& ramp = SolidRampFor(CurrentTheme());
+  return Color{level == SeverityLevel::kCritical ? ramp.critical
+                                                 : ramp.warning};
 }
 
-std::optional<Color> QualityColor(Quality quality) {
-  const QualityRamp* ramp = QualityRampFor(CurrentTheme());
-  if (!ramp)
-    return std::nullopt;  // legacy: no status dots
+Color QualityColor(Quality quality) {
+  const QualityRamp& ramp = QualityRampFor(CurrentTheme());
   switch (quality) {
     case Quality::kBad:
-      return Color{ramp->bad};
+      return Color{ramp.bad};
     case Quality::kUncertain:
-      return Color{ramp->uncertain};
+      return Color{ramp.uncertain};
     case Quality::kGood:
       break;
   }
-  return Color{ramp->good};
+  return Color{ramp.good};
 }
 
 }  // namespace scada::aui

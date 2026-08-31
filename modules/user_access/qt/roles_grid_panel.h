@@ -50,6 +50,5 @@ class RolesGridPanel : public QWidget {
   std::vector<RoleMembership> roles_;
 };
 
-// Builds a RolesGridPanel under the reshell UX theme; returns nullptr in the
-// legacy look. Ownership transfers to the caller.
+// Builds a RolesGridPanel. Ownership transfers to the caller.
 RolesGridPanel* MakeRolesGridPanel();

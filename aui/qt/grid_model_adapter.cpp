@@ -73,13 +73,10 @@ QVariant GridModelAdapter::data(const QModelIndex& index, int role) const {
   cell.column = index.column();
   model_->GetCell(cell);
 
-  // A transparent colour means "unstyled". The legacy look renders the
-  // historical black-on-white defaults so it stays pixel-identical; under the
-  // reshell theme unstyled cells fall through to the theme palette, and a
-  // cell with an explicit background but default text derives a contrasting
-  // text colour, so a semantically light cell (read-only grey, blink yellow)
-  // stays readable on the dark theme.
-  const bool themed = GetSeverityTheme() != SeverityTheme::kLegacy;
+  // A transparent colour means "unstyled": the cell falls through to the theme
+  // palette. A cell with an explicit background but default text derives a
+  // contrasting text colour, so a semantically light cell (read-only grey,
+  // blink yellow) stays readable on the dark theme.
   const auto is_transparent = [](Color color) { return color.rgba().a == 0; };
 
   switch (role) {
@@ -89,8 +86,6 @@ QVariant GridModelAdapter::data(const QModelIndex& index, int role) const {
     case Qt::ForegroundRole:
       if (!is_transparent(cell.text_color))
         return cell.text_color.qcolor();
-      if (!themed)
-        return QColor{Qt::black};
       if (!is_transparent(cell.cell_color)) {
         return cell.cell_color.qcolor().lightness() >= 128 ? QColor{Qt::black}
                                                            : QColor{Qt::white};
@@ -99,7 +94,7 @@ QVariant GridModelAdapter::data(const QModelIndex& index, int role) const {
     case Qt::BackgroundRole:
       if (!is_transparent(cell.cell_color))
         return cell.cell_color.qcolor();
-      return themed ? QVariant() : QColor{Qt::white};
+      return QVariant();
     case Qt::TextAlignmentRole:
       // The cell's own alignment wins over its column's. Qt needs its own
       // flags here: this used to hand back the aui enum raw, which Qt reads as

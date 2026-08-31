@@ -41,6 +41,5 @@ class PasswordPolicyPanel : public QWidget {
   QVBoxLayout* requirements_ = nullptr;
 };
 
-// Builds a PasswordPolicyPanel under the reshell UX theme; nullptr in the
-// legacy look. Ownership transfers to the caller.
+// Builds a PasswordPolicyPanel. Ownership transfers to the caller.
 PasswordPolicyPanel* MakePasswordPolicyPanel();

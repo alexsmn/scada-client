@@ -39,7 +39,7 @@ constexpr double kZoomStep = 1.25;
 // Most recent events kept in the Recent-events strip.
 constexpr int kMaxRecentEvents = 50;
 
-// The design tokens for the active reshell theme. The frame is only built under
+// The design tokens for the active theme. The frame is only built under
 // a token theme (WrapDisplayInFrame gates on it), so the legacy fallback here
 // is harmless. Mirrors the BarTokens() helper in the event filter bar.
 const scada::aui::ThemeTokens& FrameTokens() {
@@ -479,7 +479,5 @@ void DisplayFrame::ExportImage() {
 QWidget* WrapDisplayInFrame(VdsRuntimeWidget* diagram,
                             QString breadcrumb,
                             DisplayFrameContext data_context) {
-  if (scada::aui::GetSeverityTheme() == scada::aui::SeverityTheme::kLegacy)
-    return diagram;
   return new DisplayFrame{diagram, std::move(breadcrumb), data_context};
 }

@@ -21,9 +21,7 @@ void SaveInspectorEventScreenshot(const ScreenshotSpec& spec) {
   // A representative journal-row selection: a pending critical comms-loss
   // alarm, matching the fixture's seeded event 1008 — severity band pill,
   // message, event time at the frozen fixture clock, "— pending —" state and
-  // the live Acknowledge + To-graph actions. Severity colours are
-  // severity-theme-gated, so this capture renders under --theme
-  // (reshell-theme tag).
+  // the live Acknowledge + To-graph actions.
   InspectorPanel panel{
       InspectorPanelContext{.is_acknowledge_enabled = [] { return true; },
                             .is_go_to_source_enabled = [] { return true; }}};

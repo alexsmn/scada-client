@@ -90,8 +90,6 @@ class SettingsMenuFixture : public ::testing::Test {
     language_.AddCheckItem(ID_LANGUAGE_RUSSIAN, u"Russian");
     style_.AddCheckItem(kStyleFusion, u"Fusion");
     style_.AddCheckItem(kStyleMacos, u"macOS");
-    appearance_.AddCheckItem(kAppearanceClassic, u"Classic");
-    appearance_.AddSeparator(scada::aui::NORMAL_SEPARATOR);
     appearance_.AddCheckItem(kAppearanceSystem, u"Follow system");
     appearance_.AddCheckItem(kAppearanceDark, u"Dark");
 
@@ -107,7 +105,6 @@ class SettingsMenuFixture : public ::testing::Test {
   // comes from QStyleFactory), so any distinct value does here.
   static constexpr int kStyleFusion = 90001;
   static constexpr int kStyleMacos = 90002;
-  static constexpr int kAppearanceClassic = 90010;
   static constexpr int kAppearanceSystem = 90011;
   static constexpr int kAppearanceDark = 90012;
 

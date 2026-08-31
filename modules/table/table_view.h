@@ -60,7 +60,7 @@ class TableView : protected ControllerContext,
 
   scada::aui::Table* view_ = nullptr;
 
-  // Themed reshell toolbar above the grid (Qt only; null in the legacy look).
+  // The toolbar above the grid (Qt only).
   TableToolbar* toolbar_ = nullptr;
 
   CommandRegistry command_registry_;

@@ -6,7 +6,13 @@
       "parity_key": "favorites",
       "referenced_from": [],
       "notes": "Favorites pane: saved windows in two folders, showing all three window-type glyphs — folder, table and chart-spline (Lucide). Seeded from the fixture's `favourites` block, expanded via the spec's `expand` flag and guarded at min_rows 2; it rendered as a blank panel for months because nothing seeded the store and no guard noticed. Not published yet: no manual page embeds it.",
-      "published": false
+      "published": false,
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "8bc8d53104cc6ed2174d3bc0644af590ad226824a3a146506888c76f1972d03f"
+      }
     },
     {
       "file": "MODBUS_func.png",
@@ -19,21 +25,32 @@
     {
       "file": "client-login.png",
       "tag": "auto-dialog",
-      "publish_theme": "dark",
       "parity_key": "login",
       "referenced_from": [
         "getting-started.md"
       ],
-      "notes": "LoginDialog modal shown at startup; rendered by the dialog pipeline. The user combo is captured OPEN, listing the seven operator accounts from the fixture's login_user_list (previously one hard-coded 'root' in a closed combo). Opening it is not just showPopup(): a combo popup is its own top-level window, so the capture composes the popup's grab onto the dialog's (expand_combo in the dialog spec) - which also makes this image wider than its spec width."
+      "notes": "LoginDialog modal shown at startup; rendered by the dialog pipeline. The user combo is captured OPEN, listing the seven operator accounts from the fixture's login_user_list (previously one hard-coded 'root' in a closed combo). Opening it is not just showPopup(): a combo popup is its own top-level window, so the capture composes the popup's grab onto the dialog's (expand_combo in the dialog spec) - which also makes this image wider than its spec width.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "25eeed40abde80eb9457c00aa1c1f1cee9716d027389eb93c5a72987d0678637"
+      }
     },
     {
       "file": "workbench-login.png",
-      "tag": "reshell-theme",
+      "tag": "auto-dialog",
       "parity_key": "login",
       "referenced_from": [
         "client/workbench.md"
       ],
-      "notes": "The same LoginDialog under --theme (backlog 3.1): the reshell chrome wrapped around the .ui form - brand lockup (mark + Sign in + product line) and the 'Connecting to: <backend> · <server>' summary that tracks the fields. Saved under its own name so the legacy client-login.png the getting-started page embeds is never overwritten by a themed render. In the themed-ctest --only list. macOS render pending a Windows re-render; out of current_generator_owned_subset (subset is auto-* only)."
+      "notes": "The same LoginDialog under --theme (backlog 3.1): the reshell chrome wrapped around the .ui form - brand lockup (mark + Sign in + product line) and the 'Connecting to: <backend> · <server>' summary that tracks the fields. Saved under its own name so the legacy client-login.png the getting-started page embeds is never overwritten by a themed render. In the themed-ctest --only list. macOS render pending a Windows re-render; out of current_generator_owned_subset (subset is auto-* only).",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "4abb54c7e8ac54be285ed1d6fa6967125c9638fed0e19c209c169c0e3d038bb8"
+      }
     },
     {
       "file": "command-palette.png",
@@ -42,7 +59,13 @@
       "referenced_from": [
         "client/workbench.md"
       ],
-      "notes": "Ctrl-K command palette (opt-in UX). Rendered by the dialog pipeline over a fixture command list; regenerate with --theme=dark for the published (workbench) look — the no-theme managed run renders the legacy look, so keep the themed render in img/. Also serves docs/client/ux/shell.md. Published from a macOS render pending a Windows re-render."
+      "notes": "Ctrl-K command palette (opt-in UX). Rendered by the dialog pipeline over a fixture command list; regenerate with --theme=dark for the published (workbench) look — the no-theme managed run renders the legacy look, so keep the themed render in img/. Also serves docs/client/ux/shell.md. Published from a macOS render pending a Windows re-render.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "888b42e8d2d461c89f6b1204cf5d931747e4cb5fcde9cc61ec5beae08ba524e0"
+      }
     },
     {
       "file": "about.png",
@@ -50,7 +73,13 @@
       "published": false,
       "parity_key": "about",
       "referenced_from": [],
-      "notes": "About dialog (Help menu). Capture also guards the ShowSelfOwnedModalDialog regression: the factory used to discard a lazy Awaitable and the dialog never showed. Validation-only; themed look via --theme runs (backlog 3.4)."
+      "notes": "About dialog (Help menu). Capture also guards the ShowSelfOwnedModalDialog regression: the factory used to discard a lazy Awaitable and the dialog never showed. Validation-only; themed look via --theme runs (backlog 3.4).",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "bde17d3429ae73b7db073f9660cb27f3a85de87cdb238ea9e2d4e02afada72c6"
+      }
     },
     {
       "file": "change-password.png",
@@ -58,7 +87,13 @@
       "published": false,
       "parity_key": "change-password",
       "referenced_from": [],
-      "notes": "Set Password dialog for the fixture administrator (USER.5). Validation-only; themed look via --theme runs (backlog 3.4)."
+      "notes": "Set Password dialog for the fixture administrator (USER.5). Validation-only; themed look via --theme runs (backlog 3.4).",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "82b77a78618b7645eba9d4537e3b585b86c4344c32565a45226f5af770a88072"
+      }
     },
     {
       "file": "time-range.png",
@@ -66,7 +101,13 @@
       "published": false,
       "parity_key": "time-range",
       "referenced_from": [],
-      "notes": "Custom time-range (period) picker over its default interval range; date edits render the frozen fixture clock. Validation-only; themed look via --theme runs (backlog 3.4)."
+      "notes": "Custom time-range (period) picker over its default interval range; date edits render the frozen fixture clock. Validation-only; themed look via --theme runs (backlog 3.4).",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "7de5d5bfe9623c9e1d443dbc9407cfdb415b5f0dc438b82f161d258c7af56a7e"
+      }
     },
     {
       "file": "multi-create.png",
@@ -74,7 +115,13 @@
       "published": false,
       "parity_key": "multi-create",
       "referenced_from": [],
-      "notes": "Bulk TS/TI creation dialog under the DataItems root, device combo from the fixture Devices folder. Also guards the ShowSelfOwnedModalDialog regression. Validation-only; themed look via --theme runs (backlog 3.4)."
+      "notes": "Bulk TS/TI creation dialog under the DataItems root, device combo from the fixture Devices folder. Also guards the ShowSelfOwnedModalDialog regression. Validation-only; themed look via --theme runs (backlog 3.4).",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "c98cbdd1d100cbfc649070408050ad6060133ac7a74d407a2d0eb64757516685"
+      }
     },
     {
       "file": "message-box.png",
@@ -82,26 +129,36 @@
       "published": false,
       "parity_key": "message-box",
       "referenced_from": [],
-      "notes": "The shared DialogService::RunMessageBox confirmation (question variant, Yes/No) — the shape the two-stage confirms and apply/discard prompts use. Validation-only; themed look via --theme runs (closes backlog 0.4: stock Qt widgets under the token palette/QSS are the control primitives)."
+      "notes": "The shared DialogService::RunMessageBox confirmation (question variant, Yes/No) — the shape the two-stage confirms and apply/discard prompts use. Validation-only; themed look via --theme runs (closes backlog 0.4: stock Qt widgets under the token palette/QSS are the control primitives).",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "a991b8c3cf4c1780f18e0c04a3741036965bad422456b4c6b88a6555c677588e"
+      }
     },
     {
       "file": "client-retransmission.png",
       "tag": "auto-view",
-      "publish_theme": "dark",
       "parity_key": "transmission",
       "referenced_from": [
-        "client.md"
+        "client.md",
+        "client/workbench.md"
       ],
-      "notes": "Transmission window type. Re-rendered 2026-08-01: the address column is right-aligned now that the grid adapter converts an aui alignment to Qt's own flags — it used to hand Qt the enum raw, so every aui::Grid rendered left-aligned."
+      "notes": "Transmission window type. Re-rendered 2026-08-01: the address column is right-aligned now that the grid adapter converts an aui alignment to Qt's own flags — it used to hand Qt the enum raw, so every aui::Grid rendered left-aligned.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "e3a383d76de1ec12f5fca69eca1dfe74b52d248e6fadded28e9badbfaf6ec1c6"
+      }
     },
     {
       "file": "transmission-rules.png",
-      "tag": "reshell-theme",
-      "parity_key": "transmission",
-      "referenced_from": [
-        "client/workbench.md"
-      ],
-      "notes": "The transmission-rules grid under --theme (device TS.702, the same populated fixture as the legacy client-retransmission.png, which keeps rendering unchanged in the no-theme pipeline): themed aui::Grid, and selecting a rule now fills the shell's Transmission-rule inspector. In the themed-ctest --only list. Published from a macOS render pending a Windows re-render; kept out of current_generator_owned_subset (subset is auto-* only)."
+      "tag": "obsolete",
+      "published": false,
+      "referenced_from": [],
+      "notes": "RETIRED 2026-08-31, when the client stopped shipping an un-themed \"Classic\" appearance. This was the themed twin of client-retransmission.png: the same Transmission fixture spec on the same device (TS.702) under a second filename, so the default (no-theme) pass and the --theme pass could each render the transmission grid without overwriting the other's image. With one appearance and one render pass the two specs produced byte-identical files, which check_screenshots.py reports as one capture rendering another's picture. client-retransmission.png is the survivor: it is the one in current_generator_owned_subset. scada-docs client/workbench.md (+ en/ mirror) now embeds that name instead, so no page references this one; the img/ copy went with the reference."
     },
     {
       "file": "client-window.png",
@@ -113,37 +170,59 @@
     },
     {
       "file": "workbench-activity-rail.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "referenced_from": [
         "client/workbench.md"
       ],
-      "notes": "The activity rail on its own, from CaptureActivityRail under --theme. The manual documents the rail as a surface in its own right and a 1920px window shot cannot show a 48px column legibly, so this is grabbed from the rail widget rather than cropped out of workbench-window.png. The fixture seeds three iconed pages (Overview/Alarms/Trends) so the middle band reads as a group rather than as one button, which is the whole point of the band; the capture asserts all three zones are present, so an image missing one fails rather than being published. Shows the admin session: the Nodes and Administration modes and the Users utility are hidden for everyone else. NOT YET A WINDOWS RENDER (re-rendered on macOS 2026-08-30, originally 2026-08-02): carries macOS fonts and metrics — re-render on Windows before publishing. The 2026-08-30 pass is a real UI change, not a re-render: the rail took VS Code's macOS activity-bar geometry (48px rail and 48px items against the previous 52/44, a 2px full-height active marker against 3px) and its glyphs dropped from 24px to 20px. The pages band was then replaced outright by a horizontal separator above the pages group: the band did not read at the native rail's density (measured 8/255 off the rail as a fill, 15 with rules) and the rule lands at 129 against a 30 rail. The web client keeps the band — see docs/client/ux/shell.md §2.1. The rail is 49px from 2026-08-30, not 48: it gained its own 1px right edge, without which it and the Explorer beside it were the same colour and ran together. Items are 48 wide but 40 tall from the same pass, following VS Code's glyph-to-item ratio rather than its pixel count, since our 20px SVG glyph puts more ink on screen than its 24px codicon. The glyphs were re-centred too — the active marker's left border had been reserved on one side only, putting every glyph 1px off axis. Kept out of current_generator_owned_subset (subset is auto-* only)."
+      "notes": "The activity rail on its own, from CaptureActivityRail under --theme. The manual documents the rail as a surface in its own right and a 1920px window shot cannot show a 48px column legibly, so this is grabbed from the rail widget rather than cropped out of workbench-window.png. The fixture seeds three iconed pages (Overview/Alarms/Trends) so the middle band reads as a group rather than as one button, which is the whole point of the band; the capture asserts all three zones are present, so an image missing one fails rather than being published. Shows the admin session: the Nodes and Administration modes and the Users utility are hidden for everyone else. NOT YET A WINDOWS RENDER (re-rendered on macOS 2026-08-30, originally 2026-08-02): carries macOS fonts and metrics — re-render on Windows before publishing. The 2026-08-30 pass is a real UI change, not a re-render: the rail took VS Code's macOS activity-bar geometry (48px rail and 48px items against the previous 52/44, a 2px full-height active marker against 3px) and its glyphs dropped from 24px to 20px. The pages band was then replaced outright by a horizontal separator above the pages group: the band did not read at the native rail's density (measured 8/255 off the rail as a fill, 15 with rules) and the rule lands at 129 against a 30 rail. The web client keeps the band — see docs/client/ux/shell.md §2.1. The rail is 49px from 2026-08-30, not 48: it gained its own 1px right edge, without which it and the Explorer beside it were the same colour and ran together. Items are 48 wide but 40 tall from the same pass, following VS Code's glyph-to-item ratio rather than its pixel count, since our 20px SVG glyph puts more ink on screen than its 24px codicon. The glyphs were re-centred too — the active marker's left border had been reserved on one side only, putting every glyph 1px off axis. Kept out of current_generator_owned_subset (subset is auto-* only).",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "bad675c650524085cc8b50b252b93c4f4096b8072f0bbd951ed167946cc4e150"
+      }
     },
     {
       "file": "settings-dialog.png",
       "tag": "auto-dialog",
-      "publish_theme": "legacy",
       "referenced_from": [
         "client/workbench.md"
       ],
-      "notes": "The preferences surface, from CaptureSettingsPanel. **The filename says `dialog` and the surface is no longer one.** `SettingsDialog` was retired on 2026-08-28 for `SettingsPanel`, a full-window overlay over the workbench (backlog 626), and the capture was retargeted at it in the same change — but the tracked PNG here is still the last render of the retired dialog, because a re-render has to happen on Windows and the manual pages that embed it still describe a dialog. Backlog 628 carries the three as one change: rename the capture and the file, rewrite scada-docs client/workbench.md in both languages, re-render on Windows. Until then this row is knowingly stale, and a diff against it means nothing. What the capture now asserts: the panel is built from the row catalogue joined to the Settings MenuModel, so it shows exactly what the shell publishes — the framework toggles, every module's MainMenuId::Settings contribution, and the Language / Style / Colour scheme choice rows — plus the three things that make it a surface rather than a dialog (the search field, the category table of contents, the scope tabs) and the `Open Displays Folder` action row, which is backlog 554's answer and which the dialog could not carry. A row offering Classic plus the four appearances must still be present, because Colour scheme is how the operator turns the reshell on and it must not become unreachable. Replaces colour-scheme-menu.png, whose submenu no longer exists. publish_theme is `legacy` — the only published image that is: the capture skips under --theme by design, because the operator who needs this image is the one still on Classic looking for how to turn the reshell on, and a dark render would show the appearance they do not have yet. NOT YET A WINDOWS RENDER (re-rendered on macOS 2026-08-26, offscreen, hermetic HOME) — re-render on Windows before publishing. The Language combo reads Русский where the 2026-08-02 render read English; that is not a regression — the tracked file predates 3487975be (2026-08-15, 'qttranslations was in no manifest, so Qt chrome shipped English'), so it was captured with Qt's own catalogue absent and the combo fell back to the English source. Ruled out as leaked machine QSettings: that render was byte-identical with and without a hermetic HOME."
-
+      "notes": "The preferences surface, from CaptureSettingsPanel. **The filename says `dialog` and the surface is no longer one.** `SettingsDialog` was retired on 2026-08-28 for `SettingsPanel`, a full-window overlay over the workbench (backlog 626), and the capture was retargeted at it in the same change — but the tracked PNG here is still the last render of the retired dialog, because a re-render has to happen on Windows and the manual pages that embed it still describe a dialog. Backlog 628 carries the three as one change: rename the capture and the file, rewrite scada-docs client/workbench.md in both languages, re-render on Windows. Until then this row is knowingly stale, and a diff against it means nothing. What the capture now asserts: the panel is built from the row catalogue joined to the Settings MenuModel, so it shows exactly what the shell publishes — the framework toggles, every module's MainMenuId::Settings contribution, and the Language / Style / Colour scheme choice rows — plus the three things that make it a surface rather than a dialog (the search field, the category table of contents, the scope tabs) and the `Open Displays Folder` action row, which is backlog 554's answer and which the dialog could not carry. A row offering the four appearances must still be present, because Colour scheme is how the operator picks one and it must not become unreachable. Replaces colour-scheme-menu.png, whose submenu no longer exists. This capture used to skip under --theme and publish `legacy`, because the operator who needed it was the one still on Classic; Classic is gone, so it renders under the theme like every other capture and the tracked PNG below is doubly stale — it shows both the retired dialog and the retired appearance. NOT YET A WINDOWS RENDER (re-rendered on macOS 2026-08-26, offscreen, hermetic HOME) — re-render on Windows before publishing. The Language combo reads Русский where the 2026-08-02 render read English; that is not a regression — the tracked file predates 3487975be (2026-08-15, 'qttranslations was in no manifest, so Qt chrome shipped English'), so it was captured with Qt's own catalogue absent and the combo fell back to the English source. Ruled out as leaked machine QSettings: that render was byte-identical with and without a hermetic HOME.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "5bfaacda94cf12b0471dc23428774c571288128b54413f6aec03683120fa9c62"
+      }
     },
     {
       "file": "workbench-window.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "referenced_from": [
         "client/workbench.md"
       ],
-      "notes": "The reshelled operator workbench: CaptureMainWindow under --theme renders the full shell (activity rail, context bar with KPI severity tiles, command toolbar, editor tabs over EventJournal/Summ/Struct, the Inspector fronted in the right dock, status strip) and saves it under this name so the legacy client-window.png is never overwritten by a themed render. Fixture pending alarms light the tiles and the journal chrome. Published from a macOS render pending a Windows re-render; kept out of current_generator_owned_subset (subset is auto-* only). STALE (2026-08-01): the status strip's ping cell widened (120 -> 180) and now appends a \"no response\" marker once the ping round trip crosses 3 s (macOS App Nap fix, docs/client/message-loop.md), which shifts the endpoint cell beside it; fold this into the same pending Windows re-render. STALE (2026-07-26): the context bar no longer carries the identity/connection cluster - user/connection/server/endpoint are in the status strip only - but the published PNG still shows it; re-render on Windows and republish. The manual text in scada-docs client/workbench.md (RU+EN) is already updated."
+      "notes": "The reshelled operator workbench: CaptureMainWindow under --theme renders the full shell (activity rail, context bar with KPI severity tiles, command toolbar, editor tabs over EventJournal/Summ/Struct, the Inspector fronted in the right dock, status strip) and saves it under this name so the legacy client-window.png is never overwritten by a themed render. Fixture pending alarms light the tiles and the journal chrome. Published from a macOS render pending a Windows re-render; kept out of current_generator_owned_subset (subset is auto-* only). STALE (2026-08-01): the status strip's ping cell widened (120 -> 180) and now appends a \"no response\" marker once the ping round trip crosses 3 s (macOS App Nap fix, docs/client/message-loop.md), which shifts the endpoint cell beside it; fold this into the same pending Windows re-render. STALE (2026-07-26): the context bar no longer carries the identity/connection cluster - user/connection/server/endpoint are in the status strip only - but the published PNG still shows it; re-render on Windows and republish. The manual text in scada-docs client/workbench.md (RU+EN) is already updated.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "bbf13683dd611005eea34dd66904925345663743e5552327ff471b3ca9e7a3b5"
+      }
     },
     {
       "file": "workbench-overview.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "referenced_from": [
         "client/workbench.md"
       ],
-      "notes": "The Overview landing cockpit: a fresh page-less profile under the reshell theme boots through CreateInitialPage into MakeOverviewPage - the Explorer sidebar (tabified with its Favorites and Portfolio sibling panes) beside the dominant trend (65%) over the actionable-alarm strip, with the Inspector fronted on the right. Captured via the production seeding path (CaptureOverviewPage), so it guards the reshell initial-page routing too. macOS render pending a Windows re-render; out of current_generator_owned_subset (subset is auto-* only). Re-rendered 2026-08-29: the Explorer trees stopped drawing a row for their root (ConfigurationTreeView now takes Tree's hidden-root default), because the pane's own dock title already names it — so the tree starts at its content. macOS render, like the one it replaces; the gallery is still not a Windows baseline (docs/ops/client-screenshots.md). Rendered with --only, so no other image in the gallery moved, and provenance was deliberately NOT stamped: --stamp rewrites every row whose digest differs, and with no digests recorded anywhere yet that is all 63 of them — see backlog 642. Its Explorer pane is one of the four."
+      "notes": "The Overview landing cockpit: a fresh page-less profile under the reshell theme boots through CreateInitialPage into MakeOverviewPage - the Explorer sidebar (tabified with its Favorites and Portfolio sibling panes) beside the dominant trend (65%) over the actionable-alarm strip, with the Inspector fronted on the right. Captured via the production seeding path (CaptureOverviewPage), so it guards the reshell initial-page routing too. macOS render pending a Windows re-render; out of current_generator_owned_subset (subset is auto-* only). Re-rendered 2026-08-29: the Explorer trees stopped drawing a row for their root (ConfigurationTreeView now takes Tree's hidden-root default), because the pane's own dock title already names it — so the tree starts at its content. macOS render, like the one it replaces; the gallery is still not a Windows baseline (docs/ops/client-screenshots.md). Rendered with --only, so no other image in the gallery moved, and provenance was deliberately NOT stamped: --stamp rewrites every row whose digest differs, and with no digests recorded anywhere yet that is all 63 of them — see backlog 642. Its Explorer pane is one of the four.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "612875d9306386895e3e6d3f9c3c9f0409471cfbc136db588dbabde331752b32"
+      }
     },
     {
       "file": "control-confirm.jpg",
@@ -158,7 +237,13 @@
       "referenced_from": [
         "client.md"
       ],
-      "notes": "The operate-stage review of a select-before-operate command: the outstation has accepted the Select and is armed, and the operator is asked to confirm before the Operate goes out (answering no now sends Cancel instead of leaving the selection armed until sboTimeout). Message text comes from the real WriteModel::GetConfirmationMessage(value, second_stage=true) over the fixture analog item, shown through the ordinary DialogService question box, so it cannot drift from the shipped wording. The select itself is not issued — a Control-object Call needs a server; the two-phase exchange is covered by the iec104 tier E2E and WriteModelTest.TwoStagedControlSelectsConfirmsThenOperates. Published from a macOS render pending the Windows update-screenshots review; candidate for current_generator_owned_subset after that review."
+      "notes": "The operate-stage review of a select-before-operate command: the outstation has accepted the Select and is armed, and the operator is asked to confirm before the Operate goes out (answering no now sends Cancel instead of leaving the selection armed until sboTimeout). Message text comes from the real WriteModel::GetConfirmationMessage(value, second_stage=true) over the fixture analog item, shown through the ordinary DialogService question box, so it cannot drift from the shipped wording. The select itself is not issued — a Control-object Call needs a server; the two-phase exchange is covered by the iec104 tier E2E and WriteModelTest.TwoStagedControlSelectsConfirmsThenOperates. Published from a macOS render pending the Windows update-screenshots review; candidate for current_generator_owned_subset after that review.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "2833b542d4283f52f108f4eef28a314673035d2f21560f8925068e7a3aacb46a"
+      }
     },
     {
       "file": "control-ti.jpg",
@@ -214,12 +299,18 @@
     },
     {
       "file": "substation-display.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "parity_key": "vidicon-display",
       "referenced_from": [
         "client/workbench.md"
       ],
-      "notes": "Reshelled substation display under --theme: the DisplayFrame chrome (Live indicator, breadcrumb, zoom/fit/export) around the cross-platform VDS renderer, plus the bay strips below it — the Measurements watch (live signal values) and the Recent-events list (the fixture's pending alarms). The Measurements Value/Updated cells now fill: the frame refreshes on the spec's property_change_handler (the PROPERTY_CURRENT delivery path), not only update_handler; CaptureDisplay asserts the value cell is non-empty so that cannot regress silently. The frame is built only under the reshell theme (WrapDisplayInFrame gates on it), hence reshell-theme and the themed ctest. Published from a macOS render pending a Windows re-render; out of current_generator_owned_subset (subset is auto-* only). Windows-only Modus ActiveX not exercised here."
+      "notes": "Reshelled substation display under --theme: the DisplayFrame chrome (Live indicator, breadcrumb, zoom/fit/export) around the cross-platform VDS renderer, plus the bay strips below it — the Measurements watch (live signal values) and the Recent-events list (the fixture's pending alarms). The Measurements Value/Updated cells now fill: the frame refreshes on the spec's property_change_handler (the PROPERTY_CURRENT delivery path), not only update_handler; CaptureDisplay asserts the value cell is non-empty so that cannot regress silently. The frame is built only under the reshell theme (WrapDisplayInFrame gates on it), hence reshell-theme and the themed ctest. Published from a macOS render pending a Windows re-render; out of current_generator_owned_subset (subset is auto-* only). Windows-only Modus ActiveX not exercised here.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "63de392beba7b0bbef5c7969c109138d4aacb69cc10dbd70fc3a0d75c425b034"
+      }
     },
     {
       "file": "events-cur.jpg",
@@ -242,38 +333,61 @@
     {
       "file": "graph-cursor.png",
       "tag": "auto-view",
-      "publish_theme": "dark",
       "parity_key": "graph",
       "referenced_from": [
         "client/graph.md"
       ],
-      "notes": "Graph window with a time cursor: the capture now places and selects one (GraphAxis::AddCursor + Graph::SelectCursor) so the themed legend's '@ cursor' column is populated - before that it rendered no cursor at all and every row read '-', despite the file's name. All three series now vary and the legend's Min/Max/Average differ per pane, once a history-service bug was fixed (a read whose upper bound was the current-only sentinel DateTime::Max spread its 48 points across ~285000 years, so all but the first fell outside the window and the series read flat). REWORKED 2026-08-16 (backlog 344): this row and limits-chart.png used to be two fixture rows differing only in `filename`, so both plotted the one shared `graph` object and rendered the same file byte for byte - each a superset of both subjects rather than an illustration of either. A screenshot row now names its own graph configuration in the fixture's `graphs` object, and this one plots the `cursor` variant: two panes (TIT.201 Реактивная мощность, TIT.208 Частота), neither carrying limit bands, with the time cursor the filename is about. The cursor is opt-in per configuration now, so it no longer appears in captures that are not about it. The tracked PNG is still the pre-change render - this tree renders on macOS and the gallery is regenerated from Windows - so expect this file to change at the next Windows regeneration (see the client-screenshots doc, and the standing list in backlog 310)."
+      "notes": "Graph window with a time cursor: the capture now places and selects one (GraphAxis::AddCursor + Graph::SelectCursor) so the themed legend's '@ cursor' column is populated - before that it rendered no cursor at all and every row read '-', despite the file's name. All three series now vary and the legend's Min/Max/Average differ per pane, once a history-service bug was fixed (a read whose upper bound was the current-only sentinel DateTime::Max spread its 48 points across ~285000 years, so all but the first fell outside the window and the series read flat). REWORKED 2026-08-16 (backlog 344): this row and limits-chart.png used to be two fixture rows differing only in `filename`, so both plotted the one shared `graph` object and rendered the same file byte for byte - each a superset of both subjects rather than an illustration of either. A screenshot row now names its own graph configuration in the fixture's `graphs` object, and this one plots the `cursor` variant: two panes (TIT.201 Реактивная мощность, TIT.208 Частота), neither carrying limit bands, with the time cursor the filename is about. The cursor is opt-in per configuration now, so it no longer appears in captures that are not about it. The tracked PNG is still the pre-change render - this tree renders on macOS and the gallery is regenerated from Windows - so expect this file to change at the next Windows regeneration (see the client-screenshots doc, and the standing list in backlog 310).",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "e6000f7c3b922dec0a32b858bd13bbe6e98ba3c1d6067e37ec03cd2b3d016a86"
+      }
     },
     {
       "file": "series-inspector.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "published": false,
       "parity_key": "series-inspector",
       "referenced_from": [],
-      "notes": "The Inspector as a chart selection fills it: the element card (title, node id, live value + quality pill, Measurements with the node's limit bands) over the SERIES section — the palette swatches with the plotted colour ringed, and the display flags. Until 2026-08-30 this captured a separate SeriesInspector widget that the Graph tab drew down the right edge of the chart; that panel was folded into the shell Inspector (backlog 673), because the two sat side by side naming the same series while trend.html draws one right-hand column. The capture still builds the fixture graph and routes its first series through a real SelectionModel, so the readout and the limits are live rather than filled by hand — they resolve because MakeGraphItemNodesResident makes the graphed node resident first, which is why no load_limits handler is wired. Reshell-theme and rides client_screenshot_check_themed, like its two Inspector siblings: the severity-coloured limit values return nothing under the legacy ramp. **The tracked bytes predate the fold** (290x480, the old widget); the spec is now 320x560 and the image is owed a regeneration from the Windows pipeline — see the backlog. Validation-only; not published to the manual."
+      "notes": "The Inspector as a chart selection fills it: the element card (title, node id, live value + quality pill, Measurements with the node's limit bands) over the SERIES section — the palette swatches with the plotted colour ringed, and the display flags. Until 2026-08-30 this captured a separate SeriesInspector widget that the Graph tab drew down the right edge of the chart; that panel was folded into the shell Inspector (backlog 673), because the two sat side by side naming the same series while trend.html draws one right-hand column. The capture still builds the fixture graph and routes its first series through a real SelectionModel, so the readout and the limits are live rather than filled by hand — they resolve because MakeGraphItemNodesResident makes the graphed node resident first, which is why no load_limits handler is wired. Reshell-theme and rides client_screenshot_check_themed, like its two Inspector siblings: the severity-coloured limit values return nothing under the legacy ramp. **The tracked bytes predate the fold** (290x480, the old widget); the spec is now 320x560 and the image is owed a regeneration from the Windows pipeline — see the backlog. Validation-only; not published to the manual.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "7441f6fe9a74f31ba09308a9628d1145e92d8b12a8a2dec62087ebf1bc7e29b2"
+      }
     },
     {
       "file": "inspector-panel.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "parity_key": "inspector",
       "referenced_from": [
         "client/workbench.md"
       ],
-      "notes": "Reshell Inspector panel (modules/inspector) standalone: header + node-id subtitle, live-value hero with quality pill, Measurements (Updated + the node's configured limit bands, the breached one marked), and the Control action with its unavailable-reason line (UX 4.3). Filled with an analog signal sitting above its Hi warning limit and carrying no output channel, so both the marked breach and the disabled-control explanation render. The panel paints the reshell's dark tokens whatever the host palette is, which is why this was `reshell-theme` from 2026-08-23: as `auto-view` it was rendered by the legacy no-theme pass onto a light window, and the tracked bytes (verified byte-identical to a fresh legacy render that day) showed the title, the update time and three of the four limit values as light grey on light grey - the card's data was present and unreadable. Its two siblings had already been moved for the same class of reason (inspector-event.png and series-inspector.png, both severity-coloured), so this is the third instance rather than a new rule. In the themed-ctest --only list. Published from a macOS render pending the Windows update-screenshots review; candidate for current_generator_owned_subset after that review."
+      "notes": "Reshell Inspector panel (modules/inspector) standalone: header + node-id subtitle, live-value hero with quality pill, Measurements (Updated + the node's configured limit bands, the breached one marked), and the Control action with its unavailable-reason line (UX 4.3). Filled with an analog signal sitting above its Hi warning limit and carrying no output channel, so both the marked breach and the disabled-control explanation render. The panel paints the reshell's dark tokens whatever the host palette is, which is why this was `reshell-theme` from 2026-08-23: as `auto-view` it was rendered by the legacy no-theme pass onto a light window, and the tracked bytes (verified byte-identical to a fresh legacy render that day) showed the title, the update time and three of the four limit values as light grey on light grey - the card's data was present and unreadable. Its two siblings had already been moved for the same class of reason (inspector-event.png and series-inspector.png, both severity-coloured), so this is the third instance rather than a new rule. In the themed-ctest --only list. Published from a macOS render pending the Windows update-screenshots review; candidate for current_generator_owned_subset after that review.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "ef366f047cd377f4623cc00a6543bc7c23bb9914f422225a2dfc7262436462e7"
+      }
     },
     {
       "file": "inspector-event.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "parity_key": "inspector",
       "referenced_from": [
         "client/workbench.md"
       ],
-      "notes": "The Inspector's event (alarm) card for a journal-row selection (UX 2.2): severity band pill (Критично 800), message, event time at the frozen fixture clock, '— pending —' state, the enabled Acknowledge / To-graph actions and the History block (the event's lifecycle: raised, received by the server, awaiting acknowledgement). Standalone chrome but severity colours are theme-gated, hence reshell-theme; in the themed-ctest --only list. Published from a macOS render pending a Windows re-render; kept out of current_generator_owned_subset (subset is auto-* only)."
+      "notes": "The Inspector's event (alarm) card for a journal-row selection (UX 2.2): severity band pill (Критично 800), message, event time at the frozen fixture clock, '— pending —' state, the enabled Acknowledge / To-graph actions and the History block (the event's lifecycle: raised, received by the server, awaiting acknowledgement). Standalone chrome but severity colours are theme-gated, hence reshell-theme; in the themed-ctest --only list. Published from a macOS render pending a Windows re-render; kept out of current_generator_owned_subset (subset is auto-* only).",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "33ec95d49943dc36b8157809903cd265c162917a9470bdd0118ca8ce5432eefe"
+      }
     },
     {
       "file": "device-diagnostics.png",
@@ -281,7 +395,13 @@
       "published": false,
       "parity_key": "device-diagnostics",
       "referenced_from": [],
-      "notes": "Configuration workbench device-diagnostics inspector (DeviceDiagnostics): link-status hero (up/down/disabled), then the PROTOCOL LINK section and the device's own traffic/polling counters. Reshell-only chrome (backlog 5.0), captured under --theme against a fixture device (TS.103). Standalone like series-inspector; the capture wires the same load handler the shell wires and lets the panel fetch what it reads, rather than making the device resident on its behalf. Grew from 300x520 to 320x660 on 2026-08-23, when the fixture gained the Iec60870LinkType link TS.103 hangs under: until then no device in the gallery had a link, so ADR 0007's nine APCI rows, the section heading and the Reconnect action were rendered by no capture at all - and the tracked image still showed a Reconnect button the generator had stopped producing. The link is Running while the RTU is silent (t1 expired, two frames unacknowledged), which is the state the hero's `device is not responding` describes. Not yet embedded in a manual page."
+      "notes": "Configuration workbench device-diagnostics inspector (DeviceDiagnostics): link-status hero (up/down/disabled), then the PROTOCOL LINK section and the device's own traffic/polling counters. Reshell-only chrome (backlog 5.0), captured under --theme against a fixture device (TS.103). Standalone like series-inspector; the capture wires the same load handler the shell wires and lets the panel fetch what it reads, rather than making the device resident on its behalf. Grew from 300x520 to 320x660 on 2026-08-23, when the fixture gained the Iec60870LinkType link TS.103 hangs under: until then no device in the gallery had a link, so ADR 0007's nine APCI rows, the section heading and the Reconnect action were rendered by no capture at all - and the tracked image still showed a Reconnect button the generator had stopped producing. The link is Running while the RTU is silent (t1 expired, two frames unacknowledged), which is the state the hero's `device is not responding` describes. Not yet embedded in a manual page.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "bc4faad7c06b8f5ad135f11f98588e2f0d8b3e9120c564d5dab5c3a5bc6f1936"
+      }
     },
     {
       "file": "device-metrics.png",
@@ -291,8 +411,13 @@
       "referenced_from": [
         "client.md"
       ],
-      "notes": "The device Metrics sheet — what *Метрики* on a device's context menu opens (client.md, \"Статусы устройств\"), and the Qt half of the web's DeviceMetrics component. Rendered for the fixture's КП-01 (TS.103, an IEC 60870-5-104 RTU): the row labels are the DeviceType data-variable declarations (Связь, Включено, Принято/Отправлено сообщений и байт, Число синхронизаций времени, Число полных опросов) and each cell is an `=NodeId` formula the sheet resolves live. Not a window type of its own — DeviceMetricsModule builds a CusTable WindowDefinition from resolved NodeRefs, which do not exist when MakeScreenshotPage assembles the profile page, so the capture opens its own view. Legacy-themed and not yet embedded in a manual page: it is half of what devices-status.png shows, and replacing that figure is still open (tasks.md 39, subtask 8). Booleans render 0/1 and byte counters in scientific notation, unlike the legacy capture's Да/Нет and plain integers — a real formatting gap, filed separately. Published 2026-08-15 as the Метрики half of `devices-status.png`. Opted out of the dark publish pass with publish_theme=legacy because it cannot render themed: the sheet paints its header cells from a hard-coded Rgba{227,227,227} and its body cells white, so under --theme only the frame and scrollbars darken and the result is white cells in a black window. Filed as its own backlog entry; flip this to dark once the sheet takes its colour from the palette.",
-      "publish_theme": "legacy"
+      "notes": "The device Metrics sheet — what *Метрики* on a device's context menu opens (client.md, \"Статусы устройств\"), and the Qt half of the web's DeviceMetrics component. Rendered for the fixture's КП-01 (TS.103, an IEC 60870-5-104 RTU): the row labels are the DeviceType data-variable declarations (Связь, Включено, Принято/Отправлено сообщений и байт, Число синхронизаций времени, Число полных опросов) and each cell is an `=NodeId` formula the sheet resolves live. Not a window type of its own — DeviceMetricsModule builds a CusTable WindowDefinition from resolved NodeRefs, which do not exist when MakeScreenshotPage assembles the profile page, so the capture opens its own view. Not yet embedded in a manual page: it is half of what devices-status.png shows, and replacing that figure is still open (tasks.md 39, subtask 8). Booleans still render 0/1 where the hand-captured devices-status.png shows Да/Нет — a real formatting gap, filed separately. The byte counters no longer render in scientific notation: verified 2026-08-31 against a fresh themed render, which shows 4213904 / 1830221 as plain integers. Published 2026-08-15 as the Метрики half of `devices-status.png`. This was the last image opted out of the dark publish pass (publish_theme=legacy): it could not render themed at all, because MakeDeviceMetricsWindowDefinition baked Rgba{227,227,227} into the header cells as *window definition* data while the body cells fell back to white, so a themed render darkened only the frame and the scrollbars. Both halves are fixed — the baked header fill is gone and unstyled cells now fall through to the theme palette — so the sheet renders under any appearance. The tracked PNG predates that and is a Classic render.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "187b87a5f3ec59456cfcc29007a914ee3901d1c2afafceed1d6589ba39b3fd32"
+      }
     },
     {
       "file": "device-watch.png",
@@ -302,31 +427,55 @@
         "client/device-watch.md"
       ],
       "notes": "Device log (Watch view) for КП-01: the filter bar over a seeded IEC 60870-5-104 session — decoded Dir/Type/Cause/IOA/Fmt/N(S)/N(R) columns, plus a t1 timeout and a link loss carrying their severity colours. Rendered from the fixture's `device_log` block, delivered as event notifications by the generator's fake monitored-item service; the `rows` guard is 12 (11 seeded lines plus the one `events` entry sourced on this device). Was an empty grid for months because nothing bound a device to the view and nothing seeded events. Not published yet: no manual page embeds it. Re-rendered 2026-08-01 with the aui alignment fix: table rows are vertically centred (the adapter returned the horizontal flag alone, which Qt reads as AlignTop). Published 2026-08-15 in place of `devices-traffic.png`, which showed this same view inside the whole main window; the chrome around it is `workbench-window.png`'s subject, not this page's. Re-rendered dark for the published subset.",
-      "published": true
+      "published": true,
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "460cc373921b49cb3ef0fefe3ce1ca409778ea86277ba165762172b645dbd5f8"
+      }
     },
     {
       "file": "administration-explorer.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "published": false,
       "parity_key": "administration-explorer",
       "referenced_from": [],
-      "notes": "Administration explorer pane (the left region of users-admin.html): the section list the rail's Administration mode opens. Standalone chrome like users-rbac, captured under --theme; the pane normally derives its rows from the shell's live command resolution (ControllerDelegate::ResolveViewCommand), which the headless generator has no shell for, so the capture supplies every candidate section - what an administrator holding Configure sees. Sections are the admin-gated views that already have an entry point; roles / password policy / audit log join the list as they are built. Not yet embedded in a manual page. The manual prose for this surface is written (scada-docs client/workbench.md + en/ mirror, #administration); the image is NOT embedded yet because the published set must come from the WINDOWS pipeline - a macOS render differs by font alone and would commit as churn. Embed it on the next Windows regeneration, set published:true and add it to current_generator_owned_subset."
+      "notes": "Administration explorer pane (the left region of users-admin.html): the section list the rail's Administration mode opens. Standalone chrome like users-rbac, captured under --theme; the pane normally derives its rows from the shell's live command resolution (ControllerDelegate::ResolveViewCommand), which the headless generator has no shell for, so the capture supplies every candidate section - what an administrator holding Configure sees. Sections are the admin-gated views that already have an entry point; roles / password policy / audit log join the list as they are built. Not yet embedded in a manual page. The manual prose for this surface is written (scada-docs client/workbench.md + en/ mirror, #administration); the image is NOT embedded yet because the published set must come from the WINDOWS pipeline - a macOS render differs by font alone and would commit as churn. Embed it on the next Windows regeneration, set published:true and add it to current_generator_owned_subset.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "af071e6c6b686f3dc7da10b7bd77a4940e1f478473dd25862fb21251ed18857a"
+      }
     },
     {
       "file": "roles.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "published": false,
       "parity_key": "roles",
       "referenced_from": [],
-      "notes": "The Roles view: every Role of Server.ServerCapabilities.RoleSet with the accounts it is granted to, read via the identity mapping rules (Part 18 4.4.3). Admin-gated (WIN_REQUIRES_ADMIN), read-only. THEME-GATED, so reshell-theme rather than auto-view: MakeRolesGridPanel() returns nullptr under the legacy theme (the whole user_access panel family does), so RolesView::Init builds no widget, OpenedView::Init throws 'Can't create widget', and the view never opens. Tagged auto-view until 2026-08-02, which made every default-pipeline run fail this capture - the admin gate was NOT the cause, the session holds Configure. To publish it, the panel factory must first drop its legacy gate (the publish subset admits auto-* only). KNOWN FIXTURE GAP: Members renders 'None' for every Role. The RoleSet and its Roles browse correctly - the capture shows both - but the identity-rule rows the fixture projects under them do not come back from the client browse, so no membership reaches the view. The read path itself is unit-tested against FakeNodeService (role_membership_unittest.cpp); it is the offline fixture's rule projection that is unproven. Fix that before publishing this image. The manual prose for this surface is written (scada-docs client/workbench.md + en/ mirror, #administration); the image is NOT embedded yet because the published set must come from the WINDOWS pipeline - a macOS render differs by font alone and would commit as churn. Embed it on the next Windows regeneration, set published:true and add it to current_generator_owned_subset. CAPTURED STANDALONE since 2026-08-08 (SaveRolesScreenshot / SaveUsersGridScreenshot in user_access_capture.cpp), not through the view path: the grid is built from the server's published role->permission map, which needs ReadRolePermissions, and the generator's ordinary session is anonymous - so the view-path capture rendered 'No data' over an empty grid. AuthenticatedAttributeService supplies the administrator identity for these captures only. The member/role columns were additionally empty until a client fix the same day (ReadRoleMemberships did not fetch the rule type's chain, so no identity mapping rule read back); the tracked PNG still predates both and will change on the next Windows regeneration."
+      "notes": "The Roles view: every Role of Server.ServerCapabilities.RoleSet with the accounts it is granted to, read via the identity mapping rules (Part 18 4.4.3). Admin-gated (WIN_REQUIRES_ADMIN), read-only. THEME-GATED, so reshell-theme rather than auto-view: MakeRolesGridPanel() returns nullptr under the legacy theme (the whole user_access panel family does), so RolesView::Init builds no widget, OpenedView::Init throws 'Can't create widget', and the view never opens. Tagged auto-view until 2026-08-02, which made every default-pipeline run fail this capture - the admin gate was NOT the cause, the session holds Configure. To publish it, the panel factory must first drop its legacy gate (the publish subset admits auto-* only). KNOWN FIXTURE GAP: Members renders 'None' for every Role. The RoleSet and its Roles browse correctly - the capture shows both - but the identity-rule rows the fixture projects under them do not come back from the client browse, so no membership reaches the view. The read path itself is unit-tested against FakeNodeService (role_membership_unittest.cpp); it is the offline fixture's rule projection that is unproven. Fix that before publishing this image. The manual prose for this surface is written (scada-docs client/workbench.md + en/ mirror, #administration); the image is NOT embedded yet because the published set must come from the WINDOWS pipeline - a macOS render differs by font alone and would commit as churn. Embed it on the next Windows regeneration, set published:true and add it to current_generator_owned_subset. CAPTURED STANDALONE since 2026-08-08 (SaveRolesScreenshot / SaveUsersGridScreenshot in user_access_capture.cpp), not through the view path: the grid is built from the server's published role->permission map, which needs ReadRolePermissions, and the generator's ordinary session is anonymous - so the view-path capture rendered 'No data' over an empty grid. AuthenticatedAttributeService supplies the administrator identity for these captures only. The member/role columns were additionally empty until a client fix the same day (ReadRoleMemberships did not fetch the rule type's chain, so no identity mapping rule read back); the tracked PNG still predates both and will change on the next Windows regeneration.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "ddaec054db3e6de8413556aae952c022988433d409e1e92afd4f7933d86783eb"
+      }
     },
     {
       "file": "password-policy.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "published": false,
       "parity_key": "password-policy",
       "referenced_from": [],
-      "notes": "The Password policy view: what the server publishes on the UserManagement object (OPC UA Part 18 5.2.2) - the length range, the required character classes, and the deployment's own wording of the rule, shown verbatim. Read-only; the policy is server configuration. THEME-GATED, so reshell-theme rather than auto-view: MakePasswordPolicyPanel() returns nullptr under the legacy theme, so the view builds no widget and never opens - same gate and same 2026-08-02 retag as roles.png. The fixture configures no policy, so the capture shows the unconstrained case (Any length, nothing required) - which is a REAL state and deliberately distinct from 'No data', the unreadable case that also suppresses every requirement row. The manual prose for this surface is written (scada-docs client/workbench.md + en/ mirror, #administration); the image is NOT embedded yet because the published set must come from the WINDOWS pipeline - a macOS render differs by font alone and would commit as churn. Embed it on the next Windows regeneration, set published:true and add it to current_generator_owned_subset."
+      "notes": "The Password policy view: what the server publishes on the UserManagement object (OPC UA Part 18 5.2.2) - the length range, the required character classes, and the deployment's own wording of the rule, shown verbatim. Read-only; the policy is server configuration. THEME-GATED, so reshell-theme rather than auto-view: MakePasswordPolicyPanel() returns nullptr under the legacy theme, so the view builds no widget and never opens - same gate and same 2026-08-02 retag as roles.png. The fixture configures no policy, so the capture shows the unconstrained case (Any length, nothing required) - which is a REAL state and deliberately distinct from 'No data', the unreadable case that also suppresses every requirement row. The manual prose for this surface is written (scada-docs client/workbench.md + en/ mirror, #administration); the image is NOT embedded yet because the published set must come from the WINDOWS pipeline - a macOS render differs by font alone and would commit as churn. Embed it on the next Windows regeneration, set published:true and add it to current_generator_owned_subset.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "88cdc05c91b19b08091e02c2c23bec47ce2a2973dac04c85590248e8978711dd"
+      }
     },
     {
       "file": "audit-log.png",
@@ -334,7 +483,13 @@
       "published": false,
       "parity_key": "audit-log",
       "referenced_from": [],
-      "notes": "The Audit log view: the event journal scoped to the AuditEventType subtree (see client/modules/events/audit_events.h). Admin-gated. The capture demonstrates the filter rather than asserting it - the fixture seeds 13 events of which 4 carry audit types, and only those 4 appear. Acknowledgement chrome is deliberately absent (no unacknowledged-only toggle, no Acknowledge-all footer): an audit entry records that something happened, and there is nothing to acknowledge. The refused call renders in the warning band, which is the row an operator is looking for. NOT published: the published set comes from the WINDOWS pipeline; embed on the next regeneration."
+      "notes": "The Audit log view: the event journal scoped to the AuditEventType subtree (see client/modules/events/audit_events.h). Admin-gated. The capture demonstrates the filter rather than asserting it - the fixture seeds 13 events of which 4 carry audit types, and only those 4 appear. Acknowledgement chrome is deliberately absent (no unacknowledged-only toggle, no Acknowledge-all footer): an audit entry records that something happened, and there is nothing to acknowledge. The refused call renders in the warning band, which is the row an operator is looking for. NOT published: the published set comes from the WINDOWS pipeline; embed on the next regeneration.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "40a069f41f2d1c2ca2d2324361d42ef4bd808f6aebee9c66e50997873c0e44d0"
+      }
     },
     {
       "file": "users-rbac.png",
@@ -342,7 +497,13 @@
       "published": false,
       "parity_key": "user-access",
       "referenced_from": [],
-      "notes": "The users-admin RBAC inspector (right region of users-admin.html) for the fixture's Администратор. Rewritten 2026-08-01 onto the ROLE model: it lists the Roles the account holds and derives the permission breakdown from them through the same default role->permission map the server enforces with, replacing the coarse Administrator/Operator/Observer pill that read the retired AccessRights bitmask - a pill that would have kept asserting authority for an account whose Role had been revoked. Three states stay distinct: the Roles list, 'None' (holds no Role - real, and grants nothing), and 'No data' (the RoleSet could not be read, which also suppresses every permission row). The Roles list is real as of 2026-08-08: this capture shows Operator, ConfigureAdmin. It showed 'None' until then, which was a CLIENT bug rather than a fixture gap - ReadRoleMemberships resolved a rule's Criteria through the type's property declarations without fetching the type chain, so every rule read back empty against the real node model (regression test: ScreenshotGenerator.RolesEnumerateTheirMembers). SECOND FIXTURE FACT, easy to trip over: the panel now READS what each Role grants from the server (the RolePermissions attribute, Part 3 5.2.9) instead of carrying its own map, and that attribute requires ReadRolePermissions. The generator wires the real attribute service straight into the client, so the client's empty ServiceContext -- which a real server would have replaced with the session's identity -- reads as ANONYMOUS and the attribute is refused, collapsing the whole panel to 'No data'. AuthenticatedAttributeService supplies the administrator identity for this capture only; do not widen it to the generator's other services, which would change UserAccessLevel narrowing and with it every writability affordance."
+      "notes": "The users-admin RBAC inspector (right region of users-admin.html) for the fixture's Администратор. Rewritten 2026-08-01 onto the ROLE model: it lists the Roles the account holds and derives the permission breakdown from them through the same default role->permission map the server enforces with, replacing the coarse Administrator/Operator/Observer pill that read the retired AccessRights bitmask - a pill that would have kept asserting authority for an account whose Role had been revoked. Three states stay distinct: the Roles list, 'None' (holds no Role - real, and grants nothing), and 'No data' (the RoleSet could not be read, which also suppresses every permission row). The Roles list is real as of 2026-08-08: this capture shows Operator, ConfigureAdmin. It showed 'None' until then, which was a CLIENT bug rather than a fixture gap - ReadRoleMemberships resolved a rule's Criteria through the type's property declarations without fetching the type chain, so every rule read back empty against the real node model (regression test: ScreenshotGenerator.RolesEnumerateTheirMembers). SECOND FIXTURE FACT, easy to trip over: the panel now READS what each Role grants from the server (the RolePermissions attribute, Part 3 5.2.9) instead of carrying its own map, and that attribute requires ReadRolePermissions. The generator wires the real attribute service straight into the client, so the client's empty ServiceContext -- which a real server would have replaced with the session's identity -- reads as ANONYMOUS and the attribute is refused, collapsing the whole panel to 'No data'. AuthenticatedAttributeService supplies the administrator identity for this capture only; do not widen it to the generator's other services, which would change UserAccessLevel narrowing and with it every writability affordance.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "11d10183540c7ed9d391b9312a952333411927c0d073ee6c924b815809190f2a"
+      }
     },
     {
       "file": "transmission-rule.png",
@@ -351,7 +512,13 @@
       "referenced_from": [
         "client/workbench.md"
       ],
-      "notes": "Transmission-rules editor inspector (TransmissionRule): the right region of transmission-rules.html for a selected transmission item — source signal + type tag (TS/TI), destination endpoint + IOA, and protocol (Modbus / IEC 60870-5-104 / IEC 61850, from the item's type). Reshell-only chrome (backlog 5.2), captured under --theme against a fixture rule (TS.733 TX_Ua → Modbus IOA 2001). Standalone like users-rbac; the capture makes the rule + its type chain, source and parent endpoint resident so ShowRule resolves the source/endpoint and reads SourceAddress. Read-only in this capture (no shell write path); the mockup's Trigger/Transform/Status/counters are server-side driver concepts absent from the client node model. Not yet embedded in a manual page."
+      "notes": "Transmission-rules editor inspector (TransmissionRule): the right region of transmission-rules.html for a selected transmission item — source signal + type tag (TS/TI), destination endpoint + IOA, and protocol (Modbus / IEC 60870-5-104 / IEC 61850, from the item's type). Reshell-only chrome (backlog 5.2), captured under --theme against a fixture rule (TS.733 TX_Ua → Modbus IOA 2001). Standalone like users-rbac; the capture makes the rule + its type chain, source and parent endpoint resident so ShowRule resolves the source/endpoint and reads SourceAddress. Read-only in this capture (no shell write path); the mockup's Trigger/Transform/Status/counters are server-side driver concepts absent from the client node model. Not yet embedded in a manual page.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "85c320b0fac37980d0c0db0107bb3e9a9a1b409c2fc5074371ea9cadff26d302"
+      }
     },
     {
       "file": "bulk-create.png",
@@ -359,74 +526,128 @@
       "published": false,
       "parity_key": "bulk-create",
       "referenced_from": [],
-      "notes": "Bulk-create wizard preview (BulkCreate): the naming/addressing step of bulk-create.html — a {n}-token name + NodeId pattern, start/count/step + IOA start/step, and a live preview grid (# / Name / NodeId / IOA / Status) with a 'N new / M conflict' summary. Reshell-only chrome (backlog 5.4), standalone and node-service-free: the capture seeds a demo pattern (TS{n} current, 12 items from IOA 4001) and one existing NodeId (TS8), so row 8 flags as a red 'exists' conflict. Driven by the pure ExpandBulkCreate engine. The actual node creation rides the existing MultiCreateModel::Run (Session.addNodes). Not yet embedded in a manual page."
+      "notes": "Bulk-create wizard preview (BulkCreate): the naming/addressing step of bulk-create.html — a {n}-token name + NodeId pattern, start/count/step + IOA start/step, and a live preview grid (# / Name / NodeId / IOA / Status) with a 'N new / M conflict' summary. Reshell-only chrome (backlog 5.4), standalone and node-service-free: the capture seeds a demo pattern (TS{n} current, 12 items from IOA 4001) and one existing NodeId (TS8), so row 8 flags as a red 'exists' conflict. Driven by the pure ExpandBulkCreate engine. The actual node creation rides the existing MultiCreateModel::Run (Session.addNodes). Not yet embedded in a manual page.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "4f6f89a4824d9f6117bcf2008b90e9f85bb86a1bff01118093519b2eb2944c3b"
+      }
     },
     {
       "file": "config-parameters.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "published": false,
       "parity_key": "node-properties",
       "referenced_from": [],
-      "notes": "Config workbench tabbed device-parameter editor (NewProps under --theme): DeviceParameterForm over the real PropertyModel, one subtab per property group, Revert/Apply. Theme-gated reshell chrome (backlog 5.0) — rendered only under --theme (the legacy NewProps view is the property grid), so it is excluded from the no-theme managed check and guarded by client_screenshot_check_themed. Fixture device TS.702."
+      "notes": "Config workbench tabbed device-parameter editor (NewProps under --theme): DeviceParameterForm over the real PropertyModel, one subtab per property group, Revert/Apply. Theme-gated reshell chrome (backlog 5.0) — rendered only under --theme (the legacy NewProps view is the property grid), so it is excluded from the no-theme managed check and guarded by client_screenshot_check_themed. Fixture device TS.702.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "97f80318f839a56e8329d26a8cc4e42e414ddd9d4e54763a05269d819748a115"
+      }
     },
     {
       "file": "config-address-map.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "published": false,
       "parity_key": "node-properties",
       "referenced_from": [],
-      "notes": "Config workbench Address-map subtab (NewProps under --theme, click_object addressMapSubtab): read-only Signal / Type (TS,TI) / IOA / NodeId grid from the device's transmission items. Theme-gated reshell chrome (backlog 5.0); guarded by client_screenshot_check_themed. Fixture device TS.702."
+      "notes": "Config workbench Address-map subtab (NewProps under --theme, click_object addressMapSubtab): read-only Signal / Type (TS,TI) / IOA / NodeId grid from the device's transmission items. Theme-gated reshell chrome (backlog 5.0); guarded by client_screenshot_check_themed. Fixture device TS.702.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "262e2ca1d9048c517328aea95c8c9b8ee17e19c38c28d2f8cd93a757cd1d59e5"
+      }
     },
     {
       "file": "config-limits.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "published": false,
       "parity_key": "node-properties",
       "referenced_from": [],
-      "notes": "Config workbench Limits subtab (NewProps under --theme, click_object limitsSubtab): read-only Signal / LoLo / Lo / Hi / HiHi grid of the device's analog items. Theme-gated reshell chrome (backlog 5.0); guarded by client_screenshot_check_themed. Fixture device TS.114."
+      "notes": "Config workbench Limits subtab (NewProps under --theme, click_object limitsSubtab): read-only Signal / LoLo / Lo / Hi / HiHi grid of the device's analog items. Theme-gated reshell chrome (backlog 5.0); guarded by client_screenshot_check_themed. Fixture device TS.114.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "0307a0bb4374eb252cde51b76c3db07486c72b62525a2ad7b354c15b18493b0b"
+      }
     },
     {
       "file": "hardware-tree.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "published": true,
       "parity_key": "devices",
       "referenced_from": [
         "client.md",
         "dev/devices.md"
       ],
-      "notes": "Hardware explorer under --theme: filter field + per-device good/uncertain/bad status dots (Subsystems / HardwareTreeView). Theme-gated reshell chrome (backlog 5.0/4.2); the legacy view is a bare tree, so it is excluded from the no-theme managed check. Fixture devices KP-01 offline / KP-02 online / KP-03 disabled. Published 2026-08-15: it replaced `devices-off.png` in dev/devices.md and the tree half of `devices-status.png` in client.md — both legacy captures of this same window. Dark, like the rest of the published subset, and the status dots exist only under --theme, so this image cannot be published legacy. Re-rendered 2026-08-29: the Explorer trees stopped drawing a row for their root (ConfigurationTreeView now takes Tree's hidden-root default), because the pane's own dock title already names it — so the tree starts at its content. macOS render, like the one it replaces; the gallery is still not a Windows baseline (docs/ops/client-screenshots.md). Rendered with --only, so no other image in the gallery moved, and provenance was deliberately NOT stamped: --stamp rewrites every row whose digest differs, and with no digests recorded anywhere yet that is all 63 of them — see backlog 642. The «Все оборудование» top row is what went. The same render also caught up with a fixture change nobody had re-rendered for: 3e61559f9 (2026-08-23) nested the -104 RTU under an Iec60870LinkType link, so КП-01 МЭК-60870 is no longer a top-level row — it sits inside «Канал МЭК-104», collapsed here. That is the fixture's shape catching up, not a device disappearing."
+      "notes": "Hardware explorer under --theme: filter field + per-device good/uncertain/bad status dots (Subsystems / HardwareTreeView). Theme-gated reshell chrome (backlog 5.0/4.2); the legacy view is a bare tree, so it is excluded from the no-theme managed check. Fixture devices KP-01 offline / KP-02 online / KP-03 disabled. Published 2026-08-15: it replaced `devices-off.png` in dev/devices.md and the tree half of `devices-status.png` in client.md — both legacy captures of this same window. Dark, like the rest of the published subset, and the status dots exist only under --theme, so this image cannot be published legacy. Re-rendered 2026-08-29: the Explorer trees stopped drawing a row for their root (ConfigurationTreeView now takes Tree's hidden-root default), because the pane's own dock title already names it — so the tree starts at its content. macOS render, like the one it replaces; the gallery is still not a Windows baseline (docs/ops/client-screenshots.md). Rendered with --only, so no other image in the gallery moved, and provenance was deliberately NOT stamped: --stamp rewrites every row whose digest differs, and with no digests recorded anywhere yet that is all 63 of them — see backlog 642. The «Все оборудование» top row is what went. The same render also caught up with a fixture change nobody had re-rendered for: 3e61559f9 (2026-08-23) nested the -104 RTU under an Iec60870LinkType link, so КП-01 МЭК-60870 is no longer a top-level row — it sits inside «Канал МЭК-104», collapsed here. That is the fixture's shape catching up, not a device disappearing.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "d7d70c679051692b82b0a7899bccee540f0fd17fe58fd8348fdd5b4bc3e39848"
+      }
     },
     {
       "file": "object-tree.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "published": false,
       "parity_key": "nodes",
       "referenced_from": [],
-      "notes": "Object explorer under --theme: per-node quality status dots (backlog 4.1). Theme-gated reshell chrome; the legacy view is a bare tree, so it is excluded from the no-theme managed check. Re-rendered 2026-08-29: the Explorer trees stopped drawing a row for their root (ConfigurationTreeView now takes Tree's hidden-root default), because the pane's own dock title already names it — so the tree starts at its content. macOS render, like the one it replaces; the gallery is still not a Windows baseline (docs/ops/client-screenshots.md). Rendered with --only, so no other image in the gallery moved, and provenance was deliberately NOT stamped: --stamp rewrites every row whose digest differs, and with no digests recorded anywhere yet that is all 63 of them — see backlog 642. The «Корневая папка» top row is what went; the tree now starts at «Объекты»/«Типы», the address space's own first level."
+      "notes": "Object explorer under --theme: per-node quality status dots (backlog 4.1). Theme-gated reshell chrome; the legacy view is a bare tree, so it is excluded from the no-theme managed check. Re-rendered 2026-08-29: the Explorer trees stopped drawing a row for their root (ConfigurationTreeView now takes Tree's hidden-root default), because the pane's own dock title already names it — so the tree starts at its content. macOS render, like the one it replaces; the gallery is still not a Windows baseline (docs/ops/client-screenshots.md). Rendered with --only, so no other image in the gallery moved, and provenance was deliberately NOT stamped: --stamp rewrites every row whose digest differs, and with no digests recorded anywhere yet that is all 63 of them — see backlog 642. The «Корневая папка» top row is what went; the tree now starts at «Объекты»/«Типы», the address space's own first level.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "472b2a4da28c1e4d3bdf1dc6b946d8389a90fb35aab3c604e6102c514ddbf04e"
+      }
     },
     {
       "file": "admin-simulation.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "published": false,
       "parity_key": "simulation-items",
       "referenced_from": [],
-      "notes": "Simulation-signals admin table (SimulationItems window) under --theme: validates the generic aui::Grid token adoption (backlog 5.1) — flat themed header, hairline gridlines, accent selection — which every node-table admin surface (Formats / Simulation / Historical DBs) shares while keeping inline editing. Needs the SimulationSignals folder + SimulationSignalType added to scada_test_address_space.h and four fixture signals (SCADA.9301-9304). Theme-gated; guarded by client_screenshot_check_themed."
+      "notes": "Simulation-signals admin table (SimulationItems window) under --theme: validates the generic aui::Grid token adoption (backlog 5.1) — flat themed header, hairline gridlines, accent selection — which every node-table admin surface (Formats / Simulation / Historical DBs) shares while keeping inline editing. Needs the SimulationSignals folder + SimulationSignalType added to scada_test_address_space.h and four fixture signals (SCADA.9301-9304). Theme-gated; guarded by client_screenshot_check_themed.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "e59cc2d7b59386b567e893f8acf7fc206aad2595279a5b14f59d22d97db146be"
+      }
     },
     {
       "file": "admin-formats.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "published": false,
       "parity_key": "ts-formats",
       "referenced_from": [],
-      "notes": "TS-format admin table (Params/TsFormats window) under --theme: the themed generic aui::Grid over the TsFormats folder — Name / OpenLabel / CloseLabel (LocalizedText state captions) / OpenColor / CloseColor. Sibling of admin-simulation.png (backlog 5.1). Needs the TsFormats folder + completed TsFormatType declarations in scada_test_address_space.h, four fixture formats (SCADA.9401-9404), and the fixture LocalizedText-label handling. Theme-gated; guarded by client_screenshot_check_themed."
+      "notes": "TS-format admin table (Params/TsFormats window) under --theme: the themed generic aui::Grid over the TsFormats folder — Name / OpenLabel / CloseLabel (LocalizedText state captions) / OpenColor / CloseColor. Sibling of admin-simulation.png (backlog 5.1). Needs the TsFormats folder + completed TsFormatType declarations in scada_test_address_space.h, four fixture formats (SCADA.9401-9404), and the fixture LocalizedText-label handling. Theme-gated; guarded by client_screenshot_check_themed.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "ba76d870677c6b6faa2635e7cab54c842d43fe3d4f5a878857648274318d7ddf"
+      }
     },
     {
       "file": "admin-historical-dbs.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "published": false,
       "parity_key": "historical-db",
       "referenced_from": [],
-      "notes": "Historical-databases admin table (HistoricalDB window) under --theme: the themed generic aui::Grid over the HistoricalDatabases folder — Name / Depth / PendingTaskCount / ItemCount / WriteValueCount. Third sibling of admin-simulation.png / admin-formats.png (backlog 5.1). Needs the HistoricalDatabases folder + HistoricalDatabaseType (Depth/ItemCount/WriteValueCount/PendingTaskCount) in scada_test_address_space.h and three fixture databases (SCADA.9501-9503). Theme-gated; guarded by client_screenshot_check_themed."
+      "notes": "Historical-databases admin table (HistoricalDB window) under --theme: the themed generic aui::Grid over the HistoricalDatabases folder — Name / Depth / PendingTaskCount / ItemCount / WriteValueCount. Third sibling of admin-simulation.png / admin-formats.png (backlog 5.1). Needs the HistoricalDatabases folder + HistoricalDatabaseType (Depth/ItemCount/WriteValueCount/PendingTaskCount) in scada_test_address_space.h and three fixture databases (SCADA.9501-9503). Theme-gated; guarded by client_screenshot_check_themed.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "e9714006e19d5b5fd362e8475fa838f134628187045d642c2ff2104cb9df4d64"
+      }
     },
     {
       "file": "sheet.png",
@@ -434,7 +655,13 @@
       "published": false,
       "parity_key": "sheet",
       "referenced_from": [],
-      "notes": "Custom table (the CusTable window, SheetModel) — the free-form spreadsheet: literal labels beside '=<formula>' cells bound to live values, with a coloured title and header band. Untagged until 2026-08-01, so the managed-image gate skipped it, and the render was a blank grid: a sheet's content lives in its saved window as SheetCell/Column items, which no fixture spec could express. The spec now carries `cells` and `column_widths` (see screenshot_data.json), and the capture is guarded by a filled-cell count — a sheet's row and column counts do not move when its content vanishes, so only counting cells that rendered text can see it go empty. Column headers (A/B/C) and row numbers are deliberately absent: sheet_view.cpp shows them only in edit mode. A live cell renders its item's display format (Температура shows 42.3; Активная мощность has no format and shows 125). That exposed a third bug: a formula cell cached the text it formatted when the sheet opened, and nothing notifies when an item's format arrives, so `--only sheet.png` rendered raw values where a full run rendered formatted ones — and a real sheet opened before its nodes loaded stayed unformatted for the life of the window. Formula cells now format on read (SheetCell::GetDisplayText), and the two renders agree. Populating this capture found a teardown crash: ~SheetCell erases itself from SheetModel::blinking_cells_, which was declared after `cells_` and so destroyed before them — closing a sheet holding one blinking cell segfaulted in std::set::erase, reachable by any user whose custom table binds a cell to a live value. Fixed by declaration order, with a regression test in sheet_model_unittest.cpp. It also found the alignment bug this capture now demonstrates: per-cell alignment was parsed, stored and offered in the context menu but never reached the screen, because GridCell carried no alignment and the grid adapter handed Qt the aui enum raw — so every aui::Grid in the client rendered left-aligned whatever its columns asked for. Fixed in grid_model_adapter.cpp + GridCell, with tests in grid_model_adapter_unittest.cpp; summary.png and client-retransmission.png changed with it. macOS render pending a Windows re-render; validation-only."
+      "notes": "Custom table (the CusTable window, SheetModel) — the free-form spreadsheet: literal labels beside '=<formula>' cells bound to live values, with a coloured title and header band. Untagged until 2026-08-01, so the managed-image gate skipped it, and the render was a blank grid: a sheet's content lives in its saved window as SheetCell/Column items, which no fixture spec could express. The spec now carries `cells` and `column_widths` (see screenshot_data.json), and the capture is guarded by a filled-cell count — a sheet's row and column counts do not move when its content vanishes, so only counting cells that rendered text can see it go empty. Column headers (A/B/C) and row numbers are deliberately absent: sheet_view.cpp shows them only in edit mode. A live cell renders its item's display format (Температура shows 42.3; Активная мощность has no format and shows 125). That exposed a third bug: a formula cell cached the text it formatted when the sheet opened, and nothing notifies when an item's format arrives, so `--only sheet.png` rendered raw values where a full run rendered formatted ones — and a real sheet opened before its nodes loaded stayed unformatted for the life of the window. Formula cells now format on read (SheetCell::GetDisplayText), and the two renders agree. Populating this capture found a teardown crash: ~SheetCell erases itself from SheetModel::blinking_cells_, which was declared after `cells_` and so destroyed before them — closing a sheet holding one blinking cell segfaulted in std::set::erase, reachable by any user whose custom table binds a cell to a live value. Fixed by declaration order, with a regression test in sheet_model_unittest.cpp. It also found the alignment bug this capture now demonstrates: per-cell alignment was parsed, stored and offered in the context menu but never reached the screen, because GridCell carried no alignment and the grid adapter handed Qt the aui enum raw — so every aui::Grid in the client rendered left-aligned whatever its columns asked for. Fixed in grid_model_adapter.cpp + GridCell, with tests in grid_model_adapter_unittest.cpp; summary.png and client-retransmission.png changed with it. macOS render pending a Windows re-render; validation-only.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "032e20a47e41389cc89148a61db53f7d7e7bd5420a78bb0033e5c7554aff1706"
+      }
     },
     {
       "file": "devices.png",
@@ -444,7 +671,13 @@
       "referenced_from": [
         "client.md"
       ],
-      "notes": "Objects explorer (the Struct window, ObjectTreeModel) — the operator's device/signal tree, collapsed to its top level. Untagged until 2026-08-01, so the managed-image gate skipped it and the on-disk render sat two UI generations stale: it still showed the retired items.bmp glyphs (yellow folders, blue variable icons) from before both the Lucide SVG migration and the deliberate removal of per-row icons from this tree (ObjectTreeModel::ObjectTreeNode::GetIcon returns kNoIcon — principles.md §5, state is a dot, never artwork). Only the root row keeps a glyph. macOS render pending a Windows re-render; validation-only. Published 2026-08-15 in place of `devices-on.png`, the hand-annotated composite client.md used for the object panel. What the annotation pointed at — binding a device in the group's parameters — the surrounding prose already states, but the replacement does NOT show a group's link state in the Значение column: nothing in the fixture binds a device to a group, so that column renders empty. Filed as its own backlog entry. Re-rendered dark for the published subset. Task 116 changes this render and it has NOT been regenerated here: the two data-item rows (Ua, Дорасчет Ua средн…) lose the expander triangle they used to draw, because the leaf-type check meant to suppress it had been comparing an instance against a supertype chain and so never matched. Containers keep theirs. Measured 2026-08-16 by building the generator before and after on one macOS machine: this is the only capture of the 22 that moves. Expect it at the next Windows regeneration; it is a fix, not drift. Re-rendered 2026-08-29: the Explorer trees stopped drawing a row for their root (ConfigurationTreeView now takes Tree's hidden-root default), because the pane's own dock title already names it — so the tree starts at its content. macOS render, like the one it replaces; the gallery is still not a Windows baseline (docs/ops/client-screenshots.md). Rendered with --only, so no other image in the gallery moved, and provenance was deliberately NOT stamped: --stamp rewrites every row whose digest differs, and with no digests recorded anywhere yet that is all 63 of them — see backlog 642. The «Все объекты» top row is what went."
+      "notes": "Objects explorer (the Struct window, ObjectTreeModel) — the operator's device/signal tree, collapsed to its top level. Untagged until 2026-08-01, so the managed-image gate skipped it and the on-disk render sat two UI generations stale: it still showed the retired items.bmp glyphs (yellow folders, blue variable icons) from before both the Lucide SVG migration and the deliberate removal of per-row icons from this tree (ObjectTreeModel::ObjectTreeNode::GetIcon returns kNoIcon — principles.md §5, state is a dot, never artwork). Only the root row keeps a glyph. macOS render pending a Windows re-render; validation-only. Published 2026-08-15 in place of `devices-on.png`, the hand-annotated composite client.md used for the object panel. What the annotation pointed at — binding a device in the group's parameters — the surrounding prose already states, but the replacement does NOT show a group's link state in the Значение column: nothing in the fixture binds a device to a group, so that column renders empty. Filed as its own backlog entry. Re-rendered dark for the published subset. Task 116 changes this render and it has NOT been regenerated here: the two data-item rows (Ua, Дорасчет Ua средн…) lose the expander triangle they used to draw, because the leaf-type check meant to suppress it had been comparing an instance against a supertype chain and so never matched. Containers keep theirs. Measured 2026-08-16 by building the generator before and after on one macOS machine: this is the only capture of the 22 that moves. Expect it at the next Windows regeneration; it is a fix, not drift. Re-rendered 2026-08-29: the Explorer trees stopped drawing a row for their root (ConfigurationTreeView now takes Tree's hidden-root default), because the pane's own dock title already names it — so the tree starts at its content. macOS render, like the one it replaces; the gallery is still not a Windows baseline (docs/ops/client-screenshots.md). Rendered with --only, so no other image in the gallery moved, and provenance was deliberately NOT stamped: --stamp rewrites every row whose digest differs, and with no digests recorded anywhere yet that is all 63 of them — see backlog 642. The «Все объекты» top row is what went.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "1ada4b1056ef7157007326dbee4eba25fec9962f10d18ebac51f138af2697776"
+      }
     },
     {
       "file": "files.png",
@@ -452,7 +685,13 @@
       "published": false,
       "parity_key": "files",
       "referenced_from": [],
-      "notes": "Files view (FileSystemView) — the server's file store as a tree: directories typed FileDirectoryType, files typed FileType, expanded. Untagged until 2026-08-01, so the managed-image gate skipped it, and the fixture defined no file nodes at all — the view rendered its single root row, which no row count could catch (hence min_columns' sibling fix: the tree row check now counts materialized descendants, not just top-level rows, and runs after the expand step). The fixture's file store is described under `_filesystem_comment` in screenshot_data.json; it also needed FileDirectoryType added to the shared ScadaTestAddressSpace and FileType corrected there from ObjectType to VariableType, which is what filesystem.xml declares. The expand step settles pending node loads and expands twice: the tree's leaf test resolves a node's type definition lazily, so on the first pass every file still drew an expand twisty. macOS render pending a Windows re-render; validation-only. Re-rendered 2026-08-29: the Explorer trees stopped drawing a row for their root (ConfigurationTreeView now takes Tree's hidden-root default), because the pane's own dock title already names it — so the tree starts at its content. macOS render, like the one it replaces; the gallery is still not a Windows baseline (docs/ops/client-screenshots.md). Rendered with --only, so no other image in the gallery moved, and provenance was deliberately NOT stamped: --stamp rewrites every row whose digest differs, and with no digests recorded anywhere yet that is all 63 of them — see backlog 642. The «Файловая система» top row is what went — and note the fixture names that node more mildly than the shipped nodeset, where it is «Файлы», exactly the pane's own title. The spec's row floor dropped by one in the same change: the count starts at the view's root index, which the hidden root now occupies, so the root row is no longer among the rows counted."
+      "notes": "Files view (FileSystemView) — the server's file store as a tree: directories typed FileDirectoryType, files typed FileType, expanded. Untagged until 2026-08-01, so the managed-image gate skipped it, and the fixture defined no file nodes at all — the view rendered its single root row, which no row count could catch (hence min_columns' sibling fix: the tree row check now counts materialized descendants, not just top-level rows, and runs after the expand step). The fixture's file store is described under `_filesystem_comment` in screenshot_data.json; it also needed FileDirectoryType added to the shared ScadaTestAddressSpace and FileType corrected there from ObjectType to VariableType, which is what filesystem.xml declares. The expand step settles pending node loads and expands twice: the tree's leaf test resolves a node's type definition lazily, so on the first pass every file still drew an expand twisty. macOS render pending a Windows re-render; validation-only. Re-rendered 2026-08-29: the Explorer trees stopped drawing a row for their root (ConfigurationTreeView now takes Tree's hidden-root default), because the pane's own dock title already names it — so the tree starts at its content. macOS render, like the one it replaces; the gallery is still not a Windows baseline (docs/ops/client-screenshots.md). Rendered with --only, so no other image in the gallery moved, and provenance was deliberately NOT stamped: --stamp rewrites every row whose digest differs, and with no digests recorded anywhere yet that is all 63 of them — see backlog 642. The «Файловая система» top row is what went — and note the fixture names that node more mildly than the shipped nodeset, where it is «Файлы», exactly the pane's own title. The spec's row floor dropped by one in the same change: the count starts at the view's root index, which the hidden root now occupies, so the root row is no longer among the rows counted.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "a32266b7db6c940c730321ecf6ee4854ae894dc50740e3f7f0c0b0e4736b9ffd"
+      }
     },
     {
       "file": "data.png",
@@ -460,7 +699,13 @@
       "published": false,
       "parity_key": "timed-data",
       "referenced_from": [],
-      "notes": "Data view (the TimeVal window, TimedDataModel) — one item's raw history as a value table (source timestamp / value / quality / server timestamp). Untagged until 2026-08-01, so the managed-image gate skipped it, and the fixture spec named no item — TimedDataModel::Init takes its series from a single Item/path — so it rendered its header row over an empty body. Now seeded with TIT.211 (Температура) and guarded by min_rows:10. Width trimmed 800 -> 560 to match the view's own fixed columns (150/150/65/150 in MakeColumns); those widths also clip the two timestamp columns and the Quality header, which is the view's sizing, not the capture's. macOS render pending a Windows re-render; validation-only."
+      "notes": "Data view (the TimeVal window, TimedDataModel) — one item's raw history as a value table (source timestamp / value / quality / server timestamp). Untagged until 2026-08-01, so the managed-image gate skipped it, and the fixture spec named no item — TimedDataModel::Init takes its series from a single Item/path — so it rendered its header row over an empty body. Now seeded with TIT.211 (Температура) and guarded by min_rows:10. Width trimmed 800 -> 560 to match the view's own fixed columns (150/150/65/150 in MakeColumns); those widths also clip the two timestamp columns and the Quality header, which is the view's sizing, not the capture's. macOS render pending a Windows re-render; validation-only.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "43bf4a28d7c92b68eb9c144c049f335649aa84e6c3a6dfbd7aa4257ed410a832"
+      }
     },
     {
       "file": "summary.png",
@@ -468,7 +713,13 @@
       "published": false,
       "parity_key": "summary",
       "referenced_from": [],
-      "notes": "Summary grid (the Summ window, SummaryModel over aui::Grid): one column per configured data item against a fixed time axis — hourly aggregate rows over the fixture day, four items across two devices (ЭСТРА-ПС active/reactive power, Трансформатор T1 temperature, Диагностика frequency). Untagged until 2026-08-01, so the managed-image gate skipped it and the on-disk render sat stale — and the fixture spec configured no items at all, so it showed its 16 time rows beside a blank body, an empty capture the min_rows guard cannot see (the summary's data is in its columns). The spec now carries min_columns:4, which fails the capture if the items stop reaching the grid, plus column_width:240 (at 1120 px wide) so each header renders the item's full display path instead of an elided fragment. Values are right-aligned as of 2026-08-01: the grid adapter used to hand Qt the aui alignment enum raw, so every aui::Grid rendered left-aligned no matter what its columns asked for. macOS render pending a Windows re-render; validation-only, not published to the manual (scada-docs client/summary.md embeds only menu-summary.png)."
+      "notes": "Summary grid (the Summ window, SummaryModel over aui::Grid): one column per configured data item against a fixed time axis — hourly aggregate rows over the fixture day, four items across two devices (ЭСТРА-ПС active/reactive power, Трансформатор T1 temperature, Диагностика frequency). Untagged until 2026-08-01, so the managed-image gate skipped it and the on-disk render sat stale — and the fixture spec configured no items at all, so it showed its 16 time rows beside a blank body, an empty capture the min_rows guard cannot see (the summary's data is in its columns). The spec now carries min_columns:4, which fails the capture if the items stop reaching the grid, plus column_width:240 (at 1120 px wide) so each header renders the item's full display path instead of an elided fragment. Values are right-aligned as of 2026-08-01: the grid adapter used to hand Qt the aui alignment enum raw, so every aui::Grid rendered left-aligned no matter what its columns asked for. macOS render pending a Windows re-render; validation-only, not published to the manual (scada-docs client/summary.md embeds only menu-summary.png).",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "962c77b7ee3a17d9f956a78abf42cd7e890a2f2264bebd8bc1d65849300d9177"
+      }
     },
     {
       "file": "events.png",
@@ -476,57 +727,92 @@
       "published": false,
       "parity_key": "events",
       "referenced_from": [],
-      "notes": "Current-events panel (the docked Event window, EventView with is_panel=true) — the unacked-only surface, as distinct from the EventJournal history in events-log.png. Renders the fixture's two pending alarms (ids 1008/1009, acknowledged:false); every other fixture event defaults to acked and is deliberately absent. Untagged until 2026-08-01, so the managed-image gate skipped it and the on-disk render sat stale from before those pending alarms existed — showing a header row over an empty body. min_rows:2 on the fixture spec now fails the capture if the unacked path stops delivering. Validation-only."
+      "notes": "Current-events panel (the docked Event window, EventView with is_panel=true) — the unacked-only surface, as distinct from the EventJournal history in events-log.png. Renders the fixture's two pending alarms (ids 1008/1009, acknowledged:false); every other fixture event defaults to acked and is deliberately absent. Untagged until 2026-08-01, so the managed-image gate skipped it and the on-disk render sat stale from before those pending alarms existed — showing a header row over an empty body. min_rows:2 on the fixture spec now fails the capture if the unacked path stops delivering. Validation-only.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "38a1efd0e38cc288014ad4d74d194a3c11c3ad9f5c58d7ac4bf5b1b22e4b46ad"
+      }
     },
     {
       "file": "events-log.png",
-      "tag": "auto-view",
+      "tag": "obsolete",
       "published": false,
-      "parity_key": "event-journal",
       "referenced_from": [],
-      "notes": "Legacy event journal (the EventJournal window, EventView with is_panel=false) in the no-theme pipeline — history over the fixture's nine events, acked and pending alike, as distinct from the unacked-only panel in events.png and the themed alarm surface in events-alarm-surface.png. Untagged until 2026-08-01, so the managed-image gate skipped it and the on-disk render sat stale; unlike events.png its content was never wrong, since the journal shows acked history the fixture has always had. Validation-only. Re-rendered 2026-08-01: the fixture now seeds four AUDIT events (AddIdentity / ModifyUser / a refused RemoveUser / a session activation), so they appear here interleaved with the process events. That is correct - the journal is every event and the Audit log view is a scoped subset of it - but it does mean an OPERATOR's journal shows administrative entries. Worth a product decision if that is unwanted; the behaviour is not new (session-activation audits were already stored), the fixture just makes it visible."
+      "notes": "RETIRED 2026-08-31, when the client stopped shipping an un-themed \"Classic\" appearance. This was the untouched-platform twin of events-alarm-surface.png: the same EventJournal fixture spec under a second filename, so the default (no-theme) pass and the --theme pass could each render the journal without overwriting the other's image. With one appearance and one render pass the two specs produced byte-identical files, which check_screenshots.py reports as one capture rendering another's picture — correctly. events-alarm-surface.png is the survivor: it is the one a manual page embeds. Kept as an obsolete row rather than deleted so the name resolves for anyone reading an older commit; validation-only, never published, so no img/ file was removed with it."
     },
     {
       "file": "events-alarm-surface.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "parity_key": "event-journal",
       "referenced_from": [
         "client/workbench.md"
       ],
-      "notes": "Event journal as an alarm surface (backlog 2.2) under --theme: leading pending-dot column (severity-coloured), the Severity column naming the alarm band (Критично 800 / Предупреждение 600), an unacknowledged row's Acknowledge-Time cell reading '— pending —', and the alarm footer (displayed-backlog summary + Acknowledge-all). Fixture seeds two pending alarms (ids 1008/1009, acknowledged:false). A second EventJournal spec alongside the legacy events-log.png, which keeps rendering the unchanged legacy journal in the no-theme pipeline. Guarded by client_screenshot_check_themed. Published from a macOS render pending a Windows re-render; kept out of current_generator_owned_subset (subset is auto-* only)."
+      "notes": "Event journal as an alarm surface (backlog 2.2) under --theme: leading pending-dot column (severity-coloured), the Severity column naming the alarm band (Критично 800 / Предупреждение 600), an unacknowledged row's Acknowledge-Time cell reading '— pending —', and the alarm footer (displayed-backlog summary + Acknowledge-all). Fixture seeds two pending alarms (ids 1008/1009, acknowledged:false). A second EventJournal spec alongside the legacy events-log.png, which keeps rendering the unchanged legacy journal in the no-theme pipeline. Guarded by client_screenshot_check_themed. Published from a macOS render pending a Windows re-render; kept out of current_generator_owned_subset (subset is auto-* only).",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "20c8bf8304f7ba15ae5dd8729f7259ab61f153313b74ae3e7575e505af4211b8"
+      }
     },
     {
       "file": "table-workspace.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "parity_key": "table",
       "referenced_from": [
         "client/workbench.md"
       ],
-      "notes": "Table workspace under --theme: the reshell TableToolbar (add-signal / delete / move / sort keys; shell To-graph/CSV/Print hide when unresolved) over the operator grid with the Quality column and monospace value/timestamp cells (UX 0.3 + 2.8). Theme-gated (the legacy Table is the bare grid) - regenerate with --theme=dark --only=table-workspace.png; guarded by client_screenshot_check_themed. Published from a macOS render pending a Windows re-render; kept out of current_generator_owned_subset (subset is auto-* only)."
+      "notes": "Table workspace under --theme: the reshell TableToolbar (add-signal / delete / move / sort keys; shell To-graph/CSV/Print hide when unresolved) over the operator grid with the Quality column and monospace value/timestamp cells (UX 0.3 + 2.8). Theme-gated (the legacy Table is the bare grid) - regenerate with --theme=dark --only=table-workspace.png; guarded by client_screenshot_check_themed. Published from a macOS render pending a Windows re-render; kept out of current_generator_owned_subset (subset is auto-* only).",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "ef72006cea3c548aa3da9f2e6fc70242e6797554300f26e571546255bd8857e4"
+      }
     },
     {
       "file": "severity-tiles.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "published": false,
       "parity_key": "severity-tiles",
       "referenced_from": [],
-      "notes": "KPI severity tile strip (backlog 2.3): the context bar's Critical / Warning / Unacknowledged tiles rendered by SeverityTileStrip from BuildSeverityTiles() — most severe first, severity-coloured and bold while a count is live, muted at zero; unacknowledged carries no severity colour (workflow state, not severity). Captured standalone from seeded counts (1 critical / 3 warning / 7 unacknowledged) because the fixture holds no unacknowledged alarms, so the in-window tiles would all render zero. Theme-gated reshell chrome — MakeSeverityTileStrip returns nullptr under the legacy theme; guarded by client_screenshot_check_themed."
+      "notes": "KPI severity tile strip (backlog 2.3): the context bar's Critical / Warning / Unacknowledged tiles rendered by SeverityTileStrip from BuildSeverityTiles() — most severe first, severity-coloured and bold while a count is live, muted at zero; unacknowledged carries no severity colour (workflow state, not severity). Captured standalone from seeded counts (1 critical / 3 warning / 7 unacknowledged) because the fixture holds no unacknowledged alarms, so the in-window tiles would all render zero. Theme-gated reshell chrome — MakeSeverityTileStrip returns nullptr under the legacy theme; guarded by client_screenshot_check_themed.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "1987f924144770dd1fc043ab5011516f30cc5b2777889feb95af8020ee9bdf15"
+      }
     },
     {
       "file": "command-field.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "published": false,
       "parity_key": "command-field",
       "referenced_from": [],
-      "notes": "Top context bar command/search field (shell.md §2.2): the command palette's entry point, drawn by CommandField as a read-only QLineEdit with a leading Lucide magnifier tinted from QPalette::PlaceholderText and a trailing shortcut hint in the platform's own key notation (⌘K on macOS, Ctrl+K on Windows). Captured standalone, like severity-tiles.png, because the field is chrome rather than a view; built with the same prompt and shortcut MainWindow::CreateContextBar() gives it. Everything is sized in font/style metrics, so a diff here that only changes the field's width is usually a font difference, not a UI change. Theme-gated reshell chrome — the capture is a no-op under the legacy theme; guarded by client_screenshot_check_themed."
+      "notes": "Top context bar command/search field (shell.md §2.2): the command palette's entry point, drawn by CommandField as a read-only QLineEdit with a leading Lucide magnifier tinted from QPalette::PlaceholderText and a trailing shortcut hint in the platform's own key notation (⌘K on macOS, Ctrl+K on Windows). Captured standalone, like severity-tiles.png, because the field is chrome rather than a view; built with the same prompt and shortcut MainWindow::CreateContextBar() gives it. Everything is sized in font/style metrics, so a diff here that only changes the field's width is usually a font difference, not a UI change. Theme-gated reshell chrome — the capture is a no-op under the legacy theme; guarded by client_screenshot_check_themed.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "dd7df74c5865f950b706f3ed776ac2cf9b0800cb3fc201981d7dd631f4407bca"
+      }
     },
     {
       "file": "users-admin.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "published": false,
       "parity_key": "users",
       "referenced_from": [],
-      "notes": "Users-admin grid (Users window under --theme): the reshell UsersGridPanel returned by NodeTableController for the Users folder — User / Role (Administrator·bad / Operator·good / Observer·muted) / Sessions (Single·Multiple from MultiSessions), with the count header + 'editing requires Administrator' hint and disabled Add-user / Reset-password affordances. Theme-gated reshell chrome (backlog 5.1); the legacy Users view is the generic node-table grid, so it is excluded from the no-theme managed check and guarded by client_screenshot_check_themed. Row selection drives the shared SelectionModel → the RBAC inspector. The spec's width is 740, not the 700 it carried until 2026-08-29: SaveScreenshot resizes to the spec, Qt clamps that to the panel's layout minimum, and 740 is what every render has actually produced — the tracked PNG included. Nothing could see the disagreement while the themed ctest ran the generator directly and checked no dimensions (backlog 630). Backend/Areas/Status/Last-login from the mockup are server-side, absent from the client node model. Fixture Users folder (13 users). The manual prose for this surface is written (scada-docs client/workbench.md + en/ mirror, #administration); the image is NOT embedded yet because the published set must come from the WINDOWS pipeline - a macOS render differs by font alone and would commit as churn. Embed it on the next Windows regeneration, set published:true and add it to current_generator_owned_subset. CAPTURED STANDALONE since 2026-08-08 (SaveRolesScreenshot / SaveUsersGridScreenshot in user_access_capture.cpp), not through the view path: the grid is built from the server's published role->permission map, which needs ReadRolePermissions, and the generator's ordinary session is anonymous - so the view-path capture rendered 'No data' over an empty grid. AuthenticatedAttributeService supplies the administrator identity for these captures only. The member/role columns were additionally empty until a client fix the same day (ReadRoleMemberships did not fetch the rule type's chain, so no identity mapping rule read back); the tracked PNG still predates both and will change on the next Windows regeneration."
+      "notes": "Users-admin grid (Users window under --theme): the reshell UsersGridPanel returned by NodeTableController for the Users folder — User / Role (Administrator·bad / Operator·good / Observer·muted) / Sessions (Single·Multiple from MultiSessions), with the count header + 'editing requires Administrator' hint and disabled Add-user / Reset-password affordances. Theme-gated reshell chrome (backlog 5.1); the legacy Users view is the generic node-table grid, so it is excluded from the no-theme managed check and guarded by client_screenshot_check_themed. Row selection drives the shared SelectionModel → the RBAC inspector. The spec's width is 740, not the 700 it carried until 2026-08-29: SaveScreenshot resizes to the spec, Qt clamps that to the panel's layout minimum, and 740 is what every render has actually produced — the tracked PNG included. Nothing could see the disagreement while the themed ctest ran the generator directly and checked no dimensions (backlog 630). Backend/Areas/Status/Last-login from the mockup are server-side, absent from the client node model. Fixture Users folder (13 users). The manual prose for this surface is written (scada-docs client/workbench.md + en/ mirror, #administration); the image is NOT embedded yet because the published set must come from the WINDOWS pipeline - a macOS render differs by font alone and would commit as churn. Embed it on the next Windows regeneration, set published:true and add it to current_generator_owned_subset. CAPTURED STANDALONE since 2026-08-08 (SaveRolesScreenshot / SaveUsersGridScreenshot in user_access_capture.cpp), not through the view path: the grid is built from the server's published role->permission map, which needs ReadRolePermissions, and the generator's ordinary session is anonymous - so the view-path capture rendered 'No data' over an empty grid. AuthenticatedAttributeService supplies the administrator identity for these captures only. The member/role columns were additionally empty until a client fix the same day (ReadRoleMemberships did not fetch the rule type's chain, so no identity mapping rule read back); the tracked PNG still predates both and will change on the next Windows regeneration.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "f7d3eb0486905b05e9b93baffad19a4bc09c328b86f5e8d3b3cd737b4c24a57a"
+      }
     },
     {
       "file": "iec-60870-5-transport.png",
@@ -551,7 +837,13 @@
       "referenced_from": [
         "architecture.md"
       ],
-      "notes": "Graph with severity-coloured limit markers drawn (MetrixLine limit styles; TIT.200 carries AnalogItemType_LimitLoLo/Lo/Hi/HiHi in the fixture). SaveGraphScreenshot now makes each graphed node resident (FetchGraphNodesResident) before building the widget, so the node's EU range and limit-band property children are fetched: the axes use the EU range instead of the data auto-range and the limit markers draw. The varying series (same DateTime::Max history fix as graph-cursor.png) now read against the four bands. (The legend's current-value readout is populated: verified 2026-08-15 by rendering this spec and graph-cursor.png under --theme=dark, where the themed legend's Current column reads 125 / -32 / 50.01 - the three series' fixture base_value, delivered by LocalMonitoredItemService through TimedDataImpl's monitored-item subscription. An earlier note here claimed the cell stayed blank; it does not, and the legacy legend this file renders under shows the selected cursor's value in that column anyway, never current().) REWORKED 2026-08-16 (backlog 344): see graph-cursor.png. This row now plots the `limits` variant of the fixture's `graphs` object - a single full-height pane over TIT.200, the one node carrying AnalogItemType_LimitLoLo/Lo/Hi/HiHi - so the four bands and the severity-coloured out-of-band segments are the whole picture, and the time cursor that used to be drawn across every graph capture is gone. The tracked PNG is still the pre-change render (macOS tree; regenerated from Windows), so expect this file to change at the next Windows regeneration."
+      "notes": "Graph with severity-coloured limit markers drawn (MetrixLine limit styles; TIT.200 carries AnalogItemType_LimitLoLo/Lo/Hi/HiHi in the fixture). SaveGraphScreenshot now makes each graphed node resident (FetchGraphNodesResident) before building the widget, so the node's EU range and limit-band property children are fetched: the axes use the EU range instead of the data auto-range and the limit markers draw. The varying series (same DateTime::Max history fix as graph-cursor.png) now read against the four bands. (The legend's current-value readout is populated: verified 2026-08-15 by rendering this spec and graph-cursor.png under --theme=dark, where the themed legend's Current column reads 125 / -32 / 50.01 - the three series' fixture base_value, delivered by LocalMonitoredItemService through TimedDataImpl's monitored-item subscription. An earlier note here claimed the cell stayed blank; it does not, and the legacy legend this file renders under shows the selected cursor's value in that column anyway, never current().) REWORKED 2026-08-16 (backlog 344): see graph-cursor.png. This row now plots the `limits` variant of the fixture's `graphs` object - a single full-height pane over TIT.200, the one node carrying AnalogItemType_LimitLoLo/Lo/Hi/HiHi - so the four bands and the severity-coloured out-of-band segments are the whole picture, and the time cursor that used to be drawn across every graph capture is gone. The tracked PNG is still the pre-change render (macOS tree; regenerated from Windows), so expect this file to change at the next Windows regeneration.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "d27f087e7a16ac88516dc985e347855bc349b091f06721058b2fad6256cc432f"
+      }
     },
     {
       "file": "limits.png",
@@ -561,7 +853,13 @@
         "architecture.md",
         "client.md"
       ],
-      "notes": "LimitDialog modal, rendered over TIT.212 ('Температура нагрева'). Its four bands now come from that node's AnalogItemType_Limit{LoLo,Lo,Hi,HiHi} properties - Аварийные 90 / -25, Уставки 70 / -10, matching the manual's image; the node carried none before, so every field captured empty. ScreenshotGenerator.LimitDialogNodeCarriesItsBands pins the values, since a blank dialog satisfies the existence-and-dimensions check."
+      "notes": "LimitDialog modal, rendered over TIT.212 ('Температура нагрева'). Its four bands now come from that node's AnalogItemType_Limit{LoLo,Lo,Hi,HiHi} properties - Аварийные 90 / -25, Уставки 70 / -10, matching the manual's image; the node carried none before, so every field captured empty. ScreenshotGenerator.LimitDialogNodeCarriesItsBands pins the values, since a blank dialog satisfies the existence-and-dimensions check.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "c8652503e85083c31395245a3a3b366b8b5953e6b765d33e5ac7f9dd15970c48"
+      }
     },
     {
       "file": "login.png",
@@ -584,7 +882,13 @@
       "referenced_from": [
         "dev/data-items.md"
       ],
-      "notes": "Not a menu despite the name (audited 2026-08-08): the modal «Создание сервисных объектов» dialog — a device combo over the list of service items it would create. Rendered by the screenshot generator since 2026-08-15 (dialog kind `create-service-item`); the component list is the selected device's HasComponent data variables, which the fixture states explicitly because a fixture child is otherwise wired by Organizes alone and the list would render empty. Not yet in `current_generator_owned_subset`: swapping the generated render in for the legacy scada-docs image is subtask 13 (bulk replace), which is reviewed a batch at a time."
+      "notes": "Not a menu despite the name (audited 2026-08-08): the modal «Создание сервисных объектов» dialog — a device combo over the list of service items it would create. Rendered by the screenshot generator since 2026-08-15 (dialog kind `create-service-item`); the component list is the selected device's HasComponent data variables, which the fixture states explicitly because a fixture child is otherwise wired by Organizes alone and the list would render empty. Not yet in `current_generator_owned_subset`: swapping the generated render in for the legacy scada-docs image is subtask 13 (bulk replace), which is reviewed a batch at a time.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "e2110dae885ca18e3abc909f2c36b9ff73efd8d3371631c3510198c4635f400a"
+      }
     },
     {
       "file": "menu-create-object-ts-ti.png",
@@ -632,7 +936,13 @@
       "referenced_from": [
         "dev/excel.md"
       ],
-      "notes": "Rendered by the screenshot generator (CaptureMoreMenu): the More menu, its checkable view rows above the Excel export/import pair. Capturing it needed ExportConfigurationModule installed in the generator's module set -- the rows are contributed by that module and are admin_only, so without it the menu rendered without them. NOT the same menu the docs original shows: that image predates the rename, and this menu is titled «Дополнительно», not «Далее». Not yet in current_generator_owned_subset: publishing it would replace the manual's hand capture with a differently-titled menu, which is a docs decision."
+      "notes": "Rendered by the screenshot generator (CaptureMoreMenu): the More menu, its checkable view rows above the Excel export/import pair. Capturing it needed ExportConfigurationModule installed in the generator's module set -- the rows are contributed by that module and are admin_only, so without it the menu rendered without them. NOT the same menu the docs original shows: that image predates the rename, and this menu is titled «Дополнительно», not «Далее». Not yet in current_generator_owned_subset: publishing it would replace the manual's hand capture with a differently-titled menu, which is a docs decision.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "fa0c9a384288a1b2748ff8de75d3b2162250bd866221ef83aa34dd940bde4e02"
+      }
     },
     {
       "file": "menu-favorites.png",
@@ -697,7 +1007,13 @@
       "referenced_from": [
         "client/summary.md"
       ],
-      "notes": "Rendered by the screenshot generator (CaptureSummaryFunctionMenu): the command toolbar's Function dropdown, seven checkable aggregate rows. Needed SummaryModule installed in the generator's module set (it registers the aggregate actions the toolbar groups) plus an explicitly activated Summary view -- a window shown offscreen never becomes active, and every row resolves through the active view, so all seven rendered hidden. «Последнее» reads as checked, not «Минимум» as in the docs original: the fixture's Summ window sets no AggregateType, so the model takes its default. Not yet in current_generator_owned_subset for that reason."
+      "notes": "Rendered by the screenshot generator (CaptureSummaryFunctionMenu): the command toolbar's Function dropdown, seven checkable aggregate rows. Needed SummaryModule installed in the generator's module set (it registers the aggregate actions the toolbar groups) plus an explicitly activated Summary view -- a window shown offscreen never becomes active, and every row resolves through the active view, so all seven rendered hidden. «Последнее» reads as checked, not «Минимум» as in the docs original: the fixture's Summ window sets no AggregateType, so the model takes its default. Not yet in current_generator_owned_subset for that reason.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "7716c413cec6b3e201523e613e66c5bae0e298a4d814176911b8e136b89a47f5"
+      }
     },
     {
       "file": "modus-f11-breaker.png",
@@ -770,7 +1086,13 @@
       "referenced_from": [
         "client.md"
       ],
-      "notes": "Manual-control dialog, TI side. Verified 2026-08-08 to render the node display name ('Температура нагрева'), the current value ('41 °C') and the engineering unit beside the new-value combo - the three things this capture was recorded as missing. The new-value box was empty until 2026-08-15 — the current value had not arrived by the time WriteDialog's constructor seeded the field — and now pre-fills 41, which is why this row joined the set of tracked captures the generator no longer reproduces. The docs original pre-fills a distinct value, 25; whether to seed one is still open."
+      "notes": "Manual-control dialog, TI side. Verified 2026-08-08 to render the node display name ('Температура нагрева'), the current value ('41 °C') and the engineering unit beside the new-value combo - the three things this capture was recorded as missing. The new-value box was empty until 2026-08-15 — the current value had not arrived by the time WriteDialog's constructor seeded the field — and now pre-fills 41, which is why this row joined the set of tracked captures the generator no longer reproduces. The docs original pre-fills a distinct value, 25; whether to seed one is still open.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "f923a34d5a019f50112065354f349dafa93fbf5b3191cde5d6f2b14f8d002353"
+      }
     },
     {
       "file": "ti-parameters.png",
@@ -788,7 +1110,13 @@
       "referenced_from": [
         "client.md"
       ],
-      "notes": "The operator's review of a direct control command on an analog point, from the control-confirm dialog kind over the fixture-wide TIT.212: present 41 °C beside a commanded 12.5 °C, then the irreversibility warning. The prompt is WriteModel::GetConfirmationMessage itself rather than a copy, so it cannot drift from the shipped wording. Distinct from control-select-confirm.png, which is the same kind with second_stage set and therefore carries the extra «remote device is ready» line. ScreenshotGenerator.ControlConfirmationsReviewARealChange asserts the quoted present and commanded values differ — a command that formats to the present reading still writes a well-formed PNG."
+      "notes": "The operator's review of a direct control command on an analog point, from the control-confirm dialog kind over the fixture-wide TIT.212: present 41 °C beside a commanded 12.5 °C, then the irreversibility warning. The prompt is WriteModel::GetConfirmationMessage itself rather than a copy, so it cannot drift from the shipped wording. Distinct from control-select-confirm.png, which is the same kind with second_stage set and therefore carries the extra «remote device is ready» line. ScreenshotGenerator.ControlConfirmationsReviewARealChange asserts the quoted present and commanded values differ — a command that formats to the present reading still writes a well-formed PNG.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "d45ab6a41deb7f5c72688f556fa1d5a748be1dea30a220d8e452ec6e032ff116"
+      }
     },
     {
       "file": "ti-remote-control-disabled.png",
@@ -798,7 +1126,13 @@
         "client.md",
         "dev/data-items.md"
       ],
-      "notes": "Remote-control dialog disabled state, TI. Renders from the fixture since 2026-08-15: the `write-remote` dialog spec carries a `node` override naming TIT.213 (\u00abТемпература масла\u00bb), whose DataItemType_OutputCondition formula `TIT.211 > 70` evaluates false over the fixture data, so the condition row reads unsatisfied and the Execute button is disabled. The override exists because one node cannot render both this and ti-remote-control-enabled.png in a single run. ScreenshotGenerator.DisabledControlDialogNodeConditionIsUnsatisfied asserts both the override and the falsy evaluation \u2014 the structural check only asserts the PNG exists, so a dropped override would ship the enabled dialog under this name. Its new-value box also pre-fills 58 as of 2026-08-15: BuildWriteDialog warms the item's subscription before building the dialog, so this capture no longer depends on an earlier capture in the same run having subscribed to the node first — which is the only reason ti-remote-control-enabled.png ever showed its 41. The tracked gallery has no PNG for it yet: the Qt gallery is a Windows baseline and this was verified on macOS."
+      "notes": "Remote-control dialog disabled state, TI. Renders from the fixture since 2026-08-15: the `write-remote` dialog spec carries a `node` override naming TIT.213 («Температура масла»), whose DataItemType_OutputCondition formula `TIT.211 > 70` evaluates false over the fixture data, so the condition row reads unsatisfied and the Execute button is disabled. The override exists because one node cannot render both this and ti-remote-control-enabled.png in a single run. ScreenshotGenerator.DisabledControlDialogNodeConditionIsUnsatisfied asserts both the override and the falsy evaluation — the structural check only asserts the PNG exists, so a dropped override would ship the enabled dialog under this name. Its new-value box also pre-fills 58 as of 2026-08-15: BuildWriteDialog warms the item's subscription before building the dialog, so this capture no longer depends on an earlier capture in the same run having subscribed to the node first — which is the only reason ti-remote-control-enabled.png ever showed its 41. The tracked gallery has no PNG for it yet: the Qt gallery is a Windows baseline and this was verified on macOS.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "3576cc4ffa8874e6362cc77b224bb726737bd0f130e1e0dcb6a77bed0c4168f5"
+      }
     },
     {
       "file": "ti-remote-control-enabled.png",
@@ -808,7 +1142,13 @@
         "client.md",
         "dev/data-items.md"
       ],
-      "notes": "Remote-control dialog enabled state, TI. Title, current value, unit and the 'Условие: Выполнено' row all render (2026-08-15). The condition is TIT.212's DataItemType_OutputCondition, the formula `TIT.211 < 70`, evaluated live through TimedDataService; ScreenshotGenerator.ControlDialogNodeCarriesItsOutputCondition asserts both halves, since a lost property would only make the dialog shorter rather than fail the capture."
+      "notes": "Remote-control dialog enabled state, TI. Title, current value, unit and the 'Условие: Выполнено' row all render (2026-08-15). The condition is TIT.212's DataItemType_OutputCondition, the formula `TIT.211 < 70`, evaluated live through TimedDataService; ScreenshotGenerator.ControlDialogNodeCarriesItsOutputCondition asserts both halves, since a lost property would only make the dialog shorter rather than fail the capture.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "cf0c4bbfb1568fcdaa48e4b3743d67d2807d1eac3f1fb3ea98df95dfd14710c0"
+      }
     },
     {
       "file": "ts-channel.png",
@@ -825,7 +1165,13 @@
       "referenced_from": [
         "client.md"
       ],
-      "notes": "Manual-control dialog, TS side. Renders from the fixture since 2026-08-15: the `write-manual` spec's `node` override names TS.201 («Силовой выключатель»), a DiscreteItemType in the TS namespace under ЭСТРА-ПС › ТС. The kind is the same one ti-manual-control.png uses — WriteModel picks the discrete dialog from the node alone (TimedDataSpec::logical()), so this capture is the read-only two-state combo labelled from the node's HasTsFormat target (SCADA.9401 «Вкл/Откл») with no engineering-unit field. Before that the three ts-* rows had no dialog spec at all. Pinned by ScreenshotGenerator.DiscreteControlDialogsRenderTheirTsFormatStates, which asserts the override, the discrete branch and non-empty state labels — the structural check only asserts the PNG exists, so a lost override would ship the analog TI dialog under a TS name. The tracked gallery has no PNG for it yet: the Qt gallery is a Windows baseline and this was verified on macOS."
+      "notes": "Manual-control dialog, TS side. Renders from the fixture since 2026-08-15: the `write-manual` spec's `node` override names TS.201 («Силовой выключатель»), a DiscreteItemType in the TS namespace under ЭСТРА-ПС › ТС. The kind is the same one ti-manual-control.png uses — WriteModel picks the discrete dialog from the node alone (TimedDataSpec::logical()), so this capture is the read-only two-state combo labelled from the node's HasTsFormat target (SCADA.9401 «Вкл/Откл») with no engineering-unit field. Before that the three ts-* rows had no dialog spec at all. Pinned by ScreenshotGenerator.DiscreteControlDialogsRenderTheirTsFormatStates, which asserts the override, the discrete branch and non-empty state labels — the structural check only asserts the PNG exists, so a lost override would ship the analog TI dialog under a TS name. The tracked gallery has no PNG for it yet: the Qt gallery is a Windows baseline and this was verified on macOS.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "9516bdd50560f80693f9a1d6f305ecb86b3ec5f4fb1d792d807d2c216b5464cd"
+      }
     },
     {
       "file": "ts-remote-control-confirm.png",
@@ -834,7 +1180,13 @@
       "referenced_from": [
         "client.md"
       ],
-      "notes": "The same review on a discrete point, which is a different prompt rather than a resized copy: WriteModel takes its discrete branch from TimedDataSpec::logical() and quotes the HasTsFormat state labels instead of engineering units. TS.201 reads «Вкл» and the command is «Откл». The spec's command_value is the item's raw state, not an index into the labels — WriteModel inverts (get_or(true) ? 0 : 1), so raw 0 would command the state the point is already in. BuildControlConfirmation also warms the TimedDataService subscription first, for the reason the write dialogs do: an unarrived value reads back as the get_or default, which on a two-state item is itself a valid state and renders a plausible no-op. ScreenshotGenerator.ControlConfirmationsReviewARealChange asserts against exactly that."
+      "notes": "The same review on a discrete point, which is a different prompt rather than a resized copy: WriteModel takes its discrete branch from TimedDataSpec::logical() and quotes the HasTsFormat state labels instead of engineering units. TS.201 reads «Вкл» and the command is «Откл». The spec's command_value is the item's raw state, not an index into the labels — WriteModel inverts (get_or(true) ? 0 : 1), so raw 0 would command the state the point is already in. BuildControlConfirmation also warms the TimedDataService subscription first, for the reason the write dialogs do: an unarrived value reads back as the get_or default, which on a two-state item is itself a valid state and renders a plausible no-op. ScreenshotGenerator.ControlConfirmationsReviewARealChange asserts against exactly that.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "30a88f443959406339b92adee6bfddd79868cd8594b00e599afd948c1f329ac7"
+      }
     },
     {
       "file": "ts-remote-control-disabled.png",
@@ -843,7 +1195,13 @@
       "referenced_from": [
         "client.md"
       ],
-      "notes": "Remote-control dialog disabled state, TS. Renders from the fixture since 2026-08-15 over TS.202 («Секционный выключатель»), whose DataItemType_OutputCondition formula `TIT.211 > 70` evaluates false, so the condition row reads unsatisfied and Execute is disabled — the same two-node split TIT.212/TIT.213 make on the analog side, for the same reason: one node cannot render both variants in a single run. The tracked gallery has no PNG for it yet (Windows baseline; verified on macOS)."
+      "notes": "Remote-control dialog disabled state, TS. Renders from the fixture since 2026-08-15 over TS.202 («Секционный выключатель»), whose DataItemType_OutputCondition formula `TIT.211 > 70` evaluates false, so the condition row reads unsatisfied and Execute is disabled — the same two-node split TIT.212/TIT.213 make on the analog side, for the same reason: one node cannot render both variants in a single run. The tracked gallery has no PNG for it yet (Windows baseline; verified on macOS).",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "d752f1281c09be1592c900a5ed4f6d999678b2a3d373ecef0e632f34436a5418"
+      }
     },
     {
       "file": "ts-remote-control-enabled.png",
@@ -852,7 +1210,13 @@
       "referenced_from": [
         "client.md"
       ],
-      "notes": "Remote-control dialog enabled state, TS. Renders from the fixture since 2026-08-15 over TS.201, whose condition `TIT.211 < 70` holds. Current value «Вкл» with the combo pre-selecting «Откл»: WriteModel deliberately proposes the opposite state, which is the direction the docs original shows. That pre-selection is read once, in WriteDialog's constructor, so the capture pre-warms the item's TimedDataService subscription before building the dialog — without it the rendered combo depended on whether an earlier capture in the same run had already subscribed to the same node. The tracked gallery has no PNG for it yet (Windows baseline; verified on macOS)."
+      "notes": "Remote-control dialog enabled state, TS. Renders from the fixture since 2026-08-15 over TS.201, whose condition `TIT.211 < 70` holds. Current value «Вкл» with the combo pre-selecting «Откл»: WriteModel deliberately proposes the opposite state, which is the direction the docs original shows. That pre-selection is read once, in WriteDialog's constructor, so the capture pre-warms the item's TimedDataService subscription before building the dialog — without it the rendered combo depended on whether an earlier capture in the same run had already subscribed to the same node. The tracked gallery has no PNG for it yet (Windows baseline; verified on macOS).",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "a65d6e8c0099dc7ab3167207a567faa22d2fe572bd3f0f085ea989e2051e137b"
+      }
     },
     {
       "file": "users.jpg",
@@ -863,36 +1227,59 @@
     {
       "file": "users.png",
       "tag": "auto-view",
-      "publish_theme": "dark",
       "parity_key": "users",
       "referenced_from": [
         "dev/users.md"
       ],
-      "notes": "Users window. Re-rendered 2026-08-01 with the aui alignment fix; the only visible change is that rows are vertically centred, Qt's own item-view default."
+      "notes": "PULLED OUT OF current_generator_owned_subset 2026-08-31, so it is no longer auto-published. The Users *window* now renders UsersGridPanel unconditionally (NodeTableController routes the Users folder to it since the un-themed appearance was removed), where it used to render the generic node-table grid of NodeId / Обозначение / Имя — which is also why the spec width moved from 500 to 740, the panel’s layout minimum. The panel joins its Roles column from the server’s published role map, which needs ReadRolePermissions, and the view path runs an anonymous session, so every account reads «нет данных». That is the surface behaving correctly and the capture telling the truth, but it is a worse figure than the one dev/users.md ships today, so publishing it would regress the manual. users-admin.png is the same panel driven with AuthenticatedAttributeService and has its Roles column filled. Backlog 695 decides whether the manual keeps two figures or one and which name survives; until then scada-docs/img/users.png keeps the old render. Users window. Re-rendered 2026-08-01 with the aui alignment fix; the only visible change is that rows are vertically centred, Qt's own item-view default.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "abe11460734422b1431f6827967b56eb8ca51b97e9ecbba74fbd8f64223202f4"
+      }
     },
     {
       "file": "debugger.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "parity_key": "protocol-debugger",
       "referenced_from": [],
       "notes": "Session-request debugger (client<->server Browse/Read/Call trace), rendered from a fixture trace by debugger_capture.cpp. Not a registered view (it is --debug gated), so it has a dedicated capture. Distinct from the device protocol frame trace in ui-mockups/screens/device-protocol-trace.html, which is unbuilt. Not published yet: no manual page embeds it.",
-      "published": false
+      "published": false,
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "cf332cf6587280204449562ec4ce79a4a4f20523dd7bdfd9c9b65749cdfe1d86"
+      }
     },
     {
       "file": "watch-filter-bar.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "parity_key": "device-log-filter",
       "referenced_from": [],
       "notes": "Device log filter bar: frame kind, errors-only, and free text over the decoded columns — the toolbar of ui-mockups/screens/device-protocol-trace.html. Stock QComboBox/QCheckBox/QLineEdit, so the capture also serves as the native-look check for the strip. Rendered on its own by frame_decode_capture.cpp; inside the client it sits above the trace in both device-log modes. Not published yet: no manual page embeds it.",
-      "published": false
+      "published": false,
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "594589ffb589fd60fb6f3a56b4e25da6024f62465bd626ad8220efe09364801e"
+      }
     },
     {
       "file": "frame-decode-pane.png",
-      "tag": "reshell-theme",
+      "tag": "auto-view",
       "parity_key": "device-frame-decode",
       "referenced_from": [],
       "notes": "Device log frame-decode pane: the raw octets, the decoded APCI/ASDU field tree with byte offsets, and the address-space node the information object maps to — the right-hand inspector of ui-mockups/screens/device-protocol-trace.html. Rendered from a fixture IEC 60870-5-104 APDU and a seeded address map by frame_decode_capture.cpp; inside the client it is the right half of the Watch view's frame-trace mode. Not published yet: no manual page embeds it.",
-      "published": false
+      "published": false,
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "4468436060c298c6e9949c35b8da384152c49c7da6152aead242456cfc3e245b"
+      }
     },
     {
       "file": "colour-scheme-menu.png",
@@ -907,7 +1294,13 @@
       "published": false,
       "parity_key": "table",
       "referenced_from": [],
-      "notes": "Table window over six fixture TITs, from the `Table` capture spec. Tracked in the gallery since 07588fb3 but had no manifest row until 2026-08-02, when deriving parity_key from the matrix surfaced it: the manifest's bijection check runs against scada-docs img/, so a generator-owned capture that no page embeds could stay unlisted indefinitely. Not published — table-workspace.png is the reshell twin the manual would use."
+      "notes": "Table window over six fixture TITs, from the `Table` capture spec. Tracked in the gallery since 07588fb3 but had no manifest row until 2026-08-02, when deriving parity_key from the matrix surfaced it: the manifest's bijection check runs against scada-docs img/, so a generator-owned capture that no page embeds could stay unlisted indefinitely. Not published — table-workspace.png is the reshell twin the manual would use.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "375289c2deeaa09e0e9b74fed720284e2b7c73f3548ca4388538a7029cda19ca"
+      }
     },
     {
       "file": "parameters.png",
@@ -915,19 +1308,24 @@
       "published": false,
       "parity_key": "ts-formats",
       "referenced_from": [],
-      "notes": "Formats (`Params`) window. Tracked in the gallery since 07588fb3 but had no manifest row until 2026-08-02; found the same way as table.png. Not published — admin-formats.png is the reshell twin."
+      "notes": "Formats (`Params`) window. Tracked in the gallery since 07588fb3 but had no manifest row until 2026-08-02; found the same way as table.png. Not published — admin-formats.png is the reshell twin.",
+      "captured": {
+        "commit": "2ab9399ee",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "ec0aa5359b3bd922728cf5c45bedeba65ab2089ce12fc397e249804f319a5a3f"
+      }
     }
   ],
   "counts": {
-    "auto-dialog": 25,
+    "auto-dialog": 26,
     "auto-menu": 10,
-    "auto-view": 24,
+    "auto-view": 49,
     "manual-annotated": 2,
     "manual-diagram": 4,
     "manual-modus": 5,
     "manual-os": 3,
-    "obsolete": 11,
-    "reshell-theme": 28
+    "obsolete": 13
   },
   "current_generator_owned_subset": [
     "client-login.png",
@@ -937,7 +1335,6 @@
     "devices.png",
     "graph-cursor.png",
     "hardware-tree.png",
-    "settings-dialog.png",
-    "users.png"
+    "settings-dialog.png"
   ]
 }

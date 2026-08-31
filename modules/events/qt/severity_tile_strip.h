@@ -24,9 +24,6 @@ using SeverityTileCountsProvider = std::function<SeverityTileCounts()>;
 // when it is not (bold, severity-coloured). Unacknowledged carries no severity
 // colour: it is a workflow state, not a severity. The caption always states
 // what the number means, so colour is never the only signal.
-//
-// Opt-in reshell chrome — build it through MakeSeverityTileStrip(), which
-// returns nullptr under the legacy theme.
 class SeverityTileStrip : public QWidget {
  public:
   explicit SeverityTileStrip(SeverityTileCountsProvider counts,
@@ -41,8 +38,7 @@ class SeverityTileStrip : public QWidget {
   std::vector<QLabel*> tiles_;
 };
 
-// Builds the strip, or returns nullptr under the legacy severity theme so the
-// default UI is unchanged (the same gating the other reshell surfaces use).
+// Builds the strip. Ownership transfers to the caller.
 SeverityTileStrip* MakeSeverityTileStrip(SeverityTileCountsProvider counts,
                                          QWidget* parent = nullptr);
 
