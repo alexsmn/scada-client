@@ -1535,11 +1535,11 @@
     </message>
     <message>
         <source>Transmission Table</source>
-        <translation>Таблица передачи</translation>
+        <translation>Таблица ретрансляции</translation>
     </message>
     <message>
         <source>Transmission</source>
-        <translation>Передача</translation>
+        <translation>Ретрансляция</translation>
     </message>
     <message>
         <source>Create Portfolio</source>
