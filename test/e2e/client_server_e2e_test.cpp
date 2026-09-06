@@ -609,11 +609,10 @@ TEST_P(ClientServerE2eTest, FileSystem_CreateAndDeleteThroughProxy) {
 /**
  * Adding a transmission rule, over BOTH transports, asserting they agree.
  *
- * The invariant under test is not "the add is refused" — that is a property of
- * this topology's aggregation credentials and will change when someone fixes
- * them (backlog 702). It is that **the two client transports get the same
- * answer**, which is the thing the framework's wiring promises and the thing a
- * reader would otherwise have to take on trust: `module_install_common.cpp`
+ * Three invariants, and the first is the one the test was built around: **the
+ * two client transports get the same answer**. That is the thing the
+ * framework's wiring promises and the thing a reader would otherwise have to
+ * take on trust: `module_install_common.cpp`
  * hands the OPC UA module and the native `sessions` module the same
  * `core_module.root_node_management_service()`, so both meet one permission
  * check in `RootNodeManager::AddNodes`. The Qt client's own add path
@@ -623,16 +622,22 @@ TEST_P(ClientServerE2eTest, FileSystem_CreateAndDeleteThroughProxy) {
  * Written because the web client's add was measured as refused
  * (Bad_UserAccessDenied) against dev/local-cluster while the Qt path was only
  * ever *argued* to behave the same, from reading the wiring. The argument was
- * sound and it was still an argument; this makes it a run. First result,
- * 2026-08-31: both transports refuse with 0x8030 Bad_UserAccessDenied, and the
- * native session returns Good for the FileSystem control in the same body — so
- * the agreement is measured and is not an artefact of a broken session. See
- * parity finding V33.
+ * sound and it was still an argument; this makes it a run. See parity finding
+ * V33.
  *
- * Deliberately asserts EQUALITY rather than a status value, so it keeps its
- * meaning after the fix: when the edge aggregation stops being anonymous both
- * sides should turn Good together, and this test then guards against exactly
- * one of them doing so.
+ * The second and third invariants are that **the add succeeds** and that
+ * **the id it reports addresses the node it created** — deleting by that id
+ * has to work. Neither was assertable when this landed: the fixture's proxy
+ * aggregated its edges anonymously, so on 2026-08-31 both transports refused
+ * with 0x8030 and the test could only compare two refusals. The edge links
+ * present `svc` since 2026-09-06, the same fix dev/local-cluster took under
+ * backlog 702, and the measured A/B is in that entry.
+ *
+ * The equality assertion stays, and is not made redundant by the two value
+ * assertions beside it. Those say each transport is individually correct;
+ * equality says they are still reaching ONE node-management service, which is
+ * the property that would break silently if the endpoint modules stopped
+ * sharing it and one of them acquired its own permission path.
  *
  * Two things this cost to get right, both worth knowing before editing it.
  * `root` is single-session (the server logs MultiSessions = 0), so the two
@@ -659,6 +664,13 @@ TEST_P(ClientServerE2eTest, Transmission_AddRuleAgreesAcrossTransports) {
   std::optional<TransmissionDestination> destination;
   scada::StatusCode opcua_status{};
   scada::StatusCode remote_status{};
+  // The id each transport reported for the node it created, and what deleting
+  // BY that id answered. Both are assertions, not diagnostics — see the
+  // "reported id" block at the end.
+  scada::NodeId opcua_node_id;
+  scada::NodeId remote_node_id;
+  scada::StatusCode opcua_delete_status{};
+  scada::StatusCode remote_delete_status{};
 
   const auto make_item = [&destination](std::u16string_view name) {
     return scada::AddNodesItem{.parent_id = destination->device_id,
@@ -694,10 +706,15 @@ TEST_P(ClientServerE2eTest, Transmission_AddRuleAgreesAcrossTransports) {
         << "OPC UA AddNodes call failed: " << ::ToString(added.status());
     ASSERT_EQ(added->size(), 1u);
     opcua_status = added->front().status_code;
+    opcua_node_id = added->front().added_node_id;
     // Clean up before comparing, so a disagreement does not also leak a node
-    // into the fixture's configuration.
-    if (scada::IsGood(opcua_status))
-      (void)opcua_session.DeleteNode(added->front().added_node_id);
+    // into the fixture's configuration. The delete goes through the REPORTED
+    // id rather than a re-browse, so its status is evidence about that id.
+    if (scada::IsGood(opcua_status)) {
+      auto deleted = opcua_session.DeleteNode(opcua_node_id);
+      if (deleted.ok() && !deleted->empty())
+        opcua_delete_status = deleted->front();
+    }
   }
 
   {
@@ -739,8 +756,12 @@ TEST_P(ClientServerE2eTest, Transmission_AddRuleAgreesAcrossTransports) {
         << "native AddNodes call failed: " << ::ToString(added.status());
     ASSERT_EQ(added->size(), 1u);
     remote_status = added->front().status_code;
-    if (scada::IsGood(remote_status))
-      (void)remote_session.DeleteNode(added->front().added_node_id);
+    remote_node_id = added->front().added_node_id;
+    if (scada::IsGood(remote_status)) {
+      auto deleted = remote_session.DeleteNode(remote_node_id);
+      if (deleted.ok() && !deleted->empty())
+        remote_delete_status = deleted->front();
+    }
   }
 
   EXPECT_EQ(static_cast<std::uint32_t>(remote_status),
@@ -753,13 +774,51 @@ TEST_P(ClientServerE2eTest, Transmission_AddRuleAgreesAcrossTransports) {
       << ". They are wired to the same root node-management service, so a "
          "difference means the endpoint modules have stopped sharing it.";
 
-  // Record what the shared answer currently is. Not asserted: it is set by the
-  // deployment's aggregation credentials, not by the client (backlog 702).
-  if (!scada::IsGood(remote_status)) {
-    GTEST_LOG_(INFO) << "both transports refuse the add with status "
-                     << static_cast<std::uint32_t>(remote_status)
-                     << " (expected on a topology whose proxy aggregates its "
-                        "edges anonymously — see V33)";
+  // The shared answer is now Good, and that IS asserted. It was not when this
+  // test was written: the fixture's proxy aggregated its edges anonymously, so
+  // an anonymous downstream session was denied the forwarded AddNodes and both
+  // transports got Bad_UserAccessDenied. The edge links present `svc` since
+  // 2026-09-06 (e2e_cluster.cpp), which is the same fix dev/local-cluster took
+  // under backlog 702. Asserting the value means a regression to the anonymous
+  // link fails here rather than passing as "they still agree".
+  EXPECT_TRUE(scada::IsGood(opcua_status))
+      << "adding a transmission rule over OPC UA was refused with status "
+      << static_cast<std::uint32_t>(opcua_status)
+      << ". 32816 (Bad_UserAccessDenied) means the proxy's downstream session "
+         "to the edge is anonymous again — check the aggregation entries in "
+         "common/test/e2e/e2e_cluster.cpp.";
+  EXPECT_TRUE(scada::IsGood(remote_status))
+      << "adding a transmission rule over the native transport was refused "
+         "with status "
+      << static_cast<std::uint32_t>(remote_status);
+
+  // The REPORTED id, which is a separate defect from the status and was live
+  // in this tree until 2026-08-31. `ConfigurationManager::CreateNodes`
+  // returned status codes only, and a remote-config edge allocates a
+  // namespace-only placeholder while the config server picks the identifier —
+  // so with nowhere to carry the assigned id the edge reported the
+  // placeholder, and AddNodes answered Good with a null/wrong node id. A
+  // caller that trusts it (the Qt inspector selects the rule it just created)
+  // then addresses a node that does not exist. Deleting BY the reported id is
+  // what distinguishes a real id from a plausible-looking one; a re-browse
+  // would pass with either.
+  if (scada::IsGood(opcua_status)) {
+    EXPECT_FALSE(opcua_node_id.is_null())
+        << "AddNodes returned Good over OPC UA but reported a null node id";
+    EXPECT_TRUE(scada::IsGood(opcua_delete_status))
+        << "deleting the rule by the id AddNodes reported ("
+        << opcua_node_id.ToString() << ") failed with status "
+        << static_cast<std::uint32_t>(opcua_delete_status)
+        << ", so that id does not address the node that was created";
+  }
+  if (scada::IsGood(remote_status)) {
+    EXPECT_FALSE(remote_node_id.is_null())
+        << "AddNodes returned Good over the native transport but reported a "
+           "null node id";
+    EXPECT_TRUE(scada::IsGood(remote_delete_status))
+        << "deleting the rule by the id AddNodes reported ("
+        << remote_node_id.ToString() << ") failed with status "
+        << static_cast<std::uint32_t>(remote_delete_status);
   }
 }
 
