@@ -215,7 +215,8 @@ class ObjectTreeViewTest : public Test {
     auto* proxy =
         qobject_cast<QSortFilterProxyModel*>(view_->tree_view().model());
     EXPECT_THAT(proxy, NotNull());
-    return node && proxy ? FindNode(*proxy, QModelIndex{}, node) : QModelIndex{};
+    return node && proxy ? FindNode(*proxy, QModelIndex{}, node)
+                         : QModelIndex{};
   }
 
   static QModelIndex FindNode(QSortFilterProxyModel& proxy,
