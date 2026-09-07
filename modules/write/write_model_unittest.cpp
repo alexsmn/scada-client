@@ -136,6 +136,33 @@ class WriteModelTest : public Test {
     return model;
   }
 
+  // Drives one write through to a refused completion and dismisses the error
+  // box, so each case below asserts one consequence of the same run.
+  void RunRefusedWrite(const std::shared_ptr<WriteModel>& model) {
+    scada::base::AsyncCompletion completion{executor_};
+    std::optional<scada::StatusOr<std::vector<scada::StatusCode>>> result;
+
+    EXPECT_CALL(attribute_service_, Write(_, _))
+        .WillOnce([&](scada::ServiceContext, std::vector<scada::WriteValue>)
+                      -> scada::CoStatusOr<std::vector<scada::StatusCode>> {
+          co_await completion.Wait();
+          co_return std::move(*result);
+        });
+
+    model->Write(7.0, /*lock=*/false);
+    Drain(executor_);
+
+    result = std::vector{scada::StatusCode::Bad};
+    completion.Complete();
+    Drain(executor_);
+
+    // Absent when there is no dialog service to report through.
+    if (!dialog_service_.modes.empty()) {
+      dialog_service_.CompleteMessageBox();
+      Drain(executor_);
+    }
+  }
+
   TestExecutor executor_;
   StrictMock<scada::MockAttributeService> attribute_service_;
   NiceMock<scada::MockMethodService> method_service_;
@@ -300,33 +327,76 @@ TEST_F(WriteModelTest, ControlCommandConfirmationReviewsPresentAndCommand) {
   EXPECT_NE(message.find(u"cannot be undone remotely"), std::u16string::npos);
 }
 
-TEST_F(WriteModelTest, FailedWriteReportsErrorThenCompletes) {
+TEST_F(WriteModelTest, RefusedWriteIsReportedToTheOperator) {
   profile_.control_confirmation = false;
-  scada::base::AsyncCompletion completion{executor_};
-  std::optional<scada::StatusOr<std::vector<scada::StatusCode>>> result;
+  auto model = CreateModel();
 
+  RunRefusedWrite(model);
+
+  EXPECT_THAT(dialog_service_.modes, ElementsAre(MessageBoxMode::Error));
+}
+
+// The half an operator notices, and task 519: a refused command must leave the
+// dialog open on the value they chose. `completion_handler(false)` is what
+// keeps it there — completing with true closed it the moment the error box was
+// dismissed, so retrying meant reopening Control and re-entering the value.
+// LimitModelTest.RefusedWriteLeavesTheDialogOpen is the same assertion on the
+// side where this shape was settled first.
+TEST_F(WriteModelTest, RefusedWriteLeavesTheDialogOpen) {
+  profile_.control_confirmation = false;
+  auto model = CreateModel();
+
+  RunRefusedWrite(model);
+
+  ASSERT_TRUE(completion_.has_value());
+  EXPECT_FALSE(*completion_);
+}
+
+// The dialog stays open now, so the status line is visible after the failure —
+// and `writing_` left set made GetStatusText() go on saying "Controlling..."
+// over a command that had already been refused.
+TEST_F(WriteModelTest, RefusedWriteClearsTheStatusText) {
+  profile_.control_confirmation = false;
+  auto model = CreateModel();
+
+  RunRefusedWrite(model);
+
+  EXPECT_TRUE(model->GetStatusText().empty());
+}
+
+// The error is not reported when there is nothing to report through, but the
+// dialog must still be released rather than stranded with a dead Control
+// button — and the failure path must not dereference the absent service.
+TEST_F(WriteModelTest, RefusedWriteWithoutADialogServiceStillCompletes) {
+  profile_.control_confirmation = false;
+  auto model = CreateModel();
+  model->set_dialog_service(nullptr);
+
+  RunRefusedWrite(model);
+
+  EXPECT_THAT(dialog_service_.modes, IsEmpty());
+  ASSERT_TRUE(completion_.has_value());
+  EXPECT_FALSE(*completion_);
+}
+
+// A written command still closes the dialog and reports nothing. Without this
+// the fix above could "pass" by never completing at all, which would strand the
+// operator on a dialog whose Control button no longer does anything.
+TEST_F(WriteModelTest, SuccessfulWriteStillClosesTheDialog) {
+  profile_.control_confirmation = false;
   EXPECT_CALL(attribute_service_, Write(_, _))
       .WillOnce([&](scada::ServiceContext, std::vector<scada::WriteValue>)
                     -> scada::CoStatusOr<std::vector<scada::StatusCode>> {
-        co_await completion.Wait();
-        co_return std::move(*result);
+        co_return std::vector{scada::StatusCode::Good};
       });
 
   auto model = CreateModel();
   model->Write(7.0, /*lock=*/false);
   Drain(executor_);
 
-  result = std::vector{scada::StatusCode::Bad};
-  completion.Complete();
-  Drain(executor_);
-
-  ASSERT_THAT(dialog_service_.modes, ElementsAre(MessageBoxMode::Error));
-  EXPECT_FALSE(completion_.has_value());
-
-  dialog_service_.CompleteMessageBox();
-  Drain(executor_);
-
-  EXPECT_EQ(completion_, true);
+  ASSERT_TRUE(completion_.has_value());
+  EXPECT_TRUE(*completion_);
+  EXPECT_THAT(dialog_service_.modes, IsEmpty());
 }
 
 TEST_F(WriteModelTest, DestroyedModelDropsPendingWriteCompletion) {

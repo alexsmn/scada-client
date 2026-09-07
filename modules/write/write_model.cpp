@@ -136,7 +136,22 @@ bool WriteModel::IsConditionOk() const {
 
 void WriteModel::OnWriteComplete(const scada::Status& status) {
   if (!status) {
-    writing_ = true;
+    // The command is over — it failed. Leaving `writing_` set kept
+    // GetStatusText() answering "Controlling..." underneath the error box; that
+    // was invisible only because the dialog used to close itself on the way
+    // out, which is the defect this path exists to fix.
+    writing_ = false;
+
+    // Nothing to report through: complete anyway rather than stranding the
+    // operator on a dialog whose Control button no longer does anything. The
+    // guard also keeps the `*dialog_service` below from dereferencing null —
+    // `dialog_service_` is an optional collaborator, as ReportInputError's own
+    // guard already acknowledges. Same shape as LimitModel::OnWriteComplete.
+    if (!dialog_service_) {
+      completion_handler(false);
+      return;
+    }
+
     auto title = GetWindowTitle();
     std::u16string message = ToString16(status) + u'.';
     CoSpawn(executor_,
@@ -337,8 +352,16 @@ Awaitable<void> WriteModel::ReportWriteErrorAsync(
   try {
     co_await dialog_service.RunMessageBox(message, title,
                                           MessageBoxMode::Error);
-    completion_handler(true);
   } catch (...) {
   }
+
+  // False, so the dialog stays open on the value the operator chose and the
+  // refused command can be corrected or retried. Completing with true took the
+  // dialog away the moment its error box was dismissed, so retrying meant
+  // reopening Control and re-entering the value — and for a two-staged command,
+  // confirming it again. Completing outside the try matters: a dialog service
+  // that throws must still release the dialog, or a failed write leaves it
+  // stuck. Same shape as LimitModel::ReportWriteErrorAsync.
+  completion_handler(false);
   co_return;
 }
