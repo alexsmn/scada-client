@@ -14,11 +14,45 @@ class MockTaskManager : public TaskManager {
         .WillByDefault([](const scada::NodeState&) {
           return RejectPostInsertTaskAsync();
         });
+
+    // Every `CoStatus`-returning method needs a default action too. Without
+    // one, gmock answers an unstubbed call with a default-constructed
+    // `boost::asio::awaitable` — a null frame whose `await_ready()` still
+    // returns false, so `co_await`ing it dereferences null inside the
+    // *awaiting* coroutine, with this mock named nowhere in the backtrace
+    // (task 698; CLAUDE.md, "Unit Test Guidance"). A mock nobody stubbed did
+    // not post the task, so it answers `Bad_NotSupported`.
+    ON_CALL(*this, PostTask(/*description=*/_, /*launcher=*/_))
+        .WillByDefault([](std::u16string_view, const TaskLauncher&) {
+          return RejectAsync();
+        });
+
+    ON_CALL(*this, PostUpdateTask(/*node_id=*/_, /*attributes=*/_,
+                                  /*properties=*/_))
+        .WillByDefault([](const scada::NodeId&, scada::NodeAttributes,
+                          scada::NodeProperties) { return RejectAsync(); });
+
+    ON_CALL(*this, PostDeleteTask(/*node_id=*/_))
+        .WillByDefault([](const scada::NodeId&) { return RejectAsync(); });
+
+    ON_CALL(*this, PostAddReference(/*reference_type_id=*/_, /*source_id=*/_,
+                                    /*target_id=*/_))
+        .WillByDefault([](const scada::NodeId&, const scada::NodeId&,
+                          const scada::NodeId&) { return RejectAsync(); });
+
+    ON_CALL(*this, PostDeleteReference(/*reference_type_id=*/_, /*source_id=*/_,
+                                       /*target_id=*/_))
+        .WillByDefault([](const scada::NodeId&, const scada::NodeId&,
+                          const scada::NodeId&) { return RejectAsync(); });
   }
 
  private:
   static scada::CoStatusOr<scada::NodeId> RejectPostInsertTaskAsync() {
     co_return scada::StatusCode::Bad;
+  }
+
+  static scada::CoStatus RejectAsync() {
+    co_return scada::StatusCode::Bad_NotSupported;
   }
 
  public:
