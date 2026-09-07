@@ -16,6 +16,7 @@
 #include "timed_data/timed_data_service_fake.h"
 
 #include <QLineEdit>
+#include <QSortFilterProxyModel>
 
 #include <gmock/gmock.h>
 
@@ -191,6 +192,46 @@ class ObjectTreeViewTest : public Test {
     return node && view_->tree_view().IsChecked(node);
   }
 
+  // Ticks a row's box the way an operator's click does: through the view's own
+  // item model, with `Qt::CheckStateRole`.
+  //
+  // `Tree::SetChecked` is the programmatic setter the view uses to *apply* a
+  // mark and deliberately does not run `Tree::SetCheckedHandler`'s handler, so
+  // the whole handler body -- including the `GetOrderedNodes` walk backlog 125
+  // is about -- was unreachable from a test while `SetChecked` was the only way
+  // in (backlog 124). Nothing had to be added to `Tree` for this: it is a
+  // `QTreeView`, so its proxy model is public, and `mapToSource` recovers the
+  // node pointer the adapter stored in the index.
+  void ClickCheckBox(const scada::NodeId& node_id, bool checked) {
+    QModelIndex index = IndexOf(node_id);
+    ASSERT_TRUE(index.isValid()) << "no row for " << node_id.ToString();
+    ASSERT_TRUE(view_->tree_view().model()->setData(
+        index, checked ? Qt::Checked : Qt::Unchecked, Qt::CheckStateRole));
+  }
+
+  QModelIndex IndexOf(const scada::NodeId& node_id) {
+    ConfigurationTreeNode* node = view_->model().FindFirstTreeNode(node_id);
+    EXPECT_THAT(node, NotNull()) << "node " << node_id.ToString();
+    auto* proxy =
+        qobject_cast<QSortFilterProxyModel*>(view_->tree_view().model());
+    EXPECT_THAT(proxy, NotNull());
+    return node && proxy ? FindNode(*proxy, QModelIndex{}, node) : QModelIndex{};
+  }
+
+  static QModelIndex FindNode(QSortFilterProxyModel& proxy,
+                              const QModelIndex& parent,
+                              const void* node) {
+    for (int row = 0; row < proxy.rowCount(parent); ++row) {
+      QModelIndex index = proxy.index(row, 0, parent);
+      if (proxy.mapToSource(index).internalPointer() == node)
+        return index;
+      QModelIndex found = FindNode(proxy, index, node);
+      if (found.isValid())
+        return found;
+    }
+    return {};
+  }
+
   static inline const scada::NodeId kGroupId{2001, 1};
   static inline const scada::NodeId kItem1Id{2002, 1};
   static inline const scada::NodeId kItem2Id{2003, 1};
@@ -266,6 +307,62 @@ TEST_F(ObjectTreeViewTest, ContentsPublishedAfterTheTreeIsBuiltMarkIt) {
 
   EXPECT_TRUE(IsCheckedById(kItem1Id));
   EXPECT_TRUE(IsCheckedById(kItem2Id));
+  EXPECT_TRUE(IsCheckedById(kGroupId));
+}
+
+// The click, which nothing exercised until the seam above existed. Ticking a
+// row's box is what puts the item into the active view -- the whole point of
+// the checkable tree -- and it goes through the handler, not through
+// `Tree::SetChecked`.
+TEST_F(ObjectTreeViewTest, CheckingAnItemAddsItToTheContents) {
+  MaterializeWholeTree();
+  ASSERT_THAT(delegate_.contents().GetContainedItems(), IsEmpty());
+
+  ClickCheckBox(kItem1Id, true);
+
+  EXPECT_THAT(delegate_.contents().GetContainedItems(),
+              UnorderedElementsAre(kItem1Id));
+  EXPECT_TRUE(IsCheckedById(kItem1Id));
+}
+
+// The assertion backlog 124 asked for. The handler re-derives every mark from
+// what the view holds after the add, and `AddContainedItem` on an item already
+// there is a no-op -- so a second click must leave the contents exactly as they
+// were rather than duplicating the item or clearing the mark.
+TEST_F(ObjectTreeViewTest, ReCheckingAContainedItemLeavesTheContentsAlone) {
+  MaterializeWholeTree();
+  ClickCheckBox(kItem1Id, true);
+  const NodeIdSet after_first = delegate_.contents().GetContainedItems();
+
+  ClickCheckBox(kItem1Id, true);
+
+  EXPECT_EQ(after_first, delegate_.contents().GetContainedItems());
+  EXPECT_TRUE(IsCheckedById(kItem1Id));
+}
+
+// Unchecking is the other half of the same handler, and it must take the item
+// back out rather than only clearing the box.
+TEST_F(ObjectTreeViewTest, UncheckingAContainedItemRemovesItFromTheContents) {
+  MaterializeWholeTree();
+  ClickCheckBox(kItem1Id, true);
+  ASSERT_TRUE(IsCheckedById(kItem1Id));
+
+  ClickCheckBox(kItem1Id, false);
+
+  EXPECT_THAT(delegate_.contents().GetContainedItems(), IsEmpty());
+  EXPECT_FALSE(IsCheckedById(kItem1Id));
+}
+
+// Checking a container adds everything under it, in tree order -- the
+// `GetOrderedNodes` walk. This is the materialized case; the collapsed one is
+// backlog 125, and it is still broken.
+TEST_F(ObjectTreeViewTest, CheckingAMaterializedGroupAddsEveryItemUnderIt) {
+  MaterializeWholeTree();
+
+  ClickCheckBox(kGroupId, true);
+
+  EXPECT_THAT(delegate_.contents().GetContainedItems(),
+              UnorderedElementsAre(kItem1Id, kItem2Id));
   EXPECT_TRUE(IsCheckedById(kGroupId));
 }
 
