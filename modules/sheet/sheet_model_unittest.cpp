@@ -137,6 +137,85 @@ TEST_F(SheetModelTest, ReportsTheCellsStoredAlignment) {
   EXPECT_EQ(left.alignment, scada::aui::TableColumn::LEFT);
 }
 
+// Regression: a saved window is profile data the user can edit, and one whose
+// cell coordinates fell outside the sheet's fixed size panicked in
+// `SheetModel::GetCell` the moment the page opened; a column index outside it
+// wrote past `ColumnHeaderModel`'s vector. Both are skipped now, and the cells
+// that do fit still load.
+TEST_F(SheetModelTest, SkipsCellsAndColumnsOutsideTheSheet) {
+  FakeBlinkerManager blinker_manager;
+  SheetModel model{SheetModelContext{
+      .timed_data_service_ = timed_data_service_,
+      .blinker_manager_ = blinker_manager,
+  }};
+  model.SetSizes(3, 2);
+  // The controller sizes the column header alongside the model
+  // (`SheetController::Init`); the model does not do it itself.
+  model.column_model().SetColumnCount(model.column_count(), 65);
+
+  WindowDefinition definition{"CusTable"};
+  definition.AddItem("SheetCell")
+      .SetInt("row", 3)
+      .SetInt("col", 2)
+      .SetString("text", "fits");
+  definition.AddItem("SheetCell")
+      .SetInt("row", 4)
+      .SetInt("col", 1)
+      .SetString("text", "row past the end");
+  definition.AddItem("SheetCell")
+      .SetInt("row", 1)
+      .SetInt("col", 3)
+      .SetString("text", "column past the end");
+  definition.AddItem("SheetCell")
+      .SetInt("row", 101)
+      .SetInt("col", 101)
+      .SetString("text", "far outside");
+  definition.AddItem("Column").SetInt("ix", 2).SetInt("width", 77);
+  definition.AddItem("Column").SetInt("ix", 3).SetInt("width", 99);
+  definition.AddItem("Column").SetInt("ix", 1000).SetInt("width", 99);
+  model.Load(definition);
+
+  scada::aui::GridCell fits{.row = 2, .column = 1};
+  model.GetCell(fits);
+  EXPECT_EQ(fits.text, u"fits");
+
+  EXPECT_EQ(nullptr, model.cell(0, 0));
+  EXPECT_EQ(77, model.column_model().GetSize(1));
+  EXPECT_EQ(0, model.column_model().GetSize(2));
+  EXPECT_EQ(0, model.column_model().GetSize(999));
+}
+
+// Regression: `SetSizes` copied surviving cells into the new vector at
+// `row * old-or-new row count + column` rather than `row * column count +
+// column`, which is the layout `mutable_cell` reads. The two agree only for a
+// square sheet, and the tree only ever built square ones; any other shape
+// misplaced the cells and, for a taller-than-wide sheet, wrote past the end.
+TEST_F(SheetModelTest, ResizingKeepsCellsAtTheirCoordinates) {
+  FakeBlinkerManager blinker_manager;
+  SheetModel model{SheetModelContext{
+      .timed_data_service_ = timed_data_service_,
+      .blinker_manager_ = blinker_manager,
+  }};
+  model.SetSizes(3, 2);
+  model.GetCell(2, 1).SetFormula(u"corner");
+  model.GetCell(0, 1).SetFormula(u"top right");
+
+  model.SetSizes(4, 2);
+
+  scada::aui::GridCell corner{.row = 2, .column = 1};
+  model.GetCell(corner);
+  EXPECT_EQ(corner.text, u"corner");
+  scada::aui::GridCell top_right{.row = 0, .column = 1};
+  model.GetCell(top_right);
+  EXPECT_EQ(top_right.text, u"top right");
+  EXPECT_EQ(nullptr, model.cell(3, 1));
+
+  // Shrinking drops what no longer fits and keeps the rest in place.
+  model.SetSizes(1, 2);
+  model.GetCell(top_right);
+  EXPECT_EQ(top_right.text, u"top right");
+}
+
 // Regression: ~SheetCell erases itself from SheetModel::blinking_cells_, so
 // that set has to outlive the cells. It was declared after them, hence
 // destroyed first, and closing a custom table holding a blinking cell

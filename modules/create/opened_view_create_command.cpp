@@ -151,13 +151,19 @@ void OpenedViewCreateCommand::CreateRecord(const scada::NodeId& type_node_id,
 
   auto title = u16format(L"Creating \"{}\"", attributes.display_name.text);
 
+  // The cancelation overload of `CoSpawn` checks the token once, before the
+  // first resume. Everything after the awaits below re-checks it: the operator
+  // can close the tab while the insert is in flight, and `ViewManager` deletes
+  // the view, its controller and this command synchronously, so a resumed
+  // frame must not touch `this` or `controller_` once the token has expired.
   CoSpawn(executor_, cancelation_,
           [this, type_node_id, parent_id = parent_node.node_id(),
            title = std::move(title), attributes = std::move(attributes),
-           properties = std::move(properties)]() mutable -> Awaitable<void> {
+           properties = std::move(properties),
+           cancelation = cancelation_.ref()]() mutable -> Awaitable<void> {
             co_await CreateRecordAsync(type_node_id, parent_id,
                                        std::move(title), std::move(attributes),
-                                       std::move(properties));
+                                       std::move(properties), cancelation);
           });
 }
 
@@ -166,29 +172,47 @@ Awaitable<void> OpenedViewCreateCommand::CreateRecordAsync(
     scada::NodeId parent_id,
     std::u16string title,
     scada::NodeAttributes attributes,
-    scada::NodeProperties properties) {
-  auto node_id = co_await task_manager_.PostInsertTask(
+    scada::NodeProperties properties,
+    CancelationRef cancelation) {
+  // Copied out before the await: the event journal and the profile outlive
+  // this command, so a result that arrives after the view closed is still
+  // reported — through the copies, never through `this`.
+  LocalEvents& local_events = local_events_;
+  Profile& profile = profile_;
+  TaskManager& task_manager = task_manager_;
+
+  auto node_id = co_await task_manager.PostInsertTask(
       {.type_definition_id = type_node_id,
        .parent_id = parent_id,
        .attributes = std::move(attributes),
        .properties = std::move(properties)});
 
   if (!node_id.ok()) {
-    ReportRequestResult(title, node_id.status(), local_events_, profile_);
+    ReportRequestResult(title, node_id.status(), local_events, profile);
     co_return;
   }
 
-  ReportRequestResult(title, scada::StatusCode::Good, local_events_, profile_);
-  co_await OnCreateRecordCompleteAsync(*node_id);
+  ReportRequestResult(title, scada::StatusCode::Good, local_events, profile);
+  if (cancelation.canceled()) {
+    co_return;
+  }
+  co_await OnCreateRecordCompleteAsync(*node_id, cancelation);
   co_return;
 }
 
 Awaitable<void> OpenedViewCreateCommand::OnCreateRecordCompleteAsync(
-    scada::NodeId node_id) {
+    scada::NodeId node_id,
+    CancelationRef cancelation) {
   auto node = node_service_.GetNode(node_id);
   co_await FetchNode(node);
+  if (cancelation.canceled()) {
+    co_return;
+  }
 
+  // The handler is copied so that the view it may open after its own awaits
+  // is reached without `this`, which the operator can have closed meanwhile.
+  CreatedNodeHandler created_node_handler = created_node_handler_;
   controller_.OnViewNodeCreated(node);
-  co_await created_node_handler_(std::move(node));
+  co_await created_node_handler(std::move(node));
   co_return;
 }

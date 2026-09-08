@@ -47,12 +47,19 @@ class OpenedViewCreateCommand final : private OpenedViewCreateCommandContext,
  private:
   bool CanCreateRecord(const scada::NodeId& type_node_id) const;
   void CreateRecord(const scada::NodeId& type_node_id, int tag);
+  // Both take a `CancelationRef` taken from `cancelation_` at spawn time and
+  // re-check it after every await; once it reports canceled the command has
+  // been destroyed with its view and nothing of `this` may be touched.
   Awaitable<void> CreateRecordAsync(scada::NodeId type_node_id,
                                     scada::NodeId parent_id,
                                     std::u16string title,
                                     scada::NodeAttributes attributes,
-                                    scada::NodeProperties properties);
-  Awaitable<void> OnCreateRecordCompleteAsync(scada::NodeId node_id);
+                                    scada::NodeProperties properties,
+                                    CancelationRef cancelation);
+  Awaitable<void> OnCreateRecordCompleteAsync(scada::NodeId node_id,
+                                              CancelationRef cancelation);
 
+  // Declared last so it is destroyed first: expiring the token is what stops
+  // an in-flight coroutine from resuming into the members above.
   Cancelation cancelation_;
 };

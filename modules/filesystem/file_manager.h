@@ -8,6 +8,10 @@
 // TODO: Combine with `FileSynchronizer`.
 class FileManager {
  public:
+  // Owned as `std::unique_ptr<FileManager>` by `FileSystemComponent`, so the
+  // concrete implementation must be destroyed through this base.
+  virtual ~FileManager() = default;
+
   // Downloads file from server and saves it to public path. May use cached file
   // if it's already downloaded.
   virtual Awaitable<void> DownloadFileFromServer(

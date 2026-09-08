@@ -622,12 +622,16 @@ std::unique_ptr<OpenedView> MainWindowModule::CreateOpenedView(
                   [opened_view_ptr](PrintService& print_service) {
                     opened_view_ptr->Print(print_service);
                   },
+              // Captures the main window, not the opened view: the handler
+              // runs after the create command's server round trips, by which
+              // time the operator may have closed the view that issued it.
+              // The main window outlives every view it hosts.
               .created_node_handler_ =
-                  [this, opened_view_ptr](NodeRef node) -> Awaitable<void> {
+                  [this, &main_window](NodeRef node) -> Awaitable<void> {
                 auto def = co_await MakeWindowDefinitionAsync(
                     executor_, &kNodePropertyWindowInfo, node,
                     /*expand_groups=*/false);
-                co_await ::OpenView(&opened_view_ptr->main_window(), def, true);
+                co_await ::OpenView(&main_window, def, true);
                 co_return;
               }}));
 

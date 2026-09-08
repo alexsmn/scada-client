@@ -45,6 +45,10 @@ void ColumnHeaderModel::SetColumnCount(int count, int column_width) {
 }
 
 void ColumnHeaderModel::SetSize(int index, int new_size) {
+  // Indices reach here from persisted layouts as well as from the view, so an
+  // out-of-range one is ignored rather than written past `columns_`.
+  if (index < 0 || index >= static_cast<int>(columns_.size()))
+    return;
   columns_[index].width = new_size;
   NotifySizeChanged(index);
 }
@@ -58,4 +62,4 @@ std::u16string ColumnHeaderModel::GetTitle(int index) const {
   return columns_[index].title;
 }
 
-}  // namespace aui
+}  // namespace scada::aui

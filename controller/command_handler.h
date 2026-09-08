@@ -4,8 +4,16 @@
 
 #include <string>
 
+// A polymorphic command sink. Routers own their handlers through this base
+// (`std::unique_ptr<CommandHandler>`), so the destructor must be virtual:
+// without it every per-view command router was deleted through the base on
+// tab close, its derived destructor never ran, and each command — with the
+// `Cancelation` guarding its in-flight coroutines — leaked for the life of
+// the process.
 class CommandHandler {
  public:
+  virtual ~CommandHandler() = default;
+
   virtual CommandHandler* GetCommandHandler(unsigned command_id) {
     return this;
   }

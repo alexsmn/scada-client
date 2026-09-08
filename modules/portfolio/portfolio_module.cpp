@@ -51,39 +51,58 @@ PortfolioModule::PortfolioModule(PortfolioModuleContext&& context)
                                     .checkable = true});
   RegisterPortfolioCommandActions(ui_command_registry_);
 
-  // portfolios
-  if (const auto* pfoliose = GetList(profile_.data(), "portfolios")) {
-    for (const auto& pfolioe : *pfoliose) {
-      Portfolio& portfolio = portfolio_manager_->portfolios.emplace_back();
-      portfolio.name = GetString16(pfolioe, "name");
-      // items
-      if (const auto* itemse = GetList(pfolioe, "items")) {
-        for (const auto& iteme : *itemse) {
-          auto path = GetString(iteme, "path");
-          if (auto node_id = NodeIdFromScadaString(path); !node_id.is_null()) {
-            portfolio.items.insert(node_id);
-          }
-        }
-      }
-    }
-  }
+  LoadPortfolios(profile_.data(), *portfolio_manager_);
 
   profile_.RegisterSerializer([this](boost::json::value& data) {
-    boost::json::array portfolio_storage;
-    for (const Portfolio& portfolio : portfolio_manager_->portfolios) {
-      boost::json::value pfolioe{boost::json::object{}};
-      SetKey(pfolioe, "name", portfolio.name);
-      {
-        boost::json::array item_storage;
-        for (const scada::NodeId& node_id : portfolio.items) {
-          item_storage.emplace_back(NodeIdToScadaString(node_id));
-        }
-        pfolioe.as_object()["items"] = std::move(item_storage);
-      }
-      portfolio_storage.emplace_back(std::move(pfolioe));
-    }
-    data.as_object()["portfolios"] = std::move(portfolio_storage);
+    SavePortfolios(*portfolio_manager_, data);
   });
 }
 
 PortfolioModule::~PortfolioModule() = default;
+
+void LoadPortfolios(const boost::json::value& profile_data,
+                    PortfolioManager& portfolio_manager) {
+  const auto* pfoliose = GetList(profile_data, "portfolios");
+  if (!pfoliose) {
+    return;
+  }
+
+  for (const auto& pfolioe : *pfoliose) {
+    Portfolio& portfolio = portfolio_manager.portfolios.emplace_back();
+    portfolio.name = GetString16(pfolioe, "name");
+    const auto* itemse = GetList(pfolioe, "items");
+    if (!itemse) {
+      continue;
+    }
+    for (const auto& iteme : *itemse) {
+      // An item is `{"path": "<id>"}`. A bare `"<id>"` string is what the
+      // serializer wrote until 2026-09-07 — a shape this loader never read, so
+      // every portfolio came back empty after a restart — and is still
+      // accepted so those profiles recover their contents.
+      std::string_view path = iteme.is_string()
+                                  ? std::string_view{iteme.as_string()}
+                                  : GetString(iteme, "path");
+      if (auto node_id = NodeIdFromScadaString(path); !node_id.is_null()) {
+        portfolio.items.insert(node_id);
+      }
+    }
+  }
+}
+
+void SavePortfolios(const PortfolioManager& portfolio_manager,
+                    boost::json::value& profile_data) {
+  boost::json::array portfolio_storage;
+  for (const Portfolio& portfolio : portfolio_manager.portfolios) {
+    boost::json::value pfolioe{boost::json::object{}};
+    SetKey(pfolioe, "name", portfolio.name);
+    boost::json::array item_storage;
+    for (const scada::NodeId& node_id : portfolio.items) {
+      boost::json::value iteme{boost::json::object{}};
+      SetKey(iteme, "path", NodeIdToScadaString(node_id));
+      item_storage.emplace_back(std::move(iteme));
+    }
+    pfolioe.as_object()["items"] = std::move(item_storage);
+    portfolio_storage.emplace_back(std::move(pfolioe));
+  }
+  profile_data.as_object()["portfolios"] = std::move(portfolio_storage);
+}

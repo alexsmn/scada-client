@@ -6,6 +6,8 @@
 #include "modules/sheet/sheet_cell.h"
 #include "profile/window_definition.h"
 
+#include <boost/log/trivial.hpp>
+
 namespace {
 
 // The sheet stores alignment as the DT_* flags its formats and saved windows
@@ -44,10 +46,18 @@ SheetModel::~SheetModel() {}
 void SheetModel::Load(const WindowDefinition& definition) {
   for (const auto& item : definition.items) {
     if (item.name_is("SheetCell")) {
-      long row = item.GetInt("row", 0) - 1;
-      long col = item.GetInt("col", 0) - 1;
-      if (row < 0 || col < 0)
+      // The window definition is profile data, so a coordinate outside the
+      // sheet is a malformed file, never an invariant: `GetCell` would panic
+      // on it, and the sheet is sized before `Load` runs.
+      int row = item.GetInt("row", 0) - 1;
+      int col = item.GetInt("col", 0) - 1;
+      if (row < 0 || col < 0 || row >= row_count() || col >= column_count()) {
+        BOOST_LOG_TRIVIAL(warning)
+            << "Sheet cell (" << (row + 1) << ", " << (col + 1)
+            << ") is outside the " << row_count() << "x" << column_count()
+            << " sheet and was skipped";
         continue;
+      }
 
       SheetCell& cell = GetCell(row, col);
 
@@ -70,9 +80,15 @@ void SheetModel::Load(const WindowDefinition& definition) {
       cell.format_ = formats().Get(format);
 
     } else if (item.name_is("Column")) {
+      // Same data path: `ColumnHeaderModel::SetSize` subscripts its vector
+      // with this index, so an out-of-range column was an out-of-bounds write.
       int ix = item.GetInt("ix", 0) - 1;
-      if (ix < 0)
+      if (ix < 0 || ix >= column_count()) {
+        BOOST_LOG_TRIVIAL(warning)
+            << "Sheet column " << (ix + 1) << " is outside the "
+            << column_count() << " columns and was skipped";
         continue;
+      }
 
       int width = item.GetInt("width", 0);
       if (width <= 0)
@@ -129,7 +145,12 @@ void SheetModel::SetSizes(int row_count, int column_count) {
   int ccol = (std::min)(column_count, column_count_);  // columns to copy
   for (int i = 0; i < crow; i++) {
     for (int j = 0; j < ccol; j++)
-      new_cells[i * row_count + j] = std::move(mutable_cell(i, j));
+      // Row-major over the *new* column count, matching `mutable_cell`. This
+      // multiplied by `row_count` until 2026-09-07, which coincided with the
+      // right index only while the sheet stayed square — the one call the
+      // tree makes is `SetSizes(100, 100)` on an empty sheet — and for any
+      // other shape wrote past `new_cells`.
+      new_cells[i * column_count + j] = std::move(mutable_cell(i, j));
   }
 
   cells_.swap(new_cells);

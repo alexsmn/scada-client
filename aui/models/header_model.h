@@ -65,7 +65,10 @@ class ColumnHeaderModel : public HeaderModel {
   // HeaderModel
   virtual int GetCount() const override { return columns_.size(); }
   virtual std::u16string GetTitle(int index) const override;
+  // Out of range reads as 0, matching `SetSize`, which ignores such an index.
   virtual int GetSize(int index) const override {
+    if (index < 0 || index >= static_cast<int>(columns_.size()))
+      return 0;
     return columns_[index].width;
   }
   virtual void SetSize(int index, int new_size) override;
@@ -80,4 +83,4 @@ class ColumnHeaderModel : public HeaderModel {
   Columns columns_;
 };
 
-}  // namespace aui
+}  // namespace scada::aui
