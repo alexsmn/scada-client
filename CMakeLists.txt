@@ -173,3 +173,9 @@ add_subdirectory(test)
 if(BUILD_CLIENT_QT)
   add_subdirectory(tools)
 endif()
+
+# Last, because it walks the targets that exist by now: every test executable
+# gets the offscreen platform plugin linked in, so the macOS default that
+# `aui/test/qt/app_environment.h` applies can actually be honoured by a static
+# Qt. See the function's comment in build-support/ScadaProductBase.cmake.
+scada_qt_import_offscreen_platform_into_tests()

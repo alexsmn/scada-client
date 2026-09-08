@@ -164,6 +164,14 @@ Rules of the pipeline:
 - **macOS runs are for validation only** (offscreen platform + hermetic
   `HOME`; see "Running on macOS" in `docs/ops/client-screenshots.md`); published
   images come from the Windows pipeline so fonts stay consistent.
+- **The unit tests run offscreen on macOS too, by default.** `AppEnvironment`
+  (`aui/test/qt/app_environment.h`) sets `QT_QPA_PLATFORM=offscreen` unless
+  the variable is already set, and the root `CMakeLists.txt` links the
+  offscreen plugin into every test executable so a static Qt can honour it.
+  Without both, a `ctest` sweep bounced a Dock icon and stole focus once per
+  case. A new test binary that builds its own `QApplication` instead of
+  taking `AppEnvironment` reintroduces that; take the fixture. See
+  `docs/ops/client-build.md` → "The Qt tests run offscreen on macOS".
 
 ### UX design system
 
