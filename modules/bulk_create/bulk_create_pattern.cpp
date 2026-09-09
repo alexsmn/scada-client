@@ -1,5 +1,7 @@
 #include "bulk_create/bulk_create_pattern.h"
 
+#include <algorithm>
+#include <cstdint>
 #include <format>
 #include <string>
 #include <utility>
@@ -48,7 +50,15 @@ std::vector<BulkCreatePreviewRow> ExpandBulkCreate(
     row.number = index;
     row.name = ExpandTokens(params.name_template, index);
     row.node_id = ExpandTokens(params.node_id_template, index);
-    row.ioa = params.ioa_start + i * params.ioa_step;
+    // In 64-bit: the wizard's own spin boxes allow ioa_start up to 1e6,
+    // count up to 1e5 and ioa_step up to 1e5, whose product overflows a
+    // signed int -- undefined behaviour, reached by values the UI offers.
+    const std::int64_t ioa = static_cast<std::int64_t>(params.ioa_start) +
+                             static_cast<std::int64_t>(i) *
+                                 static_cast<std::int64_t>(params.ioa_step);
+    row.ioa_out_of_range = ioa > kMaxBulkCreateIoa || ioa < 0;
+    row.ioa =
+        static_cast<int>(std::clamp<std::int64_t>(ioa, 0, kMaxBulkCreateIoa));
     row.conflict = existing_node_ids.contains(row.node_id);
     rows.push_back(std::move(row));
   }
@@ -59,7 +69,9 @@ BulkCreateSummary SummarizeBulkCreate(
     const std::vector<BulkCreatePreviewRow>& rows) {
   BulkCreateSummary summary;
   for (const BulkCreatePreviewRow& row : rows) {
-    if (row.conflict)
+    if (row.ioa_out_of_range)
+      ++summary.out_of_range_count;
+    else if (row.conflict)
       ++summary.conflict_count;
     else
       ++summary.new_count;

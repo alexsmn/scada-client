@@ -698,6 +698,14 @@
     </message>
     <!-- modules/bulk_create/qt/bulk_create_preview_panel.cpp -->
     <message>
+        <source>address out of range</source>
+        <translation>адрес вне диапазона</translation>
+    </message>
+    <message>
+        <source>out of range</source>
+        <translation>вне диапазона</translation>
+    </message>
+    <message>
         <source>Name template</source>
         <translation>Шаблон имени</translation>
     </message>
@@ -1985,6 +1993,11 @@
     <message>
         <source>Unknown file type.</source>
         <translation>Неизвестный тип файла.</translation>
+    </message>
+    <!-- properties/transport/qt/transport_dialog.cpp -->
+    <message>
+        <source>The port must be a number from 1 to 65535.</source>
+        <translation>Порт должен быть числом от 1 до 65535.</translation>
     </message>
     <message>
         <source>Failed to download file from server.</source>

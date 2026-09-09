@@ -137,6 +137,15 @@ QWidget* TransmissionRuleInspector::BuildContent() {
       QStringLiteral("color:%1;").arg(tokens.fg_subtle.name()));
   ioa_edit_ = new QLineEdit;
   ioa_edit_->setObjectName(QStringLiteral("ioaEdit"));
+  // The full non-negative Int32 range, deliberately, and not the 16 777 215
+  // a three-octet information object address suggests. `Address` is declared
+  // on TransmissionItemType, shared by the Modbus, IEC 60870 and IEC 61850
+  // subtypes; and even within the 60870 family the address width is a
+  // configured system parameter -- `IecProtocolOptions::len_addr`
+  // (third_party/iec60870/iec60870/model/types.h), defaulting to 3 octets but
+  // encoded at whatever length the link carries. The client cannot know that
+  // length, so the bound it can enforce is the property's own type and the
+  // protocol-specific check stays on the edge.
   ioa_edit_->setValidator(new QIntValidator{0, 0x7fffffff, ioa_edit_});
   ioa_edit_->setFixedWidth(96);
   ioa_edit_->setStyleSheet(

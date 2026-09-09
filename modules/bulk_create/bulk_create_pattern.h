@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <set>
 #include <string>
 #include <string_view>
@@ -30,13 +31,28 @@ struct BulkCreateParams {
   int ioa_step = 1;
 };
 
+// The largest address a row may carry. The destination is the rule's
+// `TransmissionItemType_Address` property, a `scada::Int32`, and that is the
+// only bound the client can apply: the property is generic over the Modbus,
+// IEC 60870 and IEC 61850 transmission item subtypes, and for the 60870
+// family the information object address width is a configured system
+// parameter rather than a constant -- `IecProtocolOptions::len_addr`
+// (third_party/iec60870/iec60870/model/types.h), default 3 octets but read
+// and written at whatever length the link is configured for. So a 16 777 215
+// bound here would be both too narrow for a wider link and too wide for a
+// one-octet one, and the protocol-specific check belongs to the edge.
+inline constexpr std::int64_t kMaxBulkCreateIoa = 0x7fffffff;
+
 // One expanded preview row.
 struct BulkCreatePreviewRow {
-  int number = 0;             // the running index (start_index, +index_step ...)
-  std::u16string name;        // expanded name_template
-  std::u16string node_id;     // expanded node_id_template
-  int ioa = 0;                // ioa_start + row * ioa_step
-  bool conflict = false;      // node_id already exists in the address space
+  int number = 0;          // the running index (start_index, +index_step ...)
+  std::u16string name;     // expanded name_template
+  std::u16string node_id;  // expanded node_id_template
+  int ioa = 0;             // ioa_start + row * ioa_step, clamped
+  bool conflict = false;   // node_id already exists in the address space
+  // The expanded address ran past kMaxBulkCreateIoa. `ioa` is then clamped
+  // and the row must not be created.
+  bool ioa_out_of_range = false;
 };
 
 // Expands `params` into `params.count` preview rows, marking a row as a
@@ -50,6 +66,7 @@ std::vector<BulkCreatePreviewRow> ExpandBulkCreate(
 struct BulkCreateSummary {
   int new_count = 0;
   int conflict_count = 0;
+  int out_of_range_count = 0;
 };
 
 // Tallies the new vs. conflicting rows.

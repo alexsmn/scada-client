@@ -171,9 +171,10 @@ void BulkCreatePreviewPanel::Refresh() {
     set_cell(2, QString::fromStdU16String(row.node_id));
     set_cell(3, QString::number(row.ioa));
 
-    auto* status =
-        new QTableWidgetItem(row.conflict ? Tr("exists") : Tr("new"));
-    if (row.conflict)
+    auto* status = new QTableWidgetItem(
+        row.ioa_out_of_range ? Tr("address out of range")
+                             : (row.conflict ? Tr("exists") : Tr("new")));
+    if (row.conflict || row.ioa_out_of_range)
       status->setForeground(tokens.bad);
     else
       status->setForeground(tokens.good);
@@ -187,6 +188,11 @@ void BulkCreatePreviewPanel::Refresh() {
     text += QStringLiteral(" · %1 %2")
                 .arg(summary.conflict_count)
                 .arg(Tr("conflict"));
+  }
+  if (summary.out_of_range_count > 0) {
+    text += QStringLiteral(" · %1 %2")
+                .arg(summary.out_of_range_count)
+                .arg(Tr("out of range"));
   }
   summary_->setText(text);
 }

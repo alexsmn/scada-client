@@ -83,6 +83,49 @@ TEST(ExpandBulkCreateTest, IndexStepAdvancesTheIndex) {
   EXPECT_EQ(rows[2].name, u"P20");
 }
 
+// Regression (backlog 719): the IOA was `ioa_start + i * ioa_step` in a bare
+// int. The wizard's own spin boxes allow ioa_start 1e6, count 1e5 and
+// ioa_step 1e5, so the product overflowed a signed int -- undefined
+// behaviour reached by values the UI offers. Computed in 64-bit now, and a
+// row past the Int32 the Address property carries is flagged rather than
+// wrapped.
+TEST(ExpandBulkCreateTest, IoaPastTheAddressTypeIsFlaggedNotWrapped) {
+  BulkCreateParams params;
+  params.name_template = u"P{n}";
+  params.count = 3;
+  params.ioa_start = 2000000000;
+  params.ioa_step = 1000000000;
+
+  const std::vector<BulkCreatePreviewRow> rows = ExpandBulkCreate(params, {});
+  ASSERT_EQ(rows.size(), 3u);
+
+  EXPECT_FALSE(rows[0].ioa_out_of_range);
+  EXPECT_EQ(rows[0].ioa, 2000000000);
+  // 3e9 and 4e9 both exceed INT32_MAX; wrapped, they would have come back
+  // negative.
+  EXPECT_TRUE(rows[1].ioa_out_of_range);
+  EXPECT_TRUE(rows[2].ioa_out_of_range);
+  EXPECT_EQ(rows[1].ioa, kMaxBulkCreateIoa);
+
+  const BulkCreateSummary summary = SummarizeBulkCreate(rows);
+  EXPECT_EQ(summary.new_count, 1);
+  EXPECT_EQ(summary.out_of_range_count, 2);
+}
+
+TEST(ExpandBulkCreateTest, IoaWithinRangeIsNotFlagged) {
+  BulkCreateParams params;
+  params.name_template = u"P{n}";
+  params.count = 3;
+  params.ioa_start = 4001;
+  params.ioa_step = 1;
+
+  const std::vector<BulkCreatePreviewRow> rows = ExpandBulkCreate(params, {});
+  ASSERT_EQ(rows.size(), 3u);
+  EXPECT_EQ(rows[2].ioa, 4003);
+  for (const BulkCreatePreviewRow& row : rows)
+    EXPECT_FALSE(row.ioa_out_of_range);
+}
+
 TEST(ExpandBulkCreateTest, NonPositiveCountYieldsNoRows) {
   BulkCreateParams params;
   params.name_template = u"X{n}";

@@ -58,6 +58,36 @@ TEST_F(BulkCreatePreviewPanelTest, ConflictRowIsFlaggedAndCountedInSummary) {
   EXPECT_TRUE(summary->text().contains(QStringLiteral("1 conflict")));
 }
 
+// The grid's third status, and the proof that the panel's own spin boxes can
+// reach it: ioa_start caps at 1e6, ioa_step at 1e5 and count at 1e5, so the
+// last row of a large run runs past what the Address property can carry. It
+// used to wrap to a negative number through signed overflow (backlog 719).
+TEST_F(BulkCreatePreviewPanelTest, OutOfRangeIoaIsFlaggedAndCounted) {
+  BulkCreatePreviewPanel panel;
+  BulkCreateParams params = SampleParams();
+  // 1e6 + 21464 * 1e5 = 2 147 400 000, the last address that fits; one step
+  // further is 2 147 500 000, past INT32_MAX.
+  params.ioa_start = 1000000;
+  params.ioa_step = 100000;
+  params.count = 21466;
+  panel.SetParams(params);
+
+  const std::vector<BulkCreatePreviewRow>& rows = panel.rows();
+  ASSERT_EQ(rows.size(), 21466u);
+  EXPECT_FALSE(rows[21464].ioa_out_of_range);
+  EXPECT_EQ(rows[21464].ioa, 2147400000);
+  EXPECT_TRUE(rows[21465].ioa_out_of_range);
+
+  auto* grid = panel.findChild<QTableWidget*>(QStringLiteral("previewGrid"));
+  ASSERT_NE(grid, nullptr);
+  EXPECT_EQ(grid->item(21465, 4)->text(),
+            QStringLiteral("address out of range"));
+
+  auto* summary = panel.findChild<QLabel*>(QStringLiteral("previewSummary"));
+  ASSERT_NE(summary, nullptr);
+  EXPECT_TRUE(summary->text().contains(QStringLiteral("out of range")));
+}
+
 TEST_F(BulkCreatePreviewPanelTest, EditingCountSpinLiveUpdatesTheGrid) {
   BulkCreatePreviewPanel panel;
   panel.SetParams(SampleParams());
