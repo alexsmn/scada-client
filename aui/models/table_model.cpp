@@ -1,6 +1,8 @@
 
 #include "aui/models/table_model.h"
 
+#include "aui/text_fold.h"
+
 #include "base/check.h"
 
 namespace scada::aui {
@@ -32,7 +34,9 @@ void TableModel::Sort(int column_id, bool ascending) {}
 int TableModel::CompareCells(int row1, int row2, int column_id) {
   auto text1 = GetCellText(row1, column_id);
   auto text2 = GetCellText(row2, column_id);
-  return text1.compare(text2);
+  // Case-blind, alphabet-aware order for every text column that does not
+  // override this (task 716); numeric and time columns override it.
+  return CompareForDisplay(text1, text2);
 }
 
 boost::signals2::scoped_connection TableModel::SubscribeModelChanged(
@@ -98,4 +102,4 @@ bool TableModel::IsEditable(int row, int column_id) {
   return false;
 }
 
-}  // namespace aui
+}  // namespace scada::aui

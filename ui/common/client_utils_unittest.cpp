@@ -63,3 +63,21 @@ TEST(ClientUtilsTest, ExpandGroupItemIdsAsyncZeroLimitDoesNotFetch) {
   // A zero limit must not touch the node at all.
   EXPECT_TRUE(node_service.fetch_requests(root_id).empty());
 }
+
+// The named-node lists behind the device pickers sort for display: case-blind
+// and alphabet-aware, not by code point (task 716).
+TEST(ClientUtilsTest, SortNamedNodesOrdersForDisplay) {
+  NamedNodes nodes;
+  for (const char16_t* name :
+       {u"Яблоко", u"beta", u"Alpha", u"ёлка", u"Ель", u"gamma"}) {
+    nodes.emplace_back(name, NodeRef{});
+  }
+
+  SortNamedNodes(nodes);
+
+  std::vector<std::u16string> names;
+  for (const auto& [name, node] : nodes)
+    names.push_back(name);
+  EXPECT_THAT(names, ElementsAre(u"Alpha", u"beta", u"gamma", u"Ель", u"ёлка",
+                                 u"Яблоко"));
+}

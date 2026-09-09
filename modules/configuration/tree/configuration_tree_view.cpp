@@ -1,5 +1,6 @@
 ﻿#include "configuration/tree/configuration_tree_view.h"
 
+#include "aui/text_fold.h"
 #include "aui/translation.h"
 #include "aui/tree.h"
 #include "configuration/tree/configuration_tree_drop_handler.h"
@@ -44,7 +45,10 @@ int CompareNodes(const NodeRef& a, const NodeRef& b) {
     return fa < fb ? 1 : -1;
   if (ta != tb)
     return ta < tb ? -1 : 1;
-  return ToString16(a.display_name()).compare(ToString16(b.display_name()));
+  // Siblings of one type read in display order — case-blind, Ё beside Е —
+  // not code-point order (task 716).
+  return CompareForDisplay(ToString16(a.display_name()),
+                           ToString16(b.display_name()));
 }
 
 }  // namespace

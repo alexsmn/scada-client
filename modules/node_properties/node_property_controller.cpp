@@ -1,6 +1,7 @@
 ﻿#include "modules/node_properties/node_property_controller.h"
 
 #include "aui/models/property_tree_model.h"
+#include "aui/text_fold.h"
 #include "aui/tree.h"
 #include "common/formula_util.h"
 #include "controller/controller_delegate.h"
@@ -120,7 +121,7 @@ std::unique_ptr<UiView> NodePropertyController::Init(
       return left_group->index - right_group->index;
     const auto& left_text = left_node.GetText(0);
     const auto& right_text = right_node.GetText(0);
-    return left_text.compare(right_text);
+    return CompareForDisplay(left_text, right_text);
   });
 
 #if defined(UI_QT)

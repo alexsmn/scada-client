@@ -1,8 +1,10 @@
 ﻿#include "ui/common/client_utils.h"
 
+#include "aui/text_fold.h"
 #include "aui/translation.h"
 #include "base/any_executor.h"
 #include "base/format_time.h"
+#include "base/thread_executor.h"
 #include "base/u16format.h"
 #include "base/utf_convert.h"
 #include "common/formula_util.h"
@@ -133,8 +135,9 @@ void DeleteTreeRecordsRecursive(TaskManager& task_manager,
 }
 
 void SortNamedNodes(NamedNodes& list) {
-  std::sort(list.begin(), list.end(),
-            [](const auto& a, const auto& b) { return a.first < b.first; });
+  std::sort(list.begin(), list.end(), [](const auto& a, const auto& b) {
+    return CompareForDisplay(a.first, b.first) < 0;
+  });
 }
 
 void GetNamedNodesHelper(const NodeRef& parent,

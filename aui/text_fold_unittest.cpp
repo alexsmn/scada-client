@@ -24,4 +24,33 @@ TEST(FoldForSearchTest, FoldsMixedScriptsAndLeavesEverythingElseAlone) {
   EXPECT_EQ(FoldForSearch(u""), u"");
 }
 
+// Display order is case-blind in both alphabets and puts Ё where the Russian
+// alphabet does — between Е and Ж — rather than where the code chart does.
+// Each pair below is one the old code-point comparison got backwards.
+TEST(CompareForDisplayTest, OrdersCaseBlindAcrossBothAlphabets) {
+  EXPECT_LT(CompareForDisplay(u"apple", u"Banana"), 0);
+  EXPECT_LT(CompareForDisplay(u"Apple", u"banana"), 0);
+  EXPECT_GT(CompareForDisplay(u"banana", u"Apple"), 0);
+  EXPECT_LT(CompareForDisplay(u"аврора", u"Байкал"), 0);
+  EXPECT_GT(CompareForDisplay(u"Байкал", u"аврора"), 0);
+}
+
+TEST(CompareForDisplayTest, PutsYoBetweenYeAndZhe) {
+  EXPECT_LT(CompareForDisplay(u"Ель", u"Ёлка"), 0);
+  EXPECT_LT(CompareForDisplay(u"Ёлка", u"Жук"), 0);
+  EXPECT_LT(CompareForDisplay(u"Ёлка", u"Яблоко"), 0);
+  EXPECT_LT(CompareForDisplay(u"ёлка", u"Яблоко"), 0);
+  EXPECT_GT(CompareForDisplay(u"Яблоко", u"ёлка"), 0);
+}
+
+// Strings equal under the fold are still ordered, by their raw code points,
+// so a sort stays deterministic and never treats "abc" and "ABC" as one.
+TEST(CompareForDisplayTest, BreaksFoldTiesByCodePoint) {
+  EXPECT_EQ(CompareForDisplay(u"abc", u"abc"), 0);
+  EXPECT_GT(CompareForDisplay(u"abc", u"ABC"), 0);
+  EXPECT_LT(CompareForDisplay(u"ABC", u"abc"), 0);
+  EXPECT_LT(CompareForDisplay(u"ab", u"abc"), 0);
+  EXPECT_LT(CompareForDisplay(u"", u"a"), 0);
+}
+
 }  // namespace
