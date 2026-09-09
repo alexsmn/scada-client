@@ -31,13 +31,18 @@ void SelectionModel::SelectNode(const NodeRef& node) {
     return;
   }
 
-  if (node_ == node)
+  // Only a repeat of the same SelectNode is a no-op. After SelectEvent the
+  // same node is the event's *source* and the selection is still the event;
+  // returning early there kept the Inspector on the alarm card when the
+  // operator clicked the source in the Explorer.
+  if (node_selected_ && node_ == node)
     return;
 
   Reset();
 
   type_ = NODE;
   node_ = node;
+  node_selected_ = true;
   SubscribeNode();
 
   if (node.node_class() == scada::NodeClass::Variable) {
@@ -98,6 +103,7 @@ NodeIdSet SelectionModel::GetMultipleNodeIds() const {
 
 void SelectionModel::Reset() {
   type_ = EMPTY;
+  node_selected_ = false;
 
   if (node_) {
     node_semantic_changed_connection_.disconnect();

@@ -73,6 +73,12 @@ class SelectionModel final : private SelectionModelContext {
 
   enum Type { EMPTY, NODE, SPEC, EVENT, MULTI };
   Type type_ = EMPTY;
+  // True while the selection is exactly what SelectNode(node_) produced.
+  // SelectEvent and SelectTimedData also set node_ (to the event's source, to
+  // the spec's node), so node_ alone cannot tell "this node is already
+  // selected" from "this node is the source of the selected event" — and the
+  // latter must switch to the node on SelectNode.
+  bool node_selected_ = false;
 
   TimedDataSpec timed_data_;
   NodeRef node_;
