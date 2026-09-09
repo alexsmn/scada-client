@@ -2,7 +2,6 @@
 #include "aui/translation.h"
 
 #include "aui/resource_error.h"
-#include "base/check.h"
 #include "base/csv_reader.h"
 #include "base/u16format.h"
 #include "base/utf_convert.h"
@@ -75,8 +74,15 @@ ExportData::Property ExportDataReader::ParseProperty(
 
   auto prop_decl = node_service_.GetNode(prop_decl_id);
 
-  // The type system must be prefeteched before import starts.
-  scada::base::Check(prop_decl.fetched());
+  // The column names a declaration the address space does not carry, or one
+  // outside the prefetched type system. Either way it is the file's error,
+  // not an invariant of ours: GetNode only *starts* a fetch, so a header
+  // naming an unknown id arrives here unfetched, and this used to be a
+  // fail-stop Check on the contents of a file the operator chose.
+  if (!prop_decl || !prop_decl.fetched()) {
+    throw ResourceError{u16format(Translate("Unknown property column {}"),
+                                  std::u16string{cell})};
+  }
 
   bool reference = prop_decl.node_class() == scada::NodeClass::ReferenceType;
 

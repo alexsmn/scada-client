@@ -55,6 +55,10 @@ struct ViewState {
 const WindowInfo kSingleItemWindowInfo = {0x7fff0001, "SingleItemTest",
                                           u"Single Item", WIN_SINGLE_ITEM};
 
+// A pane (WIN_SING): one per page, deduplicated by type, and remembered in
+// the page as an invisible definition when closed.
+const WindowInfo kPaneWindowInfo = {0x7fff0002, "PaneTest", u"Pane", WIN_SING};
+
 class ViewManagerTest : public Test {
  public:
   virtual void SetUp() override;
@@ -91,6 +95,7 @@ void ViewManagerTest::SetUp() {
   controller_registry_.AddControllerFactory(kWindowInfo, never_called);
   controller_registry_.AddControllerFactory(kSingleItemWindowInfo,
                                             never_called);
+  controller_registry_.AddControllerFactory(kPaneWindowInfo, never_called);
 
   // Opening, activating, and closing views drives active-view-changed
   // notifications (see ViewManager). These tests assert on view creation and
@@ -203,6 +208,30 @@ TEST_F(ViewManagerTest, PlainView_OpeningTwiceStillOpensTwoViews) {
                                            /*after_view=*/nullptr);
 
   EXPECT_NE(second, first);
+}
+
+// Regression (backlog 718): CreateView catches a factory failure, logs it and
+// returns null, but leaves the page's stored definition marked visible. The
+// next OpenView of the same pane type found that definition and hit
+// Check(!win.visible) -- a fail-stop on a state the code had just documented
+// as recoverable. The definition is reused instead, and no second one is
+// added to the page.
+TEST_F(ViewManagerTest, Pane_ADefinitionLeftVisibleByAFailedCreateIsReused) {
+  const WindowDefinition def{kPaneWindowInfo.name};
+
+  EXPECT_CALL(view_manager_delegate_, OnCreateView(_))
+      .WillOnce(Return(ByMove(std::unique_ptr<OpenedView>{})));
+  EXPECT_EQ(view_manager_qt_.OpenView(def, /*make_active=*/true,
+                                      /*after_view=*/nullptr),
+            nullptr);
+  ASSERT_EQ(view_manager_qt_.current_page().GetWindowCount(), 1);
+  EXPECT_TRUE(view_manager_qt_.current_page().GetWindow(0).visible);
+
+  auto view_state = ExpectOpenView(kPaneWindowInfo);
+  auto* view = view_manager_qt_.OpenView(def, /*make_active=*/true,
+                                         /*after_view=*/nullptr);
+  EXPECT_NE(view, nullptr);
+  EXPECT_EQ(view_manager_qt_.current_page().GetWindowCount(), 1);
 }
 
 TEST(ViewManagerQtComponentTest, AddSplitSaveAndRemovePlainWidgets) {

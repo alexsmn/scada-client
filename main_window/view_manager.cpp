@@ -354,12 +354,15 @@ OpenedView* ViewManager::OpenView(const WindowDefinition& def,
     }
 
     // If window is not found try to find stored invisible definition for
-    // this window type.
+    // this window type. A stored definition that is still marked visible
+    // with no view behind it is one whose CreateView failed -- the factory
+    // threw, was logged, and left the flag set -- so it is reused rather
+    // than treated as an invariant violation: the code just above documented
+    // that failure as recoverable, and this was a fail-stop Check on it.
     const Page& page = current_page();
     for (int i = 0; i < page.GetWindowCount(); ++i) {
       WindowDefinition& win = page.GetWindow(i);
       if (win.type == def.type) {
-        scada::base::Check(!win.visible);
         win.visible = true;
         window_def = &win;
         break;

@@ -57,7 +57,17 @@ Awaitable<void> OpenJsonFileAsync(std::filesystem::path path,
     co_return;
   }
 
-  co_await main_window->OpenView(*window_def, /*activate=*/true);
+  // FromJson<WindowDefinition> accepts any object, so a .workplace with no
+  // usable `type` parses here and fails in OpenView, which logs "Window type
+  // not found" and returns null. Report it the way a syntax error is: to the
+  // operator, silence reads as a click that did nothing.
+  OpenedViewInterface* view =
+      co_await main_window->OpenView(*window_def, /*activate=*/true);
+  if (!view) {
+    co_await dialog_service.RunMessageBox(
+        Translate("The file has an invalid format."), OpenFileTitle(),
+        MessageBoxMode::Error);
+  }
   co_return;
 }
 

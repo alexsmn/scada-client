@@ -1,5 +1,7 @@
 ﻿#include "export_data_reader.h"
 
+#include "aui/resource_error.h"
+
 #include "address_space/test/test_scada_node_states.h"
 #include "base/csv_reader.h"
 #include "node_service/static/static_node_service.h"
@@ -36,6 +38,15 @@ TIT.75,GROUP.1,Объект ТИТ @SCADA.76,P,tit1142,0,1,{IEC_DEV.1!1142},,,,0
 TIT.76,GROUP.1,Объект ТИТ @SCADA.76,Q,tit1143,0,1,{IEC_DEV.1!1143},,,,0,0,1,,ТИТ (30 дней) @HISTORICAL_DB.2,,,0.#,0,0,0,20000,0,20000,,,,,,0,0)");
 
   EXPECT_EQ(data.nodes.size(), 7);
+}
+
+// Regression (backlog 718): a column naming a property declaration the
+// address space does not carry tripped base::Check(prop_decl.fetched()) -- a
+// fail-stop on the contents of a file the operator chose. It is the file's
+// error, reported like the other malformed-header cases.
+TEST_F(ExportDataReaderTest, UnknownPropertyColumnIsAResourceError) {
+  EXPECT_THROW(ReadExportData(u"Ид,Родитель,Тип,Имя,Bogus @SCADA.999999\n"),
+               ResourceError);
 }
 
 ExportData ExportDataReaderTest::ReadExportData(std::u16string_view str) {

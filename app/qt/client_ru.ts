@@ -1687,6 +1687,10 @@
         <translation>Неверный формат имени столбца</translation>
     </message>
     <message>
+        <source>Unknown property column {}</source>
+        <translation>Неизвестный столбец свойства {}</translation>
+    </message>
+    <message>
         <source>Group not found</source>
         <translation>Группа не найдена</translation>
     </message>

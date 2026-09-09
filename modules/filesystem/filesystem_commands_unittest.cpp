@@ -6,6 +6,7 @@
 #include "base/test/awaitable_test.h"
 #include "base/test/scoped_path_override.h"
 #include "base/test/test_executor.h"
+#include "common/test/scoped_temp_dir.h"
 #include "controller/controller.h"
 #include "controller/controller_registry.h"
 #include "controller/window_info.h"
@@ -246,6 +247,31 @@ TEST_F(OpenFileCommandTest,
       .key_modifiers = {}};
 
   EXPECT_NO_THROW(WaitCommand(command_.Execute(context)));
+  EXPECT_EQ(dialog_service_.message_box_calls, 1);
+  EXPECT_EQ(dialog_service_.last_mode, MessageBoxMode::Error);
+}
+
+// Regression (backlog 718): FromJson<WindowDefinition> never returns nullopt,
+// so a .workplace with no usable `type` parsed, OpenView logged "Window type
+// not found" and returned null, and the operator saw nothing happen. The fake
+// main window's OpenView returns null, standing in for that failure.
+TEST_F(OpenFileCommandTest,
+       Execute_WorkplaceFileTheMainWindowCannotOpenShowsErrorDialog) {
+  ScopedTempDir temp_dir{"filesystem_commands_test"};
+  const std::filesystem::path path = temp_dir.path() / "typeless.workplace";
+  {
+    std::ofstream ofs{path, std::ios::binary};
+    ofs << R"({"type": "NoSuchWindowType"})";
+  }
+
+  OpenFileCommandContext context{.main_window = &main_window_,
+                                 .dialog_service = dialog_service_,
+                                 .executor = executor_,
+                                 .file_node = MakeFileNode(path.u16string()),
+                                 .key_modifiers = {}};
+
+  EXPECT_NO_THROW(WaitCommand(command_.Execute(context)));
+  EXPECT_EQ(main_window_.open_view_calls, 1);
   EXPECT_EQ(dialog_service_.message_box_calls, 1);
   EXPECT_EQ(dialog_service_.last_mode, MessageBoxMode::Error);
 }
