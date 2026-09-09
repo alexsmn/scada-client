@@ -6,22 +6,13 @@
 #include <utility>
 
 namespace events {
-namespace {
 
-// What makes two occurrences "the same alarm": the source and what it said.
-// Severity is not part of the key — the same condition reported at a different
-// severity is still the same condition, and splitting on it would break the
-// collapse exactly when a chattering source escalates.
-using GroupKey = std::pair<scada::NodeId, std::u16string>;
-
-GroupKey KeyOf(const scada::Event& event) {
+AlarmKey AlarmKeyOf(const scada::Event& event) {
   return {event.source_node_id, event.message.text};
 }
 
-}  // namespace
-
 bool IsSameAlarm(const scada::Event& a, const scada::Event& b) {
-  return KeyOf(a) == KeyOf(b);
+  return AlarmKeyOf(a) == AlarmKeyOf(b);
 }
 
 std::vector<EventGroup> GroupRepeatedEvents(
@@ -30,13 +21,14 @@ std::vector<EventGroup> GroupRepeatedEvents(
   // occurrence, so a caller passing events in display order keeps that order
   // regardless of which member ends up representing the group.
   std::vector<std::vector<const scada::Event*>> members;
-  std::map<GroupKey, size_t> index_of;
+  std::map<AlarmKey, size_t> index_of;
 
   for (const scada::Event* event : events) {
     if (!event)
       continue;
 
-    auto [it, inserted] = index_of.try_emplace(KeyOf(*event), members.size());
+    auto [it, inserted] =
+        index_of.try_emplace(AlarmKeyOf(*event), members.size());
     if (inserted)
       members.emplace_back();
     members[it->second].push_back(event);

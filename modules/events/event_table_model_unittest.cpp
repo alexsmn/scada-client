@@ -20,10 +20,14 @@
 #include "scada/history_service_mock.h"
 #include "scada/standard_node_ids.h"
 
+#include "aui/test/recording_table_model_observer.h"
 #include "base/utf_convert.h"
 
+#include <chrono>
 #include <gmock/gmock.h>
+#include <iostream>
 #include <set>
+#include <span>
 
 using namespace testing;
 
@@ -917,4 +921,300 @@ TEST_F(EventAlarmChromeTest, CountsUnacknowledgedByArea) {
   model_.AddFilteredItem(area_b);
   EXPECT_EQ(model_.CountUnacknowledgedByArea(areas),
             (EventTableModel::AreaCounts{.total = 3, .per_area = {2, 0}}));
+}
+
+// Task 721: the journal's per-arrival and per-paint work must be linear in the
+// batch, not in the journal. A flood of thousands of repeats is exactly when
+// grouping exists, and it was also when a per-event scan of every row and a
+// per-cell walk from row 0 cost the most. These pin the row bookkeeping the
+// lookups have to keep right across appends, folds, removals and rebuilds. The
+// timings they print are the measurement the entry asked for, not an
+// assertion: a loaded machine would fail any threshold worth asserting.
+class EventJournalScalingTest : public Test {
+ protected:
+  EventJournalScalingTest() {
+    node_service_.Add(
+        {.node_id = node_id_,
+         .type_definition_id = scada::data_items::id::AnalogItemType,
+         .attributes = {.browse_name = "n1", .display_name = u"N1"}});
+    ON_CALL(node_event_provider_, unacked_events())
+        .WillByDefault(ReturnRef(live_));
+    ON_CALL(node_event_provider_, AddObserver(_))
+        .WillByDefault(
+            [this](EventObserver& observer) { observer_ = &observer; });
+    current_event_model_.emplace(node_event_provider_);
+  }
+
+  EventTableModel& MakeModel(bool current_events) {
+    model_.emplace(EventTableModelContext{
+        .executor_ = executor_,
+        .node_service_ = node_service_,
+        .current_event_model_ = *current_event_model_,
+        .historical_event_model_ = historical_event_model_,
+        .local_event_model_ = local_event_model_,
+        .current_events_ = current_events});
+    return *model_;
+  }
+
+  // Creates `count` live occurrences carrying `message`, each a second apart,
+  // and delivers them to the journal in batches of `batch` — the shape of a
+  // chattering source arriving over a subscription.
+  std::vector<const scada::Event*> Deliver(std::u16string message,
+                                           int count,
+                                           int batch) {
+    std::vector<const scada::Event*> all;
+    std::vector<const scada::Event*> pending;
+    for (int i = 0; i < count; ++i) {
+      const scada::EventId id = next_id_++;
+      const scada::Event& event =
+          live_
+              .try_emplace(id, scada::Event{.event_id = id,
+                                            .time = scada::Time{} +
+                                                    std::chrono::seconds(id),
+                                            .source_node_id = node_id_,
+                                            .message = message})
+              .first->second;
+      all.push_back(&event);
+      pending.push_back(&event);
+      if (static_cast<int>(pending.size()) == batch) {
+        observer_->OnEvents(pending);
+        pending.clear();
+      }
+    }
+    if (!pending.empty())
+      observer_->OnEvents(pending);
+    return all;
+  }
+
+  // Acknowledges `events` in batches of `batch`, the way the storage does it:
+  // an acknowledged event is *extracted* from the unacknowledged set before
+  // the notification, and its pointer dies with that call. Holding the node
+  // handles for the duration is what keeps the pointers the journal is handed
+  // valid exactly as long as production keeps them.
+  void Acknowledge(std::span<const scada::Event* const> events, int batch) {
+    std::vector<NodeEventProvider::EventContainer::node_type> extracted;
+    std::vector<const scada::Event*> pending;
+    auto flush = [&] {
+      observer_->OnEvents(pending);
+      pending.clear();
+      extracted.clear();
+    };
+    for (const scada::Event* event : events) {
+      auto node = live_.extract(event->event_id);
+      node.mapped().acked = true;
+      node.mapped().acknowledged_time = node.mapped().time;
+      pending.push_back(&node.mapped());
+      extracted.push_back(std::move(node));
+      if (static_cast<int>(pending.size()) == batch)
+        flush();
+    }
+    if (!pending.empty())
+      flush();
+  }
+
+  static int CountRowsWithMessage(scada::aui::TableModel& model,
+                                  std::u16string_view message) {
+    int count = 0;
+    for (int row = 0; row < model.GetRowCount(); ++row) {
+      if (model.GetCellText(row, EventColumnMessage) == message)
+        ++count;
+    }
+    return count;
+  }
+
+  static void Report(const char* what,
+                     std::chrono::steady_clock::time_point since) {
+    const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                        std::chrono::steady_clock::now() - since)
+                        .count();
+    std::cout << "[ timing ] " << what << ": " << ms << " ms" << std::endl;
+  }
+
+  TestExecutor executor_;
+  StaticNodeService node_service_;
+  const scada::NodeId node_id_{1, scada::NamespaceIndexes::TIT};
+
+  NiceMock<MockNodeEventProvider> node_event_provider_;
+  EventObserver* observer_ = nullptr;
+  std::optional<CurrentEventModel> current_event_model_;
+  // Stable event storage, as `NodeEventProvider::unacked_events()` provides.
+  NodeEventProvider::EventContainer live_;
+  scada::EventId next_id_ = 1;
+
+  NiceMock<scada::MockHistoryService> history_service_;
+  HistoricalEventModel historical_event_model_{executor_, history_service_};
+  LocalEvents local_events_;
+  LocalEventModel local_event_model_{local_events_};
+  std::optional<EventTableModel> model_;
+};
+
+// A synthetic flood: hundreds of one-off alarms, then thousands of repeats of
+// one alarm arriving in subscription-sized batches, then a slice of them
+// acknowledged. Every phase used to scan every row per event.
+TEST_F(EventJournalScalingTest, AFloodFoldsAndUnfoldsCorrectlyAtScale) {
+  EventTableModel& model = MakeModel(/*current_events=*/false);
+  // A month of one-off alarms already in the journal, then a flood of one
+  // alarm repeating, then a slice of it acknowledged.
+  constexpr int kOneOffs = 5000;
+  constexpr int kRepeats = 20000;
+  constexpr int kBatch = 50;
+
+  auto since = std::chrono::steady_clock::now();
+  for (int i = 0; i < kOneOffs; ++i)
+    Deliver(u"alarm " + UtfConvert<char16_t>(std::to_string(i)), 1, 1);
+  const std::vector<const scada::Event*> repeats =
+      Deliver(u"comms lost", kRepeats, kBatch);
+  Report("deliver 5000 one-offs, then 20000 repeats in batches of 50", since);
+
+  ASSERT_TRUE(model.grouped());
+  EXPECT_EQ(model.GetRowCount(), kOneOffs + 1);
+  EXPECT_EQ(model.GetOccurrenceCount(), kOneOffs + kRepeats);
+  EXPECT_EQ(model.GetAlarmSummary().unacknowledged, kOneOffs + kRepeats);
+  EXPECT_EQ(CountRowsWithMessage(model, u"comms lost"), 0);  // folded: "×3000"
+  EXPECT_EQ(CountRowsWithMessage(
+                model, events::FormatGroupedMessage(u"comms lost", kRepeats)),
+            1);
+
+  // Every occurrence is reachable through the expanded (export) view, and a
+  // walk of it is a walk, not a quadratic scan.
+  since = std::chrono::steady_clock::now();
+  ExpandedEventModel expanded{model};
+  ASSERT_EQ(expanded.GetRowCount(), kOneOffs + kRepeats);
+  EXPECT_EQ(CountRowsWithMessage(expanded, u"comms lost"), kRepeats);
+  Report("walk 25000 expanded rows", since);
+
+  // Acknowledging a slice moves those occurrences into the history — the
+  // journal keeps them, the backlog drops by exactly the slice.
+  since = std::chrono::steady_clock::now();
+  constexpr int kAcked = 2000;
+  Acknowledge(std::span{repeats}.first(kAcked), kBatch);
+  Report("acknowledge 2000 repeats in batches of 50", since);
+
+  EXPECT_EQ(model.GetAlarmSummary().unacknowledged,
+            kOneOffs + kRepeats - kAcked);
+  EXPECT_EQ(model.GetOccurrenceCount(), kOneOffs + kRepeats);
+  EXPECT_EQ(expanded.GetRowCount(), kOneOffs + kRepeats);
+}
+
+// Row lookups must follow rows as they move: after a removal in the middle,
+// an update to a later event has to reach the row it now occupies. A stale
+// lookup would repaint the wrong row or, worse, index past the end.
+TEST_F(EventJournalScalingTest, RowLookupsFollowRemovals) {
+  EventTableModel& model = MakeModel(/*current_events=*/true);
+  scada::aui::RecordingTableModelObserver observer{model};
+
+  const std::vector<const scada::Event*> a = Deliver(u"A", 1, 1);
+  const std::vector<const scada::Event*> b = Deliver(u"B", 1, 1);
+  const std::vector<const scada::Event*> c = Deliver(u"C", 1, 1);
+  ASSERT_EQ(model.GetRowCount(), 3);
+  ASSERT_EQ(&model.event_at(2), c.front());
+
+  // The live surface drops an acknowledged row outright.
+  Acknowledge(b, 1);
+  ASSERT_EQ(model.GetRowCount(), 2);
+  ASSERT_EQ(&model.event_at(1), c.front());
+  EXPECT_EQ(ExpandedEventModel{model}.GetRowCount(), 2);
+
+  // An update to C now lands on row 1, where C moved to.
+  observer.items_changed.clear();
+  observer_->OnEvents(c);
+  EXPECT_THAT(observer.items_changed, ElementsAre(Pair(1, 1)));
+
+  // And an update to A still lands on row 0.
+  observer.items_changed.clear();
+  observer_->OnEvents(a);
+  EXPECT_THAT(observer.items_changed, ElementsAre(Pair(0, 1)));
+
+  // A new arrival appends after the survivors.
+  observer.items_added.clear();
+  Deliver(u"D", 1, 1);
+  EXPECT_THAT(observer.items_added, ElementsAre(Pair(2, 1)));
+  EXPECT_EQ(ExpandedEventModel{model}.GetRowCount(), 3);
+}
+
+// A view queries the model from inside its own change notifications — Qt asks
+// for a row count within beginInsertRows — and a rebuild notifies before it
+// swaps the rows in. A lookup table rebuilt at that moment describes the rows
+// that are going away, so it must not survive the swap.
+TEST_F(EventJournalScalingTest, AQueryDuringANotificationDoesNotStaleTheIndex) {
+  EventTableModel& model = MakeModel(/*current_events=*/false);
+
+  // Every notification asks the model what it holds, the way a view does.
+  std::vector<boost::signals2::scoped_connection> probes;
+  auto probe = [&model](int, int) {
+    ExpandedEventModel{model}.GetRowCount();
+    if (model.GetRowCount() > 0)
+      model.GetCellText(0, EventColumnMessage);
+  };
+  probes.push_back(model.SubscribeItemsAdding(probe));
+  probes.push_back(model.SubscribeItemsAdded(probe));
+  probes.push_back(model.SubscribeItemsRemoving(probe));
+  probes.push_back(model.SubscribeItemsRemoved(probe));
+
+  const int count = events::kAlarmFloodThreshold + 4;
+  const std::vector<const scada::Event*> wave =
+      Deliver(u"comms lost", count, 3);
+  ASSERT_TRUE(model.grouped());
+
+  // A regroup notifies around the swap; the probe runs inside it.
+  Acknowledge(std::span{wave}.first(count - 1), 3);
+  ASSERT_FALSE(model.grouped());
+
+  // The journal still holds every occurrence, and every one of them still
+  // resolves to the row it is actually in.
+  ExpandedEventModel expanded{model};
+  EXPECT_EQ(expanded.GetRowCount(), count);
+  EXPECT_EQ(model.GetOccurrenceCount(), count);
+  EXPECT_EQ(CountRowsWithMessage(expanded, u"comms lost"), count);
+  EXPECT_EQ(model.GetAlarmSummary().unacknowledged, 1);
+
+  // A further arrival folds into the surviving live row rather than being
+  // filed against a row index that no longer means what it did.
+  Deliver(u"comms lost", 1, 1);
+  EXPECT_EQ(model.GetOccurrenceCount(), count + 1);
+  EXPECT_EQ(ExpandedEventModel{model}.GetRowCount(), count + 1);
+}
+
+// The alarm-group lookup must survive a rebuild in either direction: a flood
+// that is worked off and then returns folds into a fresh live group, never
+// into the historical row the earlier occurrences retired to.
+TEST_F(EventJournalScalingTest, GroupLookupsSurviveRegrouping) {
+  EventTableModel& model = MakeModel(/*current_events=*/false);
+
+  const std::vector<const scada::Event*> first_wave =
+      Deliver(u"comms lost", events::kAlarmFloodThreshold + 10, 5);
+  Deliver(u"transformer overheating", 1, 1);
+  ASSERT_TRUE(model.grouped());
+  ASSERT_EQ(model.GetRowCount(), 2);
+
+  // Worked off: the backlog leaves flood and the rows expand again.
+  Acknowledge(first_wave, 5);
+  ASSERT_FALSE(model.grouped());
+  EXPECT_EQ(model.GetAlarmSummary().unacknowledged, 1);
+  EXPECT_EQ(model.GetRowCount(), static_cast<int>(first_wave.size()) + 1);
+
+  // The flood returns: the new occurrences fold into one live row, and the
+  // acknowledged history keeps its own rows.
+  const int second_wave_count = events::kAlarmFloodThreshold + 5;
+  Deliver(u"comms lost", second_wave_count, 5);
+  ASSERT_TRUE(model.grouped());
+
+  int live_groups = 0;
+  int historical_groups = 0;
+  for (int row = 0; row < model.GetRowCount(); ++row) {
+    const std::u16string message = model.GetCellText(row, EventColumnMessage);
+    if (message ==
+        events::FormatGroupedMessage(u"comms lost", second_wave_count)) {
+      EXPECT_EQ(model.event_type_at(row), EventTableModel::CURRENT_EVENT);
+      ++live_groups;
+    } else if (message ==
+               events::FormatGroupedMessage(
+                   u"comms lost", static_cast<int>(first_wave.size()))) {
+      EXPECT_EQ(model.event_type_at(row), EventTableModel::HISTORICAL_EVENT);
+      ++historical_groups;
+    }
+  }
+  EXPECT_EQ(live_groups, 1);
+  EXPECT_EQ(historical_groups, 1);
+  EXPECT_EQ(model.GetAlarmSummary().unacknowledged, second_wave_count + 1);
 }

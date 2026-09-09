@@ -14,6 +14,7 @@
 
 #include <span>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace events {
@@ -31,6 +32,15 @@ struct EventGroup {
   // Total occurrences collapsed here, including the representative.
   int count() const { return 1 + static_cast<int>(repeats.size()); }
 };
+
+// What makes two occurrences "the same alarm": the source and what it said.
+// Severity is not part of the key — the same condition reported at a different
+// severity is still the same condition, and splitting on it would break the
+// collapse exactly when a chattering source escalates. Exposed so a journal
+// can key a lookup table on it and answer "which row is this alarm's" without
+// comparing against every row (task 721).
+using AlarmKey = std::pair<scada::NodeId, std::u16string>;
+AlarmKey AlarmKeyOf(const scada::Event& event);
 
 // Whether two occurrences read as the same alarm, i.e. belong in one group.
 // This is the grouping key, exposed so a journal that folds an arriving event

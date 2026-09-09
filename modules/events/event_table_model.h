@@ -5,18 +5,24 @@
 
 #include "aui/models/table_model.h"
 #include "base/any_executor_timer.h"
+#include "events/event_grouping.h"
 #include "node_service/node_ref.h"
 
 #include <boost/signals2/connection.hpp>
+#include <map>
 #include <set>
 #include <span>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 class CurrentEventModel;
 class HistoricalEventModel;
 class LocalEventModel;
 class NodeService;
-namespace scada { struct RelativeTimeRange; }
+namespace scada {
+struct RelativeTimeRange;
+}
 
 enum EventColumnId {
   EventColumnSeverity,
@@ -274,6 +280,35 @@ class EventTableModel : public scada::aui::TableModel,
 
   bool lock_update_ = false;
   bool pending_update_ = false;
+
+  // Lookup tables over `rows_` (task 721). Each is rebuilt from `rows_` on
+  // demand after a change that moves rows or swaps the pointers a row holds,
+  // and extended in place by the paths that only append or fold — which is
+  // what keeps a flood linear: k arrivals cost one rebuild plus k lookups
+  // rather than k scans of the journal. A removal invalidates rather than
+  // patches, because every row behind it shifts; removals arrive in
+  // operator-sized batches, arrivals in flood-sized ones.
+  //
+  // Every event pointer a row holds — its representative and its repeats —
+  // to the row's index. Answers FindRow() and FindOccurrenceRow().
+  mutable std::unordered_map<const scada::Event*, int> occurrence_rows_;
+  // The first row of each (type, alarm), which is what FindAlarmGroupRow()
+  // answers; only consulted while grouped.
+  using AlarmGroupKey = std::pair<EventType, events::AlarmKey>;
+  mutable std::map<AlarmGroupKey, int> alarm_group_rows_;
+  mutable bool row_index_valid_ = false;
+  // `occurrence_offsets_[i]` is the number of occurrences held by rows
+  // `[0, i)`, so the back is the total and OccurrenceAt() is a binary search
+  // rather than a walk from row 0 — the expanded (export) view asks per cell.
+  mutable std::vector<int> occurrence_offsets_;
+  mutable bool occurrence_offsets_valid_ = false;
+
+  void EnsureRowIndex() const;
+  void EnsureOccurrenceOffsets() const;
+  // Registers the pointers row `index` holds; for a row just appended.
+  void IndexRow(int index) const;
+  void InvalidateRowIndex() { row_index_valid_ = false; }
+  void InvalidateOccurrenceOffsets() { occurrence_offsets_valid_ = false; }
 
   AnyExecutorTimer refilter_delay_timer_{executor_};
 

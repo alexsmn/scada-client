@@ -21,6 +21,7 @@
 #include "node_service/node_util.h"
 
 #include <algorithm>
+#include <map>
 #include <optional>
 
 using namespace std::chrono_literals;
@@ -147,23 +148,63 @@ void EventTableModel::GetCell(scada::aui::TableCell& cell) {
 }
 
 int EventTableModel::GetOccurrenceCount() const {
-  int count = 0;
-  for (const Row& row : rows_)
-    count += 1 + static_cast<int>(row.repeats.size());
-  return count;
+  EnsureOccurrenceOffsets();
+  return occurrence_offsets_.back();
 }
 
 std::pair<const EventTableModel::Row*, const scada::Event*>
 EventTableModel::OccurrenceAt(int index) const {
+  EnsureOccurrenceOffsets();
+  if (index < 0 || index >= occurrence_offsets_.back())
+    return {nullptr, nullptr};
+
+  // The row whose occurrence range holds `index` is the last one starting at
+  // or before it.
+  auto after = std::upper_bound(occurrence_offsets_.begin(),
+                                occurrence_offsets_.end(), index);
+  const int row_index =
+      static_cast<int>(after - occurrence_offsets_.begin()) - 1;
+  const Row& row = rows_[row_index];
+  const int within = index - occurrence_offsets_[row_index];
+  if (within == 0)
+    return {&row, row.event};
+  return {&row, row.repeats[within - 1]};
+}
+
+void EventTableModel::EnsureOccurrenceOffsets() const {
+  if (occurrence_offsets_valid_)
+    return;
+
+  occurrence_offsets_.clear();
+  occurrence_offsets_.reserve(rows_.size() + 1);
+  occurrence_offsets_.push_back(0);
   for (const Row& row : rows_) {
-    if (index == 0)
-      return {&row, row.event};
-    --index;
-    if (index < static_cast<int>(row.repeats.size()))
-      return {&row, row.repeats[index]};
-    index -= static_cast<int>(row.repeats.size());
+    occurrence_offsets_.push_back(occurrence_offsets_.back() + 1 +
+                                  static_cast<int>(row.repeats.size()));
   }
-  return {nullptr, nullptr};
+  occurrence_offsets_valid_ = true;
+}
+
+void EventTableModel::EnsureRowIndex() const {
+  if (row_index_valid_)
+    return;
+
+  occurrence_rows_.clear();
+  alarm_group_rows_.clear();
+  occurrence_rows_.reserve(rows_.size());
+  for (int index = 0; index < static_cast<int>(rows_.size()); ++index)
+    IndexRow(index);
+  row_index_valid_ = true;
+}
+
+void EventTableModel::IndexRow(int index) const {
+  const Row& row = rows_[index];
+  occurrence_rows_[row.event] = index;
+  for (const scada::Event* repeat : row.repeats)
+    occurrence_rows_[repeat] = index;
+  // The first row of an alarm wins, as the scan this replaced did.
+  alarm_group_rows_.try_emplace({row.type, events::AlarmKeyOf(*row.event)},
+                                index);
 }
 
 void EventTableModel::GetOccurrenceCell(scada::aui::TableCell& cell) {
@@ -265,13 +306,14 @@ void EventTableModel::GetEventCell(const Row& row,
 }
 
 int EventTableModel::FindRow(const scada::Event& event) const {
-  for (Rows::const_iterator i = rows_.begin(); i != rows_.end(); ++i) {
-    if (i->event == &event) {
-      scada::base::Check(i->type == CURRENT_EVENT || i->type == LOCAL_EVENT);
-      return static_cast<int>(i - rows_.begin());
-    }
-  }
-  return -1;
+  EnsureRowIndex();
+  auto found = occurrence_rows_.find(&event);
+  // A repeat collapsed into a row is not that row's event.
+  if (found == occurrence_rows_.end() || rows_[found->second].event != &event)
+    return -1;
+  const Row& row = rows_[found->second];
+  scada::base::Check(row.type == CURRENT_EVENT || row.type == LOCAL_EVENT);
+  return found->second;
 }
 
 bool EventTableModel::IsEventShown(const scada::Event& event) const {
@@ -315,6 +357,28 @@ EventTableModel::AreaCounts EventTableModel::CountUnacknowledgedByArea(
   AreaCounts counts;
   counts.per_area.assign(areas.size(), 0);
 
+  // A source sits in the same area for every event it raised, and a flood is
+  // thousands of events from a handful of sources, so the containment chain
+  // is walked once per source rather than once per event (task 721).
+  std::map<scada::NodeId, int> area_of_source;  // -1: under none of `areas`
+  auto area_index_of = [&](const scada::NodeId& source) {
+    auto [entry, inserted] = area_of_source.try_emplace(source, -1);
+    if (!inserted)
+      return entry->second;
+    // Collect the source's containment chain, then attribute it to its area
+    // (top-level areas are siblings, so at most one matches).
+    ItemIds chain{source};
+    for (auto node = node_service_.GetNode(source); node; node = node.parent())
+      chain.insert(node.node_id());
+    for (size_t i = 0; i < areas.size(); ++i) {
+      if (chain.contains(areas[i])) {
+        entry->second = static_cast<int>(i);
+        break;
+      }
+    }
+    return entry->second;
+  };
+
   auto account = [&](const scada::Event& event) {
     // Ignore the active area filter — the sidebar's counts stay meaningful
     // for every area while one of them is filtering the rows — but respect
@@ -323,19 +387,8 @@ EventTableModel::AreaCounts EventTableModel::CountUnacknowledgedByArea(
     if (event.acked || !PassesFilters(event, /*include_area_filter=*/false))
       return;
     ++counts.total;
-    // Collect the source's containment chain once, then attribute the event
-    // to its area (top-level areas are siblings, so at most one matches).
-    ItemIds chain{event.source_node_id};
-    for (auto node = node_service_.GetNode(event.source_node_id); node;
-         node = node.parent()) {
-      chain.insert(node.node_id());
-    }
-    for (size_t i = 0; i < areas.size(); ++i) {
-      if (chain.contains(areas[i])) {
-        ++counts.per_area[i];
-        break;
-      }
-    }
+    if (const int area = area_index_of(event.source_node_id); area >= 0)
+      ++counts.per_area[area];
   };
 
   std::set<scada::EventId> current_ids;
@@ -358,6 +411,9 @@ EventTableModel::AreaCounts EventTableModel::CountUnacknowledgedByArea(
 
 void EventTableModel::AddRows(EventType type,
                               std::span<const scada::Event* const> events) {
+  // One rebuild at most, then every lookup and append below is O(1).
+  EnsureRowIndex();
+
   std::vector<const scada::Event*> added_events;
 
   for (auto* event : events) {
@@ -387,6 +443,8 @@ void EventTableModel::AddRows(EventType type,
         Row row{type, *event};
         row.Update(node_service_);
         rows_.emplace_back(std::move(row));
+        IndexRow(first);
+        InvalidateOccurrenceOffsets();
         NotifyItemsAdded(first, 1);
         continue;
       }
@@ -402,6 +460,9 @@ void EventTableModel::AddRows(EventType type,
       } else {
         row.repeats.push_back(event);
       }
+      // The row keeps its position; only the new pointer needs registering.
+      occurrence_rows_[event] = index;
+      InvalidateOccurrenceOffsets();
       NotifyItemsChanged(index, 1);
     }
     return;
@@ -415,30 +476,24 @@ void EventTableModel::AddRows(EventType type,
       Row row{type, *event};
       row.Update(node_service_);
       rows_.emplace_back(std::move(row));
+      IndexRow(static_cast<int>(rows_.size()) - 1);
     }
+    InvalidateOccurrenceOffsets();
     NotifyItemsAdded(first, added_events.size());
   }
 }
 
 int EventTableModel::FindOccurrenceRow(const scada::Event& event) const {
-  for (auto i = rows_.begin(); i != rows_.end(); ++i) {
-    if (i->event == &event)
-      return static_cast<int>(i - rows_.begin());
-    for (const scada::Event* repeat : i->repeats) {
-      if (repeat == &event)
-        return static_cast<int>(i - rows_.begin());
-    }
-  }
-  return -1;
+  EnsureRowIndex();
+  auto found = occurrence_rows_.find(&event);
+  return found == occurrence_rows_.end() ? -1 : found->second;
 }
 
 int EventTableModel::FindAlarmGroupRow(EventType type,
                                        const scada::Event& event) const {
-  for (auto i = rows_.begin(); i != rows_.end(); ++i) {
-    if (i->type == type && events::IsSameAlarm(*i->event, event))
-      return static_cast<int>(i - rows_.begin());
-  }
-  return -1;
+  EnsureRowIndex();
+  auto found = alarm_group_rows_.find({type, events::AlarmKeyOf(event)});
+  return found == alarm_group_rows_.end() ? -1 : found->second;
 }
 
 bool EventTableModel::RemoveOccurrence(int index, const scada::Event& event) {
@@ -460,6 +515,11 @@ bool EventTableModel::RemoveOccurrence(int index, const scada::Event& event) {
   } else {
     std::erase(row.repeats, &event);
   }
+
+  // The row keeps its index and its alarm; only the departed pointer must go.
+  if (row_index_valid_)
+    occurrence_rows_.erase(&event);
+  InvalidateOccurrenceOffsets();
 
   NotifyItemsChanged(index, 1);
   return true;
@@ -524,6 +584,9 @@ void EventTableModel::RemoveRows(int first, int count) {
   scada::base::Check(count > 0);
   NotifyItemsRemoving(first, count);
   rows_.erase(rows_.begin() + first, rows_.begin() + (first + count));
+  // Every row behind the gap moved.
+  InvalidateRowIndex();
+  InvalidateOccurrenceOffsets();
   NotifyItemsRemoved(first, count);
 }
 
@@ -628,6 +691,9 @@ void EventTableModel::AckRows(int first, int count) {
           row.repeats.push_back(
               &historical_event_model_.AddEvent(std::move(acked_repeat)));
         }
+        // The row now holds the historical copies' pointers, not the live
+        // ones; the occurrence count is unchanged.
+        InvalidateRowIndex();
       }
     }
     NotifyItemsChanged(first, count);
@@ -700,6 +766,8 @@ void EventTableModel::RefilterNow() {
     int count = static_cast<int>(rows_.size());
     NotifyItemsRemoving(0, count);
     rows_.clear();
+    InvalidateRowIndex();
+    InvalidateOccurrenceOffsets();
     NotifyItemsRemoved(0, count);
   }
 
@@ -755,6 +823,13 @@ void EventTableModel::RefilterNow() {
     int count = static_cast<int>(rows.size());
     NotifyItemsAdding(0, count);
     rows_ = std::move(rows);
+    // After the assignment, never before it: `NotifyItemsAdding` above runs
+    // observers, and an observer that queries the model (Qt's own views ask
+    // for a row count inside `beginInsertRows`) would rebuild the tables from
+    // the *old* rows_ and mark them valid, leaving them stale for the rows
+    // that arrive on the next line.
+    InvalidateRowIndex();
+    InvalidateOccurrenceOffsets();
     NotifyItemsAdded(0, count);
   }
 }
@@ -771,6 +846,8 @@ void EventTableModel::Update() {
     int count = static_cast<int>(rows_.size());
     NotifyItemsRemoving(0, count);
     rows_.clear();
+    InvalidateRowIndex();
+    InvalidateOccurrenceOffsets();
     NotifyItemsRemoved(0, count);
   }
 

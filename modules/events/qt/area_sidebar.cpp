@@ -94,11 +94,29 @@ QWidget* MakeEventAreaSidebar(EventAreaSidebarContext context) {
   }
 
   // Keep the counts current on every journal notification, the connections
-  // dying with the widget.
+  // dying with the widget — but at most one recount per turn of the event
+  // loop. A recount walks the journal's whole current, local and historical
+  // sets, and a flood notifies once per arriving event, so k arrivals used to
+  // cost k full walks (task 721). The counts are a display and nothing reads
+  // them synchronously, so being one turn behind is invisible; what the
+  // operator would have noticed is the journal stalling under the flood the
+  // counts exist to describe.
+  auto refresh_pending = std::make_shared<bool>(false);
+  auto schedule_refresh = [executor = context.executor, refresh_counts,
+                           refresh_pending] {
+    if (*refresh_pending)
+      return;
+    *refresh_pending = true;
+    PostDelayedTask(executor, {}, [refresh_counts, refresh_pending] {
+      *refresh_pending = false;
+      refresh_counts();
+    });
+  };
+
   auto connections =
       std::make_shared<std::vector<boost::signals2::scoped_connection>>();
-  connections->push_back(context.model.SubscribeModelChanged(refresh_counts));
-  auto on_range = [refresh_counts](int, int) { refresh_counts(); };
+  connections->push_back(context.model.SubscribeModelChanged(schedule_refresh));
+  auto on_range = [schedule_refresh](int, int) { schedule_refresh(); };
   connections->push_back(context.model.SubscribeItemsChanged(on_range));
   connections->push_back(context.model.SubscribeItemsAdded(on_range));
   connections->push_back(context.model.SubscribeItemsRemoved(on_range));

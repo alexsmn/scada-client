@@ -22,6 +22,7 @@ class StubTableModel : public scada::aui::TableModel {
   virtual void GetCell(scada::aui::TableCell& cell) override {}
 
   void NotifyChanged() { NotifyModelChanged(); }
+  void NotifyItemAdded(int first, int count) { NotifyItemsAdded(first, count); }
 };
 
 class EventAreaSidebarTest : public testing::Test {
@@ -33,6 +34,7 @@ class EventAreaSidebarTest : public testing::Test {
         .browse_areas = [this] { return BrowseFixedAreas(); },
         .counts =
             [this](std::span<const scada::NodeId> areas) {
+              ++count_calls_;
               EventTableModel::AreaCounts counts = counts_;
               counts.per_area.resize(areas.size(), 0);
               return counts;
@@ -48,6 +50,14 @@ class EventAreaSidebarTest : public testing::Test {
     return list;
   }
 
+  // Recounts are coalesced onto the executor (task 721), so a notification
+  // reaches the rows on the next turn of the loop rather than inside the
+  // signal. Everything asserting on the row text pumps first.
+  void Pump() {
+    for (int i = 0; i < 20; ++i)
+      QApplication::processEvents();
+  }
+
   Awaitable<std::vector<EventAreaEntry>> BrowseFixedAreas() {
     co_return std::vector<EventAreaEntry>{
         {scada::NodeId{100, 4}, u"КРУ"},
@@ -59,6 +69,7 @@ class EventAreaSidebarTest : public testing::Test {
   AnyExecutor executor_ = MakeAnyExecutor(std::make_shared<MessageLoopQt>());
   StubTableModel model_;
   EventTableModel::AreaCounts counts_{.total = 0, .per_area = {}};
+  int count_calls_ = 0;
   std::vector<std::optional<scada::NodeId>> chosen_;
 };
 
@@ -92,6 +103,7 @@ TEST_F(EventAreaSidebarTest, ModelChangeRefreshesTheCounts) {
 
   counts_ = {.total = 3, .per_area = {2, 0}};
   model_.NotifyChanged();
+  Pump();
 
   EXPECT_TRUE(list->item(0)->text().contains(QStringLiteral("3")));
   EXPECT_TRUE(list->item(1)->text().contains(QStringLiteral("2")));
@@ -99,7 +111,37 @@ TEST_F(EventAreaSidebarTest, ModelChangeRefreshesTheCounts) {
 
   counts_ = {.total = 0, .per_area = {0, 0}};
   model_.NotifyChanged();
+  Pump();
   EXPECT_FALSE(list->item(1)->text().contains(QStringLiteral("·")));
+
+  delete list;
+}
+
+// Regression (backlog 721): a recount walks the journal's whole event set, and
+// during a flood the journal notifies once per arriving event — so a batch of
+// arrivals used to cost one full recount each. They now coalesce into one.
+TEST_F(EventAreaSidebarTest, ABurstOfNotificationsCostsOneRecount) {
+  QListWidget* list = MakeSidebar();
+  ASSERT_NE(list, nullptr);
+  Pump();
+
+  count_calls_ = 0;
+  counts_ = {.total = 40, .per_area = {40, 0}};
+  for (int i = 0; i < 40; ++i)
+    model_.NotifyItemAdded(i, 1);
+  // Nothing has recounted yet: the burst is still in flight.
+  EXPECT_EQ(count_calls_, 0);
+
+  Pump();
+  EXPECT_EQ(count_calls_, 1);
+  EXPECT_TRUE(list->item(0)->text().contains(QStringLiteral("40")));
+
+  // And the next burst is not swallowed by the first.
+  counts_ = {.total = 41, .per_area = {41, 0}};
+  model_.NotifyItemAdded(40, 1);
+  Pump();
+  EXPECT_EQ(count_calls_, 2);
+  EXPECT_TRUE(list->item(0)->text().contains(QStringLiteral("41")));
 
   delete list;
 }
