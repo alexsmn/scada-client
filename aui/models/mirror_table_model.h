@@ -126,8 +126,13 @@ inline void MirrorTableModel::OnModelChanged() {
   NotifyModelChanged();
 }
 
+// With N source rows, the source block [first, first + count) mirrors to
+// [N - first - count, N - first): the block's *last* source row is the
+// mirrored block's first. MapToSource(first) is that only for count == 1,
+// which is why every formula below is spelled out rather than mapped.
 inline void MirrorTableModel::OnItemsChanged(int first, int count) {
-  const int mirrored_first = MapToSource(first);
+  const int mirrored_first =
+      mirrored_ ? source_model_.GetRowCount() - first - count : first;
   NotifyItemsChanged(mirrored_first, count);
 }
 
@@ -143,16 +148,22 @@ inline void MirrorTableModel::OnItemsAdded(int first, int count) {
   NotifyItemsAdded(mirrored_first, count);
 }
 
+// Before the removal the source still holds N rows, so the block sits at
+// N - first - count. The trailing "- 1" that used to be here made every
+// tail removal -- the only shape TimedDataModel::UpdateRows produces --
+// report row -1.
 inline void MirrorTableModel::OnItemsRemoving(int first, int count) {
   const int mirrored_first =
-      mirrored_ ? source_model_.GetRowCount() - first - count - 1 : first;
+      mirrored_ ? source_model_.GetRowCount() - first - count : first;
   NotifyItemsRemoving(mirrored_first, count);
 }
 
+// After the removal the source holds N' = N - count rows, so the same block
+// is at N' - first.
 inline void MirrorTableModel::OnItemsRemoved(int first, int count) {
   const int mirrored_first =
-      mirrored_ ? source_model_.GetRowCount() - first - 1 : first;
+      mirrored_ ? source_model_.GetRowCount() - first : first;
   NotifyItemsRemoved(mirrored_first, count);
 }
 
-}  // namespace aui
+}  // namespace scada::aui
