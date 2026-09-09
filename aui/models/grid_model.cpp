@@ -66,10 +66,6 @@ void GridModel::NotifyRowsAdded(int first, int count) {
   rows_added_signal_(*this, first, count);
 }
 
-void GridModel::NotifyRowsRemoved(int first, int count) {
-  rows_removed_signal_(*this, first, count);
-}
-
 void GridModel::NotifyRangeChanged(const GridRange& range) {
   range_changed_signal_(*this, range);
 }
@@ -78,4 +74,4 @@ void GridModel::NotifyRowsChanged(int first, int count) {
   NotifyRangeChanged(GridRange::Rows(first, count));
 }
 
-}  // namespace aui
+}  // namespace scada::aui

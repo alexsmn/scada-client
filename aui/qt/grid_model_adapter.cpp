@@ -77,22 +77,20 @@ QVariant GridModelAdapter::data(const QModelIndex& index, int role) const {
   // palette. A cell with an explicit background but default text derives a
   // contrasting text colour, so a semantically light cell (read-only grey,
   // blink yellow) stays readable on the dark theme.
-  const auto is_transparent = [](Color color) { return color.rgba().a == 0; };
-
   switch (role) {
     case Qt::DisplayRole:
     case Qt::EditRole:
       return QString::fromStdU16String(cell.text);
     case Qt::ForegroundRole:
-      if (!is_transparent(cell.text_color))
+      if (!IsTransparent(cell.text_color))
         return cell.text_color.qcolor();
-      if (!is_transparent(cell.cell_color)) {
+      if (!IsTransparent(cell.cell_color)) {
         return cell.cell_color.qcolor().lightness() >= 128 ? QColor{Qt::black}
                                                            : QColor{Qt::white};
       }
       return QVariant();
     case Qt::BackgroundRole:
-      if (!is_transparent(cell.cell_color))
+      if (!IsTransparent(cell.cell_color))
         return cell.cell_color.qcolor();
       return QVariant();
     case Qt::TextAlignmentRole:

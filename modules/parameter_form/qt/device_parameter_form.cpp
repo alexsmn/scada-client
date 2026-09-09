@@ -274,14 +274,6 @@ void DeviceParameterForm::ConnectFieldEditor(const Field& field) {
   }
 }
 
-QString DeviceParameterForm::EditorText(const Field& field) const {
-  if (auto* line = qobject_cast<QLineEdit*>(field.editor))
-    return line->text();
-  if (auto* combo = qobject_cast<QComboBox*>(field.editor))
-    return combo->currentText();
-  return {};
-}
-
 void DeviceParameterForm::SetEditorText(const Field& field,
                                         const QString& text) {
   QSignalBlocker blocker{field.editor};

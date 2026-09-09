@@ -70,8 +70,6 @@ class TransmissionModel
   void Update(NodeRef transmission);
   void Delete(const scada::NodeId& transmission_id);
 
-  static Row MakeRow(NodeRef transmission);
-
   void OnModelChanged(const scada::ModelChangeEvent& event);
   void OnNodeSemanticChanged(const scada::NodeId& node_id);
   void OnNodeFetched(const NodeFetchedEvent& event);

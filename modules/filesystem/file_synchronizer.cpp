@@ -52,14 +52,15 @@ Awaitable<void> DownloadFileNodeAsync(
   auto data_value = co_await node.scada_node().read(scada::AttributeId::Value);
   if (!data_value.ok()) {
     LOG_WARNING(*logger) << std::format("Download '{}' error: {}",
-                   path.string(), ToString(data_value.status()));
+                                        path.string(),
+                                        ToString(data_value.status()));
     co_return;
   }
 
   auto* data = data_value->value.get_if<scada::ByteString>();
   if (!data) {
     LOG_WARNING(*logger) << std::format("Wrong downloaded data for file '{}'",
-                   path.string());
+                                        path.string());
     co_return;
   }
 
@@ -125,7 +126,7 @@ bool FileSynchronizer::ProcessFileDirectoryNode(NodeRef node) {
   std::error_code ec;
   if (std::filesystem::is_directory(path, ec)) {
     LOG_INFO(*logger_) << std::format("Directory '{}' is actual",
-                    path.string());
+                                      path.string());
     return true;
   }
 
@@ -133,7 +134,7 @@ bool FileSynchronizer::ProcessFileDirectoryNode(NodeRef node) {
 
   if (!std::filesystem::create_directories(path, ec)) {
     LOG_INFO(*logger_) << std::format("Create directory '{}' error: {}",
-                    path.string(), ec.message());
+                                      path.string(), ec.message());
     return false;
   }
 
@@ -174,11 +175,4 @@ void FileSynchronizer::OnModelChanged(const scada::ModelChangeEvent& event) {
 
 void FileSynchronizer::OnNodeSemanticChanged(const scada::NodeId& node_id) {
   ProcessNode(node_service_.GetNode(node_id));
-}
-
-void FileSynchronizer::FetchFileNode(NodeRef node,
-                                     const FetchCallback& callback) {
-  node_queue_.emplace(node);
-  if (callback)
-    callbacks_[node].emplace_back(callback);
 }

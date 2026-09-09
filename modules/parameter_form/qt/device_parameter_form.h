@@ -88,9 +88,8 @@ class DeviceParameterForm : public QWidget {
   // Wires the field's editor change signal to OnFieldEdited (no-op for a
   // read-only editor).
   void ConnectFieldEditor(const Field& field);
-  // Reads / writes the editor's text regardless of editor kind. SetEditorText
-  // blocks signals so a programmatic reset is not mistaken for an edit.
-  QString EditorText(const Field& field) const;
+  // Writes the editor's text regardless of editor kind, blocking signals so a
+  // programmatic reset is not mistaken for an edit.
   void SetEditorText(const Field& field, const QString& text);
 
   void OnFieldEdited(const Field& field, const QString& text);

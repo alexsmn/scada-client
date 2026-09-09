@@ -37,8 +37,6 @@ class MetrixDataSource : public GraphDataSource {
   double limit_hi() const { return limit_hi_; }
   double limit_hihi() const { return limit_hihi_; }
 
-  bool XToData(double& x, scada::DataValue& val) const;
-
   void SetCurrentValue(double value);
 
   // GraphDataSource

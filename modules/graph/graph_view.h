@@ -60,7 +60,6 @@ class GraphView : protected ControllerContext,
   virtual scada::RelativeTimeRange GetTimeRange() const override;
   virtual void SetTimeRange(
       const scada::RelativeTimeRange& time_range) override;
-  virtual bool IsTimeRequired() const override { return true; }
 
  private:
   std::u16string MakeTitle() const;

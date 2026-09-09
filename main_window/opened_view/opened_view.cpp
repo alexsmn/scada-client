@@ -98,7 +98,10 @@ void OpenedView::Close() {
 }
 
 void OpenedView::SetModified(bool modified) {
-  modified_ = modified;
+  // Deliberately nothing: the flag used to be stored here and consulted by
+  // nobody — no close prompt, no title marker. Views keep calling this through
+  // ControllerDelegate so the contract survives; storing the bit again is the
+  // first step of whichever feature eventually reads it, not a fix on its own.
 }
 
 ContentsModel* OpenedView::GetContents() {

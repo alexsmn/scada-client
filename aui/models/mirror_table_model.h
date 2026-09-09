@@ -14,7 +14,6 @@ class MirrorTableModel : public TableModel {
   bool mirrored() const { return mirrored_; }
   void SetMirrored(bool mirrored);
 
-  int MapFromSource(int row) const;
   int MapToSource(int row) const;
 
   // TableModel
@@ -112,10 +111,6 @@ inline int MirrorTableModel::MirrorRow(int row) const {
 
   const int row_count = source_model_.GetRowCount();
   return row_count - row - 1;
-}
-
-inline int MirrorTableModel::MapFromSource(int row) const {
-  return MirrorRow(row);
 }
 
 inline int MirrorTableModel::MapToSource(int row) const {

@@ -287,8 +287,6 @@ void LoginController::Connect(bool allow_remote_logoff) {
   LOG_INFO(logger_) << "Connect"
                     << LOG_TAG("AllowRemoteLogoff", allow_remote_logoff);
 
-  connecting_ = true;
-
   if (!CreateDataServices(server_type_, services_context_, services_)) {
     LOG_WARNING(logger_) << "Canot create data services";
     OnLoginResult(scada::StatusCode::Bad_UnsupportedProtocolVersion);

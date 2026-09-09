@@ -312,8 +312,3 @@ void TransmissionModel::RemoveContainedItem(const scada::NodeId& node_id) {
     task_manager_.PostDeleteTask(transmission_id);
   }
 }
-
-// static
-TransmissionModel::Row TransmissionModel::MakeRow(NodeRef transmission) {
-  return Row{transmission};
-}

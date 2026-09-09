@@ -1,5 +1,5 @@
-#include "base/time/time_wire_codec.h"
 #include "graph/metrix_data_source.h"
+#include "base/time/time_wire_codec.h"
 
 #include "base/any_executor.h"
 #include "base/awaitable.h"
@@ -12,13 +12,12 @@
 
 namespace {
 
-std::pair<scada::Time, scada::Time> GetTimeRange(
-    const TimedDataSpec& spec) {
+std::pair<scada::Time, scada::Time> GetTimeRange(const TimedDataSpec& spec) {
   const auto& values = spec.values();
   return !values.empty()
              ? std::pair<scada::Time,
                          scada::Time>{values.front().source_timestamp,
-                                          values.back().source_timestamp}
+                                      values.back().source_timestamp}
              : std::pair<scada::Time, scada::Time>{};
 }
 
@@ -72,8 +71,7 @@ bool MetrixPointEnum::Reset(double x_from,
 
   const auto& values = timed_data_.values();
 
-  current_position_ =
-      LowerBound(values, scada::base::DecodeDoubleT(x_from));
+  current_position_ = LowerBound(values, scada::base::DecodeDoubleT(x_from));
   if (include_left_bound && current_position_ != 0) {
     --current_position_;
   }
@@ -167,19 +165,6 @@ void MetrixDataSource::SetTimedData(const TimedDataSpec& spec) {
 
 void MetrixDataSource::SetRange(const scada::TimeRange& range) {
   timed_data_.SetRange(range);
-}
-
-bool MetrixDataSource::XToData(double& x, scada::DataValue& val) const {
-  if (!connected())
-    return false;
-
-  if (const auto* value =
-          timed_data_.GetValueAt(scada::base::DecodeDoubleT(x))) {
-    val = *value;
-    return true;
-  } else {
-    return false;
-  }
 }
 
 std::unique_ptr<PointEnumerator> MetrixDataSource::EnumPoints(
@@ -315,27 +300,25 @@ void MetrixDataSource::ScheduleUpdateEarliestTimestamp() {
   auto node = timed_data_.node().scada_node();
   auto executor = executor_;
 
-  CoSpawn(executor_,
-          [this, cancelation, node,
-           executor = std::move(executor)]() mutable -> Awaitable<void> {
-            if (cancelation.canceled())
-              co_return;
+  CoSpawn(
+      executor_,
+      [this, cancelation, node,
+       executor = std::move(executor)]() mutable -> Awaitable<void> {
+        if (cancelation.canceled())
+          co_return;
 
-            auto values = co_await node.read_value_history(
-                {.from = scada::kMinTime,
-                 .to = scada::kMaxTime,
-                 .max_count = 1});
-            if (!values.ok()) {
-              co_return;
-            }
+        auto values = co_await node.read_value_history(
+            {.from = scada::kMinTime, .to = scada::kMaxTime, .max_count = 1});
+        if (!values.ok()) {
+          co_return;
+        }
 
-            if (cancelation.canceled())
-              co_return;
+        if (cancelation.canceled())
+          co_return;
 
-            SetEarliestTimestamp(values->empty()
-                                     ? scada::Time{}
-                                     : values->front().source_timestamp);
-          });
+        SetEarliestTimestamp(
+            values->empty() ? scada::Time{} : values->front().source_timestamp);
+      });
 }
 
 void MetrixDataSource::SetEarliestTimestamp(scada::Time timestamp) {
@@ -356,6 +339,6 @@ GraphRange MetrixDataSource::GetHorizontalRange() const {
     return {};
   }
 
-  return {scada::base::EncodeDoubleT(earliest_timestamp_), scada::base::EncodeDoubleT(latest_timestamp),
-          GraphRange::TIME};
+  return {scada::base::EncodeDoubleT(earliest_timestamp_),
+          scada::base::EncodeDoubleT(latest_timestamp), GraphRange::TIME};
 }

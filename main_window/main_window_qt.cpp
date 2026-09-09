@@ -3,6 +3,7 @@
 #include "aui/models/menu_model.h"
 #include "aui/models/simple_menu_model.h"
 #include "aui/models/status_bar_model.h"
+#include "aui/qt/key_codes.h"
 #include "aui/qt/status_bar.h"
 #include "aui/qt/theme_qt.h"
 #include "aui/severity_colors.h"
@@ -78,11 +79,6 @@
 #include <unordered_set>
 
 namespace {
-
-inline QKeySequence ToQKeySequence(const Shortcut& shortcut) {
-  return QKeySequence{static_cast<int>(shortcut.key_code()) +
-                      static_cast<int>(shortcut.modifiers())};
-}
 
 QRect GetDefaultBounds(const QWidget* window) {
   QScreen* screen =
@@ -1088,7 +1084,9 @@ void MainWindow::CreateToolbar() {
       action->setIcon(QIcon(LoadPixmap(command_info->image_id)));
     action->setCheckable(command_info->checkable());
     if (command_info->shortcut.has_value())
-      action->setShortcut(ToQKeySequence(*command_info->shortcut));
+      action->setShortcut(
+          scada::aui::ToQKeySequence(command_info->shortcut->modifiers(),
+                                     command_info->shortcut->key_code()));
     auto command_id = command_info->command_id;
     QObject::connect(action, &QAction::triggered,
                      [this, command_id](bool checked) {

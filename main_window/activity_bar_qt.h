@@ -239,15 +239,10 @@ class ActivityBar : public QToolBar {
   // sheet again, without end.
   bool applying_style_sheet_ = false;
 
-  // The rule between the pane modes and the pages, as a toolbar separator
-  // painted by the rail's own sheet. The Qt client separates the two groups
-  // with this; the web client uses a band instead (shell.md §2.1).
-  QAction* separator_action_ = nullptr;
-  // The "+", and the expanding spacer that pins the utilities to the foot.
-  // New pages are inserted before the "+", so both are also the anchors
-  // SetPages rebuilds against.
+  // The "+". New pages are inserted before it, so it is also the anchor
+  // SetPages rebuilds against. (The separator above the pages and the spacer
+  // below them are toolbar actions the rail adds and never needs to address.)
   QAction* new_page_action_ = nullptr;
-  QAction* spacer_action_ = nullptr;
 
   // Where a left-press landed on a page button, so eventFilter can tell a
   // click from the start of a drag.

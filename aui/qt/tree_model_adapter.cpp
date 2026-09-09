@@ -20,10 +20,6 @@ namespace scada::aui {
 
 namespace {
 
-bool IsTransparent(Color color) {
-  return color.rgba().a == 0;
-}
-
 // Resolves a model's `ColorRole` into the platform's own colours.
 //
 // This is the seam the toolkit-free models cannot cross for themselves: they

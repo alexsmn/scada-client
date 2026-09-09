@@ -26,10 +26,6 @@ Qt::AlignmentFlag AuiAligmentToQt(TableColumn::Alignment alignment) {
   }
 }
 
-bool IsTransparent(Color color) {
-  return color.rgba().a == 0;
-}
-
 }  // namespace
 
 TableModelAdapter::TableModelAdapter(std::shared_ptr<TableModel> model,

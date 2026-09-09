@@ -26,20 +26,9 @@ class MemorySettingsStore final : public SettingsStore {
     string16_values_[std::string{name}] = std::u16string{value};
   }
 
-  bool HasBool(std::string_view name) const {
-    return bool_values_.contains(std::string{name});
-  }
-
-  bool HasString(std::string_view name) const {
-    return string_values_.contains(std::string{name});
-  }
-
-  bool HasString16(std::string_view name) const {
-    return string16_values_.contains(std::string{name});
-  }
-
   std::optional<bool> GetBool(std::string_view name) const {
-    if (auto it = bool_values_.find(std::string{name}); it != bool_values_.end())
+    if (auto it = bool_values_.find(std::string{name});
+        it != bool_values_.end())
       return it->second;
     return std::nullopt;
   }

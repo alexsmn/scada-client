@@ -45,8 +45,7 @@ class TimeRangeDialogTest : public testing::Test {
 
 scada::Time ToBaseTime(const QDateTime& date_time) {
   return scada::Time{} +
-         std::chrono::milliseconds(
-             date_time.toMSecsSinceEpoch());
+         std::chrono::milliseconds(date_time.toMSecsSinceEpoch());
 }
 
 }  // namespace
@@ -57,8 +56,7 @@ TEST_F(TimeRangeDialogTest, AcceptedDialogReturnsSelectedInitialRange) {
       ToBaseTime({QDate{2024, 1, 3}, QTime{0, 0}}), /*dates=*/true};
 
   auto result = scada::aui::qt::test::StartAwaitable(ShowTimeRangeDialog(
-      dialog_service_, TimeRangeContext{profile_, initial_range,
-                                        /*time_required_=*/false}));
+      dialog_service_, TimeRangeContext{profile_, initial_range}));
   scada::aui::qt::test::ProcessEventsUntilSettled(
       result, scada::aui::qt::test::AcceptDialog);
 
@@ -66,6 +64,5 @@ TEST_F(TimeRangeDialogTest, AcceptedDialogReturnsSelectedInitialRange) {
   auto selected_range = scada::aui::qt::test::GetAwaitableResult(result);
   EXPECT_TRUE(selected_range.dates);
   EXPECT_EQ(selected_range.start, initial_range.start);
-  EXPECT_EQ(selected_range.end,
-            initial_range.end + std::chrono::days(1));
+  EXPECT_EQ(selected_range.end, initial_range.end + std::chrono::days(1));
 }

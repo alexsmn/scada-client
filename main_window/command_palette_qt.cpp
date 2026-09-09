@@ -1,5 +1,6 @@
 #include "main_window/command_palette_qt.h"
 
+#include "aui/qt/key_codes.h"
 #include "aui/translation.h"
 #include "controller/command_handler.h"
 #include "controller/command_manager.h"
@@ -24,9 +25,10 @@ constexpr unsigned kExtraItemBase = 1u << 30;
 std::u16string ShortcutText(const CommandDescriptor& descriptor) {
   if (!descriptor.shortcut)
     return {};
-  QKeySequence sequence{static_cast<int>(descriptor.shortcut->key_code()) +
-                        static_cast<int>(descriptor.shortcut->modifiers())};
-  return sequence.toString(QKeySequence::NativeText).toStdU16String();
+  return scada::aui::ToQKeySequence(descriptor.shortcut->modifiers(),
+                                    descriptor.shortcut->key_code())
+      .toString(QKeySequence::NativeText)
+      .toStdU16String();
 }
 
 }  // namespace

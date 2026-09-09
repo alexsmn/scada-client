@@ -214,10 +214,6 @@ void SheetModel::ClearRange(const scada::aui::GridRange& range) {
   NotifyRangeChanged(update_range);
 }
 
-void SheetModel::ClearCell(int row, int column) {
-  ClearRange(scada::aui::GridRange::Cell(row, column));
-}
-
 void SheetModel::OnBlink(bool state) {
   if (editing_)
     return;

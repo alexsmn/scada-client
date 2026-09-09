@@ -15,7 +15,7 @@ struct Rgba {
   constexpr auto operator<=>(const Rgba& other) const noexcept = default;
 };
 
-}  // namespace aui
+}  // namespace scada::aui
 
 #if defined(UI_QT)
 #include "aui/qt/color_qt.h"
@@ -54,6 +54,12 @@ struct ColorCode {
   static inline constexpr Rgba Crimson{220, 20, 60};
 };
 
+// True for a colour with a zero alpha, which the model adapters read as
+// "unstyled": the cell falls through to the platform palette.
+inline bool IsTransparent(Color color) {
+  return color.rgba().a == 0;
+}
+
 std::ostream& operator<<(std::ostream& stream, Color color);
 
-}  // namespace aui
+}  // namespace scada::aui

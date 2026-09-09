@@ -107,8 +107,6 @@ class OpenedView final : private OpenedViewContext,
 
   std::unique_ptr<Controller> controller_;
 
-  bool modified_ = false;
-
   std::u16string title_;
 
   bool working_ = false;

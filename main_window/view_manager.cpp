@@ -207,10 +207,6 @@ OpenedView* ViewManager::FindViewByID(int id) const {
   return i == views_.end() ? nullptr : *i;
 }
 
-bool ViewManager::IsViewAdded(OpenedView& opened_view) const {
-  return std::ranges::find(added_views_, &opened_view) != added_views_.end();
-}
-
 std::string_view ViewManager::GetSingleItemPath(const WindowDefinition& def) {
   const WindowItem* item = def.FindItem("Item");
   return item ? item->GetString("path") : std::string_view{};
@@ -251,7 +247,6 @@ void ViewManager::DestroyView(OpenedView& view) {
 
   scada::base::Check(std::ranges::find(views_, &view) != views_.end());
   std::erase(views_, &view);
-  std::erase(added_views_, &view);
 
   delegate_.OnViewClosed(view);
 

@@ -75,8 +75,6 @@ class ViewManager {
 
   OpenedView* FindViewByID(int id) const;
 
-  bool IsViewAdded(OpenedView& opened_view) const;
-
   scada::aui::ViewManagerViewId GetComponentViewId(
       const OpenedView& view) const;
   scada::aui::ViewManagerViewInfo GetComponentViewInfo(OpenedView& view) const;
@@ -103,7 +101,6 @@ class ViewManager {
 
   // TODO: Use unique_ptr instead of raw pointer.
   Views views_;
-  Views added_views_;
 
   OpenedView* active_view_ = nullptr;
 

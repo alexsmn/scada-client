@@ -10,7 +10,8 @@
 
 namespace {
 
-std::optional<scada::RelativeTimeRange> GetTimeRangeCommand(unsigned command_id) {
+std::optional<scada::RelativeTimeRange> GetTimeRangeCommand(
+    unsigned command_id) {
   switch (command_id) {
     case ID_TIME_RANGE_15M:
       return scada::RelativeTimeRange{std::chrono::minutes(15)};
@@ -24,7 +25,7 @@ std::optional<scada::RelativeTimeRange> GetTimeRangeCommand(unsigned command_id)
       return scada::RelativeTimeRange::Type::Month;
     case ID_TIME_RANGE_CUSTOM:
       return scada::RelativeTimeRange{/*start=*/scada::Time{},
-                       /*end=*/scada::Time{}};
+                                      /*end=*/scada::Time{}};
     default:
       return std::nullopt;
   }
@@ -55,12 +56,11 @@ void OpenedViewTimeRangeCommand::ExecuteCommand(unsigned command_id) {
 
   if (time_range->type == scada::RelativeTimeRange::Type::Custom) {
     auto range = model->GetTimeRange();
-    bool time_required = model->IsTimeRequired();
     CoSpawn(executor_, cancelation_,
             [model, &dialog_service = dialog_service_, &profile = profile_,
-             range, time_required]() mutable -> Awaitable<void> {
-              auto picked = co_await ShowTimeRangeDialog(
-                  dialog_service, {profile, range, time_required});
+             range]() mutable -> Awaitable<void> {
+              auto picked = co_await ShowTimeRangeDialog(dialog_service,
+                                                         {profile, range});
               model->SetTimeRange(picked);
               co_return;
             });

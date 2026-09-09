@@ -72,7 +72,6 @@ class NodeTableModel : private PropertyContext,
   void UpdateColumns(const PropertyDefs& property_defs);
   void UpdateRows();
   void UpdatedReferencingNodes(const scada::NodeId& node_id);
-  void PrefetchNodes(std::span<const NodeRef> nodes);
 
   bool IsMatchingNode(const NodeRef& node) const;
   void Update(const NodeRef& node);

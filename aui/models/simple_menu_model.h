@@ -10,6 +10,11 @@ namespace scada::aui {
 // items. This makes it easy to construct fixed menus. Menus populated by
 // dynamic data sources may be better off implementing MenuModel directly.
 // The breadth of MenuModel is not exposed through this API.
+//
+// This is a port of Chromium's ui::SimpleMenuModel, and its imperative surface
+// is kept whole on purpose: AddSeparatorIfNecessary, the Insert*At family,
+// DeleteItems and GetIndexOfCommandId have no caller in the client today, but
+// they are the port's API rather than dead code that grew here.
 class SimpleMenuModel : public MenuModel {
  public:
   class Delegate {

@@ -57,7 +57,6 @@ class SheetModel : private SheetModelContext,
   SheetCell& GetCell(int row, int column);
 
   void ClearRange(const scada::aui::GridRange& range);
-  void ClearCell(int row, int col);
 
   scada::aui::Color GetRangeColor(const scada::aui::GridRange& range) const;
   void SetRangeColor(const scada::aui::GridRange& range,

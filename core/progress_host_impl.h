@@ -23,7 +23,5 @@ class ProgressHostImpl : public ProgressHost {
 
   std::vector<RunningProgressImpl*> running_progress_impls_;
 
-  ProgressStatus status_;
-
   boost::signals2::signal<void(const ProgressStatus& status)> signal_;
 };

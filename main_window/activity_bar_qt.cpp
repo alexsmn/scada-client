@@ -282,7 +282,7 @@ ActivityBar::ActivityBar(QWidget* parent,
   // spends all its contrast on one line instead of spreading it over a region,
   // which is why it wins here and why the mockup's band, drawn at a larger
   // scale, does not transfer.
-  separator_action_ = addSeparator();
+  addSeparator();
 
   new_page_action_ =
       MakeAction(ModeIcon(Mode{.label = u"+", .icon_kind = Icon::kNewPage},
@@ -299,7 +299,7 @@ ActivityBar::ActivityBar(QWidget* parent,
   // group grows. A toolbar has no addStretch(), so it is an expanding widget.
   auto* spacer = new QWidget{this};
   spacer->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
-  spacer_action_ = addWidget(spacer);
+  addWidget(spacer);
 
   SetPages({});
 }

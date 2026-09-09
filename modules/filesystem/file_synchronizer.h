@@ -25,9 +25,6 @@ class FileSynchronizer : private FileSynchronizerContext {
   explicit FileSynchronizer(FileSynchronizerContext&& context);
   ~FileSynchronizer();
 
-  using FetchCallback = std::function<void(bool ok)>;
-  void FetchFileNode(NodeRef node, const FetchCallback& callback);
-
  private:
   void ProcessNodesRecursively(NodeRef root);
   bool ProcessNode(NodeRef node);
@@ -38,7 +35,6 @@ class FileSynchronizer : private FileSynchronizerContext {
   void OnNodeSemanticChanged(const scada::NodeId& node_id);
 
   std::queue<NodeRef> node_queue_;
-  std::map<NodeRef, std::vector<FetchCallback>> callbacks_;
 
   std::vector<boost::signals2::scoped_connection> connections_;
 };

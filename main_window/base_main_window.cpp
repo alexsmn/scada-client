@@ -249,18 +249,6 @@ void BaseMainWindow::SetActiveDataView(OpenedView* view) {
   }
 }
 
-OpenedView* BaseMainWindow::FindViewToRecycle(unsigned type) {
-  const auto& views = view_manager_->views();
-
-  auto i = std::ranges::find_if(views, [type](OpenedView* opened_view) {
-    return opened_view->window_info().command_id == type &&
-           opened_view->window_info().can_insert_item() &&
-           !opened_view->locked();
-  });
-
-  return i != views.end() ? *i : nullptr;
-}
-
 Awaitable<OpenedViewInterface*> BaseMainWindow::OpenView(
     const WindowDefinition& window_def,
     bool make_active) {

@@ -96,7 +96,6 @@ class LoginController : public std::enable_shared_from_this<LoginController> {
   std::shared_ptr<SettingsStore> settings_store_;
 
   bool login_message_ = false;
-  bool connecting_ = false;
   DataServices services_;
 
   std::string server_type_;

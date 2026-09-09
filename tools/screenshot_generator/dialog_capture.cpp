@@ -766,8 +766,7 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
         ShowTimeRangeDialog(
             dialog_service,
             TimeRangeContext{.profile_ = *env.profile,
-                             .time_range_ = scada::RelativeTimeRange{},
-                             .time_required_ = false}));
+                             .time_range_ = scada::RelativeTimeRange{}}));
     bool captured = GrabAndCloseVisibleDialogOrReport(spec, publish_guard);
     WaitForDialogCompletion(dialog_lifetime);
     return captured;
