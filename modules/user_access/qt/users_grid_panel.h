@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "scada/node_id.h"
 #include "user_access/users_grid.h"
 
@@ -52,7 +53,9 @@ class UsersGridPanel : public QWidget {
   // the widget tests and the controller's browse both drive.
   void ShowRows(const std::vector<UserGridRow>& rows);
 
-  const std::vector<UserGridRow>& rows() const { return rows_; }
+  const std::vector<UserGridRow>& rows() const SCADA_LIFETIME_BOUND {
+    return rows_;
+  }
 
  Q_SIGNALS:
   // Emitted when the operator activates (selects) a user row. Carries the

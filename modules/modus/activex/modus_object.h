@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "modus/activex/modus.h"
 
 #include <memory>
@@ -26,7 +27,7 @@ class ModusObject {
   ModusObject& operator=(const ModusObject&) = delete;
 
   SDECore::ISDEObject50& sde_object() const { return *sde_object_.Get(); }
-  const Elements& elements() const { return elements_; }
+  const Elements& elements() const SCADA_LIFETIME_BOUND { return elements_; }
 
   void AddElement(ModusElement& element) { elements_.emplace_back(&element); }
 
@@ -41,4 +42,4 @@ class ModusObject {
   unsigned current_states_;
 };
 
-}  // namespace modus
+}  // namespace scada::modus

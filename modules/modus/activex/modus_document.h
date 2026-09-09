@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/any_executor.h"
+#include "base/lifetime.h"
 
 #include "aui/handlers.h"
 #include "common/aliases.h"
@@ -58,7 +59,7 @@ class ModusDocument : private ModusDocumentContext {
   htsde2::IHTSDEForm2& sde_form() { return *sde_form_.Get(); }
   SDECore::ISDEDocument50* sde_document() { return sde_document_.Get(); }
 
-  const std::u16string& title() const { return title_; }
+  const std::u16string& title() const SCADA_LIFETIME_BOUND { return title_; }
 
   void Init(const std::filesystem::path& path,
             std::optional<std::string_view> state);
@@ -97,4 +98,4 @@ class ModusDocument : private ModusDocumentContext {
   std::vector<boost::signals2::scoped_connection> connections_;
 };
 
-}  // namespace modus
+}  // namespace scada::modus

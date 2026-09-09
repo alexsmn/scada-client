@@ -264,7 +264,11 @@ int TreeModelAdapter::columnCount(const QModelIndex& parent) const {
 }
 
 QVariant TreeModelAdapter::data(const QModelIndex& index, int role) const {
-  base::Check(index.isValid());
+  // Qt's contract allows an invalid index here (QAbstractProxyModel forwards
+  // one unchanged for the viewport outside any row), so it is not a caller
+  // bug to fail-stop on: it simply has no data.
+  if (!index.isValid())
+    return QVariant();
 
   void* node = GetNode(index);
 
@@ -347,9 +351,11 @@ bool TreeModelAdapter::setData(const QModelIndex& index,
 }
 
 Qt::ItemFlags TreeModelAdapter::flags(const QModelIndex& index) const {
-  base::Check(index.isValid());
-
   auto flags = QAbstractItemModel::flags(index);
+  // See data(): an invalid index is Qt's way of asking about the empty
+  // viewport (e.g. a drag over it), and the base flags are the answer.
+  if (!index.isValid())
+    return flags;
 
   void* node = GetNode(index);
 

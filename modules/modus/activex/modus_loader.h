@@ -1,9 +1,10 @@
 #pragma once
 
 #include "base/boost_log.h"
+#include "base/lifetime.h"
 #include "common/aliases.h"
-#include "modus/activex/modus.h"
 #include "filesystem/file_cache.h"
+#include "modus/activex/modus.h"
 
 #include <string>
 
@@ -25,7 +26,7 @@ class ModusLoader : private ModusLoaderContext {
  public:
   explicit ModusLoader(ModusLoaderContext&& context);
 
-  const std::wstring& title() const { return title_; }
+  const std::wstring& title() const SCADA_LIFETIME_BOUND { return title_; }
 
   using ObjectHandler =
       std::function<void(long object_id, std::unique_ptr<ModusObject> object)>;
@@ -55,4 +56,4 @@ class ModusLoader : private ModusLoaderContext {
   std::shared_ptr<FileCacheUpdater> cache_updater_;
 };
 
-}  // namespace modus
+}  // namespace scada::modus

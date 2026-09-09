@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/blinker.h"
+#include "base/lifetime.h"
 #include "modus/libmodus/modus_style2.h"
 
 #include "timed_data/timed_data_spec.h"
@@ -35,7 +36,9 @@ class ModusBinding2 {
                 TimedDataService& timed_data_service);
   ~ModusBinding2();
 
-  const TimedDataSpec& data_point() const { return data_point_; }
+  const TimedDataSpec& data_point() const SCADA_LIFETIME_BOUND {
+    return data_point_;
+  }
 
   void Paint(Gdiplus::Graphics& graphics, bool background);
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "settings/settings_catalog.h"
 
 #include <QWidget>
@@ -92,7 +93,9 @@ class SettingsPanel : public QWidget {
   // The rows currently drawn, after the search box and the scope tab. Exposed
   // because "which rows survived" is what almost every assertion about this
   // surface is really about.
-  const std::vector<SettingRow>& visible_rows() const { return visible_rows_; }
+  const std::vector<SettingRow>& visible_rows() const SCADA_LIFETIME_BOUND {
+    return visible_rows_;
+  }
 
  signals:
   // A control activated its command. The panel has already re-read the model,

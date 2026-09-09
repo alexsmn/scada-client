@@ -9,8 +9,10 @@
 #include "base/utils.h"
 #include "controller/node_id_set.h"
 #include "model/data_items_node_ids.h"
+
 #include "modules/table/table_row.h"
 #include "resources/common_resources.h"
+#include <optional>
 
 namespace {
 
@@ -172,8 +174,12 @@ bool TableModel::SetFormula(int row, std::string formula) {
 
   int added_first = static_cast<int>(rows_.size());
   int added_count = row - added_first + 1;
+  // The Added notification is emitted by the guard's destructor on every exit
+  // from this function, including the `return false` below: an Adding with no
+  // Added strands the Qt adapter inside beginInsertRows().
+  std::optional<ScopedItemsAdding> adding;
   if (added_count > 0) {
-    NotifyItemsAdding(added_first, added_count);
+    adding.emplace(*this, added_first, added_count);
     for (int i = 0; i < added_count; ++i)
       rows_.push_back(std::make_unique<TableRow>(*this, added_first + i));
   }
@@ -187,12 +193,8 @@ bool TableModel::SetFormula(int row, std::string formula) {
     return false;
   }
 
-  if (added_count > 0) {
-    // Must be coherent with |NotifyItemsAdding| above.
-    NotifyItemsAdded(added_first, added_count);
-  } else {
+  if (added_count == 0)
     NotifyItemsChanged(row, 1);
-  }
 
   return true;
 }

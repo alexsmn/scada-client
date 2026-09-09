@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aui/view_manager.h"
+#include "base/lifetime.h"
 #include "main_window/opened_view/opened_view.h"
 #include "profile/page_layout.h"
 
@@ -33,7 +34,7 @@ class ViewManager {
 
   // WARNING: List is required for deletion during iterator.
   using Views = std::list<OpenedView*>;
-  const Views& views() const { return views_; }
+  const Views& views() const SCADA_LIFETIME_BOUND { return views_; }
 
   OpenedView* FindViewByType(std::string_view window_type) const;
 

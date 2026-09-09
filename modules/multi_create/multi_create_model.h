@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "modules/multi_create/multi_create_dialog.h"
 
 #include <map>
@@ -9,7 +10,7 @@ class MultiCreateModel : private MultiCreateContext {
   explicit MultiCreateModel(MultiCreateContext&& context);
 
   using Devices = std::map<std::u16string, scada::NodeId>;
-  const Devices& devices() const { return devices_; }
+  const Devices& devices() const SCADA_LIFETIME_BOUND { return devices_; }
 
   std::u16string GetAutoName(bool ts) const;
 

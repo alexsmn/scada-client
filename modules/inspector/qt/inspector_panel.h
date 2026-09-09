@@ -18,6 +18,7 @@ class NodeRef;
 class SelectionModel;
 class TimedDataSpec;
 class QLabel;
+class QVBoxLayout;
 class QPushButton;
 class QStackedWidget;
 
@@ -217,6 +218,9 @@ class InspectorPanel : public QWidget {
   // The limits block: a section header plus one row per configured band,
   // hidden wholesale when the node configures none.
   QWidget* limits_ = nullptr;
+  // The block's own layout, kept from construction so the rebuild in
+  // ShowLimits() never has to recover it through an unchecked cast.
+  QVBoxLayout* limits_layout_ = nullptr;
   QLabel* limits_header_ = nullptr;
 
   // The plotted-series block: palette swatches plus the display flags, hidden
@@ -239,4 +243,5 @@ class InspectorPanel : public QWidget {
   // The History block: a section header plus one row per lifecycle step,
   // hidden wholesale when there is nothing to show.
   QWidget* timeline_ = nullptr;
+  QVBoxLayout* timeline_layout_ = nullptr;  // as limits_layout_
 };

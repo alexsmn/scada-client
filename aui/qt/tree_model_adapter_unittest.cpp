@@ -205,4 +205,14 @@ TEST_F(TreeModelAdapterTest, CheckStateIsSuppliedOnlyWhenCheckable) {
   EXPECT_FALSE(adapter_.data(index, Qt::CheckStateRole).isValid());
 }
 
+// Qt's model contract allows an invalid index in data() and flags() — a
+// QAbstractProxyModel forwards one unchanged for the viewport outside any row,
+// e.g. a drag over the empty area — and both used to fail-stop on it. Neither
+// is a caller bug: there is no data, and the base flags are the answer.
+TEST_F(TreeModelAdapterTest, InvalidIndexHasNoDataAndBaseFlags) {
+  EXPECT_FALSE(adapter_.data(QModelIndex{}, Qt::DisplayRole).isValid());
+  EXPECT_EQ(adapter_.flags(QModelIndex{}),
+            adapter_.QAbstractItemModel::flags(QModelIndex{}));
+}
+
 }  // namespace scada::aui

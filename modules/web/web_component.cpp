@@ -27,8 +27,8 @@ void RegisterWebCommands(
                               const GlobalCommandContext& context) {
          WindowDefinition def(kWebWindowInfo);
          def.title = Translate("Documentation");
-         def.path = std::filesystem::path(
-             L"http://www.telecontrol.ru/workplace_manual");
+         def.path =
+             std::filesystem::path(L"https://telecontrol-ru.github.io/scada/");
          CoSpawn(executor,
                  [&main_window = context.main_window,
                   def = std::move(def)]() -> Awaitable<void> {

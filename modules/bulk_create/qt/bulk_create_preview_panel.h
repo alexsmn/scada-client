@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "bulk_create/bulk_create_pattern.h"
 
 #include <QWidget>
@@ -42,7 +43,9 @@ class BulkCreatePreviewPanel : public QWidget {
   void Refresh();
 
   // Test/inspection accessors.
-  const std::vector<BulkCreatePreviewRow>& rows() const { return rows_; }
+  const std::vector<BulkCreatePreviewRow>& rows() const SCADA_LIFETIME_BOUND {
+    return rows_;
+  }
 
  private:
   QWidget* BuildForm();

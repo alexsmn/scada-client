@@ -23,7 +23,13 @@ class Color {
             .a = static_cast<std::uint8_t>(qAlpha(qrgba))};
   }
 
-  bool operator==(const Color& other) const noexcept = default;
+  // Compare by RGBA, not by the wrapped `QColor`: `QColor::operator==` is
+  // colour-spec sensitive (an Hsv red and an Rgb red compare unequal), and
+  // `operator<=>` below already compares the rgba, so a defaulted `==` could
+  // disagree with it.
+  bool operator==(const Color& other) const noexcept {
+    return rgba() == other.rgba();
+  }
 
   auto operator<=>(const Color& other) const noexcept {
     return rgba() <=> other.rgba();
@@ -33,4 +39,4 @@ class Color {
   QColor qcolor_;
 };
 
-}  // namespace aui
+}  // namespace scada::aui

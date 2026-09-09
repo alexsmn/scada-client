@@ -242,11 +242,11 @@ QWidget* InspectorPanel::BuildElementView() {
 
   limits_ = new QWidget;
   limits_->setObjectName(QStringLiteral("inspectorLimits"));
-  auto* limits_layout = new QVBoxLayout{limits_};
-  limits_layout->setContentsMargins(0, 0, 0, 0);
-  limits_layout->setSpacing(0);
+  limits_layout_ = new QVBoxLayout{limits_};
+  limits_layout_->setContentsMargins(0, 0, 0, 0);
+  limits_layout_->setSpacing(0);
   limits_header_ = SectionHeader(Tr("Limits"), tokens);
-  limits_layout->addWidget(limits_header_);
+  limits_layout_->addWidget(limits_header_);
   layout->addWidget(limits_);
 
   series_ = BuildSeriesSection();
@@ -381,10 +381,10 @@ QWidget* InspectorPanel::BuildEventView() {
   // journal's columns.
   timeline_ = new QWidget;
   timeline_->setObjectName(QStringLiteral("inspectorTimeline"));
-  auto* timeline_layout = new QVBoxLayout{timeline_};
-  timeline_layout->setContentsMargins(0, 0, 0, 0);
-  timeline_layout->setSpacing(0);
-  timeline_layout->addWidget(SectionHeader(Tr("History"), tokens));
+  timeline_layout_ = new QVBoxLayout{timeline_};
+  timeline_layout_->setContentsMargins(0, 0, 0, 0);
+  timeline_layout_->setSpacing(0);
+  timeline_layout_->addWidget(SectionHeader(Tr("History"), tokens));
   layout->addWidget(timeline_);
 
   layout->addStretch(1);
@@ -397,7 +397,7 @@ void InspectorPanel::ShowTimeline(
 
   // Rebuild: the steps belong to the selected event, so they change with the
   // selection rather than with the value.
-  auto* layout = qobject_cast<QVBoxLayout*>(timeline_->layout());
+  QVBoxLayout* layout = timeline_layout_;
   while (layout->count() > 1) {
     QLayoutItem* item = layout->takeAt(1);
     delete item->widget();
@@ -760,7 +760,7 @@ void InspectorPanel::ShowLimits(const std::vector<InspectorLimitRow>& limits) {
 
   // Rebuild the rows: the set of configured bands belongs to the node, so it
   // changes with the selection rather than with the value.
-  auto* layout = qobject_cast<QVBoxLayout*>(limits_->layout());
+  QVBoxLayout* layout = limits_layout_;
   while (layout->count() > 1) {
     QLayoutItem* item = layout->takeAt(1);
     delete item->widget();

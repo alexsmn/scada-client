@@ -2,6 +2,7 @@
 
 #include "base/any_executor.h"
 #include "base/check.h"
+#include "base/lifetime.h"
 
 #include "aui/types.h"
 #include "base/any_executor_timer.h"
@@ -50,7 +51,9 @@ class OpenedView final : private OpenedViewContext,
   void Init();
 
   Controller& controller() { return *controller_; }
-  const WindowInfo& window_info() const { return window_info_; }
+  const WindowInfo& window_info() const SCADA_LIFETIME_BOUND {
+    return window_info_;
+  }
   const WindowInfo& GetWindowInfo() const override { return window_info_; }
   WindowDefinition& window_def() { return window_def_; }
   int window_id() const { return window_def_.id; }

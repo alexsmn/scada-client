@@ -103,9 +103,10 @@ std::optional<scada::aui::Color> SessionStatusProvider::GetPingColor() const {
 }
 
 std::u16string SessionStatusProvider::GetEndpointText() const {
-  const std::u16string host =
-      UtfConvert<char16_t>(session_service_.GetHostName());
-  const std::u16string build = ClientBuildLabel();
+  // Not `const`: a const local cannot be moved into the return value, so both
+  // early returns copied where NRVO or a move was available.
+  std::u16string host = UtfConvert<char16_t>(session_service_.GetHostName());
+  std::u16string build = ClientBuildLabel();
   if (host.empty())
     return build;
   if (build.empty())

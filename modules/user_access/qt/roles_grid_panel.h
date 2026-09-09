@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "user_access/role_membership.h"
 
 #include <QWidget>
@@ -37,7 +38,9 @@ class RolesGridPanel : public QWidget {
   // read path preserves (role_membership.h).
   void ShowRoles(const std::optional<std::vector<RoleMembership>>& roles);
 
-  const std::vector<RoleMembership>& roles() const { return roles_; }
+  const std::vector<RoleMembership>& roles() const SCADA_LIFETIME_BOUND {
+    return roles_;
+  }
 
  private:
   QWidget* BuildHeader();
