@@ -13,7 +13,11 @@
 
 class MetrixDataSource : public GraphDataSource {
  public:
-  MetrixDataSource();
+  // The executor every coroutine this source spawns runs on. It must be the
+  // GUI executor: the continuations touch the plot's axis range and call
+  // update() on a QWidget. There is deliberately no default constructor --
+  // it used to supply a private ThreadExecutor, i.e. a real thread per line,
+  // and ran those continuations off the GUI thread.
   explicit MetrixDataSource(AnyExecutor executor);
   virtual ~MetrixDataSource();
 

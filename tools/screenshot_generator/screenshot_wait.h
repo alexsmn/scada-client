@@ -92,7 +92,12 @@ T WaitForAwaitable(AnyExecutor executor, Awaitable<T> awaitable) {
   }
 }
 
-bool WaitForPendingNodeLoads(NodeService& node_service);
+// `executor` must be the generator's own (Qt-pumped) executor. These used to
+// initiate on a private ThreadExecutor, so the wait ran on a worker while the
+// GUI thread pumped: PendingNodesWaiter reads GetPendingTaskCount() and
+// subscribes on the executor-affine NodeService, and the completion flag was
+// a plain bool written on one thread and spun on from the other.
+bool WaitForPendingNodeLoads(AnyExecutor executor, NodeService& node_service);
 
 // Pumps the event loop until nothing is still loading: no node fetch is in
 // flight and no timed data is waiting on the history it asked for. The two are
@@ -107,7 +112,8 @@ bool WaitForPendingNodeLoads(NodeService& node_service);
 //
 // Returns false if the deadline expires with work still outstanding (reported
 // as a test failure).
-bool WaitForPendingData(NodeService& node_service,
+bool WaitForPendingData(AnyExecutor executor,
+                        NodeService& node_service,
                         TimedDataService& timed_data_service);
 
 // Makes each node in `node_ids` fully resident — its own attributes, its
@@ -120,7 +126,8 @@ bool WaitForPendingData(NodeService& node_service,
 // this `node[...].value()` reads (EU range, engineering units, limit bands)
 // come back empty. Null ids are skipped; returns false only when a non-null
 // id is unknown to the service.
-bool FetchNodesResident(NodeService& node_service,
+bool FetchNodesResident(AnyExecutor executor,
+                        NodeService& node_service,
                         std::span<const scada::NodeId> node_ids);
 
 }  // namespace scada::screenshot_generator

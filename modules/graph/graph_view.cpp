@@ -52,7 +52,7 @@ GraphView::GraphView(const ControllerContext& context)
     : ControllerContext{context} {}
 
 std::unique_ptr<UiView> GraphView::Init(const WindowDefinition& definition) {
-  graph_ = new MetrixGraph(MetrixGraphContext{timed_data_service_});
+  graph_ = new MetrixGraph(MetrixGraphContext{timed_data_service_, executor_});
 
   GraphViewLoader{.definition_ = definition,
                   .profile_ = profile_,

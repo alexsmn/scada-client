@@ -285,8 +285,8 @@ QSize MetrixGraph::Legend::sizeHint() const {
 
 // MetrixGraph::MetrixLine
 
-MetrixGraph::MetrixLine::MetrixLine()
-    : data_source_{std::make_unique<MetrixDataSource>()} {
+MetrixGraph::MetrixLine::MetrixLine(AnyExecutor executor)
+    : data_source_{std::make_unique<MetrixDataSource>(std::move(executor))} {
   SetDataSource(data_source_.get());
   set_auto_range(false);
 }
@@ -461,7 +461,7 @@ void MetrixGraph::UpdateData() {
 
 MetrixGraph::MetrixLine& MetrixGraph::NewLine(std::string_view path,
                                               MetrixPane& pane) {
-  MetrixLine* line = new MetrixLine();
+  MetrixLine* line = new MetrixLine(executor_);
   pane.plot().AddLine(*line);
 
   TimedDataSpec spec;

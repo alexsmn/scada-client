@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/any_executor.h"
 #include <boost/json/value.hpp>
 
 class NodeService;
@@ -18,6 +19,7 @@ WindowDefinition MakeGraphDefinition(const boost::json::value& json);
 // bypasses the hidden main-window layout issue: hidden `QSplitter`
 // children skip relayout, so we create a fresh graph as a top-level.
 void SaveGraphScreenshot(const ScreenshotSpec& spec,
+                         AnyExecutor executor,
                          NodeService& node_service,
                          TimedDataService& timed_data_service,
                          const boost::json::value& json);
@@ -30,6 +32,7 @@ void SaveGraphScreenshot(const ScreenshotSpec& spec,
 // own until 2026-08-30; the series rows moved into this one, which is the
 // single right-hand column the trend screens draw.
 void SaveSeriesInspectorScreenshot(const ScreenshotSpec& spec,
+                                   AnyExecutor executor,
                                    NodeService& node_service,
                                    TimedDataService& timed_data_service,
                                    const boost::json::value& json);

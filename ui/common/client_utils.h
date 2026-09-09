@@ -1,7 +1,7 @@
 #pragma once
 
-#include "base/awaitable.h"
 #include "base/any_executor.h"
+#include "base/awaitable.h"
 #include "controller/node_id_set.h"
 #include "node_service/node_ref.h"
 #include "scada/node_id.h"
@@ -15,8 +15,6 @@ std::u16string GetTimedDataTooltipText(const TimedDataSpec& timed_data);
 
 const size_t kTableLimitation = 1000;
 
-Awaitable<NodeIdSet> ExpandGroupItemIds(const NodeRef& node,
-                                        size_t max_count = kTableLimitation);
 Awaitable<NodeIdSet> ExpandGroupItemIdsAsync(
     AnyExecutor executor,
     const NodeRef& node,

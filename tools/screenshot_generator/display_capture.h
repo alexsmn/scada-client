@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/any_executor.h"
 #include <boost/json/value.hpp>
 
 struct ScreenshotSpec;
@@ -22,6 +23,7 @@ class TimedDataService;
 // watch and the Recent-events list); `measurements` names the fixture signals
 // pushed into the watch, standing in for the elements an operator would click.
 void SaveDisplayScreenshot(const ScreenshotSpec& spec,
+                           AnyExecutor executor,
                            const boost::json::value& json,
                            TimedDataService& timed_data_service,
                            NodeEventProvider& node_event_provider,

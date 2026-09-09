@@ -30,7 +30,7 @@ void SaveUserAccessScreenshot(const ScreenshotSpec& spec,
 
   // Make the user resident so the panel can read its display name.
   const std::array<scada::NodeId, 1> ids{user_id};
-  scada::screenshot_generator::FetchNodesResident(node_service, ids);
+  scada::screenshot_generator::FetchNodesResident(executor, node_service, ids);
 
   NodeRef user = node_service.GetNode(user_id);
 

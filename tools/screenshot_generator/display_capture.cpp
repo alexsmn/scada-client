@@ -3,8 +3,8 @@
 #include "publish_guard.h"
 #include "screenshot_config.h"
 #include "screenshot_output.h"
-#include "widget_capture.h"
 #include "screenshot_wait.h"
+#include "widget_capture.h"
 
 #include "base/client_paths.h"
 #include "base/path_service.h"
@@ -59,6 +59,7 @@ std::vector<std::string> MeasurementPaths(const boost::json::value& json) {
 }  // namespace
 
 void SaveDisplayScreenshot(const ScreenshotSpec& spec,
+                           AnyExecutor executor,
                            const boost::json::value& json,
                            TimedDataService& timed_data_service,
                            NodeEventProvider& node_event_provider,
@@ -97,7 +98,8 @@ void SaveDisplayScreenshot(const ScreenshotSpec& spec,
     // outside the main-window/tree flow that would pull a node's attributes
     // and property children resident, and TimedData fetches only the node
     // itself — so without this the strip lists the signals with blank values.
-    scada::screenshot_generator::FetchNodesResident(node_service, node_ids);
+    scada::screenshot_generator::FetchNodesResident(executor, node_service,
+                                                    node_ids);
     for (const scada::NodeId& node_id : node_ids)
       display_frame->ShowMeasurement(node_id);
   }

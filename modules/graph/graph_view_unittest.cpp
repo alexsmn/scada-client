@@ -208,7 +208,7 @@ TEST_F(GraphViewTest, FakeTimedDataRendersLines) {
   td->ready_ranges.push_back({now - std::chrono::hours(24), now});
 
   // Create a graph with one line using the fake service.
-  MetrixGraph graph{MetrixGraphContext{fake_service}};
+  MetrixGraph graph{MetrixGraphContext{fake_service, env_.executor_}};
   auto& pane = graph.NewPane();
   auto& line = graph.NewLine("TS.200", pane);
   line.SetColor(Qt::blue);

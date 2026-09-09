@@ -138,7 +138,7 @@ constexpr StandaloneCapture kStandaloneCaptures[] = {
     // build it from the graph fixture instead of looking up an opened view.
     {"series-inspector",
      +[](const StandaloneCaptureContext& c) {
-       SaveSeriesInspectorScreenshot(c.spec, c.node_service,
+       SaveSeriesInspectorScreenshot(c.spec, c.executor, c.node_service,
                                      c.timed_data_service, c.json);
      }},
     // The device-diagnostics panel is standalone reshell chrome (the right
@@ -293,7 +293,7 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
   // hoping: with many windows open that second was split too many ways, and a
   // view could be grabbed before its trends arrived.
   ASSERT_TRUE(scada::screenshot_generator::WaitForPendingData(
-      app_.node_service(), app_.timed_data_service()));
+      executor_, app_.node_service(), app_.timed_data_service()));
 
   const auto& main_windows = app_.main_window_manager().main_windows();
   ASSERT_EQ(main_windows.size(), 1u);
@@ -342,6 +342,7 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     if (!CaptureViewSpec(spec,
                          ViewCaptureContext{
                              .main_window = main_window,
+                             .executor = executor_,
                              .node_service = app_.node_service(),
                              .timed_data_service = app_.timed_data_service(),
                              .json = FixtureConfig().json,
@@ -375,10 +376,10 @@ TEST_F(ScreenshotGenerator, CaptureDisplay) {
   // The bay strips need the live services, so the app runs for this capture
   // exactly as it does for the view captures.
   WaitForAwaitable(executor_, app_.Start());
-  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
+  ASSERT_TRUE(WaitForPendingNodeLoads(executor_, app_.node_service()));
 
   std::filesystem::create_directories(GetOutputDir());
-  SaveDisplayScreenshot(*display_spec, FixtureConfig().json,
+  SaveDisplayScreenshot(*display_spec, executor_, FixtureConfig().json,
                         app_.timed_data_service(), app_.node_event_provider(),
                         app_.node_service());
 }
@@ -395,6 +396,7 @@ namespace {
 // and a silently missed row would publish the state the selection exists to
 // replace.
 QModelIndex FindTreeRowByPath(scada::aui::Tree& tree,
+                              AnyExecutor executor,
                               NodeService& node_service,
                               std::span<const QString> path) {
   QModelIndex parent = tree.rootIndex();
@@ -432,7 +434,7 @@ QModelIndex FindTreeRowByPath(scada::aui::Tree& tree,
     // leave it, so selecting a signal does not open a branch under it.
     if (level + 1 < path.size()) {
       tree.expand(found);
-      if (!WaitForPendingNodeLoads(node_service))
+      if (!WaitForPendingNodeLoads(executor, node_service))
         return {};
     }
     parent = found;
@@ -456,6 +458,7 @@ QModelIndex FindTreeRowByPath(scada::aui::Tree& tree,
 void SelectSignalForInspector(MainWindow& main_window,
                               OpenedView& explorer_view,
                               scada::aui::Tree& tree,
+                              AnyExecutor executor,
                               NodeService& node_service,
                               QWidget& window) {
   // Активная мощность is an analog item under the fixture's telemetry folder,
@@ -465,7 +468,7 @@ void SelectSignalForInspector(MainWindow& main_window,
       QStringLiteral("ЭСТРА-ПС"), QStringLiteral("ТИ"),
       QStringLiteral("Активная мощность")};
   const QModelIndex inspected =
-      FindTreeRowByPath(tree, node_service, inspected_path);
+      FindTreeRowByPath(tree, executor, node_service, inspected_path);
   ASSERT_TRUE(inspected.isValid());
 
   main_window.ActivateView(explorer_view);
@@ -534,7 +537,7 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
   }
 
   WaitForAwaitable(executor_, app_.Start());
-  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
+  ASSERT_TRUE(WaitForPendingNodeLoads(executor_, app_.node_service()));
 
   for (int i = 0; i < 20; ++i)
     QApplication::processEvents();
@@ -614,7 +617,7 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
 
   if (tree->model()->canFetchMore(root_index))
     tree->model()->fetchMore(root_index);
-  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
+  ASSERT_TRUE(WaitForPendingNodeLoads(executor_, app_.node_service()));
 
   // Re-asserted rather than assumed: this also sidesteps the "expanded root
   // with empty child viewport" state that Qt sometimes gets into here.
@@ -719,7 +722,7 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
     QApplication::processEvents();
 
   ASSERT_NE(struct_view, nullptr);
-  SelectSignalForInspector(main_window, *struct_view, *tree,
+  SelectSignalForInspector(main_window, *struct_view, *tree, executor_,
                            app_.node_service(), *qmain);
 
   for (int i = 0; i < 10; ++i)
@@ -755,7 +758,7 @@ TEST_F(ScreenshotGenerator, CaptureOverviewPage) {
 
   // Deliberately no saved profile: the page-less boot is the state under test.
   WaitForAwaitable(executor_, app_.Start());
-  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
+  ASSERT_TRUE(WaitForPendingNodeLoads(executor_, app_.node_service()));
 
   for (int i = 0; i < 20; ++i)
     QApplication::processEvents();
@@ -853,7 +856,7 @@ TEST_F(ScreenshotGenerator, CaptureActivityRail) {
   }
 
   WaitForAwaitable(executor_, app_.Start());
-  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
+  ASSERT_TRUE(WaitForPendingNodeLoads(executor_, app_.node_service()));
   for (int i = 0; i < 20; ++i)
     QApplication::processEvents();
 
@@ -910,7 +913,7 @@ TEST_F(ScreenshotGenerator, CaptureSettingsPanel) {
   CapturePublishGuard publish_guard{kFilename};
 
   WaitForAwaitable(executor_, app_.Start());
-  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
+  ASSERT_TRUE(WaitForPendingNodeLoads(executor_, app_.node_service()));
   for (int i = 0; i < 20; ++i)
     QApplication::processEvents();
 
@@ -1145,7 +1148,7 @@ TEST_F(ScreenshotGenerator, CaptureMoreMenu) {
   }
 
   WaitForAwaitable(executor_, app_.Start());
-  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
+  ASSERT_TRUE(WaitForPendingNodeLoads(executor_, app_.node_service()));
   CapturePublishGuard publish_guard{kFilename};
 
   QMainWindow* qmain = ShowMainWindowForMenuCapture(app_);
@@ -1205,7 +1208,7 @@ TEST_F(ScreenshotGenerator, CaptureSummaryFunctionMenu) {
   }
 
   WaitForAwaitable(executor_, app_.Start());
-  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
+  ASSERT_TRUE(WaitForPendingNodeLoads(executor_, app_.node_service()));
 
   QMainWindow* qmain = ShowMainWindowForMenuCapture(app_);
   ASSERT_NE(qmain, nullptr);
@@ -1290,7 +1293,7 @@ TEST_F(ScreenshotGenerator, ControlConfirmationsReviewARealChange) {
   // Straight out of the fixture rather than FixtureConfig().dialogs, which is
   // filtered by the managed-image gate and by --only.
   WaitForAwaitable(executor_, app_.Start());
-  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
+  ASSERT_TRUE(WaitForPendingNodeLoads(executor_, app_.node_service()));
 
   int reviewed = 0;
   for (const auto& js : FixtureConfig().json.at("dialogs").as_array()) {
@@ -1304,7 +1307,8 @@ TEST_F(ScreenshotGenerator, ControlConfirmationsReviewARealChange) {
       node_id = NodeIdFromScadaString(std::string_view(node->as_string()));
     ASSERT_FALSE(node_id.is_null());
     ASSERT_TRUE(scada::screenshot_generator::FetchNodesResident(
-        app_.node_service(), std::span<const scada::NodeId>{&node_id, 1}));
+        executor_, app_.node_service(),
+        std::span<const scada::NodeId>{&node_id, 1}));
 
     // Mirrors BuildControlConfirmation's default; the two have to agree or
     // this test reviews a value the capture never renders.
@@ -1371,7 +1375,7 @@ TEST_F(ScreenshotGenerator, CaptureDialogs) {
   // WriteDialog family reads current values, formula titles, and
   // engineering units through it.
   WaitForAwaitable(executor_, app_.Start());
-  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
+  ASSERT_TRUE(WaitForPendingNodeLoads(executor_, app_.node_service()));
   for (int i = 0; i < 20; ++i)
     QApplication::processEvents();
 

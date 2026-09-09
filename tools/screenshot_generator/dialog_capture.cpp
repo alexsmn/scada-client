@@ -158,10 +158,12 @@ class NullTransportFactory : public transport::TransportFactory {
 // children, and the type-definition chain — so synchronous property reads
 // (engineering units, limit bands, control flags) resolve when the dialog
 // model is constructed.
-bool FetchDialogNodeResident(NodeService& node_service,
+bool FetchDialogNodeResident(AnyExecutor executor,
+                             NodeService& node_service,
                              const scada::NodeId& node_id) {
   return scada::screenshot_generator::FetchNodesResident(
-      node_service, std::span<const scada::NodeId>{&node_id, 1});
+      std::move(executor), node_service,
+      std::span<const scada::NodeId>{&node_id, 1});
 }
 
 // Grabs `dialog` with the drop-down of the combo box named `combo_object`
@@ -367,7 +369,7 @@ std::shared_ptr<DialogAwaitableResult<void>> BuildLimitsDialog(
     ADD_FAILURE() << "LimitsDialog: configured fixture node not found";
     return {};
   }
-  if (!FetchDialogNodeResident(*env.node_service, node_id)) {
+  if (!FetchDialogNodeResident(env.executor, *env.node_service, node_id)) {
     ADD_FAILURE() << "LimitsDialog: failed to fetch configured fixture node";
     return {};
   }
@@ -409,7 +411,7 @@ std::shared_ptr<DialogAwaitableResult<void>> BuildWriteDialog(
     ADD_FAILURE() << "WriteDialog: configured fixture node not found";
     return {};
   }
-  if (!FetchDialogNodeResident(*env.node_service, node_id)) {
+  if (!FetchDialogNodeResident(env.executor, *env.node_service, node_id)) {
     ADD_FAILURE() << "WriteDialog: failed to fetch configured fixture node";
     return {};
   }
@@ -460,7 +462,7 @@ BuildControlConfirmation(DialogEnvironment& env,
                      "+ node_service in env";
     return {};
   }
-  if (!FetchDialogNodeResident(*env.node_service, node_id)) {
+  if (!FetchDialogNodeResident(env.executor, *env.node_service, node_id)) {
     ADD_FAILURE() << "Control confirmation: fixture node not found";
     return {};
   }
@@ -741,7 +743,7 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
       return false;
     }
     const scada::NodeId user_id = NodeIdFromScadaString("USER.5");
-    if (!FetchDialogNodeResident(*env.node_service, user_id)) {
+    if (!FetchDialogNodeResident(env.executor, *env.node_service, user_id)) {
       ADD_FAILURE() << "ChangePasswordDialog: fixture user not found";
       return false;
     }
@@ -788,7 +790,7 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
       ADD_FAILURE() << "MultiCreateDialog needs a node_service";
       return false;
     }
-    if (!FetchDialogNodeResident(*env.node_service,
+    if (!FetchDialogNodeResident(env.executor, *env.node_service,
                                  scada::devices::id::Devices)) {
       ADD_FAILURE() << "MultiCreateDialog: Devices folder not found";
       return false;
@@ -807,7 +809,7 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
       ADD_FAILURE() << "CreateServiceItemDialog needs a node_service";
       return false;
     }
-    if (!FetchDialogNodeResident(*env.node_service,
+    if (!FetchDialogNodeResident(env.executor, *env.node_service,
                                  scada::devices::id::Devices)) {
       ADD_FAILURE() << "CreateServiceItemDialog: Devices folder not found";
       return false;
@@ -829,8 +831,8 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
                        "folder";
       return false;
     }
-    if (!scada::screenshot_generator::FetchNodesResident(*env.node_service,
-                                                         device_ids)) {
+    if (!scada::screenshot_generator::FetchNodesResident(
+            env.executor, *env.node_service, device_ids)) {
       ADD_FAILURE() << "CreateServiceItemDialog: failed to fetch devices";
       return false;
     }
@@ -851,8 +853,9 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
       if (std::ranges::find(device_ids, device.node_id()) == device_ids.end())
         nested_ids.push_back(device.node_id());
     }
-    if (!nested_ids.empty() && !scada::screenshot_generator::FetchNodesResident(
-                                   *env.node_service, nested_ids)) {
+    if (!nested_ids.empty() &&
+        !scada::screenshot_generator::FetchNodesResident(
+            env.executor, *env.node_service, nested_ids)) {
       ADD_FAILURE() << "CreateServiceItemDialog: failed to fetch nested "
                        "devices";
       return false;

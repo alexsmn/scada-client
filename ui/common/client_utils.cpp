@@ -2,14 +2,12 @@
 
 #include "aui/translation.h"
 #include "base/any_executor.h"
-#include "base/thread_executor.h"
 #include "base/format_time.h"
 #include "base/u16format.h"
 #include "base/utf_convert.h"
-#include "ui/common/client_utils.h"
 #include "common/formula_util.h"
-#include "resources/common_resources.h"
 #include "events/event_set.h"
+#include "events/local_events.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/node_id_util.h"
@@ -17,9 +15,10 @@
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "profile/profile.h"
-#include "events/local_events.h"
+#include "resources/common_resources.h"
 #include "services/task_manager.h"
 #include "timed_data/timed_data_spec.h"
+#include "ui/common/client_utils.h"
 
 std::u16string FormatHostName(std::string_view host_name) {
   if (host_name.empty()) {
@@ -78,14 +77,11 @@ std::u16string GetTimedDataTooltipText(const TimedDataSpec& timed_data) {
   return str;
 }
 
-Awaitable<NodeIdSet> ExpandGroupItemIds(const NodeRef& node, size_t max_count) {
-  auto executor = ThreadExecutor{};
-  co_return co_await ExpandGroupItemIdsAsync(executor, node, max_count);
-}
-
 namespace {
 
-void InsertLimited(NodeIdSet& target, const NodeIdSet& source, size_t max_count) {
+void InsertLimited(NodeIdSet& target,
+                   const NodeIdSet& source,
+                   size_t max_count) {
   for (const auto& node_id : source) {
     if (target.size() >= max_count)
       return;
@@ -111,18 +107,16 @@ Awaitable<NodeIdSet> ExpandGroupItemIdsAsync(AnyExecutor executor,
   for (const auto& child : node.targets(scada::id::Organizes)) {
     if (node_ids.size() >= max_count)
       break;
-    auto child_node_ids =
-        co_await ExpandGroupItemIdsAsync(executor, child,
-                                         max_count - node_ids.size());
+    auto child_node_ids = co_await ExpandGroupItemIdsAsync(
+        executor, child, max_count - node_ids.size());
     InsertLimited(node_ids, child_node_ids, max_count);
   }
 
   for (const auto& child : node.targets(scada::id::HasComponent)) {
     if (node_ids.size() >= max_count)
       break;
-    auto child_node_ids =
-        co_await ExpandGroupItemIdsAsync(executor, child,
-                                         max_count - node_ids.size());
+    auto child_node_ids = co_await ExpandGroupItemIdsAsync(
+        executor, child, max_count - node_ids.size());
     InsertLimited(node_ids, child_node_ids, max_count);
   }
 

@@ -1,8 +1,7 @@
 #include "clipboard/clipboard_util.h"
 
-#include "base/awaitable.h"
 #include "base/any_executor.h"
-#include "base/thread_executor.h"
+#include "base/awaitable.h"
 #ifdef _WIN32
 #include "base/win/clipboard.h"
 #endif
@@ -162,12 +161,18 @@ void CopyNodesToClipboardSync(const std::vector<NodeRef>& nodes) {
 #endif
 }
 
-void CopyNodesToClipboard(const std::vector<NodeRef>& nodes) {
+void CopyNodesToClipboard(AnyExecutor executor,
+                          const std::vector<NodeRef>& nodes) {
   // Empty user selection: nothing to copy.
   if (nodes.empty())
     return;
 
-  CoSpawn(ThreadExecutor{}, [nodes]() -> Awaitable<void> {
+  // On the GUI executor, not a fresh ThreadExecutor: FetchNode runs before
+  // the first suspension and BuildNodeTree walks references, type
+  // definitions and property values of every selected node -- all reads of
+  // the unlocked, executor-affine NodeService cache the GUI thread is
+  // mutating meanwhile.
+  CoSpawn(std::move(executor), [nodes]() -> Awaitable<void> {
     try {
       co_await CopyNodesToClipboardAsync(nodes);
     } catch (...) {
@@ -175,10 +180,11 @@ void CopyNodesToClipboard(const std::vector<NodeRef>& nodes) {
   });
 }
 
-Awaitable<void> PasteNodesFromNodeStateRecursive(TaskManager& task_manager,
-                                                 scada::NodeState&& node_state) {
+Awaitable<void> PasteNodesFromNodeStateRecursive(
+    TaskManager& task_manager,
+    scada::NodeState&& node_state) {
   co_await PasteNodesFromNodeStateRecursiveAsync(task_manager,
-                                                std::move(node_state));
+                                                 std::move(node_state));
 }
 
 Awaitable<void> PasteNodesFromNodeTree(TaskManager& task_manager,
@@ -191,7 +197,7 @@ Awaitable<void> PasteNodesFromClipboard(TaskManager& task_manager,
                                         const scada::NodeId& new_parent_id) {
 #ifdef _WIN32
   co_await PasteNodesFromClipboardAsync(task_manager, new_parent_id,
-                                       ReadClipboard(kNodeTreeFormat));
+                                        ReadClipboard(kNodeTreeFormat));
 #else
   (void)task_manager;
   (void)new_parent_id;

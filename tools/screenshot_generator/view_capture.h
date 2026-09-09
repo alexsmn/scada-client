@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/any_executor.h"
 #include "screenshot_config.h"
 
 #include <QtCore/QElapsedTimer>
@@ -50,6 +51,9 @@ scada::aui::Tree* FindTreeWidget(QWidget* widget);
 // list nobody can read.
 struct ViewCaptureContext {
   MainWindow& main_window;
+  // The generator's Qt-pumped executor; every wait and every standalone
+  // widget built from this context runs its coroutines on it.
+  AnyExecutor executor;
   NodeService& node_service;
   TimedDataService& timed_data_service;
   const boost::json::value& json;

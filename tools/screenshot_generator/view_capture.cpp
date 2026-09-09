@@ -32,7 +32,8 @@ namespace {
 // capture does not depend on another window in the same run having browsed
 // them first. Non-node paths (formulas, unresolvable ids) simply yield no node
 // id and are skipped.
-void MakeSpecItemsResident(NodeService& node_service,
+void MakeSpecItemsResident(AnyExecutor executor,
+                           NodeService& node_service,
                            const ScreenshotSpec& spec) {
   std::vector<scada::NodeId> node_ids;
   auto add = [&node_ids](const std::string& path) {
@@ -58,7 +59,8 @@ void MakeSpecItemsResident(NodeService& node_service,
   if (node_ids.empty())
     return;
 
-  scada::screenshot_generator::FetchNodesResident(node_service, node_ids);
+  scada::screenshot_generator::FetchNodesResident(executor, node_service,
+                                                  node_ids);
 }
 
 // The grid widget a view renders into, itself or the first one below it.
@@ -161,12 +163,12 @@ bool CaptureViewSpec(const ScreenshotSpec& spec,
   // run happened to include: `--only table.png` rendered Частота as "50"
   // where a wider run rendered the fixture's "0.00" format as "50.01".
   // Warming the spec's own nodes makes each capture self-sufficient.
-  MakeSpecItemsResident(context.node_service, spec);
+  MakeSpecItemsResident(context.executor, context.node_service, spec);
 
   // Those fetches can in turn start history reads (a row's alias resolves,
   // then asks for its sparkline window), so settle again before grabbing.
   EXPECT_TRUE(scada::screenshot_generator::WaitForPendingData(
-      context.node_service, context.timed_data_service))
+      context.executor, context.node_service, context.timed_data_service))
       << spec.filename;
 
   // A collapsed tree captures its folders and hides everything the capture
@@ -179,7 +181,8 @@ bool CaptureViewSpec(const ScreenshotSpec& spec,
       QApplication::processEvents();
       // expandAll fetches the next level lazily, so each newly shown row can
       // start its own child browse; settle those before counting or grabbing.
-      EXPECT_TRUE(WaitForPendingNodeLoads(context.node_service))
+      EXPECT_TRUE(
+          WaitForPendingNodeLoads(context.executor, context.node_service))
           << spec.filename;
       tree->expandAll();
       QApplication::processEvents();
@@ -333,8 +336,8 @@ bool CaptureViewSpec(const ScreenshotSpec& spec,
   if (spec.window_type == "Graph") {
     // Render graph standalone — hidden main windows don't lay out
     // QSplitter children, so we build a fresh graph widget.
-    SaveGraphScreenshot(spec, context.node_service, context.timed_data_service,
-                        context.json);
+    SaveGraphScreenshot(spec, context.executor, context.node_service,
+                        context.timed_data_service, context.json);
   } else {
     SaveScreenshot(widget, spec);
   }

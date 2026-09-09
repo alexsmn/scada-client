@@ -25,7 +25,8 @@
 
 namespace {
 
-void CopyToClipboard(const SelectionCommandContext& context,
+void CopyToClipboard(AnyExecutor executor,
+                     const SelectionCommandContext& context,
                      NodeService& node_service) {
   std::vector<NodeRef> nodes;
 
@@ -41,7 +42,7 @@ void CopyToClipboard(const SelectionCommandContext& context,
   }
 
   if (!nodes.empty()) {
-    CopyNodesToClipboard(nodes);
+    CopyNodesToClipboard(std::move(executor), nodes);
   }
 }
 
@@ -134,9 +135,9 @@ SelectionEditModule::SelectionEditModule(SelectionEditModuleContext&& context)
   selection_commands_.AddCommand(BasicCommand<SelectionCommandContext>{
       .command_id = ID_COPY,
       .execute_handler =
-          [&node_service =
-               node_service_](const SelectionCommandContext& context) {
-            CopyToClipboard(context, node_service);
+          [executor = executor_, &node_service = node_service_](
+              const SelectionCommandContext& context) {
+            CopyToClipboard(executor, context, node_service);
           },
       .enabled_handler =
           [](const SelectionCommandContext& context) {

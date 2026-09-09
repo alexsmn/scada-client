@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aui/graph.h"
+#include "base/any_executor.h"
 #include "base/lifetime.h"
 #include "graph/metrix_data_source.h"
 
@@ -14,6 +15,9 @@ class TimedDataService;
 
 struct MetrixGraphContext {
   TimedDataService& timed_data_service_;
+  // The GUI executor. Handed to every line's MetrixDataSource, whose history
+  // continuations mutate this plot and repaint it.
+  AnyExecutor executor_;
 };
 
 class MetrixGraph : private MetrixGraphContext, public Graph {
@@ -80,7 +84,7 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
 
   class MetrixLine : public GraphLine {
    public:
-    MetrixLine();
+    explicit MetrixLine(AnyExecutor executor);
     virtual ~MetrixLine();
 
     MetrixPane& pane() const {

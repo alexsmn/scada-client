@@ -108,6 +108,7 @@ const boost::json::object& ResolveGraphConfig(const ScreenshotSpec& spec,
 // properties — which showed up as an occasional capture whose series were
 // correct but whose panes had auto-ranged (no EU band, no limit markers).
 [[nodiscard]] std::vector<TimedDataSpec> MakeGraphItemNodesResident(
+    AnyExecutor executor,
     NodeService& node_service,
     TimedDataService& timed_data_service,
     const boost::json::object& graph) {
@@ -144,7 +145,8 @@ const boost::json::object& ResolveGraphConfig(const ScreenshotSpec& spec,
                      "panes would auto-range instead of using their "
                      "engineering-unit bands";
   }
-  scada::screenshot_generator::FetchNodesResident(node_service, node_ids);
+  scada::screenshot_generator::FetchNodesResident(executor, node_service,
+                                                  node_ids);
   return probes;
 }
 
@@ -250,6 +252,7 @@ bool WaitForGraphSeries(MetrixGraph& graph, std::chrono::milliseconds timeout) {
 }  // namespace
 
 void SaveGraphScreenshot(const ScreenshotSpec& spec,
+                         AnyExecutor executor,
                          NodeService& node_service,
                          TimedDataService& timed_data_service,
                          const boost::json::value& json) {
@@ -258,10 +261,10 @@ void SaveGraphScreenshot(const ScreenshotSpec& spec,
   const boost::json::object& jgraph = ResolveGraphConfig(spec, json);
 
   // Held until after the grab so the nodes stay resident (see the function).
-  std::vector<TimedDataSpec> residency_pins =
-      MakeGraphItemNodesResident(node_service, timed_data_service, jgraph);
+  std::vector<TimedDataSpec> residency_pins = MakeGraphItemNodesResident(
+      executor, node_service, timed_data_service, jgraph);
 
-  MetrixGraph graph{MetrixGraphContext{timed_data_service}};
+  MetrixGraph graph{MetrixGraphContext{timed_data_service, executor}};
   BuildGraphFromJson(graph, jgraph, json);
 
   for (auto* pane : graph.panes())
@@ -308,16 +311,17 @@ void SaveGraphScreenshot(const ScreenshotSpec& spec,
 }
 
 void SaveSeriesInspectorScreenshot(const ScreenshotSpec& spec,
+                                   AnyExecutor executor,
                                    NodeService& node_service,
                                    TimedDataService& timed_data_service,
                                    const boost::json::value& json) {
   const boost::json::object& jgraph = ResolveGraphConfig(spec, json);
 
   // Held until after the grab so the nodes stay resident (see the function).
-  std::vector<TimedDataSpec> residency_pins =
-      MakeGraphItemNodesResident(node_service, timed_data_service, jgraph);
+  std::vector<TimedDataSpec> residency_pins = MakeGraphItemNodesResident(
+      executor, node_service, timed_data_service, jgraph);
 
-  MetrixGraph graph{MetrixGraphContext{timed_data_service}};
+  MetrixGraph graph{MetrixGraphContext{timed_data_service, executor}};
   BuildGraphFromJson(graph, jgraph, json);
 
   // Let the async history/current-value chains settle so the readout and the

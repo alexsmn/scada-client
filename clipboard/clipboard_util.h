@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/any_executor.h"
 #include "base/awaitable.h"
 #include "node_service/node_ref.h"
 
@@ -13,7 +14,11 @@ class CreateTree;
 class NodeService;
 class TaskManager;
 
-void CopyNodesToClipboard(const std::vector<NodeRef>& nodes);
+// Serializes `nodes` and their subtrees to the OS clipboard. `executor` must
+// be the GUI executor: the walk reads the NodeService cache, which is
+// executor-affine (node_service.h), before and after each suspension.
+void CopyNodesToClipboard(AnyExecutor executor,
+                          const std::vector<NodeRef>& nodes);
 
 Awaitable<void> PasteNodesFromClipboard(TaskManager& task_manager,
                                         const scada::NodeId& new_parent_id);

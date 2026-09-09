@@ -2,7 +2,6 @@
 #include "screenshot_wait.h"
 
 #include "base/any_executor.h"
-#include "base/thread_executor.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/node_awaitable.h"
 #include "node_service/node_fetch_status.h"
@@ -25,9 +24,9 @@ constexpr int kPendingDataTimeoutMs = 30'000;
 
 }  // namespace
 
-bool WaitForPendingNodeLoads(NodeService& node_service) {
+bool WaitForPendingNodeLoads(AnyExecutor executor, NodeService& node_service) {
   try {
-    WaitForAwaitable(ThreadExecutor{}, WaitForPendingNodes(node_service));
+    WaitForAwaitable(std::move(executor), WaitForPendingNodes(node_service));
     return true;
   } catch (...) {
     ADD_FAILURE() << "NodeService pending-node wait failed";
@@ -35,7 +34,8 @@ bool WaitForPendingNodeLoads(NodeService& node_service) {
   }
 }
 
-bool WaitForPendingData(NodeService& node_service,
+bool WaitForPendingData(AnyExecutor executor,
+                        NodeService& node_service,
                         TimedDataService& timed_data_service) {
   // Only the real service tracks outstanding history; a fake or mock backend
   // has nothing in flight, so the node wait alone is the whole answer.
@@ -45,7 +45,7 @@ bool WaitForPendingData(NodeService& node_service,
   elapsed.start();
 
   for (;;) {
-    if (!WaitForPendingNodeLoads(node_service))
+    if (!WaitForPendingNodeLoads(executor, node_service))
       return false;
 
     if (!service || !service->HasPendingHistory())
@@ -65,7 +65,8 @@ bool WaitForPendingData(NodeService& node_service,
   }
 }
 
-bool FetchNodesResident(NodeService& node_service,
+bool FetchNodesResident(AnyExecutor executor,
+                        NodeService& node_service,
                         std::span<const scada::NodeId> node_ids) {
   // Wave 1: each graphed instance node together with its hierarchical children
   // so the property-child references (EU range, limit bands) become known.
@@ -81,7 +82,7 @@ bool FetchNodesResident(NodeService& node_service,
   }
   if (!any)
     return true;
-  if (!WaitForPendingNodeLoads(node_service))
+  if (!WaitForPendingNodeLoads(executor, node_service))
     return false;
 
   // Wave 2: the type definition (its aggregate declarations are what let
@@ -135,7 +136,7 @@ bool FetchNodesResident(NodeService& node_service,
   if (!linked.empty()) {
     for (const NodeRef& target : linked)
       target.StartFetch(NodeFetchStatus::NodeAndChildren);
-    if (!WaitForPendingNodeLoads(node_service))
+    if (!WaitForPendingNodeLoads(executor, node_service))
       return false;
     for (const NodeRef& target : linked) {
       for (const NodeRef& child :
@@ -165,7 +166,7 @@ bool FetchNodesResident(NodeService& node_service,
   for (int depth = 0; depth < kMaxTypeDepth && !types.empty(); ++depth) {
     for (const NodeRef& type : types)
       type.StartFetch(NodeFetchStatus::NodeAndChildren);
-    if (!WaitForPendingNodeLoads(node_service))
+    if (!WaitForPendingNodeLoads(executor, node_service))
       return false;
 
     std::vector<NodeRef> supertypes;
@@ -175,7 +176,7 @@ bool FetchNodesResident(NodeService& node_service,
     }
     types = std::move(supertypes);
   }
-  return WaitForPendingNodeLoads(node_service);
+  return WaitForPendingNodeLoads(std::move(executor), node_service);
 }
 
 }  // namespace scada::screenshot_generator

@@ -35,7 +35,7 @@ void SaveDeviceMetricsScreenshot(const ScreenshotSpec& spec,
 
   // Wave 1: the device itself, its children (the diagnostic counter instances
   // the cells read) and its own type.
-  scada::screenshot_generator::FetchNodesResident(node_service,
+  scada::screenshot_generator::FetchNodesResident(executor, node_service,
                                                   std::array{device_id});
 
   NodeRef device = node_service.GetNode(device_id);
@@ -53,7 +53,8 @@ void SaveDeviceMetricsScreenshot(const ScreenshotSpec& spec,
   std::vector<scada::NodeId> supertypes;
   for (NodeRef type = device.type_definition(); type; type = type.supertype())
     supertypes.push_back(type.node_id());
-  scada::screenshot_generator::FetchNodesResident(node_service, supertypes);
+  scada::screenshot_generator::FetchNodesResident(executor, node_service,
+                                                  supertypes);
 
   WindowDefinition window_definition =
       scada::screenshot_generator::WaitForAwaitable(
@@ -96,7 +97,7 @@ void SaveDeviceMetricsScreenshot(const ScreenshotSpec& spec,
   // Every metric cell is a `=NodeId` formula resolved through the data
   // services, so let those reads land before the grab.
   EXPECT_TRUE(scada::screenshot_generator::WaitForPendingData(
-      node_service, timed_data_service))
+      executor, node_service, timed_data_service))
       << spec.filename;
 
   if (!publish_guard.ShouldPublish())

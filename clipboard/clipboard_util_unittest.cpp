@@ -4,8 +4,11 @@
 #include "base/win/clipboard.h"
 #endif
 #include "base/test/awaitable_test.h"
+#include "base/test/test_executor.h"
 #include "model/data_items_node_ids.h"
 #include "model/namespaces.h"
+#include "node_service/node_fetch_status.h"
+#include "node_service/test/fake_node_service.h"
 #include "services/task_manager_mock.h"
 #include "services/test/test_task_manager.h"
 
@@ -14,6 +17,9 @@
 #endif
 
 #include <gmock/gmock.h>
+
+#include <optional>
+#include <thread>
 
 #include "base/debug_util.h"
 #include "scada/co_result.h"
@@ -54,6 +60,43 @@ void CompareRecursive(const scada::NodeState& a, const scada::NodeState& b) {
 }
 
 }  // namespace
+
+// Regression (backlog 714): CopyNodesToClipboard co_spawned on a fresh
+// ThreadExecutor, so FetchNode ran before the first suspension and the
+// subsequent BuildNodeTree walk read references, type definitions and
+// property values of every selected node -- all from a worker, off the
+// unlocked, executor-affine NodeService cache the GUI thread mutates
+// (node_service.h). Asserting on the *thread* the fetch lands on is what
+// pins it: the old code recorded a different one.
+TEST(CopyNodesToClipboard, RunsOnTheCallersExecutorAndNotAPrivateThread) {
+  TestExecutor executor;
+  FakeNodeService node_service;
+
+  const scada::NodeId node_id{7, 1};
+  node_service.Add(scada::NodeState{.node_id = node_id});
+  // The fake registers nodes fully fetched, and FetchNode short-circuits on
+  // one; unfetched, the copy actually reaches the service.
+  node_service.SetFetchStatus(node_id, NodeFetchStatus::None);
+
+  std::optional<std::thread::id> fetch_thread;
+  node_service.SetFetchHandler(node_id,
+                               [&](const NodeFetchStatus&) -> Awaitable<void> {
+                                 fetch_thread = std::this_thread::get_id();
+                                 co_return;
+                               });
+
+  CopyNodesToClipboard(executor, {node_service.GetNode(node_id)});
+
+  // Nothing has run yet: the work is queued on this executor, not started on
+  // a thread of its own.
+  EXPECT_FALSE(fetch_thread.has_value());
+
+  for (int i = 0; i < 100 && executor.GetTaskCount() != 0; ++i)
+    executor.Poll();
+
+  ASSERT_TRUE(fetch_thread.has_value());
+  EXPECT_EQ(*fetch_thread, std::this_thread::get_id());
+}
 
 TEST(PasteNodesFromNodeStateRecursive, Test) {
   TestExecutor executor;
