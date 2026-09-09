@@ -4,6 +4,7 @@
 #include "base/test/test_executor.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/test/fake_node_service.h"
+#include "scada/event.h"
 #include "scada/standard_node_ids.h"
 #include "scada/standard_reference_types.h"
 
@@ -176,6 +177,72 @@ TEST_F(TagSearchIndexTest, IssuesALevelsFetchesBeforeAwaitingThem) {
   Drain();
 
   EXPECT_THAT(TagNames(index), Contains(u"One"));
+}
+
+// Regression (backlog 720): EnsurePopulated flipped `started_` and browsed
+// once; nothing reset it, cleared the tags or subscribed to the node service.
+// So the palette offered deleted tags, missed created ones and showed old
+// names for the whole life of the window.
+TEST_F(TagSearchIndexTest, AModelChangeInvalidatesTheCollectedTags) {
+  const scada::NodeId group = AddGroup(kRoot, 10);
+  AddTag(group, 100, u"Alpha");
+
+  TagSearchIndex index{executor_, node_service_, kRoot};
+  index.EnsurePopulated();
+  Drain();
+  ASSERT_THAT(TagNames(index), Contains(u"Alpha"));
+
+  // A node was added elsewhere; the index must not keep answering from the
+  // browse that predates it.
+  AddTag(group, 101, u"Beta");
+  node_service_.EmitModelChanged(
+      scada::ModelChangeEvent{}.set_verb(scada::ModelChangeEvent::NodeAdded));
+  EXPECT_THAT(TagNames(index), IsEmpty());
+
+  index.EnsurePopulated();
+  Drain();
+  EXPECT_THAT(TagNames(index), Contains(u"Alpha"));
+  EXPECT_THAT(TagNames(index), Contains(u"Beta"));
+}
+
+// A rename reaches the index through the semantic-change signal, not the
+// model one.
+TEST_F(TagSearchIndexTest, ASemanticChangeInvalidatesTheCollectedTags) {
+  const scada::NodeId group = AddGroup(kRoot, 10);
+  const scada::NodeId tag = AddTag(group, 100, u"Old name");
+
+  TagSearchIndex index{executor_, node_service_, kRoot};
+  index.EnsurePopulated();
+  Drain();
+  ASSERT_THAT(TagNames(index), Contains(u"Old name"));
+
+  AddTag(group, 100, u"New name");
+  node_service_.EmitNodeSemanticChanged(tag);
+  EXPECT_THAT(TagNames(index), IsEmpty());
+
+  index.EnsurePopulated();
+  Drain();
+  EXPECT_THAT(TagNames(index), Contains(u"New name"));
+  EXPECT_THAT(TagNames(index), Not(Contains(u"Old name")));
+}
+
+// Reset() is the re-login path: the window outlives a login, so the previous
+// session's tags must not survive one.
+TEST_F(TagSearchIndexTest, ResetDropsTheTagsAndArmsAnotherBrowse) {
+  const scada::NodeId group = AddGroup(kRoot, 10);
+  AddTag(group, 100, u"Alpha");
+
+  TagSearchIndex index{executor_, node_service_, kRoot};
+  index.EnsurePopulated();
+  Drain();
+  ASSERT_THAT(TagNames(index), Contains(u"Alpha"));
+
+  index.Reset();
+  EXPECT_THAT(TagNames(index), IsEmpty());
+
+  index.EnsurePopulated();
+  Drain();
+  EXPECT_THAT(TagNames(index), Contains(u"Alpha"));
 }
 
 }  // namespace

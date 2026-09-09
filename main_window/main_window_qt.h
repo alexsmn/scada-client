@@ -341,6 +341,9 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // service is available).
   std::unique_ptr<TagSearchIndex> tag_search_index_;
 
+  // Watches for a re-login, which resets the palette's tag index.
+  boost::signals2::scoped_connection session_state_connection_;
+
   boost::signals2::scoped_connection change_profile_connection_;
   boost::signals2::scoped_connection action_changed_connection_;
 };

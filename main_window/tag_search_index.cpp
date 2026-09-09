@@ -6,6 +6,7 @@
 #include "node_service/node_ref.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
+#include "scada/event.h"
 #include "scada/standard_node_ids.h"
 
 #include <algorithm>
@@ -99,7 +100,22 @@ TagSearchIndex::TagSearchIndex(AnyExecutor executor,
     : executor_{std::move(executor)},
       node_service_{node_service},
       root_{std::move(root)},
-      max_tags_{max_tags} {}
+      max_tags_{max_tags} {
+  // A created or deleted node, and a renamed one, both invalidate the whole
+  // index. Re-browsing lazily rather than patching keeps one code path: a
+  // bulk edit costs one browse on the next palette open, not one per event.
+  model_changed_connection_ = node_service_.SubscribeModelChanged(
+      [this](const scada::ModelChangeEvent&) { Reset(); });
+  semantic_changed_connection_ = node_service_.SubscribeNodeSemanticChanged(
+      [this](const scada::NodeId&) { Reset(); });
+}
+
+void TagSearchIndex::Reset() {
+  started_ = false;
+  // A fresh vector, so a browse still in flight keeps appending to the one it
+  // captured and never resurrects a stale tag in this one.
+  tags_ = std::make_shared<std::vector<Tag>>();
+}
 
 TagSearchIndex::~TagSearchIndex() = default;
 

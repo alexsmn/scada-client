@@ -17,7 +17,8 @@ class StatusBarModel;
 namespace scada {
 class AttributeService;
 class NodeId;
-}
+class SessionService;
+}  // namespace scada
 
 class ActionManager;
 class CommandHandler;
@@ -78,6 +79,12 @@ struct MainWindowContext {
   // carry its own copy of it. Null in minimal/test contexts, and the panel
   // then reports the permissions as unknown rather than assuming a map.
   scada::AttributeService* attribute_service_ = nullptr;
+
+  // Optional: the session, watched only to notice a re-login. The window
+  // survives one (OnLoginCompleted swaps the services under it), so anything
+  // it cached from the previous session -- the command palette's tag index --
+  // has to be dropped when a new one comes up. Null in minimal/test contexts.
+  scada::SessionService* session_service_ = nullptr;
 
   // Optional: calls an OPC UA Method on a node, reporting progress and result
   // through the task manager. Used by the device-diagnostics panel's

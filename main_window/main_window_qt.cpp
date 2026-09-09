@@ -50,6 +50,7 @@
 #include "profile/profile.h"
 #include "profile/window_definition.h"
 #include "resources/common_resources.h"
+#include "scada/session_service.h"
 #include "scada/standard_node_ids.h"
 #include "settings/qt/settings_panel.h"
 #include "transmission_rules/qt/transmission_rule_inspector.h"
@@ -182,6 +183,17 @@ MainWindow::MainWindow(MainWindowContext&& context)
   if (node_service_) {
     tag_search_index_ = std::make_unique<TagSearchIndex>(
         executor_, *node_service_, scada::id::ObjectsFolder);
+    // The index invalidates itself on model changes, but a re-login is not
+    // one: OnLoginCompleted swaps the services under this same window, so
+    // without this the palette kept listing the previous session's tags.
+    if (session_service_) {
+      session_state_connection_ =
+          session_service_->SubscribeSessionStateChanged(
+              [this](bool connected, const scada::Status&) {
+                if (connected && tag_search_index_)
+                  tag_search_index_->Reset();
+              });
+    }
   }
   CreateToolbar();
   CreateStatusBar();
