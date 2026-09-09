@@ -59,6 +59,18 @@ void Profile::Load() {
 }
 
 void Profile::Load(const boost::json::value& data) {
+  // Valid JSON that is not an object -- `[]`, `null`, `1`, `"x"` -- must not
+  // become `data_`. Every reader guards is_object(), but SerializeToValue and
+  // the registered serializers write through as_object(), which throws on
+  // anything else, and Save() runs from ~ClientApplication. Keeping the
+  // default empty object makes every downstream as_object() hold by
+  // construction; the bad file is overwritten with a proper object on exit.
+  if (!data.is_object()) {
+    BOOST_LOG_TRIVIAL(error)
+        << "Profile root is not a JSON object; ignoring the stored profile";
+    return;
+  }
+
   data_ = data;
 
   // common settings
@@ -135,12 +147,20 @@ void Profile::Load(const boost::json::value& data) {
 void Profile::Save() {
   BOOST_LOG_TRIVIAL(info) << "Save profile";
 
-  auto data = SaveToValue();
+  // The writers and serializers are registered by modules that read
+  // `data_` back through as_object(), and GetFilePath() throws when the
+  // private directory cannot be resolved. This is called from a destructor,
+  // so nothing may escape.
+  try {
+    auto data = SaveToValue();
 
-  if (SaveJsonToFile(data, GetFilePath()))
-    BOOST_LOG_TRIVIAL(info) << "Profile saved";
-  else
-    BOOST_LOG_TRIVIAL(error) << "Profile save error";
+    if (SaveJsonToFile(data, GetFilePath()))
+      BOOST_LOG_TRIVIAL(info) << "Profile saved";
+    else
+      BOOST_LOG_TRIVIAL(error) << "Profile save error";
+  } catch (const std::exception& e) {
+    BOOST_LOG_TRIVIAL(error) << "Profile save error: " << e.what();
+  }
 }
 
 boost::json::value Profile::SaveToValue() {

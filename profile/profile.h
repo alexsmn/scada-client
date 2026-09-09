@@ -62,7 +62,13 @@ class Profile {
   EventJournal event_journal;
 
   void Load();
+  // Writes the profile to its file. Never throws: it runs from
+  // ~ClientApplication, where an escaping exception is std::terminate.
   void Save();
+
+  // Loads from an already-parsed profile document. A root that is not a JSON
+  // object is rejected and the profile keeps its current state.
+  void Load(const boost::json::value& data);
 
   // Serializes the current profile after running registered writers.
   boost::json::value SaveToValue();
@@ -144,7 +150,6 @@ class Profile {
   void NotifyChange() { profile_change_signal_(); }
 
  private:
-  void Load(const boost::json::value& data);
   boost::json::value SerializeToValue() const;
 
   std::filesystem::path GetFilePath();
