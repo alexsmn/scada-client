@@ -8,6 +8,7 @@
 #include "controller/window_info.h"
 #include "main_window/view_manager.h"
 #include "main_window/view_manager_delegate_mock.h"
+#include "profile/page.h"
 #include "modules/web/web_component.h"
 #include "view_manager_qt_component.h"
 
