@@ -257,7 +257,7 @@ TEST_F(OpenFileCommandTest,
 // main window's OpenView returns null, standing in for that failure.
 TEST_F(OpenFileCommandTest,
        Execute_WorkplaceFileTheMainWindowCannotOpenShowsErrorDialog) {
-  ScopedTempDir temp_dir{"filesystem_commands_test"};
+  scada::ScopedTempDir temp_dir{"filesystem_commands_test"};
   const std::filesystem::path path = temp_dir.path() / "typeless.workplace";
   {
     std::ofstream ofs{path, std::ios::binary};
