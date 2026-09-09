@@ -1,4 +1,4 @@
-#include "aui/qt/color_qt.h"
+#include "aui/color.h"
 
 #include <QColor>
 #include <gtest/gtest.h>
