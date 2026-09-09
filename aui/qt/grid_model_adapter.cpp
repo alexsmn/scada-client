@@ -68,6 +68,20 @@ int GridModelAdapter::columnCount(const QModelIndex& parent) const {
 }
 
 QVariant GridModelAdapter::data(const QModelIndex& index, int role) const {
+  // Decide by role before touching the model: a delegate asks for seven roles
+  // per paint and per sizeHint, this answers five, and GetCell formats the
+  // value each time it is called.
+  switch (role) {
+    case Qt::DisplayRole:
+    case Qt::EditRole:
+    case Qt::ForegroundRole:
+    case Qt::BackgroundRole:
+    case Qt::TextAlignmentRole:
+      break;
+    default:
+      return QVariant();
+  }
+
   GridCell cell;
   cell.row = index.row();
   cell.column = index.column();

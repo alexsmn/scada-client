@@ -171,6 +171,7 @@ void TreeModelAdapter::LoadGlyphs(
   glyph_size_ = size;
   icons_ = ::LoadTintedGlyphs(resource_paths, size, tint.qcolor(),
                               device_pixel_ratio);
+  status_badge_cache_.clear();
 }
 
 void TreeModelAdapter::RetintGlyphs(Color tint, qreal device_pixel_ratio) {
@@ -183,6 +184,7 @@ void TreeModelAdapter::RetintGlyphs(Color tint, qreal device_pixel_ratio) {
     paths.emplace_back(path);
   icons_ =
       ::LoadTintedGlyphs(paths, glyph_size_, tint.qcolor(), device_pixel_ratio);
+  status_badge_cache_.clear();
 }
 
 void* TreeModelAdapter::GetNode(const QModelIndex& index) const {
@@ -304,7 +306,19 @@ QVariant TreeModelAdapter::data(const QModelIndex& index, int role) const {
         return has_icon ? QVariant(icons_[icon_index]) : QVariant();
       const QPixmap base =
           has_icon ? IconPixmap(icons_[icon_index]) : QPixmap{};
-      return QVariant(WithStatusDot(base, status->qcolor()));
+      const Rgba rgba = status->rgba();
+      const std::uint32_t packed = (std::uint32_t{rgba.r} << 24) |
+                                   (std::uint32_t{rgba.g} << 16) |
+                                   (std::uint32_t{rgba.b} << 8) | rgba.a;
+      const auto key = std::make_tuple(has_icon ? icon_index : -1, packed,
+                                       base.devicePixelRatio());
+      auto it = status_badge_cache_.find(key);
+      if (it == status_badge_cache_.end()) {
+        it = status_badge_cache_
+                 .emplace(key, WithStatusDot(base, status->qcolor()))
+                 .first;
+      }
+      return QVariant(it->second);
     }
     case Qt::FontRole:
       // Value/timestamp columns render in the design-system monospace font so

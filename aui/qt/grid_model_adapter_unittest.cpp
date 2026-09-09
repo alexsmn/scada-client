@@ -20,6 +20,7 @@ namespace {
 class StubGridModel : public GridModel {
  public:
   virtual void GetCell(GridCell& cell) override {
+    ++get_cell_calls;
     cell.text = u"42";
     cell.text_color = text_color;
     cell.cell_color = cell_color;
@@ -29,6 +30,7 @@ class StubGridModel : public GridModel {
   Color text_color = ColorCode::Transparent;
   Color cell_color = ColorCode::Transparent;
   std::optional<TableColumn::Alignment> alignment;
+  int get_cell_calls = 0;
 };
 
 // A column header whose alignment the test controls.
@@ -122,6 +124,20 @@ TEST_F(GridModelAdapterTest, CellAlignmentOverridesItsColumn) {
   model_->alignment = TableColumn::RIGHT;
   EXPECT_EQ(Data(Qt::TextAlignmentRole).toInt(),
             static_cast<int>(Qt::AlignRight | Qt::AlignVCenter));
+}
+
+// A delegate asks for seven roles per paint and per sizeHint; the model's
+// GetCell formats the value each time. Only the roles that read the cell may
+// pay for it — the adapter used to fetch first and switch on the role after.
+TEST_F(GridModelAdapterTest, RolesThatDoNotReadTheCellDoNotFetchIt) {
+  Data(Qt::SizeHintRole);
+  Data(Qt::CheckStateRole);
+  Data(Qt::FontRole);
+  Data(Qt::DecorationRole);
+  EXPECT_EQ(model_->get_cell_calls, 0);
+
+  Data(Qt::DisplayRole);
+  EXPECT_EQ(model_->get_cell_calls, 1);
 }
 
 }  // namespace

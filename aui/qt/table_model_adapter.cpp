@@ -107,6 +107,19 @@ QVariant TableModelAdapter::data(const QModelIndex& index, int role) const {
       return QVariant();
   }
 
+  // Only the roles below read the cell; the rest (CheckStateRole among
+  // them) used to pay for a GetCell and then answer nothing.
+  switch (role) {
+    case Qt::DisplayRole:
+    case Qt::EditRole:
+    case Qt::ForegroundRole:
+    case Qt::BackgroundRole:
+    case Qt::DecorationRole:
+      break;
+    default:
+      return QVariant();
+  }
+
   TableCell cell;
   cell.row = index.row();
   cell.column_id = column.id;

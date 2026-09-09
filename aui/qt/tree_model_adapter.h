@@ -8,10 +8,13 @@
 #include <boost/signals2/connection.hpp>
 
 #include <QAbstractitemmodel>
+#include <cstdint>
+#include <map>
 #include <memory>
 #include <span>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <vector>
 
 class QIcon;
@@ -117,6 +120,14 @@ class TreeModelAdapter : public QAbstractItemModel {
   std::vector<boost::signals2::scoped_connection> model_connections_;
 
   std::vector<QIcon> icons_;
+
+  // Status-badged icons (WithStatusDot) by (icon index, rgba, device pixel
+  // ratio). Qt asks for DecorationRole on every paint and every sizeHint, and
+  // composing the badge allocates a pixmap and runs a QPainter each time; the
+  // whole space is three quality colours x the icon count. Cleared whenever
+  // icons_ is reloaded.
+  mutable std::map<std::tuple<int, std::uint32_t, qreal>, QPixmap>
+      status_badge_cache_;
 
   // Retained so a theme change can re-render the glyphs in the new tint; empty
   // when the adapter carries a bitmap strip, which cannot be recoloured.

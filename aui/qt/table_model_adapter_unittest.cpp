@@ -16,7 +16,12 @@ namespace {
 class StubTableModel : public TableModel {
  public:
   virtual int GetRowCount() override { return 1; }
-  virtual void GetCell(TableCell& cell) override { cell.text = u"42"; }
+  virtual void GetCell(TableCell& cell) override {
+    ++get_cell_calls;
+    cell.text = u"42";
+  }
+
+  int get_cell_calls = 0;
 };
 
 enum ColumnId { kTitleColumn, kValueColumn, kTimeColumn };
@@ -45,7 +50,8 @@ class TableModelAdapterTest : public testing::Test {
   }
 
   AppEnvironment app_env_;
-  TableModelAdapter adapter_{std::make_shared<StubTableModel>(), MakeColumns()};
+  std::shared_ptr<StubTableModel> model_ = std::make_shared<StubTableModel>();
+  TableModelAdapter adapter_{model_, MakeColumns()};
 };
 
 // Under a token theme, value (monospace-flagged) and timestamp (Time)
@@ -74,6 +80,20 @@ TEST_F(TableModelAdapterTest, ColumnAlignmentIsVerticallyCentred) {
             static_cast<int>(Qt::AlignLeft | Qt::AlignVCenter));
   EXPECT_EQ(AlignmentFor(kValueColumn),
             static_cast<int>(Qt::AlignRight | Qt::AlignVCenter));
+}
+
+// The per-column roles (font, alignment, tooltip) are answered before the
+// cell is fetched, and so must the roles the adapter never answers at all —
+// CheckStateRole used to cost a GetCell and then fall to the default.
+TEST_F(TableModelAdapterTest, RolesThatDoNotReadTheCellDoNotFetchIt) {
+  const QModelIndex index = adapter_.index(0, kValueColumn);
+  adapter_.data(index, Qt::CheckStateRole);
+  adapter_.data(index, Qt::SizeHintRole);
+  adapter_.data(index, Qt::FontRole);
+  EXPECT_EQ(model_->get_cell_calls, 0);
+
+  adapter_.data(index, Qt::DisplayRole);
+  EXPECT_EQ(model_->get_cell_calls, 1);
 }
 
 }  // namespace

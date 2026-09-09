@@ -7,8 +7,11 @@
 #include <QApplication>
 #include <QFont>
 #include <QPalette>
+#include <QPixmap>
 #include <QVariant>
 #include <gtest/gtest.h>
+
+#include <optional>
 
 namespace scada::aui {
 namespace {
@@ -68,6 +71,11 @@ class ColorStubTreeModel : public TreeModel {
   virtual Color GetBackgroundColor(void* node, int column_id) override {
     return background_color;
   }
+  virtual std::optional<Color> GetStatusColor(void* node) override {
+    return status_color;
+  }
+
+  std::optional<Color> status_color;
 
  private:
   int root_ = 0;
@@ -213,6 +221,25 @@ TEST_F(TreeModelAdapterTest, InvalidIndexHasNoDataAndBaseFlags) {
   EXPECT_FALSE(adapter_.data(QModelIndex{}, Qt::DisplayRole).isValid());
   EXPECT_EQ(adapter_.flags(QModelIndex{}),
             adapter_.QAbstractItemModel::flags(QModelIndex{}));
+}
+
+// The status badge is composed with a QPainter; Qt asks for it on every paint
+// and every sizeHint, so the composed pixmap is cached per (icon, colour, dpr)
+// and the same pixmap comes back for the same key.
+TEST_F(TreeModelAdapterColorTest, StatusBadgeIsComposedOnceAndShared) {
+  model_->status_color = SeverityColor(SeverityLevel::kWarning);
+  const QPixmap first =
+      adapter_.data(adapter_.index(0, 0), Qt::DecorationRole).value<QPixmap>();
+  const QPixmap second =
+      adapter_.data(adapter_.index(0, 0), Qt::DecorationRole).value<QPixmap>();
+  ASSERT_FALSE(first.isNull());
+  EXPECT_EQ(first.cacheKey(), second.cacheKey());
+
+  // A different colour is a different badge, not a stale one.
+  model_->status_color = SeverityColor(SeverityLevel::kCritical);
+  const QPixmap other =
+      adapter_.data(adapter_.index(0, 0), Qt::DecorationRole).value<QPixmap>();
+  EXPECT_NE(first.cacheKey(), other.cacheKey());
 }
 
 }  // namespace scada::aui
