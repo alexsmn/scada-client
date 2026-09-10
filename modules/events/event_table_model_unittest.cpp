@@ -1096,6 +1096,79 @@ TEST_F(EventJournalScalingTest, AFloodFoldsAndUnfoldsCorrectlyAtScale) {
   EXPECT_EQ(expanded.GetRowCount(), kOneOffs + kRepeats);
 }
 
+// The flood threshold is judged on a running tally rather than on a walk of
+// every row and every folded repeat (task 739), so the tally and the walk must
+// not be able to drift apart. `GetAlarmSummary()` still walks and is therefore
+// an independent second opinion; this asserts they agree after every shape of
+// mutation the journal has.
+//
+// The acknowledgement leg is the one that matters. `Acknowledge()` reproduces
+// what the storage does — flip `acked`, *then* notify — so an occurrence
+// reaching the removal paths is already acknowledged. A tally that decremented
+// by asking the departing event would never fire and would drift upward,
+// silently keeping the journal grouped after the flood had been worked off.
+TEST_F(EventJournalScalingTest, TheUnacknowledgedTallyTracksTheWalk) {
+  EventTableModel& model = MakeModel(/*current_events=*/false);
+
+  auto agrees = [&model](const char* phase) {
+    EXPECT_EQ(model.CountUnacknowledged(),
+              model.GetAlarmSummary().unacknowledged)
+        << "tally drifted from the walk after: " << phase;
+  };
+
+  agrees("an empty journal");
+
+  // Below the threshold: one row per alarm, no folding.
+  const std::vector<const scada::Event*> few = Deliver(u"low water", 3, 1);
+  ASSERT_FALSE(model.grouped());
+  EXPECT_EQ(model.CountUnacknowledged(), 3);
+  agrees("three ungrouped arrivals");
+
+  // Crossing the threshold rebuilds the journal grouped, which recomputes the
+  // tally wholesale rather than maintaining it.
+  const std::vector<const scada::Event*> flood =
+      Deliver(u"comms lost", 30, 5);
+  ASSERT_TRUE(model.grouped());
+  EXPECT_EQ(model.CountUnacknowledged(), 33);
+  agrees("a flood that regrouped the journal");
+
+  // Arrivals now fold into an existing group rather than adding rows.
+  const std::vector<const scada::Event*> folded =
+      Deliver(u"comms lost", 10, 5);
+  EXPECT_EQ(model.CountUnacknowledged(), 43);
+  agrees("arrivals folded into a group");
+
+  // A different alarm mid-flood takes a row of its own.
+  Deliver(u"breaker open", 1, 1);
+  agrees("a one-off arriving mid-flood");
+
+  // Acknowledging part of a group: the row survives, minus those occurrences.
+  Acknowledge(std::span{flood}.first(10), 5);
+  agrees("part of a group acknowledged");
+
+  // Acknowledging a whole ungrouped alarm removes its row outright.
+  Acknowledge(few, 1);
+  agrees("whole rows acknowledged");
+
+  // Working the backlog below the threshold expands the rows again — another
+  // wholesale rebuild, from the other direction. Only the one-off is left
+  // standing, so this is comfortably under kAlarmFloodThreshold.
+  Acknowledge(std::span{flood}.subspan(10), 5);
+  Acknowledge(folded, 5);
+  EXPECT_EQ(model.CountUnacknowledged(), 1);
+  EXPECT_FALSE(model.grouped());
+  agrees("the flood worked off and the rows expanded");
+
+  // And the filters, which rebuild from the source models rather than from
+  // the rows.
+  model.SetSeverityMin(scada::kSeverityCritical);
+  agrees("a severity filter that empties the journal");
+  model.SetSeverityMin(0);
+  agrees("the severity filter cleared");
+  model.SetUnacknowledgedOnly(true);
+  agrees("the unacknowledged-only filter");
+}
+
 // Row lookups must follow rows as they move: after a removal in the middle,
 // an update to a later event has to reach the row it now occupies. A stale
 // lookup would repaint the wrong row or, worse, index past the end.

@@ -134,6 +134,15 @@ class EventTableModel : public scada::aui::TableModel,
   };
   AlarmSummary GetAlarmSummary() const;
 
+  // The `unacknowledged` half of GetAlarmSummary(), in O(1): counted as the
+  // journal changes rather than by walking every row and every folded repeat.
+  // This is the signal the flood threshold is judged on, and it is asked for on
+  // every notification — see RegroupIfFloodChanged(). GetAlarmSummary() still
+  // walks, because a maximum severity cannot be maintained incrementally, and
+  // the two agreeing is pinned by
+  // EventJournalScalingTest.TheUnacknowledgedTallyTracksTheWalk.
+  int CountUnacknowledged() const { return unacked_count_; }
+
   // Unacknowledged counts for the journal's Areas sidebar: the overall count
   // plus one count per entry of `areas` (an event belongs to an area when its
   // source or any containing node is that area). Ignores the active area
@@ -199,9 +208,20 @@ class EventTableModel : public scada::aui::TableModel,
   // occurrence must be copied to keep it in the journal.
   void MoveOccurrenceToHistory(const scada::Event& event);
 
-  // Unacknowledged occurrences currently held, counting every member of a
-  // collapsed row — the signal the flood threshold is judged on.
-  int CountUnacknowledged() const;
+  // Recounts row `index` and folds the difference into `unacked_count_`. Call
+  // after any change to what that row holds.
+  //
+  // The difference is taken against the row's *stored* count rather than
+  // recomputed from the departing event, and that is the point: the storage
+  // flips an event's `acked` before it notifies, so an occurrence being
+  // removed here is already acknowledged and asking it would never decrement.
+  // The stored count predates the flip, and a recount of what remains is
+  // self-healing if anything else drifted.
+  void RecountRowUnacked(int index);
+
+  // Sums the rows' counts into `unacked_count_`. Only for a wholesale rebuild,
+  // which is O(rows) anyway.
+  void RecountAllUnacked();
 
   // Rebuilds when the backlog has crossed the flood threshold in either
   // direction, so rows collapse as a flood starts and expand once it is worked
@@ -239,16 +259,24 @@ class EventTableModel : public scada::aui::TableModel,
   // Rows displayed in grid.
   struct Row {
     Row(EventType type, const scada::Event& event)
-        : type(type), event(&event) {}
+        : type(type), event(&event), unacked(event.acked ? 0 : 1) {}
 
     void Update(NodeService& node_service);
     bool IsAffected(const scada::NodeId& node_id) const;
+
+    // Recomputes `unacked` from what the row currently holds. Call after
+    // changing `event` or `repeats`; the constructor covers a fresh row.
+    void RecountUnacked();
 
     EventType type;
     const scada::Event* event;
     // Further occurrences of the same alarm collapsed into this row (flood
     // grouping); empty when the row stands for a single event.
     std::vector<const scada::Event*> repeats;
+    // Unacknowledged occurrences this row holds — its representative plus its
+    // repeats. Kept per row so a mutation costs a recount of the one row it
+    // touched instead of a walk of the journal (task 739).
+    int unacked = 0;
     NodeRef node;
     NodeRef user;
     NodeRef acknowledged_user;
@@ -277,6 +305,13 @@ class EventTableModel : public scada::aui::TableModel,
   // Set on rebuild when the unacknowledged backlog constitutes a flood; applies
   // to the historical rows only.
   bool grouped_ = false;
+
+  // Running sum of the rows' `unacked`, maintained by every path that changes
+  // what a row holds. Not lazily cached like the lookup tables below: a lazy
+  // cache would be invalidated by the very mutation that precedes each
+  // RegroupIfFloodChanged() call and so would be recomputed every time, which
+  // is the walk this replaces.
+  int unacked_count_ = 0;
 
   bool lock_update_ = false;
   bool pending_update_ = false;

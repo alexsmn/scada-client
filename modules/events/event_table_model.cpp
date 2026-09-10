@@ -85,6 +85,14 @@ void EventTableModel::Row::Update(NodeService& node_service) {
   acknowledged_user.StartFetch(NodeFetchStatus::NodeOnly);
 }
 
+void EventTableModel::Row::RecountUnacked() {
+  unacked = event->acked ? 0 : 1;
+  for (const scada::Event* repeat : repeats) {
+    if (!repeat->acked)
+      ++unacked;
+  }
+}
+
 bool EventTableModel::Row::IsAffected(const scada::NodeId& node_id) const {
   scada::base::Check(event);
   return event->source_node_id == node_id || event->user_id == node_id ||
@@ -426,6 +434,11 @@ void EventTableModel::AddRows(EventType type,
       auto& row = rows_[index];
       scada::base::Check(row.type == type);
       row.Update(node_service_);
+      // The row holds this pointer already, so nothing was added — but the
+      // event behind it may have been acknowledged since (MoveOccurrenceToHistory
+      // re-adds an acked copy through here), so the row is recounted rather
+      // than assumed unchanged.
+      RecountRowUnacked(index);
       NotifyItemsChanged(index, 1);
     }
   }
@@ -442,6 +455,7 @@ void EventTableModel::AddRows(EventType type,
         NotifyItemsAdding(first, 1);
         Row row{type, *event};
         row.Update(node_service_);
+        unacked_count_ += row.unacked;
         rows_.emplace_back(std::move(row));
         IndexRow(first);
         InvalidateOccurrenceOffsets();
@@ -462,6 +476,7 @@ void EventTableModel::AddRows(EventType type,
       }
       // The row keeps its position; only the new pointer needs registering.
       occurrence_rows_[event] = index;
+      RecountRowUnacked(index);
       InvalidateOccurrenceOffsets();
       NotifyItemsChanged(index, 1);
     }
@@ -475,6 +490,7 @@ void EventTableModel::AddRows(EventType type,
     for (auto* event : added_events) {
       Row row{type, *event};
       row.Update(node_service_);
+      unacked_count_ += row.unacked;
       rows_.emplace_back(std::move(row));
       IndexRow(static_cast<int>(rows_.size()) - 1);
     }
@@ -519,6 +535,7 @@ bool EventTableModel::RemoveOccurrence(int index, const scada::Event& event) {
   // The row keeps its index and its alarm; only the departed pointer must go.
   if (row_index_valid_)
     occurrence_rows_.erase(&event);
+  RecountRowUnacked(index);
   InvalidateOccurrenceOffsets();
 
   NotifyItemsChanged(index, 1);
@@ -534,10 +551,24 @@ void EventTableModel::MoveOccurrenceToHistory(const scada::Event& event) {
   AddRows(HISTORICAL_EVENT, {&event_ptr, 1});
 }
 
-int EventTableModel::CountUnacknowledged() const {
-  return GetAlarmSummary().unacknowledged;
+void EventTableModel::RecountRowUnacked(int index) {
+  Row& row = rows_[index];
+  const int before = row.unacked;
+  row.RecountUnacked();
+  unacked_count_ += row.unacked - before;
 }
 
+void EventTableModel::RecountAllUnacked() {
+  unacked_count_ = 0;
+  for (const Row& row : rows_)
+    unacked_count_ += row.unacked;
+}
+
+// Still a walk, and deliberately: the footer asks for this on demand, not per
+// notification, and `max_severity` is not a quantity a running tally can
+// maintain — a maximum cannot be decremented when the row holding it goes. Its
+// `unacknowledged` is therefore an independent second opinion on
+// CountUnacknowledged(), which is what the tests cross-check.
 EventTableModel::AlarmSummary EventTableModel::GetAlarmSummary() const {
   AlarmSummary summary;
   auto account = [&summary](const scada::Event& event) {
@@ -575,6 +606,10 @@ void EventTableModel::AppendRows(Rows& rows,
   for (events::EventGroup& group : events::GroupRepeatedEvents(events)) {
     Row row{type, *group.representative};
     row.repeats = std::move(group.repeats);
+    // The constructor counted the representative alone; the repeats just
+    // arrived. `rows` is a local being built, so the model's tally is set by
+    // the caller (RefilterNow) once the rows are installed.
+    row.RecountUnacked();
     row.Update(node_service_);
     rows.emplace_back(std::move(row));
   }
@@ -583,6 +618,8 @@ void EventTableModel::AppendRows(Rows& rows,
 void EventTableModel::RemoveRows(int first, int count) {
   scada::base::Check(count > 0);
   NotifyItemsRemoving(first, count);
+  for (int i = first; i < first + count; ++i)
+    unacked_count_ -= rows_[i].unacked;
   rows_.erase(rows_.begin() + first, rows_.begin() + (first + count));
   // Every row behind the gap moved.
   InvalidateRowIndex();
@@ -692,7 +729,9 @@ void EventTableModel::AckRows(int first, int count) {
               &historical_event_model_.AddEvent(std::move(acked_repeat)));
         }
         // The row now holds the historical copies' pointers, not the live
-        // ones; the occurrence count is unchanged.
+        // ones; the occurrence count is unchanged, but all of them are
+        // acknowledged now, so the row leaves the backlog.
+        RecountRowUnacked(first + i);
         InvalidateRowIndex();
       }
     }
@@ -766,6 +805,7 @@ void EventTableModel::RefilterNow() {
     int count = static_cast<int>(rows_.size());
     NotifyItemsRemoving(0, count);
     rows_.clear();
+    unacked_count_ = 0;
     InvalidateRowIndex();
     InvalidateOccurrenceOffsets();
     NotifyItemsRemoved(0, count);
@@ -830,6 +870,7 @@ void EventTableModel::RefilterNow() {
     // that arrive on the next line.
     InvalidateRowIndex();
     InvalidateOccurrenceOffsets();
+    RecountAllUnacked();
     NotifyItemsAdded(0, count);
   }
 }
@@ -846,6 +887,7 @@ void EventTableModel::Update() {
     int count = static_cast<int>(rows_.size());
     NotifyItemsRemoving(0, count);
     rows_.clear();
+    unacked_count_ = 0;
     InvalidateRowIndex();
     InvalidateOccurrenceOffsets();
     NotifyItemsRemoved(0, count);
