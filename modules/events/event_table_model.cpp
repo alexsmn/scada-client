@@ -435,9 +435,9 @@ void EventTableModel::AddRows(EventType type,
       scada::base::Check(row.type == type);
       row.Update(node_service_);
       // The row holds this pointer already, so nothing was added — but the
-      // event behind it may have been acknowledged since (MoveOccurrenceToHistory
-      // re-adds an acked copy through here), so the row is recounted rather
-      // than assumed unchanged.
+      // event behind it may have been acknowledged since
+      // (MoveOccurrenceToHistory re-adds an acked copy through here), so the
+      // row is recounted rather than assumed unchanged.
       RecountRowUnacked(index);
       NotifyItemsChanged(index, 1);
     }

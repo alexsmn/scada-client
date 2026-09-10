@@ -1126,15 +1126,13 @@ TEST_F(EventJournalScalingTest, TheUnacknowledgedTallyTracksTheWalk) {
 
   // Crossing the threshold rebuilds the journal grouped, which recomputes the
   // tally wholesale rather than maintaining it.
-  const std::vector<const scada::Event*> flood =
-      Deliver(u"comms lost", 30, 5);
+  const std::vector<const scada::Event*> flood = Deliver(u"comms lost", 30, 5);
   ASSERT_TRUE(model.grouped());
   EXPECT_EQ(model.CountUnacknowledged(), 33);
   agrees("a flood that regrouped the journal");
 
   // Arrivals now fold into an existing group rather than adding rows.
-  const std::vector<const scada::Event*> folded =
-      Deliver(u"comms lost", 10, 5);
+  const std::vector<const scada::Event*> folded = Deliver(u"comms lost", 10, 5);
   EXPECT_EQ(model.CountUnacknowledged(), 43);
   agrees("arrivals folded into a group");
 
