@@ -38,12 +38,6 @@ double DisplayFitFactor(QSize natural, QSize viewport);
 // 100). Rounds to the nearest percent.
 int DisplayZoomPercent(double zoom);
 
-// The Recent-events strip's severity label for an OPC UA event severity
-// (0-1000-style `scada::EventSeverity`): "Critical" / "Warning" / "Info". Pure
-// and translation-free at the mapping level (callers translate the result).
-enum class DisplaySeverityBand { kInfo, kWarning, kCritical };
-DisplaySeverityBand DisplaySeverityBandFor(unsigned severity);
-
 // Live-data sources for the display frame's bay strips. All optional: when a
 // pointer is null the corresponding strip is omitted, so the frame degrades to
 // just the toolbar + diagram.

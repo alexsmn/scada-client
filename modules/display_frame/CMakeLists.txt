@@ -13,6 +13,10 @@ client_module_link_libraries(client_display_frame
     scada_common_events
   PRIVATE
     aui
+    # `events/event_severity.h` — the strip bands severities through the shared
+    # SeverityLevelForEvent rather than re-implementing the thresholds (739's
+    # sibling, backlog 624).
+    client_events
     client_vds_runtime
     node_service
     timed_data

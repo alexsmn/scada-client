@@ -4,6 +4,7 @@
 #include "aui/severity_colors.h"
 #include "aui/translation.h"
 #include "base/format_time.h"
+#include "events/event_severity.h"
 #include "events/node_event_provider.h"
 #include "node_service/node_ref.h"
 #include "node_service/node_service.h"
@@ -61,24 +62,27 @@ QString Tr(std::string_view text) {
 }
 
 QString SeverityLabel(unsigned severity) {
-  switch (DisplaySeverityBandFor(severity)) {
-    case DisplaySeverityBand::kCritical:
+  // `events::SeverityLevelLabel` is not used here: it answers with an empty
+  // string for kNone, and this strip has a column to fill, so a routine event
+  // is named "Info" rather than left blank.
+  switch (events::SeverityLevelForEvent(severity)) {
+    case scada::aui::SeverityLevel::kCritical:
       return Tr("Critical");
-    case DisplaySeverityBand::kWarning:
+    case scada::aui::SeverityLevel::kWarning:
       return Tr("Warning");
-    case DisplaySeverityBand::kInfo:
+    case scada::aui::SeverityLevel::kNone:
       break;
   }
   return Tr("Info");
 }
 
 QColor SeverityColor(const scada::aui::ThemeTokens& tokens, unsigned severity) {
-  switch (DisplaySeverityBandFor(severity)) {
-    case DisplaySeverityBand::kCritical:
+  switch (events::SeverityLevelForEvent(severity)) {
+    case scada::aui::SeverityLevel::kCritical:
       return tokens.severity_critical;
-    case DisplaySeverityBand::kWarning:
+    case scada::aui::SeverityLevel::kWarning:
       return tokens.severity_medium;
-    case DisplaySeverityBand::kInfo:
+    case scada::aui::SeverityLevel::kNone:
       break;
   }
   return tokens.severity_low;
@@ -149,14 +153,6 @@ double DisplayFitFactor(QSize natural, QSize viewport) {
 
 int DisplayZoomPercent(double zoom) {
   return static_cast<int>(std::lround(ClampDisplayZoom(zoom) * 100.0));
-}
-
-DisplaySeverityBand DisplaySeverityBandFor(unsigned severity) {
-  if (severity >= scada::kSeverityCritical)
-    return DisplaySeverityBand::kCritical;
-  if (severity >= scada::kSeverityWarning)
-    return DisplaySeverityBand::kWarning;
-  return DisplaySeverityBand::kInfo;
 }
 
 DisplayFrame::DisplayFrame(VdsRuntimeWidget* diagram,
