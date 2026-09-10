@@ -2,6 +2,7 @@
 
 #include "base/test/test_executor.h"
 #include "controller/action_manager.h"
+#include "events/alarm_flood.h"
 #include "events/local_events.h"
 #include "events/node_event_provider_mock.h"
 #include "profile/profile.h"
@@ -34,6 +35,19 @@ class EventDispatcherAlarmSoundTest : public Test {
 
   void RaiseAlarm() {
     local_events_.ReportEvent(LocalEvents::SEV_ERROR, u"comms lost");
+  }
+
+  // A warning-severity local event. Distinct from RaiseAlarm() because the
+  // annunciators gate on the escalation ladder, on which a warning is not by
+  // itself a rung — see events/alarm_escalation.h.
+  void RaiseWarning() {
+    local_events_.ReportEvent(LocalEvents::SEV_WARNING, u"tank level high");
+  }
+
+  // The id of the most recently raised local event, so a test can acknowledge
+  // one of several rather than all of them.
+  scada::EventId LastEventId() const {
+    return local_events_.events().back()->event_id;
   }
 
   void AcknowledgeAll() { local_events_.AcknowledgeAll(); }
@@ -96,6 +110,65 @@ TEST_F(EventDispatcherAlarmSoundTest, DoesNotReannunciateWhileAnAlarmStands) {
   EXPECT_TRUE(dispatcher_.playing_alarm_sound());
 }
 
+// The annunciators gate on the escalation ladder, not on "something is
+// unacknowledged" (backlog 552). A lone warning is unacknowledged and shows in
+// the journal, the status-bar count and the context bar's tiles — but it is not
+// a rung of the ladder, so the room does not sound. `StrictMock` is what
+// asserts the silence: an unexpected `Call` is a failure.
+TEST_F(EventDispatcherAlarmSoundTest, AWarningAloneDoesNotAnnunciate) {
+  RaiseWarning();
+  Dispatch();
+
+  EXPECT_FALSE(dispatcher_.playing_alarm_sound());
+}
+
+// Rung 2: enough standing warnings read as a flood even though none of them is
+// critical, so the ladder lights and the tone follows it.
+TEST_F(EventDispatcherAlarmSoundTest, AFloodOfWarningsAnnunciates) {
+  // Exactly at the threshold is not yet a flood — IsAlarmFlood is strictly
+  // greater — so the tone is still silent here.
+  for (int i = 0; i < events::kAlarmFloodThreshold; ++i) {
+    RaiseWarning();
+    Dispatch();
+  }
+  ASSERT_FALSE(dispatcher_.playing_alarm_sound());
+
+  EXPECT_CALL(alarm_sound_, Call(true));
+
+  RaiseWarning();
+  Dispatch();
+
+  EXPECT_TRUE(dispatcher_.playing_alarm_sound());
+}
+
+// The falling edge that the old early return would have swallowed. Once the
+// tone gates on the ladder, acknowledging the last critical has to stop it even
+// though warnings remain and `has_events` is therefore still true — and that
+// dispatch arrives with `added == false`, which used to return before the
+// annunciators ran.
+TEST_F(EventDispatcherAlarmSoundTest,
+       StopsWhenTheLastCriticalIsAcknowledgedWhileWarningsStand) {
+  RaiseWarning();
+  Dispatch();
+
+  EXPECT_CALL(alarm_sound_, Call(true));
+
+  RaiseAlarm();
+  Dispatch();
+  ASSERT_TRUE(dispatcher_.playing_alarm_sound());
+  const scada::EventId critical = LastEventId();
+
+  EXPECT_CALL(alarm_sound_, Call(false));
+
+  local_events_.AcknowledgeEvent(critical);
+  Dispatch();
+
+  EXPECT_FALSE(dispatcher_.playing_alarm_sound());
+  // The warning is still standing, so this is a fall of the ladder and not of
+  // the unacknowledged set.
+  EXPECT_FALSE(local_events_.events().empty());
+}
+
 // The option gates the tone, and it is the whole of what an operator ticking
 // the box in Settings controls.
 TEST_F(EventDispatcherAlarmSoundTest, StaysSilentWhenTheOptionIsOff) {
@@ -123,6 +196,19 @@ class EventDispatcherSpeechTest : public Test {
 
   void RaiseAlarm() {
     local_events_.ReportEvent(LocalEvents::SEV_ERROR, u"comms lost");
+  }
+
+  // A warning-severity local event. Distinct from RaiseAlarm() because the
+  // annunciators gate on the escalation ladder, on which a warning is not by
+  // itself a rung — see events/alarm_escalation.h.
+  void RaiseWarning() {
+    local_events_.ReportEvent(LocalEvents::SEV_WARNING, u"tank level high");
+  }
+
+  // The id of the most recently raised local event, so a test can acknowledge
+  // one of several rather than all of them.
+  scada::EventId LastEventId() const {
+    return local_events_.events().back()->event_id;
   }
 
   void AcknowledgeAll() { local_events_.AcknowledgeAll(); }
@@ -161,6 +247,14 @@ TEST_F(EventDispatcherSpeechTest, AnnouncesEvenWhenTheAlarmToneIsOff) {
   EXPECT_CALL(speech_service_, Speak(_));
 
   RaiseAlarm();
+  Dispatch();
+}
+
+// Speech takes the escalation edge too, so a lone warning does not announce.
+TEST_F(EventDispatcherSpeechTest, StaysSilentForAWarningAlone) {
+  EXPECT_CALL(speech_service_, Speak(_)).Times(0);
+
+  RaiseWarning();
   Dispatch();
 }
 

@@ -3,8 +3,10 @@
 #include "aui/translation.h"
 #include "base/any_executor_dispatch.h"
 #include "controller/action_manager.h"
+#include "events/event_severity.h"
 #include "events/local_events.h"
 #include "events/node_event_provider.h"
+#include "events/severity_tiles.h"
 #include "profile/profile.h"
 #include "resources/common_resources.h"
 #include "services/speech_service.h"
@@ -73,6 +75,27 @@ void EventDispatcher::ShowEventsDelayed(bool added) {
   showing_events_added_ = added;
 }
 
+events::AlarmEscalation EventDispatcher::CurrentEscalation() const {
+  // Reduced through CountSeverityTiles rather than by counting here, so this
+  // and the context bar's tiles cannot disagree about the same alarms — the
+  // reason EscalationFor takes tile counts in the first place.
+  std::vector<events::AlarmSummary> alarms;
+  alarms.reserve(node_event_provider_.unacked_events().size() +
+                 local_events_.events().size());
+  auto account = [&alarms](const scada::Event& event) {
+    alarms.push_back(events::AlarmSummary{
+        .severity = events::SeverityLevelForEvent(event.severity),
+        .acknowledged = event.acked,
+    });
+  };
+  for (const auto& [event_id, event] : node_event_provider_.unacked_events())
+    account(event);
+  for (const scada::Event* event : local_events_.events())
+    account(*event);
+
+  return events::EscalationFor(events::CountSeverityTiles(alarms));
+}
+
 void EventDispatcher::ShowEvents(bool added) {
   showing_events_ = false;
 
@@ -84,15 +107,28 @@ void EventDispatcher::ShowEvents(bool added) {
     action_manager_.NotifyActionChanged(ID_ACKNOWLEDGE_ALL);
   }
 
-  // Never show window if event removed.
-  if (has_events && !added)
-    return;
+  // Never show the window when the dispatch was a removal. This used to be an
+  // early return, which the annunciators below sat behind — and once they gate
+  // on the ladder rather than on `has_events` that is wrong: acknowledging the
+  // last unacknowledged critical while warnings stand lowers the ladder without
+  // lowering `has_events`, so the tone would go on sounding for an alarm state
+  // that no longer escalates (backlog 552).
+  if (!has_events || added)
+    events_handler_(has_events);
 
-  events_handler_(has_events);
+  // Both annunciators gate on the escalation ladder, not on the bare "something
+  // is unacknowledged" edge: an unacknowledged critical, or a flood. That is
+  // what the web client has always gated its tone on, and a plant that
+  // escalates at different moments depending on which client is open is the
+  // defect events/alarm_escalation.h exists to prevent. Every unacknowledged
+  // event still reaches the operator — the status-bar count, the journal and
+  // the context bar's tiles are unchanged; what the ladder decides is when the
+  // room is made to *sound*.
+  const bool escalated = CurrentEscalation().escalated();
 
   // The audible annunciator. The latch is platform-independent so that the
   // option means the same thing everywhere; only the emission below differs.
-  bool play_sound = has_events && profile_.event_play_sound;
+  bool play_sound = escalated && profile_.event_play_sound;
   if (playing_alarm_sound_ != play_sound) {
     playing_alarm_sound_ = play_sound;
 
@@ -102,15 +138,15 @@ void EventDispatcher::ShowEvents(bool added) {
       PlayAlarmSound(playing_alarm_sound_);
   }
 
-  // The spoken announcement takes the same *has unacknowledged events* edge,
-  // but a latch of its own: «Speech» and «Sound Alarm on Event» are separate
+  // The spoken announcement takes the same *escalation* edge, but a latch of
+  // its own: «Speech» and «Sound Alarm on Event» are separate
   // options, and folding them together would leave speech silent whenever the
   // tone was switched off. It speaks only as the alarm arrives — there is
   // nothing to say once the last event is acknowledged, and repeating it on
   // every dispatch would talk over the operator. Whether there is a voice at
   // all is the service's to answer; there is none on a non-Windows build.
-  if (announced_alarm_ != has_events) {
-    announced_alarm_ = has_events;
+  if (announced_alarm_ != escalated) {
+    announced_alarm_ = escalated;
 
     if (announced_alarm_ && profile_.speech_enabled && speech_service_ &&
         speech_service_->is_ok()) {

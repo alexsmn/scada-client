@@ -3,6 +3,7 @@
 #include "base/any_executor.h"
 
 #include "base/cancelation.h"
+#include "events/alarm_escalation.h"
 #include "events/event_observer.h"
 
 #include <boost/signals2/connection.hpp>
@@ -57,11 +58,19 @@ class EventDispatcher final : private EventDispatcherContext,
   void ShowEventsDelayed(bool added);
   void ShowEvents(bool added);
 
+  // The escalation ladder for the alarms currently standing, reduced from the
+  // same two sets `ShowEvents` derives `has_events` from. The annunciators gate
+  // on this rather than on the bare "something is unacknowledged" edge — see
+  // events/alarm_escalation.h for the rungs.
+  events::AlarmEscalation CurrentEscalation() const;
+
   // EventObserver
   virtual void OnEvents(std::span<const scada::Event* const> events) override;
   virtual void OnAllEventsAcknowledged() override;
 
   bool playing_alarm_sound_ = false;
+  // Tracks the escalation ladder, not `has_events_`: what has been announced is
+  // "the plant is escalating", and it falls again when the ladder does.
   bool announced_alarm_ = false;
 
   bool has_events_ = false;
