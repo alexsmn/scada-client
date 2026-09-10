@@ -21,6 +21,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 namespace {
 
@@ -695,6 +696,110 @@ TEST_F(InspectorPanelTest, DataLessSelectionShowsTheEmptyState) {
       panel.findChild<QStackedWidget*>(QStringLiteral("inspectorStack"));
   ASSERT_NE(stack, nullptr);
   EXPECT_EQ(stack->currentIndex(), 0);
+}
+
+// The Open section, drawn as `.opengrid` on
+// docs/product/ui-mockups/screens/summary.html: one button per view the
+// subject can be opened in, three across.
+TEST_F(InspectorPanelTest, OpenSectionDrawsOneButtonPerView) {
+  InspectorPanel panel{InspectorPanelContext{}};
+  panel.ShowElement(InspectorElementView{
+      .title = QStringLiteral("Ua"),
+      .value_text = QStringLiteral("10.9"),
+      .open_actions = {{.title = QStringLiteral("Graph"), .command_id = 101},
+                       {.title = QStringLiteral("Table"), .command_id = 102},
+                       {.title = QStringLiteral("Summary"), .command_id = 103},
+                       {.title = QStringLiteral("Data"), .command_id = 104}}});
+
+  auto* open = panel.findChild<QWidget*>(QStringLiteral("inspectorOpen"));
+  ASSERT_NE(open, nullptr);
+  EXPECT_FALSE(open->isHidden());
+
+  const QList<QPushButton*> buttons =
+      open->findChildren<QPushButton*>(QStringLiteral("inspectorOpenButton"));
+  ASSERT_EQ(buttons.size(), 4);
+  EXPECT_EQ(buttons[0]->text(), QStringLiteral("Graph"));
+  EXPECT_EQ(buttons[3]->text(), QStringLiteral("Data"));
+}
+
+// A subject no view accepts -- and an unwired host, which is every standalone
+// capture -- must leave no bare section header behind.
+TEST_F(InspectorPanelTest, OpenSectionIsHiddenWithNoViewsToOffer) {
+  InspectorPanel panel{InspectorPanelContext{}};
+  panel.ShowElement(InspectorElementView{.title = QStringLiteral("Ua"),
+                                         .value_text = QStringLiteral("10.9")});
+
+  auto* open = panel.findChild<QWidget*>(QStringLiteral("inspectorOpen"));
+  ASSERT_NE(open, nullptr);
+  EXPECT_TRUE(open->isHidden());
+}
+
+// Clicking a button runs the command that button carried, by id -- the title is
+// translated and could not identify it.
+TEST_F(InspectorPanelTest, OpenButtonRunsItsOwnCommand) {
+  std::vector<unsigned> opened;
+  InspectorPanel panel{InspectorPanelContext{
+      .on_open = [&](unsigned command_id) { opened.push_back(command_id); }}};
+  panel.ShowElement(InspectorElementView{
+      .title = QStringLiteral("Ua"),
+      .open_actions = {
+          {.title = QStringLiteral("Graph"), .command_id = 101},
+          {.title = QStringLiteral("Events"), .command_id = 205}}});
+
+  auto* open = panel.findChild<QWidget*>(QStringLiteral("inspectorOpen"));
+  ASSERT_NE(open, nullptr);
+  const QList<QPushButton*> buttons =
+      open->findChildren<QPushButton*>(QStringLiteral("inspectorOpenButton"));
+  ASSERT_EQ(buttons.size(), 2);
+
+  buttons[1]->click();
+  ASSERT_EQ(opened.size(), 1u);
+  EXPECT_EQ(opened[0], 205u);
+}
+
+// Regression: the buttons are rebuilt per subject, so a second ShowElement must
+// replace them rather than append. A kept button offers a view the new subject
+// may not accept, and clicking it opens the wrong thing.
+TEST_F(InspectorPanelTest, OpenSectionIsRebuiltForEachSubject) {
+  InspectorPanel panel{InspectorPanelContext{}};
+  panel.ShowElement(InspectorElementView{
+      .title = QStringLiteral("Ua"),
+      .open_actions = {{.title = QStringLiteral("Graph"), .command_id = 101},
+                       {.title = QStringLiteral("Table"), .command_id = 102}}});
+  panel.ShowElement(InspectorElementView{
+      .title = QStringLiteral("A folder"),
+      .open_actions = {{.title = QStringLiteral("Table"), .command_id = 102}}});
+
+  auto* open = panel.findChild<QWidget*>(QStringLiteral("inspectorOpen"));
+  ASSERT_NE(open, nullptr);
+  const QList<QPushButton*> buttons =
+      open->findChildren<QPushButton*>(QStringLiteral("inspectorOpenButton"));
+  ASSERT_EQ(buttons.size(), 1);
+  EXPECT_EQ(buttons[0]->text(), QStringLiteral("Table"));
+}
+
+// ShowSelection asks the host which views accept the selection, the way it
+// asks about control -- so a live selection reaches the section without the
+// caller filling the view struct by hand.
+TEST_F(InspectorPanelTest, ShowSelectionFillsTheOpenSectionFromTheHost) {
+  FormulaTimedDataService service;
+  SelectionModel selection{{service}};
+  TimedDataSpec spec{service, "{TIT.200}"};
+  selection.SelectTimedData(spec);
+
+  InspectorPanel panel{InspectorPanelContext{.open_actions = [] {
+    return std::vector<InspectorOpenAction>{
+        {.title = QStringLiteral("Graph"), .command_id = 101}};
+  }}};
+  panel.ShowSelection(selection);
+
+  auto* open = panel.findChild<QWidget*>(QStringLiteral("inspectorOpen"));
+  ASSERT_NE(open, nullptr);
+  EXPECT_FALSE(open->isHidden());
+  EXPECT_EQ(
+      open->findChildren<QPushButton*>(QStringLiteral("inspectorOpenButton"))
+          .size(),
+      1);
 }
 
 }  // namespace

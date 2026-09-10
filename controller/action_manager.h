@@ -60,4 +60,20 @@ GroupedActions GroupCommands(ActionManager& action_manager,
                              const std::vector<unsigned>& commands);
 
 std::u16string GetCommandCategoryTitle(CommandCategory category);
-bool CanExpandCommandCategory(CommandCategory category);
+
+// Where a command group is being drawn. The two surfaces deliberately group
+// CATEGORY_OPEN differently, which is what this exists for --
+// docs/product/ui-mockups/authoring.md 4b "Opening a view" draws the Explorer
+// context menu expanding the seven Open commands inline above the item
+// commands, and the toolbar collapsing them into one labelled `Open` button
+// with a menu. Every other category groups the same way on both.
+enum class CommandSurface {
+  // The Explorer's node context menu (ContextMenuModel).
+  kContextMenu,
+  // The main window's command toolbar (MainWindow::CreateToolbar).
+  kToolbar,
+};
+
+// Whether `category`'s commands are drawn inline on `surface`, rather than
+// collapsed behind one button or submenu carrying the category's title.
+bool CanExpandCommandCategory(CommandCategory category, CommandSurface surface);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QColor>
+#include <QIcon>
 #include <QString>
 #include <QWidget>
 
@@ -17,6 +18,7 @@ class Qualifier;
 class NodeRef;
 class SelectionModel;
 class TimedDataSpec;
+class QGridLayout;
 class QLabel;
 class QVBoxLayout;
 class QPushButton;
@@ -70,6 +72,25 @@ struct InspectorEventView {
   std::vector<InspectorTimelineRow> timeline;
 };
 
+// One view the Inspector's subject can be opened in — one button of the Open
+// section's grid, matching `.opengrid .obtn` on
+// docs/product/ui-mockups/screens/summary.html.
+struct InspectorOpenAction {
+  // The open command's own title, verbatim: "Graph", "Display", "Table",
+  // "Group Table", "Data", "Events" or "Summary"
+  // (docs/product/ui-mockups/authoring.md 4b "Opening a view"). The section
+  // must not invent an eighth, which is why the host reads these out of the
+  // command registry rather than the panel spelling them here.
+  QString title;
+  // The command's own icon, or a null icon for one that registers none
+  // (`Group Table` does not). The host loads it: resource ids are not
+  // something this panel reaches into.
+  QIcon icon;
+  // The command this button runs. Opaque to the panel, which hands it back to
+  // InspectorPanelContext::on_open unchanged.
+  unsigned command_id = 0;
+};
+
 // The element card's contents. Grouped into a struct rather than a positional
 // parameter list so the widget tests and the capture can fill exactly the
 // parts they exercise.
@@ -84,6 +105,12 @@ struct InspectorElementView {
   // The node's configured limit bands, most severe first. Empty when the node
   // configures none, which hides the limits block entirely.
   std::vector<InspectorLimitRow> limits;
+  // The views this subject can be opened in, in the order the commands are
+  // registered. Only the ones available for the subject: availability is not
+  // uniform — all seven need a non-empty selection and two of them also need
+  // a connected item — so a short list is a healthy state rather than an
+  // omission, and an empty one hides the section entirely.
+  std::vector<InspectorOpenAction> open_actions;
   bool controllable = false;
   // Why control is unavailable, shown under the disabled Control button.
   // Empty when control is available, or when the reason is not known.
@@ -137,6 +164,18 @@ struct InspectorPanelContext {
   // operator selection produced until this existed.
   std::function<void(const NodeRef& node, std::function<void()> redraw)>
       load_limits;
+  // The views the Inspector's current subject can be opened in — the seven
+  // CATEGORY_OPEN selection commands, filtered to the ones that accept this
+  // subject. Asked by ShowSelection each time the subject changes, because
+  // availability is the host's to judge: it owns the command resolution.
+  //
+  // Unwired, the Open section simply stays hidden — the same contract
+  // load_limits has, and what keeps the standalone captures unchanged.
+  std::function<std::vector<InspectorOpenAction>()> open_actions;
+  // Opens the view one of those buttons names, by the `command_id` its entry
+  // carried. Resolved against the active selection by the host at click time,
+  // exactly like on_control, so the panel holds no command handler.
+  std::function<void(unsigned command_id)> on_open;
   // Recolours the plotted series the series section is showing. The host
   // resolves the active view's SeriesModel at call time, exactly as the command
   // handlers above are resolved, so the panel never holds a view pointer.
@@ -193,6 +232,12 @@ class InspectorPanel : public QWidget {
   // Builds the plotted-series section: the palette swatch row and the display
   // flags. Hidden until ShowSeries fills it.
   QWidget* BuildSeriesSection();
+  // Builds the Open section: a section header over a three-column grid of
+  // view buttons. Hidden until ShowOpenActions fills it.
+  QWidget* BuildOpenSection();
+  // Rebuilds the Open section's grid; hides it when the subject can be opened
+  // in nothing (or when the host wired no open_actions at all).
+  void ShowOpenActions(const std::vector<InspectorOpenAction>& actions);
   // Rebuilds the event card's History block.
   void ShowTimeline(const std::vector<InspectorTimelineRow>& timeline);
 
@@ -230,6 +275,11 @@ class InspectorPanel : public QWidget {
   QLabel* series_own_pane_ = nullptr;
   QLabel* series_dots_ = nullptr;
   QLabel* series_stepped_ = nullptr;
+
+  // The Open block: a section header plus one button per view the subject can
+  // be opened in, hidden wholesale when there are none.
+  QWidget* open_ = nullptr;
+  QGridLayout* open_grid_ = nullptr;
 
   // Event-card widgets.
   QLabel* event_title_ = nullptr;

@@ -64,6 +64,7 @@
 #include <QEvent>
 #include <QGuiApplication>
 #include <QHBoxLayout>
+#include <QIcon>
 #include <QLabel>
 #include <QLayout>
 #include <QMenu>
@@ -1086,7 +1087,8 @@ void MainWindow::CreateToolbar() {
       continue;
     }
 
-    bool collapsible = !CanExpandCommandCategory(command_info->category);
+    bool collapsible = !CanExpandCommandCategory(command_info->category,
+                                                 CommandSurface::kToolbar);
     auto* action = new QAction(
         QString::fromStdU16String(command_info->GetShortTitle()), this);
     action->setPriority(collapsible ? QAction::LowPriority
@@ -1130,7 +1132,8 @@ void MainWindow::CreateToolbar() {
       }
 
       auto* action = FindAction(command_info->command_id);
-      if (CanExpandCommandCategory(command_info->category)) {
+      if (CanExpandCommandCategory(command_info->category,
+                                   CommandSurface::kToolbar)) {
         toolbar_->addAction(action);
         if (last_category != -1 && last_category != command_info->category) {
           toolbar_->addSeparator();
@@ -1145,6 +1148,14 @@ void MainWindow::CreateToolbar() {
           button->setMenu(menu);
           button->setPopupMode(QToolButton::InstantPopup);
           button->setText(text);
+          // The toolbar's own Qt::ToolButtonIconOnly does not reach a widget
+          // added with addWidget() -- it only styles the buttons QToolBar
+          // creates for actions -- so a group button has always shown its
+          // title by accident rather than by request. Say it, because the
+          // screens require the label: a collapsed category is a named button
+          // ("Open", "Create new", ...) and not a glyph. InstantPopup draws
+          // the menu indicator, which is the mockups' caret.
+          button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
           category_action.menu = menu;
           category_action.toolbar_action = toolbar_->addWidget(button);
           connect(menu, &QMenu::aboutToShow,
@@ -1218,6 +1229,32 @@ std::optional<InspectorSeriesView> MainWindow::ActiveSeriesView() {
   };
 }
 
+std::vector<InspectorOpenAction> MainWindow::OpenViewActions() {
+  std::vector<InspectorOpenAction> actions;
+  // Registration order, which is the order the toolbar and the context menu
+  // draw them in — the three surfaces list the same views in the same sequence.
+  for (const CommandDescriptor* command :
+       ui_command_registry_.command_manager().commands()) {
+    if (command->category != CATEGORY_OPEN)
+      continue;
+    // A command the current selection does not accept is left out rather than
+    // drawn disabled: the section is a set of destinations, and a dead button
+    // in a three-across grid reads as a view that is broken rather than one
+    // this subject has no version of. Nothing selected disables all seven,
+    // which is what empties the list and hides the section.
+    CommandHandler* handler = ResolveViewCommand(command->command_id);
+    if (!handler || !handler->IsCommandEnabled(command->command_id))
+      continue;
+    actions.push_back(InspectorOpenAction{
+        .title = QString::fromStdU16String(command->GetShortTitle()),
+        .icon = command->image_id != 0 ? QIcon(LoadPixmap(command->image_id))
+                                       : QIcon{},
+        .command_id = command->command_id,
+    });
+  }
+  return actions;
+}
+
 void MainWindow::CreateInspectorPanel() {
   // The control action reuses the selection-scoped write/control command
   // (ID_WRITE) — the existing two-stage confirm — resolved against the active
@@ -1282,6 +1319,19 @@ void MainWindow::CreateInspectorPanel() {
                       co_await FetchLimitBands(node);
                       redraw();
                     });
+          },
+      // The Open section: the seven CATEGORY_OPEN selection commands, filtered
+      // to the ones that accept the current selection. Read out of the command
+      // registry rather than listed here, so a view registering an eighth Open
+      // command reaches the Inspector without a second edit — and so the
+      // Inspector, the Explorer context menu and the toolbar can never offer
+      // different sets (docs/product/ui-mockups/authoring.md 4b).
+      .open_actions = [this] { return OpenViewActions(); },
+      .on_open =
+          [this](unsigned command_id) {
+            auto* handler = ResolveViewCommand(command_id);
+            if (handler && handler->IsCommandEnabled(command_id))
+              handler->ExecuteCommand(command_id);
           },
       // The series swatch is the panel's one writing field. Resolved against
       // the active view at click time, like the command handlers above, so the

@@ -41,7 +41,18 @@ std::u16string GetCommandCategoryTitle(CommandCategory category) {
   return Translate(kTitles[category]);
 }
 
-bool CanExpandCommandCategory(CommandCategory category) {
+bool CanExpandCommandCategory(CommandCategory category,
+                              CommandSurface surface) {
+  // CATEGORY_OPEN is the one category the two surfaces disagree about. The
+  // context menu expands it, because the seven view commands are the point of
+  // right-clicking a node and a submenu would bury them one level down. The
+  // toolbar collapses it, because there they render icon-only at 16px -- seven
+  // unlabelled glyphs where the screens draw one labelled `Open` button
+  // (docs/product/ui-mockups/authoring.md 4b, and the button is drawn on
+  // summary.html and timed-data.html).
+  if (category == CATEGORY_OPEN) {
+    return surface == CommandSurface::kContextMenu;
+  }
   return category != CATEGORY_CREATE && category != CATEGORY_DEVICE &&
          category != CATEGORY_PERIOD && category != CATEGORY_NEW &&
          category != CATEGORY_AGGREGATION && category != CATEGORY_INTERVAL &&

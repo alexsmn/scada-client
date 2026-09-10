@@ -28,6 +28,7 @@ class CommandField;
 class PageSwitcher;
 class DeviceDiagnosticsPanel;
 class InspectorPanel;
+struct InspectorOpenAction;
 struct InspectorSeriesView;
 class SeriesModel;
 class UserAccessPanel;
@@ -140,6 +141,12 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // That model read out for the Inspector's series section, or nullopt when
   // there is no series to describe.
   std::optional<InspectorSeriesView> ActiveSeriesView();
+  // The CATEGORY_OPEN selection commands the current selection accepts, in
+  // registration order, for the Inspector's Open section. Availability is not
+  // uniform — two of the seven additionally need a connected item — so a short
+  // list is the healthy case, and an empty one (nothing selected) hides the
+  // section. See docs/product/ui-mockups/authoring.md 4b "Opening a view".
+  std::vector<InspectorOpenAction> OpenViewActions();
   // The right Device-diagnostics dock (backlog 5.0): reflects a selected
   // device's link status + live traffic/polling counters. Tabified with the
   // Inspector dock.

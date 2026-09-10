@@ -252,6 +252,12 @@ QWidget* InspectorPanel::BuildElementView() {
   series_ = BuildSeriesSection();
   layout->addWidget(series_);
 
+  // Open section: the views this subject can be opened in, above the actions
+  // that act on it. That order is the screens' -- readings, then Open, then
+  // Actions (docs/product/ui-mockups/screens/summary.html).
+  open_ = BuildOpenSection();
+  layout->addWidget(open_);
+
   // Control section.
   layout->addWidget(SectionHeader(Tr("Control"), tokens));
   control_ = new QPushButton{Tr("Control…")};
@@ -561,6 +567,12 @@ void InspectorPanel::RefreshValue() {
     element.limits = MakeLimitRows(spec_->node(), spec_->current());
   }
 
+  // Which views accept this subject is the host's to judge -- it owns the
+  // command resolution -- so the section is filled from the hook rather than
+  // derived here. Unwired, the block stays hidden.
+  if (context_.open_actions)
+    element.open_actions = context_.open_actions();
+
   element.controllable =
       context_.is_control_enabled && context_.is_control_enabled();
   // The host explains an unavailable control: it owns the command resolution
@@ -745,6 +757,7 @@ void InspectorPanel::ShowElement(const InspectorElementView& element) {
                                                    : element.updated_text);
 
   ShowLimits(element.limits);
+  ShowOpenActions(element.open_actions);
 
   control_->setEnabled(element.controllable);
   control_hint_->setVisible(element.controllable);
@@ -785,5 +798,76 @@ void InspectorPanel::ShowLimits(const std::vector<InspectorLimitRow>& limits) {
           QStringLiteral("color:%1;font-weight:700;").arg(tokens.bad.name()));
     }
     layout->addWidget(row);
+  }
+}
+
+QWidget* InspectorPanel::BuildOpenSection() {
+  const scada::aui::ThemeTokens& tokens = InspectorTokens();
+
+  auto* open = new QWidget;
+  open->setObjectName(QStringLiteral("inspectorOpen"));
+  auto* layout = new QVBoxLayout{open};
+  layout->setContentsMargins(0, 0, 0, 0);
+  layout->setSpacing(0);
+  layout->addWidget(SectionHeader(Tr("Open"), tokens));
+
+  auto* grid_host = new QWidget;
+  grid_host->setObjectName(QStringLiteral("inspectorOpenGrid"));
+  open_grid_ = new QGridLayout{grid_host};
+  open_grid_->setContentsMargins(0, 6, 0, 0);
+  open_grid_->setSpacing(6);
+  layout->addWidget(grid_host);
+
+  open->setVisible(false);
+  return open;
+}
+
+void InspectorPanel::ShowOpenActions(
+    const std::vector<InspectorOpenAction>& actions) {
+  if (!open_ || !open_grid_)
+    return;
+
+  const scada::aui::ThemeTokens& tokens = InspectorTokens();
+
+  // Rebuild rather than reuse: which views accept the subject changes with the
+  // selection, so a kept button would offer a view this subject cannot open.
+  while (QLayoutItem* item = open_grid_->takeAt(0)) {
+    delete item->widget();
+    delete item;
+  }
+
+  // Nothing to open is a state, not an error -- an unwired host, or a subject
+  // no view accepts. Hide the whole block rather than leave a bare header.
+  open_->setVisible(!actions.empty());
+  if (actions.empty())
+    return;
+
+  // Three across, as `.opengrid`'s `repeat(3, minmax(0, 1fr))` draws it.
+  constexpr int kButtonsPerRow = 3;
+  int index = 0;
+  for (const InspectorOpenAction& action : actions) {
+    auto* button = new QPushButton{action.title};
+    button->setObjectName(QStringLiteral("inspectorOpenButton"));
+    if (!action.icon.isNull())
+      button->setIcon(action.icon);
+    // The command id is the button's identity for anything that has to find
+    // the button for a given view -- the title is translated, so it cannot
+    // serve.
+    button->setProperty("openCommandId", action.command_id);
+    button->setCursor(Qt::PointingHandCursor);
+    button->setStyleSheet(
+        QStringLiteral("QPushButton{background:%1;color:%2;"
+                       "border:1px solid %3;border-radius:6px;"
+                       "padding:4px 6px;font-weight:600;}")
+            .arg(tokens.surface_muted.name(), tokens.fg.name(),
+                 tokens.border_strong.name()));
+    const unsigned command_id = action.command_id;
+    connect(button, &QPushButton::clicked, this, [this, command_id] {
+      if (context_.on_open)
+        context_.on_open(command_id);
+    });
+    open_grid_->addWidget(button, index / kButtonsPerRow,
+                          index % kButtonsPerRow);
+    ++index;
   }
 }
