@@ -38,8 +38,6 @@ OpenedViewCommandRouter::OpenedViewCommandRouter(
 OpenedViewCommandRouter::~OpenedViewCommandRouter() = default;
 
 void OpenedViewCommandRouter::SetContext(OpenedView* opened_view) {
-  scada::base::Check(!opened_view || &opened_view->controller());
-
   controller_ = opened_view ? &opened_view->controller() : nullptr;
   close_command_ = opened_view
                        ? std::make_unique<OpenedViewCloseCommand>(*opened_view)

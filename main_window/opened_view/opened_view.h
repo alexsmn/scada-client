@@ -50,7 +50,10 @@ class OpenedView final : private OpenedViewContext,
 
   void Init();
 
-  Controller& controller() { return *controller_; }
+  Controller& controller() {
+    scada::base::Check(controller_);
+    return *controller_;
+  }
   const WindowInfo& window_info() const SCADA_LIFETIME_BOUND {
     return window_info_;
   }
