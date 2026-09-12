@@ -8,6 +8,8 @@
 #include "base/check.h"
 #include "base/value_util.h"
 
+#include <algorithm>
+
 #include <QAction>
 #include <QClipboard>
 #include <QEvent>
@@ -99,6 +101,23 @@ Table::Table(std::shared_ptr<TableModel> model,
 
   for (int i = 0; i < static_cast<int>(model_adapter_->columns().size()); ++i)
     setColumnWidth(i, DefaultColumnWidth(model_adapter_->columns()[i]));
+
+  // A `size_to_content` column cannot be sized here: these tables populate
+  // asynchronously, so at construction the model is empty and content sizing
+  // would measure the header alone — which is how «Обозначение» would come out
+  // wide enough for its own title and still truncate «Замкнут/Разомкнут». So it
+  // is deferred to the first population and latched: sizing again on every
+  // insert would rescan the rows of a table that may hold thousands.
+  if (HasContentSizedColumns()) {
+    // Qualified: the constructor's own `model` parameter shadows
+    // `QTableView::model()`.
+    QAbstractItemModel* const source = QTableView::model();
+    connect(source, &QAbstractItemModel::rowsInserted, this,
+            [this] { SizeContentColumns(); });
+    connect(source, &QAbstractItemModel::modelReset, this,
+            [this] { SizeContentColumns(); });
+    SizeContentColumns();
+  }
 
   setWordWrap(false);
   setShowGrid(false);
@@ -257,6 +276,27 @@ void Table::SetColumnVisible(int column_id, bool visible) {
   // grab, so it would look like the show had failed.
   if (visible && header.sectionSize(section) == 0)
     header.resizeSection(section, DefaultColumnWidth(columns()[section]));
+}
+
+bool Table::HasContentSizedColumns() const {
+  const std::vector<TableColumn>& table_columns = columns();
+  return std::any_of(table_columns.begin(), table_columns.end(),
+                     [](const TableColumn& c) { return c.size_to_content; });
+}
+
+void Table::SizeContentColumns() {
+  if (content_columns_sized_)
+    return;
+  // Nothing to measure yet — stay unlatched so the next population tries again.
+  if (model()->rowCount() == 0)
+    return;
+
+  const std::vector<TableColumn>& table_columns = columns();
+  for (int i = 0; i < static_cast<int>(table_columns.size()); ++i) {
+    if (table_columns[i].size_to_content)
+      resizeColumnToContents(i);
+  }
+  content_columns_sized_ = true;
 }
 
 int Table::VisibleColumnCount() const {

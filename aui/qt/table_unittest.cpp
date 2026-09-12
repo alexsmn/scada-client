@@ -6,6 +6,7 @@
 #include "aui/test/app_environment.h"
 
 #include <QApplication>
+#include <QHeaderView>
 
 #include <gtest/gtest.h>
 
@@ -32,6 +33,28 @@ std::vector<TableColumn> MakeColumns() {
        TableColumn::DataType::DateTime},
   };
 }
+
+// A model whose rows arrive after construction, which is how the node tables
+// populate — and the case that makes a constructor-time content measurement
+// wrong.
+class LateTableModel : public TableModel {
+ public:
+  virtual int GetRowCount() override { return rows_; }
+  virtual void GetCell(TableCell& cell) override {
+    cell.text =
+        u"SCADA.9401 \u0417\u0430\u043c\u043a\u043d\u0443\u0442/"
+        u"\u0420\u0430\u0437\u043e\u043c\u043a\u043d\u0443\u0442";
+  }
+  // Notifies the way a real model does, so the adapter emits rowsInserted and
+  // the view's deferred sizing runs — which is the behaviour under test.
+  void Populate() {
+    ScopedItemsAdding adding{*this, 0, 1};
+    rows_ = 1;
+  }
+
+ private:
+  int rows_ = 0;
+};
 
 class TableTest : public testing::Test {
  protected:
@@ -137,6 +160,72 @@ TEST_F(TableTest, AHiddenColumnRestoresWithAUsableWidth) {
 
   EXPECT_TRUE(restored.IsColumnVisible(kValueColumn));
   EXPECT_GT(restored.columnWidth(kValueColumn), 0);
+}
+
+// V42: a `size_to_content` column takes its width from its content, not from
+// the `width` field — which for a server-supplied name can only ever be a
+// guess. The admin grids carried a hard 75px and truncated to `SCADA.94…`
+// at every window size; widening the CAPTURE to 1000px changed nothing, which
+// is what proved the image was never the constraint.
+TEST_F(TableTest, SizeToContentColumnIgnoresItsDeclaredWidth) {
+  auto model = std::make_shared<LateTableModel>();
+  model->Populate();
+  std::vector<TableColumn> columns = {
+      {kTitleColumn, u"Title", /*width=*/10, TableColumn::LEFT,
+       TableColumn::DataType::General, /*monospace=*/false,
+       /*size_to_content=*/true}};
+  Table table{model, columns};
+
+  // 10px was the declared width and could not hold one character.
+  EXPECT_GT(table.columnWidth(0), 10);
+}
+
+// The reason the sizing is deferred rather than done in the constructor: these
+// tables are empty when they are built, so measuring then would size the
+// column to its HEADER and leave the content truncated exactly as before.
+TEST_F(TableTest, SizeToContentColumnIsMeasuredWhenTheRowsArrive) {
+  auto model = std::make_shared<LateTableModel>();
+  std::vector<TableColumn> columns = {
+      {kTitleColumn, u"T", /*width=*/10, TableColumn::LEFT,
+       TableColumn::DataType::General, /*monospace=*/false,
+       /*size_to_content=*/true}};
+  Table table{model, columns};
+  const int empty_width = table.columnWidth(0);
+
+  model->Populate();
+
+  EXPECT_GT(table.columnWidth(0), empty_width)
+      << "a column sized while the model was empty stays too narrow for the "
+         "content that arrives later";
+}
+
+// A column without the flag keeps its declared width, so this cannot quietly
+// re-size every table in the client — `table.png`'s nine hand-tuned columns
+// and the manual-referenced `users.png` depend on that.
+TEST_F(TableTest, ColumnsWithoutTheFlagKeepTheirDeclaredWidth) {
+  auto model = std::make_shared<LateTableModel>();
+  model->Populate();
+  std::vector<TableColumn> columns = {
+      {kTitleColumn, u"Title", kConfiguredWidth, TableColumn::LEFT}};
+  Table table{model, columns};
+
+  EXPECT_EQ(table.columnWidth(0), kConfiguredWidth);
+}
+
+// `ResizeToContents` as a MODE would have fixed the width too: it makes the
+// section non-draggable, and an operator resizing a column is ordinary. The
+// one-shot resize leaves the header interactive.
+TEST_F(TableTest, SizeToContentLeavesTheSectionResizable) {
+  auto model = std::make_shared<LateTableModel>();
+  model->Populate();
+  std::vector<TableColumn> columns = {
+      {kTitleColumn, u"Title", /*width=*/10, TableColumn::LEFT,
+       TableColumn::DataType::General, /*monospace=*/false,
+       /*size_to_content=*/true}};
+  Table table{model, columns};
+
+  EXPECT_EQ(table.horizontalHeader()->sectionResizeMode(0),
+            QHeaderView::Interactive);
 }
 
 }  // namespace

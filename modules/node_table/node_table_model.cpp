@@ -359,16 +359,27 @@ void NodeTableModel::UpdateColumns(const PropertyDefs& property_defs) {
   // Browse name
   {
     columns_.emplace_back(scada::AttributeId::BrowseName);
-    columns.emplace_back(static_cast<int>(columns.size()),
-                         Translate("Browse Name"), 75,
-                         scada::aui::TableColumn::LEFT);
+    // `size_to_content`, not a width: these two hold names the server supplies,
+    // so no declared number is right for them. The 75px they carried truncated
+    // the admin grids to `SCADA.94…` and «Замкнут/Раз…» at every window size,
+    // which the capture-review sheet mistook for a capture that was too narrow
+    // (V39) until a 1000px render showed the image was never the constraint
+    // (V42). `width` is unused when the flag is set.
+    columns.push_back(
+        scada::aui::TableColumn{.id = static_cast<int>(columns.size()),
+                                .title = Translate("Browse Name"),
+                                .alignment = scada::aui::TableColumn::LEFT,
+                                .size_to_content = true});
   }
 
   // Display name
   {
     columns_.emplace_back(scada::AttributeId::DisplayName);
-    columns.emplace_back(static_cast<int>(columns.size()), Translate("Name"),
-                         75, scada::aui::TableColumn::LEFT);
+    columns.push_back(
+        scada::aui::TableColumn{.id = static_cast<int>(columns.size()),
+                                .title = Translate("Name"),
+                                .alignment = scada::aui::TableColumn::LEFT,
+                                .size_to_content = true});
   }
 
   auto AddProp = [this, &columns](const NodeRef& property_declaration,

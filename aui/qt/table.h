@@ -83,6 +83,16 @@ class Table : public QTableView {
 
   int VisibleColumnCount() const;
 
+  // Whether any column takes its width from its content
+  // (`TableColumn::size_to_content`).
+  bool HasContentSizedColumns() const;
+
+  // Size every `size_to_content` column to its content, once the model has
+  // rows. Latched by `content_columns_sized_`: called again on each insert so
+  // an asynchronously populated table gets sized when its data lands, but
+  // measured only once so a long table is not rescanned per insert.
+  void SizeContentColumns();
+
   QModelIndex RowToIndex(int row) const;
   int IndexToRow(const QModelIndex& index) const;
 
@@ -91,6 +101,10 @@ class Table : public QTableView {
   std::unique_ptr<QSortFilterProxyModel> proxy_model_;
 
   KeyPressHandler key_press_handler_;
+
+  // Set once `size_to_content` columns have been measured against real rows,
+  // so an asynchronous population sizes them exactly once.
+  bool content_columns_sized_ = false;
 };
 
 }  // namespace scada::aui

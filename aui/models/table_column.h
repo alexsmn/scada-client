@@ -22,6 +22,21 @@ struct TableColumn {
   // Rendered in the design-system monospace font — the plain look keeps
   // the default font.
   bool monospace = false;
+  // Take the initial width from the column's CONTENT rather than from `width`,
+  // which is then unused.
+  //
+  // For a column whose text is a name the server supplies, no declared width
+  // can be right: `node_table_model.cpp` gave Browse Name and Name a hard 75px
+  // each, which truncated the admin grids to `SCADA.94…` and «Замкнут/Раз…» at
+  // every window size — the capture-review sheet recorded that as a capture
+  // defect (V39) until widening the capture to 1000px proved the image was
+  // never the constraint (V42).
+  //
+  // A one-shot `resizeColumnToContents`, not `ResizeMode::ResizeToContents`:
+  // the mode makes a section non-draggable, and an operator resizing a column
+  // is ordinary. This also keeps `client/CLAUDE.md`'s sizing rule — the width
+  // comes from font metrics via the delegate rather than from a pixel constant.
+  bool size_to_content = false;
 };
 
 struct GridCell {
