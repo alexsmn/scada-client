@@ -17,9 +17,10 @@
 #include <boost/signals2/signal.hpp>
 #include <gmock/gmock.h>
 
+#include "base/test/scoped_mock_clock_override.h"
+
 #include <chrono>
 #include <memory>
-#include <thread>
 
 namespace {
 
@@ -81,14 +82,28 @@ void ReplayFixtureTrace(FixtureSessionDebugger& debugger) {
   };
 
   for (const Step& step : kSteps) {
-    // RequestTableModel stamps start/finish from std::chrono::system_clock,
-    // which the generator's frozen scada clock does not cover. Replaying the
-    // whole trace in one go would therefore render "0 ms" in every Duration
-    // cell. Pausing briefly before each terminal phase lets the model measure
-    // a real interval, so the column shows plausible durations rather than
-    // fabricated ones.
-    if (step.phase != Phase::Running)
-      std::this_thread::sleep_for(std::chrono::milliseconds(35));
+    // Advance the FROZEN clock rather than sleeping on the real one.
+    // RequestTableModel used to stamp from std::chrono::system_clock, which
+    // the fixture's ScopedMockClockOverride does not cover, so the only way to
+    // get a non-zero Duration column was to sleep before each terminal phase —
+    // and a sleep is never exact, so the durations came out 37/38/40 ms and the
+    // start times were wall-clock. debugger.png therefore moved on every
+    // render, which made a UI change in it undetectable and left
+    // capture_provenance.py reporting the row stale after every run
+    // (visual_review V41). The model now stamps through scada::base::NowUtc(),
+    // so advancing the override gives the same plausible column
+    // deterministically. Reached statically: only one override is active per
+    // thread, and the fixture owns it.
+    if (step.phase != Phase::Running) {
+      if (auto* clock = scada::base::ScopedMockClockOverride::current()) {
+        // Varied by request id rather than a single constant: a Duration
+        // column reading `37 ms` on every row looks more fabricated than the
+        // 37/38/40 ms the sleeps used to produce, and the point of the fixture
+        // is to show what the view does with a realistic trace. Derived from
+        // the id, so it is varied AND reproducible.
+        clock->Advance(std::chrono::milliseconds{35 + 4 * step.id});
+      }
+    }
     debugger.Emit({.request_id = step.id,
                    .phase = step.phase,
                    .title = step.title,

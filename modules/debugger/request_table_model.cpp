@@ -134,7 +134,7 @@ bool RequestTableModel::UpdateRunningRequest(
   UpdateRequestFromEvent(request, event);
 
   if (!IsRunningRequest(request.phase)) {
-    request.finish_time = std::chrono::system_clock::now();
+    request.finish_time = scada::base::NowUtc();
     running_request_id_to_index_.erase(i);
   }
 
@@ -148,7 +148,7 @@ void RequestTableModel::AddRequest(
   auto& request = requests_.emplace_back(
       Request{.request_id = event.request_id,
               .phase = event.phase,
-              .start_time = std::chrono::system_clock::now(),
+              .start_time = scada::base::NowUtc(),
               .title = std::string{event.title},
               .body = std::string{event.body},
               .response_body = std::string{event.response_body}});

@@ -1247,10 +1247,10 @@
       "notes": "Session-request debugger (client<->server Browse/Read/Call trace), rendered from a fixture trace by debugger_capture.cpp. Not a registered view (it is --debug gated), so it has a dedicated capture. Distinct from the device protocol frame trace in ui-mockups/screens/device-protocol-trace.html, which is unbuilt. Not published yet: no manual page embeds it.",
       "published": false,
       "captured": {
-        "commit": "a94c71fcc",
+        "commit": "fded58423",
         "platform": "macos",
         "dirty": true,
-        "sha256": "8217ef2032b746ca110ac545273daf5291964fed60f1e949964cc44a370a1ae1"
+        "sha256": "9d58695ebbb84462b5f83c64addd11a9410daaae1bfd6a23c7497a8d6515a39b"
       }
     },
     {

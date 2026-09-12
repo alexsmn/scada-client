@@ -2,6 +2,7 @@
 
 #include "aui/models/table_model.h"
 #include "base/lifetime.h"
+#include "base/time/time.h"
 #include "scada/session_debugger.h"
 
 #include <chrono>
@@ -16,7 +17,14 @@ class RequestTableModel : public scada::aui::TableModel {
 
   using RequestId = scada::SessionDebugger::RequestId;
   using RequestPhase = scada::SessionDebugger::RequestPhase;
-  using RequestTime = std::chrono::system_clock::time_point;
+  // `scada::base::Time`, not `std::chrono::system_clock::time_point`, so the
+  // stamps honour `ScopedMockClockOverride` — which is what the screenshot
+  // generator installs to freeze the clock. Sampling `system_clock` directly
+  // put wall-clock times to the microsecond into `debugger.png`, so that
+  // capture moved on every render and no UI change in it was detectable
+  // (visual_review V41). Both are `sys_time`, so the formatting and the
+  // subtraction are unchanged.
+  using RequestTime = scada::Time;
 
   struct Request {
     RequestId request_id = 0;
@@ -34,8 +42,9 @@ class RequestTableModel : public scada::aui::TableModel {
     return requests_[visible_[index]];
   }
 
-  // Filters the visible rows to requests matching `query` (title / id substring,
-  // case-insensitive); empty shows all. Backs the trace-filter field.
+  // Filters the visible rows to requests matching `query` (title / id
+  // substring, case-insensitive); empty shows all. Backs the trace-filter
+  // field.
   void SetFilter(std::u16string query);
   // Drops every captured request.
   void Clear();
