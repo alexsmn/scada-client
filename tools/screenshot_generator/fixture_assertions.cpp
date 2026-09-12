@@ -27,12 +27,14 @@
 #include "modules/transmission/transmission_devices.h"
 #include "modules/write/write_model.h"
 #include "node_service/node_awaitable.h"
+#include "node_service/node_fetch_status.h"
 #include "node_service/node_ref.h"
 #include "node_service/node_util.h"
 #include "null_task_manager.h"
 #include "profile/profile.h"
 #include "profile/window_definition.h"
 #include "scada/qualifier.h"
+#include "scada/standard_node_ids.h"
 #include "scada/status.h"
 #include "scada/variant.h"
 #include "screenshot_wait.h"
@@ -268,6 +270,61 @@ TEST_F(ScreenshotGenerator, BootWithStructPageDoesNotOverflowStack) {
   // aborted before this line — reaching here means the recursion is
   // bounded.
   EXPECT_EQ(app_.main_window_manager().main_windows().size(), 1u);
+}
+
+// The Explorer sorts its rows on NodeClass and TypeDefinition ahead of the
+// display name -- folders above leaves, then by type -- so both attributes have
+// to be readable for a row before that row is placed. This asserts they are,
+// for the children of the Objects root the Explorer is rooted at, which is
+// what devices.png renders.
+//
+// The capture disagrees with them: devices.png comes out as one flat
+// alphabetical run, its two leaf rows among the folders rather than below them
+// and their Value cells empty (visual_review V43). This test says whether the
+// attributes were missing or merely late -- a browse that names a child already
+// carries its NodeClass and TypeDefinition, so an unfetched child should still
+// classify.
+TEST_F(ScreenshotGenerator, ExplorerChildrenCarryTheAttributesTheSortNeeds) {
+  WaitForAwaitable(executor_, app_.Start());
+  ASSERT_TRUE(WaitForPendingNodeLoads(executor_, app_.node_service()));
+
+  NodeService& node_service = app_.node_service();
+
+  // The node the Explorer is rooted at -- the fixture parent of the rows
+  // devices.png shows -- fetched with its children the way the tree fetches it.
+  // Named from the fixture rather than by a standard id: `ObjectsFolder` holds
+  // the SCADA roots, whose own children classify fine, so asking there passes
+  // without touching a single row the capture renders.
+  NodeRef root = node_service.GetNode(NodeIdFromScadaString("SCADA.24"));
+  ASSERT_TRUE(!!root);
+  root = WaitForAwaitable(executor_,
+                          root.Fetch(NodeFetchStatus::NodeAndChildren));
+  ASSERT_TRUE(!!root);
+
+  std::vector<NodeRef> children =
+      node_service.GetTargets(root.node_id(), scada::id::Organizes,
+                              /*forward=*/true);
+  ASSERT_FALSE(children.empty()) << "the Objects root browses to no children";
+
+  // Both sort terms, per child. A child that answers neither is one the
+  // comparator cannot place, and every such child ties with every other -- so
+  // the comparator falls through to the name and the grouping silently
+  // disappears, which is what the capture shows.
+  int classified = 0;
+  int typed = 0;
+  for (const NodeRef& child : children) {
+    if (child.node_class().has_value())
+      ++classified;
+    if (!!child.type_definition())
+      ++typed;
+  }
+
+  EXPECT_EQ(classified, static_cast<int>(children.size()))
+      << "only " << classified << " of " << children.size()
+      << " Explorer children report a NodeClass";
+  EXPECT_EQ(typed, static_cast<int>(children.size()))
+      << "only " << typed << " of " << children.size()
+      << " Explorer children resolve a TypeDefinition";
 }
 
 // Verifies the event journal's Area filter populates at runtime: the same
