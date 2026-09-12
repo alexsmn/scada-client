@@ -40,7 +40,25 @@ class TreeProxyModel : public QSortFilterProxyModel {
 
 void TreeProxyModel::SetCompareHandler(TreeCompareHandler handler) {
   compare_handler_ = std::move(handler);
-  invalidateFilter();
+  // `invalidate()`, not `invalidateFilter()`: changing the comparator changes
+  // the SORT, and Qt is explicit that the narrower call does not touch it --
+  // "Invalidates the current filtering" against invalidate()'s "Invalidates the
+  // current sorting and filtering"
+  // (https://doc.qt.io/qt-6/qsortfilterproxymodel.html, verified 2026-09-12).
+  //
+  // Rows already in the model keep whatever order they were sorted into
+  // otherwise, and for the Explorer that is never a harmless default:
+  // ConfigurationTreeView attaches the model, calls SetSorted(true) -- which
+  // sorts immediately -- and only then installs the comparator, so every row
+  // resident at construction was ordered by QSortFilterProxyModel's own
+  // lessThan, i.e. by DisplayRole string. Measured on the screenshot fixture:
+  // 100 comparisons ran with no comparator installed, which is why devices.png
+  // came out as one flat alphabetical run (Latin before Cyrillic) with its
+  // variable rows among the objects instead of grouped below them, and why rows
+  // arriving later -- placed by the real comparator into an array sorted by the
+  // wrong one -- made the result look arbitrary rather than merely different
+  // (visual_review V43).
+  invalidate();
 }
 
 // The model's one top-level row is the tree's root, and it is never filtered

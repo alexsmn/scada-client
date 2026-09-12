@@ -126,6 +126,40 @@ TEST_F(TreeTest, InstallingTheComparatorReordersRowsAlreadyPresent) {
             (std::vector<std::u16string>{u"Alpha", u"Bravo", u"Charlie"}));
 }
 
+// The same requirement in the sequence the Explorer actually runs, which is
+// what the test above does NOT reproduce: there the rows exist before the Tree
+// does, so they arrive through setSourceModel. ConfigurationTreeView instead
+// attaches an EMPTY model, and the rows land while it is being built -- as they
+// do whenever the nodes are already resident in the node service -- so
+// SetSorted(true) finds rows to sort and sorts them under Qt's own lessThan,
+// i.e. by DisplayRole string.
+//
+// Sorting by name is the failure mode here, not the intent: the comparator this
+// installs groups the two Zulu rows together ahead of Alpha, and a name sort
+// splits them. Measured on the screenshot fixture before the fix, 100
+// comparisons ran with no comparator installed and devices.png came out
+// name-ordered (visual_review V43).
+TEST_F(TreeTest, RowsArrivingBeforeTheComparatorAreStillReordered) {
+  auto model = std::make_shared<MutableTreeModel>();
+  Tree tree{model};
+
+  // Resident rows, added between the model being attached and the sort being
+  // switched on. A leading group flag that disagrees with the name order is
+  // what makes a fallback name sort visible.
+  MutableTreeModel::Row* alpha = model->AddRow(u"Alpha");
+  MutableTreeModel::Row* zulu_one = model->AddRow(u"Zulu 1");
+  MutableTreeModel::Row* zulu_two = model->AddRow(u"Zulu 2");
+  alpha->is_leaf = true;
+  zulu_one->is_leaf = false;
+  zulu_two->is_leaf = false;
+
+  tree.SetSorted(true);
+  tree.SetCompareHandler(&CompareByGroupThenText);
+
+  EXPECT_EQ(VisibleTexts(tree, *model),
+            (std::vector<std::u16string>{u"Zulu 1", u"Zulu 2", u"Alpha"}));
+}
+
 // The Explorer's rows are inserted before their display names arrive, so every
 // row is first compared under a placeholder and then renamed. The order the
 // operator ends up with must be the order of the final names and must not
