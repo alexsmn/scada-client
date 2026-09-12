@@ -1610,7 +1610,7 @@
     {
       "type": "Table",
       "filename": "table.png",
-      "width": 1230,
+      "width": 1460,
       "height": 300,
       "paths": [
         "TIT.200",
@@ -1653,7 +1653,7 @@
     {
       "type": "Event",
       "filename": "events.png",
-      "width": 800,
+      "width": 1250,
       "height": 300,
       "min_rows": 2
     },

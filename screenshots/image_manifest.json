@@ -729,10 +729,10 @@
       "referenced_from": [],
       "notes": "Current-events panel (the docked Event window, EventView with is_panel=true) — the unacked-only surface, as distinct from the EventJournal history in events-log.png. Renders the fixture's two pending alarms (ids 1008/1009, acknowledged:false); every other fixture event defaults to acked and is deliberately absent. Untagged until 2026-08-01, so the managed-image gate skipped it and the on-disk render sat stale from before those pending alarms existed — showing a header row over an empty body. min_rows:2 on the fixture spec now fails the capture if the unacked path stops delivering. Validation-only.",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "2002d777b",
         "platform": "macos",
         "dirty": true,
-        "sha256": "38a1efd0e38cc288014ad4d74d194a3c11c3ad9f5c58d7ac4bf5b1b22e4b46ad"
+        "sha256": "2241f2026e808e2bd7350d3156a8575965fe1c6edd195d48dc91ab4f7b173b4f"
       }
     },
     {
@@ -1296,10 +1296,10 @@
       "referenced_from": [],
       "notes": "Table window over six fixture TITs, from the `Table` capture spec. Tracked in the gallery since 07588fb3 but had no manifest row until 2026-08-02, when deriving parity_key from the matrix surfaced it: the manifest's bijection check runs against scada-docs img/, so a generator-owned capture that no page embeds could stay unlisted indefinitely. Not published — table-workspace.png is the reshell twin the manual would use.",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "2002d777b",
         "platform": "macos",
         "dirty": true,
-        "sha256": "375289c2deeaa09e0e9b74fed720284e2b7c73f3548ca4388538a7029cda19ca"
+        "sha256": "779af737d0ce5bec4a98b0dc51c73ee3858442b4f48e4fbe123d243560accb8c"
       }
     },
     {
