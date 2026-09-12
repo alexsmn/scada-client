@@ -6,9 +6,6 @@
 #include "screenshot_wait.h"
 #include "widget_capture.h"
 
-#include "base/client_paths.h"
-#include "base/path_service.h"
-#include "common/vds_runtime_api.h"
 #include "display_frame/qt/display_frame.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
@@ -65,14 +62,6 @@ void SaveDisplayScreenshot(const ScreenshotSpec& spec,
                            NodeEventProvider& node_event_provider,
                            NodeService& node_service) {
   CapturePublishGuard publish_guard{spec.filename};
-
-  // The VDS runtime dylib is loaded from the client install dir. The generator
-  // never sets base::DIR_EXE, so point client::DIR_INSTALL at the binary dir
-  // (where the dylib is co-located) so the renderer resolves it and paints the
-  // real document instead of its "runtime unavailable" placeholder.
-  scada::base::PathService::Override(
-      client::DIR_INSTALL,
-      std::filesystem::path{QApplication::applicationDirPath().toStdString()});
 
   // The DisplayFrame reparents (owns) the renderer, so the frame is the single
   // owning widget we render and delete.

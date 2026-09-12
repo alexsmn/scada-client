@@ -116,8 +116,8 @@ endif()
 # root put iec61850pp on the module path, and `target_link_libraries(...
 # iec61850pp)` with no such target is not an error in CMake, it is a raw library
 # name. So a standalone client configured cleanly and failed at the first
-# #include, which is the same trap designer/CMakeLists.txt documents for
-# scada_vds_runtime_api.
+# #include. `scada_find_products` is what makes the miss loud: it resolves the
+# product by name in both layouts and fails saying what it looked for.
 scada_find_products(iec61850pp)
 find_package(iec61850pp REQUIRED)
 

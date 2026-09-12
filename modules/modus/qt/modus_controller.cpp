@@ -42,26 +42,26 @@ class ModusDisplayView final : public DisplayWidget, public ModusViewWrapper {
 }  // namespace
 
 ModusController::ModusController(const ControllerContext& context,
-                                 RuntimeViewFactory runtime_view_factory)
+                                 DisplayViewFactory display_view_factory)
     : ControllerContext{context},
-      runtime_view_factory_{std::move(runtime_view_factory)} {}
+      display_view_factory_{std::move(display_view_factory)} {}
 
 ModusController::~ModusController() = default;
 
-ModusController::RuntimeView ModusController::CreateVdsRuntimeView() {
-  auto* runtime_view = new ModusDisplayView;
+ModusController::DisplayView ModusController::CreateDisplayView() {
+  auto* display_view = new ModusDisplayView;
 
-  runtime_view->set_selection_callback([this](const QString& data_source) {
+  display_view->set_selection_callback([this](const QString& data_source) {
     SelectDataSource(data_source.toStdString());
   });
 
-  runtime_view->set_double_click_callback([this] { AcknowledgeSelection(); });
+  display_view->set_double_click_callback([this] { AcknowledgeSelection(); });
 
   auto* scroll_area = new QScrollArea;
-  scroll_area->setWidget(runtime_view);
+  scroll_area->setWidget(display_view);
   scroll_area->setStyleSheet("background-color: white;");
 
-  return {.widget = scroll_area, .wrapper = runtime_view};
+  return {.widget = scroll_area, .wrapper = display_view};
 }
 
 void ModusController::SelectDataSource(std::string_view data_source) {
@@ -83,14 +83,14 @@ void ModusController::AcknowledgeSelection() {
 
 std::unique_ptr<UiView> ModusController::Init(
     const WindowDefinition& definition) {
-  const RuntimeView runtime_view = runtime_view_factory_
-                                       ? runtime_view_factory_(*this)
-                                       : CreateVdsRuntimeView();
+  const DisplayView display_view = display_view_factory_
+                                       ? display_view_factory_(*this)
+                                       : CreateDisplayView();
 
-  wrapper_ = runtime_view.wrapper;
+  wrapper_ = display_view.wrapper;
 
   std::unique_ptr<UiView> result;
-  result.reset(runtime_view.widget);
+  result.reset(display_view.widget);
 
   wrapper_->Open(definition, DocumentKindFor(definition, profile_));
 

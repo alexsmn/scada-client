@@ -21,26 +21,30 @@ namespace {
 
 using testing::NotNull;
 
-// Drives the *production* runtime view — `ModusController` with no injected
-// factory, so a real `ModusVdsRuntimeView` over a real `VdsRuntimeWidget`.
-// Its sibling `modus_controller_unittest.cpp` substitutes a fake wrapper and
-// tests the controller's own logic; this file is here for the part that a fake
-// cannot show, which is what the operator ends up looking at.
+// Drives the *production* display view — `ModusController` with no injected
+// factory, so a real `ModusDisplayView` over a real `DisplayWidget` over the
+// linked `display` renderer. Its sibling `modus_controller_unittest.cpp`
+// substitutes a fake wrapper and tests the controller's own logic; this file is
+// here for the part that a fake cannot show, which is what the operator ends up
+// looking at.
 //
-// Note what is deliberately NOT tested here: whether the VDS runtime renders a
-// document correctly. That belongs to the product that owns the runtime, and
-// is covered there by `designer/runtime/vds_runtime_test.cpp`, which authors a
-// document and drives the C ABI end to end. `client/` is a separate product
-// (ADR 0011) and cannot reach into `designer/`; its share of the contract is
-// the wiring and the failure surface.
+// Note what is deliberately NOT tested here: whether the renderer draws a
+// document correctly. That belongs to the `display` product, which owns the
+// parsers and the renderer backends and tests them against its own goldens.
+// `client/` is a separate product (ADR 0011); its share of the contract is the
+// wiring and the failure surface.
 //
 // The failure surface is the valuable half, because it is the one that ships
-// broken without anyone noticing: `tc_vds_runtime` is loaded with `dlopen` at
-// run time from the install directory, so an install that omits it produces a
-// client that starts, opens a Modus display, and shows the operator a window.
-// What that window must never be is blank.
+// broken without anyone noticing. Until ADR 0012 phase 4 the failure this file
+// pinned was a *missing shared library*: the renderer was `dlopen`ed from the
+// install directory, so an install that omitted it produced a client that
+// started, opened a Modus display and showed the operator a blank window. That
+// cannot happen any more — the renderer is linked in, so the only way to get a
+// display with nothing in it is a document that will not open. Both remaining
+// cases below are that: no document named, and a document that will not parse.
+// What the window must never be, in either, is blank.
 
-// The pen `VdsRuntimeWidget::paintEvent` uses for every operator-facing error.
+// The pen `DisplayWidget::paintEvent` uses for every operator-facing error.
 constexpr QColor kErrorTextColor{160, 0, 0};
 
 bool ContainsErrorText(const QImage& image) {
@@ -57,8 +61,9 @@ class ModusDisplayTest : public testing::Test {
  protected:
   void SetUp() override {
     // `GetPublicFilePath` throws without a public directory. The install
-    // override outlived the dlopen it was for (ADR 0012 phase 3) and is kept
-    // only so the fixture resolves nothing from a developer's real install.
+    // override outlived the dlopen it was for (ADR 0012 phase 3, and the
+    // plugin itself went at phase 4); it is kept only so the fixture resolves
+    // nothing from a developer's real install.
     scada::base::PathService::Override(client::DIR_PUBLIC, public_dir_.path());
     scada::base::PathService::Override(client::DIR_INSTALL,
                                        install_dir_.path());

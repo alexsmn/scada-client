@@ -72,7 +72,7 @@ class ModusControllerTest : public testing::Test {
   ModusController MakeController() {
     return ModusController{
         controller_env_.MakeControllerContext(),
-        [this](ModusController&) -> ModusController::RuntimeView {
+        [this](ModusController&) -> ModusController::DisplayView {
           return {.widget = new QWidget, .wrapper = &wrapper_};
         }};
   }
