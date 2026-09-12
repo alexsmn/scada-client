@@ -121,11 +121,16 @@ Rules of the pipeline:
   hand-captured images still get a `manual-*` manifest row.
 - **The gallery is tracked, publishing is gated.** `screenshots/` — PNGs
   included — is committed, so a UI change lands as a reviewable image diff.
-  **Not yet a verified Windows baseline**, though: the images tracked at the
-  outset were committed with their provenance unestablished and at least 12 are
-  macOS renders, so the first Windows regeneration rewrites an unknown number
-  of them as platform churn. Read `docs/ops/client-screenshots.md` before
-  treating a diff here as a UI change.
+  **The gallery is legitimately mixed-platform** (decided 2026-09-12). Offscreen
+  Qt rasterizes with the host's fonts, so a macOS render and a Windows render of
+  the same UI differ in bytes — but `QT_QPA_PLATFORM=offscreen` gives DPR=1,
+  light, and dimension-identical output for fixed-size specs, so what differs is
+  glyph rendering rather than layout. Either host may render the generated set.
+  The `captured.platform` field on each manifest row is what keeps a diff
+  readable: **a changed image whose platform also changed is churn; a changed
+  image on the same platform is a UI change.** This bullet said the set was "not
+  yet a verified Windows baseline" and promised a one-time Windows reset of it;
+  no such reset is owed.
   Publishing to the manual is a separate, narrower step, and since ADR 0011 it
   is **two commands**: `cmake --build --preset relwithdebinfo -t
   regenerate_client_screenshots` here, then
@@ -161,9 +166,17 @@ Rules of the pipeline:
   behaviour, embed the capture, and keep the manifest row's
   `referenced_from` in sync. Workbench-shell features are documented on
   `client/workbench.md` (Рабочее место оператора).
-- **macOS runs are for validation only** (offscreen platform + hermetic
-  `HOME`; see "Running on macOS" in `docs/ops/client-screenshots.md`); published
-  images come from the Windows pipeline so fonts stay consistent.
+- **macOS may render the published gallery, Windows is needed only for Modus**
+  (offscreen platform + hermetic `HOME`; see "Which platform may render the
+  gallery" in the superproject's `docs/ops/client-screenshots.md`). The
+  exception is exactly the `manual-modus` manifest family — five images that
+  draw through Modus 6.30, a Windows COM/ActiveX control, so they cannot render
+  on any other host. They are hand-maintained and outside the generator already,
+  which is why this narrows to nothing a `--capture` command can do: no `auto-*`
+  row renders through ActiveX. Two filenames mislead and are worth naming —
+  `substation-display.png` draws through the cross-platform VDS renderer and does
+  not exercise ActiveX, and `menu-scheme.png` only lists the configured
+  schematic displays in a `QMenu`; both may be rendered on macOS.
 - **The unit tests run offscreen on macOS too, by default.** `AppEnvironment`
   (`aui/test/qt/app_environment.h`) sets `QT_QPA_PLATFORM=offscreen` unless
   the variable is already set, and the root `CMakeLists.txt` links the
