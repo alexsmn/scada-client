@@ -1615,6 +1615,58 @@
         <translation>Новый график</translation>
     </message>
     <message>
+        <source>Bulk create</source>
+        <translation>Массовое создание</translation>
+    </message>
+    <message>
+        <source>Target and type</source>
+        <translation>Назначение и тип</translation>
+    </message>
+    <message>
+        <source>What to create</source>
+        <translation>Что создавать</translation>
+    </message>
+    <message>
+        <source>Data items</source>
+        <translation>Элементы данных</translation>
+    </message>
+    <message>
+        <source>Transmission rules</source>
+        <translation>Правила ретрансляции</translation>
+    </message>
+    <message>
+        <source>Item type</source>
+        <translation>Тип элемента</translation>
+    </message>
+    <message>
+        <source>Analog</source>
+        <translation>ТИТ</translation>
+    </message>
+    <message>
+        <source>Discrete</source>
+        <translation>ТС</translation>
+    </message>
+    <message>
+        <source>Source path template</source>
+        <translation>Шаблон пути источника</translation>
+    </message>
+    <message>
+        <source>Pattern</source>
+        <translation>Шаблон</translation>
+    </message>
+    <message>
+        <source>Naming and addressing</source>
+        <translation>Именование и адресация</translation>
+    </message>
+    <message>
+        <source>Review and create</source>
+        <translation>Проверка и создание</translation>
+    </message>
+    <message>
+        <source>Will create %1 of %2</source>
+        <translation>Будет создано %1 из %2</translation>
+    </message>
+    <message>
         <source>New</source>
         <translation>Новый</translation>
     </message>

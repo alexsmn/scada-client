@@ -181,4 +181,42 @@ TEST(PlanBulkCreateTest, NoRowsCreatesNothing) {
   EXPECT_TRUE(PlanBulkCreate(plan, {}).empty());
 }
 
+// Regression: MakeNestedNodeId panics on a null parent, so a run with no device
+// chosen -- reachable whenever no devices are configured, since the wizard's
+// device list is then empty -- crashed the client on Create. The item is made
+// unbound instead; a data item with no source is a node the operator can
+// finish configuring, where a panic is not.
+TEST(PlanBulkCreateTest, ADataItemWithNoDeviceIsCreatedUnboundNotPanicking) {
+  BulkCreatePlan plan;
+  plan.subject = BulkCreateSubject::kDataItem;
+  plan.type_definition_id = scada::data_items::id::AnalogItemType;
+  plan.source_path_template = u"Signal{n}";
+  // No source_device_id: null, as the wizard leaves it with an empty device
+  // list.
+
+  const std::vector<scada::NodeState> nodes =
+      PlanBulkCreate(plan, ExpandBulkCreate(DataItemParams(2), {}));
+
+  ASSERT_EQ(nodes.size(), 2u);
+  EXPECT_EQ(FindProperty(nodes[0], scada::data_items::id::DataItemType_Input1),
+            nullptr);
+}
+
+// The same for an empty path: there is no source to name, and binding would
+// produce a formula pointing at the device itself.
+TEST(PlanBulkCreateTest, ADataItemWithNoSourcePathIsCreatedUnbound) {
+  BulkCreatePlan plan;
+  plan.subject = BulkCreateSubject::kDataItem;
+  plan.type_definition_id = scada::data_items::id::AnalogItemType;
+  plan.source_device_id = scada::NodeId::FromString("ns=2;s=RTU1");
+  plan.source_path_template = u"";
+
+  const std::vector<scada::NodeState> nodes =
+      PlanBulkCreate(plan, ExpandBulkCreate(DataItemParams(1), {}));
+
+  ASSERT_EQ(nodes.size(), 1u);
+  EXPECT_EQ(FindProperty(nodes[0], scada::data_items::id::DataItemType_Input1),
+            nullptr);
+}
+
 }  // namespace

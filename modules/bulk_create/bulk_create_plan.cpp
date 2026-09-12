@@ -54,12 +54,21 @@ std::vector<scada::NodeState> PlanBulkCreate(
         // the per-row path nested under the chosen device, wrapped as a
         // formula. The path is a template so it steps with the row, exactly
         // like the name.
+        //
+        // With no device chosen or no path given there is no source to bind,
+        // and the item is created unbound rather than bound to nothing. Both
+        // are reachable -- a deployment with no devices configured leaves the
+        // wizard's device list empty -- and `MakeNestedNodeId` **panics** on a
+        // null parent, so this cannot be left to it: the operator would crash
+        // the client by pressing Create.
         const std::u16string path =
             ExpandTokens(plan.source_path_template, row.number);
-        const scada::NodeId source_id = scada::MakeNestedNodeId(
-            plan.source_device_id, std::string{path.begin(), path.end()});
-        node.set_property(scada::data_items::id::DataItemType_Input1,
-                          scada::Variant{MakeNodeIdFormula(source_id)});
+        if (!plan.source_device_id.is_null() && !path.empty()) {
+          const scada::NodeId source_id = scada::MakeNestedNodeId(
+              plan.source_device_id, std::string{path.begin(), path.end()});
+          node.set_property(scada::data_items::id::DataItemType_Input1,
+                            scada::Variant{MakeNodeIdFormula(source_id)});
+        }
         break;
       }
       case BulkCreateSubject::kTransmissionItem: {

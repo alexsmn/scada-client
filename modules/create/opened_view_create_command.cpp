@@ -3,6 +3,7 @@
 #include "aui/dialog_service.h"
 #include "base/check.h"
 #include "base/u16format.h"
+#include "bulk_create/qt/bulk_create_wizard.h"
 #include "controller/controller.h"
 #include "controller/selection_model.h"
 #include "create/create_module.h"
@@ -11,7 +12,6 @@
 #include "model/devices_node_ids.h"
 #include "model/static_types.h"
 #include "modules/create_service_item/create_service_item_dialog.h"
-#include "modules/multi_create/multi_create_dialog.h"
 #include "net/net_executor_adapter.h"
 #include "node_service/node_awaitable.h"
 #include "node_service/node_service.h"
@@ -65,7 +65,12 @@ void OpenedViewCreateCommand::ExecuteCommand(unsigned command_id) {
       return;
     case ID_ADD_MULTIPLE_ITEMS:
       if (auto* selection_model = controller_.GetSelectionModel()) {
-        ShowMultiCreateDialog(
+        // The wizard the screens draw, replacing the flat dialog
+        // (docs/product/ui-mockups/screens/bulk-create.html). It hands over no
+        // source nodes, so this entry offers the data-item subject alone --
+        // a transmission rule forwards an existing node, and nothing here has
+        // selected any to forward.
+        ShowBulkCreateWizard(
             dialog_service_,
             {node_service_, task_manager_, selection_model->node().node_id()});
       }

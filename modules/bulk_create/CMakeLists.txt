@@ -15,6 +15,9 @@ client_module_link_libraries(client_bulk_create
     scada_common
   PRIVATE
     aui
+    # The wizard browses for devices and for the target's existing children.
+    node_service
+    client_services
 )
 
 # The unit tests drive the pure pattern engine and the preview widget directly,
@@ -23,5 +26,7 @@ if(TARGET client_bulk_create_qt_unittests)
   target_link_libraries(client_bulk_create_qt_unittests PRIVATE
     aui_qt
     aui_test_qt
+    # The wizard test drives it against a FakeNodeService and a MockTaskManager.
+    node_service
   )
 endif()
