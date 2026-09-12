@@ -7,9 +7,9 @@
 #include "widget_capture.h"
 
 #include "display_frame/qt/display_frame.h"
+#include "display_view/qt/display_widget.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
-#include "display_view/qt/display_widget.h"
 
 #include <QApplication>
 #include <QPixmap>
