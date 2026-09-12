@@ -17,6 +17,8 @@
 #include "services/frame_capture_registry.h"
 #include "timed_data/timed_data_service.h"
 
+#include <boost/json.hpp>
+
 #include <functional>
 #include <memory>
 #include <stack>
@@ -133,8 +135,12 @@ class ClientApplication : private ClientApplicationContext {
   bool HasSelectionCommandForTesting(unsigned command_id) const;
   bool HasGlobalCommandForTesting(unsigned command_id) const;
 
-  // Saves the current profile JSON to the logged-in server user, or to
+  // Saves the current profile to the logged-in server user, or to
   // `target_user_id` when provided.
+  //
+  // The Qt document is wrapped into the envelope last read from the server, so
+  // the sections this client does not own -- the web client's, above all --
+  // survive. See `profile/profile_envelope.h`.
   [[nodiscard]] scada::CoStatus SaveProfileToServer(
       scada::NodeId target_user_id = {});
 
@@ -147,7 +153,30 @@ class ClientApplication : private ClientApplicationContext {
  private:
   struct PostLoginContext;
 
-  void PostLogin();
+  // Awaitable because the profile is read from the server before anything is
+  // built on it: `CreateMainWindow` at the end of this phase lays out whatever
+  // the profile holds, so a read landing after it would be a read landing too
+  // late.
+  [[nodiscard]] Awaitable<void> PostLoginAsync();
+
+  // Creates `profile_` and fills it from exactly ONE source -- the server's
+  // copy when it carries a Qt section, otherwise the local file.
+  //
+  // One source and not two on purpose: `Profile::Load` overlays rather than
+  // replaces, so calling it twice accumulates pages and windows instead of
+  // superseding them.
+  [[nodiscard]] Awaitable<void> LoadProfileAsync();
+
+  // The profile envelope stored on the server for the signed-in user, or a
+  // null value when there is none, the session is anonymous, or the read
+  // fails. Never throws: a server that cannot answer means the local file, not
+  // a failed startup.
+  [[nodiscard]] Awaitable<boost::json::value> ReadServerProfileAsync();
+
+  // Writes the profile to the server, reporting a failure rather than
+  // swallowing it. Called from `QuitAsync` -- see the note there for why not
+  // from the destructor.
+  [[nodiscard]] Awaitable<void> SaveProfileToServerOnQuitAsync();
   void CreateNodeService(const PostLoginContext& ctx);
   void CreateEventAndDataServices(const PostLoginContext& ctx);
   void CreateUserServices(const PostLoginContext& ctx);
@@ -220,6 +249,12 @@ class ClientApplication : private ClientApplicationContext {
 
   bool profile_loaded_ = false;
   scada::UInt64 profile_revision_ = 0;
+
+  // The envelope last read from the server, so a save can put the Qt section
+  // back into it without disturbing the web client's. Null when nothing was
+  // read -- `profile_envelope::Wrap` takes that to mean "there was none" and
+  // builds a fresh envelope.
+  boost::json::value server_profile_envelope_;
 
   // Sets on `Quit` and never resets. Allows multiple `Quit` calls.
   bool quitting_ = false;

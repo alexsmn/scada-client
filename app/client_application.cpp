@@ -24,6 +24,7 @@
 #include "main_window/main_window_util.h"
 #include "main_window/opened_view/opened_view_command_registry.h"
 #include "metrics/otel_metrics.h"
+#include "model/node_id_util.h"
 #include "model/security_node_ids.h"
 #include "modules/limits/limits_module.h"
 #include "modules/node_service_progress_tracker/node_service_progress_tracker.h"
@@ -33,6 +34,7 @@
 #include "portfolio/portfolio_module.h"
 #include "print/service/print_module.h"
 #include "profile/profile.h"
+#include "profile/profile_envelope.h"
 #include "project.h"
 #include "properties/property_service.h"
 #include "remote/remote_services.h"
@@ -188,6 +190,136 @@ bool ClientApplication::HasGlobalCommandForTesting(unsigned command_id) const {
          core_module_->global_commands().FindCommand(command_id) != nullptr;
 }
 
+namespace {
+
+// The nested property nodes the server publishes beside a user node, and which
+// the web client reads and writes under the same names.
+constexpr std::string_view kProfileJsonProperty = "ProfileJson";
+constexpr std::string_view kProfileRevisionProperty = "ProfileRevision";
+
+}  // namespace
+
+Awaitable<void> ClientApplication::LoadProfileAsync() {
+  profile_ = std::make_unique<Profile>();
+  profile_loaded_ = true;
+  shutdown_stack_.Push([this] { profile_.reset(); });
+
+  const boost::json::value server = co_await ReadServerProfileAsync();
+
+  // **The server wins only when it actually holds a Qt profile.** A document
+  // written by the web client alone carries a `qt.profile` the web filled in;
+  // one that has never been written carries nothing. Taking an empty section
+  // over the local file would discard this machine's window layout on the
+  // first server-backed sign-in, and the first save would then push that
+  // emptiness back -- so an empty section means "fall back", and the save on
+  // quit populates it from the file's content instead.
+  const boost::json::value qt_section = profile_envelope::Unwrap(server);
+  const bool server_has_profile =
+      qt_section.is_object() && !qt_section.as_object().empty();
+
+  if (server_has_profile) {
+    server_profile_envelope_ = server;
+    profile_->Load(server);
+    LOG_INFO(*logger_) << "Profile loaded from server";
+  } else {
+    // Remembered even when empty: it is what the save must put the Qt section
+    // back into, and it may already carry the web client's section.
+    if (server.is_object())
+      server_profile_envelope_ = server;
+    profile_->Load();
+  }
+  co_return;
+}
+
+Awaitable<boost::json::value> ClientApplication::ReadServerProfileAsync() {
+  if (!master_data_services_)
+    co_return boost::json::value{};
+
+  auto services = master_data_services_->as_services();
+  if (!services.session_service || !services.attribute_service)
+    co_return boost::json::value{};
+
+  // Anonymous has no server identity to hang a profile on, so there is nothing
+  // to read -- the same conclusion the web client reaches, by the same route.
+  const scada::NodeId user_id = services.session_service->GetUserId();
+  if (user_id.is_null())
+    co_return boost::json::value{};
+
+  auto results = co_await services.attribute_service->Read(
+      scada::ServiceContext{},
+      {scada::ReadValueId{
+           .node_id = MakeNestedNodeId(user_id, kProfileJsonProperty),
+           .attribute_id = scada::AttributeId::Value},
+       scada::ReadValueId{
+           .node_id = MakeNestedNodeId(user_id, kProfileRevisionProperty),
+           .attribute_id = scada::AttributeId::Value}});
+
+  // **A server that cannot answer means the local file, never a failed
+  // startup.** A deployment whose users carry no profile properties at all is
+  // a supported one -- it is what every build before this change talked to.
+  //
+  // Measured 2026-09-12 against the E2E single tier: this read answers **Good
+  // with an empty value** even when the config DB demonstrably holds a
+  // profile, because `SaveProfile` writes the DB without refreshing the
+  // published property node, so the address space keeps the value it was built
+  // with for the life of the server process. That is a server-side gap and the
+  // same shape as backlog 686's unresolved half -- the client writes somewhere
+  // the server accepts and the server does not make the write visible on read.
+  // Until it closes, this path is correct and finds nothing, and the local file
+  // is what actually loads.
+  if (!results.ok() || results->size() < 2) {
+    LOG_INFO(*logger_) << "No server profile; using the local file";
+    co_return boost::json::value{};
+  }
+
+  const scada::String* json = (*results)[0].value.get_if<scada::String>();
+  if (const scada::UInt64* revision =
+          (*results)[1].value.get_if<scada::UInt64>()) {
+    profile_revision_ = *revision;
+  }
+  if (!json || json->empty())
+    co_return boost::json::value{};
+
+  boost::system::error_code ec;
+  boost::json::value parsed = boost::json::parse(*json, ec);
+  if (ec) {
+    LOG_ERROR(*logger_) << "Server profile is not valid JSON: " << ec.message();
+    co_return boost::json::value{};
+  }
+  co_return parsed;
+}
+
+Awaitable<void> ClientApplication::SaveProfileToServerOnQuitAsync() {
+  if (!profile_ || !profile_loaded_)
+    co_return;
+
+  auto services = master_data_services_ ? master_data_services_->as_services()
+                                        : scada::services{};
+  if (!services.session_service ||
+      services.session_service->GetUserId().is_null()) {
+    co_return;  // Anonymous, or no session: the local file is the whole of it.
+  }
+
+  const scada::Status status = co_await SaveProfileToServer();
+  if (scada::IsGood(status.code()))
+    co_return;
+
+  // **Reported, not swallowed.** A save that can fail silently is worse than
+  // no save -- the operator would believe their layout was kept. The local
+  // file is still written from ~ClientApplication, so nothing is lost on THIS
+  // machine; what the failure costs is the copy that follows them to another.
+  LOG_ERROR(*logger_) << "Profile save to server failed: "
+                      << static_cast<unsigned>(status.code());
+  if (event_module_) {
+    // TODO: Localize.
+    event_module_->local_events().ReportEvent(
+        LocalEvents::SEV_ERROR,
+        Translate("Failed to save the profile to the server; it is kept on "
+                  "this computer only"));
+  }
+  co_return;
+}
+
 scada::CoStatus ClientApplication::SaveProfileToServer(
     scada::NodeId target_user_id) {
   if (!profile_ || !master_data_services_) {
@@ -203,7 +335,13 @@ scada::CoStatus ClientApplication::SaveProfileToServer(
   if (!target_user_id.is_null()) {
     user_id = std::move(target_user_id);
   }
-  auto profile_json = boost::json::serialize(profile_->SaveToValue());
+  // Wrapped, never the flat document: the variable is shared with the web
+  // client, and writing this client's own shape over it silently destroys the
+  // other's settings -- there is no error, the next read simply comes back
+  // without them. `Wrap` replaces `qt.profile` and preserves everything else
+  // in the envelope this session read at login.
+  auto profile_json = boost::json::serialize(profile_envelope::Wrap(
+      profile_->SaveToValue(), server_profile_envelope_));
   // SaveProfile returns no output arguments; only its status matters here.
   auto status =
       (co_await services.method_service->Call(
@@ -224,11 +362,11 @@ Awaitable<void> ClientApplication::Start() {
 Awaitable<void> ClientApplication::StartAsync() {
   RegisterClientApplicationModules();
   co_await LoginAsync();
-  PostLogin();
+  co_await PostLoginAsync();
   co_return;
 }
 
-void ClientApplication::PostLogin() {
+Awaitable<void> ClientApplication::PostLoginAsync() {
   PostLoginContext ctx{
       .audited_scada_services = master_data_services_->as_services(),
       .scada_client = scada::client{master_data_services_->as_services()},
@@ -239,6 +377,12 @@ void ClientApplication::PostLogin() {
 
   CreateNodeService(ctx);
   ctx.alias_resolver = CreateAliasResolver(*node_service_);
+
+  // Before anything reads the profile. `CreateEventAndDataServices` hands
+  // `*profile_` to EventModule by reference and `CreateMainWindow` lays out
+  // whatever it holds, so this is the last point at which the profile can
+  // still be replaced wholesale.
+  co_await LoadProfileAsync();
 
   singletons_.emplace(std::make_shared<CsvExportModule>(CsvExportModuleContext{
       .ui_command_registry_ = *ui_command_registry_,
@@ -259,6 +403,7 @@ void ClientApplication::PostLogin() {
       &core_module_->selection_commands());
 
   filesystem_component_->StartUp();
+  co_return;
 }
 
 void ClientApplication::CreateNodeService(const PostLoginContext& ctx) {
@@ -280,11 +425,9 @@ void ClientApplication::CreateNodeService(const PostLoginContext& ctx) {
 
 void ClientApplication::CreateEventAndDataServices(
     const PostLoginContext& ctx) {
-  profile_ = std::make_unique<Profile>();
-  profile_->Load();
-  profile_loaded_ = true;
-  shutdown_stack_.Push([this] { profile_.reset(); });
-
+  // `profile_` is created and filled by LoadProfileAsync, which PostLoginAsync
+  // runs before this: the profile has to be final before anything takes a
+  // reference to it.
   event_module_ = std::make_unique<EventModule>(EventModuleContext{
       .executor_ = executor_,
       .logger_ = logger_,
@@ -551,6 +694,13 @@ Awaitable<void> ClientApplication::QuitAsync() {
   if (!master_data_services_) {
     co_return;
   }
+
+  // **Here, and not in ~ClientApplication.** The destructor is where the local
+  // file is written, and it cannot host this one: a destructor cannot
+  // `co_await`. This runs while the session and the services are still alive,
+  // which is the whole requirement -- one step later, after Disconnect, there
+  // is nothing to write to.
+  co_await SaveProfileToServerOnQuitAsync();
 
   LOG_INFO(*logger_) << ("Disconnect");
 

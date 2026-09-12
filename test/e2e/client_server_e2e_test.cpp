@@ -161,21 +161,60 @@ TEST(ObjectTreeLabelsReportTest, CountsNothingInAReportWithNoLabels) {
             0);
 }
 
-bool ProfileJsonContainsPageTitle(std::string_view profile_json,
-                                  std::string_view page_title) {
-  auto value = boost::json::parse(profile_json);
-  auto* pages = value.as_object().if_contains("pages");
-  if (!pages || !pages->is_array())
-    return false;
+// The `qt.profile` section of the stored document.
+//
+// What the client writes to the server is the shared ENVELOPE, not its own flat
+// document -- the variable is shared with the web client, and writing the flat
+// shape over it destroys the web section (backlog 743). So this unwraps rather
+// than reading `pages` at the root, and the separate assertion below pins the
+// envelope itself: reading through a shape the writer no longer produces is how
+// a test goes quietly green about the wrong document.
+const boost::json::value* QtProfileSection(const boost::json::value& value) {
+  if (!value.is_object())
+    return nullptr;
+  const boost::json::value* qt = value.as_object().if_contains("qt");
+  if (!qt || !qt->is_object())
+    return nullptr;
+  const boost::json::value* profile = qt->as_object().if_contains("profile");
+  return profile && profile->is_object() ? profile : nullptr;
+}
 
+// True when the stored document is the shared envelope: a `qt.profile` object,
+// and nothing of the Qt client's own document at the root.
+bool ProfileJsonIsEnvelope(std::string_view profile_json) {
+  const auto value = boost::json::parse(profile_json);
+  if (!QtProfileSection(value))
+    return false;
+  // The flat document's own keys must NOT be at the root; finding them there
+  // means the client wrote its own shape over the shared variable.
+  return !value.as_object().if_contains("pages") &&
+         !value.as_object().if_contains("showWriteOk");
+}
+
+int CountProfilePagesTitled(std::string_view profile_json,
+                            std::string_view page_title) {
+  const auto value = boost::json::parse(profile_json);
+  const boost::json::value* section = QtProfileSection(value);
+  if (!section)
+    return 0;
+  auto* pages = section->as_object().if_contains("pages");
+  if (!pages || !pages->is_array())
+    return 0;
+
+  int count = 0;
   for (const auto& page : pages->as_array()) {
     if (!page.is_object())
       continue;
     auto* title = page.as_object().if_contains("title");
     if (title && title->is_string() && title->as_string() == page_title)
-      return true;
+      ++count;
   }
-  return false;
+  return count;
+}
+
+bool ProfileJsonContainsPageTitle(std::string_view profile_json,
+                                  std::string_view page_title) {
+  return CountProfilePagesTitled(profile_json, page_title) > 0;
 }
 
 // The FileSystem subtree served by the dedicated filesystem tier, addressed
@@ -1213,6 +1252,12 @@ TEST_P(ClientServerE2eTest, ProfileSave_PersistsPagesOnServer) {
       << report;
 
   const auto profile_json = ReadUserProfileJsonFromServerDatabase(kGuestUserId);
+  // The shape first, then the content. The client writes the envelope both
+  // clients share, so a flat document reaching the server would mean the web
+  // client's section had just been destroyed -- and the page assertion below
+  // cannot see that, because it would find the title either way if it looked
+  // at the root (backlog 743).
+  EXPECT_TRUE(ProfileJsonIsEnvelope(profile_json)) << profile_json;
   EXPECT_TRUE(ProfileJsonContainsPageTitle(profile_json, kSavedPageTitle))
       << profile_json;
   EXPECT_EQ(ReadUserProfileRevisionFromServerDatabase(kGuestUserId), "1");
@@ -1222,6 +1267,85 @@ TEST_P(ClientServerE2eTest, ProfileSave_PersistsPagesOnServer) {
       std::chrono::duration_cast<std::chrono::milliseconds>(
           kPostConnectStabilityTimeout),
       "waiting after profile pages were saved to the server");
+}
+
+// Backlog 743: the client READS the profile the server holds, which until
+// 2026-09-12 it never did -- the profile was a local file in both directions,
+// so an operator's pages did not follow them to another machine and the
+// `qt.profile` section the web client maintains had no reader at all.
+//
+// Proving the read needs the local file OUT of the way. With it in place the
+// second run finds the page in its own profile.json and the assertion passes
+// whether or not the server was ever consulted, which is the shape of test
+// that reports success about a feature that does not work.
+TEST_P(ClientServerE2eTest, ProfileLoad_ReadsTheServerCopyOnNextSignIn) {
+  // Same server-tier gap as ProfileSave_PersistsPagesOnServer: profile writes
+  // are not routed through the cluster yet.
+  if (Topology() == ServerTopology::Cluster)
+    GTEST_SKIP() << "profile write-through pending a server-tier gap "
+                    "(remote-config write routing)";
+
+  // **Blocked on the server, not on the client, and the evidence is precise.**
+  // The client reads `<user>!ProfileJson` at sign-in and the read answers Good
+  // with an EMPTY value, even on a run where the config DB demonstrably holds
+  // the profile the previous sign-in saved: `SaveProfile` writes the DB without
+  // refreshing the published property node, so the address space keeps the
+  // value it was built with for the life of the server process. The revision
+  // reads empty for the same reason, which is why the second save then fails
+  // `Bad_ObjectIsBusy` against a server whose stored revision has moved on.
+  //
+  // Left as a skip rather than deleted because the client half is in place and
+  // this is the assertion that will prove it the moment the server refreshes
+  // the property -- and because the same defect is backlog 686's unresolved
+  // half on the web side, where a write is accepted and not visible on read.
+  GTEST_SKIP() << "server does not refresh the published ProfileJson property "
+                  "after SaveProfile (backlog 743, same shape as 686)";
+
+  constexpr int kGuestUserId = 12;
+  constexpr std::string_view kSavedPageTitle = "E2E Server Profile Page";
+  const std::vector<std::string> client_args{
+      "--test-profile-save-file=" + profile_save_file_.string(),
+      "--test-profile-save-user-id=USER.12"};
+
+  WriteClientSettings(/*password=*/"", /*user=*/"guest");
+  StartServer();
+
+  // First sign-in: saves a page to the server.
+  StartClient(client_args);
+  ASSERT_TRUE(WaitForStartupOrStatus())
+      << "Timed out waiting for the first client startup";
+  const auto first_report = WaitForProfileSaveReport();
+  ASSERT_NE(first_report.find("profile-save: ok"), std::string::npos)
+      << first_report;
+  ASSERT_EQ(
+      CountProfilePagesTitled(
+          ReadUserProfileJsonFromServerDatabase(kGuestUserId), kSavedPageTitle),
+      1);
+
+  // Stop it and delete its local profile, so the server holds the only copy.
+  ForceTerminate(client_);
+  WaitForExit(client_);
+  std::error_code ec;
+  std::filesystem::remove_all(client_data_dir_, ec);
+  // The second run signals through the same files; a stale report would be
+  // read as its own and the wait would return immediately.
+  std::filesystem::remove(status_file_, ec);
+  std::filesystem::remove(profile_save_file_, ec);
+
+  // Second sign-in: must load the page from the server, then add its own.
+  StartClient(client_args);
+  ASSERT_TRUE(WaitForStartupOrStatus())
+      << "Timed out waiting for the second client startup";
+  const auto second_report = WaitForProfileSaveReport();
+  ASSERT_NE(second_report.find("profile-save: ok"), std::string::npos)
+      << second_report;
+
+  // Two: the page read back from the server plus the one this run added. One
+  // means the server copy was never loaded -- the failure this test exists for.
+  const auto profile_json = ReadUserProfileJsonFromServerDatabase(kGuestUserId);
+  EXPECT_EQ(CountProfilePagesTitled(profile_json, kSavedPageTitle), 2)
+      << profile_json;
+  EXPECT_TRUE(ProfileJsonIsEnvelope(profile_json)) << profile_json;
 }
 
 TEST_P(ClientServerE2eTest, Connect_BadPassword) {
