@@ -403,6 +403,24 @@ void MainWindow::CreateContextBar() {
   const int slot_padding = context_bar_->style()->pixelMetric(
       QStyle::PM_LayoutVerticalSpacing, nullptr, context_bar_);
 
+  // And horizontally, for the same reason and from the same place. A QToolBar
+  // contributes only its style frame on the left and right -- measured at 4px
+  // and 7px on macOS -- so with every slot zeroing its horizontal margins the
+  // breadcrumb's first glyph sat hard against the window edge and the last
+  // alarm tile against the other. `operator-shell.html` gives `.topbar` a
+  // `padding: 0 12px` for exactly this, and the two bars either side of this
+  // one already stand off the edge (the menu bar by its style, the status strip
+  // by its cells' own margins), so the context bar was the one row in the
+  // window whose text started at x=4.
+  //
+  // The inset goes on the two OUTER slots only. The centre slot is bounded by
+  // its neighbours rather than by the window, and padding it would narrow the
+  // command field for no reason.
+  const int bar_margin_left = context_bar_->style()->pixelMetric(
+      QStyle::PM_LayoutLeftMargin, nullptr, context_bar_);
+  const int bar_margin_right = context_bar_->style()->pixelMetric(
+      QStyle::PM_LayoutRightMargin, nullptr, context_bar_);
+
   // Three slots, as `operator-shell.html` lays the bar out: breadcrumb left,
   // command field centre, alarm state right. Each side is a container of its
   // own rather than "content plus a spacer" — the spacers this replaced sat
@@ -416,8 +434,10 @@ void MainWindow::CreateContextBar() {
   // own idiom (equal `1fr` grid columns) and appearance is the platform's here
   // — see client/CLAUDE.md, "the mockups are not a visual target".
   auto* left_slot = new QWidget(context_bar_);
+  left_slot->setObjectName(QStringLiteral("contextBarLeftSlot"));
   auto* left_layout = new QHBoxLayout(left_slot);
-  left_layout->setContentsMargins(0, slot_padding, 0, slot_padding);
+  left_layout->setContentsMargins(bar_margin_left, slot_padding, 0,
+                                  slot_padding);
   left_slot->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
   // No brand lockup. A native application identifies itself in the window
@@ -448,6 +468,7 @@ void MainWindow::CreateContextBar() {
   // bar's top edge. Preferred (not Expanding) horizontally, so the two
   // Expanding side slots still centre it against the bar.
   auto* centre_slot = new QWidget(context_bar_);
+  centre_slot->setObjectName(QStringLiteral("contextBarCentreSlot"));
   auto* centre_layout = new QHBoxLayout(centre_slot);
   centre_layout->setContentsMargins(0, slot_padding, 0, slot_padding);
   centre_slot->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
@@ -463,8 +484,10 @@ void MainWindow::CreateContextBar() {
   // the tiles, because a chip states that the operator must act now where a
   // tile states a count.
   auto* right_slot = new QWidget(context_bar_);
+  right_slot->setObjectName(QStringLiteral("contextBarRightSlot"));
   auto* right_layout = new QHBoxLayout(right_slot);
-  right_layout->setContentsMargins(0, slot_padding, 0, slot_padding);
+  right_layout->setContentsMargins(0, slot_padding, bar_margin_right,
+                                   slot_padding);
   right_slot->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
   right_layout->addStretch();
 

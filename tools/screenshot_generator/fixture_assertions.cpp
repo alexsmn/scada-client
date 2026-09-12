@@ -41,8 +41,11 @@
 
 #include <QApplication>
 #include <QLabel>
+#include <QLayout>
 #include <QStatusBar>
 #include <QString>
+#include <QToolBar>
+#include <QWidget>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -117,6 +120,66 @@ TEST_F(ScreenshotGenerator, StatusBarNamesTheSignedInUser) {
   }
   EXPECT_TRUE(found) << "no status-bar pane names the signed-in user "
                      << expected_user.toStdString();
+
+  MainWindow::SetHideForTesting(true);
+}
+
+// The context bar's outer content must stand off the window edge.
+//
+// A QToolBar contributes only its style frame horizontally -- 4px on the left
+// and 7px on the right, measured on macOS -- and all three slots zeroed their
+// horizontal margins, so the breadcrumb's first glyph started at x=4 and the
+// last alarm tile ended 7px from the other edge. Every other row in the window
+// stands off it: the menu bar by its own style, the status strip by its cells'
+// margins. `operator-shell.html` gives `.topbar` a `padding: 0 12px`.
+//
+// Asserted on the live widget tree rather than on pixels, for the same reason
+// the test above is: `check_screenshots.py` verifies existence, dimensions and
+// distinctness and is structurally unable to see where the ink starts. The
+// assertion is "more than the bare frame", not an exact figure -- the inset is
+// a style metric, so it moves with the platform, the DPI and the OS text size,
+// and pinning a number here would make this test a machine's rather than a
+// rule's.
+TEST_F(ScreenshotGenerator, ContextBarKeepsItsContentOffTheWindowEdge) {
+  MainWindow::SetHideForTesting(false);
+
+  {
+    Profile profile;
+    Page page;
+    page.AddWindow(WindowDefinition{"Struct"});
+    profile.AddPage(page);
+    profile.Save();
+  }
+
+  WaitForAwaitable(executor_, app_.Start());
+  ASSERT_TRUE(WaitForPendingNodeLoads(executor_, app_.node_service()));
+
+  QMainWindow* qmain = ShowMainWindowForMenuCapture(app_);
+  ASSERT_NE(qmain, nullptr);
+
+  auto* context_bar = qmain->findChild<QToolBar*>(QStringLiteral("ContextBar"));
+  ASSERT_NE(context_bar, nullptr);
+
+  auto* left_slot =
+      context_bar->findChild<QWidget*>(QStringLiteral("contextBarLeftSlot"));
+  auto* right_slot =
+      context_bar->findChild<QWidget*>(QStringLiteral("contextBarRightSlot"));
+  auto* centre_slot =
+      context_bar->findChild<QWidget*>(QStringLiteral("contextBarCentreSlot"));
+  ASSERT_NE(left_slot, nullptr);
+  ASSERT_NE(right_slot, nullptr);
+  ASSERT_NE(centre_slot, nullptr);
+
+  EXPECT_GT(left_slot->layout()->contentsMargins().left(), 0)
+      << "the breadcrumb sits against the window's left edge";
+  EXPECT_GT(right_slot->layout()->contentsMargins().right(), 0)
+      << "the alarm cluster sits against the window's right edge";
+
+  // The inset is the BAR's, so it belongs to the two slots that touch the
+  // window. Padding the centre one would narrow the command field to buy
+  // nothing -- it is bounded by its neighbours.
+  EXPECT_EQ(centre_slot->layout()->contentsMargins().left(), 0);
+  EXPECT_EQ(centre_slot->layout()->contentsMargins().right(), 0);
 
   MainWindow::SetHideForTesting(true);
 }
