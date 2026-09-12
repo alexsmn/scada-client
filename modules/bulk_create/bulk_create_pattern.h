@@ -20,8 +20,37 @@
 // "TS8 current". Unknown `{...}` sequences are left untouched.
 std::u16string ExpandTokens(std::u16string_view template_str, int index);
 
+// What a bulk create makes. One wizard serves both, because they are the same
+// shape: N nodes under a parent, each named from a template and each bound to
+// something. What differs is the binding and the address, and that is all the
+// subject decides --
+//
+//   kDataItem          a DiscreteItemType / AnalogItemType under the target,
+//                      with DataItemType_Input1 bound to a SOURCE formula. It
+//                      has no IOA; a data item is not addressed on a link.
+//   kTransmissionItem  a protocol subtype of TransmissionItemType under the
+//                      destination, with TransmissionItemType_SourceNode bound
+//                      to the node it forwards and TransmissionItemType_Address
+//                      carrying the IOA.
+//
+// Which columns the preview grid draws follows from this, which is why the
+// screen shows an IOA: docs/product/ui-mockups/screens/bulk-create.html draws
+// the transmission branch.
+enum class BulkCreateSubject {
+  kDataItem,
+  kTransmissionItem,
+};
+
+// Whether `subject` addresses its rows on a link. Only the transmission branch
+// does, so only it reads the `ioa_*` fields below and only its preview grid
+// carries an IOA column.
+bool BulkCreateSubjectUsesIoa(BulkCreateSubject subject);
+
 // The pattern the wizard's Naming/Addressing step edits.
 struct BulkCreateParams {
+  // Decides which of the two bindings below is filled, and whether the IOA
+  // fields are read at all.
+  BulkCreateSubject subject = BulkCreateSubject::kDataItem;
   std::u16string name_template;     // e.g. "TS{n} current"
   std::u16string node_id_template;  // e.g. "ns=2;s=RTU.TS{n}.I"
   int start_index = 1;
@@ -53,6 +82,10 @@ struct BulkCreatePreviewRow {
   // The expanded address ran past kMaxBulkCreateIoa. `ioa` is then clamped
   // and the row must not be created.
   bool ioa_out_of_range = false;
+  // True when the row carries no IOA because the subject does not address on a
+  // link. Distinguishes "this subject has no IOA" from "the IOA is zero", which
+  // the grid must not render the same way.
+  bool ioa_absent = false;
 };
 
 // Expands `params` into `params.count` preview rows, marking a row as a

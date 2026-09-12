@@ -64,7 +64,11 @@ TEST_F(BulkCreatePreviewPanelTest, ConflictRowIsFlaggedAndCountedInSummary) {
 // used to wrap to a negative number through signed overflow (backlog 719).
 TEST_F(BulkCreatePreviewPanelTest, OutOfRangeIoaIsFlaggedAndCounted) {
   BulkCreatePreviewPanel panel;
+  // The address half is the transmission branch's; a data item has no IOA to
+  // put out of range.
+  panel.SetSubject(BulkCreateSubject::kTransmissionItem);
   BulkCreateParams params = SampleParams();
+  params.subject = BulkCreateSubject::kTransmissionItem;
   // 1e6 + 21464 * 1e5 = 2 147 400 000, the last address that fits; one step
   // further is 2 147 500 000, past INT32_MAX.
   params.ioa_start = 1000000;
@@ -114,6 +118,42 @@ TEST_F(BulkCreatePreviewPanelTest, EditingNameTemplateReexpands) {
 
   ASSERT_FALSE(panel.rows().empty());
   EXPECT_EQ(panel.rows()[0].name, u"AI01");
+}
+
+// One panel, two subjects: the address controls and the IOA column belong to
+// the transmission branch alone, and a data item must not be offered an
+// address it cannot carry.
+TEST_F(BulkCreatePreviewPanelTest, TheIoaControlsAndColumnFollowTheSubject) {
+  BulkCreatePreviewPanel panel;
+  auto* grid = panel.findChild<QTableWidget*>(QStringLiteral("previewGrid"));
+  ASSERT_NE(grid, nullptr);
+
+  panel.SetSubject(BulkCreateSubject::kTransmissionItem);
+  EXPECT_FALSE(grid->isColumnHidden(3));
+
+  panel.SetSubject(BulkCreateSubject::kDataItem);
+  EXPECT_TRUE(grid->isColumnHidden(3));
+}
+
+// Switching away and back must not silently reset the operator's addressing.
+// The controls keep their values while hidden; ExpandBulkCreate ignores them
+// for the other subject, so nothing stale can reach a data item either.
+TEST_F(BulkCreatePreviewPanelTest, SwitchingSubjectKeepsTheAddressingValues) {
+  BulkCreatePreviewPanel panel;
+  panel.SetSubject(BulkCreateSubject::kTransmissionItem);
+  BulkCreateParams params = SampleParams();
+  params.subject = BulkCreateSubject::kTransmissionItem;
+  params.ioa_start = 7000;
+  params.ioa_step = 3;
+  params.count = 2;
+  panel.SetParams(params);
+  ASSERT_EQ(panel.rows()[1].ioa, 7003);
+
+  panel.SetSubject(BulkCreateSubject::kDataItem);
+  EXPECT_TRUE(panel.rows()[1].ioa_absent);
+
+  panel.SetSubject(BulkCreateSubject::kTransmissionItem);
+  EXPECT_EQ(panel.rows()[1].ioa, 7003);
 }
 
 }  // namespace

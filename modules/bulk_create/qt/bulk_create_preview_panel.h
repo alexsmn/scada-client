@@ -33,6 +33,15 @@ class BulkCreatePreviewPanel : public QWidget {
   explicit BulkCreatePreviewPanel(QWidget* parent = nullptr);
   ~BulkCreatePreviewPanel() override;
 
+  // Which of the two things this run creates. One panel serves both because
+  // the naming half is identical; the subject decides only whether the rows
+  // are addressed on a link, and so whether the IOA controls and the IOA
+  // column are shown at all. Defaults to kDataItem, matching
+  // `BulkCreateParams`, so a caller that says nothing gets the branch with no
+  // address rather than one silently addressing from stale spin boxes.
+  void SetSubject(BulkCreateSubject subject);
+  BulkCreateSubject subject() const { return subject_; }
+
   // The set of NodeIds already present in the target, used to flag conflicts.
   void SetExistingNodeIds(std::set<std::u16string> existing);
 
@@ -59,10 +68,16 @@ class BulkCreatePreviewPanel : public QWidget {
   QSpinBox* index_step_ = nullptr;
   QSpinBox* ioa_start_ = nullptr;
   QSpinBox* ioa_step_ = nullptr;
+  // The form rows the IOA spin boxes sit on, kept so the subject can hide the
+  // label with the field: hiding a QFormLayout field alone leaves its label
+  // behind, captioning nothing.
+  QWidget* ioa_start_label_ = nullptr;
+  QWidget* ioa_step_label_ = nullptr;
 
   QTableWidget* preview_ = nullptr;
   QLabel* summary_ = nullptr;
 
+  BulkCreateSubject subject_ = BulkCreateSubject::kDataItem;
   std::set<std::u16string> existing_node_ids_;
   std::vector<BulkCreatePreviewRow> rows_;
 };

@@ -35,6 +35,10 @@ std::u16string ExpandTokens(std::u16string_view template_str, int index) {
   return result;
 }
 
+bool BulkCreateSubjectUsesIoa(BulkCreateSubject subject) {
+  return subject == BulkCreateSubject::kTransmissionItem;
+}
+
 std::vector<BulkCreatePreviewRow> ExpandBulkCreate(
     const BulkCreateParams& params,
     const std::set<std::u16string>& existing_node_ids) {
@@ -50,15 +54,22 @@ std::vector<BulkCreatePreviewRow> ExpandBulkCreate(
     row.number = index;
     row.name = ExpandTokens(params.name_template, index);
     row.node_id = ExpandTokens(params.node_id_template, index);
-    // In 64-bit: the wizard's own spin boxes allow ioa_start up to 1e6,
-    // count up to 1e5 and ioa_step up to 1e5, whose product overflows a
-    // signed int -- undefined behaviour, reached by values the UI offers.
-    const std::int64_t ioa = static_cast<std::int64_t>(params.ioa_start) +
-                             static_cast<std::int64_t>(i) *
-                                 static_cast<std::int64_t>(params.ioa_step);
-    row.ioa_out_of_range = ioa > kMaxBulkCreateIoa || ioa < 0;
-    row.ioa =
-        static_cast<int>(std::clamp<std::int64_t>(ioa, 0, kMaxBulkCreateIoa));
+    if (BulkCreateSubjectUsesIoa(params.subject)) {
+      // In 64-bit: the wizard's own spin boxes allow ioa_start up to 1e6,
+      // count up to 1e5 and ioa_step up to 1e5, whose product overflows a
+      // signed int -- undefined behaviour, reached by values the UI offers.
+      const std::int64_t ioa = static_cast<std::int64_t>(params.ioa_start) +
+                               static_cast<std::int64_t>(i) *
+                                   static_cast<std::int64_t>(params.ioa_step);
+      row.ioa_out_of_range = ioa > kMaxBulkCreateIoa || ioa < 0;
+      row.ioa =
+          static_cast<int>(std::clamp<std::int64_t>(ioa, 0, kMaxBulkCreateIoa));
+    } else {
+      // A data item is not addressed on a link, so it carries no IOA at all --
+      // left absent rather than zero, which the grid would render as a real
+      // address 0 and the range check would call in-range.
+      row.ioa_absent = true;
+    }
     row.conflict = existing_node_ids.contains(row.node_id);
     rows.push_back(std::move(row));
   }

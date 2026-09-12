@@ -17,6 +17,12 @@
 
 namespace {
 
+// The preview grid's columns: # / Name / NodeId / IOA / Status. The IOA column
+// is hidden for a subject that does not address on a link, so its index is
+// named rather than spelled at the two places that need it.
+constexpr int kIoaColumn = 3;
+constexpr int kColumnCount = 5;
+
 const scada::aui::ThemeTokens& PanelTokens() {
   return scada::aui::ActiveThemeTokens();
 }
@@ -77,6 +83,11 @@ QWidget* BulkCreatePreviewPanel::BuildForm() {
   form->addRow(Tr("Index step"), index_step_);
   form->addRow(Tr("IOA start"), ioa_start_);
   form->addRow(Tr("IOA step"), ioa_step_);
+  // Kept so SetSubject can hide each label with its field. QFormLayout gives a
+  // row's label no relationship to the widget once added, so hiding only the
+  // spin box would leave "IOA start" captioning the row below it.
+  ioa_start_label_ = form->labelForField(ioa_start_);
+  ioa_step_label_ = form->labelForField(ioa_step_);
 
   // Muted field-label colour so the grid reads as the focus.
   form_host->setStyleSheet(
@@ -109,7 +120,7 @@ QWidget* BulkCreatePreviewPanel::BuildPreview() {
 
   preview_ = new QTableWidget;
   preview_->setObjectName(QStringLiteral("previewGrid"));
-  preview_->setColumnCount(5);
+  preview_->setColumnCount(kColumnCount);
   preview_->setHorizontalHeaderLabels(
       {QStringLiteral("#"), Tr("Name"), Tr("NodeId"), Tr("IOA"), Tr("Status")});
   preview_->verticalHeader()->setVisible(false);
@@ -130,9 +141,33 @@ BulkCreateParams BulkCreatePreviewPanel::CurrentParams() const {
   params.start_index = start_index_->value();
   params.count = count_->value();
   params.index_step = index_step_->value();
+  params.subject = subject_;
   params.ioa_start = ioa_start_->value();
   params.ioa_step = ioa_step_->value();
   return params;
+}
+
+void BulkCreatePreviewPanel::SetSubject(BulkCreateSubject subject) {
+  if (subject_ == subject)
+    return;
+  subject_ = subject;
+
+  // Only the transmission branch addresses its rows on a link, so only it
+  // shows the address controls and the IOA column. The controls keep their
+  // values while hidden -- switching subject twice must not silently reset the
+  // operator's addressing -- and ExpandBulkCreate ignores them for the other
+  // subject anyway, so a stale value cannot reach a data item.
+  const bool uses_ioa = BulkCreateSubjectUsesIoa(subject_);
+  for (QWidget* widget :
+       {static_cast<QWidget*>(ioa_start_), static_cast<QWidget*>(ioa_step_),
+        ioa_start_label_, ioa_step_label_}) {
+    if (widget)
+      widget->setVisible(uses_ioa);
+  }
+  if (preview_)
+    preview_->setColumnHidden(kIoaColumn, !uses_ioa);
+
+  Refresh();
 }
 
 void BulkCreatePreviewPanel::SetExistingNodeIds(
