@@ -1,5 +1,7 @@
 ﻿#include "profile/profile.h"
 
+#include "profile/profile_envelope.h"
+
 #include "aui/translation.h"
 #include "base/boost_log.h"
 #include "base/client_paths.h"
@@ -58,19 +60,40 @@ void Profile::Load() {
   BOOST_LOG_TRIVIAL(info) << "Profile loaded";
 }
 
-void Profile::Load(const boost::json::value& data) {
+void Profile::Load(const boost::json::value& document) {
   // Valid JSON that is not an object -- `[]`, `null`, `1`, `"x"` -- must not
   // become `data_`. Every reader guards is_object(), but SerializeToValue and
   // the registered serializers write through as_object(), which throws on
   // anything else, and Save() runs from ~ClientApplication. Keeping the
   // default empty object makes every downstream as_object() hold by
   // construction; the bad file is overwritten with a proper object on exit.
-  if (!data.is_object()) {
+  if (!document.is_object()) {
     BOOST_LOG_TRIVIAL(error)
         << "Profile root is not a JSON object; ignoring the stored profile";
     return;
   }
 
+  // A profile can arrive in either shape: this client's own flat document, or
+  // the envelope both clients share on the server, whose Qt section holds that
+  // same flat document. Unwrapping here rather than at each call site means a
+  // profile opens whichever way it was stored, and -- more to the point -- an
+  // envelope reaching a reader that expected flat is silent: every key below
+  // would simply miss, the profile would load empty, and Save() would then
+  // write that emptiness back over the real one.
+  const boost::json::value unwrapped = profile_envelope::Unwrap(document);
+  if (!unwrapped.is_object()) {
+    BOOST_LOG_TRIVIAL(error)
+        << "Profile envelope holds no object; ignoring the stored profile";
+    return;
+  }
+  const boost::json::value& data = unwrapped;
+
+  // The FLAT document, never the envelope. `data_` is this client's
+  // forward-compat carry-over and `SerializeToValue` writes its known keys back
+  // over it, so an envelope here would put `showWriteOk` beside `web` and hand
+  // the result to whoever saves next. The envelope's other sections are
+  // remembered by the caller that read them -- see `ClientApplication` -- since
+  // preserving them is a property of the round trip, not of this object.
   data_ = data;
 
   // common settings

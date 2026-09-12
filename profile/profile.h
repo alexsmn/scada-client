@@ -66,9 +66,11 @@ class Profile {
   // ~ClientApplication, where an escaping exception is std::terminate.
   void Save();
 
-  // Loads from an already-parsed profile document. A root that is not a JSON
-  // object is rejected and the profile keeps its current state.
-  void Load(const boost::json::value& data);
+  // Loads from an already-parsed profile document, in either shape: this
+  // client's flat document, or the shared envelope whose `qt.profile` section
+  // holds one (see `profile_envelope.h`). A root that is not a JSON object is
+  // rejected and the profile keeps its current state.
+  void Load(const boost::json::value& document);
 
   // Serializes the current profile after running registered writers.
   boost::json::value SaveToValue();
