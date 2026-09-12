@@ -812,6 +812,30 @@ TEST_F(ScreenshotGenerator, CaptureOverviewPage) {
   qmain->show();
   scada::screenshot_generator::PumpEventLoopFor(std::chrono::milliseconds(500));
 
+  // The landing's Inspector is a pane like any other, so with nothing selected
+  // it renders its "select an item" placeholder — which published the whole
+  // right-hand third of the hero as an empty column. Make the selection the
+  // shell's own way, through the Explorer pane the page already docks, so the
+  // capture exercises the selection→Inspector wiring rather than posing it.
+  {
+    scada::aui::Tree* tree = nullptr;
+    OpenedView* struct_view = nullptr;
+    for (OpenedView* view : main_window.opened_views()) {
+      if (view->window_info().name != "Struct")
+        continue;
+      struct_view = view;
+      tree = FindTreeWidget(view->view());
+      break;
+    }
+    ASSERT_NE(struct_view, nullptr);
+    ASSERT_NE(tree, nullptr);
+
+    SelectSignalForInspector(main_window, *struct_view, *tree, executor_,
+                             app_.node_service(), *qmain);
+    for (int i = 0; i < 10; ++i)
+      QApplication::processEvents();
+  }
+
   if (!publish_guard.ShouldPublish()) {
     MainWindow::SetHideForTesting(true);
     return;
