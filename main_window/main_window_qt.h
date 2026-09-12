@@ -2,6 +2,7 @@
 
 #include "aui/qt/dialog_service_impl_qt.h"
 #include "controller/action_manager.h"
+#include "controller/command_ui_registry.h"
 #include "main_window/base_main_window.h"
 #include "main_window/pages/page_switcher.h"
 #include "main_window/pane_modes.h"
@@ -85,6 +86,10 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
       WindowDefinition& def) override;
 
   // ViewManagerDelegate
+  // The tab strip's `+`: a "New view for <subject>" group over the views the
+  // selection accepts, then an "Empty" group of the ones that open with no
+  // selection at all (docs/product/ui-mockups/screens/shell-chrome.html).
+  virtual void OnShowNewViewMenu(const scada::aui::Point& point) override;
   virtual void OnShowTabPopupMenu(OpenedView& view,
                                   const scada::aui::Point& point) override;
   // Both re-derive the rail marker: closing a pane by hand or activating a
@@ -147,6 +152,16 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // list is the healthy case, and an empty one (nothing selected) hides the
   // section. See docs/product/ui-mockups/authoring.md 4b "Opening a view".
   std::vector<InspectorOpenAction> OpenViewActions();
+  // The current selection's display title, for a surface that has to name its
+  // subject. Empty when nothing is selected.
+  QString SelectionSubjectTitle();
+  // The menu contributions that open a view with no selection -- the "Empty"
+  // group of the tab strip's `+`. Derived from the registry rather than listed:
+  // a contribution under the Graph or Table menu whose command id is a
+  // registered WINDOW id is one that opens a view, which is what makes it an
+  // empty-view opener. `Group Table` sits in the same menu and is not one,
+  // because it is a selection command over the parent group.
+  std::vector<MenuContribution> EmptyViewCommands();
   // The right Device-diagnostics dock (backlog 5.0): reflects a selected
   // device's link status + live traffic/polling counters. Tabified with the
   // Inspector dock.

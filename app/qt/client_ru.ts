@@ -1611,6 +1611,10 @@
         <translation>Новая таблица данных</translation>
     </message>
     <message>
+        <source>New Graph</source>
+        <translation>Новый график</translation>
+    </message>
+    <message>
         <source>New</source>
         <translation>Новый</translation>
     </message>
@@ -3282,6 +3286,24 @@
         <location filename="../../main_window/main_window_qt.cpp" line="274"/>
         <source>Loading...</source>
         <translation>Загрузка...</translation>
+    </message>
+    <message>
+        <location filename="../../main_window/main_window_qt.cpp" line="1644"/>
+        <source>New view for %1</source>
+        <translation>Новое окно для %1</translation>
+    </message>
+    <message>
+        <location filename="../../main_window/main_window_qt.cpp" line="1660"/>
+        <source>Empty</source>
+        <translation>Пустое</translation>
+    </message>
+</context>
+<context>
+    <name>ViewManagerQtComponent</name>
+    <message>
+        <location filename="../../../third_party/view_manager_qt/view_manager_qt_component.cpp" line="0"/>
+        <source>New view</source>
+        <translation>Новое окно</translation>
     </message>
 </context>
 <context>

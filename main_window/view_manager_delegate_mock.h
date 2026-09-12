@@ -19,4 +19,9 @@ class MockViewManagerDelegate : public ViewManagerDelegate {
               OnShowTabPopupMenu,
               (OpenedView & view, const scada::aui::Point& point),
               (override));
+
+  MOCK_METHOD(void,
+              OnShowNewViewMenu,
+              (const scada::aui::Point& point),
+              (override));
 };

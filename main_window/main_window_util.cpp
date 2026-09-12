@@ -99,3 +99,23 @@ bool ExecuteDefaultNodeCommand(const AnyExecutor& executor,
           });
   return true;
 }
+
+std::vector<MenuContribution> FindEmptyViewCommands(
+    const UiCommandRegistry& ui_command_registry,
+    const std::function<bool(unsigned command_id)>& is_enabled) {
+  std::vector<MenuContribution> result;
+  // Name the menus, not the commands: it is the window-id test below that
+  // decides what belongs, so a new empty-view command in either menu arrives
+  // here on its own.
+  for (MainMenuId menu_id : {MainMenuId::Graph, MainMenuId::Table}) {
+    for (const MenuContribution& contribution :
+         ui_command_registry.GetMenuContributions(menu_id)) {
+      if (!FindWindowInfo(contribution.command_id))
+        continue;
+      if (is_enabled && !is_enabled(contribution.command_id))
+        continue;
+      result.push_back(contribution);
+    }
+  }
+  return result;
+}

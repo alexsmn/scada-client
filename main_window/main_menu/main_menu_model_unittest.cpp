@@ -43,6 +43,7 @@ class DummyViewManagerDelegate : public ViewManagerDelegate {
   void OnActiveViewChanged(OpenedView* view) override {}
   void OnShowTabPopupMenu(OpenedView& view,
                           const scada::aui::Point& point) override {}
+  void OnShowNewViewMenu(const scada::aui::Point& point) override {}
 };
 
 // Mirrors the fixture in main_window/pages/page_commands_unittest.cpp: the menu

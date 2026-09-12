@@ -126,8 +126,18 @@ void BaseMainWindow::Close() {
 }
 
 CommandHandler* BaseMainWindow::ResolveViewCommand(unsigned command_id) {
-  // The command contexts a shell surface resolves against, in priority order —
-  // the same list the platform toolbar and command palette use.
+  // The command contexts a shell surface resolves against — the same list the
+  // platform toolbar, the Explorer context menu and the command palette use.
+  //
+  // **Least specific first**: CommandManager::ResolveHandler walks this list in
+  // REVERSE, so Controller beats OpenedView beats Selection beats Global, and
+  // the array reads back-to-front from the priority it expresses. That matters
+  // because three commands are registered in two contexts at once --
+  // ID_OPEN_GRAPH and ID_OPEN_TABLE each carry a global command that opens the
+  // view EMPTY as well as a selection command that opens it on the selection --
+  // so reading this list front-to-front would predict the opposite behaviour
+  // from the one every Open surface actually has. (This comment said "in
+  // priority order" until 2026-09-12, which is exactly backwards.)
   static constexpr CommandContextId kShellContexts[] = {
       CommandContextId::Global,
       CommandContextId::Selection,

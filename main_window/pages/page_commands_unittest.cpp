@@ -38,6 +38,7 @@ class DummyViewManagerDelegate : public ViewManagerDelegate {
   void OnActiveViewChanged(OpenedView* view) override {}
   void OnShowTabPopupMenu(OpenedView& view,
                           const scada::aui::Point& point) override {}
+  void OnShowNewViewMenu(const scada::aui::Point& point) override {}
 };
 
 Awaitable<std::u16string> ReturnTitleAsync(std::u16string title) {

@@ -164,8 +164,13 @@ void RegisterGraphCommandActions(UiCommandRegistry& ui_command_registry) {
                                        .category_ = CATEGORY_EDIT,
                                        .title_ = Translate("Delete Pane")});
 
+  // "New Graph", not "New": the contribution is rendered in two menus now --
+  // the Graph menu and the tab strip's `+` "Empty" group, where it sits beside
+  // `New Table` and `New Data Table` and a bare "New" names nothing. It also
+  // makes the Graph menu read like its Table sibling, which has always said
+  // `New Table`.
   ui_command_registry.AddMenuItem({.menu_id = MainMenuId::Graph,
                                    .order = 100,
                                    .command_id = ID_GRAPH_VIEW,
-                                   .title = Translate("New")});
+                                   .title = Translate("New Graph")});
 }

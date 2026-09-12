@@ -34,6 +34,13 @@ ViewManager::ViewManager(QMainWindow& main_window,
         if (auto* view = FindViewByComponentId(view_id))
           delegate_.OnShowTabPopupMenu(*view, point);
       });
+
+  // Wiring this is what makes the component draw the `+` at all, so it has to
+  // happen here rather than lazily: a block created before the handler is set
+  // would never carry one.
+  component_.SetNewTabHandler([this](const scada::aui::Point& point) {
+    delegate_.OnShowNewViewMenu(point);
+  });
 }
 #endif
 

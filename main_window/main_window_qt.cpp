@@ -31,6 +31,7 @@
 #include "main_window/main_menu/main_menu_model.h"
 #include "main_window/main_window_command_router.h"
 #include "main_window/main_window_manager.h"
+#include "main_window/main_window_util.h"
 #include "main_window/opened_view/opened_view.h"
 #include "main_window/overview_page.h"
 #include "main_window/page_icons.h"
@@ -1686,6 +1687,71 @@ void MainWindow::OnShowTabPopupMenu(OpenedView& view,
                                     const scada::aui::Point& point) {
   QMenu menu;
   BuildMenu(menu, *tab_popup_menu_);
+  menu.exec(point);
+}
+
+QString MainWindow::SelectionSubjectTitle() {
+  OpenedView* active = GetActiveView();
+  SelectionModel* selection =
+      active ? active->controller().GetSelectionModel() : nullptr;
+  if (!selection || selection->empty())
+    return QString{};
+  return QString::fromStdU16String(selection->GetTitle());
+}
+
+std::vector<MenuContribution> MainWindow::EmptyViewCommands() {
+  return FindEmptyViewCommands(
+      ui_command_registry_, [this](unsigned command_id) {
+        CommandHandler* handler = ResolveViewCommand(command_id);
+        return handler && handler->IsCommandEnabled(command_id);
+      });
+}
+
+void MainWindow::OnShowNewViewMenu(const scada::aui::Point& point) {
+  QMenu menu;
+
+  // The menu names its subject, and that is the whole difference between this
+  // `+` and the activity rail's: the rail's adds a *page*, this one adds a
+  // *tab*, and they are never adjacent for a user to compare
+  // (docs/product/ui-mockups/authoring.md 4b). Said rather than inferred.
+  const std::vector<InspectorOpenAction> subject_actions = OpenViewActions();
+  const QString subject = SelectionSubjectTitle();
+  if (!subject_actions.empty() && !subject.isEmpty()) {
+    menu.addSection(tr("New view for %1").arg(subject));
+    for (const InspectorOpenAction& action : subject_actions) {
+      QAction* item = menu.addAction(action.icon, action.title);
+      const unsigned command_id = action.command_id;
+      connect(item, &QAction::triggered, this, [this, command_id] {
+        auto* handler = ResolveViewCommand(command_id);
+        if (handler && handler->IsCommandEnabled(command_id))
+          handler->ExecuteCommand(command_id);
+      });
+    }
+  }
+
+  // The Empty group. These are the commands that had no home in the shell
+  // except the menu bar, which is the reason the screens give this group.
+  const std::vector<MenuContribution> empty_commands = EmptyViewCommands();
+  if (!empty_commands.empty()) {
+    menu.addSection(tr("Empty"));
+    for (const MenuContribution& contribution : empty_commands) {
+      QAction* item =
+          menu.addAction(QString::fromStdU16String(contribution.title));
+      const unsigned command_id = contribution.command_id;
+      connect(item, &QAction::triggered, this, [this, command_id] {
+        auto* handler = ResolveViewCommand(command_id);
+        if (handler && handler->IsCommandEnabled(command_id))
+          handler->ExecuteCommand(command_id);
+      });
+    }
+  }
+
+  // Nothing to offer at all: no selection and no empty-view command enabled.
+  // Showing an empty popup would say the button is broken rather than that
+  // there is nothing to open.
+  if (menu.isEmpty())
+    return;
+
   menu.exec(point);
 }
 
