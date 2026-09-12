@@ -9,6 +9,10 @@ client_module_include_directories(client_bulk_create PUBLIC
 client_module_link_libraries(client_bulk_create
   PUBLIC
     Qt6::Widgets
+    # `bulk_create_plan.h` produces scada::NodeState values, so the node model
+    # is part of this module's interface. The token engine next to it stays
+    # free of it.
+    scada_common
   PRIVATE
     aui
 )
