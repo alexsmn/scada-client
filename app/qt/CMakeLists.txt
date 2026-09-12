@@ -286,15 +286,31 @@ install(TARGETS client_qt
   BUNDLE DESTINATION "." COMPONENT Client
   RUNTIME DESTINATION "bin" COMPONENT Client)
 
-if(EXISTS "${CMAKE_SOURCE_DIR}/dependencies/bin")
-  install(DIRECTORY "${CMAKE_SOURCE_DIR}/dependencies/bin/"
+# PROJECT_SOURCE_DIR, not CMAKE_SOURCE_DIR. Both blocks arrived in 1a7a17380
+# ("Move client packaging payloads into repo-local install rules", 2026-04-22),
+# when client was its own repository and CMAKE_SOURCE_DIR therefore *was* the
+# client root. It no longer is reliably: CMAKE_SOURCE_DIR names the top-level
+# project, which is the consumer whenever a product is spliced into another
+# (ADR 0011), and in the generated client export the path escapes the export
+# root altogether -- `tools/export/check-escapes.py` reports it.
+#
+# Both rules are inert today and the `if(EXISTS)` guard is why that went
+# unnoticed: `dependencies/bin` exists in neither layout, and `examples/schemes`
+# sits at the MONOREPO root, which the client product does not claim in
+# products.toml and which no product claims at all. So the example schematics
+# have not been installed since the monorepo import separated the payload from
+# its install rule. Repointing the anchor fixes the ADR 0011 violation and
+# restores the rule's original meaning; it does not put the payload back, which
+# is a packaging question rather than a build one.
+if(EXISTS "${PROJECT_SOURCE_DIR}/dependencies/bin")
+  install(DIRECTORY "${PROJECT_SOURCE_DIR}/dependencies/bin/"
     DESTINATION "bin"
     COMPONENT Client
     PATTERN "DisplayLib.dll" EXCLUDE)
 endif()
 
-if(EXISTS "${CMAKE_SOURCE_DIR}/examples/schemes")
-  install(DIRECTORY "${CMAKE_SOURCE_DIR}/examples/schemes"
+if(EXISTS "${PROJECT_SOURCE_DIR}/examples/schemes")
+  install(DIRECTORY "${PROJECT_SOURCE_DIR}/examples/schemes"
     DESTINATION "examples"
     COMPONENT Client)
 endif()

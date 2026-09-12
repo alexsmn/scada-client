@@ -3357,7 +3357,6 @@
 <context>
     <name>ViewManagerQtComponent</name>
     <message>
-        <location filename="../../../third_party/view_manager_qt/view_manager_qt_component.cpp" line="0"/>
         <source>New view</source>
         <translation>Новое окно</translation>
     </message>
