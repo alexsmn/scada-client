@@ -311,7 +311,6 @@ Awaitable<void> ClientApplication::SaveProfileToServerOnQuitAsync() {
   LOG_ERROR(*logger_) << "Profile save to server failed: "
                       << static_cast<unsigned>(status.code());
   if (event_module_) {
-    // TODO: Localize.
     event_module_->local_events().ReportEvent(
         LocalEvents::SEV_ERROR,
         Translate("Failed to save the profile to the server; it is kept on "
@@ -707,7 +706,6 @@ Awaitable<void> ClientApplication::QuitAsync() {
   // Event module is not created if login fails.
   // TODO: Create event module unconditionally.
   if (event_module_) {
-    // TODO: Localize.
     event_module_->local_events().ReportEvent(
         LocalEvents::SEV_ERROR, Translate("Disconnecting from server..."));
   }

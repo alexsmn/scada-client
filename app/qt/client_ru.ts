@@ -2089,6 +2089,10 @@
     </message>
     <!-- app/client_application.cpp -->
     <message>
+        <source>Failed to save the profile to the server; it is kept on this computer only</source>
+        <translation>Не удалось сохранить профиль на сервере; он сохранён только на этом компьютере</translation>
+    </message>
+    <message>
         <source>The specified username is already in use by another session. Disconnect the open session and continue?</source>
         <translation>Указанное имя пользователя уже используется другой сессией. Разорвать открытую сессию и продолжить?</translation>
     </message>
