@@ -19,7 +19,7 @@ class QScrollArea;
 class QTableWidget;
 class TimedDataService;
 class TimedDataSpec;
-class VdsRuntimeWidget;
+class DisplayWidget;
 
 // Pure zoom helpers (no widget state) so the frame's scaling maths can be
 // unit-tested without a running QApplication.
@@ -71,7 +71,7 @@ class DisplayFrame : public QWidget, private EventObserver {
   // ownership). `breadcrumb` is the human-readable display location shown at
   // the toolbar's left (typically the display title); it may be empty.
   // `data_context` supplies the bay strips' live sources (all optional).
-  DisplayFrame(VdsRuntimeWidget* diagram,
+  DisplayFrame(DisplayWidget* diagram,
                QString breadcrumb,
                DisplayFrameContext data_context,
                QWidget* parent = nullptr);
@@ -106,7 +106,7 @@ class DisplayFrame : public QWidget, private EventObserver {
 
   DisplayFrameContext data_context_;
 
-  VdsRuntimeWidget* diagram_ = nullptr;
+  DisplayWidget* diagram_ = nullptr;
   QScrollArea* scroll_ = nullptr;
   QLabel* zoom_label_ = nullptr;
 
@@ -125,6 +125,6 @@ class DisplayFrame : public QWidget, private EventObserver {
 
 // Wraps `diagram` in a DisplayFrame. Ownership of the returned widget
 // transfers to the caller; the returned frame owns `diagram`.
-QWidget* WrapDisplayInFrame(VdsRuntimeWidget* diagram,
+QWidget* WrapDisplayInFrame(DisplayWidget* diagram,
                             QString breadcrumb,
                             DisplayFrameContext data_context);

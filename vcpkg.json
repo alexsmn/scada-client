@@ -6,6 +6,7 @@
   "$consumes": [
     "client/aui",
     "common",
+    "display",
     "third_party/graph_qt",
     "third_party/iec61850pp",
     "third_party/opcuapp",
@@ -48,6 +49,7 @@
     "boost-smart-ptr",
     "boost-system",
     "boost-uuid",
+    "compoundfilereader",
     "grpc",
     "gtest",
     "lunasvg",

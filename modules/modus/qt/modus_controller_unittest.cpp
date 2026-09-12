@@ -1,7 +1,6 @@
 #include "modus/qt/modus_controller.h"
 
 #include "aui/test/app_environment.h"
-#include "common/vds_runtime_api.h"
 #include "controller/test/controller_environment.h"
 #include "modus/modus_view_wrapper.h"
 #include "profile/window_definition.h"
@@ -22,14 +21,14 @@ using testing::IsNull;
 using testing::NotNull;
 
 // A `ModusViewWrapper` with no VDS runtime behind it. The production wrapper is
-// a `VdsRuntimeWidget`, which dlopens `tc_vds_runtime` — a shared library built
+// a `DisplayWidget`, which dlopens `tc_vds_runtime` — a shared library built
 // by the designer product, not by `client/` (ADR 0011) — so a test that used it
 // would be testing whether that library happened to be installed. This records
 // what the controller asked of the wrapper instead.
 class FakeModusViewWrapper final : public ModusViewWrapper {
  public:
   void Open(const WindowDefinition& definition,
-            int32_t document_kind) override {
+            scada::display::view::DocumentKind document_kind) override {
     opened_paths_.push_back(definition.path);
     opened_kinds_.push_back(document_kind);
   }
@@ -51,7 +50,9 @@ class FakeModusViewWrapper final : public ModusViewWrapper {
   const std::vector<std::filesystem::path>& opened_paths() const {
     return opened_paths_;
   }
-  const std::vector<int32_t>& opened_kinds() const { return opened_kinds_; }
+  const std::vector<scada::display::view::DocumentKind>& opened_kinds() const {
+    return opened_kinds_;
+  }
   int save_count() const { return save_count_; }
   const std::vector<scada::NodeId>& shown_items() const { return shown_items_; }
 
@@ -59,7 +60,7 @@ class FakeModusViewWrapper final : public ModusViewWrapper {
   std::filesystem::path path_;
   bool show_contained_item_result_ = false;
   std::vector<std::filesystem::path> opened_paths_;
-  std::vector<int32_t> opened_kinds_;
+  std::vector<scada::display::view::DocumentKind> opened_kinds_;
   int save_count_ = 0;
   std::vector<scada::NodeId> shown_items_;
 };
@@ -225,7 +226,7 @@ TEST_F(ModusControllerTest,
   ASSERT_THAT(view, NotNull());
 
   EXPECT_THAT(wrapper_.opened_kinds(),
-              testing::ElementsAre(TC_VDS_RUNTIME_DOCUMENT_KIND_XSDE));
+              testing::ElementsAre(scada::display::view::DocumentKind::kXsde));
 }
 
 TEST_F(ModusControllerTest,
@@ -240,7 +241,7 @@ TEST_F(ModusControllerTest,
   ASSERT_THAT(view, NotNull());
 
   EXPECT_THAT(wrapper_.opened_kinds(),
-              testing::ElementsAre(TC_VDS_RUNTIME_DOCUMENT_KIND_SDE));
+              testing::ElementsAre(scada::display::view::DocumentKind::kSde));
 }
 
 // An `.sde` is version 1 whatever the profile says, so the flag must not reach
@@ -258,7 +259,7 @@ TEST_F(ModusControllerTest,
   ASSERT_THAT(view, NotNull());
 
   EXPECT_THAT(wrapper_.opened_kinds(),
-              testing::ElementsAre(TC_VDS_RUNTIME_DOCUMENT_KIND_SDE));
+              testing::ElementsAre(scada::display::view::DocumentKind::kSde));
 }
 
 }  // namespace

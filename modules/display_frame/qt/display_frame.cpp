@@ -12,7 +12,7 @@
 #include "scada/node_id.h"
 #include "timed_data/timed_data_service.h"
 #include "timed_data/timed_data_spec.h"
-#include "vds_runtime/qt/vds_runtime_widget.h"
+#include "display_view/qt/display_widget.h"
 
 #include <QFileDialog>
 #include <QFrame>
@@ -155,7 +155,7 @@ int DisplayZoomPercent(double zoom) {
   return static_cast<int>(std::lround(ClampDisplayZoom(zoom) * 100.0));
 }
 
-DisplayFrame::DisplayFrame(VdsRuntimeWidget* diagram,
+DisplayFrame::DisplayFrame(DisplayWidget* diagram,
                            QString breadcrumb,
                            DisplayFrameContext data_context,
                            QWidget* parent)
@@ -472,7 +472,7 @@ void DisplayFrame::ExportImage() {
   diagram_->grab().save(path);
 }
 
-QWidget* WrapDisplayInFrame(VdsRuntimeWidget* diagram,
+QWidget* WrapDisplayInFrame(DisplayWidget* diagram,
                             QString breadcrumb,
                             DisplayFrameContext data_context) {
   return new DisplayFrame{diagram, std::move(breadcrumb), data_context};

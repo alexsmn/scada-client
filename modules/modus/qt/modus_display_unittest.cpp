@@ -14,7 +14,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <cstdlib>
 #include <fstream>
 #include <memory>
 
@@ -54,20 +53,19 @@ bool ContainsErrorText(const QImage& image) {
   return false;
 }
 
-class ModusVdsRuntimeTest : public testing::Test {
+class ModusDisplayTest : public testing::Test {
  protected:
   void SetUp() override {
-    // `GetPublicFilePath` throws without this, and the widget resolves the
-    // runtime library relative to the install directory. Pointing both at an
-    // empty temp tree is what makes the no-runtime case reproducible on a
-    // developer machine that happens to have a runtime installed.
+    // `GetPublicFilePath` throws without a public directory. The install
+    // override outlived the dlopen it was for (ADR 0012 phase 3) and is kept
+    // only so the fixture resolves nothing from a developer's real install.
     scada::base::PathService::Override(client::DIR_PUBLIC, public_dir_.path());
     scada::base::PathService::Override(client::DIR_INSTALL,
                                        install_dir_.path());
   }
 
-  // The inner runtime widget: `Init` returns the `QScrollArea` that holds it.
-  static QWidget* RuntimeWidgetOf(UiView& view) {
+  // The inner display widget: `Init` returns the `QScrollArea` that holds it.
+  static QWidget* DisplayWidgetOf(UiView& view) {
     auto* scroll_area = qobject_cast<QScrollArea*>(&view);
     return scroll_area ? scroll_area->widget() : nullptr;
   }
@@ -95,24 +93,25 @@ class ModusVdsRuntimeTest : public testing::Test {
 // A window definition that names no document resolves to the displays folder
 // itself. The widget diagnoses that before the loader sees it, because the
 // loader's own complaint named a directory and talked about file extensions.
-TEST_F(ModusVdsRuntimeTest, AWindowWithNoDocumentSaysSoInsteadOfRendering) {
+TEST_F(ModusDisplayTest, AWindowWithNoDocumentSaysSoInsteadOfRendering) {
   ModusController controller{controller_env_.MakeControllerContext()};
 
   std::unique_ptr<UiView> view = controller.Init(WindowDefinition{});
   ASSERT_THAT(view, NotNull());
 
-  QWidget* runtime_widget = RuntimeWidgetOf(*view);
-  ASSERT_THAT(runtime_widget, NotNull());
+  QWidget* display_widget = DisplayWidgetOf(*view);
+  ASSERT_THAT(display_widget, NotNull());
 
-  EXPECT_TRUE(ContainsErrorText(Render(*runtime_widget)))
+  EXPECT_TRUE(ContainsErrorText(Render(*display_widget)))
       << "A Modus window with no document assigned rendered no message; the "
          "operator would see an empty white panel.";
 }
 
-// The install-is-missing-the-runtime case. This is the one that reaches a
-// customer: the client links none of the VDS runtime, it dlopens it, so the
-// binary is happy and only the display is empty.
-TEST_F(ModusVdsRuntimeTest, AMissingRuntimeIsReportedInTheDisplayItself) {
+// The document-will-not-parse case, which is what reaches a customer now that
+// the renderer is linked rather than loaded: the binary is happy, the window
+// opens, and only the display is empty. The fixture writes bytes that are not a
+// schematic, so the parser is what fails.
+TEST_F(ModusDisplayTest, AnUnreadableDocumentIsReportedInTheDisplayItself) {
   WindowDefinition definition;
   definition.path = WriteDocument("substation.sde");
 
@@ -121,17 +120,17 @@ TEST_F(ModusVdsRuntimeTest, AMissingRuntimeIsReportedInTheDisplayItself) {
   std::unique_ptr<UiView> view = controller.Init(definition);
   ASSERT_THAT(view, NotNull());
 
-  QWidget* runtime_widget = RuntimeWidgetOf(*view);
-  ASSERT_THAT(runtime_widget, NotNull());
+  QWidget* display_widget = DisplayWidgetOf(*view);
+  ASSERT_THAT(display_widget, NotNull());
 
-  EXPECT_TRUE(ContainsErrorText(Render(*runtime_widget)))
-      << "A Modus display whose runtime library is absent rendered no message.";
+  EXPECT_TRUE(ContainsErrorText(Render(*display_widget)))
+      << "A Modus display whose document will not parse rendered no message.";
 }
 
 // `Save` round-trips through the real wrapper rather than a fake one, which is
 // what pins `GetPublicFilePath`/`FullFilePathToPublic` being inverses for the
 // flat case the client actually uses.
-TEST_F(ModusVdsRuntimeTest, SaveReturnsThePublicPathTheDefinitionCameWith) {
+TEST_F(ModusDisplayTest, SaveReturnsThePublicPathTheDefinitionCameWith) {
   WindowDefinition definition;
   definition.path = WriteDocument("substation.sde");
 
@@ -142,42 +141,6 @@ TEST_F(ModusVdsRuntimeTest, SaveReturnsThePublicPathTheDefinitionCameWith) {
   controller.Save(saved);
 
   EXPECT_EQ(saved.path, std::filesystem::path{"substation.sde"});
-}
-
-// The real-render half. It needs a built `tc_vds_runtime`, which is the
-// designer product's output and is not in the client's build tree, so it is
-// opt-in by environment rather than skipped silently: point
-// SCADA_MODUS_VDS_RUNTIME_DIR at a directory holding the shared library.
-TEST_F(ModusVdsRuntimeTest, ARealRuntimeRendersADocumentWithoutError) {
-  const char* runtime_dir = std::getenv("SCADA_MODUS_VDS_RUNTIME_DIR");
-  if (!runtime_dir || !*runtime_dir) {
-    GTEST_SKIP() << "Set SCADA_MODUS_VDS_RUNTIME_DIR to a directory holding "
-                    "tc_vds_runtime (built by the designer product) to run "
-                    "this case.";
-    // Verified 2026-08-25 against designer/build/ninja/bin/Debug. Note that
-    // run printed a wall of objc duplicate-class warnings — the runtime dylib
-    // carries its own Qt, and loading it into a Qt host registers QNSWindow
-    // and friends twice. Whether the *shipped* runtime does that is task 485.
-  }
-
-  scada::base::PathService::Override(client::DIR_INSTALL, runtime_dir);
-
-  // A document the runtime cannot parse still exercises the load path; what
-  // this case asserts is that the runtime was found, which the "cannot open
-  // document" message distinguishes from "runtime is not available".
-  WindowDefinition definition;
-  definition.path = WriteDocument("substation.sde");
-
-  ModusController controller{controller_env_.MakeControllerContext()};
-  std::unique_ptr<UiView> view = controller.Init(definition);
-  ASSERT_THAT(view, NotNull());
-
-  QWidget* runtime_widget = RuntimeWidgetOf(*view);
-  ASSERT_THAT(runtime_widget, NotNull());
-
-  // The runtime loaded, so the failure is about the document rather than the
-  // library. Either way the operator gets a message, which is the invariant.
-  EXPECT_TRUE(ContainsErrorText(Render(*runtime_widget)));
 }
 
 }  // namespace

@@ -17,7 +17,7 @@ client_module_link_libraries(client_display_frame
     # SeverityLevelForEvent rather than re-implementing the thresholds (739's
     # sibling, backlog 624).
     client_events
-    client_vds_runtime
+    client_display_view
     node_service
     timed_data
 )

@@ -12,7 +12,7 @@
 #include "profile/window_definition.h"
 #include "resources/common_resources.h"
 #include "timed_data/timed_data_spec.h"
-#include "vds_runtime/qt/vds_runtime_widget.h"
+#include "display_view/qt/display_widget.h"
 
 #include <exception>
 
@@ -29,10 +29,10 @@ std::unique_ptr<UiView> VidiconDisplayNativeView::Init(
     const WindowDefinition& definition) {
   path_ = definition.path;
 
-  auto widget = std::make_unique<VdsRuntimeWidget>();
+  auto widget = std::make_unique<DisplayWidget>();
 
   auto full_path = GetPublicFilePath(path_);
-  widget->Open(full_path, TC_VDS_RUNTIME_DOCUMENT_KIND_VDS);
+  widget->Open(full_path, scada::display::view::DocumentKind::kVds);
 
   const QString title =
       widget->title().isEmpty()

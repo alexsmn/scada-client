@@ -577,6 +577,10 @@
         <translation>Для этого окна не задана мнемосхема.</translation>
     </message>
     <message>
+        <source>No display is loaded.</source>
+        <translation>Мнемосхема не загружена.</translation>
+    </message>
+    <message>
         <source>Cannot open document</source>
         <translation>Не удалось открыть документ</translation>
     </message>

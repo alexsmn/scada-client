@@ -46,8 +46,9 @@ endif()
 
 # `qt/modus_view.cpp` is the ActiveX view and `qt/modus_view2.cpp` the libmodus
 # one; each is excluded unless its renderer is being built. Production uses
-# neither — `ModusController` builds a `ModusVdsRuntimeView` over the VDS
-# runtime — so with both options OFF this is the pre-484 source list exactly.
+# neither — `ModusController` builds a `ModusDisplayView` over the linked
+# `display` product — so with both options OFF this is the pre-484 source list
+# exactly.
 if(TARGET client_modus_qt)
   set(_client_modus_excluded_views)
   if(NOT CLIENT_MODUS_ACTIVEX)
@@ -67,9 +68,15 @@ if(TARGET client_modus_qt)
   endif()
 endif()
 
-client_module_link_libraries(client_modus PRIVATE
-  client_controller
-  client_vds_runtime
+client_module_link_libraries(client_modus
+  PUBLIC
+    # PUBLIC because modus_util.h and modus_view_wrapper.h name
+    # scada::display::view::DocumentKind in their own signatures: since ADR 0012
+    # phase 3 the renderer is linked, so the enum travels instead of the int32_t
+    # that used to keep the plugin's C API out of those headers.
+    client_display_view
+  PRIVATE
+    client_controller
 )
 
 if(TARGET client_modus_qt_unittests)

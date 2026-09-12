@@ -112,7 +112,7 @@ target_link_libraries(client_screenshot_generator PRIVATE
   client_portfolio_qt
   client_print_service_qt
   client_properties_qt
-  client_vds_runtime_qt
+  client_display_view_qt
   scada_core_opcua_client
   Boost::program_options
   base_unittest

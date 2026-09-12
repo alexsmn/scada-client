@@ -33,7 +33,7 @@ scada_product_base()
 # `core`, `graph_qt` and `view_manager_qt` are aui's — aui is added as a
 # subdirectory of this build, so its find_package calls read THIS directory's
 # module path, not one of its own.
-scada_find_products(common core opcuapp graph_qt view_manager_qt)
+scada_find_products(common core display opcuapp graph_qt view_manager_qt)
 
 enable_testing()
 
@@ -66,6 +66,7 @@ if(BUILD_CLIENT_QT)
 endif()
 
 find_package(ScadaCommon REQUIRED)
+find_package(Display REQUIRED)
 
 # aui is slated for extraction into its own repository — consume it through
 # its find module, which also provides the client_module() dual-target

@@ -7,5 +7,5 @@ client_module_link_libraries(client_vidicon_display_native PUBLIC
 client_module_link_libraries(client_vidicon_display_native PRIVATE
   client_display_frame
   client_filesystem
-  client_vds_runtime
+  client_display_view
 )

@@ -20,8 +20,8 @@ class ModusController : protected ControllerContext, public Controller {
  public:
   // The runtime view this controller embeds: the widget that goes into the
   // window, and the wrapper interface the controller drives. Production builds
-  // one object that is both (`ModusVdsRuntimeView`, which is a
-  // `VdsRuntimeWidget`), but they are kept as two pointers so a test can supply
+  // one object that is both (`ModusDisplayView`, which is a
+  // `DisplayWidget`), but they are kept as two pointers so a test can supply
   // a wrapper with no VDS runtime — and so no `tc_vds_runtime` shared library —
   // behind it. The widget is owned by the returned `UiView`; the wrapper is
   // owned by the widget tree.

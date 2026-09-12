@@ -1,6 +1,5 @@
 #include "modus/modus_util.h"
 
-#include "common/vds_runtime_api.h"
 #include "profile/profile.h"
 #include "profile/window_definition.h"
 
@@ -146,7 +145,7 @@ TEST(MakeModusFilePathTest, ASiblingHyperlinkKeepsAMultiLevelDirectory) {
 
 // `DocumentKindFor` is the seam that carries the version-2 choice to the
 // renderer; `ModusController::Init` passes its result to the runtime instead of
-// TC_VDS_RUNTIME_DOCUMENT_KIND_AUTO. It follows `IsModus2` exactly, which is
+// DocumentKind::kAuto. It follows `IsModus2` exactly, which is
 // what makes the «Use Modus runtime renderer» command observable.
 class DocumentKindForTest : public testing::Test {
  public:
@@ -159,11 +158,11 @@ TEST_F(DocumentKindForTest, AnXsdeDocumentFollowsTheProfileFlag) {
 
   profile_.modus.modus2 = true;
   EXPECT_EQ(DocumentKindFor(definition, profile_),
-            TC_VDS_RUNTIME_DOCUMENT_KIND_XSDE);
+            scada::display::view::DocumentKind::kXsde);
 
   profile_.modus.modus2 = false;
   EXPECT_EQ(DocumentKindFor(definition, profile_),
-            TC_VDS_RUNTIME_DOCUMENT_KIND_SDE);
+            scada::display::view::DocumentKind::kSde);
 }
 
 TEST_F(DocumentKindForTest, AnSdeDocumentIsVersionOneWhateverTheProfileSays) {
@@ -172,7 +171,7 @@ TEST_F(DocumentKindForTest, AnSdeDocumentIsVersionOneWhateverTheProfileSays) {
 
   profile_.modus.modus2 = true;
   EXPECT_EQ(DocumentKindFor(definition, profile_),
-            TC_VDS_RUNTIME_DOCUMENT_KIND_SDE);
+            scada::display::view::DocumentKind::kSde);
 }
 
 }  // namespace

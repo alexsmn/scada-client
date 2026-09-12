@@ -8,7 +8,7 @@ class NodeEventProvider;
 class NodeService;
 class TimedDataService;
 
-// Renders the reshelled substation display — a cross-platform VdsRuntimeWidget
+// Renders the reshelled substation display — a cross-platform DisplayWidget
 // wrapped in the DisplayFrame chrome (Live indicator, breadcrumb, zoom / fit /
 // export toolbar) — from the fixture named by the manifest's `display.path`,
 // and saves it under `GetOutputDir() / spec.filename`.

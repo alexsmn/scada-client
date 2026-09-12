@@ -1,6 +1,5 @@
 #include "modus/modus_util.h"
 
-#include "common/vds_runtime_api.h"
 #include "filesystem/file_util.h"
 #include "profile/profile.h"
 #include "profile/window_definition.h"
@@ -22,9 +21,12 @@ bool IsModus2(const WindowDefinition& definition, Profile& profile) {
   return modus2;
 }
 
-int32_t DocumentKindFor(const WindowDefinition& definition, Profile& profile) {
-  return IsModus2(definition, profile) ? TC_VDS_RUNTIME_DOCUMENT_KIND_XSDE
-                                       : TC_VDS_RUNTIME_DOCUMENT_KIND_SDE;
+scada::display::view::DocumentKind DocumentKindFor(
+    const WindowDefinition& definition,
+    Profile& profile) {
+  using scada::display::view::DocumentKind;
+  return IsModus2(definition, profile) ? DocumentKind::kXsde
+                                       : DocumentKind::kSde;
 }
 
 bool IsModusFilePath(const std::filesystem::path& path) {

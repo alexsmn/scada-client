@@ -1,12 +1,12 @@
 #include "modus/qt/modus_controller.h"
 
 #include "controller/selection_model.h"
+#include "display_view/qt/display_widget.h"
 #include "filesystem/file_util.h"
 #include "modus/modus_component.h"
 #include "modus/modus_util.h"
 #include "modus/modus_view_wrapper.h"
 #include "profile/window_definition.h"
-#include "vds_runtime/qt/vds_runtime_widget.h"
 
 #include <QScrollArea>
 
@@ -16,18 +16,17 @@
 
 namespace {
 
-// The production runtime view: one object that is both the Qt widget the
+// The production display view: one object that is both the Qt widget the
 // window embeds and the `ModusViewWrapper` the controller drives.
-class ModusVdsRuntimeView final : public VdsRuntimeWidget,
-                                  public ModusViewWrapper {
+class ModusDisplayView final : public DisplayWidget, public ModusViewWrapper {
  public:
-  explicit ModusVdsRuntimeView(QWidget* parent = nullptr)
-      : VdsRuntimeWidget{parent} {}
+  explicit ModusDisplayView(QWidget* parent = nullptr)
+      : DisplayWidget{parent} {}
 
   void Open(const WindowDefinition& definition,
-            int32_t document_kind) override {
+            scada::display::view::DocumentKind document_kind) override {
     path_ = GetPublicFilePath(definition.path);
-    VdsRuntimeWidget::Open(path_, document_kind);
+    DisplayWidget::Open(path_, document_kind);
   }
 
   void Save(WindowDefinition&) override {}
@@ -50,7 +49,7 @@ ModusController::ModusController(const ControllerContext& context,
 ModusController::~ModusController() = default;
 
 ModusController::RuntimeView ModusController::CreateVdsRuntimeView() {
-  auto* runtime_view = new ModusVdsRuntimeView;
+  auto* runtime_view = new ModusDisplayView;
 
   runtime_view->set_selection_callback([this](const QString& data_source) {
     SelectDataSource(data_source.toStdString());
