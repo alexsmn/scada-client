@@ -10,8 +10,10 @@ rendered from a tree that no longer exists — so images drift while the gallery
 still reads as a baseline, silently.
 
 Re-rendering and comparing is the only thing that can *prove* freshness, and it
-is expensive: it needs Qt, a build, and — for the Qt gallery — Windows, which
-is not the platform most sessions run on. This script is the cheap half:
+is expensive: it needs Qt and a build. It no longer needs Windows — that
+requirement was retired on 2026-09-12 and survives only for the `manual-modus`
+ActiveX family, which this script's `generated_rows` never covers. This script
+is the cheap half:
 it records, per generated image, the commit and platform it was captured at,
 so staleness becomes **visible** without a re-render.
 

@@ -176,10 +176,10 @@
       ],
       "notes": "The activity rail on its own, from CaptureActivityRail under --theme. The manual documents the rail as a surface in its own right and a 1920px window shot cannot show a 48px column legibly, so this is grabbed from the rail widget rather than cropped out of workbench-window.png. The fixture seeds three iconed pages (Overview/Alarms/Trends) so the middle band reads as a group rather than as one button, which is the whole point of the band; the capture asserts all three zones are present, so an image missing one fails rather than being published. Shows the admin session: the Nodes and Administration modes and the Users utility are hidden for everyone else. NOT YET A WINDOWS RENDER (re-rendered on macOS 2026-08-30, originally 2026-08-02): carries macOS fonts and metrics — re-render on Windows before publishing. The 2026-08-30 pass is a real UI change, not a re-render: the rail took VS Code's macOS activity-bar geometry (48px rail and 48px items against the previous 52/44, a 2px full-height active marker against 3px) and its glyphs dropped from 24px to 20px. The pages band was then replaced outright by a horizontal separator above the pages group: the band did not read at the native rail's density (measured 8/255 off the rail as a fill, 15 with rules) and the rule lands at 129 against a 30 rail. The web client keeps the band — see docs/client/ux/shell.md §2.1. The rail is 49px from 2026-08-30, not 48: it gained its own 1px right edge, without which it and the Explorer beside it were the same colour and ran together. Items are 48 wide but 40 tall from the same pass, following VS Code's glyph-to-item ratio rather than its pixel count, since our 20px SVG glyph puts more ink on screen than its 24px codicon. The glyphs were re-centred too — the active marker's left border had been reserved on one side only, putting every glyph 1px off axis. Kept out of current_generator_owned_subset (subset is auto-* only).",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "a94c71fcc",
         "platform": "macos",
         "dirty": true,
-        "sha256": "bad675c650524085cc8b50b252b93c4f4096b8072f0bbd951ed167946cc4e150"
+        "sha256": "718e7e7dceb444c0439375ea1532bef8aec3667af2eb27a6f0fec5157c4a9b23"
       }
     },
     {
@@ -204,10 +204,10 @@
       ],
       "notes": "The reshelled operator workbench: CaptureMainWindow under --theme renders the full shell (activity rail, context bar with KPI severity tiles, command toolbar, editor tabs over EventJournal/Summ/Struct, the Inspector fronted in the right dock, status strip) and saves it under this name so the legacy client-window.png is never overwritten by a themed render. Fixture pending alarms light the tiles and the journal chrome. Published from a macOS render pending a Windows re-render; kept out of current_generator_owned_subset (subset is auto-* only). STALE (2026-08-01): the status strip's ping cell widened (120 -> 180) and now appends a \"no response\" marker once the ping round trip crosses 3 s (macOS App Nap fix, docs/client/message-loop.md), which shifts the endpoint cell beside it; fold this into the same pending Windows re-render. STALE (2026-07-26): the context bar no longer carries the identity/connection cluster - user/connection/server/endpoint are in the status strip only - but the published PNG still shows it; re-render on Windows and republish. The manual text in scada-docs client/workbench.md (RU+EN) is already updated.",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "a94c71fcc",
         "platform": "macos",
         "dirty": true,
-        "sha256": "bbf13683dd611005eea34dd66904925345663743e5552327ff471b3ca9e7a3b5"
+        "sha256": "5f7a7efa5b2f8bb3c349ab25eb18a2feb8f107556b1b7369a2f44fc745e2843e"
       }
     },
     {
@@ -218,10 +218,10 @@
       ],
       "notes": "The Overview landing cockpit: a fresh page-less profile under the reshell theme boots through CreateInitialPage into MakeOverviewPage - the Explorer sidebar (tabified with its Favorites and Portfolio sibling panes) beside the dominant trend (65%) over the actionable-alarm strip, with the Inspector fronted on the right. Captured via the production seeding path (CaptureOverviewPage), so it guards the reshell initial-page routing too. macOS render pending a Windows re-render; out of current_generator_owned_subset (subset is auto-* only). Re-rendered 2026-08-29: the Explorer trees stopped drawing a row for their root (ConfigurationTreeView now takes Tree's hidden-root default), because the pane's own dock title already names it — so the tree starts at its content. macOS render, like the one it replaces; the gallery is still not a Windows baseline (docs/ops/client-screenshots.md). Rendered with --only, so no other image in the gallery moved, and provenance was deliberately NOT stamped: --stamp rewrites every row whose digest differs, and with no digests recorded anywhere yet that is all 63 of them — see backlog 642. Its Explorer pane is one of the four.",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "a94c71fcc",
         "platform": "macos",
         "dirty": true,
-        "sha256": "612875d9306386895e3e6d3f9c3c9f0409471cfbc136db588dbabde331752b32"
+        "sha256": "7afeae195f488f2d22facf8ffb55730258c41e00baff26ea42f16ac9a51a2c9f"
       }
     },
     {
@@ -304,12 +304,12 @@
       "referenced_from": [
         "client/workbench.md"
       ],
-      "notes": "Reshelled substation display under --theme: the DisplayFrame chrome (Live indicator, breadcrumb, zoom/fit/export) around the cross-platform VDS renderer, plus the bay strips below it — the Measurements watch (live signal values) and the Recent-events list (the fixture's pending alarms). The Measurements Value/Updated cells now fill: the frame refreshes on the spec's property_change_handler (the PROPERTY_CURRENT delivery path), not only update_handler; CaptureDisplay asserts the value cell is non-empty so that cannot regress silently. The frame is built only under the reshell theme (WrapDisplayInFrame gates on it), hence reshell-theme and the themed ctest. Published from a macOS render pending a Windows re-render; out of current_generator_owned_subset (subset is auto-* only). Windows-only Modus ActiveX not exercised here.",
+      "notes": "Reshelled substation display under --theme: the DisplayFrame chrome (Live indicator, breadcrumb, zoom/fit/export) around the cross-platform VDS renderer, plus the bay strips below it — the Measurements watch (live signal values) and the Recent-events list (the fixture's pending alarms). The Measurements Value/Updated cells now fill: the frame refreshes on the spec's property_change_handler (the PROPERTY_CURRENT delivery path), not only update_handler; CaptureDisplay asserts the value cell is non-empty so that cannot regress silently. The frame is built only under the reshell theme (WrapDisplayInFrame gates on it), hence reshell-theme and the themed ctest. Rendered on macOS, which is a supported platform for this gallery since 2026-09-12 -- there is no Windows re-render pending. Out of current_generator_owned_subset (subset is auto-* only). **This capture needs tc_vds_runtime staged beside the generator or it renders an error message instead of the display** (V40, fixed 2026-09-12): the runtime is built by the DESIGNER product, and ADR 0011 removed the root target that used to copy it next to client_qt, so the client's own build tree has none. Stage it before capturing: cp designer/build/ninja/bin/<Config>/libtc_vds_runtime.dylib client/build/ninja/bin/<Config>/vds/ -- VdsRuntimeLoader looks in the install dir and in vds/ beneath it. Windows-only Modus ActiveX not exercised here.",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "a94c71fcc",
         "platform": "macos",
         "dirty": true,
-        "sha256": "63de392beba7b0bbef5c7969c109138d4aacb69cc10dbd70fc3a0d75c425b034"
+        "sha256": "3bebadf34141e45717c195459d6aab6f44c4664b6e39cb327e995054f2af068c"
       }
     },
     {
@@ -1247,10 +1247,10 @@
       "notes": "Session-request debugger (client<->server Browse/Read/Call trace), rendered from a fixture trace by debugger_capture.cpp. Not a registered view (it is --debug gated), so it has a dedicated capture. Distinct from the device protocol frame trace in ui-mockups/screens/device-protocol-trace.html, which is unbuilt. Not published yet: no manual page embeds it.",
       "published": false,
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "a94c71fcc",
         "platform": "macos",
         "dirty": true,
-        "sha256": "cf332cf6587280204449562ec4ce79a4a4f20523dd7bdfd9c9b65749cdfe1d86"
+        "sha256": "8217ef2032b746ca110ac545273daf5291964fed60f1e949964cc44a370a1ae1"
       }
     },
     {
