@@ -587,10 +587,10 @@
       ],
       "notes": "Hardware explorer under --theme: filter field + per-device good/uncertain/bad status dots (Subsystems / HardwareTreeView). Theme-gated reshell chrome (backlog 5.0/4.2); the legacy view is a bare tree, so it is excluded from the no-theme managed check. Fixture devices KP-01 offline / KP-02 online / KP-03 disabled. Published 2026-08-15: it replaced `devices-off.png` in dev/devices.md and the tree half of `devices-status.png` in client.md — both legacy captures of this same window. Dark, like the rest of the published subset, and the status dots exist only under --theme, so this image cannot be published legacy. Re-rendered 2026-08-29: the Explorer trees stopped drawing a row for their root (ConfigurationTreeView now takes Tree's hidden-root default), because the pane's own dock title already names it — so the tree starts at its content. macOS render, like the one it replaces; the gallery is still not a Windows baseline (docs/ops/client-screenshots.md). Rendered with --only, so no other image in the gallery moved, and provenance was deliberately NOT stamped: --stamp rewrites every row whose digest differs, and with no digests recorded anywhere yet that is all 63 of them — see backlog 642. The «Все оборудование» top row is what went. The same render also caught up with a fixture change nobody had re-rendered for: 3e61559f9 (2026-08-23) nested the -104 RTU under an Iec60870LinkType link, so КП-01 МЭК-60870 is no longer a top-level row — it sits inside «Канал МЭК-104», collapsed here. That is the fixture's shape catching up, not a device disappearing.",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "9204f0684",
         "platform": "macos",
         "dirty": true,
-        "sha256": "d7d70c679051692b82b0a7899bccee540f0fd17fe58fd8348fdd5b4bc3e39848"
+        "sha256": "bd544c2f90d139a18bf960e3c06cec40156785c6ed5a104568b959dd0220535f"
       }
     },
     {
@@ -687,10 +687,10 @@
       "referenced_from": [],
       "notes": "Files view (FileSystemView) — the server's file store as a tree: directories typed FileDirectoryType, files typed FileType, expanded. Untagged until 2026-08-01, so the managed-image gate skipped it, and the fixture defined no file nodes at all — the view rendered its single root row, which no row count could catch (hence min_columns' sibling fix: the tree row check now counts materialized descendants, not just top-level rows, and runs after the expand step). The fixture's file store is described under `_filesystem_comment` in screenshot_data.json; it also needed FileDirectoryType added to the shared ScadaTestAddressSpace and FileType corrected there from ObjectType to VariableType, which is what filesystem.xml declares. The expand step settles pending node loads and expands twice: the tree's leaf test resolves a node's type definition lazily, so on the first pass every file still drew an expand twisty. macOS render pending a Windows re-render; validation-only. Re-rendered 2026-08-29: the Explorer trees stopped drawing a row for their root (ConfigurationTreeView now takes Tree's hidden-root default), because the pane's own dock title already names it — so the tree starts at its content. macOS render, like the one it replaces; the gallery is still not a Windows baseline (docs/ops/client-screenshots.md). Rendered with --only, so no other image in the gallery moved, and provenance was deliberately NOT stamped: --stamp rewrites every row whose digest differs, and with no digests recorded anywhere yet that is all 63 of them — see backlog 642. The «Файловая система» top row is what went — and note the fixture names that node more mildly than the shipped nodeset, where it is «Файлы», exactly the pane's own title. The spec's row floor dropped by one in the same change: the count starts at the view's root index, which the hidden root now occupies, so the root row is no longer among the rows counted.",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "9204f0684",
         "platform": "macos",
         "dirty": true,
-        "sha256": "a32266b7db6c940c730321ecf6ee4854ae894dc50740e3f7f0c0b0e4736b9ffd"
+        "sha256": "d0c9c1ef0a37d02a0a3179464f94d48e59c6cbd35b776b0e3177ea60345eb21f"
       }
     },
     {
