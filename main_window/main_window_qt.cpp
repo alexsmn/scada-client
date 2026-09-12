@@ -62,6 +62,7 @@
 #include <QApplication>
 #include <QDockWidget>
 #include <QEvent>
+#include <QFontMetrics>
 #include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QIcon>
@@ -72,6 +73,7 @@
 #include <QScreen>
 #include <QShortcut>
 #include <QStatusBar>
+#include <QStyle>
 #include <QTabWidget>
 #include <QTimer>
 #include <QToolBar>
@@ -317,6 +319,22 @@ namespace {
 // region for an unacknowledged alarm.
 constexpr int kAnnunciatorFlashInterval = 700;
 
+// Corner radius for the escalation chips, which are pills: half the chip's own
+// height -- exactly, because the chips are vertically Fixed -- so the shape
+// survives any OS text size. This was a hard-coded 9px,
+// which is a defect of the kind docs/client/ux/README.md names outright -- a
+// chip whose height is font-derived but whose radius is not stops reading as a
+// pill the moment the font grows past twice that radius, which is exactly what
+// an accessibility text-size bump does.
+//
+// `border` is the stylesheet border width the caller writes in the same rule: a
+// QSS border widens the label past the font-and-margin box QLabel sizes itself
+// to, and a radius that ignored it would fall short of half the drawn height.
+int PillRadius(const QLabel& label, int border) {
+  const QFontMetrics metrics{label.font()};
+  return (metrics.height() + 2 * label.margin() + 2 * border) / 2;
+}
+
 }  // namespace
 
 // Paints the annunciator chip for the current phase of its flash.
@@ -335,16 +353,20 @@ void MainWindow::StyleAnnunciator() {
       scada::aui::SeverityColor(scada::aui::SeverityLevel::kCritical);
   const QColor accent = color ? color->qcolor() : QColor{0xe8, 0x5a, 0x52};
 
+  const int radius = PillRadius(*annunciator_indicator_, 1);
+
   if (annunciator_flash_on_) {
     annunciator_indicator_->setStyleSheet(
         QStringLiteral("background:%1;color:%2;border:1px solid %1;"
-                       "border-radius:9px;font-weight:700;")
-            .arg(accent.name(), scada::aui::ReadableTextOn(accent).name()));
+                       "border-radius:%3px;font-weight:700;")
+            .arg(accent.name(), scada::aui::ReadableTextOn(accent).name())
+            .arg(radius));
   } else {
     annunciator_indicator_->setStyleSheet(
         QStringLiteral("background:transparent;color:%1;border:1px solid %1;"
-                       "border-radius:9px;font-weight:700;")
-            .arg(accent.name()));
+                       "border-radius:%2px;font-weight:700;")
+            .arg(accent.name())
+            .arg(radius));
   }
 }
 
@@ -354,6 +376,31 @@ void MainWindow::CreateContextBar() {
   context_bar_->setMovable(false);
   context_bar_->setFloatable(false);
   context_bar_->setContextMenuPolicy(Qt::PreventContextMenu);
+
+  // Give the bar vertical breathing room, taken from the style.
+  //
+  // A QToolBar states no height of its own: it collapses to its tallest child
+  // plus the style's frame. All three slots zeroed their vertical margins and
+  // CommandField::sizeHint() forwards QLineEdit's height unchanged, so the
+  // field alone decided the bar and the bar hugged it -- measured at 29px with
+  // 3px of clearance around a 23px field.
+  //
+  // The padding is a style metric and never a literal, so it tracks DPI and the
+  // OS text size (docs/client/ux/README.md: "Metrics come from the platform ...
+  // Hard-coded pixel sizes are defects"). Deliberately NOT setFixedHeight: that
+  // would pin the bar to one machine's pixels and break text-size
+  // accessibility, and matching the mockups' 40px is explicitly not the goal --
+  // docs/product/ui-mockups/mockup-caveats.md, "What is not a divergence",
+  // exempts Qt control metrics from the HTML screens.
+  //
+  // It goes on the three SLOTS and not on the toolbar's own layout, which was
+  // tried first and is wrong in a way only a render shows: QToolBarLayout hands
+  // a vertically-Fixed child its sizeHint height and top-aligns it, so padding
+  // the toolbar grew the bar to 41px while leaving the field at the top with
+  // 3px above it and 15px below. Padding each slot instead makes the slot the
+  // tallest child, and a QHBoxLayout centres a Fixed-height widget inside it.
+  const int slot_padding = context_bar_->style()->pixelMetric(
+      QStyle::PM_LayoutVerticalSpacing, nullptr, context_bar_);
 
   // Three slots, as `operator-shell.html` lays the bar out: breadcrumb left,
   // command field centre, alarm state right. Each side is a container of its
@@ -369,7 +416,7 @@ void MainWindow::CreateContextBar() {
   // — see client/CLAUDE.md, "the mockups are not a visual target".
   auto* left_slot = new QWidget(context_bar_);
   auto* left_layout = new QHBoxLayout(left_slot);
-  left_layout->setContentsMargins(0, 0, 0, 0);
+  left_layout->setContentsMargins(0, slot_padding, 0, slot_padding);
   left_slot->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
   // No brand lockup. A native application identifies itself in the window
@@ -395,7 +442,16 @@ void MainWindow::CreateContextBar() {
       palette_key, [this](const QString& initial_text) {
         ShowCommandPalette(initial_text);
       });
-  context_bar_->addWidget(command_search_);
+  // The centre slot is a container like the two beside it, so the field takes
+  // the same padding and is centred in it rather than sitting against the
+  // bar's top edge. Preferred (not Expanding) horizontally, so the two
+  // Expanding side slots still centre it against the bar.
+  auto* centre_slot = new QWidget(context_bar_);
+  auto* centre_layout = new QHBoxLayout(centre_slot);
+  centre_layout->setContentsMargins(0, slot_padding, 0, slot_padding);
+  centre_slot->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+  centre_layout->addWidget(command_search_);
+  context_bar_->addWidget(centre_slot);
 
   auto* palette_shortcut = new QShortcut(palette_key, this);
   connect(palette_shortcut, &QShortcut::activated, this,
@@ -407,7 +463,7 @@ void MainWindow::CreateContextBar() {
   // tile states a count.
   auto* right_slot = new QWidget(context_bar_);
   auto* right_layout = new QHBoxLayout(right_slot);
-  right_layout->setContentsMargins(0, 0, 0, 0);
+  right_layout->setContentsMargins(0, slot_padding, 0, slot_padding);
   right_slot->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
   right_layout->addStretch();
 
@@ -417,6 +473,13 @@ void MainWindow::CreateContextBar() {
   // such alarm read as a tile going from 0 to 1 and nothing else.
   annunciator_indicator_ = new QLabel(right_slot);
   annunciator_indicator_->setMargin(2);
+  // Fixed vertically so the chip is its own natural height and is
+  // centred in the slot. Left to stretch, it fills the row and the
+  // font-derived PillRadius then falls short of half the drawn height
+  // -- measured at a 46px chip taking a 17px radius under a 2x font,
+  // which reads as a rounded rectangle rather than a pill.
+  annunciator_indicator_->setSizePolicy(QSizePolicy::Preferred,
+                                        QSizePolicy::Fixed);
   annunciator_indicator_->setVisible(false);
   right_layout->addWidget(annunciator_indicator_);
 
@@ -438,6 +501,12 @@ void MainWindow::CreateContextBar() {
   // annunciator is drawn as an outline.
   flood_indicator_ = new QLabel(right_slot);
   flood_indicator_->setMargin(2);
+  // Fixed vertically so the chip is its own natural height and is
+  // centred in the slot. Left to stretch, it fills the row and the
+  // font-derived PillRadius then falls short of half the drawn height
+  // -- measured at a 46px chip taking a 17px radius under a 2x font,
+  // which reads as a rounded rectangle rather than a pill.
+  flood_indicator_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
   flood_indicator_->setVisible(false);
   right_layout->addWidget(flood_indicator_);
 
@@ -522,8 +591,9 @@ void MainWindow::CreateContextBar() {
       const QColor fill = color ? color->qcolor() : QColor{0xe8, 0x5a, 0x52};
       flood_indicator_->setStyleSheet(
           QStringLiteral(
-              "background:%1;color:%2;border-radius:9px;font-weight:700;")
-              .arg(fill.name(), scada::aui::ReadableTextOn(fill).name()));
+              "background:%1;color:%2;border-radius:%3px;font-weight:700;")
+              .arg(fill.name(), scada::aui::ReadableTextOn(fill).name())
+              .arg(PillRadius(*flood_indicator_, 0)));
     }
   };
   refresh();
