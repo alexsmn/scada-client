@@ -54,10 +54,7 @@ class VidiconDisplayNativeView : private VidiconDisplayNativeViewContext,
 
   std::filesystem::path path_;
 
-  QWidget* widget_ = nullptr;
-
-  // The reshell frame around the renderer when the UX theme is active (else
-  // null — the bare renderer is returned). Used to push selected signals into
+  // The display frame around the renderer. Used to push selected signals into
   // the Measurements strip.
   DisplayFrame* frame_ = nullptr;
 

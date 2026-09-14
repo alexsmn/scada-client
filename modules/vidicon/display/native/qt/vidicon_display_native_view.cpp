@@ -54,19 +54,20 @@ std::unique_ptr<UiView> VidiconDisplayNativeView::Init(
     }
   });
 
-  widget_ = widget.get();
-
   // Wrap the renderer in the display frame — Live indicator, hotspot
   // breadcrumb, zoom / fit / export, and the bay strips. The frame reparents
-  // (owns) the renderer, so release the unique_ptr only when ownership actually
-  // moved into a new frame.
+  // (owns) the renderer, so the unique_ptr is released once ownership has
+  // moved into it.
+  //
+  // This used to be conditional: WrapDisplayInFrame returned the bare widget
+  // under the legacy theme, and the caller had to detect that by identity.
+  // `15bd4e48b` removed the legacy theme, so the frame is now unconditional
+  // and there is no bare-widget route left to detect.
   QWidget* framed = WrapDisplayInFrame(
       widget.get(), title,
       DisplayFrameContext{.timed_data_service = &timed_data_service_,
                           .node_event_provider = &node_event_provider_,
                           .node_service = &node_service_});
-  if (framed == widget_)
-    return widget;
 
   frame_ = static_cast<DisplayFrame*>(framed);
   widget.release();
