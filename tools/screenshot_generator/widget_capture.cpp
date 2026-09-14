@@ -82,6 +82,6 @@ void SaveScreenshot(QWidget* widget, const ScreenshotSpec& spec) {
     widget->setVisible(was_visible);
   }
 
-  auto path = GetOutputDir() / spec.filename;
+  auto path = OutputPathFor(spec.filename);
   pixmap.save(QString::fromStdString(path.string()));
 }

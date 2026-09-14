@@ -3,6 +3,7 @@
     {
       "file": "favorites.png",
       "tag": "auto-view",
+      "theme": "dark",
       "parity_key": "favorites",
       "referenced_from": [],
       "notes": "Favorites pane: saved windows in two folders, showing all three window-type glyphs — folder, table and chart-spline (Lucide). Seeded from the fixture's `favourites` block, expanded via the spec's `expand` flag and guarded at min_rows 2; it rendered as a blank panel for months because nothing seeded the store and no guard noticed. Not published yet: no manual page embeds it.",
@@ -12,6 +13,20 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "8bc8d53104cc6ed2174d3bc0644af590ad226824a3a146506888c76f1972d03f"
+      }
+    },
+    {
+      "file": "favorites-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of favorites.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to favorites.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "ceeadb17451cb64752ed0710f99b989599cc459056533e92c97f4a630761773f"
       }
     },
     {
@@ -25,6 +40,7 @@
     {
       "file": "client-login.png",
       "tag": "auto-dialog",
+      "theme": "dark",
       "parity_key": "login",
       "referenced_from": [
         "getting-started.md"
@@ -38,8 +54,23 @@
       }
     },
     {
+      "file": "client-login-light.png",
+      "tag": "auto-dialog",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of client-login.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to client-login.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "f28e35a777c7a9c184034fbcdc97f49cbe36929d984eb446c13b1866c4dd5c17"
+      }
+    },
+    {
       "file": "workbench-login.png",
       "tag": "auto-dialog",
+      "theme": "dark",
       "parity_key": "login",
       "referenced_from": [
         "client/workbench.md"
@@ -53,8 +84,23 @@
       }
     },
     {
+      "file": "workbench-login-light.png",
+      "tag": "auto-dialog",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of workbench-login.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to workbench-login.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "00decb41c4ac3a8e9b5983dfa7f338155c4f3d11f1b33a5faa8c9e4d6d767f38"
+      }
+    },
+    {
       "file": "command-palette.png",
       "tag": "auto-dialog",
+      "theme": "dark",
       "parity_key": "command-palette",
       "referenced_from": [
         "client/workbench.md"
@@ -68,8 +114,23 @@
       }
     },
     {
+      "file": "command-palette-light.png",
+      "tag": "auto-dialog",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of command-palette.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to command-palette.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "d7477c3580c3c50b2234b49a1e090e63f86fea11c27ff3b639f33672018db714"
+      }
+    },
+    {
       "file": "about.png",
       "tag": "auto-dialog",
+      "theme": "dark",
       "published": false,
       "parity_key": "about",
       "referenced_from": [],
@@ -82,8 +143,23 @@
       }
     },
     {
+      "file": "about-light.png",
+      "tag": "auto-dialog",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of about.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to about.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "e85dce67ca4607d6e38b635845318dc3a3e4d9ab1fe75756b63ef50fbe1d188a"
+      }
+    },
+    {
       "file": "change-password.png",
       "tag": "auto-dialog",
+      "theme": "dark",
       "published": false,
       "parity_key": "change-password",
       "referenced_from": [],
@@ -96,8 +172,23 @@
       }
     },
     {
+      "file": "change-password-light.png",
+      "tag": "auto-dialog",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of change-password.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to change-password.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "ccc7c5c4013078e2bd1e43cf7fa7dd158f03d88093230376e01bc355975a5906"
+      }
+    },
+    {
       "file": "time-range.png",
       "tag": "auto-dialog",
+      "theme": "dark",
       "published": false,
       "parity_key": "time-range",
       "referenced_from": [],
@@ -110,8 +201,23 @@
       }
     },
     {
+      "file": "time-range-light.png",
+      "tag": "auto-dialog",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of time-range.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to time-range.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "82c5a70324050d2d391c9ad539fb10dd7b6710e6fbbb05134f7f6ee15a56a5c3"
+      }
+    },
+    {
       "file": "multi-create.png",
       "tag": "auto-dialog",
+      "theme": "dark",
       "published": false,
       "parity_key": "multi-create",
       "referenced_from": [],
@@ -124,8 +230,23 @@
       }
     },
     {
+      "file": "multi-create-light.png",
+      "tag": "auto-dialog",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of multi-create.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to multi-create.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "3d11ee02f949ed6ba03f6ec744fa0b30dd82fef1d94d027fe979dcfe9f4f7591"
+      }
+    },
+    {
       "file": "message-box.png",
       "tag": "auto-dialog",
+      "theme": "dark",
       "published": false,
       "parity_key": "message-box",
       "referenced_from": [],
@@ -138,8 +259,23 @@
       }
     },
     {
+      "file": "message-box-light.png",
+      "tag": "auto-dialog",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of message-box.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to message-box.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "96cd7470b7a4e3c9053e04a09d46b330b7a8620e6ba76b609a7e483cb7e3b143"
+      }
+    },
+    {
       "file": "client-retransmission.png",
       "tag": "auto-view",
+      "theme": "dark",
       "parity_key": "transmission",
       "referenced_from": [
         "client.md",
@@ -151,6 +287,20 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "e3a383d76de1ec12f5fca69eca1dfe74b52d248e6fadded28e9badbfaf6ec1c6"
+      }
+    },
+    {
+      "file": "client-retransmission-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of client-retransmission.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to client-retransmission.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "ac2a2ba7cc4404d1a2354ceba546d7402c4b28a16cd49c67ac9a952e24505434"
       }
     },
     {
@@ -171,6 +321,7 @@
     {
       "file": "workbench-activity-rail.png",
       "tag": "auto-view",
+      "theme": "dark",
       "referenced_from": [
         "client/workbench.md"
       ],
@@ -183,8 +334,23 @@
       }
     },
     {
+      "file": "workbench-activity-rail-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of workbench-activity-rail.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to workbench-activity-rail.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "e261d1bb67cb74e059114f99e3b898691560d2de64bda66a42698a3d0f363c81"
+      }
+    },
+    {
       "file": "settings-dialog.png",
       "tag": "auto-dialog",
+      "theme": "dark",
       "referenced_from": [
         "client/workbench.md"
       ],
@@ -197,8 +363,23 @@
       }
     },
     {
+      "file": "settings-dialog-light.png",
+      "tag": "auto-dialog",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of settings-dialog.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to settings-dialog.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "782d0b82510e71eb068dd8ca2b8995e25125beab99a4662671d2eeeb114e4ff8"
+      }
+    },
+    {
       "file": "workbench-window.png",
       "tag": "auto-view",
+      "theme": "dark",
       "referenced_from": [
         "client/workbench.md"
       ],
@@ -211,8 +392,23 @@
       }
     },
     {
+      "file": "workbench-window-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of workbench-window.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to workbench-window.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "5895ec45e2302b2c52a2d921a0ec8d684129e1b6626539b6954facd8356989a8"
+      }
+    },
+    {
       "file": "workbench-overview.png",
       "tag": "auto-view",
+      "theme": "dark",
       "referenced_from": [
         "client/workbench.md"
       ],
@@ -225,6 +421,20 @@
       }
     },
     {
+      "file": "workbench-overview-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of workbench-overview.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to workbench-overview.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "9c8c70c9d65472d26173c24b1733ba922f2b9ac9a3947adb9cff0606689de0c0"
+      }
+    },
+    {
       "file": "control-confirm.jpg",
       "tag": "obsolete",
       "referenced_from": [],
@@ -233,6 +443,7 @@
     {
       "file": "control-select-confirm.png",
       "tag": "auto-dialog",
+      "theme": "dark",
       "parity_key": "write",
       "referenced_from": [
         "client.md"
@@ -243,6 +454,20 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "2833b542d4283f52f108f4eef28a314673035d2f21560f8925068e7a3aacb46a"
+      }
+    },
+    {
+      "file": "control-select-confirm-light.png",
+      "tag": "auto-dialog",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of control-select-confirm.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to control-select-confirm.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "082d227cfc524388726bc7e236acb5083f1c2c89f65c57d6b8dd1cdf964efe72"
       }
     },
     {
@@ -300,6 +525,7 @@
     {
       "file": "substation-display.png",
       "tag": "auto-view",
+      "theme": "dark",
       "parity_key": "vidicon-display",
       "referenced_from": [
         "client/workbench.md"
@@ -310,6 +536,20 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "b36562110ec314ab3ee35faecbed5b9c13ce1c8ddfd95044e66cf1bd0570007a"
+      }
+    },
+    {
+      "file": "substation-display-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of substation-display.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to substation-display.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "0f953ab0916d59b39de62abc62abbaa1c9aebea593c51c1e5f026a59933d42cd"
       }
     },
     {
@@ -333,6 +573,7 @@
     {
       "file": "graph-cursor.png",
       "tag": "auto-view",
+      "theme": "dark",
       "parity_key": "graph",
       "referenced_from": [
         "client/graph.md"
@@ -346,8 +587,23 @@
       }
     },
     {
+      "file": "graph-cursor-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of graph-cursor.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to graph-cursor.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "5d2ff9fa7e3fc17f92cbaf77c25434a7aa267e56fdca75ecf3b56d7ddca4f53e"
+      }
+    },
+    {
       "file": "series-inspector.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": false,
       "parity_key": "series-inspector",
       "referenced_from": [],
@@ -360,8 +616,23 @@
       }
     },
     {
+      "file": "series-inspector-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of series-inspector.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to series-inspector.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "372f61185515b78b929ff3b4561c7bd99feaae2d191727ed458db36274405ead"
+      }
+    },
+    {
       "file": "inspector-panel.png",
       "tag": "auto-view",
+      "theme": "dark",
       "parity_key": "inspector",
       "referenced_from": [
         "client/workbench.md"
@@ -375,8 +646,23 @@
       }
     },
     {
+      "file": "inspector-panel-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of inspector-panel.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to inspector-panel.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "9e19f8d488309c7c87a82b2a5c4d056575748ca0d298ebb556396d5abd356fba"
+      }
+    },
+    {
       "file": "inspector-event.png",
       "tag": "auto-view",
+      "theme": "dark",
       "parity_key": "inspector",
       "referenced_from": [
         "client/workbench.md"
@@ -390,8 +676,23 @@
       }
     },
     {
+      "file": "inspector-event-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of inspector-event.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to inspector-event.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "cfaa87f60611c9c44b443691e1bbe76594fbf2fa32c939017602705dd5edb103"
+      }
+    },
+    {
       "file": "device-diagnostics.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": false,
       "parity_key": "device-diagnostics",
       "referenced_from": [],
@@ -404,8 +705,23 @@
       }
     },
     {
+      "file": "device-diagnostics-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of device-diagnostics.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to device-diagnostics.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "2eb2471dc0d7b02e3b7a424375f77b876bf40c9ce8f371fa202e2c9775441ae8"
+      }
+    },
+    {
       "file": "device-metrics.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": true,
       "parity_key": "device-diagnostics",
       "referenced_from": [
@@ -420,8 +736,23 @@
       }
     },
     {
+      "file": "device-metrics-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of device-metrics.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to device-metrics.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "05688cb5bacf593c20aa11df644df6f5149f2b89d44beee468785f0008f8577e"
+      }
+    },
+    {
       "file": "device-watch.png",
       "tag": "auto-view",
+      "theme": "dark",
       "parity_key": "watch",
       "referenced_from": [
         "client/device-watch.md"
@@ -436,8 +767,23 @@
       }
     },
     {
+      "file": "device-watch-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of device-watch.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to device-watch.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "78c4152e53f3de61964f8573d5e6bb17d7fc99f4b25ee26906eeca6217bc27f8"
+      }
+    },
+    {
       "file": "administration-explorer.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": false,
       "parity_key": "administration-explorer",
       "referenced_from": [],
@@ -450,8 +796,23 @@
       }
     },
     {
+      "file": "administration-explorer-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of administration-explorer.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to administration-explorer.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "eacf29aa03e3bcab99991523503c0667475e6f631f972373ac88965a4ef58d05"
+      }
+    },
+    {
       "file": "roles.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": false,
       "parity_key": "roles",
       "referenced_from": [],
@@ -464,8 +825,23 @@
       }
     },
     {
+      "file": "roles-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of roles.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to roles.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "f4c84ed9010d52914edd12b07b4f56e2db45075e66369d462d4ffa04f0be8d6c"
+      }
+    },
+    {
       "file": "password-policy.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": false,
       "parity_key": "password-policy",
       "referenced_from": [],
@@ -478,8 +854,23 @@
       }
     },
     {
+      "file": "password-policy-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of password-policy.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to password-policy.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "ccd50514dcfd95f53a1d76069275829b07936c68a2d44ca3c70bff23a2be8e33"
+      }
+    },
+    {
       "file": "audit-log.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": false,
       "parity_key": "audit-log",
       "referenced_from": [],
@@ -492,8 +883,23 @@
       }
     },
     {
+      "file": "audit-log-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of audit-log.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to audit-log.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "0dfc282b2710da18587ea34e9a5a26fd4fac024a0f0bad69936b72c5f1adbe08"
+      }
+    },
+    {
       "file": "users-rbac.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": false,
       "parity_key": "user-access",
       "referenced_from": [],
@@ -506,8 +912,23 @@
       }
     },
     {
+      "file": "users-rbac-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of users-rbac.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to users-rbac.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "9a99c2d7573a76460c5528129951c7d8f0e87201afe67e7b4558d23e152406ab"
+      }
+    },
+    {
       "file": "transmission-rule.png",
       "tag": "auto-view",
+      "theme": "dark",
       "parity_key": "transmission",
       "referenced_from": [
         "client/workbench.md"
@@ -521,8 +942,23 @@
       }
     },
     {
+      "file": "transmission-rule-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of transmission-rule.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to transmission-rule.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "9c0657eef3148298e685748b7df4b8905c7c27c49aae5c88e55aa6e1f462fc02"
+      }
+    },
+    {
       "file": "bulk-create.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": false,
       "parity_key": "bulk-create",
       "referenced_from": [],
@@ -535,8 +971,23 @@
       }
     },
     {
+      "file": "bulk-create-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of bulk-create.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to bulk-create.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "6bcbc3f0892db7978bad62cbd5b3604cee26a241e0bfa6663566e3900cecc081"
+      }
+    },
+    {
       "file": "config-parameters.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": false,
       "parity_key": "node-properties",
       "referenced_from": [],
@@ -549,8 +1000,23 @@
       }
     },
     {
+      "file": "config-parameters-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of config-parameters.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to config-parameters.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "7b45ba9bf8d911acdc841335d5b90e7698d4dc206e716ece6a56fe618f710239"
+      }
+    },
+    {
       "file": "config-address-map.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": false,
       "parity_key": "node-properties",
       "referenced_from": [],
@@ -563,8 +1029,23 @@
       }
     },
     {
+      "file": "config-address-map-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of config-address-map.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to config-address-map.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "8df699a36b9d007d5e81c4f73063173de5abda9fbe1a2e3791351fdaf9cb3483"
+      }
+    },
+    {
       "file": "config-limits.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": false,
       "parity_key": "node-properties",
       "referenced_from": [],
@@ -577,8 +1058,23 @@
       }
     },
     {
+      "file": "config-limits-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of config-limits.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to config-limits.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "ace7e02079ea8c476b6e8d1652ed85dae548aba14cbbf2c97ef798de37b521ee"
+      }
+    },
+    {
       "file": "hardware-tree.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": true,
       "parity_key": "devices",
       "referenced_from": [
@@ -594,8 +1090,23 @@
       }
     },
     {
+      "file": "hardware-tree-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of hardware-tree.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to hardware-tree.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "15d91f422858d5e15b3c70f97f26d1549d50864cfa72c0752e74d8a7679a2d1c"
+      }
+    },
+    {
       "file": "object-tree.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": false,
       "parity_key": "nodes",
       "referenced_from": [],
@@ -608,8 +1119,23 @@
       }
     },
     {
+      "file": "object-tree-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of object-tree.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to object-tree.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "c76df3c69f31d105c68929987097437d0ab4591a18053c3146d845515d9b4a78"
+      }
+    },
+    {
       "file": "admin-simulation.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": false,
       "parity_key": "simulation-items",
       "referenced_from": [],
@@ -622,8 +1148,23 @@
       }
     },
     {
+      "file": "admin-simulation-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of admin-simulation.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to admin-simulation.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "393d63a1778176cd8363018469c3e0e186657251fd7d40c35f6e802598e38ff0"
+      }
+    },
+    {
       "file": "admin-formats.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": false,
       "parity_key": "ts-formats",
       "referenced_from": [],
@@ -636,8 +1177,23 @@
       }
     },
     {
+      "file": "admin-formats-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of admin-formats.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to admin-formats.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "f8f2a02cb7d7e0de24dc8d1a34401f9711f169f792c85eba7b0b849e092a6990"
+      }
+    },
+    {
       "file": "admin-historical-dbs.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": false,
       "parity_key": "historical-db",
       "referenced_from": [],
@@ -650,8 +1206,23 @@
       }
     },
     {
+      "file": "admin-historical-dbs-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of admin-historical-dbs.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to admin-historical-dbs.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "3e40fc8936ec444bd69d579b7cce9a14ee07ab4c1bdf1b5e27cadef6d949e1f3"
+      }
+    },
+    {
       "file": "sheet.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": false,
       "parity_key": "sheet",
       "referenced_from": [],
@@ -664,8 +1235,23 @@
       }
     },
     {
+      "file": "sheet-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of sheet.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to sheet.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "3f6675ea5b1e489730c4af53b5d176330aa9def5201c2a2cf60e42c1ad447f88"
+      }
+    },
+    {
       "file": "devices.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": true,
       "parity_key": "object-tree",
       "referenced_from": [
@@ -680,8 +1266,23 @@
       }
     },
     {
+      "file": "devices-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of devices.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to devices.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "a156205458b7d0ee5957a2d621f7ca19f9ac968a08e6c1211d5a17997d88e62a"
+      }
+    },
+    {
       "file": "files.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": false,
       "parity_key": "files",
       "referenced_from": [],
@@ -694,8 +1295,23 @@
       }
     },
     {
+      "file": "files-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of files.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to files.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "dac4bf8e6d9880df37cb359ee1242f294130bbf0854f9b19280638d37d7bef67"
+      }
+    },
+    {
       "file": "data.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": false,
       "parity_key": "timed-data",
       "referenced_from": [],
@@ -708,8 +1324,23 @@
       }
     },
     {
+      "file": "data-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of data.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to data.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "39725b763a4bc72c375a5688e8cbc540c998b2c6ccef4e32cfdd5c53b50d620b"
+      }
+    },
+    {
       "file": "summary.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": false,
       "parity_key": "summary",
       "referenced_from": [],
@@ -722,8 +1353,23 @@
       }
     },
     {
+      "file": "summary-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of summary.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to summary.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "a912dc12de532c08d282f42085d66928ec6235dfe584f1ae348a4f0dfc49b8de"
+      }
+    },
+    {
       "file": "events.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": false,
       "parity_key": "events",
       "referenced_from": [],
@@ -736,6 +1382,20 @@
       }
     },
     {
+      "file": "events-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of events.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to events.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "056cd8906592eedc3efddb909b029419b83702a9d4c893db7ae6623ba943625b"
+      }
+    },
+    {
       "file": "events-log.png",
       "tag": "obsolete",
       "published": false,
@@ -745,6 +1405,7 @@
     {
       "file": "events-alarm-surface.png",
       "tag": "auto-view",
+      "theme": "dark",
       "parity_key": "event-journal",
       "referenced_from": [
         "client/workbench.md"
@@ -758,8 +1419,23 @@
       }
     },
     {
+      "file": "events-alarm-surface-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of events-alarm-surface.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to events-alarm-surface.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "b2b4f2e13264bf411ff781d88739f8eb9a2549b334d9c0543cb4d16aaa3b701d"
+      }
+    },
+    {
       "file": "table-workspace.png",
       "tag": "auto-view",
+      "theme": "dark",
       "parity_key": "table",
       "referenced_from": [
         "client/workbench.md"
@@ -773,8 +1449,23 @@
       }
     },
     {
+      "file": "table-workspace-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of table-workspace.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to table-workspace.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "7e99dbe6ff67269dc51e5b7bf42ea47ce2b3cbbb6a573c73267f1ea916de636e"
+      }
+    },
+    {
       "file": "severity-tiles.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": false,
       "parity_key": "severity-tiles",
       "referenced_from": [],
@@ -787,8 +1478,23 @@
       }
     },
     {
+      "file": "severity-tiles-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of severity-tiles.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to severity-tiles.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "149b2b5de48c69af2de641c320e97f7250dcc7dc6d3dce223733847633757cf9"
+      }
+    },
+    {
       "file": "command-field.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": false,
       "parity_key": "command-field",
       "referenced_from": [],
@@ -801,8 +1507,23 @@
       }
     },
     {
+      "file": "command-field-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of command-field.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to command-field.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "0ecaafdfac9abc370a25309195ae16f5317705c0e7979af30ae3291c8a54242a"
+      }
+    },
+    {
       "file": "users-admin.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": false,
       "parity_key": "users",
       "referenced_from": [],
@@ -812,6 +1533,20 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "f7d3eb0486905b05e9b93baffad19a4bc09c328b86f5e8d3b3cd737b4c24a57a"
+      }
+    },
+    {
+      "file": "users-admin-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of users-admin.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to users-admin.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "a9648a7b870b44000bb28d0f649cbffe99d0fd873d5d608653b4956e3c8394f2"
       }
     },
     {
@@ -833,6 +1568,7 @@
     {
       "file": "limits-chart.png",
       "tag": "auto-view",
+      "theme": "dark",
       "parity_key": "graph",
       "referenced_from": [
         "architecture.md"
@@ -846,8 +1582,23 @@
       }
     },
     {
+      "file": "limits-chart-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of limits-chart.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to limits-chart.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "70a840001900da0c9263ee5cebd58af04cae835427fe014b3daeaf4e229de397"
+      }
+    },
+    {
       "file": "limits.png",
       "tag": "auto-dialog",
+      "theme": "dark",
       "parity_key": "limits",
       "referenced_from": [
         "architecture.md",
@@ -859,6 +1610,20 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "c8652503e85083c31395245a3a3b366b8b5953e6b765d33e5ac7f9dd15970c48"
+      }
+    },
+    {
+      "file": "limits-light.png",
+      "tag": "auto-dialog",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of limits.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to limits.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "58ea6643994768f17a28ed18e1b77e23048885a72e3bdd6d713d52abf2c7e57e"
       }
     },
     {
@@ -878,6 +1643,7 @@
     {
       "file": "menu-create-object-service.png",
       "tag": "auto-dialog",
+      "theme": "dark",
       "parity_key": "create-service-item",
       "referenced_from": [
         "dev/data-items.md"
@@ -888,6 +1654,20 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "e2110dae885ca18e3abc909f2c36b9ff73efd8d3371631c3510198c4635f400a"
+      }
+    },
+    {
+      "file": "menu-create-object-service-light.png",
+      "tag": "auto-dialog",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of menu-create-object-service.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to menu-create-object-service.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "d11ee449fde9e5fa49e5faa2da5eaab87feee681bc6f95f7053dd774b700d6cf"
       }
     },
     {
@@ -933,6 +1713,7 @@
     {
       "file": "menu-excel.png",
       "tag": "auto-menu",
+      "theme": "dark",
       "referenced_from": [
         "dev/excel.md"
       ],
@@ -942,6 +1723,20 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "fa0c9a384288a1b2748ff8de75d3b2162250bd866221ef83aa34dd940bde4e02"
+      }
+    },
+    {
+      "file": "menu-excel-light.png",
+      "tag": "auto-menu",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of menu-excel.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to menu-excel.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "b4dcd57fe842be97c644ad2cbb46b119fc29cb07992ca381ea8650b19a98f9a7"
       }
     },
     {
@@ -1004,6 +1799,7 @@
     {
       "file": "menu-summary.png",
       "tag": "auto-menu",
+      "theme": "dark",
       "referenced_from": [
         "client/summary.md"
       ],
@@ -1013,6 +1809,20 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "7716c413cec6b3e201523e613e66c5bae0e298a4d814176911b8e136b89a47f5"
+      }
+    },
+    {
+      "file": "menu-summary-light.png",
+      "tag": "auto-menu",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of menu-summary.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to menu-summary.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "f91a6da1568f7976bbe8389dcc8c6344e6cbf3974131d206c508680818572de6"
       }
     },
     {
@@ -1082,6 +1892,7 @@
     {
       "file": "ti-manual-control.png",
       "tag": "auto-dialog",
+      "theme": "dark",
       "parity_key": "write",
       "referenced_from": [
         "client.md"
@@ -1092,6 +1903,20 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "f923a34d5a019f50112065354f349dafa93fbf5b3191cde5d6f2b14f8d002353"
+      }
+    },
+    {
+      "file": "ti-manual-control-light.png",
+      "tag": "auto-dialog",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of ti-manual-control.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to ti-manual-control.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "ee0f0cb167875bc8ba293226c67aeafbe4e86d0996380e316ce054a962c35ff0"
       }
     },
     {
@@ -1106,6 +1931,7 @@
     {
       "file": "ti-remote-control-confirm.png",
       "tag": "auto-dialog",
+      "theme": "dark",
       "parity_key": "write",
       "referenced_from": [
         "client.md"
@@ -1119,8 +1945,23 @@
       }
     },
     {
+      "file": "ti-remote-control-confirm-light.png",
+      "tag": "auto-dialog",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of ti-remote-control-confirm.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to ti-remote-control-confirm.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "8bee470878050eb83d1cf6532c04d515f49deeb9178b0e3d85dd70597b0a9bd2"
+      }
+    },
+    {
       "file": "ti-remote-control-disabled.png",
       "tag": "auto-dialog",
+      "theme": "dark",
       "parity_key": "write",
       "referenced_from": [
         "client.md",
@@ -1135,8 +1976,23 @@
       }
     },
     {
+      "file": "ti-remote-control-disabled-light.png",
+      "tag": "auto-dialog",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of ti-remote-control-disabled.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to ti-remote-control-disabled.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "83777cbe4a7fde8f5c697f9569ee6dd5b9611b1709f3915e66fde9357303dad4"
+      }
+    },
+    {
       "file": "ti-remote-control-enabled.png",
       "tag": "auto-dialog",
+      "theme": "dark",
       "parity_key": "write",
       "referenced_from": [
         "client.md",
@@ -1151,6 +2007,20 @@
       }
     },
     {
+      "file": "ti-remote-control-enabled-light.png",
+      "tag": "auto-dialog",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of ti-remote-control-enabled.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to ti-remote-control-enabled.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "f10151c335dd81db40d2f7aee03aab17379b4f68b821e94fca2df3b8e7ecd319"
+      }
+    },
+    {
       "file": "ts-channel.png",
       "tag": "auto-dialog",
       "referenced_from": [
@@ -1161,6 +2031,7 @@
     {
       "file": "ts-manual-control.png",
       "tag": "auto-dialog",
+      "theme": "dark",
       "parity_key": "write",
       "referenced_from": [
         "client.md"
@@ -1174,8 +2045,23 @@
       }
     },
     {
+      "file": "ts-manual-control-light.png",
+      "tag": "auto-dialog",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of ts-manual-control.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to ts-manual-control.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "0a628721680fb8b06887fcc239892aae146f867afff39c47a91e8829a96a207e"
+      }
+    },
+    {
       "file": "ts-remote-control-confirm.png",
       "tag": "auto-dialog",
+      "theme": "dark",
       "parity_key": "write",
       "referenced_from": [
         "client.md"
@@ -1189,8 +2075,23 @@
       }
     },
     {
+      "file": "ts-remote-control-confirm-light.png",
+      "tag": "auto-dialog",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of ts-remote-control-confirm.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to ts-remote-control-confirm.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "a992f869a51009ecc9999a191a368f3d7fcddddf848fac4f9ba4df9025a5f3d7"
+      }
+    },
+    {
       "file": "ts-remote-control-disabled.png",
       "tag": "auto-dialog",
+      "theme": "dark",
       "parity_key": "write",
       "referenced_from": [
         "client.md"
@@ -1204,8 +2105,23 @@
       }
     },
     {
+      "file": "ts-remote-control-disabled-light.png",
+      "tag": "auto-dialog",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of ts-remote-control-disabled.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to ts-remote-control-disabled.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "410e68dc5391e2a97efb2b85e93a20789c18d5835bf5c9a571ae44eb92c6c525"
+      }
+    },
+    {
       "file": "ts-remote-control-enabled.png",
       "tag": "auto-dialog",
+      "theme": "dark",
       "parity_key": "write",
       "referenced_from": [
         "client.md"
@@ -1219,6 +2135,20 @@
       }
     },
     {
+      "file": "ts-remote-control-enabled-light.png",
+      "tag": "auto-dialog",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of ts-remote-control-enabled.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to ts-remote-control-enabled.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "39200df7da12b934182bac9ba6430837abc1dc460fd04c32eaa9001839f4fd5e"
+      }
+    },
+    {
       "file": "users.jpg",
       "tag": "obsolete",
       "referenced_from": [],
@@ -1227,6 +2157,7 @@
     {
       "file": "users.png",
       "tag": "auto-view",
+      "theme": "dark",
       "parity_key": "users",
       "referenced_from": [
         "dev/users.md"
@@ -1240,8 +2171,23 @@
       }
     },
     {
+      "file": "users-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of users.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to users.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "04ba2c315615ddf10bebdb87648758e9f686b992488079660d73e7fcc0314a78"
+      }
+    },
+    {
       "file": "debugger.png",
       "tag": "auto-view",
+      "theme": "dark",
       "parity_key": "protocol-debugger",
       "referenced_from": [],
       "notes": "Session-request debugger (client<->server Browse/Read/Call trace), rendered from a fixture trace by debugger_capture.cpp. Not a registered view (it is --debug gated), so it has a dedicated capture. Distinct from the device protocol frame trace in ui-mockups/screens/device-protocol-trace.html, which is unbuilt. Not published yet: no manual page embeds it.",
@@ -1254,8 +2200,23 @@
       }
     },
     {
+      "file": "debugger-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of debugger.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to debugger.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "864bb629760ecfd9b243da3e76eb5712d41305111eeb7768ad4b765f753cf939"
+      }
+    },
+    {
       "file": "watch-filter-bar.png",
       "tag": "auto-view",
+      "theme": "dark",
       "parity_key": "device-log-filter",
       "referenced_from": [],
       "notes": "Device log filter bar: frame kind, errors-only, and free text over the decoded columns — the toolbar of ui-mockups/screens/device-protocol-trace.html. Stock QComboBox/QCheckBox/QLineEdit, so the capture also serves as the native-look check for the strip. Rendered on its own by frame_decode_capture.cpp; inside the client it sits above the trace in both device-log modes. Not published yet: no manual page embeds it.",
@@ -1268,8 +2229,23 @@
       }
     },
     {
+      "file": "watch-filter-bar-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of watch-filter-bar.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to watch-filter-bar.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "28fdece95c6edea42a31db949da9ef26b5b192c675fb3f38b38248993dd0560e"
+      }
+    },
+    {
       "file": "frame-decode-pane.png",
       "tag": "auto-view",
+      "theme": "dark",
       "parity_key": "device-frame-decode",
       "referenced_from": [],
       "notes": "Device log frame-decode pane: the raw octets, the decoded APCI/ASDU field tree with byte offsets, and the address-space node the information object maps to — the right-hand inspector of ui-mockups/screens/device-protocol-trace.html. Rendered from a fixture IEC 60870-5-104 APDU and a seeded address map by frame_decode_capture.cpp; inside the client it is the right half of the Watch view's frame-trace mode. Not published yet: no manual page embeds it.",
@@ -1282,6 +2258,20 @@
       }
     },
     {
+      "file": "frame-decode-pane-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of frame-decode-pane.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to frame-decode-pane.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "7819f49ad2b8d63c70f2e53b76be776880f79009b39b15d0041edd40e5260275"
+      }
+    },
+    {
       "file": "colour-scheme-menu.png",
       "tag": "obsolete",
       "referenced_from": [],
@@ -1291,6 +2281,7 @@
     {
       "file": "table.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": false,
       "parity_key": "table",
       "referenced_from": [],
@@ -1303,8 +2294,23 @@
       }
     },
     {
+      "file": "table-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of table.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to table.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "d070d74352778ed1f0e61d6490961e6bd61dd2e681bf50d0195a7e2a01293a3d"
+      }
+    },
+    {
       "file": "parameters.png",
       "tag": "auto-view",
+      "theme": "dark",
       "published": false,
       "parity_key": "ts-formats",
       "referenced_from": [],
@@ -1315,12 +2321,26 @@
         "dirty": true,
         "sha256": "ec0aa5359b3bd922728cf5c45bedeba65ab2089ce12fc397e249804f319a5a3f"
       }
+    },
+    {
+      "file": "parameters-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of parameters.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to parameters.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "0ed6944b1",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "817257b2c73186531e0a66b278bdaddd98392002e2bd9a70dd0392c17224ce55"
+      }
     }
   ],
   "counts": {
-    "auto-dialog": 26,
-    "auto-menu": 10,
-    "auto-view": 49,
+    "auto-dialog": 46,
+    "auto-menu": 12,
+    "auto-view": 95,
     "manual-annotated": 2,
     "manual-diagram": 4,
     "manual-modus": 5,

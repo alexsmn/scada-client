@@ -3,7 +3,7 @@
 struct ScreenshotSpec;
 
 // Renders the KPI severity tile strip — the context bar's alarm summary
-// (backlog 2.3) — and saves it under `GetOutputDir() / spec.filename`.
+// (backlog 2.3) — and saves it under `OutputPathFor(spec.filename)`.
 //
 // Standalone and node-service-free: the strip's value is how the counts read,
 // so the capture seeds a live alarm picture (a critical, warnings, and a larger

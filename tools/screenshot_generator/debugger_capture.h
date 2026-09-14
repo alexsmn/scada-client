@@ -3,7 +3,7 @@
 struct ScreenshotSpec;
 
 // Renders the session-request debugger and saves it under
-// `GetOutputDir() / spec.filename`.
+// `OutputPathFor(spec.filename)`.
 //
 // This is the client<->server request trace, not the device protocol frame
 // trace in docs/product/ui-mockups/screens/device-protocol-trace.html — that is a

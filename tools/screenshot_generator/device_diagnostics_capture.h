@@ -10,7 +10,7 @@ class TimedDataService;
 
 // Renders the reshelled Device Diagnostics panel — the right region of
 // config-workbench.html — from the fixture and saves it under
-// `GetOutputDir() / spec.filename`.
+// `OutputPathFor(spec.filename)`.
 //
 // Standalone like SaveSeriesInspectorScreenshot: it makes the fixture device
 // (and its diagnostic child variables) resident, builds a fresh

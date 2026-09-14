@@ -115,7 +115,7 @@ void SaveDisplayScreenshot(const ScreenshotSpec& spec,
   }
 
   QPixmap pixmap = GrabWhenSettled(frame);
-  auto output_path = GetOutputDir() / spec.filename;
+  auto output_path = OutputPathFor(spec.filename);
   if (!publish_guard.ShouldPublish())
     return;
 

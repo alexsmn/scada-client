@@ -7,7 +7,7 @@ class NodeService;
 
 // Renders the reshelled transmission-rule inspector — the right region of
 // transmission-rules.html — from a fixture transmission item, and saves it
-// under `GetOutputDir() / spec.filename`.
+// under `OutputPathFor(spec.filename)`.
 //
 // Standalone like SaveUserAccessScreenshot: it builds a fresh
 // TransmissionRuleInspector, wires the load handler the shell wires, and drives

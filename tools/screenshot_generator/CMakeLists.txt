@@ -173,6 +173,8 @@ add_executable(client_screenshot_generator_unittests
   "publish_guard_unittest.cpp"
   "screenshot_options.cpp"
   "screenshot_options_unittest.cpp"
+  "screenshot_output.cpp"
+  "screenshot_output_unittest.cpp"
 )
 
 target_link_libraries(client_screenshot_generator_unittests PRIVATE

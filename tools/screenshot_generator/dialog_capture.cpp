@@ -254,7 +254,7 @@ bool GrabAndCloseVisibleDialog(const DialogSpec& spec) {
   QPixmap pixmap = spec.expand_combo.empty() ? GrabWhenSettled(dialog)
                                              : GrabDialogWithComboPopupOpen(
                                                    dialog, spec.expand_combo);
-  auto path = GetOutputDir() / spec.filename;
+  auto path = OutputPathFor(spec.filename);
   pixmap.save(QString::fromStdString(path.string()));
 
   // LoginDialog::reject() now calls QDialog::reject() before resolving its

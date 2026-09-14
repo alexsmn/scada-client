@@ -11,7 +11,7 @@ class NodeService;
 
 // Renders the reshelled users-admin RBAC inspector — the right region of
 // users-admin.html — from a fixture user, and saves it under
-// `GetOutputDir() / spec.filename`.
+// `OutputPathFor(spec.filename)`.
 //
 // Standalone like SaveDeviceDiagnosticsScreenshot: it makes the fixture user
 // (and its type) resident, builds a fresh UserAccessPanel, drives it via
@@ -24,7 +24,7 @@ void SaveUserAccessScreenshot(const ScreenshotSpec& spec,
                               AnyExecutor executor);
 
 // Renders the Roles view — every Role of the RoleSet and the accounts it is
-// granted to — and saves it under `GetOutputDir() / spec.filename`.
+// granted to — and saves it under `OutputPathFor(spec.filename)`.
 //
 // Standalone for the same reason as SaveUserAccessScreenshot, and it is the
 // reason rather than a convenience: reading the published role -> permission
@@ -39,7 +39,7 @@ void SaveRolesScreenshot(const ScreenshotSpec& spec,
                          AnyExecutor executor);
 
 // Renders the users-admin grid — every account, its status, and the Roles it
-// holds — and saves it under `GetOutputDir() / spec.filename`.
+// holds — and saves it under `OutputPathFor(spec.filename)`.
 //
 // Standalone for the same reason as SaveRolesScreenshot: the Roles column is
 // joined from the same RoleSet read, which an anonymous session may not

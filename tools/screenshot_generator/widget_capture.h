@@ -25,5 +25,5 @@ class QWidget;
 QPixmap GrabWhenSettled(QWidget* widget);
 
 // Resizes `widget` to the spec dimensions, waits for it to settle, grabs a
-// QPixmap and writes it to `GetOutputDir() / spec.filename`. No-op on null.
+// QPixmap and writes it to `OutputPathFor(spec.filename)`. No-op on null.
 void SaveScreenshot(QWidget* widget, const ScreenshotSpec& spec);

@@ -101,6 +101,48 @@ def hardcoded_capture_filenames(source_dir: Path) -> set[str]:
     return names
 
 
+# The appearance whose renders carry the bare filename from
+# `screenshot_data.json`. Mirrors `kUnsuffixedTheme` in screenshot_output.cpp,
+# and the two have to agree: that file decides what the generator WRITES and
+# this one decides what is looked for. Dark is unsuffixed because dark is what
+# the client starts in.
+GALLERY_DEFAULT_THEME = "dark"
+
+
+def themed_name(filename: str, theme: str) -> str:
+    """The gallery filename a spec renders to under `theme`.
+
+    The Python twin of `ThemedOutputPath`. Kept deliberately small, and the
+    generator's own unit tests are the ones that pin the rule.
+    """
+    if theme == GALLERY_DEFAULT_THEME:
+        return filename
+    stem, _, ext = filename.rpartition(".")
+    return f"{stem}-{theme}.{ext}"
+
+
+def gallery_themes(manifest: dict) -> list[str]:
+    """The appearances the manifest says the gallery holds.
+
+    Read from each row's `theme` field, so adding `hc` captures is a manifest
+    change and not a code change here. Rows without one are the default
+    appearance.
+
+    DECLARED rather than inferred from the filename, which was tried first and
+    is wrong: stripping a trailing `-<suffix>` and asking whether the remainder
+    is a real capture reads `devices-create.png` -- the create-object menu over
+    the Objects tree -- as a "create"-themed variant of `devices.png`, because
+    both of those files genuinely exist. It then counts that row as producible
+    and stops reporting it as owed, which is the failure that matters: a
+    capture nobody renders silently leaves the owed list.
+    """
+    themes = {GALLERY_DEFAULT_THEME}
+    for entry in manifest["images"]:
+        if entry["tag"].startswith("auto-") and entry.get("theme"):
+            themes.add(entry["theme"])
+    return sorted(themes)
+
+
 def owed_captures(
     manifest: dict, data: dict, source_dir: Path
 ) -> dict[str, list[str]]:
@@ -115,11 +157,19 @@ def owed_captures(
         for spec in data.get(key, [])
     } | hardcoded_capture_filenames(source_dir)
 
+    # A themed variant is produced by the same spec under another `--theme`,
+    # so it is owed only when its base capture is.
+    producible = {
+        themed_name(name, theme)
+        for name in rendered
+        for theme in gallery_themes(manifest)
+    }
+
     owed: dict[str, list[str]] = {}
     for entry in manifest["images"]:
         if not entry["tag"].startswith("auto-"):
             continue
-        if entry["file"] in rendered:
+        if entry["file"] in producible:
             continue
         owed.setdefault(entry["tag"], []).append(entry["file"])
     return {tag: sorted(files) for tag, files in sorted(owed.items())}
@@ -238,31 +288,42 @@ def main() -> int:
     env = dict(os.environ)
     env["QT_QPA_PLATFORM"] = "offscreen"
 
-    command = [
-        str(args.generator),
-        f"--out={out_dir}",
-        f"--image-manifest={args.image_manifest}",
-        f"--data={args.data}",
-    ]
-    if args.theme:
-        command.append(f"--theme={args.theme}")
+    # One generator run per appearance the gallery holds. A single run can only
+    # ever produce one of them -- the theme decides what the generator writes,
+    # so checking the light rows against a dark run reports every one of them
+    # as "not produced", which is what this did before the gallery grew a
+    # second appearance.
+    themes = [args.theme] if args.theme else gallery_themes(manifest)
 
-    try:
-        result = subprocess.run(
-            command,
-            env=env,
-            cwd=args.generator.parent,
-            timeout=240,
-        )
-    except subprocess.TimeoutExpired:
-        print("error: generator timed out after 240s", file=sys.stderr)
-        return 1
-    if result.returncode != 0:
-        print(
-            f"error: generator exited with {result.returncode}",
-            file=sys.stderr,
-        )
-        return 1
+    for theme in themes:
+        command = [
+            str(args.generator),
+            f"--out={out_dir}",
+            f"--image-manifest={args.image_manifest}",
+            f"--data={args.data}",
+            f"--theme={theme}",
+        ]
+
+        try:
+            result = subprocess.run(
+                command,
+                env=env,
+                cwd=args.generator.parent,
+                timeout=240,
+            )
+        except subprocess.TimeoutExpired:
+            print(
+                f"error: generator timed out after 240s rendering {theme}",
+                file=sys.stderr,
+            )
+            return 1
+        if result.returncode != 0:
+            print(
+                f"error: generator exited with {result.returncode} "
+                f"rendering {theme}",
+                file=sys.stderr,
+            )
+            return 1
 
     managed = {
         e["file"] for e in manifest["images"] if e["tag"].startswith("auto-")
@@ -280,24 +341,30 @@ def main() -> int:
     produced = []
     checked_names: set[str] = set()
     for spec, exact_dims in specs:
-        filename = spec["filename"]
-        if filename not in managed:
-            continue
-        path = out_dir / filename
-        if not path.is_file():
-            errors.append(f"{filename}: not produced")
-            continue
-        checked_names.add(filename)
-        produced.append(path)
-        width = spec.get("width")
-        height = spec.get("height")
-        if exact_dims and width and height:
-            actual = png_dimensions(path)
-            if actual != (width, height):
-                errors.append(
-                    f"{filename}: {actual[0]}x{actual[1]}, spec says "
-                    f"{width}x{height}"
-                )
+        base_filename = spec["filename"]
+        for theme in themes:
+            filename = themed_name(base_filename, theme)
+            if filename not in managed:
+                continue
+            path = out_dir / filename
+            if not path.is_file():
+                errors.append(f"{filename}: not produced")
+                continue
+            checked_names.add(filename)
+            produced.append(path)
+            width = spec.get("width")
+            height = spec.get("height")
+            if exact_dims and width and height:
+                actual = png_dimensions(path)
+                if actual != (width, height):
+                    # The spec's dimensions are the theme-independent part:
+                    # SaveScreenshot hard-resizes the widget, so a themed
+                    # render that differs in SIZE is a defect rather than an
+                    # appearance difference.
+                    errors.append(
+                        f"{filename}: {actual[0]}x{actual[1]}, spec says "
+                        f"{width}x{height}"
+                    )
 
     # A managed row whose filename lives in the C++ rather than in the fixture
     # is checked for existence, which is the whole point for those: several are

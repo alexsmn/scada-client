@@ -11,7 +11,7 @@ class TimedDataService;
 // Renders the reshelled substation display — a cross-platform DisplayWidget
 // wrapped in the DisplayFrame chrome (Live indicator, breadcrumb, zoom / fit /
 // export toolbar) — from the fixture named by the manifest's `display.path`,
-// and saves it under `GetOutputDir() / spec.filename`.
+// and saves it under `OutputPathFor(spec.filename)`.
 //
 // Standalone like SaveGraphScreenshot: it builds a fresh top-level widget
 // rather than reaching into the hidden main window (whose layout is skipped

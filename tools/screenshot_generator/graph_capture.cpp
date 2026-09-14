@@ -303,7 +303,7 @@ void SaveGraphScreenshot(const ScreenshotSpec& spec,
   scada::screenshot_generator::PumpEventLoopFor(std::chrono::milliseconds(200));
 
   QPixmap pixmap = graph.grab();
-  auto output_path = GetOutputDir() / spec.filename;
+  auto output_path = OutputPathFor(spec.filename);
   if (!publish_guard.ShouldPublish())
     return;
 

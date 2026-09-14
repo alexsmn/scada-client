@@ -39,7 +39,7 @@ struct DialogEnvironment {
 };
 
 // Builds and shows the dialog identified by `spec.kind`, then grabs a
-// QPixmap of it and writes to `GetOutputDir() / spec.filename`.
+// QPixmap of it and writes to `OutputPathFor(spec.filename)`.
 // Returns true on success, false if the kind is unknown or no visible
 // dialog was produced. Uses gtest's ADD_FAILURE on misses.
 bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env);

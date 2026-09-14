@@ -10,7 +10,7 @@ class TimedDataService;
 // Renders the device Metrics sheet — the window the operator reaches with
 // *Метрики* on a device's context menu (client.md, "Статусы устройств") — for
 // the fixture device named by `spec.path`, and saves it under
-// `GetOutputDir() / spec.filename`.
+// `OutputPathFor(spec.filename)`.
 //
 // Unlike the other standalone captures this one goes through the real window
 // pipeline rather than building a widget by hand: the metrics view is not a

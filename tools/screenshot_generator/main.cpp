@@ -523,7 +523,7 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
 
   auto output_dir = GetOutputDir();
   std::filesystem::create_directories(output_dir);
-  const auto output_image = output_dir / filename;
+  const auto output_image = OutputPathFor(filename);
   CapturePublishGuard publish_guard{filename};
 
   {
@@ -753,7 +753,7 @@ TEST_F(ScreenshotGenerator, CaptureOverviewPage) {
 
   auto output_dir = GetOutputDir();
   std::filesystem::create_directories(output_dir);
-  const auto output_image = output_dir / filename;
+  const auto output_image = OutputPathFor(filename);
   CapturePublishGuard publish_guard{filename};
 
   // Deliberately no saved profile: the page-less boot is the state under test.
@@ -908,7 +908,7 @@ TEST_F(ScreenshotGenerator, CaptureActivityRail) {
   const QPixmap frame = GrabWhenSettled(rail);
   ASSERT_FALSE(frame.isNull());
   ASSERT_TRUE(
-      frame.save(QString::fromStdString((output_dir / kFilename).string())))
+      frame.save(QString::fromStdString((OutputPathFor(kFilename)).string())))
       << "could not write " << kFilename;
 }
 
@@ -1068,7 +1068,7 @@ TEST_F(ScreenshotGenerator, CaptureSettingsPanel) {
 
   QPixmap panel_pixmap = GrabWhenSettled(panel);
   ASSERT_FALSE(panel_pixmap.isNull());
-  panel_pixmap.save(QString::fromStdString((output_dir / kFilename).string()));
+  panel_pixmap.save(QString::fromStdString((OutputPathFor(kFilename)).string()));
 }
 
 // Menu-popup captures (the `auto-menu` manifest tag).
@@ -1125,7 +1125,7 @@ int CountMenuRows(const QMenu& menu) {
 }
 
 // Lays the populated menu out at its natural size and writes it to
-// `GetOutputDir() / filename`.
+// `OutputPathFor(filename)`.
 void SaveMenuCapture(QMenu* menu,
                      const char* filename,
                      const CapturePublishGuard& publish_guard) {
@@ -1143,7 +1143,7 @@ void SaveMenuCapture(QMenu* menu,
   const QPixmap pixmap = GrabWhenSettled(menu);
   ASSERT_FALSE(pixmap.isNull()) << filename << " grabbed an empty pixmap";
   ASSERT_TRUE(
-      pixmap.save(QString::fromStdString((output_dir / filename).string())))
+      pixmap.save(QString::fromStdString(OutputPathFor(filename).string())))
       << "could not write " << filename;
 }
 
