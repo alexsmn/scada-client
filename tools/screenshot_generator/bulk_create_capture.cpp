@@ -19,6 +19,11 @@ void SaveBulkCreateScreenshot(const ScreenshotSpec& spec) {
   params.start_index = 1;
   params.count = 12;
   params.index_step = 1;
+  // Stated explicitly, and it is the whole subject of this capture: the IOA
+  // fields below and the Адрес column only exist for a transmission item. The
+  // default is kDataItem, and leaving it there is what made the tracked image
+  // render address 0 on every row while still showing the address controls.
+  params.subject = BulkCreateSubject::kTransmissionItem;
   params.ioa_start = 4001;
   params.ioa_step = 1;
   panel.SetParams(params);

@@ -156,4 +156,47 @@ TEST_F(BulkCreatePreviewPanelTest, SwitchingSubjectKeepsTheAddressingValues) {
   EXPECT_EQ(panel.rows()[1].ioa, 7003);
 }
 
+// `SetParams` carries the subject, and a panel nobody told is consistent.
+//
+// Both halves of this were broken together and produced one wrong picture:
+// `SetParams` copied every field of `BulkCreateParams` EXCEPT `subject`, while
+// the constructor built the IOA controls visible and only `SetSubject` ever
+// hid them -- and `SetSubject` early-returns when the subject has not changed,
+// so the default was never reconciled. A caller that set the subject in the
+// struct and called `SetParams` therefore got the address controls and the IOA
+// column of a transmission item, computing as a data item: every row rendered
+// address 0. That is exactly what `bulk-create.png` showed in the tracked
+// gallery, and no check could see it -- the model was right, the panel was
+// self-consistent by its own lights, and the image had been captured from a
+// dirty tree before the field existed.
+TEST_F(BulkCreatePreviewPanelTest, SetParamsAppliesTheSubjectItIsGiven) {
+  BulkCreatePreviewPanel panel;
+  BulkCreateParams params = SampleParams();
+  params.subject = BulkCreateSubject::kTransmissionItem;
+
+  // No SetSubject call: the struct is the only place the subject is stated.
+  panel.SetParams(params);
+
+  EXPECT_EQ(panel.subject(), BulkCreateSubject::kTransmissionItem);
+  ASSERT_FALSE(panel.rows().empty());
+  EXPECT_FALSE(panel.rows()[0].ioa_absent);
+  EXPECT_EQ(panel.rows()[0].ioa, params.ioa_start);
+  EXPECT_EQ(panel.rows()[11].ioa, params.ioa_start + 11);
+}
+
+TEST_F(BulkCreatePreviewPanelTest, AFreshPanelHidesTheAddressColumnItCannotFill) {
+  // kDataItem is the default for both the panel and the params, so a panel
+  // nobody configures must already agree with it rather than waiting for a
+  // SetSubject that -- being a no-op change -- would never arrive.
+  BulkCreatePreviewPanel panel;
+  ASSERT_EQ(panel.subject(), BulkCreateSubject::kDataItem);
+
+  auto* grid = panel.findChild<QTableWidget*>(QStringLiteral("previewGrid"));
+  ASSERT_NE(grid, nullptr);
+  // Column 3 is the IOA column (`kIoaColumn`), which the panel keeps private.
+  EXPECT_TRUE(grid->isColumnHidden(3))
+      << "the IOA column is shown for a subject that carries no IOA, so every "
+         "row renders address 0";
+}
+
 }  // namespace

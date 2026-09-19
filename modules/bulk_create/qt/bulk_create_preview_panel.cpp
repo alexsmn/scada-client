@@ -53,6 +53,9 @@ BulkCreatePreviewPanel::BulkCreatePreviewPanel(QWidget* parent)
   root->addWidget(BuildForm());
   root->addWidget(BuildPreview());
 
+  // The widgets are built showing the address controls, so the initial state
+  // has to be reconciled with `subject_` rather than assumed to match it.
+  ApplySubject();
   Refresh();
 }
 
@@ -147,11 +150,7 @@ BulkCreateParams BulkCreatePreviewPanel::CurrentParams() const {
   return params;
 }
 
-void BulkCreatePreviewPanel::SetSubject(BulkCreateSubject subject) {
-  if (subject_ == subject)
-    return;
-  subject_ = subject;
-
+void BulkCreatePreviewPanel::ApplySubject() {
   // Only the transmission branch addresses its rows on a link, so only it
   // shows the address controls and the IOA column. The controls keep their
   // values while hidden -- switching subject twice must not silently reset the
@@ -166,7 +165,13 @@ void BulkCreatePreviewPanel::SetSubject(BulkCreateSubject subject) {
   }
   if (preview_)
     preview_->setColumnHidden(kIoaColumn, !uses_ioa);
+}
 
+void BulkCreatePreviewPanel::SetSubject(BulkCreateSubject subject) {
+  if (subject_ == subject)
+    return;
+  subject_ = subject;
+  ApplySubject();
   Refresh();
 }
 
@@ -185,6 +190,8 @@ void BulkCreatePreviewPanel::SetParams(const BulkCreateParams& params) {
   index_step_->setValue(params.index_step);
   ioa_start_->setValue(params.ioa_start);
   ioa_step_->setValue(params.ioa_step);
+  subject_ = params.subject;
+  ApplySubject();
   Refresh();
 }
 

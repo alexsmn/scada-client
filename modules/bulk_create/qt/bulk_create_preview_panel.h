@@ -42,10 +42,28 @@ class BulkCreatePreviewPanel : public QWidget {
   void SetSubject(BulkCreateSubject subject);
   BulkCreateSubject subject() const { return subject_; }
 
+ private:
+  // Brings the IOA controls and the IOA column into agreement with `subject_`.
+  // Unconditional, and called from the constructor: `SetSubject` early-returns
+  // when the subject has not changed, so a panel left at the default was never
+  // reconciled with it and showed the address controls of a subject that has
+  // no address.
+  void ApplySubject();
+
+ public:
+
   // The set of NodeIds already present in the target, used to flag conflicts.
   void SetExistingNodeIds(std::set<std::u16string> existing);
 
-  // Seeds the pattern fields and refreshes the preview.
+  // Seeds the pattern fields -- INCLUDING the subject -- and refreshes.
+  //
+  // It honours `params.subject` because `CollectParams` writes that field, so
+  // the struct round-trips through this panel and dropping one member of it
+  // made `SetParams` a trap: a caller that set the subject and called this got
+  // a data-item preview with no indication. The screenshot capture was that
+  // caller, and the picture it produced -- an IOA column reading 0 on every
+  // row, under visible IOA controls -- sat in the tracked gallery until
+  // 2026-09-19.
   void SetParams(const BulkCreateParams& params);
 
   // Re-expands the current pattern into the preview grid + summary.
