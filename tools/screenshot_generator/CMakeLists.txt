@@ -45,6 +45,8 @@ add_executable(client_screenshot_generator
   "severity_tiles_capture.h"
   "command_field_capture.cpp"
   "command_field_capture.h"
+  "shell_strip_capture.cpp"
+  "shell_strip_capture.h"
   "inspector_capture.cpp"
   "inspector_capture.h"
   "transmission_rule_capture.h"

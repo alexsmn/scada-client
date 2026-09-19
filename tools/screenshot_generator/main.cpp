@@ -1,6 +1,7 @@
 #include "administration_capture.h"
 #include "bulk_create_capture.h"
 #include "command_field_capture.h"
+#include "shell_strip_capture.h"
 #include "debugger_capture.h"
 #include "device_diagnostics_capture.h"
 #include "device_metrics_capture.h"
@@ -236,6 +237,20 @@ constexpr StandaloneCapture kStandaloneCaptures[] = {
     {"command-field",
      +[](const StandaloneCaptureContext& c) {
        SaveCommandFieldScreenshot(c.spec);
+     }},
+    // The three shell strips: each is a thin band inside a 1920px window, so
+    // each gets a picture of its own rather than being read out of
+    // workbench-window.png. The two rail strips build an ActivityBar with only
+    // their own zone populated.
+    {"pages",
+     +[](const StandaloneCaptureContext& c) { SavePagesScreenshot(c.spec); }},
+    {"rail-utilities",
+     +[](const StandaloneCaptureContext& c) {
+       SaveRailUtilitiesScreenshot(c.spec);
+     }},
+    {"breadcrumb",
+     +[](const StandaloneCaptureContext& c) {
+       SaveBreadcrumbScreenshot(c.spec);
      }},
     // The Inspector is standalone reshell chrome (the right-hand selection
     // panel), filled with a representative expression-row selection.

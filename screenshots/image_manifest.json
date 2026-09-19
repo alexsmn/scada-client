@@ -2427,12 +2427,102 @@
         "sha256": "8b3ae453908cb0b62dd26d561191dadd1fae851748c3a8b5c09daa5bc4fe3c65"
       },
       "published": false
+    },
+    {
+      "file": "pages.png",
+      "tag": "auto-view",
+      "theme": "dark",
+      "parity_key": "pages",
+      "published": false,
+      "referenced_from": [],
+      "notes": "The activity rail's page band: the profile's pages plus the '+' that adds one. Two pages carry an icon and the third falls back to its 1-based position, which is what a page shows until the operator gives it one; the third is active, so the marker is in frame. Built from an ActivityBar with only its pages zone populated — a QToolBar lays out only what it holds, which is the Qt counterpart of the web generator clipping its rail capture to a selector.",
+      "captured": {
+        "commit": "1a60167e2",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "5b7471eb39c6964e1cd7b7a4ee8245a0a9085f3d78b29b16f1a68aa821061645"
+      }
+    },
+    {
+      "file": "pages-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "parity_key": "pages",
+      "published": false,
+      "referenced_from": [],
+      "notes": "The light render of pages.png. Same fixture, same spec; only the design-token appearance differs. See that row for what the picture is of.",
+      "captured": {
+        "commit": "1a60167e2",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "2184a462c8023b8cb5e22430bf67e69ca085b8c47c39eaa6f1d6fce349e1848e"
+      }
+    },
+    {
+      "file": "rail-utilities.png",
+      "tag": "auto-view",
+      "theme": "dark",
+      "parity_key": "rail-utilities",
+      "published": false,
+      "referenced_from": [],
+      "notes": "The activity rail's third zone: the utilities pinned at its foot behind an expanding spacer — Settings, and Users for an admin session. The marker sits on Users because a utility's marker means 'that view is what the workspace is showing' rather than 'this was clicked'. The pages group's '+' is hidden for this capture; it is added unconditionally by the rail's constructor and would otherwise lead a picture of the zone next door.",
+      "captured": {
+        "commit": "1a60167e2",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "c9a19acd5c674a4696d5f74bb883836b87b23196a2f502064a46313dab449f09"
+      }
+    },
+    {
+      "file": "rail-utilities-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "parity_key": "rail-utilities",
+      "published": false,
+      "referenced_from": [],
+      "notes": "The light render of rail-utilities.png. Same fixture, same spec; only the design-token appearance differs. See that row for what the picture is of.",
+      "captured": {
+        "commit": "1a60167e2",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "6a2887234e40a6b68b31695434490dbb9f1588e6c0f7e9297901c3b78f05af14"
+      }
+    },
+    {
+      "file": "breadcrumb.png",
+      "tag": "auto-view",
+      "theme": "dark",
+      "parity_key": "breadcrumb",
+      "published": false,
+      "referenced_from": [],
+      "notes": "The context bar's breadcrumb: page / view / selection. The ends render in the foreground weight and the middle stays quiet, which is the rule the widget's own header states — a picture carries it better than the prose does.",
+      "captured": {
+        "commit": "1a60167e2",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "c92ff78db1c55bc4b6ffd8b8ba838a8ec393c4f93000e20a721e5e123d7a5cf8"
+      }
+    },
+    {
+      "file": "breadcrumb-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "parity_key": "breadcrumb",
+      "published": false,
+      "referenced_from": [],
+      "notes": "The light render of breadcrumb.png. Same fixture, same spec; only the design-token appearance differs. See that row for what the picture is of.",
+      "captured": {
+        "commit": "1a60167e2",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "21ca043cf9d531088ace36216f705c61641709df80fc6c2d272e85cd7294fe5e"
+      }
     }
   ],
   "counts": {
     "auto-dialog": 46,
     "auto-menu": 12,
-    "auto-view": 97,
+    "auto-view": 103,
     "manual-annotated": 2,
     "manual-diagram": 4,
     "manual-modus": 5,

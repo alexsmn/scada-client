@@ -280,6 +280,10 @@
         <translation>Тревоги</translation>
     </message>
     <message>
+        <source>Active power</source>
+        <translation>Активная мощность</translation>
+    </message>
+    <message>
         <source>Trends</source>
         <translation>Тренды</translation>
     </message>
