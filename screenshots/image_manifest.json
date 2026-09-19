@@ -358,13 +358,13 @@
       }
     },
     {
-      "file": "settings-dialog.png",
+      "file": "settings.png",
       "tag": "auto-dialog",
       "theme": "dark",
       "referenced_from": [
         "client/workbench.md"
       ],
-      "notes": "The preferences surface, from CaptureSettingsPanel: a full-window overlay over the workbench with its own search box, four scope tabs, a category list with counts, and a per-row storage chip saying where each setting lives. **The filename still says `dialog` and the surface is not one** — `SettingsDialog` was retired on 2026-08-28 for `SettingsPanel` (backlog 626). What this row said until 2026-09-19 is now wrong in the reassuring direction: it warned the tracked PNG was the last render of the retired dialog and that a diff against it meant nothing. It is not — a fresh render is byte-identical and shows the overlay; it was re-rendered at 15bd4e48b. So the picture is current and the diff is meaningful. What is still owed is the RENAME to settings.png, which is backlog 628 and interlocks with the manual pages that embed the old name.",
+      "notes": "The preferences surface, from CaptureSettingsPanel: a full-window overlay over the workbench with its own search box, four scope tabs, a category list with counts, and a per-row storage chip saying where each setting lives. Renamed from `settings-dialog.png` on 2026-09-19 (backlog 628): `SettingsDialog` was retired on 2026-08-28 for `SettingsPanel` (backlog 626). What this row said until 2026-09-19 is now wrong in the reassuring direction: it warned the tracked PNG was the last render of the retired dialog and that a diff against it meant nothing. It is not — a fresh render is byte-identical and shows the overlay; it was re-rendered at 15bd4e48b. So the picture is current and the diff is meaningful. The rename interlocked with the manual pages that embed the file, so it landed with them.",
       "captured": {
         "commit": "2ab9399ee",
         "platform": "macos",
@@ -374,12 +374,12 @@
       "parity_key": "settings"
     },
     {
-      "file": "settings-dialog-light.png",
+      "file": "settings-light.png",
       "tag": "auto-dialog",
       "theme": "light",
       "published": false,
       "referenced_from": [],
-      "notes": "The light render of settings-dialog.png. Same fixture, same spec; only the design-token appearance differs. See that row for what the picture is of and for the rename backlog 628 still owes.",
+      "notes": "The light render of settings.png. Same fixture, same spec; only the design-token appearance differs. See that row for what the picture is of.",
       "captured": {
         "commit": "0ed6944b1",
         "platform": "macos",
@@ -395,7 +395,7 @@
       "referenced_from": [
         "client/workbench.md"
       ],
-      "notes": "The reshelled operator workbench: CaptureMainWindow under --theme renders the full shell (activity rail, context bar with KPI severity tiles, command toolbar, editor tabs over EventJournal/Summ/Struct, the Inspector fronted in the right dock, status strip) and saves it under this name so the legacy client-window.png is never overwritten by a themed render. Fixture pending alarms light the tiles and the journal chrome. Published from a macOS render pending a Windows re-render; kept out of current_generator_owned_subset (subset is auto-* only). STALE (2026-08-01): the status strip's ping cell widened (120 -> 180) and now appends a \"no response\" marker once the ping round trip crosses 3 s (macOS App Nap fix, docs/client/message-loop.md), which shifts the endpoint cell beside it; fold this into the same pending Windows re-render. STALE (2026-07-26): the context bar no longer carries the identity/connection cluster - user/connection/server/endpoint are in the status strip only - but the published PNG still shows it; re-render on Windows and republish. The manual text in scada-docs client/workbench.md (RU+EN) is already updated.",
+      "notes": "The reshelled operator workbench: CaptureMainWindow under --theme renders the full shell (activity rail, context bar with KPI severity tiles, command toolbar, editor tabs over EventJournal/Summ/Struct, the Inspector fronted in the right dock, status strip) and saves it under this name so the legacy client-window.png is never overwritten by a themed render. Fixture pending alarms light the tiles and the journal chrome. Kept out of current_generator_owned_subset (subset is auto-* only). Both STALE notes this row carried until 2026-09-19 are DISCHARGED, and were already wrong when they were read: they described the status strip's ping cell widening (120 -> 180, plus the \"no response\" marker, 0db08d4f8, 2026-08-01) and the context bar losing its identity/connection cluster to the status strip (2026-07-26), and asked for a Windows re-render. The tracked PNG already shows both — the context bar carries only breadcrumb, search and severity tiles, and user/connection/server/endpoint sit in the status strip — because it was re-rendered at 87b6a9b4b (2026-09-12), which has 0db08d4f8 as an ancestor. The request for a WINDOWS re-render is obsolete on its own terms too: either host may render the generated set (decided 2026-09-12), and only the manual-modus family needs Windows. This row is the README's hero image, so a note saying \"do not trust this picture\" is not a cheap thing to leave lying around.",
       "captured": {
         "commit": "87b6a9b4b",
         "platform": "macos",
@@ -2539,7 +2539,7 @@
     "devices.png",
     "graph-cursor.png",
     "hardware-tree.png",
-    "settings-dialog.png",
+    "settings.png",
     "workbench-overview.png"
   ]
 }
