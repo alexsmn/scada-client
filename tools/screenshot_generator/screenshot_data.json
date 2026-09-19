@@ -2024,6 +2024,12 @@
       "filename": "breadcrumb.png",
       "width": 460,
       "height": 34
+    },
+    {
+      "capture": "settings",
+      "filename": "settings-dialog.png",
+      "width": 948,
+      "height": 572
     }
   ],
   "_dialogs_comment": [

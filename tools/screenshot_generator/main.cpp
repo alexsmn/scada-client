@@ -267,6 +267,9 @@ constexpr StandaloneCapture kStandaloneCaptures[] = {
     // by the CaptureDisplay TEST_F; nothing for this sweep to grab. Null
     // rather than absent, so an unknown key is still an error.
     {"display", nullptr},
+    // Likewise the settings overlay: it is shown over a real main window by
+    // the CaptureSettingsPanel TEST_F, which this sweep has no window for.
+    {"settings", nullptr},
 };
 
 // Resolves a spec's `capture` key. Null means the key is not one this
@@ -952,7 +955,23 @@ TEST_F(ScreenshotGenerator, CaptureActivityRail) {
 // dialog, so renaming the file here would break those pages before anything
 // could fix them — see the manifest note and backlog 628.
 TEST_F(ScreenshotGenerator, CaptureSettingsPanel) {
-  constexpr const char* kFilename = "settings-dialog.png";
+  // The filename comes from the fixture rather than a literal, the way
+  // CaptureDisplay already does it. Two reasons, and the second is the one that
+  // forced it: a spec row is what `_fixture_captures` in the parity checker
+  // reads, so a capture with no row can carry no `parity_key` and the matrix
+  // cannot pair it with the web's — which is why the `settings` row sat in the
+  // D22 worklist while a perfectly current picture of the surface was already
+  // tracked. And it puts the rename that backlog 628 still owes in one place.
+  const ScreenshotSpec* settings_spec = nullptr;
+  for (const auto& spec : FixtureConfig().screenshots) {
+    if (spec.capture == "settings") {
+      settings_spec = &spec;
+      break;
+    }
+  }
+  ASSERT_NE(settings_spec, nullptr)
+      << "no `settings` capture row in screenshot_data.json";
+  const std::string kFilename = settings_spec->filename;
   if (!ShouldCaptureScreenshot(kFilename))
     GTEST_SKIP() << kFilename << " not requested";
 

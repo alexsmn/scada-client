@@ -364,13 +364,14 @@
       "referenced_from": [
         "client/workbench.md"
       ],
-      "notes": "The preferences surface, from CaptureSettingsPanel. **The filename says `dialog` and the surface is no longer one.** `SettingsDialog` was retired on 2026-08-28 for `SettingsPanel`, a full-window overlay over the workbench (backlog 626), and the capture was retargeted at it in the same change — but the tracked PNG here is still the last render of the retired dialog, because a re-render has to happen on Windows and the manual pages that embed it still describe a dialog. Backlog 628 carries the three as one change: rename the capture and the file, rewrite scada-docs client/workbench.md in both languages, re-render on Windows. Until then this row is knowingly stale, and a diff against it means nothing. What the capture now asserts: the panel is built from the row catalogue joined to the Settings MenuModel, so it shows exactly what the shell publishes — the framework toggles, every module's MainMenuId::Settings contribution, and the Language / Style / Colour scheme choice rows — plus the three things that make it a surface rather than a dialog (the search field, the category table of contents, the scope tabs) and the `Open Displays Folder` action row, which is backlog 554's answer and which the dialog could not carry. A row offering the four appearances must still be present, because Colour scheme is how the operator picks one and it must not become unreachable. Replaces colour-scheme-menu.png, whose submenu no longer exists. This capture used to skip under --theme and publish `legacy`, because the operator who needed it was the one still on Classic; Classic is gone, so it renders under the theme like every other capture and the tracked PNG below is doubly stale — it shows both the retired dialog and the retired appearance. NOT YET A WINDOWS RENDER (re-rendered on macOS 2026-08-26, offscreen, hermetic HOME) — re-render on Windows before publishing. The Language combo reads Русский where the 2026-08-02 render read English; that is not a regression — the tracked file predates 3487975be (2026-08-15, 'qttranslations was in no manifest, so Qt chrome shipped English'), so it was captured with Qt's own catalogue absent and the combo fell back to the English source. Ruled out as leaked machine QSettings: that render was byte-identical with and without a hermetic HOME.",
+      "notes": "The preferences surface, from CaptureSettingsPanel: a full-window overlay over the workbench with its own search box, four scope tabs, a category list with counts, and a per-row storage chip saying where each setting lives. **The filename still says `dialog` and the surface is not one** — `SettingsDialog` was retired on 2026-08-28 for `SettingsPanel` (backlog 626). What this row said until 2026-09-19 is now wrong in the reassuring direction: it warned the tracked PNG was the last render of the retired dialog and that a diff against it meant nothing. It is not — a fresh render is byte-identical and shows the overlay; it was re-rendered at 15bd4e48b. So the picture is current and the diff is meaningful. What is still owed is the RENAME to settings.png, which is backlog 628 and interlocks with the manual pages that embed the old name.",
       "captured": {
         "commit": "2ab9399ee",
         "platform": "macos",
         "dirty": true,
         "sha256": "5bfaacda94cf12b0471dc23428774c571288128b54413f6aec03683120fa9c62"
-      }
+      },
+      "parity_key": "settings"
     },
     {
       "file": "settings-dialog-light.png",
@@ -378,13 +379,14 @@
       "theme": "light",
       "published": false,
       "referenced_from": [],
-      "notes": "Light-theme render of settings-dialog.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to settings-dialog.png, and this is a second appearance of that capture rather than a second capture.",
+      "notes": "The light render of settings-dialog.png. Same fixture, same spec; only the design-token appearance differs. See that row for what the picture is of and for the rename backlog 628 still owes.",
       "captured": {
         "commit": "0ed6944b1",
         "platform": "macos",
         "dirty": true,
         "sha256": "782d0b82510e71eb068dd8ca2b8995e25125beab99a4662671d2eeeb114e4ff8"
-      }
+      },
+      "parity_key": "settings"
     },
     {
       "file": "workbench-window.png",
