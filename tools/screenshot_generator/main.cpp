@@ -277,6 +277,17 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     // Event pane during startup before CaptureAllWindows inspects it.
     profile.event_auto_show = false;
     profile.event_auto_hide = false;
+    // Portfolios reach the pane through the PROFILE rather than through a
+    // seeder of ours: PortfolioModule's constructor calls
+    // LoadPortfolios(profile_.data(), ...), so the production loader is the one
+    // that runs and the fixture cannot drift from the shape the client reads.
+    // That is also why this happens before Save() and before Start(), unlike
+    // SeedFavourites below -- the favourites store is built during post-login,
+    // the portfolio manager during module construction.
+    if (const auto* portfolios =
+            FixtureConfig().json.as_object().if_contains("portfolios")) {
+      profile.data().as_object()["portfolios"] = *portfolios;
+    }
     profile.AddPage(
         MakeScreenshotPage(FixtureConfig().screenshots, FixtureConfig().json));
     profile.Save();

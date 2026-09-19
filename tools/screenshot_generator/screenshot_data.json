@@ -72,14 +72,38 @@
       "class": "object",
       "type_definition": "SCADA.331",
       "references": [
-        { "type": "NS0.47", "target": "TS.9001" },
-        { "type": "NS0.47", "target": "TS.9002" },
-        { "type": "NS0.47", "target": "TS.9003" },
-        { "type": "NS0.47", "target": "TS.9004" },
-        { "type": "NS0.47", "target": "TS.9005" },
-        { "type": "NS0.47", "target": "TS.9006" },
-        { "type": "NS0.47", "target": "TS.9007" },
-        { "type": "NS0.47", "target": "TS.9008" }
+        {
+          "type": "NS0.47",
+          "target": "TS.9001"
+        },
+        {
+          "type": "NS0.47",
+          "target": "TS.9002"
+        },
+        {
+          "type": "NS0.47",
+          "target": "TS.9003"
+        },
+        {
+          "type": "NS0.47",
+          "target": "TS.9004"
+        },
+        {
+          "type": "NS0.47",
+          "target": "TS.9005"
+        },
+        {
+          "type": "NS0.47",
+          "target": "TS.9006"
+        },
+        {
+          "type": "NS0.47",
+          "target": "TS.9007"
+        },
+        {
+          "type": "NS0.47",
+          "target": "TS.9008"
+        }
       ]
     },
     {
@@ -88,7 +112,10 @@
       "class": "object",
       "type_definition": "SCADA.118",
       "references": [
-        { "type": "NS0.47", "target": "TS.9101" }
+        {
+          "type": "NS0.47",
+          "target": "TS.9101"
+        }
       ]
     },
     {
@@ -97,7 +124,10 @@
       "class": "object",
       "type_definition": "SCADA.277",
       "references": [
-        { "type": "NS0.47", "target": "TS.9201" }
+        {
+          "type": "NS0.47",
+          "target": "TS.9201"
+        }
       ]
     },
     {
@@ -108,15 +138,42 @@
       "class": "object",
       "type_definition": "SCADA.124",
       "references": [
-        {"type": "NS0.47", "target": "TS.9301"},
-        {"type": "NS0.47", "target": "TS.9302"},
-        {"type": "NS0.47", "target": "TS.9303"},
-        {"type": "NS0.47", "target": "TS.9304"},
-        {"type": "NS0.47", "target": "TS.9305"},
-        {"type": "NS0.47", "target": "TS.9306"},
-        {"type": "NS0.47", "target": "TS.9307"},
-        {"type": "NS0.47", "target": "TS.9308"},
-        {"type": "NS0.47", "target": "TS.9309"}
+        {
+          "type": "NS0.47",
+          "target": "TS.9301"
+        },
+        {
+          "type": "NS0.47",
+          "target": "TS.9302"
+        },
+        {
+          "type": "NS0.47",
+          "target": "TS.9303"
+        },
+        {
+          "type": "NS0.47",
+          "target": "TS.9304"
+        },
+        {
+          "type": "NS0.47",
+          "target": "TS.9305"
+        },
+        {
+          "type": "NS0.47",
+          "target": "TS.9306"
+        },
+        {
+          "type": "NS0.47",
+          "target": "TS.9307"
+        },
+        {
+          "type": "NS0.47",
+          "target": "TS.9308"
+        },
+        {
+          "type": "NS0.47",
+          "target": "TS.9309"
+        }
       ]
     },
     {
@@ -279,7 +336,10 @@
       "class": "object",
       "type_definition": "SCADA.62",
       "references": [
-        { "type": "SCADA.328", "target": "TS.104" }
+        {
+          "type": "SCADA.328",
+          "target": "TS.104"
+        }
       ]
     },
     {
@@ -1938,6 +1998,14 @@
       "filename": "frame-decode-pane.png",
       "width": 440,
       "height": 440
+    },
+    {
+      "type": "Portfolio",
+      "filename": "portfolio.png",
+      "width": 300,
+      "height": 400,
+      "expand": true,
+      "min_rows": 5
     }
   ],
   "_dialogs_comment": [
@@ -2223,5 +2291,33 @@
         ]
       }
     ]
-  }
+  },
+  "_portfolios_comment": "Portfolios for the Portfolio pane, in the shape LoadPortfolios reads -- {name, items:[{path}]} -- because the pane is filled by PortfolioModule's constructor calling LoadPortfolios(profile_.data(), ...), not by a seeder of the generator's own. main.cpp copies this block into the profile before Save() for that reason. Items name real fixture nodes so the tree renders their browse names rather than raw ids.",
+  "portfolios": [
+    {
+      "name": "Ключевые параметры",
+      "items": [
+        {
+          "path": "TIT.200"
+        },
+        {
+          "path": "TIT.208"
+        },
+        {
+          "path": "TIT.211"
+        }
+      ]
+    },
+    {
+      "name": "Диагностика КП",
+      "items": [
+        {
+          "path": "TIT.212"
+        },
+        {
+          "path": "TIT.201"
+        }
+      ]
+    }
+  ]
 }

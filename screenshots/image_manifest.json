@@ -2397,12 +2397,42 @@
         "dirty": true,
         "sha256": "817257b2c73186531e0a66b278bdaddd98392002e2bd9a70dd0392c17224ce55"
       }
+    },
+    {
+      "file": "portfolio.png",
+      "tag": "auto-view",
+      "theme": "dark",
+      "parity_key": "portfolio",
+      "referenced_from": [],
+      "notes": "The Portfolio pane: two portfolios and their members, rendered by browse name. Qt DOCKS this one — kPortfolioWindowInfo carries WIN_SING, so the view manager tabifies it with the Objects pane rather than opening a workspace tab — which is why the capture is pane-shaped at 300x400 like devices.png and favorites.png. Its contents come from the profile: PortfolioModule's constructor calls LoadPortfolios(profile_.data(), ...), so the generator copies the fixture's `portfolios` block into the profile before Save() rather than seeding the manager directly, and the production loader is the code under test.",
+      "captured": {
+        "commit": "df2e525b0",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "d52a775b5b4687b7ab9b5b3362543306cc94c56b213d1c5f97a180e0a94f187c"
+      },
+      "published": false
+    },
+    {
+      "file": "portfolio-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "parity_key": "portfolio",
+      "referenced_from": [],
+      "notes": "The light render of portfolio.png. Same fixture, same spec; only the design-token appearance differs. See that row for what the picture is of.",
+      "captured": {
+        "commit": "df2e525b0",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "8b3ae453908cb0b62dd26d561191dadd1fae851748c3a8b5c09daa5bc4fe3c65"
+      },
+      "published": false
     }
   ],
   "counts": {
     "auto-dialog": 46,
     "auto-menu": 12,
-    "auto-view": 95,
+    "auto-view": 97,
     "manual-annotated": 2,
     "manual-diagram": 4,
     "manual-modus": 5,
