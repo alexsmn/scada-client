@@ -2,7 +2,7 @@
   "name": "scada-client",
   "version": "2.6.0",
   "description": "Telecontrol SCADA Client for industrial monitoring and control",
-  "license": "Apache-2.0",
+  "license": "GPL-3.0-only",
   "$consumes": [
     "client/aui",
     "common",

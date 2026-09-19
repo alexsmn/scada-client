@@ -1,122 +1,174 @@
 # Telecontrol SCADA Client
 
-A C++ industrial SCADA (Supervisory Control and Data Acquisition) client application for remote monitoring and control of industrial systems. Provides real-time and historical data viewing, event/alarm journaling, device configuration management, and support for multiple industrial protocols.
+Desktop client for the Telecontrol SCADA system: real-time and historical
+monitoring, alarm handling, and device configuration for industrial and
+power-system installations. C++23 and Qt 6, on Windows and macOS.
 
-## Features
+**[Live demo](https://telecontrol-ru.github.io/scada/app/)** ·
+**User manual** [English](https://telecontrol-ru.github.io/scada/en/) /
+[Русский](https://telecontrol-ru.github.io/scada/) ·
+**[Screen gallery](screenshots/)**
 
-- Remote device monitoring and control
-- Real-time and historical time-series data viewing
-- Event/alarm journaling with acknowledgment
-- Device and node configuration management
-- User authentication and persistent profiles
-- Multi-window interface with customizable page layouts
-- Data export (CSV, configuration)
-- Print and print preview
-- Graph/chart visualization
-- Protocol support: SCADA/Telecontrol, OPC UA, Vidicon, Modus
+![The operator workbench](screenshots/workbench-window.png)
 
-## Prerequisites
+The operator workbench: object explorer, event journal with severity banding,
+and the Inspector showing the selected signal's value, quality and setpoints.
+The client follows the host OS light/dark preference — every screen below is
+[captured in both appearances](screenshots/).
 
-- C++17 compiler (MSVC, GCC, or Clang)
-- CMake 3.x+
-- [vcpkg](https://vcpkg.io/) (recommended for dependency management)
-- Qt 6 (Widgets, LinguistTools, PrintSupport; ActiveQt on Windows)
-- Boost (ASIO, Beast, Signals2, Locale, Range, Algorithm)
-- Google Test
-- OPC UA SDK (the `opcuapp` product, `third_party/opcuapp`)
-- Windows SDK / ATL (Windows only, for Modus and COM support)
+## Screens
+
+| | |
+|---|---|
+| [<img src="screenshots/graph-cursor.png" alt="Trends with a time cursor" width="420">](https://telecontrol-ru.github.io/scada/en/client/graph/) | [<img src="screenshots/substation-display.png" alt="Substation single-line display" width="420">](https://telecontrol-ru.github.io/scada/en/client/display/) |
+| **[Trends](https://telecontrol-ru.github.io/scada/en/client/graph/)** — stacked time-series panes with per-series min/max/mean and a shared time cursor. | **[Displays](https://telecontrol-ru.github.io/scada/en/client/display/)** — single-line schematics driven by live values. |
+| [<img src="screenshots/events-alarm-surface.png" alt="Event journal as an alarm surface" width="420">](https://telecontrol-ru.github.io/scada/en/client/events/) | [<img src="screenshots/debugger.png" alt="Session request debugger" width="420">](https://telecontrol-ru.github.io/scada/en/client/debugger/) |
+| **[Alarms and events](https://telecontrol-ru.github.io/scada/en/client/events/)** — severity-banded journal, filtered by zone, severity and period, with acknowledgment. | **[Protocol debugger](https://telecontrol-ru.github.io/scada/en/client/debugger/)** — every client↔server request traced with phase and duration. |
+
+**[All 72 screens →](screenshots/)**
+
+## What it does
+
+- Browse the server's object model — devices, signals, and their live values
+- Real-time and historical trends, with cursors, limits and CSV export
+- Event and alarm journals, with acknowledgment and per-zone filtering
+- Single-line displays and free-form tables built on the same data
+- Device configuration: parameters, address maps, limits, bulk create
+- Users, roles and password policy; an audit log of who changed what
+- Per-device diagnostics, metrics, and a decoded protocol frame log
+- Printing and print preview; user profiles with saved page layouts
+- Russian and English UI
+
+### Data service backends
+
+Three are registered through the `REGISTER_DATA_SERVICES` macro, selected at
+login:
+
+| Backend | Protocol | Default address |
+|---------|----------|-----------------|
+| Scada | Telecontrol (gRPC) | `localhost` |
+| OPC UA | OPC UA | `opc.tcp://localhost:4840` |
+| Vidicon | Vidicon | `localhost` |
+
+The servers those talk to speak IEC 60870-5-104, IEC 61850, Modbus and OPC UA
+to the field. Modus 6.30 schematics are integrated on Windows through ActiveX.
+
+## Trying it
+
+The quickest look is the **[live demo](https://telecontrol-ru.github.io/scada/app/)**
+— a shared instance you can sign into anonymously. That is the *web* client:
+a browser implementation of the same workbench, the same vocabulary and the
+same data, rendered in its own idiom rather than as a copy of this one.
+
+**This repository does not build standalone yet.** The client resolves the
+six products it consumes as sibling checkouts, and three of them are not
+published:
+
+| Consumed product | What it is | Public |
+|---|---|---|
+| [`scada-core`](https://github.com/alexsmn/scada-core) | base utilities, gRPC protocol, metrics | yes |
+| [`scada-common`](https://github.com/alexsmn/scada-common) | address space, node services, OPC UA types | yes |
+| [`opcuapp`](https://github.com/alexsmn/opcuapp) | OPC UA SDK | yes |
+| `display` | the schematic display runtime | not yet |
+| `graph_qt` | the charting widget | not yet |
+| `view_manager_qt` | dockable view management | not yet |
+
+So treat a clone as sources to read rather than a build to run — the CI here
+is static analysis for the same reason. The build instructions below are the
+real ones, and they work in a checkout that has all six.
 
 ## Building
-
-### CMake Presets (Recommended)
 
 ```bash
 cmake --preset ninja                 # Configure
 cmake --build --preset release       # Build (or: debug, relwithdebinfo)
 ctest --preset test-release          # Test (or: test-debug)
+cmake --build --preset relwithdebinfo --target run   # Build and launch
 ```
 
-Every product in the SCADA tree carries this same preset set (ADR 0011), so the
-commands do not change from one to the next. Set `VCPKG_ROOT` in the
-environment; everything else machine-specific — toolchain paths, ccache,
-cppcheck, and on Windows the MSVC include/lib directories — lives in one
-`.scada-local.cmake` beside `build-support/`, shared by every product. There is
-no per-repo `CMakeUserPresets.json` any more.
+Every product in the SCADA tree carries this same preset set, so the commands
+do not change from one to the next. Export `VCPKG_ROOT` before configuring —
+the preset names the vcpkg toolchain through it, and a toolchain file is read
+before any project CMake runs, so nothing else can supply it. Everything else
+machine-specific — ccache, cppcheck, and on Windows the MSVC include and lib
+directories — lives in one `.scada-local.cmake` beside `build-support/`.
 
-The client consumes five products — `common`, `core`, `opcuapp`, `graph_qt` and
-`view_manager_qt`. In a standalone checkout they sit beside it and the resolver
-in `build-support/` finds them there.
+### Prerequisites
 
-### MSBuild (Windows)
+- A C++23 compiler (MSVC, Clang, or GCC)
+- CMake 3.25+ with [vcpkg](https://vcpkg.io/)
+- Qt 6 — `qtbase` (widgets), `qttools`, `qttranslations`; `qtactiveqt` on Windows
+- Boost — Asio, Beast, Signals2, Algorithm, Range, JSON, Process, Program Options, Date Time, System
+- GoogleTest
+- Windows SDK / ATL, for the Windows-only COM and ActiveX modules
 
-```bash
-nuget restore .
-msbuild /m /p:Configuration=Release .
-```
+Those come from [`vcpkg.json`](vcpkg.json); the sibling products come from the
+resolver in `build-support/`.
 
 ## CI
 
-GitHub Actions builds on every push/PR to `release/2.5`:
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs **static analysis
+only**, on push and pull request to `main` and `release/**`. There is no build
+job: a public runner cannot assemble one while three consumed products are
+unpublished, and it would also need a multi-hour Qt source build with no
+binary cache. A build job returns when those products do.
 
-| Platform | Compiler | Architecture |
-|----------|----------|--------------|
-| Windows | MSVC | x64 |
-| Windows | MSVC | x86 |
-| Ubuntu | GCC | x64 |
-| Ubuntu | Clang | x64 |
+The `analyze` job runs the same cppcheck configuration the local build runs,
+against this repository's own `.cppcheck-suppressions`. It builds a pinned
+cppcheck (2.21.0) from source rather than installing the distro package, which
+is eight releases behind and disagrees with it in both directions. `error:`
+findings gate the job; warnings are uploaded as an artifact.
 
-Dependency repos (`scada-core`, `scada-common`, `transport`, etc.) are checked out automatically. Modules requiring proprietary SDKs (Modus, Classic OPC, Vidicon) are disabled in CI.
-
-## Project Structure
+## Project structure
 
 ```
 scada-client/
-├── app/                # Application entry point (qt/ subdir)
-├── aui/                # Abstract UI layer (platform-agnostic models)
-├── base/               # Foundation utilities
-├── clipboard/          # Clipboard and node serialization
-├── modules/         # ~22 reusable UI components
-├── configuration/      # Device/node configuration management
-├── controller/         # MVC controller layer and command registry
-├── core/               # Core module: command registries, tracer, progress
-├── events/             # Event system, journal, local events
-├── export/             # CSV and configuration export/import
-├── favorites/          # Bookmarks management
-├── filesystem/         # File system operations and caching
-├── graph/              # Graph/chart visualization
-├── main_window/        # Main window management and page lifecycle
-├── modus/              # Modus 6.30 ActiveX/COM integration (Qt only)
-├── portfolio/          # Portfolio management
-├── print/              # Print and print preview
-├── profile/            # User profiles, window definitions, layouts
-├── properties/         # Property management and dialogs
-├── services/           # Shared services (speech, tasks, telemetry)
-├── timed_data/         # Time-series data service
-├── vidicon/            # Vidicon protocol integration (Qt only)
-├── web/                # Web component
-├── res/                # Resources and settings
-└── test/               # Integration tests
+├── app/           # Entry point and ClientApplication (qt/ holds main())
+├── aui/           # Abstract UI layer: toolkit-free grid/tree/table models
+├── base/          # Foundation utilities (command line, blinker, JSON, files)
+├── clipboard/     # Clipboard and node serialization
+├── controller/    # MVC controller layer, view management, command registry
+├── core/          # Command registries, tracer, progress host
+├── main_window/   # Window lifecycle, pages, docks, status bar
+├── modules/       # 45 feature modules — see below
+├── profile/       # User profiles, window definitions, page layouts
+├── properties/    # Property management and dialogs
+├── res/           # Resources and settings
+├── resources/     # Command ids and icon-strip paths
+├── screenshots/   # Generated screen gallery + image_manifest.json
+├── services/      # Shared services (speech, tasks, telemetry)
+├── test/          # Integration tests, shared fixtures, E2E
+├── tools/         # Screenshot generator and source-only checks
+├── ui/            # Shared widgets
+└── web/           # Web component
 ```
 
-Modules with UI code keep their toolkit-specific implementations in a `qt/` subdirectory. The custom `client_module.cmake` build system creates the `<name>_qt` target automatically for each module.
+`modules/` is where the features live — `graph`, `events`, `table`, `summary`,
+`sheet`, `timed_data`, `portfolio`, `favorites`, `filesystem`, `print`,
+`export`, `configuration`, `administration`, `debugger`,
+`device_diagnostics`, `device_metrics`, `bulk_create`, `limits`, `login`,
+`settings`, `inspector`, `transmission`, and the Windows-only `modus` and
+`vidicon`, among others.
+
+A module with UI keeps its toolkit-specific code in a `qt/` subdirectory and
+its models in the module root, which is what keeps those models testable
+without a `QApplication`. The `client_module()` CMake helper creates the
+`<name>_qt` target for each one automatically.
 
 ## Architecture
 
-The application uses a modular MVC architecture with context-based dependency injection. Each module defines a `*Context` struct containing its dependencies and privately inherits from it:
+Modular MVC with context-based dependency injection. Each module declares a
+`*Context` struct of its dependencies and privately inherits from it, so what
+a module needs is explicit rather than reached through globals:
 
 ```
-main() -> AppInit -> ClientApplication -> [CoreModule, EventModule, MainWindowModule, ...]
+main() → AppInit → ClientApplication → [CoreModule, EventModule, MainWindowModule, ...]
 ```
 
-Three pluggable data service backends are supported via the `REGISTER_DATA_SERVICES` macro:
+Async work is coroutine-first (`co_await` over Boost.Asio), with `promise<T>`
+kept at older module boundaries.
 
-| Backend | Protocol | Default Address |
-|---------|----------|-----------------|
-| Scada | Telecontrol | `localhost` |
-| OPC UA | OPC UA | `opc.tcp://localhost:4840` |
-| Vidicon | Vidicon | `localhost` |
-
-## Command-Line Switches
+## Command-line switches
 
 | Switch | Description |
 |--------|-------------|
@@ -128,51 +180,12 @@ Three pluggable data service backends are supported via the `REGISTER_DATA_SERVI
 | `--log-service-model-change-event` | Log model change events |
 | `--log-service-node-semantics-change-event` | Log node semantics change events |
 
-## Discovery
+## Screenshot generator
 
-http://telecontrol.ru/discovery.json
-
-## Telemetry
-
-Add to the `discovery.json` when possible:
-
-```json
-"telemetry": "https://d26i7akorx31n9.cloudfront.net/telemetry",
-```
-
-## Updates
-
-### Use cases
-
-* Check for updates once per hour.
-* Once an update is detected, register a local event.
-* An option to stop all update checks.
-* A command to download the update.
-
-### Schema
-
-```json
-{
-  "scada": {
-    "versions": {
-      "2.3.8": {
-        "description": "Many updates",
-        "installer": "https://telecontrol-public.s3-us-west-2.amazonaws.com/telecontrol-scada/telecontrol-scada-2.3.8.msi"
-      }
-    }
-  }
-}
-```
-
-## Screenshot Generator
-
-The screenshot generator captures PNG screenshots of client window types using
-an offscreen Qt renderer. It lives in [`tools/screenshot_generator/`](tools/screenshot_generator)
-and builds as its **own executable**, `client_screenshot_generator` — it is not
-part of `client_qt_unittests`, though it still uses GTest to drive the captures,
-so `--gtest_filter` selects among them.
-
-### Running
+The [gallery](screenshots/) is rendered, not hand-captured: an offscreen Qt
+build drives real windows from a JSON fixture, so a UI change lands as a
+reviewable image diff. It builds as its own executable,
+`client_screenshot_generator`, in [`tools/screenshot_generator/`](tools/screenshot_generator).
 
 ```bash
 cmake --build --preset release --target client_screenshot_generator
@@ -180,9 +193,9 @@ cd build/ninja/bin/Release
 QT_QPA_PLATFORM=offscreen ./client_screenshot_generator --out=path/to/output
 ```
 
-`--out` is required. `QT_QPA_PLATFORM=offscreen` is not optional on a headless
-host. Nothing rebuilds the generator for you, so build it before reading any
-change in its output as a regression.
+`--out` is required, and `QT_QPA_PLATFORM=offscreen` is not optional on a
+headless host. Nothing rebuilds the generator for you, so build it before
+reading any change in its output as a regression.
 
 | Option | Meaning |
 |---|---|
@@ -192,24 +205,29 @@ change in its output as a regression.
 | `--only=<names>` | Comma/semicolon/newline-separated filenames to capture |
 | `--theme=<name>` | Render under a design-token theme: `dark`, `light` or `hc` |
 
-An unrecognised option is rejected rather than ignored — everything but
-`--gtest_*` must be one of the above.
+Anything but `--gtest_*` that is not in that table is rejected rather than
+ignored. `--gtest_filter` selects among the `ScreenshotGenerator.*` captures;
+`CaptureAllWindows` writes one PNG per window type and `CaptureMainWindow`
+writes the composite workbench.
 
-### Available captures
+After regenerating, refresh the gallery index:
 
-`--gtest_filter` selects among the `ScreenshotGenerator.*` captures; the two
-broadest are:
+```bash
+python3 screenshots/render_gallery.py --render
+```
 
-| Test               | Output                                                                        |
-|--------------------|-------------------------------------------------------------------------------|
-| `CaptureAllWindows` | Individual PNGs for each window type (graph.png, table.png, events.png, etc.) |
-| `CaptureMainWindow` | `client-window.png` — composite main window with Graph, Nodes, and Events    |
+A bare `render_gallery.py` is the check that it is current, and runs as the
+`client_screenshot_gallery_check` ctest.
 
-### Window types captured
+## Documentation
 
-Graph, Table, Summary, Events, EventJournal, DeviceWatch, ObjectTree, Devices,
-Users, Parameters, Sheet, Favorites, Files, TimedData, Retransmission.
+The user manual — operator guides, device configuration, protocol notes — is
+published bilingually at
+**[telecontrol-ru.github.io/scada](https://telecontrol-ru.github.io/scada/)**
+([English](https://telecontrol-ru.github.io/scada/en/)). Most of its UI images
+are the captures in [`screenshots/`](screenshots/).
 
 ## License
 
-Apache 2.0 — see [LICENSE](LICENSE).
+GPL-3.0 — see [LICENSE](LICENSE). Third-party asset notices are in
+[NOTICE](NOTICE).

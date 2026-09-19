@@ -4,7 +4,7 @@
 
 Telecontrol SCADA Client is a C++ industrial monitoring and control application (version 2.6.0). It provides remote device monitoring, real-time and historical data viewing, event/alarm journaling, and device configuration management. The application supports multiple industrial protocols (SCADA/Telecontrol, OPC UA, Vidicon, Modus) and ships a Qt desktop frontend. (A second Wt web frontend existed until 2026-08-08; the web client is the separate `web/` app in the superproject, not a second backend of this one.)
 
-Licensed under Apache 2.0.
+Licensed under GPL-3.0 (see `LICENSE`, which carries the GPL-3.0 text).
 
 ## Repository Structure
 
@@ -20,7 +20,7 @@ scada-client/
 │   └── test/
 ├── base/                   # Foundation utilities (command line, blinker, JSON, filesystem)
 ├── clipboard/              # Clipboard and node serialization
-├── modules/             # ~22 reusable UI components
+├── modules/             # 45 feature modules
 │   ├── about/              # About dialog
 │   ├── debugger/           # Request/response protocol debugger
 │   ├── device_metrics/     # Device performance metrics
@@ -419,13 +419,6 @@ cmake --build --preset relwithdebinfo       # Build (RelWithDebInfo)
 cmake --build --preset debug                # Build (Debug)
 ctest --preset test-release                 # Test (Release)
 ctest --preset test-debug                   # Test (Debug)
-```
-
-### MSBuild (Windows Only)
-
-```bash
-nuget restore .
-msbuild /m /p:Configuration=Release .
 ```
 
 ### Custom CMake Module System

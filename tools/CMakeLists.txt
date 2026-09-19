@@ -53,4 +53,15 @@ if(Python3_FOUND)
       "${CMAKE_CURRENT_SOURCE_DIR}/check_qrc_resources.py"
       "--client-dir=${CMAKE_CURRENT_SOURCE_DIR}/..")
   set_tests_properties(client_qrc_resource_check PROPERTIES TIMEOUT 120)
+
+  # screenshots/README.md is the public gallery and is GENERATED from
+  # image_manifest.json, so it goes stale the moment a capture is added,
+  # retagged or removed — silently, because a stale index still renders. The
+  # superproject carries four hand-repairs of exactly that failure on another
+  # generated page. Bare invocation is the check; --render writes.
+  # Source-only: no build, no Qt, no network.
+  add_test(NAME client_screenshot_gallery_check
+    COMMAND ${Python3_EXECUTABLE}
+      "${CMAKE_CURRENT_SOURCE_DIR}/../screenshots/render_gallery.py")
+  set_tests_properties(client_screenshot_gallery_check PROPERTIES TIMEOUT 120)
 endif()
