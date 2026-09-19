@@ -1382,7 +1382,7 @@
     <!-- actions.cpp: specific actions -->
     <message>
         <source>Watch</source>
-        <translation>Монитор</translation>
+        <translation>Наблюдение</translation>
     </message>
     <message>
         <source>Metrics</source>
