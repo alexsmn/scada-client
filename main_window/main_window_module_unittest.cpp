@@ -17,6 +17,8 @@
 #include "portfolio/portfolio_module.h"
 #include "profile/profile.h"
 #include "resources/common_resources.h"
+#include "aui/dialog_service_mock.h"
+#include "main_window/main_window_mock.h"
 #include "services/speech_service_mock.h"
 
 #include <gmock/gmock.h>
@@ -45,8 +47,24 @@ class MainWindowModuleTest : public Test {
       node_command_handler_;
   DefaultNodeCommandRegistry default_node_commands_;
 
+  // Run a registered global command through the registry the module filled.
+  void ExecuteGlobalCommand(unsigned command_id) {
+    const auto* command =
+        controller_env_.global_commands_.FindCommand(command_id);
+    ASSERT_NE(command, nullptr);
+    ASSERT_TRUE(command->execute_handler);
+    GlobalCommandContext context{command_main_window_, command_dialog_service_};
+    command->execute_handler(context);
+  }
+
   StrictMock<MockFunction<void()>> quit_handler_;
   StrictMock<MockFunction<void()>> login_handler_;
+  StrictMock<MockFunction<void()>> sign_out_handler_;
+  // The two collaborators a GlobalCommandContext needs. Nice rather than
+  // strict: these commands touch neither, and a StrictMock would fail on any
+  // incidental call rather than on the thing under test.
+  NiceMock<MockMainWindow> command_main_window_;
+  NiceMock<MockDialogService> command_dialog_service_;
   StrictMock<MockSpeechService> speech_service_;
   ProgressHostImpl progress_host_;
   UiCommandRegistry ui_command_registry_;
@@ -105,6 +123,7 @@ void MainWindowModuleTest::SetUp() {
       .quit_handler_ = quit_handler_.AsStdFunction(),
       .scada_services_ = controller_env_.services(),
       .login_handler_ = login_handler_.AsStdFunction(),
+      .sign_out_handler_ = sign_out_handler_.AsStdFunction(),
       .task_manager_ = controller_env_.task_manager_,
       .node_event_provider_ = event_module_.node_event_provider(),
       .timed_data_service_ = controller_env_.timed_data_service_,
@@ -203,6 +222,39 @@ TEST_F(MainWindowModuleTest, DeleteCurrentPage_NotLast) {
 // no `menu_group`, so it never entered the Settings model and `SettingsDialog`,
 // which renders that model and nothing else, had nothing to draw. It sits
 // beside the alarm tone because the two are the annunciators of the same edge.
+// The sign-out menu entry has to exist in the build an operator actually
+// runs. Both entries were behind `#if !defined(NDEBUG)` until 2026-09-20, so
+// in a release build the only way out of a session was to quit -- and with the
+// login dialog's `Auto:` box ticked, quitting and reopening signs the same
+// operator straight back in.
+TEST_F(MainWindowModuleTest, SignOutIsReachableFromTheMenu) {
+  const auto contributions =
+      ui_command_registry_.GetMenuContributions(MainMenuId::More);
+
+  EXPECT_THAT(contributions,
+              Contains(Field(&MenuContribution::command_id, ID_LOGOFF)));
+  EXPECT_THAT(contributions,
+              Contains(Field(&MenuContribution::command_id, ID_LOGIN)));
+}
+
+// Signing out must not be wired to the login handler. The two do opposite
+// things to the session, and the pair used to share one callback taking a
+// bool -- where the false branch was `// TODO: Logoff.` and did nothing at
+// all.
+TEST_F(MainWindowModuleTest, SignOutRunsTheSignOutHandler) {
+  EXPECT_CALL(sign_out_handler_, Call());
+  EXPECT_CALL(login_handler_, Call()).Times(0);
+
+  ExecuteGlobalCommand(ID_LOGOFF);
+}
+
+TEST_F(MainWindowModuleTest, ConnectRunsTheLoginHandler) {
+  EXPECT_CALL(login_handler_, Call());
+  EXPECT_CALL(sign_out_handler_, Call()).Times(0);
+
+  ExecuteGlobalCommand(ID_LOGIN);
+}
+
 TEST_F(MainWindowModuleTest, SpeechOptionLivesUnderSettings) {
   const auto contributions =
       ui_command_registry_.GetMenuContributions(MainMenuId::Settings);

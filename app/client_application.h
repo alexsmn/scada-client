@@ -191,6 +191,13 @@ class ClientApplication : private ClientApplicationContext {
   Awaitable<void> StartAsync();
   Awaitable<void> Login();
   Awaitable<void> LoginAsync();
+
+  // End the current session and offer the login dialog again. Cancelling that
+  // dialog leaves the client connected to nothing rather than quitting: a
+  // dropped session is a state the client already handles, and `ID_LOGIN`
+  // becomes enabled so the operator can come back.
+  Awaitable<void> SignOut();
+  Awaitable<void> SignOutAsync();
   Awaitable<void> RunAsync();
   Awaitable<void> QuitAsync();
 

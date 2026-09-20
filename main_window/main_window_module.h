@@ -42,6 +42,11 @@ struct MainWindowContext;
 struct SelectionCommandContext;
 
 using LoginHandler = std::function<void()>;
+// Ends the current session and offers the login dialog again. Separate from
+// LoginHandler rather than a bool parameter on it: the two do opposite things
+// to the session, and a caller that gets the flag wrong signs an operator out
+// instead of in.
+using SignOutHandler = std::function<void()>;
 using QuitHandler = std::function<void()>;
 
 struct MainWindowModuleContext {
@@ -50,6 +55,7 @@ struct MainWindowModuleContext {
   QuitHandler quit_handler_;
   scada::services scada_services_;
   LoginHandler login_handler_;
+  SignOutHandler sign_out_handler_;
   TaskManager& task_manager_;
   NodeEventProvider& node_event_provider_;
   TimedDataService& timed_data_service_;

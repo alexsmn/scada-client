@@ -609,6 +609,8 @@ void ClientApplication::CreateMainWindow(const PostLoginContext& ctx) {
           .scada_services_ = ctx.audited_scada_services,
           .login_handler_ =
               [this] { CoSpawn(executor_, [this] { return Login(); }); },
+          .sign_out_handler_ =
+              [this] { CoSpawn(executor_, [this] { return SignOut(); }); },
           .task_manager_ = *task_manager_,
           .node_event_provider_ = event_module_->node_event_provider(),
           .timed_data_service_ = *timed_data_service_,
@@ -661,6 +663,44 @@ void ClientApplication::OnLoginCompleted(const DataServices& data_services) {
   auto audited_services =
       *AuditDataServices(data_services, core_module_->tracer(), executor_);
   master_data_services_->SetServices(std::move(audited_services));
+}
+
+Awaitable<void> ClientApplication::SignOut() {
+  return SignOutAsync();
+}
+
+/**
+ * End the session, then offer the login dialog again.
+ *
+ * The order matters and mirrors the web client's sign out. The profile is
+ * written back while the session that owns it still exists -- afterwards there
+ * is nothing to write through -- and only then is the session closed, so the
+ * server is told rather than left to time it out. An account configured
+ * `MultiSessions = 0` is refused a second logon while one is outstanding, so
+ * skipping the close would lock the next operator out for the rest of the
+ * session timeout.
+ *
+ * Cancelling the dialog is not an error. It leaves the client connected to
+ * nothing, which is a state it already handles because sessions drop on their
+ * own, and `ID_LOGIN` is enabled exactly then so the operator can return.
+ */
+Awaitable<void> ClientApplication::SignOutAsync() {
+  LOG_INFO(*logger_) << ("Sign out");
+
+  co_await SaveProfileToServerOnQuitAsync();
+
+  auto services = master_data_services_ ? master_data_services_->as_services()
+                                        : scada::services{};
+  if (services.session_service) {
+    co_await services.session_service->Disconnect();
+  }
+
+  try {
+    co_await LoginAsync();
+  } catch (const LoginCanceled&) {
+    LOG_INFO(*logger_) << ("Sign out: login dialog cancelled");
+  }
+  co_return;
 }
 
 Awaitable<void> ClientApplication::Quit() {

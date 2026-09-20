@@ -185,7 +185,8 @@ void RegisterMainWindowCommandActions(
     SpeechService& speech_service,
     scada::SessionService& session_service,
     MainWindowManager& main_window_manager,
-    std::function<void(bool login)> login_handler,
+    std::function<void()> login_handler,
+    std::function<void()> sign_out_handler,
     BasicCommandRegistry<GlobalCommandContext>& global_commands,
     UiCommandRegistry& ui_command_registry) {
   global_commands.AddCommand(
@@ -231,17 +232,22 @@ void RegisterMainWindowCommandActions(
             return !session_service.IsConnected();
           })
           .set_execute_handler([login_handler](const GlobalCommandContext&) {
-            login_handler(/*login=*/true);
+            login_handler();
           }));
   global_commands.AddCommand(
       BasicCommand<GlobalCommandContext>{ID_LOGOFF}
           .set_enabled_handler([&session_service](const GlobalCommandContext&) {
             return session_service.IsConnected();
           })
-          .set_execute_handler([login_handler](const GlobalCommandContext&) {
-            login_handler(/*login=*/false);
-          }));
-#if !defined(NDEBUG)
+          .set_execute_handler(
+              [sign_out_handler](const GlobalCommandContext&) {
+                sign_out_handler();
+              }));
+  // Shipped, not debug-only. These two were behind `#if !defined(NDEBUG)`
+  // until 2026-09-20, which meant the only way out of a session in a release
+  // build was to quit the application -- and with the login dialog's `Auto:`
+  // box ticked, quitting and reopening signs the same operator straight back
+  // in. Their handlers pair: exactly one is enabled at a time.
   ui_command_registry.AddMenuItem({.menu_id = MainMenuId::More,
                                    .order = 900,
                                    .command_id = ID_LOGIN,
@@ -252,7 +258,6 @@ void RegisterMainWindowCommandActions(
        .order = 910,
        .command_id = ID_LOGOFF,
        .title = Translate("Disconnect from Server")});
-#endif
 
 #if defined(UI_QT)
   global_commands.AddCommand(
@@ -405,13 +410,7 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
   RegisterMainWindowCommandActions(
       executor_, profile_, speech_service_, *scada_services_.session_service,
       *main_window_manager_,
-      [this](bool login) {
-        if (login) {
-          login_handler_();
-        } else {
-          // TODO: Logoff.
-        }
-      },
+      login_handler_, sign_out_handler_,
       global_commands_, ui_command_registry_);
 
   selection_command_router_ =
