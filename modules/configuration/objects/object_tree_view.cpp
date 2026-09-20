@@ -86,6 +86,19 @@ ObjectTreeView::ObjectTreeView(
       }));
   model_connections_.push_back(
       model().SubscribeModelResetting([this] { OnTreeModelResetting(); }));
+
+  // Catch up on the rows that already exist.
+  //
+  // The model is built and Init()ed by CreateConfigurationTreeModel, which runs
+  // in this constructor's initializer list -- before the subscriptions above.
+  // The root's first level is populated there, so its nodes-added notifications
+  // fire with nobody listening, and OnTreeNodesAdded never sees the root as a
+  // parent. Every top-level row therefore missed its live value subscription
+  // permanently: not a timing wobble, a window that closes before the observer
+  // is attached. Parity finding V45.
+  if (auto* root_node = model().root()) {
+    UpdateNodesVisibility(*root_node, true);
+  }
 }
 
 ObjectTreeView::~ObjectTreeView() = default;
@@ -186,6 +199,27 @@ ObjectTreeModel& ObjectTreeView::model() {
   return static_cast<ObjectTreeModel&>(ConfigurationTreeView::model());
 }
 
+bool ObjectTreeView::ShowsChildren(ConfigurationTreeNode& parent_node) {
+  // The root's children are the top-level rows, and they are on screen from
+  // the moment they exist: the root itself is never drawn (the pane's title
+  // names its contents), so the view holds no expansion state for it and
+  // `IsExpanded` answers false for it forever. Without the first term a row
+  // added under the root after construction would never be subscribed.
+  //
+  // This is NOT what fixed V45, and the distinction is worth keeping. Tracing
+  // the real fixture showed `parent == root()` is never true here, because the
+  // root's first level is populated during the model's Init() -- before this
+  // view subscribes at all -- so those notifications reach nobody and this
+  // function is not called for them. The constructor's catch-up is what
+  // repairs that. This term covers the other case: children arriving under the
+  // root *later*, while the view is listening.
+  //
+  // The teardown side already assumed both: OnTreeModelResetting hands the
+  // root to UpdateNodesVisibility to unsubscribe exactly these children.
+  return &parent_node == model().root() ||
+         tree_view().IsExpanded(&parent_node, true);
+}
+
 void ObjectTreeView::UpdateNodesVisibility(ConfigurationTreeNode& parent_node,
                                            bool expanded) {
   for (int i = 0; i < parent_node.GetChildCount(); ++i) {
@@ -203,7 +237,7 @@ void ObjectTreeView::OnTreeNodeChanged(void* node) {
 
 void ObjectTreeView::OnTreeNodesAdded(void* parent, int start, int count) {
   auto& parent_node = *model().AsNode(parent);
-  if (tree_view().IsExpanded(&parent_node, true)) {
+  if (ShowsChildren(parent_node)) {
     for (int i = 0; i < count; ++i) {
       auto& child = parent_node.GetChild(start + i);
       model().SetNodeVisible(&child, true);

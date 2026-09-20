@@ -143,6 +143,44 @@ class ObjectTreeViewTest : public Test {
           .reference_type_id = scada::id::Organizes});
     }
 
+    // A data item directly under the tree's root, i.e. a top-level row. Its
+    // live value subscription is the one that depended on the root being
+    // treated as showing its children (V45).
+    node_service_.Add(scada::NodeState{
+        .node_id = kTopLevelItemId,
+        .node_class = scada::NodeClass::Variable,
+        .type_definition_id = scada::data_items::id::DataItemType,
+        .parent_id = scada::data_items::id::DataItems,
+        .reference_type_id = scada::id::Organizes});
+
+    // A three-level branch, kept separate from kGroupId so the container-mark
+    // tests still see a group whose children are exactly their two items.
+    //
+    // Depth is the point. Subscribing a top-level row fetches it, and fetching
+    // a node materializes its children, so everything one level below the root
+    // now exists as soon as the tree loads. kDeepItemId sits two levels down,
+    // under a nested group that nothing subscribes, so it is still absent when
+    // contents are published -- which is the state
+    // NodesMaterializedAfterContentsComeUpMarked has to start from.
+    node_service_.Add(scada::NodeState{
+        .node_id = kDeepGroupId,
+        .node_class = scada::NodeClass::Object,
+        .type_definition_id = scada::data_items::id::DataGroupType,
+        .parent_id = scada::data_items::id::DataItems,
+        .reference_type_id = scada::id::Organizes});
+    node_service_.Add(scada::NodeState{
+        .node_id = kNestedGroupId,
+        .node_class = scada::NodeClass::Object,
+        .type_definition_id = scada::data_items::id::DataGroupType,
+        .parent_id = kDeepGroupId,
+        .reference_type_id = scada::id::Organizes});
+    node_service_.Add(scada::NodeState{
+        .node_id = kDeepItemId,
+        .node_class = scada::NodeClass::Variable,
+        .type_definition_id = scada::data_items::id::DataItemType,
+        .parent_id = kNestedGroupId,
+        .reference_type_id = scada::id::Organizes});
+
     view_ = std::make_unique<TestObjectTreeView>(MakeContext(),
                                                  node_service_tree_factory_);
     ui_view_ = view_->Init(WindowDefinition{});
@@ -184,6 +222,19 @@ class ObjectTreeViewTest : public Test {
     ConfigurationTreeNode* group = view_->model().FindFirstTreeNode(kGroupId);
     ASSERT_THAT(group, NotNull());
     Materialize(*group);
+  }
+
+  // Materializes the three-level branch down to kDeepItemId.
+  void MaterializeDeepBranch() {
+    ASSERT_THAT(view_->model().root(), NotNull());
+    Materialize(*view_->model().root());
+    ConfigurationTreeNode* deep = view_->model().FindFirstTreeNode(kDeepGroupId);
+    ASSERT_THAT(deep, NotNull());
+    Materialize(*deep);
+    ConfigurationTreeNode* nested =
+        view_->model().FindFirstTreeNode(kNestedGroupId);
+    ASSERT_THAT(nested, NotNull());
+    Materialize(*nested);
   }
 
   bool IsCheckedById(const scada::NodeId& node_id) {
@@ -233,7 +284,34 @@ class ObjectTreeViewTest : public Test {
     return {};
   }
 
+  // Whether the row holds a live-value subscription.
+  //
+  // Reads the Value column's TEXT COLOUR, which is the one accessor that
+  // separates the two states this test has to tell apart: VisibleNodeModel
+  // returns `bad_value_color` when the row has no VisibleNode at all, and
+  // Transparent when it has one that is not bad -- and a ProxyVisibleNode
+  // whose fetch has not landed reports IsBad() == false, so it reads as
+  // subscribed. GetStatusColor cannot be used here: it answers nullopt for
+  // *both* an absent node and an unresolved one, which is what made an earlier
+  // version of this test unable to distinguish a broken fix from a slow one.
+  //
+  // Deliberately not asserting the value or the dot. Those need the async
+  // node/type-chain fetch to complete, which is ObjectTreeModel's contract and
+  // is covered by ObjectTreeModelAsyncVisibleNodeTest; this fixture's subject
+  // is only whether the row gets subscribed in the first place.
+  bool IsSubscribed(const scada::NodeId& node_id) {
+    ConfigurationTreeNode* node = view_->model().FindFirstTreeNode(node_id);
+    EXPECT_THAT(node, NotNull()) << "node " << node_id.ToString();
+    if (!node)
+      return false;
+    return view_->model().GetTextColor(node, 1) != env_.profile_.bad_value_color;
+  }
+
   static inline const scada::NodeId kGroupId{2001, 1};
+  static inline const scada::NodeId kTopLevelItemId{2004, 1};
+  static inline const scada::NodeId kDeepGroupId{2005, 1};
+  static inline const scada::NodeId kNestedGroupId{2006, 1};
+  static inline const scada::NodeId kDeepItemId{2007, 1};
   static inline const scada::NodeId kItem1Id{2002, 1};
   static inline const scada::NodeId kItem2Id{2003, 1};
 
@@ -251,16 +329,49 @@ class ObjectTreeViewTest : public Test {
 // they name are created afterwards. Before the fix nothing reconciled a node
 // that appeared later, so both items came up clear.
 TEST_F(ObjectTreeViewTest, NodesMaterializedAfterContentsComeUpMarked) {
-  delegate_.contents().PublishContents(NodeIdSet{kItem1Id, kItem2Id});
+  delegate_.contents().PublishContents(NodeIdSet{kDeepItemId});
 
-  // Nothing is materialized yet, so the publish above could not have marked
-  // anything: the seeding has to happen on the way in.
-  ASSERT_THAT(view_->model().FindFirstTreeNode(kItem1Id), IsNull());
+  // The precondition IS the proof: with nothing materialized, the publish
+  // above cannot have marked anything, so a mark that appears later can only
+  // have been seeded on the way in.
+  //
+  // It moved two levels down on 2026-09-19. It used to name an item under
+  // kGroupId, and that stopped being unmaterialized when top-level rows began
+  // subscribing to their values (V45): subscribing a row fetches it, and
+  // fetching a node materializes its children, so everything one level below
+  // the root now exists as soon as the tree loads. Relaxing the assertion
+  // would have kept this test green while retiring what it proves -- the mark
+  // could then have come from the publish rather than from the seeding.
+  ASSERT_THAT(view_->model().FindFirstTreeNode(kDeepItemId), IsNull());
 
+  MaterializeDeepBranch();
+
+  EXPECT_TRUE(IsCheckedById(kDeepItemId));
+}
+
+// The V45 regression. A data item at the top level of the tree subscribes to
+// its live value, so its Value column and quality dot are populated.
+//
+// Before the fix nothing subscribed it: OnTreeNodesAdded gated on
+// `IsExpanded(parent)`, and the root is never drawn as a row, so the view holds
+// no expansion state for it and that answered false forever. Every top-level
+// data item therefore showed a permanently empty Value column — in the shipped
+// client, not only in the screenshot gallery where it was noticed. Rows under
+// an expanded parent were always fine, which is why it survived: the same
+// capture showed both, and only the top-level half was wrong.
+TEST_F(ObjectTreeViewTest, ATopLevelDataItemSubscribesToItsValue) {
+  EXPECT_TRUE(IsSubscribed(kTopLevelItemId));
+}
+
+// The other half of the same rule, and the reason the bug was invisible: a row
+// whose parent is collapsed must NOT subscribe. Without this, "fix" the first
+// test by subscribing everything and nothing would notice.
+TEST_F(ObjectTreeViewTest, AnItemUnderACollapsedParentDoesNotSubscribe) {
   MaterializeWholeTree();
 
-  EXPECT_TRUE(IsCheckedById(kItem1Id));
-  EXPECT_TRUE(IsCheckedById(kItem2Id));
+  ASSERT_FALSE(view_->tree_view().IsExpanded(
+      view_->model().FindFirstTreeNode(kGroupId), false));
+  EXPECT_FALSE(IsSubscribed(kItem1Id));
 }
 
 // A container is marked exactly when everything under it is, and that rule has

@@ -22,6 +22,10 @@ class ObjectTreeView : public ConfigurationTreeView {
   std::vector<std::u16string> GetExpandedLabelPathForTesting(int levels);
 
  protected:
+  // Whether `parent_node`'s children are on screen, and so want a live
+  // value subscription. True for an expanded node and for the root, whose
+  // children are the top-level rows.
+  bool ShowsChildren(ConfigurationTreeNode& parent_node);
   void UpdateNodesVisibility(ConfigurationTreeNode& parent_node, bool expanded);
 
   void OnTreeNodeChanged(void* node);
