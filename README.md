@@ -246,6 +246,10 @@ So please open an **issue** instead; patches are welcome as patches, and reach
 this repository through the next export. [CONTRIBUTING.md](CONTRIBUTING.md) has
 the detail and what to include in a report.
 
+**Except for a security issue** — this client talks to equipment, so a report
+that is exploitable should not be public before there is a fix to upgrade to.
+[SECURITY.md](SECURITY.md) says where to send it.
+
 ## License
 
 GPL-3.0 — see [LICENSE](LICENSE). Third-party asset notices are in
