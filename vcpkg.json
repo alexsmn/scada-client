@@ -7,7 +7,6 @@
     "client/aui",
     "common",
     "third_party/graph_qt",
-    "third_party/iec61850pp",
     "third_party/opcuapp",
     "third_party/view_manager_qt"
   ],
