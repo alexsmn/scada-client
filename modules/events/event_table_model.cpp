@@ -48,13 +48,8 @@ void GetEventColors(const scada::Event& event,
   // colour exclusively for abnormal conditions") and §5, which describes the
   // intended design as "a red alarm row also carries a severity label and an
   // unacknowledged dot".
-  std::optional<scada::aui::EventBackground> background;
-  if (event.severity >= scada::kSeverityCritical) {
-    background = scada::aui::EventBackground::kCritical;
-  } else if (event.severity >= scada::kSeverityWarning) {
-    background = scada::aui::EventBackground::kWarning;
-  }
-
+  const std::optional<scada::aui::EventBackground> background =
+      events::EventBackgroundForSeverity(event.severity);
   if (!background)
     return;
 

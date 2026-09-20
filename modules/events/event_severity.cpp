@@ -14,6 +14,19 @@ scada::aui::SeverityLevel SeverityLevelForEvent(unsigned severity) {
   return scada::aui::SeverityLevel::kNone;
 }
 
+std::optional<scada::aui::EventBackground> EventBackgroundForSeverity(
+    unsigned severity) {
+  switch (SeverityLevelForEvent(severity)) {
+    case scada::aui::SeverityLevel::kCritical:
+      return scada::aui::EventBackground::kCritical;
+    case scada::aui::SeverityLevel::kWarning:
+      return scada::aui::EventBackground::kWarning;
+    case scada::aui::SeverityLevel::kNone:
+      return std::nullopt;
+  }
+  return std::nullopt;
+}
+
 std::u16string SeverityLevelLabel(scada::aui::SeverityLevel level) {
   // English literals through Translate(); the Russian lives in the .ts.
   switch (level) {

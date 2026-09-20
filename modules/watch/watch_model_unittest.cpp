@@ -1,5 +1,6 @@
 #include "modules/watch/watch_model.h"
 
+#include "aui/severity_colors.h"
 #include "node_service/static/static_node_service.h"
 
 #include <gtest/gtest.h>
@@ -180,7 +181,6 @@ TEST_F(WatchModelTest, ClearEmptiesBothModes) {
   EXPECT_EQ(model_.GetRowCount(), 0);
 }
 
-
 // The structured path: direction and the decoded columns come from the frame,
 // not from parsing the message back apart.
 TEST_F(WatchModelTest, StructuredFramesPopulateTheDecodedColumns) {
@@ -234,7 +234,6 @@ TEST_F(WatchModelTest, UnsetFrameFieldsRenderBlank) {
   EXPECT_EQ(model_.GetCellText(0, 3), u"RX");
 }
 
-
 // The APCI columns. N(S)/N(R) share a cell because that is how the standard
 // names them and how an engineer reads a stalled send window.
 TEST_F(WatchModelTest, ShowsApciFormatAndSequenceNumbers) {
@@ -260,7 +259,8 @@ TEST_F(WatchModelTest, SupervisoryFramesShowOnlyTheReceiveSequence) {
 // all: both leave the sequence cell blank rather than inventing numbers.
 TEST_F(WatchModelTest, UnnumberedAndDecodedRowsHaveNoSequenceNumbers) {
   DeliverApci(1, "U", 0, 0);
-  DeliverFrame(2, u"decoded ASDU", scada::DeviceFrame::kInbound, /*type_id=*/13);
+  DeliverFrame(2, u"decoded ASDU", scada::DeviceFrame::kInbound,
+               /*type_id=*/13);
 
   ASSERT_EQ(model_.GetRowCount(), 2);
   EXPECT_EQ(model_.GetCellText(0, 7), u"U");
@@ -269,7 +269,6 @@ TEST_F(WatchModelTest, UnnumberedAndDecodedRowsHaveNoSequenceNumbers) {
   EXPECT_EQ(model_.GetCellText(1, 7), u"");
   EXPECT_EQ(model_.GetCellText(1, 8), u"");
 }
-
 
 // The kind filter, from the trace mockup's All / I-format / S+U segments.
 TEST_F(WatchModelTest, FiltersByFrameKind) {
@@ -298,7 +297,8 @@ TEST_F(WatchModelTest, FiltersByFrameKind) {
 TEST_F(WatchModelTest, FrameKindFilterExcludesRowsWithoutAFormat) {
   DeliverFormat(1, "I");
   Deliver(2, u"#RX: legacy marker line");
-  DeliverFrame(3, u"decoded ASDU", scada::DeviceFrame::kInbound, /*type_id=*/13);
+  DeliverFrame(3, u"decoded ASDU", scada::DeviceFrame::kInbound,
+               /*type_id=*/13);
 
   model_.SetFilter({.kind = WatchFilter::Kind::kInformation});
   ASSERT_EQ(model_.GetRowCount(), 1);
@@ -386,6 +386,69 @@ TEST_F(WatchModelTest, RowsArrivingUnderAFilterAreFiltered) {
   ASSERT_EQ(model_.GetRowCount(), 2);
   EXPECT_EQ(model_.GetCellText(0, 7), u"I");
   EXPECT_EQ(model_.GetCellText(1, 7), u"I");
+}
+
+// --- Severity row colours (backlog 772) -------------------------------------
+
+// The device log bands its rows by severity, and both halves of the colour --
+// fill AND text -- come from `aui/severity_colors.h`, so the row follows the
+// active appearance. The model used to paint two literal `Rgba` fills and set
+// no text colour: the fills were theme-independent while the text was not, so
+// under the dark appearance the theme's near-white default landed on pale
+// yellow and the warning rows were close to invisible. That is what an
+// operator on a dark desktop got, and on a frame trace the rows hardest to
+// read were the timeouts and the lost links.
+TEST_F(WatchModelTest, SeverityRowsTakeBothColoursFromTheSharedResolver) {
+  DeliverWithSeverity(1, u"t1 timeout", scada::kSeverityWarning);
+  DeliverWithSeverity(2, u"link down", scada::kSeverityCritical);
+
+  const scada::aui::EventRowColors warning =
+      scada::aui::EventRowColorsFor(scada::aui::EventBackground::kWarning);
+  const scada::aui::EventRowColors critical =
+      scada::aui::EventRowColorsFor(scada::aui::EventBackground::kCritical);
+
+  scada::aui::TableCell warning_cell{.row = 0, .column_id = 2};
+  model_.GetCell(warning_cell);
+  EXPECT_EQ(warning_cell.cell_color, warning.background);
+  EXPECT_EQ(warning_cell.text_color, warning.text);
+
+  scada::aui::TableCell critical_cell{.row = 1, .column_id = 2};
+  model_.GetCell(critical_cell);
+  EXPECT_EQ(critical_cell.cell_color, critical.background);
+  EXPECT_EQ(critical_cell.text_color, critical.text);
+}
+
+// The same row under the other appearance must come back different. This is
+// the assertion the literals could never satisfy: they were the same two
+// values in every theme, which is exactly why the dark rows were unreadable.
+TEST_F(WatchModelTest, SeverityRowColoursFollowTheActiveAppearance) {
+  DeliverWithSeverity(1, u"t1 timeout", scada::kSeverityWarning);
+
+  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
+  scada::aui::TableCell dark{.row = 0, .column_id = 2};
+  model_.GetCell(dark);
+
+  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kLight);
+  scada::aui::TableCell light{.row = 0, .column_id = 2};
+  model_.GetCell(light);
+
+  scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
+
+  EXPECT_NE(dark.text_color, light.text_color);
+}
+
+// A routine row is not an alarm, so it keeps the palette's own colours -- a
+// calm surface draws the eye only to abnormal conditions.
+TEST_F(WatchModelTest, ARoutineRowIsLeftUncoloured) {
+  DeliverWithSeverity(1, u"routine", scada::kSeverityNormal);
+
+  scada::aui::TableCell cell{.row = 0, .column_id = 2};
+  model_.GetCell(cell);
+
+  EXPECT_EQ(cell.cell_color,
+            scada::aui::Color{scada::aui::ColorCode::Transparent});
+  EXPECT_EQ(cell.text_color,
+            scada::aui::Color{scada::aui::ColorCode::Transparent});
 }
 
 }  // namespace

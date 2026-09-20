@@ -8,6 +8,7 @@
 
 #include "aui/severity_colors.h"
 
+#include <optional>
 #include <string>
 
 namespace events {
@@ -16,6 +17,21 @@ namespace events {
 // >= critical threshold => kCritical, >= warning threshold => kWarning, else
 // kNone.
 scada::aui::SeverityLevel SeverityLevelForEvent(unsigned severity);
+
+// The row-fill class for a raw event severity, or nullopt for a routine event,
+// which gets no fill: a calm surface draws the eye only to alarms
+// (docs/client/ux/principles.md §1).
+//
+// This is the second half of the same banding as `SeverityLevelForEvent` --
+// `EventBackground` is the *soft row fill* vocabulary where `SeverityLevel` is
+// the *solid cue* one -- and it lives here for the same reason: every surface
+// that fills a row by severity resolves it here, so the thresholds cannot
+// drift apart. They had: the journal and the device log each carried their own
+// `>= kSeverityCritical / >= kSeverityWarning` ladder, and the device log's
+// went further and painted two literal `Rgba` fills with no text colour, so
+// its rows were unreadable under the dark appearance.
+std::optional<scada::aui::EventBackground> EventBackgroundForSeverity(
+    unsigned severity);
 
 // The operator-facing name of an alarm band ("Critical" / "Warning"), or empty
 // for kNone — a routine event has no alarm band to name. Translated, so callers

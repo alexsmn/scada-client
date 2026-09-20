@@ -1,14 +1,17 @@
 ﻿#include "modules/watch/watch_model.h"
 
+#include "aui/severity_colors.h"
 #include "aui/translation.h"
 #include "base/format_time.h"
 #include "base/string_util.h"
 #include "base/utf_convert.h"
+#include "events/event_severity.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 
 #include <algorithm>
 #include <fstream>
+#include <optional>
 
 namespace {
 
@@ -248,10 +251,10 @@ void WatchModel::SetDevice(NodeRef device) {
 
   Clear();
 
-  event_source_.Start(device_.node_id(),
-                      scada::ToTimeRangeWithOpenRange(
-                          time_range_, /*now=*/scada::Now()),
-                      /*delegate=*/*this);
+  event_source_.Start(
+      device_.node_id(),
+      scada::ToTimeRangeWithOpenRange(time_range_, /*now=*/scada::Now()),
+      /*delegate=*/*this);
 }
 
 void WatchModel::SetTimeRange(const scada::RelativeTimeRange& time_range) {
@@ -263,10 +266,10 @@ void WatchModel::SetTimeRange(const scada::RelativeTimeRange& time_range) {
 
   Clear();
 
-  event_source_.Start(device_.node_id(),
-                      scada::ToTimeRangeWithOpenRange(
-                          time_range_, /*now=*/scada::Now()),
-                      /*delegate=*/*this);
+  event_source_.Start(
+      device_.node_id(),
+      scada::ToTimeRangeWithOpenRange(time_range_, /*now=*/scada::Now()),
+      /*delegate=*/*this);
 }
 
 void WatchModel::SaveLog(const std::filesystem::path& path) {
@@ -289,11 +292,19 @@ int WatchModel::GetRowCount() {
 void WatchModel::GetCell(scada::aui::TableCell& cell) {
   const Row& row = VisibleRow(cell.row);
 
-  // TODO: Unify with GetEventColors().
-  if (row.event.severity >= scada::kSeverityCritical) {
-    cell.cell_color = scada::aui::Rgba{248, 105, 107};
-  } else if (row.event.severity >= scada::kSeverityWarning) {
-    cell.cell_color = scada::aui::Rgba{255, 235, 132};
+  // Both colours come from the single severity source, so the row follows the
+  // active appearance. This used to paint two literal `Rgba` fills and set no
+  // text colour at all: the fills were theme-independent while the text was
+  // not, so under the dark appearance -- which the client takes from the host
+  // OS by default -- the theme's near-white default landed on pale yellow and
+  // the warning rows were close to invisible. On a device log that is a frame
+  // trace, so the rows hardest to read were the timeouts and the lost links.
+  if (const std::optional<scada::aui::EventBackground> background =
+          events::EventBackgroundForSeverity(row.event.severity)) {
+    const scada::aui::EventRowColors colors =
+        scada::aui::EventRowColorsFor(*background);
+    cell.cell_color = colors.background;
+    cell.text_color = colors.text;
   }
 
   cell.text = CellText(row, cell.column_id);
@@ -353,8 +364,7 @@ std::u16string WatchModel::CellText(const Row& row, int column_id) const {
 
     case 6:
       if (row.frame && row.frame->object_address != 0) {
-        text =
-            UtfConvert<char16_t>(std::to_string(row.frame->object_address));
+        text = UtfConvert<char16_t>(std::to_string(row.frame->object_address));
       }
       break;
 
@@ -374,13 +384,11 @@ std::u16string WatchModel::CellText(const Row& row, int column_id) const {
         // S-format has no N(S) and U-format has neither; show only what the
         // format actually carries rather than padding with zeros.
         if (f.format == "I") {
-          text = UtfConvert<char16_t>(std::to_string(f.send_sequence) +
-                                           "/" +
-                                           std::to_string(f.receive_sequence));
+          text = UtfConvert<char16_t>(std::to_string(f.send_sequence) + "/" +
+                                      std::to_string(f.receive_sequence));
         } else if (f.format == "S") {
-          text =
-              UtfConvert<char16_t>("\u2014/" +
-                                   std::to_string(f.receive_sequence));
+          text = UtfConvert<char16_t>("\u2014/" +
+                                      std::to_string(f.receive_sequence));
         }
       }
       break;
