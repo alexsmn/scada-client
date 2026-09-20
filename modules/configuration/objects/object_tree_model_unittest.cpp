@@ -69,15 +69,27 @@ class TestObjectTreeModel : public ObjectTreeModel {
 
   int fetched_visible_node_count() const { return fetched_visible_node_count_; }
 
+  // Makes the next classification fail, standing in for a type chain that is
+  // not yet resident. FakeNodeService resolves `supertype()` whatever a type's
+  // fetch status, so the real condition -- an unfetched type reporting no
+  // supertype -- cannot be built through it; this reproduces the one thing
+  // that matters, a fetched row the synchronous path cannot classify.
+  void FailNextClassification() { fail_next_classification_ = true; }
+
  protected:
   std::shared_ptr<VisibleNode> CreateFetchedVisibleNode(
       const NodeRef& node) override {
+    if (fail_next_classification_) {
+      fail_next_classification_ = false;
+      return nullptr;
+    }
     ++fetched_visible_node_count_;
     return std::make_shared<StaticVisibleNode>(u"Fetched");
   }
 
  private:
   int fetched_visible_node_count_ = 0;
+  bool fail_next_classification_ = false;
 };
 
 }  // namespace
@@ -150,11 +162,12 @@ TEST_F(ObjectTreeModelTest, RowsCarryNoIcon) {
 
 class ObjectTreeModelAsyncVisibleNodeTest : public ::testing::Test {
  protected:
-  void InitModel(bool remove_child_on_second_get_children = false) {
+  void InitModel(bool remove_child_on_second_get_children = false,
+                 NodeFetchStatus child_fetch_status = NodeFetchStatus::None) {
     root_node_ = MakeObjectTreeNode(model_service_, scada::id::RootFolder,
                                     NodeFetchStatus::NodeAndChildren);
     child_node_ =
-        MakeObjectTreeNode(model_service_, kDataItemId, NodeFetchStatus::None);
+        MakeObjectTreeNode(model_service_, kDataItemId, child_fetch_status);
 
     auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
     node_service_tree_ = node_service_tree.get();
@@ -253,6 +266,36 @@ TEST_F(ObjectTreeModelAsyncVisibleNodeTest,
   EXPECT_TRUE(model_->GetText(child_tree_node_, 1).empty());
 
   CompleteFetch();
+  EXPECT_EQ(model_->fetched_visible_node_count(), 1);
+  EXPECT_EQ(model_->GetText(child_tree_node_, 1), u"Fetched");
+}
+
+// The V45 regression, second half. A row whose INSTANCE is already fetched
+// takes the synchronous classification path, and that path used to be the end
+// of the road: if it could not classify the node it returned nothing, the row
+// got no VisibleNode at all, and nothing retried -- so its Value column stayed
+// empty for the rest of the session.
+//
+// In the field the classification fails because IsInstanceOf walks the type
+// definition's supertype chain and an unfetched type reports no supertype, so
+// an AnalogItemType instance answers "not a DataItemType". Measured that way
+// in the screenshot generator's own run: the five top-level leaves of
+// workbench-overview.png reported `item=0 group=0` with their type definition
+// resident. FetchTypeChainAsync already existed for exactly this and was wired
+// only into the asynchronous path.
+//
+// The fix lets a failed synchronous classification fall through to that path,
+// and this asserts the fall-through: the row ends up subscribed anyway.
+TEST_F(ObjectTreeModelAsyncVisibleNodeTest,
+       AFetchedRowTheSyncPathCannotClassifyStillSubscribes) {
+  InitModel(/*remove_child_on_second_get_children=*/false,
+            /*child_fetch_status=*/NodeFetchStatus::NodeOnly);
+  model_->FailNextClassification();
+
+  model_->SetNodeVisible(child_tree_node_, true);
+  for (int i = 0; i < 20; ++i)
+    PollExecutor();
+
   EXPECT_EQ(model_->fetched_visible_node_count(), 1);
   EXPECT_EQ(model_->GetText(child_tree_node_, 1), u"Fetched");
 }

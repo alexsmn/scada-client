@@ -149,8 +149,30 @@ std::shared_ptr<VisibleNode> ObjectTreeModel::CreateVisibleNode(
       *static_cast<ConfigurationTreeNode*>(tree_node);
   auto node = configuration_tree_node.node();
 
-  if (node.fetched())
-    return CreateFetchedVisibleNode(node);
+  // A fetched instance can still be misclassified, which is the hole the
+  // comment on FetchTypeChainAsync describes and which this branch used to
+  // fall into. Fetching the instance says nothing about its type chain, and
+  // IsInstanceOf walks that chain: an unfetched type reports no supertype, so
+  // an AnalogItemType instance answers "not a DataItemType" and gets no
+  // VisibleNode at all. Nothing retries, so that row's Value column and
+  // quality dot stay empty for the rest of the session.
+  //
+  // Only a NEGATIVE answer can be wrong that way -- a positive one has already
+  // walked the chain it needed. So keep the synchronous fast path when it
+  // classifies the node, and fall through to the asynchronous path, which
+  // pulls the chain in first, when it does not. A node that genuinely is
+  // neither a data item nor a data group takes one extra hop and still ends up
+  // with a proxy whose underlying node is null, which renders as it did
+  // before.
+  //
+  // Found by instrumenting the screenshot generator's own run for parity
+  // finding V45: the five top-level leaves of workbench-overview.png reported
+  // `item=0 group=0` with their type definition resident, while the groups
+  // beside them classified correctly.
+  if (node.fetched()) {
+    if (auto visible_node = CreateFetchedVisibleNode(node))
+      return visible_node;
+  }
 
   auto proxy_visible_node = std::make_shared<ProxyVisibleNode>();
   CoSpawn(ObjectTreeModelContext::executor_,
