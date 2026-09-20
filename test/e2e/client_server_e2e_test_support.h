@@ -21,7 +21,7 @@ class object;
 
 namespace client::test {
 
-class Iec61850TestServer;
+class Iec61850Device;
 
 enum class E2eProtocol {
   Remote,
@@ -154,7 +154,10 @@ class ClientServerE2eTest : public ::testing::TestWithParam<E2eParam> {
   int remote_port_ = 0;
   int opcua_port_ = 0;
   int iec61850_port_ = 0;
-  std::unique_ptr<Iec61850TestServer> iec61850_server_;
+  // A child process since backlog 801: the client compiles no libiec61850, and
+  // a build given no device binary simply has none (the parameters that need
+  // one skip, like those that need a tier binary).
+  std::unique_ptr<Iec61850Device> iec61850_device_;
 
   std::filesystem::path status_file_;
   std::filesystem::path object_view_values_file_;

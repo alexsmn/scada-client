@@ -1,6 +1,6 @@
 #include "test/e2e/client_server_e2e_test_support.h"
 
-#include "test/e2e/iec61850_test_server.h"
+#include "test/e2e/e2e_iec61850_device.h"
 
 #include <boost/asio/connect.hpp>
 #include <boost/asio/io_context.hpp>
@@ -188,10 +188,6 @@ bool CanConnectTcp(std::string_view host, std::string_view service) {
   }
 }
 
-bool CanConnectTcp(int port) {
-  return CanConnectTcp("127.0.0.1", std::to_string(port));
-}
-
 // Splits a "host:port" endpoint. Returns false when there is no port part.
 bool SplitHostPort(std::string_view endpoint,
                    std::string* host,
@@ -329,6 +325,18 @@ void ClientServerE2eTest::SetUp() {
            "SCADA_E2E_EXTERNAL_HOST -- that mode needs no tier binaries.";
   }
 
+  // The simulated IED is the eighth process in the topology and is skipped on
+  // the same terms as the seven tiers: it is a binary this product does not
+  // build (backlog 801), so a build that was not given one cannot stand up a
+  // device for the iec61850 tier to talk to.
+  if (std::string_view{SCADA_E2E_IEC61850_DEVICE_EXE}.empty()) {
+    GTEST_SKIP()
+        << "this build has no IEC 61850 device binary, so the iec61850 tier "
+           "would have nothing to talk to. It is built by the superproject "
+           "(target scada_e2e_iec61850_device); re-configure with "
+           "-DSCADA_E2E_IEC61850_DEVICE_EXE=<path>.";
+  }
+
   ASSERT_TRUE(std::filesystem::exists(GetServerExePath()));
   ASSERT_TRUE(std::filesystem::exists(GetClientExePath()));
   ASSERT_TRUE(std::filesystem::exists(GetServerFixtureDir()));
@@ -349,13 +357,12 @@ void ClientServerE2eTest::SetUp() {
   iec61850_port_ = ports_.Allocate();
   PrepareWorkspace();
 
-  iec61850_server_ = std::make_unique<Iec61850TestServer>(iec61850_port_);
-  ASSERT_TRUE(WaitUntil(
-      [this] {
-        return iec61850_server_->running() || iec61850_server_->failed();
-      },
-      5s));
-  ASSERT_FALSE(iec61850_server_->failed());
+  // Launched into the run's own workspace so its captured stderr lands beside
+  // the tiers' and is preserved with them when a case fails.
+  iec61850_device_ = std::make_unique<Iec61850Device>(
+      std::filesystem::path{SCADA_E2E_IEC61850_DEVICE_EXE}, iec61850_port_,
+      workspace_.path());
+  ASSERT_TRUE(iec61850_device_->running()) << iec61850_device_->error();
 }
 
 void ClientServerE2eTest::TearDown() {
@@ -374,7 +381,7 @@ void ClientServerE2eTest::TearDown() {
     cluster_->Terminate();
   WaitForExit(client_);
   WaitForExit(server_);
-  iec61850_server_.reset();
+  iec61850_device_.reset();
 }
 
 void ClientServerE2eTest::PrepareServerFilesystem(

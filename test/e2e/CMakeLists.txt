@@ -106,43 +106,36 @@ else()
       "${SCADA_E2E_BUNDLED_SQLITE3}")
 endif()
 
-# The harness carries common/test/e2e/iec61850_test_server.cpp, which includes
-# libiec61850 headers; those arrive through the `iec61850pp` product. Resolved
-# HERE rather than in common, next to the target that links it: common declares
-# the source, but a find_package there would run for every consumer of common
-# and drag libiec61850 into all nine tier builds, which link no harness at all.
+# ── The IEC 61850 device ────────────────────────────────────────────────────
 #
-# Until ADR 0011 this was only ever satisfied by accident — the superproject
-# root put iec61850pp on the module path, and `target_link_libraries(...
-# iec61850pp)` with no such target is not an error in CMake, it is a raw library
-# name. So a standalone client configured cleanly and failed at the first
-# #include. `scada_find_products` is what makes the miss loud: it resolves the
-# product by name in both layouts and fails saying what it looked for.
+# The suite needs a simulated IED for the `scada-iec61850` tier to talk to. It
+# used to COMPILE one: `common/test/e2e/iec61850_test_server.cpp` travelled with
+# the harness (an INTERFACE library, so its sources compile in the consumer),
+# which put libiec61850 -- and with it the unpublished `iec61850pp` product and
+# a git submodule -- into the Qt client's source closure for the sake of a fake
+# device. That is what kept the public client from configuring on Windows and
+# macOS, since `iec61850pp` is not beside it there.
 #
-# QUIET, and a skip rather than a hard failure, for one reason: `iec61850pp` is
-# `published = false`, so it is NOT beside the client in the public export -- and
-# this suite could not run there anyway, since it drives TIER BINARIES, and every
-# tier is a separately sold product that is also unpublished. A configure that
-# insisted on it would make the whole public client unconfigurable on Windows and
-# macOS -- on Linux the return() at the top of this file gets there first -- for
-# the sake of a target nobody there can use.
-#
-# This is deliberately NOT an option to turn the suite off. Absence of the
-# PRODUCT is the condition, the same way absence of a tier path is above, so a
-# tree that has iec61850pp always builds the suite and no configuration of ours
-# can quietly drop it.
-scada_resolve_product(iec61850pp _client_e2e_iec61850pp QUIET)
-if(NOT _client_e2e_iec61850pp)
-  message(STATUS
-    "client_server_e2e_tests: skipped, the `iec61850pp` product is not beside "
-    "this one. The cluster harness compiles "
-    "common/test/e2e/iec61850_test_server.cpp, which needs libiec61850 headers; "
-    "and the suite drives tier binaries, which are separate products in any "
-    "case.")
-  return()
+# Since backlog 801 it is a BINARY, named by path exactly like the seven tier
+# binaries above. A path that is set but wrong is a hard error -- that is a
+# mistake -- while absence is a supported mode: the parameters that need a
+# device skip at runtime, carrying the text below.
+set(SCADA_E2E_IEC61850_DEVICE_EXE "" CACHE FILEPATH
+    "The scada_e2e_iec61850_device binary, built by the superproject")
+if(SCADA_E2E_IEC61850_DEVICE_EXE
+   AND NOT EXISTS "${SCADA_E2E_IEC61850_DEVICE_EXE}")
+  message(FATAL_ERROR
+    "SCADA_E2E_IEC61850_DEVICE_EXE points at "
+    "'${SCADA_E2E_IEC61850_DEVICE_EXE}', which does not exist.")
 endif()
-scada_find_products(iec61850pp)
-find_package(iec61850pp REQUIRED)
+if(NOT SCADA_E2E_IEC61850_DEVICE_EXE)
+  message(STATUS
+    "client_server_e2e_tests: built without an IEC 61850 device. The "
+    "parameters that need one will skip at runtime;\n"
+    "  to have one, build the superproject's scada_e2e_iec61850_device target "
+    "and re-configure with\n"
+    "    -DSCADA_E2E_IEC61850_DEVICE_EXE=<path>")
+endif()
 
 add_executable(client_server_e2e_tests
   "client_server_e2e_test.cpp"
@@ -154,7 +147,6 @@ target_precompile_headers(client_server_e2e_tests REUSE_FROM scada_base)
 target_link_libraries(client_server_e2e_tests PRIVATE
   base_unittest
   client_base
-  iec61850pp
   # The shared cluster harness: its sources, its include root and the paths to
   # common's own fixtures all travel with the target.
   scada_e2e_harness
@@ -171,6 +163,8 @@ target_link_libraries(client_server_e2e_tests PRIVATE
 )
 
 target_compile_definitions(client_server_e2e_tests PRIVATE
+  # The simulated IED, empty when this build was given none.
+  SCADA_E2E_IEC61850_DEVICE_EXE="${SCADA_E2E_IEC61850_DEVICE_EXE}"
   # SingleTier topology: one device tier plays the whole server.
   SCADA_E2E_SERVER_EXE="${_scada_e2e_exe_IEC104}"
   # Cluster topology: the real tier split behind an aggregating proxy.
