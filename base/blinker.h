@@ -11,14 +11,26 @@
 inline constexpr scada::Duration kBlinkHalfPeriod =
     std::chrono::milliseconds{300};
 
-// The blink state at `time`. Blink phase is a pure function of wall-clock time
-// rather than a free-running toggle, which means every blinker in the process
-// is in phase with every other, the phase does not depend on when the manager
-// happened to be constructed, and anything that freezes the clock
-// (ScopedMockClockOverride — the screenshot generator does exactly this) sees a
-// single, stable state instead of whatever the toggle had reached. A capture
-// whose highlight flipped run to run is not reproducible, and a screenshot
-// diff is the project's visual-regression signal.
+// The blink state at `time` for a blinker of `half_period`. Blink phase is a
+// pure function of wall-clock time rather than a free-running toggle, which
+// means every blinker sharing a period is in phase with every other, the phase
+// does not depend on when the blinker happened to be constructed, and anything
+// that freezes the clock (ScopedMockClockOverride — the screenshot generator
+// does exactly this) sees a single, stable state instead of whatever the toggle
+// had reached. A capture whose highlight flipped run to run is not
+// reproducible, and a screenshot diff is the project's visual-regression
+// signal.
+//
+// Take this overload for any indicator that flashes on its own period. The
+// main window's unacknowledged-critical annunciator is the one that exists:
+// it flashes at 700ms against this file's 300ms, and it drove its own
+// `QTimer` toggle until 2026-09-20 — the same defect this function was written
+// to remove, reintroduced later in a widget that never reached for it. The
+// caller still needs a timer to SAMPLE the phase; what it must not do is
+// advance the phase itself.
+bool BlinkPhaseAt(scada::Time time, scada::Duration half_period);
+
+// The blink state at `time`, at the shared kBlinkHalfPeriod.
 bool BlinkPhaseAt(scada::Time time);
 
 class BlinkerManager {

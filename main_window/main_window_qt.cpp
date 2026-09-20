@@ -10,6 +10,7 @@
 #include "aui/translation.h"
 #include "base/auto_reset.h"
 #include "base/awaitable.h"
+#include "base/blinker.h"
 #include "base/check.h"
 #include "base/utf_convert.h"
 #include "controller/action_manager.h"
@@ -315,10 +316,17 @@ void MainWindow::CreateStatusBar() {
 
 namespace {
 
-// The annunciator's flash period. Slow enough to read the caption through,
-// fast enough to be pre-attentive; ISA-18.2 asks for a flash rate in this
-// region for an unacknowledged alarm.
-constexpr int kAnnunciatorFlashInterval = 700;
+// The annunciator's flash half-period. Slow enough to read the caption
+// through, fast enough to be pre-attentive; ISA-18.2 asks for a flash rate in
+// this region for an unacknowledged alarm.
+constexpr scada::Duration kAnnunciatorFlashHalfPeriod =
+    std::chrono::milliseconds{700};
+
+// How often the phase is SAMPLED, which is not the same as how often it flips.
+// Half the half-period, for the reason `kBlinkTick` gives in blinker.cpp: at
+// exactly one flip per tick the sampling aliases and the flash can stall or
+// double up.
+constexpr int kAnnunciatorFlashInterval = 350;
 
 // Corner radius for the escalation chips, which are pills: half the chip's own
 // height -- exactly, because the chips are vertically Fixed -- so the shape
@@ -515,7 +523,15 @@ void MainWindow::CreateContextBar() {
   annunciator_flash_ = new QTimer(this);
   annunciator_flash_->setInterval(kAnnunciatorFlashInterval);
   connect(annunciator_flash_, &QTimer::timeout, this, [this] {
-    annunciator_flash_on_ = !annunciator_flash_on_;
+    // Sampled from the clock, never toggled. A free-running toggle advances
+    // with the event loop, so a frozen clock cannot hold it still and the
+    // screenshot generator caught this chip mid-flash — lit in one render,
+    // outlined in the next, from one unchanged binary (visual_review V54).
+    // blinker.h explains the rule; this widget predated anyone applying it.
+    const bool on = BlinkPhaseAt(scada::Now(), kAnnunciatorFlashHalfPeriod);
+    if (on == annunciator_flash_on_)
+      return;
+    annunciator_flash_on_ = on;
     StyleAnnunciator();
   });
 
@@ -582,14 +598,20 @@ void MainWindow::CreateContextBar() {
     if (escalation.annunciating) {
       annunciator_indicator_->setText(QStringLiteral(" %1 ").arg(
           QString::fromStdU16String(Translate("Unacknowledged critical"))));
+      // The first lit frame has to come from the clock too, or the chip shows
+      // a stale phase until the first tick — which under a frozen clock is
+      // forever, and is precisely the frame a capture takes.
+      annunciator_flash_on_ =
+          BlinkPhaseAt(scada::Now(), kAnnunciatorFlashHalfPeriod);
       StyleAnnunciator();
       if (!annunciator_flash_->isActive())
         annunciator_flash_->start();
     } else {
       annunciator_flash_->stop();
-      // So the next lit phase starts from the same place every time rather
-      // than from wherever the previous alarm left the cycle.
-      annunciator_flash_on_ = false;
+      // No phase to reset: it is a function of the clock, so the next alarm
+      // picks it up wherever the clock is rather than inheriting whatever this
+      // one left behind. The reset this replaces existed to stop exactly that
+      // inheritance, which is a problem a derived phase does not have.
     }
 
     // Flood escalation: a single prominent state pill when the unacknowledged

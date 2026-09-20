@@ -65,4 +65,40 @@ TEST(BlinkerTest, FrozenClockGivesOneStableState) {
     EXPECT_EQ(BlinkPhaseAt(scada::Now()), state);
 }
 
+// The annunciator flashes at its own rate, so it takes the half-period
+// overload. Its period must behave exactly like the shared one -- these pin the
+// generalisation rather than the caller.
+TEST(BlinkerTest, ACustomHalfPeriodIsStableWithinItAndFlipsAcrossIt) {
+  constexpr scada::Duration kHalf = std::chrono::milliseconds{700};
+
+  EXPECT_EQ(BlinkPhaseAt(kPhaseStart, kHalf),
+            BlinkPhaseAt(kPhaseStart + kHalf / 2, kHalf));
+  EXPECT_NE(BlinkPhaseAt(kPhaseStart, kHalf),
+            BlinkPhaseAt(kPhaseStart + kHalf, kHalf));
+  EXPECT_EQ(BlinkPhaseAt(kPhaseStart, kHalf),
+            BlinkPhaseAt(kPhaseStart + 2 * kHalf, kHalf));
+}
+
+// The no-argument overload must stay exactly the shared-period one, so the
+// generalisation cannot quietly change every existing blinker.
+TEST(BlinkerTest, TheShortOverloadIsTheSharedHalfPeriod) {
+  for (int i = 0; i < 8; ++i) {
+    const scada::Time t = kPhaseStart + i * kBlinkHalfPeriod / 3;
+    EXPECT_EQ(BlinkPhaseAt(t), BlinkPhaseAt(t, kBlinkHalfPeriod)) << "i=" << i;
+  }
+}
+
+// V54: the unacknowledged-critical annunciator drove a free-running QTimer
+// toggle, so the screenshot generator caught it lit in one render and outlined
+// in the next from one unchanged binary. A frozen clock cannot stop a toggle;
+// it does stop a derived phase, and this is the property the capture needs.
+TEST(BlinkerTest, FrozenClockGivesOneStableStateAtTheAnnunciatorPeriod) {
+  constexpr scada::Duration kHalf = std::chrono::milliseconds{700};
+  const scada::base::ScopedMockClockOverride clock;
+
+  const bool state = BlinkPhaseAt(scada::Now(), kHalf);
+  for (int i = 0; i < 10; ++i)
+    EXPECT_EQ(BlinkPhaseAt(scada::Now(), kHalf), state);
+}
+
 }  // namespace

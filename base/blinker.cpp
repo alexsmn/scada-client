@@ -11,9 +11,9 @@ constexpr scada::Duration kBlinkTick = kBlinkHalfPeriod / 2;
 
 }  // namespace
 
-bool BlinkPhaseAt(scada::Time time) {
+bool BlinkPhaseAt(scada::Time time, scada::Duration half_period) {
   const int64_t ticks = time.time_since_epoch().count();
-  const int64_t period = kBlinkHalfPeriod.count();
+  const int64_t period = half_period.count();
 
   // Floor division, not the built-in truncating one: `/` rounds toward zero, so
   // the half-period just before the epoch and the one just after would both
@@ -25,6 +25,10 @@ bool BlinkPhaseAt(scada::Time time) {
     --half_periods;
 
   return half_periods % 2 != 0;
+}
+
+bool BlinkPhaseAt(scada::Time time) {
+  return BlinkPhaseAt(time, kBlinkHalfPeriod);
 }
 
 // BlinkerManagerImpl
