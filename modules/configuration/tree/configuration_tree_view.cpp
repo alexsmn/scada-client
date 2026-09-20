@@ -24,29 +24,34 @@
 
 namespace {
 
+// Orders one parent's rows for reading: objects above variables, and each of
+// those two runs in display order.
+//
+// It sorted by the type definition's NodeId between the class and the name
+// until 2026-09-19, which grouped same-type siblings together — but ordered
+// the GROUPS by an integer that appears nowhere on screen, so the result read
+// as noise. In the hardware tree it put `Канал MODBUS` (SCADA.108) first and
+// `Канал МЭК-104` (SCADA.124) fourth, with `Трансформатор T1` and
+// `КП-02 MODBUS` between them, because 108 < 115 < 118 < 124. No operator can
+// see that, and a doc reader comparing two channels cannot find the second one.
+//
+// The key was inherited (it predates 2023) and had never actually run: the
+// comparator was installed after SetSorted(true), so Qt's own lessThan sorted
+// the resident rows by DisplayRole and later arrivals were binary-inserted
+// against that wrong order. 349beab01 fixed the installation order, which is
+// what made this rule visible for the first time — and immediately showed it
+// was the wrong rule.
 int CompareNodes(const NodeRef& a, const NodeRef& b) {
   if (!!a != !!b)
     return !!a < !!b ? 1 : -1;
   if (a.fetched() != b.fetched())
     return a.fetched() < b.fetched() ? 1 : -1;
-  // Hold the type-definition cursors, don't bind references into them.
-  // type_definition() returns a NodeRef by value and node_id() is
-  // SCADA_LIFETIME_BOUND to it, so a `const auto&` here dangled from the end of
-  // its own full-expression — and both are read further down, which made this
-  // comparator sort the Explorer's rows on freed memory. Clang says so
-  // (-Wdangling); the annotation is what lets it.
-  const NodeRef type_a = a.type_definition();
-  const NodeRef type_b = b.type_definition();
-  const scada::NodeId& ta = type_a.node_id();
-  const scada::NodeId& tb = type_b.node_id();
   bool fa = a.node_class() != scada::NodeClass::Variable;
   bool fb = b.node_class() != scada::NodeClass::Variable;
   if (fa != fb)
     return fa < fb ? 1 : -1;
-  if (ta != tb)
-    return ta < tb ? -1 : 1;
-  // Siblings of one type read in display order — case-blind, Ё beside Е —
-  // not code-point order (task 716).
+  // Siblings read in display order — case-blind, Ё beside Е — not code-point
+  // order (task 716).
   return CompareForDisplay(ToString16(a.display_name()),
                            ToString16(b.display_name()));
 }
