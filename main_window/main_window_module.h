@@ -19,6 +19,7 @@ class EventDispatcher;
 class Favourites;
 class FileCache;
 class FileManager;
+class DisplaySelectionRegistry;
 class FrameCaptureRegistry;
 class LocalEvents;
 class MainWindow;
@@ -57,6 +58,7 @@ struct MainWindowModuleContext {
   PortfolioManager& portfolio_manager_;
   LocalEvents& local_events_;
   FrameCaptureRegistry& frame_capture_registry_;
+  DisplaySelectionRegistry& display_selection_registry_;
   Favourites& favourites_;
   FileCache& file_cache_;
   FileManager& file_manager_;

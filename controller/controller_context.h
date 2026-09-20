@@ -13,6 +13,7 @@ class BlinkerManager;
 class ControllerDelegate;
 class CreateTree;
 class DialogService;
+class DisplaySelectionRegistry;
 class NodeEventProvider;
 class ExportModel;
 class FileCache;
@@ -45,4 +46,8 @@ struct ControllerContext {
   CreateTree& create_tree_;
   PropertyService& property_service_;
   FrameCaptureRegistry& frame_capture_registry_;
+  // Where a schematic display publishes what the operator selected, for the
+  // status strip's `Selected` cell. See
+  // `services/display_selection_registry.h`.
+  DisplaySelectionRegistry& display_selection_registry_;
 };

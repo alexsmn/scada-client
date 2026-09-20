@@ -14,6 +14,7 @@
 #include "scada/data_services_factory.h"
 #include "scada/node_id.h"
 #include "scada/status.h"
+#include "services/display_selection_registry.h"
 #include "services/frame_capture_registry.h"
 #include "timed_data/timed_data_service.h"
 
@@ -226,6 +227,7 @@ class ClientApplication : private ClientApplicationContext {
   // a unique_ptr: it is pure state with no dependencies, and it must outlive
   // both the controllers that arm and the status strip that reports.
   FrameCaptureRegistry frame_capture_registry_;
+  DisplaySelectionRegistry display_selection_registry_;
 
   std::unique_ptr<CreateTree> create_tree_;
   std::unique_ptr<PropertyService> property_service_;

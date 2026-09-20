@@ -7,10 +7,12 @@
 #include "modus/modus_util.h"
 #include "modus/modus_view_wrapper.h"
 #include "profile/window_definition.h"
+#include "services/display_selection_registry.h"
 
 #include <QScrollArea>
 
 #include <exception>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -46,14 +48,27 @@ ModusController::ModusController(const ControllerContext& context,
     : ControllerContext{context},
       display_view_factory_{std::move(display_view_factory)} {}
 
-ModusController::~ModusController() = default;
+ModusController::~ModusController() {
+  // Only if the strip is still showing this display's selection; see
+  // `DisplaySelectionRegistry`.
+  display_selection_registry_.ClearSelection(this);
+}
 
 ModusController::DisplayView ModusController::CreateDisplayView() {
   auto* display_view = new ModusDisplayView;
 
-  display_view->set_selection_callback([this](const QString& data_source) {
-    SelectDataSource(data_source.toStdString());
-  });
+  display_view->set_selection_callback(
+      [this](const std::optional<scada::display::view::ShapeHit>& hit) {
+        if (!hit) {
+          selection_.Clear();
+          display_selection_registry_.ClearSelection(this);
+          return;
+        }
+
+        display_selection_registry_.SetSelection(
+            this, DisplayShapeLabel(*hit).toStdU16String());
+        SelectDataSource(hit->data_source);
+      });
 
   display_view->set_double_click_callback([this] { AcknowledgeSelection(); });
 

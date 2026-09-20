@@ -4,6 +4,7 @@
 #include "aui/severity_colors.h"
 #include "aui/translation.h"
 #include "base/format_time.h"
+#include "display_view/qt/display_widget.h"
 #include "events/event_severity.h"
 #include "events/node_event_provider.h"
 #include "node_service/node_ref.h"
@@ -12,7 +13,6 @@
 #include "scada/node_id.h"
 #include "timed_data/timed_data_service.h"
 #include "timed_data/timed_data_spec.h"
-#include "display_view/qt/display_widget.h"
 
 #include <QFileDialog>
 #include <QFrame>
@@ -40,6 +40,14 @@ constexpr double kZoomStep = 1.25;
 // Most recent events kept in the Recent-events strip.
 constexpr int kMaxRecentEvents = 50;
 
+// The legend's inset from the viewport's bottom-left corner, from the mockup's
+// `.legend` rule (left: 14px; bottom: 12px).
+constexpr int kLegendMarginLeft = 14;
+constexpr int kLegendMarginBottom = 12;
+
+// One legend swatch, from the mockup's `.legend .sw`.
+constexpr int kLegendSwatchSize = 12;
+
 // The design tokens for the active theme. The frame is only built under
 // a token theme (WrapDisplayInFrame gates on it), so the legacy fallback here
 // is harmless. Mirrors the BarTokens() helper in the event filter bar.
@@ -59,6 +67,40 @@ QString SoftRgba(const QColor& color, double alpha) {
 
 QString Tr(std::string_view text) {
   return QString::fromStdU16String(Translate(text));
+}
+
+// One legend entry: a swatch in `color` followed by `label`.
+//
+// `filled` fills the swatch as well as outlining it (a closed device is drawn
+// solid), and `dashed` draws the outline dashed (the selection halo). Between
+// them the four states the mockup legends are distinguishable without relying
+// on colour alone, which is what design-language.md asks of single-line
+// semantics.
+QWidget* MakeLegendEntry(const QString& label,
+                         const QColor& color,
+                         bool filled,
+                         bool dashed,
+                         const scada::aui::ThemeTokens& tokens,
+                         QWidget* parent) {
+  auto* entry = new QWidget{parent};
+  auto* layout = new QHBoxLayout{entry};
+  layout->setContentsMargins(0, 0, 0, 0);
+  layout->setSpacing(6);
+
+  auto* swatch = new QLabel{entry};
+  swatch->setFixedSize(kLegendSwatchSize, kLegendSwatchSize);
+  swatch->setStyleSheet(
+      QStringLiteral("background:%1;border:1.5px %2 %3;border-radius:3px;")
+          .arg(filled ? color.name() : QStringLiteral("transparent"),
+               dashed ? QStringLiteral("dashed") : QStringLiteral("solid"),
+               color.name()));
+  layout->addWidget(swatch);
+
+  auto* text = new QLabel{label, entry};
+  text->setStyleSheet(QStringLiteral("color:%1;").arg(tokens.fg_muted.name()));
+  layout->addWidget(text);
+
+  return entry;
 }
 
 QString SeverityLabel(unsigned severity) {
@@ -155,6 +197,15 @@ int DisplayZoomPercent(double zoom) {
   return static_cast<int>(std::lround(ClampDisplayZoom(zoom) * 100.0));
 }
 
+QPoint DisplayLegendOrigin(QSize legend, QSize viewport) {
+  // Clamped at the top: a viewport shorter than the legend would otherwise
+  // place it at a negative y, hiding the entries the operator most needs. It
+  // overlaps the diagram in that case, which is the lesser loss.
+  return {
+      kLegendMarginLeft,
+      std::max(viewport.height() - legend.height() - kLegendMarginBottom, 0)};
+}
+
 DisplayFrame::DisplayFrame(DisplayWidget* diagram,
                            QString breadcrumb,
                            DisplayFrameContext data_context,
@@ -177,6 +228,8 @@ DisplayFrame::DisplayFrame(DisplayWidget* diagram,
   const scada::aui::ThemeTokens& tokens = FrameTokens();
   scroll_->viewport()->setStyleSheet(
       QStringLiteral("background:%1;").arg(tokens.bg.name()));
+
+  BuildLegend();
 
   if (QWidget* strips = BuildBayStrips())
     root->addWidget(strips);
@@ -278,6 +331,55 @@ void DisplayFrame::BuildToolbar(const QString& breadcrumb) {
   layout->addWidget(export_button);
 
   qobject_cast<QVBoxLayout*>(this->layout())->insertWidget(0, bar);
+}
+
+void DisplayFrame::BuildLegend() {
+  if (!scroll_)
+    return;
+
+  const scada::aui::ThemeTokens& tokens = FrameTokens();
+
+  // Parented to the VIEWPORT, not to the diagram: the diagram is resized by
+  // zoom and scrolls under the viewport, and a legend that scrolled away with
+  // it would stop being a legend. The mockup pins it to the diagram pane.
+  legend_ = new QWidget{scroll_->viewport()};
+  legend_->setObjectName(QStringLiteral("displayLegend"));
+  legend_->setStyleSheet(
+      QStringLiteral("#displayLegend{background:%1;border:1px solid %2;"
+                     "border-radius:8px;}")
+          .arg(SoftRgba(tokens.surface, 0.88), tokens.border.name()));
+
+  auto* layout = new QHBoxLayout{legend_};
+  layout->setContentsMargins(10, 6, 10, 6);
+  layout->setSpacing(14);
+
+  // The four states the mockup legends, in its order. The colours are the
+  // single-line tokens the renderer itself colours with, so the legend cannot
+  // drift from the diagram; `accent` is the selection halo's own colour.
+  layout->addWidget(MakeLegendEntry(Tr("Closed / in service"), tokens.sl_closed,
+                                    /*filled=*/true,
+                                    /*dashed=*/false, tokens, legend_));
+  layout->addWidget(MakeLegendEntry(Tr("Open"), tokens.sl_open,
+                                    /*filled=*/false, /*dashed=*/false, tokens,
+                                    legend_));
+  layout->addWidget(MakeLegendEntry(Tr("Energized"), tokens.sl_live,
+                                    /*filled=*/false, /*dashed=*/false, tokens,
+                                    legend_));
+  layout->addWidget(MakeLegendEntry(Tr("Selected"), tokens.accent,
+                                    /*filled=*/false, /*dashed=*/true, tokens,
+                                    legend_));
+
+  legend_->adjustSize();
+  legend_->raise();
+  PlaceLegend();
+}
+
+void DisplayFrame::PlaceLegend() {
+  if (!legend_ || !scroll_)
+    return;
+  legend_->adjustSize();
+  legend_->move(
+      DisplayLegendOrigin(legend_->size(), scroll_->viewport()->size()));
 }
 
 QWidget* DisplayFrame::BuildBayStrips() {
@@ -456,8 +558,13 @@ void DisplayFrame::SetZoom(double zoom) {
 
 bool DisplayFrame::eventFilter(QObject* watched, QEvent* event) {
   if (scroll_ && watched == scroll_->viewport() &&
-      event->type() == QEvent::Resize && fit_) {
-    RefitToViewport();
+      event->type() == QEvent::Resize) {
+    // Unconditionally, unlike the refit: the legend is anchored to the
+    // viewport's bottom edge whether or not the page is being kept fitted, so
+    // gating it on `fit_` would strand it the moment the operator zoomed.
+    PlaceLegend();
+    if (fit_)
+      RefitToViewport();
   }
   return QWidget::eventFilter(watched, event);
 }

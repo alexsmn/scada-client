@@ -7,14 +7,16 @@
 #include "controller/controller_delegate.h"
 #include "controller/selection_model.h"
 #include "display_frame/qt/display_frame.h"
+#include "display_view/qt/display_widget.h"
 #include "filesystem/file_util.h"
 #include "modules/write/write_service.h"
 #include "profile/window_definition.h"
 #include "resources/common_resources.h"
+#include "services/display_selection_registry.h"
 #include "timed_data/timed_data_spec.h"
-#include "display_view/qt/display_widget.h"
 
 #include <exception>
+#include <optional>
 
 // VidiconDisplayNativeView
 
@@ -23,7 +25,12 @@ VidiconDisplayNativeView::VidiconDisplayNativeView(
     : VidiconDisplayNativeViewContext{std::move(context)},
       selection_{{timed_data_service_}} {}
 
-VidiconDisplayNativeView::~VidiconDisplayNativeView() = default;
+VidiconDisplayNativeView::~VidiconDisplayNativeView() {
+  // Only if the strip is still showing OUR selection; another display opened
+  // since would own it, and blanking that is the failure the owner check in
+  // `DisplaySelectionRegistry` exists to prevent.
+  display_selection_registry_.ClearSelection(this);
+}
 
 std::unique_ptr<UiView> VidiconDisplayNativeView::Init(
     const WindowDefinition& definition) {
@@ -40,19 +47,34 @@ std::unique_ptr<UiView> VidiconDisplayNativeView::Init(
           : widget->title();
   controller_delegate_.SetTitle(title.toStdU16String());
 
-  widget->set_selection_callback([this](const QString& data_source) {
-    try {
-      auto node_id = scada::NodeId::FromString(data_source.toStdString());
-      if (node_id.is_null())
-        return;
-      selection_.SelectTimedData(TimedDataSpec{timed_data_service_, node_id});
-      // Mirror the selection into the frame's Measurements strip.
-      if (frame_)
-        frame_->ShowMeasurement(node_id);
-    } catch (const std::exception&) {
-      selection_.Clear();
-    }
-  });
+  widget->set_selection_callback(
+      [this](const std::optional<scada::display::view::ShapeHit>& hit) {
+        // A click on bare page. The Measurements strip is deliberately
+        // append-only, so what clears here is the selection itself and the
+        // status strip's readout of it -- not the signals the operator has
+        // already asked to watch.
+        if (!hit) {
+          selection_.Clear();
+          display_selection_registry_.ClearSelection(this);
+          return;
+        }
+
+        display_selection_registry_.SetSelection(
+            this, DisplayShapeLabel(*hit).toStdU16String());
+
+        try {
+          auto node_id = scada::NodeId::FromString(hit->data_source);
+          if (node_id.is_null())
+            return;
+          selection_.SelectTimedData(
+              TimedDataSpec{timed_data_service_, node_id});
+          // Mirror the selection into the frame's Measurements strip.
+          if (frame_)
+            frame_->ShowMeasurement(node_id);
+        } catch (const std::exception&) {
+          selection_.Clear();
+        }
+      });
 
   // Wrap the renderer in the display frame — Live indicator, hotspot
   // breadcrumb, zoom / fit / export, and the bay strips. The frame reparents

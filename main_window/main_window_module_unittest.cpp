@@ -112,6 +112,8 @@ void MainWindowModuleTest::SetUp() {
       .portfolio_manager_ = portfolio_module_.portfolio_manager(),
       .local_events_ = event_module_.local_events(),
       .frame_capture_registry_ = controller_env_.frame_capture_registry_,
+      .display_selection_registry_ =
+          controller_env_.display_selection_registry_,
       .favourites_ = favorites_module.favourites(),
       .file_cache_ = controller_env_.file_cache_,
       .file_manager_ = controller_env_.file_manager_,

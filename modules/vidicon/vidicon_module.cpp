@@ -19,7 +19,9 @@ VidiconModule::VidiconModule(VidiconModuleContext&& context)
                 .dialog_service_ = context.dialog_service_,
                 .write_service_ = write_service_,
                 .node_event_provider_ = context.node_event_provider_,
-                .node_service_ = context.node_service_});
+                .node_service_ = context.node_service_,
+                .display_selection_registry_ =
+                    context.display_selection_registry_});
       });
 
   file_registry_.RegisterType(kVidiconDisplayWindowInfo.command_id,

@@ -2,6 +2,7 @@
 
 #include "events/event_observer.h"
 
+#include <QPoint>
 #include <QSize>
 #include <QString>
 #include <QWidget>
@@ -37,6 +38,13 @@ double DisplayFitFactor(QSize natural, QSize viewport);
 // The zoom factor rendered as the toolbar's integer percent label (e.g. 1.0 ->
 // 100). Rounds to the nearest percent.
 int DisplayZoomPercent(double zoom);
+
+// Where the equipment-state legend sits inside the diagram viewport: bottom
+// left, inset by the mockup's own margins, for a legend of `legend` size in a
+// viewport of `viewport` size. Pure so the placement can be tested without a
+// running QApplication; clamped to the origin so a viewport smaller than the
+// legend still shows its top-left corner rather than scrolling it off.
+QPoint DisplayLegendOrigin(QSize legend, QSize viewport);
 
 // Live-data sources for the display frame's bay strips. All optional: when a
 // pointer is null the corresponding strip is omitted, so the frame degrades to
@@ -91,6 +99,8 @@ class DisplayFrame : public QWidget, private EventObserver {
  private:
   void BuildToolbar(const QString& breadcrumb);
   QWidget* BuildBayStrips();
+  void BuildLegend();
+  void PlaceLegend();
   QSize DiagramNaturalSize() const;
   void ApplyZoom();
   void RefitToViewport();
@@ -112,6 +122,10 @@ class DisplayFrame : public QWidget, private EventObserver {
 
   QTableWidget* measurements_ = nullptr;
   QTableWidget* events_ = nullptr;
+
+  // Floats over the diagram's viewport rather than sitting in the layout, the
+  // way the mockup draws it; repositioned on every viewport resize.
+  QWidget* legend_ = nullptr;
 
   // One spec per Measurements row (parallel to the table's rows); each spec's
   // update_handler refreshes its row live.

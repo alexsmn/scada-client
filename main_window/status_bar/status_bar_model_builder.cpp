@@ -4,6 +4,7 @@
 #include "events/node_event_provider.h"
 #include "main_window/status_bar/capture_status_provider.h"
 #include "main_window/status_bar/event_status_provider.h"
+#include "main_window/status_bar/selection_status_provider.h"
 #include "main_window/status_bar/session_status_provider.h"
 #include "main_window/status_bar/user_status_provider.h"
 
@@ -101,6 +102,24 @@ std::shared_ptr<scada::aui::StatusBarModel> StatusBarModelBuilder::Build() {
        // Wider than the bare "<server>: N ms" it used to hold: a stalled
        // session appends a marker, and the number grows into five digits.
        .size = 180});
+
+  // What the operator has selected on a schematic display. Placed between the
+  // ping and the endpoint, which is where the mockup's status strip carries it
+  // -- after the connection cells, ahead of the cells naming the installation.
+  // Empty until something is selected, so the strip below is unchanged for
+  // everyone who never opens a display.
+
+  auto selection_status_provider =
+      std::make_shared<SelectionStatusProvider>(display_selection_registry_);
+
+  int selection_pane_index = model->AddPane(
+      {.text_provider = std::bind_front(&SelectionStatusProvider::GetText,
+                                        selection_status_provider),
+       .size = 160});
+
+  selection_status_provider->Init([model, selection_pane_index] {
+    model->NotifyPanesChanged(selection_pane_index);
+  });
 
   int endpoint_pane_index = model->AddPane(
       {.text_provider = std::bind_front(&SessionStatusProvider::GetEndpointText,

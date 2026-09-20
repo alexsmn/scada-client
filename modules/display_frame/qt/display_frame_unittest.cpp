@@ -2,6 +2,9 @@
 
 #include <gtest/gtest.h>
 
+#include <QPoint>
+#include <QSize>
+
 #include <cmath>
 #include <limits>
 
@@ -53,6 +56,23 @@ TEST(DisplayFrameZoomTest, PercentRoundsToNearest) {
   EXPECT_EQ(DisplayZoomPercent(0.5), 50);
   EXPECT_EQ(DisplayZoomPercent(1.234), 123);
   EXPECT_EQ(DisplayZoomPercent(1.236), 124);
+}
+
+// The legend floats over the diagram viewport, so its placement is arithmetic
+// rather than layout and is checkable without a QApplication.
+
+TEST(DisplayLegendOriginTest, SitsAtTheViewportBottomLeft) {
+  // 400 - 30 - 12 = 358.
+  EXPECT_EQ(DisplayLegendOrigin(QSize{300, 30}, QSize{800, 400}),
+            (QPoint{14, 358}));
+}
+
+// A viewport shorter than the legend would otherwise place it above the top
+// edge, hiding the entries entirely; overlapping the diagram is the lesser
+// loss.
+TEST(DisplayLegendOriginTest, ClampsToTheTopOfATinyViewport) {
+  EXPECT_EQ(DisplayLegendOrigin(QSize{300, 90}, QSize{800, 40}),
+            (QPoint{14, 0}));
 }
 
 }  // namespace

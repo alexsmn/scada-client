@@ -597,7 +597,8 @@ void ClientApplication::CreateMainWindow(const PostLoginContext& ctx) {
           .blinker_manager_ = *blinker_manager_,
           .property_service_ = *property_service_,
           .create_tree_ = *create_tree_,
-          .frame_capture_registry_ = frame_capture_registry_});
+          .frame_capture_registry_ = frame_capture_registry_,
+          .display_selection_registry_ = display_selection_registry_});
 
   main_window_module_ =
       std::make_unique<MainWindowModule>(MainWindowModuleContext{
@@ -617,6 +618,7 @@ void ClientApplication::CreateMainWindow(const PostLoginContext& ctx) {
           .portfolio_manager_ = portfolio_module_->portfolio_manager(),
           .local_events_ = event_module_->local_events(),
           .frame_capture_registry_ = frame_capture_registry_,
+          .display_selection_registry_ = display_selection_registry_,
           .favourites_ = favorites_module_->favourites(),
           .file_cache_ = filesystem_component_->file_cache(),
           .file_manager_ = filesystem_component_->file_manager(),

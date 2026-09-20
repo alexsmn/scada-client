@@ -8,7 +8,6 @@
 #include "base/test/test_executor.h"
 #include "controller/command_registry.h"
 #include "controller/controller_context.h"
-#include "services/frame_capture_registry.h"
 #include "controller/controller_delegate_mock.h"
 #include "controller/controller_registry.h"
 #include "controller/window_info.h"
@@ -28,6 +27,8 @@
 #include "scada/monitored_item_service_mock.h"
 #include "scada/session_service_mock.h"
 #include "services/create_tree.h"
+#include "services/display_selection_registry.h"
+#include "services/frame_capture_registry.h"
 #include "services/task_manager_mock.h"
 #include "timed_data/timed_data_service_mock.h"
 
@@ -68,7 +69,8 @@ struct ControllerEnvironment {
             .blinker_manager_ = blinker_manager_,
             .create_tree_ = create_tree_,
             .property_service_ = property_service_,
-            .frame_capture_registry_ = frame_capture_registry_};
+            .frame_capture_registry_ = frame_capture_registry_,
+            .display_selection_registry_ = display_selection_registry_};
   }
 
   // NOTE: Consider `ControllerTest`.
@@ -98,6 +100,7 @@ struct ControllerEnvironment {
   testing::NiceMock<MockBlinkerManager> blinker_manager_;
   CreateTree create_tree_;
   FrameCaptureRegistry frame_capture_registry_;
+  DisplaySelectionRegistry display_selection_registry_;
   PropertyService property_service_;
 
   inline static const WindowInfo kFakeWindowInfo{.name = "fake"};

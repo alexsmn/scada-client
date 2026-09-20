@@ -2,15 +2,17 @@
 
 #include "aui/test/app_environment.h"
 #include "base/time/time.h"
-#include "scada/date_time.h"
 #include "events/node_event_provider.h"
+#include "scada/date_time.h"
 #include "scada/event.h"
 
 #include <gtest/gtest.h>
 
+#include <QLabel>
 #include <QString>
 #include <QStringList>
 #include <QTableWidget>
+#include <QWidget>
 
 #include <string>
 #include <utility>
@@ -88,6 +90,26 @@ TEST_F(DisplayFrameStripsTest, NoBayStripsWithoutDataSources) {
   DisplayFrame frame(/*diagram=*/nullptr, QStringLiteral("Bay 1"),
                      DisplayFrameContext{});
   EXPECT_EQ(frame.findChild<QTableWidget*>(), nullptr);
+}
+
+// The equipment-state legend the mockup asks for: four entries, present
+// whether or not the frame has live-data sources, because it explains the
+// diagram rather than the bay strips.
+TEST_F(DisplayFrameStripsTest, LegendCarriesTheFourEquipmentStates) {
+  DisplayFrame frame(/*diagram=*/nullptr, QStringLiteral("Bay 1"),
+                     DisplayFrameContext{});
+
+  auto* legend = frame.findChild<QWidget*>(QStringLiteral("displayLegend"));
+  ASSERT_NE(legend, nullptr);
+
+  // Each entry is a swatch label plus a text label; only the text labels carry
+  // any, so collecting the non-empty ones counts the entries.
+  QStringList captions;
+  for (QLabel* label : legend->findChildren<QLabel*>()) {
+    if (!label->text().isEmpty())
+      captions << label->text();
+  }
+  EXPECT_EQ(captions.size(), 4);
 }
 
 }  // namespace

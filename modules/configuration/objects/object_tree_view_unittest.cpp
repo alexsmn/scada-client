@@ -204,7 +204,8 @@ class ObjectTreeViewTest : public Test {
             .blinker_manager_ = env_.blinker_manager_,
             .create_tree_ = env_.create_tree_,
             .property_service_ = env_.property_service_,
-            .frame_capture_registry_ = env_.frame_capture_registry_};
+            .frame_capture_registry_ = env_.frame_capture_registry_,
+            .display_selection_registry_ = env_.display_selection_registry_};
   }
 
   // Materializes one level below `node`. The tree is lazy, so until this runs
@@ -228,7 +229,8 @@ class ObjectTreeViewTest : public Test {
   void MaterializeDeepBranch() {
     ASSERT_THAT(view_->model().root(), NotNull());
     Materialize(*view_->model().root());
-    ConfigurationTreeNode* deep = view_->model().FindFirstTreeNode(kDeepGroupId);
+    ConfigurationTreeNode* deep =
+        view_->model().FindFirstTreeNode(kDeepGroupId);
     ASSERT_THAT(deep, NotNull());
     Materialize(*deep);
     ConfigurationTreeNode* nested =
@@ -304,7 +306,8 @@ class ObjectTreeViewTest : public Test {
     EXPECT_THAT(node, NotNull()) << "node " << node_id.ToString();
     if (!node)
       return false;
-    return view_->model().GetTextColor(node, 1) != env_.profile_.bad_value_color;
+    return view_->model().GetTextColor(node, 1) !=
+           env_.profile_.bad_value_color;
   }
 
   static inline const scada::NodeId kGroupId{2001, 1};

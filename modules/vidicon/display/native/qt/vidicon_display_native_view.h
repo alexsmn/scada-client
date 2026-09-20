@@ -10,6 +10,7 @@
 class ControllerDelegate;
 class DialogService;
 class DisplayFrame;
+class DisplaySelectionRegistry;
 class NodeEventProvider;
 class NodeService;
 class QWidget;
@@ -32,6 +33,10 @@ struct VidiconDisplayNativeViewContext {
   // For the reshelled display frame's bay strips.
   NodeEventProvider& node_event_provider_;
   NodeService& node_service_;
+  // Where the selected element is published for the status strip's `Selected`
+  // cell. The view cannot reach the status bar itself -- it is built once for
+  // the window -- so the registry is the seam. ADR 0012 phase 5.
+  DisplaySelectionRegistry& display_selection_registry_;
 };
 
 class VidiconDisplayNativeView : private VidiconDisplayNativeViewContext,

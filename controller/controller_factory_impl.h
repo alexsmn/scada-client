@@ -45,6 +45,7 @@ struct ControllerFactoryImpl {
   PropertyService& property_service_;
   CreateTree& create_tree_;
   FrameCaptureRegistry& frame_capture_registry_;
+  DisplaySelectionRegistry& display_selection_registry_;
 };
 
 inline std::unique_ptr<Controller> ControllerFactoryImpl::CreateController(
@@ -71,5 +72,5 @@ inline std::unique_ptr<Controller> ControllerFactoryImpl::CreateController(
       *scada_services_.monitored_item_service, timed_data_service_,
       node_service_, *scada_services_.attribute_service, file_cache_, profile_,
       dialog_service, blinker_manager_, create_tree_, property_service_,
-      frame_capture_registry_});
+      frame_capture_registry_, display_selection_registry_});
 }

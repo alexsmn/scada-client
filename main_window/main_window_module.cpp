@@ -485,7 +485,8 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
                             local_events_,
                             node_service_,
                             profile_,
-                            frame_capture_registry_}
+                            frame_capture_registry_,
+                            display_selection_registry_}
           .Build();
 
   auto connection_info_provider = [this] {

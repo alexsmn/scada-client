@@ -77,6 +77,9 @@ client_module_link_libraries(client_modus
     client_display_view
   PRIVATE
     client_controller
+    # DisplaySelectionRegistry: where the controller publishes the selected
+    # element for the status strip (ADR 0012 phase 5).
+    client_services
 )
 
 if(TARGET client_modus_qt_unittests)
