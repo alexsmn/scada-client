@@ -348,7 +348,49 @@ class EventJournalAlarmSurfaceTest : public EventTableModelTest {
   static scada::aui::Color BackgroundFor(scada::aui::EventBackground kind) {
     return scada::aui::EventRowColorsFor(kind).background;
   }
+
+  // The row index whose message cell reads `message`, or -1. Local rows are
+  // appended alongside the current and historical ones and then sorted, so a
+  // test that seeds one cannot assume where it lands.
+  int RowWithMessage(std::u16string_view message) {
+    for (int row = 0; row < event_table_model_->GetRowCount(); ++row) {
+      if (CellText(EventColumnMessage, row) == message)
+        return row;
+    }
+    return -1;
+  }
 };
+
+// A client-side error is an alarm like any other: `LocalEvents::ReportEvent`
+// maps `SEV_ERROR` onto `scada::kSeverityCritical`, the journal bands on
+// severity alone, so a local error arrives red. Backlog 135 asked for this and
+// it was already true -- pinned here rather than deleted unpinned, because
+// nothing else asserted that the LOCAL_EVENT source reaches the same colouring
+// as the server feeds, and the mapping it relies on lives two files away.
+TEST_F(EventJournalAlarmSurfaceTest, ALocalErrorIsBandedLikeAnyOtherAlarm) {
+  local_events_.ReportEvent(LocalEvents::SEV_ERROR, u"write failed");
+  local_events_.ReportEvent(LocalEvents::SEV_WARNING, u"retrying");
+  local_events_.ReportEvent(LocalEvents::SEV_INFO, u"connected");
+  Init();
+
+  const int error_row = RowWithMessage(u"write failed");
+  ASSERT_NE(error_row, -1);
+  EXPECT_EQ(CellBackground(error_row),
+            BackgroundFor(scada::aui::EventBackground::kCritical));
+
+  const int warning_row = RowWithMessage(u"retrying");
+  ASSERT_NE(warning_row, -1);
+  EXPECT_EQ(CellBackground(warning_row),
+            BackgroundFor(scada::aui::EventBackground::kWarning));
+
+  // A routine local event is not an alarm and keeps the palette's colours.
+  const int info_row = RowWithMessage(u"connected");
+  ASSERT_NE(info_row, -1);
+  EXPECT_NE(CellBackground(info_row),
+            BackgroundFor(scada::aui::EventBackground::kCritical));
+  EXPECT_NE(CellBackground(info_row),
+            BackgroundFor(scada::aui::EventBackground::kWarning));
+}
 
 // The row colour is the event's *severity*, whether or not it has been
 // acknowledged: a pending critical alarm used to paint green (the
