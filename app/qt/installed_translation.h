@@ -1,7 +1,7 @@
 #pragma once
 
+#include "aui/translation.h"
 #include "base/boost_log.h"
-#include "base/program_options.h"
 
 #include <QApplication>
 #include <QLibraryInfo>
@@ -58,18 +58,17 @@ class InstalledTranslation {
   }
 
  private:
+  // Delegates to the one resolution the whole client uses, so the catalogs
+  // installed here and the LocaleIds a session sends cannot disagree. The
+  // `--locale` switch reaches it through `SetUiLocaleOverride`, called in
+  // main() before this runs.
+  //
+  // This used to duplicate the order (settings, then the switch, then the
+  // system) and was the only reader of the switch. Once a session started
+  // sending its language, that duplicate made `--locale=en` on a Russian
+  // machine produce an English window asking the server for Russian.
   QString GetLocaleName() const {
-    if (auto locale_name = settings_.value("LocaleName").toString();
-        !locale_name.isEmpty()) {
-      return locale_name;
-    }
-
-    if (auto locale_name = client::GetOptionValue("locale");
-        !locale_name.empty()) {
-      return QString::fromStdString(locale_name);
-    }
-
-    return QLocale::system().bcp47Name();
+    return QString::fromStdString(UiLocaleName());
   }
 
   QSettings& settings_;

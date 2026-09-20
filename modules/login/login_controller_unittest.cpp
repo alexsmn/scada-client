@@ -1,6 +1,7 @@
 #include "modules/login/login_controller.h"
 
 #include "aui/dialog_service_mock.h"
+#include "aui/translation.h"
 #include "base/callback_awaitable.h"
 #include "base/memory_settings_store.h"
 #include "base/test/awaitable_test.h"
@@ -15,6 +16,8 @@
 #include <algorithm>
 #include <cstdint>
 #include <memory>
+#include <string>
+#include <vector>
 
 using namespace testing;
 
@@ -230,6 +233,43 @@ TEST(LoginControllerTest, ReadsStoredEnglishServerTypeIntoSelectedIndex) {
   const int scada_index = FindServerTypeIndex("Scada");
   EXPECT_EQ(controller.server_type_index(), scada_index);
   EXPECT_EQ(controller.server_host, "scada-host");
+}
+
+// The session carries the language the client is displayed in, so
+// server-supplied text — node display names above all — comes back in it
+// rather than in whatever language the configuration was authored in. OPC UA
+// Part 4 §5.4 Locale Negotiation,
+// https://reference.opcfoundation.org/Core/Part4/v105/docs/5.4
+//
+// This is the one link in that chain with nothing else behind it: the wire and
+// the server are covered by SessionProxyTest and the framework suites, and
+// `UiLocaleName()` by its own tests, but the controller putting one into the
+// other is a plain pass-through that only a test can hold in place.
+TEST(LoginControllerTest, ConnectCarriesTheUiLanguageAsTheSessionLocale) {
+  auto settings_store = std::make_shared<MemorySettingsStore>();
+  TestExecutor executor;
+  StrictMock<MockDialogService> dialog_service;
+  StrictMock<scada::MockSessionService> session_service;
+  ScopedScadaSessionService scoped_session_service{session_service};
+  NullTransportFactory transport_factory;
+  DeferredStatus connect;
+
+  EXPECT_CALL(session_service, ConnectStatus(_))
+      .WillOnce([executor, &connect](
+                    scada::SessionConnectParams params) -> scada::CoStatus {
+        // Exactly the UI language, most preferred and alone: this client shows
+        // one language at a time, so it asks for one.
+        EXPECT_EQ(std::vector<std::string>{UiLocaleName()}, params.locale_ids);
+        co_return co_await connect.Wait(executor);
+      });
+
+  auto controller = CreateController(executor, dialog_service, settings_store,
+                                     transport_factory);
+  controller->completion_handler = [](DataServices) {};
+  controller->Login();
+  Drain(executor);
+  connect.Resolve();
+  Drain(executor);
 }
 
 TEST(LoginControllerTest, LoginCompletesAfterSessionConnect) {

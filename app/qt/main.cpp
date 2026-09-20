@@ -7,6 +7,7 @@
 #include "app/qt/startup_flow.h"
 #include "app/startup_exception.h"
 #include "aui/qt/message_loop_qt.h"
+#include "aui/translation.h"
 #include "base/any_executor.h"
 #include "base/any_executor_timer.h"
 #include "base/boost_log.h"
@@ -151,6 +152,12 @@ int main(int argc, char* argv[]) {
     QApplication::setQuitOnLastWindowClosed(false);
 
     InitE2eSettingsOverride();
+
+    // The `--locale` switch reaches the translation layer here, before the
+    // catalogs are chosen: `UiLocaleName()` is what both InstalledTranslation
+    // and the session's LocaleIds resolve through, and aui cannot read the
+    // command line itself (see aui/translation.h).
+    SetUiLocaleOverride(client::GetOptionValue("locale"));
 
     QSettings settings;
     InstalledTranslation installed_translation{settings};

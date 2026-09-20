@@ -6,6 +6,8 @@
 #include <QString>
 #include <QtGlobal>
 
+#include <utility>
+
 namespace {
 
 // Keep service display names in the empty translation context used by
@@ -18,18 +20,32 @@ namespace {
 
 }  // namespace
 
+// The startup `--locale` override, injected by the app layer. A function-local
+// rather than a namespace-scope object so it is not a static global; it is
+// written once at startup, before any window or session exists, and only read
+// afterwards.
+std::string& UiLocaleOverride() {
+  static std::string override_locale;
+  return override_locale;
+}
+
 std::string UiLocaleName() {
-  // The stored choice first, then the system language — the same order
-  // InstalledTranslation uses when it decides which .qm files to install, so
-  // this cannot disagree with the language actually on screen. The
-  // command-line `locale` override that InstalledTranslation also honours is
-  // deliberately not read here: it belongs to the app layer, which records
-  // the resulting choice in the same setting.
+  // The operator's stored choice wins, then the startup override, then the
+  // system language. `InstalledTranslation` resolves the catalogs it installs
+  // through this same function, so the window's language and the language the
+  // session asks the server for are the same by construction rather than by
+  // two lists happening to agree.
   if (const QString stored = QSettings{}.value("LocaleName").toString();
       !stored.isEmpty()) {
     return stored.toStdString();
   }
+  if (!UiLocaleOverride().empty())
+    return UiLocaleOverride();
   return QLocale::system().bcp47Name().toStdString();
+}
+
+void SetUiLocaleOverride(std::string locale_name) {
+  UiLocaleOverride() = std::move(locale_name);
 }
 
 std::u16string Translate(std::string_view text) {

@@ -28,9 +28,11 @@ class UiLocaleNameTest : public testing::Test {
     QSettings::setPath(QSettings::IniFormat, QSettings::UserScope,
                        settings_dir_.path());
     QSettings{}.clear();
+    SetUiLocaleOverride({});
   }
 
   void TearDown() override {
+    SetUiLocaleOverride({});
     QSettings{}.clear();
     QCoreApplication::setOrganizationName(previous_organization_);
     QCoreApplication::setApplicationName(previous_application_);
@@ -77,6 +79,43 @@ TEST_F(UiLocaleNameTest, AnEmptyStoredChoiceIsNotAChoice) {
   // A cleared setting must fall through to the system language rather than
   // becoming an empty locale id.
   QSettings{}.setValue("LocaleName", "");
+  EXPECT_EQ(QLocale::system().bcp47Name().toStdString(), UiLocaleName());
+}
+
+// The `--locale` switch. It used to reach the translators only, so an
+// English window asked the server for Russian node names — the exact defect
+// locale negotiation exists to prevent, arriving through the one path that
+// did not share the resolution.
+TEST_F(UiLocaleNameTest, TheStartupOverrideIsHonoured) {
+  SetUiLocaleOverride("en");
+  EXPECT_EQ(std::string{"en"}, UiLocaleName());
+}
+
+TEST_F(UiLocaleNameTest, AStoredChoiceOutranksTheStartupOverride) {
+  // The operator picked a language in Settings; a switch on the command line
+  // does not silently override what they chose.
+  QSettings{}.setValue("LocaleName", "ru");
+  SetUiLocaleOverride("en");
+  EXPECT_EQ(std::string{"ru"}, UiLocaleName());
+}
+
+TEST_F(UiLocaleNameTest, TheStartupOverrideOutranksTheSystemLanguage) {
+  SetUiLocaleOverride("de");
+  EXPECT_EQ(std::string{"de"}, UiLocaleName());
+  EXPECT_NE(QLocale::system().bcp47Name().toStdString(), UiLocaleName());
+}
+
+TEST_F(UiLocaleNameTest, AnEmptyOverrideIsNotAnOverride) {
+  // What a client that never passes `--locale` supplies, and what clearing it
+  // must restore: the system language, not an empty locale id.
+  SetUiLocaleOverride("");
+  EXPECT_EQ(QLocale::system().bcp47Name().toStdString(), UiLocaleName());
+}
+
+TEST_F(UiLocaleNameTest, TheOverrideCanBeCleared) {
+  SetUiLocaleOverride("en");
+  ASSERT_EQ(std::string{"en"}, UiLocaleName());
+  SetUiLocaleOverride({});
   EXPECT_EQ(QLocale::system().bcp47Name().toStdString(), UiLocaleName());
 }
 
