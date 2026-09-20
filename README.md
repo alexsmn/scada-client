@@ -62,9 +62,8 @@ The quickest look is the **[live demo](https://telecontrol-ru.github.io/scada/ap
 a browser implementation of the same workbench, the same vocabulary and the
 same data, rendered in its own idiom rather than as a copy of this one.
 
-**This repository builds from its public dependencies, without the schematic
-display.** The client resolves the six products it consumes as sibling
-checkouts. Five are public:
+**This repository does not build standalone yet.** The client resolves the six
+products it consumes as sibling checkouts. Five are public:
 
 | Consumed product | What it is | Source |
 |---|---|---|
@@ -76,23 +75,15 @@ checkouts. Five are public:
 | `display` | the schematic display runtime | **proprietary** |
 
 The sixth, `display`, is the Vidicon schematic runtime and stays closed — not a
-publication that has not happened yet, but one that is not going to happen. So
-the display surface is **optional**, and without it the client builds and runs
-against the five public products alone:
+publication that has not happened yet, but one that is not going to happen.
+Instead it will ship as a **prebuilt binary behind a C ABI**, which the client
+loads rather than compiles, so this repository will build from its public
+dependencies without the schematic display ever becoming public.
 
-```bash
-cmake --preset ninja -DCLIENT_WITH_DISPLAY=OFF
-```
-
-What you give up is the schematic display — Modus and VDS mimic diagrams, and
-the Vidicon integration that draws through them. Everything else in the list
-above is unaffected: trends, alarms, tables, configuration, users and the
-protocol debugger all build and run.
-
-The longer-term plan is to ship `display` as a prebuilt binary behind a C ABI,
-so the same option chooses between "no display" and "display from a binary"
-rather than between "no display" and "no build". The build instructions below
-work either way.
+Until that lands the client needs `display` as source, so treat a clone as
+sources to read rather than a build to run — which is also why the CI here is
+static analysis. The build instructions below are the real ones, and they work
+in a checkout that has all six.
 
 ## Building
 

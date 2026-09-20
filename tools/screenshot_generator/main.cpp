@@ -6,9 +6,7 @@
 // the same ScreenshotGenerator fixture.
 
 #include "dialog_capture.h"
-#if CLIENT_HAS_DISPLAY
 #include "display_capture.h"
-#endif
 #include "fixture_builder.h"
 #include "screenshot_config.h"
 #include "screenshot_fixture.h"
@@ -152,10 +150,6 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
             << output_dir.string() << std::endl;
 }
 
-// Built only with the schematic display surface (ADR 0013 phase 1): without
-// `display` there is no VDS renderer to capture, and the capture is simply
-// absent rather than skipped — a skip would imply a fixture problem.
-#if CLIENT_HAS_DISPLAY
 TEST_F(ScreenshotGenerator, CaptureDisplay) {
   // The reshelled substation display renders standalone from a VDS fixture — it
   // isn't part of the profile page, so it can't be picked up by
@@ -181,7 +175,6 @@ TEST_F(ScreenshotGenerator, CaptureDisplay) {
                         app_.timed_data_service(), app_.node_event_provider(),
                         app_.node_service());
 }
-#endif  // CLIENT_HAS_DISPLAY
 
 TEST_F(ScreenshotGenerator, CaptureDialogs) {
   auto output_dir = GetOutputDir();

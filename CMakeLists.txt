@@ -29,29 +29,11 @@ project(scada-client
 
 scada_product_base()
 
-# The schematic display surface, which is the ONE part of this client that
-# cannot be built from public sources: `display` is never published (see the
-# superproject CLAUDE.md, "Repository boundaries are commercial"), while every
-# other product below is. Turning this OFF is what lets the public repository
-# build from its published dependencies alone — the client then has no
-# Modus/VDS display, and says so where a display would have been.
-#
-# ADR 0013 phase 1. Phases 2-5 replace the source linkage with a C ABI over a
-# packaged binary, at which point this option chooses between "no display" and
-# "display from a binary" rather than between "no display" and "display from
-# source". The option's meaning survives that change, which is why it is
-# spelled WITH_DISPLAY rather than after the linkage.
-option(CLIENT_WITH_DISPLAY "Build the schematic display surface (needs the private `display` product)" ON)
-
 # The products this one consumes. `common` and `opcuapp` are the client's own;
 # `core`, `graph_qt` and `view_manager_qt` are aui's — aui is added as a
 # subdirectory of this build, so its find_package calls read THIS directory's
 # module path, not one of its own.
-if(CLIENT_WITH_DISPLAY)
-  scada_find_products(common core display opcuapp graph_qt view_manager_qt)
-else()
-  scada_find_products(common core opcuapp graph_qt view_manager_qt)
-endif()
+scada_find_products(common core display opcuapp graph_qt view_manager_qt)
 
 enable_testing()
 
@@ -84,9 +66,7 @@ if(BUILD_CLIENT_QT)
 endif()
 
 find_package(ScadaCommon REQUIRED)
-if(CLIENT_WITH_DISPLAY)
-  find_package(Display REQUIRED)
-endif()
+find_package(Display REQUIRED)
 
 # aui is slated for extraction into its own repository — consume it through
 # its find module, which also provides the client_module() dual-target
