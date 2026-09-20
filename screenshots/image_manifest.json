@@ -440,10 +440,10 @@
       "referenced_from": [],
       "notes": "Light-theme render of workbench-overview.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to workbench-overview.png, and this is a second appearance of that capture rather than a second capture.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "c121a69c0",
         "platform": "macos",
         "dirty": true,
-        "sha256": "9c8c70c9d65472d26173c24b1733ba922f2b9ac9a3947adb9cff0606689de0c0"
+        "sha256": "bae268704eb71ce7a9bdcf0e765adcae22cccf841d1ae5daddfa19e7fc4bbe42"
       }
     },
     {
@@ -1007,10 +1007,10 @@
       "referenced_from": [],
       "notes": "Light-theme render of bulk-create.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "c121a69c0",
         "platform": "macos",
         "dirty": true,
-        "sha256": "6bcbc3f0892db7978bad62cbd5b3604cee26a241e0bfa6663566e3900cecc081"
+        "sha256": "3a3e1cd10f1ec671a78ef0906fab227108674246fe19df1600a6d6e75d3a9b28"
       }
     },
     {
@@ -1130,10 +1130,10 @@
       "referenced_from": [],
       "notes": "Light-theme render of hardware-tree.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "c121a69c0",
         "platform": "macos",
         "dirty": true,
-        "sha256": "15d91f422858d5e15b3c70f97f26d1549d50864cfa72c0752e74d8a7679a2d1c"
+        "sha256": "b781b9ce3e5d91f7252542c7fdbc24f14c6bd91069858f9fd6ff3b5a1534df7c"
       }
     },
     {
@@ -1312,10 +1312,10 @@
       "referenced_from": [],
       "notes": "Light-theme render of devices.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "c121a69c0",
         "platform": "macos",
         "dirty": true,
-        "sha256": "a156205458b7d0ee5957a2d621f7ca19f9ac968a08e6c1211d5a17997d88e62a"
+        "sha256": "6736f5a82524ce5714313407d5de2df35d8e7cfc92a9521b3dfba2a9d99599cd"
       }
     },
     {
@@ -1670,10 +1670,10 @@
       "referenced_from": [],
       "notes": "Light-theme render of limits.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "c121a69c0",
         "platform": "macos",
         "dirty": true,
-        "sha256": "58ea6643994768f17a28ed18e1b77e23048885a72e3bdd6d713d52abf2c7e57e"
+        "sha256": "08894742348e16aa8ee095ad9d25e2eaaf361fb5ae9652bb3ef06cc0427b901c"
       }
     },
     {
