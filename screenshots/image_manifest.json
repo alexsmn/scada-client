@@ -545,10 +545,10 @@
       ],
       "notes": "Reshelled substation display under --theme: the DisplayFrame chrome (Live indicator, breadcrumb, zoom/fit/export) around the cross-platform VDS renderer, plus the bay strips below it — the Measurements watch (live signal values) and the Recent-events list (the fixture's pending alarms). The Measurements Value/Updated cells now fill: the frame refreshes on the spec's property_change_handler (the PROPERTY_CURRENT delivery path), not only update_handler; CaptureDisplay asserts the value cell is non-empty so that cannot regress silently. The frame is built only under the reshell theme (WrapDisplayInFrame gates on it), hence reshell-theme and the themed ctest. Rendered on macOS, which is a supported platform for this gallery since 2026-09-12 -- there is no Windows re-render pending. Out of current_generator_owned_subset (subset is auto-* only). **This capture needed tc_vds_runtime staged beside the generator until 2026-09-12, and no longer does** (V40, then ADR 0012 phase 3): the runtime was the DESIGNER product's output and the client's build tree had none, so a capture without that manual copy rendered an error message instead of the display. The renderer is linked into the client now, so there is nothing to stage and nothing to forget -- the capture renders the schematic from a clean client build tree. Windows-only Modus ActiveX not exercised here. IT MOVED at ADR 0012 phase 3 (2026-09-12), as predicted here: display_capture.cpp now drives DisplayWidget over the linked facade. Measured rather than assumed -- 1941 of 2376054 bytes differ (0.08%), the largest runs being two 105-pixel spans, i.e. anti-aliasing at edges from painting into the widget's backing store instead of blitting a pre-composited ARGB32 image. Same subject, same layout, no structural change. Recorded here rather than left to 746 alone because a diff is read from this file, not from the backlog — which is how devices.png's own note explained its task 116 re-render to the session that hit it. Note also that the published copy in scada-docs/img is frozen: this row is NOT in current_generator_owned_subset, so a publish will not refresh it and the manual keeps whatever it has until somebody graduates the row.",
       "captured": {
-        "commit": "9204f0684",
+        "commit": "4a3499bf4",
         "platform": "macos",
         "dirty": true,
-        "sha256": "b36562110ec314ab3ee35faecbed5b9c13ce1c8ddfd95044e66cf1bd0570007a"
+        "sha256": "fe2425d2f878836e6f1b5a0c50eba6178f623493c394359ca16d08c14fbaa6f1"
       }
     },
     {
@@ -560,10 +560,10 @@
       "referenced_from": [],
       "notes": "Light-theme render of substation-display.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "4a3499bf4",
         "platform": "macos",
         "dirty": true,
-        "sha256": "0f953ab0916d59b39de62abc62abbaa1c9aebea593c51c1e5f026a59933d42cd"
+        "sha256": "b964248df6e2395327777ea1d2623ea9e1c6f90f0f6ef74c6cbafebb66346cae"
       }
     },
     {

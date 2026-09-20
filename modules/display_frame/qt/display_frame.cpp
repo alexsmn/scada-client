@@ -19,6 +19,8 @@
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
+#include <QPainter>
+#include <QPen>
 #include <QPixmap>
 #include <QResizeEvent>
 #include <QScrollArea>
@@ -69,17 +71,64 @@ QString Tr(std::string_view text) {
   return QString::fromStdU16String(Translate(text));
 }
 
-// One legend entry: a swatch in `color` followed by `label`.
+// How one legend swatch is drawn. Shape as well as colour, because
+// design-language.md §2 requires a single-line state to stay legible without
+// relying on hue: `kFilled` is a closed device, `kHollow` an open one or a
+// conductor, and `kSelection` is a miniature of the halo the diagram paints.
+enum class LegendSwatchKind { kFilled, kHollow, kSelection };
+
+// The legend's colour chip, painted rather than styled.
 //
-// `filled` fills the swatch as well as outlining it (a closed device is drawn
-// solid), and `dashed` draws the outline dashed (the selection halo). Between
-// them the four states the mockup legends are distinguishable without relying
-// on colour alone, which is what design-language.md asks of single-line
-// semantics.
+// A QSS `border: 1.5px dashed` with a `border-radius` renders SOLID at this
+// size -- measured on the generated capture, where the Selected swatch came
+// out an unbroken outline and was left distinguishable from Open and
+// Energized by hue alone. Painting it is also what lets the selection chip
+// carry the same inner-plus-dashed-outer pair the halo does, so the legend
+// reads as a key to the drawing rather than as a separate vocabulary.
+class LegendSwatch final : public QWidget {
+ public:
+  LegendSwatch(const QColor& color, LegendSwatchKind kind, QWidget* parent)
+      : QWidget{parent}, color_{color}, kind_{kind} {
+    setFixedSize(kLegendSwatchSize, kLegendSwatchSize);
+  }
+
+ protected:
+  void paintEvent(QPaintEvent*) override {
+    QPainter painter{this};
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    if (kind_ == LegendSwatchKind::kSelection) {
+      // The halo, in miniature: a solid rect on the symbol and a dashed one
+      // outside it. Same order and same relative weights as PaintSelection.
+      const QRectF inner = QRectF{rect()}.adjusted(3.5, 3.5, -3.5, -3.5);
+      painter.setBrush(Qt::NoBrush);
+      painter.setPen(QPen{color_, 1.5});
+      painter.drawRect(inner);
+
+      QPen outer{color_, 1.0, Qt::DashLine};
+      outer.setDashPattern({2, 2});
+      painter.setPen(outer);
+      painter.setOpacity(0.8);
+      painter.drawRect(QRectF{rect()}.adjusted(0.5, 0.5, -0.5, -0.5));
+      return;
+    }
+
+    const QRectF box = QRectF{rect()}.adjusted(0.75, 0.75, -0.75, -0.75);
+    painter.setBrush(kind_ == LegendSwatchKind::kFilled ? QBrush{color_}
+                                                        : Qt::NoBrush);
+    painter.setPen(QPen{color_, 1.5});
+    painter.drawRoundedRect(box, 3, 3);
+  }
+
+ private:
+  QColor color_;
+  LegendSwatchKind kind_;
+};
+
+// One legend entry: a swatch in `color` followed by `label`.
 QWidget* MakeLegendEntry(const QString& label,
                          const QColor& color,
-                         bool filled,
-                         bool dashed,
+                         LegendSwatchKind kind,
                          const scada::aui::ThemeTokens& tokens,
                          QWidget* parent) {
   auto* entry = new QWidget{parent};
@@ -87,14 +136,7 @@ QWidget* MakeLegendEntry(const QString& label,
   layout->setContentsMargins(0, 0, 0, 0);
   layout->setSpacing(6);
 
-  auto* swatch = new QLabel{entry};
-  swatch->setFixedSize(kLegendSwatchSize, kLegendSwatchSize);
-  swatch->setStyleSheet(
-      QStringLiteral("background:%1;border:1.5px %2 %3;border-radius:3px;")
-          .arg(filled ? color.name() : QStringLiteral("transparent"),
-               dashed ? QStringLiteral("dashed") : QStringLiteral("solid"),
-               color.name()));
-  layout->addWidget(swatch);
+  layout->addWidget(new LegendSwatch{color, kind, entry});
 
   auto* text = new QLabel{label, entry};
   text->setStyleSheet(QStringLiteral("color:%1;").arg(tokens.fg_muted.name()));
@@ -366,16 +408,16 @@ void DisplayFrame::BuildLegend() {
   // meaning. "Closed" is spelled out for the same reason (it is already
   // «Закрыт»). See client/CLAUDE.md, Localization.
   layout->addWidget(MakeLegendEntry(Tr("Closed / in service"), tokens.sl_closed,
-                                    /*filled=*/true,
-                                    /*dashed=*/false, tokens, legend_));
+                                    LegendSwatchKind::kFilled, tokens,
+                                    legend_));
   layout->addWidget(MakeLegendEntry(Tr("Open / not in service"), tokens.sl_open,
-                                    /*filled=*/false,
-                                    /*dashed=*/false, tokens, legend_));
+                                    LegendSwatchKind::kHollow, tokens,
+                                    legend_));
   layout->addWidget(MakeLegendEntry(Tr("Energized"), tokens.sl_live,
-                                    /*filled=*/false, /*dashed=*/false, tokens,
+                                    LegendSwatchKind::kHollow, tokens,
                                     legend_));
   layout->addWidget(MakeLegendEntry(Tr("Selected"), tokens.accent,
-                                    /*filled=*/false, /*dashed=*/true, tokens,
+                                    LegendSwatchKind::kSelection, tokens,
                                     legend_));
 
   legend_->adjustSize();
