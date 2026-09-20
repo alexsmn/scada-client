@@ -52,11 +52,20 @@ struct AwaitableResult<void> {
   bool done = false;
 };
 
+// Spawns `awaitable` onto `executor` and hands back the slot its outcome will
+// land in, WITHOUT waiting for it.
+//
+// This is the half of WaitForAwaitable that a dialog capture can use. A dialog
+// awaitable does not complete until the dialog is dismissed, and the capture
+// has to grab the dialog while it is still up — so blocking here would
+// deadlock. The capture starts the awaitable, grabs and rejects the dialog,
+// and only then waits on the returned handle.
 template <class T>
-T WaitForAwaitable(AnyExecutor executor, Awaitable<T> awaitable) {
+std::shared_ptr<AwaitableResult<T>> StartAwaitable(AnyExecutor executor,
+                                                   Awaitable<T> awaitable) {
   auto result = std::make_shared<AwaitableResult<T>>();
   CoSpawn(
-      executor,
+      std::move(executor),
       [result, awaitable = std::move(awaitable)]() mutable -> Awaitable<void> {
         try {
           if constexpr (std::is_void_v<T>) {
@@ -69,6 +78,23 @@ T WaitForAwaitable(AnyExecutor executor, Awaitable<T> awaitable) {
         }
         result->done = true;
       });
+  return result;
+}
+
+// Rethrows whatever `result` caught, if anything. Separate from the wait so a
+// caller that expects the awaitable to end in an exception - a modal dismissed
+// through reject(), which is how every dialog capture ends - can decide for
+// itself whether that is a failure.
+template <class T>
+void RethrowAwaitableError(const std::shared_ptr<AwaitableResult<T>>& result) {
+  if (result->error) {
+    std::rethrow_exception(result->error);
+  }
+}
+
+template <class T>
+T WaitForAwaitable(AnyExecutor executor, Awaitable<T> awaitable) {
+  auto result = StartAwaitable(std::move(executor), std::move(awaitable));
 
   // Fail-stop instead of hanging the build: a livelocked fetch pipeline
   // (e.g. node-model eviction churn) otherwise leaves the POST_BUILD step
@@ -82,9 +108,7 @@ T WaitForAwaitable(AnyExecutor executor, Awaitable<T> awaitable) {
                 "completed (livelock?)");
   }
 
-  if (result->error) {
-    std::rethrow_exception(result->error);
-  }
+  RethrowAwaitableError(result);
 
   ProcessPostedEvents();
   if constexpr (!std::is_void_v<T>) {

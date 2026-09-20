@@ -9,6 +9,7 @@
 #include <vector>
 
 struct DialogSpec;
+class Favourites;
 class NodeService;
 class Profile;
 class TimedDataService;
@@ -27,8 +28,14 @@ struct DialogEnvironment {
   TimedDataService* timed_data_service = nullptr;
   // Profile — WriteModel consults `profile.control_confirmation` on the
   // write path (never taken in capture mode), but still needs a valid
-  // reference at construction time.
+  // reference at construction time. The CSV options dialog also reads it,
+  // for the separator and encoding it remembers between exports.
   Profile* profile = nullptr;
+  // Favourites store the «Add to favourites» dialog writes into. Its folder
+  // combo is filled from this, so the capture needs the seeded one rather
+  // than a fresh store — an empty combo is the dialog's least informative
+  // state and is exactly what a default-constructed one would give.
+  Favourites* favourites = nullptr;
   // Analog item node the limits/write dialog screenshots default to. A
   // DialogSpec may name its own node instead ("node" in the fixture), which
   // is how two captures of one kind can show two states of the same dialog.
