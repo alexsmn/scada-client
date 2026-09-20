@@ -147,12 +147,28 @@ Rules of the pipeline:
   and a publish on its own silently republishes the previous render. Review
   with `git diff` on the manual's `img/`. An image graduates
   into that subset only after its rendering is reviewed against the page
-  that embeds it. **One pass renders the whole gallery**, under the
-  design-token appearance the generator defaults to (dark). It used to take
-  two — a light "Classic" pass plus a `--theme=dark` pass over the published
-  subset, arbitrated by a `publish_theme` manifest field — until the client
-  stopped shipping an un-themed appearance; see
-  `docs/ops/client-screenshots.md`.
+  that embeds it. **The gallery is TWO passes, one per appearance** — the
+  default (dark), and the same command with `--theme light`:
+
+  ```bash
+  client_screenshot_generator --out client/screenshots
+  client_screenshot_generator --out client/screenshots --theme light
+  ```
+
+  Half the gallery is the light set: 75 of the 154 tracked PNGs are
+  `*-light.png`, each a manifest row with `"theme": "light"`. **A capture
+  re-rendered in one appearance leaves its sibling stale, and nothing reports
+  it** — the light row keeps its own `captured` digest, so provenance stays
+  self-consistent while the image documents a UI that has changed.
+  This bullet said "One pass renders the whole gallery" until 2026-09-19 and
+  that is what the sentence cost: the Explorer sort fix, the multi-parent
+  fixture fix and the V56 re-render all landed dark-only, leaving
+  `devices-light`, `hardware-tree-light`, `workbench-overview-light` and
+  `limits-light` stale — found by a light sweep, not by any check. The claim
+  was a half-truth inherited from the retired two-pass scheme (a light
+  "Classic" pass plus `--theme=dark` over the published subset, arbitrated by
+  a `publish_theme` manifest field): what ended was the *un-themed* appearance,
+  not the second pass. See `docs/ops/client-screenshots.md`.
 - **Validate consistency** after touching images, the manifest, or manual
   pages: `python3 screenshots/validate_image_manifest.py` (auto-finds
   a sibling scada-docs checkout, or pass `--docs-repo`).
