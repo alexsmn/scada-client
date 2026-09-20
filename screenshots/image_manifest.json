@@ -1655,10 +1655,10 @@
       ],
       "notes": "LimitDialog modal, rendered over TIT.212 ('Температура нагрева'). Its four bands now come from that node's AnalogItemType_Limit{LoLo,Lo,Hi,HiHi} properties - Аварийные 90 / -25, Уставки 70 / -10, matching the manual's image; the node carried none before, so every field captured empty. ScreenshotGenerator.LimitDialogNodeCarriesItsBands pins the values, since a blank dialog satisfies the existence-and-dimensions check.",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "64ddc3757",
         "platform": "macos",
         "dirty": true,
-        "sha256": "c8652503e85083c31395245a3a3b366b8b5953e6b765d33e5ac7f9dd15970c48"
+        "sha256": "97ec4a0c747fd6385e4754aea92c66442291c9af5bde5ba95e659b0a21d4aa87"
       }
     },
     {
