@@ -20,9 +20,26 @@
 #include <filesystem>
 #include <format>
 #include <span>
+#include <vector>
 #ifdef _WIN32
 #include <windows.h>  // for VK_CONTROL
 #endif
+
+namespace {
+
+// The session's LocaleIds: the UI language, most preferred, and nothing else.
+// A single entry rather than a list because the client has exactly one
+// language on screen at a time; an empty UI language becomes an empty list,
+// which Part 4 §5.4 reads as "any locale the server has" and is exactly what
+// this client wants when it does not know its own.
+std::vector<std::string> SessionLocaleIds() {
+  std::string locale_name = UiLocaleName();
+  if (locale_name.empty())
+    return {};
+  return {std::move(locale_name)};
+}
+
+}  // namespace
 
 namespace {
 
@@ -300,6 +317,14 @@ void LoginController::Connect(bool allow_remote_logoff) {
                           .user_name = scada::ToLocalizedText(user_name),
                           .password = scada::ToLocalizedText(password),
                           .allow_remote_logoff = allow_remote_logoff,
+                          // Ask the server for text in the language this
+                          // client is displayed in, so node names and event
+                          // messages match the rest of the window rather than
+                          // whichever language the configuration was authored
+                          // in. OPC UA Part 4 §5.4 Locale Negotiation,
+                          // https://reference.opcfoundation.org/Core/Part4/
+                          // v105/docs/5.4
+                          .locale_ids = SessionLocaleIds(),
                           .security = MakeSecuritySettings()}]() mutable {
     return ConnectAsync(std::move(executor), std::move(controller),
                         *session_service, std::move(params));

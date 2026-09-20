@@ -128,14 +128,10 @@ BasicCommand<GlobalCommandContext> MakeProfileOptionCommand(
 
 #if defined(UI_QT)
 QString GetSelectedLocaleName() {
-  QSettings settings;
-
-  if (auto locale_name = settings.value("LocaleName").toString();
-      !locale_name.isEmpty()) {
-    return locale_name;
-  }
-
-  return QLocale::system().bcp47Name();
+  // One source of truth for "which language is this client in": the same
+  // answer is sent to the server as the session's LocaleIds, so the menu's
+  // radio state and the language node names arrive in cannot disagree.
+  return QString::fromStdString(UiLocaleName());
 }
 
 bool IsRussianLocale(QStringView locale_name) {
