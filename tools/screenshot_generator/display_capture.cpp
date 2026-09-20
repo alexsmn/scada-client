@@ -66,7 +66,7 @@ void SaveDisplayScreenshot(const ScreenshotSpec& spec,
   // The DisplayFrame reparents (owns) the renderer, so the frame is the single
   // owning widget we render and delete.
   auto* diagram = new DisplayWidget;
-  diagram->Open(FixturePath(json), scada::display::view::DocumentKind::kAuto);
+  diagram->Open(FixturePath(json), DisplayDocumentKind::kAuto);
 
   // The bay strips ride the app's live services, so the capture shows the
   // whole reshelled surface rather than just the chrome: the Recent-events

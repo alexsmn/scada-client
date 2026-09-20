@@ -118,6 +118,29 @@ endif()
 # name. So a standalone client configured cleanly and failed at the first
 # #include. `scada_find_products` is what makes the miss loud: it resolves the
 # product by name in both layouts and fails saying what it looked for.
+#
+# QUIET, and a skip rather than a hard failure, for one reason: `iec61850pp` is
+# `published = false`, so it is NOT beside the client in the public export -- and
+# this suite could not run there anyway, since it drives TIER BINARIES, and every
+# tier is a separately sold product that is also unpublished. A configure that
+# insisted on it would make the whole public client unconfigurable on Windows and
+# macOS -- on Linux the return() at the top of this file gets there first -- for
+# the sake of a target nobody there can use.
+#
+# This is deliberately NOT an option to turn the suite off. Absence of the
+# PRODUCT is the condition, the same way absence of a tier path is above, so a
+# tree that has iec61850pp always builds the suite and no configuration of ours
+# can quietly drop it.
+scada_resolve_product(iec61850pp _client_e2e_iec61850pp QUIET)
+if(NOT _client_e2e_iec61850pp)
+  message(STATUS
+    "client_server_e2e_tests: skipped, the `iec61850pp` product is not beside "
+    "this one. The cluster harness compiles "
+    "common/test/e2e/iec61850_test_server.cpp, which needs libiec61850 headers; "
+    "and the suite drives tier binaries, which are separate products in any "
+    "case.")
+  return()
+endif()
 scada_find_products(iec61850pp)
 find_package(iec61850pp REQUIRED)
 

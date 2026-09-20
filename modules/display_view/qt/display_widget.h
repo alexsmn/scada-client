@@ -1,8 +1,9 @@
 #pragma once
 
 #include "base/lifetime.h"
-#include "display/view/display_document.h"
+#include "display_view/display_runtime.h"
 
+#include <QImage>
 #include <QRectF>
 #include <QSize>
 #include <QString>
@@ -15,12 +16,17 @@
 
 // Shows a VDS or Modus SDE/XSDE display, with live equipment state on it.
 //
-// This is the client's half of ADR 0012: the renderer is *linked*, not loaded,
-// so the document is painted straight into this widget's own QPainter in
-// paintEvent. The plugin it replaced blitted a BGRA buffer of exactly the
-// widget's pixel size, which is why zooming and device-pixel-ratio correctness
-// were unreachable before; both come for free from painting into the widget's
-// own painter, and ADR 0012 phase 3 delivered them by removing the buffer.
+// The renderer arrives as a LOADED shared library, not as linked source
+// (ADR 0013): `display` is never published, and the public Qt client has to
+// build. So the document is rendered into a BGRA buffer this widget owns and
+// then drawn into the widget's painter, rather than painted into that painter
+// directly.
+//
+// That costs what ADR 0012 phase 3 had bought and ADR 0013 states outright: a
+// zoomed schematic scales a bitmap where the linked facade re-rendered as
+// vector. What is kept is device-pixel-ratio correctness -- the buffer is
+// allocated at the widget's own DPR and tagged with it, so the drawing is
+// sharp on a retina screen even though it is a bitmap.
 //
 // Pure geometry and naming helpers (no widget state) so the selection maths
 // can be unit-tested without a running QApplication.
@@ -32,8 +38,8 @@
 // hit test uses, and the two must stay that way or the halo lands somewhere
 // the click did not. Returns a null rect for a degenerate page or widget,
 // which callers treat as "nothing to draw".
-QRectF DisplayPageRectToWidget(const scada::display::RectF& page_rect,
-                               const scada::display::RectF& page_bounds,
+QRectF DisplayPageRectToWidget(const DisplayRect& page_rect,
+                               const DisplayRect& page_bounds,
                                QSize widget_size);
 
 // What to call a selected shape in operator-facing chrome.
@@ -42,7 +48,7 @@ QRectF DisplayPageRectToWidget(const scada::display::RectF& page_rect,
 // and it is also the data-source binding -- then the drawn text, which is what
 // a shape with no name shows on the diagram. Empty when the shape offers
 // neither, in which case the chrome says nothing rather than inventing an id.
-QString DisplayShapeLabel(const scada::display::view::ShapeHit& hit);
+QString DisplayShapeLabel(const DisplayShapeHit& hit);
 
 // A document that will not open is not an error the operator can act on
 // through a dialog, so the failure is painted where the display would have
@@ -57,8 +63,7 @@ class DisplayWidget : public QWidget {
   // Opens `path`, choosing the parser with `kind`. Returns false and paints
   // the reason on failure.
   bool Open(const std::filesystem::path& path,
-            scada::display::view::DocumentKind kind =
-                scada::display::view::DocumentKind::kAuto);
+            DisplayDocumentKind kind = DisplayDocumentKind::kAuto);
 
   const QString& error_message() const SCADA_LIFETIME_BOUND {
     return error_message_;
@@ -76,15 +81,15 @@ class DisplayWidget : public QWidget {
   // strip names the shape -- and because a *cleared* selection has no data
   // source to report at all, which is why the old signature could not express
   // one.
-  using SelectionCallback = std::function<void(
-      const std::optional<scada::display::view::ShapeHit>& hit)>;
+  using SelectionCallback =
+      std::function<void(const std::optional<DisplayShapeHit>& hit)>;
   void set_selection_callback(SelectionCallback callback) {
     selection_callback_ = std::move(callback);
   }
 
   // The shape the operator last clicked, or nullopt when the selection is
   // clear. Painted as the accent halo over the authored drawing.
-  const std::optional<scada::display::view::ShapeHit>& selection() const
+  const std::optional<DisplayShapeHit>& selection() const
       SCADA_LIFETIME_BOUND {
     return selection_;
   }
@@ -105,14 +110,18 @@ class DisplayWidget : public QWidget {
   void PaintMessage(QPainter& painter, const QString& message) const;
   void PaintSelection(QPainter& painter) const;
   QPointF WidgetToPage(const QPoint& point) const;
-  void SetSelection(std::optional<scada::display::view::ShapeHit> selection);
+  void SetSelection(std::optional<DisplayShapeHit> selection);
 
-  std::unique_ptr<scada::display::view::DisplayDocument> document_;
+  std::unique_ptr<DisplayRuntimeDocument> document_;
   std::filesystem::path path_;
   QString title_;
   QString error_message_;
 
-  std::optional<scada::display::view::ShapeHit> selection_;
+  // The buffer the runtime paints into, reused across paints so a repaint does
+  // not reallocate. Its size is the widget's size in DEVICE pixels.
+  QImage frame_;
+
+  std::optional<DisplayShapeHit> selection_;
 
   SelectionCallback selection_callback_;
   DoubleClickCallback double_click_callback_;

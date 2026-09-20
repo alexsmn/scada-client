@@ -291,6 +291,11 @@ endif()
 # above, which renders into the build tree.
 set(SCREENSHOT_DOCS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../screenshots")
 
+# The schematic captures render through the loaded display runtime (ADR 0013),
+# so the generator needs one beside it or `substation-display.png` would come
+# out saying there is none. Not a bundle on any platform, so no DIRECTORY.
+client_stage_display_runtime(client_screenshot_generator)
+
 # On macOS force the offscreen platform: the local gallery is
 # validation-only there (published images come from Windows), and cocoa
 # runs from headless/background build contexts have livelocked in event

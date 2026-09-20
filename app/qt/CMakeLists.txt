@@ -232,6 +232,31 @@ if(APPLE AND TRANSLATIONS_OUT)
   add_dependencies(client_qt client_qt_copy_bundle_translations)
 endif()
 
+# ── The display runtime, staged beside the executable ──────────────────────
+#
+# `DisplayRuntime::SearchPaths()` looks beside the executable first, so the copy
+# goes there. On macOS the executable lives inside the bundle, which is also the
+# directory QApplication::applicationDirPath() reports -- the same reason the
+# translations are mirrored in there.
+#
+# A copy rather than a build: `display` is a separate product with its own build
+# tree and there is no shared bin/ (ADR 0011), so the client is handed a path the
+# way the E2E suite is handed its tier binaries. With no path nothing is staged
+# and a schematic window says there is no runtime, which is a supported state
+# rather than a broken build (ADR 0013).
+if(APPLE)
+  client_stage_display_runtime(client_qt DIRECTORY
+    "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/client.app/Contents/MacOS")
+else()
+  client_stage_display_runtime(client_qt)
+endif()
+
+if(SCADA_DISPLAY_RUNTIME_LIBRARY)
+  install(FILES "${SCADA_DISPLAY_RUNTIME_LIBRARY}"
+    DESTINATION "$<IF:$<BOOL:${APPLE}>,client.app/Contents/MacOS,bin>"
+    COMPONENT Client)
+endif()
+
 # Convenience launcher
 #
 # CMake presets cannot run anything: there is no "run" preset kind, and a

@@ -71,9 +71,9 @@ endif()
 client_module_link_libraries(client_modus
   PUBLIC
     # PUBLIC because modus_util.h and modus_view_wrapper.h name
-    # scada::display::view::DocumentKind in their own signatures: since ADR 0012
-    # phase 3 the renderer is linked, so the enum travels instead of the int32_t
-    # that used to keep the plugin's C API out of those headers.
+    # DisplayDocumentKind in their own signatures. That enum is the CLIENT's own
+    # since ADR 0013 -- it used to be scada::display::view::DocumentKind, from a
+    # product the client no longer compiles.
     client_display_view
   PRIVATE
     client_controller

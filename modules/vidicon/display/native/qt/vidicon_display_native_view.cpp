@@ -39,7 +39,7 @@ std::unique_ptr<UiView> VidiconDisplayNativeView::Init(
   auto widget = std::make_unique<DisplayWidget>();
 
   auto full_path = GetPublicFilePath(path_);
-  widget->Open(full_path, scada::display::view::DocumentKind::kVds);
+  widget->Open(full_path, DisplayDocumentKind::kVds);
 
   const QString title =
       widget->title().isEmpty()
@@ -48,7 +48,7 @@ std::unique_ptr<UiView> VidiconDisplayNativeView::Init(
   controller_delegate_.SetTitle(title.toStdU16String());
 
   widget->set_selection_callback(
-      [this](const std::optional<scada::display::view::ShapeHit>& hit) {
+      [this](const std::optional<DisplayShapeHit>& hit) {
         // A click on bare page. The Measurements strip is deliberately
         // append-only, so what clears here is the selection itself and the
         // status strip's readout of it -- not the signals the operator has

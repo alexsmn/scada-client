@@ -27,7 +27,7 @@ class ModusDisplayView final : public DisplayWidget, public ModusViewWrapper {
 
   void Open(const WindowDefinition& definition) override {
     path_ = GetPublicFilePath(definition.path);
-    DisplayWidget::Open(path_, scada::display::view::DocumentKind::kModus);
+    DisplayWidget::Open(path_, DisplayDocumentKind::kModus);
   }
 
   void Save(WindowDefinition&) override {}
@@ -57,7 +57,7 @@ ModusController::DisplayView ModusController::CreateDisplayView() {
   auto* display_view = new ModusDisplayView;
 
   display_view->set_selection_callback(
-      [this](const std::optional<scada::display::view::ShapeHit>& hit) {
+      [this](const std::optional<DisplayShapeHit>& hit) {
         if (!hit) {
           selection_.Clear();
           display_selection_registry_.ClearSelection(this);

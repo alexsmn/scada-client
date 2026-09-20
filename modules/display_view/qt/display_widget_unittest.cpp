@@ -9,12 +9,9 @@
 
 namespace {
 
-using scada::display::RectF;
-using scada::display::view::ShapeHit;
-
 // A 200x100 page, shown in a 400x200 widget: a 2x scale on both axes, which
 // keeps the arithmetic checkable by eye while still exercising the flip.
-const RectF kPage{0, 0, 200, 100};
+const DisplayRect kPage{0, 0, 200, 100};
 const QSize kWidget{400, 200};
 
 // The halo is drawn from the hit's page bounds, so a flip error here puts it
@@ -25,7 +22,7 @@ TEST(DisplayPageRectToWidgetTest, FlipsPageYIntoWidgetY) {
   // grows upward. In widget coordinates that is near the bottom too, so the
   // widget top edge is the far one: (100 - 30) * 2 = 140.
   const QRectF mapped =
-      DisplayPageRectToWidget(RectF{20, 10, 40, 20}, kPage, kWidget);
+      DisplayPageRectToWidget(DisplayRect{20, 10, 40, 20}, kPage, kWidget);
 
   EXPECT_DOUBLE_EQ(mapped.left(), 40.0);
   EXPECT_DOUBLE_EQ(mapped.width(), 80.0);
@@ -48,7 +45,7 @@ TEST(DisplayPageRectToWidgetTest, MapsThePageOntoTheWholeWidget) {
 // gives; taking the span rather than the sign keeps the halo on the shape.
 TEST(DisplayPageRectToWidgetTest, NormalisesANegativeHeight) {
   const QRectF mapped =
-      DisplayPageRectToWidget(RectF{20, 30, 40, -20}, kPage, kWidget);
+      DisplayPageRectToWidget(DisplayRect{20, 30, 40, -20}, kPage, kWidget);
 
   EXPECT_DOUBLE_EQ(mapped.top(), 140.0);
   EXPECT_DOUBLE_EQ(mapped.height(), 40.0);
@@ -59,7 +56,7 @@ TEST(DisplayPageRectToWidgetTest, NormalisesANegativeHeight) {
 // page metrics is a real case the facade tolerates.
 TEST(DisplayPageRectToWidgetTest, DegenerateInputsAreEmpty) {
   EXPECT_TRUE(
-      DisplayPageRectToWidget(kPage, RectF{0, 0, 0, 0}, kWidget).isEmpty());
+      DisplayPageRectToWidget(kPage, DisplayRect{0, 0, 0, 0}, kWidget).isEmpty());
   EXPECT_TRUE(DisplayPageRectToWidget(kPage, kPage, QSize{0, 0}).isEmpty());
   EXPECT_TRUE(DisplayPageRectToWidget(kPage, kPage, QSize{400, 0}).isEmpty());
 }
@@ -67,13 +64,13 @@ TEST(DisplayPageRectToWidgetTest, DegenerateInputsAreEmpty) {
 TEST(DisplayPageRectToWidgetTest, NonFiniteInputsAreEmpty) {
   const double nan = std::numeric_limits<double>::quiet_NaN();
   EXPECT_TRUE(
-      DisplayPageRectToWidget(RectF{nan, 0, 10, 10}, kPage, kWidget).isEmpty());
+      DisplayPageRectToWidget(DisplayRect{nan, 0, 10, 10}, kPage, kWidget).isEmpty());
   EXPECT_TRUE(
-      DisplayPageRectToWidget(kPage, RectF{0, 0, nan, 100}, kWidget).isEmpty());
+      DisplayPageRectToWidget(kPage, DisplayRect{0, 0, nan, 100}, kWidget).isEmpty());
 }
 
 TEST(DisplayShapeLabelTest, PrefersTheAuthoredName) {
-  ShapeHit hit;
+  DisplayShapeHit hit;
   hit.name = "Q1";
   hit.text = "110 kV";
 
@@ -81,7 +78,7 @@ TEST(DisplayShapeLabelTest, PrefersTheAuthoredName) {
 }
 
 TEST(DisplayShapeLabelTest, FallsBackToTheDrawnText) {
-  ShapeHit hit;
+  DisplayShapeHit hit;
   hit.text = "110 kV";
 
   EXPECT_EQ(DisplayShapeLabel(hit), QStringLiteral("110 kV"));
@@ -90,7 +87,7 @@ TEST(DisplayShapeLabelTest, FallsBackToTheDrawnText) {
 // A shape with neither gets no label, and the chrome then says nothing rather
 // than showing an internal id the operator cannot match to anything.
 TEST(DisplayShapeLabelTest, IsEmptyWhenTheShapeHasNeither) {
-  ShapeHit hit;
+  DisplayShapeHit hit;
   hit.id = 42;
 
   EXPECT_TRUE(DisplayShapeLabel(hit).isEmpty());

@@ -13,12 +13,6 @@
 
 namespace {
 
-using scada::display::RectF;
-using scada::display::view::DisplayDocument;
-using scada::display::view::DocumentKind;
-using scada::display::view::Error;
-using scada::display::view::ShapeHit;
-
 // The selection halo, in widget pixels, from the mockup's SVG: a solid rect on
 // the symbol bounds and a dashed one 6px outside it.
 // docs/product/ui-mockups/screens/substation-display.html draws exactly this
@@ -45,8 +39,8 @@ int SizeHintDimension(double value, int fallback) {
 
 }  // namespace
 
-QRectF DisplayPageRectToWidget(const RectF& page_rect,
-                               const RectF& page_bounds,
+QRectF DisplayPageRectToWidget(const DisplayRect& page_rect,
+                               const DisplayRect& page_bounds,
                                QSize widget_size) {
   if (!std::isfinite(page_bounds.w) || !std::isfinite(page_bounds.h) ||
       page_bounds.w <= 0 || page_bounds.h <= 0 || widget_size.width() <= 0 ||
@@ -71,7 +65,7 @@ QRectF DisplayPageRectToWidget(const RectF& page_rect,
                 QSizeF{page_rect.w * scale_x, std::abs(bottom - top)}};
 }
 
-QString DisplayShapeLabel(const ShapeHit& hit) {
+QString DisplayShapeLabel(const DisplayShapeHit& hit) {
   if (!hit.name.empty())
     return QString::fromStdString(hit.name);
   return QString::fromStdString(hit.text);
@@ -83,7 +77,8 @@ DisplayWidget::DisplayWidget(QWidget* parent) : QWidget{parent} {
 
 DisplayWidget::~DisplayWidget() = default;
 
-bool DisplayWidget::Open(const std::filesystem::path& path, DocumentKind kind) {
+bool DisplayWidget::Open(const std::filesystem::path& path,
+                         DisplayDocumentKind kind) {
   path_ = path;
   title_.clear();
   error_message_.clear();
@@ -104,8 +99,21 @@ bool DisplayWidget::Open(const std::filesystem::path& path, DocumentKind kind) {
     return false;
   }
 
-  Error error;
-  document_ = DisplayDocument::Open(path, kind, &error);
+  // A missing runtime is its own condition, not a bad document: the operator
+  // has a client that works and one capability it cannot serve, and telling
+  // them the document failed would send them looking at the file. ADR 0013
+  // design point 3 makes this a supported state rather than a build error.
+  if (!DisplayRuntime::Get()) {
+    error_message_ = QStringLiteral("%1\n%2").arg(
+        Tr("No display runtime is installed."),
+        QString::fromStdString(
+            std::string{DisplayRuntime::unavailable_reason()}));
+    update();
+    return false;
+  }
+
+  DisplayError error;
+  document_ = DisplayRuntimeDocument::Open(path, kind, &error);
   if (!document_) {
     error_message_ = QStringLiteral("%1: %2").arg(
         Tr("Cannot open document"), QString::fromStdString(error.message));
@@ -123,7 +131,7 @@ QSize DisplayWidget::sizeHint() const {
   if (!document_)
     return {640, 480};
 
-  const RectF bounds = document_->PageBounds();
+  const DisplayRect bounds = document_->PageBounds();
   return {SizeHintDimension(bounds.w, 640), SizeHintDimension(bounds.h, 480)};
 }
 
@@ -139,18 +147,33 @@ void DisplayWidget::paintEvent(QPaintEvent*) {
   if (width() <= 0 || height() <= 0)
     return;
 
-  // Straight into the widget's painter: no intermediate image, which is the
-  // whole point of linking the renderer rather than loading it.
-  Error error;
-  if (!document_->Render(painter,
-                         RectF{0, 0, static_cast<double>(width()),
-                               static_cast<double>(height())},
-                         &error)) {
+  // Into a buffer and then onto the painter, because the ABI carries pixels
+  // (ADR 0013). Allocated in DEVICE pixels and tagged with the ratio, so the
+  // bitmap is the screen's own resolution rather than a scaled-up logical one:
+  // that is the half of ADR 0012 phase 3 this seam can still keep.
+  const qreal ratio = devicePixelRatioF();
+  const QSize device_size{
+      std::max(1, static_cast<int>(std::lround(width() * ratio))),
+      std::max(1, static_cast<int>(std::lround(height() * ratio)))};
+  if (frame_.size() != device_size) {
+    frame_ = QImage{device_size, QImage::Format_ARGB32_Premultiplied};
+    if (frame_.isNull()) {
+      PaintMessage(painter, Tr("Not enough memory to draw this display."));
+      return;
+    }
+  }
+
+  DisplayError error;
+  if (!document_->RenderBgra(frame_.bits(), frame_.width(), frame_.height(),
+                             static_cast<int32_t>(frame_.bytesPerLine()),
+                             &error)) {
     PaintMessage(painter, QStringLiteral("%1: %2").arg(
                               Tr("Cannot render document"),
                               QString::fromStdString(error.message)));
     return;
   }
+  frame_.setDevicePixelRatio(ratio);
+  painter.drawImage(rect(), frame_);
 
   // After the document, never before: the halo says which of the drawn shapes
   // is selected, so the drawing has to be underneath it.
@@ -166,7 +189,8 @@ void DisplayWidget::mousePressEvent(QMouseEvent* event) {
   if (!std::isfinite(page.x()) || !std::isfinite(page.y()))
     return;
 
-  const std::optional<ShapeHit> hit = document_->HitTest({page.x(), page.y()});
+  const std::optional<DisplayShapeHit> hit =
+      document_->HitTest(page.x(), page.y());
 
   // A click on bare page clears the selection. That is the half the old code
   // had no way to express: it reported hits only, so the halo and the status
@@ -226,7 +250,7 @@ void DisplayWidget::PaintSelection(QPainter& painter) const {
   painter.restore();
 }
 
-void DisplayWidget::SetSelection(std::optional<ShapeHit> selection) {
+void DisplayWidget::SetSelection(std::optional<DisplayShapeHit> selection) {
   const bool had_selection = selection_.has_value();
   if (!had_selection && !selection)
     return;
@@ -244,7 +268,7 @@ QPointF DisplayWidget::WidgetToPage(const QPoint& point) const {
   if (!document_ || width() == 0 || height() == 0)
     return {};
 
-  const RectF bounds = document_->PageBounds();
+  const DisplayRect bounds = document_->PageBounds();
   if (!std::isfinite(bounds.w) || !std::isfinite(bounds.h) || bounds.w <= 0 ||
       bounds.h <= 0) {
     return {};

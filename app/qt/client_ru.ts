@@ -579,7 +579,7 @@
         <source>Use Modus runtime renderer</source>
         <translation>Использовать модуль отображения Modus</translation>
     </message>
-    <!-- modules/vds_runtime: operator-facing display document errors. -->
+    <!-- modules/display_view: operator-facing display document errors. -->
     <message>
         <source>No display document is assigned to this window.</source>
         <translation>Для этого окна не задана мнемосхема.</translation>
@@ -593,10 +593,6 @@
         <translation>Не удалось открыть документ</translation>
     </message>
     <message>
-        <source>Cannot read document info</source>
-        <translation>Не удалось прочитать сведения о документе</translation>
-    </message>
-    <message>
         <source>Cannot render document</source>
         <translation>Не удалось отобразить документ</translation>
     </message>
@@ -605,8 +601,12 @@
         <translation>Не удалось отобразить документ: неверный размер.</translation>
     </message>
     <message>
-        <source>VDS runtime is not available.</source>
-        <translation>Модуль отображения мнемосхем недоступен.</translation>
+        <source>No display runtime is installed.</source>
+        <translation>Модуль отображения мнемосхем не установлен.</translation>
+    </message>
+    <message>
+        <source>Not enough memory to draw this display.</source>
+        <translation>Недостаточно памяти для отображения мнемосхемы.</translation>
     </message>
     <message>
         <source>Good</source>
