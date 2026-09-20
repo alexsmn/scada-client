@@ -3,6 +3,7 @@
 
 #include "publish_guard.h"
 #include "screenshot_config.h"
+#include "screenshot_options.h"
 #include "screenshot_fixture.h"
 #include "screenshot_output.h"
 #include "screenshot_wait.h"
@@ -67,8 +68,19 @@ TEST_F(ScreenshotGenerator, CaptureSettingsPanel) {
       break;
     }
   }
-  ASSERT_NE(settings_spec, nullptr)
-      << "no `settings` capture row in screenshot_data.json";
+  if (!settings_spec) {
+    // `--only` filters the fixture's screenshot list itself (the managed-image
+    // predicate in screenshot_config.cpp), so an absent spec means "not
+    // requested" whenever a filter is active — and `--only` is the recommended
+    // workflow, because a full pass emits a spurious diff on the images entry
+    // 766 covers. Asserting here made every partial run that did not name this
+    // capture fail the suite; that was introduced with the spec lookup in
+    // 0f7e68c87 and is what this branch fixes. Only an UNFILTERED run can
+    // conclude the fixture row is genuinely missing.
+    if (!GetScreenshotOptions().only_filenames.empty())
+      GTEST_SKIP() << "settings capture not requested";
+    FAIL() << "no `settings` capture row in screenshot_data.json";
+  }
   const std::string kFilename = settings_spec->filename;
   if (!ShouldCaptureScreenshot(kFilename))
     GTEST_SKIP() << kFilename << " not requested";

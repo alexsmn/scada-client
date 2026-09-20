@@ -288,6 +288,10 @@
         <translation>Тренды</translation>
     </message>
     <message>
+        <source>Voltages</source>
+        <translation>Напряжения</translation>
+    </message>
+    <message>
         <source>Substations</source>
         <translation>Подстанции</translation>
     </message>

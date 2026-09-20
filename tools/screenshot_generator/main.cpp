@@ -185,6 +185,15 @@ TEST_F(ScreenshotGenerator, CaptureDialogs) {
   // engineering units through it.
   WaitForAwaitable(executor_, app_.Start());
   ASSERT_TRUE(WaitForPendingNodeLoads(executor_, app_.node_service()));
+
+  // The favourites store is per-TEST, not per-suite: `app_` is a fixture
+  // member, so every TEST_F constructs its own ClientApplication. The seeding
+  // in CaptureAllWindows therefore never reaches this test — in a full run as
+  // much as under `--only` — and the «Add to favourites» dialog rendered its
+  // folder list holding nothing but the "(no group)" placeholder. Seeding here
+  // is what puts the fixture's two folders in the picture; without it the
+  // capture documents the dialog's emptiest state and asserts nothing.
+  SeedFavourites(FixtureConfig().json, app_.favourites());
   for (int i = 0; i < 20; ++i)
     QApplication::processEvents();
 

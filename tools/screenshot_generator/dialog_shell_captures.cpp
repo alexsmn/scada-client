@@ -197,7 +197,7 @@ bool CaptureTransportDialog(const DialogCaptureContext& context) {
   // before the lazy body ever reads it. GrabThenAwait waits for the coroutine
   // to unwind, so this local outlives it. Same hazard ShowAddFavouritesDialog
   // documents on its own by-value context parameter.
-  const transport::TransportString endpoint{"tcp://192.168.1.50:2404"};
+  const transport::TransportString endpoint{"TCP;Active;Host=192.168.1.50;Port=2404"};
   auto lifetime = StartAwaitable(
       context.env.executor,
       ShowTransportDialog(context.dialog_service, endpoint));
