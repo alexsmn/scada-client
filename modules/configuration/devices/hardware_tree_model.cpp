@@ -134,7 +134,30 @@ HardwareTreeModel::HardwareTreeModel(HardwareTreeModelContext&& context)
                        scada::devices::id::Iec61850ConfigurableObjectType,
                        scada::devices::id::Iec61850DataVariableType,
                        scada::devices::id::Iec61850ControlObjectType,
-                       scada::devices::id::TransmissionItemType}}),
+                       scada::devices::id::TransmissionItemType},
+                  // A transmission rule is a row, never a branch. Its only
+                  // children are the `Address` and `SourceNode` property
+                  // instances, which attach by HasProperty — not in this
+                  // tree's reference filter, and `PropertyType` is not in the
+                  // type list above either — so a rule's expander has always
+                  // opened onto nothing. The parameter form is where those two
+                  // belong, which is the same reasoning that makes DataItemType
+                  // a leaf in ObjectTreeModel and FileType one in the
+                  // filesystem tree.
+                  //
+                  // All four ids, not just the base type: `IsInstanceOf` walks
+                  // the supertype chain, and a chain hop reads a *type* node
+                  // that nothing has fetched when the row is created — see
+                  // `NodeServiceTreeImpl::HasChildren`, whose comment records
+                  // the expander that appeared and then vanished a round trip
+                  // later. A rule instance is typed with its per-protocol
+                  // subtype, so naming the subtypes makes the comparison match
+                  // at the first iteration, with no fetch required.
+                  .leaf_type_definition_ids_ =
+                      {scada::devices::id::TransmissionItemType,
+                       scada::devices::id::ModbusTransmissionItemType,
+                       scada::devices::id::Iec60870TransmissionItemType,
+                       scada::devices::id::Iec61850TransmissionItemType}}),
       }},
       timed_data_service_{context.timed_data_service_} {}
 
