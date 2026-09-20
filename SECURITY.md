@@ -7,7 +7,7 @@ rather than in public.
 
 ## Reporting a vulnerability
 
-**Email [mail@telecontrol.ru](mailto:mail@telecontrol.ru)** with "security" in
+**Email [alexsmn@gmail.com](mailto:alexsmn@gmail.com)** with "security" in
 the subject line.
 
 Please do **not** open a public issue, a pull request or a discussion for
@@ -32,9 +32,9 @@ to be on the server side of the conversation.
 
 ## What happens next
 
-Reports go to the people who maintain the product and are acknowledged by
-reply. We will tell you what we find, whether we consider it a vulnerability,
-and when a fix ships. If you would like credit in the release notes, say so;
+Reports reach the maintainer directly and are acknowledged by reply. We will
+tell you what we find, whether we consider it a vulnerability, and when a fix
+ships. If you would like credit in the release notes, say so;
 if you would prefer not to be named, say that instead.
 
 We have no bug bounty. This is a request for responsible disclosure, not a
