@@ -24,6 +24,7 @@
 
 #include <boost/json.hpp>
 
+#include <span>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -176,14 +177,32 @@ Page MakeScreenshotPage(const std::vector<ScreenshotSpec>& specs,
 
 void PopulateFixtureNodes(AddressSpaceImpl& address_space,
                           const boost::json::value& root) {
-  // Build child→parent map from the JSON tree so each instance can find
-  // the existing node it should attach to.
-  std::unordered_map<scada::NodeId, scada::NodeId> parent_map;
+  // Build child→parents map from the JSON tree so each instance can find the
+  // existing node it should attach to.
+  //
+  // Every declared parent is kept, and a child with several is attached to all
+  // of them. This was a `map<NodeId, NodeId>` with `parent_map[child] = parent`
+  // until 2026-09-19, so a second declaration silently overwrote the first and
+  // the address space received one edge of the two — `tree` declares 153 edges
+  // over 141 distinct children, and 12 children carry two parents, so 12 edges
+  // were being dropped on every run. The loss was invisible because the
+  // survivor is whichever parent appears LAST in the file (boost::json::object
+  // preserves insertion order), and in both affected captures that parent was
+  // somewhere the image could not show: TC1/TC2/TC8 kept `TS.109` КРУ, which
+  // renders collapsed, so they vanished from devices.png's top level; ЭНИП-2
+  // and ЭНМВ-1 kept `TS.112`, which belongs to the Objects tree and appears
+  // nowhere in the hardware tree, so they vanished from hardware-tree.png
+  // entirely. Five rows missing across two tracked captures, and seven more
+  // nodes affected where nothing rendered them either way (backlog 783).
+  //
+  // A node reachable through two hierarchical references is ordinary OPC UA,
+  // and the fixture means it: those 40 extra edges are deliberate.
+  std::unordered_map<scada::NodeId, std::vector<scada::NodeId>> parent_map;
   for (const auto& [parent_str, children] : root.at("tree").as_object()) {
     auto parent = NodeIdFromScadaString(std::string_view(parent_str));
     for (const auto& child : children.as_array()) {
       auto child_id = ParseJsonChildNodeId(child);
-      parent_map[child_id] = parent;
+      parent_map[child_id].push_back(parent);
     }
   }
 
@@ -235,10 +254,27 @@ void PopulateFixtureNodes(AddressSpaceImpl& address_space,
       scada::base::Check(parent_it != parent_map.end(),
                          "fixture node lost its `tree` parent: " +
                              NodeIdToScadaString(node_id));
-      const auto& parent_id = parent_it->second;
+      // The node is CREATED under its first declared parent; every other
+      // declared parent becomes an ordinary reference once all the nodes
+      // exist, below. Defer until the creation parent is resident — the
+      // others need not be yet, since a pending reference is applied after
+      // the whole multi-pass loop has finished.
+      const std::vector<scada::NodeId>& parent_ids = parent_it->second;
+      scada::base::Check(!parent_ids.empty(),
+                         "fixture node has an empty parent list: " +
+                             NodeIdToScadaString(node_id));
+      const scada::NodeId& parent_id = parent_ids.front();
       if (!address_space.GetNode(parent_id)) {
         next.push_back(jn_ptr);
         continue;
+      }
+      for (const scada::NodeId& extra_parent :
+           std::span{parent_ids}.subspan(1)) {
+        pending_references.push_back(PendingReference{
+            .source_id = extra_parent,
+            .reference_type_id = scada::NodeId{scada::id::Organizes, 0},
+            .target_id = node_id,
+        });
       }
 
       const auto& cls = jn.at("class").as_string();
