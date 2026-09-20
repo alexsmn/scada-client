@@ -25,10 +25,9 @@ class ModusDisplayView final : public DisplayWidget, public ModusViewWrapper {
   explicit ModusDisplayView(QWidget* parent = nullptr)
       : DisplayWidget{parent} {}
 
-  void Open(const WindowDefinition& definition,
-            scada::display::view::DocumentKind document_kind) override {
+  void Open(const WindowDefinition& definition) override {
     path_ = GetPublicFilePath(definition.path);
-    DisplayWidget::Open(path_, document_kind);
+    DisplayWidget::Open(path_, scada::display::view::DocumentKind::kModus);
   }
 
   void Save(WindowDefinition&) override {}
@@ -107,7 +106,7 @@ std::unique_ptr<UiView> ModusController::Init(
   std::unique_ptr<UiView> result;
   result.reset(display_view.widget);
 
-  wrapper_->Open(definition, DocumentKindFor(definition, profile_));
+  wrapper_->Open(definition);
 
   return result;
 }

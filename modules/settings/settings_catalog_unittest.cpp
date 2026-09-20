@@ -83,8 +83,6 @@ class SettingsMenuFixture : public ::testing::Test {
     settings_.AddItem(ID_VIEW_PUBLIC_FOLDER, u"Open Displays Folder");
 
     settings_.AddCheckItem(ID_MODUS_TOPOLOGY, u"Show Modus topology");
-    settings_.AddCheckItem(ID_MODUS_RUNTIME_RENDERER,
-                           u"Use Modus runtime renderer");
 
     language_.AddCheckItem(ID_LANGUAGE_ENGLISH, u"English");
     language_.AddCheckItem(ID_LANGUAGE_RUSSIAN, u"Russian");
@@ -186,13 +184,12 @@ TEST_F(SettingsMenuFixture, AnUndescribedContributionIsReported) {
 // shared screen lists Colour scheme before Widget style, and the catalogue is
 // what decides.
 TEST_F(SettingsMenuFixture, RowsAreInScreenOrderNotMenuOrder) {
-  EXPECT_EQ(
-      Ids(Catalog()),
-      (std::vector<std::string>{
-          "language", "colour-scheme", "widget-style", "sound-on-events",
-          "show-events", "hide-events", "flash-window", "control-confirmation",
-          "control-success", "toolbar", "status-bar", "modus-topology",
-          "modus-renderer", "open-displays-folder"}));
+  EXPECT_EQ(Ids(Catalog()),
+            (std::vector<std::string>{
+                "language", "colour-scheme", "widget-style", "sound-on-events",
+                "show-events", "hide-events", "flash-window",
+                "control-confirmation", "control-success", "toolbar",
+                "status-bar", "modus-topology", "open-displays-folder"}));
 }
 
 // A row's title is the command's own, so the surface and the menu cannot say
@@ -278,7 +275,7 @@ TEST_F(SettingsMenuFixture, CategoriesGroupInScreenOrderAndDropEmptyOnes) {
                 SettingCategory::kAppearance, SettingCategory::kEventsAlarms,
                 SettingCategory::kControl, SettingCategory::kWorkspace,
                 SettingCategory::kDisplays}));
-  EXPECT_EQ(sizes, (std::vector<size_t>{3, 4, 2, 2, 3}));
+  EXPECT_EQ(sizes, (std::vector<size_t>{3, 4, 2, 2, 2}));
 
   // A category with nothing left in it is a table-of-contents entry that
   // scrolls nowhere, so it is dropped rather than drawn empty.
@@ -301,17 +298,19 @@ TEST_F(SettingsMenuFixture, SearchMatchesTitleDescriptionAndCategory) {
             (std::vector<std::string>{"flash-window"}));
   // Category name, which is how an operator looks for a display setting whose
   // title never says the word.
-  EXPECT_EQ(Ids(FilterSettingRows(rows, u"displays", std::nullopt)),
-            (std::vector<std::string>{"modus-topology", "modus-renderer",
-                                      "open-displays-folder"}));
+  EXPECT_EQ(
+      Ids(FilterSettingRows(rows, u"displays", std::nullopt)),
+      (std::vector<std::string>{"modus-topology", "open-displays-folder"}));
 }
 
 TEST_F(SettingsMenuFixture, SearchIsCaseInsensitiveAndOrderIndependent) {
   const std::vector<SettingRow> rows = Catalog();
-  EXPECT_EQ(Ids(FilterSettingRows(rows, u"MODUS runtime", std::nullopt)),
-            (std::vector<std::string>{"modus-renderer"}));
-  EXPECT_EQ(Ids(FilterSettingRows(rows, u"runtime modus", std::nullopt)),
-            (std::vector<std::string>{"modus-renderer"}));
+  // These named the retired «Use Modus runtime renderer» row until backlog
+  // 491; the point of the case is the matcher, so any multi-term row does.
+  EXPECT_EQ(Ids(FilterSettingRows(rows, u"MODUS topology", std::nullopt)),
+            (std::vector<std::string>{"modus-topology"}));
+  EXPECT_EQ(Ids(FilterSettingRows(rows, u"topology modus", std::nullopt)),
+            (std::vector<std::string>{"modus-topology"}));
   // Every term has to match, so one that matches nothing rules the row out.
   EXPECT_TRUE(FilterSettingRows(rows, u"modus nonesuch", std::nullopt).empty());
   // An empty query is not a filter.
@@ -337,7 +336,7 @@ TEST_F(SettingsMenuFixture, ScopeTabsOfferOnlyScopesSomeRowUses) {
 // holds.
 TEST_F(SettingsMenuFixture, ActionsAreCountedApartAndAreNeverAScopeTab) {
   const SettingRowCounts counts = CountSettingRows(Catalog());
-  EXPECT_EQ(counts.settings, 13u);
+  EXPECT_EQ(counts.settings, 12u);
   EXPECT_EQ(counts.actions, 1u);
 
   EXPECT_EQ(std::ranges::count(SettingStorageScopes(), SettingScope::kAction),

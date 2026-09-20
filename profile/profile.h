@@ -95,9 +95,6 @@ class Profile {
 
   struct Modus {
     bool topology = true;
-
-    // Use the internal Modus renderer instead of ActiveX.
-    bool modus2 = false;
   };
 
   Modus modus;

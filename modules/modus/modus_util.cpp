@@ -1,33 +1,8 @@
 #include "modus/modus_util.h"
 
 #include "filesystem/file_util.h"
-#include "profile/profile.h"
-#include "profile/window_definition.h"
 
 #include <boost/algorithm/string/predicate.hpp>
-
-bool IsModus2(const WindowDefinition& definition, Profile& profile) {
-  bool modus2 = profile.modus.modus2;
-  if (auto* options = definition.FindItem("Options")) {
-    auto version = options->GetInt("version", 0);
-    if (version != 0)
-      modus2 = version >= 2;
-  }
-
-  if (!boost::iequals(definition.path.extension().string(), ".xsde")) {
-    modus2 = false;
-  }
-
-  return modus2;
-}
-
-scada::display::view::DocumentKind DocumentKindFor(
-    const WindowDefinition& definition,
-    Profile& profile) {
-  using scada::display::view::DocumentKind;
-  return IsModus2(definition, profile) ? DocumentKind::kXsde
-                                       : DocumentKind::kSde;
-}
 
 bool IsModusFilePath(const std::filesystem::path& path) {
   auto ext = path.extension().string();

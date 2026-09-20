@@ -21,6 +21,7 @@
 namespace {
 
 using testing::Contains;
+using testing::IsNull;
 using testing::NotNull;
 
 // `GlobalCommandContext` holds two references, and a global command's handler
@@ -170,38 +171,25 @@ TEST_F(ModusModuleTest, TopologyCommandTracksAndTogglesTheProfileFlag) {
   EXPECT_FALSE(command->checked_handler(context));
 }
 
-// Task 483 wired this flag up: `profile.modus.modus2` is read by `IsModus2`,
-// which `DocumentKindFor` calls and `ModusController::Init` passes to the
-// runtime as the document kind. What this case covers is the command's own
-// contract — that it toggles and reports the flag; that the flag reaches the
-// renderer is covered by `ModusControllerTest`'s `InitOpensAn*` cases.
-TEST_F(ModusModuleTest, RuntimeRendererCommandTogglesTheVersionTwoFlag) {
+// Backlog 491 retired «Use Modus runtime renderer». The command toggled a
+// profile flag whose only consumer produced a `DocumentKind` the reader
+// discarded, so it changed no rendering in any of its four cases -- and in the
+// one where it carried information, an `.xsde` display with the flag off, the
+// value it produced was the wrong one. Its own case and its half of the
+// menu-group case went with it; this asserts the menu no longer offers it.
+TEST_F(ModusModuleTest, NoRuntimeRendererCommandIsRegistered) {
   InstallModule();
 
-  const auto* command = FindGlobalCommand(u"Use Modus runtime renderer");
-  ASSERT_THAT(command, NotNull());
-
-  const GlobalCommandContext context = command_context();
-
-  env_.profile_.modus.modus2 = false;
-  EXPECT_FALSE(command->checked_handler(context));
-
-  command->execute_handler(context);
-
-  EXPECT_TRUE(env_.profile_.modus.modus2);
-  EXPECT_TRUE(command->checked_handler(context));
+  EXPECT_THAT(FindGlobalCommand(u"Use Modus runtime renderer"), IsNull());
 }
 
-TEST_F(ModusModuleTest, BothGlobalCommandsSitInTheDisplaySettingsGroup) {
+TEST_F(ModusModuleTest, TheTopologyCommandSitsInTheDisplaySettingsGroup) {
   InstallModule();
 
-  for (std::u16string_view title :
-       {u"Show Modus topology", u"Use Modus runtime renderer"}) {
-    const auto* command = FindGlobalCommand(title);
-    ASSERT_THAT(command, NotNull());
-    ASSERT_TRUE(command->menu_group.has_value());
-    EXPECT_EQ(*command->menu_group, MenuGroup::DISPLAY_SETTINGS);
-  }
+  const auto* command = FindGlobalCommand(u"Show Modus topology");
+  ASSERT_THAT(command, NotNull());
+  ASSERT_TRUE(command->menu_group.has_value());
+  EXPECT_EQ(*command->menu_group, MenuGroup::DISPLAY_SETTINGS);
 }
 
 TEST_F(ModusModuleTest, RegistersTheSetupAction) {

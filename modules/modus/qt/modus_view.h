@@ -25,8 +25,7 @@ class ModusView : public QWidget,
   void ShowSetupDialog();
 
   // ModusViewWrapper
-  virtual void Open(const WindowDefinition& definition,
-                    int32_t document_kind) override;
+  virtual void Open(const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
   virtual std::filesystem::path GetPath() const override;
   virtual bool ShowContainedItem(const scada::NodeId& item_id) override;

@@ -29,13 +29,29 @@ TEST(ProfileTest, NonObjectRootIsIgnoredAndSaveStillProducesAnObject) {
 
 TEST(ProfileTest, ObjectRootIsLoadedAndRoundTrips) {
   Profile profile;
-  profile.Load(boost::json::parse(R"({"showWriteOk": false, "modus2": true})"));
+  profile.Load(
+      boost::json::parse(R"({"showWriteOk": false, "topology": false})"));
   EXPECT_FALSE(profile.show_write_ok);
-  EXPECT_TRUE(profile.modus.modus2);
+  EXPECT_FALSE(profile.modus.topology);
 
   const boost::json::value saved = profile.SaveToValue();
   ASSERT_TRUE(saved.is_object());
   EXPECT_EQ(saved.as_object().at("showWriteOk").as_bool(), false);
+  EXPECT_EQ(saved.as_object().at("topology").as_bool(), false);
+}
+
+// A profile written by a client that still had the «Use Modus runtime
+// renderer» flag loads unchanged, and the retired key is carried through
+// rather than deleted: SerializeToValue starts from the loaded document, so a
+// key this client no longer recognises survives the round trip. Backlog 491.
+TEST(ProfileTest, ARetiredModus2KeyIsCarriedThroughUnread) {
+  Profile profile;
+  EXPECT_NO_THROW(profile.Load(
+      boost::json::parse(R"({"modus2": true, "topology": false})")));
+  EXPECT_FALSE(profile.modus.topology);
+
+  const boost::json::value saved = profile.SaveToValue();
+  ASSERT_TRUE(saved.is_object());
   EXPECT_EQ(saved.as_object().at("modus2").as_bool(), true);
 }
 

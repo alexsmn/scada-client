@@ -356,12 +356,21 @@ void DisplayFrame::BuildLegend() {
   // The four states the mockup legends, in its order. The colours are the
   // single-line tokens the renderer itself colours with, so the legend cannot
   // drift from the diagram; `accent` is the selection halo's own colour.
+  //
+  // The mockup labels the second entry "Open" and this says "Open / not in
+  // service" instead -- deliberately, not as a wording preference.
+  // `Translate()` has no context to disambiguate with, and the empty context
+  // already maps "Open" to «Открыть», the FILE action; «Открыть» beside a
+  // breaker symbol is worse than an untranslated label, and no check would
+  // have reported it, because the string HAS a translation -- just not this
+  // meaning. "Closed" is spelled out for the same reason (it is already
+  // «Закрыт»). See client/CLAUDE.md, Localization.
   layout->addWidget(MakeLegendEntry(Tr("Closed / in service"), tokens.sl_closed,
                                     /*filled=*/true,
                                     /*dashed=*/false, tokens, legend_));
-  layout->addWidget(MakeLegendEntry(Tr("Open"), tokens.sl_open,
-                                    /*filled=*/false, /*dashed=*/false, tokens,
-                                    legend_));
+  layout->addWidget(MakeLegendEntry(Tr("Open / not in service"), tokens.sl_open,
+                                    /*filled=*/false,
+                                    /*dashed=*/false, tokens, legend_));
   layout->addWidget(MakeLegendEntry(Tr("Energized"), tokens.sl_live,
                                     /*filled=*/false, /*dashed=*/false, tokens,
                                     legend_));

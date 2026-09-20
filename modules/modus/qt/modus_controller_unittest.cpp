@@ -27,10 +27,8 @@ using testing::NotNull;
 // what the controller asked of the wrapper instead.
 class FakeModusViewWrapper final : public ModusViewWrapper {
  public:
-  void Open(const WindowDefinition& definition,
-            scada::display::view::DocumentKind document_kind) override {
+  void Open(const WindowDefinition& definition) override {
     opened_paths_.push_back(definition.path);
-    opened_kinds_.push_back(document_kind);
   }
 
   void Save(WindowDefinition& definition) override { ++save_count_; }
@@ -50,9 +48,6 @@ class FakeModusViewWrapper final : public ModusViewWrapper {
   const std::vector<std::filesystem::path>& opened_paths() const {
     return opened_paths_;
   }
-  const std::vector<scada::display::view::DocumentKind>& opened_kinds() const {
-    return opened_kinds_;
-  }
   int save_count() const { return save_count_; }
   const std::vector<scada::NodeId>& shown_items() const { return shown_items_; }
 
@@ -60,7 +55,6 @@ class FakeModusViewWrapper final : public ModusViewWrapper {
   std::filesystem::path path_;
   bool show_contained_item_result_ = false;
   std::vector<std::filesystem::path> opened_paths_;
-  std::vector<scada::display::view::DocumentKind> opened_kinds_;
   int save_count_ = 0;
   std::vector<scada::NodeId> shown_items_;
 };
@@ -210,13 +204,12 @@ TEST_F(ModusControllerTest, NoCommandsAreRegisteredYet) {
   EXPECT_THAT(controller.GetCommandHandler(0), IsNull());
 }
 
-// Task 483: the «Use Modus runtime renderer» command used to toggle a profile
-// flag that nothing read, so it changed no rendering. `Init` now derives the
-// document kind from the definition and the profile and passes it to the
-// runtime, which is what makes the operator's choice reach the renderer.
-TEST_F(ModusControllerTest,
-       InitOpensAnXsdeWithTheVersionTwoKindWhenTheFlagIsSet) {
-  controller_env_.profile_.modus.modus2 = true;
+// Backlog 491 retired the «Use Modus runtime renderer» flag and the
+// `DocumentKind` it produced: the reader chooses the SDE or XSDE decoder from
+// the extension, which is the only thing that can, so three cases asserting
+// the kind went with it. What is left to pin is that `Init` opens the
+// definition's own document, for both extensions.
+TEST_F(ModusControllerTest, InitOpensTheDefinitionsDocument) {
   ModusController controller = MakeController();
 
   WindowDefinition definition;
@@ -225,31 +218,10 @@ TEST_F(ModusControllerTest,
   std::unique_ptr<UiView> view = controller.Init(definition);
   ASSERT_THAT(view, NotNull());
 
-  EXPECT_THAT(wrapper_.opened_kinds(),
-              testing::ElementsAre(scada::display::view::DocumentKind::kXsde));
+  EXPECT_THAT(wrapper_.opened_paths(), testing::ElementsAre(definition.path));
 }
 
-TEST_F(ModusControllerTest,
-       InitOpensAnXsdeWithTheVersionOneKindWhenTheFlagIsClear) {
-  controller_env_.profile_.modus.modus2 = false;
-  ModusController controller = MakeController();
-
-  WindowDefinition definition;
-  definition.path = "schemes/substation.xsde";
-
-  std::unique_ptr<UiView> view = controller.Init(definition);
-  ASSERT_THAT(view, NotNull());
-
-  EXPECT_THAT(wrapper_.opened_kinds(),
-              testing::ElementsAre(scada::display::view::DocumentKind::kSde));
-}
-
-// An `.sde` is version 1 whatever the profile says, so the flag must not reach
-// it. This is the case that would regress if `DocumentKindFor` were reduced to
-// reading the profile alone.
-TEST_F(ModusControllerTest,
-       InitOpensAnSdeWithTheVersionOneKindEvenWithTheFlagSet) {
-  controller_env_.profile_.modus.modus2 = true;
+TEST_F(ModusControllerTest, InitOpensAnSdeDocumentToo) {
   ModusController controller = MakeController();
 
   WindowDefinition definition;
@@ -258,8 +230,7 @@ TEST_F(ModusControllerTest,
   std::unique_ptr<UiView> view = controller.Init(definition);
   ASSERT_THAT(view, NotNull());
 
-  EXPECT_THAT(wrapper_.opened_kinds(),
-              testing::ElementsAre(scada::display::view::DocumentKind::kSde));
+  EXPECT_THAT(wrapper_.opened_paths(), testing::ElementsAre(definition.path));
 }
 
 }  // namespace

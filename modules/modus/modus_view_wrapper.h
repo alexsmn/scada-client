@@ -1,6 +1,5 @@
 #pragma once
 
-#include "display/view/display_document.h"
 #include "scada/node_id.h"
 
 #include <filesystem>
@@ -11,17 +10,13 @@ class ModusViewWrapper {
  public:
   virtual ~ModusViewWrapper() = default;
 
-  // Opens the document named by `definition`. `document_kind` names which
-  // Modus reader the document is to be read with; the controller derives it
-  // from the window definition and the profile (see `IsModus2`) rather than
-  // letting the renderer guess from the file extension, so that the operator's
-  // «Use Modus runtime renderer» choice reaches the renderer.
+  // Opens the document named by `definition`.
   //
-  // It was an `int32_t` until ADR 0012 phase 3, so that this header did not
-  // drag the plugin's C API into everything driving a Modus view. The renderer
-  // is linked now, so the enum travels directly.
-  virtual void Open(const WindowDefinition& definition,
-                    scada::display::view::DocumentKind document_kind) = 0;
+  // It took a `DocumentKind` alongside, derived from the window definition and
+  // a profile flag, until backlog 491 -- which the reader then discarded,
+  // because SDE and XSDE are unrelated encodings and only the extension can
+  // choose between them. The reader makes that choice itself now.
+  virtual void Open(const WindowDefinition& definition) = 0;
 
   virtual void Save(WindowDefinition& definition) = 0;
 

@@ -104,7 +104,11 @@ void Profile::Load(const boost::json::value& document) {
   event_play_sound = GetBool(data, "soundOnEvents", event_play_sound);
 
   modus.topology = GetBool(data, "topology", modus.topology);
-  modus.modus2 = GetBool(data, "modus2", modus.modus2);
+  // A "modus2" key written by an older client is read by nothing now --
+  // backlog 491 retired the flag it fed. It is not dropped either:
+  // SerializeToValue starts from `data_`, so an unrecognised key survives the
+  // round trip rather than being deleted from somebody's profile by a client
+  // that simply stopped knowing about it.
 
   // window settings
   if (auto* list = GetList(data, "windows")) {
@@ -205,7 +209,6 @@ boost::json::value Profile::SerializeToValue() const {
   SetKey(data, "soundOnEvents", event_play_sound);
 
   SetKey(data, "topology", modus.topology);
-  SetKey(data, "modus2", modus.modus2);
 
   // window settings
   {

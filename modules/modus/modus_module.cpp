@@ -41,20 +41,6 @@ ModusModule::ModusModule(ModusModuleContext&& context)
            [&profile = profile_](const GlobalCommandContext& context) {
              return profile.modus.topology;
            }});
-
-  global_commands_.AddCommand(
-      {.command_id = ID_MODUS_RUNTIME_RENDERER,
-       .title = Translate("Use Modus runtime renderer"),
-       .menu_group = MenuGroup::DISPLAY_SETTINGS,
-       .execute_handler =
-           [&profile = profile_](const GlobalCommandContext& context) {
-             profile.modus.modus2 = !profile.modus.modus2;
-             profile.NotifyChange();
-           },
-       .checked_handler =
-           [&profile = profile_](const GlobalCommandContext& context) {
-             return profile.modus.modus2;
-           }});
 }
 
 ModusModule::~ModusModule() {

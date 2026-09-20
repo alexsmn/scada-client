@@ -168,16 +168,6 @@ constexpr std::array kDescriptors = {
         .description = "Draw the Modus topology layer over the display.",
     },
     SettingDescriptor{
-        .command_id = ID_MODUS_RUNTIME_RENDERER,
-        .id = "modus-renderer",
-        .category = SettingCategory::kDisplays,
-        .scope = SettingScope::kProfile,
-        .control = SettingControl::kToggle,
-        .description =
-            "Render Modus displays with the runtime renderer instead of the "
-            "ActiveX control.",
-    },
-    SettingDescriptor{
         .command_id = ID_VIEW_PUBLIC_FOLDER,
         .id = "open-displays-folder",
         .category = SettingCategory::kDisplays,

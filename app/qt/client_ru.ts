@@ -1172,6 +1172,22 @@
         <translation>Закрыт</translation>
     </message>
     <message>
+        <source>Closed / in service</source>
+        <translation>Включено / в работе</translation>
+    </message>
+    <message>
+        <source>Open / not in service</source>
+        <translation>Отключено / не в работе</translation>
+    </message>
+    <message>
+        <source>Energized</source>
+        <translation>Под напряжением</translation>
+    </message>
+    <message>
+        <source>Selected</source>
+        <translation>Выбрано</translation>
+    </message>
+    <message>
         <source>Unknown</source>
         <translation>Неизвестно</translation>
     </message>
