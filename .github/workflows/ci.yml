@@ -133,12 +133,13 @@ jobs:
   #
   # THE FIRST RUNS WILL BE SLOW, AND MAY TIME OUT. vcpkg builds Qt, gRPC, Boost,
   # OpenSSL, protobuf and opentelemetry-cpp from source; there is no prebuilt
-  # Qt here. The GitHub Actions cache backend (`x-gha`) is what makes the SECOND
-  # run cheap -- vcpkg writes each port to it as that port completes, so even a
-  # job that hits the 6-hour limit leaves the cache further along than it found
-  # it, and a later run continues from there. Expect two or three runs before
-  # the first green one. That is also why this job does not gate anything yet:
-  # see `continue-on-error` below, and delete it once a run has been green.
+  # Qt here. The binary cache carried between runs (see the `env:` block) is
+  # what makes the SECOND run cheap -- vcpkg writes each port to it as that
+  # port completes, so even a job that dies at the 6-hour limit leaves the
+  # cache further along than it found it, and a later run continues from there.
+  # Expect two or three runs before the first green one. That is also why this
+  # job does not gate anything yet: see `continue-on-error` below, and delete
+  # it once a run has been green.
   build:
     name: Build (${{ matrix.name }})
     runs-on: ${{ matrix.os }}
@@ -161,10 +162,27 @@ jobs:
             os: macos-latest
 
     env:
-      # vcpkg's GitHub Actions cache backend. `readwrite` so a run both uses
-      # what earlier runs built and contributes what it built itself, which is
-      # the whole bootstrap strategy above.
-      VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+      # The binary cache is a plain DIRECTORY, carried between runs by
+      # actions/cache below.
+      #
+      # NOT `x-gha`, which every recipe on the internet still recommends and
+      # which vcpkg has REMOVED: the tool in this tree
+      # (2026-05-27-d5b6777d) answers a binary source of that name with "The
+      # 'x-gha' binary caching backend has been removed. Consider using a
+      # NuGet-based binary caching provider instead", and its list of valid
+      # providers -- clear, default, nuget, nugetconfig, nugettimeout,
+      # interactive, x-azblob, x-gcs, x-aws, x-aws-config, http, files -- does
+      # not contain it. So a workflow written from the usual recipe fails at
+      # the first configure rather than merely building slowly. Read out of the
+      # tool binary's own message catalogue, 2026-09-20.
+      #
+      # `files` over `nuget` because it needs no package registry, no
+      # `packages: write` permission and no second credential: the cache is a
+      # directory, and the restore/save steps below are what make it survive a
+      # run. The NuGet route is the one to take if the 10 GB per-repository
+      # cache limit becomes the binding constraint.
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/vcpkg-cache
+      VCPKG_BINARY_SOURCES: "clear;files,${{ github.workspace }}/vcpkg-cache,readwrite"
 
     steps:
     # ── The sibling layout ──────────────────────────────────────────────────
@@ -248,9 +266,11 @@ jobs:
           libxkbcommon-dev libxkbcommon-x11-dev \
           libxrandr-dev libxss-dev libxtst-dev
 
-    - name: Install Ninja (Linux)
+    # xvfb for the test step; see its comment for why the tests need a real
+    # display here rather than the offscreen platform.
+    - name: Install Ninja and Xvfb (Linux)
       if: runner.os == 'Linux'
-      run: sudo apt-get install -y ninja-build
+      run: sudo apt-get install -y ninja-build xvfb
 
     - name: Install Ninja (macOS)
       if: runner.os == 'macOS'
@@ -266,22 +286,41 @@ jobs:
       if: runner.os == 'Windows'
       uses: ilammy/msvc-dev-cmd@v1
 
+    # The pin is the commit this tree's own vcpkg is at, so CI resolves the same
+    # ports a developer does.
+    #
+    # It is NOT the one `core/.github/workflows/cmake-multi-platform.yml`
+    # carries. That one, a34c873a9717a888f58dc05571dde15571f56e66, does not
+    # exist in microsoft/vcpkg at all -- the API answers 422, "No commit found
+    # for SHA" (checked 2026-09-20). It has never been noticed because every
+    # step in that workflow is `continue-on-error`, which is the concrete shape
+    # of the decoration tasks.md 316 describes.
     - name: Set up vcpkg
       uses: lukka/run-vcpkg@v11
       with:
-        vcpkgGitCommitId: 'a34c873a9717a888f58dc05571dde15571f56e66'
+        vcpkgGitCommitId: 'f3e10653cc27d62a37a3763cd84b38bca07c6075'
         # The manifest is resolved by the CMake toolchain during configure, not
         # here: every product is its own manifest root (ADR 0011 phase 6), and
         # this step only has to put vcpkg on disk and export VCPKG_ROOT.
         runVcpkgInstall: false
 
-    # vcpkg's own cache, which `x-gha` needs a token to reach.
-    - name: Export the GitHub Actions cache credentials
-      uses: actions/github-script@v9
+    - name: Create the binary cache directory
+      run: cmake -E make_directory "${{ github.workspace }}/vcpkg-cache"
+
+    # Restore-and-save rather than `actions/cache`, so the cache is written even
+    # when the job fails or is cancelled at the 6-hour limit. That is the whole
+    # bootstrap: vcpkg writes each port to the directory as that port finishes,
+    # so a run that dies half way through Qt still leaves the next one further
+    # along. The run_id in the key makes every run save its own entry, and the
+    # restore-keys prefix makes it start from the newest earlier one.
+    - name: Restore the vcpkg binary cache
+      uses: actions/cache/restore@v6
       with:
-        script: |
-          core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-          core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+        path: ${{ github.workspace }}/vcpkg-cache
+        key: vcpkg-${{ matrix.os }}-${{ hashFiles('client/vcpkg.json') }}-${{ github.run_id }}
+        restore-keys: |
+          vcpkg-${{ matrix.os }}-${{ hashFiles('client/vcpkg.json') }}-
+          vcpkg-${{ matrix.os }}-
 
     # ── Build ───────────────────────────────────────────────────────────────
     #
@@ -300,15 +339,42 @@ jobs:
       working-directory: client
       run: cmake --build --preset release
 
+    # `if: always()` is the point of splitting restore from save: the ports that
+    # DID build have to survive a failed or cancelled job, or the bootstrap
+    # above never converges. A plain `actions/cache` saves only on success.
+    - name: Save the vcpkg binary cache
+      if: always()
+      uses: actions/cache/save@v6
+      with:
+        path: ${{ github.workspace }}/vcpkg-cache
+        key: vcpkg-${{ matrix.os }}-${{ hashFiles('client/vcpkg.json') }}-${{ github.run_id }}
+
+    # The E2E suite is skipped at configure time here (no `iec61850pp` sibling
+    # and no tier binaries), so this is the unit suite.
+    #
+    # DO NOT SET QT_QPA_PLATFORM=offscreen HERE, however obvious it looks for a
+    # headless runner. `scada_qt_import_offscreen_platform_into_tests()` links
+    # that plugin into this product's OWN test executables and deliberately
+    # skips consumed products' -- and `view_manager_qt_unittests`, spliced into
+    # this build, is a Qt test binary with no offscreen plugin in it. Forcing
+    # the variable aborts it inside QApplication's constructor, and because
+    # gtest_discover_tests runs the binary at TEST time, that failure takes out
+    # the whole ctest invocation rather than one case. Measured against the
+    # export on macOS, 2026-09-20: "Could not find the Qt platform plugin
+    # \"offscreen\" ... Available platform plugins are: cocoa".
+    #
+    # So each binary is left to choose: the client's own tests default to
+    # offscreen on macOS by themselves, Windows uses its native platform, and
+    # Linux gets a real (virtual) display from xvfb below.
     - name: Test (Release)
+      if: runner.os != 'Linux'
       working-directory: client
-      # The E2E suite is skipped at configure time here (no `iec61850pp`
-      # sibling, and no tier binaries), so this is the unit suite. Offscreen is
-      # the default the test entry points already apply on macOS; Linux needs it
-      # said, since a runner has no display.
-      env:
-        QT_QPA_PLATFORM: offscreen
       run: ctest --preset test-release --output-on-failure
+
+    - name: Test (Release, under Xvfb)
+      if: runner.os == 'Linux'
+      working-directory: client
+      run: xvfb-run --auto-servernum ctest --preset test-release --output-on-failure
 
     - name: Upload the test log
       if: failure()
