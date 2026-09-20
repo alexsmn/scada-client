@@ -39,7 +39,9 @@ class GridModelAdapter final : public QAbstractTableModel {
 
   void OnGridModelChanged(GridModel& model);
   void OnGridRangeChanged(GridModel& model, const GridRange& range);
+  void OnGridRowsAdding(GridModel& model, int first, int count);
   void OnGridRowsAdded(GridModel& model, int first, int count);
+  void OnGridRowsRemoving(GridModel& model, int first, int count);
   void OnGridRowsRemoved(GridModel& model, int first, int count);
 
   void OnModelChanged(HeaderModel& model);
@@ -49,11 +51,22 @@ class GridModelAdapter final : public QAbstractTableModel {
 
   void ConnectModels();
 
+  // Emits a `beginResetModel`/`endResetModel` pair and re-reads the section
+  // counts it caches.
+  void ResetFromModel();
+
   const std::shared_ptr<GridModel> model_;
   const std::shared_ptr<HeaderModel> row_model_;
   const std::shared_ptr<HeaderModel> column_model_;
 
+  // The section counts as the views last saw them. A `HeaderModel` announces a
+  // replacement without saying whether the count moved, and the answer decides
+  // between a structural reset and a repaint -- so the previous count has to
+  // be remembered here.
+  int last_row_count_ = 0;
+  int last_column_count_ = 0;
+
   std::vector<boost::signals2::scoped_connection> model_connections_;
 };
 
-}  // namespace aui
+}  // namespace scada::aui

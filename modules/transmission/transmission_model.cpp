@@ -231,8 +231,12 @@ void TransmissionModel::Update(NodeRef transmission) {
 
   int i = FindRow(transmission.node_id());
   if (i == -1) {
-    rows_.push_back(Row{transmission, source_id});
-    GridModel::NotifyRowsAdded(rows_.size() - 1, 1);
+    {
+      // Announced around the insertion; see the same shape in
+      // `NodeTableModel::Update`.
+      ScopedRowsAdding adding{*this, static_cast<int>(rows_.size()), 1};
+      rows_.push_back(Row{transmission, source_id});
+    }
     if (!source_id.is_null())
       NotifyContainedItemChanged(source_id, true);
     return;
@@ -259,8 +263,10 @@ void TransmissionModel::Delete(const scada::NodeId& transmission_id) {
   if (!row.source_id.is_null())
     NotifyContainedItemChanged(row.source_id, false);
 
+  // A removal rather than a wholesale change -- a reset drops the selection of
+  // every row that survives.
+  ScopedRowsRemoving removing{*this, i, 1};
   rows_.erase(rows_.begin() + i);
-  GridModel::NotifyModelChanged();
 }
 
 int TransmissionModel::FindRow(const scada::NodeId& transmission_id) const {

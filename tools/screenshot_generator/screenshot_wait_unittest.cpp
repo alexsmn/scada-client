@@ -6,6 +6,7 @@
 
 #include <gtest/gtest.h>
 
+#include <memory>
 #include <stdexcept>
 
 namespace scada::screenshot_generator {
@@ -30,31 +31,42 @@ Awaitable<void> RejectVoid() {
   co_return;
 }
 
-AnyExecutor MakeExecutor() {
-  return MakeAnyExecutor(std::make_shared<MessageLoopQt>());
-}
-
 }  // namespace
 
 class ScreenshotWaitTest : public testing::Test {
  protected:
+  // The pump is owned by the fixture, and that is load-bearing rather than
+  // tidiness. These tests used to build it inside a `MakeExecutor()` helper
+  // returning `MakeAnyExecutor(std::make_shared<MessageLoopQt>())`, so the
+  // only owner of the loop was the `AnyExecutor` the spawned coroutine
+  // captured: completing the awaitable dropped the last reference from inside
+  // `MessageLoopQt::Run()`, which then re-locked a destroyed `mutex_` and
+  // aborted with `recursive_mutex lock failed: Invalid argument`. All four
+  // cases died that way. The generator itself never had the problem -- it
+  // passes the application's own executor, which outlives every task -- so
+  // this was a fixture that did not resemble any caller. The underlying
+  // re-entrancy in `Run()` is real and is filed separately; owning the loop
+  // here is what a caller actually does.
   AppEnvironment app_env_;
+  std::shared_ptr<MessageLoopQt> message_loop_ =
+      std::make_shared<MessageLoopQt>();
+  AnyExecutor executor_ = MakeAnyExecutor(message_loop_);
 };
 
 TEST_F(ScreenshotWaitTest, WaitForAwaitableReturnsResolvedValue) {
-  EXPECT_EQ(WaitForAwaitable(MakeExecutor(), ResolveInt()), 42);
+  EXPECT_EQ(WaitForAwaitable(executor_, ResolveInt()), 42);
 }
 
 TEST_F(ScreenshotWaitTest, WaitForAwaitablePropagatesRejectedValue) {
-  EXPECT_THROW(WaitForAwaitable(MakeExecutor(), RejectInt()), std::runtime_error);
+  EXPECT_THROW(WaitForAwaitable(executor_, RejectInt()), std::runtime_error);
 }
 
 TEST_F(ScreenshotWaitTest, WaitForAwaitableCompletesResolvedVoid) {
-  EXPECT_NO_THROW(WaitForAwaitable(MakeExecutor(), ResolveVoid()));
+  EXPECT_NO_THROW(WaitForAwaitable(executor_, ResolveVoid()));
 }
 
 TEST_F(ScreenshotWaitTest, WaitForAwaitablePropagatesRejectedVoid) {
-  EXPECT_THROW(WaitForAwaitable(MakeExecutor(), RejectVoid()), std::runtime_error);
+  EXPECT_THROW(WaitForAwaitable(executor_, RejectVoid()), std::runtime_error);
 }
 
-}  // namespace screenshot_generator
+}  // namespace scada::screenshot_generator

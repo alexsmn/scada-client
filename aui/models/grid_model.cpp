@@ -43,9 +43,19 @@ boost::signals2::scoped_connection GridModel::SubscribeModelChanged(
   return model_changed_signal_.connect(callback);
 }
 
+boost::signals2::scoped_connection GridModel::SubscribeRowsAdding(
+    const RowRangeCallback& callback) {
+  return rows_adding_signal_.connect(callback);
+}
+
 boost::signals2::scoped_connection GridModel::SubscribeRowsAdded(
     const RowRangeCallback& callback) {
   return rows_added_signal_.connect(callback);
+}
+
+boost::signals2::scoped_connection GridModel::SubscribeRowsRemoving(
+    const RowRangeCallback& callback) {
+  return rows_removing_signal_.connect(callback);
 }
 
 boost::signals2::scoped_connection GridModel::SubscribeRowsRemoved(
@@ -62,8 +72,24 @@ void GridModel::NotifyModelChanged() {
   model_changed_signal_(*this);
 }
 
+void GridModel::NotifyRowsAdding(int first, int count) {
+  base::Check(count > 0);
+  rows_adding_signal_(*this, first, count);
+}
+
 void GridModel::NotifyRowsAdded(int first, int count) {
+  base::Check(count > 0);
   rows_added_signal_(*this, first, count);
+}
+
+void GridModel::NotifyRowsRemoving(int first, int count) {
+  base::Check(count > 0);
+  rows_removing_signal_(*this, first, count);
+}
+
+void GridModel::NotifyRowsRemoved(int first, int count) {
+  base::Check(count > 0);
+  rows_removed_signal_(*this, first, count);
 }
 
 void GridModel::NotifyRangeChanged(const GridRange& range) {

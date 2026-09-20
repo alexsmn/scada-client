@@ -111,6 +111,16 @@ if(TARGET aui_qt)
   endif()
 endif()
 
+# `QAbstractItemModelTester` lives in Qt Test, and the model adapters are
+# exactly what it exists to check -- it asserts the whole
+# begin/end-insert-remove-reset contract, including cases nobody writes a
+# bespoke assertion for. Linked into the test executable only, never into
+# `aui_qt`, so nothing of Qt Test ships in the client.
+if(TARGET aui_qt_unittests)
+  find_package(Qt6 REQUIRED COMPONENTS Test)
+  target_link_libraries(aui_qt_unittests PRIVATE Qt6::Test)
+endif()
+
 # Subs.
 
 add_subdirectory(test)

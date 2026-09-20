@@ -59,6 +59,10 @@ void ColumnHeaderModel::SetColumns(int count, const TableColumn* columns) {
 }
 
 std::u16string ColumnHeaderModel::GetTitle(int index) const {
+  // Out of range reads as empty, matching `GetSize`: a `QHeaderView` repaints
+  // from the section count it last heard about, which can outlive a shrink.
+  if (index < 0 || index >= static_cast<int>(columns_.size()))
+    return {};
   return columns_[index].title;
 }
 

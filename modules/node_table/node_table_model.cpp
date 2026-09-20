@@ -255,9 +255,12 @@ void NodeTableModel::Update(const NodeRef& node) {
     FetchRow(rows_[ix]);
     NotifyRowsChanged(ix, 1);
   } else {
+    // The insertion is announced around itself: a view told only afterwards
+    // cannot open a `beginInsertRows` scope, and its selection keeps row
+    // numbers that no longer name what they did.
+    ScopedRowsAdding adding{*this, static_cast<int>(rows_.size()), 1};
     auto& row = rows_.emplace_back(node);
     FetchRow(row);
-    NotifyRowsAdded(static_cast<int>(rows_.size()) - 1, 1);
   }
 
   ScheduleSort();
@@ -265,8 +268,14 @@ void NodeTableModel::Update(const NodeRef& node) {
 
 void NodeTableModel::Delete(const scada::NodeId& node_id) {
   if (int ix = FindRowIndex(node_id); ix != -1) {
+    // A removal, not a wholesale change: announcing it as one reset the view
+    // and dropped the operator's selection of every *other* row. The guard is
+    // also what tells `QItemSelectionModel` the removal is coming, without
+    // which a selection on a later row keeps an index that now names a
+    // different node -- and, after a shrink, one past `rowCount()` that still
+    // reads as valid.
+    ScopedRowsRemoving removing{*this, ix, 1};
     rows_.erase(rows_.begin() + ix);
-    NotifyModelChanged();
   }
 }
 

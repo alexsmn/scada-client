@@ -200,11 +200,20 @@ int SummaryModel::ColumnModel::GetCount() const {
   return static_cast<int>(model_.columns_.size());
 }
 
+// A header is queried by section number, and `QHeaderView` repaints from the
+// count it last heard about -- which outlives a `DeleteColumn` until the
+// structural change reaches it. So every accessor here answers a default out
+// of range rather than indexing a shrunk vector, the same way
+// `ColumnHeaderModel` does.
 int SummaryModel::ColumnModel::GetSize(int index) const {
+  if (!model_.IsColumnIndex(index))
+    return 0;
   return model_.columns_[index]->width();
 }
 
 void SummaryModel::ColumnModel::SetSize(int index, int new_size) {
+  if (!model_.IsColumnIndex(index))
+    return;
   SummaryModel::Column& column = *model_.columns_[index];
   if (column.width() != new_size) {
     column.set_width(new_size);
@@ -213,6 +222,8 @@ void SummaryModel::ColumnModel::SetSize(int index, int new_size) {
 }
 
 std::u16string SummaryModel::ColumnModel::GetTitle(int index) const {
+  if (!model_.IsColumnIndex(index))
+    return {};
   return model_.columns_[index]->GetTitle();
 }
 
@@ -271,8 +282,8 @@ int SummaryModel::FindColumn(const scada::NodeId& node_id,
 }
 
 void SummaryModel::Load(const WindowDefinition& definition) {
-  const auto time_range =
-      RestoreTimeRange(definition).value_or(scada::RelativeTimeRange::Type::Day);
+  const auto time_range = RestoreTimeRange(definition)
+                              .value_or(scada::RelativeTimeRange::Type::Day);
   const auto interval = definition.Get<scada::Duration>("Interval")
                             .value_or(std::chrono::hours(1));
   const scada::NodeId aggregate_type =
@@ -430,7 +441,8 @@ void SummaryModel::SetParams(const scada::RelativeTimeRange& time_range,
                     << LOG_TAG("StartTime", ToString(start_time_))
                     << LOG_TAG("EndTime", ToString(end_time_))
                     << LOG_TAG("RowCount", row_count_)
-                    << LOG_TAG("scada::RelativeTimeRange", ToString(time_range_))
+                    << LOG_TAG("scada::RelativeTimeRange",
+                               ToString(time_range_))
                     << LOG_TAG("AggregateFilter", ToString(aggregate_filter_));
 
   for (size_t i = 0; i < columns_.size(); ++i)

@@ -75,11 +75,13 @@ void TableModelAdapter::RetintGlyphs(Color tint, qreal device_pixel_ratio) {
 }
 
 int TableModelAdapter::rowCount(const QModelIndex& parent) const {
-  return model_->GetRowCount();
+  // Flat: a valid parent has no children. See the same note on
+  // `GridModelAdapter::rowCount`.
+  return parent.isValid() ? 0 : model_->GetRowCount();
 }
 
 int TableModelAdapter::columnCount(const QModelIndex& parent) const {
-  return static_cast<int>(columns_.size());
+  return parent.isValid() ? 0 : static_cast<int>(columns_.size());
 }
 
 QVariant TableModelAdapter::data(const QModelIndex& index, int role) const {
@@ -176,6 +178,11 @@ QVariant TableModelAdapter::headerData(int section,
 
 Qt::ItemFlags TableModelAdapter::flags(const QModelIndex& index) const {
   auto flags = QAbstractItemModel::flags(index);
+  // The root index has column -1, and this indexed `columns_` with it. See the
+  // same note on `GridModelAdapter::flags`; here it was an out-of-bounds read
+  // rather than only a wrong answer.
+  if (!index.isValid())
+    return flags;
   if (model_->IsEditable(index.row(), columns_[index.column()].id))
     flags |= Qt::ItemIsEditable;
   return flags;
@@ -186,8 +193,17 @@ void TableModelAdapter::sort(int column, Qt::SortOrder order) {
 }
 
 void TableModelAdapter::OnModelChanged() {
-  resetInternalData();
-  layoutChanged();
+  // `TableModel::ModelChanged` is documented as "changed wholesale", so this
+  // is a reset rather than a layout change. A bare `layoutChanged()` with no
+  // preceding `layoutAboutToBeChanged()` is memory-unsafe behind
+  // `TableProxyModel` (`aui/qt/table.cpp`, a QSortFilterProxyModel):
+  // `_q_sourceLayoutChanged` deletes every `Mapping` and remaps only the
+  // persistent indexes `_q_sourceLayoutAboutToBeChanged` saved -- which never
+  // ran -- so the view's current, selection and hover indexes keep freed
+  // `internalPointer()`s. Latent only because the one sorted `Table` is the
+  // event journal and `EventTableModel` never fires `ModelChanged`.
+  beginResetModel();
+  endResetModel();
 }
 
 void TableModelAdapter::OnItemsChanged(int first, int count) {

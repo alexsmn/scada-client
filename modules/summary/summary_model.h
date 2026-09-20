@@ -6,13 +6,13 @@
 #include "aui/models/grid_model.h"
 #include "base/boost_log.h"
 #include "base/time/time.h"
-#include "scada/date_time.h"
 #include "common/node_state.h"
 #include "controller/contents_model.h"
 #include "controller/time_model.h"
 #include "export/export_model.h"
 #include "node_service/node_ref.h"
 #include "scada/aggregate_filter.h"
+#include "scada/date_time.h"
 
 #include <memory>
 
@@ -85,7 +85,8 @@ class SummaryModel : private SummaryModelContext,
 
   // TimeModel
   virtual scada::RelativeTimeRange GetTimeRange() const override;
-  virtual void SetTimeRange(const scada::RelativeTimeRange& time_range) override;
+  virtual void SetTimeRange(
+      const scada::RelativeTimeRange& time_range) override;
 
   // ExportModel
   virtual ExportData GetExportData() override;
@@ -100,6 +101,13 @@ class SummaryModel : private SummaryModelContext,
   void OnCellChanged(int column, int row);
   void OnColumnChanged(int column);
   void OnColumnTitleChanged(int column);
+
+  // Whether `index` names a live column. The header models are queried by
+  // section number by a `QHeaderView` that may still be holding a count from
+  // before a `DeleteColumn`, so they ask this before indexing `columns_`.
+  bool IsColumnIndex(int index) const {
+    return index >= 0 && index < static_cast<int>(columns_.size());
+  }
 
   BoostLogger logger_{LOG_NAME("SummaryModel")};
 

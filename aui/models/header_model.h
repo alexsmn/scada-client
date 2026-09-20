@@ -72,10 +72,17 @@ class ColumnHeaderModel : public HeaderModel {
     return columns_[index].width;
   }
   virtual void SetSize(int index, int new_size) override;
+  // Out of range reads as the default, matching `GetSize`. A header is queried
+  // by section number, and a section count can shrink between the change and
+  // the repaint that follows it.
   virtual TableColumn::Alignment GetAlignment(int index) const override {
+    if (index < 0 || index >= static_cast<int>(columns_.size()))
+      return TableColumn::CENTER;
     return columns_[index].alignment;
   }
   virtual TableColumn::DataType GetDataType(int index) const override {
+    if (index < 0 || index >= static_cast<int>(columns_.size()))
+      return TableColumn::DataType::General;
     return columns_[index].data_type;
   }
 
