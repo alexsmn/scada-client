@@ -1,6 +1,6 @@
 # Screen gallery
 
-72 captures of the Telecontrol SCADA client, rendered offscreen from a fixture by [`client_screenshot_generator`](../tools/screenshot_generator) and tracked in this repository — so a UI change lands as a reviewable image diff rather than being noticed the next time somebody refreshes the manual.
+75 captures of the Telecontrol SCADA client, rendered offscreen from a fixture by [`client_screenshot_generator`](../tools/screenshot_generator) and tracked in this repository — so a UI change lands as a reviewable image diff rather than being noticed the next time somebody refreshes the manual.
 
 Each capture is rendered in both appearances. The client follows the host OS light/dark preference by default, so both are what operators actually see. The previews below are the dark render; the light one is linked beside it.
 
@@ -65,15 +65,17 @@ Workspace views and panels — what the operator works in. (50)
 
 ## Dialogs
 
-Modal and overlay surfaces. (20)
+Modal and overlay surfaces. (23)
 
 | Capture | Preview | |
 |---|---|---|
 | **About**<br>`about.png` | <img src="about.png" alt="About" width="360"> | [Light](about-light.png) |
+| **Add favourites**<br>`add-favourites.png` | <img src="add-favourites.png" alt="Add favourites" width="360"> | [Light](add-favourites-light.png) |
 | **Change password**<br>`change-password.png` | <img src="change-password.png" alt="Change password" width="360"> | [Light](change-password-light.png) |
 | **Client login**<br>`client-login.png` | <img src="client-login.png" alt="Client login" width="360"> | [Light](client-login-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/getting-started/) |
 | **Command palette**<br>`command-palette.png` | <img src="command-palette.png" alt="Command palette" width="360"> | [Light](command-palette-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
 | **Control select confirm**<br>`control-select-confirm.png` | <img src="control-select-confirm.png" alt="Control select confirm" width="360"> | [Light](control-select-confirm-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
+| **Csv export**<br>`csv-export.png` | <img src="csv-export.png" alt="Csv export" width="360"> | [Light](csv-export-light.png) |
 | **Limits**<br>`limits.png` | <img src="limits.png" alt="Limits" width="360"> | [Light](limits-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/architecture/) |
 | **Menu create object service**<br>`menu-create-object-service.png` | <img src="menu-create-object-service.png" alt="Menu create object service" width="360"> | [Light](menu-create-object-service-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/data-items/) |
 | **Message box**<br>`message-box.png` | <img src="message-box.png" alt="Message box" width="360"> | [Light](message-box-light.png) |
@@ -84,6 +86,7 @@ Modal and overlay surfaces. (20)
 | **Ti remote control disabled**<br>`ti-remote-control-disabled.png` | <img src="ti-remote-control-disabled.png" alt="Ti remote control disabled" width="360"> | [Light](ti-remote-control-disabled-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
 | **Ti remote control enabled**<br>`ti-remote-control-enabled.png` | <img src="ti-remote-control-enabled.png" alt="Ti remote control enabled" width="360"> | [Light](ti-remote-control-enabled-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
 | **Time range**<br>`time-range.png` | <img src="time-range.png" alt="Time range" width="360"> | [Light](time-range-light.png) |
+| **Transport**<br>`transport.png` | <img src="transport.png" alt="Transport" width="360"> | [Light](transport-light.png) |
 | **Ts manual control**<br>`ts-manual-control.png` | <img src="ts-manual-control.png" alt="Ts manual control" width="360"> | [Light](ts-manual-control-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
 | **Ts remote control confirm**<br>`ts-remote-control-confirm.png` | <img src="ts-remote-control-confirm.png" alt="Ts remote control confirm" width="360"> | [Light](ts-remote-control-confirm-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
 | **Ts remote control disabled**<br>`ts-remote-control-disabled.png` | <img src="ts-remote-control-disabled.png" alt="Ts remote control disabled" width="360"> | [Light](ts-remote-control-disabled-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
