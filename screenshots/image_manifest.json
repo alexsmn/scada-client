@@ -2206,6 +2206,96 @@
       }
     },
     {
+      "file": "csv-export.png",
+      "tag": "auto-dialog",
+      "theme": "dark",
+      "parity_key": "csv-export",
+      "published": false,
+      "referenced_from": [],
+      "notes": "The CSV export options the command asks for before writing the file — separator, encoding, and whether to expand grouped rows. Captured with `can_expand=true` so the expand option is in frame: the dialog HIDES it when the data has no groups rather than offering it with no effect, so the default state would document the smaller dialog. The web has no counterpart by design and the matrix records that as `web.no_surface`: it exports straight from each view through the browser's own save picker.",
+      "captured": {
+        "commit": "25705e1fa",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "1f8675731b8669861bf31eb7a5d6654a23286fe472864d8521e308570a4bf4c9"
+      }
+    },
+    {
+      "file": "csv-export-light.png",
+      "tag": "auto-dialog",
+      "theme": "light",
+      "parity_key": "csv-export",
+      "published": false,
+      "referenced_from": [],
+      "notes": "The light render of csv-export.png. Same fixture, same spec; only the design-token appearance differs. See that row for what the picture is of.",
+      "captured": {
+        "commit": "25705e1fa",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "659aa081df727a708653682176911bc019a814d73e95caf8fea77b46e53b2f1f"
+      }
+    },
+    {
+      "file": "add-favourites.png",
+      "tag": "auto-dialog",
+      "theme": "dark",
+      "parity_key": "add-favourites",
+      "published": false,
+      "referenced_from": [],
+      "notes": "«Add to favourites»: names the entry and picks the folder it lands in. Built against the SEEDED favourites store rather than a fresh one, so the folder combo has the fixture's two folders in it — an empty combo is this dialog's least informative state. The web has no counterpart by design (`web.no_surface`): it writes straight into the default folder from the tree's context menu, with no prompt.",
+      "captured": {
+        "commit": "25705e1fa",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "f0fc055612581f11e4b16e5c06ee176a71553ea75c2a0476a652209bfeac728b"
+      }
+    },
+    {
+      "file": "add-favourites-light.png",
+      "tag": "auto-dialog",
+      "theme": "light",
+      "parity_key": "add-favourites",
+      "published": false,
+      "referenced_from": [],
+      "notes": "The light render of add-favourites.png. Same fixture, same spec; only the design-token appearance differs. See that row for what the picture is of.",
+      "captured": {
+        "commit": "25705e1fa",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "c85c6c35c246d3813e566dfd49fc7048142952b2020f79867306e25855bc07f0"
+      }
+    },
+    {
+      "file": "transport.png",
+      "tag": "auto-dialog",
+      "theme": "dark",
+      "parity_key": "transport",
+      "published": false,
+      "referenced_from": [],
+      "notes": "The transport-settings dialog, which edits the connection string a device or link uses. Seeded with a TCP endpoint rather than an empty string so the host and port fields are populated and the protocol combo shows a resolved selection. The web has no counterpart by design (`web.no_surface`): its equivalent is the endpoint field on the login form, already photographed under the `login` row.",
+      "captured": {
+        "commit": "25705e1fa",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "d2b984fb241b004ab30c875471b8ecafc52b797cba0946164516e686127be44d"
+      }
+    },
+    {
+      "file": "transport-light.png",
+      "tag": "auto-dialog",
+      "theme": "light",
+      "parity_key": "transport",
+      "published": false,
+      "referenced_from": [],
+      "notes": "The light render of transport.png. Same fixture, same spec; only the design-token appearance differs. See that row for what the picture is of.",
+      "captured": {
+        "commit": "25705e1fa",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "b4592078e9e5729cdd7c391f994f98db7ae02627741efcdd738d42e48994f70f"
+      }
+    },
+    {
       "file": "users.jpg",
       "tag": "obsolete",
       "referenced_from": [],
@@ -2521,7 +2611,7 @@
     }
   ],
   "counts": {
-    "auto-dialog": 45,
+    "auto-dialog": 51,
     "auto-menu": 12,
     "auto-view": 103,
     "manual-annotated": 2,
