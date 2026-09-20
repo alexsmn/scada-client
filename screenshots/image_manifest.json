@@ -397,10 +397,10 @@
       ],
       "notes": "The reshelled operator workbench: CaptureMainWindow under --theme renders the full shell (activity rail, context bar with KPI severity tiles, command toolbar, editor tabs over EventJournal/Summ/Struct, the Inspector fronted in the right dock, status strip) and saves it under this name so the legacy client-window.png is never overwritten by a themed render. Fixture pending alarms light the tiles and the journal chrome. Kept out of current_generator_owned_subset (subset is auto-* only). Both STALE notes this row carried until 2026-09-19 are DISCHARGED, and were already wrong when they were read: they described the status strip's ping cell widening (120 -> 180, plus the \"no response\" marker, 0db08d4f8, 2026-08-01) and the context bar losing its identity/connection cluster to the status strip (2026-07-26), and asked for a Windows re-render. The tracked PNG already shows both — the context bar carries only breadcrumb, search and severity tiles, and user/connection/server/endpoint sit in the status strip — because it was re-rendered at 87b6a9b4b (2026-09-12), which has 0db08d4f8 as an ancestor. The request for a WINDOWS re-render is obsolete on its own terms too: either host may render the generated set (decided 2026-09-12), and only the manual-modus family needs Windows. This row is the README's hero image, so a note saying \"do not trust this picture\" is not a cheap thing to leave lying around.",
       "captured": {
-        "commit": "87b6a9b4b",
+        "commit": "d99c48cb6",
         "platform": "macos",
         "dirty": true,
-        "sha256": "6758f9f964209c05250486b9dcb6f10835fd1d3655442cc42e9c35835dc2915d"
+        "sha256": "7b754f1e6eb04cabba221e7975326c996dc0f61861e569c58ca67c6e2758123f"
       }
     },
     {
@@ -411,10 +411,10 @@
       "referenced_from": [],
       "notes": "Light-theme render of workbench-window.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to workbench-window.png, and this is a second appearance of that capture rather than a second capture.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "d99c48cb6",
         "platform": "macos",
         "dirty": true,
-        "sha256": "5895ec45e2302b2c52a2d921a0ec8d684129e1b6626539b6954facd8356989a8"
+        "sha256": "86a10fa0ee53a8205dcff9db955f83695255e38f8e8cb5ebf8e510c0bec847d5"
       }
     },
     {
