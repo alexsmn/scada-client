@@ -491,10 +491,17 @@ published export at `github.com/alexsmn/scada-client`. It triggers on push/PR to
 
 **Static analysis only, and there is no build job.** A public runner cannot
 assemble one: a standalone client build resolves its consumed products as
-sibling checkouts (ADR 0011), and `net` — reached through `common` and `core` —
-is `published = false` in `tools/export/products.toml`. It would also need Qt,
-which is a multi-hour vcpkg source build with no binary cache. A build job comes
-back when the consumed products are published, not before.
+sibling checkouts (ADR 0011), and one of the six — `display` — is deliberately
+never published (superproject CLAUDE.md, "Repository boundaries are
+commercial"). It would also need Qt, which is a multi-hour vcpkg source build
+with no binary cache.
+
+This paragraph named `net` until 2026-09-20 and that no longer applies: `net`
+(published as `transport`), `graph_qt` (as `graph-qt`), `view_manager_qt`, `sql`
+and `express` all resumed publishing that day, so `display` is the only
+unpublished product left in the closure. A build job therefore comes back when
+the client stops consuming `display` as source and links a packaged binary
+instead — not when the remaining products are published, because there are none.
 
 The `analyze` job runs the same cppcheck configuration the build runs — see
 `scada_configure_cppcheck()` in `build-support/ScadaProductBase.cmake` — against

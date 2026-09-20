@@ -3,10 +3,11 @@
 #
 # STATIC ANALYSIS ONLY, DELIBERATELY. There is no build job because a public
 # runner cannot assemble one: a standalone client build resolves the products it
-# consumes as sibling checkouts (ADR 0011), and `net` — which client reaches
-# through `common` and `core` — is `published = false` in
-# tools/export/products.toml with a local destination. It would also need Qt,
-# which is a multi-hour vcpkg source build on a runner with no binary cache.
+# consumes as sibling checkouts (ADR 0011), and one of them — `display`, the
+# schematic runtime — is deliberately never published. `net` used to be named
+# here too and no longer applies: it, graph_qt, view_manager_qt, sql and express
+# all resumed publishing on 2026-09-20. It would also need Qt, which is a
+# multi-hour vcpkg source build on a runner with no binary cache.
 # The workflow this replaced tried anyway: it cloned the pre-monorepo repos and
 # hand-assembled CMAKE_MODULE_PATH across sibling checkouts, took 4–6h per run,
 # and last ran in Feb 2026 because it triggered on `release/2.5` while

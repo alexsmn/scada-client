@@ -27,7 +27,7 @@ The client follows the host OS light/dark preference — every screen below is
 | [<img src="screenshots/events-alarm-surface.png" alt="Event journal as an alarm surface" width="420">](https://telecontrol-ru.github.io/scada/en/client/events/) | [<img src="screenshots/debugger.png" alt="Session request debugger" width="420">](https://telecontrol-ru.github.io/scada/en/client/debugger/) |
 | **[Alarms and events](https://telecontrol-ru.github.io/scada/en/client/events/)** — severity-banded journal, filtered by zone, severity and period, with acknowledgment. | **[Protocol debugger](https://telecontrol-ru.github.io/scada/en/client/debugger/)** — every client↔server request traced with phase and duration. |
 
-**[All 72 screens →](screenshots/)**
+**[Browse the full gallery →](screenshots/)**
 
 ## What it does
 
@@ -63,21 +63,26 @@ a browser implementation of the same workbench, the same vocabulary and the
 same data, rendered in its own idiom rather than as a copy of this one.
 
 **This repository does not build standalone yet.** The client resolves the
-six products it consumes as sibling checkouts, and three of them are not
-published:
+six products it consumes as sibling checkouts. Five are public:
 
-| Consumed product | What it is | Public |
+| Consumed product | What it is | Source |
 |---|---|---|
-| [`scada-core`](https://github.com/alexsmn/scada-core) | base utilities, gRPC protocol, metrics | yes |
-| [`scada-common`](https://github.com/alexsmn/scada-common) | address space, node services, OPC UA types | yes |
-| [`opcuapp`](https://github.com/alexsmn/opcuapp) | OPC UA SDK | yes |
-| `display` | the schematic display runtime | not yet |
-| `graph_qt` | the charting widget | not yet |
-| `view_manager_qt` | dockable view management | not yet |
+| [`scada-core`](https://github.com/alexsmn/scada-core) | base utilities, gRPC protocol, metrics | public |
+| [`scada-common`](https://github.com/alexsmn/scada-common) | address space, node services, OPC UA types | public |
+| [`opcuapp`](https://github.com/alexsmn/opcuapp) | OPC UA SDK | public |
+| [`graph_qt`](https://github.com/alexsmn/graph-qt) | the charting widget | public |
+| [`view_manager_qt`](https://github.com/alexsmn/view_manager_qt) | dockable view management | public |
+| `display` | the schematic display runtime | **proprietary** |
 
-So treat a clone as sources to read rather than a build to run — the CI here
-is static analysis for the same reason. The build instructions below are the
-real ones, and they work in a checkout that has all six.
+The sixth, `display`, is the Vidicon schematic runtime and stays closed. It is
+not a publication that has not happened yet — it is not going to — so the plan
+is to stop consuming it as source and ship it as a **prebuilt binary the client
+links dynamically**, which is what will let this repository build from its
+public dependencies alone. Until that lands, treat a clone as sources to read
+rather than a build to run, which is also why the CI here is static analysis.
+
+The build instructions below are the real ones, and they work in a checkout
+that has all six.
 
 ## Building
 
@@ -111,9 +116,10 @@ resolver in `build-support/`.
 
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs **static analysis
 only**, on push and pull request to `main` and `release/**`. There is no build
-job: a public runner cannot assemble one while three consumed products are
-unpublished, and it would also need a multi-hour Qt source build with no
-binary cache. A build job returns when those products do.
+job: a public runner cannot assemble one while `display` is closed, and it
+would also need a multi-hour Qt source build with no binary cache. A build job
+returns when the client links a packaged `display` binary instead of consuming
+it as source.
 
 The `analyze` job runs the same cppcheck configuration the local build runs,
 against this repository's own `.cppcheck-suppressions`. It builds a pinned
