@@ -63,6 +63,19 @@ struct DisplayError {
   std::string message;
 };
 
+// Why this client will not drive the ABI table a library handed it, or empty
+// when it will.
+//
+// Free, and declared here, because the loading path is a process-wide singleton
+// over a real shared library: there is no way to hand it a table that is one
+// version too new, or one that under-reports its own size, short of building a
+// library that lies. A test calls this with a table it wrote itself.
+//
+// The two members it reads sit at fixed offsets in every ABI version, which is
+// what makes them readable at all before anything else about the table is
+// known. See `display/abi/display_abi.h`, "VERSIONING".
+std::string DisplayRuntimeTableRejection(const ScadaDisplayApi& api);
+
 // The loaded runtime library, or the reason there is none.
 //
 // ABSENCE IS A SUPPORTED STATE, not a build configuration (ADR 0013 design

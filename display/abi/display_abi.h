@@ -28,6 +28,15 @@
 // newer table and a newer caller detects a shorter one. Gate every access to a
 // member added after ABI 1 on `struct_size`.
 //
+// THE PAIR ARE VERSIONED SEPARATELY AND DRIFT IN ONE DIRECTION. A host is built
+// from source; a library is downloaded, and is therefore usually the older of
+// the two. So the contract is deliberately tolerant of exactly that: a host
+// asks for the newest ABI it knows and ACCEPTS ANY TABLE AT OR BELOW IT,
+// reading only the members that ABI defined (see SCADA_DISPLAY_ABI_1_SIZE).
+// The other direction already worked, by the prefix rule. What a host must
+// never do is accept a table ABOVE its own ABI: the members past its knowledge
+// are not the ones it thinks they are.
+//
 // This file is deliberately C, not C++: no namespaces, no templates, no fixed
 // enum underlying types, nothing a C compiler would reject. A host may bind to
 // it from any language that speaks C.
@@ -35,6 +44,7 @@
 #ifndef SCADA_DISPLAY_ABI_H_
 #define SCADA_DISPLAY_ABI_H_
 
+#include <stddef.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -258,10 +268,33 @@ typedef struct ScadaDisplayApi {
   const char*(SCADA_DISPLAY_CALL* runtime_version)(void);
 } ScadaDisplayApi;
 
+// How many bytes of the table ABI 1 defined — through `runtime_version`, its
+// last member. A host speaking a later ABI checks a served ABI-1 table's
+// `struct_size` against THIS rather than against `sizeof(ScadaDisplayApi)`,
+// which by then describes a longer table the library never wrote.
+//
+// Computed from the member rather than written as a number because appending a
+// member must not be able to change it: `offsetof` of an existing member is
+// fixed by the no-reorder rule, which is the same rule this whole scheme rests
+// on. A future ABI 2 adds its own `SCADA_DISPLAY_ABI_2_SIZE` beside this and
+// never edits it.
+#define SCADA_DISPLAY_ABI_1_SIZE                \
+  (offsetof(ScadaDisplayApi, runtime_version) + \
+   sizeof(((const ScadaDisplayApi*)0)->runtime_version))
+
 // ── Entry point ─────────────────────────────────────────────────────────────
 
-// The one exported symbol. Returns a table whose `abi_version` is at most
-// `requested_abi_version`, or NULL when the library cannot satisfy it.
+// The one exported symbol. Returns the NEWEST table whose `abi_version` is at
+// most `requested_abi_version`, or NULL when it has none that old — which is
+// to say, when the library is newer than the host and has dropped the host's
+// ABI entirely.
+//
+// Two uses follow from "newest at or below", and a library must serve both.
+// A host asks for SCADA_DISPLAY_ABI_VERSION to get something it can drive; and
+// a host that was just refused asks for UINT32_MAX to get the library's own
+// newest table, for no reason but to be able to SAY what it found. The second
+// is why the refusal path can name a version at all, and it must not be
+// special-cased: it is the first rule read at its limit.
 //
 // THE HOST MUST NOT CREATE A QT APPLICATION OBJECT FOR THIS LIBRARY, AND
 // CANNOT. The library carries its own Qt, so its Qt globals are not the

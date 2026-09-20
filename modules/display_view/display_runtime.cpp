@@ -3,6 +3,7 @@
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 
+#include <cstdint>
 #include <cstring>
 #include <utility>
 
@@ -67,9 +68,79 @@ std::string OwnedString(const char* text) {
   return text ? std::string{text} : std::string{};
 }
 
+// How many bytes a table claiming `abi_version` must be for this client to read
+// the members that version defined.
+//
+// Not `sizeof(ScadaDisplayApi)`: a client built against a later ABI has a
+// LONGER struct than an older library ever wrote, and measuring an ABI-1 table
+// against an ABI-3 struct rejects a library that is perfectly usable. The
+// per-version sizes the ABI header publishes are what this is for.
+size_t RequiredStructSize(uint32_t abi_version) {
+  // One entry today. Each future ABI appends its own; none is ever edited,
+  // because a member is only ever appended and offsetof of an existing one
+  // cannot move.
+  switch (abi_version) {
+    case 1:
+      return SCADA_DISPLAY_ABI_1_SIZE;
+    default:
+      break;
+  }
+  // A version this client has never heard of is rejected before it gets here,
+  // so the only way in is an abi_version of 0 -- a table that does not claim to
+  // implement anything. Demand more than exists so it cannot be used.
+  return SIZE_MAX;
+}
+
+// What a library is, for a message an operator reads. Never parsed.
+//
+// Takes a table rather than a loaded runtime because the caller that needs it
+// most has just been REFUSED one, and its only handle on the library is
+// whatever `ScadaDisplayGetApi(UINT32_MAX)` hands back. Every field is gated:
+// this is a binary that has already failed to agree with us once.
+std::string Describe(const ScadaDisplayApi* api) {
+  if (!api)
+    return "a runtime that reports no version at all";
+
+  std::string text = "display ABI " + std::to_string(api->abi_version);
+  if (api->struct_size >= SCADA_DISPLAY_ABI_1_SIZE && api->runtime_version) {
+    const std::string version = OwnedString(api->runtime_version());
+    if (!version.empty())
+      text += " (" + version + ")";
+  }
+  return text;
+}
+
 }  // namespace
 
 // ── Loading ─────────────────────────────────────────────────────────────────
+
+std::string DisplayRuntimeTableRejection(const ScadaDisplayApi& api) {
+  if (api.abi_version > SCADA_DISPLAY_ABI_VERSION) {
+    // Not a drift this client can absorb: past its own ABI the members are not
+    // the ones it thinks they are. A well-behaved library never does this,
+    // having just been asked for a table at or below -- which is why it is a
+    // rejection and not a fallback.
+    return "served display ABI " + std::to_string(api.abi_version) +
+           " after being asked for " +
+           std::to_string(SCADA_DISPLAY_ABI_VERSION) + " or older";
+  }
+
+  // An OLDER library is accepted on purpose, and this is the direction the
+  // pair actually drift in: a host is built from source and a library is
+  // downloaded, so the library is usually the older of the two. It is measured
+  // against what ITS ABI defined, never against sizeof(ScadaDisplayApi), which
+  // by a later ABI describes a longer table it never wrote.
+  const size_t required = RequiredStructSize(api.abi_version);
+  if (api.struct_size < required) {
+    // Shorter than the ABI it claims: the members past its end are whatever
+    // happens to follow in the library's memory, and calling one is a jump to
+    // an address nobody set.
+    return "its display ABI " + std::to_string(api.abi_version) + " table is " +
+           std::to_string(api.struct_size) + " bytes, short of the " +
+           std::to_string(required) + " that version defines";
+  }
+  return {};
+}
 
 // Does the one-time load, so DisplayRuntime itself holds no loading state.
 //
@@ -133,26 +204,20 @@ class DisplayRuntimeLoader {
 
     const ScadaDisplayApi* api = get_api(SCADA_DISPLAY_ABI_VERSION);
     if (!api) {
-      reason_ = native + ": does not support ABI version " +
-                std::to_string(SCADA_DISPLAY_ABI_VERSION);
+      // Refused. The library is NEWER than this client and no longer serves an
+      // ABI this old -- the only shape a "newest at or below" implementation
+      // can refuse. Ask it what it does have, purely so the operator is told
+      // which library was rejected rather than that one was.
+      reason_ = native + ": this client speaks display ABI " +
+                std::to_string(SCADA_DISPLAY_ABI_VERSION) + ", and " +
+                Describe(get_api(UINT32_MAX)) + " is newer";
       return false;
     }
 
     // The table the library handed back must also describe itself sanely.
-    // These two are the only things a host can check before it starts calling
-    // through function pointers, and a table that fails them is one whose
-    // pointers cannot be trusted either.
-    if (api->abi_version != SCADA_DISPLAY_ABI_VERSION) {
-      reason_ = native + ": served ABI " + std::to_string(api->abi_version) +
-                " after being asked for " +
-                std::to_string(SCADA_DISPLAY_ABI_VERSION);
-      return false;
-    }
-    if (api->struct_size < sizeof(ScadaDisplayApi)) {
-      // Shorter than this header describes: the members past its end are
-      // whatever happens to follow in the library's memory, and calling one is
-      // a jump to an address nobody set.
-      reason_ = native + ": its ABI table is smaller than this build expects";
+    if (std::string rejection = DisplayRuntimeTableRejection(*api);
+        !rejection.empty()) {
+      reason_ = native + ": " + std::move(rejection);
       return false;
     }
 

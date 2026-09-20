@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include <cstddef>
 #include <cstdlib>
 #include <filesystem>
 #include <optional>
@@ -118,6 +119,89 @@ TEST(DisplayRuntimeTest, LoadsTheConfiguredRuntime) {
   // abi_version -- but it is what a log or an About box shows, so it must not
   // come back empty.
   EXPECT_FALSE(runtime->version().empty());
+}
+
+// ── The version handshake ───────────────────────────────────────────────────
+//
+// Driven against tables written HERE rather than against a library, because
+// every case worth testing is a library that disagrees with this client, and
+// the only such library in existence would have to be built to lie. The
+// decision is a free function for exactly that reason; see the note on
+// DisplayRuntimeTableRejection.
+//
+// What these pin is the DIRECTION of tolerance, which is the whole of phase 5's
+// versioning answer: a host is built from source and a runtime is downloaded,
+// so the runtime is the older of the pair, and an older runtime must keep
+// working.
+
+// A table this client would accept: its own ABI, its own size.
+ScadaDisplayApi CurrentTable() {
+  ScadaDisplayApi api{};
+  api.abi_version = SCADA_DISPLAY_ABI_VERSION;
+  api.struct_size = sizeof(ScadaDisplayApi);
+  return api;
+}
+
+TEST(DisplayRuntimeVersionTest, AcceptsATableOfItsOwnAbi) {
+  EXPECT_EQ(DisplayRuntimeTableRejection(CurrentTable()), "");
+}
+
+TEST(DisplayRuntimeVersionTest, RejectsATableAboveItsOwnAbi) {
+  // Past this client's ABI the members are not the ones it thinks they are, so
+  // there is nothing safe to read however large the table claims to be. A
+  // library that has just been asked for "at or below" never answers this way,
+  // which is why it is a rejection rather than a fallback.
+  ScadaDisplayApi api = CurrentTable();
+  api.abi_version = SCADA_DISPLAY_ABI_VERSION + 1;
+  api.struct_size = sizeof(ScadaDisplayApi) * 2;
+
+  const std::string rejection = DisplayRuntimeTableRejection(api);
+  EXPECT_NE(rejection, "");
+  // The operator is told which way round the mismatch is, because the action
+  // differs: too new means update the client, too old means update the runtime.
+  EXPECT_NE(rejection.find(std::to_string(SCADA_DISPLAY_ABI_VERSION + 1)),
+            std::string::npos)
+      << rejection;
+}
+
+TEST(DisplayRuntimeVersionTest, RejectsATableShorterThanItsOwnAbiDefines) {
+  // Below `struct_size` the members are whatever follows in the library's
+  // memory. Calling one is a jump to an address nobody set, so this is the one
+  // check that has to happen before any call through the table.
+  ScadaDisplayApi api = CurrentTable();
+  api.struct_size = SCADA_DISPLAY_ABI_1_SIZE - 1;
+  EXPECT_NE(DisplayRuntimeTableRejection(api), "");
+}
+
+TEST(DisplayRuntimeVersionTest, AcceptsATableLongerThanThisClientKnows) {
+  // A NEWER runtime serving this client's ABI is allowed to have appended
+  // members this build has never heard of -- that is the prefix rule, and
+  // refusing it would break the pairing the other way round.
+  ScadaDisplayApi api = CurrentTable();
+  api.struct_size = sizeof(ScadaDisplayApi) + 64;
+  EXPECT_EQ(DisplayRuntimeTableRejection(api), "");
+}
+
+TEST(DisplayRuntimeVersionTest, RejectsATableClaimingNoAbiAtAll) {
+  // Zero is what a default-initialised struct holds, so a library that
+  // exported its table without ever filling it in presents this way. There is
+  // no version 0, so no size can make it readable.
+  ScadaDisplayApi api = CurrentTable();
+  api.abi_version = 0;
+  api.struct_size = sizeof(ScadaDisplayApi);
+  EXPECT_NE(DisplayRuntimeTableRejection(api), "");
+}
+
+TEST(DisplayRuntimeVersionTest,
+     TheAbiOneSizeIsMeasuredFromTheLastAbiOneMember) {
+  // The size a served ABI-1 table is measured against must be the one ABI 1
+  // defined, and it must not move when a later ABI appends a member. With one
+  // version the two coincide -- which is why this is worth stating now, since
+  // no build can yet tell a correct implementation from a wrong one.
+  EXPECT_EQ(SCADA_DISPLAY_ABI_1_SIZE, sizeof(ScadaDisplayApi));
+  EXPECT_EQ(SCADA_DISPLAY_ABI_1_SIZE,
+            offsetof(ScadaDisplayApi, runtime_version) +
+                sizeof(ScadaDisplayApi::runtime_version));
 }
 
 // ── Documents ───────────────────────────────────────────────────────────────
