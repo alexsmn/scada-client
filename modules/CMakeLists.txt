@@ -31,8 +31,15 @@ add_subdirectory(favorites)
 add_subdirectory(filesystem)
 add_subdirectory(graph)
 add_subdirectory(print)
-add_subdirectory(display_view)
-add_subdirectory(display_frame)
+# The display surface and everything that draws through it. `modus` and
+# `vidicon` are further down for ordering reasons but belong to this group:
+# both link client_display_view, so neither can build without `display`.
+# Their absence is already a supported state — app/qt and main_window gate on
+# `if(TARGET client_modus_qt)` — which is what makes this option cheap.
+if(CLIENT_WITH_DISPLAY)
+  add_subdirectory(display_view)
+  add_subdirectory(display_frame)
+endif()
 add_subdirectory(inspector)
 add_subdirectory(device_diagnostics)
 add_subdirectory(parameter_form)
@@ -42,8 +49,11 @@ add_subdirectory(user_access)
 add_subdirectory(transmission_rules)
 add_subdirectory(bulk_create)
 
-add_subdirectory(modus)
-add_subdirectory(vidicon)
+# See the note above display_view: these two draw through it.
+if(CLIENT_WITH_DISPLAY)
+  add_subdirectory(modus)
+  add_subdirectory(vidicon)
+endif()
 
 foreach(component_name IN LISTS CLIENT_COMPONENTS)
   add_subdirectory(${component_name})

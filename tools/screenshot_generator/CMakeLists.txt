@@ -39,8 +39,6 @@ add_executable(client_screenshot_generator
   "view_capture.h"
   "graph_capture.cpp"
   "graph_capture.h"
-  "display_capture.cpp"
-  "display_capture.h"
   "device_diagnostics_capture.cpp"
   "device_metrics_capture.cpp"
   "device_metrics_capture.h"
@@ -108,7 +106,6 @@ target_link_libraries(client_screenshot_generator PRIVATE
   client_common
   client_configuration_qt
   client_controller_qt
-  client_display_frame_qt
   client_device_diagnostics_qt
   client_inspector_qt
   client_administration_qt
@@ -132,12 +129,23 @@ target_link_libraries(client_screenshot_generator PRIVATE
   client_portfolio_qt
   client_print_service_qt
   client_properties_qt
-  client_display_view_qt
   scada_core_opcua_client
   Boost::program_options
   base_unittest
   graph_qt
 )
+# The display captures, following the same shape as modus/vidicon below: the
+# target exists only when CLIENT_WITH_DISPLAY is on (ADR 0013 phase 1), and
+# display_capture.cpp is what draws through it.
+if(TARGET client_display_view_qt)
+  target_sources(client_screenshot_generator PRIVATE
+    "display_capture.cpp"
+    "display_capture.h")
+  target_link_libraries(client_screenshot_generator PRIVATE
+    client_display_frame_qt
+    client_display_view_qt)
+  target_compile_definitions(client_screenshot_generator PRIVATE CLIENT_HAS_DISPLAY=1)
+endif()
 if(TARGET client_modus_qt)
   target_link_libraries(client_screenshot_generator PRIVATE client_modus_qt)
   target_compile_definitions(client_screenshot_generator PRIVATE CLIENT_HAS_MODUS=1)
