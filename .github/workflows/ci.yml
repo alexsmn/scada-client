@@ -1,24 +1,31 @@
 # CI for scada-client, which runs on the published export at
 # github.com/alexsmn/scada-client.
 #
-# STATIC ANALYSIS ONLY, DELIBERATELY. There is no build job because a public
-# runner cannot assemble one: a standalone client build resolves the products it
-# consumes as sibling checkouts (ADR 0011), and one of them — `display`, the
-# schematic runtime — is deliberately never published. `net` used to be named
-# here too and no longer applies: it, graph_qt, view_manager_qt, sql and express
-# all resumed publishing on 2026-09-20. It would also need Qt, which is a
-# multi-hour vcpkg source build on a runner with no binary cache.
-# The workflow this replaced tried anyway: it cloned the pre-monorepo repos and
-# hand-assembled CMAKE_MODULE_PATH across sibling checkouts, took 4–6h per run,
-# and last ran in Feb 2026 because it triggered on `release/2.5` while
-# export.py publishes the default branch. A build job comes back when the
-# consumed products are published, not before.
+# Two jobs: cppcheck, which gates, and a three-platform build, which does not
+# gate yet and says why in its own comment.
 #
-# cppcheck here is the same configuration the build runs — see
+# THE BUILD JOB EXISTS AGAIN AS OF 2026-09-20, after a year in which it could
+# not. The obstacle was never Qt: it was that a standalone client build resolves
+# its consumed products as sibling checkouts (ADR 0011), and `display` -- the
+# schematic renderer -- is deliberately never published, so one of those
+# siblings could not exist on a public runner. ADR 0013 replaced the source
+# dependency with a C ABI over a shared library loaded at RUN time. The client
+# no longer compiles `display`; it carries one C header describing the
+# interface, and every other product in its closure is public (`net`, `graph_qt`
+# and `view_manager_qt` resumed publishing the same day). A client with no
+# runtime beside it builds, runs, and reports that it has no schematic renderer.
+#
+# The workflow deleted in August 2026 is not what came back. That one cloned the
+# pre-monorepo repositories and hand-assembled CMAKE_MODULE_PATH across them,
+# took 4-6h per run, and last ran in February 2026 because it triggered on
+# `release/2.5` while export.py publishes the default branch. This one resolves
+# products by name through build-support/ and triggers on what is published.
+#
+# cppcheck here is the same configuration the build runs -- see
 # `scada_configure_cppcheck()` in build-support/ScadaProductBase.cmake, which
 # reads this product's own .cppcheck-suppressions.
 
-name: Static analysis
+name: CI
 
 on:
   push:
@@ -108,4 +115,205 @@ jobs:
       with:
         name: cppcheck-report
         path: cppcheck-report.txt
+        retention-days: 7
+
+  # ── Build ─────────────────────────────────────────────────────────────────
+  #
+  # THIS JOB BECAME POSSIBLE ON 2026-09-20 AND HAD BEEN IMPOSSIBLE BEFORE.
+  # A standalone client build resolves the products it consumes as sibling
+  # checkouts (ADR 0011), and `display` -- the schematic renderer -- is
+  # deliberately never published. ADR 0013 replaced it with a C ABI over a
+  # shared library loaded at run time, so the client's *source* closure is now
+  # one C header plus products that are all public. The runtime binary is not
+  # needed to build; a client without one runs and reports that it has none.
+  #
+  # WHAT IS NOT COVERED, AND CANNOT BE. `client_server_e2e_tests` skips here:
+  # it drives tier binaries, and every tier is a separately sold product that is
+  # unpublished, so no public runner can assemble that suite whatever we do.
+  #
+  # THE FIRST RUNS WILL BE SLOW, AND MAY TIME OUT. vcpkg builds Qt, gRPC, Boost,
+  # OpenSSL, protobuf and opentelemetry-cpp from source; there is no prebuilt
+  # Qt here. The GitHub Actions cache backend (`x-gha`) is what makes the SECOND
+  # run cheap -- vcpkg writes each port to it as that port completes, so even a
+  # job that hits the 6-hour limit leaves the cache further along than it found
+  # it, and a later run continues from there. Expect two or three runs before
+  # the first green one. That is also why this job does not gate anything yet:
+  # see `continue-on-error` below, and delete it once a run has been green.
+  build:
+    name: Build (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    # Not a gate yet. The bootstrap above means the first runs say more about
+    # the cache than about the code, and a red X that everyone learns to ignore
+    # is worse than no check (see tasks.md 316, `core`'s decorative matrix).
+    # REMOVE THIS the day a run is green, and treat the job as gating from then
+    # on. Leaving it is how a build job becomes decoration.
+    continue-on-error: true
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows / MSVC
+            os: windows-latest
+          - name: Ubuntu / GCC
+            os: ubuntu-latest
+          - name: macOS / AppleClang
+            os: macos-latest
+
+    env:
+      # vcpkg's GitHub Actions cache backend. `readwrite` so a run both uses
+      # what earlier runs built and contributes what it built itself, which is
+      # the whole bootstrap strategy above.
+      VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+
+    steps:
+    # ── The sibling layout ──────────────────────────────────────────────────
+    #
+    # In an export every consumed product is a sibling directory NAMED AFTER THE
+    # PRODUCT (build-support/ScadaProducts.cmake resolves `../<name>`), which is
+    # not always the repository's name: `net` publishes as `transport` and
+    # `graph_qt` as `graph-qt`. So each checkout names its `path` explicitly and
+    # the directory name is what matters, never the repo's.
+    #
+    # The list is the client's transitive closure, not just what it names:
+    # client -> common, core, opcuapp, graph_qt, view_manager_qt; common -> core,
+    # express, opcuapp; core -> net; opcuapp -> net. `aui` is in-tree.
+    - name: Check out scada-client
+      uses: actions/checkout@v7
+      with:
+        path: client
+
+    - name: Check out scada-common
+      uses: actions/checkout@v7
+      with:
+        repository: alexsmn/scada-common
+        path: common
+
+    - name: Check out scada-core
+      uses: actions/checkout@v7
+      with:
+        repository: alexsmn/scada-core
+        path: core
+
+    - name: Check out opcuapp
+      uses: actions/checkout@v7
+      with:
+        repository: alexsmn/opcuapp
+        path: opcuapp
+
+    - name: Check out graph-qt
+      uses: actions/checkout@v7
+      with:
+        repository: alexsmn/graph-qt
+        path: graph_qt
+
+    - name: Check out view_manager_qt
+      uses: actions/checkout@v7
+      with:
+        repository: alexsmn/view_manager_qt
+        path: view_manager_qt
+
+    # Publishes as `transport`; the directory must be `net`.
+    - name: Check out transport (the `net` product)
+      uses: actions/checkout@v7
+      with:
+        repository: alexsmn/transport
+        path: net
+
+    - name: Check out express
+      uses: actions/checkout@v7
+      with:
+        repository: alexsmn/express
+        path: express
+
+    # ── Toolchain ───────────────────────────────────────────────────────────
+
+    # Qt's vcpkg build needs the X11/XCB/font development headers on Linux; none
+    # of this is needed on the other two, where the platform SDK carries the
+    # equivalents. Kept to what qtbase's port actually asks for rather than a
+    # blanket `build-dep qtbase`, which pulls a distro Qt we must not link.
+    - name: Install Qt's build dependencies (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          autoconf automake libtool pkg-config bison flex \
+          libdbus-1-dev libfontconfig1-dev libfreetype-dev \
+          libgl1-mesa-dev libglu1-mesa-dev \
+          libx11-dev libxext-dev libxfixes-dev libxi-dev libxrender-dev \
+          libxcb1-dev libxcb-glx0-dev libxcb-keysyms1-dev libxcb-image0-dev \
+          libxcb-shm0-dev libxcb-icccm4-dev libxcb-sync-dev libxcb-xfixes0-dev \
+          libxcb-shape0-dev libxcb-randr0-dev libxcb-render-util0-dev \
+          libxcb-util-dev libxcb-xinerama0-dev libxcb-xkb-dev \
+          libxkbcommon-dev libxkbcommon-x11-dev \
+          libxrandr-dev libxss-dev libxtst-dev
+
+    - name: Install Ninja (Linux)
+      if: runner.os == 'Linux'
+      run: sudo apt-get install -y ninja-build
+
+    - name: Install Ninja (macOS)
+      if: runner.os == 'macOS'
+      run: brew install ninja
+
+    # The presets carry no `environment` block by design (ADR 0011), so on
+    # Windows the MSVC toolchain has to be in the environment before cmake runs.
+    # A developer's machine does this through SCADA_MSVC_INCLUDE_DIRS in
+    # .scada-local.cmake; a runner has no such file, so the developer command
+    # prompt's variables are set here instead. Ninja comes with Visual Studio,
+    # so no separate install on this platform.
+    - name: Set up MSVC (Windows)
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Set up vcpkg
+      uses: lukka/run-vcpkg@v11
+      with:
+        vcpkgGitCommitId: 'a34c873a9717a888f58dc05571dde15571f56e66'
+        # The manifest is resolved by the CMake toolchain during configure, not
+        # here: every product is its own manifest root (ADR 0011 phase 6), and
+        # this step only has to put vcpkg on disk and export VCPKG_ROOT.
+        runVcpkgInstall: false
+
+    # vcpkg's own cache, which `x-gha` needs a token to reach.
+    - name: Export the GitHub Actions cache credentials
+      uses: actions/github-script@v9
+      with:
+        script: |
+          core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+          core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
+    # ── Build ───────────────────────────────────────────────────────────────
+    #
+    # One configure preset, the same name every product in the tree carries.
+    # Release only: a Ninja Multi-Config tree can build all three, but each
+    # config is a separate compile of everything and the runner budget is the
+    # binding constraint. Debug is a real gap -- it is the configuration that
+    # catches a `static const` member with no definition, which Release folds
+    # away (tasks.md 476) -- and this job is not the place to close it.
+
+    - name: Configure
+      working-directory: client
+      run: cmake --preset ninja
+
+    - name: Build (Release)
+      working-directory: client
+      run: cmake --build --preset release
+
+    - name: Test (Release)
+      working-directory: client
+      # The E2E suite is skipped at configure time here (no `iec61850pp`
+      # sibling, and no tier binaries), so this is the unit suite. Offscreen is
+      # the default the test entry points already apply on macOS; Linux needs it
+      # said, since a runner has no display.
+      env:
+        QT_QPA_PLATFORM: offscreen
+      run: ctest --preset test-release --output-on-failure
+
+    - name: Upload the test log
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: ctest-log-${{ matrix.os }}
+        path: client/build/ninja/Testing/
         retention-days: 7

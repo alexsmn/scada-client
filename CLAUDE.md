@@ -489,19 +489,35 @@ published export at `github.com/alexsmn/scada-client`. It triggers on push/PR to
 `main` and `release/**` — the old workflow triggered on `release/2.5`, which
 `export.py` does not publish, so it last ran in Feb 2026.
 
-**Static analysis only, and there is no build job.** A public runner cannot
-assemble one: a standalone client build resolves its consumed products as
-sibling checkouts (ADR 0011), and one of the six — `display` — is deliberately
+**Two jobs since 2026-09-20: `analyze` (cppcheck), which gates, and `build`, a
+Windows/Ubuntu/macOS matrix, which does not gate yet.** For a year there was no
+build job, and the obstacle was never Qt: a standalone client build resolves its
+consumed products as sibling checkouts (ADR 0011), and `display` is deliberately
 never published (superproject CLAUDE.md, "Repository boundaries are
-commercial"). It would also need Qt, which is a multi-hour vcpkg source build
-with no binary cache.
+commercial"), so one of those siblings could not exist on a public runner.
 
-This paragraph named `net` until 2026-09-20 and that no longer applies: `net`
-(published as `transport`), `graph_qt` (as `graph-qt`), `view_manager_qt`, `sql`
-and `express` all resumed publishing that day, so `display` is the only
-unpublished product left in the closure. A build job therefore comes back when
-the client stops consuming `display` as source and links a packaged binary
-instead — not when the remaining products are published, because there are none.
+ADR 0013 removed that. The client no longer compiles `display` — it loads the
+schematic renderer as a shared library through a C ABI at run time, carrying
+only the interface header, which `tools/export/products.toml` places at the
+export's root. Every other product in the closure is public (`net` publishes as
+`transport`, `graph_qt` as `graph-qt`). **A client with no runtime binary beside
+it builds and runs**; schematic windows report that there is no display runtime,
+which is a supported state rather than a broken build.
+
+Two things the build job cannot cover. `client_server_e2e_tests` skips there: it
+drives tier binaries, and every tier is a separately sold unpublished product,
+so no public runner can assemble that suite. And it builds Release only —
+Debug is the configuration that catches a `static const` member with no
+definition, and the tree still has nowhere to run one (superproject tasks.md
+476).
+
+**`continue-on-error: true` is on the build job on purpose, and is meant to be
+deleted.** vcpkg builds Qt, gRPC, Boost and the rest from source with nothing
+prebuilt; the GitHub Actions cache backend (`VCPKG_BINARY_SOURCES=x-gha`) is
+what makes the *second* run cheap, since vcpkg writes each port to it as that
+port completes. Expect two or three runs before the first green one. Remove the
+flag once a run has been green — a build job that is permanently allowed to fail
+is the decorative matrix `core` already has (superproject tasks.md 316).
 
 The `analyze` job runs the same cppcheck configuration the build runs — see
 `scada_configure_cppcheck()` in `build-support/ScadaProductBase.cmake` — against
