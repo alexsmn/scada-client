@@ -17,7 +17,7 @@
 # `scada_configure_cppcheck()` in build-support/ScadaProductBase.cmake, which
 # reads this product's own .cppcheck-suppressions.
 
-name: CI
+name: Static analysis
 
 on:
   push:

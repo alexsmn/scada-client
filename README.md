@@ -4,6 +4,8 @@ Desktop client for the Telecontrol SCADA system: real-time and historical
 monitoring, alarm handling, and device configuration for industrial and
 power-system installations. C++23 and Qt 6, on Windows and macOS.
 
+[![Static analysis](https://github.com/alexsmn/scada-client/actions/workflows/ci.yml/badge.svg)](https://github.com/alexsmn/scada-client/actions/workflows/ci.yml)
+
 **[Live demo](https://telecontrol-ru.github.io/scada/app/)** ·
 **User manual** [English](https://telecontrol-ru.github.io/scada/en/) /
 [Русский](https://telecontrol-ru.github.io/scada/) ·
@@ -226,6 +228,17 @@ published bilingually at
 **[telecontrol-ru.github.io/scada](https://telecontrol-ru.github.io/scada/)**
 ([English](https://telecontrol-ru.github.io/scada/en/)). Most of its UI images
 are the captures in [`screenshots/`](screenshots/).
+
+## Contributing
+
+**This repository is generated.** Development happens in a private monorepo and
+the public repository is regenerated from it, so a merged pull request here
+would put this branch ahead of the monorepo and block every later publish —
+the exporter refuses a non-fast-forward rather than force-pushing over it.
+
+So please open an **issue** instead; patches are welcome as patches, and reach
+this repository through the next export. [CONTRIBUTING.md](CONTRIBUTING.md) has
+the detail and what to include in a report.
 
 ## License
 

@@ -18,7 +18,7 @@ Workspace views and panels — what the operator works in. (50)
 | **Administration explorer**<br>`administration-explorer.png` | <img src="administration-explorer.png" alt="Administration explorer" width="360"> | [Light](administration-explorer-light.png) |
 | **Audit log**<br>`audit-log.png` | <img src="audit-log.png" alt="Audit log" width="360"> | [Light](audit-log-light.png) |
 | **Breadcrumb**<br>`breadcrumb.png` | <img src="breadcrumb.png" alt="Breadcrumb" width="360"> | [Light](breadcrumb-light.png) |
-| **Bulk create**<br>`bulk-create.png` | <img src="bulk-create.png" alt="Bulk create" width="360"> | [Light](bulk-create-light.png) |
+| **Bulk create**<br>`bulk-create.png` | <img src="bulk-create.png" alt="Bulk create" width="360"> | [Light](bulk-create-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/data-items/) |
 | **Client retransmission**<br>`client-retransmission.png` | <img src="client-retransmission.png" alt="Client retransmission" width="360"> | [Light](client-retransmission-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
 | **Command field**<br>`command-field.png` | <img src="command-field.png" alt="Command field" width="360"> | [Light](command-field-light.png) |
 | **Config address map**<br>`config-address-map.png` | <img src="config-address-map.png" alt="Config address map" width="360"> | [Light](config-address-map-light.png) |
