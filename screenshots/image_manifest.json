@@ -986,10 +986,11 @@
       "file": "bulk-create.png",
       "tag": "auto-view",
       "theme": "dark",
-      "published": false,
       "parity_key": "bulk-create",
-      "referenced_from": [],
-      "notes": "Bulk-create wizard preview (BulkCreate): the naming/addressing step of bulk-create.html — a {n}-token name + NodeId pattern, start/count/step + IOA start/step, and a live preview grid (# / Name / NodeId / IOA / Status) with a 'N new / M conflict' summary. Reshell-only chrome (backlog 5.4), standalone and node-service-free: the capture seeds a demo pattern (TS{n} current, 12 items from IOA 4001) and one existing NodeId (TS8), so row 8 flags as a red 'exists' conflict. Driven by the pure ExpandBulkCreate engine. The actual node creation rides the existing MultiCreateModel::Run (Session.addNodes). Not yet embedded in a manual page.",
+      "referenced_from": [
+        "dev/data-items.md"
+      ],
+      "notes": "Bulk-create wizard preview (BulkCreate): the naming/addressing step of bulk-create.html — a {n}-token name + NodeId pattern, start/count/step + IOA start/step, and a live preview grid (# / Name / NodeId / IOA / Status) with a 'N new / M conflict' summary. Reshell-only chrome (backlog 5.4), standalone and node-service-free: the capture seeds a demo pattern (TS{n} current, 12 items from IOA 4001) and one existing NodeId (TS8), so row 8 flags as a red 'exists' conflict. Driven by the pure ExpandBulkCreate engine. The actual node creation rides the existing MultiCreateModel::Run (Session.addNodes). Embedded in dev/data-items.md since 2026-09-19, replacing menu-create-object-ts-ti.png: that image is the flat MultiCreate dialog, which ID_ADD_MULTIPLE_ITEMS stopped opening on 2026-09-12.",
       "captured": {
         "commit": "2ab9399ee",
         "platform": "macos",
@@ -1722,11 +1723,9 @@
     },
     {
       "file": "menu-create-object-ts-ti.png",
-      "tag": "auto-dialog",
-      "referenced_from": [
-        "dev/data-items.md"
-      ],
-      "notes": "Not a menu despite the name (audited 2026-08-08): the modal «Создание серии объектов» bulk-create dialog. The generator already renders that dialog as multi-create.png (dialogs kind `multi-create`), so what is owed here is a docs-side re-point, not a new capture — the two differ only in fixture content (this one seeds 9 ТИТ on MODBUS RTU : SmartTermo)."
+      "tag": "obsolete",
+      "referenced_from": [],
+      "notes": "Not a menu despite the name (audited 2026-08-08): the modal «Создание серии объектов» bulk-create dialog. The generator already renders that dialog as multi-create.png (dialogs kind `multi-create`), so what is owed here is a docs-side re-point, not a new capture — the two differ only in fixture content (this one seeds 9 ТИТ on MODBUS RTU : SmartTermo). OBSOLETE since 2026-09-19 and the re-point is done, but not to multi-create.png: that renders the SAME retired dialog. ID_ADD_MULTIPLE_ITEMS calls ShowBulkCreateWizard (client/modules/create/opened_view_create_command.cpp) and the only surviving caller of ShowMultiCreateDialog is the generator's own dialog_capture.cpp, so dev/data-items.md now embeds bulk-create.png instead. The PNG is still in scada-docs/img/ and is a removal candidate; the multi-create.png pair photographs the same dead surface and wants the same decision."
     },
     {
       "file": "menu-create-object.png",
@@ -2522,16 +2521,17 @@
     }
   ],
   "counts": {
-    "auto-dialog": 46,
+    "auto-dialog": 45,
     "auto-menu": 12,
     "auto-view": 103,
     "manual-annotated": 2,
     "manual-diagram": 4,
     "manual-modus": 5,
     "manual-os": 3,
-    "obsolete": 13
+    "obsolete": 14
   },
   "current_generator_owned_subset": [
+    "bulk-create.png",
     "client-login.png",
     "client-retransmission.png",
     "device-metrics.png",
