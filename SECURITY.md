@@ -7,8 +7,14 @@ rather than in public.
 
 ## Reporting a vulnerability
 
-**Email [alexsmn@gmail.com](mailto:alexsmn@gmail.com)** with "security" in
-the subject line.
+**Use [GitHub's private vulnerability reporting](https://github.com/alexsmn/scada-client/security/advisories/new)**
+— the *Report a vulnerability* button on this repository's Security tab. It is
+enabled here, the report stays private between you and the maintainer, and it
+keeps the discussion attached to the repository rather than to an inbox.
+
+If you would rather not use GitHub, **email
+[alexsmn@gmail.com](mailto:alexsmn@gmail.com)** with "security" in the subject
+line. Both reach the same person; neither is a queue you will be lost in.
 
 Please do **not** open a public issue, a pull request or a discussion for
 anything you believe is exploitable. A public report is readable by everyone
