@@ -3,7 +3,7 @@ This file is a draft for the copyright holder and their counsel to review,
 amend and adopt. It grants nothing while this block is present.
 
 The copyright holder is now named -- Telecontrol, Ltd. (ООО "Телеконтроль"),
-2017-2026 -- and no [DECIDE] remains in the permission itself.
+2012-2026 -- and no [DECIDE] remains in the permission itself.
 
 BUT FILLING IN A BLANK IS NOT GRANTING A PERMISSION. Adoption is deleting this
 block, and that is the copyright holder's act, not a drafting step: it is also
@@ -49,7 +49,7 @@ THE PERMISSION
      additional permission under section 7 of the GPL, to combine the Program
      with the Runtime and to convey the resulting combined work.
 
-     The Program is Copyright (C) 2017-2026 Telecontrol, Ltd.
+     The Program is Copyright (C) 2012-2026 Telecontrol, Ltd.
      (ООО "Телеконтроль"). The same notice is in the file COPYRIGHT.
 
   2. WHAT IT LIFTS. When you convey such a combined work in a non-source form,
@@ -99,11 +99,12 @@ NOTES FOR THE DRAFTER -- DELETE BEFORE ADOPTION
            the incorporation documents before adopting -- the quotation marks
            around a Russian company name are part of the registered name.
 
-       ii. THE START YEAR IS WRONG AND 2012 IS THE FLOOR THIS TREE CAN
-           EVIDENCE. 2017-2026 was taken from this repository's first commit
-           (2017-08-24, "Initial.") and today, and the holder has since
-           confirmed the work predates it. The earliest dated artifact in the
-           tree is `examples/delphi/TelecontrolScadaLib_TLB.pas`, a Delphi
+       ii. SETTLED 2026-09-20: 2012-2026, THE FLOOR THIS TREE CAN EVIDENCE.
+           The range was 2017-2026, taken from this repository's first commit
+           (2017-08-24, "Initial.") and today; the holder confirmed the work
+           predates it and chose the evidenced floor rather than a year that
+           could not be supported. The earliest dated artifact in the tree
+           is `examples/delphi/TelecontrolScadaLib_TLB.pas`, a Delphi
            type-library import stamped "File generated on 17.11.2012", carrying
            `$Rev: 17244 $` and describing a type library read out of
            `C:\Work\workplace\trunk\build-vs10\Release\exe\client.exe`
@@ -114,11 +115,12 @@ NOTES FOR THE DRAFTER -- DELETE BEFORE ADOPTION
            earlier -- the only pre-2012 dates in it are test fixtures
            (1994-11-15, 2004-11-15).
 
-           The start year is the year the first version was FIRST PUBLISHED --
-           delivered to a customer or otherwise made available -- not when
-           coding started and not the earliest file date. Only the holder
-           knows it. Set it to that year if it can be evidenced; otherwise
-           2012 is the defensible floor.
+           So 2012 is a floor, not the truth: the work is older, and the
+           holder may widen the range at any time on producing something that
+           dates the first release -- a delivery note, an installation record,
+           a contract. The year wanted is the year the first version was FIRST
+           PUBLISHED, delivered to a customer or otherwise made available;
+           not when coding started, and not the earliest file date.
 
            Do NOT round it earlier to be safe: the risk is asymmetric. A
            notice that starts late loses nothing, because since Berne a notice
