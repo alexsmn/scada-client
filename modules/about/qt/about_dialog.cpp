@@ -41,12 +41,18 @@ class AboutDialog : public QDialog {
     auto organization_name = tr("Telecontrol, Ltd.");
     // The range this work is claimed over, not the year the dialog was
     // written. It ran as a bare 2018 until 2026-09-20, which understated it at
-    // both ends: this repository's first commit is 2017-08-24 and it is still
-    // being changed daily. Deliberately NOT derived from the build clock -- an
-    // old binary rebuilt next year would then claim a year in which nothing
-    // was authored. Widen it by hand when the work is revised, and keep it in
-    // step with COPYRIGHT and clause 1 of LICENSE-EXCEPTION.txt.
-    const char* copyright_years = "2017\u20132026";
+    // both ends, and then briefly as 2017 -- this repository's first commit --
+    // which is not the same question: the work predates the repository. 2012
+    // is the earliest FIRST RELEASE the tree can evidence, from a Delphi type
+    // library generated out of a shipping client on 17.11.2012. See
+    // LICENSE-EXCEPTION.txt note A(ii) for why a floor is the right answer
+    // here, and why rounding it earlier would not be.
+    //
+    // Deliberately NOT derived from the build clock -- an old binary rebuilt
+    // next year would then claim a year in which nothing was authored. Widen
+    // it by hand when the work is revised, and keep it in step with COPYRIGHT,
+    // clause 1 of LICENSE-EXCEPTION.txt and the runtime's own licence.
+    const char* copyright_years = "2012\u20132026";
 
     ui.label->setText(
         QString{"<html><head/><body>"
