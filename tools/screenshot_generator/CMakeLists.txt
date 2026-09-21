@@ -296,11 +296,19 @@ set(SCREENSHOT_DOCS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../screenshots")
 # out saying there is none. Not a bundle on any platform, so no DIRECTORY.
 client_stage_display_runtime(client_screenshot_generator)
 
-# On macOS force the offscreen platform: the local gallery is
-# validation-only there (published images come from Windows), and cocoa
-# runs from headless/background build contexts have livelocked in event
-# dispatch, wedging the build at 100% CPU. Windows keeps the native
-# platform so the published gallery renders with real fonts.
+# On macOS force the offscreen platform: cocoa runs from headless/background
+# build contexts have livelocked in event dispatch, wedging the build at 100%
+# CPU. Windows keeps the native platform.
+#
+# This said "the local gallery is validation-only there (published images come
+# from Windows)" until 2026-09-20, which stopped being true on 2026-09-12:
+# either host may render the Qt set and the gallery is legitimately
+# mixed-platform, with Windows required only for the `manual-modus` ActiveX
+# family that no `--capture` produces anyway (root CLAUDE.md, "Documentation
+# Conventions"; docs/ops/client-screenshots.md, "Which platform may render the
+# gallery"). The four images published to the manual in 813 were rendered here,
+# under this very branch, which is what a reader of the old comment would have
+# taken to be forbidden.
 if(APPLE)
   set(SCREENSHOT_CAPTURE_LAUNCHER
       ${CMAKE_COMMAND} -E env QT_QPA_PLATFORM=offscreen)
