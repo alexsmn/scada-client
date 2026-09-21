@@ -56,6 +56,11 @@
     {
       "name": "qtbase",
       "features": [
+        {
+          "name": "fontconfig",
+          "platform": "linux"
+        },
+        "freetype",
         "png",
         "widgets"
       ]
