@@ -104,12 +104,34 @@ def head_commit(repo_root: Path) -> str:
     return git(repo_root, "rev-parse", "--short", "HEAD")
 
 
-def render_paths_dirty(repo_root: Path) -> bool:
-    """Whether any tracked file that can affect a render differs from HEAD."""
+def render_paths_dirty(repo_root: Path, images_dir: Path | None = None) -> bool:
+    """Whether any tracked file that can affect a render differs from HEAD.
+
+    The gallery itself is excluded, and without that exclusion this function
+    cannot return False during the one operation that calls it. The images live
+    under `client/`, which is a render path, so a regeneration dirties the very
+    tree it is asking about: every one of the 150 stamped rows read
+    `"dirty": true` when this was measured (2026-09-20), including rows stamped
+    from an otherwise pristine checkout. A flag that is always set carries no
+    information, and this one was worse than useless -- `report()` returns on
+    it, so the "captured at a commit that is not in this history" check below
+    never ran for any image.
+
+    What a render consumes is the source; what it produces is the gallery. Only
+    the first can make a capture unreproducible.
+    """
     existing = [p for p in RENDER_PATHS if (repo_root / p).exists()]
     if not existing:
         return False
-    return bool(git(repo_root, "status", "--porcelain", "--", *existing))
+    pathspec = list(existing)
+    if images_dir is not None:
+        try:
+            rel = images_dir.resolve().relative_to(repo_root.resolve())
+        except ValueError:
+            rel = None
+        if rel is not None:
+            pathspec.append(f":(exclude){rel.as_posix()}")
+    return bool(git(repo_root, "status", "--porcelain", "--", *pathspec))
 
 
 def commit_is_in_history(repo_root: Path, commit: str) -> bool:
@@ -251,7 +273,7 @@ def main(argv: list[str] | None = None) -> int:
         provenance = {
             "commit": head_commit(repo_root),
             "platform": platform_name(),
-            "dirty": render_paths_dirty(repo_root),
+            "dirty": render_paths_dirty(repo_root, images_dir),
         }
         restamped = stamp(manifest, images_dir, provenance)
         if restamped:

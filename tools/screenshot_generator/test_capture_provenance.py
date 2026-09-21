@@ -226,6 +226,21 @@ class GitInteraction(unittest.TestCase):
     def test_a_clean_tree_is_not_dirty(self):
         self.assertFalse(cp.render_paths_dirty(self.repo))
 
+    def test_the_gallery_it_writes_does_not_count_as_dirt(self):
+        # The regression this pins: the gallery lives under `client/`, which is
+        # a render path, so the act of regenerating dirtied the tree the flag
+        # was asking about. render_paths_dirty() could not return False during
+        # a stamp, and all 150 stamped rows read "dirty": true as a result --
+        # which also meant report() returned on the dirty branch and never ran
+        # its "not in this history" check for any image.
+        gallery = self.repo / "client" / "screenshots"
+        gallery.mkdir(parents=True, exist_ok=True)
+        (gallery / "devices.png").write_bytes(b"rendered")
+        self.assertFalse(cp.render_paths_dirty(self.repo, gallery))
+        # Still dirty when the SOURCE moved, which is the case worth reporting.
+        (self.repo / "client" / "f.txt").write_text("modified")
+        self.assertTrue(cp.render_paths_dirty(self.repo, gallery))
+
 
 if __name__ == "__main__":
     unittest.main()
