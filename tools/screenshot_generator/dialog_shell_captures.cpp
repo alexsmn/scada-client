@@ -21,6 +21,7 @@
 #include "controller/command_manager.h"
 #include "main_window/command_palette_qt.h"
 #include "modules/about/about_dialog.h"
+#include "modules/about/about_info.h"
 #include "modules/export/csv/csv_export.h"
 #include "modules/favorites/add_favourites_dialog.h"
 #include "modules/login/login_dialog.h"
@@ -111,9 +112,30 @@ bool CaptureCommandPaletteDialog(const DialogCaptureContext& context) {
 }
 
 bool CaptureAboutDialog(const DialogCaptureContext& context) {
+  // A FIXED AboutInfo, never `CollectAboutInfo`. Every field the live
+  // collector reads varies with the machine or the commit — the build stamp
+  // moves on every landing, `QSysInfo::prettyProductName()` differs between
+  // the two hosts that may render this gallery, and the session rows depend on
+  // a connected server. Reading them here would make this capture differ on
+  // every regeneration, which is exactly the signal the tracked gallery
+  // exists to carry (client/CLAUDE.md, "Doc screenshots").
+  //
+  // The values are the ones the shared screen draws for the signed-in state:
+  // docs/product/ui-mockups/screens/about.html.
+  //
   // Eagerly-shown self-owned modal; the generic grab rejects it and the dialog
   // deleteLater's itself.
-  ShowAboutDialog(context.dialog_service);
+  ShowAboutDialog(
+      context.dialog_service,
+      AboutInfo{.product = u"Telecontrol SCADA",
+                .version = u"2.6.0",
+                .build_commit = u"9f3c21a",
+                .build_date = u"2026-09-18T10:00:00+03:00",
+                .runtime = u"Qt 6.8.2 · macOS 15.6 · arm64",
+                .server = u"opc.tcp://sub-north.tc.local:4840",
+                .user = u"operator1",
+                .has_session = true,
+                .connected = true});
   return GrabShownDialog(context);
 }
 

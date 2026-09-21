@@ -17,6 +17,58 @@
 #include <string_view>
 #include <vector>
 
+// Rasterises one SVG *resource* into a square pixmap at the device pixel ratio,
+// with its own colours left alone.
+//
+// Split out of `LoadTintedGlyph` for the one asset that is not a Lucide glyph:
+// the application mark (docs/client/ux/iconography.md §5.4 — "the product's own
+// mark, not a command glyph"), which is deliberately multi-coloured and would
+// be flattened to one palette colour by the tinting path below.
+//
+// It exists at all because `QIcon{":/….svg"}` renders NOTHING here: the
+// qsvgicon icon-engine plugin is not built (see client/CMakeLists.txt — qtsvg's
+// vcpkg build needs a full Xcode, which is what kept the client from building
+// standalone from its export), and QIcon answers a file type it has no engine
+// for with an empty pixmap rather than an error. The About dialog asked QIcon
+// for its mark that way and drew a blank space for it, in every build, with
+// nothing anywhere reporting it.
+//
+// Returns a null QPixmap when the resource is missing or will not parse; the
+// caller draws nothing rather than a placeholder.
+inline QPixmap LoadSvgPixmap(std::string_view resource_path,
+                             int size,
+                             qreal device_pixel_ratio = 1.0) {
+  const QString path = QString::fromUtf8(
+      resource_path.data(), static_cast<qsizetype>(resource_path.size()));
+  if (size <= 0)
+    return {};
+
+  // lunasvg cannot open a Qt resource by path, so the bytes are read out first.
+  QFile file{path};
+  if (!file.open(QIODevice::ReadOnly))
+    return {};
+  const QByteArray svg = file.readAll();
+  const auto document = lunasvg::Document::loadFromData(
+      svg.constData(), static_cast<size_t>(svg.size()));
+  if (!document)
+    return {};
+
+  const qreal dpr = device_pixel_ratio > 0 ? device_pixel_ratio : 1.0;
+  const int px = qRound(size * dpr);
+  lunasvg::Bitmap bitmap = document->renderToBitmap(px, px);
+  if (!bitmap.valid())
+    return {};
+
+  const QImage image{bitmap.data(), px, px,
+                     static_cast<qsizetype>(bitmap.stride()),
+                     QImage::Format_ARGB32_Premultiplied};
+  // Copied: the QImage above is a view over lunasvg's buffer, which dies with
+  // `bitmap` at the end of this function.
+  QPixmap pixmap = QPixmap::fromImage(image.copy());
+  pixmap.setDevicePixelRatio(dpr);
+  return pixmap;
+}
+
 // Renders one Lucide SVG resource into a `size`-square icon painted in `tint`.
 //
 // The files carry `stroke="currentColor"`, which Qt's SVG renderer has no

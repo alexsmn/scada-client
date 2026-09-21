@@ -1,5 +1,7 @@
 #include "modules/about/about_dialog.h"
 
+#include "modules/about/about_info.h"
+
 #include "aui/qt/dialog_service_impl_qt.h"
 #include "aui/test/app_environment.h"
 
@@ -17,7 +19,8 @@ TEST(AboutDialogTest, ShowAboutDialogShowsTheDialog) {
   AppEnvironment app_env;
   DialogServiceImplQt dialog_service;
 
-  ShowAboutDialog(dialog_service);
+  ShowAboutDialog(dialog_service, AboutInfo{.product = u"Telecontrol SCADA",
+                                           .version = u"2.6.0"});
   QApplication::processEvents();
 
   QDialog* visible = nullptr;

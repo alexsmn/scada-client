@@ -1,7 +1,5 @@
 #include "modules/login/qt/login_dialog.h"
 
-#include "aui/qt/theme_qt.h"
-#include "aui/severity_colors.h"
 #include "base/e2e_test_hooks.h"
 #include "modules/login/login_controller.h"
 #include "modules/login/login_summary.h"
@@ -22,6 +20,7 @@
 #include <QtWidgets/qlineedit.h>
 #include <QtWidgets/qmessagebox.h>
 #include <QtWidgets/qpushbutton.h>
+#include <QtWidgets/qtoolbutton.h>
 
 namespace {
 
@@ -119,6 +118,18 @@ LoginDialog::LoginDialog(AnyExecutor executor,
   connect(ui.privateKeyBrowseButton, &QPushButton::clicked, this, [this] {
     BrowseForFile(*ui.privateKeyLineEdit, tr("Select client private key"));
   });
+  // The three OPC UA security rows sit behind a disclosure, collapsed.
+  // `login.html` draws none of them: they are configuration an operator sets
+  // once and a deployment often never, where everything else on this form is
+  // supplied at every sign-in. Expanded when any of them already carries a
+  // value, so an operator who HAS configured a certificate is not asked to go
+  // looking for it.
+  ui.securityToggleButton->setChecked(
+      !controller_->client_certificate_path.empty() ||
+      !controller_->client_private_key_path.empty() ||
+      controller_->security_mode_index > 0);
+  connect(ui.securityToggleButton, &QToolButton::toggled, this,
+          [this] { UpdateSecurityVisibility(); });
   UpdateSecurityVisibility();
 
   ui.userNameComboBox->view()->setToolTip(
@@ -139,7 +150,6 @@ LoginDialog::LoginDialog(AnyExecutor executor,
 }
 
 void LoginDialog::BuildReshellChrome() {
-  const scada::aui::ThemeTokens& tokens = scada::aui::ActiveThemeTokens();
   auto* root = qobject_cast<QVBoxLayout*>(layout());
   if (!root)
     return;
@@ -151,18 +161,24 @@ void LoginDialog::BuildReshellChrome() {
   // does not, and repeating it cost a third of the dialog's height before the
   // first field.
 
-  // "You are connecting to" — the wrong-server guard. Only the backend and
-  // server are shown because they are all this dialog knows before it
-  // authenticates; see LoginConnectionSummary.
+  // "You are connecting to" — the wrong-server guard, now a quiet line rather
+  // than a bordered card.
+  //
+  // Two things changed here and both are about the same defect. It was a
+  // panel — background, border, radius, 6px padding, a baked 11px font — laid
+  // on top of a form whose every other row is drawn by the platform style, so
+  // the largest block on this dialog was the one carrying the least. And all
+  // of that came from a `setStyleSheet` with colours baked out of the theme
+  // tokens, which the native-look rules call a regression to remove rather
+  // than add (client/CLAUDE.md, "Colour through QPalette roles"). It is now a
+  // label quietened through the palette, which follows the platform's own
+  // light/dark switch with nothing to keep in step.
   connection_summary_ = new QLabel{this};
-  connection_summary_->setObjectName(QStringLiteral("loginConnectionSummary"));
   connection_summary_->setWordWrap(true);
-  connection_summary_->setStyleSheet(
-      QStringLiteral("#loginConnectionSummary{background:%1;color:%2;"
-                     "border:1px solid %3;border-radius:6px;padding:6px 9px;"
-                     "font-size:11px;}")
-          .arg(tokens.surface_muted.name(), tokens.fg_muted.name(),
-               tokens.border.name(QColor::HexArgb)));
+  QPalette quiet = connection_summary_->palette();
+  quiet.setColor(connection_summary_->foregroundRole(),
+                 quiet.color(QPalette::PlaceholderText));
+  connection_summary_->setPalette(quiet);
   root->insertWidget(root->count() - 1, connection_summary_);
 
   // The summary tracks whichever field the operator edits.
@@ -176,8 +192,26 @@ void LoginDialog::RefreshConnectionSummary() {
   if (!connection_summary_)
     return;
 
-  // The backend combo is hidden when only one backend is built in; its text is
-  // still the honest name of what will be connected to.
+  // **Shown only when it says something the form above does not.** The address
+  // is in `serverComboBox` on every single render, so restating it underneath
+  // is one of the two controls this dialog has, said twice. What the summary
+  // can carry alone is the BACKEND name, and only in the build where
+  // `serverTypeComboBox` is hidden because one backend is compiled in — there
+  // the operator has no other way to see which protocol they are about to
+  // speak. Where both controls are visible the line is pure duplication and is
+  // not drawn, which is what makes the steady-state dialog three rows and a
+  // button (`docs/product/ui-mockups/screens/login.html`).
+  //
+  // `isHidden()`, not `isVisible()`: this runs from the constructor, before the
+  // window is shown, and `isVisible()` is false for every widget in a window
+  // that has not been shown yet — so asking it here hid nothing and drew the
+  // duplicate line anyway. `isHidden()` answers the question actually being
+  // asked, which is whether the combo was explicitly hidden a few lines above.
+  if (!ui.serverTypeComboBox->isHidden()) {
+    connection_summary_->setVisible(false);
+    return;
+  }
+
   const std::u16string summary = LoginConnectionSummary(
       ui.serverTypeComboBox->currentText().toStdU16String(),
       ui.serverComboBox->currentText().toStdU16String());
@@ -254,6 +288,7 @@ void LoginDialog::EnableControls(bool enable) {
   ui.userNameComboBox->setEnabled(enable);
   ui.passwordLineEdit->setEnabled(enable);
   ui.autoLoginCheckBox->setEnabled(enable);
+  ui.securityToggleButton->setEnabled(enable);
   ui.securityModeComboBox->setEnabled(enable);
   ui.certificateLineEdit->setEnabled(enable);
   ui.certificateBrowseButton->setEnabled(enable);
@@ -263,13 +298,26 @@ void LoginDialog::EnableControls(bool enable) {
 }
 
 void LoginDialog::UpdateSecurityVisibility() {
-  const bool show = controller_->IsSecuritySupported();
+  // Two conditions, and they mean different things. A backend that has no
+  // notion of endpoint security hides the disclosure itself — the rows are not
+  // collapsed there, they do not exist. A backend that does shows the
+  // disclosure and lets the operator decide whether to look.
+  const bool supported = controller_->IsSecuritySupported();
+  ui.securityToggleButton->setVisible(supported);
+  ui.securityToggleButton->setArrowType(
+      ui.securityToggleButton->isChecked() ? Qt::DownArrow : Qt::RightArrow);
+
+  const bool show = supported && ui.securityToggleButton->isChecked();
   ui.securityLabel->setVisible(show);
   ui.securityModeComboBox->setVisible(show);
   ui.certificateLabel->setVisible(show);
   ui.certificateWidget->setVisible(show);
   ui.privateKeyLabel->setVisible(show);
   ui.privateKeyWidget->setVisible(show);
+
+  // The window is sized to its content and has no scroll area, so collapsing
+  // the section has to give the height back rather than leaving a gap.
+  adjustSize();
 }
 
 void LoginDialog::BrowseForFile(QLineEdit& target, const QString& title) {

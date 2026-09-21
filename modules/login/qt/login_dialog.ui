@@ -59,34 +59,47 @@
        </property>
       </widget>
      </item>
-     <item row="3" column="0">
-      <widget class="QLabel" name="autoLoginLabel">
+     <item row="3" column="0" colspan="2">
+      <widget class="QCheckBox" name="autoLoginCheckBox">
        <property name="text">
-        <string>Auto-Login:</string>
+        <string>Sign in automatically next time</string>
        </property>
       </widget>
      </item>
-     <item row="3" column="1">
-      <widget class="QCheckBox" name="autoLoginCheckBox"/>
+     <item row="4" column="0" colspan="2">
+      <widget class="QToolButton" name="securityToggleButton">
+       <property name="text">
+        <string>Security and certificates</string>
+       </property>
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+       <property name="autoRaise">
+        <bool>true</bool>
+       </property>
+       <property name="toolButtonStyle">
+        <enum>Qt::ToolButtonTextBesideIcon</enum>
+       </property>
+      </widget>
      </item>
-     <item row="4" column="0">
+     <item row="5" column="0">
       <widget class="QLabel" name="securityLabel">
        <property name="text">
         <string>Security:</string>
        </property>
       </widget>
      </item>
-     <item row="4" column="1">
+     <item row="5" column="1">
       <widget class="QComboBox" name="securityModeComboBox"/>
      </item>
-     <item row="5" column="0">
+     <item row="6" column="0">
       <widget class="QLabel" name="certificateLabel">
        <property name="text">
         <string>Certificate:</string>
        </property>
       </widget>
      </item>
-     <item row="5" column="1">
+     <item row="6" column="1">
       <widget class="QWidget" name="certificateWidget" native="true">
        <layout class="QHBoxLayout" name="certificateLayout">
         <property name="leftMargin">
@@ -121,14 +134,14 @@
        </layout>
       </widget>
      </item>
-     <item row="6" column="0">
+     <item row="7" column="0">
       <widget class="QLabel" name="privateKeyLabel">
        <property name="text">
         <string>Private key:</string>
        </property>
       </widget>
      </item>
-     <item row="6" column="1">
+     <item row="7" column="1">
       <widget class="QWidget" name="privateKeyWidget" native="true">
        <layout class="QHBoxLayout" name="privateKeyLayout">
         <property name="leftMargin">

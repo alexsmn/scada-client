@@ -46,7 +46,9 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
     ClientApplicationModules modules) {
   return [modules](ClientApplicationModuleContext& context) {
     RegisterAboutCommands(context.global_commands_,
-                          context.ui_command_registry_);
+                          context.ui_command_registry_,
+                          *context.scada_services_.session_service,
+                          context.node_service_);
 #if defined(_WIN32)
     RegisterWebCommands(context.executor_, context.global_commands_,
                         context.ui_command_registry_);

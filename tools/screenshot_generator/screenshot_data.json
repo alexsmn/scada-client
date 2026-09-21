@@ -2045,14 +2045,14 @@
       "kind": "login",
       "filename": "client-login.png",
       "width": 490,
-      "height": 245,
+      "height": 190,
       "expand_combo": "userNameComboBox"
     },
     {
       "kind": "login",
       "filename": "workbench-login.png",
       "width": 490,
-      "height": 245
+      "height": 190
     },
     {
       "kind": "limits",
