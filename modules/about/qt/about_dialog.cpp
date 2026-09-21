@@ -6,8 +6,8 @@
 #include "resources/common_resources.h"
 #include "ui/qt/client_utils_qt.h"
 
-#include <QIcon>
 #include "ui_about_dialog.h"
+#include <QIcon>
 
 #include <QApplication>
 #include <QMessageBox>
@@ -23,12 +23,19 @@ class AboutDialog : public QDialog {
     // UI that should show what the app *is*, and it is deliberately not routed
     // through LoadPixmap: that path tints to a single palette colour, which
     // would flatten a coloured brand asset (iconography.md §5.4).
-    ui.icon->setPixmap(QIcon{QStringLiteral(":/icons/app-mark.svg")}.pixmap(64,
-                                                                           64));
+    ui.icon->setPixmap(
+        QIcon{QStringLiteral(":/icons/app-mark.svg")}.pixmap(64, 64));
 
     auto version = tr("Version %1").arg(PROJECT_VERSION_DOTTED_STRING);
     auto organization_name = tr("Telecontrol");
-    const int copyright_year = 2018;
+    // The range this work is claimed over, not the year the dialog was
+    // written. It ran as a bare 2018 until 2026-09-20, which understated it at
+    // both ends: this repository's first commit is 2017-08-24 and it is still
+    // being changed daily. Deliberately NOT derived from the build clock -- an
+    // old binary rebuilt next year would then claim a year in which nothing
+    // was authored. Widen it by hand when the work is revised, and keep it in
+    // step with COPYRIGHT and clause 1 of LICENSE-EXCEPTION.txt.
+    const char* copyright_years = "2017\u20132026";
 
     ui.label->setText(
         QString{"<html><head/><body>"
@@ -38,7 +45,7 @@ class AboutDialog : public QDialog {
                 "</body></html>"}
             .arg(QApplication::applicationDisplayName())
             .arg(version)
-            .arg(copyright_year)
+            .arg(QString::fromUtf8(copyright_years))
             .arg(QApplication::organizationDomain())
             .arg(organization_name)
             .arg(PROJECT_VERSION_DOTTED_STRING));

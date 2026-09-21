@@ -1,10 +1,16 @@
 !!! DRAFT - NOT IN FORCE - NOT LEGAL ADVICE !!!
 This file is a draft for the copyright holder and their counsel to review,
-amend and adopt. It grants nothing while this block is present: every
-[DECIDE] below is unanswered, and no copyright holder is named. The publish
-tool (tools/export/publish_display_runtime.py) refuses to ship the display
-runtime while this marker is here. Delete this block, from the first line to
-the rule below, when the terms are settled.
+amend and adopt. It grants nothing while this block is present.
+
+The copyright holder is now named (Telecontrol, 2017-2026) and no [DECIDE]
+remains in the permission itself -- but FILLING IN A BLANK IS NOT GRANTING A
+PERMISSION. Adoption is deleting this block, and that is the copyright
+holder's act, not a drafting step: it is also what opens the publish gate in
+tools/export/publish_display_runtime.py, which refuses to ship the display
+runtime while this marker is here.
+
+Before adopting, read the notes at the foot of this file -- (A) in particular,
+which is now a list of what still has to be true, not a blank to fill.
 ==============================================================================
 
                   ADDITIONAL PERMISSION UNDER GNU GPL VERSION 3
@@ -37,10 +43,10 @@ WHAT THIS IS FOR
 
 THE PERMISSION
 
-  1. GRANT. [DECIDE: name the copyright holder(s) -- see NOTES] , being the
-     copyright holders of the Program, give you permission, as an additional
-     permission under section 7 of the GPL, to combine the Program with the
-     Runtime and to convey the resulting combined work.
+  1. GRANT. Telecontrol, being the copyright holder of the Program
+     (Copyright (C) 2017-2026 Telecontrol), gives you permission, as an
+     additional permission under section 7 of the GPL, to combine the Program
+     with the Runtime and to convey the resulting combined work.
 
   2. WHAT IT LIFTS. When you convey such a combined work in a non-source form,
      its Corresponding Source need not include the source code of the Runtime.
@@ -52,7 +58,7 @@ THE PERMISSION
      5 and 6 in full.
 
   4. SCOPE. This permission extends to the Runtime as distributed by
-     [DECIDE: the distributor's legal name] , and to any other program that
+     Telecontrol, and to any other program that
      implements the interface described in `display/abi/display_abi.h` and is
      loaded by the Program through that interface. It is a permission
      concerning the Program only: it grants no rights whatever in the Runtime,
@@ -71,15 +77,36 @@ THE PERMISSION
 NOTES FOR THE DRAFTER -- DELETE BEFORE ADOPTION
 ==============================================================================
 
-  A. NOBODY IS NAMED AS A COPYRIGHT HOLDER, AND THIS IS THE FIRST THING TO
-     FIX. Section 7 permits additional permissions only from the copyright
-     holders of the material. As of 2026-09-20 no file in this repository
-     asserts copyright in the Program: `LICENSE` is the verbatim GPL text with
-     its "How to Apply These Terms" appendix placeholders (`<year>`,
-     `<name of author>`) still unfilled, and no source file carries a
-     copyright notice. A permission granted by nobody is a permission granted
-     by nobody. Fill in clause 1, and add the matching copyright notice to
-     LICENSE's appendix and to the source headers, in the same change.
+  A. WHAT "TELECONTROL" HAS TO BE, AND WHAT IS STILL MISSING. Until
+     2026-09-20 no file in this repository asserted copyright in the Program
+     at all, so clause 1 named nobody. It now names Telecontrol, and the
+     matching notice is in `COPYRIGHT` and `README.md`. Three things are still
+     owed before this is safe to adopt:
+
+       i.  "Telecontrol" is a trading name, not a legal entity. Section 7
+           permits additional permissions from "the copyright holders", and a
+           grant has to identify who is granting it well enough to be binding.
+           Replace it in clause 1 and clause 4 with the registered entity --
+           the form that would appear on a contract -- and match `COPYRIGHT`.
+
+       ii. The year range 2017-2026 is taken from this repository's first
+           commit (2017-08-24, "Initial.") and today. If the work was first
+           published before that commit, or under another entity, the range
+           and possibly the holder are wrong.
+
+      iii. NOTHING IS ASSERTED PER FILE. The notice is at the root of the work
+           only; the 1094 source files carry none. That is a defensible way to
+           license a work distributed whole, and it is not what the FSF
+           recommends -- a file copied out of the tree on its own carries no
+           notice and no licence. See `docs/adr/0013-display-c-abi.md`.
+
+     NOTE WHAT MUST NOT BE DONE: do not fill in the `<year>` and
+     `<name of author>` placeholders in `LICENSE`. They are part of the GPL's
+     "How to Apply These Terms" appendix -- a template to copy OUT into your
+     own files -- and the licence text says of itself, in its second
+     paragraph, that copying it verbatim is permitted "but changing it is not
+     allowed". An earlier draft of this note said to fill them in; that was
+     wrong.
 
   B. THE THIRD-PARTY CODE IN THE PROGRAM DOES NOT BLOCK THIS. The only
      third-party copyrights in the client tree are permissive and allow

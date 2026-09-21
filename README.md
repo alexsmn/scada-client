@@ -253,8 +253,11 @@ that is exploitable should not be public before there is a fix to upgrade to.
 
 ## License
 
-GPL-3.0 — see [LICENSE](LICENSE). Third-party asset notices are in
-[NOTICE](NOTICE).
+Copyright (C) 2017-2026 Telecontrol.
+
+GPL-3.0 — see [LICENSE](LICENSE) for the licence text and
+[COPYRIGHT](COPYRIGHT) for the notice that covers this work. Third-party asset
+notices are in [NOTICE](NOTICE).
 
 The client draws schematic displays by loading a separate, proprietary shared
 library at run time — the schematic display runtime — which is not part of this
