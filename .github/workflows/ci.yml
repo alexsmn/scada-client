@@ -7,8 +7,11 @@
 # THE BUILD JOB EXISTS AGAIN AS OF 2026-09-20, after a year in which it could
 # not. The obstacle was never Qt: it was that a standalone client build resolves
 # its consumed products as sibling checkouts (ADR 0011), and `display` -- the
-# schematic renderer -- is deliberately never published, so one of those
-# siblings could not exist on a public runner. ADR 0013 replaced the source
+# schematic renderer -- is SOURCE that is deliberately never published, so one
+# of those siblings could not exist on a public runner. Its BINARY is a
+# different question and the opposite answer: that is the whole compromise
+# ADR 0013 makes, and `display_runtime` ships as a release asset on this very
+# repository. ADR 0013 replaced the source
 # dependency with a C ABI over a shared library loaded at RUN time. The client
 # no longer compiles `display`; it carries one C header describing the
 # interface, and every other product in its closure is public (`net`, `graph_qt`
@@ -121,8 +124,10 @@ jobs:
   #
   # THIS JOB BECAME POSSIBLE ON 2026-09-20 AND HAD BEEN IMPOSSIBLE BEFORE.
   # A standalone client build resolves the products it consumes as sibling
-  # checkouts (ADR 0011), and `display` -- the schematic renderer -- is
-  # deliberately never published. ADR 0013 replaced it with a C ABI over a
+  # checkouts (ADR 0011), and `display` -- the schematic renderer -- is SOURCE
+  # that is deliberately never published; its BINARY ships as a release asset
+  # on this repository, which is the compromise ADR 0013 exists to make.
+  # ADR 0013 replaced the source dependency with a C ABI over a
   # shared library loaded at run time, so the client's *source* closure is now
   # one C header plus products that are all public. The runtime binary is not
   # needed to build; a client without one runs and reports that it has none.

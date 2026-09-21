@@ -499,9 +499,12 @@ published export at `github.com/alexsmn/scada-client`. It triggers on push/PR to
 **Two jobs since 2026-09-20: `analyze` (cppcheck), which gates, and `build`, a
 Windows/Ubuntu/macOS matrix, which does not gate yet.** For a year there was no
 build job, and the obstacle was never Qt: a standalone client build resolves its
-consumed products as sibling checkouts (ADR 0011), and `display` is deliberately
-never published (superproject CLAUDE.md, "Repository boundaries are
-commercial"), so one of those siblings could not exist on a public runner.
+consumed products as sibling checkouts (ADR 0011), and `display`'s **source** is
+deliberately never published (superproject CLAUDE.md, "Repository boundaries are
+commercial"), so one of those siblings could not exist on a public runner. Its
+**binary** is the opposite answer and the same decision: `display_runtime` ships
+as a release asset on this repository, which is the compromise ADR 0013 exists
+to make. Reading only the first half inverts it.
 
 ADR 0013 removed that. The client no longer compiles `display` — it loads the
 schematic renderer as a shared library through a C ABI at run time, carrying
