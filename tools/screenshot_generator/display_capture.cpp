@@ -7,6 +7,7 @@
 #include "widget_capture.h"
 
 #include "display_frame/qt/display_frame.h"
+#include "display_view/display_runtime.h"
 #include "display_view/qt/display_widget.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
@@ -62,6 +63,42 @@ void SaveDisplayScreenshot(const ScreenshotSpec& spec,
                            NodeEventProvider& node_event_provider,
                            NodeService& node_service) {
   CapturePublishGuard publish_guard{spec.filename};
+
+  // **The precondition, stated rather than assumed.** Since ADR 0013 the
+  // schematic is drawn by a display runtime loaded at run time, and a client
+  // configured without one is a SUPPORTED state: `DisplayWidget` lays out
+  // perfectly and draws "there is no display runtime" over an empty page. That
+  // is a valid PNG of a missing dependency, and nothing downstream can tell it
+  // from a real render — right dimensions, right layout, no empty-surface
+  // tell, which is exactly the case `publish_guard.h` says no dimension or
+  // layout check can catch.
+  //
+  // So it FAILED OPEN: `client/`'s configure leaves
+  // `SCADA_DISPLAY_RUNTIME_LIBRARY` empty by default, the generator exited 0,
+  // and a routine full pass overwrote the tracked capture with the placeholder
+  // — 402107 differing pixels — unless a human happened to look at the image
+  // (backlog 814).
+  //
+  // SKIP rather than fail, and the distinction is ADR 0013's: a client with no
+  // runtime beside it must build and pass its own suite, because that is the
+  // state a stranger who cloned the public repository is in, and `display` is
+  // never published. A hard failure here would make an optional dependency a
+  // test requirement and turn the client's own CI red for a supported
+  // configuration. What matters for 814 is that nothing is WRITTEN — the
+  // tracked capture keeps its bytes, the skip is visible in the run, and
+  // `check_screenshots.py` reports the row as owed rather than produced.
+  if (!DisplayRuntime::Get()) {
+    GTEST_SKIP()
+        << spec.filename << " renders through the display runtime, and none "
+           "was loaded: "
+        << DisplayRuntime::unavailable_reason()
+        << "\nThe tracked capture was left alone rather than overwritten with "
+           "the placeholder. To produce it, build the `display` product and "
+           "configure the client with"
+           "\n  -DSCADA_DISPLAY_RUNTIME_LIBRARY=<display>/build/ninja/bin/"
+           "<Config>/libdisplay_runtime.<so|dylib|dll>"
+           "\nor set SCADA_DISPLAY_RUNTIME in the environment.";
+  }
 
   // The DisplayFrame reparents (owns) the renderer, so the frame is the single
   // owning widget we render and delete.
