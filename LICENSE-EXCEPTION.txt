@@ -1,0 +1,109 @@
+!!! DRAFT - NOT IN FORCE - NOT LEGAL ADVICE !!!
+This file is a draft for the copyright holder and their counsel to review,
+amend and adopt. It grants nothing while this block is present: every
+[DECIDE] below is unanswered, and no copyright holder is named. The publish
+tool (tools/export/publish_display_runtime.py) refuses to ship the display
+runtime while this marker is here. Delete this block, from the first line to
+the rule below, when the terms are settled.
+==============================================================================
+
+                  ADDITIONAL PERMISSION UNDER GNU GPL VERSION 3
+                                  SECTION 7
+
+                    Telecontrol SCADA Client -- version 1.0
+
+
+WHAT THIS IS FOR
+
+  The Telecontrol SCADA Client ("the Program") is licensed under the GNU
+  General Public License version 3, the text of which is in the file LICENSE
+  beside this one.
+
+  The Program draws schematic displays by loading a separate shared library at
+  run time -- the Telecontrol SCADA schematic display runtime ("the Runtime"),
+  distributed as `libdisplay_runtime.dylib`, `libdisplay_runtime.so` or
+  `display_runtime.dll`. The Runtime is not free software and its source code
+  is not published. The Program is specifically designed to load it, through
+  the C interface described in `display/abi/display_abi.h`.
+
+  Section 1 of the GPL defines the Corresponding Source of a work to include
+  the source for shared libraries that the work is "specifically designed to
+  require". Without the permission below, conveying the Program together with
+  the Runtime -- or conveying a copy of the Program intended to be used with
+  it -- would oblige the conveyor to provide the Runtime's source, which they
+  cannot do. The permission below lifts exactly that obligation and nothing
+  else.
+
+
+THE PERMISSION
+
+  1. GRANT. [DECIDE: name the copyright holder(s) -- see NOTES] , being the
+     copyright holders of the Program, give you permission, as an additional
+     permission under section 7 of the GPL, to combine the Program with the
+     Runtime and to convey the resulting combined work.
+
+  2. WHAT IT LIFTS. When you convey such a combined work in a non-source form,
+     its Corresponding Source need not include the source code of the Runtime.
+
+  3. WHAT IT DOES NOT LIFT. Every other condition of the GPL continues to
+     apply to the Program. In particular the Corresponding Source you convey
+     must still include the complete source of the Program and of every other
+     covered work combined with it, and you must still comply with sections 4,
+     5 and 6 in full.
+
+  4. SCOPE. This permission extends to the Runtime as distributed by
+     [DECIDE: the distributor's legal name] , and to any other program that
+     implements the interface described in `display/abi/display_abi.h` and is
+     loaded by the Program through that interface. It is a permission
+     concerning the Program only: it grants no rights whatever in the Runtime,
+     which is licensed separately and on its own terms.
+
+  5. NOT A FURTHER RESTRICTION. This is an additional permission within the
+     meaning of GPL section 7 -- it removes an obligation and imposes none. As
+     section 7 provides, you may remove it from any copy you convey, and if
+     you modify the Program you may keep it or drop it at your option.
+
+  6. NO OTHER CHANGE. Nothing here modifies, weakens or reinterprets the GPL
+     in any other respect. If any part of this permission is held invalid, the
+     Program remains licensed under the GPL alone.
+
+
+NOTES FOR THE DRAFTER -- DELETE BEFORE ADOPTION
+==============================================================================
+
+  A. NOBODY IS NAMED AS A COPYRIGHT HOLDER, AND THIS IS THE FIRST THING TO
+     FIX. Section 7 permits additional permissions only from the copyright
+     holders of the material. As of 2026-09-20 no file in this repository
+     asserts copyright in the Program: `LICENSE` is the verbatim GPL text with
+     its "How to Apply These Terms" appendix placeholders (`<year>`,
+     `<name of author>`) still unfilled, and no source file carries a
+     copyright notice. A permission granted by nobody is a permission granted
+     by nobody. Fill in clause 1, and add the matching copyright notice to
+     LICENSE's appendix and to the source headers, in the same change.
+
+  B. THE THIRD-PARTY CODE IN THE PROGRAM DOES NOT BLOCK THIS. The only
+     third-party copyrights in the client tree are permissive and allow
+     sublicensing and relicensing: the Lucide/Feather icons
+     (`res/icons/LICENSE`, ISC), `app/qt/DeployQt.cmake` (MIT, Nathan Osman),
+     and a WebKit-derived helper in `aui/os_exchange_data.cpp` (BSD-2-clause,
+     Apple Inc.). None is GPL, so none of their holders needs to join the
+     grant. Verify this again before adopting -- it is a survey of the tree at
+     2026-09-20, not a warranty.
+
+  C. THE SAME QUESTION SITS ON THE CLIENT PACKAGE, NOT JUST THE DOWNLOAD.
+     `app/qt/CMakeLists.txt` has an `install()` rule that copies the Runtime
+     into the client package. That is conveying the combined work, so it needs
+     this permission just as the release asset does.
+
+  D. THIS FILE MUST REACH RECIPIENTS. It is published automatically: the
+     export maps the whole `client/` directory to the public repository root
+     (`tools/export/products.toml`). Reference it from `README.md` and, ideally,
+     from the per-file notices you add under (A), so a recipient who reads only
+     a source header still learns the permission exists.
+
+  E. MODEL AND DIRECTION. This is deliberately shaped like the GNU Classpath
+     exception rather than the OpenSSL one. The OpenSSL exception's closing
+     sentence requires Corresponding Source to include the source of the
+     linked library, which works because OpenSSL is open and would defeat the
+     whole purpose here. Read clause 2 carefully for that reason: it is the
+     inverse of the sentence a reader may be expecting.

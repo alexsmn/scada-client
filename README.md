@@ -255,3 +255,15 @@ that is exploitable should not be public before there is a fix to upgrade to.
 
 GPL-3.0 — see [LICENSE](LICENSE). Third-party asset notices are in
 [NOTICE](NOTICE).
+
+The client draws schematic displays by loading a separate, proprietary shared
+library at run time — the schematic display runtime — which is not part of this
+repository and is not free software. Combining a GPL work with a library it is
+specifically designed to require needs an additional permission under GPL
+section 7; the draft of that permission is
+[LICENSE-EXCEPTION.txt](LICENSE-EXCEPTION.txt).
+
+**It is a draft and grants nothing yet.** Until it is adopted, the client is
+under the GPL alone, and the runtime is not distributed. The client builds and
+runs without it: schematic windows report that there is no display runtime,
+which is a supported state rather than a broken build.
