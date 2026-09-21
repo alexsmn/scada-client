@@ -46,12 +46,12 @@
       "referenced_from": [
         "getting-started.md"
       ],
-      "notes": "LoginDialog modal shown at startup; rendered by the dialog pipeline. The user combo is captured OPEN, listing the seven operator accounts from the fixture's login_user_list (previously one hard-coded 'root' in a closed combo). Opening it is not just showPopup(): a combo popup is its own top-level window, so the capture composes the popup's grab onto the dialog's (expand_combo in the dialog spec) - which also makes this image wider than its spec width.",
+      "notes": "LoginDialog modal shown at startup; rendered by the dialog pipeline. The user combo is captured OPEN, listing the seven operator accounts from the fixture's login_user_list (previously one hard-coded 'root' in a closed combo). Opening it is not just showPopup(): a combo popup is its own top-level window, so the capture composes the popup's grab onto the dialog's (expand_combo in the dialog spec) - which also makes this image wider than its spec width. SPARSER SINCE 2026-09-20: the form is Server / User name / Password plus a spanning `Sign in automatically next time` checkbox, which is the shape docs/product/ui-mockups/screens/login.html draws. Three things went. The `Auto-Login:` label column beside a bare checkbox said the same thing twice and half of it was a fragment. The OPC UA security rows (mode, certificate, private key) moved behind a `Security and certificates` disclosure — they are configuration set once, where everything else here is supplied at every sign-in — so they appear in NEITHER login capture, whose fixture backend does not support them anyway. And the `Connecting to:` summary is no longer drawn when the protocol combo is visible, because there it restated the two controls immediately above it; it survives only in a build carrying one protocol, where it is the only place the protocol is named. The capture's height came down 245 -> 190 to match.",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "b6047aaad",
         "platform": "macos",
         "dirty": true,
-        "sha256": "25eeed40abde80eb9457c00aa1c1f1cee9716d027389eb93c5a72987d0678637"
+        "sha256": "6158f0693bdca8860433bb0529e6a3b3ef6ea3bd134439755bbabdfd71a0c560"
       }
     },
     {
@@ -61,12 +61,12 @@
       "parity_key": "login",
       "published": false,
       "referenced_from": [],
-      "notes": "Light-theme render of client-login.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
+      "notes": "Light-theme render of client-login.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own. SPARSER SINCE 2026-09-20: the form is Server / User name / Password plus a spanning `Sign in automatically next time` checkbox, which is the shape docs/product/ui-mockups/screens/login.html draws. Three things went. The `Auto-Login:` label column beside a bare checkbox said the same thing twice and half of it was a fragment. The OPC UA security rows (mode, certificate, private key) moved behind a `Security and certificates` disclosure — they are configuration set once, where everything else here is supplied at every sign-in — so they appear in NEITHER login capture, whose fixture backend does not support them anyway. And the `Connecting to:` summary is no longer drawn when the protocol combo is visible, because there it restated the two controls immediately above it; it survives only in a build carrying one protocol, where it is the only place the protocol is named. The capture's height came down 245 -> 190 to match.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "b6047aaad",
         "platform": "macos",
         "dirty": true,
-        "sha256": "f28e35a777c7a9c184034fbcdc97f49cbe36929d984eb446c13b1866c4dd5c17"
+        "sha256": "9d391d4a96a709b97d2df03107082bdc0aa6c04ae5c1b1d3300aabbff9edfebf"
       }
     },
     {
@@ -77,12 +77,12 @@
       "referenced_from": [
         "client/workbench.md"
       ],
-      "notes": "The same LoginDialog under --theme (backlog 3.1): the reshell chrome wrapped around the .ui form - brand lockup (mark + Sign in + product line) and the 'Connecting to: <backend> · <server>' summary that tracks the fields. Saved under its own name so the legacy client-login.png the getting-started page embeds is never overwritten by a themed render. In the themed-ctest --only list. macOS render pending a Windows re-render; out of current_generator_owned_subset (subset is auto-* only).",
+      "notes": "The same LoginDialog under --theme (backlog 3.1): the .ui form under the design-token appearance. This note described a brand lockup and a 'Connecting to:' summary card until 2026-09-20; the lockup was removed when dialogs.md §1 was applied to this dialog, and the summary is described below. Saved under its own name so the legacy client-login.png the getting-started page embeds is never overwritten by a themed render. In the themed-ctest --only list. macOS render pending a Windows re-render; out of current_generator_owned_subset (subset is auto-* only). SPARSER SINCE 2026-09-20: the form is Server / User name / Password plus a spanning `Sign in automatically next time` checkbox, which is the shape docs/product/ui-mockups/screens/login.html draws. Three things went. The `Auto-Login:` label column beside a bare checkbox said the same thing twice and half of it was a fragment. The OPC UA security rows (mode, certificate, private key) moved behind a `Security and certificates` disclosure — they are configuration set once, where everything else here is supplied at every sign-in — so they appear in NEITHER login capture, whose fixture backend does not support them anyway. And the `Connecting to:` summary is no longer drawn when the protocol combo is visible, because there it restated the two controls immediately above it; it survives only in a build carrying one protocol, where it is the only place the protocol is named. The capture's height came down 245 -> 190 to match.",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "b6047aaad",
         "platform": "macos",
         "dirty": true,
-        "sha256": "4abb54c7e8ac54be285ed1d6fa6967125c9638fed0e19c209c169c0e3d038bb8"
+        "sha256": "20a96e054bb62e6682830ad3fc24f1a506296478c239c4b54e8778765325c5f0"
       }
     },
     {
@@ -92,12 +92,12 @@
       "parity_key": "login",
       "published": false,
       "referenced_from": [],
-      "notes": "Light-theme render of workbench-login.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
+      "notes": "Light-theme render of workbench-login.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own. SPARSER SINCE 2026-09-20: the form is Server / User name / Password plus a spanning `Sign in automatically next time` checkbox, which is the shape docs/product/ui-mockups/screens/login.html draws. Three things went. The `Auto-Login:` label column beside a bare checkbox said the same thing twice and half of it was a fragment. The OPC UA security rows (mode, certificate, private key) moved behind a `Security and certificates` disclosure — they are configuration set once, where everything else here is supplied at every sign-in — so they appear in NEITHER login capture, whose fixture backend does not support them anyway. And the `Connecting to:` summary is no longer drawn when the protocol combo is visible, because there it restated the two controls immediately above it; it survives only in a build carrying one protocol, where it is the only place the protocol is named. The capture's height came down 245 -> 190 to match.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "b6047aaad",
         "platform": "macos",
         "dirty": true,
-        "sha256": "00decb41c4ac3a8e9b5983dfa7f338155c4f3d11f1b33a5faa8c9e4d6d767f38"
+        "sha256": "dacfd224684a4e407b80256285e5dbc5c6ec3a6f31e108b35aa38a4d6c41cb15"
       }
     },
     {
@@ -140,10 +140,10 @@
       "referenced_from": [],
       "notes": "About dialog (Help menu). Capture also guards the ShowSelfOwnedModalDialog regression: the factory used to discard a lazy Awaitable and the dialog never showed. Validation-only; themed look via --theme runs (backlog 3.4).",
       "captured": {
-        "commit": "9ce83d0c5",
+        "commit": "7f5279d8e",
         "platform": "macos",
         "dirty": true,
-        "sha256": "853776949df897ed4bcae11ae390fa076580c23de02c84fa897822955266c6ed"
+        "sha256": "3b560563847de41016ee211a3aa49fde06cd847ee7aab3dac19e97e2b2f53d89"
       }
     },
     {
@@ -155,10 +155,10 @@
       "referenced_from": [],
       "notes": "Light-theme render of about.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "9ce83d0c5",
+        "commit": "7f5279d8e",
         "platform": "macos",
         "dirty": true,
-        "sha256": "cb0d1a64a6c9220176253ef03842ee8a93ff76d21bb4d0f4107f88c64344269e"
+        "sha256": "6e3f263fde283925e2514bb5544744cc2473efab3f63474580184425cad9681b"
       }
     },
     {
