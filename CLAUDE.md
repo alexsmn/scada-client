@@ -201,6 +201,13 @@ Rules of the pipeline:
   case. A new test binary that builds its own `QApplication` instead of
   taking `AppEnvironment` reintroduces that; take the fixture. See
   `docs/ops/client-build.md` → "The Qt tests run offscreen on macOS".
+  Note the fixture makes a second, separate decision that is **not**
+  macOS-only: whichever way the platform ends up an unadorned `offscreen`,
+  including one the caller put in the environment, it is upgraded to
+  `offscreen:configfile=<path>` so the process gets a 1920x1080 screen rather
+  than the plugin's built-in 800x600. `QT_QPA_PLATFORM=offscreen` for a whole
+  `ctest` run is therefore safe — 2258/2258 either way, measured 2026-09-20 —
+  and asking for a different screen means naming your own `configfile=`.
 
 ### UX design system
 

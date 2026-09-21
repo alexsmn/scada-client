@@ -266,8 +266,10 @@ jobs:
           libxkbcommon-dev libxkbcommon-x11-dev \
           libxrandr-dev libxss-dev libxtst-dev
 
-    # xvfb for the test step; see its comment for why the tests need a real
-    # display here rather than the offscreen platform.
+    # xvfb for the test step, which runs the suite on a real (virtual) display
+    # rather than on Qt's offscreen platform. See that step's comment: the two
+    # reasons that made the offscreen platform unusable here are both fixed,
+    # but nobody has run a Linux leg without xvfb to find out whether it can go.
     - name: Install Ninja and Xvfb (Linux)
       if: runner.os == 'Linux'
       run: sudo apt-get install -y ninja-build xvfb
@@ -352,32 +354,35 @@ jobs:
     # The E2E suite is skipped at configure time here (no `iec61850pp` sibling
     # and no tier binaries), so this is the unit suite.
     #
-    # DO NOT SET QT_QPA_PLATFORM=offscreen HERE, however obvious it looks for a
-    # headless runner. Each binary is left to choose instead: the client's own
-    # tests default to offscreen on macOS by themselves, Windows uses its
-    # native platform, and Linux gets a real (virtual) display from xvfb below.
+    # QT_QPA_PLATFORM is deliberately NOT set here. Each binary chooses for
+    # itself instead: the client's own tests default to offscreen on macOS,
+    # Windows uses its native platform, and Linux gets a real (virtual)
+    # display from xvfb below.
     #
-    # Two reasons, and only the first has been fixed.
+    # It is worth knowing that this is now a preference rather than a
+    # prohibition, because it was a prohibition twice and both reasons are
+    # gone (measured on macOS 2026-09-20; the suite is identical with the
+    # variable and without it, 2258/2258 either way):
     #
-    # It used to ABORT. `scada_qt_import_offscreen_platform_into_tests()`
-    # linked the plugin into this product's own test executables and skipped
-    # the ones consumed products bring in, so `view_manager_qt_unittests` and
-    # `graph_qt_unittests` -- both spliced into this build through `aui`, both
-    # building a QApplication -- had no offscreen plugin in them. Forcing the
-    # variable aborted each inside QApplication's constructor, and because
-    # gtest_discover_tests runs the binary at TEST time, one abort took out the
-    # whole ctest invocation rather than one case. Measured on macOS
-    # 2026-09-20: "Could not find the Qt platform plugin \"offscreen\" ...
-    # Available platform plugins are: cocoa". That skip is gone, so the
-    # variable no longer breaks this suite -- 2249/2249 with it and without it.
+    #  - It used to ABORT the whole run.
+    #    `scada_qt_import_offscreen_platform_into_tests()` linked the offscreen
+    #    plugin into this product's own test executables and skipped the ones
+    #    consumed products bring in, so `view_manager_qt_unittests` and
+    #    `graph_qt_unittests` -- both spliced in through `aui`, both building a
+    #    QApplication -- had none. Setting the variable aborted each inside
+    #    QApplication's constructor, and because gtest_discover_tests runs the
+    #    binary at TEST time, one abort took out the entire ctest invocation
+    #    rather than one case.
+    #  - It then picked the WRONG SCREEN. The plugin's built-in screen is
+    #    800x600 and the fixtures ask for `offscreen:configfile=<path>`, a
+    #    1920x1080 description; a bare `offscreen` in the environment won over
+    #    that and silently brought the small screen with it, which any test
+    #    asserting on restored window geometry would fail. An unadorned
+    #    `offscreen` is now upgraded to carry the screen description, so it no
+    #    longer can.
     #
-    # It still picks the WRONG SCREEN. The plugin's built-in screen is 800x600,
-    # and the whole point of letting each fixture choose is that it asks for
-    # `offscreen:configfile=<path>` instead, naming a 1920x1080 description --
-    # a bare `offscreen` in the environment wins over that and silently takes
-    # the small screen with it. Nothing in the client asserts on window
-    # geometry today, so nothing here would notice; a test that did would fail
-    # only under this variable, which is the worst shape for it to fail in.
+    # What has NOT been established is whether the Linux leg could drop xvfb
+    # and run offscreen. Nothing here has run that, so xvfb stays.
     - name: Test (Release)
       if: runner.os != 'Linux'
       working-directory: client
