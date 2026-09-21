@@ -27,7 +27,18 @@ class AboutDialog : public QDialog {
         QIcon{QStringLiteral(":/icons/app-mark.svg")}.pixmap(64, 64));
 
     auto version = tr("Version %1").arg(PROJECT_VERSION_DOTTED_STRING);
-    auto organization_name = tr("Telecontrol");
+    // The REGISTERED ENTITY, not the trading name, because the line this
+    // feeds is a copyright notice and a notice naming something that is not a
+    // legal person asserts nothing. It is the same string as COPYRIGHT and as
+    // clause 1 of LICENSE-EXCEPTION.txt, and the three must agree: an operator
+    // reading the About box and a lawyer reading the exception have to be
+    // looking at the same holder.
+    //
+    // If the brand name is wanted here instead, this is the one line to change
+    // -- but then the About box stops being one of the places the notice is
+    // asserted, and COPYRIGHT's "Scope of this notice" has to stop saying it
+    // is.
+    auto organization_name = tr("Telecontrol, Ltd.");
     // The range this work is claimed over, not the year the dialog was
     // written. It ran as a bare 2018 until 2026-09-20, which understated it at
     // both ends: this repository's first commit is 2017-08-24 and it is still

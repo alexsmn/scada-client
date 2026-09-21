@@ -2858,8 +2858,8 @@
     </message>
     <message>
         <location filename="../../modules/about/qt/about_dialog.cpp" line="23"/>
-        <source>Telecontrol</source>
-        <translation>Телеконтроль</translation>
+        <source>Telecontrol, Ltd.</source>
+        <translation>ООО «Телеконтроль»</translation>
     </message>
 </context>
 <context>

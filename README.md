@@ -253,7 +253,7 @@ that is exploitable should not be public before there is a fix to upgrade to.
 
 ## License
 
-Copyright (C) 2017-2026 Telecontrol.
+Copyright (C) 2017-2026 Telecontrol, Ltd. (ООО "Телеконтроль").
 
 GPL-3.0 — see [LICENSE](LICENSE) for the licence text and
 [COPYRIGHT](COPYRIGHT) for the notice that covers this work. Third-party asset
