@@ -22,11 +22,28 @@ so staleness becomes **visible** without a re-render.
 `sha256` is what makes the record self-verifying, and it is why this works at
 all in a repository where nobody can be trusted to re-stamp by hand: if the
 bytes on disk no longer match the digest, the recorded commit describes some
-*other* image and the provenance is stale, whoever wrote it. That also solves
-the "which files did this pass actually write" problem without the pass having
-to say — a render that changed nothing leaves its provenance untouched, which
-is correct, because the older commit is still the one that produced those
-bytes.
+*other* image and the provenance is stale, whoever wrote it.
+
+What the digest does **not** answer is which files a run rendered, and this
+module claimed for a year that it did — the paragraph above used to end "that
+also solves the *which files did this pass actually write* problem without the
+pass having to say". It does not (tasks 642 and 816). "The bytes differ from
+what is recorded" and "this run produced these bytes" coincide only once a row
+has a record to differ from, and only when nothing else in the gallery moved:
+a partial render followed by `--stamp`, in a checkout where a peer holds an
+unrelated capture modified, stamps that peer's image with this run's commit.
+That is an ordinary evening in this tree. The web mirror had the identical
+shape and one `--only` run wrote its commit onto all 22 of its rows
+(`b52ad74e9`, task 599).
+
+So `--stamp` is **told** what the run rendered and never infers it. A caller
+says so with `--produced`, `--produced-from` or `--produced-since`, and a
+`--stamp` that says nothing fails rather than guessing: defaulting to
+"everything" restores the backfill and defaulting to "nothing" would quietly
+stop recording provenance at all. Within that list the digest still governs —
+a rendered image whose bytes came out identical keeps the older commit that
+genuinely produced them, which is correct and keeps a no-op run from churning
+the manifest.
 
 `dirty` matters more than it looks. A capture taken from a modified worktree is
 reproducible from *no* commit, so its `commit` is not a claim anyone can check.
@@ -34,8 +51,8 @@ Recording it is the difference between "stale" and "never verifiable".
 
 Two modes:
 
-    capture_provenance.py --stamp   # after a regeneration; rewrites changed rows
-    capture_provenance.py --report  # what the gallery's provenance says today
+    capture_provenance.py --stamp --produced-since <marker>   # after a render
+    capture_provenance.py --report   # what the gallery's provenance says today
 
 Nothing here backfills. An image with no `captured` block reads as *unknown*,
 which is the honest state of every image tracked before this existed — writing
@@ -50,6 +67,7 @@ import hashlib
 import json
 import subprocess
 import sys
+from collections.abc import Iterable
 from pathlib import Path
 
 # Tracked paths whose content can change what a capture renders. Used only to
@@ -161,16 +179,36 @@ def generated_rows(manifest: dict) -> list[dict]:
     return [row for row in manifest["images"] if is_generator_owned(row.get("tag", ""))]
 
 
-def stamp(manifest: dict, images_dir: Path, provenance: dict) -> list[str]:
-    """Record `provenance` on every generated image whose bytes changed.
+def stamp(manifest: dict, images_dir: Path, provenance: dict,
+          produced: Iterable[str] | None) -> list[str]:
+    """Record `provenance` on the images in `produced` whose bytes changed.
 
-    Returns the filenames restamped. A row whose digest still matches keeps the
-    provenance it had: those bytes were produced by that older commit, and
-    overwriting it with today's would claim a freshness the render did not
-    establish.
+    `produced` is the list of filenames this run rendered, and it is required:
+    the two questions "did the bytes move" and "did this run write them" are
+    different, and answering the second with the first is tasks 642 and 816.
+    A row outside `produced` is never touched whatever its digest says.
+
+    Returns the filenames restamped. Two cases inside `produced` are easy to
+    lose and are both deliberate. A rendered row whose digest still matches
+    keeps the provenance it had — that older commit did produce those bytes,
+    and overwriting it would claim a freshness this render did not establish.
+    A rendered row with no record at all *does* get its first one, which is not
+    a backfill: this run is what made those bytes.
+
+    Raises `TypeError` when `produced` is None. Loud rather than silent in
+    either direction — defaulting to "everything" restores the backfill this
+    gate exists to stop, and defaulting to "nothing" would quietly stop
+    recording provenance while still reporting success.
     """
+    if produced is None:
+        raise TypeError(
+            "stamp() needs the list of files this run rendered "
+            "(tasks 642 and 816)")
+    rendered = produced if isinstance(produced, (set, frozenset)) else set(produced)
     restamped = []
     for row in generated_rows(manifest):
+        if row["file"] not in rendered:
+            continue
         image = images_dir / row["file"]
         if not image.exists():
             continue
@@ -182,11 +220,58 @@ def stamp(manifest: dict, images_dir: Path, provenance: dict) -> list[str]:
     return restamped
 
 
+def produced_since(images_dir: Path, manifest: dict, marker: Path) -> set[str]:
+    """Generated images modified at or after `marker`'s mtime.
+
+    The pipeline's answer to "what did this run render". A caller that can
+    enumerate its output should say so with `--produced`, which is exact; this
+    is for the render passes that cannot, which is all of them today — the
+    generator writes its PNGs from scattered call sites and keeps no list, so
+    the marker file `regenerate_client_screenshots` touches immediately before
+    the pass is the only thing in the pipeline that knows when it started.
+
+    It is a window rather than a list, so it inherits one failure the explicit
+    form does not: a file some other session writes *during* the render is
+    inside the window and reads as produced. That window is the render, where
+    the old behaviour's window was all of history — and the digest gate still
+    applies within it. Narrow it further by rendering from a worktree, which is
+    what the shared checkout's own rules already ask for.
+
+    `>=` rather than `>`: the marker is created immediately before the pass, and
+    on a filesystem with coarse timestamps the first image can land in the same
+    tick. Including the boundary risks nothing here, since the marker is not an
+    image and the digest gate decides what actually gets written.
+    """
+    since = marker.stat().st_mtime
+    return {
+        row["file"]
+        for row in generated_rows(manifest)
+        if (images_dir / row["file"]).exists()
+        and (images_dir / row["file"]).stat().st_mtime >= since
+    }
+
+
 def report(manifest: dict, images_dir: Path, repo_root: Path | None) -> list[str]:
-    """One line per generated image whose provenance is absent or not credible.
+    """One line per finding about a generated image's provenance.
 
     Silence means every tracked generated image records a clean capture, from a
     commit in this history, whose bytes are still the ones that were stamped.
+
+    One image can raise more than one finding, and that is the point of the
+    ordering below. `dirty` and "not in this history" are independent facts
+    about different parts of the record — one is about the worktree the capture
+    came from, the other about whether the commit it names still exists — so a
+    dirty capture is *also* checked against history. It was not until task 815:
+    this function returned on the flag, and because `render_paths_dirty()`
+    examined `client` while the gallery it stamps lives under `client/`, every
+    row stamped before `d59515aa9` reads `dirty: true` whatever the tree held.
+    144 of the 150 stamped rows did, so the history check below had never run
+    on a row that reached it and read as passing.
+
+    The earlier two checks *do* stop, and for a reason the other two do not
+    share: an unstamped row has no commit to ask about, and a row whose bytes
+    no longer match the digest has a commit that describes some other image.
+    Neither leaves a question the history check could answer.
     """
     lines = []
     for row in sorted(generated_rows(manifest), key=lambda r: r["file"]):
@@ -209,7 +294,6 @@ def report(manifest: dict, images_dir: Path, repo_root: Path | None) -> list[str
                 f"{name}: captured from a dirty tree at {captured.get('commit', '?')} "
                 f"- reproducible from no commit"
             )
-            continue
         commit = captured.get("commit")
         if repo_root and commit and not commit_is_in_history(repo_root, commit):
             lines.append(
@@ -237,6 +321,53 @@ def platform_summary(manifest: dict, images_dir: Path) -> list[str]:
     return [f"  {platform}: {count}" for platform, count in sorted(counts.items())]
 
 
+def read_produced_list(path: Path) -> set[str]:
+    """The filenames a render pass recorded, from a list file or a JSON array.
+
+    Both shapes because the two producers differ: a shell pass writes lines,
+    and anything porting the web tool's `capture-report.json` writes JSON. A
+    file that parses as neither is an error rather than an empty list — an
+    empty list stamps nothing and reports success, which is the silent failure
+    this whole gate exists to avoid.
+    """
+    text = path.read_text(encoding="utf-8")
+    stripped = text.lstrip()
+    if stripped.startswith("[") or stripped.startswith("{"):
+        parsed = json.loads(text)
+        if isinstance(parsed, dict):
+            parsed = parsed.get("produced", [])
+        return {str(name) for name in parsed}
+    names = {
+        line.strip()
+        for line in text.splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    }
+    # A path is accepted and reduced to its basename: the manifest keys on the
+    # bare filename, and a caller echoing what it wrote has the full path.
+    return {Path(name).name for name in names}
+
+
+def resolve_produced(args: argparse.Namespace, manifest: dict,
+                     images_dir: Path) -> set[str]:
+    """What the run rendered, from whichever way the caller chose to say it.
+
+    Raises `TypeError` when the caller said nothing. `--stamp` cannot default:
+    guessing "everything" is the defect (tasks 642 and 816) and guessing
+    "nothing" stamps no provenance while reporting success.
+    """
+    if args.produced:
+        return {Path(name).name for name in args.produced}
+    if args.produced_from is not None:
+        return read_produced_list(args.produced_from)
+    if args.produced_since is not None:
+        return produced_since(images_dir, manifest, args.produced_since)
+    raise TypeError(
+        "--stamp needs to be told what this run rendered: pass --produced "
+        "FILE (repeatable), --produced-from PATH, or --produced-since MARKER. "
+        "It used to infer this from which digests had changed, which stamped "
+        "this run's commit onto images it never rendered (tasks 642 and 816)")
+
+
 def main(argv: list[str] | None = None) -> int:
     here = Path(__file__).resolve()
     default_manifest = here.parents[2] / "screenshots" / "image_manifest.json"
@@ -244,9 +375,26 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--stamp", action="store_true",
-                      help="record provenance on generated images whose bytes changed")
+                      help="record provenance on the images this run rendered; "
+                           "needs one of --produced/--produced-from/--produced-since")
     mode.add_argument("--report", action="store_true",
                       help="print generated images whose provenance is absent or stale")
+    # What the run rendered. Required by --stamp and mutually exclusive: the
+    # tool must be told, and there is deliberately no blanket "all" -- a caller
+    # that really did render everything can still say so by listing it, and
+    # nothing in this pipeline is in a position to assert it otherwise (the
+    # regeneration target renders one theme, so "every generated row" has never
+    # been true of it). Tasks 642 and 816.
+    produced = parser.add_mutually_exclusive_group()
+    produced.add_argument("--produced", action="append", metavar="FILE",
+                          help="a filename this run rendered; repeatable")
+    produced.add_argument("--produced-from", type=Path, metavar="PATH",
+                          help="file listing the rendered filenames, one per "
+                               "line (# comments and blanks ignored), or a "
+                               "JSON array of them")
+    produced.add_argument("--produced-since", type=Path, metavar="MARKER",
+                          help="treat generated images modified at or after "
+                               "MARKER's mtime as this run's output")
     parser.add_argument("--image-manifest", type=Path, default=default_manifest)
     parser.add_argument("--images-dir", type=Path, default=None,
                         help="defaults to the manifest's own directory")
@@ -275,14 +423,20 @@ def main(argv: list[str] | None = None) -> int:
             "platform": platform_name(),
             "dirty": render_paths_dirty(repo_root, images_dir),
         }
-        restamped = stamp(manifest, images_dir, provenance)
+        try:
+            rendered = resolve_produced(args, manifest, images_dir)
+        except (TypeError, OSError) as error:
+            print(f"capture_provenance: {error}", file=sys.stderr)
+            return 2
+        restamped = stamp(manifest, images_dir, provenance, rendered)
         if restamped:
             manifest_path.write_text(
                 json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
                 encoding="utf-8",
             )
-        print(f"capture provenance: {len(restamped)} image(s) restamped at "
-              f"{provenance['commit']} on {provenance['platform']}"
+        print(f"capture provenance: {len(restamped)} of {len(rendered)} "
+              f"rendered image(s) restamped at {provenance['commit']} on "
+              f"{provenance['platform']}"
               + (" (DIRTY TREE)" if provenance["dirty"] else ""))
         for name in restamped:
             print(f"  {name}")
@@ -296,7 +450,9 @@ def main(argv: list[str] | None = None) -> int:
         # Reported, never failed on: every image tracked before this existed is
         # legitimately unknown, so a non-zero count is the backlog rather than a
         # regression. Same rule as check_screenshots.py's owed set.
-        print(f"{len(lines)} image(s) with absent or unverifiable provenance:")
+        images = len({line.split(":", 1)[0] for line in lines})
+        print(f"{len(lines)} finding(s) across {images} image(s) with absent "
+              f"or unverifiable provenance:")
         for line in lines:
             print(f"  {line}")
     else:

@@ -339,17 +339,39 @@ set_property(DIRECTORY APPEND PROPERTY
 # last, after the render pass, so it sees the bytes that were actually
 # published; it rewrites only rows whose digest changed, because an unchanged
 # image is still the output of the older commit already recorded against it.
+#
+# `--produced-since` is what tells it which rows this pass rendered, and it is
+# now required: the tool used to infer that from which digests had changed,
+# which stamped this run's commit onto images it never rendered whenever
+# anything else in the gallery was modified — a peer's uncommitted re-render,
+# or leftovers from an earlier pass (tasks 642 and 816).
+#
+# A marker file touched immediately before the render is the only thing in this
+# pipeline that knows when the pass started: the generator writes its PNGs from
+# scattered call sites and keeps no list of them, so there is nothing to
+# enumerate. Note what the alternative would have been and why it is wrong —
+# "this target renders everything, so stamp everything" is false here. This
+# pass renders ONE theme (the generator's default, dark); the light siblings
+# come from a separate `--theme=light` invocation, so 75 of the 166 generated
+# rows are not this pass's output and never were.
+set(SCREENSHOT_RENDER_MARKER
+  "${CMAKE_CURRENT_BINARY_DIR}/screenshot_render_started")
 if(Python3_FOUND)
   set(screenshot_provenance_stamp
     COMMAND ${Python3_EXECUTABLE}
       "${CMAKE_CURRENT_SOURCE_DIR}/capture_provenance.py"
       "--stamp"
       "--image-manifest=${SCREENSHOT_IMAGE_MANIFEST}"
-      "--images-dir=${SCREENSHOT_DOCS_DIR}")
+      "--images-dir=${SCREENSHOT_DOCS_DIR}"
+      "--produced-since=${SCREENSHOT_RENDER_MARKER}")
 endif()
 
 add_custom_target(regenerate_client_screenshots
   COMMAND ${CMAKE_COMMAND} -E make_directory "${SCREENSHOT_DOCS_DIR}"
+  # `touch` rather than `touch_nocreate`: the marker must exist and must carry
+  # THIS run's start time, so a stale one from a previous regeneration cannot
+  # widen the window to include images that pass rendered.
+  COMMAND ${CMAKE_COMMAND} -E touch "${SCREENSHOT_RENDER_MARKER}"
   COMMAND ${SCREENSHOT_CAPTURE_LAUNCHER} $<TARGET_FILE:client_screenshot_generator>
     "--out=${SCREENSHOT_DOCS_DIR}"
     "--image-manifest=${SCREENSHOT_IMAGE_MANIFEST}"
