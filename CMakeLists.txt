@@ -35,9 +35,11 @@ scada_product_base()
 # module path, not one of its own.
 #
 # `display` is NOT among them, and that is the whole of ADR 0013: the schematic
-# renderer is never published, so the client loads it as a shared library at run
-# time instead of compiling it. What the client needs from that product at BUILD
-# time is one C header, resolved below — no sources, no targets, no link.
+# renderer's SOURCE is never published, so the client loads it as a shared
+# library at run time instead of compiling it. What the client needs from that
+# product at BUILD time is one C header, resolved below — no sources, no
+# targets, no link. The renderer's BINARY does publish, as a release asset, so
+# "never published" on its own is the half of the sentence that inverts it.
 scada_find_products(common core opcuapp graph_qt view_manager_qt)
 
 enable_testing()

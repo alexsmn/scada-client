@@ -13,8 +13,10 @@
 // The client's half of the `display` C ABI (ADR 0013 phase 4).
 //
 // The schematic renderer arrives as a shared library loaded at run time, not as
-// source, because `display` is never published and the public Qt client must
-// still build. Everything below is a thin C++ skin over
+// source, because `display`'s SOURCE is never published and the public Qt
+// client must still build. The binary is published separately, as a release
+// asset, so absence of the library is a state a user fixes by downloading one
+// rather than a capability this client does not have. Everything below is a thin C++ skin over
 // `display/abi/display_abi.h` whose only job is to keep the ABI's rules -- the
 // handle to close, the strings that belong to the document, the error buffer to
 // copy out of -- from leaking into widget code.

@@ -17,8 +17,9 @@
 // Shows a VDS or Modus SDE/XSDE display, with live equipment state on it.
 //
 // The renderer arrives as a LOADED shared library, not as linked source
-// (ADR 0013): `display` is never published, and the public Qt client has to
-// build. So the document is rendered into a BGRA buffer this widget owns and
+// (ADR 0013): `display`'s SOURCE is never published, and the public Qt client
+// has to build. Its binary is published separately, which is what makes a
+// loaded library the answer rather than a missing feature. So the document is rendered into a BGRA buffer this widget owns and
 // then drawn into the widget's painter, rather than painted into that painter
 // directly.
 //
