@@ -99,10 +99,43 @@ NOTES FOR THE DRAFTER -- DELETE BEFORE ADOPTION
            the incorporation documents before adopting -- the quotation marks
            around a Russian company name are part of the registered name.
 
-       ii. The year range 2017-2026 is taken from this repository's first
-           commit (2017-08-24, "Initial.") and today. If the work was first
-           published before that commit, or under another entity, the range
-           and possibly the holder are wrong.
+       ii. THE START YEAR IS WRONG AND 2012 IS THE FLOOR THIS TREE CAN
+           EVIDENCE. 2017-2026 was taken from this repository's first commit
+           (2017-08-24, "Initial.") and today, and the holder has since
+           confirmed the work predates it. The earliest dated artifact in the
+           tree is `examples/delphi/TelecontrolScadaLib_TLB.pas`, a Delphi
+           type-library import stamped "File generated on 17.11.2012", carrying
+           `$Rev: 17244 $` and describing a type library read out of
+           `C:\Work\workplace\trunk\build-vs10\Release\exe\client.exe`
+           whose HelpString is "Telecontrol SCADA 1.0 Type Library". So a
+           shipping 1.0 client existed by November 2012; the Subversion
+           revision number says there was a great deal before it, but a
+           revision number is not a date. Nothing in the tree dates anything
+           earlier -- the only pre-2012 dates in it are test fixtures
+           (1994-11-15, 2004-11-15).
+
+           The start year is the year the first version was FIRST PUBLISHED --
+           delivered to a customer or otherwise made available -- not when
+           coding started and not the earliest file date. Only the holder
+           knows it. Set it to that year if it can be evidenced; otherwise
+           2012 is the defensible floor.
+
+           Do NOT round it earlier to be safe: the risk is asymmetric. A
+           notice that starts late loses nothing, because since Berne a notice
+           is not what creates the protection; a notice claiming a year the
+           holder cannot support is the one that can be attacked, and in the
+           United States 17 U.S.C. 506(c) makes fraudulent use of a copyright
+           notice an offence with an inflated date as its textbook case.
+
+      iv.  IF THE ENTITY IS YOUNGER THAN THE WORK, SAY WHO ASSIGNED IT.
+           A notice reading "Copyright (C) 2012-2026 Telecontrol, Ltd." asserts
+           that this entity holds the copyright in the 2012 version too. If
+           ООО "Телеконтроль" was incorporated after the first release, that
+           is only true if the earlier copyright was assigned to it, and the
+           assignment has to exist. This matters more here than it would in an
+           ordinary notice: clause 1 grants a section 7 permission over the
+           whole Program, and a permission is only as good as the grantor's
+           title to the part being permitted. Check it before adopting.
 
       iii. NOTHING IS ASSERTED PER FILE. The notice is at the root of the work
            only; the 1094 source files carry none. That is a defensible way to
