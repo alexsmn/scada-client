@@ -2861,6 +2861,71 @@
         <source>Telecontrol, Ltd.</source>
         <translation>ООО «Телеконтроль»</translation>
     </message>
+    <message>
+        <location filename="../../modules/about/qt/about_dialog.cpp"/>
+        <source>Build</source>
+        <translation>Сборка</translation>
+    </message>
+    <message>
+        <location filename="../../modules/about/qt/about_dialog.cpp"/>
+        <source>Runtime</source>
+        <translation>Среда</translation>
+    </message>
+    <message>
+        <location filename="../../modules/about/qt/about_dialog.cpp"/>
+        <source>Server</source>
+        <translation>Сервер</translation>
+    </message>
+    <message>
+        <location filename="../../modules/about/qt/about_dialog.cpp"/>
+        <source>Connection</source>
+        <translation>Соединение</translation>
+    </message>
+    <message>
+        <location filename="../../modules/about/qt/about_dialog.cpp"/>
+        <source>Signed in</source>
+        <translation>Вход выполнен</translation>
+    </message>
+    <message>
+        <location filename="../../modules/about/qt/about_dialog.cpp"/>
+        <source>not recorded</source>
+        <translation>не записана</translation>
+    </message>
+    <message>
+        <location filename="../../modules/about/qt/about_dialog.cpp"/>
+        <source>connected</source>
+        <translation>подключено</translation>
+    </message>
+    <message>
+        <location filename="../../modules/about/qt/about_dialog.cpp"/>
+        <source>not connected</source>
+        <translation>нет подключения</translation>
+    </message>
+    <message>
+        <location filename="../../modules/about/qt/about_dialog.cpp"/>
+        <source>anonymous</source>
+        <translation>анонимно</translation>
+    </message>
+    <message>
+        <location filename="../../modules/about/qt/about_dialog.cpp"/>
+        <source>Copy details</source>
+        <translation>Скопировать сведения</translation>
+    </message>
+    <message>
+        <location filename="../../modules/about/qt/about_dialog.cpp"/>
+        <source>Copied</source>
+        <translation>Скопировано</translation>
+    </message>
+    <message>
+        <location filename="../../modules/about/qt/about_dialog.cpp"/>
+        <source>© %1 &lt;a href=&quot;https://%2&quot;&gt;%3&lt;/a&gt;</source>
+        <translation>© %1 &lt;a href=&quot;https://%2&quot;&gt;%3&lt;/a&gt;</translation>
+    </message>
+    <message>
+        <location filename="../../modules/about/qt/about_dialog.cpp"/>
+        <source>GPL-3.0 — see LICENSE beside the program</source>
+        <translation>GPL-3.0 — см. файл LICENSE рядом с программой</translation>
+    </message>
 </context>
 <context>
     <name>AddFavouritesDialog</name>
@@ -3157,9 +3222,14 @@
         <translation>Пароль:</translation>
     </message>
     <message>
-        <location filename="../../modules/login/qt/login_dialog.ui" line="65"/>
-        <source>Auto-Login:</source>
-        <translation>Авто:</translation>
+        <location filename="../../modules/login/qt/login_dialog.ui"/>
+        <source>Sign in automatically next time</source>
+        <translation>Входить автоматически в следующий раз</translation>
+    </message>
+    <message>
+        <location filename="../../modules/login/qt/login_dialog.ui"/>
+        <source>Security and certificates</source>
+        <translation>Защита и сертификаты</translation>
     </message>
     <message>
         <location filename="../../modules/login/qt/login_dialog.ui" line="75"/>
