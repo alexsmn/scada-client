@@ -457,5 +457,186 @@ class GitInteraction(unittest.TestCase):
         self.assertTrue(cp.render_paths_dirty(self.repo, gallery))
 
 
+class RecordingRenders(unittest.TestCase):
+    """`last_rendered` answers what `captured.commit` deliberately does not."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self._tmp.name)
+        self.addCleanup(self._tmp.cleanup)
+
+    def test_an_identical_rerender_records_the_render_but_keeps_the_commit(self):
+        # The whole reason the field exists (task 785): stamp() rightly keeps
+        # the older commit for unchanged bytes, which left no trace that the
+        # image had been looked at again.
+        write_image(self.dir, "a.png", b"one")
+        old = {"commit": "old0000", "platform": "macos", "dirty": False,
+               "sha256": sha(b"one")}
+        m = manifest_with({"file": "a.png", "tag": "auto-view", "captured": dict(old)})
+        provenance = {"commit": "new1111", "platform": "macos", "dirty": False}
+        self.assertEqual(cp.stamp(m, self.dir, provenance, ["a.png"]), [])
+        self.assertEqual(cp.record_renders(m, self.dir, "new1111", ["a.png"]), ["a.png"])
+        self.assertEqual(m["images"][0]["captured"]["commit"], "old0000")
+        self.assertEqual(m["images"][0]["captured"]["last_rendered"], "new1111")
+
+    def test_a_row_the_run_did_not_render_is_untouched(self):
+        write_image(self.dir, "a.png", b"one")
+        m = manifest_with({"file": "a.png", "tag": "auto-view",
+                           "captured": {"commit": "old0000", "sha256": sha(b"one")}})
+        self.assertEqual(cp.record_renders(m, self.dir, "new1111", []), [])
+        self.assertNotIn("last_rendered", m["images"][0]["captured"])
+
+    def test_recording_the_same_render_twice_changes_nothing(self):
+        write_image(self.dir, "a.png", b"one")
+        m = manifest_with({"file": "a.png", "tag": "auto-view",
+                           "captured": {"commit": "c", "sha256": sha(b"one"),
+                                        "last_rendered": "new1111"}})
+        self.assertEqual(cp.record_renders(m, self.dir, "new1111", ["a.png"]), [])
+
+
+def row(name: str, theme: str | None, captured: dict | None = None,
+        tag: str = "auto-view") -> dict:
+    r = {"file": name, "tag": tag}
+    if theme:
+        r["theme"] = theme
+    if captured:
+        r["captured"] = captured
+    return r
+
+
+class Pairing(unittest.TestCase):
+    def test_pairs_on_the_declared_theme(self):
+        pairs, orphans = cp.theme_pairs(manifest_with(
+            row("a.png", "dark"), row("a-light.png", "light")))
+        self.assertEqual([(d["file"], l["file"]) for d, l in pairs],
+                         [("a.png", "a-light.png")])
+        self.assertEqual(orphans, [])
+
+    def test_a_name_that_looks_themed_is_not_a_sibling_without_the_field(self):
+        # devices-create.png is a separate capture, not a "create"-themed
+        # variant of devices.png; the filename only proposes a pair.
+        pairs, orphans = cp.theme_pairs(manifest_with(
+            row("a.png", "dark"), row("a-light.png", None)))
+        self.assertEqual(pairs, [])
+        self.assertEqual(orphans, ["a.png: dark capture with no light sibling"])
+
+    def test_a_themed_capture_with_no_light_sibling_is_an_orphan(self):
+        # The publish-time gap 785 named: three dialogs got a light sibling on
+        # 2026-09-19 only because the rows being copied happened to have one.
+        _, orphans = cp.theme_pairs(manifest_with(row("a.png", "dark")))
+        self.assertEqual(orphans, ["a.png: dark capture with no light sibling"])
+
+    def test_a_light_render_with_no_base_is_an_orphan(self):
+        _, orphans = cp.theme_pairs(manifest_with(row("a-light.png", "light")))
+        self.assertEqual(orphans, ["a-light.png: light render with no themed base capture"])
+
+    def test_rows_declaring_no_theme_are_neither_paired_nor_orphans(self):
+        # The owed captures nothing renders yet.
+        pairs, orphans = cp.theme_pairs(manifest_with(row("owed.png", None)))
+        self.assertEqual((pairs, orphans), ([], []))
+
+    def test_hand_captured_rows_are_ignored(self):
+        _, orphans = cp.theme_pairs(manifest_with(
+            row("hand.png", "dark", tag="manual-os")))
+        self.assertEqual(orphans, [])
+
+
+class PairStaleness(unittest.TestCase):
+    """The pair predicate, against a real throwaway repository."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.repo = Path(self._tmp.name)
+        self.addCleanup(self._tmp.cleanup)
+        self._git("init", "-q", "-b", "main")
+        self._git("config", "user.email", "t@example.com")
+        self._git("config", "user.name", "t")
+        (self.repo / "client" / "screenshots").mkdir(parents=True)
+        (self.repo / "docs").mkdir()
+        self.base = self._commit("client/src.cpp", "v1")
+
+    def _git(self, *args: str) -> None:
+        subprocess.run(("git", *args), cwd=self.repo, check=True, capture_output=True)
+
+    def _commit(self, rel: str, text: str) -> str:
+        path = self.repo / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
+        self._git("add", "-A")
+        self._git("commit", "-qm", f"{rel}={text}")
+        return cp.head_commit(self.repo)
+
+    def _check(self, dark: dict, light: dict, baseline: dict | None = None):
+        m = manifest_with(row("a.png", "dark", dark), row("a-light.png", "light", light))
+        return cp.check_pairs(m, self.repo, self.repo / "client" / "screenshots",
+                              baseline)
+
+    def test_dark_rerendered_after_a_source_change_leaves_light_behind(self):
+        # The case the entry was filed about: the Explorer sort fix, the
+        # fixture fix and V56 all landed dark-only.
+        fix = self._commit("client/src.cpp", "v2")
+        failures, _ = self._check({"commit": fix}, {"commit": self.base})
+        self.assertEqual(len(failures), 1)
+        self.assertTrue(failures[0].startswith("a-light.png: behind a.png"), failures)
+
+    def test_a_sibling_rendered_after_the_change_is_current(self):
+        fix = self._commit("client/src.cpp", "v2")
+        later = self._commit("client/other.cpp", "x")
+        failures, _ = self._check({"commit": fix},
+                                  {"commit": self.base, "last_rendered": later})
+        self.assertEqual(failures, [])
+
+    def test_the_bytes_commit_alone_would_flag_an_identical_rerender(self):
+        # What the predicate the entry proposed would have done: without
+        # last_rendered, a light re-render that came out identical after the
+        # fix is indistinguishable from no re-render at all. This pins that the
+        # check falls back to the conservative answer rather than guessing.
+        fix = self._commit("client/src.cpp", "v2")
+        failures, _ = self._check({"commit": fix}, {"commit": self.base})
+        self.assertEqual(len(failures), 1)
+
+    def test_a_change_outside_the_render_paths_owes_nothing(self):
+        later = self._commit("docs/readme.md", "x")
+        failures, _ = self._check({"commit": later}, {"commit": self.base})
+        self.assertEqual(failures, [])
+
+    def test_committing_the_other_appearances_pngs_is_not_a_render_change(self):
+        # The gallery lives under client/, a render path. Without excluding it,
+        # the commit that tracked the dark PNGs would count as a change to what
+        # renders the light ones.
+        later = self._commit("client/screenshots/a.png", "bytes")
+        failures, _ = self._check({"commit": later}, {"commit": self.base})
+        self.assertEqual(failures, [])
+
+    def test_both_directions_are_checked(self):
+        fix = self._commit("client/src.cpp", "v2")
+        failures, _ = self._check({"commit": self.base}, {"commit": fix})
+        self.assertEqual(len(failures), 1)
+        self.assertTrue(failures[0].startswith("a.png: behind a-light.png"), failures)
+
+    def test_an_unstamped_sibling_fails_closed(self):
+        failures, _ = self._check({"commit": self.base}, {})
+        self.assertTrue(any("no recorded capture" in f for f in failures), failures)
+
+    def test_a_commit_git_cannot_resolve_fails_closed(self):
+        failures, _ = self._check({"commit": "0" * 40}, {"commit": self.base})
+        self.assertTrue(any("cannot be compared" in f for f in failures), failures)
+
+    def test_a_baselined_finding_is_a_note_not_a_failure(self):
+        fix = self._commit("client/src.cpp", "v2")
+        failures, notes = self._check({"commit": fix}, {"commit": self.base},
+                                      {"behind": {"a-light.png": "x"}})
+        self.assertEqual(failures, [])
+        self.assertEqual(len(notes), 1)
+
+    def test_a_baseline_entry_that_no_longer_applies_fails(self):
+        # Self-cleaning, like every other worklist in this tree: closing a gap
+        # forces deleting its entry.
+        failures, _ = self._check({"commit": self.base}, {"commit": self.base},
+                                  {"behind": {"a-light.png": "x"}})
+        self.assertEqual(len(failures), 1)
+        self.assertIn("no longer behind", failures[0])
+
+
 if __name__ == "__main__":
     unittest.main()

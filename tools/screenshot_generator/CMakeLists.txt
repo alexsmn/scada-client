@@ -364,6 +364,16 @@ if(Python3_FOUND)
       "--image-manifest=${SCREENSHOT_IMAGE_MANIFEST}"
       "--images-dir=${SCREENSHOT_DOCS_DIR}"
       "--produced-since=${SCREENSHOT_RENDER_MARKER}")
+  # Then say which light/dark siblings this pass left behind (task 785). It
+  # reports and never fails here: this target renders one appearance by
+  # design, so right after it the other one is legitimately owed. The failing
+  # form is the superproject's ctest, which carries the worklist.
+  set(screenshot_theme_pairs_report
+    COMMAND ${Python3_EXECUTABLE}
+      "${CMAKE_CURRENT_SOURCE_DIR}/capture_provenance.py"
+      "--check-pairs" "--no-fail"
+      "--image-manifest=${SCREENSHOT_IMAGE_MANIFEST}"
+      "--images-dir=${SCREENSHOT_DOCS_DIR}")
 endif()
 
 add_custom_target(regenerate_client_screenshots
@@ -376,6 +386,7 @@ add_custom_target(regenerate_client_screenshots
     "--out=${SCREENSHOT_DOCS_DIR}"
     "--image-manifest=${SCREENSHOT_IMAGE_MANIFEST}"
   ${screenshot_provenance_stamp}
+  ${screenshot_theme_pairs_report}
   COMMENT "Rendering screenshots into client/screenshots/"
   VERBATIM
   USES_TERMINAL

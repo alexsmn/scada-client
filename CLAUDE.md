@@ -157,9 +157,18 @@ Rules of the pipeline:
 
   Half the gallery is the light set: 75 of the 154 tracked PNGs are
   `*-light.png`, each a manifest row with `"theme": "light"`. **A capture
-  re-rendered in one appearance leaves its sibling stale, and nothing reports
-  it** — the light row keeps its own `captured` digest, so provenance stays
-  self-consistent while the image documents a UI that has changed.
+  re-rendered in one appearance leaves its sibling stale** — the light row
+  keeps its own `captured` digest, so provenance stays self-consistent while
+  the image documents a UI that has changed. Since 2026-09-26
+  `python3 tools/screenshot_generator/capture_provenance.py --check-pairs`
+  reports it: a capture whose sibling changed after it was last rendered, with
+  render-path sources moving in between, or a themed capture with no sibling at
+  all. `regenerate_client_screenshots` runs it after stamping, report-only,
+  since that target renders one appearance. It reads
+  `captured.last_rendered`, which `--stamp` now writes on every row a pass
+  rendered whether or not its bytes changed — so **stamp the light pass too**
+  (`--produced-since` a marker touched before it), or the light set never
+  records that it was looked at.
   This bullet said "One pass renders the whole gallery" until 2026-09-19 and
   that is what the sentence cost: the Explorer sort fix, the multi-parent
   fixture fix and the V56 re-render all landed dark-only, leaving

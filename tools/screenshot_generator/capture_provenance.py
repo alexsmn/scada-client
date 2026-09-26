@@ -49,10 +49,20 @@ the manifest.
 reproducible from *no* commit, so its `commit` is not a claim anyone can check.
 Recording it is the difference between "stale" and "never verifiable".
 
-Two modes:
+Three modes:
 
     capture_provenance.py --stamp --produced-since <marker>   # after a render
     capture_provenance.py --report   # what the gallery's provenance says today
+    capture_provenance.py --check-pairs [--baseline PATH]     # task 785
+
+`--check-pairs` answers the question the per-image record cannot: every
+generated capture is rendered twice, dark and light, in two separate passes,
+and a fix re-rendered in one appearance leaves its sibling documenting the old
+UI while both records stay self-consistent. It pairs the rows by their `theme`
+field and reports a capture whose sibling changed after it was last rendered
+with something under RENDER_PATHS moving in between. That needs to know when
+an image was last *rendered*, not only when its bytes last changed, so
+`--stamp` also records `captured.last_rendered` on every row the run rendered.
 
 Nothing here backfills. An image with no `captured` block reads as *unknown*,
 which is the honest state of every image tracked before this existed — writing
@@ -220,6 +230,202 @@ def stamp(manifest: dict, images_dir: Path, provenance: dict,
     return restamped
 
 
+def record_renders(manifest: dict, images_dir: Path, commit: str,
+                   produced: Iterable[str]) -> list[str]:
+    """Record `commit` as the last render of every row in `produced`.
+
+    This is the half `stamp()` deliberately does not answer. `captured.commit`
+    is the commit that last CHANGED an image's bytes -- a re-render that comes
+    out identical keeps the older commit, correctly, because that commit did
+    produce those bytes. So it says nothing about when the image was last
+    looked at, and "was the light sibling rendered after the dark one changed?"
+    is exactly that question (task 785). `captured.last_rendered` records it:
+    every row this run rendered gets it, whether or not its bytes moved.
+
+    Only rows that already carry a `captured` record are touched -- call this
+    after `stamp()`, which gives a first record to every rendered row that had
+    none. Returns the filenames whose `last_rendered` changed, so a pass that
+    renders nothing new rewrites nothing.
+    """
+    rendered = produced if isinstance(produced, (set, frozenset)) else set(produced)
+    touched = []
+    for row in generated_rows(manifest):
+        if row["file"] not in rendered or not (images_dir / row["file"]).exists():
+            continue
+        captured = row.get("captured")
+        if not captured or captured.get("last_rendered") == commit:
+            continue
+        captured["last_rendered"] = commit
+        touched.append(row["file"])
+    return touched
+
+
+def theme_pairs(manifest: dict) -> tuple[list[tuple[dict, dict]], list[str]]:
+    """Each generated capture paired with its light sibling, plus the orphans.
+
+    A capture's light render is `<base>-light.png`, but the filename only
+    PROPOSES the pair: it is admitted when the manifest's own `theme` field says
+    one row is `light` and the other is not. Reading the theme off the name is
+    the mistake that took `devices-create.png` -- a separate capture -- for a
+    themed variant of `devices.png` (root CLAUDE.md; `render_gallery.py` pairs
+    the same way). Rows that declare no theme are never paired and never
+    orphans: they are the owed captures nothing renders yet.
+
+    Returns (pairs, findings). A finding is a themed row with no sibling in the
+    other appearance -- the publish-time gap task 785 named: three dialog
+    captures got a light sibling on 2026-09-19 only because the rows being
+    copied happened to have one.
+    """
+    rows = {row["file"]: row for row in generated_rows(manifest)}
+    pairs = []
+    findings = []
+    for name, row in sorted(rows.items()):
+        theme = row.get("theme")
+        if not theme:
+            continue
+        if theme == "light":
+            base = name.removesuffix("-light.png") + ".png"
+            base_row = rows.get(base)
+            if not name.endswith("-light.png") or base_row is None \
+                    or base_row.get("theme") in (None, "light"):
+                findings.append(f"{name}: light render with no themed base capture")
+            continue
+        sibling = rows.get(name.removesuffix(".png") + "-light.png")
+        if sibling is None or sibling.get("theme") != "light":
+            findings.append(f"{name}: {theme} capture with no light sibling")
+            continue
+        pairs.append((row, sibling))
+    return pairs, findings
+
+
+def _merge_base(repo_root: Path, a: str, b: str) -> str | None:
+    try:
+        return git(repo_root, "merge-base", a, b) or None
+    except subprocess.CalledProcessError:
+        return None
+
+
+def render_paths_changed(repo_root: Path, since: str, until: str,
+                         images_dir: Path | None) -> list[str] | None:
+    """Files under RENDER_PATHS that differ between `since` and `until`.
+
+    The gallery itself is excluded, for the reason `render_paths_dirty` gives:
+    the images and the manifest live under `client/`, so without the exclusion
+    the commit that tracked the other appearance's PNGs would count as a change
+    to what renders them. None when git cannot answer (an unknown commit).
+    """
+    pathspec = [p for p in RENDER_PATHS if (repo_root / p).exists()]
+    if images_dir is not None:
+        try:
+            rel = images_dir.resolve().relative_to(repo_root.resolve())
+            pathspec.append(f":(exclude){rel.as_posix()}")
+        except ValueError:
+            pass
+    try:
+        out = git(repo_root, "diff", "--name-only", f"{since}..{until}", "--",
+                  *pathspec)
+    except subprocess.CalledProcessError:
+        return None
+    return out.split() if out else []
+
+
+def pair_findings(manifest: dict, repo_root: Path,
+                  images_dir: Path | None = None) -> dict[str, str]:
+    """Captures whose sibling in the other appearance changed after they were
+    last rendered, keyed by the capture that is BEHIND (task 785).
+
+    For a pair (A, B) and each direction: A's bytes last changed at
+    `A.captured.commit`; B was last rendered at `B.captured.last_rendered`
+    (falling back to `B.captured.commit` for a row recorded before that field
+    existed -- the latest render the record can vouch for). B is behind when
+    its last render is not on or after A's change AND something under
+    RENDER_PATHS moved in between. If nothing moved, A's change came from no
+    source change B could have missed, and B is not owed a render.
+
+    The predicate is deliberately NOT "the two were captured at the same
+    commit". The themes are always two passes, so that is false for nearly
+    every pair; and `captured.commit` is when the bytes last changed rather than
+    when they were last rendered, so comparing the two recorded commits directly
+    flagged 60 of 75 pairs on the day this was written, every one a pair where
+    an identical re-render had simply left no trace. That is what
+    `last_rendered` is for.
+
+    Unstamped rows and commits git cannot resolve are findings too: this check
+    fails closed, and `--report` says which of those it is.
+    """
+    findings: dict[str, str] = {}
+    diff_cache: dict[tuple[str, str], list[str] | None] = {}
+
+    def behind(changed: dict, other: dict) -> str | None:
+        changed_at = (changed.get("captured") or {}).get("commit")
+        other_rec = other.get("captured") or {}
+        seen_at = other_rec.get("last_rendered") or other_rec.get("commit")
+        if not changed_at or not seen_at:
+            return (f"cannot be compared with {changed['file']} - "
+                    f"one of the pair has no recorded capture")
+        if changed_at == seen_at:
+            return None
+        if commit_is_ancestor(repo_root, changed_at, seen_at):
+            return None
+        base = seen_at if commit_is_ancestor(repo_root, seen_at, changed_at) \
+            else _merge_base(repo_root, seen_at, changed_at)
+        if base is None:
+            return (f"cannot be compared with {changed['file']} - git cannot "
+                    f"relate {seen_at} and {changed_at}")
+        key = (base, changed_at)
+        if key not in diff_cache:
+            diff_cache[key] = render_paths_changed(repo_root, base, changed_at,
+                                                   images_dir)
+        moved = diff_cache[key]
+        if moved is None:
+            return (f"cannot be compared with {changed['file']} - git cannot "
+                    f"diff {base}..{changed_at}")
+        if not moved:
+            return None
+        return (f"behind {changed['file']} - that changed at {changed_at}, "
+                f"this was last rendered at {seen_at}, and {len(moved)} "
+                f"render-path file(s) moved in between (e.g. {moved[0]})")
+
+    pairs, _ = theme_pairs(manifest)
+    for first, second in pairs:
+        for changed, other in ((first, second), (second, first)):
+            reason = behind(changed, other)
+            if reason:
+                findings[other["file"]] = reason
+    return findings
+
+
+def commit_is_ancestor(repo_root: Path, ancestor: str, descendant: str) -> bool:
+    """Whether `ancestor` is `descendant` or one of its ancestors."""
+    return subprocess.run(
+        ("git", "merge-base", "--is-ancestor", ancestor, descendant),
+        cwd=repo_root, capture_output=True).returncode == 0
+
+
+def check_pairs(manifest: dict, repo_root: Path, images_dir: Path | None,
+                baseline: dict | None) -> tuple[list[str], list[str]]:
+    """The `--check-pairs` verdict: (failures, notes).
+
+    Failures are orphans, pair findings the baseline does not carry, and
+    baseline entries that no longer describe a finding -- the last makes the
+    worklist self-cleaning, the shape of every other baseline in this tree, so
+    closing a gap forces deleting its line. Notes are the findings the baseline
+    does carry, printed so the worklist stays visible.
+    """
+    _, orphans = theme_pairs(manifest)
+    findings = pair_findings(manifest, repo_root, images_dir)
+    carried = set((baseline or {}).get("behind", {}))
+    failures = list(orphans)
+    notes = []
+    for name, reason in sorted(findings.items()):
+        (notes if name in carried else failures).append(f"{name}: {reason}")
+    for name in sorted(carried - set(findings)):
+        failures.append(
+            f"{name}: in the baseline but no longer behind its sibling - "
+            f"delete its entry")
+    return failures, notes
+
+
 def produced_since(images_dir: Path, manifest: dict, marker: Path) -> set[str]:
     """Generated images modified at or after `marker`'s mtime.
 
@@ -379,6 +585,17 @@ def main(argv: list[str] | None = None) -> int:
                            "needs one of --produced/--produced-from/--produced-since")
     mode.add_argument("--report", action="store_true",
                       help="print generated images whose provenance is absent or stale")
+    mode.add_argument("--check-pairs", action="store_true",
+                      help="fail when a capture is behind its sibling in the "
+                           "other appearance, or has no sibling (task 785)")
+    parser.add_argument("--baseline", type=Path, default=None,
+                        help="--check-pairs: JSON worklist of captures known to "
+                             "be behind; the check fails on new ones and on "
+                             "entries that no longer apply")
+    parser.add_argument("--no-fail", action="store_true",
+                        help="--check-pairs: report, but exit 0 -- for the "
+                             "regeneration target, which renders one "
+                             "appearance by design")
     # What the run rendered. Required by --stamp and mutually exclusive: the
     # tool must be told, and there is deliberately no blanket "all" -- a caller
     # that really did render everything can still say so by listing it, and
@@ -429,7 +646,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"capture_provenance: {error}", file=sys.stderr)
             return 2
         restamped = stamp(manifest, images_dir, provenance, rendered)
-        if restamped:
+        # After stamp(), so a row it just gave a first record also gets this.
+        seen = record_renders(manifest, images_dir, provenance["commit"], rendered)
+        if restamped or seen:
             manifest_path.write_text(
                 json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
                 encoding="utf-8",
@@ -440,6 +659,31 @@ def main(argv: list[str] | None = None) -> int:
               + (" (DIRTY TREE)" if provenance["dirty"] else ""))
         for name in restamped:
             print(f"  {name}")
+        return 0
+
+    if args.check_pairs:
+        if repo_root is None:
+            print("capture_provenance: not a git repository; pairs not checked",
+                  file=sys.stderr)
+            return 0 if args.no_fail else 1
+        baseline = None
+        if args.baseline is not None:
+            baseline = json.loads(args.baseline.read_text(encoding="utf-8"))
+        failures, notes = check_pairs(manifest, repo_root, images_dir, baseline)
+        if notes:
+            print(f"{len(notes)} capture(s) behind their sibling, carried by "
+                  f"the baseline:")
+            for line in notes:
+                print(f"  {line}")
+        if failures:
+            print(f"{len(failures)} light/dark pair finding(s) - render the "
+                  f"appearance that is behind (docs/ops/client-screenshots.md, "
+                  f"\"Keeping the two appearances in step\"):")
+            for line in failures:
+                print(f"  {line}")
+            return 0 if args.no_fail else 1
+        print("no light/dark pair is behind its sibling"
+              + (" beyond the baseline's worklist" if notes else ""))
         return 0
 
     lines = report(manifest, images_dir, repo_root)
