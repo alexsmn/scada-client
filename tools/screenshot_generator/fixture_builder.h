@@ -2,9 +2,11 @@
 
 #include "base/time/time.h"
 #include "scada/date_time.h"
+#include "scada/node_id.h"
 
 #include <boost/json/value.hpp>
 
+#include <string_view>
 #include <vector>
 
 class AddressSpaceImpl;
@@ -22,6 +24,14 @@ scada::Time FixtureNow(const boost::json::value& json);
 // else gets a bare `WindowDefinition{type}`.
 Page MakeScreenshotPage(const std::vector<ScreenshotSpec>& specs,
                         const boost::json::value& json);
+
+// Parses a node id as the fixture's `tree` and `nodes` arrays spell it: a
+// SCADA-style string ("TIT.211", "85"), or a bare integer meaning ns=1.
+scada::NodeId ParseJsonChildNodeId(const boost::json::value& child);
+
+// Parses one node id string as the fixture spells it: SCADA-style ("TIT.211")
+// or a bare decimal, which names a standard ns=0 node ("85" is Objects).
+scada::NodeId ParseFixtureNodeIdString(std::string_view s);
 
 // Adds the JSON's ns=1 instance nodes to `address_space` on top of the
 // standard SCADA tree that ScadaTestAddressSpace builds in code.

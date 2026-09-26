@@ -1,10 +1,10 @@
 #include "fixture_builder.h"
-#include "base/utf_convert.h"
-#include "scada/access_rights.h"
-#include "scada/user_management_encoding.h"
-#include "scada/authorization.h"
-#include "model/security_node_ids.h"
 #include "base/time/calendar.h"
+#include "base/utf_convert.h"
+#include "model/security_node_ids.h"
+#include "scada/access_rights.h"
+#include "scada/authorization.h"
+#include "scada/user_management_encoding.h"
 
 #include "graph_capture.h"
 #include "screenshot_config.h"
@@ -44,12 +44,6 @@ bool LooksLikeJsonNodeId(std::string_view s) {
   if (!NodeIdFromScadaString(s).is_null())
     return true;
   return std::ranges::all_of(s, [](char c) { return c >= '0' && c <= '9'; });
-}
-
-scada::NodeId ParseJsonChildNodeId(const boost::json::value& child) {
-  if (child.is_string())
-    return NodeIdFromScadaString(std::string_view(child.as_string()));
-  return scada::NodeId{static_cast<scada::NumericId>(child.as_int64()), 1};
 }
 
 std::optional<scada::NodeId> ParseJsonPropertyId(std::string_view name) {
@@ -175,6 +169,25 @@ Page MakeScreenshotPage(const std::vector<ScreenshotSpec>& specs,
   return page;
 }
 
+scada::NodeId ParseJsonChildNodeId(const boost::json::value& child) {
+  if (child.is_string())
+    return ParseFixtureNodeIdString(std::string_view(child.as_string()));
+  return scada::NodeId{static_cast<scada::NumericId>(child.as_int64()), 1};
+}
+
+scada::NodeId ParseFixtureNodeIdString(std::string_view s) {
+  // A bare decimal string is a standard OPC UA node — `tree` is keyed "84"
+  // (Root), "85" (Objects) and so on. NodeIdFromScadaString reads no
+  // namespace-less form and answers the null id, which is what these keys
+  // silently parsed to until 2026-09-26.
+  if (!s.empty() &&
+      std::ranges::all_of(s, [](char c) { return c >= '0' && c <= '9'; })) {
+    return scada::NodeId{
+        static_cast<scada::NumericId>(std::stoul(std::string{s})), 0};
+  }
+  return NodeIdFromScadaString(s);
+}
+
 void PopulateFixtureNodes(AddressSpaceImpl& address_space,
                           const boost::json::value& root) {
   // Build child→parents map from the JSON tree so each instance can find the
@@ -183,9 +196,9 @@ void PopulateFixtureNodes(AddressSpaceImpl& address_space,
   // Every declared parent is kept, and a child with several is attached to all
   // of them. This was a `map<NodeId, NodeId>` with `parent_map[child] = parent`
   // until 2026-09-19, so a second declaration silently overwrote the first and
-  // the address space received one edge of the two — `tree` declares 153 edges
-  // over 141 distinct children, and 12 children carry two parents, so 12 edges
-  // were being dropped on every run. The loss was invisible because the
+  // the address space received one edge of the two — `tree` then declared 153
+  // edges over 141 distinct children, and 12 children carry two parents, so 12
+  // edges were being dropped on every run. The loss was invisible because the
   // survivor is whichever parent appears LAST in the file (boost::json::object
   // preserves insertion order), and in both affected captures that parent was
   // somewhere the image could not show: TC1/TC2/TC8 kept `TS.109` КРУ, which
@@ -196,10 +209,19 @@ void PopulateFixtureNodes(AddressSpaceImpl& address_space,
   // nodes affected where nothing rendered them either way (backlog 783).
   //
   // A node reachable through two hierarchical references is ordinary OPC UA,
-  // and the fixture means it: those 40 extra edges are deliberate.
+  // and the fixture means it: those 12 second edges are deliberate.
+  //
+  // A `tree` edge whose child is a standard node ScadaTestAddressSpace already
+  // built is NOT added here — the `nodes` loop below skips any node that
+  // exists. So such an edge must already be in the pre-built space, and
+  // AddressSpaceHoldsEveryDeclaredTreeEdge (fixture_model_assertions.cpp)
+  // fails on one that is not. Sixteen were not until 2026-09-26: edges copied
+  // from the server nodeset (Users -> UserType, the Aliases, PropertyCategories
+  // and OPC folders) that the test space does not carry, so the fixture
+  // described a tree nothing ever held. They were deleted from `tree`.
   std::unordered_map<scada::NodeId, std::vector<scada::NodeId>> parent_map;
   for (const auto& [parent_str, children] : root.at("tree").as_object()) {
-    auto parent = NodeIdFromScadaString(std::string_view(parent_str));
+    auto parent = ParseFixtureNodeIdString(std::string_view(parent_str));
     for (const auto& child : children.as_array()) {
       auto child_id = ParseJsonChildNodeId(child);
       parent_map[child_id].push_back(parent);

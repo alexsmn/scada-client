@@ -1,6 +1,7 @@
 // Assertions that the fixture's address space carries what the captured
 // models read out of it: Explorer sort keys, the event filter's areas, the
-// transmission destinations, role membership, and a data group's link state.
+// transmission destinations, role membership, a data group's link state, and
+// every parent/child edge the fixture's `tree` declares.
 //
 // These are the ones that fail when screenshot_data.json drifts rather than
 // when the client does — a missing reference or attribute renders a plausible
@@ -8,12 +9,16 @@
 
 #include "screenshot_fixture.h"
 
+#include "address_space/address_space.h"
+#include "address_space/node.h"
+#include "address_space/node_utils.h"
 #include "aui/translation.h"
 #include "authenticated_attribute_service.h"
 #include "base/utf_convert.h"
 #include "common/format.h"
 #include "configuration/objects/visible_node_model.h"
 #include "events/qt/event_filter_bar.h"
+#include "fixture_builder.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
 #include "model/data_items_node_ids.h"
@@ -65,7 +70,6 @@ using scada::screenshot_generator::WaitForPendingNodeLoads;
 
 }  // namespace
 
-
 // The Explorer sorts its rows on NodeClass and TypeDefinition ahead of the
 // display name -- folders above leaves, then by type -- so both attributes have
 // to be readable for a row before that row is placed. This asserts they are,
@@ -91,8 +95,8 @@ TEST_F(ScreenshotGenerator, ExplorerChildrenCarryTheAttributesTheSortNeeds) {
   // without touching a single row the capture renders.
   NodeRef root = node_service.GetNode(NodeIdFromScadaString("SCADA.24"));
   ASSERT_TRUE(!!root);
-  root = WaitForAwaitable(executor_,
-                          root.Fetch(NodeFetchStatus::NodeAndChildren));
+  root =
+      WaitForAwaitable(executor_, root.Fetch(NodeFetchStatus::NodeAndChildren));
   ASSERT_TRUE(!!root);
 
   std::vector<NodeRef> children =
@@ -290,4 +294,77 @@ TEST_F(ScreenshotGenerator, DataGroupShowsItsDeviceLinkState) {
            "The fixture binds the online device on purpose: hardware-tree.png "
            "is what shows the offline and disabled states.";
   }
+}
+
+namespace {
+
+bool IsHierarchical(const scada::Reference& reference) {
+  return reference.node && reference.type &&
+         scada::IsSubtypeOf(scada::AsTypeDefinition(*reference.type),
+                            scada::id::HierarchicalReferences);
+}
+
+// Where a node actually hangs, for the failure message: "absent" when the
+// address space has no such node, otherwise its hierarchical parents.
+std::string DescribeHierarchicalParents(
+    const scada::AddressSpace& address_space,
+    const scada::NodeId& node_id) {
+  const scada::Node* node = address_space.GetNode(node_id);
+  if (!node)
+    return "absent";
+  std::string parents;
+  for (const scada::Reference& reference : node->inverse_references()) {
+    if (!IsHierarchical(reference))
+      continue;
+    parents += parents.empty() ? "under " : ", ";
+    parents += NodeIdToScadaString(reference.node->id());
+  }
+  return parents.empty() ? "no hierarchical parent" : parents;
+}
+
+}  // namespace
+
+// Every `(parent, child)` edge the fixture's `tree` declares reaches the
+// address space as a forward hierarchical reference. The mirror of
+// PopulateFixtureNodes' orphan check: that one catches a `nodes` entry with no
+// `tree` parent, this catches a `tree` edge the loader was handed and dropped.
+//
+// Asserted per declared edge on purpose. The loader used to keep one parent
+// per child, so a child declared under two lost its first edge, and twelve
+// edges went missing on every run while every capture still rendered
+// (backlog 783). A check counting distinct node ids under a parent cannot see
+// that — a multi-parent node is one id reached twice — and one counting
+// rendered rows would bake in whatever the tree model does with it today.
+// The address space is populated in the fixture's constructor, so no client
+// start is needed.
+TEST_F(ScreenshotGenerator, AddressSpaceHoldsEveryDeclaredTreeEdge) {
+  std::vector<std::string> dropped;
+  size_t declared = 0;
+  for (const auto& [parent_key, children] :
+       FixtureConfig().json.at("tree").as_object()) {
+    const scada::NodeId parent_id =
+        ParseFixtureNodeIdString(std::string_view(parent_key));
+    const scada::Node* parent = address_space_.GetNode(parent_id);
+    for (const auto& child : children.as_array()) {
+      ++declared;
+      const scada::NodeId child_id = ParseJsonChildNodeId(child);
+      const bool held =
+          parent &&
+          std::ranges::any_of(parent->forward_references(),
+                              [&child_id](const scada::Reference& reference) {
+                                return IsHierarchical(reference) &&
+                                       reference.node->id() == child_id;
+                              });
+      if (!held) {
+        dropped.push_back(
+            std::string(parent_key) + " -> " + NodeIdToScadaString(child_id) +
+            " (" + DescribeHierarchicalParents(address_space_, child_id) + ")");
+      }
+    }
+  }
+
+  ASSERT_GT(declared, 0u) << "the fixture declares no `tree` edges";
+  EXPECT_THAT(dropped, testing::IsEmpty())
+      << dropped.size() << " of " << declared
+      << " declared `tree` edges are missing from the address space";
 }

@@ -1076,26 +1076,12 @@
       "SCADA.24",
       "SCADA.27",
       "SCADA.28",
-      "SCADA.300",
-      "SCADA.30",
-      "SCADA.329",
-      "SCADA.310"
+      "SCADA.30"
     ],
     "87": [
       "78"
     ],
-    "SCADA.310": [
-      "SCADA.312",
-      "SCADA.313",
-      "SCADA.314",
-      "SCADA.315",
-      "SCADA.316",
-      "SCADA.317",
-      "SCADA.318",
-      "SCADA.319"
-    ],
     "SCADA.29": [
-      "SCADA.16",
       "SCADA.234",
       "USER.1",
       "USER.2",
@@ -1125,27 +1111,21 @@
       "FILESYSTEM_FILE.reports%2F2026-04-15.csv"
     ],
     "SCADA.12": [
-      "SCADA.20",
       "SCADA.9501",
       "SCADA.9502",
       "SCADA.9503"
     ],
     "SCADA.27": [
-      "SCADA.80",
       "SCADA.9401",
       "SCADA.9402",
       "SCADA.9403",
       "SCADA.9404"
     ],
     "SCADA.28": [
-      "SCADA.67",
       "SCADA.9301",
       "SCADA.9302",
       "SCADA.9303",
       "SCADA.9304"
-    ],
-    "SCADA.300": [
-      "SCADA.301"
     ],
     "SCADA.24": [
       "TS.100",
