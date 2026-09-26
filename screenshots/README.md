@@ -33,7 +33,7 @@ Workspace views and panels — what the operator works in. (50)
 | **Events alarm surface**<br>`events-alarm-surface.png` | <img src="events-alarm-surface.png" alt="Events alarm surface" width="360"> | [Light](events-alarm-surface-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
 | **Events**<br>`events.png` | <img src="events.png" alt="Events" width="360"> | [Light](events-light.png) |
 | **Favorites**<br>`favorites.png` | <img src="favorites.png" alt="Favorites" width="360"> | [Light](favorites-light.png) |
-| **Files**<br>`files.png` | <img src="files.png" alt="Files" width="360"> | [Light](files-light.png) |
+| **Files**<br>`files.png` | <img src="files.png" alt="Files" width="360"> | [Light](files-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
 | **Frame decode pane**<br>`frame-decode-pane.png` | <img src="frame-decode-pane.png" alt="Frame decode pane" width="360"> | [Light](frame-decode-pane-light.png) |
 | **Graph cursor**<br>`graph-cursor.png` | <img src="graph-cursor.png" alt="Graph cursor" width="360"> | [Light](graph-cursor-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/graph/) |
 | **Hardware tree**<br>`hardware-tree.png` | <img src="hardware-tree.png" alt="Hardware tree" width="360"> | [Light](hardware-tree-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |

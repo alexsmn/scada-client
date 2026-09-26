@@ -1402,10 +1402,13 @@
       "file": "files.png",
       "tag": "auto-view",
       "theme": "dark",
-      "published": false,
+      "published": true,
       "parity_key": "files",
-      "referenced_from": [],
-      "notes": "Files view (FileSystemView) — the server's file store as a tree: directories typed FileDirectoryType, files typed FileType, expanded. Untagged until 2026-08-01, so the managed-image gate skipped it, and the fixture defined no file nodes at all — the view rendered its single root row, which no row count could catch (hence min_columns' sibling fix: the tree row check now counts materialized descendants, not just top-level rows, and runs after the expand step). The fixture's file store is described under `_filesystem_comment` in screenshot_data.json; it also needed FileDirectoryType added to the shared ScadaTestAddressSpace and FileType corrected there from ObjectType to VariableType, which is what filesystem.xml declares. The expand step settles pending node loads and expands twice: the tree's leaf test resolves a node's type definition lazily, so on the first pass every file still drew an expand twisty. macOS render; validation-only. Re-rendered 2026-08-29: the Explorer trees stopped drawing a row for their root (ConfigurationTreeView now takes Tree's hidden-root default), because the pane's own dock title already names it — so the tree starts at its content. macOS render, like the one it replaces; the gallery is still not a Windows baseline (docs/ops/client-screenshots.md). Rendered with --only, so no other image in the gallery moved, and provenance was deliberately NOT stamped: --stamp rewrites every row whose digest differs, and with no digests recorded anywhere yet that is all 63 of them — see backlog 642. The «Файловая система» top row is what went — and note the fixture names that node more mildly than the shipped nodeset, where it is «Файлы», exactly the pane's own title. The spec's row floor dropped by one in the same change: the count starts at the view's root index, which the hidden root now occupies, so the root row is no longer among the rows counted.",
+      "referenced_from": [
+        "client.md",
+        "dev/server-files.md"
+      ],
+      "notes": "Files view (FileSystemView) — the server's file store as a tree: directories typed FileDirectoryType, files typed FileType, expanded. Untagged until 2026-08-01, so the managed-image gate skipped it, and the fixture defined no file nodes at all — the view rendered its single root row, which no row count could catch (hence min_columns' sibling fix: the tree row check now counts materialized descendants, not just top-level rows, and runs after the expand step). The fixture's file store is described under `_filesystem_comment` in screenshot_data.json; it also needed FileDirectoryType added to the shared ScadaTestAddressSpace and FileType corrected there from ObjectType to VariableType, which is what filesystem.xml declares. The expand step settles pending node loads and expands twice: the tree's leaf test resolves a node's type definition lazily, so on the first pass every file still drew an expand twisty. macOS render; validation-only. Re-rendered 2026-08-29: the Explorer trees stopped drawing a row for their root (ConfigurationTreeView now takes Tree's hidden-root default), because the pane's own dock title already names it — so the tree starts at its content. macOS render, like the one it replaces; the gallery is still not a Windows baseline (docs/ops/client-screenshots.md). Rendered with --only, so no other image in the gallery moved, and provenance was deliberately NOT stamped: --stamp rewrites every row whose digest differs, and with no digests recorded anywhere yet that is all 63 of them — see backlog 642. The «Файловая система» top row is what went — and note the fixture names that node more mildly than the shipped nodeset, where it is «Файлы», exactly the pane's own title. The spec's row floor dropped by one in the same change: the count starts at the view's root index, which the hidden root now occupies, so the root row is no longer among the rows counted. Re-pointed 2026-09-26 (backlog 39, option (a)): this now carries the pane's dock frame (spec `frame`) and a file store of .xsde schematics under Мнемосхемы/ and Телемеханика/, so it shows what client.md and dev/server-files.md describe — «файлы мнемосхем Модус», organised in folders. It replaces menu-files.png, whose own notes had called this a docs-side re-point; it was not, until the frame and the file store existed.",
       "captured": {
         "commit": "0a9b3bccb",
         "platform": "macos",
@@ -1904,12 +1907,9 @@
     },
     {
       "file": "menu-files.png",
-      "tag": "auto-view",
-      "referenced_from": [
-        "client.md",
-        "dev/server-files.md"
-      ],
-      "notes": "Not a menu despite the name (audited 2026-08-08): the Files panel listing .xsde schematics, no popup anywhere. The generator already renders that view as files.png (spec type `FileSystemView`), so what is owed is a docs-side re-point, not a capture."
+      "tag": "obsolete",
+      "referenced_from": [],
+      "notes": "Superseded by files.png on 2026-09-26 (backlog 39). Hand-captured Files panel listing .xsde schematics. Its predecessor note called the replacement a pure docs-side re-point; opening both showed otherwise — the generated capture was a bare panel over build artefacts (iec104.cfg, server.log) where this one is a titled pane over a schematic file store. The generator gained both before this was retired."
     },
     {
       "file": "menu-notepad.png",
@@ -2763,12 +2763,12 @@
   "counts": {
     "auto-dialog": 51,
     "auto-menu": 12,
-    "auto-view": 103,
+    "auto-view": 102,
     "manual-annotated": 2,
     "manual-diagram": 4,
     "manual-modus": 5,
     "manual-os": 3,
-    "obsolete": 14
+    "obsolete": 15
   },
   "current_generator_owned_subset": [
     "bulk-create.png",
@@ -2777,6 +2777,7 @@
     "device-metrics.png",
     "device-watch.png",
     "devices.png",
+    "files.png",
     "graph-cursor.png",
     "hardware-tree.png",
     "settings.png",
