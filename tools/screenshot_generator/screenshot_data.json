@@ -1721,7 +1721,7 @@
     {
       "type": "EventJournal",
       "filename": "events-alarm-surface.png",
-      "width": 800,
+      "width": 1250,
       "height": 400,
       "min_rows": 9
     },

@@ -1544,16 +1544,18 @@
       "theme": "dark",
       "parity_key": "event-journal",
       "referenced_from": [
+        "client/events.md",
         "client/workbench.md"
       ],
-      "notes": "Event journal as an alarm surface (backlog 2.2) under --theme: leading pending-dot column (severity-coloured), the Severity column naming the alarm band (Критично 800 / Предупреждение 600), an unacknowledged row's Acknowledge-Time cell reading '— pending —', and the alarm footer (displayed-backlog summary + Acknowledge-all). Fixture seeds two pending alarms (ids 1008/1009, acknowledged:false). A second EventJournal spec alongside the legacy events-log.png, which keeps rendering the unchanged legacy journal in the no-theme pipeline. Guarded by client_screenshot_check_themed. Published from a macOS render (a supported host since 2026-09-12); kept out of current_generator_owned_subset (subset is auto-* only).",
+      "notes": "Event journal as an alarm surface (backlog 2.2) under --theme: leading pending-dot column (severity-coloured), the Severity column naming the alarm band (Критично 800 / Предупреждение 600), an unacknowledged row's Acknowledge-Time cell reading '— pending —', and the alarm footer (displayed-backlog summary + Acknowledge-all). Fixture seeds two pending alarms (ids 1008/1009, acknowledged:false). A second EventJournal spec alongside the legacy events-log.png, which keeps rendering the unchanged legacy journal in the no-theme pipeline. Guarded by client_screenshot_check_themed. Published from a macOS render (a supported host since 2026-09-12); kept out of current_generator_owned_subset (subset is auto-* only). Re-pointed 2026-09-26 (backlog 39): this also serves client/events.md, replacing menu-events-log.png. That page's own text says the journal is augmented «точкой \"не квитировано\" в первом столбце, названием важности, итоговой строкой со сводкой неквитированных событий и кнопкой Квитировать все» — all four are visible here and NONE was visible in the image the page carried, which showed a Важность column of bare numbers and no dot column at all. Widened 800→1250 in the same change so the Сообщение column renders: it is the most informative column and its absence was the one thing the retired hand capture had over this one. Residual, pre-existing and not introduced here: the Время column still elides to «16.04.2026 15:02:00…», because the grid gives the extra width to Сообщение rather than to the timestamp.",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "fd98f7ff2",
         "platform": "macos",
         "dirty": true,
-        "sha256": "20c8bf8304f7ba15ae5dd8729f7259ab61f153313b74ae3e7575e505af4211b8",
-        "last_rendered": "6b03b5d47"
-      }
+        "sha256": "dfeb8710b14057c16abba15dcd7db5ca0279918acb1299bba8b7c89b85026207",
+        "last_rendered": "fd98f7ff2"
+      },
+      "published": true
     },
     {
       "file": "events-alarm-surface-light.png",
@@ -1564,11 +1566,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of events-alarm-surface.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "fd98f7ff2",
         "platform": "macos",
         "dirty": true,
-        "sha256": "b2b4f2e13264bf411ff781d88739f8eb9a2549b334d9c0543cb4d16aaa3b701d",
-        "last_rendered": "6b03b5d47"
+        "sha256": "39cd67a0f962afbd5f94d82bae7571ee5c6dfa6a558b1f193959a0c9ab0516ef",
+        "last_rendered": "fd98f7ff2"
       }
     },
     {
@@ -1854,11 +1856,9 @@
     },
     {
       "file": "menu-events-log.png",
-      "tag": "auto-view",
-      "referenced_from": [
-        "client/events.md"
-      ],
-      "notes": "Not a menu despite the name (audited 2026-08-08): a plain EventJournal window («Журнал событий за месяц») with no popup anywhere in it. The generator already renders that view as events-log.png, so what is owed is a docs-side re-point, not a capture."
+      "tag": "obsolete",
+      "referenced_from": [],
+      "notes": "Superseded by events-alarm-surface.png on 2026-09-26 (backlog 39). Hand-captured whole application window over the month journal, eight columns including Объект/Инициатор/Квитировал/Время квитирования. It was retired for CONTRADICTING its own page rather than for being hand-made: client/events.md describes the unacknowledged dot, the severity name, the summary row and the Квитировать все button, and this image — the pre-reshell UI — showed none of them. The docs-side table in the entry sent this row at events-log.png, which is itself obsolete; the live journal surface is events-alarm-surface.png."
     },
     {
       "file": "menu-events.png",
@@ -2763,12 +2763,12 @@
   "counts": {
     "auto-dialog": 51,
     "auto-menu": 12,
-    "auto-view": 101,
+    "auto-view": 100,
     "manual-annotated": 2,
     "manual-diagram": 4,
     "manual-modus": 5,
     "manual-os": 3,
-    "obsolete": 16
+    "obsolete": 17
   },
   "current_generator_owned_subset": [
     "bulk-create.png",
@@ -2777,6 +2777,7 @@
     "device-metrics.png",
     "device-watch.png",
     "devices.png",
+    "events-alarm-surface.png",
     "favorites.png",
     "files.png",
     "graph-cursor.png",

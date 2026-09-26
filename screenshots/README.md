@@ -30,7 +30,7 @@ Workspace views and panels — what the operator works in. (50)
 | **Device metrics**<br>`device-metrics.png` | <img src="device-metrics.png" alt="Device metrics" width="360"> | [Light](device-metrics-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
 | **Device watch**<br>`device-watch.png` | <img src="device-watch.png" alt="Device watch" width="360"> | [Light](device-watch-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/device-watch/) |
 | **Devices**<br>`devices.png` | <img src="devices.png" alt="Devices" width="360"> | [Light](devices-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
-| **Events alarm surface**<br>`events-alarm-surface.png` | <img src="events-alarm-surface.png" alt="Events alarm surface" width="360"> | [Light](events-alarm-surface-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
+| **Events alarm surface**<br>`events-alarm-surface.png` | <img src="events-alarm-surface.png" alt="Events alarm surface" width="360"> | [Light](events-alarm-surface-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/events/) |
 | **Events**<br>`events.png` | <img src="events.png" alt="Events" width="360"> | [Light](events-light.png) |
 | **Favorites**<br>`favorites.png` | <img src="favorites.png" alt="Favorites" width="360"> | [Light](favorites-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
 | **Files**<br>`files.png` | <img src="files.png" alt="Files" width="360"> | [Light](files-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
