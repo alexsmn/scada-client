@@ -9,11 +9,11 @@
       "notes": "Favorites pane: saved windows in two folders, showing all three window-type glyphs — folder, table and chart-spline (Lucide). Seeded from the fixture's `favourites` block, expanded via the spec's `expand` flag and guarded at min_rows 2; it rendered as a blank panel for months because nothing seeded the store and no guard noticed. Not published yet: no manual page embeds it.",
       "published": false,
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "0a9b3bccb",
         "platform": "macos",
         "dirty": true,
-        "sha256": "8bc8d53104cc6ed2174d3bc0644af590ad226824a3a146506888c76f1972d03f",
-        "last_rendered": "6b03b5d47"
+        "sha256": "02b3361c1ca11f6dfd5a74d8987f9e475ce81b03b70e581e0c50ef84a69224b0",
+        "last_rendered": "0a9b3bccb"
       }
     },
     {
@@ -25,11 +25,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of favorites.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "0a9b3bccb",
         "platform": "macos",
         "dirty": true,
-        "sha256": "ceeadb17451cb64752ed0710f99b989599cc459056533e92c97f4a630761773f",
-        "last_rendered": "6b03b5d47"
+        "sha256": "8af52cad05235817b8ab0a88f42cfe2ac4000fa043f3682194775b380e5ba7c7",
+        "last_rendered": "0a9b3bccb"
       }
     },
     {
@@ -1407,11 +1407,11 @@
       "referenced_from": [],
       "notes": "Files view (FileSystemView) — the server's file store as a tree: directories typed FileDirectoryType, files typed FileType, expanded. Untagged until 2026-08-01, so the managed-image gate skipped it, and the fixture defined no file nodes at all — the view rendered its single root row, which no row count could catch (hence min_columns' sibling fix: the tree row check now counts materialized descendants, not just top-level rows, and runs after the expand step). The fixture's file store is described under `_filesystem_comment` in screenshot_data.json; it also needed FileDirectoryType added to the shared ScadaTestAddressSpace and FileType corrected there from ObjectType to VariableType, which is what filesystem.xml declares. The expand step settles pending node loads and expands twice: the tree's leaf test resolves a node's type definition lazily, so on the first pass every file still drew an expand twisty. macOS render; validation-only. Re-rendered 2026-08-29: the Explorer trees stopped drawing a row for their root (ConfigurationTreeView now takes Tree's hidden-root default), because the pane's own dock title already names it — so the tree starts at its content. macOS render, like the one it replaces; the gallery is still not a Windows baseline (docs/ops/client-screenshots.md). Rendered with --only, so no other image in the gallery moved, and provenance was deliberately NOT stamped: --stamp rewrites every row whose digest differs, and with no digests recorded anywhere yet that is all 63 of them — see backlog 642. The «Файловая система» top row is what went — and note the fixture names that node more mildly than the shipped nodeset, where it is «Файлы», exactly the pane's own title. The spec's row floor dropped by one in the same change: the count starts at the view's root index, which the hidden root now occupies, so the root row is no longer among the rows counted.",
       "captured": {
-        "commit": "9204f0684",
+        "commit": "0a9b3bccb",
         "platform": "macos",
         "dirty": true,
-        "sha256": "d0c9c1ef0a37d02a0a3179464f94d48e59c6cbd35b776b0e3177ea60345eb21f",
-        "last_rendered": "6b03b5d47"
+        "sha256": "ff3df7e9d2b4a9283b6a339ac2d494b45c3e7f2eb7162374efb90daac46016f0",
+        "last_rendered": "0a9b3bccb"
       }
     },
     {
@@ -1423,11 +1423,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of files.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "0a9b3bccb",
         "platform": "macos",
         "dirty": true,
-        "sha256": "dac4bf8e6d9880df37cb359ee1242f294130bbf0854f9b19280638d37d7bef67",
-        "last_rendered": "6b03b5d47"
+        "sha256": "7c1bc939e0f062e88b8d269dae7db81024bb70eb2b38d1a3882c18ddf3217a92",
+        "last_rendered": "0a9b3bccb"
       }
     },
     {

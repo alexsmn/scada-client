@@ -54,6 +54,32 @@ QPixmap GrabWhenSettled(QWidget* widget) {
   return pixmap;
 }
 
+void SaveFramedScreenshot(QWidget* framed, const ScreenshotSpec& spec) {
+  if (!framed)
+    return;
+
+  // Deliberately NOT the detach-and-resize path `SaveScreenshot` takes below.
+  // A QDockWidget draws its title bar and its float/close buttons as children
+  // only while it is docked; `setParent(nullptr)` promotes it to a top-level
+  // window, where that chrome becomes the window manager's job — and under
+  // `QT_QPA_PLATFORM=offscreen` there is no window manager, so the grab comes
+  // back as the bare content with the frame silently gone. That failure is
+  // invisible: a valid PNG of the right size, just not of the thing asked for.
+  //
+  // So resize in place and grab in place. The size is a request rather than a
+  // guarantee — the dock's layout in the main window has the final say — which
+  // is the cost of keeping the frame.
+  framed->setMinimumSize(spec.width, spec.height);
+  framed->resize(spec.width, spec.height);
+  QApplication::processEvents();
+
+  QPixmap pixmap = GrabWhenSettled(framed);
+  framed->setMinimumSize(0, 0);
+
+  auto path = OutputPathFor(spec.filename);
+  pixmap.save(QString::fromStdString(path.string()));
+}
+
 void SaveScreenshot(QWidget* widget, const ScreenshotSpec& spec) {
   if (!widget)
     return;

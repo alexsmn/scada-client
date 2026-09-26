@@ -27,3 +27,9 @@ QPixmap GrabWhenSettled(QWidget* widget);
 // Resizes `widget` to the spec dimensions, waits for it to settle, grabs a
 // QPixmap and writes it to `OutputPathFor(spec.filename)`. No-op on null.
 void SaveScreenshot(QWidget* widget, const ScreenshotSpec& spec);
+
+// Saves a capture of a widget that must keep its surrounding chrome — a pane's
+// dock frame, with its title and float/close buttons. Unlike `SaveScreenshot`
+// it never reparents, because the chrome exists only while the widget is where
+// it lives. See the comment on the definition.
+void SaveFramedScreenshot(QWidget* framed, const ScreenshotSpec& spec);

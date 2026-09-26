@@ -17,6 +17,7 @@
 #include <QtCore/QElapsedTimer>
 #include <QtWidgets/QAbstractButton>
 #include <QtWidgets/QApplication>
+#include <QtWidgets/QDockWidget>
 #include <QtWidgets/QTableView>
 
 #include <algorithm>
@@ -338,6 +339,19 @@ bool CaptureViewSpec(const ScreenshotSpec& spec,
     // QSplitter children, so we build a fresh graph widget.
     SaveGraphScreenshot(spec, context.executor, context.node_service,
                         context.timed_data_service, context.json);
+  } else if (spec.frame) {
+    // Grab the dock, not the view: the dock owns the title bar and the
+    // float/close buttons, and the view is its content widget. Falls back to
+    // the bare view when the pane is not docked, so the flag degrades to the
+    // default rather than failing a capture.
+    QWidget* framed = qobject_cast<QDockWidget*>(widget->parentWidget());
+    if (!framed) {
+      ADD_FAILURE() << spec.filename << ": frame was requested but "
+                    << spec.window_type
+                    << " is not in a dock; capturing the bare view";
+      framed = widget;
+    }
+    SaveFramedScreenshot(framed, spec);
   } else {
     SaveScreenshot(widget, spec);
   }

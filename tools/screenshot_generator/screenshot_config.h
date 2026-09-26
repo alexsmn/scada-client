@@ -84,6 +84,20 @@ struct ScreenshotSpec {
   // Expand every row of a tree-backed window before grabbing. A collapsed
   // tree captures its folders and hides everything the capture is about.
   bool expand = false;
+  // Grab the view's dock frame — its title bar and float/close buttons —
+  // rather than the bare view widget.
+  //
+  // A pane captured bare is a rectangle of content with nothing saying what
+  // it is or where it lives, and the manual's hand-captured originals all
+  // carry the frame: `menu-files.png` is a titled `Файлы` panel, which is what
+  // tells a reader the pane is dockable and closable at all. Auditing the two
+  // side by side on 2026-09-26 (backlog 39) is what put this here — the docs
+  // image and the generated one were called duplicates on the strength of
+  // rendering the same view, and they do not show the same thing.
+  //
+  // Off by default: most captures are of the content, and a frame around a
+  // grid is noise. Set it where the capture's subject IS the pane.
+  bool frame = false;
   // Name of the graph configuration this capture plots ("graph" in the JSON),
   // resolved against the fixture's top-level `graphs` object. Empty means the
   // fixture-wide `graph` object. Two `Graph` captures illustrate different

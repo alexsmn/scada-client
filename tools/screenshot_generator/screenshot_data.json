@@ -1014,50 +1014,68 @@
       }
     },
     {
-      "id": "FILESYSTEM_FILE.config",
-      "browse_name": "config",
+      "id": "FILESYSTEM_FILE.Мнемосхемы",
+      "browse_name": "Мнемосхемы",
       "class": "object",
       "type_definition": "SCADA.305"
     },
     {
-      "id": "FILESYSTEM_FILE.config%2Fiec104.cfg",
-      "browse_name": "iec104.cfg",
+      "id": "FILESYSTEM_FILE.Мнемосхемы%2FСхема РП.xsde",
+      "browse_name": "Схема РП.xsde",
       "class": "variable",
       "type_definition": "SCADA.306"
     },
     {
-      "id": "FILESYSTEM_FILE.config%2Fmodbus.cfg",
-      "browse_name": "modbus.cfg",
+      "id": "FILESYSTEM_FILE.Мнемосхемы%2FСхема ТП-2Н.xsde",
+      "browse_name": "Схема ТП-2Н.xsde",
       "class": "variable",
       "type_definition": "SCADA.306"
     },
     {
-      "id": "FILESYSTEM_FILE.reports",
-      "browse_name": "reports",
+      "id": "FILESYSTEM_FILE.Мнемосхемы%2FСхема ТП-МС.xsde",
+      "browse_name": "Схема ТП-МС.xsde",
+      "class": "variable",
+      "type_definition": "SCADA.306"
+    },
+    {
+      "id": "FILESYSTEM_FILE.Мнемосхемы%2FСхема ТП-ОС.xsde",
+      "browse_name": "Схема ТП-ОС.xsde",
+      "class": "variable",
+      "type_definition": "SCADA.306"
+    },
+    {
+      "id": "FILESYSTEM_FILE.Телемеханика",
+      "browse_name": "Телемеханика",
       "class": "object",
       "type_definition": "SCADA.305"
     },
     {
-      "id": "FILESYSTEM_FILE.reports%2Fdaily-load.csv",
-      "browse_name": "daily-load.csv",
+      "id": "FILESYSTEM_FILE.Телемеханика%2FТелемеханика РП.xsde",
+      "browse_name": "Телемеханика РП.xsde",
       "class": "variable",
       "type_definition": "SCADA.306"
     },
     {
-      "id": "FILESYSTEM_FILE.reports%2F2026-04-15.csv",
-      "browse_name": "2026-04-15.csv",
+      "id": "FILESYSTEM_FILE.Телемеханика%2FТелемеханика ТП-2Н.xsde",
+      "browse_name": "Телемеханика ТП-2Н.xsde",
       "class": "variable",
       "type_definition": "SCADA.306"
     },
     {
-      "id": "FILESYSTEM_FILE.device-map.xml",
-      "browse_name": "device-map.xml",
+      "id": "FILESYSTEM_FILE.Телемеханика%2FТелемеханика ТП-МС.xsde",
+      "browse_name": "Телемеханика ТП-МС.xsde",
       "class": "variable",
       "type_definition": "SCADA.306"
     },
     {
-      "id": "FILESYSTEM_FILE.server.log",
-      "browse_name": "server.log",
+      "id": "FILESYSTEM_FILE.Сетевые настройки АСДУЭ.xsde",
+      "browse_name": "Сетевые настройки АСДУЭ.xsde",
+      "class": "variable",
+      "type_definition": "SCADA.306"
+    },
+    {
+      "id": "FILESYSTEM_FILE.Схема передачи данных АСДУЭ.xsde",
+      "browse_name": "Схема передачи данных АСДУЭ.xsde",
       "class": "variable",
       "type_definition": "SCADA.306"
     }
@@ -1097,18 +1115,10 @@
       "USER.12"
     ],
     "SCADA.304": [
-      "FILESYSTEM_FILE.config",
-      "FILESYSTEM_FILE.reports",
-      "FILESYSTEM_FILE.device-map.xml",
-      "FILESYSTEM_FILE.server.log"
-    ],
-    "FILESYSTEM_FILE.config": [
-      "FILESYSTEM_FILE.config%2Fiec104.cfg",
-      "FILESYSTEM_FILE.config%2Fmodbus.cfg"
-    ],
-    "FILESYSTEM_FILE.reports": [
-      "FILESYSTEM_FILE.reports%2Fdaily-load.csv",
-      "FILESYSTEM_FILE.reports%2F2026-04-15.csv"
+      "FILESYSTEM_FILE.Мнемосхемы",
+      "FILESYSTEM_FILE.Телемеханика",
+      "FILESYSTEM_FILE.Сетевые настройки АСДУЭ.xsde",
+      "FILESYSTEM_FILE.Схема передачи данных АСДУЭ.xsde"
     ],
     "SCADA.12": [
       "SCADA.9501",
@@ -1265,6 +1275,17 @@
       "TIT.211",
       "TIT.212",
       "TIT.213"
+    ],
+    "FILESYSTEM_FILE.Мнемосхемы": [
+      "FILESYSTEM_FILE.Мнемосхемы%2FСхема РП.xsde",
+      "FILESYSTEM_FILE.Мнемосхемы%2FСхема ТП-2Н.xsde",
+      "FILESYSTEM_FILE.Мнемосхемы%2FСхема ТП-МС.xsde",
+      "FILESYSTEM_FILE.Мнемосхемы%2FСхема ТП-ОС.xsde"
+    ],
+    "FILESYSTEM_FILE.Телемеханика": [
+      "FILESYSTEM_FILE.Телемеханика%2FТелемеханика РП.xsde",
+      "FILESYSTEM_FILE.Телемеханика%2FТелемеханика ТП-2Н.xsde",
+      "FILESYSTEM_FILE.Телемеханика%2FТелемеханика ТП-МС.xsde"
     ]
   },
   "_local_events_comment": "Client-side events, reported through LocalEvents. The journal renders these with the object «Локальное событие» rather than a node display name, which is what the manual's event-journal pages show. severity is info | warning | error.",
@@ -1926,18 +1947,20 @@
     {
       "type": "Favorites",
       "filename": "favorites.png",
-      "width": 300,
+      "width": 320,
       "height": 400,
       "expand": true,
-      "min_rows": 2
+      "min_rows": 2,
+      "frame": true
     },
     {
       "type": "FileSystemView",
       "filename": "files.png",
-      "width": 300,
+      "width": 320,
       "height": 400,
       "expand": true,
-      "min_rows": 8
+      "min_rows": 11,
+      "frame": true
     },
     {
       "type": "TimeVal",
