@@ -4,24 +4,32 @@
 #include "base/lifetime.h"
 #include "scada/node_id.h"
 
+#include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 
-// The payload of a node dragged out of a client view: the dragged node's id,
-// serialized as a `protocol::NodeId` message under `kMimeType`. The encoding
-// is the protobuf one the clipboard already uses for node trees, so the two
-// exchange paths share one wire vocabulary.
+// The payload of nodes dragged out of a client view: the dragged node ids, in
+// the view's order, serialized as a `protocol::DragNodes` message under
+// `kMimeType`. The encoding is the protobuf one the clipboard already uses for
+// node trees, so the two exchange paths share one wire vocabulary.
 class ItemDragData {
  public:
   ItemDragData() = default;
-  explicit ItemDragData(const scada::NodeId& item_id) : node_id_(item_id) {}
+  explicit ItemDragData(scada::NodeId item_id);
+  explicit ItemDragData(std::vector<scada::NodeId> item_ids)
+      : node_ids_(std::move(item_ids)) {}
 
-  const scada::NodeId& item_id() const SCADA_LIFETIME_BOUND { return node_id_; }
+  // The dragged node ids; never empty after a successful `Load`.
+  std::span<const scada::NodeId> item_ids() const SCADA_LIFETIME_BOUND {
+    return node_ids_;
+  }
 
-  // Encodes the node id as a serialized `protocol::NodeId`.
+  // Encodes the node ids as a serialized `protocol::DragNodes`.
   std::string Serialize() const;
   // Decodes a payload produced by `Serialize`. Drag payloads come from outside
-  // the process, so malformed or foreign bytes return false rather than fail.
+  // the process, so malformed or foreign bytes, an empty list and a null id
+  // all return false rather than fail.
   bool Deserialize(std::string_view bytes);
 
   // Adds the payload to `drag_data` under `kMimeType`.
@@ -33,5 +41,5 @@ class ItemDragData {
       "application/telecontrol.scada.nodes";
 
  private:
-  scada::NodeId node_id_;
+  std::vector<scada::NodeId> node_ids_;
 };

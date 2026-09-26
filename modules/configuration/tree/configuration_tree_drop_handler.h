@@ -28,6 +28,9 @@ class ConfigurationTreeDropHandler
   explicit ConfigurationTreeDropHandler(
       ConfigurationTreeDropHandlerContext&& context);
 
+  // Resolves the drop of an `ItemDragData` payload onto `target_node`. A
+  // payload of several nodes drops only when every node accepts the same
+  // operation, and `action` then performs it for all of them.
   int GetDropAction(const DragData& drag_data,
                     const ConfigurationTreeNode* target_node,
                     DropAction& action);

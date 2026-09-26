@@ -3,7 +3,6 @@
 #include "base/awaitable.h"
 #include "common/formula_util.h"
 #include "configuration/tree/configuration_tree_node.h"
-#include "ui/dragdrop/item_drag_data.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "net/net_executor_adapter.h"
@@ -11,6 +10,10 @@
 #include "node_service/node_util.h"
 #include "services/create_tree.h"
 #include "services/task_manager.h"
+#include "ui/dragdrop/item_drag_data.h"
+
+#include <span>
+#include <vector>
 
 namespace {
 
@@ -206,5 +209,31 @@ int ConfigurationTreeDropHandler::GetDropAction(
     return scada::aui::DragDropTypes::DRAG_NONE;
   }
 
-  return GetDropAction(item_drag_data.item_id(), target_node, action);
+  std::span<const scada::NodeId> dragging_ids = item_drag_data.item_ids();
+  if (dragging_ids.size() == 1)
+    return GetDropAction(dragging_ids.front(), target_node, action);
+
+  // A multi-node drop is all or nothing: every node must accept the same
+  // operation on the target. Dropping only the nodes that fit, or moving some
+  // while linking others, would do something the user did not see offered.
+  std::vector<DropAction> actions;
+  actions.reserve(dragging_ids.size());
+  int operation = scada::aui::DragDropTypes::DRAG_NONE;
+  for (const scada::NodeId& dragging_id : dragging_ids) {
+    DropAction node_action;
+    int node_operation = GetDropAction(dragging_id, target_node, node_action);
+    if (node_operation == scada::aui::DragDropTypes::DRAG_NONE ||
+        !node_action || (!actions.empty() && node_operation != operation)) {
+      return scada::aui::DragDropTypes::DRAG_NONE;
+    }
+    operation = node_operation;
+    actions.emplace_back(std::move(node_action));
+  }
+
+  action = [actions = std::move(actions), operation] {
+    for (const DropAction& node_action : actions)
+      node_action();
+    return operation;
+  };
+  return operation;
 }

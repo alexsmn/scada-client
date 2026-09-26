@@ -313,18 +313,21 @@ void ConfigurationTreeView::UpdateSelection() {
 
 DragData ConfigurationTreeView::GetDragData(
     const std::vector<void*>& nodes) const {
-  if (nodes.empty())
-    return {};
+  std::vector<scada::NodeId> node_ids;
+  node_ids.reserve(nodes.size());
+  for (void* node : nodes) {
+    auto node_id = static_cast<ConfigurationTreeNode*>(node)->node().node_id();
+    if (!node_id.is_null())
+      node_ids.emplace_back(std::move(node_id));
+  }
 
-  auto* tree_node = static_cast<ConfigurationTreeNode*>(nodes.front());
-  auto node_id = tree_node->node().node_id();
-  if (node_id.is_null())
+  if (node_ids.empty())
     return {};
 
   DragData drag_data;
   // Named local rather than `ItemDragData{...}.Save(...)`: cppcheck 2.21
-  // mis-reads that shape as an access of the moved-from `node_id`.
-  ItemDragData item_drag_data{std::move(node_id)};
+  // mis-reads that shape as an access of the moved-from `node_ids`.
+  ItemDragData item_drag_data{std::move(node_ids)};
   item_drag_data.Save(drag_data);
   return drag_data;
 }

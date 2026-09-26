@@ -2,25 +2,38 @@
 
 #include "remote/protocol_utils.h"
 
+ItemDragData::ItemDragData(scada::NodeId item_id) {
+  node_ids_.emplace_back(std::move(item_id));
+}
+
 std::string ItemDragData::Serialize() const {
-  protocol::NodeId message;
-  Convert(node_id_, message);
+  protocol::DragNodes message;
+  for (const scada::NodeId& node_id : node_ids_)
+    Convert(node_id, *message.add_node_id());
   return message.SerializeAsString();
 }
 
 bool ItemDragData::Deserialize(std::string_view bytes) {
-  protocol::NodeId message;
+  protocol::DragNodes message;
   if (!message.ParseFromArray(bytes.data(), static_cast<int>(bytes.size())))
     return false;
 
-  scada::NodeId node_id;
-  Convert(message, node_id);
   // Drag-drop payload is external data: an empty message parses cleanly, and
-  // a null id is not something a drag can carry.
-  if (node_id.is_null())
+  // neither an empty drag nor a null id is something a drag can carry.
+  if (message.node_id().empty())
     return false;
 
-  node_id_ = std::move(node_id);
+  std::vector<scada::NodeId> node_ids;
+  node_ids.reserve(message.node_id_size());
+  for (const protocol::NodeId& source : message.node_id()) {
+    scada::NodeId node_id;
+    Convert(source, node_id);
+    if (node_id.is_null())
+      return false;
+    node_ids.emplace_back(std::move(node_id));
+  }
+
+  node_ids_ = std::move(node_ids);
   return true;
 }
 

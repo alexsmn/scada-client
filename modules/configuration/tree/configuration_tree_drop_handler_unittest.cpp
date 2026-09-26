@@ -13,6 +13,7 @@
 #include "scada/co_result.h"
 #include "services/create_tree.h"
 #include "services/task_manager_mock.h"
+#include "ui/dragdrop/item_drag_data.h"
 
 #include <gmock/gmock.h>
 
@@ -239,6 +240,83 @@ TEST_F(ConfigurationTreeDropHandlerTest, MoveDropPostsReferenceCoroutine) {
   ASSERT_TRUE(action);
 
   EXPECT_EQ(action(), scada::aui::DragDropTypes::DRAG_MOVE);
+  Drain(executor_);
+}
+
+scada::CoStatus GoodReferenceResult(const scada::NodeId&,
+                                    const scada::NodeId&,
+                                    const scada::NodeId&) {
+  co_return scada::StatusCode::Good;
+}
+
+TEST_F(ConfigurationTreeDropHandlerTest, MultiNodeMoveDropMovesEveryNode) {
+  const scada::NodeId second_id{15, 1};
+  auto target_type = MakeTestNode(scada::data_items::id::DataGroupType, {});
+  auto target_node = MakeTargetNode(MakeTestNode(
+      new_parent_id_,
+      {.type_definition_id = scada::data_items::id::DataGroupType}));
+  const TestNodeOptions movable{
+      .type_definition_id = scada::data_items::id::DataItemType,
+      .parent_id = old_parent_id_,
+      .creates = {target_type}};
+  auto first_node = MakeTestNode(channel_id_, movable);
+  auto second_node = MakeTestNode(second_id, movable);
+
+  EXPECT_CALL(node_service_, GetNode(channel_id_)).WillOnce(Return(first_node));
+  EXPECT_CALL(node_service_, GetNode(second_id)).WillOnce(Return(second_node));
+  for (const scada::NodeId& node_id : {channel_id_, second_id}) {
+    EXPECT_CALL(task_manager_,
+                PostDeleteReference(scada::NodeId{scada::id::Organizes},
+                                    old_parent_id_, node_id))
+        .WillOnce(&GoodReferenceResult);
+    EXPECT_CALL(task_manager_,
+                PostAddReference(scada::NodeId{scada::id::Organizes},
+                                 new_parent_id_, node_id))
+        .WillOnce(&GoodReferenceResult);
+  }
+
+  DragData drag_data;
+  ItemDragData{std::vector<scada::NodeId>{channel_id_, second_id}}.Save(
+      drag_data);
+
+  DropAction action;
+  auto handler = MakeHandler();
+  EXPECT_EQ(handler.GetDropAction(drag_data, target_node, action),
+            scada::aui::DragDropTypes::DRAG_MOVE);
+  ASSERT_TRUE(action);
+
+  EXPECT_EQ(action(), scada::aui::DragDropTypes::DRAG_MOVE);
+  Drain(executor_);
+}
+
+// One node the target cannot take refuses the whole drop, rather than moving
+// the rest: the operator was shown one drag, not a partial one.
+TEST_F(ConfigurationTreeDropHandlerTest,
+       MultiNodeDropIsRefusedWhenOneNodeCannotDrop) {
+  const scada::NodeId unknown_id{15, 1};
+  auto target_type = MakeTestNode(scada::data_items::id::DataGroupType, {});
+  auto target_node = MakeTargetNode(MakeTestNode(
+      new_parent_id_,
+      {.type_definition_id = scada::data_items::id::DataGroupType}));
+  auto movable_node = MakeTestNode(
+      channel_id_, {.type_definition_id = scada::data_items::id::DataItemType,
+                    .parent_id = old_parent_id_,
+                    .creates = {target_type}});
+
+  ON_CALL(node_service_, GetNode(channel_id_))
+      .WillByDefault(Return(movable_node));
+  // `unknown_id` resolves to no node, so it has no drop of its own.
+
+  DragData drag_data;
+  ItemDragData{std::vector<scada::NodeId>{channel_id_, unknown_id}}.Save(
+      drag_data);
+
+  // StrictMock<MockTaskManager>: any posted move would fail the test.
+  DropAction action;
+  auto handler = MakeHandler();
+  EXPECT_EQ(handler.GetDropAction(drag_data, target_node, action),
+            scada::aui::DragDropTypes::DRAG_NONE);
+  EXPECT_FALSE(action);
   Drain(executor_);
 }
 
