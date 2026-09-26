@@ -334,7 +334,26 @@ def main() -> int:
     # size to their layout minimums, which vary with platform font metrics
     # (the login dialog is 403px wide on Windows, 475px on macOS), so for
     # them only existence is checked.
-    specs = [(s, True) for s in data.get("screenshots", [])] + [
+    #
+    # A `frame` capture joins the dialogs, and for the same reason rather than
+    # as an exemption for convenience: keeping the chrome means the widget
+    # cannot be hard-resized. A QDockWidget draws its title bar and buttons
+    # only while it is docked, so detaching it to make the size stick is
+    # exactly what would lose the frame the capture exists for; its height is
+    # then the dock AREA's, set by the main window's layout and the platform's
+    # font metrics (`files.png` renders 320x478 against a spec of 320x400).
+    #
+    # **`window` is layout-bound too, and a `--only` run will tell you it is
+    # not.** A main window laid out with its menu bar, rail, docks and status
+    # strip has a minimumSizeHint, and resize() is clamped to it — so
+    # `favorites.png` came out exactly 1100x620 rendered alone and 1195x620 in
+    # a full sweep, where more of the shell is built. The spec dims stay
+    # meaningful as a REQUEST (they choose the aspect and the rough size); they
+    # are not a postcondition for anything that keeps its chrome.
+    def exact_dims_for(spec: dict) -> bool:
+        return not spec.get("frame") or spec["frame"] == "none"
+
+    specs = [(s, exact_dims_for(s)) for s in data.get("screenshots", [])] + [
         (s, False) for s in data.get("dialogs", [])
     ]
     errors = []
