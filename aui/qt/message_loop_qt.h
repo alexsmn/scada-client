@@ -7,6 +7,7 @@
 #include <QTimer>
 #include <atomic>
 #include <functional>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <queue>
@@ -31,7 +32,16 @@
 // client's sockets on its own thread and posts completions here. Everything
 // else, including construction and destruction, is GUI-thread only. A
 // `QCoreApplication` must exist before the constructor runs.
-class MessageLoopQt final : public QObject {
+//
+// Lifetime: a task may drop the last reference to the loop that is running it
+// — `AnyExecutorAdapter` owns the loop by `shared_ptr`, so a coroutine spawned
+// onto an executor nobody else holds owns the pump that resumes it. When the
+// loop is `shared_ptr`-owned, a pass holds its own reference until it has
+// finished touching members, and a pass left holding the last one releases it
+// only once no Qt frame for this object is on the stack (see `Run()`). A loop
+// owned any other way must outlive every task it runs.
+class MessageLoopQt final : public QObject,
+                            public std::enable_shared_from_this<MessageLoopQt> {
  public:
   using Task = std::function<void()>;
 
@@ -53,7 +63,9 @@ class MessageLoopQt final : public QObject {
   // Runs one pump pass synchronously: promotes due delayed tasks and drains the
   // immediate queue. Tests use it to step the loop without a running
   // `QEventLoop`; production drives it from the posted wakeup and the timer.
-  void RunOnce() { Run(); }
+  // If a task dropped the last reference to the loop, the loop is destroyed
+  // before this returns.
+  void RunOnce();
 
   // Number of wakeup events posted since construction. Immediate posts coalesce
   // into one wakeup while a pass is pending, which is the property worth
@@ -71,9 +83,17 @@ class MessageLoopQt final : public QObject {
 
   bool event(QEvent* event) override;
 
-  // One pass: promote due delayed tasks, drain a bounded slice of the immediate
-  // queue, then re-schedule whatever is left.
+  // One pass driven by Qt — the posted wakeup or `wake_timer_`. A last
+  // reference returned by `RunPass()` is released on a later turn of the event
+  // loop, because Qt documents deleting a QObject while it is handling an
+  // event delivered to it as unsafe.
   void Run();
+
+  // One pass: promote due delayed tasks, drain a bounded slice of the immediate
+  // queue, then re-schedule whatever is left. Returns the pass's own reference
+  // to the loop when a task dropped every other one, so the caller decides
+  // where the loop dies; otherwise null.
+  [[nodiscard]] std::shared_ptr<MessageLoopQt> RunPass();
 
   // Asks for a `Run()` at the next turn of the event loop. Thread-safe, and
   // coalescing: repeated calls while a wakeup is already pending post nothing.

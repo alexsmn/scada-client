@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 
 #include <chrono>
+#include <memory>
 #include <thread>
 #include <vector>
 
@@ -177,6 +178,63 @@ TEST_F(MessageLoopQtTest, IdleLoopPostsNoWakeups) {
   const size_t settled = loop_.GetWakeupCountForTesting();
   PumpUntil([] { return false; }, 100ms);
   EXPECT_EQ(loop_.GetWakeupCountForTesting(), settled);
+}
+
+// A task may drop the last reference to the loop running it:
+// `AnyExecutorAdapter` owns the loop by `shared_ptr`, so a coroutine spawned
+// onto an executor nobody else holds owns its own pump. The pass used to
+// re-lock `mutex_` on the freed object after such a task returned, aborting
+// with "recursive_mutex lock failed" (task 789).
+class SharedMessageLoopQtTest : public testing::Test {
+ protected:
+  AppEnvironment app_env_;
+  std::shared_ptr<MessageLoopQt> loop_ = std::make_shared<MessageLoopQt>();
+  std::weak_ptr<MessageLoopQt> weak_loop_ = loop_;
+};
+
+// Dispatched by Qt, the loop must survive its own event delivery — Qt
+// documents deleting a QObject inside its event handling as unsafe — and die
+// on a later turn instead. The rest of the pass still runs.
+TEST_F(SharedMessageLoopQtTest, WakeupTaskDroppingTheLastReferenceIsDeferred) {
+  bool later_task_ran = false;
+  loop_->PostDelayedTask({}, [this] { loop_.reset(); });
+  loop_->PostDelayedTask({}, [&later_task_ran] { later_task_ran = true; });
+
+  MessageLoopQt* raw = loop_.get();
+  QCoreApplication::sendPostedEvents(raw);
+
+  EXPECT_TRUE(later_task_ran);
+  EXPECT_FALSE(weak_loop_.expired());
+  EXPECT_TRUE(PumpUntil([this] { return weak_loop_.expired(); }));
+}
+
+TEST_F(SharedMessageLoopQtTest, TimerTaskDroppingTheLastReferenceIsDeferred) {
+  loop_->PostDelayedTask(10ms, [this] { loop_.reset(); });
+
+  EXPECT_TRUE(PumpUntil([this] { return weak_loop_.expired(); }));
+}
+
+// With no Qt frame on the stack there is nothing to defer for: the loop is
+// gone by the time RunOnce() returns.
+TEST_F(SharedMessageLoopQtTest, RunOnceReleasesTheLastReferenceSynchronously) {
+  loop_->PostDelayedTask({}, [this] { loop_.reset(); });
+
+  MessageLoopQt* raw = loop_.get();
+  raw->RunOnce();
+
+  EXPECT_TRUE(weak_loop_.expired());
+}
+
+// The pass's own reference must not keep a loop alive that still has an
+// owner, nor defer anything.
+TEST_F(SharedMessageLoopQtTest, PassWithAnOwnerLeftDestroysNothing) {
+  bool ran = false;
+  loop_->PostDelayedTask({}, [&ran] { ran = true; });
+
+  loop_->RunOnce();
+
+  EXPECT_TRUE(ran);
+  EXPECT_EQ(weak_loop_.use_count(), 1);
 }
 
 }  // namespace

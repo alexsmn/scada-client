@@ -5,9 +5,11 @@
 
 #include <QCoreApplication>
 #include <QEvent>
+#include <QMetaObject>
 
 #include <algorithm>
 #include <exception>
+#include <utility>
 
 namespace {
 
@@ -113,7 +115,36 @@ bool MessageLoopQt::event(QEvent* event) {
   return QObject::event(event);
 }
 
+void MessageLoopQt::RunOnce() {
+  // No Qt frame for this object is on the stack here, so a last reference the
+  // pass returns can be dropped on the spot: the loop dies as `last` goes out
+  // of scope, after the pass has finished with every member.
+  std::shared_ptr<MessageLoopQt> last = RunPass();
+}
+
 void MessageLoopQt::Run() {
+  std::shared_ptr<MessageLoopQt> last = RunPass();
+  if (!last)
+    return;
+
+  // We are inside `event()` or `wake_timer_`'s timeout, and destroying the
+  // loop here would delete a QObject during its own event delivery — the case
+  // `QObject::~QObject` warns against and `deleteLater()` exists for.
+  // `deleteLater()` itself is not available: the object is owned by a
+  // `shared_ptr`, not by Qt. So hand the reference to a queued call on the
+  // application object instead; it is dropped on the next turn of the event
+  // loop, which is exactly when `deleteLater()` would have deleted.
+  QMetaObject::invokeMethod(
+      QCoreApplication::instance(), [last = std::move(last)] {},
+      Qt::QueuedConnection);
+}
+
+std::shared_ptr<MessageLoopQt> MessageLoopQt::RunPass() {
+  // A task may drop the last external reference to this loop (see the class
+  // comment). Holding our own across the pass keeps every member access below
+  // on a live object; empty when the loop is not `shared_ptr`-owned.
+  std::shared_ptr<MessageLoopQt> self = weak_from_this().lock();
+
   // Clear before touching the queues. Clearing afterwards would drop a wakeup
   // for anything posted during the drain: the flag would still read true, so no
   // event is posted, and then we clear it with work left behind.
@@ -157,6 +188,10 @@ void MessageLoopQt::Run() {
   if (has_immediate_work)
     ScheduleWork();
   ScheduleDelayedWork(next_deadline);
+
+  if (self && self.use_count() == 1)
+    return self;
+  return nullptr;
 }
 
 void MessageLoopQt::ScheduleDelayedWork(std::optional<TimePoint> deadline) {

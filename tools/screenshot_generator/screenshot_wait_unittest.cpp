@@ -44,9 +44,9 @@ class ScreenshotWaitTest : public testing::Test {
   // aborted with `recursive_mutex lock failed: Invalid argument`. All four
   // cases died that way. The generator itself never had the problem -- it
   // passes the application's own executor, which outlives every task -- so
-  // this was a fixture that did not resemble any caller. The underlying
-  // re-entrancy in `Run()` is real and is filed separately; owning the loop
-  // here is what a caller actually does.
+  // this was a fixture that did not resemble any caller. `Run()` now survives
+  // such a task (task 789, pinned by `SharedMessageLoopQtTest`), but owning
+  // the loop here is still what a caller actually does.
   AppEnvironment app_env_;
   std::shared_ptr<MessageLoopQt> message_loop_ =
       std::make_shared<MessageLoopQt>();
