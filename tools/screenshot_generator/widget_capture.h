@@ -33,3 +33,14 @@ void SaveScreenshot(QWidget* widget, const ScreenshotSpec& spec);
 // it never reparents, because the chrome exists only while the widget is where
 // it lives. See the comment on the definition.
 void SaveFramedScreenshot(QWidget* framed, const ScreenshotSpec& spec);
+
+// Saves a capture of the whole main window around `view` — menu bar, toolbars,
+// docks, status strip. Shows the window for the grab and restores its previous
+// visibility, since the sweep runs it hidden.
+//
+// It does NOT include the OS title bar, which no offscreen grab can reach; see
+// the definition. A hand-captured original showing one is not reproducible by
+// this and should stay `manual-*`.
+void SaveWindowScreenshot(QWidget* window,
+                          QWidget* view,
+                          const ScreenshotSpec& spec);

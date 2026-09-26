@@ -8,9 +8,12 @@
 #include <gtest/gtest.h>
 
 #include <QApplication>
+#include <QDockWidget>
 #include <QElapsedTimer>
 #include <QImage>
+#include <QLayout>
 #include <QPixmap>
+#include <QSize>
 #include <QString>
 #include <QWidget>
 
@@ -52,6 +55,59 @@ QPixmap GrabWhenSettled(QWidget* widget) {
         << " ms means the run was heavily loaded as well.";
   }
   return pixmap;
+}
+
+void SaveWindowScreenshot(QWidget* window,
+                          QWidget* view,
+                          const ScreenshotSpec& spec) {
+  if (!window)
+    return;
+
+  // The sweep builds its main window hidden (`MainWindow::SetHideForTesting`
+  // in screenshot_fixture.cpp), and a hidden window does not lay its children
+  // out — the Graph branch in view_capture.cpp exists for that same reason. So
+  // show it, let the layouts run, grab, and hide it again so the specs after
+  // this one see the window they expected.
+  //
+  // What this CANNOT produce is the OS title bar: `grab()` renders the Qt
+  // widget tree and the title bar belongs to the window manager.
+  // `screenshot_fixture.cpp` records that PrintWindow(PW_RENDERFULLCONTENT)
+  // was tried for precisely this and did not reliably capture child content.
+  // Restore the window's geometry afterwards, not just its visibility. The
+  // sweep renders every spec into ONE main window, so resizing it here and
+  // leaving it resized makes the NEXT capture lay out against this spec's
+  // dimensions — measured: `files.png` rendered after this capture differed
+  // from the same spec rendered alone, which is the order-dependence the
+  // fixture's own comments record being bitten by before.
+  const bool was_visible = window->isVisible();
+  const QSize previous_size = window->size();
+
+  // Raise the pane being captured, so the window is shown around THIS view
+  // rather than whichever dock happened to be on top.
+  if (view) {
+    if (auto* dock = qobject_cast<QDockWidget*>(view->parentWidget())) {
+      dock->show();
+      dock->raise();
+    }
+  }
+
+  window->resize(spec.width, spec.height);
+  window->show();
+  window->ensurePolished();
+  if (QLayout* layout = window->layout())
+    layout->activate();
+  for (int i = 0; i < 20; ++i)
+    QApplication::processEvents();
+
+  QPixmap pixmap = GrabWhenSettled(window);
+
+  if (!was_visible)
+    window->hide();
+  window->resize(previous_size);
+  QApplication::processEvents();
+
+  auto path = OutputPathFor(spec.filename);
+  pixmap.save(QString::fromStdString(path.string()));
 }
 
 void SaveFramedScreenshot(QWidget* framed, const ScreenshotSpec& spec) {

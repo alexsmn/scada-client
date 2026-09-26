@@ -84,8 +84,7 @@ struct ScreenshotSpec {
   // Expand every row of a tree-backed window before grabbing. A collapsed
   // tree captures its folders and hides everything the capture is about.
   bool expand = false;
-  // Grab the view's dock frame — its title bar and float/close buttons —
-  // rather than the bare view widget.
+  // How much of the surrounding chrome the capture keeps.
   //
   // A pane captured bare is a rectangle of content with nothing saying what
   // it is or where it lives, and the manual's hand-captured originals all
@@ -95,9 +94,22 @@ struct ScreenshotSpec {
   // image and the generated one were called duplicates on the strength of
   // rendering the same view, and they do not show the same thing.
   //
-  // Off by default: most captures are of the content, and a frame around a
-  // grid is noise. Set it where the capture's subject IS the pane.
-  bool frame = false;
+  // `kNone` is the default: most captures are of the content, and chrome
+  // around a grid is noise. Set it where the capture's subject IS the pane or
+  // where it lives.
+  //
+  // **`kWindow` cannot give you the OS title bar.** `grab()` renders the Qt
+  // widget tree, and the title bar belongs to the window manager — which is
+  // why `screenshot_fixture.cpp` says PrintWindow(PW_RENDERFULLCONTENT) was
+  // tried for exactly this and abandoned. So a window capture is the menu bar,
+  // the toolbars, the docks and the status strip, and a hand-captured original
+  // that shows a title bar cannot be reproduced byte-for-byte by any spec.
+  enum class Frame {
+    kNone,    // the view widget alone
+    kDock,    // the pane's QDockWidget: its title and float/close buttons
+    kWindow,  // the whole main window around it, minus the OS title bar
+  };
+  Frame frame = Frame::kNone;
   // Name of the graph configuration this capture plots ("graph" in the JSON),
   // resolved against the fixture's top-level `graphs` object. Empty means the
   // fixture-wide `graph` object. Two `Graph` captures illustrate different

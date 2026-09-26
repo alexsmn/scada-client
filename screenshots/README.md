@@ -32,7 +32,7 @@ Workspace views and panels — what the operator works in. (50)
 | **Devices**<br>`devices.png` | <img src="devices.png" alt="Devices" width="360"> | [Light](devices-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
 | **Events alarm surface**<br>`events-alarm-surface.png` | <img src="events-alarm-surface.png" alt="Events alarm surface" width="360"> | [Light](events-alarm-surface-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
 | **Events**<br>`events.png` | <img src="events.png" alt="Events" width="360"> | [Light](events-light.png) |
-| **Favorites**<br>`favorites.png` | <img src="favorites.png" alt="Favorites" width="360"> | [Light](favorites-light.png) |
+| **Favorites**<br>`favorites.png` | <img src="favorites.png" alt="Favorites" width="360"> | [Light](favorites-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
 | **Files**<br>`files.png` | <img src="files.png" alt="Files" width="360"> | [Light](files-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
 | **Frame decode pane**<br>`frame-decode-pane.png` | <img src="frame-decode-pane.png" alt="Frame decode pane" width="360"> | [Light](frame-decode-pane-light.png) |
 | **Graph cursor**<br>`graph-cursor.png` | <img src="graph-cursor.png" alt="Graph cursor" width="360"> | [Light](graph-cursor-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/graph/) |

@@ -339,14 +339,25 @@ bool CaptureViewSpec(const ScreenshotSpec& spec,
     // QSplitter children, so we build a fresh graph widget.
     SaveGraphScreenshot(spec, context.executor, context.node_service,
                         context.timed_data_service, context.json);
-  } else if (spec.frame) {
+  } else if (spec.frame == ScreenshotSpec::Frame::kWindow) {
+    // Make this spec's view the ACTIVE one before the grab. The window's
+    // breadcrumb and its Inspector read the active view, not whichever dock is
+    // raised, so without this the capture shows the window around the right
+    // pane while naming the previous spec's view in the breadcrumb — which is
+    // exactly the kind of quiet wrongness a full-window capture exists to
+    // avoid.
+    context.main_window.ActivateView(*view);
+    QApplication::processEvents();
+    SaveWindowScreenshot(dynamic_cast<QWidget*>(&context.main_window), widget,
+                         spec);
+  } else if (spec.frame == ScreenshotSpec::Frame::kDock) {
     // Grab the dock, not the view: the dock owns the title bar and the
     // float/close buttons, and the view is its content widget. Falls back to
     // the bare view when the pane is not docked, so the flag degrades to the
     // default rather than failing a capture.
     QWidget* framed = qobject_cast<QDockWidget*>(widget->parentWidget());
     if (!framed) {
-      ADD_FAILURE() << spec.filename << ": frame was requested but "
+      ADD_FAILURE() << spec.filename << ": frame \"dock\" was requested but "
                     << spec.window_type
                     << " is not in a dock; capturing the bare view";
       framed = widget;

@@ -1947,11 +1947,11 @@
     {
       "type": "Favorites",
       "filename": "favorites.png",
-      "width": 320,
-      "height": 400,
+      "width": 1100,
+      "height": 620,
       "expand": true,
       "min_rows": 2,
-      "frame": true
+      "frame": "window"
     },
     {
       "type": "FileSystemView",
@@ -1960,7 +1960,7 @@
       "height": 400,
       "expand": true,
       "min_rows": 11,
-      "frame": true
+      "frame": "dock"
     },
     {
       "type": "TimeVal",

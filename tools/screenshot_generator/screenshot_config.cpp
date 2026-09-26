@@ -8,7 +8,9 @@
 
 #include <algorithm>
 #include <iostream>
+#include <stdexcept>
 #include <string>
+#include <string_view>
 #include <unordered_set>
 #include <vector>
 
@@ -172,8 +174,24 @@ void ScreenshotConfig::Load(const std::filesystem::path& path) {
       spec.click_object = std::string(click_object->as_string());
     if (const auto* expand = js.as_object().if_contains("expand"))
       spec.expand = expand->as_bool();
-    if (const auto* frame = js.as_object().if_contains("frame"))
-      spec.frame = frame->as_bool();
+    if (const auto* frame = js.as_object().if_contains("frame")) {
+      // A string rather than a bool, because there are three answers and the
+      // two chrome levels are not "more" and "less" of one thing: a dock frame
+      // says what the pane is, a window says where it lives. An unknown value
+      // throws rather than silently degrading to the bare view, which would
+      // ship a capture that looks like the spec was never read.
+      const std::string_view name = frame->as_string();
+      if (name == "dock")
+        spec.frame = ScreenshotSpec::Frame::kDock;
+      else if (name == "window")
+        spec.frame = ScreenshotSpec::Frame::kWindow;
+      else if (name == "none")
+        spec.frame = ScreenshotSpec::Frame::kNone;
+      else
+        throw std::runtime_error("unknown \"frame\" for " + spec.filename +
+                                 ": " + std::string{name} +
+                                 " (expected none, dock or window)");
+    }
     if (const auto* graph_config = js.as_object().if_contains("graph"))
       spec.graph_config = std::string(graph_config->as_string());
     if (IsManagedImage(managed_images, spec))
