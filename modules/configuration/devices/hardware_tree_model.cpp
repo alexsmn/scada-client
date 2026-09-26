@@ -8,6 +8,8 @@
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "services/device_state_notifier.h"
+#include "transmission_rules/transmission_rule.h"
+#include "transmission_rules/transmission_rule_fetch.h"
 
 namespace {
 
@@ -16,6 +18,41 @@ bool IsHardwareDeviceNode(const NodeRef& node) {
          IsInstanceOf(node, scada::devices::id::ModbusDeviceType) ||
          IsInstanceOf(node, scada::devices::id::Iec60870DeviceType) ||
          IsInstanceOf(node, scada::devices::id::Iec61850DeviceType);
+}
+
+// Compared by id rather than with IsInstanceOf, for the reason the model's
+// `leaf_type_definition_ids_` gives: a rule is typed with its per-protocol
+// subtype, and walking up to TransmissionItemType reads type nodes nothing has
+// fetched when the row is created.
+bool IsTransmissionRuleNode(const NodeRef& node) {
+  const scada::NodeId type_id = node.type_definition().node_id();
+  return type_id == scada::devices::id::TransmissionItemType ||
+         type_id == scada::devices::id::ModbusTransmissionItemType ||
+         type_id == scada::devices::id::Iec60870TransmissionItemType ||
+         type_id == scada::devices::id::Iec61850TransmissionItemType;
+}
+
+// The source signal a rule transmits. `SourceNode` holds a NodeId *value*
+// rather than a reference, and reads null until FetchTransmissionRule has made
+// the rule's property children and type chain resident.
+scada::NodeId RuleSourceId(const NodeRef& rule) {
+  return rule[scada::devices::id::TransmissionItemType_SourceNode]
+      .value()
+      .get_or(scada::NodeId{});
+}
+
+// "Ua → 2001" — the line the rules grid and both clients' rule inspectors
+// already head a rule with, so a rule reads the same everywhere.
+std::u16string RuleLabel(const NodeRef& rule) {
+  const scada::NodeId source_id = RuleSourceId(rule);
+  const NodeRef source =
+      source_id.is_null() ? NodeRef{} : rule.service()->GetNode(source_id);
+  const scada::Int32 ioa =
+      rule[scada::devices::id::TransmissionItemType_Address]
+          .value()
+          .get_or<scada::Int32>(0);
+  return TransmissionRuleSummary(
+      source ? ToString16(source.display_name()) : std::u16string{}, ioa);
 }
 
 }  // namespace
@@ -33,6 +70,7 @@ class HardwareTreeModel::DeviceTreeNode : public ConfigurationTreeNode {
   virtual void OnModelChanged() override;
 
   // TreeNode
+  virtual std::u16string GetText(int column_id) const override;
   virtual int GetIcon() const override;
 
   // The device's connection state: the live DeviceStateNotifier value, falling
@@ -46,7 +84,32 @@ class HardwareTreeModel::DeviceTreeNode : public ConfigurationTreeNode {
  private:
   void UpdateNotifier();
 
+  // A transmission rule carries no display text of its own: the tier
+  // synthesises `<namespace name>.<id>` for every rule row lacking one, which
+  // names the row without identifying the rule. The label that does identify
+  // it needs the rule's two properties and its source's display name, none of
+  // which the tree has made resident, and GetText runs on every paint — so
+  // the reads are requested once here, and the row repaints when they land.
+  void UpdateRuleLabel();
+
+  static Awaitable<void> ResolveRuleAsync(std::weak_ptr<void> lifetime_token,
+                                          DeviceTreeNode* tree_node,
+                                          NodeRef rule);
+
   std::unique_ptr<DeviceStateNotifier> device_state_notifier_;
+
+  // Set once a rule's reads have been requested, and the source they were
+  // requested for — so a model change that re-points the rule at another
+  // source asks again, while the change the fetch itself provokes does not.
+  bool rule_requested_ = false;
+  scada::NodeId rule_source_id_;
+  // True once the reads have landed; until then the row keeps the base text,
+  // "[Loading]" suffix included.
+  bool rule_resolved_ = false;
+
+  // Outlives nothing: a reply that lands after the row was destroyed (the
+  // branch collapsed and re-fetched, or the model torn down) finds it expired.
+  std::shared_ptr<void> lifetime_token_ = std::make_shared<int>(0);
 };
 
 HardwareTreeModel::DeviceTreeNode::DeviceTreeNode(
@@ -57,6 +120,13 @@ HardwareTreeModel::DeviceTreeNode::DeviceTreeNode(
     : ConfigurationTreeNode{model, std::move(reference_type_id),
                             forward_reference, node} {
   UpdateNotifier();
+  UpdateRuleLabel();
+}
+
+std::u16string HardwareTreeModel::DeviceTreeNode::GetText(int column_id) const {
+  if (rule_resolved_)
+    return RuleLabel(node());
+  return ConfigurationTreeNode::GetText(column_id);
 }
 
 int HardwareTreeModel::DeviceTreeNode::GetIcon() const {
@@ -98,6 +168,7 @@ HardwareTreeModel::DeviceTreeNode::GetDeviceStateForTesting() const {
 void HardwareTreeModel::DeviceTreeNode::OnModelChanged() {
   ConfigurationTreeNode::OnModelChanged();
   UpdateNotifier();
+  UpdateRuleLabel();
 }
 
 void HardwareTreeModel::DeviceTreeNode::UpdateNotifier() {
@@ -107,6 +178,39 @@ void HardwareTreeModel::DeviceTreeNode::UpdateNotifier() {
     device_state_notifier_ = std::make_unique<DeviceStateNotifier>(
         model.timed_data_service(), this->node(), [this] { Changed(); });
   }
+}
+
+void HardwareTreeModel::DeviceTreeNode::UpdateRuleLabel() {
+  if (!node().fetched() || !IsTransmissionRuleNode(node()))
+    return;
+  if (rule_requested_ && RuleSourceId(node()) == rule_source_id_)
+    return;
+
+  rule_requested_ = true;
+  rule_source_id_ = RuleSourceId(node());
+  CoSpawn(model().executor(),
+          [lifetime_token = std::weak_ptr<void>{lifetime_token_},
+           tree_node = this, rule = node()]() mutable -> Awaitable<void> {
+            co_await ResolveRuleAsync(std::move(lifetime_token), tree_node,
+                                      std::move(rule));
+          });
+}
+
+// static
+Awaitable<void> HardwareTreeModel::DeviceTreeNode::ResolveRuleAsync(
+    std::weak_ptr<void> lifetime_token,
+    DeviceTreeNode* tree_node,
+    NodeRef rule) {
+  co_await FetchTransmissionRule(rule);
+
+  if (lifetime_token.expired())
+    co_return;
+
+  // Record the source the fetch actually resolved, so the model change it
+  // provokes reads as settled in UpdateRuleLabel rather than as a re-point.
+  tree_node->rule_source_id_ = RuleSourceId(rule);
+  tree_node->rule_resolved_ = true;
+  tree_node->Changed();
 }
 
 // HardwareTreeModel

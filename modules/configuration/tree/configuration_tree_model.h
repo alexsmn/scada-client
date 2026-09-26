@@ -40,6 +40,11 @@ class ConfigurationTreeModel
 
   std::weak_ptr<void> GetLifetimeToken() const { return lifetime_token_; }
 
+  // The executor the model's own fetches run on; a subclass whose rows issue
+  // reads of their own (HardwareTreeModel's transmission-rule labels) spawns
+  // them here so their completions are ordered with the model's.
+  const AnyExecutor& executor() const SCADA_LIFETIME_BOUND { return executor_; }
+
  protected:
   // Returns nullptr if node must be skipped.
   virtual std::unique_ptr<ConfigurationTreeNode> CreateTreeNode(
