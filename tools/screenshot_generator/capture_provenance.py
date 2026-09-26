@@ -367,6 +367,16 @@ def pair_findings(manifest: dict, repo_root: Path,
             return None
         if commit_is_ancestor(repo_root, changed_at, seen_at):
             return None
+        # The changed side's current bytes were ALSO produced at its own last
+        # render. If the other side has been rendered on that tree or a later
+        # one, it has seen whatever those bytes reflect, wherever
+        # `captured.commit` points. This is what settles a pair stamped at a
+        # commit that was rebased away: both sides re-rendered identically at
+        # one commit are in step, though the commit their bytes first appeared
+        # at is not in this history (device-watch, 2026-09-26).
+        changed_seen = (changed.get("captured") or {}).get("last_rendered")
+        if changed_seen and commit_is_ancestor(repo_root, changed_seen, seen_at):
+            return None
         base = seen_at if commit_is_ancestor(repo_root, seen_at, changed_at) \
             else _merge_base(repo_root, seen_at, changed_at)
         if base is None:

@@ -595,6 +595,29 @@ class PairStaleness(unittest.TestCase):
         failures, _ = self._check({"commit": fix}, {"commit": self.base})
         self.assertEqual(len(failures), 1)
 
+    def test_a_pair_rerendered_together_is_in_step_whatever_its_bytes_commit(self):
+        # Both rows' bytes first appeared at a commit rebased out of this
+        # history, and both were re-rendered identically at one later commit.
+        # Whatever that lost commit changed, each side has since been rendered
+        # on a tree containing the other's current bytes.
+        self._git("checkout", "-q", "-b", "side")
+        lost = self._commit("client/src.cpp", "side")
+        self._git("checkout", "-q", "main")
+        later = self._commit("client/other.cpp", "x")
+        rec = {"commit": lost, "last_rendered": later}
+        failures, _ = self._check(dict(rec), dict(rec))
+        self.assertEqual(failures, [])
+
+    def test_a_lost_commit_with_only_one_side_rerendered_is_still_behind(self):
+        # The refinement above must not excuse the case the check exists for.
+        self._git("checkout", "-q", "-b", "side")
+        lost = self._commit("client/src.cpp", "side")
+        self._git("checkout", "-q", "main")
+        later = self._commit("client/other.cpp", "x")
+        failures, _ = self._check({"commit": lost}, {"commit": self.base,
+                                                     "last_rendered": later})
+        self.assertEqual(len(failures), 1, failures)
+
     def test_a_change_outside_the_render_paths_owes_nothing(self):
         later = self._commit("docs/readme.md", "x")
         failures, _ = self._check({"commit": later}, {"commit": self.base})
