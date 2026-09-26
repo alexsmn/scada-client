@@ -260,7 +260,7 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y \
-          autoconf automake libtool pkg-config bison flex \
+          autoconf autoconf-archive automake libtool pkg-config bison flex \
           libdbus-1-dev libfontconfig1-dev libfreetype-dev \
           libgl1-mesa-dev libglu1-mesa-dev \
           libx11-dev libxext-dev libxfixes-dev libxi-dev libxrender-dev \
@@ -282,6 +282,19 @@ jobs:
     - name: Install Ninja (macOS)
       if: runner.os == 'macOS'
       run: brew install ninja
+
+    # Autotools, on both Unix legs. Ports built through vcpkg-make (libb2,
+    # gperf, and others in Qt's closure) run autoreconf, and vcpkg-make's
+    # preflight refuses to start without autoconf, automake, a libtoolize
+    # (Homebrew's `glibtoolize` counts) and autoconf-archive's macros. The
+    # first run of this job failed at configure on exactly that: libb2 on
+    # macOS, which had none of them, and gperf on Ubuntu, which lacked only
+    # autoconf-archive (run 36275890762, 2026-09-26). The check is
+    # vcpkg_make.cmake's "requires the following programs" block at the
+    # vcpkg commit pinned below.
+    - name: Install autotools (macOS)
+      if: runner.os == 'macOS'
+      run: brew install autoconf autoconf-archive automake libtool
 
     # The presets carry no `environment` block by design (ADR 0011), so on
     # Windows the MSVC toolchain has to be in the environment before cmake runs.

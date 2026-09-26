@@ -58,7 +58,7 @@ scada-client/
 ├── res/                    # Resources and settings
 ├── test/                   # Integration tests and display tester
 ├── screenshots/            # Doc screenshot gallery + image_manifest.json
-├── .github/workflows/      # CI: ci.yml (cppcheck only; see CI/CD below)
+├── .github/workflows/      # CI: ci.yml (cppcheck + build matrix; see CI/CD below)
 ├── .cppcheck-suppressions  # This product's own cppcheck suppressions
 ├── CMakeLists.txt          # Root CMake build file
 ├── aui/client_module.cmake # Custom CMake helpers for `_qt` target creation (aui-owned)
@@ -532,9 +532,10 @@ definition, and the tree still has nowhere to run one (superproject tasks.md
 
 **`continue-on-error: true` is on the build job on purpose, and is meant to be
 deleted.** vcpkg builds Qt, gRPC, Boost and the rest from source with nothing
-prebuilt; the GitHub Actions cache backend (`VCPKG_BINARY_SOURCES=x-gha`) is
-what makes the *second* run cheap, since vcpkg writes each port to it as that
-port completes. Expect two or three runs before the first green one. Remove the
+prebuilt; a `files` binary cache carried between runs by
+`actions/cache/restore` + `save` is what makes the *second* run cheap, since
+vcpkg writes each port to it as that port completes (not `x-gha`, which vcpkg
+has removed — the workflow's `env:` block has the detail). Expect two or three runs before the first green one. Remove the
 flag once a run has been green — a build job that is permanently allowed to fail
 is the decorative matrix `core` already has (superproject tasks.md 316).
 
