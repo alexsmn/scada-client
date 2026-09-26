@@ -2483,6 +2483,14 @@
         <translation>Неправильный класс узла</translation>
     </message>
     <message>
+        <source>Wrong attribute</source>
+        <translation>Неправильный атрибут</translation>
+    </message>
+    <message>
+        <source>Wrong reference target</source>
+        <translation>Неправильная цель ссылки</translation>
+    </message>
+    <message>
         <source>IEC 61850 protocol error</source>
         <translation>Ошибка протокола МЭК-61850</translation>
     </message>
@@ -2557,6 +2565,14 @@
     <message>
         <source>The value is out of range and will not be stored</source>
         <translation>Значение недопустимо и не будет сохранено</translation>
+    </message>
+    <message>
+        <source>The value cannot be written</source>
+        <translation>Значение недоступно для записи</translation>
+    </message>
+    <message>
+        <source>The response is too large to send</source>
+        <translation>Ответ слишком велик для передачи</translation>
     </message>
     <!-- Data-quality flags, rendered as a space-separated run
          (core/scada/qualifier.cpp). Kept abbreviated exactly as before: the
