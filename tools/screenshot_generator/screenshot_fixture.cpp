@@ -15,6 +15,7 @@
 #include "scada/event.h"
 #include "scada/node_id.h"
 #include "screenshot_wait.h"
+#include "services/status_text.h"
 
 #include <QApplication>
 #include <QLibraryInfo>
@@ -268,11 +269,14 @@ ScreenshotGenerator::ScreenshotGenerator() {
                      "from this build — see docs/ops/client-screenshots.md.";
   }
 
-  // Route shared code's operator-facing text through those catalogs. Status
-  // descriptions, data-quality flags and boolean value labels are produced
-  // below `common/` (core/scada/{status,qualifier,variant}.cpp) and reach the
-  // UI through `scada::TranslateUiText`, which returns its English argument
-  // verbatim until a translator is installed. The client installs one in
+  // Route shared code's operator-facing text through those catalogs.
+  // Data-quality flags and boolean value labels are produced below `common/`
+  // (core/scada/{qualifier,variant}.cpp) and reach the UI through
+  // `scada::TranslateUiText`, which returns its English argument verbatim
+  // until a translator is installed; status descriptions come from the
+  // client's own table (services/status_text.h), which core reaches only
+  // through `scada::SetStatusTextProvider` and renders as symbolic names
+  // until it is installed. The client installs one in
   // `AppInit` — but the generator is a gtest binary and has no `main()` of its
   // own, so `AppInit` never runs here and every such string rendered English
   // no matter what the catalog said. Third instance of this defect shape in
@@ -280,6 +284,7 @@ ScreenshotGenerator::ScreenshotGenerator() {
   // loudly now, while this one had no signal at all until
   // `TranslatedUiTextResolvesToRussian` (task 376).
   scada::SetUiTextTranslator(&Translate);
+  InstallStatusText();
 
   // Pin Fusion for captures. Unlike the client — which runs the platform style
   // so it looks native (docs/client/ux/principles.md §9) — published

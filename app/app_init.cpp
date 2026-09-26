@@ -3,6 +3,7 @@
 #include "aui/translation.h"
 #include "base/ui_text.h"
 #include "model/node_id_util.h"
+#include "services/status_text.h"
 
 #include "base/boost_log_init.h"
 #include "base/client_paths.h"
@@ -76,6 +77,8 @@ AppInit::AppInit(int argc, char* argv[]) {
   // them through the client's Qt translation catalogs. Installed here, but
   // only called at display time — after InstalledTranslation loads the .qm.
   scada::SetUiTextTranslator(&Translate);
+  // Core holds no wording for status codes; the client's table supplies it.
+  InstallStatusText();
   client::RegisterPathProvider();
   InitE2eLogPathOverride();
 

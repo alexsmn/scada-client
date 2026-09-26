@@ -2342,10 +2342,10 @@
          them reintroduces the bug silently and invisibly, so
          `TranslatedUiTextResolvesToRussian` in the screenshot generator pins
          one string from each of the three groups below. -->
-    <!-- Status-code descriptions (core/scada/status.cpp). These moved out of
-         the C++ table into this catalog; the English there is the lookup key, so
-         a server with no catalog renders the English and the client renders the
-         Russian these entries preserve verbatim. -->
+    <!-- Status-code descriptions (client/services/status_text.cpp, marked
+         QT_TRANSLATE_NOOP with the empty context). Core carries only the
+         symbolic names; the client's table is the one place status codes are
+         worded, and its English is the lookup key for these entries. -->
     <message>
         <source>Operation completed successfully</source>
         <translation>Операция выполнена успешно</translation>

@@ -211,7 +211,8 @@ TEST_F(ScreenshotGenerator, TranslatedUiTextResolvesToRussian) {
                                         [](char16_t c) { return c > 0x7f; });
   };
 
-  // core/scada/status.cpp — rendered in the object table's status column.
+  // client/services/status_text.cpp, reached from core through
+  // `scada::SetStatusTextProvider` — the object table's status column.
   const std::u16string status =
       ::ToString16(scada::StatusCode::Bad_WrongNodeId);
   EXPECT_TRUE(is_translated(status))
