@@ -228,7 +228,7 @@
       "published": false,
       "parity_key": "multi-create",
       "referenced_from": [],
-      "notes": "Bulk TS/TI creation dialog under the DataItems root, device combo from the fixture Devices folder. Also guards the ShowSelfOwnedModalDialog regression. Validation-only; themed look via --theme runs (backlog 3.4).",
+      "notes": "Bulk TS/TI creation dialog under the DataItems root, device combo from the fixture Devices folder. Also guards the ShowSelfOwnedModalDialog regression. Validation-only; themed look via --theme runs (backlog 3.4). WHY THIS STILL RENDERS (recorded 2026-09-19): the dialog it photographs is unreachable — `ID_ADD_MULTIPLE_ITEMS` opens the bulk-create wizard, and `dialog_node_captures.cpp` is now `ShowMultiCreateDialog`'s only caller in the tree (re-verified 2026-09-26; the note said `dialog_capture.cpp`, which holds the dispatch table rather than the call). It is kept deliberately, not overlooked: backlog 148(b) keeps the form as the reference for a Defaults step the wizard does not have, since it is the only surface that has ever carried per-item defaults. So this is neither a documentation image nor a removal candidate while 148(b) stands.",
       "captured": {
         "commit": "2ab9399ee",
         "platform": "macos",
@@ -243,7 +243,7 @@
       "parity_key": "multi-create",
       "published": false,
       "referenced_from": [],
-      "notes": "Light-theme render of multi-create.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
+      "notes": "Light-theme render of multi-create.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own. WHY THIS STILL RENDERS (recorded 2026-09-19): the dialog it photographs is unreachable — `ID_ADD_MULTIPLE_ITEMS` opens the bulk-create wizard, and `dialog_node_captures.cpp` is now `ShowMultiCreateDialog`'s only caller in the tree (re-verified 2026-09-26; the note said `dialog_capture.cpp`, which holds the dispatch table rather than the call). It is kept deliberately, not overlooked: backlog 148(b) keeps the form as the reference for a Defaults step the wizard does not have, since it is the only surface that has ever carried per-item defaults. So this is neither a documentation image nor a removal candidate while 148(b) stands.",
       "captured": {
         "commit": "0ed6944b1",
         "platform": "macos",
