@@ -2,6 +2,7 @@
 
 #include "diff_data.h"
 #include "model/data_items_node_ids.h"
+#include "model/history_node_ids.h"
 #include "services/task_manager_mock.h"
 
 #include <gmock/gmock.h>
@@ -43,5 +44,27 @@ TEST(Importer, UnorderedCreatedNodes) {
                                    .type_definition_id =
                                        scada::data_items::id::DataGroupType,
                                    .parent_id = root_node_id}}},
+                task_manager);
+}
+
+// Regression: re-targeting a reference (a signal moved from one history
+// archive to another) deleted the reference to the NEW target, which does not
+// exist yet, and then added it -- so the node kept its old reference and gained
+// a second one.
+TEST(Importer, RetargetedReferenceDeletesTheOldTarget) {
+  const scada::NodeId node_id{1, scada::NamespaceIndexes::TS};
+  const scada::NodeId old_target{1, scada::NamespaceIndexes::HISTORICAL_DB};
+  const scada::NodeId new_target{2, scada::NamespaceIndexes::HISTORICAL_DB};
+  const scada::NodeId ref_type = scada::history::id::HasHistoricalDatabase;
+
+  NiceMock<MockTaskManager> task_manager;
+
+  EXPECT_CALL(task_manager, PostDeleteReference(ref_type, node_id, old_target));
+  EXPECT_CALL(task_manager, PostAddReference(ref_type, node_id, new_target));
+
+  ApplyDiffData({.modify_nodes = {{.id = node_id,
+                                   .refs = {{.reference_type_id = ref_type,
+                                             .delete_target_id = old_target,
+                                             .add_target_id = new_target}}}}},
                 task_manager);
 }

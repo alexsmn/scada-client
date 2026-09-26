@@ -20,7 +20,7 @@ void ApplyDiffData(const DiffData& diff, TaskManager& task_manager) {
     for (auto& ref : p.refs) {
       if (!ref.delete_target_id.is_null()) {
         task_manager.PostDeleteReference(ref.reference_type_id, p.id,
-                                         ref.add_target_id);
+                                         ref.delete_target_id);
       }
 
       if (!ref.add_target_id.is_null()) {
