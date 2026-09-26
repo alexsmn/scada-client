@@ -100,6 +100,76 @@ class OwedCapturesTest(unittest.TestCase):
         )
 
 
+def gtest_report(*tests: tuple[str, str, str]) -> dict:
+    """A gtest JSON report holding `(name, result, skip message)` tests."""
+    cases = []
+    for name, result, message in tests:
+        case = {"name": name, "classname": "ScreenshotGenerator",
+                "status": "RUN", "result": result}
+        if result == "SKIPPED":
+            case["skipped"] = [{"message": message}]
+        cases.append(case)
+    return {"testsuites": [{"name": "ScreenshotGenerator",
+                            "testsuite": cases}]}
+
+
+DISPLAY_DATA = {
+    "screenshots": [
+        {"capture": "display", "filename": "substation-display.png"},
+        {"filename": "table.png"},
+    ]
+}
+
+
+class SkippedCapturesTest(unittest.TestCase):
+    """A capture the generator skips on purpose is reported, not failed.
+
+    `CaptureDisplay` skips when the client has no display runtime, which is
+    the client's default configuration (backlog 814). Before these, the check
+    read the missing file as "not produced", so `client_screenshot_check` was
+    red on every build that had not staged a runtime.
+    """
+
+    def test_the_skip_reason_drops_gtest_location_prefix(self) -> None:
+        report = gtest_report(
+            ("CaptureDisplay", "SKIPPED",
+             "main.cpp:91\nno display runtime was loaded"))
+        self.assertEqual(
+            check.skipped_tests(report),
+            {"ScreenshotGenerator.CaptureDisplay":
+             "no display runtime was loaded"},
+        )
+
+    def test_a_skipped_display_test_excuses_the_display_capture_only(
+        self,
+    ) -> None:
+        report = gtest_report(
+            ("CaptureDisplay", "SKIPPED", "x.cpp:1\nno runtime"),
+            ("CaptureAllWindows", "COMPLETED", ""))
+        self.assertEqual(
+            check.skipped_captures(DISPLAY_DATA, check.skipped_tests(report)),
+            {"substation-display.png": "no runtime"},
+        )
+
+    def test_a_display_test_that_ran_excuses_nothing(self) -> None:
+        report = gtest_report(("CaptureDisplay", "COMPLETED", ""))
+        self.assertEqual(
+            check.skipped_captures(DISPLAY_DATA, check.skipped_tests(report)),
+            {},
+        )
+
+    def test_a_skip_of_any_other_test_excuses_nothing(self) -> None:
+        report = gtest_report(
+            ("CaptureAllWindows", "SKIPPED", "x.cpp:1\nnot requested"))
+        self.assertEqual(
+            check.skipped_captures(DISPLAY_DATA, check.skipped_tests(report)),
+            {},
+        )
+
+    def test_an_empty_report_excuses_nothing(self) -> None:
+        self.assertEqual(check.skipped_captures(DISPLAY_DATA, {}), {})
+
+
 class HardcodedFilenamesTest(unittest.TestCase):
     def setUp(self) -> None:
         self._temp = tempfile.TemporaryDirectory(prefix="scada_owed_test_")

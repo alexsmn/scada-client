@@ -109,6 +109,53 @@ def hardcoded_capture_filenames(source_dir: Path) -> set[str]:
 GALLERY_DEFAULT_THEME = "dark"
 
 
+# Capture kinds the generator may deliberately SKIP rather than render, keyed by
+# the gtest that owns them. A skipped capture writes nothing, so without this
+# the check reads its absence as "not produced" and fails.
+#
+# The display capture is the one: since ADR 0013 phase 4 the client loads the
+# schematic renderer at run time, a client configured without one is a
+# supported state (it is what a stranger who cloned the public repository has),
+# and `CaptureDisplay` skips rather than save a "no display runtime"
+# placeholder over the tracked image (backlog 814). That commit meant this
+# check to report the row as not rendered; it failed it instead, so the
+# client's own suite was red in its default configuration.
+#
+# Deliberately a closed list: a skip of any other test is not an excuse for a
+# missing capture, and a display capture that is ABSENT without its test having
+# skipped is still an error.
+SKIPPABLE_CAPTURE_TESTS = {"display": "ScreenshotGenerator.CaptureDisplay"}
+
+
+def skipped_tests(report: dict) -> dict[str, str]:
+    """Maps `Suite.Test` to its skip reason, for every SKIPPED test in a gtest
+    JSON report (`--gtest_output=json:`).
+
+    gtest records the reason as `file:line` followed by the GTEST_SKIP()
+    message; the location is dropped.
+    """
+    out: dict[str, str] = {}
+    for suite in report.get("testsuites", []):
+        for test in suite.get("testsuite", []):
+            if test.get("result") != "SKIPPED":
+                continue
+            messages = [m.get("message", "") for m in test.get("skipped", [])]
+            text = "\n".join(messages)
+            reason = text.split("\n", 1)[1].strip() if "\n" in text else ""
+            out[f"{test.get('classname')}.{test.get('name')}"] = reason
+    return out
+
+
+def skipped_captures(data: dict, skipped: dict[str, str]) -> dict[str, str]:
+    """Maps each fixture capture whose owning test skipped to the reason."""
+    out: dict[str, str] = {}
+    for spec in data.get("screenshots", []):
+        test = SKIPPABLE_CAPTURE_TESTS.get(spec.get("capture", ""))
+        if test and test in skipped:
+            out[spec["filename"]] = skipped[test] or "skipped"
+    return out
+
+
 def themed_name(filename: str, theme: str) -> str:
     """The gallery filename a spec renders to under `theme`.
 
@@ -221,6 +268,21 @@ def unchecked_captures(
     return {kind: sorted(files) for kind, files in sorted(out.items())}
 
 
+def print_skipped(skipped: list[tuple[str, str]]) -> None:
+    """Reports the captures the generator deliberately skipped. Never an error:
+    see SKIPPABLE_CAPTURE_TESTS."""
+    if not skipped:
+        return
+    print(f"{len(skipped)} capture(s) skipped by the generator, not rendered")
+    reasons: dict[str, list[str]] = {}
+    for filename, reason in skipped:
+        reasons.setdefault(reason, []).append(filename)
+    for reason, files in reasons.items():
+        print(f"  {', '.join(files)}")
+        first = reason.splitlines()[0] if reason else "skipped"
+        print(f"    {first}")
+
+
 def print_unchecked(unchecked: dict[str, list[str]]) -> None:
     """Says what a clean run is *not* evidence about."""
     explanation = {
@@ -295,13 +357,21 @@ def main() -> int:
     # second appearance.
     themes = [args.theme] if args.theme else gallery_themes(manifest)
 
+    # Each run's gtest report, read for the captures it skipped. Kept out of
+    # `out_dir`, which may be the tracked gallery, and fresh per invocation so
+    # a previous run's skip can never excuse this run's missing file.
+    report_dir = Path(tempfile.mkdtemp(prefix="screenshot-check-gtest-"))
+    skipped_by_theme: dict[str, dict[str, str]] = {}
+
     for theme in themes:
+        report_path = report_dir / f"{theme}.json"
         command = [
             str(args.generator),
             f"--out={out_dir}",
             f"--image-manifest={args.image_manifest}",
             f"--data={args.data}",
             f"--theme={theme}",
+            f"--gtest_output=json:{report_path}",
         ]
 
         try:
@@ -324,6 +394,12 @@ def main() -> int:
                 file=sys.stderr,
             )
             return 1
+        try:
+            report = json.loads(report_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            # No report means no evidence of a skip, so nothing is excused.
+            report = {}
+        skipped_by_theme[theme] = skipped_captures(data, skipped_tests(report))
 
     managed = {
         e["file"] for e in manifest["images"] if e["tag"].startswith("auto-")
@@ -357,6 +433,7 @@ def main() -> int:
         (s, False) for s in data.get("dialogs", [])
     ]
     errors = []
+    skipped: list[tuple[str, str]] = []
     produced = []
     checked_names: set[str] = set()
     for spec, exact_dims in specs:
@@ -367,7 +444,11 @@ def main() -> int:
                 continue
             path = out_dir / filename
             if not path.is_file():
-                errors.append(f"{filename}: not produced")
+                reason = skipped_by_theme.get(theme, {}).get(base_filename)
+                if reason is not None:
+                    skipped.append((filename, reason))
+                else:
+                    errors.append(f"{filename}: not produced")
                 continue
             checked_names.add(filename)
             produced.append(path)
@@ -421,8 +502,9 @@ def main() -> int:
     unchecked = unchecked_captures(
         manifest, data, Path(__file__).resolve().parent, checked_names
     )
-    if unchecked or owed:
+    if unchecked or owed or skipped:
         print("what this run is not evidence about:")
+    print_skipped(skipped)
     # Reported, never failed on: the owed set is the remaining work of task 39,
     # so a non-zero count is the backlog rather than a regression.
     print_unchecked(unchecked)

@@ -86,7 +86,8 @@ void SaveDisplayScreenshot(const ScreenshotSpec& spec,
   // test requirement and turn the client's own CI red for a supported
   // configuration. What matters for 814 is that nothing is WRITTEN — the
   // tracked capture keeps its bytes, the skip is visible in the run, and
-  // `check_screenshots.py` reports the row as owed rather than produced.
+  // `check_screenshots.py` reads this skip from the gtest report and lists the
+  // row as skipped rather than failing it (`SKIPPABLE_CAPTURE_TESTS`).
   if (!DisplayRuntime::Get()) {
     GTEST_SKIP()
         << spec.filename << " renders through the display runtime, and none "
