@@ -1,89 +1,33 @@
 #include "ui/dragdrop/item_drag_data.h"
 
-#include "base/pickle.h"
+#include "remote/protocol_utils.h"
 
-namespace {
-const uint16_t kVersion = 0;
+std::string ItemDragData::Serialize() const {
+  protocol::NodeId message;
+  Convert(node_id_, message);
+  return message.SerializeAsString();
 }
 
-void ItemDragData::Save(scada::aui::OSExchangeData& data) const {
-  scada::base::Pickle pickle;
-  Save(pickle);
-  data.SetPickledData(GetCustomFormat(), pickle);
-}
-
-bool ItemDragData::Load(const scada::aui::OSExchangeData& data) {
-  scada::base::Pickle pickle;
-  if (!data.GetPickledData(GetCustomFormat(), pickle))
+bool ItemDragData::Deserialize(std::string_view bytes) {
+  protocol::NodeId message;
+  if (!message.ParseFromArray(bytes.data(), static_cast<int>(bytes.size())))
     return false;
 
-  return Load(pickle);
-}
-
-void ItemDragData::Save(scada::base::Pickle& pickle) const {
-  pickle.WriteUInt16(0);
-  pickle.WriteUInt16(node_id_.namespace_index());
-  pickle.WriteUInt16(static_cast<uint16_t>(node_id_.type()));
-  switch (node_id_.type()) {
-    case scada::NodeIdType::Numeric:
-      pickle.WriteUInt32(node_id_.numeric_id());
-      break;
-    case scada::NodeIdType::String:
-      pickle.WriteString(node_id_.string_id());
-      break;
-    default:
-      // Unsupported NodeId type: write nothing; the loader rejects the
-      // payload.
-      break;
-  }
-}
-
-bool ItemDragData::Load(const scada::base::Pickle& pickle) {
-  uint16_t version = 0;
-  uint16_t namespace_index = 0;
-  uint16_t identifier_type = 0;
-
-  scada::base::PickleIterator it(pickle);
-  if (!it.ReadUInt16(&version) || !it.ReadUInt16(&namespace_index) ||
-      !it.ReadUInt16(&identifier_type))
+  scada::NodeId node_id;
+  Convert(message, node_id);
+  // Drag-drop payload is external data: an empty message parses cleanly, and
+  // a null id is not something a drag can carry.
+  if (node_id.is_null())
     return false;
 
-  if (version != 0)
-    return false;
-
-  switch (static_cast<scada::NodeIdType>(identifier_type)) {
-    case scada::NodeIdType::Numeric: {
-      uint32_t numeric_id = 0;
-      if (!it.ReadUInt32(&numeric_id))
-        return false;
-      node_id_ = scada::NodeId{numeric_id, namespace_index};
-      break;
-    }
-
-    case scada::NodeIdType::String: {
-      std::string string_id;
-      if (!it.ReadString(&string_id))
-        return false;
-      node_id_ = scada::NodeId{std::move(string_id), namespace_index};
-      break;
-    }
-
-    default:
-      // Drag-drop payload is external data; reject unknown NodeId types.
-      return false;
-  }
-
+  node_id_ = std::move(node_id);
   return true;
 }
 
 void ItemDragData::Save(DragData& drag_data) const {
-  scada::base::Pickle pickle;
-  Save(pickle);
-  std::vector<char> buffer{
-      static_cast<const char*>(pickle.data()),
-      static_cast<const char*>(pickle.data()) + pickle.size()};
-  drag_data.emplace(std::piecewise_construct, std::forward_as_tuple(kMimeType),
-                    std::forward_as_tuple(std::move(buffer)));
+  std::string bytes = Serialize();
+  drag_data.insert_or_assign(std::string{kMimeType},
+                             std::vector<char>{bytes.begin(), bytes.end()});
 }
 
 bool ItemDragData::Load(const DragData& drag_data) {
@@ -91,15 +35,6 @@ bool ItemDragData::Load(const DragData& drag_data) {
   if (i == drag_data.end())
     return false;
 
-  const auto& buffer = i->second;
-  scada::base::Pickle pickle{buffer.data(), static_cast<int>(buffer.size())};
-  return Load(pickle);
-}
-
-// static
-scada::aui::OSExchangeData::CustomFormat ItemDragData::GetCustomFormat() {
-  static const scada::aui::OSExchangeData::CustomFormat kFormat =
-      scada::aui::OSExchangeData::RegisterCustomFormat(
-          "telecontrol/scada/node");
-  return kFormat;
+  const std::vector<char>& buffer = i->second;
+  return Deserialize(std::string_view{buffer.data(), buffer.size()});
 }

@@ -62,6 +62,8 @@ target_precompile_headers(client_ui_dragdrop_qt REUSE_FROM scada_base)
 target_link_libraries(client_ui_dragdrop_qt PRIVATE
   aui_qt
   client_common
+  # The drag payload is a serialized `protocol::NodeId`.
+  scada_remote_protocol_conversions
 )
 
 add_library(client_ui_progress_qt

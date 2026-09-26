@@ -1,27 +1,33 @@
 #pragma once
 
 #include "aui/handlers.h"
-#include "aui/os_exchange_data.h"
 #include "base/lifetime.h"
 #include "scada/node_id.h"
 
+#include <string>
+#include <string_view>
+
+// The payload of a node dragged out of a client view: the dragged node's id,
+// serialized as a `protocol::NodeId` message under `kMimeType`. The encoding
+// is the protobuf one the clipboard already uses for node trees, so the two
+// exchange paths share one wire vocabulary.
 class ItemDragData {
  public:
-  ItemDragData() {}
+  ItemDragData() = default;
   explicit ItemDragData(const scada::NodeId& item_id) : node_id_(item_id) {}
 
   const scada::NodeId& item_id() const SCADA_LIFETIME_BOUND { return node_id_; }
 
-  void Save(scada::base::Pickle& pickle) const;
-  bool Load(const scada::base::Pickle& pickle);
+  // Encodes the node id as a serialized `protocol::NodeId`.
+  std::string Serialize() const;
+  // Decodes a payload produced by `Serialize`. Drag payloads come from outside
+  // the process, so malformed or foreign bytes return false rather than fail.
+  bool Deserialize(std::string_view bytes);
 
-  void Save(scada::aui::OSExchangeData& data) const;
-  bool Load(const scada::aui::OSExchangeData& data);
-
+  // Adds the payload to `drag_data` under `kMimeType`.
   void Save(DragData& drag_data) const;
+  // Reads the payload stored under `kMimeType`; false if absent or malformed.
   bool Load(const DragData& drag_data);
-
-  static scada::aui::OSExchangeData::CustomFormat GetCustomFormat();
 
   inline static const std::string_view kMimeType =
       "application/telecontrol.scada.nodes";

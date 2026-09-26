@@ -2,7 +2,6 @@
 
 #include "aui/color.h"
 #include "aui/grid.h"
-#include "aui/os_exchange_data.h"
 #include "base/utf_convert.h"
 #include "common/formula_util.h"
 #include "controller/controller_delegate.h"
@@ -15,7 +14,6 @@
 #include "resources/common_resources.h"
 #include "scada/session_service.h"
 #include "ui/common/client_utils.h"
-#include "ui/dragdrop/item_drag_data.h"
 
 #if defined(UI_QT)
 #include <QColorDialog>

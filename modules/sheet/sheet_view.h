@@ -14,10 +14,6 @@ namespace scada::aui {
 class Grid;
 }
 
-namespace scada::ui {
-class OSExchangeData;
-}
-
 #if defined(UI_QT)
 class QLineEdit;
 class QWidget;
