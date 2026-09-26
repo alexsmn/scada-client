@@ -66,7 +66,6 @@ using scada::screenshot_generator::WaitForPendingNodeLoads;
 
 }  // namespace
 
-
 // The status strip must name the signed-in operator, not just their role.
 // `LocalSessionService` reports a null user id by default, and
 // `UserStatusProvider::GetText()` falls back to the bare role label when the
@@ -185,10 +184,11 @@ TEST_F(ScreenshotGenerator, ContextBarKeepsItsContentOffTheWindowEdge) {
   MainWindow::SetHideForTesting(true);
 }
 
-// Operator-facing text that shared code produces — status-code descriptions,
-// data-quality flags, boolean value labels — reaches the UI through
-// `scada::TranslateUiText`, whose installed translator is the client's
-// `Translate()`. That looks up in the *empty* translation context, deliberately
+// Operator-facing text for values shared code produces — status-code
+// descriptions, data-quality flags, boolean value labels — comes from the
+// client's tables in services/core_ui_text.cpp, installed into core as
+// providers, and is looked up through the client's `Translate()`. That looks up
+// in the *empty* translation context, deliberately
 // (client/aui/qt/translation_qt.cpp says why), so those entries have to sit in
 // the empty context of `client_ru.ts`. Filed under the class that happens to
 // display them, the lookup misses and the English source renders inside the
@@ -198,8 +198,10 @@ TEST_F(ScreenshotGenerator, ContextBarKeepsItsContentOffTheWindowEdge) {
 // matches its spec dimensions, and still differs from no other capture, so
 // `check_screenshots.py` passes; it surfaces only as an unexplained image diff
 // against the tracked gallery. Task 376 was exactly this, and it had swallowed
-// the whole `core/scada/status.cpp` table plus `qualifier.cpp` and
-// `variant.cpp` — 64 entries.
+// all 64 of those entries, when they still lived in core. The providers add a
+// second way to fail the same way — a binary that never calls
+// `InstallCoreUiText()` renders the invariant forms — and this test catches
+// that too.
 //
 // One string per source, asserted to have left ASCII behind rather than
 // asserted equal to its Russian: Cyrillic literals do not belong in this
@@ -211,26 +213,31 @@ TEST_F(ScreenshotGenerator, TranslatedUiTextResolvesToRussian) {
                                         [](char16_t c) { return c > 0x7f; });
   };
 
-  // client/services/status_text.cpp, reached from core through
-  // `scada::SetStatusTextProvider` — the object table's status column.
+  // `StatusText` — the object table's status column.
   const std::u16string status =
       ::ToString16(scada::StatusCode::Bad_WrongNodeId);
   EXPECT_TRUE(is_translated(status))
       << "status description fell back to its English source: "
       << QString::fromStdU16String(status).toStdString();
 
-  // core/scada/qualifier.cpp — the quality strip beside a value.
+  // `QualifierFlagText` — the quality strip beside a value.
   const std::u16string quality =
       ::ToString16(scada::Qualifier().set_sporadic(true));
   EXPECT_TRUE(is_translated(quality))
       << "quality flag fell back to its English source: "
       << QString::fromStdU16String(quality).toStdString();
 
-  // core/scada/variant.cpp — how a boolean value prints.
+  // `BooleanText` — how a boolean value prints.
   const std::u16string boolean = scada::Variant::TrueLabel();
   EXPECT_TRUE(is_translated(boolean))
       << "boolean label fell back to its English source: "
       << QString::fromStdU16String(boolean).toStdString();
+
+  // `FallbackLabelText` — a two-state value with no labels of its own.
+  const std::u16string state = DefaultCloseLabel();
+  EXPECT_TRUE(is_translated(state))
+      << "fallback state label fell back to its English source: "
+      << QString::fromStdU16String(state).toStdString();
 }
 
 // Regression test for a stack overflow that fires during `app_.Start()`

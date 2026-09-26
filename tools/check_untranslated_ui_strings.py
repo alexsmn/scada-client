@@ -70,9 +70,11 @@ a naive grep for Cyrillic in the first place.
 Rule 2 also runs over `core/` and `common/` (see `SHARED_ROOTS`), because the
 client is not where operator-facing text ends. A status description, a quality
 flag and a boolean label are all produced down there and rendered verbatim by
-the client; before `TranslateUiText` (`core/base/ui_text.h`) existed they were
-Russian literals with no seam to translate them through, which is precisely the
-condition this rule detects. Those trees are optional — the client repo is
+the client; once they were Russian literals with no seam to translate them
+through, which is precisely the condition this rule detects. Today core and
+common carry only invariant forms for them and the client supplies the words
+(`client/services/core_ui_text.cpp`), so a Cyrillic literal appearing there
+again is a regression. Those trees are optional — the client repo is
 published standalone, where they are absent — so the check skips whichever it
 cannot find rather than failing.
 
@@ -222,7 +224,7 @@ ALLOWED_CYRILLIC_DIRS = {
 ALLOWED_CYRILLIC = {
     # Wire data, not UI text. A configuration export writes the *localized*
     # boolean label, so files exported by a Russian client — and every file
-    # exported before the labels went through TranslateUiText — carry these
+    # exported before the labels were translatable — carry these
     # words. Import has to keep recognising them. See the comment on
     # ParseBoolLabel.
     ("//common/common/format.cpp", "Да"): "legacy exported BOOL spelling",
@@ -239,9 +241,9 @@ ALLOWED_CYRILLIC = {
 
 # The shared libraries below the client, scanned by rule 2 only. They produce
 # operator-facing text too — a status description, a quality flag, a boolean
-# label — and it reaches the client through `TranslateUiText`
-# (`core/base/ui_text.h`), so a Russian literal here is exactly as
-# untranslatable as one in the client. They are optional: the client repo is
+# label — and the client supplies its words through the providers those
+# libraries expose (`client/services/core_ui_text.cpp`), so a Russian literal
+# here is exactly as untranslatable as one in the client. They are optional: the client repo is
 # published standalone, where these directories do not exist.
 #
 # Rule 1 does not apply — none of the six sinks exist below the UI layer.
@@ -257,7 +259,7 @@ SHARED_CYRILLIC_GAPS = {
     "//common/node_service/node_format.cpp": "quality-modifier glyphs",
     "//common/address_space/node_format.cpp": "quality-modifier glyphs",
     # OPC UA standard node display names, served over the wire by a process
-    # that installs no translator — routing them through TranslateUiText would
+    # that installs no text provider — routing them through one would
     # make the server send English, changing what operators see, with nothing
     # on the client side to translate it back.
     "//common/address_space/standard_address_space.cpp":
@@ -314,7 +316,7 @@ CONSTANT = re.compile(
 #
 # The lookbehind excludes a member or qualified call — `x.tr(`, `Foo::tr(` —
 # from being taken as a bare `tr(`.
-TRANSLATORS = ("Translate", "TranslateUiText", "Tr", "tr")
+TRANSLATORS = ("Translate", "Tr", "tr")
 
 # Qt's mark-for-translation macros, as a family rather than as the one spelling
 # this tree happens to use today (`QT_TRANSLATE_NOOP`, 4 sites). Naming just

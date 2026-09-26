@@ -1,9 +1,7 @@
 #include "app/app_init.h"
 
-#include "aui/translation.h"
-#include "base/ui_text.h"
 #include "model/node_id_util.h"
-#include "services/status_text.h"
+#include "services/core_ui_text.h"
 
 #include "base/boost_log_init.h"
 #include "base/client_paths.h"
@@ -73,12 +71,11 @@ AppInit::AppInit(int argc, char* argv[]) {
 
   scada::RegisterPathProvider();
   scada::RegisterModelNamespaceResolver();
-  // Shared formatting code (common/format.h) carries English literals; route
-  // them through the client's Qt translation catalogs. Installed here, but
-  // only called at display time — after InstalledTranslation loads the .qm.
-  scada::SetUiTextTranslator(&Translate);
-  // Core holds no wording for status codes; the client's table supplies it.
-  InstallStatusText();
+  // Core and common hold no operator-facing wording for status codes, quality
+  // flags, booleans or common's fallback labels; the client's tables supply
+  // it. Installed here, but only called at display time — after
+  // InstalledTranslation loads the .qm.
+  InstallCoreUiText();
   client::RegisterPathProvider();
   InitE2eLogPathOverride();
 

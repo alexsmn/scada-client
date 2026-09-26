@@ -1,8 +1,6 @@
 #include "screenshot_fixture.h"
 
 #include "aui/qt/theme_qt.h"
-#include "aui/translation.h"
-#include "base/ui_text.h"
 #include "base/utf_convert.h"
 #include "favorites/favourites.h"
 #include "main_window/main_window.h"
@@ -15,7 +13,7 @@
 #include "scada/event.h"
 #include "scada/node_id.h"
 #include "screenshot_wait.h"
-#include "services/status_text.h"
+#include "services/core_ui_text.h"
 
 #include <QApplication>
 #include <QLibraryInfo>
@@ -269,22 +267,18 @@ ScreenshotGenerator::ScreenshotGenerator() {
                      "from this build — see docs/ops/client-screenshots.md.";
   }
 
-  // Route shared code's operator-facing text through those catalogs.
-  // Data-quality flags and boolean value labels are produced below `common/`
-  // (core/scada/{qualifier,variant}.cpp) and reach the UI through
-  // `scada::TranslateUiText`, which returns its English argument verbatim
-  // until a translator is installed; status descriptions come from the
-  // client's own table (services/status_text.h), which core reaches only
-  // through `scada::SetStatusTextProvider` and renders as symbolic names
-  // until it is installed. The client installs one in
-  // `AppInit` — but the generator is a gtest binary and has no `main()` of its
-  // own, so `AppInit` never runs here and every such string rendered English
-  // no matter what the catalog said. Third instance of this defect shape in
-  // this constructor, and the worst-behaved: the two above at least fail
-  // loudly now, while this one had no signal at all until
-  // `TranslatedUiTextResolvesToRussian` (task 376).
-  scada::SetUiTextTranslator(&Translate);
-  InstallStatusText();
+  // Route shared code's operator-facing text through those catalogs. Status
+  // descriptions, quality flags, boolean labels and common's fallback labels
+  // come from the client's own tables (services/core_ui_text.h), which core
+  // and common reach only through their providers and render as invariant
+  // forms (`Bad_WrongNodeId`, `SPORADIC`, `true`, `1`) until those are
+  // installed. The client installs them in `AppInit` — but the generator is a
+  // gtest binary and has no `main()` of its own, so `AppInit` never runs here
+  // and every such string rendered English no matter what the catalog said.
+  // Third instance of this defect shape in this constructor, and the
+  // worst-behaved: the two above at least fail loudly now, while this one had
+  // no signal at all until `TranslatedUiTextResolvesToRussian` (task 376).
+  InstallCoreUiText();
 
   // Pin Fusion for captures. Unlike the client — which runs the platform style
   // so it looks native (docs/client/ux/principles.md §9) — published

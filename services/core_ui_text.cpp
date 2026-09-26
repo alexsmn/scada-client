@@ -1,4 +1,7 @@
-#include "services/status_text.h"
+#include "services/core_ui_text.h"
+
+#include "scada/qualifier.h"
+#include "scada/variant.h"
 
 #include "aui/translation.h"
 
@@ -140,6 +143,31 @@ constexpr StatusTextEntry kStatusTexts[] = {
      QT_TRANSLATE_NOOP("", "The value cannot be read")},
 };
 
+struct QualifierFlagTextEntry {
+  unsigned flag;
+  // English source, keyed like the status sentences. These are deliberately
+  // short: the rendering is a space-separated run inside a narrow grid cell.
+  //
+  // "Bad quality" and "No link" are spelled that way because `Translate()`
+  // looks up by source text with no disambiguation context, and the catalog
+  // already maps "Bad" to "Недостоверно" and "Offline" to "Нет связи" — the
+  // long forms used elsewhere. Reusing those sources would have silently
+  // widened this strip.
+  const char* text;
+};
+
+constexpr QualifierFlagTextEntry kQualifierFlagTexts[] = {
+    {scada::Qualifier::BAD, QT_TRANSLATE_NOOP("", "Bad quality")},
+    {scada::Qualifier::BACKUP, QT_TRANSLATE_NOOP("", "Backup")},
+    {scada::Qualifier::OFFLINE, QT_TRANSLATE_NOOP("", "No link")},
+    {scada::Qualifier::MANUAL, QT_TRANSLATE_NOOP("", "Manual")},
+    {scada::Qualifier::MISCONFIGURED, QT_TRANSLATE_NOOP("", "Misconfigured")},
+    {scada::Qualifier::SIMULATED, QT_TRANSLATE_NOOP("", "Simulated")},
+    {scada::Qualifier::SPORADIC, QT_TRANSLATE_NOOP("", "Sporadic")},
+    {scada::Qualifier::STALE, QT_TRANSLATE_NOOP("", "Stale")},
+    {scada::Qualifier::FAILED, QT_TRANSLATE_NOOP("", "Failed")},
+};
+
 }  // namespace
 
 std::u16string StatusText(scada::StatusCode status_code) {
@@ -152,6 +180,34 @@ std::u16string StatusText(scada::StatusCode status_code) {
                              : Translate("Error");
 }
 
-void InstallStatusText() {
+std::u16string QualifierFlagText(unsigned flag) {
+  for (const QualifierFlagTextEntry& entry : kQualifierFlagTexts) {
+    if (entry.flag == flag)
+      return Translate(entry.text);
+  }
+  return {};
+}
+
+std::u16string BooleanText(bool value) {
+  return value ? Translate("Yes") : Translate("No");
+}
+
+std::u16string FallbackLabelText(FallbackLabel label) {
+  switch (label) {
+    case FallbackLabel::kDefaultClose:
+      return Translate("On");
+    case FallbackLabel::kDefaultOpen:
+      return Translate("Off");
+    case FallbackLabel::kEmptyDisplayName:
+    case FallbackLabel::kUnknownDisplayName:
+      return Translate("#NAME?");
+  }
+  return {};
+}
+
+void InstallCoreUiText() {
   scada::SetStatusTextProvider(&StatusText);
+  scada::SetQualifierFlagTextProvider(&QualifierFlagText);
+  scada::SetBooleanTextProvider(&BooleanText);
+  SetFallbackLabelProvider(&FallbackLabelText);
 }

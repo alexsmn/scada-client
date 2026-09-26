@@ -255,7 +255,8 @@
         <source>Search tags, objects, commands…</source>
         <translation>Поиск объектов, сигналов, команд…</translation>
     </message>
-    <!-- common/common/format.cpp default value-formatting text: the fallback
+    <!-- common/common/format.h's fallback labels, worded in
+         client/services/core_ui_text.cpp (FallbackLabelText): the fallback
          state labels for a two-state item without its own TsFormat labels, and
          the placeholder for an unresolvable display name. -->
     <message>
@@ -2329,9 +2330,10 @@
         <source>Online</source>
         <translation>Есть связь</translation>
     </message>
-    <!-- Everything from here to the end of this context reaches the UI through
-         `scada::TranslateUiText` (core/base/ui_text.h), whose installed
-         translator is the client's `Translate()` — and that looks up with the
+    <!-- Everything from here to the end of this context is looked up by the
+         client's `Translate()` — from client/services/core_ui_text.cpp's
+         tables, which core reaches through its text providers — and that
+         looks up with the
          EMPTY context, deliberately (client/aui/qt/translation_qt.cpp says
          why). So these entries MUST stay in this context. They sat under
          <name>WriteDialog</name> until 2026-08-22, where nothing could read
@@ -2342,7 +2344,7 @@
          them reintroduces the bug silently and invisibly, so
          `TranslatedUiTextResolvesToRussian` in the screenshot generator pins
          one string from each of the three groups below. -->
-    <!-- Status-code descriptions (client/services/status_text.cpp, marked
+    <!-- Status-code descriptions (client/services/core_ui_text.cpp, marked
          QT_TRANSLATE_NOOP with the empty context). Core carries only the
          symbolic names; the client's table is the one place status codes are
          worded, and its English is the lookup key for these entries. -->
@@ -2583,7 +2585,7 @@
         <translation>Значение недоступно для чтения</translation>
     </message>
     <!-- Data-quality flags, rendered as a space-separated run
-         (core/scada/qualifier.cpp). Kept abbreviated exactly as before: the
+         (client/services/core_ui_text.cpp). Kept abbreviated exactly as before: the
          strip sits in a narrow grid cell. -->
     <message>
         <source>Bad quality</source>
@@ -2621,7 +2623,7 @@
         <source>Failed</source>
         <translation>Ошибка</translation>
     </message>
-    <!-- Boolean value labels (core/scada/variant.cpp,
+    <!-- Boolean value labels (client/services/core_ui_text.cpp, reached as
          Variant::TrueLabel/FalseLabel). -->
     <message>
         <source>Yes</source>

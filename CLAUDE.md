@@ -755,13 +755,16 @@ and mislabelled three of the entries below; C++20 features are marked.
   the change is invisible to the operator and to the screenshot gallery.
 - **The same rule now covers `core/` and `common/`, which is where the rest of
   the operator's text comes from.** Status-code descriptions, data-quality
-  flags and the boolean Yes/No labels are produced below the client and
-  rendered by it verbatim; they carry English sources and go through
-  `scada::TranslateUiText` (`core/base/ui_text.h`), whose translator the client
-  installs in `AppInit`. Their Russian lives in `app/qt/client_ru.ts` like
-  everything else, so adding a status code means adding a catalog entry.
-  Without a translator installed — every server tier, and every unit test — the
-  English source renders, and that is the intended behaviour, not a fallback.
+  flags, the boolean Yes/No labels and `common/format.h`'s fallback labels are
+  produced below the client and rendered by it verbatim — but `core/` and
+  `common/` carry no words for them, only invariant forms (`Bad_Timeout`,
+  `STALE`, `true`, `1`). The words live in `services/core_ui_text.cpp`, which
+  `InstallCoreUiText()` plugs into those libraries' providers in `AppInit`, and
+  their Russian lives in `app/qt/client_ru.ts` like everything else — so adding
+  a status code means adding a row there and a catalog entry.
+  `CoreUiTextTest.EveryBadCodeHasASentence` fails on a missing row. Without the
+  providers installed — every server tier, and most unit tests — the invariant
+  forms render, and that is the intended behaviour, not a fallback.
   These trees are optional to the check: this repo publishes standalone, so it
   skips whichever of them is absent.
 - A `.ui` form's strings belong to the **form class's context**
