@@ -192,8 +192,8 @@ bool ClientApplication::HasGlobalCommandForTesting(unsigned command_id) const {
 
 namespace {
 
-// The nested property nodes the server publishes beside a user node, and which
-// the web client reads and writes under the same names.
+// The nested property nodes a server from before `GetProfile` kept the profile
+// in, and which the web client still reads and writes under the same names.
 constexpr std::string_view kProfileJsonProperty = "ProfileJson";
 constexpr std::string_view kProfileRevisionProperty = "ProfileRevision";
 
@@ -236,8 +236,10 @@ Awaitable<boost::json::value> ClientApplication::ReadServerProfileAsync() {
     co_return boost::json::value{};
 
   auto services = master_data_services_->as_services();
-  if (!services.session_service || !services.attribute_service)
+  if (!services.session_service ||
+      (!services.method_service && !services.attribute_service)) {
     co_return boost::json::value{};
+  }
 
   // Anonymous has no server identity to hang a profile on, so there is nothing
   // to read -- the same conclusion the web client reaches, by the same route.
@@ -245,40 +247,17 @@ Awaitable<boost::json::value> ClientApplication::ReadServerProfileAsync() {
   if (user_id.is_null())
     co_return boost::json::value{};
 
-  auto results = co_await services.attribute_service->Read(
-      scada::ServiceContext{},
-      {scada::ReadValueId{
-           .node_id = MakeNestedNodeId(user_id, kProfileJsonProperty),
-           .attribute_id = scada::AttributeId::Value},
-       scada::ReadValueId{
-           .node_id = MakeNestedNodeId(user_id, kProfileRevisionProperty),
-           .attribute_id = scada::AttributeId::Value}});
-
   // **A server that cannot answer means the local file, never a failed
-  // startup.** A deployment whose users carry no profile properties at all is
-  // a supported one -- it is what every build before this change talked to.
-  //
-  // Measured 2026-09-12 against the E2E single tier: this read answers **Good
-  // with an empty value** even when the config DB demonstrably holds a
-  // profile, because `SaveProfile` writes the DB without refreshing the
-  // published property node, so the address space keeps the value it was built
-  // with for the life of the server process. That is a server-side gap and the
-  // same shape as backlog 686's unresolved half -- the client writes somewhere
-  // the server accepts and the server does not make the write visible on read.
-  // Until it closes, this path is correct and finds nothing, and the local file
-  // is what actually loads.
-  if (!results.ok() || results->size() < 2) {
+  // startup.** A deployment whose users carry no profile at all is a supported
+  // one -- it is what every build before server profiles talked to.
+  std::optional<scada::String> json =
+      co_await CallGetProfileAsync(services, user_id);
+  if (!json)
+    json = co_await ReadLegacyProfilePropertiesAsync(services, user_id);
+  if (!json || json->empty()) {
     LOG_INFO(*logger_) << "No server profile; using the local file";
     co_return boost::json::value{};
   }
-
-  const scada::String* json = (*results)[0].value.get_if<scada::String>();
-  if (const scada::UInt64* revision =
-          (*results)[1].value.get_if<scada::UInt64>()) {
-    profile_revision_ = *revision;
-  }
-  if (!json || json->empty())
-    co_return boost::json::value{};
 
   boost::system::error_code ec;
   boost::json::value parsed = boost::json::parse(*json, ec);
@@ -287,6 +266,75 @@ Awaitable<boost::json::value> ClientApplication::ReadServerProfileAsync() {
     co_return boost::json::value{};
   }
   co_return parsed;
+}
+
+Awaitable<std::optional<scada::String>> ClientApplication::CallGetProfileAsync(
+    const scada::services& services,
+    const scada::NodeId& user_id) {
+  if (!services.method_service)
+    co_return std::nullopt;
+
+  // `GetProfile` reads the account's UserExtensionType row, which is where
+  // `SaveProfile` writes (backlog 743). It answers the JSON and the revision
+  // the next save must quote.
+  auto result = co_await services.method_service->Call(
+      user_id, scada::security::id::UserType_GetProfile, {},
+      scada::ServiceContext{});
+  if (!result.ok()) {
+    LOG_INFO(*logger_) << "GetProfile unavailable ("
+                       << static_cast<unsigned>(result.status().code())
+                       << "); reading the legacy profile properties";
+    co_return std::nullopt;
+  }
+
+  const std::vector<scada::Variant>& outputs = result->output_arguments;
+  const scada::String* json =
+      outputs.size() >= 1 ? outputs[0].get_if<scada::String>() : nullptr;
+  const scada::UInt64* revision =
+      outputs.size() >= 2 ? outputs[1].get_if<scada::UInt64>() : nullptr;
+  if (!json || !revision) {
+    // A server from before 2026-09-26 answers a native-protocol Call with no
+    // output arguments at all (scada.proto had nowhere to put them), so an
+    // empty answer means "cannot tell", not a malformed profile.
+    LOG_INFO(*logger_) << "GetProfile answered no profile; reading the legacy "
+                          "profile properties";
+    co_return std::nullopt;
+  }
+
+  profile_revision_ = *revision;
+  co_return *json;
+}
+
+Awaitable<std::optional<scada::String>>
+ClientApplication::ReadLegacyProfilePropertiesAsync(
+    const scada::services& services,
+    const scada::NodeId& user_id) {
+  if (!services.attribute_service)
+    co_return std::nullopt;
+
+  // A server from before `GetProfile` kept the profile in the UserType row's
+  // own properties. On a current server these are retired columns that
+  // nothing writes, so this read answers Good and empty -- which is why it is
+  // only the fallback.
+  auto results = co_await services.attribute_service->Read(
+      scada::ServiceContext{},
+      {scada::ReadValueId{
+           .node_id = MakeNestedNodeId(user_id, kProfileJsonProperty),
+           .attribute_id = scada::AttributeId::Value},
+       scada::ReadValueId{
+           .node_id = MakeNestedNodeId(user_id, kProfileRevisionProperty),
+           .attribute_id = scada::AttributeId::Value}});
+  if (!results.ok() || results->size() < 2)
+    co_return std::nullopt;
+
+  if (const scada::UInt64* revision =
+          (*results)[1].value.get_if<scada::UInt64>()) {
+    profile_revision_ = *revision;
+  }
+  const scada::String* json = (*results)[0].value.get_if<scada::String>();
+  if (!json)
+    co_return std::nullopt;
+  co_return *json;
 }
 
 Awaitable<void> ClientApplication::SaveProfileToServerOnQuitAsync() {

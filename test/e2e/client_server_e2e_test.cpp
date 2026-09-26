@@ -1285,21 +1285,20 @@ TEST_P(ClientServerE2eTest, ProfileLoad_ReadsTheServerCopyOnNextSignIn) {
     GTEST_SKIP() << "profile write-through pending a server-tier gap "
                     "(remote-config write routing)";
 
-  // **Blocked on the server, not on the client, and the evidence is precise.**
-  // The client reads `<user>!ProfileJson` at sign-in and the read answers Good
-  // with an EMPTY value, even on a run where the config DB demonstrably holds
-  // the profile the previous sign-in saved: `SaveProfile` writes the DB without
-  // refreshing the published property node, so the address space keeps the
-  // value it was built with for the life of the server process. The revision
-  // reads empty for the same reason, which is why the second save then fails
-  // `Bad_ObjectIsBusy` against a server whose stored revision has moved on.
-  //
-  // Left as a skip rather than deleted because the client half is in place and
-  // this is the assertion that will prove it the moment the server refreshes
-  // the property -- and because the same defect is backlog 686's unresolved
-  // half on the web side, where a write is accepted and not visible on read.
-  GTEST_SKIP() << "server does not refresh the published ProfileJson property "
-                  "after SaveProfile (backlog 743, same shape as 686)";
+  // An OPC UA client session never learns the node id of the user it signed in
+  // as -- opcuapp's `ClientSession::GetUserId()` answers null, because
+  // ActivateSession carries no such thing -- so over OPC UA the client neither
+  // reads nor writes a server profile, and there is nothing here to prove.
+  if (Protocol() == E2eProtocol::OpcUa)
+    GTEST_SKIP() << "an OPC UA client session has no user node id, so it has "
+                    "no server profile to load";
+
+  // Backlog 743. This was skipped while the client read `<user>!ProfileJson`:
+  // `SaveProfile` stores the profile on the account's UserExtensionType row,
+  // and that property is a retired UserType column nothing writes, so the read
+  // answered Good and empty on every sign-in and the revision read 0, failing
+  // the second save with `Bad_ObjectIsBusy`. The client now reads through
+  // `UserType_GetProfile`, which answers from the row `SaveProfile` wrote.
 
   constexpr int kGuestUserId = 12;
   constexpr std::string_view kSavedPageTitle = "E2E Server Profile Page";

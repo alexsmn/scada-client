@@ -13,7 +13,9 @@
 #include "scada/co_result.h"
 #include "scada/data_services_factory.h"
 #include "scada/node_id.h"
+#include "scada/services.h"
 #include "scada/status.h"
+#include "scada/string.h"
 #include "services/display_selection_registry.h"
 #include "services/frame_capture_registry.h"
 #include "timed_data/timed_data_service.h"
@@ -22,6 +24,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <stack>
 #include <stdexcept>
 
@@ -173,6 +176,20 @@ class ClientApplication : private ClientApplicationContext {
   // fails. Never throws: a server that cannot answer means the local file, not
   // a failed startup.
   [[nodiscard]] Awaitable<boost::json::value> ReadServerProfileAsync();
+
+  // The profile JSON as `UserType_GetProfile` answers it, recording the
+  // revision it reports in `profile_revision_`. Null when the server has no
+  // such method or the call fails, so the caller can fall back.
+  [[nodiscard]] Awaitable<std::optional<scada::String>> CallGetProfileAsync(
+      const scada::services& services,
+      const scada::NodeId& user_id);
+
+  // The profile JSON from the user node's `ProfileJson`/`ProfileRevision`
+  // properties -- where a server predating `GetProfile` kept it. Null when the
+  // read fails.
+  [[nodiscard]] Awaitable<std::optional<scada::String>>
+  ReadLegacyProfilePropertiesAsync(const scada::services& services,
+                                   const scada::NodeId& user_id);
 
   // Writes the profile to the server, reporting a failure rather than
   // swallowing it. Called from `QuitAsync` -- see the note there for why not
