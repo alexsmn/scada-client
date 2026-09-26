@@ -13,6 +13,7 @@ file(GLOB SCREENSHOT_GENERATOR_WIN32_RESOURCES CONFIGURE_DEPENDS
 
 add_executable(client_screenshot_generator
   "main.cpp"
+  "context_menu_capture.cpp"
   "control_confirmation_check.cpp"
   "explorer_selection.cpp"
   "explorer_selection.h"

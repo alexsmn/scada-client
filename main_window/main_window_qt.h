@@ -14,6 +14,7 @@ class SeverityTileStrip;
 }
 
 #include <boost/signals2/connection.hpp>
+#include <functional>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -76,6 +77,29 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   virtual void ShowPopupMenu(scada::aui::MenuModel* merge_menu,
                              const scada::aui::Point& point,
                              bool right_click) override;
+
+  // Receives a populated context menu in place of it being popped up.
+  using PopupMenuInterceptor = std::function<void(QMenu&)>;
+
+  // Diverts `ShowPopupMenu` to `interceptor`, which is handed the menu after
+  // it has been built and before `exec()` would run. Pass an empty function to
+  // restore the normal behaviour.
+  //
+  // This exists for the screenshot generator's `auto-menu` context captures,
+  // and the diversion point is deliberate: the menu is built by the one code
+  // path the operator's right-click uses, so the published image cannot
+  // document a menu nobody sees. Nothing before this point is bypassed either,
+  // which is what makes the capture faithful — the view that was clicked
+  // supplies its own `merge_menu` (a grid's command set differs from the
+  // object tree's), and `BuildMenu` calls `MenuWillShow()` so each row's
+  // enabled state is resolved against the live selection. Several of the
+  // manual's images show disabled rows, and a menu assembled some other way
+  // would render them all enabled.
+  //
+  // A capture cannot simply call `ShowPopupMenu` and grab the result: Qt's
+  // `QMenu::exec` runs a nested event loop and does not return until something
+  // dismisses the menu, and offscreen nothing does.
+  void SetPopupMenuInterceptor(PopupMenuInterceptor interceptor);
 
  protected:
   // BaseMainWindow
@@ -339,6 +363,9 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // Mirrors the last state asked for through SetWindowFlashing, so the alert is
   // raised on the rising edge only. OnEvents calls in on every event dispatch.
   bool window_flashing_ = false;
+  // Empty in the shipping client; set only by the screenshot generator. See
+  // SetPopupMenuInterceptor.
+  PopupMenuInterceptor popup_menu_interceptor_;
 
   // Right Inspector dock. Updated from OnSelectionChanged with the
   // active view's SelectionModel.

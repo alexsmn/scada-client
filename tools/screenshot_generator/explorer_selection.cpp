@@ -25,17 +25,7 @@
 #include <span>
 
 namespace scada::screenshot_generator {
-namespace {
 
-// Walks the Explorer tree from its visible root down `path` (one display name
-// per level), fetching and expanding each level on the way, and returns the
-// index of the last name. The rows are lazily loaded, so a level has to be
-// fetched and settled before the next name can be looked for.
-//
-// An invalid index means a step was not found, and the failure names the level
-// and the rows it did see: the caller uses this to put a selection on screen,
-// and a silently missed row would publish the state the selection exists to
-// replace.
 QModelIndex FindTreeRowByPath(scada::aui::Tree& tree,
                               AnyExecutor executor,
                               NodeService& node_service,
@@ -82,8 +72,6 @@ QModelIndex FindTreeRowByPath(scada::aui::Tree& tree,
   }
   return parent;
 }
-
-}  // namespace
 
 bool MaterializeExplorerTree(scada::aui::Tree& tree,
                              QDockWidget* tree_dock,

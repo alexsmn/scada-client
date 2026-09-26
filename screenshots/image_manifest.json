@@ -11,11 +11,11 @@
       "notes": "Favorites pane: saved windows in two folders, showing all three window-type glyphs — folder, table and chart-spline (Lucide). Seeded from the fixture's `favourites` block, expanded via the spec's `expand` flag and guarded at min_rows 2; it rendered as a blank panel for months because nothing seeded the store and no guard noticed. Not published yet: no manual page embeds it. Re-pointed 2026-09-26 (backlog 39, option (a)): rendered with `frame: \"window\"`, so the capture is the whole main window around the pane — menu bar, context bar with the severity tiles, activity rail, tab strip, status strip — which is what tells a reader WHERE Favourites lives, and is what the bare panel could not say. It replaces menu-favorites.png. **It does not carry the OS title bar** that the hand-captured original had, and no offscreen grab can: `grab()` renders the Qt widget tree, and screenshot_fixture.cpp records that PrintWindow(PW_RENDERFULLCONTENT) was tried for exactly this and abandoned.",
       "published": true,
       "captured": {
-        "commit": "1aae9ee98",
+        "commit": "1a014d850",
         "platform": "macos",
         "dirty": true,
-        "sha256": "e797b8fad0807c05635ea9926f9741b4d88d0431af6bcd470c4120ef428bbd97",
-        "last_rendered": "1aae9ee98"
+        "sha256": "756fdf1a2c44140218555f0b7adcc32c144c9409f5ff7d835dbd2f8f019b1403",
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -27,11 +27,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of favorites.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "1aae9ee98",
+        "commit": "1a014d850",
         "platform": "macos",
         "dirty": true,
-        "sha256": "3550f82ced39f67da704ef8ab36eb1b9fa25e1645d5f48599e9b6af5348d4a4d",
-        "last_rendered": "1aae9ee98"
+        "sha256": "6ced674c8c0fb3c869bffb4e8e1c598ec813d689643d195b0e84042047fe3797",
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -56,7 +56,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "6158f0693bdca8860433bb0529e6a3b3ef6ea3bd134439755bbabdfd71a0c560",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -72,7 +72,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "9d391d4a96a709b97d2df03107082bdc0aa6c04ae5c1b1d3300aabbff9edfebf",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -89,7 +89,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "20a96e054bb62e6682830ad3fc24f1a506296478c239c4b54e8778765325c5f0",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -105,7 +105,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "dacfd224684a4e407b80256285e5dbc5c6ec3a6f31e108b35aa38a4d6c41cb15",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -122,7 +122,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "888b42e8d2d461c89f6b1204cf5d931747e4cb5fcde9cc61ec5beae08ba524e0",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -138,7 +138,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "d7477c3580c3c50b2234b49a1e090e63f86fea11c27ff3b639f33672018db714",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -154,7 +154,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "3b560563847de41016ee211a3aa49fde06cd847ee7aab3dac19e97e2b2f53d89",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -170,7 +170,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "6e3f263fde283925e2514bb5544744cc2473efab3f63474580184425cad9681b",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -186,7 +186,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "82b77a78618b7645eba9d4537e3b585b86c4344c32565a45226f5af770a88072",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -202,7 +202,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "ccc7c5c4013078e2bd1e43cf7fa7dd158f03d88093230376e01bc355975a5906",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -218,7 +218,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "7de5d5bfe9623c9e1d443dbc9407cfdb415b5f0dc438b82f161d258c7af56a7e",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -234,7 +234,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "82c5a70324050d2d391c9ad539fb10dd7b6710e6fbbb05134f7f6ee15a56a5c3",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -250,7 +250,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "c98cbdd1d100cbfc649070408050ad6060133ac7a74d407a2d0eb64757516685",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -266,7 +266,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "3d11ee02f949ed6ba03f6ec744fa0b30dd82fef1d94d027fe979dcfe9f4f7591",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -282,7 +282,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "a991b8c3cf4c1780f18e0c04a3741036965bad422456b4c6b88a6555c677588e",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -298,7 +298,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "96cd7470b7a4e3c9053e04a09d46b330b7a8620e6ba76b609a7e483cb7e3b143",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -316,7 +316,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "e3a383d76de1ec12f5fca69eca1dfe74b52d248e6fadded28e9badbfaf6ec1c6",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -332,7 +332,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "ac2a2ba7cc4404d1a2354ceba546d7402c4b28a16cd49c67ac9a952e24505434",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -363,7 +363,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "718e7e7dceb444c0439375ea1532bef8aec3667af2eb27a6f0fec5157c4a9b23",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -378,7 +378,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "e261d1bb67cb74e059114f99e3b898691560d2de64bda66a42698a3d0f363c81",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -394,7 +394,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "5bfaacda94cf12b0471dc23428774c571288128b54413f6aec03683120fa9c62",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       },
       "parity_key": "settings"
     },
@@ -410,7 +410,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "782d0b82510e71eb068dd8ca2b8995e25125beab99a4662671d2eeeb114e4ff8",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       },
       "parity_key": "settings"
     },
@@ -427,7 +427,7 @@
         "platform": "macos",
         "dirty": false,
         "sha256": "0396e294f3eb0a087694ba3fd657e0429dc8dc69dcbcd5fce978605089f240f1",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -442,7 +442,7 @@
         "platform": "macos",
         "dirty": false,
         "sha256": "2b62665fe083a3a81938ab65afd008086063f73d5c6aefad74daac7ccee4e117",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -458,7 +458,7 @@
         "platform": "macos",
         "dirty": false,
         "sha256": "aa13d1bf1024392390097da6b508cbd52fc8ba8ae970f148bccaf25ab057f8ef",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -473,7 +473,7 @@
         "platform": "macos",
         "dirty": false,
         "sha256": "a5b5970edf4b8a0e76c0686f49bf029600f29f121e937e8d29d1bc4851c169c5",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -496,7 +496,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "2833b542d4283f52f108f4eef28a314673035d2f21560f8925068e7a3aacb46a",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -512,7 +512,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "082d227cfc524388726bc7e236acb5083f1c2c89f65c57d6b8dd1cdf964efe72",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -533,7 +533,7 @@
       "referenced_from": [
         "dev/devices.md"
       ],
-      "notes": "NOT a device-state capture, despite the auto-state tag it carried until 2026-08-15: the image is the hardware tree with the object context menu open on its *Создать* submenu (Направление МЭК-101/104, Устройство МЭК-61850, Направление MODBUS). It is the `menu-create-object` capture of the auto-menu group, and it is blocked on the same context-menu helper as the other six there — see tasks.md 39, subtask 7."
+      "notes": "NOT a device-state capture, despite the auto-state tag it carried until 2026-08-15: the image is the HARDWARE tree («Оборудование», the `Subsystems` window) with its context menu open on «Создать» — Направление МЭК-101/104, Устройство МЭК-61850, Направление MODBUS. **Not a duplicate of menu-create-object.png either**, which tasks.md claimed until 2026-09-26: that one is the OBJECT tree («Объекты», `Struct`) and its «Создать» submenu lists object kinds, a disjoint command set on a different tree. It is no longer blocked on the context-menu helper — the other six shipped on 2026-09-26 — but on the offline fixture: ScadaTestAddressSpace declares creatable placeholders for Modbus links and data groups only, so no IEC 60870 link is creatable anywhere and the «Создать» row simply does not appear on the МЭК rows. See tasks.md 39, subtask 7."
     },
     {
       "file": "devices-off.png",
@@ -632,7 +632,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "e6000f7c3b922dec0a32b858bd13bbe6e98ba3c1d6067e37ec03cd2b3d016a86",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -648,7 +648,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "5d2ff9fa7e3fc17f92cbaf77c25434a7aa267e56fdca75ecf3b56d7ddca4f53e",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -664,7 +664,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "7441f6fe9a74f31ba09308a9628d1145e92d8b12a8a2dec62087ebf1bc7e29b2",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -680,7 +680,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "372f61185515b78b929ff3b4561c7bd99feaae2d191727ed458db36274405ead",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -697,7 +697,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "ef366f047cd377f4623cc00a6543bc7c23bb9914f422225a2dfc7262436462e7",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -713,7 +713,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "9e19f8d488309c7c87a82b2a5c4d056575748ca0d298ebb556396d5abd356fba",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -730,7 +730,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "33ec95d49943dc36b8157809903cd265c162917a9470bdd0118ca8ce5432eefe",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -746,7 +746,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "cfaa87f60611c9c44b443691e1bbe76594fbf2fa32c939017602705dd5edb103",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -762,7 +762,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "bc4faad7c06b8f5ad135f11f98588e2f0d8b3e9120c564d5dab5c3a5bc6f1936",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -778,7 +778,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "2eb2471dc0d7b02e3b7a424375f77b876bf40c9ce8f371fa202e2c9775441ae8",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -796,7 +796,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "187b87a5f3ec59456cfcc29007a914ee3901d1c2afafceed1d6589ba39b3fd32",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -812,7 +812,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "05688cb5bacf593c20aa11df644df6f5149f2b89d44beee468785f0008f8577e",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -830,7 +830,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "83cb8d1cc26065b6dd9a8788f4e981e5c0af2ef453269bea236d9587b1353cb7",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -846,7 +846,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "b8b47d4cffa84791d1d97603bd8c942ec76bf485e9c1e5d2cd1a9c6ec90321be",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -862,7 +862,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "af071e6c6b686f3dc7da10b7bd77a4940e1f478473dd25862fb21251ed18857a",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -878,7 +878,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "eacf29aa03e3bcab99991523503c0667475e6f631f972373ac88965a4ef58d05",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -894,7 +894,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "ddaec054db3e6de8413556aae952c022988433d409e1e92afd4f7933d86783eb",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -910,7 +910,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "f4c84ed9010d52914edd12b07b4f56e2db45075e66369d462d4ffa04f0be8d6c",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -926,7 +926,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "88cdc05c91b19b08091e02c2c23bec47ce2a2973dac04c85590248e8978711dd",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -942,7 +942,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "ccd50514dcfd95f53a1d76069275829b07936c68a2d44ca3c70bff23a2be8e33",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -958,7 +958,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "40a069f41f2d1c2ca2d2324361d42ef4bd808f6aebee9c66e50997873c0e44d0",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -974,7 +974,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "0dfc282b2710da18587ea34e9a5a26fd4fac024a0f0bad69936b72c5f1adbe08",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -990,7 +990,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "11d10183540c7ed9d391b9312a952333411927c0d073ee6c924b815809190f2a",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1006,7 +1006,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "9a99c2d7573a76460c5528129951c7d8f0e87201afe67e7b4558d23e152406ab",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1023,7 +1023,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "85c320b0fac37980d0c0db0107bb3e9a9a1b409c2fc5074371ea9cadff26d302",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1039,7 +1039,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "9c0657eef3148298e685748b7df4b8905c7c27c49aae5c88e55aa6e1f462fc02",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1056,7 +1056,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "4f6f89a4824d9f6117bcf2008b90e9f85bb86a1bff01118093519b2eb2944c3b",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1072,7 +1072,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "3a3e1cd10f1ec671a78ef0906fab227108674246fe19df1600a6d6e75d3a9b28",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1088,7 +1088,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "97f80318f839a56e8329d26a8cc4e42e414ddd9d4e54763a05269d819748a115",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1104,7 +1104,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "7b45ba9bf8d911acdc841335d5b90e7698d4dc206e716ece6a56fe618f710239",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1120,7 +1120,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "262e2ca1d9048c517328aea95c8c9b8ee17e19c38c28d2f8cd93a757cd1d59e5",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1136,7 +1136,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "8df699a36b9d007d5e81c4f73063173de5abda9fbe1a2e3791351fdaf9cb3483",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1152,7 +1152,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "0307a0bb4374eb252cde51b76c3db07486c72b62525a2ad7b354c15b18493b0b",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1168,7 +1168,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "ace7e02079ea8c476b6e8d1652ed85dae548aba14cbbf2c97ef798de37b521ee",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1187,7 +1187,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "147b97eb5443191815a288dc3f279abb95ede00f5f7282cd265796df9ab41af4",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1203,7 +1203,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "b781b9ce3e5d91f7252542c7fdbc24f14c6bd91069858f9fd6ff3b5a1534df7c",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1219,7 +1219,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "472b2a4da28c1e4d3bdf1dc6b946d8389a90fb35aab3c604e6102c514ddbf04e",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1235,7 +1235,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "c76df3c69f31d105c68929987097437d0ab4591a18053c3146d845515d9b4a78",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1251,7 +1251,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "e59cc2d7b59386b567e893f8acf7fc206aad2595279a5b14f59d22d97db146be",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1267,7 +1267,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "393d63a1778176cd8363018469c3e0e186657251fd7d40c35f6e802598e38ff0",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1283,7 +1283,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "ba76d870677c6b6faa2635e7cab54c842d43fe3d4f5a878857648274318d7ddf",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1299,7 +1299,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "f8f2a02cb7d7e0de24dc8d1a34401f9711f169f792c85eba7b0b849e092a6990",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1315,7 +1315,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "e9714006e19d5b5fd362e8475fa838f134628187045d642c2ff2104cb9df4d64",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1331,7 +1331,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "3e40fc8936ec444bd69d579b7cce9a14ee07ab4c1bdf1b5e27cadef6d949e1f3",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1347,7 +1347,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "032e20a47e41389cc89148a61db53f7d7e7bd5420a78bb0033e5c7554aff1706",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1363,7 +1363,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "3f6675ea5b1e489730c4af53b5d176330aa9def5201c2a2cf60e42c1ad447f88",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1381,7 +1381,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "772e7c81538c8903d381a0fcd08856330fb3e348b293b7ad4970b9b5b2c57762",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1397,7 +1397,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "6736f5a82524ce5714313407d5de2df35d8e7cfc92a9521b3dfba2a9d99599cd",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1416,7 +1416,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "9c247b7ff049e11419df4949d1a74cff5ecfb7eaaa92afe6477954d65ea64d71",
-        "last_rendered": "1aae9ee98"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1432,7 +1432,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "58c314467b53f38fccf11a7c5c627494f2c36a4ec6ec4d0cf3770826a9ad14b9",
-        "last_rendered": "1aae9ee98"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1448,7 +1448,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "43bf4a28d7c92b68eb9c144c049f335649aa84e6c3a6dfbd7aa4257ed410a832",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1464,7 +1464,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "39725b763a4bc72c375a5688e8cbc540c998b2c6ccef4e32cfdd5c53b50d620b",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1480,7 +1480,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "962c77b7ee3a17d9f956a78abf42cd7e890a2f2264bebd8bc1d65849300d9177",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1496,7 +1496,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "a912dc12de532c08d282f42085d66928ec6235dfe584f1ae348a4f0dfc49b8de",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1512,7 +1512,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "2241f2026e808e2bd7350d3156a8575965fe1c6edd195d48dc91ab4f7b173b4f",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1528,7 +1528,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "056cd8906592eedc3efddb909b029419b83702a9d4c893db7ae6623ba943625b",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1553,7 +1553,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "dfeb8710b14057c16abba15dcd7db5ca0279918acb1299bba8b7c89b85026207",
-        "last_rendered": "fd98f7ff2"
+        "last_rendered": "1a014d850"
       },
       "published": true
     },
@@ -1570,7 +1570,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "39cd67a0f962afbd5f94d82bae7571ee5c6dfa6a558b1f193959a0c9ab0516ef",
-        "last_rendered": "fd98f7ff2"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1587,7 +1587,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "ef72006cea3c548aa3da9f2e6fc70242e6797554300f26e571546255bd8857e4",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1603,7 +1603,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "7e99dbe6ff67269dc51e5b7bf42ea47ce2b3cbbb6a573c73267f1ea916de636e",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1619,7 +1619,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "1987f924144770dd1fc043ab5011516f30cc5b2777889feb95af8020ee9bdf15",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1635,7 +1635,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "149b2b5de48c69af2de641c320e97f7250dcc7dc6d3dce223733847633757cf9",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1651,7 +1651,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "dd7df74c5865f950b706f3ed776ac2cf9b0800cb3fc201981d7dd631f4407bca",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1667,7 +1667,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "0ecaafdfac9abc370a25309195ae16f5317705c0e7979af30ae3291c8a54242a",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1683,7 +1683,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "f7d3eb0486905b05e9b93baffad19a4bc09c328b86f5e8d3b3cd737b4c24a57a",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1699,7 +1699,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "a9648a7b870b44000bb28d0f649cbffe99d0fd873d5d608653b4956e3c8394f2",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1732,7 +1732,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "d27f087e7a16ac88516dc985e347855bc349b091f06721058b2fad6256cc432f",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1748,7 +1748,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "70a840001900da0c9263ee5cebd58af04cae835427fe014b3daeaf4e229de397",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1766,7 +1766,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "97ec4a0c747fd6385e4754aea92c66442291c9af5bde5ba95e659b0a21d4aa87",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1782,7 +1782,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "08894742348e16aa8ee095ad9d25e2eaaf361fb5ae9652bb3ef06cc0427b901c",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1813,7 +1813,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "e2110dae885ca18e3abc909f2c36b9ff73efd8d3371631c3510198c4635f400a",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1829,7 +1829,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "d11ee449fde9e5fa49e5faa2da5eaab87feee681bc6f95f7053dd774b700d6cf",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1841,18 +1841,64 @@
     {
       "file": "menu-create-object.png",
       "tag": "auto-menu",
+      "theme": "dark",
       "referenced_from": [
         "dev/data-items.md"
       ],
-      "notes": "A true QMenu popup (audited 2026-08-08): the object-tree context menu on a folder object, with the «Создать» submenu open — so a capture needs submenu support, not just one popup. Six of the nine remaining auto-menu rows are context menus like this, which have no fixture-driven pipeline; see the auto-menu task."
+      "notes": "Rendered by the screenshot generator (CaptureObjectMenuCreate): the object tree's context menu on a group with the «Создать» submenu OPEN, which is what dev/data-items.md is about at that point. The open submenu is a COMPOSITE and has to be: an open submenu is a second top-level popup, so no single grab() reaches both and offscreen there is no screen to grab instead. Both halves are real renders of the real widgets; only their relative placement is computed, from the parent's own action geometry and frame width. The submenu lists «Серийное создание...», «Сервисные объекты...», «Объект ТС», «Объект ТИТ» -- one row fewer than the docs original, which also shows «Группа», because the fixture's group type declares no sub-group placeholder. Not yet in current_generator_owned_subset.",
+      "captured": {
+        "commit": "1a014d850",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "6a3bd9e2a7e9aaba8beec65c767e5b74b144df446b18ce41c93eae85f4d7adc8",
+        "last_rendered": "1a014d850"
+      }
+    },
+    {
+      "file": "menu-create-object-light.png",
+      "tag": "auto-menu",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of menu-create-object.png, produced by the same capture under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see. Deliberately carries no `parity_key` — the capability's coverage claim belongs to menu-create-object.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "1a014d850",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "8985732818337ad4128259d4c2302ec6b58d01631dc8218fde3d074464fbbb6b",
+        "last_rendered": "1a014d850"
+      }
     },
     {
       "file": "menu-delete-object.png",
       "tag": "auto-menu",
+      "theme": "dark",
       "referenced_from": [
         "dev/data-items.md"
       ],
-      "notes": "A true QMenu popup (audited 2026-08-08): the object-tree context menu on a data item, «Удалить» highlighted. Carries disabled rows (Квитировать, Снять блокировку) and a «Устройство» submenu arrow, so the capture has to reproduce enablement state, not just the item list."
+      "notes": "Rendered by the screenshot generator (CaptureObjectMenuDelete): the object tree's context menu on a data item, «Удалить» highlighted, carrying the greyed «Квитирование» / «Разблокировать» rows and the «Устройство» submenu arrow the docs original shows. The enablement state is resolved against a live selection rather than staged; see menu-parameters.png for the mechanism. dev/data-items.md calls this «Пример контекстного меню, всплывающего по нажатию ПКМ», which the popup alone serves. Not yet in current_generator_owned_subset -- replacing the hand capture is a docs decision.",
+      "captured": {
+        "commit": "1a014d850",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "9220247d9731799df747f776d0e3f8907d95ab80f9db08f129b5a1ae1db71528",
+        "last_rendered": "1a014d850"
+      }
+    },
+    {
+      "file": "menu-delete-object-light.png",
+      "tag": "auto-menu",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of menu-delete-object.png, produced by the same capture under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see. Deliberately carries no `parity_key` — the capability's coverage claim belongs to menu-delete-object.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "1a014d850",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "8a95263551500ec466a88531ae4eda0671820e4d8462085ddcb7234f96ba0798",
+        "last_rendered": "1a014d850"
+      }
     },
     {
       "file": "menu-events-log.png",
@@ -1881,7 +1927,7 @@
         "platform": "macos",
         "dirty": false,
         "sha256": "0c8cafd1c24ed036ab33c071cf6d262e219c21ecb9e37278cd4d1d9d1dcaf4c9",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1896,7 +1942,7 @@
         "platform": "macos",
         "dirty": false,
         "sha256": "ec5b1670d3ae49dd5683271e6a3793994fdba33a532e47415ebeaeb5df50fc00",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1922,26 +1968,95 @@
     {
       "file": "menu-parameters-elements-copy.png",
       "tag": "auto-menu",
+      "theme": "dark",
       "referenced_from": [
         "dev/displays.md"
       ],
-      "notes": "A true QMenu popup (audited 2026-08-08): the context menu on the configuration table (Конфигурация: ЭНИП-2 + ЭНМВ-1) over a three-row selection, «Копировать» highlighted. Anchored to a grid, not the object tree, so a menu-rendering helper has to reach the table's own command set as well."
+      "notes": "Rendered by the screenshot generator (CaptureGridMenuCopy): the configuration table's context menu over a multi-row selection, «Копировать» highlighted. A DIFFERENT menu from the object tree's four above -- the grid passes its own merge_menu to ShowPopupMenu, so «Переименовать» and «Упорядочить» are the table's own command set merged with the generic one, and the capture reaches it only because it drives a real right-click. The table is opened the way dev/displays.md says to open it: select the group in the object tree, «Свойства элемента». Deliberately NOT a publish candidate, and this is the one of the six where that is a real objection rather than caution: dev/displays.md embeds this image under a sentence about the TABLE («объекты расположены в строках таблицы, а их различные параметры отображаются в столбцах»), which a popup alone does not show. Re-pointing that sentence at a configuration-table capture, and giving the menu its own place under the «Из контекстного меню таблицы...» sentence below it, is the docs decision this needs.",
+      "captured": {
+        "commit": "1a014d850",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "d725c2e95f98a0250722e21b5950ce3bb3751670612c93e6646665b137c80607",
+        "last_rendered": "1a014d850"
+      }
+    },
+    {
+      "file": "menu-parameters-elements-copy-light.png",
+      "tag": "auto-menu",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of menu-parameters-elements-copy.png, produced by the same capture under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see. Deliberately carries no `parity_key` — the capability's coverage claim belongs to menu-parameters-elements-copy.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "1a014d850",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "d7bb694b96d128f3c0609310b560620855d335a3aee2809fc7eaeb02eed7b086",
+        "last_rendered": "1a014d850"
+      }
     },
     {
       "file": "menu-parameters-elements.png",
       "tag": "auto-menu",
+      "theme": "dark",
       "referenced_from": [
         "dev/displays.md"
       ],
-      "notes": "A true QMenu popup (audited 2026-08-08): the object-tree context menu on a folder object, «Параметры элементов» highlighted. Same popup shape as menu-create-object.png with the submenu closed."
+      "notes": "Rendered by the screenshot generator (CaptureObjectMenuElementProperties): the object tree's context menu on a GROUP, «Свойства элемента» highlighted -- the plural command, which only a group offers, so its presence is what says the selection really was one. Says «Свойства элемента», not «Параметры элементов»: the command was renamed and dev/displays.md's prose already uses the new name. Popup alone rather than over the tree, as with the rest of this group. Not yet in current_generator_owned_subset.",
+      "captured": {
+        "commit": "1a014d850",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "2121df8528b091545ac68087c88b5431e964afa4dd8fb64825d0f5111dd0266f",
+        "last_rendered": "1a014d850"
+      }
+    },
+    {
+      "file": "menu-parameters-elements-light.png",
+      "tag": "auto-menu",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of menu-parameters-elements.png, produced by the same capture under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see. Deliberately carries no `parity_key` — the capability's coverage claim belongs to menu-parameters-elements.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "1a014d850",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "fd4711cdc4bfe5fa7edc8cca08373bc59446598b51f2dbcfe1a982eff6d5000e",
+        "last_rendered": "1a014d850"
+      }
     },
     {
       "file": "menu-parameters.png",
       "tag": "auto-menu",
+      "theme": "dark",
       "referenced_from": [
         "dev/data-items.md"
       ],
-      "notes": "A true QMenu popup (audited 2026-08-08): the object-tree context menu on a data item, «Параметры» highlighted, with the disabled Квитировать / Снять блокировку rows and the «Устройство» submenu arrow."
+      "notes": "Rendered by the screenshot generator (CaptureObjectMenuProperties): the object tree's context menu on a data item, «Свойства» highlighted, with «Квитирование», «Управление...» and «Разблокировать» greyed out. Driving a real right-click is what makes those greyed rows real -- the event reaches the tree's viewport, the view's own handler calls ShowPopupMenu, and BuildMenu's MenuWillShow() resolves each row against the live selection; see MainWindow::SetPopupMenuInterceptor. Capturing it also needed five more modules in the generator's module set (Graph, Table, TimedData, NodeProperty, SelectionEdit) -- without them the menu rendered with eight of its seventeen rows and looked perfectly plausible. TWO differences from the docs original, and neither is a defect: it says «Свойства», not «Параметры» (the command was renamed, and dev/data-items.md's prose already says «Свойства»), and it is the popup alone rather than the popup over the object tree, which is what this pipeline produces (cf. menu-excel.png). The filename keeps the old word on purpose: pairs_reviewed in the parity matrix records capture filenames, so renaming one invalidates every review that named it. Not yet in current_generator_owned_subset -- replacing the manual's hand capture is a docs decision, though here it would make the page self-consistent.",
+      "captured": {
+        "commit": "1a014d850",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "2c1659590ed289d837d481bb94727dc4707197569238149473eb9ccc75690131",
+        "last_rendered": "1a014d850"
+      }
+    },
+    {
+      "file": "menu-parameters-light.png",
+      "tag": "auto-menu",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of menu-parameters.png, produced by the same capture under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see. Deliberately carries no `parity_key` — the capability's coverage claim belongs to menu-parameters.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "1a014d850",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "a9c1c27f8c3465772dcc3e8b329bceec986b6fa703828a2b706e07cd062134b5",
+        "last_rendered": "1a014d850"
+      }
     },
     {
       "file": "menu-scheme.png",
@@ -1964,7 +2079,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "7716c413cec6b3e201523e613e66c5bae0e298a4d814176911b8e136b89a47f5",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -1979,7 +2094,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "f91a6da1568f7976bbe8389dcc8c6344e6cbf3974131d206c508680818572de6",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2025,10 +2140,33 @@
     {
       "file": "ti-delete.png",
       "tag": "auto-menu",
+      "theme": "dark",
       "referenced_from": [
         "development.md"
       ],
-      "notes": "A true QMenu popup (audited 2026-08-08): the configuration-table context menu (Конфигурация: Smart Termo) over a three-row ТИТ selection, «Удалить» highlighted. Same grid-anchored shape as menu-parameters-elements-copy.png; the filename has no menu- prefix, so an audit that keys off the name misses it."
+      "notes": "Rendered by the screenshot generator (CaptureGridMenuDelete): the configuration table's context menu over a multi-row selection, «Удалить» highlighted -- same grid-anchored shape as menu-parameters-elements-copy.png, and the filename has no menu- prefix, so an audit that keys off the name misses it. development.md describes the command ('Удаляет выделенный объект, несколько выделенных объектов или устройство из системы'), which the popup serves; the multi-row selection behind it is real but is not visible in a popup-only capture. Not yet in current_generator_owned_subset.",
+      "captured": {
+        "commit": "1a014d850",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "b5f6a5b91076de766af508d3907be3aeb82cfdaf90cdfb426ddf28de2091a6a6",
+        "last_rendered": "1a014d850"
+      }
+    },
+    {
+      "file": "ti-delete-light.png",
+      "tag": "auto-menu",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of ti-delete.png, produced by the same capture under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see. Deliberately carries no `parity_key` — the capability's coverage claim belongs to ti-delete.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "1a014d850",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "5d911df49dbff6bdf8fb3300d8daa22315347694158a8ee1eb7678665f065fce",
+        "last_rendered": "1a014d850"
+      }
     },
     {
       "file": "ti-element-parameters.png",
@@ -2060,7 +2198,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "f923a34d5a019f50112065354f349dafa93fbf5b3191cde5d6f2b14f8d002353",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2076,7 +2214,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "ee0f0cb167875bc8ba293226c67aeafbe4e86d0996380e316ce054a962c35ff0",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2102,7 +2240,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "d45ab6a41deb7f5c72688f556fa1d5a748be1dea30a220d8e452ec6e032ff116",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2118,7 +2256,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "8bee470878050eb83d1cf6532c04d515f49deeb9178b0e3d85dd70597b0a9bd2",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2136,7 +2274,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "3576cc4ffa8874e6362cc77b224bb726737bd0f130e1e0dcb6a77bed0c4168f5",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2152,7 +2290,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "83777cbe4a7fde8f5c697f9569ee6dd5b9611b1709f3915e66fde9357303dad4",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2170,7 +2308,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "cf0c4bbfb1568fcdaa48e4b3743d67d2807d1eac3f1fb3ea98df95dfd14710c0",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2186,7 +2324,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "f10151c335dd81db40d2f7aee03aab17379b4f68b821e94fca2df3b8e7ecd319",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2211,7 +2349,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "9516bdd50560f80693f9a1d6f305ecb86b3ec5f4fb1d792d807d2c216b5464cd",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2227,7 +2365,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "0a628721680fb8b06887fcc239892aae146f867afff39c47a91e8829a96a207e",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2244,7 +2382,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "30a88f443959406339b92adee6bfddd79868cd8594b00e599afd948c1f329ac7",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2260,7 +2398,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "a992f869a51009ecc9999a191a368f3d7fcddddf848fac4f9ba4df9025a5f3d7",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2277,7 +2415,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "d752f1281c09be1592c900a5ed4f6d999678b2a3d373ecef0e632f34436a5418",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2293,7 +2431,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "410e68dc5391e2a97efb2b85e93a20789c18d5835bf5c9a571ae44eb92c6c525",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2310,7 +2448,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "a65d6e8c0099dc7ab3167207a567faa22d2fe572bd3f0f085ea989e2051e137b",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2326,7 +2464,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "39200df7da12b934182bac9ba6430837abc1dc460fd04c32eaa9001839f4fd5e",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2342,7 +2480,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "1f8675731b8669861bf31eb7a5d6654a23286fe472864d8521e308570a4bf4c9",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2358,7 +2496,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "659aa081df727a708653682176911bc019a814d73e95caf8fea77b46e53b2f1f",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2374,7 +2512,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "f0fc055612581f11e4b16e5c06ee176a71553ea75c2a0476a652209bfeac728b",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2390,7 +2528,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "c85c6c35c246d3813e566dfd49fc7048142952b2020f79867306e25855bc07f0",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2406,7 +2544,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "d2b984fb241b004ab30c875471b8ecafc52b797cba0946164516e686127be44d",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2422,7 +2560,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "b4592078e9e5729cdd7c391f994f98db7ae02627741efcdd738d42e48994f70f",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2445,7 +2583,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "abe11460734422b1431f6827967b56eb8ca51b97e9ecbba74fbd8f64223202f4",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2461,7 +2599,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "04ba2c315615ddf10bebdb87648758e9f686b992488079660d73e7fcc0314a78",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2477,7 +2615,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "9d58695ebbb84462b5f83c64addd11a9410daaae1bfd6a23c7497a8d6515a39b",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2493,7 +2631,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "864bb629760ecfd9b243da3e76eb5712d41305111eeb7768ad4b765f753cf939",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2509,7 +2647,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "594589ffb589fd60fb6f3a56b4e25da6024f62465bd626ad8220efe09364801e",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2525,7 +2663,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "28fdece95c6edea42a31db949da9ef26b5b192c675fb3f38b38248993dd0560e",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2541,7 +2679,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "4468436060c298c6e9949c35b8da384152c49c7da6152aead242456cfc3e245b",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2557,7 +2695,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "7819f49ad2b8d63c70f2e53b76be776880f79009b39b15d0041edd40e5260275",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2580,7 +2718,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "779af737d0ce5bec4a98b0dc51c73ee3858442b4f48e4fbe123d243560accb8c",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2596,7 +2734,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "d070d74352778ed1f0e61d6490961e6bd61dd2e681bf50d0195a7e2a01293a3d",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2612,7 +2750,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "ec0aa5359b3bd922728cf5c45bedeba65ab2089ce12fc397e249804f319a5a3f",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2628,7 +2766,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "817257b2c73186531e0a66b278bdaddd98392002e2bd9a70dd0392c17224ce55",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2643,7 +2781,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "d52a775b5b4687b7ab9b5b3362543306cc94c56b213d1c5f97a180e0a94f187c",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       },
       "published": false
     },
@@ -2659,7 +2797,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "8b3ae453908cb0b62dd26d561191dadd1fae851748c3a8b5c09daa5bc4fe3c65",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       },
       "published": false
     },
@@ -2676,7 +2814,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "5b7471eb39c6964e1cd7b7a4ee8245a0a9085f3d78b29b16f1a68aa821061645",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2692,7 +2830,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "2184a462c8023b8cb5e22430bf67e69ca085b8c47c39eaa6f1d6fce349e1848e",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2708,7 +2846,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "c9a19acd5c674a4696d5f74bb883836b87b23196a2f502064a46313dab449f09",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2724,7 +2862,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "6a2887234e40a6b68b31695434490dbb9f1588e6c0f7e9297901c3b78f05af14",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2740,7 +2878,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "c92ff78db1c55bc4b6ffd8b8ba838a8ec393c4f93000e20a721e5e123d7a5cf8",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     },
     {
@@ -2756,13 +2894,13 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "21ca043cf9d531088ace36216f705c61641709df80fc6c2d272e85cd7294fe5e",
-        "last_rendered": "6b03b5d47"
+        "last_rendered": "1a014d850"
       }
     }
   ],
   "counts": {
     "auto-dialog": 51,
-    "auto-menu": 12,
+    "auto-menu": 18,
     "auto-view": 100,
     "manual-annotated": 2,
     "manual-diagram": 4,

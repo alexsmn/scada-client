@@ -509,6 +509,47 @@ TEST(MainWindowQtTest, MenuBarDoesNotDuplicateTheModelDrivenSettingsMenu) {
               ElementsAre(settings_title));
 }
 
+// The screenshot generator's `auto-menu` context captures render the menu
+// `ShowPopupMenu` builds, and they can only do that because the interceptor
+// gets it *instead of* `exec()`. Two things have to hold, and neither is
+// visible at a call site:
+//
+//   - `ShowPopupMenu` must RETURN when an interceptor is installed. Without
+//     the early return, `QMenu::exec` runs a nested event loop that offscreen
+//     nothing dismisses, so the generator hangs rather than failing.
+//   - The menu handed over must be the built one, not an empty shell, so a
+//     published capture cannot document a menu nobody sees.
+//
+// Clearing the interceptor is deliberately not exercised here: the only
+// observable difference is that `exec()` runs, which is exactly the blocking
+// call this seam exists to avoid.
+TEST(MainWindowQtTest, PopupMenuInterceptorReceivesTheBuiltMenuInsteadOfExec) {
+  MainWindowQtHarness harness{u"Top"};
+
+  scada::aui::SimpleMenuModel merge_menu{nullptr};
+  merge_menu.AddItem(ID_PRINT, Translate("Print"));
+
+  int calls = 0;
+  QStringList rows;
+  harness.main_window().SetPopupMenuInterceptor([&](QMenu& menu) {
+    ++calls;
+    for (const QAction* action : menu.actions()) {
+      if (!action->isSeparator())
+        rows << action->text();
+    }
+  });
+
+  // Returns at all — the assertion the generator depends on. A missing early
+  // return hangs here rather than failing.
+  harness.main_window().ShowPopupMenu(&merge_menu, scada::aui::Point{},
+                                      /*right_click=*/true);
+
+  EXPECT_EQ(calls, 1);
+  EXPECT_THAT(rows, Contains(QString::fromStdU16String(Translate("Print"))))
+      << "the interceptor was handed a menu without the caller's merge_menu "
+         "rows, so it is not the menu ShowPopupMenu would have popped up";
+}
+
 // Regression: SetWindowFlashing was an empty body, so «Flash Main Window on
 // Event» was a live Settings checkbox an operator could tick for nothing
 // (backlog 636). What this pins is that the request is acted on and latched.

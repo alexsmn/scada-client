@@ -1855,11 +1855,21 @@ void MainWindow::closeEvent(QCloseEvent* event) {
   QMainWindow::closeEvent(event);
 }
 
+void MainWindow::SetPopupMenuInterceptor(PopupMenuInterceptor interceptor) {
+  popup_menu_interceptor_ = std::move(interceptor);
+}
+
 void MainWindow::ShowPopupMenu(scada::aui::MenuModel* merge_menu,
                                const scada::aui::Point& point,
                                bool right_click) {
   QMenu menu;
   BuildDefaultPopupMenu(menu, merge_menu, *context_menu_model_);
+  // The menu is fully built by this point, so an interceptor sees exactly what
+  // the operator would. Returning instead of exec()ing is the whole diversion.
+  if (popup_menu_interceptor_) {
+    popup_menu_interceptor_(menu);
+    return;
+  }
   menu.exec(point);
 }
 

@@ -2,6 +2,11 @@
 
 #include "base/any_executor.h"
 
+#include <QModelIndex>
+#include <QString>
+
+#include <span>
+
 class MainWindow;
 class NodeService;
 class OpenedView;
@@ -13,6 +18,20 @@ class Tree;
 }
 
 namespace scada::screenshot_generator {
+
+// Walks the Explorer tree from its visible root down `path` (one display name
+// per level), fetching and expanding each level on the way, and returns the
+// index of the last name. The rows are lazily loaded, so a level has to be
+// fetched and settled before the next name can be looked for.
+//
+// An invalid index means a step was not found, and the failure names the level
+// and the rows it did see: callers use this to put a selection on screen, and
+// a silently missed row would publish the state the selection exists to
+// replace.
+QModelIndex FindTreeRowByPath(scada::aui::Tree& tree,
+                              AnyExecutor executor,
+                              NodeService& node_service,
+                              std::span<const QString> path);
 
 // Expands and settles the Explorer tree so the capture grabs laid-out rows
 // rather than an empty viewport. The caller frames the dock first; `tree_dock`

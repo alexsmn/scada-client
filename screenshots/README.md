@@ -1,6 +1,6 @@
 # Screen gallery
 
-75 captures of the Telecontrol SCADA client, rendered offscreen from a fixture by [`client_screenshot_generator`](../tools/screenshot_generator) and tracked in this repository — so a UI change lands as a reviewable image diff rather than being noticed the next time somebody refreshes the manual.
+81 captures of the Telecontrol SCADA client, rendered offscreen from a fixture by [`client_screenshot_generator`](../tools/screenshot_generator) and tracked in this repository — so a UI change lands as a reviewable image diff rather than being noticed the next time somebody refreshes the manual.
 
 Each capture is rendered in both appearances. The client follows the host OS light/dark preference by default, so both are what operators actually see. The previews below are the dark render; the light one is linked beside it.
 
@@ -95,12 +95,18 @@ Modal and overlay surfaces. (23)
 
 ## Menus
 
-Menus and context menus, captured open. (2)
+Menus and context menus, captured open. (8)
 
 | Capture | Preview | |
 |---|---|---|
+| **Menu create object**<br>`menu-create-object.png` | <img src="menu-create-object.png" alt="Menu create object" width="360"> | [Light](menu-create-object-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/data-items/) |
+| **Menu delete object**<br>`menu-delete-object.png` | <img src="menu-delete-object.png" alt="Menu delete object" width="360"> | [Light](menu-delete-object-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/data-items/) |
 | **Menu excel**<br>`menu-excel.png` | <img src="menu-excel.png" alt="Menu excel" width="360"> | [Light](menu-excel-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/excel/) |
+| **Menu parameters elements copy**<br>`menu-parameters-elements-copy.png` | <img src="menu-parameters-elements-copy.png" alt="Menu parameters elements copy" width="360"> | [Light](menu-parameters-elements-copy-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/displays/) |
+| **Menu parameters elements**<br>`menu-parameters-elements.png` | <img src="menu-parameters-elements.png" alt="Menu parameters elements" width="360"> | [Light](menu-parameters-elements-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/displays/) |
+| **Menu parameters**<br>`menu-parameters.png` | <img src="menu-parameters.png" alt="Menu parameters" width="360"> | [Light](menu-parameters-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/data-items/) |
 | **Menu summary**<br>`menu-summary.png` | <img src="menu-summary.png" alt="Menu summary" width="360"> | [Light](menu-summary-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/summary/) |
+| **Ti delete**<br>`ti-delete.png` | <img src="ti-delete.png" alt="Ti delete" width="360"> | [Light](ti-delete-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/development/) |
 
 ## Reading a diff
 
