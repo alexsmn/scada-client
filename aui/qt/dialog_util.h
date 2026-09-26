@@ -1,7 +1,6 @@
 #pragma once
 
 #include "aui/qt/message_loop_qt.h"
-#include "base/async_completion.h"
 #include "base/awaitable.h"
 #include "base/callback_awaitable.h"
 
@@ -22,6 +21,19 @@ struct DialogCompletion {
   std::optional<T> result;
 };
 
+// Every awaitable modal helper below has the same contract for a dialog that
+// is destroyed while still open -- typically because its parent went first,
+// which deletes the child without emitting `accepted`, `rejected` or
+// `finished`: the awaiting coroutine chain is ABANDONED. It is destroyed, never
+// resumed, and nothing after the `co_await` runs.
+//
+// That is deliberate. Resuming with a rejection instead would run callers'
+// post-dialog code after the widgets it refers to are gone -- e.g.
+// `WriteModel::ReportWriteErrorAsync` then calls a completion handler that
+// captures the deleted `WriteDialog`'s `this`. The cost is that an outer party
+// awaiting the chain's result never receives one, so do not gate shutdown on a
+// modal completing. Pinned by the `*AbandonsAwaiterWhenParentDestroyed` cases
+// in dialog_util_unittest.cpp.
 template <class T, class Mapper>
 inline Awaitable<ModalDialogResult<T, Mapper>> RunModalDialogAsync(
     std::unique_ptr<T> dialog,
@@ -93,28 +105,17 @@ inline void ShowSelfOwnedModalDialog(std::unique_ptr<T> dialog) {
   dialog_ptr->show();
 }
 
+// Shows `dialog` modally and completes when it is accepted; a rejected dialog
+// completes by throwing.
+//
+// Built on `RunModalDialogAsync` like its siblings so that all of them share
+// one answer to a dialog that never finishes (see the note above it). It used
+// to wait on an `AsyncCompletion` gate instead, whose waiter list held the
+// awaiting frame while the frame held the gate -- so a dialog destroyed with
+// its parent leaked that frame and everything it captured.
 template <class T>
 inline Awaitable<void> StartOwnedModalDialog(std::unique_ptr<T> dialog) {
-  auto executor = co_await boost::asio::this_coro::executor;
-  scada::base::AsyncCompletion completion{executor};
-  T* dialog_ptr = dialog.release();
-
-  QObject::connect(dialog_ptr, &QDialog::accepted,
-                   [dialog_ptr, completion]() mutable {
-                     completion.Complete();
-                     dialog_ptr->deleteLater();
-                   });
-
-  QObject::connect(dialog_ptr, &QDialog::rejected,
-                   [dialog_ptr, completion]() mutable {
-                     completion.Fail(std::make_exception_ptr(std::exception{}));
-                     dialog_ptr->deleteLater();
-                   });
-
-  dialog_ptr->setModal(true);
-  dialog_ptr->show();
-
-  co_await completion.Wait();
+  co_await RunModalDialogAsync(std::move(dialog), [](T&) { return true; });
   co_return;
 }
 

@@ -7,6 +7,7 @@
 #include <QDialog>
 #include <QEventLoop>
 #include <QPointer>
+#include <QWidget>
 #include <gtest/gtest.h>
 
 #include <chrono>
@@ -32,6 +33,41 @@ void ProcessEventsUntil(Predicate predicate) {
         QEventLoop::AllEvents | QEventLoop::WaitForMoreEvents, 20);
     std::this_thread::sleep_for(std::chrono::milliseconds{1});
   }
+}
+
+// Starts `awaitable` on a modal dialog parented to a widget, destroys the
+// parent while the dialog is still open, and reports what became of the
+// awaiting coroutine: whether it was resumed, and whether its frame was
+// released. A parent destroyed first deletes its child dialog without emitting
+// `accepted`, `rejected` or `finished` -- which is how ⌘Q, or a main window
+// closing, takes a modal down.
+struct ParentDestroyedOutcome {
+  bool resumed = false;
+  bool frame_released = false;
+};
+
+template <class T, class StartFn>
+ParentDestroyedOutcome DestroyParentOfOpenDialog(StartFn start) {
+  auto parent = std::make_unique<QWidget>();
+  auto dialog = std::make_unique<QDialog>(parent.get());
+  QPointer<QDialog> tracker{dialog.get()};
+
+  auto result =
+      scada::aui::qt::test::StartAwaitable<T>(start(std::move(dialog)));
+  ProcessEventsUntil([&] { return tracker && tracker->isVisible(); });
+  EXPECT_TRUE(tracker && tracker->isVisible());
+
+  parent.reset();
+  EXPECT_TRUE(tracker.isNull());
+
+  // `result` is shared with the spawned coroutine's frame, so its use count
+  // drops to one exactly when that frame is destroyed. Frame destruction is
+  // posted through the executor, hence the drain.
+  ProcessEventsUntil([&] { return result->done || result.use_count() == 1; });
+  QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+  ProcessEventsUntil([&] { return result.use_count() == 1; });
+
+  return {.resumed = result->done, .frame_released = result.use_count() == 1};
 }
 
 }  // namespace
@@ -172,4 +208,42 @@ TEST_F(DialogUtilTest, StartFinishedModalDialogRejectsMapperException) {
   ASSERT_TRUE(scada::aui::qt::test::IsAwaitableReady(result));
   EXPECT_THROW(scada::aui::qt::test::GetAwaitableResult(result),
                std::runtime_error);
+}
+
+// Regression for 727. A dialog whose parent is destroyed while it is open
+// finishes neither way, so the awaiter is ABANDONED: its coroutine chain is
+// destroyed without being resumed. That is the contract the header states, and
+// it is deliberate -- resuming with a rejection would run the caller's
+// post-dialog code (WriteModel::ReportWriteErrorAsync calls a completion
+// handler capturing the since-deleted WriteDialog's `this`) after the widgets
+// it refers to are gone. `StartOwnedModalDialog` used to wait on an
+// `AsyncCompletion` gate whose waiter list held the awaiting frame while the
+// frame held the gate, so the frame leaked with everything it captured.
+TEST_F(DialogUtilTest, OwnedModalDialogAbandonsAwaiterWhenParentDestroyed) {
+  auto outcome =
+      DestroyParentOfOpenDialog<void>([](std::unique_ptr<QDialog> dialog) {
+        return StartOwnedModalDialog(std::move(dialog));
+      });
+  EXPECT_FALSE(outcome.resumed);
+  EXPECT_TRUE(outcome.frame_released);
+}
+
+TEST_F(DialogUtilTest, MappedModalDialogAbandonsAwaiterWhenParentDestroyed) {
+  auto outcome =
+      DestroyParentOfOpenDialog<int>([](std::unique_ptr<QDialog> dialog) {
+        return StartMappedModalDialog(std::move(dialog),
+                                      [](QDialog&) { return 42; });
+      });
+  EXPECT_FALSE(outcome.resumed);
+  EXPECT_TRUE(outcome.frame_released);
+}
+
+TEST_F(DialogUtilTest, FinishedModalDialogAbandonsAwaiterWhenParentDestroyed) {
+  auto outcome =
+      DestroyParentOfOpenDialog<int>([](std::unique_ptr<QDialog> dialog) {
+        return StartFinishedModalDialog(
+            std::move(dialog), [](QDialog&, int result) { return result; });
+      });
+  EXPECT_FALSE(outcome.resumed);
+  EXPECT_TRUE(outcome.frame_released);
 }
