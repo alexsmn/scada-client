@@ -2,6 +2,9 @@
 
 #include <boost/program_options.hpp>
 
+#include <string>
+#include <string_view>
+
 namespace client {
 
 void InitProgramOptions(int argc, char* argv[]);

@@ -3,6 +3,8 @@
 #include "base/check.h"
 #include "scada/event.h"
 
+#include <algorithm>
+
 // Windows.h #defines ReportEvent to ReportEventA/W. Undo it.
 #ifdef ReportEvent
 #undef ReportEvent

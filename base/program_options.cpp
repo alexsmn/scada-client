@@ -1,5 +1,8 @@
 #include "base/program_options.h"
 
+#include <string>
+#include <string_view>
+
 namespace client {
 
 namespace {

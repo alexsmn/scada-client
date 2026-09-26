@@ -1,7 +1,9 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 #include <unordered_map>
+#include <vector>
 
 // TODO: Rename to `FileTypeRegistry` or `FileExtensionRegistry`.
 class FileRegistry {

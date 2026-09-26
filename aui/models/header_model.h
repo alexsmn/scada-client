@@ -7,6 +7,7 @@
 #include <boost/signals2/signal.hpp>
 #include <functional>
 #include <string>
+#include <vector>
 
 namespace scada::aui {
 

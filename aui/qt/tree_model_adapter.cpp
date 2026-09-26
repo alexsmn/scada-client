@@ -16,6 +16,8 @@
 #include <QPixmap>
 #include <QSize>
 
+#include <algorithm>
+
 namespace scada::aui {
 
 namespace {

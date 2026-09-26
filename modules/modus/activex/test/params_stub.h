@@ -4,6 +4,7 @@
 
 #include <atlbase.h>
 
+#include <algorithm>
 #include <atlcom.h>
 #include <span>
 #include <vector>

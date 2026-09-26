@@ -1,5 +1,7 @@
 #include "profile/profile_envelope.h"
 
+#include <string_view>
+
 namespace profile_envelope {
 namespace {
 

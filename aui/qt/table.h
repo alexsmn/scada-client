@@ -7,8 +7,10 @@
 
 #include <QPoint>
 #include <QTableView>
+#include <memory>
 #include <span>
 #include <string_view>
+#include <vector>
 
 class QSortFilterProxyModel;
 class QEvent;

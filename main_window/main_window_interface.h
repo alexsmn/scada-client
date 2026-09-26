@@ -2,6 +2,9 @@
 
 #include "base/awaitable.h"
 
+#include <string_view>
+#include <vector>
+
 class OpenedViewInterface;
 class Page;
 class WindowDefinition;

@@ -16,6 +16,7 @@
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <stdexcept>
+#include <unordered_map>
 
 namespace {
 

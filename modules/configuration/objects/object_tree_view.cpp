@@ -12,6 +12,8 @@
 #include "profile/profile.h"
 #include "ui/common/client_utils.h"
 
+#include <unordered_map>
+
 namespace {
 
 ConfigurationTreeNode* FindFirstValueTreeNode(ConfigurationTreeNode& node) {

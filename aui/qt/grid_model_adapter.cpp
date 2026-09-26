@@ -9,6 +9,8 @@
 #include <QMimeData>
 #include <QSize>
 
+#include <algorithm>
+
 namespace scada::aui {
 
 namespace {

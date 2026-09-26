@@ -3,8 +3,11 @@
 #include "base/time/time_wire_codec.h"
 
 #include <chrono>
+#include <unordered_map>
 
 #include "base/time_utils.h"
+#include "graph/graph_view.h"
+#include "graph/metrix_graph.h"
 #include "profile/profile.h"
 #include "profile/window_definition_util.h"
 #include <boost/algorithm/string/predicate.hpp>

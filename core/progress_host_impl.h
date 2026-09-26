@@ -4,6 +4,8 @@
 
 #include <boost/signals2/signal.hpp>
 
+#include <vector>
+
 class ProgressHostImpl : public ProgressHost {
  public:
   // ProgressHost

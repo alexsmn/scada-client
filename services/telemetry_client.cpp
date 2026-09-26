@@ -1,6 +1,8 @@
 #include "services/telemetry_client.h"
 
+#include <chrono>
 #include <memory>
+#include <string>
 
 #pragma warning(push)
 #pragma warning(disable : 4702)

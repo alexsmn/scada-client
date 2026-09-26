@@ -8,6 +8,8 @@
 #include <QPalette>
 #include <gtest/gtest.h>
 
+#include <vector>
+
 namespace {
 
 class TestTableModel final : public scada::aui::TableModel {

@@ -5,9 +5,11 @@
 #include <boost/json.hpp>
 
 #include <QTreeView>
+#include <memory>
 #include <set>
 #include <span>
 #include <string_view>
+#include <vector>
 
 class QEvent;
 

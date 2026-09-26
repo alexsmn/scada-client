@@ -4,6 +4,7 @@
 #include "base/cancelation.h"
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 class DialogService;

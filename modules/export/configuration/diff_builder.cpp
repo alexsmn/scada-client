@@ -3,6 +3,7 @@
 #include "export/configuration/export_data.h"
 
 #include <algorithm>
+#include <unordered_map>
 #include <unordered_set>
 
 class DiffDataBuilder {

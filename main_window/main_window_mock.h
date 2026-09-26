@@ -4,6 +4,9 @@
 
 #include <gmock/gmock.h>
 
+#include <string_view>
+#include <vector>
+
 class MockMainWindow : public MainWindowInterface {
  public:
   MockMainWindow() {

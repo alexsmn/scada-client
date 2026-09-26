@@ -14,6 +14,7 @@
 #include <boost/asio/post.hpp>
 
 #include <span>
+#include <unordered_map>
 
 namespace {
 

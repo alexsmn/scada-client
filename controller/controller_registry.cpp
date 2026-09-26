@@ -2,6 +2,8 @@
 
 #include "base/check.h"
 
+#include <map>
+
 namespace {
 
 ControllerRegistry* g_controller_registry = nullptr;

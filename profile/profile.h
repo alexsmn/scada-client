@@ -11,6 +11,7 @@
 
 #include <boost/json.hpp>
 #include <boost/signals2/signal.hpp>
+#include <functional>
 #include <map>
 
 struct MainWindowDef {

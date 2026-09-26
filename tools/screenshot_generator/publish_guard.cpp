@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <ostream>
 #include <utility>
 
 int RecordedFailureCount() {

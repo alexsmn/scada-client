@@ -11,6 +11,8 @@
 #include <QPalette>
 #include <QPushButton>
 
+#include <memory>
+
 namespace scada::aui {
 
 QWidget* ItemDelegate::createEditor(QWidget* parent,

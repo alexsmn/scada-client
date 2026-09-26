@@ -5,6 +5,7 @@
 #include "timed_data/timed_data_spec.h"
 
 #include <boost/signals2/connection.hpp>
+#include <map>
 #include <optional>
 
 class BlinkerManager;

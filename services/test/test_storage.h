@@ -1,5 +1,13 @@
 #pragma once
 
+#include "common/node_state.h"
+#include "model/namespaces.h"
+
+#include <algorithm>
+#include <memory>
+#include <stdexcept>
+#include <unordered_map>
+
 class TestStorage {
  public:
   explicit TestStorage(scada::NodeId root_node_id)

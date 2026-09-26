@@ -6,6 +6,7 @@
 
 #include <filesystem>
 #include <memory>
+#include <ostream>
 
 class NodeService;
 class DialogService;

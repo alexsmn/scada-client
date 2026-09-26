@@ -3,6 +3,7 @@
 #include "base/check.h"
 #include "base/json.h"
 
+#include <algorithm>
 #include <memory>
 #include <optional>
 #include <vector>

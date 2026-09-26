@@ -2,6 +2,8 @@
 
 #include "base/check.h"
 
+#include <algorithm>
+
 namespace {
 
 void Merge(const ProgressStatus& from, ProgressStatus& to) {

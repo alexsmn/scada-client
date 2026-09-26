@@ -4,6 +4,9 @@
 #include "aui/point.h"
 
 #include <functional>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 typedef std::function<void()> DoubleClickHandler;
 typedef std::function<void()> SelectionChangedHandler;

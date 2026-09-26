@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include <chrono>
+#include <functional>
 #include <thread>
 
 namespace scada::screenshot_generator {

@@ -6,6 +6,8 @@
 #include "scada/session_debugger.h"
 
 #include <chrono>
+#include <unordered_map>
+#include <vector>
 
 namespace scada {
 class SessionService;
