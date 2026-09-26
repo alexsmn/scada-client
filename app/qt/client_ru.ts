@@ -2574,6 +2574,14 @@
         <source>The response is too large to send</source>
         <translation>Ответ слишком велик для передачи</translation>
     </message>
+    <message>
+        <source>The object is not in a state that allows this operation</source>
+        <translation>Состояние объекта не допускает эту операцию</translation>
+    </message>
+    <message>
+        <source>The value cannot be read</source>
+        <translation>Значение недоступно для чтения</translation>
+    </message>
     <!-- Data-quality flags, rendered as a space-separated run
          (core/scada/qualifier.cpp). Kept abbreviated exactly as before: the
          strip sits in a narrow grid cell. -->
