@@ -45,6 +45,8 @@ target_link_libraries(client_qt_app_shared PUBLIC
   client_common
   client_configuration_qt
   client_controller_qt
+  # The right dock's specialist panels, registered by ClientApplication.
+  client_device_diagnostics_qt
   client_events_qt
   client_export_configuration_qt
   client_export_excel_qt
@@ -61,6 +63,8 @@ target_link_libraries(client_qt_app_shared PUBLIC
   client_portfolio_qt
   client_print_service_qt
   client_properties_qt
+  client_transmission_rules_qt
+  client_user_access_qt
   scada_core_opcua_client
 )
 if(TARGET client_modus_qt)

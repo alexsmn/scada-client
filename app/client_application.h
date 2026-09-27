@@ -70,6 +70,7 @@ class MasterDataServices;
 class NodeService;
 class NodeServiceProgressTracker;
 class OpenedViewCommandRegistry;
+class SelectionPanelRegistry;
 class PortfolioModule;
 class Profile;
 class PrintModule;
@@ -230,6 +231,10 @@ class ClientApplication : private ClientApplicationContext {
   std::unique_ptr<ControllerRegistry> controller_registry_;
   std::unique_ptr<UiCommandRegistry> ui_command_registry_;
   std::unique_ptr<OpenedViewCommandRegistry> opened_view_command_registry_;
+  // The right dock's specialist panels, contributed by their modules.
+  // Registered once, in the constructor: which panels exist does not depend on
+  // the session, and every main window of every login builds from it.
+  std::unique_ptr<SelectionPanelRegistry> selection_panel_registry_;
 
   std::shared_ptr<MasterDataServices> master_data_services_;
 

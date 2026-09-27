@@ -12,7 +12,9 @@
 #include "controller/command_ui_registry.h"
 #include "controller/controller_factory_impl.h"
 #include "controller/controller_registry.h"
+#include "controller/qt/selection_panel_registry.h"
 #include "core/core_module.h"
+#include "device_diagnostics/qt/device_diagnostics_selection_panel.h"
 #include "events/event_module.h"
 #include "events/local_events.h"
 #include "export/configuration/export_configuration_module.h"
@@ -48,6 +50,8 @@
 #include "services/speech_service_impl.h"
 #include "services/task_manager_impl.h"
 #include "timed_data/timed_data_service_factory.h"
+#include "transmission_rules/qt/transmission_rule_selection_panel.h"
+#include "user_access/qt/user_access_selection_panel.h"
 
 #include <boost/json.hpp>
 
@@ -139,9 +143,15 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
       ui_command_registry_{std::make_unique<UiCommandRegistry>()},
       opened_view_command_registry_{
           std::make_unique<OpenedViewCommandRegistry>()},
+      selection_panel_registry_{std::make_unique<SelectionPanelRegistry>()},
       master_data_services_{std::make_shared<MasterDataServices>(executor_)},
       quit_completion_{executor_} {
   logger_ = std::make_shared<BoostLogger>(LOG_NAME("client"));
+
+  // Registration order is tab order after the Inspector.
+  RegisterDeviceDiagnosticsSelectionPanel(*selection_panel_registry_);
+  RegisterUserAccessSelectionPanel(*selection_panel_registry_);
+  RegisterTransmissionRuleSelectionPanel(*selection_panel_registry_);
 
   transport_factory_ = transport::CreateTransportFactory();
 
@@ -688,7 +698,8 @@ void ClientApplication::CreateMainWindow(const PostLoginContext& ctx) {
           .ui_command_registry_ = *ui_command_registry_,
           .opened_view_commands_ = *opened_view_command_registry_,
           .controller_factory_ = std::bind_front(
-              &ControllerFactoryImpl::CreateController, controller_factory)});
+              &ControllerFactoryImpl::CreateController, controller_factory),
+          .selection_panel_registry_ = selection_panel_registry_.get()});
   shutdown_stack_.Push([this] { main_window_module_.reset(); });
 }
 

@@ -31,6 +31,7 @@ class NodeService;
 class Profile;
 class ProgressHost;
 class SelectionCommandRouter;
+class SelectionPanelRegistry;
 class UiCommandRegistry;
 class ViewManager;
 
@@ -99,4 +100,9 @@ struct MainWindowContext {
   // server is the authority regardless; this only decides whether a control
   // button is offered live or disabled with its reason.
   std::function<bool()> has_call_permission_;
+
+  // Optional: the specialist panels feature modules contribute to the right
+  // dock beside the Inspector. Null in minimal/test contexts, which then get
+  // the Inspector alone.
+  const SelectionPanelRegistry* selection_panel_registry_ = nullptr;
 };

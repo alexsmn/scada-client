@@ -13,6 +13,8 @@ client_module_link_libraries(client_transmission_rules
     node_service
   PRIVATE
     aui
+    # SelectionPanelRegistry: this module contributes a right-dock panel.
+    client_controller
     # TransmissionItemType / data-item type ids.
     scada_model
 )

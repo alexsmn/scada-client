@@ -33,6 +33,7 @@ class Profile;
 class PrintService;
 class ProgressHost;
 class SelectionCommandRouter;
+class SelectionPanelRegistry;
 class SpeechService;
 class TaskManager;
 class TimedDataService;
@@ -79,6 +80,9 @@ struct MainWindowModuleContext {
   OpenedViewCommandRegistry& opened_view_commands_;
   // TODO: Keep either controller factory or controller registry.
   ControllerFactory controller_factory_;
+  // Optional: the right dock's specialist panels. Null gives each main window
+  // the Inspector alone.
+  const SelectionPanelRegistry* selection_panel_registry_ = nullptr;
 };
 
 class MainWindowModule : private MainWindowModuleContext {

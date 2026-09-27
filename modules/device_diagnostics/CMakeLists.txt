@@ -13,6 +13,8 @@ client_module_link_libraries(client_device_diagnostics
     node_service
   PRIVATE
     aui
+    # SelectionPanelRegistry: this module contributes a right-dock panel.
+    client_controller
     # Device diagnostic variable ids.
     scada_model
     # Live counter/link specs.

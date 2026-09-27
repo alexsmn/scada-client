@@ -14,10 +14,10 @@
 #include "controller/command_manager.h"
 #include "controller/command_ui_registry.h"
 #include "controller/controller.h"
+#include "controller/qt/selection_panel_registry.h"
 #include "controller/selection_model.h"
 #include "controller/series_model.h"
 #include "controller/window_info.h"
-#include "device_diagnostics/qt/device_diagnostics_panel.h"
 #include "filesystem/file_cache.h"
 #include "inspector/qt/inspector_panel.h"
 #include "main_window/activity_bar_qt.h"
@@ -40,11 +40,7 @@
 #include "main_window/tag_search_index.h"
 #include "main_window/view_manager.h"
 #include "main_window/window_definition_builder.h"
-#include "model/devices_node_ids.h"
-#include "model/security_node_ids.h"
-#include "modules/device_diagnostics/device_diagnostics_fetch.h"
 #include "modules/inspector/limit_band.h"
-#include "modules/transmission_rules/transmission_rule_fetch.h"
 #include "modules/write/write_availability.h"
 #include "node_service/node_util.h"
 #include "profile/profile.h"
@@ -53,10 +49,8 @@
 #include "scada/session_service.h"
 #include "scada/standard_node_ids.h"
 #include "settings/qt/settings_panel.h"
-#include "transmission_rules/qt/transmission_rule_inspector.h"
 #include "ui/common/client_utils.h"
 #include "ui/qt/client_utils_qt.h"
-#include "user_access/qt/user_access_panel.h"
 
 #include <QAction>
 #include <QApplication>
@@ -228,9 +222,7 @@ MainWindow::MainWindow(MainWindowContext&& context)
   WireRailPages();
   CreateContextBar();
   CreateInspectorPanel();
-  CreateDiagnosticsPanel();
-  CreateUserAccessPanel();
-  CreateTransmissionRulePanel();
+  CreateSelectionPanels();
   TabifySpecialistDocks();
   // The palette's tag index is built here but deliberately NOT started here —
   // see StartTagSearchBrowse(), called once the first page is open.
@@ -1183,118 +1175,39 @@ void MainWindow::CreateInspectorPanel() {
   inspector_dock_ = dock;
 }
 
-void MainWindow::CreateDiagnosticsPanel() {
-  // The device-wide actions each reuse a selection-scoped device command,
-  // resolved against the active selection exactly like the toolbar/menu path —
-  // Metrics trend (ID_OPEN_DEVICE_METRICS) and Open log (ID_OPEN_EVENTS, which
-  // opens the event journal).
-  //
-  // "Reconnect now" is NOT one of them. It used to be wired to ID_ITEM_ENABLE,
-  // which re-enables a disabled device and is a different action wearing the
-  // mockup's label. It is now the protocol registry's link action: an OPC UA
-  // Method on the device's parent LINK (ADR 0007), supplied per device by the
-  // panel itself, because only some protocols have one and only some devices
-  // have a link.
-  auto make_action = [this](unsigned command_id,
-                            std::u16string label) -> DiagnosticAction {
-    auto resolve = [this, command_id]() -> CommandHandler* {
-      return ResolveViewCommand(command_id);
-    };
-    return DiagnosticAction{
-        .label = std::move(label),
-        .execute =
-            [resolve, command_id] {
-              CommandHandler* handler = resolve();
-              if (handler && handler->IsCommandEnabled(command_id))
-                handler->ExecuteCommand(command_id);
-            },
-        .is_enabled =
-            [resolve, command_id] {
-              CommandHandler* handler = resolve();
-              return handler && handler->IsCommandEnabled(command_id);
-            },
-        // These are gated by the selection, not by a right, so the reason an
-        // operator can act on is to change what is selected.
-        .disabled_reason =
-            Translate("Not available for the current selection")};
-  };
-
-  DeviceDiagnosticsPanelContext context;
-  context.actions.push_back(
-      make_action(ID_OPEN_DEVICE_METRICS, Translate("Metrics trend")));
-  context.actions.push_back(make_action(ID_OPEN_EVENTS, Translate("Open log")));
-  context.call_link_method = call_node_method_;
-  context.can_call = has_call_permission_;
-  // The panel's rows come from the device's children and its parent link, which
-  // a selection makes no more resident here than it does for the Inspector's
-  // limit bands — and an unfetched parent costs the operator the Reconnect
-  // action on a device whose link is down.
-  context.load = [this](const NodeRef& device, std::function<void()> redraw) {
-    CoSpawn(executor_,
-            [device, redraw = std::move(redraw)]() -> Awaitable<void> {
-              co_await FetchDeviceDiagnostics(device);
-              redraw();
-            });
-  };
-
-  diagnostics_ = MakeDeviceDiagnosticsPanel(std::move(context));
-  if (!diagnostics_)
+void MainWindow::CreateSelectionPanels() {
+  if (!selection_panel_registry_)
     return;
 
-  auto* dock = new QDockWidget(
-      QString::fromStdU16String(Translate("Device diagnostics")), this);
-  dock->setObjectName(QStringLiteral("DeviceDiagnosticsDock"));
-  dock->setWidget(diagnostics_);
-  addDockWidget(Qt::RightDockWidgetArea, dock);
-  // Share the right dock area with the Inspector; the device-diagnostics tab
-  // comes to the front only when a device is selected.
-  if (inspector_dock_)
-    tabifyDockWidget(inspector_dock_, dock);
-}
+  const SelectionPanelContext context{
+      .executor = executor_,
+      .resolve_command =
+          [this](unsigned command_id) {
+            return ResolveViewCommand(command_id);
+          },
+      .node_service = node_service_,
+      .attribute_service = attribute_service_,
+      .call_node_method = call_node_method_,
+      .has_call_permission = has_call_permission_};
 
-void MainWindow::CreateUserAccessPanel() {
-  user_access_ = MakeUserAccessPanel();
-  if (!user_access_)
-    return;
+  for (const SelectionPanelFactory& factory :
+       selection_panel_registry_->factories()) {
+    std::unique_ptr<SelectionPanel> panel = factory(context);
+    if (!panel)
+      continue;
 
-  auto* dock = new QDockWidget(
-      QString::fromStdU16String(Translate("Access rights")), this);
-  dock->setObjectName(QStringLiteral("UserAccessDock"));
-  dock->setWidget(user_access_);
-  addDockWidget(Qt::RightDockWidgetArea, dock);
-  // Shares the right dock; fronted only when a user is selected.
-  if (inspector_dock_)
-    tabifyDockWidget(inspector_dock_, dock);
-}
+    auto* dock =
+        new QDockWidget(QString::fromStdU16String(panel->title()), this);
+    dock->setObjectName(QString::fromStdString(panel->object_name()));
+    dock->setWidget(&panel->widget());
+    addDockWidget(Qt::RightDockWidgetArea, dock);
+    // Shares the right dock with the Inspector; a panel's tab comes to the
+    // front only when the operator picks it.
+    if (inspector_dock_)
+      tabifyDockWidget(inspector_dock_, dock);
 
-void MainWindow::CreateTransmissionRulePanel() {
-  transmission_rule_ = MakeTransmissionRuleInspector();
-  if (!transmission_rule_)
-    return;
-
-  // Same bargain as the Inspector's limit bands: the panel reads a rule the
-  // selection has not made resident — here in two hops, the second one a NodeId
-  // property naming a peer node — so the shell owns the fetch and the panel
-  // asks for it.
-  transmission_rule_->SetLoadHandler([this](const NodeRef& rule,
-                                            std::function<void()> redraw) {
-    CoSpawn(executor_, [rule, redraw = std::move(redraw)]() -> Awaitable<void> {
-      co_await FetchTransmissionRule(rule);
-      redraw();
-    });
-  });
-
-  auto* dock = new QDockWidget(
-      QString::fromStdU16String(Translate("Transmission rule")), this);
-  dock->setObjectName(QStringLiteral("TransmissionRuleDock"));
-  dock->setWidget(transmission_rule_);
-  // No ApplyHandler is wired here: the shell has no TaskManager, so the panel
-  // presents the rule read-only. Editing rides the existing transmission grid,
-  // which writes SourceAddress through its own TaskManager.
-  addDockWidget(Qt::RightDockWidgetArea, dock);
-  // Shares the right dock; fronted only when a transmission rule is selected.
-  if (inspector_dock_)
-    tabifyDockWidget(inspector_dock_, dock);
+    selection_panels_.push_back(std::move(panel));
+  }
 }
 
 void MainWindow::TabifySpecialistDocks() {
@@ -1307,9 +1220,9 @@ void MainWindow::TabifySpecialistDocks() {
   // done when they were created — which is how four title bars ended up
   // sharing the right column, each one squeezing the panel above it. Re-tabify
   // after every restore.
-  for (const char* name :
-       {"DeviceDiagnosticsDock", "UserAccessDock", "TransmissionRuleDock"}) {
-    if (auto* dock = findChild<QDockWidget*>(QString::fromLatin1(name));
+  for (const std::unique_ptr<SelectionPanel>& panel : selection_panels_) {
+    if (auto* dock = findChild<QDockWidget*>(
+            QString::fromStdString(panel->object_name()));
         dock && dock != inspector_dock_) {
       tabifyDockWidget(inspector_dock_, dock);
     }
@@ -1363,61 +1276,24 @@ void MainWindow::OnSelectionChanged() {
   // The breadcrumb's last segment is the selection, so it moves with it.
   RefreshBreadcrumb();
 
-  if (inspector_ || diagnostics_ || user_access_ || transmission_rule_) {
-    OpenedView* active = GetActiveView();
-    SelectionModel* selection =
-        active ? active->controller().GetSelectionModel() : nullptr;
-    if (inspector_) {
-      if (selection)
-        inspector_->ShowSelection(*selection);
-      else
-        inspector_->Clear();
-      // The plotted-series section, for a view that plots something. Every
-      // other view supplies no SeriesModel and the section stays absent — an
-      // absent section rather than an empty one, because "this view has no
-      // series" is not a fact about the selection worth a row.
-      inspector_->ShowSeries(ActiveSeriesView());
-    }
-    if (diagnostics_) {
-      // Only a single device selection carries diagnostics; anything else
-      // clears the panel.
-      if (selection && !selection->empty() && !selection->multiple() &&
-          IsInstanceOf(selection->node(), scada::devices::id::DeviceType)) {
-        diagnostics_->ShowDevice(selection->node(),
-                                 selection->timed_data_service());
-      } else {
-        diagnostics_->Clear();
-      }
-    }
-    if (user_access_) {
-      // A single user-node selection fills the RBAC panel; anything else
-      // clears. Without an attribute service there is no way to read what the
-      // Roles grant, and the panel must not fall back to assuming a map — so
-      // the selection clears rather than showing an invented breakdown.
-      if (selection && !selection->empty() && !selection->multiple() &&
-          attribute_service_ &&
-          IsInstanceOf(selection->node(), scada::security::id::UserType)) {
-        // The node carries the account's NAME; the panel reads the Roles
-        // themselves from the RoleSet, and what they grant from the server's
-        // published RolePermissions.
-        user_access_->ShowUser(selection->node(), *node_service_,
-                               *attribute_service_, executor_);
-      } else {
-        user_access_->Clear();
-      }
-    }
-    if (transmission_rule_) {
-      // A single transmission-item selection fills the rule inspector; anything
-      // else clears.
-      if (selection && !selection->empty() && !selection->multiple() &&
-          IsInstanceOf(selection->node(),
-                       scada::devices::id::TransmissionItemType)) {
-        transmission_rule_->ShowRule(selection->node());
-      } else {
-        transmission_rule_->Clear();
-      }
-    }
+  OpenedView* active = GetActiveView();
+  SelectionModel* selection =
+      active ? active->controller().GetSelectionModel() : nullptr;
+  if (inspector_) {
+    if (selection)
+      inspector_->ShowSelection(*selection);
+    else
+      inspector_->Clear();
+    // The plotted-series section, for a view that plots something. Every
+    // other view supplies no SeriesModel and the section stays absent — an
+    // absent section rather than an empty one, because "this view has no
+    // series" is not a fact about the selection worth a row.
+    inspector_->ShowSeries(ActiveSeriesView());
   }
+  // Each specialist panel decides which selections it shows; the shell only
+  // hands the selection over.
+  for (const std::unique_ptr<SelectionPanel>& panel : selection_panels_)
+    panel->ShowSelection(selection);
 
   // Null before CreateToolbar has run and after the destructor has begun.
   if (command_actions_)

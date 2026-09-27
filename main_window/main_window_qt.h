@@ -26,13 +26,11 @@ class Breadcrumb;
 class CommandField;
 class PageSwitcher;
 class PaneModeController;
-class DeviceDiagnosticsPanel;
 class InspectorPanel;
 struct InspectorOpenAction;
 struct InspectorSeriesView;
 class SeriesModel;
-class UserAccessPanel;
-class TransmissionRuleInspector;
+class SelectionPanel;
 class TagSearchIndex;
 class QAction;
 class QDockWidget;
@@ -179,15 +177,9 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // empty-view opener. `Group Table` sits in the same menu and is not one,
   // because it is a selection command over the parent group.
   std::vector<MenuContribution> EmptyViewCommands();
-  // The right Device-diagnostics dock (backlog 5.0): reflects a selected
-  // device's link status + live traffic/polling counters. Tabified with the
-  // Inspector dock.
-  void CreateDiagnosticsPanel();
-  // The right RBAC dock: reflects a selected user's role + permissions.
-  void CreateUserAccessPanel();
-  // The right Transmission-rule dock: reflects a selected transmission item
-  // (source → destination IOA). Tabified with the Inspector dock.
-  void CreateTransmissionRulePanel();
+  // Builds one dock per panel the feature modules registered, tabified onto
+  // the Inspector in registration order.
+  void CreateSelectionPanels();
   // Wires the rail's pages group: the page buttons, the "+" that creates one,
   // and the per-page context menu.
   void WireRailPages();
@@ -313,17 +305,10 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // onto it.
   QDockWidget* inspector_dock_ = nullptr;
 
-  // Right Device-diagnostics dock. Filled from OnSelectionChanged when
-  // the active view's selection is a device; cleared otherwise.
-  DeviceDiagnosticsPanel* diagnostics_ = nullptr;
-
-  // Right RBAC dock. Filled from OnSelectionChanged when a user node
-  // is selected.
-  UserAccessPanel* user_access_ = nullptr;
-
-  // Right Transmission-rule dock. Filled from OnSelectionChanged when
-  // the selection is a transmission item; cleared otherwise.
-  TransmissionRuleInspector* transmission_rule_ = nullptr;
+  // The right dock's specialist panels, contributed by feature modules
+  // through the SelectionPanelRegistry. Each is fed every selection change and
+  // decides for itself which selections it shows.
+  std::vector<std::unique_ptr<SelectionPanel>> selection_panels_;
 
   // Flat tag index for the command palette's tag search (null when no node
   // service is available).

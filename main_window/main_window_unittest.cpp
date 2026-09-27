@@ -12,6 +12,7 @@
 #include "controller/command_ui_registry.h"
 #include "controller/controller_factory_mock.h"
 #include "controller/controller_mock.h"
+#include "controller/qt/selection_panel_registry.h"
 #include "controller/test/controller_environment.h"
 #include "core/progress_host_impl.h"
 #include "export/csv/csv_export_module.h"
@@ -40,14 +41,18 @@
 
 #if defined(UI_QT)
 #include <QAction>
+#include <QDockWidget>
 #include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
+#include <QWidget>
 #endif
 
 #include "base/debug_util.h"
 
 #include <span>
+#include <string>
+#include <vector>
 
 using namespace testing;
 namespace {
@@ -405,7 +410,9 @@ TEST_F(MainWindowTest, Close_InvokesQuitHandler) {
 // label the main-menu model contributes.
 class MainWindowQtHarness {
  public:
-  explicit MainWindowQtHarness(std::u16string top_menu_label) {
+  explicit MainWindowQtHarness(
+      std::u16string top_menu_label,
+      const SelectionPanelRegistry* selection_panels = nullptr) {
     MainWindow::SetHideForTesting();
     controller_env_.profile_.AddPage({});
     // The activity rail conforms the opened page to the active pane mode, so
@@ -442,7 +449,8 @@ class MainWindowQtHarness {
               return std::make_unique<TestMainMenuModel>(label);
             },
         .connection_info_provider_ = connection_info_provider_.AsStdFunction(),
-        .progress_host_ = progress_host_});
+        .progress_host_ = progress_host_,
+        .selection_panel_registry_ = selection_panels});
   }
 
   ~MainWindowQtHarness() { main_window_->CleanupForTesting(); }
@@ -483,6 +491,99 @@ class MainWindowQtHarness {
   ProgressHostImpl progress_host_;
   std::optional<MainWindow> main_window_;
 };
+
+// A module's right-dock panel, reduced to what the shell can observe: its
+// dock identity and the selections it is handed.
+class FakeSelectionPanel final : public SelectionPanel {
+ public:
+  FakeSelectionPanel(std::string name, int& show_count)
+      : name_{std::move(name)}, show_count_{show_count} {}
+
+  std::string object_name() const override { return name_; }
+  std::u16string title() const override {
+    return std::u16string(name_.begin(), name_.end());
+  }
+  QWidget& widget() override { return *widget_; }
+  void ShowSelection(const SelectionModel* selection) override {
+    ++show_count_;
+    last_selection_was_null = selection == nullptr;
+  }
+
+  bool last_selection_was_null = false;
+
+ private:
+  const std::string name_;
+  int& show_count_;
+  // Owned by the dock once docked, as a real panel's widget is.
+  QWidget* widget_ = new QWidget;
+};
+
+SelectionPanelFactory MakeFakePanel(std::string name, int& show_count) {
+  return [name = std::move(name),
+          &show_count](const SelectionPanelContext& context)
+             -> std::unique_ptr<SelectionPanel> {
+    // The window hands every panel a way to resolve commands against the
+    // active view, whatever else its context lacks.
+    EXPECT_TRUE(context.resolve_command);
+    return std::make_unique<FakeSelectionPanel>(name, show_count);
+  };
+}
+
+std::vector<QString> RightDockNames(const MainWindow& main_window) {
+  std::vector<QString> names;
+  for (QDockWidget* dock : main_window.findChildren<QDockWidget*>()) {
+    if (main_window.dockWidgetArea(dock) == Qt::RightDockWidgetArea)
+      names.push_back(dock->objectName());
+  }
+  return names;
+}
+
+// Backlog 722: the shell builds whatever panels the modules registered,
+// without naming any of them, and a factory declining to build is a panel the
+// window simply does not have.
+TEST(MainWindowQtTest, RegisteredSelectionPanelsBecomeRightDocks) {
+  int first_shows = 0;
+  int second_shows = 0;
+  SelectionPanelRegistry registry;
+  registry.Register(MakeFakePanel("FirstDock", first_shows));
+  registry.Register(
+      [](const SelectionPanelContext&) -> std::unique_ptr<SelectionPanel> {
+        return nullptr;
+      });
+  registry.Register(MakeFakePanel("SecondDock", second_shows));
+
+  MainWindowQtHarness harness{u"Top", &registry};
+
+  EXPECT_THAT(RightDockNames(harness.main_window()),
+              UnorderedElementsAre(QStringLiteral("InspectorDock"),
+                                   QStringLiteral("FirstDock"),
+                                   QStringLiteral("SecondDock")));
+  // Tabified onto the Inspector, not stacked beside it.
+  auto* inspector =
+      harness.main_window().findChild<QDockWidget*>("InspectorDock");
+  ASSERT_NE(inspector, nullptr);
+  EXPECT_THAT(harness.main_window().tabifiedDockWidgets(inspector), SizeIs(2));
+}
+
+// Every selection change reaches every panel; which selections a panel shows
+// is the panel's own decision. Opening the first page is one such change, with
+// no active view and so no selection.
+TEST(MainWindowQtTest, EverySelectionChangeReachesEveryPanel) {
+  int shows = 0;
+  SelectionPanelRegistry registry;
+  registry.Register(MakeFakePanel("FakeDock", shows));
+
+  MainWindowQtHarness harness{u"Top", &registry};
+
+  EXPECT_GE(shows, 1);
+}
+
+TEST(MainWindowQtTest, NoRegistryMeansTheInspectorAlone) {
+  MainWindowQtHarness harness{u"Top"};
+
+  EXPECT_THAT(RightDockNames(harness.main_window()),
+              ElementsAre(QStringLiteral("InspectorDock")));
+}
 
 TEST(MainWindowQtTest, MenuBarPopulatesTopLevelMenusImmediately) {
   MainWindowQtHarness harness{u"Top"};
