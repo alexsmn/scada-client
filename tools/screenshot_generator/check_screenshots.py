@@ -426,7 +426,19 @@ def main() -> int:
     # a full sweep, where more of the shell is built. The spec dims stay
     # meaningful as a REQUEST (they choose the aspect and the rough size); they
     # are not a postcondition for anything that keeps its chrome.
+    #
+    # **And on Linux nothing is dimension-checked, only produced.** "Exact on
+    # every platform" held for the two platforms the gallery is rendered on,
+    # macOS and Windows; the client's Linux CI leg, the first to run this,
+    # found four view captures whose minimum size under Linux fonts exceeds
+    # the spec -- `users.png` 767x302 against 740x302, `device-diagnostics.png`
+    # 333x660 against 320x660 (scada-client run 36323051134). The gallery is
+    # never rendered on Linux, so the spec sizes are not its contract there;
+    # it still has to produce every capture, which is what catches a crash or
+    # a capture gone missing.
     def exact_dims_for(spec: dict) -> bool:
+        if sys.platform.startswith("linux"):
+            return False
         return not spec.get("frame") or spec["frame"] == "none"
 
     specs = [(s, exact_dims_for(s)) for s in data.get("screenshots", [])] + [
