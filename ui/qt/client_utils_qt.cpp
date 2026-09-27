@@ -22,11 +22,10 @@ namespace {
 // it (docs/client/ux/iconography.md §5.1). Must stay in lock-step with
 // res/client.qrc and common_resources.h.
 //
-// NOTE: the table is keyed by the raw numeric id. common_resources.h reuses
-// numeric values across unrelated symbols; the ids below (the ones actually
-// used as an Action image_id today) are all distinct, but a future
-// .image_id_ that happens to share a number with one of these would silently
-// resolve to the wrong icon.
+// NOTE: the table is keyed by the raw numeric id, and image ids may share a
+// number with an unrelated command id (common_resource_ids.inc). The keys must
+// still be distinct among themselves, which the static_assert below checks: a
+// repeated key would silently resolve to whichever row the lookup met first.
 constexpr std::array<std::pair<unsigned, std::string_view>, 17> kIconResources{{
     {ID_GRAPH_VIEW, ":/icons/chart-spline.svg"},
     {ID_MODUS_VIEW, ":/icons/workflow.svg"},
@@ -46,6 +45,19 @@ constexpr std::array<std::pair<unsigned, std::string_view>, 17> kIconResources{{
     {IDB_ACKNOWLEDGE_ALL, ":/icons/check-check.svg"},
     {ID_APPLICATION, ":/icons/settings.svg"},
 }};
+
+constexpr bool IconResourceIdsAreDistinct() {
+  for (size_t i = 0; i < kIconResources.size(); ++i) {
+    for (size_t j = i + 1; j < kIconResources.size(); ++j) {
+      if (kIconResources[i].first == kIconResources[j].first)
+        return false;
+    }
+  }
+  return true;
+}
+static_assert(IconResourceIdsAreDistinct(),
+              "two kIconResources rows share an id; LoadPixmap would only "
+              "ever find the first");
 
 // Marks the exclusive QActionGroups BuildMenu creates for radio items, so a
 // rebuild discards its own predecessors and leaves alone any group a caller
