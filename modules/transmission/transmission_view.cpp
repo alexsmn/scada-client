@@ -23,6 +23,8 @@
 #include <QWidget>
 #endif
 
+#include <tuple>
+
 TransmissionView::TransmissionView(const ControllerContext& context)
     : ControllerContext{context},
       model_{std::make_shared<TransmissionModel>(context.executor_,
@@ -109,7 +111,8 @@ void TransmissionView::DeleteSelection() {
     return;
 
   for (auto row_index : grid_->GetSelectedRows())
-    task_manager_.PostDeleteTask(model_->row(row_index).transmission.node_id());
+    std::ignore = task_manager_.PostDeleteTask(
+        model_->row(row_index).transmission.node_id());
 }
 
 void TransmissionView::OnSelectionChanged() {

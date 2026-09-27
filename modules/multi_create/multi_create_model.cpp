@@ -10,6 +10,7 @@
 #include "services/task_manager.h"
 
 #include <format>
+#include <tuple>
 
 namespace {
 
@@ -53,7 +54,7 @@ void MultiCreateModel::Run(const RunParams& params) {
         std::format("{}{}", params.path_prefix, address);
     auto path = MakeNodeIdFormula(MakeNestedNodeId(device_id, item_path));
 
-    task_manager_.PostInsertTask(
+    std::ignore = task_manager_.PostInsertTask(
         {.type_definition_id = type_definition_id,
          .parent_id = parent_id_,
          .attributes = {.display_name = std::move(display_name)},

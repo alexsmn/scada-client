@@ -8,6 +8,8 @@
 #include "node_service/node_util.h"
 #include "services/task_manager.h"
 
+#include <tuple>
+
 CreateServiceItemModel::CreateServiceItemModel(
     CreateServiceItemContext&& context)
     : CreateServiceItemContext{std::move(context)} {
@@ -70,7 +72,7 @@ void CreateServiceItemModel::Run(const RunParams& params) {
           scada::data_items::id::AnalogItemType_DisplayFormat, "0.");
     }
 
-    task_manager_.PostInsertTask(
+    std::ignore = task_manager_.PostInsertTask(
         {.type_definition_id = type_definition_id,
          .parent_id = parent_id_,
          .attributes = {.display_name = std::move(display_name)},

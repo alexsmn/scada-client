@@ -18,6 +18,7 @@
 
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
+#include <tuple>
 
 namespace {
 
@@ -157,7 +158,8 @@ bool TransmissionModel::SetCellText(int row,
   scada::NodeProperties properties;
   properties.emplace_back(scada::devices::id::TransmissionItemType_Address,
                           static_cast<int>(value));
-  task_manager_.PostUpdateTask(row_item.transmission.node_id(), {}, properties);
+  std::ignore = task_manager_.PostUpdateTask(row_item.transmission.node_id(),
+                                             {}, properties);
 
   return true;
 }
@@ -299,7 +301,7 @@ void TransmissionModel::AddContainedItem(const scada::NodeId& node_id,
 
   auto transmission_item_type_id = TransmissionItemTypeFor(device_);
 
-  task_manager_.PostInsertTask(
+  std::ignore = task_manager_.PostInsertTask(
       {.type_definition_id = transmission_item_type_id,
        .parent_id = device_.node_id(),
        .properties = {{scada::devices::id::TransmissionItemType_SourceNode,
@@ -315,6 +317,6 @@ void TransmissionModel::RemoveContainedItem(const scada::NodeId& node_id) {
   }
 
   for (const auto& transmission_id : transmission_ids) {
-    task_manager_.PostDeleteTask(transmission_id);
+    std::ignore = task_manager_.PostDeleteTask(transmission_id);
   }
 }

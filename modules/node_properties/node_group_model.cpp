@@ -4,6 +4,8 @@
 #include "properties/property_definition.h"
 #include "services/task_manager.h"
 
+#include <tuple>
+
 NodeGroupModel::NodeGroupModel(NodePropertyModel& property_model)
     : property_model_{property_model} {}
 
@@ -58,7 +60,7 @@ void NodeGroupModel::SetValue(int index, const std::u16string& value) {
     if (attributes.empty())
       return;
 
-    property_model_.task_manager_.PostUpdateTask(
+    std::ignore = property_model_.task_manager_.PostUpdateTask(
         property_model_.node_.node_id(), attributes, {});
   }
 }

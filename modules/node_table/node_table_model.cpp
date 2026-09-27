@@ -20,6 +20,7 @@
 #include "services/task_manager.h"
 
 #include <boost/range/adaptor/transformed.hpp>
+#include <tuple>
 
 using namespace std::chrono_literals;
 
@@ -148,10 +149,10 @@ bool NodeTableModel::SetCellText(int row,
 
   if (const auto& c = columns_[column];
       c.attr_id == scada::AttributeId::BrowseName) {
-    task_manager_.PostUpdateTask(node.node_id(),
-                                 {.browse_name = UtfConvert<char>(text)}, {});
+    std::ignore = task_manager_.PostUpdateTask(
+        node.node_id(), {.browse_name = UtfConvert<char>(text)}, {});
   } else if (c.attr_id == scada::AttributeId::DisplayName) {
-    task_manager_.PostUpdateTask(
+    std::ignore = task_manager_.PostUpdateTask(
         node.node_id(), {.display_name = scada::ToLocalizedText(text)}, {});
   } else {
     c.prop_def->SetText(*this, node, c.property_declaration.node_id(), text);

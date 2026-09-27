@@ -24,6 +24,7 @@
 
 #include <memory>
 #include <set>
+#include <tuple>
 #include <utility>
 
 namespace {
@@ -261,7 +262,7 @@ std::vector<scada::NodeState> BulkCreateWizard::PlannedNodes() const {
 
 void BulkCreateWizard::accept() {
   for (const scada::NodeState& node : PlannedNodes())
-    context_.task_manager_.PostInsertTask(node);
+    std::ignore = context_.task_manager_.PostInsertTask(node);
   QWizard::accept();
 }
 
