@@ -199,10 +199,11 @@ scada::CoStatusOr<scada::NodeId> TaskManagerImpl::RunInsertTask(
   const scada::NodeId added_node_id = add_results.front().added_node_id;
 
   // Add the references through the service directly, as part of this task.
-  // `PostAddReference` cannot be used here: it returns a lazy awaitable that
-  // enqueues a task only once awaited, and awaiting a queued task from inside
-  // this coroutine would deadlock — this coroutine itself runs as the queue's
-  // current task, and tasks are serialized.
+  // `PostAddReference` cannot be used here: it enqueues a separate task, and
+  // awaiting that task from inside this coroutine would deadlock -- this
+  // coroutine itself runs as the queue's current task, and tasks are
+  // serialized. (This comment used to call the awaitable lazy; every `Post*`
+  // enqueues before returning, per the contract in task_manager.h.)
   if (!node_state.references.empty()) {
     std::vector<scada::AddReferencesItem> reference_inputs;
     reference_inputs.reserve(node_state.references.size());

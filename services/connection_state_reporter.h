@@ -6,6 +6,9 @@
 
 #include <boost/signals2/connection.hpp>
 
+#include <chrono>
+#include <vector>
+
 namespace scada {
 class SessionService;
 class Status;
@@ -17,6 +20,11 @@ struct ConnectionStateReporterContext {
   const AnyExecutor executor_;
   scada::SessionService& session_service_;
   LocalEvents& local_events_;
+  // The wait before each reconnect attempt, indexed by retry count; the last
+  // entry repeats. Injectable because AnyExecutorTimer runs on the real clock,
+  // which a test executor's virtual time cannot advance (backlog 646).
+  std::vector<Clock::duration> reconnect_delays_ = {
+      std::chrono::seconds{1}, std::chrono::seconds{5}, std::chrono::seconds{30}};
 };
 
 class ConnectionStateReporter final : private ConnectionStateReporterContext {

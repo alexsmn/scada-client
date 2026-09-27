@@ -17,6 +17,7 @@
 #ifndef _WIN32
 #include <cstdlib>
 #include <string>
+#include <tuple>
 #endif
 
 namespace {
@@ -36,7 +37,12 @@ void OpenWithAssociatedProgram(const std::filesystem::path& path) {
 #ifdef _WIN32
   win_util::OpenWithAssociatedProgram(path);
 #else
+#if defined(__APPLE__)
   std::string command = "open '";
+#else
+  // `open` is macOS's; on Linux it is openvt. xdg-open is the desktop's.
+  std::string command = "xdg-open '";
+#endif
   for (char ch : path.string()) {
     if (ch == '\'')
       command += "'\\''";
@@ -44,7 +50,8 @@ void OpenWithAssociatedProgram(const std::filesystem::path& path) {
       command += ch;
   }
   command += "'";
-  std::system(command.c_str());
+  // Best effort: with no handler for the file there is nothing to do.
+  std::ignore = std::system(command.c_str());
 #endif
 }
 

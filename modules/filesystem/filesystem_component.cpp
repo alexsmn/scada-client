@@ -30,6 +30,7 @@
 #endif
 #include <cstdlib>
 #include <filesystem>
+#include <tuple>
 
 namespace {
 
@@ -50,7 +51,12 @@ void OpenPublicFolder() {
                 /*lpDirectory=*/nullptr,
                 /*nShowCmd=*/SW_SHOWNORMAL);
 #else
+#if defined(__APPLE__)
   std::string command = "open '";
+#else
+  // `open` is macOS's; on Linux it is openvt. xdg-open is the desktop's.
+  std::string command = "xdg-open '";
+#endif
   for (char ch : path.string()) {
     if (ch == '\'') {
       command += "'\\''";
@@ -59,7 +65,8 @@ void OpenPublicFolder() {
     }
   }
   command += "'";
-  std::system(command.c_str());
+  // Best effort: with no handler for the file there is nothing to do.
+  std::ignore = std::system(command.c_str());
 #endif
 }
 

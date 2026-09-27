@@ -22,6 +22,8 @@
 #include "timed_data/timed_data_spec.h"
 #include "ui/common/client_utils.h"
 
+#include <tuple>
+
 std::u16string FormatHostName(std::string_view host_name) {
   if (host_name.empty()) {
     return Translate("Local");
@@ -131,7 +133,7 @@ void CompletePath(const std::u16string& text,
 
 void DeleteTreeRecordsRecursive(TaskManager& task_manager,
                                 const NodeRef& node) {
-  task_manager.PostDeleteTask(node.node_id());
+  std::ignore = task_manager.PostDeleteTask(node.node_id());
 }
 
 void SortNamedNodes(NamedNodes& list) {

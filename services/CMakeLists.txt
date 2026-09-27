@@ -39,6 +39,9 @@ if(TARGET client_services_qt_unittests)
     client_core
     client_events_qt
     client_profile_qt
+    # ConnectionStateReporter formats the host name through ui/common's
+    # FormatHostName; nothing exercised it here until its reconnect test.
+    client_ui_common_qt
     node_service
   )
   if(MSVC)

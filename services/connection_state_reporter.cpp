@@ -1,6 +1,7 @@
 ﻿#include "services/connection_state_reporter.h"
 
 #include "aui/translation.h"
+#include "base/awaitable.h"
 #include "base/u16format.h"
 #include "ui/common/client_utils.h"
 #include "scada/session_service.h"
@@ -16,9 +17,6 @@
 
 using namespace std::chrono_literals;
 
-namespace {
-const Clock::duration kReconnectDelays[] = {1s, 5s, 30s};
-}
 
 ConnectionStateReporter::ConnectionStateReporter(
     ConnectionStateReporterContext&& context)
@@ -67,9 +65,9 @@ void ConnectionStateReporter::OnSessionDeleted(const scada::Status& status) {
   }
 
   reconnect_retry_ =
-      std::min(reconnect_retry_ + 1, std::size(kReconnectDelays) - 1);
+      std::min(reconnect_retry_ + 1, reconnect_delays_.size() - 1);
 
-  auto delay = kReconnectDelays[reconnect_retry_];
+  auto delay = reconnect_delays_[reconnect_retry_];
   auto delay_s = static_cast<unsigned>(
       std::chrono::duration_cast<std::chrono::seconds>(delay).count());
 
@@ -83,5 +81,14 @@ void ConnectionStateReporter::OnSessionDeleted(const scada::Status& status) {
 }
 
 void ConnectionStateReporter::OnReconnectTimer() {
-  session_service_.Reconnect();
+  // Reconnect() is a coroutine, and a coroutine does nothing until it is
+  // awaited: calling it and dropping the result built a frame and destroyed it
+  // unrun. So after a lost connection the client announced "Reconnecting in N
+  // seconds" and never did -- found by GCC's -Werror=unused-result on the
+  // client's first Linux CI build (scada-client run 36295863277), which Clang
+  // does not raise for a discarded awaitable.
+  CoSpawn(executor_,
+          [&session_service = session_service_]() -> Awaitable<void> {
+            co_await session_service.Reconnect();
+          });
 }

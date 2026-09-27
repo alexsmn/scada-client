@@ -11,6 +11,8 @@
 #include "properties/property_util.h"
 #include "services/task_manager.h"
 
+#include <tuple>
+
 namespace {
 
 std::pair<scada::NodeId /*parent_id*/, std::string /*component_name*/>
@@ -129,8 +131,8 @@ void ChannelPropertyDefinition::SetText(const PropertyContext& context,
     formula = item_path;
   }
 
-  context.task_manager_.PostUpdateTask(node.node_id(), {},
-                                       {{prop_decl_id, std::move(formula)}});
+  std::ignore = context.task_manager_.PostUpdateTask(
+      node.node_id(), {}, {{prop_decl_id, std::move(formula)}});
 }
 
 scada::aui::EditData ChannelPropertyDefinition::GetPropertyEditor(

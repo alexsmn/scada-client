@@ -13,6 +13,7 @@
 
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
+#include <tuple>
 
 namespace {
 
@@ -59,8 +60,8 @@ void SetTextHelper(const PropertyContext& context,
     return;
   }
 
-  context.task_manager_.PostUpdateTask(node.node_id(), {},
-                                       {{prop_decl_id, std::move(value)}});
+  std::ignore = context.task_manager_.PostUpdateTask(
+      node.node_id(), {}, {{prop_decl_id, std::move(value)}});
 }
 
 NodeRef FindNodeByNameAndType(const NodeRef& parent_node,

@@ -13,6 +13,7 @@
 #include "services/task_manager.h"
 
 #include <transport/transport_string.h>
+#include <tuple>
 
 namespace {
 
@@ -73,12 +74,12 @@ void ReferencePropertyDefinition::SetText(const PropertyContext& context,
     return;
 
   if (old_ref_node) {
-    context.task_manager_.PostDeleteReference(prop_decl_id, node.node_id(),
-                                              old_ref_node.node_id());
+    std::ignore = context.task_manager_.PostDeleteReference(
+        prop_decl_id, node.node_id(), old_ref_node.node_id());
   }
   if (target) {
-    context.task_manager_.PostAddReference(prop_decl_id, node.node_id(),
-                                           target.node_id());
+    std::ignore = context.task_manager_.PostAddReference(
+        prop_decl_id, node.node_id(), target.node_id());
   }
 }
 
@@ -169,8 +170,8 @@ void EnumPropertyDefinition::SetText(const PropertyContext& context,
     return;
 
   int int_value = static_cast<int>(i - enum_strings->begin());
-  context.task_manager_.PostUpdateTask(node.node_id(), {},
-                                       {{prop_decl_id, int_value}});
+  std::ignore = context.task_manager_.PostUpdateTask(
+      node.node_id(), {}, {{prop_decl_id, int_value}});
 }
 
 scada::aui::EditData EnumPropertyDefinition::GetPropertyEditor(
@@ -246,8 +247,8 @@ void ColorPropertyDefinition::SetText(const PropertyContext& context,
     return;
 
   int color = scada::aui::FindColorName(text.c_str());
-  context.task_manager_.PostUpdateTask(node.node_id(), {},
-                                       {{prop_decl_id, color}});
+  std::ignore = context.task_manager_.PostUpdateTask(node.node_id(), {},
+                                                     {{prop_decl_id, color}});
 }
 
 scada::aui::EditData ColorPropertyDefinition::GetPropertyEditor(
