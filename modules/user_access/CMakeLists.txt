@@ -11,8 +11,9 @@ client_module_link_libraries(client_user_access
     Qt6::Widgets
     # NodeRef appears in the public panel header.
     node_service
-    # RolesView derives from Controller and registers itself.
-    controller
+    # RolesView derives from Controller and registers itself. (This said
+    # `controller`, which names no target and was silently dropped.)
+    client_controller
   PRIVATE
     aui
     # UserType / RoleType / IdentityMappingRuleType ids.

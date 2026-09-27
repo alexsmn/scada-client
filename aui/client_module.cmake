@@ -102,12 +102,20 @@ function(client_module_link_libraries_helper MODULE_NAME)
   foreach(LINK_TYPE ${LINK_TYPES})
     if(ARG_${LINK_TYPE})
       foreach(LIB ${ARG_${LINK_TYPE}})
-        if(TARGET ${LIB}_${ARG_CONFIG})
-          target_link_libraries(${MODULE_NAME} ${LINK_TYPE} ${LIB}_${ARG_CONFIG})
-        elseif(TARGET ${LIB})
+        # Resolved when the build is generated, not now. This used to test
+        # `if(TARGET ...)` at call time, so a library defined in a directory
+        # configured LATER -- client_common in app/, client_user_access after
+        # administration/ -- was silently not linked at all; the fallback that
+        # should have caught it tested `REQUIRED`, which is never set, rather
+        # than `ARG_REQUIRED`. 23 links were being dropped that way, and GNU
+        # ld's single pass is what finally said so (undefined RolesView and
+        # v3::CreateNodeService, scada-client run 36304111222). A name that
+        # is no target at all now reaches the linker and fails there, loudly.
+        if(ARG_CONFIG)
+          target_link_libraries(${MODULE_NAME} ${LINK_TYPE}
+            "$<IF:$<TARGET_EXISTS:${LIB}_${ARG_CONFIG}>,${LIB}_${ARG_CONFIG},${LIB}>")
+        else()
           target_link_libraries(${MODULE_NAME} ${LINK_TYPE} ${LIB})
-        elseif(REQUIRED)
-          message(FATAL_ERROR "Client module ${MODULE_NAME} cannot link to the required ${LINK_TYPE} library ${LIB}")
         endif()
       endforeach()
     endif()
