@@ -3,7 +3,6 @@
 #include "aui/models/menu_model.h"
 #include "aui/models/simple_menu_model.h"
 #include "aui/models/status_bar_model.h"
-#include "aui/qt/key_codes.h"
 #include "aui/qt/status_bar.h"
 #include "aui/qt/theme_qt.h"
 #include "aui/severity_colors.h"
@@ -27,6 +26,7 @@
 #include "inspector/qt/inspector_panel.h"
 #include "main_window/activity_bar_qt.h"
 #include "main_window/breadcrumb_qt.h"
+#include "main_window/command_actions_qt.h"
 #include "main_window/command_field_qt.h"
 #include "main_window/command_palette_qt.h"
 #include "main_window/main_menu/main_menu_model.h"
@@ -200,6 +200,12 @@ MainWindow::MainWindow(MainWindowContext&& context)
               });
     }
   }
+  // The window's QActions exist whether or not a toolbar is built to show them.
+  command_actions_ = std::make_unique<CommandActions>(
+      ui_command_registry_.command_manager(),
+      ui_command_registry_.action_manager(),
+      [this](unsigned command_id) { return ResolveViewCommand(command_id); },
+      *this);
   CreateToolbar();
   CreateStatusBar();
 
@@ -229,11 +235,6 @@ MainWindow::MainWindow(MainWindowContext&& context)
   // what decides whether the admin-gated Users utility is offered at all.
   RefreshUtilityMarker();
 
-  action_changed_connection_ = ui_command_registry_.action_manager().Subscribe(
-      [this](Action& action, ActionChangeMask change_mask) {
-        OnActionChanged(action, change_mask);
-      });
-
   change_profile_connection_ = profile_.AddChangeObserver([this] {
     const MainWindowDef& prefs = GetPrefs();
     statusBar()->setVisible(prefs.status_bar);
@@ -242,7 +243,10 @@ MainWindow::MainWindow(MainWindowContext&& context)
 }
 
 MainWindow::~MainWindow() {
-  action_changed_connection_.disconnect();
+  // Stop following action changes before the views go: closing the page would
+  // otherwise re-resolve handlers against a window being torn down. The
+  // QActions themselves are this window's children and outlive the registry.
+  command_actions_.reset();
 
   view_manager_->ClosePage();
   // TODO: Comment why explicit reset is needed.
@@ -1197,37 +1201,6 @@ void MainWindow::ShowCommandPalette(const QString& initial_text) {
 }
 
 void MainWindow::CreateToolbar() {
-  auto& command_manager = ui_command_registry_.command_manager();
-  for (auto* command_info : command_manager.commands()) {
-    if (!command_info->show_in_toolbar) {
-      continue;
-    }
-
-    bool collapsible = !CanExpandCommandCategory(command_info->category,
-                                                 CommandSurface::kToolbar);
-    auto* action = new QAction(
-        QString::fromStdU16String(command_info->GetShortTitle()), this);
-    action->setPriority(collapsible ? QAction::LowPriority
-                                    : QAction::NormalPriority);
-    action->setVisible(false);
-    if (command_info->image_id != 0)
-      action->setIcon(QIcon(LoadPixmap(command_info->image_id)));
-    action->setCheckable(command_info->checkable());
-    if (command_info->shortcut.has_value())
-      action->setShortcut(
-          scada::aui::ToQKeySequence(command_info->shortcut->modifiers(),
-                                     command_info->shortcut->key_code()));
-    auto command_id = command_info->command_id;
-    QObject::connect(action, &QAction::triggered,
-                     [this, command_id](bool checked) {
-                       auto* handler = ResolveViewCommand(command_id);
-                       if (handler && handler->IsCommandEnabled(command_id))
-                         handler->ExecuteCommand(command_id);
-                     });
-    action_map_.emplace(command_info->command_id, action);
-    action_command_ids_.emplace(action, command_info->command_id);
-  }
-
   toolbar_ = new QToolBar(this);
   toolbar_->setObjectName(QStringLiteral("CommandToolbar"));
   toolbar_->setVisible(GetPrefs().toolbar);
@@ -1242,12 +1215,13 @@ void MainWindow::CreateToolbar() {
   {
     // Action order is important.
     int last_category = -1;
-    for (auto* command_info : command_manager.commands()) {
+    for (auto* command_info :
+         ui_command_registry_.command_manager().commands()) {
       if (!command_info->show_in_toolbar) {
         continue;
       }
 
-      auto* action = FindAction(command_info->command_id);
+      auto* action = command_actions_->Find(command_info->command_id);
       if (CanExpandCommandCategory(command_info->category,
                                    CommandSurface::kToolbar)) {
         toolbar_->addAction(action);
@@ -1274,8 +1248,10 @@ void MainWindow::CreateToolbar() {
           button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
           category_action.menu = menu;
           category_action.toolbar_action = toolbar_->addWidget(button);
-          connect(menu, &QMenu::aboutToShow,
-                  [this, menu] { UpdateMenuActions(*menu); });
+          connect(menu, &QMenu::aboutToShow, [this, menu] {
+            if (command_actions_)
+              command_actions_->UpdateMenu(*menu);
+          });
         }
         category_action.menu->addAction(action);
       }
@@ -1705,9 +1681,9 @@ void MainWindow::OnSelectionChanged() {
     }
   }
 
-  for (const auto& [command_id, action] : action_map_) {
-    UpdateAction(*action, command_id, ActionChangeMask::AllButTitle);
-  }
+  // Null before CreateToolbar has run and after the destructor has begun.
+  if (command_actions_)
+    command_actions_->UpdateAll();
 
   for (const auto& [_, category] : category_actions_) {
     bool has_visible_actions =
@@ -1798,46 +1774,6 @@ void MainWindow::OnShowNewViewMenu(const scada::aui::Point& point) {
     return;
 
   menu.exec(point);
-}
-
-QAction* MainWindow::FindAction(unsigned command_id) {
-  auto i = action_map_.find(command_id);
-  return i == action_map_.end() ? nullptr : i->second;
-}
-
-void MainWindow::OnActionChanged(Action& action, ActionChangeMask change_mask) {
-  auto i = action_map_.find(action.command_id());
-  if (i != action_map_.end())
-    UpdateAction(*i->second, i->first, change_mask);
-}
-
-void MainWindow::UpdateAction(QAction& action,
-                              unsigned command_id,
-                              ActionChangeMask change_mask) {
-  if (static_cast<unsigned>(change_mask) &
-      static_cast<unsigned>(ActionChangeMask::Title)) {
-    if (const auto* a =
-            ui_command_registry_.action_manager().FindAction(command_id)) {
-      action.setText(QString::fromStdU16String(a->GetTitle()));
-    }
-  }
-
-  const CommandHandler* handler = ResolveViewCommand(command_id);
-  action.setVisible(!!handler);
-  if (handler) {
-    bool enabled = handler->IsCommandEnabled(command_id);
-    action.setEnabled(enabled);
-    if (enabled)
-      action.setChecked(handler->IsCommandChecked(command_id));
-  }
-}
-
-void MainWindow::UpdateMenuActions(QMenu& menu) {
-  for (QAction* action : menu.actions()) {
-    auto i = action_command_ids_.find(action);
-    if (i != action_command_ids_.end())
-      UpdateAction(*action, i->second, ActionChangeMask::All);
-  }
 }
 
 void MainWindow::closeEvent(QCloseEvent* event) {

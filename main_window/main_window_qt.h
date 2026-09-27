@@ -25,6 +25,7 @@ class NodeId;
 }
 
 class ActivityBar;
+class CommandActions;
 class Breadcrumb;
 class CommandField;
 class PageSwitcher;
@@ -141,7 +142,7 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // and grip toolbar — where every mockup screen draws one. Every command it
   // carries stays reachable from the menu bar, the node context menu and the
   // Ctrl-K palette, so leaving it off hides a duplicate surface rather than a
-  // capability.
+  // capability. It lays out `command_actions_` and creates none of them.
   void CreateToolbar();
   void CreateStatusBar();
   // The top context bar: the command/search field and alarm state.
@@ -272,19 +273,11 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   void ShowCommandPalette(const QString& initial_text = QString());
   void RebuildMenuBar();
 
-  QAction* FindAction(unsigned command_id);
-
-  void UpdateAction(QAction& qaction,
-                    unsigned command_id,
-                    ActionChangeMask change_mask);
-  void UpdateMenuActions(QMenu& menu);
-
-  void OnActionChanged(Action& action, ActionChangeMask change_mask);
-
   std::unique_ptr<ViewManager> view_manager_;
 
-  std::map<unsigned /*command_id*/, QAction*> action_map_;
-  std::map<QAction*, unsigned /*command_id*/> action_command_ids_;
+  // The QAction per button-surface command, kept in step with the handlers the
+  // window resolves. Owned apart from the toolbar that displays them.
+  std::unique_ptr<CommandActions> command_actions_;
 
   QToolBar* toolbar_ = nullptr;
 
@@ -394,5 +387,4 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   boost::signals2::scoped_connection session_state_connection_;
 
   boost::signals2::scoped_connection change_profile_connection_;
-  boost::signals2::scoped_connection action_changed_connection_;
 };
