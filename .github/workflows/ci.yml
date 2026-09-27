@@ -372,9 +372,13 @@ jobs:
       working-directory: client
       run: cmake --preset ninja
 
+    # `-k 0`: keep going past a failed compile, so one run reports every
+    # platform-specific error instead of stopping at the first. The Windows
+    # leg found them one per run otherwise (opcuapp runs 36282517652 and
+    # 36283768898, each stopping on a different MSVC-only error).
     - name: Build (Release)
       working-directory: client
-      run: cmake --build --preset release
+      run: cmake --build --preset release -- -k 0
 
     # `if: always()` is the point of splitting restore from save: the ports that
     # DID build have to survive a failed or cancelled job, or the bootstrap
