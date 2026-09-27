@@ -112,7 +112,8 @@ TEST_F(TagSearchIndexTest, DescendsThroughNestedContainers) {
 TEST_F(TagSearchIndexTest, StopsAtMaxTags) {
   const scada::NodeId group = AddGroup(kRoot, 10);
   for (unsigned i = 0; i < 10; ++i)
-    AddTag(group, 100 + i, u"Tag" + std::u16string(1, u'0' + i));
+    AddTag(group, 100 + i,
+           u"Tag" + std::u16string(1, static_cast<char16_t>(u'0' + i)));
 
   TagSearchIndex index{executor_, node_service_, kRoot, /*max_tags=*/3};
   index.EnsurePopulated();

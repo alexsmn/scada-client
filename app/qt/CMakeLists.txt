@@ -85,6 +85,14 @@ add_executable(client_qt WIN32 ${MAIN_QT})
 set_target_properties(client_qt PROPERTIES AUTORCC ON)
 target_precompile_headers(client_qt REUSE_FROM scada_base)
 target_link_libraries(client_qt PUBLIC client_qt_app_shared)
+if(WIN32)
+  # main.cpp starts GDI+ through core's header-only base/win/
+  # gdiplus_initializer.h, whose GdiplusStartup/GdiplusShutdown live in
+  # gdiplus.lib; nothing linked it, and client.exe failed with LNK2019 on the
+  # client's first Windows CI build to reach the link (scada-client run
+  # 36336499395).
+  target_link_libraries(client_qt PRIVATE gdiplus)
+endif()
 set_property(TARGET client_qt PROPERTY OUTPUT_NAME "client")
 # With a static Qt only the platform plugins Qt considers default for the host
 # are linked in — cocoa on macOS, windows on Windows. The offscreen platform is
