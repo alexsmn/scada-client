@@ -103,14 +103,13 @@ ClientApplicationModuleConfigurator MakeScreenshotModules() {
             .selection_commands_ = context.selection_commands_,
             .ui_command_registry_ = context.ui_command_registry_}));
 
-    // Contributes "Export/Import Configuration to Excel..." to the More menu
+    // Contributes "Export/Import Configuration..." to the More menu
     // (menu-excel.png). Both rows are `admin_only`, so they additionally need
     // the fixture's session service to grant kConfigure.
     context.singletons_.emplace(std::make_shared<ExportConfigurationModule>(
         ExportConfigurationModuleContext{
             .executor_ = context.executor_,
             .node_service_ = context.node_service_,
-            .task_manager_ = context.task_manager_,
             .global_commands_ = context.global_commands_,
             .ui_command_registry_ = context.ui_command_registry_}));
 

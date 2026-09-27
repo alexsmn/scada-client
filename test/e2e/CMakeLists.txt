@@ -160,6 +160,10 @@ target_link_libraries(client_server_e2e_tests PRIVATE
   # single-protocol test can see.
   scada_core_remote
   transport
+  # The Qt client's configuration transfer client (ADR 0014), driven over both
+  # transports so the export/import path is checked through a real tier
+  # rather than a fake transfer object.
+  client_export_configuration_qt
 )
 
 target_compile_definitions(client_server_e2e_tests PRIVATE

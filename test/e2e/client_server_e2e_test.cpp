@@ -3,6 +3,8 @@
 
 #include "base/awaitable.h"
 #include "base/time/time.h"
+#include "export/configuration/configuration_transfer_client.h"
+#include "model/namespace_uris.h"
 #include "opcua/client/client_session.h"
 #include "opcua_bridge/client_adapters.h"
 #include "remote/remote_services.h"
@@ -20,6 +22,7 @@
 
 #include <boost/asio/io_context.hpp>
 #include <boost/json.hpp>
+#include <gmock/gmock.h>
 
 #include <algorithm>
 #include <chrono>
@@ -260,7 +263,15 @@ class ProxyOpcUaSession {
       : transport_factory_{transport::CreateTransportFactory()},
         session_{std::make_shared<opcua::ClientSession>(io_.get_executor(),
                                                         *transport_factory_)},
-        services_{scada::opcua_bridge::CreateClientDataServices(session_)} {}
+        // The remapping variant, which the Qt client uses
+        // (modules/opcua_services): a tier publishes only the namespaces it
+        // serves, so its indexes differ from the canonical ones this suite
+        // writes NodeIds in. The plain variant happened to work against the
+        // proxy, whose array is the full canonical one, and sent a single
+        // tier every canonical index untranslated.
+        services_{scada::opcua_bridge::CreateRemappingClientDataServices(
+            session_,
+            scada::model::GetCanonicalNamespaceUris())} {}
 
   ~ProxyOpcUaSession() {
     if (connected_) {
@@ -335,7 +346,30 @@ class ProxyOpcUaSession {
     });
   }
 
+  // The Qt client's configuration transfer (ADR 0014), over this session's
+  // Call service — the production client code, not a stand-in for it.
+  scada::StatusOr<std::string> ExportConfiguration() {
+    const ConfigurationTransferClient client{TransferCall()};
+    return Run([&client] { return client.Export(); });
+  }
+
+  ConfigurationTransferClient::ImportOutcome ImportConfiguration(
+      std::string contents,
+      ConfigurationTransferClient::ImportOptions options) {
+    const ConfigurationTransferClient client{TransferCall()};
+    return Run([&] { return client.Import(std::move(contents), options); });
+  }
+
  private:
+  ConfigurationTransferCall TransferCall() {
+    return [this](scada::NodeId object_id, scada::NodeId method_id,
+                  std::vector<scada::Variant> arguments) {
+      return services_.method_service_->Call(
+          std::move(object_id), std::move(method_id), std::move(arguments),
+          scada::ServiceContext{});
+    };
+  }
+
   boost::asio::io_context io_;
   std::shared_ptr<transport::TransportFactory> transport_factory_;
   std::shared_ptr<opcua::ClientSession> session_;
@@ -418,7 +452,30 @@ class ProxyRemoteSession {
     });
   }
 
+  // The Qt client's configuration transfer (ADR 0014), over this session's
+  // Call service — the production client code, not a stand-in for it.
+  scada::StatusOr<std::string> ExportConfiguration() {
+    const ConfigurationTransferClient client{TransferCall()};
+    return Run([&client] { return client.Export(); });
+  }
+
+  ConfigurationTransferClient::ImportOutcome ImportConfiguration(
+      std::string contents,
+      ConfigurationTransferClient::ImportOptions options) {
+    const ConfigurationTransferClient client{TransferCall()};
+    return Run([&] { return client.Import(std::move(contents), options); });
+  }
+
  private:
+  ConfigurationTransferCall TransferCall() {
+    return [this](scada::NodeId object_id, scada::NodeId method_id,
+                  std::vector<scada::Variant> arguments) {
+      return services_.method_service_->Call(
+          std::move(object_id), std::move(method_id), std::move(arguments),
+          scada::ServiceContext{});
+    };
+  }
+
   boost::asio::io_context io_;
   std::shared_ptr<transport::TransportFactory> transport_factory_;
   ::DataServices services_;
@@ -1428,6 +1485,56 @@ TEST_P(ClientServerE2eTest,
           kPostConnectStabilityTimeout),
       "waiting for the server to remain stable after rejecting an unsupported "
       "security mode");
+}
+
+// ADR 0014 end to end: the Qt client's configuration transfer, over this
+// parameter's transport, against real tier binaries — in Cluster through the
+// aggregating proxy, which routes the security namespace to the config tier.
+// A dry-run import of the configuration just exported is the one import that
+// must come back clean with nothing to do, so it proves the whole path
+// (Part 20 transfer, gzip detection, the full-replace diff, the version check,
+// the result document read back by the write file's NodeId) without changing
+// the configuration.
+TEST_P(ClientServerE2eTest, ConfigurationTransfer_ExportThenCheckedReimport) {
+  if (UsesExternalServer())
+    GTEST_SKIP() << "the transfer object is hosted only by a server this suite "
+                    "configures";
+
+  StartServer();
+
+  const auto run = [](auto& session) {
+    auto exported = session.ExportConfiguration();
+    ASSERT_TRUE(exported.ok())
+        << "export failed: " << ::ToString(exported.status());
+    ASSERT_FALSE(exported->empty());
+    ASSERT_FALSE(IsGzipData(*exported))
+        << "the fixture configuration is far below the gzip threshold";
+    EXPECT_EQ(scada::NodeSetDocumentKind(*exported), "UANodeSet");
+
+    const auto checked = session.ImportConfiguration(
+        *exported, ConfigurationTransferClient::ImportOptions{.dry_run = true});
+    ASSERT_TRUE(checked.status)
+        << "re-importing an unchanged export was refused: "
+        << ::ToString(checked.status);
+    ASSERT_TRUE(checked.result.has_value())
+        << "the server kept no result document for the import";
+    EXPECT_TRUE(checked.result->dry_run);
+    EXPECT_FALSE(checked.result->committed);
+    EXPECT_THAT(checked.result->added, ::testing::IsEmpty());
+    EXPECT_THAT(checked.result->modified, ::testing::IsEmpty());
+    EXPECT_THAT(checked.result->deleted, ::testing::IsEmpty());
+    EXPECT_THAT(checked.result->failures, ::testing::IsEmpty());
+  };
+
+  if (Protocol() == E2eProtocol::OpcUa) {
+    ProxyOpcUaSession session;
+    ASSERT_TRUE(session.Connect(opcua_port_));
+    run(session);
+  } else {
+    ProxyRemoteSession session;
+    ASSERT_TRUE(session.Connect(remote_port_));
+    run(session);
+  }
 }
 
 INSTANTIATE_TEST_SUITE_P(

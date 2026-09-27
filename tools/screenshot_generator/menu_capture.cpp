@@ -122,11 +122,12 @@ void SaveMenuCapture(QMenu* menu,
 
 }  // namespace
 
-// The More menu, whose subject in the manual is the "Export configuration to
-// Excel..." row it ends with (dev/excel.md). The rows above it are the
-// checkable view toggles, so the capture guards both: the export row must be
-// present — it is `admin_only`, so a non-administrator fixture silently drops
-// it — and the toggles above it must still be checkable.
+// The More menu, whose subject in the manual is the "Export Configuration..."
+// and "Import Configuration..." rows it ends with (dev/excel.md, which keeps
+// its old name and permalink; menu-excel.png likewise). The rows above it are
+// the checkable view toggles, so the capture guards both: the export row must
+// be present — it is `admin_only`, so a non-administrator fixture silently
+// drops it — and the toggles above it must still be checkable.
 TEST_F(ScreenshotGenerator, CaptureMoreMenu) {
   constexpr const char* kFilename = "menu-excel.png";
   if (!ShouldCaptureScreenshot(kFilename))
@@ -155,20 +156,20 @@ TEST_F(ScreenshotGenerator, CaptureMoreMenu) {
   ASSERT_NE(menu, nullptr);
   EXPECT_GT(CountMenuRows(*menu), 1) << "the More menu rendered empty";
 
-  const auto excel_title =
-      QString::fromStdU16String(Translate("Export Configuration to Excel..."));
+  const auto export_title =
+      QString::fromStdU16String(Translate("Export Configuration..."));
   int checkable_rows = 0;
-  bool has_excel_row = false;
+  bool has_export_row = false;
   for (const QAction* action : menu->actions()) {
     if (action->isSeparator())
       continue;
-    if (action->text() == excel_title)
-      has_excel_row = true;
+    if (action->text() == export_title)
+      has_export_row = true;
     if (action->isCheckable())
       ++checkable_rows;
   }
-  EXPECT_TRUE(has_excel_row)
-      << "the More menu has no " << excel_title.toStdString()
+  EXPECT_TRUE(has_export_row)
+      << "the More menu has no " << export_title.toStdString()
       << " row - it is admin_only, so this capture is running without the "
          "administrator identity the manual's image depicts";
   EXPECT_GT(checkable_rows, 0) << "no checkable view rows above the export row";

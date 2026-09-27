@@ -173,17 +173,13 @@ SINKS = (
 # only be listed here because translating it would be *wrong* — not because
 # nobody has got round to it; use LITERAL_KNOWN_GAPS for that.
 LITERAL_ALLOWED_UNTRANSLATED = {
-    # The data-interchange strings that must stay English
-    # (export_data_writer.cpp column headers, kNodeIdTitle) are not reached by
-    # any sink, so they never appear here in the first place.
-    #
     # A default *filename*, not a title. It reaches SelectSaveFile through
     # `default_path`, and this check cannot tell one field of the params struct
     # from another; the file the operator saves must keep its extension and its
     # ASCII name whatever language the client is in.
     (
-        "modules/export/configuration/excel_configuration_commands.cpp",
-        "configuration.csv",
+        "modules/export/configuration/configuration_transfer_commands.cpp",
+        "configuration.xml",
     ): "default filename, not a title",
 }
 

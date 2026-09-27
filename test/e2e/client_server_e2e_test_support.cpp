@@ -79,31 +79,44 @@ std::string_view GetServerType(E2eProtocol protocol) {
   return {};
 }
 
+// The path of a tier binary: the environment variable of the same name when
+// it is set, the path this suite was configured with otherwise. The override
+// is for a binary built after the configure — a host build beside a
+// cross-build-owned tier tree, say — named at run time without reconfiguring
+// a build tree other sessions share.
+std::filesystem::path TierExePath(const char* variable,
+                                  std::string_view configured) {
+  if (auto* value = std::getenv(variable); value && *value) {
+    return std::filesystem::path{value};
+  }
+  return std::filesystem::path{configured};
+}
+
 std::filesystem::path GetServerExePath() {
-  return std::filesystem::path{SCADA_E2E_SERVER_EXE};
+  return TierExePath("SCADA_E2E_SERVER_EXE", SCADA_E2E_SERVER_EXE);
 }
 
 // Cluster-topology tier binaries (each tier is a distinct executable).
 std::filesystem::path GetConfigExePath() {
-  return std::filesystem::path{SCADA_E2E_CONFIG_EXE};
+  return TierExePath("SCADA_E2E_CONFIG_EXE", SCADA_E2E_CONFIG_EXE);
 }
 std::filesystem::path GetHistorianExePath() {
-  return std::filesystem::path{SCADA_E2E_HISTORIAN_EXE};
+  return TierExePath("SCADA_E2E_HISTORIAN_EXE", SCADA_E2E_HISTORIAN_EXE);
 }
 std::filesystem::path GetProxyExePath() {
-  return std::filesystem::path{SCADA_E2E_PROXY_EXE};
+  return TierExePath("SCADA_E2E_PROXY_EXE", SCADA_E2E_PROXY_EXE);
 }
 std::filesystem::path GetIec104ExePath() {
-  return std::filesystem::path{SCADA_E2E_IEC104_EXE};
+  return TierExePath("SCADA_E2E_IEC104_EXE", SCADA_E2E_IEC104_EXE);
 }
 std::filesystem::path GetModbusExePath() {
-  return std::filesystem::path{SCADA_E2E_MODBUS_EXE};
+  return TierExePath("SCADA_E2E_MODBUS_EXE", SCADA_E2E_MODBUS_EXE);
 }
 std::filesystem::path GetIec61850ExePath() {
-  return std::filesystem::path{SCADA_E2E_IEC61850_EXE};
+  return TierExePath("SCADA_E2E_IEC61850_EXE", SCADA_E2E_IEC61850_EXE);
 }
 std::filesystem::path GetFilesystemExePath() {
-  return std::filesystem::path{SCADA_E2E_FILESYSTEM_EXE};
+  return TierExePath("SCADA_E2E_FILESYSTEM_EXE", SCADA_E2E_FILESYSTEM_EXE);
 }
 
 std::filesystem::path GetClientExePath() {
@@ -424,8 +437,14 @@ void ClientServerE2eTest::PrepareWorkspace() {
   if (!UsesExternalServer()) {
     PrepareServerFilesystem(workspace_.path(), iec61850_port_);
     // SingleTier identity; StartCluster() rewrites this same file as the proxy.
+    // The single tier owns the configuration database, so it is the server
+    // that hosts the configuration transfer object (ADR 0014) — what the
+    // config tier does in a cluster.
     WriteServerJson(workspace_.path(), remote_port_, opcua_port_,
-                    "scada-e2e-server");
+                    "scada-e2e-server", [](boost::json::object& server_json) {
+                      server_json["configurationTransfer"] =
+                          boost::json::object{{"host", true}};
+                    });
   }
 
   status_file_ = workspace_.path() / "client-status.txt";

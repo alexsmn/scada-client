@@ -223,14 +223,6 @@
         <source>Export failed. Please check that Microsoft Excel is installed correctly.</source>
         <translation>Не удалось выполнить экспорт. Проверьте, что Microsoft Excel установлен корректно.</translation>
     </message>
-    <message>
-        <source>Failed to open Notepad</source>
-        <translation>Не удалось открыть Блокнот</translation>
-    </message>
-    <message>
-        <source>Failed to open report</source>
-        <translation>Не удалось открыть отчёт</translation>
-    </message>
     <!-- modules/write/write_model.cpp — the control-command review an
          operator answers before an irreversible field action
          (docs/ux/principles.md §7). Goes through Translate(), so it
@@ -1767,48 +1759,8 @@
         <source>Export failed.</source>
         <translation>Ошибка при экспорте.</translation>
     </message>
-    <message>
-        <source>Unknown data type</source>
-        <translation>Неизвестный тип данных</translation>
-    </message>
-    <message>
-        <source>No header row</source>
-        <translation>Нет строки заголовка</translation>
-    </message>
-    <message>
-        <source>Invalid column name format</source>
-        <translation>Неверный формат имени столбца</translation>
-    </message>
-    <message>
-        <source>Unknown property column {}</source>
-        <translation>Неизвестный столбец свойства {}</translation>
-    </message>
-    <message>
-        <source>Group not found</source>
-        <translation>Группа не найдена</translation>
-    </message>
-    <message>
-        <source>Type not found</source>
-        <translation>Тип не найден</translation>
-    </message>
-    <message>
-        <source>Property {} not found</source>
-        <translation>Свойство {} не найдено</translation>
-    </message>
-    <message>
-        <source>Cannot convert value &apos;{}&apos; to type &apos;{}&apos;</source>
-        <translation>Невозможно преобразовать значение &apos;{}&apos; как тип &apos;{}&apos;</translation>
-    </message>
     <!-- modules/export/configuration/excel_configuration_commands.cpp: wraps
          whichever reader error above it was thrown, with the CSV position. -->
-    <message>
-        <source>Error importing row {}, column {}: {}.</source>
-        <translation>Ошибка импорта строки {}, столбца {}: {}.</translation>
-    </message>
-    <message>
-        <source>Row has fewer cells than expected</source>
-        <translation>Количество ячеек в строке меньше ожидаемого</translation>
-    </message>
     <message>
         <source>&lt;Group&gt;</source>
         <translation>&lt;Группа&gt;</translation>
@@ -1922,12 +1874,12 @@
         <translation>Базы данных</translation>
     </message>
     <message>
-        <source>Export Configuration to Excel...</source>
-        <translation>Экспорт конфигурации в Excel...</translation>
+        <source>Export Configuration...</source>
+        <translation>Экспорт конфигурации...</translation>
     </message>
     <message>
-        <source>Import Configuration from Excel...</source>
-        <translation>Импорт конфигурации из Excel...</translation>
+        <source>Import Configuration...</source>
+        <translation>Импорт конфигурации...</translation>
     </message>
     <message>
         <source>Connect to Server...</source>
@@ -2133,18 +2085,58 @@
         <source>Disconnecting from server...</source>
         <translation>Отключение от сервера...</translation>
     </message>
-    <!-- export/configuration/excel_configuration_commands.cpp -->
+    <!-- export/configuration/configuration_transfer_commands.cpp -->
+    <message>
+        <source>Export Configuration</source>
+        <translation>Экспорт конфигурации</translation>
+    </message>
+    <message>
+        <source>Import Configuration</source>
+        <translation>Импорт конфигурации</translation>
+    </message>
+    <message>
+        <source>{} matches the current configuration. There is nothing to import.</source>
+        <translation>{} совпадает с текущей конфигурацией. Импортировать нечего.</translation>
+    </message>
+    <message>
+        <source>{}: {} to add, {} to change, {} to delete, {} reference changes.</source>
+        <translation>{}: добавить {}, изменить {}, удалить {}, изменений ссылок {}.</translation>
+    </message>
+    <message>
+        <source>The configuration has changed since {} was exported. Importing it would overwrite those changes.</source>
+        <translation>Конфигурация изменилась после экспорта {}. Импорт перезапишет эти изменения.</translation>
+    </message>
+    <message>
+        <source>{} cannot be imported: {}</source>
+        <translation>{} нельзя импортировать: {}</translation>
+    </message>
+    <message>
+        <source>…and {} more.</source>
+        <translation>…и ещё {}.</translation>
+    </message>
+    <message>
+        <source>The configuration could not be exported: {}</source>
+        <translation>Не удалось экспортировать конфигурацию: {}</translation>
+    </message>
+    <message>
+        <source>Failed to write file.</source>
+        <translation>Не удалось записать файл.</translation>
+    </message>
+    <message>
+        <source>The configuration was exported to {}.</source>
+        <translation>Конфигурация экспортирована в {}.</translation>
+    </message>
+    <message>
+        <source>Check it anyway?</source>
+        <translation>Проверить всё равно?</translation>
+    </message>
+    <message>
+        <source>Imported: {} added, {} changed, {} deleted.</source>
+        <translation>Импортировано: добавлено {}, изменено {}, удалено {}.</translation>
+    </message>
     <message>
         <source>Failed to open file.</source>
         <translation>Не удалось открыть файл.</translation>
-    </message>
-    <message>
-        <source>Export complete. Open the file now?</source>
-        <translation>Экспорт завершён. Открыть файл?</translation>
-    </message>
-    <message>
-        <source>No changes found</source>
-        <translation>Изменения не найдены</translation>
     </message>
     <message>
         <source>Import</source>

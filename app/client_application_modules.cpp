@@ -198,7 +198,6 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
           ExportConfigurationModuleContext{
               .executor_ = context.executor_,
               .node_service_ = context.node_service_,
-              .task_manager_ = context.task_manager_,
               .global_commands_ = context.global_commands_,
               .ui_command_registry_ = context.ui_command_registry_}));
     }

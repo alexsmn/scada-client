@@ -142,8 +142,8 @@
 // The audit trail: the event journal scoped to the AuditEventType subtree.
 #define ID_AUDIT_LOG_VIEW               2020
 #define ID_GRAPH_ZOOM                   4001
-#define ID_EXPORT_CONFIGURATION_TO_EXCEL 4022
-#define ID_IMPORT_CONFIGURATION_FROM_EXCEL 4023
+#define ID_EXPORT_CONFIGURATION 4022
+#define ID_IMPORT_CONFIGURATION 4023
 #define ID_LOGIN                        4024
 #define ID_LOGOFF                       4025
 #define ID_VIEW_PUBLIC_FOLDER           4026
