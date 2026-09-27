@@ -255,6 +255,14 @@ jobs:
     # of this is needed on the other two, where the platform SDK carries the
     # equivalents. Kept to what qtbase's port actually asks for rather than a
     # blanket `build-dep qtbase`, which pulls a distro Qt we must not link.
+    #
+    # The X11/XCB line is qtbase's portfile's own list, verbatim (its "can be
+    # installed on Ubuntu systems via" message at the pinned vcpkg commit),
+    # `'^libxcb.*-dev'` regex included; plus libsm-dev/libice-dev, which the
+    # port's `xcb-sm` feature needs. A hand-picked subset stood here until
+    # 2026-09-26 and failed qtbase's configure (run 36284598209): no
+    # libx11-xcb-dev, no libxcb-xinput-dev, so `xcb`, `xcb_xlib`, `xcb_sm` and
+    # `system_xcb_xinput` could not be forced on.
     - name: Install Qt's build dependencies (Linux)
       if: runner.os == 'Linux'
       run: |
@@ -263,13 +271,11 @@ jobs:
           autoconf autoconf-archive automake libtool libltdl-dev autopoint \
           pkg-config bison flex \
           libdbus-1-dev libfontconfig1-dev libfreetype-dev \
-          libgl1-mesa-dev libglu1-mesa-dev \
-          libx11-dev libxext-dev libxfixes-dev libxi-dev libxrender-dev \
-          libxcb1-dev libxcb-glx0-dev libxcb-keysyms1-dev libxcb-image0-dev \
-          libxcb-shm0-dev libxcb-icccm4-dev libxcb-sync-dev libxcb-xfixes0-dev \
-          libxcb-shape0-dev libxcb-randr0-dev libxcb-render-util0-dev \
-          libxcb-util-dev libxcb-xinerama0-dev libxcb-xkb-dev \
-          libxkbcommon-dev libxkbcommon-x11-dev \
+          libgl1-mesa-dev \
+          '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev \
+          libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libegl1-mesa-dev \
+          libsm-dev libice-dev \
+          libx11-dev libxext-dev libxfixes-dev \
           libxrandr-dev libxss-dev libxtst-dev
 
     # xvfb for the test step, which runs the suite on a real (virtual) display
@@ -372,9 +378,22 @@ jobs:
     # catches a `static const` member with no definition, which Release folds
     # away (tasks.md 476) -- and this job is not the place to close it.
 
+    # Classic OPC and Vidicon are off on Windows: `common`'s opc module does
+    # `find_package(OPC REQUIRED)` and its vidicon module
+    # `find_package(MIDL REQUIRED)`, both out-of-tree SDKs no public runner has
+    # (superproject CLAUDE.md, "Dependencies" -- SCADA_EXTRA_MODULE_PATH). The
+    # run that first got this far stopped on OPC (run 36284598209). Both
+    # options are Windows-only, and the client skips its vidicon module when
+    # `common` builds none.
     - name: Configure
       working-directory: client
-      run: cmake --preset ninja
+      shell: bash
+      run: |
+        if [ "$RUNNER_OS" = "Windows" ]; then
+          cmake --preset ninja -DBUILD_OPC=OFF -DBUILD_VIDICON=OFF
+        else
+          cmake --preset ninja
+        fi
 
     # `-k 0`: keep going past a failed compile, so one run reports every
     # platform-specific error instead of stopping at the first. The Windows
