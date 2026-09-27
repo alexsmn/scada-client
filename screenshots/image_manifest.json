@@ -1923,11 +1923,11 @@
       ],
       "notes": "Rendered by the screenshot generator (CaptureMoreMenu): the More menu, its checkable view rows above the Export Configuration... / Import Configuration... pair (titled '...to Excel' until ADR 0014 phase 5, 2026-09-26). Capturing it needed ExportConfigurationModule installed in the generator's module set -- the rows are contributed by that module and are admin_only, so without it the menu rendered without them. NOT the same menu the docs original shows: that image predates the rename, and this menu is titled «Дополнительно», not «Далее». Not yet in current_generator_owned_subset: publishing it would replace the manual's hand capture with a differently-titled menu, which is a docs decision.",
       "captured": {
-        "commit": "d59515aa9",
+        "commit": "bf5943584",
         "platform": "macos",
-        "dirty": false,
-        "sha256": "0c8cafd1c24ed036ab33c071cf6d262e219c21ecb9e37278cd4d1d9d1dcaf4c9",
-        "last_rendered": "1a014d850"
+        "dirty": true,
+        "sha256": "4813709a30f0c58de9414e65bd788d1906b322184c47ea70cf0a64a59a090539",
+        "last_rendered": "bf5943584"
       }
     },
     {
@@ -1938,11 +1938,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of menu-excel.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to menu-excel.png, and this is a second appearance of that capture rather than a second capture.",
       "captured": {
-        "commit": "d59515aa9",
+        "commit": "bf5943584",
         "platform": "macos",
-        "dirty": false,
-        "sha256": "ec5b1670d3ae49dd5683271e6a3793994fdba33a532e47415ebeaeb5df50fc00",
-        "last_rendered": "1a014d850"
+        "dirty": true,
+        "sha256": "1320954fdf8395a5af9209a7d0d07e6ea62177ee02f99e882f497a6ed3cef183",
+        "last_rendered": "bf5943584"
       }
     },
     {
