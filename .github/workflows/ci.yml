@@ -462,3 +462,22 @@ jobs:
         name: ctest-log-${{ matrix.os }}
         path: client/build/ninja/Testing/
         retention-days: 7
+
+    # The Linux golden images for graph_qt and view_manager_qt. Goldens are per
+    # platform (offscreen Qt draws text with the host's fonts), and Linux's set
+    # has to be recorded HERE, on this runner, to match what this runner
+    # draws. A golden that does not exist yet is written by the test, which
+    # then skips; this uploads those new files, plus any `actual_*` render of
+    # a mismatch, so they can be reviewed and committed under
+    # <product>/testdata/linux/. Neither product has CI of its own, so this
+    # leg is the only Linux runner either one gets.
+    - name: Upload the Linux golden images
+      if: always() && runner.os == 'Linux'
+      uses: actions/upload-artifact@v7
+      with:
+        name: linux-goldens
+        path: |
+          graph_qt/testdata/linux/
+          view_manager_qt/testdata/linux/
+        if-no-files-found: ignore
+        retention-days: 14
