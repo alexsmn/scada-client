@@ -6,7 +6,6 @@ power-system installations. C++23 and Qt 6, on Windows and macOS.
 
 [![Static analysis](https://github.com/alexsmn/scada-client/actions/workflows/ci.yml/badge.svg)](https://github.com/alexsmn/scada-client/actions/workflows/ci.yml)
 
-**[Live demo](https://telecontrol-ru.github.io/scada/app/)** ·
 **User manual** [English](https://telecontrol-ru.github.io/scada/en/) /
 [Русский](https://telecontrol-ru.github.io/scada/) ·
 **[Screen gallery](screenshots/)**
@@ -56,11 +55,6 @@ The servers those talk to speak IEC 60870-5-104, IEC 61850, Modbus and OPC UA
 to the field. Modus 6.30 schematics are integrated on Windows through ActiveX.
 
 ## Trying it
-
-The quickest look is the **[live demo](https://telecontrol-ru.github.io/scada/app/)**
-— a shared instance you can sign into anonymously. That is the *web* client:
-a browser implementation of the same workbench, the same vocabulary and the
-same data, rendered in its own idiom rather than as a copy of this one.
 
 **This repository does not build standalone yet.** The client resolves the six
 products it consumes as sibling checkouts. Five are public:
