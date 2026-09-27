@@ -279,13 +279,15 @@ class ProxyOpcUaSession {
     }
   }
 
-  scada::Status Connect(int opcua_port) {
-    auto status = Run([this, opcua_port] {
+  // Signs in as `user`, whose fixture password is empty; the default is the
+  // administrator the rest of the suite uses.
+  scada::Status Connect(int opcua_port, std::u16string user = u"root") {
+    auto status = Run([this, opcua_port, &user] {
       return services_.session_service_->ConnectStatus(
           scada::SessionConnectParams{
               .connection_string =
                   "opc.tcp://127.0.0.1:" + std::to_string(opcua_port),
-              .user_name = u"root",
+              .user_name = user,
               .password = {}});
     });
     connected_ = static_cast<bool>(status);
@@ -343,6 +345,15 @@ class ProxyOpcUaSession {
       return services_.node_management_service_->DeleteNodes(
           scada::ServiceContext{},
           {scada::DeleteNodesItem{.node_id = node_id}});
+    });
+  }
+
+  scada::DataValue ReadAttribute(const scada::NodeId& node_id,
+                                 scada::AttributeId attribute_id) {
+    return Run([this, &node_id, attribute_id] {
+      return scada::Read(
+          *services_.attribute_service_, scada::ServiceContext{},
+          scada::ReadValueId{.node_id = node_id, .attribute_id = attribute_id});
     });
   }
 
@@ -415,8 +426,10 @@ class ProxyRemoteSession {
       Run([this] { return services_.session_service_->Disconnect(); });
   }
 
-  scada::Status Connect(int remote_port) {
-    auto status = Run([this, remote_port] {
+  // Signs in as `user`, whose fixture password is empty; the default is the
+  // administrator the rest of the suite uses.
+  scada::Status Connect(int remote_port, std::u16string user = u"root") {
+    auto status = Run([this, remote_port, &user] {
       return services_.session_service_->ConnectStatus(
           scada::SessionConnectParams{
               // A native connection string is a transport::TransportString,
@@ -426,7 +439,7 @@ class ProxyRemoteSession {
               // never connects on macOS.
               .connection_string = "TCP;Active;Host=127.0.0.1;Port=" +
                                    std::to_string(remote_port),
-              .user_name = u"root",
+              .user_name = user,
               .password = {}});
     });
     connected_ = static_cast<bool>(status);
@@ -449,6 +462,15 @@ class ProxyRemoteSession {
       return services_.node_management_service_->DeleteNodes(
           scada::ServiceContext{},
           {scada::DeleteNodesItem{.node_id = node_id}});
+    });
+  }
+
+  scada::DataValue ReadAttribute(const scada::NodeId& node_id,
+                                 scada::AttributeId attribute_id) {
+    return Run([this, &node_id, attribute_id] {
+      return scada::Read(
+          *services_.attribute_service_, scada::ServiceContext{},
+          scada::ReadValueId{.node_id = node_id, .attribute_id = attribute_id});
     });
   }
 
@@ -1535,6 +1557,277 @@ TEST_P(ClientServerE2eTest, ConfigurationTransfer_ExportThenCheckedReimport) {
     ASSERT_TRUE(session.Connect(remote_port_));
     run(session);
   }
+}
+
+// The fixture's discrete item TS.1 («ОД-110 Т2»): canonical namespace 1,
+// DiscreteItemType. A literal for the reason kDevicesRoot is one.
+const scada::NodeId kTransferredItem{1, 1};
+constexpr std::string_view kDiscreteItemsUri =
+    "http://telecontrol.ru/opcua/data_items/DiscreteItemType";
+// The name the import tests give it, in the export's UTF-8 and as read back.
+constexpr std::string_view kTransferredItemNewNameUtf8 =
+    "E2E renamed by import";
+constexpr char16_t kTransferredItemNewName[] = u"E2E renamed by import";
+
+// The document-local index a UANodeSet gives `uri` in its NamespaceUris
+// (Part 6 §F.2, https://reference.opcfoundation.org/Core/Part6/v105/docs/F.2):
+// its 1-based position there, since index 0 is the OPC UA namespace.
+std::optional<int> LocalNamespaceIndex(std::string_view document,
+                                       std::string_view uri) {
+  const std::size_t end = document.find("</NamespaceUris>");
+  int index = 0;
+  for (std::size_t at = document.find("<Uri>");
+       at != std::string_view::npos && at < end;
+       at = document.find("<Uri>", at + 1)) {
+    ++index;
+    const std::size_t text = at + std::string_view{"<Uri>"}.size();
+    if (document.substr(text, uri.size()) == uri &&
+        document.substr(text + uri.size()).starts_with("</Uri>")) {
+      return index;
+    }
+  }
+  return std::nullopt;
+}
+
+// `document`, an export, with the DisplayName of the node `ns=<uri>;i=<id>`
+// replaced by `name` — a full replace that differs from the configuration in
+// exactly one attribute of one node. Nothing when the node or its DisplayName
+// is not in the document.
+std::optional<std::string> WithDisplayName(std::string document,
+                                           std::string_view namespace_uri,
+                                           scada::NumericId id,
+                                           std::string_view name) {
+  const auto ns = LocalNamespaceIndex(document, namespace_uri);
+  if (!ns)
+    return std::nullopt;
+  const std::string node_attribute =
+      "NodeId=\"ns=" + std::to_string(*ns) + ";i=" + std::to_string(id) + "\"";
+  const std::size_t node = document.find(node_attribute);
+  if (node == std::string::npos)
+    return std::nullopt;
+  const std::size_t node_end = document.find("</UA", node);
+  const std::size_t tag = document.find("<DisplayName", node);
+  if (tag == std::string::npos || tag > node_end)
+    return std::nullopt;
+  const std::size_t text = document.find('>', tag) + 1;
+  const std::size_t text_end = document.find("</DisplayName>", text);
+  document.replace(text, text_end - text, name);
+  return document;
+}
+
+// The version token an export's ConfigurationExport extension carries (ADR
+// 0014 decision 6); empty when there is none.
+std::string ExportVersion(std::string_view document) {
+  constexpr std::string_view kAttribute = "Version=\"";
+  const std::size_t extension = document.find("<ConfigurationExport");
+  const std::size_t at = document.find(kAttribute, extension);
+  if (extension == std::string_view::npos || at == std::string_view::npos)
+    return {};
+  const std::size_t begin = at + kAttribute.size();
+  return std::string{document.substr(begin, document.find('"', begin) - begin)};
+}
+
+// The DisplayName `session` reads for `node_id`, or nothing when the read
+// fails.
+template <class Session>
+std::optional<std::u16string> ReadDisplayName(Session& session,
+                                              const scada::NodeId& node_id) {
+  const scada::DataValue value =
+      session.ReadAttribute(node_id, scada::AttributeId::DisplayName);
+  if (!scada::IsGood(value.status_code))
+    return std::nullopt;
+  const auto* text = value.value.template get_if<scada::LocalizedText>();
+  return text ? std::optional{text->text} : std::nullopt;
+}
+
+// Reads `node_id`'s DisplayName through `session` until it is `expected` or
+// ten seconds pass, returning the last reading. A committed change reaches a
+// reader behind the proxy EVENTUALLY: the config tier batches change events
+// (100 ms), and an edge that answers the proxy's Read fan-out re-reads the node
+// when its event arrives. A single read straight after the commit sees the old
+// value there, which is correct behaviour, not the defect being tested for.
+template <class Session>
+std::optional<std::u16string> WaitForDisplayName(
+    Session& session,
+    const scada::NodeId& node_id,
+    const std::optional<std::u16string>& expected) {
+  const auto deadline =
+      std::chrono::steady_clock::now() + std::chrono::seconds{10};
+  std::optional<std::u16string> name = ReadDisplayName(session, node_id);
+  while (name != expected && std::chrono::steady_clock::now() < deadline) {
+    std::this_thread::sleep_for(std::chrono::milliseconds{100});
+    name = ReadDisplayName(session, node_id);
+  }
+  return name;
+}
+
+// Renames kTransferredItem by importing `exported` with that one change, and
+// checks the result document says exactly that happened.
+template <class Session>
+void ApplyRename(Session& session, const std::string& exported) {
+  const auto renamed = WithDisplayName(exported, kDiscreteItemsUri, 1,
+                                       kTransferredItemNewNameUtf8);
+  ASSERT_TRUE(renamed.has_value())
+      << "the export has no DisplayName for TS.1 to change";
+
+  const auto applied = session.ImportConfiguration(
+      *renamed, ConfigurationTransferClient::ImportOptions{});
+  ASSERT_TRUE(applied.status)
+      << "the import was refused: " << ::ToString(applied.status);
+  ASSERT_TRUE(applied.result.has_value());
+  EXPECT_FALSE(applied.result->dry_run);
+  EXPECT_TRUE(applied.result->committed);
+  EXPECT_THAT(applied.result->modified, ::testing::SizeIs(1));
+  EXPECT_THAT(applied.result->added, ::testing::IsEmpty());
+  EXPECT_THAT(applied.result->deleted, ::testing::IsEmpty());
+  EXPECT_THAT(applied.result->failures, ::testing::IsEmpty());
+}
+
+// Runs `test` against a session of this parameter's transport, signed in as
+// `user`.
+template <class Test>
+void WithTransferSession(E2eProtocol protocol,
+                         int opcua_port,
+                         int remote_port,
+                         std::u16string user,
+                         Test&& test) {
+  if (protocol == E2eProtocol::OpcUa) {
+    ProxyOpcUaSession session;
+    ASSERT_TRUE(session.Connect(opcua_port, std::move(user)));
+    test(session);
+  } else {
+    ProxyRemoteSession session;
+    ASSERT_TRUE(session.Connect(remote_port, std::move(user)));
+    test(session);
+  }
+}
+
+// An import that changes something, end to end: the config tier commits it,
+// and a client — in Cluster, through the proxy — then reads the new value and
+// exports a new version. The in-process tests stop at the commit; this is the
+// half they cannot see.
+TEST_P(ClientServerE2eTest, ConfigurationTransfer_AnAppliedImportIsReadBack) {
+  if (UsesExternalServer())
+    GTEST_SKIP() << "an applied import would change a deployment's "
+                    "configuration";
+
+  StartServer();
+
+  WithTransferSession(
+      Protocol(), opcua_port_, remote_port_, u"root", [](auto& session) {
+        const auto exported = session.ExportConfiguration();
+        ASSERT_TRUE(exported.ok())
+            << "export failed: " << ::ToString(exported.status());
+
+        ApplyRename(session, *exported);
+        if (::testing::Test::HasFatalFailure())
+          return;
+
+        EXPECT_EQ(WaitForDisplayName(session, kTransferredItem,
+                                     std::u16string{kTransferredItemNewName}),
+                  std::u16string{kTransferredItemNewName});
+
+        const auto again = session.ExportConfiguration();
+        ASSERT_TRUE(again.ok());
+        EXPECT_NE(ExportVersion(*again), ExportVersion(*exported))
+            << "the version token did not move with the configuration";
+        EXPECT_NE(again->find(kTransferredItemNewNameUtf8), std::string::npos);
+      });
+}
+
+// The admin gate over the wire (ADR 0014 open question 1): a signed-in user
+// without the Configure right can neither export nor import — in Cluster it is
+// the proxy that refuses, although it reaches the config tier as an
+// administrator's service account — and the refused import changes nothing.
+TEST_P(ClientServerE2eTest, ConfigurationTransfer_ANonAdministratorIsRefused) {
+  if (UsesExternalServer())
+    GTEST_SKIP() << "the fixture's guest user exists only on a server this "
+                    "suite configures";
+
+  StartServer();
+
+  std::string exported;
+  std::optional<std::u16string> original_name;
+  WithTransferSession(
+      Protocol(), opcua_port_, remote_port_, u"root", [&](auto& session) {
+        auto result = session.ExportConfiguration();
+        ASSERT_TRUE(result.ok());
+        exported = std::move(*result);
+        original_name = ReadDisplayName(session, kTransferredItem);
+      });
+  ASSERT_FALSE(exported.empty());
+  ASSERT_TRUE(original_name.has_value());
+  const auto renamed = WithDisplayName(exported, kDiscreteItemsUri, 1,
+                                       kTransferredItemNewNameUtf8);
+  ASSERT_TRUE(renamed.has_value());
+
+  WithTransferSession(
+      Protocol(), opcua_port_, remote_port_, u"guest", [&](auto& session) {
+        const auto refused_export = session.ExportConfiguration();
+        EXPECT_FALSE(refused_export.ok())
+            << "a user without the Configure right exported the "
+               "configuration";
+
+        const auto refused_import = session.ImportConfiguration(
+            *renamed, ConfigurationTransferClient::ImportOptions{});
+        EXPECT_FALSE(refused_import.status)
+            << "a user without the Configure right imported a "
+               "configuration";
+      });
+
+  WithTransferSession(
+      Protocol(), opcua_port_, remote_port_, u"root", [&](auto& session) {
+        EXPECT_EQ(ReadDisplayName(session, kTransferredItem), original_name);
+      });
+}
+
+// The version check over the wire (ADR 0014 decision 6): once the
+// configuration has moved, an export taken before it is refused as stale with
+// Bad_InvalidState and changes nothing; the same file applies when the user
+// explicitly asks to skip the check, restoring what it holds.
+TEST_P(ClientServerE2eTest,
+       ConfigurationTransfer_AStaleExportIsRefusedUnlessTheVersionIsIgnored) {
+  if (UsesExternalServer())
+    GTEST_SKIP() << "an applied import would change a deployment's "
+                    "configuration";
+
+  StartServer();
+
+  WithTransferSession(
+      Protocol(), opcua_port_, remote_port_, u"root", [](auto& session) {
+        const auto exported = session.ExportConfiguration();
+        ASSERT_TRUE(exported.ok());
+        const auto original_name = ReadDisplayName(session, kTransferredItem);
+        ASSERT_TRUE(original_name.has_value());
+
+        ApplyRename(session, *exported);
+        if (::testing::Test::HasFatalFailure())
+          return;
+        // Read before the rename, so a reader behind the proxy holds the old
+        // name: this is what proves the rename reaches a reader that had
+        // already read the node, which a cold read cannot.
+        ASSERT_EQ(WaitForDisplayName(session, kTransferredItem,
+                                     std::u16string{kTransferredItemNewName}),
+                  std::u16string{kTransferredItemNewName})
+            << "a reader that had read the node never saw the rename";
+
+        const auto stale = session.ImportConfiguration(
+            *exported, ConfigurationTransferClient::ImportOptions{});
+        EXPECT_EQ(stale.status.code(), scada::StatusCode::Bad_InvalidState)
+            << ::ToString(stale.status);
+        EXPECT_EQ(ReadDisplayName(session, kTransferredItem),
+                  std::u16string{kTransferredItemNewName})
+            << "a refused import changed the configuration";
+
+        const auto forced = session.ImportConfiguration(
+            *exported,
+            ConfigurationTransferClient::ImportOptions{.ignore_version = true});
+        ASSERT_TRUE(forced.status)
+            << "ignoreVersion did not apply the stale file: "
+            << ::ToString(forced.status);
+        EXPECT_EQ(WaitForDisplayName(session, kTransferredItem, original_name),
+                  original_name);
+      });
 }
 
 INSTANTIATE_TEST_SUITE_P(
