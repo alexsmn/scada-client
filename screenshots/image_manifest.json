@@ -1944,7 +1944,7 @@
       "referenced_from": [
         "dev/excel.md"
       ],
-      "notes": "Rendered by the screenshot generator (CaptureMoreMenu): the More menu, its checkable view rows above the Export Configuration... / Import Configuration... pair (titled '...to Excel' until ADR 0014 phase 5, 2026-09-26). Capturing it needed ExportConfigurationModule installed in the generator's module set -- the rows are contributed by that module and are admin_only, so without it the menu rendered without them. NOT the same menu the docs original shows: that image predates the rename, and this menu is titled «Дополнительно», not «Далее». Not yet in current_generator_owned_subset: publishing it would replace the manual's hand capture with a differently-titled menu, which is a docs decision.",
+      "notes": "Rendered by the screenshot generator (CaptureMoreMenu): the More menu, its checkable view rows above the Export Configuration... / Import Configuration... pair (titled '...to Excel' until ADR 0014 phase 5, 2026-09-26). Capturing it needed ExportConfigurationModule installed in the generator's module set -- the rows are contributed by that module and are admin_only, so without it the menu rendered without them. NOT the same menu the docs original shows: that image predates the rename, and this menu is titled «Дополнительно», not «Далее». In current_generator_owned_subset since 2026-09-27, by the user's decision: the manual's 2024 hand capture showed the pre-rename «Далее» menu and '...в Excel' rows, while dev/excel.md already named `Дополнительно` and the current Export/Import rows, so this render is what the page describes. The menu-bar title is not in the image; the page names it.",
       "captured": {
         "commit": "0b2af3336",
         "platform": "macos",
@@ -2941,6 +2941,7 @@
     "files.png",
     "graph-cursor.png",
     "hardware-tree.png",
+    "menu-excel.png",
     "settings.png",
     "workbench-login.png",
     "workbench-overview.png"
