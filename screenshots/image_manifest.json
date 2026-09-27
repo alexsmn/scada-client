@@ -815,11 +815,11 @@
       ],
       "notes": "The device Metrics sheet — what *Метрики* on a device's context menu opens (client.md, \"Статусы устройств\"), and the Qt half of the web's DeviceMetrics component. Rendered for the fixture's КП-01 (TS.103, an IEC 60870-5-104 RTU): the row labels are the DeviceType data-variable declarations (Связь, Включено, Принято/Отправлено сообщений и байт, Число синхронизаций времени, Число полных опросов) and each cell is an `=NodeId` formula the sheet resolves live. Not a window type of its own — DeviceMetricsModule builds a CusTable WindowDefinition from resolved NodeRefs, which do not exist when MakeScreenshotPage assembles the profile page, so the capture opens its own view. Not yet embedded in a manual page: it is half of what devices-status.png shows, and replacing that figure is still open (tasks.md 39, subtask 8). Booleans still render 0/1 where the hand-captured devices-status.png shows Да/Нет — a real formatting gap, filed separately. The byte counters no longer render in scientific notation: verified 2026-08-31 against a fresh themed render, which shows 4213904 / 1830221 as plain integers. Published 2026-08-15 as the Метрики half of `devices-status.png`. This was the last image opted out of the dark publish pass (publish_theme=legacy): it could not render themed at all, because MakeDeviceMetricsWindowDefinition baked Rgba{227,227,227} into the header cells as *window definition* data while the body cells fell back to white, so a themed render darkened only the frame and the scrollbars. Both halves are fixed — the baked header fill is gone and unstyled cells now fall through to the theme palette — so the sheet renders under any appearance. The tracked PNG predates that and is a Classic render.",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "870526a8e",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "187b87a5f3ec59456cfcc29007a914ee3901d1c2afafceed1d6589ba39b3fd32",
-        "last_rendered": "1a014d850"
+        "dirty": false,
+        "sha256": "858c8d0fe1fcf362484af9a2c427dc88232f3737331a22b7ba70815a0736d21d",
+        "last_rendered": "870526a8e"
       }
     },
     {
@@ -831,11 +831,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of device-metrics.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "870526a8e",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "05688cb5bacf593c20aa11df644df6f5149f2b89d44beee468785f0008f8577e",
-        "last_rendered": "1a014d850"
+        "dirty": false,
+        "sha256": "515b74b6b150e529d08a44a6d799ab55d5ecd77dd9bca757035aebe74b915fed",
+        "last_rendered": "870526a8e"
       }
     },
     {
@@ -1366,11 +1366,11 @@
       "referenced_from": [],
       "notes": "Custom table (the CusTable window, SheetModel) — the free-form spreadsheet: literal labels beside '=<formula>' cells bound to live values, with a coloured title and header band. Untagged until 2026-08-01, so the managed-image gate skipped it, and the render was a blank grid: a sheet's content lives in its saved window as SheetCell/Column items, which no fixture spec could express. The spec now carries `cells` and `column_widths` (see screenshot_data.json), and the capture is guarded by a filled-cell count — a sheet's row and column counts do not move when its content vanishes, so only counting cells that rendered text can see it go empty. Column headers (A/B/C) and row numbers are deliberately absent: sheet_view.cpp shows them only in edit mode. A live cell renders its item's display format (Температура shows 42.3; Активная мощность has no format and shows 125). That exposed a third bug: a formula cell cached the text it formatted when the sheet opened, and nothing notifies when an item's format arrives, so `--only sheet.png` rendered raw values where a full run rendered formatted ones — and a real sheet opened before its nodes loaded stayed unformatted for the life of the window. Formula cells now format on read (SheetCell::GetDisplayText), and the two renders agree. Populating this capture found a teardown crash: ~SheetCell erases itself from SheetModel::blinking_cells_, which was declared after `cells_` and so destroyed before them — closing a sheet holding one blinking cell segfaulted in std::set::erase, reachable by any user whose custom table binds a cell to a live value. Fixed by declaration order, with a regression test in sheet_model_unittest.cpp. It also found the alignment bug this capture now demonstrates: per-cell alignment was parsed, stored and offered in the context menu but never reached the screen, because GridCell carried no alignment and the grid adapter handed Qt the aui enum raw — so every aui::Grid in the client rendered left-aligned whatever its columns asked for. Fixed in grid_model_adapter.cpp + GridCell, with tests in grid_model_adapter_unittest.cpp; summary.png and client-retransmission.png changed with it. macOS render; validation-only.",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "870526a8e",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "032e20a47e41389cc89148a61db53f7d7e7bd5420a78bb0033e5c7554aff1706",
-        "last_rendered": "1a014d850"
+        "dirty": false,
+        "sha256": "5a3fa2d715b46559f6f6accf35cb7ce3b9c4036872dbc14d712f4c49d89a87ee",
+        "last_rendered": "870526a8e"
       }
     },
     {
@@ -1382,11 +1382,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of sheet.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "870526a8e",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "3f6675ea5b1e489730c4af53b5d176330aa9def5201c2a2cf60e42c1ad447f88",
-        "last_rendered": "1a014d850"
+        "dirty": false,
+        "sha256": "1032bb897c0b3e6e8ec160fe23bf9bc0d6a9ab4cf2fda34524a13caa3ce6f02c",
+        "last_rendered": "870526a8e"
       }
     },
     {
@@ -1606,11 +1606,11 @@
       ],
       "notes": "Table workspace under --theme: the reshell TableToolbar (add-signal / delete / move / sort keys; shell To-graph/CSV/Print hide when unresolved) over the operator grid with the Quality column and monospace value/timestamp cells (UX 0.3 + 2.8). Theme-gated (the legacy Table is the bare grid) - regenerate with --theme=dark --only=table-workspace.png; guarded by client_screenshot_check_themed. Published from a macOS render (a supported host since 2026-09-12); kept out of current_generator_owned_subset (subset is auto-* only).",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "870526a8e",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "ef72006cea3c548aa3da9f2e6fc70242e6797554300f26e571546255bd8857e4",
-        "last_rendered": "1a014d850"
+        "dirty": false,
+        "sha256": "fac4f4d92023ad244501fc27c3083fc20a7ac09b039652b8d91810a303dbee2b",
+        "last_rendered": "870526a8e"
       }
     },
     {
@@ -1622,11 +1622,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of table-workspace.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "870526a8e",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "7e99dbe6ff67269dc51e5b7bf42ea47ce2b3cbbb6a573c73267f1ea916de636e",
-        "last_rendered": "1a014d850"
+        "dirty": false,
+        "sha256": "835e3d95e0eb27f47bf7add90abd7f31387d5ae106ddfc9b62df8843afa4f4f4",
+        "last_rendered": "870526a8e"
       }
     },
     {
@@ -2735,11 +2735,11 @@
       "referenced_from": [],
       "notes": "Table window over six fixture TITs, from the `Table` capture spec. Tracked in the gallery since 07588fb3 but had no manifest row until 2026-08-02, when deriving parity_key from the matrix surfaced it: the manifest's bijection check runs against scada-docs img/, so a generator-owned capture that no page embeds could stay unlisted indefinitely. Not published — table-workspace.png is the reshell twin the manual would use.",
       "captured": {
-        "commit": "2002d777b",
+        "commit": "870526a8e",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "779af737d0ce5bec4a98b0dc51c73ee3858442b4f48e4fbe123d243560accb8c",
-        "last_rendered": "1a014d850"
+        "dirty": false,
+        "sha256": "413222b949b60fac3e479d245a655d9c607b9ee279d284021d2c899e4e202847",
+        "last_rendered": "870526a8e"
       }
     },
     {
@@ -2751,11 +2751,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of table.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "870526a8e",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "d070d74352778ed1f0e61d6490961e6bd61dd2e681bf50d0195a7e2a01293a3d",
-        "last_rendered": "1a014d850"
+        "dirty": false,
+        "sha256": "a6919bc9c75f1afcd31fd75983147438fd5356d19036b75e036cd2b6543464c1",
+        "last_rendered": "870526a8e"
       }
     },
     {
