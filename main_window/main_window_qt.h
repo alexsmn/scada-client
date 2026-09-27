@@ -9,10 +9,6 @@
 
 #include <QMainWindow>
 
-namespace events {
-class SeverityTileStrip;
-}
-
 #include <boost/signals2/connection.hpp>
 #include <functional>
 #include <optional>
@@ -42,7 +38,6 @@ class QDockWidget;
 class QLabel;
 class QMenu;
 class QPoint;
-class QTimer;
 class QToolBar;
 class QWidget;
 class ProgressController;
@@ -151,10 +146,6 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // object. Cheap and idempotent, so it is called from every hook that can move
   // any of the three rather than trying to work out which one moved.
   void RefreshBreadcrumb();
-  // Repaints the annunciator chip for the current phase of its flash. Called
-  // by the flash timer and whenever the rung lights, so the chip is never left
-  // showing the previous alarm's phase.
-  void StyleAnnunciator();
   // The left activity rail (backlog 1.1): selects which panes occupy the
   // left sidebar. It never opens a workspace tab and never switches the page.
   void CreateActivityBar();
@@ -310,39 +301,8 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // Refreshed from the three places the path can move: UpdateTitle (page),
   // OnActiveViewChanged (view) and OnSelectionChanged (subject).
   Breadcrumb* breadcrumb_ = nullptr;
-  // Live severity KPI tiles in the context bar (critical / warning /
-  // unacknowledged), refreshed with the status-bar model.
-  events::SeverityTileStrip* severity_tiles_ = nullptr;
-  // The escalation ladder's two rungs (events/alarm_escalation.h), ahead of the
-  // tiles as shell-chrome.html draws them. Independent conditions, so either,
-  // both or neither can be visible.
-  //
-  // Annunciator: at least one unacknowledged critical alarm (ISA-18.2). It
-  // flashes while lit, which `annunciator_flash_` drives; the audible half is
-  // EventDispatcher's and is already platform-independent.
-  //
-  // The flash is NOT gated on any reduce-motion preference, and that is a
-  // decision rather than something nobody got to (2026-08-31). An ISA-18.2
-  // annunciation is a safety signal, so it must not be suppressible by a
-  // setting the operator chose for their desktop and the plant never agreed
-  // to. Qt exposes no reduce-motion query to consult in any case -- checked
-  // against the Qt this tree vendors, 6.11.1: QStyleHints declares no such
-  // property and no Qt6 header mentions one -- but the point is that one
-  // would not be consulted here if it did.
-  //
-  // WCAG 2.2.2 Pause, Stop, Hide is the criterion that would apply on a web
-  // surface, and its exception covers movement "part of an activity where it
-  // is essential"
-  // (https://www.w3.org/WAI/WCAG22/Understanding/pause-stop-hide.html,
-  // verified 2026-08-31). The flash rate is well under 2.3.1's three-per-
-  // second threshold. If the motion ever
-  // needs softening, soften it for everybody -- never switch the annunciator
-  // off for the operators most likely to be sitting in front of it all shift.
-  QLabel* annunciator_indicator_ = nullptr;
-  QTimer* annunciator_flash_ = nullptr;
-  bool annunciator_flash_on_ = false;
-  // Alarm-flood escalation pill; visible only while a flood is active.
-  QLabel* flood_indicator_ = nullptr;
+  // Drives the bar's alarm-state cluster (AlarmStateCluster) from the
+  // status-bar model's counts.
   boost::signals2::scoped_connection context_bar_connection_;
 
   // Left activity rail. Selects the sidebar's pane mode.

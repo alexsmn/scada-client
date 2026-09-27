@@ -4,12 +4,10 @@
 #include "aui/models/simple_menu_model.h"
 #include "aui/models/status_bar_model.h"
 #include "aui/qt/status_bar.h"
-#include "aui/qt/theme_qt.h"
 #include "aui/severity_colors.h"
 #include "aui/translation.h"
 #include "base/auto_reset.h"
 #include "base/awaitable.h"
-#include "base/blinker.h"
 #include "base/check.h"
 #include "base/utf_convert.h"
 #include "controller/action_manager.h"
@@ -20,11 +18,10 @@
 #include "controller/series_model.h"
 #include "controller/window_info.h"
 #include "device_diagnostics/qt/device_diagnostics_panel.h"
-#include "events/alarm_escalation.h"
-#include "events/qt/severity_tile_strip.h"
 #include "filesystem/file_cache.h"
 #include "inspector/qt/inspector_panel.h"
 #include "main_window/activity_bar_qt.h"
+#include "main_window/alarm_state_cluster_qt.h"
 #include "main_window/breadcrumb_qt.h"
 #include "main_window/command_actions_qt.h"
 #include "main_window/command_field_qt.h"
@@ -64,11 +61,9 @@
 #include <QApplication>
 #include <QDockWidget>
 #include <QEvent>
-#include <QFontMetrics>
 #include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QIcon>
-#include <QLabel>
 #include <QLayout>
 #include <QMenu>
 #include <QMenuBar>
@@ -77,7 +72,6 @@
 #include <QStatusBar>
 #include <QStyle>
 #include <QTabWidget>
-#include <QTimer>
 #include <QToolBar>
 #include <QToolButton>
 
@@ -318,71 +312,6 @@ void MainWindow::CreateStatusBar() {
       std::make_unique<ProgressController>(*status_bar, progress_host_);
 }
 
-namespace {
-
-// The annunciator's flash half-period. Slow enough to read the caption
-// through, fast enough to be pre-attentive; ISA-18.2 asks for a flash rate in
-// this region for an unacknowledged alarm.
-constexpr scada::Duration kAnnunciatorFlashHalfPeriod =
-    std::chrono::milliseconds{700};
-
-// How often the phase is SAMPLED, which is not the same as how often it flips.
-// Half the half-period, for the reason `kBlinkTick` gives in blinker.cpp: at
-// exactly one flip per tick the sampling aliases and the flash can stall or
-// double up.
-constexpr int kAnnunciatorFlashInterval = 350;
-
-// Corner radius for the escalation chips, which are pills: half the chip's own
-// height -- exactly, because the chips are vertically Fixed -- so the shape
-// survives any OS text size. This was a hard-coded 9px,
-// which is a defect of the kind docs/client/ux/README.md names outright -- a
-// chip whose height is font-derived but whose radius is not stops reading as a
-// pill the moment the font grows past twice that radius, which is exactly what
-// an accessibility text-size bump does.
-//
-// `border` is the stylesheet border width the caller writes in the same rule: a
-// QSS border widens the label past the font-and-margin box QLabel sizes itself
-// to, and a radius that ignored it would fall short of half the drawn height.
-int PillRadius(const QLabel& label, int border) {
-  const QFontMetrics metrics{label.font()};
-  return (metrics.height() + 2 * label.margin() + 2 * border) / 2;
-}
-
-}  // namespace
-
-// Paints the annunciator chip for the current phase of its flash.
-//
-// Both phases are severity-critical (a process-semantic colour, exempt from
-// platform styling, §9) and differ in *fill*: the quiet phase is an outline —
-// the mockup's `.ann` treatment, which distinguishes it from the flood pill's
-// solid fill — and the lit phase fills. The caption keeps critical-token
-// contrast in both, derived rather than baked, for the same reason the flood
-// pill derives its text colour.
-//
-// A stylesheet rather than the palette, on the same grounds as the flood pill:
-// the chip is a rounded fill with a border, and QPalette expresses neither.
-void MainWindow::StyleAnnunciator() {
-  const std::optional<scada::aui::Color> color =
-      scada::aui::SeverityColor(scada::aui::SeverityLevel::kCritical);
-  const QColor accent = color ? color->qcolor() : QColor{0xe8, 0x5a, 0x52};
-
-  const int radius = PillRadius(*annunciator_indicator_, 1);
-
-  if (annunciator_flash_on_) {
-    annunciator_indicator_->setStyleSheet(
-        QStringLiteral("background:%1;color:%2;border:1px solid %1;"
-                       "border-radius:%3px;font-weight:700;")
-            .arg(accent.name(), scada::aui::ReadableTextOn(accent).name())
-            .arg(radius));
-  } else {
-    annunciator_indicator_->setStyleSheet(
-        QStringLiteral("background:transparent;color:%1;border:1px solid %1;"
-                       "border-radius:%2px;font-weight:700;")
-            .arg(accent.name())
-            .arg(radius));
-  }
-}
-
 void MainWindow::CreateContextBar() {
   context_bar_ = new QToolBar(this);
   context_bar_->setObjectName(QStringLiteral("ContextBar"));
@@ -491,76 +420,13 @@ void MainWindow::CreateContextBar() {
   connect(palette_shortcut, &QShortcut::activated, this,
           [this] { ShowCommandPalette(); });
 
-  // Right slot: alarm state alone. The escalation ladder's two rungs first,
-  // then the per-severity tiles — shell-chrome.html draws the chips ahead of
-  // the tiles, because a chip states that the operator must act now where a
-  // tile states a count.
-  auto* right_slot = new QWidget(context_bar_);
-  right_slot->setObjectName(QStringLiteral("contextBarRightSlot"));
-  auto* right_layout = new QHBoxLayout(right_slot);
-  right_layout->setContentsMargins(0, slot_padding, bar_margin_right,
-                                   slot_padding);
-  right_slot->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-  right_layout->addStretch();
-
-  // Rung 1 — the ISA-18.2 annunciator: any unacknowledged critical alarm.
-  // Hidden until one stands. Below the flood threshold this is the *only*
-  // thing that marks a critical alarm nobody has taken; before it existed, one
-  // such alarm read as a tile going from 0 to 1 and nothing else.
-  annunciator_indicator_ = new QLabel(right_slot);
-  annunciator_indicator_->setMargin(2);
-  // Fixed vertically so the chip is its own natural height and is
-  // centred in the slot. Left to stretch, it fills the row and the
-  // font-derived PillRadius then falls short of half the drawn height
-  // -- measured at a 46px chip taking a 17px radius under a 2x font,
-  // which reads as a rounded rectangle rather than a pill.
-  annunciator_indicator_->setSizePolicy(QSizePolicy::Preferred,
-                                        QSizePolicy::Fixed);
-  annunciator_indicator_->setVisible(false);
-  right_layout->addWidget(annunciator_indicator_);
-
-  // Flashing is part of the signal, not decoration (ISA-18.2): a standing
-  // unacknowledged critical must keep asserting itself. The timer runs only
-  // while the rung is lit, and the two phases differ in fill rather than in
-  // presence — a chip that blinks out entirely can be missed in the dark half
-  // of its own cycle.
-  annunciator_flash_ = new QTimer(this);
-  annunciator_flash_->setInterval(kAnnunciatorFlashInterval);
-  connect(annunciator_flash_, &QTimer::timeout, this, [this] {
-    // Sampled from the clock, never toggled. A free-running toggle advances
-    // with the event loop, so a frozen clock cannot hold it still and the
-    // screenshot generator caught this chip mid-flash — lit in one render,
-    // outlined in the next, from one unchanged binary (visual_review V54).
-    // blinker.h explains the rule; this widget predated anyone applying it.
-    const bool on = BlinkPhaseAt(scada::Now(), kAnnunciatorFlashHalfPeriod);
-    if (on == annunciator_flash_on_)
-      return;
-    annunciator_flash_on_ = on;
-    StyleAnnunciator();
-  });
-
-  // Rung 2 — alarm-flood escalation pill (hidden unless a flood is active),
-  // left of the per-severity tiles so it reads as the dominant state during a
-  // flood. A flood outranks a single critical, so it is drawn solid where the
-  // annunciator is drawn as an outline.
-  flood_indicator_ = new QLabel(right_slot);
-  flood_indicator_->setMargin(2);
-  // Fixed vertically so the chip is its own natural height and is
-  // centred in the slot. Left to stretch, it fills the row and the
-  // font-derived PillRadius then falls short of half the drawn height
-  // -- measured at a 46px chip taking a 17px radius under a 2x font,
-  // which reads as a rounded rectangle rather than a pill.
-  flood_indicator_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-  flood_indicator_->setVisible(false);
-  right_layout->addWidget(flood_indicator_);
-
-  // Live severity KPI tiles (backlog 2.3): critical / warning / unacknowledged,
-  // ordered and coloured by the shared tile builder.
-  severity_tiles_ = events::MakeSeverityTileStrip(
+  // Right slot: alarm state alone -- the escalation chips, then the
+  // per-severity tiles. See AlarmStateCluster.
+  //
+  // The status-bar model exposes the counts as separate aggregates; the alarm
+  // total is the unacknowledged count (see EventStatusProvider::GetTileCounts).
+  auto* alarm_state = new AlarmStateCluster(
       [this] {
-        // The status-bar model exposes the counts as separate aggregates; the
-        // alarm total is the unacknowledged count (see
-        // EventStatusProvider::GetTileCounts).
         return events::SeverityTileCounts{
             .critical = status_bar_model_->GetSeverityCount(
                 scada::aui::SeverityLevel::kCritical),
@@ -568,10 +434,14 @@ void MainWindow::CreateContextBar() {
                 scada::aui::SeverityLevel::kWarning),
             .unacknowledged = status_bar_model_->GetAlarmCount()};
       },
-      right_slot);
-  if (severity_tiles_)
-    right_layout->addWidget(severity_tiles_);
-  context_bar_->addWidget(right_slot);
+      context_bar_);
+  alarm_state->setObjectName(QStringLiteral("contextBarRightSlot"));
+  alarm_state->layout()->setContentsMargins(0, slot_padding, bar_margin_right,
+                                            slot_padding);
+  alarm_state->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  context_bar_->addWidget(alarm_state);
+  context_bar_connection_ = status_bar_model_->SubscribePanesChanged(
+      [alarm_state](int, int) { alarm_state->Refresh(); });
 
   // No identity/connection cluster here. Who/where context (user·role,
   // connection, server latency, endpoint·build) is stated once, in the status
@@ -579,76 +449,6 @@ void MainWindow::CreateContextBar() {
   // costs a place to look without adding a fact (shell.md §3: don't show the
   // same metric in two prominent places). The top bar carries only alarm state,
   // which needs pre-attentive prominence.
-
-  auto refresh = [this] {
-    if (severity_tiles_)
-      severity_tiles_->Refresh();
-
-    // Both rungs come from one reduction of one set of counts, so the chips
-    // and the tiles beside them can never disagree about the same alarms.
-    const int alarm_count = status_bar_model_->GetAlarmCount();
-    const events::SeverityTileCounts counts{
-        .critical = status_bar_model_->GetSeverityCount(
-            scada::aui::SeverityLevel::kCritical),
-        .warning = status_bar_model_->GetSeverityCount(
-            scada::aui::SeverityLevel::kWarning),
-        .unacknowledged = alarm_count};
-    const events::AlarmEscalation escalation = events::EscalationFor(counts);
-
-    // Annunciation: the chip states the condition rather than restating the
-    // count, because the `Critical N` tile is right beside it — the same
-    // division the web client settled on when its ladder moved into the bar.
-    annunciator_indicator_->setVisible(escalation.annunciating);
-    if (escalation.annunciating) {
-      annunciator_indicator_->setText(QStringLiteral(" %1 ").arg(
-          QString::fromStdU16String(Translate("Unacknowledged critical"))));
-      // The first lit frame has to come from the clock too, or the chip shows
-      // a stale phase until the first tick — which under a frozen clock is
-      // forever, and is precisely the frame a capture takes.
-      annunciator_flash_on_ =
-          BlinkPhaseAt(scada::Now(), kAnnunciatorFlashHalfPeriod);
-      StyleAnnunciator();
-      if (!annunciator_flash_->isActive())
-        annunciator_flash_->start();
-    } else {
-      annunciator_flash_->stop();
-      // No phase to reset: it is a function of the clock, so the next alarm
-      // picks it up wherever the clock is rather than inheriting whatever this
-      // one left behind. The reset this replaces existed to stop exactly that
-      // inheritance, which is a problem a derived phase does not have.
-    }
-
-    // Flood escalation: a single prominent state pill when the unacknowledged
-    // count crosses the flood threshold, so a flood reads as a state, not a
-    // scroll.
-    const bool flood = escalation.flooding;
-    flood_indicator_->setVisible(flood);
-    if (flood) {
-      flood_indicator_->setText(
-          QStringLiteral(" %1 (%2) ")
-              .arg(QString::fromStdU16String(Translate("Alarm flood")))
-              .arg(alarm_count));
-      const std::optional<scada::aui::Color> color =
-          scada::aui::SeverityColor(scada::aui::SeverityLevel::kCritical);
-      // A stylesheet, not the palette: the pill is a rounded fill, and
-      // border-radius is one of the few things QPalette cannot express.
-      //
-      // The fill is a process-semantic colour, fixed by ISA-18.2 and exempt
-      // from platform styling — but the text on it is derived from the fill
-      // rather than baked. The dark and light critical tokens differ enough in
-      // luminance that one constant cannot serve both, which the previous
-      // hard-coded #ffffff did not account for.
-      const QColor fill = color ? color->qcolor() : QColor{0xe8, 0x5a, 0x52};
-      flood_indicator_->setStyleSheet(
-          QStringLiteral(
-              "background:%1;color:%2;border-radius:%3px;font-weight:700;")
-              .arg(fill.name(), scada::aui::ReadableTextOn(fill).name())
-              .arg(PillRadius(*flood_indicator_, 0)));
-    }
-  };
-  refresh();
-  context_bar_connection_ = status_bar_model_->SubscribePanesChanged(
-      [refresh](int, int) { refresh(); });
 
   addToolBar(Qt::TopToolBarArea, context_bar_);
   // Force the command toolbar onto its own row below the context bar.
