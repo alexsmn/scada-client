@@ -1921,7 +1921,7 @@
       "referenced_from": [
         "dev/excel.md"
       ],
-      "notes": "Rendered by the screenshot generator (CaptureMoreMenu): the More menu, its checkable view rows above the Excel export/import pair. Capturing it needed ExportConfigurationModule installed in the generator's module set -- the rows are contributed by that module and are admin_only, so without it the menu rendered without them. NOT the same menu the docs original shows: that image predates the rename, and this menu is titled «Дополнительно», not «Далее». Not yet in current_generator_owned_subset: publishing it would replace the manual's hand capture with a differently-titled menu, which is a docs decision.",
+      "notes": "Rendered by the screenshot generator (CaptureMoreMenu): the More menu, its checkable view rows above the Export Configuration... / Import Configuration... pair (titled '...to Excel' until ADR 0014 phase 5, 2026-09-26). Capturing it needed ExportConfigurationModule installed in the generator's module set -- the rows are contributed by that module and are admin_only, so without it the menu rendered without them. NOT the same menu the docs original shows: that image predates the rename, and this menu is titled «Дополнительно», not «Далее». Not yet in current_generator_owned_subset: publishing it would replace the manual's hand capture with a differently-titled menu, which is a docs decision.",
       "captured": {
         "commit": "d59515aa9",
         "platform": "macos",
@@ -1959,11 +1959,9 @@
     },
     {
       "file": "menu-notepad.png",
-      "tag": "manual-os",
-      "referenced_from": [
-        "dev/excel.md"
-      ],
-      "notes": "Not a menu, and not the client at all (audited 2026-08-08): a third-party text editor showing the exported configuration CSV, syntax-highlighted. Out of scope for the generator for the same reason as the other manual-os images — it is another application's window."
+      "tag": "obsolete",
+      "referenced_from": [],
+      "notes": "Not a menu, and not the client at all (audited 2026-08-08): a third-party text editor showing the exported configuration CSV, syntax-highlighted. Obsolete since 2026-09-26: the CSV it shows is gone (ADR 0014 phase 5 replaced it with a UANodeSet XML file), and dev/excel.md no longer embeds it."
     },
     {
       "file": "menu-parameters-elements-copy.png",
@@ -2905,8 +2903,8 @@
     "manual-annotated": 2,
     "manual-diagram": 4,
     "manual-modus": 5,
-    "manual-os": 3,
-    "obsolete": 17
+    "manual-os": 2,
+    "obsolete": 18
   },
   "current_generator_owned_subset": [
     "bulk-create.png",
