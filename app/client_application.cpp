@@ -389,13 +389,18 @@ scada::CoStatus ClientApplication::SaveProfileToServer(
   // in the envelope this session read at login.
   auto profile_json = boost::json::serialize(profile_envelope::Wrap(
       profile_->SaveToValue(), server_profile_envelope_));
+  // The arguments are built before the co_await, not inline in it: GCC 14.2
+  // crashes (internal compiler error `in is_this_parameter`,
+  // cp/semantics.cc) on this coroutine when the awaited call's braced
+  // argument list reads a member (`profile_revision_`) -- the client's Linux
+  // CI leg, scada-client run 36301215089.
+  std::vector<scada::Variant> arguments{scada::String{std::move(profile_json)},
+                                        profile_revision_};
   // SaveProfile returns no output arguments; only its status matters here.
-  auto status =
-      (co_await services.method_service->Call(
-           user_id, scada::security::id::UserType_SaveProfile,
-           {scada::String{std::move(profile_json)}, profile_revision_},
-           scada::ServiceContext{}))
-          .status();
+  auto call_result = co_await services.method_service->Call(
+      user_id, scada::security::id::UserType_SaveProfile, std::move(arguments),
+      scada::ServiceContext{});
+  auto status = call_result.status();
   if (scada::IsGood(status.code())) {
     ++profile_revision_;
   }
