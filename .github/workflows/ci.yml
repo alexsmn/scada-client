@@ -150,7 +150,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     # Not a gate yet. The bootstrap above means the first runs say more about
     # the cache than about the code, and a red X that everyone learns to ignore
-    # is worse than no check (see tasks.md 316, `core`'s decorative matrix).
+    # is worse than no check (core's matrix was exactly that until 2026-09-27,
+    # superproject tasks.md 316).
     # REMOVE THIS the day a run is green, and treat the job as gating from then
     # on. Leaving it is how a build job becomes decoration.
     continue-on-error: true
@@ -336,12 +337,12 @@ jobs:
     # The pin is the commit this tree's own vcpkg is at, so CI resolves the same
     # ports a developer does.
     #
-    # It is NOT the one `core/.github/workflows/cmake-multi-platform.yml`
-    # carries. That one, a34c873a9717a888f58dc05571dde15571f56e66, does not
-    # exist in microsoft/vcpkg at all -- the API answers 422, "No commit found
-    # for SHA" (checked 2026-09-20). It has never been noticed because every
-    # step in that workflow is `continue-on-error`, which is the concrete shape
-    # of the decoration tasks.md 316 describes.
+    # Every product's workflow carries the same one. core's once carried
+    # a34c873a9717a888f58dc05571dde15571f56e66, which does not exist in
+    # microsoft/vcpkg at all -- the API answers 422, "No commit found for SHA"
+    # (checked 2026-09-20) -- and nothing noticed, because every step in that
+    # workflow was `continue-on-error` (superproject tasks.md 316, closed
+    # 2026-09-27).
     - name: Set up vcpkg
       uses: lukka/run-vcpkg@v11
       with:

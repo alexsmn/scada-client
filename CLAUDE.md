@@ -537,7 +537,7 @@ prebuilt; a `files` binary cache carried between runs by
 vcpkg writes each port to it as that port completes (not `x-gha`, which vcpkg
 has removed — the workflow's `env:` block has the detail). Expect two or three runs before the first green one. Remove the
 flag once a run has been green — a build job that is permanently allowed to fail
-is the decorative matrix `core` already has (superproject tasks.md 316).
+is what `core`'s matrix was until 2026-09-27 (superproject tasks.md 316).
 
 The `analyze` job runs the same cppcheck configuration the build runs — see
 `scada_configure_cppcheck()` in `build-support/ScadaProductBase.cmake` — against
