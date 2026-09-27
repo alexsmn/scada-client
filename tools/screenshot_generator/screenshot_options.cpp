@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <fstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -52,6 +53,19 @@ std::vector<std::string> GetProcessArgs() {
 
   for (int i = 1; i < *argc; ++i)
     args.emplace_back((*argv)[i]);
+#else
+  // Linux: the kernel's copy of argv, NUL-separated. There was no branch here,
+  // so every option -- `--out` first -- read as missing, and
+  // client_screenshot_check failed on the client's first Linux CI run to
+  // reach it (scada-client run 36306873339).
+  std::ifstream cmdline{"/proc/self/cmdline", std::ios::binary};
+  std::string arg;
+  bool first = true;
+  while (std::getline(cmdline, arg, '\0')) {
+    if (!first)
+      args.push_back(arg);
+    first = false;
+  }
 #endif
 
   return args;
