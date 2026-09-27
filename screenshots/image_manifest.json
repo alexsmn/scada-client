@@ -423,11 +423,11 @@
       ],
       "notes": "The reshelled operator workbench: CaptureMainWindow under --theme renders the full shell (activity rail, context bar with KPI severity tiles, command toolbar, editor tabs over EventJournal/Summ/Struct, the Inspector fronted in the right dock, status strip) and saves it under this name so the legacy client-window.png is never overwritten by a themed render. Fixture pending alarms light the tiles and the journal chrome. Kept out of current_generator_owned_subset (subset is auto-* only). Both STALE notes this row carried until 2026-09-19 are DISCHARGED, and were already wrong when they were read: they described the status strip's ping cell widening (120 -> 180, plus the \"no response\" marker, 0db08d4f8, 2026-08-01) and the context bar losing its identity/connection cluster to the status strip (2026-07-26), and asked for a Windows re-render. The tracked PNG already shows both — the context bar carries only breadcrumb, search and severity tiles, and user/connection/server/endpoint sit in the status strip — because it was re-rendered at 87b6a9b4b (2026-09-12), which has 0db08d4f8 as an ancestor. The request for a WINDOWS re-render is obsolete on its own terms too: either host may render the generated set (decided 2026-09-12), and only the manual-modus family needs Windows. This row is the README's hero image, so a note saying \"do not trust this picture\" is not a cheap thing to leave lying around. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it.",
       "captured": {
-        "commit": "d59515aa9",
+        "commit": "fdff72fdf",
         "platform": "macos",
         "dirty": false,
-        "sha256": "0396e294f3eb0a087694ba3fd657e0429dc8dc69dcbcd5fce978605089f240f1",
-        "last_rendered": "1a014d850"
+        "sha256": "ed6410208d05706f66883b53d0d583a140d22743e906e5c76e6c1653e93450be",
+        "last_rendered": "fdff72fdf"
       }
     },
     {
@@ -438,11 +438,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of workbench-window.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to workbench-window.png, and this is a second appearance of that capture rather than a second capture. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it.",
       "captured": {
-        "commit": "d59515aa9",
+        "commit": "fdff72fdf",
         "platform": "macos",
         "dirty": false,
-        "sha256": "2b62665fe083a3a81938ab65afd008086063f73d5c6aefad74daac7ccee4e117",
-        "last_rendered": "1a014d850"
+        "sha256": "c91c40d3c7263d907bc3c05bba6fb46d44ea93f7776c9c41a17fb0f45494afd5",
+        "last_rendered": "fdff72fdf"
       }
     },
     {
@@ -454,11 +454,11 @@
       ],
       "notes": "The Overview landing cockpit: a fresh page-less profile under the reshell theme boots through CreateInitialPage into MakeOverviewPage - the Explorer sidebar (tabified with its Favorites and Portfolio sibling panes) beside the dominant trend (65%) over the actionable-alarm strip, with the Inspector fronted on the right. Captured via the production seeding path (CaptureOverviewPage), so it guards the reshell initial-page routing too. In current_generator_owned_subset since 2026-09-12: the render was reviewed against the page that embeds it (scada-docs client/workbench.md and the en/ mirror, the «Обзор» section), which is what graduates an image into the published set. Re-rendered 2026-08-29: the Explorer trees stopped drawing a row for their root (ConfigurationTreeView now takes Tree's hidden-root default), because the pane's own dock title already names it — so the tree starts at its content. Re-rendered 2026-09-12: the landing published its whole right-hand third as the Inspector's «select an item» placeholder, because nothing on a freshly seeded page is selected — CaptureOverviewPage now makes the selection the shell's own way, through the Explorer pane the page already docks (SelectSignalForInspector, shared with workbench-window.png), so the card renders its readout, quality badge, limit bands and actions. Either host may render this image and the platform field is what keeps a diff readable (docs/ops/client-screenshots.md); the «pending a Windows re-render» this row used to claim is not owed. Rendered with --only, so no other image in the gallery moved, and provenance was stamped by hand for this row alone: --stamp rewrites every row whose digest differs — see backlog 642. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it.",
       "captured": {
-        "commit": "d59515aa9",
+        "commit": "fdff72fdf",
         "platform": "macos",
         "dirty": false,
-        "sha256": "aa13d1bf1024392390097da6b508cbd52fc8ba8ae970f148bccaf25ab057f8ef",
-        "last_rendered": "1a014d850"
+        "sha256": "06fd5c9c51af46e100cca8ec2cce5734edf2dacf9ac4df569f7734233823d678",
+        "last_rendered": "fdff72fdf"
       }
     },
     {
@@ -469,11 +469,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of workbench-overview.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to workbench-overview.png, and this is a second appearance of that capture rather than a second capture. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it.",
       "captured": {
-        "commit": "d59515aa9",
+        "commit": "fdff72fdf",
         "platform": "macos",
         "dirty": false,
-        "sha256": "a5b5970edf4b8a0e76c0686f49bf029600f29f121e937e8d29d1bc4851c169c5",
-        "last_rendered": "1a014d850"
+        "sha256": "6b1194b62604c41a3c3a57bf3412771708046ff9ef7b918d01862867c414c95f",
+        "last_rendered": "fdff72fdf"
       }
     },
     {
