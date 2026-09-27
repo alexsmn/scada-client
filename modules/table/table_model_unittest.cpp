@@ -9,6 +9,7 @@
 #include "base/test/scoped_mock_clock_override.h"
 #include "base/test/test_executor.h"
 #include "base/time/calendar.h"
+#include "base/utf_convert.h"
 #include "common/node_state.h"
 #include "events/node_event_provider_mock.h"
 #include "model/data_items_node_ids.h"
@@ -374,7 +375,7 @@ TEST_F(TableModelTest, DeliveredTimestampsRender) {
     const std::u16string text = table_model_.GetCellText(0, column);
     EXPECT_NE(text.find(u"2026"), std::u16string::npos)
         << "column " << column << " rendered "
-        << std::string{text.begin(), text.end()};
+        << UtfConvert<char>(text);
   }
 }
 

@@ -67,7 +67,7 @@ std::vector<scada::NodeState> PlanBulkCreate(
             ExpandTokens(plan.source_path_template, row.number);
         if (!plan.source_device_id.is_null() && !path.empty()) {
           const scada::NodeId source_id = scada::MakeNestedNodeId(
-              plan.source_device_id, std::string{path.begin(), path.end()});
+              plan.source_device_id, UtfConvert<char>(path));
           node.set_property(scada::data_items::id::DataItemType_Input1,
                             scada::Variant{MakeNodeIdFormula(source_id)});
         }
