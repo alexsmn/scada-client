@@ -1,5 +1,6 @@
 #include "bulk_create/bulk_create_plan.h"
 
+#include "base/utf_convert.h"
 #include "common/formula_util.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
@@ -41,8 +42,9 @@ std::vector<scada::NodeState> PlanBulkCreate(
         // The template's form is OPC UA's (`ns=2;s=...`), so it takes
         // NodeId::FromString and NOT NodeIdFromScadaString, which parses this
         // tree's own `TS.105` shorthand and would silently mangle it.
-        .node_id = scada::NodeId::FromString(
-            std::string{row.node_id.begin(), row.node_id.end()}),
+        // UtfConvert, not std::string{begin, end}: that copied each UTF-16
+        // unit into a char, truncating anything outside ASCII (MSVC C4244).
+        .node_id = scada::NodeId::FromString(UtfConvert<char>(row.node_id)),
         .type_definition_id = plan.type_definition_id,
         .parent_id = plan.parent_id,
         .attributes = {.display_name = scada::ToLocalizedText(row.name)},

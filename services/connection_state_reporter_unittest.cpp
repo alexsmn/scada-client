@@ -11,6 +11,7 @@
 #include <gtest/gtest.h>
 
 #include <chrono>
+#include <thread>
 
 using namespace std::chrono_literals;
 
@@ -63,7 +64,15 @@ TEST_F(ConnectionStateReporterTest, ReconnectRunsWhenTheBackoffElapses) {
 
   session_state_changed_(/*connected=*/false,
                          scada::Status{scada::StatusCode::Bad_Disconnected});
-  Drain(executor_);
+  // Drain until the reconnect is seen, bounded. The zero-delay timer is still a
+  // real steady_timer, whose completion reaches the executor only once its
+  // context has been polled; a single Drain() returned before that on Linux
+  // (scada-client run 36326279025), though not on macOS.
+  for (int i = 0; i < 200 && reconnects_ == 0; ++i) {
+    Drain(executor_);
+    if (reconnects_ == 0)
+      std::this_thread::sleep_for(std::chrono::milliseconds{10});
+  }
 
   EXPECT_EQ(reconnects_, 1);
 }
