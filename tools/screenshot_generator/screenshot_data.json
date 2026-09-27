@@ -1841,21 +1841,21 @@
           "row": 3,
           "col": 1,
           "text": "Параметр",
-          "color": "#FFEFEFEF"
+          "header": true
         },
         {
           "row": 3,
           "col": 2,
           "text": "Значение",
           "align": "center",
-          "color": "#FFEFEFEF"
+          "header": true
         },
         {
           "row": 3,
           "col": 3,
           "text": "Ед. изм.",
           "align": "center",
-          "color": "#FFEFEFEF"
+          "header": true
         },
         {
           "row": 4,

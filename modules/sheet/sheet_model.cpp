@@ -77,6 +77,8 @@ void SheetModel::Load(const WindowDefinition& definition) {
       if (!color_string.empty())
         format.color = scada::aui::StringToColor(color_string);
 
+      format.header = item.GetBool("header");
+
       cell.format_ = formats().Get(format);
 
     } else if (item.name_is("Column")) {
@@ -126,6 +128,9 @@ void SheetModel::Save(WindowDefinition& definition) {
             item.SetString("align", "right");
           else if (cell->format_->align == DT_CENTER)
             item.SetString("align", "center");
+
+          if (cell->format_->header)
+            item.SetBool("header", true);
         }
       }
     }
@@ -182,11 +187,19 @@ void SheetModel::GetCell(scada::aui::GridCell& cell) {
   if (c->format_)
     cell.alignment = SheetAlignmentToAui(c->format_->align);
 
+  // A cell answers with a role or with a literal colour, never both (see
+  // `scada::aui::ColorRole`). The operator's own fill and the blink highlight
+  // are literals and win; an unfilled header asks for the palette's header
+  // role, so the band follows the theme (task 696).
   if (c->format_ && c->format_->color != scada::aui::ColorCode::Transparent)
     cell.cell_color = c->format_->color;
+  else if (c->format_ && c->format_->header)
+    cell.color_role = scada::aui::ColorRole::Header;
 
-  if (!editing_ && c->is_blinking() && Blinker::GetState())
+  if (!editing_ && c->is_blinking() && Blinker::GetState()) {
+    cell.color_role = scada::aui::ColorRole::Default;
     cell.cell_color = scada::aui::ColorCode::Yellow;
+  }
 }
 
 SheetCell& SheetModel::GetCell(int row, int column) {

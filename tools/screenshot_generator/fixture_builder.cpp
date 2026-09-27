@@ -156,6 +156,8 @@ Page MakeScreenshotPage(const std::vector<ScreenshotSpec>& specs,
           item.SetString("align", cell.align);
         if (!cell.color.empty())
           item.SetString("color", cell.color);
+        if (cell.header)
+          item.SetBool("header", true);
       }
       for (size_t i = 0; i < spec.column_widths.size(); ++i) {
         WindowItem& item = window.AddItem("Column");

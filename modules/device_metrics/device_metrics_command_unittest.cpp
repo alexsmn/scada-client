@@ -178,6 +178,33 @@ TEST_F(DeviceMetricsCommandTest, MakeDeviceMetricsWindowDefinitionSync) {
                       CellIs(u"={IEC_DEV.3!InterrogateCount}"))));
 }
 
+// The label cells — the device row and the metric column — are marked
+// `header`, and no cell carries a baked fill. Regression: the labels were
+// painted Rgba{227, 227, 227} as window-definition data, which survived into
+// the dark theme as a light stripe; after that was removed they were
+// indistinguishable from the values (task 696).
+TEST_F(DeviceMetricsCommandTest, LabelCellsAreHeadersAndNothingIsFilled) {
+  const auto* device1 =
+      CreateDevice(scada::NodeId{1, device_namespace_index}, u"Device 1");
+  const std::vector devices{GetNode(device1->id())};
+
+  auto window_definition =
+      MakeDeviceMetricsWindowDefinitionSync(u"Test title", devices);
+
+  int headers = 0;
+  for (const WindowItem& item : window_definition.items) {
+    if (item.name != "SheetCell")
+      continue;
+    const bool is_label = item.GetInt("row") == 1 || item.GetInt("col") == 1;
+    EXPECT_EQ(item.GetBool("header"), is_label)
+        << "row " << item.GetInt("row") << " col " << item.GetInt("col");
+    EXPECT_TRUE(item.GetString("color").empty());
+    headers += is_label ? 1 : 0;
+  }
+  // One device heading plus one label per metric.
+  EXPECT_GT(headers, 1);
+}
+
 TEST_F(DeviceMetricsCommandTest, MakeDeviceMetricsWindowDefinitionAsync) {
   const auto* device1 = CreateDevice({1, device_namespace_index}, u"Device 1");
   const auto* device2 = CreateDevice({2, device_namespace_index}, u"Device 2");

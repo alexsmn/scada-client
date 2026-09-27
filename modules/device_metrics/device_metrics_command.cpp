@@ -60,16 +60,12 @@ WindowDefinition MakeDeviceMetricsWindowDefinitionSync(
     cell.SetInt("width", 200);
   }
 
-  // Header cells carry no baked fill. They used to be painted
-  // Rgba{227, 227, 227}, and a colour set here is *window definition* data —
-  // it is serialised into the page and read back whatever appearance the
-  // client is running, so the band survived into the dark and high-contrast
-  // themes as a light stripe and made the sheet the one capture that could not
-  // be rendered themed at all. Unstyled cells fall through to the theme
-  // palette (GridModelAdapter), which is what every other grid in the client
-  // does. Giving the sheet a real header-cell *style* — a semantic flag the
-  // view resolves against the palette, rather than an operator cell colour —
-  // is a sheet-model change, filed separately.
+  // Header cells are marked `header` rather than given a fill. They used to be
+  // painted Rgba{227, 227, 227}, and a colour set here is *window definition*
+  // data — it is serialised into the page and read back whatever appearance
+  // the client is running, so the band survived into the dark and
+  // high-contrast themes as a light stripe. The flag is resolved against the
+  // palette when the cell is drawn, so the band follows the theme (task 696).
 
   // Header.
   auto data_variable_decls = CollectVariables(devices) | to_vector;
@@ -79,6 +75,7 @@ WindowDefinition MakeDeviceMetricsWindowDefinitionSync(
     cell.SetInt("col", 1);
     cell.SetString("text", ToString16(data_variable_decls[i].display_name()));
     cell.SetString("align", "right");
+    cell.SetBool("header", true);
   }
 
   // Items.
@@ -91,6 +88,7 @@ WindowDefinition MakeDeviceMetricsWindowDefinitionSync(
       cell.SetInt("row", 1);
       cell.SetInt("col", i + 2);
       cell.SetString("text", ToString16(device.display_name()));
+      cell.SetBool("header", true);
     }
 
     // Metric cells.

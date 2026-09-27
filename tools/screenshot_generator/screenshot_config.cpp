@@ -159,6 +159,8 @@ void ScreenshotConfig::Load(const std::filesystem::path& path) {
           sheet_cell.align = std::string(align->as_string());
         if (const auto* color = cell.if_contains("color"))
           sheet_cell.color = std::string(color->as_string());
+        if (const auto* header = cell.if_contains("header"))
+          sheet_cell.header = header->as_bool();
         spec.cells.push_back(std::move(sheet_cell));
       }
     }

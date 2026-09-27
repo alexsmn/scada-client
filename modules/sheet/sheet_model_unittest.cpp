@@ -137,6 +137,62 @@ TEST_F(SheetModelTest, ReportsTheCellsStoredAlignment) {
   EXPECT_EQ(left.alignment, scada::aui::TableColumn::LEFT);
 }
 
+// A header cell is a semantic flag, not a colour: it reaches the grid as
+// `ColorRole::Header` for the view to resolve against the palette, it survives
+// a save, and an operator's own fill still wins over it (task 696).
+TEST_F(SheetModelTest, HeaderCellIsARoleThatRoundTrips) {
+  FakeBlinkerManager blinker_manager;
+  SheetModel model{SheetModelContext{
+      .timed_data_service_ = timed_data_service_,
+      .blinker_manager_ = blinker_manager,
+  }};
+  model.SetSizes(10, 10);
+
+  WindowDefinition definition{"CusTable"};
+  definition.AddItem("SheetCell")
+      .SetInt("row", 1)
+      .SetInt("col", 1)
+      .SetString("text", "Связь")
+      .SetBool("header", true);
+  definition.AddItem("SheetCell")
+      .SetInt("row", 1)
+      .SetInt("col", 2)
+      .SetString("text", "Итого")
+      .SetBool("header", true)
+      .SetString("color",
+                 scada::aui::ColorToString(scada::aui::ColorCode::Red));
+  definition.AddItem("SheetCell")
+      .SetInt("row", 2)
+      .SetInt("col", 1)
+      .SetString("text", "42");
+  model.Load(definition);
+
+  scada::aui::GridCell header{.row = 0, .column = 0};
+  model.GetCell(header);
+  EXPECT_EQ(header.color_role, scada::aui::ColorRole::Header);
+  EXPECT_EQ(header.cell_color,
+            scada::aui::Color{scada::aui::ColorCode::Transparent});
+
+  scada::aui::GridCell filled{.row = 0, .column = 1};
+  model.GetCell(filled);
+  EXPECT_EQ(filled.cell_color, scada::aui::Color{scada::aui::ColorCode::Red});
+  // A role or a literal, never both.
+  EXPECT_EQ(filled.color_role, scada::aui::ColorRole::Default);
+
+  scada::aui::GridCell plain{.row = 1, .column = 0};
+  model.GetCell(plain);
+  EXPECT_EQ(plain.color_role, scada::aui::ColorRole::Default);
+
+  WindowDefinition saved{"CusTable"};
+  model.Save(saved);
+  int saved_headers = 0;
+  for (const WindowItem& item : saved.items) {
+    if (item.name == "SheetCell" && item.GetBool("header"))
+      ++saved_headers;
+  }
+  EXPECT_EQ(saved_headers, 2);
+}
+
 // Regression: a saved window is profile data the user can edit, and one whose
 // cell coordinates fell outside the sheet's fixed size panicked in
 // `SheetModel::GetCell` the moment the page opened; a column index outside it

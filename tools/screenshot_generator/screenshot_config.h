@@ -21,6 +21,9 @@ struct SheetCellSpec {
   std::string align;
   // Cell background as `#AARRGGBB`; an alpha of 0 reads as "no colour".
   std::string color;
+  // A label cell, drawn from the palette's header role rather than a fill
+  // (the sheet's `header` flag, task 696).
+  bool header = false;
 };
 
 // Configuration for a single main-window view capture. Matches one row
