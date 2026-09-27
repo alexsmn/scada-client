@@ -1830,6 +1830,151 @@ TEST_P(ClientServerE2eTest,
       });
 }
 
+// The element of the node `ns=<local>;<identifier>` in `document`, from its
+// opening tag to its closing `</UAVariable>`; empty when it is not there.
+std::string_view VariableElement(std::string_view document,
+                                 std::string_view node_id) {
+  const std::string opening =
+      "<UAVariable NodeId=\"" + std::string{node_id} + "\"";
+  const std::size_t begin = document.find(opening);
+  if (begin == std::string_view::npos)
+    return {};
+  constexpr std::string_view kClosing = "</UAVariable>";
+  const std::size_t end = document.find(kClosing, begin);
+  return end == std::string_view::npos
+             ? std::string_view{}
+             : document.substr(begin, end + kClosing.size() - begin);
+}
+
+// Replaces every occurrence of `from` in `text` by `to`.
+std::string ReplaceAll(std::string text,
+                       std::string_view from,
+                       std::string_view to) {
+  for (std::size_t at = text.find(from); at != std::string::npos;
+       at = text.find(from, at + to.size())) {
+    text.replace(at, from.size(), to);
+  }
+  return text;
+}
+
+// `document`, an export, with `count` copies of the discrete item TS.1 added,
+// numbered from `first_id` -- each the item's element and its property
+// children, renumbered. Enough of them take a configuration past the export's
+// gzip threshold. Nothing when TS.1 is not in the document as expected.
+std::optional<std::string> WithCopiesOfTransferredItem(std::string document,
+                                                       int count,
+                                                       int first_id) {
+  const auto ns = LocalNamespaceIndex(document, kDiscreteItemsUri);
+  if (!ns)
+    return std::nullopt;
+  const std::string prefix = "ns=" + std::to_string(*ns) + ";";
+  const std::string item_id = prefix + "i=1";
+  const std::string property_prefix = prefix + "s=1!";
+
+  std::string item{VariableElement(document, item_id)};
+  if (item.empty())
+    return std::nullopt;
+  // The item's References name each property child; copy those children too.
+  // Scanned in the item element alone, not in what is appended to it: each
+  // child's own NodeId carries the same prefix.
+  const std::string element = item;
+  for (std::size_t at = element.find(property_prefix); at != std::string::npos;
+       at = element.find(property_prefix, at + 1)) {
+    const std::size_t end = element.find('<', at);
+    const std::string_view property = VariableElement(
+        document, std::string_view{element}.substr(at, end - at));
+    if (property.empty())
+      return std::nullopt;
+    item.append("\n  ").append(property);
+  }
+
+  std::string copies;
+  for (int i = 0; i < count; ++i) {
+    const std::string id = std::to_string(first_id + i);
+    std::string copy = ReplaceAll(item, "\"" + item_id + "\"",
+                                  "\"" + prefix + "i=" + id + "\"");
+    copy = ReplaceAll(std::move(copy), ">" + item_id + "<",
+                      ">" + prefix + "i=" + id + "<");
+    copy =
+        ReplaceAll(std::move(copy), property_prefix, prefix + "s=" + id + "!");
+    copy = ReplaceAll(std::move(copy), "BrowseName=\"TS.1\"",
+                      "BrowseName=\"TS." + id + "\"");
+    copies.append("  ").append(copy).append("\n");
+  }
+  const std::size_t end = document.rfind("</UANodeSet>");
+  if (end == std::string::npos)
+    return std::nullopt;
+  document.insert(end, copies);
+  return document;
+}
+
+// How many copies of TS.1 take the fixture past the threshold, numbered from
+// an id no fixture item uses; and the threshold itself
+// (ConfigurationExporter::Settings::gzip_threshold's default).
+constexpr int kTransferredItemCopies = 400;
+constexpr int kFirstCopyId = 100000;
+constexpr std::size_t kExportGzipThreshold = 1024 * 1024;
+
+// A configuration past the gzip threshold (ConfigurationExporter's 1 MiB),
+// over the wire: a ~1.5 MB file uploads in some two dozen 64 KiB Write calls
+// and commits; the export that follows comes back gzipped; and that gzipped
+// file re-imports in a dry run with nothing to do -- which also proves it
+// holds every item, since a full replace missing one would delete it. The
+// fixture's own export is far below the threshold, so this is the only case
+// that crosses it. The download is NOT chunked: this XML gzips to ~46 KB,
+// under one 64 KiB Read.
+TEST_P(ClientServerE2eTest, ConfigurationTransfer_ALargeExportIsGzipped) {
+  if (UsesExternalServer())
+    GTEST_SKIP() << "an applied import would change a deployment's "
+                    "configuration";
+
+  StartServer();
+
+  WithTransferSession(
+      Protocol(), opcua_port_, remote_port_, u"root", [](auto& session) {
+        const auto exported = session.ExportConfiguration();
+        ASSERT_TRUE(exported.ok())
+            << "export failed: " << ::ToString(exported.status());
+        ASSERT_FALSE(IsGzipData(*exported));
+
+        const auto enlarged = WithCopiesOfTransferredItem(
+            *exported, kTransferredItemCopies, kFirstCopyId);
+        ASSERT_TRUE(enlarged.has_value())
+            << "the export has no TS.1 element to copy";
+        ASSERT_GT(enlarged->size(), kExportGzipThreshold)
+            << "the enlarged configuration does not cross the threshold";
+
+        const auto applied = session.ImportConfiguration(
+            *enlarged, ConfigurationTransferClient::ImportOptions{});
+        ASSERT_TRUE(applied.status) << "the enlarged import was refused: "
+                                    << ::ToString(applied.status);
+        ASSERT_TRUE(applied.result.has_value());
+        EXPECT_TRUE(applied.result->committed);
+        EXPECT_THAT(applied.result->added,
+                    ::testing::SizeIs(kTransferredItemCopies));
+        EXPECT_THAT(applied.result->failures, ::testing::IsEmpty());
+
+        const auto large = session.ExportConfiguration();
+        ASSERT_TRUE(large.ok())
+            << "the large export failed: " << ::ToString(large.status());
+        EXPECT_TRUE(IsGzipData(*large))
+            << "a " << enlarged->size()
+            << "-byte configuration was exported uncompressed";
+
+        const auto checked = session.ImportConfiguration(
+            *large,
+            ConfigurationTransferClient::ImportOptions{.dry_run = true});
+        ASSERT_TRUE(checked.status)
+            << "re-importing the gzipped export was refused: "
+            << ::ToString(checked.status);
+        ASSERT_TRUE(checked.result.has_value());
+        EXPECT_THAT(checked.result->added, ::testing::IsEmpty());
+        EXPECT_THAT(checked.result->modified, ::testing::IsEmpty());
+        EXPECT_THAT(checked.result->deleted, ::testing::IsEmpty());
+        EXPECT_THAT(checked.result->failures, ::testing::IsEmpty());
+      });
+}
+
 INSTANTIATE_TEST_SUITE_P(
     Protocols,
     ClientServerE2eTest,
