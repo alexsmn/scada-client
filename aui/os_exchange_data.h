@@ -4,6 +4,15 @@
 #include <map>
 #include <vector>
 
+#ifdef _WIN32
+// IDataObject, FORMATETC, STGMEDIUM, HRESULT: this header declared a COM
+// object with none of them included, and compiled only where something before
+// it had already pulled <windows.h> in.
+#include <windows.h>
+
+#include <objidl.h>
+#endif
+
 namespace scada::base {
 class Pickle;
 }

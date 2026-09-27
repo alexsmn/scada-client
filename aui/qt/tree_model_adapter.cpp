@@ -282,16 +282,16 @@ QVariant TreeModelAdapter::data(const QModelIndex& index, int role) const {
       // that still name a literal colour are asserting a process semantic
       // (alarm state, data quality) with a fixed value that must not follow
       // the platform theme; they leave the role at `Default` and fall through.
-      const ColorRole role = model_->GetColorRole(node, index.column());
-      if (role != ColorRole::Default)
-        return RoleForeground(role);
+      const ColorRole color_role = model_->GetColorRole(node, index.column());
+      if (color_role != ColorRole::Default)
+        return RoleForeground(color_role);
       auto color = model_->GetTextColor(node, index.column());
       return IsTransparent(color) ? QVariant{} : color.qcolor();
     }
     case Qt::BackgroundRole: {
-      const ColorRole role = model_->GetColorRole(node, index.column());
-      if (role != ColorRole::Default)
-        return RoleBackground(role);
+      const ColorRole color_role = model_->GetColorRole(node, index.column());
+      if (color_role != ColorRole::Default)
+        return RoleBackground(color_role);
       auto color = model_->GetBackgroundColor(node, index.column());
       return IsTransparent(color) ? QVariant{} : color.qcolor();
     }

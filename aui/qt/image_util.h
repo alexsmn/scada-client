@@ -160,7 +160,7 @@ inline std::vector<QIcon> LoadTintedGlyphs(
 // rather than competing with the label they sit beside.
 inline scada::aui::Color GlyphTintFor(const QPalette& palette) {
   QColor tint = palette.color(QPalette::Text);
-  tint.setAlphaF(0.7);
+  tint.setAlphaF(0.7f);
   return scada::aui::Rgba{static_cast<unsigned char>(tint.red()),
                           static_cast<unsigned char>(tint.green()),
                           static_cast<unsigned char>(tint.blue()),
