@@ -85,8 +85,9 @@ void ConnectionStateReporter::OnReconnectTimer() {
   // awaited: calling it and dropping the result built a frame and destroyed it
   // unrun. So after a lost connection the client announced "Reconnecting in N
   // seconds" and never did -- found by GCC's -Werror=unused-result on the
-  // client's first Linux CI build (scada-client run 36295863277), which Clang
-  // does not raise for a discarded awaitable.
+  // client's first Linux CI build (scada-client run 36295863277). Clang reports
+  // the same call only as a -Wunused-value warning, which is not an error in
+  // this tree, so it went unnoticed on macOS.
   CoSpawn(executor_,
           [&session_service = session_service_]() -> Awaitable<void> {
             co_await session_service.Reconnect();
