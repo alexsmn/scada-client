@@ -164,3 +164,15 @@ TEST_F(ConfigurationTreeViewSortTest, ObjectsReadInNameOrderNotTypeIdOrder) {
   EXPECT_THAT(VisibleRows(),
               ElementsAre(u"Астра", u"Берёза", u"Яблоко", u"Аметист"));
 }
+
+// The constructor promises that an empty selection means the root, which is
+// what lets the tree's context menu act on «Все оборудование» — the tree shows
+// no root row to click. That mapping ran only on a selection change, so a tree
+// that had just been opened answered an empty selection instead, and the
+// root-scoped commands («Создать» among them) were missing until the operator
+// clicked a row and cleared it again.
+TEST_F(ConfigurationTreeViewSortTest, AFreshTreeActsOnItsRootBeforeAnyClick) {
+  SelectionModel* selection = view_->GetSelectionModel();
+  ASSERT_THAT(selection, NotNull());
+  EXPECT_EQ(selection->node().node_id(), scada::data_items::id::DataItems);
+}

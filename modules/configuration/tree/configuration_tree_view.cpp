@@ -255,6 +255,15 @@ std::unique_ptr<UiView> ConfigurationTreeView::Init(
   if (auto* state = definition.FindItem("State"))
     tree_view_->RestoreState(state->attributes);
 
+  // Seed the selection. UpdateSelection() is what maps "nothing picked" onto
+  // the root, but it runs only on a selection CHANGE, and a freshly opened tree
+  // has had none — so until the operator clicked a row and cleared it again,
+  // the selection was empty and every root-scoped command was missing from the
+  // context menu: right-clicking the hardware tree's blank area offered
+  // «Вставить» alone, with no «Создать» for a new link.
+  if (model_->root())
+    UpdateSelection();
+
 #if defined(UI_QT)
   // A type-to-filter field above the Explorer tree.
   return WrapExplorerWithFilter(tree_view_);
