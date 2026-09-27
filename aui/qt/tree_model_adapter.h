@@ -7,7 +7,7 @@
 #include "aui/os_exchange_data.h"
 #include <boost/signals2/connection.hpp>
 
-#include <QAbstractitemmodel>
+#include <QAbstractItemModel>
 #include <cstdint>
 #include <map>
 #include <memory>
