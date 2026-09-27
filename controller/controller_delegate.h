@@ -18,6 +18,7 @@ class WindowDefinition;
 
 class ControllerDelegate {
  public:
+  virtual ~ControllerDelegate() = default;
   virtual void SetTitle(std::u16string_view title) = 0;
 
   // Resolves a command against the full command surface the shell offers this

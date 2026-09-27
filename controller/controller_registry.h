@@ -17,6 +17,7 @@ using ControllerRegistryFactory =
 
 class ControllerRegistrarBase {
  public:
+  virtual ~ControllerRegistrarBase() = default;
   ControllerRegistrarBase(const WindowInfo& window_info, bool is_static);
 
   const WindowInfo& window_info() const SCADA_LIFETIME_BOUND {

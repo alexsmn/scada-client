@@ -9,6 +9,7 @@ class WindowDefinition;
 
 class ViewManagerDelegate {
  public:
+  virtual ~ViewManagerDelegate() = default;
   virtual std::unique_ptr<OpenedView> OnCreateView(
       WindowDefinition& definition) = 0;
 

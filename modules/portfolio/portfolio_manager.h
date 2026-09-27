@@ -16,6 +16,7 @@ class Portfolio;
 
 class PortfolioEvents {
  public:
+  virtual ~PortfolioEvents() = default;
   virtual void Portfolio_OnUpdate(Portfolio& portfolio) {}
   virtual void Portfolio_OnDelete(Portfolio& portfolio) {}
   virtual void Portfolio_OnUpdateItem(Portfolio& portfolio,

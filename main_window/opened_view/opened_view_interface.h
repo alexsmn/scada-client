@@ -25,5 +25,5 @@ class OpenedViewInterface {
       const WindowInfo* window_info) const = 0;
 
  protected:
-  ~OpenedViewInterface() = default;
+  virtual ~OpenedViewInterface() = default;
 };

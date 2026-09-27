@@ -13,6 +13,7 @@ namespace scada::aui {
 
 class HeaderModel {
  public:
+  virtual ~HeaderModel() = default;
   using ModelChangedCallback = std::function<void(HeaderModel& model)>;
   using SizeChangedCallback =
       std::function<void(HeaderModel& model, int index)>;

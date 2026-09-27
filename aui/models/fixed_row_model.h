@@ -8,6 +8,7 @@ class FixedRowModel : public HeaderModel {
  public:
   class Delegate {
    public:
+    virtual ~Delegate() = default;
     virtual int GetRowCount() = 0;
     virtual std::u16string GetRowTitle(int index);
   };

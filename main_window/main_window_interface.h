@@ -58,5 +58,5 @@ class MainWindowInterface {
   virtual void ShowSettings() {}
 
  protected:
-  ~MainWindowInterface() = default;
+  virtual ~MainWindowInterface() = default;
 };
