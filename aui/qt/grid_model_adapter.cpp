@@ -3,6 +3,7 @@
 
 #include "aui/color.h"
 #include "aui/models/grid_range.h"
+#include "aui/qt/color_role_qt.h"
 #include "aui/severity_colors.h"
 #include "base/check.h"
 
@@ -104,15 +105,19 @@ QVariant GridModelAdapter::data(const QModelIndex& index, int role) const {
   cell.column = index.column();
   model_->GetCell(cell);
 
-  // A transparent colour means "unstyled": the cell falls through to the theme
-  // palette. A cell with an explicit background but default text derives a
-  // contrasting text colour, so a semantically light cell (read-only grey,
-  // blink yellow) stays readable on the dark theme.
+  // A cell answers with a `ColorRole`, resolved against the palette so it
+  // follows the theme, or with literal colours, never both (see `ColorRole`).
+  // A transparent colour means "unstyled": the cell falls through to the
+  // view's palette. A cell with an explicit background but default text
+  // derives a contrasting text colour, so an operator's light fill or blink
+  // yellow stays readable on the dark theme.
   switch (role) {
     case Qt::DisplayRole:
     case Qt::EditRole:
       return QString::fromStdU16String(cell.text);
     case Qt::ForegroundRole:
+      if (cell.color_role != ColorRole::Default)
+        return ColorRoleForeground(cell.color_role);
       if (!IsTransparent(cell.text_color))
         return cell.text_color.qcolor();
       if (!IsTransparent(cell.cell_color)) {
@@ -121,6 +126,8 @@ QVariant GridModelAdapter::data(const QModelIndex& index, int role) const {
       }
       return QVariant();
     case Qt::BackgroundRole:
+      if (cell.color_role != ColorRole::Default)
+        return ColorRoleBackground(cell.color_role);
       if (!IsTransparent(cell.cell_color))
         return cell.cell_color.qcolor();
       return QVariant();

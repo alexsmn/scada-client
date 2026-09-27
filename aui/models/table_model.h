@@ -14,6 +14,9 @@ struct TableCell {
   std::u16string text;
   Color text_color = ColorCode::Transparent;
   Color cell_color = ColorCode::Transparent;
+  // What the colouring means, resolved against the palette. Answer with this
+  // or with the two colours above, never both (see `ColorRole`).
+  ColorRole color_role = ColorRole::Default;
   int icon_index = -1;
 };
 

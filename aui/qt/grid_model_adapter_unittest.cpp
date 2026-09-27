@@ -10,8 +10,10 @@
 #include <gtest/gtest.h>
 
 #include <QAbstractItemModelTester>
+#include <QApplication>
 #include <QColor>
 #include <QItemSelectionModel>
+#include <QPalette>
 #include <QSignalSpy>
 #include <QVariant>
 
@@ -33,6 +35,7 @@ class StubGridModel : public GridModel {
     cell.text_color = text_color;
     cell.cell_color = cell_color;
     cell.alignment = alignment;
+    cell.color_role = cell_role;
   }
 
   // The notification shapes a real model uses, exposed so the adapter tests
@@ -56,6 +59,7 @@ class StubGridModel : public GridModel {
   Color text_color = ColorCode::Transparent;
   Color cell_color = ColorCode::Transparent;
   std::optional<TableColumn::Alignment> alignment;
+  ColorRole cell_role = ColorRole::Default;
   int get_cell_calls = 0;
 };
 
@@ -177,6 +181,46 @@ TEST_F(GridModelAdapterTest, ThemedExplicitBackgroundDerivesContrastingText) {
 
   model_->cell_color = Rgba{0x20, 0x20, 0x20};  // dark
   EXPECT_EQ(Data(Qt::ForegroundRole).value<QColor>(), QColor{Qt::white});
+}
+
+// A colour role is resolved against the application palette at paint time,
+// so a header band or a disabled cell follows a theme switch instead of
+// carrying one fixed RGB into every appearance. Regression: the grids' models
+// could only name literals — `Rgba{227, 227, 227}` headers and
+// `Rgba{0xF0, 0xF0, 0xF0}` read-only cells — which stayed light stripes under
+// the dark theme (tasks 367/696).
+TEST_F(GridModelAdapterTest, ColorRoleResolvesAgainstTheCurrentPalette) {
+  const QPalette original = QApplication::palette();
+
+  model_->cell_role = ColorRole::Header;
+  EXPECT_EQ(Data(Qt::BackgroundRole).value<QColor>(),
+            QApplication::palette().color(QPalette::Button));
+  EXPECT_EQ(Data(Qt::ForegroundRole).value<QColor>(),
+            QApplication::palette().color(QPalette::ButtonText));
+
+  QPalette dark = original;
+  dark.setColor(QPalette::Button, QColor{0x30, 0x31, 0x34});
+  dark.setColor(QPalette::ButtonText, QColor{0xE8, 0xEA, 0xED});
+  dark.setColor(QPalette::Disabled, QPalette::Text, QColor{0x80, 0x81, 0x84});
+  QApplication::setPalette(dark);
+  EXPECT_EQ(Data(Qt::BackgroundRole).value<QColor>(),
+            (QColor{0x30, 0x31, 0x34}));
+  EXPECT_EQ(Data(Qt::ForegroundRole).value<QColor>(),
+            (QColor{0xE8, 0xEA, 0xED}));
+
+  // A disabled cell is greyed by its text alone.
+  model_->cell_role = ColorRole::Disabled;
+  EXPECT_FALSE(Data(Qt::BackgroundRole).isValid());
+  EXPECT_EQ(Data(Qt::ForegroundRole).value<QColor>(),
+            (QColor{0x80, 0x81, 0x84}));
+
+  // Placeholder text recolours the text only.
+  model_->cell_role = ColorRole::Placeholder;
+  EXPECT_FALSE(Data(Qt::BackgroundRole).isValid());
+  EXPECT_EQ(Data(Qt::ForegroundRole).value<QColor>(),
+            QApplication::palette().color(QPalette::PlaceholderText));
+
+  QApplication::setPalette(original);
 }
 
 // A column's alignment reaches Qt as Qt's own flags. Regression: the adapter

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aui/color.h"
+#include "aui/models/color_role.h"
 
 #include <optional>
 
@@ -53,6 +54,9 @@ struct GridCell {
   // whose cells carry their own formatting sets it; the spreadsheet does,
   // because alignment there is a per-cell property the operator chooses.
   std::optional<TableColumn::Alignment> alignment;
+  // What the colouring means, resolved against the palette. Answer with this
+  // or with the two colours above, never both (see `ColorRole`).
+  ColorRole color_role = ColorRole::Default;
 };
 
 }  // namespace scada::aui

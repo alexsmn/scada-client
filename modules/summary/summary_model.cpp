@@ -335,8 +335,11 @@ void SummaryModel::GetCell(scada::aui::GridCell& cell) {
                                                    data_value.qualifier);
   }
 
+  // A period whose data has not arrived is greyed through the palette's
+  // disabled text, so it follows the theme; it used to be a literal
+  // Rgba{227, 227, 227} fill that stayed a light stripe on dark (task 367).
   if (!column.IsReady(cell.row)) {
-    cell.cell_color = scada::aui::ColorCode::DarkGray;
+    cell.color_role = scada::aui::ColorRole::Disabled;
   }
 }
 

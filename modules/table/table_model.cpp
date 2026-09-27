@@ -72,7 +72,7 @@ void TableModel::GetCellEx(TableCellEx& cell) const {
   if (cell.row == static_cast<int>(rows_.size())) {
     if (cell.column_id == 0) {
       cell.text = Translate("Enter expression");
-      cell.text_color = scada::aui::Rgba{192, 192, 192};
+      cell.color_role = scada::aui::ColorRole::Placeholder;
     }
     return;
   }

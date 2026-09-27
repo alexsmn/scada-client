@@ -152,6 +152,23 @@ TEST_F(NodeTableModelTest, NotifiesAfterAsyncBrowseCompletes) {
   EXPECT_GE(model_changed, 1);
 }
 
+// While the browse is outstanding the one placeholder row is drawn as
+// inactive, by role rather than by a literal grey, so it follows the theme.
+// Regression: the cell used to carry `Rgba{0xF0, 0xF0, 0xF0}`, which stayed a
+// light stripe under the dark and high-contrast themes (task 367).
+TEST_F(NodeTableModelTest, LoadingRowIsInactiveByRoleNotByColour) {
+  auto model = CreateModel(kGroupId);
+
+  scada::aui::GridCell cell;
+  model->GetCell(cell);
+
+  EXPECT_EQ(cell.color_role, scada::aui::ColorRole::Disabled);
+  EXPECT_EQ(cell.cell_color,
+            scada::aui::Color{scada::aui::ColorCode::Transparent});
+
+  CompleteAllFetches();
+}
+
 // Regression for the on-close SIGSEGV: a fetch completing during teardown
 // resumes the SetParentNode coroutine and fires model_changed_signal_. A
 // handler — in the app, the grid adapter's endResetModel driving the

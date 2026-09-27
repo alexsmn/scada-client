@@ -47,6 +47,7 @@ module;
 #include "aui/grid.h"
 #include "aui/handlers.h"
 #include "aui/key_codes.h"
+#include "aui/models/color_role.h"
 #include "aui/models/edit_data.h"
 #include "aui/models/fixed_row_model.h"
 #include "aui/models/grid_model.h"
@@ -172,6 +173,9 @@ using aui::TableColumn;
 // models/table_model.h
 using aui::TableCell;
 using aui::TableModel;
+
+// models/color_role.h
+using aui::ColorRole;
 
 // models/tree_model.h
 using aui::TreeModel;

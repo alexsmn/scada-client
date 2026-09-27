@@ -3,6 +3,7 @@
 
 #include "aui/color.h"
 #include "aui/models/table_model.h"
+#include "aui/qt/color_role_qt.h"
 #include "aui/qt/image_util.h"
 #include "aui/qt/theme_qt.h"
 #include "base/check.h"
@@ -132,9 +133,14 @@ QVariant TableModelAdapter::data(const QModelIndex& index, int role) const {
     case Qt::EditRole:
       return QString::fromStdU16String(cell.text);
     case Qt::ForegroundRole:
+      // A role or a literal, never both (see `ColorRole`).
+      if (cell.color_role != ColorRole::Default)
+        return ColorRoleForeground(cell.color_role);
       return IsTransparent(cell.text_color) ? QVariant{}
                                             : cell.text_color.qcolor();
     case Qt::BackgroundRole:
+      if (cell.color_role != ColorRole::Default)
+        return ColorRoleBackground(cell.color_role);
       return IsTransparent(cell.cell_color) ? QVariant{}
                                             : cell.cell_color.qcolor();
     case Qt::DecorationRole:

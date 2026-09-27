@@ -209,23 +209,23 @@ TEST_F(SummaryModelTest, CellsAreGreyWhileLoading) {
           .AddItem("Interval", std::chrono::minutes(30))
           .AddItem("AggregateType", scada::id::AggregateFunction_Maximum));
 
-  EXPECT_EQ(scada::aui::ColorCode::DarkGray,
+  EXPECT_EQ(scada::aui::ColorRole::Disabled,
             GetCellAt(/*column_index=*/0,
                       TestTimeFromString("15 Nov 2004 13:30:00 UTC"))
-                .cell_color);
+                .color_role);
 
-  EXPECT_EQ(scada::aui::ColorCode::Transparent,
+  EXPECT_EQ(scada::aui::ColorRole::Default,
             GetCellAt(/*column_index=*/0,
                       TestTimeFromString("15 Nov 2004 14:00:00 UTC"))
-                .cell_color);
+                .color_role);
 
-  EXPECT_EQ(scada::aui::ColorCode::Transparent,
+  EXPECT_EQ(scada::aui::ColorRole::Default,
             GetCellAt(/*column_index=*/0,
                       TestTimeFromString("15 Nov 2004 14:30:00 UTC"))
-                .cell_color);
+                .color_role);
 
-  EXPECT_EQ(scada::aui::ColorCode::DarkGray,
+  EXPECT_EQ(scada::aui::ColorRole::Disabled,
             GetCellAt(/*column_index=*/0,
                       TestTimeFromString("15 Nov 2004 15:00:00 UTC"))
-                .cell_color);
+                .color_role);
 }

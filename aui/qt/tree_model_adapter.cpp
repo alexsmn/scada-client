@@ -4,6 +4,7 @@
 #include "aui/color.h"
 #include "aui/drag_drop_types.h"
 #include "aui/models/tree_model.h"
+#include "aui/qt/color_role_qt.h"
 #include "aui/qt/image_util.h"
 #include "aui/qt/theme_qt.h"
 #include "base/check.h"
@@ -21,40 +22,6 @@
 namespace scada::aui {
 
 namespace {
-
-// Resolves a model's `ColorRole` into the platform's own colours.
-//
-// This is the seam the toolkit-free models cannot cross for themselves: they
-// can say *disabled* or *header*, and the palette -- which follows the OS
-// light/dark theme and the user's accessibility settings -- decides what that
-// looks like. Returns an unset `QVariant` for `Default`, leaving the view's
-// own colour alone.
-QVariant RoleForeground(ColorRole role) {
-  const QPalette& palette = QApplication::palette();
-  switch (role) {
-    case ColorRole::Disabled:
-      return palette.color(QPalette::Disabled, QPalette::Text);
-    case ColorRole::Header:
-      return palette.color(QPalette::Normal, QPalette::ButtonText);
-    case ColorRole::Default:
-      return QVariant{};
-  }
-  return QVariant{};
-}
-
-QVariant RoleBackground(ColorRole role) {
-  const QPalette& palette = QApplication::palette();
-  switch (role) {
-    case ColorRole::Header:
-      return palette.color(QPalette::Normal, QPalette::Button);
-    // A disabled cell is greyed by its text colour alone; tinting the row
-    // behind it as well would read as a selection.
-    case ColorRole::Disabled:
-    case ColorRole::Default:
-      return QVariant{};
-  }
-  return QVariant{};
-}
 
 // The pixmap for a tree icon at its loaded size (icons are loaded at a single
 // size; fall back to 16 px if the icon reports none).
@@ -284,14 +251,14 @@ QVariant TreeModelAdapter::data(const QModelIndex& index, int role) const {
       // the platform theme; they leave the role at `Default` and fall through.
       const ColorRole color_role = model_->GetColorRole(node, index.column());
       if (color_role != ColorRole::Default)
-        return RoleForeground(color_role);
+        return ColorRoleForeground(color_role);
       auto color = model_->GetTextColor(node, index.column());
       return IsTransparent(color) ? QVariant{} : color.qcolor();
     }
     case Qt::BackgroundRole: {
       const ColorRole color_role = model_->GetColorRole(node, index.column());
       if (color_role != ColorRole::Default)
-        return RoleBackground(color_role);
+        return ColorRoleBackground(color_role);
       auto color = model_->GetBackgroundColor(node, index.column());
       return IsTransparent(color) ? QVariant{} : color.qcolor();
     }

@@ -378,6 +378,20 @@ TEST_F(TableModelTest, DeliveredTimestampsRender) {
   }
 }
 
+// The empty row's prompt is drawn as placeholder text by role, not in a
+// literal light grey that vanished against the light theme's white and glared
+// on the dark one (task 367).
+TEST_F(TableModelTest, EntryPromptIsAPlaceholderByRole) {
+  TableCellEx cell = {};
+  cell.row = table_model_.GetRowCount() - 1;
+  cell.column_id = 0;
+  table_model_.GetCellEx(cell);
+
+  EXPECT_EQ(cell.color_role, scada::aui::ColorRole::Placeholder);
+  EXPECT_EQ(cell.text_color,
+            scada::aui::Color{scada::aui::ColorCode::Transparent});
+}
+
 TEST_F(TableModelTest, DiscreteOpenValueUsesPaletteTextColor) {
   const auto& row_context = SetFormula();
 
