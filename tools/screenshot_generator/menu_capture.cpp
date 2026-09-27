@@ -16,6 +16,7 @@
 #include "main_window/opened_view/opened_view.h"
 #include "profile/profile.h"
 #include "profile/window_definition.h"
+#include "resources/common_resources.h"
 
 #include <QAction>
 #include <QApplication>
@@ -151,6 +152,21 @@ TEST_F(ScreenshotGenerator, CaptureMoreMenu) {
 
   QMainWindow* qmain = ShowMainWindowForMenuCapture(app_);
   ASSERT_NE(qmain, nullptr);
+
+  // The menu's pane rows are checked by whether each pane is open, and the
+  // Events pane opens by itself once the fixture's unacknowledged events
+  // reach the client (`MainWindowModule::OnEvents`, with `event_auto_show`
+  // on by default). That arrival raced the grab: an isolated run grabbed
+  // first and showed «События» unchecked, while a full gallery pass, slower
+  // to reach this point, sometimes did not — so menu-excel.png changed
+  // between two runs of one binary. Wait for the state an operator
+  // actually sees after sign-in.
+  MainWindow& main_window = app_.main_window_manager().main_windows().front();
+  ASSERT_TRUE(WaitUntil([&] {
+    return main_window.FindViewByType(GetWindowInfo(ID_EVENT_VIEW).name) !=
+           nullptr;
+  })) << "the Events pane never opened for the fixture's unacknowledged "
+         "events";
 
   QMenu* menu = PopulateMenuBarMenu(qmain, "More");
   ASSERT_NE(menu, nullptr);

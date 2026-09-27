@@ -294,6 +294,14 @@ ScreenshotGenerator::ScreenshotGenerator() {
   // real client, not only by diffing generated PNGs.
   QApplication::setStyle("Fusion");
 
+  // A focused line edit blinks its caret on a wall-clock timer, so whether
+  // the caret is in a capture depended on how long the run took to reach the
+  // grab: settings.png differed by exactly one caret-shaped column between
+  // two full passes of the same binary, while isolated runs agreed. A flash
+  // time of 0 stops the blinking, so the caret's state no longer depends on
+  // timing.
+  QApplication::setCursorFlashTime(0);
+
   // Render under the design-token appearance `--theme` names (dark by
   // default), applied over the Fusion base exactly as the client applies it
   // over the platform style (see app/qt/installed_appearance.h). ApplyTheme
