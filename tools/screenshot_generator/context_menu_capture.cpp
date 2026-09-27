@@ -620,6 +620,52 @@ TEST_F(ScreenshotGenerator, CaptureObjectMenuCreate) {
                          });
 }
 
+// The hardware tree's context menu with the «Создать» submenu open, listing the
+// kinds of link and device «Все оборудование» can hold (dev/devices.md:
+// "Добавить направление МЭК-60870-5 можно выбрав из контекстного меню
+// подсистемы МЭК пункт *Создать*...").
+//
+// NOT a duplicate of menu-create-object.png: that is the object tree, whose
+// «Создать» lists object kinds; this one lists link and device kinds, a
+// disjoint command set. It renders only because the offline address space
+// types the folder with DevicesFolderType and carries its <Link> and
+// <Iec61850Device> placeholders — with a plain FolderType nothing is creatable
+// there and the row does not appear at all.
+//
+// The manual's original right-clicks the folder's own row, which this tree no
+// longer draws: it is re-rooted at «Все оборудование». With nothing picked the
+// view's selection IS that folder (ConfigurationTreeView::UpdateSelection), so
+// the capture selects nothing and right-clicks, which is the same menu. That
+// held only after a click until 2026-09-26 — a freshly opened tree answered an
+// empty selection and the menu held «Вставить» alone — so this capture is also
+// what pins ConfigurationTreeView::Init seeding the selection.
+TEST_F(ScreenshotGenerator, CaptureHardwareMenuCreate) {
+  constexpr const char* kFilename = "devices-create.png";
+  if (!ShouldCaptureScreenshot(kFilename))
+    GTEST_SKIP() << kFilename << " not requested";
+
+  CaptureTreeContextMenu(
+      app_, executor_, kFilename, "Subsystems", {}, "Create", "Create",
+      [](const ContextMenuRender& render) {
+        // Exactly the kinds the manual's image lists: a fifth row would mean
+        // the capture was not acting on the root.
+        EXPECT_EQ(render.submenu_rows.size(), 4)
+            << render.submenu_rows.join(QLatin1String(" | ")).toStdString();
+        // Every kind the manual's image lists. The IEC 60870 pair are the
+        // create module's own actions; the other two take their titles from
+        // the type nodes' display names, so they are matched as written.
+        for (const QString& title :
+             {RowTitle("IEC 60870-101 Link"), RowTitle("IEC 60870-104 Link"),
+              QStringLiteral("Устройство МЭК-61850"),
+              QStringLiteral("Направление MODBUS")}) {
+          EXPECT_TRUE(render.submenu_rows.contains(title))
+              << "the hardware Create submenu has no " << title.toStdString()
+              << " row: "
+              << render.submenu_rows.join(QLatin1String(" | ")).toStdString();
+        }
+      });
+}
+
 // The configuration table's context menu over a multi-row selection,
 // «Копировать» highlighted (dev/displays.md: "Из контекстного меню таблицы
 // доступны операции *Копирования* и *Вставки* объектов").

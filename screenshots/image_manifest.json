@@ -530,10 +530,33 @@
     {
       "file": "devices-create.png",
       "tag": "auto-menu",
+      "theme": "dark",
       "referenced_from": [
         "dev/devices.md"
       ],
-      "notes": "NOT a device-state capture, despite the auto-state tag it carried until 2026-08-15: the image is the HARDWARE tree («Оборудование», the `Subsystems` window) with its context menu open on «Создать» — Направление МЭК-101/104, Устройство МЭК-61850, Направление MODBUS. **Not a duplicate of menu-create-object.png either**, which tasks.md claimed until 2026-09-26: that one is the OBJECT tree («Объекты», `Struct`) and its «Создать» submenu lists object kinds, a disjoint command set on a different tree. It is no longer blocked on the context-menu helper — the other six shipped on 2026-09-26 — but on the offline fixture: ScadaTestAddressSpace declares creatable placeholders for Modbus links and data groups only, so no IEC 60870 link is creatable anywhere and the «Создать» row simply does not appear on the МЭК rows. See tasks.md 39, subtask 7."
+      "notes": "Rendered by the screenshot generator (CaptureHardwareMenuCreate): the HARDWARE tree («Оборудование», the `Subsystems` window) right-clicked with nothing selected, which the view treats as its root «Все оборудование» (the tree draws no root row), with the «Создать» submenu OPEN and composited beside the menu as menu-create-object.png is. The submenu lists the same four kinds as the docs original, and the capture asserts exactly those four: «Канал IEC 60870-101», «Канал IEC 60870-104», «Устройство МЭК-61850», «Направление MODBUS». The first two read «Канал IEC» where the original reads «Направление МЭК» — that is the client catalog's current wording for the create module's two actions, not a capture defect — and the original's highlighted «Устройство МЭК-61850» row is not reproduced, since the capture highlights «Создать» only. Rendering it needed a client fix too: until 2026-09-26 a freshly opened tree left its selection empty rather than on the root, and the menu then offered «Вставить» alone. **Not a duplicate of menu-create-object.png**: that is the OBJECT tree («Объекты», `Struct`), whose «Создать» lists object kinds — a disjoint command set on a different tree. It was owed until 2026-09-26 on the offline fixture rather than on the menu: ScadaTestAddressSpace typed «Все оборудование» as plain FolderType, so nothing was creatable at the root and the «Создать» row did not appear at all; it now carries DevicesFolderType with the nodeset's <Link> and <Iec61850Device> placeholders. Unlike the docs original it is the popup alone, not the popup over the tree, as the other context-menu captures are. Not yet in current_generator_owned_subset.",
+      "captured": {
+        "commit": "6771e3603",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "123043f0a5ddfeb2d4dafc71824fe9166a1b4bb6477a7ad9e9e41122ee8ed9b1",
+        "last_rendered": "6771e3603"
+      }
+    },
+    {
+      "file": "devices-create-light.png",
+      "tag": "auto-menu",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of devices-create.png, produced by the same capture under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see. Deliberately carries no `parity_key` — the capability's coverage claim belongs to devices-create.png, and this is a second appearance of that capture rather than a second capture.",
+      "captured": {
+        "commit": "6771e3603",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "eff4c146c04f5ff7380daab509a472941147548b719aa7a2d81845eecaedd555",
+        "last_rendered": "6771e3603"
+      }
     },
     {
       "file": "devices-off.png",
@@ -2898,7 +2921,7 @@
   ],
   "counts": {
     "auto-dialog": 51,
-    "auto-menu": 18,
+    "auto-menu": 19,
     "auto-view": 100,
     "manual-annotated": 2,
     "manual-diagram": 4,
