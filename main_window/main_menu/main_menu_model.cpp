@@ -95,6 +95,17 @@ void AddMenuContributions(
   }
 }
 
+// Opens |window| in |main_window|, activating it. The display, favourites and
+// trash lists all end in this.
+void SpawnOpenView(const AnyExecutor& executor,
+                   MainWindowInterface& main_window,
+                   WindowDefinition window) {
+  CoSpawn(executor,
+          [&main_window, window = std::move(window)]() -> Awaitable<void> {
+            co_await main_window.OpenView(window, true);
+          });
+}
+
 }  // namespace
 
 // DisplayMenuModel
@@ -111,9 +122,20 @@ void DisplayMenuModel::MenuWillShow() {
       AddItems(*window_info);
     }
   }
+
+  // Once for the whole menu, after every type has had its turn: added per type,
+  // an empty type listed ahead of a populated one put a placeholder row in
+  // front of the files, and every row after it opened the file one below.
+  if (items_.empty()) {
+    AddItem(0, Translate("<No displays>"));
+  }
 }
 
 void DisplayMenuModel::ActivatedAt(int index) {
+  // The "<No displays>" placeholder is disabled, but a disabled row is still a
+  // row: never read past the files.
+  if (index < 0 || index >= static_cast<int>(items_.size()))
+    return;
   const auto& item = items_[index];
   // find existing display
   if (auto* view = main_window_manager_.FindOpenedViewByFilePath(item.path)) {
@@ -123,14 +145,12 @@ void DisplayMenuModel::ActivatedAt(int index) {
     scada::base::Check(item.window_info);
     WindowDefinition def(*item.window_info);
     def.path = item.path;
-    CoSpawn(executor_, [this, def = std::move(def)]() -> Awaitable<void> {
-      co_await main_window_.OpenView(def, true);
-    });
+    SpawnOpenView(executor_, main_window_, std::move(def));
   }
 }
 
 bool DisplayMenuModel::IsEnabledAt(int index) const {
-  return !items_.empty();
+  return index >= 0 && index < static_cast<int>(items_.size());
 }
 
 void DisplayMenuModel::AddItems(const WindowInfo& window_info) {
@@ -138,10 +158,6 @@ void DisplayMenuModel::AddItems(const WindowInfo& window_info) {
        file_cache_.GetList(window_info.command_id)) {
     AddItem(0, entry.title);
     items_.emplace_back(&window_info, entry.path);
-  }
-
-  if (items_.empty()) {
-    AddItem(0, Translate("<No displays>"));
   }
 }
 
@@ -176,9 +192,7 @@ void FavouritesMenuModel::MenuWillShow() {
 }
 
 void FavouritesMenuModel::ActivatedAt(int index) {
-  CoSpawn(executor_, [this, window = *windows_[index]]() -> Awaitable<void> {
-    co_await main_window_.OpenView(window, true);
-  });
+  SpawnOpenView(executor_, main_window_, *windows_[index]);
 }
 
 bool FavouritesMenuModel::IsEnabledAt(int index) const {
@@ -188,8 +202,7 @@ bool FavouritesMenuModel::IsEnabledAt(int index) const {
 // PageMenuModel
 
 PageMenuModel::PageMenuModel(const MainMenuContext& context)
-    : MainMenuContext{context},
-      scada::aui::SimpleMenuModel{nullptr},
+    : scada::aui::SimpleMenuModel{nullptr},
       page_switcher_{PageSwitcherContext{
           .executor_ = context.executor_,
           .profile_ = context.profile_,
@@ -254,6 +267,7 @@ bool WindowMenuModel::IsItemCheckedAt(int index) const {
 
 void TrashMenuModel::MenuWillShow() {
   Clear();
+  trash_indices_.clear();
 
   const Page& trash = profile_.trash;
   for (int i = 0; i < trash.GetWindowCount(); ++i) {
@@ -262,26 +276,30 @@ void TrashMenuModel::MenuWillShow() {
       std::u16string label =
           Translate("Restore") + u" " + window_def.GetTitle(*window_info);
       AddItem(0, label);
+      trash_indices_.push_back(i);
     }
   }
 
-  empty_ = GetItemCount() == 0;
-  if (empty_)
+  if (trash_indices_.empty())
     AddItem(0, Translate("<Trash is empty>"));
 }
 
 void TrashMenuModel::ActivatedAt(int index) {
+  scada::base::Check(index >= 0 &&
+                     index < static_cast<int>(trash_indices_.size()));
   Page& trash = profile_.trash;
-  scada::base::Check(index < trash.GetWindowCount());
-  auto window = trash.GetWindow(index);
-  trash.DeleteWindow(index);
-  CoSpawn(executor_, [this, window = std::move(window)]() -> Awaitable<void> {
-    co_await main_window_.OpenView(window, true);
-  });
+  const int trash_index = trash_indices_[index];
+  scada::base::Check(trash_index < trash.GetWindowCount());
+  WindowDefinition window = trash.GetWindow(trash_index);
+  trash.DeleteWindow(trash_index);
+  // The rows past this one now name the window one earlier in the trash, so
+  // the list is stale until the next MenuWillShow() rebuilds it.
+  trash_indices_.clear();
+  SpawnOpenView(executor_, main_window_, std::move(window));
 }
 
 bool TrashMenuModel::IsEnabledAt(int index) const {
-  return !empty_;
+  return index >= 0 && index < static_cast<int>(trash_indices_.size());
 }
 
 #if defined(UI_QT)
@@ -306,8 +324,8 @@ bool StyleMenuModel::IsItemCheckedAt(int index) const {
 
 // AppearanceMenuModel
 
-AppearanceMenuModel::AppearanceMenuModel(const MainMenuContext& context)
-    : MainMenuContext{context}, scada::aui::SimpleMenuModel{nullptr} {
+AppearanceMenuModel::AppearanceMenuModel()
+    : scada::aui::SimpleMenuModel{nullptr} {
   // One radio group of alternatives. `kSystem` leads, and is named for what it
   // does: it is the default appearance, because the client is a native desktop
   // application and follows the host light/dark preference
@@ -350,8 +368,7 @@ MainMenuModel::MainMenuModel(const MainMenuContext& context)
       display_menu_model_{context},
       table_favourites_{MainMenuId::Table, context},
       table_submenu_{this},
-      graph_favourites_{
-          std::make_unique<FavouritesMenuModel>(MainMenuId::Graph, context)},
+      graph_favourites_{MainMenuId::Graph, context},
       graph_submenu_{this},
       more_submenu_{this},
       page_list_menu_{context},
@@ -360,7 +377,6 @@ MainMenuModel::MainMenuModel(const MainMenuContext& context)
       trash_menu_{context},
       window_submenu_{this},
 #if defined(UI_QT)
-      appearance_submenu_{context},
       language_submenu_{this},
       settings_menu_{this},
 #endif
@@ -381,8 +397,7 @@ void MainMenuModel::Rebuild() {
   AddMenuContributions(graph_submenu_, ui_command_registry_, commands_,
                        MainMenuId::Graph, admin_);
   graph_submenu_.AddSeparator(scada::aui::NORMAL_SEPARATOR);
-  if (graph_favourites_)
-    graph_submenu_.AddInplaceMenu(graph_favourites_.get());
+  graph_submenu_.AddInplaceMenu(&graph_favourites_);
   AddSubMenu(0, Translate("Graph"), &graph_submenu_);
 
   AddSubMenu(0, Translate("Item"), &context_menu_model_);

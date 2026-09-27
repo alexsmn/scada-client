@@ -46,6 +46,9 @@ struct MainMenuContext {
   UiCommandRegistry& ui_command_registry_;
 };
 
+// Display: every schematic file of every window type components registered for
+// this menu (see main_menu_window_type_registry.h), listed flat. Activating a
+// row focuses the view already showing that file, or opens one.
 class DisplayMenuModel : private MainMenuContext,
                          public scada::aui::SimpleMenuModel {
  public:
@@ -59,6 +62,8 @@ class DisplayMenuModel : private MainMenuContext,
  private:
   void AddItems(const WindowInfo& window_info);
 
+  // One per file row, in row order. The "<No displays>" placeholder is added
+  // only when this ends up empty, so row N is always items_[N].
   struct Item {
     const WindowInfo* window_info = nullptr;
     std::filesystem::path path;
@@ -67,6 +72,8 @@ class DisplayMenuModel : private MainMenuContext,
   std::vector<Item> items_;
 };
 
+// The favourites of the window types registered for one main-menu submenu
+// (Table or Graph), shown in place inside that submenu.
 class FavouritesMenuModel : private MainMenuContext,
                             public scada::aui::SimpleMenuModel {
  public:
@@ -83,8 +90,10 @@ class FavouritesMenuModel : private MainMenuContext,
   std::vector<const WindowDefinition*> windows_;
 };
 
-class PageMenuModel : private MainMenuContext,
-                      public scada::aui::SimpleMenuModel {
+// The profile's pages as one radio group, the current one checked. Holds no
+// context of its own: everything it does goes through the PageSwitcher it
+// shares with the activity rail.
+class PageMenuModel : public scada::aui::SimpleMenuModel {
  public:
   explicit PageMenuModel(const MainMenuContext& context);
 
@@ -104,6 +113,7 @@ class PageMenuModel : private MainMenuContext,
   int active_index_ = -1;
 };
 
+// The views open in this main window, the active one checked.
 class WindowMenuModel : private MainMenuContext,
                         public scada::aui::SimpleMenuModel {
  public:
@@ -119,6 +129,9 @@ class WindowMenuModel : private MainMenuContext,
   int active_index_ = -1;
 };
 
+// The profile's trash: one "Restore" row per closed window whose type is still
+// registered. Activating a row reopens that window and takes it out of the
+// trash.
 class TrashMenuModel : private MainMenuContext,
                        public scada::aui::SimpleMenuModel {
  public:
@@ -131,10 +144,13 @@ class TrashMenuModel : private MainMenuContext,
   virtual bool IsEnabledAt(int index) const override;
 
  private:
-  bool empty_ = true;
+  // The trash index behind each row. A window whose type is no longer
+  // registered gets no row, so row N is not trash window N in general.
+  std::vector<int> trash_indices_;
 };
 
 #if defined(UI_QT)
+// Settings → Style: every QStyle this Qt build offers, as one radio group.
 class StyleMenuModel : public scada::aui::SimpleMenuModel {
  public:
   StyleMenuModel();
@@ -162,10 +178,9 @@ class StyleMenuModel : public scada::aui::SimpleMenuModel {
 //
 // Every switch is live and complete: the workbench chrome is structural and is
 // built once whatever the appearance, so changing appearance only recolours it.
-class AppearanceMenuModel : private MainMenuContext,
-                            public scada::aui::SimpleMenuModel {
+class AppearanceMenuModel : public scada::aui::SimpleMenuModel {
  public:
-  explicit AppearanceMenuModel(const MainMenuContext& context);
+  AppearanceMenuModel();
 
   // views::MenuModel
   virtual void ActivatedAt(int index) override;
@@ -179,6 +194,8 @@ class AppearanceMenuModel : private MainMenuContext,
 
 #endif  // defined(UI_QT)
 
+// The main window's menu bar: the fixed top-level submenus, each filled from
+// module contributions plus the dynamic lists above.
 class MainMenuModel final : private MainMenuContext,
                             private scada::aui::SimpleMenuModel::Delegate,
                             public scada::aui::SimpleMenuModel {
@@ -205,7 +222,7 @@ class MainMenuModel final : private MainMenuContext,
   DisplayMenuModel display_menu_model_;
   FavouritesMenuModel table_favourites_;
   scada::aui::SimpleMenuModel table_submenu_;
-  std::unique_ptr<FavouritesMenuModel> graph_favourites_;
+  FavouritesMenuModel graph_favourites_;
   scada::aui::SimpleMenuModel graph_submenu_;
   scada::aui::SimpleMenuModel more_submenu_;
   PageMenuModel page_list_menu_;

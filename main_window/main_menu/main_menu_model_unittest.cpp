@@ -9,6 +9,9 @@
 #include "base/test/test_executor.h"
 #include "controller/command_registry.h"
 #include "controller/command_ui_registry.h"
+#include "controller/controller_registry.h"
+#include "controller/main_menu_window_type_registry.h"
+#include "controller/window_info.h"
 #include "core/global_command_context.h"
 #include "favorites/favourites.h"
 #include "filesystem/file_cache.h"
@@ -19,6 +22,7 @@
 #include "main_window/view_manager.h"
 #include "main_window/view_manager_delegate.h"
 #include "profile/profile.h"
+#include "profile/window_definition.h"
 
 #include <QApplication>
 #include <QMainWindow>
@@ -46,9 +50,8 @@ class DummyViewManagerDelegate : public ViewManagerDelegate {
   void OnShowNewViewMenu(const scada::aui::Point& point) override {}
 };
 
-// Mirrors the fixture in main_window/pages/page_commands_unittest.cpp: the menu
-// models take the whole MainMenuContext, so the cheapest honest way to build
-// one is to stand up the real collaborators.
+// The appearance menu reads and writes application state only, so it needs no
+// MainMenuContext and its fixture stands up nothing but the QApplication.
 class AppearanceMenuModelTest : public Test {
  protected:
   void TearDown() override {
@@ -72,8 +75,48 @@ class AppearanceMenuModelTest : public Test {
   }
 
   AppEnvironment app_env_;
+  AppearanceMenuModel menu_;
+};
+
+// Two display window types, one of which never has a file. Registered through
+// a real ControllerRegistry, which is what FindWindowInfoByName() reads.
+constexpr WindowInfo kEmptyDisplayInfo = {.command_id = 60001,
+                                          .name = "MenuTestEmptyDisplay",
+                                          .title = u"Empty display"};
+constexpr WindowInfo kFileDisplayInfo = {.command_id = 60002,
+                                         .name = "MenuTestFileDisplay",
+                                         .title = u"File display"};
+
+// Mirrors the fixture in main_window/pages/page_commands_unittest.cpp: these
+// models take the whole MainMenuContext, so the cheapest honest way to build
+// one is to stand up the real collaborators.
+class MainMenuListsTest : public Test {
+ protected:
+  MainMenuListsTest() {
+    for (const WindowInfo* info : {&kEmptyDisplayInfo, &kFileDisplayInfo}) {
+      controller_registry_.AddControllerFactory(
+          *info, [](const ControllerContext&) { return nullptr; });
+    }
+  }
+
+  ~MainMenuListsTest() override {
+    // The display-type registry is process state; later tests must not
+    // inherit these two types.
+    UnregisterDisplayMenuWindowType(kEmptyDisplayInfo.name);
+    UnregisterDisplayMenuWindowType(kFileDisplayInfo.name);
+  }
+
+  void AddFile(const WindowInfo& info,
+               const std::filesystem::path& path,
+               const std::u16string& title) {
+    FileCache::ItemMap items;
+    file_cache_.Update(info.command_id, path, title, items);
+  }
+
+  AppEnvironment app_env_;
   TestExecutor executor_;
   Profile profile_;
+  ControllerRegistry controller_registry_;
 
   StrictMock<MockFunction<std::unique_ptr<MainWindow>(int window_id)>>
       main_window_factory_;
@@ -82,7 +125,7 @@ class AppearanceMenuModelTest : public Test {
                                           main_window_factory_.AsStdFunction(),
                                           quit_handler_.AsStdFunction()}};
 
-  StrictMock<MockMainWindow> main_window_;
+  NiceMock<MockMainWindow> main_window_;
   NiceMock<MockDialogService> dialog_service_;
   Favourites favourites_;
   FileRegistry file_registry_;
@@ -108,9 +151,73 @@ class AppearanceMenuModelTest : public Test {
                                 .context_menu_model_ = context_menu_,
                                 .commands_ = commands_,
                                 .ui_command_registry_ = ui_command_registry_};
-
-  AppearanceMenuModel menu_{menu_context_};
 };
+
+// Regression: the "<No displays>" placeholder was added once per window type
+// that had no files, so a type listed ahead of a populated one put a
+// placeholder row in front of the files, and each file row opened the file one
+// below it -- the last one reading past the end of the list.
+TEST_F(MainMenuListsTest, AnEmptyDisplayTypeDoesNotShiftTheRowsAfterIt) {
+  RegisterDisplayMenuWindowType(kEmptyDisplayInfo.name);
+  RegisterDisplayMenuWindowType(kFileDisplayInfo.name);
+  AddFile(kFileDisplayInfo, "alpha.sde", u"Alpha");
+  AddFile(kFileDisplayInfo, "beta.sde", u"Beta");
+
+  DisplayMenuModel menu{menu_context_};
+  menu.MenuWillShow();
+
+  ASSERT_EQ(menu.GetItemCount(), 2);
+  EXPECT_EQ(menu.GetLabelAt(0), u"Alpha");
+  EXPECT_EQ(menu.GetLabelAt(1), u"Beta");
+  EXPECT_TRUE(menu.IsEnabledAt(1));
+
+  EXPECT_CALL(main_window_, OpenView(Field(&WindowDefinition::path,
+                                           std::filesystem::path{"beta.sde"}),
+                                     true));
+  menu.ActivatedAt(1);
+  executor_.Poll();
+}
+
+// With no files anywhere the menu still says so, exactly once, and the
+// placeholder does nothing when activated.
+TEST_F(MainMenuListsTest, NoDisplaysShowsOnePlaceholder) {
+  RegisterDisplayMenuWindowType(kEmptyDisplayInfo.name);
+  RegisterDisplayMenuWindowType(kFileDisplayInfo.name);
+
+  DisplayMenuModel menu{menu_context_};
+  menu.MenuWillShow();
+
+  ASSERT_EQ(menu.GetItemCount(), 1);
+  EXPECT_FALSE(menu.IsEnabledAt(0));
+
+  EXPECT_CALL(main_window_, OpenView).Times(0);
+  menu.ActivatedAt(0);
+  executor_.Poll();
+}
+
+// Regression: a trashed window whose type is no longer registered gets no row,
+// but activation indexed the trash by row, so "Restore <File display>" reopened
+// the unregistered window instead and dropped it from the trash.
+TEST_F(MainMenuListsTest, TrashRestoresTheWindowItsRowNames) {
+  profile_.trash.AddWindow(WindowDefinition{"MenuTestUnregistered"});
+  WindowDefinition registered{kFileDisplayInfo};
+  registered.title = u"Kept";
+  profile_.trash.AddWindow(registered);
+
+  TrashMenuModel menu{menu_context_};
+  menu.MenuWillShow();
+  ASSERT_EQ(menu.GetItemCount(), 1);
+  ASSERT_TRUE(menu.IsEnabledAt(0));
+
+  EXPECT_CALL(main_window_, OpenView(Field(&WindowDefinition::type,
+                                           std::string{kFileDisplayInfo.name}),
+                                     true));
+  menu.ActivatedAt(0);
+  executor_.Poll();
+
+  ASSERT_EQ(profile_.trash.GetWindowCount(), 1);
+  EXPECT_EQ(profile_.trash.GetWindow(0).type, "MenuTestUnregistered");
+}
 
 // The menu offers each shipped appearance as one radio group — they are
 // alternatives, not independent toggles. There is no sixth "Classic" row: the
