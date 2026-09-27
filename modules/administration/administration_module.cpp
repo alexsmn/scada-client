@@ -1,17 +1,17 @@
 #include "administration/administration_module.h"
 
 #include "administration/administration_view.h"
-#include "user_access/qt/password_policy_view.h"
-#include "user_access/qt/roles_view.h"
 #include "controller/controller_registry.h"
 #include "controller/window_info.h"
 #include "resources/common_resources.h"
+#include "user_access/qt/password_policy_view.h"
+#include "user_access/qt/roles_view.h"
 
 namespace {
 
 // WIN_SING: a left-dock pane, which is what a rail mode switches between.
 // WIN_REQUIRES_ADMIN both gates the pane and, through
-// MainWindow::IsPaneModeAvailable, hides the whole Administration rail mode
+// PaneModeController::IsModeAvailable, hides the whole Administration rail mode
 // from a session without the Configure right.
 constexpr WindowInfo kAdministrationWindowInfo = {
     .command_id = ID_ADMINISTRATION_VIEW,

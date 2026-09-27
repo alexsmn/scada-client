@@ -25,6 +25,7 @@ class CommandActions;
 class Breadcrumb;
 class CommandField;
 class PageSwitcher;
+class PaneModeController;
 class DeviceDiagnosticsPanel;
 class InspectorPanel;
 struct InspectorOpenAction;
@@ -237,23 +238,6 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // a view in the current page rather than owning shell state, so the marker
   // is a projection of what the workspace is showing, like the mode marker.
   void RefreshUtilityMarker();
-  // Brings the current page's panes into line with the active mode, without
-  // touching the persisted choice. Called on every page open.
-  void ApplyPaneModeToCurrentWindow();
-  // The mode the window is currently in, resolved from the profile preference
-  // and falling back to what the open page looks like.
-  PaneModeId ActivePaneMode();
-  // Whether the current user may open `id`. Admin-gated modes resolve through
-  // the same command router the menus use, so both agree by construction.
-  bool IsPaneModeAvailable(PaneModeId id);
-  // Re-derives the rail's active marker and per-mode availability from the
-  // panes that are actually open, so the marker cannot go stale.
-  void RefreshPaneModeMarker();
-  // Raises the mode's own subject — the first pane it declares — above its
-  // tabified siblings. Needed on a mode switch, where Qt would otherwise leave
-  // whichever dock it tabified last on top, and on a page open, where the
-  // restored dock blob carries the previously-fronted tab.
-  void FrontPrimaryPane(const PaneMode& mode);
   // Opens an address-space tag (from the palette) in a table view.
   void OpenTag(const scada::NodeId& node_id, const std::u16string& title);
   // Starts the command palette's address-space browse. See the definition for
@@ -310,9 +294,11 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // The page list and switching policy behind the rail's pages group, shared
   // with the Page main menu so both obey the same rules.
   std::unique_ptr<PageSwitcher> page_switcher_;
-  // Guards RefreshPaneModeMarker against the pane close/activate notifications
-  // that SetPaneMode itself provokes while it is mid-switch.
-  bool applying_pane_mode_ = false;
+  // The sidebar's mode policy, and the adapter it drives this window through.
+  // Built with the rail, so both are null until CreateActivityBar has run.
+  class PaneModeHostImpl;
+  std::unique_ptr<PaneModeHostImpl> pane_mode_host_;
+  std::unique_ptr<PaneModeController> pane_modes_;
   // Mirrors the last state asked for through SetWindowFlashing, so the alert is
   // raised on the rising edge only. OnEvents calls in on every event dispatch.
   bool window_flashing_ = false;

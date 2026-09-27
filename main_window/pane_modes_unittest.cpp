@@ -49,10 +49,11 @@ TEST(PaneModesTest, AdminModesRequireAdmin) {
   }
 }
 
-// The rail mode is only as reachable as its pane: MainWindow::
-// IsPaneModeAvailable hides a mode whose panes resolve no command handler, and
-// the router refuses a WIN_REQUIRES_ADMIN command without the Configure right.
-// Naming the wrong pane here would silently show the mode to everyone.
+// The rail mode is only as reachable as its pane:
+// PaneModeController::IsModeAvailable hides a mode whose panes resolve no
+// command handler, and the router refuses a WIN_REQUIRES_ADMIN command without
+// the Configure right. Naming the wrong pane here would silently show the mode
+// to everyone.
 TEST(PaneModesTest, AdministrationModeOwnsTheAdministrationPane) {
   const PaneMode& mode = GetPaneMode(PaneModeId::kAdministration);
   EXPECT_EQ(mode.key, "administration");

@@ -34,6 +34,7 @@
 #include "main_window/overview_page.h"
 #include "main_window/page_icons.h"
 #include "main_window/pages/page_switcher.h"
+#include "main_window/pane_mode_controller.h"
 #include "main_window/selection_command_router.h"
 #include "main_window/status_bar/progress_controller_qt.h"
 #include "main_window/tag_search_index.h"
@@ -153,6 +154,60 @@ void BuildDefaultPopupMenu(QMenu& menu,
 
 }  // namespace
 
+// Drives PaneModeController through this window: pane names resolve to
+// WindowInfo here, and the rail is the controller's output.
+class MainWindow::PaneModeHostImpl final : public PaneModeHost {
+ public:
+  explicit PaneModeHostImpl(MainWindow& window) : window_{window} {}
+
+  bool IsPaneOpen(std::string_view pane_type) override {
+    return window_.FindViewByType(pane_type) != nullptr;
+  }
+
+  bool CanOpenPane(std::string_view pane_type) override {
+    const WindowInfo* info = FindWindowInfoByName(pane_type);
+    return info && window_.commands().GetCommandHandler(info->command_id);
+  }
+
+  void ClosePane(std::string_view pane_type) override {
+    if (const WindowInfo* info = FindWindowInfoByName(pane_type))
+      window_.ClosePane(*info);
+  }
+
+  void OpenPane(std::string_view pane_type) override {
+    if (const WindowInfo* info = FindWindowInfoByName(pane_type))
+      window_.OpenPaneSync(*info, /*activate=*/false);
+  }
+
+  void FrontPane(std::string_view pane_type) override {
+    if (OpenedViewInterface* pane = window_.FindViewByType(pane_type))
+      window_.ActivateView(*pane);
+  }
+
+  std::string_view ActivePaneType() override {
+    OpenedView* active = window_.GetActiveView();
+    return active ? std::string_view{active->window_info().name}
+                  : std::string_view{};
+  }
+
+  const Page& CurrentPage() override { return window_.current_page(); }
+
+  std::string& PersistedModeKey() override {
+    return window_.GetPrefs().pane_mode;
+  }
+
+  void ShowModeAvailable(PaneModeId id, bool available) override {
+    window_.activity_bar_->SetModeAvailable(id, available);
+  }
+
+  void ShowActiveMode(std::optional<PaneModeId> id) override {
+    window_.activity_bar_->SetActiveMode(id);
+  }
+
+ private:
+  MainWindow& window_;
+};
+
 MainWindow::MainWindow(MainWindowContext&& context)
     : BaseMainWindow{std::move(context), dialog_service_} {
   const MainWindowDef& prefs = GetPrefs();
@@ -224,7 +279,8 @@ MainWindow::MainWindow(MainWindowContext&& context)
 
   // Init() opened the restored page, which conformed it to the active mode.
   // Bring the rail in line with what is actually on screen.
-  RefreshPaneModeMarker();
+  if (pane_modes_)
+    pane_modes_->RefreshMarker();
   // The first pass that can see a populated command registry, so it is also
   // what decides whether the admin-gated Users utility is offered at all.
   RefreshUtilityMarker();
@@ -500,6 +556,8 @@ void MainWindow::CreateActivityBar() {
 
   activity_bar_ = new ActivityBar(this, std::move(modes),
                                   [this](PaneModeId id) { SetPaneMode(id); });
+  pane_mode_host_ = std::make_unique<PaneModeHostImpl>(*this);
+  pane_modes_ = std::make_unique<PaneModeController>(*pane_mode_host_);
 
   // The third rail zone (activity-rail.html). Settings opens the preferences
   // overlay over the whole workbench and Users the account list in the current
@@ -702,130 +760,13 @@ void MainWindow::ShowPageContextMenu(int page_id, const QPoint& global_pos) {
   menu.exec(global_pos);
 }
 
-bool MainWindow::SelectPaneModeForPane(std::string_view window_type) {
-  const PaneMode* mode = FindPaneModeOwningPaneType(window_type);
-  if (!mode)
-    return false;
-  SetPaneMode(mode->id);
-  return true;
-}
-
-PaneModeId MainWindow::ActivePaneMode() {
-  const std::string& key = GetPrefs().pane_mode;
-  if (const PaneMode* mode = FindPaneModeByKey(key)) {
-    // A profile can carry a mode the current user may not open. Fall back
-    // rather than presenting an empty sidebar with no way out.
-    if (!mode->requires_admin || IsPaneModeAvailable(mode->id))
-      return mode->id;
-    return PaneModeId::kObjects;
-  }
-  // No mode recorded — this profile predates the rail. Infer one from the page
-  // so the operator keeps the panes they had.
-  return InferPaneModeFromPage(current_page());
-}
-
-bool MainWindow::IsPaneModeAvailable(PaneModeId id) {
-  const PaneMode& mode = GetPaneMode(id);
-  if (!mode.requires_admin)
-    return true;
-  // Ask the same resolution the menus use, so the rail and the More menu agree
-  // by construction: a WIN_REQUIRES_ADMIN view resolves to no handler without
-  // the Configure right (MainWindowCommandRouter::GetCommandHandler).
-  for (std::string_view pane_type : mode.pane_types) {
-    const WindowInfo* info = FindWindowInfoByName(pane_type);
-    if (!info || !commands().GetCommandHandler(info->command_id))
-      return false;
-  }
-  return true;
-}
-
 void MainWindow::SetPaneMode(PaneModeId id) {
-  if (!IsPaneModeAvailable(id))
-    return;
-
-  const PaneMode& mode = GetPaneMode(id);
-
-  // What the sidebar shows right now, in the rail's vocabulary.
-  std::vector<std::string_view> open_panes;
-  for (std::string_view pane_type : GetModeOwnedPaneTypes()) {
-    if (FindViewByType(pane_type))
-      open_panes.push_back(pane_type);
-  }
-
-  const PaneModeDelta delta = ComputePaneModeDelta(mode, open_panes);
-
-  {
-    // Closing and opening panes fires OnViewClosed / OnActiveViewChanged; let
-    // the switch finish before re-deriving the marker from a half-applied set.
-    scada::base::AutoReset<bool> applying{&applying_pane_mode_, true};
-
-    // Close first, then open in declared order — AddDockView tabifies onto the
-    // first dock already in the area, so opening early would tab the new panes
-    // onto ones that are about to disappear.
-    for (std::string_view pane_type : delta.to_close) {
-      if (const WindowInfo* info = FindWindowInfoByName(pane_type))
-        ClosePane(*info);
-    }
-    for (std::string_view pane_type : delta.to_open) {
-      if (const WindowInfo* info = FindWindowInfoByName(pane_type))
-        OpenPaneSync(*info, /*activate=*/false);
-    }
-
-    FrontPrimaryPane(mode);
-  }
-
-  GetPrefs().pane_mode = std::string{mode.key};
-  RefreshPaneModeMarker();
+  if (pane_modes_)
+    pane_modes_->SetMode(id);
 }
 
-void MainWindow::FrontPrimaryPane(const PaneMode& mode) {
-  if (mode.pane_types.empty())
-    return;
-  if (OpenedViewInterface* primary = FindViewByType(mode.pane_types.front()))
-    ActivateView(*primary);
-}
-
-void MainWindow::ApplyPaneModeToCurrentWindow() {
-  if (!activity_bar_)
-    return;
-  SetPaneMode(ActivePaneMode());
-}
-
-void MainWindow::RefreshPaneModeMarker() {
-  if (!activity_bar_)
-    return;
-
-  for (const PaneMode& mode : GetPaneModes())
-    activity_bar_->SetModeAvailable(mode.id, IsPaneModeAvailable(mode.id));
-
-  std::vector<std::string_view> open_panes;
-  for (std::string_view pane_type : GetModeOwnedPaneTypes()) {
-    if (FindViewByType(pane_type))
-      open_panes.push_back(pane_type);
-  }
-
-  // An exact match is the honest answer; anything else and the sidebar is not
-  // showing a mode, so the rail must not claim one.
-  for (const PaneMode& mode : GetPaneModes()) {
-    if (mode.pane_types.size() != open_panes.size())
-      continue;
-    if (std::ranges::equal(mode.pane_types, open_panes)) {
-      activity_bar_->SetActiveMode(mode.id);
-      return;
-    }
-  }
-
-  // Partial match: fall back to the mode owning whatever pane is active, so a
-  // manually closed sibling still leaves the rail pointing somewhere true.
-  if (OpenedView* active = GetActiveView()) {
-    if (const PaneMode* mode =
-            FindPaneModeOwningPaneType(active->window_info().name)) {
-      activity_bar_->SetActiveMode(mode->id);
-      return;
-    }
-  }
-
-  activity_bar_->SetActiveMode(std::nullopt);
+bool MainWindow::SelectPaneModeForPane(std::string_view window_type) {
+  return pane_modes_ && pane_modes_->SelectModeForPane(window_type);
 }
 
 void MainWindow::ShowSettings() {
@@ -888,21 +829,17 @@ void MainWindow::RefreshUtilityMarker() {
 }
 
 void MainWindow::OnViewClosed(OpenedView& view) {
-  const bool was_owned_pane =
-      FindPaneModeOwningPaneType(view.window_info().name) != nullptr;
+  // WindowInfo is static, so the name outlives the view.
+  const std::string_view pane_type = view.window_info().name;
   BaseMainWindow::OnViewClosed(view);
-  if (was_owned_pane && !applying_pane_mode_ &&
-      !view_manager_->is_closing_page()) {
-    RefreshPaneModeMarker();
-  }
+  if (pane_modes_)
+    pane_modes_->OnPaneClosed(pane_type, view_manager_->is_closing_page());
 }
 
 void MainWindow::OnActiveViewChanged(OpenedView* view) {
   BaseMainWindow::OnActiveViewChanged(view);
-  if (!applying_pane_mode_ && view &&
-      FindPaneModeOwningPaneType(view->window_info().name)) {
-    RefreshPaneModeMarker();
-  }
+  if (pane_modes_ && view)
+    pane_modes_->OnPaneActivated(view->window_info().name);
   RefreshUtilityMarker();
   RefreshBreadcrumb();
 }
@@ -1385,13 +1322,13 @@ void MainWindow::TabifySpecialistDocks() {
 }
 
 void MainWindow::OpenPage(const Page& page) {
-  if (activity_bar_) {
+  if (pane_modes_) {
     // Conform the page to the active mode BEFORE the view manager builds it.
     // ViewManager::OpenPage creates every visible window and only then restores
     // the dock-state blob, so a pane opened afterwards would sit outside the
     // restored layout at Qt's default width.
     Page conformed = page;
-    ApplyPaneModeToPage(conformed, GetPaneMode(ActivePaneMode()));
+    pane_modes_->ConformPage(conformed);
     BaseMainWindow::OpenPage(conformed);
   } else {
     // No rail yet (a page opened before the chrome is built), so the page's own
@@ -1406,15 +1343,16 @@ void MainWindow::OpenPage(const Page& page) {
   // Portfolio was on top reopens showing Portfolio, not Objects. Re-assert it
   // after TabifySpecialistDocks, which raises the Inspector and so must not be
   // the last thing to touch dock stacking.
-  if (activity_bar_)
-    FrontPrimaryPane(GetPaneMode(ActivePaneMode()));
+  if (pane_modes_)
+    pane_modes_->FrontPrimaryPane();
 
   // Every page switch funnels through here — the Pages menu, the Pages pane,
   // the page commands, and the startup restore — so this is the one place the
   // marker has to be re-derived, and the one place the page list is known to
   // be stale (New and Delete both end in an OpenPage).
   RefreshRailPages();
-  RefreshPaneModeMarker();
+  if (pane_modes_)
+    pane_modes_->RefreshMarker();
 
   // The page's panes exist now, so every tree in it has queued its own first
   // level. Only now may the palette's browse start.

@@ -35,7 +35,7 @@ class QEvent;
 // The rail never opens a workspace tab, and a utility is not a third kind of
 // destination: it opens its surface in the current page the way any view does,
 // so activating one leaves the page marker lit. Every marker is a projection
-// of real state (see MainWindow::RefreshPaneModeMarker), not a record of the
+// of real state (see PaneModeController::RefreshMarker), not a record of the
 // last click, so none can go stale when a page switch or a manual pane close
 // changes what is on screen.
 //
