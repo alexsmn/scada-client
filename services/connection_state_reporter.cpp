@@ -49,7 +49,7 @@ void ConnectionStateReporter::OnSessionDeleted(const scada::Status& status) {
   if (status) {
     local_events_.ReportEvent(
         LocalEvents::SEV_INFO,
-        u16format(L"Disconnecting from server {}. ", host_name));
+        u16format(Translate("Disconnecting from server {}."), host_name));
     return;
   }
 
@@ -57,10 +57,10 @@ void ConnectionStateReporter::OnSessionDeleted(const scada::Status& status) {
   if (status.code() == scada::StatusCode::Bad_SessionForcedLogoff) {
     local_events_.ReportEvent(
         LocalEvents::SEV_ERROR,
-        u16format(
-            L"Disconnected from server {}. These credentials are being used to "
-            L"log in from another workstation.",
-            host_name));
+        u16format(Translate("Disconnected from server {}. These credentials "
+                            "are being used to log in from another "
+                            "workstation."),
+                  host_name));
     return;
   }
 
@@ -73,9 +73,9 @@ void ConnectionStateReporter::OnSessionDeleted(const scada::Status& status) {
 
   local_events_.ReportEvent(
       LocalEvents::SEV_WARNING,
-      u16format(
-          L"Connection to server {} lost. {}. Reconnecting in {} seconds.",
-          host_name, ToString16(status), delay_s));
+      u16format(Translate("Connection to server {} lost. {}. Reconnecting in "
+                          "{} seconds."),
+                host_name, ToString16(status), delay_s));
 
   reconnect_timer_.StartOne(delay, [this] { OnReconnectTimer(); });
 }

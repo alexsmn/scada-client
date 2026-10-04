@@ -112,7 +112,7 @@ void PageSwitcher::ActivatePage(int page_id) {
   // Re-activating the open page means "throw away my unsaved layout changes",
   // which is destructive enough to confirm.
   std::u16string message =
-      u16format(L"Return to saved page {}?", current_page.GetTitle());
+      u16format(Translate("Return to saved page {}?"), current_page.GetTitle());
   CoSpawn(executor_, cancelation_,
           [this, page_ptr = &page,
            message = std::move(message)]() -> Awaitable<void> {

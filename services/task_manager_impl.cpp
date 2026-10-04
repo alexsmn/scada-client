@@ -28,11 +28,12 @@ std::u16string FormatReference(NodeService& node_service,
                                const scada::NodeId& source_id,
                                const scada::NodeId& target_id,
                                bool add) {
-  return u16format(L"{} of type {} from {} to {}",
-                   add ? L"Adding reference" : L"Deleting reference",
-                   GetDisplayName(node_service, reference_type_id).text,
-                   GetDisplayName(node_service, source_id).text,
-                   GetDisplayName(node_service, target_id).text);
+  return u16format(
+      Translate("{} of type {} from {} to {}"),
+      add ? Translate("Adding reference") : Translate("Deleting reference"),
+      GetDisplayName(node_service, reference_type_id).text,
+      GetDisplayName(node_service, source_id).text,
+      GetDisplayName(node_service, target_id).text);
 }
 
 scada::StatusOr<std::vector<scada::WriteValue>> PrepareUpdateInputs(
@@ -264,7 +265,7 @@ scada::CoStatus TaskManagerImpl::PostUpdateTask(
     scada::NodeProperties properties) {
   std::u16string title = GetDisplayName(node_service_, node_id).text;
   auto self = shared_from_this();
-  return PostTaskMethod(u16format(L"Modifying {}", title),
+  return PostTaskMethod(u16format(Translate("Modifying {}"), title),
                         [self, node_id, attributes = std::move(attributes),
                          properties = std::move(properties)]() mutable {
                           return RunUpdateTask(std::move(self), node_id,
@@ -305,7 +306,7 @@ scada::CoStatus TaskManagerImpl::RunUpdateTask(
 scada::CoStatus TaskManagerImpl::PostDeleteTask(const scada::NodeId& node_id) {
   std::u16string title = GetDisplayName(node_service_, node_id).text;
   auto self = shared_from_this();
-  return PostTaskMethod(u16format(L"Deleting {}", title),
+  return PostTaskMethod(u16format(Translate("Deleting {}"), title),
                         [self, node_id]() mutable {
                           return RunDeleteTask(std::move(self), node_id);
                         });

@@ -1,5 +1,6 @@
 ﻿#include "modules/change_password/change_password.h"
 
+#include "aui/translation.h"
 #include "base/awaitable.h"
 #include "base/u16format.h"
 #include "events/local_event_util.h"
@@ -55,7 +56,7 @@ void ChangePassword(const ChangePasswordContext& context,
                 scada::String{});
   CoSpawn(context.executor_,
           [executor = context.executor_, call = std::move(call),
-           title = u16format(L"Changing password for user {}",
+           title = u16format(Translate("Changing password for user {}"),
                              ToString16(context.user_.display_name())),
            &local_events = context.local_events_,
            &profile = context.profile_]() mutable -> Awaitable<void> {

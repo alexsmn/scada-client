@@ -136,7 +136,8 @@ ConfigurationModule::ConfigurationModule(ConfigurationModuleContext&& context)
                  executor_,
                  [this, node = context.selection.node()]() -> Awaitable<void> {
                    (void)co_await task_manager_.PostTask(
-                       u16format(L"Unlocking {}", node.display_name().text),
+                       u16format(Translate("Unlocking {}"),
+                                 node.display_name().text),
                        [node]() -> scada::CoStatus {
                          co_return co_await node.scada_node().call(
                              scada::data_items::id::DataItemType_Unlock);

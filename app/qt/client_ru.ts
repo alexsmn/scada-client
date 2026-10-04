@@ -2053,7 +2053,78 @@
         <source>Insert</source>
         <translation>Вставка</translation>
     </message>
+    <!-- services/task_manager_impl.cpp: task titles, which head the local
+         event reporting each task's result (backlog 850). -->
+    <message>
+        <source>Modifying {}</source>
+        <translation>Изменение {}</translation>
+    </message>
+    <message>
+        <source>Deleting {}</source>
+        <translation>Удаление {}</translation>
+    </message>
+    <message>
+        <source>{} of type {} from {} to {}</source>
+        <translation>{} типа {} от {} к {}</translation>
+    </message>
+    <message>
+        <source>Adding reference</source>
+        <translation>Добавление ссылки</translation>
+    </message>
+    <message>
+        <source>Deleting reference</source>
+        <translation>Удаление ссылки</translation>
+    </message>
     <!-- services/connection_state_reporter.cpp -->
+    <message>
+        <source>Disconnecting from server {}.</source>
+        <translation>Отключение от сервера {}.</translation>
+    </message>
+    <message>
+        <source>Disconnected from server {}. These credentials are being used to log in from another workstation.</source>
+        <translation>Отключено от сервера {}. С этими учётными данными выполнен вход на другом рабочем месте.</translation>
+    </message>
+    <message>
+        <source>Connection to server {} lost. {}. Reconnecting in {} seconds.</source>
+        <translation>Соединение с сервером {} потеряно. {}. Повторное подключение через {} с.</translation>
+    </message>
+    <!-- Backlog 848: modules/events/event_module.cpp names a refused
+         acknowledgement in the local event that reports it. -->
+    <message>
+        <source>Event acknowledgement</source>
+        <translation>Квитирование событий</translation>
+    </message>
+    <!-- Backlog 850: format strings that reached the operator in English
+         because they were literals (rule 5 of
+         tools/check_untranslated_ui_strings.py). -->
+    <message>
+        <source>Unlocking {}</source>
+        <translation>Разблокировка {}</translation>
+    </message>
+    <message>
+        <source>Display for item &quot;{}&quot; was not found.</source>
+        <translation>Мнемосхема для сигнала «{}» не найдена.</translation>
+    </message>
+    <message>
+        <source>Changing password for user {}</source>
+        <translation>Смена пароля пользователя {}</translation>
+    </message>
+    <message>
+        <source>Are you sure you want to delete {}?</source>
+        <translation>Вы действительно хотите удалить {}?</translation>
+    </message>
+    <message>
+        <source>Are you sure you want to delete {} items?</source>
+        <translation>Вы действительно хотите удалить выбранные объекты ({})?</translation>
+    </message>
+    <message>
+        <source>Creating &quot;{}&quot;</source>
+        <translation>Создание «{}»</translation>
+    </message>
+    <message>
+        <source>Return to saved page {}?</source>
+        <translation>Вернуться к сохранённой странице {}?</translation>
+    </message>
     <message>
         <source>Connection to server established. Login successful.</source>
         <translation>Соединение с сервером установлено. Вход выполнен.</translation>

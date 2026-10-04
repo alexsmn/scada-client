@@ -1,6 +1,7 @@
 #include "create/opened_view_create_command.h"
 
 #include "aui/dialog_service.h"
+#include "aui/translation.h"
 #include "base/check.h"
 #include "base/u16format.h"
 #include "bulk_create/qt/bulk_create_wizard.h"
@@ -154,7 +155,8 @@ void OpenedViewCreateCommand::CreateRecord(const scada::NodeId& type_node_id,
                             ts.ToString());
   }
 
-  auto title = u16format(L"Creating \"{}\"", attributes.display_name.text);
+  auto title =
+      u16format(Translate("Creating \"{}\""), attributes.display_name.text);
 
   // The cancelation overload of `CoSpawn` checks the token once, before the
   // first resume. Everything after the awaits below re-checks it: the operator

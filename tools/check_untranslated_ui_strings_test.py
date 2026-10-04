@@ -81,6 +81,18 @@ DISPLAY_CASES = (
     ),
 )
 
+FORMAT_CASES = (
+    (
+        "a task title built from a literal (backlog 850's form)",
+        'void f(){ PostTask(u16format(L"Modifying {}", title)); }',
+    ),
+    (
+        "a sentence split over adjacent literals",
+        'void f(){ auto m = u16format(L"Connection to server {} lost. "\n'
+        '                                 L"Reconnecting in {} seconds.", h, d); }',
+    ),
+)
+
 # Correct code, or text no operator reads. None may produce a finding.
 QUIET_CASES = (
     ("Translate() call", 'void f(){ setWindowTitle(Translate("Device Setup")); }'),
@@ -118,6 +130,10 @@ QUIET_CASES = (
     ),
     ("literal that reaches no sink at all", 'void f(){ send("HELLO SERVER"); }'),
     ("literal with no letters", 'void f(){ setWindowTitle(" - "); }'),
+    ("translated format string", 'void f(){ u16format(Translate("Modifying {}"), t); }'),
+    ("format of placeholders only", 'void f(){ u16format(L"{}: {}.", a, b); }'),
+    ("identifier pattern", 'void f(){ u16format(L"Device{}", suffix); }'),
+    ("port name pattern", 'void f(){ u16format(L"COM{}:", i); }'),
 )
 
 
@@ -129,6 +145,10 @@ def dialog_findings(source: str, directory: pathlib.Path):
 
 def display_findings(source: str):
     return [text for _, _, text in checker.scan_file_for_display_literals(source)]
+
+
+def format_findings(source: str):
+    return [text for _, _, text in checker.scan_file_for_format_literals(source)]
 
 
 def main() -> int:
@@ -143,6 +163,10 @@ def main() -> int:
         for name, source in DISPLAY_CASES:
             if not display_findings(source):
                 failures.append(f"rule 3 missed: {name}")
+
+        for name, source in FORMAT_CASES:
+            if not format_findings(source):
+                failures.append(f"rule 5 missed: {name}")
 
         # The joined form must come back whole, not as its two pieces.
         joined = dialog_findings(
@@ -161,7 +185,8 @@ def main() -> int:
             failures.append(f"arguments were welded together: {separate}")
 
         for name, source in QUIET_CASES:
-            noise = dialog_findings(source, directory) + display_findings(source)
+            noise = (dialog_findings(source, directory) + display_findings(source)
+                     + format_findings(source))
             if noise:
                 failures.append(f"false positive on {name}: {noise}")
 

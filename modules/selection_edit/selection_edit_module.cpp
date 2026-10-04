@@ -73,11 +73,12 @@ void DeleteSelection(AnyExecutor executor,
     return;
   }
 
-  auto message = nodes.size() == 1
-                     ? u16format(L"Are you sure you want to delete {}?",
-                                 nodes.front().display_name().text)
-                     : u16format(L"Are you sure you want to delete {} items?",
-                                 nodes.size());
+  auto message =
+      nodes.size() == 1
+          ? u16format(Translate("Are you sure you want to delete {}?"),
+                      nodes.front().display_name().text)
+          : u16format(Translate("Are you sure you want to delete {} items?"),
+                      nodes.size());
 
   CoSpawn(executor,
           [&task_manager, &dialog_service = context.dialog_service,

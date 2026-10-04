@@ -35,7 +35,7 @@ Awaitable<OpenedViewInterface*> OpenDisplayContainingNode(
       file_cache.GetList(ID_MODUS_VIEW).GetFilesContainingItem(node.node_id());
 
   if (cached_items.empty()) {
-    auto msg = u16format(L"Display for item \"{}\" was not found.",
+    auto msg = u16format(Translate("Display for item \"{}\" was not found."),
                          ToString16(node.display_name()));
     co_await dialog_service.RunMessageBox(msg, Translate("Display"),
                                           MessageBoxMode::Info);

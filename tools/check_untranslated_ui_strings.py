@@ -31,7 +31,8 @@ takes one. So before a region is judged, every `Translate(...)`-family call in
 it is blanked out, and only what remains is a finding. Without that step the
 widened pattern reports 40 correct call sites and nothing else.
 
-Three independent rules run over the tree.
+Independent rules run over the tree; rule 5, at the end of this list, was
+added for backlog 850.
 
 **Rule 1 — untranslated strings at a user-facing sink.**
 
@@ -130,6 +131,17 @@ already counted *matched* gaps, so it printed "5 known gap(s)" over a
 thirteen-entry dict and the discrepancy went unread. Entries keyed on
 `//core/`/`//common/` are skipped when those roots are absent, which is the
 standalone client export.
+
+**Rule 5 — no literal format string of prose.**
+
+`u16format(L"Modifying {}", title)` is a sentence an operator reads, built
+into a variable — a task title, a local event, a confirmation held for a later
+prompt — so it reaches no sink rules 1 and 3 know and was invisible to both.
+Twelve such sentences shipped in English (backlog 850): the configuration task
+titles, the connection-lost event, the delete confirmation among them. Rule 5
+reads the *first* argument of `FORMAT_SINKS` and reports a literal one that
+carries prose (see `FORMAT_PROSE`); a `Translate(...)`d format string is not a
+literal and is not reported.
 
 **How the keys are spelled, and why it is not cosmetic.** A path key from the
 client scan is client-relative (`modules/graph/metrix_graph.cpp`); one from the
@@ -536,6 +548,36 @@ def scan_file_for_display_literals(source: str):
                 yield source[: m.start()].count("\n") + 1, m.group(2), normalize(text)
 
 
+# Rule 5's sinks: string-formatting calls. The *format string* is the part an
+# operator reads, and a literal one is untranslatable however the result is
+# used afterwards — which is exactly why rules 1 and 3 never saw these: the
+# result goes into a variable (a task title, a local event, a message held for
+# a later prompt) before it reaches anything they recognise. Twelve such
+# sentences reached the Russian operator in English until backlog 850.
+FORMAT_SINKS = ("u16format",)
+
+# Prose rather than a token: two words of two or more letters, placeholders and
+# markup removed first. "Device{}", "COM{}:" and a log-file name pattern are
+# identifiers; "Modifying {}" is one word too, but it reached the operator
+# untranslated all the same, so a single word followed by a placeholder counts.
+FORMAT_PROSE = re.compile(r"[A-Za-z]{2,}\W+[A-Za-z]{2,}|^[A-Z][a-z]+ $")
+
+
+def scan_file_for_format_literals(source: str):
+    """Yields (line, sink, text) for each literal format string of prose."""
+    for sink in FORMAT_SINKS:
+        for m in re.finditer(r"\b" + sink + r"\s*\(", source):
+            region = argument_region(source, m.end() - 1)
+            if not region:
+                continue
+            first = LITERAL.match(region.lstrip())
+            if not first:
+                continue  # a Translate()d or computed format string
+            text = next(literal_groups(region.lstrip()), "")
+            if FORMAT_PROSE.search(MARKUP_ONLY.sub("", text)):
+                yield source[: m.start()].count("\n") + 1, sink, normalize(text)
+
+
 CYRILLIC = re.compile(r"[Ѐ-ӿ]")
 # `\uXXXX`, `\xXX` and the escaped backslash, which must be consumed as one
 # token so `\\u0410` is not mistaken for an escape.
@@ -698,9 +740,11 @@ def main() -> int:
             else:
                 findings.append((rel, line, sink, text, via))
 
-        for line, sink, text in scan_file_for_display_literals(
-            path.read_text("utf-8", "replace")
-        ):
+        source = path.read_text("utf-8", "replace")
+        for line, sink, text in [
+            *scan_file_for_display_literals(source),
+            *scan_file_for_format_literals(source),
+        ]:
             if (rel, text) in LITERAL_ALLOWED_UNTRANSLATED:
                 allowed += 1
                 used.add(("LITERAL_ALLOWED_UNTRANSLATED", (rel, text)))
@@ -776,7 +820,9 @@ def main() -> int:
             print(f'      "{shown}"')
         for rel, line, sink, text in displayed:
             shown = text if len(text) <= 68 else text[:65] + "..."
-            print(f"  {rel}:{line}: {sink} (shown by Qt, rule 3)")
+            rule = ("format string, rule 5" if sink in FORMAT_SINKS
+                    else "shown by Qt, rule 3")
+            print(f"  {rel}:{line}: {sink} ({rule})")
             print(f'      "{shown}"')
         print(
             "\nWrap the string in Translate(\"...\") and add it to the *empty*\n"
