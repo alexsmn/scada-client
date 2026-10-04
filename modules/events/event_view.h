@@ -59,7 +59,8 @@ class EventView : protected ControllerContext,
 
   // TimeModel
   virtual scada::RelativeTimeRange GetTimeRange() const override;
-  virtual void SetTimeRange(const scada::RelativeTimeRange& time_range) override;
+  virtual void SetTimeRange(
+      const scada::RelativeTimeRange& time_range) override;
 
   // ExportModel
   virtual ExportData GetExportData() override;
@@ -81,8 +82,6 @@ class EventView : protected ControllerContext,
 
   const bool is_panel_;
   const bool audit_only_ = false;
-
-  LocalEvents& local_events_;
 
   const std::shared_ptr<EventTableModel> model_;
 

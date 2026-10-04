@@ -151,6 +151,10 @@ EventModule::EventModule(EventModuleContext&& context)
           [this](const GlobalCommandContext&) {
             return !node_event_provider().unacked_events().empty() ||
                    !local_events_->events().empty();
+          },
+      .disabled_reason_handler =
+          [](const GlobalCommandContext&) {
+            return Translate("Nothing is waiting to be acknowledged");
           }});
   selection_commands_.AddCommand(BasicCommand<SelectionCommandContext>{
       .command_id = ID_ACKNOWLEDGE_CURRENT,

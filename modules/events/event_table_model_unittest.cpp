@@ -965,6 +965,110 @@ TEST_F(EventAlarmChromeTest, CountsUnacknowledgedByArea) {
             (EventTableModel::AreaCounts{.total = 3, .per_area = {2, 0}}));
 }
 
+// Backlog 869 (decided 2026-10-04): the journal's «Квитировать все»
+// acknowledges what the journal shows and nothing a filter hides. A flood of
+// critical repeats is shown (collapsed into one row, so every member counts);
+// a warning below the severity filter and a critical alarm outside the object
+// filter are pending but hidden, and must stay unacknowledged.
+TEST_F(EventAlarmChromeTest, AcknowledgeShownSkipsWhatTheFiltersHide) {
+  const scada::NodeId other_node{2, scada::NamespaceIndexes::TIT};
+  node_service_.Add(
+      {.node_id = other_node,
+       .type_definition_id = scada::data_items::id::AnalogItemType,
+       .attributes = {.browse_name = "n2", .display_name = u"N2"}});
+
+  auto& live = node_event_provider_.unacked_events_;
+  const int flood = events::kAlarmFloodThreshold + 2;
+  std::set<scada::EventId> shown_ids;
+  for (int i = 0; i < flood; ++i) {
+    const auto id = static_cast<scada::EventId>(1 + i);
+    live.try_emplace(
+        id, scada::Event{.event_id = id,
+                         .time = scada::Time{} + std::chrono::seconds(i),
+                         .severity = scada::kSeverityCritical,
+                         .source_node_id = node_id_,
+                         .message = u"trip"});
+    shown_ids.insert(id);
+  }
+  const scada::EventId below_severity = 100;
+  live.try_emplace(below_severity,
+                   scada::Event{.event_id = below_severity,
+                                .severity = scada::kSeverityWarning,
+                                .source_node_id = node_id_,
+                                .message = u"warn"});
+  const scada::EventId other_object = 101;
+  live.try_emplace(other_object,
+                   scada::Event{.event_id = other_object,
+                                .severity = scada::kSeverityCritical,
+                                .source_node_id = other_node,
+                                .message = u"elsewhere"});
+
+  model_.AddFilteredItem(node_id_);
+  model_.SetSeverityMin(scada::kSeverityCritical);
+  Rebuild();
+  ASSERT_TRUE(model_.grouped());
+  ASSERT_EQ(model_.GetRowCount(), 1);
+  ASSERT_EQ(model_.group_count_at(0), flood);
+  ASSERT_TRUE(model_.CanAcknowledgeShown());
+
+  std::set<scada::EventId> acked;
+  EXPECT_CALL(node_event_provider_, AcknowledgeEvent(_))
+      .WillRepeatedly([&](scada::EventId id) { acked.insert(id); });
+  EXPECT_CALL(node_event_provider_, AcknowledgeAllEvents()).Times(0);
+
+  model_.AcknowledgeShown();
+
+  EXPECT_EQ(acked, shown_ids);
+  EXPECT_FALSE(acked.contains(below_severity));
+  EXPECT_FALSE(acked.contains(other_object));
+}
+
+// With every pending alarm filtered out, the command has nothing to do and
+// reports so — the footer's button and the menu item disable on it — even
+// though the server still holds unacknowledged alarms.
+TEST_F(EventAlarmChromeTest, NothingShownMeansNothingToAcknowledge) {
+  node_event_provider_.unacked_events_.try_emplace(
+      1, scada::Event{.event_id = 1,
+                      .severity = scada::kSeverityWarning,
+                      .source_node_id = node_id_,
+                      .message = u"warn"});
+  model_.SetSeverityMin(scada::kSeverityCritical);
+  Rebuild();
+  ASSERT_EQ(model_.GetRowCount(), 0);
+
+  EXPECT_FALSE(model_.CanAcknowledgeShown());
+
+  EXPECT_CALL(node_event_provider_, AcknowledgeEvent(_)).Times(0);
+  model_.AcknowledgeShown();
+}
+
+// A historical row's acknowledged flag is a record the journal cannot change,
+// so an unacknowledged history row alone does not enable the command.
+TEST_F(EventAlarmChromeTest, UnacknowledgedHistoryAloneIsNotAcknowledgeable) {
+  historical_event_model_.AddEvent({.event_id = 1,
+                                    .severity = scada::kSeverityCritical,
+                                    .source_node_id = node_id_,
+                                    .message = u"old"});
+  Rebuild();
+  ASSERT_EQ(model_.GetRowCount(), 1);
+  ASSERT_EQ(model_.GetAlarmSummary().unacknowledged, 1);
+
+  EXPECT_FALSE(model_.CanAcknowledgeShown());
+}
+
+// Local events are part of what the journal shows, so they are acknowledged
+// with the rest.
+TEST_F(EventAlarmChromeTest, AcknowledgeShownIncludesLocalEvents) {
+  local_events_.ReportEvent(LocalEvents::SEV_ERROR, u"comms lost");
+  Rebuild();
+  ASSERT_TRUE(model_.CanAcknowledgeShown());
+
+  model_.AcknowledgeShown();
+
+  EXPECT_TRUE(local_events_.events().empty());
+  EXPECT_FALSE(model_.CanAcknowledgeShown());
+}
+
 // Task 721: the journal's per-arrival and per-paint work must be linear in the
 // batch, not in the journal. A flood of thousands of repeats is exactly when
 // grouping exists, and it was also when a per-event scan of every row and a

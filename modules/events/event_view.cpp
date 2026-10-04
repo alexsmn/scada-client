@@ -93,7 +93,6 @@ EventView::EventView(const ControllerContext& context,
     : ControllerContext{context},
       is_panel_{is_panel},
       audit_only_{audit_only},
-      local_events_{local_events},
       model_{CreateEventTableModel(context, local_events, is_panel)} {
   const scada::aui::TableColumn kEventViewColumns[] = {
       {EventColumnTime, Translate("Time"), 150, scada::aui::TableColumn::LEFT,
@@ -167,18 +166,18 @@ EventView::EventView(const ControllerContext& context,
                              "acknowledged");
           }));
 
+  // The journal's «Квитировать все» (footer button and context menu)
+  // acknowledges what the journal shows, after its zone, severity, object and
+  // unacknowledged-only filters — never an alarm a filter hides (backlog 869,
+  // decided 2026-10-04). The unscoped command stays registered globally in
+  // EventModule for surfaces that show no filtered rows.
   command_registry_.AddCommand(
       Command{ID_ACKNOWLEDGE_ALL}
-          .set_execute_handler([this] {
-            node_event_provider_.AcknowledgeAllEvents();
-            local_events_.AcknowledgeAll();
-          })
-          .set_enabled_handler([this] {
-            return !node_event_provider_.unacked_events().empty() ||
-                   !local_events_.events().empty();
-          })
+          .set_execute_handler([this] { model_->AcknowledgeShown(); })
+          .set_enabled_handler([this] { return model_->CanAcknowledgeShown(); })
           .set_disabled_reason_handler([] {
-            return Translate("Nothing is waiting to be acknowledged");
+            return Translate(
+                "No event shown here is waiting to be acknowledged");
           }));
 
   command_registry_.AddCommand(

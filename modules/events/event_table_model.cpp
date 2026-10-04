@@ -925,25 +925,59 @@ void EventTableModel::AcknowledgeRows(std::span<const int> rows) {
       targets.push_back({r.type, repeat->event_id});
   }
 
-  for (const Target& target : targets) {
-    switch (target.type) {
-      case CURRENT_EVENT:
-        // Event state comes from the server; it may already have been acked
-        // concurrently.
-        current_event_model_.Ack(target.event_id);
-        break;
+  for (const Target& target : targets)
+    AckEvent(target.type, target.event_id);
+}
 
-      case HISTORICAL_EVENT:
-        // Do nothing.
-        break;
-
-      case LOCAL_EVENT:
-        local_event_model_.Ack(target.event_id);
-        break;
-
-      default:
-        scada::base::NotReached();
+void EventTableModel::AcknowledgeShown() {
+  // Resolved to event ids up front for the reason AcknowledgeRows() gives:
+  // each acknowledgement notifies, and the notification removes or regroups
+  // rows under the loop. Only unacknowledged live occurrences are targeted, so
+  // a journal full of acknowledged history sends nothing for them.
+  struct Target {
+    EventType type;
+    scada::EventId event_id;
+  };
+  std::vector<Target> targets;
+  for (const Row& row : rows_) {
+    if (row.type == HISTORICAL_EVENT || row.unacked == 0)
+      continue;
+    if (!row.event->acked)
+      targets.push_back({row.type, row.event->event_id});
+    for (const scada::Event* repeat : row.repeats) {
+      if (!repeat->acked)
+        targets.push_back({row.type, repeat->event_id});
     }
+  }
+
+  for (const Target& target : targets)
+    AckEvent(target.type, target.event_id);
+}
+
+bool EventTableModel::CanAcknowledgeShown() const {
+  return std::ranges::any_of(rows_, [](const Row& row) {
+    return row.type != HISTORICAL_EVENT && row.unacked != 0;
+  });
+}
+
+void EventTableModel::AckEvent(EventType type, scada::EventId event_id) {
+  switch (type) {
+    case CURRENT_EVENT:
+      // Event state comes from the server; it may already have been acked
+      // concurrently.
+      current_event_model_.Ack(event_id);
+      break;
+
+    case HISTORICAL_EVENT:
+      // Do nothing.
+      break;
+
+    case LOCAL_EVENT:
+      local_event_model_.Ack(event_id);
+      break;
+
+    default:
+      scada::base::NotReached();
   }
 }
 

@@ -116,6 +116,19 @@ class EventTableModel : public scada::aui::TableModel,
   void AcknowledgeRows(std::span<const int> rows);
   void AcknowledgeRow(int row) { AcknowledgeRows({&row, 1}); }
 
+  // Acknowledges every alarm the journal currently shows — the rows that pass
+  // its zone, minimum-severity, object and unacknowledged-only filters, with
+  // every occurrence collapsed into a flood group counted as shown. This is
+  // the journal's «Квитировать все»: an operator acknowledges only what they
+  // can see, never an alarm a filter hides (backlog 869, decided 2026-10-04).
+  void AcknowledgeShown();
+
+  // Whether AcknowledgeShown() has anything to do: a shown live (current or
+  // local) occurrence is unacknowledged. A historical row's acknowledged flag
+  // is a record, not something the journal can change, so an unacknowledged
+  // historical row alone does not count.
+  bool CanAcknowledgeShown() const;
+
   // Whether the journal's historical rows are currently collapsed into flood
   // groups. Decided by the model itself on each rebuild (see
   // kAlarmFloodThreshold), not set by the caller: the journal groups exactly
@@ -230,6 +243,9 @@ class EventTableModel : public scada::aui::TableModel,
 
   // TODO: Remove this method. Keep only `OnCurrentEvents()`.
   void AckRows(int first, int count);
+
+  // Acknowledges one live occurrence; a historical one is a no-op.
+  void AckEvent(EventType type, scada::EventId event_id);
 
   bool IsEventShown(const scada::Event& event) const;
 
