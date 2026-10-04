@@ -10,6 +10,8 @@ struct WriteServiceImplContext {
   AnyExecutor executor_;
   TimedDataService& timed_data_service_;
   Profile& profile_;
+  // Where a successful control command is reported. Optional.
+  LocalEvents* local_events_ = nullptr;
 };
 
 class WriteServiceImpl final : private WriteServiceImplContext,
@@ -30,7 +32,8 @@ class WriteServiceImpl final : private WriteServiceImplContext,
                        .timed_data_service_ = timed_data_service_,
                        .node_id_ = node_id,
                        .profile_ = profile_,
-                       .manual_ = manual});
+                       .manual_ = manual,
+                       .local_events_ = local_events_});
     });
   }
 

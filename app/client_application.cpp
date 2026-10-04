@@ -549,13 +549,15 @@ void ClientApplication::CreateUserServices(const PostLoginContext& ctx) {
   write_service_ = std::make_unique<WriteServiceImpl>(
       WriteServiceImplContext{.executor_ = executor_,
                               .timed_data_service_ = *timed_data_service_,
-                              .profile_ = *profile_});
+                              .profile_ = *profile_,
+                              .local_events_ = &event_module_->local_events()});
 
   singletons_.emplace(std::make_shared<WriteModule>(WriteModuleContext{
       .executor_ = executor_,
       .timed_data_service_ = *timed_data_service_,
       .session_service_ = *ctx.audited_scada_services.session_service,
       .profile_ = *profile_,
+      .local_events_ = event_module_->local_events(),
       .selection_commands_ = core_module_->selection_commands(),
       .ui_command_registry_ = *ui_command_registry_}));
 

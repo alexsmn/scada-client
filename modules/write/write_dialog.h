@@ -6,9 +6,7 @@
 #include "scada/node_id.h"
 
 class DialogService;
-class Profile;
-class TimedDataService;
-
+class LocalEvents;
 class Profile;
 class TimedDataService;
 
@@ -18,6 +16,9 @@ struct WriteContext {
   const scada::NodeId node_id_;
   Profile& profile_;
   const bool manual_ = false;
+  // Where a successful command is reported when the profile's
+  // `show_write_ok` asks for it. Optional: without it success stays silent.
+  LocalEvents* const local_events_ = nullptr;
 };
 
 // The context is taken **by value**: this returns a lazy awaitable, and a

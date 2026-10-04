@@ -5,5 +5,7 @@ if(TARGET client_component_write_qt_unittests)
     # The write-availability test builds its nodes in a real address space.
     address_space
     node_service
+    # The write-model test reads the local events a completed command reports.
+    client_events_qt
   )
 endif()

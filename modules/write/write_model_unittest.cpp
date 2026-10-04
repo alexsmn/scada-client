@@ -4,6 +4,7 @@
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "common/node_state.h"
+#include "events/local_events.h"
 #include "model/data_items_node_ids.h"
 #include "model/nested_node_ids.h"
 #include "model/node_id_util.h"
@@ -129,7 +130,7 @@ class WriteModelTest : public Test {
 
     auto model = std::make_shared<WriteModel>(
         WriteContext{executor_, timed_data_service_, kDataItemId, profile_,
-                     /*manual_=*/false});
+                     /*manual_=*/false, &local_events_});
     model->set_dialog_service(&dialog_service_);
     model->status_change_handler = [this] { ++status_changes_; };
     model->completion_handler = [this](bool ok) { completion_ = ok; };
@@ -171,6 +172,7 @@ class WriteModelTest : public Test {
       std::make_shared<NiceMock<MockTimedData>>();
   StaticNodeService node_service_;
   Profile profile_;
+  LocalEvents local_events_;
   RecordingDialogService dialog_service_;
   int status_changes_ = 0;
   std::optional<bool> completion_;
@@ -397,6 +399,65 @@ TEST_F(WriteModelTest, SuccessfulWriteStillClosesTheDialog) {
   ASSERT_TRUE(completion_.has_value());
   EXPECT_TRUE(*completion_);
   EXPECT_THAT(dialog_service_.modes, IsEmpty());
+}
+
+// Backlog 849: "Report successful control" is what the setting promises, so
+// with it on a completed command leaves a record in the event panel. It used
+// to govern only configuration edits, and control closed silently.
+TEST_F(WriteModelTest, SuccessfulControlIsReportedWhenTheSettingIsOn) {
+  profile_.control_confirmation = false;
+  profile_.show_write_ok = true;
+  EXPECT_CALL(attribute_service_, Write(_, _))
+      .WillOnce([&](scada::ServiceContext, std::vector<scada::WriteValue>)
+                    -> scada::CoStatusOr<std::vector<scada::StatusCode>> {
+        co_return std::vector{scada::StatusCode::Good};
+      });
+
+  auto model = CreateModel();
+  model->Write(7.0, /*lock=*/false);
+  Drain(executor_);
+
+  ASSERT_THAT(local_events_.events(), SizeIs(1));
+  EXPECT_EQ(local_events_.events()[0]->severity, scada::kSeverityNormal);
+  EXPECT_NE(local_events_.events()[0]->message.text.find(u"Output"),
+            std::u16string::npos);
+}
+
+TEST_F(WriteModelTest, SuccessfulControlIsSilentWhenTheSettingIsOff) {
+  profile_.control_confirmation = false;
+  profile_.show_write_ok = false;
+  EXPECT_CALL(attribute_service_, Write(_, _))
+      .WillOnce([&](scada::ServiceContext, std::vector<scada::WriteValue>)
+                    -> scada::CoStatusOr<std::vector<scada::StatusCode>> {
+        co_return std::vector{scada::StatusCode::Good};
+      });
+
+  auto model = CreateModel();
+  model->Write(7.0, /*lock=*/false);
+  Drain(executor_);
+
+  ASSERT_TRUE(completion_.has_value());
+  EXPECT_TRUE(*completion_);
+  EXPECT_THAT(local_events_.events(), IsEmpty());
+}
+
+// The select half of a two-staged command is not the command; only the operate
+// that follows it completes anything, so the select reports nothing.
+TEST_F(WriteModelTest, TwoStagedControlReportsOnceAfterTheOperate) {
+  profile_.control_confirmation = false;
+  profile_.show_write_ok = true;
+  ON_CALL(method_service_, Call)
+      .WillByDefault(
+          [](scada::NodeId, scada::NodeId, std::vector<scada::Variant>,
+             scada::ServiceContext) { return scada::MakeMethodCallResult(); });
+
+  auto model = CreateModel(/*two_staged=*/true);
+  model->Write(1.0, /*lock=*/false);
+  Drain(executor_);
+
+  ASSERT_TRUE(completion_.has_value());
+  EXPECT_TRUE(*completion_);
+  EXPECT_THAT(local_events_.events(), SizeIs(1));
 }
 
 TEST_F(WriteModelTest, DestroyedModelDropsPendingWriteCompletion) {

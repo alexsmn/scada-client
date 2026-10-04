@@ -5,6 +5,7 @@
 template <class T>
 class BasicCommandRegistry;
 
+class LocalEvents;
 class Profile;
 class TimedDataService;
 class UiCommandRegistry;
@@ -19,6 +20,8 @@ struct WriteModuleContext {
   TimedDataService& timed_data_service_;
   scada::SessionService& session_service_;
   Profile& profile_;
+  // Where a successful control command is reported (backlog 849).
+  LocalEvents& local_events_;
   BasicCommandRegistry<SelectionCommandContext>& selection_commands_;
   UiCommandRegistry& ui_command_registry_;
 };

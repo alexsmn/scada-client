@@ -34,13 +34,14 @@ WriteModule::WriteModule(WriteModuleContext&& context)
            [this](const SelectionCommandContext& context) {
              // `ExecuteWriteDialog` returns a lazy awaitable — spawn it
              // detached so the dialog actually opens.
-             CoSpawn(executor_, [this, &dialog_service = context.dialog_service,
-                                 node_id =
-                                     context.selection.node().node_id()]() {
-               return ExecuteWriteDialog(
-                   dialog_service, WriteContext{executor_, timed_data_service_,
-                                                node_id, profile_, false});
-             });
+             CoSpawn(executor_,
+                     [this, &dialog_service = context.dialog_service,
+                      node_id = context.selection.node().node_id()]() {
+                       return ExecuteWriteDialog(
+                           dialog_service,
+                           WriteContext{executor_, timed_data_service_, node_id,
+                                        profile_, false, &local_events_});
+                     });
            },
        // Both gates read the shared node rule (`GetWriteBlock`), which the
        // Inspector also uses to tell the operator why control is unavailable.
@@ -70,13 +71,14 @@ WriteModule::WriteModule(WriteModuleContext&& context)
            [this](const SelectionCommandContext& context) {
              // `ExecuteWriteDialog` returns a lazy awaitable — spawn it
              // detached so the dialog actually opens.
-             CoSpawn(executor_, [this, &dialog_service = context.dialog_service,
-                                 node_id =
-                                     context.selection.node().node_id()]() {
-               return ExecuteWriteDialog(
-                   dialog_service, WriteContext{executor_, timed_data_service_,
-                                                node_id, profile_, true});
-             });
+             CoSpawn(executor_,
+                     [this, &dialog_service = context.dialog_service,
+                      node_id = context.selection.node().node_id()]() {
+                       return ExecuteWriteDialog(
+                           dialog_service,
+                           WriteContext{executor_, timed_data_service_, node_id,
+                                        profile_, true, &local_events_});
+                     });
            },
        .available_handler =
            [this](const SelectionCommandContext& context) {

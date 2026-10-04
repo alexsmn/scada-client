@@ -3,8 +3,10 @@
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
 #include "base/check.h"
+#include "base/u16format.h"
 #include "common/format.h"
 #include "common/formula_util.h"
+#include "events/local_event_util.h"
 #include "model/data_items_node_ids.h"
 #include "model/nested_node_ids.h"
 #include "model/node_id_util.h"
@@ -174,7 +176,20 @@ void WriteModel::OnWriteComplete(const scada::Status& status) {
   }
 
   writing_ = true;
+  ReportSuccess();
   completion_handler(true);
+}
+
+void WriteModel::ReportSuccess() {
+  // The "report successful control" setting promises this (backlog 849);
+  // before, the dialog just closed. ReportRequestResult applies the setting.
+  if (!local_events_)
+    return;
+
+  std::u16string title = u16format(
+      L"{} {}: {}", GetWindowTitle(), GetSourceTitle(),
+      spec_.GetValueString(write_value_, {}, ValueFormat{FORMAT_UNITS}));
+  ReportRequestResult(title, scada::StatusCode::Good, *local_events_, profile_);
 }
 
 std::u16string WriteModel::GetConfirmationMessage(double value,

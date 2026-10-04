@@ -67,6 +67,8 @@ class WriteModel : private WriteContext,
 
  private:
   void OnWriteComplete(const scada::Status& status);
+  // Reports a completed command as a local event, if the profile asks for it.
+  void ReportSuccess();
 
   void StartWriting(bool second_stage);
   void StartWritingHelper();
