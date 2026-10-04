@@ -4,7 +4,6 @@
 #include "controller/action_manager.h"
 #include "controller/command_ui_registry.h"
 #include "main_window/base_main_window.h"
-#include "main_window/pages/page_switcher.h"
 #include "main_window/pane_modes.h"
 
 #include <QMainWindow>
@@ -24,7 +23,7 @@ class ActivityBar;
 class CommandActions;
 class Breadcrumb;
 class CommandField;
-class PageSwitcher;
+class RailPagesController;
 class PaneModeController;
 class InspectorPanel;
 struct InspectorOpenAction;
@@ -180,21 +179,6 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // Builds one dock per panel the feature modules registered, tabified onto
   // the Inspector in registration order.
   void CreateSelectionPanels();
-  // Wires the rail's pages group: the page buttons, the "+" that creates one,
-  // and the per-page context menu.
-  void WireRailPages();
-  // Rebuilds the rail's page buttons and re-marks the open page.
-  void RefreshRailPages();
-  // Rename / Delete for `page_id`, plus New — the same registered ID_PAGE_*
-  // commands the Page menu uses.
-  void ShowPageContextMenu(int page_id, const QPoint& global_pos);
-
-  // The rail icon currently set on `page_id`, or empty when it has none. Read
-  // back from the profile rather than cached, so the context menu's check mark
-  // cannot disagree with what the rail draws.
-  std::string PageIconFor(int page_id) const;
-  // Sets `page_id`'s rail icon and redraws the rail. Empty `key` clears it.
-  void SetPageIcon(int page_id, std::string_view key);
   // Runs a registered command through the shell's command resolution, doing
   // nothing when it does not resolve or is disabled. The rail's pages, its
   // pinned utilities and the page context menu all reach their commands this
@@ -283,9 +267,9 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
 
   // Left activity rail. Selects the sidebar's pane mode.
   ActivityBar* activity_bar_ = nullptr;
-  // The page list and switching policy behind the rail's pages group, shared
-  // with the Page main menu so both obey the same rules.
-  std::unique_ptr<PageSwitcher> page_switcher_;
+  // The rail's pages group: its buttons, reordering and per-page context
+  // menu. Built with the rail, so null until CreateActivityBar has run.
+  std::unique_ptr<RailPagesController> rail_pages_;
   // The sidebar's mode policy, and the adapter it drives this window through.
   // Built with the rail, so both are null until CreateActivityBar has run.
   class PaneModeHostImpl;

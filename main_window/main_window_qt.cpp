@@ -32,9 +32,8 @@
 #include "main_window/main_window_util.h"
 #include "main_window/opened_view/opened_view.h"
 #include "main_window/overview_page.h"
-#include "main_window/page_icons.h"
-#include "main_window/pages/page_switcher.h"
 #include "main_window/pane_mode_controller.h"
+#include "main_window/rail_pages_controller.h"
 #include "main_window/selection_command_router.h"
 #include "main_window/status_bar/progress_controller_qt.h"
 #include "main_window/tag_search_index.h"
@@ -219,7 +218,17 @@ MainWindow::MainWindow(MainWindowContext&& context)
   // specialist docks (shell.md §2). Structural rather than cosmetic, so
   // Settings → Colour scheme recolours it but never adds or removes it.
   CreateActivityBar();
-  WireRailPages();
+  rail_pages_ =
+      std::make_unique<RailPagesController>(RailPagesControllerContext{
+          .activity_bar_ = *activity_bar_,
+          .page_switcher_ = {.executor_ = executor_,
+                             .profile_ = profile_,
+                             .main_window_ = *this,
+                             .main_window_manager_ = main_window_manager_,
+                             .dialog_service_ = dialog_service_},
+          .execute_command_ =
+              [this](unsigned command_id) { ExecuteShellCommand(command_id); },
+          .menu_parent_ = *this});
   CreateContextBar();
   CreateInspectorPanel();
   CreateSelectionPanels();
@@ -306,7 +315,8 @@ void MainWindow::UpdateTitle() {
   // Renaming a page ends here (PageCommands -> SetCurrentPageTitle ->
   // UpdateTitle) and nowhere else, so this is the hook that keeps the Pages
   // list's label in step. PageCommands does not raise a profile change.
-  RefreshRailPages();
+  if (rail_pages_)
+    rail_pages_->Refresh();
   // Same hook, same reason: the breadcrumb's first segment is the page title.
   RefreshBreadcrumb();
 }
@@ -591,50 +601,6 @@ void MainWindow::CreateActivityBar() {
   addToolBar(Qt::LeftToolBarArea, activity_bar_);
 }
 
-void MainWindow::WireRailPages() {
-  page_switcher_ = std::make_unique<PageSwitcher>(
-      PageSwitcherContext{.executor_ = executor_,
-                          .profile_ = profile_,
-                          .main_window_ = *this,
-                          .main_window_manager_ = main_window_manager_,
-                          .dialog_service_ = dialog_service_});
-
-  activity_bar_->SetPageCallbacks(
-      [this](int page_id) { page_switcher_->ActivatePage(page_id); },
-      [this] { ExecuteShellCommand(ID_PAGE_NEW); },
-      [this](int page_id, const QPoint& global_pos) {
-        ShowPageContextMenu(page_id, global_pos);
-      },
-      [this](int page_id, int new_index) {
-        page_switcher_->ReorderPage(page_id, new_index);
-        // The Page menu reads the same ordered list, so it follows without
-        // any further wiring.
-        RefreshRailPages();
-      });
-
-  RefreshRailPages();
-}
-
-void MainWindow::RefreshRailPages() {
-  if (!activity_bar_ || !page_switcher_)
-    return;
-
-  std::vector<ActivityBar::PageButton> buttons;
-  int active_page_id = 0;
-  for (const PageEntry& entry : page_switcher_->ListPages()) {
-    buttons.push_back(
-        ActivityBar::PageButton{.page_id = entry.page_id,
-                                .title = entry.title,
-                                .icon_key = entry.icon,
-                                .opened_elsewhere = entry.opened_elsewhere});
-    if (entry.current)
-      active_page_id = entry.page_id;
-  }
-
-  activity_bar_->SetPages(std::move(buttons));
-  activity_bar_->SetActivePage(active_page_id);
-}
-
 void MainWindow::ExecuteShellCommand(unsigned command_id) {
   // Route through the shell's command resolution rather than reimplementing
   // New / Rename / Delete: PageCommands owns them, and the Page menu and the
@@ -643,113 +609,6 @@ void MainWindow::ExecuteShellCommand(unsigned command_id) {
     if (handler->IsCommandEnabled(command_id))
       handler->ExecuteCommand(command_id);
   }
-}
-
-std::string MainWindow::PageIconFor(int page_id) const {
-  if (!page_switcher_)
-    return {};
-  for (const PageEntry& entry : page_switcher_->ListPages()) {
-    if (entry.page_id == page_id)
-      return entry.icon;
-  }
-  return {};
-}
-
-void MainWindow::SetPageIcon(int page_id, std::string_view key) {
-  if (!page_switcher_)
-    return;
-  page_switcher_->SetPageIcon(page_id, key);
-  // The rail reads the icon from the profile, so redraw the buttons rather
-  // than mutating the one that was clicked — same path a rename takes.
-  RefreshRailPages();
-}
-
-void MainWindow::ShowPageContextMenu(int page_id, const QPoint& global_pos) {
-  QMenu menu{this};
-
-  // Rename and Delete act on the *current* page (that is what ID_PAGE_RENAME
-  // and ID_PAGE_DELETE mean), so switch to the right-clicked page first when
-  // it is not already open. Anything else would silently rename the wrong one.
-  const bool is_current = page_id == current_page().id;
-
-  auto add = [&](unsigned command_id, const char* label, bool enabled) {
-    QAction* action =
-        menu.addAction(QString::fromStdU16String(Translate(label)));
-    action->setEnabled(enabled);
-    connect(action, &QAction::triggered, this,
-            [this, command_id] { ExecuteShellCommand(command_id); });
-  };
-
-  // Opening the right-clicked page is the menu's primary action, so it leads
-  // and is bold. Absent when that page is already open — "Open page" on the
-  // page you are looking at would mean the revert, which is not what the
-  // reader would expect from it.
-  const std::vector<PageEntry> pages = page_switcher_->ListPages();
-  const auto entry = std::ranges::find(pages, page_id, &PageEntry::page_id);
-  if (!is_current && entry != pages.end() && !entry->opened_elsewhere) {
-    QAction* open =
-        menu.addAction(QString::fromStdU16String(Translate("Open page")));
-    connect(open, &QAction::triggered, this,
-            [this, page_id] { page_switcher_->ActivatePage(page_id); });
-    menu.setDefaultAction(open);
-    menu.addSeparator();
-  }
-
-  add(ID_PAGE_RENAME, "Rename", is_current);
-  add(ID_PAGE_DUPLICATE, "Duplicate", is_current);
-
-  // Reordering acts on the right-clicked page directly, the way the icon
-  // submenu does: moving a page does not require having it open, and forcing a
-  // switch first would be a worse way to rearrange a list. Each end of the list
-  // disables its own direction rather than silently doing nothing.
-  const int index =
-      entry == pages.end() ? -1 : static_cast<int>(entry - pages.begin());
-  auto add_move = [&](const char* label, int target, bool enabled) {
-    QAction* action =
-        menu.addAction(QString::fromStdU16String(Translate(label)));
-    action->setEnabled(enabled);
-    connect(action, &QAction::triggered, this, [this, page_id, target] {
-      page_switcher_->ReorderPage(page_id, target);
-      RefreshRailPages();
-    });
-  };
-  add_move("Move up", index - 1, index > 0);
-  add_move("Move down", index + 1,
-           index >= 0 && index + 1 < static_cast<int>(pages.size()));
-
-  // The icon is a property of the page, not of the current one, so unlike
-  // Rename and Delete it acts on the right-clicked page directly — no need to
-  // switch to it first, and no reason to disable it when another page is open.
-  QMenu* icon_menu = menu.addMenu(QString::fromStdU16String(Translate("Icon")));
-  const std::string current_icon = PageIconFor(page_id);
-
-  QAction* none_action =
-      icon_menu->addAction(QString::fromStdU16String(Translate("None")));
-  none_action->setCheckable(true);
-  none_action->setChecked(current_icon.empty());
-  connect(none_action, &QAction::triggered, this,
-          [this, page_id] { SetPageIcon(page_id, {}); });
-  icon_menu->addSeparator();
-
-  for (const PageIcon& icon : GetPageIcons()) {
-    QAction* action =
-        icon_menu->addAction(QString::fromStdU16String(Translate(icon.label)));
-    action->setCheckable(true);
-    action->setChecked(current_icon == icon.key);
-    const std::string key{icon.key};
-    connect(action, &QAction::triggered, this,
-            [this, page_id, key] { SetPageIcon(page_id, key); });
-  }
-
-  // Delete sits last, behind its own separator: the destructive item is kept
-  // away from the ones above it so it is not reached by muscle memory.
-  menu.addSeparator();
-  add(ID_PAGE_DELETE, "Delete page", is_current);
-
-  menu.addSeparator();
-  add(ID_PAGE_NEW, "New page", true);
-
-  menu.exec(global_pos);
 }
 
 void MainWindow::SetPaneMode(PaneModeId id) {
@@ -1263,7 +1122,8 @@ void MainWindow::OpenPage(const Page& page) {
   // the page commands, and the startup restore — so this is the one place the
   // marker has to be re-derived, and the one place the page list is known to
   // be stale (New and Delete both end in an OpenPage).
-  RefreshRailPages();
+  if (rail_pages_)
+    rail_pages_->Refresh();
   if (pane_modes_)
     pane_modes_->RefreshMarker();
 
