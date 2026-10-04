@@ -73,6 +73,9 @@ class EventView : protected ControllerContext,
   void SelectSeverity();
   Awaitable<void> SelectSeverityAsync();
   void SetSeverityMin(scada::EventSeverity severity);
+  // Whether a severity threshold above "all events" is in force, read from
+  // wherever the current mode keeps it.
+  bool HasCustomSeverityMin() const;
 
   NodeIdSet GetSelectedNodeIds() const;
 

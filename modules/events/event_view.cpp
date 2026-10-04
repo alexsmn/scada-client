@@ -190,16 +190,18 @@ EventView::EventView(const ControllerContext& context,
 
   command_registry_.AddCommand(
       Command{ID_SEVERITY_ALL}
-          .set_execute_handler([this] {
-            model_->SetSeverityMin(0);
-            controller_delegate_.SetTitle(MakeTitle());
-          })
-          .set_checked_handler([this] { return model_->severity_min() == 0; }));
+          // Through SetSeverityMin, which knows where the threshold lives. In
+          // Current mode it is the fetch threshold, not the model's filter, so
+          // resetting only the model left the custom threshold in force while
+          // the menu showed All checked (backlog 847).
+          .set_execute_handler(
+              [this] { SetSeverityMin(static_cast<scada::EventSeverity>(0)); })
+          .set_checked_handler([this] { return !HasCustomSeverityMin(); }));
 
   command_registry_.AddCommand(
       Command{ID_SEVERITY_CUSTOM}
           .set_execute_handler([this] { SelectSeverity(); })
-          .set_checked_handler([this] { return model_->severity_min() != 0; }));
+          .set_checked_handler([this] { return HasCustomSeverityMin(); }));
 }
 
 EventView::~EventView() {}
@@ -502,6 +504,14 @@ Awaitable<void> EventView::SelectSeverityAsync() {
                                      parse_error);
   }
   co_return;
+}
+
+bool EventView::HasCustomSeverityMin() const {
+  // Current mode keeps its threshold on the fetcher, where the floor that
+  // means "all events" is kSeverityMin rather than 0.
+  if (model_->current_events())
+    return node_event_provider_.severity_min() > scada::kSeverityMin;
+  return model_->severity_min() != 0;
 }
 
 void EventView::SetSeverityMin(scada::EventSeverity severity) {
