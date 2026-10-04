@@ -420,10 +420,9 @@ jobs:
     # The E2E suite is skipped at configure time here (no `iec61850pp` sibling
     # and no tier binaries), so this is the unit suite.
     #
-    # QT_QPA_PLATFORM is deliberately NOT set here. Each binary chooses for
-    # itself instead: the client's own tests default to offscreen on macOS,
-    # Windows uses its native platform, and Linux gets a real (virtual)
-    # display from xvfb below.
+    # QT_QPA_PLATFORM is set only on Windows, below. Otherwise each binary
+    # chooses for itself: the client's own tests default to offscreen on
+    # macOS, and Linux gets a real (virtual) display from xvfb.
     #
     # It is worth knowing that this is now a preference rather than a
     # prohibition, because it was a prohibition twice and both reasons are
@@ -450,8 +449,23 @@ jobs:
     # What has NOT been established is whether the Linux leg could drop xvfb
     # and run offscreen. Nothing here has run that, so xvfb stays.
     - name: Test (Release)
-      if: runner.os != 'Linux'
+      if: runner.os == 'macOS'
       working-directory: client
+      run: ctest --preset test-release --output-on-failure --timeout 300
+
+    # Offscreen on Windows. The native `windows` platform hangs constructing
+    # the QApplication on a hosted runner, which has no interactive desktop:
+    # the first run to reach this step spent GitHub's whole six-hour budget
+    # timing out Qt test after Qt test at ctest's 300s bound -- trivial ones
+    # included (UiLocaleNameTest, GoldenImageTest) -- and finished 1437 of
+    # 2466 (scada-client run 36342865771). Every test binary links the
+    # offscreen plugin, and a bare `offscreen` is upgraded to the fixtures'
+    # 1920x1080 screen description, so the whole run is safe on it.
+    - name: Test (Release, offscreen)
+      if: runner.os == 'Windows'
+      working-directory: client
+      env:
+        QT_QPA_PLATFORM: offscreen
       run: ctest --preset test-release --output-on-failure --timeout 300
 
     - name: Test (Release, under Xvfb)
