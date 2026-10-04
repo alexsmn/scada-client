@@ -46,6 +46,8 @@ class EventModule : private EventModuleContext {
                       const WindowInfo& window_info,
                       const std::string_view& mode = {});
 
-  std::shared_ptr<EventFetcher> event_fetcher_;
+  // Declared first so it outlives the fetcher, whose acknowledgement queue
+  // reports refusals into it.
   std::unique_ptr<LocalEvents> local_events_;
+  std::shared_ptr<EventFetcher> event_fetcher_;
 };

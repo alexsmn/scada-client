@@ -4,12 +4,14 @@
 #include "aui/test/app_environment.h"
 #include "base/awaitable.h"
 #include "base/boost_log.h"
+#include "base/test/awaitable_test.h"
 #include "controller/command_ui_registry.h"
 #include "controller/selection_model.h"
 #include "controller/test/controller_environment.h"
 #include "controller/window_info.h"
 #include "core/selection_command_context.h"
 #include "events/event_fetcher.h"
+#include "events/local_events.h"
 #include "main_window/main_window_mock.h"
 #include "main_window/opened_view/opened_view_interface.h"
 #include "resources/common_resources.h"
@@ -99,6 +101,24 @@ TEST_F(EventModuleTest, OpenEventsCommandRoutesToMainWindowOpenView) {
   ASSERT_THAT(mode_item, NotNull());
   EXPECT_TRUE(mode_item->attributes.is_string());
   EXPECT_EQ(mode_item->attributes.as_string(), "Current");
+}
+
+// Backlog 848: when the Server refuses an acknowledgement the operator is told,
+// as a local error event, instead of the event silently staying
+// unacknowledged.
+TEST_F(EventModuleTest, RefusedAcknowledgementIsReportedAsALocalEvent) {
+  EXPECT_CALL(controller_env_.method_service_, Call)
+      .WillOnce(Invoke([](auto, auto, auto, auto) {
+        return scada::MakeMethodCallResult(
+            scada::StatusCode::Bad_UserAccessDenied);
+      }));
+
+  event_module_.node_event_provider().AcknowledgeEvent(17);
+  Drain(controller_env_.executor_);
+
+  const LocalEvents::Events& events = event_module_.local_events().events();
+  ASSERT_THAT(events, SizeIs(1));
+  EXPECT_EQ(events[0]->severity, scada::kSeverityCritical);
 }
 
 // The severity filter's 0-100 -> 1-1000 migration (ADR 0005 phase 1). These

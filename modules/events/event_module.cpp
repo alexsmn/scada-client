@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <optional>
+#include <span>
 
 #include "aui/translation.h"
 #include "base/any_executor.h"
@@ -16,6 +17,7 @@
 #include "events/event_fetcher.h"
 #include "events/event_fetcher_builder.h"
 #include "events/event_view.h"
+#include "events/local_event_util.h"
 #include "events/local_events.h"
 #include "events/node_event_provider.h"
 #include "main_window/main_window_interface.h"
@@ -63,10 +65,22 @@ Awaitable<void> OpenWindowDefinition(
 
 EventModule::EventModule(EventModuleContext&& context)
     : EventModuleContext(std::move(context)) {
-  event_fetcher_ =
-      EventFetcherBuilder{
-          .executor_ = executor_, .logger_ = logger_, .services_ = services_}
-          .Build();
+  // Before the fetcher, which reports refused acknowledgements into it.
+  local_events_ = std::make_unique<LocalEvents>();
+
+  event_fetcher_ = EventFetcherBuilder{
+      .executor_ = executor_,
+      .logger_ = logger_,
+      .services_ = services_,
+      // A refusal (e.g. no Call permission) would otherwise leave the
+      // event unacknowledged with nothing said (backlog 848).
+      .ack_failed_handler_ = [&local_events = *local_events_,
+                              &profile = profile_](
+                                 std::span<const scada::EventId> /*event_ids*/,
+                                 const scada::Status& status) {
+        ReportRequestResult(Translate("Event acknowledgement"), status,
+                            local_events, profile);
+      }}.Build();
 
   // Profiles written before ADR 0005 phase 1 stored the 0-100 severity
   // scale; the severityScale marker (written below) distinguishes them.
@@ -96,8 +110,6 @@ EventModule::EventModule(EventModuleContext&& context)
   }
   event_fetcher_->SetSeverityMin(
       static_cast<scada::EventSeverity>(severity_min));
-
-  local_events_ = std::make_unique<LocalEvents>();
 
   controller_registry_.AddControllerFactory(
       kEventWindowInfo,
