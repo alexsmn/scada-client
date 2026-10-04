@@ -21,16 +21,16 @@ class NodeId;
 
 class ActivityBar;
 class CommandActions;
-class Breadcrumb;
-class CommandField;
+class ContextBar;
 class RailPagesController;
+class RailUtilitiesController;
 class PaneModeController;
 class InspectorPanel;
 struct InspectorOpenAction;
 struct InspectorSeriesView;
 class SeriesModel;
 class SelectionPanel;
-class TagSearchIndex;
+class CommandPaletteLauncher;
 class QAction;
 class QDockWidget;
 class QLabel;
@@ -216,13 +216,9 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   void RefreshUtilityMarker();
   // Opens an address-space tag (from the palette) in a table view.
   void OpenTag(const scada::NodeId& node_id, const std::u16string& title);
-  // Starts the command palette's address-space browse. See the definition for
-  // why it must not run before the first page is open.
-  void StartTagSearchBrowse();
   // Opens the Ctrl-K command palette over every registered command, optionally
   // seeded with `initial_text` (type-to-search from the context-bar field).
   void ShowCommandPalette(const QString& initial_text = QString());
-  void RebuildMenuBar();
 
   std::unique_ptr<ViewManager> view_manager_;
 
@@ -251,16 +247,9 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // it is never in a layout, so it disturbs nothing it covers.
   SettingsPanel* settings_panel_ = nullptr;
 
-  // Top context bar: the command/search field and alarm state. It
-  // deliberately carries neither a brand mark nor identity/connection cells —
-  // the window title names the application and the status strip owns who/where
-  // (see CreateContextBar).
-  QToolBar* context_bar_ = nullptr;
-  CommandField* command_search_ = nullptr;
-  // Where the workspace is (page → view → selection), in the bar's left slot.
-  // Refreshed from the three places the path can move: UpdateTitle (page),
-  // OnActiveViewChanged (view) and OnSelectionChanged (subject).
-  Breadcrumb* breadcrumb_ = nullptr;
+  // Top context bar: breadcrumb, command field and alarm state. See
+  // ContextBar.
+  ContextBar* context_bar_ = nullptr;
   // Drives the bar's alarm-state cluster (AlarmStateCluster) from the
   // status-bar model's counts.
   boost::signals2::scoped_connection context_bar_connection_;
@@ -270,6 +259,9 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // The rail's pages group: its buttons, reordering and per-page context
   // menu. Built with the rail, so null until CreateActivityBar has run.
   std::unique_ptr<RailPagesController> rail_pages_;
+  // The rail's pinned utilities (Settings, Users) and their marker. Built with
+  // the rail, so null until CreateActivityBar has run.
+  std::unique_ptr<RailUtilitiesController> rail_utilities_;
   // The sidebar's mode policy, and the adapter it drives this window through.
   // Built with the rail, so both are null until CreateActivityBar has run.
   class PaneModeHostImpl;
@@ -294,12 +286,8 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // decides for itself which selections it shows.
   std::vector<std::unique_ptr<SelectionPanel>> selection_panels_;
 
-  // Flat tag index for the command palette's tag search (null when no node
-  // service is available).
-  std::unique_ptr<TagSearchIndex> tag_search_index_;
-
-  // Watches for a re-login, which resets the palette's tag index.
-  boost::signals2::scoped_connection session_state_connection_;
+  // The Ctrl-K palette and the tag index behind its tag search.
+  std::unique_ptr<CommandPaletteLauncher> palette_;
 
   boost::signals2::scoped_connection change_profile_connection_;
 };

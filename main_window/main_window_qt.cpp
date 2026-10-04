@@ -24,19 +24,20 @@
 #include "main_window/alarm_state_cluster_qt.h"
 #include "main_window/breadcrumb_qt.h"
 #include "main_window/command_actions_qt.h"
-#include "main_window/command_field_qt.h"
-#include "main_window/command_palette_qt.h"
+#include "main_window/command_palette_launcher.h"
+#include "main_window/context_bar_qt.h"
 #include "main_window/main_menu/main_menu_model.h"
 #include "main_window/main_window_command_router.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/main_window_util.h"
+#include "main_window/menu_bar_qt.h"
 #include "main_window/opened_view/opened_view.h"
 #include "main_window/overview_page.h"
 #include "main_window/pane_mode_controller.h"
 #include "main_window/rail_pages_controller.h"
+#include "main_window/rail_utilities_controller.h"
 #include "main_window/selection_command_router.h"
 #include "main_window/status_bar/progress_controller_qt.h"
-#include "main_window/tag_search_index.h"
 #include "main_window/view_manager.h"
 #include "main_window/window_definition_builder.h"
 #include "modules/inspector/limit_band.h"
@@ -233,23 +234,20 @@ MainWindow::MainWindow(MainWindowContext&& context)
   CreateInspectorPanel();
   CreateSelectionPanels();
   TabifySpecialistDocks();
-  // The palette's tag index is built here but deliberately NOT started here —
-  // see StartTagSearchBrowse(), called once the first page is open.
-  if (node_service_) {
-    tag_search_index_ = std::make_unique<TagSearchIndex>(
-        executor_, *node_service_, scada::id::ObjectsFolder);
-    // The index invalidates itself on model changes, but a re-login is not
-    // one: OnLoginCompleted swaps the services under this same window, so
-    // without this the palette kept listing the previous session's tags.
-    if (session_service_) {
-      session_state_connection_ =
-          session_service_->SubscribeSessionStateChanged(
-              [this](bool connected, const scada::Status&) {
-                if (connected && tag_search_index_)
-                  tag_search_index_->Reset();
-              });
-    }
-  }
+  palette_ =
+      std::make_unique<CommandPaletteLauncher>(CommandPaletteLauncherContext{
+          .executor_ = executor_,
+          .command_manager_ = ui_command_registry_.command_manager(),
+          .resolve_command_ =
+              [this](unsigned command_id) {
+                return ResolveViewCommand(command_id);
+              },
+          .open_tag_ =
+              [this](const scada::NodeId& node_id,
+                     const std::u16string& title) { OpenTag(node_id, title); },
+          .parent_ = *this,
+          .node_service_ = node_service_,
+          .session_service_ = session_service_});
   // The window's QActions exist whether or not a toolbar is built to show them.
   command_actions_ = std::make_unique<CommandActions>(
       ui_command_registry_.command_manager(),
@@ -276,7 +274,7 @@ MainWindow::MainWindow(MainWindowContext&& context)
   }
 
   Init(*view_manager_);
-  RebuildMenuBar();
+  RebuildMenuBar(*menuBar(), *main_menu_model_);
 
   // Init() opened the restored page, which conformed it to the active mode.
   // Bring the rail in line with what is actually on screen.
@@ -327,38 +325,7 @@ void MainWindow::CreateMenuBar() {
 
   auto* menu_bar = new QMenuBar(this);
   setMenuBar(menu_bar);
-
-  for (int i = 0; i < main_menu_model_->GetItemCount(); ++i) {
-    const std::u16string label = main_menu_model_->GetLabelAt(i);
-    auto* submenu = menu_bar->addMenu(QString::fromStdU16String(label));
-    auto* submenu_model = main_menu_model_->GetSubmenuModelAt(i);
-    scada::base::Check(submenu_model);
-    QObject::connect(submenu, &QMenu::aboutToShow, this,
-                     [submenu, submenu_model] {
-                       submenu->clear();
-                       BuildMenu(*submenu, *submenu_model);
-                     });
-#ifdef __APPLE__
-    auto* loading_action = submenu->addAction(tr("Loading..."));
-    loading_action->setEnabled(false);
-#endif
-  }
-}
-
-void MainWindow::RebuildMenuBar() {
-  const auto top_level_actions = menuBar()->actions();
-  // The appended Settings menu is not part of the model, so allow one extra.
-  scada::base::Check(top_level_actions.size() >=
-                     main_menu_model_->GetItemCount());
-
-  for (int i = 0; i < main_menu_model_->GetItemCount(); ++i) {
-    auto* submenu = top_level_actions[i]->menu();
-    auto* submenu_model = main_menu_model_->GetSubmenuModelAt(i);
-    scada::base::Check(submenu);
-    scada::base::Check(submenu_model);
-    submenu->clear();
-    BuildMenu(*submenu, *submenu_model);
-  }
+  PopulateMenuBar(*menu_bar, *main_menu_model_);
 }
 
 void MainWindow::CreateStatusBar() {
@@ -371,119 +338,9 @@ void MainWindow::CreateStatusBar() {
 }
 
 void MainWindow::CreateContextBar() {
-  context_bar_ = new QToolBar(this);
-  context_bar_->setObjectName(QStringLiteral("ContextBar"));
-  context_bar_->setMovable(false);
-  context_bar_->setFloatable(false);
-  context_bar_->setContextMenuPolicy(Qt::PreventContextMenu);
-
-  // Give the bar vertical breathing room, taken from the style.
-  //
-  // A QToolBar states no height of its own: it collapses to its tallest child
-  // plus the style's frame. All three slots zeroed their vertical margins and
-  // CommandField::sizeHint() forwards QLineEdit's height unchanged, so the
-  // field alone decided the bar and the bar hugged it -- measured at 29px with
-  // 3px of clearance around a 23px field.
-  //
-  // The padding is a style metric and never a literal, so it tracks DPI and the
-  // OS text size (docs/client/ux/README.md: "Metrics come from the platform ...
-  // Hard-coded pixel sizes are defects"). Deliberately NOT setFixedHeight: that
-  // would pin the bar to one machine's pixels and break text-size
-  // accessibility, and matching the mockups' 40px is explicitly not the goal --
-  // docs/product/ui-mockups/mockup-caveats.md, "What is not a divergence",
-  // exempts Qt control metrics from the HTML screens.
-  //
-  // It goes on the three SLOTS and not on the toolbar's own layout, which was
-  // tried first and is wrong in a way only a render shows: QToolBarLayout hands
-  // a vertically-Fixed child its sizeHint height and top-aligns it, so padding
-  // the toolbar grew the bar to 41px while leaving the field at the top with
-  // 3px above it and 15px below. Padding each slot instead makes the slot the
-  // tallest child, and a QHBoxLayout centres a Fixed-height widget inside it.
-  const int slot_padding = context_bar_->style()->pixelMetric(
-      QStyle::PM_LayoutVerticalSpacing, nullptr, context_bar_);
-
-  // And horizontally, for the same reason and from the same place. A QToolBar
-  // contributes only its style frame on the left and right -- measured at 4px
-  // and 7px on macOS -- so with every slot zeroing its horizontal margins the
-  // breadcrumb's first glyph sat hard against the window edge and the last
-  // alarm tile against the other. `operator-shell.html` gives `.topbar` a
-  // `padding: 0 12px` for exactly this, and the two bars either side of this
-  // one already stand off the edge (the menu bar by its style, the status strip
-  // by its cells' own margins), so the context bar was the one row in the
-  // window whose text started at x=4.
-  //
-  // The inset goes on the two OUTER slots only. The centre slot is bounded by
-  // its neighbours rather than by the window, and padding it would narrow the
-  // command field for no reason.
-  const int bar_margin_left = context_bar_->style()->pixelMetric(
-      QStyle::PM_LayoutLeftMargin, nullptr, context_bar_);
-  const int bar_margin_right = context_bar_->style()->pixelMetric(
-      QStyle::PM_LayoutRightMargin, nullptr, context_bar_);
-
-  // Three slots, as `operator-shell.html` lays the bar out: breadcrumb left,
-  // command field centre, alarm state right. Each side is a container of its
-  // own rather than "content plus a spacer" — the spacers this replaced sat
-  // *between* the content, so the field's position was a function of what the
-  // two sides happened to hold rather than of the bar. Which slot a widget
-  // belongs to is now stated by the code, not implied by insertion order.
-  //
-  // Note this makes the field's placement architecturally right without making
-  // it pixel-centred: the columns start from their children's size hints, so a
-  // wide alarm cluster still shifts the field. Exact centring is the mockup's
-  // own idiom (equal `1fr` grid columns) and appearance is the platform's here
-  // — see client/CLAUDE.md, "the mockups are not a visual target".
-  auto* left_slot = new QWidget(context_bar_);
-  left_slot->setObjectName(QStringLiteral("contextBarLeftSlot"));
-  auto* left_layout = new QHBoxLayout(left_slot);
-  left_layout->setContentsMargins(bar_margin_left, slot_padding, 0,
-                                  slot_padding);
-  left_slot->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-
-  // No brand lockup. A native application identifies itself in the window
-  // title and the About dialog, not with an in-window mark — and the one that
-  // stood here was a hard-coded, space-padded, untranslatable literal
-  // (docs/client/ux/shell.md §2.2, native rework).
-  // Where the workspace is: page → view → selected object. The left slot the
-  // brand lockup vacated, which is the slot `config-workbench.html` draws a
-  // breadcrumb in. It coexists with the command field rather than replacing it
-  // — shell.md §2.2 — because the two answer different questions.
-  breadcrumb_ = new Breadcrumb(left_slot);
-  left_layout->addWidget(breadcrumb_);
-  left_layout->addStretch();
-  context_bar_->addWidget(left_slot);
-
-  // Command/search entry point (centre). It owns no text: clicking it, or
-  // typing into it, opens the command palette, which is where the typing
-  // happens. The field draws the magnifier and the shortcut hint itself.
-  const QKeySequence palette_key{Qt::CTRL | Qt::Key_K};
-  command_search_ = new CommandField(
-      context_bar_,
-      QString::fromStdU16String(Translate("Search tags, objects, commands…")),
-      palette_key, [this](const QString& initial_text) {
-        ShowCommandPalette(initial_text);
-      });
-  // The centre slot is a container like the two beside it, so the field takes
-  // the same padding and is centred in it rather than sitting against the
-  // bar's top edge. Preferred (not Expanding) horizontally, so the two
-  // Expanding side slots still centre it against the bar.
-  auto* centre_slot = new QWidget(context_bar_);
-  centre_slot->setObjectName(QStringLiteral("contextBarCentreSlot"));
-  auto* centre_layout = new QHBoxLayout(centre_slot);
-  centre_layout->setContentsMargins(0, slot_padding, 0, slot_padding);
-  centre_slot->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
-  centre_layout->addWidget(command_search_);
-  context_bar_->addWidget(centre_slot);
-
-  auto* palette_shortcut = new QShortcut(palette_key, this);
-  connect(palette_shortcut, &QShortcut::activated, this,
-          [this] { ShowCommandPalette(); });
-
-  // Right slot: alarm state alone -- the escalation chips, then the
-  // per-severity tiles. See AlarmStateCluster.
-  //
   // The status-bar model exposes the counts as separate aggregates; the alarm
   // total is the unacknowledged count (see EventStatusProvider::GetTileCounts).
-  auto* alarm_state = new AlarmStateCluster(
+  context_bar_ = new ContextBar(
       [this] {
         return events::SeverityTileCounts{
             .critical = status_bar_model_->GetSeverityCount(
@@ -492,21 +349,16 @@ void MainWindow::CreateContextBar() {
                 scada::aui::SeverityLevel::kWarning),
             .unacknowledged = status_bar_model_->GetAlarmCount()};
       },
-      context_bar_);
-  alarm_state->setObjectName(QStringLiteral("contextBarRightSlot"));
-  alarm_state->layout()->setContentsMargins(0, slot_padding, bar_margin_right,
-                                            slot_padding);
-  alarm_state->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-  context_bar_->addWidget(alarm_state);
+      [this](const QString& initial_text) { ShowCommandPalette(initial_text); },
+      this);
   context_bar_connection_ = status_bar_model_->SubscribePanesChanged(
-      [alarm_state](int, int) { alarm_state->Refresh(); });
+      [this](int, int) { context_bar_->RefreshAlarmState(); });
 
-  // No identity/connection cluster here. Who/where context (user·role,
-  // connection, server latency, endpoint·build) is stated once, in the status
-  // strip — mirroring it in the top bar duplicated four cells verbatim and
-  // costs a place to look without adding a fact (shell.md §3: don't show the
-  // same metric in two prominent places). The top bar carries only alarm state,
-  // which needs pre-attentive prominence.
+  // Bound window-wide rather than on the field, so Ctrl-K opens the palette
+  // wherever focus is.
+  auto* palette_shortcut = new QShortcut(ContextBar::PaletteKey(), this);
+  connect(palette_shortcut, &QShortcut::activated, this,
+          [this] { ShowCommandPalette(); });
 
   addToolBar(Qt::TopToolBarArea, context_bar_);
   // Force the command toolbar onto its own row below the context bar.
@@ -533,19 +385,6 @@ ActivityBar::Icon ModeIconKind(PaneModeId id) {
   return ActivityBar::Icon::kNone;
 }
 
-// The pinned utilities at the foot of the rail. A dedicated enumeration rather
-// than the command ids themselves, because those numeric values are reused
-// across unrelated symbols (see resources/common_resources.h) and a rail id is
-// compared, not dispatched.
-enum class RailUtility {
-  kSettings,
-  kUsers,
-};
-
-constexpr int RailUtilityId(RailUtility utility) {
-  return static_cast<int>(utility);
-}
-
 }  // namespace
 
 void MainWindow::CreateActivityBar() {
@@ -561,26 +400,11 @@ void MainWindow::CreateActivityBar() {
   pane_mode_host_ = std::make_unique<PaneModeHostImpl>(*this);
   pane_modes_ = std::make_unique<PaneModeController>(*pane_mode_host_);
 
-  // The third rail zone (activity-rail.html). Settings opens the preferences
-  // overlay over the whole workbench and Users the account list in the current
-  // page, so neither disturbs the page marker.
-  activity_bar_->SetUtilities(
-      {ActivityBar::Utility{.utility_id = RailUtilityId(RailUtility::kSettings),
-                            .label = Translate("Settings"),
-                            .icon_kind = ActivityBar::Icon::kSettings},
-       ActivityBar::Utility{.utility_id = RailUtilityId(RailUtility::kUsers),
-                            .label = Translate("Users"),
-                            .icon_kind = ActivityBar::Icon::kUsers}},
-      [this](int utility_id) {
-        switch (static_cast<RailUtility>(utility_id)) {
-          case RailUtility::kSettings:
-            ExecuteShellCommand(ID_SETTINGS);
-            return;
-          case RailUtility::kUsers:
-            ExecuteShellCommand(ID_USERS_VIEW);
-            return;
-        }
-      });
+  // The third rail zone: the pinned utilities.
+  rail_utilities_ = std::make_unique<RailUtilitiesController>(
+      *activity_bar_,
+      [this](unsigned command_id) { ExecuteShellCommand(command_id); },
+      [this](unsigned command_id) { return ResolveViewCommand(command_id); });
 
   // The rail IS the toolbar now (shell.md §9, partial), rather than a custom
   // widget stuffed into one. Two consequences worth naming:
@@ -655,28 +479,11 @@ int MainWindow::StatusStripInset() const {
 }
 
 void MainWindow::RefreshUtilityMarker() {
-  if (!activity_bar_)
+  if (!rail_utilities_)
     return;
-
-  // Users is admin-only, resolved through the same command router the menus
-  // use so the rail cannot offer a door the shell would refuse to open. Done
-  // here rather than once at construction: the rail is built before the
-  // modules finish registering their views, so a one-shot check would read a
-  // registry that is not populated yet and hide the button for everyone.
-  activity_bar_->SetUtilityAvailable(
-      RailUtilityId(RailUtility::kUsers),
-      ResolveViewCommand(ID_USERS_VIEW) != nullptr);
-
-  // Only Users can ever be marked. Settings opens an overlay that covers the
-  // rail, so a marker on its own button could never be seen while it was
-  // true — the marker is a projection of what the workspace is showing, and
-  // while Settings is up the workspace is not showing.
   OpenedView* active = GetActiveView();
-  const bool users_active =
-      active && active->window_info().name == std::string_view{"Users"};
-  activity_bar_->SetActiveUtility(
-      users_active ? std::optional{RailUtilityId(RailUtility::kUsers)}
-                   : std::nullopt);
+  rail_utilities_->Refresh(active ? std::string_view{active->window_info().name}
+                                  : std::string_view{});
 }
 
 void MainWindow::OnViewClosed(OpenedView& view) {
@@ -696,7 +503,7 @@ void MainWindow::OnActiveViewChanged(OpenedView* view) {
 }
 
 void MainWindow::RefreshBreadcrumb() {
-  if (!breadcrumb_)
+  if (!context_bar_)
     return;
 
   // Page and view are the path; the selected object is the subject. Only the
@@ -721,7 +528,7 @@ void MainWindow::RefreshBreadcrumb() {
                        : QString{}},
       {.label = subject, .strong = true},
   };
-  breadcrumb_->SetSegments(segments);
+  context_bar_->SetBreadcrumb(segments);
 }
 
 void MainWindow::OpenTag(const scada::NodeId& node_id,
@@ -736,56 +543,8 @@ void MainWindow::OpenTag(const scada::NodeId& node_id,
           });
 }
 
-// Starts the command palette's one-time address-space browse.
-//
-// Deliberately not called from the constructor, which is where it used to run.
-// That browse walks the Organizes hierarchy under ObjectsFolder one node per
-// await (TagSearchIndex::BrowseNodeAsync), and starting it before any pane
-// existed put a continuous stream of Read/Browse round trips on the session
-// for the whole of the operator's first wait — the one the Explorer's trees are
-// already spending on their own serial per-child fetch
-// (docs/client/message-loop.md §10). Nothing here is a queue: v3's fetcher
-// spawns each fetch as its own coroutine and caps nothing, so this is
-// concurrent load rather than starvation, and deferring it is a smaller win
-// than it first appeared. It is still the right order — speculative work goes
-// after the surfaces the operator is looking at, not before them.
-//
-// It stays a background browse: nothing waits on it, and the palette starts it
-// itself if it is somehow still unstarted.
-void MainWindow::StartTagSearchBrowse() {
-  if (tag_search_index_)
-    tag_search_index_->EnsurePopulated();
-}
-
 void MainWindow::ShowCommandPalette(const QString& initial_text) {
-  // Address-space tags as extra palette entries; activating one opens it in a
-  // table view. The browse normally started when the first page opened, so
-  // tags() is usually already populated here — but start it from here too, so
-  // the palette works on its own terms if no page ever opened.
-  std::vector<CommandPalette::ExtraItem> extras;
-  if (tag_search_index_) {
-    StartTagSearchBrowse();
-    const std::u16string tag_detail = Translate("tag");
-    for (const TagSearchIndex::Tag& tag : tag_search_index_->tags()) {
-      extras.push_back({tag.name, tag_detail,
-                        [this, node_id = tag.node_id, title = tag.name] {
-                          OpenTag(node_id, title);
-                        }});
-    }
-  }
-
-  auto* palette = new CommandPalette(
-      this, ui_command_registry_.command_manager(),
-      [this](unsigned command_id) -> CommandHandler* {
-        return ResolveViewCommand(command_id);
-      },
-      std::move(extras));
-  palette->setAttribute(Qt::WA_DeleteOnClose);
-  if (!initial_text.isEmpty())
-    palette->PresetFilter(initial_text);
-  palette->show();
-  palette->raise();
-  palette->activateWindow();
+  palette_->Show(initial_text);
 }
 
 void MainWindow::CreateToolbar() {
@@ -1129,7 +888,8 @@ void MainWindow::OpenPage(const Page& page) {
 
   // The page's panes exist now, so every tree in it has queued its own first
   // level. Only now may the palette's browse start.
-  StartTagSearchBrowse();
+  if (palette_)
+    palette_->StartTagSearchBrowse();
 }
 
 void MainWindow::OnSelectionChanged() {
