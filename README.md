@@ -52,7 +52,9 @@ login:
 | Vidicon | Vidicon | `localhost` |
 
 The servers those talk to speak IEC 60870-5-104, IEC 61850, Modbus and OPC UA
-to the field. Modus 6.30 schematics are integrated on Windows through ActiveX.
+to the field. Modus schematics are drawn by the client's own display module;
+an ActiveX renderer for the Modus 6.30 control remains as an opt-in Windows
+build (`CLIENT_MODUS_ACTIVEX`, off by default).
 
 ## Trying it
 
