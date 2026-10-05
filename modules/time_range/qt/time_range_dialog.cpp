@@ -14,8 +14,7 @@ QDateTime ToQDateTime(scada::Time time) {
 
 scada::Time ToTime(QDateTime date_time) {
   return scada::Time{} +
-         std::chrono::milliseconds(
-             date_time.toMSecsSinceEpoch());
+         std::chrono::milliseconds(date_time.toMSecsSinceEpoch());
 }
 
 }  // namespace
@@ -46,6 +45,12 @@ TimeRangeDialog::TimeRangeDialog(TimeRangeContext&& context, QWidget* parent)
   auto bounds = scada::ToTimeRange(time_range_, /*now=*/scada::Now());
   auto start = ToQDateTime(bounds.first);
   auto end = ToQDateTime(bounds.second);
+  // In dates-only mode the resolved end is the midnight AFTER the last day,
+  // while the range stores (and accept() writes back) the last day itself —
+  // ToTimeRange adds the day. Show the last day, or every OK would move the
+  // end one day later.
+  if (time_range_.dates)
+    end = end.addDays(-1);
 
   ui.startDateEdit->setDate(start.date());
   ui.endDateEdit->setDate(end.date());
@@ -64,12 +69,12 @@ void TimeRangeDialog::accept() {
   QDialog::accept();
 }
 
-Awaitable<scada::RelativeTimeRange> ShowTimeRangeDialog(DialogService& dialog_service,
-                                         TimeRangeContext&& context) {
+Awaitable<scada::RelativeTimeRange> ShowTimeRangeDialog(
+    DialogService& dialog_service,
+    TimeRangeContext&& context) {
   auto dialog = std::make_unique<TimeRangeDialog>(
       std::move(context), dialog_service.GetParentWidget());
-  return StartMappedModalDialog(std::move(dialog),
-                                [](TimeRangeDialog& dialog) {
-                                  return dialog.time_range();
-                                });
+  return StartMappedModalDialog(std::move(dialog), [](TimeRangeDialog& dialog) {
+    return dialog.time_range();
+  });
 }

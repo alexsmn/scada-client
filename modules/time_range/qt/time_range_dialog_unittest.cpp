@@ -64,5 +64,7 @@ TEST_F(TimeRangeDialogTest, AcceptedDialogReturnsSelectedInitialRange) {
   auto selected_range = scada::aui::qt::test::GetAwaitableResult(result);
   EXPECT_TRUE(selected_range.dates);
   EXPECT_EQ(selected_range.start, initial_range.start);
-  EXPECT_EQ(selected_range.end, initial_range.end + std::chrono::days(1));
+  // Accepting unchanged must not move the end: the dialog used to show the
+  // resolved end (the midnight after the last day), so each OK added a day.
+  EXPECT_EQ(selected_range.end, initial_range.end);
 }
