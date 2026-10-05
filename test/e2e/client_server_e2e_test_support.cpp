@@ -612,7 +612,12 @@ void ClientServerE2eTest::StartClient(std::vector<std::string> extra_args) {
       // developer last left the client in silently changed what these
       // assertions saw, and a run could overwrite their saved workspace. The
       // file cache lives in the same directory and follows.
-      "--test-data-dir=" + client_data_dir_.string()};
+      "--test-data-dir=" + client_data_dir_.string(),
+      // The fixture's node names are asserted in Russian, and the session's
+      // LocaleIds follow the UI language (UiLocaleName), so without this an
+      // English host is answered in English — the static nodesets carry both
+      // since backlog 790 — and every Russian label assertion fails.
+      "--locale=ru"};
   // Client-side telemetry is metrics only today (the client runs no trace sink
   // and no OTLP log sink — see docs/ops/e2e-client-server.md, "Viewing a run's
   // telemetry"), so this exports "scada-client" meters and nothing else.
