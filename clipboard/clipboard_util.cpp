@@ -12,6 +12,7 @@
 #include "node_service/node_util.h"
 #include "remote/protocol_utils.h"
 #include "services/create_tree.h"
+#include "services/limit_properties.h"
 #include "services/task_manager.h"
 
 #ifdef _WIN32
@@ -41,28 +42,41 @@ Awaitable<void> CopyNodesToClipboardAsync(std::vector<NodeRef> nodes) {
 
 Awaitable<void> PasteNodesFromNodeStateRecursiveAsync(
     TaskManager& task_manager,
-    scada::NodeState node_state);
+    scada::NodeState node_state,
+    PasteLimits limits);
 
 Awaitable<void> PasteChildrenAsync(TaskManager& task_manager,
                                    std::vector<scada::NodeState> children,
-                                   const scada::NodeId& parent_id) {
+                                   const scada::NodeId& parent_id,
+                                   PasteLimits limits) {
   for (auto& child : children) {
     // Clipboard payload is external data; the reference type is not
     // guaranteed to be Organizes.
     child.parent_id = parent_id;
     co_await PasteNodesFromNodeStateRecursiveAsync(task_manager,
-                                                   std::move(child));
+                                                   std::move(child), limits);
   }
 }
 
 Awaitable<void> PasteNodesFromNodeStateRecursiveAsync(
     TaskManager& task_manager,
-    scada::NodeState node_state) {
+    scada::NodeState node_state,
+    PasteLimits limits) {
   auto executor = co_await boost::asio::this_coro::executor;
 
   std::erase_if(
       node_state.references,
       [](const scada::ReferenceDescription& ref) { return !ref.forward; });
+
+  // The server refuses a limit write without the Control right (backlog 864),
+  // and the insert writes properties after creating the node, so carrying the
+  // limits would create the item and then fail the paste. Dropping them pastes
+  // the item without limits, which whoever holds the Control right sets.
+  if (limits == PasteLimits::kDrop) {
+    std::erase_if(node_state.properties, [](const auto& property) {
+      return IsLimitProperty(property.first);
+    });
+  }
 
   auto children = std::exchange(node_state.children, {});
 
@@ -71,26 +85,28 @@ Awaitable<void> PasteNodesFromNodeStateRecursiveAsync(
   if (!node_id.ok()) {
     co_return;
   }
-  co_await PasteChildrenAsync(task_manager, std::move(children), *node_id);
+  co_await PasteChildrenAsync(task_manager, std::move(children), *node_id,
+                              limits);
 }
 
-Awaitable<void> PasteNodesFromNodeTreeAsync(
-    TaskManager& task_manager,
-    const scada::NodeId& new_parent_id,
-    const protocol::NodeTree& node_tree) {
+Awaitable<void> PasteNodesFromNodeTreeAsync(TaskManager& task_manager,
+                                            const scada::NodeId& new_parent_id,
+                                            const protocol::NodeTree& node_tree,
+                                            PasteLimits limits) {
   for (const auto& packed_node : node_tree.node()) {
     auto node_state = ConvertTo<scada::NodeState>(packed_node);
     // Clipboard payload is external data; the reference type is not
     // guaranteed to be Organizes.
     node_state.parent_id = new_parent_id;
-    co_await PasteNodesFromNodeStateRecursiveAsync(task_manager,
-                                                   std::move(node_state));
+    co_await PasteNodesFromNodeStateRecursiveAsync(
+        task_manager, std::move(node_state), limits);
   }
 }
 
 Awaitable<void> PasteNodesFromClipboardAsync(TaskManager& task_manager,
                                              scada::NodeId new_parent_id,
-                                             std::string buffer) {
+                                             std::string buffer,
+                                             PasteLimits limits) {
   if (buffer.empty())
     throw std::runtime_error{"Clipboard does not contain node data"};
 
@@ -98,7 +114,8 @@ Awaitable<void> PasteNodesFromClipboardAsync(TaskManager& task_manager,
   if (!node_tree.ParseFromString(buffer))
     throw std::runtime_error{"Clipboard node data is invalid"};
 
-  co_await PasteNodesFromNodeTreeAsync(task_manager, new_parent_id, node_tree);
+  co_await PasteNodesFromNodeTreeAsync(task_manager, new_parent_id, node_tree,
+                                       limits);
 }
 
 }  // namespace
@@ -180,27 +197,31 @@ void CopyNodesToClipboard(AnyExecutor executor,
   });
 }
 
-Awaitable<void> PasteNodesFromNodeStateRecursive(
-    TaskManager& task_manager,
-    scada::NodeState&& node_state) {
+Awaitable<void> PasteNodesFromNodeStateRecursive(TaskManager& task_manager,
+                                                 scada::NodeState&& node_state,
+                                                 PasteLimits limits) {
   co_await PasteNodesFromNodeStateRecursiveAsync(task_manager,
-                                                 std::move(node_state));
+                                                 std::move(node_state), limits);
 }
 
 Awaitable<void> PasteNodesFromNodeTree(TaskManager& task_manager,
                                        const scada::NodeId& new_parent_id,
-                                       const protocol::NodeTree& node_tree) {
-  co_await PasteNodesFromNodeTreeAsync(task_manager, new_parent_id, node_tree);
+                                       const protocol::NodeTree& node_tree,
+                                       PasteLimits limits) {
+  co_await PasteNodesFromNodeTreeAsync(task_manager, new_parent_id, node_tree,
+                                       limits);
 }
 
 Awaitable<void> PasteNodesFromClipboard(TaskManager& task_manager,
-                                        const scada::NodeId& new_parent_id) {
+                                        const scada::NodeId& new_parent_id,
+                                        PasteLimits limits) {
 #ifdef _WIN32
   co_await PasteNodesFromClipboardAsync(task_manager, new_parent_id,
-                                        ReadClipboard(kNodeTreeFormat));
+                                        ReadClipboard(kNodeTreeFormat), limits);
 #else
   (void)task_manager;
   (void)new_parent_id;
+  (void)limits;
   throw std::runtime_error{"Clipboard is not supported on this platform"};
 #endif
 }

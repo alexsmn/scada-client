@@ -28,6 +28,13 @@ using namespace testing;
 
 namespace {
 
+// A completed PostInsertTask result, taken by value so a plain gmock action can
+// hand it back without a capturing coroutine (see CLAUDE.md, Unit Test
+// Guidance).
+scada::CoStatusOr<scada::NodeId> InsertResult(scada::NodeId node_id) {
+  co_return node_id;
+}
+
 #ifdef _WIN32
 const UINT kNodeTreeFormat =
     ::RegisterClipboardFormat(L"EFCAD60E-2623-4eef-8DE9-9B030DCD3AFE");
@@ -125,7 +132,8 @@ TEST(PasteNodesFromNodeStateRecursive, Test) {
                                .display_name = u"DataItem1"}}}}}};
 
   WaitAwaitable(executor, PasteNodesFromNodeStateRecursive(
-                              task_manager, scada::NodeState{top_node}));
+                              task_manager, scada::NodeState{top_node},
+                              PasteLimits::kKeep));
 
   auto* storage_root_node = storage.FindNode(scada::data_items::id::DataItems);
   ASSERT_THAT(storage_root_node, NotNull());
@@ -152,7 +160,8 @@ TEST(PasteNodesFromNodeStateRecursive, RejectedInsertPropagates) {
           }));
 
   WaitAwaitable(executor, PasteNodesFromNodeStateRecursive(
-                              task_manager, std::move(node_state)));
+                              task_manager, std::move(node_state),
+                              PasteLimits::kKeep));
 }
 
 TEST(PasteNodesFromNodeStateRecursive,
@@ -209,7 +218,49 @@ TEST(PasteNodesFromNodeStateRecursive,
 
   EXPECT_NO_THROW(WaitAwaitable(
       executor,
-      PasteNodesFromNodeStateRecursive(task_manager, std::move(node_state))));
+      PasteNodesFromNodeStateRecursive(task_manager, std::move(node_state),
+                                       PasteLimits::kKeep)));
+}
+
+// Backlog 864: a paster without the Control right gets the item without its
+// limits, which the server would refuse to write; everything else is kept.
+TEST(PasteNodesFromNodeStateRecursive, DropsLimitsOnlyWhenAsked) {
+  for (const PasteLimits limits : {PasteLimits::kKeep, PasteLimits::kDrop}) {
+    TestExecutor executor;
+    StrictMock<MockTaskManager> task_manager;
+
+    scada::NodeState node_state{
+        .node_id = {1, scada::NamespaceIndexes::TIT},
+        .type_definition_id = scada::data_items::id::AnalogItemType,
+        .parent_id = scada::data_items::id::DataItems,
+        .reference_type_id = scada::id::Organizes,
+        .attributes = {.browse_name = "Analog1", .display_name = u"Analog1"},
+        .properties = {{scada::data_items::id::AnalogItemType_LimitHi, 90.0},
+                       {scada::data_items::id::AnalogItemType_EuHi, 100.0}}};
+
+    scada::NodeProperties inserted_properties;
+    EXPECT_CALL(task_manager, PostInsertTask(_))
+        .WillOnce(Invoke([&](const scada::NodeState& inserted) {
+          inserted_properties = inserted.properties;
+          return InsertResult(scada::NodeId{7, scada::NamespaceIndexes::TIT});
+        }));
+
+    WaitAwaitable(executor, PasteNodesFromNodeStateRecursive(
+                                task_manager, std::move(node_state), limits));
+
+    std::vector<scada::NodeId> pasted;
+    for (const auto& [prop_decl_id, value] : inserted_properties) {
+      pasted.push_back(prop_decl_id);
+    }
+    if (limits == PasteLimits::kKeep) {
+      EXPECT_THAT(pasted,
+                  ElementsAre(scada::data_items::id::AnalogItemType_LimitHi,
+                              scada::data_items::id::AnalogItemType_EuHi));
+    } else {
+      EXPECT_THAT(pasted,
+                  ElementsAre(scada::data_items::id::AnalogItemType_EuHi));
+    }
+  }
 }
 
 #ifdef _WIN32
@@ -220,7 +271,8 @@ TEST(PasteNodesFromClipboard, EmptyClipboardRejects) {
 
   EXPECT_THROW(WaitAwaitable(executor, PasteNodesFromClipboard(
                                            task_manager,
-                                           scada::data_items::id::DataItems)),
+                                           scada::data_items::id::DataItems,
+                                           PasteLimits::kKeep)),
                std::runtime_error);
 }
 
@@ -231,7 +283,8 @@ TEST(PasteNodesFromClipboard, InvalidClipboardPayloadRejects) {
 
   EXPECT_THROW(WaitAwaitable(executor, PasteNodesFromClipboard(
                                            task_manager,
-                                           scada::data_items::id::DataItems)),
+                                           scada::data_items::id::DataItems,
+                                           PasteLimits::kKeep)),
                std::runtime_error);
 }
 #endif

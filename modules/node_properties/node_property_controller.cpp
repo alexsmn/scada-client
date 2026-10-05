@@ -11,6 +11,7 @@
 #include "modules/node_properties/node_property_model.h"
 #include "node_service/node_service.h"
 #include "profile/window_definition.h"
+#include "scada/session_service.h"
 
 #if defined(UI_QT)
 #include "aui/severity_colors.h"
@@ -47,7 +48,9 @@ std::unique_ptr<UiView> NodePropertyController::Init(
   property_model_ = std::make_shared<NodePropertyModel>(
       property_service_,
       PropertyContext{executor_, node_service_, task_manager_, dialog_service_},
-      std::move(node));
+      std::move(node),
+      /*limits_editable=*/
+      session_service_.HasProcessPermission(scada::Permission::kWrite));
 
 #if defined(UI_QT)
   // Present the properties as the subtabbed device-parameter form (Revert /

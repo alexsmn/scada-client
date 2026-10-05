@@ -153,7 +153,10 @@ ConfigurationModule::ConfigurationModule(ConfigurationModuleContext&& context)
            },
        .available_handler =
            [this](const SelectionCommandContext& context) {
-             return session_service_.HasPermission(scada::Permission::kCall) &&
+             // Unlock releases a manual input, so it needs the Control right
+             // the input did (backlog 864).
+             return session_service_.HasProcessPermission(
+                        scada::Permission::kCall) &&
                     IsInstanceOf(context.selection.node(),
                                  scada::data_items::id::DataItemType);
            }});

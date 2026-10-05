@@ -59,5 +59,9 @@ Awaitable<void> OpenedViewPasteCommand::PasteFromClipboardAsync() {
     throw std::runtime_error{"No valid paste parent is available"};
   }
 
-  co_await PasteNodesFromClipboard(task_manager_, parent_node.node_id());
+  co_await PasteNodesFromClipboard(
+      task_manager_, parent_node.node_id(),
+      session_service_.HasProcessPermission(scada::Permission::kWrite)
+          ? PasteLimits::kKeep
+          : PasteLimits::kDrop);
 }

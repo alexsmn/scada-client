@@ -12,7 +12,17 @@
 #include "modules/write/write_dialog.h"
 #include "node_service/node_util.h"
 #include "resources/common_resources.h"
+#include "scada/authorization.h"
 #include "scada/session_service.h"
+
+namespace {
+
+// Control and manual input write a value or call a commanding method — the
+// Control capability, which on a process node only the Control right holds.
+constexpr scada::Permission kControlPermissions =
+    scada::RequiredPermissions(scada::Capability::kControl);
+
+}  // namespace
 
 WriteModule::WriteModule(WriteModuleContext&& context)
     : WriteModuleContext{std::move(context)} {
@@ -54,7 +64,11 @@ WriteModule::WriteModule(WriteModuleContext&& context)
            },
        .available_handler =
            [this](const SelectionCommandContext& context) {
-             return session_service_.HasPermission(scada::Permission::kWrite) &&
+             // A command is a process write, which the Configure right does
+             // not grant (backlog 864); ask the same question the server
+             // will.
+             return session_service_.HasProcessPermission(
+                        kControlPermissions) &&
                     GetWriteBlock(context.selection.node()) !=
                         WriteBlock::kNotCommandable;
            },
@@ -82,7 +96,8 @@ WriteModule::WriteModule(WriteModuleContext&& context)
            },
        .available_handler =
            [this](const SelectionCommandContext& context) {
-             return session_service_.HasPermission(scada::Permission::kWrite) &&
+             return session_service_.HasProcessPermission(
+                        kControlPermissions) &&
                     IsInstanceOf(context.selection.node(),
                                  scada::data_items::id::DataItemType);
            }});

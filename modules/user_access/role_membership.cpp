@@ -1,6 +1,7 @@
 #include "user_access/role_membership.h"
 
 #include "base/utf_convert.h"
+#include "model/data_items_node_ids.h"
 #include "model/security_node_ids.h"
 #include "node_service/node_awaitable.h"
 #include "node_service/node_ref.h"
@@ -112,7 +113,18 @@ Awaitable<std::optional<std::vector<scada::RolePermissionType>>>
 ReadServerRolePermissions(scada::AttributeService& attribute_service) {
   const scada::DataValue value = co_await scada::Read(
       attribute_service, scada::ServiceContext{},
-      scada::ReadValueId{kServerObject,
+      scada::ReadValueId{kServerObject, scada::AttributeId::RolePermissions});
+  if (!scada::IsGood(value.status_code)) {
+    co_return std::nullopt;
+  }
+  co_return scada::DecodeRolePermissions(value.value);
+}
+
+Awaitable<std::optional<std::vector<scada::RolePermissionType>>>
+ReadProcessRolePermissions(scada::AttributeService& attribute_service) {
+  const scada::DataValue value = co_await scada::Read(
+      attribute_service, scada::ServiceContext{},
+      scada::ReadValueId{scada::data_items::id::DataItemControlType_Operate,
                          scada::AttributeId::RolePermissions});
   if (!scada::IsGood(value.status_code)) {
     co_return std::nullopt;
@@ -131,6 +143,10 @@ Awaitable<std::optional<std::vector<RoleMembership>>> ReadRoleMemberships(
   if (!published) {
     co_return std::nullopt;
   }
+  // The process map is optional: a server that predates it enforced the
+  // default map on process nodes too, so falling back to it is the truth for
+  // that server rather than a guess.
+  const auto process = co_await ReadProcessRolePermissions(attribute_service);
 
   NodeRef role_set = node_service.GetNode(kRoleSet);
   if (!role_set) {
@@ -146,7 +162,9 @@ Awaitable<std::optional<std::vector<RoleMembership>>> ReadRoleMemberships(
         .node_id = role.node_id(),
         .name = ToString16(role.display_name()),
         .well_known = IsWellKnownRole(role.node_id()),
-        .permissions = PublishedGrant(*published, role.node_id())};
+        .permissions = PublishedGrant(*published, role.node_id()),
+        .process_permissions =
+            PublishedGrant(process ? *process : *published, role.node_id())};
     for (NodeRef& rule : role.targets(scada::id::HierarchicalReferences)) {
       if (auto member = co_await ReadRuleCriteria(rule)) {
         if (std::ranges::find(membership.members, *member) ==
@@ -175,7 +193,8 @@ std::map<std::u16string, std::vector<AccountRole>> RolesByAccount(
       std::vector<AccountRole>& held = by_account[member];
       if (std::ranges::find(held, role.node_id, &AccountRole::node_id) ==
           held.end()) {
-        held.push_back(AccountRole{role.node_id, role.name, role.permissions});
+        held.push_back(AccountRole{role.node_id, role.name, role.permissions,
+                                   role.process_permissions});
       }
     }
   }

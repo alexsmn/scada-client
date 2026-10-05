@@ -162,6 +162,58 @@ TEST_F(RoleMembershipTest, RolesCarryTheServerPublishedGrant) {
             scada::DefaultPermissionsForRole(scada::WellKnownRole::kOperator));
 }
 
+// Backlog 864: an Engineer holds Write and Call on configuration but not on
+// process nodes, and the second grant is read off the server's process map.
+TEST_F(RoleMembershipTest, RolesCarryTheServerPublishedProcessGrant) {
+  AddRoleSet();
+  const scada::NodeId engineer =
+      scada::WellKnownRoleId(scada::WellKnownRole::kEngineer);
+  AddRole(engineer, u"Engineer");
+
+  const auto roles = Read();
+
+  ASSERT_TRUE(roles.has_value());
+  ASSERT_EQ(roles->size(), 1u);
+  ASSERT_TRUE((*roles)[0].permissions.has_value());
+  ASSERT_TRUE((*roles)[0].process_permissions.has_value());
+  EXPECT_TRUE(scada::Contains(*(*roles)[0].permissions,
+                              scada::Permission::kWrite));
+  EXPECT_FALSE(scada::Contains(*(*roles)[0].process_permissions,
+                               scada::Permission::kWrite));
+  EXPECT_FALSE(scada::Contains(*(*roles)[0].process_permissions,
+                               scada::Permission::kCall));
+}
+
+// A server that predates the process map enforced the default map on process
+// nodes too, so the default grant stands in for it rather than "nothing".
+TEST(RoleMembershipProcessMapUnreadable, FallsBackToTheDefaultGrant) {
+  boost::asio::io_context io;
+  FakeNodeService node_service;
+  FakeRolePermissionsService attribute_service{scada::DefaultRolePermissions()};
+
+  node_service.Add(scada::NodeState{
+      .node_id = scada::security::id::IdentityMappingRuleType,
+      .node_class = scada::NodeClass::ObjectType});
+  node_service.Add(scada::NodeState{.node_id = kRoleSet,
+                                    .node_class = scada::NodeClass::Object});
+  node_service.Add(scada::NodeState{
+      .node_id = scada::WellKnownRoleId(scada::WellKnownRole::kEngineer),
+      .node_class = scada::NodeClass::Object,
+      .parent_id = kRoleSet,
+      .reference_type_id = scada::id::Organizes,
+      .attributes = {.display_name = u"Engineer"}});
+
+  const auto roles = RunAwaitable(
+      io, [&]() -> Awaitable<std::optional<std::vector<RoleMembership>>> {
+        co_return co_await ReadRoleMemberships(io.get_executor(), node_service,
+                                               attribute_service);
+      });
+
+  ASSERT_TRUE(roles.has_value());
+  ASSERT_EQ(roles->size(), 1u);
+  EXPECT_EQ((*roles)[0].process_permissions, (*roles)[0].permissions);
+}
+
 // A custom (group) Role has no entry in the published map — its grants are a
 // per-namespace policy (Part 3 §5.2.9) — so it carries none, rather than a
 // guess.

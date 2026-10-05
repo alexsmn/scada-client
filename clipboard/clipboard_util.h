@@ -20,11 +20,20 @@ class TaskManager;
 void CopyNodesToClipboard(AnyExecutor executor,
                           const std::vector<NodeRef>& nodes);
 
+// Whether a paste carries an analog item's limits into the new item. Limits
+// are process data that only the Control right writes (backlog 864), so a
+// paster without it passes kDrop and gets the item without its limits rather
+// than a paste the server half-refuses. Ask
+// SessionService::HasProcessPermission(Permission::kWrite).
+enum class PasteLimits { kKeep, kDrop };
+
 Awaitable<void> PasteNodesFromClipboard(TaskManager& task_manager,
-                                        const scada::NodeId& new_parent_id);
+                                        const scada::NodeId& new_parent_id,
+                                        PasteLimits limits);
 
 Awaitable<void> PasteNodesFromNodeStateRecursive(TaskManager& task_manager,
-                                                 scada::NodeState&& node_state);
+                                                 scada::NodeState&& node_state,
+                                                 PasteLimits limits);
 
 NodeRef GetPasteParentNode(NodeService& node_service,
                            CreateTree& create_tree,

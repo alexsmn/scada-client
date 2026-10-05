@@ -2,6 +2,7 @@
 
 #include "modules/node_properties/node_property_model.h"
 #include "properties/property_definition.h"
+#include "services/limit_properties.h"
 #include "services/task_manager.h"
 
 #include <tuple>
@@ -80,6 +81,11 @@ scada::aui::EditData NodeGroupModel::GetEditData(int index) const {
         return {.editor_type = scada::aui::EditData::EditorType::NONE};
     }
   }
+
+  // Limits are process data (backlog 864): without the Control right the
+  // server refuses the write, so the field is shown but not offered.
+  if (!property_model_.limits_editable_ && IsLimitProperty(prop.prop_decl_id))
+    return {.editor_type = scada::aui::EditData::EditorType::NONE};
 
   return prop.def->GetPropertyEditor(property_model_, property_model_.node_,
                                      prop.prop_decl_id);

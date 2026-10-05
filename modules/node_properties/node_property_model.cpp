@@ -43,10 +43,12 @@ void SortPropertiesRecursive(
 
 NodePropertyModel::NodePropertyModel(PropertyService& property_service,
                                      PropertyContext&& context,
-                                     NodeRef node)
+                                     NodeRef node,
+                                     bool limits_editable)
     : PropertyContext{std::move(context)},
       property_service_{property_service},
-      node_{std::move(node)} {
+      node_{std::move(node)},
+      limits_editable_{limits_editable} {
   model_changed_connection_ = node_service_.SubscribeModelChanged(
       [this](const scada::ModelChangeEvent& event) { OnModelChanged(event); });
   node_semantic_changed_connection_ =

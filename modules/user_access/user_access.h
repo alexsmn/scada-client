@@ -47,6 +47,11 @@ std::vector<UserPermission> PermissionsForRoles(
 // §5.2.9), so claiming anything about it would be invention.
 scada::Permission EffectivePermissions(std::span<const AccountRole> roles);
 
+// The union of the grants the server published for `roles` on PROCESS nodes
+// (AccountRole::process_permissions) — what decides the Control capability.
+scada::Permission EffectiveProcessPermissions(
+    std::span<const AccountRole> roles);
+
 // The capability's label key (an English literal for Translate()).
 const char* UserPermissionLabelKey(scada::Capability kind);
 

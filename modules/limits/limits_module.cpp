@@ -34,7 +34,10 @@ LimitsModule::LimitsModule(LimitsModuleContext&& context)
            },
        .available_handler =
            [this](const SelectionCommandContext& context) {
-             return session_service_.HasPermission(scada::Permission::kWrite) &&
+             // Limits are process data: the Configure right does not move
+             // them (backlog 864), so ask what the server will enforce.
+             return session_service_.HasProcessPermission(
+                        scada::Permission::kWrite) &&
                     IsInstanceOf(context.selection.node(),
                                  scada::data_items::id::AnalogItemType);
            }});

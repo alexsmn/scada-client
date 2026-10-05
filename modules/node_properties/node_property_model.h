@@ -20,9 +20,14 @@ class NodePropertyModel
       public scada::aui::PropertyModel,
       public std::enable_shared_from_this<NodePropertyModel> {
  public:
+  // `limits_editable` is whether the session may write an analog item's
+  // limits, which are process data and need the Control right
+  // (SessionService::HasProcessPermission). When false the limit properties
+  // are shown read-only rather than offered for an edit the server refuses.
   NodePropertyModel(PropertyService& property_service,
                     PropertyContext&& context,
-                    NodeRef node);
+                    NodeRef node,
+                    bool limits_editable);
   virtual ~NodePropertyModel();
 
   const NodeRef& node() const SCADA_LIFETIME_BOUND { return node_; }
@@ -51,6 +56,8 @@ class NodePropertyModel
   NodeGroupModel root_{*this};
 
   NodeRef node_;
+
+  const bool limits_editable_;
 
   Cancelation cancelation_;
 

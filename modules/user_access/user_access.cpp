@@ -19,9 +19,25 @@ scada::Permission EffectivePermissions(std::span<const AccountRole> roles) {
   return permissions;
 }
 
+scada::Permission EffectiveProcessPermissions(
+    std::span<const AccountRole> roles) {
+  scada::Permission permissions = scada::Permission::kNone;
+  for (const AccountRole& role : roles) {
+    if (role.process_permissions) {
+      permissions |= *role.process_permissions;
+    }
+  }
+  return permissions;
+}
+
 std::vector<UserPermission> PermissionsForRoles(
     std::span<const AccountRole> roles) {
   const scada::Permission permissions = EffectivePermissions(roles);
+  // Control is judged on process nodes, where the server grants Write and Call
+  // to the Control right alone; the Configure right's Roles hold both on
+  // configuration and would otherwise read as able to control (backlog 864).
+  const scada::Permission process_permissions =
+      EffectiveProcessPermissions(roles);
   // Each coarse capability is backed by the concrete PermissionType bits the
   // server checks for that operation (scada::RequiredPermissions), so a row
   // cannot claim a capability the server would refuse.
@@ -29,8 +45,11 @@ std::vector<UserPermission> PermissionsForRoles(
   for (const scada::Capability capability :
        {scada::Capability::kView, scada::Capability::kControl,
         scada::Capability::kConfigure}) {
-    result.push_back(
-        UserPermission{capability, scada::Grants(permissions, capability)});
+    result.push_back(UserPermission{
+        capability, scada::Grants(capability == scada::Capability::kControl
+                                      ? process_permissions
+                                      : permissions,
+                                  capability)});
   }
   return result;
 }

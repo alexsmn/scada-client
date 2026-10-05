@@ -43,6 +43,18 @@ struct RoleMembership {
   // read (see `ReadRoleMemberships`), so an absent entry never has to stand in
   // for two different facts.
   std::optional<scada::Permission> permissions;
+  // What the server says this Role grants on a PROCESS node — a data item's
+  // value and limits, and the commanding methods — read off the
+  // RolePermissions of the data item Control object's Operate method, which
+  // carries the server's process map (scada::ProcessRolePermissions). The
+  // Configure right's Roles keep Write and Call in `permissions` and lose them
+  // here, which is how the Control capability is told apart (backlog 864).
+  //
+  // nullopt means the server published no process entry for this Role. When
+  // the process map cannot be read at all — a server that predates it — this
+  // holds `permissions`, which is what such a server enforced on process nodes
+  // too.
+  std::optional<scada::Permission> process_permissions;
 };
 
 // Reads every Role, its membership, and what the server grants it.
@@ -81,6 +93,13 @@ Awaitable<std::optional<std::vector<RoleMembership>>> ReadRoleMemberships(
 Awaitable<std::optional<std::vector<scada::RolePermissionType>>>
 ReadServerRolePermissions(scada::AttributeService& attribute_service);
 
+// Reads the server's role -> permission map for PROCESS nodes: the
+// RolePermissions attribute of the data item Control object's Operate method,
+// a static node the server gives the process map (Part 3 §4.9.3 node-specific
+// Permissions). nullopt when it could not be read.
+Awaitable<std::optional<std::vector<scada::RolePermissionType>>>
+ReadProcessRolePermissions(scada::AttributeService& attribute_service);
+
 // One Role an account holds. The id travels with the name because the two
 // answer different questions: the name is what an operator reads, the id is
 // what the effective permissions are derived from (a display name is
@@ -94,6 +113,10 @@ struct AccountRole {
   // anything up in a client-side map. nullopt means the server published no
   // entry — a custom (group) Role, which therefore contributes nothing.
   std::optional<scada::Permission> permissions;
+  // The Role's grant on process nodes, carried through from
+  // `RoleMembership::process_permissions`. It alone decides the Control
+  // capability.
+  std::optional<scada::Permission> process_permissions;
 };
 
 // Inverts `roles` into account name -> the Roles it holds, which is what a

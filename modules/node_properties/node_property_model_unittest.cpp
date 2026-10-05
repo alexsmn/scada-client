@@ -26,6 +26,8 @@
 
 #include <gmock/gmock.h>
 
+#include <map>
+
 using namespace testing;
 
 namespace {
@@ -52,9 +54,28 @@ class ControllableNodeFetcher : public v3::NodeFetcher {
     co_return scada::MakeNodeState(*node);
   }
 
+  // Children are served ungated from the address space, the way the
+  // production fetcher's Browse returns them: a type's property declarations
+  // are its children, and without them the model has no property rows at all.
   scada::CoStatusOr<scada::ReferenceDescriptions> FetchChildren(
       const scada::NodeId& node_id) override {
-    co_return scada::ReferenceDescriptions{};
+    const auto* node = address_space_.GetNode(node_id);
+    if (!node)
+      co_return scada::ReferenceDescriptions{};
+    scada::ReferenceDescriptions references;
+    for (const auto& reference : node->forward_references()) {
+      if (scada::IsSubtypeOf(*reference.type,
+                             scada::id::HierarchicalReferences)) {
+        references.push_back(
+            {.reference_type_id = reference.type->id(),
+             .forward = true,
+             .node_id = reference.node->id(),
+             .node_class = reference.node->GetNodeClass(),
+             .browse_name = reference.node->GetBrowseName(),
+             .display_name = reference.node->GetDisplayName()});
+      }
+    }
+    co_return references;
   }
 
   // Idempotent: the service may re-request a node that was already
@@ -106,12 +127,14 @@ class NodePropertyModelTest : public Test {
   // NodePropertyModel uses shared_from_this to keep itself alive across its own
   // notifications, so it must be owned by a shared_ptr — as it is in production
   // (NodePropertyController holds a std::shared_ptr).
-  std::shared_ptr<NodePropertyModel> CreateModel() {
+  std::shared_ptr<NodePropertyModel> CreateModel(
+      const scada::NodeId& node_id = kNodeId,
+      bool limits_editable = true) {
     auto model = std::make_shared<NodePropertyModel>(
         property_service_,
         PropertyContext{executor_, *node_service_, task_manager_,
                         dialog_service_},
-        node_service_->GetNode(kNodeId));
+        node_service_->GetNode(node_id), limits_editable);
     model->model_changed_handler = [this] { ++model_changed_count_; };
     model->node_deleted.connect([this] { ++node_deleted_count_; });
     return model;
@@ -122,6 +145,17 @@ class NodePropertyModelTest : public Test {
   void DeleteNode(const scada::NodeId& node_id) {
     view_events_->OnModelChanged(scada::ModelChangeEvent{
         .node_id = node_id, .verb = scada::ModelChangeEvent::NodeDeleted});
+  }
+
+  // Completes `node_id`'s fetch and every fetch it chains into (the type
+  // definition chain), as the first test below spells out.
+  void CompleteFetches(const scada::NodeId& node_id) {
+    fetcher_->CompleteFetch(node_id);
+    Drain(executor_);
+    for (size_t i = 0; i < fetcher_->fetch_requests.size(); ++i) {
+      fetcher_->CompleteFetch(fetcher_->fetch_requests[i].first);
+      Drain(executor_);
+    }
   }
 
   scada::aui::PropertyGroup& RootGroup(NodePropertyModel& model) {
@@ -173,6 +207,55 @@ TEST_F(NodePropertyModelTest, UpdatesAfterInitialFetchCompletes) {
 
   EXPECT_GE(model_changed_count_, 1);
   EXPECT_GT(RootGroup(*model).GetCount(), 0);
+}
+
+// Collects the editor each property row offers, keyed by its declaration.
+void CollectEditors(
+    const NodeGroupModel& group,
+    std::map<scada::NodeId, scada::aui::EditData::EditorType>& editors) {
+  for (int i = 0; i < static_cast<int>(group.properties.size()); ++i) {
+    const NodeGroupModel::Property& prop = group.properties[i];
+    if (prop.submodel) {
+      CollectEditors(*prop.submodel, editors);
+    } else if (!prop.prop_decl_id.is_null()) {
+      editors[prop.prop_decl_id] = group.GetEditData(i).editor_type;
+    }
+  }
+}
+
+// Backlog 864: limits are process data, so a session without the Control right
+// sees them read-only while the item's configuration stays editable.
+TEST_F(NodePropertyModelTest, LimitsAreReadOnlyWithoutTheControlRight) {
+  const scada::NodeId analog_id{2, scada::NamespaceIndexes::TIT};
+  GenericNodeFactory node_factory{address_space_};
+  auto [status, node] = node_factory.CreateNode(scada::NodeState{
+      .node_id = analog_id,
+      .node_class = scada::NodeClass::Variable,
+      .type_definition_id = scada::data_items::id::AnalogItemType,
+      .parent_id = scada::data_items::id::DataItems,
+      .reference_type_id = scada::id::Organizes,
+      .attributes = scada::NodeAttributes{.display_name = u"Analog"}});
+  ASSERT_TRUE(status);
+
+  for (const bool limits_editable : {false, true}) {
+    auto model = CreateModel(analog_id, limits_editable);
+    Drain(executor_);
+    CompleteFetches(analog_id);
+
+    std::map<scada::NodeId, scada::aui::EditData::EditorType> editors;
+    CollectEditors(static_cast<NodeGroupModel&>(RootGroup(*model)), editors);
+
+    const auto limit =
+        editors.find(scada::data_items::id::AnalogItemType_LimitHi);
+    ASSERT_NE(limit, editors.end()) << "the limit row is not shown at all";
+    EXPECT_EQ(limit->second == scada::aui::EditData::EditorType::NONE,
+              !limits_editable);
+
+    const auto units =
+        editors.find(scada::data_items::id::AnalogItemType_EuHi);
+    ASSERT_NE(units, editors.end());
+    EXPECT_NE(units->second, scada::aui::EditData::EditorType::NONE);
+  }
 }
 
 TEST_F(NodePropertyModelTest, DestroyedModelDoesNotUpdateAfterFetchCompletes) {

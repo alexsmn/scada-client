@@ -9,12 +9,25 @@
 
 namespace {
 
+// What the server's process map grants `role` (scada::ProcessRolePermissions),
+// standing in for the Control object's RolePermissions read.
+scada::Permission ProcessGrant(scada::WellKnownRole role) {
+  for (const scada::RolePermissionType& entry :
+       scada::ProcessRolePermissions()) {
+    if (entry.role_id == scada::WellKnownRoleId(role)) {
+      return entry.permissions;
+    }
+  }
+  return scada::Permission::kNone;
+}
+
 // A Role as the SERVER published it: its id plus the grant that came back on
 // the RolePermissions map. `DefaultPermissionsForRole` stands in for the
 // server here — in the client it is only ever the wire that supplies this.
 AccountRole Role(scada::WellKnownRole role, std::u16string name) {
   return AccountRole{scada::WellKnownRoleId(role), std::move(name),
-                     scada::DefaultPermissionsForRole(role)};
+                     scada::DefaultPermissionsForRole(role),
+                     ProcessGrant(role)};
 }
 
 bool GrantedFor(const std::vector<UserPermission>& permissions,
@@ -81,6 +94,24 @@ TEST(UserAccess, MultipleRolesUnionTheirPermissions) {
 
   EXPECT_TRUE(GrantedFor(permissions, scada::Capability::kView));
   EXPECT_TRUE(GrantedFor(permissions, scada::Capability::kControl));
+  EXPECT_TRUE(GrantedFor(permissions, scada::Capability::kConfigure));
+}
+
+// Backlog 864: the Configure right's Roles hold Write and Call on
+// configuration, but not on process nodes, so an Engineer reads as
+// configuring and NOT controlling — rights level 1, «Инженер АСУ и связи».
+TEST(UserAccess, EngineerMayConfigureButNotControl) {
+  const std::vector<AccountRole> roles = {
+      Role(scada::WellKnownRole::kObserver, u"Observer"),
+      Role(scada::WellKnownRole::kEngineer, u"Engineer"),
+      Role(scada::WellKnownRole::kSupervisor, u"Supervisor"),
+      Role(scada::WellKnownRole::kConfigureAdmin, u"ConfigureAdmin"),
+      Role(scada::WellKnownRole::kSecurityAdmin, u"SecurityAdmin")};
+
+  const auto permissions = PermissionsForRoles(roles);
+
+  EXPECT_TRUE(GrantedFor(permissions, scada::Capability::kView));
+  EXPECT_FALSE(GrantedFor(permissions, scada::Capability::kControl));
   EXPECT_TRUE(GrantedFor(permissions, scada::Capability::kConfigure));
 }
 
