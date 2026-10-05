@@ -487,17 +487,16 @@
       "tag": "auto-dialog",
       "theme": "dark",
       "parity_key": "write",
-      "referenced_from": [
-        "client.md"
-      ],
-      "notes": "The operate-stage review of a select-before-operate command: the outstation has accepted the Select and is armed, and the operator is asked to confirm before the Operate goes out (answering no now sends Cancel instead of leaving the selection armed until sboTimeout). Message text comes from the real WriteModel::GetConfirmationMessage(value, second_stage=true) over the fixture analog item, shown through the ordinary DialogService question box, so it cannot drift from the shipped wording. The select itself is not issued — a Control-object Call needs a server; the two-phase exchange is covered by the iec104 tier E2E and WriteModelTest.TwoStagedControlSelectsConfirmsThenOperates. Published from a macOS render pending the Windows update-screenshots review; candidate for current_generator_owned_subset after that review.",
+      "referenced_from": [],
+      "notes": "The operate-stage review of a select-before-operate command: the outstation has accepted the Select and is armed, and the operator is asked to confirm before the Operate goes out (answering no now sends Cancel instead of leaving the selection armed until sboTimeout). Message text comes from the real WriteModel::GetConfirmationMessage(value, second_stage=true) over the fixture analog item, shown through the ordinary DialogService question box, so it cannot drift from the shipped wording. The select itself is not issued — a Control-object Call needs a server; the two-phase exchange is covered by the iec104 tier E2E and WriteModelTest.TwoStagedControlSelectsConfirmsThenOperates. Published from a macOS render pending the Windows update-screenshots review; candidate for current_generator_owned_subset after that review. Unpublished 2026-10-04 (operator-role review): the copy in scada-docs/img contradicted the page text (2024 captures, one in English, or — for events-alarm-surface.png — a local message shown as Критично 800 and audit rows in the operator journal), and graduating the gallery render into current_generator_owned_subset needs a fresh capture run against the current write dialog and journal, which that review could not do. Removed from img/ and from the pages; republish once a reviewed render exists.",
       "captured": {
         "commit": "2ab9399ee",
         "platform": "macos",
         "dirty": true,
         "sha256": "2833b542d4283f52f108f4eef28a314673035d2f21560f8925068e7a3aacb46a",
         "last_rendered": "1a014d850"
-      }
+      },
+      "published": false
     },
     {
       "file": "control-select-confirm-light.png",
@@ -1566,11 +1565,8 @@
       "tag": "auto-view",
       "theme": "dark",
       "parity_key": "event-journal",
-      "referenced_from": [
-        "client/events.md",
-        "client/workbench.md"
-      ],
-      "notes": "Event journal as an alarm surface (backlog 2.2) under --theme: leading pending-dot column (severity-coloured), the Severity column naming the alarm band (Критично 800 / Предупреждение 600), an unacknowledged row's Acknowledge-Time cell reading '— pending —', and the alarm footer (displayed-backlog summary + Acknowledge-all). Fixture seeds two pending alarms (ids 1008/1009, acknowledged:false). A second EventJournal spec alongside the legacy events-log.png, which keeps rendering the unchanged legacy journal in the no-theme pipeline. Guarded by client_screenshot_check_themed. Published from a macOS render (a supported host since 2026-09-12); kept out of current_generator_owned_subset (subset is auto-* only). Re-pointed 2026-09-26 (backlog 39): this also serves client/events.md, replacing menu-events-log.png. That page's own text says the journal is augmented «точкой \"не квитировано\" в первом столбце, названием важности, итоговой строкой со сводкой неквитированных событий и кнопкой Квитировать все» — all four are visible here and NONE was visible in the image the page carried, which showed a Важность column of bare numbers and no dot column at all. Widened 800→1250 in the same change so the Сообщение column renders: it is the most informative column and its absence was the one thing the retired hand capture had over this one. Residual, pre-existing and not introduced here: the Время column still elides to «16.04.2026 15:02:00…», because the grid gives the extra width to Сообщение rather than to the timestamp.",
+      "referenced_from": [],
+      "notes": "Event journal as an alarm surface (backlog 2.2) under --theme: leading pending-dot column (severity-coloured), the Severity column naming the alarm band (Критично 800 / Предупреждение 600), an unacknowledged row's Acknowledge-Time cell reading '— pending —', and the alarm footer (displayed-backlog summary + Acknowledge-all). Fixture seeds two pending alarms (ids 1008/1009, acknowledged:false). A second EventJournal spec alongside the legacy events-log.png, which keeps rendering the unchanged legacy journal in the no-theme pipeline. Guarded by client_screenshot_check_themed. Published from a macOS render (a supported host since 2026-09-12); kept out of current_generator_owned_subset (subset is auto-* only). Re-pointed 2026-09-26 (backlog 39): this also serves client/events.md, replacing menu-events-log.png. That page's own text says the journal is augmented «точкой \"не квитировано\" в первом столбце, названием важности, итоговой строкой со сводкой неквитированных событий и кнопкой Квитировать все» — all four are visible here and NONE was visible in the image the page carried, which showed a Важность column of bare numbers and no dot column at all. Widened 800→1250 in the same change so the Сообщение column renders: it is the most informative column and its absence was the one thing the retired hand capture had over this one. Residual, pre-existing and not introduced here: the Время column still elides to «16.04.2026 15:02:00…», because the grid gives the extra width to Сообщение rather than to the timestamp. Unpublished 2026-10-04 (operator-role review): the copy in scada-docs/img contradicted the page text (2024 captures, one in English, or — for events-alarm-surface.png — a local message shown as Критично 800 and audit rows in the operator journal), and graduating the gallery render into current_generator_owned_subset needs a fresh capture run against the current write dialog and journal, which that review could not do. Removed from img/ and from the pages; republish once a reviewed render exists.",
       "captured": {
         "commit": "fd98f7ff2",
         "platform": "macos",
@@ -1578,7 +1574,7 @@
         "sha256": "dfeb8710b14057c16abba15dcd7db5ca0279918acb1299bba8b7c89b85026207",
         "last_rendered": "1a014d850"
       },
-      "published": true
+      "published": false
     },
     {
       "file": "events-alarm-surface-light.png",
@@ -1931,11 +1927,9 @@
     },
     {
       "file": "menu-events.png",
-      "tag": "manual-annotated",
-      "referenced_from": [
-        "client.md"
-      ],
-      "notes": "Not a menu despite the name (audited 2026-08-08): an Events view strip (1263x180) whose subject is the STATUS BAR beneath it — «Диспетчер 1», «Подключен», «Отклик: 0 мс» each carry a red underline drawn on top of the capture. The annotations are editorial, added after the grab, so the image cannot be regenerated by the generator however good the fixture gets. Its event rows are the canonical ones the fixture event-log gap is measured against."
+      "tag": "obsolete",
+      "referenced_from": [],
+      "notes": "Not a menu despite the name (audited 2026-08-08): an Events view strip (1263x180) whose subject is the STATUS BAR beneath it — «Диспетчер 1», «Подключен», «Отклик: 0 мс» each carry a red underline drawn on top of the capture. The annotations are editorial, added after the grab, so the image cannot be regenerated by the generator however good the fixture gets. Its event rows are the canonical ones the fixture event-log gap is measured against. Retired 2026-10-04 (operator-role review): a 2024 capture of the old event panel (Объект/Инициатор columns, green fill, «Отклик» status cell) that contradicts client.md; no longer referenced."
     },
     {
       "file": "menu-excel.png",
@@ -2210,17 +2204,16 @@
       "tag": "auto-dialog",
       "theme": "dark",
       "parity_key": "write",
-      "referenced_from": [
-        "client.md"
-      ],
-      "notes": "Manual-control dialog, TI side. Verified 2026-08-08 to render the node display name ('Температура нагрева'), the current value ('41 °C') and the engineering unit beside the new-value combo - the three things this capture was recorded as missing. The new-value box was empty until 2026-08-15 — the current value had not arrived by the time WriteDialog's constructor seeded the field — and now pre-fills 41, which is why this row joined the set of tracked captures the generator no longer reproduces. The docs original pre-fills a distinct value, 25; whether to seed one is still open.",
+      "referenced_from": [],
+      "notes": "Manual-control dialog, TI side. Verified 2026-08-08 to render the node display name ('Температура нагрева'), the current value ('41 °C') and the engineering unit beside the new-value combo - the three things this capture was recorded as missing. The new-value box was empty until 2026-08-15 — the current value had not arrived by the time WriteDialog's constructor seeded the field — and now pre-fills 41, which is why this row joined the set of tracked captures the generator no longer reproduces. The docs original pre-fills a distinct value, 25; whether to seed one is still open. Unpublished 2026-10-04 (operator-role review): the copy in scada-docs/img contradicted the page text (2024 captures, one in English, or — for events-alarm-surface.png — a local message shown as Критично 800 and audit rows in the operator journal), and graduating the gallery render into current_generator_owned_subset needs a fresh capture run against the current write dialog and journal, which that review could not do. Removed from img/ and from the pages; republish once a reviewed render exists.",
       "captured": {
         "commit": "2ab9399ee",
         "platform": "macos",
         "dirty": true,
         "sha256": "f923a34d5a019f50112065354f349dafa93fbf5b3191cde5d6f2b14f8d002353",
         "last_rendered": "1a014d850"
-      }
+      },
+      "published": false
     },
     {
       "file": "ti-manual-control-light.png",
@@ -2252,17 +2245,16 @@
       "tag": "auto-dialog",
       "theme": "dark",
       "parity_key": "write",
-      "referenced_from": [
-        "client.md"
-      ],
-      "notes": "The operator's review of a direct control command on an analog point, from the control-confirm dialog kind over the fixture-wide TIT.212: present 41 °C beside a commanded 12.5 °C, then the irreversibility warning. The prompt is WriteModel::GetConfirmationMessage itself rather than a copy, so it cannot drift from the shipped wording. Distinct from control-select-confirm.png, which is the same kind with second_stage set and therefore carries the extra «remote device is ready» line. ScreenshotGenerator.ControlConfirmationsReviewARealChange asserts the quoted present and commanded values differ — a command that formats to the present reading still writes a well-formed PNG.",
+      "referenced_from": [],
+      "notes": "The operator's review of a direct control command on an analog point, from the control-confirm dialog kind over the fixture-wide TIT.212: present 41 °C beside a commanded 12.5 °C, then the irreversibility warning. The prompt is WriteModel::GetConfirmationMessage itself rather than a copy, so it cannot drift from the shipped wording. Distinct from control-select-confirm.png, which is the same kind with second_stage set and therefore carries the extra «remote device is ready» line. ScreenshotGenerator.ControlConfirmationsReviewARealChange asserts the quoted present and commanded values differ — a command that formats to the present reading still writes a well-formed PNG. Unpublished 2026-10-04 (operator-role review): the copy in scada-docs/img contradicted the page text (2024 captures, one in English, or — for events-alarm-surface.png — a local message shown as Критично 800 and audit rows in the operator journal), and graduating the gallery render into current_generator_owned_subset needs a fresh capture run against the current write dialog and journal, which that review could not do. Removed from img/ and from the pages; republish once a reviewed render exists.",
       "captured": {
         "commit": "2ab9399ee",
         "platform": "macos",
         "dirty": true,
         "sha256": "d45ab6a41deb7f5c72688f556fa1d5a748be1dea30a220d8e452ec6e032ff116",
         "last_rendered": "1a014d850"
-      }
+      },
+      "published": false
     },
     {
       "file": "ti-remote-control-confirm-light.png",
@@ -2286,7 +2278,6 @@
       "theme": "dark",
       "parity_key": "write",
       "referenced_from": [
-        "client.md",
         "dev/data-items.md"
       ],
       "notes": "Remote-control dialog disabled state, TI. Renders from the fixture since 2026-08-15: the `write-remote` dialog spec carries a `node` override naming TIT.213 («Температура масла»), whose DataItemType_OutputCondition formula `TIT.211 > 70` evaluates false over the fixture data, so the condition row reads unsatisfied and the Execute button is disabled. The override exists because one node cannot render both this and ti-remote-control-enabled.png in a single run. ScreenshotGenerator.DisabledControlDialogNodeConditionIsUnsatisfied asserts both the override and the falsy evaluation — the structural check only asserts the PNG exists, so a dropped override would ship the enabled dialog under this name. Its new-value box also pre-fills 58 as of 2026-08-15: BuildWriteDialog warms the item's subscription before building the dialog, so this capture no longer depends on an earlier capture in the same run having subscribed to the node first — which is the only reason ti-remote-control-enabled.png ever showed its 41. The tracked gallery has no PNG for it yet: the Qt gallery is a Windows baseline and this was verified on macOS.",
@@ -2320,7 +2311,6 @@
       "theme": "dark",
       "parity_key": "write",
       "referenced_from": [
-        "client.md",
         "dev/data-items.md"
       ],
       "notes": "Remote-control dialog enabled state, TI. Title, current value, unit and the 'Условие: Выполнено' row all render (2026-08-15). The condition is TIT.212's DataItemType_OutputCondition, the formula `TIT.211 < 70`, evaluated live through TimedDataService; ScreenshotGenerator.ControlDialogNodeCarriesItsOutputCondition asserts both halves, since a lost property would only make the dialog shorter rather than fail the capture.",
@@ -2361,17 +2351,16 @@
       "tag": "auto-dialog",
       "theme": "dark",
       "parity_key": "write",
-      "referenced_from": [
-        "client.md"
-      ],
-      "notes": "Manual-control dialog, TS side. Renders from the fixture since 2026-08-15: the `write-manual` spec's `node` override names TS.201 («Силовой выключатель»), a DiscreteItemType in the TS namespace under ЭСТРА-ПС › ТС. The kind is the same one ti-manual-control.png uses — WriteModel picks the discrete dialog from the node alone (TimedDataSpec::logical()), so this capture is the read-only two-state combo labelled from the node's HasTsFormat target (SCADA.9401 «Вкл/Откл») with no engineering-unit field. Before that the three ts-* rows had no dialog spec at all. Pinned by ScreenshotGenerator.DiscreteControlDialogsRenderTheirTsFormatStates, which asserts the override, the discrete branch and non-empty state labels — the structural check only asserts the PNG exists, so a lost override would ship the analog TI dialog under a TS name. The tracked gallery has no PNG for it yet: the Qt gallery is a Windows baseline and this was verified on macOS.",
+      "referenced_from": [],
+      "notes": "Manual-control dialog, TS side. Renders from the fixture since 2026-08-15: the `write-manual` spec's `node` override names TS.201 («Силовой выключатель»), a DiscreteItemType in the TS namespace under ЭСТРА-ПС › ТС. The kind is the same one ti-manual-control.png uses — WriteModel picks the discrete dialog from the node alone (TimedDataSpec::logical()), so this capture is the read-only two-state combo labelled from the node's HasTsFormat target (SCADA.9401 «Вкл/Откл») with no engineering-unit field. Before that the three ts-* rows had no dialog spec at all. Pinned by ScreenshotGenerator.DiscreteControlDialogsRenderTheirTsFormatStates, which asserts the override, the discrete branch and non-empty state labels — the structural check only asserts the PNG exists, so a lost override would ship the analog TI dialog under a TS name. The tracked gallery has no PNG for it yet: the Qt gallery is a Windows baseline and this was verified on macOS. Unpublished 2026-10-04 (operator-role review): the copy in scada-docs/img contradicted the page text (2024 captures, one in English, or — for events-alarm-surface.png — a local message shown as Критично 800 and audit rows in the operator journal), and graduating the gallery render into current_generator_owned_subset needs a fresh capture run against the current write dialog and journal, which that review could not do. Removed from img/ and from the pages; republish once a reviewed render exists.",
       "captured": {
         "commit": "2ab9399ee",
         "platform": "macos",
         "dirty": true,
         "sha256": "9516bdd50560f80693f9a1d6f305ecb86b3ec5f4fb1d792d807d2c216b5464cd",
         "last_rendered": "1a014d850"
-      }
+      },
+      "published": false
     },
     {
       "file": "ts-manual-control-light.png",
@@ -2394,17 +2383,16 @@
       "tag": "auto-dialog",
       "theme": "dark",
       "parity_key": "write",
-      "referenced_from": [
-        "client.md"
-      ],
-      "notes": "The same review on a discrete point, which is a different prompt rather than a resized copy: WriteModel takes its discrete branch from TimedDataSpec::logical() and quotes the HasTsFormat state labels instead of engineering units. TS.201 reads «Вкл» and the command is «Откл». The spec's command_value is the item's raw state, not an index into the labels — WriteModel inverts (get_or(true) ? 0 : 1), so raw 0 would command the state the point is already in. BuildControlConfirmation also warms the TimedDataService subscription first, for the reason the write dialogs do: an unarrived value reads back as the get_or default, which on a two-state item is itself a valid state and renders a plausible no-op. ScreenshotGenerator.ControlConfirmationsReviewARealChange asserts against exactly that.",
+      "referenced_from": [],
+      "notes": "The same review on a discrete point, which is a different prompt rather than a resized copy: WriteModel takes its discrete branch from TimedDataSpec::logical() and quotes the HasTsFormat state labels instead of engineering units. TS.201 reads «Вкл» and the command is «Откл». The spec's command_value is the item's raw state, not an index into the labels — WriteModel inverts (get_or(true) ? 0 : 1), so raw 0 would command the state the point is already in. BuildControlConfirmation also warms the TimedDataService subscription first, for the reason the write dialogs do: an unarrived value reads back as the get_or default, which on a two-state item is itself a valid state and renders a plausible no-op. ScreenshotGenerator.ControlConfirmationsReviewARealChange asserts against exactly that. Unpublished 2026-10-04 (operator-role review): the copy in scada-docs/img contradicted the page text (2024 captures, one in English, or — for events-alarm-surface.png — a local message shown as Критично 800 and audit rows in the operator journal), and graduating the gallery render into current_generator_owned_subset needs a fresh capture run against the current write dialog and journal, which that review could not do. Removed from img/ and from the pages; republish once a reviewed render exists.",
       "captured": {
         "commit": "2ab9399ee",
         "platform": "macos",
         "dirty": true,
         "sha256": "30a88f443959406339b92adee6bfddd79868cd8594b00e599afd948c1f329ac7",
         "last_rendered": "1a014d850"
-      }
+      },
+      "published": false
     },
     {
       "file": "ts-remote-control-confirm-light.png",
@@ -2427,17 +2415,16 @@
       "tag": "auto-dialog",
       "theme": "dark",
       "parity_key": "write",
-      "referenced_from": [
-        "client.md"
-      ],
-      "notes": "Remote-control dialog disabled state, TS. Renders from the fixture since 2026-08-15 over TS.202 («Секционный выключатель»), whose DataItemType_OutputCondition formula `TIT.211 > 70` evaluates false, so the condition row reads unsatisfied and Execute is disabled — the same two-node split TIT.212/TIT.213 make on the analog side, for the same reason: one node cannot render both variants in a single run. The tracked gallery has no PNG for it yet (Windows baseline; verified on macOS).",
+      "referenced_from": [],
+      "notes": "Remote-control dialog disabled state, TS. Renders from the fixture since 2026-08-15 over TS.202 («Секционный выключатель»), whose DataItemType_OutputCondition formula `TIT.211 > 70` evaluates false, so the condition row reads unsatisfied and Execute is disabled — the same two-node split TIT.212/TIT.213 make on the analog side, for the same reason: one node cannot render both variants in a single run. The tracked gallery has no PNG for it yet (Windows baseline; verified on macOS). Unpublished 2026-10-04 (operator-role review): the copy in scada-docs/img contradicted the page text (2024 captures, one in English, or — for events-alarm-surface.png — a local message shown as Критично 800 and audit rows in the operator journal), and graduating the gallery render into current_generator_owned_subset needs a fresh capture run against the current write dialog and journal, which that review could not do. Removed from img/ and from the pages; republish once a reviewed render exists.",
       "captured": {
         "commit": "2ab9399ee",
         "platform": "macos",
         "dirty": true,
         "sha256": "d752f1281c09be1592c900a5ed4f6d999678b2a3d373ecef0e632f34436a5418",
         "last_rendered": "1a014d850"
-      }
+      },
+      "published": false
     },
     {
       "file": "ts-remote-control-disabled-light.png",
@@ -2460,17 +2447,16 @@
       "tag": "auto-dialog",
       "theme": "dark",
       "parity_key": "write",
-      "referenced_from": [
-        "client.md"
-      ],
-      "notes": "Remote-control dialog enabled state, TS. Renders from the fixture since 2026-08-15 over TS.201, whose condition `TIT.211 < 70` holds. Current value «Вкл» with the combo pre-selecting «Откл»: WriteModel deliberately proposes the opposite state, which is the direction the docs original shows. That pre-selection is read once, in WriteDialog's constructor, so the capture pre-warms the item's TimedDataService subscription before building the dialog — without it the rendered combo depended on whether an earlier capture in the same run had already subscribed to the same node. The tracked gallery has no PNG for it yet (Windows baseline; verified on macOS).",
+      "referenced_from": [],
+      "notes": "Remote-control dialog enabled state, TS. Renders from the fixture since 2026-08-15 over TS.201, whose condition `TIT.211 < 70` holds. Current value «Вкл» with the combo pre-selecting «Откл»: WriteModel deliberately proposes the opposite state, which is the direction the docs original shows. That pre-selection is read once, in WriteDialog's constructor, so the capture pre-warms the item's TimedDataService subscription before building the dialog — without it the rendered combo depended on whether an earlier capture in the same run had already subscribed to the same node. The tracked gallery has no PNG for it yet (Windows baseline; verified on macOS). Unpublished 2026-10-04 (operator-role review): the copy in scada-docs/img contradicted the page text (2024 captures, one in English, or — for events-alarm-surface.png — a local message shown as Критично 800 and audit rows in the operator journal), and graduating the gallery render into current_generator_owned_subset needs a fresh capture run against the current write dialog and journal, which that review could not do. Removed from img/ and from the pages; republish once a reviewed render exists.",
       "captured": {
         "commit": "2ab9399ee",
         "platform": "macos",
         "dirty": true,
         "sha256": "a65d6e8c0099dc7ab3167207a567faa22d2fe572bd3f0f085ea989e2051e137b",
         "last_rendered": "1a014d850"
-      }
+      },
+      "published": false
     },
     {
       "file": "ts-remote-control-enabled-light.png",
@@ -2923,11 +2909,11 @@
     "auto-dialog": 51,
     "auto-menu": 19,
     "auto-view": 100,
-    "manual-annotated": 2,
+    "manual-annotated": 1,
     "manual-diagram": 4,
     "manual-modus": 5,
     "manual-os": 2,
-    "obsolete": 18
+    "obsolete": 19
   },
   "current_generator_owned_subset": [
     "bulk-create.png",
@@ -2936,7 +2922,6 @@
     "device-metrics.png",
     "device-watch.png",
     "devices.png",
-    "events-alarm-surface.png",
     "favorites.png",
     "files.png",
     "graph-cursor.png",
