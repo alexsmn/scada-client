@@ -4,15 +4,16 @@
 #include "base/client_paths.h"
 #include "base/format.h"
 #include "base/json.h"
-#include "base/boost_log.h"
 #include "base/path_service.h"
 #include "base/value_util.h"
 #include "filesystem/file_registry.h"
 #include "filesystem/file_util.h"
 #include "model/node_id_util.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <optional>
+#include <tuple>
 
 namespace {
 
@@ -44,7 +45,7 @@ FileCache::FileEntry LoadFileEntry(const boost::json::value& data) {
 }
 
 boost::json::value SaveFileEntry(const FileCache::FileEntry& entry,
-                                  std::string_view type_name) {
+                                 std::string_view type_name) {
   boost::json::value file_data{boost::json::object{}};
 
   SetKey(file_data, "type", type_name);
@@ -135,16 +136,20 @@ void FileCache::Save() {
 
 std::vector<FileCache::DisplayItem> FileCache::FileList::GetFilesContainingItem(
     const scada::NodeId& item_id) const {
-  std::vector<DisplayItem> items;
-  items.reserve(size());
-
-  for (FileList::const_iterator i = begin(); i != end(); ++i) {
-    const FileEntry& entry = *i;
-    ItemMap::const_iterator j = entry.items.find(item_id);
-    if (j != entry.items.end())
-      items.push_back(DisplayItem(entry.path, j->second));
+  std::vector<const FileEntry*> entries;
+  for (const FileEntry& entry : *this) {
+    if (entry.items.contains(item_id))
+      entries.push_back(&entry);
   }
 
+  std::ranges::sort(entries, [](const FileEntry* a, const FileEntry* b) {
+    return std::tie(a->title, a->path) < std::tie(b->title, b->path);
+  });
+
+  std::vector<DisplayItem> items;
+  items.reserve(entries.size());
+  for (const FileEntry* entry : entries)
+    items.emplace_back(entry->path, entry->items.at(item_id));
   return items;
 }
 

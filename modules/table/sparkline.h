@@ -1,16 +1,15 @@
 #pragma once
 
 #include "base/time/time.h"
-#include "scada/date_time.h"
 #include "scada/data_value.h"
+#include "scada/date_time.h"
 
 #include <span>
 #include <vector>
 
 // The trailing history window a reshell table row observes to feed its
 // sparkline cell (table-watch.html "Trend 1 h").
-inline constexpr scada::Duration kSparklineWindow =
-    std::chrono::hours(1);
+inline constexpr scada::Duration kSparklineWindow = std::chrono::hours(1);
 
 // A point in a sparkline's local pixel space (origin top-left, y grows down),
 // ready to feed a QPainter polyline (or any renderer).
@@ -25,8 +24,11 @@ struct SparklinePoint {
 // bottom so the stroke is not clipped. The series is normalized to its own
 // min/max so small variations stay visible; a flat series draws a centred
 // horizontal line. Fewer than two values (nothing to connect), or a
-// non-positive size, yields an empty polyline. Pure and Qt-free so the geometry
-// can be unit-tested; the Qt sparkline delegate converts the result to QPointF.
+// non-positive size, yields an empty polyline. A series longer than two
+// samples per pixel column is reduced to each column's min and max, so the
+// polyline is bounded by the width rather than by the history window. Pure and
+// Qt-free so the geometry can be unit-tested; the Qt sparkline delegate
+// converts the result to QPointF.
 std::vector<SparklinePoint> ComputeSparklinePoints(
     std::span<const double> values,
     float width,

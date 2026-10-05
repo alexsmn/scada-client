@@ -35,6 +35,10 @@ class FileCache {
    public:
     int Find(const std::filesystem::path& path) const;
 
+    // Returns the files whose item map holds `item_id`, ordered by title and
+    // then by path. The list itself is in cache-load-then-directory-scan
+    // order, which differs between machines and after a cache rebuild, so the
+    // order is fixed here for callers that act on the first match.
     std::vector<DisplayItem> GetFilesContainingItem(
         const scada::NodeId& item_id) const;
   };

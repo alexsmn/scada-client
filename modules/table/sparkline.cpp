@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <vector>
 
 std::vector<double> NumericSeries(std::span<const scada::DataValue> values) {
@@ -50,19 +51,44 @@ std::vector<SparklinePoint> ComputeSparklinePoints(
   const float usable_height = std::max(0.0f, height - 2 * padding);
   const float mid_y = height / 2;
 
+  // Higher value -> smaller y (towards the top). A flat series (range == 0)
+  // has no meaningful vertical position, so centre it.
+  const auto y_of = [&](double value) {
+    return range > 0
+               ? padding + static_cast<float>((max_value - value) / range) *
+                               usable_height
+               : mid_y;
+  };
+
   const int count = static_cast<int>(finite.size());
+  // One point per pixel column is all the cell can show. A row's trailing
+  // window can hold thousands of samples, so past two per column the series
+  // is reduced to each column's min and max, in sample order: the drawn
+  // envelope is unchanged and the polyline stays bounded by the cell width.
+  const int columns = std::max(2, static_cast<int>(width));
+  if (count <= 2 * columns) {
+    std::vector<SparklinePoint> points;
+    points.reserve(finite.size());
+    for (int i = 0; i < count; ++i) {
+      const float x = width * static_cast<float>(i) / (count - 1);
+      points.push_back({x, y_of(finite[i])});
+    }
+    return points;
+  }
+
   std::vector<SparklinePoint> points;
-  points.reserve(finite.size());
-  for (int i = 0; i < count; ++i) {
-    const float x = width * static_cast<float>(i) / (count - 1);
-    // Higher value -> smaller y (towards the top). A flat series (range == 0)
-    // has no meaningful vertical position, so centre it.
-    const float y =
-        range > 0
-            ? padding + static_cast<float>((max_value - finite[i]) / range) *
-                            usable_height
-            : mid_y;
-    points.push_back({x, y});
+  points.reserve(2 * columns);
+  for (int column = 0; column < columns; ++column) {
+    const auto first = finite.begin() + int64_t{column} * count / columns;
+    const auto last = finite.begin() + int64_t{column + 1} * count / columns;
+    const auto [lo, hi] = std::minmax_element(first, last);
+    const float x = width * static_cast<float>(column) / (columns - 1);
+    if (lo == hi) {
+      points.push_back({x, y_of(*lo)});
+    } else {
+      points.push_back({x, y_of(*std::min(lo, hi))});
+      points.push_back({x, y_of(*std::max(lo, hi))});
+    }
   }
   return points;
 }

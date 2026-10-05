@@ -18,6 +18,7 @@
 #endif
 
 #include <algorithm>
+#include <chrono>
 #include <optional>
 
 #if defined(UI_QT)
@@ -29,6 +30,16 @@
 #endif
 
 namespace {
+
+// How often MetrixGraph re-derives each line's history window from the
+// horizontal axis. Most ticks are no-ops: TimedDataSpec::SetRange returns early
+// on an unchanged range, and under time-fit the axis moves only when a line's
+// history extends the scroll range (GraphLine::UpdateHorizontalRange), not on
+// every tick — so the view observer is re-registered at the data rate, not at
+// this rate. The poll stays because it is also what picks up a data source
+// that connects after its line was added (MetrixLine::UpdateTimeRange skips
+// unconnected sources), which the axis's rangeChanged signal would not.
+constexpr std::chrono::milliseconds kUpdateDataInterval{50};
 
 #if defined(UI_QT)
 // The active theme's tokens that drive the chart chrome. Resolved through
@@ -370,7 +381,7 @@ MetrixGraph::MetrixGraph(MetrixGraphContext&& context)
 
   QObject::connect(&update_data_timer_, &QTimer::timeout,
                    [this] { UpdateData(); });
-  update_data_timer_.start(50);
+  update_data_timer_.start(kUpdateDataInterval);
 }
 
 #if defined(UI_QT)

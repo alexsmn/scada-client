@@ -46,6 +46,21 @@ TimedDataSpec MakeTimedDataSpec(NodeRef node, scada::Time timestamp) {
   return TimedDataSpec{timed_data};
 }
 
+// Counts view-observer registrations, which is what a change of a line's
+// history window costs the timed data (a range union, a trim and a gap fetch).
+class CountingTimedData final : public FakeTimedData {
+ public:
+  using FakeTimedData::FakeTimedData;
+
+  void AddViewObserver(TimedDataViewObserver& observer,
+                       const scada::TimeRange& range) override {
+    ++view_observer_registrations;
+    FakeTimedData::AddViewObserver(observer, range);
+  }
+
+  int view_observer_registrations = 0;
+};
+
 }  // namespace
 
 class GraphViewTest : public Test {
@@ -192,6 +207,42 @@ TEST(GraphViewSeriesModelTest, DisplayFlagCommandsNotifyTheHost) {
   EXPECT_EQ(notifications, 1);
   // One series, alone in its pane — which is what the section reports.
   EXPECT_TRUE(view.IsSeriesOnOwnPane());
+}
+
+// MetrixGraph polls every line's history window on a 50 ms timer. That is
+// cheap only because a tick over an unchanged axis registers nothing; pin it,
+// so a poll that started re-registering at 20 Hz per line would fail here.
+TEST_F(GraphViewTest, UpdateDataOverAnUnchangedAxisDoesNotReregister) {
+  FakeTimedDataService fake_service;
+  const scada::Time now = scada::Now();
+
+  auto timed_data = std::make_shared<CountingTimedData>("TS.201");
+  timed_data->data_values.push_back(MakeDataValue(1.0, now));
+  timed_data->ready_ranges.push_back({now - std::chrono::hours(1), now});
+  fake_service.formulas["TS.201"] = timed_data;
+
+  MetrixGraph graph{MetrixGraphContext{fake_service, env_.executor_}};
+  auto& pane = graph.NewPane();
+  graph.NewLine("TS.201", pane);
+
+  graph.horizontal_axis().SetTimeFit(false);
+  graph.horizontal_axis().SetRange(
+      GraphRange{scada::base::EncodeDoubleT(now - std::chrono::hours(1)),
+                 scada::base::EncodeDoubleT(now), GraphRange::TIME});
+  graph.UpdateData();
+  const int after_first = timed_data->view_observer_registrations;
+
+  for (int i = 0; i < 20; ++i)
+    graph.UpdateData();
+  EXPECT_EQ(timed_data->view_observer_registrations, after_first);
+
+  // A moved window is registered once, on the next tick.
+  graph.horizontal_axis().SetRange(
+      GraphRange{scada::base::EncodeDoubleT(now - std::chrono::hours(2)),
+                 scada::base::EncodeDoubleT(now), GraphRange::TIME});
+  graph.UpdateData();
+  graph.UpdateData();
+  EXPECT_EQ(timed_data->view_observer_registrations, after_first + 1);
 }
 
 TEST_F(GraphViewTest, FakeTimedDataRendersLines) {

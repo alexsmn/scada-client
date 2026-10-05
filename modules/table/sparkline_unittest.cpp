@@ -2,9 +2,11 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <limits>
+#include <vector>
 
 namespace {
 
@@ -97,6 +99,28 @@ TEST(SparklineTest, StaysWithinPaddedBand) {
 // including coercible discrete/bool states, whose 0/1 timeline is a
 // meaningful mini-trend. Null and non-numeric values (a text state) are
 // skipped, not turned into zeros that would distort the normalization.
+// A row's trailing hour can hold thousands of samples; the polyline must stay
+// bounded by the cell width, and a one-sample spike must still be drawn.
+TEST(SparklineTest, LongSeriesIsBoundedByWidthAndKeepsExtremes) {
+  std::vector<double> values(3600, 10.0);
+  values[1234] = 99.0;  // spike: the series max
+  values[2500] = -5.0;  // dip: the series min
+  const auto points = ComputeSparklinePoints(values, 80, 20, /*padding=*/2);
+
+  ASSERT_FALSE(points.empty());
+  EXPECT_LE(points.size(), 160u);
+  EXPECT_FLOAT_EQ(points.front().x, 0.0f);
+  EXPECT_FLOAT_EQ(points.back().x, 80.0f);
+
+  float top = 20, bottom = 0;
+  for (const SparklinePoint& point : points) {
+    top = std::min(top, point.y);
+    bottom = std::max(bottom, point.y);
+  }
+  EXPECT_FLOAT_EQ(top, 2.0f);
+  EXPECT_FLOAT_EQ(bottom, 18.0f);
+}
+
 TEST(NumericSeriesTest, ExtractsNumbersAndSkipsNonNumericValues) {
   std::vector<scada::DataValue> values(4);
   values[0].value = scada::Variant{1.5};
