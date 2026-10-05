@@ -122,7 +122,6 @@ class BaseMainWindow : protected MainWindowContext,
   virtual void OnSelectionChanged() = 0;
 
   virtual void UpdateTitle() = 0;
-  virtual void SetToolbarPosition(unsigned position) = 0;
 
   // ViewManagerDelegate
   virtual void OnViewClosed(OpenedView& view) override;

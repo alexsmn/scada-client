@@ -73,7 +73,7 @@ void ContextMenuModel::Rebuild() {
       separated = true;
     }
 
-    if (CanExpandCommandCategory(category, CommandSurface::kContextMenu)) {
+    if (CanExpandCommandCategory(category)) {
       if (!commands.empty()) {
         AddMenuActions(*this, commands, active_view);
         separated = false;

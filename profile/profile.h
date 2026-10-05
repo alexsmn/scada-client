@@ -23,7 +23,6 @@ struct MainWindowDef {
   scada::aui::Rect bounds;
   State state = State::kNormal;
   int page_id = 0;
-  bool toolbar = false;
   bool status_bar = true;
   // The activity rail's selected left-pane mode, as a `PaneMode::key`. Empty
   // means "never chosen" — the window infers one from the page it opens.

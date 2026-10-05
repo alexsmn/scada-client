@@ -26,8 +26,6 @@
 #include <QMenuBar>
 #include <QPixmap>
 #include <QString>
-#include <QToolBar>
-#include <QToolButton>
 #include <gtest/gtest.h>
 
 #include <filesystem>
@@ -193,11 +191,13 @@ TEST_F(ScreenshotGenerator, CaptureMoreMenu) {
   SaveMenuCapture(menu, kFilename, publish_guard);
 }
 
-// The Summary view's Function dropdown: the seven aggregate functions, one of
-// them checked. This is a toolbar menu rather than a menu-bar one — the
-// command toolbar groups the categories it cannot expand behind a
-// `QToolButton` (see `MainWindow::CreateToolBar`) — but it populates the same
-// way, through its own `aboutToShow`.
+// The Summary view's Function submenu: the seven aggregate functions, one of
+// them checked. It is the menu bar's Item menu, which `ContextMenuModel`
+// builds from the active view's commands and which folds the categories it
+// does not expand behind a submenu carrying the category's title
+// (`CanExpandCommandCategory`). Until backlog 697 removed the command toolbar
+// in 2026-10 this captured that toolbar's Function button instead; the rows
+// are the same commands either way.
 //
 // Which function is checked comes from the fixture's Summ window, which sets
 // no `AggregateType` and so takes the model's default. The manual's original
@@ -227,12 +227,10 @@ TEST_F(ScreenshotGenerator, CaptureSummaryFunctionMenu) {
   QMainWindow* qmain = ShowMainWindowForMenuCapture(app_);
   ASSERT_NE(qmain, nullptr);
 
-  // Activate the Summary view explicitly. The toolbar resolves every row
-  // through `ResolveViewCommand`, which asks the *active* view — and a window
-  // shown offscreen never receives the focus that would make one active, so
-  // without this the seven rows exist but resolve no handler, and
-  // `UpdateAction` hides them all. The menu still renders: seven invisible rows
-  // grab as an empty popup.
+  // Activate the Summary view explicitly. The Item menu resolves every row
+  // through the *active* view — and a window shown offscreen never receives
+  // the focus that would make one active, so without this the Item menu
+  // carries none of the Summary view's commands.
   auto& main_window = app_.main_window_manager().main_windows().front();
   OpenedView* summary_view = nullptr;
   for (OpenedView* view : main_window.opened_views()) {
@@ -244,19 +242,19 @@ TEST_F(ScreenshotGenerator, CaptureSummaryFunctionMenu) {
   for (int i = 0; i < 10; ++i)
     QApplication::processEvents();
 
-  auto* toolbar = qmain->findChild<QToolBar*>("CommandToolbar");
-  ASSERT_NE(toolbar, nullptr) << "no command toolbar in the main window";
+  QMenu* item_menu = PopulateMenuBarMenu(qmain, "Item");
+  ASSERT_NE(item_menu, nullptr);
 
   const auto function_title = QString::fromStdU16String(Translate("Function"));
   QMenu* menu = nullptr;
-  for (QToolButton* button : toolbar->findChildren<QToolButton*>()) {
-    if (button->text() == function_title && button->menu())
-      menu = button->menu();
+  for (QAction* action : item_menu->actions()) {
+    if (action->text() == function_title && action->menu())
+      menu = action->menu();
   }
   ASSERT_NE(menu, nullptr)
       << "no " << function_title.toStdString()
-      << " tool button on the command toolbar - the aggregate commands are no "
-         "longer grouped behind one";
+      << " submenu in the Item menu - the aggregate commands are no longer "
+         "grouped behind one";
 
   emit menu->aboutToShow();
   for (int i = 0; i < 10; ++i)

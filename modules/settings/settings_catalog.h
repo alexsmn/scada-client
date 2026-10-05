@@ -59,8 +59,8 @@ enum class SettingCategory {
 // The three stores are real and differ. `kClient` is machine-local (`QSettings`
 // here, `localStorage` in the web client); `kProfile` is the profile envelope
 // on the server, which both clients read; `kWindow` is `MainWindowDef` inside
-// that envelope, keyed by main-window id, which is why Toolbar and Status Bar
-// are per window rather than per account. `kAction` is not a store -- it marks
+// that envelope, keyed by main-window id, which is why Status Bar is
+// per window rather than per account. `kAction` is not a store -- it marks
 // a row that runs something rather than holding a value, and is counted
 // separately for that reason.
 enum class SettingScope {

@@ -102,8 +102,8 @@ class SettingsPanel : public QWidget {
   // so this is not about the control's own state — it is for the shell, which
   // may have to restate something the panel cannot see for itself.
   //
-  // Today that is exactly one thing: the bottom inset. `Status Bar` and
-  // `Toolbar` are rows on this surface that change the chrome underneath it,
+  // Today that is exactly one thing: the bottom inset. `Status Bar` is
+  // a row on this surface that changes the chrome underneath it,
   // and a locale or widget-style change moves the strip's metrics too, so the
   // shell re-measures and calls `SetBottomInset`.
   void SettingApplied();

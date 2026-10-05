@@ -89,7 +89,6 @@ class FakeDelegate : public SimpleMenuModel::Delegate {
 class SettingsPanelTest : public ::testing::Test {
  protected:
   SettingsPanelTest() {
-    settings_.AddCheckItem(ID_VIEW_TOOLBAR, u"Toolbar");
     settings_.AddCheckItem(ID_VIEW_STATUS_BAR, u"Status Bar");
     settings_.AddSeparator(scada::aui::NORMAL_SEPARATOR);
     settings_.AddCheckItem(ID_EVENT_PLAY_SOUND, u"Sound Alarm on Event");
@@ -207,11 +206,12 @@ TEST_F(SettingsPanelTest, AChoiceRowOffersItsSubmenuAndActivatesTheChoice) {
 TEST_F(SettingsPanelTest, TogglingARowActivatesItsCommand) {
   SettingsPanel panel{nullptr, settings_};
 
-  QCheckBox& box = RequireControl<QCheckBox>(panel, QStringLiteral("toolbar"));
+  QCheckBox& box =
+      RequireControl<QCheckBox>(panel, QStringLiteral("status-bar"));
   EXPECT_FALSE(box.isChecked());
 
   box.click();
-  EXPECT_EQ(delegate_.executed(), (std::vector<int>{ID_VIEW_TOOLBAR}));
+  EXPECT_EQ(delegate_.executed(), (std::vector<int>{ID_VIEW_STATUS_BAR}));
   EXPECT_TRUE(box.isChecked());
 }
 
@@ -241,7 +241,7 @@ TEST_F(SettingsPanelTest, SearchNarrowsTheRowsAndTheTableOfContents) {
 
   EXPECT_EQ(VisibleIds(panel), (std::vector<std::string>{"flash-window"}));
   EXPECT_NE(Row(panel, QStringLiteral("flash-window")), nullptr);
-  EXPECT_EQ(Row(panel, QStringLiteral("toolbar")), nullptr);
+  EXPECT_EQ(Row(panel, QStringLiteral("status-bar")), nullptr);
   // A category with nothing left in it is a destination that scrolls nowhere.
   ASSERT_EQ(panel.category_list()->count(), 1);
   EXPECT_TRUE(panel.category_list()->item(0)->text().startsWith(
@@ -249,7 +249,7 @@ TEST_F(SettingsPanelTest, SearchNarrowsTheRowsAndTheTableOfContents) {
 
   // Clearing the box puts everything back.
   panel.search_field()->clear();
-  EXPECT_EQ(panel.visible_rows().size(), 6u);
+  EXPECT_EQ(panel.visible_rows().size(), 5u);
 }
 
 TEST_F(SettingsPanelTest, ScopeTabsFilterAndOfferOnlyScopesInUse) {
@@ -265,8 +265,7 @@ TEST_F(SettingsPanelTest, ScopeTabsFilterAndOfferOnlyScopesInUse) {
 
   panel.scope_tabs()->setCurrentIndex(
       tabs.indexOf(QStringLiteral("This window")));
-  EXPECT_EQ(VisibleIds(panel),
-            (std::vector<std::string>{"toolbar", "status-bar"}));
+  EXPECT_EQ(VisibleIds(panel), (std::vector<std::string>{"status-bar"}));
 }
 
 // The panel owns no shell state, which is the whole argument for an overlay
@@ -364,7 +363,7 @@ TEST_F(SettingsPanelTest, EveryKindOfControlReportsThatItApplied) {
   QObject::connect(&panel, &SettingsPanel::SettingApplied, &panel,
                    [&applied] { ++applied; });
 
-  RequireControl<QCheckBox>(panel, QStringLiteral("toolbar")).click();
+  RequireControl<QCheckBox>(panel, QStringLiteral("status-bar")).click();
   EXPECT_EQ(applied, 1);
 
   RequireControl<QPushButton>(panel, QStringLiteral("open-displays-folder"))
@@ -461,14 +460,14 @@ TEST_F(SettingsPanelTest, RestatingTheInsetDisturbsNothingElse) {
   // lookups, and null equals null, so it would pass for a panel that drew no
   // rows at all -- the setup silently not happening, which is the one thing an
   // equality between two lookups cannot report.
-  QWidget* before = &RequireRow(*panel, QStringLiteral("toolbar"));
+  QWidget* before = &RequireRow(*panel, QStringLiteral("status-bar"));
   panel->search_field()->clearFocus();
 
   panel->SetBottomInset(40);
 
   EXPECT_EQ(panel->geometry(), QRect(0, 0, 800, 600 - 40));
   EXPECT_NE(panel->focusWidget(), panel->search_field());
-  EXPECT_EQ(Row(*panel, QStringLiteral("toolbar")), before);
+  EXPECT_EQ(Row(*panel, QStringLiteral("status-bar")), before);
 }
 
 // Reopening re-reads the menu: a module can have registered a contribution, and

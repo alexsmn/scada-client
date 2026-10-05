@@ -27,7 +27,6 @@
 #include <QLayout>
 #include <QMainWindow>
 #include <QPixmap>
-#include <QToolBar>
 #include <QToolButton>
 #include <gtest/gtest.h>
 
@@ -99,26 +98,6 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
       layout->activate();
   for (int i = 0; i < 20; ++i)
     QApplication::processEvents();
-
-  // Verify the toolbar icon wiring against the live QWidget tree directly,
-  // not the rendered pixels: the style must be icon-only, and the icon-bearing
-  // command actions must have resolved their icons through LoadPixmap, which
-  // returned empty pixmaps on macOS/Linux before the res/client.qrc fix. Not
-  // every command carries an icon (many are image_id == 0, text-only), so we
-  // assert that the pipeline produced icons, not that every action has one;
-  // exhaustive per-id coverage lives in ClientUtilsQtTest.
-  // Target the command toolbar specifically: the workbench chrome adds other
-  // toolbars (activity rail, context bar) that carry no command icons.
-  auto* toolbar = qmain->findChild<QToolBar*>("CommandToolbar");
-  ASSERT_NE(toolbar, nullptr);
-  EXPECT_EQ(toolbar->toolButtonStyle(), Qt::ToolButtonIconOnly);
-  int actions_with_icons = 0;
-  for (QAction* action : toolbar->actions()) {
-    if (!action->isSeparator() && !action->icon().isNull())
-      ++actions_with_icons;
-  }
-  EXPECT_GT(actions_with_icons, 0)
-      << "no toolbar action resolved an icon (LoadPixmap/qrc regression)";
 
   scada::aui::Tree* tree = nullptr;
   QDockWidget* tree_dock = nullptr;

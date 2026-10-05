@@ -20,7 +20,6 @@ class NodeId;
 }
 
 class ActivityBar;
-class CommandActions;
 class ContextBar;
 class RailPagesController;
 class RailUtilitiesController;
@@ -36,7 +35,6 @@ class QDockWidget;
 class QLabel;
 class QMenu;
 class QPoint;
-class QToolBar;
 class QWidget;
 class ProgressController;
 class SettingsPanel;
@@ -99,7 +97,6 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // BaseMainWindow
   virtual void UpdateTitle() override;
   virtual void OnSelectionChanged() override;
-  virtual void SetToolbarPosition(unsigned position) override;
   virtual std::unique_ptr<OpenedView> OnCreateView(
       WindowDefinition& def) override;
 
@@ -128,15 +125,6 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // would otherwise leave them stacked vertically.
   void TabifySpecialistDocks();
   void CreateMenuBar();
-  // Builds the grip command toolbar. It is off by default and stays that way
-  // unless the operator turns the `Toolbar` preference on: shell.md §2.2 gives
-  // that role to the top context bar ("Replaces the grip toolbar"), and the two
-  // shown together draw three stacked rows of chrome — menu bar, context bar
-  // and grip toolbar — where every mockup screen draws one. Every command it
-  // carries stays reachable from the menu bar, the node context menu and the
-  // Ctrl-K palette, so leaving it off hides a duplicate surface rather than a
-  // capability. It lays out `command_actions_` and creates none of them.
-  void CreateToolbar();
   void CreateStatusBar();
   // The top context bar: the command/search field and alarm state.
   void CreateContextBar();
@@ -221,19 +209,6 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   void ShowCommandPalette(const QString& initial_text = QString());
 
   std::unique_ptr<ViewManager> view_manager_;
-
-  // The QAction per button-surface command, kept in step with the handlers the
-  // window resolves. Owned apart from the toolbar that displays them.
-  std::unique_ptr<CommandActions> command_actions_;
-
-  QToolBar* toolbar_ = nullptr;
-
-  struct CategoryData {
-    QMenu* menu = nullptr;
-    QAction* toolbar_action = nullptr;
-  };
-
-  std::map<CommandCategory, CategoryData> category_actions_;
 
   DialogServiceImplQt dialog_service_;
 

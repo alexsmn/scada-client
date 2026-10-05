@@ -239,10 +239,9 @@ void RegisterMainWindowCommandActions(
           .set_enabled_handler([&session_service](const GlobalCommandContext&) {
             return session_service.IsConnected();
           })
-          .set_execute_handler(
-              [sign_out_handler](const GlobalCommandContext&) {
-                sign_out_handler();
-              }));
+          .set_execute_handler([sign_out_handler](const GlobalCommandContext&) {
+            sign_out_handler();
+          }));
   // Shipped, not debug-only. These two were behind `#if !defined(NDEBUG)`
   // until 2026-09-20, which meant the only way out of a session in a release
   // build was to quit the application -- and with the login dialog's `Auto:`
@@ -292,9 +291,6 @@ void RegisterMainWindowCommandActions(
                                    .command_id = ID_WINDOW_SPLIT_VERT,
                                    .title = Translate("Split Vertically")});
 #endif
-
-  global_commands.AddCommand(MakeMainWindowOptionCommand(
-      ID_VIEW_TOOLBAR, Translate("Toolbar"), profile, &MainWindowDef::toolbar));
 
   global_commands.AddCommand(
       MakeMainWindowOptionCommand(ID_VIEW_STATUS_BAR, Translate("Status Bar"),
@@ -409,8 +405,7 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
 
   RegisterMainWindowCommandActions(
       executor_, profile_, speech_service_, *scada_services_.session_service,
-      *main_window_manager_,
-      login_handler_, sign_out_handler_,
+      *main_window_manager_, login_handler_, sign_out_handler_,
       global_commands_, ui_command_registry_);
 
   selection_command_router_ =

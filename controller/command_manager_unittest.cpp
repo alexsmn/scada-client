@@ -115,12 +115,10 @@ TEST(UiCommandRegistryTest, RegisterCommandStoresPlacements) {
   auto& descriptor = registry.RegisterCommand(
       {.command_id = 10, .title = u"Command"},
       {.main_menu = {{.menu_id = MainMenuId::More, .order = 20}},
-       .toolbar = false,
-       .context_menu = true});
+       .context_menu = false});
 
   EXPECT_EQ(10u, descriptor.command_id);
-  EXPECT_FALSE(descriptor.show_in_toolbar);
-  EXPECT_TRUE(descriptor.show_in_context_menu);
+  EXPECT_FALSE(descriptor.show_in_context_menu);
 
   auto contributions = registry.GetMenuContributions(MainMenuId::More);
   ASSERT_EQ(1u, contributions.size());

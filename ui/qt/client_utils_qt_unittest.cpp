@@ -28,13 +28,13 @@
 
 namespace {
 
-// The command/action resource ids that modules attach to toolbar actions via
-// Action::image_id_. Every one must resolve to an icon through LoadPixmap on
-// all platforms; a blank toolbar on macOS/Linux was the regression this
-// guards against. Keep in lock-step with the table in client_utils_qt.cpp and
-// res/client.qrc. (ID_APPLICATION is excluded: it is the About-dialog
-// application icon, asked for at a different size.)
-constexpr std::array<std::pair<const char*, unsigned>, 16> kToolbarIcons{{
+// The command/action resource ids that modules attach via Action::image_id_,
+// drawn on the Inspector's action buttons. Every one must resolve to an icon
+// through LoadPixmap on all platforms; a blank command toolbar on macOS/Linux
+// was the regression this was written against. Keep in lock-step with the table
+// in client_utils_qt.cpp and res/client.qrc. (ID_APPLICATION is excluded: it is
+// the About-dialog application icon, asked for at a different size.)
+constexpr std::array<std::pair<const char*, unsigned>, 16> kCommandIcons{{
     {"ID_GRAPH_VIEW", ID_GRAPH_VIEW},
     {"ID_MODUS_VIEW", ID_MODUS_VIEW},
     {"ID_TABLE_VIEW", ID_TABLE_VIEW},
@@ -58,8 +58,8 @@ class ClientUtilsQtTest : public testing::Test {
   AppEnvironment app_env_;  // Constructs a QApplication for QPixmap loading.
 };
 
-TEST_F(ClientUtilsQtTest, EveryToolbarIconLoadsAtTheRequestedSize) {
-  for (const auto& [name, id] : kToolbarIcons) {
+TEST_F(ClientUtilsQtTest, EveryCommandIconLoadsAtTheRequestedSize) {
+  for (const auto& [name, id] : kCommandIcons) {
     QPixmap pixmap = LoadPixmap(id, 24);
     ASSERT_FALSE(pixmap.isNull())
         << name << " (id " << id << ") did not resolve to an icon; check "
@@ -133,7 +133,7 @@ double InkCoverage(const QIcon& icon, int size) {
 
 // Every shipped glyph must rasterise to something. The two qrc guards
 // elsewhere (ConfigurationTreeGlyphs.EveryMappedGlyphIsShipped, and
-// EveryToolbarIconLoadsAtTheRequestedSize above) prove a mapped path is
+// EveryCommandIconLoadsAtTheRequestedSize above) prove a mapped path is
 // registered and present; neither proves the bytes behind it *draw*. lunasvg
 // returns a valid, empty bitmap for an element it does not support, so such a
 // glyph renders blank with nothing failing — the regression class the

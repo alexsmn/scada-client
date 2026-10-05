@@ -25,8 +25,6 @@ struct CommandDescriptor {
   unsigned flags = 0;
   std::optional<Shortcut> shortcut;
   std::function<std::u16string()> title_provider;
-  // Controls whether generic toolbar builders include this command.
-  bool show_in_toolbar = true;
   // Controls whether generic context menu builders include this command.
   bool show_in_context_menu = true;
 

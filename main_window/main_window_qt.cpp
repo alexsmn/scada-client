@@ -23,7 +23,6 @@
 #include "main_window/activity_bar_qt.h"
 #include "main_window/alarm_state_cluster_qt.h"
 #include "main_window/breadcrumb_qt.h"
-#include "main_window/command_actions_qt.h"
 #include "main_window/command_palette_launcher.h"
 #include "main_window/context_bar_qt.h"
 #include "main_window/main_menu/main_menu_model.h"
@@ -67,8 +66,6 @@
 #include <QStatusBar>
 #include <QStyle>
 #include <QTabWidget>
-#include <QToolBar>
-#include <QToolButton>
 
 #include <ranges>
 #include <unordered_set>
@@ -248,13 +245,6 @@ MainWindow::MainWindow(MainWindowContext&& context)
           .parent_ = *this,
           .node_service_ = node_service_,
           .session_service_ = session_service_});
-  // The window's QActions exist whether or not a toolbar is built to show them.
-  command_actions_ = std::make_unique<CommandActions>(
-      ui_command_registry_.command_manager(),
-      ui_command_registry_.action_manager(),
-      [this](unsigned command_id) { return ResolveViewCommand(command_id); },
-      *this);
-  CreateToolbar();
   CreateStatusBar();
 
   if (!g_hide_for_testing) {
@@ -287,16 +277,10 @@ MainWindow::MainWindow(MainWindowContext&& context)
   change_profile_connection_ = profile_.AddChangeObserver([this] {
     const MainWindowDef& prefs = GetPrefs();
     statusBar()->setVisible(prefs.status_bar);
-    toolbar_->setVisible(GetPrefs().toolbar);
   });
 }
 
 MainWindow::~MainWindow() {
-  // Stop following action changes before the views go: closing the page would
-  // otherwise re-resolve handlers against a window being torn down. The
-  // QActions themselves are this window's children and outlive the registry.
-  command_actions_.reset();
-
   view_manager_->ClosePage();
   // TODO: Comment why explicit reset is needed.
   view_manager_.reset();
@@ -361,8 +345,6 @@ void MainWindow::CreateContextBar() {
           [this] { ShowCommandPalette(); });
 
   addToolBar(Qt::TopToolBarArea, context_bar_);
-  // Force the command toolbar onto its own row below the context bar.
-  addToolBarBreak(Qt::TopToolBarArea);
 }
 
 namespace {
@@ -456,8 +438,8 @@ void MainWindow::ShowSettings() {
 
   if (!settings_panel_) {
     settings_panel_ = new SettingsPanel{this, menu_model->settings_model()};
-    // Re-measure whenever a setting is applied. `Status Bar` and `Toolbar` are
-    // rows on that surface, so an operator can switch off the very strip the
+    // Re-measure whenever a setting is applied. `Status Bar` is a row on
+    // that surface, so an operator can switch off the very strip the
     // panel stops above — and hiding a `QStatusBar` re-lays this window out
     // without resizing it, so nothing the panel watches for itself would
     // notice. A choice row can move the strip too: a locale changes what it
@@ -545,68 +527,6 @@ void MainWindow::OpenTag(const scada::NodeId& node_id,
 
 void MainWindow::ShowCommandPalette(const QString& initial_text) {
   palette_->Show(initial_text);
-}
-
-void MainWindow::CreateToolbar() {
-  toolbar_ = new QToolBar(this);
-  toolbar_->setObjectName(QStringLiteral("CommandToolbar"));
-  toolbar_->setVisible(GetPrefs().toolbar);
-  toolbar_->setWindowTitle(tr("Toolbar"));
-  // Icon-only buttons, sized to the 16px source icons so the toolbar stays
-  // compact (the platform default icon size is larger and would upscale the
-  // icons and inflate the button height). Actions without an icon fall back to
-  // showing their text.
-  toolbar_->setToolButtonStyle(Qt::ToolButtonIconOnly);
-  toolbar_->setIconSize(QSize(16, 16));
-
-  {
-    // Action order is important.
-    int last_category = -1;
-    for (auto* command_info :
-         ui_command_registry_.command_manager().commands()) {
-      if (!command_info->show_in_toolbar) {
-        continue;
-      }
-
-      auto* action = command_actions_->Find(command_info->command_id);
-      if (CanExpandCommandCategory(command_info->category,
-                                   CommandSurface::kToolbar)) {
-        toolbar_->addAction(action);
-        if (last_category != -1 && last_category != command_info->category) {
-          toolbar_->addSeparator();
-        }
-      } else {
-        auto& category_action = category_actions_[command_info->category];
-        if (!category_action.menu) {
-          auto* button = new QToolButton(toolbar_);
-          auto* menu = new QMenu(this);
-          auto title = GetCommandCategoryTitle(command_info->category);
-          auto text = QString::fromUtf16(title.data(), title.size());
-          button->setMenu(menu);
-          button->setPopupMode(QToolButton::InstantPopup);
-          button->setText(text);
-          // The toolbar's own Qt::ToolButtonIconOnly does not reach a widget
-          // added with addWidget() -- it only styles the buttons QToolBar
-          // creates for actions -- so a group button has always shown its
-          // title by accident rather than by request. Say it, because the
-          // screens require the label: a collapsed category is a named button
-          // ("Open", "Create new", ...) and not a glyph. InstantPopup draws
-          // the menu indicator, which is the mockups' caret.
-          button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-          category_action.menu = menu;
-          category_action.toolbar_action = toolbar_->addWidget(button);
-          connect(menu, &QMenu::aboutToShow, [this, menu] {
-            if (command_actions_)
-              command_actions_->UpdateMenu(*menu);
-          });
-        }
-        category_action.menu->addAction(action);
-      }
-      last_category = command_info->category;
-    }
-  }
-
-  addToolBar(Qt::TopToolBarArea, toolbar_);
 }
 
 void MainWindow::SetWindowFlashing(bool flashing) {
@@ -915,28 +835,18 @@ void MainWindow::OnSelectionChanged() {
   for (const std::unique_ptr<SelectionPanel>& panel : selection_panels_)
     panel->ShowSelection(selection);
 
-  // Null before CreateToolbar has run and after the destructor has begun.
-  if (command_actions_)
-    command_actions_->UpdateAll();
-
-  for (const auto& [_, category] : category_actions_) {
-    bool has_visible_actions =
-        std::ranges::any_of(category.menu->actions(), &QAction::isVisible);
-    category.toolbar_action->setVisible(has_visible_actions);
-  }
-
-  bool adjacent_separator = false;
-  for (auto* toolbar_action : toolbar_->actions()) {
-    if (toolbar_action->isSeparator()) {
-      toolbar_action->setVisible(!adjacent_separator);
-      adjacent_separator = true;
-    } else if (toolbar_action->isVisible()) {
-      adjacent_separator = false;
-    }
-  }
+  // Resolve the context menu's commands against the new selection now, not
+  // first when the operator right-clicks. Resolving is what starts the node
+  // fetches some commands' availability reads (the «Создать» group walks the
+  // selection's parents and types through lazily loaded NodeRefs), and the
+  // menu is built synchronously, so a first right-click on a freshly selected
+  // node would otherwise miss those rows. The command toolbar's QAction
+  // registry used to do this as a side effect on every selection change; it
+  // went with the toolbar (backlog 697), and the screenshot generator's
+  // menu-create-object and menu-parameters-elements captures are what noticed.
+  if (context_menu_model_)
+    context_menu_model_->MenuWillShow();
 }
-
-void MainWindow::SetToolbarPosition(unsigned position) {}
 
 void MainWindow::OnShowTabPopupMenu(OpenedView& view,
                                     const scada::aui::Point& point) {

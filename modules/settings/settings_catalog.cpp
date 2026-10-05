@@ -3,7 +3,7 @@
 #include "aui/models/menu_model.h"
 #include "aui/text_fold.h"
 #include "aui/translation.h"
-// Toolbar and Status Bar are MFC's standard ids rather than ours, and they live
+// Status Bar is MFC's standard id rather than ours, and it lives
 // apart from the rest for that reason. Macros only -- no link dependency on the
 // shell follows from this include.
 #include "main_window/standard_command_ids.h"
@@ -139,17 +139,6 @@ constexpr std::array kDescriptors = {
         .control = SettingControl::kToggle,
         .description =
             "Report a successful control command back to the operator.",
-    },
-    SettingDescriptor{
-        .command_id = ID_VIEW_TOOLBAR,
-        .id = "toolbar",
-        .category = SettingCategory::kWorkspace,
-        .scope = SettingScope::kWindow,
-        .control = SettingControl::kToggle,
-        .description =
-            "Show the grip command toolbar in this window. Off by default — "
-            "the context bar carries the same commands — and per main window, "
-            "not per account, so a second window keeps its own answer.",
     },
     SettingDescriptor{
         .command_id = ID_VIEW_STATUS_BAR,

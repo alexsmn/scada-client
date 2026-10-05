@@ -23,7 +23,6 @@ struct MenuContribution {
 // Describes where a command should appear in generated UI surfaces.
 struct CommandPlacements {
   std::vector<MenuContribution> main_menu;
-  bool toolbar = true;
   bool context_menu = true;
 };
 

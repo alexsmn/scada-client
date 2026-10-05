@@ -31,7 +31,6 @@ void LoadMainWindowDef(MainWindowDef& main_window,
   if (GetBool(data, "maximized", false)) {
     main_window.state = MainWindowDef::State::kMaximized;
   }
-  main_window.toolbar = GetBool(data, "toolbar", false);
   main_window.status_bar = GetBool(data, "statusBar", true);
   main_window.page_id = GetInt(data, "page", 0);
   main_window.pane_mode = GetString(data, "paneMode", "");
@@ -223,7 +222,6 @@ boost::json::value Profile::SerializeToValue() const {
       if (main_window.state == MainWindowDef::State::kMaximized) {
         SetKey(wine, "maximized", true);
       }
-      SetKey(wine, "toolbar", main_window.toolbar);
       SetKey(wine, "statusBar", main_window.status_bar);
       SetKey(wine, "page", main_window.page_id);
       if (!main_window.pane_mode.empty())

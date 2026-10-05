@@ -1447,10 +1447,6 @@
         <translation>Добавить веб-страницу</translation>
     </message>
     <message>
-        <source>Toolbar</source>
-        <translation>Панель инструментов</translation>
-    </message>
-    <message>
         <source>Status Bar</source>
         <translation>Строка состояния</translation>
     </message>
@@ -2912,10 +2908,6 @@
         <translation>Сообщать оператору об успешном выполнении команды управления.</translation>
     </message>
     <message>
-        <source>Show the grip command toolbar in this window. Off by default — the context bar carries the same commands — and per main window, not per account, so a second window keeps its own answer.</source>
-        <translation>Показывать панель инструментов с командами в этом окне. По умолчанию выключена — те же команды доступны в контекстной панели. Настройка относится к главному окну, а не к учётной записи, поэтому второе окно сохраняет собственное значение.</translation>
-    </message>
-    <message>
         <source>Show the status strip in this window.</source>
         <translation>Показывать строку состояния в этом окне.</translation>
     </message>
@@ -3523,11 +3515,6 @@
         <location filename="../../main_window/main_window_qt.cpp" line="245"/>
         <source>%1 (Server: %2)</source>
         <translation>%1 (Сервер: %2)</translation>
-    </message>
-    <message>
-        <location filename="../../main_window/main_window_qt.cpp" line="946"/>
-        <source>Toolbar</source>
-        <translation>Панель инструментов</translation>
     </message>
     <message>
         <location filename="../../main_window/main_window_qt.cpp" line="274"/>

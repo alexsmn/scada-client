@@ -70,7 +70,7 @@ void SeedFavourites(const boost::json::value& root, Favourites& favourites);
 void SeedLocalEvents(const boost::json::value& root, LocalEvents& local_events);
 
 // Returns the fixture's single `MainWindow` as a `QMainWindow`, shown and
-// pumped so its menu bar and command toolbar are live. `app.Start()` must
+// pumped so its menu bar is live. `app.Start()` must
 // already have run.
 QMainWindow* ShowMainWindowForMenuCapture(ClientApplication& app);
 

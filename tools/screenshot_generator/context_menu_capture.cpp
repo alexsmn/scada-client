@@ -581,6 +581,25 @@ TEST_F(ScreenshotGenerator, CaptureObjectMenuDelete) {
                          });
 }
 
+// The object tree's context menu on a data item, «Копировать» highlighted
+// (dev/data-items.md, "Копирование объектов"). Until backlog 697 removed the
+// command toolbar in 2026-10 this file was a hand capture of that toolbar's
+// Copy button showing its tooltip; the context menu is where the command is.
+TEST_F(ScreenshotGenerator, CaptureObjectMenuCopy) {
+  constexpr const char* kFilename = "menu-copy-object.png";
+  if (!ShouldCaptureScreenshot(kFilename))
+    GTEST_SKIP() << kFilename << " not requested";
+
+  const std::array<QString, 3> path = {QStringLiteral("ЭСТРА-ПС"),
+                                       QStringLiteral("ТИ"),
+                                       QStringLiteral("Активная мощность")};
+  CaptureTreeContextMenu(app_, executor_, kFilename, "Struct", path, "Copy",
+                         nullptr, [](const ContextMenuRender& render) {
+                           EXPECT_TRUE(render.rows.contains(RowTitle("Copy")))
+                               << "the data item's menu has no Copy row";
+                         });
+}
+
 // The object tree's context menu on a group, «Свойства элемента» highlighted
 // (dev/displays.md: "Пункт `Свойства элемента` вызывается из контекстного меню
 // для выделенной группы объектов по нажатию ПКМ").

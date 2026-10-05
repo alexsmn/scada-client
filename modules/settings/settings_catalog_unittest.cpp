@@ -67,7 +67,6 @@ class FakeDelegate : public SimpleMenuModel::Delegate {
 class SettingsMenuFixture : public ::testing::Test {
  protected:
   SettingsMenuFixture() {
-    settings_.AddCheckItem(ID_VIEW_TOOLBAR, u"Toolbar");
     settings_.AddCheckItem(ID_VIEW_STATUS_BAR, u"Status Bar");
 
     settings_.AddSeparator(scada::aui::NORMAL_SEPARATOR);
@@ -188,8 +187,8 @@ TEST_F(SettingsMenuFixture, RowsAreInScreenOrderNotMenuOrder) {
             (std::vector<std::string>{
                 "language", "colour-scheme", "widget-style", "sound-on-events",
                 "show-events", "hide-events", "flash-window",
-                "control-confirmation", "control-success", "toolbar",
-                "status-bar", "modus-topology", "open-displays-folder"}));
+                "control-confirmation", "control-success", "status-bar",
+                "modus-topology", "open-displays-folder"}));
 }
 
 // A row's title is the command's own, so the surface and the menu cannot say
@@ -220,7 +219,6 @@ TEST_F(SettingsMenuFixture, ScopesMatchWhereTheValueIsActuallyStored) {
   const std::vector<SettingRow> rows = Catalog();
   EXPECT_EQ(Require(rows, "widget-style").scope, SettingScope::kClient);
   EXPECT_EQ(Require(rows, "sound-on-events").scope, SettingScope::kProfile);
-  EXPECT_EQ(Require(rows, "toolbar").scope, SettingScope::kWindow);
   EXPECT_EQ(Require(rows, "status-bar").scope, SettingScope::kWindow);
   EXPECT_EQ(Require(rows, "open-displays-folder").scope, SettingScope::kAction);
 }
@@ -244,11 +242,11 @@ TEST_F(SettingsMenuFixture, TheDisplaysActionHasAPlace) {
 // Displays category then holds the action alone. Absence, not a disabled row.
 TEST_F(SettingsMenuFixture, ACommandTheShellDoesNotPublishHasNoRow) {
   SimpleMenuModel without_modus{&delegate_};
-  without_modus.AddCheckItem(ID_VIEW_TOOLBAR, u"Toolbar");
+  without_modus.AddCheckItem(ID_VIEW_STATUS_BAR, u"Status Bar");
   without_modus.AddItem(ID_VIEW_PUBLIC_FOLDER, u"Open Displays Folder");
 
   EXPECT_EQ(Ids(BuildSettingsCatalog(without_modus)),
-            (std::vector<std::string>{"toolbar", "open-displays-folder"}));
+            (std::vector<std::string>{"status-bar", "open-displays-folder"}));
 }
 
 // An invisible item is invisible here too -- which is how an admin-gated
@@ -275,7 +273,7 @@ TEST_F(SettingsMenuFixture, CategoriesGroupInScreenOrderAndDropEmptyOnes) {
                 SettingCategory::kAppearance, SettingCategory::kEventsAlarms,
                 SettingCategory::kControl, SettingCategory::kWorkspace,
                 SettingCategory::kDisplays}));
-  EXPECT_EQ(sizes, (std::vector<size_t>{3, 4, 2, 2, 2}));
+  EXPECT_EQ(sizes, (std::vector<size_t>{3, 4, 2, 1, 2}));
 
   // A category with nothing left in it is a table-of-contents entry that
   // scrolls nowhere, so it is dropped rather than drawn empty.
@@ -336,7 +334,7 @@ TEST_F(SettingsMenuFixture, ScopeTabsOfferOnlyScopesSomeRowUses) {
 // holds.
 TEST_F(SettingsMenuFixture, ActionsAreCountedApartAndAreNeverAScopeTab) {
   const SettingRowCounts counts = CountSettingRows(Catalog());
-  EXPECT_EQ(counts.settings, 12u);
+  EXPECT_EQ(counts.settings, 11u);
   EXPECT_EQ(counts.actions, 1u);
 
   EXPECT_EQ(std::ranges::count(SettingStorageScopes(), SettingScope::kAction),

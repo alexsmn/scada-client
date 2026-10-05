@@ -5,11 +5,9 @@
 CommandDescriptor& UiCommandRegistry::RegisterCommand(
     CommandDescriptor descriptor,
     CommandPlacements placements) {
-  descriptor.show_in_toolbar = placements.toolbar;
   descriptor.show_in_context_menu = placements.context_menu;
 
   auto& registered = command_manager_.RegisterCommand(std::move(descriptor));
-  registered.show_in_toolbar = placements.toolbar;
   registered.show_in_context_menu = placements.context_menu;
 
   for (auto& contribution : placements.main_menu) {
