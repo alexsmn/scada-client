@@ -453,19 +453,47 @@ jobs:
       working-directory: client
       run: ctest --preset test-release --output-on-failure --timeout 300
 
-    # Offscreen on Windows. The native `windows` platform hangs constructing
-    # the QApplication on a hosted runner, which has no interactive desktop:
-    # the first run to reach this step spent GitHub's whole six-hour budget
-    # timing out Qt test after Qt test at ctest's 300s bound -- trivial ones
-    # included (UiLocaleNameTest, GoldenImageTest) -- and finished 1437 of
-    # 2466 (scada-client run 36342865771). Every test binary links the
-    # offscreen plugin, and a bare `offscreen` is upgraded to the fixtures'
-    # 1920x1080 screen description, so the whole run is safe on it.
+    # Windows needs Qt's plugin directory named, because its Qt is SHARED.
+    # macOS's triplet (arm64-osx) builds Qt statically, so
+    # `qt_import_plugins` really links the offscreen plugin into each test
+    # executable there. x64-windows builds Qt as DLLs, and that call then
+    # links nothing: qoffscreen.dll has to be found at run time, and vcpkg's
+    # app-local deployment copies the Qt DLLs beside the tests but not
+    # `plugins/`. Every test that builds a QApplication then hung with no
+    # output after `[ RUN ]`, natively (scada-client run 36342865771, 1437 of
+    # 2466 finished) and offscreen alike (run 37231782423: 1061 non-Qt tests
+    # passed, then every Qt test timed out until the six-hour job limit). The
+    # first run blamed the native `windows` platform; the second showed it was
+    # never the platform, since offscreen hung the same way.
+    #
+    # The probe runs ONE QApplication test with QT_DEBUG_PLUGINS under a
+    # two-minute bound before the suite, so a plugin that still cannot be
+    # found fails this job in minutes, prints Qt's own account of where it
+    # looked, and does not spend six hours on 1400 identical timeouts.
+    - name: Probe Qt plugin loading (Windows)
+      if: runner.os == 'Windows'
+      working-directory: client
+      shell: bash
+      env:
+        QT_QPA_PLATFORM: offscreen
+        QT_PLUGIN_PATH: ${{ github.workspace }}/client/build/ninja/vcpkg_installed/x64-windows/Qt6/plugins
+        QT_DEBUG_PLUGINS: 1
+      run: |
+        ls build/ninja/vcpkg_installed/x64-windows/Qt6/plugins/platforms
+        timeout 120 build/ninja/bin/Release/aui_qt_unittests.exe \
+          --gtest_filter=DialogServiceImplQtTest.RunMessageBoxMapsNoButtonResult
+
+    # Offscreen, because a hosted runner has no interactive desktop, and a
+    # bare `offscreen` is upgraded to the fixtures' 1920x1080 screen
+    # description. `timeout-minutes` bounds the step well inside the job's six
+    # hours, so a regression of the hang above still reaches the log upload.
     - name: Test (Release, offscreen)
       if: runner.os == 'Windows'
       working-directory: client
+      timeout-minutes: 90
       env:
         QT_QPA_PLATFORM: offscreen
+        QT_PLUGIN_PATH: ${{ github.workspace }}/client/build/ninja/vcpkg_installed/x64-windows/Qt6/plugins
       run: ctest --preset test-release --output-on-failure --timeout 300
 
     - name: Test (Release, under Xvfb)
