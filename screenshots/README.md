@@ -30,7 +30,7 @@ Workspace views and panels — what the operator works in. (50)
 | **Device metrics**<br>`device-metrics.png` | <img src="device-metrics.png" alt="Device metrics" width="360"> | [Light](device-metrics-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
 | **Device watch**<br>`device-watch.png` | <img src="device-watch.png" alt="Device watch" width="360"> | [Light](device-watch-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/device-watch/) |
 | **Devices**<br>`devices.png` | <img src="devices.png" alt="Devices" width="360"> | [Light](devices-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
-| **Events alarm surface**<br>`events-alarm-surface.png` | <img src="events-alarm-surface.png" alt="Events alarm surface" width="360"> | [Light](events-alarm-surface-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/events/) |
+| **Events alarm surface**<br>`events-alarm-surface.png` | <img src="events-alarm-surface.png" alt="Events alarm surface" width="360"> | [Light](events-alarm-surface-light.png) |
 | **Events**<br>`events.png` | <img src="events.png" alt="Events" width="360"> | [Light](events-light.png) |
 | **Favorites**<br>`favorites.png` | <img src="favorites.png" alt="Favorites" width="360"> | [Light](favorites-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
 | **Files**<br>`files.png` | <img src="files.png" alt="Files" width="360"> | [Light](files-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
@@ -74,23 +74,23 @@ Modal and overlay surfaces. (23)
 | **Change password**<br>`change-password.png` | <img src="change-password.png" alt="Change password" width="360"> | [Light](change-password-light.png) |
 | **Client login**<br>`client-login.png` | <img src="client-login.png" alt="Client login" width="360"> | [Light](client-login-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/getting-started/) |
 | **Command palette**<br>`command-palette.png` | <img src="command-palette.png" alt="Command palette" width="360"> | [Light](command-palette-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
-| **Control select confirm**<br>`control-select-confirm.png` | <img src="control-select-confirm.png" alt="Control select confirm" width="360"> | [Light](control-select-confirm-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
+| **Control select confirm**<br>`control-select-confirm.png` | <img src="control-select-confirm.png" alt="Control select confirm" width="360"> | [Light](control-select-confirm-light.png) |
 | **Csv export**<br>`csv-export.png` | <img src="csv-export.png" alt="Csv export" width="360"> | [Light](csv-export-light.png) |
 | **Limits**<br>`limits.png` | <img src="limits.png" alt="Limits" width="360"> | [Light](limits-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/architecture/) |
 | **Menu create object service**<br>`menu-create-object-service.png` | <img src="menu-create-object-service.png" alt="Menu create object service" width="360"> | [Light](menu-create-object-service-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/data-items/) |
 | **Message box**<br>`message-box.png` | <img src="message-box.png" alt="Message box" width="360"> | [Light](message-box-light.png) |
 | **Multi create**<br>`multi-create.png` | <img src="multi-create.png" alt="Multi create" width="360"> | [Light](multi-create-light.png) |
 | **Settings**<br>`settings.png` | <img src="settings.png" alt="Settings" width="360"> | [Light](settings-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
-| **Ti manual control**<br>`ti-manual-control.png` | <img src="ti-manual-control.png" alt="Ti manual control" width="360"> | [Light](ti-manual-control-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
-| **Ti remote control confirm**<br>`ti-remote-control-confirm.png` | <img src="ti-remote-control-confirm.png" alt="Ti remote control confirm" width="360"> | [Light](ti-remote-control-confirm-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
-| **Ti remote control disabled**<br>`ti-remote-control-disabled.png` | <img src="ti-remote-control-disabled.png" alt="Ti remote control disabled" width="360"> | [Light](ti-remote-control-disabled-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
-| **Ti remote control enabled**<br>`ti-remote-control-enabled.png` | <img src="ti-remote-control-enabled.png" alt="Ti remote control enabled" width="360"> | [Light](ti-remote-control-enabled-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
+| **Ti manual control**<br>`ti-manual-control.png` | <img src="ti-manual-control.png" alt="Ti manual control" width="360"> | [Light](ti-manual-control-light.png) |
+| **Ti remote control confirm**<br>`ti-remote-control-confirm.png` | <img src="ti-remote-control-confirm.png" alt="Ti remote control confirm" width="360"> | [Light](ti-remote-control-confirm-light.png) |
+| **Ti remote control disabled**<br>`ti-remote-control-disabled.png` | <img src="ti-remote-control-disabled.png" alt="Ti remote control disabled" width="360"> | [Light](ti-remote-control-disabled-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/data-items/) |
+| **Ti remote control enabled**<br>`ti-remote-control-enabled.png` | <img src="ti-remote-control-enabled.png" alt="Ti remote control enabled" width="360"> | [Light](ti-remote-control-enabled-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/data-items/) |
 | **Time range**<br>`time-range.png` | <img src="time-range.png" alt="Time range" width="360"> | [Light](time-range-light.png) |
 | **Transport**<br>`transport.png` | <img src="transport.png" alt="Transport" width="360"> | [Light](transport-light.png) |
-| **Ts manual control**<br>`ts-manual-control.png` | <img src="ts-manual-control.png" alt="Ts manual control" width="360"> | [Light](ts-manual-control-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
-| **Ts remote control confirm**<br>`ts-remote-control-confirm.png` | <img src="ts-remote-control-confirm.png" alt="Ts remote control confirm" width="360"> | [Light](ts-remote-control-confirm-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
-| **Ts remote control disabled**<br>`ts-remote-control-disabled.png` | <img src="ts-remote-control-disabled.png" alt="Ts remote control disabled" width="360"> | [Light](ts-remote-control-disabled-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
-| **Ts remote control enabled**<br>`ts-remote-control-enabled.png` | <img src="ts-remote-control-enabled.png" alt="Ts remote control enabled" width="360"> | [Light](ts-remote-control-enabled-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
+| **Ts manual control**<br>`ts-manual-control.png` | <img src="ts-manual-control.png" alt="Ts manual control" width="360"> | [Light](ts-manual-control-light.png) |
+| **Ts remote control confirm**<br>`ts-remote-control-confirm.png` | <img src="ts-remote-control-confirm.png" alt="Ts remote control confirm" width="360"> | [Light](ts-remote-control-confirm-light.png) |
+| **Ts remote control disabled**<br>`ts-remote-control-disabled.png` | <img src="ts-remote-control-disabled.png" alt="Ts remote control disabled" width="360"> | [Light](ts-remote-control-disabled-light.png) |
+| **Ts remote control enabled**<br>`ts-remote-control-enabled.png` | <img src="ts-remote-control-enabled.png" alt="Ts remote control enabled" width="360"> | [Light](ts-remote-control-enabled-light.png) |
 | **Workbench login**<br>`workbench-login.png` | <img src="workbench-login.png" alt="Workbench login" width="360"> | [Light](workbench-login-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
 
 ## Menus
