@@ -72,6 +72,10 @@ class Table : public QTableView {
   // QTableView
   virtual void changeEvent(QEvent* event) override;
   virtual void keyPressEvent(QKeyEvent* event) override;
+  // Claims Copy ahead of a window-wide shortcut on the same key: this view
+  // copies its own cells on Ctrl+C, and a window shortcut would otherwise take
+  // the key before keyPressEvent sees it.
+  virtual bool event(QEvent* event) override;
 
  private:
   void ApplyThemePalette();

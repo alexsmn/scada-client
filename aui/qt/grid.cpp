@@ -369,6 +369,19 @@ void Grid::RequestFocus() {
   setFocus();
 }
 
+bool Grid::event(QEvent* event) {
+  // Qt offers a key to the focus widget as a ShortcutOverride before it
+  // consults the shortcut map; accepting it delivers the key here as an
+  // ordinary key press instead. Only Copy: it is the one key this view
+  // handles itself that a window shortcut also claims.
+  if (event->type() == QEvent::ShortcutOverride &&
+      static_cast<QKeyEvent*>(event)->matches(QKeySequence::Copy)) {
+    event->accept();
+    return true;
+  }
+  return QTableView::event(event);
+}
+
 void Grid::keyPressEvent(QKeyEvent* event) {
   if (event->matches(QKeySequence::Copy)) {
     CopyToClipboard();

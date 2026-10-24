@@ -1,10 +1,10 @@
 #pragma once
 
-#include <boost/json.hpp>
 #include "aui/handlers.h"
 #include "aui/models/grid_range.h"
 #include "aui/qt/grid_model_adapter.h"
 #include "aui/qt/item_delegate.h"
+#include <boost/json.hpp>
 
 #include <QPen>
 #include <QTableView>
@@ -83,6 +83,10 @@ class Grid final : public QTableView {
   virtual void selectionChanged(const QItemSelection& selected,
                                 const QItemSelection& deselected) override;
   virtual void keyPressEvent(QKeyEvent* event) override;
+  // Claims Copy ahead of a window-wide shortcut on the same key: this view
+  // copies its own cells on Ctrl+C, and a window shortcut would otherwise take
+  // the key before keyPressEvent sees it.
+  virtual bool event(QEvent* event) override;
 
  private:
   void UpdateSelectionRange();
@@ -109,4 +113,4 @@ class Grid final : public QTableView {
   QItemSelectionRange expand_range_;
 };
 
-}  // namespace aui
+}  // namespace scada::aui

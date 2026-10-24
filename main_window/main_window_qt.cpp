@@ -24,6 +24,7 @@
 #include "main_window/alarm_state_cluster_qt.h"
 #include "main_window/breadcrumb_qt.h"
 #include "main_window/command_palette_launcher.h"
+#include "main_window/command_shortcuts_qt.h"
 #include "main_window/context_bar_qt.h"
 #include "main_window/main_menu/main_menu_model.h"
 #include "main_window/main_window_command_router.h"
@@ -245,6 +246,11 @@ MainWindow::MainWindow(MainWindowContext&& context)
           .parent_ = *this,
           .node_service_ = node_service_,
           .session_service_ = session_service_});
+  // Ctrl+C, Ctrl+V and Delete, window-wide; enabled by OnSelectionChanged.
+  command_shortcuts_ = std::make_unique<CommandShortcuts>(
+      ui_command_registry_.command_manager(),
+      [this](unsigned command_id) { return ResolveViewCommand(command_id); },
+      *this);
   CreateStatusBar();
 
   if (!g_hide_for_testing) {
@@ -846,6 +852,11 @@ void MainWindow::OnSelectionChanged() {
   // menu-create-object and menu-parameters-elements captures are what noticed.
   if (context_menu_model_)
     context_menu_model_->MenuWillShow();
+
+  // Null before the constructor has built them and after the destructor has
+  // begun; a key only reaches a shortcut whose command applies right now.
+  if (command_shortcuts_)
+    command_shortcuts_->Refresh();
 }
 
 void MainWindow::OnShowTabPopupMenu(OpenedView& view,

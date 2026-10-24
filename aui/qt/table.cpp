@@ -367,6 +367,19 @@ void Table::changeEvent(QEvent* event) {
   }
 }
 
+bool Table::event(QEvent* event) {
+  // Qt offers a key to the focus widget as a ShortcutOverride before it
+  // consults the shortcut map; accepting it delivers the key here as an
+  // ordinary key press instead. Only Copy: it is the one key this view
+  // handles itself that a window shortcut also claims.
+  if (event->type() == QEvent::ShortcutOverride &&
+      static_cast<QKeyEvent*>(event)->matches(QKeySequence::Copy)) {
+    event->accept();
+    return true;
+  }
+  return QTableView::event(event);
+}
+
 void Table::keyPressEvent(QKeyEvent* event) {
   if (key_press_handler_ &&
       key_press_handler_(static_cast<KeyCode>(event->key())))

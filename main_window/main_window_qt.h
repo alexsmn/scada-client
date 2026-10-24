@@ -23,6 +23,7 @@ class ActivityBar;
 class ContextBar;
 class RailPagesController;
 class RailUtilitiesController;
+class CommandShortcuts;
 class PaneModeController;
 class InspectorPanel;
 struct InspectorOpenAction;
@@ -237,6 +238,8 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // The rail's pinned utilities (Settings, Users) and their marker. Built with
   // the rail, so null until CreateActivityBar has run.
   std::unique_ptr<RailUtilitiesController> rail_utilities_;
+  // The catalog's keyboard shortcuts (Copy, Paste, Delete), window-wide.
+  std::unique_ptr<CommandShortcuts> command_shortcuts_;
   // The sidebar's mode policy, and the adapter it drives this window through.
   // Built with the rail, so both are null until CreateActivityBar has run.
   class PaneModeHostImpl;
