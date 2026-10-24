@@ -5,6 +5,7 @@
 #include "aui/test/app_environment.h"
 #include "profile/profile.h"
 
+#include <QDateEdit>
 #include <QDateTime>
 #include <QDialog>
 #include <gtest/gtest.h>
@@ -67,4 +68,25 @@ TEST_F(TimeRangeDialogTest, AcceptedDialogReturnsSelectedInitialRange) {
   // Accepting unchanged must not move the end: the dialog used to show the
   // resolved end (the midnight after the last day), so each OK added a day.
   EXPECT_EQ(selected_range.end, initial_range.end);
+}
+
+// A reversed period used to be accepted and then silently replaced by the last
+// hour (backlog 912). The dialog must refuse it and stay open.
+TEST_F(TimeRangeDialogTest, ReversedPeriodIsNotAccepted) {
+  const scada::RelativeTimeRange initial_range{
+      ToBaseTime({QDate{2024, 1, 2}, QTime{0, 0}}),
+      ToBaseTime({QDate{2024, 1, 3}, QTime{0, 0}}), /*dates=*/true};
+
+  bool stayed_open = false;
+  auto result = scada::aui::qt::test::StartAwaitable(ShowTimeRangeDialog(
+      dialog_service_, TimeRangeContext{profile_, initial_range}));
+  scada::aui::qt::test::ProcessEventsUntilSettled(
+      result, [&stayed_open](QDialog& dialog) {
+        dialog.findChild<QDateEdit*>("endDateEdit")->setDate(QDate{2024, 1, 1});
+        dialog.accept();
+        stayed_open = dialog.result() != QDialog::Accepted;
+        dialog.reject();
+      });
+
+  EXPECT_TRUE(stayed_open);
 }

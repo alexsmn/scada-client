@@ -5,6 +5,8 @@
 #include "aui/qt/dialog_util.h"
 #include "ui_time_range_dialog.h"
 
+#include <QPushButton>
+
 namespace {
 
 QDateTime ToQDateTime(scada::Time time) {
@@ -31,6 +33,11 @@ class TimeRangeDialog final : public QDialog, private TimeRangeContext {
   virtual void accept() override;
 
  private:
+  // A custom period whose end is not after its start used to be accepted and
+  // then silently replaced by the last hour in `ToTimeRange` (backlog 912).
+  bool IsRangeValid() const;
+  void UpdateOkButton();
+
   Ui::TimeRangeDialog ui;
 };
 
@@ -57,9 +64,38 @@ TimeRangeDialog::TimeRangeDialog(TimeRangeContext&& context, QWidget* parent)
 
   ui.startTimeEdit->setTime(start.time());
   ui.endTimeEdit->setTime(end.time());
+
+  connect(ui.startDateEdit, &QDateEdit::dateChanged, this,
+          &TimeRangeDialog::UpdateOkButton);
+  connect(ui.endDateEdit, &QDateEdit::dateChanged, this,
+          &TimeRangeDialog::UpdateOkButton);
+  connect(ui.startTimeEdit, &QTimeEdit::timeChanged, this,
+          &TimeRangeDialog::UpdateOkButton);
+  connect(ui.endTimeEdit, &QTimeEdit::timeChanged, this,
+          &TimeRangeDialog::UpdateOkButton);
+  connect(ui.timeGroupBox, &QGroupBox::toggled, this,
+          &TimeRangeDialog::UpdateOkButton);
+  UpdateOkButton();
+}
+
+bool TimeRangeDialog::IsRangeValid() const {
+  // Dates-only: the end is a whole day and `ToTimeRange` adds it, so one day
+  // (start == end) is a valid period. With times, the end must be later.
+  if (!ui.timeGroupBox->isChecked())
+    return ui.startDateEdit->date() <= ui.endDateEdit->date();
+  return QDateTime{ui.startDateEdit->date(), ui.startTimeEdit->time()} <
+         QDateTime{ui.endDateEdit->date(), ui.endTimeEdit->time()};
+}
+
+void TimeRangeDialog::UpdateOkButton() {
+  if (QPushButton* ok = ui.buttonBox->button(QDialogButtonBox::Ok))
+    ok->setEnabled(IsRangeValid());
 }
 
 void TimeRangeDialog::accept() {
+  if (!IsRangeValid())
+    return;
+
   bool dates = !ui.timeGroupBox->isChecked();
   QDateTime start{ui.startDateEdit->date(), ui.startTimeEdit->time()};
   QDateTime end{ui.endDateEdit->date(), ui.endTimeEdit->time()};
