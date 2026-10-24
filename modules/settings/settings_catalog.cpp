@@ -33,10 +33,11 @@ struct SettingDescriptor {
 
 // The inventory, in screen order.
 //
-// Fourteen rows over five categories, which is the Qt half of the twenty rows
-// `settings-rows.html` counts: six of that sheet's rows are web-only (the two
+// Fifteen rows over five categories, which is the Qt half of the twenty rows
+// `settings-rows.html` draws: six of that sheet's rows are web-only (the two
 // layout sliders, the rail and Explorer switches, the plant name and the
 // configuration snapshot) and are absent here rather than drawn disabled.
+// Speech is on the sheet and was missing here until backlog 877.
 //
 // Every entry names a command the shell registers today. Adding one without a
 // command is how an invented preference would get in, which is the failure the
@@ -50,11 +51,9 @@ constexpr std::array kDescriptors = {
         .category = SettingCategory::kAppearance,
         .scope = SettingScope::kClient,
         .control = SettingControl::kChoice,
-        .description =
-            "Language of the operator interface. Stored on this machine, so it "
-            "does not follow the account to another workstation — or to the "
-            "web "
-            "client.",
+        .description = "Language of the operator interface. Stored on this "
+                       "computer, so it "
+                       "does not follow the account to another workstation.",
     },
     SettingDescriptor{
         .command_id = ID_SETTINGS_APPEARANCE,
@@ -87,12 +86,24 @@ constexpr std::array kDescriptors = {
         .scope = SettingScope::kProfile,
         .control = SettingControl::kToggle,
         .description =
-            "Play the annunciator tone while an event stands unacknowledged. "
-            "One "
-            "key on both clients, so a choice made in either reaches the "
-            "other. It "
-            "silences the tone only: the banner and the severity colours are "
-            "ISA-18.2 signals and stay unconditional.",
+            "Sound a tone when an alarm needs attention. On Windows the tone "
+            "repeats until the alarms are acknowledged; elsewhere it sounds "
+            "once. It silences the tone only: the banner and the severity "
+            "colours are ISA-18.2 signals and stay unconditional.",
+    },
+    // Beside the tone, as in the Settings menu: the two annunciators of the
+    // same edge. Undescribed, the switch had no row on this screen — the only
+    // place the Qt client offers it — while it is on by default on Windows
+    // (backlog 877).
+    SettingDescriptor{
+        .command_id = ID_OPT_SPEECH,
+        .id = "speech",
+        .category = SettingCategory::kEventsAlarms,
+        .scope = SettingScope::kProfile,
+        .control = SettingControl::kToggle,
+        .description =
+            "Announce a new alarm aloud. Drawn disabled where this computer "
+            "has no voice.",
     },
     SettingDescriptor{
         .command_id = ID_SHOW_EVENTS,
@@ -109,7 +120,7 @@ constexpr std::array kDescriptors = {
         .scope = SettingScope::kProfile,
         .control = SettingControl::kToggle,
         .description =
-            "Drop an event from the view once it has been acknowledged.",
+            "Close the event view once every event has been acknowledged.",
     },
     SettingDescriptor{
         .command_id = ID_EVENT_FLASH_WINDOW,
@@ -125,11 +136,7 @@ constexpr std::array kDescriptors = {
         .category = SettingCategory::kControl,
         .scope = SettingScope::kProfile,
         .control = SettingControl::kToggle,
-        .description =
-            "Confirm before sending a control command. The web client confirms "
-            "every control unconditionally, so it publishes no switch rather "
-            "than "
-            "one that is always on.",
+        .description = "Confirm before sending a control command.",
     },
     SettingDescriptor{
         .command_id = ID_SHOW_WRITEOK,

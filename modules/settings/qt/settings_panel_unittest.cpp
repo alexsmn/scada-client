@@ -179,7 +179,7 @@ TEST_F(SettingsPanelTest, EveryRowCarriesATitleAChipADescriptionAndAControl) {
   // The chip names the store, and the description says what ticking it does.
   EXPECT_TRUE(texts.contains(QStringLiteral("Profile")));
   EXPECT_TRUE(std::ranges::any_of(texts, [](const QString& text) {
-    return text.contains(QStringLiteral("annunciator"));
+    return text.contains(QStringLiteral("tone"));
   }));
 }
 

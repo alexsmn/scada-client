@@ -78,6 +78,7 @@ class SettingsMenuFixture : public ::testing::Test {
     settings_.AddCheckItem(ID_EVENT_FLASH_WINDOW,
                            u"Flash Main Window on Event");
     settings_.AddCheckItem(ID_EVENT_PLAY_SOUND, u"Sound Alarm on Event");
+    settings_.AddCheckItem(ID_OPT_SPEECH, u"Speech");
     settings_.AddSeparator(scada::aui::NORMAL_SEPARATOR);
     settings_.AddItem(ID_VIEW_PUBLIC_FOLDER, u"Open Displays Folder");
 
@@ -186,7 +187,7 @@ TEST_F(SettingsMenuFixture, RowsAreInScreenOrderNotMenuOrder) {
   EXPECT_EQ(Ids(Catalog()),
             (std::vector<std::string>{
                 "language", "colour-scheme", "widget-style", "sound-on-events",
-                "show-events", "hide-events", "flash-window",
+                "speech", "show-events", "hide-events", "flash-window",
                 "control-confirmation", "control-success", "status-bar",
                 "modus-topology", "open-displays-folder"}));
 }
@@ -273,7 +274,7 @@ TEST_F(SettingsMenuFixture, CategoriesGroupInScreenOrderAndDropEmptyOnes) {
                 SettingCategory::kAppearance, SettingCategory::kEventsAlarms,
                 SettingCategory::kControl, SettingCategory::kWorkspace,
                 SettingCategory::kDisplays}));
-  EXPECT_EQ(sizes, (std::vector<size_t>{3, 4, 2, 1, 2}));
+  EXPECT_EQ(sizes, (std::vector<size_t>{3, 5, 2, 1, 2}));
 
   // A category with nothing left in it is a table-of-contents entry that
   // scrolls nowhere, so it is dropped rather than drawn empty.
@@ -334,11 +335,24 @@ TEST_F(SettingsMenuFixture, ScopeTabsOfferOnlyScopesSomeRowUses) {
 // holds.
 TEST_F(SettingsMenuFixture, ActionsAreCountedApartAndAreNeverAScopeTab) {
   const SettingRowCounts counts = CountSettingRows(Catalog());
-  EXPECT_EQ(counts.settings, 11u);
+  EXPECT_EQ(counts.settings, 12u);
   EXPECT_EQ(counts.actions, 1u);
 
   EXPECT_EQ(std::ranges::count(SettingStorageScopes(), SettingScope::kAction),
             0);
+}
+
+}  // namespace
+
+namespace {
+
+// The speech switch is published to the Settings menu, and the Qt client has no
+// other place to reach it; with no descriptor it had no row (backlog 877).
+TEST_F(SettingsMenuFixture, SpeechHasARowBesideTheTone) {
+  const std::vector<SettingRow> rows = Catalog();
+  const SettingRow& speech = Require(rows, "speech");
+  EXPECT_EQ(speech.category, SettingCategory::kEventsAlarms);
+  EXPECT_EQ(speech.command_id, static_cast<unsigned>(ID_OPT_SPEECH));
 }
 
 }  // namespace
