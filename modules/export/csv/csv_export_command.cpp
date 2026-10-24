@@ -77,7 +77,11 @@ class CsvExportCommandRun
     auto file_name = MakeFileName(window_title_);
     file_name += ".csv";
 
-    auto csv_export_dir = GetString16(profile_.data(), "csvPath");
+    std::filesystem::path csv_export_dir{
+        GetString16(profile_.data(), "csvPath")};
+    // A profile saved before backlog 931 holds the previous file itself.
+    if (csv_export_dir.extension() == ".csv")
+      csv_export_dir = csv_export_dir.parent_path();
 
     // Named local: SaveParams::title is a u16string_view, so it must not be
     // bound to a temporary that the struct outlives.
@@ -87,7 +91,9 @@ class CsvExportCommandRun
         .default_path = csv_export_dir / file_name,
         .filters = kFilters,
     });
-    SetKey(profile_.data(), "csvPath", path_.u16string());
+    // The directory, not the file: the next default is built by appending a
+    // file name to it, which made it `old.csv/Title.csv` (backlog 931).
+    SetKey(profile_.data(), "csvPath", path_.parent_path().u16string());
 
     // Ask the data whether it can expand before offering the choice. This is a
     // best-effort question: the export itself runs later and is the thing that

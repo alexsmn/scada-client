@@ -110,8 +110,10 @@ TEST_F(CsvExportCommandTest, WritesCsvAndPromptsToOpen) {
 
   WaitAwaitable(executor_, Run());
 
+  // The folder is remembered, not the file, so the next default is
+  // `<folder>/<title>.csv` rather than `old.csv/<title>.csv` (backlog 931).
   EXPECT_EQ(GetString16(profile_.data(), "csvPath"),
-            export_file_path.u16string());
+            export_file_path.parent_path().u16string());
   EXPECT_EQ(ReadFile(export_file_path), "Name\r\nvalue");
 }
 
