@@ -5,7 +5,7 @@
 # docs/client/aui-extraction.md for the dependency contract.
 
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
-  cmake_minimum_required(VERSION 3.25)
+  cmake_minimum_required(VERSION 3.27)
   project(scada-client-aui VERSION 2.6.0 LANGUAGES CXX)
 
   set(CMAKE_CXX_STANDARD 23)

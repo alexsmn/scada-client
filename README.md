@@ -100,7 +100,7 @@ directories — lives in one `.scada-local.cmake` beside `build-support/`.
 ### Prerequisites
 
 - A C++23 compiler (MSVC, Clang, or GCC)
-- CMake 3.25+ with [vcpkg](https://vcpkg.io/)
+- CMake 3.27+ with [vcpkg](https://vcpkg.io/)
 - Qt 6 — `qtbase` (widgets), `qttools`, `qttranslations`; `qtactiveqt` on Windows
 - Boost — Asio, Beast, Signals2, Algorithm, Range, JSON, Process, Program Options, Date Time, System
 - GoogleTest
