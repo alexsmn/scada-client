@@ -7,12 +7,15 @@
 #include "base/file_settings_store.h"
 #include "base/string_util.h"
 #include "net/net_executor_adapter.h"
+#include "opcua/client/application_pki.h"
+#include "opcua/client/endpoint_url.h"
 
 #include "base/u16format.h"
 #include "scada/session_service.h"
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <boost/asio/ip/host_name.hpp>
 #include <boost/range/iterator_range.hpp>
 
 #include <algorithm>
@@ -78,6 +81,29 @@ const char kForceLogoffMessage[] =
     "The specified username is already in use by another session. "
     "Disconnect the open session and continue?";
 const wchar_t kLoginFailedMessage[] = L"Error connecting to server ({}).";
+// A first meeting with a server's certificate. The fingerprint is what the
+// user compares against one the server's operator publishes -- the GCP demo
+// serves it at https://<host>/opcua/fingerprint.txt.
+const char kTrustCertificateMessage[] =
+    "The server presented a certificate this computer has not trusted "
+    "before.\n\n{}\nSHA-256 fingerprint:\n{}\n\nCompare the fingerprint "
+    "with the one the server's operator publishes. Trust this certificate and "
+    "connect?";
+// A different certificate from a host already trusted: what an attacker
+// between the client and the server would look like.
+const char kCertificateChangedMessage[] =
+    "WARNING: the server at this address presented a DIFFERENT certificate "
+    "from the one this computer trusted before. Someone intercepting the "
+    "connection would look exactly like this.\n\n{}\nSHA-256 fingerprint:\n"
+    "{}\n\nTrust the new certificate only if the server's operator confirms "
+    "that it was replaced. Trust it and connect?";
+// The application instance certificate this client generates for itself
+// names it by host (OPC UA Part 6 §6.2.2 Application Instance Certificate,
+// https://reference.opcfoundation.org/Core/Part6/v105/docs/6.2.2).
+const char kApplicationUriPrefix[] = "urn:";
+const char kApplicationUriSuffix[] = ":Telecontrol:ScadaClient";
+const char kPkiDirectoryKey[] = "OpcUaPkiDirectory";
+
 const char kAutoLoginMessage[] =
     "To disable automatic login, hold Ctrl when launching the application.";
 
@@ -137,6 +163,26 @@ void AppendMruList(std::vector<std::u16string>& list,
     list.resize(10);
 }
 
+std::filesystem::path DefaultPkiDirectory() {
+#ifdef _WIN32
+  const char* base = std::getenv("LOCALAPPDATA");
+  return std::filesystem::path{base ? base : "."} / "Telecontrol" /
+         "SCADA Client" / "pki";
+#else
+  std::filesystem::path base_dir =
+      std::getenv("HOME") ? std::getenv("HOME") : ".";
+  return base_dir / "Library/Application Support/Telecontrol/SCADA Client/pki";
+#endif
+}
+
+// The host part of what the user typed, as a SAN check compares it.
+std::string DialledHost(const std::string& server_host) {
+  const std::string url = server_host.starts_with("opc.tcp://")
+                              ? server_host
+                              : "opc.tcp://" + server_host;
+  return opcua::ParseOpcTcpUrl(url).host;
+}
+
 std::shared_ptr<SettingsStore> CreateDefaultSettingsStore() {
 #ifdef _WIN32
   return std::make_shared<RegistrySettingsStore>(HKEY_CURRENT_USER,
@@ -178,6 +224,9 @@ LoginController::LoginController(AnyExecutor executor,
       ParseSecurityModeIndex(settings_store_->ReadString("SecurityMode"));
   client_certificate_path = settings_store_->ReadString("ClientCertificate");
   client_private_key_path = settings_store_->ReadString("ClientPrivateKey");
+  const auto pki_directory = settings_store_->ReadString(kPkiDirectoryKey);
+  pki_directory_ = pki_directory.empty() ? DefaultPkiDirectory()
+                                         : std::filesystem::path{pki_directory};
 
   const auto& list = GetDataServicesInfoList();
   server_type_data_.resize(list.size());
@@ -280,6 +329,11 @@ void LoginController::OnLoginFailed(const scada::Status& status) {
   if (login_failed_handler && login_failed_handler(status))
     return;
 
+  if (status.code() == scada::StatusCode::Bad_CertificateUntrusted &&
+      PromptToTrustServerCertificate()) {
+    return;
+  }
+
   if (status.code() == scada::StatusCode::Bad_UserIsAlreadyLoggedOn) {
     CoSpawn(executor_, [executor = executor_, controller = weak_from_this(),
                         prompt = dialog_service_.RunMessageBox(
@@ -303,6 +357,21 @@ void LoginController::OnLoginFailed(const scada::Status& status) {
 void LoginController::Connect(bool allow_remote_logoff) {
   LOG_INFO(logger_) << "Connect"
                     << LOG_TAG("AllowRemoteLogoff", allow_remote_logoff);
+
+  // A secured OPC UA connect needs an application instance certificate; make
+  // one on first use rather than asking the user for PEM files.
+  if (IsSecuritySupported() && security_mode_index != 0 &&
+      (client_certificate_path.empty() || client_private_key_path.empty())) {
+    std::string host_name = boost::asio::ip::host_name();
+    opcua::ApplicationPki pki{pki_directory_};
+    const auto status = pki.EnsureOwnCertificate(
+        std::string{kApplicationUriPrefix} + host_name + kApplicationUriSuffix,
+        host_name);
+    if (status.bad()) {
+      LOG_WARNING(logger_) << "Cannot create the OPC UA client certificate"
+                           << LOG_TAG("Directory", pki_directory_.string());
+    }
+  }
 
   if (!CreateDataServices(server_type_, services_context_, services_)) {
     LOG_WARNING(logger_) << "Canot create data services";
@@ -375,7 +444,71 @@ scada::SessionSecuritySettings LoginController::MakeSecuritySettings() const {
   }
   settings.client_certificate_path = client_certificate_path;
   settings.client_private_key_path = client_private_key_path;
+  if (settings.mode == scada::SessionSecuritySettings::Mode::None)
+    return settings;
+
+  // A secured connect always authenticates the server against this client's
+  // own trust list -- it used to trust whatever certificate discovery
+  // returned, which is a man in the middle's to choose (OPC UA Part 4 §6.1.3,
+  // https://reference.opcfoundation.org/Core/Part4/v105/docs/6.1.3). A refused
+  // certificate lands in rejected/, where PromptToTrustServerCertificate()
+  // finds it to ask about.
+  const opcua::ApplicationPki pki{pki_directory_};
+  settings.trusted_certificates_dir = pki.trusted_dir().string();
+  settings.rejected_certificates_dir = pki.rejected_dir().string();
+  // No certificate configured: use the one this client generated for itself.
+  if (settings.client_certificate_path.empty() ||
+      settings.client_private_key_path.empty()) {
+    settings.client_certificate_path = pki.own_certificate().string();
+    settings.client_private_key_path = pki.own_private_key().string();
+  }
   return settings;
+}
+
+bool LoginController::PromptToTrustServerCertificate() {
+  const opcua::ApplicationPki pki{pki_directory_};
+  const auto rejected = pki.NewestRejected(DialledHost(server_host));
+  if (!rejected)
+    return false;
+  const std::u16string message = u16format(
+      rejected->replaces_trusted ? Translate(kCertificateChangedMessage)
+                                 : Translate(kTrustCertificateMessage),
+      ToString16(scada::ToLocalizedText(rejected->subject)),
+      ToString16(scada::ToLocalizedText(rejected->sha256_fingerprint)));
+  CoSpawn(executor_,
+          [executor = executor_, controller = weak_from_this(),
+           certificate = rejected->file,
+           prompt = dialog_service_.RunMessageBox(
+               message, {}, MessageBoxMode::QuestionYesNo)]() mutable {
+            return PromptTrustServerCertificateAsync(
+                std::move(executor), std::move(controller),
+                std::move(certificate), std::move(prompt));
+          });
+  return true;
+}
+
+Awaitable<void> LoginController::PromptTrustServerCertificateAsync(
+    AnyExecutor executor,
+    std::weak_ptr<LoginController> controller,
+    std::filesystem::path certificate,
+    Awaitable<MessageBoxResult> prompt) {
+  try {
+    const auto result = co_await std::move(prompt);
+    auto controller_ptr = controller.lock();
+    if (!controller_ptr)
+      co_return;
+    if (result == MessageBoxResult::Yes) {
+      opcua::ApplicationPki pki{controller_ptr->pki_directory_};
+      if (pki.Trust({.file = std::move(certificate)}).good()) {
+        controller_ptr->Connect(false);
+        co_return;
+      }
+    }
+    controller_ptr->login_message_ = true;
+    controller_ptr->error_handler();
+  } catch (...) {
+  }
+  co_return;
 }
 
 Awaitable<void> LoginController::ConnectAsync(

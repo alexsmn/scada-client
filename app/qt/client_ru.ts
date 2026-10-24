@@ -2647,6 +2647,74 @@
         <source>The value cannot be read</source>
         <translation>Значение недоступно для чтения</translation>
     </message>
+    <message>
+        <source>The server presented a certificate this computer has not trusted before.
+
+{}
+SHA-256 fingerprint:
+{}
+
+Compare the fingerprint with the one the server&apos;s operator publishes. Trust this certificate and connect?</source>
+        <translation>Сервер предъявил сертификат, которому этот компьютер ещё не доверял.
+
+{}
+Отпечаток SHA-256:
+{}
+
+Сравните отпечаток с опубликованным администратором сервера. Доверять этому сертификату и подключиться?</translation>
+    </message>
+    <message>
+        <source>WARNING: the server at this address presented a DIFFERENT certificate from the one this computer trusted before. Someone intercepting the connection would look exactly like this.
+
+{}
+SHA-256 fingerprint:
+{}
+
+Trust the new certificate only if the server&apos;s operator confirms that it was replaced. Trust it and connect?</source>
+        <translation>ВНИМАНИЕ: сервер по этому адресу предъявил ДРУГОЙ сертификат, не тот, которому этот компьютер доверял раньше. Именно так выглядел бы перехват соединения.
+
+{}
+Отпечаток SHA-256:
+{}
+
+Доверяйте новому сертификату, только если администратор сервера подтвердил его замену. Доверять ему и подключиться?</translation>
+    </message>
+    <message>
+        <source>The server has reached its maximum number of sessions</source>
+        <translation>Сервер достиг предельного числа сеансов</translation>
+    </message>
+    <message>
+        <source>The server has reached its maximum number of subscriptions</source>
+        <translation>Сервер достиг предельного числа подписок</translation>
+    </message>
+    <message>
+        <source>Too many update requests are queued on the server</source>
+        <translation>На сервере слишком много запросов обновлений в очереди</translation>
+    </message>
+    <message>
+        <source>The server certificate was not issued for this address</source>
+        <translation>Сертификат сервера выдан не для этого адреса</translation>
+    </message>
+    <message>
+        <source>The server certificate was issued for another application</source>
+        <translation>Сертификат сервера выдан другому приложению</translation>
+    </message>
+    <message>
+        <source>The server certificate is not trusted</source>
+        <translation>Сертификат сервера не является доверенным</translation>
+    </message>
+    <message>
+        <source>The certificate is invalid</source>
+        <translation>Недопустимый сертификат</translation>
+    </message>
+    <message>
+        <source>The certificate has expired or is not yet valid</source>
+        <translation>Срок действия сертификата истёк или ещё не начался</translation>
+    </message>
+    <message>
+        <source>The server requires a secure connection</source>
+        <translation>Сервер требует защищённого соединения</translation>
+    </message>
     <!-- Data-quality flags, rendered as a space-separated run
          (client/services/core_ui_text.cpp). Kept abbreviated exactly as before: the
          strip sits in a narrow grid cell. -->

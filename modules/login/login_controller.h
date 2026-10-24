@@ -9,6 +9,7 @@
 #include "scada/data_services_factory.h"
 #include "scada/localized_text.h"
 
+#include <filesystem>
 #include <memory>
 #include <optional>
 
@@ -61,6 +62,12 @@ class LoginController : public std::enable_shared_from_this<LoginController> {
   // above (i.e. the OPC UA backend). Lets the dialog show/hide those fields.
   bool IsSecuritySupported() const;
 
+  // This client's OPC UA PKI directory (opcua::ApplicationPki): its own
+  // application instance certificate and the server certificates the user has
+  // trusted or been asked about. The "OpcUaPkiDirectory" setting overrides the
+  // per-user default, which is what the E2E suite does.
+  const std::filesystem::path& pki_directory() const { return pki_directory_; }
+
  protected:
   void Connect(bool allow_remote_logoff);
 
@@ -85,6 +92,15 @@ class LoginController : public std::enable_shared_from_this<LoginController> {
       AnyExecutor executor,
       std::weak_ptr<LoginController> controller,
       Awaitable<MessageBoxResult> prompt);
+  // Asks whether to trust the server certificate a secured connect refused
+  // as untrusted, and reconnects if the user says yes. Returns false when
+  // there is no refused certificate to ask about.
+  bool PromptToTrustServerCertificate();
+  static Awaitable<void> PromptTrustServerCertificateAsync(
+      AnyExecutor executor,
+      std::weak_ptr<LoginController> controller,
+      std::filesystem::path certificate,
+      Awaitable<MessageBoxResult> prompt);
   static Awaitable<void> ReportLoginErrorAsync(
       AnyExecutor executor,
       std::weak_ptr<LoginController> controller,
@@ -106,6 +122,8 @@ class LoginController : public std::enable_shared_from_this<LoginController> {
   };
 
   std::vector<ServerTypeData> server_type_data_;
+
+  std::filesystem::path pki_directory_;
 
  private:
   BoostLogger logger_{LOG_NAME("LoginController")};

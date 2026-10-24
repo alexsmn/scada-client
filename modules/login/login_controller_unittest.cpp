@@ -6,6 +6,9 @@
 #include "base/memory_settings_store.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
+#include "common/test/scoped_temp_dir.h"
+#include "opcua/client/application_pki.h"
+#include "opcua/transport/binary/crypto.h"
 #include "scada/co_result.h"
 #include "scada/data_services_factory.h"
 #include "scada/session_service_mock.h"
@@ -15,6 +18,8 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <memory>
 #include <string>
 #include <vector>
@@ -128,7 +133,26 @@ class TestLoginController : public LoginController {
     server_type_ = std::move(server_type);
     OnLoginCompleted();
   }
+
+  using LoginController::MakeSecuritySettings;
 };
+
+// Writes a freshly generated certificate for `host` into `dir` and returns its
+// SHA-256 fingerprint, the form the trust prompt shows.
+std::string PlaceCertificate(const std::filesystem::path& dir,
+                             const std::string& name,
+                             const std::string& host) {
+  const std::vector<std::string> dns_names{host};
+  auto generated =
+      opcua::binary::crypto::GenerateApplicationInstanceCertificate(
+          "urn:telecontrol:scada:server", "server", dns_names, 30);
+  EXPECT_TRUE(generated.ok());
+  std::filesystem::create_directories(dir);
+  std::ofstream{dir / name} << generated->certificate_pem;
+  auto certificate =
+      opcua::binary::crypto::LoadPemCertificate(generated->certificate_pem);
+  return opcua::binary::crypto::CertificateSha256Fingerprint(*certificate);
+}
 
 int FindServerTypeIndex(std::string_view name) {
   const auto& services = GetDataServicesInfoList();
@@ -482,6 +506,180 @@ TEST(LoginControllerTest, DestroyedControllerDropsPendingConnectCompletion) {
   Drain(executor);
 
   EXPECT_FALSE(completed);
+}
+
+// A secured connect refused for an untrusted server certificate asks the user,
+// showing the fingerprint, and on Yes moves the certificate to trusted/ and
+// connects again (docs/ops/demo-opcua-exposure.md §8.8).
+TEST(LoginControllerTest, UntrustedServerCertificateIsTrustedOnYes) {
+  scada::ScopedTempDir pki_dir{"login_pki"};
+  auto settings_store = std::make_shared<MemorySettingsStore>();
+  settings_store->Write("OpcUaPkiDirectory", pki_dir.path().string());
+  const opcua::ApplicationPki pki{pki_dir.path()};
+  const auto fingerprint =
+      PlaceCertificate(pki.rejected_dir(), "server.pem", "scada-host");
+
+  TestExecutor executor;
+  StrictMock<MockDialogService> dialog_service;
+  StrictMock<scada::MockSessionService> session_service;
+  ScopedScadaSessionService scoped_session_service{session_service};
+  NullTransportFactory transport_factory;
+  DeferredStatus first_connect;
+  DeferredStatus second_connect;
+  DeferredValue<MessageBoxResult> trust_prompt;
+  std::u16string prompt_text;
+  bool completed = false;
+
+  EXPECT_CALL(session_service, ConnectStatus(_))
+      .WillOnce([executor, &first_connect](
+                    scada::SessionConnectParams) -> scada::CoStatus {
+        co_return co_await first_connect.Wait(executor);
+      })
+      .WillOnce([executor, &second_connect](
+                    scada::SessionConnectParams) -> scada::CoStatus {
+        co_return co_await second_connect.Wait(executor);
+      });
+  EXPECT_CALL(dialog_service, RunMessageBox(/*message=*/_, /*title=*/_,
+                                            MessageBoxMode::QuestionYesNo))
+      // A plain lambda, not a coroutine: `message` views the caller's string,
+      // which is gone by the time a lazy coroutine body would first run.
+      .WillOnce([executor, &trust_prompt, &prompt_text](
+                    std::u16string_view message, std::u16string_view,
+                    MessageBoxMode) {
+        prompt_text = message;
+        return trust_prompt.Wait(executor);
+      });
+
+  auto controller = CreateController(executor, dialog_service, settings_store,
+                                     transport_factory);
+  controller->completion_handler = [&](DataServices) { completed = true; };
+
+  controller->Login();
+  Drain(executor);
+  first_connect.Resolve(scada::StatusCode::Bad_CertificateUntrusted);
+  Drain(executor);
+
+  EXPECT_NE(prompt_text.find(ToString16(scada::ToLocalizedText(fingerprint))),
+            std::u16string::npos);
+  EXPECT_EQ(prompt_text.find(u"DIFFERENT"), std::u16string::npos);
+
+  trust_prompt.Resolve(MessageBoxResult::Yes);
+  Drain(executor);
+  EXPECT_TRUE(std::filesystem::exists(pki.trusted_dir() / "server.pem"));
+  EXPECT_FALSE(std::filesystem::exists(pki.rejected_dir() / "server.pem"));
+
+  second_connect.Resolve();
+  Drain(executor);
+  EXPECT_TRUE(completed);
+}
+
+TEST(LoginControllerTest, DecliningAnUntrustedCertificateTrustsNothing) {
+  scada::ScopedTempDir pki_dir{"login_pki"};
+  auto settings_store = std::make_shared<MemorySettingsStore>();
+  settings_store->Write("OpcUaPkiDirectory", pki_dir.path().string());
+  const opcua::ApplicationPki pki{pki_dir.path()};
+  PlaceCertificate(pki.rejected_dir(), "server.pem", "scada-host");
+
+  TestExecutor executor;
+  StrictMock<MockDialogService> dialog_service;
+  StrictMock<scada::MockSessionService> session_service;
+  ScopedScadaSessionService scoped_session_service{session_service};
+  NullTransportFactory transport_factory;
+  bool error_reported = false;
+
+  EXPECT_CALL(session_service, ConnectStatus(_))
+      .WillOnce([](scada::SessionConnectParams) -> scada::CoStatus {
+        co_return scada::StatusCode::Bad_CertificateUntrusted;
+      });
+  EXPECT_CALL(dialog_service, RunMessageBox(/*message=*/_, /*title=*/_,
+                                            MessageBoxMode::QuestionYesNo))
+      .WillOnce([](std::u16string_view, std::u16string_view,
+                   MessageBoxMode) -> Awaitable<MessageBoxResult> {
+        co_return MessageBoxResult::No;
+      });
+
+  auto controller = CreateController(executor, dialog_service, settings_store,
+                                     transport_factory);
+  controller->error_handler = [&] { error_reported = true; };
+
+  controller->Login();
+  Drain(executor);
+
+  EXPECT_TRUE(error_reported);
+  EXPECT_TRUE(std::filesystem::exists(pki.rejected_dir() / "server.pem"));
+  EXPECT_FALSE(std::filesystem::exists(pki.trusted_dir() / "server.pem"));
+}
+
+// A different certificate for a host already trusted is the shape of a man in
+// the middle; the prompt says so rather than asking the first-meeting question.
+TEST(LoginControllerTest, ChangedServerCertificateIsWarnedAbout) {
+  scada::ScopedTempDir pki_dir{"login_pki"};
+  auto settings_store = std::make_shared<MemorySettingsStore>();
+  settings_store->Write("OpcUaPkiDirectory", pki_dir.path().string());
+  const opcua::ApplicationPki pki{pki_dir.path()};
+  PlaceCertificate(pki.trusted_dir(), "old.pem", "scada-host");
+  PlaceCertificate(pki.rejected_dir(), "new.pem", "scada-host");
+
+  TestExecutor executor;
+  StrictMock<MockDialogService> dialog_service;
+  StrictMock<scada::MockSessionService> session_service;
+  ScopedScadaSessionService scoped_session_service{session_service};
+  NullTransportFactory transport_factory;
+  std::u16string prompt_text;
+
+  EXPECT_CALL(session_service, ConnectStatus(_))
+      .WillOnce([](scada::SessionConnectParams) -> scada::CoStatus {
+        co_return scada::StatusCode::Bad_CertificateUntrusted;
+      });
+  EXPECT_CALL(dialog_service, RunMessageBox(/*message=*/_, /*title=*/_,
+                                            MessageBoxMode::QuestionYesNo))
+      .WillOnce([&prompt_text](std::u16string_view message, std::u16string_view,
+                               MessageBoxMode) {
+        prompt_text = message;  // Eagerly; see the test above.
+        return [](MessageBoxResult result) -> Awaitable<MessageBoxResult> {
+          co_return result;
+        }(MessageBoxResult::No);
+      });
+
+  auto controller = CreateController(executor, dialog_service, settings_store,
+                                     transport_factory);
+  controller->error_handler = [] {};
+  controller->Login();
+  Drain(executor);
+
+  EXPECT_NE(prompt_text.find(u"DIFFERENT"), std::u16string::npos);
+}
+
+// A secured mode always carries this client's trust list, and its own
+// certificate when the user configured none: before, the client trusted
+// whatever certificate discovery returned.
+TEST(LoginControllerTest, SecuredModesAuthenticateTheServer) {
+  scada::ScopedTempDir pki_dir{"login_pki"};
+  auto settings_store = std::make_shared<MemorySettingsStore>();
+  settings_store->Write("OpcUaPkiDirectory", pki_dir.path().string());
+  TestExecutor executor;
+  StrictMock<MockDialogService> dialog_service;
+  NullTransportFactory transport_factory;
+  auto controller = CreateController(executor, dialog_service, settings_store,
+                                     transport_factory);
+  const opcua::ApplicationPki pki{pki_dir.path()};
+
+  controller->security_mode_index = 0;
+  EXPECT_FALSE(controller->MakeSecuritySettings().has_trust_store());
+
+  for (int mode : {1, 2}) {
+    controller->security_mode_index = mode;
+    const auto settings = controller->MakeSecuritySettings();
+    EXPECT_EQ(settings.trusted_certificates_dir, pki.trusted_dir().string());
+    EXPECT_EQ(settings.rejected_certificates_dir, pki.rejected_dir().string());
+    EXPECT_EQ(settings.client_certificate_path, pki.own_certificate().string());
+    EXPECT_EQ(settings.client_private_key_path, pki.own_private_key().string());
+  }
+
+  controller->client_certificate_path = "/mine.pem";
+  controller->client_private_key_path = "/mine.key";
+  EXPECT_EQ(controller->MakeSecuritySettings().client_certificate_path,
+            "/mine.pem");
 }
 
 }  // namespace

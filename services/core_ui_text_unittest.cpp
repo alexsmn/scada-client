@@ -24,7 +24,7 @@ class CoreUiTextTest : public ::testing::Test {
 TEST_F(CoreUiTextTest, EveryBadCodeHasASentence) {
   const std::u16string fallback = StatusText(static_cast<scada::StatusCode>(
       (static_cast<unsigned>(scada::StatusSeverity::Bad) << 14) | 0x3FFF));
-  constexpr auto kLast = scada::StatusCode::Bad_NotReadable;
+  constexpr auto kLast = scada::StatusCode::Bad_SecurityModeInsufficient;
   const unsigned bad = static_cast<unsigned>(scada::StatusCode::Bad);
   for (unsigned code = bad + 1; code <= static_cast<unsigned>(kLast); ++code) {
     EXPECT_NE(fallback, StatusText(static_cast<scada::StatusCode>(code)))
