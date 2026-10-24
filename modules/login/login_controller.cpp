@@ -4,7 +4,9 @@
 #include "aui/translation.h"
 #include "base/any_executor_dispatch.h"
 #include "base/check.h"
+#include "base/client_paths.h"
 #include "base/file_settings_store.h"
+#include "base/path_service.h"
 #include "base/string_util.h"
 #include "net/net_executor_adapter.h"
 #include "opcua/client/application_pki.h"
@@ -163,16 +165,14 @@ void AppendMruList(std::vector<std::u16string>& list,
     list.resize(10);
 }
 
+// The per-user client data directory's pki/ (client::DIR_PRIVATE:
+// %APPDATA%\Telecontrol\SCADA Client on Windows, ~/Library/Application
+// Support/Telecontrol/SCADA Client elsewhere, or --test-data-dir).
 std::filesystem::path DefaultPkiDirectory() {
-#ifdef _WIN32
-  const char* base = std::getenv("LOCALAPPDATA");
-  return std::filesystem::path{base ? base : "."} / "Telecontrol" /
-         "SCADA Client" / "pki";
-#else
-  std::filesystem::path base_dir =
-      std::getenv("HOME") ? std::getenv("HOME") : ".";
-  return base_dir / "Library/Application Support/Telecontrol/SCADA Client/pki";
-#endif
+  std::filesystem::path private_dir;
+  if (!scada::base::PathService::Get(client::DIR_PRIVATE, &private_dir))
+    private_dir = std::filesystem::current_path();
+  return private_dir / "pki";
 }
 
 // The host part of what the user typed, as a SAN check compares it.

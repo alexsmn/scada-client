@@ -1467,11 +1467,16 @@ TEST_P(ClientServerE2eTest, Connect_Success_WithDiscoveryAutoSecurity) {
       << "Unexpected client status while waiting for startup: " << status;
   EXPECT_TRUE(client_.IsRunning()) << "Client exited unexpectedly after login";
 
-  // "Auto" security can only connect if GetEndpoints discovery ran and selected
-  // the server's (None) endpoint, so a successful login proves that path. The
-  // post-activation NamespaceArray read is part of the same new flow.
+  // "Auto" security can only connect if GetEndpoints discovery ran. Since the
+  // client authenticates the server (backlog 917), Auto with a trust list
+  // refuses the None endpoint, so a successful login is a SignAndEncrypt
+  // session to a server the client verified against its trusted certificate,
+  // with the client's own certificate generated on first use. The
+  // post-activation NamespaceArray read is part of the same flow.
   EXPECT_TRUE(ContainsInDirectory(client_log_dir_, "NamespaceArray"))
       << "Client did not read the server NamespaceArray after connecting";
+  EXPECT_TRUE(std::filesystem::exists(pki_dir_ / "own" / "certificate.pem"))
+      << "Client did not generate its application instance certificate";
 
   ExpectServerAuthLog();
   ExpectProcessesRemainRunningFor(
@@ -1480,23 +1485,32 @@ TEST_P(ClientServerE2eTest, Connect_Success_WithDiscoveryAutoSecurity) {
       "waiting for the discovery-based OPC UA session to remain stable");
 }
 
-TEST_P(ClientServerE2eTest,
-       Connect_SignAndEncryptRejectedWhenServerOffersNone) {
+TEST_P(ClientServerE2eTest, Connect_UntrustedServerCertificateIsRefused) {
   if (Protocol() != E2eProtocol::OpcUa)
     GTEST_SKIP() << "Endpoint security applies to the OPC UA backend";
+  if (UsesExternalServer())
+    GTEST_SKIP() << "An external target's certificate is not the fixture's";
 
-  // The in-repo server advertises only a SecurityPolicy=None endpoint, so a
-  // client that requires SignAndEncrypt must fail endpoint selection during
-  // discovery and never activate a session.
+  // A client that has never trusted the server's certificate must refuse it
+  // rather than encrypt to whoever answered discovery (OPC UA Part 4 §6.1.3,
+  // https://reference.opcfoundation.org/Core/Part4/v105/docs/6.1.3), and keep
+  // it in rejected/ for the trust prompt. In e2e mode the prompt is skipped and
+  // the refusal is reported. (This test used to be
+  // Connect_SignAndEncryptRejectedWhenServerOffersNone, whose comment claimed a
+  // None-only server; the fixture server has always offered Basic256Sha256,
+  // and the failure was really the client having no certificate.)
   WriteClientSettings(/*password=*/"", /*user=*/"root",
-                      /*security_mode=*/"SignAndEncrypt");
+                      /*security_mode=*/"SignAndEncrypt",
+                      /*trust_server=*/false);
   StartServer();
   StartClient();
 
   const auto status = WaitForStatus();
-  EXPECT_NE(status.find("failure"), std::string::npos)
-      << "Expected the client to report a connection failure; status: "
+  EXPECT_NE(status.find("Bad_CertificateUntrusted"), std::string::npos)
+      << "Expected the client to refuse the untrusted server; status: "
       << status;
+  EXPECT_FALSE(std::filesystem::is_empty(pki_dir_ / "rejected"))
+      << "The refused certificate should be kept for the trust prompt";
   if (!UsesExternalServer()) {
     EXPECT_FALSE(
         ContainsInDirectory(server_log_dir_, "OPC UA session activated"))
@@ -1505,8 +1519,8 @@ TEST_P(ClientServerE2eTest,
   ExpectServerRemainsRunningFor(
       std::chrono::duration_cast<std::chrono::milliseconds>(
           kPostConnectStabilityTimeout),
-      "waiting for the server to remain stable after rejecting an unsupported "
-      "security mode");
+      "waiting for the server to remain stable after the client refused its "
+      "certificate");
 }
 
 // ADR 0014 end to end: the Qt client's configuration transfer, over this

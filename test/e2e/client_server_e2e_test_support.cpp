@@ -455,6 +455,7 @@ void ClientServerE2eTest::PrepareWorkspace() {
   profile_save_file_ = workspace_.path() / "profile-save.txt";
   historical_timed_data_file_ = workspace_.path() / "historical-timed-data.txt";
   settings_file_ = workspace_.path() / "client-settings.json";
+  pki_dir_ = workspace_.path() / "ClientPki";
   server_log_dir_ = workspace_.path() / "Logs";
   client_log_dir_ = workspace_.path() / "ClientLogs";
   client_data_dir_ = workspace_.path() / "ClientData";
@@ -462,7 +463,8 @@ void ClientServerE2eTest::PrepareWorkspace() {
 
 void ClientServerE2eTest::WriteClientSettings(std::string_view password,
                                               std::string_view user,
-                                              std::string_view security_mode) {
+                                              std::string_view security_mode,
+                                              bool trust_server) {
   auto remote_host = std::string{"localhost:"} + std::to_string(remote_port_);
   auto opcua_host = std::string{"127.0.0.1:"} + std::to_string(opcua_port_);
   std::string login_user{user};
@@ -489,6 +491,16 @@ void ClientServerE2eTest::WriteClientSettings(std::string_view password,
   };
   if (!security_mode.empty())
     root["SecurityMode"] = std::string{security_mode};
+  root["OpcUaPkiDirectory"] = pki_dir_.string();
+  // Every local topology presents the fixture's certificate; an external
+  // target presents its own, which this suite cannot know in advance.
+  if (trust_server && !UsesExternalServer()) {
+    std::filesystem::create_directories(pki_dir_ / "trusted");
+    std::filesystem::copy_file(
+        GetServerFixtureDir() / "Certificates" / "ServerCertificate.pem",
+        pki_dir_ / "trusted" / "ServerCertificate.pem",
+        std::filesystem::copy_options::overwrite_existing);
+  }
   WriteTextFile(settings_file_, boost::json::serialize(root));
 }
 

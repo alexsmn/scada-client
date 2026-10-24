@@ -116,10 +116,14 @@ class ClientServerE2eTest : public ::testing::TestWithParam<E2eParam> {
   void PrepareWorkspace();
   // Writes the client settings file. `security_mode`, when non-empty, sets the
   // OPC UA endpoint security selection ("None" / "Auto" / "SignAndEncrypt");
-  // it is ignored by the Scada (gRPC) backend.
+  // it is ignored by the Scada (gRPC) backend. A secured mode authenticates the
+  // server against the client's PKI directory (`pki_dir_`); `trust_server`
+  // provisions the fixture server's certificate there as already trusted, as an
+  // operator who had answered the client's trust prompt would have.
   void WriteClientSettings(std::string_view password,
                            std::string_view user = "root",
-                           std::string_view security_mode = {});
+                           std::string_view security_mode = {},
+                           bool trust_server = true);
   // Historizes + simulates the analog item TIT.4 so the server collects a
   // steady stream of samples the client's timed-data view can read back. Call
   // before StartServer(); applies to the single tier's config DB, or — in
@@ -167,6 +171,9 @@ class ClientServerE2eTest : public ::testing::TestWithParam<E2eParam> {
   std::filesystem::path profile_save_file_;
   std::filesystem::path historical_timed_data_file_;
   std::filesystem::path settings_file_;
+  // The client's OPC UA PKI directory (own certificate, trusted/, rejected/),
+  // inside the workspace so a failed run keeps it.
+  std::filesystem::path pki_dir_;
   std::filesystem::path server_log_dir_;
   std::filesystem::path client_log_dir_;
   // The client's isolated profile / file-cache directory for this run. Kept
