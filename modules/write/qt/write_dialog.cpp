@@ -151,9 +151,13 @@ void WriteDialog::accept() {
     value = index ? 1.0 : 0.0;
 
   } else {
-    bool ok = false;
-    value = ui.valueComboBox->currentText().toDouble(&ok);
-    if (!ok) {
+    // Not QString::toDouble, which is C-locale and refused «12,5» (backlog
+    // 912).
+    const std::optional<double> parsed =
+        ParseOperatorNumber(ui.valueComboBox->currentText().toStdU16String());
+    if (parsed)
+      value = *parsed;
+    if (!parsed) {
       // Through the model, which owns the executor the message box has to be
       // spawned on: RunMessageBox is lazy, and calling it here discarded the
       // awaitable, so the box never appeared and the dialog just refused to

@@ -129,8 +129,11 @@ std::vector<InspectorLimitRow> MakeLimitRows(const NodeRef& node,
 
 InspectorQualityBand InspectorQualityBandFor(
     const scada::Qualifier& qualifier) {
-  return qualifier.bad() ? InspectorQualityBand::kBad
-                         : InspectorQualityBand::kGood;
+  // general_bad(), as the object tree uses: the server marks a value
+  // offline, stale, failed or misconfigured without setting BAD, and checking
+  // BAD alone called such a value good (backlog 923).
+  return qualifier.general_bad() ? InspectorQualityBand::kBad
+                                 : InspectorQualityBand::kGood;
 }
 
 InspectorQualityBand InspectorQualityBandFor(const scada::DataValue& value) {
@@ -559,8 +562,8 @@ void InspectorPanel::RefreshValue() {
   InspectorElementView element{.title = title_->text(),
                                .node_id_text = subtitle_->text()};
   if (spec_) {
-    element.value_text = QString::fromStdU16String(
-        spec_->GetCurrentString(ValueFormat{FORMAT_QUALITY | FORMAT_UNITS}));
+    element.value_text = QString::fromStdU16String(spec_->GetCurrentString(
+        ValueFormat{FORMAT_QUALITY | FORMAT_UNITS | FORMAT_STATUS}));
     element.quality = InspectorQualityBandFor(spec_->current());
     element.updated_text = QString::fromStdString(
         FormatTime(spec_->change_time(), TIME_FORMAT_TIME));

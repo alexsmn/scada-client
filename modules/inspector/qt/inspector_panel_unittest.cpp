@@ -36,6 +36,18 @@ TEST(InspectorQualityBandTest, BadQualifierIsBad) {
   EXPECT_EQ(InspectorQualityBandFor(bad), InspectorQualityBand::kBad);
 }
 
+// The server marks these states without BAD; the band must still read Bad,
+// as the object tree does (backlog 923).
+TEST(InspectorQualityBandTest, OfflineStaleFailedAndMisconfiguredAreBad) {
+  for (unsigned flag :
+       {scada::Qualifier::OFFLINE, scada::Qualifier::STALE,
+        scada::Qualifier::FAILED, scada::Qualifier::MISCONFIGURED}) {
+    EXPECT_EQ(InspectorQualityBandFor(scada::Qualifier{flag}),
+              InspectorQualityBand::kBad)
+        << flag;
+  }
+}
+
 // Regression: a value that was never delivered carries a default-constructed
 // Qualifier, which is zero and therefore "not BAD". Mapping that through the
 // Qualifier alone reported Good, so a display element bound to a node the

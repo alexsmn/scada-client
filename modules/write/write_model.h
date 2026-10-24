@@ -9,6 +9,16 @@
 #include "scada/status.h"
 #include "timed_data/timed_data_spec.h"
 
+#include <optional>
+#include <string_view>
+
+// Parses a number the operator typed into the Control dialog. Accepts either
+// a decimal point or a decimal comma, so «12,5» typed on a Russian keyboard is
+// the same value as «12.5» (backlog 912); surrounding spaces are ignored.
+// Returns nullopt for anything else, including a trailing unit or a second
+// separator.
+std::optional<double> ParseOperatorNumber(std::u16string_view text);
+
 class WriteModel : private WriteContext,
                    public std::enable_shared_from_this<WriteModel> {
  public:

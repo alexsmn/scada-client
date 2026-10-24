@@ -329,6 +329,39 @@ TEST_F(WriteModelTest, ControlCommandConfirmationReviewsPresentAndCommand) {
   EXPECT_NE(message.find(u"cannot be undone remotely"), std::u16string::npos);
 }
 
+// The confirmation is the last screen before an irreversible command, so it
+// must carry the same quality marks as the dialog: «?» for BAD (backlog 908)
+// and the status letters for a reading the server marks offline or stale
+// without BAD (backlog 923).
+TEST_F(WriteModelTest, ConfirmationMarksAnInvalidPresentValue) {
+  ON_CALL(*timed_data_, GetDataValue())
+      .WillByDefault(Return(scada::DataValue{
+          scada::Variant{5.0},
+          scada::Qualifier{scada::Qualifier::BAD | scada::Qualifier::OFFLINE},
+          scada::Time{}, scada::Time{}}));
+
+  auto model = CreateModel();
+  model->Write(42.0, /*lock=*/false);
+  Drain(executor_);
+
+  ASSERT_EQ(dialog_service_.messages.size(), 1u);
+  const std::u16string& message = dialog_service_.messages.at(0);
+  EXPECT_NE(message.find(u"5?"), std::u16string::npos) << message;
+  EXPECT_NE(message.find(u"[С]"), std::u16string::npos) << message;
+}
+
+TEST_F(WriteModelTest, OfflineValueWithoutBadShowsItsStatusLetter) {
+  ON_CALL(*timed_data_, GetDataValue())
+      .WillByDefault(Return(scada::DataValue{
+          scada::Variant{5.0}, scada::Qualifier{scada::Qualifier::STALE},
+          scada::Time{}, scada::Time{}}));
+
+  auto model = CreateModel();
+
+  EXPECT_NE(model->GetCurrentValue(/*formatted=*/true).find(u"[У]"),
+            std::u16string::npos);
+}
+
 TEST_F(WriteModelTest, RefusedWriteIsReportedToTheOperator) {
   profile_.control_confirmation = false;
   auto model = CreateModel();
@@ -519,3 +552,24 @@ TEST_F(WriteModelTest, ReportedInputErrorNeitherWritesNorCompletes) {
 
   EXPECT_FALSE(completion_.has_value());
 }
+
+namespace {
+
+// «12,5» typed on a Russian keyboard used to be refused as "Incorrect floating
+// point value" (backlog 912).
+TEST(ParseOperatorNumberTest, AcceptsDecimalPointAndDecimalComma) {
+  EXPECT_EQ(ParseOperatorNumber(u"12.5"), 12.5);
+  EXPECT_EQ(ParseOperatorNumber(u"12,5"), 12.5);
+  EXPECT_EQ(ParseOperatorNumber(u" -3,25 "), -3.25);
+  EXPECT_EQ(ParseOperatorNumber(u"+7"), 7.0);
+  EXPECT_EQ(ParseOperatorNumber(u"1e3"), 1000.0);
+}
+
+TEST(ParseOperatorNumberTest, RejectsWhatIsNotANumber) {
+  EXPECT_EQ(ParseOperatorNumber(u""), std::nullopt);
+  EXPECT_EQ(ParseOperatorNumber(u"12,5,1"), std::nullopt);
+  EXPECT_EQ(ParseOperatorNumber(u"12 кВ"), std::nullopt);
+  EXPECT_EQ(ParseOperatorNumber(u"abc"), std::nullopt);
+}
+
+}  // namespace

@@ -14,6 +14,7 @@
 #include "profile/profile.h"
 #include "scada/co_result.h"
 
+#include <charconv>
 #include <tuple>
 
 namespace {
@@ -59,9 +60,41 @@ std::u16string WriteModel::GetSourceTitle() const {
   return spec_.GetTitle().text;
 }
 
+std::optional<double> ParseOperatorNumber(std::u16string_view text) {
+  while (!text.empty() && (text.front() == u' ' || text.front() == u'\t'))
+    text.remove_prefix(1);
+  while (!text.empty() && (text.back() == u' ' || text.back() == u'\t'))
+    text.remove_suffix(1);
+  if (text.empty())
+    return std::nullopt;
+
+  std::string ascii;
+  ascii.reserve(text.size());
+  for (char16_t c : text) {
+    if (c > 0x7f)
+      return std::nullopt;
+    ascii += c == u',' ? '.' : static_cast<char>(c);
+  }
+  // from_chars rejects a leading '+', which an operator may well type.
+  std::string_view digits = ascii;
+  if (digits.starts_with('+'))
+    digits.remove_prefix(1);
+
+  double value = 0;
+  const auto [end, error] =
+      std::from_chars(digits.data(), digits.data() + digits.size(), value);
+  if (error != std::errc{} || end != digits.data() + digits.size())
+    return std::nullopt;
+  return value;
+}
+
 std::u16string WriteModel::GetCurrentValue(bool formatted) const {
+  // FORMAT_STATUS adds the status letters ([С] offline, [У] stale, …): the
+  // server marks those states without BAD, so «?» alone would call an offline
+  // reading good (backlog 923).
   return spec_.GetCurrentString(
-      formatted ? ValueFormat{FORMAT_QUALITY | FORMAT_UNITS} : ValueFormat{0});
+      formatted ? ValueFormat{FORMAT_QUALITY | FORMAT_UNITS | FORMAT_STATUS}
+                : ValueFormat{0});
 }
 
 std::vector<std::u16string> WriteModel::GetDiscreteStates() const {
@@ -197,8 +230,10 @@ std::u16string WriteModel::GetConfirmationMessage(double value,
   // Present the operator what the point reads now and what the command will
   // make it, so an irreversible field action is reviewed — not just answered
   // yes/no — before it is sent (principle §7 in docs/client/ux/principles.md).
-  const std::u16string present_str =
-      spec_.GetCurrentString(ValueFormat{FORMAT_UNITS});
+  // Formatted as in the dialog itself: this is the last screen before an
+  // irreversible command, so it must not drop the «?» of an invalid reading
+  // (backlog 908) or the letters of an offline or stale one (backlog 923).
+  const std::u16string present_str = GetCurrentValue(/*formatted=*/true);
   const std::u16string command_str =
       spec_.GetValueString(value, {}, ValueFormat{FORMAT_UNITS});
 
