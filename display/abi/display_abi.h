@@ -79,7 +79,12 @@ extern "C" {
 // borrows its shape from reached version 2 and was deleted (ADR 0012 phase 4),
 // and nothing implements it any more, so continuing its numbering would claim
 // a compatibility that does not exist.
-#define SCADA_DISPLAY_ABI_VERSION 1u
+//
+// ABI 2 (backlog 915) appends the four members a host needs to put live
+// values on a Modus schematic: enumerating what the document is bound to,
+// writing a value as an element's text, and finding where an object is
+// drawn. Nothing before `runtime_version` moved.
+#define SCADA_DISPLAY_ABI_VERSION 2u
 
 // ── Plain data ──────────────────────────────────────────────────────────────
 
@@ -238,14 +243,21 @@ typedef struct ScadaDisplayApi {
       const ScadaDisplayStatePalette* palette,
       ScadaDisplayError* error);
 
-  // Records the latest value and quality for one data source — a shape
-  // identified by its name — and reports the region needing repaint in
-  // `invalidated_bounds`. Returns non-zero on success.
+  // Records the latest value and quality for one data source and reports the
+  // region needing repaint in `invalidated_bounds`. Returns non-zero on
+  // success.
   //
   // `value` is an equipment-state keyword ("closed"/"open"/"on"/"off"/
   // "energized"/"dead"/…, parsed by ParseEquipmentState); `quality` is an OPC
-  // UA StatusCode whose severity bits select good/uncertain/bad. The new state
-  // shows on the next `render_bgra`, and only while a palette is installed.
+  // UA StatusCode whose severity bits select good/uncertain/bad.
+  //
+  // In a VDS document a data source is a shape's name, and the state shows on
+  // the next `render_bgra` only while a palette is installed. In a Modus
+  // document it is a formula from an element's `ключ_привязки` (the strings
+  // `get_data_source` enumerates): a position flips each `положение`-bound
+  // element's own symbol, palette or not, and a reading that is not good is
+  // also marked in the palette's quality colours while one is installed. A
+  // library serving ABI 1 knows only the VDS meaning.
   //
   // The reported region is the whole page: state colouring can change any
   // shape's appearance and there is no per-shape spatial index, so a narrower
@@ -266,6 +278,43 @@ typedef struct ScadaDisplayApi {
   // "the display runtime was rejected" without being able to say which one it
   // found.
   const char*(SCADA_DISPLAY_CALL* runtime_version)(void);
+
+  // ── ABI 2 ──
+  // Gate every member below on `struct_size >= SCADA_DISPLAY_ABI_2_SIZE`.
+
+  // How many data sources the document's bindings name — what a host
+  // subscribes to. Zero for a VDS document, whose data sources are shape
+  // names and are not enumerated, and for a NULL document.
+  int32_t(SCADA_DISPLAY_CALL* get_data_source_count)(
+      ScadaDisplayDocument document);
+
+  // The `index`th data source, in document order, as UTF-8 in storage the
+  // document owns until `close_document`; NULL when `index` is out of range.
+  const char*(SCADA_DISPLAY_CALL* get_data_source)(
+      ScadaDisplayDocument document,
+      int32_t index);
+
+  // Writes `text` as the text of every Modus element whose `текст` or
+  // `значение_базовое` is bound to `data_source`, and reports the region
+  // needing repaint in `invalidated_bounds` (empty when nothing is bound to
+  // it). Returns non-zero on success. The host formats the value, quality
+  // mark included; the library draws it in the element's own font.
+  int32_t(SCADA_DISPLAY_CALL* set_data_source_text)(
+      ScadaDisplayDocument document,
+      const char* data_source,
+      const char* text,
+      ScadaDisplayRect* invalidated_bounds,
+      ScadaDisplayError* error);
+
+  // Finds the first element bound to `data_source`. Returns 1 and fills
+  // `info` (strings owned as for `hit_test`, and replaced by the next
+  // `hit_test` or `find_data_source_shape`), 0 when nothing is bound to it,
+  // and a negative value on failure with `error` filled.
+  int32_t(SCADA_DISPLAY_CALL* find_data_source_shape)(
+      ScadaDisplayDocument document,
+      const char* data_source,
+      ScadaDisplayShapeInfo* info,
+      ScadaDisplayError* error);
 } ScadaDisplayApi;
 
 // How many bytes of the table ABI 1 defined — through `runtime_version`, its
@@ -281,6 +330,12 @@ typedef struct ScadaDisplayApi {
 #define SCADA_DISPLAY_ABI_1_SIZE                \
   (offsetof(ScadaDisplayApi, runtime_version) + \
    sizeof(((const ScadaDisplayApi*)0)->runtime_version))
+
+// How many bytes of the table ABI 2 defined — through
+// `find_data_source_shape`, its last member. Same rule as ABI 1's.
+#define SCADA_DISPLAY_ABI_2_SIZE                       \
+  (offsetof(ScadaDisplayApi, find_data_source_shape) + \
+   sizeof(((const ScadaDisplayApi*)0)->find_data_source_shape))
 
 // ── Entry point ─────────────────────────────────────────────────────────────
 
