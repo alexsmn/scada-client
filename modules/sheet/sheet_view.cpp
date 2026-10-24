@@ -205,7 +205,7 @@ NodeIdSet SheetController::GetSelectedNodeIdList() {
     for (int column = range.column(); column <= range.last_column(); ++column) {
       const SheetCell* cell = model_->cell(row, column);
       if (cell) {
-        if (auto node_id = cell->timed_data().node_id(); node_id.is_null()) {
+        if (auto node_id = cell->timed_data().node_id(); !node_id.is_null()) {
           result.emplace(std::move(node_id));
         }
       }
