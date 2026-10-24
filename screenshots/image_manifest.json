@@ -344,11 +344,9 @@
     },
     {
       "file": "client-window.png",
-      "tag": "manual-modus",
-      "referenced_from": [
-        "client.md"
-      ],
-      "notes": "Docs image is a full main window with a Modus schematic centre; CaptureMainWindow only renders the non-Modus EventJournal + Summ + Struct fallback, so keep this hand-maintained until the fake Modus runtime exists. STALE (2026-08-29): the Objects dock in it still shows a «Все объекты» root row the tree no longer draws. Hand-maintained, so this one needs re-shooting rather than regenerating."
+      "tag": "obsolete",
+      "referenced_from": [],
+      "notes": "Retired 2026-10-24: client.md now embeds workbench-window.png, the generated full-window capture, which shows the current menu bar and status strip the page describes. This hand-maintained 2024 figure showed a Modus schematic centre and an Objects dock with a «Все объекты» root row the tree no longer draws, so it contradicted the page beside it. Former note: Docs image is a full main window with a Modus schematic centre; CaptureMainWindow only renders the non-Modus EventJournal + Summ + Struct fallback, so keep this hand-maintained until the fake Modus runtime exists. STALE (2026-08-29): the Objects dock in it still shows a «Все объекты» root row the tree no longer draws. Hand-maintained, so this one needs re-shooting rather than regenerating."
     },
     {
       "file": "workbench-activity-rail.png",
@@ -419,6 +417,7 @@
       "tag": "auto-view",
       "theme": "dark",
       "referenced_from": [
+        "client.md",
         "client/workbench.md"
       ],
       "notes": "The reshelled operator workbench: CaptureMainWindow under --theme renders the full shell (activity rail, context bar with KPI severity tiles, editor tabs over EventJournal/Summ/Struct, the Inspector fronted in the right dock, status strip) and saves it under this name so the legacy client-window.png is never overwritten by a themed render. Fixture pending alarms light the tiles and the journal chrome. Kept out of current_generator_owned_subset (subset is auto-* only). Both STALE notes this row carried until 2026-09-19 are DISCHARGED, and were already wrong when they were read: they described the status strip's ping cell widening (120 -> 180, plus the \"no response\" marker, 0db08d4f8, 2026-08-01) and the context bar losing its identity/connection cluster to the status strip (2026-07-26), and asked for a Windows re-render. The tracked PNG already shows both — the context bar carries only breadcrumb, search and severity tiles, and user/connection/server/endpoint sit in the status strip — because it was re-rendered at 87b6a9b4b (2026-09-12), which has 0db08d4f8 as an ancestor. The request for a WINDOWS re-render is obsolete on its own terms too: either host may render the generated set (decided 2026-09-12), and only the manual-modus family needs Windows. This row is the README's hero image, so a note saying \"do not trust this picture\" is not a cheap thing to leave lying around. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it.",
@@ -583,11 +582,9 @@
     },
     {
       "file": "display.png",
-      "tag": "manual-modus",
-      "referenced_from": [
-        "client/display.md"
-      ],
-      "notes": "Modus schematic; out of scope until fake runtime lands."
+      "tag": "obsolete",
+      "referenced_from": [],
+      "notes": "Retired 2026-10-24: removed from client/display.md with no replacement. It was a 2024 hand capture of a Modus schematic drawn with live values, and the built-in renderer draws Modus schematics without live values in this version, so the figure promised what the page now warns against. No validated generator capture of a Modus schematic exists (substation-display.png is a Vidicon .vds display inside the display frame, a different window). Former note: Modus schematic; out of scope until fake runtime lands."
     },
     {
       "file": "substation-display.png",
@@ -1779,7 +1776,7 @@
         "architecture.md",
         "client.md"
       ],
-      "notes": "LimitDialog modal, rendered over TIT.212 ('Температура нагрева'). Its four bands now come from that node's AnalogItemType_Limit{LoLo,Lo,Hi,HiHi} properties - Аварийные 90 / -25, Уставки 70 / -10, matching the manual's image; the node carried none before, so every field captured empty. ScreenshotGenerator.LimitDialogNodeCarriesItsBands pins the values, since a blank dialog satisfies the existence-and-dimensions check.",
+      "notes": "LimitDialog modal, rendered over TIT.212 ('Температура нагрева'). Its four bands now come from that node's AnalogItemType_Limit{LoLo,Lo,Hi,HiHi} properties - Аварийные 90 / -25, Уставки 70 / -10, matching the manual's image; the node carried none before, so every field captured empty. ScreenshotGenerator.LimitDialogNodeCarriesItsBands pins the values, since a blank dialog satisfies the existence-and-dimensions check. GRADUATED 2026-10-24 into current_generator_owned_subset: reviewed against client.md («Уставки») and architecture.md, neither of which says anything the render contradicts (band labels and values match; the pages name no buttons). Replaced a 2024 hand capture that still carried the OS title bar and an «OK» button where the dialog now reads «Применить».",
       "captured": {
         "commit": "64ddc3757",
         "platform": "macos",
@@ -2933,9 +2930,9 @@
     "auto-menu": 21,
     "auto-view": 100,
     "manual-diagram": 4,
-    "manual-modus": 5,
+    "manual-modus": 3,
     "manual-os": 2,
-    "obsolete": 19
+    "obsolete": 21
   },
   "current_generator_owned_subset": [
     "bulk-create.png",
@@ -2948,6 +2945,7 @@
     "files.png",
     "graph-cursor.png",
     "hardware-tree.png",
+    "limits.png",
     "menu-copy-object.png",
     "menu-excel.png",
     "menu-summary.png",
