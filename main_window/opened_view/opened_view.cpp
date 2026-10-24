@@ -3,15 +3,18 @@
 #include "aui/translation.h"
 #include "base/any_executor.h"
 #include "base/check.h"
+#include "base/relative_time_range.h"
 #include "base/utf_convert.h"
 #include "controller/command_handler.h"
 #include "controller/controller.h"
 #include "controller/selection_model.h"
+#include "controller/time_model.h"
 #include "controller/window_info.h"
 #include "export/export_model.h"
 #include "main_window/main_window.h"
 #include "main_window/window_definition_builder.h"
 #include "net/net_executor_adapter.h"
+#include "print/service/print_header.h"
 #include "print/service/print_util.h"
 #include "resources/common_resources.h"
 
@@ -175,8 +178,19 @@ void OpenedView::Print(PrintService& print_service) {
   if (!export_model)
     return;
 
+  // The period comes from the view's own time model where it has one, so the
+  // printout says what it covers (backlog 875).
+  std::optional<scada::TimeRange> period;
+  const scada::Time now = scada::Now();
+  if (auto* time_model = controller_->GetTimeModel())
+    period = scada::ToTimeRange(time_model->GetTimeRange(), now);
+
+  const PrintHeader header = MakePrintHeader(
+      GetWindowTitle(), period, export_model->GetExportDescription(), now);
+
   auto export_data = export_model->GetExportData();
-  std::visit([&print_service](auto& data) { ::Print(print_service, data); },
+  std::visit([&print_service,
+              &header](auto& data) { ::Print(print_service, data, header); },
              export_data);
 }
 

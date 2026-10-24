@@ -11,12 +11,18 @@ namespace scada::aui {
 class Grid;
 }
 
+#if defined(UI_QT)
+#include <QLabel>
+#include <QPointer>
+#endif
+
 class ExportModel;
 class SummaryModel;
 
 class SummaryView : protected ControllerContext, public Controller {
  public:
   explicit SummaryView(const ControllerContext& context);
+  ~SummaryView() override;
 
   // Controller
   virtual std::unique_ptr<UiView> Init(
@@ -34,6 +40,14 @@ class SummaryView : protected ControllerContext, public Controller {
 
   const std::shared_ptr<SummaryModel> model_;
   scada::aui::Grid* grid_ = nullptr;
+
+#if defined(UI_QT)
+  void UpdateTruncationNotice();
+
+  // A QPointer: the widget tree is owned by the host and can go before this
+  // controller, while the model can still change params in between.
+  QPointer<QLabel> truncation_notice_;
+#endif
 
   CommandRegistry command_registry_;
 };

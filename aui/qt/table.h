@@ -66,6 +66,11 @@ class Table : public QTableView {
   void SetColumnVisible(int column_id, bool visible);
   bool IsColumnVisible(int column_id) const;
 
+  // The columns the operator can see, in the order the header shows them.
+  // What a print or an export should carry: the hidden ones include raw
+  // identifiers and formulas nobody asked to publish (backlog 912).
+  std::vector<TableColumn> VisibleColumns() const;
+
   void CopyToClipbard();
 
  protected:

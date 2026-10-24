@@ -19,6 +19,9 @@ struct SummaryModelParams {
   scada::Time start_time = scada::kNullTime;
   scada::Time end_time = scada::kNullTime;
   size_t row_count;
+  // True when the period asked for more than kMaxRowCount rows, so
+  // `end_time` falls short of it (backlog 871).
+  bool truncated = false;
 };
 
 inline SummaryModelParams CalculateSummaryModelParams(
@@ -42,9 +45,11 @@ inline SummaryModelParams CalculateSummaryModelParams(
 
   auto delta = end_time - start_time;
   int64_t row_count = delta / interval;
+  const bool truncated = row_count > static_cast<int64_t>(kMaxRowCount);
   row_count = std::min(row_count, static_cast<int64_t>(kMaxRowCount));
 
   SummaryModelParams result;
+  result.truncated = truncated;
   result.start_time = start_time;
   result.end_time = start_time + interval * row_count;
   result.row_count = static_cast<size_t>(row_count);
@@ -62,6 +67,7 @@ inline std::ostream& operator<<(std::ostream& stream,
   StructWriter{stream}
       .AddField("start_time", ToString(params.start_time))
       .AddField("end_time", ToString(params.end_time))
-      .AddField("row_count", ToString(params.row_count));
+      .AddField("row_count", ToString(params.row_count))
+      .AddField("truncated", params.truncated ? "true" : "false");
   return stream;
 }

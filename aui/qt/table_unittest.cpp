@@ -121,6 +121,20 @@ TEST_F(TableTest, ColumnsCanBeHiddenAndShown) {
   EXPECT_TRUE(table.IsColumnVisible(kTimeColumn));
 }
 
+// A print or an export takes VisibleColumns(), so a hidden column must not be
+// in it and the header's order must be kept (backlog 912).
+TEST_F(TableTest, VisibleColumnsSkipHiddenOnesInHeaderOrder) {
+  Table table{std::make_shared<StubTableModel>(), MakeColumns()};
+  table.SetColumnVisible(kValueColumn, false);
+  table.horizontalHeader()->moveSection(/*from=*/2, /*to=*/0);
+
+  std::vector<int> ids;
+  for (const TableColumn& column : table.VisibleColumns())
+    ids.push_back(column.id);
+
+  EXPECT_EQ(ids, (std::vector<int>{kTimeColumn, kTitleColumn}));
+}
+
 // Hiding the last one is refused: the header context menu is the only way to
 // bring a column back, and a header with no sections has nothing to
 // right-click — the table would be unrecoverable short of editing the profile.

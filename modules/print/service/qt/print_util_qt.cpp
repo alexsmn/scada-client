@@ -31,7 +31,9 @@ Qt::Alignment MakeQtAlignment(scada::aui::TableColumn::Alignment alignment) {
 
 class TableDocumentBuilder {
  public:
-  explicit TableDocumentBuilder(int row_count, int column_count);
+  TableDocumentBuilder(const PrintHeader& header,
+                       int row_count,
+                       int column_count);
 
   void SetColumn(int column,
                  const std::u16string& title,
@@ -39,9 +41,11 @@ class TableDocumentBuilder {
 
   void SetCell(int row, int column, const std::u16string& text);
 
-  QTextDocument& Build();
+  std::unique_ptr<QTextDocument> Build();
 
  private:
+  void InsertHeader(const PrintHeader& header);
+
   const int row_count_;
   const int column_count_;
 
@@ -50,18 +54,22 @@ class TableDocumentBuilder {
   QTextCharFormat header_format_;
   std::vector<QTextBlockFormat> column_formats_;
 
-  QTextDocument document_;
-  QTextCursor cursor_{&document_};
+  std::unique_ptr<QTextDocument> document_ = std::make_unique<QTextDocument>();
+  QTextCursor cursor_{document_.get()};
   QTextTable* table_ = nullptr;
 };
 
-TableDocumentBuilder::TableDocumentBuilder(int row_count, int column_count)
+TableDocumentBuilder::TableDocumentBuilder(const PrintHeader& header,
+                                           int row_count,
+                                           int column_count)
     : row_count_{row_count},
       column_count_{column_count},
       column_formats_(column_count) {
   // document.setDocumentMargin(10);
 
   cursor_.movePosition(QTextCursor::Start);
+
+  InsertHeader(header);
 
   QTextTableFormat table_format;
   table_format.setBorderStyle(QTextFrameFormat::BorderStyle_None);
@@ -76,6 +84,23 @@ TableDocumentBuilder::TableDocumentBuilder(int row_count, int column_count)
 
   header_format_ = row_format_;
   header_format_.setFontWeight(QFont::Bold);
+}
+
+void TableDocumentBuilder::InsertHeader(const PrintHeader& header) {
+  // Page numbers need nothing here: QTextDocument::print paginates an
+  // unpaginated document itself and numbers each page at the bottom.
+  if (!header.title.empty()) {
+    QTextCharFormat title_format;
+    title_format.setFontWeight(QFont::Bold);
+    title_format.setFontPointSize(14);
+    cursor_.insertText(QString::fromStdU16String(header.title), title_format);
+    cursor_.insertBlock();
+  }
+
+  for (const std::u16string& line : header.lines) {
+    cursor_.insertText(QString::fromStdU16String(line), QTextCharFormat{});
+    cursor_.insertBlock();
+  }
 }
 
 void TableDocumentBuilder::SetColumn(
@@ -100,22 +125,23 @@ void TableDocumentBuilder::SetCell(int row,
   cursor.insertText(QString::fromStdU16String(text));
 }
 
-QTextDocument& TableDocumentBuilder::Build() {
+std::unique_ptr<QTextDocument> TableDocumentBuilder::Build() {
   cursor_.movePosition(QTextCursor::End);
   cursor_.insertBlock();
 
-  return document_;
+  return std::move(document_);
 }
 
-void Print(PrintService& print_service,
-           const ExportModel::TableExportData& table) {
+std::unique_ptr<QTextDocument> MakePrintDocument(
+    const ExportModel::TableExportData& table,
+    const PrintHeader& header) {
   // A printout is a record like the spreadsheet exports, so it prints one row
   // per event where the view groups them.
   scada::aui::TableModel& model = table.ModelFor(/*expanded=*/true);
   const auto row_range = table.GetRowRange(/*expanded=*/true);
   const int column_count = static_cast<int>(table.columns.size());
 
-  TableDocumentBuilder builder{row_range.count, column_count};
+  TableDocumentBuilder builder{header, row_range.count, column_count};
 
   for (int i = 0; i < column_count; ++i)
     builder.SetColumn(i, table.columns[i].title, table.columns[i].alignment);
@@ -128,20 +154,21 @@ void Print(PrintService& print_service,
     }
   }
 
-  // Print to PDF
-  builder.Build().print(&print_service.printer);
+  return builder.Build();
 }
 
-void Print(PrintService& print_service,
-           const ExportModel::GridExportData& grid) {
+std::unique_ptr<QTextDocument> MakePrintDocument(
+    const ExportModel::GridExportData& grid,
+    const PrintHeader& header) {
   const int row_count = grid.rows.GetCount();
   const int column_count = grid.columns.GetCount();
 
-  // Add a row header.
+  // Add a row header, titled as the export titles it (the summary's
+  // "Time (interval start)"); it printed with no title at all (backlog 875).
+  TableDocumentBuilder builder{header, row_count, 1 + column_count};
 
-  TableDocumentBuilder builder{row_count, 1 + column_count};
-
-  builder.SetColumn(0, {}, scada::aui::TableColumn::Alignment::RIGHT);
+  builder.SetColumn(0, grid.row_title_column.title,
+                    grid.row_title_column.alignment);
   for (int i = 0; i < column_count; ++i) {
     builder.SetColumn(1 + i, grid.columns.GetTitle(i),
                       grid.columns.GetAlignment(i));
@@ -153,6 +180,17 @@ void Print(PrintService& print_service,
       builder.SetCell(row, 1 + column, grid.model.GetCellText(row, column));
   }
 
-  // Print to PDF
-  builder.Build().print(&print_service.printer);
+  return builder.Build();
+}
+
+void Print(PrintService& print_service,
+           const ExportModel::TableExportData& table,
+           const PrintHeader& header) {
+  MakePrintDocument(table, header)->print(&print_service.printer);
+}
+
+void Print(PrintService& print_service,
+           const ExportModel::GridExportData& grid,
+           const PrintHeader& header) {
+  MakePrintDocument(grid, header)->print(&print_service.printer);
 }

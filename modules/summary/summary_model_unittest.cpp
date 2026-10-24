@@ -138,6 +138,24 @@ TEST_F(SummaryModelTest, HourlySummaryForDayShows24Rows) {
   EXPECT_EQ(summary_model_.GetCellText(/*row=*/23, /*column=*/0), u"23");
 }
 
+// A printout names the method and interval the operator chose (backlog 875),
+// and the export's row column says which end of the interval a row is — it
+// was the literal English "Time" (backlog 912).
+TEST_F(SummaryModelTest, ExportDescribesMethodAndInterval) {
+  summary_model_.SetParams(
+      scada::RelativeTimeRange{scada::RelativeTimeRange::Type::Day},
+      scada::AggregateFilter{
+          scada::GetLocalAggregateStartTime(), std::chrono::hours(1),
+          scada::NodeId{scada::id::AggregateFunction_Maximum}});
+
+  EXPECT_EQ(summary_model_.GetExportDescription(), u"Maximum, 1-Hour");
+
+  auto export_data = summary_model_.GetExportData();
+  auto* grid = std::get_if<ExportModel::GridExportData>(&export_data);
+  ASSERT_NE(grid, nullptr);
+  EXPECT_EQ(grid->row_title_column.title, u"Time (interval start)");
+}
+
 TEST_F(SummaryModelTest, Load) {
   timed_data_service_.AddTimedData("item1");
   timed_data_service_.AddTimedData("item2");

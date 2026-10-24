@@ -53,3 +53,19 @@ TEST(SummaryModelUtil, CalculateSummaryModelParams_PriciseBounds) {
 
   EXPECT_EQ(params, expected_params);
 }
+
+// A period longer than the cap used to be cut with no sign of it (backlog 871);
+// the params now say so, and a period that fits is not marked.
+TEST(SummaryModelUtil, CalculateSummaryModelParams_MarksATruncatedPeriod) {
+  const scada::Time now = scada::Time{} + std::chrono::days{20000};
+  const auto month = CalculateSummaryModelParams(
+      scada::RelativeTimeRange{now - std::chrono::days{30}, now},
+      std::chrono::minutes{1}, now);
+  EXPECT_TRUE(month.truncated);
+  EXPECT_EQ(month.row_count, kMaxRowCount);
+
+  const auto day = CalculateSummaryModelParams(
+      scada::RelativeTimeRange{now - std::chrono::days{1}, now},
+      std::chrono::hours{1}, now);
+  EXPECT_FALSE(day.truncated);
+}

@@ -1,9 +1,12 @@
 ﻿#include "modules/summary/summary_model.h"
 
 #include "aui/models/grid_range.h"
+#include "aui/translation.h"
 #include "base/awaitable.h"
 #include "base/check.h"
 #include "base/format_time.h"
+#include "base/u16format.h"
+#include "base/utf_convert.h"
 #include "common/aggregation.h"
 #include "common/formula_util.h"
 #include "modules/summary/summary_model_util.h"
@@ -439,6 +442,7 @@ void SummaryModel::SetParams(const scada::RelativeTimeRange& time_range,
   start_time_ = params.start_time;
   end_time_ = params.end_time;
   row_count_ = params.row_count;
+  truncated_ = params.truncated;
 
   LOG_INFO(logger_) << "Calculated params"
                     << LOG_TAG("StartTime", ToString(start_time_))
@@ -452,6 +456,9 @@ void SummaryModel::SetParams(const scada::RelativeTimeRange& time_range,
     columns_[i]->UpdateTimes();
 
   NotifyModelChanged();
+
+  if (params_changed_handler)
+    params_changed_handler();
 }
 
 scada::DataValue SummaryModel::GetDataValue(int row, int column) const {
@@ -468,9 +475,64 @@ bool SummaryModel::IsCustomUnits(const scada::NodeId& aggregation_id) {
   return aggregation_id == scada::id::AggregateFunction_Count;
 }
 
+// static
+std::u16string SummaryModel::TruncationNotice(scada::Time cut) {
+  return u16format(
+      Translate("The summary is limited to {} rows and ends at {}."),
+      kMaxRowCount,
+      UtfConvert<char16_t>(
+          FormatTime(cut, TIME_FORMAT_DATE | TIME_FORMAT_TIME)));
+}
+
+std::u16string SummaryModel::GetExportDescription() {
+  // The same titles the Summary's own menus show, so a printout names the
+  // method the operator chose (backlog 875).
+  constexpr std::pair<scada::NumericId, const char*> kAggregateTitles[] = {
+      {scada::id::AggregateFunction_Count, "Count"},
+      {scada::id::AggregateFunction_Start, "First"},
+      {scada::id::AggregateFunction_End, "Last"},
+      {scada::id::AggregateFunction_Minimum, "Minimum"},
+      {scada::id::AggregateFunction_Maximum, "Maximum"},
+      {scada::id::AggregateFunction_Total, "Sum"},
+      {scada::id::AggregateFunction_Average, "Average"},
+  };
+  constexpr std::pair<scada::Duration, const char*> kIntervalTitles[] = {
+      {std::chrono::minutes(1), "1-Minute"},
+      {std::chrono::minutes(5), "5 min"},
+      {std::chrono::minutes(15), "15 min"},
+      {std::chrono::minutes(30), "30 min"},
+      {std::chrono::hours(1), "1-Hour"},
+      {std::chrono::hours(12), "12 hours"},
+      {std::chrono::days(1), "1-Day"},
+  };
+
+  std::u16string description;
+  for (const auto& [id, title] : kAggregateTitles) {
+    if (aggregate_filter_.aggregate_type == scada::NodeId{id})
+      description = Translate(title);
+  }
+  for (const auto& [interval, title] : kIntervalTitles) {
+    if (aggregate_filter_.interval == interval) {
+      if (!description.empty())
+        description += u", ";
+      description += Translate(title);
+    }
+  }
+  if (auto cut = truncated_at()) {
+    if (!description.empty())
+      description += u". ";
+    description += TruncationNotice(*cut);
+  }
+  return description;
+}
+
 ExportModel::ExportData SummaryModel::GetExportData() {
   return GridExportData{
-      scada::aui::TableColumn{-1, u"Time", 100, scada::aui::TableColumn::LEFT,
+      // Translated, and saying which end of the interval the row is: the
+      // literal English u"Time" reached a Russian spreadsheet as-is (backlog
+      // 912), and a print showed no title at all (backlog 875).
+      scada::aui::TableColumn{-1, Translate("Time (interval start)"), 100,
+                              scada::aui::TableColumn::LEFT,
                               scada::aui::TableColumn::DataType::General},
       *this, row_model(), column_model()};
 }

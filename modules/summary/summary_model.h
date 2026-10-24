@@ -14,7 +14,9 @@
 #include "scada/aggregate_filter.h"
 #include "scada/date_time.h"
 
+#include <functional>
 #include <memory>
+#include <optional>
 
 namespace scada {
 class DataValue;
@@ -72,6 +74,17 @@ class SummaryModel : private SummaryModelContext,
   const TimedDataSpec& timed_data(int column) const;
 
   scada::Time GetRowTime(int row) const;
+
+  // When the period needs more rows than the summary holds, the time its last
+  // row ends at; nullopt when the whole period fits. The cap used to cut the
+  // period silently (backlog 871).
+  std::optional<scada::Time> truncated_at() const {
+    return truncated_ ? std::optional{end_time_} : std::nullopt;
+  }
+
+  // Called after the period or the interval changes, so a view can show or
+  // hide its truncation notice.
+  std::function<void()> params_changed_handler;
   int GetRowForTime(scada::Time time) const;
 
   // aui::GridModel
@@ -90,8 +103,12 @@ class SummaryModel : private SummaryModelContext,
 
   // ExportModel
   virtual ExportData GetExportData() override;
+  virtual std::u16string GetExportDescription() override;
 
   static bool IsCustomUnits(const scada::NodeId& aggregation_id);
+
+  // The sentence a view and a printout show when the row cap cut the period.
+  static std::u16string TruncationNotice(scada::Time cut);
 
  private:
   class Column;
@@ -116,6 +133,7 @@ class SummaryModel : private SummaryModelContext,
   std::vector<std::unique_ptr<Column>> columns_;
 
   scada::Time start_time_ = scada::kNullTime;
+  bool truncated_ = false;
   // |end_time_| defines start of the last interval.
   scada::Time end_time_ = scada::kNullTime;
   scada::RelativeTimeRange time_range_;

@@ -255,6 +255,21 @@ bool Table::IsColumnVisible(int column_id) const {
   return section != -1 && !horizontalHeader()->isSectionHidden(section);
 }
 
+std::vector<TableColumn> Table::VisibleColumns() const {
+  const QHeaderView& header = *horizontalHeader();
+  const std::vector<TableColumn>& table_columns = columns();
+  std::vector<TableColumn> result;
+  for (int visual = 0; visual < header.count(); ++visual) {
+    const int section = header.logicalIndex(visual);
+    if (section < 0 || section >= static_cast<int>(table_columns.size()) ||
+        header.isSectionHidden(section)) {
+      continue;
+    }
+    result.push_back(table_columns[section]);
+  }
+  return result;
+}
+
 void Table::SetColumnVisible(int column_id, bool visible) {
   const int section = ColumnSection(column_id);
   if (section == -1)

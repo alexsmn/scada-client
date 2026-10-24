@@ -368,6 +368,10 @@ void TableView::OnSelectionChanged() {
 }
 
 ExportModel::ExportData TableView::GetExportData() {
-  return TableExportData{*model_, view_->columns(),
+  // Visible columns only: the hidden ones («Источник» among them) carry raw
+  // node ids and formulas, and a printout or a spreadsheet is a record of what
+  // the operator was looking at (backlog 912).
+  export_columns_ = view_->VisibleColumns();
+  return TableExportData{*model_, export_columns_,
                          Range{0, model_->row_count()}};
 }

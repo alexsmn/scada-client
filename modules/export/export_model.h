@@ -4,6 +4,7 @@
 #include "aui/models/table_model.h"
 
 #include <optional>
+#include <string>
 #include <variant>
 #include <vector>
 
@@ -62,4 +63,9 @@ class ExportModel {
   using ExportData = std::variant<TableExportData, GridExportData>;
 
   virtual ExportData GetExportData() = 0;
+
+  // What a printout's header should say about the data beyond the window
+  // title and the period — the aggregation method and interval of a summary,
+  // say. Empty when there is nothing to add.
+  virtual std::u16string GetExportDescription() { return {}; }
 };

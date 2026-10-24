@@ -9,6 +9,11 @@
 #include "controller/controller_delegate.h"
 #include "profile/window_definition.h"
 
+#if defined(UI_QT)
+#include <QLabel>
+#include <QVBoxLayout>
+#endif
+
 namespace {
 
 constexpr std::pair<unsigned, scada::NumericId> kAggregateCommands[] = {
@@ -37,6 +42,11 @@ SummaryView::SummaryView(const ControllerContext& context)
     : ControllerContext{context},
       model_{std::make_shared<SummaryModel>(
           SummaryModelContext{executor_, node_service_, timed_data_service_})} {}
+
+SummaryView::~SummaryView() {
+  // The model is shared with the grid and may outlive this controller.
+  model_->params_changed_handler = nullptr;
+}
 
 std::unique_ptr<UiView> SummaryView::Init(const WindowDefinition& definition) {
   model_->Load(definition);
@@ -99,8 +109,43 @@ std::unique_ptr<UiView> SummaryView::Init(const WindowDefinition& definition) {
             }));
   }
 
+#if defined(UI_QT)
+  // A notice above the grid when the row cap cuts the period, which it used
+  // to do silently: a month at 1-minute rows ended ~6.9 days in (backlog 871).
+  truncation_notice_ = new QLabel;
+  truncation_notice_->setObjectName(QStringLiteral("summaryTruncationNotice"));
+  truncation_notice_->setWordWrap(true);
+  truncation_notice_->setContentsMargins(6, 4, 6, 4);
+
+  auto* layout = new QVBoxLayout;
+  layout->setContentsMargins(0, 0, 0, 0);
+  layout->setSpacing(0);
+  layout->addWidget(truncation_notice_);
+  layout->addWidget(grid_);
+  auto* contents = new QWidget;
+  contents->setLayout(layout);
+
+  model_->params_changed_handler = [this] { UpdateTruncationNotice(); };
+  UpdateTruncationNotice();
+
+  return std::unique_ptr<UiView>{contents};
+#else
   return std::unique_ptr<UiView>{grid_->CreateParentIfNecessary()};
+#endif
 }
+
+#if defined(UI_QT)
+void SummaryView::UpdateTruncationNotice() {
+  if (!truncation_notice_)
+    return;
+  const std::optional<scada::Time> cut = model_->truncated_at();
+  truncation_notice_->setVisible(cut.has_value());
+  if (cut) {
+    truncation_notice_->setText(
+        QString::fromStdU16String(SummaryModel::TruncationNotice(*cut)));
+  }
+}
+#endif
 
 void SummaryView::Save(WindowDefinition& definition) {
   model_->Save(definition);

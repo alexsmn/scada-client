@@ -60,6 +60,10 @@ class TableView : protected ControllerContext,
 
   scada::aui::Table* view_ = nullptr;
 
+  // The visible columns as of the last GetExportData(). Held here because
+  // TableExportData refers to its columns rather than owning them.
+  std::vector<scada::aui::TableColumn> export_columns_;
+
   // The toolbar above the grid (Qt only).
   TableToolbar* toolbar_ = nullptr;
 
