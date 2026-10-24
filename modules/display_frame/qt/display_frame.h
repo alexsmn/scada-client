@@ -7,11 +7,14 @@
 #include <QString>
 #include <QWidget>
 
+#include <boost/signals2/connection.hpp>
+
 #include <memory>
 #include <vector>
 
 namespace scada {
 class NodeId;
+class SessionService;
 }
 class NodeEventProvider;
 class NodeService;
@@ -56,6 +59,10 @@ struct DisplayFrameContext {
   NodeEventProvider* node_event_provider = nullptr;
   // Resolves an event's source node to a display name for the Object column.
   NodeService* node_service = nullptr;
+  // Drives the toolbar's Live pill: "Live" while connected, "Offline"
+  // otherwise. Without one the pill reads "Live" unconditionally, which is
+  // what every frame did until backlog 911 — so the host should supply it.
+  scada::SessionService* session_service = nullptr;
 };
 
 // A reshelled chrome frame around a schematic (single-line) display renderer.
@@ -108,6 +115,7 @@ class DisplayFrame : public QWidget, private EventObserver {
   void ExportImage();
 
   void RefreshMeasurementRow(int row, const TimedDataSpec& spec);
+  void UpdateLiveIndicator(bool connected);
   void RefreshEvents();
 
   // EventObserver (Recent-events strip refresh triggers).
@@ -119,6 +127,8 @@ class DisplayFrame : public QWidget, private EventObserver {
   DisplayWidget* diagram_ = nullptr;
   QScrollArea* scroll_ = nullptr;
   QLabel* zoom_label_ = nullptr;
+  QLabel* live_indicator_ = nullptr;
+  boost::signals2::scoped_connection session_state_connection_;
 
   QTableWidget* measurements_ = nullptr;
   QTableWidget* events_ = nullptr;

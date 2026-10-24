@@ -20,6 +20,7 @@ VidiconModule::VidiconModule(VidiconModuleContext&& context)
                 .write_service_ = write_service_,
                 .node_event_provider_ = context.node_event_provider_,
                 .node_service_ = context.node_service_,
+                .session_service_ = context.session_service_,
                 .display_selection_registry_ =
                     context.display_selection_registry_});
       });

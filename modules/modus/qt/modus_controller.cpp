@@ -79,8 +79,15 @@ ModusController::DisplayView ModusController::CreateDisplayView() {
 }
 
 void ModusController::SelectDataSource(std::string_view data_source) {
-  if (data_source.empty())
+  // An empty data source is a click on bare page or on a shape bound to no
+  // object. The display moves (or drops) its highlight either way, so the
+  // selection must follow: leaving the previous object selected let
+  // «Управление…», the Inspector and a double-click acknowledgement act on an
+  // object the operator no longer sees highlighted (backlog 907).
+  if (data_source.empty()) {
+    selection_.Clear();
     return;
+  }
 
   try {
     selection_.SelectTimedData(

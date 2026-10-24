@@ -64,8 +64,12 @@ std::unique_ptr<UiView> VidiconDisplayNativeView::Init(
 
         try {
           auto node_id = scada::NodeId::FromString(hit->data_source);
-          if (node_id.is_null())
+          // An unbound shape is highlighted like any other, so the previous
+          // object must not stay selected behind it (backlog 907).
+          if (node_id.is_null()) {
+            selection_.Clear();
             return;
+          }
           selection_.SelectTimedData(
               TimedDataSpec{timed_data_service_, node_id});
           // Mirror the selection into the frame's Measurements strip.
@@ -89,7 +93,8 @@ std::unique_ptr<UiView> VidiconDisplayNativeView::Init(
       widget.get(), title,
       DisplayFrameContext{.timed_data_service = &timed_data_service_,
                           .node_event_provider = &node_event_provider_,
-                          .node_service = &node_service_});
+                          .node_service = &node_service_,
+                          .session_service = &session_service_});
 
   frame_ = static_cast<DisplayFrame*>(framed);
   widget.release();

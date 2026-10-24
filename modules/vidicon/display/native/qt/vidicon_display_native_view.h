@@ -17,6 +17,10 @@ class QWidget;
 class TimedDataService;
 class WriteService;
 
+namespace scada {
+class SessionService;
+}
+
 namespace scada::vidicon {
 class VidiconClient;
 }
@@ -33,6 +37,8 @@ struct VidiconDisplayNativeViewContext {
   // For the reshelled display frame's bay strips.
   NodeEventProvider& node_event_provider_;
   NodeService& node_service_;
+  // Drives the display frame's Live pill (backlog 911).
+  scada::SessionService& session_service_;
   // Where the selected element is published for the status strip's `Selected`
   // cell. The view cannot reach the status bar itself -- it is built once for
   // the window -- so the registry is the seam. ADR 0012 phase 5.

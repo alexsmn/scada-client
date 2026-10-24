@@ -11,6 +11,7 @@
 #include "node_service/node_service.h"
 #include "scada/event.h"
 #include "scada/node_id.h"
+#include "scada/session_service.h"
 #include "timed_data/timed_data_service.h"
 #include "timed_data/timed_data_spec.h"
 
@@ -293,6 +294,16 @@ DisplayFrame::~DisplayFrame() {
     data_context_.node_event_provider->RemoveObserver(*this);
 }
 
+void DisplayFrame::UpdateLiveIndicator(bool connected) {
+  const scada::aui::ThemeTokens& tokens = FrameTokens();
+  const QColor& color = connected ? tokens.good : tokens.bad;
+  live_indicator_->setText(connected ? Tr("Live") : Tr("Offline"));
+  live_indicator_->setStyleSheet(
+      QStringLiteral("#liveIndicator{background:%1;color:%2;border-radius:9px;"
+                     "padding:1px 10px;font-weight:600;}")
+          .arg(SoftRgba(color, 0.16), color.name()));
+}
+
 void DisplayFrame::BuildToolbar(const QString& breadcrumb) {
   const scada::aui::ThemeTokens& tokens = FrameTokens();
 
@@ -319,14 +330,20 @@ void DisplayFrame::BuildToolbar(const QString& breadcrumb) {
     layout->addWidget(crumb);
   }
 
-  // Live indicator pill.
-  auto* live = new QLabel{Tr("Live"), bar};
-  live->setObjectName(QStringLiteral("liveIndicator"));
-  live->setStyleSheet(
-      QStringLiteral("#liveIndicator{background:%1;color:%2;border-radius:9px;"
-                     "padding:1px 10px;font-weight:600;}")
-          .arg(SoftRgba(tokens.good, 0.16), tokens.good.name()));
-  layout->addWidget(live);
+  // Live indicator pill. It follows the session: a fixed "Live" label stayed
+  // green while the client was disconnected (backlog 911).
+  live_indicator_ = new QLabel{bar};
+  live_indicator_->setObjectName(QStringLiteral("liveIndicator"));
+  layout->addWidget(live_indicator_);
+  if (auto* session = data_context_.session_service) {
+    session_state_connection_ = session->SubscribeSessionStateChanged(
+        [this](bool connected, const scada::Status&) {
+          UpdateLiveIndicator(connected);
+        });
+    UpdateLiveIndicator(session->IsConnected());
+  } else {
+    UpdateLiveIndicator(/*connected=*/true);
+  }
 
   layout->addStretch(1);
 

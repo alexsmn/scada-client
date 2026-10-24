@@ -152,9 +152,11 @@ TEST_F(ModusControllerTest, SelectingADataSourceSelectsThatNodesLiveValue) {
   EXPECT_FALSE(selection->empty());
 }
 
-// A click that hits nothing reports an empty data source, and must not disturb
-// a selection the operator already made elsewhere.
-TEST_F(ModusControllerTest, AnEmptyDataSourceLeavesTheSelectionAlone) {
+// A click on bare page or on an unbound shape reports an empty data source.
+// The display moves its highlight off the previous object, so the selection
+// must clear too — otherwise commands act on an object no longer highlighted
+// (backlog 907).
+TEST_F(ModusControllerTest, AnEmptyDataSourceClearsTheSelection) {
   ModusController controller = MakeController();
   controller.Init(WindowDefinition{});
 
@@ -164,7 +166,7 @@ TEST_F(ModusControllerTest, AnEmptyDataSourceLeavesTheSelectionAlone) {
 
   controller.SelectDataSource("");
 
-  EXPECT_FALSE(selection->empty());
+  EXPECT_TRUE(selection->empty());
 }
 
 // Pins the surprising half of `scada::NodeId::FromString`: it has no failure

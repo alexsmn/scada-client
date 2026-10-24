@@ -5,7 +5,9 @@
 #include "events/node_event_provider.h"
 #include "scada/date_time.h"
 #include "scada/event.h"
+#include "scada/session_service_mock.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <QLabel>
@@ -113,3 +115,31 @@ TEST_F(DisplayFrameStripsTest, LegendCarriesTheFourEquipmentStates) {
 }
 
 }  // namespace
+
+// The Live pill follows the session. It was a fixed label that stayed green
+// while the client was disconnected (backlog 911).
+TEST_F(DisplayFrameStripsTest, LivePillReadsOfflineWhileDisconnected) {
+  testing::NiceMock<scada::MockSessionService> session;
+  ON_CALL(session, IsConnected(testing::_))
+      .WillByDefault(testing::Return(false));
+
+  DisplayFrame frame(/*diagram=*/nullptr, QStringLiteral("Bay 1"),
+                     DisplayFrameContext{.session_service = &session});
+
+  auto* live = frame.findChild<QLabel*>(QStringLiteral("liveIndicator"));
+  ASSERT_NE(live, nullptr);
+  EXPECT_EQ(live->text(), QStringLiteral("Offline"));
+}
+
+TEST_F(DisplayFrameStripsTest, LivePillReadsLiveWhileConnected) {
+  testing::NiceMock<scada::MockSessionService> session;
+  ON_CALL(session, IsConnected(testing::_))
+      .WillByDefault(testing::Return(true));
+
+  DisplayFrame frame(/*diagram=*/nullptr, QStringLiteral("Bay 1"),
+                     DisplayFrameContext{.session_service = &session});
+
+  auto* live = frame.findChild<QLabel*>(QStringLiteral("liveIndicator"));
+  ASSERT_NE(live, nullptr);
+  EXPECT_EQ(live->text(), QStringLiteral("Live"));
+}
