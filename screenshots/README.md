@@ -61,7 +61,7 @@ Workspace views and panels — what the operator works in. (50)
 | **Watch filter bar**<br>`watch-filter-bar.png` | <img src="watch-filter-bar.png" alt="Watch filter bar" width="360"> | [Light](watch-filter-bar-light.png) |
 | **Workbench activity rail**<br>`workbench-activity-rail.png` | <img src="workbench-activity-rail.png" alt="Workbench activity rail" width="360"> | [Light](workbench-activity-rail-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
 | **Workbench overview**<br>`workbench-overview.png` | <img src="workbench-overview.png" alt="Workbench overview" width="360"> | [Light](workbench-overview-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
-| **Workbench window**<br>`workbench-window.png` | <img src="workbench-window.png" alt="Workbench window" width="360"> | [Light](workbench-window-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
+| **Workbench window**<br>`workbench-window.png` | <img src="workbench-window.png" alt="Workbench window" width="360"> | [Light](workbench-window-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
 
 ## Dialogs
 
