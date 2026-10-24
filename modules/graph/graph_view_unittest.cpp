@@ -8,6 +8,7 @@
 #include "controller/test/controller_environment.h"
 #include "graph/metrix_data_source.h"
 #include "graph/metrix_graph.h"
+#include "model/node_id_util.h"
 #include "node_service/test/fake_node_service.h"
 #include "resources/common_resources.h"
 #include "scada/client.h"
@@ -477,4 +478,32 @@ TEST(MetrixDataSourceTest, DropsCanceledEarliestTimestampRead) {
   EXPECT_EQ(horizontal_range.low(),
             scada::base::EncodeDoubleT(current_earliest));
   EXPECT_EQ(horizontal_range.high(), scada::base::EncodeDoubleT(second_latest));
+}
+
+// Ten panes is the limit, and a graph saved at the limit must reopen with
+// every line. The loader used to check the cap before looking up the line's
+// own (already read) pane, so the 10th pane's lines were dropped (backlog
+// 926).
+TEST_F(GraphViewTest, TenPanesKeepEveryLineOnReopen) {
+  constexpr int kPaneCount = 10;
+  WindowDefinition loaded;
+  for (int i = 0; i < kPaneCount; ++i)
+    loaded.AddItem("GraphPane").SetInt("ix", i);
+  for (int i = 0; i < kPaneCount; ++i) {
+    loaded.AddItem("Item").SetInt("pane", i).SetString(
+        "path", NodeIdToScadaString(scada::NodeId(100 + i, 1)));
+  }
+
+  GraphView view{env_.MakeControllerContext()};
+  std::unique_ptr<UiView> ui_view = view.Init(loaded);
+
+  WindowDefinition saved;
+  view.Save(saved);
+
+  int lines = 0;
+  for (const auto& item : saved.items) {
+    if (item.name_is("Item"))
+      ++lines;
+  }
+  EXPECT_EQ(lines, kPaneCount);
 }

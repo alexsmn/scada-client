@@ -65,9 +65,6 @@ struct GraphViewLoader {
   }
 
   void ReadItem(const WindowItem& item) {
-    if (graph_.panes().size() >= kMaxPanes)
-      return;
-
     auto path = item.GetString("path");
     auto stype = item.GetString("type", "GraphLine");
     auto color_string = item.GetString("clr");
@@ -77,10 +74,16 @@ struct GraphViewLoader {
     int pane_ix = item.GetInt("pane", -1);
     auto i = pane_map.find(pane_ix);
     MetrixGraph::MetrixPane* pane = NULL;
-    if (i != pane_map.end())
+    if (i != pane_map.end()) {
       pane = static_cast<MetrixGraph::MetrixPane*>(i->second);
-    else
+    } else {
+      // The cap applies only when a line needs a pane of its own. Checking it
+      // first dropped every line of the 10th pane and of any after it, though
+      // those panes had been read already (backlog 926).
+      if (graph_.panes().size() >= kMaxPanes)
+        return;
       pane = &static_cast<MetrixGraph::MetrixPane&>(graph_.NewPane());
+    }
     // make color
     auto color = color_string.empty() ? graph_view_.NewColor()
                                       : scada::aui::StringToColor(color_string);
