@@ -35,6 +35,14 @@ on:
     branches: [ "main", "release/**" ]
   pull_request:
     branches: [ "main", "release/**" ]
+  # Manual runs, for one purpose so far: `debug_windows` opens an SSH session
+  # on the Windows runner after the build (see "Debug session" below).
+  workflow_dispatch:
+    inputs:
+      debug_windows:
+        description: Open an SSH session on the Windows runner after the build
+        type: boolean
+        default: false
 
 env:
   # Pinned, and built from source below rather than installed from apt. See the
@@ -364,11 +372,17 @@ jobs:
     # so a run that dies half way through Qt still leaves the next one further
     # along. The run_id in the key makes every run save its own entry, and the
     # restore-keys prefix makes it start from the newest earlier one.
+    #
+    # run_attempt is in the key too, because a re-run keeps its run_id. Without
+    # it the cancelled first attempt of run 37259169471 claimed the key with a
+    # partial cache, the re-run's save was refused ("Unable to reserve cache
+    # ... another job may be creating this cache"), and the 95 ports it had
+    # built -- gRPC and Qt among them, 3h18m of Configure -- were thrown away.
     - name: Restore the vcpkg binary cache
       uses: actions/cache/restore@v6
       with:
         path: ${{ github.workspace }}/vcpkg-cache
-        key: vcpkg-${{ matrix.os }}-${{ hashFiles('client/vcpkg.json') }}-${{ github.run_id }}
+        key: vcpkg-${{ matrix.os }}-${{ hashFiles('client/vcpkg.json') }}-${{ github.run_id }}-${{ github.run_attempt }}
         restore-keys: |
           vcpkg-${{ matrix.os }}-${{ hashFiles('client/vcpkg.json') }}-
           vcpkg-${{ matrix.os }}-
@@ -415,7 +429,30 @@ jobs:
       uses: actions/cache/save@v6
       with:
         path: ${{ github.workspace }}/vcpkg-cache
-        key: vcpkg-${{ matrix.os }}-${{ hashFiles('client/vcpkg.json') }}-${{ github.run_id }}
+        key: vcpkg-${{ matrix.os }}-${{ hashFiles('client/vcpkg.json') }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+    # An SSH session on the Windows runner, on a manual run with debug_windows
+    # set and never otherwise. It sits here, after the build and before the
+    # probe, so the session has the built tree to work in. The probe below
+    # fails in under a second with exit 127 and no Qt output (run
+    # 37259169471), and the session is how that gets looked at directly.
+    #
+    # `limit-access-to-actor: true` is not optional. This repository is
+    # public, so its job logs are too, and the session's address is printed in
+    # the log: without the flag, anyone reading it could connect. With it the
+    # session accepts only the SSH keys on the GitHub profile of whoever
+    # started the run, and the action FAILS rather than opening an open
+    # session when there are none (it throws "No public SSH keys registered",
+    # action-tmate v3.24 src/index.js). Pinned by commit; v3.24 declares
+    # node24. Create C:\msys64\continue, or `continue` at the workspace root,
+    # to end it early (continueFileExists() in src/index.js); the step's
+    # timeout ends it otherwise.
+    - name: Debug session (Windows, manual runs only)
+      if: runner.os == 'Windows' && github.event_name == 'workflow_dispatch' && inputs.debug_windows
+      timeout-minutes: 60
+      uses: mxschmitt/action-tmate@35b54afac29c97fb54faba5b513f8fbd1882f113 # v3.24
+      with:
+        limit-access-to-actor: true
 
     # The E2E suite is skipped at configure time here (no `iec61850pp` sibling
     # and no tier binaries), so this is the unit suite.
@@ -470,6 +507,15 @@ jobs:
     # two-minute bound before the suite, so a plugin that still cannot be
     # found fails this job in minutes, prints Qt's own account of where it
     # looked, and does not spend six hours on 1400 identical timeouts.
+    #
+    # It did fail fast (run 37259169471), but said nothing: exit 127 straight
+    # after `[ RUN ]`, with no plugin log. Two things now make it explain
+    # itself. Qt on Windows sends its messages to OutputDebugString rather
+    # than stderr when stderr is not a console, which a CI pipe is not, so
+    # QT_FORCE_STDERR_LOGGING routes them back. And 127 is how MSYS bash
+    # reports a Windows process killed by a DLL that could not be loaded, so
+    # the probe prints the DLLs the plugin and the test import, for comparison
+    # with what sits beside the test.
     - name: Probe Qt plugin loading (Windows)
       if: runner.os == 'Windows'
       working-directory: client
@@ -478,10 +524,23 @@ jobs:
         QT_QPA_PLATFORM: offscreen
         QT_PLUGIN_PATH: ${{ github.workspace }}/client/build/ninja/vcpkg_installed/x64-windows/Qt6/plugins
         QT_DEBUG_PLUGINS: 1
+        QT_FORCE_STDERR_LOGGING: 1
       run: |
-        ls build/ninja/vcpkg_installed/x64-windows/Qt6/plugins/platforms
+        plugins=build/ninja/vcpkg_installed/x64-windows/Qt6/plugins
+        ls "$plugins/platforms"
+        echo "--- DLLs qoffscreen.dll imports:"
+        dumpbin //nologo //dependents "$plugins/platforms/qoffscreen.dll" | grep -i '\.dll'
+        echo "--- DLLs aui_qt_unittests.exe imports:"
+        dumpbin //nologo //dependents build/ninja/bin/Release/aui_qt_unittests.exe | grep -i '\.dll'
+        echo "--- Qt DLLs beside the test:"
+        ls build/ninja/bin/Release | grep -i '^qt6' || true
+        set +e
         timeout 120 build/ninja/bin/Release/aui_qt_unittests.exe \
           --gtest_filter=DialogServiceImplQtTest.RunMessageBoxMapsNoButtonResult
+        rc=$?
+        set -e
+        echo "probe exit code: $rc"
+        exit $rc
 
     # Offscreen, because a hosted runner has no interactive desktop, and a
     # bare `offscreen` is upgraded to the fixtures' 1920x1080 screen
