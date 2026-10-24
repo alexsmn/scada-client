@@ -30,9 +30,11 @@ const ColorPropertyDefinition kColorPropDef;
 const EnumPropertyDefinition kEnumPropDef;
 
 struct ChannelPropertyTree {
-  explicit ChannelPropertyTree(std::u16string_view suffix)
-      : device{u16format(L"Device{}", suffix), true},
-        channel{u16format(L"Channel{}", suffix), false} {}
+  // Whole English sources rather than a suffix glued on with u16format, so
+  // each title is one catalog entry the Russian client can translate (backlog
+  // 916).
+  ChannelPropertyTree(const char* device_title, const char* channel_title)
+      : device{device_title, true}, channel{channel_title, false} {}
 
   ChannelPropertyDefinition device;
   ChannelPropertyDefinition channel;
@@ -40,9 +42,11 @@ struct ChannelPropertyTree {
   HierachicalPropertyDefinition root{{&device, &channel}};
 };
 
-const ChannelPropertyTree kObjectInput1PropTree{u""};
-const ChannelPropertyTree kObjectInput2PropTree{u" (backup)"};
-const ChannelPropertyTree kObjectOutputPropTree{u" (control)"};
+const ChannelPropertyTree kObjectInput1PropTree{"Device", "Channel"};
+const ChannelPropertyTree kObjectInput2PropTree{"Device (backup)",
+                                                "Channel (backup)"};
+const ChannelPropertyTree kObjectOutputPropTree{"Device (control)",
+                                                "Channel (control)"};
 
 const TransportPropertyDefinition kLinkTransportPropDef;
 

@@ -6,6 +6,7 @@
 #include "address_space/test/scada_test_address_space.h"
 #include "address_space/type_definition.h"
 #include "aui/dialog_service_mock.h"
+#include "aui/test/app_environment.h"
 #include "base/check.h"
 #include "base/test/awaitable_test.h"
 #include "base/u16format.h"
@@ -25,6 +26,9 @@
 #include "services/task_manager_mock.h"
 
 #include "base/debug_util.h"
+
+#include <QCoreApplication>
+#include <QTranslator>
 
 #include <algorithm>
 
@@ -142,7 +146,7 @@ class PropertyDefsTest : public Test {
   PropertyContext property_context{executor, *node_service, task_manager,
                                    dialog_service};
 
-  ChannelPropertyDefinition channel_property_definition{u"Title", true};
+  ChannelPropertyDefinition channel_property_definition{"Title", true};
 
   inline static const scada::NodeId data_item_id{1, 1};
   inline static const scada::NodeId data_group_id{2, 1};
@@ -283,3 +287,35 @@ TEST_F(PropertyDefsTest, DeviceChoiceHandler_LoadsChoicesFromCoroutine) {
                                      u16format(L"{} : {}", kLinkDisplayName,
                                                kDeviceDisplayName)}));
 }
+
+namespace {
+
+// Answers one source string, the way the installed Russian catalog would.
+class OneEntryTranslator final : public QTranslator {
+ public:
+  QString translate(const char* context,
+                    const char* source_text,
+                    const char* disambiguation,
+                    int n) const override {
+    return std::string_view{source_text} == "Device (backup)"
+               ? QStringLiteral("Устройство (резерв)")
+               : QString{};
+  }
+};
+
+// The definitions are namespace-scope constants, built before any catalog is
+// installed; a title composed then stayed English in the Russian client
+// (backlog 916). It must be translated when it is read.
+TEST_F(PropertyDefsTest, ChannelTitleIsTranslatedWhenRead) {
+  AppEnvironment app_env;
+  ChannelPropertyDefinition definition{"Device (backup)", /*device=*/true};
+
+  OneEntryTranslator translator;
+  QCoreApplication::installTranslator(&translator);
+  const std::u16string title = definition.GetTitle(property_context, {});
+  QCoreApplication::removeTranslator(&translator);
+
+  EXPECT_EQ(title, u"Устройство (резерв)");
+}
+
+}  // namespace

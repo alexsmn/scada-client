@@ -5,9 +5,12 @@
 
 class ChannelPropertyDefinition : public PropertyDefinition {
  public:
-  ChannelPropertyDefinition(std::u16string title, bool device)
+  // `title` is the English source, translated when read: the definitions are
+  // namespace-scope constants built before any catalog is installed, so a
+  // title composed at construction stayed English (backlog 916).
+  ChannelPropertyDefinition(const char* title, bool device)
       : PropertyDefinition(scada::aui::TableColumn::LEFT),
-        title_(std::move(title)),
+        title_(title),
         device_(device) {}
 
   // PropertyDefinition
@@ -37,6 +40,6 @@ class ChannelPropertyDefinition : public PropertyDefinition {
   static scada::NodeId GetDeviceId(const NodeRef& node,
                                    const scada::NodeId& prop_decl_id);
 
-  const std::u16string title_;
+  const char* const title_;
   const bool device_;
 };

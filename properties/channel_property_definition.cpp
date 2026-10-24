@@ -1,5 +1,6 @@
 #include "properties/channel_property_definition.h"
 
+#include "aui/translation.h"
 #include "base/utf_convert.h"
 #include "common/formula_util.h"
 #include "model/data_items_node_ids.h"
@@ -36,7 +37,7 @@ const char16_t ChannelPropertyDefinition::kParentGroupDevice[] = u"<Group>";
 std::u16string ChannelPropertyDefinition::GetTitle(
     const PropertyContext& context,
     const NodeRef& property_declaration) const {
-  return title_;
+  return Translate(title_);
 }
 
 // static
