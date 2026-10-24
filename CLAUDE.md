@@ -211,12 +211,15 @@ Rules of the pipeline:
   taking `AppEnvironment` reintroduces that; take the fixture. See
   `docs/ops/client-build.md` → "The Qt tests run offscreen on macOS".
   Note the fixture makes a second, separate decision that is **not**
-  macOS-only: whichever way the platform ends up an unadorned `offscreen`,
+  macOS-only, though it skips Windows: whichever way the platform ends up an unadorned `offscreen`,
   including one the caller put in the environment, it is upgraded to
   `offscreen:configfile=<path>` so the process gets a 1920x1080 screen rather
   than the plugin's built-in 800x600. `QT_QPA_PLATFORM=offscreen` for a whole
   `ctest` run is therefore safe — 2258/2258 either way, measured 2026-09-20 —
-  and asking for a different screen means naming your own `configfile=`.
+  and asking for a different screen means naming your own `configfile=`. On
+  Windows a bare `offscreen` is left alone: Qt splits the platform string on
+  `:`, so a `configfile=D:/...` path is cut at the drive letter and the plugin
+  aborts (`aui/test/qt/app_environment.h` has the detail).
 
 ### UX design system
 

@@ -42,7 +42,7 @@
 // merely had not been reconfigured yet, which is what a peer session measured
 // as 345 failures on 2026-09-07.
 //
-// WHICH SCREEN, and this half runs on every platform. The offscreen plugin's
+// WHICH SCREEN, and this half runs everywhere but Windows. The offscreen plugin's
 // built-in screen is 800x600, and `QWidget::restoreGeometry()` clamps a
 // restored window to the screen it lands on, so a geometry-restoring test
 // needs a desktop-sized one -- which is what `configfile=` names. A caller
@@ -62,6 +62,17 @@
 // aborts. So the fixture looks before naming it, in both halves: a binary run
 // after its source tree moved falls back to the plugin's built-in 800x600
 // screen, still headless, rather than to that abort.
+//
+// Windows gets no screen description, because there the path cannot be
+// passed at all. Qt splits the platform string on `:`, so the drive letter
+// cuts `offscreen:configfile=D:/a/...` down to `configfile=D`; the plugin
+// then reports `Could not find platform config file D` and the process exits
+// before the test body runs. That is what killed every QApplication test on
+// the client's Windows CI leg (scada-client run 40098873156, with Qt's
+// plugin log routed to stderr). `build-support/scada_qt_offscreen_platform.h`,
+// the same logic for the other products, has left Windows out from the start.
+// A bare `offscreen` there keeps the plugin's 800x600 screen, which no client
+// test minds: none asserts on restored geometry.
 class AppEnvironment {
  private:
   // A member so it runs before `app_`: QApplication reads QT_QPA_PLATFORM in
@@ -80,12 +91,14 @@ class AppEnvironment {
         qputenv("QT_QPA_PLATFORM", have_screen ? kWithScreen : "offscreen");
 #endif
 
-      // Which screen: on every platform, and including the case the caller
-      // asked for. An unadorned `offscreen` gets the screen description
-      // attached; anything else -- `cocoa`, or an `offscreen` already
-      // carrying options -- is left exactly as it was.
+      // Which screen: everywhere but Windows (see above), and including the
+      // case the caller asked for. An unadorned `offscreen` gets the screen
+      // description attached; anything else -- `cocoa`, or an `offscreen`
+      // already carrying options -- is left exactly as it was.
+#if !defined(Q_OS_WIN)
       if (have_screen && qgetenv("QT_QPA_PLATFORM") == "offscreen")
         qputenv("QT_QPA_PLATFORM", kWithScreen);
+#endif
 #endif
     }
   };

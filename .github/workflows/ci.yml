@@ -35,14 +35,6 @@ on:
     branches: [ "main", "release/**" ]
   pull_request:
     branches: [ "main", "release/**" ]
-  # Manual runs, for one purpose so far: `debug_windows` opens an SSH session
-  # on the Windows runner after the build (see "Debug session" below).
-  workflow_dispatch:
-    inputs:
-      debug_windows:
-        description: Open an SSH session on the Windows runner after the build
-        type: boolean
-        default: false
 
 env:
   # Pinned, and built from source below rather than installed from apt. See the
@@ -431,29 +423,6 @@ jobs:
         path: ${{ github.workspace }}/vcpkg-cache
         key: vcpkg-${{ matrix.os }}-${{ hashFiles('client/vcpkg.json') }}-${{ github.run_id }}-${{ github.run_attempt }}
 
-    # An SSH session on the Windows runner, on a manual run with debug_windows
-    # set and never otherwise. It sits here, after the build and before the
-    # probe, so the session has the built tree to work in. The probe below
-    # fails in under a second with exit 127 and no Qt output (run
-    # 37259169471), and the session is how that gets looked at directly.
-    #
-    # `limit-access-to-actor: true` is not optional. This repository is
-    # public, so its job logs are too, and the session's address is printed in
-    # the log: without the flag, anyone reading it could connect. With it the
-    # session accepts only the SSH keys on the GitHub profile of whoever
-    # started the run, and the action FAILS rather than opening an open
-    # session when there are none (it throws "No public SSH keys registered",
-    # action-tmate v3.24 src/index.js). Pinned by commit; v3.24 declares
-    # node24. Create C:\msys64\continue, or `continue` at the workspace root,
-    # to end it early (continueFileExists() in src/index.js); the step's
-    # timeout ends it otherwise.
-    - name: Debug session (Windows, manual runs only)
-      if: runner.os == 'Windows' && github.event_name == 'workflow_dispatch' && inputs.debug_windows
-      timeout-minutes: 60
-      uses: mxschmitt/action-tmate@35b54afac29c97fb54faba5b513f8fbd1882f113 # v3.24
-      with:
-        limit-access-to-actor: true
-
     # The E2E suite is skipped at configure time here (no `iec61850pp` sibling
     # and no tier binaries), so this is the unit suite.
     #
@@ -516,6 +485,15 @@ jobs:
     # reports a Windows process killed by a DLL that could not be loaded, so
     # the probe prints the DLLs the plugin and the test import, for comparison
     # with what sits beside the test.
+    #
+    # With that, run 40098873156 named the cause: the plugin loaded from
+    # QT_PLUGIN_PATH, then `Could not find platform config file D`. The test
+    # fixture had turned the bare `offscreen` into
+    # `offscreen:configfile=D:/a/...`, and Qt splits platform arguments on
+    # `:`, so the drive letter cut the path to `D`. AppEnvironment
+    # (aui/test/qt/app_environment.h) no longer attaches a screen
+    # description on Windows. The 127 was not a missing DLL: every Qt DLL
+    # the plugin and the test import was beside the test.
     - name: Probe Qt plugin loading (Windows)
       if: runner.os == 'Windows'
       working-directory: client
