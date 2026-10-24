@@ -151,6 +151,14 @@ Awaitable<void> AddFileAsync(NodeRef parent_directory,
 
 }  // namespace
 
+Awaitable<void> CreateFileDirectory(NodeRef parent_directory,
+                                    TaskManager& task_manager) {
+  (void)co_await task_manager.PostInsertTask(
+      {.type_definition_id = scada::filesystem::id::FileDirectoryType,
+       .parent_id = parent_directory.node_id(),
+       .attributes = {.display_name = Translate("New Folder")}});
+}
+
 Awaitable<void> AddFile(NodeRef parent_directory,
                         DialogService& dialog_service,
                         TaskManager& task_manager,

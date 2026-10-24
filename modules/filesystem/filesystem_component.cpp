@@ -167,7 +167,15 @@ void FileSystemComponent::AddFileCommand(
 
   selection_commands_->AddCommand(
       BasicCommand<SelectionCommandContext>{command_id}
-          .set_execute_handler([this](const SelectionCommandContext& context) {
+          .set_execute_handler([this, type_definition_id](
+                                   const SelectionCommandContext& context) {
+            // Each command its own action: the folder command used to reach
+            // AddFile too, so «Создать — Папка» uploaded a file (backlog 891).
+            if (type_definition_id ==
+                scada::filesystem::id::FileDirectoryType) {
+              return CreateFileDirectory(context.selection.node(),
+                                         task_manager_);
+            }
             return AddFile(context.selection.node(), context.dialog_service,
                            task_manager_, executor_);
           })

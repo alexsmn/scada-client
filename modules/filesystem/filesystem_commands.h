@@ -49,3 +49,9 @@ Awaitable<void> AddFile(NodeRef parent_directory,
                         DialogService& dialog_service,
                         TaskManager& task_manager,
                         AnyExecutor executor);
+
+// «Создать — Папка»: creates an empty folder under `parent_directory`, named
+// "New Folder" for the operator to rename in place. It used to share AddFile's
+// handler and so opened the file picker and uploaded a file (backlog 891).
+Awaitable<void> CreateFileDirectory(NodeRef parent_directory,
+                                    TaskManager& task_manager);

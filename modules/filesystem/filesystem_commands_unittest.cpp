@@ -18,7 +18,9 @@
 #include "node_service/static/static_node_service.h"
 #include "profile/window_definition.h"
 #include "resources/common_resources.h"
+#include "services/task_manager_mock.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <fstream>
@@ -327,4 +329,42 @@ TEST_F(OpenFileCommandTest,
   EXPECT_TRUE(main_window_.last_activate);
   EXPECT_EQ(main_window_.open_view_calls, 1);
   EXPECT_EQ(dialog_service_.message_box_calls, 0);
+}
+
+namespace {
+
+// A plain coroutine taking its result by value, so the gmock action above can
+// stay a non-coroutine lambda (CLAUDE.md, Unit Test Guidance).
+scada::CoStatusOr<scada::NodeId> ReadyNodeId(scada::NodeId id) {
+  co_return id;
+}
+
+}  // namespace
+
+// «Создать — Папка» used to run the add-file handler, so it opened a file
+// picker and uploaded a file. It must create a folder (backlog 891).
+TEST(CreateFileDirectoryTest, InsertsAFolderNotAFile) {
+  TestExecutor executor;
+  StaticNodeService node_service;
+  constexpr scada::NodeId kParentId{500, 1};
+  node_service.Add(scada::NodeState{
+      .node_id = kParentId,
+      .node_class = scada::NodeClass::Object,
+      .type_definition_id = scada::filesystem::id::FileDirectoryType});
+
+  testing::NiceMock<MockTaskManager> task_manager;
+  scada::NodeState inserted;
+  EXPECT_CALL(task_manager, PostInsertTask(testing::_))
+      .WillOnce([&inserted](const scada::NodeState& state) {
+        inserted = state;
+        return ReadyNodeId(scada::NodeId{501, 1});
+      });
+
+  WaitAwaitable(executor, CreateFileDirectory(node_service.GetNode(kParentId),
+                                              task_manager));
+
+  EXPECT_EQ(inserted.type_definition_id,
+            scada::filesystem::id::FileDirectoryType);
+  EXPECT_EQ(inserted.parent_id, kParentId);
+  EXPECT_FALSE(inserted.attributes.display_name.empty());
 }
