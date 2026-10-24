@@ -1,5 +1,6 @@
 #include "configuration/configuration_module.h"
 
+#include "aui/dialog_service.h"
 #include "aui/translation.h"
 #include "base/awaitable.h"
 #include "base/u16format.h"
@@ -184,9 +185,12 @@ void ConfigurationModule::RegisterMethodCommand(
            },
        .available_handler =
            [this](const SelectionCommandContext& context) {
+             // DeviceType methods, so offered on devices. They were offered on
+             // data items, where «Полный опрос» and «Синхронизация часов» call
+             // a method the node does not have (backlog 892).
              return session_service_.HasPermission(scada::Permission::kCall) &&
                     IsInstanceOf(context.selection.node(),
-                                 scada::data_items::id::DataItemType);
+                                 scada::devices::id::DeviceType);
            }});
 }
 
@@ -207,6 +211,29 @@ void ConfigurationModule::CallMethod(
           });
 }
 
+Awaitable<void> ConfigurationModule::SetDeviceEnabledAsync(
+    NodeRef node,
+    DialogService& dialog_service,
+    bool enable) {
+  // Disabling stops polling and control of the device and everything under
+  // it, so it asks first; it used to go on one click (backlog 924). Enabling
+  // restores the normal state and does not.
+  if (!enable) {
+    const MessageBoxResult answer = co_await dialog_service.RunMessageBox(
+        u16format(Translate("Disable \"{}\"? Its data stops updating and "
+                            "control through it is refused until it is "
+                            "enabled again."),
+                  ToString16(node.display_name())),
+        Translate("Disable"), MessageBoxMode::QuestionYesNo);
+    if (answer != MessageBoxResult::Yes)
+      co_return;
+  }
+
+  (void)co_await task_manager_.PostUpdateTask(
+      node.node_id(), /*attrs=*/{}, /*props=*/
+      {{scada::devices::id::DeviceType_Disabled, !enable}});
+}
+
 void ConfigurationModule::RegisterEnableDeviceCommand(unsigned command_id,
                                                       bool enable) {
   selection_commands_.AddCommand(
@@ -217,12 +244,9 @@ void ConfigurationModule::RegisterEnableDeviceCommand(unsigned command_id,
              // so the task actually runs; the task manager reports completion
              // itself.
              CoSpawn(
-                 executor_,
-                 [this, node_id = context.selection.node().node_id(),
-                  enable]() -> Awaitable<void> {
-                   (void)co_await task_manager_.PostUpdateTask(
-                       node_id, /*attrs=*/{}, /*props=*/
-                       {{scada::devices::id::DeviceType_Disabled, !enable}});
+                 executor_, [this, node = context.selection.node(),
+                             &dialog_service = context.dialog_service, enable] {
+                   return SetDeviceEnabledAsync(node, dialog_service, enable);
                  });
            },
        .enabled_handler =

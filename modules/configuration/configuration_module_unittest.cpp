@@ -184,3 +184,83 @@ TEST_F(ConfigurationModuleTest, ReportsMethodCallFailureAfterCompletion) {
   EXPECT_EQ(event.severity, scada::kSeverityCritical);
   EXPECT_NE(event.message.text.find(u"Pump"), std::u16string::npos);
 }
+
+// «Полный опрос» and «Синхронизация часов» call DeviceType methods, so they are
+// offered on devices and not on data items, where they used to be (backlog
+// 892).
+TEST_F(ConfigurationModuleTest, DeviceMethodCommandsAreOfferedOnDevicesOnly) {
+  // Every right, so HasPermission(kCall) holds and only the node type decides.
+  ON_CALL(session_service_, GetAccessRights())
+      .WillByDefault(Return(~std::uint32_t{0}));
+  node_service_.Add(
+      scada::NodeState{.node_id = scada::devices::id::DeviceType,
+                       .node_class = scada::NodeClass::ObjectType});
+  node_service_.Add(
+      scada::NodeState{.node_id = scada::data_items::id::DataItemType,
+                       .node_class = scada::NodeClass::VariableType});
+  const NodeRef device = node_service_.Add(
+      scada::NodeState{.node_id = scada::NodeId{7001, 1},
+                       .node_class = scada::NodeClass::Object,
+                       .type_definition_id = scada::devices::id::DeviceType});
+  const NodeRef item = node_service_.Add(scada::NodeState{
+      .node_id = scada::NodeId{7002, 1},
+      .node_class = scada::NodeClass::Variable,
+      .type_definition_id = scada::data_items::id::DataItemType});
+
+  for (unsigned command_id : {ID_DEV1_REFR, ID_DEV1_SYNC}) {
+    auto* command = selection_commands_.FindCommand(command_id);
+    ASSERT_NE(command, nullptr);
+
+    selection_.SelectNode(device);
+    EXPECT_TRUE(command->available_handler(MakeCommandContext())) << command_id;
+
+    selection_.SelectNode(item);
+    EXPECT_FALSE(command->available_handler(MakeCommandContext()))
+        << command_id;
+  }
+}
+
+namespace {
+
+Awaitable<MessageBoxResult> AnswerWith(MessageBoxResult result) {
+  co_return result;
+}
+
+}  // namespace
+
+// «Отключить» stops a device's data and control, so it asks first; it used to
+// write on one click (backlog 924). Declining writes nothing.
+TEST_F(ConfigurationModuleTest, DisableAsksAndDeclineWritesNothing) {
+  EXPECT_CALL(dialog_service_,
+              RunMessageBox(_, _, MessageBoxMode::QuestionYesNo))
+      .WillOnce([](std::u16string_view, std::u16string_view, MessageBoxMode) {
+        return AnswerWith(MessageBoxResult::No);
+      });
+  EXPECT_CALL(task_manager_, PostUpdateTask(_, _, _)).Times(0);
+
+  ExecuteCommand(ID_ITEM_DISABLE);
+  DrainExecutor();
+}
+
+TEST_F(ConfigurationModuleTest, DisableConfirmedWritesDisabled) {
+  EXPECT_CALL(dialog_service_,
+              RunMessageBox(_, _, MessageBoxMode::QuestionYesNo))
+      .WillOnce([](std::u16string_view, std::u16string_view, MessageBoxMode) {
+        return AnswerWith(MessageBoxResult::Yes);
+      });
+  bool executed = false;
+  EXPECT_CALL(task_manager_,
+              PostUpdateTask(scada::NodeId{kItemNodeId, 1}, _, _))
+      .WillOnce([&executed](const scada::NodeId&, scada::NodeAttributes,
+                            scada::NodeProperties properties) {
+        EXPECT_THAT(properties,
+                    ElementsAre(Pair(scada::devices::id::DeviceType_Disabled,
+                                     scada::Variant{true})));
+        return CompleteLazily(&executed);
+      });
+
+  ExecuteCommand(ID_ITEM_DISABLE);
+  DrainExecutor();
+
+  EXPECT_TRUE(executed);
+}

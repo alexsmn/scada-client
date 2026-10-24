@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/any_executor.h"
+#include "base/awaitable.h"
 #include "configuration/tree/node_service_tree.h"
 #include "configuration/tree/node_service_tree_impl.h"
 
@@ -10,6 +11,7 @@
 template <class T>
 class BasicCommandRegistry;
 class ControllerRegistry;
+class DialogService;
 class LocalEvents;
 class NodeRef;
 class Profile;
@@ -46,6 +48,11 @@ class ConfigurationModule : private ConfigurationModuleContext {
   void RegisterMethodCommand(unsigned command_id,
                              const scada::NodeId& method_id);
   void RegisterEnableDeviceCommand(unsigned command_id, bool enable);
+  // Writes the device's Disabled property, asking first when disabling.
+  // `node` by value: the coroutine runs after the command handler returns.
+  Awaitable<void> SetDeviceEnabledAsync(NodeRef node,
+                                        DialogService& dialog_service,
+                                        bool enable);
 
   void CallMethod(const NodeRef& node,
                   const scada::NodeId& method_id,
