@@ -156,6 +156,22 @@ TEST_F(SummaryModelTest, ExportDescribesMethodAndInterval) {
   EXPECT_EQ(grid->row_title_column.title, u"Time (interval start)");
 }
 
+// The time-weighted aggregates (backlog 870) are named in a printout, and the
+// integral is shown without the item's units, which it is not measured in.
+TEST_F(SummaryModelTest, TimeWeightedAggregatesAreNamedAndUnitless) {
+  summary_model_.SetParams(
+      scada::RelativeTimeRange{scada::RelativeTimeRange::Type::Day},
+      scada::AggregateFilter{
+          scada::GetLocalAggregateStartTime(), std::chrono::hours(1),
+          scada::NodeId{scada::id::AggregateFunction_TimeAverage2}});
+  EXPECT_EQ(summary_model_.GetExportDescription(), u"Time Average, 1-Hour");
+
+  EXPECT_TRUE(SummaryModel::IsCustomUnits(
+      scada::NodeId{scada::id::AggregateFunction_Total}));
+  EXPECT_FALSE(SummaryModel::IsCustomUnits(
+      scada::NodeId{scada::id::AggregateFunction_TimeAverage2}));
+}
+
 TEST_F(SummaryModelTest, Load) {
   timed_data_service_.AddTimedData("item1");
   timed_data_service_.AddTimedData("item2");

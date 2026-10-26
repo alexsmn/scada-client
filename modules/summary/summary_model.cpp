@@ -472,7 +472,12 @@ const TimedDataSpec& SummaryModel::timed_data(int column) const {
 
 // static
 bool SummaryModel::IsCustomUnits(const scada::NodeId& aggregation_id) {
-  return aggregation_id == scada::id::AggregateFunction_Count;
+  // Count is a plain number; the time integral is in the item's units times
+  // seconds (OPC UA Part 13 §5.4.3.9 Total2,
+  // https://reference.opcfoundation.org/Core/Part13/v105/docs/5.4.3.9), so the
+  // item's own units would misstate it.
+  return aggregation_id == scada::id::AggregateFunction_Count ||
+         aggregation_id == scada::id::AggregateFunction_Total;
 }
 
 // static
@@ -493,8 +498,9 @@ std::u16string SummaryModel::GetExportDescription() {
       {scada::id::AggregateFunction_End, "Last"},
       {scada::id::AggregateFunction_Minimum, "Minimum"},
       {scada::id::AggregateFunction_Maximum, "Maximum"},
-      {scada::id::AggregateFunction_Total, "Sum"},
+      {scada::id::AggregateFunction_Total, "Time Integral"},
       {scada::id::AggregateFunction_Average, "Average"},
+      {scada::id::AggregateFunction_TimeAverage2, "Time Average"},
   };
   constexpr std::pair<scada::Duration, const char*> kIntervalTitles[] = {
       {std::chrono::minutes(1), "1-Minute"},

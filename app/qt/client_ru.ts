@@ -1600,12 +1600,16 @@
         <translation>Максимум</translation>
     </message>
     <message>
-        <source>Sum</source>
-        <translation>Сумма</translation>
+        <source>Time Integral</source>
+        <translation>Интеграл по времени</translation>
     </message>
     <message>
         <source>Average</source>
         <translation>Среднее</translation>
+    </message>
+    <message>
+        <source>Time Average</source>
+        <translation>Среднее по времени</translation>
     </message>
     <!-- actions.cpp: edit actions -->
     <message>

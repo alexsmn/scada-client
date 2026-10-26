@@ -45,8 +45,9 @@ void RegisterSummaryCommandActions(UiCommandRegistry& ui_command_registry) {
   const std::pair<unsigned, const char*> aggregation_actions[] = {
       {ID_AGGREGATION_START, "First"}, {ID_AGGREGATION_END, "Last"},
       {ID_AGGREGATION_COUNT, "Count"}, {ID_AGGREGATION_MIN, "Minimum"},
-      {ID_AGGREGATION_MAX, "Maximum"}, {ID_AGGREGATION_SUM, "Sum"},
-      {ID_AGGREGATION_AVG, "Average"}};
+      {ID_AGGREGATION_MAX, "Maximum"}, {ID_AGGREGATION_AVG, "Average"},
+      {ID_AGGREGATION_TIME_AVG, "Time Average"},
+      {ID_AGGREGATION_SUM, "Time Integral"}};
   for (const auto& [command_id, title] : aggregation_actions) {
     ui_command_registry.AddAction(Action{.command_id_ = command_id,
                                          .category_ = CATEGORY_AGGREGATION,

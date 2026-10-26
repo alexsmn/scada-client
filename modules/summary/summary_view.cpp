@@ -24,6 +24,7 @@ constexpr std::pair<unsigned, scada::NumericId> kAggregateCommands[] = {
     {ID_AGGREGATION_MAX, scada::id::AggregateFunction_Maximum},
     {ID_AGGREGATION_SUM, scada::id::AggregateFunction_Total},
     {ID_AGGREGATION_AVG, scada::id::AggregateFunction_Average},
+    {ID_AGGREGATION_TIME_AVG, scada::id::AggregateFunction_TimeAverage2},
 };
 
 constexpr std::pair<unsigned, scada::Duration> kIntervalCommands[] = {
