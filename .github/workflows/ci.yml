@@ -564,3 +564,19 @@ jobs:
           view_manager_qt/testdata/linux/
         if-no-files-found: ignore
         retention-days: 14
+
+    # The same for Windows, whose CI leg runs offscreen and so draws text
+    # differently from the native-platform set at the top of each testdata/
+    # (scada-client run 40138625293). The tests select
+    # <product>/testdata/windows-offscreen/ when the platform is offscreen on
+    # Windows; review these and commit them there.
+    - name: Upload the Windows offscreen golden images
+      if: always() && runner.os == 'Windows'
+      uses: actions/upload-artifact@v7
+      with:
+        name: windows-offscreen-goldens
+        path: |
+          graph_qt/testdata/windows-offscreen/
+          view_manager_qt/testdata/windows-offscreen/
+        if-no-files-found: ignore
+        retention-days: 14
