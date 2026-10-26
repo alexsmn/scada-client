@@ -114,8 +114,8 @@ class TargetAndTypePage final : public QWizardPage {
     // Data items need a folder to go into; an invocation from a selection of
     // sources has none.
     if (!wizard_.context_.parent_id_.is_null()) {
-      wizard_.subject_->addItem(
-          Tr("Data items"), static_cast<int>(BulkCreateSubject::kDataItem));
+      wizard_.subject_->addItem(Tr("Data items"),
+                                static_cast<int>(BulkCreateSubject::kDataItem));
     }
     // Offered only when the caller handed over sources and somewhere to put
     // them. A rule forwards an existing node, so without a selection there is
@@ -293,8 +293,7 @@ const BulkCreateDestination* BulkCreateWizard::destination() const {
   if (!destination_)
     return nullptr;
   const int index = destination_->currentIndex();
-  if (index < 0 ||
-      index >= static_cast<int>(context_.destinations_.size()))
+  if (index < 0 || index >= static_cast<int>(context_.destinations_.size()))
     return nullptr;
   return &context_.destinations_[index];
 }

@@ -254,9 +254,9 @@ void Print(PrintService& print_service,
     return;
   // Without fullPage the painter's origin is already the printable area's
   // top-left corner, so the page is that area's size at the origin.
-  const QRect page{QPoint{}, printer.pageLayout()
-                                 .paintRectPixels(printer.resolution())
-                                 .size()};
+  const QRect page{
+      QPoint{},
+      printer.pageLayout().paintRectPixels(printer.resolution()).size()};
   PaintImagePage(painter, page, image, header);
   painter.end();
 }

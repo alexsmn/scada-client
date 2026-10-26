@@ -3,10 +3,10 @@
 #include "base/time/time_wire_codec.h"
 #include "base/time_utils.h"
 
+#include "aui/dialog_service.h"
 #include "base/check.h"
 #include "common/formula_util.h"
 #include "controller/controller_delegate.h"
-#include "aui/dialog_service.h"
 #include "controller/selection_model.h"
 #include "graph/graph_setup_dialog.h"
 #include "graph/graph_view_loader.h"
@@ -137,9 +137,8 @@ std::unique_ptr<UiView> GraphView::Init(const WindowDefinition& definition) {
   command_registry_.AddCommand(
       Command{ID_GRAPH_SETUP}.set_execute_handler([this] { SetupLine(); }));
 
-  command_registry_.AddCommand(
-      Command{ID_EXPORT_IMAGE}.set_execute_handler(
-          [this] { CoSpawn(executor_, [this] { return SaveImageAs(); }); }));
+  command_registry_.AddCommand(Command{ID_EXPORT_IMAGE}.set_execute_handler(
+      [this] { CoSpawn(executor_, [this] { return SaveImageAs(); }); }));
 
   command_registry_.AddCommand(Command{ID_GRAPH_BK_COLOR}.set_execute_handler(
       [this] { ChooseGraphColor(); }));

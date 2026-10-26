@@ -45,9 +45,9 @@ class BulkCreateWizardTest : public ::testing::Test {
   std::unique_ptr<QWizard> MakeWizard(
       std::vector<scada::NodeId> sources = {},
       std::vector<BulkCreateDestination> destinations = {}) {
-    return std::unique_ptr<QWizard>{MakeBulkCreateWizard(
-        {node_service_, task_manager_, kFolder, std::move(sources),
-         std::move(destinations)})};
+    return std::unique_ptr<QWizard>{
+        MakeBulkCreateWizard({node_service_, task_manager_, kFolder,
+                              std::move(sources), std::move(destinations)})};
   }
 
   std::vector<BulkCreateDestination> Receivers() const {
@@ -105,7 +105,8 @@ TEST_F(BulkCreateWizardTest, TheDataItemFieldsFollowTheSubject) {
 
 // Sources with nowhere to send them offer no rules: the subject would produce
 // rules parented on nothing.
-TEST_F(BulkCreateWizardTest, WithoutAReceivingDeviceTheRuleSubjectIsNotOffered) {
+TEST_F(BulkCreateWizardTest,
+       WithoutAReceivingDeviceTheRuleSubjectIsNotOffered) {
   std::unique_ptr<QWizard> wizard =
       MakeWizard({scada::NodeId::FromString("ns=2;s=A")});
   QComboBox* subject = SubjectCombo(*wizard);
@@ -117,15 +118,16 @@ TEST_F(BulkCreateWizardTest, WithoutAReceivingDeviceTheRuleSubjectIsNotOffered) 
 // passed no sources. Opened on a selection (no folder), the wizard is rules
 // only, one per source, each parented on the chosen receiving device and typed
 // by it -- the planner used to get the folder and no type at all.
-TEST_F(BulkCreateWizardTest, OpenedOnSourcesCreatesOneRulePerSourceOnTheDevice) {
+TEST_F(BulkCreateWizardTest,
+       OpenedOnSourcesCreatesOneRulePerSourceOnTheDevice) {
   const std::vector<scada::NodeId> sources = {
       scada::NodeId::FromString("ns=2;s=A"),
       scada::NodeId::FromString("ns=2;s=B")};
-  auto wizard = std::unique_ptr<QWizard>{MakeBulkCreateWizard(
-      {.node_service_ = node_service_,
-       .task_manager_ = task_manager_,
-       .source_node_ids_ = sources,
-       .destinations_ = Receivers()})};
+  auto wizard = std::unique_ptr<QWizard>{
+      MakeBulkCreateWizard({.node_service_ = node_service_,
+                            .task_manager_ = task_manager_,
+                            .source_node_ids_ = sources,
+                            .destinations_ = Receivers()})};
   QComboBox* subject = SubjectCombo(*wizard);
   ASSERT_NE(subject, nullptr);
   ASSERT_EQ(subject->count(), 1);
@@ -144,10 +146,10 @@ TEST_F(BulkCreateWizardTest, OpenedOnSourcesCreatesOneRulePerSourceOnTheDevice) 
     EXPECT_EQ(posted[i].parent_id, kReceiver);
     EXPECT_EQ(posted[i].type_definition_id, kRuleType);
     EXPECT_TRUE(posted[i].node_id.is_null()) << "the server allocates rule ids";
-    EXPECT_EQ(scada::GetProperty(
-                  posted[i].properties,
-                  scada::devices::id::TransmissionItemType_SourceNode),
-              scada::Variant{sources[i]});
+    EXPECT_EQ(
+        scada::GetProperty(posted[i].properties,
+                           scada::devices::id::TransmissionItemType_SourceNode),
+        scada::Variant{sources[i]});
   }
 }
 
