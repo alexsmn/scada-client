@@ -82,7 +82,12 @@ class BulkCreateWizard final : public QWizard {
   BulkCreateWizardContext context_;
   std::set<std::u16string> existing_node_ids_;
 
+  // The destination device the rules go to, for the transmission subject;
+  // null when there is no destination to choose.
+  const BulkCreateDestination* destination() const;
+
   QComboBox* subject_ = nullptr;
+  QComboBox* destination_ = nullptr;
   QComboBox* device_ = nullptr;
   QComboBox* item_type_ = nullptr;
   QLineEdit* source_path_ = nullptr;
@@ -106,15 +111,32 @@ class TargetAndTypePage final : public QWizardPage {
 
     wizard_.subject_ = new QComboBox;
     wizard_.subject_->setObjectName(QStringLiteral("bulkCreateSubject"));
-    wizard_.subject_->addItem(Tr("Data items"),
-                              static_cast<int>(BulkCreateSubject::kDataItem));
-    // Offered only when the caller handed over sources. A rule forwards an
-    // existing node, so without a selection there is nothing for one to
-    // forward and the subject would produce an empty run.
-    if (!wizard_.context_.source_node_ids_.empty()) {
+    // Data items need a folder to go into; an invocation from a selection of
+    // sources has none.
+    if (!wizard_.context_.parent_id_.is_null()) {
+      wizard_.subject_->addItem(
+          Tr("Data items"), static_cast<int>(BulkCreateSubject::kDataItem));
+    }
+    // Offered only when the caller handed over sources and somewhere to put
+    // them. A rule forwards an existing node, so without a selection there is
+    // nothing for one to forward and the subject would produce an empty run.
+    if (!wizard_.context_.source_node_ids_.empty() &&
+        !wizard_.context_.destinations_.empty()) {
       wizard_.subject_->addItem(
           Tr("Transmission rules"),
           static_cast<int>(BulkCreateSubject::kTransmissionItem));
+    }
+
+    // The receiving device, as the Transmission table's destination rail
+    // names them (backlog 894).
+    wizard_.destination_ = new QComboBox;
+    wizard_.destination_->setObjectName(
+        QStringLiteral("bulkCreateDestination"));
+    for (const BulkCreateDestination& destination :
+         wizard_.context_.destinations_) {
+      wizard_.destination_->addItem(
+          QString::fromStdU16String(destination.name),
+          QString::fromStdString(destination.device_id.ToString()));
     }
 
     wizard_.item_type_ = new QComboBox;
@@ -129,9 +151,11 @@ class TargetAndTypePage final : public QWizardPage {
     wizard_.source_path_->setObjectName(QStringLiteral("bulkCreateSourcePath"));
 
     layout->addRow(Tr("What to create"), wizard_.subject_);
+    layout->addRow(Tr("Receiving device"), wizard_.destination_);
     layout->addRow(Tr("Item type"), wizard_.item_type_);
     layout->addRow(Tr("Device"), wizard_.device_);
     layout->addRow(Tr("Source path template"), wizard_.source_path_);
+    destination_label_ = layout->labelForField(wizard_.destination_);
     item_type_label_ = layout->labelForField(wizard_.item_type_);
     device_label_ = layout->labelForField(wizard_.device_);
     source_path_label_ = layout->labelForField(wizard_.source_path_);
@@ -156,9 +180,15 @@ class TargetAndTypePage final : public QWizardPage {
       if (widget)
         widget->setVisible(data_item);
     }
+    for (QWidget* widget :
+         {static_cast<QWidget*>(wizard_.destination_), destination_label_}) {
+      if (widget)
+        widget->setVisible(!data_item);
+    }
   }
 
   BulkCreateWizard& wizard_;
+  QWidget* destination_label_ = nullptr;
   QWidget* item_type_label_ = nullptr;
   QWidget* device_label_ = nullptr;
   QWidget* source_path_label_ = nullptr;
@@ -179,7 +209,14 @@ class PatternPage final : public QWizardPage {
 
   void initializePage() override {
     wizard_.preview_->SetSubject(wizard_.subject());
-    wizard_.preview_->SetExistingNodeIds(wizard_.existing_node_ids_);
+    // Conflicts are against whatever the run creates into: the folder for data
+    // items, the chosen destination device for rules.
+    const BulkCreateDestination* destination = wizard_.destination();
+    wizard_.preview_->SetExistingNodeIds(
+        wizard_.subject() == BulkCreateSubject::kTransmissionItem && destination
+            ? ReadExistingNodeIds(wizard_.context_.node_service_,
+                                  destination->device_id)
+            : wizard_.existing_node_ids_);
   }
 
  private:
@@ -235,6 +272,31 @@ BulkCreateWizard::BulkCreateWizard(BulkCreateWizardContext context,
   // so a flat pass over the Devices folder would miss every child device.
   FillDevices(context_.node_service_.GetNode(scada::devices::id::Devices),
               *device_);
+
+  // Opened on a selection of sources, the run is rules only: one row per
+  // source, and no requested NodeId, so the server allocates each rule's id as
+  // it does for a rule made by ticking an object (backlog 894).
+  if (context_.parent_id_.is_null() && !context_.source_node_ids_.empty()) {
+    preview_->SetParams(BulkCreateParams{
+        .subject = BulkCreateSubject::kTransmissionItem,
+        .name_template = u"TS{n}",
+        .node_id_template = {},
+        .start_index = 1,
+        .count = static_cast<int>(context_.source_node_ids_.size()),
+        .index_step = 1,
+        .ioa_start = 1,
+        .ioa_step = 1});
+  }
+}
+
+const BulkCreateDestination* BulkCreateWizard::destination() const {
+  if (!destination_)
+    return nullptr;
+  const int index = destination_->currentIndex();
+  if (index < 0 ||
+      index >= static_cast<int>(context_.destinations_.size()))
+    return nullptr;
+  return &context_.destinations_[index];
 }
 
 BulkCreateSubject BulkCreateWizard::subject() const {
@@ -247,6 +309,16 @@ std::vector<scada::NodeState> BulkCreateWizard::PlannedNodes() const {
   BulkCreatePlan plan;
   plan.subject = subject();
   plan.parent_id = context_.parent_id_;
+  if (plan.subject == BulkCreateSubject::kTransmissionItem) {
+    // A rule is parented on its destination device and typed by it — the
+    // shape `TransmissionModel::AddContainedItem` posts. It used to take the
+    // data-item folder and no type at all (backlog 894).
+    const BulkCreateDestination* target = destination();
+    if (!target)
+      return {};
+    plan.parent_id = target->device_id;
+    plan.type_definition_id = target->rule_type_id;
+  }
   if (plan.subject == BulkCreateSubject::kDataItem) {
     plan.type_definition_id = item_type_->currentData().toBool()
                                   ? scada::data_items::id::DiscreteItemType

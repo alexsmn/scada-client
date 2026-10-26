@@ -1337,6 +1337,18 @@
         <translation>Серийное создание...</translation>
     </message>
     <message>
+        <source>Transmission Rules...</source>
+        <translation>Правила ретрансляции...</translation>
+    </message>
+    <message>
+        <source>No device is configured to receive transmission rules.</source>
+        <translation>Нет устройства, настроенного на прием правил ретрансляции.</translation>
+    </message>
+    <message>
+        <source>Receiving device</source>
+        <translation>Принимающее устройство</translation>
+    </message>
+    <message>
         <source>Service Items...</source>
         <translation>Сервисные объекты...</translation>
     </message>

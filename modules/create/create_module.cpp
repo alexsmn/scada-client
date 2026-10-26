@@ -91,6 +91,10 @@ CreateModule::CreateModule(CreateModuleContext&& context)
              .category_ = CATEGORY_CREATE,
              .title_ = Translate("Multiple Create...")});
   ui_command_registry_.AddAction(
+      Action{.command_id_ = ID_NEW_TRANSMISSION_RULES,
+             .category_ = CATEGORY_CREATE,
+             .title_ = Translate("Transmission Rules...")});
+  ui_command_registry_.AddAction(
       Action{.command_id_ = ID_NEW_SERVICE_ITEMS,
              .category_ = CATEGORY_CREATE,
              .title_ = Translate("Service Items...")});

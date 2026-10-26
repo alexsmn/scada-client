@@ -7,5 +7,8 @@ client_module_link_libraries(client_component_create PRIVATE
   # backlog.
   client_bulk_create
   client_component_create_service_item
+  # The transmission-rules entry lists the devices the Transmission table's
+  # destination rail lists (BrowseTransmissionDevices).
+  client_component_transmission
 )
 

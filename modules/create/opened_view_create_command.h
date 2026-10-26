@@ -10,6 +10,7 @@
 #include "scada/status.h"
 
 #include <functional>
+#include <vector>
 
 class Controller;
 class CreateTree;
@@ -46,6 +47,14 @@ class OpenedViewCreateCommand final : private OpenedViewCreateCommandContext,
 
  private:
   bool CanCreateRecord(const scada::NodeId& type_node_id) const;
+
+  // The data items selected in the view, which transmission rules forward.
+  std::vector<scada::NodeId> GetSelectedSourceItems() const;
+  // Opens the bulk-create wizard on |sources| once the transmission-capable
+  // devices are known (backlog 894).
+  Awaitable<void> CreateTransmissionRulesAsync(
+      std::vector<scada::NodeId> sources,
+      CancelationRef cancelation);
   void CreateRecord(const scada::NodeId& type_node_id, int tag);
   // Both take a `CancelationRef` taken from `cancelation_` at spawn time and
   // re-check it after every await; once it reports canceled the command has

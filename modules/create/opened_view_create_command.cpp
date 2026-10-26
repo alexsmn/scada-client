@@ -12,6 +12,8 @@
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/static_types.h"
+#include "modules/transmission/transmission_devices.h"
+#include "node_service/node_util.h"
 #include "modules/create_service_item/create_service_item_dialog.h"
 #include "net/net_executor_adapter.h"
 #include "node_service/node_awaitable.h"
@@ -34,6 +36,12 @@ CommandHandler* OpenedViewCreateCommand::GetCommandHandler(
     case ID_ADD_MULTIPLE_ITEMS:
       return CanCreateRecord(scada::data_items::id::DiscreteItemType) ? this
                                                                       : nullptr;
+
+    case ID_NEW_TRANSMISSION_RULES:
+      return session_service_.HasPermission(scada::Permission::kAddNode) &&
+                     !GetSelectedSourceItems().empty()
+                 ? this
+                 : nullptr;
 
     case ID_NEW_IEC60870_LINK101:
     case ID_NEW_IEC60870_LINK104:
@@ -70,11 +78,20 @@ void OpenedViewCreateCommand::ExecuteCommand(unsigned command_id) {
         // (docs/product/ui-mockups/screens/bulk-create.html). It hands over no
         // source nodes, so this entry offers the data-item subject alone --
         // a transmission rule forwards an existing node, and nothing here has
-        // selected any to forward.
+        // selected any to forward. ID_NEW_TRANSMISSION_RULES is the entry
+        // that does.
         ShowBulkCreateWizard(
             dialog_service_,
             {node_service_, task_manager_, selection_model->node().node_id()});
       }
+      return;
+    case ID_NEW_TRANSMISSION_RULES:
+      CoSpawn(executor_, cancelation_,
+              [this, sources = GetSelectedSourceItems(),
+               cancelation = cancelation_.ref()]() mutable -> Awaitable<void> {
+                co_await CreateTransmissionRulesAsync(std::move(sources),
+                                                      cancelation);
+              });
       return;
   }
 
@@ -84,6 +101,62 @@ void OpenedViewCreateCommand::ExecuteCommand(unsigned command_id) {
   }
 
   scada::base::NotReached();
+}
+
+std::vector<scada::NodeId> OpenedViewCreateCommand::GetSelectedSourceItems()
+    const {
+  std::vector<scada::NodeId> sources;
+  auto* selection_model = controller_.GetSelectionModel();
+  if (!selection_model)
+    return sources;
+  if (selection_model->multiple()) {
+    for (const scada::NodeId& node_id : selection_model->GetMultipleNodeIds())
+      sources.push_back(node_id);
+  } else if (const NodeRef& node = selection_model->node()) {
+    sources.push_back(node.node_id());
+  }
+  // Only a data item has a value for a rule to forward.
+  std::erase_if(sources, [this](const scada::NodeId& node_id) {
+    return !IsInstanceOf(node_service_.GetNode(node_id),
+                         scada::data_items::id::DataItemType);
+  });
+  return sources;
+}
+
+Awaitable<void> OpenedViewCreateCommand::CreateTransmissionRulesAsync(
+    std::vector<scada::NodeId> sources,
+    CancelationRef cancelation) {
+  // The same walk as the Transmission table's destination rail, so the wizard
+  // offers exactly the devices that table can show rules for.
+  std::vector<TransmissionDeviceEntry> devices =
+      co_await BrowseTransmissionDevices(
+          node_service_.GetNode(scada::devices::id::Devices));
+  if (cancelation.canceled())
+    co_return;
+
+  std::vector<BulkCreateDestination> destinations;
+  for (const TransmissionDeviceEntry& device : devices) {
+    scada::NodeId rule_type_id =
+        TransmissionItemTypeFor(node_service_.GetNode(device.node_id));
+    if (!rule_type_id.is_null()) {
+      destinations.push_back({.device_id = device.node_id,
+                              .name = device.name,
+                              .rule_type_id = std::move(rule_type_id)});
+    }
+  }
+
+  if (destinations.empty()) {
+    co_await dialog_service_.RunMessageBox(
+        Translate("No device is configured to receive transmission rules."),
+        Translate("Transmission rules"), MessageBoxMode::Info);
+    co_return;
+  }
+
+  ShowBulkCreateWizard(dialog_service_,
+                       {.node_service_ = node_service_,
+                        .task_manager_ = task_manager_,
+                        .source_node_ids_ = std::move(sources),
+                        .destinations_ = std::move(destinations)});
 }
 
 bool OpenedViewCreateCommand::CanCreateRecord(
