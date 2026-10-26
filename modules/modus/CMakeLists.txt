@@ -87,4 +87,10 @@ if(TARGET client_modus_qt_unittests)
     aui_qt
     client_filesystem_qt
   )
+  # The runtime `modus_display_unittest.cpp` drives the production display
+  # view against, as `display_view/CMakeLists.txt` does for the loader's own
+  # tests. Empty means no runtime; the cases that need one skip and say so.
+  target_compile_definitions(client_modus_qt_unittests PRIVATE
+    SCADA_DISPLAY_RUNTIME_UNDER_TEST="${SCADA_DISPLAY_RUNTIME_LIBRARY}"
+  )
 endif()
