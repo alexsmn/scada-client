@@ -282,9 +282,13 @@ typedef struct ScadaDisplayApi {
   // ── ABI 2 ──
   // Gate every member below on `struct_size >= SCADA_DISPLAY_ABI_2_SIZE`.
 
-  // How many data sources the document's bindings name — what a host
-  // subscribes to. Zero for a VDS document, whose data sources are shape
-  // names and are not enumerated, and for a NULL document.
+  // How many data sources the document names — what a host subscribes to.
+  // A Modus document's are its binding formulas; a VDS document's are its
+  // shape names at any depth, since a VDS shape's name is its binding, though
+  // a cosmetic shape is named too and a host keeps only the names it can
+  // resolve. Zero for a NULL document. A runtime built before 2026-10-26
+  // answers zero for every VDS document, so a host must read zero as "no
+  // objects known", not as "no objects".
   int32_t(SCADA_DISPLAY_CALL* get_data_source_count)(
       ScadaDisplayDocument document);
 
