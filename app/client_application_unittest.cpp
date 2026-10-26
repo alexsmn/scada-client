@@ -17,10 +17,12 @@
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
+#include "model/security_node_ids.h"
 #include "node_service/node_service.h"
 #include "node_service/test/create_test_node_service.h"
 #include "profile/profile.h"
 #include "resources/common_resources.h"
+#include "scada/method_service_mock.h"
 #include "scada/monitoring_parameters.h"
 #include "scada/read_value_id.h"
 #include "scada/services_mock.h"
@@ -243,11 +245,15 @@ class ClientApplicationTest : public ClientApplicationTestBase {
  protected:
   void StartApp() { Wait(app_.Start()); }
 
-  ClientApplication app_{
-      ClientApplicationContext{.executor_ = executor_,
-                               .login_handler_ = login_handler_.AsStdFunction(),
-                               .node_service_override_ = node_service_override_,
-                               .module_configurator_ = MakeUnitTestModules()}};
+  // Answers `Cancel` unless a test stubs it, which declines a retry.
+  NiceMock<MockDialogService> session_end_dialog_;
+
+  ClientApplication app_{ClientApplicationContext{
+      .executor_ = executor_,
+      .login_handler_ = login_handler_.AsStdFunction(),
+      .node_service_override_ = node_service_override_,
+      .module_configurator_ = MakeUnitTestModules(),
+      .session_end_dialog_service_ = &session_end_dialog_}};
 };
 
 ClientApplicationTestBase::ClientApplicationTestBase() {
@@ -414,6 +420,46 @@ TEST_F(ClientApplicationTest, OnlyTheStartupLoginAllowsAutoLogin) {
   explicit_login_asked = false;
   ASSERT_TRUE(app_.ExecuteGlobalCommandForTesting(ID_LOGIN, context));
   ASSERT_TRUE(WaitUntil([&] { return explicit_login_asked; }));
+}
+
+Awaitable<MessageBoxResult> MakeMessageBoxAnswer(MessageBoxResult answer) {
+  co_return answer;
+}
+
+// Backlog 924: a profile the server refused on quit used to be reported as a
+// local event while the window that shows events was closing, so nobody saw
+// it. It is now a modal question, and "Yes" tries again before the session
+// closes; "No" lets the quit finish.
+TEST_F(ClientApplicationTest, FailedProfileSaveOnQuitAsksAndRetries) {
+  NiceMock<scada::MockMethodService> method_service;
+  scada::services services = services_.services();
+  services.method_service = &method_service;
+  ON_CALL(login_handler_, Call(_, _))
+      .WillByDefault(Invoke([services](DataServicesContext&&, bool)
+                                -> Awaitable<std::optional<DataServices>> {
+        co_return std::optional{DataServices::FromUnownedServices(services)};
+      }));
+  ON_CALL(services_.session_service, GetUserId())
+      .WillByDefault(Return(scada::NodeId{1, 100}));
+  StartApp();
+
+  int save_attempts = 0;
+  EXPECT_CALL(
+      method_service,
+      Call(_, scada::NodeId{scada::security::id::UserType_SaveProfile}, _, _))
+      .Times(2)
+      .WillRepeatedly(Invoke([&save_attempts](auto&&...) {
+        ++save_attempts;
+        return scada::MakeMethodCallResult(scada::StatusCode::Bad);
+      }));
+  EXPECT_CALL(session_end_dialog_,
+              RunMessageBox(_, _, MessageBoxMode::QuestionYesNo))
+      .WillOnce(Return(ByMove(MakeMessageBoxAnswer(MessageBoxResult::Yes))))
+      .WillOnce(Return(ByMove(MakeMessageBoxAnswer(MessageBoxResult::No))));
+
+  Wait(app_.Quit());
+
+  EXPECT_EQ(save_attempts, 2);
 }
 
 // Ensure that the initial page is created and all windows are defined.

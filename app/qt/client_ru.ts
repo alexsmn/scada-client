@@ -2203,6 +2203,18 @@
         <translation>Не удалось сохранить профиль на сервере; он сохранён только на этом компьютере</translation>
     </message>
     <message>
+        <source>Failed to save the profile to the server; it is kept on this computer only.
+
+Try again? Choose No to continue without the server copy.</source>
+        <translation>Не удалось сохранить профиль на сервере; он сохранён только на этом компьютере.
+
+Повторить попытку? «Нет» — продолжить без копии на сервере.</translation>
+    </message>
+    <message>
+        <source>Profile Save</source>
+        <translation>Сохранение профиля</translation>
+    </message>
+    <message>
         <source>The specified username is already in use by another session. Disconnect the open session and continue?</source>
         <translation>Указанное имя пользователя уже используется другой сессией. Разорвать открытую сессию и продолжить?</translation>
     </message>

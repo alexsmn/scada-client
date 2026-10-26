@@ -1,6 +1,8 @@
 #include "app/client_application.h"
 
 #include "administration/administration_module.h"
+#include "aui/dialog_service.h"
+#include "aui/qt/dialog_service_impl_qt.h"
 #include "aui/translation.h"
 #include "base/any_executor.h"
 #include "base/blinker.h"
@@ -23,6 +25,8 @@
 #include "export/excel/excel_export_module.h"
 #include "favorites/favorites_module.h"
 #include "filesystem/filesystem_component.h"
+#include "main_window/main_window.h"
+#include "main_window/main_window_manager.h"
 #include "main_window/main_window_module.h"
 #include "main_window/main_window_util.h"
 #include "main_window/opened_view/opened_view_command_registry.h"
@@ -371,16 +375,40 @@ Awaitable<void> ClientApplication::SaveProfileToServerOnQuitAsync() {
     co_return;  // Anonymous, or no session: the local file is the whole of it.
   }
 
-  const scada::Status status = co_await SaveProfileToServer();
-  if (scada::IsGood(status.code()))
-    co_return;
+  for (;;) {
+    const scada::Status status = co_await SaveProfileToServer();
+    if (scada::IsGood(status.code()))
+      co_return;
 
-  // **Reported, not swallowed.** A save that can fail silently is worse than
-  // no save -- the operator would believe their layout was kept. The local
-  // file is still written from ~ClientApplication, so nothing is lost on THIS
-  // machine; what the failure costs is the copy that follows them to another.
-  LOG_ERROR(*logger_) << "Profile save to server failed: "
-                      << static_cast<unsigned>(status.code());
+    // **Reported, not swallowed.** A save that can fail silently is worse than
+    // no save -- the operator would believe their layout was kept. The local
+    // file is still written from ~ClientApplication, so nothing is lost on
+    // THIS machine; what the failure costs is the copy that follows them to
+    // another.
+    LOG_ERROR(*logger_) << "Profile save to server failed: "
+                        << static_cast<unsigned>(status.code());
+
+    // **Asked, not posted.** A local event alone is invisible here: on quit
+    // the event panel goes with the window, and on sign-out the next
+    // operator's login dialog covers it. A modal box is the one report that
+    // is still on screen, and it is also the last moment a retry is possible
+    // -- one step later the session is closed (backlog 924).
+    MessageBoxResult answer = MessageBoxResult::No;
+    try {
+      answer = co_await GetSessionEndDialogService().RunMessageBox(
+          Translate("Failed to save the profile to the server; it is kept on "
+                    "this computer only.\n\nTry again? Choose No to continue "
+                    "without the server copy."),
+          Translate("Profile Save"), MessageBoxMode::QuestionYesNo);
+    } catch (...) {
+      // A box that cannot run (shutdown) must not keep the client from
+      // exiting: treat it as declining another attempt.
+    }
+    if (answer == MessageBoxResult::Yes)
+      continue;
+    break;
+  }
+
   if (event_module_) {
     event_module_->local_events().ReportEvent(
         LocalEvents::SEV_ERROR,
@@ -388,6 +416,23 @@ Awaitable<void> ClientApplication::SaveProfileToServerOnQuitAsync() {
                   "this computer only"));
   }
   co_return;
+}
+
+DialogService& ClientApplication::GetSessionEndDialogService() {
+  if (session_end_dialog_service_)
+    return *session_end_dialog_service_;
+  if (main_window_module_) {
+    auto main_windows =
+        main_window_module_->main_window_manager().main_windows();
+    if (!std::ranges::empty(main_windows))
+      return main_windows.front().GetDialogService();
+  }
+  // The last main window has closed, which is the ordinary state on quit: a
+  // parentless box is still a top-level modal window, and the event loop keeps
+  // running because `main.cpp` turns off quit-on-last-window-closed.
+  if (!unparented_dialog_service_)
+    unparented_dialog_service_ = std::make_unique<DialogServiceImplQt>();
+  return *unparented_dialog_service_;
 }
 
 scada::CoStatus ClientApplication::SaveProfileToServer(

@@ -57,6 +57,7 @@ class ConnectionStateReporter;
 class ControllerRegistry;
 class CoreModule;
 class CreateTree;
+class DialogService;
 class EventModule;
 class NodeEventProvider;
 class Favourites;
@@ -112,6 +113,12 @@ struct ClientApplicationContext {
 
   ClientApplicationModuleConfigurator module_configurator_ =
       MakeDefaultClientApplicationModules();
+
+  // Optional override for testing. Asks the operator what to do when the
+  // profile cannot be saved to the server as the session ends. Null uses the
+  // first main window's dialog host, or an unparented one once the last main
+  // window has closed -- which is the usual state on quit.
+  DialogService* session_end_dialog_service_ = nullptr;
 };
 
 class ClientApplication : private ClientApplicationContext {
@@ -203,9 +210,14 @@ class ClientApplication : private ClientApplicationContext {
                                    const scada::NodeId& user_id);
 
   // Writes the profile to the server, reporting a failure rather than
-  // swallowing it. Called from `QuitAsync` -- see the note there for why not
-  // from the destructor.
+  // swallowing it. Called from `QuitAsync` and `SignOutAsync` -- see the note
+  // in `QuitAsync` for why not from the destructor. A failure is put to the
+  // operator in a modal box that offers another attempt, since nothing can
+  // retry once the session is gone (backlog 924).
   [[nodiscard]] Awaitable<void> SaveProfileToServerOnQuitAsync();
+
+  // The dialog host for `SaveProfileToServerOnQuitAsync`'s question.
+  DialogService& GetSessionEndDialogService();
   void CreateNodeService(const PostLoginContext& ctx);
   void CreateEventAndDataServices(const PostLoginContext& ctx);
   void CreateUserServices(const PostLoginContext& ctx);
@@ -281,6 +293,10 @@ class ClientApplication : private ClientApplicationContext {
   std::unique_ptr<AppNapSuppressor> app_nap_suppressor_;
 
   std::unique_ptr<MainWindowModule> main_window_module_;
+
+  // Created on demand by `GetSessionEndDialogService` when no main window is
+  // left to own a message box.
+  std::unique_ptr<DialogService> unparented_dialog_service_;
 
   std::unique_ptr<NodeServiceProgressTracker> node_service_progress_tracker_;
 

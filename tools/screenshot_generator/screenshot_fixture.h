@@ -11,6 +11,7 @@
 #include "address_space/test/scada_test_address_space.h"
 #include "address_space/view_service_impl.h"
 #include "app/client_application.h"
+#include "aui/dialog_service.h"
 #include "aui/qt/message_loop_qt.h"
 #include "aui/test/app_environment.h"
 #include "authenticated_attribute_service.h"
@@ -44,6 +45,29 @@ class LocalEvents;
 class QMainWindow;
 
 namespace scada::screenshot_generator {
+
+// Answers the question the client asks when its profile cannot be saved to the
+// server as the session ends (backlog 924). The fixture's local services hold
+// a signed-in user but cannot store a profile, so every run reaches that
+// question on quit; a real message box there would wait for a click that
+// never comes. "No" lets the quit finish, as an operator declining a retry.
+class SessionEndDialogService final : public DialogService {
+ public:
+  UiView* GetDialogOwningWindow() const override { return nullptr; }
+  UiView* GetParentWidget() const override { return nullptr; }
+  Awaitable<MessageBoxResult> RunMessageBox(std::u16string_view,
+                                            std::u16string_view,
+                                            MessageBoxMode) override {
+    co_return MessageBoxResult::No;
+  }
+  Awaitable<std::filesystem::path> SelectOpenFile(
+      std::u16string_view) override {
+    co_return std::filesystem::path{};
+  }
+  Awaitable<std::filesystem::path> SelectSaveFile(const SaveParams&) override {
+    co_return std::filesystem::path{};
+  }
+};
 
 // The fixture JSON, loaded once per test suite by
 // `ScreenshotGenerator::SetUpTestSuite` and read by every capture and
@@ -225,6 +249,8 @@ class ScreenshotGenerator : public ::testing::Test {
 
   scada::base::ScopedPathOverride private_dir_override_{::client::DIR_PRIVATE};
 
+  SessionEndDialogService session_end_dialog_service_;
+
   ClientApplication app_{ClientApplicationContext{
       .executor_ = executor_,
       .login_handler_ = [this](DataServicesContext&&,
@@ -239,7 +265,8 @@ class ScreenshotGenerator : public ::testing::Test {
       // `LocalViewService::Browse` + `LocalAttributeService::Read`,
       // which is how current values, display names, and tree structure
       // all flow through the real code paths the client runs in prod.
-      .module_configurator_ = MakeScreenshotModules()}};
+      .module_configurator_ = MakeScreenshotModules(),
+      .session_end_dialog_service_ = &session_end_dialog_service_}};
 };
 
 }  // namespace scada::screenshot_generator
