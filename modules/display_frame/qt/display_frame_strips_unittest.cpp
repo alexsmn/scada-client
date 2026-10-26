@@ -7,6 +7,7 @@
 #include "scada/event.h"
 #include "scada/session_service_mock.h"
 
+#include <boost/signals2/signal.hpp>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -141,5 +142,34 @@ TEST_F(DisplayFrameStripsTest, LivePillReadsLiveWhileConnected) {
 
   auto* live = frame.findChild<QLabel*>(QStringLiteral("liveIndicator"));
   ASSERT_NE(live, nullptr);
+  EXPECT_EQ(live->text(), QStringLiteral("Live"));
+}
+
+// ...and keeps following it afterwards: a session dropping and coming back
+// turns the pill to «Нет связи» and back to «Онлайн» without reopening the
+// display (backlog 911).
+TEST_F(DisplayFrameStripsTest, LivePillFollowsSessionStateChanges) {
+  testing::NiceMock<scada::MockSessionService> session;
+  ON_CALL(session, IsConnected(testing::_))
+      .WillByDefault(testing::Return(true));
+  boost::signals2::signal<void(bool, const scada::Status&)> state_changed;
+  ON_CALL(session, SubscribeSessionStateChanged(testing::_))
+      .WillByDefault(
+          [&state_changed](
+              const scada::SessionService::SessionStateChangedCallback& cb) {
+            return boost::signals2::scoped_connection{
+                state_changed.connect(cb)};
+          });
+
+  DisplayFrame frame(/*diagram=*/nullptr, QStringLiteral("Bay 1"),
+                     DisplayFrameContext{.session_service = &session});
+  auto* live = frame.findChild<QLabel*>(QStringLiteral("liveIndicator"));
+  ASSERT_NE(live, nullptr);
+  ASSERT_EQ(live->text(), QStringLiteral("Live"));
+
+  state_changed(false, scada::StatusCode::Bad_Disconnected);
+  EXPECT_EQ(live->text(), QStringLiteral("Offline"));
+
+  state_changed(true, scada::StatusCode::Good);
   EXPECT_EQ(live->text(), QStringLiteral("Live"));
 }
