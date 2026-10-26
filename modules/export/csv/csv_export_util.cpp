@@ -1,5 +1,5 @@
-#include "base/time/time_wire_codec.h"
 #include "export/csv/csv_export_util.h"
+#include "base/time/time_wire_codec.h"
 
 #include "aui/models/grid_model.h"
 #include "aui/models/header_model.h"
@@ -65,7 +65,8 @@ bool Convert(const scada::Variant& source,
       target.Set(source.get<scada::LocalizedText>().text.c_str());
       return true;
     case scada::Variant::DATE_TIME:
-      target.Set(static_cast<DATE>(scada::base::EncodeDoubleT(source.get<scada::Time>())));
+      target.Set(static_cast<DATE>(
+          scada::base::EncodeDoubleT(source.get<scada::Time>())));
       return true;
     default:
       // Server value of an unsupported type; skip it.
@@ -77,14 +78,15 @@ bool Convert(const scada::Variant& source,
 
 void ExportToCsv(ExportModel::TableExportData& table,
                  const CsvExportParams& params,
-                 const std::filesystem::path& path) {
+                 const std::filesystem::path& path,
+                 const CsvEncoding& system_encoding) {
   // Binary: CsvWriter ends rows with "\r\n" itself (RFC 4180), and a
   // text-mode stream on Windows would turn its "\n" into a second "\r\n",
   // so every exported row ended "\r\r\n" (CsvExportCommandTest, scada-client
   // run 40138625293).
   std::ofstream stream{path, std::ios::binary};
   CsvWriter writer{stream};
-  writer.unicode = params.unicode;
+  writer.encoding = params.unicode ? Utf8CsvEncoding() : system_encoding;
   writer.delimiter = params.delimiter;
   writer.quote = params.quote;
 
@@ -107,14 +109,15 @@ void ExportToCsv(ExportModel::TableExportData& table,
 
 void ExportToCsv(ExportModel::GridExportData& grid,
                  const CsvExportParams& params,
-                 const std::filesystem::path& path) {
+                 const std::filesystem::path& path,
+                 const CsvEncoding& system_encoding) {
   // Binary: CsvWriter ends rows with "\r\n" itself (RFC 4180), and a
   // text-mode stream on Windows would turn its "\n" into a second "\r\n",
   // so every exported row ended "\r\r\n" (CsvExportCommandTest, scada-client
   // run 40138625293).
   std::ofstream stream{path, std::ios::binary};
   CsvWriter writer{stream};
-  writer.unicode = params.unicode;
+  writer.encoding = params.unicode ? Utf8CsvEncoding() : system_encoding;
   writer.delimiter = params.delimiter;
   writer.quote = params.quote;
 

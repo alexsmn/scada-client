@@ -114,7 +114,10 @@ TEST_F(CsvExportCommandTest, WritesCsvAndPromptsToOpen) {
   // `<folder>/<title>.csv` rather than `old.csv/<title>.csv` (backlog 931).
   EXPECT_EQ(GetString16(profile_.data(), "csvPath"),
             export_file_path.parent_path().u16string());
-  EXPECT_EQ(ReadFile(export_file_path), "Name\r\nvalue");
+  // The default is the system encoding: the bare ANSI text on Windows, UTF-8
+  // with a byte-order mark elsewhere (backlog 925). Either way rows end CRLF.
+  EXPECT_EQ(ReadFile(export_file_path),
+            SystemCsvEncoding().bom + "Name\r\nvalue");
 }
 
 TEST_F(CsvExportCommandTest, ExportFailureShowsErrorDialogAndRejects) {

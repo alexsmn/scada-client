@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/csv_writer.h"
 #include "export/export_model.h"
 #include <boost/json.hpp>
 
@@ -8,6 +9,8 @@
 class ExcelSheetModel;
 
 struct CsvExportParams {
+  // UTF-8 with a byte-order mark when set; otherwise the system encoding
+  // (SystemCsvEncoding(): the ANSI code page on Windows).
   bool unicode = false;
   char delimiter = ',';
   char quote = '"';
@@ -19,12 +22,17 @@ struct CsvExportParams {
   bool expand_groups = true;
 };
 
+// Writes `table` or `grid` to `path`. `system_encoding` is what
+// `params.unicode == false` means; tests replace it to exercise a code page
+// the host does not have.
 void ExportToCsv(ExportModel::TableExportData& table,
                  const CsvExportParams& params,
-                 const std::filesystem::path& path);
+                 const std::filesystem::path& path,
+                 const CsvEncoding& system_encoding = SystemCsvEncoding());
 void ExportToCsv(ExportModel::GridExportData& grid,
                  const CsvExportParams& params,
-                 const std::filesystem::path& path);
+                 const std::filesystem::path& path,
+                 const CsvEncoding& system_encoding = SystemCsvEncoding());
 
 void ExportToExcel(ExportModel::TableExportData& table, ExcelSheetModel& sheet);
 void ExportToExcel(ExportModel::GridExportData& grid, ExcelSheetModel& sheet);
