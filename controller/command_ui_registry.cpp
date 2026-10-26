@@ -25,7 +25,11 @@ void UiCommandRegistry::RegisterHandler(unsigned command_id,
 }
 
 void UiCommandRegistry::AddAction(Action action) {
-  RegisterCommand(ToCommandDescriptor(action));
+  AddAction(std::move(action), CommandPlacements{});
+}
+
+void UiCommandRegistry::AddAction(Action action, CommandPlacements placements) {
+  RegisterCommand(ToCommandDescriptor(action), std::move(placements));
   action_manager_.AddAction(std::move(action));
 }
 

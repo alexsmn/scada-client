@@ -9,6 +9,7 @@
 #include "controller/selection_model.h"
 #include "controller/test/controller_environment.h"
 #include "controller/window_info.h"
+#include "core/global_command_context.h"
 #include "core/selection_command_context.h"
 #include "events/event_fetcher.h"
 #include "events/local_events.h"
@@ -121,6 +122,77 @@ TEST_F(EventModuleTest, RefusedAcknowledgementIsReportedAsALocalEvent) {
   EXPECT_EQ(events[0]->severity, scada::kSeverityCritical);
 }
 
+// Backlog 933: the global «Квитировать все» acknowledges every alarm on the
+// system for every workstation, so it asks first — naming how many — and a
+// "No" acknowledges nothing.
+class EventModuleAcknowledgeAllTest : public EventModuleTest {
+ protected:
+  void SetUp() override {
+    event_module_.local_events().ReportEvent(LocalEvents::SEV_ERROR, u"First");
+    event_module_.local_events().ReportEvent(LocalEvents::SEV_WARNING,
+                                             u"Second");
+  }
+
+  // Runs the command as the main menu would, answering the confirmation with
+  // `answer`, and returns the message the operator was shown.
+  std::u16string RunAcknowledgeAll(MessageBoxResult answer) {
+    const auto* command =
+        controller_env_.global_commands_.FindCommand(ID_ACKNOWLEDGE_ALL);
+    EXPECT_THAT(command, NotNull());
+    if (!command)
+      return {};
+
+    std::u16string shown;
+    EXPECT_CALL(dialog_service_, RunMessageBox(_, _, _))
+        .WillOnce(Invoke([&shown, answer](std::u16string_view message,
+                                          std::u16string_view, MessageBoxMode) {
+          shown = std::u16string{message};
+          return MakeAnswer(answer);
+        }));
+
+    EXPECT_TRUE(command->enabled_handler(GlobalCommandContext{
+        .main_window = main_window_, .dialog_service = dialog_service_}));
+    command->execute_handler(GlobalCommandContext{
+        .main_window = main_window_, .dialog_service = dialog_service_});
+    Drain(controller_env_.executor_);
+    return shown;
+  }
+
+  static Awaitable<MessageBoxResult> MakeAnswer(MessageBoxResult answer) {
+    co_return answer;
+  }
+
+  NiceMock<MockMainWindow> main_window_;
+  StrictMock<MockDialogService> dialog_service_;
+};
+
+TEST_F(EventModuleAcknowledgeAllTest, NoLeavesEverythingUnacknowledged) {
+  const std::u16string shown = RunAcknowledgeAll(MessageBoxResult::No);
+
+  EXPECT_NE(shown.find(u"2"), std::u16string::npos)
+      << "the confirmation must say how many events it acknowledges";
+  EXPECT_THAT(event_module_.local_events().events(), SizeIs(2));
+}
+
+TEST_F(EventModuleAcknowledgeAllTest, YesAcknowledgesEverything) {
+  RunAcknowledgeAll(MessageBoxResult::Yes);
+
+  EXPECT_THAT(event_module_.local_events().events(), IsEmpty());
+}
+
+// ...and it is kept out of the generic context menu, where it would sit beside
+// an object's own «Квитирование», while still reaching the main menu.
+TEST_F(EventModuleTest, AcknowledgeAllIsNotInTheGenericContextMenu) {
+  const CommandDescriptor* descriptor =
+      ui_command_registry_.command_manager().FindCommand(ID_ACKNOWLEDGE_ALL);
+  ASSERT_THAT(descriptor, NotNull());
+  EXPECT_FALSE(descriptor->show_in_context_menu);
+
+  EXPECT_THAT(
+      ui_command_registry_.GetMenuContributions(MainMenuId::More),
+      Contains(Field(&MenuContribution::command_id, ID_ACKNOWLEDGE_ALL)));
+}
+
 // The severity filter's 0-100 -> 1-1000 migration (ADR 0005 phase 1). These
 // build their own module because the threshold is read once, in the
 // constructor, so the profile has to carry its value before that runs.
@@ -153,8 +225,7 @@ class EventModuleSeverityMigrationTest : public Test {
 // everything. Rescaling the default turned it into 10 and silently hid the
 // severity-1 device-watch stream.
 TEST_F(EventModuleSeverityMigrationTest, AbsentThresholdIsNotRescaled) {
-  EXPECT_EQ(SeverityMinFor({}),
-            static_cast<unsigned>(scada::kSeverityMin));
+  EXPECT_EQ(SeverityMinFor({}), static_cast<unsigned>(scada::kSeverityMin));
   // A profile carrying unrelated keys is still one that stored no threshold.
   EXPECT_EQ(SeverityMinFor({{"severityScale", 100}}),
             static_cast<unsigned>(scada::kSeverityMin));

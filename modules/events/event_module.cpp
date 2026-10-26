@@ -4,9 +4,11 @@
 #include <optional>
 #include <span>
 
+#include "aui/dialog_service.h"
 #include "aui/translation.h"
 #include "base/any_executor.h"
 #include "base/awaitable.h"
+#include "base/u16format.h"
 #include "base/value_util.h"
 #include "controller/command_registry.h"
 #include "controller/command_ui_registry.h"
@@ -154,10 +156,17 @@ EventModule::EventModule(EventModuleContext&& context)
   AddOpenCommand(ID_HISTORICAL_EVENTS, kEventJournalWindowInfo);
   global_commands_.AddCommand(BasicCommand<GlobalCommandContext>{
       .command_id = ID_ACKNOWLEDGE_ALL,
+      // Asks first: this acknowledges every alarm on the whole system, for
+      // every workstation, and it is reachable from the main menu and the
+      // command palette, far from any event list (backlog 933). The journal's
+      // own «Квитировать все», which acknowledges only what it shows (backlog
+      // 869), is a separate command and does not ask.
       .execute_handler =
-          [this](const GlobalCommandContext&) {
-            node_event_provider().AcknowledgeAllEvents();
-            local_events_->AcknowledgeAll();
+          [this](const GlobalCommandContext& context) {
+            CoSpawn(executor_,
+                    [this, &dialog_service = context.dialog_service] {
+                      return ConfirmAndAcknowledgeAll(dialog_service);
+                    });
           },
       .enabled_handler =
           [this](const GlobalCommandContext&) {
@@ -192,10 +201,27 @@ EventModule::EventModule(EventModuleContext&& context)
   ui_command_registry_.AddAction(Action{.command_id_ = ID_ACKNOWLEDGE_CURRENT,
                                         .category_ = CATEGORY_ITEM,
                                         .title_ = Translate("Acknowledge")});
-  ui_command_registry_.AddAction(Action{.command_id_ = ID_ACKNOWLEDGE_ALL,
-                                        .category_ = CATEGORY_VIEW,
-                                        .title_ = Translate("Acknowledge All"),
-                                        .image_id_ = IDB_ACKNOWLEDGE_ALL});
+  // Kept out of the generic context menu (every view's right-click and the
+  // main menu's Item submenu), where it would sit beside an object's own
+  // «Квитирование», one misclick from acknowledging every alarm on the system
+  // (backlog 933). It does not reach that menu today only because nothing
+  // registers a Global handler with the CommandManager, so the flag says so
+  // explicitly rather than relying on that. The event views list their own,
+  // scoped «Квитировать все»; the global one goes in the main menu's More,
+  // and the command palette lists it too.
+  ui_command_registry_.AddAction(
+      Action{.command_id_ = ID_ACKNOWLEDGE_ALL,
+             .category_ = CATEGORY_VIEW,
+             .title_ = Translate("Acknowledge All"),
+             .image_id_ = IDB_ACKNOWLEDGE_ALL},
+      // A group of its own near the end of More, away from the checkable
+      // view toggles at the top, where one slip of the pointer would land on
+      // it while showing or hiding a pane.
+      CommandPlacements{
+          .main_menu = {MenuContribution{.menu_id = MainMenuId::More,
+                                         .order = 800,
+                                         .separator_before = true}},
+          .context_menu = false});
   ui_command_registry_.AddAction(Action{.command_id_ = ID_SEVERITY_CUSTOM,
                                         .category_ = CATEGORY_VIEW,
                                         .title_ = Translate("Severity..."),
@@ -227,6 +253,26 @@ EventModule::EventModule(EventModuleContext&& context)
 }
 
 EventModule::~EventModule() {}
+
+Awaitable<void> EventModule::ConfirmAndAcknowledgeAll(
+    DialogService& dialog_service) {
+  const size_t count = node_event_provider().unacked_events().size() +
+                       local_events_->events().size();
+  if (count == 0)
+    co_return;
+
+  const MessageBoxResult answer = co_await dialog_service.RunMessageBox(
+      u16format(Translate("Acknowledge all {} unacknowledged events? Every "
+                          "alarm on the whole system is acknowledged, for "
+                          "every workstation."),
+                count),
+      Translate("Acknowledge All"), MessageBoxMode::QuestionYesNoDefaultNo);
+  if (answer != MessageBoxResult::Yes)
+    co_return;
+
+  node_event_provider().AcknowledgeAllEvents();
+  local_events_->AcknowledgeAll();
+}
 
 NodeEventProvider& EventModule::node_event_provider() {
   return *event_fetcher_;

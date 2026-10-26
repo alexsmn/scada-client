@@ -1481,6 +1481,10 @@
         <translation>Квитировать все</translation>
     </message>
     <message>
+        <source>Acknowledge all {} unacknowledged events? Every alarm on the whole system is acknowledged, for every workstation.</source>
+        <translation>Квитировать все неквитированные события ({})? Будут квитированы все тревоги во всей системе, для всех рабочих мест.</translation>
+    </message>
+    <message>
         <source>Severity...</source>
         <translation>Важность...</translation>
     </message>

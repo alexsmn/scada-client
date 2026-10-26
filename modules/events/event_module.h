@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/any_executor.h"
+#include "base/awaitable.h"
 #include "base/boost_log.h"
 #include "base/lifetime.h"
 #include "scada/services.h"
@@ -12,6 +13,7 @@ template <class T>
 class BasicCommandRegistry;
 
 class ControllerRegistry;
+class DialogService;
 class EventFetcher;
 class LocalEvents;
 class NodeEventProvider;
@@ -45,6 +47,10 @@ class EventModule : private EventModuleContext {
   void AddOpenCommand(unsigned command_id,
                       const WindowInfo& window_info,
                       const std::string_view& mode = {});
+
+  // The global «Квитировать все»: asks the operator, naming how many events
+  // it will acknowledge system-wide, and acknowledges them only on Yes.
+  Awaitable<void> ConfirmAndAcknowledgeAll(DialogService& dialog_service);
 
   // Declared first so it outlives the fetcher, whose acknowledgement queue
   // reports refusals into it.

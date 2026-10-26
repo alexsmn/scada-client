@@ -54,6 +54,9 @@ class UiCommandRegistry {
                        CommandHandler& handler);
 
   void AddAction(Action action);
+  // Same, with explicit UI placements — e.g. to keep a command out of the
+  // generic context menu while still contributing it to a main menu.
+  void AddAction(Action action, CommandPlacements placements);
   void AddMenuItem(MenuContribution contribution);
 
   std::vector<MenuContribution> GetMenuContributions(MainMenuId menu_id) const;
