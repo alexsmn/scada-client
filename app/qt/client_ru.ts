@@ -18,6 +18,60 @@
              where "Адрес" is unambiguous, and the full "Адрес объекта" clips. -->
         <translation>Адрес</translation>
     </message>
+    <!-- Manual-review fixes, 2026-10-24 (backlog 875, 871, 891, 877, 924,
+         916). -->
+    <message>
+        <source>Time (interval start)</source>
+        <translation>Время (начало интервала)</translation>
+    </message>
+    <message>
+        <source>Period: {} – {}</source>
+        <translation>Период: {} – {}</translation>
+    </message>
+    <message>
+        <source>Printed: {}</source>
+        <translation>Напечатано: {}</translation>
+    </message>
+    <message>
+        <source>The summary is limited to {} rows and ends at {}.</source>
+        <translation>Сводка ограничена {} строками и заканчивается в {}.</translation>
+    </message>
+    <message>
+        <source>New Folder</source>
+        <translation>Новая папка</translation>
+    </message>
+    <message>
+        <source>Announce a new alarm aloud. Drawn disabled where this computer has no voice.</source>
+        <translation>Объявлять новую тревогу голосом. Недоступно, если на этом компьютере нет синтезатора речи.</translation>
+    </message>
+    <message>
+        <source>Delete the page &quot;{}&quot;? Its windows can be reopened from the trash.</source>
+        <translation>Удалить страницу «{}»? Её окна можно будет открыть снова из корзины.</translation>
+    </message>
+    <message>
+        <source>Delete Page</source>
+        <translation>Удаление страницы</translation>
+    </message>
+    <message>
+        <source>Disable &quot;{}&quot;? Its data stops updating and control through it is refused until it is enabled again.</source>
+        <translation>Отключить «{}»? Его данные перестанут обновляться, а управление через него будет запрещено, пока его снова не включат.</translation>
+    </message>
+    <message>
+        <source>Device (backup)</source>
+        <translation>Устройство (резерв)</translation>
+    </message>
+    <message>
+        <source>Channel (backup)</source>
+        <translation>Канал (резерв)</translation>
+    </message>
+    <message>
+        <source>Device (control)</source>
+        <translation>Устройство (управление)</translation>
+    </message>
+    <message>
+        <source>Channel (control)</source>
+        <translation>Канал (управление)</translation>
+    </message>
     <!-- Device log filter bar (modules/watch). "I-format" / "S/U-format" are
          the IEC 60870-5-104 §5.1 APCI format names and stay as-is. -->
     <message>
@@ -2940,8 +2994,8 @@ Trust the new certificate only if the server&apos;s operator confirms that it wa
          effect cannot be stated in a sentence is one the operator cannot make
          a decision about. -->
     <message>
-        <source>Language of the operator interface. Stored on this machine, so it does not follow the account to another workstation — or to the web client.</source>
-        <translation>Язык интерфейса оператора. Хранится на этом компьютере, поэтому не переносится вместе с учётной записью на другое рабочее место — и не переносится в веб-клиент.</translation>
+        <source>Language of the operator interface. Stored on this computer, so it does not follow the account to another workstation.</source>
+        <translation>Язык интерфейса оператора. Хранится на этом компьютере, поэтому не переносится вместе с учётной записью на другое рабочее место.</translation>
     </message>
     <message>
         <source>Follow system, Dark, Light or High contrast. The choice applies live and in full. Alarm severity, data quality and switchgear state keep their fixed values whichever scheme is picked: those are safety signals, not styling.</source>
@@ -2952,24 +3006,24 @@ Trust the new certificate only if the server&apos;s operator confirms that it wa
         <translation>Стиль платформы, которым отрисовываются элементы управления. Цветовая схема накладывается поверх него, а не заменяет его — поэтому это две отдельные настройки.</translation>
     </message>
     <message>
-        <source>Play the annunciator tone while an event stands unacknowledged. One key on both clients, so a choice made in either reaches the other. It silences the tone only: the banner and the severity colours are ISA-18.2 signals and stay unconditional.</source>
-        <translation>Подавать звуковой сигнал, пока событие не квитировано. Ключ общий для обоих клиентов, поэтому выбор, сделанный в одном, действует и в другом. Отключается только звук: баннер и цвета важности — сигналы по ISA-18.2 и выводятся всегда.</translation>
+        <source>Sound a tone when an alarm needs attention. On Windows the tone repeats until the alarms are acknowledged; elsewhere it sounds once. It silences the tone only: the banner and the severity colours are ISA-18.2 signals and stay unconditional.</source>
+        <translation>Подавать звуковой сигнал, когда тревога требует внимания. В Windows сигнал повторяется до квитирования тревог, в других системах звучит один раз. Отключается только звук: баннер и цвета важности — сигналы по ISA-18.2 и выводятся всегда.</translation>
     </message>
     <message>
         <source>Raise the event view when an event arrives.</source>
         <translation>Открывать окно событий при поступлении события.</translation>
     </message>
     <message>
-        <source>Drop an event from the view once it has been acknowledged.</source>
-        <translation>Убирать событие из окна после квитирования.</translation>
+        <source>Close the event view once every event has been acknowledged.</source>
+        <translation>Закрывать окно событий, когда все события квитированы.</translation>
     </message>
     <message>
         <source>Flash the window in the taskbar when an event arrives.</source>
         <translation>Мигать окном на панели задач при поступлении события.</translation>
     </message>
     <message>
-        <source>Confirm before sending a control command. The web client confirms every control unconditionally, so it publishes no switch rather than one that is always on.</source>
-        <translation>Запрашивать подтверждение перед отправкой команды управления. Веб-клиент запрашивает подтверждение всегда, поэтому не показывает переключатель вместо того, который постоянно включён.</translation>
+        <source>Confirm before sending a control command.</source>
+        <translation>Запрашивать подтверждение перед отправкой команды управления.</translation>
     </message>
     <message>
         <source>Report a successful control command back to the operator.</source>
