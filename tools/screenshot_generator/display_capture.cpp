@@ -1,5 +1,6 @@
 #include "display_capture.h"
 
+#include "capture_writer.h"
 #include "publish_guard.h"
 #include "screenshot_config.h"
 #include "screenshot_output.h"
@@ -157,5 +158,5 @@ void SaveDisplayScreenshot(const ScreenshotSpec& spec,
   if (!publish_guard.ShouldPublish())
     return;
 
-  pixmap.save(QString::fromStdString(output_path.string()));
+  WriteCapture(pixmap.toImage(), output_path);
 }

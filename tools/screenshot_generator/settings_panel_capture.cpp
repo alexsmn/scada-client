@@ -1,10 +1,11 @@
 // The Settings surface capture, and with it the operator-facing Colour scheme
 // choice.
 
+#include "capture_writer.h"
 #include "publish_guard.h"
 #include "screenshot_config.h"
-#include "screenshot_options.h"
 #include "screenshot_fixture.h"
+#include "screenshot_options.h"
 #include "screenshot_output.h"
 #include "screenshot_wait.h"
 #include "widget_capture.h"
@@ -223,5 +224,5 @@ TEST_F(ScreenshotGenerator, CaptureSettingsPanel) {
 
   QPixmap panel_pixmap = GrabWhenSettled(panel);
   ASSERT_FALSE(panel_pixmap.isNull());
-  panel_pixmap.save(QString::fromStdString((OutputPathFor(kFilename)).string()));
+  WriteCapture(panel_pixmap.toImage(), OutputPathFor(kFilename));
 }

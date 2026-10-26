@@ -1,5 +1,6 @@
 #include "widget_capture.h"
 
+#include "capture_writer.h"
 #include "screenshot_config.h"
 #include "screenshot_output.h"
 #include "screenshot_wait.h"
@@ -107,7 +108,7 @@ void SaveWindowScreenshot(QWidget* window,
   QApplication::processEvents();
 
   auto path = OutputPathFor(spec.filename);
-  pixmap.save(QString::fromStdString(path.string()));
+  WriteCapture(pixmap.toImage(), path);
 }
 
 void SaveFramedScreenshot(QWidget* framed, const ScreenshotSpec& spec) {
@@ -133,7 +134,7 @@ void SaveFramedScreenshot(QWidget* framed, const ScreenshotSpec& spec) {
   framed->setMinimumSize(0, 0);
 
   auto path = OutputPathFor(spec.filename);
-  pixmap.save(QString::fromStdString(path.string()));
+  WriteCapture(pixmap.toImage(), path);
 }
 
 void SaveScreenshot(QWidget* widget, const ScreenshotSpec& spec) {
@@ -165,5 +166,5 @@ void SaveScreenshot(QWidget* widget, const ScreenshotSpec& spec) {
   }
 
   auto path = OutputPathFor(spec.filename);
-  pixmap.save(QString::fromStdString(path.string()));
+  WriteCapture(pixmap.toImage(), path);
 }

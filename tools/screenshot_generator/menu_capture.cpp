@@ -1,5 +1,6 @@
 // Menu-popup captures (the `auto-menu` manifest tag).
 
+#include "capture_writer.h"
 #include "publish_guard.h"
 #include "screenshot_config.h"
 #include "screenshot_fixture.h"
@@ -114,8 +115,7 @@ void SaveMenuCapture(QMenu* menu,
 
   const QPixmap pixmap = GrabWhenSettled(menu);
   ASSERT_FALSE(pixmap.isNull()) << filename << " grabbed an empty pixmap";
-  ASSERT_TRUE(
-      pixmap.save(QString::fromStdString(OutputPathFor(filename).string())))
+  ASSERT_TRUE(WriteCapture(pixmap.toImage(), OutputPathFor(filename)))
       << "could not write " << filename;
 }
 

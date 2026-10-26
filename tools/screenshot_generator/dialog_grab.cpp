@@ -1,5 +1,6 @@
 #include "dialog_grab.h"
 
+#include "capture_writer.h"
 #include "dialog_pump.h"
 #include "publish_guard.h"
 #include "screenshot_config.h"
@@ -100,7 +101,7 @@ bool GrabAndCloseVisibleDialog(const DialogSpec& spec) {
                                              : GrabDialogWithComboPopupOpen(
                                                    dialog, spec.expand_combo);
   auto path = OutputPathFor(spec.filename);
-  pixmap.save(QString::fromStdString(path.string()));
+  WriteCapture(pixmap.toImage(), path);
 
   // LoginDialog::reject() now calls QDialog::reject() before resolving its
   // completion, so it hides the dialog itself — it must, or a cancel issued

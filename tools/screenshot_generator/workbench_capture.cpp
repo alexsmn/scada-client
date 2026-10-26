@@ -1,6 +1,7 @@
 // The three full-window workbench captures: the operator workbench hero, the
 // Overview landing page, and the activity rail on its own.
 
+#include "capture_writer.h"
 #include "explorer_selection.h"
 #include "publish_guard.h"
 #include "screenshot_config.h"
@@ -141,7 +142,7 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
   }
 
   QPixmap pixmap = GrabWhenSettled(qmain);
-  pixmap.save(QString::fromStdString(output_image.string()));
+  WriteCapture(pixmap.toImage(), output_image);
 
   MainWindow::SetHideForTesting(true);
 }
@@ -249,7 +250,7 @@ TEST_F(ScreenshotGenerator, CaptureOverviewPage) {
   }
 
   QPixmap pixmap = GrabWhenSettled(qmain);
-  pixmap.save(QString::fromStdString(output_image.string()));
+  WriteCapture(pixmap.toImage(), output_image);
 
   MainWindow::SetHideForTesting(true);
 }
@@ -314,7 +315,6 @@ TEST_F(ScreenshotGenerator, CaptureActivityRail) {
 
   const QPixmap frame = GrabWhenSettled(rail);
   ASSERT_FALSE(frame.isNull());
-  ASSERT_TRUE(
-      frame.save(QString::fromStdString((OutputPathFor(kFilename)).string())))
+  ASSERT_TRUE(WriteCapture(frame.toImage(), OutputPathFor(kFilename)))
       << "could not write " << kFilename;
 }

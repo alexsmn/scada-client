@@ -2,6 +2,7 @@
 
 #include "base/time/time_wire_codec.h"
 
+#include "capture_writer.h"
 #include "fixture_builder.h"
 #include "publish_guard.h"
 #include "screenshot_config.h"
@@ -307,7 +308,7 @@ void SaveGraphScreenshot(const ScreenshotSpec& spec,
   if (!publish_guard.ShouldPublish())
     return;
 
-  pixmap.save(QString::fromStdString(output_path.string()));
+  WriteCapture(pixmap.toImage(), output_path);
 }
 
 void SaveSeriesInspectorScreenshot(const ScreenshotSpec& spec,

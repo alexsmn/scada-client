@@ -23,6 +23,7 @@
 // assertions below are the whole regression net. See "auto-menu — a menu
 // popup" in docs/ops/client-screenshots.md.
 
+#include "capture_writer.h"
 #include "explorer_selection.h"
 #include "publish_guard.h"
 #include "screenshot_config.h"
@@ -297,8 +298,7 @@ void SaveMenuPixmap(const QPixmap& pixmap,
     return;
 
   ASSERT_FALSE(pixmap.isNull()) << filename << " grabbed an empty pixmap";
-  ASSERT_TRUE(
-      pixmap.save(QString::fromStdString(OutputPathFor(filename).string())))
+  ASSERT_TRUE(WriteCapture(pixmap.toImage(), OutputPathFor(filename)))
       << "could not write " << filename;
 }
 

@@ -13,6 +13,8 @@ file(GLOB SCREENSHOT_GENERATOR_WIN32_RESOURCES CONFIGURE_DEPENDS
 
 add_executable(client_screenshot_generator
   "main.cpp"
+  "capture_writer.cpp"
+  "capture_writer.h"
   "context_menu_capture.cpp"
   "control_confirmation_check.cpp"
   "explorer_selection.cpp"
@@ -183,12 +185,15 @@ endif()
 # file that no target builds looks exactly like a passing one, so keep this
 # target in step when adding another.
 #
-# Deliberately nothing Qt: what it covers is the settle loop's budget
-# arithmetic, the publish guard's failure-count scoping and the command-line
-# parser, all Qt-free on purpose so they can be tested without a widget, an
-# event loop, or a machine that happens to be idle. `Boost::program_options` is
-# the one non-gtest link, and it is there because the parser is what it tests.
+# Deliberately no widgets: what it covers is the settle loop's budget
+# arithmetic, the publish guard's failure-count scoping, the command-line
+# parser and the capture writer, none of which needs a widget, an event loop,
+# or a machine that happens to be idle. `Boost::program_options` is there
+# because the parser is what it tests; `Qt6::Gui` because the capture writer
+# decodes and encodes PNGs through QImage, which needs no QGuiApplication.
 add_executable(client_screenshot_generator_unittests
+  "capture_writer.cpp"
+  "capture_writer_unittest.cpp"
   "settle_loop_unittest.cpp"
   "publish_guard.cpp"
   "publish_guard_unittest.cpp"
@@ -201,6 +206,7 @@ add_executable(client_screenshot_generator_unittests
 target_link_libraries(client_screenshot_generator_unittests PRIVATE
   base_unittest
   Boost::program_options
+  Qt6::Gui
 )
 
 target_include_directories(client_screenshot_generator_unittests PRIVATE
