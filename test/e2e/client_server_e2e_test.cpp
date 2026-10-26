@@ -1299,14 +1299,12 @@ TEST_P(ClientServerE2eTest, OperatorUseCases_OpenRegisteredSurfaces) {
 }
 
 TEST_P(ClientServerE2eTest, ProfileSave_PersistsPagesOnServer) {
-  // Profile writes route client→proxy→edge→config tier; that remote-config
-  // write-through isn't wired through the cluster yet (a pending server-tier
-  // gap). Runs under SingleTier where the profile is written to the single
-  // tier's own config DB.
-  if (Topology() == ServerTopology::Cluster)
-    GTEST_SKIP() << "profile write-through pending a server-tier gap "
-                    "(remote-config write routing)";
-
+  // Under SingleTier the profile lands in the one tier's own config DB. Under
+  // Cluster the save is a Call on the user's node, which the proxy routes to
+  // the configuration owner by its UserType namespace claim, so it lands in
+  // scada-config's DB (ServerConfigDatabasePath) -- the topology a
+  // scada-setup site has. This skipped Cluster from 2026-09-12 as "pending a
+  // server-tier gap (remote-config write routing)"; backlog 878 ran it.
   constexpr int kGuestUserId = 12;
   constexpr std::string_view kSavedPageTitle = "E2E Server Profile Page";
 
@@ -1358,12 +1356,8 @@ TEST_P(ClientServerE2eTest, ProfileSave_PersistsPagesOnServer) {
 // whether or not the server was ever consulted, which is the shape of test
 // that reports success about a feature that does not work.
 TEST_P(ClientServerE2eTest, ProfileLoad_ReadsTheServerCopyOnNextSignIn) {
-  // Same server-tier gap as ProfileSave_PersistsPagesOnServer: profile writes
-  // are not routed through the cluster yet.
-  if (Topology() == ServerTopology::Cluster)
-    GTEST_SKIP() << "profile write-through pending a server-tier gap "
-                    "(remote-config write routing)";
-
+  // Runs under Cluster too, where both the save and the read are routed to
+  // the configuration owner (see ProfileSave_PersistsPagesOnServer).
   // An OPC UA client session never learns the node id of the user it signed in
   // as -- opcuapp's `ClientSession::GetUserId()` answers null, because
   // ActivateSession carries no such thing -- so over OPC UA the client neither
