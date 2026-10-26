@@ -191,7 +191,7 @@ TEST_F(ScreenshotGenerator, CaptureMoreMenu) {
   SaveMenuCapture(menu, kFilename, publish_guard);
 }
 
-// The Summary view's Function submenu: the seven aggregate functions, one of
+// The Summary view's Function submenu: the eight aggregate functions, one of
 // them checked. It is the menu bar's Item menu, which `ContextMenuModel`
 // builds from the active view's commands and which folds the categories it
 // does not expand behind a submenu carrying the category's title
@@ -202,7 +202,7 @@ TEST_F(ScreenshotGenerator, CaptureMoreMenu) {
 // Which function is checked comes from the fixture's Summ window, which sets
 // no `AggregateType` and so takes the model's default. The manual's original
 // shows Minimum; rather than pin a value the fixture does not state, this
-// asserts the invariant that matters — the seven rows are all there and
+// asserts the invariant that matters — the eight rows are all there and
 // exactly one of them is checked.
 TEST_F(ScreenshotGenerator, CaptureSummaryFunctionMenu) {
   constexpr const char* kFilename = "menu-summary.png";
@@ -262,8 +262,9 @@ TEST_F(ScreenshotGenerator, CaptureSummaryFunctionMenu) {
 
   CapturePublishGuard publish_guard{kFilename};
 
-  // Seven aggregate functions: First, Last, Count, Minimum, Maximum, Sum,
-  // Average (see RegisterSummaryCommandActions). A row that stopped being
+  // Eight aggregate functions: First, Last, Count, Minimum, Maximum, Average,
+  // Time Average, Time Integral (see RegisterSummaryCommandActions; the time
+  // pair since backlog 870). A row that stopped being
   // checkable, or a menu that resolved no checked row, would still render.
   int visible_rows = 0;
   int checkable_rows = 0;
@@ -278,10 +279,10 @@ TEST_F(ScreenshotGenerator, CaptureSummaryFunctionMenu) {
     if (action->isChecked())
       ++checked_rows;
   }
-  EXPECT_EQ(CountMenuRows(*menu), 7) << "expected the seven aggregate rows";
-  EXPECT_EQ(visible_rows, 7)
+  EXPECT_EQ(CountMenuRows(*menu), 8) << "expected the eight aggregate rows";
+  EXPECT_EQ(visible_rows, 8)
       << "an aggregate row resolved no command handler and was hidden";
-  EXPECT_EQ(checkable_rows, 7) << "an aggregate row stopped being checkable";
+  EXPECT_EQ(checkable_rows, 8) << "an aggregate row stopped being checkable";
   EXPECT_EQ(checked_rows, 1)
       << "expected exactly one aggregate function to read as selected";
 
