@@ -5,6 +5,7 @@
 #include "address_space/object.h"
 #include "address_space/test/scada_test_address_space.h"
 #include "address_space/variable.h"
+#include "aui/dialog_service_mock.h"
 #include "aui/qt/message_loop_qt.h"
 #include "aui/test/app_environment.h"
 #include "base/async_completion.h"
@@ -12,12 +13,14 @@
 #include "base/client_paths.h"
 #include "base/test/scoped_path_override.h"
 #include "controller/controller_registry.h"
+#include "core/global_command_context.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
 #include "node_service/node_service.h"
 #include "node_service/test/create_test_node_service.h"
 #include "profile/profile.h"
+#include "resources/common_resources.h"
 #include "scada/monitoring_parameters.h"
 #include "scada/read_value_id.h"
 #include "scada/services_mock.h"
@@ -222,9 +225,15 @@ class ClientApplicationTestBase : public Test {
   scada::base::ScopedPathOverride private_dir_override_{client::DIR_PRIVATE};
 
   NiceMock<MockFunction<Awaitable<std::optional<DataServices>>(
-      DataServicesContext&& services_context)>>
+      DataServicesContext&& services_context,
+      bool allow_auto_login)>>
       login_handler_;
 };
+
+// A login dialog the operator closed without signing in.
+Awaitable<std::optional<DataServices>> MakeCanceledLogin() {
+  co_return std::nullopt;
+}
 
 class ClientApplicationTest : public ClientApplicationTestBase {
  public:
@@ -244,12 +253,13 @@ class ClientApplicationTest : public ClientApplicationTestBase {
 ClientApplicationTestBase::ClientApplicationTestBase() {
   MainWindow::SetHideForTesting();
 
-  ON_CALL(login_handler_, Call(/*services_context=*/_))
-      .WillByDefault(Invoke([this](DataServicesContext&&)
-                                -> Awaitable<std::optional<DataServices>> {
-        co_return std::optional{
-            DataServices::FromUnownedServices(services_.services())};
-      }));
+  ON_CALL(login_handler_, Call(/*services_context=*/_, /*allow_auto_login=*/_))
+      .WillByDefault(
+          Invoke([this](DataServicesContext&&,
+                        bool) -> Awaitable<std::optional<DataServices>> {
+            co_return std::optional{
+                DataServices::FromUnownedServices(services_.services())};
+          }));
 }
 
 ClientApplicationTest::ClientApplicationTest() = default;
@@ -287,22 +297,24 @@ TEST(ShutdownStackTest, RunsSinglePushedAction) {
 }
 
 TEST_F(ClientApplicationTest, LoginFailed) {
-  EXPECT_CALL(login_handler_, Call(/*services_context=*/_))
-      .WillOnce(Invoke(
-          [](DataServicesContext&&) -> Awaitable<std::optional<DataServices>> {
-            co_return std::optional<DataServices>{};
-          }));
+  EXPECT_CALL(login_handler_,
+              Call(/*services_context=*/_, /*allow_auto_login=*/_))
+      .WillOnce(Invoke([](DataServicesContext&&,
+                          bool) -> Awaitable<std::optional<DataServices>> {
+        co_return std::optional<DataServices>{};
+      }));
 
   auto started = app_.Start();
   EXPECT_THROW(Wait(std::move(started)), LoginCanceled);
 }
 
 TEST_F(ClientApplicationTest, QuitAfterCanceledLoginResolves) {
-  EXPECT_CALL(login_handler_, Call(/*services_context=*/_))
-      .WillOnce(Invoke(
-          [](DataServicesContext&&) -> Awaitable<std::optional<DataServices>> {
-            co_return std::optional<DataServices>{};
-          }));
+  EXPECT_CALL(login_handler_,
+              Call(/*services_context=*/_, /*allow_auto_login=*/_))
+      .WillOnce(Invoke([](DataServicesContext&&,
+                          bool) -> Awaitable<std::optional<DataServices>> {
+        co_return std::optional<DataServices>{};
+      }));
 
   auto started = app_.Start();
   EXPECT_THROW(Wait(std::move(started)), LoginCanceled);
@@ -329,12 +341,13 @@ TEST_F(ClientApplicationTest, LoginHandlerRejectionPropagates) {
     MyError() : std::runtime_error{"boom"} {}
   };
 
-  EXPECT_CALL(login_handler_, Call(/*services_context=*/_))
-      .WillOnce(Invoke(
-          [](DataServicesContext&&) -> Awaitable<std::optional<DataServices>> {
-            throw MyError{};
-            co_return std::optional<DataServices>{};
-          }));
+  EXPECT_CALL(login_handler_,
+              Call(/*services_context=*/_, /*allow_auto_login=*/_))
+      .WillOnce(Invoke([](DataServicesContext&&,
+                          bool) -> Awaitable<std::optional<DataServices>> {
+        throw MyError{};
+        co_return std::optional<DataServices>{};
+      }));
 
   EXPECT_THROW(Wait(app_.Start()), MyError);
 }
@@ -345,13 +358,14 @@ TEST_F(ClientApplicationTest, LoginHandlerRejectionPropagates) {
 // checking that app_.Start() stays pending until login resumes.
 TEST_F(ClientApplicationTest, StartWaitsForLoginBeforePostLogin) {
   scada::base::AsyncCompletion pending_login{executor_};
-  EXPECT_CALL(login_handler_, Call(/*services_context=*/_))
-      .WillOnce(Invoke(
-          [&](DataServicesContext&&) -> Awaitable<std::optional<DataServices>> {
-            co_await pending_login.Wait();
-            co_return std::optional{
-                DataServices::FromUnownedServices(services_.services())};
-          }));
+  EXPECT_CALL(login_handler_,
+              Call(/*services_context=*/_, /*allow_auto_login=*/_))
+      .WillOnce(Invoke([&](DataServicesContext&&,
+                           bool) -> Awaitable<std::optional<DataServices>> {
+        co_await pending_login.Wait();
+        co_return std::optional{
+            DataServices::FromUnownedServices(services_.services())};
+      }));
 
   auto started = StartClientApplicationAwaitable(executor_, app_.Start());
 
@@ -365,6 +379,41 @@ TEST_F(ClientApplicationTest, StartWaitsForLoginBeforePostLogin) {
   // Resolve the login and verify Start() now completes.
   pending_login.Complete();
   WaitForClientApplicationAwaitable(io_context_, started);
+}
+
+// Backlog 934: only the sign-in at application start may be submitted by a
+// stored automatic login. Signing out and connecting again is a handover
+// between operators, so that dialog must wait for the next one.
+TEST_F(ClientApplicationTest, OnlyTheStartupLoginAllowsAutoLogin) {
+  EXPECT_CALL(login_handler_, Call(_, /*allow_auto_login=*/true));
+  StartApp();
+  Mock::VerifyAndClearExpectations(&login_handler_);
+
+  bool explicit_login_asked = false;
+  EXPECT_CALL(login_handler_, Call(_, /*allow_auto_login=*/false))
+      .Times(2)
+      .WillRepeatedly(
+          Invoke([&explicit_login_asked](DataServicesContext&&, bool) {
+            explicit_login_asked = true;
+            // Cancelled: the operator closes the dialog.
+            return MakeCanceledLogin();
+          }));
+
+  const auto& main_windows = app_.main_window_manager().main_windows();
+  ASSERT_THAT(main_windows, SizeIs(1));
+  MainWindow& main_window = main_windows.front();
+  NiceMock<MockDialogService> dialog_service;
+  const GlobalCommandContext context{.main_window = main_window,
+                                     .dialog_service = dialog_service};
+
+  // «Отключиться от сервера»...
+  ASSERT_TRUE(app_.ExecuteGlobalCommandForTesting(ID_LOGOFF, context));
+  ASSERT_TRUE(WaitUntil([&] { return explicit_login_asked; }));
+
+  // ...and «Подключиться к серверу...».
+  explicit_login_asked = false;
+  ASSERT_TRUE(app_.ExecuteGlobalCommandForTesting(ID_LOGIN, context));
+  ASSERT_TRUE(WaitUntil([&] { return explicit_login_asked; }));
 }
 
 // Ensure that the initial page is created and all windows are defined.
@@ -445,12 +494,14 @@ class ClientApplicationConfiguratorTest : public Test {
  public:
   ClientApplicationConfiguratorTest() {
     MainWindow::SetHideForTesting();
-    ON_CALL(login_handler_, Call(/*services_context=*/_))
-        .WillByDefault(Invoke([this](DataServicesContext&&)
-                                  -> Awaitable<std::optional<DataServices>> {
-          co_return std::optional{
-              DataServices::FromUnownedServices(services_.services())};
-        }));
+    ON_CALL(login_handler_,
+            Call(/*services_context=*/_, /*allow_auto_login=*/_))
+        .WillByDefault(
+            Invoke([this](DataServicesContext&&,
+                          bool) -> Awaitable<std::optional<DataServices>> {
+              co_return std::optional{
+                  DataServices::FromUnownedServices(services_.services())};
+            }));
   }
 
  protected:
@@ -476,7 +527,8 @@ class ClientApplicationConfiguratorTest : public Test {
   scada::MockServices services_;
   scada::base::ScopedPathOverride private_dir_override_{client::DIR_PRIVATE};
   NiceMock<MockFunction<Awaitable<std::optional<DataServices>>(
-      DataServicesContext&& services_context)>>
+      DataServicesContext&& services_context,
+      bool allow_auto_login)>>
       login_handler_;
 };
 

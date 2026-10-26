@@ -14,6 +14,7 @@
 #include "controller/controller_registry.h"
 #include "controller/qt/selection_panel_registry.h"
 #include "core/core_module.h"
+#include "core/global_command_context.h"
 #include "device_diagnostics/qt/device_diagnostics_selection_panel.h"
 #include "events/event_module.h"
 #include "events/local_events.h"
@@ -198,6 +199,18 @@ bool ClientApplication::HasSelectionCommandForTesting(
 bool ClientApplication::HasGlobalCommandForTesting(unsigned command_id) const {
   return core_module_ &&
          core_module_->global_commands().FindCommand(command_id) != nullptr;
+}
+
+bool ClientApplication::ExecuteGlobalCommandForTesting(
+    unsigned command_id,
+    const GlobalCommandContext& context) {
+  if (!core_module_)
+    return false;
+  const auto* command = core_module_->global_commands().FindCommand(command_id);
+  if (!command || !command->execute_handler)
+    return false;
+  command->execute_handler(context);
+  return true;
 }
 
 namespace {
@@ -423,7 +436,7 @@ Awaitable<void> ClientApplication::Start() {
 
 Awaitable<void> ClientApplication::StartAsync() {
   RegisterClientApplicationModules();
-  co_await LoginAsync();
+  co_await LoginAsync(/*allow_auto_login=*/true);
   co_await PostLoginAsync();
   co_return;
 }
@@ -705,17 +718,20 @@ void ClientApplication::CreateMainWindow(const PostLoginContext& ctx) {
   shutdown_stack_.Push([this] { main_window_module_.reset(); });
 }
 
+// «Подключиться к серверу...»: the operator asked for the dialog, so it waits
+// for them even when automatic login is set.
 Awaitable<void> ClientApplication::Login() {
-  return LoginAsync();
+  return LoginAsync(/*allow_auto_login=*/false);
 }
 
-Awaitable<void> ClientApplication::LoginAsync() {
+Awaitable<void> ClientApplication::LoginAsync(bool allow_auto_login) {
   LOG_INFO(*logger_) << ("Login");
 
   DataServicesContext services_context{logger_, executor_, *transport_factory_,
                                        ReadServiceLogParamsFromCommandLine()};
 
-  auto services = co_await login_handler_(std::move(services_context));
+  auto services =
+      co_await login_handler_(std::move(services_context), allow_auto_login);
   if (!services) {
     throw LoginCanceled{};
   }
@@ -761,8 +777,10 @@ Awaitable<void> ClientApplication::SignOutAsync() {
     co_await services.session_service->Disconnect();
   }
 
+  // Never an automatic login here: signing out is how one operator hands the
+  // workstation to the next (backlog 934).
   try {
-    co_await LoginAsync();
+    co_await LoginAsync(/*allow_auto_login=*/false);
   } catch (const LoginCanceled&) {
     LOG_INFO(*logger_) << ("Sign out: login dialog cancelled");
   }

@@ -178,8 +178,10 @@ int main(int argc, char* argv[]) {
     // would have nothing registered on it. See docs/client/message-loop.md §1.
     ClientApplication app{ClientApplicationContext{
         .executor_ = executor,
-        .login_handler_ = [executor](DataServicesContext&& services_context) {
-          return ExecuteLoginDialog(executor, std::move(services_context));
+        .login_handler_ = [executor](DataServicesContext&& services_context,
+                                     bool allow_auto_login) {
+          return ExecuteLoginDialog(executor, std::move(services_context),
+                                    /*settings_store=*/{}, allow_auto_login);
         }}};
 
     auto startup_flow_context = client::QtStartupFlowContext{

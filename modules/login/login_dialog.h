@@ -21,7 +21,13 @@ class SettingsStore;
 // per-user settings file, or the E2E `--test-settings-file` override).
 // Hermetic harnesses — the screenshot generator — pass an in-memory store so
 // captures never leak machine state.
+//
+// `allow_auto_login` is true only for the sign-in at application start: that
+// is the one the stored "Sign in automatically" setting submits by itself. A
+// Connect after a Disconnect passes false, so it never signs the previous
+// operator back in (backlog 934).
 Awaitable<std::optional<DataServices>> ExecuteLoginDialog(
     AnyExecutor executor,
     DataServicesContext services_context,
-    std::shared_ptr<SettingsStore> settings_store = {});
+    std::shared_ptr<SettingsStore> settings_store = {},
+    bool allow_auto_login = false);

@@ -682,4 +682,119 @@ TEST(LoginControllerTest, SecuredModesAuthenticateTheServer) {
             "/mine.pem");
 }
 
+// Backlog 934: a stored automatic login submits itself at application start
+// and nowhere else. Connecting again after «Отключиться от сервера» is a
+// handover between operators, and must wait for the next one; the stored
+// setting survives, so the next start still signs in automatically.
+TEST(LoginControllerTest, AutoLoginSubmitsOnlyAtStartup) {
+  auto settings_store = std::make_shared<MemorySettingsStore>();
+  settings_store->SetBool("AutoLogin", true);
+  settings_store->SetString16("Password", u"secret");
+  TestExecutor executor;
+  StrictMock<MockDialogService> dialog_service;
+  NullTransportFactory transport_factory;
+
+  auto at_reconnect = std::make_shared<TestLoginController>(
+      executor, MakeServicesContext(executor, transport_factory),
+      dialog_service, settings_store);
+  EXPECT_FALSE(at_reconnect->ShouldAutoSubmit(/*at_startup=*/false,
+                                              /*bypass_held=*/false));
+  EXPECT_TRUE(at_reconnect->auto_login) << "the stored setting is kept";
+
+  auto at_startup = std::make_shared<TestLoginController>(
+      executor, MakeServicesContext(executor, transport_factory),
+      dialog_service, settings_store);
+  EXPECT_TRUE(at_startup->ShouldAutoSubmit(/*at_startup=*/true,
+                                           /*bypass_held=*/false));
+}
+
+// The hold-a-key escape at start (Ctrl, Option on macOS) turns automatic login
+// off, and the sign-in that follows saves it off and forgets the password.
+TEST(LoginControllerTest, BypassKeyTurnsAutoLoginOff) {
+  auto settings_store = std::make_shared<MemorySettingsStore>();
+  settings_store->SetBool("AutoLogin", true);
+  settings_store->SetString16("Password", u"secret");
+  TestExecutor executor;
+  StrictMock<MockDialogService> dialog_service;
+  NullTransportFactory transport_factory;
+
+  TestLoginController controller{
+      executor, MakeServicesContext(executor, transport_factory),
+      dialog_service, settings_store};
+  controller.completion_handler = [](DataServices) {};
+  EXPECT_FALSE(controller.ShouldAutoSubmit(/*at_startup=*/true,
+                                           /*bypass_held=*/true));
+  EXPECT_FALSE(controller.auto_login);
+
+  controller.CompleteLoginForTest("Scada");
+  Drain(executor);
+
+  EXPECT_EQ(settings_store->GetBool("AutoLogin"), std::optional{false});
+  EXPECT_EQ(settings_store->GetString16("Password"),
+            std::optional<std::u16string>{u""});
+}
+
+// Backlog 924's second half: unticking automatic login forgets the stored
+// password instead of keeping it for whoever ticks the box next.
+TEST(LoginControllerTest, ClearingAutoLoginForgetsThePassword) {
+  auto settings_store = std::make_shared<MemorySettingsStore>();
+  settings_store->SetBool("AutoLogin", true);
+  settings_store->SetString16("Password", u"old-secret");
+  TestExecutor executor;
+  StrictMock<MockDialogService> dialog_service;
+  NullTransportFactory transport_factory;
+  auto controller = CreateController(executor, dialog_service, settings_store,
+                                     transport_factory);
+  controller->completion_handler = [](DataServices) {};
+  controller->auto_login = false;
+
+  controller->CompleteLoginForTest("Scada");
+  Drain(executor);
+
+  EXPECT_EQ(settings_store->GetString16("Password"),
+            std::optional<std::u16string>{u""});
+}
+
+// Cancelling a sign-in in progress — an automatic login the operator wants to
+// stop — drops its result, and a session that opened anyway is closed rather
+// than left signed in as the previous operator.
+TEST(LoginControllerTest, CancelledLoginIgnoresItsResultAndDisconnects) {
+  auto settings_store = std::make_shared<MemorySettingsStore>();
+  TestExecutor executor;
+  StrictMock<MockDialogService> dialog_service;
+  StrictMock<scada::MockSessionService> session_service;
+  ScopedScadaSessionService scoped_session_service{session_service};
+  NullTransportFactory transport_factory;
+  DeferredStatus connect;
+  bool completed = false;
+  bool failed = false;
+
+  EXPECT_CALL(session_service, ConnectStatus(_))
+      .WillOnce(
+          [executor, &connect](scada::SessionConnectParams) -> scada::CoStatus {
+            co_return co_await connect.Wait(executor);
+          });
+  EXPECT_CALL(session_service, Disconnect());
+
+  auto controller = CreateController(executor, dialog_service, settings_store,
+                                     transport_factory);
+  controller->completion_handler = [&](DataServices) { completed = true; };
+  controller->error_handler = [&] { failed = true; };
+
+  controller->Login();
+  Drain(executor);
+  EXPECT_TRUE(controller->login_in_progress());
+
+  controller->CancelLogin();
+  EXPECT_FALSE(controller->login_in_progress());
+
+  connect.Resolve(scada::StatusCode::Good);
+  Drain(executor);
+
+  EXPECT_FALSE(completed);
+  EXPECT_FALSE(failed);
+  EXPECT_EQ(settings_store->GetString16("User"), std::nullopt)
+      << "a cancelled sign-in must not be remembered as a successful one";
+}
+
 }  // namespace

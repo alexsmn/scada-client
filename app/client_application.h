@@ -78,6 +78,7 @@ class PropertyService;
 class TaskManager;
 class Speech;
 class UiCommandRegistry;
+struct GlobalCommandContext;
 class WriteService;
 
 namespace scada::metrics {
@@ -88,8 +89,13 @@ struct ClientApplicationContext {
   const AnyExecutor executor_;
 
   // TODO: Remove the `DataServicesContext` parameter.
+  //
+  // `allow_auto_login` is true only for the sign-in at application start; a
+  // Connect after a Disconnect passes false so a stored automatic login does
+  // not sign the previous operator back in (backlog 934).
   const std::function<Awaitable<std::optional<DataServices>>(
-      DataServicesContext&& services_context)>
+      DataServicesContext&& services_context,
+      bool allow_auto_login)>
       login_handler_;
 
   NodeServiceTreeFactory node_service_tree_factory_;
@@ -139,6 +145,10 @@ class ClientApplication : private ClientApplicationContext {
   MainWindowManager& main_window_manager() SCADA_LIFETIME_BOUND;
   bool HasSelectionCommandForTesting(unsigned command_id) const;
   bool HasGlobalCommandForTesting(unsigned command_id) const;
+  // Runs a registered global command's execute handler, as the main menu
+  // would. Returns false when no such command is registered.
+  bool ExecuteGlobalCommandForTesting(unsigned command_id,
+                                      const GlobalCommandContext& context);
 
   // Saves the current profile to the logged-in server user, or to
   // `target_user_id` when provided.
@@ -208,7 +218,7 @@ class ClientApplication : private ClientApplicationContext {
 
   Awaitable<void> StartAsync();
   Awaitable<void> Login();
-  Awaitable<void> LoginAsync();
+  Awaitable<void> LoginAsync(bool allow_auto_login);
 
   // End the current session and offer the login dialog again. Cancelling that
   // dialog leaves the client connected to nothing rather than quitting: a

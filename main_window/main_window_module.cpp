@@ -246,7 +246,9 @@ void RegisterMainWindowCommandActions(
   // until 2026-09-20, which meant the only way out of a session in a release
   // build was to quit the application -- and with the login dialog's `Auto:`
   // box ticked, quitting and reopening signs the same operator straight back
-  // in. Their handlers pair: exactly one is enabled at a time.
+  // in. The dialog either of them opens never auto-submits, so they are the
+  // handover route even with that box ticked (backlog 934). Their handlers
+  // pair: exactly one is enabled at a time.
   ui_command_registry.AddMenuItem({.menu_id = MainMenuId::More,
                                    .order = 900,
                                    .command_id = ID_LOGIN,

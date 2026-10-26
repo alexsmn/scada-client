@@ -2211,6 +2211,10 @@
         <translation>Чтобы отключить автоматический вход, удерживайте Ctrl при запуске приложения.</translation>
     </message>
     <message>
+        <source>To disable automatic login, hold Option (⌥) when launching the application.</source>
+        <translation>Чтобы отключить автоматический вход, удерживайте Option (⌥) при запуске приложения.</translation>
+    </message>
+    <message>
         <source>Disconnecting from server...</source>
         <translation>Отключение от сервера...</translation>
     </message>

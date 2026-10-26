@@ -11,6 +11,7 @@
 #include <QApplication>
 #include <QCheckBox>
 #include <QFileDialog>
+#include <QGuiApplication>
 #include <QKeyEvent>
 #include <QSettings>
 #include <QtWidgets/qcombobox.h>
@@ -32,6 +33,22 @@ QStringList MakeQStringList(const std::vector<std::u16string>& source) {
   return list;
 }
 
+// The key held at start to skip automatic login. Ctrl everywhere but macOS,
+// where Qt reports the Command key as Qt::ControlModifier and Command is what
+// the Dock and Finder already read at launch; Option is the Mac convention for
+// launching an application differently (Photos and Music both use it to pick
+// a library). The Windows check used to be `GetAsyncKeyState(VK_CONTROL)` and
+// compiled nowhere else, while the hint naming Ctrl was shown on every
+// platform (backlog 934).
+bool IsAutoLoginBypassHeld() {
+#if defined(__APPLE__)
+  constexpr Qt::KeyboardModifier kBypass = Qt::AltModifier;
+#else
+  constexpr Qt::KeyboardModifier kBypass = Qt::ControlModifier;
+#endif
+  return QGuiApplication::queryKeyboardModifiers().testFlag(kBypass);
+}
+
 Awaitable<std::optional<DataServices>> DeleteLoginDialogOnCompletionAsync(
     LoginDialog& login_dialog) {
   auto result = co_await login_dialog.Wait();
@@ -43,7 +60,8 @@ Awaitable<std::optional<DataServices>> DeleteLoginDialogOnCompletionAsync(
 
 LoginDialog::LoginDialog(AnyExecutor executor,
                          DataServicesContext&& services_context,
-                         std::shared_ptr<SettingsStore> settings_store)
+                         std::shared_ptr<SettingsStore> settings_store,
+                         bool allow_auto_login)
     : controller_{std::make_shared<LoginController>(
           executor,
           std::move(services_context),
@@ -103,6 +121,9 @@ LoginDialog::LoginDialog(AnyExecutor executor,
       QString::fromStdU16String(controller_->user_name));
   ui.userNameComboBox->lineEdit()->selectAll();
 
+  // Decided before the checkbox is filled: holding the bypass key unticks it.
+  const bool auto_submit = controller_->ShouldAutoSubmit(
+      allow_auto_login, allow_auto_login && IsAutoLoginBypassHeld());
   ui.autoLoginCheckBox->setChecked(controller_->auto_login);
 
   ui.securityModeComboBox->addItems(
@@ -142,7 +163,9 @@ LoginDialog::LoginDialog(AnyExecutor executor,
   // through, so the form itself stays untouched.
   BuildReshellChrome();
 
-  if (controller_->auto_login) {
+  // The stored password goes into the field only when it is about to be
+  // submitted. On a reconnect the next operator types their own.
+  if (auto_submit) {
     ui.passwordLineEdit->setText(
         QString::fromStdU16String(controller_->password));
     Login();
@@ -232,6 +255,18 @@ void LoginDialog::accept() {
 }
 
 void LoginDialog::reject() {
+  // Cancel while signing in — an automatic login, typically — stops that
+  // sign-in and hands the form back, rather than closing the dialog (which at
+  // start quits the application). A second Cancel closes it as before.
+  if (controller_->login_in_progress()) {
+    controller_->CancelLogin();
+    ui.passwordLineEdit->clear();
+    EnableControls(true);
+    ui.userNameComboBox->setFocus();
+    ui.userNameComboBox->lineEdit()->selectAll();
+    return;
+  }
+
   if (client::IsE2eTestMode()) {
     client::ReportE2eStatusIfUnset("canceled");
   }
@@ -349,10 +384,11 @@ bool LoginDialog::eventFilter(QObject* object, QEvent* event) {
 Awaitable<std::optional<DataServices>> ExecuteLoginDialog(
     AnyExecutor executor,
     DataServicesContext services_context,
-    std::shared_ptr<SettingsStore> settings_store) {
+    std::shared_ptr<SettingsStore> settings_store,
+    bool allow_auto_login) {
   LoginDialog* login_dialog =
       new LoginDialog{std::move(executor), std::move(services_context),
-                      std::move(settings_store)};
+                      std::move(settings_store), allow_auto_login};
 
   login_dialog->setModal(true);
   login_dialog->show();

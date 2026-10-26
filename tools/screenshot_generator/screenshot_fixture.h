@@ -225,8 +225,8 @@ class ScreenshotGenerator : public ::testing::Test {
 
   ClientApplication app_{ClientApplicationContext{
       .executor_ = executor_,
-      .login_handler_ = [this](DataServicesContext&&)
-          -> Awaitable<std::optional<DataServices>> {
+      .login_handler_ = [this](DataServicesContext&&,
+                               bool) -> Awaitable<std::optional<DataServices>> {
         co_return std::optional{DataServices::FromUnownedServices(services_)};
       },
       // Intentionally no node_service/timed_data_service/tree-factory

@@ -31,6 +31,27 @@ class LoginController : public std::enable_shared_from_this<LoginController> {
 
   void Login();
 
+  // Decides whether the dialog signs in with the stored password without
+  // waiting for the operator, and settles `auto_login` for the checkbox.
+  //
+  // Only an application start auto-submits (`at_startup`). Connecting again
+  // after «Отключиться от сервера» is a handover between operators, and
+  // auto-submitting there signed the previous operator straight back in
+  // (backlog 934); the stored setting stays as it was, so the next start still
+  // signs in automatically. `bypass_held` is the hold-a-key escape at start
+  // (Ctrl, or Option on macOS; `LoginDialog` reads the keyboard): it turns
+  // automatic login off, and the setting is saved off on the next successful
+  // sign-in.
+  bool ShouldAutoSubmit(bool at_startup, bool bypass_held);
+
+  // Abandons the sign-in in progress: its result, when it arrives, is
+  // ignored, and a session it managed to open is closed again. Lets the
+  // operator stop an automatic login and sign in as someone else.
+  void CancelLogin();
+
+  // True from `Login()` until its result has been handled or cancelled.
+  bool login_in_progress() const { return login_in_progress_; }
+
   void DeleteUserName(std::u16string_view user_name);
 
   std::function<void(DataServices services)> completion_handler;
@@ -79,10 +100,13 @@ class LoginController : public std::enable_shared_from_this<LoginController> {
   void OnLoginCompleted();
   void OnLoginFailed(const scada::Status& status);
 
+  // `attempt` is the `connect_attempt_` the connect was started under; a
+  // result for any other attempt was cancelled and is discarded.
   static Awaitable<void> ConnectAsync(AnyExecutor executor,
                                       std::weak_ptr<LoginController> controller,
                                       scada::SessionService& session_service,
-                                      scada::SessionConnectParams params);
+                                      scada::SessionConnectParams params,
+                                      unsigned attempt);
   static Awaitable<void> CompleteLoginAsync(
       AnyExecutor executor,
       std::function<void(DataServices services)> completion_handler,
@@ -112,6 +136,8 @@ class LoginController : public std::enable_shared_from_this<LoginController> {
   std::shared_ptr<SettingsStore> settings_store_;
 
   bool login_message_ = false;
+  bool login_in_progress_ = false;
+  unsigned connect_attempt_ = 0;
   DataServices services_;
 
   std::string server_type_;

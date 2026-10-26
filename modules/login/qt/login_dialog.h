@@ -22,10 +22,12 @@ class LoginDialog : public QDialog {
   Q_OBJECT
 
  public:
-  // `settings_store` — see ExecuteLoginDialog in modules/login/login_dialog.h.
+  // `settings_store` and `allow_auto_login` — see ExecuteLoginDialog in
+  // modules/login/login_dialog.h.
   LoginDialog(AnyExecutor executor,
               DataServicesContext&& services_context,
-              std::shared_ptr<SettingsStore> settings_store = {});
+              std::shared_ptr<SettingsStore> settings_store = {},
+              bool allow_auto_login = false);
   ~LoginDialog();
 
   Awaitable<std::optional<DataServices>> Wait();

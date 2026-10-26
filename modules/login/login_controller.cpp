@@ -26,9 +26,6 @@
 #include <format>
 #include <span>
 #include <vector>
-#ifdef _WIN32
-#include <windows.h>  // for VK_CONTROL
-#endif
 
 namespace {
 
@@ -106,8 +103,17 @@ const char kApplicationUriPrefix[] = "urn:";
 const char kApplicationUriSuffix[] = ":Telecontrol:ScadaClient";
 const char kPkiDirectoryKey[] = "OpcUaPkiDirectory";
 
+// The bypass key is named per platform, because the key that skips the login
+// is Option on a Mac (LoginDialog says why). Two whole sentences rather than a
+// placeholder, so each reads naturally in translation.
+#if defined(__APPLE__)
+const char kAutoLoginMessage[] =
+    "To disable automatic login, hold Option (⌥) when launching the "
+    "application.";
+#else
 const char kAutoLoginMessage[] =
     "To disable automatic login, hold Ctrl when launching the application.";
+#endif
 
 std::string GetServerHostTypeKey(std::string_view server_type_name) {
   return std::format("{}{}", kServerHostKeyPrefix, server_type_name);
@@ -252,12 +258,27 @@ LoginController::LoginController(AnyExecutor executor,
 
   server_host = server_type_data_[server_type_index_].host;
 
-#ifdef _WIN32
-  // Don't perform automatic login if Shift is pressed.
-  if (GetAsyncKeyState(VK_CONTROL) < 0)
-    auto_login = false;
-#endif
   login_message_ = !auto_login;
+}
+
+bool LoginController::ShouldAutoSubmit(bool at_startup, bool bypass_held) {
+  if (at_startup && bypass_held && auto_login) {
+    LOG_INFO(logger_) << "Automatic login skipped by the bypass key";
+    auto_login = false;
+    // Ticking the box again re-explains the escape, as it did on first use.
+    login_message_ = true;
+  }
+  return at_startup && auto_login;
+}
+
+void LoginController::CancelLogin() {
+  if (!login_in_progress_)
+    return;
+  LOG_INFO(logger_) << "Login cancelled";
+  login_in_progress_ = false;
+  // Invalidates the connect in flight; ConnectAsync closes a session it opens.
+  ++connect_attempt_;
+  services_ = {};
 }
 
 void LoginController::Login() {
@@ -272,6 +293,7 @@ void LoginController::OnLoginResult(const scada::Status& status) {
   LOG_INFO(logger_) << "Connect completed"
                     << LOG_TAG("Status", ToString(status));
 
+  login_in_progress_ = false;
   Dispatch(executor_, weak_from_this(), [this, status] {
     if (status)
       OnLoginCompleted();
@@ -294,8 +316,9 @@ void LoginController::OnLoginCompleted() {
       server_host);
   settings_store_->Write("ServerType", server_type_);
   settings_store_->Write("AutoLogin", auto_login);
-  if (auto_login)
-    settings_store_->Write("Password", password);
+  // Unticking the box forgets the password too; it used to stay stored,
+  // ready for the next time anyone ticked it (backlog 924).
+  settings_store_->Write("Password", auto_login ? password : std::u16string{});
   settings_store_->Write("SecurityMode",
                          SecurityModeToString(security_mode_index));
   settings_store_->Write("ClientCertificate", client_certificate_path);
@@ -379,7 +402,9 @@ void LoginController::Connect(bool allow_remote_logoff) {
     return;
   }
 
+  login_in_progress_ = true;
   CoSpawn(executor_, [executor = executor_, controller = weak_from_this(),
+                      attempt = ++connect_attempt_,
                       session_service = services_.session_service_,
                       params = scada::SessionConnectParams{
                           .host = server_host,
@@ -396,7 +421,7 @@ void LoginController::Connect(bool allow_remote_logoff) {
                           .locale_ids = SessionLocaleIds(),
                           .security = MakeSecuritySettings()}]() mutable {
     return ConnectAsync(std::move(executor), std::move(controller),
-                        *session_service, std::move(params));
+                        *session_service, std::move(params), attempt);
   });
 }
 
@@ -515,10 +540,21 @@ Awaitable<void> LoginController::ConnectAsync(
     AnyExecutor executor,
     std::weak_ptr<LoginController> controller,
     scada::SessionService& session_service,
-    scada::SessionConnectParams params) {
+    scada::SessionConnectParams params,
+    unsigned attempt) {
   auto status = co_await session_service.ConnectStatus(std::move(params));
-  if (auto controller_ptr = controller.lock()) {
+  auto controller_ptr = controller.lock();
+  if (controller_ptr && controller_ptr->connect_attempt_ == attempt) {
     controller_ptr->OnLoginResult(status);
+    co_return;
+  }
+  // Cancelled (CancelLogin). A session that opened anyway is closed rather
+  // than left signed in under an operator who asked to stop.
+  if (controller_ptr && status) {
+    try {
+      co_await session_service.Disconnect();
+    } catch (...) {
+    }
   }
   co_return;
 }
