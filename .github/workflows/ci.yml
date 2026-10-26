@@ -405,10 +405,15 @@ jobs:
           # function names and lines rather than bare addresses (backlog 950).
           # These reach this tree's own targets only: vcpkg's ports build
           # with their own triplet flags, so the binary cache is unaffected.
+          # `-DEBUG`, not `/DEBUG`: this step runs in Git Bash, whose MSYS
+          # layer rewrites an argument starting with `/` into a path, so
+          # `/DEBUG` reached the linker as `C:\Program Files\Git\DEBUG` and
+          # configure failed (LNK1104 on 'C:\Program.obj', scada-client run
+          # 40407208351). link.exe takes either prefix.
           cmake --preset ninja -DBUILD_OPC=OFF -DBUILD_VIDICON=OFF \
             -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded \
-            -DCMAKE_EXE_LINKER_FLAGS=/DEBUG \
-            -DCMAKE_SHARED_LINKER_FLAGS=/DEBUG
+            -DCMAKE_EXE_LINKER_FLAGS=-DEBUG \
+            -DCMAKE_SHARED_LINKER_FLAGS=-DEBUG
         else
           cmake --preset ninja
         fi
