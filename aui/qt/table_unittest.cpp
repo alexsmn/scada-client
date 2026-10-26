@@ -80,10 +80,11 @@ class TableTest : public testing::Test {
 // keep their configured width.
 //
 // Whether the monospace face IS wider belongs to the host's fonts, not to
-// Table: it is on macOS and Linux, and it is not on the Windows CI runner
-// under the offscreen platform (scada-client run 40138625293, 170 vs 170).
-// So the expectation is measured the way the code measures it, rather than
-// assumed.
+// Table, so the expectation is measured the way the code measures it rather
+// than assumed. It is wider on macOS and Linux. The Windows CI runner once
+// measured 170 vs 170 (scada-client run 40138625293), because offscreen Qt
+// there had no fonts at all and both faces were the same fallback; the
+// workflow now names C:\Windows\Fonts as QT_QPA_FONTDIR.
 TEST_F(TableTest, MonospaceColumnDefaultsWidenWithTheFont) {
   const QString sample = QStringLiteral("00.00.0000 00:00:00.000");
   const bool mono_is_wider =

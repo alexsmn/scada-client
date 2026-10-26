@@ -501,6 +501,7 @@ jobs:
       env:
         QT_QPA_PLATFORM: offscreen
         QT_PLUGIN_PATH: ${{ github.workspace }}/client/build/ninja/vcpkg_installed/x64-windows/Qt6/plugins
+        QT_QPA_FONTDIR: C:\Windows\Fonts
         QT_DEBUG_PLUGINS: 1
         QT_FORCE_STDERR_LOGGING: 1
       run: |
@@ -520,10 +521,22 @@ jobs:
         echo "probe exit code: $rc"
         exit $rc
 
-    # Offscreen, because a hosted runner has no interactive desktop, and a
-    # bare `offscreen` is upgraded to the fixtures' 1920x1080 screen
-    # description. `timeout-minutes` bounds the step well inside the job's six
-    # hours, so a regression of the hang above still reaches the log upload.
+    # Offscreen, because a hosted runner has no interactive desktop. On
+    # Windows a bare `offscreen` keeps the plugin's 800x600 screen (see
+    # aui/test/qt/app_environment.h for why it cannot take the 1920x1080
+    # description there). `timeout-minutes` bounds the step well inside the
+    # job's six hours, so a regression of the hang above still reaches the log
+    # upload.
+    #
+    # QT_QPA_FONTDIR is what gives offscreen Qt any fonts at all on Windows.
+    # There the plugin uses QFreeTypeFontDatabase, which loads from
+    # QPlatformFontDatabase::fontDir(): QT_QPA_FONTDIR, or else
+    # <Qt libraries>/fonts, which vcpkg's Qt does not have (qtbase 6.11
+    # src/plugins/platforms/offscreen/qoffscreenintegration.cpp and
+    # src/gui/text/qplatformfontdatabase.cpp, read 2026-10-26). Without it
+    # every glyph rendered as a box: run 40339418463's golden images were all
+    # tofu, and the monospace face measured no wider than the UI font because
+    # both were the same fallback.
     - name: Test (Release, offscreen)
       if: runner.os == 'Windows'
       working-directory: client
@@ -531,6 +544,7 @@ jobs:
       env:
         QT_QPA_PLATFORM: offscreen
         QT_PLUGIN_PATH: ${{ github.workspace }}/client/build/ninja/vcpkg_installed/x64-windows/Qt6/plugins
+        QT_QPA_FONTDIR: C:\Windows\Fonts
       run: ctest --preset test-release --output-on-failure --timeout 300
 
     - name: Test (Release, under Xvfb)
