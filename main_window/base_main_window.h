@@ -74,6 +74,13 @@ class BaseMainWindow : protected MainWindowContext,
   virtual void SetCurrentPageTitle(std::u16string_view title) override;
   virtual void SaveCurrentPage() override;
   virtual void DeleteCurrentPage() override;
+
+  // How many closed windows the trash keeps.
+  static constexpr int kMaxTrashWindows = 10;
+
+  // Adds `page`'s document windows (not its panes) to `trash`, keeping the
+  // trash to kMaxTrashWindows.
+  static void MoveWindowsToTrash(const Page& page, Page& trash);
   virtual OpenedView* GetActiveView() const override;
   virtual OpenedView* GetActiveDataView() const override;
   virtual Awaitable<OpenedViewInterface*> OpenView(

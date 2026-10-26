@@ -22,6 +22,7 @@
 #include <gmock/gmock.h>
 #include <QMainWindow>
 
+#include <algorithm>
 #include <chrono>
 
 using namespace testing;
@@ -88,13 +89,53 @@ class PageCommandsTest : public Test {
        main_window_manager_, rename_prompt_runner_.AsStdFunction()}};
 };
 
-TEST_F(PageCommandsTest, DeletePage) {
+// Deleting a page asks first; it used to go on one click (backlog 924).
+TEST_F(PageCommandsTest, DeletePageConfirmed) {
+  Page page;
+  page.title = u"Shift";
   auto* command = commands_.FindCommand(ID_PAGE_DELETE);
   ASSERT_THAT(command, NotNull());
 
+  EXPECT_CALL(main_window_, GetCurrentPage()).WillRepeatedly(ReturnRef(page));
+  EXPECT_CALL(dialog_service_,
+              RunMessageBox(_, _, MessageBoxMode::QuestionYesNo))
+      .WillOnce([](std::u16string_view, std::u16string_view, MessageBoxMode) {
+        return ReturnMessageBoxResultAsync(MessageBoxResult::Yes);
+      });
   EXPECT_CALL(main_window_, DeleteCurrentPage());
 
   command->execute_handler(command_context_);
+  Drain(executor_);
+}
+
+TEST_F(PageCommandsTest, DeletePageDeclinedKeepsThePage) {
+  Page page;
+  page.title = u"Shift";
+  auto* command = commands_.FindCommand(ID_PAGE_DELETE);
+  ASSERT_THAT(command, NotNull());
+
+  EXPECT_CALL(main_window_, GetCurrentPage()).WillRepeatedly(ReturnRef(page));
+  EXPECT_CALL(dialog_service_,
+              RunMessageBox(_, _, MessageBoxMode::QuestionYesNo))
+      .WillOnce([](std::u16string_view, std::u16string_view, MessageBoxMode) {
+        return ReturnMessageBoxResultAsync(MessageBoxResult::No);
+      });
+  // StrictMock: a DeleteCurrentPage() call here fails the test.
+
+  command->execute_handler(command_context_);
+  Drain(executor_);
+}
+
+// The destructive command comes last in the Page menu, behind a separator; it
+// sat second, directly under New (backlog 935).
+TEST_F(PageCommandsTest, DeleteIsLastInThePageMenuBehindASeparator) {
+  std::vector<MenuContribution> items =
+      ui_command_registry_.GetMenuContributions(MainMenuId::Page);
+  std::ranges::sort(items, {}, &MenuContribution::order);
+
+  ASSERT_FALSE(items.empty());
+  EXPECT_EQ(items.back().command_id, static_cast<unsigned>(ID_PAGE_DELETE));
+  EXPECT_TRUE(items.back().separator_before);
 }
 
 TEST_F(PageCommandsTest, RenamePageAcceptedUpdatesCurrentPageTitle) {

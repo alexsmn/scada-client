@@ -67,6 +67,7 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // It is the requested state, not the state of the taskbar entry: the platform
   // drops the alert on activation without telling us.
   bool IsWindowFlashing() const { return window_flashing_; }
+  int window_alert_count() const { return window_alert_count_; }
   virtual void ShowPopupMenu(scada::aui::MenuModel* merge_menu,
                              const scada::aui::Point& point,
                              bool right_click) override;
@@ -245,9 +246,11 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   class PaneModeHostImpl;
   std::unique_ptr<PaneModeHostImpl> pane_mode_host_;
   std::unique_ptr<PaneModeController> pane_modes_;
-  // Mirrors the last state asked for through SetWindowFlashing, so the alert is
-  // raised on the rising edge only. OnEvents calls in on every event dispatch.
+  // Mirrors the last state asked for through SetWindowFlashing.
   bool window_flashing_ = false;
+  // How many times the taskbar alert was raised; Qt offers no way to read the
+  // alert state back, so this is what a test can observe.
+  int window_alert_count_ = 0;
   // Empty in the shipping client; set only by the screenshot generator. See
   // SetPopupMenuInterceptor.
   PopupMenuInterceptor popup_menu_interceptor_;

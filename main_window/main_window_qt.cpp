@@ -536,11 +536,11 @@ void MainWindow::ShowCommandPalette(const QString& initial_text) {
 }
 
 void MainWindow::SetWindowFlashing(bool flashing) {
-  // MainWindowModule::OnEvents calls in on every event dispatch, so act on the
-  // edge rather than re-asking on each one.
-  if (window_flashing_ == flashing) {
-    return;
-  }
+  // MainWindowModule::OnEvents calls in with `true` only when events ARRIVE
+  // (EventDispatcher passes no rising level on a removal), so every such call
+  // is a new arrival and re-raises the alert. Latching on the edge meant a new
+  // critical event did not flash while older ones stood unacknowledged
+  // (backlog 890).
   window_flashing_ = flashing;
   if (!flashing) {
     // Deliberately nothing. Qt offers no public cancel — QWindow::alert sets
@@ -554,6 +554,7 @@ void MainWindow::SetWindowFlashing(bool flashing) {
   // attention request rather than a decoration. Duration 0 means "until the
   // operator activates the window".
   // https://doc.qt.io/qt-6/qapplication.html#alert
+  ++window_alert_count_;
   QApplication::alert(this, /*msec=*/0);
 }
 

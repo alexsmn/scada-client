@@ -289,7 +289,7 @@ void BaseMainWindow::OnViewClosed(OpenedView& view) {
     // append trash
     auto& trash = profile_.trash;
     trash.AddWindow(view.window_def());
-    while (trash.GetWindowCount() > 10)
+    while (trash.GetWindowCount() > kMaxTrashWindows)
       trash.DeleteWindow(0);
 
     auto& page = view_manager_->current_page();
@@ -309,12 +309,32 @@ void BaseMainWindow::OpenPage(const Page& page) {
   OnSelectionChanged();
 }
 
+// static
+void BaseMainWindow::MoveWindowsToTrash(const Page& page, Page& trash) {
+  for (int i = 0; i < page.GetWindowCount(); ++i) {
+    const WindowDefinition& window = page.GetWindow(i);
+    // Panes are not documents: a pane's definition only records its layout.
+    const WindowInfo* info = FindWindowInfoByName(window.type);
+    if (info && info->is_pane())
+      continue;
+    trash.AddWindow(window);
+  }
+  while (trash.GetWindowCount() > kMaxTrashWindows)
+    trash.DeleteWindow(0);
+}
+
 void BaseMainWindow::DeleteCurrentPage() {
   const int page_id = current_page().id;
 
   // Close the current page before removing it from the profile so view teardown
   // runs against a still-valid page object.
   view_manager_->ClosePage();
+
+  // The page's windows go to the trash, as a window closed on its own does.
+  // Closing a page skips that path (OnViewClosed returns early while the page
+  // is closing), so a deleted page's windows were simply gone (backlog 924).
+  if (auto i = profile_.pages.find(page_id); i != profile_.pages.end())
+    MoveWindowsToTrash(i->second, profile_.trash);
 
   profile_.pages.erase(page_id);
 

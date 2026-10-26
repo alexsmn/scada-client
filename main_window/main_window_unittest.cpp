@@ -666,9 +666,12 @@ TEST(MainWindowQtTest, WindowFlashingFollowsTheRequestedState) {
   harness.main_window().SetWindowFlashing(true);
   EXPECT_TRUE(harness.main_window().IsWindowFlashing());
 
-  // OnEvents calls in on every event dispatch, so the repeat must be harmless.
+  // OnEvents calls in with `true` only when events arrive, so each call is a
+  // new arrival and re-raises the alert — a latch on the first one meant a new
+  // critical did not flash while older events stood (backlog 890).
   harness.main_window().SetWindowFlashing(true);
   EXPECT_TRUE(harness.main_window().IsWindowFlashing());
+  EXPECT_EQ(harness.main_window().window_alert_count(), 2);
 
   harness.main_window().SetWindowFlashing(false);
   EXPECT_FALSE(harness.main_window().IsWindowFlashing());
@@ -834,4 +837,24 @@ TEST_F(MainWindowTest, DeleteCurrentPage_NotLast) {
 
   EXPECT_THAT(controller_env_.profile_.pages, SizeIs(1));
   EXPECT_EQ(main_window_->current_page().id, another_page_id);
+}
+
+// Deleting a page closes its windows without the per-window trash path, so a
+// deleted page's windows used to vanish (backlog 924). They go to the trash,
+// which keeps its usual size.
+TEST(BaseMainWindowTrashTest, DeletedPageWindowsGoToTheTrashCapped) {
+  Page page;
+  for (int i = 0; i < BaseMainWindow::kMaxTrashWindows + 2; ++i) {
+    WindowDefinition window{"NotAPane"};
+    window.title = u"Window " + std::u16string(1, char16_t(u'A' + i));
+    page.AddWindow(window);
+  }
+  Page trash;
+
+  BaseMainWindow::MoveWindowsToTrash(page, trash);
+
+  ASSERT_EQ(trash.GetWindowCount(), BaseMainWindow::kMaxTrashWindows);
+  // The oldest are dropped; the last window of the page is kept.
+  EXPECT_EQ(trash.GetWindow(trash.GetWindowCount() - 1).title,
+            page.GetWindow(page.GetWindowCount() - 1).title);
 }

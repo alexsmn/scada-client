@@ -1,8 +1,10 @@
 #include "main_window/pages/page_commands.h"
 
+#include "aui/dialog_service.h"
 #include "aui/prompt_dialog.h"
 #include "aui/translation.h"
 #include "base/awaitable.h"
+#include "base/u16format.h"
 #include "controller/command_registry.h"
 #include "controller/command_ui_registry.h"
 #include "core/global_command_context.h"
@@ -24,6 +26,21 @@ Awaitable<void> RenameCurrentPageAsync(AnyExecutor executor,
       co_await prompt_runner(dialog_service, std::move(current_page_title));
   main_window.SetCurrentPageTitle(title);
   co_return;
+}
+
+// Asks before deleting the current page, which used to go on one click
+// (backlog 924). Its windows go to the trash, as a closed window does.
+Awaitable<void> DeleteCurrentPageAsync(MainWindowInterface& main_window,
+                                       DialogService& dialog_service,
+                                       std::u16string page_title) {
+  const MessageBoxResult answer = co_await dialog_service.RunMessageBox(
+      u16format(Translate("Delete the page \"{}\"? Its windows can be reopened "
+                          "from the trash."),
+                page_title),
+      Translate("Delete Page"), MessageBoxMode::QuestionYesNo);
+  if (answer != MessageBoxResult::Yes)
+    co_return;
+  main_window.DeleteCurrentPage();
 }
 
 }  // namespace
@@ -58,7 +75,13 @@ PageCommands::PageCommands(PageCommandsContext&& context)
       {.command_id = ID_PAGE_DELETE,
        .title = Translate("Delete"),
        .execute_handler = [this](const GlobalCommandContext& context) {
-         context.main_window.DeleteCurrentPage();
+         CoSpawn(executor_,
+                 [&main_window = context.main_window,
+                  &dialog_service = context.dialog_service,
+                  title = context.main_window.GetCurrentPage().GetTitle()] {
+                   return DeleteCurrentPageAsync(main_window, dialog_service,
+                                                 title);
+                 });
        }});
 
   global_commands_.AddCommand(
@@ -74,9 +97,13 @@ PageCommands::PageCommands(PageCommandsContext&& context)
 
   ui_command_registry_.AddMenuItem(
       {.menu_id = MainMenuId::Page, .order = 100, .command_id = ID_PAGE_NEW});
+  // Last, behind a separator, as the page button's menu has it: the one
+  // destructive command should not sit second, directly under «Новая»
+  // (backlog 935).
   ui_command_registry_.AddMenuItem({.menu_id = MainMenuId::Page,
-                                    .order = 200,
-                                    .command_id = ID_PAGE_DELETE});
+                                    .order = 900,
+                                    .command_id = ID_PAGE_DELETE,
+                                    .separator_before = true});
   ui_command_registry_.AddMenuItem({.menu_id = MainMenuId::Page,
                                     .order = 300,
                                     .command_id = ID_PAGE_RENAME});
