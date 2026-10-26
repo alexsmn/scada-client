@@ -1,5 +1,7 @@
 #include "main_window/status_bar/event_status_provider.h"
 
+#include "aui/translation.h"
+#include "base/u16format.h"
 #include "events/local_events.h"
 #include "events/node_event_provider_mock.h"
 #include "profile/profile.h"
@@ -42,6 +44,18 @@ class EventStatusTileCountsTest : public ::testing::Test {
   Profile profile_;
   EventStatusProvider provider_{node_event_provider_, local_events_, profile_};
 };
+
+// Backlog 889: «Важность: N» names the events panel's threshold, which hides
+// rows from that panel only. The fetcher is never narrowed by it, so the
+// counts beside it are not reduced either.
+TEST_F(EventStatusTileCountsTest, SeverityTextNamesThePanelThreshold) {
+  profile_.event_panel_severity_min = 500;
+  AddAlarm(1, scada::kSeverityWarning - 1);
+
+  EXPECT_EQ(provider_.GetSeverityText(),
+            u16format(Translate("Severity: {}"), 500u));
+  EXPECT_EQ(provider_.GetAlarmCount(), 1);
+}
 
 TEST_F(EventStatusTileCountsTest, EmptyAlarmSetIsAllZero) {
   EXPECT_EQ(provider_.GetTileCounts(), events::SeverityTileCounts{});

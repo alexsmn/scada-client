@@ -11,6 +11,7 @@
 #include "events/event_menu_model.h"
 #include "events/expanded_event_model.h"
 #include "export/export_model.h"
+#include "scada/event.h"
 
 #include <memory>
 

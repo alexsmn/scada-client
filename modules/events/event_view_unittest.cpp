@@ -14,20 +14,17 @@ using namespace testing;
 namespace {
 
 // The events panel (the docked Current-mode view) keeps its severity
-// threshold on the event fetcher, not on the table model. The provider below
-// remembers what it is set to, the way the real fetcher does, so the tests
-// can see where a menu command actually sends the threshold.
+// threshold on its own table model, starting from and writing back to the
+// profile (`Profile::event_panel_severity_min`). It must never reach the
+// fetcher, which every other alarm surface reads (backlog 889) -- so the
+// provider here fails the test if anything sets its threshold.
 class EventViewPanelSeverityTest : public Test {
  protected:
   void SetUp() override {
-    ON_CALL(env_.node_event_provider_, severity_min()).WillByDefault([this] {
-      return fetch_severity_min_;
-    });
-    ON_CALL(env_.node_event_provider_, SetSeverityMin(_))
-        .WillByDefault([this](scada::EventSeverity severity) {
-          fetch_severity_min_ = severity;
-        });
+    EXPECT_CALL(env_.node_event_provider_, SetSeverityMin(_)).Times(0);
+  }
 
+  void CreateView() {
     view_ = std::make_unique<EventView>(env_.MakeControllerContext(),
                                         local_events_, /*is_panel=*/true);
     ui_view_ = view_->Init(WindowDefinition{});
@@ -50,8 +47,6 @@ class EventViewPanelSeverityTest : public Test {
   ControllerEnvironment env_;
   LocalEvents local_events_;
 
-  scada::EventSeverity fetch_severity_min_ = scada::kSeverityMin;
-
   std::unique_ptr<EventView> view_;
   std::unique_ptr<UiView> ui_view_;
 };
@@ -60,27 +55,30 @@ class EventViewPanelSeverityTest : public Test {
 
 // Backlog 847: a custom threshold (as restored from the profile's
 // `severityMin`, or chosen with Custom...) must read as Custom, not All.
-TEST_F(EventViewPanelSeverityTest, CustomFetchThresholdIsShownAsCustom) {
-  fetch_severity_min_ = static_cast<scada::EventSeverity>(500);
+TEST_F(EventViewPanelSeverityTest, RestoredThresholdIsShownAsCustom) {
+  env_.profile_.event_panel_severity_min = 500;
+  CreateView();
 
   EXPECT_TRUE(IsChecked(ID_SEVERITY_CUSTOM));
   EXPECT_FALSE(IsChecked(ID_SEVERITY_ALL));
 }
 
-// Backlog 847: All must lower the fetch threshold itself. It used to reset only
-// the table model's own filter, so events below the old threshold were never
-// fetched while the menu claimed All.
-TEST_F(EventViewPanelSeverityTest, AllLowersTheFetchThreshold) {
-  fetch_severity_min_ = static_cast<scada::EventSeverity>(500);
+// Backlog 847: All must clear the threshold the panel saves, not only the
+// filter on screen, or the next start restores the old one.
+TEST_F(EventViewPanelSeverityTest, AllClearsTheSavedThreshold) {
+  env_.profile_.event_panel_severity_min = 500;
+  CreateView();
 
   Execute(ID_SEVERITY_ALL);
 
-  EXPECT_EQ(fetch_severity_min_, scada::kSeverityMin);
+  EXPECT_EQ(env_.profile_.event_panel_severity_min,
+            static_cast<unsigned>(scada::kSeverityMin));
   EXPECT_TRUE(IsChecked(ID_SEVERITY_ALL));
   EXPECT_FALSE(IsChecked(ID_SEVERITY_CUSTOM));
 }
 
 TEST_F(EventViewPanelSeverityTest, DefaultThresholdIsAll) {
+  CreateView();
   EXPECT_TRUE(IsChecked(ID_SEVERITY_ALL));
   EXPECT_FALSE(IsChecked(ID_SEVERITY_CUSTOM));
 }

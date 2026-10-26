@@ -203,6 +203,17 @@ class EventModuleSeverityMigrationTest : public Test {
   // factories on construction, and registering the same WindowInfo twice is
   // a hard error, so the environments cannot be shared across cases.
   unsigned SeverityMinFor(boost::json::object profile_data) {
+    return Thresholds(std::move(profile_data)).panel;
+  }
+
+  struct ThresholdsResult {
+    unsigned panel = 0;
+    unsigned fetcher = 0;
+  };
+
+  // Both thresholds the module ends up with: the panel's, and the fetcher's
+  // that every other alarm surface reads.
+  ThresholdsResult Thresholds(boost::json::object profile_data) {
     ControllerEnvironment controller_env;
     UiCommandRegistry ui_command_registry;
     controller_env.profile_.data() = std::move(profile_data);
@@ -215,7 +226,9 @@ class EventModuleSeverityMigrationTest : public Test {
         .global_commands_ = controller_env.global_commands_,
         .selection_commands_ = controller_env.selection_commands_,
         .ui_command_registry_ = ui_command_registry}};
-    return static_cast<unsigned>(module.event_fetcher().severity_min());
+    return {.panel = controller_env.profile_.event_panel_severity_min,
+            .fetcher =
+                static_cast<unsigned>(module.event_fetcher().severity_min())};
   }
 
   AppEnvironment app_env_;
@@ -244,6 +257,16 @@ TEST_F(EventModuleSeverityMigrationTest, NewScaleThresholdPassesThrough) {
   EXPECT_EQ(SeverityMinFor({{"severityMin", 500}, {"severityScale", 1000}}),
             500u);
   EXPECT_EQ(SeverityMinFor({{"severityMin", 1}, {"severityScale", 1000}}), 1u);
+}
+
+// Backlog 889: the stored threshold is the events panel's alone. It used to be
+// applied to the fetcher, so an event below it reached no counter, tile,
+// escalation, flashing or global «Квитировать все» either.
+TEST_F(EventModuleSeverityMigrationTest, StoredThresholdLeavesTheFetcherOpen) {
+  const ThresholdsResult thresholds =
+      Thresholds({{"severityMin", 500}, {"severityScale", 1000}});
+  EXPECT_EQ(thresholds.panel, 500u);
+  EXPECT_EQ(thresholds.fetcher, static_cast<unsigned>(scada::kSeverityMin));
 }
 
 // Values from a corrupt or hand-edited profile must not escape the scale or

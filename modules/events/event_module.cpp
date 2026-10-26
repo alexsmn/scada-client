@@ -110,8 +110,12 @@ EventModule::EventModule(EventModuleContext&& context)
         std::clamp(value, static_cast<int>(scada::kSeverityMin),
                    static_cast<int>(scada::kSeverityMax)));
   }
-  event_fetcher_->SetSeverityMin(
-      static_cast<scada::EventSeverity>(severity_min));
+  // **The panel's, never the fetcher's.** It used to be applied to the
+  // fetcher, which is the one event stream behind the counter, the tiles,
+  // escalation, flashing and the global «Квитировать все» -- so an event
+  // below the panel's threshold reached none of them, and an operator who
+  // narrowed the panel stopped hearing everything under it (backlog 889).
+  profile_.event_panel_severity_min = severity_min;
 
   controller_registry_.AddControllerFactory(
       kEventWindowInfo,
@@ -138,7 +142,7 @@ EventModule::EventModule(EventModuleContext&& context)
 
   profile_.RegisterSerializer([this](boost::json::value& data) {
     SetKey(data, "severityMin",
-           static_cast<int>(event_fetcher_->severity_min()));
+           static_cast<int>(profile_.event_panel_severity_min));
     SetKey(data, "severityScale", 1000);
   });
 

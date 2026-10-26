@@ -81,9 +81,9 @@ void EventTableModel::Row::Update(NodeService& node_service) {
 }
 
 void EventTableModel::Row::RecountUnacked() {
-  unacked = event->acked ? 0 : 1;
+  unacked = IsPending(type, *event) ? 1 : 0;
   for (const scada::Event* repeat : repeats) {
-    if (!repeat->acked)
+    if (IsPending(type, *repeat))
       ++unacked;
   }
 }
@@ -283,10 +283,12 @@ void EventTableModel::GetEventCell(const Row& row,
       // data" rather than "nobody has responded yet". Under the reshell theme
       // say so outright — the journal is an alarm surface, and a pending
       // response is its most actionable state.
-      if (!event.acked) {
+      if (IsPending(row.type, event)) {
         cell.text = Translate("— pending —");
         break;
       }
+      if (!event.acked)
+        break;  // A history record nobody acknowledged: nothing to show.
       cell.text = UtfConvert<char16_t>(
           FormatTime(event.acknowledged_time,
                      TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
@@ -300,7 +302,7 @@ void EventTableModel::GetEventCell(const Row& row,
       // The dot means "pending", the background means "how bad", and the
       // "— pending —" cell spells the state out (colour is never the only
       // cue).
-      if (!event.acked)
+      if (IsPending(row.type, event))
         cell.text = u"●";
       break;
     default:
@@ -394,20 +396,13 @@ EventTableModel::AreaCounts EventTableModel::CountUnacknowledgedByArea(
       ++counts.per_area[area];
   };
 
-  std::set<scada::EventId> current_ids;
-  for (const scada::Event& event : current_event_model_.events()) {
-    current_ids.insert(event.event_id);
+  // History records are not counted: they are never pending here (see
+  // IsPending), and an alarm still waiting is counted by its live copy, which
+  // replaces the record in the rows.
+  for (const scada::Event& event : current_event_model_.events())
     account(event);
-  }
   for (const scada::Event& event : local_event_model_.events())
     account(event);
-  if (!current_events_) {
-    // Historical copies of live events dedupe by id, as in RefilterNow().
-    for (const scada::Event& event : historical_event_model_.events()) {
-      if (!current_ids.contains(event.event_id))
-        account(event);
-    }
-  }
 
   return counts;
 }
@@ -566,16 +561,18 @@ void EventTableModel::RecountAllUnacked() {
 // CountUnacknowledged(), which is what the tests cross-check.
 EventTableModel::AlarmSummary EventTableModel::GetAlarmSummary() const {
   AlarmSummary summary;
-  auto account = [&summary](const scada::Event& event) {
-    if (event.acked)
+  // Pending, as the rows' dots are: a history record is never pending here
+  // (see IsPending), so it is not counted as waiting either.
+  auto account = [&summary](EventType type, const scada::Event& event) {
+    if (!IsPending(type, event))
       return;
     ++summary.unacknowledged;
     summary.max_severity = std::max(summary.max_severity, event.severity);
   };
   for (const Row& row : rows_) {
-    account(*row.event);
+    account(row.type, *row.event);
     for (const scada::Event* repeat : row.repeats)
-      account(*repeat);
+      account(row.type, *repeat);
   }
   return summary;
 }

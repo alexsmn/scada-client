@@ -67,6 +67,19 @@ class EventTableModel : public scada::aui::TableModel,
 
   bool current_events() const { return current_events_; }
 
+  // Whether an occurrence of `type` is waiting to be acknowledged here. A
+  // historical row never is, whatever its record says: the journal cannot
+  // acknowledge history (`AckEvent` ignores it), and an alarm that is still
+  // pending is shown by its live row, which replaces the history copy. So an
+  // unacknowledged history record has no live counterpart to act on, and
+  // marking it pending offered a double-click that did nothing (backlog 889).
+  static bool IsPending(EventType type, const scada::Event& event) {
+    return !event.acked && type != HISTORICAL_EVENT;
+  }
+  bool IsRowPending(int row) const {
+    return IsPending(rows_[row].type, *rows_[row].event);
+  }
+
   EventType event_type_at(int row) const { return rows_[row].type; }
   const scada::Event& event_at(int row) const SCADA_LIFETIME_BOUND {
     return *rows_[row].event;
@@ -275,7 +288,7 @@ class EventTableModel : public scada::aui::TableModel,
   // Rows displayed in grid.
   struct Row {
     Row(EventType type, const scada::Event& event)
-        : type(type), event(&event), unacked(event.acked ? 0 : 1) {}
+        : type(type), event(&event), unacked(IsPending(type, event) ? 1 : 0) {}
 
     void Update(NodeService& node_service);
     bool IsAffected(const scada::NodeId& node_id) const;

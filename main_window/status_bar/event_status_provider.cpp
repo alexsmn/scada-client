@@ -64,8 +64,10 @@ int EventStatusProvider::GetSeverityCount(
 }
 
 std::u16string EventStatusProvider::GetSeverityText() const {
+  // The events panel's threshold, which hides rows from that panel only
+  // (backlog 889); the fetcher behind the counts beside it is never narrowed.
   return u16format(Translate("Severity: {}"),
-                   node_event_provider_.severity_min());
+                   profile_.event_panel_severity_min);
 }
 
 scada::aui::SeverityLevel EventStatusProvider::HighestUnackedLevel() const {

@@ -71,6 +71,14 @@ std::shared_ptr<EventTableModel> CreateEventTableModel(
   return {holder, &holder->event_table_model};
 }
 
+// The table model's filter takes 0 for "all events"; the scale's floor,
+// kSeverityMin, hides nothing either, so it is normalised to 0 for the menu's
+// All/Custom check to read it as All.
+scada::EventSeverity ToModelSeverityMin(scada::EventSeverity severity) {
+  return severity <= scada::kSeverityMin ? static_cast<scada::EventSeverity>(0)
+                                         : severity;
+}
+
 scada::EventSeverity ParseSeverity(std::u16string_view str) {
   unsigned severity = 0;
   if (!Parse(str, severity) || severity > scada::kSeverityMax) {
@@ -190,10 +198,8 @@ EventView::EventView(const ControllerContext& context,
 
   command_registry_.AddCommand(
       Command{ID_SEVERITY_ALL}
-          // Through SetSeverityMin, which knows where the threshold lives. In
-          // Current mode it is the fetch threshold, not the model's filter, so
-          // resetting only the model left the custom threshold in force while
-          // the menu showed All checked (backlog 847).
+          // Through SetSeverityMin, which also writes the panel's threshold
+          // back to the profile (backlog 847).
           .set_execute_handler(
               [this] { SetSeverityMin(static_cast<scada::EventSeverity>(0)); })
           .set_checked_handler([this] { return !HasCustomSeverityMin(); }));
@@ -234,9 +240,11 @@ void EventView::OnSelectionChanged() {
 
 bool EventView::CanAcknowledgeSelection() const {
   auto rows = table_->GetSelectedRows();
+  // Pending, not merely unacknowledged: a history row is never acknowledgeable
+  // here, so offering it promised an action that silently did nothing
+  // (backlog 889).
   for (auto i = rows.begin(); i != rows.end(); ++i) {
-    const scada::Event& event = model_->event_at(*i);
-    if (!event.acked)
+    if (model_->IsRowPending(*i))
       return true;
   }
   return false;
@@ -274,6 +282,14 @@ std::unique_ptr<UiView> EventView::Init(const WindowDefinition& definition) {
     }
     if (auto time_range = RestoreTimeRange(definition))
       model_->SetTimeRange(*time_range);
+  }
+
+  // The panel's threshold is a filter on its own rows, restored from the
+  // profile; the fetcher behind every other alarm surface is never narrowed
+  // by it (backlog 889).
+  if (is_panel_) {
+    model_->SetSeverityMin(ToModelSeverityMin(
+        static_cast<scada::EventSeverity>(profile_.event_panel_severity_min)));
   }
 
   if (auto* state = definition.FindItem("State"))
@@ -477,9 +493,7 @@ void EventView::SelectSeverity() {
 }
 
 Awaitable<void> EventView::SelectSeverityAsync() {
-  unsigned initial_severity = model_->current_events()
-                                  ? node_event_provider_.severity_min()
-                                  : model_->severity_min();
+  unsigned initial_severity = model_->severity_min();
   auto prompt = Translate("Minimum severity threshold (0 = all events):");
 
   // Wait for the prompt dialog. A user cancel surfaces as a rejection here,
@@ -507,23 +521,23 @@ Awaitable<void> EventView::SelectSeverityAsync() {
 }
 
 bool EventView::HasCustomSeverityMin() const {
-  // Current mode keeps its threshold on the fetcher, where the floor that
-  // means "all events" is kSeverityMin rather than 0.
-  if (model_->current_events())
-    return node_event_provider_.severity_min() > scada::kSeverityMin;
   return model_->severity_min() != 0;
 }
 
 void EventView::SetSeverityMin(scada::EventSeverity severity) {
-  if (model_->current_events()) {
-    // 0 means "all events" in the UI; the fetcher's valid floor is
-    // kSeverityMin (1), which matches every event on the 1-1000 scale
-    // (0 is not a valid severity — OPC UA Part 5 §6.4.2).
-    node_event_provider_.SetSeverityMin(severity == 0 ? scada::kSeverityMin
-                                                      : severity);
+  severity = ToModelSeverityMin(severity);
+  model_->SetSeverityMin(severity);
+  if (is_panel_) {
+    // The panel has no title to mark; its threshold is saved instead, and the
+    // status bar's «Важность: N» follows it. 0 means "all events" in the UI,
+    // and the profile keeps the scale's floor, kSeverityMin (1), which matches
+    // every event on the 1-1000 scale (0 is not a valid severity — OPC UA
+    // Part 5 §6.4.2,
+    // https://reference.opcfoundation.org/Core/Part5/v105/docs/6.4.2).
+    profile_.event_panel_severity_min =
+        severity == 0 ? scada::kSeverityMin : severity;
     profile_.NotifyChange();
   } else {
-    model_->SetSeverityMin(severity);
     controller_delegate_.SetTitle(MakeTitle());
   }
 }

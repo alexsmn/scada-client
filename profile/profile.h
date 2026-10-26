@@ -61,6 +61,13 @@ class Profile {
 
   EventJournal event_journal;
 
+  // The events panel's «Важность» threshold on the 1-1000 scale; 1
+  // (`scada::kSeverityMin`) shows everything. It filters the panel's own rows
+  // and nothing else -- the counter, the tiles, escalation, flashing and the
+  // global «Квитировать все» see every event (backlog 889). Stored as
+  // `severityMin` by EventModule, which owns the 0-100 scale migration.
+  unsigned event_panel_severity_min = 1;
+
   void Load();
   // Writes the profile to its file. Never throws: it runs from
   // ~ClientApplication, where an escaping exception is std::terminate.

@@ -588,6 +588,31 @@ TEST_F(EventFloodGroupingTest, ALocalEventIsAttributedToTheLocalEventSource) {
   EXPECT_FALSE(cell.text.empty());
 }
 
+// Backlog 889: the journal cannot acknowledge a history record, and an alarm
+// that is still pending is shown by its live row instead of the history copy.
+// So an unacknowledged record with no live row is not pending here: no dot, no
+// «ожидает» cell, and nothing for «Квитировать все» or a double-click to do.
+TEST_F(EventFloodGroupingTest, AnUnacknowledgedHistoryRecordIsNotPending) {
+  historical_event_model_.AddEvent({.event_id = 1,
+                                    .time = scada::Time{},
+                                    .source_node_id = node_id_,
+                                    .message = u"stale",
+                                    .acked = false});
+  Rebuild();
+
+  ASSERT_EQ(model_.GetRowCount(), 1);
+  EXPECT_FALSE(model_.IsRowPending(0));
+  EXPECT_EQ(model_.CountUnacknowledged(), 0);
+  EXPECT_FALSE(model_.CanAcknowledgeShown());
+
+  scada::aui::TableCell dot{.row = 0, .column_id = EventColumnUnacked};
+  model_.GetCell(dot);
+  EXPECT_TRUE(dot.text.empty());
+  scada::aui::TableCell ack_time{.row = 0, .column_id = EventColumnAckTime};
+  model_.GetCell(ack_time);
+  EXPECT_TRUE(ack_time.text.empty());
+}
+
 // Below the flood threshold nothing changes: a quiet journal is a plain list,
 // one row per event, so grouping never surprises an operator who is not buried.
 TEST_F(EventFloodGroupingTest, ABacklogBelowTheThresholdIsNotGrouped) {
@@ -849,14 +874,17 @@ using EventAlarmChromeTest = EventFloodGroupingTest;
 // The footer summary counts the displayed unacknowledged occurrences and
 // tracks the highest severity among them; acknowledged history stays out.
 TEST_F(EventAlarmChromeTest, AlarmSummaryCountsPendingAndHighestSeverity) {
-  historical_event_model_.AddEvent({.event_id = 1,
-                                    .severity = scada::kSeverityWarning,
-                                    .source_node_id = node_id_,
-                                    .message = u"warn"});
-  historical_event_model_.AddEvent({.event_id = 2,
-                                    .severity = scada::kSeverityCritical,
-                                    .source_node_id = node_id_,
-                                    .message = u"crit"});
+  // Pending means live: a history record is never pending (backlog 889).
+  node_event_provider_.unacked_events_.try_emplace(
+      1, scada::Event{.event_id = 1,
+                      .severity = scada::kSeverityWarning,
+                      .source_node_id = node_id_,
+                      .message = u"warn"});
+  node_event_provider_.unacked_events_.try_emplace(
+      2, scada::Event{.event_id = 2,
+                      .severity = scada::kSeverityCritical,
+                      .source_node_id = node_id_,
+                      .message = u"crit"});
   historical_event_model_.AddEvent({.event_id = 3,
                                     .severity = 1000,
                                     .source_node_id = node_id_,
@@ -879,10 +907,11 @@ TEST_F(EventAlarmChromeTest, EmptyJournalSummarizesCalm) {
 // The leading pending-dot cell marks unacknowledged rows; acknowledged rows
 // stay empty, so the actionable rows read at a glance.
 TEST_F(EventAlarmChromeTest, PendingDotMarksUnacknowledgedRows) {
-  historical_event_model_.AddEvent({.event_id = 1,
-                                    .severity = scada::kSeverityCritical,
-                                    .source_node_id = node_id_,
-                                    .message = u"crit"});
+  node_event_provider_.unacked_events_.try_emplace(
+      1, scada::Event{.event_id = 1,
+                      .severity = scada::kSeverityCritical,
+                      .source_node_id = node_id_,
+                      .message = u"crit"});
   historical_event_model_.AddEvent({.event_id = 2,
                                     .source_node_id = node_id_,
                                     .message = u"done",
@@ -891,7 +920,7 @@ TEST_F(EventAlarmChromeTest, PendingDotMarksUnacknowledgedRows) {
   ASSERT_EQ(model_.GetRowCount(), 2);
 
   for (int row = 0; row < model_.GetRowCount(); ++row) {
-    const bool pending = !model_.event_at(row).acked;
+    const bool pending = model_.GetCellText(row, EventColumnMessage) == u"crit";
     EXPECT_EQ(model_.GetCellText(row, EventColumnUnacked),
               pending ? std::u16string{u"\u25CF"} : std::u16string{});
   }
@@ -907,7 +936,7 @@ TEST_F(EventAlarmChromeTest, LiveAlarmIsNotDuplicatedByItsHistoryCopy) {
                           .severity = scada::kSeverityCritical,
                           .source_node_id = node_id_,
                           .message = u"crit"};
-  empty_current_.try_emplace(event_id, live);
+  node_event_provider_.unacked_events_.try_emplace(event_id, live);
   historical_event_model_.AddEvent(live);
   historical_event_model_.AddEvent({.event_id = 8,
                                     .source_node_id = node_id_,
@@ -945,14 +974,17 @@ TEST_F(EventAlarmChromeTest, CountsUnacknowledgedByArea) {
 
   // Two pending alarms under area A (one direct, one via containment), one
   // acknowledged under A, and one pending outside every area.
-  historical_event_model_.AddEvent(
-      {.event_id = 1, .source_node_id = in_a, .message = u"m1"});
-  historical_event_model_.AddEvent(
-      {.event_id = 2, .source_node_id = area_a, .message = u"m2"});
+  auto& live = node_event_provider_.unacked_events_;
+  live.try_emplace(
+      1, scada::Event{.event_id = 1, .source_node_id = in_a, .message = u"m1"});
+  live.try_emplace(
+      2,
+      scada::Event{.event_id = 2, .source_node_id = area_a, .message = u"m2"});
   historical_event_model_.AddEvent(
       {.event_id = 3, .source_node_id = in_a, .message = u"m3", .acked = true});
-  historical_event_model_.AddEvent(
-      {.event_id = 4, .source_node_id = node_id_, .message = u"m4"});
+  live.try_emplace(
+      4, scada::Event{
+             .event_id = 4, .source_node_id = node_id_, .message = u"m4"});
   Rebuild();
 
   const scada::NodeId areas[] = {area_a, area_b};
@@ -1051,7 +1083,9 @@ TEST_F(EventAlarmChromeTest, UnacknowledgedHistoryAloneIsNotAcknowledgeable) {
                                     .message = u"old"});
   Rebuild();
   ASSERT_EQ(model_.GetRowCount(), 1);
-  ASSERT_EQ(model_.GetAlarmSummary().unacknowledged, 1);
+  // Not pending either (backlog 889): nothing here could acknowledge it, so
+  // counting it as waiting promised an action that did nothing.
+  EXPECT_EQ(model_.GetAlarmSummary().unacknowledged, 0);
 
   EXPECT_FALSE(model_.CanAcknowledgeShown());
 }
