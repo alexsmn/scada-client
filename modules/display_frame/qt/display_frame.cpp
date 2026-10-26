@@ -254,6 +254,11 @@ DisplayFrame::DisplayFrame(DisplayWidget* diagram,
                            DisplayFrameContext data_context,
                            QWidget* parent)
     : QWidget{parent}, data_context_{data_context}, diagram_{diagram} {
+  if (data_context_.event_sources) {
+    event_sources_.emplace(data_context_.event_sources->begin(),
+                           data_context_.event_sources->end());
+  }
+
   auto* root = new QVBoxLayout{this};
   root->setContentsMargins(0, 0, 0, 0);
   root->setSpacing(0);
@@ -548,6 +553,11 @@ void DisplayFrame::RefreshEvents() {
   std::vector<const scada::Event*> recent;
   for (const auto& [id, event] :
        data_context_.node_event_provider->unacked_events()) {
+    // Only this display's objects, when the host could say which they are; an
+    // event raised by an object elsewhere in the system belongs to the event
+    // panel, not to this schematic's strip (backlog 911).
+    if (event_sources_ && !event_sources_->contains(event.source_node_id))
+      continue;
     recent.push_back(&event);
   }
   // Most recent first.

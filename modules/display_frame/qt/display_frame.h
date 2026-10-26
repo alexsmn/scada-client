@@ -1,6 +1,7 @@
 #pragma once
 
 #include "events/event_observer.h"
+#include "scada/node_id.h"
 
 #include <QPoint>
 #include <QSize>
@@ -10,10 +11,11 @@
 #include <boost/signals2/connection.hpp>
 
 #include <memory>
+#include <optional>
+#include <set>
 #include <vector>
 
 namespace scada {
-class NodeId;
 class SessionService;
 }
 class NodeEventProvider;
@@ -57,6 +59,13 @@ struct DisplayFrameContext {
   TimedDataService* timed_data_service = nullptr;
   // Backs the Recent-events strip (its unacknowledged/actionable events).
   NodeEventProvider* node_event_provider = nullptr;
+  // The objects the display shows. When set, the Recent-events strip lists
+  // only the events they raised; an empty list means a display that shows no
+  // object, and lists nothing. Unset lists every unacknowledged event in the
+  // system -- for a host that cannot tell which objects the display shows,
+  // such as one loading a display runtime from before 2026-10-26, which names
+  // no VDS objects (backlog 911).
+  std::optional<std::vector<scada::NodeId>> event_sources;
   // Resolves an event's source node to a display name for the Object column.
   NodeService* node_service = nullptr;
   // Drives the toolbar's Live pill: "Live" while connected, "Offline"
@@ -123,6 +132,8 @@ class DisplayFrame : public QWidget, private EventObserver {
   void OnAllEventsAcknowledged() override;
 
   DisplayFrameContext data_context_;
+  // `data_context_.event_sources` as a set, for the per-event lookup.
+  std::optional<std::set<scada::NodeId>> event_sources_;
 
   DisplayWidget* diagram_ = nullptr;
   QScrollArea* scroll_ = nullptr;

@@ -18,6 +18,34 @@
 #include <exception>
 #include <optional>
 
+namespace {
+
+// The objects `widget`'s display shows, for its Recent-events strip: every
+// data source that names a node. A VDS shape's name is its binding, but a
+// cosmetic shape is named too, so a name that is not a node id is skipped.
+// Nullopt when the runtime names no data source at all -- one from before
+// 2026-10-26 answers zero for every VDS document, which says nothing about
+// the display, so the strip keeps listing every event rather than none.
+std::optional<std::vector<scada::NodeId>> DisplayObjects(
+    const DisplayWidget& widget) {
+  const std::vector<std::string> data_sources = widget.DataSources();
+  if (data_sources.empty())
+    return std::nullopt;
+  std::vector<scada::NodeId> objects;
+  for (const std::string& data_source : data_sources) {
+    try {
+      scada::NodeId node_id = scada::NodeId::FromString(data_source);
+      if (!node_id.is_null())
+        objects.push_back(std::move(node_id));
+    } catch (const std::exception&) {
+      // Not a node id: a label or a decorative shape.
+    }
+  }
+  return objects;
+}
+
+}  // namespace
+
 // VidiconDisplayNativeView
 
 VidiconDisplayNativeView::VidiconDisplayNativeView(
@@ -93,6 +121,7 @@ std::unique_ptr<UiView> VidiconDisplayNativeView::Init(
       widget.get(), title,
       DisplayFrameContext{.timed_data_service = &timed_data_service_,
                           .node_event_provider = &node_event_provider_,
+                          .event_sources = DisplayObjects(*widget),
                           .node_service = &node_service_,
                           .session_service = &session_service_});
 

@@ -89,6 +89,47 @@ TEST_F(DisplayFrameStripsTest, RecentEventsStripRendersProviderEvents) {
   EXPECT_TRUE(messages.contains(QStringLiteral("Comms degraded")));
 }
 
+// Backlog 911: with the display's objects known, the strip lists only the
+// events they raised -- an alarm elsewhere in the system belongs to the event
+// panel, not to this schematic.
+TEST_F(DisplayFrameStripsTest, RecentEventsListOnlyTheDisplaysObjects) {
+  const scada::NodeId on_display{101, 1};
+  const scada::NodeId elsewhere{202, 1};
+  FakeNodeEventProvider provider;
+  scada::Event mine = MakeEvent(1, scada::kSeverityCritical, u"Overvoltage");
+  mine.source_node_id = on_display;
+  scada::Event other = MakeEvent(2, scada::kSeverityCritical, u"Far away");
+  other.source_node_id = elsewhere;
+  provider.events.emplace(1, mine);
+  provider.events.emplace(2, other);
+
+  DisplayFrame frame(
+      /*diagram=*/nullptr, QStringLiteral("Bay 1"),
+      DisplayFrameContext{.node_event_provider = &provider,
+                          .event_sources = std::vector{on_display}});
+
+  auto* table = frame.findChild<QTableWidget*>();
+  ASSERT_NE(table, nullptr);
+  ASSERT_EQ(table->rowCount(), 1);
+  EXPECT_EQ(table->item(0, 3)->text(), QStringLiteral("Overvoltage"));
+}
+
+// A display that shows no object has no events of its own.
+TEST_F(DisplayFrameStripsTest, RecentEventsAreEmptyForADisplayWithNoObjects) {
+  FakeNodeEventProvider provider;
+  provider.events.emplace(
+      1, MakeEvent(1, scada::kSeverityCritical, u"Overvoltage"));
+
+  DisplayFrame frame(
+      /*diagram=*/nullptr, QStringLiteral("Bay 1"),
+      DisplayFrameContext{.node_event_provider = &provider,
+                          .event_sources = std::vector<scada::NodeId>{}});
+
+  auto* table = frame.findChild<QTableWidget*>();
+  ASSERT_NE(table, nullptr);
+  EXPECT_EQ(table->rowCount(), 0);
+}
+
 TEST_F(DisplayFrameStripsTest, NoBayStripsWithoutDataSources) {
   DisplayFrame frame(/*diagram=*/nullptr, QStringLiteral("Bay 1"),
                      DisplayFrameContext{});
