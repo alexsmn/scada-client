@@ -17,7 +17,9 @@ void InitProgramOptions(int argc, char* argv[]) {
 
   po::options_description desc;
   desc.add_options()("debug", "Enable debug mode")(
-      "excel", "Enable Excel export")("locale", po::value<std::string>(),
+      // No longer gates anything: Excel export is offered wherever Excel is
+      // registered (backlog 873). Still accepted so an old shortcut starts.
+      "excel", "Accepted for compatibility; has no effect")("locale", po::value<std::string>(),
                                       "Application locale")(
       "verbose-logging", "Enable verbose logging")(
       "log-service-read", "Log service read operations")(

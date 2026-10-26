@@ -5,7 +5,6 @@
 #include "aui/show_message_box.h"
 #include "base/check.h"
 #include "base/excel.h"
-#include "base/program_options.h"
 #include "export/csv/csv_export_util.h"
 #include "export/export_model.h"
 #include "resources/common_resources.h"
@@ -16,7 +15,7 @@ OpenedViewExcelExportCommand::OpenedViewExcelExportCommand(
 
 CommandHandler* OpenedViewExcelExportCommand::GetCommandHandler(
     unsigned command_id) {
-  return command_id == ID_EXPORT_EXCEL && client::HasOption("excel") &&
+  return command_id == ID_EXPORT_EXCEL && excel_available_() &&
                  export_model_getter_()
              ? this
              : nullptr;

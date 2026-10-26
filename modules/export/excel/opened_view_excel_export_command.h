@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/any_executor.h"
+#include "base/excel.h"
 #include "controller/command_handler.h"
 
 #include <functional>
@@ -17,6 +18,9 @@ struct OpenedViewExcelExportCommandContext {
   const AnyExecutor executor_;
   DialogService& dialog_service_;
   ExcelExportModelGetter export_model_getter_;
+  // Whether Excel can be automated here. The command is offered only then; it
+  // used to need the undocumented `--excel` switch instead (backlog 873).
+  std::function<bool()> excel_available_ = &Excel::IsAvailable;
 };
 
 class OpenedViewExcelExportCommand final

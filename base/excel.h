@@ -45,6 +45,10 @@ class ExcelSheetModel {
 
 class Excel {
  public:
+  // True when Excel's automation server is registered on this computer, i.e.
+  // `Excel.Application` resolves to a CLSID. Always false off Windows.
+  static bool IsAvailable();
+
   Excel();
 
   void SetVisible(bool visible = true);

@@ -119,6 +119,17 @@ void ExcelSheetModel::SetData(int row, int col, const std::wstring& val) {
 
 // Excel
 
+// static
+bool Excel::IsAvailable() {
+  // A registry lookup, asked on every menu update; Excel being installed while
+  // the Client runs is not worth paying that for.
+  static const bool available = [] {
+    CLSID clsid;
+    return SUCCEEDED(CLSIDFromProgID(L"Excel.Application", &clsid));
+  }();
+  return available;
+}
+
 Excel::Excel() {
   CLSID clsid;
   HRESULT hr = CLSIDFromProgID(L"Excel.Application", &clsid);
@@ -193,6 +204,11 @@ void ExcelSheetModel::SetData(int, int, scada::base::win::ScopedVariant&&) {}
 void ExcelSheetModel::SetData(int, int, const VARIANT&) {}
 
 void ExcelSheetModel::SetData(int, int, const std::wstring&) {}
+
+// static
+bool Excel::IsAvailable() {
+  return false;
+}
 
 Excel::Excel() {
   throw HRESULT{};
