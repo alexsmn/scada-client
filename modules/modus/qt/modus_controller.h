@@ -47,8 +47,8 @@ class ModusController : protected ControllerContext, public Controller {
   // resolved by the formula service exactly as the schematic's own
   // subscription is, so an alias selects the object it names (backlog 915).
   // An empty string means "the click hit an element bound to nothing" and
-  // leaves the selection alone — note that this is NOT the same as clicking
-  // empty space, which the widget reports as a cleared selection instead.
+  // clears the selection, as a click on bare page does (backlog 907): the
+  // highlight has moved off the previous object, so the selection must too.
   //
   // A formula the service cannot resolve still selects something: it yields
   // an error TimedData rather than throwing, so a drawing that names a stale
