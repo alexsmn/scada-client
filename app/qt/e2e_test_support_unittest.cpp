@@ -206,6 +206,13 @@ TEST_F(E2eTestSupportTest, ObjectTreeLabelsCheckWritesSuccessfulReport) {
 // FetchMore() is still in flight, so a transient subtree can present a
 // complete-looking path before the intended one loads. The check must wait for
 // the path to stop changing instead of accepting the first ready-looking one.
+//
+// The transient path must change well inside the settle window on every host.
+// It lasted five polls against a 50 ms window until 2026-10-26, which held on
+// macOS (about 5 ms) and failed on Windows, where a 1 ms sleep lasts about one
+// 15.6 ms timer tick, so five polls ran past 50 ms and the transient path
+// settled (scada-client run 40353311846). Two polls against 500 ms leave a
+// wide margin either way.
 TEST_F(E2eTestSupportTest, ObjectTreeLabelsCheckWaitsForTransientPathToSettle) {
   int call_count = 0;
   WaitAwaitable(executor_,
@@ -214,7 +221,7 @@ TEST_F(E2eTestSupportTest, ObjectTreeLabelsCheckWaitsForTransientPathToSettle) {
                         .executor = executor_,
                         .get_expanded_labels =
                             [&call_count] {
-                              if (++call_count <= 5) {
+                              if (++call_count <= 2) {
                                 return std::vector<std::u16string>{
                                     u"Root", u"Transient", u"Group", u"Point"};
                               }
@@ -223,7 +230,7 @@ TEST_F(E2eTestSupportTest, ObjectTreeLabelsCheckWaitsForTransientPathToSettle) {
                             },
                         .timeout = std::chrono::seconds{10},
                         .poll_interval = std::chrono::milliseconds{1},
-                        .settle_duration = std::chrono::milliseconds{50},
+                        .settle_duration = std::chrono::milliseconds{500},
                     },
                     report_path_));
 
