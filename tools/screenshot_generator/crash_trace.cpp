@@ -66,18 +66,18 @@ LONG CALLBACK TraceAccessViolation(EXCEPTION_POINTERS* info) {
   SymInitialize(process, nullptr, TRUE);
 
   const auto* record = info->ExceptionRecord;
-  std::fprintf(stderr,
-               "crash_trace: access violation (%s 0x%llx) at 0x%llx, thread "
-               "%lu\n",
-               record->NumberParameters >= 2 && record->ExceptionInformation[0]
-                   ? "writing"
-                   : "reading",
-               record->NumberParameters >= 2
-                   ? static_cast<unsigned long long>(
-                         record->ExceptionInformation[1])
-                   : 0ULL,
-               reinterpret_cast<unsigned long long>(record->ExceptionAddress),
-               GetCurrentThreadId());
+  std::fprintf(
+      stderr,
+      "crash_trace: access violation (%s 0x%llx) at 0x%llx, thread "
+      "%lu\n",
+      record->NumberParameters >= 2 && record->ExceptionInformation[0]
+          ? "writing"
+          : "reading",
+      record->NumberParameters >= 2
+          ? static_cast<unsigned long long>(record->ExceptionInformation[1])
+          : 0ULL,
+      reinterpret_cast<unsigned long long>(record->ExceptionAddress),
+      GetCurrentThreadId());
 
   CONTEXT context = *info->ContextRecord;
   STACKFRAME64 frame{};
