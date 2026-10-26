@@ -17,6 +17,8 @@ add_executable(client_screenshot_generator
   "capture_writer.h"
   "context_menu_capture.cpp"
   "control_confirmation_check.cpp"
+  "crash_trace.cpp"
+  "crash_trace.h"
   "explorer_selection.cpp"
   "explorer_selection.h"
   "menu_capture.cpp"
@@ -144,6 +146,11 @@ target_link_libraries(client_screenshot_generator PRIVATE
 if(TARGET client_modus_qt)
   target_link_libraries(client_screenshot_generator PRIVATE client_modus_qt)
   target_compile_definitions(client_screenshot_generator PRIVATE CLIENT_HAS_MODUS=1)
+endif()
+# DbgHelp walks and symbolizes the stack crash_trace.cpp prints on a fault
+# (backlog 950).
+if(WIN32)
+  target_link_libraries(client_screenshot_generator PRIVATE dbghelp)
 endif()
 if(TARGET client_vidicon_qt)
   target_link_libraries(client_screenshot_generator PRIVATE client_vidicon_qt)

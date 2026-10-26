@@ -400,7 +400,15 @@ jobs:
       shell: bash
       run: |
         if [ "$RUNNER_OS" = "Windows" ]; then
-          cmake --preset ninja -DBUILD_OPC=OFF -DBUILD_VIDICON=OFF
+          # Debug information in the Release build (/Z7, and /DEBUG to link
+          # it), so that the screenshot generator's crash_trace prints
+          # function names and lines rather than bare addresses (backlog 950).
+          # These reach this tree's own targets only: vcpkg's ports build
+          # with their own triplet flags, so the binary cache is unaffected.
+          cmake --preset ninja -DBUILD_OPC=OFF -DBUILD_VIDICON=OFF \
+            -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded \
+            -DCMAKE_EXE_LINKER_FLAGS=/DEBUG \
+            -DCMAKE_SHARED_LINKER_FLAGS=/DEBUG
         else
           cmake --preset ninja
         fi

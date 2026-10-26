@@ -14,6 +14,7 @@
 #include "aui/qt/message_loop_qt.h"
 #include "aui/test/app_environment.h"
 #include "authenticated_attribute_service.h"
+#include "crash_trace.h"
 #include "base/any_executor.h"
 #include "base/client_paths.h"
 #include "base/no_destructor.h"
@@ -138,6 +139,7 @@ class ScreenshotGenerator : public ::testing::Test {
       qputenv("QT_QPA_PLATFORM", "offscreen");
 #endif
 
+    InstallCrashTrace();
     InitScreenshotOptions();
     FixtureConfig().Load(GetDataFilePath());
   }
