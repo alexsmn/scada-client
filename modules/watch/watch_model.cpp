@@ -209,7 +209,15 @@ bool WatchModel::IsVisible(const Row& row) const {
   // A row with no APCI format — a plain log line, a decoded-ASDU row, or a
   // frame from a server that predates the structured event — is not a frame of
   // any format, so no format filter admits it.
-  const std::string_view format = row.frame ? row.frame->format : "";
+  //
+  // Both branches are string_views on purpose. `row.frame->format : ""` mixes
+  // a std::string with a char array, so the conditional's result is a
+  // temporary std::string, and the view outlived it. Clang's and GCC's
+  // short-string buffer kept reading "I"; MSVC's did not, and every format
+  // filter came up empty on Windows (WatchModelTest.FiltersByFrameKind and
+  // three more, scada-client run 40138625293).
+  const std::string_view format =
+      row.frame ? std::string_view{row.frame->format} : std::string_view{};
   switch (filter_.kind) {
     case WatchFilter::Kind::kAny:
       break;
