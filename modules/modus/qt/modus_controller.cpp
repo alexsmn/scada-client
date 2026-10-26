@@ -2,12 +2,17 @@
 
 #include "controller/selection_model.h"
 #include "display_view/qt/display_widget.h"
+#include "filesystem/file_cache.h"
 #include "filesystem/file_util.h"
 #include "modus/modus_component.h"
+#include "modus/modus_live_data.h"
 #include "modus/modus_util.h"
 #include "modus/modus_view_wrapper.h"
 #include "profile/window_definition.h"
 #include "services/display_selection_registry.h"
+#include "timed_data/timed_data_spec.h"
+
+#include "base/utf_convert.h"
 
 #include <QScrollArea>
 
@@ -34,7 +39,22 @@ class ModusDisplayView final : public DisplayWidget, public ModusViewWrapper {
 
   std::filesystem::path GetPath() const override { return path_; }
 
+  std::u16string GetTitle() const override { return title().toStdU16String(); }
+
   bool ShowContainedItem(const scada::NodeId&) override { return false; }
+
+  std::vector<std::string> GetDataSources() const override {
+    return DisplayWidget::DataSources();
+  }
+
+  void SetDataSourceReading(const ModusDataSourceReading& reading) override {
+    DisplayWidget::SetDataSourceReading(reading.data_source, reading.state,
+                                        reading.text, reading.quality);
+  }
+
+  bool SelectDataSourceElement(std::string_view data_source) override {
+    return DisplayWidget::SelectDataSourceElement(data_source);
+  }
 
  private:
   std::filesystem::path path_;
@@ -64,9 +84,14 @@ ModusController::DisplayView ModusController::CreateDisplayView() {
           return;
         }
 
-        display_selection_registry_.SetSelection(
-            this, DisplayShapeLabel(*hit).toStdU16String());
         SelectDataSource(hit->data_source);
+
+        // A Modus element has no authored name, and a bound symbol often no
+        // text either, so the selected object's own title names it.
+        std::u16string label = DisplayShapeLabel(*hit).toStdU16String();
+        if (label.empty() && !selection_.empty())
+          label = ToString16(selection_.timed_data().GetTitle());
+        display_selection_registry_.SetSelection(this, label);
       });
 
   display_view->set_double_click_callback([this] { AcknowledgeSelection(); });
@@ -89,10 +114,12 @@ void ModusController::SelectDataSource(std::string_view data_source) {
     return;
   }
 
+  // Through the formula path, as the schematic subscribes and as 2.5.7 did:
+  // a binding key is an alias, a node id or an expression, and only the
+  // formula service resolves all three (backlog 915).
   try {
     selection_.SelectTimedData(
-        TimedDataSpec{timed_data_service_,
-                      scada::NodeId::FromString(std::string{data_source})});
+        TimedDataSpec{timed_data_service_, std::string_view{data_source}});
   } catch (const std::exception&) {
     selection_.Clear();
   }
@@ -109,11 +136,28 @@ std::unique_ptr<UiView> ModusController::Init(
                                        : CreateDisplayView();
 
   wrapper_ = display_view.wrapper;
+  widget_ = display_view.widget;
 
   std::unique_ptr<UiView> result;
   result.reset(display_view.widget);
 
   wrapper_->Open(definition);
+
+  const std::vector<std::string> data_sources = wrapper_->GetDataSources();
+  live_data_ = std::make_unique<ModusLiveData>(
+      timed_data_service_, data_sources,
+      [this](const ModusDataSourceReading& reading) {
+        // The widget tree belongs to the window, which may be torn down
+        // before this controller is.
+        if (!widget_)
+          return;
+        wrapper_->SetDataSourceReading(reading);
+        // A subscription resolving to its object is what the file index
+        // waits for; null while the constructor below is still running.
+        if (live_data_)
+          UpdateFileCache();
+      });
+  UpdateFileCache();
 
   return result;
 }
@@ -124,7 +168,43 @@ void ModusController::Save(WindowDefinition& definition) {
   wrapper_->Save(definition);
 }
 
+void ModusController::UpdateFileCache() {
+  const std::filesystem::path path = wrapper_->GetPath();
+  if (path.empty())
+    return;
+
+  // The schematic's «Заголовок» names it in the display menu; one without a
+  // title keeps its file name, as the cache's own scan names it.
+  std::u16string title = wrapper_->GetTitle();
+  if (title.empty())
+    title = path.stem().u16string();
+
+  FileCache::ItemMap items;
+  for (const scada::NodeId& node_id : live_data_->ResolvedNodes())
+    items.emplace(node_id, 0);
+
+  if (title == indexed_title_ && items == indexed_items_)
+    return;
+  indexed_title_ = title;
+  indexed_items_ = items;
+
+  // What 2.5.7's ActiveX loader did on every load (`FileCacheUpdater`), and
+  // what nothing in the built-in path did: the menu kept file names and
+  // «Мнемосхема» for an object found no display (backlogs 915, 910).
+  file_cache_.Update(ID_MODUS_VIEW, FullFilePathToPublic(path), title, items);
+}
+
 bool ModusController::ShowContainedItem(const scada::NodeId& item_id) {
+  // The element bound to the object, found through the bindings the schematic
+  // is subscribed to (backlog 910); a renderer that resolves objects itself
+  // is asked otherwise.
+  if (live_data_ && widget_) {
+    if (std::optional<std::string> data_source =
+            live_data_->FindDataSourceForNode(item_id);
+        data_source && wrapper_->SelectDataSourceElement(*data_source)) {
+      return true;
+    }
+  }
   return wrapper_->ShowContainedItem(item_id);
 }
 

@@ -1,10 +1,13 @@
 #include "display_view/display_runtime.h"
 
+#include "common/test/scoped_temp_dir.h"
+
 #include <gtest/gtest.h>
 
 #include <cstddef>
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
 #include <optional>
 #include <string>
 #include <vector>
@@ -195,13 +198,26 @@ TEST(DisplayRuntimeVersionTest, RejectsATableClaimingNoAbiAtAll) {
 TEST(DisplayRuntimeVersionTest,
      TheAbiOneSizeIsMeasuredFromTheLastAbiOneMember) {
   // The size a served ABI-1 table is measured against must be the one ABI 1
-  // defined, and it must not move when a later ABI appends a member. With one
-  // version the two coincide -- which is why this is worth stating now, since
-  // no build can yet tell a correct implementation from a wrong one.
-  EXPECT_EQ(SCADA_DISPLAY_ABI_1_SIZE, sizeof(ScadaDisplayApi));
+  // defined, and it must not move when a later ABI appends a member. Since
+  // ABI 2 (backlog 915) the two differ, which is the case this was pinned for.
+  EXPECT_LT(SCADA_DISPLAY_ABI_1_SIZE, sizeof(ScadaDisplayApi));
   EXPECT_EQ(SCADA_DISPLAY_ABI_1_SIZE,
             offsetof(ScadaDisplayApi, runtime_version) +
                 sizeof(ScadaDisplayApi::runtime_version));
+}
+
+TEST(DisplayRuntimeVersionTest, AcceptsARuntimeServingAnOlderAbi) {
+  // A runtime built before ABI 2 serves an ABI-1 table, exactly ABI 1 long.
+  // It is accepted -- schematics then open without live values, as before --
+  // and measured against ABI 1's size, never against this client's struct.
+  ScadaDisplayApi api{};
+  api.abi_version = 1;
+  api.struct_size = SCADA_DISPLAY_ABI_1_SIZE;
+  EXPECT_EQ(DisplayRuntimeTableRejection(api), "");
+
+  // The same length claiming ABI 2 is short of what ABI 2 defines.
+  api.abi_version = 2;
+  EXPECT_NE(DisplayRuntimeTableRejection(api), "");
 }
 
 // ── Documents ───────────────────────────────────────────────────────────────
@@ -347,6 +363,85 @@ TEST_F(DisplayRuntimeDocumentTest, StateColouringChangesWhatIsDrawn) {
 
   EXPECT_NE(authored, coloured)
       << "driving every data source changed nothing on the diagram";
+}
+
+// ── Modus bindings through the loader (backlog 915) ─────────────────────────
+//
+// The client's half of ABI 2, against the real runtime: a Modus element's
+// `ключ_привязки` is what the client subscribes to, and a value written for a
+// data source reaches the element bound to it and no other.
+
+std::filesystem::path WriteBoundModusFixture(const scada::ScopedTempDir& dir) {
+  const std::filesystem::path path = dir.path() / "bound.xsde";
+  std::ofstream file(path, std::ios::binary);
+  file << R"(<?xml version="1.0" encoding="UTF-8"?>
+<SDEDocument Version="520">
+  <Pages>
+    <Page title="Main">
+      <SDEObjects>
+        <Type typ="43" ObjectType="Breaker">
+          <SDE tag="1" sTag="11" origin="4 4">
+            <Tech className="Breaker" closed="1" ключ_привязки="TS_Q1"/>
+          </SDE>
+        </Type>
+        <Type typ="5" ObjectType="Text">
+          <SDE tag="1" sTag="12" origin="12 4" rectWidth="8" rectHeight="2"
+               inText="0000" ключ_привязки="текст=TIT_U"/>
+          <SDE tag="2" sTag="13" origin="12 10" rectWidth="8" rectHeight="2"
+               inText="0000" ключ_привязки="текст=TIT_I"/>
+        </Type>
+      </SDEObjects>
+    </Page>
+  </Pages>
+</SDEDocument>)";
+  return path;
+}
+
+TEST(DisplayRuntimeModusBindingTest, AValueReachesOnlyTheElementBoundToIt) {
+  if (!HaveRuntime())
+    GTEST_SKIP() << "this client was configured without a display runtime";
+
+  scada::ScopedTempDir dir{"client_display_runtime"};
+  DisplayError error;
+  std::unique_ptr<DisplayRuntimeDocument> document =
+      DisplayRuntimeDocument::Open(WriteBoundModusFixture(dir),
+                                   DisplayDocumentKind::kModus, &error);
+  ASSERT_NE(document, nullptr) << error.message;
+
+  EXPECT_EQ(document->DataSources(),
+            (std::vector<std::string>{"TS_Q1", "TIT_U", "TIT_I"}));
+
+  const DisplayRect invalidated = document->SetDataSourceText("TIT_U", "10,5");
+  EXPECT_GT(invalidated.w, 0);
+  ASSERT_TRUE(document->FindDataSourceShape("TIT_U"));
+  EXPECT_EQ(document->FindDataSourceShape("TIT_U")->text, "10,5");
+  EXPECT_EQ(document->FindDataSourceShape("TIT_I")->text, "0000");
+
+  // A click on the bound breaker reports its binding, which is what the
+  // controller selects.
+  const std::optional<DisplayShapeHit> breaker =
+      document->FindDataSourceShape("TS_Q1");
+  ASSERT_TRUE(breaker);
+  const std::optional<DisplayShapeHit> hit =
+      document->HitTest(breaker->bounds.x + breaker->bounds.w / 2,
+                        breaker->bounds.y + breaker->bounds.h / 2);
+  ASSERT_TRUE(hit);
+  EXPECT_EQ(hit->data_source, "TS_Q1");
+
+  // And a position changes what is drawn.
+  constexpr int32_t kWidth = 200;
+  constexpr int32_t kHeight = 120;
+  const size_t size = static_cast<size_t>(kWidth) * kHeight * 4;
+  std::vector<uint8_t> closed(size, 0);
+  ASSERT_TRUE(
+      document->RenderBgra(closed.data(), kWidth, kHeight, kWidth * 4, &error))
+      << error.message;
+  document->SetDataSourceState("TS_Q1", "open", 0);
+  std::vector<uint8_t> open(size, 0);
+  ASSERT_TRUE(
+      document->RenderBgra(open.data(), kWidth, kHeight, kWidth * 4, &error))
+      << error.message;
+  EXPECT_NE(closed, open);
 }
 
 }  // namespace

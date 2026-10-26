@@ -163,7 +163,26 @@ class DisplayRuntimeDocument {
                                  std::string_view value,
                                  int32_t quality);
 
+  // ABI 2. Each answers as if nothing were bound when the loaded runtime
+  // serves ABI 1, which knows no Modus bindings: the schematic then draws as
+  // authored, without values, as it did before ABI 2 existed.
+
+  // The data sources the document's bindings name, once each — what the host
+  // subscribes to. Empty for a VDS document.
+  std::vector<std::string> DataSources() const;
+
+  // Writes `text` as the text of every element bound to `data_source` as a
+  // value, and returns the region needing repaint (empty if none is).
+  DisplayRect SetDataSourceText(std::string_view data_source,
+                                std::string_view text);
+
+  // The first element bound to `data_source`, or nullopt.
+  std::optional<DisplayShapeHit> FindDataSourceShape(
+      std::string_view data_source) const;
+
  private:
+  bool HasAbi2() const;
+
   DisplayRuntimeDocument(const DisplayRuntime& runtime,
                          ScadaDisplayDocument document);
 

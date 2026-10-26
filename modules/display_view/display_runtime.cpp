@@ -76,12 +76,14 @@ std::string OwnedString(const char* text) {
 // against an ABI-3 struct rejects a library that is perfectly usable. The
 // per-version sizes the ABI header publishes are what this is for.
 size_t RequiredStructSize(uint32_t abi_version) {
-  // One entry today. Each future ABI appends its own; none is ever edited,
+  // One entry per ABI. Each future ABI appends its own; none is ever edited,
   // because a member is only ever appended and offsetof of an existing one
   // cannot move.
   switch (abi_version) {
     case 1:
       return SCADA_DISPLAY_ABI_1_SIZE;
+    case 2:
+      return SCADA_DISPLAY_ABI_2_SIZE;
     default:
       break;
   }
@@ -282,6 +284,21 @@ std::string_view DisplayRuntime::unavailable_reason() {
 
 // ── Documents ───────────────────────────────────────────────────────────────
 
+namespace {
+
+DisplayShapeHit ToHit(const ScadaDisplayShapeInfo& info) {
+  DisplayShapeHit hit;
+  hit.id = info.id;
+  hit.bounds = ToRect(info.bounds);
+  // Copied, not aliased: the ABI says the next call replaces them.
+  hit.name = OwnedString(info.name);
+  hit.text = OwnedString(info.text);
+  hit.data_source = OwnedString(info.data_source);
+  return hit;
+}
+
+}  // namespace
+
 DisplayRuntimeDocument::DisplayRuntimeDocument(const DisplayRuntime& runtime,
                                                ScadaDisplayDocument document)
     : runtime_{runtime}, document_{document} {}
@@ -356,14 +373,7 @@ std::optional<DisplayShapeHit> DisplayRuntimeDocument::HitTest(
     return std::nullopt;
   }
 
-  DisplayShapeHit hit;
-  hit.id = info.id;
-  hit.bounds = ToRect(info.bounds);
-  // Copied, not aliased: the ABI says the next hit_test replaces them.
-  hit.name = OwnedString(info.name);
-  hit.text = OwnedString(info.text);
-  hit.data_source = OwnedString(info.data_source);
-  return hit;
+  return ToHit(info);
 }
 
 void DisplayRuntimeDocument::SetStatePalette(
@@ -403,4 +413,53 @@ DisplayRect DisplayRuntimeDocument::SetDataSourceState(
   // The caller repaints what it is told to; the whole page is the safe answer
   // and matches what the renderer reports on success.
   return page_bounds_;
+}
+
+bool DisplayRuntimeDocument::HasAbi2() const {
+  return runtime_.api().abi_version >= 2 &&
+         runtime_.api().struct_size >= SCADA_DISPLAY_ABI_2_SIZE;
+}
+
+std::vector<std::string> DisplayRuntimeDocument::DataSources() const {
+  std::vector<std::string> sources;
+  if (!HasAbi2())
+    return sources;
+  const int32_t count = runtime_.api().get_data_source_count(document_);
+  for (int32_t i = 0; i < count; ++i) {
+    if (const char* source = runtime_.api().get_data_source(document_, i))
+      sources.emplace_back(source);
+  }
+  return sources;
+}
+
+DisplayRect DisplayRuntimeDocument::SetDataSourceText(
+    std::string_view data_source,
+    std::string_view text) {
+  if (!HasAbi2())
+    return {};
+  const std::string data_source_text{data_source};
+  const std::string value_text{text};
+
+  ScadaDisplayRect invalidated{};
+  ScadaDisplayError abi_error{};
+  if (runtime_.api().set_data_source_text(document_, data_source_text.c_str(),
+                                          value_text.c_str(), &invalidated,
+                                          &abi_error)) {
+    return ToRect(invalidated);
+  }
+  return page_bounds_;
+}
+
+std::optional<DisplayShapeHit> DisplayRuntimeDocument::FindDataSourceShape(
+    std::string_view data_source) const {
+  if (!HasAbi2())
+    return std::nullopt;
+  const std::string data_source_text{data_source};
+  ScadaDisplayShapeInfo info{};
+  ScadaDisplayError abi_error{};
+  if (runtime_.api().find_data_source_shape(document_, data_source_text.c_str(),
+                                            &info, &abi_error) != 1) {
+    return std::nullopt;
+  }
+  return ToHit(info);
 }

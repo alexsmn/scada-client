@@ -5,12 +5,17 @@
 #include "controller/controller.h"
 #include "controller/controller_context.h"
 #include "controller/selection_model.h"
+#include "filesystem/file_cache.h"
+
+#include <QPointer>
+#include <QWidget>
 
 #include <filesystem>
 #include <functional>
 #include <memory>
 #include <string_view>
 
+class ModusLiveData;
 class ModusViewWrapper;
 
 // Hosts a Modus display: builds the display view, opens the document named by
@@ -37,15 +42,18 @@ class ModusController : protected ControllerContext, public Controller {
                            DisplayViewFactory display_view_factory = {});
   virtual ~ModusController();
 
-  // Selection sink for the display view. Maps a VDS data-source string to a
-  // live TimedData selection. An empty string means "the click hit nothing"
-  // and leaves the selection alone — note that this is NOT the same as
-  // clicking empty space, which the renderer does not report at all.
+  // Selection sink for the display view. Maps an element's data source — the
+  // formula from its `ключ_привязки` — to a live TimedData selection,
+  // resolved by the formula service exactly as the schematic's own
+  // subscription is, so an alias selects the object it names (backlog 915).
+  // An empty string means "the click hit an element bound to nothing" and
+  // leaves the selection alone — note that this is NOT the same as clicking
+  // empty space, which the widget reports as a cleared selection instead.
   //
-  // Every other string selects something: `scada::NodeId::FromString` does not
-  // fail, it falls through to a *string* NodeId, so a drawing that names a
-  // stale or misspelled data source selects a node that does not resolve
-  // rather than clearing. The clear below is reached only if building the
+  // A formula the service cannot resolve still selects something: it yields
+  // an error TimedData rather than throwing, so a drawing that names a stale
+  // or misspelled alias selects an object that shows as not found rather
+  // than clearing. The clear below is reached only if building the
   // `TimedDataSpec` throws, which is why it is a catch and not a parse check.
   void SelectDataSource(std::string_view data_source);
 
@@ -63,11 +71,28 @@ class ModusController : protected ControllerContext, public Controller {
  private:
   DisplayView CreateDisplayView();
 
+  // Indexes the open schematic in the file cache under its title and the
+  // objects it is bound to, when either changed since the last time.
+  void UpdateFileCache();
+
   SelectionModel selection_{{timed_data_service_}};
 
   DisplayViewFactory display_view_factory_;
 
   ModusViewWrapper* wrapper_ = nullptr;
+
+  // The widget the wrapper lives in, which the window owns. Null once the
+  // window has destroyed it, so a late reading is dropped rather than
+  // delivered to a deleted view.
+  QPointer<QWidget> widget_;
+
+  // The schematic's live bindings, from `Init` on (backlog 915).
+  std::unique_ptr<ModusLiveData> live_data_;
+
+  // What `UpdateFileCache` last wrote, so an unchanged index is not rewritten
+  // on every reading.
+  std::u16string indexed_title_;
+  FileCache::ItemMap indexed_items_;
 
   CommandRegistry command_registry_;
 

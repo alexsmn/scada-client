@@ -31,6 +31,27 @@ QString Tr(std::string_view text) {
   return QString::fromStdU16String(Translate(text));
 }
 
+uint32_t PackRgb(const QColor& colour) {
+  return static_cast<uint32_t>(colour.rgb()) & 0x00FFFFFFu;
+}
+
+// The equipment-state palette, from the active theme's tokens. Installed on
+// every document: a VDS display recolours bound shapes with it, and a Modus
+// display uses only its quality colours, to mark a reading that is not good
+// (backlog 915). These are ISA-101 process colours with fixed values, so they
+// do not follow the OS accent.
+DisplayStatePalette ThemeStatePalette() {
+  const scada::aui::ThemeTokens& tokens = scada::aui::ActiveThemeTokens();
+  return {
+      .sl_live = PackRgb(tokens.sl_live),
+      .sl_energized = PackRgb(tokens.sl_energized),
+      .sl_closed = PackRgb(tokens.sl_closed),
+      .sl_open = PackRgb(tokens.sl_open),
+      .bad = PackRgb(tokens.bad),
+      .uncertain = PackRgb(tokens.uncertain),
+  };
+}
+
 int SizeHintDimension(double value, int fallback) {
   if (!std::isfinite(value) || value <= 0)
     return fallback;
@@ -122,8 +143,40 @@ bool DisplayWidget::Open(const std::filesystem::path& path,
   }
 
   title_ = QString::fromStdString(document_->Title());
+  const DisplayStatePalette palette = ThemeStatePalette();
+  document_->SetStatePalette(&palette);
   updateGeometry();
   update();
+  return true;
+}
+
+std::vector<std::string> DisplayWidget::DataSources() const {
+  return document_ ? document_->DataSources() : std::vector<std::string>{};
+}
+
+void DisplayWidget::SetDataSourceReading(std::string_view data_source,
+                                         std::string_view state,
+                                         std::string_view text,
+                                         int32_t quality) {
+  if (!document_)
+    return;
+  document_->SetDataSourceState(data_source, state, quality);
+  // An empty text is "no value yet", which leaves the authored text showing
+  // rather than blanking the element.
+  if (!text.empty())
+    document_->SetDataSourceText(data_source, text);
+  // The runtime reports the whole page; one update() covers it.
+  update();
+}
+
+bool DisplayWidget::SelectDataSourceElement(std::string_view data_source) {
+  if (!document_)
+    return false;
+  std::optional<DisplayShapeHit> hit =
+      document_->FindDataSourceShape(data_source);
+  if (!hit)
+    return false;
+  SetSelection(std::move(hit));
   return true;
 }
 

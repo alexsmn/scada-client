@@ -13,6 +13,9 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
 
 // Shows a VDS or Modus SDE/XSDE display, with live equipment state on it.
 //
@@ -99,6 +102,23 @@ class DisplayWidget : public QWidget {
   void set_double_click_callback(DoubleClickCallback callback) {
     double_click_callback_ = std::move(callback);
   }
+
+  // The data sources the open document's bindings name, once each — empty
+  // for a VDS document and while nothing is open.
+  std::vector<std::string> DataSources() const;
+
+  // Shows one data source's latest reading: `state` drives the elements bound
+  // to a position, `text` (when not empty) the ones bound to a value, and
+  // `quality` marks a reading that is not good. Repaints.
+  void SetDataSourceReading(std::string_view data_source,
+                            std::string_view state,
+                            std::string_view text,
+                            int32_t quality);
+
+  // Selects the first element bound to `data_source`, exactly as clicking it
+  // would — the selection callback runs — and returns false when no element
+  // is bound to it.
+  bool SelectDataSourceElement(std::string_view data_source);
 
   QSize sizeHint() const override;
 
