@@ -1816,11 +1816,11 @@
       ],
       "notes": "Rendered by the screenshot generator (CaptureObjectMenuCopy): the object tree's context menu on a data item, «Копировать» highlighted -- the same menu and selection as menu-delete-object.png. Until 2026-10-04 this was a hand capture of the command toolbar's Copy button showing its tooltip; backlog 697 removed that toolbar, so the image documented chrome the client no longer has, and dev/data-items.md now captions it «Пример контекстного меню, всплывающего по нажатию ПКМ». Reviewed against that page on 2026-10-04 and moved into current_generator_owned_subset the same day.",
       "captured": {
-        "commit": "f05b985ef",
+        "commit": "b52336da0",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "a8a734d6fa68d52a6d58c4dcdad5820f86528537ba48a2c7ce70d05251f050c6",
-        "last_rendered": "f05b985ef"
+        "dirty": false,
+        "sha256": "400c6a5b75e9be4eaae4a0cad67f3ed7ebd3de075f1eb0ea634bfa308f966d34",
+        "last_rendered": "b52336da0"
       }
     },
     {
@@ -1831,11 +1831,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of menu-copy-object.png, produced by the same capture under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see. Deliberately carries no `parity_key` — the capability's coverage claim belongs to menu-copy-object.png, and this is a second appearance of that capture rather than a second capture.",
       "captured": {
-        "commit": "f05b985ef",
+        "commit": "b52336da0",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "09de1ac609515f8c40c3c64b0d05426ffa5ae772ab1d4d3013d08c055f1dd731",
-        "last_rendered": "f05b985ef"
+        "dirty": false,
+        "sha256": "6ed3169cd3a80777be6843b2df99382e75fcad95c445faa2244b61d5ad91aee4",
+        "last_rendered": "b52336da0"
       }
     },
     {
@@ -1917,11 +1917,11 @@
       ],
       "notes": "Rendered by the screenshot generator (CaptureObjectMenuDelete): the object tree's context menu on a data item, «Удалить» highlighted, carrying the greyed «Квитирование» / «Разблокировать» rows and the «Устройство» submenu arrow the docs original shows. The enablement state is resolved against a live selection rather than staged; see menu-parameters.png for the mechanism. dev/data-items.md calls this «Пример контекстного меню, всплывающего по нажатию ПКМ», which the popup alone serves. Not yet in current_generator_owned_subset -- replacing the hand capture is a docs decision.",
       "captured": {
-        "commit": "1a014d850",
+        "commit": "b52336da0",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "9220247d9731799df747f776d0e3f8907d95ab80f9db08f129b5a1ae1db71528",
-        "last_rendered": "1a014d850"
+        "dirty": false,
+        "sha256": "785bca10ee62a8860402982cdb35edac36bdefbc6385dc6548d364129e421687",
+        "last_rendered": "b52336da0"
       }
     },
     {
@@ -1932,11 +1932,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of menu-delete-object.png, produced by the same capture under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see. Deliberately carries no `parity_key` — the capability's coverage claim belongs to menu-delete-object.png, and this is a second appearance of that capture rather than a second capture.",
       "captured": {
-        "commit": "1a014d850",
+        "commit": "b52336da0",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "8a95263551500ec466a88531ae4eda0671820e4d8462085ddcb7234f96ba0798",
-        "last_rendered": "1a014d850"
+        "dirty": false,
+        "sha256": "22459e24e30d14022dca5945bfa31f6a2ced15c858336ef1a82e663d9a9c6cf1",
+        "last_rendered": "b52336da0"
       }
     },
     {
@@ -1960,11 +1960,11 @@
       ],
       "notes": "Rendered by the screenshot generator (CaptureMoreMenu): the More menu, its checkable view rows above the Export Configuration... / Import Configuration... pair (titled '...to Excel' until ADR 0014 phase 5, 2026-09-26). Capturing it needed ExportConfigurationModule installed in the generator's module set -- the rows are contributed by that module and are admin_only, so without it the menu rendered without them. NOT the same menu the docs original shows: that image predates the rename, and this menu is titled «Дополнительно», not «Далее». In current_generator_owned_subset since 2026-09-27, by the user's decision: the manual's 2024 hand capture showed the pre-rename «Далее» menu and '...в Excel' rows, while dev/excel.md already named `Дополнительно` and the current Export/Import rows, so this render is what the page describes. The menu-bar title is not in the image; the page names it.",
       "captured": {
-        "commit": "0b2af3336",
+        "commit": "b52336da0",
         "platform": "macos",
         "dirty": false,
-        "sha256": "0c6f1d078ace71893d7adfaff3920e66d1c7bb74bda1de15c1b4e791df215289",
-        "last_rendered": "0b2af3336"
+        "sha256": "a1cc65e2524181bcf30f1bfd079b59ad375bf03fe011d59c3100fe9372661339",
+        "last_rendered": "b52336da0"
       }
     },
     {
@@ -1975,11 +1975,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of menu-excel.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to menu-excel.png, and this is a second appearance of that capture rather than a second capture.",
       "captured": {
-        "commit": "0b2af3336",
+        "commit": "b52336da0",
         "platform": "macos",
         "dirty": false,
-        "sha256": "fc37514c67a47d4ce976cdd54b9fa8fd8177e79cf73a585a8f5467adee12d892",
-        "last_rendered": "0b2af3336"
+        "sha256": "6c27a78ae29fa1f8f3c1324388f8349fd81f370350a7716a78082310d98c30c1",
+        "last_rendered": "b52336da0"
       }
     },
     {
@@ -2071,11 +2071,11 @@
       ],
       "notes": "Rendered by the screenshot generator (CaptureObjectMenuProperties): the object tree's context menu on a data item, «Свойства» highlighted, with «Квитирование», «Управление...» and «Разблокировать» greyed out. Driving a real right-click is what makes those greyed rows real -- the event reaches the tree's viewport, the view's own handler calls ShowPopupMenu, and BuildMenu's MenuWillShow() resolves each row against the live selection; see MainWindow::SetPopupMenuInterceptor. Capturing it also needed five more modules in the generator's module set (Graph, Table, TimedData, NodeProperty, SelectionEdit) -- without them the menu rendered with eight of its seventeen rows and looked perfectly plausible. TWO differences from the docs original, and neither is a defect: it says «Свойства», not «Параметры» (the command was renamed, and dev/data-items.md's prose already says «Свойства»), and it is the popup alone rather than the popup over the object tree, which is what this pipeline produces (cf. menu-excel.png). The filename keeps the old word on purpose: pairs_reviewed in the parity matrix records capture filenames, so renaming one invalidates every review that named it. Not yet in current_generator_owned_subset -- replacing the manual's hand capture is a docs decision, though here it would make the page self-consistent.",
       "captured": {
-        "commit": "1a014d850",
+        "commit": "b52336da0",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "2c1659590ed289d837d481bb94727dc4707197569238149473eb9ccc75690131",
-        "last_rendered": "1a014d850"
+        "dirty": false,
+        "sha256": "433e374cdf40df59669d288f65ac7d26d2db0deb2b786f8b95bdbd056f4608e7",
+        "last_rendered": "b52336da0"
       }
     },
     {
@@ -2086,11 +2086,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of menu-parameters.png, produced by the same capture under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see. Deliberately carries no `parity_key` — the capability's coverage claim belongs to menu-parameters.png, and this is a second appearance of that capture rather than a second capture.",
       "captured": {
-        "commit": "1a014d850",
+        "commit": "b52336da0",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "a9c1c27f8c3465772dcc3e8b329bceec986b6fa703828a2b706e07cd062134b5",
-        "last_rendered": "1a014d850"
+        "dirty": false,
+        "sha256": "b4500d53e23d15de7b70f2fa0e654a5c5571693881e4cbd07dc3f884a7a72852",
+        "last_rendered": "b52336da0"
       }
     },
     {
