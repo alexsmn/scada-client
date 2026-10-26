@@ -25,6 +25,7 @@ PrintModule::PrintModule(PrintModuleContext&& context)
             .print_service_ = *context.print_service_,
             .dialog_service_ = context.dialog_service_,
             .export_model_getter_ = context.export_model_getter_,
+            .image_export_model_getter_ = context.image_export_model_getter_,
             .print_view_handler_ = context.print_view_handler_});
       });
 }

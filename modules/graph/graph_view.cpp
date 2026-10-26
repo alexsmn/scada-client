@@ -6,6 +6,7 @@
 #include "base/check.h"
 #include "common/formula_util.h"
 #include "controller/controller_delegate.h"
+#include "aui/dialog_service.h"
 #include "controller/selection_model.h"
 #include "graph/graph_setup_dialog.h"
 #include "graph/graph_view_loader.h"
@@ -19,6 +20,8 @@
 
 #if defined(UI_QT)
 #include <QColorDialog>
+#include <QImage>
+#include <QPainter>
 #include <QScrollBar>
 #endif
 
@@ -134,6 +137,10 @@ std::unique_ptr<UiView> GraphView::Init(const WindowDefinition& definition) {
   command_registry_.AddCommand(
       Command{ID_GRAPH_SETUP}.set_execute_handler([this] { SetupLine(); }));
 
+  command_registry_.AddCommand(
+      Command{ID_EXPORT_IMAGE}.set_execute_handler(
+          [this] { CoSpawn(executor_, [this] { return SaveImageAs(); }); }));
+
   command_registry_.AddCommand(Command{ID_GRAPH_BK_COLOR}.set_execute_handler(
       [this] { ChooseGraphColor(); }));
 
@@ -169,6 +176,52 @@ std::unique_ptr<UiView> GraphView::Init(const WindowDefinition& definition) {
   // SeriesInspector of its own down the right edge until 2026-08-30, which put
   // two inspectors on screen naming the same series where trend.html draws one.
   return std::unique_ptr<UiView>{graph_};
+}
+
+// GraphView — ImageExportModel
+
+QSize GraphView::GetImageSize() const {
+  return graph_ ? graph_->size() : QSize{};
+}
+
+void GraphView::RenderImage(QPainter& painter) {
+  if (graph_)
+    graph_->render(&painter);
+}
+
+bool GraphView::SaveImage(const std::filesystem::path& path) {
+  const QSize size = GetImageSize();
+  if (size.isEmpty())
+    return false;
+  QImage image{size, QImage::Format_ARGB32_Premultiplied};
+  image.fill(Qt::transparent);
+  {
+    QPainter painter{&image};
+    RenderImage(painter);
+  }
+  return image.save(QString::fromStdU16String(path.u16string()), "PNG");
+}
+
+Awaitable<void> GraphView::SaveImageAs() {
+  static constexpr std::string_view kPngExtensions[] = {"png"};
+  // A file-name suffix, not words an operator reads.
+  static constexpr char kPngSuffix[] = ".png";
+  // Named locals: SaveParams holds views, which must not outlive temporaries.
+  const std::u16string title = Translate("Save as Image...");
+  const std::u16string filter_title = Translate("PNG image");
+  const DialogService::Filter filters[] = {
+      {.title = filter_title, .extensions = kPngExtensions}};
+  std::filesystem::path default_path{MakeTitle()};
+  default_path += kPngSuffix;
+  std::filesystem::path path = co_await dialog_service_.SelectSaveFile(
+      {.title = title, .default_path = default_path, .filters = filters});
+  if (path.empty())
+    co_return;
+  if (!SaveImage(path)) {
+    co_await dialog_service_.RunMessageBox(
+        Translate("The image could not be saved."), title,
+        MessageBoxMode::Error);
+  }
 }
 
 // GraphView — SeriesModel

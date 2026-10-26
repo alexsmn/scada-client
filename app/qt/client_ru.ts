@@ -1450,6 +1450,18 @@
         <source>Export to Excel</source>
         <translation>Экспорт в Excel</translation>
     </message>
+    <message>
+        <source>Save as Image...</source>
+        <translation>Сохранить как изображение...</translation>
+    </message>
+    <message>
+        <source>PNG image</source>
+        <translation>Изображение PNG</translation>
+    </message>
+    <message>
+        <source>The image could not be saved.</source>
+        <translation>Не удалось сохранить изображение.</translation>
+    </message>
     <!-- actions.cpp: specific actions -->
     <message>
         <source>Watch</source>

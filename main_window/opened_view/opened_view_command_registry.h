@@ -18,6 +18,7 @@ class Controller;
 class CreateTree;
 class DialogService;
 class ExportModel;
+class ImageExportModel;
 class LocalEvents;
 class NodeRef;
 class NodeService;
@@ -28,6 +29,7 @@ class TimeModel;
 
 using OpenedViewCreatedNodeHandler = std::function<Awaitable<void>(NodeRef)>;
 using OpenedViewExportModelGetter = std::function<ExportModel*()>;
+using OpenedViewImageExportModelGetter = std::function<ImageExportModel*()>;
 using OpenedViewPrintViewHandler = std::function<void(PrintService&)>;
 using OpenedViewTimeModelGetter = std::function<TimeModel*()>;
 using OpenedViewWindowTitleGetter = std::function<std::u16string()>;
@@ -44,6 +46,7 @@ struct OpenedViewCommandFactoryContext {
   Controller& controller_;
   PrintService* print_service_ = nullptr;
   OpenedViewExportModelGetter export_model_getter_;
+  OpenedViewImageExportModelGetter image_export_model_getter_;
   OpenedViewTimeModelGetter time_model_getter_;
   OpenedViewWindowTitleGetter window_title_getter_;
   OpenedViewPrintViewHandler print_view_handler_;

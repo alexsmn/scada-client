@@ -2,6 +2,7 @@
 
 #include "aui/color.h"
 #include "aui/types.h"
+#include "base/awaitable.h"
 #include "controller/command_registry.h"
 #include "controller/contents_model.h"
 #include "controller/controller.h"
@@ -9,7 +10,10 @@
 #include "controller/selection_model.h"
 #include "controller/series_model.h"
 #include "controller/time_model.h"
+#include "export/image_export_model.h"
 #include "graph/metrix_graph.h"
+
+#include <filesystem>
 
 namespace scada {
 struct RelativeTimeRange;
@@ -20,6 +24,7 @@ class GraphView : protected ControllerContext,
                   public ContentsModel,
                   public TimeModel,
                   public SeriesModel,
+                  public ImageExportModel,
                   private Graph::Controller {
  public:
   explicit GraphView(const ControllerContext& context);
@@ -39,6 +44,15 @@ class GraphView : protected ControllerContext,
   virtual ContentsModel* GetContentsModel() override { return this; }
   virtual TimeModel* GetTimeModel() override { return this; }
   virtual SeriesModel* GetSeriesModel() override { return this; }
+  virtual ImageExportModel* GetImageExportModel() override { return this; }
+
+  // ImageExportModel — the graph as it is drawn on screen, for printing and
+  // for "Save as Image" (backlog 874).
+  virtual QSize GetImageSize() const override;
+  virtual void RenderImage(QPainter& painter) override;
+
+  // Writes the graph to |path| as a PNG. Returns false when it cannot.
+  bool SaveImage(const std::filesystem::path& path);
 
   // SeriesModel — the configurable series' presentation, rendered by the shell
   // Inspector. `GetConfigurableLine()` is what "the" series means here: the
@@ -78,6 +92,9 @@ class GraphView : protected ControllerContext,
   void ChooseGraphColor();
 
   void UndoZoom();
+
+  // Asks for a file name and saves the graph there as a PNG.
+  Awaitable<void> SaveImageAs();
 
   // Delete all pane lines and remove items.
   void ClearPane(MetrixGraph::MetrixPane& pane);

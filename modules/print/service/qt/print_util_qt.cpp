@@ -2,8 +2,13 @@
 
 #include "aui/models/grid_model.h"
 #include "aui/models/table_model.h"
+#include "export/image_export_model.h"
 #include "print/service/print_service.h"
 
+#include <algorithm>
+
+#include <QFontMetrics>
+#include <QPainter>
 #include <QTextCursor>
 #include <QTextDocument>
 #include <QTextTable>
@@ -193,4 +198,65 @@ void Print(PrintService& print_service,
            const ExportModel::GridExportData& grid,
            const PrintHeader& header) {
   MakePrintDocument(grid, header)->print(&print_service.printer);
+}
+
+void PaintImagePage(QPainter& painter,
+                    const QRect& page,
+                    ImageExportModel& image,
+                    const PrintHeader& header) {
+  painter.save();
+
+  // The header, as a table printout opens: a bold title, then one line each.
+  int top = page.top();
+  if (!header.title.empty()) {
+    QFont title_font = painter.font();
+    title_font.setBold(true);
+    title_font.setPointSizeF(title_font.pointSizeF() * 1.4);
+    painter.setFont(title_font);
+    const int height = QFontMetrics{title_font, painter.device()}.lineSpacing();
+    painter.drawText(QRect{page.left(), top, page.width(), height},
+                     Qt::AlignLeft | Qt::AlignVCenter,
+                     QString::fromStdU16String(header.title));
+    top += height;
+  }
+  painter.setFont(QFont{});
+  const int line_height = QFontMetrics{QFont{}, painter.device()}.lineSpacing();
+  for (const std::u16string& line : header.lines) {
+    painter.drawText(QRect{page.left(), top, page.width(), line_height},
+                     Qt::AlignLeft | Qt::AlignVCenter,
+                     QString::fromStdU16String(line));
+    top += line_height;
+  }
+  top += line_height / 2;
+
+  // The picture, scaled to the space left and centred horizontally.
+  const QSize size = image.GetImageSize();
+  const QRect area{page.left(), top, page.width(), page.bottom() - top + 1};
+  if (!size.isEmpty() && area.width() > 0 && area.height() > 0) {
+    const qreal scale = std::min(qreal(area.width()) / size.width(),
+                                 qreal(area.height()) / size.height());
+    const qreal left = area.left() + (area.width() - size.width() * scale) / 2;
+    painter.translate(left, area.top());
+    painter.scale(scale, scale);
+    painter.setClipRect(QRect{QPoint{}, size});
+    image.RenderImage(painter);
+  }
+
+  painter.restore();
+}
+
+void Print(PrintService& print_service,
+           ImageExportModel& image,
+           const PrintHeader& header) {
+  QPrinter& printer = print_service.printer;
+  QPainter painter;
+  if (!painter.begin(&printer))
+    return;
+  // Without fullPage the painter's origin is already the printable area's
+  // top-left corner, so the page is that area's size at the origin.
+  const QRect page{QPoint{}, printer.pageLayout()
+                                 .paintRectPixels(printer.resolution())
+                                 .size()};
+  PaintImagePage(painter, page, image, header);
+  painter.end();
 }

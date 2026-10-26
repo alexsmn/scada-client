@@ -8,7 +8,11 @@ PrintCommand::PrintCommand(PrintCommandContext&& context)
     : PrintCommandContext{std::move(context)} {}
 
 CommandHandler* PrintCommand::GetCommandHandler(unsigned command_id) {
-  return command_id == ID_PRINT && export_model_getter_() ? this : nullptr;
+  if (command_id != ID_PRINT)
+    return nullptr;
+  bool printable = export_model_getter_() ||
+                   (image_export_model_getter_ && image_export_model_getter_());
+  return printable ? this : nullptr;
 }
 
 void PrintCommand::ExecuteCommand(unsigned command_id) {

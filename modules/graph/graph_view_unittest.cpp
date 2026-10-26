@@ -16,9 +16,14 @@
 #include "timed_data/timed_data_service_fake.h"
 
 #include "base/debug_util.h"
+#include "common/test/scoped_temp_dir.h"
+#include "controller/window_info.h"
+#include "graph/graph_component.h"
 #include "scada/co_result.h"
 
 #include <QImage>
+#include <QSet>
+#include <QWidget>
 
 using namespace testing;
 
@@ -89,6 +94,36 @@ TEST_F(GraphViewTest, Test) {
   time_model->SetTimeRange(scada::RelativeTimeRange::Type::Day);
   // EXPECT_THAT(time_model->GetTimeRange(),
   // Eq(scada::RelativeTimeRange::Type::Day));
+}
+
+// Backlog 874: the graph prints and saves as a picture. It used to have no
+// WIN_CAN_PRINT and no way out of the window at all.
+TEST_F(GraphViewTest, PrintsAndSavesAsAPicture) {
+  EXPECT_TRUE(kGraphWindowInfo.printable());
+  EXPECT_EQ(graph_view_.GetImageExportModel(),
+            static_cast<ImageExportModel*>(&graph_view_));
+  EXPECT_THAT(graph_view_.GetCommandHandler(ID_EXPORT_IMAGE), NotNull());
+}
+
+TEST_F(GraphViewTest, SaveImageWritesThePictureAtItsOnScreenSize) {
+  scada::ScopedTempDir temp_dir{"scada_graph_image_test"};
+  auto* widget = static_cast<QWidget*>(ui_view_.get());
+  widget->resize(320, 200);
+  ASSERT_EQ(graph_view_.GetImageSize(), QSize(320, 200));
+
+  const auto path = temp_dir.path() / "graph.png";
+  ASSERT_TRUE(graph_view_.SaveImage(path));
+
+  QImage saved;
+  ASSERT_TRUE(saved.load(QString::fromStdU16String(path.u16string())));
+  EXPECT_EQ(saved.size(), QSize(320, 200));
+
+  // Not a blank canvas: the axes and grid draw in more than one colour.
+  QSet<QRgb> colours;
+  for (int y = 0; y < saved.height(); y += 4)
+    for (int x = 0; x < saved.width(); x += 4)
+      colours.insert(saved.pixel(x, y));
+  EXPECT_GT(colours.size(), 1);
 }
 
 TEST_F(GraphViewTest, GraphSetupCommandRegistered) {

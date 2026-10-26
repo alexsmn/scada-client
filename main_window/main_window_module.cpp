@@ -604,6 +604,10 @@ std::unique_ptr<OpenedView> MainWindowModule::CreateOpenedView(
                   [opened_view_ptr] {
                     return opened_view_ptr->controller().GetExportModel();
                   },
+              .image_export_model_getter_ =
+                  [opened_view_ptr] {
+                    return opened_view_ptr->controller().GetImageExportModel();
+                  },
               .time_model_getter_ =
                   [opened_view_ptr] {
                     return opened_view_ptr->controller().GetTimeModel();

@@ -65,7 +65,9 @@ Awaitable<OpenedViewInterface*> OpenDisplayContainingNode(
 
 }  // namespace
 
-const WindowInfo kGraphWindowInfo = {ID_GRAPH_VIEW, "Graph", u"Graph", WIN_INS};
+// Printable since backlog 874: the graph prints as a picture, scaled to a page.
+const WindowInfo kGraphWindowInfo = {ID_GRAPH_VIEW, "Graph", u"Graph",
+                                     WIN_INS | WIN_CAN_PRINT};
 
 REGISTER_CONTROLLER(GraphView, kGraphWindowInfo);
 
@@ -120,6 +122,9 @@ void RegisterGraphCommandActions(UiCommandRegistry& ui_command_registry) {
                                        .title_ = Translate("Display"),
                                        .image_id_ = ID_MODUS_VIEW,
                                        .flags_ = Action::ALWAYS_VISIBLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_EXPORT_IMAGE,
+                                       .category_ = CATEGORY_EXPORT,
+                                       .title_ = Translate("Save as Image...")});
   ui_command_registry.AddAction(Action{.command_id_ = ID_VIEW_LEGEND,
                                        .category_ = CATEGORY_VIEW,
                                        .title_ = Translate("Legend"),

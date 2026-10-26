@@ -9,6 +9,7 @@
 class CommandHandler;
 class ContentsModel;
 class ExportModel;
+class ImageExportModel;
 class SelectionModel;
 class SeriesModel;
 class TimeModel;
@@ -42,6 +43,9 @@ class Controller {
   virtual SeriesModel* GetSeriesModel() { return nullptr; }
 
   virtual ExportModel* GetExportModel() { return nullptr; }
+
+  // A view whose contents are a picture to print or save as an image.
+  virtual ImageExportModel* GetImageExportModel() { return nullptr; }
 
   // View root node for creation.
   virtual NodeRef GetRootNode() const { return nullptr; }

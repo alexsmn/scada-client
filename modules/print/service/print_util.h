@@ -6,9 +6,12 @@
 #include <string>
 #include <vector>
 
+class ImageExportModel;
 class PrintService;
 
 #if defined(UI_QT)
+class QPainter;
+class QRect;
 class QTextDocument;
 #endif
 
@@ -28,7 +31,19 @@ void Print(PrintService& print_service,
            const ExportModel::GridExportData& grid,
            const PrintHeader& header = {});
 
+// Prints a picture view (the graph) on one page: the header, then the picture
+// scaled to fit the rest of the page with its aspect ratio kept (backlog 874).
+void Print(PrintService& print_service,
+           ImageExportModel& image,
+           const PrintHeader& header = {});
+
 #if defined(UI_QT)
+// Paints what Print() puts on a page of |page| size. Exposed for tests.
+void PaintImagePage(QPainter& painter,
+                    const QRect& page,
+                    ImageExportModel& image,
+                    const PrintHeader& header);
+
 // The documents Print() sends to the printer. Exposed for tests.
 std::unique_ptr<QTextDocument> MakePrintDocument(
     const ExportModel::TableExportData& table,
