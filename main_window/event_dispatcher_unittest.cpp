@@ -71,6 +71,17 @@ class EventDispatcherAlarmSoundTest : public Test {
       .event_debounce_ = {}}};
 };
 
+// A successful command leaves an info-level client message. Those are records,
+// not alarms: a run of them used to reach the flood rung and sound the tone
+// over empty tiles (backlog 888).
+TEST_F(EventDispatcherAlarmSoundTest, InfoMessagesNeverFloodTheLadder) {
+  for (int i = 0; i < 20; ++i)
+    local_events_.ReportEvent(LocalEvents::SEV_INFO, u"command sent");
+  Dispatch();
+
+  EXPECT_FALSE(dispatcher_.playing_alarm_sound());
+}
+
 TEST_F(EventDispatcherAlarmSoundTest, AnnunciatesWhenAnAlarmArrives) {
   EXPECT_CALL(alarm_sound_, Call(true));
 

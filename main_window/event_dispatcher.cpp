@@ -3,6 +3,7 @@
 #include "aui/translation.h"
 #include "base/any_executor_dispatch.h"
 #include "controller/action_manager.h"
+#include "events/alarm_set.h"
 #include "events/event_severity.h"
 #include "events/local_events.h"
 #include "events/node_event_provider.h"
@@ -79,20 +80,9 @@ events::AlarmEscalation EventDispatcher::CurrentEscalation() const {
   // Reduced through CountSeverityTiles rather than by counting here, so this
   // and the context bar's tiles cannot disagree about the same alarms — the
   // reason EscalationFor takes tile counts in the first place.
-  std::vector<events::AlarmSummary> alarms;
-  alarms.reserve(node_event_provider_.unacked_events().size() +
-                 local_events_.events().size());
-  auto account = [&alarms](const scada::Event& event) {
-    alarms.push_back(events::AlarmSummary{
-        .severity = events::SeverityLevelForEvent(event.severity),
-        .acknowledged = event.acked,
-    });
-  };
-  for (const auto& [event_id, event] : node_event_provider_.unacked_events())
-    account(event);
-  for (const scada::Event* event : local_events_.events())
-    account(*event);
-
+  // CollectAlarms is the set the tiles count too (backlog 888).
+  const std::vector<events::AlarmSummary> alarms =
+      events::CollectAlarms(node_event_provider_, local_events_);
   return events::EscalationFor(events::CountSeverityTiles(alarms));
 }
 

@@ -2,6 +2,7 @@
 
 #include "aui/translation.h"
 #include "base/u16format.h"
+#include "events/alarm_set.h"
 #include "events/local_events.h"
 #include "events/node_event_provider.h"
 #include "profile/profile.h"
@@ -37,18 +38,11 @@ events::SeverityTileCounts EventStatusProvider::GetTileCounts() const {
   // The client's event model retains only alarms nobody has acknowledged yet
   // (NodeEventProvider drops an event once it is acked) and carries no
   // condition-cleared state, so every alarm it knows about is active and
-  // unacknowledged. The aggregation still runs through CountSeverityTiles() so
-  // the tiles' semantics live in one tested place — when the client gains a
-  // cleared-but-unread state, only the mapping below changes.
-  std::vector<events::AlarmSummary> alarms;
-  alarms.reserve(node_event_provider_.unacked_events().size());
-  for (const scada::Event& event :
-       node_event_provider_.unacked_events() | std::views::values) {
-    alarms.push_back({.severity = events::SeverityLevelForEvent(event.severity),
-                      .acknowledged = false,
-                      .active = true});
-  }
-  return events::CountSeverityTiles(alarms);
+  // unacknowledged. The set is CollectAlarms', the same one the escalation
+  // ladder reads, so a tone never sounds over tiles that show nothing
+  // (backlog 888).
+  return events::CountSeverityTiles(
+      events::CollectAlarms(node_event_provider_, local_events_));
 }
 
 int EventStatusProvider::GetAlarmCount() const {

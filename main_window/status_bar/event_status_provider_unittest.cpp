@@ -67,6 +67,18 @@ TEST_F(EventStatusTileCountsTest, CountsBySeverityAndTotal) {
   EXPECT_EQ(provider_.GetAlarmCount(), 4);
 }
 
+// The tiles count the client's own warnings and errors — the set the
+// escalation ladder sounds on — and not its info-level notes (backlog 888).
+TEST_F(EventStatusTileCountsTest, CountsTheClientsOwnAlarmsButNotItsNotes) {
+  local_events_.ReportEvent(LocalEvents::SEV_ERROR, u"comms lost");
+  local_events_.ReportEvent(LocalEvents::SEV_WARNING, u"reconnect failed");
+  local_events_.ReportEvent(LocalEvents::SEV_INFO, u"command sent");
+
+  EXPECT_EQ(provider_.GetTileCounts(),
+            (events::SeverityTileCounts{
+                .critical = 1, .warning = 1, .unacknowledged = 2}));
+}
+
 // Acknowledging drops the event from the client's event model, so the tiles
 // fall back to calm — the acceptance line for backlog 2.3.
 TEST_F(EventStatusTileCountsTest, CountsFallAsAlarmsAreAcknowledged) {
