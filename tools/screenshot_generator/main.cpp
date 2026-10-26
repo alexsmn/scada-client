@@ -17,6 +17,7 @@
 #include "view_capture.h"
 
 #include "app/client_application.h"
+#include "main_window/alarm_state_cluster_qt.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
@@ -24,6 +25,7 @@
 #include "profile/window_definition.h"
 
 #include <QApplication>
+#include <QLabel>
 #include <gtest/gtest.h>
 
 #include <filesystem>
@@ -92,6 +94,25 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
   // Non-const: capturing a sidebar pane means selecting its activity-rail mode
   // first, the same way an operator would.
   MainWindow& main_window = const_cast<MainWindow&>(main_windows.front());
+
+  // The context bar's annunciator lights once the fixture's unacknowledged
+  // critical event reaches the client, and that arrival raced the sweep: an
+  // isolated `--only=favorites.png` grabbed before it and showed an unlit bar,
+  // while a full pass, slower to get there, showed the chip -- so
+  // favorites.png changed between two runs of one binary. Every capture that
+  // includes the window chrome had the same exposure. Wait for the state an
+  // operator sees after sign-in, as CaptureMoreMenu does for the Events pane.
+  ASSERT_TRUE(scada::screenshot_generator::WaitUntil([&] {
+    QWidget* window = dynamic_cast<QWidget*>(&main_window);
+    if (!window)
+      return false;
+    for (QWidget* child : window->findChildren<QWidget*>()) {
+      if (auto* cluster = dynamic_cast<AlarmStateCluster*>(child))
+        return cluster->annunciator()->isVisibleTo(cluster);
+    }
+    return false;
+  })) << "the annunciator never lit for the fixture's unacknowledged "
+         "critical event";
 
   int captured = 0;
   // Each non-standalone spec adds its own window to the fixture page (see

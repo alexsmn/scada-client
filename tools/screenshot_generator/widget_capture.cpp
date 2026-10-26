@@ -8,21 +8,60 @@
 
 #include <gtest/gtest.h>
 
+#include <QAbstractAnimation>
 #include <QApplication>
 #include <QDockWidget>
 #include <QElapsedTimer>
 #include <QImage>
 #include <QLayout>
 #include <QPixmap>
+#include <QPointer>
 #include <QSize>
 #include <QString>
 #include <QWidget>
 
 #include <chrono>
 
+namespace {
+
+// Jumps every running Qt animation under `widget` to its end state.
+//
+// Qt animates some of its own widgets with no setting to turn it off: a
+// QLineEdit's clear button fades in over a 160 ms QPropertyAnimation
+// (`QLineEditIconButton::startOpacityAnimation` in qtbase's
+// qlineedit_p.cpp), and the generator cannot sample a frozen clock inside it
+// the way BlinkPhaseAt does for our own blinking. That fade made limits.png
+// render with its four clear buttons in one full pass and without them in the
+// next, from one binary: the grab landed at whatever opacity the fade had
+// reached, and a fade stuck at 0 reads as three identical frames, i.e. as
+// settled. The end state is the one an operator sees, so take it.
+void FinishRunningAnimations(QWidget* widget) {
+  const QList<QPointer<QAbstractAnimation>> animations = [widget] {
+    QList<QPointer<QAbstractAnimation>> found;
+    for (QAbstractAnimation* animation :
+         widget->window()->findChildren<QAbstractAnimation*>()) {
+      if (animation->state() == QAbstractAnimation::Running)
+        found.append(animation);
+    }
+    return found;
+  }();
+  for (const QPointer<QAbstractAnimation>& animation : animations) {
+    // Finishing one can delete another (DeleteWhenStopped, or a group
+    // stopping its children), hence the guard.
+    if (animation && animation->state() == QAbstractAnimation::Running &&
+        animation->totalDuration() >= 0) {
+      animation->setCurrentTime(animation->totalDuration());
+    }
+  }
+}
+
+}  // namespace
+
 // Works only because nothing in a capture animates on its own: blink phase is
 // derived from the clock (see BlinkPhaseAt) and the generator freezes the
-// clock, so a widget that stops changing has genuinely finished.
+// clock, and Qt's own animations are jumped to their end before every frame
+// (FinishRunningAnimations), so a widget that stops changing has genuinely
+// finished.
 //
 // The loop itself is RunSettleLoop, which bounds the wait by frames compared
 // rather than by elapsed time — see the comment on kMaxFrames for why that
@@ -37,6 +76,7 @@ QPixmap GrabWhenSettled(QWidget* widget) {
   QPixmap pixmap;
   const sg::SettleResult result = sg::RunSettleLoop(
       [&] {
+        FinishRunningAnimations(widget);
         widget->repaint();
         pixmap = widget->grab();
         return pixmap.toImage();
