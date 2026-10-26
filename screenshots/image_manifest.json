@@ -1075,7 +1075,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "4f6f89a4824d9f6117bcf2008b90e9f85bb86a1bff01118093519b2eb2944c3b",
-        "last_rendered": "b043cb310"
+        "last_rendered": "99b39c599"
       }
     },
     {
@@ -1091,7 +1091,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "3a3e1cd10f1ec671a78ef0906fab227108674246fe19df1600a6d6e75d3a9b28",
-        "last_rendered": "b043cb310"
+        "last_rendered": "99b39c599"
       }
     },
     {
@@ -1890,7 +1890,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "6a3bd9e2a7e9aaba8beec65c767e5b74b144df446b18ce41c93eae85f4d7adc8",
-        "last_rendered": "b043cb310"
+        "last_rendered": "99b39c599"
       }
     },
     {
@@ -1905,7 +1905,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "8985732818337ad4128259d4c2302ec6b58d01631dc8218fde3d074464fbbb6b",
-        "last_rendered": "b043cb310"
+        "last_rendered": "99b39c599"
       }
     },
     {
@@ -1964,7 +1964,7 @@
         "platform": "macos",
         "dirty": false,
         "sha256": "a1cc65e2524181bcf30f1bfd079b59ad375bf03fe011d59c3100fe9372661339",
-        "last_rendered": "b043cb310"
+        "last_rendered": "99b39c599"
       }
     },
     {
@@ -1979,7 +1979,7 @@
         "platform": "macos",
         "dirty": false,
         "sha256": "6c27a78ae29fa1f8f3c1324388f8349fd81f370350a7716a78082310d98c30c1",
-        "last_rendered": "b043cb310"
+        "last_rendered": "99b39c599"
       }
     },
     {
@@ -2108,13 +2108,13 @@
       "referenced_from": [
         "client/summary.md"
       ],
-      "notes": "Rendered by the screenshot generator (CaptureSummaryFunctionMenu): the Item menu's Function submenu with the Summary view active, seven checkable aggregate rows. It was the command toolbar's Function dropdown until backlog 697 removed that toolbar on 2026-10-04; the submenu is the same commands and rendered byte-identical. Needed SummaryModule installed in the generator's module set (it registers the aggregate actions) plus an explicitly activated Summary view -- a window shown offscreen never becomes active, and every row resolves through the active view. «Последнее» reads as checked: the fixture's Summ window sets no AggregateType, so the model takes its default, which is the default client/summary.md states. Reviewed against that page on 2026-10-04 and moved into current_generator_owned_subset the same day.",
+      "notes": "Rendered by the screenshot generator (CaptureSummaryFunctionMenu): the Item menu's Function submenu with the Summary view active, eight checkable aggregate rows (seven until backlog 870 added Time Average and renamed Sum to Time Integral, 2026-10-26). It was the command toolbar's Function dropdown until backlog 697 removed that toolbar on 2026-10-04; the submenu is the same commands and rendered byte-identical. Needed SummaryModule installed in the generator's module set (it registers the aggregate actions) plus an explicitly activated Summary view -- a window shown offscreen never becomes active, and every row resolves through the active view. «Последнее» reads as checked: the fixture's Summ window sets no AggregateType, so the model takes its default, which is the default client/summary.md states. Reviewed against that page on 2026-10-04 and moved into current_generator_owned_subset the same day.",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "99b39c599",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "7716c413cec6b3e201523e613e66c5bae0e298a4d814176911b8e136b89a47f5",
-        "last_rendered": "b043cb310"
+        "dirty": false,
+        "sha256": "cdc445deaf451e46fd0d2ebd70f2c0f51195c9679d30657cc14fead9c7454566",
+        "last_rendered": "99b39c599"
       }
     },
     {
@@ -2125,11 +2125,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of menu-summary.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to menu-summary.png, and this is a second appearance of that capture rather than a second capture.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "99b39c599",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "f91a6da1568f7976bbe8389dcc8c6344e6cbf3974131d206c508680818572de6",
-        "last_rendered": "b043cb310"
+        "dirty": false,
+        "sha256": "419f90d6c24d38315f68c596addb5b94c1ac616a194b2402ccc308c082920efe",
+        "last_rendered": "99b39c599"
       }
     },
     {
