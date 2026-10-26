@@ -80,7 +80,15 @@ TEST(CopyNodesToClipboard, RunsOnTheCallersExecutorAndNotAPrivateThread) {
   FakeNodeService node_service;
 
   const scada::NodeId node_id{7, 1};
-  node_service.Add(scada::NodeState{.node_id = node_id});
+  // A type definition, as every real node has: the copy writes its id to the
+  // clipboard first, and a null id serializes to an empty payload, which
+  // Clipboard::SetData refuses with a panic. That write compiles to nothing
+  // off Windows, so only the Windows leg ever reached it.
+  node_service.Add(
+      scada::NodeState{.node_id = scada::data_items::id::DataGroupType});
+  node_service.Add(scada::NodeState{
+      .node_id = node_id,
+      .type_definition_id = scada::data_items::id::DataGroupType});
   // The fake registers nodes fully fetched, and FetchNode short-circuits on
   // one; unfetched, the copy actually reaches the service.
   node_service.SetFetchStatus(node_id, NodeFetchStatus::None);

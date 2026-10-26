@@ -6,6 +6,8 @@
 #include "aui/test/app_environment.h"
 
 #include <QApplication>
+#include <QFontMetrics>
+#include <QGuiApplication>
 #include <QHeaderView>
 
 #include <gtest/gtest.h>
@@ -72,15 +74,31 @@ class TableTest : public testing::Test {
   AppEnvironment app_env_;
 };
 
-// The value/timestamp columns render in the (wider) monospace font, so their
-// default widths widen with it — a timestamp that fits the configured width in
-// the UI font must not elide in monospace. Other columns keep their configured
-// width.
+// The value/timestamp columns render in the monospace font, so their default
+// widths widen with it when it is the wider face — a timestamp that fits the
+// configured width in the UI font must not elide in monospace. Other columns
+// keep their configured width.
+//
+// Whether the monospace face IS wider belongs to the host's fonts, not to
+// Table: it is on macOS and Linux, and it is not on the Windows CI runner
+// under the offscreen platform (scada-client run 40138625293, 170 vs 170).
+// So the expectation is measured the way the code measures it, rather than
+// assumed.
 TEST_F(TableTest, MonospaceColumnDefaultsWidenWithTheFont) {
+  const QString sample = QStringLiteral("00.00.0000 00:00:00.000");
+  const bool mono_is_wider =
+      QFontMetrics{MonoValueFont()}.horizontalAdvance(sample) >
+      QFontMetrics{QGuiApplication::font()}.horizontalAdvance(sample);
+
   Table table{std::make_shared<StubTableModel>(), MakeColumns()};
   EXPECT_EQ(table.columnWidth(kTitleColumn), kConfiguredWidth);
-  EXPECT_GT(table.columnWidth(kValueColumn), kConfiguredWidth);
-  EXPECT_GT(table.columnWidth(kTimeColumn), kConfiguredWidth);
+  if (mono_is_wider) {
+    EXPECT_GT(table.columnWidth(kValueColumn), kConfiguredWidth);
+    EXPECT_GT(table.columnWidth(kTimeColumn), kConfiguredWidth);
+  } else {
+    EXPECT_EQ(table.columnWidth(kValueColumn), kConfiguredWidth);
+    EXPECT_EQ(table.columnWidth(kTimeColumn), kConfiguredWidth);
+  }
 }
 
 // Item views paint their interior from the *Window* colour
