@@ -78,7 +78,11 @@ bool Convert(const scada::Variant& source,
 void ExportToCsv(ExportModel::TableExportData& table,
                  const CsvExportParams& params,
                  const std::filesystem::path& path) {
-  std::ofstream stream{path};
+  // Binary: CsvWriter ends rows with "\r\n" itself (RFC 4180), and a
+  // text-mode stream on Windows would turn its "\n" into a second "\r\n",
+  // so every exported row ended "\r\r\n" (CsvExportCommandTest, scada-client
+  // run 40138625293).
+  std::ofstream stream{path, std::ios::binary};
   CsvWriter writer{stream};
   writer.unicode = params.unicode;
   writer.delimiter = params.delimiter;
@@ -104,7 +108,11 @@ void ExportToCsv(ExportModel::TableExportData& table,
 void ExportToCsv(ExportModel::GridExportData& grid,
                  const CsvExportParams& params,
                  const std::filesystem::path& path) {
-  std::ofstream stream{path};
+  // Binary: CsvWriter ends rows with "\r\n" itself (RFC 4180), and a
+  // text-mode stream on Windows would turn its "\n" into a second "\r\n",
+  // so every exported row ended "\r\r\n" (CsvExportCommandTest, scada-client
+  // run 40138625293).
+  std::ofstream stream{path, std::ios::binary};
   CsvWriter writer{stream};
   writer.unicode = params.unicode;
   writer.delimiter = params.delimiter;
