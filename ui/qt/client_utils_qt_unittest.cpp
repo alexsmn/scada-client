@@ -22,8 +22,10 @@
 
 #include <array>
 #include <filesystem>
+#include <memory>
 #include <set>
 #include <string>
+#include <unordered_set>
 #include <utility>
 
 namespace {
@@ -404,6 +406,35 @@ TEST_F(BuildMenuRadioTest, RebuildingDoesNotAccumulateGroups) {
     ASSERT_EQ(menu.actions().size(), 2);
     EXPECT_EQ(GroupCount(menu), 1) << "after build " << i;
   }
+}
+
+// A submenu rebuilds itself when it opens, which is after BuildMenu has
+// returned, and the context menu passes a skip set that is a local of its
+// builder. The rebuild must use its own copy: it held the caller's pointer,
+// and opening a context menu's submenu then read a dead set (a crash on
+// Windows, in the screenshot generator's CaptureObjectMenuCreate).
+TEST_F(BuildMenuRadioTest, ASubmenuStillSkipsAfterTheCallersSetIsGone) {
+  delegate_.enabled = true;
+  ReasonMenuModel submenu_model{delegate_};
+  submenu_model.AddItem(1, u"Kept");
+  submenu_model.AddItem(2, u"Skipped");
+  ReasonMenuModel model{delegate_};
+  model.AddSubMenu(0, u"Create", &submenu_model);
+
+  QMenu menu;
+  {
+    auto skip =
+        std::make_unique<std::unordered_set<int>>(std::unordered_set<int>{2});
+    BuildMenu(menu, model, skip.get());
+  }
+
+  ASSERT_EQ(menu.actions().size(), 1);
+  QMenu* submenu = menu.actions().at(0)->menu();
+  ASSERT_NE(submenu, nullptr);
+  // What opening the submenu does.
+  emit submenu->aboutToShow();
+  ASSERT_EQ(submenu->actions().size(), 1);
+  EXPECT_EQ(submenu->actions().at(0)->text(), QStringLiteral("Kept"));
 }
 
 }  // namespace

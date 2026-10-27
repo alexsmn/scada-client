@@ -13,6 +13,7 @@
 
 #include <array>
 #include <map>
+#include <memory>
 #include <string_view>
 #include <utility>
 
@@ -145,11 +146,23 @@ void AppendMenuItems(QMenu& menu,
           auto* submenu =
               menu.addMenu(QString::fromStdU16String(model.GetLabelAt(i)));
           BuildMenu(*submenu, *submenu_model, skip_command_ids);
+          // The rebuild runs when the submenu opens, long after this call has
+          // returned, so it keeps its own copy of the skip set. It held the
+          // caller's pointer until 2026-10-26, and BuildDefaultPopupMenu
+          // passes a local: opening a context menu's submenu read a dead
+          // set, which crashed on Windows and was luck elsewhere (the
+          // screenshot generator's CaptureObjectMenuCreate, scada-client run
+          // 40419064057).
+          auto skip_copy =
+              skip_command_ids
+                  ? std::make_shared<const std::unordered_set<int>>(
+                        *skip_command_ids)
+                  : nullptr;
           QObject::connect(submenu, &QMenu::aboutToShow,
-                           [submenu, submenu_model, skip_command_ids] {
+                           [submenu, submenu_model, skip_copy] {
                              submenu->clear();
                              BuildMenu(*submenu, *submenu_model,
-                                       skip_command_ids);
+                                       skip_copy.get());
                            });
         }
         break;

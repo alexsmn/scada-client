@@ -14,7 +14,8 @@ class QMenu;
 // command/check/radio items whose command id is in the set are omitted (used to
 // suppress entries a caller-supplied menu already provides); the recursion
 // carries the same set into submenus. Passing null preserves the legacy
-// behavior for all other callers.
+// behavior for all other callers. The set is read during this call only: a
+// submenu, which rebuilds when it opens, keeps a copy, so it may be a local.
 void BuildMenu(QMenu& menu,
                scada::aui::MenuModel& model,
                const std::unordered_set<int>* skip_command_ids = nullptr);
