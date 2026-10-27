@@ -508,8 +508,8 @@ published export at `github.com/alexsmn/scada-client`. It triggers on push/PR to
 `main` and `release/**` — the old workflow triggered on `release/2.5`, which
 `export.py` does not publish, so it last ran in Feb 2026.
 
-**Two jobs since 2026-09-20: `analyze` (cppcheck), which gates, and `build`, a
-Windows/Ubuntu/macOS matrix, which does not gate yet.** For a year there was no
+**Two jobs, both gating: `analyze` (cppcheck), since 2026-09-20, and `build`, a
+Windows/Ubuntu/macOS matrix, since 2026-10-27.** For a year there was no
 build job, and the obstacle was never Qt: a standalone client build resolves its
 consumed products as sibling checkouts (ADR 0011), and `display`'s **source** is
 deliberately never published (superproject CLAUDE.md, "Repository boundaries are
@@ -533,14 +533,28 @@ Debug is the configuration that catches a `static const` member with no
 definition, and the tree still has nowhere to run one (superproject tasks.md
 476).
 
-**`continue-on-error: true` is on the build job on purpose, and is meant to be
-deleted.** vcpkg builds Qt, gRPC, Boost and the rest from source with nothing
-prebuilt; a `files` binary cache carried between runs by
-`actions/cache/restore` + `save` is what makes the *second* run cheap, since
-vcpkg writes each port to it as that port completes (not `x-gha`, which vcpkg
-has removed — the workflow's `env:` block has the detail). Expect two or three runs before the first green one. Remove the
-flag once a run has been green — a build job that is permanently allowed to fail
-is what `core`'s matrix was until 2026-09-27 (superproject tasks.md 316).
+**The build job gates, and must not get its `continue-on-error` back.** It
+carried the flag while it bootstrapped: vcpkg builds Qt, gRPC, Boost and the
+rest from source with nothing prebuilt, and a `files` binary cache carried
+between runs by `actions/cache/restore` + `save` is what makes later runs cheap,
+since vcpkg writes each port to it as that port completes (not `x-gha`, which
+vcpkg has removed — the workflow's `env:` block has the detail). The save key
+includes `github.run_attempt`, because a re-run keeps its run id and would
+otherwise be refused the save. The flag came off after the first run green on
+all three platforms (scada-client run 40439310927, 2026-10-27). A build job
+that is allowed to fail is what `core`'s matrix was until 2026-09-27
+(superproject tasks.md 316).
+
+**The Windows leg runs the Qt tests offscreen, and needs three things to.**
+`QT_PLUGIN_PATH` names vcpkg's plugin directory, because Windows' Qt is shared
+and the plugins are not deployed beside the tests. `QT_QPA_FONTDIR` names
+`C:\Windows\Fonts`, because offscreen Qt on Windows otherwise has no fonts at
+all. And `AppEnvironment` leaves a bare `offscreen` alone there: a
+`configfile=D:/...` path is cut at the drive letter. The workflow's comments
+carry the runs behind each. It also builds Release with debug information, so
+the screenshot generator's `crash_trace` prints a named stack on an access
+violation. That is how the two Windows-only use-after-frees in the generator's
+path were found.
 
 The `analyze` job runs the same cppcheck configuration the build runs — see
 `scada_configure_cppcheck()` in `build-support/ScadaProductBase.cmake` — against

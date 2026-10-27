@@ -142,19 +142,17 @@ jobs:
   # what makes the SECOND run cheap -- vcpkg writes each port to it as that
   # port completes, so even a job that dies at the 6-hour limit leaves the
   # cache further along than it found it, and a later run continues from there.
-  # Expect two or three runs before the first green one. That is also why this
-  # job does not gate anything yet: see `continue-on-error` below, and delete
-  # it once a run has been green.
+  # It took many runs before the first green one, on Windows above all.
+  #
+  # The job gates. It carried `continue-on-error: true` while it bootstrapped,
+  # because the first runs said more about the cache than about the code. The
+  # flag came off after the first run green on all three platforms
+  # (scada-client run 40439310927, 2026-10-27). Do not put it back to get past
+  # a failure: a build job that is allowed to fail is decoration, which is
+  # what core's matrix was until 2026-09-27 (superproject tasks.md 316).
   build:
     name: Build (${{ matrix.name }})
     runs-on: ${{ matrix.os }}
-    # Not a gate yet. The bootstrap above means the first runs say more about
-    # the cache than about the code, and a red X that everyone learns to ignore
-    # is worse than no check (core's matrix was exactly that until 2026-09-27,
-    # superproject tasks.md 316).
-    # REMOVE THIS the day a run is green, and treat the job as gating from then
-    # on. Leaving it is how a build job becomes decoration.
-    continue-on-error: true
 
     strategy:
       fail-fast: false
