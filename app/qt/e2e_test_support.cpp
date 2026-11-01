@@ -550,7 +550,7 @@ std::vector<OperatorUseCaseSmokeCheck> MakeOperatorUseCaseSmokeChecks() {
       {.id = "UC-18",
        .description = "manage users and passwords",
        .registered_window_types = {"Users"},
-       .registered_selection_commands = {ID_CHANGE_PASSWORD},
+       .registered_selection_commands = {ID_CHANGE_PASSWORD, ID_ACCOUNT_ROLES},
        .main_window_commands = {ID_USERS_VIEW}},
       {.id = "UC-19",
        .description = "configure transmission rules",

@@ -16,6 +16,7 @@
 #include "model/devices_node_ids.h"
 #include "model/namespaces.h"
 #include "model/node_id_util.h"
+#include "model/security_node_ids.h"
 #include "node_service/node_util.h"
 #include "node_service/test/create_test_node_service.h"
 #include "properties/channel_property_definition.h"
@@ -246,6 +247,39 @@ TEST_F(PropertyDefsTest, Enum) {
   ASSERT_TRUE(prop_def);
   EXPECT_EQ(u"Polling",
             prop_def->GetText(property_context, link, mode_prop_def.node_id()));
+}
+
+// «Права» (UserType.AccessRights) grants nothing since roles became the
+// authorization model, so the client must not offer it as an editable
+// property — an administrator entering 3 got an account that could only look
+// (backlog 937). Another Int32 declaration on the same type is still shown, so
+// the test pins the exclusion rather than the data type.
+TEST_F(PropertyDefsTest, AccessRightsIsNotOffered) {
+  for (const scada::NodeId& prop_decl_id :
+       {scada::NodeId{scada::security::id::UserType_AccessRights},
+        scada::NodeId{9999, scada::security::id::UserType.namespace_index()}}) {
+    node_factory.CreateNode(scada::NodeState{
+        .node_id = prop_decl_id,
+        .node_class = scada::NodeClass::Variable,
+        .type_definition_id = {scada::id::PropertyType,
+                               scada::NamespaceIndexes::NS0},
+        .parent_id = scada::devices::id::Iec60870DeviceType,
+        .reference_type_id = {scada::id::HasProperty,
+                              scada::NamespaceIndexes::NS0},
+        .attributes = scada::NodeAttributes{
+            .browse_name = "Int32Property",
+            .display_name = u"Int32Property",
+            .data_type = {scada::id::Int32, scada::NamespaceIndexes::NS0}}});
+  }
+  SyncNodeService();
+
+  PropertyService property_service;
+  EXPECT_EQ(property_service.GetPropertyDef(node_service->GetNode(
+                scada::security::id::UserType_AccessRights)),
+            nullptr);
+  EXPECT_NE(property_service.GetPropertyDef(node_service->GetNode(scada::NodeId{
+                9999, scada::security::id::UserType.namespace_index()})),
+            nullptr);
 }
 
 TEST_F(PropertyDefsTest, GetChildPropertyDefsAsync_ReturnsChildTypeProperties) {

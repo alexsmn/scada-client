@@ -80,6 +80,14 @@ constexpr StandaloneCapture kStandaloneCaptures[] = {
        SaveUsersGridScreenshot(c.spec, c.node_service,
                                c.authenticated_attribute_service, c.executor);
      }},
+    // The Roles dialog is checked from the same RoleSet read, so it needs the
+    // same identity; it is a dialog only the "Roles..." command opens.
+    {"account-roles",
+     +[](const StandaloneCaptureContext& c) {
+       SaveAccountRolesScreenshot(c.spec, c.node_service,
+                                  c.authenticated_attribute_service,
+                                  c.executor);
+     }},
     // The transmission-rule inspector is standalone reshell chrome (the right
     // region of transmission-rules.html), built from a fixture transmission
     // item.

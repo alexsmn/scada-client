@@ -933,6 +933,38 @@
       }
     },
     {
+      "file": "account-roles.png",
+      "tag": "auto-view",
+      "theme": "dark",
+      "published": false,
+      "parity_key": "account-roles",
+      "referenced_from": [],
+      "notes": "The Roles dialog an administrator opens with Roles... on an account in the Users view (backlog 937): one checkbox per Role the server lets an administrator edit, checked where the account holds it. Rendered for the fixture administrator «Администратор», who holds both of the fixture's Roles, so both rows are checked. CAPTURED STANDALONE (SaveAccountRolesScreenshot in user_access_capture.cpp) for the reason roles.png is: the checkboxes come from ReadRoleMemberships, which needs the administrator identity the generator's ordinary session lacks. Validation-only; the manual describes the dialog in dev/users.md without a figure.",
+      "captured": {
+        "commit": "3c39c334d",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "49ebc556ed3b552ed17aa8981e084c9d9278e335e8e6a7cb3eaadabfb08ee032",
+        "last_rendered": "3c39c334d"
+      }
+    },
+    {
+      "file": "account-roles-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "parity_key": "account-roles",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of account-roles.png, produced by the same capture spec under `--theme light`. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
+      "captured": {
+        "commit": "3c39c334d",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "db9f9102bf5f236db5bf17c7288ee73c38e48055a16bc7d4ecd65a5cc9998fe6",
+        "last_rendered": "3c39c334d"
+      }
+    },
+    {
       "file": "password-policy.png",
       "tag": "auto-view",
       "theme": "dark",
@@ -2928,7 +2960,7 @@
   "counts": {
     "auto-dialog": 51,
     "auto-menu": 21,
-    "auto-view": 100,
+    "auto-view": 102,
     "manual-diagram": 4,
     "manual-modus": 3,
     "manual-os": 2,

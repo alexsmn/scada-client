@@ -6,6 +6,8 @@
 #include "node_service/node_ref.h"
 #include "node_service/test/fake_node_service.h"
 #include "scada/authorization.h"
+#include "scada/identity_mapping_rule_encoding.h"
+#include "scada/method_service.h"
 #include "scada/node_id.h"
 #include "scada/standard_node_ids.h"
 #include "user_access/test/fake_role_permissions_service.h"
@@ -62,9 +64,8 @@ class RoleMembershipTest : public ::testing::Test {
   std::optional<std::vector<RoleMembership>> Read() {
     return RunAwaitable(
         io_, [this]() -> Awaitable<std::optional<std::vector<RoleMembership>>> {
-          co_return co_await ReadRoleMemberships(io_.get_executor(),
-                                                 node_service_,
-                                                 attribute_service_);
+          co_return co_await ReadRoleMemberships(
+              io_.get_executor(), node_service_, attribute_service_);
         });
   }
 
@@ -176,8 +177,8 @@ TEST_F(RoleMembershipTest, RolesCarryTheServerPublishedProcessGrant) {
   ASSERT_EQ(roles->size(), 1u);
   ASSERT_TRUE((*roles)[0].permissions.has_value());
   ASSERT_TRUE((*roles)[0].process_permissions.has_value());
-  EXPECT_TRUE(scada::Contains(*(*roles)[0].permissions,
-                              scada::Permission::kWrite));
+  EXPECT_TRUE(
+      scada::Contains(*(*roles)[0].permissions, scada::Permission::kWrite));
   EXPECT_FALSE(scada::Contains(*(*roles)[0].process_permissions,
                                scada::Permission::kWrite));
   EXPECT_FALSE(scada::Contains(*(*roles)[0].process_permissions,
@@ -191,9 +192,9 @@ TEST(RoleMembershipProcessMapUnreadable, FallsBackToTheDefaultGrant) {
   FakeNodeService node_service;
   FakeRolePermissionsService attribute_service{scada::DefaultRolePermissions()};
 
-  node_service.Add(scada::NodeState{
-      .node_id = scada::security::id::IdentityMappingRuleType,
-      .node_class = scada::NodeClass::ObjectType});
+  node_service.Add(
+      scada::NodeState{.node_id = scada::security::id::IdentityMappingRuleType,
+                       .node_class = scada::NodeClass::ObjectType});
   node_service.Add(scada::NodeState{.node_id = kRoleSet,
                                     .node_class = scada::NodeClass::Object});
   node_service.Add(scada::NodeState{
@@ -236,9 +237,8 @@ TEST(RoleMembershipMapUnreadable, UnreadableRoleMapIsUnknownNotAssumed) {
   FakeNodeService node_service;
   FakeRolePermissionsService attribute_service{std::nullopt};
 
-  node_service.Add(
-      scada::NodeState{.node_id = kRoleSet,
-                       .node_class = scada::NodeClass::Object});
+  node_service.Add(scada::NodeState{.node_id = kRoleSet,
+                                    .node_class = scada::NodeClass::Object});
   node_service.Add(scada::NodeState{
       .node_id = scada::WellKnownRoleId(scada::WellKnownRole::kOperator),
       .node_class = scada::NodeClass::Object,
@@ -282,6 +282,146 @@ TEST_F(RoleMembershipTest, InvertsMembershipByAccount) {
   // An account named by no rule is simply absent; the caller decides what that
   // means.
   EXPECT_FALSE(by_account.contains(u"audit"));
+}
+
+// A MethodService that records every call and answers each with the next
+// status from `results` (Good once they run out) — the role editor's whole
+// write path is these calls, so the test asserts on exactly what went out.
+class RecordingMethodService : public scada::MethodService {
+ public:
+  struct Request {
+    scada::NodeId node_id;
+    scada::NodeId method_id;
+    std::vector<scada::Variant> arguments;
+  };
+
+  scada::CoStatusOr<scada::CallResult> Call(
+      scada::NodeId node_id,
+      scada::NodeId method_id,
+      std::vector<scada::Variant> arguments,
+      scada::ServiceContext context) override {
+    calls.push_back({node_id, method_id, arguments});
+    scada::Status status = scada::StatusCode::Good;
+    if (!results.empty()) {
+      status = results.front();
+      results.erase(results.begin());
+    }
+    co_return scada::MakeCallResult(std::move(status));
+  }
+
+  std::vector<Request> calls;
+  std::vector<scada::Status> results;
+};
+
+// The editor computes the smallest set of changes: a Role the account already
+// holds, or already lacks, is left alone, so an unchanged dialog writes
+// nothing — and writes no audit record claiming a change.
+TEST(RoleMembershipChangesTest, GrantsAndRevokesOnlyWhatDiffers) {
+  const scada::NodeId op =
+      scada::WellKnownRoleId(scada::WellKnownRole::kOperator);
+  const scada::NodeId admin =
+      scada::WellKnownRoleId(scada::WellKnownRole::kConfigureAdmin);
+  const scada::NodeId engineer =
+      scada::WellKnownRoleId(scada::WellKnownRole::kEngineer);
+  const std::vector<RoleMembership> roles = {
+      {.node_id = op, .members = {u"ivanov"}},
+      {.node_id = admin, .members = {u"petrov"}},
+      {.node_id = engineer, .members = {u"ivanov"}}};
+
+  const std::vector<scada::NodeId> desired = {op, admin};
+  EXPECT_EQ(ComputeRoleMembershipChanges(roles, u"ivanov", desired),
+            (std::vector<RoleMembershipChange>{
+                {.role_id = admin, .grant = true},
+                {.role_id = engineer, .grant = false}}));
+
+  const std::vector<scada::NodeId> same = {op, engineer};
+  EXPECT_TRUE(ComputeRoleMembershipChanges(roles, u"ivanov", same).empty());
+}
+
+// Anonymous and AuthenticatedUser are granted by token class; the server
+// refuses AddIdentity on them (Part 18 §4.3), so the editor never asks.
+TEST(RoleMembershipChangesTest, NeverTouchesTheTokenClassRoles) {
+  const scada::NodeId anonymous =
+      scada::WellKnownRoleId(scada::WellKnownRole::kAnonymous);
+  const scada::NodeId authenticated =
+      scada::WellKnownRoleId(scada::WellKnownRole::kAuthenticatedUser);
+  EXPECT_FALSE(IsRoleMembershipEditable(anonymous));
+  EXPECT_FALSE(IsRoleMembershipEditable(authenticated));
+  EXPECT_TRUE(IsRoleMembershipEditable(
+      scada::WellKnownRoleId(scada::WellKnownRole::kObserver)));
+  EXPECT_TRUE(IsRoleMembershipEditable(scada::NodeId{5, 30}));
+
+  const std::vector<RoleMembership> roles = {
+      {.node_id = anonymous, .members = {}},
+      {.node_id = authenticated, .members = {u"ivanov"}}};
+  const std::vector<scada::NodeId> desired = {anonymous};
+  EXPECT_TRUE(ComputeRoleMembershipChanges(roles, u"ivanov", desired).empty());
+}
+
+// What goes on the wire: one AddIdentity/RemoveIdentity per change, on the
+// Role node, carrying a UserName rule naming the account — the shape the
+// server's RoleSet manager decodes and the read path reads back.
+TEST(RoleMembershipChangesTest, AppliesEachChangeAsAnIdentityCall) {
+  RecordingMethodService methods;
+  FakeNodeService node_service{scada::services{.method_service = &methods}};
+  const scada::NodeId op =
+      scada::WellKnownRoleId(scada::WellKnownRole::kOperator);
+  const scada::NodeId admin =
+      scada::WellKnownRoleId(scada::WellKnownRole::kConfigureAdmin);
+  node_service.Add(
+      scada::NodeState{.node_id = op, .node_class = scada::NodeClass::Object});
+  node_service.Add(scada::NodeState{.node_id = admin,
+                                    .node_class = scada::NodeClass::Object});
+
+  boost::asio::io_context io;
+  std::optional<scada::Status> status;
+  RunAwaitable(io, [&]() -> Awaitable<void> {
+    status.emplace(co_await ApplyRoleMembershipChanges(
+        node_service, u"Клиент 1",
+        {{.role_id = op, .grant = true}, {.role_id = admin, .grant = false}}));
+  });
+
+  ASSERT_TRUE(status.has_value());
+  EXPECT_TRUE(*status);
+  ASSERT_EQ(methods.calls.size(), 2u);
+  EXPECT_EQ(methods.calls[0].node_id, op);
+  EXPECT_EQ(methods.calls[0].method_id,
+            scada::NodeId{scada::security::id::RoleType_AddIdentity});
+  EXPECT_EQ(methods.calls[1].node_id, admin);
+  EXPECT_EQ(methods.calls[1].method_id,
+            scada::NodeId{scada::security::id::RoleType_RemoveIdentity});
+  for (const auto& call : methods.calls) {
+    ASSERT_EQ(call.arguments.size(), 1u);
+    const auto rule = scada::DecodeIdentityMappingRule(
+        call.arguments[0].get_or(scada::ExtensionObject{}));
+    ASSERT_TRUE(rule.has_value());
+    EXPECT_EQ(rule->criteria_type, scada::IdentityCriteriaType::kUserName);
+    EXPECT_EQ(rule->criteria, "Клиент 1");
+  }
+}
+
+// A refused change stops the run and is reported: the operator must learn
+// that the account does not hold what the dialog showed.
+TEST(RoleMembershipChangesTest, StopsAtTheFirstRefusal) {
+  RecordingMethodService methods;
+  methods.results = {scada::StatusCode::Bad_UserAccessDenied};
+  FakeNodeService node_service{scada::services{.method_service = &methods}};
+  const scada::NodeId op =
+      scada::WellKnownRoleId(scada::WellKnownRole::kOperator);
+  node_service.Add(
+      scada::NodeState{.node_id = op, .node_class = scada::NodeClass::Object});
+
+  boost::asio::io_context io;
+  std::optional<scada::Status> status;
+  RunAwaitable(io, [&]() -> Awaitable<void> {
+    status.emplace(co_await ApplyRoleMembershipChanges(
+        node_service, u"ivanov",
+        {{.role_id = op, .grant = true}, {.role_id = op, .grant = false}}));
+  });
+
+  ASSERT_TRUE(status.has_value());
+  EXPECT_EQ(status->code(), scada::StatusCode::Bad_UserAccessDenied);
+  EXPECT_EQ(methods.calls.size(), 1u);
 }
 
 }  // namespace

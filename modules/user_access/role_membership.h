@@ -4,10 +4,13 @@
 #include "base/awaitable.h"
 #include "scada/authorization.h"
 #include "scada/node_id.h"
+#include "scada/status.h"
 
 #include <map>
 #include <optional>
+#include <span>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace scada {
@@ -124,3 +127,44 @@ struct AccountRole {
 // the caller decides whether that means "holds nothing" or "unknown".
 std::map<std::u16string, std::vector<AccountRole>> RolesByAccount(
     const std::vector<RoleMembership>& roles);
+
+// One change the role editor makes to an account's membership: grant
+// (AddIdentity) or revoke (RemoveIdentity) one Role.
+struct RoleMembershipChange {
+  scada::NodeId role_id;
+  bool grant = false;
+
+  bool operator==(const RoleMembershipChange&) const = default;
+};
+
+// Whether an administrator can change who holds `role_id` by naming accounts.
+// True for every Role but Anonymous and AuthenticatedUser: the server grants
+// those two by token class, never by name, and refuses AddIdentity on them
+// (OPC UA Part 18 §4.3,
+// https://reference.opcfoundation.org/Core/Part18/v105/docs/4.3).
+bool IsRoleMembershipEditable(const scada::NodeId& role_id);
+
+// The changes that leave `account` holding exactly `desired` among the
+// editable Roles in `roles`, in `roles` order. A Role that is not editable is
+// never touched, whatever `desired` says about it, and a Role the account
+// already holds (or already lacks) produces no change — so an unchanged
+// selection issues no call and writes no audit record.
+std::vector<RoleMembershipChange> ComputeRoleMembershipChanges(
+    std::span<const RoleMembership> roles,
+    std::u16string_view account,
+    std::span<const scada::NodeId> desired);
+
+// Applies `changes` for `account`: AddIdentity or RemoveIdentity, with a
+// UserName identity mapping rule naming the account, on each Role node (OPC UA
+// Part 18 §4.4.5/§4.4.6,
+// https://reference.opcfoundation.org/Core/Part18/v105/docs/4.4.5). The server
+// audits every call, refused or not.
+//
+// Stops at the first failure and returns it; changes before it stay applied,
+// because membership changes are independent and the server has no
+// transaction spanning several of them. Returns Good when every change
+// applied, including when there were none.
+Awaitable<scada::Status> ApplyRoleMembershipChanges(
+    NodeService& node_service,
+    std::u16string account,
+    std::vector<RoleMembershipChange> changes);

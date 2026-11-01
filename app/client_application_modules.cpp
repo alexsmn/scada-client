@@ -13,6 +13,7 @@
 #if defined(UI_QT)
 #include "modules/graph/graph_component.h"
 #endif
+#include "modules/account_roles/account_roles_module.h"
 #include "modules/change_password/change_password_module.h"
 #include "modules/node_properties/node_property_component.h"
 #include "modules/node_service_progress_tracker/node_service_progress_tracker.h"
@@ -45,10 +46,9 @@ void RegisterClientApplicationModules(ClientApplicationModules modules) {
 ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
     ClientApplicationModules modules) {
   return [modules](ClientApplicationModuleContext& context) {
-    RegisterAboutCommands(context.global_commands_,
-                          context.ui_command_registry_,
-                          *context.scada_services_.session_service,
-                          context.node_service_);
+    RegisterAboutCommands(
+        context.global_commands_, context.ui_command_registry_,
+        *context.scada_services_.session_service, context.node_service_);
 #if defined(_WIN32)
     RegisterWebCommands(context.executor_, context.global_commands_,
                         context.ui_command_registry_);
@@ -125,6 +125,16 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
             .profile_ = context.profile_,
             .session_service_ = *context.scada_services_.session_service,
             .node_service_ = context.node_service_,
+            .selection_commands_ = context.selection_commands_,
+            .ui_command_registry_ = context.ui_command_registry_}));
+    context.singletons_.emplace(
+        std::make_shared<AccountRolesModule>(AccountRolesModuleContext{
+            .executor_ = context.executor_,
+            .local_events_ = context.local_events_,
+            .profile_ = context.profile_,
+            .session_service_ = *context.scada_services_.session_service,
+            .node_service_ = context.node_service_,
+            .attribute_service_ = *context.scada_services_.attribute_service,
             .selection_commands_ = context.selection_commands_,
             .ui_command_registry_ = context.ui_command_registry_}));
     context.singletons_.emplace(

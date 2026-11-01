@@ -48,3 +48,14 @@ void SaveUsersGridScreenshot(const ScreenshotSpec& spec,
                              NodeService& node_service,
                              scada::AttributeService& attribute_service,
                              AnyExecutor executor);
+
+// Renders the Roles dialog (Roles... on an account) for the fixture
+// administrator, with its checkboxes drawn from the real RoleSet read, and
+// saves it under `OutputPathFor(spec.filename)`.
+//
+// Standalone for the same reason as SaveRolesScreenshot: the dialog is built
+// from ReadRoleMemberships, which needs the administrator identity.
+void SaveAccountRolesScreenshot(const ScreenshotSpec& spec,
+                                NodeService& node_service,
+                                scada::AttributeService& attribute_service,
+                                AnyExecutor executor);

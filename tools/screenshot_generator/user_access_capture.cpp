@@ -5,6 +5,8 @@
 #include "screenshot_wait.h"
 #include "widget_capture.h"
 
+#include "account_roles/account_roles_dialog.h"
+#include "account_roles/qt/account_roles_dialog_qt.h"
 #include "model/node_id_util.h"
 #include "node_service/node_ref.h"
 #include "node_service/node_service.h"
@@ -79,4 +81,29 @@ void SaveRolesScreenshot(const ScreenshotSpec& spec,
       ReadRoleMemberships(executor, node_service, attribute_service)));
 
   SaveScreenshot(panel.get(), spec);
+}
+
+void SaveAccountRolesScreenshot(const ScreenshotSpec& spec,
+                                NodeService& node_service,
+                                scada::AttributeService& attribute_service,
+                                AnyExecutor executor) {
+  CapturePublishGuard publish_guard{spec.filename};
+
+  // The fixture administrator, as in the users-rbac capture: it holds Operator
+  // and ConfigureAdmin, so the dialog shows both a checked and an unchecked
+  // state.
+  const std::u16string account = u"Администратор";
+  const auto roles = scada::screenshot_generator::WaitForAwaitable(
+      executor, ReadRoleMemberships(executor, node_service, attribute_service));
+  if (!roles) {
+    ADD_FAILURE() << spec.filename << ": the RoleSet could not be read";
+    return;
+  }
+
+  AccountRolesDialog dialog{account, MakeAccountRoleChoices(*roles, account)};
+
+  if (!publish_guard.ShouldPublish())
+    return;
+
+  SaveScreenshot(&dialog, spec);
 }

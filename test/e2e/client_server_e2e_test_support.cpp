@@ -579,23 +579,24 @@ void ClientServerE2eTest::StartCluster() {
   filesystem_tier_ = cluster_->Tier(ClusterTier::kFilesystem);
 
   // --- Proxy (client-facing) -------------------------------------------------
-  // Keeps workspace_'s local config DB to authenticate the client's login, with
-  // its data-item rows stripped so the aggregated edge namespace stays
-  // authoritative for live values.
+  // Reads its configuration from the config tier (ConfigureProxyRole), so the
+  // login is checked against the one copy every change lands in. workspace_
+  // still gets the fixture DB from PrepareServerFilesystem; nothing reads it.
   ExecuteConfigurationSql(MakeServerContextForExe(GetProxyExePath()),
                           workspace_.path(),
                           std::string{kStripDataItemRowsSql});
   boost::json::array aggregation_servers = cluster_->AggregationServers();
   WriteServerJson(
       workspace_.path(), remote_port_, opcua_port_, "scada-e2e-proxy",
-      [&aggregation_servers](boost::json::object& server_json) {
-        ConfigureProxyRole(server_json,
-                           ProxyRoleOptions{
-                               .aggregation_servers = &aggregation_servers,
-                               // WriteServerJson already applied the suite's
-                               // telemetry settings for this service name.
-                               .otlp_endpoint = {},
-                           });
+      [this, &aggregation_servers](boost::json::object& server_json) {
+        ConfigureProxyRole(
+            server_json, ProxyRoleOptions{
+                             .aggregation_servers = &aggregation_servers,
+                             .configuration_endpoint = config_tier_->OpcUaUrl(),
+                             // WriteServerJson already applied the suite's
+                             // telemetry settings for this service name.
+                             .otlp_endpoint = {},
+                         });
       });
   LaunchProcess(GetProxyExePath(),
                 {"--param=" + (workspace_.path() / "server.json").string()},

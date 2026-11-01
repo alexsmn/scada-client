@@ -10,8 +10,10 @@
 #include "scada/attribute_service.h"
 #include "scada/authorization.h"
 #include "scada/basic_types.h"
+#include "scada/identity_mapping_rule_encoding.h"
 #include "scada/role_permission_encoding.h"
 #include "scada/standard_node_ids.h"
+#include "scada/status.h"
 #include "scada/variant.h"
 
 #include <algorithm>
@@ -199,4 +201,52 @@ std::map<std::u16string, std::vector<AccountRole>> RolesByAccount(
     }
   }
   return by_account;
+}
+
+bool IsRoleMembershipEditable(const scada::NodeId& role_id) {
+  return role_id != scada::WellKnownRoleId(scada::WellKnownRole::kAnonymous) &&
+         role_id !=
+             scada::WellKnownRoleId(scada::WellKnownRole::kAuthenticatedUser);
+}
+
+std::vector<RoleMembershipChange> ComputeRoleMembershipChanges(
+    std::span<const RoleMembership> roles,
+    std::u16string_view account,
+    std::span<const scada::NodeId> desired) {
+  std::vector<RoleMembershipChange> changes;
+  for (const RoleMembership& role : roles) {
+    if (!IsRoleMembershipEditable(role.node_id)) {
+      continue;
+    }
+    const bool held =
+        std::ranges::find(role.members, account) != role.members.end();
+    const bool wanted =
+        std::ranges::find(desired, role.node_id) != desired.end();
+    if (held != wanted) {
+      changes.push_back({.role_id = role.node_id, .grant = wanted});
+    }
+  }
+  return changes;
+}
+
+Awaitable<scada::Status> ApplyRoleMembershipChanges(
+    NodeService& node_service,
+    std::u16string account,
+    std::vector<RoleMembershipChange> changes) {
+  // The rule names the account; it is the same UserName criteria the read
+  // path above recognises, so what is written here reads back as membership.
+  const scada::Variant rule{scada::MakeIdentityMappingRuleObject(
+      {.criteria_type = scada::IdentityCriteriaType::kUserName,
+       .criteria = UtfConvert<char>(account)})};
+  for (const RoleMembershipChange& change : changes) {
+    NodeRef role = node_service.GetNode(change.role_id);
+    const scada::Status status = co_await role.scada_node().call(
+        change.grant ? scada::security::id::RoleType_AddIdentity
+                     : scada::security::id::RoleType_RemoveIdentity,
+        rule);
+    if (!status) {
+      co_return status;
+    }
+  }
+  co_return scada::StatusCode::Good;
 }

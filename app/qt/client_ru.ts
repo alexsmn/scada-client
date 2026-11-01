@@ -1526,6 +1526,19 @@
         <source>Password</source>
         <translation>Пароль</translation>
     </message>
+    <!-- Roles... on an account: grant and revoke its Roles (backlog 937). -->
+    <message>
+        <source>Roles...</source>
+        <translation>Роли...</translation>
+    </message>
+    <message>
+        <source>Roles of user %1. Rights at sign-in come from these roles only.</source>
+        <translation>Роли пользователя %1. Права при входе определяются только ролями.</translation>
+    </message>
+    <message>
+        <source>The change takes effect at the next sign-in.</source>
+        <translation>Изменение вступит в силу при следующем входе.</translation>
+    </message>
     <message>
         <source>Enable</source>
         <translation>Включить</translation>
@@ -2225,6 +2238,10 @@
     <message>
         <source>Changing password for user {}</source>
         <translation>Смена пароля пользователя {}</translation>
+    </message>
+    <message>
+        <source>Changing roles of user {}</source>
+        <translation>Изменение ролей пользователя {}</translation>
     </message>
     <!-- The Server refuses a change to root's password when the server
          computer configures it (Bad_NotWritable); the Client says where it is

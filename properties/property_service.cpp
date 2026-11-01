@@ -7,6 +7,7 @@
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/scada_node_ids.h"
+#include "model/security_node_ids.h"
 #include "node_service/node_awaitable.h"
 #include "node_service/node_util.h"
 #include "properties/channel_property_definition.h"
@@ -168,6 +169,16 @@ scada::CoStatus PropertyService::GetAllSubtypesPropertiesStatusAsync(
 
 const PropertyDefinition* PropertyService::GetPropertyDef(
     const NodeRef& prop_decl) {
+  // «Права» (UserType.AccessRights) grants nothing: since the role cutover a
+  // session's rights come only from the Roles its account holds, and the
+  // column survives only as the input of the one-shot 2.5 migration. Showing
+  // it — editable — told an administrator that entering 3 made an
+  // administrator, when the account could then only look. Roles are granted
+  // with Roles... instead (backlog 937). A null definition is what keeps a
+  // property out of every grid and the Properties window.
+  if (prop_decl.node_id() == scada::security::id::UserType_AccessRights)
+    return nullptr;
+
   if (auto i = kPropertyDefinitionMap.find(prop_decl.node_id());
       i != kPropertyDefinitionMap.end()) {
     return i->second;

@@ -14,6 +14,8 @@
 #include "scada/event.h"
 #include "scada/event_filter.h"
 #include "scada/history_service.h"
+#include "scada/identity_mapping_rule_encoding.h"
+#include "scada/method_service.h"
 #include "scada/node_management_service.h"
 #include "scada/read_value_id.h"
 #include "scada/session_service.h"
@@ -279,16 +281,18 @@ class ProxyOpcUaSession {
     }
   }
 
-  // Signs in as `user`, whose fixture password is empty; the default is the
-  // administrator the rest of the suite uses.
-  scada::Status Connect(int opcua_port, std::u16string user = u"root") {
-    auto status = Run([this, opcua_port, &user] {
+  // Signs in as `user` with `password` — empty for the fixture accounts; the
+  // default is the administrator the rest of the suite uses.
+  scada::Status Connect(int opcua_port,
+                        std::u16string user = u"root",
+                        std::u16string password = {}) {
+    auto status = Run([this, opcua_port, &user, &password] {
       return services_.session_service_->ConnectStatus(
           scada::SessionConnectParams{
               .connection_string =
                   "opc.tcp://127.0.0.1:" + std::to_string(opcua_port),
               .user_name = user,
-              .password = {}});
+              .password = password});
     });
     connected_ = static_cast<bool>(status);
     return status;
@@ -355,6 +359,36 @@ class ProxyOpcUaSession {
           *services_.attribute_service_, scada::ServiceContext{},
           scada::ReadValueId{.node_id = node_id, .attribute_id = attribute_id});
     });
+  }
+
+  // Calls `method_id` on `object_id` — the Call service the Qt client's
+  // commands use (Set Password..., Roles...).
+  scada::Status Call(const scada::NodeId& object_id,
+                     const scada::NodeId& method_id,
+                     std::vector<scada::Variant> arguments) {
+    auto result = Run([this, &object_id, &method_id, &arguments] {
+      return services_.method_service_->Call(
+          object_id, method_id, std::move(arguments), scada::ServiceContext{});
+    });
+    return result.ok() ? scada::Status{scada::StatusCode::Good}
+                       : result.status();
+  }
+
+  // Renames `node_id` the way the Qt client does: a Write of its DisplayName
+  // (TaskManagerImpl::PostUpdateTask).
+  scada::Status WriteDisplayName(const scada::NodeId& node_id,
+                                 std::u16string name) {
+    auto result = Run([this, &node_id, &name] {
+      return services_.attribute_service_->Write(
+          scada::ServiceContext{},
+          {scada::WriteValue{.node_id = node_id,
+                             .attribute_id = scada::AttributeId::DisplayName,
+                             .value = scada::LocalizedText{name}}});
+    });
+    if (!result.ok())
+      return result.status();
+    return result->empty() ? scada::Status{scada::StatusCode::Bad}
+                           : scada::Status{result->front()};
   }
 
   // The Qt client's configuration transfer (ADR 0014), over this session's
@@ -426,10 +460,12 @@ class ProxyRemoteSession {
       Run([this] { return services_.session_service_->Disconnect(); });
   }
 
-  // Signs in as `user`, whose fixture password is empty; the default is the
-  // administrator the rest of the suite uses.
-  scada::Status Connect(int remote_port, std::u16string user = u"root") {
-    auto status = Run([this, remote_port, &user] {
+  // Signs in as `user` with `password` — empty for the fixture accounts; the
+  // default is the administrator the rest of the suite uses.
+  scada::Status Connect(int remote_port,
+                        std::u16string user = u"root",
+                        std::u16string password = {}) {
+    auto status = Run([this, remote_port, &user, &password] {
       return services_.session_service_->ConnectStatus(
           scada::SessionConnectParams{
               // A native connection string is a transport::TransportString,
@@ -440,7 +476,7 @@ class ProxyRemoteSession {
               .connection_string = "TCP;Active;Host=127.0.0.1;Port=" +
                                    std::to_string(remote_port),
               .user_name = user,
-              .password = {}});
+              .password = password});
     });
     connected_ = static_cast<bool>(status);
     return status;
@@ -472,6 +508,49 @@ class ProxyRemoteSession {
           *services_.attribute_service_, scada::ServiceContext{},
           scada::ReadValueId{.node_id = node_id, .attribute_id = attribute_id});
     });
+  }
+
+  scada::StatusOr<std::vector<scada::BrowseResult>> BrowseChildren(
+      const scada::NodeId& node_id) {
+    return Run([this, &node_id] {
+      return services_.view_service_->Browse(
+          scada::ServiceContext{},
+          {scada::BrowseDescription{
+              .node_id = node_id,
+              .direction = scada::BrowseDirection::Forward,
+              .reference_type_id =
+                  scada::NodeId{scada::id::HierarchicalReferences}}});
+    });
+  }
+
+  // Calls `method_id` on `object_id` — the Call service the Qt client's
+  // commands use (Set Password..., Roles...).
+  scada::Status Call(const scada::NodeId& object_id,
+                     const scada::NodeId& method_id,
+                     std::vector<scada::Variant> arguments) {
+    auto result = Run([this, &object_id, &method_id, &arguments] {
+      return services_.method_service_->Call(
+          object_id, method_id, std::move(arguments), scada::ServiceContext{});
+    });
+    return result.ok() ? scada::Status{scada::StatusCode::Good}
+                       : result.status();
+  }
+
+  // Renames `node_id` the way the Qt client does: a Write of its DisplayName
+  // (TaskManagerImpl::PostUpdateTask).
+  scada::Status WriteDisplayName(const scada::NodeId& node_id,
+                                 std::u16string name) {
+    auto result = Run([this, &node_id, &name] {
+      return services_.attribute_service_->Write(
+          scada::ServiceContext{},
+          {scada::WriteValue{.node_id = node_id,
+                             .attribute_id = scada::AttributeId::DisplayName,
+                             .value = scada::LocalizedText{name}}});
+    });
+    if (!result.ok())
+      return result.status();
+    return result->empty() ? scada::Status{scada::StatusCode::Bad}
+                           : scada::Status{result->front()};
   }
 
   // The Qt client's configuration transfer (ADR 0014), over this session's
@@ -1980,6 +2059,257 @@ TEST_P(ClientServerE2eTest, ConfigurationTransfer_ALargeExportIsGzipped) {
         EXPECT_THAT(checked.result->modified, ::testing::IsEmpty());
         EXPECT_THAT(checked.result->deleted, ::testing::IsEmpty());
         EXPECT_THAT(checked.result->failures, ::testing::IsEmpty());
+      });
+}
+
+// Canonical ids the configuration-propagation test needs, as literals for the
+// reason kDevicesRoot is one. The security, data-item and device nodesets are
+// all mapped into the SCADA namespace (7) — the fixture names UserType
+// "SCADA.16" and the proxy templates claim the Users folder as ns=7;i=29.
+const scada::NodeId kUsersFolder{29, 7};
+const scada::NodeId kUserTypeId{16, 7};
+const scada::NodeId kDataItemsRoot{24, 7};
+const scada::NodeId kDataGroupTypeId{62, 7};
+const scada::NodeId kIec60870LinkTypeId{124, 7};
+const scada::NodeId kRoleTypeAddIdentity{363, 7};
+// OPC UA Part 18 §5.2 UserManagement and its ModifyUser method, and the
+// ConfigureAdmin well-known Role (Part 3 §4.9): namespace 0.
+const scada::NodeId kUserManagement{24290, 0};
+const scada::NodeId kModifyUser{24306, 0};
+const scada::NodeId kConfigureAdminRole{15716, 0};
+
+// Adds one Object under `parent` through `session` and returns its id, or a
+// null id when the server refused it (`status` says why).
+template <class Session>
+scada::NodeId AddObject(Session& session,
+                        const scada::NodeId& parent,
+                        const scada::NodeId& type_definition,
+                        std::u16string name,
+                        scada::Status* status = nullptr) {
+  auto result = session.AddNode(
+      scada::AddNodesItem{.parent_id = parent,
+                          .node_class = scada::NodeClass::Object,
+                          .type_definition_id = type_definition,
+                          .attributes = {.display_name = std::move(name)}});
+  scada::Status outcome = !result.ok() ? result.status()
+                          : result->empty()
+                              ? scada::Status{scada::StatusCode::Bad}
+                              : scada::Status{result->front().status_code};
+  if (status)
+    *status = outcome;
+  return outcome ? result->front().added_node_id : scada::NodeId{};
+}
+
+// True once `child` is no longer among `parent`'s children as `session`
+// browses them, within ten seconds — a deletion reaches a reader behind the
+// proxy eventually, like a rename (see WaitForDisplayName).
+template <class Session>
+bool WaitUntilNotAChild(Session& session,
+                        const scada::NodeId& parent,
+                        const scada::NodeId& child) {
+  const auto listed = [&] {
+    auto result = session.BrowseChildren(parent);
+    if (!result.ok() || result->empty())
+      return true;
+    return std::ranges::any_of(
+        result->front().references,
+        [&](const auto& reference) { return reference.node_id == child; });
+  };
+  const auto deadline =
+      std::chrono::steady_clock::now() + std::chrono::seconds{10};
+  while (listed()) {
+    if (std::chrono::steady_clock::now() >= deadline)
+      return false;
+    std::this_thread::sleep_for(std::chrono::milliseconds{100});
+  }
+  return true;
+}
+
+// A configuration change made from the Client reaches every copy of the
+// configuration the server keeps, and every process that reads it: an account
+// created in the Client can sign in, a Role granted to it takes effect at its
+// next sign-in, a rename and a deletion are honoured at sign-in, and an object
+// or device created, renamed and deleted through the client-facing endpoint is
+// seen the same way by the config tier and by the protocol edge serving it.
+//
+// The user manual said for version 2.6 that this was not verified
+// (scada-docs getting-started.md #project, changes.md #limits-client); this
+// test is what lets it say so. Every write goes through the same services
+// the Qt client's commands use: AddNodes (Create - User / object / link), the
+// standard ModifyUser (Set Password...), AddIdentity on the Role (Roles...), a
+// DisplayName Write (rename) and DeleteNodes.
+TEST_P(ClientServerE2eTest, ConfigurationChanges_ReachEveryServerCopy) {
+  if (UsesExternalServer())
+    GTEST_SKIP() << "the test creates and deletes accounts and devices";
+
+  StartServer();
+
+  const auto sign_in = [this](std::u16string user,
+                              std::u16string password) -> scada::Status {
+    if (Protocol() == E2eProtocol::OpcUa) {
+      ProxyOpcUaSession session;
+      return session.Connect(opcua_port_, std::move(user), std::move(password));
+    }
+    ProxyRemoteSession session;
+    return session.Connect(remote_port_, std::move(user), std::move(password));
+  };
+  // Whether `user` may create an object — the Configure right, which only the
+  // ConfigureAdmin Role grants. Read off a fresh session, because rights are
+  // granted when a session is activated (OPC UA Part 18 §4.4.1).
+  const auto can_configure = [this](std::u16string user,
+                                    std::u16string password) -> bool {
+    const auto try_create = [&](auto& session) {
+      if (!session.Connect(
+              Protocol() == E2eProtocol::OpcUa ? opcua_port_ : remote_port_,
+              user, password)) {
+        ADD_FAILURE() << "could not sign in to probe the Configure right";
+        return false;
+      }
+      const scada::NodeId probe = AddObject(
+          session, kDataItemsRoot, kDataGroupTypeId, u"E2E rights probe");
+      if (probe.is_null())
+        return false;
+      EXPECT_TRUE(session.DeleteNode(probe).ok());
+      return true;
+    };
+    if (Protocol() == E2eProtocol::OpcUa) {
+      ProxyOpcUaSession session;
+      return try_create(session);
+    }
+    ProxyRemoteSession session;
+    return try_create(session);
+  };
+
+  constexpr char16_t kAccount[] = u"E2E Operator";
+  constexpr char16_t kRenamedAccount[] = u"E2E Engineer";
+  constexpr char16_t kPassword[] = u"E2e-pass-1";
+
+  WithTransferSession(
+      Protocol(), opcua_port_, remote_port_, u"root", [&](auto& admin) {
+        // --- An account created in the Client can sign in -------------------
+        scada::Status status{scada::StatusCode::Good};
+        const scada::NodeId account =
+            AddObject(admin, kUsersFolder, kUserTypeId, kAccount, &status);
+        ASSERT_FALSE(account.is_null())
+            << "Create - User was refused: " << ::ToString(status);
+        status = admin.Call(
+            kUserManagement, kModifyUser,
+            {scada::LocalizedText{kAccount}, /*modify_password=*/true,
+             scada::LocalizedText{kPassword},
+             /*modify_user_configuration=*/false, scada::UInt32{0},
+             /*modify_description=*/false, scada::String{}});
+        ASSERT_TRUE(status)
+            << "Set Password... was refused: " << ::ToString(status);
+        EXPECT_TRUE(sign_in(kAccount, kPassword))
+            << "an account created in the Client cannot sign in";
+
+        // --- A Role granted in the Client takes effect at sign-in -----------
+        EXPECT_FALSE(can_configure(kAccount, kPassword))
+            << "a new account holds the Configure right before any grant";
+        status = admin.Call(
+            kConfigureAdminRole, kRoleTypeAddIdentity,
+            {scada::Variant{scada::MakeIdentityMappingRuleObject(
+                {.criteria_type = scada::IdentityCriteriaType::kUserName,
+                 .criteria = "E2E Operator"})}});
+        ASSERT_TRUE(status)
+            << "granting ConfigureAdmin was refused: " << ::ToString(status);
+        EXPECT_TRUE(can_configure(kAccount, kPassword))
+            << "ConfigureAdmin granted in the Client did not reach the "
+               "process that signs the account in";
+
+        // --- A rename is honoured at sign-in --------------------------------
+        status = admin.WriteDisplayName(account, kRenamedAccount);
+        ASSERT_TRUE(status)
+            << "renaming the account was refused: " << ::ToString(status);
+        EXPECT_TRUE(sign_in(kRenamedAccount, kPassword))
+            << "a renamed account cannot sign in under its new name";
+        EXPECT_FALSE(sign_in(kAccount, kPassword))
+            << "a renamed account still signs in under its old name";
+
+        // --- A deletion is honoured at sign-in ------------------------------
+        const auto deleted = admin.DeleteNode(account);
+        ASSERT_TRUE(deleted.ok());
+        ASSERT_THAT(*deleted, ::testing::ElementsAre(scada::StatusCode::Good));
+        EXPECT_FALSE(sign_in(kRenamedAccount, kPassword))
+            << "a deleted account can still sign in";
+
+        // --- Objects and devices reach every process that reads them -------
+        const scada::NodeId group =
+            AddObject(admin, kDataItemsRoot, kDataGroupTypeId,
+                      u"E2E propagation group", &status);
+        ASSERT_FALSE(group.is_null())
+            << "creating an object was refused: " << ::ToString(status);
+        const scada::NodeId link =
+            AddObject(admin, kDevicesRoot, kIec60870LinkTypeId,
+                      u"E2E propagation link", &status);
+        ASSERT_FALSE(link.is_null())
+            << "creating a device was refused: " << ::ToString(status);
+
+        // Created through the proxy, served back through it before the rename.
+        EXPECT_EQ(WaitForDisplayName(admin, group,
+                                     std::u16string{u"E2E propagation group"}),
+                  std::u16string{u"E2E propagation group"});
+        EXPECT_EQ(WaitForDisplayName(admin, link,
+                                     std::u16string{u"E2E propagation link"}),
+                  std::u16string{u"E2E propagation link"});
+        status = admin.WriteDisplayName(group, u"E2E group renamed");
+        ASSERT_TRUE(status)
+            << "renaming an object was refused: " << ::ToString(status);
+        status = admin.WriteDisplayName(link, u"E2E link renamed");
+        ASSERT_TRUE(status)
+            << "renaming a device was refused: " << ::ToString(status);
+        EXPECT_EQ(WaitForDisplayName(admin, group,
+                                     std::u16string{u"E2E group renamed"}),
+                  std::u16string{u"E2E group renamed"});
+        EXPECT_EQ(WaitForDisplayName(admin, link,
+                                     std::u16string{u"E2E link renamed"}),
+                  std::u16string{u"E2E link renamed"});
+
+        // Behind the proxy, the same names from the processes themselves: the
+        // config tier owns the configuration, and the IEC 104 edge serves the
+        // link from it.
+        if (Topology() == ServerTopology::Cluster) {
+          ProxyOpcUaSession config;
+          ASSERT_TRUE(config.Connect(config_tier_->opcua_port()));
+          EXPECT_EQ(WaitForDisplayName(config, group,
+                                       std::u16string{u"E2E group renamed"}),
+                    std::u16string{u"E2E group renamed"});
+          EXPECT_EQ(WaitForDisplayName(config, link,
+                                       std::u16string{u"E2E link renamed"}),
+                    std::u16string{u"E2E link renamed"});
+          ProxyOpcUaSession edge;
+          ASSERT_TRUE(
+              edge.Connect(cluster_->Tier(ClusterTier::kIec104)->opcua_port()));
+          EXPECT_EQ(WaitForDisplayName(edge, link,
+                                       std::u16string{u"E2E link renamed"}),
+                    std::u16string{u"E2E link renamed"})
+              << "the IEC 104 edge did not see the renamed link";
+        }
+
+        ASSERT_TRUE(admin.DeleteNode(group).ok());
+        ASSERT_TRUE(admin.DeleteNode(link).ok());
+        // What the Client shows is its parent's children, so a deletion is
+        // judged there.
+        EXPECT_TRUE(WaitUntilNotAChild(admin, kDataItemsRoot, group))
+            << "a deleted object is still listed";
+        EXPECT_TRUE(WaitUntilNotAChild(admin, kDevicesRoot, link))
+            << "a deleted device is still listed";
+        if (Topology() == ServerTopology::Cluster) {
+          ProxyOpcUaSession config;
+          ASSERT_TRUE(config.Connect(config_tier_->opcua_port()));
+          EXPECT_EQ(WaitForDisplayName(config, group, std::nullopt),
+                    std::nullopt)
+              << "the config tier still serves a deleted object";
+          ProxyOpcUaSession edge;
+          ASSERT_TRUE(
+              edge.Connect(cluster_->Tier(ClusterTier::kIec104)->opcua_port()));
+          // Judged by the listing, not by a Read: the edge answers a Read
+          // of an id it no longer holds Good with an empty name rather than
+          // Bad_NodeIdUnknown (backlog 978), while the deletion itself has
+          // reached it — its device activator stops the link.
+          EXPECT_TRUE(WaitUntilNotAChild(edge, kDevicesRoot, link))
+              << "the IEC 104 edge still lists a deleted device";
+        }
       });
 }
 

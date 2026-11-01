@@ -1621,6 +1621,12 @@
       "min_rows": 2
     },
     {
+      "capture": "account-roles",
+      "filename": "account-roles.png",
+      "width": 380,
+      "height": 340
+    },
+    {
       "type": "PasswordPolicy",
       "filename": "password-policy.png",
       "width": 420,

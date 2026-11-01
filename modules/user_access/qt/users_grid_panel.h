@@ -30,15 +30,15 @@ class QTableWidget;
 // the host pops the standard view context menu through
 // ControllerDelegate::ShowPopupMenu — no bespoke write path. That menu carries
 // both the selection commands for the highlighted user (Set Password... /
-// Delete, admin-gated) and the CATEGORY_CREATE "New" submenu whose "User" entry
-// runs the existing create command (OpenedViewCreateCommand -> PostInsertTask,
-// parented to the Users folder, gated on the Configure access right). Reset-
-// password is enabled only when a user row is selected; Add-user is always
-// enabled (the create is parent-scoped and access-right-gated at the command).
-// Enable / disable of an account is SHOWN (the Status column, from the Part 18
-// UserConfigurationMask) but not yet editable from here: the standard
-// ModifyUser call that would toggle it is not wired to a command, so offering
-// a toggle would promise a write the panel cannot make.
+// Roles... / Delete, admin-gated) and the CATEGORY_CREATE "New" submenu whose
+// "User" entry runs the existing create command (OpenedViewCreateCommand ->
+// PostInsertTask, parented to the Users folder, gated on the Configure access
+// right). Reset- password is enabled only when a user row is selected; Add-user
+// is always enabled (the create is parent-scoped and access-right-gated at the
+// command). Enable / disable of an account is SHOWN (the Status column, from
+// the Part 18 UserConfigurationMask) but not yet editable from here: the
+// standard ModifyUser call that would toggle it is not wired to a command, so
+// offering a toggle would promise a write the panel cannot make.
 //
 // It is returned as the Users view (see
 // NodeTableController); UiView is a QWidget, so the panel is the view.

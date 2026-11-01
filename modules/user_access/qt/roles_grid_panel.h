@@ -20,10 +20,10 @@ class QTableWidget;
 // showed it at all: an administrator could grant or revoke a Role and see
 // nothing anywhere.
 //
-// Read-only. Editing membership is AddIdentity/RemoveIdentity on the Role
-// (OPC UA Part 18 §4.4.5/§4.4.6), which is a privileged write this view does
-// not yet route — showing an editable cell would promise a call it cannot
-// make.
+// Read-only. Membership is edited per account, with Roles... on an account in
+// the Users view (modules/account_roles), which issues AddIdentity /
+// RemoveIdentity on each Role (OPC UA Part 18 §4.4.5/§4.4.6); this view shows
+// the result.
 //
 // UiView is a QWidget, so the panel is the view.
 class RolesGridPanel : public QWidget {

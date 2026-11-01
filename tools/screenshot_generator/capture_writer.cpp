@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <format>
 #include <iostream>
+#include <ostream>
 #include <system_error>
 
 namespace {
