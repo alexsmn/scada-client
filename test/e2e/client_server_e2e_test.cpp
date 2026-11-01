@@ -2100,6 +2100,19 @@ scada::NodeId AddObject(Session& session,
   return outcome ? result->front().added_node_id : scada::NodeId{};
 }
 
+// Polls `condition` for up to ten seconds; true once it holds.
+template <class Condition>
+bool WaitUntilTrue(Condition&& condition) {
+  const auto deadline =
+      std::chrono::steady_clock::now() + std::chrono::seconds{10};
+  while (!condition()) {
+    if (std::chrono::steady_clock::now() >= deadline)
+      return false;
+    std::this_thread::sleep_for(std::chrono::milliseconds{200});
+  }
+  return true;
+}
+
 // True once `child` is no longer among `parent`'s children as `session`
 // browses them, within ten seconds — a deletion reaches a reader behind the
 // proxy eventually, like a rename (see WaitForDisplayName).
@@ -2225,6 +2238,12 @@ TEST_P(ClientServerE2eTest, ConfigurationChanges_ReachEveryServerCopy) {
             << "a renamed account cannot sign in under its new name";
         EXPECT_FALSE(sign_in(kAccount, kPassword))
             << "a renamed account still signs in under its old name";
+        // Its Role follows it: the grant names the account, and the server
+        // rewrites it to the new name (backlog 977). The rewrite lands just
+        // after the rename commits, so allow it a moment.
+        EXPECT_TRUE(WaitUntilTrue([&] {
+          return can_configure(kRenamedAccount, kPassword);
+        })) << "a renamed account lost the Role granted under its old name";
 
         // --- A deletion is honoured at sign-in ------------------------------
         const auto deleted = admin.DeleteNode(account);
@@ -2232,6 +2251,23 @@ TEST_P(ClientServerE2eTest, ConfigurationChanges_ReachEveryServerCopy) {
         ASSERT_THAT(*deleted, ::testing::ElementsAre(scada::StatusCode::Good));
         EXPECT_FALSE(sign_in(kRenamedAccount, kPassword))
             << "a deleted account can still sign in";
+
+        // A new account under the deleted one's name starts with no Role: the
+        // server removed the grant with the account (backlog 977).
+        const scada::NodeId successor = AddObject(
+            admin, kUsersFolder, kUserTypeId, kRenamedAccount, &status);
+        ASSERT_FALSE(successor.is_null())
+            << "recreating the account was refused: " << ::ToString(status);
+        status = admin.Call(
+            kUserManagement, kModifyUser,
+            {scada::LocalizedText{kRenamedAccount}, /*modify_password=*/true,
+             scada::LocalizedText{kPassword},
+             /*modify_user_configuration=*/false, scada::UInt32{0},
+             /*modify_description=*/false, scada::String{}});
+        ASSERT_TRUE(status) << ::ToString(status);
+        EXPECT_FALSE(can_configure(kRenamedAccount, kPassword))
+            << "a new account inherited the Role of a deleted one by name";
+        ASSERT_TRUE(admin.DeleteNode(successor).ok());
 
         // --- Objects and devices reach every process that reads them -------
         const scada::NodeId group =
