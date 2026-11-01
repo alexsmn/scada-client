@@ -13,7 +13,7 @@
 #if defined(UI_QT)
 #include "modules/graph/graph_component.h"
 #endif
-#include "modules/account_roles/account_roles_module.h"
+#include "modules/accounts/accounts_module.h"
 #include "modules/change_password/change_password_module.h"
 #include "modules/node_properties/node_property_component.h"
 #include "modules/node_service_progress_tracker/node_service_progress_tracker.h"
@@ -128,7 +128,7 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
             .selection_commands_ = context.selection_commands_,
             .ui_command_registry_ = context.ui_command_registry_}));
     context.singletons_.emplace(
-        std::make_shared<AccountRolesModule>(AccountRolesModuleContext{
+        std::make_shared<AccountsModule>(AccountsModuleContext{
             .executor_ = context.executor_,
             .local_events_ = context.local_events_,
             .profile_ = context.profile_,

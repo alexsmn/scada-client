@@ -5,8 +5,8 @@
 #include "screenshot_wait.h"
 #include "widget_capture.h"
 
-#include "account_roles/account_roles_dialog.h"
-#include "account_roles/qt/account_roles_dialog_qt.h"
+#include "accounts/account_roles_dialog.h"
+#include "accounts/qt/account_roles_dialog_qt.h"
 #include "model/node_id_util.h"
 #include "node_service/node_ref.h"
 #include "node_service/node_service.h"

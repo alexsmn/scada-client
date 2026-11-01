@@ -18,6 +18,7 @@
 #include "selection_edit/opened_view_paste_command.h"
 #include "services/task_manager.h"
 #include "ui/common/client_utils.h"
+#include "user_access/account_configuration.h"
 
 #include <algorithm>
 #include <ranges>
@@ -167,8 +168,13 @@ SelectionEditModule::SelectionEditModule(SelectionEditModuleContext&& context)
       .available_handler =
           [&session_service =
                session_service_](const SelectionCommandContext& context) {
+            // An account marked NoDelete (OPC UA Part 18 §5.2.3) — the
+            // inter-process service account among them — is not offered: the
+            // server refuses to delete it, and deleting it would break every
+            // link between the Server processes (backlog 882).
             return session_service.HasPermission(
                        scada::Permission::kDeleteNode) &&
-                   !context.selection.empty();
+                   !context.selection.empty() &&
+                   !IsUndeletableAccount(context.selection.node());
           }});
 }

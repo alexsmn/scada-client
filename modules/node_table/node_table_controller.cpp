@@ -12,6 +12,7 @@
 #include "resources/common_resources.h"
 #include "services/task_manager.h"
 #include "ui/common/client_utils.h"
+#include "user_access/users_grid_reloader.h"
 
 #include <span>
 
@@ -42,6 +43,46 @@ GetSortCommands() {
   };
   return kSortCommands;
 }
+
+#if defined(UI_QT)
+// One reload at a time, and one more if anything changed while it ran.
+struct UsersReloadState {
+  bool running = false;
+  bool again = false;
+};
+
+// Re-reads the Users view's rows into `panel`. Holds nothing of the
+// controller: the services outlive it, `state` is shared, and `panel` is
+// checked after every wait.
+void ReloadUsers(AnyExecutor executor,
+                 NodeService& node_service,
+                 scada::AttributeService& attribute_service,
+                 std::shared_ptr<UsersReloadState> state,
+                 QPointer<UsersGridPanel> panel) {
+  if (state->running) {
+    state->again = true;
+    return;
+  }
+  state->running = true;
+  CoSpawn(executor,
+          [executor, &node_service, &attribute_service, state,
+           panel]() -> Awaitable<void> {
+            do {
+              state->again = false;
+              auto rows = co_await BuildUsersGrid(executor, node_service,
+                                                  attribute_service);
+              if (!panel) {
+                break;
+              }
+              // nullopt is "the account list could not be read" — which a
+              // non-administrator gets by design (Part 18 §5.2.1). Showing
+              // an empty grid instead would say the server has no users.
+              panel->ShowRows(rows ? *rows : std::vector<UserGridRow>{});
+            } while (state->again);
+            state->running = false;
+          });
+}
+#endif
 
 }  // namespace
 
@@ -98,22 +139,21 @@ std::unique_ptr<UiView> NodeTableController::Init(
       // completion against a destroyed panel. The accounts come from the
       // standard UserManagement object rather than from this view's parent
       // folder — the folder is only what routed us here.
-      CoSpawn(
-          executor_,
-          [executor = executor_, &node_service = node_service_,
-           &attribute_service = attribute_service_,
-           panel_ptr =
-               QPointer<UsersGridPanel>{panel}]() mutable -> Awaitable<void> {
-            auto rows = co_await BuildUsersGrid(executor, node_service,
-                                                attribute_service);
-            if (panel_ptr) {
-              // nullopt is "the account list could not be read" — which a
-              // non-administrator gets by design (Part 18 §5.2.1). Showing
-              // an empty grid instead would say the server has no users.
-              panel_ptr->ShowRows(rows ? *rows : std::vector<UserGridRow>{});
-            }
-            co_return;
-          });
+      //
+      // And re-read them whenever an account, a Role or a role rule changes.
+      // The rows were read once and never again, so an account created,
+      // renamed, deleted, disabled or given a Role from this very view stayed
+      // as it was until the view was reopened (found with backlog 149).
+      auto reload = [executor = executor_, &node_service = node_service_,
+                     &attribute_service = attribute_service_,
+                     state = std::make_shared<UsersReloadState>(),
+                     panel_ptr = QPointer<UsersGridPanel>{panel}] {
+        ReloadUsers(executor, node_service, attribute_service, state,
+                    panel_ptr);
+      };
+      reload();
+      users_reloader_ =
+          std::make_unique<UsersGridReloader>(node_service_, std::move(reload));
       return std::unique_ptr<UiView>{panel};
     }
   }

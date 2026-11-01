@@ -35,10 +35,11 @@ class QTableWidget;
 // PostInsertTask, parented to the Users folder, gated on the Configure access
 // right). Reset- password is enabled only when a user row is selected; Add-user
 // is always enabled (the create is parent-scoped and access-right-gated at the
-// command). Enable / disable of an account is SHOWN (the Status column, from
-// the Part 18 UserConfigurationMask) but not yet editable from here: the
-// standard ModifyUser call that would toggle it is not wired to a command, so
-// offering a toggle would promise a write the panel cannot make.
+// command). Enable / disable of an account is shown in the Status column (the
+// Part 18 UserConfigurationMask) and changed by the Enable Account / Disable
+// Account selection commands in the same menu (modules/accounts, backlog 149).
+// The host re-reads the rows when an account, Role or role rule changes
+// (UsersGridReloader), so the grid follows those commands.
 //
 // It is returned as the Users view (see
 // NodeTableController); UiView is a QWidget, so the panel is the view.

@@ -21,7 +21,7 @@ class QTableWidget;
 // nothing anywhere.
 //
 // Read-only. Membership is edited per account, with Roles... on an account in
-// the Users view (modules/account_roles), which issues AddIdentity /
+// the Users view (modules/accounts), which issues AddIdentity /
 // RemoveIdentity on each Role (OPC UA Part 18 §4.4.5/§4.4.6); this view shows
 // the result.
 //

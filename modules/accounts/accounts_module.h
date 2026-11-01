@@ -16,7 +16,7 @@ class Profile;
 class UiCommandRegistry;
 struct SelectionCommandContext;
 
-struct AccountRolesModuleContext {
+struct AccountsModuleContext {
   AnyExecutor executor_;
   LocalEvents& local_events_;
   Profile& profile_;
@@ -27,9 +27,10 @@ struct AccountRolesModuleContext {
   UiCommandRegistry& ui_command_registry_;
 };
 
-// Registers the "Roles..." selection command on accounts (see
-// AccountRolesCommandBuilder).
-class AccountRolesModule : private AccountRolesModuleContext {
+// Registers the account-administration selection commands: "Roles..." (see
+// AccountRolesCommandBuilder) and "Enable Account" / "Disable Account" (see
+// AccountStatusCommandBuilder).
+class AccountsModule : private AccountsModuleContext {
  public:
-  explicit AccountRolesModule(AccountRolesModuleContext&& context);
+  explicit AccountsModule(AccountsModuleContext&& context);
 };

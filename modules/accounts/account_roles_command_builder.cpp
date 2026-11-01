@@ -1,6 +1,7 @@
-#include "account_roles/account_roles_command_builder.h"
+#include "accounts/account_roles_command_builder.h"
 
-#include "account_roles/account_roles_dialog.h"
+#include "accounts/account_roles_dialog.h"
+#include "accounts/account_status.h"
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
 #include "base/awaitable.h"
@@ -47,14 +48,14 @@ Awaitable<void> ShowAccountRolesAsync(
         if (changes.empty()) {
           return;
         }
-        CoSpawn(executor,
-                [account, changes = std::move(changes), title, &local_events,
-                 &profile, &node_service]() mutable -> Awaitable<void> {
-                  const scada::Status status =
-                      co_await ApplyRoleMembershipChanges(node_service, account,
-                                                          std::move(changes));
-                  ReportRequestResult(title, status, local_events, profile);
-                });
+        CoSpawn(
+            executor,
+            [account, changes = std::move(changes), title, &local_events,
+             &profile, &node_service]() mutable -> Awaitable<void> {
+              const scada::Status status = co_await ApplyRoleMembershipChanges(
+                  node_service, account, std::move(changes));
+              ReportAccountChangeResult(title, status, local_events, profile);
+            });
       });
 }
 

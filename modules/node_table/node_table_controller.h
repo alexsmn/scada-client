@@ -9,16 +9,19 @@
 #include "controller/selection_model.h"
 #include "modules/node_table/node_table_menu_model.h"
 
+#include <memory>
+
 namespace scada::aui {
 class Grid;
 }
 
 class NodeTableModel;
+class UsersGridReloader;
 
 class NodeTableController : protected ControllerContext,
                             public Controller
 #ifdef _WIN32
-                            ,
+    ,
                             public DataObject
 #endif
 {
@@ -46,4 +49,8 @@ class NodeTableController : protected ControllerContext,
 
   CommandRegistry command_registry_;
   NodeTableMenuModel menu_model_{command_registry_};
+
+  // The Users view re-reads its rows when an account, a Role or a role rule
+  // changes (see Init).
+  std::unique_ptr<UsersGridReloader> users_reloader_;
 };

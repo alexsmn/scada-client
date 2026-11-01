@@ -2250,6 +2250,32 @@
         <source>The root password is set on the server computer and cannot be changed from the Client. Change it there with: scada-setup set-password --root-password &lt;new password&gt;</source>
         <translation>Пароль root задаётся на компьютере Сервера и не может быть изменён из Клиента. Измените его там командой: scada-setup set-password --root-password &lt;новый пароль&gt;</translation>
     </message>
+    <!-- The same refusal for the inter-process service account svc (backlog 882). -->
+    <message>
+        <source>The service account&apos;s password is set on the server computer and cannot be changed from the Client. Change it there with: scada-setup set-password --svc-password &lt;new password&gt;</source>
+        <translation>Пароль служебной учётной записи задаётся на компьютере Сервера и не может быть изменён из Клиента. Измените его там командой: scada-setup set-password --svc-password &lt;новый пароль&gt;</translation>
+    </message>
+    <message>
+        <source>This is a service account managed on the server computer; it cannot be changed from the Client.</source>
+        <translation>Это служебная учётная запись, которой управляют на компьютере Сервера; изменить её из Клиента нельзя.</translation>
+    </message>
+    <!-- Enable / Disable Account on a selected account (backlog 149). -->
+    <message>
+        <source>Enable Account</source>
+        <translation>Включить учётную запись</translation>
+    </message>
+    <message>
+        <source>Disable Account</source>
+        <translation>Отключить учётную запись</translation>
+    </message>
+    <message>
+        <source>Enabling user {}</source>
+        <translation>Включение пользователя {}</translation>
+    </message>
+    <message>
+        <source>Disabling user {}</source>
+        <translation>Отключение пользователя {}</translation>
+    </message>
     <message>
         <source>Are you sure you want to delete {}?</source>
         <translation>Вы действительно хотите удалить {}?</translation>

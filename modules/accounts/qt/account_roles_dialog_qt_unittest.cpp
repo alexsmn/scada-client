@@ -1,4 +1,4 @@
-#include "account_roles/qt/account_roles_dialog_qt.h"
+#include "accounts/qt/account_roles_dialog_qt.h"
 
 #include "aui/test/app_environment.h"
 #include "scada/authorization.h"

@@ -238,7 +238,7 @@ endforeach()
 
 set(CLIENT_COMPONENTS
   about
-  account_roles
+  accounts
   change_password
   create
   create_service_item

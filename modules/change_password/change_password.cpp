@@ -19,21 +19,30 @@ namespace {
 Awaitable<void> ReportPasswordChangeResultAsync(AnyExecutor executor,
                                                 scada::CoStatus call,
                                                 std::u16string title,
+                                                bool root,
                                                 LocalEvents& local_events,
                                                 const Profile& profile) {
   auto status = co_await std::move(call);
   if (status.code() == scada::StatusCode::Bad_NotWritable) {
     // The Server answers this for the built-in root account when its password
-    // is configured on the server computer: every start rewrites it there, so
-    // a change made here would revert. The bare status name would tell the
-    // operator nothing about where the password is changed instead.
+    // is configured on the server computer, and for the inter-process service
+    // account `svc`, whose password is configured there always: every start
+    // rewrites them, so a change made here would revert. The bare status name
+    // would tell the operator nothing about where the password is changed
+    // instead (backlog 882).
     local_events.ReportEvent(
         LocalEvents::SEV_ERROR,
         u16format(L"{} - {}", title,
-                  Translate("The root password is set on the server computer "
-                            "and cannot be changed from the Client. Change it "
-                            "there with: scada-setup set-password "
-                            "--root-password <new password>")));
+                  root ? Translate("The root password is set on the server "
+                                   "computer and cannot be changed from the "
+                                   "Client. Change it there with: scada-setup "
+                                   "set-password --root-password <new "
+                                   "password>")
+                       : Translate("The service account's password is set on "
+                                   "the server computer and cannot be changed "
+                                   "from the Client. Change it there with: "
+                                   "scada-setup set-password --svc-password "
+                                   "<new password>")));
     co_return;
   }
   ReportRequestResult(title, status, local_events, profile);
@@ -73,10 +82,11 @@ void ChangePassword(const ChangePasswordContext& context,
           [executor = context.executor_, call = std::move(call),
            title = u16format(Translate("Changing password for user {}"),
                              ToString16(context.user_.display_name())),
+           root = ToString16(context.user_.display_name()) == u"root",
            &local_events = context.local_events_,
            &profile = context.profile_]() mutable -> Awaitable<void> {
             co_await ReportPasswordChangeResultAsync(
-                std::move(executor), std::move(call), std::move(title),
+                std::move(executor), std::move(call), std::move(title), root,
                 local_events, profile);
           });
 }

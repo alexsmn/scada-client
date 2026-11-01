@@ -2072,6 +2072,7 @@ const scada::NodeId kDataItemsRoot{24, 7};
 const scada::NodeId kDataGroupTypeId{62, 7};
 const scada::NodeId kIec60870LinkTypeId{124, 7};
 const scada::NodeId kRoleTypeAddIdentity{363, 7};
+const scada::NodeId kRoleTypeRemoveIdentity{364, 7};
 // OPC UA Part 18 §5.2 UserManagement and its ModifyUser method, and the
 // ConfigureAdmin well-known Role (Part 3 §4.9): namespace 0.
 const scada::NodeId kUserManagement{24290, 0};
@@ -2347,6 +2348,103 @@ TEST_P(ClientServerE2eTest, ConfigurationChanges_ReachEveryServerCopy) {
               << "the IEC 104 edge still lists a deleted device";
         }
       });
+}
+
+// The account-administration commands, end to end: Disable Account keeps an
+// account from signing in and Enable Account lets it back (backlog 149), and
+// in the tier split the inter-process service account `svc`, which every
+// process signs in with, refuses the Client's delete, rename, password reset,
+// disable and role change (backlog 882) — while it keeps working.
+TEST_P(ClientServerE2eTest, Accounts_DisableEnableAndAProtectedServiceAccount) {
+  if (UsesExternalServer())
+    GTEST_SKIP() << "the test creates, disables and deletes accounts";
+
+  StartServer();
+
+  const auto sign_in = [this](std::u16string user,
+                              std::u16string password) -> scada::Status {
+    if (Protocol() == E2eProtocol::OpcUa) {
+      ProxyOpcUaSession session;
+      return session.Connect(opcua_port_, std::move(user), std::move(password));
+    }
+    ProxyRemoteSession session;
+    return session.Connect(remote_port_, std::move(user), std::move(password));
+  };
+  const auto modify_user = [](auto& admin, std::u16string name,
+                              std::optional<std::u16string> password,
+                              std::optional<scada::UInt32> mask) {
+    return admin.Call(
+        kUserManagement, kModifyUser,
+        {scada::LocalizedText{name}, password.has_value(),
+         scada::LocalizedText{password.value_or(u"")}, mask.has_value(),
+         mask.value_or(0), /*modify_description=*/false, scada::String{}});
+  };
+  constexpr char16_t kAccount[] = u"E2E Shift";
+  constexpr char16_t kPassword[] = u"E2e-pass-2";
+  constexpr scada::UInt32 kDisabled = 2;  // Part 18 §5.2.3 Disabled bit
+
+  WithTransferSession(
+      Protocol(), opcua_port_, remote_port_, u"root", [&](auto& admin) {
+        scada::Status status{scada::StatusCode::Good};
+        const scada::NodeId account =
+            AddObject(admin, kUsersFolder, kUserTypeId, kAccount, &status);
+        ASSERT_FALSE(account.is_null()) << ::ToString(status);
+        ASSERT_TRUE(modify_user(admin, kAccount, std::u16string{kPassword},
+                                std::nullopt));
+        ASSERT_TRUE(sign_in(kAccount, kPassword));
+
+        status = modify_user(admin, kAccount, std::nullopt, kDisabled);
+        ASSERT_TRUE(status)
+            << "Disable Account was refused: " << ::ToString(status);
+        // Behind the proxy the change lands a moment after the call returns:
+        // the proxy reads scada-config through a cache that scada-config's
+        // change events invalidate, and those are batched (100 ms).
+        EXPECT_TRUE(WaitUntilTrue([&] {
+          return !sign_in(kAccount, kPassword);
+        })) << "a disabled account can still sign in";
+        status = modify_user(admin, kAccount, std::nullopt, scada::UInt32{0});
+        ASSERT_TRUE(status)
+            << "Enable Account was refused: " << ::ToString(status);
+        EXPECT_TRUE(WaitUntilTrue([&] {
+          return !!sign_in(kAccount, kPassword);
+        })) << "an enabled account cannot sign in";
+        ASSERT_TRUE(admin.DeleteNode(account).ok());
+
+        if (Topology() != ServerTopology::Cluster)
+          return;
+        // svc is the config tier's provisioned account (id 100).
+        const scada::NodeId svc{100, 5};
+        const auto deleted = admin.DeleteNode(svc);
+        ASSERT_TRUE(deleted.ok());
+        EXPECT_THAT(
+            *deleted,
+            ::testing::Not(::testing::ElementsAre(scada::StatusCode::Good)))
+            << "the service account was deleted";
+        EXPECT_FALSE(admin.WriteDisplayName(svc, u"svc2"))
+            << "the service account was renamed";
+        EXPECT_FALSE(
+            modify_user(admin, u"svc", std::u16string{u"x"}, std::nullopt))
+            << "the service account's password was reset";
+        EXPECT_FALSE(modify_user(admin, u"svc", std::nullopt, kDisabled))
+            << "the service account was disabled";
+        EXPECT_FALSE(admin.Call(
+            kConfigureAdminRole, kRoleTypeRemoveIdentity,
+            {scada::Variant{scada::MakeIdentityMappingRuleObject(
+                {.criteria_type = scada::IdentityCriteriaType::kUserName,
+                 .criteria = "svc"})}}))
+            << "a Role was taken from the service account";
+      });
+
+  // The processes still reach each other as svc: a fresh session through the
+  // proxy reads an edge's device tree.
+  if (Topology() == ServerTopology::Cluster) {
+    ProxyOpcUaSession session;
+    ASSERT_TRUE(session.Connect(opcua_port_));
+    const auto devices = session.BrowseChildren(kDevicesRoot);
+    ASSERT_TRUE(devices.ok());
+    ASSERT_FALSE(devices->empty());
+    EXPECT_FALSE(devices->front().references.empty());
+  }
 }
 
 INSTANTIATE_TEST_SUITE_P(

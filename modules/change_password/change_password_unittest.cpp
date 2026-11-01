@@ -102,9 +102,11 @@ TEST_F(ChangePasswordTest, AdminResetCallsModifyUserAndSendsNoOldPassword) {
 
   ASSERT_EQ(sent.size(), 7u);
   // The account is identified by name, and the old password appears nowhere.
-  EXPECT_EQ(sent[0].get_or(scada::LocalizedText{}), scada::LocalizedText{u"Operator"});
+  EXPECT_EQ(sent[0].get_or(scada::LocalizedText{}),
+            scada::LocalizedText{u"Operator"});
   EXPECT_TRUE(sent[1].get_or(false));
-  EXPECT_EQ(sent[2].get_or(scada::LocalizedText{}), scada::LocalizedText{u"new"});
+  EXPECT_EQ(sent[2].get_or(scada::LocalizedText{}),
+            scada::LocalizedText{u"new"});
   for (const scada::Variant& argument : sent) {
     EXPECT_NE(argument.get_or(scada::LocalizedText{}),
               scada::LocalizedText{u"old"});
@@ -133,22 +135,47 @@ TEST_F(ChangePasswordTest, ReportsFailureAfterMethodCallCompletes) {
 // server computer configures it, because every start would rewrite it there.
 // The bare status name would not tell the operator where the password IS
 // changed, so the report names the command.
+// The server answers Bad_NotWritable for root when its password is configured
+// on the server computer, and for the inter-process service account `svc`
+// always; each refusal names the command that changes that password (backlog
+// 882).
 TEST_F(ChangePasswordTest, NotWritableReportsWhereThePasswordIsChanged) {
   EXPECT_CALL(method_service_,
               Call(kUserManagement, kModifyUserMethod, SizeIs(7), _))
-      .WillOnce(Invoke([](auto, auto, auto, auto) {
+      .Times(2)
+      .WillRepeatedly(Invoke([](auto, auto, auto, auto) {
         return scada::MakeMethodCallResult(scada::StatusCode::Bad_NotWritable);
       }));
 
-  ChangePassword(Context(/*self_service=*/false), u"", u"new");
-  PollExecutor();
+  const NodeRef root = node_service_.Add(scada::NodeState{
+      .node_id = scada::NodeId{kUserNodeId + 1, 1},
+      .attributes = {.display_name = scada::LocalizedText{u"root"}}});
+  const NodeRef svc = node_service_.Add(scada::NodeState{
+      .node_id = scada::NodeId{kUserNodeId + 2, 1},
+      .attributes = {.display_name = scada::LocalizedText{u"svc"}}});
 
-  ASSERT_EQ(local_events_.events().size(), 1);
-  const auto& event = *local_events_.events().front();
-  EXPECT_EQ(event.severity, scada::kSeverityCritical);
-  EXPECT_NE(event.message.text.find(u"Changing password for user Operator"),
+  for (const NodeRef& user : {root, svc}) {
+    ChangePasswordContext context = Context(/*self_service=*/false);
+    ChangePassword(ChangePasswordContext{.user_ = user,
+                                         .executor_ = context.executor_,
+                                         .local_events_ = context.local_events_,
+                                         .profile_ = context.profile_,
+                                         .node_service_ = context.node_service_,
+                                         .self_service_ = false},
+                   u"", u"new");
+    PollExecutor();
+  }
+
+  ASSERT_EQ(local_events_.events().size(), 2);
+  const auto& root_event = *local_events_.events()[0];
+  EXPECT_EQ(root_event.severity, scada::kSeverityCritical);
+  EXPECT_NE(root_event.message.text.find(u"Changing password for user root"),
             std::u16string::npos);
   EXPECT_NE(
-      event.message.text.find(u"scada-setup set-password --root-password"),
+      root_event.message.text.find(u"scada-setup set-password --root-password"),
+      std::u16string::npos);
+  const auto& svc_event = *local_events_.events()[1];
+  EXPECT_NE(
+      svc_event.message.text.find(u"scada-setup set-password --svc-password"),
       std::u16string::npos);
 }
