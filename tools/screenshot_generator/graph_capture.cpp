@@ -211,9 +211,9 @@ void BuildGraphFromJson(MetrixGraph& graph,
 // independent of what else the run contained.
 //
 // It does not on its own fix a blank trend: the line can hold a full series
-// whose points all sit outside the visible window (see the interval cap in
-// LocalHistoryService::ReadRaw). Hence the failure path — a graph capture
-// that would be blank must fail the run rather than ship.
+// whose points all sit outside the visible window (LocalHistoryService only
+// holds the day before "now"). Hence the failure path — a graph capture that
+// would be blank must fail the run rather than ship.
 bool WaitForGraphSeries(MetrixGraph& graph, std::chrono::milliseconds timeout) {
   auto lines_pending = [&graph] {
     int pending = 0;
