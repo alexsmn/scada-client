@@ -83,13 +83,17 @@ TableView::TableView(const ControllerContext& context)
 #if defined(UI_QT)
   if (sparkline_column != -1) {
     // The Trend cells are painted, not textual: a per-row mini-trend from the
-    // row's trailing history window (see TableRow::SetFormula).
+    // row's trailing history window (see TableRow::SetFormula). The window is
+    // applied here as well as requested there, because the row's timed data
+    // holds whatever any window has fetched for the node — a 24 h trend open
+    // elsewhere would otherwise fill this cell with a day (backlog 949).
     view_->setItemDelegateForColumn(
         sparkline_column,
         new SparklineDelegate{
             [this](int row) {
               const TableRow* table_row = model_->GetRow(row);
-              return table_row ? NumericSeries(table_row->timed_data().values())
+              return table_row ? NumericSeries(table_row->timed_data().values(),
+                                               scada::Now() - kSparklineWindow)
                                : std::vector<double>{};
             },
             view_});

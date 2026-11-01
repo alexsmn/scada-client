@@ -135,4 +135,23 @@ TEST(NumericSeriesTest, EmptyHistoryIsEmpty) {
   EXPECT_TRUE(NumericSeries({}).empty());
 }
 
+// Regression for backlog 949: a row's timed data shares its node's cache, so
+// a 24 h trend reading the same node left a day of samples in it and the
+// row's 1 h Trend cell drew all of them. Samples before the window drop out.
+TEST(NumericSeriesTest, DropsSamplesOlderThanTheWindow) {
+  const scada::Time now = scada::Time{} + std::chrono::days(20000);
+  std::vector<scada::DataValue> values(3);
+  values[0].value = scada::Variant{1.0};
+  values[0].source_timestamp = now - std::chrono::hours(5);
+  values[1].value = scada::Variant{2.0};
+  values[1].source_timestamp = now - std::chrono::minutes(30);
+  values[2].value = scada::Variant{3.0};
+  values[2].source_timestamp = now - std::chrono::minutes(5);
+
+  EXPECT_EQ(NumericSeries(values, now - std::chrono::hours(1)),
+            (std::vector<double>{2.0, 3.0}));
+  // No window keeps everything, which is what existing callers rely on.
+  EXPECT_EQ(NumericSeries(values), (std::vector<double>{1.0, 2.0, 3.0}));
+}
+
 }  // namespace

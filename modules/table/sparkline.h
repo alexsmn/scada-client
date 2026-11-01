@@ -39,5 +39,9 @@ std::vector<SparklinePoint> ComputeSparklinePoints(
 // `values`, in order, that coerce to a number — including discrete/bool
 // states, whose 0/1 timeline is a meaningful mini-trend. Null and non-numeric
 // samples (text states) are skipped rather than substituted — a
-// min/max-normalized mini-trend must not invent zeros. Pure and Qt-free.
-std::vector<double> NumericSeries(std::span<const scada::DataValue> values);
+// min/max-normalized mini-trend must not invent zeros. Samples older than
+// `from` are dropped when it is not null: a row's timed data shares its
+// node's cache with every other window that reads the node, so `values` can
+// reach far further back than the row's own trailing window. Pure and Qt-free.
+std::vector<double> NumericSeries(std::span<const scada::DataValue> values,
+                                  scada::Time from = scada::kNullTime);

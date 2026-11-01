@@ -5,10 +5,13 @@
 #include <cstdint>
 #include <vector>
 
-std::vector<double> NumericSeries(std::span<const scada::DataValue> values) {
+std::vector<double> NumericSeries(std::span<const scada::DataValue> values,
+                                  scada::Time from) {
   std::vector<double> series;
   series.reserve(values.size());
   for (const scada::DataValue& value : values) {
+    if (!scada::IsNull(from) && value.source_timestamp < from)
+      continue;
     double sample = 0;
     if (value.value.get(sample))
       series.push_back(sample);
