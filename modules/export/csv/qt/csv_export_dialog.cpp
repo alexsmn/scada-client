@@ -11,7 +11,12 @@
 #include "export/csv/csv_export_util.h"
 #include "profile/profile.h"
 
+#include <QLocale>
 #include <QMessageBox>
+
+#if defined(_WIN32)
+#include <windows.h>
+#endif
 
 class CsvExportDialog : public QDialog {
   Q_OBJECT
@@ -100,12 +105,27 @@ void CsvExportDialog::accept() {
   QDialog::accept();
 }
 
+char SystemCsvDelimiter() {
+  std::u16string list_separator;
+#if defined(_WIN32)
+  // The "List separator" of the user's regional settings, which is what Excel
+  // splits a CSV file on.
+  // https://learn.microsoft.com/en-us/windows/win32/intl/locale-slist
+  wchar_t buffer[8] = {};
+  if (GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_SLIST, buffer,
+                      static_cast<int>(std::size(buffer))) > 0) {
+    list_separator = QString::fromWCharArray(buffer).toStdU16String();
+  }
+#endif
+  return ChooseCsvDelimiter(list_separator,
+                            QLocale::system().decimalPoint().toStdU16String());
+}
+
 Awaitable<CsvExportParams> ShowCsvExportDialog(DialogService& dialog_service,
                                                Profile& profile,
                                                bool can_expand) {
   auto csv_export_params =
-      FromJson<CsvExportParams>(GetKey(profile.data(), "csv"))
-          .value_or(CsvExportParams{});
+      LoadCsvExportParams(GetKey(profile.data(), "csv"), SystemCsvDelimiter());
 
   auto dialog = std::make_unique<CsvExportDialog>(
       csv_export_params, can_expand, dialog_service.GetParentWidget());

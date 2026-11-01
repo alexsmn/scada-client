@@ -58,6 +58,8 @@ class SummaryModel : private SummaryModelContext,
   void SetParams(const scada::RelativeTimeRange& time_range,
                  scada::AggregateFilter aggregate_filter);
 
+  // Adds a column and returns its index, or -1 when the summary already holds
+  // kMaxColumnCount columns; the refusal is counted in dropped_column_count().
   int AddColumn(std::string formula);
   void DeleteColumn(int index);
   int FindColumn(const scada::NodeId& node_id, int starting_index = 0) const;
@@ -82,9 +84,14 @@ class SummaryModel : private SummaryModelContext,
     return truncated_ ? std::optional{end_time_} : std::nullopt;
   }
 
-  // Called after the period or the interval changes, so a view can show or
-  // hide its truncation notice.
-  std::function<void()> params_changed_handler;
+  // How many columns the column cap has refused since the summary was opened:
+  // items added past it, or saved items a reopen could not restore. Both used
+  // to vanish without a word (backlog 962).
+  size_t dropped_column_count() const { return dropped_column_count_; }
+
+  // Called after the period, the interval or the dropped-column count
+  // changes, so a view can show or hide its notice.
+  std::function<void()> notice_changed_handler;
   int GetRowForTime(scada::Time time) const;
 
   // aui::GridModel
@@ -110,6 +117,12 @@ class SummaryModel : private SummaryModelContext,
   // The sentence a view and a printout show when the row cap cut the period.
   static std::u16string TruncationNotice(scada::Time cut);
 
+  // The sentence a view shows when the column cap refused |dropped| items.
+  static std::u16string ColumnLimitNotice(size_t dropped);
+
+  // Everything the view's notice says now, or empty when it has nothing.
+  std::u16string GetNotice() const;
+
  private:
   class Column;
   class ColumnModel;
@@ -134,6 +147,7 @@ class SummaryModel : private SummaryModelContext,
 
   scada::Time start_time_ = scada::kNullTime;
   bool truncated_ = false;
+  size_t dropped_column_count_ = 0;
   // |end_time_| defines start of the last interval.
   scada::Time end_time_ = scada::kNullTime;
   scada::RelativeTimeRange time_range_;

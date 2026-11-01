@@ -253,6 +253,18 @@ scada::aui::HeaderModel& SummaryModel::column_model() {
 }
 
 int SummaryModel::AddColumn(std::string formula) {
+  if (columns_.size() >= kMaxColumnCount) {
+    // Every column holds a history subscription per row, so the cap stays;
+    // what changed is that hitting it is said (backlog 962).
+    ++dropped_column_count_;
+    LOG_WARNING(logger_) << "Column limit reached; the item is not added"
+                         << LOG_TAG("Formula", formula)
+                         << LOG_TAG("MaxColumnCount", kMaxColumnCount);
+    if (notice_changed_handler)
+      notice_changed_handler();
+    return -1;
+  }
+
   int index = static_cast<int>(columns_.size());
   auto& column = columns_.emplace_back(
       std::make_unique<Column>(*this, index, std::move(formula)));
@@ -297,14 +309,15 @@ void SummaryModel::Load(const WindowDefinition& definition) {
             scada::AggregateFilter{scada::GetLocalAggregateStartTime(),
                                    interval, aggregate_type});
 
-  size_t count = std::min(kMaxColumnCount, definition.items.size());
-  for (size_t i = 0; i < count; ++i) {
-    const WindowItem& item = definition.items[i];
+  // The cap applies per column, not per stored item: it used to count every
+  // item of the definition, and drop the columns past it without a word.
+  for (const WindowItem& item : definition.items) {
     if (item.name_is("Item")) {
       auto path = item.GetString("path");
       int width = item.GetInt("width", 100);
       int index = AddColumn(std::string{path});
-      columns_[index]->set_width(width);
+      if (index != -1)
+        columns_[index]->set_width(width);
     }
   }
 
@@ -457,8 +470,8 @@ void SummaryModel::SetParams(const scada::RelativeTimeRange& time_range,
 
   NotifyModelChanged();
 
-  if (params_changed_handler)
-    params_changed_handler();
+  if (notice_changed_handler)
+    notice_changed_handler();
 }
 
 scada::DataValue SummaryModel::GetDataValue(int row, int column) const {
@@ -487,6 +500,25 @@ std::u16string SummaryModel::TruncationNotice(scada::Time cut) {
       kMaxRowCount,
       UtfConvert<char16_t>(
           FormatTime(cut, TIME_FORMAT_DATE | TIME_FORMAT_TIME)));
+}
+
+std::u16string SummaryModel::ColumnLimitNotice(size_t dropped) {
+  return u16format(
+      Translate("The summary is limited to {} columns; {} items were not "
+                "added."),
+      kMaxColumnCount, dropped);
+}
+
+std::u16string SummaryModel::GetNotice() const {
+  std::u16string notice;
+  if (auto cut = truncated_at())
+    notice = TruncationNotice(*cut);
+  if (dropped_column_count_ != 0) {
+    if (!notice.empty())
+      notice += u" ";
+    notice += ColumnLimitNotice(dropped_column_count_);
+  }
+  return notice;
 }
 
 std::u16string SummaryModel::GetExportDescription() {

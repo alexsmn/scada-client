@@ -37,6 +37,10 @@
         <translation>Сводка ограничена {} строками и заканчивается в {}.</translation>
     </message>
     <message>
+        <source>The summary is limited to {} columns; {} items were not added.</source>
+        <translation>Сводка ограничена {} столбцами; не добавлено элементов: {}.</translation>
+    </message>
+    <message>
         <source>New Folder</source>
         <translation>Новая папка</translation>
     </message>

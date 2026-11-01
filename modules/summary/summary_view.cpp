@@ -3,11 +3,11 @@
 #include "aui/dialog_service.h"
 #include "aui/grid.h"
 #include "base/relative_time_range.h"
-#include "ui/common/client_utils.h"
-#include "resources/common_resources.h"
-#include "modules/summary/summary_model.h"
 #include "controller/controller_delegate.h"
+#include "modules/summary/summary_model.h"
 #include "profile/window_definition.h"
+#include "resources/common_resources.h"
+#include "ui/common/client_utils.h"
 
 #if defined(UI_QT)
 #include <QLabel>
@@ -41,12 +41,12 @@ constexpr std::pair<unsigned, scada::Duration> kIntervalCommands[] = {
 
 SummaryView::SummaryView(const ControllerContext& context)
     : ControllerContext{context},
-      model_{std::make_shared<SummaryModel>(
-          SummaryModelContext{executor_, node_service_, timed_data_service_})} {}
+      model_{std::make_shared<SummaryModel>(SummaryModelContext{
+          executor_, node_service_, timed_data_service_})} {}
 
 SummaryView::~SummaryView() {
   // The model is shared with the grid and may outlive this controller.
-  model_->params_changed_handler = nullptr;
+  model_->notice_changed_handler = nullptr;
 }
 
 std::unique_ptr<UiView> SummaryView::Init(const WindowDefinition& definition) {
@@ -113,6 +113,7 @@ std::unique_ptr<UiView> SummaryView::Init(const WindowDefinition& definition) {
 #if defined(UI_QT)
   // A notice above the grid when the row cap cuts the period, which it used
   // to do silently: a month at 1-minute rows ended ~6.9 days in (backlog 871).
+  // It also says when the column cap refused items (backlog 962).
   truncation_notice_ = new QLabel;
   truncation_notice_->setObjectName(QStringLiteral("summaryTruncationNotice"));
   truncation_notice_->setWordWrap(true);
@@ -126,7 +127,7 @@ std::unique_ptr<UiView> SummaryView::Init(const WindowDefinition& definition) {
   auto* contents = new QWidget;
   contents->setLayout(layout);
 
-  model_->params_changed_handler = [this] { UpdateTruncationNotice(); };
+  model_->notice_changed_handler = [this] { UpdateTruncationNotice(); };
   UpdateTruncationNotice();
 
   return std::unique_ptr<UiView>{contents};
@@ -139,12 +140,10 @@ std::unique_ptr<UiView> SummaryView::Init(const WindowDefinition& definition) {
 void SummaryView::UpdateTruncationNotice() {
   if (!truncation_notice_)
     return;
-  const std::optional<scada::Time> cut = model_->truncated_at();
-  truncation_notice_->setVisible(cut.has_value());
-  if (cut) {
-    truncation_notice_->setText(
-        QString::fromStdU16String(SummaryModel::TruncationNotice(*cut)));
-  }
+  const std::u16string notice = model_->GetNotice();
+  truncation_notice_->setVisible(!notice.empty());
+  if (!notice.empty())
+    truncation_notice_->setText(QString::fromStdU16String(notice));
 }
 #endif
 

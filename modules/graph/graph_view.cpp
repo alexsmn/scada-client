@@ -8,6 +8,7 @@
 #include "common/formula_util.h"
 #include "controller/controller_delegate.h"
 #include "controller/selection_model.h"
+#include "graph/graph_export_table.h"
 #include "graph/graph_setup_dialog.h"
 #include "graph/graph_view_loader.h"
 #include "graph/graph_view_saver.h"
@@ -53,6 +54,8 @@ bool IsReadableOnBackground(const QColor& color, const QColor& background) {
 
 GraphView::GraphView(const ControllerContext& context)
     : ControllerContext{context} {}
+
+GraphView::~GraphView() = default;
 
 std::unique_ptr<UiView> GraphView::Init(const WindowDefinition& definition) {
   graph_ = new MetrixGraph(MetrixGraphContext{timed_data_service_, executor_});
@@ -175,6 +178,36 @@ std::unique_ptr<UiView> GraphView::Init(const WindowDefinition& definition) {
   // SeriesInspector of its own down the right edge until 2026-08-30, which put
   // two inspectors on screen naming the same series where trend.html draws one.
   return std::unique_ptr<UiView>{graph_};
+}
+
+// GraphView — ExportModel
+
+ExportModel::ExportData GraphView::GetExportData() {
+  std::vector<GraphExportSeries> series;
+  scada::Time from = scada::kNullTime;
+  scada::Time to = scada::kNullTime;
+  if (graph_) {
+    // What is on screen: the visible range, every line of every pane.
+    const GraphRange& range = graph_->horizontal_axis().range();
+    from = scada::base::DecodeDoubleT(range.low());
+    to = scada::base::DecodeDoubleT(range.high());
+    for (GraphPane* pane : graph_->panes()) {
+      for (GraphLine* graph_line : pane->plot().lines()) {
+        const auto& data_source =
+            static_cast<MetrixGraph::MetrixLine&>(*graph_line).data_source();
+        const TimedDataSpec& timed_data = data_source.timed_data();
+        series.push_back(GraphExportSeries{
+            .title = data_source.title(),
+            .values = timed_data.values(),
+            .format = [&timed_data](const scada::DataValue& value) {
+              return timed_data.GetValueString(value.value, value.qualifier,
+                                               ValueFormat{0});
+            }});
+      }
+    }
+  }
+  export_table_ = std::make_unique<GraphExportTable>(series, from, to);
+  return TableExportData{*export_table_, export_table_->columns()};
 }
 
 // GraphView — ImageExportModel

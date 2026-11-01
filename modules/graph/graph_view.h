@@ -10,10 +10,14 @@
 #include "controller/selection_model.h"
 #include "controller/series_model.h"
 #include "controller/time_model.h"
+#include "export/export_model.h"
 #include "export/image_export_model.h"
 #include "graph/metrix_graph.h"
 
 #include <filesystem>
+#include <memory>
+
+class GraphExportTable;
 
 namespace scada {
 struct RelativeTimeRange;
@@ -25,9 +29,11 @@ class GraphView : protected ControllerContext,
                   public TimeModel,
                   public SeriesModel,
                   public ImageExportModel,
+                  public ExportModel,
                   private Graph::Controller {
  public:
   explicit GraphView(const ControllerContext& context);
+  ~GraphView();
 
   bool FindColor(scada::aui::Color color) const;
   scada::aui::Color NewColor() const;
@@ -45,11 +51,16 @@ class GraphView : protected ControllerContext,
   virtual TimeModel* GetTimeModel() override { return this; }
   virtual SeriesModel* GetSeriesModel() override { return this; }
   virtual ImageExportModel* GetImageExportModel() override { return this; }
+  virtual ExportModel* GetExportModel() override { return this; }
 
   // ImageExportModel — the graph as it is drawn on screen, for printing and
   // for "Save as Image" (backlog 874).
   virtual QSize GetImageSize() const override;
   virtual void RenderImage(QPainter& painter) override;
+
+  // ExportModel — the values of every series over the visible time range, for
+  // CSV and Excel export. The graph used to leave only as a picture.
+  virtual ExportData GetExportData() override;
 
   // Writes the graph to |path| as a PNG. Returns false when it cannot.
   bool SaveImage(const std::filesystem::path& path);
@@ -119,4 +130,7 @@ class GraphView : protected ControllerContext,
   GraphRange prezoom_horizontal_range_;
 
   CommandRegistry command_registry_;
+
+  // The snapshot the last GetExportData() handed out; it refers to this.
+  std::unique_ptr<GraphExportTable> export_table_;
 };

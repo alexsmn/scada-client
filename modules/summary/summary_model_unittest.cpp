@@ -7,6 +7,7 @@
 #include "common/formula_util.h"
 #include "controller/window_info.h"
 #include "modules/summary/summary_component.h"
+#include "modules/summary/summary_model_util.h"
 #include "node_service/static/static_node_service.h"
 #include "profile/window_definition.h"
 #include "resources/common_resources.h"
@@ -74,6 +75,54 @@ TEST_F(SummaryModelTest, AddColumn) {
   EXPECT_EQ(summary_model_.column_model().GetTitle(1), u"item2");
 }
 
+// Backlog 962: a summary saved with more columns than it holds lost the rest
+// on reopen without a word. The cap stays, and now refuses at add time too,
+// so what is saved can be restored, and both refusals are counted and said.
+TEST_F(SummaryModelTest, ColumnCapRefusesAndCountsTheItemsPastIt) {
+  WindowDefinition definition{kSummaryWindowInfo};
+  for (size_t i = 0; i < kMaxColumnCount + 2; ++i) {
+    auto formula = "item" + std::to_string(i);
+    timed_data_service_.AddTimedData(formula);
+    definition.AddItem(MakeItem(formula));
+  }
+  int notices = 0;
+  summary_model_.notice_changed_handler = [&] { ++notices; };
+
+  summary_model_.Load(definition);
+
+  EXPECT_EQ(summary_model_.column_model().GetCount(),
+            static_cast<int>(kMaxColumnCount));
+  EXPECT_EQ(summary_model_.dropped_column_count(), 2u);
+  EXPECT_GT(notices, 0);
+  EXPECT_EQ(summary_model_.GetNotice(), SummaryModel::ColumnLimitNotice(2));
+
+  // Adding past the cap is refused the same way.
+  timed_data_service_.AddTimedData("extra");
+  EXPECT_EQ(summary_model_.AddColumn("extra"), -1);
+  EXPECT_EQ(summary_model_.dropped_column_count(), 3u);
+  EXPECT_EQ(summary_model_.column_model().GetCount(),
+            static_cast<int>(kMaxColumnCount));
+}
+
+TEST_F(SummaryModelTest, TheCapCountsColumnsNotOtherStoredItems) {
+  // The cap used to count every item of the definition, so a stored time
+  // range or grid state could push the last column out.
+  WindowDefinition definition{kSummaryWindowInfo};
+  definition.AddItem("State");
+  for (size_t i = 0; i < kMaxColumnCount; ++i) {
+    auto formula = "item" + std::to_string(i);
+    timed_data_service_.AddTimedData(formula);
+    definition.AddItem(MakeItem(formula));
+  }
+
+  summary_model_.Load(definition);
+
+  EXPECT_EQ(summary_model_.column_model().GetCount(),
+            static_cast<int>(kMaxColumnCount));
+  EXPECT_EQ(summary_model_.dropped_column_count(), 0u);
+  EXPECT_TRUE(summary_model_.GetNotice().empty());
+}
+
 TEST_F(SummaryModelTest, AddContainedItemExpandsGroupOnExecutor) {
   const scada::NodeId group_id{1, 1};
   const scada::NodeId organized_item_id{2, 1};
@@ -132,8 +181,7 @@ TEST_F(SummaryModelTest, HourlySummaryForDayShows24Rows) {
   EXPECT_EQ(summary_model_.GetTimeRange(), time_range);
   EXPECT_EQ(summary_model_.row_model().GetCount(), 24);
   EXPECT_EQ(summary_model_.GetRowTime(0), start_time);
-  EXPECT_EQ(summary_model_.GetRowTime(23),
-            start_time + std::chrono::hours(23));
+  EXPECT_EQ(summary_model_.GetRowTime(23), start_time + std::chrono::hours(23));
   EXPECT_EQ(summary_model_.GetCellText(/*row=*/0, /*column=*/0), u"0");
   EXPECT_EQ(summary_model_.GetCellText(/*row=*/23, /*column=*/0), u"23");
 }
@@ -176,8 +224,9 @@ TEST_F(SummaryModelTest, Load) {
   timed_data_service_.AddTimedData("item1");
   timed_data_service_.AddTimedData("item2");
 
-  auto time_range = scada::RelativeTimeRange{TestTimeFromString("15 Nov 2004 12:45:26 UTC"),
-                              TestTimeFromString("16 Nov 2004 12:45:26 UTC")};
+  auto time_range =
+      scada::RelativeTimeRange{TestTimeFromString("15 Nov 2004 12:45:26 UTC"),
+                               TestTimeFromString("16 Nov 2004 12:45:26 UTC")};
 
   auto window_def =
       WindowDefinition{kSummaryWindowInfo}
@@ -216,8 +265,9 @@ TEST_F(SummaryModelTest, Save) {
           .AddItem(MakeItem("item1"))
           .AddItem(MakeItem("item2"))
           .AddItem("scada::RelativeTimeRange",
-                   scada::RelativeTimeRange{TestTimeFromString("15 Nov 2004 12:45:26 UTC"),
-                             TestTimeFromString("16 Nov 2004 12:45:26 UTC")})
+                   scada::RelativeTimeRange{
+                       TestTimeFromString("15 Nov 2004 12:45:26 UTC"),
+                       TestTimeFromString("16 Nov 2004 12:45:26 UTC")})
           .AddItem("Interval", std::chrono::minutes(30))
           .AddItem("AggregateType", scada::id::AggregateFunction_Maximum);
 
@@ -238,8 +288,9 @@ TEST_F(SummaryModelTest, CellsAreGreyWhileLoading) {
       WindowDefinition{kSummaryWindowInfo}
           .AddItem(MakeItem("item1"))
           .AddItem("scada::RelativeTimeRange",
-                   scada::RelativeTimeRange{TestTimeFromString("15 Nov 2004 12:45:26 UTC"),
-                             TestTimeFromString("16 Nov 2004 12:45:26 UTC")})
+                   scada::RelativeTimeRange{
+                       TestTimeFromString("15 Nov 2004 12:45:26 UTC"),
+                       TestTimeFromString("16 Nov 2004 12:45:26 UTC")})
           .AddItem("Interval", std::chrono::minutes(30))
           .AddItem("AggregateType", scada::id::AggregateFunction_Maximum));
 

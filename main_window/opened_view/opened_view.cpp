@@ -187,8 +187,9 @@ void OpenedView::Print(PrintService& print_service) {
   if (auto* time_model = controller_->GetTimeModel())
     period = scada::ToTimeRange(time_model->GetTimeRange(), now);
 
-  // A picture view (the graph) prints as one scaled page (backlog 874).
-  if (!export_model) {
+  // A picture view (the graph) prints as one scaled page (backlog 874), even
+  // when it also exports its values as a table for CSV and Excel.
+  if (image_export_model) {
     ::Print(print_service, *image_export_model,
             MakePrintHeader(GetWindowTitle(), period,
                             image_export_model->GetExportDescription(), now));

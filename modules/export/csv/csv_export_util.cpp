@@ -219,3 +219,27 @@ std::optional<CsvExportParams> FromJson(const boost::json::value& value) {
 
   return params;
 }
+
+char ChooseCsvDelimiter(std::u16string_view list_separator,
+                        std::u16string_view decimal_separator) {
+  // A quote, a digit or a letter would make the file unreadable; a regional
+  // setting can hold any string, so only a plain ASCII symbol is taken.
+  if (list_separator.size() == 1) {
+    const char16_t c = list_separator.front();
+    if (c == u'\t' ||
+        (c > u' ' && c < 0x7F && c != u'"' && !(c >= u'0' && c <= u'9') &&
+         !(c >= u'A' && c <= u'Z') && !(c >= u'a' && c <= u'z'))) {
+      return static_cast<char>(c);
+    }
+  }
+  return decimal_separator == u"," ? ';' : ',';
+}
+
+CsvExportParams LoadCsvExportParams(const boost::json::value& stored,
+                                    char default_delimiter) {
+  CsvExportParams params =
+      FromJson<CsvExportParams>(stored).value_or(CsvExportParams{});
+  if (GetString(stored, "delimiter").size() != 1)
+    params.delimiter = default_delimiter;
+  return params;
+}

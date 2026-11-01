@@ -105,6 +105,19 @@ TEST_F(GraphViewTest, PrintsAndSavesAsAPicture) {
   EXPECT_THAT(graph_view_.GetCommandHandler(ID_EXPORT_IMAGE), NotNull());
 }
 
+// The graph's values leave as a table too, for CSV and Excel export; they
+// used to leave only as a picture.
+TEST_F(GraphViewTest, ExportsItsValuesAsATable) {
+  ASSERT_EQ(graph_view_.GetExportModel(),
+            static_cast<ExportModel*>(&graph_view_));
+  auto data = graph_view_.GetExportData();
+  auto* table = std::get_if<ExportModel::TableExportData>(&data);
+  ASSERT_THAT(table, NotNull());
+  ASSERT_FALSE(table->columns.empty());
+  EXPECT_EQ(table->columns[0].data_type,
+            scada::aui::TableColumn::DataType::DateTime);
+}
+
 TEST_F(GraphViewTest, SaveImageWritesThePictureAtItsOnScreenSize) {
   scada::ScopedTempDir temp_dir{"scada_graph_image_test"};
   auto* widget = static_cast<QWidget*>(ui_view_.get());

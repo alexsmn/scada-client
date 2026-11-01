@@ -1,6 +1,7 @@
 #include "export/csv/csv_export_util.h"
 
 #include "aui/models/table_model.h"
+#include "base/utf_convert.h"
 #include "common/test/scoped_temp_dir.h"
 
 #include <fstream>
@@ -72,4 +73,40 @@ TEST_F(CsvExportUtilTest, SystemEncodingConvertsToTheCodePageWithoutBom) {
             "\xC8\xEC\xFF\r\n"  // Имя
             "\xC4\xE0\r\n"      // Да
             "\xCD\xE5\xF2");    // Нет
+}
+
+// Backlog 947: Excel splits a CSV file on the system list separator, so the
+// fixed `,` default produced one-column files under Russian settings.
+TEST(CsvDelimiterTest, FollowsTheSystemListSeparator) {
+  EXPECT_EQ(ChooseCsvDelimiter(u";", u","), ';');
+  EXPECT_EQ(ChooseCsvDelimiter(u",", u"."), ',');
+  EXPECT_EQ(ChooseCsvDelimiter(u"|", u"."), '|');
+  EXPECT_EQ(ChooseCsvDelimiter(u"\t", u"."), '\t');
+}
+
+TEST(CsvDelimiterTest, WithoutAListSeparatorFollowsTheDecimalSeparator) {
+  // A decimal comma means the list separator is `;` (Russian, German...).
+  EXPECT_EQ(ChooseCsvDelimiter(u"", u","), ';');
+  EXPECT_EQ(ChooseCsvDelimiter(u"", u"."), ',');
+}
+
+TEST(CsvDelimiterTest, AnUnusableListSeparatorIsIgnored) {
+  for (std::u16string_view separator :
+       {u"\"", u"0", u"a", u"Z", u" ", u";;", u"‖"}) {
+    EXPECT_EQ(ChooseCsvDelimiter(separator, u","), ';')
+        << UtfConvert<char>(std::u16string{separator});
+  }
+}
+
+TEST(CsvDelimiterTest, ASavedDelimiterWinsOverTheDefault) {
+  boost::json::value stored{boost::json::object{}};
+  EXPECT_EQ(LoadCsvExportParams(stored, ';').delimiter, ';');
+  EXPECT_EQ(LoadCsvExportParams(boost::json::value{}, ';').delimiter, ';');
+
+  CsvExportParams saved;
+  saved.delimiter = '\t';
+  saved.unicode = true;
+  const CsvExportParams loaded = LoadCsvExportParams(ToJson(saved), ';');
+  EXPECT_EQ(loaded.delimiter, '\t');
+  EXPECT_TRUE(loaded.unicode);
 }
