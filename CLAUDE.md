@@ -514,7 +514,15 @@ tests pass, the macOS and Windows legs run `tools/release/package.sh`, which
 writes a `.dmg` (Apple silicon) and a `.zip` (x64). Each package carries
 `LICENSE`, `COPYRIGHT`, `NOTICE`, every vcpkg port's licence and a
 `SOURCES.txt` naming the commit of each sibling repository. The `release` job
-attaches them to a **draft** release, and a person publishes it.
+adds them to the **product release** for that tag — the one that carries the
+Windows MSI, `telecontrol-scada-<version>.msi`, which is built and uploaded by
+hand. The Client and the product share one version, and the manual's download
+link is `/releases/latest`, so a Client-only release published as latest would
+hide the MSI. If the release exists, draft or published, the packages are
+uploaded into it and only the notes between the `client-packages` markers are
+rewritten. Otherwise the job creates a **draft** titled
+`Telecontrol SCADA v<version>`, and the run warns until the MSI is attached. A
+person publishes it.
 `package.sh` is a script so the same packaging can be dry-run locally:
 `tools/release/package.sh build/ninja <version> <out dir>` after a Release
 build.

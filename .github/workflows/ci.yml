@@ -766,26 +766,49 @@ jobs:
         merge-multiple: true
         path: dist
 
-    - name: Create the draft release
+    # The Client packages join the product release for the same tag, the one
+    # that carries the Windows MSI (`telecontrol-scada-<version>.msi`, built
+    # and uploaded by hand): the manual's download link is /releases/latest,
+    # so a Client-only release published as latest would hide the MSI. If the
+    # release already exists, draft or published, the packages are added to it
+    # and its notes keep everything outside the marked Client section, so a
+    # re-run replaces that section rather than appending a second one.
+    # Otherwise a draft is created under the product's title for the MSI to be
+    # added to before it is published.
+    - name: Add the packages to the product release
       working-directory: dist
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
         version=${GITHUB_REF_NAME#v}
+        begin='<!-- client-packages:begin -->'
+        end='<!-- client-packages:end -->'
         {
-          echo "Telecontrol SCADA Client $version for macOS and Windows."
+          echo "$begin"
+          echo "## Client for macOS and Windows"
           echo
           for f in *.notes.md; do cat "$f"; echo; done
           echo "Schematic (single-line) displays need the display runtime, which is not part of this release. Without it the Client runs normally and schematic windows report that no display runtime is installed."
           echo
-          echo "Each package carries the licence, third-party notices, and \`SOURCES.txt\` naming the exact commit of every repository it was built from."
-        } > release-notes.md
-        cat release-notes.md
+          echo "Each Client package carries the licence, third-party notices, and \`SOURCES.txt\` naming the exact commit of every repository it was built from."
+          echo "$end"
+        } > client-section.md
         assets=(*.dmg *.zip)
         if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+          gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json body -q .body |
+            awk -v b="$begin" -v e="$end" '$0 == b { skip = 1 } !skip { if ($0 == "") blanks++; else { while (blanks) { print ""; blanks-- } print } } $0 == e { skip = 0 }' > existing.md
+          { cat existing.md; echo; cat client-section.md; } > release-notes.md
           gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber --repo "$GITHUB_REPOSITORY"
+          gh release edit "$GITHUB_REF_NAME" --notes-file release-notes.md --repo "$GITHUB_REPOSITORY"
         else
+          { echo "Telecontrol SCADA v$version"; echo; cat client-section.md; } > release-notes.md
           gh release create "$GITHUB_REF_NAME" "${assets[@]}" --draft --verify-tag \
-            --title "Telecontrol SCADA Client $version" \
+            --title "Telecontrol SCADA v$version" \
             --notes-file release-notes.md --repo "$GITHUB_REPOSITORY"
+        fi
+        cat release-notes.md
+        msi="telecontrol-scada-$version.msi"
+        if ! gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' | grep -qxF "$msi"; then
+          echo "::warning::$GITHUB_REF_NAME has no $msi yet. Attach it before publishing: the manual's Server download is /releases/latest."
+          echo "**Attach \`$msi\` before publishing $GITHUB_REF_NAME.** The manual's Server download link is /releases/latest." >> "$GITHUB_STEP_SUMMARY"
         fi
