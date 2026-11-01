@@ -209,6 +209,7 @@ class PatternPage final : public QWizardPage {
 
   void initializePage() override {
     wizard_.preview_->SetSubject(wizard_.subject());
+    ApplyDestinationAddresses();
     // Conflicts are against whatever the run creates into: the folder for data
     // items, the chosen destination device for rules.
     const BulkCreateDestination* destination = wizard_.destination();
@@ -220,7 +221,26 @@ class PatternPage final : public QWizardPage {
   }
 
  private:
+  // The destination's addresses feed the duplicate column, and its next free
+  // address seeds the IOA start -- once per destination, so returning to this
+  // page does not undo an operator's edit, while switching the receiving
+  // device moves the start to where that device's table ends.
+  void ApplyDestinationAddresses() {
+    const BulkCreateDestination* destination = wizard_.destination();
+    if (wizard_.subject() != BulkCreateSubject::kTransmissionItem ||
+        !destination) {
+      wizard_.preview_->SetExistingAddresses({});
+      return;
+    }
+    wizard_.preview_->SetExistingAddresses(destination->used_addresses);
+    if (seeded_destination_ != destination->device_id) {
+      seeded_destination_ = destination->device_id;
+      wizard_.preview_->SetIoaStart(destination->next_address);
+    }
+  }
+
   BulkCreateWizard& wizard_;
+  scada::NodeId seeded_destination_;
 };
 
 // Step 3. Counts what Finish will actually do, from the same planner that does

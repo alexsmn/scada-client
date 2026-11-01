@@ -3,6 +3,7 @@
 #include "bulk_create/bulk_create_pattern.h"
 #include "scada/node_id.h"
 
+#include <set>
 #include <string>
 #include <vector>
 
@@ -18,6 +19,13 @@ struct BulkCreateDestination {
   scada::NodeId device_id;
   std::u16string name;
   scada::NodeId rule_type_id;
+  // The addresses the device's rules already carry, so the preview can flag a
+  // row that would duplicate one. Resolved by the caller for the same reason
+  // as the type.
+  std::set<int> used_addresses;
+  // Where a run onto this device starts addressing: the device's next free
+  // address, as a rule made by ticking an object gets.
+  int next_address = 1;
 };
 
 // What a bulk-create run needs from its host.

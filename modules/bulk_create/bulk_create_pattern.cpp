@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <format>
+#include <map>
 #include <string>
 #include <utility>
 
@@ -76,6 +77,23 @@ std::vector<BulkCreatePreviewRow> ExpandBulkCreate(
   return rows;
 }
 
+void MarkDuplicateAddresses(std::vector<BulkCreatePreviewRow>& rows,
+                            const std::set<int>& existing_addresses) {
+  auto created = [](const BulkCreatePreviewRow& row) {
+    return !row.ioa_absent && !row.conflict && !row.ioa_out_of_range;
+  };
+  std::map<int, int> run_counts;
+  for (const BulkCreatePreviewRow& row : rows) {
+    if (created(row))
+      ++run_counts[row.ioa];
+  }
+  for (BulkCreatePreviewRow& row : rows) {
+    row.duplicate_address =
+        created(row) &&
+        (existing_addresses.contains(row.ioa) || run_counts[row.ioa] > 1);
+  }
+}
+
 BulkCreateSummary SummarizeBulkCreate(
     const std::vector<BulkCreatePreviewRow>& rows) {
   BulkCreateSummary summary;
@@ -86,6 +104,8 @@ BulkCreateSummary SummarizeBulkCreate(
       ++summary.conflict_count;
     else
       ++summary.new_count;
+    if (row.duplicate_address)
+      ++summary.duplicate_address_count;
   }
   return summary;
 }

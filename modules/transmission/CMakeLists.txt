@@ -15,5 +15,8 @@ if(TARGET client_component_transmission_qt_unittests)
     # includes `transmission_devices.h` exposes.
     aui_test_qt
     scada_common
+    # transmission_model_unittest.cpp drives the real model over the shared
+    # test address space's node states.
+    address_space
   )
 endif()

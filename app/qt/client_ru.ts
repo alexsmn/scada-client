@@ -804,6 +804,15 @@
         <source>conflict</source>
         <translation>конфликт</translation>
     </message>
+    <message>
+        <source>duplicate address</source>
+        <translation>повтор адреса</translation>
+    </message>
+    <!-- modules/transmission/transmission_model.cpp: the Status column -->
+    <message>
+        <source>Duplicate address</source>
+        <translation>Повтор адреса</translation>
+    </message>
     <!-- modules/table: reshell Trend (sparkline) column -->
     <message>
         <source>Trend</source>

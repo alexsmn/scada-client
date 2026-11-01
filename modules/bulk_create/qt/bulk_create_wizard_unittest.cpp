@@ -186,4 +186,39 @@ TEST_F(BulkCreateWizardTest, FinishWithNoRowsPostsNothing) {
   wizard->accept();
 }
 
+// The run starts where the receiving device's table ends, and a row landing on
+// an address one of its rules already carries says so -- the same next free
+// address and duplicate flag a rule made by ticking an object gets.
+TEST_F(BulkCreateWizardTest, ThePatternStartsAtTheDevicesNextFreeAddress) {
+  std::vector<BulkCreateDestination> destinations = Receivers();
+  destinations[0].used_addresses = {41, 42, 50};
+  destinations[0].next_address = 51;
+  auto wizard = std::unique_ptr<QWizard>{MakeBulkCreateWizard(
+      {.node_service_ = node_service_,
+       .task_manager_ = task_manager_,
+       .source_node_ids_ = {scada::NodeId::FromString("ns=2;s=A"),
+                            scada::NodeId::FromString("ns=2;s=B")},
+       .destinations_ = std::move(destinations)})};
+  auto* preview = wizard->findChild<BulkCreatePreviewPanel*>();
+  ASSERT_NE(preview, nullptr);
+
+  wizard->show();
+  wizard->next();  // to the Pattern page
+
+  ASSERT_EQ(preview->rows().size(), 2u);
+  EXPECT_EQ(preview->rows()[0].ioa, 51);
+  EXPECT_EQ(preview->rows()[1].ioa, 52);
+  EXPECT_FALSE(preview->rows()[0].duplicate_address);
+
+  // Moved by hand onto the device's table, the rows are flagged.
+  preview->SetIoaStart(41);
+  EXPECT_TRUE(preview->rows()[0].duplicate_address);
+  EXPECT_TRUE(preview->rows()[1].duplicate_address);
+
+  // Returning to the page keeps the operator's start.
+  wizard->back();
+  wizard->next();
+  EXPECT_EQ(preview->rows()[0].ioa, 41);
+}
+
 }  // namespace

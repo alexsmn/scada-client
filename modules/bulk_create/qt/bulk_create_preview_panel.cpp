@@ -76,7 +76,10 @@ QWidget* BulkCreatePreviewPanel::BuildForm() {
   count_ = MakeSpin(0, 100000, 12);
   count_->setObjectName(QStringLiteral("countSpin"));
   index_step_ = MakeSpin(1, 100000, 1);
-  ioa_start_ = MakeSpin(0, 1000000, 4001);
+  // Up to the property's own bound: the wizard seeds the start from the
+  // destination's next free address, which a 3-octet IEC 60870 link puts as
+  // high as 16 777 215.
+  ioa_start_ = MakeSpin(0, static_cast<int>(kMaxBulkCreateIoa), 4001);
   ioa_step_ = MakeSpin(1, 100000, 1);
 
   form->addRow(Tr("Name template"), name_template_);
@@ -181,6 +184,15 @@ void BulkCreatePreviewPanel::SetExistingNodeIds(
   Refresh();
 }
 
+void BulkCreatePreviewPanel::SetExistingAddresses(std::set<int> existing) {
+  existing_addresses_ = std::move(existing);
+  Refresh();
+}
+
+void BulkCreatePreviewPanel::SetIoaStart(int ioa_start) {
+  ioa_start_->setValue(ioa_start);
+}
+
 void BulkCreatePreviewPanel::SetParams(const BulkCreateParams& params) {
   name_template_->setText(QString::fromStdU16String(params.name_template));
   node_id_template_->setText(
@@ -201,6 +213,7 @@ void BulkCreatePreviewPanel::Refresh() {
 
   const scada::aui::ThemeTokens& tokens = PanelTokens();
   rows_ = ExpandBulkCreate(CurrentParams(), existing_node_ids_);
+  MarkDuplicateAddresses(rows_, existing_addresses_);
 
   preview_->setRowCount(static_cast<int>(rows_.size()));
   for (int i = 0; i < static_cast<int>(rows_.size()); ++i) {
@@ -213,10 +226,12 @@ void BulkCreatePreviewPanel::Refresh() {
     set_cell(2, QString::fromStdU16String(row.node_id));
     set_cell(3, QString::number(row.ioa));
 
-    auto* status = new QTableWidgetItem(
-        row.ioa_out_of_range ? Tr("address out of range")
-                             : (row.conflict ? Tr("exists") : Tr("new")));
-    if (row.conflict || row.ioa_out_of_range)
+    auto* status =
+        new QTableWidgetItem(row.ioa_out_of_range ? Tr("address out of range")
+                             : row.conflict       ? Tr("exists")
+                             : row.duplicate_address ? Tr("duplicate address")
+                                                     : Tr("new"));
+    if (row.conflict || row.ioa_out_of_range || row.duplicate_address)
       status->setForeground(tokens.bad);
     else
       status->setForeground(tokens.good);
@@ -230,6 +245,11 @@ void BulkCreatePreviewPanel::Refresh() {
     text += QStringLiteral(" · %1 %2")
                 .arg(summary.conflict_count)
                 .arg(Tr("conflict"));
+  }
+  if (summary.duplicate_address_count > 0) {
+    text += QStringLiteral(" · %1 %2")
+                .arg(summary.duplicate_address_count)
+                .arg(Tr("duplicate address"));
   }
   if (summary.out_of_range_count > 0) {
     text += QStringLiteral(" · %1 %2")

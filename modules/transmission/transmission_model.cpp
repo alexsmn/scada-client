@@ -1,7 +1,9 @@
 #include "modules/transmission/transmission_model.h"
 
+#include "modules/transmission/transmission_address.h"
 #include "modules/transmission/transmission_devices.h"
 
+#include "aui/translation.h"
 #include "base/awaitable.h"
 #include "base/cancelation.h"
 #include "base/check.h"
@@ -51,6 +53,7 @@ void TransmissionModel::Init(NodeRef device) {
   connections_.clear();
   cancelation_.Cancel();
   device_ = std::move(device);
+  reserved_addresses_.clear();
 
   connections_.push_back(node_service_.SubscribeModelChanged(
       [this](const scada::ModelChangeEvent& event) { OnModelChanged(event); }));
@@ -75,6 +78,12 @@ void TransmissionModel::Init(NodeRef device) {
           co_return;
         }
         (void)co_await FetchTypeChainStatus(device_.type_definition());
+        if (cancelation.canceled()) {
+          co_return;
+        }
+        // The link's properties: an IEC 60870 link carries the IOA width that
+        // bounds the address a ticked object gets.
+        (void)co_await FetchChildrenStatus(device_.parent());
         if (cancelation.canceled()) {
           co_return;
         }
@@ -126,18 +135,48 @@ void TransmissionModel::GetCell(scada::aui::GridCell& cell) {
       break;
     }
 
-    case 1:
+    case 1: {
       auto device_item_address =
           row.transmission[scada::devices::id::TransmissionItemType_Address]
               .value()
               .get_or(0);
       cell.text = WideFormat(device_item_address);
       break;
+    }
+
+    case 2:
+      // Text, not colour: the duplicate is a configuration fault the
+      // engineer has to read, and a text cell needs no palette role the
+      // native styles do not have.
+      if (IsDuplicateAddress(cell.row))
+        cell.text = Translate("Duplicate address");
+      break;
   }
 }
 
+bool TransmissionModel::IsDuplicateAddress(int row) const {
+  const std::optional<int> address =
+      ReadTransmissionAddress(rows_[row].transmission);
+  if (!address)
+    return false;
+  for (int i = 0; i < static_cast<int>(rows_.size()); ++i) {
+    if (i != row && ReadTransmissionAddress(rows_[i].transmission) == address)
+      return true;
+  }
+  return false;
+}
+
+std::vector<int> TransmissionModel::UsedAddresses() const {
+  std::vector<int> used;
+  for (const Row& row : rows_) {
+    if (std::optional<int> address = ReadTransmissionAddress(row.transmission))
+      used.push_back(*address);
+  }
+  return used;
+}
+
 bool TransmissionModel::IsEditable(int row, int column) {
-  return column != 0;
+  return column == 1;
 }
 
 bool TransmissionModel::SetCellText(int row,
@@ -239,12 +278,18 @@ void TransmissionModel::Update(NodeRef transmission) {
       ScopedRowsAdding adding{*this, static_cast<int>(rows_.size()), 1};
       rows_.push_back(Row{transmission, source_id});
     }
+    ReleaseReservedAddress(transmission);
+    // The new rule's address may duplicate an existing row's.
+    GridModel::NotifyRowsChanged(0, static_cast<int>(rows_.size()));
     if (!source_id.is_null())
       NotifyContainedItemChanged(source_id, true);
     return;
   }
 
-  GridModel::NotifyRowsChanged(i, 1);
+  // Every row, not just this one: an address change can make another row a
+  // duplicate, or stop it being one.
+  GridModel::NotifyRowsChanged(0, static_cast<int>(rows_.size()));
+  ReleaseReservedAddress(transmission);
 
   auto old_source_id = rows_[i].source_id;
   if (old_source_id != source_id) {
@@ -267,8 +312,17 @@ void TransmissionModel::Delete(const scada::NodeId& transmission_id) {
 
   // A removal rather than a wholesale change -- a reset drops the selection of
   // every row that survives.
-  ScopedRowsRemoving removing{*this, i, 1};
-  rows_.erase(rows_.begin() + i);
+  {
+    ScopedRowsRemoving removing{*this, i, 1};
+    rows_.erase(rows_.begin() + i);
+  }
+  // The rule it duplicated may now stand alone.
+  GridModel::NotifyRowsChanged(0, static_cast<int>(rows_.size()));
+}
+
+void TransmissionModel::ReleaseReservedAddress(const NodeRef& transmission) {
+  if (std::optional<int> address = ReadTransmissionAddress(transmission))
+    reserved_addresses_.erase(*address);
 }
 
 int TransmissionModel::FindRow(const scada::NodeId& transmission_id) const {
@@ -301,11 +355,29 @@ void TransmissionModel::AddContainedItem(const scada::NodeId& node_id,
 
   auto transmission_item_type_id = TransmissionItemTypeFor(device_);
 
+  scada::NodeProperties properties{
+      {scada::devices::id::TransmissionItemType_SourceNode,
+       scada::Variant{node_id}}};
+
+  // The next free address on this device, rather than the type's default of
+  // 1 that every ticked object used to share. Addresses already handed to an
+  // insert that has not come back yet count as used, so ticking several
+  // objects in a row gives each its own.
+  std::vector<int> used = UsedAddresses();
+  used.insert(used.end(), reserved_addresses_.begin(),
+              reserved_addresses_.end());
+  if (std::optional<int> address =
+          NextFreeTransmissionAddressFor(device_, used)) {
+    properties.emplace_back(
+        scada::devices::id::TransmissionItemType_Address,
+        scada::Variant{static_cast<scada::Int32>(*address)});
+    reserved_addresses_.insert(*address);
+  }
+
   std::ignore = task_manager_.PostInsertTask(
       {.type_definition_id = transmission_item_type_id,
        .parent_id = device_.node_id(),
-       .properties = {{scada::devices::id::TransmissionItemType_SourceNode,
-                       scada::Variant{node_id}}}});
+       .properties = std::move(properties)});
 }
 
 void TransmissionModel::RemoveContainedItem(const scada::NodeId& node_id) {

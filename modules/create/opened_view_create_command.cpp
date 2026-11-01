@@ -13,6 +13,7 @@
 #include "model/devices_node_ids.h"
 #include "model/static_types.h"
 #include "modules/create_service_item/create_service_item_dialog.h"
+#include "modules/transmission/transmission_address.h"
 #include "modules/transmission/transmission_devices.h"
 #include "net/net_executor_adapter.h"
 #include "node_service/node_awaitable.h"
@@ -136,13 +137,23 @@ Awaitable<void> OpenedViewCreateCommand::CreateTransmissionRulesAsync(
 
   std::vector<BulkCreateDestination> destinations;
   for (const TransmissionDeviceEntry& device : devices) {
-    scada::NodeId rule_type_id =
-        TransmissionItemTypeFor(node_service_.GetNode(device.node_id));
-    if (!rule_type_id.is_null()) {
-      destinations.push_back({.device_id = device.node_id,
-                              .name = device.name,
-                              .rule_type_id = std::move(rule_type_id)});
-    }
+    NodeRef device_node = node_service_.GetNode(device.node_id);
+    scada::NodeId rule_type_id = TransmissionItemTypeFor(device_node);
+    if (rule_type_id.is_null())
+      continue;
+    // The addresses this device's rules carry, for the preview's duplicate
+    // flag and for where the run starts addressing.
+    co_await FetchTransmissionAddresses(device_node);
+    if (cancelation.canceled())
+      co_return;
+    const std::vector<int> used = ReadTransmissionAddresses(device_node);
+    destinations.push_back(
+        {.device_id = device.node_id,
+         .name = device.name,
+         .rule_type_id = std::move(rule_type_id),
+         .used_addresses = {used.begin(), used.end()},
+         .next_address =
+             NextFreeTransmissionAddressFor(device_node, used).value_or(1)});
   }
 
   if (destinations.empty()) {

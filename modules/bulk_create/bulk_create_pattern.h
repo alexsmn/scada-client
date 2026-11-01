@@ -86,6 +86,12 @@ struct BulkCreatePreviewRow {
   // link. Distinguishes "this subject has no IOA" from "the IOA is zero", which
   // the grid must not render the same way.
   bool ioa_absent = false;
+  // The row's IOA is already carried by a rule on the destination, or by
+  // another row of this run that will be created. The row is still created --
+  // the Transmission table flags a duplicate rather than refusing one -- but
+  // the preview says so, because the receiver cannot tell two objects sent
+  // under one address apart.
+  bool duplicate_address = false;
 };
 
 // Expands `params` into `params.count` preview rows, marking a row as a
@@ -95,11 +101,22 @@ std::vector<BulkCreatePreviewRow> ExpandBulkCreate(
     const BulkCreateParams& params,
     const std::set<std::u16string>& existing_node_ids);
 
+// Marks the rows whose IOA collides with `existing_addresses` (the addresses
+// the destination's rules already carry) or with another row of the run. Only
+// rows that will be created take part: a conflicting or out-of-range row is
+// dropped by the planner, so its address occupies nothing. A no-op for a
+// subject without an IOA.
+void MarkDuplicateAddresses(std::vector<BulkCreatePreviewRow>& rows,
+                            const std::set<int>& existing_addresses);
+
 // Aggregate counts for the wizard's "N new / M conflict" summary.
 struct BulkCreateSummary {
   int new_count = 0;
   int conflict_count = 0;
   int out_of_range_count = 0;
+  // Of `new_count`, the rows whose address is a duplicate. They are created,
+  // so they are not subtracted from it.
+  int duplicate_address_count = 0;
 };
 
 // Tallies the new vs. conflicting rows.

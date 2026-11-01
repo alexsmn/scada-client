@@ -10,6 +10,7 @@
 
 #include <boost/signals2/connection.hpp>
 #include <functional>
+#include <set>
 #include <vector>
 
 class NodeService;
@@ -48,6 +49,11 @@ class TransmissionModel
 
   void Refresh();
 
+  // True when another rule on this device carries `row`'s destination
+  // address. Such rows read "Duplicate address" in the Status column; a rule
+  // whose address has not been fetched is never one.
+  bool IsDuplicateAddress(int row) const;
+
   // ContentsModel
   virtual void AddContainedItem(const scada::NodeId& node_id,
                                 unsigned flags) override;
@@ -67,6 +73,13 @@ class TransmissionModel
   int FindRow(const scada::NodeId& transmission_id) const;
   int FindSource(const scada::NodeId& source_id) const;
 
+  // The fetched destination addresses of every row.
+  std::vector<int> UsedAddresses() const;
+
+  // Forgets the reservation `AddContainedItem` made for `transmission`'s
+  // address, now that the rule carrying it has arrived.
+  void ReleaseReservedAddress(const NodeRef& transmission);
+
   void Update(NodeRef transmission);
   void Delete(const scada::NodeId& transmission_id);
 
@@ -81,6 +94,11 @@ class TransmissionModel
   NodeRef device_;
 
   Rows rows_;
+
+  // Addresses handed to rule inserts that have not come back as rows yet, so
+  // several objects ticked in quick succession do not all compute the same
+  // next free address from a table that has not changed.
+  std::set<int> reserved_addresses_;
 
   std::vector<boost::signals2::scoped_connection> connections_;
   Cancelation cancelation_;

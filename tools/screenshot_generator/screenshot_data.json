@@ -857,7 +857,7 @@
       "class": "object",
       "type_definition": "SCADA.342",
       "properties": {
-        "SCADA.225": 2002,
+        "SCADA.225": 2001,
         "SCADA.373": "TIT.724"
       }
     },

@@ -51,9 +51,15 @@ class BulkCreatePreviewPanel : public QWidget {
   void ApplySubject();
 
  public:
-
   // The set of NodeIds already present in the target, used to flag conflicts.
   void SetExistingNodeIds(std::set<std::u16string> existing);
+
+  // The addresses the destination's rules already carry, used to flag rows
+  // whose IOA would duplicate one.
+  void SetExistingAddresses(std::set<int> existing);
+
+  // Moves the IOA start without touching the rest of the pattern.
+  void SetIoaStart(int ioa_start);
 
   // Seeds the pattern fields -- INCLUDING the subject -- and refreshes.
   //
@@ -97,6 +103,7 @@ class BulkCreatePreviewPanel : public QWidget {
 
   BulkCreateSubject subject_ = BulkCreateSubject::kDataItem;
   std::set<std::u16string> existing_node_ids_;
+  std::set<int> existing_addresses_;
   std::vector<BulkCreatePreviewRow> rows_;
 };
 

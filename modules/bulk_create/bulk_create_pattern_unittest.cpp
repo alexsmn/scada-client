@@ -217,4 +217,69 @@ TEST(SummarizeBulkCreateTest, DataItemRowsCountAsNew) {
   EXPECT_EQ(summary.out_of_range_count, 0);
 }
 
+BulkCreateParams TransmissionRun(int ioa_start, int count) {
+  BulkCreateParams params;
+  params.subject = BulkCreateSubject::kTransmissionItem;
+  params.name_template = u"TS{n}";
+  params.count = count;
+  params.ioa_start = ioa_start;
+  params.ioa_step = 1;
+  return params;
+}
+
+// A row whose IOA a rule on the destination already carries is flagged, and
+// still counted as created: the duplicate is shown, not refused.
+TEST(MarkDuplicateAddressesTest, FlagsRowsCollidingWithTheDestination) {
+  std::vector<BulkCreatePreviewRow> rows =
+      ExpandBulkCreate(TransmissionRun(1, 4), {});
+  MarkDuplicateAddresses(rows, {2, 4, 100});
+
+  EXPECT_FALSE(rows[0].duplicate_address);
+  EXPECT_TRUE(rows[1].duplicate_address);
+  EXPECT_FALSE(rows[2].duplicate_address);
+  EXPECT_TRUE(rows[3].duplicate_address);
+
+  const BulkCreateSummary summary = SummarizeBulkCreate(rows);
+  EXPECT_EQ(summary.new_count, 4);
+  EXPECT_EQ(summary.duplicate_address_count, 2);
+}
+
+// A step of zero sends every row of the run under one address.
+TEST(MarkDuplicateAddressesTest, FlagsRowsCollidingWithEachOther) {
+  BulkCreateParams params = TransmissionRun(10, 3);
+  params.ioa_step = 0;
+  std::vector<BulkCreatePreviewRow> rows = ExpandBulkCreate(params, {});
+  MarkDuplicateAddresses(rows, {});
+
+  for (const BulkCreatePreviewRow& row : rows)
+    EXPECT_TRUE(row.duplicate_address);
+}
+
+// A row the planner drops occupies no address, so it neither is a duplicate
+// nor makes another row one.
+TEST(MarkDuplicateAddressesTest, DroppedRowsTakeNoPart) {
+  BulkCreateParams params = TransmissionRun(10, 2);
+  params.node_id_template = u"ns=2;s=R{n}";
+  params.ioa_step = 0;
+  std::vector<BulkCreatePreviewRow> rows =
+      ExpandBulkCreate(params, {u"ns=2;s=R1"});
+  ASSERT_TRUE(rows[0].conflict);
+  MarkDuplicateAddresses(rows, {});
+
+  EXPECT_FALSE(rows[0].duplicate_address);
+  EXPECT_FALSE(rows[1].duplicate_address);
+}
+
+TEST(MarkDuplicateAddressesTest, DataItemsHaveNoAddressToDuplicate) {
+  BulkCreateParams params;
+  params.subject = BulkCreateSubject::kDataItem;
+  params.name_template = u"AI{n}";
+  params.count = 2;
+  std::vector<BulkCreatePreviewRow> rows = ExpandBulkCreate(params, {});
+  MarkDuplicateAddresses(rows, {0});
+
+  for (const BulkCreatePreviewRow& row : rows)
+    EXPECT_FALSE(row.duplicate_address);
+}
+
 }  // namespace

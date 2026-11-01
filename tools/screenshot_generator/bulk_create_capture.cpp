@@ -12,6 +12,9 @@ void SaveBulkCreateScreenshot(const ScreenshotSpec& spec) {
   // One existing NodeId so the preview flags a conflict, mirroring the mockup's
   // "1 conflict" (TS8 already exists).
   panel.SetExistingNodeIds({u"ns=2;s=RTU.TS8.I"});
+  // And one address a rule on the destination already carries, so row 3 shows
+  // the duplicate-address flag a rule landing on a taken IOA gets.
+  panel.SetExistingAddresses({4003});
 
   BulkCreateParams params;
   params.name_template = u"TS{n} current";

@@ -45,6 +45,8 @@ std::unique_ptr<UiView> TransmissionView::Init(
   const scada::aui::TableColumn columns[] = {
       {0, Translate("Object"), 250, scada::aui::TableColumn::LEFT},
       {1, Translate("Address"), 100, scada::aui::TableColumn::RIGHT},
+      // Flags a rule whose address another rule on this device also carries.
+      {2, Translate("Status"), 150, scada::aui::TableColumn::LEFT},
   };
   column_model_->SetColumns(std::size(columns), columns);
 
