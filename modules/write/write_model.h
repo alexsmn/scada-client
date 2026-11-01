@@ -23,6 +23,10 @@ class WriteModel : private WriteContext,
                    public std::enable_shared_from_this<WriteModel> {
  public:
   explicit WriteModel(WriteContext&& context);
+  // Releases a selection still outstanding: the dialog that owns this model
+  // has gone, by whichever route -- the window button, Escape, a parent
+  // destroying it while the confirmation is up (backlog 711).
+  ~WriteModel();
 
   void set_dialog_service(DialogService* dialog_service) {
     dialog_service_ = dialog_service;
@@ -95,9 +99,22 @@ class WriteModel : private WriteContext,
   // `local_events` that the selection of `source_title` may still be armed.
   // Bad_NotSupported — a driver that never selects — reports nothing. Takes no
   // model: the dialog may already be gone when the device answers.
+  // `local_events` is checked against its `lifetime()` before the report, so
+  // an answer arriving after the session was torn down reports nothing.
   static Awaitable<void> ReportCancelRefusalAsync(scada::CoStatus operation,
                                                   LocalEvents* local_events,
                                                   std::u16string source_title);
+
+  // Awaits a select and hands its outcome to `model`. When the model is gone
+  // by then -- the operator closed the dialog while the select was in flight
+  // -- a select the device accepted is released with `cancel` instead, since
+  // nobody is left to operate or decline it. `cancel` is built eagerly and is
+  // lazy, so it is never sent while the model is alive to decide.
+  static Awaitable<void> CompleteSelectAsync(std::weak_ptr<WriteModel> model,
+                                             scada::CoStatus select,
+                                             scada::CoStatus cancel,
+                                             LocalEvents* local_events,
+                                             std::u16string source_title);
 
   static Awaitable<void> CompleteWriteAsync(AnyExecutor executor,
                                             std::weak_ptr<WriteModel> model,

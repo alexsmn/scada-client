@@ -39,6 +39,13 @@ scada::CoStatusOr<scada::CallResult> AwaitRefusal(
   co_return scada::MakeCallResult(scada::Status{scada::StatusCode::Bad});
 }
 
+// A Call answer that arrives only once `answer` completes, and accepts.
+scada::CoStatusOr<scada::CallResult> AwaitAcceptance(
+    scada::base::AsyncCompletion& answer) {
+  co_await answer.Wait();
+  co_return scada::MakeCallResult(scada::Status{scada::StatusCode::Good});
+}
+
 class RecordingDialogService : public DialogService {
  public:
   explicit RecordingDialogService(AnyExecutor executor)
@@ -114,7 +121,8 @@ class WriteModelTest : public Test {
   // StaticNodeService::Add is try_emplace-based: adding a node id that already
   // exists is a SILENT no-op, so OutputTwoStaged cannot be changed after the
   // fact. The model reads it once, at construction.
-  std::shared_ptr<WriteModel> CreateModel(bool two_staged = false) {
+  std::shared_ptr<WriteModel> CreateModel(bool two_staged = false,
+                                          LocalEvents* local_events = nullptr) {
     node_service_.Add(
         scada::NodeState{.node_id = kDataItemId,
                          .node_class = scada::NodeClass::Variable,
@@ -138,7 +146,8 @@ class WriteModelTest : public Test {
 
     auto model = std::make_shared<WriteModel>(
         WriteContext{executor_, timed_data_service_, kDataItemId, profile_,
-                     /*manual_=*/false, &local_events_});
+                     /*manual_=*/false,
+                     local_events ? local_events : &local_events_});
     model->set_dialog_service(&dialog_service_);
     model->status_change_handler = [this] { ++status_changes_; };
     model->completion_handler = [this](bool ok) { completion_ = ok; };
@@ -374,6 +383,119 @@ TEST_F(WriteModelTest, CancelRefusedAfterTheDialogClosedIsStillReported) {
   Drain(executor_);
 
   EXPECT_THAT(local_events_.events(), SizeIs(1));
+}
+
+// Backlog 711: the operator closes the control dialog -- Escape, the window
+// button -- while the select is still in flight. The device then accepts it
+// with nobody left to operate or decline, and the selection used to stay armed
+// until the outstation's own timeout.
+TEST_F(WriteModelTest, SelectAcceptedAfterTheDialogClosedIsReleased) {
+  scada::base::AsyncCompletion select_answer{executor_};
+  ON_CALL(method_service_, Call)
+      .WillByDefault([&](scada::NodeId, scada::NodeId method_id,
+                         std::vector<scada::Variant>, scada::ServiceContext) {
+        called_methods_.push_back(method_id);
+        return method_id == scada::data_items::id::DataItemControlType_Select
+                   ? AwaitAcceptance(select_answer)
+                   : scada::MakeMethodCallResult();
+      });
+
+  auto model = CreateModel(/*two_staged=*/true);
+  model->Write(42.0, /*lock=*/false);
+  Drain(executor_);
+  model.reset();
+
+  select_answer.Complete();
+  Drain(executor_);
+
+  EXPECT_THAT(called_methods_,
+              ElementsAre(scada::data_items::id::DataItemControlType_Select,
+                          scada::data_items::id::DataItemControlType_Cancel));
+  // Nothing is asked of an operator who has closed the dialog.
+  EXPECT_TRUE(dialog_service_.modes.empty());
+}
+
+// The dialog is destroyed while the operate confirmation is up, so the prompt
+// is abandoned and never answers. The selection is released all the same.
+TEST_F(WriteModelTest, DestroyedModelWithASelectionOutstandingReleasesIt) {
+  ON_CALL(method_service_, Call)
+      .WillByDefault([this](scada::NodeId, scada::NodeId method_id,
+                            std::vector<scada::Variant>,
+                            scada::ServiceContext) {
+        called_methods_.push_back(method_id);
+        return scada::MakeMethodCallResult();
+      });
+
+  auto model = CreateModel(/*two_staged=*/true);
+  model->Write(42.0, /*lock=*/false);
+  Drain(executor_);
+  ASSERT_THAT(dialog_service_.modes,
+              ElementsAre(MessageBoxMode::QuestionYesNoDefaultNo));
+
+  model.reset();
+  Drain(executor_);
+
+  EXPECT_THAT(called_methods_,
+              ElementsAre(scada::data_items::id::DataItemControlType_Select,
+                          scada::data_items::id::DataItemControlType_Cancel));
+}
+
+// A refused select armed nothing, and a model that never selected has nothing
+// to release: neither sends a Cancel.
+TEST_F(WriteModelTest, NoSelectionHeldMeansNoCancelOnClose) {
+  ON_CALL(method_service_, Call)
+      .WillByDefault([this](scada::NodeId, scada::NodeId method_id,
+                            std::vector<scada::Variant>,
+                            scada::ServiceContext) {
+        called_methods_.push_back(method_id);
+        return scada::MakeMethodCallResult(
+            method_id == scada::data_items::id::DataItemControlType_Select
+                ? scada::Status{scada::StatusCode::Bad}
+                : scada::Status{scada::StatusCode::Good});
+      });
+
+  auto model = CreateModel(/*two_staged=*/true);
+  model.reset();
+  Drain(executor_);
+  EXPECT_THAT(called_methods_, IsEmpty());
+
+  model = CreateModel(/*two_staged=*/true);
+  model->Write(42.0, /*lock=*/false);
+  Drain(executor_);
+  dialog_service_.CompleteMessageBox();
+  Drain(executor_);
+  model.reset();
+  Drain(executor_);
+
+  EXPECT_THAT(called_methods_,
+              ElementsAre(scada::data_items::id::DataItemControlType_Select));
+}
+
+// A sign-out rebuilds the session, destroying the event sink, while a Cancel
+// may still be waiting for the device. Its refusal then reports nothing
+// rather than writing into a destroyed object.
+TEST_F(WriteModelTest, CancelRefusedAfterTheEventSinkIsGoneReportsNothing) {
+  scada::base::AsyncCompletion cancel_answer{executor_};
+  ON_CALL(method_service_, Call)
+      .WillByDefault([&](scada::NodeId, scada::NodeId method_id,
+                         std::vector<scada::Variant>, scada::ServiceContext) {
+        return method_id == scada::data_items::id::DataItemControlType_Cancel
+                   ? AwaitRefusal(cancel_answer)
+                   : scada::MakeMethodCallResult();
+      });
+
+  auto session_events = std::make_unique<LocalEvents>();
+  auto model = CreateModel(/*two_staged=*/true, session_events.get());
+  model->Write(42.0, /*lock=*/false);
+  Drain(executor_);
+  model.reset();  // The dialog closes with the selection outstanding.
+  Drain(executor_);
+  session_events.reset();  // The session is torn down.
+
+  cancel_answer.Complete();
+  Drain(executor_);  // Under ASan, a report here is a heap-use-after-free.
+
+  EXPECT_THAT(local_events_.events(), IsEmpty());
 }
 
 TEST_F(WriteModelTest, ControlCommandConfirmationReviewsPresentAndCommand) {

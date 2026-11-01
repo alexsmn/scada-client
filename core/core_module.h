@@ -29,6 +29,14 @@ class CoreModule {
 
   ProgressHost& progress_host() SCADA_LIFETIME_BOUND { return *progress_host_; }
 
+  // Empties both command registries. Everything in them is registered by the
+  // post-login modules, so a session rebuild clears them before registering
+  // again; the tracer and the progress host are not session state and stay.
+  void ClearCommands() {
+    global_commands_.Clear();
+    selection_commands_.Clear();
+  }
+
  private:
   std::stack<std::shared_ptr<void>> singletons_;
 

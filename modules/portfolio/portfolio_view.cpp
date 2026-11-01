@@ -6,6 +6,7 @@
 #include "controller/selection_model.h"
 #include "modules/select_item/select_item_dialog.h"
 #include "node_service/node_service.h"
+#include "portfolio/portfolio_delete.h"
 #include "portfolio/portfolio_manager.h"
 #include "portfolio/portfolio_tree_model.h"
 #include "resources/common_resources.h"
@@ -88,12 +89,27 @@ std::unique_ptr<UiView> PortfolioView::Init(
 
 void PortfolioView::DeleteSelection() {
   const PortfolioTreeNode* node = model_->AsNode(tree_->GetSelectedNode());
-  if (node) {
-    if (node->is_portfolio())
-      portfolio_manager_.Delete(node->portfolio());
-    else
-      portfolio_manager_.DeleteItem(node->portfolio(), node->item_id());
+  if (!node)
+    return;
+
+  // Confirmed first: neither a portfolio nor an item removed from one can be
+  // brought back (backlog 961). The coroutine holds nothing of this view, which
+  // may close while the question is up; it names its target by value.
+  std::optional<scada::NodeId> item_id;
+  std::u16string item_title;
+  if (!node->is_portfolio()) {
+    item_id = node->item_id();
+    item_title = node->GetText(0);
   }
+  CoSpawn(executor_, [&dialog_service = dialog_service_,
+                      &portfolio_manager = portfolio_manager_,
+                      portfolio_name = node->portfolio().name,
+                      item_id = std::move(item_id),
+                      item_title = std::move(item_title)]() mutable {
+    return ConfirmAndDeleteFromPortfolio(
+        dialog_service, portfolio_manager, std::move(portfolio_name),
+        std::move(item_id), std::move(item_title));
+  });
 }
 
 const Portfolio* PortfolioView::GetSelectedPortfolio() const {

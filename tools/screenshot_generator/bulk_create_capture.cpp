@@ -9,16 +9,16 @@
 void SaveBulkCreateScreenshot(const ScreenshotSpec& spec) {
   BulkCreatePreviewPanel panel;
 
-  // One existing NodeId so the preview flags a conflict, mirroring the mockup's
-  // "1 conflict" (TS8 already exists).
-  panel.SetExistingNodeIds({u"ns=2;s=RTU.TS8.I"});
-  // And one address a rule on the destination already carries, so row 3 shows
+  // One address a rule on the destination already carries, so row 3 shows
   // the duplicate-address flag a rule landing on a taken IOA gets.
   panel.SetExistingAddresses({4003});
 
   BulkCreateParams params;
   params.name_template = u"TS{n} current";
-  params.node_id_template = u"ns=2;s=RTU.TS{n}.I";
+  // Empty, as the wizard now proposes and the manual recommends: the Server
+  // assigns the ids. The former string template is one the Server refuses
+  // (backlog 960), so the manual must not show it filled in.
+  params.node_id_template = {};
   params.start_index = 1;
   params.count = 12;
   params.index_step = 1;

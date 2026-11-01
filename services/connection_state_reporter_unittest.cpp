@@ -127,4 +127,23 @@ TEST_F(ConnectionStateReporterTest, TakeoverReportsItAndDoesNotReconnect) {
       std::u16string::npos);
 }
 
+// A session-state change is delivered through the executor, so it can still
+// be queued when the reporter is destroyed -- a sign-out rebuilding the
+// session does exactly that (backlog 887). It must then do nothing; it used
+// to run on the destroyed reporter and crash.
+TEST_F(ConnectionStateReporterTest, ChangeQueuedWhenDestroyedIsDropped) {
+  auto reporter = std::make_unique<ConnectionStateReporter>(
+      ConnectionStateReporterContext{.executor_ = executor_,
+                                     .session_service_ = session_service_,
+                                     .local_events_ = local_events_});
+  ASSERT_TRUE(session_state_changed_);
+
+  session_state_changed_(/*connected=*/false,
+                         scada::Status{scada::StatusCode::Bad_Disconnected});
+  reporter.reset();
+  Drain(executor_);
+
+  EXPECT_TRUE(local_events_.events().empty());
+}
+
 }  // namespace

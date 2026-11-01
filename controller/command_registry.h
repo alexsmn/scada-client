@@ -111,6 +111,10 @@ class BasicCommandRegistry {
 
   auto commands() const { return command_map_ | std::views::values; }
 
+  // Forgets every command, for a registry whose registrants are torn down and
+  // built again (a sign-out rebuilding the session, backlog 887).
+  void Clear() { command_map_.clear(); }
+
  protected:
   std::unordered_map<unsigned /*command_id*/, BasicCommand<C>> command_map_;
 };

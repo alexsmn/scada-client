@@ -4,6 +4,7 @@
 #include "scada/event.h"
 
 #include <boost/signals2/signal.hpp>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -35,6 +36,11 @@ class LocalEvents {
 
   EventSignal& event_signal() SCADA_LIFETIME_BOUND { return event_signal_; }
 
+  // Expires when this object is destroyed. For work that outlives the module
+  // owning it -- a device answering a control Cancel after a sign-out has
+  // rebuilt the session -- to check before it reports here.
+  std::weak_ptr<const void> lifetime() const { return lifetime_; }
+
  private:
   Events::iterator FindEvent(scada::EventId event_id);
 
@@ -45,4 +51,6 @@ class LocalEvents {
   Events events_;
 
   boost::signals2::signal<void(const scada::Event&)> event_signal_;
+
+  const std::shared_ptr<const void> lifetime_ = std::make_shared<int>(0);
 };

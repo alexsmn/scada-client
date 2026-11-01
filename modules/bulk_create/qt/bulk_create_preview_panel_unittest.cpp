@@ -37,6 +37,20 @@ TEST_F(BulkCreatePreviewPanelTest, DefaultPatternPopulatesPreviewGrid) {
   EXPECT_EQ(panel.rows().size(), 12u);
 }
 
+// Backlog 960: the default used to be `ns=2;s=RTU.TS{n}.I`, a string
+// identifier the Server refuses, so the wizard's own proposal created nothing.
+// Empty lets the Server assign the ids.
+TEST_F(BulkCreatePreviewPanelTest, DefaultNodeIdTemplateLetsTheServerAssign) {
+  BulkCreatePreviewPanel panel;
+  auto* node_id_template =
+      panel.findChild<QLineEdit*>(QStringLiteral("nodeIdTemplate"));
+  ASSERT_NE(node_id_template, nullptr);
+  EXPECT_TRUE(node_id_template->text().isEmpty());
+  ASSERT_FALSE(panel.rows().empty());
+  for (const BulkCreatePreviewRow& row : panel.rows())
+    EXPECT_TRUE(row.node_id.empty());
+}
+
 TEST_F(BulkCreatePreviewPanelTest, ConflictRowIsFlaggedAndCountedInSummary) {
   BulkCreatePreviewPanel panel;
   panel.SetExistingNodeIds({u"ns=2;s=RTU.TS8.I"});

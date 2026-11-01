@@ -52,6 +52,14 @@ WriteModel::WriteModel(WriteContext&& context)
   }
 }
 
+WriteModel::~WriteModel() {
+  // Safe from a destructor because the cancel holds nothing of the model: it
+  // captures the prepared call, the event sink and a title (see
+  // CancelOutstandingSelect), and `spec_` is still alive in this body to build
+  // the call from.
+  CancelOutstandingSelect();
+}
+
 std::u16string WriteModel::GetWindowTitle() const {
   return manual_ ? Translate("Manual Input") : Translate("Control");
 }
@@ -140,12 +148,17 @@ void WriteModel::Write(double value, bool lock) {
   } else if (two_staged_) {
     write_selecting_ = true;
     CoSpawn(executor_,
-            [executor = executor_, model = weak_from_this(),
-             operation = ControlNode().call(
+            [model = weak_from_this(),
+             select = ControlNode().call(
                  scada::data_items::id::DataItemControlType_Select,
-                 write_value_)]() mutable {
-              return CompleteWriteAsync(std::move(executor), std::move(model),
-                                        std::move(operation));
+                 write_value_),
+             cancel = ControlNode().call(
+                 scada::data_items::id::DataItemControlType_Cancel),
+             local_events = local_events_,
+             source_title = GetSourceTitle()]() mutable {
+              return CompleteSelectAsync(std::move(model), std::move(select),
+                                         std::move(cancel), local_events,
+                                         std::move(source_title));
             });
 
   } else {
@@ -339,12 +352,16 @@ Awaitable<void> WriteModel::ReportCancelRefusalAsync(
     scada::CoStatus operation,
     LocalEvents* local_events,
     std::u16string source_title) {
+  // Taken before the wait: the answer can come after a sign-out has destroyed
+  // the event module this pointer belongs to (backlog 887 rebuilds it).
+  const std::weak_ptr<const void> local_events_alive =
+      local_events ? local_events->lifetime() : std::weak_ptr<const void>{};
   const scada::Status status = co_await std::move(operation);
   // Bad_NotSupported is DataItemWriteImpl::Cancel's answer for a driver with
   // no Cancel (MODBUS, IEC 104 commands other than C_SC_NA_1). Those never
   // send the device a select stage, so nothing is left armed to report.
   if (status || status.code() == scada::StatusCode::Bad_NotSupported ||
-      !local_events)
+      !local_events || local_events_alive.expired())
     co_return;
 
   // Always reported, whatever `show_write_ok` says: that setting governs
@@ -355,6 +372,24 @@ Awaitable<void> WriteModel::ReportCancelRefusalAsync(
                 source_title, ToString16(status),
                 Translate("The device may stay selected until its own "
                           "selection timeout expires.")));
+  co_return;
+}
+
+Awaitable<void> WriteModel::CompleteSelectAsync(std::weak_ptr<WriteModel> model,
+                                                scada::CoStatus select,
+                                                scada::CoStatus cancel,
+                                                LocalEvents* local_events,
+                                                std::u16string source_title) {
+  const scada::Status status = co_await std::move(select);
+  if (auto model_ptr = model.lock()) {
+    model_ptr->OnWriteComplete(status);
+    co_return;
+  }
+  // A refused select armed nothing.
+  if (!status)
+    co_return;
+  co_await ReportCancelRefusalAsync(std::move(cancel), local_events,
+                                    std::move(source_title));
   co_return;
 }
 

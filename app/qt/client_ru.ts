@@ -56,6 +56,28 @@
         <source>Delete Page</source>
         <translation>Удаление страницы</translation>
     </message>
+    <!-- portfolio/portfolio_delete.cpp -->
+    <message>
+        <source>Remove &quot;{}&quot; from the portfolio &quot;{}&quot;?</source>
+        <translation>Убрать «{}» из портфолио «{}»?</translation>
+    </message>
+    <message>
+        <source>Delete the portfolio &quot;{}&quot; with its list of objects? This cannot be undone.</source>
+        <translation>Удалить портфолио «{}» вместе со списком объектов? Отменить удаление нельзя.</translation>
+    </message>
+    <message>
+        <source>Remove from Portfolio</source>
+        <translation>Удаление из портфолио</translation>
+    </message>
+    <message>
+        <source>Delete Portfolio</source>
+        <translation>Удаление портфолио</translation>
+    </message>
+    <!-- bulk_create/qt/bulk_create_preview_panel.cpp -->
+    <message>
+        <source>Assigned by the Server</source>
+        <translation>Назначает Сервер</translation>
+    </message>
     <message>
         <source>Disable &quot;{}&quot;? Its data stops updating and control through it is refused until it is enabled again.</source>
         <translation>Отключить «{}»? Его данные перестанут обновляться, а управление через него будет запрещено, пока его снова не включат.</translation>

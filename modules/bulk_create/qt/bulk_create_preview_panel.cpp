@@ -70,7 +70,12 @@ QWidget* BulkCreatePreviewPanel::BuildForm() {
 
   name_template_ = new QLineEdit(QStringLiteral("TS{n} current"));
   name_template_->setObjectName(QStringLiteral("nameTemplate"));
-  node_id_template_ = new QLineEdit(QStringLiteral("ns=2;s=RTU.TS{n}.I"));
+  // Empty: the Server then assigns free numeric ids, as for an ordinary
+  // create. The former default, `ns=2;s=RTU.TS{n}.I`, was a string identifier,
+  // which the Server refuses -- so the wizard's own proposal never created
+  // anything until the operator cleared it (backlog 960).
+  node_id_template_ = new QLineEdit;
+  node_id_template_->setPlaceholderText(Tr("Assigned by the Server"));
   node_id_template_->setObjectName(QStringLiteral("nodeIdTemplate"));
   start_index_ = MakeSpin(0, 1000000, 1);
   count_ = MakeSpin(0, 100000, 12);

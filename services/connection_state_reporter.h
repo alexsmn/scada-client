@@ -3,6 +3,7 @@
 #include "base/any_executor.h"
 
 #include "base/any_executor_timer.h"
+#include "base/cancelation.h"
 
 #include <boost/signals2/connection.hpp>
 
@@ -43,6 +44,13 @@ class ConnectionStateReporter final : private ConnectionStateReporterContext {
 
   AnyExecutorTimer reconnect_timer_{executor_};
   size_t reconnect_retry_ = 0;
+
+  // Guards the session-state handler: it is posted to the executor, so a
+  // notification already queued when this object is destroyed would run on
+  // it -- which a sign-out does, rebuilding the session (backlog 887).
+  // Declared before the connection so it is still alive while that
+  // disconnects.
+  Cancelation cancelation_;
 
   const boost::signals2::scoped_connection session_state_changed_connection_;
 };

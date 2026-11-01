@@ -525,6 +525,14 @@ Awaitable<void> ClientApplication::StartAsync() {
 }
 
 Awaitable<void> ClientApplication::PostLoginAsync() {
+  // Everything pushed from here on is the session's, for `TearDownSession`.
+  post_login_mark_ = shutdown_stack_.size();
+  default_node_commands_before_login_ = default_node_commands_;
+  profile_user_id_ = master_data_services_->as_services().session_service
+                         ? master_data_services_->as_services()
+                               .session_service->GetUserId()
+                         : scada::NodeId{};
+
   PostLoginContext ctx{
       .audited_scada_services = master_data_services_->as_services(),
       .scada_client = scada::client{master_data_services_->as_services()},
@@ -566,7 +574,9 @@ Awaitable<void> ClientApplication::PostLoginAsync() {
 
 void ClientApplication::CreateNodeService(const PostLoginContext& ctx) {
   if (node_service_override_) {
-    node_service_ = std::move(node_service_override_);
+    // Copied, not moved: a session rebuild comes back here and must find the
+    // same override.
+    node_service_ = node_service_override_;
   } else {
     node_service_ = ::CreateNodeService(NodeServiceContext{
         .executor_ = executor_,
@@ -803,8 +813,25 @@ void ClientApplication::CreateMainWindow(const PostLoginContext& ctx) {
 
 // «Подключиться к серверу...»: the operator asked for the dialog, so it waits
 // for them even when automatic login is set.
+//
+// Usually this reconnects the same operator after a dropped session, and the
+// windows they had open stay as they were. When the dialog signs in somebody
+// else -- or follows a sign-out whose own dialog was cancelled -- the session
+// is rebuilt for them, exactly as a completed sign-out would have.
 Awaitable<void> ClientApplication::Login() {
-  return LoginAsync(/*allow_auto_login=*/false);
+  co_await LoginAsync(/*allow_auto_login=*/false);
+  if (session_rebuild_pending_ || SignedInAccountChanged())
+    co_await RebuildSessionAsync();
+  co_return;
+}
+
+bool ClientApplication::SignedInAccountChanged() const {
+  auto services = master_data_services_ ? master_data_services_->as_services()
+                                        : scada::services{};
+  const scada::NodeId user_id = services.session_service
+                                    ? services.session_service->GetUserId()
+                                    : scada::NodeId{};
+  return user_id != profile_user_id_;
 }
 
 Awaitable<void> ClientApplication::LoginAsync(bool allow_auto_login) {
@@ -866,8 +893,58 @@ Awaitable<void> ClientApplication::SignOutAsync() {
     co_await LoginAsync(/*allow_auto_login=*/false);
   } catch (const LoginCanceled&) {
     LOG_INFO(*logger_) << ("Sign out: login dialog cancelled");
+    session_rebuild_pending_ = true;
+    co_return;
   }
+
+  // Always, even when the same account signs back in: the profile was just
+  // saved, so reading it again costs a round trip and loses nothing.
+  co_await RebuildSessionAsync();
   co_return;
+}
+
+Awaitable<void> ClientApplication::RebuildSessionAsync() {
+  LOG_INFO(*logger_) << ("Rebuilding the session for the signed-in account");
+  session_rebuild_pending_ = false;
+  TearDownSession();
+  co_await PostLoginAsync();
+  co_return;
+}
+
+void ClientApplication::TearDownSession() {
+  // The local file is written here as ~ClientApplication writes it, so this
+  // machine keeps the outgoing operator's window placement.
+  if (profile_ && profile_loaded_)
+    profile_->Save();
+
+  shutdown_stack_.UnwindTo(post_login_mark_);
+
+  // The post-login objects nothing pushed a teardown for, reset in reverse
+  // declaration order -- which is exactly when ~ClientApplication destroys
+  // them, after the stack has run, so this order is the one already proven.
+  singletons_ = {};
+  filesystem_component_.reset();
+  write_service_.reset();
+  property_service_.reset();
+  event_module_.reset();
+
+  profile_loaded_ = false;
+  profile_revision_ = 0;
+  server_profile_envelope_ = nullptr;
+  profile_user_id_ = scada::NodeId{};
+
+  // **Fresh registries, or every command is registered twice.** The modules
+  // just destroyed registered commands, menu items, window types and default
+  // node handlers into these, and none of them unregisters. Everything in them
+  // came from the post-login modules -- `selection_panel_registry_`, filled in
+  // the constructor, is the one that did not, and it is left alone.
+  core_module_->ClearCommands();
+  controller_registry_.reset();  // A process-wide singleton: one at a time.
+  controller_registry_ = std::make_unique<ControllerRegistry>();
+  ui_command_registry_ = std::make_unique<UiCommandRegistry>();
+  opened_view_command_registry_ =
+      std::make_unique<OpenedViewCommandRegistry>();
+  default_node_commands_ = default_node_commands_before_login_;
 }
 
 Awaitable<void> ClientApplication::Quit() {

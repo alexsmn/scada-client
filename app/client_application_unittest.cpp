@@ -21,6 +21,7 @@
 #include "node_service/node_service.h"
 #include "node_service/test/create_test_node_service.h"
 #include "profile/profile.h"
+#include "profile/profile_envelope.h"
 #include "resources/common_resources.h"
 #include "scada/method_service_mock.h"
 #include "scada/monitoring_parameters.h"
@@ -567,6 +568,149 @@ TEST_F(ClientApplicationLocalProfileTest, AnonymousSessionKeepsTheLocalFile) {
 
   EXPECT_TRUE(HasPreviousOperatorsPage());
   EXPECT_TRUE(app_.profile().event_play_sound);
+}
+
+// Backlog 887: «Отключиться от сервера» is how one operator hands the
+// workstation to the next. The sign-out used to log the next operator in
+// without reloading anything, so they kept the outgoing operator's pages and
+// settings and the next save wrote them into the new account.
+class ClientApplicationSignOutTest : public ClientApplicationLocalProfileTest {
+ protected:
+  static constexpr std::u16string_view kOutgoingPageTitle =
+      u"Outgoing operator's page";
+  const scada::NodeId kOutgoing{1, 100};
+  const scada::NodeId kIncoming{1, 200};
+
+  ClientApplicationSignOutTest() {
+    // The outgoing account has a saved profile; the incoming one has none.
+    ON_CALL(
+        method_service_,
+        Call(_, scada::NodeId{scada::security::id::UserType_GetProfile}, _, _))
+        .WillByDefault(Invoke([this](scada::NodeId user_id, auto&&...) {
+          ++profile_reads_;
+          std::string json;
+          if (user_id == kOutgoing) {
+            Profile outgoing;
+            Page page;
+            page.title = kOutgoingPageTitle;
+            outgoing.AddPage(page);
+            outgoing.event_play_sound = true;
+            json = boost::json::serialize(profile_envelope::Wrap(
+                outgoing.SaveToValue(), boost::json::value{}));
+          }
+          return scada::MakeMethodCallResult(std::vector<scada::Variant>{
+              scada::String{std::move(json)}, scada::UInt64{1}});
+        }));
+    ON_CALL(
+        method_service_,
+        Call(_, scada::NodeId{scada::security::id::UserType_SaveProfile}, _, _))
+        .WillByDefault(Invoke([this](scada::NodeId user_id, scada::NodeId,
+                                     std::vector<scada::Variant> arguments,
+                                     scada::ServiceContext) {
+          const scada::String* json =
+              arguments.empty() ? nullptr : arguments[0].get_if<scada::String>();
+          saves_.push_back(
+              {user_id, json && json->find("Outgoing operator") !=
+                                    std::string::npos});
+          return scada::MakeMethodCallResult(scada::StatusCode::Good);
+        }));
+    SignInAs(kOutgoing);
+  }
+
+  bool HasOutgoingPage() {
+    return std::ranges::any_of(
+        app_.profile().pages | std::views::values,
+        [](const Page& page) { return page.title == kOutgoingPageTitle; });
+  }
+
+  // The next login dialog signs the incoming operator in.
+  void NextLoginIsTheIncomingOperator() {
+    EXPECT_CALL(login_handler_, Call(_, /*allow_auto_login=*/false))
+        .WillOnce(Invoke([this](DataServicesContext&&, bool)
+                             -> Awaitable<std::optional<DataServices>> {
+          SignInAs(kIncoming);
+          co_return std::optional{
+              DataServices::FromUnownedServices(services_with_methods_)};
+        }));
+  }
+
+  // Runs a global command as the main menu would. Never touch the window
+  // afterwards: a rebuild replaces it.
+  void ExecuteGlobalCommand(unsigned command_id) {
+    MainWindow& main_window =
+        app_.main_window_manager().main_windows().front();
+    NiceMock<MockDialogService> dialog_service;
+    ASSERT_TRUE(app_.ExecuteGlobalCommandForTesting(
+        command_id, GlobalCommandContext{.main_window = main_window,
+                                         .dialog_service = dialog_service}));
+  }
+
+  // The rebuild is done once the profile has been read again and the main
+  // window module has registered its commands anew.
+  // The budget is generous because a rebuild stands the whole session up
+  // again, which takes seconds on a machine other builds are loading; it ends
+  // as soon as the rebuild does.
+  bool WaitForRebuild() {
+    return WaitUntil(
+        [this] {
+          return profile_reads_ == 2 &&
+                 app_.HasGlobalCommandForTesting(ID_LOGOFF);
+        },
+        /*timeout_ms=*/60000);
+  }
+
+  struct Save {
+    scada::NodeId user_id;
+    bool carries_outgoing_page = false;
+  };
+  std::vector<Save> saves_;
+  int profile_reads_ = 0;
+};
+
+TEST_F(ClientApplicationSignOutTest, NextOperatorGetsTheirOwnProfile) {
+  StartApp();
+  ASSERT_TRUE(HasOutgoingPage());
+  ASSERT_TRUE(app_.profile().event_play_sound);
+
+  NextLoginIsTheIncomingOperator();
+  ExecuteGlobalCommand(ID_LOGOFF);
+  ASSERT_TRUE(WaitForRebuild());
+
+  EXPECT_FALSE(HasOutgoingPage());
+  EXPECT_FALSE(app_.profile().event_play_sound);
+  EXPECT_THAT(app_.main_window_manager().main_windows(), SizeIs(1));
+
+  Wait(app_.Quit());
+  // The outgoing operator's profile went to their own account at sign-out,
+  // and the incoming one's save carries nothing of it.
+  ASSERT_THAT(saves_, SizeIs(2));
+  EXPECT_EQ(saves_[0].user_id, kOutgoing);
+  EXPECT_TRUE(saves_[0].carries_outgoing_page);
+  EXPECT_EQ(saves_[1].user_id, kIncoming);
+  EXPECT_FALSE(saves_[1].carries_outgoing_page);
+}
+
+TEST_F(ClientApplicationSignOutTest,
+       ConnectAfterACancelledSignOutGetsTheNextOperatorsProfile) {
+  StartApp();
+
+  // The sign-out's own dialog is closed...
+  bool cancelled = false;
+  EXPECT_CALL(login_handler_, Call(_, /*allow_auto_login=*/false))
+      .WillOnce(Invoke([&cancelled](DataServicesContext&&, bool) {
+        cancelled = true;
+        return MakeCanceledLogin();
+      }));
+  ExecuteGlobalCommand(ID_LOGOFF);
+  ASSERT_TRUE(WaitUntil([&] { return cancelled; }, /*timeout_ms=*/60000));
+  Mock::VerifyAndClearExpectations(&login_handler_);
+
+  // ...and «Подключиться к серверу...» signs the next operator in.
+  NextLoginIsTheIncomingOperator();
+  ExecuteGlobalCommand(ID_LOGIN);
+  ASSERT_TRUE(WaitForRebuild());
+
+  EXPECT_FALSE(HasOutgoingPage());
 }
 
 // Ensure that the initial page is created and all windows are defined.

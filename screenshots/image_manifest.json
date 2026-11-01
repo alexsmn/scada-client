@@ -1069,13 +1069,13 @@
       "referenced_from": [
         "dev/data-items.md"
       ],
-      "notes": "Bulk-create wizard preview (BulkCreate): the naming/addressing step of bulk-create.html — a {n}-token name + NodeId pattern, start/count/step + IOA start/step, and a live preview grid (# / Name / NodeId / IOA / Status) with a 'N new / M conflict' summary. Reshell-only chrome (backlog 5.4), standalone and node-service-free: the capture seeds a demo pattern (TS{n} current, 12 items from IOA 4001) and one existing NodeId (TS8), so row 8 flags as a red 'exists' conflict. Driven by the pure ExpandBulkCreate engine. The actual node creation rides the existing MultiCreateModel::Run (Session.addNodes). Embedded in dev/data-items.md since 2026-09-19, replacing menu-create-object-ts-ti.png: that image is the flat MultiCreate dialog, which ID_ADD_MULTIPLE_ITEMS stopped opening on 2026-09-12. Re-rendered 2026-11-01: the capture also seeds one address the destination's rules already carry (4003), so row 3 reads «повтор адреса» and the summary adds «1 повтор адреса».",
+      "notes": "Bulk-create wizard preview (BulkCreate): the naming/addressing step of bulk-create.html — a {n}-token name + NodeId pattern, start/count/step + IOA start/step, and a live preview grid (# / Name / NodeId / IOA / Status) with a 'N new / M conflict' summary. Reshell-only chrome (backlog 5.4), standalone and node-service-free: the capture seeds a demo pattern (TS{n} current, 12 items from IOA 4001) and one existing NodeId (TS8), so row 8 flags as a red 'exists' conflict. Driven by the pure ExpandBulkCreate engine. The actual node creation rides the existing MultiCreateModel::Run (Session.addNodes). Embedded in dev/data-items.md since 2026-09-19, replacing menu-create-object-ts-ti.png: that image is the flat MultiCreate dialog, which ID_ADD_MULTIPLE_ITEMS stopped opening on 2026-09-12. Re-rendered 2026-11-01: the capture also seeds one address the destination's rules already carry (4003), so row 3 reads «повтор адреса» and the summary adds «1 повтор адреса». Re-rendered 2026-11-01 again: the NodeId template is empty by default and shows «Назначает Сервер» (backlog 960) — the former string template is one the Server refuses — so the capture no longer seeds a TS8 NodeId conflict; row 3's duplicate address is the conflict it shows.",
       "captured": {
-        "commit": "9a76c88bf",
+        "commit": "a54995102",
         "platform": "macos",
         "dirty": true,
-        "sha256": "f6b2dddf11e56aa7d5daeafebb62eb4d88ca0f70cfcd7793cff2ea1e426076ed",
-        "last_rendered": "9a76c88bf"
+        "sha256": "eb385198afa368ffd530184c96a5f72d9dfeb93383277ab9de50a2085292b972",
+        "last_rendered": "a54995102"
       }
     },
     {
@@ -1085,13 +1085,13 @@
       "parity_key": "bulk-create",
       "published": false,
       "referenced_from": [],
-      "notes": "Light-theme render of bulk-create.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own. Re-rendered 2026-11-01: the capture also seeds one address the destination's rules already carry (4003), so row 3 reads «повтор адреса» and the summary adds «1 повтор адреса».",
+      "notes": "Light-theme render of bulk-create.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own. Re-rendered 2026-11-01: the capture also seeds one address the destination's rules already carry (4003), so row 3 reads «повтор адреса» and the summary adds «1 повтор адреса». Re-rendered 2026-11-01 again: the NodeId template is empty by default and shows «Назначает Сервер» (backlog 960) — the former string template is one the Server refuses — so the capture no longer seeds a TS8 NodeId conflict; row 3's duplicate address is the conflict it shows.",
       "captured": {
-        "commit": "9a76c88bf",
+        "commit": "a54995102",
         "platform": "macos",
         "dirty": true,
-        "sha256": "e59ab3b58701b9877464d6e5aa4d0e9e24ac15f29ab8a8027542632ac98dab3b",
-        "last_rendered": "9a76c88bf"
+        "sha256": "b1165439cae71af21984cc821a2db14602a46fe239bbf24b5c227c58e397a651",
+        "last_rendered": "a54995102"
       }
     },
     {

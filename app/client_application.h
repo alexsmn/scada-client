@@ -42,6 +42,18 @@ class ShutdownStack {
   }
   void Push(std::function<void()> action) { actions_.push(std::move(action)); }
 
+  // How many actions are pushed: a mark `UnwindTo` can return to.
+  size_t size() const { return actions_.size(); }
+
+  // Runs, LIFO, every action pushed after the stack held `mark` of them, and
+  // leaves the rest for the destructor.
+  void UnwindTo(size_t mark) {
+    while (actions_.size() > mark) {
+      actions_.top()();
+      actions_.pop();
+    }
+  }
+
  private:
   std::stack<std::function<void()>> actions_;
 };
@@ -246,9 +258,26 @@ class ClientApplication : private ClientApplicationContext {
   // End the current session and offer the login dialog again. Cancelling that
   // dialog leaves the client connected to nothing rather than quitting: a
   // dropped session is a state the client already handles, and `ID_LOGIN`
-  // becomes enabled so the operator can come back.
+  // becomes enabled so the operator can come back. A sign-in that does go
+  // through rebuilds the session around the new account's profile.
   Awaitable<void> SignOut();
   Awaitable<void> SignOutAsync();
+
+  // Tears down everything `PostLoginAsync` built and runs it again, so the
+  // account now signed in gets its own profile -- pages, alarm tone, control
+  // confirmation, severity threshold -- and every later save goes to it with
+  // that profile rather than the previous operator's (backlog 887).
+  [[nodiscard]] Awaitable<void> RebuildSessionAsync();
+
+  // The teardown half of `RebuildSessionAsync`. Destroys the post-login
+  // objects in the order `~ClientApplication` does, then gives every registry
+  // the post-login modules fill a fresh instance, so the rebuild registers
+  // each command and window type exactly once.
+  void TearDownSession();
+
+  // True when the session now signed in belongs to a different account from
+  // the one the profile was loaded for.
+  bool SignedInAccountChanged() const;
   Awaitable<void> RunAsync();
   Awaitable<void> QuitAsync();
 
@@ -314,6 +343,18 @@ class ClientApplication : private ClientApplicationContext {
   std::unique_ptr<FileSystemComponent> filesystem_component_;
 
   std::stack<std::shared_ptr<void>> singletons_;
+
+  // `shutdown_stack_`'s size when `PostLoginAsync` began: everything above it
+  // belongs to the session and is unwound by `TearDownSession`.
+  size_t post_login_mark_ = 0;
+  // `default_node_commands_` as the caller handed it in, before any post-login
+  // module added a handler; `TearDownSession` restores it.
+  DefaultNodeCommandRegistry default_node_commands_before_login_;
+  // The account `profile_` was loaded for; null when anonymous or unknown.
+  scada::NodeId profile_user_id_;
+  // Set when a sign-out's login dialog was cancelled: the outgoing operator's
+  // session is still built, so the next sign-in must rebuild it whoever it is.
+  bool session_rebuild_pending_ = false;
 
   bool profile_loaded_ = false;
   scada::UInt64 profile_revision_ = 0;
