@@ -34,11 +34,15 @@
 #include <QApplication>
 #include <QElapsedTimer>
 #include <QEventLoop>
+#include <QRect>
 #include <boost/asio/io_context.hpp>
 #include <gmock/gmock.h>
 
+#include <algorithm>
 #include <optional>
+#include <ranges>
 #include <stdexcept>
+#include <string_view>
 #include <vector>
 
 using namespace ::testing;
@@ -460,6 +464,109 @@ TEST_F(ClientApplicationTest, FailedProfileSaveOnQuitAsksAndRetries) {
   Wait(app_.Quit());
 
   EXPECT_EQ(save_attempts, 2);
+}
+
+// Backlog 957: the local profile file is one per OS user, not per account, so
+// on a shared workstation it holds whoever signed in last. These tests leave
+// such a file behind and sign in under each kind of session.
+class ClientApplicationLocalProfileTest : public ClientApplicationTest {
+ protected:
+  static constexpr int kWindowId = 1;
+  static QRect WindowBounds() { return QRect{10, 20, 800, 600}; }
+  static constexpr std::u16string_view kPreviousPageTitle =
+      u"Previous operator's page";
+
+  ClientApplicationLocalProfileTest() {
+    Profile local;
+    Page page;
+    page.title = kPreviousPageTitle;
+    local.AddPage(page);
+    local.event_play_sound = true;
+    MainWindowDef& window = local.GetMainWindow(kWindowId);
+    window.bounds = WindowBounds();
+    local.Save();
+
+    services_with_methods_.method_service = &method_service_;
+    ON_CALL(login_handler_, Call(_, _))
+        .WillByDefault(
+            Invoke([this](DataServicesContext&&,
+                          bool) -> Awaitable<std::optional<DataServices>> {
+              co_return std::optional{
+                  DataServices::FromUnownedServices(services_with_methods_)};
+            }));
+    ON_CALL(
+        method_service_,
+        Call(_, scada::NodeId{scada::security::id::UserType_SaveProfile}, _, _))
+        .WillByDefault(Invoke([](auto&&...) {
+          return scada::MakeMethodCallResult(scada::StatusCode::Good);
+        }));
+  }
+
+  // Quits here rather than in the base destructor, which runs after
+  // `method_service_` is gone.
+  ~ClientApplicationLocalProfileTest() override { Wait(app_.Quit()); }
+
+  void SignInAs(scada::NodeId user_id) {
+    ON_CALL(services_.session_service, GetUserId())
+        .WillByDefault(Return(std::move(user_id)));
+  }
+
+  // The answer a current server gives for an account that has never saved.
+  void ServerAnswersEmptyProfile() {
+    ON_CALL(
+        method_service_,
+        Call(_, scada::NodeId{scada::security::id::UserType_GetProfile}, _, _))
+        .WillByDefault(Invoke([](auto&&...) {
+          return scada::MakeMethodCallResult(
+              std::vector<scada::Variant>{scada::String{}, scada::UInt64{0}});
+        }));
+  }
+
+  bool HasPreviousOperatorsPage() {
+    return std::ranges::any_of(
+        app_.profile().pages | std::views::values,
+        [](const Page& page) { return page.title == kPreviousPageTitle; });
+  }
+
+  NiceMock<scada::MockMethodService> method_service_;
+  scada::services services_with_methods_ = services_.services();
+};
+
+TEST_F(ClientApplicationLocalProfileTest,
+       NewAccountStartsFromDefaultProfileNotTheLocalFile) {
+  SignInAs(scada::NodeId{1, 100});
+  ServerAnswersEmptyProfile();
+
+  StartApp();
+
+  EXPECT_FALSE(HasPreviousOperatorsPage());
+  EXPECT_FALSE(app_.profile().event_play_sound);
+  // The machine's window placement is the one thing that carries over.
+  const MainWindowDef* window = app_.profile().FindMainWindow(kWindowId);
+  ASSERT_NE(window, nullptr);
+  EXPECT_EQ(window->bounds, WindowBounds());
+}
+
+TEST_F(ClientApplicationLocalProfileTest,
+       ServerThatCannotAnswerKeepsTheLocalFile) {
+  // `MockMethodService` answers Bad_NotSupported, and the legacy property read
+  // answers nothing: a server that cannot say whether the account has a
+  // profile, so the local file is all there is.
+  SignInAs(scada::NodeId{1, 100});
+
+  StartApp();
+
+  EXPECT_TRUE(HasPreviousOperatorsPage());
+  EXPECT_TRUE(app_.profile().event_play_sound);
+}
+
+TEST_F(ClientApplicationLocalProfileTest, AnonymousSessionKeepsTheLocalFile) {
+  ServerAnswersEmptyProfile();
+
+  StartApp();
+
+  EXPECT_TRUE(HasPreviousOperatorsPage());
+  EXPECT_TRUE(app_.profile().event_play_sound);
 }
 
 // Ensure that the initial page is created and all windows are defined.

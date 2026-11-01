@@ -224,6 +224,21 @@ namespace {
 constexpr std::string_view kProfileJsonProperty = "ProfileJson";
 constexpr std::string_view kProfileRevisionProperty = "ProfileRevision";
 
+// Copies where this machine's main windows stood -- position, size and
+// maximized state -- and nothing else. The local file is one per OS user, so
+// whatever else it holds belongs to whoever last signed in here (backlog 957);
+// only the placement is a fact about this computer rather than about them.
+// Each window's page and pane mode are left unset, since they name pages of a
+// profile the account does not have.
+void AdoptWindowPlacement(const Profile& local, Profile& profile) {
+  for (const auto& [id, local_def] : local.main_windows) {
+    MainWindowDef& def = profile.main_windows[id];
+    def.id = local_def.id;
+    def.bounds = local_def.bounds;
+    def.state = local_def.state;
+  }
+}
+
 }  // namespace
 
 Awaitable<void> ClientApplication::LoadProfileAsync() {
@@ -231,7 +246,8 @@ Awaitable<void> ClientApplication::LoadProfileAsync() {
   profile_loaded_ = true;
   shutdown_stack_.Push([this] { profile_.reset(); });
 
-  const boost::json::value server = co_await ReadServerProfileAsync();
+  const ServerProfileRead read = co_await ReadServerProfileAsync();
+  const boost::json::value& server = read.document;
 
   // **The server wins only when it actually holds a Qt profile.** A document
   // written by the web client alone carries a `qt.profile` the web filled in;
@@ -253,26 +269,42 @@ Awaitable<void> ClientApplication::LoadProfileAsync() {
     // back into, and it may already carry the web client's section.
     if (server.is_object())
       server_profile_envelope_ = server;
-    profile_->Load();
+
+    if (read.account_backed) {
+      // **An account the server answers for starts from a fresh default.** The
+      // local file is one per OS user, not per account, so on a shared
+      // workstation it holds the previous operator's pages, portfolios, alarm
+      // tone and severity threshold -- and the first save on quit would write
+      // them into this account (backlog 957). Only the window placement is
+      // carried over, being a fact about the machine.
+      Profile local;
+      local.Load();
+      AdoptWindowPlacement(local, *profile_);
+      LOG_INFO(*logger_) << "No server profile for this account; starting from "
+                            "the default profile";
+    } else {
+      profile_->Load();
+    }
   }
   co_return;
 }
 
-Awaitable<boost::json::value> ClientApplication::ReadServerProfileAsync() {
+Awaitable<ClientApplication::ServerProfileRead>
+ClientApplication::ReadServerProfileAsync() {
   if (!master_data_services_)
-    co_return boost::json::value{};
+    co_return ServerProfileRead{};
 
   auto services = master_data_services_->as_services();
   if (!services.session_service ||
       (!services.method_service && !services.attribute_service)) {
-    co_return boost::json::value{};
+    co_return ServerProfileRead{};
   }
 
   // Anonymous has no server identity to hang a profile on, so there is nothing
   // to read -- the same conclusion the web client reaches, by the same route.
   const scada::NodeId user_id = services.session_service->GetUserId();
   if (user_id.is_null())
-    co_return boost::json::value{};
+    co_return ServerProfileRead{};
 
   // **A server that cannot answer means the local file, never a failed
   // startup.** A deployment whose users carry no profile at all is a supported
@@ -281,18 +313,24 @@ Awaitable<boost::json::value> ClientApplication::ReadServerProfileAsync() {
       co_await CallGetProfileAsync(services, user_id);
   if (!json)
     json = co_await ReadLegacyProfilePropertiesAsync(services, user_id);
-  if (!json || json->empty()) {
-    LOG_INFO(*logger_) << "No server profile; using the local file";
-    co_return boost::json::value{};
+  if (!json) {
+    LOG_INFO(*logger_) << "Server cannot answer for a profile; using the local "
+                          "file";
+    co_return ServerProfileRead{};
   }
+  // From here the server has answered for this account, so the account owns
+  // its profile and the local file is no longer a stand-in for it.
+  if (json->empty())
+    co_return ServerProfileRead{.account_backed = true};
 
   boost::system::error_code ec;
   boost::json::value parsed = boost::json::parse(*json, ec);
   if (ec) {
     LOG_ERROR(*logger_) << "Server profile is not valid JSON: " << ec.message();
-    co_return boost::json::value{};
+    co_return ServerProfileRead{.account_backed = true};
   }
-  co_return parsed;
+  co_return ServerProfileRead{.document = std::move(parsed),
+                              .account_backed = true};
 }
 
 Awaitable<std::optional<scada::String>> ClientApplication::CallGetProfileAsync(

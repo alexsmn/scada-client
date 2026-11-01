@@ -181,19 +181,30 @@ class ClientApplication : private ClientApplicationContext {
   // late.
   [[nodiscard]] Awaitable<void> PostLoginAsync();
 
-  // Creates `profile_` and fills it from exactly ONE source -- the server's
-  // copy when it carries a Qt section, otherwise the local file.
+  // Creates `profile_` and fills it from exactly ONE source: the server's copy
+  // when it carries a Qt section; a fresh default when the server answers for
+  // the account but holds no Qt section yet (keeping only this machine's window
+  // placement from the local file, backlog 957); otherwise -- anonymous, or a
+  // server that cannot tell -- the local file.
   //
   // One source and not two on purpose: `Profile::Load` overlays rather than
   // replaces, so calling it twice accumulates pages and windows instead of
   // superseding them.
   [[nodiscard]] Awaitable<void> LoadProfileAsync();
 
-  // The profile envelope stored on the server for the signed-in user, or a
-  // null value when there is none, the session is anonymous, or the read
-  // fails. Never throws: a server that cannot answer means the local file, not
-  // a failed startup.
-  [[nodiscard]] Awaitable<boost::json::value> ReadServerProfileAsync();
+  // What the server answered for the signed-in account's profile.
+  struct ServerProfileRead {
+    // The stored profile envelope, or null when there is none.
+    boost::json::value document;
+    // True when the server answered for this account at all, with a profile
+    // or with an empty one. False for an anonymous session or a server that
+    // cannot tell, where the local file is all the profile there is.
+    bool account_backed = false;
+  };
+
+  // The profile stored on the server for the signed-in user. Never throws: a
+  // server that cannot answer means the local file, not a failed startup.
+  [[nodiscard]] Awaitable<ServerProfileRead> ReadServerProfileAsync();
 
   // The profile JSON as `UserType_GetProfile` answers it, recording the
   // revision it reports in `profile_revision_`. Null when the server has no
