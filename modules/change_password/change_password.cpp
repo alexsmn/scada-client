@@ -3,15 +3,16 @@
 #include "aui/translation.h"
 #include "base/awaitable.h"
 #include "base/u16format.h"
-#include "events/local_event_util.h"
 #include "base/utf_convert.h"
+#include "events/local_event_util.h"
+#include "events/local_events.h"
 #include "model/namespaces.h"
 #include "model/security_node_ids.h"
-#include "node_service/node_service.h"
-#include "scada/standard_node_ids.h"
 #include "modules/change_password/change_password_dialog.h"
 #include "node_service/node_ref.h"
+#include "node_service/node_service.h"
 #include "scada/co_result.h"
+#include "scada/standard_node_ids.h"
 
 namespace {
 
@@ -21,6 +22,20 @@ Awaitable<void> ReportPasswordChangeResultAsync(AnyExecutor executor,
                                                 LocalEvents& local_events,
                                                 const Profile& profile) {
   auto status = co_await std::move(call);
+  if (status.code() == scada::StatusCode::Bad_NotWritable) {
+    // The Server answers this for the built-in root account when its password
+    // is configured on the server computer: every start rewrites it there, so
+    // a change made here would revert. The bare status name would tell the
+    // operator nothing about where the password is changed instead.
+    local_events.ReportEvent(
+        LocalEvents::SEV_ERROR,
+        u16format(L"{} - {}", title,
+                  Translate("The root password is set on the server computer "
+                            "and cannot be changed from the Client. Change it "
+                            "there with: scada-setup set-password "
+                            "--root-password <new password>")));
+    co_return;
+  }
   ReportRequestResult(title, status, local_events, profile);
   co_return;
 }

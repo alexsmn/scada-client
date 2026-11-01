@@ -2191,6 +2191,13 @@
         <source>Changing password for user {}</source>
         <translation>Смена пароля пользователя {}</translation>
     </message>
+    <!-- The Server refuses a change to root's password when the server
+         computer configures it (Bad_NotWritable); the Client says where it is
+         changed instead. -->
+    <message>
+        <source>The root password is set on the server computer and cannot be changed from the Client. Change it there with: scada-setup set-password --root-password &lt;new password&gt;</source>
+        <translation>Пароль root задаётся на компьютере Сервера и не может быть изменён из Клиента. Измените его там командой: scada-setup set-password --root-password &lt;новый пароль&gt;</translation>
+    </message>
     <message>
         <source>Are you sure you want to delete {}?</source>
         <translation>Вы действительно хотите удалить {}?</translation>

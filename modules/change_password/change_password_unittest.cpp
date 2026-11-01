@@ -128,3 +128,27 @@ TEST_F(ChangePasswordTest, ReportsFailureAfterMethodCallCompletes) {
   EXPECT_NE(event.message.text.find(u"Changing password for user Operator"),
             std::u16string::npos);
 }
+
+// The Server refuses a change to root's password with Bad_NotWritable when the
+// server computer configures it, because every start would rewrite it there.
+// The bare status name would not tell the operator where the password IS
+// changed, so the report names the command.
+TEST_F(ChangePasswordTest, NotWritableReportsWhereThePasswordIsChanged) {
+  EXPECT_CALL(method_service_,
+              Call(kUserManagement, kModifyUserMethod, SizeIs(7), _))
+      .WillOnce(Invoke([](auto, auto, auto, auto) {
+        return scada::MakeMethodCallResult(scada::StatusCode::Bad_NotWritable);
+      }));
+
+  ChangePassword(Context(/*self_service=*/false), u"", u"new");
+  PollExecutor();
+
+  ASSERT_EQ(local_events_.events().size(), 1);
+  const auto& event = *local_events_.events().front();
+  EXPECT_EQ(event.severity, scada::kSeverityCritical);
+  EXPECT_NE(event.message.text.find(u"Changing password for user Operator"),
+            std::u16string::npos);
+  EXPECT_NE(
+      event.message.text.find(u"scada-setup set-password --root-password"),
+      std::u16string::npos);
+}
