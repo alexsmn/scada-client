@@ -23,7 +23,8 @@ ConnectionStateReporter::ConnectionStateReporter(
     : ConnectionStateReporterContext{std::move(context)},
       session_state_changed_connection_{
           session_service_.SubscribeSessionStateChanged(
-              BindExecutor(executor_, cancelation_,
+              BindExecutor(executor_,
+                           cancelation_,
                            [this](bool connected, const scada::Status& status) {
                              if (connected)
                                OnSessionCreated();

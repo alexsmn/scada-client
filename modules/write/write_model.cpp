@@ -147,19 +147,18 @@ void WriteModel::Write(double value, bool lock) {
 
   } else if (two_staged_) {
     write_selecting_ = true;
-    CoSpawn(executor_,
-            [model = weak_from_this(),
-             select = ControlNode().call(
-                 scada::data_items::id::DataItemControlType_Select,
-                 write_value_),
-             cancel = ControlNode().call(
-                 scada::data_items::id::DataItemControlType_Cancel),
-             local_events = local_events_,
-             source_title = GetSourceTitle()]() mutable {
-              return CompleteSelectAsync(std::move(model), std::move(select),
-                                         std::move(cancel), local_events,
-                                         std::move(source_title));
-            });
+    CoSpawn(executor_, [model = weak_from_this(),
+                        select = ControlNode().call(
+                            scada::data_items::id::DataItemControlType_Select,
+                            write_value_),
+                        cancel = ControlNode().call(
+                            scada::data_items::id::DataItemControlType_Cancel),
+                        local_events = local_events_,
+                        source_title = GetSourceTitle()]() mutable {
+      return CompleteSelectAsync(std::move(model), std::move(select),
+                                 std::move(cancel), local_events,
+                                 std::move(source_title));
+    });
 
   } else {
     StartWriting(false);

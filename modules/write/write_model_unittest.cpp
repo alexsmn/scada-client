@@ -144,10 +144,9 @@ class WriteModelTest : public Test {
         .type_definition_id = scada::data_items::id::DataItemControlType,
         .attributes = {.display_name = u"Control"}});
 
-    auto model = std::make_shared<WriteModel>(
-        WriteContext{executor_, timed_data_service_, kDataItemId, profile_,
-                     /*manual_=*/false,
-                     local_events ? local_events : &local_events_});
+    auto model = std::make_shared<WriteModel>(WriteContext{
+        executor_, timed_data_service_, kDataItemId, profile_,
+        /*manual_=*/false, local_events ? local_events : &local_events_});
     model->set_dialog_service(&dialog_service_);
     model->status_change_handler = [this] { ++status_changes_; };
     model->completion_handler = [this](bool ok) { completion_ = ok; };

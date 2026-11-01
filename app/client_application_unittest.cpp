@@ -608,10 +608,10 @@ class ClientApplicationSignOutTest : public ClientApplicationLocalProfileTest {
                                      std::vector<scada::Variant> arguments,
                                      scada::ServiceContext) {
           const scada::String* json =
-              arguments.empty() ? nullptr : arguments[0].get_if<scada::String>();
-          saves_.push_back(
-              {user_id, json && json->find("Outgoing operator") !=
-                                    std::string::npos});
+              arguments.empty() ? nullptr
+                                : arguments[0].get_if<scada::String>();
+          saves_.push_back({user_id, json && json->find("Outgoing operator") !=
+                                                 std::string::npos});
           return scada::MakeMethodCallResult(scada::StatusCode::Good);
         }));
     SignInAs(kOutgoing);
@@ -626,19 +626,19 @@ class ClientApplicationSignOutTest : public ClientApplicationLocalProfileTest {
   // The next login dialog signs the incoming operator in.
   void NextLoginIsTheIncomingOperator() {
     EXPECT_CALL(login_handler_, Call(_, /*allow_auto_login=*/false))
-        .WillOnce(Invoke([this](DataServicesContext&&, bool)
-                             -> Awaitable<std::optional<DataServices>> {
-          SignInAs(kIncoming);
-          co_return std::optional{
-              DataServices::FromUnownedServices(services_with_methods_)};
-        }));
+        .WillOnce(
+            Invoke([this](DataServicesContext&&,
+                          bool) -> Awaitable<std::optional<DataServices>> {
+              SignInAs(kIncoming);
+              co_return std::optional{
+                  DataServices::FromUnownedServices(services_with_methods_)};
+            }));
   }
 
   // Runs a global command as the main menu would. Never touch the window
   // afterwards: a rebuild replaces it.
   void ExecuteGlobalCommand(unsigned command_id) {
-    MainWindow& main_window =
-        app_.main_window_manager().main_windows().front();
+    MainWindow& main_window = app_.main_window_manager().main_windows().front();
     NiceMock<MockDialogService> dialog_service;
     ASSERT_TRUE(app_.ExecuteGlobalCommandForTesting(
         command_id, GlobalCommandContext{.main_window = main_window,

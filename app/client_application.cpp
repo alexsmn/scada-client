@@ -528,10 +528,10 @@ Awaitable<void> ClientApplication::PostLoginAsync() {
   // Everything pushed from here on is the session's, for `TearDownSession`.
   post_login_mark_ = shutdown_stack_.size();
   default_node_commands_before_login_ = default_node_commands_;
-  profile_user_id_ = master_data_services_->as_services().session_service
-                         ? master_data_services_->as_services()
-                               .session_service->GetUserId()
-                         : scada::NodeId{};
+  profile_user_id_ =
+      master_data_services_->as_services().session_service
+          ? master_data_services_->as_services().session_service->GetUserId()
+          : scada::NodeId{};
 
   PostLoginContext ctx{
       .audited_scada_services = master_data_services_->as_services(),
@@ -942,8 +942,7 @@ void ClientApplication::TearDownSession() {
   controller_registry_.reset();  // A process-wide singleton: one at a time.
   controller_registry_ = std::make_unique<ControllerRegistry>();
   ui_command_registry_ = std::make_unique<UiCommandRegistry>();
-  opened_view_command_registry_ =
-      std::make_unique<OpenedViewCommandRegistry>();
+  opened_view_command_registry_ = std::make_unique<OpenedViewCommandRegistry>();
   default_node_commands_ = default_node_commands_before_login_;
 }
 
