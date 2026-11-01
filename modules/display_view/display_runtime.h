@@ -16,10 +16,10 @@
 // source, because `display`'s SOURCE is never published and the public Qt
 // client must still build. The binary is published separately, as a release
 // asset, so absence of the library is a state a user fixes by downloading one
-// rather than a capability this client does not have. Everything below is a thin C++ skin over
-// `display/abi/display_abi.h` whose only job is to keep the ABI's rules -- the
-// handle to close, the strings that belong to the document, the error buffer to
-// copy out of -- from leaking into widget code.
+// rather than a capability this client does not have. Everything below is a
+// thin C++ skin over `display/abi/display_abi.h` whose only job is to keep the
+// ABI's rules -- the handle to close, the strings that belong to the document,
+// the error buffer to copy out of -- from leaking into widget code.
 //
 // NOTHING HERE NAMES A `display` TYPE. That is the point: the types are the
 // client's own, so the client's source closure contains one C header and no
@@ -168,7 +168,8 @@ class DisplayRuntimeDocument {
   // authored, without values, as it did before ABI 2 existed.
 
   // The data sources the document's bindings name, once each — what the host
-  // subscribes to. Empty for a VDS document.
+  // subscribes to: a Modus document's binding keys, a VDS document's tag
+  // addresses (or, in one without tags, its shape names).
   std::vector<std::string> DataSources() const;
 
   // Writes `text` as the text of every element bound to `data_source` as a
@@ -180,8 +181,29 @@ class DisplayRuntimeDocument {
   std::optional<DisplayShapeHit> FindDataSourceShape(
       std::string_view data_source) const;
 
+  // ABI 3. A runtime serving an older ABI takes a reading as a position and
+  // text — all it can draw — marks no alarm and knows no hyperlink.
+
+  // Records one data source's latest reading — the number when there is one,
+  // and the text a table would show — and returns the region needing repaint.
+  // This is what drives a Vidicon schematic, whose shapes compute from the
+  // number.
+  DisplayRect SetDataSourceValue(std::string_view data_source,
+                                 std::optional<double> value,
+                                 std::string_view text,
+                                 int32_t quality);
+
+  // Frames the elements bound to `data_source` in `colour` (0x00RRGGBB), or
+  // removes the frame with nullopt; the host toggles it to blink.
+  DisplayRect SetDataSourceAlarm(std::string_view data_source,
+                                 std::optional<uint32_t> colour);
+
+  // The hyperlink of shape `shape_id`, as authored, or empty.
+  std::string ShapeHyperlink(int32_t shape_id) const;
+
  private:
   bool HasAbi2() const;
+  bool HasAbi3() const;
 
   DisplayRuntimeDocument(const DisplayRuntime& runtime,
                          ScadaDisplayDocument document);

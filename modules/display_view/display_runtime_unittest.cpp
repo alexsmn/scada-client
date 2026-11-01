@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdlib>
 #include <filesystem>
@@ -363,6 +364,42 @@ TEST_F(DisplayRuntimeDocumentTest, StateColouringChangesWhatIsDrawn) {
 
   EXPECT_NE(authored, coloured)
       << "driving every data source changed nothing on the diagram";
+}
+
+// What puts live values on a Vidicon schematic, through the real loader: the
+// fixture's shapes are bound through their tags' addresses, and a reading for
+// them changes what is drawn. Until ABI 3 nothing could deliver one.
+TEST_F(DisplayRuntimeDocumentTest, AVidiconTagReadingChangesWhatIsDrawn) {
+  const std::vector<std::string> sources = document_->DataSources();
+  ASSERT_FALSE(sources.empty());
+  const std::string address = "{Telecontrol.IEC104.3\\Punkt_1.TS.TS_13}";
+  if (std::ranges::find(sources, address) == sources.end())
+    GTEST_SKIP() << "the runtime predates ABI 3 and lists shape names";
+
+  constexpr int32_t kWidth = 320;
+  constexpr int32_t kHeight = 240;
+  const size_t size = static_cast<size_t>(kWidth) * kHeight * 4;
+  DisplayError error;
+  std::vector<uint8_t> authored(size, 0);
+  ASSERT_TRUE(document_->RenderBgra(authored.data(), kWidth, kHeight,
+                                    kWidth * 4, &error))
+      << error.message;
+
+  for (const std::string& source : sources)
+    document_->SetDataSourceValue(source, 1.0, "1", 0);
+  std::vector<uint8_t> live(size, 0);
+  ASSERT_TRUE(
+      document_->RenderBgra(live.data(), kWidth, kHeight, kWidth * 4, &error))
+      << error.message;
+  EXPECT_NE(authored, live);
+
+  // An alarm frame and a hyperlink cross the boundary too; a VDS shape has no
+  // hyperlink.
+  EXPECT_GT(document_->SetDataSourceAlarm(address, 0xFF0000u).w, 0);
+  const std::optional<DisplayShapeHit> shape =
+      document_->FindDataSourceShape(address);
+  ASSERT_TRUE(shape);
+  EXPECT_EQ(document_->ShapeHyperlink(shape->id), "");
 }
 
 // ── Modus bindings through the loader (backlog 915) ─────────────────────────

@@ -169,6 +169,33 @@ void DisplayWidget::SetDataSourceReading(std::string_view data_source,
   update();
 }
 
+void DisplayWidget::ShowReading(const DisplayDataSourceReading& reading) {
+  if (!document_)
+    return;
+  document_->SetDataSourceValue(reading.data_source, reading.value,
+                                reading.text, reading.quality);
+  update();
+}
+
+void DisplayWidget::SetAlarmMarked(std::string_view data_source, bool marked) {
+  if (!document_)
+    return;
+  // An unacknowledged alarm is a process signal with a fixed meaning
+  // (ISA-18.2), so it takes the critical-severity token rather than the
+  // document's colours or the OS accent.
+  std::optional<uint32_t> colour;
+  if (marked)
+    colour = PackRgb(scada::aui::ActiveThemeTokens().severity_critical);
+  document_->SetDataSourceAlarm(data_source, colour);
+  update();
+}
+
+std::string DisplayWidget::SelectionHyperlink() const {
+  if (!document_ || !selection_)
+    return {};
+  return document_->ShapeHyperlink(selection_->id);
+}
+
 bool DisplayWidget::SelectDataSourceElement(std::string_view data_source) {
   if (!document_)
     return false;

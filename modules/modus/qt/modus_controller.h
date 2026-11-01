@@ -10,12 +10,14 @@
 #include <QPointer>
 #include <QWidget>
 
+#include <boost/signals2/connection.hpp>
+
 #include <filesystem>
 #include <functional>
 #include <memory>
 #include <string_view>
 
-class ModusLiveData;
+class DisplayLiveData;
 class ModusViewWrapper;
 
 // Hosts a Modus display: builds the display view, opens the document named by
@@ -57,8 +59,16 @@ class ModusController : protected ControllerContext, public Controller {
   // `TimedDataSpec` throws, which is why it is a catch and not a parse check.
   void SelectDataSource(std::string_view data_source);
 
-  // Acknowledges the selected item's alarm — the display view's double click.
+  // Acknowledges the selected item's alarm.
   void AcknowledgeSelection();
+
+  // The display view's double click: acknowledges the selected element's
+  // alarm when it has one, and otherwise follows its hyperlink.
+  void OnDoubleClick();
+
+  // Opens the Modus schematic `hyperlink` names, resolved against this
+  // display's own path; false when it names nothing that may be opened.
+  bool FollowHyperlink(std::string_view hyperlink);
 
   // Controller overrides
   virtual std::unique_ptr<UiView> Init(
@@ -70,6 +80,9 @@ class ModusController : protected ControllerContext, public Controller {
 
  private:
   DisplayView CreateDisplayView();
+
+  // Marks or unmarks every element with an unacknowledged alarm.
+  void OnBlink(bool state);
 
   // Indexes the open schematic in the file cache under its title and the
   // objects it is bound to, when either changed since the last time.
@@ -87,7 +100,11 @@ class ModusController : protected ControllerContext, public Controller {
   QPointer<QWidget> widget_;
 
   // The schematic's live bindings, from `Init` on (backlog 915).
-  std::unique_ptr<ModusLiveData> live_data_;
+  std::unique_ptr<DisplayLiveData> live_data_;
+
+  // Declared after `live_data_` so it disconnects first: a blink must never
+  // reach a controller whose subscriptions are gone.
+  boost::signals2::scoped_connection blink_connection_;
 
   // What `UpdateFileCache` last wrote, so an unchanged index is not rewritten
   // on every reading.

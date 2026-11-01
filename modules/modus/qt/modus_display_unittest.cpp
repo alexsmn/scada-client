@@ -255,7 +255,7 @@ TEST_F(ModusDisplayTest, SaveReturnsThePublicPathTheDefinitionCameWith) {
 // ── Live values through the whole chain (backlog 915) ───────────────────────
 
 // A value change on a bound object reaches the drawing: timed-data service ->
-// `ModusLiveData` -> `ModusController` -> `DisplayWidget` -> the runtime.
+// `DisplayLiveData` -> `ModusController` -> `DisplayWidget` -> the runtime.
 TEST_F(ModusDisplayTest, AValueChangeRepaintsTheBoundElements) {
   if (!HaveRuntime())
     GTEST_SKIP() << "this client was configured without a display runtime";

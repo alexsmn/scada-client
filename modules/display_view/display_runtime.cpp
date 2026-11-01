@@ -84,6 +84,8 @@ size_t RequiredStructSize(uint32_t abi_version) {
       return SCADA_DISPLAY_ABI_1_SIZE;
     case 2:
       return SCADA_DISPLAY_ABI_2_SIZE;
+    case 3:
+      return SCADA_DISPLAY_ABI_3_SIZE;
     default:
       break;
   }
@@ -420,6 +422,11 @@ bool DisplayRuntimeDocument::HasAbi2() const {
          runtime_.api().struct_size >= SCADA_DISPLAY_ABI_2_SIZE;
 }
 
+bool DisplayRuntimeDocument::HasAbi3() const {
+  return runtime_.api().abi_version >= 3 &&
+         runtime_.api().struct_size >= SCADA_DISPLAY_ABI_3_SIZE;
+}
+
 std::vector<std::string> DisplayRuntimeDocument::DataSources() const {
   std::vector<std::string> sources;
   if (!HasAbi2())
@@ -462,4 +469,53 @@ std::optional<DisplayShapeHit> DisplayRuntimeDocument::FindDataSourceShape(
     return std::nullopt;
   }
   return ToHit(info);
+}
+
+DisplayRect DisplayRuntimeDocument::SetDataSourceValue(
+    std::string_view data_source,
+    std::optional<double> value,
+    std::string_view text,
+    int32_t quality) {
+  if (!HasAbi3()) {
+    // An older runtime still takes a Modus reading as a position and text.
+    SetDataSourceState(
+        data_source, value ? (*value != 0.0 ? "closed" : "open") : "", quality);
+    if (!text.empty())
+      SetDataSourceText(data_source, text);
+    return page_bounds_;
+  }
+  const std::string data_source_text{data_source};
+  const std::string value_text{text};
+  ScadaDisplayRect invalidated{};
+  ScadaDisplayError abi_error{};
+  if (runtime_.api().set_data_source_value(
+          document_, data_source_text.c_str(), value.value_or(0.0),
+          value.has_value() ? 1 : 0, value_text.c_str(), quality, &invalidated,
+          &abi_error)) {
+    return ToRect(invalidated);
+  }
+  return page_bounds_;
+}
+
+DisplayRect DisplayRuntimeDocument::SetDataSourceAlarm(
+    std::string_view data_source,
+    std::optional<uint32_t> colour) {
+  if (!HasAbi3())
+    return {};
+  const std::string data_source_text{data_source};
+  ScadaDisplayRect invalidated{};
+  ScadaDisplayError abi_error{};
+  if (runtime_.api().set_data_source_alarm(
+          document_, data_source_text.c_str(), colour.has_value() ? 1 : 0,
+          colour.value_or(0), &invalidated, &abi_error)) {
+    return ToRect(invalidated);
+  }
+  return page_bounds_;
+}
+
+std::string DisplayRuntimeDocument::ShapeHyperlink(int32_t shape_id) const {
+  if (!HasAbi3())
+    return {};
+  const char* link = runtime_.api().get_shape_hyperlink(document_, shape_id);
+  return link ? std::string{link} : std::string{};
 }

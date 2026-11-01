@@ -1,11 +1,13 @@
 #include "modus/qt/modus_controller.h"
 
+#include "base/blinker.h"
+#include "controller/controller_delegate.h"
 #include "controller/selection_model.h"
+#include "display_view/display_live_data.h"
 #include "display_view/qt/display_widget.h"
 #include "filesystem/file_cache.h"
 #include "filesystem/file_util.h"
 #include "modus/modus_component.h"
-#include "modus/modus_live_data.h"
 #include "modus/modus_util.h"
 #include "modus/modus_view_wrapper.h"
 #include "profile/window_definition.h"
@@ -48,8 +50,15 @@ class ModusDisplayView final : public DisplayWidget, public ModusViewWrapper {
   }
 
   void SetDataSourceReading(const ModusDataSourceReading& reading) override {
-    DisplayWidget::SetDataSourceReading(reading.data_source, reading.state,
-                                        reading.text, reading.quality);
+    DisplayWidget::ShowReading(reading);
+  }
+
+  void SetDataSourceAlarm(std::string_view data_source, bool marked) override {
+    DisplayWidget::SetAlarmMarked(data_source, marked);
+  }
+
+  std::string GetSelectionHyperlink() const override {
+    return DisplayWidget::SelectionHyperlink();
   }
 
   bool SelectDataSourceElement(std::string_view data_source) override {
@@ -94,7 +103,7 @@ ModusController::DisplayView ModusController::CreateDisplayView() {
         display_selection_registry_.SetSelection(this, label);
       });
 
-  display_view->set_double_click_callback([this] { AcknowledgeSelection(); });
+  display_view->set_double_click_callback([this] { OnDoubleClick(); });
 
   auto* scroll_area = new QScrollArea;
   scroll_area->setWidget(display_view);
@@ -129,6 +138,40 @@ void ModusController::AcknowledgeSelection() {
   selection_.timed_data().Acknowledge();
 }
 
+void ModusController::OnDoubleClick() {
+  // 2.5.7's `ModusDocument::OnDocDblClick`: an element whose object has an
+  // unacknowledged alarm is acknowledged; otherwise its hyperlink is
+  // followed, so a double-click never both acknowledges and navigates.
+  if (selection_.timed_data().alerting()) {
+    AcknowledgeSelection();
+    return;
+  }
+  FollowHyperlink(wrapper_->GetSelectionHyperlink());
+}
+
+bool ModusController::FollowHyperlink(std::string_view hyperlink) {
+  if (hyperlink.empty())
+    return false;
+  // Resolved against this display, kept inside the public directory, and
+  // opened as a schematic window of its own kind.
+  const std::optional<std::filesystem::path> target = MakeModusFilePath(
+      std::filesystem::path{std::u8string{hyperlink.begin(), hyperlink.end()}},
+      FullFilePathToPublic(wrapper_->GetPath()));
+  if (!target || !IsModusFilePath(*target))
+    return false;
+  WindowDefinition definition{kModusWindowInfo};
+  definition.path = *target;
+  controller_delegate_.OpenView(definition);
+  return true;
+}
+
+void ModusController::OnBlink(bool state) {
+  if (!live_data_ || !widget_)
+    return;
+  for (const std::string& data_source : live_data_->AlertingDataSources())
+    wrapper_->SetDataSourceAlarm(data_source, state);
+}
+
 std::unique_ptr<UiView> ModusController::Init(
     const WindowDefinition& definition) {
   const DisplayView display_view = display_view_factory_
@@ -144,7 +187,7 @@ std::unique_ptr<UiView> ModusController::Init(
   wrapper_->Open(definition);
 
   const std::vector<std::string> data_sources = wrapper_->GetDataSources();
-  live_data_ = std::make_unique<ModusLiveData>(
+  live_data_ = std::make_unique<DisplayLiveData>(
       timed_data_service_, data_sources,
       [this](const ModusDataSourceReading& reading) {
         // The widget tree belongs to the window, which may be torn down
@@ -152,12 +195,22 @@ std::unique_ptr<UiView> ModusController::Init(
         if (!widget_)
           return;
         wrapper_->SetDataSourceReading(reading);
+        // An alarm shows in the blink phase it arrives in; an acknowledged
+        // one is cleared at once rather than at the next blink.
+        wrapper_->SetDataSourceAlarm(
+            reading.data_source,
+            reading.alerting && blinker_manager_.GetState());
         // A subscription resolving to its object is what the file index
         // waits for; null while the constructor below is still running.
         if (live_data_)
           UpdateFileCache();
       });
   UpdateFileCache();
+
+  // 2.5.7 blinked an element with an unacknowledged alarm («НеКвитировано»);
+  // the shared blinker keeps every display in one phase.
+  blink_connection_ =
+      blinker_manager_.Subscribe([this](bool state) { OnBlink(state); });
 
   return result;
 }

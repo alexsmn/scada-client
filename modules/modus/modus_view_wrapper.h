@@ -1,5 +1,6 @@
 #pragma once
 
+#include "display_view/display_live_data.h"
 #include "scada/node_id.h"
 
 #include <cstdint>
@@ -10,19 +11,8 @@
 
 class WindowDefinition;
 
-// One data source's latest reading, in the terms the display runtime takes
-// (backlog 915): a position keyword for `положение`-bound elements, the
-// formatted value for `текст`-bound ones, and an OPC UA StatusCode whose
-// severity bits say whether the reading is good.
-struct ModusDataSourceReading {
-  std::string data_source;
-  // "closed" / "open", or empty when there is no value to read one from.
-  std::string state;
-  // The value as tables show it, units and quality mark included; empty when
-  // there is no value.
-  std::string text;
-  int32_t quality = 0;
-};
+// The reading the controller hands its view; see DisplayDataSourceReading.
+using ModusDataSourceReading = DisplayDataSourceReading;
 
 class ModusViewWrapper {
  public:
@@ -53,6 +43,13 @@ class ModusViewWrapper {
 
   // Shows one data source's latest reading on every element bound to it.
   virtual void SetDataSourceReading(const ModusDataSourceReading& reading) {}
+
+  // Frames the elements bound to `data_source` as carrying an unacknowledged
+  // alarm while `marked`; the controller toggles it with the blinker.
+  virtual void SetDataSourceAlarm(std::string_view data_source, bool marked) {}
+
+  // The hyperlink of the selected element, as authored, or empty.
+  virtual std::string GetSelectionHyperlink() const { return {}; }
 
   // Selects the first element bound to `data_source`, as a click on it would,
   // and returns false when no element is (backlog 910).

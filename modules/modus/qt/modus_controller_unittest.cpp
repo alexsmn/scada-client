@@ -1,6 +1,7 @@
 #include "modus/qt/modus_controller.h"
 
 #include "aui/test/app_environment.h"
+#include "base/blinker.h"
 #include "controller/test/controller_environment.h"
 #include "filesystem/file_cache.h"
 #include "modus/modus_view_wrapper.h"
@@ -21,6 +22,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -68,6 +70,20 @@ class FakeModusViewWrapper final : public ModusViewWrapper {
     return true;
   }
 
+  void SetDataSourceAlarm(std::string_view data_source, bool marked) override {
+    alarms_.emplace_back(std::string{data_source}, marked);
+  }
+
+  std::string GetSelectionHyperlink() const override { return hyperlink_; }
+  void set_hyperlink(std::string hyperlink) {
+    hyperlink_ = std::move(hyperlink);
+  }
+
+  // Every alarm mark the controller set, in order.
+  const std::vector<std::pair<std::string, bool>>& alarms() const {
+    return alarms_;
+  }
+
   void set_data_sources(std::vector<std::string> data_sources) {
     data_sources_ = std::move(data_sources);
   }
@@ -99,6 +115,8 @@ class FakeModusViewWrapper final : public ModusViewWrapper {
   std::vector<std::string> data_sources_;
   std::vector<ModusDataSourceReading> readings_;
   std::vector<std::string> selected_elements_;
+  std::vector<std::pair<std::string, bool>> alarms_;
+  std::string hyperlink_;
 };
 
 // The latest reading the wrapper was given for `data_source`.
@@ -250,6 +268,82 @@ TEST_F(ModusControllerTest, AnUnresolvableDataSourceStillSelectsSomething) {
   controller.SelectDataSource("not a node id");
 
   EXPECT_FALSE(selection->empty());
+}
+
+// 2.5.7's double-click: an element with an unacknowledged alarm is
+// acknowledged, and only an element with nothing to acknowledge follows its
+// hyperlink — never both.
+TEST_F(ModusControllerTest,
+       ADoubleClickAcknowledgesAnAlarmInsteadOfNavigating) {
+  std::shared_ptr<MockTimedData> data = BindFormula("TS_Q1");
+  ON_CALL(*data, IsAlerting()).WillByDefault(Return(true));
+  EXPECT_CALL(*data, Acknowledge());
+  EXPECT_CALL(controller_env_.controller_delegate_, OpenView(_)).Times(0);
+
+  ModusController controller = MakeController();
+  controller.Init(WindowDefinition{});
+  wrapper_.set_hyperlink("next.sde");
+  controller.SelectDataSource("TS_Q1");
+
+  controller.OnDoubleClick();
+}
+
+// Backlog 944 (e): the built-in renderer only acknowledged, so a schematic's
+// hyperlinks led nowhere.
+TEST_F(ModusControllerTest, ADoubleClickFollowsTheSelectedElementsHyperlink) {
+  ModusController controller = MakeController();
+  wrapper_.set_path("current.sde");
+  controller.Init(WindowDefinition{});
+  wrapper_.set_hyperlink("next.xsde");
+
+  WindowDefinition opened;
+  EXPECT_CALL(controller_env_.controller_delegate_, OpenView(_))
+      .WillOnce(testing::SaveArg<0>(&opened));
+
+  controller.OnDoubleClick();
+
+  EXPECT_EQ(opened.type, "Modus");
+  EXPECT_EQ(opened.path.filename(), std::filesystem::path{"next.xsde"});
+}
+
+TEST_F(ModusControllerTest, AHyperlinkLeavingThePublicDirectoryOpensNothing) {
+  ModusController controller = MakeController();
+  wrapper_.set_path("current.sde");
+  controller.Init(WindowDefinition{});
+  EXPECT_CALL(controller_env_.controller_delegate_, OpenView(_)).Times(0);
+
+  EXPECT_FALSE(controller.FollowHyperlink("../../secret.sde"));
+  EXPECT_FALSE(controller.FollowHyperlink("report.pdf"));
+  EXPECT_FALSE(controller.FollowHyperlink(""));
+}
+
+// Backlog 944 (c): an element whose object has an unacknowledged alarm blinks,
+// as 2.5.7's «НеКвитировано» style did, in phase with the shared blinker.
+TEST_F(ModusControllerTest, AnUnacknowledgedAlarmBlinksWithTheBlinker) {
+  BlinkerManager::BlinkerCallback blink;
+  ON_CALL(controller_env_.blinker_manager_, Subscribe(_))
+      .WillByDefault([&blink](const BlinkerManager::BlinkerCallback& callback) {
+        blink = callback;
+        return boost::signals2::scoped_connection{};
+      });
+  std::shared_ptr<MockTimedData> alarmed = BindFormula("TS_Q1");
+  ON_CALL(*alarmed, IsAlerting()).WillByDefault(Return(true));
+  BindFormula("TS_Q2");
+
+  wrapper_.set_data_sources({"TS_Q1", "TS_Q2"});
+  ModusController controller = MakeController();
+  // Kept alive: the controller stops drawing once the window's widgets go.
+  std::unique_ptr<UiView> view = controller.Init(WindowDefinition{});
+  ASSERT_TRUE(blink);
+
+  const size_t before = wrapper_.alarms().size();
+  blink(true);
+  blink(false);
+  const std::vector<std::pair<std::string, bool>> marks{
+      wrapper_.alarms().begin() + before, wrapper_.alarms().end()};
+  EXPECT_THAT(marks,
+              testing::ElementsAre(std::pair{std::string{"TS_Q1"}, true},
+                                   std::pair{std::string{"TS_Q1"}, false}));
 }
 
 TEST_F(ModusControllerTest, AcknowledgeSelectionIsSafeWithNothingSelected) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/lifetime.h"
+#include "display_view/display_live_data.h"
 #include "display_view/display_runtime.h"
 
 #include <QImage>
@@ -22,9 +23,9 @@
 // The renderer arrives as a LOADED shared library, not as linked source
 // (ADR 0013): `display`'s SOURCE is never published, and the public Qt client
 // has to build. Its binary is published separately, which is what makes a
-// loaded library the answer rather than a missing feature. So the document is rendered into a BGRA buffer this widget owns and
-// then drawn into the widget's painter, rather than painted into that painter
-// directly.
+// loaded library the answer rather than a missing feature. So the document is
+// rendered into a BGRA buffer this widget owns and then drawn into the widget's
+// painter, rather than painted into that painter directly.
 //
 // That costs what ADR 0012 phase 3 had bought and ADR 0013 states outright: a
 // zoomed schematic scales a bitmap where the linked facade re-rendered as
@@ -93,8 +94,7 @@ class DisplayWidget : public QWidget {
 
   // The shape the operator last clicked, or nullopt when the selection is
   // clear. Painted as the accent halo over the authored drawing.
-  const std::optional<DisplayShapeHit>& selection() const
-      SCADA_LIFETIME_BOUND {
+  const std::optional<DisplayShapeHit>& selection() const SCADA_LIFETIME_BOUND {
     return selection_;
   }
 
@@ -103,8 +103,9 @@ class DisplayWidget : public QWidget {
     double_click_callback_ = std::move(callback);
   }
 
-  // The data sources the open document's bindings name, once each — empty
-  // for a VDS document and while nothing is open.
+  // The data sources the open document's bindings name, once each — a Modus
+  // document's binding keys, a VDS document's tag addresses — and empty while
+  // nothing is open.
   std::vector<std::string> DataSources() const;
 
   // Shows one data source's latest reading: `state` drives the elements bound
@@ -114,6 +115,20 @@ class DisplayWidget : public QWidget {
                             std::string_view state,
                             std::string_view text,
                             int32_t quality);
+
+  // Shows one data source's latest reading: the number for a Vidicon shape's
+  // formulas, and the position and text for a Modus element, with its
+  // quality. Repaints.
+  void ShowReading(const DisplayDataSourceReading& reading);
+
+  // Frames the elements bound to `data_source` in the theme's
+  // critical-severity colour while `marked`, for an unacknowledged alarm; the
+  // host toggles it with its blinker. Repaints.
+  void SetAlarmMarked(std::string_view data_source, bool marked);
+
+  // The hyperlink of the selected element (a Modus `гиперссылка`, as
+  // authored), or empty when nothing with one is selected.
+  std::string SelectionHyperlink() const;
 
   // Selects the first element bound to `data_source`, exactly as clicking it
   // would — the selection callback runs — and returns false when no element

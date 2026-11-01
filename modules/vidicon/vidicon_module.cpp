@@ -21,6 +21,7 @@ VidiconModule::VidiconModule(VidiconModuleContext&& context)
                 .node_event_provider_ = context.node_event_provider_,
                 .node_service_ = context.node_service_,
                 .session_service_ = context.session_service_,
+                .blinker_manager_ = context.blinker_manager_,
                 .display_selection_registry_ =
                     context.display_selection_registry_});
       });

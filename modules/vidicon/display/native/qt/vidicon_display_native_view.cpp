@@ -3,10 +3,12 @@
 #include "aui/dialog_service.h"
 #include "aui/show_message_box.h"
 #include "aui/translation.h"
+#include "base/blinker.h"
 #include "base/u16format.h"
 #include "controller/controller_delegate.h"
 #include "controller/selection_model.h"
 #include "display_frame/qt/display_frame.h"
+#include "display_view/display_live_data.h"
 #include "display_view/qt/display_widget.h"
 #include "filesystem/file_util.h"
 #include "modules/write/write_service.h"
@@ -89,23 +91,7 @@ std::unique_ptr<UiView> VidiconDisplayNativeView::Init(
 
         display_selection_registry_.SetSelection(
             this, DisplayShapeLabel(*hit).toStdU16String());
-
-        try {
-          auto node_id = scada::NodeId::FromString(hit->data_source);
-          // An unbound shape is highlighted like any other, so the previous
-          // object must not stay selected behind it (backlog 907).
-          if (node_id.is_null()) {
-            selection_.Clear();
-            return;
-          }
-          selection_.SelectTimedData(
-              TimedDataSpec{timed_data_service_, node_id});
-          // Mirror the selection into the frame's Measurements strip.
-          if (frame_)
-            frame_->ShowMeasurement(node_id);
-        } catch (const std::exception&) {
-          selection_.Clear();
-        }
+        SelectDataSource(hit->data_source);
       });
 
   // Wrap the renderer in the display frame — Live indicator, hotspot
@@ -126,8 +112,54 @@ std::unique_ptr<UiView> VidiconDisplayNativeView::Init(
                           .session_service = &session_service_});
 
   frame_ = static_cast<DisplayFrame*>(framed);
-  widget.release();
+  widget_ = widget.release();
+
+  // What puts live values on the schematic itself: each address the shapes'
+  // tags name is subscribed like a table cell's formula, and its reading
+  // drives the shapes' own formulas in the renderer. Until this, a Vidicon
+  // display showed values only in the frame's Measurements strip.
+  live_data_ = std::make_unique<DisplayLiveData>(
+      timed_data_service_, widget_->DataSources(),
+      [this](const DisplayDataSourceReading& reading) {
+        if (!widget_)
+          return;
+        widget_->ShowReading(reading);
+        widget_->SetAlarmMarked(
+            reading.data_source,
+            reading.alerting && blinker_manager_.GetState());
+      });
+  blink_connection_ =
+      blinker_manager_.Subscribe([this](bool state) { OnBlink(state); });
+
   return std::unique_ptr<UiView>{framed};
+}
+
+void VidiconDisplayNativeView::SelectDataSource(std::string_view data_source) {
+  // An unbound shape is highlighted like any other, so the previous object
+  // must not stay selected behind it (backlog 907).
+  if (data_source.empty()) {
+    selection_.Clear();
+    return;
+  }
+  // Through the formula service, as the schematic subscribes: a tag's
+  // `{VIDICON.Share.1\…}` address is a channel path, not a node id.
+  try {
+    TimedDataSpec spec{timed_data_service_, data_source};
+    const scada::NodeId node_id = spec.node_id();
+    selection_.SelectTimedData(std::move(spec));
+    // Mirror the selection into the frame's Measurements strip.
+    if (frame_ && !node_id.is_null())
+      frame_->ShowMeasurement(node_id);
+  } catch (const std::exception&) {
+    selection_.Clear();
+  }
+}
+
+void VidiconDisplayNativeView::OnBlink(bool state) {
+  if (!live_data_ || !widget_)
+    return;
+  for (const std::string& data_source : live_data_->AlertingDataSources())
+    widget_->SetAlarmMarked(data_source, state);
 }
 
 void VidiconDisplayNativeView::Save(WindowDefinition& definition) {

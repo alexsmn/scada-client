@@ -1,4 +1,4 @@
-#include "modus/modus_live_data.h"
+#include "display_view/display_live_data.h"
 
 #include "timed_data/timed_data_spec.h"
 
@@ -19,14 +19,14 @@ constexpr int32_t kBadQuality = static_cast<int32_t>(0x80000000u);
 
 // One subscription. Heap-allocated so the spec's handlers, which capture it,
 // never see it move.
-struct ModusLiveData::Binding {
+struct DisplayLiveData::Binding {
   std::string data_source;
   TimedDataSpec spec;
 };
 
-ModusLiveData::ModusLiveData(TimedDataService& timed_data_service,
-                             std::span<const std::string> data_sources,
-                             ReadingCallback callback)
+DisplayLiveData::DisplayLiveData(TimedDataService& timed_data_service,
+                                 std::span<const std::string> data_sources,
+                                 ReadingCallback callback)
     : callback_{std::move(callback)} {
   for (const std::string& data_source : data_sources) {
     auto binding = std::make_unique<Binding>();
@@ -39,6 +39,8 @@ ModusLiveData::ModusLiveData(TimedDataService& timed_data_service,
     };
     raw->spec.node_modified_handler = report;
     raw->spec.deletion_handler = report;
+    // An alarm raised or acknowledged changes no value, so it arrives here.
+    raw->spec.event_change_handler = report;
 
     // A formula the service cannot use reports as not connected rather than
     // stopping the rest of the schematic from binding.
@@ -52,9 +54,9 @@ ModusLiveData::ModusLiveData(TimedDataService& timed_data_service,
   }
 }
 
-ModusLiveData::~ModusLiveData() = default;
+DisplayLiveData::~DisplayLiveData() = default;
 
-std::optional<std::string> ModusLiveData::FindDataSourceForNode(
+std::optional<std::string> DisplayLiveData::FindDataSourceForNode(
     const scada::NodeId& node_id) const {
   if (node_id.is_null())
     return std::nullopt;
@@ -65,7 +67,37 @@ std::optional<std::string> ModusLiveData::FindDataSourceForNode(
   return std::nullopt;
 }
 
-std::vector<scada::NodeId> ModusLiveData::ResolvedNodes() const {
+const DisplayLiveData::Binding* DisplayLiveData::FindBinding(
+    std::string_view data_source) const {
+  for (const std::unique_ptr<Binding>& binding : bindings_) {
+    if (binding->data_source == data_source)
+      return binding.get();
+  }
+  return nullptr;
+}
+
+bool DisplayLiveData::IsAlerting(std::string_view data_source) const {
+  const Binding* binding = FindBinding(data_source);
+  return binding && binding->spec.connected() && binding->spec.alerting();
+}
+
+bool DisplayLiveData::Acknowledge(std::string_view data_source) {
+  if (!IsAlerting(data_source))
+    return false;
+  FindBinding(data_source)->spec.Acknowledge();
+  return true;
+}
+
+std::vector<std::string> DisplayLiveData::AlertingDataSources() const {
+  std::vector<std::string> result;
+  for (const std::unique_ptr<Binding>& binding : bindings_) {
+    if (binding->spec.connected() && binding->spec.alerting())
+      result.push_back(binding->data_source);
+  }
+  return result;
+}
+
+std::vector<scada::NodeId> DisplayLiveData::ResolvedNodes() const {
   std::vector<scada::NodeId> nodes;
   for (const std::unique_ptr<Binding>& binding : bindings_) {
     if (!binding->spec.connected())
@@ -78,14 +110,16 @@ std::vector<scada::NodeId> ModusLiveData::ResolvedNodes() const {
 }
 
 // static
-ModusDataSourceReading ModusLiveData::MakeReading(std::string_view data_source,
-                                                  const TimedDataSpec& spec) {
-  ModusDataSourceReading reading{.data_source = std::string{data_source}};
+DisplayDataSourceReading DisplayLiveData::MakeReading(
+    std::string_view data_source,
+    const TimedDataSpec& spec) {
+  DisplayDataSourceReading reading{.data_source = std::string{data_source}};
   if (!spec.connected()) {
     reading.quality = kBadQuality;
     return reading;
   }
 
+  reading.alerting = spec.alerting();
   const scada::DataValue current = spec.current();
   if (current.qualifier.general_bad())
     reading.quality = kBadQuality;
@@ -94,12 +128,13 @@ ModusDataSourceReading ModusLiveData::MakeReading(std::string_view data_source,
 
   // 2.5.7 read every value as a double and drew a position for anything
   // non-zero (`ModusElement::UpdateData`).
-  reading.state = current.value.get_or(0.0) != 0.0 ? "closed" : "open";
+  reading.value = current.value.get_or(0.0);
+  reading.state = *reading.value != 0.0 ? "closed" : "open";
   reading.text = UtfConvert<char>(spec.GetCurrentString());
   return reading;
 }
 
-void ModusLiveData::Report(const Binding& binding) const {
+void DisplayLiveData::Report(const Binding& binding) const {
   if (callback_)
     callback_(MakeReading(binding.data_source, binding.spec));
 }
