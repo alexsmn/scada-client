@@ -87,8 +87,17 @@ class WriteModel : private WriteContext,
   // Select/Operate/Cancel methods.
   scada::node ControlNode() const;
 
-  // Releases a selection the operator decided not to act on.
+  // Releases a selection the operator decided not to act on. A refused
+  // release is reported as a local event, never as a dialog.
   void CancelOutstandingSelect();
+
+  // Awaits the Cancel and, when the device refuses it, reports to
+  // `local_events` that the selection of `source_title` may still be armed.
+  // Bad_NotSupported — a driver that never selects — reports nothing. Takes no
+  // model: the dialog may already be gone when the device answers.
+  static Awaitable<void> ReportCancelRefusalAsync(scada::CoStatus operation,
+                                                  LocalEvents* local_events,
+                                                  std::u16string source_title);
 
   static Awaitable<void> CompleteWriteAsync(AnyExecutor executor,
                                             std::weak_ptr<WriteModel> model,

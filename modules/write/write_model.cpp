@@ -7,6 +7,7 @@
 #include "common/format.h"
 #include "common/formula_util.h"
 #include "events/local_event_util.h"
+#include "events/local_events.h"
 #include "model/data_items_node_ids.h"
 #include "model/nested_node_ids.h"
 #include "model/node_id_util.h"
@@ -15,7 +16,6 @@
 #include "scada/co_result.h"
 
 #include <charconv>
-#include <tuple>
 
 namespace {
 }  // namespace
@@ -320,17 +320,42 @@ void WriteModel::CancelOutstandingSelect() {
     return;
   }
   select_outstanding_ = false;
-  // Fire and forget: the operator has already moved on, and a server that
-  // cannot cancel (Bad_NotSupported — no IEC 60870 driver implements one yet)
-  // must not raise an error dialog over it. Leaving it uncancelled would hold
-  // the outstation's selection until its own sboTimeout.
-  CoSpawn(executor_,
-          [operation = ControlNode().call(
-               scada::data_items::id::DataItemControlType_Cancel)]() mutable
-          -> Awaitable<void> {
-            std::ignore = co_await std::move(operation);
-            co_return;
-          });
+  // Leaving it uncancelled would hold the outstation's selection until its own
+  // sboTimeout. The operator has already moved on, so a refusal must not raise
+  // an error dialog over whatever they are doing now — but it must not vanish
+  // either: IEC 104 and IEC 61850 implement Cancel (backlog 946), a device can
+  // refuse it, and the selection then stays armed. So a refusal is reported as
+  // a local event (backlog 959).
+  CoSpawn(executor_, [operation = ControlNode().call(
+                          scada::data_items::id::DataItemControlType_Cancel),
+                      local_events = local_events_,
+                      source_title = GetSourceTitle()]() mutable {
+    return ReportCancelRefusalAsync(std::move(operation), local_events,
+                                    std::move(source_title));
+  });
+}
+
+Awaitable<void> WriteModel::ReportCancelRefusalAsync(
+    scada::CoStatus operation,
+    LocalEvents* local_events,
+    std::u16string source_title) {
+  const scada::Status status = co_await std::move(operation);
+  // Bad_NotSupported is DataItemWriteImpl::Cancel's answer for a driver with
+  // no Cancel (MODBUS, IEC 104 commands other than C_SC_NA_1). Those never
+  // send the device a select stage, so nothing is left armed to report.
+  if (status || status.code() == scada::StatusCode::Bad_NotSupported ||
+      !local_events)
+    co_return;
+
+  // Always reported, whatever `show_write_ok` says: that setting governs
+  // success reports, and this is a failure an operator has to act on.
+  local_events->ReportEvent(
+      LocalEvents::SEV_ERROR,
+      u16format(L"{}: {} - {}. {}", Translate("Release of selection"),
+                source_title, ToString16(status),
+                Translate("The device may stay selected until its own "
+                          "selection timeout expires.")));
+  co_return;
 }
 
 Awaitable<void> WriteModel::CompleteWriteAsync(AnyExecutor executor,

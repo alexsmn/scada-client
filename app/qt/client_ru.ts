@@ -2381,6 +2381,14 @@ Try again? Choose No to continue without the server copy.</source>
         <translation>Подготовка к управлению...</translation>
     </message>
     <message>
+        <source>Release of selection</source>
+        <translation>Отмена выбора</translation>
+    </message>
+    <message>
+        <source>The device may stay selected until its own selection timeout expires.</source>
+        <translation>Устройство может оставаться в состоянии выбора до истечения собственного тайм-аута выбора.</translation>
+    </message>
+    <message>
         <source>Controlling...</source>
         <translation>Управление...</translation>
     </message>

@@ -31,6 +31,14 @@ constexpr scada::NodeId kDataItemId{9002, 1};
 const scada::NodeId kControlNodeId =
     scada::MakeNestedNodeId(kDataItemId, scada::kControlObjectName);
 
+// A Call answer that arrives only once `answer` completes, and refuses.
+// `answer` is a test-scope object, so the reference outlives the lazy frame.
+scada::CoStatusOr<scada::CallResult> AwaitRefusal(
+    scada::base::AsyncCompletion& answer) {
+  co_await answer.Wait();
+  co_return scada::MakeCallResult(scada::Status{scada::StatusCode::Bad});
+}
+
 class RecordingDialogService : public DialogService {
  public:
   explicit RecordingDialogService(AnyExecutor executor)
@@ -267,19 +275,21 @@ TEST_F(WriteModelTest, TwoStagedControlSelectsConfirmsThenOperates) {
 }
 
 // Declining releases the selection instead of leaving the outstation armed
-// until its own sboTimeout. The cancel is fire-and-forget: no IEC 60870 driver
-// implements one, so Bad_NotSupported is the expected answer and must not
-// raise an error dialog at an operator who has already moved on.
+// until its own sboTimeout. A cancel the device refuses must not raise an
+// error dialog at an operator who has already moved on — but it is reported as
+// a local event, since the selection may still be armed (backlog 959).
 TEST_F(WriteModelTest, DecliningTwoStagedControlCancelsTheSelection) {
+  // A failure report must not depend on the success-report setting.
+  profile_.show_write_ok = false;
   EXPECT_CALL(method_service_, Call(kControlNodeId, _, _, _))
       .WillRepeatedly([this](scada::NodeId, scada::NodeId method_id,
                              std::vector<scada::Variant>,
                              scada::ServiceContext) {
         called_methods_.push_back(method_id);
-        // Answer the cancel the way a real driver does.
+        // The device refuses the release (an IEC 104 negative confirmation).
         return scada::MakeMethodCallResult(
             method_id == scada::data_items::id::DataItemControlType_Cancel
-                ? scada::Status{scada::StatusCode::Bad_NotSupported}
+                ? scada::Status{scada::StatusCode::Bad}
                 : scada::Status{scada::StatusCode::Good});
       });
 
@@ -301,10 +311,69 @@ TEST_F(WriteModelTest, DecliningTwoStagedControlCancelsTheSelection) {
                           scada::data_items::id::DataItemControlType_Cancel));
   EXPECT_EQ(completion_, false);
 
-  // The rejected cancel is swallowed: still just the one confirmation prompt,
-  // no error box behind it.
+  // No error box behind the one confirmation prompt...
   EXPECT_THAT(dialog_service_.modes,
               ElementsAre(MessageBoxMode::QuestionYesNoDefaultNo));
+
+  // ...but the refusal is reported, naming the point, even though the
+  // "report successful control" setting is off.
+  ASSERT_THAT(local_events_.events(), SizeIs(1));
+  EXPECT_EQ(local_events_.events()[0]->severity, scada::kSeverityCritical);
+  EXPECT_NE(local_events_.events()[0]->message.text.find(u"Output"),
+            std::u16string::npos);
+}
+
+// A released selection is the expected outcome, and Bad_NotSupported is a
+// driver that never armed one (MODBUS, IEC 104 commands other than
+// C_SC_NA_1). Neither leaves anything for the operator to act on.
+TEST_F(WriteModelTest, ReleasedOrNeverArmedSelectionReportsNothing) {
+  for (scada::StatusCode cancel_answer :
+       {scada::StatusCode::Good, scada::StatusCode::Bad_NotSupported}) {
+    ON_CALL(method_service_, Call)
+        .WillByDefault([cancel_answer](scada::NodeId, scada::NodeId method_id,
+                                       std::vector<scada::Variant>,
+                                       scada::ServiceContext) {
+          return scada::MakeMethodCallResult(
+              method_id == scada::data_items::id::DataItemControlType_Cancel
+                  ? scada::Status{cancel_answer}
+                  : scada::Status{scada::StatusCode::Good});
+        });
+
+    auto model = CreateModel(/*two_staged=*/true);
+    model->Write(42.0, /*lock=*/false);
+    Drain(executor_);
+    dialog_service_.CompleteMessageBox(MessageBoxResult::No);
+    Drain(executor_);
+
+    EXPECT_EQ(completion_, false);
+    EXPECT_THAT(local_events_.events(), IsEmpty());
+  }
+}
+
+// The device answers the cancel after the dialog has closed and taken the
+// model with it. The refusal still has to reach the operator.
+TEST_F(WriteModelTest, CancelRefusedAfterTheDialogClosedIsStillReported) {
+  scada::base::AsyncCompletion cancel_answer{executor_};
+  ON_CALL(method_service_, Call)
+      .WillByDefault([&](scada::NodeId, scada::NodeId method_id,
+                         std::vector<scada::Variant>, scada::ServiceContext) {
+        return method_id == scada::data_items::id::DataItemControlType_Cancel
+                   ? AwaitRefusal(cancel_answer)
+                   : scada::MakeMethodCallResult();
+      });
+
+  auto model = CreateModel(/*two_staged=*/true);
+  model->Write(42.0, /*lock=*/false);
+  Drain(executor_);
+  dialog_service_.CompleteMessageBox(MessageBoxResult::No);
+  Drain(executor_);
+  model.reset();
+
+  EXPECT_THAT(local_events_.events(), IsEmpty());
+  cancel_answer.Complete();
+  Drain(executor_);
+
+  EXPECT_THAT(local_events_.events(), SizeIs(1));
 }
 
 TEST_F(WriteModelTest, ControlCommandConfirmationReviewsPresentAndCommand) {
