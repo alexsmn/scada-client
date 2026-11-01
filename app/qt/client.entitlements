@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Entitlements for the release-signed macOS Client (tools/release/package.sh).
+
+  disable-library-validation: the hardened runtime, which notarisation
+  requires, otherwise lets the process load only libraries signed by the same
+  team. The display runtime (ADR 0013) is a separate download that is loaded
+  with dlopen from $SCADA_DISPLAY_RUNTIME or beside the executable, and it
+  is not necessarily signed by the team that signed this Client, so without
+  this entitlement a signed Client could never load it.
+-->
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<true/>
+</dict>
+</plist>

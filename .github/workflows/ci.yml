@@ -1,8 +1,10 @@
 # CI for scada-client, which runs on the published export at
 # github.com/alexsmn/scada-client.
 #
-# Two jobs: cppcheck, which gates, and a three-platform build, which does not
-# gate yet and says why in its own comment.
+# Three jobs: cppcheck and a three-platform build, which both gate, and on a
+# `v*` tag a release job that publishes what the build packaged. See the
+# release job's comment for what a release carries and what it deliberately
+# does not.
 #
 # THE BUILD JOB EXISTS AGAIN AS OF 2026-09-20, after a year in which it could
 # not. The obstacle was never Qt: it was that a standalone client build resolves
@@ -33,6 +35,10 @@ name: CI
 on:
   push:
     branches: [ "main", "release/**" ]
+    # A version tag runs the whole matrix and then the release job. The tag
+    # must name the version client/CMakeLists.txt declares; the build job
+    # refuses a mismatch before it spends hours compiling.
+    tags: [ "v*" ]
   pull_request:
     branches: [ "main", "release/**" ]
 
@@ -48,11 +54,13 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v7
+      # https://github.com/actions/checkout/releases/tag/v7.0.1
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
     - name: Cache cppcheck
       id: cache-cppcheck
-      uses: actions/cache@v6
+      # https://github.com/actions/cache/releases/tag/v6.1.0
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ~/cppcheck
         key: cppcheck-${{ env.CPPCHECK_VERSION }}-${{ runner.os }}
@@ -114,7 +122,8 @@ jobs:
 
     - name: Upload cppcheck report
       if: always()
-      uses: actions/upload-artifact@v7
+      # https://github.com/actions/upload-artifact/releases/tag/v7.0.2
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: cppcheck-report
         path: cppcheck-report.txt
@@ -204,52 +213,73 @@ jobs:
     # client -> common, core, opcuapp, graph_qt, view_manager_qt; common -> core,
     # express, opcuapp; core -> net; opcuapp -> net. `aui` is in-tree.
     - name: Check out scada-client
-      uses: actions/checkout@v7
+      # https://github.com/actions/checkout/releases/tag/v7.0.1
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         path: client
 
     - name: Check out scada-common
-      uses: actions/checkout@v7
+      # https://github.com/actions/checkout/releases/tag/v7.0.1
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         repository: alexsmn/scada-common
         path: common
 
     - name: Check out scada-core
-      uses: actions/checkout@v7
+      # https://github.com/actions/checkout/releases/tag/v7.0.1
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         repository: alexsmn/scada-core
         path: core
 
     - name: Check out opcuapp
-      uses: actions/checkout@v7
+      # https://github.com/actions/checkout/releases/tag/v7.0.1
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         repository: alexsmn/opcuapp
         path: opcuapp
 
     - name: Check out graph-qt
-      uses: actions/checkout@v7
+      # https://github.com/actions/checkout/releases/tag/v7.0.1
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         repository: alexsmn/graph-qt
         path: graph_qt
 
     - name: Check out view_manager_qt
-      uses: actions/checkout@v7
+      # https://github.com/actions/checkout/releases/tag/v7.0.1
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         repository: alexsmn/view_manager_qt
         path: view_manager_qt
 
     # Publishes as `transport`; the directory must be `net`.
     - name: Check out transport (the `net` product)
-      uses: actions/checkout@v7
+      # https://github.com/actions/checkout/releases/tag/v7.0.1
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         repository: alexsmn/transport
         path: net
 
     - name: Check out express
-      uses: actions/checkout@v7
+      # https://github.com/actions/checkout/releases/tag/v7.0.1
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         repository: alexsmn/express
         path: express
+
+    # A tag that does not match the project version would publish a package
+    # whose bundle, About dialog and file names all say a different version
+    # from the release they hang on. Checked first, so a typo costs seconds.
+    - name: Check the tag against the project version
+      if: startsWith(github.ref, 'refs/tags/v')
+      shell: bash
+      run: |
+        declared=$(awk '/^project\(scada-client/{f=1} f&&$1=="VERSION"{print $2; exit}' client/CMakeLists.txt)
+        if [ "${GITHUB_REF_NAME#v}" != "$declared" ]; then
+          echo "::error::tag $GITHUB_REF_NAME does not match project(scada-client VERSION $declared)"
+          exit 1
+        fi
 
     # ── Toolchain ───────────────────────────────────────────────────────────
 
@@ -333,7 +363,8 @@ jobs:
     # so no separate install on this platform.
     - name: Set up MSVC (Windows)
       if: runner.os == 'Windows'
-      uses: ilammy/msvc-dev-cmd@v1
+      # https://github.com/ilammy/msvc-dev-cmd/releases/tag/v1.13.0
+      uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
 
     # The pin is the commit this tree's own vcpkg is at, so CI resolves the same
     # ports a developer does.
@@ -345,7 +376,8 @@ jobs:
     # workflow was `continue-on-error` (superproject tasks.md 316, closed
     # 2026-09-27).
     - name: Set up vcpkg
-      uses: lukka/run-vcpkg@v11
+      # https://github.com/lukka/run-vcpkg/releases/tag/v11.6
+      uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11.6
       with:
         vcpkgGitCommitId: 'f3e10653cc27d62a37a3763cd84b38bca07c6075'
         # The manifest is resolved by the CMake toolchain during configure, not
@@ -369,7 +401,8 @@ jobs:
     # ... another job may be creating this cache"), and the 95 ports it had
     # built -- gRPC and Qt among them, 3h18m of Configure -- were thrown away.
     - name: Restore the vcpkg binary cache
-      uses: actions/cache/restore@v6
+      # https://github.com/actions/cache/releases/tag/v6.1.0
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ github.workspace }}/vcpkg-cache
         key: vcpkg-${{ matrix.os }}-${{ hashFiles('client/vcpkg.json') }}-${{ github.run_id }}-${{ github.run_attempt }}
@@ -429,7 +462,8 @@ jobs:
     # above never converges. A plain `actions/cache` saves only on success.
     - name: Save the vcpkg binary cache
       if: always()
-      uses: actions/cache/save@v6
+      # https://github.com/actions/cache/releases/tag/v6.1.0
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ github.workspace }}/vcpkg-cache
         key: vcpkg-${{ matrix.os }}-${{ hashFiles('client/vcpkg.json') }}-${{ github.run_id }}-${{ github.run_attempt }}
@@ -523,7 +557,7 @@ jobs:
         echo "--- DLLs aui_qt_unittests.exe imports:"
         dumpbin //nologo //dependents build/ninja/bin/Release/aui_qt_unittests.exe | grep -i '\.dll'
         echo "--- Qt DLLs beside the test:"
-        ls build/ninja/bin/Release | grep -i '^qt6' || true
+        ls build/ninja/bin/Release/[Qq]t6* 2>/dev/null || true
         set +e
         timeout 120 build/ninja/bin/Release/aui_qt_unittests.exe \
           --gtest_filter=DialogServiceImplQtTest.RunMessageBoxMapsNoButtonResult
@@ -563,9 +597,99 @@ jobs:
       working-directory: client
       run: xvfb-run --auto-servernum ctest --preset test-release --output-on-failure --timeout 300
 
+    # ── Release packaging (v* tags only) ────────────────────────────────────
+    #
+    # After the tests, so a release is only ever cut from a build that passed
+    # them. macOS and Windows only: the Client is not shipped for Linux.
+    # client/tools/release/package.sh does the work, so the same packaging can
+    # be dry-run on a developer's machine; its header documents the inputs.
+    #
+    # Signing is optional and all-or-nothing per group. With no secrets the
+    # job still releases, unsigned, and the release notes say so and say how a
+    # user opens the app anyway. The secrets reach only the steps that need
+    # them, never the build or test steps, which run third-party code.
+    - name: Import the signing certificate (macOS)
+      if: startsWith(github.ref, 'refs/tags/v') && runner.os == 'macOS'
+      shell: bash
+      env:
+        MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
+        MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+      run: |
+        if [ -z "$MACOS_CERTIFICATE_P12_BASE64" ]; then
+          echo "::notice::MACOS_CERTIFICATE_P12_BASE64 is not set; the macOS Client will be released unsigned"
+          exit 0
+        fi
+        [ -n "$MACOS_CERTIFICATE_PASSWORD" ] ||
+          { echo "::error::MACOS_CERTIFICATE_P12_BASE64 is set but MACOS_CERTIFICATE_PASSWORD is not"; exit 1; }
+        # A throwaway keychain, so nothing lands in the runner's login one.
+        keychain="$RUNNER_TEMP/release-signing.keychain-db"
+        keychain_password=$(openssl rand -hex 24)
+        security create-keychain -p "$keychain_password" "$keychain"
+        security set-keychain-settings -lut 21600 "$keychain"
+        security unlock-keychain -p "$keychain_password" "$keychain"
+        echo "$MACOS_CERTIFICATE_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+        security import "$RUNNER_TEMP/certificate.p12" -k "$keychain" \
+          -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+        rm -f "$RUNNER_TEMP/certificate.p12"
+        # Lets codesign use the key without a GUI prompt nobody can answer.
+        security set-key-partition-list -S apple-tool:,apple:,codesign: \
+          -s -k "$keychain_password" "$keychain" > /dev/null
+        # Unquoted on purpose: the existing search list, one keychain a word.
+        # shellcheck disable=SC2046
+        security list-keychains -d user -s "$keychain" \
+          $(security list-keychains -d user | tr -d '"')
+        identity=$(security find-identity -v -p codesigning "$keychain" |
+          awk -F'"' '/Developer ID Application/{print $2; exit}')
+        [ -n "$identity" ] ||
+          { echo "::error::the certificate holds no 'Developer ID Application' identity"; exit 1; }
+        echo "Signing as: $identity"
+        echo "MACOS_SIGNING_IDENTITY=$identity" >> "$GITHUB_ENV"
+
+    # Run from the workspace root so SCADA_SOURCE_DIRS can name the sibling
+    # checkouts by their directory; SOURCES.txt then records the exact commit
+    # of every product the package was built from.
+    - name: Package the Client
+      if: startsWith(github.ref, 'refs/tags/v') && runner.os != 'Linux'
+      shell: bash
+      env:
+        APPLE_ID: ${{ secrets.APPLE_ID }}
+        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        SCADA_SOURCE_DIRS: client common core opcuapp graph_qt view_manager_qt net express
+      run: |
+        if [ -n "$APPLE_ID$APPLE_TEAM_ID$APPLE_APP_SPECIFIC_PASSWORD" ]; then
+          if [ -z "$APPLE_ID" ] || [ -z "$APPLE_TEAM_ID" ] || [ -z "$APPLE_APP_SPECIFIC_PASSWORD" ]; then
+            echo "::error::notarisation needs all three of APPLE_ID, APPLE_TEAM_ID and APPLE_APP_SPECIFIC_PASSWORD"
+            exit 1
+          fi
+          if [ "$RUNNER_OS" = "macOS" ] && [ -z "${MACOS_SIGNING_IDENTITY:-}" ]; then
+            echo "::error::notarisation credentials are set but there is no signing certificate"
+            exit 1
+          fi
+        else
+          unset APPLE_ID APPLE_TEAM_ID APPLE_APP_SPECIFIC_PASSWORD
+        fi
+        client/tools/release/package.sh client/build/ninja "${GITHUB_REF_NAME#v}" dist
+
+    - name: Remove the signing keychain (macOS)
+      if: always() && startsWith(github.ref, 'refs/tags/v') && runner.os == 'macOS'
+      shell: bash
+      run: security delete-keychain "$RUNNER_TEMP/release-signing.keychain-db" 2>/dev/null || true
+
+    # https://github.com/actions/upload-artifact/releases/tag/v7.0.2
+    - name: Upload the release package
+      if: startsWith(github.ref, 'refs/tags/v') && runner.os != 'Linux'
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: client-release-${{ runner.os }}
+        path: dist/
+        if-no-files-found: error
+        retention-days: 14
+
     - name: Upload the test log
       if: failure()
-      uses: actions/upload-artifact@v7
+      # https://github.com/actions/upload-artifact/releases/tag/v7.0.2
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: ctest-log-${{ matrix.os }}
         path: client/build/ninja/Testing/
@@ -581,7 +705,8 @@ jobs:
     # leg is the only Linux runner either one gets.
     - name: Upload the Linux golden images
       if: always() && runner.os == 'Linux'
-      uses: actions/upload-artifact@v7
+      # https://github.com/actions/upload-artifact/releases/tag/v7.0.2
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: linux-goldens
         path: |
@@ -597,7 +722,8 @@ jobs:
     # Windows; review these and commit them there.
     - name: Upload the Windows offscreen golden images
       if: always() && runner.os == 'Windows'
-      uses: actions/upload-artifact@v7
+      # https://github.com/actions/upload-artifact/releases/tag/v7.0.2
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: windows-offscreen-goldens
         path: |
@@ -605,3 +731,61 @@ jobs:
           view_manager_qt/testdata/windows-offscreen/
         if-no-files-found: ignore
         retention-days: 14
+
+  # ── Release ───────────────────────────────────────────────────────────────
+  #
+  # On a `v*` tag, after both other jobs pass, collects what the build legs
+  # packaged and attaches it to a DRAFT release for this tag. Draft, so the
+  # release notes and the assets are looked at by a person before anyone can
+  # download them; publishing is one click on the release page. A re-run for a
+  # tag whose release already exists replaces the assets and leaves the notes
+  # alone.
+  #
+  # WHAT IS NOT IN IT. The display runtime -- the schematic renderer, loaded
+  # at run time through a C ABI (ADR 0013) -- is not bundled while its licence
+  # is unsettled (superproject tasks.md 788). A Client without it is a
+  # supported state: it runs, and schematic windows say there is no display
+  # runtime. package.sh refuses a package that contains one.
+  #
+  # No action creates the release: `gh` is preinstalled on the runner, which
+  # leaves no third-party pin holding the repository's write token.
+  release:
+    name: Release
+    needs: [ analyze, build ]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+    # https://github.com/actions/download-artifact/releases/tag/v8.0.2
+    - name: Download the packages
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        pattern: client-release-*
+        merge-multiple: true
+        path: dist
+
+    - name: Create the draft release
+      working-directory: dist
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        version=${GITHUB_REF_NAME#v}
+        {
+          echo "Telecontrol SCADA Client $version for macOS and Windows."
+          echo
+          for f in *.notes.md; do cat "$f"; echo; done
+          echo "Schematic (single-line) displays need the display runtime, which is not part of this release. Without it the Client runs normally and schematic windows report that no display runtime is installed."
+          echo
+          echo "Each package carries the licence, third-party notices, and \`SOURCES.txt\` naming the exact commit of every repository it was built from."
+        } > release-notes.md
+        cat release-notes.md
+        assets=(*.dmg *.zip)
+        if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+          gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber --repo "$GITHUB_REPOSITORY"
+        else
+          gh release create "$GITHUB_REF_NAME" "${assets[@]}" --draft --verify-tag \
+            --title "Telecontrol SCADA Client $version" \
+            --notes-file release-notes.md --repo "$GITHUB_REPOSITORY"
+        fi

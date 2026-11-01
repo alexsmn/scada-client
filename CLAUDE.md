@@ -505,10 +505,46 @@ underlying design and consumer rules.
 
 GitHub Actions workflow (`.github/workflows/ci.yml`), which runs on the
 published export at `github.com/alexsmn/scada-client`. It triggers on push/PR to
-`main` and `release/**` — the old workflow triggered on `release/2.5`, which
-`export.py` does not publish, so it last ran in Feb 2026.
+`main` and `release/**`, and on `v*` tags — the old workflow triggered on
+`release/2.5`, which `export.py` does not publish, so it last ran in Feb 2026.
 
-**Two jobs, both gating: `analyze` (cppcheck), since 2026-09-20, and `build`, a
+**On a `v*` tag it also cuts a release** (since 2026-11-01). The tag must equal
+`project(scada-client VERSION …)` or the build job stops at once. After the
+tests pass, the macOS and Windows legs run `tools/release/package.sh`, which
+writes a `.dmg` (Apple silicon) and a `.zip` (x64). Each package carries
+`LICENSE`, `COPYRIGHT`, `NOTICE`, every vcpkg port's licence and a
+`SOURCES.txt` naming the commit of each sibling repository. The `release` job
+attaches them to a **draft** release, and a person publishes it.
+`package.sh` is a script so the same packaging can be dry-run locally:
+`tools/release/package.sh build/ninja <version> <out dir>` after a Release
+build.
+
+- **The display runtime is never packaged** while its licence is unsettled
+  (superproject tasks.md 788). The script deletes it if the build staged it and
+  then refuses any package that still contains one. Lifting that is a
+  deliberate edit to the script, not a configure option.
+- **Signing is optional; secrets switch it on, and each group is
+  all-or-nothing.** `MACOS_CERTIFICATE_P12_BASE64` + `MACOS_CERTIFICATE_PASSWORD`
+  give a Developer ID signature with the hardened runtime.
+  `APPLE_ID` + `APPLE_TEAM_ID` + `APPLE_APP_SPECIFIC_PASSWORD` add notarisation
+  and stapling. With no secrets the release is unsigned (ad hoc on macOS), and
+  its notes tell the user how to open it anyway. Windows is not code-signed.
+- **The `.dmg`'s bundle is not the build's bundle byte for byte.** codesign
+  refuses data files under `Contents/MacOS` ("code object is not signed at all"
+  on `client_ru.qm`). The build mirrors the catalogs there because
+  `InstalledTranslation` reads `applicationDirPath() + "/translations"`. So the
+  script moves them to `Contents/Resources/translations` and leaves a symlink
+  at the old path. `app/qt/client.entitlements` disables library validation,
+  because a hardened-runtime process otherwise refuses to `dlopen` a display
+  runtime signed by anyone else.
+- **The macOS minimum is whatever the runner builds for.** No
+  `CMAKE_OSX_DEPLOYMENT_TARGET` is set (nor vcpkg's), so the release notes read
+  `minos` out of the binary rather than promising a version.
+- **Every action in this workflow is pinned by SHA**, with the release URL in a
+  comment above it. The build legs produce the released binaries, so a moved
+  tag must not reach them.
+
+**Two jobs gate: `analyze` (cppcheck), since 2026-09-20, and `build`, a
 Windows/Ubuntu/macOS matrix, since 2026-10-27.** For a year there was no
 build job, and the obstacle was never Qt: a standalone client build resolves its
 consumed products as sibling checkouts (ADR 0011), and `display`'s **source** is
