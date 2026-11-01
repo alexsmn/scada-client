@@ -84,7 +84,13 @@ extern "C" {
 // values on a Modus schematic: enumerating what the document is bound to,
 // writing a value as an element's text, and finding where an object is
 // drawn. Nothing before `runtime_version` moved.
-#define SCADA_DISPLAY_ABI_VERSION 2u
+//
+// ABI 3 appends three members for what a 2.5.7 schematic did and 2.6 did not:
+// a reading delivered as a number (what puts live values on a Vidicon
+// schematic, whose formulas compute from the number), an unacknowledged alarm
+// marked on its elements, and the hyperlink a double-click on a Modus element
+// follows. Nothing before `find_data_source_shape` moved.
+#define SCADA_DISPLAY_ABI_VERSION 3u
 
 // ── Plain data ──────────────────────────────────────────────────────────────
 
@@ -251,8 +257,11 @@ typedef struct ScadaDisplayApi {
   // "energized"/"dead"/…, parsed by ParseEquipmentState); `quality` is an OPC
   // UA StatusCode whose severity bits select good/uncertain/bad.
   //
-  // In a VDS document a data source is a shape's name, and the state shows on
-  // the next `render_bgra` only while a palette is installed. In a Modus
+  // In a VDS document a data source is a tag address (see
+  // `set_data_source_value`), and a position reaches the shapes bound to it as
+  // 1 or 0; in a VDS document without tags it is a shape's name, and the state
+  // shows on the next `render_bgra` only while a palette is installed. A
+  // library before ABI 3 knows only the shape-name meaning. In a Modus
   // document it is a formula from an element's `ключ_привязки` (the strings
   // `get_data_source` enumerates): a position flips each `положение`-bound
   // element's own symbol, palette or not, and a reading that is not good is
@@ -283,12 +292,14 @@ typedef struct ScadaDisplayApi {
   // Gate every member below on `struct_size >= SCADA_DISPLAY_ABI_2_SIZE`.
 
   // How many data sources the document names — what a host subscribes to.
-  // A Modus document's are its binding formulas; a VDS document's are its
-  // shape names at any depth, since a VDS shape's name is its binding, though
-  // a cosmetic shape is named too and a host keeps only the names it can
-  // resolve. Zero for a NULL document. A runtime built before 2026-10-26
-  // answers zero for every VDS document, so a host must read zero as "no
-  // objects known", not as "no objects".
+  // A Modus document's are its binding formulas. A VDS document's are the
+  // addresses its shapes' `Tag` rows name in their `Raw` cells; a VDS document
+  // without tags names its shapes at any depth instead, since a shape's name
+  // was its binding before tags were read (a library before ABI 3 always
+  // answers names), and a host keeps only the ones it can resolve. Zero for a
+  // NULL document. A runtime built before 2026-10-26 answers zero for every
+  // VDS document, so a host must read zero as "no objects known", not as "no
+  // objects".
   int32_t(SCADA_DISPLAY_CALL* get_data_source_count)(
       ScadaDisplayDocument document);
 
@@ -319,6 +330,55 @@ typedef struct ScadaDisplayApi {
       const char* data_source,
       ScadaDisplayShapeInfo* info,
       ScadaDisplayError* error);
+
+  // ── ABI 3 ──
+  // Gate every member below on `struct_size >= SCADA_DISPLAY_ABI_3_SIZE`.
+
+  // Records one data source's latest reading: `value` as a number when
+  // `has_value` is non-zero, `text` as the host formats it (units and quality
+  // mark included; NULL or empty for none), and `quality` as an OPC UA
+  // StatusCode. Reports the region needing repaint in `invalidated_bounds`
+  // (empty when nothing is bound to the data source). Returns non-zero on
+  // success.
+  //
+  // In a VDS document this is what makes the schematic live: every shape
+  // whose `Tag` row names `data_source` in its `Raw` cell takes the reading,
+  // and its own formulas — a breaker's fill, a blade's visibility, a value's
+  // text field — follow on the next `render_bgra`. In a Modus document it is
+  // `set_data_source_state` with the position a non-zero value reads as, plus
+  // `set_data_source_text`.
+  int32_t(SCADA_DISPLAY_CALL* set_data_source_value)(
+      ScadaDisplayDocument document,
+      const char* data_source,
+      double value,
+      int32_t has_value,
+      const char* text,
+      int32_t quality,
+      ScadaDisplayRect* invalidated_bounds,
+      ScadaDisplayError* error);
+
+  // Frames every element bound to `data_source` in `colour` (packed
+  // 0x00RRGGBB) when `alarm` is non-zero, or removes the frame when it is
+  // zero, and reports the region needing repaint (empty when nothing is bound
+  // to it). Returns non-zero on success. The library keeps no clock: a host
+  // makes an unacknowledged alarm blink by toggling it in phase with its own
+  // blinker, and takes the colour from its own alarm palette.
+  int32_t(SCADA_DISPLAY_CALL* set_data_source_alarm)(
+      ScadaDisplayDocument document,
+      const char* data_source,
+      int32_t alarm,
+      uint32_t colour,
+      ScadaDisplayRect* invalidated_bounds,
+      ScadaDisplayError* error);
+
+  // The hyperlink of the shape `shape_id` names (an id from `hit_test`) as
+  // UTF-8 in storage the document owns until `close_document`, or NULL when
+  // it has none. A Modus element's is its `гиперссылка` as authored — usually
+  // a schematic's file name, relative to this document — which a host
+  // resolves and opens on a double-click, as 2.5.7 did.
+  const char*(SCADA_DISPLAY_CALL* get_shape_hyperlink)(
+      ScadaDisplayDocument document,
+      int32_t shape_id);
 } ScadaDisplayApi;
 
 // How many bytes of the table ABI 1 defined — through `runtime_version`, its
@@ -340,6 +400,12 @@ typedef struct ScadaDisplayApi {
 #define SCADA_DISPLAY_ABI_2_SIZE                       \
   (offsetof(ScadaDisplayApi, find_data_source_shape) + \
    sizeof(((const ScadaDisplayApi*)0)->find_data_source_shape))
+
+// How many bytes of the table ABI 3 defined — through `get_shape_hyperlink`,
+// its last member. Same rule as ABI 1's.
+#define SCADA_DISPLAY_ABI_3_SIZE                    \
+  (offsetof(ScadaDisplayApi, get_shape_hyperlink) + \
+   sizeof(((const ScadaDisplayApi*)0)->get_shape_hyperlink))
 
 // ── Entry point ─────────────────────────────────────────────────────────────
 
