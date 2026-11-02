@@ -2189,12 +2189,18 @@
       "notes": "Modus schematic, overview."
     },
     {
-      "file": "structure.png",
+      "file": "structure-en.svg",
+      "tag": "manual-diagram",
+      "referenced_from": [],
+      "notes": "English twin of structure.svg, referenced from en/index.md only. Hand-drawn SVG; keep the two in step."
+    },
+    {
+      "file": "structure.svg",
       "tag": "manual-diagram",
       "referenced_from": [
         "index.md"
       ],
-      "notes": "System architecture diagram."
+      "notes": "System architecture diagram for 2.6: workstations, the central computer's processes, a site computer, field protocols. Hand-drawn SVG; structure-en.svg is its English twin."
     },
     {
       "file": "ti-channel.png",
@@ -2961,7 +2967,7 @@
     "auto-dialog": 51,
     "auto-menu": 21,
     "auto-view": 102,
-    "manual-diagram": 4,
+    "manual-diagram": 5,
     "manual-modus": 3,
     "manual-os": 2,
     "obsolete": 21
