@@ -1,6 +1,6 @@
 # Screen gallery
 
-83 captures of the Telecontrol SCADA client, rendered offscreen from a fixture by [`client_screenshot_generator`](../tools/screenshot_generator) and tracked in this repository — so a UI change lands as a reviewable image diff rather than being noticed the next time somebody refreshes the manual.
+84 captures of the Telecontrol SCADA client, rendered offscreen from a fixture by [`client_screenshot_generator`](../tools/screenshot_generator) and tracked in this repository — so a UI change lands as a reviewable image diff rather than being noticed the next time somebody refreshes the manual.
 
 Each capture is rendered in both appearances. The client follows the host OS light/dark preference by default, so both are what operators actually see. The previews below are the dark render; the light one is linked beside it.
 
@@ -8,10 +8,11 @@ Each capture is rendered in both appearances. The client follows the host OS lig
 
 ## Views
 
-Workspace views and panels — what the operator works in. (50)
+Workspace views and panels — what the operator works in. (51)
 
 | Capture | Preview | |
 |---|---|---|
+| **Account roles**<br>`account-roles.png` | <img src="account-roles.png" alt="Account roles" width="360"> | [Light](account-roles-light.png) |
 | **Admin formats**<br>`admin-formats.png` | <img src="admin-formats.png" alt="Admin formats" width="360"> | [Light](admin-formats-light.png) |
 | **Admin historical dbs**<br>`admin-historical-dbs.png` | <img src="admin-historical-dbs.png" alt="Admin historical dbs" width="360"> | [Light](admin-historical-dbs-light.png) |
 | **Admin simulation**<br>`admin-simulation.png` | <img src="admin-simulation.png" alt="Admin simulation" width="360"> | [Light](admin-simulation-light.png) |
