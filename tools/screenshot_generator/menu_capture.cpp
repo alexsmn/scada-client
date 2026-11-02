@@ -191,6 +191,48 @@ TEST_F(ScreenshotGenerator, CaptureMoreMenu) {
   SaveMenuCapture(menu, kFilename, publish_guard);
 }
 
+// The generator installs the shipping client's module set
+// (`ScreenshotModuleSelection`), not a list of its own. A module the generator
+// leaves out contributes no commands, so every menu that would list them
+// renders short and nothing fails; that is what the hand-kept list it replaced
+// did to every menu capture in turn (backlog 144). The Help menu is the
+// witness: its rows come from `RegisterAboutCommands`, which the hand-kept
+// list never called, so under it this menu held none of them. No capture
+// photographs the Help menu, which is why this is asserted rather than seen.
+TEST_F(ScreenshotGenerator, HelpMenuCarriesTheShippingClientsRows) {
+  MainWindow::SetHideForTesting(false);
+
+  {
+    Profile profile;
+    Page page;
+    page.AddWindow(WindowDefinition{"Struct"});
+    profile.AddPage(page);
+    profile.Save();
+  }
+
+  WaitForAwaitable(executor_, app_.Start());
+  ASSERT_TRUE(WaitForPendingNodeLoads(executor_, app_.node_service()));
+
+  QMainWindow* qmain = ShowMainWindowForMenuCapture(app_);
+  ASSERT_NE(qmain, nullptr);
+
+  QMenu* menu = PopulateMenuBarMenu(qmain, "Help");
+  ASSERT_NE(menu, nullptr);
+
+  const auto about_title = QString::fromStdU16String(Translate("About..."));
+  bool has_about_row = false;
+  for (const QAction* action : menu->actions()) {
+    if (!action->isSeparator() && action->text() == about_title)
+      has_about_row = true;
+  }
+  EXPECT_TRUE(has_about_row)
+      << "the Help menu has no " << about_title.toStdString()
+      << " row - the generator is not installing the shipping client's "
+         "modules, so menu captures render fewer rows than an operator sees";
+
+  MainWindow::SetHideForTesting(true);
+}
+
 // The Summary view's Function submenu: the eight aggregate functions, one of
 // them checked. It is the menu bar's Item menu, which `ContextMenuModel`
 // builds from the active view's commands and which folds the categories it
