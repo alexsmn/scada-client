@@ -56,8 +56,9 @@ std::vector<int> ReadTransmissionAddresses(const NodeRef& device);
 //   Modbus        the 10 000-address block of the highest used address
 //                 (coils 1-10000, discrete inputs 10001-20000, input
 //                 registers 30001-40000, holding registers 40001-50000), so a
-//                 new rule stays in the same register table; block 1 when the
-//                 table is empty. The encoding is the Modbus tier's
+//                 new rule stays in the same register table; the holding
+//                 registers when the table is empty, since a coil carries
+//                 only one bit. The encoding is the Modbus tier's
 //                 (`EncodeModbusAddress`), restated here because the client
 //                 cannot link a tier.
 //   otherwise     1 .. INT32_MAX, the property's own type.

@@ -16,6 +16,12 @@ namespace {
 // (scada-tier-modbus/modules/modbus/modbus_util.cpp, kLocationAddressRange).
 constexpr int kModbusBlockSize = 10000;
 
+// The holding registers (40001-50000), where an empty Modbus table starts: a
+// master reads an analogue value there with function 3, and a discrete one as
+// 0 or 1. Coils (block 0) carry one bit, so starting there truncated every
+// analogue value to 0 or 1.
+constexpr int kModbusHoldingRegistersBlock = 4;
+
 // The IOA width when the link's own setting is not resident: the nodeset's
 // default for Iec60870LinkType_InfoAddressSize.
 constexpr int kDefaultIecInfoAddressOctets = 3;
@@ -125,7 +131,7 @@ TransmissionAddressRange TransmissionAddressRangeFor(
 
   if (DeviceUsesRuleType(device,
                          scada::devices::id::ModbusTransmissionItemType)) {
-    int block = 0;
+    int block = kModbusHoldingRegistersBlock;
     if (!used.empty()) {
       const int highest = *std::ranges::max_element(used);
       if (highest >= 1)

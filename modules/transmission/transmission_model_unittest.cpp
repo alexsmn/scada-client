@@ -80,8 +80,10 @@ class TransmissionModelTest : public ::testing::Test {
         });
   }
 
-  void AddLink(const scada::NodeId& link_type_id,
-               scada::NodeProperties properties = {}) {
+  void AddLink(
+      const scada::NodeId& link_type_id,
+      scada::NodeProperties properties = {},
+      const scada::NodeId& device_type_id = scada::devices::id::DeviceType) {
     node_service_.Add(
         scada::NodeState{.node_id = kLinkId,
                          .node_class = scada::NodeClass::Object,
@@ -92,7 +94,7 @@ class TransmissionModelTest : public ::testing::Test {
     node_service_.Add(
         scada::NodeState{.node_id = kDeviceId,
                          .node_class = scada::NodeClass::Object,
-                         .type_definition_id = scada::devices::id::DeviceType,
+                         .type_definition_id = device_type_id,
                          .parent_id = kLinkId,
                          .reference_type_id = scada::id::Organizes});
   }
@@ -146,6 +148,32 @@ TEST_F(TransmissionModelTest, ATickedObjectGetsTheNextFreeAddress) {
 
   ASSERT_EQ(inserted_.size(), 1u);
   EXPECT_EQ(AddressOf(inserted_[0]), 40003);
+}
+
+// The first rule on a Modbus receiver used to get coil 1, which carries one
+// bit, so every analogue value arrived as 0 or 1 (backlog 987).
+TEST_F(TransmissionModelTest, TheFirstModbusRuleIsTheFirstHoldingRegister) {
+  AddLink(scada::devices::id::ModbusLinkType, {},
+          scada::devices::id::ModbusDeviceType);
+  Init();
+  ASSERT_EQ(model_->GetRowCount(), 0);
+
+  model_->AddContainedItem(kTickedId, 0);
+
+  ASSERT_EQ(inserted_.size(), 1u);
+  EXPECT_EQ(AddressOf(inserted_[0]), 40001);
+}
+
+// A receiver whose rules already use coils keeps giving coils.
+TEST_F(TransmissionModelTest, AModbusTableOfCoilsStaysInCoils) {
+  AddLink(scada::devices::id::ModbusLinkType);
+  AddRule(0, scada::devices::id::ModbusTransmissionItemType, 7);
+  Init();
+
+  model_->AddContainedItem(kTickedId, 0);
+
+  ASSERT_EQ(inserted_.size(), 1u);
+  EXPECT_EQ(AddressOf(inserted_[0]), 8);
 }
 
 // Ticking several objects before the first insert comes back must not hand
