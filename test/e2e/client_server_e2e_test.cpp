@@ -1218,10 +1218,11 @@ TEST_P(ClientServerE2eTest, Connect_Success_ExpandsHardwareTreeDevices) {
   // value that routed (the IEC60870 server-side device has no peer and settles
   // Offline).
   //
-  // Run the cluster suite with SCADA_SERVER_LICENSE_REQUIRE_GCP_BINDING=false;
-  // without it every tier stops during startup and the harness reports it as
-  // "did not start listening", which reads like a timeout rather than a licence
-  // refusal.
+  // Run the cluster suite with a license that verifies on this host (the
+  // superproject's unbound development license does). A license bound to
+  // another host stops every tier during startup, and the harness reports it
+  // as "did not start listening", which reads like a timeout rather than a
+  // licence refusal.
   if (Topology() != ServerTopology::Cluster)
     GTEST_SKIP() << "multi-protocol hardware tree requires the Cluster "
                     "topology (SingleTier configures only IEC60870)";
