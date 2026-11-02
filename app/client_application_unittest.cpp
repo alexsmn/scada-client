@@ -617,6 +617,14 @@ class ClientApplicationSignOutTest : public ClientApplicationLocalProfileTest {
     SignInAs(kOutgoing);
   }
 
+  // Quits here for the same reason `ClientApplicationLocalProfileTest` does,
+  // one level down: the quit saves the profile through the actions above,
+  // which write `saves_` and `profile_reads_`, and the base destructors run
+  // after those are gone. A test that never quits itself otherwise appends to
+  // a freed vector: GCC 14's ASan reports it, and the Ubuntu CI leg segfaulted
+  // on it (v2.6.0), while macOS and Windows passed.
+  ~ClientApplicationSignOutTest() override { Wait(app_.Quit()); }
+
   bool HasOutgoingPage() {
     return std::ranges::any_of(
         app_.profile().pages | std::views::values,
