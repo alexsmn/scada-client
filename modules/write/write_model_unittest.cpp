@@ -332,8 +332,8 @@ TEST_F(WriteModelTest, DecliningTwoStagedControlCancelsTheSelection) {
 }
 
 // A released selection is the expected outcome, and Bad_NotSupported is a
-// driver that never armed one (MODBUS, IEC 104 commands other than
-// C_SC_NA_1). Neither leaves anything for the operator to act on.
+// driver with no Cancel, which never armed one. Neither leaves anything for
+// the operator to act on.
 TEST_F(WriteModelTest, ReleasedOrNeverArmedSelectionReportsNothing) {
   for (scada::StatusCode cancel_answer :
        {scada::StatusCode::Good, scada::StatusCode::Bad_NotSupported}) {
@@ -356,6 +356,73 @@ TEST_F(WriteModelTest, ReleasedOrNeverArmedSelectionReportsNothing) {
     EXPECT_EQ(completion_, false);
     EXPECT_THAT(local_events_.events(), IsEmpty());
   }
+}
+
+// The Server refuses the select of an object whose device cannot select
+// (IEC 104 commands other than a single command, every MODBUS object) with
+// Bad_NotSupported. The operator is told so in words, nothing is confirmed,
+// operated or cancelled, and the dialog stays open (backlog 983). It used to
+// answer Good, and the prompt said the device was ready to execute.
+TEST_F(WriteModelTest, RefusedSelectExplainsAndArmsNothing) {
+  EXPECT_CALL(method_service_, Call(kControlNodeId, _, _, _))
+      .WillRepeatedly([this](scada::NodeId, scada::NodeId method_id,
+                             std::vector<scada::Variant>,
+                             scada::ServiceContext) {
+        called_methods_.push_back(method_id);
+        return scada::MakeMethodCallResult(
+            scada::Status{scada::StatusCode::Bad_NotSupported});
+      });
+
+  auto model = CreateModel(/*two_staged=*/true);
+  model->Write(42.0, /*lock=*/false);
+  Drain(executor_);
+
+  // One error box, not the confirmation prompt.
+  ASSERT_THAT(dialog_service_.modes, ElementsAre(MessageBoxMode::Error));
+  const std::u16string& message = dialog_service_.messages.at(0);
+  EXPECT_NE(message.find(u"Two-stage control is not available for this "
+                         u"object"),
+            std::u16string::npos);
+  EXPECT_NE(message.find(u"Nothing was sent to the device."),
+            std::u16string::npos);
+  EXPECT_EQ(message.find(u"ready to execute"), std::u16string::npos);
+  EXPECT_TRUE(model->GetStatusText().empty());
+
+  dialog_service_.CompleteMessageBox();
+  Drain(executor_);
+
+  EXPECT_THAT(called_methods_,
+              ElementsAre(scada::data_items::id::DataItemControlType_Select));
+  EXPECT_EQ(completion_, false);
+  EXPECT_THAT(local_events_.events(), IsEmpty());
+
+  // Closing the dialog sends no Cancel: there is no selection to release.
+  model.reset();
+  Drain(executor_);
+  EXPECT_THAT(called_methods_,
+              ElementsAre(scada::data_items::id::DataItemControlType_Select));
+}
+
+// Any other refusal of the select still says the command was not executed.
+TEST_F(WriteModelTest, RefusedSelectByTheDeviceSaysNotExecuted) {
+  ON_CALL(method_service_, Call)
+      .WillByDefault([](scada::NodeId, scada::NodeId,
+                        std::vector<scada::Variant>, scada::ServiceContext) {
+        return scada::MakeMethodCallResult(
+            scada::Status{scada::StatusCode::Bad_Timeout});
+      });
+
+  auto model = CreateModel(/*two_staged=*/true);
+  model->Write(42.0, /*lock=*/false);
+  Drain(executor_);
+
+  ASSERT_THAT(dialog_service_.modes, ElementsAre(MessageBoxMode::Error));
+  EXPECT_NE(
+      dialog_service_.messages.at(0).find(u"The command was not executed."),
+      std::u16string::npos);
+  dialog_service_.CompleteMessageBox();
+  Drain(executor_);
+  EXPECT_EQ(completion_, false);
 }
 
 // The device answers the cancel after the dialog has closed and taken the

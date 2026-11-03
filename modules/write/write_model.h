@@ -81,6 +81,9 @@ class WriteModel : private WriteContext,
 
  private:
   void OnWriteComplete(const scada::Status& status);
+  // The error an operator sees when the select stage of a two-stage control is
+  // refused; Bad_NotSupported says the object's device cannot select.
+  static std::u16string GetSelectRefusalMessage(const scada::Status& status);
   // Reports a completed command as a local event, if the profile asks for it.
   void ReportSuccess();
 

@@ -17,8 +17,7 @@
 
 #include <charconv>
 
-namespace {
-}  // namespace
+namespace {}  // namespace
 
 WriteModel::WriteModel(WriteContext&& context)
     : WriteContext{std::move(context)} {
@@ -188,6 +187,9 @@ void WriteModel::OnWriteComplete(const scada::Status& status) {
     // was invisible only because the dialog used to close itself on the way
     // out, which is the defect this path exists to fix.
     writing_ = false;
+    // A refused select armed nothing, so there is no selection to release.
+    const bool select_refused = write_selecting_;
+    write_selecting_ = false;
 
     // Nothing to report through: complete anyway rather than stranding the
     // operator on a dialog whose Control button no longer does anything. The
@@ -200,7 +202,8 @@ void WriteModel::OnWriteComplete(const scada::Status& status) {
     }
 
     auto title = GetWindowTitle();
-    std::u16string message = ToString16(status) + u'.';
+    std::u16string message = select_refused ? GetSelectRefusalMessage(status)
+                                            : ToString16(status) + u'.';
     CoSpawn(executor_,
             [executor = executor_, completion_handler = completion_handler,
              dialog_service = dialog_service_, message, title]() mutable {
@@ -223,6 +226,23 @@ void WriteModel::OnWriteComplete(const scada::Status& status) {
   writing_ = true;
   ReportSuccess();
   completion_handler(true);
+}
+
+std::u16string WriteModel::GetSelectRefusalMessage(
+    const scada::Status& status) {
+  // Bad_NotSupported is the Server refusing two-stage control on an object
+  // whose device cannot select (IEC 104 commands other than a single command,
+  // every MODBUS object). Said in words, because "Operation is not supported"
+  // alone does not tell the operator what to do next (backlog 983).
+  if (status.code() == scada::StatusCode::Bad_NotSupported) {
+    return Translate(
+        "Two-stage control is not available for this object: its device "
+        "cannot select a command. Nothing was sent to the device. Ask the "
+        "administrator to turn off two-stage control for this object.");
+  }
+  return u16format(L"{}: {}. {}", Translate("Preparation for control failed"),
+                   ToString16(status),
+                   Translate("The command was not executed."));
 }
 
 void WriteModel::ReportSuccess() {
@@ -303,14 +323,13 @@ void WriteModel::StartWritingHelper() {
   // ordinary value write and stays one.
   if (two_staged_) {
     select_outstanding_ = false;
-    CoSpawn(executor_,
-            [executor = executor_, model = weak_from_this(),
-             operation = ControlNode().call(
-                 scada::data_items::id::DataItemControlType_Operate,
-                 write_value_)]() mutable {
-              return CompleteWriteAsync(std::move(executor), std::move(model),
-                                        std::move(operation));
-            });
+    CoSpawn(executor_, [executor = executor_, model = weak_from_this(),
+                        operation = ControlNode().call(
+                            scada::data_items::id::DataItemControlType_Operate,
+                            write_value_)]() mutable {
+      return CompleteWriteAsync(std::move(executor), std::move(model),
+                                std::move(operation));
+    });
     return;
   }
 
@@ -357,8 +376,9 @@ Awaitable<void> WriteModel::ReportCancelRefusalAsync(
       local_events ? local_events->lifetime() : std::weak_ptr<const void>{};
   const scada::Status status = co_await std::move(operation);
   // Bad_NotSupported is DataItemWriteImpl::Cancel's answer for a driver with
-  // no Cancel (MODBUS, IEC 104 commands other than C_SC_NA_1). Those never
-  // send the device a select stage, so nothing is left armed to report.
+  // no Cancel. Such a driver never sends the device a select stage, so nothing
+  // is left armed to report. (MODBUS and IEC 104 commands other than C_SC_NA_1
+  // now refuse the select itself, so they never get this far.)
   if (status || status.code() == scada::StatusCode::Bad_NotSupported ||
       !local_events || local_events_alive.expired())
     co_return;
