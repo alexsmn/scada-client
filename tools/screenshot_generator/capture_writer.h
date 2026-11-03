@@ -18,22 +18,42 @@ class QImage;
 // previous one, makes the stalled capture the line after the big number.
 // Deliberately Qt-free and handed its clock readings, so the arithmetic is
 // testable without a widget or a wall clock.
+//
+// A big gap is not necessarily a stall: the run clock keeps counting while the
+// machine sleeps, and an unattended Mac on battery sleeps in stretches of about
+// 15 minutes — the size of the gap 898 first measured. So each reading also
+// carries an awake clock, which stops during sleep, and a line whose gap was
+// mostly sleep says so. Measured 2026-11-03: every multi-minute gap in a run
+// across a closed lid was sleep, and one awake run at load 45 had none.
 class CaptureTimeline {
  public:
   using Clock = std::chrono::steady_clock;
 
-  explicit CaptureTimeline(Clock::time_point start) : start_{start} {}
+  // One reading of both clocks. `awake` is time since an arbitrary epoch that
+  // excludes system sleep, or nullopt where no such clock is read.
+  struct Instant {
+    Clock::time_point run;
+    std::optional<std::chrono::nanoseconds> awake;
+  };
+
+  // Reads both clocks now. `run` is steady_clock, which on macOS is
+  // CLOCK_MONOTONIC_RAW and counts sleep; `awake` is CLOCK_UPTIME_RAW, which
+  // does not. Off macOS `awake` is nullopt.
+  static Instant Now();
+
+  explicit CaptureTimeline(Instant start) : start_{start} {}
 
   // Records that `filename` finished at `now`, and returns the line to log:
-  // `capture <filename> (<outcome>) at <run seconds>s, +<gap seconds>s`.
-  // The first capture's gap is measured from `start`.
+  // `capture <filename> (<outcome>) at <run seconds>s, +<gap seconds>s`,
+  // followed by `, <seconds>s of it asleep` when at least a second of the gap
+  // was system sleep. The first capture's gap is measured from `start`.
   std::string Record(std::string_view filename,
                      std::string_view outcome,
-                     Clock::time_point now);
+                     Instant now);
 
  private:
-  const Clock::time_point start_;
-  std::optional<Clock::time_point> previous_;
+  const Instant start_;
+  std::optional<Instant> previous_;
 };
 
 // Writes `image` to `path` as a PNG — unless `path` already holds an image

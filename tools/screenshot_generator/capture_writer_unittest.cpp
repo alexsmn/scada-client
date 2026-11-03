@@ -118,14 +118,43 @@ TEST_F(CaptureWriterTest, AnEmptyImageIsAFailure) {
 // since the previous capture, so a stall is the line after a large `+`.
 TEST(CaptureTimelineTest, ReportsRunTimeAndTheGapSinceThePreviousCapture) {
   const CaptureTimeline::Clock::time_point start{};
-  CaptureTimeline timeline{start};
+  CaptureTimeline timeline{{.run = start}};
 
-  EXPECT_EQ(timeline.Record("a.png", "written", start + 2s),
+  EXPECT_EQ(timeline.Record("a.png", "written", {.run = start + 2s}),
             "capture a.png (written) at 2.0s, +2.0s");
-  EXPECT_EQ(timeline.Record("b.png", "unchanged", start + 2500ms),
+  EXPECT_EQ(timeline.Record("b.png", "unchanged", {.run = start + 2500ms}),
             "capture b.png (unchanged) at 2.5s, +0.5s");
-  EXPECT_EQ(timeline.Record("c.png", "written", start + 870s),
+  EXPECT_EQ(timeline.Record("c.png", "written", {.run = start + 870s}),
             "capture c.png (written) at 870.0s, +867.5s");
+}
+
+// A gap the machine slept through is not a stall, and the line says so: the
+// run clock counted 860 s that the awake clock did not. Under a second of
+// difference is clock jitter, not sleep, and adds nothing.
+TEST(CaptureTimelineTest, NamesTheSleepInsideAGap) {
+  const CaptureTimeline::Clock::time_point start{};
+  CaptureTimeline timeline{{.run = start, .awake = 100s}};
+
+  EXPECT_EQ(timeline.Record("a.png", "written",
+                            {.run = start + 2s, .awake = 102s - 300ms}),
+            "capture a.png (written) at 2.0s, +2.0s");
+  EXPECT_EQ(
+      timeline.Record("b.png", "written", {.run = start + 870s, .awake = 110s}),
+      "capture b.png (written) at 870.0s, +868.0s, 859.7s of it asleep");
+}
+
+// The real clocks, read twice with no sleep between: the awake clock is read
+// on macOS, where it advances in step with the run clock.
+TEST(CaptureTimelineTest, NowReadsTheAwakeClockOnMacOS) {
+  const CaptureTimeline::Instant first = CaptureTimeline::Now();
+  const CaptureTimeline::Instant second = CaptureTimeline::Now();
+#if defined(__APPLE__)
+  ASSERT_TRUE(first.awake && second.awake);
+  EXPECT_LE(*first.awake, *second.awake);
+#else
+  EXPECT_FALSE(first.awake.has_value());
+#endif
+  EXPECT_LE(first.run, second.run);
 }
 
 }  // namespace
