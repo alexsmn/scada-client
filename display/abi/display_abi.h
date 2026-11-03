@@ -344,7 +344,14 @@ typedef struct ScadaDisplayApi {
   // In a VDS document this is what makes the schematic live: every shape
   // whose `Tag` row names `data_source` in its `Raw` cell takes the reading,
   // and its own formulas — a breaker's fill, a blade's visibility, a value's
-  // text field — follow on the next `render_bgra`. In a Modus document it is
+  // text field — follow on the next `render_bgra`. A reading with `has_value`
+  // zero puts back what the file was saved with, so a shape whose value is
+  // lost returns to its drawn state; a reading whose `quality` is not good
+  // hatches the bound shapes (their text fields excepted) in the palette's
+  // quality colours while one is installed. A runtime built before
+  // 2026-11-02 serves the same ABI 3 but ignores `quality` here and keeps the
+  // last value on `has_value` zero; a host needs no change either way, since
+  // it already sends both. In a Modus document it is
   // `set_data_source_state` with the position a non-zero value reads as, plus
   // `set_data_source_text`.
   int32_t(SCADA_DISPLAY_CALL* set_data_source_value)(
