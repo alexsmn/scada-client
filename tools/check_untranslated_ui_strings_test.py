@@ -91,6 +91,28 @@ FORMAT_CASES = (
         'void f(){ auto m = u16format(L"Connection to server {} lost. "\n'
         '                                 L"Reconnecting in {} seconds.", h, d); }',
     ),
+    # Backlog 916: a title glued to a suffix and stored. Not prose, so only
+    # the storing context tells it from a protocol key.
+    (
+        "a glued title in a constructor's brace initialiser (916's form)",
+        "struct T {\n"
+        "  explicit T(std::u16string_view suffix)\n"
+        '      : device{u16format(L"Device{}", suffix), true},\n'
+        '        channel{u16format(L"Channel{}", suffix), false} {}\n'
+        "};",
+    ),
+    (
+        "a glued title assigned to a variable",
+        'void f(){ std::u16string title = u16format(L"Device{}", suffix); }',
+    ),
+    (
+        "a glued title returned",
+        'std::u16string f(){ return u16format(L"Channel{}", suffix); }',
+    ),
+    (
+        "a glued title in a member initialiser",
+        'T::T(int n) : title_(u16format(L"Device ({})", n)) {}',
+    ),
 )
 
 # Correct code, or text no operator reads. None may produce a finding.
@@ -134,6 +156,32 @@ QUIET_CASES = (
     ("format of placeholders only", 'void f(){ u16format(L"{}: {}.", a, b); }'),
     ("identifier pattern", 'void f(){ u16format(L"Device{}", suffix); }'),
     ("port name pattern", 'void f(){ u16format(L"COM{}:", i); }'),
+    # Rule 5's title half must not reach these: each is a single word glued
+    # to a placeholder, which is how protocol and config keys are spelled.
+    (
+        "port name handed to a call",
+        'void f(){ items.emplace_back(u16format(L"COM{}:", i)); }',
+    ),
+    (
+        "stored config key",
+        'void f(){ auto key = u16format(L"Port={}", port); }',
+    ),
+    (
+        "stored file pattern",
+        'void f(){ auto name = u16format(L"Temp{}.log", n); }',
+    ),
+    (
+        "glued word passed straight to a call",
+        'void f(){ Send(u16format(L"Device{}", suffix)); }',
+    ),
+    (
+        "glued word streamed to a log",
+        'void f(){ LOG_INFO(logger) << u16format(L"Device{}", suffix); }',
+    ),
+    (
+        "glued word compared, not stored",
+        'bool f(){ return name == u16format(L"Device{}", s) ? 1 : 0; }',
+    ),
 )
 
 

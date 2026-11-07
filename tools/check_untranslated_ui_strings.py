@@ -143,6 +143,19 @@ reads the *first* argument of `FORMAT_SINKS` and reports a literal one that
 carries prose (see `FORMAT_PROSE`); a `Translate(...)`d format string is not a
 literal and is not reported.
 
+Rule 5 has a second half, for a title rather than a sentence. The Properties
+panel's channel fields were built as `device{u16format(L"Device{}", suffix)}`
+— one English word with a suffix glued on, stored in a constructor and shown
+as a field title. It is not prose, so the first half passed it, and it shipped
+in English until 2026-10-24 (backlog 916). A lone word glued to a placeholder
+is also exactly how a protocol or config key is spelled (`Port={}`,
+`Description={}\n`, `Temp{}`, `COM{}:` — 36 such formats across the server
+tiers when this was written), so the shape alone would drown the rule. It
+therefore needs both: the literal is one capitalised word plus placeholders
+(`FORMAT_TITLE`), *and* the result is stored — a brace initialiser, an `=`, a
+`return`, or a member initialiser (`stores_result`). A key passed straight to
+a call, streamed to a log or discarded is not reported.
+
 **How the keys are spelled, and why it is not cosmetic.** A path key from the
 client scan is client-relative (`modules/graph/metrix_graph.cpp`); one from the
 shared scan carries a leading `//` (`//core/base/win/format_hresult.cpp`).
@@ -560,7 +573,72 @@ FORMAT_SINKS = ("u16format",)
 # markup removed first. "Device{}", "COM{}:" and a log-file name pattern are
 # identifiers; "Modifying {}" is one word too, but it reached the operator
 # untranslated all the same, so a single word followed by a placeholder counts.
-FORMAT_PROSE = re.compile(r"[A-Za-z]{2,}\W+[A-Za-z]{2,}|^[A-Z][a-z]+ $")
+# The words must be separated by whitespace: `{}.log` and `Port={}` collapse to
+# `.log`/`Port=`, and `Temp{}.log` to `Temp.log`, which is a file name rather
+# than two words (backlog 916 found the last one reported as prose).
+FORMAT_PROSE = re.compile(r"[A-Za-z]{2,}\W*\s\W*[A-Za-z]{2,}|^[A-Z][a-z]+ $")
+
+# Rule 5's second half: one capitalised English word and nothing else once the
+# placeholders are gone — `Device{}`, `Channel {}`, `Device ({})`. Acronyms
+# (`COM{}:`), key/value pairs (`Port={}`) and file patterns (`{}.log`) carry
+# punctuation or no capitalised word, and are not titles.
+FORMAT_TITLE = re.compile(r"^[\s()]*[A-Z][a-z]{2,}[\s()]*$")
+
+# What may sit immediately before an initialiser's opening brace: an
+# identifier or a template's closing `>` (`device{…}`, `Foo<T>{…}`). A function
+# body's brace follows `)` or a keyword, never one of these — `const` and the
+# like are excluded by name below.
+_BRACE_INIT_OWNER = re.compile(r"(\w+|>)\s*$")
+_NOT_AN_OWNER = {"const", "noexcept", "override", "final", "else", "do",
+                 "try", "mutable"}
+
+
+def _is_brace_init(source: str, brace: int) -> bool:
+    m = _BRACE_INIT_OWNER.search(source, 0, brace)
+    return bool(m) and m.group(1) not in _NOT_AN_OWNER
+
+
+def _enclosing_opener(source: str, start: int) -> int:
+    """Index of the innermost unclosed ( or { before `start`, or -1."""
+    depth = 0
+    i = start - 1
+    while i >= 0:
+        c = source[i]
+        if c in ")}":
+            depth += 1
+        elif c in "({":
+            if depth == 0:
+                return i
+            depth -= 1
+        elif c == ";" and depth == 0:
+            return -1
+        i -= 1
+    return -1
+
+
+def stores_result(source: str, call_start: int) -> bool:
+    """True when the call at `call_start` initialises or returns its value.
+
+    Stored means the string outlives the expression and is shown later — the
+    shape backlog 916 shipped. A call's argument, a stream operand and a
+    discarded result are not stored; that is where log and protocol formats
+    live, and reporting them would drown the rule.
+    """
+    before = source[:call_start].rstrip()
+    if re.search(r"\breturn$", before):
+        return True
+    if before.endswith("=") and not re.search(r"[=!<>]=$", before):
+        return True
+    if not before.endswith((",", "(", "{")):
+        return False
+    opener = _enclosing_opener(source, len(before))
+    if opener < 0:
+        return False
+    if source[opener] == "{":
+        return _is_brace_init(source, opener)
+    # A member initialiser, `title_(u16format(...))` — the trailing underscore
+    # is this tree's member-variable spelling. A plain call is not stored.
+    return bool(re.search(r"\w+_\s*$", source[:opener]))
 
 
 def scan_file_for_format_literals(source: str):
@@ -574,7 +652,10 @@ def scan_file_for_format_literals(source: str):
             if not first:
                 continue  # a Translate()d or computed format string
             text = next(literal_groups(region.lstrip()), "")
-            if FORMAT_PROSE.search(MARKUP_ONLY.sub("", text)):
+            words = MARKUP_ONLY.sub("", text)
+            if FORMAT_PROSE.search(words) or (
+                FORMAT_TITLE.match(words) and stores_result(source, m.start())
+            ):
                 yield source[: m.start()].count("\n") + 1, sink, normalize(text)
 
 
