@@ -158,6 +158,17 @@ int main(int argc, char* argv[]) {
     // and the session's LocaleIds resolve through, and aui cannot read the
     // command line itself (see aui/translation.h).
     SetUiLocaleOverride(client::GetOptionValue("locale"));
+    // The stored choice outranks the switch, so on a machine where a language
+    // has ever been picked `--locale` changes nothing. Say so once rather than
+    // let it look like a client that ignores its language (backlog 809).
+    if (const std::string shadowed_by = UiLocaleOverrideShadowedBy();
+        !shadowed_by.empty()) {
+      BOOST_LOG_TRIVIAL(warning)
+          << "--locale=" << client::GetOptionValue("locale")
+          << " has no effect: the language chosen in Settings (" << shadowed_by
+          << ") takes precedence. Change it in Settings, or clear the stored "
+             "LocaleName, to use the switch.";
+    }
 
     QSettings settings;
     InstalledTranslation installed_translation{settings};

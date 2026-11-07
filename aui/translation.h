@@ -34,3 +34,16 @@ std::string UiLocaleName();
 // installed. An empty string clears the override, which is also the default:
 // a client that never calls this behaves exactly as before.
 void SetUiLocaleOverride(std::string locale_name);
+
+// Returns the stored language that hides the startup override, or an empty
+// string when nothing is hidden.
+//
+// Non-empty exactly when `--locale` was given, the operator has also stored a
+// language, and the two differ: `UiLocaleName()` then answers with the stored
+// one, so the switch has no effect at all. That precedence is deliberate — an
+// operator's choice outlives a launch flag — but it is silent, and on
+// 2026-09-20 it made `--locale=en` against a stored `ru_RU` read exactly like a
+// client that never negotiates its language (backlog 809). The app layer warns
+// with this once at startup; it is a query rather than a log call because
+// `aui/` does not own the client's logging.
+std::string UiLocaleOverrideShadowedBy();

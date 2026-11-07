@@ -119,4 +119,32 @@ TEST_F(UiLocaleNameTest, TheOverrideCanBeCleared) {
   EXPECT_EQ(QLocale::system().bcp47Name().toStdString(), UiLocaleName());
 }
 
+// `UiLocaleOverrideShadowedBy()` is what the startup warning reads. The
+// precedence above is deliberate; what backlog 809 found was that losing it was
+// silent, so these pin exactly when the switch is reported as hidden.
+TEST_F(UiLocaleNameTest, AStoredChoiceThatDiffersShadowsTheOverride) {
+  QSettings{}.setValue("LocaleName", "ru_RU");
+  SetUiLocaleOverride("en");
+  EXPECT_EQ(std::string{"ru_RU"}, UiLocaleOverrideShadowedBy());
+}
+
+TEST_F(UiLocaleNameTest, NoOverrideMeansNothingIsShadowed) {
+  // An operator with a stored language who never passes `--locale` must not
+  // be warned about a switch they did not use.
+  QSettings{}.setValue("LocaleName", "ru_RU");
+  EXPECT_EQ(std::string{}, UiLocaleOverrideShadowedBy());
+}
+
+TEST_F(UiLocaleNameTest, NoStoredChoiceMeansTheOverrideIsHonoured) {
+  SetUiLocaleOverride("en");
+  EXPECT_EQ(std::string{}, UiLocaleOverrideShadowedBy());
+  EXPECT_EQ(std::string{"en"}, UiLocaleName());
+}
+
+TEST_F(UiLocaleNameTest, AMatchingStoredChoiceIsNotAConflict) {
+  QSettings{}.setValue("LocaleName", "en");
+  SetUiLocaleOverride("en");
+  EXPECT_EQ(std::string{}, UiLocaleOverrideShadowedBy());
+}
+
 }  // namespace
