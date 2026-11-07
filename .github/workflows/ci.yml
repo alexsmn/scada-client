@@ -369,6 +369,13 @@ jobs:
     # The pin is the commit this tree's own vcpkg is at, so CI resolves the same
     # ports a developer does.
     #
+    # It is a master commit, not the 2026.10.16 tag before it, on purpose: that
+    # tag carries c-ares 1.34.8, whose configure finds `pipe2` in the macOS 27
+    # SDK and then fails `-Werror=unguarded-availability-new` when deploying to
+    # an older macOS. c-ares 1.34.9 (a security release) probes with
+    # -Werror=partial-availability instead; a2f9862da6 is the first vcpkg commit
+    # carrying it. Reproduced on macOS 26.6 + CLT SDK 27.0, 2026-11-07.
+    #
     # Every product's workflow carries the same one. core's once carried
     # a34c873a9717a888f58dc05571dde15571f56e66, which does not exist in
     # microsoft/vcpkg at all -- the API answers 422, "No commit found for SHA"
@@ -379,7 +386,7 @@ jobs:
       # https://github.com/lukka/run-vcpkg/releases/tag/v11.6
       uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11.6
       with:
-        vcpkgGitCommitId: 'f3e10653cc27d62a37a3763cd84b38bca07c6075'
+        vcpkgGitCommitId: 'a2f9862da6d88040a8537fb9b8cb24deaa9a196b'
         # The manifest is resolved by the CMake toolchain during configure, not
         # here: every product is its own manifest root (ADR 0011 phase 6), and
         # this step only has to put vcpkg on disk and export VCPKG_ROOT.
