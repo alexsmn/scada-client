@@ -20,6 +20,10 @@ class SettingsStore {
   virtual bool Write(std::string_view name, std::string_view string_value) = 0;
   virtual bool Write(std::string_view name,
                      std::u16string_view string16_value) = 0;
+
+  // Removes the value `name`, whatever its type. Returns true when the value
+  // is gone afterwards, including when it was never there.
+  virtual bool Erase(std::string_view name) = 0;
 };
 
 #ifdef _WIN32
@@ -35,6 +39,7 @@ class RegistrySettingsStore final : public SettingsStore {
   bool Write(std::string_view name, std::string_view string_value) override;
   bool Write(std::string_view name,
              std::u16string_view string16_value) override;
+  bool Erase(std::string_view name) override;
 
  private:
   HKEY root_;

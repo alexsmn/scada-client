@@ -5,6 +5,7 @@
 #include "aui/dialog_service.h"
 #include "base/awaitable.h"
 #include "base/boost_log.h"
+#include "base/secret_store.h"
 #include "base/settings_store.h"
 #include "scada/data_services_factory.h"
 #include "scada/localized_text.h"
@@ -24,10 +25,18 @@ class DialogService;
 
 class LoginController : public std::enable_shared_from_this<LoginController> {
  public:
+  // `secret_store` keeps the automatic-login password (backlog 1030). When it
+  // is null the controller picks one: the platform store (DPAPI on Windows,
+  // the Keychain on macOS) when `settings_store` is null too -- the
+  // production case -- and a PlainSettingsSecretStore over the injected
+  // settings otherwise, so the E2E suite's test-settings file keeps carrying
+  // its password in the clear as it always has, and no harness ever reads or
+  // writes the operator's real secret.
   LoginController(AnyExecutor executor,
                   DataServicesContext&& services_context,
                   DialogService& dialog_service,
-                  std::shared_ptr<SettingsStore> settings_store = {});
+                  std::shared_ptr<SettingsStore> settings_store = {},
+                  std::shared_ptr<SecretStore> secret_store = {});
 
   void Login();
 
@@ -134,6 +143,7 @@ class LoginController : public std::enable_shared_from_this<LoginController> {
   DataServicesContext services_context_;
   DialogService& dialog_service_;
   std::shared_ptr<SettingsStore> settings_store_;
+  std::shared_ptr<SecretStore> secret_store_;
 
   bool login_message_ = false;
   bool login_in_progress_ = false;
@@ -152,5 +162,16 @@ class LoginController : public std::enable_shared_from_this<LoginController> {
   std::filesystem::path pki_directory_;
 
  private:
+  // The stored automatic-login password. A value left in the clear by a
+  // release before backlog 1030 is moved into the secret store on first read:
+  // stored protected, then erased from the settings. If it cannot be stored
+  // protected, the plain value is kept and used, so an upgrade never loses a
+  // working automatic login.
+  std::u16string LoadStoredPassword();
+
+  // Stores the password protected when automatic login is on, and erases it
+  // when it is off. Either way no plain copy is left in the settings.
+  void SaveStoredPassword();
+
   BoostLogger logger_{LOG_NAME("LoginController")};
 };

@@ -17,6 +17,7 @@ class FileSettingsStore final : public SettingsStore {
   bool Write(std::string_view name, std::string_view string_value) override;
   bool Write(std::string_view name,
              std::u16string_view string16_value) override;
+  bool Erase(std::string_view name) override;
 
  private:
   void Load();

@@ -3,6 +3,8 @@
 #include "aui/dialog_service_mock.h"
 #include "aui/translation.h"
 #include "base/callback_awaitable.h"
+#include "base/file_settings_store.h"
+#include "base/memory_secret_store.h"
 #include "base/memory_settings_store.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
@@ -175,10 +177,11 @@ std::shared_ptr<TestLoginController> CreateController(
     AnyExecutor executor,
     DialogService& dialog_service,
     std::shared_ptr<SettingsStore> settings_store,
-    transport::TransportFactory& transport_factory) {
+    transport::TransportFactory& transport_factory,
+    std::shared_ptr<SecretStore> secret_store = {}) {
   auto controller = std::make_shared<TestLoginController>(
       executor, MakeServicesContext(executor, transport_factory),
-      dialog_service, std::move(settings_store));
+      dialog_service, std::move(settings_store), std::move(secret_store));
   controller->SetServerTypeIndex(FindServerTypeIndex("Scada"));
   controller->server_host = "scada-host";
   controller->user_name = u"ivan";
@@ -688,22 +691,24 @@ TEST(LoginControllerTest, SecuredModesAuthenticateTheServer) {
 // setting survives, so the next start still signs in automatically.
 TEST(LoginControllerTest, AutoLoginSubmitsOnlyAtStartup) {
   auto settings_store = std::make_shared<MemorySettingsStore>();
+  auto secret_store = std::make_shared<MemorySecretStore>();
   settings_store->SetBool("AutoLogin", true);
-  settings_store->SetString16("Password", u"secret");
+  secret_store->Write("Password", u"secret");
   TestExecutor executor;
   StrictMock<MockDialogService> dialog_service;
   NullTransportFactory transport_factory;
 
   auto at_reconnect = std::make_shared<TestLoginController>(
       executor, MakeServicesContext(executor, transport_factory),
-      dialog_service, settings_store);
+      dialog_service, settings_store, secret_store);
   EXPECT_FALSE(at_reconnect->ShouldAutoSubmit(/*at_startup=*/false,
                                               /*bypass_held=*/false));
   EXPECT_TRUE(at_reconnect->auto_login) << "the stored setting is kept";
 
   auto at_startup = std::make_shared<TestLoginController>(
       executor, MakeServicesContext(executor, transport_factory),
-      dialog_service, settings_store);
+      dialog_service, settings_store, secret_store);
+  EXPECT_EQ(at_startup->password, u"secret");
   EXPECT_TRUE(at_startup->ShouldAutoSubmit(/*at_startup=*/true,
                                            /*bypass_held=*/false));
 }
@@ -712,15 +717,16 @@ TEST(LoginControllerTest, AutoLoginSubmitsOnlyAtStartup) {
 // off, and the sign-in that follows saves it off and forgets the password.
 TEST(LoginControllerTest, BypassKeyTurnsAutoLoginOff) {
   auto settings_store = std::make_shared<MemorySettingsStore>();
+  auto secret_store = std::make_shared<MemorySecretStore>();
   settings_store->SetBool("AutoLogin", true);
-  settings_store->SetString16("Password", u"secret");
+  secret_store->Write("Password", u"secret");
   TestExecutor executor;
   StrictMock<MockDialogService> dialog_service;
   NullTransportFactory transport_factory;
 
   TestLoginController controller{
       executor, MakeServicesContext(executor, transport_factory),
-      dialog_service, settings_store};
+      dialog_service, settings_store, secret_store};
   controller.completion_handler = [](DataServices) {};
   EXPECT_FALSE(controller.ShouldAutoSubmit(/*at_startup=*/true,
                                            /*bypass_held=*/true));
@@ -730,29 +736,179 @@ TEST(LoginControllerTest, BypassKeyTurnsAutoLoginOff) {
   Drain(executor);
 
   EXPECT_EQ(settings_store->GetBool("AutoLogin"), std::optional{false});
-  EXPECT_EQ(settings_store->GetString16("Password"),
-            std::optional<std::u16string>{u""});
+  EXPECT_EQ(secret_store->Read("Password"), std::nullopt);
+  EXPECT_EQ(settings_store->GetString16("Password"), std::nullopt);
 }
 
 // Backlog 924's second half: unticking automatic login forgets the stored
 // password instead of keeping it for whoever ticks the box next.
 TEST(LoginControllerTest, ClearingAutoLoginForgetsThePassword) {
   auto settings_store = std::make_shared<MemorySettingsStore>();
+  auto secret_store = std::make_shared<MemorySecretStore>();
   settings_store->SetBool("AutoLogin", true);
-  settings_store->SetString16("Password", u"old-secret");
+  secret_store->Write("Password", u"old-secret");
   TestExecutor executor;
   StrictMock<MockDialogService> dialog_service;
   NullTransportFactory transport_factory;
   auto controller = CreateController(executor, dialog_service, settings_store,
-                                     transport_factory);
+                                     transport_factory, secret_store);
   controller->completion_handler = [](DataServices) {};
   controller->auto_login = false;
 
   controller->CompleteLoginForTest("Scada");
   Drain(executor);
 
+  EXPECT_EQ(secret_store->Read("Password"), std::nullopt);
+  EXPECT_EQ(settings_store->GetString16("Password"), std::nullopt);
+}
+
+// Backlog 1030: the automatic-login password goes to the secret store (DPAPI,
+// the Keychain), never into the plain settings.
+TEST(LoginControllerTest, AutoLoginStoresThePasswordOnlyInTheSecretStore) {
+  auto settings_store = std::make_shared<MemorySettingsStore>();
+  // Already on, so the first-use explanation is not shown.
+  settings_store->SetBool("AutoLogin", true);
+  auto secret_store = std::make_shared<MemorySecretStore>();
+  TestExecutor executor;
+  StrictMock<MockDialogService> dialog_service;
+  NullTransportFactory transport_factory;
+  auto controller = CreateController(executor, dialog_service, settings_store,
+                                     transport_factory, secret_store);
+  controller->completion_handler = [](DataServices) {};
+  controller->auto_login = true;
+  controller->password = u"new-secret";
+
+  controller->CompleteLoginForTest("Scada");
+  Drain(executor);
+
+  EXPECT_EQ(secret_store->Read("Password"),
+            std::optional<std::u16string>{u"new-secret"});
+  EXPECT_EQ(settings_store->GetString16("Password"), std::nullopt);
+  EXPECT_EQ(settings_store->GetBool("AutoLogin"), std::optional{true});
+}
+
+// Backlog 1030: a password an older release left in the clear is moved on
+// first read -- stored protected, then erased from the settings -- and the
+// automatic login it belongs to keeps working.
+TEST(LoginControllerTest, PlainPasswordIsMigratedOnFirstRead) {
+  auto settings_store = std::make_shared<MemorySettingsStore>();
+  auto secret_store = std::make_shared<MemorySecretStore>();
+  settings_store->SetBool("AutoLogin", true);
+  settings_store->SetString16("Password", u"legacy-secret");
+  TestExecutor executor;
+  StrictMock<MockDialogService> dialog_service;
+  NullTransportFactory transport_factory;
+
+  auto controller = std::make_shared<TestLoginController>(
+      executor, MakeServicesContext(executor, transport_factory),
+      dialog_service, settings_store, secret_store);
+
+  EXPECT_EQ(controller->password, u"legacy-secret");
+  EXPECT_EQ(secret_store->Read("Password"),
+            std::optional<std::u16string>{u"legacy-secret"});
+  EXPECT_EQ(settings_store->GetString16("Password"), std::nullopt);
+  EXPECT_TRUE(controller->ShouldAutoSubmit(/*at_startup=*/true,
+                                           /*bypass_held=*/false));
+}
+
+// When the secret cannot be stored protected, the plain value is not erased:
+// an upgrade must never cost the operator a working automatic login. It is
+// moved the next time protection works.
+TEST(LoginControllerTest, PlainPasswordIsKeptWhenItCannotBeProtected) {
+  auto settings_store = std::make_shared<MemorySettingsStore>();
+  auto secret_store = std::make_shared<MemorySecretStore>();
+  secret_store->set_writable(false);
+  settings_store->SetBool("AutoLogin", true);
+  settings_store->SetString16("Password", u"legacy-secret");
+  TestExecutor executor;
+  StrictMock<MockDialogService> dialog_service;
+  NullTransportFactory transport_factory;
+
+  auto controller = std::make_shared<TestLoginController>(
+      executor, MakeServicesContext(executor, transport_factory),
+      dialog_service, settings_store, secret_store);
+
+  EXPECT_EQ(controller->password, u"legacy-secret");
   EXPECT_EQ(settings_store->GetString16("Password"),
-            std::optional<std::u16string>{u""});
+            std::optional<std::u16string>{u"legacy-secret"});
+}
+
+// A stored secret wins over a stale plain value, and the plain one is erased
+// on the next successful sign-in rather than left behind.
+TEST(LoginControllerTest, SecretStoreWinsAndStalePlainValueIsErased) {
+  auto settings_store = std::make_shared<MemorySettingsStore>();
+  auto secret_store = std::make_shared<MemorySecretStore>();
+  settings_store->SetBool("AutoLogin", true);
+  settings_store->SetString16("Password", u"stale");
+  secret_store->Write("Password", u"current");
+  TestExecutor executor;
+  StrictMock<MockDialogService> dialog_service;
+  NullTransportFactory transport_factory;
+
+  TestLoginController controller{
+      executor, MakeServicesContext(executor, transport_factory),
+      dialog_service, settings_store, secret_store};
+  EXPECT_EQ(controller.password, u"current");
+
+  controller.completion_handler = [](DataServices) {};
+  controller.auto_login = true;
+  controller.SetServerTypeIndex(FindServerTypeIndex("Scada"));
+  controller.CompleteLoginForTest("Scada");
+  Drain(executor);
+
+  EXPECT_EQ(settings_store->GetString16("Password"), std::nullopt);
+  EXPECT_EQ(secret_store->Read("Password"),
+            std::optional<std::u16string>{u"current"});
+}
+
+// The migration's erase must reach the disk on macOS, where the settings are
+// a JSON file: an erase that only dropped the value in memory would leave the
+// plain password in the file for the next start to migrate again.
+TEST(LoginControllerTest, FileSettingsEraseIsPersisted) {
+  scada::ScopedTempDir temp_dir{"login_settings"};
+  const std::filesystem::path path = temp_dir.path() / "settings.json";
+  {
+    FileSettingsStore store{path};
+    ASSERT_TRUE(store.Write("Password", std::u16string_view{u"legacy"}));
+    ASSERT_TRUE(store.Write("User", std::u16string_view{u"ivan"}));
+    ASSERT_TRUE(store.Erase("Password"));
+    EXPECT_TRUE(store.Erase("Password")) << "erasing nothing succeeds";
+  }
+  FileSettingsStore reloaded{path};
+  EXPECT_EQ(reloaded.ReadString16("Password"), u"");
+  EXPECT_EQ(reloaded.ReadString16("User"), u"ivan");
+  std::ifstream file{path};
+  const std::string content{std::istreambuf_iterator<char>{file},
+                            std::istreambuf_iterator<char>{}};
+  EXPECT_EQ(content.find("legacy"), std::string::npos);
+}
+
+// An injected settings store keeps the password in the clear in that store,
+// as the E2E suite's test-settings file always has, unless a secret store is
+// injected too: no harness ever reaches the operator's real secret, and a
+// relaunch against the same file still signs in automatically.
+TEST(LoginControllerTest, InjectedSettingsKeepThePasswordInThoseSettings) {
+  auto settings_store = std::make_shared<MemorySettingsStore>();
+  settings_store->SetBool("AutoLogin", true);
+  settings_store->SetString16("Password", u"harness-secret");
+  TestExecutor executor;
+  StrictMock<MockDialogService> dialog_service;
+  NullTransportFactory transport_factory;
+
+  auto first = std::make_shared<TestLoginController>(
+      executor, MakeServicesContext(executor, transport_factory),
+      dialog_service, settings_store);
+  EXPECT_EQ(first->password, u"harness-secret");
+  first->completion_handler = [](DataServices) {};
+  first->CompleteLoginForTest("Scada");
+  Drain(executor);
+
+  EXPECT_EQ(settings_store->GetString16("Password"),
+            std::optional<std::u16string>{u"harness-secret"});
+  auto second = std::make_shared<TestLoginController>(
+      executor, MakeServicesContext(executor, transport_factory),
+      dialog_service, settings_store);
+  EXPECT_EQ(second->password, u"harness-secret");
 }
 
 // Cancelling a sign-in in progress — an automatic login the operator wants to

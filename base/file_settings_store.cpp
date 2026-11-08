@@ -54,6 +54,14 @@ bool FileSettingsStore::Write(std::string_view name,
   return Write(name, UtfConvert<char>(string16_value));
 }
 
+bool FileSettingsStore::Erase(std::string_view name) {
+  const bool had_bool = bool_values_.erase(std::string{name}) != 0;
+  const bool had_string = string_values_.erase(std::string{name}) != 0;
+  if (!had_bool && !had_string)
+    return true;
+  return Save();
+}
+
 void FileSettingsStore::Load() {
   bool_values_.clear();
   string_values_.clear();

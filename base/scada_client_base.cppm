@@ -42,9 +42,13 @@ module;
 #include "base/excel.h"  // self-stubbed: COM types are faked on non-Windows
 #include "base/file_settings_store.h"
 #include "base/json.h"
+#include "base/memory_secret_store.h"
 #include "base/memory_settings_store.h"
+#include "base/plain_settings_secret_store.h"
 #include "base/pool.h"
 #include "base/program_options.h"
+#include "base/protected_settings_secret_store.h"
+#include "base/secret_store.h"
 #include "base/settings_store.h"
 #include "base/relative_time_range.h"
 #include "base/utils.h"
@@ -104,8 +108,24 @@ export {
   using ::SaveJsonToFile;
   using ::SaveJsonToString;
 
+  // memory_secret_store.h
+  using ::MemorySecretStore;
+
   // memory_settings_store.h
   using ::MemorySettingsStore;
+
+  // plain_settings_secret_store.h
+  using ::PlainSettingsSecretStore;
+
+  // protected_settings_secret_store.h
+  using ::ProtectedSettingsSecretStore;
+
+  // secret_store.h
+  using ::CreatePlatformSecretStore;
+  using ::SecretStore;
+#if defined(__APPLE__)
+  using ::CreateKeychainSecretStore;
+#endif
 
   // pool.h
   using ::Pool;

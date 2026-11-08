@@ -92,4 +92,17 @@ bool RegistrySettingsStore::Write(std::string_view name,
   return RegHelper{reg}.Write(name, string16_value);
 }
 
+bool RegistrySettingsStore::Erase(std::string_view name) {
+  // RegKey has no delete, and it is core's; the raw call is two lines.
+  HKEY key = nullptr;
+  LONG result = ::RegOpenKeyExW(root_, subkey_.c_str(), 0, KEY_SET_VALUE, &key);
+  if (result == ERROR_FILE_NOT_FOUND)
+    return true;
+  if (result != ERROR_SUCCESS)
+    return false;
+  result = ::RegDeleteValueW(key, UtfConvert<wchar_t>(name).c_str());
+  ::RegCloseKey(key);
+  return result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND;
+}
+
 #endif

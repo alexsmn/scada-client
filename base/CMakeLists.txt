@@ -7,6 +7,15 @@ endif()
 
 target_link_libraries(client_base PUBLIC scada_base)
 
+# SecretStore backends (secret_store.h): DPAPI on Windows, the Keychain on
+# macOS.
+if(WIN32)
+  target_link_libraries(client_base PRIVATE crypt32)
+elseif(APPLE)
+  target_link_libraries(client_base PRIVATE
+    "-framework Security" "-framework CoreFoundation")
+endif()
+
 target_sources(client_base PRIVATE
   "file_settings_store.cpp"
   "file_settings_store.h"

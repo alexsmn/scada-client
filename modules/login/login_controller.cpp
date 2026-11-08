@@ -7,6 +7,7 @@
 #include "base/client_paths.h"
 #include "base/file_settings_store.h"
 #include "base/path_service.h"
+#include "base/plain_settings_secret_store.h"
 #include "base/string_util.h"
 #include "net/net_executor_adapter.h"
 #include "opcua/client/application_pki.h"
@@ -47,6 +48,11 @@ namespace {
 
 const wchar_t kRegistryKey[] = L"Software\\Telecontrol\\Workplace";
 const char kServerHostKeyPrefix[] = "Host:";
+
+// The automatic-login password. Before backlog 1030 it was a plain settings
+// value of this name; it is now a SecretStore entry of the same name, and the
+// settings value is only ever read to migrate it and then erased.
+const char kPasswordKey[] = "Password";
 
 // Backend name (DataServicesInfo::name) of the OPC UA backend. Security
 // settings are only meaningful for it.
@@ -207,20 +213,29 @@ std::shared_ptr<SettingsStore> CreateDefaultSettingsStore() {
 LoginController::LoginController(AnyExecutor executor,
                                  DataServicesContext&& services_context,
                                  DialogService& dialog_service,
-                                 std::shared_ptr<SettingsStore> settings_store)
+                                 std::shared_ptr<SettingsStore> settings_store,
+                                 std::shared_ptr<SecretStore> secret_store)
     : executor_{std::move(executor)},
       services_context_{std::move(services_context)},
       dialog_service_{dialog_service},
-      settings_store_{std::move(settings_store)} {
+      settings_store_{std::move(settings_store)},
+      secret_store_{std::move(secret_store)} {
+  const bool settings_injected = settings_store_ != nullptr;
   if (!settings_store_)
     settings_store_ = CreateDefaultSettingsStore();
+  if (!secret_store_) {
+    secret_store_ =
+        settings_injected
+            ? std::make_shared<PlainSettingsSecretStore>(settings_store_)
+            : CreatePlatformSecretStore(settings_store_);
+  }
 
   user_name = settings_store_->ReadString16("User");
   std::u16string users = settings_store_->ReadString16("UserList");
   user_list = ParseListString(users);
 
   auto server_type = settings_store_->ReadString("ServerType");
-  password = settings_store_->ReadString16("Password");
+  password = LoadStoredPassword();
   auto_login = settings_store_->ReadBool("AutoLogin");
 
   security_mode_list = {Translate("No security"),
@@ -289,6 +304,42 @@ void LoginController::Login() {
   Connect(false);
 }
 
+std::u16string LoginController::LoadStoredPassword() {
+  if (std::optional<std::u16string> secret = secret_store_->Read(kPasswordKey))
+    return std::move(*secret);
+
+  std::u16string plain = settings_store_->ReadString16(kPasswordKey);
+  if (plain.empty())
+    return {};
+
+  if (secret_store_->Write(kPasswordKey, plain)) {
+    settings_store_->Erase(kPasswordKey);
+    LOG_INFO(logger_) << "Moved the stored password into the secret store";
+  } else {
+    LOG_WARNING(logger_) << "Cannot protect the stored password; it stays "
+                            "in the settings until it can be";
+  }
+  return plain;
+}
+
+void LoginController::SaveStoredPassword() {
+  // Never leave a copy in the clear, whatever an older release wrote. Erased
+  // first, because a PlainSettingsSecretStore keeps the secret under this
+  // very name.
+  settings_store_->Erase(kPasswordKey);
+
+  // Unticking the box forgets the password too; it used to stay stored,
+  // ready for the next time anyone ticked it (backlog 924).
+  if (auto_login && !password.empty()) {
+    if (!secret_store_->Write(kPasswordKey, password)) {
+      LOG_WARNING(logger_) << "Cannot store the password protected; "
+                              "automatic login will ask for it";
+    }
+  } else {
+    secret_store_->Erase(kPasswordKey);
+  }
+}
+
 void LoginController::OnLoginResult(const scada::Status& status) {
   LOG_INFO(logger_) << "Connect completed"
                     << LOG_TAG("Status", ToString(status));
@@ -316,9 +367,7 @@ void LoginController::OnLoginCompleted() {
       server_host);
   settings_store_->Write("ServerType", server_type_);
   settings_store_->Write("AutoLogin", auto_login);
-  // Unticking the box forgets the password too; it used to stay stored,
-  // ready for the next time anyone ticked it (backlog 924).
-  settings_store_->Write("Password", auto_login ? password : std::u16string{});
+  SaveStoredPassword();
   settings_store_->Write("SecurityMode",
                          SecurityModeToString(security_mode_index));
   settings_store_->Write("ClientCertificate", client_certificate_path);

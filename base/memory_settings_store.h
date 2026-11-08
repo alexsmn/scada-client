@@ -89,6 +89,13 @@ class MemorySettingsStore final : public SettingsStore {
     return true;
   }
 
+  bool Erase(std::string_view name) override {
+    bool_values_.erase(std::string{name});
+    string_values_.erase(std::string{name});
+    string16_values_.erase(std::string{name});
+    return true;
+  }
+
  private:
   std::map<std::string, bool> bool_values_;
   std::map<std::string, std::string> string_values_;
