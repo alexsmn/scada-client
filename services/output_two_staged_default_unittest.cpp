@@ -3,6 +3,7 @@
 #include "common/formula_util.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
+#include "model/namespaces.h"
 #include "model/node_id_util.h"
 #include "node_service/test/fake_node_service.h"
 #include "scada/standard_node_ids.h"
@@ -55,11 +56,21 @@ TEST_F(OutputTwoStagedDefaultTest, ModbusItemsAreOneStage) {
   EXPECT_EQ(GetOutputTwoStagedDefault(device, kDiscrete), false);
 }
 
-// An IEC 60870-5 set-point cannot be selected, while a single command can.
+// An IEC 60870-5 set-point cannot be selected, while a single command can —
+// and that is known, so it answers Yes rather than "unknown".
 TEST_F(OutputTwoStagedDefaultTest, Iec60870OnlyTheAnalogItemIsOneStage) {
   NodeRef device = AddDevice(scada::devices::id::Iec60870DeviceType);
   EXPECT_EQ(GetOutputTwoStagedDefault(device, kAnalog), false);
-  EXPECT_EQ(GetOutputTwoStagedDefault(device, kDiscrete), std::nullopt);
+  EXPECT_EQ(GetOutputTwoStagedDefault(device, kDiscrete), true);
+}
+
+// The OPC tier refuses every select, so an OPC item is one-stage. The server
+// is not a typed node; it is recognised from its id without a fetch.
+TEST_F(OutputTwoStagedDefaultTest, OpcItemsAreOneStage) {
+  NodeRef server = node_service_.GetNode(
+      scada::NodeId{"Vendor.Server.1", scada::NamespaceIndexes::OPC});
+  EXPECT_EQ(GetOutputTwoStagedDefault(server, kAnalog), false);
+  EXPECT_EQ(GetOutputTwoStagedDefault(server, kDiscrete), false);
 }
 
 // The control model that decides it is on the IED, not in the configuration.
@@ -120,21 +131,57 @@ TEST_F(OutputTwoStagedDefaultTest, DeviceOfARealChannelNodeIsItsAncestor) {
       device.node_id());
 }
 
+// A Classic OPC channel is an item address, not a node under a device; it
+// resolves to its server, so two items of one server share a "device".
+TEST_F(OutputTwoStagedDefaultTest, DeviceOfAnOpcItemIsItsServer) {
+  const scada::NodeId server{"Vendor.Server.1", scada::NamespaceIndexes::OPC};
+  const std::string item_a = MakeNodeIdFormula(scada::NodeId{
+      "Vendor.Server.1\\Group.Breaker1", scada::NamespaceIndexes::OPC});
+  const std::string item_b = MakeNodeIdFormula(scada::NodeId{
+      "Vendor.Server.1\\Group.Breaker2", scada::NamespaceIndexes::OPC});
+
+  EXPECT_EQ(GetDataItemDeviceId(node_service_, item_a, ""), server);
+  EXPECT_EQ(GetDataItemDeviceId(node_service_, "", item_b), server);
+  EXPECT_TRUE(IsOpcDeviceId(server));
+
+  // A remote server keeps its machine name, which is part of its identity.
+  EXPECT_EQ(GetDataItemDeviceId(node_service_,
+                                MakeNodeIdFormula(scada::NodeId{
+                                    "\\\\host\\Vendor.Server.1\\Group.Breaker1",
+                                    scada::NamespaceIndexes::OPC}),
+                                ""),
+            (scada::NodeId{"\\\\host\\Vendor.Server.1",
+                           scada::NamespaceIndexes::OPC}));
+}
+
 // --- When a device change rewrites the value --------------------------------
 
 TEST(OutputTwoStagedOnRebindTest, FollowsTheDeviceOnlyFromTheOldDefault) {
   // Unbound (default Yes) → MODBUS: turns off.
   EXPECT_EQ(GetOutputTwoStagedOnRebind(true, std::nullopt, false), false);
-  // MODBUS default (No) → a device that selects: back to Yes.
-  EXPECT_EQ(GetOutputTwoStagedOnRebind(false, false, std::nullopt), true);
+  // MODBUS default (No) → a device known to select: back to Yes.
+  EXPECT_EQ(GetOutputTwoStagedOnRebind(false, false, true), true);
   // Yes on MODBUS was somebody's choice: kept.
-  EXPECT_EQ(GetOutputTwoStagedOnRebind(true, false, std::nullopt),
-            std::nullopt);
+  EXPECT_EQ(GetOutputTwoStagedOnRebind(true, false, true), std::nullopt);
   // No on an unbound item was somebody's choice: kept.
   EXPECT_EQ(GetOutputTwoStagedOnRebind(false, std::nullopt, std::nullopt),
             std::nullopt);
-  // Already what the new device wants: nothing to write.
+  // Already what the new device wants: nothing to write. This is MODBUS →
+  // OPC, which used to turn back to Yes when OPC said nothing.
   EXPECT_EQ(GetOutputTwoStagedOnRebind(false, false, false), std::nullopt);
+  // Unbound (default Yes) → OPC: turns off.
+  EXPECT_EQ(GetOutputTwoStagedOnRebind(true, std::nullopt, false), false);
+}
+
+// Backlog 1028: the new device's answer is unknown (IEC 61850, whose control
+// model is on the IED), so whatever is stored stays — a one-stage MODBUS item
+// moved to a direct-control object must not become Yes and be refused.
+TEST(OutputTwoStagedOnRebindTest, AnUnknownNewDeviceKeepsTheStoredValue) {
+  EXPECT_EQ(GetOutputTwoStagedOnRebind(false, false, std::nullopt),
+            std::nullopt);
+  EXPECT_EQ(GetOutputTwoStagedOnRebind(true, std::nullopt, std::nullopt),
+            std::nullopt);
+  EXPECT_EQ(GetOutputTwoStagedOnRebind(true, true, std::nullopt), std::nullopt);
 }
 
 }  // namespace

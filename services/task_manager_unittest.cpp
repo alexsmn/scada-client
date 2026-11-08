@@ -3,11 +3,12 @@
 #include "address_space/test/test_scada_node_states.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
+#include "common/formula_util.h"
 #include "core/progress_host_impl.h"
 #include "events/local_events.h"
-#include "common/formula_util.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
+#include "model/namespaces.h"
 #include "model/node_id_util.h"
 #include "node_service/static/static_node_service.h"
 #include "profile/profile.h"
@@ -518,6 +519,16 @@ class TaskManagerTwoStagedTest : public TaskManagerTest {
         {.node_id = kIec104Device,
          .node_class = scada::NodeClass::Object,
          .type_definition_id = scada::devices::id::Iec60870DeviceType});
+    node_service_.Add(
+        {.node_id = kIec61850Device,
+         .node_class = scada::NodeClass::Object,
+         .type_definition_id = scada::devices::id::Iec61850DeviceType});
+    // An IEC 61850 data object is a real node under its device.
+    node_service_.Add({.node_id = kIec61850DataObject,
+                       .node_class = scada::NodeClass::Variable,
+                       .type_definition_id = scada::id::BaseDataVariableType,
+                       .parent_id = kIec61850Device,
+                       .reference_type_id = scada::id::Organizes});
 
     ON_CALL(attribute_service_, Write(_, _))
         .WillByDefault([this](scada::ServiceContext,
@@ -577,6 +588,17 @@ class TaskManagerTwoStagedTest : public TaskManagerTest {
   static inline const scada::NodeId kIec104Device{902,
                                                   scada::NamespaceIndexes::TS};
   static inline const scada::NodeId kItem{903, scada::NamespaceIndexes::TS};
+  static inline const scada::NodeId kIec61850Device{
+      904, scada::NamespaceIndexes::TS};
+  static inline const scada::NodeId kIec61850DataObject{
+      905, scada::NamespaceIndexes::TS};
+
+  // A Classic OPC item address: not a node under a device, but a string id in
+  // the OPC namespace.
+  static std::string OpcChannel(std::string_view item) {
+    return MakeNodeIdFormula(scada::NodeId{
+        "Vendor.Server.1\\" + std::string{item}, scada::NamespaceIndexes::OPC});
+  }
 
   std::vector<scada::WriteValue> writes_;
 };
@@ -694,5 +716,92 @@ TEST_F(TaskManagerTwoStagedTest, ReaddressingOnTheSameDeviceWritesNothing) {
         Channel(kModbusDevice, "6")}}));
 
   EXPECT_TRUE(status);
+  EXPECT_EQ(WrittenTwoStaged(), std::nullopt);
+}
+
+// --- Backlog 1028: OPC and the unknown IEC 61850 ----------------------------
+//
+// OPC said nothing, so an object created on it kept Yes, and a MODBUS item
+// moved to it or to an IEC 61850 direct-control object turned back to Yes —
+// all of which the Server refuses to select.
+
+// The OPC tier refuses every select, so an OPC object starts one-stage.
+TEST_F(TaskManagerTwoStagedTest, InsertOnOpcChannelIsOneStage) {
+  ExpectInsertedAs(scada::data_items::id::DiscreteItemType);
+
+  auto node_id = Wait(task_manager_->PostInsertTask(
+      {.type_definition_id = scada::data_items::id::DiscreteItemType,
+       .parent_id = scada::data_items::id::DataItems,
+       .properties = {{scada::data_items::id::DataItemType_Output,
+                       OpcChannel("Group.Breaker1")}}}));
+
+  ASSERT_TRUE(node_id.ok());
+  EXPECT_EQ(WrittenTwoStaged(), false);
+}
+
+// An unbound object (default Yes) bound to OPC turns off.
+TEST_F(TaskManagerTwoStagedTest, BindingAnUnboundItemToOpcTurnsItOff) {
+  AddItem(scada::data_items::id::DiscreteItemType,
+          {{scada::data_items::id::DataItemType_Input1, scada::String{}},
+           {scada::data_items::id::DataItemType_Output, scada::String{}},
+           {scada::data_items::id::DataItemType_OutputTwoStaged, true}});
+
+  auto status = Wait(task_manager_->PostUpdateTask(
+      kItem, {},
+      {{scada::data_items::id::DataItemType_Output,
+        OpcChannel("Group.Breaker1")}}));
+
+  EXPECT_TRUE(status);
+  EXPECT_EQ(WrittenTwoStaged(), false);
+}
+
+// MODBUS → OPC: both one-stage, so the No stays and nothing is written.
+TEST_F(TaskManagerTwoStagedTest, RebindingFromModbusToOpcStaysOneStage) {
+  AddItem(scada::data_items::id::DiscreteItemType,
+          {{scada::data_items::id::DataItemType_Input1, scada::String{}},
+           {scada::data_items::id::DataItemType_Output,
+            Channel(kModbusDevice, "5")},
+           {scada::data_items::id::DataItemType_OutputTwoStaged, false}});
+
+  auto status = Wait(task_manager_->PostUpdateTask(
+      kItem, {},
+      {{scada::data_items::id::DataItemType_Output,
+        OpcChannel("Group.Breaker1")}}));
+
+  EXPECT_TRUE(status);
+  EXPECT_EQ(WrittenTwoStaged(), std::nullopt);
+}
+
+// MODBUS → IEC 61850: whether the object selects is on the IED, so the
+// Client does not know, and keeps the No rather than risk an object every
+// select of which is refused.
+TEST_F(TaskManagerTwoStagedTest, RebindingFromModbusToIec61850KeepsOneStage) {
+  AddItem(scada::data_items::id::DiscreteItemType,
+          {{scada::data_items::id::DataItemType_Input1, scada::String{}},
+           {scada::data_items::id::DataItemType_Output,
+            Channel(kModbusDevice, "5")},
+           {scada::data_items::id::DataItemType_OutputTwoStaged, false}});
+
+  auto status = Wait(task_manager_->PostUpdateTask(
+      kItem, {},
+      {{scada::data_items::id::DataItemType_Output,
+        MakeNodeIdFormula(kIec61850DataObject)}}));
+
+  EXPECT_TRUE(status);
+  EXPECT_EQ(WrittenTwoStaged(), std::nullopt);
+}
+
+// IEC 61850 creation is unchanged: an object dropped from an IEC 61850 device
+// keeps the default Yes (991af9bbd).
+TEST_F(TaskManagerTwoStagedTest, InsertOnIec61850ChannelKeepsTheDefault) {
+  ExpectInsertedAs(scada::data_items::id::DiscreteItemType);
+
+  auto node_id = Wait(task_manager_->PostInsertTask(
+      {.type_definition_id = scada::data_items::id::DiscreteItemType,
+       .parent_id = scada::data_items::id::DataItems,
+       .properties = {{scada::data_items::id::DataItemType_Output,
+                       MakeNodeIdFormula(kIec61850DataObject)}}}));
+
+  ASSERT_TRUE(node_id.ok());
   EXPECT_EQ(WrittenTwoStaged(), std::nullopt);
 }

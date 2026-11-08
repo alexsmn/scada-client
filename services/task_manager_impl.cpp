@@ -94,6 +94,12 @@ Awaitable<std::optional<bool>> FetchOutputTwoStagedDefault(
     scada::NodeId item_type_definition_id) {
   if (device_id.is_null())
     co_return std::nullopt;
+  // An OPC server is decided from its id; fetching it would ask the Server to
+  // browse an external OPC server for nothing.
+  if (IsOpcDeviceId(device_id)) {
+    co_return GetOutputTwoStagedDefault(node_service.GetNode(device_id),
+                                        item_type_definition_id);
+  }
   NodeRef device = node_service.GetNode(device_id);
   co_await FetchNode(device);
   co_return GetOutputTwoStagedDefault(device, item_type_definition_id);
@@ -120,9 +126,12 @@ Awaitable<std::optional<bool>> DeriveInsertedOutputTwoStaged(
   if (output.empty() && input.empty())
     co_return std::nullopt;
 
-  co_return co_await FetchOutputTwoStagedDefault(
+  // Only a No needs writing: Yes is the nodeset default the Server has
+  // already stored on the new node.
+  const std::optional<bool> value = co_await FetchOutputTwoStagedDefault(
       node_service, GetDataItemDeviceId(node_service, output, input),
       type_definition_id);
+  co_return value == false ? value : std::nullopt;
 }
 
 // The "Two-stage control" value to write alongside an update that re-binds a
