@@ -388,11 +388,11 @@
       ],
       "notes": "The preferences surface, from CaptureSettingsPanel: a full-window overlay over the workbench with its own search box, four scope tabs, a category list with counts, and a per-row storage chip saying where each setting lives. Renamed from `settings-dialog.png` on 2026-09-19 (backlog 628): `SettingsDialog` was retired on 2026-08-28 for `SettingsPanel` (backlog 626). What this row said until 2026-09-19 is now wrong in the reassuring direction: it warned the tracked PNG was the last render of the retired dialog and that a diff against it meant nothing. It is not — a fresh render is byte-identical and shows the overlay; it was re-rendered at 15bd4e48b. So the picture is current and the diff is meaningful. The rename interlocked with the manual pages that embed the file, so it landed with them.",
       "captured": {
-        "commit": "b043cb310",
+        "commit": "fc325312f",
         "platform": "macos",
         "dirty": false,
-        "sha256": "97b9485c1bc3f4c4082fa8beade75f6d2accbea9da4a632f948f8ec00b1d3673",
-        "last_rendered": "e39632260"
+        "sha256": "ff0ec5ba653009aa3458cce1ab7250d33491743656fd30dbaff8c2584f8413c4",
+        "last_rendered": "fc325312f"
       },
       "parity_key": "settings"
     },
@@ -404,11 +404,11 @@
       "referenced_from": [],
       "notes": "The light render of settings.png. Same fixture, same spec; only the design-token appearance differs. See that row for what the picture is of.",
       "captured": {
-        "commit": "b043cb310",
+        "commit": "fc325312f",
         "platform": "macos",
         "dirty": false,
-        "sha256": "0f1e8899819116b85086eb5fea2d18c69fb49da32630614216f1fcb223a9d84d",
-        "last_rendered": "ea9d80292"
+        "sha256": "79ac11d88f33d75e4977b4e17dba0c6e71898990755f13a665a7a312e74f9b2b",
+        "last_rendered": "fc325312f"
       },
       "parity_key": "settings"
     },
