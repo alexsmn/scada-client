@@ -35,6 +35,9 @@
 //  - the LOG_* / LOG_NAME macros (base/boost_log.h via
 //    device_state_notifier.h): macros cannot be exported.
 
+// facade-omits: services/sapi.h -- Windows-only COM type library
+// facade-omits: services/atl_module.h -- ATL plumbing, Windows-only content
+
 module;
 
 // ---- Global module fragment: headers stay the source of truth ----

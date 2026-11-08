@@ -26,6 +26,8 @@
 //    view_manager_qt component libraries (declared aui_qt deps). The names
 //    they surface (views::*, ViewManagerQtComponent) belong to those
 //    libraries, not aui — include textually where used;
+// facade-omits: aui/graph.h -- wraps the external graph_qt library
+// facade-omits: aui/view_manager.h -- wraps the external view_manager_qt library
 //  - os_exchange_data.h on Windows: the _WIN32 branch declares COM members
 //    (IDataObject, FORMATETC, ...) and presumes the consumer included the
 //    COM headers first; the portable branch is facaded on non-Windows.

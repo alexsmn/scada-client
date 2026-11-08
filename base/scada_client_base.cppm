@@ -31,6 +31,8 @@
 // Those transitive overloads are the same global-module entities that
 // scada.core exports, so TUs importing both facades see one merged set.
 
+// facade-omits: base/memory_istream.h -- Windows-only, and ::MemoryIStream collides with scada.base
+
 module;
 
 // ---- Global module fragment: headers stay the source of truth ----
