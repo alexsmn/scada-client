@@ -52,6 +52,7 @@
 #include "services/app_nap_suppressor.h"
 #include "services/connection_state_reporter.h"
 #include "services/create_tree.h"
+#include "services/legacy_event_severity.h"
 #include "services/server_compatibility.h"
 #include "services/speech_service_impl.h"
 #include "services/task_manager_impl.h"
@@ -893,8 +894,12 @@ Awaitable<void> ClientApplication::LoginAsync(bool allow_auto_login) {
 void ClientApplication::OnLoginCompleted(const DataServices& data_services) {
   LOG_INFO(*logger_) << ("Login completed");
 
+  // A Server from before 2.6 sends event severities on its 0-100 scale; every
+  // consumer below bands on 1-1000, so they are rescaled here, at the one
+  // boundary all events cross (backlog 1026).
   auto audited_services =
-      *AuditDataServices(data_services, core_module_->tracer(), executor_);
+      *AuditDataServices(RescaleLegacyEventSeverities(data_services),
+                         core_module_->tracer(), executor_);
   master_data_services_->SetServices(std::move(audited_services));
 }
 
