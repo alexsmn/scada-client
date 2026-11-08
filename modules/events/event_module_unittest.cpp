@@ -68,11 +68,12 @@ TEST_F(EventModuleTest, OpenEventsCommandRoutesToMainWindowOpenView) {
 
   WindowDefinition opened;
   EXPECT_CALL(main_window, OpenView(_, _))
-      .WillOnce(Invoke([&opened](const WindowDefinition& def, bool /*activate*/)
-                           -> Awaitable<OpenedViewInterface*> {
-        opened = def;
-        co_return nullptr;
-      }));
+      .WillOnce(
+          [&opened](const WindowDefinition& def,
+                    bool /*activate*/) -> Awaitable<OpenedViewInterface*> {
+            opened = def;
+            co_return nullptr;
+          });
 
   const auto* command =
       controller_env_.selection_commands_.FindCommand(ID_OPEN_EVENTS);
@@ -109,10 +110,10 @@ TEST_F(EventModuleTest, OpenEventsCommandRoutesToMainWindowOpenView) {
 // unacknowledged.
 TEST_F(EventModuleTest, RefusedAcknowledgementIsReportedAsALocalEvent) {
   EXPECT_CALL(controller_env_.method_service_, Call)
-      .WillOnce(Invoke([](auto, auto, auto, auto) {
+      .WillOnce([](auto, auto, auto, auto) {
         return scada::MakeMethodCallResult(
             scada::StatusCode::Bad_UserAccessDenied);
-      }));
+      });
 
   event_module_.node_event_provider().AcknowledgeEvent(17);
   Drain(controller_env_.executor_);
@@ -144,11 +145,11 @@ class EventModuleAcknowledgeAllTest : public EventModuleTest {
 
     std::u16string shown;
     EXPECT_CALL(dialog_service_, RunMessageBox(_, _, _))
-        .WillOnce(Invoke([&shown, answer](std::u16string_view message,
-                                          std::u16string_view, MessageBoxMode) {
+        .WillOnce([&shown, answer](std::u16string_view message,
+                                   std::u16string_view, MessageBoxMode) {
           shown = std::u16string{message};
           return MakeAnswer(answer);
-        }));
+        });
 
     EXPECT_TRUE(command->enabled_handler(GlobalCommandContext{
         .main_window = main_window_, .dialog_service = dialog_service_}));

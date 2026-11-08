@@ -97,8 +97,8 @@ TEST_F(LimitModelTest, WriteLimitsRunsPostedUpdateTask) {
 
   EXPECT_CALL(task_manager_,
               PostUpdateTask(scada::NodeId{kItemNodeId, 1}, _, _))
-      .WillOnce(Invoke([&executed](const scada::NodeId&, scada::NodeAttributes,
-                                   scada::NodeProperties properties) {
+      .WillOnce([&executed](const scada::NodeId&, scada::NodeAttributes,
+                            scada::NodeProperties properties) {
         EXPECT_THAT(properties,
                     UnorderedElementsAre(
                         Pair(scada::data_items::id::AnalogItemType_LimitLo,
@@ -110,7 +110,7 @@ TEST_F(LimitModelTest, WriteLimitsRunsPostedUpdateTask) {
                         Pair(scada::data_items::id::AnalogItemType_LimitHiHi,
                              scada::Variant{99.0})));
         return CompleteLazily(&executed);
-      }));
+      });
 
   model_->WriteLimits({.lo = u"5", .hi = u"95", .lolo = u"1", .hihi = u"99"});
   DrainExecutor();
@@ -124,14 +124,14 @@ TEST_F(LimitModelTest, WriteLimitsClearsEmptiedBands) {
   bool executed = false;
 
   EXPECT_CALL(task_manager_, PostUpdateTask(_, _, _))
-      .WillOnce(Invoke([&executed](const scada::NodeId&, scada::NodeAttributes,
-                                   scada::NodeProperties properties) {
+      .WillOnce([&executed](const scada::NodeId&, scada::NodeAttributes,
+                            scada::NodeProperties properties) {
         EXPECT_THAT(
             properties,
             Contains(Pair(scada::data_items::id::AnalogItemType_LimitLoLo,
                           scada::Variant{})));
         return CompleteLazily(&executed);
-      }));
+      });
 
   model_->WriteLimits({.lo = u"5", .hi = u"95", .lolo = u"", .hihi = u"99"});
   DrainExecutor();
@@ -150,10 +150,10 @@ scada::CoStatus FailLazily(scada::StatusCode status_code) {
 // both, and the bands the operator typed were silently not in effect.
 TEST_F(LimitModelTest, RefusedWriteIsReportedToTheOperator) {
   EXPECT_CALL(task_manager_, PostUpdateTask(_, _, _))
-      .WillOnce(Invoke([](const scada::NodeId&, scada::NodeAttributes,
-                          scada::NodeProperties) {
+      .WillOnce([](const scada::NodeId&, scada::NodeAttributes,
+                   scada::NodeProperties) {
         return FailLazily(scada::StatusCode::Bad_UserAccessDenied);
-      }));
+      });
 
   model_->WriteLimits({.lo = u"5", .hi = u"95", .lolo = u"1", .hihi = u"99"});
   DrainExecutor();
@@ -168,10 +168,10 @@ TEST_F(LimitModelTest, RefusedWriteIsReportedToTheOperator) {
 // dialog still does after reporting its own errors.
 TEST_F(LimitModelTest, RefusedWriteLeavesTheDialogOpen) {
   EXPECT_CALL(task_manager_, PostUpdateTask(_, _, _))
-      .WillOnce(Invoke([](const scada::NodeId&, scada::NodeAttributes,
-                          scada::NodeProperties) {
+      .WillOnce([](const scada::NodeId&, scada::NodeAttributes,
+                   scada::NodeProperties) {
         return FailLazily(scada::StatusCode::Bad_UserAccessDenied);
-      }));
+      });
 
   model_->WriteLimits({.lo = u"5", .hi = u"95", .lolo = u"1", .hihi = u"99"});
   DrainExecutor();
@@ -186,10 +186,10 @@ TEST_F(LimitModelTest, RefusedWriteLeavesTheDialogOpen) {
 TEST_F(LimitModelTest, SuccessfulWriteCompletesWithoutReporting) {
   bool executed = false;
   EXPECT_CALL(task_manager_, PostUpdateTask(_, _, _))
-      .WillOnce(Invoke([&executed](const scada::NodeId&, scada::NodeAttributes,
-                                   scada::NodeProperties) {
+      .WillOnce([&executed](const scada::NodeId&, scada::NodeAttributes,
+                            scada::NodeProperties) {
         return CompleteLazily(&executed);
-      }));
+      });
 
   model_->WriteLimits({.lo = u"5", .hi = u"95", .lolo = u"1", .hihi = u"99"});
   DrainExecutor();
@@ -203,10 +203,10 @@ TEST_F(LimitModelTest, SuccessfulWriteCompletesWithoutReporting) {
 // while the first is in flight would race two completions onto one dialog.
 TEST_F(LimitModelTest, SecondApplyWhileWritingIsIgnored) {
   EXPECT_CALL(task_manager_, PostUpdateTask(_, _, _))
-      .WillOnce(Invoke([](const scada::NodeId&, scada::NodeAttributes,
-                          scada::NodeProperties) {
+      .WillOnce([](const scada::NodeId&, scada::NodeAttributes,
+                   scada::NodeProperties) {
         return FailLazily(scada::StatusCode::Bad_UserAccessDenied);
-      }));
+      });
 
   const LimitModel::Limits limits{
       .lo = u"5", .hi = u"95", .lolo = u"1", .hihi = u"99"};

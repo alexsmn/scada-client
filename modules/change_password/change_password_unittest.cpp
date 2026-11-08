@@ -70,9 +70,9 @@ class ChangePasswordTest : public Test {
 TEST_F(ChangePasswordTest, SelfServiceCallsTheStandardChangePassword) {
   EXPECT_CALL(method_service_,
               Call(kUserManagement, kChangePasswordMethod, SizeIs(2), _))
-      .WillOnce(Invoke([](auto, auto, auto, auto) {
+      .WillOnce([](auto, auto, auto, auto) {
         return scada::MakeMethodCallResult(scada::StatusCode::Good);
-      }));
+      });
 
   ChangePassword(Context(/*self_service=*/true), u"old", u"new");
   PollExecutor();
@@ -92,10 +92,10 @@ TEST_F(ChangePasswordTest, AdminResetCallsModifyUserAndSendsNoOldPassword) {
   std::vector<scada::Variant> sent;
   EXPECT_CALL(method_service_,
               Call(kUserManagement, kModifyUserMethod, SizeIs(7), _))
-      .WillOnce(Invoke([&sent](auto, auto, auto arguments, auto) {
+      .WillOnce([&sent](auto, auto, auto arguments, auto) {
         sent = arguments;
         return scada::MakeMethodCallResult(scada::StatusCode::Good);
-      }));
+      });
 
   ChangePassword(Context(/*self_service=*/false), u"old", u"new");
   PollExecutor();
@@ -123,15 +123,15 @@ TEST_F(ChangePasswordTest, SelfServiceOnA257ServerUsesThePerUserMethod) {
   std::vector<scada::Variant> sent;
   EXPECT_CALL(method_service_,
               Call(kUserManagement, kChangePasswordMethod, _, _))
-      .WillOnce(Invoke([](auto, auto, auto, auto) {
+      .WillOnce([](auto, auto, auto, auto) {
         return scada::MakeMethodCallResult(scada::StatusCode::Bad_WrongNodeId);
-      }));
+      });
   EXPECT_CALL(method_service_,
               Call(scada::NodeId{kUserNodeId, 1}, legacy_method, _, _))
-      .WillOnce(Invoke([&sent](auto, auto, auto arguments, auto) {
+      .WillOnce([&sent](auto, auto, auto arguments, auto) {
         sent = arguments;
         return scada::MakeMethodCallResult(scada::StatusCode::Good);
-      }));
+      });
 
   ChangePassword(Context(/*self_service=*/true), u"old", u"new");
   PollExecutor();
@@ -150,9 +150,9 @@ TEST_F(ChangePasswordTest, SelfServiceOnA257ServerUsesThePerUserMethod) {
 // report says what to do instead of naming a status code.
 TEST_F(ChangePasswordTest, AdminResetOnA257ServerExplainsInsteadOfFailing) {
   EXPECT_CALL(method_service_, Call(kUserManagement, kModifyUserMethod, _, _))
-      .WillOnce(Invoke([](auto, auto, auto, auto) {
+      .WillOnce([](auto, auto, auto, auto) {
         return scada::MakeMethodCallResult(scada::StatusCode::Bad_WrongNodeId);
-      }));
+      });
 
   ChangePassword(Context(/*self_service=*/false), u"old", u"new");
   PollExecutor();
@@ -166,12 +166,12 @@ TEST_F(ChangePasswordTest, AdminResetOnA257ServerExplainsInsteadOfFailing) {
 TEST_F(ChangePasswordTest, ReportsFailureAfterMethodCallCompletes) {
   EXPECT_CALL(method_service_,
               Call(kUserManagement, kChangePasswordMethod, SizeIs(2), _))
-      .WillOnce(Invoke([](auto, auto, auto, auto) {
+      .WillOnce([](auto, auto, auto, auto) {
         // A refusal that is not "no such method": Bad_WrongMethodId would
         // now be read as a pre-2.6 Server and retried the 2.5 way.
         return scada::MakeMethodCallResult(
             scada::StatusCode::Bad_UserAccessDenied);
-      }));
+      });
 
   ChangePassword(Context(/*self_service=*/true), u"old", u"new");
   PollExecutor();
@@ -195,9 +195,9 @@ TEST_F(ChangePasswordTest, NotWritableReportsWhereThePasswordIsChanged) {
   EXPECT_CALL(method_service_,
               Call(kUserManagement, kModifyUserMethod, SizeIs(7), _))
       .Times(2)
-      .WillRepeatedly(Invoke([](auto, auto, auto, auto) {
+      .WillRepeatedly([](auto, auto, auto, auto) {
         return scada::MakeMethodCallResult(scada::StatusCode::Bad_NotWritable);
-      }));
+      });
 
   const NodeRef root = node_service_.Add(scada::NodeState{
       .node_id = scada::NodeId{kUserNodeId + 1, 1},

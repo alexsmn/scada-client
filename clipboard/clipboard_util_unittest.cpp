@@ -162,10 +162,10 @@ TEST(PasteNodesFromNodeStateRecursive, RejectedInsertPropagates) {
       .attributes = {.browse_name = "Group1", .display_name = u"Group1"}};
 
   EXPECT_CALL(task_manager, PostInsertTask(_))
-      .WillOnce(Invoke(
+      .WillOnce(
           [](const scada::NodeState&) -> scada::CoStatusOr<scada::NodeId> {
             co_return scada::StatusCode::Bad;
-          }));
+          });
 
   WaitAwaitable(executor, PasteNodesFromNodeStateRecursive(
                               task_manager, std::move(node_state),
@@ -204,24 +204,24 @@ TEST(PasteNodesFromNodeStateRecursive,
     InSequence sequence;
 
     EXPECT_CALL(task_manager, PostInsertTask(_))
-        .WillOnce(Invoke([&](const scada::NodeState& inserted)
-                             -> scada::CoStatusOr<scada::NodeId> {
+        .WillOnce([&](const scada::NodeState& inserted)
+                      -> scada::CoStatusOr<scada::NodeId> {
           EXPECT_TRUE(inserted.children.empty());
           EXPECT_THAT(inserted.references, SizeIs(1));
           if (!inserted.references.empty())
             EXPECT_TRUE(inserted.references.front().forward);
           co_return inserted_parent_id;
-        }));
+        });
 
     EXPECT_CALL(task_manager, PostInsertTask(_))
-        .WillOnce(Invoke([&](const scada::NodeState& inserted)
-                             -> scada::CoStatusOr<scada::NodeId> {
+        .WillOnce([&](const scada::NodeState& inserted)
+                      -> scada::CoStatusOr<scada::NodeId> {
           EXPECT_TRUE(inserted.children.empty());
           EXPECT_EQ(inserted.parent_id, inserted_parent_id);
           EXPECT_EQ(inserted.type_definition_id,
                     scada::data_items::id::DiscreteItemType);
           co_return inserted_child_id;
-        }));
+        });
   }
 
   EXPECT_NO_THROW(WaitAwaitable(
@@ -248,10 +248,10 @@ TEST(PasteNodesFromNodeStateRecursive, DropsLimitsOnlyWhenAsked) {
 
     scada::NodeProperties inserted_properties;
     EXPECT_CALL(task_manager, PostInsertTask(_))
-        .WillOnce(Invoke([&](const scada::NodeState& inserted) {
+        .WillOnce([&](const scada::NodeState& inserted) {
           inserted_properties = inserted.properties;
           return InsertResult(scada::NodeId{7, scada::NamespaceIndexes::TIT});
-        }));
+        });
 
     WaitAwaitable(executor, PasteNodesFromNodeStateRecursive(
                                 task_manager, std::move(node_state), limits));

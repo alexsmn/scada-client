@@ -265,12 +265,11 @@ ClientApplicationTestBase::ClientApplicationTestBase() {
   MainWindow::SetHideForTesting();
 
   ON_CALL(login_handler_, Call(/*services_context=*/_, /*allow_auto_login=*/_))
-      .WillByDefault(
-          Invoke([this](DataServicesContext&&,
-                        bool) -> Awaitable<std::optional<DataServices>> {
-            co_return std::optional{
-                DataServices::FromUnownedServices(services_.services())};
-          }));
+      .WillByDefault([this](DataServicesContext&&,
+                            bool) -> Awaitable<std::optional<DataServices>> {
+        co_return std::optional{
+            DataServices::FromUnownedServices(services_.services())};
+      });
 }
 
 ClientApplicationTest::ClientApplicationTest() = default;
@@ -310,10 +309,10 @@ TEST(ShutdownStackTest, RunsSinglePushedAction) {
 TEST_F(ClientApplicationTest, LoginFailed) {
   EXPECT_CALL(login_handler_,
               Call(/*services_context=*/_, /*allow_auto_login=*/_))
-      .WillOnce(Invoke([](DataServicesContext&&,
-                          bool) -> Awaitable<std::optional<DataServices>> {
+      .WillOnce([](DataServicesContext&&,
+                   bool) -> Awaitable<std::optional<DataServices>> {
         co_return std::optional<DataServices>{};
-      }));
+      });
 
   auto started = app_.Start();
   EXPECT_THROW(Wait(std::move(started)), LoginCanceled);
@@ -322,10 +321,10 @@ TEST_F(ClientApplicationTest, LoginFailed) {
 TEST_F(ClientApplicationTest, QuitAfterCanceledLoginResolves) {
   EXPECT_CALL(login_handler_,
               Call(/*services_context=*/_, /*allow_auto_login=*/_))
-      .WillOnce(Invoke([](DataServicesContext&&,
-                          bool) -> Awaitable<std::optional<DataServices>> {
+      .WillOnce([](DataServicesContext&&,
+                   bool) -> Awaitable<std::optional<DataServices>> {
         co_return std::optional<DataServices>{};
-      }));
+      });
 
   auto started = app_.Start();
   EXPECT_THROW(Wait(std::move(started)), LoginCanceled);
@@ -354,11 +353,11 @@ TEST_F(ClientApplicationTest, LoginHandlerRejectionPropagates) {
 
   EXPECT_CALL(login_handler_,
               Call(/*services_context=*/_, /*allow_auto_login=*/_))
-      .WillOnce(Invoke([](DataServicesContext&&,
-                          bool) -> Awaitable<std::optional<DataServices>> {
+      .WillOnce([](DataServicesContext&&,
+                   bool) -> Awaitable<std::optional<DataServices>> {
         throw MyError{};
         co_return std::optional<DataServices>{};
-      }));
+      });
 
   EXPECT_THROW(Wait(app_.Start()), MyError);
 }
@@ -371,12 +370,12 @@ TEST_F(ClientApplicationTest, StartWaitsForLoginBeforePostLogin) {
   scada::base::AsyncCompletion pending_login{executor_};
   EXPECT_CALL(login_handler_,
               Call(/*services_context=*/_, /*allow_auto_login=*/_))
-      .WillOnce(Invoke([&](DataServicesContext&&,
-                           bool) -> Awaitable<std::optional<DataServices>> {
+      .WillOnce([&](DataServicesContext&&,
+                    bool) -> Awaitable<std::optional<DataServices>> {
         co_await pending_login.Wait();
         co_return std::optional{
             DataServices::FromUnownedServices(services_.services())};
-      }));
+      });
 
   auto started = StartClientApplicationAwaitable(executor_, app_.Start());
 
@@ -403,12 +402,11 @@ TEST_F(ClientApplicationTest, OnlyTheStartupLoginAllowsAutoLogin) {
   bool explicit_login_asked = false;
   EXPECT_CALL(login_handler_, Call(_, /*allow_auto_login=*/false))
       .Times(2)
-      .WillRepeatedly(
-          Invoke([&explicit_login_asked](DataServicesContext&&, bool) {
-            explicit_login_asked = true;
-            // Cancelled: the operator closes the dialog.
-            return MakeCanceledLogin();
-          }));
+      .WillRepeatedly([&explicit_login_asked](DataServicesContext&&, bool) {
+        explicit_login_asked = true;
+        // Cancelled: the operator closes the dialog.
+        return MakeCanceledLogin();
+      });
 
   const auto& main_windows = app_.main_window_manager().main_windows();
   ASSERT_THAT(main_windows, SizeIs(1));
@@ -440,10 +438,11 @@ TEST_F(ClientApplicationTest, FailedProfileSaveOnQuitAsksAndRetries) {
   scada::services services = services_.services();
   services.method_service = &method_service;
   ON_CALL(login_handler_, Call(_, _))
-      .WillByDefault(Invoke([services](DataServicesContext&&, bool)
-                                -> Awaitable<std::optional<DataServices>> {
+      .WillByDefault([services](
+                         DataServicesContext&&,
+                         bool) -> Awaitable<std::optional<DataServices>> {
         co_return std::optional{DataServices::FromUnownedServices(services)};
-      }));
+      });
   ON_CALL(services_.session_service, GetUserId())
       .WillByDefault(Return(scada::NodeId{1, 100}));
   StartApp();
@@ -453,10 +452,10 @@ TEST_F(ClientApplicationTest, FailedProfileSaveOnQuitAsksAndRetries) {
       method_service,
       Call(_, scada::NodeId{scada::security::id::UserType_SaveProfile}, _, _))
       .Times(2)
-      .WillRepeatedly(Invoke([&save_attempts](auto&&...) {
+      .WillRepeatedly([&save_attempts](auto&&...) {
         ++save_attempts;
         return scada::MakeMethodCallResult(scada::StatusCode::Bad);
-      }));
+      });
   EXPECT_CALL(session_end_dialog_,
               RunMessageBox(_, _, MessageBoxMode::QuestionYesNo))
       .WillOnce(Return(ByMove(MakeMessageBoxAnswer(MessageBoxResult::Yes))))
@@ -476,24 +475,25 @@ TEST_F(ClientApplicationTest, ServerWithoutSaveProfileQuitsWithoutAsking) {
   scada::services services = services_.services();
   services.method_service = &method_service;
   ON_CALL(login_handler_, Call(_, _))
-      .WillByDefault(Invoke([services](DataServicesContext&&, bool)
-                                -> Awaitable<std::optional<DataServices>> {
+      .WillByDefault([services](
+                         DataServicesContext&&,
+                         bool) -> Awaitable<std::optional<DataServices>> {
         co_return std::optional{DataServices::FromUnownedServices(services)};
-      }));
+      });
   ON_CALL(services_.session_service, GetUserId())
       .WillByDefault(Return(scada::NodeId{1, 100}));
-  ON_CALL(method_service, Call(_, _, _, _)).WillByDefault(Invoke([](auto&&...) {
+  ON_CALL(method_service, Call(_, _, _, _)).WillByDefault([](auto&&...) {
     return scada::MakeMethodCallResult(scada::StatusCode::Bad_WrongNodeId);
-  }));
+  });
   StartApp();
 
   EXPECT_CALL(
       method_service,
       Call(_, scada::NodeId{scada::security::id::UserType_SaveProfile}, _, _))
       .Times(1)
-      .WillOnce(Invoke([](auto&&...) {
+      .WillOnce([](auto&&...) {
         return scada::MakeMethodCallResult(scada::StatusCode::Bad_WrongNodeId);
-      }));
+      });
   EXPECT_CALL(session_end_dialog_, RunMessageBox(_, _, _)).Times(0);
 
   Wait(app_.Quit());
@@ -521,18 +521,17 @@ class ClientApplicationLocalProfileTest : public ClientApplicationTest {
 
     services_with_methods_.method_service = &method_service_;
     ON_CALL(login_handler_, Call(_, _))
-        .WillByDefault(
-            Invoke([this](DataServicesContext&&,
-                          bool) -> Awaitable<std::optional<DataServices>> {
-              co_return std::optional{
-                  DataServices::FromUnownedServices(services_with_methods_)};
-            }));
+        .WillByDefault([this](DataServicesContext&&,
+                              bool) -> Awaitable<std::optional<DataServices>> {
+          co_return std::optional{
+              DataServices::FromUnownedServices(services_with_methods_)};
+        });
     ON_CALL(
         method_service_,
         Call(_, scada::NodeId{scada::security::id::UserType_SaveProfile}, _, _))
-        .WillByDefault(Invoke([](auto&&...) {
+        .WillByDefault([](auto&&...) {
           return scada::MakeMethodCallResult(scada::StatusCode::Good);
-        }));
+        });
   }
 
   // Quits here rather than in the base destructor, which runs after
@@ -549,10 +548,10 @@ class ClientApplicationLocalProfileTest : public ClientApplicationTest {
     ON_CALL(
         method_service_,
         Call(_, scada::NodeId{scada::security::id::UserType_GetProfile}, _, _))
-        .WillByDefault(Invoke([](auto&&...) {
+        .WillByDefault([](auto&&...) {
           return scada::MakeMethodCallResult(
               std::vector<scada::Variant>{scada::String{}, scada::UInt64{0}});
-        }));
+        });
   }
 
   bool HasPreviousOperatorsPage() {
@@ -618,7 +617,7 @@ class ClientApplicationSignOutTest : public ClientApplicationLocalProfileTest {
     ON_CALL(
         method_service_,
         Call(_, scada::NodeId{scada::security::id::UserType_GetProfile}, _, _))
-        .WillByDefault(Invoke([this](scada::NodeId user_id, auto&&...) {
+        .WillByDefault([this](scada::NodeId user_id, auto&&...) {
           ++profile_reads_;
           std::string json;
           if (user_id == kOutgoing) {
@@ -632,20 +631,20 @@ class ClientApplicationSignOutTest : public ClientApplicationLocalProfileTest {
           }
           return scada::MakeMethodCallResult(std::vector<scada::Variant>{
               scada::String{std::move(json)}, scada::UInt64{1}});
-        }));
+        });
     ON_CALL(
         method_service_,
         Call(_, scada::NodeId{scada::security::id::UserType_SaveProfile}, _, _))
-        .WillByDefault(Invoke([this](scada::NodeId user_id, scada::NodeId,
-                                     std::vector<scada::Variant> arguments,
-                                     scada::ServiceContext) {
+        .WillByDefault([this](scada::NodeId user_id, scada::NodeId,
+                              std::vector<scada::Variant> arguments,
+                              scada::ServiceContext) {
           const scada::String* json =
               arguments.empty() ? nullptr
                                 : arguments[0].get_if<scada::String>();
           saves_.push_back({user_id, json && json->find("Outgoing operator") !=
                                                  std::string::npos});
           return scada::MakeMethodCallResult(scada::StatusCode::Good);
-        }));
+        });
     SignInAs(kOutgoing);
   }
 
@@ -666,13 +665,12 @@ class ClientApplicationSignOutTest : public ClientApplicationLocalProfileTest {
   // The next login dialog signs the incoming operator in.
   void NextLoginIsTheIncomingOperator() {
     EXPECT_CALL(login_handler_, Call(_, /*allow_auto_login=*/false))
-        .WillOnce(
-            Invoke([this](DataServicesContext&&,
-                          bool) -> Awaitable<std::optional<DataServices>> {
-              SignInAs(kIncoming);
-              co_return std::optional{
-                  DataServices::FromUnownedServices(services_with_methods_)};
-            }));
+        .WillOnce([this](DataServicesContext&&,
+                         bool) -> Awaitable<std::optional<DataServices>> {
+          SignInAs(kIncoming);
+          co_return std::optional{
+              DataServices::FromUnownedServices(services_with_methods_)};
+        });
   }
 
   // Runs a global command as the main menu would. Never touch the window
@@ -737,10 +735,10 @@ TEST_F(ClientApplicationSignOutTest,
   // The sign-out's own dialog is closed...
   bool cancelled = false;
   EXPECT_CALL(login_handler_, Call(_, /*allow_auto_login=*/false))
-      .WillOnce(Invoke([&cancelled](DataServicesContext&&, bool) {
+      .WillOnce([&cancelled](DataServicesContext&&, bool) {
         cancelled = true;
         return MakeCanceledLogin();
-      }));
+      });
   ExecuteGlobalCommand(ID_LOGOFF);
   ASSERT_TRUE(WaitUntil([&] { return cancelled; }, /*timeout_ms=*/60000));
   Mock::VerifyAndClearExpectations(&login_handler_);
@@ -833,12 +831,11 @@ class ClientApplicationConfiguratorTest : public Test {
     MainWindow::SetHideForTesting();
     ON_CALL(login_handler_,
             Call(/*services_context=*/_, /*allow_auto_login=*/_))
-        .WillByDefault(
-            Invoke([this](DataServicesContext&&,
-                          bool) -> Awaitable<std::optional<DataServices>> {
-              co_return std::optional{
-                  DataServices::FromUnownedServices(services_.services())};
-            }));
+        .WillByDefault([this](DataServicesContext&&,
+                              bool) -> Awaitable<std::optional<DataServices>> {
+          co_return std::optional{
+              DataServices::FromUnownedServices(services_.services())};
+        });
   }
 
  protected:

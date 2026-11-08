@@ -315,8 +315,7 @@ MainWindowTest::MainWindowTest() {
   // gMock matches ahead of this one.
   EXPECT_CALL(opened_view_factory_, Call(_, _))
       .Times(AnyNumber())
-      .WillRepeatedly(
-          Invoke([](MainWindow&, WindowDefinition&) { return nullptr; }));
+      .WillRepeatedly([](MainWindow&, WindowDefinition&) { return nullptr; });
 
 #if defined(UI_QT)
   main_window_.emplace(MakeMainWindowContext());
@@ -387,7 +386,7 @@ void MainWindowTest::ExpectOpenView() {
   EXPECT_CALL(opened_view_factory_, Call(/*main_window=*/_,
                                          /*window_def=*/_))
       .WillOnce(
-          Invoke([this](MainWindow& main_window, WindowDefinition& window_def) {
+          [this](MainWindow& main_window, WindowDefinition& window_def) {
             auto opened_view = std::make_unique<OpenedView>(OpenedViewContext{
                 .executor_ = controller_env_.executor_,
                 .window_info_ = ControllerEnvironment::kFakeWindowInfo,
@@ -396,7 +395,7 @@ void MainWindowTest::ExpectOpenView() {
                 .controller_factory_ = controller_factory_.AsStdFunction()});
             opened_view->Init();
             return opened_view;
-          }));
+          });
 }
 
 TEST_F(MainWindowTest, Close_InvokesQuitHandler) {
@@ -419,8 +418,7 @@ class MainWindowQtHarness {
     // the shell asks for that mode's panes whatever the page itself holds.
     EXPECT_CALL(opened_view_factory_, Call(_, _))
         .Times(AnyNumber())
-        .WillRepeatedly(
-            Invoke([](MainWindow&, WindowDefinition&) { return nullptr; }));
+        .WillRepeatedly([](MainWindow&, WindowDefinition&) { return nullptr; });
     main_window_.emplace(MainWindowContext{
         .executor_ = controller_env_.executor_,
         .ui_command_registry_ = ui_command_registry_,

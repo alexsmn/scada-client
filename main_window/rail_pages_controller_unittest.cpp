@@ -33,9 +33,8 @@ class RailPagesControllerTest : public Test {
     second_id_ = AddPage(u"Second").id;
     third_id_ = AddPage(u"Third").id;
     EXPECT_CALL(main_window_, GetCurrentPage())
-        .WillRepeatedly(Invoke([this]() -> const Page& {
-          return profile_.pages.at(current_id_);
-        }));
+        .WillRepeatedly(
+            [this]() -> const Page& { return profile_.pages.at(current_id_); });
   }
 
   Page& AddPage(std::u16string title) {

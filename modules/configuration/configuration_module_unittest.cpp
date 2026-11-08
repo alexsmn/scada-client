@@ -115,16 +115,16 @@ class ConfigurationModuleTest : public Test {
 // was never called.
 TEST_F(ConfigurationModuleTest, UnlockCommandRunsPostedTask) {
   EXPECT_CALL(task_manager_, PostTask(_, _))
-      .WillOnce(Invoke(
+      .WillOnce(
           [](std::u16string_view, const TaskManager::TaskLauncher& launcher) {
             return RunLauncherLazily(launcher);
-          }));
+          });
   EXPECT_CALL(method_service_,
               Call(scada::NodeId{kItemNodeId, 1},
                    scada::data_items::id::DataItemType_Unlock, IsEmpty(), _))
-      .WillOnce(Invoke([](auto, auto, auto, auto) {
+      .WillOnce([](auto, auto, auto, auto) {
         return scada::MakeMethodCallResult(scada::StatusCode::Good);
-      }));
+      });
 
   ExecuteCommand(ID_UNLOCK_ITEM);
   DrainExecutor();
@@ -136,13 +136,13 @@ TEST_F(ConfigurationModuleTest, EnableCommandRunsPostedUpdateTask) {
   bool executed = false;
   EXPECT_CALL(task_manager_,
               PostUpdateTask(scada::NodeId{kItemNodeId, 1}, _, _))
-      .WillOnce(Invoke([&](const scada::NodeId&, scada::NodeAttributes,
-                           scada::NodeProperties properties) {
+      .WillOnce([&](const scada::NodeId&, scada::NodeAttributes,
+                    scada::NodeProperties properties) {
         EXPECT_THAT(properties,
                     ElementsAre(Pair(scada::devices::id::DeviceType_Disabled,
                                      scada::Variant{false})));
         return CompleteLazily(&executed);
-      }));
+      });
 
   ExecuteCommand(ID_ITEM_ENABLE);
   DrainExecutor();
@@ -154,9 +154,9 @@ TEST_F(ConfigurationModuleTest, ReportsMethodCallSuccessAfterCompletion) {
   EXPECT_CALL(method_service_,
               Call(scada::NodeId{kItemNodeId, 1},
                    scada::devices::id::DeviceType_Interrogate, IsEmpty(), _))
-      .WillOnce(Invoke([](auto, auto, auto, auto) {
+      .WillOnce([](auto, auto, auto, auto) {
         return scada::MakeMethodCallResult(scada::StatusCode::Good);
-      }));
+      });
 
   ExecuteInterrogateCommand();
   DrainExecutor();
@@ -171,10 +171,10 @@ TEST_F(ConfigurationModuleTest, ReportsMethodCallFailureAfterCompletion) {
   EXPECT_CALL(method_service_,
               Call(scada::NodeId{kItemNodeId, 1},
                    scada::devices::id::DeviceType_Interrogate, IsEmpty(), _))
-      .WillOnce(Invoke([](auto, auto, auto, auto) {
+      .WillOnce([](auto, auto, auto, auto) {
         return scada::MakeMethodCallResult(
             scada::StatusCode::Bad_WrongMethodId);
-      }));
+      });
 
   ExecuteInterrogateCommand();
   DrainExecutor();

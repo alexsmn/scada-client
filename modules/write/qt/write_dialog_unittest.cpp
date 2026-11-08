@@ -56,9 +56,9 @@ class WriteDialogSeedTest : public Test {
   WriteDialogSeedTest() {
     ON_CALL(timed_data_service_, GetFormulaTimedData(_, _))
         .WillByDefault(Return(timed_data_));
-    ON_CALL(*timed_data_, GetNode()).WillByDefault(Invoke([this] {
+    ON_CALL(*timed_data_, GetNode()).WillByDefault([this] {
       return node_service_.GetNode(kDataItemId);
-    }));
+    });
     ON_CALL(*timed_data_, GetTitle()).WillByDefault(Return(u"Output"));
 
     // The type node has to be resident too, not just named as the item's

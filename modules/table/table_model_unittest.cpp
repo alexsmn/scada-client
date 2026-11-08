@@ -152,31 +152,31 @@ std::shared_ptr<TableModelTest::RowContext> TableModelTest::SetFormula() {
   // which is what a row re-ranging an already-connected spec does every time it
   // sets a formula.
   ON_CALL(row_context->timed_data, AddObserver(_))
-      .WillByDefault(Invoke(
+      .WillByDefault(
           [&observers = row_context->observers](TimedDataObserver& observer) {
             if (!observers.HasObserver(&observer))
               observers.AddObserver(&observer);
-          }));
+          });
 
   ON_CALL(row_context->timed_data, AddViewObserver(_, _))
-      .WillByDefault(Invoke(
+      .WillByDefault(
           [&view_observers = row_context->view_observers](
               TimedDataViewObserver& observer, const scada::TimeRange& range) {
             if (!view_observers.HasObserver(&observer))
               view_observers.AddObserver(&observer);
-          }));
+          });
 
   ON_CALL(row_context->timed_data, RemoveObserver(_))
-      .WillByDefault(Invoke(
+      .WillByDefault(
           [&observers = row_context->observers](TimedDataObserver& observer) {
             observers.RemoveObserver(&observer);
-          }));
+          });
 
   ON_CALL(row_context->timed_data, RemoveViewObserver(_))
-      .WillByDefault(Invoke([&view_observers = row_context->view_observers](
-                                TimedDataViewObserver& observer) {
+      .WillByDefault([&view_observers = row_context->view_observers](
+                         TimedDataViewObserver& observer) {
         view_observers.RemoveObserver(&observer);
-      }));
+      });
 
   const std::string formula = "formula";
   EXPECT_CALL(
@@ -467,8 +467,9 @@ TEST_F(TableModelTest, InvalidFormulaShowsMessageBox) {
 
   bool shown = false;
   EXPECT_CALL(dialog_service_, RunMessageBox(_, _, MessageBoxMode::Error))
-      .WillOnce(Invoke([&](std::u16string_view, std::u16string_view,
-                           MessageBoxMode) { return ShowLazily(&shown); }));
+      .WillOnce([&](std::u16string_view, std::u16string_view, MessageBoxMode) {
+        return ShowLazily(&shown);
+      });
 
   EXPECT_FALSE(
       table_model_.SetCellText(0, TableModel::COLUMN_TITLE, u"=nonsense"));

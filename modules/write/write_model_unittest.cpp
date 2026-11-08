@@ -109,9 +109,9 @@ class WriteModelTest : public Test {
     // Resolved lazily: the item is seeded by CreateModel(), after this
     // constructor runs, and a NodeRef taken before it exists is null — which
     // silently made every model read the OutputTwoStaged default.
-    ON_CALL(*timed_data_, GetNode()).WillByDefault(Invoke([this] {
+    ON_CALL(*timed_data_, GetNode()).WillByDefault([this] {
       return node_service_.GetNode(kDataItemId);
-    }));
+    });
     ON_CALL(*timed_data_, GetTitle()).WillByDefault(Return(u"Output"));
   }
 
@@ -213,12 +213,11 @@ TEST_F(WriteModelTest, SuccessfulWriteCompletesAfterAttributeCallback) {
             EXPECT_DOUBLE_EQ(inputs[0].value.template get<double>(), 42.0);
             EXPECT_FALSE(inputs[0].flags.select());
           }),
-          Invoke([&](scada::ServiceContext, std::vector<scada::WriteValue>)
-                     -> Awaitable<
-                         scada::StatusOr<std::vector<scada::StatusCode>>> {
+          [&](scada::ServiceContext, std::vector<scada::WriteValue>)
+              -> Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> {
             co_await completion.Wait();
             co_return std::move(*result);
-          })));
+          }));
 
   auto model = CreateModel();
   model->Write(42.0, /*lock=*/false);

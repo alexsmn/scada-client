@@ -119,7 +119,7 @@ EventTableModelTest::EventTableModelTest() {
       .WillByDefault(ReturnRef(test_events_));
 
   EXPECT_CALL(node_event_provider_, AddObserver(_))
-      .WillOnce(Invoke([&](EventObserver& obs) { event_observer_ = &obs; }));
+      .WillOnce([&](EventObserver& obs) { event_observer_ = &obs; });
 
   current_event_model_.emplace(node_event_provider_);
 
