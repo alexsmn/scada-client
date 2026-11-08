@@ -812,133 +812,134 @@ TEST_F(TaskManagerTwoStagedTest, InsertOnIec61850ChannelKeepsTheDefault) {
 
   ASSERT_TRUE(node_id.ok());
   EXPECT_EQ(WrittenTwoStaged(), std::nullopt);
+}
 
-  // Backlog 1031: since backlog 1015 the insert asks for every property's
-  // declaration before it creates anything. Measured here against the
-  // production node service (v3) rather than reasoned about: what a ~1000-row
-  // Multiple Create costs in declaration round trips. A declaration is fetched
-  // once and then served from the node cache, because each insert touches it
-  // and keeps it at the front of the service's most-recently-used window --
-  // even while the views read far more new nodes than that window holds. So no
-  // per-type cache is added in the task manager; this test is what says so.
-  class CountingNodeFetcher : public v3::NodeFetcher {
-   public:
-    explicit CountingNodeFetcher(scada::AddressSpace& address_space)
-        : address_space_{address_space} {}
+// Backlog 1031: since backlog 1015 the insert asks for every property's
+// declaration before it creates anything. Measured here against the
+// production node service (v3) rather than reasoned about: what a ~1000-row
+// Multiple Create costs in declaration round trips. A declaration is fetched
+// once and then served from the node cache, because each insert touches it and
+// keeps it at the front of the service's most-recently-used window -- even
+// while the views read far more new nodes than that window holds. So no
+// per-type cache is added in the task manager; this test is what says so.
+class CountingNodeFetcher : public v3::NodeFetcher {
+ public:
+  explicit CountingNodeFetcher(scada::AddressSpace& address_space)
+      : address_space_{address_space} {}
 
-    scada::CoStatusOr<scada::NodeState> FetchNode(
-        const scada::NodeId& node_id) override {
-      ++fetches[node_id];
-      const auto* node = address_space_.GetNode(node_id);
-      if (!node)
-        co_return scada::StatusCode::Bad_WrongNodeId;
-      co_return scada::MakeNodeState(*node);
-    }
+  scada::CoStatusOr<scada::NodeState> FetchNode(
+      const scada::NodeId& node_id) override {
+    ++fetches[node_id];
+    const auto* node = address_space_.GetNode(node_id);
+    if (!node)
+      co_return scada::StatusCode::Bad_WrongNodeId;
+    co_return scada::MakeNodeState(*node);
+  }
 
-    scada::CoStatusOr<scada::ReferenceDescriptions> FetchChildren(
-        const scada::NodeId& node_id) override {
-      co_return scada::ReferenceDescriptions{};
-    }
+  scada::CoStatusOr<scada::ReferenceDescriptions> FetchChildren(
+      const scada::NodeId& node_id) override {
+    co_return scada::ReferenceDescriptions{};
+  }
 
-    std::map<scada::NodeId, int> fetches;
+  std::map<scada::NodeId, int> fetches;
 
-   private:
-    scada::AddressSpace& address_space_;
-  };
+ private:
+  scada::AddressSpace& address_space_;
+};
 
-  class TaskManagerInsertCostTest : public Test {
-   protected:
-    void SetUp() override {
-      node_service_->OnChannelOpened();
-      // The server refuses every insert after the declaration gate: the gate's
-      // cost is what is measured, and the refusal ends each task there.
-      ON_CALL(node_management_service_, AddNodes(_, _))
-          .WillByDefault(
-              [](scada::ServiceContext, std::vector<scada::AddNodesItem>) {
-                return scada::MakeNodeManagementResult<scada::AddNodesResult>(
-                    scada::Status{scada::StatusCode::Bad});
-              });
-    }
+class TaskManagerInsertCostTest : public Test {
+ protected:
+  void SetUp() override {
+    node_service_->OnChannelOpened();
+    // The server refuses every insert after the declaration gate: the gate's
+    // cost is what is measured, and the refusal ends each task there.
+    ON_CALL(node_management_service_, AddNodes(_, _))
+        .WillByDefault(
+            [](scada::ServiceContext, std::vector<scada::AddNodesItem>) {
+              return scada::MakeNodeManagementResult<scada::AddNodesResult>(
+                  scada::Status{scada::StatusCode::Bad});
+            });
+  }
 
-    template <class T>
-    T Wait(Awaitable<T> pending) {
-      auto result = StartAwaitable(executor_, std::move(pending));
-      while (!result->done) {
-        executor_.Advance(10ms);
-        Drain(executor_);
-      }
-      executor_.Poll();
-      return WaitResult(executor_, std::move(result));
-    }
-
-    scada_test::ScadaTestAddressSpace address_space_;
-    TestExecutor executor_;
-    NiceMock<scada::MockMonitoredItemService> monitored_item_service_;
-    std::shared_ptr<CountingNodeFetcher> fetcher_ =
-        std::make_shared<CountingNodeFetcher>(address_space_);
-    // The production window size: the default of NodeServiceImplContext.
-    std::shared_ptr<v3::NodeServiceImpl> node_service_ =
-        std::make_shared<v3::NodeServiceImpl>(v3::NodeServiceImplContext{
-            .executor_ = executor_,
-            .monitored_item_service_ = monitored_item_service_,
-            .node_fetcher_ = fetcher_,
-            .view_events_provider_ = [](scada::ViewEvents&) {
-              return std::make_unique<IViewEventsSubscription>();
-            }});
-    NiceMock<scada::MockAttributeService> attribute_service_;
-    NiceMock<scada::MockNodeManagementService> node_management_service_;
-    LocalEvents local_events_;
-    Profile profile_;
-    ProgressHostImpl progress_host_;
-    const std::shared_ptr<TaskManagerImpl> task_manager_ =
-        std::make_shared<TaskManagerImpl>(TaskManagerImplContext{
-            .executor_ = executor_,
-            .node_service_ = *node_service_,
-            .attribute_service_ = attribute_service_,
-            .node_management_service_ = node_management_service_,
-            .local_events_ = local_events_,
-            .profile_ = profile_,
-            .progress_host_ = progress_host_});
-  };
-
-  TEST_F(TaskManagerInsertCostTest, AThousandInsertsFetchEachDeclarationOnce) {
-    constexpr int kRows = 1000;
-    // More new nodes per row than the 4096-node window can hold over the run:
-    // the open views fetch every row the create adds, and its properties.
-    constexpr int kNodesReadPerRow = 8;
-    const std::vector<scada::NodeId> declarations{
-        scada::data_items::id::DataItemType_Alias,
-        scada::data_items::id::DataItemType_Input1,
-        scada::data_items::id::DataItemType_Severity};
-
-    // The control: a node read once and never again must be evicted by that
-    // churn, or the run below never tested the window at all.
-    const scada::NodeId control = scada::data_items::id::AnalogItemType;
-    ASSERT_TRUE(Wait(FetchNodeStatus(node_service_->GetNode(control))));
-
-    for (int row = 0; row < kRows; ++row) {
-      scada::NodeProperties properties;
-      for (const scada::NodeId& declaration : declarations)
-        properties.emplace_back(declaration, scada::Variant{});
-      (void)Wait(task_manager_->PostInsertTask(
-          {.type_definition_id = scada::data_items::id::DiscreteItemType,
-           .parent_id = scada::data_items::id::DataItems,
-           .properties = std::move(properties)}));
-
-      for (int i = 0; i < kNodesReadPerRow; ++i) {
-        node_service_
-            ->GetNode(scada::NodeId{static_cast<scada::NumericId>(
-                                        1'000'000 + row * kNodesReadPerRow + i),
-                                    scada::NamespaceIndexes::TS})
-            .StartFetch(NodeFetchStatus::NodeOnly);
-      }
+  template <class T>
+  T Wait(Awaitable<T> pending) {
+    auto result = StartAwaitable(executor_, std::move(pending));
+    while (!result->done) {
+      executor_.Advance(10ms);
       Drain(executor_);
     }
-
-    ASSERT_TRUE(Wait(FetchNodeStatus(node_service_->GetNode(control))));
-    EXPECT_EQ(fetcher_->fetches[control], 2);
-
-    for (const scada::NodeId& declaration : declarations)
-      EXPECT_EQ(fetcher_->fetches[declaration], 1) << declaration.ToString();
-    EXPECT_EQ(fetcher_->fetches[scada::data_items::id::DiscreteItemType], 1);
+    executor_.Poll();
+    return WaitResult(executor_, std::move(result));
   }
+
+  scada_test::ScadaTestAddressSpace address_space_;
+  TestExecutor executor_;
+  NiceMock<scada::MockMonitoredItemService> monitored_item_service_;
+  std::shared_ptr<CountingNodeFetcher> fetcher_ =
+      std::make_shared<CountingNodeFetcher>(address_space_);
+  // The production window size: the default of NodeServiceImplContext.
+  std::shared_ptr<v3::NodeServiceImpl> node_service_ =
+      std::make_shared<v3::NodeServiceImpl>(v3::NodeServiceImplContext{
+          .executor_ = executor_,
+          .monitored_item_service_ = monitored_item_service_,
+          .node_fetcher_ = fetcher_,
+          .view_events_provider_ = [](scada::ViewEvents&) {
+            return std::make_unique<IViewEventsSubscription>();
+          }});
+  NiceMock<scada::MockAttributeService> attribute_service_;
+  NiceMock<scada::MockNodeManagementService> node_management_service_;
+  LocalEvents local_events_;
+  Profile profile_;
+  ProgressHostImpl progress_host_;
+  const std::shared_ptr<TaskManagerImpl> task_manager_ =
+      std::make_shared<TaskManagerImpl>(TaskManagerImplContext{
+          .executor_ = executor_,
+          .node_service_ = *node_service_,
+          .attribute_service_ = attribute_service_,
+          .node_management_service_ = node_management_service_,
+          .local_events_ = local_events_,
+          .profile_ = profile_,
+          .progress_host_ = progress_host_});
+};
+
+TEST_F(TaskManagerInsertCostTest, AThousandInsertsFetchEachDeclarationOnce) {
+  constexpr int kRows = 1000;
+  // More new nodes per row than the 4096-node window can hold over the run:
+  // the open views fetch every row the create adds, and its properties.
+  constexpr int kNodesReadPerRow = 8;
+  const std::vector<scada::NodeId> declarations{
+      scada::data_items::id::DataItemType_Alias,
+      scada::data_items::id::DataItemType_Input1,
+      scada::data_items::id::DataItemType_Severity};
+
+  // The control: a node read once and never again must be evicted by that
+  // churn, or the run below never tested the window at all.
+  const scada::NodeId control = scada::data_items::id::AnalogItemType;
+  ASSERT_TRUE(Wait(FetchNodeStatus(node_service_->GetNode(control))));
+
+  for (int row = 0; row < kRows; ++row) {
+    scada::NodeProperties properties;
+    for (const scada::NodeId& declaration : declarations)
+      properties.emplace_back(declaration, scada::Variant{});
+    (void)Wait(task_manager_->PostInsertTask(
+        {.type_definition_id = scada::data_items::id::DiscreteItemType,
+         .parent_id = scada::data_items::id::DataItems,
+         .properties = std::move(properties)}));
+
+    for (int i = 0; i < kNodesReadPerRow; ++i) {
+      node_service_
+          ->GetNode(scada::NodeId{static_cast<scada::NumericId>(
+                                      1'000'000 + row * kNodesReadPerRow + i),
+                                  scada::NamespaceIndexes::TS})
+          .StartFetch(NodeFetchStatus::NodeOnly);
+    }
+    Drain(executor_);
+  }
+
+  ASSERT_TRUE(Wait(FetchNodeStatus(node_service_->GetNode(control))));
+  EXPECT_EQ(fetcher_->fetches[control], 2);
+
+  for (const scada::NodeId& declaration : declarations)
+    EXPECT_EQ(fetcher_->fetches[declaration], 1) << declaration.ToString();
+  EXPECT_EQ(fetcher_->fetches[scada::data_items::id::DiscreteItemType], 1);
+}
