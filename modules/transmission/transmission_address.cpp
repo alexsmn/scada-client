@@ -84,14 +84,37 @@ int ModbusTransmissionRegisterCount(int address, std::string_view format) {
   const std::string_view type = format.substr(0, format.find(';'));
   if (type.find(':') != type.npos || type.find('+') != type.npos)
     return 1;
-  auto is = [type](std::string_view name) {
-    return std::ranges::equal(type, name, [](char a, char b) {
+  // `name` is upper case; `token` is matched without regard to case, as the
+  // tier's `boost::iequals` does.
+  auto equals = [](std::string_view token, std::string_view name) {
+    return std::ranges::equal(token, name, [](char a, char b) {
       return std::toupper(static_cast<unsigned char>(a)) == b;
     });
   };
-  if (is("UINT32") || is("INT32") || is("FLOAT"))
+
+  // Every option after the type must be one the tier knows, or it rejects the
+  // whole format (`ParseChannelParams`: a misspelt "swapword" is refused, an
+  // empty token from a trailing ';' is not) -- and a rejected format is one
+  // register wide (backlog 1036).
+  if (const std::size_t semicolon = format.find(';');
+      semicolon != format.npos) {
+    std::string_view options = format.substr(semicolon + 1);
+    while (true) {
+      const std::size_t next = options.find(';');
+      const std::string_view option = options.substr(0, next);
+      if (!option.empty() && !equals(option, "SWAPBYTES") &&
+          !equals(option, "SWAPWORDS") && !equals(option, "REVERSEWORDS")) {
+        return 1;
+      }
+      if (next == options.npos)
+        break;
+      options = options.substr(next + 1);
+    }
+  }
+
+  if (equals(type, "UINT32") || equals(type, "INT32") || equals(type, "FLOAT"))
     return 2;
-  if (is("DOUBLE"))
+  if (equals(type, "DOUBLE"))
     return 4;
   return 1;
 }

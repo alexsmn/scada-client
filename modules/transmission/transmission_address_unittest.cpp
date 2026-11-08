@@ -154,4 +154,16 @@ TEST(ModbusTransmissionRegisterCountTest, ARejectedFormatIsOneWide) {
   EXPECT_EQ(ModbusTransmissionRegisterCount(40001, "HOLDREG"), 1);
 }
 
+// Backlog 1036: an option the tier does not know makes it reject the whole
+// format (`ParseChannelParams`), so the rule is one wide like any other
+// rejected format. A trailing ';' names no option and is accepted.
+TEST(ModbusTransmissionRegisterCountTest, AnUnknownOptionIsARejectedFormat) {
+  EXPECT_EQ(ModbusTransmissionRegisterCount(40001, "FLOAT;swapword"), 1);
+  EXPECT_EQ(ModbusTransmissionRegisterCount(40001, "DOUBLE;swapwords;x"), 1);
+  EXPECT_EQ(ModbusTransmissionRegisterCount(40001, "FLOAT;SwapBytes;"), 2);
+  EXPECT_EQ(
+      ModbusTransmissionRegisterCount(40001, "UINT32;swapbytes;REVERSEWORDS"),
+      2);
+}
+
 }  // namespace

@@ -48,8 +48,10 @@ bool TransmissionAddressesOverlap(const TransmissionAddressSpan& a,
 // because the client cannot link a tier): in Input or Holding Registers,
 // UINT32, INT32 and FLOAT take 2 registers and DOUBLE takes 4; every other
 // type, an empty format, a bit table (Coils, Discrete Inputs) and a format the
-// tier rejects take 1. A rejected format sends nothing, but the address it
-// names is still the one the engineer meant, so it keeps reserving it.
+// tier rejects (an unknown type, a location or bit part, or an option other
+// than SwapBytes, SwapWords and ReverseWords) take 1. A rejected format sends
+// nothing, but the address it names is still the one the engineer meant, so it
+// keeps reserving it.
 int ModbusTransmissionRegisterCount(int address, std::string_view format);
 
 // The address a new rule on a table holding `used` should get. A new rule
