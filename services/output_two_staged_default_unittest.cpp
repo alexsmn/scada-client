@@ -64,6 +64,36 @@ TEST_F(OutputTwoStagedDefaultTest, Iec60870OnlyTheAnalogItemIsOneStage) {
   EXPECT_EQ(GetOutputTwoStagedDefault(device, kDiscrete), true);
 }
 
+// Backlog 1036: the Output channel's type override decides the IEC 60870-5
+// command before the item type does. `INT16:` and `FLOAT:` make it a set-point
+// the Server refuses to select; `BOOL:` makes it `C_SC_NA_1`, which selects.
+TEST_F(OutputTwoStagedDefaultTest, Iec60870TypeOverrideDecidesTheCommand) {
+  NodeRef device = AddDevice(scada::devices::id::Iec60870DeviceType);
+  auto output = [&](std::string_view nested) {
+    return MakeNodeIdFormula(scada::MakeNestedNodeId(device.node_id(), nested));
+  };
+  EXPECT_EQ(GetOutputTwoStagedDefault(device, kDiscrete, output("FLOAT:5")),
+            false);
+  EXPECT_EQ(GetOutputTwoStagedDefault(device, kDiscrete, output("INT16:5")),
+            false);
+  EXPECT_EQ(GetOutputTwoStagedDefault(device, kAnalog, output("BOOL:5")), true);
+  // No override, or one the tier does not know: the item type decides.
+  EXPECT_EQ(GetOutputTwoStagedDefault(device, kDiscrete, output("5")), true);
+  EXPECT_EQ(GetOutputTwoStagedDefault(device, kAnalog, output("5")), false);
+  EXPECT_EQ(GetOutputTwoStagedDefault(device, kAnalog, output("WORD:5")),
+            false);
+}
+
+// The override is an IEC 60870-5 notion; a MODBUS `BOOL:`-looking address
+// does not make a MODBUS item selectable.
+TEST_F(OutputTwoStagedDefaultTest, TypeOverrideIsReadOnlyOnIec60870) {
+  NodeRef device = AddDevice(scada::devices::id::ModbusDeviceType);
+  EXPECT_EQ(GetOutputTwoStagedDefault(device, kAnalog,
+                                      MakeNodeIdFormula(scada::MakeNestedNodeId(
+                                          device.node_id(), "BOOL:5"))),
+            false);
+}
+
 // The OPC tier refuses every select, so an OPC item is one-stage. The server
 // is not a typed node; it is recognised from its id without a fetch.
 TEST_F(OutputTwoStagedDefaultTest, OpcItemsAreOneStage) {

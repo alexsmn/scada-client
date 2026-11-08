@@ -19,13 +19,23 @@ class NodeService;
 //
 // - any data item on a MODBUS device — MODBUS has no select-before-operate,
 //   and the MODBUS tier refuses every select;
-// - an analog data item on an IEC 60870-5 device — its command is a set-point
-//   (`P_ME_*`), and only the single command `C_SC_NA_1` can be selected;
+// - an IEC 60870-5 data item whose command is a set-point (`P_ME_*`) — only
+//   the single command `C_SC_NA_1` can be selected. The command is set by the
+//   Output channel's type override when `output_formula` carries one
+//   (`INT16:`/`FLOAT:` → set-point, `BOOL:` → `C_SC_NA_1`), and otherwise by
+//   the item type: analog → set-point, discrete → `C_SC_NA_1`;
 // - any data item on a Classic OPC server — OPC DA has no select-before-
 //   operate, and the OPC tier refuses every select (backlog 994).
 //
-// It answers Yes for a discrete item on an IEC 60870-5 device, whose single
-// command does select: a known Yes, equal to the nodeset default.
+// It answers Yes for an IEC 60870-5 item whose command is `C_SC_NA_1` (a
+// discrete item, or any item whose Output is `BOOL:`), which does select: a
+// known Yes, equal to the nodeset default.
+//
+// `output_formula` is the item's Output channel formula; only its IEC 60870-5
+// type override is read, and only on an IEC 60870-5 device. Callers that
+// create items bound by Input1 alone pass nothing: there is no command yet,
+// and setting the Output later re-derives the value (see
+// `GetOutputTwoStagedOnRebind`).
 //
 // It answers `std::nullopt` — unknown, keep the default — everywhere else,
 // including every IEC 61850 device: whether an IEC 61850 object selects is its
@@ -40,7 +50,8 @@ class NodeService;
 // create or edit path has to remember to (backlog 1016).
 std::optional<bool> GetOutputTwoStagedDefault(
     const NodeRef& device,
-    const scada::NodeId& item_type_definition_id);
+    const scada::NodeId& item_type_definition_id,
+    std::string_view output_formula = {});
 
 // Whether `device_id` names a Classic OPC server, the "device" an OPC channel
 // resolves to (see `GetDataItemDeviceId`). An OPC server is not a typed node,
@@ -64,9 +75,11 @@ scada::NodeId GetDataItemDeviceId(NodeService& node_service,
                                   std::string_view input_formula);
 
 // Whether an existing data item's "Two-stage control" should change when its
-// device changes, and to what. `stored` is the value the item holds;
+// binding changes, and to what. `stored` is the value the item holds;
 // `old_default` and `new_default` are `GetOutputTwoStagedDefault` for the old
-// and the new device (`std::nullopt` meaning unknown).
+// and the new binding — device and Output formula, so an IEC 60870-5 type
+// override added or removed on the same device counts as a change
+// (`std::nullopt` meaning unknown).
 //
 // The property is treated as still at its default when `stored` equals the
 // value the Client would have created the item with for the OLD device — Yes

@@ -67,6 +67,38 @@ scada::NodeId GetChannelDeviceId(NodeService& node_service,
   return {};
 }
 
+// The command an IEC 60870-5 Output channel's type override makes the tier
+// send, as `Iec60870DeviceManager`'s `PrepareWrite`
+// (scada-tier-iec104/modules/iec60870/module/iec60870_device_manager.cpp)
+// decides it from `ParseIec60870ChannelParams`.
+enum class Iec60870Override { kNone, kSingleCommand, kSetPoint };
+
+// Reads the override prefix of an IEC 60870-5 channel formula such as
+// `{DEV.1!FLOAT:5}`: `BOOL:` sends the single command `C_SC_NA_1`, `INT16:`
+// and `FLOAT:` send the set-points `P_ME_NB_1` and `P_ME_NC_1`. No prefix, an
+// unparseable formula, or a prefix the tier does not know (which makes it
+// reject the channel outright, so no stage is ever reached) is `kNone`.
+Iec60870Override GetIec60870Override(std::string_view formula) {
+  if (formula.empty())
+    return Iec60870Override::kNone;
+  const scada::NodeId channel_id = GetFormulaSingleNodeId(formula);
+  if (channel_id.is_null())
+    return Iec60870Override::kNone;
+  scada::NodeId root_id;
+  std::string_view nested_name;
+  if (!scada::GetRootNestedNodeId(channel_id, root_id, nested_name))
+    return Iec60870Override::kNone;
+  const std::size_t colon = nested_name.find(':');
+  if (colon == std::string_view::npos)
+    return Iec60870Override::kNone;
+  const std::string_view prefix = nested_name.substr(0, colon);
+  if (prefix == "BOOL")
+    return Iec60870Override::kSingleCommand;
+  if (prefix == "INT16" || prefix == "FLOAT")
+    return Iec60870Override::kSetPoint;
+  return Iec60870Override::kNone;
+}
+
 }  // namespace
 
 bool IsOpcDeviceId(const scada::NodeId& device_id) {
@@ -76,7 +108,8 @@ bool IsOpcDeviceId(const scada::NodeId& device_id) {
 
 std::optional<bool> GetOutputTwoStagedDefault(
     const NodeRef& device,
-    const scada::NodeId& item_type_definition_id) {
+    const scada::NodeId& item_type_definition_id,
+    std::string_view output_formula) {
   if (!device)
     return std::nullopt;
 
@@ -89,11 +122,24 @@ std::optional<bool> GetOutputTwoStagedDefault(
   if (IsInstanceOf(device, scada::devices::id::ModbusDeviceType))
     return false;
 
-  // An analog item's IEC 60870-5 command carries a number, so the tier sends
-  // it as a set-point, which `Iec60870DeviceStateClient` refuses to select. A
-  // discrete item's command is `C_SC_NA_1`, which does select: that is a known
-  // Yes, not an unknown, which is what lets a re-bind tell it from IEC 61850.
+  // Only `C_SC_NA_1` selects: `Iec60870DeviceStateClient::Write` refuses a
+  // select of any other command. Which command the tier sends is decided
+  // first by the Output channel's type override, and only without one by the
+  // value: an analog item's command carries a number and goes as a set-point,
+  // a discrete item's carries a bool and goes as `C_SC_NA_1`. So a discrete
+  // item whose Output is `FLOAT:5` is a set-point and one-stage, and an analog
+  // item whose Output is `BOOL:5` is a single command and selects (backlog
+  // 1036). A Yes here is known, not an unknown, which is what lets a re-bind
+  // tell it from IEC 61850.
   if (IsInstanceOf(device, scada::devices::id::Iec60870DeviceType)) {
+    switch (GetIec60870Override(output_formula)) {
+      case Iec60870Override::kSingleCommand:
+        return true;
+      case Iec60870Override::kSetPoint:
+        return false;
+      case Iec60870Override::kNone:
+        break;
+    }
     return item_type_definition_id != scada::data_items::id::AnalogItemType;
   }
 

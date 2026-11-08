@@ -91,7 +91,8 @@ std::string GetFormula(const NodeRef& node, const scada::NodeId& prop_decl_id) {
 Awaitable<std::optional<bool>> FetchOutputTwoStagedDefault(
     NodeService& node_service,
     scada::NodeId device_id,
-    scada::NodeId item_type_definition_id) {
+    scada::NodeId item_type_definition_id,
+    std::string output_formula) {
   if (device_id.is_null())
     co_return std::nullopt;
   // An OPC server is decided from its id alone, as `GetOutputTwoStagedDefault`
@@ -101,7 +102,8 @@ Awaitable<std::optional<bool>> FetchOutputTwoStagedDefault(
     co_return false;
   NodeRef device = node_service.GetNode(device_id);
   co_await FetchNode(device);
-  co_return GetOutputTwoStagedDefault(device, item_type_definition_id);
+  co_return GetOutputTwoStagedDefault(device, item_type_definition_id,
+                                      output_formula);
 }
 
 // The "Two-stage control" value a node being inserted should carry, or
@@ -129,7 +131,7 @@ Awaitable<std::optional<bool>> DeriveInsertedOutputTwoStaged(
   // already stored on the new node.
   const std::optional<bool> value = co_await FetchOutputTwoStagedDefault(
       node_service, GetDataItemDeviceId(node_service, output, input),
-      type_definition_id);
+      type_definition_id, output);
   co_return value == false ? value : std::nullopt;
 }
 
@@ -159,17 +161,23 @@ Awaitable<std::optional<bool>> DeriveReboundOutputTwoStaged(
   const std::string old_input = GetFormula(node, DataItemType_Input1);
   const scada::NodeId old_device_id =
       GetDataItemDeviceId(node_service, old_output, old_input);
-  const scada::NodeId new_device_id = GetDataItemDeviceId(
-      node_service, new_output ? GetFormula(new_output) : old_output,
-      new_input ? GetFormula(new_input) : old_input);
-  if (old_device_id == new_device_id)
+  const std::string new_output_formula =
+      new_output ? GetFormula(new_output) : old_output;
+  const scada::NodeId new_device_id =
+      GetDataItemDeviceId(node_service, new_output_formula,
+                          new_input ? GetFormula(new_input) : old_input);
+  // The default is decided by the device and, on IEC 60870-5, by the Output
+  // channel's type override, so an Output edited on the same device can still
+  // change it (backlog 1036). Only an unchanged Output on the same device
+  // cannot.
+  if (old_device_id == new_device_id && old_output == new_output_formula)
     co_return std::nullopt;
 
   const scada::NodeId type_id = node.type_definition().node_id();
   const std::optional<bool> old_default = co_await FetchOutputTwoStagedDefault(
-      node_service, old_device_id, type_id);
+      node_service, old_device_id, type_id, old_output);
   const std::optional<bool> new_default = co_await FetchOutputTwoStagedDefault(
-      node_service, new_device_id, type_id);
+      node_service, new_device_id, type_id, new_output_formula);
   co_return GetOutputTwoStagedOnRebind(two_staged.value().get_or(true),
                                        old_default, new_default);
 }

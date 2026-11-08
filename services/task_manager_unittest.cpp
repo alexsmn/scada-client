@@ -727,6 +727,59 @@ TEST_F(TaskManagerTwoStagedTest, ReaddressingOnTheSameDeviceWritesNothing) {
   EXPECT_EQ(WrittenTwoStaged(), std::nullopt);
 }
 
+// --- Backlog 1036: the IEC 60870-5 type override ---------------------------
+
+// A discrete item whose Output is a `FLOAT:` set-point is created one-stage:
+// the Server refuses to select a set-point.
+TEST_F(TaskManagerTwoStagedTest, InsertOnIec104SetPointOverrideIsOneStage) {
+  ExpectInsertedAs(scada::data_items::id::DiscreteItemType);
+
+  auto node_id = Wait(task_manager_->PostInsertTask(
+      {.type_definition_id = scada::data_items::id::DiscreteItemType,
+       .parent_id = scada::data_items::id::DataItems,
+       .properties = {{scada::data_items::id::DataItemType_Output,
+                       Channel(kIec104Device, "FLOAT:5")}}}));
+
+  ASSERT_TRUE(node_id.ok());
+  EXPECT_EQ(WrittenTwoStaged(), false);
+}
+
+// Adding the override on the same device changes the command, so a value
+// still at the old default follows it.
+TEST_F(TaskManagerTwoStagedTest, AddingASetPointOverrideTurnsItOff) {
+  AddItem(scada::data_items::id::DiscreteItemType,
+          {{scada::data_items::id::DataItemType_Input1, scada::String{}},
+           {scada::data_items::id::DataItemType_Output,
+            Channel(kIec104Device, "5")},
+           {scada::data_items::id::DataItemType_OutputTwoStaged, true}});
+
+  auto status = Wait(task_manager_->PostUpdateTask(
+      kItem, {},
+      {{scada::data_items::id::DataItemType_Output,
+        Channel(kIec104Device, "INT16:5")}}));
+
+  EXPECT_TRUE(status);
+  EXPECT_EQ(WrittenTwoStaged(), false);
+}
+
+// An analog item (default No) given a `BOOL:` override now sends `C_SC_NA_1`,
+// which selects: the default Yes comes back.
+TEST_F(TaskManagerTwoStagedTest, ABoolOverrideOnAnAnalogItemRestoresYes) {
+  AddItem(scada::data_items::id::AnalogItemType,
+          {{scada::data_items::id::DataItemType_Input1, scada::String{}},
+           {scada::data_items::id::DataItemType_Output,
+            Channel(kIec104Device, "5")},
+           {scada::data_items::id::DataItemType_OutputTwoStaged, false}});
+
+  auto status = Wait(task_manager_->PostUpdateTask(
+      kItem, {},
+      {{scada::data_items::id::DataItemType_Output,
+        Channel(kIec104Device, "BOOL:5")}}));
+
+  EXPECT_TRUE(status);
+  EXPECT_EQ(WrittenTwoStaged(), true);
+}
+
 // --- Backlog 1028: OPC and the unknown IEC 61850 ----------------------------
 //
 // OPC said nothing, so an object created on it kept Yes, and a MODBUS item
