@@ -1,7 +1,9 @@
 #include "services/output_two_staged_default.h"
 
+#include "common/formula_util.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
+#include "model/node_id_util.h"
 #include "node_service/test/fake_node_service.h"
 #include "scada/standard_node_ids.h"
 
@@ -76,6 +78,63 @@ TEST_F(OutputTwoStagedDefaultTest, UnknownOrMissingDeviceKeepsTheDefault) {
   EXPECT_EQ(GetOutputTwoStagedDefault(
                 node_service_.GetNode(scada::NodeId{999, 2}), kAnalog),
             std::nullopt);
+}
+
+// --- Which device a data item's command reaches -----------------------------
+
+// The Output channel decides; Input1 stands in only while there is no Output.
+TEST_F(OutputTwoStagedDefaultTest, DeviceComesFromOutputThenInput) {
+  NodeRef modbus = AddDevice(scada::devices::id::ModbusDeviceType);
+  NodeRef iec104 = AddDevice(scada::devices::id::Iec60870DeviceType);
+  const std::string on_modbus =
+      MakeNodeIdFormula(scada::MakeNestedNodeId(modbus.node_id(), "1"));
+  const std::string on_iec104 =
+      MakeNodeIdFormula(scada::MakeNestedNodeId(iec104.node_id(), "1/2"));
+
+  EXPECT_EQ(GetDataItemDeviceId(node_service_, on_modbus, on_iec104),
+            modbus.node_id());
+  EXPECT_EQ(GetDataItemDeviceId(node_service_, "", on_iec104),
+            iec104.node_id());
+  EXPECT_TRUE(GetDataItemDeviceId(node_service_, "", "").is_null());
+}
+
+// An IEC 61850 data object is a real node under its device, not a nested id,
+// so it resolves through its parents.
+TEST_F(OutputTwoStagedDefaultTest, DeviceOfARealChannelNodeIsItsAncestor) {
+  NodeRef device = AddDevice(scada::devices::id::Iec61850DeviceType);
+  const scada::NodeId logical_node{500, 2};
+  node_service_.Add(
+      scada::NodeState{.node_id = logical_node,
+                       .node_class = scada::NodeClass::Object,
+                       .parent_id = device.node_id(),
+                       .reference_type_id = scada::id::Organizes});
+  const scada::NodeId data_object{501, 2};
+  node_service_.Add(
+      scada::NodeState{.node_id = data_object,
+                       .node_class = scada::NodeClass::Variable,
+                       .parent_id = logical_node,
+                       .reference_type_id = scada::id::Organizes});
+
+  EXPECT_EQ(
+      GetDataItemDeviceId(node_service_, MakeNodeIdFormula(data_object), ""),
+      device.node_id());
+}
+
+// --- When a device change rewrites the value --------------------------------
+
+TEST(OutputTwoStagedOnRebindTest, FollowsTheDeviceOnlyFromTheOldDefault) {
+  // Unbound (default Yes) → MODBUS: turns off.
+  EXPECT_EQ(GetOutputTwoStagedOnRebind(true, std::nullopt, false), false);
+  // MODBUS default (No) → a device that selects: back to Yes.
+  EXPECT_EQ(GetOutputTwoStagedOnRebind(false, false, std::nullopt), true);
+  // Yes on MODBUS was somebody's choice: kept.
+  EXPECT_EQ(GetOutputTwoStagedOnRebind(true, false, std::nullopt),
+            std::nullopt);
+  // No on an unbound item was somebody's choice: kept.
+  EXPECT_EQ(GetOutputTwoStagedOnRebind(false, std::nullopt, std::nullopt),
+            std::nullopt);
+  // Already what the new device wants: nothing to write.
+  EXPECT_EQ(GetOutputTwoStagedOnRebind(false, false, false), std::nullopt);
 }
 
 }  // namespace

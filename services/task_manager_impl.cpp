@@ -5,6 +5,7 @@
 #include "base/u16format.h"
 #include "core/progress_host.h"
 #include "events/local_events.h"
+#include "model/data_items_node_ids.h"
 #include "net/net_executor_adapter.h"
 #include "node_service/node_awaitable.h"
 #include "node_service/node_service.h"
@@ -13,6 +14,7 @@
 #include "scada/co_result.h"
 #include "scada/service_context.h"
 #include "scada/status_or.h"
+#include "services/output_two_staged_default.h"
 
 // Windows.h #defines ReportEvent to ReportEventA/W. Undo it.
 #ifdef ReportEvent
@@ -73,6 +75,94 @@ scada::Status FirstBadStatus(std::span<const scada::StatusCode> codes) {
   auto it = std::ranges::find_if(codes, &scada::IsBad);
   return it == codes.end() ? scada::Status{scada::StatusCode::Good}
                            : scada::Status{*it};
+}
+
+std::string GetFormula(const scada::Variant* value) {
+  return value ? value->get_or(scada::String{}) : std::string{};
+}
+
+std::string GetFormula(const NodeRef& node, const scada::NodeId& prop_decl_id) {
+  return node[prop_decl_id].value().get_or(scada::String{});
+}
+
+// `GetOutputTwoStagedDefault` for `device_id`, fetching the device first so its
+// type is known. Parameters are by value: the frame outlives no caller state.
+Awaitable<std::optional<bool>> FetchOutputTwoStagedDefault(
+    NodeService& node_service,
+    scada::NodeId device_id,
+    scada::NodeId item_type_definition_id) {
+  if (device_id.is_null())
+    co_return std::nullopt;
+  NodeRef device = node_service.GetNode(device_id);
+  co_await FetchNode(device);
+  co_return GetOutputTwoStagedDefault(device, item_type_definition_id);
+}
+
+// The "Two-stage control" value a node being inserted should carry, or
+// `std::nullopt` to leave the Server's default. Only a data item bound to a
+// channel is decided, and only when the caller did not set the property itself
+// (bulk and multi create, a paste of a copied item). This is what gives the
+// single *Create* path, an IEC 61850 drag-and-drop and every future create
+// path the same default as the wizards (backlog 1016).
+Awaitable<std::optional<bool>> DeriveInsertedOutputTwoStaged(
+    NodeService& node_service,
+    scada::NodeProperties properties,
+    scada::NodeId type_definition_id) {
+  if (scada::FindProperty(
+          properties, scada::data_items::id::DataItemType_OutputTwoStaged)) {
+    co_return std::nullopt;
+  }
+  const std::string output = GetFormula(scada::FindProperty(
+      properties, scada::data_items::id::DataItemType_Output));
+  const std::string input = GetFormula(scada::FindProperty(
+      properties, scada::data_items::id::DataItemType_Input1));
+  if (output.empty() && input.empty())
+    co_return std::nullopt;
+
+  co_return co_await FetchOutputTwoStagedDefault(
+      node_service, GetDataItemDeviceId(node_service, output, input),
+      type_definition_id);
+}
+
+// The "Two-stage control" value to write alongside an update that re-binds a
+// data item to another device, or `std::nullopt` to write nothing. The value
+// follows the device only while it is still the default for the old one; see
+// `GetOutputTwoStagedOnRebind` for how "still the default" is decided.
+Awaitable<std::optional<bool>> DeriveReboundOutputTwoStaged(
+    NodeService& node_service,
+    NodeRef node,
+    scada::NodeProperties properties) {
+  using namespace scada::data_items::id;
+  const scada::Variant* new_output =
+      scada::FindProperty(properties, DataItemType_Output);
+  const scada::Variant* new_input =
+      scada::FindProperty(properties, DataItemType_Input1);
+  if ((!new_output && !new_input) ||
+      scada::FindProperty(properties, DataItemType_OutputTwoStaged)) {
+    co_return std::nullopt;
+  }
+
+  NodeRef two_staged = node[DataItemType_OutputTwoStaged];
+  if (!two_staged)
+    co_return std::nullopt;  // Not a data item.
+
+  const std::string old_output = GetFormula(node, DataItemType_Output);
+  const std::string old_input = GetFormula(node, DataItemType_Input1);
+  const scada::NodeId old_device_id =
+      GetDataItemDeviceId(node_service, old_output, old_input);
+  const scada::NodeId new_device_id = GetDataItemDeviceId(
+      node_service, new_output ? GetFormula(new_output) : old_output,
+      new_input ? GetFormula(new_input) : old_input);
+  if (old_device_id == new_device_id)
+    co_return std::nullopt;
+
+  const scada::NodeId type_id = node.type_definition().node_id();
+  const std::optional<bool> old_default = co_await FetchOutputTwoStagedDefault(
+      node_service, old_device_id, type_id);
+  const std::optional<bool> new_default = co_await FetchOutputTwoStagedDefault(
+      node_service, new_device_id, type_id);
+  co_return GetOutputTwoStagedOnRebind(two_staged.value().get_or(true),
+                                       old_default, new_default);
 }
 
 void CompleteTaskCompletion(scada::base::AsyncCompletion& completion,
@@ -234,6 +324,13 @@ scada::CoStatusOr<scada::NodeId> TaskManagerImpl::RunInsertTask(
     }
   }
 
+  if (std::optional<bool> two_staged = co_await DeriveInsertedOutputTwoStaged(
+          self->node_service_, node_state.properties,
+          node_state.type_definition_id)) {
+    node_state.set_property(scada::data_items::id::DataItemType_OutputTwoStaged,
+                            *two_staged);
+  }
+
   if (!node_state.properties.empty()) {
     NodeRef node = self->node_service_.GetNode(added_node_id);
     fetch_status = co_await FetchNodeStatus(node);
@@ -283,6 +380,12 @@ scada::CoStatus TaskManagerImpl::RunUpdateTask(
   auto fetch_status = co_await FetchNodeStatus(node);
   if (!fetch_status) {
     co_return fetch_status;
+  }
+
+  if (std::optional<bool> two_staged = co_await DeriveReboundOutputTwoStaged(
+          self->node_service_, node, properties)) {
+    properties.emplace_back(scada::data_items::id::DataItemType_OutputTwoStaged,
+                            *two_staged);
   }
 
   auto inputs =

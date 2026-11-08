@@ -5,7 +5,10 @@
 #include "base/test/test_executor.h"
 #include "core/progress_host_impl.h"
 #include "events/local_events.h"
+#include "common/formula_util.h"
 #include "model/data_items_node_ids.h"
+#include "model/devices_node_ids.h"
+#include "model/node_id_util.h"
 #include "node_service/static/static_node_service.h"
 #include "profile/profile.h"
 #include "scada/attribute_service_mock.h"
@@ -451,4 +454,203 @@ TEST_F(TaskManagerTest, BackToBackPostDeleteTasksRunSequentially) {
   EXPECT_TRUE(Wait(std::move(second_task)));
 
   EXPECT_FALSE(task_manager_->IsRunning());
+}
+
+// --- "Two-stage control" follows the device (backlog 1016) -----------------
+//
+// The default used to be derived only by the bulk-create wizard and the multi
+// create, so an object created one at a time, dropped from an IEC 61850
+// device, or later re-bound to a MODBUS / IEC 60870-5 device kept Yes and the
+// Server refused its select. The task manager now decides it on every insert
+// and every channel edit.
+
+class TaskManagerTwoStagedTest : public TaskManagerTest {
+ protected:
+  void SetUp() override {
+    TaskManagerTest::SetUp();
+    node_service_.Add(
+        {.node_id = kModbusDevice,
+         .node_class = scada::NodeClass::Object,
+         .type_definition_id = scada::devices::id::ModbusDeviceType});
+    node_service_.Add(
+        {.node_id = kIec104Device,
+         .node_class = scada::NodeClass::Object,
+         .type_definition_id = scada::devices::id::Iec60870DeviceType});
+
+    ON_CALL(attribute_service_, Write(_, _))
+        .WillByDefault([this](scada::ServiceContext,
+                              std::vector<scada::WriteValue> inputs) {
+          writes_.insert(writes_.end(), inputs.begin(), inputs.end());
+          return scada::MakeNodeManagementResult<scada::StatusCode>(
+              std::vector<scada::StatusCode>(inputs.size(),
+                                             scada::StatusCode::Good));
+        });
+  }
+
+  // An existing data item with the given type and properties.
+  void AddItem(const scada::NodeId& type_id, scada::NodeProperties properties) {
+    node_service_.Add({.node_id = kItem,
+                       .node_class = scada::NodeClass::Variable,
+                       .type_definition_id = type_id,
+                       .parent_id = scada::data_items::id::DataItems,
+                       .reference_type_id = scada::id::Organizes,
+                       .properties = std::move(properties)});
+  }
+
+  static std::string Channel(const scada::NodeId& device_id,
+                             std::string_view address) {
+    return MakeNodeIdFormula(scada::MakeNestedNodeId(device_id, address));
+  }
+
+  // The value written to the item's "Two-stage control", if any.
+  std::optional<bool> WrittenTwoStaged() {
+    const scada::NodeId prop_id =
+        node_service_
+            .GetNode(kItem)[scada::data_items::id::DataItemType_OutputTwoStaged]
+            .node_id();
+    std::optional<bool> result;
+    for (const scada::WriteValue& write : writes_) {
+      if (write.node_id == prop_id)
+        result = write.value.get_or(true);
+    }
+    return result;
+  }
+
+  void ExpectInsertedAs(const scada::NodeId& type_id) {
+    EXPECT_CALL(node_management_service_, AddNodes(_, _))
+        .WillOnce([](scada::ServiceContext, std::vector<scada::AddNodesItem>) {
+          return scada::MakeNodeManagementResult<scada::AddNodesResult>(
+              std::vector<scada::AddNodesResult>{{.added_node_id = kItem}});
+        });
+    // What the Server holds once the node exists: every property, with the
+    // nodeset's default Yes for two-stage control.
+    AddItem(type_id,
+            {{scada::data_items::id::DataItemType_Input1, scada::String{}},
+             {scada::data_items::id::DataItemType_Output, scada::String{}},
+             {scada::data_items::id::DataItemType_OutputTwoStaged, true}});
+  }
+
+  static inline const scada::NodeId kModbusDevice{901,
+                                                  scada::NamespaceIndexes::TS};
+  static inline const scada::NodeId kIec104Device{902,
+                                                  scada::NamespaceIndexes::TS};
+  static inline const scada::NodeId kItem{903, scada::NamespaceIndexes::TS};
+
+  std::vector<scada::WriteValue> writes_;
+};
+
+// The single *Create* path and a channel drop both insert one node bound to a
+// channel and leave the property unset; it must come out one-stage on MODBUS.
+TEST_F(TaskManagerTwoStagedTest, InsertOnModbusChannelIsOneStage) {
+  ExpectInsertedAs(scada::data_items::id::DiscreteItemType);
+
+  auto node_id = Wait(task_manager_->PostInsertTask(
+      {.type_definition_id = scada::data_items::id::DiscreteItemType,
+       .parent_id = scada::data_items::id::DataItems,
+       .properties = {{scada::data_items::id::DataItemType_Output,
+                       Channel(kModbusDevice, "1")}}}));
+
+  ASSERT_TRUE(node_id.ok());
+  EXPECT_EQ(WrittenTwoStaged(), false);
+}
+
+// A caller that states the value (the wizards, a paste) is not overruled.
+TEST_F(TaskManagerTwoStagedTest, InsertKeepsAnExplicitValue) {
+  ExpectInsertedAs(scada::data_items::id::AnalogItemType);
+
+  auto node_id = Wait(task_manager_->PostInsertTask(
+      {.type_definition_id = scada::data_items::id::AnalogItemType,
+       .parent_id = scada::data_items::id::DataItems,
+       .properties = {
+           {scada::data_items::id::DataItemType_Input1,
+            Channel(kModbusDevice, "1")},
+           {scada::data_items::id::DataItemType_OutputTwoStaged, true}}}));
+
+  ASSERT_TRUE(node_id.ok());
+  EXPECT_EQ(WrittenTwoStaged(), true);
+}
+
+// A discrete item on IEC 60870-5 selects, so the default stays Yes and nothing
+// extra is written.
+TEST_F(TaskManagerTwoStagedTest, InsertOnSelectableChannelKeepsTheDefault) {
+  ExpectInsertedAs(scada::data_items::id::DiscreteItemType);
+
+  auto node_id = Wait(task_manager_->PostInsertTask(
+      {.type_definition_id = scada::data_items::id::DiscreteItemType,
+       .parent_id = scada::data_items::id::DataItems,
+       .properties = {{scada::data_items::id::DataItemType_Output,
+                       Channel(kIec104Device, "1")}}}));
+
+  ASSERT_TRUE(node_id.ok());
+  EXPECT_EQ(WrittenTwoStaged(), std::nullopt);
+}
+
+// An object created unbound holds the default Yes; binding it to a MODBUS
+// device afterwards turns it off.
+TEST_F(TaskManagerTwoStagedTest, BindingAnUnboundItemToModbusTurnsItOff) {
+  AddItem(scada::data_items::id::DiscreteItemType,
+          {{scada::data_items::id::DataItemType_Input1, scada::String{}},
+           {scada::data_items::id::DataItemType_Output, scada::String{}},
+           {scada::data_items::id::DataItemType_OutputTwoStaged, true}});
+
+  auto status = Wait(task_manager_->PostUpdateTask(
+      kItem, {},
+      {{scada::data_items::id::DataItemType_Output,
+        Channel(kModbusDevice, "5")}}));
+
+  EXPECT_TRUE(status);
+  EXPECT_EQ(WrittenTwoStaged(), false);
+}
+
+// The value was the MODBUS default (No); moving the item to a device that
+// selects restores the default Yes.
+TEST_F(TaskManagerTwoStagedTest, RebindingFromModbusRestoresTheDefault) {
+  AddItem(scada::data_items::id::DiscreteItemType,
+          {{scada::data_items::id::DataItemType_Input1, scada::String{}},
+           {scada::data_items::id::DataItemType_Output,
+            Channel(kModbusDevice, "5")},
+           {scada::data_items::id::DataItemType_OutputTwoStaged, false}});
+
+  auto status = Wait(task_manager_->PostUpdateTask(
+      kItem, {},
+      {{scada::data_items::id::DataItemType_Output,
+        Channel(kIec104Device, "5")}}));
+
+  EXPECT_TRUE(status);
+  EXPECT_EQ(WrittenTwoStaged(), true);
+}
+
+// Yes on a MODBUS item is not the MODBUS default, so somebody chose it; a
+// re-bind leaves it alone.
+TEST_F(TaskManagerTwoStagedTest, RebindingKeepsAValueTheEngineerChose) {
+  AddItem(scada::data_items::id::DiscreteItemType,
+          {{scada::data_items::id::DataItemType_Input1, scada::String{}},
+           {scada::data_items::id::DataItemType_Output,
+            Channel(kModbusDevice, "5")},
+           {scada::data_items::id::DataItemType_OutputTwoStaged, true}});
+
+  auto status = Wait(task_manager_->PostUpdateTask(
+      kItem, {},
+      {{scada::data_items::id::DataItemType_Output,
+        Channel(kIec104Device, "5")}}));
+
+  EXPECT_TRUE(status);
+  EXPECT_EQ(WrittenTwoStaged(), std::nullopt);
+}
+
+// A new address on the same device is not a device change.
+TEST_F(TaskManagerTwoStagedTest, ReaddressingOnTheSameDeviceWritesNothing) {
+  AddItem(scada::data_items::id::DiscreteItemType,
+          {{scada::data_items::id::DataItemType_Input1, scada::String{}},
+           {scada::data_items::id::DataItemType_Output,
+            Channel(kModbusDevice, "5")},
+           {scada::data_items::id::DataItemType_OutputTwoStaged, true}});
+
+  auto status = Wait(task_manager_->PostUpdateTask(
+      kItem, {},
+      {{scada::data_items::id::DataItemType_Output,
+        Channel(kModbusDevice, "6")}}));
+
+  EXPECT_TRUE(status);
+  EXPECT_EQ(WrittenTwoStaged(), std::nullopt);
 }
