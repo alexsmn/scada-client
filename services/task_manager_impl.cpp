@@ -288,6 +288,11 @@ scada::CoStatusOr<scada::NodeId> TaskManagerImpl::RunInsertTask(
   // an unknown node, which IsMissingOnServer recognises, and that answer does
   // not depend on how much of the type chain happens to be resident. Any
   // other failure is left to the insert below to report as it always has.
+  //
+  // Each declaration costs one round trip per session, not per insert: the
+  // node service keeps it resident because every insert touches it (backlog
+  // 1031, measured over 1000 inserts by TaskManagerInsertCostTest), so no
+  // per-task cache is kept here.
   for (const auto& [prop_decl_id, value] : node_state.properties) {
     const scada::Status decl_status =
         co_await FetchNodeStatus(self->node_service_.GetNode(prop_decl_id));
