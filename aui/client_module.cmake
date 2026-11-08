@@ -95,7 +95,7 @@ endfunction()
 ]]
 function(client_module_link_libraries_helper MODULE_NAME)
   set(LINK_TYPES PRIVATE PUBLIC INTERFACE)
-  cmake_parse_arguments(ARG "REQUIRED" "CONFIG" "${LINK_TYPES}" ${ARGN})
+  cmake_parse_arguments(ARG "" "CONFIG" "${LINK_TYPES}" ${ARGN})
 
   # Undefined `CONFIG` is handled properly below.
 
@@ -132,7 +132,7 @@ function(client_module_link_libraries MODULE_NAME)
 
   foreach(CONFIG IN LISTS CLIENT_UI_CONFIGS)
     if(TARGET ${MODULE_NAME}_${CONFIG})
-      client_module_link_libraries_helper(${MODULE_NAME}_${CONFIG} CONFIG ${CONFIG} ${ARGN} REQUIRED)
+      client_module_link_libraries_helper(${MODULE_NAME}_${CONFIG} CONFIG ${CONFIG} ${ARGN})
     endif()
   endforeach()
 endfunction()
