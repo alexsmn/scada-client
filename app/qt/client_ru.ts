@@ -2504,6 +2504,14 @@ Try again? Choose No to continue without the server copy.</source>
         <translation>Устройство может оставаться в состоянии выбора до истечения собственного тайм-аута выбора.</translation>
     </message>
     <message>
+        <source>A Server before 2.6 cannot release a selection</source>
+        <translation>Сервер версии до 2.6 не может отменить выбор</translation>
+    </message>
+    <message>
+        <source>The device stays selected until its own selection timeout expires.</source>
+        <translation>Устройство остаётся в состоянии выбора до истечения собственного тайм-аута выбора.</translation>
+    </message>
+    <message>
         <source>Controlling...</source>
         <translation>Управление...</translation>
     </message>

@@ -384,8 +384,22 @@ void WriteModel::CancelOutstandingSelect() {
   }
   select_outstanding_ = false;
   // A Server from before 2.6 has no Cancel to send; the 2.5 Client left the
-  // selection to the device's own timeout, and so does this one.
+  // selection to the device's own timeout, and so does this one. But the
+  // operator is told (backlog 1013): the outstation stays selected, so another
+  // select on it -- from this desk or any other -- is refused until that
+  // timeout expires. Same title and severity as the 2.6 path's refused Cancel,
+  // so the journal reads one way whichever Server answered. Reported
+  // synchronously: nothing is awaited, so the sink cannot die under it.
   if (legacy_control_) {
+    if (local_events_) {
+      local_events_->ReportEvent(
+          LocalEvents::SEV_ERROR,
+          u16format(L"{}: {} - {}. {}", Translate("Release of selection"),
+                    GetSourceTitle(),
+                    Translate("A Server before 2.6 cannot release a selection"),
+                    Translate("The device stays selected until its own "
+                              "selection timeout expires.")));
+    }
     return;
   }
   // Leaving it uncancelled would hold the outstation's selection until its own

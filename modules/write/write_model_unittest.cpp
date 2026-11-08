@@ -461,7 +461,9 @@ TEST_F(WriteModelTest, ServerWithoutControlObjectSelectsByFlaggedWrite) {
 }
 
 // Declining after a 2.5-style select sends nothing: such a Server has no
-// Cancel, and calling one would only report a refusal nobody can act on.
+// Cancel, and calling one would only report a refusal nobody can act on. The
+// operator is told the device stays selected until its own timeout (backlog
+// 1013), once, with the same title the 2.6 path's refused Cancel carries.
 TEST_F(WriteModelTest, DecliningAfterAFlaggedSelectSendsNoCancel) {
   EXPECT_CALL(method_service_, Call(kControlNodeId, _, _, _))
       .WillRepeatedly([this](scada::NodeId, scada::NodeId method_id,
@@ -488,7 +490,39 @@ TEST_F(WriteModelTest, DecliningAfterAFlaggedSelectSendsNoCancel) {
   EXPECT_THAT(called_methods_,
               ElementsAre(scada::data_items::id::DataItemControlType_Select));
   EXPECT_EQ(completion_, false);
+  ASSERT_THAT(local_events_.events(), SizeIs(1));
+  EXPECT_EQ(local_events_.events()[0]->severity, scada::kSeverityCritical);
+  const std::u16string& text = local_events_.events()[0]->message.text;
+  EXPECT_NE(text.find(u"Release of selection"), std::u16string::npos);
+  EXPECT_NE(text.find(u"Output"), std::u16string::npos);
+  EXPECT_NE(text.find(u"selection timeout"), std::u16string::npos);
+}
+
+// Closing the dialog with a 2.5-style select outstanding -- rather than
+// answering No -- tells the operator the same thing (backlog 1013).
+TEST_F(WriteModelTest, ClosingAfterAFlaggedSelectReportsTheHeldSelection) {
+  ON_CALL(method_service_, Call)
+      .WillByDefault([](scada::NodeId, scada::NodeId,
+                        std::vector<scada::Variant>, scada::ServiceContext) {
+        return scada::MakeMethodCallResult(
+            scada::Status{scada::StatusCode::Bad_WrongNodeId});
+      });
+  EXPECT_CALL(attribute_service_, Write(_, _))
+      .WillOnce([](scada::ServiceContext, std::vector<scada::WriteValue>) {
+        return scada::MakeAttributeResult<scada::StatusCode>(
+            std::vector{scada::StatusCode::Good});
+      });
+
+  auto model = CreateModel(/*two_staged=*/true);
+  model->Write(42.0, /*lock=*/false);
+  Drain(executor_);
   EXPECT_THAT(local_events_.events(), IsEmpty());
+  model.reset();
+  Drain(executor_);
+
+  ASSERT_THAT(local_events_.events(), SizeIs(1));
+  EXPECT_NE(local_events_.events()[0]->message.text.find(u"Output"),
+            std::u16string::npos);
 }
 
 // A 2.5-style select the Server also refuses is reported once, as a refused
