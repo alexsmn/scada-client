@@ -467,6 +467,38 @@ TEST_F(ClientApplicationTest, FailedProfileSaveOnQuitAsksAndRetries) {
   EXPECT_EQ(save_attempts, 2);
 }
 
+// A 2.5.7 Server has no SaveProfile: it refuses the method as an unknown node.
+// That is not a save that might succeed on a retry, so quitting must not ask
+// every operator, every time, whether to try again -- the local file is the
+// profile there, as it was with the 2.5 Client.
+TEST_F(ClientApplicationTest, ServerWithoutSaveProfileQuitsWithoutAsking) {
+  NiceMock<scada::MockMethodService> method_service;
+  scada::services services = services_.services();
+  services.method_service = &method_service;
+  ON_CALL(login_handler_, Call(_, _))
+      .WillByDefault(Invoke([services](DataServicesContext&&, bool)
+                                -> Awaitable<std::optional<DataServices>> {
+        co_return std::optional{DataServices::FromUnownedServices(services)};
+      }));
+  ON_CALL(services_.session_service, GetUserId())
+      .WillByDefault(Return(scada::NodeId{1, 100}));
+  ON_CALL(method_service, Call(_, _, _, _)).WillByDefault(Invoke([](auto&&...) {
+    return scada::MakeMethodCallResult(scada::StatusCode::Bad_WrongNodeId);
+  }));
+  StartApp();
+
+  EXPECT_CALL(
+      method_service,
+      Call(_, scada::NodeId{scada::security::id::UserType_SaveProfile}, _, _))
+      .Times(1)
+      .WillOnce(Invoke([](auto&&...) {
+        return scada::MakeMethodCallResult(scada::StatusCode::Bad_WrongNodeId);
+      }));
+  EXPECT_CALL(session_end_dialog_, RunMessageBox(_, _, _)).Times(0);
+
+  Wait(app_.Quit());
+}
+
 // Backlog 957: the local profile file is one per OS user, not per account, so
 // on a shared workstation it holds whoever signed in last. These tests leave
 // such a file behind and sign in under each kind of session.

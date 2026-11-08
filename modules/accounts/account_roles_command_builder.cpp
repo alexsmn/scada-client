@@ -10,10 +10,12 @@
 #include "controller/command_ui_registry.h"
 #include "controller/selection_model.h"
 #include "events/local_event_util.h"
+#include "events/local_events.h"
 #include "model/security_node_ids.h"
 #include "node_service/node_util.h"
 #include "resources/common_resources.h"
 #include "scada/session_service.h"
+#include "services/server_compatibility.h"
 #include "user_access/role_membership.h"
 
 namespace {
@@ -35,8 +37,14 @@ Awaitable<void> ShowAccountRolesAsync(
   auto roles =
       co_await ReadRoleMemberships(executor, node_service, attribute_service);
   if (!roles) {
-    ReportRequestResult(title, scada::StatusCode::Bad_NotReadable, local_events,
-                        profile);
+    // A Server older than 2.6 has no RoleSet: its accounts carry rights of
+    // their own instead, so there is nothing here to edit. Said in words,
+    // since "Bad_NotReadable" alone does not tell the administrator why.
+    local_events.ReportEvent(
+        LocalEvents::SEV_ERROR,
+        u16format(L"{} - {}", title,
+                  Translate("The roles cannot be read from the Server. A "
+                            "Server older than version 2.6 has no roles.")));
     co_return;
   }
 

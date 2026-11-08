@@ -20,20 +20,24 @@ class UsersGridPanelTest : public ::testing::Test {
   static std::vector<UserGridRow> SampleRows() {
     return {
         {.name = u"root",
-         .roles = std::vector<AccountRole>{{scada::NodeId{15716, 0}, u"ConfigureAdmin"}},
+         .roles = std::vector<AccountRole>{{scada::NodeId{15716, 0},
+                                            u"ConfigureAdmin"}},
          .node_id = scada::NodeId{234, 1}},
         {.name = u"engineer",
          .description = u"Commissioning",
          .user_configuration = scada::UserConfiguration::kDisabled,
-         .roles = std::vector<AccountRole>{{scada::NodeId{16036, 0}, u"Engineer"},
-                                   {scada::NodeId{15680, 0}, u"Operator"}},
+         .roles =
+             std::vector<AccountRole>{{scada::NodeId{16036, 0}, u"Engineer"},
+                                      {scada::NodeId{15680, 0}, u"Operator"}},
          .node_id = scada::NodeId{2, 1}},
         // No Role at all, and a role set that could not be read — the two
         // states the column must not conflate.
         {.name = u"dispatcher",
          .roles = std::vector<AccountRole>{},
          .node_id = scada::NodeId{3, 1}},
-        {.name = u"unknown", .roles = std::nullopt, .node_id = scada::NodeId{4, 1}},
+        {.name = u"unknown",
+         .roles = std::nullopt,
+         .node_id = scada::NodeId{4, 1}},
     };
   }
 };
@@ -137,6 +141,33 @@ TEST_F(UsersGridPanelTest, EmptyRowsClearsGrid) {
   auto* grid = panel.findChild<QTableWidget*>(QStringLiteral("usersGrid"));
   ASSERT_NE(grid, nullptr);
   EXPECT_EQ(grid->rowCount(), 0);
+}
+
+// An account list that could not be read -- a non-administrator, or a 2.5.7
+// Server, which has no UserManagement object -- must not render as "Users · 0":
+// that states the server has no users. It says it could not read them.
+TEST_F(UsersGridPanelTest, UnreadableListSaysSoInsteadOfShowingNoUsers) {
+  UsersGridPanel panel;
+  panel.ShowRows(SampleRows());
+  panel.ShowUnavailable();
+
+  auto* grid = panel.findChild<QTableWidget*>(QStringLiteral("usersGrid"));
+  ASSERT_NE(grid, nullptr);
+  EXPECT_EQ(grid->rowCount(), 0);
+  EXPECT_TRUE(panel.rows().empty());
+  EXPECT_TRUE(panel.unavailable());
+
+  auto* title = panel.findChild<QLabel*>(QStringLiteral("usersTitle"));
+  ASSERT_NE(title, nullptr);
+  EXPECT_FALSE(title->text().contains(QStringLiteral("0")));
+  auto* message = panel.findChild<QLabel*>(QStringLiteral("usersUnavailable"));
+  ASSERT_NE(message, nullptr);
+  EXPECT_TRUE(message->text().contains(QStringLiteral("2.6")));
+
+  // A later successful read replaces the message with the rows.
+  panel.ShowRows(SampleRows());
+  EXPECT_FALSE(panel.unavailable());
+  EXPECT_EQ(grid->rowCount(), 4);
 }
 
 }  // namespace

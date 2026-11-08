@@ -9,6 +9,7 @@
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "scada/standard_node_ids.h"
+#include "services/server_compatibility.h"
 
 Awaitable<scada::Status> SetAccountDisabled(NodeService& node_service,
                                             std::u16string account,
@@ -41,6 +42,14 @@ void ReportAccountChangeResult(const std::u16string& title,
                   Translate("This is a service account managed on the server "
                             "computer; it cannot be changed from the "
                             "Client.")));
+    return;
+  }
+  // A 2.5.7 Server has neither the UserManagement object nor Roles, and
+  // refuses both as unknown nodes. Naming the status ("Wrong node
+  // identifier") would send the administrator looking for a broken account.
+  if (IsMissingOnServer(status)) {
+    local_events.ReportEvent(LocalEvents::SEV_ERROR,
+                             u16format(L"{} - {}", title, ServerTooOldText()));
     return;
   }
   ReportRequestResult(title, status, local_events, profile);

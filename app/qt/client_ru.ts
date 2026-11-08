@@ -2259,6 +2259,27 @@
         <source>This is a service account managed on the server computer; it cannot be changed from the Client.</source>
         <translation>Это служебная учётная запись, которой управляют на компьютере Сервера; изменить её из Клиента нельзя.</translation>
     </message>
+    <!-- A 2.6 Client connected to a 2.5.7 Server, which lacks the 2.6-only services (backlog 1009). -->
+    <message>
+        <source>The Server does not support this. It requires Server version 2.6 or later.</source>
+        <translation>Сервер этого не поддерживает: нужен Сервер версии 2.6 или новее.</translation>
+    </message>
+    <message>
+        <source>The user list cannot be read. It requires the Administrator role and a Server of version 2.6 or later.</source>
+        <translation>Список пользователей не удаётся прочитать: для этого нужны роль администратора и Сервер версии 2.6 или новее.</translation>
+    </message>
+    <message>
+        <source>The account status cannot be read from the Server. A Server older than version 2.6 cannot disable accounts.</source>
+        <translation>Состояние учётной записи не удаётся прочитать с Сервера. Сервер версии ниже 2.6 не умеет отключать учётные записи.</translation>
+    </message>
+    <message>
+        <source>The roles cannot be read from the Server. A Server older than version 2.6 has no roles.</source>
+        <translation>Роли не удаётся прочитать с Сервера. В Сервере версии ниже 2.6 ролей нет.</translation>
+    </message>
+    <message>
+        <source>A Server older than version 2.6 changes a password only together with the current one: the user changes it after signing in.</source>
+        <translation>Сервер версии ниже 2.6 меняет пароль только вместе с текущим: пользователь меняет его сам после входа.</translation>
+    </message>
     <!-- Enable / Disable Account on a selected account (backlog 149). -->
     <message>
         <source>Enable Account</source>

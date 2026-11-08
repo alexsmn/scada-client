@@ -75,9 +75,15 @@ void ReloadUsers(AnyExecutor executor,
                 break;
               }
               // nullopt is "the account list could not be read" — which a
-              // non-administrator gets by design (Part 18 §5.2.1). Showing
-              // an empty grid instead would say the server has no users.
-              panel->ShowRows(rows ? *rows : std::vector<UserGridRow>{});
+              // non-administrator gets by design (Part 18 §5.2.1), and so does
+              // anyone on a Server older than 2.6, which has no UserManagement
+              // object. Showing an empty grid instead would say the server has
+              // no users, which is what this did until the 2.5.7 review.
+              if (rows) {
+                panel->ShowRows(*rows);
+              } else {
+                panel->ShowUnavailable();
+              }
             } while (state->again);
             state->running = false;
           });

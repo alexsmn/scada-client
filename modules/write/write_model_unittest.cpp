@@ -409,6 +409,117 @@ TEST_F(WriteModelTest, RefusedSelectExplainsAndArmsNothing) {
               ElementsAre(scada::data_items::id::DataItemControlType_Select));
 }
 
+// A 2.5.7 Server has no per-item Control object: it refuses the Select as an
+// unknown node before anything reaches the device. The 2.6 Client must then
+// send the two stages the way the 2.5 Client did -- a value write flagged as a
+// select, the confirmation, then a plain value write -- rather than telling the
+// operator the device cannot select.
+TEST_F(WriteModelTest, ServerWithoutControlObjectSelectsByFlaggedWrite) {
+  EXPECT_CALL(method_service_, Call(kControlNodeId, _, _, _))
+      .WillRepeatedly([this](scada::NodeId, scada::NodeId method_id,
+                             std::vector<scada::Variant>,
+                             scada::ServiceContext) {
+        called_methods_.push_back(method_id);
+        return scada::MakeMethodCallResult(
+            scada::Status{scada::StatusCode::Bad_WrongNodeId});
+      });
+  std::vector<scada::WriteValue> writes;
+  EXPECT_CALL(attribute_service_, Write(_, _))
+      .Times(2)
+      .WillRepeatedly([&writes](scada::ServiceContext,
+                                std::vector<scada::WriteValue> inputs) {
+        writes.insert(writes.end(), inputs.begin(), inputs.end());
+        return scada::MakeAttributeResult<scada::StatusCode>(
+            std::vector{scada::StatusCode::Good});
+      });
+
+  auto model = CreateModel(/*two_staged=*/true);
+  model->Write(42.0, /*lock=*/false);
+  Drain(executor_);
+
+  // The select went out a second time, as 2.5 sent it, and the operator is
+  // asked to confirm -- not shown an error.
+  ASSERT_EQ(writes.size(), 1u);
+  EXPECT_EQ(writes[0].node_id, kDataItemId);
+  EXPECT_TRUE(writes[0].flags.select());
+  EXPECT_DOUBLE_EQ(writes[0].value.get<double>(), 42.0);
+  ASSERT_THAT(dialog_service_.modes,
+              ElementsAre(MessageBoxMode::QuestionYesNoDefaultNo));
+  EXPECT_NE(dialog_service_.messages.at(0).find(u"ready to execute"),
+            std::u16string::npos);
+
+  dialog_service_.CompleteMessageBox(MessageBoxResult::Yes);
+  Drain(executor_);
+
+  // The operate is the unflagged write; no Operate call was sent to a Server
+  // that has already said it has no Control object.
+  ASSERT_EQ(writes.size(), 2u);
+  EXPECT_FALSE(writes[1].flags.select());
+  EXPECT_DOUBLE_EQ(writes[1].value.get<double>(), 42.0);
+  EXPECT_THAT(called_methods_,
+              ElementsAre(scada::data_items::id::DataItemControlType_Select));
+  EXPECT_EQ(completion_, true);
+}
+
+// Declining after a 2.5-style select sends nothing: such a Server has no
+// Cancel, and calling one would only report a refusal nobody can act on.
+TEST_F(WriteModelTest, DecliningAfterAFlaggedSelectSendsNoCancel) {
+  EXPECT_CALL(method_service_, Call(kControlNodeId, _, _, _))
+      .WillRepeatedly([this](scada::NodeId, scada::NodeId method_id,
+                             std::vector<scada::Variant>,
+                             scada::ServiceContext) {
+        called_methods_.push_back(method_id);
+        return scada::MakeMethodCallResult(
+            scada::Status{scada::StatusCode::Bad_WrongNodeId});
+      });
+  EXPECT_CALL(attribute_service_, Write(_, _))
+      .WillOnce([](scada::ServiceContext, std::vector<scada::WriteValue>) {
+        return scada::MakeAttributeResult<scada::StatusCode>(
+            std::vector{scada::StatusCode::Good});
+      });
+
+  auto model = CreateModel(/*two_staged=*/true);
+  model->Write(42.0, /*lock=*/false);
+  Drain(executor_);
+  dialog_service_.CompleteMessageBox(MessageBoxResult::No);
+  Drain(executor_);
+  model.reset();
+  Drain(executor_);
+
+  EXPECT_THAT(called_methods_,
+              ElementsAre(scada::data_items::id::DataItemControlType_Select));
+  EXPECT_EQ(completion_, false);
+  EXPECT_THAT(local_events_.events(), IsEmpty());
+}
+
+// A 2.5-style select the Server also refuses is reported once, as a refused
+// select, and is not retried again.
+TEST_F(WriteModelTest, RefusedFlaggedSelectIsReportedOnce) {
+  ON_CALL(method_service_, Call)
+      .WillByDefault([](scada::NodeId, scada::NodeId,
+                        std::vector<scada::Variant>, scada::ServiceContext) {
+        return scada::MakeMethodCallResult(
+            scada::Status{scada::StatusCode::Bad_WrongNodeId});
+      });
+  EXPECT_CALL(attribute_service_, Write(_, _))
+      .WillOnce([](scada::ServiceContext, std::vector<scada::WriteValue>) {
+        return scada::MakeAttributeResult<scada::StatusCode>(
+            std::vector{scada::StatusCode::Bad_WrongNodeId});
+      });
+
+  auto model = CreateModel(/*two_staged=*/true);
+  model->Write(42.0, /*lock=*/false);
+  Drain(executor_);
+
+  ASSERT_THAT(dialog_service_.modes, ElementsAre(MessageBoxMode::Error));
+  EXPECT_NE(
+      dialog_service_.messages.at(0).find(u"The command was not executed."),
+      std::u16string::npos);
+  dialog_service_.CompleteMessageBox();
+  Drain(executor_);
+  EXPECT_EQ(completion_, false);
+}
+
 // Any other refusal of the select still says the command was not executed.
 TEST_F(WriteModelTest, RefusedSelectByTheDeviceSaysNotExecuted) {
   ON_CALL(method_service_, Call)

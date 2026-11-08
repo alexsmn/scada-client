@@ -52,6 +52,7 @@
 #include "services/app_nap_suppressor.h"
 #include "services/connection_state_reporter.h"
 #include "services/create_tree.h"
+#include "services/server_compatibility.h"
 #include "services/speech_service_impl.h"
 #include "services/task_manager_impl.h"
 #include "timed_data/timed_data_service_factory.h"
@@ -417,6 +418,18 @@ Awaitable<void> ClientApplication::SaveProfileToServerOnQuitAsync() {
     const scada::Status status = co_await SaveProfileToServer();
     if (scada::IsGood(status.code()))
       co_return;
+
+    // **A Server with no `SaveProfile` at all is not a failed save.** A 2.5.7
+    // Server predates profiles on the server, refuses the method as unknown,
+    // and has nothing a retry could change -- asking would put the same box
+    // in front of every operator at every quit. The local file, written from
+    // ~ClientApplication, is the whole of the profile there, exactly as it was
+    // with the 2.5 Client.
+    if (IsMissingOnServer(status)) {
+      LOG_INFO(*logger_) << "Server has no SaveProfile; the profile is kept "
+                            "in the local file only";
+      co_return;
+    }
 
     // **Reported, not swallowed.** A save that can fail silently is worse than
     // no save -- the operator would believe their layout was kept. The local

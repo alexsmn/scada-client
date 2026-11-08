@@ -54,6 +54,15 @@ class UsersGridPanel : public QWidget {
   // the widget tests and the controller's browse both drive.
   void ShowRows(const std::vector<UserGridRow>& rows);
 
+  // Says the account list could not be read, instead of rendering an empty
+  // grid that would state the server has no users. A non-administrator gets
+  // this by design (OPC UA Part 18 §5.2.1), and so does everyone connected to
+  // a Server older than 2.6, which publishes no UserManagement object.
+  void ShowUnavailable();
+
+  // Whether the panel currently shows the unavailable state.
+  bool unavailable() const;
+
   const std::vector<UserGridRow>& rows() const SCADA_LIFETIME_BOUND {
     return rows_;
   }
@@ -77,6 +86,7 @@ class UsersGridPanel : public QWidget {
   bool HasSelection() const;
 
   QLabel* title_ = nullptr;
+  QLabel* unavailable_ = nullptr;
   QPushButton* add_user_ = nullptr;
   QPushButton* reset_password_ = nullptr;
   QTableWidget* grid_ = nullptr;

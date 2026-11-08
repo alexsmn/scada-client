@@ -89,6 +89,9 @@ class WriteModel : private WriteContext,
 
   void StartWriting(bool second_stage);
   void StartWritingHelper();
+  // Re-sends the select stage as a 2.5-style flagged value write, after the
+  // Server refused the Control object's Select as unknown.
+  void SelectByLegacyWrite();
 
   // The item's Control object (`<item>!Control`), which carries the
   // Select/Operate/Cancel methods.
@@ -161,5 +164,11 @@ class WriteModel : private WriteContext,
 
   bool has_condition_ = false;
   bool two_staged_ = false;
+  // The Server has no per-item Control object -- a Server from before 2.6,
+  // which refuses the Select call as an unknown node (IsMissingOnServer). The
+  // two stages then go the way the 2.5 Client sent them: a value write flagged
+  // as a select, then a plain value write, and no Cancel, which such a Server
+  // does not have.
+  bool legacy_control_ = false;
   TimedDataSpec condition_;
 };

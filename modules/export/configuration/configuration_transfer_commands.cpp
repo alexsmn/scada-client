@@ -6,6 +6,7 @@
 #include "base/utf_convert.h"
 #include "opcua_bridge/conversion.h"
 #include "services/core_ui_text.h"
+#include "services/server_compatibility.h"
 
 #include <fstream>
 #include <iterator>
@@ -86,8 +87,12 @@ std::u16string ImportCheckReport(
                                  "those changes."),
                        file_name);
   } else {
+    // A 2.5.7 Server has no ConfigurationTransfer object at all; its CSV
+    // export was a Client feature that 2.6 replaced with this NodeSet one.
     report = u16format(Translate("{} cannot be imported: {}"), file_name,
-                       StatusText(outcome.status.code()));
+                       IsMissingOnServer(outcome.status)
+                           ? ServerTooOldText()
+                           : StatusText(outcome.status.code()));
   }
 
   if (result && !result->failures.empty()) {
@@ -134,7 +139,9 @@ Awaitable<void> ExportConfiguration(const ConfigurationTransferClient& client,
   if (!exported.ok()) {
     co_await dialog_service.RunMessageBox(
         u16format(Translate("The configuration could not be exported: {}"),
-                  StatusText(exported.status().code())),
+                  IsMissingOnServer(exported.status())
+                      ? ServerTooOldText()
+                      : StatusText(exported.status().code())),
         title, MessageBoxMode::Error);
     co_return;
   }

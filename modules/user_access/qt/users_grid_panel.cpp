@@ -74,6 +74,15 @@ UsersGridPanel::UsersGridPanel(QWidget* parent) : QWidget{parent} {
   root->setContentsMargins(14, 14, 14, 14);
   root->setSpacing(10);
   root->addWidget(BuildHeader());
+  // Palette-coloured by the native style; no stylesheet needed for a plain
+  // explanatory line.
+  unavailable_ = new QLabel{
+      Tr("The user list cannot be read. It requires the Administrator role "
+         "and a Server of version 2.6 or later.")};
+  unavailable_->setObjectName(QStringLiteral("usersUnavailable"));
+  unavailable_->setWordWrap(true);
+  unavailable_->setVisible(false);
+  root->addWidget(unavailable_);
   root->addWidget(BuildGrid());
 }
 
@@ -144,9 +153,21 @@ QWidget* UsersGridPanel::BuildGrid() {
   return grid_;
 }
 
+void UsersGridPanel::ShowUnavailable() {
+  rows_.clear();
+  grid_->setRowCount(0);
+  title_->setText(Tr("Users"));
+  unavailable_->setVisible(true);
+}
+
+bool UsersGridPanel::unavailable() const {
+  return !unavailable_->isHidden();
+}
+
 void UsersGridPanel::ShowRows(const std::vector<UserGridRow>& rows) {
   const scada::aui::ThemeTokens& tokens = PanelTokens();
   rows_ = rows;
+  unavailable_->setVisible(false);
 
   title_->setText(QStringLiteral("%1 · %2").arg(Tr("Users")).arg(rows_.size()));
 

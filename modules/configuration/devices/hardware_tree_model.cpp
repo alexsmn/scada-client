@@ -8,6 +8,7 @@
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "services/device_state_notifier.h"
+#include "services/transmission_source.h"
 #include "transmission_rules/transmission_rule.h"
 #include "transmission_rules/transmission_rule_fetch.h"
 
@@ -36,9 +37,7 @@ bool IsTransmissionRuleNode(const NodeRef& node) {
 // rather than a reference, and reads null until FetchTransmissionRule has made
 // the rule's property children and type chain resident.
 scada::NodeId RuleSourceId(const NodeRef& rule) {
-  return rule[scada::devices::id::TransmissionItemType_SourceNode]
-      .value()
-      .get_or(scada::NodeId{});
+  return GetTransmissionSourceId(rule);
 }
 
 // "Ua → 2001" — the line the rules grid and both clients' rule inspectors

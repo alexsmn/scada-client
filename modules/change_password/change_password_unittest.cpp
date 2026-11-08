@@ -113,12 +113,64 @@ TEST_F(ChangePasswordTest, AdminResetCallsModifyUserAndSendsNoOldPassword) {
   }
 }
 
+// A 2.5.7 Server has no UserManagement object: it refuses the standard call
+// as an unknown node and changes a password with the per-user ChangePassword
+// method, which takes the current password and the new one. One's own
+// password must still change there, the way the 2.5 Client changed it.
+TEST_F(ChangePasswordTest, SelfServiceOnA257ServerUsesThePerUserMethod) {
+  const scada::NodeId legacy_method =
+      scada::security::id::UserType_ChangePassword;
+  std::vector<scada::Variant> sent;
+  EXPECT_CALL(method_service_,
+              Call(kUserManagement, kChangePasswordMethod, _, _))
+      .WillOnce(Invoke([](auto, auto, auto, auto) {
+        return scada::MakeMethodCallResult(scada::StatusCode::Bad_WrongNodeId);
+      }));
+  EXPECT_CALL(method_service_,
+              Call(scada::NodeId{kUserNodeId, 1}, legacy_method, _, _))
+      .WillOnce(Invoke([&sent](auto, auto, auto arguments, auto) {
+        sent = arguments;
+        return scada::MakeMethodCallResult(scada::StatusCode::Good);
+      }));
+
+  ChangePassword(Context(/*self_service=*/true), u"old", u"new");
+  PollExecutor();
+
+  ASSERT_EQ(sent.size(), 2u);
+  EXPECT_EQ(sent[0].get_or(scada::LocalizedText{}),
+            scada::LocalizedText{u"old"});
+  EXPECT_EQ(sent[1].get_or(scada::LocalizedText{}),
+            scada::LocalizedText{u"new"});
+  ASSERT_EQ(local_events_.events().size(), 1);
+  EXPECT_EQ(local_events_.events().front()->severity, scada::kSeverityNormal);
+}
+
+// An administrator's reset has no 2.5 equivalent -- the 2.5.7 Server always
+// demands the account's current password -- so nothing is retried and the
+// report says what to do instead of naming a status code.
+TEST_F(ChangePasswordTest, AdminResetOnA257ServerExplainsInsteadOfFailing) {
+  EXPECT_CALL(method_service_, Call(kUserManagement, kModifyUserMethod, _, _))
+      .WillOnce(Invoke([](auto, auto, auto, auto) {
+        return scada::MakeMethodCallResult(scada::StatusCode::Bad_WrongNodeId);
+      }));
+
+  ChangePassword(Context(/*self_service=*/false), u"old", u"new");
+  PollExecutor();
+
+  ASSERT_EQ(local_events_.events().size(), 1);
+  const auto& event = *local_events_.events().front();
+  EXPECT_EQ(event.severity, scada::kSeverityCritical);
+  EXPECT_NE(event.message.text.find(u"2.6"), std::u16string::npos);
+}
+
 TEST_F(ChangePasswordTest, ReportsFailureAfterMethodCallCompletes) {
   EXPECT_CALL(method_service_,
               Call(kUserManagement, kChangePasswordMethod, SizeIs(2), _))
       .WillOnce(Invoke([](auto, auto, auto, auto) {
+        // A refusal that is not "no such method": Bad_WrongMethodId would
+        // now be read as a pre-2.6 Server and retried the 2.5 way.
         return scada::MakeMethodCallResult(
-            scada::StatusCode::Bad_WrongMethodId);
+            scada::StatusCode::Bad_UserAccessDenied);
       }));
 
   ChangePassword(Context(/*self_service=*/true), u"old", u"new");

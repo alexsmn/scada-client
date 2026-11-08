@@ -4,6 +4,7 @@
 #include "node_service/node_fetch_status.h"
 #include "node_service/node_service.h"
 #include "scada/node_id.h"
+#include "services/transmission_source.h"
 
 Awaitable<void> FetchTransmissionRule(NodeRef transmission) {
   if (!transmission)
@@ -36,10 +37,7 @@ Awaitable<void> FetchTransmissionRule(NodeRef transmission) {
   // link is a NodeId *value*, so nothing above this line has touched it. Its
   // own fetch answers the display name, and its type definition answers the
   // TS/TI tag.
-  const scada::NodeId source_id =
-      transmission[scada::devices::id::TransmissionItemType_SourceNode]
-          .value()
-          .get_or(scada::NodeId{});
+  const scada::NodeId source_id = GetTransmissionSourceId(transmission);
   if (source_id.is_null())
     co_return;
   if (NodeRef source = transmission.service()->GetNode(source_id))

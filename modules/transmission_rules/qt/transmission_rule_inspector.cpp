@@ -9,6 +9,7 @@
 #include "node_service/node_util.h"
 #include "scada/basic_types.h"
 #include "scada/variant.h"
+#include "services/transmission_source.h"
 #include "transmission_rules/transmission_rule.h"
 
 #include <QFrame>
@@ -219,10 +220,8 @@ void TransmissionRuleInspector::ShowRule(const NodeRef& transmission) {
 
   // The source link is the SourceNode NodeId property (transmission OPC UA
   // alignment, phase 4); resolving it needs the type chain resident.
-  const NodeRef source = transmission.service()->GetNode(
-      transmission[scada::devices::id::TransmissionItemType_SourceNode]
-          .value()
-          .get_or(scada::NodeId{}));
+  const NodeRef source =
+      transmission.service()->GetNode(GetTransmissionSourceId(transmission));
   const NodeRef endpoint = transmission.parent();
   const scada::Int32 ioa =
       transmission[scada::devices::id::TransmissionItemType_Address]

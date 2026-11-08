@@ -8,6 +8,7 @@
 #include "model/devices_node_ids.h"
 #include "node_service/static/static_node_service.h"
 #include "services/task_manager_mock.h"
+#include "services/transmission_source.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -134,6 +135,31 @@ class TransmissionModelTest : public ::testing::Test {
                                           node_service_,
                                           task_manager_);
 };
+
+// A 2.5.7 Server has no SourceNode property: it links a rule to its source
+// with the 2.5 HasTransmissionSource reference. The 2.6 Client used to read
+// only the property, so every source on such a Server showed blank.
+TEST_F(TransmissionModelTest, ARuleFromA257ServerShowsItsSource) {
+  AddLink(scada::devices::id::ModbusLinkType);
+  node_service_.Add(scada::NodeState{
+      .node_id = scada::NodeId{6300, 1},
+      .node_class = scada::NodeClass::Object,
+      .type_definition_id = scada::devices::id::ModbusTransmissionItemType,
+      .parent_id = kDeviceId,
+      .reference_type_id = scada::id::Organizes,
+      .properties = {{scada::devices::id::TransmissionItemType_Address,
+                      scada::Int32{40001}}}}
+                        .add_reference(scada::ReferenceDescription{
+                            .reference_type_id = kLegacyHasTransmissionSource,
+                            .forward = true,
+                            .node_id = kSourceId}));
+  Init();
+  ASSERT_EQ(model_->GetRowCount(), 1);
+
+  scada::aui::GridCell cell{.row = 0, .column = 0};
+  model_->GetCell(cell);
+  EXPECT_EQ(cell.text, u"Ua");
+}
 
 // The defect: a rule made by ticking an object carried no address, so it took
 // the type's default of 1 and every ticked object shared it.

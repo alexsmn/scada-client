@@ -17,6 +17,7 @@
 #include "scada/event.h"
 #include "scada/node_management_service.h"
 #include "services/task_manager.h"
+#include "services/transmission_source.h"
 
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
@@ -26,12 +27,12 @@ namespace {
 
 // The source link is the SourceNode NodeId property (transmission OPC UA
 // alignment, phase 4) — the retired HasTransmissionSource reference is
-// rejected by migrated servers. Reading it via operator[] resolves the
-// declaration through the type chain, so the chain must be resident.
+// rejected by migrated servers, but a 2.5.7 Server still answers with it, so
+// it is read as the fallback (GetTransmissionSourceId). Reading the property
+// via operator[] resolves the declaration through the type chain, so the
+// chain must be resident.
 scada::NodeId GetSourceNodeId(const NodeRef& transmission) {
-  return transmission[scada::devices::id::TransmissionItemType_SourceNode]
-      .value()
-      .get_or(scada::NodeId{});
+  return GetTransmissionSourceId(transmission);
 }
 
 }  // namespace

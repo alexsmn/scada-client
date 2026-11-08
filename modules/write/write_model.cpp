@@ -14,6 +14,8 @@
 #include "net/net_executor_adapter.h"
 #include "profile/profile.h"
 #include "scada/co_result.h"
+#include "scada/write_flags.h"
+#include "services/server_compatibility.h"
 
 #include <charconv>
 
@@ -181,6 +183,15 @@ bool WriteModel::IsConditionOk() const {
 }
 
 void WriteModel::OnWriteComplete(const scada::Status& status) {
+  // A Server from before 2.6 has no Control object, so it refuses the Select
+  // as an unknown node before anything reaches the device. That is not the
+  // device refusing to select: send the same select the 2.5 way instead.
+  if (!status && write_selecting_ && two_staged_ && !legacy_control_ &&
+      IsMissingOnServer(status)) {
+    SelectByLegacyWrite();
+    return;
+  }
+
   if (!status) {
     // The command is over — it failed. Leaving `writing_` set kept
     // GetStatusText() answering "Controlling..." underneath the error box; that
@@ -324,8 +335,12 @@ void WriteModel::StartWritingHelper() {
 
   // The operate phase of a two-staged control is a Call on the Control object,
   // so the server can tell it apart from the select. A one-stage control is an
-  // ordinary value write and stays one.
-  if (two_staged_) {
+  // ordinary value write and stays one -- and so is the operate stage on a
+  // Server from before 2.6, which takes the unflagged write after a flagged
+  // one as the operate.
+  if (legacy_control_) {
+    select_outstanding_ = false;
+  } else if (two_staged_) {
     select_outstanding_ = false;
     CoSpawn(executor_, [executor = executor_, model = weak_from_this(),
                         operation = ControlNode().call(
@@ -350,11 +365,29 @@ scada::node WriteModel::ControlNode() const {
       MakeNestedNodeId(spec_.node().node_id(), scada::kControlObjectName));
 }
 
+void WriteModel::SelectByLegacyWrite() {
+  legacy_control_ = true;
+  scada::WriteFlags flags;
+  flags.set_select();
+  CoSpawn(executor_,
+          [executor = executor_, model = weak_from_this(),
+           operation = spec_.scada_node().write(
+               scada::AttributeId::Value, write_value_, flags)]() mutable {
+            return CompleteWriteAsync(std::move(executor), std::move(model),
+                                      std::move(operation));
+          });
+}
+
 void WriteModel::CancelOutstandingSelect() {
   if (!select_outstanding_) {
     return;
   }
   select_outstanding_ = false;
+  // A Server from before 2.6 has no Cancel to send; the 2.5 Client left the
+  // selection to the device's own timeout, and so does this one.
+  if (legacy_control_) {
+    return;
+  }
   // Leaving it uncancelled would hold the outstation's selection until its own
   // sboTimeout. The operator has already moved on, so a refusal must not raise
   // an error dialog over whatever they are doing now — but it must not vanish

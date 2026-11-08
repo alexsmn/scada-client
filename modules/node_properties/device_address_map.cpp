@@ -10,6 +10,7 @@
 #include "scada/localized_text.h"
 #include "scada/standard_node_ids.h"
 #include "scada/variant.h"
+#include "services/transmission_source.h"
 
 #include <string>
 #include <utility>
@@ -44,12 +45,14 @@ Awaitable<std::vector<AddressMapRow>> BuildDeviceAddressMap(
     // a child without that property is some other node. The property node's
     // value needs its own fetch (children fetch loads the node, not the
     // value).
+    // A 2.5.7 Server has no SourceNode property and links the item through
+    // the 2.5 HasTransmissionSource reference instead, which the child's own
+    // fetch already made resident (GetTransmissionSourceId).
     NodeRef source_prop =
         child[scada::devices::id::TransmissionItemType_SourceNode];
-    if (!source_prop)
-      continue;
-    co_await source_prop.Fetch(NodeFetchStatus::NodeOnly);
-    const scada::NodeId source_id = source_prop.value().get_or(scada::NodeId{});
+    if (source_prop)
+      co_await source_prop.Fetch(NodeFetchStatus::NodeOnly);
+    const scada::NodeId source_id = GetTransmissionSourceId(child);
     if (source_id.is_null())
       continue;
     NodeRef source = device.service()->GetNode(source_id);

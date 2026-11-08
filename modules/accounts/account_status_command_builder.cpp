@@ -7,11 +7,13 @@
 #include "controller/action.h"
 #include "controller/command_ui_registry.h"
 #include "controller/selection_model.h"
+#include "events/local_events.h"
 #include "model/security_node_ids.h"
 #include "node_service/node_awaitable.h"
 #include "node_service/node_util.h"
 #include "resources/common_resources.h"
 #include "scada/session_service.h"
+#include "services/server_compatibility.h"
 #include "user_access/account_configuration.h"
 
 namespace {
@@ -35,8 +37,15 @@ Awaitable<void> SetAccountDisabledAsync(NodeRef user,
   }
   const auto current = ResidentUserConfiguration(user);
   if (!current) {
-    ReportAccountChangeResult(title, scada::StatusCode::Bad_NotReadable,
-                              local_events, profile);
+    // The status is the Part 18 UserConfiguration property, which a Server
+    // older than 2.6 does not have: an account there cannot be disabled at
+    // all, so say that rather than "Bad_NotReadable".
+    local_events.ReportEvent(
+        LocalEvents::SEV_ERROR,
+        u16format(L"{} - {}", title,
+                  Translate("The account status cannot be read from the "
+                            "Server. A Server older than version 2.6 cannot "
+                            "disable accounts.")));
     co_return;
   }
   const scada::Status status =
