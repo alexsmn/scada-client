@@ -3,7 +3,11 @@
 #include "base/protected_settings_secret_store.h"
 #include "base/settings_store.h"
 
+// wincrypt.h before dpapi.h, explicitly: windows.h only pulls it in when
+// WIN32_LEAN_AND_MEAN is not defined, and dpapi.h does not include it.
 #include <windows.h>
+
+#include <wincrypt.h>
 
 #include <dpapi.h>
 
