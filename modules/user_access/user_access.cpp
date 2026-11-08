@@ -65,11 +65,3 @@ const char* UserPermissionLabelKey(scada::Capability kind) {
   }
   return "";
 }
-
-const char* UserSessionsLabelKey(std::optional<bool> multi_sessions) {
-  // "No data" rather than a default: false is a real answer (single session),
-  // so an absent read must not borrow it.
-  if (!multi_sessions)
-    return "No data";
-  return *multi_sessions ? "Multiple" : "Single";
-}

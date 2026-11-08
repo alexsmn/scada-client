@@ -752,18 +752,6 @@
         <source>Role</source>
         <translation>Роль</translation>
     </message>
-    <message>
-        <source>Sessions</source>
-        <translation>Сеансы</translation>
-    </message>
-    <message>
-        <source>Single</source>
-        <translation>Один</translation>
-    </message>
-    <message>
-        <source>Multiple</source>
-        <translation>Несколько</translation>
-    </message>
     <!-- modules/transmission_rules/qt/transmission_rule_inspector.cpp -->
     <message>
         <source>Transmission rule</source>

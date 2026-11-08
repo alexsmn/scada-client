@@ -191,8 +191,8 @@ CALL_CASES = (
         {"Raised"},
     ),
     (
-        # `UserSessionsLabelKey` returns `*multi ? "Multiple" : "Single"`, so a
-        # rule matching only `return "...";` would see neither string.
+        # A conditional return carries two strings, so a rule matching only
+        # `return "...";` would see neither.
         "both arms of a conditional return",
         {
             "text.cpp": 'const char* WriteBlockText(bool on){'

@@ -724,8 +724,9 @@ SOURCE_STRING_RETURN = re.compile(
     r"([A-Za-z_]\w*)\s*\(")
 
 # The whole return expression, so a literal reached through a conditional is
-# read too: `UserSessionsLabelKey` returns `*multi ? "Multiple" : "Single"`,
-# and a rule matching only `return "...";` would see neither string.
+# read too: a function returning `on ? "Multiple" : "Single"` reaches
+# Translate() with both strings, and a rule matching only `return "...";`
+# would see neither.
 RETURN_EXPRESSION = re.compile(r"\breturn\b([^;]*);")
 
 

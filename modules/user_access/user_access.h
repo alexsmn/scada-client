@@ -3,7 +3,6 @@
 #include "scada/authorization.h"
 #include "user_access/role_membership.h"
 
-#include <optional>
 #include <span>
 #include <vector>
 
@@ -54,9 +53,3 @@ scada::Permission EffectiveProcessPermissions(
 
 // The capability's label key (an English literal for Translate()).
 const char* UserPermissionLabelKey(scada::Capability kind);
-
-// The session-policy label key for a Sessions cell: a user whose MultiSessions
-// flag is set may hold several concurrent sessions. An unset optional means
-// the flag could not be read and reads "No data" — false is a real answer
-// ("single session"), so an absent read must not borrow it.
-const char* UserSessionsLabelKey(std::optional<bool> multi_sessions);

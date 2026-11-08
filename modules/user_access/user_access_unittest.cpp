@@ -140,10 +140,4 @@ TEST(UserAccess, EffectivePermissionsMatchTheServerRoleMap) {
             scada::DefaultPermissionsForRole(scada::WellKnownRole::kOperator));
 }
 
-TEST(UserAccess, SessionsLabelDistinguishesUnknownFromSingle) {
-  EXPECT_STREQ(UserSessionsLabelKey(std::nullopt), "No data");
-  EXPECT_STREQ(UserSessionsLabelKey(false), "Single");
-  EXPECT_STREQ(UserSessionsLabelKey(true), "Multiple");
-}
-
 }  // namespace
