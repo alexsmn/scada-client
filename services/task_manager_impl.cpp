@@ -94,12 +94,11 @@ Awaitable<std::optional<bool>> FetchOutputTwoStagedDefault(
     scada::NodeId item_type_definition_id) {
   if (device_id.is_null())
     co_return std::nullopt;
-  // An OPC server is decided from its id; fetching it would ask the Server to
-  // browse an external OPC server for nothing.
-  if (IsOpcDeviceId(device_id)) {
-    co_return GetOutputTwoStagedDefault(node_service.GetNode(device_id),
-                                        item_type_definition_id);
-  }
+  // An OPC server is decided from its id alone, as `GetOutputTwoStagedDefault`
+  // does: it is not a typed node, a node service may hold no node for it, and
+  // fetching one would ask the Server to browse an external OPC server.
+  if (IsOpcDeviceId(device_id))
+    co_return false;
   NodeRef device = node_service.GetNode(device_id);
   co_await FetchNode(device);
   co_return GetOutputTwoStagedDefault(device, item_type_definition_id);

@@ -526,7 +526,7 @@ class TaskManagerTwoStagedTest : public TaskManagerTest {
     // An IEC 61850 data object is a real node under its device.
     node_service_.Add({.node_id = kIec61850DataObject,
                        .node_class = scada::NodeClass::Variable,
-                       .type_definition_id = scada::id::BaseDataVariableType,
+                       .type_definition_id = scada::id::BaseVariableType,
                        .parent_id = kIec61850Device,
                        .reference_type_id = scada::id::Organizes});
 
