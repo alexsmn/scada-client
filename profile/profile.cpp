@@ -15,6 +15,7 @@
 #include "model/scada_node_ids.h"
 
 #include <stdexcept>
+#include <system_error>
 
 namespace {
 
@@ -299,7 +300,34 @@ std::filesystem::path Profile::GetFilePath() {
       path.empty()) {
     throw std::runtime_error{"Cannot resolve client profile directory"};
   }
-  return path / "profile.json";
+  if (file_suffix_.empty())
+    return path / "profile.json";
+  return path / ("profile-" + file_suffix_ + ".json");
+}
+
+bool Profile::HasFile() {
+  try {
+    std::error_code ec;
+    return std::filesystem::is_regular_file(GetFilePath(), ec);
+  } catch (const std::exception&) {
+    return false;
+  }
+}
+
+void Profile::SetAccountKey(std::string_view account_key) {
+  static constexpr char kHex[] = "0123456789ABCDEF";
+  file_suffix_.clear();
+  for (const char c : account_key) {
+    const auto byte = static_cast<unsigned char>(c);
+    if ((byte >= '0' && byte <= '9') || (byte >= 'A' && byte <= 'Z') ||
+        (byte >= 'a' && byte <= 'z')) {
+      file_suffix_ += c;
+    } else {
+      file_suffix_ += '_';
+      file_suffix_ += kHex[byte >> 4];
+      file_suffix_ += kHex[byte & 0xF];
+    }
+  }
 }
 
 Page& Profile::AddPage(const Page& page) {

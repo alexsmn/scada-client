@@ -1,9 +1,44 @@
 #include "profile/profile.h"
 
+#include "base/client_paths.h"
+#include "base/test/scoped_path_override.h"
+
 #include <boost/json.hpp>
 #include <gtest/gtest.h>
 
 namespace {
+
+// Backlog 1014: an account-keyed file is separate from the shared one and from
+// every other account's, including accounts whose ids differ only in a byte
+// the file name cannot carry.
+TEST(ProfileTest, AccountKeyedFilesAreSeparate) {
+  scada::base::ScopedPathOverride private_dir{client::DIR_PRIVATE};
+
+  Profile shared;
+  shared.event_play_sound = true;
+  shared.Save();
+
+  Profile account;
+  account.SetAccountKey("ns=1;i=100");
+  EXPECT_FALSE(account.HasFile());
+  account.Save();
+  EXPECT_TRUE(account.HasFile());
+
+  Profile reloaded;
+  reloaded.SetAccountKey("ns=1;i=100");
+  reloaded.Load();
+  EXPECT_FALSE(reloaded.event_play_sound);
+
+  // ';' and '_' must not collapse to one name.
+  Profile lookalike;
+  lookalike.SetAccountKey("ns=1_i=100");
+  EXPECT_FALSE(lookalike.HasFile());
+
+  Profile shared_again;
+  EXPECT_TRUE(shared_again.HasFile());
+  shared_again.Load();
+  EXPECT_TRUE(shared_again.event_play_sound);
+}
 
 // Regression (backlog 717): a profile.json holding valid JSON that is not an
 // object used to become `data_` as-is. Every reader guards is_object(), but

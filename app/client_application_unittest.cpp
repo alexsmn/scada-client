@@ -579,17 +579,72 @@ TEST_F(ClientApplicationLocalProfileTest,
   EXPECT_EQ(window->bounds, WindowBounds());
 }
 
+// Backlog 1014: a 2.5.7 Server cannot hold a profile. `MockMethodService`
+// answers Bad_NotSupported and the legacy property read answers nothing, so the
+// local file is all there is -- but the shared one holds the previous
+// operator's settings, so a named account gets a file of its own and starts,
+// the first time, from the default with only the window placement carried.
 TEST_F(ClientApplicationLocalProfileTest,
-       ServerThatCannotAnswerKeepsTheLocalFile) {
-  // `MockMethodService` answers Bad_NotSupported, and the legacy property read
-  // answers nothing: a server that cannot say whether the account has a
-  // profile, so the local file is all there is.
+       ServerThatCannotAnswerGivesTheAccountItsOwnLocalFile) {
   SignInAs(scada::NodeId{1, 100});
 
   StartApp();
 
-  EXPECT_TRUE(HasPreviousOperatorsPage());
+  EXPECT_FALSE(HasPreviousOperatorsPage());
+  EXPECT_FALSE(app_.profile().event_play_sound);
+  const MainWindowDef* window = app_.profile().FindMainWindow(kWindowId);
+  ASSERT_NE(window, nullptr);
+  EXPECT_EQ(window->bounds, WindowBounds());
+}
+
+namespace {
+
+// Writes a local profile file keyed by `account`, holding one page titled
+// `page_title` and the alarm tone switched on.
+void SaveAccountProfile(const scada::NodeId& account,
+                        std::u16string_view page_title) {
+  Profile profile;
+  profile.SetAccountKey(account.ToString());
+  Page page;
+  page.title = page_title;
+  profile.AddPage(page);
+  profile.event_play_sound = true;
+  profile.Save();
+}
+
+bool HasPage(const Profile& profile, std::u16string_view title) {
+  return std::ranges::any_of(
+      profile.pages | std::views::values,
+      [title](const Page& page) { return page.title == title; });
+}
+
+}  // namespace
+
+// The account's own file is what it gets back on the next sign-in, choices
+// and all.
+TEST_F(ClientApplicationLocalProfileTest,
+       ServerThatCannotAnswerLoadsTheAccountsOwnLocalFile) {
+  SaveAccountProfile(scada::NodeId{1, 100}, u"Own page");
+  SignInAs(scada::NodeId{1, 100});
+
+  StartApp();
+
+  EXPECT_TRUE(HasPage(app_.profile(), u"Own page"));
   EXPECT_TRUE(app_.profile().event_play_sound);
+  EXPECT_FALSE(HasPreviousOperatorsPage());
+}
+
+// Another operator's file stays theirs: a second account signing in on the
+// same OS user does not pick it up.
+TEST_F(ClientApplicationLocalProfileTest,
+       ServerThatCannotAnswerDoesNotLoadAnotherAccountsFile) {
+  SaveAccountProfile(scada::NodeId{1, 100}, u"Other operator's page");
+  SignInAs(scada::NodeId{1, 101});
+
+  StartApp();
+
+  EXPECT_FALSE(HasPage(app_.profile(), u"Other operator's page"));
+  EXPECT_FALSE(app_.profile().event_play_sound);
 }
 
 TEST_F(ClientApplicationLocalProfileTest, AnonymousSessionKeepsTheLocalFile) {

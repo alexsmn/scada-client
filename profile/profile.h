@@ -11,8 +11,11 @@
 
 #include <boost/json.hpp>
 #include <boost/signals2/signal.hpp>
+#include <filesystem>
 #include <functional>
 #include <map>
+#include <string>
+#include <string_view>
 
 struct MainWindowDef {
   MainWindowDef();
@@ -69,6 +72,19 @@ class Profile {
   unsigned event_panel_severity_min = 1;
 
   void Load();
+  // Whether the profile's file exists. False, too, when the profile directory
+  // cannot be resolved -- there is then no file to load either way.
+  [[nodiscard]] bool HasFile();
+
+  // Keys the profile's file by a signed-in account instead of the one file per
+  // OS user, so `Load()` and `Save()` use `profile-<key>.json`. Used when the
+  // Server cannot hold the account's profile (a 2.5.7 Server, backlog 1014):
+  // without it, the shared file hands one operator's alarm tone, severity
+  // threshold and pages to whoever signs in next. Any byte that
+  // is not an ASCII letter or digit is written as `_XX`, so the mapping from
+  // account to file name is one-to-one and always a valid file name.
+  void SetAccountKey(std::string_view account_key);
+
   // Writes the profile to its file. Never throws: it runs from
   // ~ClientApplication, where an escaping exception is std::terminate.
   void Save();
@@ -159,6 +175,9 @@ class Profile {
   boost::json::value SerializeToValue() const;
 
   std::filesystem::path GetFilePath();
+
+  // Empty for the shared per-OS-user file; see SetAccountKey.
+  std::string file_suffix_;
 
   boost::json::value data_{boost::json::object{}};
 

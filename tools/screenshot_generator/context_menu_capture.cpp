@@ -386,7 +386,7 @@ void CaptureTreeContextMenu(
     Page page;
     page.AddWindow(WindowDefinition{std::string{window_type}});
     profile.AddPage(page);
-    profile.Save();
+    scada::screenshot_generator::SaveSeedProfile(profile);
   }
 
   WaitForAwaitable(executor, app.Start());
@@ -450,7 +450,7 @@ void CaptureGridContextMenu(
     Page page;
     page.AddWindow(WindowDefinition{"Struct"});
     profile.AddPage(page);
-    profile.Save();
+    scada::screenshot_generator::SaveSeedProfile(profile);
   }
 
   WaitForAwaitable(executor, app.Start());

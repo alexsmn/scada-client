@@ -283,6 +283,34 @@ Awaitable<void> ClientApplication::LoadProfileAsync() {
       AdoptWindowPlacement(local, *profile_);
       LOG_INFO(*logger_) << "No server profile for this account; starting from "
                             "the default profile";
+    } else if (!read.local_account.is_null()) {
+      // **A named account the server cannot hold a profile for keeps its own
+      // local file** (backlog 1014). A 2.5.7 Server has no profile storage, so
+      // the file is all the profile there is -- but the shared per-OS-user file
+      // would hand the outgoing operator's alarm tone, severity threshold,
+      // pages and the rest to whoever signs in next at a shift handover.
+      // (Control confirmation is not among them: Profile never writes it to
+      // the file, so it starts on in every session whatever the file holds.)
+      //
+      // Keyed by account rather than resetting those settings on sign-in,
+      // because a reset cannot express "safe" for all of them: the tone's
+      // default is off, so resetting it would hand over exactly the silence the
+      // incoming operator must not inherit. Keying gives each operator their
+      // own choices back, which is what a 2.6 Server's profile does. An account
+      // with no file of its own yet starts from the default, carrying only the
+      // machine's window placement -- the same start as a new account on a 2.6
+      // Server (backlog 957). Nothing migrates from the shared file: it holds
+      // whoever signed in last, which is the problem.
+      profile_->SetAccountKey(read.local_account.ToString());
+      if (profile_->HasFile()) {
+        profile_->Load();
+      } else {
+        Profile local;
+        local.Load();
+        AdoptWindowPlacement(local, *profile_);
+        LOG_INFO(*logger_) << "No local profile for this account yet; starting "
+                              "from the default profile";
+      }
     } else {
       profile_->Load();
     }
@@ -316,8 +344,8 @@ ClientApplication::ReadServerProfileAsync() {
     json = co_await ReadLegacyProfilePropertiesAsync(services, user_id);
   if (!json) {
     LOG_INFO(*logger_) << "Server cannot answer for a profile; using the local "
-                          "file";
-    co_return ServerProfileRead{};
+                          "file for this account";
+    co_return ServerProfileRead{.local_account = user_id};
   }
   // From here the server has answered for this account, so the account owns
   // its profile and the local file is no longer a stand-in for it.

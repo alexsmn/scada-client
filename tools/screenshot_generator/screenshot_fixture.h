@@ -15,14 +15,15 @@
 #include "aui/qt/message_loop_qt.h"
 #include "aui/test/app_environment.h"
 #include "authenticated_attribute_service.h"
-#include "crash_trace.h"
 #include "base/any_executor.h"
 #include "base/client_paths.h"
 #include "base/no_destructor.h"
 #include "base/test/scoped_mock_clock_override.h"
 #include "base/test/scoped_path_override.h"
+#include "crash_trace.h"
 #include "fixture_builder.h"
 #include "node_service/node_service.h"
+#include "profile/profile.h"
 #include "scada/access_rights.h"
 #include "screenshot_modules.h"
 #include "screenshot_options.h"
@@ -74,6 +75,17 @@ class SessionEndDialogService final : public DialogService {
 // assertion. Shared rather than file-private because the fixture below and the
 // tests that drive it no longer live in one translation unit.
 ScreenshotConfig& FixtureConfig();
+
+// Saves `profile` as the local file the fixture's signed-in account loads at
+// Start. The fixture's Server holds no profiles, so ClientApplication reads the
+// account's own local file rather than the shared one (backlog 1014); a seed
+// written to the shared file would never be read.
+inline void SaveSeedProfile(Profile& profile) {
+  const scada::NodeId& user = FixtureConfig().session_user_node_id;
+  if (!user.is_null())
+    profile.SetAccountKey(user.ToString());
+  profile.Save();
+}
 
 // Seeds the device-log lines the fixture's `device_log` block defines as event
 // notifications on the device, so the Log capture renders a real session

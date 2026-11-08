@@ -74,7 +74,7 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
     page.AddWindow(WindowDefinition{"Summ"});
     page.AddWindow(WindowDefinition{"Struct"});
     profile.AddPage(page);
-    profile.Save();
+    scada::screenshot_generator::SaveSeedProfile(profile);
   }
 
   WaitForAwaitable(executor_, app_.Start());
@@ -284,7 +284,7 @@ TEST_F(ScreenshotGenerator, CaptureActivityRail) {
       page.AddWindow(WindowDefinition{"Struct"});
       profile.AddPage(page);
     }
-    profile.Save();
+    scada::screenshot_generator::SaveSeedProfile(profile);
   }
 
   WaitForAwaitable(executor_, app_.Start());

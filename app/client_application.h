@@ -212,6 +212,9 @@ class ClientApplication : private ClientApplicationContext {
     // or with an empty one. False for an anonymous session or a server that
     // cannot tell, where the local file is all the profile there is.
     bool account_backed = false;
+    // The signed-in account when the server cannot hold its profile (a 2.5.7
+    // Server, backlog 1014); null otherwise, and always null for anonymous.
+    scada::NodeId local_account;
   };
 
   // The profile stored on the server for the signed-in user. Never throws: a

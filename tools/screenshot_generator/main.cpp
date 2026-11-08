@@ -73,7 +73,7 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     }
     profile.AddPage(
         MakeScreenshotPage(FixtureConfig().screenshots, FixtureConfig().json));
-    profile.Save();
+    scada::screenshot_generator::SaveSeedProfile(profile);
   }
 
   WaitForAwaitable(executor_, app_.Start());

@@ -141,7 +141,7 @@ TEST_F(ScreenshotGenerator, CaptureMoreMenu) {
     Page page;
     page.AddWindow(WindowDefinition{"Struct"});
     profile.AddPage(page);
-    profile.Save();
+    scada::screenshot_generator::SaveSeedProfile(profile);
   }
 
   WaitForAwaitable(executor_, app_.Start());
@@ -207,7 +207,7 @@ TEST_F(ScreenshotGenerator, HelpMenuCarriesTheShippingClientsRows) {
     Page page;
     page.AddWindow(WindowDefinition{"Struct"});
     profile.AddPage(page);
-    profile.Save();
+    scada::screenshot_generator::SaveSeedProfile(profile);
   }
 
   WaitForAwaitable(executor_, app_.Start());
@@ -260,7 +260,7 @@ TEST_F(ScreenshotGenerator, CaptureSummaryFunctionMenu) {
     Page page;
     page.AddWindow(WindowDefinition{"Summ"});
     profile.AddPage(page);
-    profile.Save();
+    scada::screenshot_generator::SaveSeedProfile(profile);
   }
 
   WaitForAwaitable(executor_, app_.Start());
