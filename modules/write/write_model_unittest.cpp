@@ -172,8 +172,9 @@ class WriteModelTest : public Test {
   }
 
   // Seeds a device of `type_id` (with the supertype link `IsInstanceOf`
-  // walks) and answers the Output formula of a channel under it.
-  std::string AddDeviceChannel(const scada::NodeId& type_id) {
+  // walks) and answers the Output formula of channel `nested` under it.
+  std::string AddDeviceChannel(const scada::NodeId& type_id,
+                               std::string_view nested = "1") {
     node_service_.Add(
         scada::NodeState{.node_id = scada::devices::id::DeviceType,
                          .node_class = scada::NodeClass::ObjectType});
@@ -185,7 +186,7 @@ class WriteModelTest : public Test {
     node_service_.Add(scada::NodeState{.node_id = device_id,
                                        .node_class = scada::NodeClass::Object,
                                        .type_definition_id = type_id});
-    return MakeNodeIdFormula(scada::MakeNestedNodeId(device_id, "1"));
+    return MakeNodeIdFormula(scada::MakeNestedNodeId(device_id, nested));
   }
 
   // Answers the Control object's Select as unknown, as a 2.5.7 Server does,
@@ -665,6 +666,25 @@ TEST_F(WriteModelTest,
   model.reset();
   Drain(executor_);
   select_answer.Complete();
+  Drain(executor_);
+
+  EXPECT_THAT(local_events_.events(), IsEmpty());
+}
+
+// An IEC 60870-5 object whose Output overrides the type to a set-point
+// (`FLOAT:`) cannot select either, whatever its item type.
+TEST_F(WriteModelTest, DecliningAFlaggedSetPointSelectReportsNothing) {
+  scada::base::AsyncCompletion select_answer{executor_};
+  ExpectLegacySelect(select_answer);
+
+  auto model = CreateModel(
+      /*two_staged=*/true, /*local_events=*/nullptr,
+      AddDeviceChannel(scada::devices::id::Iec60870DeviceType, "FLOAT:1"));
+  model->Write(42.0, /*lock=*/false);
+  Drain(executor_);
+  select_answer.Complete();
+  Drain(executor_);
+  dialog_service_.CompleteMessageBox(MessageBoxResult::No);
   Drain(executor_);
 
   EXPECT_THAT(local_events_.events(), IsEmpty());

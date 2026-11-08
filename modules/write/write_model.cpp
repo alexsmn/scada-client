@@ -86,9 +86,15 @@ bool WriteModel::DeviceCannotSelect() const {
   // a typed node, and a node service may hold no node for it.
   if (IsOpcDeviceId(device_id))
     return true;
-  return GetOutputTwoStagedDefault(spec_.node().service()->GetNode(device_id),
-                                   spec_.node().type_definition().node_id()) ==
-         false;
+  // The Output formula carries an IEC 60870-5 type override, which decides
+  // whether the command is a set-point (`FLOAT:`) or a single command.
+  const NodeRef& node = spec_.node();
+  const scada::String output =
+      node[scada::data_items::id::DataItemType_Output].value().get_or(
+          scada::String{});
+  return GetOutputTwoStagedDefault(node.service()->GetNode(device_id),
+                                   node.type_definition().node_id(),
+                                   output) == false;
 }
 
 WriteModel::~WriteModel() {
