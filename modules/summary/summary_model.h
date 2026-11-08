@@ -131,6 +131,13 @@ class SummaryModel : private SummaryModelContext,
   // or wrong. False until the Server has been asked.
   bool IsAggregateUnsupported() const;
 
+  // Whether the cells are left blank: the aggregate is unsupported, or it
+  // depends on the Server's version and the Server has not answered yet
+  // (backlog 1029). Unlike IsAggregateUnsupported, true while pending -- the
+  // notice says nothing until there is something to say, but no value a
+  // 2.5.7 Server may have computed wrongly is shown, printed or exported.
+  bool IsAggregateWithheld() const;
+
   // The aggregates whose 2.6 meaning a 2.5.7 Server lacks.
   static bool RequiresServer26(const scada::NodeId& aggregation_id);
 

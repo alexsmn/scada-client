@@ -344,8 +344,10 @@ void SummaryModel::Save(WindowDefinition& definition) {
 
 void SummaryModel::GetCell(scada::aui::GridCell& cell) {
   // Blank rather than a number the Server computed some other way; the
-  // notice says why (backlog 1015).
-  if (IsAggregateUnsupported()) {
+  // notice says why (backlog 1015). Blank too while the Server has not yet
+  // said which it is, or a print or export taken in that window would carry a
+  // 2.5.7 Server's plain sum as the integral (backlog 1029).
+  if (IsAggregateWithheld()) {
     cell.text.clear();
     return;
   }
@@ -498,6 +500,11 @@ bool SummaryModel::IsAggregateUnsupported() const {
          RequiresServer26(aggregate_filter_.aggregate_type);
 }
 
+bool SummaryModel::IsAggregateWithheld() const {
+  return RequiresServer26(aggregate_filter_.aggregate_type) &&
+         server_before_2_6_.value_or(true);
+}
+
 void SummaryModel::ProbeServerVersionIfNeeded() {
   if (server_probe_started_ ||
       !RequiresServer26(aggregate_filter_.aggregate_type)) {
@@ -523,15 +530,17 @@ void SummaryModel::ProbeServerVersionIfNeeded() {
 
 void SummaryModel::OnServerVersionProbed(bool before_2_6) {
   server_before_2_6_ = before_2_6;
+  // Either answer changes the cells: a 2.6 Server's values appear, having
+  // been withheld while the check was pending (see IsAggregateWithheld).
+  NotifyModelChanged();
   if (!before_2_6)
     return;
-  NotifyModelChanged();
   if (notice_changed_handler)
     notice_changed_handler();
 }
 
 scada::DataValue SummaryModel::GetDataValue(int row, int column) const {
-  if (IsAggregateUnsupported())
+  if (IsAggregateWithheld())
     return {};
   const auto& col = *columns_[column];
   return col.GetDataValue(row);

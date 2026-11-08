@@ -253,6 +253,51 @@ TEST_F(SummaryModelTest, TimeIntegralOnAServerBefore26IsBlankAndExplained) {
   EXPECT_EQ(summary_model_.GetNotice().find(u"2.6"), std::u16string::npos);
 }
 
+// Backlog 1029: until the Server says which version it is, a Time Integral
+// cell may hold a 2.5.7 Server's plain sum. It stays blank -- so a print or
+// export taken in that window carries nothing wrong -- and shows once a 2.6
+// Server answers. The notice says nothing while the check is pending.
+TEST_F(SummaryModelTest, TimeIntegralIsBlankUntilTheServerVersionIsKnown) {
+  node_service_.Add(
+      scada::NodeState{.node_id = scada::data_items::id::DataItemControlType,
+                       .node_class = scada::NodeClass::ObjectType});
+  auto start_time = TestTimeFromString("15 Nov 2004 10:00:00 UTC");
+  auto timed_data = timed_data_service_.AddTimedData("item1");
+  for (int i = 0; i < 24; ++i) {
+    auto timestamp = start_time + std::chrono::hours(i);
+    timed_data->data_values.emplace_back(/*value=*/i,
+                                         /*qualifier=*/scada::Qualifier{},
+                                         /*source_timestamp=*/timestamp,
+                                         /*server_timestamp=*/timestamp);
+  }
+  summary_model_.Load(
+      WindowDefinition{kSummaryWindowInfo}
+          .AddItem(MakeItem("item1"))
+          .AddItem("scada::RelativeTimeRange",
+                   scada::RelativeTimeRange{
+                       start_time, start_time + std::chrono::hours(24)}));
+  ASSERT_EQ(summary_model_.GetCellText(/*row=*/23, /*column=*/0), u"23");
+
+  summary_model_.SetAggregateType(
+      scada::NodeId{scada::id::AggregateFunction_Total});
+
+  EXPECT_TRUE(summary_model_.IsAggregateWithheld());
+  EXPECT_FALSE(summary_model_.IsAggregateUnsupported());
+  EXPECT_EQ(summary_model_.GetCellText(/*row=*/23, /*column=*/0), u"");
+  EXPECT_EQ(summary_model_.GetNotice().find(u"2.6"), std::u16string::npos);
+
+  // The view has to be told: the values it drew blank are now there.
+  int model_changes = 0;
+  boost::signals2::scoped_connection connection =
+      summary_model_.SubscribeModelChanged(
+          [&](scada::aui::GridModel&) { ++model_changes; });
+  Drain(executor_);
+
+  EXPECT_FALSE(summary_model_.IsAggregateWithheld());
+  EXPECT_GE(model_changes, 1);
+  EXPECT_NE(summary_model_.GetCellText(/*row=*/23, /*column=*/0), u"");
+}
+
 TEST_F(SummaryModelTest, TimeAverageOnA26ServerIsShown) {
   node_service_.Add(
       scada::NodeState{.node_id = scada::data_items::id::DataItemControlType,
