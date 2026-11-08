@@ -355,4 +355,80 @@ TEST_F(SettingsMenuFixture, SpeechHasARowBesideTheTone) {
   EXPECT_EQ(speech.command_id, static_cast<unsigned>(ID_OPT_SPEECH));
 }
 
+// Backlog 1012: the `Modified` badge compares a toggle with its default, and
+// says nothing on a row with no fixed default to compare against.
+TEST_F(SettingsMenuFixture, ModifiedMeansDiffersFromTheDefault) {
+  // A fresh fake has nothing checked: Status Bar (default on) differs, Sound
+  // (default off) does not.
+  std::vector<SettingRow> rows = Catalog();
+  EXPECT_TRUE(SettingRowIsModified(Require(rows, "status-bar")));
+  EXPECT_FALSE(SettingRowIsModified(Require(rows, "sound-on-events")));
+
+  delegate_.SetChecked(ID_VIEW_STATUS_BAR);
+  delegate_.SetChecked(ID_EVENT_PLAY_SOUND);
+  rows = Catalog();
+  EXPECT_FALSE(SettingRowIsModified(Require(rows, "status-bar")));
+  EXPECT_TRUE(SettingRowIsModified(Require(rows, "sound-on-events")));
+}
+
+// Language, Colour scheme and Widget style resolve from the host, and an
+// action holds no value, so none of them can be "modified".
+TEST_F(SettingsMenuFixture, RowsWithNoFixedDefaultAreNeverModified) {
+  const std::vector<SettingRow> rows = Catalog();
+  for (std::string_view id :
+       {"language", "colour-scheme", "widget-style", "open-displays-folder"}) {
+    const SettingRow& row = Require(rows, id);
+    EXPECT_FALSE(row.default_checked) << id;
+    EXPECT_FALSE(SettingRowIsModified(row)) << id;
+  }
+  // And every toggle has one: a toggle without a default would silently drop
+  // out of the filter and lose its reset.
+  for (const SettingRow& row : rows) {
+    if (row.control == SettingControl::kToggle)
+      EXPECT_TRUE(row.default_checked) << row.id;
+  }
+}
+
+TEST_F(SettingsMenuFixture, ResetActivatesOnlyAModifiedEnabledRow) {
+  // Control Confirmation defaults to on, so checked is its default.
+  delegate_.SetChecked(ID_WRITE_CONFIRMATION);
+  delegate_.SetChecked(ID_EVENT_PLAY_SOUND);
+  delegate_.SetChecked(ID_EVENT_FLASH_WINDOW);
+  delegate_.Disable(ID_EVENT_FLASH_WINDOW);
+  const std::vector<SettingRow> rows = Catalog();
+
+  // At its default already: nothing to do.
+  EXPECT_FALSE(ResetSettingRowToDefault(Require(rows, "control-confirmation")));
+  // Modified but disabled: the command's refusal stands.
+  EXPECT_FALSE(ResetSettingRowToDefault(Require(rows, "flash-window")));
+  // No default at all.
+  EXPECT_FALSE(ResetSettingRowToDefault(Require(rows, "colour-scheme")));
+  EXPECT_TRUE(delegate_.executed().empty());
+
+  const SettingRow& sound = Require(rows, "sound-on-events");
+  EXPECT_TRUE(ResetSettingRowToDefault(sound));
+  EXPECT_EQ(delegate_.executed(), (std::vector<int>{ID_EVENT_PLAY_SOUND}));
+  EXPECT_FALSE(SettingRowIsModified(sound));
+}
+
+TEST_F(SettingsMenuFixture, TheModifiedFilterKeepsOnlyModifiedRows) {
+  // Everything at its default except Sound (on) and Status Bar (off).
+  for (int id :
+       {ID_WRITE_CONFIRMATION, ID_SHOW_WRITEOK, ID_SHOW_EVENTS, ID_HIDE_EVENTS,
+        ID_OPT_SPEECH, ID_MODUS_TOPOLOGY, ID_EVENT_PLAY_SOUND}) {
+    delegate_.SetChecked(id);
+  }
+  const std::vector<SettingRow> rows = Catalog();
+
+  EXPECT_EQ(Ids(FilterSettingRows(rows, u"", std::nullopt,
+                                  /*modified_only=*/true)),
+            (std::vector<std::string>{"sound-on-events", "status-bar"}));
+  // It composes with the scope tab, as the web filter does.
+  EXPECT_EQ(Ids(FilterSettingRows(rows, u"", SettingScope::kWindow,
+                                  /*modified_only=*/true)),
+            (std::vector<std::string>{"status-bar"}));
+  // Off, it filters nothing.
+  EXPECT_EQ(FilterSettingRows(rows, u"", std::nullopt).size(), rows.size());
+}
+
 }  // namespace

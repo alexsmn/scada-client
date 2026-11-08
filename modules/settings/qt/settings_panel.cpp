@@ -4,21 +4,25 @@
 #include "aui/translation.h"
 
 #include <QCheckBox>
+#include <QClipboard>
 #include <QComboBox>
 #include <QEvent>
 #include <QFont>
 #include <QFrame>
+#include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QKeyEvent>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
+#include <QMenu>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QSignalBlocker>
 #include <QSplitter>
 #include <QStyle>
 #include <QTabBar>
+#include <QTimer>
 #include <QToolButton>
 #include <QVBoxLayout>
 
@@ -113,7 +117,23 @@ SettingsPanel::SettingsPanel(QWidget* parent, MenuModel& settings_menu)
   search_field_->setObjectName(QStringLiteral("settings-search"));
   search_field_->setPlaceholderText(Ui(Translate("Search settings")));
   search_field_->setClearButtonEnabled(true);
-  layout->addWidget(search_field_);
+
+  // The `Modified` filter sits on the search field's line because it narrows
+  // the same list the query does, and the web panel puts it there for the same
+  // reason. A checkable tool button rather than a checkbox: it is a view
+  // toggle, not a preference, and a checkbox here would read as one more
+  // setting.
+  auto* search_row = new QHBoxLayout;
+  search_row->addWidget(search_field_, 1);
+  modified_filter_ = new QToolButton{frame};
+  modified_filter_->setObjectName(QStringLiteral("settings-modified-filter"));
+  modified_filter_->setCheckable(true);
+  modified_filter_->setText(Ui(Translate("Modified")));
+  modified_filter_->setToolTip(Ui(Translate("Show modified settings only")));
+  modified_filter_->setAccessibleName(
+      Ui(Translate("Show modified settings only")));
+  search_row->addWidget(modified_filter_);
+  layout->addLayout(search_row);
 
   auto* scope_row = new QHBoxLayout;
   scope_tabs_ = new QTabBar{frame};
@@ -152,6 +172,8 @@ SettingsPanel::SettingsPanel(QWidget* parent, MenuModel& settings_menu)
   connect(search_field_, &QLineEdit::textChanged, this,
           [this] { RebuildRows(); });
   connect(scope_tabs_, &QTabBar::currentChanged, this,
+          [this] { RebuildRows(); });
+  connect(modified_filter_, &QToolButton::toggled, this,
           [this] { RebuildRows(); });
   // Selecting a category scrolls to its heading rather than filtering to it:
   // the list is one scrolling surface, which is what lets a search cross
@@ -269,7 +291,8 @@ std::optional<SettingScope> SettingsPanel::SelectedScope() const {
 
 void SettingsPanel::RebuildRows() {
   const std::u16string query = search_field_->text().toStdU16String();
-  visible_rows_ = FilterSettingRows(catalog_, query, SelectedScope());
+  visible_rows_ = FilterSettingRows(catalog_, query, SelectedScope(),
+                                    modified_filter_->isChecked());
 
   // Everything under the host is rebuilt rather than reconciled: the list is
   // fourteen rows at most, and a reconciler would be the only thing in this
@@ -277,6 +300,19 @@ void SettingsPanel::RebuildRows() {
   qDeleteAll(rows_host_->findChildren<QWidget*>(Qt::FindDirectChildrenOnly));
 
   category_list_->clear();
+
+  // Say why the list is empty rather than leaving a blank pane: with the
+  // filter on and every setting at its default, nothing else on screen
+  // explains the silence.
+  if (visible_rows_.empty()) {
+    QLabel* empty = MakeMutedLabel(
+        rows_host_, modified_filter_->isChecked()
+                        ? Ui(Translate("No setting differs from its default."))
+                        : Ui(Translate("No setting matches this search.")));
+    empty->setObjectName(QStringLiteral("settings-empty"));
+    empty->setWordWrap(true);
+    rows_layout_->addWidget(empty);
+  }
 
   for (const SettingCategoryGroup& group : GroupSettingRows(visible_rows_)) {
     auto* heading = new QLabel{Ui(group.label), rows_host_};
@@ -333,7 +369,18 @@ QWidget* SettingsPanel::CreateRow(const SettingRow& row) {
     title_row->addWidget(title);
   }
   title_row->addStretch(1);
+  // The badge is created for every row with a default and only shown or
+  // hidden afterwards, so the toggle's own handler can restate it without
+  // rebuilding the list under the checkbox that was just clicked.
+  if (row.default_checked) {
+    QLabel* badge = MakeMutedLabel(widget, Ui(Translate("Modified")));
+    badge->setObjectName(QStringLiteral("settings-modified"));
+    badge->setToolTip(Ui(Translate("Differs from its default.")));
+    title_row->addWidget(badge);
+    badge->setVisible(SettingRowIsModified(row));
+  }
   title_row->addWidget(MakeScopeChip(widget, row.scope));
+  title_row->addWidget(CreateRowMenuButton(row, widget));
   layout->addLayout(title_row);
 
   QLabel* description = MakeMutedLabel(widget, Ui(row.description));
@@ -419,11 +466,18 @@ QCheckBox* SettingsPanel::CreateToggleControl(const SettingRow& row,
   // The command toggles, so it is activated rather than set — the same call the
   // menu item made. Re-reading the model afterwards keeps the box honest if the
   // command refused or the profile clamped the value.
-  MenuModel* model = row.model;
-  const int index = row.index;
-  connect(box, &QCheckBox::clicked, this, [this, model, index, box] {
-    model->ActivatedAt(index);
-    box->setChecked(model->IsItemCheckedAt(index));
+  connect(box, &QCheckBox::clicked, this, [this, row, box] {
+    row.model->ActivatedAt(row.index);
+    box->setChecked(row.model->IsItemCheckedAt(row.index));
+    if (auto* badge = box->parentWidget()->findChild<QLabel*>(
+            QStringLiteral("settings-modified"))) {
+      badge->setVisible(SettingRowIsModified(row));
+    }
+    // Under the `Modified` filter a row flipped back to its default no longer
+    // belongs in the list. Deferred, because rebuilding now would delete this
+    // checkbox from inside its own `clicked`.
+    if (modified_filter_->isChecked())
+      ScheduleReload();
     emit SettingApplied();
   });
 
@@ -443,4 +497,67 @@ QWidget* SettingsPanel::CreateActionControl(const SettingRow& row,
   });
 
   return button;
+}
+
+QToolButton* SettingsPanel::CreateRowMenuButton(const SettingRow& row,
+                                                QWidget* parent) {
+  auto* button = new QToolButton{parent};
+  button->setObjectName(QStringLiteral("settings-row-menu"));
+  button->setText(QStringLiteral("\u22EF"));
+  button->setAutoRaise(true);
+  button->setToolTip(Ui(Translate("Setting actions")));
+  button->setAccessibleName(Ui(Translate("Setting actions")));
+
+  // Popped from `clicked` rather than attached with `setMenu`: an attached
+  // menu makes the style draw a drop-down arrow beside the glyph, and the
+  // panel takes no stylesheet to suppress it.
+  auto* menu = new QMenu{button};
+  // Populated on every show rather than once: whether `Reset to default` is
+  // enabled depends on the live value, which can have changed since the row
+  // was built.
+  connect(menu, &QMenu::aboutToShow, this,
+          [this, menu, row] { PopulateRowMenu(*menu, row); });
+  PopulateRowMenu(*menu, row);
+  connect(button, &QToolButton::clicked, menu, [button, menu] {
+    menu->popup(button->mapToGlobal(QPoint{0, button->height()}));
+  });
+  return button;
+}
+
+void SettingsPanel::PopulateRowMenu(QMenu& menu, const SettingRow& row) {
+  menu.clear();
+
+  // Only on a row that knows its default: a row that cannot say whether it
+  // differs from one cannot be returned to one either.
+  if (row.default_checked) {
+    QAction* reset = menu.addAction(Ui(Translate("Reset to default")));
+    reset->setObjectName(QStringLiteral("settings-reset"));
+    const bool modified = SettingRowIsModified(row);
+    reset->setEnabled(modified && row.model->IsEnabledAt(row.index));
+    if (!modified)
+      reset->setToolTip(Ui(Translate("Already at its default")));
+    connect(reset, &QAction::triggered, this, [this, row] {
+      if (!ResetSettingRowToDefault(row))
+        return;
+      // The menu, its button and the row are all rebuilt by the reload, and
+      // this runs while the button is still inside its popup `QMenu::exec` --
+      // so the rebuild waits for the event loop rather than deleting the
+      // button under its own handler.
+      ScheduleReload();
+      emit SettingApplied();
+    });
+  }
+
+  QAction* copy = menu.addAction(Ui(Translate("Copy setting ID")));
+  copy->setObjectName(QStringLiteral("settings-copy-id"));
+  const QString id =
+      QString::fromUtf8(row.id.data(), static_cast<qsizetype>(row.id.size()));
+  connect(copy, &QAction::triggered, this, [id] {
+    if (QClipboard* clipboard = QGuiApplication::clipboard())
+      clipboard->setText(id);
+  });
+}
+
+void SettingsPanel::ScheduleReload() {
+  QTimer::singleShot(0, this, [this] { ReloadCatalog(); });
 }

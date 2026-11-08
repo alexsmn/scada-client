@@ -29,6 +29,12 @@ struct SettingDescriptor {
   // English source, translated at build time the same way every other client
   // string is.
   const char* description;
+  // The value a toggle holds in a fresh profile, or none when the row has no
+  // fixed default to differ from. Restated here because the menu model knows a
+  // command's checked state and nothing about where it started;
+  // `settings_catalog_profile_unittest.cpp` pins every value against
+  // `Profile{}` / `MainWindowDef{}`, so the copy cannot drift from the owner.
+  std::optional<bool> default_checked = std::nullopt;
 };
 
 // The inventory, in screen order.
@@ -90,6 +96,7 @@ constexpr std::array kDescriptors = {
             "repeats until the alarms are acknowledged; elsewhere it sounds "
             "once. It silences the tone only: the banner and the severity "
             "colours are ISA-18.2 signals and stay unconditional.",
+        .default_checked = false,
     },
     // Beside the tone, as in the Settings menu: the two annunciators of the
     // same edge. Undescribed, the switch had no row on this screen — the only
@@ -104,6 +111,7 @@ constexpr std::array kDescriptors = {
         .description =
             "Announce a new alarm aloud. Drawn disabled where this computer "
             "has no voice.",
+        .default_checked = true,
     },
     SettingDescriptor{
         .command_id = ID_SHOW_EVENTS,
@@ -112,6 +120,7 @@ constexpr std::array kDescriptors = {
         .scope = SettingScope::kProfile,
         .control = SettingControl::kToggle,
         .description = "Raise the event view when an event arrives.",
+        .default_checked = true,
     },
     SettingDescriptor{
         .command_id = ID_HIDE_EVENTS,
@@ -121,6 +130,7 @@ constexpr std::array kDescriptors = {
         .control = SettingControl::kToggle,
         .description =
             "Close the event view once every event has been acknowledged.",
+        .default_checked = true,
     },
     SettingDescriptor{
         .command_id = ID_EVENT_FLASH_WINDOW,
@@ -129,6 +139,7 @@ constexpr std::array kDescriptors = {
         .scope = SettingScope::kProfile,
         .control = SettingControl::kToggle,
         .description = "Flash the window in the taskbar when an event arrives.",
+        .default_checked = false,
     },
     SettingDescriptor{
         .command_id = ID_WRITE_CONFIRMATION,
@@ -137,6 +148,7 @@ constexpr std::array kDescriptors = {
         .scope = SettingScope::kProfile,
         .control = SettingControl::kToggle,
         .description = "Confirm before sending a control command.",
+        .default_checked = true,
     },
     SettingDescriptor{
         .command_id = ID_SHOW_WRITEOK,
@@ -146,6 +158,7 @@ constexpr std::array kDescriptors = {
         .control = SettingControl::kToggle,
         .description =
             "Report a successful control command back to the operator.",
+        .default_checked = true,
     },
     SettingDescriptor{
         .command_id = ID_VIEW_STATUS_BAR,
@@ -154,6 +167,7 @@ constexpr std::array kDescriptors = {
         .scope = SettingScope::kWindow,
         .control = SettingControl::kToggle,
         .description = "Show the status strip in this window.",
+        .default_checked = true,
     },
     SettingDescriptor{
         .command_id = ID_MODUS_TOPOLOGY,
@@ -162,6 +176,7 @@ constexpr std::array kDescriptors = {
         .scope = SettingScope::kProfile,
         .control = SettingControl::kToggle,
         .description = "Draw the Modus topology layer over the display.",
+        .default_checked = true,
     },
     SettingDescriptor{
         .command_id = ID_VIEW_PUBLIC_FOLDER,
@@ -314,6 +329,7 @@ std::vector<SettingRow> BuildSettingsCatalog(MenuModel& settings_menu) {
         .control = descriptor.control,
         .title = item.model->GetLabelAt(item.index),
         .description = Translate(descriptor.description),
+        .default_checked = descriptor.default_checked,
         .model = item.model,
         .index = item.index,
     });
@@ -369,12 +385,41 @@ bool SettingRowMatchesQuery(const SettingRow& row, std::u16string_view query) {
   return true;
 }
 
+std::optional<bool> SettingDefaultChecked(unsigned command_id) {
+  for (const SettingDescriptor& descriptor : kDescriptors) {
+    if (descriptor.command_id == command_id)
+      return descriptor.default_checked;
+  }
+  return std::nullopt;
+}
+
+bool SettingRowIsModified(const SettingRow& row) {
+  if (!row.default_checked || !row.model)
+    return false;
+  return row.model->IsItemCheckedAt(row.index) != *row.default_checked;
+}
+
+bool ResetSettingRowToDefault(const SettingRow& row) {
+  // Disabled is a refusal the command made for a reason of its own (Speech on
+  // a computer with no voice); resetting around it would be the surface
+  // overruling the command.
+  if (!SettingRowIsModified(row) || !row.model->IsEnabledAt(row.index))
+    return false;
+  // A toggle is activated, never set -- the same call the checkbox and the menu
+  // item make, so the profile's own change notification runs.
+  row.model->ActivatedAt(row.index);
+  return true;
+}
+
 std::vector<SettingRow> FilterSettingRows(std::span<const SettingRow> rows,
                                           std::u16string_view query,
-                                          std::optional<SettingScope> scope) {
+                                          std::optional<SettingScope> scope,
+                                          bool modified_only) {
   std::vector<SettingRow> result;
   for (const SettingRow& row : rows) {
     if (scope && row.scope != *scope)
+      continue;
+    if (modified_only && !SettingRowIsModified(row))
       continue;
     if (!SettingRowMatchesQuery(row, query))
       continue;

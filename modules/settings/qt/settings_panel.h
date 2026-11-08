@@ -16,7 +16,9 @@ class QCheckBox;
 class QLabel;
 class QLineEdit;
 class QListWidget;
+class QMenu;
 class QTabBar;
+class QToolButton;
 class QVBoxLayout;
 
 // The Settings surface — the workbench's preferences editor, drawn from
@@ -89,6 +91,8 @@ class SettingsPanel : public QWidget {
   QLineEdit* search_field() const { return search_field_; }
   QTabBar* scope_tabs() const { return scope_tabs_; }
   QListWidget* category_list() const { return category_list_; }
+  // The `Modified` filter beside the search field.
+  QToolButton* modified_filter() const { return modified_filter_; }
 
   // The rows currently drawn, after the search box and the scope tab. Exposed
   // because "which rows survived" is what almost every assertion about this
@@ -139,6 +143,14 @@ class SettingsPanel : public QWidget {
   QWidget* CreateChoiceControl(const SettingRow& row, QWidget* parent);
   QCheckBox* CreateToggleControl(const SettingRow& row, QWidget* parent);
   QWidget* CreateActionControl(const SettingRow& row, QWidget* parent);
+  // The row's `⋯` button: `Reset to default` on a row that knows its default,
+  // enabled only while the row is modified, and `Copy setting ID` on every row
+  // -- the behaviour the web panel settled as backlog 625.
+  QToolButton* CreateRowMenuButton(const SettingRow& row, QWidget* parent);
+  void PopulateRowMenu(QMenu& menu, const SettingRow& row);
+  // Re-reads the catalogue on the next event-loop turn. For handlers whose own
+  // widget the rebuild would delete while they are still running.
+  void ScheduleReload();
 
   scada::aui::MenuModel& settings_menu_;
 
@@ -149,6 +161,7 @@ class SettingsPanel : public QWidget {
   QLineEdit* search_field_ = nullptr;
   QTabBar* scope_tabs_ = nullptr;
   QLabel* count_label_ = nullptr;
+  QToolButton* modified_filter_ = nullptr;
   QListWidget* category_list_ = nullptr;
   QWidget* rows_host_ = nullptr;
   QVBoxLayout* rows_layout_ = nullptr;

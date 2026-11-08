@@ -6,12 +6,17 @@
 #include "main_window/standard_command_ids.h"
 #include "resources/common_resources.h"
 
+#include <QAction>
 #include <QCheckBox>
+#include <QClipboard>
 #include <QComboBox>
+#include <QCoreApplication>
+#include <QGuiApplication>
 #include <QKeyEvent>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
+#include <QMenu>
 #include <QPointer>
 #include <QPushButton>
 #include <QResizeEvent>
@@ -144,6 +149,39 @@ class SettingsPanelTest : public ::testing::Test {
       throw std::runtime_error("settings row " + id.toStdString() +
                                " draws no control of the expected kind");
     return *control;
+  }
+
+  // The row's `Modified` badge, or null when the row has none at all.
+  QLabel* Badge(const SettingsPanel& panel, const QString& id) {
+    return RequireRow(panel, id).findChild<QLabel*>(
+        QStringLiteral("settings-modified"));
+  }
+
+  // Shown, judged against the row rather than the screen: the panel is never
+  // shown in these tests, so `isVisible()` would be false for everything.
+  bool BadgeShown(const SettingsPanel& panel, const QString& id) {
+    QLabel* badge = Badge(panel, id);
+    return badge && badge->isVisibleTo(&RequireRow(panel, id));
+  }
+
+  // The row's `⋯` menu, populated as it would be on show.
+  QMenu& RowMenu(const SettingsPanel& panel, const QString& id) {
+    auto* button = RequireRow(panel, id).findChild<QToolButton*>(
+        QStringLiteral("settings-row-menu"));
+    QMenu* menu = button ? button->findChild<QMenu*>() : nullptr;
+    if (!menu)
+      throw std::runtime_error("settings row " + id.toStdString() +
+                               " has no row menu");
+    emit menu->aboutToShow();
+    return *menu;
+  }
+
+  QAction* MenuAction(QMenu& menu, const QString& name) {
+    for (QAction* action : menu.actions()) {
+      if (action->objectName() == name)
+        return action;
+    }
+    return nullptr;
   }
 
   std::vector<std::string> VisibleIds(const SettingsPanel& panel) {
@@ -495,6 +533,97 @@ TEST_F(SettingsPanelTest, ADisabledCommandExplainsItself) {
       RequireControl<QCheckBox>(panel, QStringLiteral("sound-on-events"));
   EXPECT_FALSE(box.isEnabled());
   EXPECT_EQ(box.toolTip(), QStringLiteral("no reason to enable it"));
+}
+
+// Backlog 1012: a toggle that differs from its default carries a `Modified`
+// badge, and a row with no fixed default carries none at all.
+TEST_F(SettingsPanelTest, TheBadgeMarksOnlyRowsThatDifferFromTheirDefault) {
+  // Nothing checked: Status Bar (default on) differs, Sound (default off) and
+  // Flash (default off) do not.
+  SettingsPanel panel{nullptr, settings_};
+
+  EXPECT_TRUE(BadgeShown(panel, QStringLiteral("status-bar")));
+  EXPECT_FALSE(BadgeShown(panel, QStringLiteral("sound-on-events")));
+  EXPECT_FALSE(BadgeShown(panel, QStringLiteral("flash-window")));
+  // Colour scheme resolves from the host; the action holds no value.
+  EXPECT_EQ(Badge(panel, QStringLiteral("colour-scheme")), nullptr);
+  EXPECT_EQ(Badge(panel, QStringLiteral("open-displays-folder")), nullptr);
+}
+
+TEST_F(SettingsPanelTest, FlippingAToggleRestatesItsBadge) {
+  SettingsPanel panel{nullptr, settings_};
+
+  RequireControl<QCheckBox>(panel, QStringLiteral("sound-on-events")).click();
+  EXPECT_TRUE(BadgeShown(panel, QStringLiteral("sound-on-events")));
+
+  RequireControl<QCheckBox>(panel, QStringLiteral("status-bar")).click();
+  EXPECT_FALSE(BadgeShown(panel, QStringLiteral("status-bar")));
+}
+
+// `Reset to default` exists only where there is a default, is enabled only
+// while the row differs from it, and returns the row there.
+TEST_F(SettingsPanelTest, ResetToDefaultReturnsAModifiedRow) {
+  SettingsPanel panel{nullptr, settings_};
+
+  EXPECT_EQ(MenuAction(RowMenu(panel, QStringLiteral("colour-scheme")),
+                       QStringLiteral("settings-reset")),
+            nullptr);
+  QAction* sound_reset =
+      MenuAction(RowMenu(panel, QStringLiteral("sound-on-events")),
+                 QStringLiteral("settings-reset"));
+  ASSERT_NE(sound_reset, nullptr);
+  EXPECT_FALSE(sound_reset->isEnabled());
+
+  QAction* reset = MenuAction(RowMenu(panel, QStringLiteral("status-bar")),
+                              QStringLiteral("settings-reset"));
+  ASSERT_NE(reset, nullptr);
+  ASSERT_TRUE(reset->isEnabled());
+  QPointer<QWidget> old_row = Row(panel, QStringLiteral("status-bar"));
+  reset->trigger();
+  EXPECT_EQ(delegate_.executed(), (std::vector<int>{ID_VIEW_STATUS_BAR}));
+  // The rebuild waits for the event loop, so the menu that ran it is still
+  // alive when its `exec` returns.
+  EXPECT_TRUE(old_row);
+  QCoreApplication::processEvents();
+
+  EXPECT_TRUE(RequireControl<QCheckBox>(panel, QStringLiteral("status-bar"))
+                  .isChecked());
+  EXPECT_FALSE(BadgeShown(panel, QStringLiteral("status-bar")));
+}
+
+TEST_F(SettingsPanelTest, CopySettingIdPutsTheStableIdOnTheClipboard) {
+  SettingsPanel panel{nullptr, settings_};
+
+  // On every row, the ones without a default included.
+  for (const QString id :
+       {QStringLiteral("colour-scheme"), QStringLiteral("open-displays-folder"),
+        QStringLiteral("sound-on-events")}) {
+    QAction* copy =
+        MenuAction(RowMenu(panel, id), QStringLiteral("settings-copy-id"));
+    ASSERT_NE(copy, nullptr) << id.toStdString();
+    copy->trigger();
+    EXPECT_EQ(QGuiApplication::clipboard()->text(), id);
+  }
+}
+
+TEST_F(SettingsPanelTest, TheModifiedFilterKeepsModifiedRowsAndExplainsEmpty) {
+  SettingsPanel panel{nullptr, settings_};
+
+  panel.modified_filter()->click();
+  EXPECT_EQ(VisibleIds(panel), (std::vector<std::string>{"status-bar"}));
+
+  // Flipping the last modified row back drops it from the filtered list, once
+  // the event loop has run the deferred rebuild.
+  RequireControl<QCheckBox>(panel, QStringLiteral("status-bar")).click();
+  QCoreApplication::processEvents();
+  EXPECT_TRUE(VisibleIds(panel).empty());
+  auto* empty = panel.findChild<QLabel*>(QStringLiteral("settings-empty"));
+  ASSERT_NE(empty, nullptr);
+  EXPECT_EQ(empty->text(),
+            QStringLiteral("No setting differs from its default."));
+
+  panel.modified_filter()->click();
+  EXPECT_EQ(panel.visible_rows().size(), 5u);
 }
 
 }  // namespace

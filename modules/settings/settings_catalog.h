@@ -102,6 +102,14 @@ struct SettingRow {
   // decision about.
   std::u16string description;
 
+  // What a toggle holds in a fresh profile, or none when the row has no fixed
+  // default to differ from. None for every choice and every action: Language,
+  // Colour scheme and Widget style resolve from the host (its locale, its
+  // light/dark preference, its platform style), so a `Modified` badge on them
+  // would assert a comparison this client cannot make -- the same reasoning the
+  // web client applies to its own language and theme rows.
+  std::optional<bool> default_checked;
+
   // The model and index the row's control drives. For `kChoice` this is the
   // submenu *item*; the options are `model->GetSubmenuModelAt(index)`.
   scada::aui::MenuModel* model = nullptr;
@@ -160,11 +168,30 @@ std::vector<unsigned> UndescribedSettingsCommands(
 // can actually read, so it runs on the translated strings.
 bool SettingRowMatchesQuery(const SettingRow& row, std::u16string_view query);
 
-// Rows surviving the search box and the selected scope tab, in catalogue order.
-// An unset `scope` is the "All" tab.
+// The default the catalogue records for `command_id`, or none when the row has
+// no fixed default or the command is not described at all. Exposed so a test
+// can pin each value against the profile that actually owns it.
+std::optional<bool> SettingDefaultChecked(unsigned command_id);
+
+// Does the row's live value differ from its default -- the `Modified` badge?
+//
+// Always false for a row with no default: a row that cannot say whether it
+// differs says nothing rather than guessing.
+bool SettingRowIsModified(const SettingRow& row);
+
+// Returns a modified, enabled row to its default by activating its command
+// once, and reports whether it did. A row that is unmodified, has no default,
+// or is disabled is left alone -- the `Reset to default` item is only enabled
+// while this would act.
+bool ResetSettingRowToDefault(const SettingRow& row);
+
+// Rows surviving the search box, the selected scope tab and the `Modified`
+// filter, in catalogue order. An unset `scope` is the "All" tab;
+// `modified_only` keeps just the rows `SettingRowIsModified` answers yes for.
 std::vector<SettingRow> FilterSettingRows(std::span<const SettingRow> rows,
                                           std::u16string_view query,
-                                          std::optional<SettingScope> scope);
+                                          std::optional<SettingScope> scope,
+                                          bool modified_only = false);
 
 struct SettingCategoryGroup {
   SettingCategory category = SettingCategory::kAppearance;

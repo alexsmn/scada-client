@@ -3127,6 +3127,45 @@ Trust the new certificate only if the server&apos;s operator confirms that it wa
         <source>Settings: %1 · Actions: %2</source>
         <translation>Настроек: %1 · Действий: %2</translation>
     </message>
+    <!-- The row chrome (backlog 1012): the `Modified` badge and filter, the
+         row's ⋯ menu, and the empty-list sentences. Worded as the web panel's
+         settings.json words them, so the two realms share the vocabulary. -->
+    <message>
+        <source>Modified</source>
+        <translation>Изменено</translation>
+    </message>
+    <message>
+        <source>Show modified settings only</source>
+        <translation>Показывать только изменённые настройки</translation>
+    </message>
+    <message>
+        <source>Differs from its default.</source>
+        <translation>Отличается от значения по умолчанию.</translation>
+    </message>
+    <message>
+        <source>No setting differs from its default.</source>
+        <translation>Ни одна настройка не отличается от значения по умолчанию.</translation>
+    </message>
+    <message>
+        <source>No setting matches this search.</source>
+        <translation>Нет настроек, соответствующих поиску.</translation>
+    </message>
+    <message>
+        <source>Setting actions</source>
+        <translation>Действия с настройкой</translation>
+    </message>
+    <message>
+        <source>Reset to default</source>
+        <translation>Сбросить по умолчанию</translation>
+    </message>
+    <message>
+        <source>Already at its default</source>
+        <translation>Уже имеет значение по умолчанию</translation>
+    </message>
+    <message>
+        <source>Copy setting ID</source>
+        <translation>Копировать идентификатор настройки</translation>
+    </message>
     <!-- Category headings. `Appearance` and `Control` are already in this
          context, from the command titles they are named after. -->
     <message>

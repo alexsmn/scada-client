@@ -22,5 +22,9 @@ if(TARGET client_settings_qt_unittests)
   target_link_libraries(client_settings_qt_unittests PRIVATE
     aui_qt
     aui_test_qt
+    # Tests only: settings_catalog_profile_unittest.cpp pins the catalogue's
+    # restated defaults against `Profile{}`. The module itself still links no
+    # profile.
+    client_profile_qt
   )
 endif()
