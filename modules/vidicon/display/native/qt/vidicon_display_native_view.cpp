@@ -9,6 +9,7 @@
 #include "controller/selection_model.h"
 #include "display_frame/qt/display_frame.h"
 #include "display_view/display_live_data.h"
+#include "display_view/display_runtime.h"
 #include "display_view/qt/display_widget.h"
 #include "filesystem/file_util.h"
 #include "modules/write/write_service.h"
@@ -70,6 +71,10 @@ std::unique_ptr<UiView> VidiconDisplayNativeView::Init(
 
   auto full_path = GetPublicFilePath(path_);
   widget->Open(full_path, DisplayDocumentKind::kVds);
+  // The runtime is loaded by now; say in the status strip if it is too old to
+  // mark bad readings (backlog 1006).
+  display_selection_registry_.SetRuntimeNotice(
+      DisplayRuntimeQualityNotice(DisplayRuntime::Get()));
 
   const QString title =
       widget->title().isEmpty()

@@ -1,5 +1,7 @@
 #include "display_view/display_runtime.h"
 
+#include "aui/translation.h"
+#include "base/boost_log.h"
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 
@@ -86,6 +88,8 @@ size_t RequiredStructSize(uint32_t abi_version) {
       return SCADA_DISPLAY_ABI_2_SIZE;
     case 3:
       return SCADA_DISPLAY_ABI_3_SIZE;
+    case 4:
+      return SCADA_DISPLAY_ABI_4_SIZE;
     default:
       break;
   }
@@ -144,6 +148,13 @@ std::string DisplayRuntimeTableRejection(const ScadaDisplayApi& api) {
            std::to_string(required) + " that version defines";
   }
   return {};
+}
+
+bool DisplayRuntimeMarksQuality(const ScadaDisplayApi& api) {
+  // Both halves, as for every other version gate: a table claiming ABI 4 but
+  // shorter than ABI 4 defines is one this client would have rejected, and a
+  // check that read the version alone would answer for a table nobody vetted.
+  return api.abi_version >= 4 && api.struct_size >= SCADA_DISPLAY_ABI_4_SIZE;
 }
 
 // Does the one-time load, so DisplayRuntime itself holds no loading state.
@@ -229,6 +240,17 @@ class DisplayRuntimeLoader {
         api,
         OwnedString(api->runtime_version ? api->runtime_version() : nullptr)}};
     reason_.clear();
+
+    // Once per process, because the load is: an older runtime is usable, but
+    // it may draw a bad or missing reading as a confident one, and that is a
+    // safety signal lost with nothing on screen to say so (backlog 1006). The
+    // status strip says it too; see DisplayRuntimeQualityNotice.
+    if (!runtime_->marks_quality()) {
+      BoostLogger logger{LOG_NAME("DisplayRuntime")};
+      LOG_WARNING(logger) << native << ": " << Describe(api)
+                          << " predates display ABI 4, so bad or missing "
+                             "readings may not be marked on schematics";
+    }
     return true;
   }
 
@@ -282,6 +304,16 @@ const DisplayRuntime* DisplayRuntime::Get() {
 
 std::string_view DisplayRuntime::unavailable_reason() {
   return Loader().reason();
+}
+
+bool DisplayRuntime::marks_quality() const {
+  return DisplayRuntimeMarksQuality(*api_);
+}
+
+std::u16string DisplayRuntimeQualityNotice(const DisplayRuntime* runtime) {
+  if (!runtime || runtime->marks_quality())
+    return {};
+  return Translate("Old display runtime: bad values may not be marked");
 }
 
 // ── Documents ───────────────────────────────────────────────────────────────

@@ -78,6 +78,14 @@ struct DisplayError {
 // known. See `display/abi/display_abi.h`, "VERSIONING".
 std::string DisplayRuntimeTableRejection(const ScadaDisplayApi& api);
 
+// Whether a table this client accepted keeps the quality-marking contract —
+// a bad reading hatched, a missing or bad value shown as "?" — which is what
+// ABI 4 means (backlog 1006). An older runtime is still driven, since it
+// draws everything else correctly; the client warns instead. Free for the
+// same reason as DisplayRuntimeTableRejection: the only way to hold an older
+// table is to write one.
+bool DisplayRuntimeMarksQuality(const ScadaDisplayApi& api);
+
 // The loaded runtime library, or the reason there is none.
 //
 // ABSENCE IS A SUPPORTED STATE, not a build configuration (ADR 0013 design
@@ -104,6 +112,10 @@ class DisplayRuntime {
   // What the loaded library says it is, for diagnostics and logs.
   std::string_view version() const { return version_; }
 
+  // Whether it marks bad and missing readings; see DisplayRuntimeMarksQuality.
+  // When it does not, the loader has logged a warning once.
+  bool marks_quality() const;
+
   DisplayRuntime(const DisplayRuntime&) = delete;
   DisplayRuntime& operator=(const DisplayRuntime&) = delete;
 
@@ -115,6 +127,11 @@ class DisplayRuntime {
   const ScadaDisplayApi* api_;
   std::string version_;
 };
+
+// What the status strip says about `runtime`, already translated: empty when
+// there is none or it marks bad readings, and otherwise a warning that the
+// schematic may draw a bad or missing value as a good one (backlog 1006).
+std::u16string DisplayRuntimeQualityNotice(const DisplayRuntime* runtime);
 
 // One open display, over the ABI.
 //

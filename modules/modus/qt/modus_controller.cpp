@@ -4,6 +4,7 @@
 #include "controller/controller_delegate.h"
 #include "controller/selection_model.h"
 #include "display_view/display_live_data.h"
+#include "display_view/display_runtime.h"
 #include "display_view/qt/display_widget.h"
 #include "filesystem/file_cache.h"
 #include "filesystem/file_util.h"
@@ -185,6 +186,10 @@ std::unique_ptr<UiView> ModusController::Init(
   result.reset(display_view.widget);
 
   wrapper_->Open(definition);
+  // The runtime is loaded by now; say in the status strip if it is too old to
+  // mark bad readings (backlog 1006).
+  display_selection_registry_.SetRuntimeNotice(
+      DisplayRuntimeQualityNotice(DisplayRuntime::Get()));
 
   const std::vector<std::string> data_sources = wrapper_->GetDataSources();
   live_data_ = std::make_unique<DisplayLiveData>(

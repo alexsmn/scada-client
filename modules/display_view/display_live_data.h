@@ -26,8 +26,8 @@ struct DisplayDataSourceReading {
   std::string state;
   // The value as a number, or nullopt when there is none.
   std::optional<double> value;
-  // The value as tables show it, units and quality mark included; empty when
-  // there is no value.
+  // The value as tables show it, units and quality mark included; "?" when
+  // there is no value, so a value field never keeps a number nothing reports.
   std::string text;
   int32_t quality = 0;
   // The object has an unacknowledged alarm — 2.5.7's «НеКвитировано» style.

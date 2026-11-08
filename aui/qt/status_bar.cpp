@@ -23,9 +23,12 @@ StatusBar::StatusBar(StatusBarModel& model, QWidget* parent)
   for (int i = 0; i < model_.GetPaneCount(); ++i) {
     auto* pane = new QLabel{this};
     pane->setMargin(2);
-    pane->setText(QString::fromStdU16String(model_.GetPaneText(i)));
+    const std::u16string text = model_.GetPaneText(i);
+    pane->setText(QString::fromStdU16String(text));
     ApplyPaneColor(pane, model_.GetPaneColor(i));
     addPermanentWidget(pane);
+    if (model_.IsPaneHiddenWhenEmpty(i))
+      pane->setVisible(!text.empty());
     panes_.emplace_back(pane);
   }
 
@@ -44,6 +47,8 @@ void StatusBar::OnPanesChanged(int index, int count) {
     auto text = model_.GetPaneText(index + i);
     panes_[index + i]->setText(QString::fromStdU16String(text));
     ApplyPaneColor(panes_[index + i], model_.GetPaneColor(index + i));
+    if (model_.IsPaneHiddenWhenEmpty(index + i))
+      panes_[index + i]->setVisible(!text.empty());
   }
 }
 

@@ -1274,6 +1274,10 @@
         <translation>Выбрано</translation>
     </message>
     <message>
+        <source>Old display runtime: bad values may not be marked</source>
+        <translation>Устаревшая библиотека мнемосхем: недостоверные значения могут не отмечаться</translation>
+    </message>
+    <message>
         <source>Unknown</source>
         <translation>Неизвестно</translation>
     </message>

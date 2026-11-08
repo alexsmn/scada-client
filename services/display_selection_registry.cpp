@@ -32,3 +32,10 @@ void DisplaySelectionRegistry::ClearSelection(Owner owner) {
   label_.clear();
   changed_signal_();
 }
+
+void DisplaySelectionRegistry::SetRuntimeNotice(std::u16string notice) {
+  if (runtime_notice_ == notice)
+    return;
+  runtime_notice_ = std::move(notice);
+  changed_signal_();
+}

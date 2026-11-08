@@ -15,6 +15,15 @@ namespace {
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/7.38.1
 constexpr int32_t kBadQuality = static_cast<int32_t>(0x80000000u);
 
+// The text of a reading with no value. A value field must never fall back to
+// whatever it showed before — the designer's saved number, or the last live
+// one — since either reads as a good measurement (backlog 1005). It is the
+// mark `FormatValue` appends to a bad value, so the field reads as the
+// value's table cell does. Sent by the host as well as applied by the
+// runtime, so a runtime that predates the quality-marking contract still
+// shows it in a field that displays the host's text.
+constexpr char kNoValueText[] = "?";
+
 }  // namespace
 
 // One subscription. Heap-allocated so the spec's handlers, which capture it,
@@ -116,6 +125,7 @@ DisplayDataSourceReading DisplayLiveData::MakeReading(
   DisplayDataSourceReading reading{.data_source = std::string{data_source}};
   if (!spec.connected()) {
     reading.quality = kBadQuality;
+    reading.text = kNoValueText;
     return reading;
   }
 
@@ -123,8 +133,10 @@ DisplayDataSourceReading DisplayLiveData::MakeReading(
   const scada::DataValue current = spec.current();
   if (current.qualifier.general_bad())
     reading.quality = kBadQuality;
-  if (current.value.is_null())
+  if (current.value.is_null()) {
+    reading.text = kNoValueText;
     return reading;
+  }
 
   // 2.5.7 read every value as a double and drew a position for anything
   // non-zero (`ModusElement::UpdateData`).

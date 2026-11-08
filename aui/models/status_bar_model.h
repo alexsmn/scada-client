@@ -20,6 +20,12 @@ class StatusBarModel {
   virtual std::u16string GetPaneText(int index) const = 0;
   virtual int GetPaneSize(int index) const = 0;
 
+  // Whether the pane takes no room while its text is empty. Off by default:
+  // an empty label still occupies its margins, and the panes that exist
+  // already rely on keeping their place. A pane that is empty almost always
+  // (a rare warning) opts in, so its existence moves nothing else.
+  virtual bool IsPaneHiddenWhenEmpty(int index) const { return false; }
+
   // Optional foreground colour for a pane's text (e.g. a severity indicator).
   // Default: no colour, i.e. the pane uses the status bar's normal text colour.
   virtual std::optional<Color> GetPaneColor(int index) const {

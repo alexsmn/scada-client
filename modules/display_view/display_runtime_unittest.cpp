@@ -221,6 +221,53 @@ TEST(DisplayRuntimeVersionTest, AcceptsARuntimeServingAnOlderAbi) {
   EXPECT_NE(DisplayRuntimeTableRejection(api), "");
 }
 
+// ── The quality-marking contract (backlog 1006) ─────────────────────────────
+//
+// An older runtime is driven, not refused, so the client has to tell it apart
+// to warn that bad readings may not be marked. ABI 4 is that contract; it
+// added no member, so the decision rests on the version and on a size that
+// is ABI 3's.
+
+TEST(DisplayRuntimeQualityTest, ATableOfThisAbiMarksQuality) {
+  EXPECT_TRUE(DisplayRuntimeMarksQuality(CurrentTable()));
+}
+
+TEST(DisplayRuntimeQualityTest, AnAbi3TableDoesNot) {
+  // Including one built after 2026-11-02, which hatched shapes but left a
+  // value field showing the designer's number: the host cannot tell the two
+  // apart, so both are warned about.
+  ScadaDisplayApi api{};
+  api.abi_version = 3;
+  api.struct_size = SCADA_DISPLAY_ABI_3_SIZE;
+  ASSERT_EQ(DisplayRuntimeTableRejection(api), "");
+  EXPECT_FALSE(DisplayRuntimeMarksQuality(api));
+
+  api.abi_version = 1;
+  api.struct_size = SCADA_DISPLAY_ABI_1_SIZE;
+  EXPECT_FALSE(DisplayRuntimeMarksQuality(api));
+}
+
+TEST(DisplayRuntimeQualityTest, AnAbi4TableShortOfItsSizeDoesNot) {
+  ScadaDisplayApi api{};
+  api.abi_version = 4;
+  api.struct_size = SCADA_DISPLAY_ABI_4_SIZE - 1;
+  EXPECT_NE(DisplayRuntimeTableRejection(api), "");
+  EXPECT_FALSE(DisplayRuntimeMarksQuality(api));
+}
+
+TEST(DisplayRuntimeQualityTest, NoNoticeWithoutARuntime) {
+  EXPECT_TRUE(DisplayRuntimeQualityNotice(nullptr).empty());
+}
+
+TEST(DisplayRuntimeQualityTest, TheRuntimeUnderTestNeedsNoNotice) {
+  if (!HaveRuntime())
+    GTEST_SKIP() << "this client was configured without a display runtime";
+  const DisplayRuntime* runtime = DisplayRuntime::Get();
+  ASSERT_NE(runtime, nullptr) << DisplayRuntime::unavailable_reason();
+  EXPECT_TRUE(runtime->marks_quality());
+  EXPECT_TRUE(DisplayRuntimeQualityNotice(runtime).empty());
+}
+
 // ── Documents ───────────────────────────────────────────────────────────────
 
 class DisplayRuntimeDocumentTest : public ::testing::Test {

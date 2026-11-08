@@ -33,6 +33,10 @@ int StatusBarModelImpl::GetPaneSize(int index) const {
   return panes_[index].size;
 }
 
+bool StatusBarModelImpl::IsPaneHiddenWhenEmpty(int index) const {
+  return panes_[index].hidden_when_empty;
+}
+
 std::optional<Color> StatusBarModelImpl::GetPaneColor(int index) const {
   auto color_provider = panes_[index].color_provider;
   return color_provider ? color_provider() : std::nullopt;

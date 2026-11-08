@@ -3,6 +3,7 @@
 #include "aui/models/status_bar_model_impl.h"
 #include "events/node_event_provider.h"
 #include "main_window/status_bar/capture_status_provider.h"
+#include "main_window/status_bar/display_runtime_status_provider.h"
 #include "main_window/status_bar/event_status_provider.h"
 #include "main_window/status_bar/selection_status_provider.h"
 #include "main_window/status_bar/session_status_provider.h"
@@ -119,6 +120,28 @@ std::shared_ptr<scada::aui::StatusBarModel> StatusBarModelBuilder::Build() {
 
   selection_status_provider->Init([model, selection_pane_index] {
     model->NotifyPanesChanged(selection_pane_index);
+  });
+
+  // A display runtime too old to mark bad readings (backlog 1006). Beside
+  // the selection, since both are about the schematic, and empty unless a
+  // display has opened on such a runtime.
+
+  auto display_runtime_status_provider =
+      std::make_shared<DisplayRuntimeStatusProvider>(
+          display_selection_registry_);
+
+  int display_runtime_pane_index = model->AddPane(
+      {.text_provider = std::bind_front(&DisplayRuntimeStatusProvider::GetText,
+                                        display_runtime_status_provider),
+       .color_provider =
+           std::bind_front(&DisplayRuntimeStatusProvider::GetColor,
+                           display_runtime_status_provider),
+       .size = 320,
+       // Empty unless the runtime is old, so it must not shift the strip.
+       .hidden_when_empty = true});
+
+  display_runtime_status_provider->Init([model, display_runtime_pane_index] {
+    model->NotifyPanesChanged(display_runtime_pane_index);
   });
 
   int endpoint_pane_index = model->AddPane(

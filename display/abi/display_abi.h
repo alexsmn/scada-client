@@ -90,7 +90,18 @@ extern "C" {
 // schematic, whose formulas compute from the number), an unacknowledged alarm
 // marked on its elements, and the hyperlink a double-click on a Modus element
 // follows. Nothing before `find_data_source_shape` moved.
-#define SCADA_DISPLAY_ABI_VERSION 3u
+//
+// ABI 4 (backlog 1006) adds no member: it is the version a runtime claims
+// once `set_data_source_value` keeps the QUALITY-MARKING CONTRACT described
+// there — a bad reading hatches its shapes, a value field with no value or a
+// bad one shows "?", and a lost value puts the drawn state back. Those marks
+// are a safety signal, and a runtime that lacks them draws a confident
+// schematic with nothing to say so, so the host needs a number to warn on.
+// An ABI 3 runtime may have some of the contract (from 2026-11-02 it hatched
+// shapes) but not all of it, and a host cannot tell which; it treats every
+// ABI 3 table as lacking it. The table layout is ABI 3's, and
+// `SCADA_DISPLAY_ABI_4_SIZE` equals `SCADA_DISPLAY_ABI_3_SIZE`.
+#define SCADA_DISPLAY_ABI_VERSION 4u
 
 // ── Plain data ──────────────────────────────────────────────────────────────
 
@@ -344,16 +355,21 @@ typedef struct ScadaDisplayApi {
   // In a VDS document this is what makes the schematic live: every shape
   // whose `Tag` row names `data_source` in its `Raw` cell takes the reading,
   // and its own formulas — a breaker's fill, a blade's visibility, a value's
-  // text field — follow on the next `render_bgra`. A reading with `has_value`
-  // zero puts back what the file was saved with, so a shape whose value is
-  // lost returns to its drawn state; a reading whose `quality` is not good
-  // hatches the bound shapes (their text fields excepted) in the palette's
-  // quality colours while one is installed. A runtime built before
-  // 2026-11-02 serves the same ABI 3 but ignores `quality` here and keeps the
-  // last value on `has_value` zero; a host needs no change either way, since
-  // it already sends both. In a Modus document it is
-  // `set_data_source_state` with the position a non-zero value reads as, plus
-  // `set_data_source_text`.
+  // text field — follow on the next `render_bgra`.
+  //
+  // THE QUALITY-MARKING CONTRACT, which a table claiming ABI 4 keeps. A
+  // reading with `has_value` zero puts back each bound row's value as the
+  // file was saved, so a shape whose value is lost returns to its drawn
+  // state, and its value fields show "?" rather than the number the designer
+  // saved. A reading whose `quality` is not good hatches the bound shapes in
+  // the palette's quality colours while one is installed; their value fields
+  // are not hatched but show "?" after the text. A runtime serving ABI 3 may
+  // keep part of this or none of it — before 2026-11-02 it ignored `quality`
+  // here and kept the last value on `has_value` zero — so a host warns that
+  // bad quality may not be marked when it is served ABI 3 or older.
+  //
+  // In a Modus document it is `set_data_source_state` with the position a
+  // non-zero value reads as, plus `set_data_source_text` marked the same way.
   int32_t(SCADA_DISPLAY_CALL* set_data_source_value)(
       ScadaDisplayDocument document,
       const char* data_source,
@@ -413,6 +429,12 @@ typedef struct ScadaDisplayApi {
 #define SCADA_DISPLAY_ABI_3_SIZE                    \
   (offsetof(ScadaDisplayApi, get_shape_hyperlink) + \
    sizeof(((const ScadaDisplayApi*)0)->get_shape_hyperlink))
+
+// How many bytes of the table ABI 4 defined. ABI 4 added no member (see
+// SCADA_DISPLAY_ABI_VERSION), so it is ABI 3's size; it is spelled out so a
+// host measures each version against its own constant and a later ABI that
+// does append a member never has to reason about which one to borrow.
+#define SCADA_DISPLAY_ABI_4_SIZE SCADA_DISPLAY_ABI_3_SIZE
 
 // ── Entry point ─────────────────────────────────────────────────────────────
 

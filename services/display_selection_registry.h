@@ -43,6 +43,18 @@ class DisplaySelectionRegistry {
   // Empty when nothing is selected.
   const std::u16string& label() const SCADA_LIFETIME_BOUND { return label_; }
 
+  // Publishes what the status strip should say about the display runtime
+  // itself — today only that it is too old to mark bad readings (backlog
+  // 1006). Process-wide rather than per view, since there is one runtime;
+  // an empty notice clears it. Kept here because this registry is already
+  // the seam between the displays and the status strip.
+  void SetRuntimeNotice(std::u16string notice);
+
+  // Empty when there is nothing to say about the runtime.
+  const std::u16string& runtime_notice() const SCADA_LIFETIME_BOUND {
+    return runtime_notice_;
+  }
+
   [[nodiscard]] boost::signals2::scoped_connection SubscribeChanged(
       const ChangeCallback& callback) {
     return changed_signal_.connect(callback);
@@ -51,6 +63,7 @@ class DisplaySelectionRegistry {
  private:
   Owner owner_ = nullptr;
   std::u16string label_;
+  std::u16string runtime_notice_;
 
   boost::signals2::signal<void()> changed_signal_;
 };

@@ -25,6 +25,8 @@ class StatusBarModelImpl final : public StatusBarModel {
     // Optional: supplies the pane's text colour (e.g. a severity indicator).
     StatusColorProvider color_provider;
     int size = -1;
+    // See StatusBarModel::IsPaneHiddenWhenEmpty.
+    bool hidden_when_empty = false;
   };
 
   using AlarmCountProvider = std::function<int()>;
@@ -46,6 +48,7 @@ class StatusBarModelImpl final : public StatusBarModel {
   virtual std::u16string GetPaneText(int index) const override;
   virtual int GetPaneSize(int index) const override;
   virtual std::optional<Color> GetPaneColor(int index) const override;
+  virtual bool IsPaneHiddenWhenEmpty(int index) const override;
   virtual int GetAlarmCount() const override;
   virtual int GetSeverityCount(SeverityLevel level) const override;
   [[nodiscard]] virtual boost::signals2::scoped_connection
