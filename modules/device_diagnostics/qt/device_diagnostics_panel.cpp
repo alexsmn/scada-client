@@ -339,6 +339,16 @@ std::optional<DiagnosticAction> DeviceDiagnosticsPanel::MakeLinkAction(
   if (!context_.call_link_method)
     return std::nullopt;
 
+  // The method must exist on THIS server's link, resolved the way the link rows
+  // are. A 2.6 Server publishes it as a Method child of every link instance
+  // (browsed on the deployed demo 2026-11-07: IEC_LINK.1 has a `Reconnect`
+  // child, ns=10;s=1!Reconnect, NodeClass Method, beside LinkState). A 2.5.7
+  // Server shares protocol 20.0 but predates the method, so its links have no
+  // such child, and a button drawn there could only fail with Bad_WrongNodeId
+  // ("Wrong node identifier"). Omit it, as the link rows already are.
+  if (!ResolveDiagnosticChild(link, action.method_id, action.browse_name))
+    return std::nullopt;
+
   return DiagnosticAction{
       .label = Translate(action.label),
       .execute =

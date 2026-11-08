@@ -173,6 +173,10 @@
         {
           "type": "NS0.47",
           "target": "TS.9309"
+        },
+        {
+          "type": "NS0.47",
+          "target": "TS.9310"
         }
       ]
     },
@@ -232,6 +236,13 @@
       "browse_name": "SendTimeoutExpired",
       "class": "variable",
       "base_value": true
+    },
+    {
+      "_comment": "The link's Reconnect method (Iec60870LinkType_Reconnect). A 2.6 Server instantiates it on every link from the type's Mandatory declaration; this fixture's node factory does not instantiate components, so it is spelled out. The device-diagnostics panel offers Reconnect now only when the link carries it (backlog 1011: a 2.5.7 Server has no such method and would refuse the call), so without this node the capture loses the button.",
+      "id": "TS.9310",
+      "browse_name": "Reconnect",
+      "display_name": "Переподключить",
+      "class": "method"
     },
     {
       "id": "TS.9001",
@@ -1182,7 +1193,8 @@
       "TS.9306",
       "TS.9307",
       "TS.9308",
-      "TS.9309"
+      "TS.9309",
+      "TS.9310"
     ],
     "TS.103": [
       "TS.120",

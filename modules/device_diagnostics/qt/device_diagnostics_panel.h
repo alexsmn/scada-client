@@ -126,8 +126,10 @@ class DeviceDiagnosticsPanel : public QWidget {
   // so it can be exercised without a live node service.
   //
   // Returns nullopt when the protocol declares no action, when the device has
-  // no link (there is nothing to act on), or when the host wired no
-  // method-call path. All three mean "no button", never "dead button".
+  // no link (there is nothing to act on), when the host wired no method-call
+  // path, or when the link has no such method child — an older Server (2.5.7)
+  // predates it and would refuse the call. All four mean "no button", never
+  // "dead button".
   std::optional<DiagnosticAction> MakeLinkAction(
       const ProtocolLinkAction& action,
       const NodeRef& link);

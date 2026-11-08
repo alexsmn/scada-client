@@ -22,6 +22,22 @@ std::vector<DeviceDiagnosticRow> SampleRows() {
   };
 }
 
+// A timed-data service that serves nothing: the panel tests below assert on
+// which rows and buttons exist, not on the values they would show.
+class NoTimedData : public TimedDataService {
+ public:
+  std::shared_ptr<TimedData> GetNodeTimedData(
+      const scada::NodeId&,
+      const scada::AggregateFilter&) override {
+    return nullptr;
+  }
+  std::shared_ptr<TimedData> GetFormulaTimedData(
+      std::string_view,
+      const scada::AggregateFilter&) override {
+    return nullptr;
+  }
+};
+
 class DeviceDiagnosticsPanelTest : public ::testing::Test {
  protected:
   // Qt requires a QApplication before any QWidget; destroyed with the fixture.
@@ -38,9 +54,9 @@ TEST_F(DeviceDiagnosticsPanelTest, StartsInEmptyState) {
 TEST_F(DeviceDiagnosticsPanelTest, ShowDiagnosticsFillsHeroAndRows) {
   DeviceDiagnosticsPanel panel{DeviceDiagnosticsPanelContext{}};
 
-  panel.ShowDiagnostics(QStringLiteral("RTU-02"),
-                        QStringLiteral("IEC 60870-5-104"), DeviceLinkBand::kDown,
-                        QStringLiteral("no response"), SampleRows());
+  panel.ShowDiagnostics(
+      QStringLiteral("RTU-02"), QStringLiteral("IEC 60870-5-104"),
+      DeviceLinkBand::kDown, QStringLiteral("no response"), SampleRows());
 
   auto* stack = panel.findChild<QStackedWidget*>();
   ASSERT_NE(stack, nullptr);
@@ -83,8 +99,8 @@ TEST_F(DeviceDiagnosticsPanelTest, ActionsRenderTrackEnablementAndExecute) {
   context.actions.push_back(DiagnosticAction{.label = u"Open log"});
   DeviceDiagnosticsPanel panel{std::move(context)};
 
-  panel.ShowDiagnostics(QStringLiteral("RTU-02"), QString{}, DeviceLinkBand::kUp,
-                        QString{}, {});
+  panel.ShowDiagnostics(QStringLiteral("RTU-02"), QString{},
+                        DeviceLinkBand::kUp, QString{}, {});
 
   QPushButton* reconnect = nullptr;
   QPushButton* open_log = nullptr;
@@ -101,8 +117,8 @@ TEST_F(DeviceDiagnosticsPanelTest, ActionsRenderTrackEnablementAndExecute) {
   EXPECT_TRUE(open_log->isEnabled());    // no gate
 
   enabled = true;
-  panel.ShowDiagnostics(QStringLiteral("RTU-02"), QString{}, DeviceLinkBand::kUp,
-                        QString{}, {});
+  panel.ShowDiagnostics(QStringLiteral("RTU-02"), QString{},
+                        DeviceLinkBand::kUp, QString{}, {});
   EXPECT_TRUE(reconnect->isEnabled());
 
   reconnect->click();
@@ -179,8 +195,8 @@ TEST_F(DeviceDiagnosticsPanelTest, LinkActionIsOmittedWhenItCouldNotWork) {
 
 TEST_F(DeviceDiagnosticsPanelTest, ClearReturnsToEmptyState) {
   DeviceDiagnosticsPanel panel{DeviceDiagnosticsPanelContext{}};
-  panel.ShowDiagnostics(QStringLiteral("RTU-02"), QString{}, DeviceLinkBand::kUp,
-                        QString{}, SampleRows());
+  panel.ShowDiagnostics(QStringLiteral("RTU-02"), QString{},
+                        DeviceLinkBand::kUp, QString{}, SampleRows());
   panel.Clear();
   auto* stack = panel.findChild<QStackedWidget*>();
   ASSERT_NE(stack, nullptr);
@@ -201,20 +217,9 @@ TEST_F(DeviceDiagnosticsPanelTest, LoadsTheDeviceBeforeReadingItsLink) {
   constexpr scada::NodeId kDeviceType{331, 12};
   constexpr scada::NodeId kLink{50, 12};
   constexpr scada::NodeId kLinkType{332, 12};
+  constexpr scada::NodeId kReconnect{51, 12};
 
-  class NoTimedData : public TimedDataService {
-   public:
-    std::shared_ptr<TimedData> GetNodeTimedData(
-        const scada::NodeId&,
-        const scada::AggregateFilter&) override {
-      return nullptr;
-    }
-    std::shared_ptr<TimedData> GetFormulaTimedData(
-        std::string_view,
-        const scada::AggregateFilter&) override {
-      return nullptr;
-    }
-  } timed_data;
+  NoTimedData timed_data;
 
   FakeNodeService nodes;
   nodes.Add(scada::NodeState{.node_id = kDeviceType,
@@ -255,6 +260,14 @@ TEST_F(DeviceDiagnosticsPanelTest, LoadsTheDeviceBeforeReadingItsLink) {
                              .node_class = scada::NodeClass::Object,
                              .type_definition_id = kLinkType,
                              .attributes = {.display_name = u"Link"}});
+  // The link's Reconnect method, as a 2.6 Server publishes it on every link
+  // instance. Without it the button is omitted (see the 2.5.7 test below).
+  nodes.Add(scada::NodeState{
+      .node_id = kReconnect,
+      .node_class = scada::NodeClass::Method,
+      .parent_id = kLink,
+      .reference_type_id = scada::id::HasComponent,
+      .attributes = {.browse_name = scada::QualifiedName{"Reconnect"}}});
   nodes.Add(scada::NodeState{.node_id = kDevice,
                              .node_class = scada::NodeClass::Object,
                              .type_definition_id = kDeviceType,
@@ -270,25 +283,76 @@ TEST_F(DeviceDiagnosticsPanelTest, LoadsTheDeviceBeforeReadingItsLink) {
             QString::fromStdU16String(Translate("Reconnect now")));
 }
 
+// Backlog 1011. A 2.5.7 Server shares protocol 20.0 with 2.6 but predates the
+// link's Reconnect method (Iec60870LinkType_Reconnect, 471): its link has the
+// right type and the device hangs under it, yet the link carries no Reconnect
+// child, and a call would answer Bad_WrongNodeId — "Wrong node identifier".
+// The button is decided by the method node resolving on the link, the way the
+// link rows are, so it is omitted there and appears once the method exists.
+TEST_F(DeviceDiagnosticsPanelTest, LinkActionIsOmittedWhenTheServerLacksIt) {
+  constexpr scada::NodeId kDevice{103, 12};
+  constexpr scada::NodeId kDeviceType{331, 12};
+  constexpr scada::NodeId kLink{50, 12};
+  constexpr scada::NodeId kLinkType{332, 12};
+  constexpr scada::NodeId kReconnect{51, 12};
+
+  NoTimedData timed_data;
+
+  // The 2.5.7 shape: a typed link with a device under it, and no method.
+  FakeNodeService nodes;
+  nodes.Add(scada::NodeState{.node_id = kDeviceType,
+                             .node_class = scada::NodeClass::ObjectType,
+                             .attributes = {.browse_name = scada::QualifiedName{
+                                                "Iec60870DeviceType"}}});
+  nodes.Add(scada::NodeState{
+      .node_id = kLinkType,
+      .node_class = scada::NodeClass::ObjectType,
+      .attributes = {.browse_name = scada::QualifiedName{"Iec60870LinkType"}}});
+  nodes.Add(scada::NodeState{.node_id = kLink,
+                             .node_class = scada::NodeClass::Object,
+                             .type_definition_id = kLinkType,
+                             .attributes = {.display_name = u"Link"}});
+  nodes.Add(scada::NodeState{.node_id = kDevice,
+                             .node_class = scada::NodeClass::Object,
+                             .type_definition_id = kDeviceType,
+                             .parent_id = kLink,
+                             .reference_type_id = scada::id::Organizes,
+                             .attributes = {.display_name = u"КП-01"}});
+
+  DeviceDiagnosticsPanelContext context;
+  context.call_link_method = [](const NodeRef&, const scada::NodeId&) {};
+  DeviceDiagnosticsPanel panel{std::move(context)};
+
+  panel.ShowDevice(nodes.GetNode(kDevice), timed_data);
+  EXPECT_TRUE(panel.findChildren<QPushButton*>().empty())
+      << "Reconnect was offered on a link that has no Reconnect method";
+  EXPECT_FALSE(panel.MakeLinkAction(
+      ProtocolDiagnosticsFor("Iec60870DeviceType")->link_action,
+      nodes.GetNode(kLink)));
+
+  // The same link on a 2.6 Server, which publishes the method on the instance.
+  nodes.Add(scada::NodeState{
+      .node_id = kReconnect,
+      .node_class = scada::NodeClass::Method,
+      .parent_id = kLink,
+      .reference_type_id = scada::id::HasComponent,
+      .attributes = {.browse_name = scada::QualifiedName{"Reconnect"}}});
+  panel.ShowDevice(nodes.GetNode(kDevice), timed_data);
+
+  const auto buttons = panel.findChildren<QPushButton*>();
+  ASSERT_EQ(buttons.size(), 1)
+      << "Reconnect did not appear once the link carried the method";
+  EXPECT_EQ(buttons.front()->text(),
+            QString::fromStdU16String(Translate("Reconnect now")));
+}
+
 // A reply for a device the operator has moved off must not repaint the rows.
 TEST_F(DeviceDiagnosticsPanelTest, StaleLoadReplyIsIgnored) {
   constexpr scada::NodeId kFirst{103, 12};
   constexpr scada::NodeId kSecond{104, 12};
   constexpr scada::NodeId kDeviceType{331, 12};
 
-  class NoTimedData : public TimedDataService {
-   public:
-    std::shared_ptr<TimedData> GetNodeTimedData(
-        const scada::NodeId&,
-        const scada::AggregateFilter&) override {
-      return nullptr;
-    }
-    std::shared_ptr<TimedData> GetFormulaTimedData(
-        std::string_view,
-        const scada::AggregateFilter&) override {
-      return nullptr;
-    }
-  } timed_data;
+  NoTimedData timed_data;
 
   FakeNodeService nodes;
   nodes.Add(scada::NodeState{.node_id = kDeviceType,

@@ -36,9 +36,9 @@ void SaveDeviceDiagnosticsScreenshot(const ScreenshotSpec& spec,
   // link, offered only when that link exists — so hard-coding its label here
   // would put a button in the manual that the app does not show for this
   // device. The call path below is wired inert so the capture takes the same
-  // route the app does; this fixture parents КП-01 straight onto the Devices
-  // folder, so no link resolves and the panel omits both the link section and
-  // its action. Modelling a link in the fixture is what would bring them back.
+  // route the app does; the button then comes from the fixture's link TS.50,
+  // and only because that link carries a Reconnect method child (TS.9310) —
+  // the panel omits it on a link without one, as on a 2.5.7 Server.
   DeviceDiagnosticsPanelContext context;
   for (std::string_view label : {"Metrics trend", "Open log"})
     context.actions.push_back(DiagnosticAction{.label = Translate(label)});

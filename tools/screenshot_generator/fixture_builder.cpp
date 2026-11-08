@@ -303,6 +303,11 @@ void PopulateFixtureNodes(AddressSpaceImpl& address_space,
 
       const auto& cls = jn.at("class").as_string();
       const bool is_variable = (cls == "variable");
+      // A Method child, such as an IEC 60870 link's Reconnect. This factory
+      // does not instantiate a type's components (a server's does, through
+      // CreateMissingChildren), so a panel that offers a method only when the
+      // instance carries it needs the fixture to say so.
+      const bool is_method = (cls == "method");
       auto browse_name = GetJsonString(jn.as_object(), "browse_name", {});
       if (browse_name.empty())
         browse_name = NodeIdToScadaString(node_id);
@@ -314,9 +319,13 @@ void PopulateFixtureNodes(AddressSpaceImpl& address_space,
 
       scada::NodeState state;
       state.node_id = node_id;
-      state.node_class =
-          is_variable ? scada::NodeClass::Variable : scada::NodeClass::Object;
-      state.type_definition_id = ParseJsonTypeDefinition(jn.as_object());
+      state.node_class = is_method     ? scada::NodeClass::Method
+                         : is_variable ? scada::NodeClass::Variable
+                                       : scada::NodeClass::Object;
+      // A Method carries no type definition, the way CreateMissingChildren
+      // (common/address_space/node_factory_util.cpp) instantiates one.
+      if (!is_method)
+        state.type_definition_id = ParseJsonTypeDefinition(jn.as_object());
       state.parent_id = parent_id;
       state.reference_type_id = scada::NodeId{scada::id::Organizes, 0};
       state.attributes.browse_name = scada::QualifiedName{browse_name};
