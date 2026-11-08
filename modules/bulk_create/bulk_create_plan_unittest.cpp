@@ -98,6 +98,29 @@ TEST(PlanBulkCreateTest, DataItemCarriesTheTwoStagedDecisionOnlyWhenMade) {
   }
 }
 
+// Backlog 1036: the decision is the source device's, so an item the plan
+// leaves unbound (no path) does not carry it -- it keeps the Server's default,
+// which is what a later binding is judged against.
+TEST(PlanBulkCreateTest, AnUnboundDataItemDoesNotCarryTheTwoStagedDecision) {
+  BulkCreatePlan plan;
+  plan.subject = BulkCreateSubject::kDataItem;
+  plan.type_definition_id = scada::data_items::id::AnalogItemType;
+  plan.source_device_id = scada::NodeId::FromString("ns=2;s=RTU1");
+  plan.source_path_template = u"";
+  plan.output_two_staged = false;
+
+  const std::vector<scada::NodeState> nodes =
+      PlanBulkCreate(plan, ExpandBulkCreate(DataItemParams(2), {}));
+  ASSERT_EQ(nodes.size(), 2u);
+  for (const scada::NodeState& node : nodes) {
+    EXPECT_EQ(FindProperty(node, scada::data_items::id::DataItemType_Input1),
+              nullptr);
+    EXPECT_EQ(
+        FindProperty(node, scada::data_items::id::DataItemType_OutputTwoStaged),
+        nullptr);
+  }
+}
+
 // The source path steps with the row exactly as the name does; a fixed source
 // across every row would bind every created item to one signal.
 TEST(PlanBulkCreateTest, DataItemSourcePathStepsWithTheRow) {

@@ -70,10 +70,15 @@ std::vector<scada::NodeState> PlanBulkCreate(
               plan.source_device_id, UtfConvert<char>(path));
           node.set_property(scada::data_items::id::DataItemType_Input1,
                             scada::Variant{MakeNodeIdFormula(source_id)});
-        }
-        if (plan.output_two_staged) {
-          node.set_property(scada::data_items::id::DataItemType_OutputTwoStaged,
-                            scada::Variant{*plan.output_two_staged});
+          // The decision is the source device's, so it applies only to an
+          // item actually bound to that device. An unbound item keeps the
+          // Server's default, which is what a later binding is judged
+          // against (`GetOutputTwoStagedOnRebind`, backlog 1036).
+          if (plan.output_two_staged) {
+            node.set_property(
+                scada::data_items::id::DataItemType_OutputTwoStaged,
+                scada::Variant{*plan.output_two_staged});
+          }
         }
         break;
       }
