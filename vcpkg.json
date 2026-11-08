@@ -1,6 +1,6 @@
 {
   "name": "scada-client",
-  "version": "2.6.0",
+  "version": "2.6.1",
   "description": "Telecontrol SCADA Client for industrial monitoring and control",
   "license": "GPL-3.0-only",
   "$consumes": [
