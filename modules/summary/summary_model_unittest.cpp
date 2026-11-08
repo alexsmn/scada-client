@@ -6,6 +6,7 @@
 #include "common/aggregation.h"
 #include "common/formula_util.h"
 #include "controller/window_info.h"
+#include "model/data_items_node_ids.h"
 #include "modules/summary/summary_component.h"
 #include "modules/summary/summary_model_util.h"
 #include "node_service/static/static_node_service.h"
@@ -218,6 +219,54 @@ TEST_F(SummaryModelTest, TimeWeightedAggregatesAreNamedAndUnitless) {
       scada::NodeId{scada::id::AggregateFunction_Total}));
   EXPECT_FALSE(SummaryModel::IsCustomUnits(
       scada::NodeId{scada::id::AggregateFunction_TimeAverage2}));
+}
+
+// Backlog 1015: a 2.5.7 Server has no Time Average and answers Time Integral
+// with a plain sum, with no error to say so. The summary asks the Server for a
+// node 2.6 added -- unknown to this empty node service, as to a 2.5.7 Server --
+// and then shows blank cells and says Server 2.6 is required.
+TEST_F(SummaryModelTest, TimeIntegralOnAServerBefore26IsBlankAndExplained) {
+  timed_data_service_.AddTimedData("item1");
+  summary_model_.Load(
+      WindowDefinition{kSummaryWindowInfo}.AddItem(MakeItem("item1")));
+  int notices = 0;
+  summary_model_.notice_changed_handler = [&] { ++notices; };
+
+  summary_model_.SetAggregateType(
+      scada::NodeId{scada::id::AggregateFunction_Total});
+  EXPECT_FALSE(summary_model_.IsAggregateUnsupported());
+  Drain(executor_);
+
+  EXPECT_TRUE(summary_model_.IsAggregateUnsupported());
+  EXPECT_GE(notices, 2);
+  EXPECT_NE(summary_model_.GetNotice().find(u"2.6"), std::u16string::npos);
+  EXPECT_NE(summary_model_.GetNotice().find(u"Time Integral"),
+            std::u16string::npos);
+  scada::aui::GridCell cell{.row = 0, .column = 0};
+  summary_model_.GetCell(cell);
+  EXPECT_TRUE(cell.text.empty());
+
+  // The other methods still work on the same Server.
+  summary_model_.SetAggregateType(
+      scada::NodeId{scada::id::AggregateFunction_Maximum});
+  EXPECT_FALSE(summary_model_.IsAggregateUnsupported());
+  EXPECT_EQ(summary_model_.GetNotice().find(u"2.6"), std::u16string::npos);
+}
+
+TEST_F(SummaryModelTest, TimeAverageOnA26ServerIsShown) {
+  node_service_.Add(
+      scada::NodeState{.node_id = scada::data_items::id::DataItemControlType,
+                       .node_class = scada::NodeClass::ObjectType});
+  timed_data_service_.AddTimedData("item1");
+  summary_model_.Load(
+      WindowDefinition{kSummaryWindowInfo}.AddItem(MakeItem("item1")));
+
+  summary_model_.SetAggregateType(
+      scada::NodeId{scada::id::AggregateFunction_TimeAverage2});
+  Drain(executor_);
+
+  EXPECT_FALSE(summary_model_.IsAggregateUnsupported());
+  EXPECT_EQ(summary_model_.GetNotice().find(u"2.6"), std::u16string::npos);
 }
 
 TEST_F(SummaryModelTest, Load) {

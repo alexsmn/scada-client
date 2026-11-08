@@ -9,12 +9,15 @@
 #include "base/utf_convert.h"
 #include "common/aggregation.h"
 #include "common/formula_util.h"
+#include "model/data_items_node_ids.h"
 #include "modules/summary/summary_model_util.h"
 #include "net/net_executor_adapter.h"
+#include "node_service/node_awaitable.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "profile/window_definition.h"
 #include "profile/window_definition_util.h"
+#include "services/server_compatibility.h"
 #include "timed_data/timed_data_property.h"
 #include "timed_data/timed_data_spec.h"
 #include "ui/common/client_utils.h"
@@ -340,6 +343,13 @@ void SummaryModel::Save(WindowDefinition& definition) {
 }
 
 void SummaryModel::GetCell(scada::aui::GridCell& cell) {
+  // Blank rather than a number the Server computed some other way; the
+  // notice says why (backlog 1015).
+  if (IsAggregateUnsupported()) {
+    cell.text.clear();
+    return;
+  }
+
   const Column& column = *columns_[cell.column];
 
   const scada::DataValue& data_value = column.GetDataValue(cell.row);
@@ -472,9 +482,57 @@ void SummaryModel::SetParams(const scada::RelativeTimeRange& time_range,
 
   if (notice_changed_handler)
     notice_changed_handler();
+
+  ProbeServerVersionIfNeeded();
+}
+
+// static
+bool SummaryModel::RequiresServer26(const scada::NodeId& aggregation_id) {
+  return aggregation_id == scada::id::AggregateFunction_TimeAverage2 ||
+         aggregation_id == scada::id::AggregateFunction_Total ||
+         aggregation_id == scada::id::AggregateFunction_Total2;
+}
+
+bool SummaryModel::IsAggregateUnsupported() const {
+  return server_before_2_6_.value_or(false) &&
+         RequiresServer26(aggregate_filter_.aggregate_type);
+}
+
+void SummaryModel::ProbeServerVersionIfNeeded() {
+  if (server_probe_started_ ||
+      !RequiresServer26(aggregate_filter_.aggregate_type)) {
+    return;
+  }
+  server_probe_started_ = true;
+
+  // The Time Integral gives no error to test on a 2.5.7 Server -- it answers a
+  // plain sum -- so the Server is identified by a node 2.6 added instead: the
+  // per-item Control object's type, which a 2.5.7 Server refuses as an unknown
+  // node like every other 2.6-only node (see services/server_compatibility.h).
+  // Asked once per summary, and only when an aggregate depends on the answer.
+  CoSpawn(executor_, cancelation_,
+          [this, cancelation = cancelation_.ref(),
+           probe = node_service_.GetNode(
+               scada::data_items::id::DataItemControlType)]() mutable
+              -> Awaitable<void> {
+            const scada::Status status = co_await FetchNodeStatus(probe);
+            if (!cancelation.canceled())
+              OnServerVersionProbed(IsMissingOnServer(status));
+          });
+}
+
+void SummaryModel::OnServerVersionProbed(bool before_2_6) {
+  server_before_2_6_ = before_2_6;
+  if (!before_2_6)
+    return;
+  NotifyModelChanged();
+  if (notice_changed_handler)
+    notice_changed_handler();
 }
 
 scada::DataValue SummaryModel::GetDataValue(int row, int column) const {
+  if (IsAggregateUnsupported())
+    return {};
   const auto& col = *columns_[column];
   return col.GetDataValue(row);
 }
@@ -517,6 +575,17 @@ std::u16string SummaryModel::GetNotice() const {
     if (!notice.empty())
       notice += u" ";
     notice += ColumnLimitNotice(dropped_column_count_);
+  }
+  if (IsAggregateUnsupported()) {
+    if (!notice.empty())
+      notice += u" ";
+    // Names the method, since the others work on the same Server.
+    notice += u16format(L"{}: {}",
+                        aggregate_filter_.aggregate_type ==
+                                scada::id::AggregateFunction_TimeAverage2
+                            ? Translate("Time Average")
+                            : Translate("Time Integral"),
+                        ServerTooOldText());
   }
   return notice;
 }

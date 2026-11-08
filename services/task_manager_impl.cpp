@@ -15,6 +15,7 @@
 #include "scada/service_context.h"
 #include "scada/status_or.h"
 #include "services/output_two_staged_default.h"
+#include "services/server_compatibility.h"
 
 // Windows.h #defines ReportEvent to ReportEventA/W. Undo it.
 #ifdef ReportEvent
@@ -263,6 +264,29 @@ scada::CoStatusOr<scada::NodeId> TaskManagerImpl::RunInsertTask(
   if (type_def.node_class() != scada::NodeClass::ObjectType &&
       type_def.node_class() != scada::NodeClass::VariableType) {
     co_return scada::StatusCode::Bad_WrongTypeId;
+  }
+
+  // **Refuse a property the Server's type does not declare, before anything
+  // is created** (backlog 1015). The declaration ids come from this Client's
+  // own model, so one the Server's type lacks means the Server is older than
+  // the Client: a 2.5.7 Server has no TransmissionItemType.SourceNode, for
+  // one. Checked only after AddNodes, as the property write below would, the
+  // node is already created -- a retransmission object with no source -- and
+  // the operator is told "Wrong property identifier", which sends them looking
+  // for a misconfigured object rather than at the Server version.
+  //
+  // The declaration node is asked for directly rather than looked up through
+  // the type: a Server that never had the property refuses its declaration as
+  // an unknown node, which IsMissingOnServer recognises, and that answer does
+  // not depend on how much of the type chain happens to be resident. Any
+  // other failure is left to the insert below to report as it always has.
+  for (const auto& [prop_decl_id, value] : node_state.properties) {
+    const scada::Status decl_status =
+        co_await FetchNodeStatus(self->node_service_.GetNode(prop_decl_id));
+    if (IsMissingOnServer(decl_status)) {
+      self->running_task_.failure_text = ServerTooOldText();
+      co_return scada::StatusCode::Bad_WrongPropertyId;
+    }
   }
 
   const scada::NodeClass node_class =
@@ -528,7 +552,9 @@ void TaskManagerImpl::ReportRequestCompletion(
 
   if (!status || profile_.show_write_ok) {
     std::u16string message =
-        u16format(L"{}: {}.", task.title, ToString16(status));
+        !status && !task.failure_text.empty()
+            ? u16format(L"{}: {}", task.title, task.failure_text)
+            : u16format(L"{}: {}.", task.title, ToString16(status));
     if (!result_text.empty()) {
       message += u'\n' + result_text;
     }

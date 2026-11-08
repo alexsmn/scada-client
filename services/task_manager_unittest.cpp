@@ -82,14 +82,13 @@ TEST_F(TaskManagerTest, PostInsertTask_Succeeds) {
                    /*requested_id=*/scada::NodeId{}, parent_id,
                    /*node_class=*/scada::NodeClass::Variable, type_def_id,
                    /*attributes=*/_))))
-      .WillOnce(
-          [&](scada::ServiceContext, std::vector<scada::AddNodesItem>)
-              -> Awaitable<
-                  scada::StatusOr<std::vector<scada::AddNodesResult>>> {
-            return scada::MakeNodeManagementResult<scada::AddNodesResult>(
-                std::vector<scada::AddNodesResult>{
-                    {.added_node_id = added_node_id}});
-          });
+      .WillOnce([&](scada::ServiceContext, std::vector<scada::AddNodesItem>)
+                    -> Awaitable<
+                        scada::StatusOr<std::vector<scada::AddNodesResult>>> {
+        return scada::MakeNodeManagementResult<scada::AddNodesResult>(
+            std::vector<scada::AddNodesResult>{
+                {.added_node_id = added_node_id}});
+      });
 
   auto node_id = Wait(task_manager_->PostInsertTask(
       // Provide the node ID similar to how it's provided on paste.
@@ -118,14 +117,13 @@ TEST_F(TaskManagerTest, PostInsertTask_AddsReferences) {
   const scada::NodeId inverse_source{9, scada::NamespaceIndexes::TS};
 
   EXPECT_CALL(node_management_service_, AddNodes(_, _))
-      .WillOnce(
-          [&](scada::ServiceContext, std::vector<scada::AddNodesItem>)
-              -> Awaitable<
-                  scada::StatusOr<std::vector<scada::AddNodesResult>>> {
-            return scada::MakeNodeManagementResult<scada::AddNodesResult>(
-                std::vector<scada::AddNodesResult>{
-                    {.added_node_id = added_node_id}});
-          });
+      .WillOnce([&](scada::ServiceContext, std::vector<scada::AddNodesItem>)
+                    -> Awaitable<
+                        scada::StatusOr<std::vector<scada::AddNodesResult>>> {
+        return scada::MakeNodeManagementResult<scada::AddNodesResult>(
+            std::vector<scada::AddNodesResult>{
+                {.added_node_id = added_node_id}});
+      });
 
   EXPECT_CALL(node_management_service_, AddReferences(_, _))
       .WillOnce([&](scada::ServiceContext,
@@ -166,14 +164,13 @@ TEST_F(TaskManagerTest, PostInsertTask_AddReferencesFailurePropagates) {
   const scada::NodeId added_node_id{7, scada::NamespaceIndexes::TS};
 
   EXPECT_CALL(node_management_service_, AddNodes(_, _))
-      .WillOnce(
-          [&](scada::ServiceContext, std::vector<scada::AddNodesItem>)
-              -> Awaitable<
-                  scada::StatusOr<std::vector<scada::AddNodesResult>>> {
-            return scada::MakeNodeManagementResult<scada::AddNodesResult>(
-                std::vector<scada::AddNodesResult>{
-                    {.added_node_id = added_node_id}});
-          });
+      .WillOnce([&](scada::ServiceContext, std::vector<scada::AddNodesItem>)
+                    -> Awaitable<
+                        scada::StatusOr<std::vector<scada::AddNodesResult>>> {
+        return scada::MakeNodeManagementResult<scada::AddNodesResult>(
+            std::vector<scada::AddNodesResult>{
+                {.added_node_id = added_node_id}});
+      });
 
   EXPECT_CALL(node_management_service_, AddReferences(_, _))
       .WillOnce([](scada::ServiceContext, std::vector<scada::AddReferencesItem>)
@@ -238,6 +235,51 @@ TEST_F(TaskManagerTest, PostInsertTask_BadTypeDefId) {
       ElementsAre(Field(&scada::Event::severity, scada::kSeverityCritical)));
 
   EXPECT_FALSE(task_manager_->IsRunning());
+}
+
+// Backlog 1015: a 2.5.7 Server's TransmissionItemType has no SourceNode, so
+// inserting a retransmission object used to create the object and then fail
+// writing its source -- an object with no source, reported as "Wrong property
+// identifier". A property the Server's type does not declare is now refused
+// before anything is created, and named as a Server version question.
+TEST_F(TaskManagerTest, PostInsertTask_UndeclaredPropertyCreatesNothing) {
+  EXPECT_CALL(node_management_service_, AddNodes(_, _)).Times(0);
+
+  // An id this Server has no node for stands in for SourceNode on 2.5.7.
+  const scada::NodeId unknown_declaration{987654,
+                                          scada::NamespaceIndexes::SCADA};
+  auto result = Wait(task_manager_->PostInsertTask(
+      {.type_definition_id = scada::data_items::id::DiscreteItemType,
+       .parent_id = scada::data_items::id::DataItems,
+       .properties = {{unknown_declaration, scada::Variant{true}}}}));
+  ASSERT_FALSE(result.ok());
+  EXPECT_EQ(result.status().code(), scada::StatusCode::Bad_WrongPropertyId);
+
+  ASSERT_THAT(
+      local_events_.events(),
+      ElementsAre(Field(&scada::Event::severity, scada::kSeverityCritical)));
+  EXPECT_NE(local_events_.events()[0]->message.text.find(u"2.6"),
+            std::u16string::npos);
+  EXPECT_FALSE(task_manager_->IsRunning());
+}
+
+// The gate passes a property the type does declare, through its supertype.
+TEST_F(TaskManagerTest, PostInsertTask_DeclaredPropertyReachesTheServer) {
+  EXPECT_CALL(node_management_service_, AddNodes(_, _))
+      .WillOnce([](scada::ServiceContext, std::vector<scada::AddNodesItem>)
+                    -> Awaitable<
+                        scada::StatusOr<std::vector<scada::AddNodesResult>>> {
+        return scada::MakeNodeManagementResult<scada::AddNodesResult>(
+            scada::Status{scada::StatusCode::Bad});
+      });
+
+  auto result = Wait(task_manager_->PostInsertTask(
+      {.type_definition_id = scada::data_items::id::DiscreteItemType,
+       .parent_id = scada::data_items::id::DataItems,
+       .properties = {{scada::data_items::id::DataItemType_Alias,
+                       scada::Variant{scada::String{"a"}}}}}));
+  ASSERT_FALSE(result.ok());
+  EXPECT_EQ(result.status().code(), scada::StatusCode::Bad);
 }
 
 TEST_F(TaskManagerTest, PostDeleteTask_ServiceFails) {

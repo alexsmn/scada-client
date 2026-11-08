@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/any_executor.h"
+#include "base/cancelation.h"
 #include "base/lifetime.h"
 
 #include "aui/models/grid_model.h"
@@ -123,6 +124,16 @@ class SummaryModel : private SummaryModelContext,
   // Everything the view's notice says now, or empty when it has nothing.
   std::u16string GetNotice() const;
 
+  // Whether the Server this summary reads from computes `aggregation_id` as
+  // 2.6 defines it. Time Average and Time Integral do not on a Server before
+  // 2.6 -- the first is missing there and the second is a plain sum, not an
+  // integral (backlog 1015) -- so this summary's cells for them would be empty
+  // or wrong. False until the Server has been asked.
+  bool IsAggregateUnsupported() const;
+
+  // The aggregates whose 2.6 meaning a 2.5.7 Server lacks.
+  static bool RequiresServer26(const scada::NodeId& aggregation_id);
+
  private:
   class Column;
   class ColumnModel;
@@ -131,6 +142,11 @@ class SummaryModel : private SummaryModelContext,
   void OnCellChanged(int column, int row);
   void OnColumnChanged(int column);
   void OnColumnTitleChanged(int column);
+
+  // Asks the Server, once, whether it is from before 2.6, when the chosen
+  // aggregate depends on it. See IsAggregateUnsupported.
+  void ProbeServerVersionIfNeeded();
+  void OnServerVersionProbed(bool before_2_6);
 
   // Whether `index` names a live column. The header models are queried by
   // section number by a `QHeaderView` that may still be holding a count from
@@ -157,4 +173,10 @@ class SummaryModel : private SummaryModelContext,
 
   std::unique_ptr<RowModel> row_model_;
   std::unique_ptr<ColumnModel> column_model_;
+
+  // Unset until the probe answers; see ProbeServerVersionIfNeeded.
+  std::optional<bool> server_before_2_6_;
+  bool server_probe_started_ = false;
+  // Last: cancels the probe before anything it touches is destroyed.
+  Cancelation cancelation_;
 };

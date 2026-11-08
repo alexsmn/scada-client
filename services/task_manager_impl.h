@@ -78,6 +78,9 @@ class TaskManagerImpl : private TaskManagerImplContext,
     TaskMethod method;
     std::optional<scada::base::AsyncCompletion> completion;
     std::function<void(const scada::Status&)> cancel;
+    // Said in place of the status code when the task fails, for a failure the
+    // code alone would misname -- set by the running task's own method.
+    std::u16string failure_text;
   };
 
   void Run();
