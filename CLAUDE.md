@@ -537,6 +537,17 @@ build.
   `APPLE_ID` + `APPLE_TEAM_ID` + `APPLE_APP_SPECIFIC_PASSWORD` add notarisation
   and stapling. With no secrets the release is unsigned (ad hoc on macOS), and
   its notes tell the user how to open it anyway. Windows is not code-signed.
+  None of these secrets is set yet, so the signed path has never run on a
+  runner. What has been exercised (2026-11-07, on a Mac, ad hoc plus the
+  hardened runtime): nested code is signed inside-out before the bundle, so a
+  dylib or plugin added to the bundle later cannot break the release, and the
+  client starts under the hardened runtime with `client.entitlements`.
+  Notarisation submits the **app** first and staples it, then the `.dmg`, so
+  the copy dragged into /Applications opens on an offline workstation. It
+  reads the notary status from JSON rather than the exit code: `notarytool
+  submit --wait` exits 0 on `Invalid` too ([notarytool(1)](https://keith.github.io/xcode-man-pages/notarytool.1.html),
+  verified 2026-11-07). The import step also adds Apple's Developer ID G2
+  intermediate, pinned by SHA-256, in case the `.p12` lacks the chain.
 - **The `.dmg`'s bundle is not the build's bundle byte for byte.** codesign
   refuses data files under `Contents/MacOS` ("code object is not signed at all"
   on `client_ru.qm`). The build mirrors the catalogs there because

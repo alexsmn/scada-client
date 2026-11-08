@@ -638,6 +638,15 @@ jobs:
         security import "$RUNNER_TEMP/certificate.p12" -k "$keychain" \
           -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
         rm -f "$RUNNER_TEMP/certificate.p12"
+        # The issuing intermediate, in case the .p12 lacks it and the runner
+        # image does too: without the chain, `find-identity -v` hides the
+        # identity as untrusted and the step below fails. Pinned by digest
+        # (read 2026-11-07); Apple's copy expires 2031-09-17.
+        curl -fsSL -o "$RUNNER_TEMP/DeveloperIDG2CA.cer" \
+          https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer
+        echo "f16cd3c54c7f83cea4bf1a3e6a0819c8aaa8e4a1528fd144715f350643d2df3a  $RUNNER_TEMP/DeveloperIDG2CA.cer" |
+          shasum -a 256 -c -
+        security import "$RUNNER_TEMP/DeveloperIDG2CA.cer" -k "$keychain" || true
         # Lets codesign use the key without a GUI prompt nobody can answer.
         security set-key-partition-list -S apple-tool:,apple:,codesign: \
           -s -k "$keychain_password" "$keychain" > /dev/null

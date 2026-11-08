@@ -19,7 +19,10 @@
 #                                Unset: the app is ad-hoc signed, and the
 #                                notes say Gatekeeper will refuse it.
 #   APPLE_ID, APPLE_TEAM_ID,     notarisation credentials for notarytool
-#   APPLE_APP_SPECIFIC_PASSWORD  (requires MACOS_SIGNING_IDENTITY).
+#   APPLE_APP_SPECIFIC_PASSWORD  (requires MACOS_SIGNING_IDENTITY). The app is
+#                                notarised and stapled on its own, then the
+#                                .dmg, so the copy a user drags out of the
+#                                image carries its ticket and opens offline.
 #   SCADA_SOURCE_DIRS            space-separated git checkouts whose remote and
 #                                commit are recorded in SOURCES.txt -- the
 #                                client and every sibling product it was built
@@ -127,6 +130,52 @@ smoke_test() {
   fi
 }
 
+# Signs every Mach-O inside the bundle first and the bundle last. codesign
+# seals nested code by its own signature, so signing only the outer bundle
+# fails ("code object is not signed at all") the moment a dylib, framework or
+# plugin is added; --deep is no substitute, because it does not apply the
+# entitlements to nested code and Apple advises against it for signing. Today
+# the bundle holds one executable (Qt is static on arm64-osx), so the loop is
+# what keeps a future nested binary from breaking the release on first use.
+# "$@" is the codesign options shared by every item.
+sign_bundle() {
+  local app=$1 f
+  shift
+  while IFS= read -r -d '' f; do
+    if file -b "$f" | grep -q 'Mach-O'; then
+      codesign --force "$@" "$f"
+    fi
+  done < <(find "$app/Contents" -type f ! -path "$app/Contents/MacOS/client" \
+    ! -path '*/_CodeSignature/*' -print0)
+  # Frameworks and nested bundles are sealed as a whole, after their contents.
+  while IFS= read -r -d '' f; do
+    codesign --force "$@" "$f"
+  done < <(find "$app/Contents" -depth \( -name '*.framework' -o -name '*.app' \
+    -o -name '*.bundle' -o -name '*.plugin' \) -type d -print0)
+  codesign --force "$@" --entitlements "$entitlements" "$app"
+}
+
+# Submits one file to Apple's notary service and fails unless it is accepted.
+# `notarytool submit --wait` exits 0 once the service reaches ANY final state,
+# Invalid and Rejected included (notarytool(1)), so the status is read from
+# the JSON rather than trusted from the exit code, and a refusal prints the
+# notary log, which is the only place that says what was wrong.
+notarise() {
+  local file=$1 out id status
+  local creds=(--apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID"
+    --password "$APPLE_APP_SPECIFIC_PASSWORD")
+  echo "package.sh: notarising $(basename "$file")"
+  out=$(xcrun notarytool submit "$file" --wait --output-format json "${creds[@]}") ||
+    die "notarytool submit failed: $out"
+  id=$(plutil -extract id raw -o - - <<<"$out" 2>/dev/null || true)
+  status=$(plutil -extract status raw -o - - <<<"$out" 2>/dev/null || true)
+  echo "package.sh: submission ${id:-?}: ${status:-?}"
+  if [ "$status" != "Accepted" ]; then
+    [ -n "$id" ] && xcrun notarytool log "$id" "${creds[@]}" >&2 || true
+    die "notarisation of $(basename "$file") ended as '${status:-unknown}': $out"
+  fi
+}
+
 package_macos() {
   local arch app_name app dmg notes identity minos entitlements
   arch=$(uname -m)
@@ -177,16 +226,33 @@ package_macos() {
   if [ -n "$identity" ]; then
     # --options runtime is the hardened runtime, which notarisation requires.
     # --timestamp is a secure timestamp from Apple, which it also requires.
-    codesign --force --options runtime --timestamp \
-      --entitlements "$entitlements" --sign "$identity" "$app"
+    sign_bundle "$app" --options runtime --timestamp --sign "$identity"
   else
     # Ad hoc. The linker already ad-hoc signed the executable, but that seal
     # covers only the Mach-O; re-signing the bundle seals its resources and
     # translations too, so a damaged download is detected rather than run.
-    codesign --force --entitlements "$entitlements" --sign - "$app"
+    sign_bundle "$app" --sign -
   fi
-  codesign --verify --strict --verbose=2 "$app"
+  codesign --verify --deep --strict --verbose=2 "$app"
   smoke_test "$app/Contents/MacOS/client"
+
+  local notarising=
+  if [ -n "$identity" ] && [ -n "${APPLE_ID:-}" ]; then
+    notarising=1
+    # The app first, on its own. A ticket stapled to the .dmg covers the
+    # image, but the copy a user drags into /Applications leaves that ticket
+    # behind, and its first launch then asks Apple online -- which a SCADA
+    # workstation on an isolated network cannot do. Stapling the app itself
+    # makes that first launch work offline. notarytool takes a zip, not a
+    # bare bundle; ditto --keepParent makes the archive Apple documents.
+    ditto -c -k --keepParent "$app" "$work/app.zip"
+    notarise "$work/app.zip"
+    rm -f "$work/app.zip"
+    xcrun stapler staple "$app"
+    xcrun stapler validate "$app"
+    codesign --verify --deep --strict --verbose=2 "$app"
+    spctl --assess --type execute --verbose=2 "$app"
+  fi
 
   # hdiutil on hosted macOS runners intermittently fails with "Resource
   # busy"; a short retry is the usual remedy.
@@ -204,12 +270,11 @@ package_macos() {
   local signing
   if [ -n "$identity" ]; then
     codesign --force --timestamp --sign "$identity" "$dmg"
-    if [ -n "${APPLE_ID:-}" ]; then
-      # Notarising the disk image covers the app inside it; stapling attaches
-      # the ticket so Gatekeeper can check it offline.
-      xcrun notarytool submit "$dmg" --wait \
-        --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" \
-        --password "$APPLE_APP_SPECIFIC_PASSWORD"
+    codesign --verify --strict --verbose=2 "$dmg"
+    if [ -n "$notarising" ]; then
+      # Then the image, so the download itself passes Gatekeeper when opened;
+      # stapling attaches the ticket so that check works offline too.
+      notarise "$dmg"
       xcrun stapler staple "$dmg"
       xcrun stapler validate "$dmg"
       spctl --assess --type open --context context:primary-signature -v "$dmg"
