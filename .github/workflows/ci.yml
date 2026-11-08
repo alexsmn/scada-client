@@ -784,13 +784,17 @@ jobs:
 
     # The Client packages join the product release for the same tag, the one
     # that carries the Windows MSI (`telecontrol-scada-<version>.msi`, built
-    # and uploaded by hand): the manual's download link is /releases/latest,
-    # so a Client-only release published as latest would hide the MSI. If the
-    # release already exists, draft or published, the packages are added to it
-    # and its notes keep everything outside the marked Client section, so a
-    # re-run replaces that section rather than appending a second one.
-    # Otherwise a draft is created under the product's title for the MSI to be
-    # added to before it is published.
+    # and uploaded by hand) when there is one. Until a 2.6 Server installer
+    # exists, 2.5.7 stays the "latest" release (backlog 997), so /releases/latest
+    # keeps serving a Server installer. A release with no MSI is therefore a
+    # Client-only release: publish it with
+    # `gh release edit <tag> --draft=false --latest=false`. Only a release that
+    # carries the MSI may be marked latest. If the release already exists,
+    # draft or published, the packages are added to it and its notes keep
+    # everything outside the marked Client section, so a re-run replaces that
+    # section rather than appending a second one. Otherwise a draft is created
+    # under the product's title; it stays a draft until someone publishes it
+    # as above.
     - name: Add the packages to the product release
       working-directory: dist
       env:
@@ -825,6 +829,6 @@ jobs:
         cat release-notes.md
         msi="telecontrol-scada-$version.msi"
         if ! gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' | grep -qxF "$msi"; then
-          echo "::warning::$GITHUB_REF_NAME has no $msi yet. Attach it before publishing: the manual's Server download is /releases/latest."
-          echo "**Attach \`$msi\` before publishing $GITHUB_REF_NAME.** The manual's Server download link is /releases/latest." >> "$GITHUB_STEP_SUMMARY"
+          echo "::warning::$GITHUB_REF_NAME has no $msi, so it is a Client-only release. Publish it without marking it latest: gh release edit $GITHUB_REF_NAME --draft=false --latest=false. Only a release carrying the MSI may be marked latest."
+          echo "**$GITHUB_REF_NAME has no \`$msi\`, so it is a Client-only release.** Publish it with \`gh release edit $GITHUB_REF_NAME --draft=false --latest=false\` so the release carrying the Server installer stays latest. Once the MSI is attached it may be marked latest." >> "$GITHUB_STEP_SUMMARY"
         fi
