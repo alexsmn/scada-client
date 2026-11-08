@@ -23,7 +23,7 @@ unset(_scada_parent)
 scada_product_prologue()
 
 project(scada-client
-  VERSION 2.6.3
+  VERSION 2.6.4
   LANGUAGES CXX
 )
 
