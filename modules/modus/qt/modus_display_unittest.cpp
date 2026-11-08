@@ -15,12 +15,14 @@
 #include <QCoreApplication>
 #include <QImage>
 #include <QMouseEvent>
+#include <QPainter>
 #include <QScrollArea>
 #include <QWidget>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <cmath>
 #include <cstdlib>
 #include <fstream>
 #include <memory>
@@ -36,6 +38,7 @@ using testing::_;
 using testing::Eq;
 using testing::NotNull;
 using testing::Return;
+using namespace Qt::StringLiterals;
 
 // Points the display loader at the runtime the configure named, before
 // anything calls `DisplayRuntime::Get()` -- which loads once per process --
@@ -92,17 +95,104 @@ bool HaveRuntime() {
 // which no single-layer test crosses. Those cases need a runtime and skip
 // without one.
 
-// The pen `DisplayWidget::paintEvent` uses for every operator-facing error.
+// The pen `DisplayWidget::PaintMessage` uses for every operator-facing error,
+// drawn over a white fill.
 constexpr QColor kErrorTextColor{160, 0, 0};
 
+// Whether `color` is ink of `kErrorTextColor` laid over white at some
+// coverage: a point on the segment white -> kErrorTextColor.
+//
+// The coverage is read from green (0 on white, 255 at full ink), and red must
+// sit where that coverage puts it. The tolerance absorbs gamma-corrected
+// glyph blending, which bends the segment by ~15 levels at half coverage.
+// It does not admit what a schematic draws: pure red (255,0,0) is 95 levels
+// off, grey text lies on the white -> black diagonal, and a coloured fill has
+// green != blue.
+bool IsErrorInk(QColor color) {
+  constexpr int kMinCoverage = 96;  // of 255; ignores faint fringe pixels
+  constexpr int kTolerance = 24;
+  const int coverage = 255 - color.green();
+  if (coverage < kMinCoverage)
+    return false;
+  if (std::abs(color.green() - color.blue()) > kTolerance)
+    return false;
+  const int expected_red = 255 - (255 - kErrorTextColor.red()) * coverage / 255;
+  return std::abs(color.red() - expected_red) <= kTolerance;
+}
+
+// Whether `image` shows an error message: enough pixels of error ink that it
+// cannot be a stray edge pixel.
+//
+// This asked for a pixel exactly equal to kErrorTextColor until 2026-11-08.
+// That holds only while some glyph stem covers a whole pixel, and with Qt
+// 6.11.2's Linux glyph rasterization none did: both failure-surface tests
+// failed on the client's Ubuntu CI leg (scada-client run 42506651766, tag
+// v2.6.3) while macOS and Windows passed. Antialiased ink is still error ink,
+// so the check reads the colour's shape rather than one value of it.
 bool ContainsErrorText(const QImage& image) {
+  constexpr int kMinInkPixels = 20;
+  int ink_pixels = 0;
   for (int y = 0; y < image.height(); ++y) {
     for (int x = 0; x < image.width(); ++x) {
-      if (image.pixelColor(x, y) == kErrorTextColor)
+      if (IsErrorInk(image.pixelColor(x, y)) && ++ink_pixels >= kMinInkPixels)
         return true;
     }
   }
   return false;
+}
+
+// Paints `text` the way `DisplayWidget::PaintMessage` does, with the pen at
+// `alpha` so that no pixel reaches the full ink colour.
+QImage PaintMessageImage(const QString& text, int alpha) {
+  QImage image{320, 120, QImage::Format_ARGB32_Premultiplied};
+  image.fill(Qt::white);
+  QPainter painter{&image};
+  QColor pen = kErrorTextColor;
+  pen.setAlpha(alpha);
+  painter.setPen(pen);
+  painter.drawText(image.rect(), Qt::AlignCenter, text);
+  return image;
+}
+
+TEST(ContainsErrorTextTest, FindsAMessageWithNoFullyCoveredPixel) {
+  AppEnvironment app_env;
+  const QImage image = PaintMessageImage(u"No document assigned"_s, 200);
+  bool any_exact = false;
+  for (int y = 0; y < image.height(); ++y)
+    for (int x = 0; x < image.width(); ++x)
+      any_exact |= image.pixelColor(x, y) == kErrorTextColor;
+  ASSERT_FALSE(any_exact) << "the fixture must exercise antialiased ink only";
+  EXPECT_TRUE(ContainsErrorText(image));
+}
+
+TEST(ContainsErrorTextTest, FindsAMessageAtFullInk) {
+  AppEnvironment app_env;
+  EXPECT_TRUE(ContainsErrorText(PaintMessageImage(u"Cannot open"_s, 255)));
+}
+
+TEST(ContainsErrorTextTest, IgnoresABlankPanel) {
+  QImage image{320, 120, QImage::Format_ARGB32_Premultiplied};
+  image.fill(Qt::white);
+  EXPECT_FALSE(ContainsErrorText(image));
+}
+
+// What a schematic may legitimately draw must not read as an error message,
+// or the live-value cases' "the document opened" assertion means nothing.
+TEST(ContainsErrorTextTest, IgnoresRedEquipmentAndBlackText) {
+  AppEnvironment app_env;
+  QImage image{320, 120, QImage::Format_ARGB32_Premultiplied};
+  image.fill(Qt::white);
+  QPainter painter{&image};
+  painter.setRenderHint(QPainter::Antialiasing);
+  painter.setBrush(QColor{255, 0, 0});
+  painter.setPen(Qt::NoPen);
+  painter.drawEllipse(QRect{10, 10, 60, 60});
+  painter.setBrush(QColor{200, 0, 0});
+  painter.drawRect(QRect{80, 10, 60, 60});
+  painter.setPen(Qt::black);
+  painter.drawText(QRect{150, 10, 160, 100}, Qt::AlignCenter, u"0000 kV"_s);
+  painter.end();
+  EXPECT_FALSE(ContainsErrorText(image));
 }
 
 class ModusDisplayTest : public testing::Test {
