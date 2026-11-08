@@ -88,6 +88,12 @@ class TransmissionModel
 
   void OnModelChanged(const scada::ModelChangeEvent& event);
   void OnNodeSemanticChanged(const scada::NodeId& node_id);
+  // Refreshes the row a changed node belongs to: the rule itself, or the rule
+  // owning a changed property.
+  void OnNodeChanged(const scada::NodeId& node_id);
+  // The row whose rule owns the property `node_id`, or -1.
+  int FindPropertyOwnerRow(const scada::NodeId& node_id,
+                           const NodeRef& node) const;
   void OnNodeFetched(const NodeFetchedEvent& event);
 
   AnyExecutor executor_;

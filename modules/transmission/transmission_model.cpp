@@ -10,6 +10,7 @@
 #include "base/format.h"
 #include "base/range_util.h"
 #include "model/devices_node_ids.h"
+#include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_awaitable.h"
 #include "node_service/node_service.h"
@@ -21,6 +22,7 @@
 
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
+#include <string_view>
 #include <tuple>
 
 namespace {
@@ -243,16 +245,40 @@ void TransmissionModel::OnModelChanged(const scada::ModelChangeEvent& event) {
   if (event.verb & scada::ModelChangeEvent::NodeDeleted) {
     Delete(event.node_id);
   } else {
-    auto node = node_service_.GetNode(event.node_id);
-    if (IsInstanceOf(node, scada::devices::id::TransmissionItemType))
-      Update(node);
+    OnNodeChanged(event.node_id);
   }
 }
 
 void TransmissionModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
+  OnNodeChanged(node_id);
+}
+
+void TransmissionModel::OnNodeChanged(const scada::NodeId& node_id) {
   auto node = node_service_.GetNode(node_id);
-  if (IsInstanceOf(node, scada::devices::id::TransmissionItemType))
+  if (IsInstanceOf(node, scada::devices::id::TransmissionItemType)) {
     Update(node);
+    return;
+  }
+  // A change to one of a rule's properties -- its address or its Value
+  // format -- can be announced on the property node rather than on the rule:
+  // the node service publishes a refetched property under its own id. Either
+  // decides whether the row and its neighbours overlap (backlog 1031).
+  if (int row = FindPropertyOwnerRow(node_id, node); row != -1)
+    Update(NodeRef{rows_[row].transmission});
+}
+
+int TransmissionModel::FindPropertyOwnerRow(const scada::NodeId& node_id,
+                                            const NodeRef& node) const {
+  // A database property's id is nested under its owner's, which resolves the
+  // row with nothing resident.
+  scada::NodeId parent_id;
+  std::string_view nested_name;
+  if (IsNestedNodeId(node_id, parent_id, nested_name))
+    return FindRow(parent_id);
+  // A property a node factory created lives under its browse name instead.
+  if (node && node.node_class() == scada::NodeClass::Variable)
+    return FindRow(node.parent().node_id());
+  return -1;
 }
 
 void TransmissionModel::OnNodeFetched(const NodeFetchedEvent& event) {

@@ -6,7 +6,9 @@
 #include "common/node_state.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
+#include "model/node_id_util.h"
 #include "node_service/static/static_node_service.h"
+#include "node_service/test/fake_node_service.h"
 #include "services/task_manager_mock.h"
 #include "services/transmission_source.h"
 
@@ -327,6 +329,132 @@ TEST_F(TransmissionModelTest, OnlyTheAddressColumnIsEditable) {
   EXPECT_FALSE(model_->IsEditable(0, 0));
   EXPECT_TRUE(model_->IsEditable(0, 1));
   EXPECT_FALSE(model_->IsEditable(0, 2));
+}
+
+// Backlog 1031: a rule's Value format is a property, and its new value reaches
+// the client on the property node -- the node service publishes a refetched
+// property under the property's own id, not the rule's. The model refreshed
+// only on events naming a rule, so a rule widened to FLOAT over its neighbour
+// showed no "Duplicate address" until the table was reopened. FakeNodeService
+// rather than StaticNodeService: the test needs a value to change and the
+// change to be announced.
+class TransmissionModelLiveTest : public ::testing::Test {
+ protected:
+  static constexpr scada::NumericId kFirstRuleNumericId = 6200;
+
+  void SetUp() override {
+    for (const scada::NodeState& node_state : GetScadaNodeStates())
+      node_service_.Add(node_state);
+    node_service_.Add(scada::NodeState{
+        .node_id = scada::devices::id::ModbusTransmissionItemType_Format,
+        .node_class = scada::NodeClass::Variable,
+        .type_definition_id = scada::id::PropertyType,
+        .parent_id = scada::devices::id::ModbusTransmissionItemType,
+        .reference_type_id = scada::id::HasProperty,
+        .attributes = {.browse_name = "Format",
+                       .data_type = scada::id::String}});
+    node_service_.Add(scada::NodeState{
+        .node_id = kSourceId,
+        .node_class = scada::NodeClass::Variable,
+        .type_definition_id = scada::data_items::id::AnalogItemType,
+        .attributes = {.display_name = u"Ua"}});
+    node_service_.Add(scada::NodeState{
+        .node_id = kLinkId,
+        .node_class = scada::NodeClass::Object,
+        .type_definition_id = scada::devices::id::ModbusLinkType,
+        .parent_id = scada::devices::id::Devices,
+        .reference_type_id = scada::id::Organizes});
+    node_service_.Add(
+        scada::NodeState{.node_id = kDeviceId,
+                         .node_class = scada::NodeClass::Object,
+                         .type_definition_id = scada::devices::id::DeviceType,
+                         .parent_id = kLinkId,
+                         .reference_type_id = scada::id::Organizes});
+    AddRule(0, 40001);
+    AddRule(1, 40002);
+
+    model_->Init(node_service_.GetNode(kDeviceId));
+    executor_.Poll();
+    range_changed_ = model_->SubscribeRangeChanged(
+        [this](scada::aui::GridModel&, const scada::aui::GridRange&) {
+          ++range_changes_;
+        });
+  }
+
+  static scada::NodeId RuleId(int index) {
+    return scada::NodeId{
+        static_cast<scada::NumericId>(kFirstRuleNumericId + index), 1};
+  }
+
+  static scada::NodeId FormatPropertyId(int index) {
+    return MakeNestedNodeId(
+        RuleId(index),
+        scada::devices::id::ModbusTransmissionItemType_Format.ToString());
+  }
+
+  void AddRule(int index, scada::Int32 address) {
+    node_service_.Add(scada::NodeState{
+        .node_id = RuleId(index),
+        .node_class = scada::NodeClass::Object,
+        .type_definition_id = scada::devices::id::ModbusTransmissionItemType,
+        .parent_id = kDeviceId,
+        .reference_type_id = scada::id::Organizes,
+        .properties = {
+            {scada::devices::id::TransmissionItemType_SourceNode, kSourceId},
+            {scada::devices::id::TransmissionItemType_Address, address},
+            {scada::devices::id::ModbusTransmissionItemType_Format,
+             scada::Variant{std::string{"INT16"}}}}});
+  }
+
+  // Replaces the property node's value, as a refetch does.
+  void SetFormat(int index, std::string format) {
+    node_service_.Add(scada::NodeState{
+        .node_id = FormatPropertyId(index),
+        .node_class = scada::NodeClass::Variable,
+        .type_definition_id = scada::id::PropertyType,
+        .parent_id = RuleId(index),
+        .reference_type_id = scada::id::HasProperty,
+        .attributes = {.value = scada::Variant{std::move(format)}}});
+  }
+
+  std::u16string StatusText(int row) {
+    scada::aui::GridCell cell{.row = row, .column = 2};
+    model_->GetCell(cell);
+    return cell.text;
+  }
+
+  TestExecutor executor_;
+  FakeNodeService node_service_;
+  NiceMock<MockTaskManager> task_manager_;
+  std::shared_ptr<TransmissionModel> model_ =
+      std::make_shared<TransmissionModel>(executor_,
+                                          node_service_,
+                                          task_manager_);
+  boost::signals2::scoped_connection range_changed_;
+  int range_changes_ = 0;
+};
+
+TEST_F(TransmissionModelLiveTest, AFormatChangeOnThePropertyRepaintsStatus) {
+  ASSERT_EQ(model_->GetRowCount(), 2);
+  EXPECT_EQ(StatusText(0), std::u16string{});
+  EXPECT_EQ(StatusText(1), std::u16string{});
+
+  SetFormat(0, "FLOAT");
+  node_service_.EmitNodeSemanticChanged(FormatPropertyId(0));
+
+  EXPECT_GT(range_changes_, 0);
+  EXPECT_EQ(StatusText(0), u"Duplicate address");
+  EXPECT_EQ(StatusText(1), u"Duplicate address");
+}
+
+// The same change announced on the rule itself, as the 2.6 Server's
+// configuration database does for a property write.
+TEST_F(TransmissionModelLiveTest, AFormatChangeOnTheRuleRepaintsStatus) {
+  SetFormat(0, "FLOAT");
+  node_service_.EmitNodeSemanticChanged(RuleId(0));
+
+  EXPECT_GT(range_changes_, 0);
+  EXPECT_EQ(StatusText(1), u"Duplicate address");
 }
 
 }  // namespace
