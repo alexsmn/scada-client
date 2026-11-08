@@ -323,7 +323,7 @@ install(TARGETS client_qt
   BUNDLE DESTINATION "." COMPONENT Client
   RUNTIME DESTINATION "bin" COMPONENT Client)
 
-# PROJECT_SOURCE_DIR, not CMAKE_SOURCE_DIR. Both blocks arrived in 1a7a17380
+# PROJECT_SOURCE_DIR, not CMAKE_SOURCE_DIR. This block arrived in 1a7a17380
 # ("Move client packaging payloads into repo-local install rules", 2026-04-22),
 # when client was its own repository and CMAKE_SOURCE_DIR therefore *was* the
 # client root. It no longer is reliably: CMAKE_SOURCE_DIR names the top-level
@@ -331,25 +331,19 @@ install(TARGETS client_qt
 # (ADR 0011), and in the generated client export the path escapes the export
 # root altogether -- `tools/export/check-escapes.py` reports it.
 #
-# Both rules are inert today and the `if(EXISTS)` guard is why that went
-# unnoticed: `dependencies/bin` exists in neither layout, and `examples/schemes`
-# sits at the MONOREPO root, which the client product does not claim in
-# products.toml and which no product claims at all. So the example schematics
-# have not been installed since the monorepo import separated the payload from
-# its install rule. Repointing the anchor fixes the ADR 0011 violation and
-# restores the rule's original meaning; it does not put the payload back, which
-# is a packaging question rather than a build one.
+# The rule is inert today and the `if(EXISTS)` guard is why that went
+# unnoticed: `dependencies/bin` exists in neither layout. Repointing the anchor
+# fixed the ADR 0011 violation and restored the rule's original meaning; it
+# does not put a payload back, which is a packaging question.
+#
+# The example schematics this file used to install as well are no longer the
+# client's: they stay private (decided 2026-11-08), so they ship in the
+# superproject's documentation package rather than from this published repo.
 if(EXISTS "${PROJECT_SOURCE_DIR}/dependencies/bin")
   install(DIRECTORY "${PROJECT_SOURCE_DIR}/dependencies/bin/"
     DESTINATION "bin"
     COMPONENT Client
     PATTERN "DisplayLib.dll" EXCLUDE)
-endif()
-
-if(EXISTS "${PROJECT_SOURCE_DIR}/examples/schemes")
-  install(DIRECTORY "${PROJECT_SOURCE_DIR}/examples/schemes"
-    DESTINATION "examples"
-    COMPONENT Client)
 endif()
 
 # UT-s

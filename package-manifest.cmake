@@ -10,7 +10,7 @@ set(SCADA_PACKAGE_STANDALONE_INSTALLER_DEFAULT ON)
 # product sharing an UpgradeCode, so a shared one made installing this MSI
 # uninstall the others (backlog 929). Constant for the life of the package.
 set(SCADA_PACKAGE_WIX_UPGRADE_GUID "5A16172E-7D30-4798-890E-121EA0ED006D")
-set(SCADA_PACKAGE_INSTALL_DESTINATIONS "bin" "bin/translations" "examples/schemes")
+set(SCADA_PACKAGE_INSTALL_DESTINATIONS "bin" "bin/translations")
 set(SCADA_PACKAGE_RUNTIME_DEPENDENCY_POLICY "repo-local-runtime-deps")
 set(SCADA_PACKAGE_ROOT_GROUPS "product-client")
 # scada-vds-runtime was a conditional dependency here until ADR 0012 phase 4:
