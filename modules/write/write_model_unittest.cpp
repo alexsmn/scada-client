@@ -359,10 +359,11 @@ TEST_F(WriteModelTest, ReleasedOrNeverArmedSelectionReportsNothing) {
 }
 
 // The Server refuses the select of an object whose device cannot select
-// (IEC 104 commands other than a single command, every MODBUS object) with
-// Bad_NotSupported. The operator is told so in words, nothing is confirmed,
-// operated or cancelled, and the dialog stays open (backlog 983). It used to
-// answer Good, and the prompt said the device was ready to execute.
+// (IEC 60870-5 commands other than a single command, every MODBUS and OPC
+// object, IEC 61850 direct control) with Bad_NotSupported. The operator is told
+// so in words, nothing is confirmed, operated or cancelled, and the dialog
+// stays open (backlog 983). It used to answer Good, and the prompt said the
+// device was ready to execute.
 TEST_F(WriteModelTest, RefusedSelectExplainsAndArmsNothing) {
   EXPECT_CALL(method_service_, Call(kControlNodeId, _, _, _))
       .WillRepeatedly([this](scada::NodeId, scada::NodeId method_id,
@@ -386,6 +387,11 @@ TEST_F(WriteModelTest, RefusedSelectExplainsAndArmsNothing) {
   EXPECT_NE(message.find(u"Nothing was sent to the device."),
             std::u16string::npos);
   EXPECT_EQ(message.find(u"ready to execute"), std::u16string::npos);
+  // Two-stage control is configured per object, which is the project
+  // engineer's job, not the administrator's.
+  EXPECT_NE(message.find(u"engineer who configures the project"),
+            std::u16string::npos);
+  EXPECT_EQ(message.find(u"administrator"), std::u16string::npos);
   EXPECT_TRUE(model->GetStatusText().empty());
 
   dialog_service_.CompleteMessageBox();

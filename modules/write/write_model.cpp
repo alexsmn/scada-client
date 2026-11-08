@@ -231,14 +231,18 @@ void WriteModel::OnWriteComplete(const scada::Status& status) {
 std::u16string WriteModel::GetSelectRefusalMessage(
     const scada::Status& status) {
   // Bad_NotSupported is the Server refusing two-stage control on an object
-  // whose device cannot select (IEC 104 commands other than a single command,
-  // every MODBUS object). Said in words, because "Operation is not supported"
-  // alone does not tell the operator what to do next (backlog 983).
+  // whose device cannot select: IEC 60870-5 commands other than a single
+  // command (C_SC_NA_1), every MODBUS and OPC object, and IEC 61850 objects
+  // with direct control. Said in words, because "Operation is not supported"
+  // alone does not tell the operator what to do next (backlog 983). It names
+  // the project engineer rather than the administrator: two-stage control is
+  // a property of the object, which the engineer configures.
   if (status.code() == scada::StatusCode::Bad_NotSupported) {
     return Translate(
         "Two-stage control is not available for this object: its device "
         "cannot select a command. Nothing was sent to the device. Ask the "
-        "administrator to turn off two-stage control for this object.");
+        "engineer who configures the project to turn off two-stage control "
+        "for this object.");
   }
   return u16format(L"{}: {}. {}", Translate("Preparation for control failed"),
                    ToString16(status),
@@ -377,7 +381,8 @@ Awaitable<void> WriteModel::ReportCancelRefusalAsync(
   const scada::Status status = co_await std::move(operation);
   // Bad_NotSupported is DataItemWriteImpl::Cancel's answer for a driver with
   // no Cancel. Such a driver never sends the device a select stage, so nothing
-  // is left armed to report. (MODBUS and IEC 104 commands other than C_SC_NA_1
+  // is left armed to report. (Devices that cannot select -- MODBUS, OPC,
+  // IEC 60870-5 commands other than C_SC_NA_1, IEC 61850 direct control --
   // now refuse the select itself, so they never get this far.)
   if (status || status.code() == scada::StatusCode::Bad_NotSupported ||
       !local_events || local_events_alive.expired())

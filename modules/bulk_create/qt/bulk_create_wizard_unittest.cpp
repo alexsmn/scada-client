@@ -2,6 +2,7 @@
 
 #include "aui/test/app_environment.h"
 #include "bulk_create/qt/bulk_create_preview_panel.h"
+#include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "node_service/test/fake_node_service.h"
 #include "scada/node_id.h"
@@ -170,6 +171,52 @@ TEST_F(BulkCreateWizardTest, FinishPostsOneInsertPerPlannedNode) {
 
   EXPECT_CALL(task_manager_, PostInsertTask(_)).Times(4);
   wizard->accept();
+}
+
+// Data items bound to a MODBUS device are created with two-stage control off:
+// the MODBUS tier refuses every select, so the nodeset's Yes would leave each
+// one uncontrollable until an engineer turned it off.
+TEST_F(BulkCreateWizardTest, ItemsOnAModbusDeviceAreCreatedOneStage) {
+  node_service_.Add({.node_id = scada::devices::id::DeviceType,
+                     .node_class = scada::NodeClass::ObjectType});
+  node_service_.Add({.node_id = scada::devices::id::ModbusDeviceType,
+                     .node_class = scada::NodeClass::ObjectType,
+                     .supertype_id = scada::devices::id::DeviceType});
+  node_service_.Add({.node_id = scada::devices::id::Devices,
+                     .node_class = scada::NodeClass::Object});
+  node_service_.Add({.node_id = scada::NodeId::FromString("ns=2;s=PLC"),
+                     .node_class = scada::NodeClass::Object,
+                     .type_definition_id = scada::devices::id::ModbusDeviceType,
+                     .parent_id = scada::devices::id::Devices,
+                     .reference_type_id = scada::id::Organizes,
+                     .attributes = {.display_name = u"PLC"}});
+
+  std::unique_ptr<QWizard> wizard = MakeWizard();
+  auto* preview = wizard->findChild<BulkCreatePreviewPanel*>();
+  ASSERT_NE(preview, nullptr);
+  BulkCreateParams params;
+  params.subject = BulkCreateSubject::kDataItem;
+  params.name_template = u"AI{n}";
+  params.node_id_template = u"ns=2;s=AI{n}";
+  params.count = 2;
+  preview->SetParams(params);
+
+  std::vector<scada::NodeState> posted;
+  EXPECT_CALL(task_manager_, PostInsertTask(_))
+      .Times(2)
+      .WillRepeatedly([&posted](const scada::NodeState& node) {
+        posted.push_back(node);
+        return AcceptInsert();
+      });
+  wizard->accept();
+
+  ASSERT_EQ(posted.size(), 2u);
+  for (const scada::NodeState& node : posted) {
+    EXPECT_EQ(
+        scada::GetProperty(node.properties,
+                           scada::data_items::id::DataItemType_OutputTwoStaged),
+        scada::Variant{false});
+  }
 }
 
 // Nothing to create must post nothing rather than an empty run.

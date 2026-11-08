@@ -71,6 +71,10 @@ std::vector<scada::NodeState> PlanBulkCreate(
           node.set_property(scada::data_items::id::DataItemType_Input1,
                             scada::Variant{MakeNodeIdFormula(source_id)});
         }
+        if (plan.output_two_staged) {
+          node.set_property(scada::data_items::id::DataItemType_OutputTwoStaged,
+                            scada::Variant{*plan.output_two_staged});
+        }
         break;
       }
       case BulkCreateSubject::kTransmissionItem: {

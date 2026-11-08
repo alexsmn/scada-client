@@ -2459,8 +2459,8 @@ Try again? Choose No to continue without the server copy.</source>
         <translation>Подготовка к управлению...</translation>
     </message>
     <message>
-        <source>Two-stage control is not available for this object: its device cannot select a command. Nothing was sent to the device. Ask the administrator to turn off two-stage control for this object.</source>
-        <translation>Двухэтапное управление для этого объекта недоступно: его устройство не поддерживает выбор команды. На устройство ничего не отправлено. Обратитесь к администратору, чтобы отключить двухэтапное управление для этого объекта.</translation>
+        <source>Two-stage control is not available for this object: its device cannot select a command. Nothing was sent to the device. Ask the engineer who configures the project to turn off two-stage control for this object.</source>
+        <translation>Двухэтапное управление для этого объекта недоступно: его устройство не поддерживает выбор команды. На устройство ничего не отправлено. Обратитесь к инженеру, настраивающему проект, чтобы отключить двухэтапное управление для этого объекта.</translation>
     </message>
     <message>
         <source>Preparation for control failed</source>

@@ -71,6 +71,33 @@ TEST(PlanBulkCreateTest, DataItemCarriesItsSourceFormulaAndNoAddress) {
       nullptr);
 }
 
+// The caller's "Two-stage control" decision reaches every created item; with
+// none, the property is left off so the Server's default applies.
+TEST(PlanBulkCreateTest, DataItemCarriesTheTwoStagedDecisionOnlyWhenMade) {
+  BulkCreatePlan plan;
+  plan.subject = BulkCreateSubject::kDataItem;
+  plan.type_definition_id = scada::data_items::id::AnalogItemType;
+  plan.source_device_id = scada::NodeId::FromString("ns=2;s=RTU1");
+  plan.source_path_template = u"Signal{n}";
+
+  std::vector<scada::NodeState> nodes =
+      PlanBulkCreate(plan, ExpandBulkCreate(DataItemParams(2), {}));
+  ASSERT_EQ(nodes.size(), 2u);
+  EXPECT_EQ(FindProperty(nodes[0],
+                         scada::data_items::id::DataItemType_OutputTwoStaged),
+            nullptr);
+
+  plan.output_two_staged = false;
+  nodes = PlanBulkCreate(plan, ExpandBulkCreate(DataItemParams(2), {}));
+  ASSERT_EQ(nodes.size(), 2u);
+  for (const scada::NodeState& node : nodes) {
+    const scada::Variant* two_staged =
+        FindProperty(node, scada::data_items::id::DataItemType_OutputTwoStaged);
+    ASSERT_NE(two_staged, nullptr);
+    EXPECT_EQ(*two_staged, scada::Variant{false});
+  }
+}
+
 // The source path steps with the row exactly as the name does; a fixed source
 // across every row would bind every created item to one signal.
 TEST(PlanBulkCreateTest, DataItemSourcePathStepsWithTheRow) {

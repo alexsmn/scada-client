@@ -4,6 +4,7 @@
 #include "common/node_state.h"
 #include "scada/node_id.h"
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -39,6 +40,10 @@ struct BulkCreatePlan {
   // `MultiCreateModel::Run` does.
   scada::NodeId source_device_id;
   std::u16string source_path_template;
+  // Data item only — the "Two-stage control" value to create the items with,
+  // which the caller derives from the source device
+  // (`GetOutputTwoStagedDefault`). Unset leaves the Server's default.
+  std::optional<bool> output_two_staged;
 
   // Transmission item only — the node each rule forwards, in row order. Bulk
   // rule creation is driven by a *selection* of sources rather than by a

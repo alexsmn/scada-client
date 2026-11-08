@@ -7,9 +7,11 @@
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
+#include "services/output_two_staged_default.h"
 #include "services/task_manager.h"
 
 #include <format>
+#include <optional>
 #include <tuple>
 
 namespace {
@@ -44,6 +46,13 @@ void MultiCreateModel::Run(const RunParams& params) {
       params.ts ? scada::data_items::id::DiscreteItemType
                 : scada::data_items::id::AnalogItemType;
 
+  // Decided once for the run: every item shares the device and the type.
+  const std::optional<bool> two_staged =
+      device_id.is_null()
+          ? std::nullopt
+          : GetOutputTwoStagedDefault(node_service_.GetNode(device_id),
+                                      type_definition_id);
+
   for (int i = 0; i < params.count; ++i) {
     int number = params.starting_number + i;
     int address = params.starting_address + i;
@@ -54,11 +63,16 @@ void MultiCreateModel::Run(const RunParams& params) {
         std::format("{}{}", params.path_prefix, address);
     auto path = MakeNodeIdFormula(MakeNestedNodeId(device_id, item_path));
 
-    std::ignore = task_manager_.PostInsertTask(
-        {.type_definition_id = type_definition_id,
-         .parent_id = parent_id_,
-         .attributes = {.display_name = std::move(display_name)},
-         .properties = {
-             {scada::data_items::id::DataItemType_Input1, std::move(path)}}});
+    scada::NodeState node{
+        .type_definition_id = type_definition_id,
+        .parent_id = parent_id_,
+        .attributes = {.display_name = std::move(display_name)},
+        .properties = {
+            {scada::data_items::id::DataItemType_Input1, std::move(path)}}};
+    if (two_staged) {
+      node.set_property(scada::data_items::id::DataItemType_OutputTwoStaged,
+                        *two_staged);
+    }
+    std::ignore = task_manager_.PostInsertTask(std::move(node));
   }
 }

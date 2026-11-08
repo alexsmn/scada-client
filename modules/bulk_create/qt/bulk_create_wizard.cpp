@@ -12,6 +12,7 @@
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "scada/node_id.h"
+#include "services/output_two_staged_default.h"
 #include "services/task_manager.h"
 
 #include <QComboBox>
@@ -345,6 +346,11 @@ std::vector<scada::NodeState> BulkCreateWizard::PlannedNodes() const {
     plan.source_device_id = scada::NodeId::FromString(
         device_->currentData().toString().toStdString());
     plan.source_path_template = source_path_->text().toStdU16String();
+    if (!plan.source_device_id.is_null()) {
+      plan.output_two_staged = GetOutputTwoStagedDefault(
+          context_.node_service_.GetNode(plan.source_device_id),
+          plan.type_definition_id);
+    }
   } else {
     plan.source_node_ids = context_.source_node_ids_;
   }
