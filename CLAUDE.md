@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Telecontrol SCADA Client is a C++ industrial monitoring and control application (version 2.6.1). It provides remote device monitoring, real-time and historical data viewing, event/alarm journaling, and device configuration management. The application supports multiple industrial protocols (SCADA/Telecontrol, OPC UA, Vidicon, Modus) and ships a Qt desktop frontend. (A second Wt web frontend existed until 2026-08-08; the web client is the separate `web/` app in the superproject, not a second backend of this one.)
+Telecontrol SCADA Client is a C++ industrial monitoring and control application (version 2.6.2). It provides remote device monitoring, real-time and historical data viewing, event/alarm journaling, and device configuration management. The application supports multiple industrial protocols (SCADA/Telecontrol, OPC UA, Vidicon, Modus) and ships a Qt desktop frontend. (A second Wt web frontend existed until 2026-08-08; the web client is the separate `web/` app in the superproject, not a second backend of this one.)
 
 Licensed under GPL-3.0 (see `LICENSE`, which carries the GPL-3.0 text).
 
