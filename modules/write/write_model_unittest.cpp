@@ -39,6 +39,15 @@ scada::CoStatusOr<scada::CallResult> AwaitRefusal(
   co_return scada::MakeCallResult(scada::Status{scada::StatusCode::Bad});
 }
 
+// A Write answer that arrives only once `answer` completes, with `code` for
+// the one value written.
+scada::CoStatusOr<std::vector<scada::StatusCode>> AwaitWriteAnswer(
+    scada::base::AsyncCompletion& answer,
+    scada::StatusCode code) {
+  co_await answer.Wait();
+  co_return std::vector{code};
+}
+
 // A Call answer that arrives only once `answer` completes, and accepts.
 scada::CoStatusOr<scada::CallResult> AwaitAcceptance(
     scada::base::AsyncCompletion& answer) {
@@ -523,6 +532,72 @@ TEST_F(WriteModelTest, ClosingAfterAFlaggedSelectReportsTheHeldSelection) {
   ASSERT_THAT(local_events_.events(), SizeIs(1));
   EXPECT_NE(local_events_.events()[0]->message.text.find(u"Output"),
             std::u16string::npos);
+}
+
+// Backlog 1027: the operator closes the dialog while the 2.5-style select is
+// still in flight. The device then accepts it with nobody left to operate,
+// and such a Server has no Cancel -- so the operator is told the device stays
+// selected, as closing after the answer does. Before the fix the answer went
+// through CompleteWriteAsync, which dropped it with the model.
+TEST_F(WriteModelTest,
+       ClosingBeforeAFlaggedSelectAnswersReportsTheHeldSelection) {
+  ON_CALL(method_service_, Call)
+      .WillByDefault([](scada::NodeId, scada::NodeId,
+                        std::vector<scada::Variant>, scada::ServiceContext) {
+        return scada::MakeMethodCallResult(
+            scada::Status{scada::StatusCode::Bad_WrongNodeId});
+      });
+  scada::base::AsyncCompletion select_answer{executor_};
+  EXPECT_CALL(attribute_service_, Write(_, _))
+      .WillOnce([&select_answer](scada::ServiceContext,
+                                 std::vector<scada::WriteValue>) {
+        return AwaitWriteAnswer(select_answer, scada::StatusCode::Good);
+      });
+
+  auto model = CreateModel(/*two_staged=*/true);
+  model->Write(42.0, /*lock=*/false);
+  Drain(executor_);
+  model.reset();
+  Drain(executor_);
+  EXPECT_THAT(local_events_.events(), IsEmpty());
+
+  select_answer.Complete();
+  Drain(executor_);
+
+  ASSERT_THAT(local_events_.events(), SizeIs(1));
+  const std::u16string& text = local_events_.events()[0]->message.text;
+  EXPECT_NE(text.find(u"Release of selection"), std::u16string::npos);
+  EXPECT_NE(text.find(u"Output"), std::u16string::npos);
+  EXPECT_NE(text.find(u"selection timeout"), std::u16string::npos);
+  // Nothing is asked of an operator who has closed the dialog.
+  EXPECT_TRUE(dialog_service_.modes.empty());
+}
+
+// The same close, but the Server refuses the flagged select: nothing was
+// armed, so nothing is reported.
+TEST_F(WriteModelTest, ClosingBeforeAFlaggedSelectIsRefusedReportsNothing) {
+  ON_CALL(method_service_, Call)
+      .WillByDefault([](scada::NodeId, scada::NodeId,
+                        std::vector<scada::Variant>, scada::ServiceContext) {
+        return scada::MakeMethodCallResult(
+            scada::Status{scada::StatusCode::Bad_WrongNodeId});
+      });
+  scada::base::AsyncCompletion select_answer{executor_};
+  EXPECT_CALL(attribute_service_, Write(_, _))
+      .WillOnce([&select_answer](scada::ServiceContext,
+                                 std::vector<scada::WriteValue>) {
+        return AwaitWriteAnswer(select_answer, scada::StatusCode::Bad);
+      });
+
+  auto model = CreateModel(/*two_staged=*/true);
+  model->Write(42.0, /*lock=*/false);
+  Drain(executor_);
+  model.reset();
+  select_answer.Complete();
+  Drain(executor_);
+
+  EXPECT_THAT(local_events_.events(), IsEmpty());
+  EXPECT_TRUE(dialog_service_.modes.empty());
 }
 
 // A 2.5-style select the Server also refuses is reported once, as a refused

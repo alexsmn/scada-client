@@ -122,6 +122,23 @@ class WriteModel : private WriteContext,
                                              LocalEvents* local_events,
                                              std::u16string source_title);
 
+  // The legacy twin of CompleteSelectAsync, for a Server before 2.6: awaits
+  // the flagged-write select and hands its outcome to `model`. When the model
+  // is gone by then, a select the device accepted cannot be released (such a
+  // Server has no Cancel), so the held selection of `source_title` is reported
+  // to `local_events` instead -- checked against its `lifetime()` first.
+  // Parameters are by value: the frame outlives the CoSpawn call.
+  static Awaitable<void> CompleteLegacySelectAsync(
+      std::weak_ptr<WriteModel> model,
+      scada::CoStatus select,
+      LocalEvents* local_events,
+      std::u16string source_title);
+
+  // Reports that a Server before 2.6 left `source_title` selected, since it
+  // has no Cancel. Synchronous; a null `local_events` reports nothing.
+  static void ReportLegacySelectionHeld(LocalEvents* local_events,
+                                        std::u16string_view source_title);
+
   static Awaitable<void> CompleteWriteAsync(AnyExecutor executor,
                                             std::weak_ptr<WriteModel> model,
                                             scada::CoStatus operation);

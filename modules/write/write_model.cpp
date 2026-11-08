@@ -369,13 +369,32 @@ void WriteModel::SelectByLegacyWrite() {
   legacy_control_ = true;
   scada::WriteFlags flags;
   flags.set_select();
-  CoSpawn(executor_,
-          [executor = executor_, model = weak_from_this(),
-           operation = spec_.scada_node().write(
-               scada::AttributeId::Value, write_value_, flags)]() mutable {
-            return CompleteWriteAsync(std::move(executor), std::move(model),
-                                      std::move(operation));
-          });
+  // Not CompleteWriteAsync: that drops the answer once the dialog is gone, so
+  // a select the device accepted after the operator closed it set no
+  // `select_outstanding_` and nobody was told the device stays selected
+  // (backlog 1027).
+  CoSpawn(executor_, [model = weak_from_this(),
+                      select = spec_.scada_node().write(
+                          scada::AttributeId::Value, write_value_, flags),
+                      local_events = local_events_,
+                      source_title = GetSourceTitle()]() mutable {
+    return CompleteLegacySelectAsync(std::move(model), std::move(select),
+                                     local_events, std::move(source_title));
+  });
+}
+
+// static
+void WriteModel::ReportLegacySelectionHeld(LocalEvents* local_events,
+                                           std::u16string_view source_title) {
+  if (!local_events)
+    return;
+  local_events->ReportEvent(
+      LocalEvents::SEV_ERROR,
+      u16format(L"{}: {} - {}. {}", Translate("Release of selection"),
+                source_title,
+                Translate("A Server before 2.6 cannot release a selection"),
+                Translate("The device stays selected until its own "
+                          "selection timeout expires.")));
 }
 
 void WriteModel::CancelOutstandingSelect() {
@@ -391,15 +410,7 @@ void WriteModel::CancelOutstandingSelect() {
   // so the journal reads one way whichever Server answered. Reported
   // synchronously: nothing is awaited, so the sink cannot die under it.
   if (legacy_control_) {
-    if (local_events_) {
-      local_events_->ReportEvent(
-          LocalEvents::SEV_ERROR,
-          u16format(L"{}: {} - {}. {}", Translate("Release of selection"),
-                    GetSourceTitle(),
-                    Translate("A Server before 2.6 cannot release a selection"),
-                    Translate("The device stays selected until its own "
-                              "selection timeout expires.")));
-    }
+    ReportLegacySelectionHeld(local_events_, GetSourceTitle());
     return;
   }
   // Leaving it uncancelled would hold the outstation's selection until its own
@@ -461,6 +472,29 @@ Awaitable<void> WriteModel::CompleteSelectAsync(std::weak_ptr<WriteModel> model,
     co_return;
   co_await ReportCancelRefusalAsync(std::move(cancel), local_events,
                                     std::move(source_title));
+  co_return;
+}
+
+Awaitable<void> WriteModel::CompleteLegacySelectAsync(
+    std::weak_ptr<WriteModel> model,
+    scada::CoStatus select,
+    LocalEvents* local_events,
+    std::u16string source_title) {
+  // Taken before the wait, as in ReportCancelRefusalAsync: a sign-out can
+  // destroy the event module while the select is in flight.
+  const std::weak_ptr<const void> local_events_alive =
+      local_events ? local_events->lifetime() : std::weak_ptr<const void>{};
+  const scada::Status status = co_await std::move(select);
+  if (auto model_ptr = model.lock()) {
+    model_ptr->OnWriteComplete(status);
+    co_return;
+  }
+  // A refused select armed nothing. An accepted one is held by the device
+  // with nobody left to operate it, and a Server before 2.6 has no Cancel to
+  // release it with -- so say so, as closing after the answer does.
+  if (!status || local_events_alive.expired())
+    co_return;
+  ReportLegacySelectionHeld(local_events, source_title);
   co_return;
 }
 
