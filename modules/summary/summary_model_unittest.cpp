@@ -10,6 +10,7 @@
 #include "modules/summary/summary_component.h"
 #include "modules/summary/summary_model_util.h"
 #include "node_service/static/static_node_service.h"
+#include "node_service/test/fake_node_service.h"
 #include "profile/window_definition.h"
 #include "resources/common_resources.h"
 #include "timed_data/timed_data_fake.h"
@@ -296,6 +297,41 @@ TEST_F(SummaryModelTest, TimeIntegralIsBlankUntilTheServerVersionIsKnown) {
   EXPECT_FALSE(summary_model_.IsAggregateWithheld());
   EXPECT_GE(model_changes, 1);
   EXPECT_NE(summary_model_.GetCellText(/*row=*/23, /*column=*/0), u"");
+}
+
+// Backlog 1035: a probe that times out or loses the session says nothing about
+// the Server. It used to be read as "2.6", so a 2.5.7 Server's plain sum was
+// shown as a Time Integral and never asked about again. Now it decides
+// nothing -- the cells stay withheld -- and the next column change asks again.
+TEST_F(SummaryModelTest, AFailedVersionProbeDecidesNothingAndIsAskedAgain) {
+  // A node service whose answer for the probe's node the test sets, so the
+  // probe can fail for a reason other than "unknown node".
+  FakeNodeService node_service;
+  node_service.SetStatus(scada::data_items::id::DataItemControlType,
+                         scada::Status{scada::StatusCode::Bad_Timeout});
+  SummaryModel summary_model{
+      SummaryModelContext{executor_, node_service, timed_data_service_}};
+  timed_data_service_.AddTimedData("item1");
+  timed_data_service_.AddTimedData("item2");
+  summary_model.Load(
+      WindowDefinition{kSummaryWindowInfo}.AddItem(MakeItem("item1")));
+
+  summary_model.SetAggregateType(
+      scada::NodeId{scada::id::AggregateFunction_Total});
+  Drain(executor_);
+
+  EXPECT_TRUE(summary_model.IsAggregateWithheld());
+  EXPECT_FALSE(summary_model.IsAggregateUnsupported());
+  EXPECT_EQ(summary_model.GetNotice().find(u"2.6"), std::u16string::npos);
+
+  // The session serves again, and the Server turns out to be 2.5.7.
+  node_service.SetStatus(scada::data_items::id::DataItemControlType,
+                         scada::Status{scada::StatusCode::Bad_WrongNodeId});
+  summary_model.AddColumn("item2");
+  Drain(executor_);
+
+  EXPECT_TRUE(summary_model.IsAggregateUnsupported());
+  EXPECT_NE(summary_model.GetNotice().find(u"2.6"), std::u16string::npos);
 }
 
 TEST_F(SummaryModelTest, TimeAverageOnA26ServerIsShown) {

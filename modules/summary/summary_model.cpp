@@ -402,6 +402,9 @@ void SummaryModel::OnCellChanged(int column, int row) {
 
 void SummaryModel::OnColumnChanged(int column) {
   NotifyRangeChanged(scada::aui::GridRange::Column(column));
+  // A column reloading is the sign the session is serving again, so a version
+  // probe that failed for another reason is asked again here (backlog 1035).
+  ProbeServerVersionIfNeeded();
 }
 
 void SummaryModel::OnColumnTitleChanged(int column) {
@@ -506,7 +509,7 @@ bool SummaryModel::IsAggregateWithheld() const {
 }
 
 void SummaryModel::ProbeServerVersionIfNeeded() {
-  if (server_probe_started_ ||
+  if (server_probe_started_ || server_before_2_6_.has_value() ||
       !RequiresServer26(aggregate_filter_.aggregate_type)) {
     return;
   }
@@ -516,7 +519,8 @@ void SummaryModel::ProbeServerVersionIfNeeded() {
   // plain sum -- so the Server is identified by a node 2.6 added instead: the
   // per-item Control object's type, which a 2.5.7 Server refuses as an unknown
   // node like every other 2.6-only node (see services/server_compatibility.h).
-  // Asked once per summary, and only when an aggregate depends on the answer.
+  // Answered once per summary, and asked only when an aggregate depends on
+  // the answer.
   CoSpawn(executor_, cancelation_,
           [this, cancelation = cancelation_.ref(),
            probe = node_service_.GetNode(
@@ -524,8 +528,24 @@ void SummaryModel::ProbeServerVersionIfNeeded() {
               -> Awaitable<void> {
             const scada::Status status = co_await FetchNodeStatus(probe);
             if (!cancelation.canceled())
-              OnServerVersionProbed(IsMissingOnServer(status));
+              OnServerVersionProbeAnswered(status);
           });
+}
+
+void SummaryModel::OnServerVersionProbeAnswered(const scada::Status& status) {
+  // Only "unknown node" says 2.5.7, and only a found node says 2.6. Any other
+  // failure -- a timeout, the session dropping mid-fetch -- says nothing
+  // about the Server, so nothing is decided: the cells stay withheld and the
+  // next column change asks again, as the event-severity probe does. Reading
+  // such a failure as "2.6" showed a 2.5.7 Server's plain sum as a Time
+  // Integral, for good (backlog 1035).
+  if (!status && !IsMissingOnServer(status)) {
+    LOG_WARNING(logger_) << "Server version probe failed; will ask again"
+                         << LOG_TAG("Status", ToString(status));
+    server_probe_started_ = false;
+    return;
+  }
+  OnServerVersionProbed(IsMissingOnServer(status));
 }
 
 void SummaryModel::OnServerVersionProbed(bool before_2_6) {

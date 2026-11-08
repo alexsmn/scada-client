@@ -150,9 +150,14 @@ class SummaryModel : private SummaryModelContext,
   void OnColumnChanged(int column);
   void OnColumnTitleChanged(int column);
 
-  // Asks the Server, once, whether it is from before 2.6, when the chosen
-  // aggregate depends on it. See IsAggregateUnsupported.
+  // Asks the Server whether it is from before 2.6, when the chosen aggregate
+  // depends on it and no answer is in hand or in flight. See
+  // IsAggregateUnsupported.
   void ProbeServerVersionIfNeeded();
+  // Decides the version from the probe's `status`, or decides nothing and
+  // lets the next column change ask again when the failure is not "unknown
+  // node" (backlog 1035).
+  void OnServerVersionProbeAnswered(const scada::Status& status);
   void OnServerVersionProbed(bool before_2_6);
 
   // Whether `index` names a live column. The header models are queried by
