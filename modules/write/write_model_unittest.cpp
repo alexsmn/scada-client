@@ -3,9 +3,12 @@
 #include "base/async_completion.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
+#include "common/formula_util.h"
 #include "common/node_state.h"
 #include "events/local_events.h"
 #include "model/data_items_node_ids.h"
+#include "model/devices_node_ids.h"
+#include "model/namespaces.h"
 #include "model/nested_node_ids.h"
 #include "model/node_id_util.h"
 #include "node_service/static/static_node_service.h"
@@ -130,8 +133,12 @@ class WriteModelTest : public Test {
   // StaticNodeService::Add is try_emplace-based: adding a node id that already
   // exists is a SILENT no-op, so OutputTwoStaged cannot be changed after the
   // fact. The model reads it once, at construction.
+  //
+  // `output_formula` binds the item's Output channel, which decides the
+  // device its command is routed to; empty leaves the device unknown.
   std::shared_ptr<WriteModel> CreateModel(bool two_staged = false,
-                                          LocalEvents* local_events = nullptr) {
+                                          LocalEvents* local_events = nullptr,
+                                          std::string output_formula = {}) {
     node_service_.Add(
         scada::NodeState{.node_id = kDataItemId,
                          .node_class = scada::NodeClass::Variable,
@@ -139,7 +146,9 @@ class WriteModelTest : public Test {
                          .attributes = {.display_name = u"Output"}}
             .set_property(scada::data_items::id::DataItemType_OutputTwoStaged,
                           two_staged)
-            .set_property(scada::data_items::id::DataItemType_Locked, false));
+            .set_property(scada::data_items::id::DataItemType_Locked, false)
+            .set_property(scada::data_items::id::DataItemType_Output,
+                          scada::String{output_formula}));
 
     // The item's Control object, which carries Select/Operate/Cancel. It has
     // to exist here because StaticNodeService::GetScadaNode answers an unknown
@@ -160,6 +169,39 @@ class WriteModelTest : public Test {
     model->status_change_handler = [this] { ++status_changes_; };
     model->completion_handler = [this](bool ok) { completion_ = ok; };
     return model;
+  }
+
+  // Seeds a device of `type_id` (with the supertype link `IsInstanceOf`
+  // walks) and answers the Output formula of a channel under it.
+  std::string AddDeviceChannel(const scada::NodeId& type_id) {
+    node_service_.Add(
+        scada::NodeState{.node_id = scada::devices::id::DeviceType,
+                         .node_class = scada::NodeClass::ObjectType});
+    node_service_.Add(
+        scada::NodeState{.node_id = type_id,
+                         .node_class = scada::NodeClass::ObjectType,
+                         .supertype_id = scada::devices::id::DeviceType});
+    const scada::NodeId device_id{9100, 2};
+    node_service_.Add(scada::NodeState{.node_id = device_id,
+                                       .node_class = scada::NodeClass::Object,
+                                       .type_definition_id = type_id});
+    return MakeNodeIdFormula(scada::MakeNestedNodeId(device_id, "1"));
+  }
+
+  // Answers the Control object's Select as unknown, as a 2.5.7 Server does,
+  // and the flagged select Good once `select_answer` completes.
+  void ExpectLegacySelect(scada::base::AsyncCompletion& select_answer) {
+    ON_CALL(method_service_, Call)
+        .WillByDefault([](scada::NodeId, scada::NodeId,
+                          std::vector<scada::Variant>, scada::ServiceContext) {
+          return scada::MakeMethodCallResult(
+              scada::Status{scada::StatusCode::Bad_WrongNodeId});
+        });
+    EXPECT_CALL(attribute_service_, Write(_, _))
+        .WillOnce([&select_answer](scada::ServiceContext,
+                                   std::vector<scada::WriteValue>) {
+          return AwaitWriteAnswer(select_answer, scada::StatusCode::Good);
+        });
   }
 
   // Drives one write through to a refused completion and dismisses the error
@@ -571,6 +613,85 @@ TEST_F(WriteModelTest,
   EXPECT_NE(text.find(u"selection timeout"), std::u16string::npos);
   // Nothing is asked of an operator who has closed the dialog.
   EXPECT_TRUE(dialog_service_.modes.empty());
+}
+
+// Backlog 1034: a 2.5.7 Server answers a select on a MODBUS device Good
+// without contacting it ("Don't support Select"), so declining afterwards
+// leaves nothing selected. Reporting the held selection there raised a false
+// critical event on every declined command, and the prompt claimed the device
+// was ready.
+TEST_F(WriteModelTest, DecliningAFlaggedSelectOnAModbusDeviceReportsNothing) {
+  scada::base::AsyncCompletion select_answer{executor_};
+  ExpectLegacySelect(select_answer);
+
+  auto model = CreateModel(
+      /*two_staged=*/true, /*local_events=*/nullptr,
+      AddDeviceChannel(scada::devices::id::ModbusDeviceType));
+  model->Write(42.0, /*lock=*/false);
+  Drain(executor_);
+  select_answer.Complete();
+  Drain(executor_);
+
+  ASSERT_THAT(dialog_service_.modes,
+              ElementsAre(MessageBoxMode::QuestionYesNoDefaultNo));
+  EXPECT_EQ(dialog_service_.messages.at(0).find(u"ready to execute"),
+            std::u16string::npos);
+  // The rest of the review is still there.
+  EXPECT_NE(dialog_service_.messages.at(0).find(u"Send it?"),
+            std::u16string::npos);
+
+  dialog_service_.CompleteMessageBox(MessageBoxResult::No);
+  Drain(executor_);
+  model.reset();
+  Drain(executor_);
+
+  EXPECT_EQ(completion_, false);
+  EXPECT_THAT(local_events_.events(), IsEmpty());
+}
+
+// The same for a Classic OPC item closed while its flagged select is still in
+// flight: the OPC tier never selects either, so the late Good holds nothing.
+TEST_F(WriteModelTest,
+       ClosingBeforeAFlaggedSelectOnAnOpcItemAnswersReportsNothing) {
+  scada::base::AsyncCompletion select_answer{executor_};
+  ExpectLegacySelect(select_answer);
+
+  auto model = CreateModel(
+      /*two_staged=*/true, /*local_events=*/nullptr,
+      MakeNodeIdFormula(scada::NodeId{"Vendor.Server.1\\Group.Breaker1",
+                                      scada::NamespaceIndexes::OPC}));
+  model->Write(42.0, /*lock=*/false);
+  Drain(executor_);
+  model.reset();
+  Drain(executor_);
+  select_answer.Complete();
+  Drain(executor_);
+
+  EXPECT_THAT(local_events_.events(), IsEmpty());
+}
+
+// A device that does select -- a single command on IEC 60870-5 -- still holds
+// the 2.5.7 selection, so declining still reports it.
+TEST_F(WriteModelTest,
+       DecliningAFlaggedSelectOnASelectingDeviceStillReportsIt) {
+  scada::base::AsyncCompletion select_answer{executor_};
+  ExpectLegacySelect(select_answer);
+
+  auto model = CreateModel(
+      /*two_staged=*/true, /*local_events=*/nullptr,
+      AddDeviceChannel(scada::devices::id::Iec60870DeviceType));
+  model->Write(42.0, /*lock=*/false);
+  Drain(executor_);
+  select_answer.Complete();
+  Drain(executor_);
+  EXPECT_NE(dialog_service_.messages.at(0).find(u"ready to execute"),
+            std::u16string::npos);
+  dialog_service_.CompleteMessageBox(MessageBoxResult::No);
+  Drain(executor_);
+
+  ASSERT_THAT(local_events_.events(), SizeIs(1));
+  EXPECT_NE(local_events_.events()[0]->message.text.find(u"selection timeout"),
+            std::u16string::npos);
 }
 
 // The same close, but the Server refuses the flagged select: nothing was

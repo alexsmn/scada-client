@@ -5,6 +5,7 @@
 #include "aui/dialog_service.h"
 #include "base/awaitable.h"
 #include "modules/write/write_dialog.h"
+#include "node_service/node_ref.h"
 #include "scada/co_result.h"
 #include "scada/status.h"
 #include "timed_data/timed_data_spec.h"
@@ -97,6 +98,17 @@ class WriteModel : private WriteContext,
   // Select/Operate/Cancel methods.
   scada::node ControlNode() const;
 
+  // Whether the device the item's command is routed to is known to be unable
+  // to select: `GetOutputTwoStagedDefault` answers No for it. False when the
+  // device is unknown, unresolved or not yet fetched -- an unknown device may
+  // be holding a selection, so the conservative answer keeps the report.
+  // The constructor starts fetching the device so its type is known by the
+  // time a select answers.
+  bool DeviceCannotSelect() const;
+  // The device `DeviceCannotSelect` asks about, read from the item's channel
+  // formulas (`GetDataItemDeviceId`), or a null id.
+  scada::NodeId CommandDeviceId() const;
+
   // Releases a selection the operator decided not to act on. A refused
   // release is reported as a local event, never as a dialog.
   void CancelOutstandingSelect();
@@ -128,11 +140,14 @@ class WriteModel : private WriteContext,
   // Server has no Cancel), so the held selection of `source_title` is reported
   // to `local_events` instead -- checked against its `lifetime()` first.
   // Parameters are by value: the frame outlives the CoSpawn call.
+  // `device_cannot_select` is `DeviceCannotSelect` taken when the select was
+  // sent; when true, an accepted select held nothing and nothing is reported.
   static Awaitable<void> CompleteLegacySelectAsync(
       std::weak_ptr<WriteModel> model,
       scada::CoStatus select,
       LocalEvents* local_events,
-      std::u16string source_title);
+      std::u16string source_title,
+      bool device_cannot_select);
 
   // Reports that a Server before 2.6 left `source_title` selected, since it
   // has no Cancel. Synchronous; a null `local_events` reports nothing.
@@ -187,5 +202,12 @@ class WriteModel : private WriteContext,
   // as a select, then a plain value write, and no Cancel, which such a Server
   // does not have.
   bool legacy_control_ = false;
+  // The object's device cannot select (MODBUS, Classic OPC, an IEC 60870-5
+  // set-point; see `GetOutputTwoStagedDefault`). A Server before 2.6 answers
+  // a select on such a device Good without contacting it, so after a legacy
+  // select nothing is held and there is nothing to report or to say is
+  // "ready" (backlog 1034). Decided by `DeviceCannotSelect` when the legacy
+  // select is sent and again when it is accepted.
+  bool device_cannot_select_ = false;
   TimedDataSpec condition_;
 };

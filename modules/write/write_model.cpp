@@ -12,9 +12,11 @@
 #include "model/nested_node_ids.h"
 #include "model/node_id_util.h"
 #include "net/net_executor_adapter.h"
+#include "node_service/node_service.h"
 #include "profile/profile.h"
 #include "scada/co_result.h"
 #include "scada/write_flags.h"
+#include "services/output_two_staged_default.h"
 #include "services/server_compatibility.h"
 
 #include <charconv>
@@ -50,7 +52,43 @@ WriteModel::WriteModel(WriteContext&& context)
     has_condition_ = !condition.empty();
     if (has_condition_)
       condition_.Connect(timed_data_service_, condition);
+
+    // Whether the device can select decides what a 2.5.7 Server's accepted
+    // select means (backlog 1034); fetch it now so its type is known by then.
+    // An OPC server is decided from its id and has no node to fetch.
+    if (two_staged_) {
+      if (const scada::NodeId device_id = CommandDeviceId();
+          !device_id.is_null() && !IsOpcDeviceId(device_id)) {
+        spec_.node().service()->GetNode(device_id).StartFetch();
+      }
+    }
   }
+}
+
+scada::NodeId WriteModel::CommandDeviceId() const {
+  const NodeRef& node = spec_.node();
+  if (!node || !node.service())
+    return {};
+  const scada::String output =
+      node[scada::data_items::id::DataItemType_Output].value().get_or(
+          scada::String{});
+  const scada::String input =
+      node[scada::data_items::id::DataItemType_Input1].value().get_or(
+          scada::String{});
+  return GetDataItemDeviceId(*node.service(), output, input);
+}
+
+bool WriteModel::DeviceCannotSelect() const {
+  const scada::NodeId device_id = CommandDeviceId();
+  if (device_id.is_null())
+    return false;
+  // Decided from the id alone, as TaskManagerImpl does: an OPC server is not
+  // a typed node, and a node service may hold no node for it.
+  if (IsOpcDeviceId(device_id))
+    return true;
+  return GetOutputTwoStagedDefault(spec_.node().service()->GetNode(device_id),
+                                   spec_.node().type_definition().node_id()) ==
+         false;
 }
 
 WriteModel::~WriteModel() {
@@ -226,6 +264,11 @@ void WriteModel::OnWriteComplete(const scada::Status& status) {
   }
 
   if (write_selecting_) {
+    // Asked again now rather than kept from when the select was sent: the
+    // device fetch the constructor started has had the select's round trip to
+    // complete.
+    if (legacy_control_)
+      device_cannot_select_ = DeviceCannotSelect();
     // The select succeeded. From here until the operate is issued or the
     // operator declines, the outstation holds a selection we are responsible
     // for releasing.
@@ -285,7 +328,9 @@ std::u16string WriteModel::GetConfirmationMessage(double value,
       spec_.GetValueString(value, {}, ValueFormat{FORMAT_UNITS});
 
   std::u16string message;
-  if (second_stage) {
+  // A 2.5.7 Server accepts a select on a device that cannot select without
+  // contacting it (backlog 1034), so nothing is waiting: do not say it is.
+  if (second_stage && !(legacy_control_ && device_cannot_select_)) {
     // The operate stage of a select-before-operate command: the device has
     // accepted the select and is waiting. This was a bare u"..." literal, so
     // it could never be translated — it must go through Translate() like the
@@ -367,20 +412,23 @@ scada::node WriteModel::ControlNode() const {
 
 void WriteModel::SelectByLegacyWrite() {
   legacy_control_ = true;
+  device_cannot_select_ = DeviceCannotSelect();
   scada::WriteFlags flags;
   flags.set_select();
   // Not CompleteWriteAsync: that drops the answer once the dialog is gone, so
   // a select the device accepted after the operator closed it set no
   // `select_outstanding_` and nobody was told the device stays selected
   // (backlog 1027).
-  CoSpawn(executor_, [model = weak_from_this(),
-                      select = spec_.scada_node().write(
-                          scada::AttributeId::Value, write_value_, flags),
-                      local_events = local_events_,
-                      source_title = GetSourceTitle()]() mutable {
-    return CompleteLegacySelectAsync(std::move(model), std::move(select),
-                                     local_events, std::move(source_title));
-  });
+  CoSpawn(
+      executor_, [model = weak_from_this(),
+                  select = spec_.scada_node().write(scada::AttributeId::Value,
+                                                    write_value_, flags),
+                  local_events = local_events_, source_title = GetSourceTitle(),
+                  device_cannot_select = device_cannot_select_]() mutable {
+        return CompleteLegacySelectAsync(std::move(model), std::move(select),
+                                         local_events, std::move(source_title),
+                                         device_cannot_select);
+      });
 }
 
 // static
@@ -409,8 +457,13 @@ void WriteModel::CancelOutstandingSelect() {
   // timeout expires. Same title and severity as the 2.6 path's refused Cancel,
   // so the journal reads one way whichever Server answered. Reported
   // synchronously: nothing is awaited, so the sink cannot die under it.
+  // Except where the device cannot select (MODBUS, OPC, an IEC 60870-5
+  // set-point): the 2.5.7 Server accepted that select without contacting the
+  // device, so nothing is held, and a critical event saying otherwise would
+  // fire on every declined command (backlog 1034).
   if (legacy_control_) {
-    ReportLegacySelectionHeld(local_events_, GetSourceTitle());
+    if (!device_cannot_select_)
+      ReportLegacySelectionHeld(local_events_, GetSourceTitle());
     return;
   }
   // Leaving it uncancelled would hold the outstation's selection until its own
@@ -479,7 +532,8 @@ Awaitable<void> WriteModel::CompleteLegacySelectAsync(
     std::weak_ptr<WriteModel> model,
     scada::CoStatus select,
     LocalEvents* local_events,
-    std::u16string source_title) {
+    std::u16string source_title,
+    bool device_cannot_select) {
   // Taken before the wait, as in ReportCancelRefusalAsync: a sign-out can
   // destroy the event module while the select is in flight.
   const std::weak_ptr<const void> local_events_alive =
@@ -491,8 +545,10 @@ Awaitable<void> WriteModel::CompleteLegacySelectAsync(
   }
   // A refused select armed nothing. An accepted one is held by the device
   // with nobody left to operate it, and a Server before 2.6 has no Cancel to
-  // release it with -- so say so, as closing after the answer does.
-  if (!status || local_events_alive.expired())
+  // release it with -- so say so, as closing after the answer does. A device
+  // that cannot select was never contacted, so it holds nothing (backlog
+  // 1034).
+  if (!status || device_cannot_select || local_events_alive.expired())
     co_return;
   ReportLegacySelectionHeld(local_events, source_title);
   co_return;
