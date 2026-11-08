@@ -141,17 +141,21 @@ Awaitable<void> OpenedViewCreateCommand::CreateTransmissionRulesAsync(
     scada::NodeId rule_type_id = TransmissionItemTypeFor(device_node);
     if (rule_type_id.is_null())
       continue;
-    // The addresses this device's rules carry, for the preview's duplicate
-    // flag and for where the run starts addressing.
+    // The addresses this device's rules occupy, for the preview's duplicate
+    // flag and for where the run starts addressing. Every address of a wide
+    // MODBUS rule counts: the wizard's rules carry no Value format and take
+    // one register each, so one landing on a FLOAT's second register is as
+    // much a collision as one landing on its first.
     co_await FetchTransmissionAddresses(device_node);
     if (cancelation.canceled())
       co_return;
-    const std::vector<int> used = ReadTransmissionAddresses(device_node);
+    const std::vector<TransmissionAddressSpan> used =
+        ReadTransmissionAddresses(device_node);
     destinations.push_back(
         {.device_id = device.node_id,
          .name = device.name,
          .rule_type_id = std::move(rule_type_id),
-         .used_addresses = {used.begin(), used.end()},
+         .used_addresses = CoveredTransmissionAddresses(used),
          .next_address =
              NextFreeTransmissionAddressFor(device_node, used).value_or(1)});
   }

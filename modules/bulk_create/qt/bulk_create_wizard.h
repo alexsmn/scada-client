@@ -19,8 +19,9 @@ struct BulkCreateDestination {
   scada::NodeId device_id;
   std::u16string name;
   scada::NodeId rule_type_id;
-  // The addresses the device's rules already carry, so the preview can flag a
-  // row that would duplicate one. Resolved by the caller for the same reason
+  // Every address the device's rules already occupy -- all the registers of
+  // a wide MODBUS rule, not just its first -- so the preview can flag a row
+  // that would collide with one. Resolved by the caller for the same reason
   // as the type.
   std::set<int> used_addresses;
   // Where a run onto this device starts addressing: the device's next free

@@ -156,22 +156,27 @@ void TransmissionModel::GetCell(scada::aui::GridCell& cell) {
 }
 
 bool TransmissionModel::IsDuplicateAddress(int row) const {
-  const std::optional<int> address =
-      ReadTransmissionAddress(rows_[row].transmission);
-  if (!address)
+  const std::optional<TransmissionAddressSpan> span =
+      ReadTransmissionAddressSpan(rows_[row].transmission);
+  if (!span)
     return false;
   for (int i = 0; i < static_cast<int>(rows_.size()); ++i) {
-    if (i != row && ReadTransmissionAddress(rows_[i].transmission) == address)
+    if (i == row)
+      continue;
+    const std::optional<TransmissionAddressSpan> other =
+        ReadTransmissionAddressSpan(rows_[i].transmission);
+    if (other && TransmissionAddressesOverlap(*span, *other))
       return true;
   }
   return false;
 }
 
-std::vector<int> TransmissionModel::UsedAddresses() const {
-  std::vector<int> used;
+std::vector<TransmissionAddressSpan> TransmissionModel::UsedAddresses() const {
+  std::vector<TransmissionAddressSpan> used;
   for (const Row& row : rows_) {
-    if (std::optional<int> address = ReadTransmissionAddress(row.transmission))
-      used.push_back(*address);
+    if (std::optional<TransmissionAddressSpan> span =
+            ReadTransmissionAddressSpan(row.transmission))
+      used.push_back(*span);
   }
   return used;
 }
@@ -364,9 +369,11 @@ void TransmissionModel::AddContainedItem(const scada::NodeId& node_id,
   // 1 that every ticked object used to share. Addresses already handed to an
   // insert that has not come back yet count as used, so ticking several
   // objects in a row gives each its own.
-  std::vector<int> used = UsedAddresses();
-  used.insert(used.end(), reserved_addresses_.begin(),
-              reserved_addresses_.end());
+  // A reserved address is a new rule's, which carries no Value format and so
+  // takes one address.
+  std::vector<TransmissionAddressSpan> used = UsedAddresses();
+  for (int reserved : reserved_addresses_)
+    used.push_back({.address = reserved});
   if (std::optional<int> address =
           NextFreeTransmissionAddressFor(device_, used)) {
     properties.emplace_back(

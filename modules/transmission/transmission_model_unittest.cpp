@@ -15,6 +15,7 @@
 
 #include <memory>
 #include <optional>
+#include <string>
 #include <vector>
 
 namespace {
@@ -68,6 +69,16 @@ class TransmissionModelTest : public ::testing::Test {
         .attributes = {.browse_name = "InfoAddressSize",
                        .data_type = scada::id::Int32}});
 
+    // The MODBUS rule's Value format, mirroring devices_modbus.xml.
+    node_service_.Add(scada::NodeState{
+        .node_id = scada::devices::id::ModbusTransmissionItemType_Format,
+        .node_class = scada::NodeClass::Variable,
+        .type_definition_id = scada::id::PropertyType,
+        .parent_id = scada::devices::id::ModbusTransmissionItemType,
+        .reference_type_id = scada::id::HasProperty,
+        .attributes = {.browse_name = "Format",
+                       .data_type = scada::id::String}});
+
     node_service_.Add(scada::NodeState{
         .node_id = kSourceId,
         .node_class = scada::NodeClass::Variable,
@@ -102,7 +113,16 @@ class TransmissionModelTest : public ::testing::Test {
 
   void AddRule(int index,
                const scada::NodeId& rule_type_id,
-               scada::Int32 address) {
+               scada::Int32 address,
+               std::string format = {}) {
+    scada::NodeProperties properties{
+        {scada::devices::id::TransmissionItemType_SourceNode, kSourceId},
+        {scada::devices::id::TransmissionItemType_Address, address}};
+    if (!format.empty()) {
+      properties.emplace_back(
+          scada::devices::id::ModbusTransmissionItemType_Format,
+          scada::Variant{std::move(format)});
+    }
     node_service_.Add(scada::NodeState{
         .node_id =
             scada::NodeId{static_cast<scada::NumericId>(6200 + index), 1},
@@ -110,9 +130,7 @@ class TransmissionModelTest : public ::testing::Test {
         .type_definition_id = rule_type_id,
         .parent_id = kDeviceId,
         .reference_type_id = scada::id::Organizes,
-        .properties = {
-            {scada::devices::id::TransmissionItemType_SourceNode, kSourceId},
-            {scada::devices::id::TransmissionItemType_Address, address}}});
+        .properties = std::move(properties)});
   }
 
   void Init() {
@@ -255,6 +273,48 @@ TEST_F(TransmissionModelTest, RulesSharingAnAddressAreFlagged) {
     EXPECT_EQ(StatusText(row),
               duplicate ? u"Duplicate address" : std::u16string{})
         << row;
+  }
+}
+
+// Backlog 1018: a FLOAT rule at 40001 occupies 40001 and 40002, so the next
+// ticked object goes to 40003 -- not 40002, where it would overwrite half the
+// float on the wire.
+TEST_F(TransmissionModelTest, ATickedObjectStepsPastAWideModbusRule) {
+  AddLink(scada::devices::id::ModbusLinkType);
+  AddRule(0, scada::devices::id::ModbusTransmissionItemType, 40001,
+          "FLOAT;swapwords");
+  Init();
+  ASSERT_EQ(model_->GetRowCount(), 1);
+
+  model_->AddContainedItem(kTickedId, 0);
+  model_->AddContainedItem(kSecondTickedId, 0);
+
+  ASSERT_EQ(inserted_.size(), 2u);
+  EXPECT_EQ(AddressOf(inserted_[0]), 40003);
+  EXPECT_EQ(AddressOf(inserted_[1]), 40004);
+}
+
+// A rule at a register inside a wider rule's span collides with it as surely
+// as one at the same address, and both are flagged.
+TEST_F(TransmissionModelTest, RulesOverlappingAWideRuleAreFlagged) {
+  AddLink(scada::devices::id::ModbusLinkType);
+  AddRule(0, scada::devices::id::ModbusTransmissionItemType, 40001, "DOUBLE");
+  AddRule(1, scada::devices::id::ModbusTransmissionItemType, 40004);
+  AddRule(2, scada::devices::id::ModbusTransmissionItemType, 40005, "INT32");
+  Init();
+  ASSERT_EQ(model_->GetRowCount(), 3);
+
+  for (int row = 0; row < model_->GetRowCount(); ++row) {
+    const scada::Int32 address =
+        model_->row(row)
+            .transmission[scada::devices::id::TransmissionItemType_Address]
+            .value()
+            .get_or(scada::Int32{0});
+    const bool overlapping = address != 40005;
+    EXPECT_EQ(model_->IsDuplicateAddress(row), overlapping) << address;
+    EXPECT_EQ(StatusText(row),
+              overlapping ? u"Duplicate address" : std::u16string{})
+        << address;
   }
 }
 

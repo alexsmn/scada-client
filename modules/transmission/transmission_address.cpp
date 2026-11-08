@@ -6,8 +6,10 @@
 #include "node_service/node_util.h"
 
 #include <algorithm>
+#include <cctype>
+#include <climits>
 #include <cstdint>
-#include <map>
+#include <string>
 
 namespace {
 
@@ -21,6 +23,10 @@ constexpr int kModbusBlockSize = 10000;
 // 0 or 1. Coils (block 0) carry one bit, so starting there truncated every
 // analogue value to 0 or 1.
 constexpr int kModbusHoldingRegistersBlock = 4;
+
+// The input registers (30001-40000), the other table whose rules may carry a
+// type wider than one register.
+constexpr int kModbusInputRegistersBlock = 3;
 
 // The IOA width when the link's own setting is not resident: the nodeset's
 // default for Iec60870LinkType_InfoAddressSize.
@@ -57,12 +63,58 @@ bool DeviceUsesRuleType(const NodeRef& device,
 
 }  // namespace
 
-std::optional<int> NextFreeTransmissionAddress(std::span<const int> used,
-                                               TransmissionAddressRange range) {
+bool TransmissionAddressesOverlap(const TransmissionAddressSpan& a,
+                                  const TransmissionAddressSpan& b) {
+  return a.address <= b.last() && b.address <= a.last();
+}
+
+int ModbusTransmissionRegisterCount(int address, std::string_view format) {
+  // Only the register tables carry a wider type; in Coils and Discrete Inputs
+  // the tier allows BOOL alone.
+  if (address < 1)
+    return 1;
+  const int block = (address - 1) / kModbusBlockSize;
+  if (block != kModbusInputRegistersBlock &&
+      block != kModbusHoldingRegistersBlock)
+    return 1;
+
+  // The type is the format's first ';'-separated token, matched without
+  // regard to case (`ParseDataType`). A location or bit part makes the tier
+  // reject the whole format.
+  const std::string_view type = format.substr(0, format.find(';'));
+  if (type.find(':') != type.npos || type.find('+') != type.npos)
+    return 1;
+  auto is = [type](std::string_view name) {
+    return std::ranges::equal(type, name, [](char a, char b) {
+      return std::toupper(static_cast<unsigned char>(a)) == b;
+    });
+  };
+  if (is("UINT32") || is("INT32") || is("FLOAT"))
+    return 2;
+  if (is("DOUBLE"))
+    return 4;
+  return 1;
+}
+
+std::set<int> CoveredTransmissionAddresses(
+    std::span<const TransmissionAddressSpan> used) {
+  std::set<int> covered;
+  for (const TransmissionAddressSpan& span : used) {
+    for (std::int64_t address = span.address;
+         address <= span.last() && address <= INT32_MAX; ++address) {
+      covered.insert(static_cast<int>(address));
+    }
+  }
+  return covered;
+}
+
+std::optional<int> NextFreeTransmissionAddress(
+    std::span<const TransmissionAddressSpan> used,
+    TransmissionAddressRange range) {
   if (range.max < range.min)
     return std::nullopt;
 
-  const std::set<int> taken(used.begin(), used.end());
+  const std::set<int> taken = CoveredTransmissionAddresses(used);
   // Only the addresses inside the range matter: a stray out-of-range address
   // must neither push max+1 past the range nor count as occupying it.
   auto in_range_max = taken.upper_bound(range.max);
@@ -81,18 +133,6 @@ std::optional<int> NextFreeTransmissionAddress(std::span<const int> used,
   return std::nullopt;
 }
 
-std::set<int> DuplicateTransmissionAddresses(std::span<const int> addresses) {
-  std::map<int, int> counts;
-  for (int address : addresses)
-    ++counts[address];
-  std::set<int> duplicates;
-  for (const auto& [address, count] : counts) {
-    if (count > 1)
-      duplicates.insert(address);
-  }
-  return duplicates;
-}
-
 std::optional<int> ReadTransmissionAddress(const NodeRef& rule) {
   const scada::Variant value =
       rule[scada::devices::id::TransmissionItemType_Address].value();
@@ -102,22 +142,41 @@ std::optional<int> ReadTransmissionAddress(const NodeRef& rule) {
   return address;
 }
 
-std::vector<int> ReadTransmissionAddresses(const NodeRef& device) {
-  std::vector<int> addresses;
+std::optional<TransmissionAddressSpan> ReadTransmissionAddressSpan(
+    const NodeRef& rule) {
+  const std::optional<int> address = ReadTransmissionAddress(rule);
+  if (!address)
+    return std::nullopt;
+  int width = 1;
+  // Only a MODBUS rule has a Value format; an IEC 60870-5 rule is one IOA.
+  if (IsInstanceOf(rule, scada::devices::id::ModbusTransmissionItemType)) {
+    const std::string format =
+        rule[scada::devices::id::ModbusTransmissionItemType_Format]
+            .value()
+            .get_or(std::string{});
+    width = ModbusTransmissionRegisterCount(*address, format);
+  }
+  return TransmissionAddressSpan{.address = *address, .width = width};
+}
+
+std::vector<TransmissionAddressSpan> ReadTransmissionAddresses(
+    const NodeRef& device) {
+  std::vector<TransmissionAddressSpan> addresses;
   for (const NodeRef::Reference& reference :
        device.references(scada::id::Organizes)) {
     if (!IsInstanceOf(reference.target,
                       scada::devices::id::TransmissionItemType))
       continue;
-    if (std::optional<int> address = ReadTransmissionAddress(reference.target))
-      addresses.push_back(*address);
+    if (std::optional<TransmissionAddressSpan> span =
+            ReadTransmissionAddressSpan(reference.target))
+      addresses.push_back(*span);
   }
   return addresses;
 }
 
 TransmissionAddressRange TransmissionAddressRangeFor(
     const NodeRef& device,
-    std::span<const int> used) {
+    std::span<const TransmissionAddressSpan> used) {
   if (DeviceUsesRuleType(device,
                          scada::devices::id::Iec60870TransmissionItemType)) {
     int octets =
@@ -133,7 +192,9 @@ TransmissionAddressRange TransmissionAddressRangeFor(
                          scada::devices::id::ModbusTransmissionItemType)) {
     int block = kModbusHoldingRegistersBlock;
     if (!used.empty()) {
-      const int highest = *std::ranges::max_element(used);
+      const int highest =
+          std::ranges::max_element(used, {}, &TransmissionAddressSpan::address)
+              ->address;
       if (highest >= 1)
         block = (highest - 1) / kModbusBlockSize;
     }
@@ -144,8 +205,9 @@ TransmissionAddressRange TransmissionAddressRangeFor(
   return {};
 }
 
-std::optional<int> NextFreeTransmissionAddressFor(const NodeRef& device,
-                                                  std::span<const int> used) {
+std::optional<int> NextFreeTransmissionAddressFor(
+    const NodeRef& device,
+    std::span<const TransmissionAddressSpan> used) {
   return NextFreeTransmissionAddress(used,
                                      TransmissionAddressRangeFor(device, used));
 }

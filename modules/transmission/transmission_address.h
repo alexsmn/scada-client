@@ -3,9 +3,11 @@
 #include "base/awaitable.h"
 #include "node_service/node_ref.h"
 
+#include <cstdint>
 #include <optional>
 #include <set>
 #include <span>
+#include <string_view>
 #include <vector>
 
 // The destination addresses a device's transmission rules may carry, and how a
@@ -19,9 +21,43 @@ struct TransmissionAddressRange {
   int max = 0x7fffffff;
 };
 
-// The address a new rule on a table holding `used` should get.
+// The destination addresses one rule occupies: `width` consecutive addresses
+// starting at `address`. Every rule takes one address, except a MODBUS rule
+// whose Value format names a type wider than a register (see
+// `ModbusTransmissionRegisterCount`).
+struct TransmissionAddressSpan {
+  int address = 0;
+  int width = 1;
+
+  // The last address the rule occupies. 64-bit so that a rule at the top of
+  // the Int32 range cannot overflow.
+  std::int64_t last() const { return std::int64_t{address} + width - 1; }
+
+  bool operator==(const TransmissionAddressSpan&) const = default;
+};
+
+// True when `a` and `b` share at least one address. Two such rules write the
+// same register (or IOA), so the receiver sees one value under both.
+bool TransmissionAddressesOverlap(const TransmissionAddressSpan& a,
+                                  const TransmissionAddressSpan& b);
+
+// How many consecutive addresses a MODBUS retransmission rule at `address`
+// with Value format `format` occupies, as the Modbus tier lays it out
+// (`ParseTransmissionChannelParams` and `ParseChannelParams` in
+// scada-tier-modbus/modules/modbus/modbus_channel_params.cpp, restated
+// because the client cannot link a tier): in Input or Holding Registers,
+// UINT32, INT32 and FLOAT take 2 registers and DOUBLE takes 4; every other
+// type, an empty format, a bit table (Coils, Discrete Inputs) and a format the
+// tier rejects take 1. A rejected format sends nothing, but the address it
+// names is still the one the engineer meant, so it keeps reserving it.
+int ModbusTransmissionRegisterCount(int address, std::string_view format);
+
+// The address a new rule on a table holding `used` should get. A new rule
+// carries no Value format, so it takes one address.
 //
-// **The highest used address plus one**, not the lowest gap. A destination's
+// **The address after the highest one used**, not the lowest gap, counting
+// every address a wide rule occupies: after a FLOAT rule at 40001 the next is
+// 40003, never 40002, which is the FLOAT's second register. A destination's
 // address map is agreed with the receiving dispatch centre, and a gap in it is
 // as likely to be a reserved spare as an oversight; filling it silently would
 // put a signal where the receiver expects something else. Max+1 appends after
@@ -29,23 +65,31 @@ struct TransmissionAddressRange {
 // ticks come out consecutive. Only when max+1 leaves `range` is the lowest
 // free address in the range taken instead. An empty table starts at
 // `range.min`. Null when every address in the range is taken.
-std::optional<int> NextFreeTransmissionAddress(std::span<const int> used,
-                                               TransmissionAddressRange range);
+std::optional<int> NextFreeTransmissionAddress(
+    std::span<const TransmissionAddressSpan> used,
+    TransmissionAddressRange range);
 
-// The addresses that occur more than once in `addresses`. Two rules on one
-// destination with one address send two objects under one address, and the
-// receiver cannot tell them apart.
-std::set<int> DuplicateTransmissionAddresses(std::span<const int> addresses);
+// Every address the rules in `used` occupy, each wide rule contributing all
+// of its addresses. What a new one-address rule must not land on.
+std::set<int> CoveredTransmissionAddresses(
+    std::span<const TransmissionAddressSpan> used);
 
 // The address `rule` (a TransmissionItemType instance) carries, or null while
 // its value has not been fetched. Never a guessed 0: an unfetched rule must
 // count neither as a duplicate nor as used.
 std::optional<int> ReadTransmissionAddress(const NodeRef& rule);
 
-// The known addresses of the transmission rules under `device`. Requires the
-// device's children and their property instances fetched; a rule whose
+// The addresses `rule` occupies: its address, and for a MODBUS rule the width
+// its Value format gives (one while the format is not resident). Null while
+// the address has not been fetched.
+std::optional<TransmissionAddressSpan> ReadTransmissionAddressSpan(
+    const NodeRef& rule);
+
+// The known address spans of the transmission rules under `device`. Requires
+// the device's children and their property instances fetched; a rule whose
 // address is not resident yet is left out.
-std::vector<int> ReadTransmissionAddresses(const NodeRef& device);
+std::vector<TransmissionAddressSpan> ReadTransmissionAddresses(
+    const NodeRef& device);
 
 // The address range a rule on `device` may carry, given the addresses its
 // rules already use. Per protocol, from the device's rule type:
@@ -62,13 +106,15 @@ std::vector<int> ReadTransmissionAddresses(const NodeRef& device);
 //                 (`EncodeModbusAddress`), restated here because the client
 //                 cannot link a tier.
 //   otherwise     1 .. INT32_MAX, the property's own type.
-TransmissionAddressRange TransmissionAddressRangeFor(const NodeRef& device,
-                                                     std::span<const int> used);
+TransmissionAddressRange TransmissionAddressRangeFor(
+    const NodeRef& device,
+    std::span<const TransmissionAddressSpan> used);
 
 // The address the next rule on `device` should get: the two functions above
 // combined. Null when the range is full.
-std::optional<int> NextFreeTransmissionAddressFor(const NodeRef& device,
-                                                  std::span<const int> used);
+std::optional<int> NextFreeTransmissionAddressFor(
+    const NodeRef& device,
+    std::span<const TransmissionAddressSpan> used);
 
 // Fetches what `ReadTransmissionAddresses` and `TransmissionAddressRangeFor`
 // read for `device`: its children with their property instances, and its

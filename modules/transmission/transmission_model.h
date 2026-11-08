@@ -6,6 +6,7 @@
 #include "base/cancelation.h"
 #include "base/lifetime.h"
 #include "controller/contents_model.h"
+#include "modules/transmission/transmission_address.h"
 #include "node_service/node_ref.h"
 
 #include <boost/signals2/connection.hpp>
@@ -49,9 +50,11 @@ class TransmissionModel
 
   void Refresh();
 
-  // True when another rule on this device carries `row`'s destination
-  // address. Such rows read "Duplicate address" in the Status column; a rule
-  // whose address has not been fetched is never one.
+  // True when another rule on this device occupies any of the destination
+  // addresses `row`'s rule does: the same address, or for MODBUS a register
+  // inside a wider rule's span (a FLOAT at 40001 also holds 40002). Such rows
+  // read "Duplicate address" in the Status column; a rule whose address has
+  // not been fetched is never one.
   bool IsDuplicateAddress(int row) const;
 
   // ContentsModel
@@ -74,7 +77,7 @@ class TransmissionModel
   int FindSource(const scada::NodeId& source_id) const;
 
   // The fetched destination addresses of every row.
-  std::vector<int> UsedAddresses() const;
+  std::vector<TransmissionAddressSpan> UsedAddresses() const;
 
   // Forgets the reservation `AddContainedItem` made for `transmission`'s
   // address, now that the rule carrying it has arrived.
