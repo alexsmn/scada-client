@@ -206,6 +206,13 @@ LITERAL_ALLOWED_UNTRANSLATED = {
         "modules/export/configuration/configuration_transfer_commands.cpp",
         "configuration.xml",
     ): "default filename, not a title",
+    # U+22EF MIDLINE HORIZONTAL ELLIPSIS, the Settings row's "more actions"
+    # glyph: a symbol, not words. The button's tooltip and accessible name
+    # carry the translated "Setting actions".
+    (
+        "modules/settings/qt/settings_panel.cpp",
+        "\\u22EF",
+    ): "a glyph, not words; tooltip and accessible name are translated",
 }
 
 # Strings that *should* be translated but are not yet. This list must only ever
