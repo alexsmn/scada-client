@@ -1036,9 +1036,13 @@ Awaitable<void> ClientApplication::QuitAsync() {
 
   // Event module is not created if login fails.
   // TODO: Create event module unconditionally.
+  //
+  // **Informational, not an error.** Quitting is the operator's own request,
+  // and a local `SEV_ERROR` is a critical event: with the alarm tone on it
+  // would sound one critical tone as the Client closes (backlog 1044).
   if (event_module_) {
     event_module_->local_events().ReportEvent(
-        LocalEvents::SEV_ERROR, Translate("Disconnecting from server..."));
+        LocalEvents::SEV_INFO, Translate("Disconnecting from server..."));
   }
 
   try {

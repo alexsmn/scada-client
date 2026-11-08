@@ -14,6 +14,7 @@
 #include "base/test/scoped_path_override.h"
 #include "controller/controller_registry.h"
 #include "core/global_command_context.h"
+#include "events/local_events.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
@@ -497,6 +498,26 @@ TEST_F(ClientApplicationTest, ServerWithoutSaveProfileQuitsWithoutAsking) {
   EXPECT_CALL(session_end_dialog_, RunMessageBox(_, _, _)).Times(0);
 
   Wait(app_.Quit());
+}
+
+// Backlog 1044: quitting is the operator's own request, so the local event it
+// raises must not be critical -- a critical local event is what sounds the
+// alarm tone, and the Client would beep once on every ordinary close.
+TEST_F(ClientApplicationTest, QuitReportsDisconnectAsInformational) {
+  StartApp();
+
+  Wait(app_.Quit());
+
+  const LocalEvents::Events& events = app_.local_events().events();
+  auto disconnecting =
+      std::ranges::find_if(events, [](const scada::Event* event) {
+        return event->message.text == u"Disconnecting from server...";
+      });
+  ASSERT_NE(disconnecting, events.end());
+  EXPECT_EQ((*disconnecting)->severity, scada::kSeverityNormal);
+  EXPECT_TRUE(std::ranges::none_of(events, [](const scada::Event* event) {
+    return event->severity >= scada::kSeverityCritical;
+  }));
 }
 
 // Backlog 957: the local profile file is one per OS user, not per account, so
