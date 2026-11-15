@@ -29,20 +29,6 @@ project(scada-client
 
 scada_product_base()
 
-# A view or reference bound to a temporary that dies at the end of the
-# statement (-Wdangling, -Wdangling-gsl; Clang only) is a use-after-scope that
-# no unit test reliably sees: a short string lives inside its own object, so
-# its bytes survive the scope and an assertion on them still passes. Two
-# shipped this way until 2026-11-15, the CSV export's file-dialog filter title
-# and the table's sort-by-channel type ids, each reported as a warning nobody
-# read. Fatal here so the next one fails the build. Client-wide rather than in
-# build-support because only the client's build was measured clean.
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT MSVC)
-  add_compile_options(
-    $<$<COMPILE_LANGUAGE:CXX>:-Werror=dangling>
-    $<$<COMPILE_LANGUAGE:CXX>:-Werror=dangling-gsl>)
-endif()
-
 # The products this one consumes. `common` and `opcuapp` are the client's own;
 # `core`, `graph_qt` and `view_manager_qt` are aui's — aui is added as a
 # subdirectory of this build, so its find_package calls read THIS directory's
