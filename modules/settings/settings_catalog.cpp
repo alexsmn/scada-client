@@ -93,8 +93,10 @@ constexpr std::array kDescriptors = {
         .control = SettingControl::kToggle,
         .description =
             "Sound a tone when an alarm needs attention. On Windows the tone "
-            "repeats until the alarms are acknowledged; elsewhere it sounds "
-            "once. It silences the tone only: the banner and the severity "
+            "repeats while an unacknowledged critical alarm stands or more "
+            "than ten alarms are unacknowledged, and stops as soon as neither "
+            "holds; elsewhere it sounds once. It silences the tone only: the "
+            "banner and the severity "
             "colours are ISA-18.2 signals and stay unconditional.",
         .default_checked = false,
     },

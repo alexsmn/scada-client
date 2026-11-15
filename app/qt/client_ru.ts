@@ -3229,8 +3229,8 @@ Trust the new certificate only if the server&apos;s operator confirms that it wa
         <translation>Стиль платформы, которым отрисовываются элементы управления. Цветовая схема накладывается поверх него, а не заменяет его — поэтому это две отдельные настройки.</translation>
     </message>
     <message>
-        <source>Sound a tone when an alarm needs attention. On Windows the tone repeats until the alarms are acknowledged; elsewhere it sounds once. It silences the tone only: the banner and the severity colours are ISA-18.2 signals and stay unconditional.</source>
-        <translation>Подавать звуковой сигнал, когда тревога требует внимания. В Windows сигнал повторяется до квитирования тревог, в других системах звучит один раз. Отключается только звук: баннер и цвета важности — сигналы по ISA-18.2 и выводятся всегда.</translation>
+        <source>Sound a tone when an alarm needs attention. On Windows the tone repeats while an unacknowledged critical alarm stands or more than ten alarms are unacknowledged, and stops as soon as neither holds; elsewhere it sounds once. It silences the tone only: the banner and the severity colours are ISA-18.2 signals and stay unconditional.</source>
+        <translation>Подавать звуковой сигнал, когда тревога требует внимания. В Windows сигнал повторяется, пока есть неквитированная критическая тревога или неквитированных тревог больше десяти, и прекращается, как только ни то ни другое не выполняется; в других системах звучит один раз. Отключается только звук: баннер и цвета важности — сигналы по ISA-18.2 и выводятся всегда.</translation>
     </message>
     <message>
         <source>Raise the event view when an event arrives.</source>
