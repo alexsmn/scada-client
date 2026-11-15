@@ -104,3 +104,62 @@ TEST_F(TimedDataModelTest, LiveUpdateOutsideFrozenWindowIsIgnored) {
 
   EXPECT_EQ(model_.GetRowCount(), rows);
 }
+
+namespace {
+
+// A timed data whose history arrives when the test says so, rather than at
+// once as FakeTimedData's does.
+class DeferredTimedData : public FakeTimedData {
+ public:
+  explicit DeferredTimedData(const std::string& formula)
+      : FakeTimedData{formula} {}
+
+  void AddViewObserver(TimedDataViewObserver& observer,
+                       const scada::TimeRange& range) override {
+    observer_ = &observer;
+  }
+
+  void RemoveViewObserver(TimedDataViewObserver& observer) override {
+    if (observer_ == &observer)
+      observer_ = nullptr;
+  }
+
+  void Deliver() {
+    ready_ranges = {{scada::kMinTime, scada::kMaxTime}};
+    if (observer_)
+      observer_->OnTimedDataReady();
+  }
+
+ private:
+  TimedDataViewObserver* observer_ = nullptr;
+};
+
+}  // namespace
+
+// Task 155: the timed-data view's "[Loading]" title marker is pushed, not
+// polled, so the model must report both edges — working while the requested
+// day has not arrived, and done once it has.
+TEST_F(TimedDataModelTest, ReportsWorkingUntilHistoryArrives) {
+  clock_.SetNow(TestTimeFromString("15 Nov 2004 10:22:00"));
+
+  auto timed_data = std::make_shared<DeferredTimedData>("item1");
+  timed_data_service_.formulas["item1"] = timed_data;
+
+  std::vector<bool> reported;
+  model_.working_changed_handler = [&] {
+    reported.push_back(model_.working());
+  };
+
+  model_.Init(WindowDefinition{}.AddItem(
+      std::move(WindowItem{"Item"}.SetString("path", "item1"))));
+
+  ASSERT_THAT(reported, Not(IsEmpty()));
+  EXPECT_TRUE(reported.back());
+  EXPECT_TRUE(model_.working());
+
+  timed_data->Deliver();
+
+  ASSERT_THAT(reported, Not(IsEmpty()));
+  EXPECT_FALSE(reported.back());
+  EXPECT_FALSE(model_.working());
+}

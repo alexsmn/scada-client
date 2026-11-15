@@ -23,12 +23,12 @@ class TimedDataController : protected ControllerContext,
                             public ExportModel {
  public:
   explicit TimedDataController(const ControllerContext& context);
+  ~TimedDataController() override;
 
   // Controller
   virtual std::unique_ptr<UiView> Init(
       const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
-  virtual bool IsWorking() const override;
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual SelectionModel* GetSelectionModel() override { return &selection_; }
   virtual ContentsModel* GetContentsModel() override { return this; }

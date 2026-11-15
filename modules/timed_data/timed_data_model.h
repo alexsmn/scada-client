@@ -5,6 +5,8 @@
 #include "controller/time_model.h"
 #include "timed_data/timed_data_spec.h"
 
+#include <functional>
+
 namespace scada::base {
 class Clock;
 }
@@ -36,6 +38,13 @@ class TimedDataModel : private TimedDataModelContext,
 
   // The formula can be updated after initialization.
   void SetFormula(std::string_view formula);
+
+  // True while the requested range has not been fully received.
+  bool working() const { return !timed_data_.ready(); }
+
+  // Invoked whenever working() may have changed: on every row update, which
+  // follows each range or formula change and each delivery of data.
+  std::function<void()> working_changed_handler;
 
   // aui::TableModel overrides
   virtual int GetRowCount() override;

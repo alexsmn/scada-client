@@ -110,6 +110,13 @@ EventTableModel::EventTableModel(EventTableModelContext&& context)
   connections_.emplace_back(historical_event_model_.refilter_now.connect(
       std::bind_front(&EventTableModel::RefilterNow, this)));
 
+  // A journal shows one of the two models, but forwarding both is harmless:
+  // a listener re-reads working(), which consults only the one shown.
+  connections_.emplace_back(current_event_model_.on_working_changed.connect(
+      [this] { on_working_changed(); }));
+  connections_.emplace_back(historical_event_model_.on_working_changed.connect(
+      [this] { on_working_changed(); }));
+
   connections_.emplace_back(local_event_model_.on_event.connect(
       std::bind_front(&EventTableModel::OnLocalEvent, this)));
 
@@ -1018,7 +1025,7 @@ std::u16string EventTableModel::MakeTitle() const {
   return title;
 }
 
-bool EventTableModel::IsWorking() const {
+bool EventTableModel::working() const {
   if (current_events_)
     return current_event_model_.working();
   else

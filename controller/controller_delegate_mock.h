@@ -17,6 +17,8 @@ class MockControllerDelegate : public ControllerDelegate {
 
   MOCK_METHOD(void, SetModified, (bool modified), (override));
 
+  MOCK_METHOD(void, SetWorking, (bool working), (override));
+
   MOCK_METHOD(void, Close, (), (override));
 
   MOCK_METHOD(void, OpenView, (const WindowDefinition& def), (override));

@@ -98,6 +98,28 @@ class TestActionController final : public Controller {
   CommandRegistry command_registry_;
 };
 
+// Reports the view as working from Init, the way a view whose data has not
+// arrived yet does, and lets the test report it done later.
+class WorkingReportingController final : public Controller {
+ public:
+  explicit WorkingReportingController(ControllerDelegate& delegate)
+      : delegate_{delegate} {}
+
+  std::unique_ptr<UiView> Init(const WindowDefinition& definition) override {
+    delegate_.SetWorking(true);
+#if defined(UI_QT)
+    return std::make_unique<QWidget>();
+#else
+    return nullptr;
+#endif
+  }
+
+  void FinishWorking() { delegate_.SetWorking(false); }
+
+ private:
+  ControllerDelegate& delegate_;
+};
+
 class TestOpenedViewCommandRouter final : public CommandHandler {
  public:
   explicit TestOpenedViewCommandRouter(Controller& controller)
@@ -855,4 +877,35 @@ TEST(BaseMainWindowTrashTest, DeletedPageWindowsGoToTheTrashCapped) {
   // The oldest are dropped; the last window of the page is kept.
   EXPECT_EQ(trash.GetWindow(trash.GetWindowCount() - 1).title,
             page.GetWindow(page.GetWindowCount() - 1).title);
+}
+
+// Task 155: the "[Loading]" title marker used to come from a 100 ms timer
+// polling Controller::IsWorking(). It is now whatever the controller last
+// reported -- including from inside Init, before any main window has the
+// view, which must neither crash a headless host nor be lost.
+TEST_F(MainWindowTest, OpenedViewShowsTheWorkingStateTheControllerReports) {
+  WorkingReportingController* controller = nullptr;
+  WindowDefinition definition{ControllerEnvironment::kFakeWindowInfo};
+  OpenedView view{OpenedViewContext{
+      .executor_ = controller_env_.executor_,
+      .window_info_ = ControllerEnvironment::kFakeWindowInfo,
+      .window_def_ = definition,
+      .dialog_service_ = controller_env_.dialog_service_,
+      .controller_factory_ =
+          [&](unsigned command_id, ControllerDelegate& controller_delegate,
+              DialogService& dialog_service) -> std::unique_ptr<Controller> {
+        auto result =
+            std::make_unique<WorkingReportingController>(controller_delegate);
+        controller = result.get();
+        return result;
+      }}};
+  view.Init();
+  ASSERT_THAT(controller, NotNull());
+
+  const std::u16string loading = u"[" + Translate("Loading") + u"]";
+  EXPECT_NE(view.GetDisplayTitle().find(loading), std::u16string::npos);
+  EXPECT_EQ(view.GetWindowTitle().find(loading), std::u16string::npos);
+
+  controller->FinishWorking();
+  EXPECT_EQ(view.GetDisplayTitle(), view.GetWindowTitle());
 }

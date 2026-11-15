@@ -13,6 +13,7 @@ class ControllerDelegateImpl final : public ControllerDelegate {
                              const scada::aui::Point& point,
                              bool right_click) override {}
   virtual void SetModified(bool modified) override {}
+  virtual void SetWorking(bool working) override {}
   virtual void Close() override {}
   virtual void OpenView(const WindowDefinition& def) override {}
   virtual void ExecuteDefaultNodeCommand(const NodeRef& node) override {}

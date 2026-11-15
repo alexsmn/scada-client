@@ -103,8 +103,14 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
 
     std::unique_ptr<MetrixDataSource> data_source_;
 
+    // The graph to tell when this line's history arrives. Set by
+    // MetrixGraph::NewLine once the line is in a plot; history can be reported
+    // before that, when graph() would dereference a null plot.
+    MetrixGraph* working_observer_ = nullptr;
+
    protected:
     // MetrixDataSource::Observer
+    virtual void OnDataSourceHistoryChanged() override;
     virtual void OnDataSourceCurrentValueChanged() override;
     virtual void OnDataSourceItemChanged() override;
     virtual void OnDataSourceDeleted() override;
@@ -126,6 +132,14 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
   }
 
   MetrixLine& NewLine(std::string_view path, MetrixPane& pane);
+
+  // True while any line has not yet received the history its window needs.
+  bool working() const;
+
+  // Invoked whenever working() may have changed: after each periodic window
+  // update (UpdateData), which also follows lines being added or removed, and
+  // whenever a line's history arrives.
+  std::function<void()> working_changed_handler;
   MetrixPane& NewPane();
 
   void UpdateData();

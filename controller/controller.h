@@ -23,8 +23,6 @@ class Controller {
 
   virtual std::unique_ptr<UiView> Init(const WindowDefinition& definition) = 0;
 
-  virtual bool IsWorking() const { return false; }
-
   virtual void Save(WindowDefinition& definition) {}
   virtual void OnViewNodeCreated(const NodeRef& node) {}
 

@@ -152,6 +152,26 @@ TEST_F(NodeTableModelTest, NotifiesAfterAsyncBrowseCompletes) {
   EXPECT_GE(model_changed, 1);
 }
 
+// Task 155: the node table's "[Loading]" title marker is pushed rather than
+// polled, so the model has to say when loading ends — once, and only then.
+TEST_F(NodeTableModelTest, ReportsLoadedOnceWhenTheBrowseCompletes) {
+  auto model = CreateModel(kGroupId);
+  int loaded = 0;
+  model->loaded_handler = [&] {
+    EXPECT_FALSE(model->loading());
+    ++loaded;
+  };
+
+  EXPECT_TRUE(model->loading());
+  Drain(executor_);
+  EXPECT_EQ(loaded, 0);
+
+  CompleteAllFetches();
+
+  EXPECT_FALSE(model->loading());
+  EXPECT_EQ(loaded, 1);
+}
+
 // While the browse is outstanding the one placeholder row is drawn as
 // inactive, by role rather than by a literal grey, so it follows the theme.
 // Regression: the cell used to carry `Rgba{0xF0, 0xF0, 0xF0}`, which stayed a

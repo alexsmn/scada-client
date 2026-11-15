@@ -76,6 +76,7 @@ class FakeControllerDelegate : public ControllerDelegate {
                      const scada::aui::Point& point,
                      bool right_click) override {}
   void SetModified(bool modified) override {}
+  void SetWorking(bool working) override {}
   void Close() override {}
   void OpenView(const WindowDefinition& def) override {}
   void ExecuteDefaultNodeCommand(const NodeRef& node) override {}

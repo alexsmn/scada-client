@@ -306,6 +306,13 @@ MetrixGraph::MetrixLine::~MetrixLine() {
   SetDataSource(nullptr);
 }
 
+void MetrixGraph::MetrixLine::OnDataSourceHistoryChanged() {
+  GraphLine::OnDataSourceHistoryChanged();
+
+  if (working_observer_ && working_observer_->working_changed_handler)
+    working_observer_->working_changed_handler();
+}
+
 void MetrixGraph::MetrixLine::OnDataSourceCurrentValueChanged() {
   GraphLine::OnDataSourceCurrentValueChanged();
 
@@ -463,17 +470,31 @@ void MetrixGraph::MetrixLine::UpdateTimeRange() {
   data_source().SetRange({from, to});
 }
 
+bool MetrixGraph::working() const {
+  for (auto* pane : panes()) {
+    for (auto* line : pane->plot().lines()) {
+      if (!static_cast<const MetrixLine*>(line)->data_source().is_ready())
+        return true;
+    }
+  }
+  return false;
+}
+
 void MetrixGraph::UpdateData() {
   for (auto* pane : panes()) {
     for (auto* line : pane->plot().lines())
       static_cast<MetrixLine*>(line)->UpdateTimeRange();
   }
+
+  if (working_changed_handler)
+    working_changed_handler();
 }
 
 MetrixGraph::MetrixLine& MetrixGraph::NewLine(std::string_view path,
                                               MetrixPane& pane) {
   MetrixLine* line = new MetrixLine(executor_);
   pane.plot().AddLine(*line);
+  line->working_observer_ = this;
 
   TimedDataSpec spec;
   spec.Connect(timed_data_service_, path);

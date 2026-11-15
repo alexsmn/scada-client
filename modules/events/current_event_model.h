@@ -26,6 +26,8 @@ class CurrentEventModel : private EventObserver {
   }
 
   boost::signals2::signal<void()> on_all_acked;
+  // Fired after working() changes.
+  boost::signals2::signal<void()> on_working_changed;
   boost::signals2::signal<void(std::span<const scada::Event* const> events)>
       on_events;
 
@@ -35,6 +37,8 @@ class CurrentEventModel : private EventObserver {
   }
 
   virtual void OnAllEventsAcknowledged() override { on_all_acked(); }
+
+  virtual void OnAckingChanged() override { on_working_changed(); }
 
   NodeEventProvider& node_event_provider_;
 };

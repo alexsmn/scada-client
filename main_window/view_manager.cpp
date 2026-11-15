@@ -108,7 +108,7 @@ scada::aui::ViewManagerViewInfo ViewManager::GetComponentViewInfo(
   return scada::aui::ViewManagerViewInfo{
       .id = GetComponentViewId(view),
       .widget = view.view(),
-      .title = view.GetWindowTitle(),
+      .title = view.GetDisplayTitle(),
 #if defined(UI_QT)
       .state_name = "dock-" + std::to_string(view.window_id()),
 #endif

@@ -59,6 +59,11 @@ GraphView::~GraphView() = default;
 
 std::unique_ptr<UiView> GraphView::Init(const WindowDefinition& definition) {
   graph_ = new MetrixGraph(MetrixGraphContext{timed_data_service_, executor_});
+  // The graph is owned by the view widget, which the shell destroys before
+  // this controller, so the handler never outlives `this`.
+  graph_->working_changed_handler = [this] {
+    controller_delegate_.SetWorking(graph_->working());
+  };
 
   GraphViewLoader{.definition_ = definition,
                   .profile_ = profile_,
@@ -449,17 +454,6 @@ std::u16string GraphView::MakeTitle() const {
                 graph_->panes().front()->plot().primary_line())
           : nullptr;
   return line ? line->data_source().title() : Translate("No item");
-}
-
-bool GraphView::IsWorking() const {
-  for (auto* pane : graph_->panes()) {
-    for (auto* graph_line : pane->plot().lines()) {
-      auto& line = static_cast<MetrixGraph::MetrixLine&>(*graph_line);
-      if (!line.data_source().is_ready())
-        return true;
-    }
-  }
-  return false;
 }
 
 void GraphView::OnGraphSelectPane() {

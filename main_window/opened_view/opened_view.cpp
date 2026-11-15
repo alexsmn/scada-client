@@ -23,11 +23,8 @@
 #include <QWidget>
 #endif
 
-using namespace std::chrono_literals;
-
 OpenedView::OpenedView(OpenedViewContext&& context)
-    : OpenedViewContext{std::move(context)},
-      update_working_timer_{context.executor_} {}
+    : OpenedViewContext{std::move(context)} {}
 
 OpenedView::~OpenedView() {}
 
@@ -45,8 +42,6 @@ void OpenedView::Init() {
   if (!view_) {
     throw std::runtime_error{"Can't create widget"};
   }
-
-  update_working_timer_.StartRepeating(100ms, [this] { UpdateWorking(); });
 
   //  image_ =
   //  ui::ResourceBundle::GetSharedInstance().GetNamedImage(window_info_.type);
@@ -87,13 +82,16 @@ std::u16string OpenedView::GetWindowTitle() const {
   return translated_info_title();
 }
 
-void OpenedView::UpdateTitle() {
+std::u16string OpenedView::GetDisplayTitle() const {
   std::u16string title = GetWindowTitle();
   if (working_)
     title += u" [" + Translate("Loading") + u"]";
+  return title;
+}
 
+void OpenedView::UpdateTitle() {
   scada::base::Check(main_window_);
-  main_window_->OnViewTitleUpdated(*this, title);
+  main_window_->OnViewTitleUpdated(*this, GetDisplayTitle());
 }
 
 void OpenedView::Close() {
@@ -116,12 +114,16 @@ void OpenedView::Select(const scada::NodeId& node_id) {
   controller_->ShowContainedItem(node_id);
 }
 
-void OpenedView::UpdateWorking() {
-  bool working = controller_->IsWorking();
-  if (working != working_) {
-    working_ = working;
+void OpenedView::SetWorking(bool working) {
+  if (working == working_)
+    return;
+  working_ = working;
+  // The controller reports its initial state from inside Init, before the
+  // view is registered with any main window; the view manager then reads
+  // GetDisplayTitle() when it adds the view. Headless hosts have no main
+  // window at all.
+  if (main_window_)
     UpdateTitle();
-  }
 }
 
 void OpenedView::SetTitle(std::u16string_view title) {

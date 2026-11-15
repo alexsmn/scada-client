@@ -56,13 +56,24 @@ struct MirrorTableModelHolder {
 TimedDataController::TimedDataController(const ControllerContext& context)
     : ControllerContext{context} {}
 
+TimedDataController::~TimedDataController() {
+  // The table shares ownership of the model and can outlive this controller.
+  if (model_)
+    model_->working_changed_handler = nullptr;
+}
+
 std::unique_ptr<UiView> TimedDataController::Init(
     const WindowDefinition& definition) {
   model_ = std::make_shared<TimedDataModel>(
       TimedDataModelContext{.clock_ = *scada::base::DefaultClock::GetInstance(),
                             .timed_data_service_ = timed_data_service_});
 
+  // Set before Init, which already requests the range.
+  model_->working_changed_handler = [this] {
+    controller_delegate_.SetWorking(model_->working());
+  };
   model_->Init(definition);
+  controller_delegate_.SetWorking(model_->working());
 
   auto mirror_table_holder = std::make_shared<MirrorTableModelHolder>(model_);
 
@@ -138,10 +149,6 @@ void TimedDataController::AddContainedItem(const scada::NodeId& node_id,
 
 CommandHandler* TimedDataController::GetCommandHandler(unsigned command_id) {
   return command_registry_.GetCommandHandler(command_id);
-}
-
-bool TimedDataController::IsWorking() const {
-  return !model_->timed_data().ready();
 }
 
 TimeModel* TimedDataController::GetTimeModel() {

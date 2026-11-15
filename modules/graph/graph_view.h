@@ -41,7 +41,6 @@ class GraphView : protected ControllerContext,
   void SetGraphColor(scada::aui::Color color);
 
   // Controller methods
-  virtual bool IsWorking() const override;
   virtual std::unique_ptr<UiView> Init(
       const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;

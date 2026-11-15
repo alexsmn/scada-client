@@ -106,7 +106,11 @@ NodeTableController::NodeTableController(const ControllerContext& context,
     model_->SetParentNode(parent_node);
 }
 
-NodeTableController::~NodeTableController() = default;
+NodeTableController::~NodeTableController() {
+  // The grid shares ownership of the model, so it can outlive this controller
+  // and finish loading afterwards.
+  model_->loaded_handler = nullptr;
+}
 
 std::unique_ptr<UiView> NodeTableController::Init(
     const WindowDefinition& definition) {
@@ -117,6 +121,9 @@ std::unique_ptr<UiView> NodeTableController::Init(
   }
 
   model_->SetSorting(profile_.node_table.default_sort_property_id);
+
+  model_->loaded_handler = [this] { controller_delegate_.SetWorking(false); };
+  controller_delegate_.SetWorking(model_->loading());
 
 #if defined(UI_QT)
   // The Users administration table renders as the themed UsersGridPanel
@@ -254,8 +261,4 @@ NodeRef NodeTableController::GetRootNode() const {
 void NodeTableController::SetSorting(const scada::NodeId& property_id) {
   profile_.node_table.default_sort_property_id = property_id;
   model_->SetSorting(property_id);
-}
-
-bool NodeTableController::IsWorking() const {
-  return model_->loading();
 }

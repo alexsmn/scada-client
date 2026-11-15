@@ -42,10 +42,15 @@ class HistoricalEventModel {
 
   void CancelRequest() {
     cancelation_.Cancel();
-    request_running_ = false;
+    if (request_running_) {
+      request_running_ = false;
+      on_working_changed();
+    }
   }
 
   boost::signals2::signal<void()> refilter_now;
+  // Fired after working() changes.
+  boost::signals2::signal<void()> on_working_changed;
 
  private:
   Awaitable<void> UpdateAsync(CancelationRef request_cancelation,
@@ -81,6 +86,7 @@ inline void HistoricalEventModel::Update() {
 
   scada::base::Check(!request_running_);
   request_running_ = true;
+  on_working_changed();
 
   CoSpawn(executor_,
           [this, request_cancelation = cancelation_.ref(), from,
@@ -125,4 +131,5 @@ inline void HistoricalEventModel::OnHistoryReadEventsCompleted(
   request_running_ = false;
 
   refilter_now();
+  on_working_changed();
 }

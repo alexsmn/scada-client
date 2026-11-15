@@ -9,6 +9,7 @@
 #include "node_service/node_ref.h"
 
 #include <boost/signals2/connection.hpp>
+#include <boost/signals2/signal.hpp>
 #include <map>
 #include <set>
 #include <span>
@@ -84,7 +85,12 @@ class EventTableModel : public scada::aui::TableModel,
   const scada::Event& event_at(int row) const SCADA_LIFETIME_BOUND {
     return *rows_[row].event;
   }
-  bool IsWorking() const;
+  // True while the historical journal's request is running, or while the
+  // current journal is acknowledging.
+  bool working() const;
+
+  // Fired whenever working() may have changed.
+  boost::signals2::signal<void()> on_working_changed;
 
   const scada::RelativeTimeRange& time_range() const;
   void SetTimeRange(const scada::RelativeTimeRange& range);

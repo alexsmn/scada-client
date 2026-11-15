@@ -41,6 +41,12 @@ class ControllerDelegate {
 
   virtual void SetModified(bool modified) = 0;
 
+  // Reports whether the view is still loading or acknowledging, which the
+  // shell shows as a "[Loading]" title marker. A view calls it whenever that
+  // state may have changed; repeating the current value is harmless. Nothing
+  // polls the view for it, so a transition that is not reported is not shown.
+  virtual void SetWorking(bool working) = 0;
+
   virtual void Close() = 0;
 
   virtual void OpenView(const WindowDefinition& def) = 0;

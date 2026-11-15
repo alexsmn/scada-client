@@ -18,7 +18,6 @@ class MockController : public Controller {
               (override));
 
   MOCK_METHOD(bool, CanClose, (), (const override));
-  MOCK_METHOD(bool, IsWorking, (), (const override));
 
   MOCK_METHOD(void, Save, (WindowDefinition & definition), (override));
   MOCK_METHOD(void, OnViewNodeCreated, (const NodeRef& node), (override));

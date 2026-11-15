@@ -10,6 +10,7 @@
 #include "properties/property_context.h"
 
 #include <boost/signals2/connection.hpp>
+#include <functional>
 #include <memory>
 #include <span>
 
@@ -56,7 +57,12 @@ class NodeTableModel : private PropertyContext,
                            const std::u16string& text) override;
   virtual scada::aui::EditData GetEditData(int row, int column) override;
 
+  // True until the columns and the first set of rows have been read, or the
+  // read failed. It goes false once and never returns to true.
   bool loading() const { return loading_; }
+
+  // Invoked once, when loading() turns false.
+  std::function<void()> loaded_handler;
 
  private:
   using PropertyDefs =
@@ -68,6 +74,7 @@ class NodeTableModel : private PropertyContext,
   };
 
   void FetchRow(Row& row) const;
+  void FinishLoading();
 
   void UpdateColumns(const PropertyDefs& property_defs);
   void UpdateRows();

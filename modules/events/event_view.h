@@ -13,6 +13,7 @@
 #include "export/export_model.h"
 #include "scada/event.h"
 
+#include <boost/signals2/connection.hpp>
 #include <memory>
 
 namespace scada::aui {
@@ -42,7 +43,6 @@ class EventView : protected ControllerContext,
   void AcknowledgeSelection();
 
   // Controller
-  virtual bool IsWorking() const override;
   virtual std::unique_ptr<UiView> Init(
       const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
@@ -88,6 +88,10 @@ class EventView : protected ControllerContext,
   const bool audit_only_ = false;
 
   const std::shared_ptr<EventTableModel> model_;
+
+  // Forwards the model's working state to the shell. The table shares the
+  // model, so the connection is scoped to this view rather than to the model.
+  boost::signals2::scoped_connection working_connection_;
 
   // The same journal with its flood groups expanded, handed to exports and
   // printouts so a record contains every occurrence rather than a count.

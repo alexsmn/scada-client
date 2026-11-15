@@ -1,6 +1,7 @@
 #include "events/event_table_model.h"
 #include "aui/translation.h"
 
+#include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "events/alarm_flood.h"
 #include "events/audit_events.h"
@@ -235,6 +236,43 @@ TEST(EventTableModelUnacknowledgedFilterTest,
   // Back off: the acknowledged event returns.
   model.SetUnacknowledgedOnly(false);
   EXPECT_EQ(model.GetRowCount(), 3);
+}
+
+// Task 155: the journal's "[Loading]" title marker is pushed, not polled, so
+// the model must announce both edges of a historical read.
+TEST(EventTableModelWorkingTest, ReportsTheHistoricalReadStartingAndEnding) {
+  TestExecutor executor;
+  StaticNodeService node_service;
+
+  NiceMock<MockNodeEventProvider> node_event_provider;
+  NodeEventProvider::EventContainer empty_current;
+  ON_CALL(node_event_provider, unacked_events())
+      .WillByDefault(ReturnRef(empty_current));
+  CurrentEventModel current_event_model{node_event_provider};
+
+  NiceMock<scada::MockHistoryService> history_service;
+  HistoricalEventModel historical_event_model{executor, history_service};
+  LocalEvents local_events;
+  LocalEventModel local_event_model{local_events};
+
+  EventTableModel model{{.executor_ = executor,
+                         .node_service_ = node_service,
+                         .current_event_model_ = current_event_model,
+                         .historical_event_model_ = historical_event_model,
+                         .local_event_model_ = local_event_model,
+                         .current_events_ = false}};
+
+  std::vector<bool> reported;
+  boost::signals2::scoped_connection connection =
+      model.on_working_changed.connect(
+          [&] { reported.push_back(model.working()); });
+
+  model.Update();
+  EXPECT_THAT(reported, ElementsAre(true));
+
+  Drain(executor);
+  EXPECT_THAT(reported, ElementsAre(true, false));
+  EXPECT_FALSE(model.working());
 }
 
 // The Audit log is this journal scoped to the AuditEventType subtree. The

@@ -88,6 +88,9 @@ void TimedDataModel::UpdateRows(const scada::TimeRange& range) {
       NotifyItemsChanged(first - start, last - first);
     }
   }
+
+  if (working_changed_handler)
+    working_changed_handler();
 }
 
 const scada::DataValue& TimedDataModel::value(int row) const {

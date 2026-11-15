@@ -251,6 +251,11 @@ bool EventView::CanAcknowledgeSelection() const {
 }
 
 std::unique_ptr<UiView> EventView::Init(const WindowDefinition& definition) {
+  // Connected before Update(), which starts the historical request.
+  working_connection_ = model_->on_working_changed.connect(
+      [this] { controller_delegate_.SetWorking(model_->working()); });
+  controller_delegate_.SetWorking(model_->working());
+
   model_->LockUpdate();
   model_->Update();
 
@@ -395,10 +400,6 @@ bool EventView::OnKeyPressed(scada::aui::KeyCode key_code) {
     default:
       return false;
   }
-}
-
-bool EventView::IsWorking() const {
-  return model_->IsWorking();
 }
 
 std::u16string EventView::MakeTitle() const {

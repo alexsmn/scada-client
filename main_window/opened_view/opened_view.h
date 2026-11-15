@@ -5,7 +5,6 @@
 #include "base/lifetime.h"
 
 #include "aui/types.h"
-#include "base/any_executor_timer.h"
 #include "controller/command_handler.h"
 #include "controller/controller_delegate.h"
 #include "controller/controller_factory.h"
@@ -77,11 +76,15 @@ class OpenedView final : private OpenedViewContext,
   void SetWindowTitle(std::u16string_view title) override;
   WindowDefinition Save() override;
   std::u16string GetWindowTitle() const override;
+  // The tab or dock title as shown: GetWindowTitle() plus the "[Loading]"
+  // marker while the controller reports it is working.
+  std::u16string GetDisplayTitle() const;
   virtual void Close() override;
 
   // ControllerDelegate
   // TODO: Move to private.
   virtual void SetModified(bool modified) override;
+  virtual void SetWorking(bool working) override;
 
   Awaitable<WindowDefinition> GetOpenWindowDefinition(
       const WindowInfo* window_info) const override;
@@ -89,7 +92,6 @@ class OpenedView final : private OpenedViewContext,
   std::unique_ptr<CommandHandler> commands;
 
  private:
-  void UpdateWorking();
   void UpdateTitle();
 
   // ControllerDelegate
@@ -112,8 +114,8 @@ class OpenedView final : private OpenedViewContext,
 
   std::u16string title_;
 
+  // Reported by the controller through SetWorking; shown as a title marker.
   bool working_ = false;
-  AnyExecutorTimer update_working_timer_;
 
   std::unique_ptr<UiView> view_;
 

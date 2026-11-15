@@ -75,7 +75,7 @@ void NodeTableModel::SetParentNode(const NodeRef& parent_node) {
               if (cancelation.canceled()) {
                 co_return;
               }
-              loading_ = false;
+              FinishLoading();
               LogLoadFailure(property_defs.status());
               NotifyModelChanged();
               co_return;
@@ -86,7 +86,7 @@ void NodeTableModel::SetParentNode(const NodeRef& parent_node) {
               co_return;
             }
             if (!fetch_status) {
-              loading_ = false;
+              FinishLoading();
               LogLoadFailure(fetch_status);
               NotifyModelChanged();
               co_return;
@@ -176,8 +176,16 @@ scada::aui::EditData NodeTableModel::GetEditData(int row, int column) {
                                        c.property_declaration.node_id());
 }
 
-void NodeTableModel::UpdateRows() {
+void NodeTableModel::FinishLoading() {
+  if (!loading_)
+    return;
   loading_ = false;
+  if (loaded_handler)
+    loaded_handler();
+}
+
+void NodeTableModel::UpdateRows() {
+  FinishLoading();
 
   auto nodes = parent_node_.targets(kParentReferenceTypeId);
 
