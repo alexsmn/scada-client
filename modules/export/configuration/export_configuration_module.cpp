@@ -8,6 +8,7 @@
 #include "export/configuration/configuration_transfer_commands.h"
 #include "node_service/node_service.h"
 #include "resources/common_resources.h"
+#include "scada/session_service.h"
 
 ExportConfigurationModule::ExportConfigurationModule(
     ExportConfigurationModuleContext&& context)
@@ -27,6 +28,11 @@ ExportConfigurationModule::ExportConfigurationModule(
   client_ =
       std::make_shared<const ConfigurationTransferClient>(std::move(call));
 
+  auto on_our_server = [session_service =
+                            session_service_](const GlobalCommandContext&) {
+    return !session_service || session_service->IsScada();
+  };
+
   global_commands_.AddCommand(
       BasicCommand<GlobalCommandContext>{ID_EXPORT_CONFIGURATION}
           .set_execute_handler([executor = executor_, client = client_](
@@ -36,7 +42,8 @@ ExportConfigurationModule::ExportConfigurationModule(
                                  context.dialog_service]() -> Awaitable<void> {
                       co_await ExportConfiguration(*client, dialog_service);
                     });
-          }));
+          })
+          .set_available_handler(on_our_server));
   ui_command_registry_.AddMenuItem(
       {.menu_id = MainMenuId::More,
        .order = 300,
@@ -54,7 +61,8 @@ ExportConfigurationModule::ExportConfigurationModule(
                                  context.dialog_service]() -> Awaitable<void> {
                       co_await ImportConfiguration(*client, dialog_service);
                     });
-          }));
+          })
+          .set_available_handler(on_our_server));
   ui_command_registry_.AddMenuItem(
       {.menu_id = MainMenuId::More,
        .order = 310,

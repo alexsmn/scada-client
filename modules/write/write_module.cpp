@@ -50,7 +50,8 @@ WriteModule::WriteModule(WriteModuleContext&& context)
                        return ExecuteWriteDialog(
                            dialog_service,
                            WriteContext{executor_, timed_data_service_, node_id,
-                                        profile_, false, &local_events_});
+                                        profile_, false, &local_events_,
+                                        session_service_.IsScada()});
                      });
            },
        // Both gates read the shared node rule (`GetWriteBlock`), which the

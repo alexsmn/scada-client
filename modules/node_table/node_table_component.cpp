@@ -28,18 +28,20 @@ const WindowInfo kTableEditorWindowInfo = {
     ID_TABLE_EDITOR, "TableEditor", u"Configuration",
     WIN_DISALLOW_NEW | WIN_REQUIRES_ADMIN};
 
-const WindowInfo kTsFormatsWindowInfo = {ID_TS_FORMATS_VIEW, "Params",
-                                         u"Formats", WIN_REQUIRES_ADMIN};
+const WindowInfo kTsFormatsWindowInfo = {
+    ID_TS_FORMATS_VIEW, "Params", u"Formats",
+    WIN_REQUIRES_ADMIN | WIN_REQUIRES_SCADA};
 
 const WindowInfo kUsersWindowInfo = {ID_USERS_VIEW, "Users", u"Users",
-                                     WIN_REQUIRES_ADMIN};
+                                     WIN_REQUIRES_ADMIN | WIN_REQUIRES_SCADA};
 
 const WindowInfo kSimulationSignalsWindowInfo = {
     ID_SIMULATION_ITEMS_VIEW, "SimulationItems", u"Simulated Signals",
-    WIN_REQUIRES_ADMIN};
+    WIN_REQUIRES_ADMIN | WIN_REQUIRES_SCADA};
 
 const WindowInfo kHistoricalDatabasesWindowInfo = {
-    ID_HISTORICAL_DB_VIEW, "HistoricalDB", u"Databases", WIN_REQUIRES_ADMIN};
+    ID_HISTORICAL_DB_VIEW, "HistoricalDB", u"Databases",
+    WIN_REQUIRES_ADMIN | WIN_REQUIRES_SCADA};
 
 REGISTER_CONTROLLER(NodeTableControllerImpl<0>, kTableEditorWindowInfo);
 REGISTER_CONTROLLER(

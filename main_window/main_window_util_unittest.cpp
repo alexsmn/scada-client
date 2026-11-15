@@ -2,7 +2,10 @@
 
 #include "controller/command_ui_registry.h"
 #include "controller/main_menu_id.h"
+#include "controller/window_info.h"
+#include "node_service/test/fake_node_service.h"
 #include "resources/common_resources.h"
+#include "scada/standard_node_ids.h"
 
 #include <gtest/gtest.h>
 
@@ -137,6 +140,35 @@ TEST(FindEmptyViewCommandsTest, IgnoresOtherMenus) {
                         .title = u"New Summary"});
 
   EXPECT_TRUE(FindEmptyViewCommands(registry, AlwaysEnabled()).empty());
+}
+
+// A Variable of a third-party server has no DataItemType. Activating it must
+// open its value, not the admin-only property sheet, which is what every such
+// variable fell through to (backlog 1054).
+TEST(GetDefaultNodeWindowInfoTest, APlainVariableOpensInTheTable) {
+  FakeNodeService node_service;
+  const NodeRef variable = node_service.Add(scada::NodeState{
+      .node_id = scada::NodeId{"Demo.Temperature", 2},
+      .node_class = scada::NodeClass::Variable,
+      // BaseDataVariableType, ns=0;i=63 — what a third-party server types an
+      // ordinary variable with. Not in this tree's standard id table.
+      .type_definition_id = scada::NodeId{63}});
+
+  EXPECT_EQ(GetDefaultNodeWindowInfo(variable, {}).name, "Table");
+  // Ctrl still opens the configuration editor, as for every node.
+  EXPECT_EQ(
+      GetDefaultNodeWindowInfo(variable, scada::aui::ControlModifier).name,
+      "TableEditor");
+}
+
+TEST(GetDefaultNodeWindowInfoTest, APlainObjectStillOpensItsProperties) {
+  FakeNodeService node_service;
+  const NodeRef object = node_service.Add(
+      scada::NodeState{.node_id = scada::NodeId{"Demo.Pump", 2},
+                       .node_class = scada::NodeClass::Object,
+                       .type_definition_id = scada::id::BaseObjectType});
+
+  EXPECT_EQ(GetDefaultNodeWindowInfo(object, {}).name, "NewProps");
 }
 
 }  // namespace

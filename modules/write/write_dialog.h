@@ -19,6 +19,13 @@ struct WriteContext {
   // Where a successful command is reported when the profile's
   // `show_write_ok` asks for it. Optional: without it success stays silent.
   LocalEvents* const local_events_ = nullptr;
+  // False when the session is connected to an OPC UA server that is not ours
+  // (`scada::SessionService::IsScada()`). Such a server has no per-item
+  // Control object, so the select stage of two-stage control is skipped and
+  // the value is written directly — the only command any OPC UA server
+  // understands (docs/product/multi-server-and-distribution.md, "foreign
+  // server" item 1).
+  const bool scada_server_ = true;
 };
 
 // The context is taken **by value**: this returns a lazy awaitable, and a

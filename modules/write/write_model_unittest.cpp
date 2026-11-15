@@ -286,6 +286,48 @@ TEST_F(WriteModelTest, SuccessfulWriteCompletesAfterAttributeCallback) {
   EXPECT_TRUE(dialog_service_.modes.empty());
 }
 
+// A Variable of a third-party server carries no OutputTwoStaged property, and
+// the property's default is Yes — which sent a Select to a Control object the
+// server has never had, failing before the value was written. On a foreign
+// server the value is written directly, the one command every OPC UA server
+// understands (backlog 1054).
+TEST_F(WriteModelTest, AForeignServersVariableIsWrittenWithoutASelect) {
+  profile_.control_confirmation = false;
+  node_service_.Add(scada::NodeState{
+      .node_id = scada::NodeId{63},
+      .node_class = scada::NodeClass::VariableType,
+      .attributes = {.display_name = u"BaseDataVariableType"}});
+  node_service_.Add(
+      scada::NodeState{.node_id = kDataItemId,
+                       .node_class = scada::NodeClass::Variable,
+                       // BaseDataVariableType, ns=0;i=63: an ordinary
+                       // third-party variable.
+                       .type_definition_id = scada::NodeId{63},
+                       .attributes = {.display_name = u"Demo.Setpoint"}});
+  EXPECT_CALL(method_service_, Call).Times(0);
+  EXPECT_CALL(attribute_service_, Write(_, _))
+      .WillOnce(DoAll(WithArg<1>([](const auto& inputs) {
+                        ASSERT_EQ(inputs.size(), 1u);
+                        EXPECT_EQ(inputs[0].node_id, kDataItemId);
+                        EXPECT_FALSE(inputs[0].flags.select());
+                      }),
+                      [](scada::ServiceContext, std::vector<scada::WriteValue>)
+                          -> scada::CoStatusOr<std::vector<scada::StatusCode>> {
+                        co_return std::vector{scada::StatusCode::Good};
+                      }));
+
+  auto model = std::make_shared<WriteModel>(
+      WriteContext{executor_, timed_data_service_, kDataItemId, profile_,
+                   /*manual_=*/false, &local_events_, /*scada_server_=*/false});
+  model->set_dialog_service(&dialog_service_);
+  model->status_change_handler = [this] { ++status_changes_; };
+  model->completion_handler = [this](bool ok) { completion_ = ok; };
+  model->Write(42.0, /*lock=*/false);
+  Drain(executor_);
+
+  EXPECT_EQ(completion_, true);
+}
+
 // A two-staged control is a select, then the operator's confirmation, then an
 // operate — three distinct steps, where it used to be two indistinguishable
 // value writes. The confirmation sits between a real select and a real

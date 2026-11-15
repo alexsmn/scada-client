@@ -209,7 +209,8 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
               .executor_ = context.executor_,
               .node_service_ = context.node_service_,
               .global_commands_ = context.global_commands_,
-              .ui_command_registry_ = context.ui_command_registry_}));
+              .ui_command_registry_ = context.ui_command_registry_,
+              .session_service_ = context.scada_services_.session_service}));
     }
 
     if (modules.node_service_progress_tracker) {

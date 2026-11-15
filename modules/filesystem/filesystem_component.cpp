@@ -34,8 +34,12 @@
 
 namespace {
 
-const WindowInfo kWindowInfo = {
-    ID_FILE_SYSTEM_VIEW, "FileSystemView", u"Files", WIN_SING, 200, 400};
+const WindowInfo kWindowInfo = {ID_FILE_SYSTEM_VIEW,
+                                "FileSystemView",
+                                u"Files",
+                                WIN_SING | WIN_REQUIRES_SCADA,
+                                200,
+                                400};
 
 REGISTER_CONTROLLER(FileSystemView, kWindowInfo);
 

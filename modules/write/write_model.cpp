@@ -41,7 +41,11 @@ WriteModel::WriteModel(WriteContext&& context)
   const auto& node = spec_.node();
   locked_ =
       node[scada::data_items::id::DataItemType_Locked].value().get_or(false);
+  // The property defaults to Yes when absent, which is right for our data
+  // items and wrong for every Variable of a foreign server: it has no Control
+  // object to select, and the Select would fail before the write was tried.
   two_staged_ =
+      scada_server_ &&
       node[scada::data_items::id::DataItemType_OutputTwoStaged].value().get_or(
           true);
 

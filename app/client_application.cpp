@@ -54,6 +54,7 @@
 #include "services/create_tree.h"
 #include "services/legacy_event_severity.h"
 #include "services/server_compatibility.h"
+#include "services/server_kind.h"
 #include "services/speech_service_impl.h"
 #include "services/task_manager_impl.h"
 #include "timed_data/timed_data_service_factory.h"
@@ -575,6 +576,21 @@ Awaitable<void> ClientApplication::PostLoginAsync() {
           ? master_data_services_->as_services().session_service->GetUserId()
           : scada::NodeId{};
 
+  // Ours or another vendor's: decided once, before the node service, the
+  // modules and the window exist, so every SCADA-only surface is withheld up
+  // front rather than failing into a node the server does not have
+  // (docs/product/multi-server-and-distribution.md, "foreign server" item 1).
+  if (server_kind_session_) {
+    const scada::model::ServerKind kind = co_await ReadServerKind(
+        std::static_pointer_cast<scada::AttributeService>(
+            master_data_services_));
+    server_kind_session_->set_server_kind(kind);
+    LOG_INFO(*logger_) << "Server kind: "
+                       << (kind == scada::model::ServerKind::kOurs
+                               ? "Telecontrol SCADA"
+                               : "third-party OPC UA");
+  }
+
   PostLoginContext ctx{
       .audited_scada_services = master_data_services_->as_services(),
       .scada_client = scada::client{master_data_services_->as_services()},
@@ -900,6 +916,15 @@ void ClientApplication::OnLoginCompleted(const DataServices& data_services) {
   auto audited_services =
       *AuditDataServices(RescaleLegacyEventSeverities(data_services),
                          core_module_->tracer(), executor_);
+  // Every surface that asks `IsScada()` reaches the session through here.
+  // PostLoginAsync decides the answer before it builds any of them.
+  if (audited_services.session_service_) {
+    server_kind_session_ = std::make_shared<ServerKindSessionService>(
+        std::move(audited_services.session_service_));
+    audited_services.session_service_ = server_kind_session_;
+  } else {
+    server_kind_session_.reset();
+  }
   master_data_services_->SetServices(std::move(audited_services));
 }
 

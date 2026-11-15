@@ -17,22 +17,23 @@ constexpr WindowInfo kAdministrationWindowInfo = {
     .command_id = ID_ADMINISTRATION_VIEW,
     .name = "Administration",
     .title = u"Administration",
-    .flags = WIN_SING | WIN_REQUIRES_ADMIN,
+    .flags = WIN_SING | WIN_REQUIRES_ADMIN | WIN_REQUIRES_SCADA,
     .size = {200, 400}};
 
 // The Roles workspace view. Registered here rather than beside its own class:
 // a REGISTER_CONTROLLER in a static-library TU nothing references is dropped
 // by the linker, and this module is the one that routes to it.
-constexpr WindowInfo kRolesWindowInfo = {.command_id = ID_ROLES_VIEW,
-                                         .name = "Roles",
-                                         .title = u"Roles",
-                                         .flags = WIN_REQUIRES_ADMIN};
+constexpr WindowInfo kRolesWindowInfo = {
+    .command_id = ID_ROLES_VIEW,
+    .name = "Roles",
+    .title = u"Roles",
+    .flags = WIN_REQUIRES_ADMIN | WIN_REQUIRES_SCADA};
 
 constexpr WindowInfo kPasswordPolicyWindowInfo = {
     .command_id = ID_PASSWORD_POLICY_VIEW,
     .name = "PasswordPolicy",
     .title = u"Password policy",
-    .flags = WIN_REQUIRES_ADMIN};
+    .flags = WIN_REQUIRES_ADMIN | WIN_REQUIRES_SCADA};
 
 }  // namespace
 

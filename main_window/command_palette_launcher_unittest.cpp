@@ -4,11 +4,14 @@
 #include "base/test/test_executor.h"
 #include "controller/command_manager.h"
 #include "main_window/command_palette_qt.h"
+#include "node_service/test/fake_node_service.h"
+#include "scada/session_service_mock.h"
 
 #include <QLineEdit>
 #include <QPointer>
 #include <QWidget>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <memory>
@@ -29,11 +32,27 @@ class CommandPaletteLauncherTest : public ::testing::Test {
             .parent_ = parent_});
   }
 
+  std::unique_ptr<CommandPaletteLauncher> MakeLauncherWithSession() {
+    return std::make_unique<CommandPaletteLauncher>(
+        CommandPaletteLauncherContext{
+            .executor_ = executor_,
+            .command_manager_ = command_manager_,
+            .resolve_command_ = [](unsigned) -> CommandHandler* {
+              return nullptr;
+            },
+            .open_tag_ = [](const scada::NodeId&, const std::u16string&) {},
+            .parent_ = parent_,
+            .node_service_ = &node_service_,
+            .session_service_ = &session_service_});
+  }
+
   // Per-test QApplication; see ActivityBarTest for why it is never static.
   AppEnvironment app_env_;
   TestExecutor executor_;
   CommandManager command_manager_;
   QWidget parent_;
+  FakeNodeService node_service_;
+  testing::NiceMock<scada::MockSessionService> session_service_;
 };
 
 // No address space means a palette of commands alone — and starting the
@@ -43,6 +62,22 @@ TEST_F(CommandPaletteLauncherTest, WithoutANodeServiceThereIsNoTagSearch) {
 
   EXPECT_FALSE(launcher->has_tag_search());
   launcher->StartTagSearchBrowse();
+}
+
+// A third-party server has no DataItemType tags; the walk would browse its
+// whole Organizes tree and find nothing (backlog 1054). The answer follows the
+// session, so a re-login onto our server brings tag search back.
+TEST_F(CommandPaletteLauncherTest, AForeignServerHasNoTagSearch) {
+  bool scada = false;
+  ON_CALL(session_service_, IsScada()).WillByDefault([&] { return scada; });
+  std::unique_ptr<CommandPaletteLauncher> launcher = MakeLauncherWithSession();
+
+  EXPECT_FALSE(launcher->has_tag_search());
+  launcher->StartTagSearchBrowse();
+  EXPECT_TRUE(node_service_.fetch_requests(scada::id::ObjectsFolder).empty());
+
+  scada = true;
+  EXPECT_TRUE(launcher->has_tag_search());
 }
 
 TEST_F(CommandPaletteLauncherTest, ShowParentsThePaletteToTheHost) {

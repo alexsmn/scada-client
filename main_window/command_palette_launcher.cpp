@@ -17,7 +17,8 @@ CommandPaletteLauncher::CommandPaletteLauncher(
       command_manager_{context.command_manager_},
       resolve_command_{std::move(context.resolve_command_)},
       open_tag_{std::move(context.open_tag_)},
-      parent_{context.parent_} {
+      parent_{context.parent_},
+      session_service_{context.session_service_} {
   if (!context.node_service_)
     return;
 
@@ -40,8 +41,16 @@ CommandPaletteLauncher::CommandPaletteLauncher(
 
 CommandPaletteLauncher::~CommandPaletteLauncher() = default;
 
+bool CommandPaletteLauncher::has_tag_search() const {
+  // Asked each time rather than at construction: the window outlives a
+  // re-login, which can land on a different kind of server. On a foreign one
+  // the walk would browse its whole Organizes tree and find nothing.
+  return tag_search_index_ &&
+         (!session_service_ || session_service_->IsScada());
+}
+
 void CommandPaletteLauncher::StartTagSearchBrowse() {
-  if (tag_search_index_)
+  if (has_tag_search())
     tag_search_index_->EnsurePopulated();
 }
 
@@ -50,7 +59,7 @@ CommandPalette* CommandPaletteLauncher::Show(const QString& initial_text) {
   // browse normally started when the first page opened, so tags() is usually
   // already populated here.
   std::vector<CommandPalette::ExtraItem> extras;
-  if (tag_search_index_) {
+  if (has_tag_search()) {
     StartTagSearchBrowse();
     const std::u16string tag_detail = Translate("tag");
     for (const TagSearchIndex::Tag& tag : tag_search_index_->tags()) {

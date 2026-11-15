@@ -62,14 +62,15 @@ class PaneModeController {
   // (a workspace view, or the bottom-docked Events pane).
   bool SelectModeForPane(std::string_view pane_type);
 
-  // The mode the window is in: the persisted one if the user may open it,
-  // Objects if they may not, and one inferred from the current page if the
-  // profile predates the rail and records none.
+  // The mode the window is in: the persisted one if this session may open it,
+  // one inferred from the current page if the profile predates the rail and
+  // records none, and otherwise the first available mode in rail order
+  // (Objects, unless the server is not ours).
   PaneModeId ActiveMode();
 
-  // Whether the current user may open `id`. A mode needing admin rights is
-  // available only when every one of its panes resolves for this user, which
-  // is the same resolution the menus use.
+  // Whether this session may open `id`: every one of its panes resolves to a
+  // handler, which is the same resolution the menus use (the Configure right
+  // for an admin view, a SCADA server for a WIN_REQUIRES_SCADA one).
   bool IsModeAvailable(PaneModeId id);
 
   // Brings the current page's panes into line with the active mode, without
@@ -94,6 +95,7 @@ class PaneModeController {
 
  private:
   void FrontPrimaryPane(const PaneMode& mode);
+  PaneModeId FirstAvailableMode();
 
   PaneModeHost& host_;
   // True while SetMode is closing and opening panes, whose notifications would

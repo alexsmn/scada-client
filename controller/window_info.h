@@ -12,6 +12,11 @@ enum WindowFlags {
   WIN_CAN_PRINT = 0x0010,       // can print contents
   WIN_REQUIRES_ADMIN = 0x0020,  // user must have admin rights to create window
   WIN_SINGLE_ITEM = 0x0040,     // only single item allowed in window
+  // The window shows something only a Telecontrol SCADA server has (its
+  // DataItems tree, devices, files, users, displays): it is withheld when
+  // the session is connected to any other OPC UA server
+  // (`scada::SessionService::IsScada()`).
+  WIN_REQUIRES_SCADA = 0x0080,
 };
 
 struct WindowInfo {
@@ -28,6 +33,9 @@ struct WindowInfo {
   bool createable() const { return !(flags & WIN_DISALLOW_NEW); }
   bool requires_admin_rights() const {
     return (flags & WIN_REQUIRES_ADMIN) != 0;
+  }
+  bool requires_scada_server() const {
+    return (flags & WIN_REQUIRES_SCADA) != 0;
   }
   bool single_item() const { return (flags & WIN_SINGLE_ITEM) != 0; }
 };

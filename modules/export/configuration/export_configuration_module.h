@@ -11,6 +11,10 @@ class NodeService;
 class UiCommandRegistry;
 struct GlobalCommandContext;
 
+namespace scada {
+class SessionService;
+}
+
 struct ExportConfigurationModuleContext {
   AnyExecutor executor_;
   // The session the transfer object is called through.
@@ -19,6 +23,10 @@ struct ExportConfigurationModuleContext {
   UiCommandRegistry& ui_command_registry_;
   // Calls to use instead of the session's, for tests.
   ConfigurationTransferCall call_;
+  // Optional: asked whether the server is ours. The transfer object exists
+  // only on our configuration server, so both commands are withheld on any
+  // other OPC UA server rather than failing as "too old". Null offers them.
+  scada::SessionService* session_service_ = nullptr;
 };
 
 // "Export Configuration..." and "Import Configuration..." for administrators:

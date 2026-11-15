@@ -35,7 +35,8 @@ struct CommandPaletteLauncherContext {
   // Optional: the address space, for the palette's tag search. Null gives a
   // palette of commands alone.
   NodeService* node_service_ = nullptr;
-  // Optional: watched only to notice a re-login, which drops the tag index.
+  // Optional: watched to notice a re-login, which drops the tag index, and
+  // asked whether the server is ours, without which there is no tag search.
   scada::SessionService* session_service_ = nullptr;
 };
 
@@ -69,8 +70,10 @@ class CommandPaletteLauncher {
   // pointer is for a caller that wants to look at it before then.
   CommandPalette* Show(const QString& initial_text);
 
-  // Whether the palette offers address-space tags at all.
-  bool has_tag_search() const { return tag_search_index_ != nullptr; }
+  // Whether the palette offers address-space tags at all: never without a
+  // node service, and never on a server that is not ours, whose address space
+  // has no DataItemType tags to find (`scada::SessionService::IsScada()`).
+  bool has_tag_search() const;
 
  private:
   const AnyExecutor executor_;
@@ -80,6 +83,7 @@ class CommandPaletteLauncher {
                            const std::u16string& title)>
       open_tag_;
   QWidget& parent_;
+  scada::SessionService* const session_service_;
 
   std::unique_ptr<TagSearchIndex> tag_search_index_;
   boost::signals2::scoped_connection session_state_connection_;

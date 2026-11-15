@@ -2,6 +2,7 @@
 
 #include "base/any_executor.h"
 
+#include "aui/key_codes.h"
 #include "base/awaitable.h"
 #include "controller/command_ui_registry.h"
 #include "profile/window_definition.h"
@@ -10,11 +11,21 @@
 #include <vector>
 
 class MainWindowInterface;
+class NodeRef;
 struct NodeCommandContext;
+struct WindowInfo;
 
 Awaitable<void> OpenView(MainWindowInterface* main_window,
                          const WindowDefinition& window_def,
                          bool activate = true);
+
+// The view a node opens in when it is activated (double-click, Enter): a group
+// in the table, a data item in the graph, a device in its watch, any other
+// Variable in the table, and anything else on the property sheet — or, with
+// Ctrl, in the configuration editor.
+const WindowInfo& GetDefaultNodeWindowInfo(
+    const NodeRef& node,
+    scada::aui::KeyModifiers key_modifiers);
 
 bool ExecuteDefaultNodeCommand(const AnyExecutor& executor,
                                const NodeCommandContext& context);

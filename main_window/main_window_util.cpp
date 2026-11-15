@@ -39,6 +39,15 @@ const WindowInfo& GetDefaultNodeWindowInfo(
     return kGraphWindowInfo;
   else if (IsInstanceOf(node, scada::devices::id::DeviceType))
     return kWatchWindowInfo;
+  // Any other Variable — every variable of a third-party server, which has no
+  // DataItemType — opens on its value in the current-value table rather than
+  // on the property sheet: watching the value is what an operator opens a
+  // variable for, and the table shows any data type, where a graph needs a
+  // number. Ctrl still opens the configuration editor, as for every node
+  // (docs/product/multi-server-and-distribution.md, "foreign server" item 5).
+  else if (!(key_modifiers & scada::aui::ControlModifier) &&
+           node.node_class() == scada::NodeClass::Variable)
+    return kTableWindowInfo;
   else
     return (key_modifiers & scada::aui::ControlModifier)
                ? kTableEditorWindowInfo

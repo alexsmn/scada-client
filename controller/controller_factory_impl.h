@@ -66,6 +66,11 @@ inline std::unique_ptr<Controller> ControllerFactoryImpl::CreateController(
     return nullptr;
   }
 
+  if (registrar->window_info().requires_scada_server() &&
+      !scada_services_.session_service->IsScada()) {
+    return nullptr;
+  }
+
   return registrar->CreateController(ControllerContext{
       executor_, delegate, task_manager_, *scada_services_.session_service,
       node_event_provider_, *scada_services_.history_service,

@@ -32,6 +32,8 @@
 // `ClientApplication` so each module's shutdown can be registered next
 // to its construction site instead of being manually ordered in the
 // destructor.
+class ServerKindSessionService;
+
 class ShutdownStack {
  public:
   ~ShutdownStack() {
@@ -302,6 +304,11 @@ class ClientApplication : private ClientApplicationContext {
   std::unique_ptr<SelectionPanelRegistry> selection_panel_registry_;
 
   std::shared_ptr<MasterDataServices> master_data_services_;
+
+  // The signed-in session, wrapped so that `IsScada()` answers whether the
+  // server is ours. Set at login, decided at the top of PostLoginAsync, before
+  // any view is created; see services/server_kind.h.
+  std::shared_ptr<ServerKindSessionService> server_kind_session_;
 
   std::unique_ptr<Profile> profile_;
 

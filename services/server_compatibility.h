@@ -24,6 +24,17 @@
 // the 2.5 way of doing the same thing, or tells the operator the Server is too
 // old for it, instead of passing a bare status code on.
 //
+// It is a question about OUR Server's version, never about whose server it is.
+// Another vendor's server also refuses these nodes, with its own
+// Bad_NodeIdUnknown or with Bad_WrongNodeId, and "requires Server version 2.6"
+// would be the wrong story there. That case is decided up front instead: after
+// sign-in the Client reads the server's NamespaceArray
+// (`ReadServerKind`, services/server_kind.h) and, on a foreign server,
+// withholds the SCADA-only surfaces that reach these calls —
+// `WIN_REQUIRES_SCADA` views, two-stage control, configuration transfer, tag
+// search — through `scada::SessionService::IsScada()`. So when an answer below
+// arrives, the server is ours and older.
+//
 // Never use it for a status a device returned: Bad_NotSupported, for one, is
 // the 2.6 Server refusing on behalf of a device that cannot do something, and
 // is deliberately not in this set.

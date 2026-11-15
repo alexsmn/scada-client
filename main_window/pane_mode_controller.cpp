@@ -58,25 +58,38 @@ bool PaneModeController::SelectModeForPane(std::string_view pane_type) {
 }
 
 PaneModeId PaneModeController::ActiveMode() {
+  // A profile can carry a mode this session may not open — an admin mode for
+  // an operator, or a SCADA-only mode on another vendor's server. Fall back
+  // rather than presenting an empty sidebar with no way out.
   if (const PaneMode* mode = FindPaneModeByKey(host_.PersistedModeKey())) {
-    // A profile can carry a mode the current user may not open. Fall back
-    // rather than presenting an empty sidebar with no way out.
-    if (!mode->requires_admin || IsModeAvailable(mode->id))
+    if (IsModeAvailable(mode->id))
       return mode->id;
-    return PaneModeId::kObjects;
+    return FirstAvailableMode();
   }
   // No mode recorded — this profile predates the rail. Infer one from the page
   // so the operator keeps the panes they had.
-  return InferPaneModeFromPage(host_.CurrentPage());
+  const PaneModeId inferred = InferPaneModeFromPage(host_.CurrentPage());
+  return IsModeAvailable(inferred) ? inferred : FirstAvailableMode();
+}
+
+PaneModeId PaneModeController::FirstAvailableMode() {
+  for (const PaneMode& mode : GetPaneModes()) {
+    if (IsModeAvailable(mode.id))
+      return mode.id;
+  }
+  // Nothing opens at all; Objects is what the rail has always defaulted to.
+  return PaneModeId::kObjects;
 }
 
 bool PaneModeController::IsModeAvailable(PaneModeId id) {
   const PaneMode& mode = GetPaneMode(id);
-  if (!mode.requires_admin)
-    return true;
   // The host asks the same resolution the menus use, so the rail and the More
   // menu agree by construction: a WIN_REQUIRES_ADMIN view resolves to no
-  // handler without the Configure right.
+  // handler without the Configure right, and a WIN_REQUIRES_SCADA view to none
+  // on a server that is not ours. Every pane, not just an admin mode's: on a
+  // foreign server Objects, Devices and Files each lose their subject pane, and
+  // a mode that opened only its secondary pane would be a different mode under
+  // the old name.
   return std::ranges::all_of(mode.pane_types, [this](std::string_view type) {
     return host_.CanOpenPane(type);
   });

@@ -46,6 +46,8 @@ module;
 #include "services/connection_state_reporter.h"
 #include "services/create_tree.h"
 #include "services/device_state_notifier.h"
+#include "services/legacy_event_severity.h"
+#include "services/server_kind.h"
 #include "services/speech_service.h"
 #include "services/speech_service_impl.h"
 #include "services/task_manager.h"
@@ -82,6 +84,16 @@ export {
   using ::DeviceStateNotifier;
   using ::ToLocalizedString;
   using ::ToString;
+
+  // legacy_event_severity.h
+  using ::LegacySeverityProbe;
+  using ::RescaleLegacyEventSeverities;
+  using ::RescaleLegacySeverities;
+  using ::RescaleLegacySeverity;
+
+  // server_kind.h
+  using ::ReadServerKind;
+  using ::ServerKindSessionService;
 
   // speech_service.h / speech_service_impl.h
   using ::Speech;

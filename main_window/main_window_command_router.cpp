@@ -46,6 +46,12 @@ CommandHandler* MainWindowCommandRouter::GetCommandHandler(
         !session_service_.HasAccessRight(scada::AccessRight::kConfigure)) {
       return nullptr;
     }
+    // A SCADA-only view on another vendor's server would open onto nodes
+    // that do not exist there; resolve it to no handler, as for the admin
+    // gate above, so the menus, the palette and the rail all leave it out.
+    if (win_info->requires_scada_server() && !session_service_.IsScada()) {
+      return nullptr;
+    }
     return this;
   }
 

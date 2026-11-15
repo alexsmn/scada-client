@@ -15,9 +15,9 @@
 
 #include <utility>
 
-const WindowInfo kTransmissionWindowInfo = {ID_TRANSMISSION_VIEW,
-                                            "Transmission", u"Transmission",
-                                            WIN_INS | WIN_DISALLOW_NEW};
+const WindowInfo kTransmissionWindowInfo = {
+    ID_TRANSMISSION_VIEW, "Transmission", u"Transmission",
+    WIN_INS | WIN_DISALLOW_NEW | WIN_REQUIRES_SCADA};
 
 REGISTER_CONTROLLER(TransmissionView, kTransmissionWindowInfo);
 

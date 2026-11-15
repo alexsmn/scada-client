@@ -25,6 +25,8 @@ class FakeHost : public PaneModeHost {
     return std::ranges::find(open, pane_type) != open.end();
   }
   bool CanOpenPane(std::string_view pane_type) override {
+    if (!scada_server && scada_only.contains(std::string{pane_type}))
+      return false;
     return !admin_only.contains(std::string{pane_type}) || is_admin;
   }
   void ClosePane(std::string_view pane_type) override {
@@ -61,6 +63,11 @@ class FakeHost : public PaneModeHost {
   std::string mode_key;
   std::set<std::string> admin_only = {"Nodes", "Administration"};
   bool is_admin = false;
+  // The panes registered WIN_REQUIRES_SCADA, withheld on another vendor's
+  // server.
+  std::set<std::string> scada_only = {"Struct", "Subsystems", "FileSystemView",
+                                      "Administration"};
+  bool scada_server = true;
 
   std::map<PaneModeId, bool> available_modes;
   std::optional<PaneModeId> marker;
@@ -124,6 +131,36 @@ TEST_F(PaneModeControllerTest, AnUnavailablePersistedModeFallsBackToObjects) {
 
   host_.is_admin = true;
   EXPECT_EQ(controller_.ActiveMode(), PaneModeId::kAdministration);
+}
+
+// On a server that is not ours, Objects, Devices and Files each lose their
+// subject pane, so the modes are withheld rather than opened half-empty, and
+// the rail falls back to the generic Nodes browser (backlog 1054).
+TEST_F(PaneModeControllerTest, OnAForeignServerOnlyTheGenericModesRemain) {
+  host_.scada_server = false;
+  host_.is_admin = true;  // An OPC UA session reports full rights.
+
+  controller_.RefreshMarker();
+  EXPECT_FALSE(host_.available_modes[PaneModeId::kObjects]);
+  EXPECT_FALSE(host_.available_modes[PaneModeId::kDevices]);
+  EXPECT_FALSE(host_.available_modes[PaneModeId::kFiles]);
+  EXPECT_FALSE(host_.available_modes[PaneModeId::kAdministration]);
+  EXPECT_TRUE(host_.available_modes[PaneModeId::kNodes]);
+
+  controller_.SetMode(PaneModeId::kObjects);
+  EXPECT_TRUE(host_.log.empty());
+
+  host_.mode_key = "objects";
+  EXPECT_EQ(controller_.ActiveMode(), PaneModeId::kNodes);
+}
+
+// A profile from before the rail infers its mode from the page; on a foreign
+// server that inference must not land on a mode that cannot open.
+TEST_F(PaneModeControllerTest, AnInferredModeThatCannotOpenFallsBack) {
+  host_.scada_server = false;
+  host_.is_admin = true;
+  host_.page.AddWindow(WindowDefinition{"Subsystems"});
+  EXPECT_EQ(controller_.ActiveMode(), PaneModeId::kNodes);
 }
 
 TEST_F(PaneModeControllerTest, AProfileWithNoModeInfersOneFromThePage) {
