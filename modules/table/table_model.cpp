@@ -36,8 +36,10 @@ bool CompareRows(const TableRow* left,
       if (!node1 || !node2) {
         return node2 != nullptr;
       }
-      const auto& type_id1 = node1.type_definition().node_id();
-      const auto& type_id2 = node2.type_definition().node_id();
+      // By value: type_definition() returns a temporary NodeRef that owns the
+      // id, so a reference to node_id() dangles at the end of the statement.
+      const scada::NodeId type_id1 = node1.type_definition().node_id();
+      const scada::NodeId type_id2 = node2.type_definition().node_id();
       if (type_id1 != type_id2) {
         return type_id1 < type_id2;
       }

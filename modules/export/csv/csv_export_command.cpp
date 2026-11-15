@@ -70,8 +70,11 @@ class CsvExportCommandRun
  private:
   Awaitable<void> RunAsync(std::shared_ptr<CsvExportCommandRun> /*self*/) {
     const std::string_view kCsvExt[] = {"*.csv"};
+    // Named local: Filter::title is a u16string_view, and the dialog reads it
+    // after this statement, so it must not view Translate()'s temporary.
+    const std::u16string csv_filter_title = Translate("CSV Files");
     const DialogService::Filter kFilters[] = {
-        {Translate("CSV Files"), kCsvExt},
+        {csv_filter_title, kCsvExt},
     };
 
     auto file_name = MakeFileName(window_title_);
@@ -136,8 +139,8 @@ class CsvExportCommandRun
     }
 
     if (export_exception) {
-      co_await dialog_service_.RunMessageBox(Translate("Export failed."), ExportTitle(),
-                                             MessageBoxMode::Error);
+      co_await dialog_service_.RunMessageBox(
+          Translate("Export failed."), ExportTitle(), MessageBoxMode::Error);
       std::rethrow_exception(export_exception);
     }
 
