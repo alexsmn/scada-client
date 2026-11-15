@@ -30,6 +30,16 @@ class EventModuleTest : public Test {
   ControllerEnvironment controller_env_;
   UiCommandRegistry ui_command_registry_;
 
+  // Our own server, so the event fetcher takes the SCADA path: acknowledges go
+  // to Server as one batch call. The mock session would otherwise answer
+  // IsScada() false, which the fetcher reads as a third-party server (backlog
+  // 1055). Set before `event_module_`, which reads it when it is built.
+  const bool our_server_ = [this] {
+    ON_CALL(controller_env_.session_service_, IsScada())
+        .WillByDefault(Return(true));
+    return true;
+  }();
+
   EventModule event_module_{EventModuleContext{
       .executor_ = controller_env_.executor_,
       .logger_ = std::make_shared<BoostLogger>(LOG_NAME("Test")),
