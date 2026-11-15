@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Behaviour tests for rules 3, 7, 8, 9 and 10 of `check_ui_translations.py`.
+"""Behaviour tests for rules 3, 7, 8, 9 and 10 of `check_ui_translations.py`,
+and for what it reports when lupdate is absent.
 
 Rule 7 resolves a `Translate(x.label)` call back to the table the member is
 read from, so its failure mode is the one every checker in this directory
@@ -432,6 +433,47 @@ def run_rule9_cases():
     return failures
 
 
+def run_lupdate_absent_cases():
+    """A missing lupdate must read as a skip, never as a pass.
+
+    Rules 1 and 6 are the client's catalog-completeness check -- they re-run
+    lupdate's extraction and compare every (context, source) key the code has
+    against client_ru.ts -- and they cannot run without it. main() returned 0
+    in that case until 2026-11-15, so ctest reported the check Passed on any
+    machine without lupdate on PATH. Two halves: main() must return the skip
+    code, and the CMake registration must declare the same number, or ctest
+    reads the skip as a failure (or, with 0 again, as a pass).
+    """
+    failures = []
+    tools_dir = pathlib.Path(checker.__file__).resolve().parent
+    real_which = checker.shutil.which
+    real_argv = sys.argv
+    checker.shutil.which = lambda name: None
+    sys.argv = ["check_ui_translations.py", f"--client-dir={tools_dir.parent}"]
+    try:
+        with io.StringIO() as out, io.StringIO() as err:
+            saved = sys.stdout, sys.stderr
+            sys.stdout, sys.stderr = out, err
+            try:
+                code = checker.main()
+            finally:
+                sys.stdout, sys.stderr = saved
+            log = out.getvalue() + err.getvalue()
+    finally:
+        checker.shutil.which = real_which
+        sys.argv = real_argv
+    if code != checker.SKIP_RETURN_CODE:
+        failures.append(f"no lupdate: main() returned {code}, expected the "
+                        f"skip code {checker.SKIP_RETURN_CODE}\n{log}")
+
+    cmake = (tools_dir / "CMakeLists.txt").read_text(encoding="utf-8")
+    declared = f"SKIP_RETURN_CODE {checker.SKIP_RETURN_CODE}"
+    if declared not in cmake:
+        failures.append(f"no lupdate: tools/CMakeLists.txt does not declare "
+                        f"'{declared}' for client_ui_translation_check")
+    return failures
+
+
 def main():
     failures = []
 
@@ -501,16 +543,18 @@ def main():
 
     failures.extend(run_rule9_cases())
     failures.extend(run_rule10_cases())
+    failures.extend(run_lupdate_absent_cases())
 
     total = (len(CASES) + len(CALL_CASES) + len(RULE3_CASES)
-             + len(RULE9_CASES) + len(RULE10_CASES) + 5)
+             + len(RULE9_CASES) + len(RULE10_CASES) + 5 + 2)
     if failures:
         print(f"{len(failures)} of {total} case(s) failed:\n")
         for failure in failures:
             print(f"  {failure}")
         return 1
 
-    print(f"OK: {total} rule 3, 7, 8, 9 and 10 behaviour case(s) pass.")
+    print(f"OK: {total} rule 3, 7, 8, 9, 10 and missing-lupdate behaviour "
+          f"case(s) pass.")
     return 0
 
 

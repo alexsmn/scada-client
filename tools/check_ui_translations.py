@@ -1262,6 +1262,12 @@ def report_tr_gaps(cpp_files, ts_files, lupdate):
     return len(missing)
 
 
+# What main() returns when lupdate is absent and rules 1 and 6 could not run.
+# tools/CMakeLists.txt declares the same number as the test's SKIP_RETURN_CODE,
+# so ctest reports a skip rather than a pass.
+SKIP_RETURN_CODE = 77
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--client-dir", type=pathlib.Path,
@@ -1343,9 +1349,14 @@ def main():
             return 1
         print("OK: no stale TRANSLATE_GAPS entries.")
         # Matches the build, which also degrades gracefully without Qt
-        # LinguistTools rather than failing.
-        print("lupdate not found; skipping the .ui translation check.")
-        return 0
+        # LinguistTools rather than failing -- but says so to ctest. This
+        # returned 0 until 2026-11-15, so a machine with no lupdate on PATH
+        # reported the whole check Passed while rules 1 and 6 -- the two that
+        # compare every (context, source) the code has against the catalog --
+        # had not run at all. SKIP_RETURN_CODE makes that a visible skip.
+        print("lupdate not found; skipping rules 1 and 6 (.ui forms and tr() "
+              "calls), which need it to extract the code's strings.")
+        return SKIP_RETURN_CODE
 
     expected = extract_ui_strings(ui_files, lupdate)
 

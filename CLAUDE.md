@@ -849,6 +849,15 @@ and mislabelled three of the entries below; C++20 features are marked.
   `tools/check_ui_translations.py`) fails the build when a form string has no
   translation that would reach the `.qm`; it also records the deliberate
   exclusions and the remaining untranslated strings.
+- **That check is also the catalog-completeness check, and it compares keys,
+  not files.** Rules 1 and 6 run `lupdate` over every `.ui` form and `.cpp`
+  into a scratch `.ts` and fail on any `(context, source)` the code has and
+  `client_ru.ts` lacks — the string that never reached the catalog at all,
+  which an "untranslated entries" scan cannot see. Comparing `lupdate`'s
+  output file instead would go red on every unrelated edit, since it rewrites
+  `<location>` line numbers. Both need `lupdate` on `PATH`; without it the
+  script exits 77 and ctest reports the test **Skipped** — it reported Passed
+  until 2026-11-15 — so a skip there means those two rules did not run.
 - **The same check has two more rules, and both run without `lupdate`** (they
   read the sources and the catalogs, so they must not inherit the skip that a
   missing Qt LinguistTools causes):
