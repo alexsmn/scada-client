@@ -2,6 +2,9 @@ set(SCADA_PACKAGE_NAME "scada-client")
 set(SCADA_PACKAGE_REPO "client")
 set(SCADA_PACKAGE_COMPONENT "Client")
 set(SCADA_PACKAGE_DISPLAY_NAME "Клиент")
+# The standalone MSI's ProductName in Programs and Features; DISPLAY_NAME
+# stays the short component label (decided by the user 2026-11-15).
+set(SCADA_PACKAGE_PRODUCT_NAME "ОИК Телеконтроль — Клиент")
 set(SCADA_PACKAGE_DESCRIPTION "Client package")
 set(SCADA_PACKAGE_DISTRIBUTION_KIND "end-user")
 set(SCADA_PACKAGE_STANDALONE_INSTALLER_DEFAULT ON)
