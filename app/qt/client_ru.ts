@@ -1413,6 +1413,16 @@
         <source>Graph Setup</source>
         <translation>Настройка графика</translation>
     </message>
+    <!-- modules/graph/graph_setup_dialog.cpp: the form's two row labels
+         (backlog 1051). -->
+    <message>
+        <source>Color:</source>
+        <translation>Цвет:</translation>
+    </message>
+    <message>
+        <source>Line weight:</source>
+        <translation>Толщина линии:</translation>
+    </message>
     <message>
         <source>Data</source>
         <translation>Данные</translation>

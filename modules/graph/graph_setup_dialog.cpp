@@ -44,8 +44,8 @@ class GraphSetupDialogQt final : public QDialog {
     line_weight_spin_->setValue(setup.line_weight_);
 
     auto* form_layout = new QFormLayout;
-    form_layout->addRow("Color:", color_combo_);
-    form_layout->addRow("Line weight:", line_weight_spin_);
+    form_layout->addRow(ToQString(Translate("Color:")), color_combo_);
+    form_layout->addRow(ToQString(Translate("Line weight:")), line_weight_spin_);
 
     auto* button_box = new QDialogButtonBox{
         QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this};
