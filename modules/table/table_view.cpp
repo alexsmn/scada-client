@@ -9,6 +9,7 @@
 #include "controller/selection_model.h"
 #include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
+#include "modules/table/table_double_click.h"
 #include "modules/table/table_model.h"
 #include "modules/table/table_row.h"
 #include "node_service/node_service.h"
@@ -262,13 +263,15 @@ void TableView::OnDoubleClick() {
   if (!row)
     return;
 
-  if (row->is_blinking()) {
-    row->timed_data().Acknowledge();
+  switch (ChooseTableDoubleClickAction(row->is_blinking(), session_service_)) {
+    case TableDoubleClickAction::kAcknowledge:
+      row->timed_data().Acknowledge();
+      break;
 
-  } else {
-    if (const auto& node = row->timed_data().node()) {
-      controller_delegate_.ExecuteDefaultNodeCommand(node);
-    }
+    case TableDoubleClickAction::kDefaultCommand:
+      if (const auto& node = row->timed_data().node())
+        controller_delegate_.ExecuteDefaultNodeCommand(node);
+      break;
   }
 }
 
