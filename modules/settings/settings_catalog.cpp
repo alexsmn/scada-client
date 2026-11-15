@@ -147,9 +147,13 @@ constexpr std::array kDescriptors = {
         .command_id = ID_WRITE_CONFIRMATION,
         .id = "control-confirmation",
         .category = SettingCategory::kControl,
-        .scope = SettingScope::kProfile,
+        // Not saved: every sign-in starts a fresh profile with it on, so it
+        // holds for one session only (backlog 1046).
+        .scope = SettingScope::kSession,
         .control = SettingControl::kToggle,
-        .description = "Confirm before sending a control command.",
+        .description = "Confirm before sending a control command. Applies "
+                       "until you sign out: confirmation is back on at every "
+                       "sign-in.",
         .default_checked = true,
     },
     SettingDescriptor{
@@ -204,6 +208,7 @@ constexpr std::array kStorageScopes = {
     SettingScope::kClient,
     SettingScope::kProfile,
     SettingScope::kWindow,
+    SettingScope::kSession,
 };
 
 // Locates `command_id` in the settings menu, or a null model when the shell
@@ -293,6 +298,8 @@ std::u16string SettingScopeLabel(SettingScope scope) {
       return Translate("Profile");
     case SettingScope::kWindow:
       return Translate("This window");
+    case SettingScope::kSession:
+      return Translate("This session");
     case SettingScope::kAction:
       return Translate("Action");
   }

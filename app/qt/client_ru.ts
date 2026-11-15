@@ -3206,6 +3206,10 @@ Trust the new certificate only if the server&apos;s operator confirms that it wa
         <translation>Это окно</translation>
     </message>
     <message>
+        <source>This session</source>
+        <translation>Этот сеанс</translation>
+    </message>
+    <message>
         <source>Action</source>
         <translation>Действие</translation>
     </message>
@@ -3245,8 +3249,8 @@ Trust the new certificate only if the server&apos;s operator confirms that it wa
         <translation>Мигать окном на панели задач при поступлении события.</translation>
     </message>
     <message>
-        <source>Confirm before sending a control command.</source>
-        <translation>Запрашивать подтверждение перед отправкой команды управления.</translation>
+        <source>Confirm before sending a control command. Applies until you sign out: confirmation is back on at every sign-in.</source>
+        <translation>Запрашивать подтверждение перед отправкой команды управления. Действует до выхода из системы: при каждом входе подтверждение снова включено.</translation>
     </message>
     <message>
         <source>Report a successful control command back to the operator.</source>

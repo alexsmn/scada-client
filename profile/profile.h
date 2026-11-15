@@ -112,8 +112,13 @@ class Profile {
   // play sound if there are any unacknowledged events
   bool event_play_sound = false;
 
+  // announce new alarms aloud; saved as `speech` (backlog 1046)
   bool speech_enabled = true;
 
+  // Ask before sending a control command. Deliberately NOT saved:
+  // `ClientApplication::LoadProfileAsync` builds a fresh Profile at every
+  // sign-in, so confirmation is back on after each one, whatever the previous
+  // session chose. The settings catalogue marks it `SettingScope::kSession`.
   bool control_confirmation = true;
 
   struct Modus {

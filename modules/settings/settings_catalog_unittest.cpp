@@ -222,6 +222,12 @@ TEST_F(SettingsMenuFixture, ScopesMatchWhereTheValueIsActuallyStored) {
   EXPECT_EQ(Require(rows, "sound-on-events").scope, SettingScope::kProfile);
   EXPECT_EQ(Require(rows, "status-bar").scope, SettingScope::kWindow);
   EXPECT_EQ(Require(rows, "open-displays-folder").scope, SettingScope::kAction);
+  // Speech is saved in the profile; control confirmation is not saved at all
+  // and is back on at every sign-in, so "Profile" would promise it follows the
+  // account when it does not (backlog 1046).
+  EXPECT_EQ(Require(rows, "speech").scope, SettingScope::kProfile);
+  EXPECT_EQ(Require(rows, "control-confirmation").scope,
+            SettingScope::kSession);
 }
 
 // Task 554's other half. `Open Displays Folder` is a command, which the
@@ -317,10 +323,10 @@ TEST_F(SettingsMenuFixture, SearchIsCaseInsensitiveAndOrderIndependent) {
 }
 
 TEST_F(SettingsMenuFixture, ScopeTabsOfferOnlyScopesSomeRowUses) {
-  EXPECT_EQ(
-      VisibleSettingScopes(Catalog()),
-      (std::vector<SettingScope>{SettingScope::kClient, SettingScope::kProfile,
-                                 SettingScope::kWindow}));
+  EXPECT_EQ(VisibleSettingScopes(Catalog()),
+            (std::vector<SettingScope>{
+                SettingScope::kClient, SettingScope::kProfile,
+                SettingScope::kWindow, SettingScope::kSession}));
 
   // A tab that can only ever come back empty is worse than no tab: with the
   // choice rows gone there is no machine-local setting left to offer one for.

@@ -75,6 +75,42 @@ TEST(ProfileTest, ObjectRootIsLoadedAndRoundTrips) {
   EXPECT_EQ(saved.as_object().at("topology").as_bool(), false);
 }
 
+// Speech is an account preference like the alarm tone, so it survives a
+// save and a fresh Profile's load -- which is what every sign-in does. It was
+// read and written by nothing until backlog 1046, so an operator who turned
+// it off heard it again after the next sign-in.
+TEST(ProfileTest, SpeechSurvivesARoundTripThroughAFreshProfile) {
+  Profile before;
+  ASSERT_TRUE(before.speech_enabled);
+  before.speech_enabled = false;
+  const boost::json::value saved = before.SaveToValue();
+  ASSERT_TRUE(saved.is_object());
+  EXPECT_EQ(saved.as_object().at("speech").as_bool(), false);
+
+  Profile after;
+  after.Load(saved);
+  EXPECT_FALSE(after.speech_enabled);
+}
+
+// A profile saved before the key existed keeps the default (on).
+TEST(ProfileTest, SpeechDefaultsOnWhenTheProfileHasNoKey) {
+  Profile profile;
+  profile.Load(boost::json::parse(R"({"soundOnEvents": true})"));
+  EXPECT_TRUE(profile.speech_enabled);
+}
+
+// Control confirmation is per session by design: it is not written, so a
+// fresh Profile -- every sign-in -- starts with it on again.
+TEST(ProfileTest, ControlConfirmationIsNotCarriedAcrossSignIns) {
+  Profile before;
+  before.control_confirmation = false;
+  const boost::json::value saved = before.SaveToValue();
+
+  Profile after;
+  after.Load(saved);
+  EXPECT_TRUE(after.control_confirmation);
+}
+
 // A profile written by a client that still had the «Use Modus runtime
 // renderer» flag loads unchanged, and the retired key is carried through
 // rather than deleted: SerializeToValue starts from the loaded document, so a

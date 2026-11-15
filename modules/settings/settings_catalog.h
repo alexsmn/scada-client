@@ -60,13 +60,16 @@ enum class SettingCategory {
 // here, `localStorage` in the web client); `kProfile` is the profile envelope
 // on the server, which both clients read; `kWindow` is `MainWindowDef` inside
 // that envelope, keyed by main-window id, which is why Status Bar is
-// per window rather than per account. `kAction` is not a store -- it marks
-// a row that runs something rather than holding a value, and is counted
-// separately for that reason.
+// per window rather than per account. `kSession` is held in memory and never
+// saved, so it is back at its default after every sign-in -- Control
+// Confirmation, which is reset on purpose (backlog 1046). `kAction` is not a
+// store -- it marks a row that runs something rather than holding a value,
+// and is counted separately for that reason.
 enum class SettingScope {
   kClient,
   kProfile,
   kWindow,
+  kSession,
   kAction,
 };
 

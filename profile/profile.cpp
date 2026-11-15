@@ -102,6 +102,7 @@ void Profile::Load(const boost::json::value& document) {
   event_auto_hide = GetBool(data, "hideEvents", event_auto_hide);
   event_flash_window = GetBool(data, "flashOnEvents", event_flash_window);
   event_play_sound = GetBool(data, "soundOnEvents", event_play_sound);
+  speech_enabled = GetBool(data, "speech", speech_enabled);
 
   modus.topology = GetBool(data, "topology", modus.topology);
   // A "modus2" key written by an older client is read by nothing now --
@@ -207,6 +208,7 @@ boost::json::value Profile::SerializeToValue() const {
   SetKey(data, "hideEvents", event_auto_hide);
   SetKey(data, "flashOnEvents", event_flash_window);
   SetKey(data, "soundOnEvents", event_play_sound);
+  SetKey(data, "speech", speech_enabled);
 
   SetKey(data, "topology", modus.topology);
 
