@@ -386,13 +386,13 @@
       "referenced_from": [
         "client/workbench.md"
       ],
-      "notes": "The preferences surface, from CaptureSettingsPanel: a full-window overlay over the workbench with its own search box, four scope tabs, a category list with counts, and a per-row storage chip saying where each setting lives. Renamed from `settings-dialog.png` on 2026-09-19 (backlog 628): `SettingsDialog` was retired on 2026-08-28 for `SettingsPanel` (backlog 626). What this row said until 2026-09-19 is now wrong in the reassuring direction: it warned the tracked PNG was the last render of the retired dialog and that a diff against it meant nothing. It is not — a fresh render is byte-identical and shows the overlay; it was re-rendered at 15bd4e48b. So the picture is current and the diff is meaningful. The rename interlocked with the manual pages that embed the file, so it landed with them.",
+      "notes": "The preferences surface, from CaptureSettingsPanel: a full-window overlay over the workbench with its own search box, five scope tabs (All, then This client, Profile, This window and This session -- the last added for Control Confirmation by backlog 1046), a category list with counts, and a per-row storage chip saying where each setting lives. Renamed from `settings-dialog.png` on 2026-09-19 (backlog 628): `SettingsDialog` was retired on 2026-08-28 for `SettingsPanel` (backlog 626). What this row said until 2026-09-19 is now wrong in the reassuring direction: it warned the tracked PNG was the last render of the retired dialog and that a diff against it meant nothing. It is not — a fresh render is byte-identical and shows the overlay; it was re-rendered at 15bd4e48b. So the picture is current and the diff is meaningful. The rename interlocked with the manual pages that embed the file, so it landed with them.",
       "captured": {
-        "commit": "fc325312f",
+        "commit": "c26b0eef1",
         "platform": "macos",
         "dirty": false,
-        "sha256": "ff0ec5ba653009aa3458cce1ab7250d33491743656fd30dbaff8c2584f8413c4",
-        "last_rendered": "fc325312f"
+        "sha256": "991008aa1ea23827d7258f9a71388b9e64c21ae95e5a5a7fad480a21bf9eea3f",
+        "last_rendered": "c26b0eef1"
       },
       "parity_key": "settings"
     },
@@ -404,11 +404,11 @@
       "referenced_from": [],
       "notes": "The light render of settings.png. Same fixture, same spec; only the design-token appearance differs. See that row for what the picture is of.",
       "captured": {
-        "commit": "fc325312f",
+        "commit": "c26b0eef1",
         "platform": "macos",
         "dirty": false,
-        "sha256": "79ac11d88f33d75e4977b4e17dba0c6e71898990755f13a665a7a312e74f9b2b",
-        "last_rendered": "fc325312f"
+        "sha256": "3d436480cc67b5d68ae24db19f6391e604cc1834edb1ce0c83e6bda0b5b112cf",
+        "last_rendered": "c26b0eef1"
       },
       "parity_key": "settings"
     },
