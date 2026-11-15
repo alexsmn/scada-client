@@ -515,8 +515,9 @@ writes a `.dmg` (Apple silicon) and a `.zip` (x64). Each package carries
 `LICENSE`, `COPYRIGHT`, `NOTICE`, every vcpkg port's licence and a
 `SOURCES.txt` naming the commit of each sibling repository. The `release` job
 adds them to the **product release** for that tag — the one that carries the
-Windows MSI, `telecontrol-scada-<version>.msi`, which is built and uploaded by
-hand. The Client and the product share one version. A tag whose release has
+Windows Server MSI, `scada-server-<version>.msi`, which is built and uploaded by
+hand. Since 2.6 the Server MSI is separate from `telecontrol-scada-<version>.msi`,
+which carries the Client and the Designer. The Client and the product share one version. A tag whose release has
 no MSI is a **Client-only release**: it is published with
 `gh release edit <tag> --draft=false --latest=false`, so `/releases/latest`
 keeps serving a release that carries a Server installer (2.5.7, until a 2.6
