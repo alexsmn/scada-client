@@ -1,0 +1,1023 @@
+# CLAUDE.md — Telecontrol SCADA Client — reference
+
+This is the long form of `CLAUDE.md` beside it: the full text that file carried until 2026-11-15, kept verbatim under the same headings. It holds the reasoning, incidents and measurements behind each rule. `CLAUDE.md` is authoritative for the rule; this file is authoritative for the evidence. When you change a rule, change it in `CLAUDE.md` and record the reason here.
+
+
+## Project Overview
+
+Telecontrol SCADA Client is a C++ industrial monitoring and control application (version 2.6.4). It provides remote device monitoring, real-time and historical data viewing, event/alarm journaling, and device configuration management. The application supports multiple industrial protocols (SCADA/Telecontrol, OPC UA, Vidicon, Modus) and ships a Qt desktop frontend. (A second Wt web frontend existed until 2026-08-08; the web client is the separate `web/` app in the superproject, not a second backend of this one.)
+
+Licensed under GPL-3.0 (see `LICENSE`, which carries the GPL-3.0 text).
+
+## Repository Structure
+
+```
+scada-client/
+├── app/                    # Application entry point (qt/ subdir)
+│   ├── qt/                 # Qt desktop application main()
+│   ├── client_application.h/.cpp  # Core application orchestrator
+│   └── ...
+├── aui/                    # Abstract UI layer (platform-agnostic models)
+│   ├── models/             # Grid, tree, table data models
+│   ├── qt/                 # Qt-specific UI implementations
+│   └── test/
+├── base/                   # Foundation utilities (command line, blinker, JSON, filesystem)
+├── clipboard/              # Clipboard and node serialization
+├── modules/             # 45 feature modules
+│   ├── about/              # About dialog
+│   ├── debugger/           # Request/response protocol debugger
+│   ├── device_metrics/     # Device performance metrics
+│   ├── limits/             # Value limit editor
+│   ├── login/              # Authentication dialog
+│   ├── sheet/              # Spreadsheet-like view
+│   ├── summary/            # Data summary view
+│   ├── table/              # Generic table component
+│   ├── timed_data/         # Time-series data view
+│   ├── watch/              # Real-time value watch
+│   ├── write/              # Write values to devices
+│   ├── configuration/      # Device/node configuration management
+│   ├── events/             # Event system, event journal, local events
+│   ├── export/             # Export functionality
+│   ├── favorites/          # Bookmarks/favorites management
+│   ├── filesystem/         # File system operations and caching
+│   ├── graph/              # Graph/chart visualization
+│   ├── modus/              # Modus 6.30 ActiveX/COM integration (Qt only)
+│   ├── node_service_progress_tracker/
+│   ├── opcua_services/
+│   ├── portfolio/          # Portfolio management
+│   ├── print/              # Print and print preview
+│   ├── settings/           # Preferences surface (overlay over the main window)
+│   ├── vidicon/            # Vidicon protocol integration (Qt only)
+│   └── ...                 # (select_item, node_properties, node_table, etc.)
+├── controller/             # MVC controller layer, view management, command registry
+│   └── test/
+├── core/                   # Core module: command registries, tracer, progress host
+├── main_window/            # Main window management and page/view lifecycle
+├── profile/                # User profiles, window definitions, page layouts
+├── properties/             # Property management and dialogs
+├── services/               # Shared services (speech, task management, telemetry)
+├── timed_data/             # Time-series data service
+├── web/                    # Web component
+├── res/                    # Resources and settings
+├── test/                   # Integration tests and display tester
+├── screenshots/            # Doc screenshot gallery + image_manifest.json
+├── .github/workflows/      # CI: ci.yml (cppcheck + build matrix; see CI/CD below)
+├── .cppcheck-suppressions  # This product's own cppcheck suppressions
+├── CMakeLists.txt          # Root CMake build file
+├── aui/client_module.cmake # Custom CMake helpers for `_qt` target creation (aui-owned)
+├── app/qt/client_ru.ts     # The whole Russian catalog; the only .ts that ships
+├── app/client_icon.rc      # Windows resource script: the app icon, nothing else
+├── resources/              # Command ids (common_resources.h) + icon-strip paths
+└── client_utils.cpp/.h     # Global utility functions
+```
+
+**The client backlog is not in this repo.** Like the design docs, it moved to
+the superproject: the whole tree now shares one `tasks.md` at `/scada/tasks.md`,
+and client-only work lives in its **Client** section. Do not re-create
+`client/tasks.md` <!-- doc-citations: absent -->.
+
+## Documentation
+
+**The client's design docs live in the superproject, not in this repo.** Only
+the generated screenshot gallery (`screenshots/`) is repo-owned; every
+prose doc and diagram moved to `/scada/docs/` so the Qt and web clients share
+one documentation tree. Paths below are relative to the superproject root and
+resolve only in the sibling checkout under `/scada`.
+
+- `docs/client/design.md` — layered component architecture, grounded in
+  concrete source files
+- `docs/client/requirements.md` — use cases, functional and non-functional
+  requirements
+- `docs/client/message-loop.md` — how the client schedules async work: the
+  event-driven `MessageLoopQt` pump, the asio I/O thread behind `AnyExecutor`,
+  and the macOS App Nap freeze that made all of it visible. Read it before
+  changing anything about scheduling, `MessageLoopQt`, or executors.
+- `docs/client/ux/` — the UX design system (see "UX design system" below)
+- `docs/client/command-line.md` — command-line switch documentation
+- `docs/client/aui-extraction.md`, `docs/client/telemetry-gaps.md`,
+  `docs/client/opcua-client-interop.md`, `docs/client/chromium-deps.md`
+- `docs/ops/client-build.md`, `docs/ops/client-cxx-modules.md`,
+  `docs/ops/client-screenshots.md`, `docs/ops/e2e-client-server.md`
+- `docs/diagrams/client-*.puml` / `.svg` — the client architecture diagrams
+- `docs/product/ui-mockups/` — the shared Qt ⇄ web screen mockups
+
+Treat `design.md` and `requirements.md` as living documents, not snapshots.
+
+### Doc screenshots and the web manual
+
+The user-facing web manual is a **separate repo** (scada-docs, Jekyll on
+GitHub Pages, usually checked out as a sibling of this repo). Almost all of
+its UI images are rendered offline by
+`client/tools/screenshot_generator/` from the JSON fixture
+`screenshot_data.json` — they are **build artifacts, not hand captures**.
+The authoritative design/workflow doc is
+[`docs/ops/client-screenshots.md`](../docs/ops/client-screenshots.md); the source of truth for every
+manual image (tag, referencing pages, publish subset) is
+[`screenshots/image_manifest.json`](screenshots/image_manifest.json).
+
+Rules of the pipeline:
+
+- **Manifest first.** Every image added to, retagged in, or removed from
+  the manual gets its manifest entry updated in the same change. New
+  screenshots follow the "Adding a new auto-screenshot" flow in
+  `docs/ops/client-screenshots.md` (fixture entry + capture spec + manifest row);
+  hand-captured images still get a `manual-*` manifest row.
+- **The gallery is tracked, publishing is gated.** `screenshots/` — PNGs
+  included — is committed, so a UI change lands as a reviewable image diff.
+  **The gallery is legitimately mixed-platform** (decided 2026-09-12). Offscreen
+  Qt rasterizes with the host's fonts, so a macOS render and a Windows render of
+  the same UI differ in bytes — but `QT_QPA_PLATFORM=offscreen` gives DPR=1,
+  light, and dimension-identical output for fixed-size specs, so what differs is
+  glyph rendering rather than layout. Either host may render the generated set.
+  The `captured.platform` field on each manifest row is what keeps a diff
+  readable: **a changed image whose platform also changed is churn; a changed
+  image on the same platform is a UI change.** This bullet said the set was "not
+  yet a verified Windows baseline" and promised a one-time Windows reset of it;
+  no such reset is owed.
+  Publishing to the manual is a separate, narrower step, and since ADR 0011 it
+  is **two commands**: `cmake --build --preset relwithdebinfo -t
+  regenerate_client_screenshots` here, then
+  `cmake -DSCADA_SCREENSHOT_SRC_DIR=client/screenshots
+  -DSCADA_DOCS_IMG_DIR=scada-docs/img
+  -DSCADA_SCREENSHOT_GENERATOR=<path to the generator binary>
+  -P cmake/update_screenshots.cmake` from
+  the superproject root. The first regenerates the gallery; the second copies
+  only the manifest's `current_generator_owned_subset` into scada-docs `img/`.
+  The `update-screenshots-dev` workflow preset that used to do both is gone.
+  **Pass `SCADA_SCREENSHOT_GENERATOR`** — it is what enforces the order the
+  deleted target used to: the publish refuses when a PNG is older than the
+  generator that should have produced it. Without it the publish only warns,
+  and a publish on its own silently republishes the previous render. Review
+  with `git diff` on the manual's `img/`. An image graduates
+  into that subset only after its rendering is reviewed against the page
+  that embeds it. **The gallery is TWO passes, one per appearance** — the
+  default (dark), and the same command with `--theme light`:
+
+  ```bash
+  client_screenshot_generator --out client/screenshots
+  client_screenshot_generator --out client/screenshots --theme light
+  ```
+
+  Half the gallery is the light set: 75 of the 154 tracked PNGs are
+  `*-light.png`, each a manifest row with `"theme": "light"`. **A capture
+  re-rendered in one appearance leaves its sibling stale** — the light row
+  keeps its own `captured` digest, so provenance stays self-consistent while
+  the image documents a UI that has changed. Since 2026-09-26
+  `python3 tools/screenshot_generator/capture_provenance.py --check-pairs`
+  reports it: a capture whose sibling changed after it was last rendered, with
+  render-path sources moving in between, or a themed capture with no sibling at
+  all. `regenerate_client_screenshots` runs it after stamping, report-only,
+  since that target renders one appearance. It reads
+  `captured.last_rendered`, which `--stamp` now writes on every row a pass
+  rendered whether or not its bytes changed — so **stamp the light pass too**
+  (`--produced-since` a marker touched before it), or the light set never
+  records that it was looked at.
+  This bullet said "One pass renders the whole gallery" until 2026-09-19 and
+  that is what the sentence cost: the Explorer sort fix, the multi-parent
+  fixture fix and the V56 re-render all landed dark-only, leaving
+  `devices-light`, `hardware-tree-light`, `workbench-overview-light` and
+  `limits-light` stale — found by a light sweep, not by any check. The claim
+  was a half-truth inherited from the retired two-pass scheme (a light
+  "Classic" pass plus `--theme=dark` over the published subset, arbitrated by
+  a `publish_theme` manifest field): what ended was the *un-themed* appearance,
+  not the second pass. See `docs/ops/client-screenshots.md`.
+- **Validate consistency** after touching images, the manifest, or manual
+  pages: `python3 screenshots/validate_image_manifest.py` (auto-finds
+  a sibling scada-docs checkout, or pass `--docs-repo`).
+- **When UI changes, regenerate.** A diff in the generated PNGs is the
+  visual-regression signal; refresh the published copies in the same
+  effort as the UI change, and retag orphaned images `obsolete` when
+  removing features.
+- **New user-visible functionality gets BOTH a screenshot and a manual
+  description in the same effort.** Add/extend the scada-docs page (Russian
+  canonical + the `en/` mirror + `_data/i18n_pages.yml`) describing the
+  behaviour, embed the capture, and keep the manifest row's
+  `referenced_from` in sync. Workbench-shell features are documented on
+  `client/workbench.md` (Рабочее место оператора).
+- **macOS may render the published gallery, Windows is needed only for Modus**
+  (offscreen platform + hermetic `HOME`; see "Which platform may render the
+  gallery" in the superproject's `docs/ops/client-screenshots.md`). The
+  exception is exactly the `manual-modus` manifest family — five images that
+  draw through Modus 6.30, a Windows COM/ActiveX control, so they cannot render
+  on any other host. They are hand-maintained and outside the generator already,
+  which is why this narrows to nothing a `--capture` command can do: no `auto-*`
+  row renders through ActiveX. Two filenames mislead and are worth naming —
+  `substation-display.png` draws through the cross-platform VDS renderer and does
+  not exercise ActiveX, and `menu-scheme.png` only lists the configured
+  schematic displays in a `QMenu`; both may be rendered on macOS.
+- **The unit tests run offscreen on macOS too, by default.** `AppEnvironment`
+  (`aui/test/qt/app_environment.h`) sets `QT_QPA_PLATFORM=offscreen` unless
+  the variable is already set, and the root `CMakeLists.txt` links the
+  offscreen plugin into every test executable so a static Qt can honour it.
+  Without both, a `ctest` sweep bounced a Dock icon and stole focus once per
+  case. A new test binary that builds its own `QApplication` instead of
+  taking `AppEnvironment` reintroduces that; take the fixture. See
+  `docs/ops/client-build.md` → "The Qt tests run offscreen on macOS".
+  Note the fixture makes a second, separate decision that is **not**
+  macOS-only, though it skips Windows: whichever way the platform ends up an unadorned `offscreen`,
+  including one the caller put in the environment, it is upgraded to
+  `offscreen:configfile=<path>` so the process gets a 1920x1080 screen rather
+  than the plugin's built-in 800x600. `QT_QPA_PLATFORM=offscreen` for a whole
+  `ctest` run is therefore safe — 2258/2258 either way, measured 2026-09-20 —
+  and asking for a different screen means naming your own `configfile=`. On
+  Windows a bare `offscreen` is left alone: Qt splits the platform string on
+  `:`, so a `configfile=D:/...` path is cut at the drive letter and the plugin
+  aborts (`aui/test/qt/app_environment.h` has the detail).
+
+### UX design system
+
+The client's UX design system lives under [`docs/client/ux/`](../docs/client/ux/README.md).
+**Read it before adding or restyling any UI**, and follow it rather than
+inventing chrome.
+
+**The direction is a native desktop look and feel** (agreed 2026-07-26,
+superseding the earlier browser-styled reshell). The client must read as a
+native application on each host OS:
+
+- **Use the platform Qt style** — `windows11`/`windowsvista`, `macos`, or the
+  Linux `QT_QPA_PLATFORMTHEME` style. Do **not** call
+  `QApplication::setStyle("Fusion")`; the platform default wins and the `Style`
+  QSetting is a user override.
+- **Colour through `QPalette` roles**, not stylesheets. Adding a
+  `setStyleSheet` with a baked colour is a regression — there are ~105 such
+  sites and the plan is to remove them (backlog P6), not add more.
+- **Size through `QStyle::PixelMetric`, `QFontMetrics`, `QApplication::font()`.**
+  Never hard-code `font-size:Npx`, fixed widget widths, or hand-tuned radii:
+  they break DPI scaling and the OS font-size accessibility setting.
+- **Follow the OS light/dark preference by default**, with an explicit
+  dark/light/high-contrast override. Theme changes must apply live, which means
+  handling `QEvent::ApplicationPaletteChange`.
+- **Prefer stock Qt widgets in their conventional roles** — `QMenuBar`,
+  `QToolBar`, `QDockWidget`, `QStatusBar`, `QMessageBox`, `QFileDialog`. Native
+  dialogs are the desired end state, not something to theme away.
+- **Dialogs follow [`docs/client/ux/dialogs.md`](../docs/client/ux/dialogs.md)**. Two rules catch
+  most defects: the OS title bar *is* the title, so never repeat it (or a brand
+  mark) in the content area; and always use `QDialogButtonBox` rather than
+  laying out OK/Cancel by hand — button order is opposite on macOS and Windows,
+  and the box also supplies Qt's own translated labels.
+- **Exception — process semantics are ours, not the platform's.** Alarm
+  severity, data quality (good/uncertain/bad), and single-line equipment state
+  are functional safety colours (ISA-101, ISA-18.2/EEMUA 191). They keep their
+  fixed token values, must not follow the OS accent, and must not invert with
+  the system theme. Colour is still never the only signal — always pair with a
+  label or shape.
+
+The information architecture from the reshell still stands (Activity bar →
+Explorer → workspace tabs → Inspector → status strip, operator-first, one home
+per datum). It is the *chrome* that becomes native, not the layout.
+
+The HTML mockups in [`docs/product/ui-mockups/screens/`](../docs/product/ui-mockups/screens/) are
+**the north star for information architecture** — which surfaces exist, what
+each one shows, and what the operator can act on there. They were restyled to
+this native direction on 2026-07-26, but they remain approximations of it and
+are **not a visual target**: "native" means the appearance is the host
+platform's, and it differs between macOS and Windows. Read them for *what goes
+where and which data appears*; take the *appearance* from the platform, and
+validate implemented UI against real Qt widgets via the headless
+`client_screenshot_generator`, never against the HTML. See
+[`docs/client/ux/README.md`](../docs/client/ux/README.md) → Mockups for the full caveat.
+
+That architecture is the **product's**, not just this client's — the web client
+implements the same one, rendered in its own idiom. The cross-client obligation
+that goes with it is recorded in the superproject `CLAUDE.md`, not here (this
+repo must stay standalone).
+
+- [`docs/client/ux/principles.md`](../docs/client/ux/principles.md) — HMI/SCADA UX principles
+  (High-Performance HMI, ISA-101, ISA-18.2/EEMUA 191 alarms, situational
+  awareness, colour rules) with citations. The *why* behind every UI decision.
+- [`docs/client/ux/design-language.md`](../docs/client/ux/design-language.md) — the shared
+  design tokens (exact colour/type/spacing values) and component primitives.
+  Components must consume tokens; never hard-code hex.
+- [`docs/client/ux/shell.md`](../docs/client/ux/shell.md) — the reshelled layout mapped onto the
+  existing `main_window/` / registries / `modules/` code.
+- [`docs/client/ux/backlog.md`](../docs/client/ux/backlog.md) — the surface catalogue and
+  dependency notes. Treat it as a **menu of slices, not a fixed waterfall**
+  (see the implementation approach below).
+- Rendered, theme-toggleable mockups live in
+  [`docs/product/ui-mockups/screens/`](../docs/product/ui-mockups/screens/) — operator,
+  engineering and admin surfaces, each with a light/dark toggle. They are the
+  architecture reference described above, not a visual target.
+
+### UX implementation approach
+
+**Do not follow `backlog.md` as a strict P0→P5 waterfall.** The agreed way to
+build the reshell (decided with the user) is:
+
+- **Incremental vertical slices.** Ship one coherent surface end-to-end at a
+  time, each independently valuable, and re-evaluate after each. Do not attempt
+  a big-bang switchover — this is a live client edited by multiple people.
+- **Full reshell is the north star, reached gradually.** The operator-workbench
+  structure (Activity bar → Explorer → workspace tabs → Inspector → status
+  strip) remains the target; slices converge on it rather than landing it all
+  at once.
+- **Theming is palette-first, and no longer opt-in.** The design-token theming
+  (`scada::aui::ApplyTheme` in [`aui/qt/theme_qt.h`](aui/qt/theme_qt.h)) is the
+  only appearance the client has. `InstalledAppearance`
+  (`app/qt/installed_appearance.h`) applies it unconditionally at startup, from
+  the `Ux/Theme` QSetting — `system` by default, so the client follows the host
+  OS light/dark preference. The operator changes it in **Settings → Colour
+  scheme** (`AppearanceMenuModel` in `main_window/main_menu/`), a radio menu
+  alongside Settings → Style that applies live and in full.
+  **`SeverityTheme::kLegacy`, `ClearTheme()`, `IsThemeInstalled()` and the
+  `Ux/Experimental` gate were removed on 2026-08-31.** If you find a
+  `GetSeverityTheme() != kLegacy` in an old doc or diff, that was the
+  "is the reshell on" feature flag, and it is gone: the ~50 surfaces it gated
+  are built unconditionally, and `GetSeverityTheme()` now answers "which
+  appearance" and nothing else. Do not reintroduce a "no theme" state to make a
+  widget's `paintEvent` conditional — a widget decides how to draw, its host
+  decides whether to build it.
+  `ApplyTheme` owns the severity ramp too — never set `SetSeverityTheme`
+  alongside it, which is how three copies of that mapping
+  drifted. Prefer recolouring through `QPalette`
+  (`ThemeScope::kPaletteOnly`). The global stylesheet (`kFull`) has been
+  **reduced to a single rule** (backlog P6.2) — everything a native style can
+  draw is now left to it. `BuildThemeStyleSheet` records what was removed and
+  why; a unit test fails if any of those selectors comes back. Never grow the
+  global sheet, and never make it unconditional.
+- **Every removed `setStyleSheet` is progress.** Adding one needs a reason that
+  `QPalette` plus `QStyle::PixelMetric` could not serve — state it in a comment.
+- **Validate by purpose, and validate in both OS appearances.** Use the HTML
+  mockups in `docs/product/ui-mockups/screens/` for information architecture only;
+  validate anything implemented against **real Qt widgets** via the headless
+  `client_screenshot_generator` (see `docs/ops/client-screenshots.md`) — not HTML, which
+  does not match Qt's rendering. A native-look change is not done until it has
+  been seen under both a light and a dark system theme.
+
+When in doubt about scope or sequence, ask rather than executing the backlog
+top to bottom.
+
+### When to update the docs
+
+**Update `docs/client/design.md`, `docs/client/requirements.md`, and the relevant diagram
+whenever you change or add functionality.** Concretely, that means at
+minimum:
+
+- Adding or removing a top-level module (`*_module.{h,cpp}`) — update the
+  module table and `docs/diagrams/client-module-graph.puml`.
+- Adding or removing a directory under `client/` that hosts a new layer or
+  domain area — update the layer description and
+  `docs/diagrams/client-architecture-layers.puml`.
+- Adding or removing a back-end registered with `REGISTER_DATA_SERVICES` —
+  update FR-1 in `docs/client/requirements.md` §3.
+- Changing the bootstrap order in `ClientApplication::PostLogin()` —
+  update `docs/diagrams/client-bootstrap-sequence.puml`.
+- Adding a new actor-facing capability that isn't covered by an existing
+  use case — add a row to the use-case table in `docs/client/requirements.md` §2
+  and a functional requirement in `docs/client/requirements.md` §3.
+- Removing a use case (deleting a feature) — strike the row in §2 and the
+  matching FR.
+- Changing a design token, component primitive, or a shell region — update the
+  matching `docs/client/ux/` doc **and** the affected mockup in
+  `docs/product/ui-mockups/screens/` in the same change, then regenerate the touched
+  `screenshots/` image once the code lands.
+
+If you cannot tell whether a change affects the doc, ask. Drift between
+the doc and the code is worse than no doc.
+
+### Diagrams
+
+Architecture diagrams live in the superproject's shared `docs/diagrams/`
+tree, prefixed `client-` to distinguish them from the server ones. Paths in
+this section are relative to the superproject root.
+
+| File | Renders to | Used in |
+|---|---|---|
+| `docs/diagrams/client-use-cases.puml` | `client-use-cases.svg` | `docs/client/requirements.md` §2 (use cases) |
+| `docs/diagrams/client-architecture-layers.puml` | `client-architecture-layers.svg` | `docs/client/design.md` §3 (component overview) |
+| `docs/diagrams/client-module-graph.puml` | `client-module-graph.svg` | `docs/client/design.md` §3.6 (domain modules) |
+| `docs/diagrams/client-bootstrap-sequence.puml` | `client-bootstrap-sequence.svg` | `docs/client/design.md` §3.1 (startup sequence) |
+| `docs/diagrams/client-opcua-discovery-flow.puml` | `client-opcua-discovery-flow.svg` | `docs/client/opcua-client-interop.md` |
+
+The `.svg` files are committed alongside the `.puml` sources so the doc
+renders correctly on GitHub without a build step.
+
+**To update a diagram:**
+
+1. Edit the corresponding `.puml` file. PlantUML syntax reference:
+   <https://plantuml.com/>.
+2. Regenerate the SVG with `plantuml` (macOS: `brew install plantuml`; it
+   brings its own JDK and Graphviz):
+
+   ```bash
+   plantuml -tsvg docs/diagrams/client-<name>.puml
+   ```
+
+3. **Look at the rendered output** before committing — render a PNG
+   (`plantuml -tpng docs/diagrams/client-<name>.puml -o /tmp`) and open it. Layout
+   collisions and PlantUML warning banners are drawn *into* the image and
+   are invisible in the source.
+4. Commit both the `.puml` source *and* the regenerated `.svg`. They must
+   stay in lock-step — never commit one without the other.
+
+**PlantUML conventions worth knowing:**
+
+- Start every diagram with `!include _style.puml` — the shared house style
+  (theme, skinparams, palette variables `$tier`/`$config`/`$store`/`$hazard`/
+  `$external`/`$neutral`/`$proxy`) lives in `docs/diagrams/_style.puml`. See the
+  superproject `CLAUDE.md`, "PlantUML house style", for the palette table.
+- Colour an activity with `:text; <<$tier>>` **after** the semicolon. The
+  legacy `#RRGGBB:text;` prefix form is deprecated and PlantUML draws a
+  warning banner into the image.
+- `<style>` blocks with stereotype classes silently do nothing under
+  `!theme plain` — colours just don't apply, with no error.
+- A trailing `' comment` on a `!$var = "..."` line is a syntax error; put
+  preprocessor comments on their own lines.
+- Always end the file with a trailing newline.
+
+**To add a new diagram:**
+
+1. Create `docs/diagrams/client-<name>.puml` starting with
+   `!include _style.puml`.
+2. Render it as above, and look at the PNG.
+3. Reference it from `docs/client/design.md` with
+   `![alt](../diagrams/client-<name>.svg)` and a "Source: …" caption pointing
+   back to the `.puml`.
+4. Add it to the table above in this section.
+
+## Build System
+
+### CMake (Primary — Cross-Platform)
+
+The project uses CMake with a hierarchical structure. Each module directory has its own `CMakeLists.txt`.
+
+**CMake Presets:**
+
+`CMakePresets.json` is self-contained and carries the same preset names as every other product in the tree (ADR 0011). Machine-specific settings live in one `.scada-local.cmake` beside `build-support/`, not in a per-repo `CMakeUserPresets.json`.
+
+| Type | Preset | Description |
+| ---- | ------ | ----------- |
+| Configure | `ninja` | Ninja Multi-Config, vcpkg toolchain |
+| Build | `debug` / `release` / `relwithdebinfo` | |
+| Test | `test-debug` / `test-release` | |
+
+```bash
+cmake --preset ninja                        # Configure (once)
+cmake --build --preset release              # Build (Release)
+cmake --build --preset relwithdebinfo       # Build (RelWithDebInfo)
+cmake --build --preset debug                # Build (Debug)
+ctest --preset test-release                 # Test (Release)
+ctest --preset test-debug                   # Test (Debug)
+```
+
+### Custom CMake Module System
+
+The `aui/client_module.cmake` file (owned by aui, which is slated for extraction into its own repository; the client gets it via `find_package(ScadaClientAui)`) defines helper functions for the flavoured build architecture. It is written against a `CLIENT_UI_CONFIGS` list; Qt is the only entry, so every module creates one target (`<name>_qt`) automatically:
+
+- `client_module(name)` — Creates the Qt library target
+- `client_module_sources(name PUBLIC|PRIVATE dirs...)` — Adds sources from directories (auto-includes the `dir/qt/` subdir)
+- `client_module_link_libraries(name PUBLIC|PRIVATE libs...)` — Links libraries, auto-resolving `_qt` suffixed targets
+- `client_module_include_directories(name PUBLIC|PRIVATE dirs...)` — Adds include directories
+
+Qt targets get `AUTOMOC`, `AUTOUIC`, `AUTORCC` enabled and `.ts` translation files processed automatically.
+
+### Key Dependencies
+
+Managed via `vcpkg.json` manifest:
+
+- **Qt 6** — `qtbase` (Widgets, PrintSupport), `qttools` (LinguistTools), `qtactiveqt` (Windows)
+- **Boost** — `boost-asio`, `boost-beast`, `boost-signals2`, `boost-locale`, `boost-range`, `boost-algorithm`
+- **Google Test** — `gtest`
+
+Not managed by vcpkg:
+
+- **OPC UA SDK** — Industrial protocol (the `opcuapp` product at
+  `third_party/opcuapp`, resolved by name through `scada_find_products`, not by path)
+- **Modus 6.30** — ActiveX/COM library (Windows/Qt only, via `${deps}/modus`)
+- **Windows SDK / ATL** — COM/ActiveX support (Windows only)
+
+## CMake Options
+
+| Option | Default | Description |
+| ------ | ------- | ----------- |
+| `BUILD_OPC` | `ON` | Build Classic OPC modules in scada-common (Windows only) |
+| `BUILD_VIDICON` | `ON` | Build Vidicon modules in scada-common (Windows only) |
+
+The `vidicon` client module is automatically skipped when `scada_common_opc` and `scada_common_vidicon` targets are not available.
+
+## C++20 Module Facades (SCADA_CXX_MODULES)
+
+With `-DSCADA_CXX_MODULES=ON` (default OFF, build unchanged when OFF), the
+client library layers expose named-module facades (`scada.client.base`,
+`scada.client.aui`, `scada.client.controller`, ...) following the core/common
+facade design. The facades are compiled against the `_qt` targets' flags, so
+`UI_QT` is defined in every BMI. See `docs/ops/client-cxx-modules.md` for the
+module map, exclusions, and presets, and `core/docs/cxx-modules.md` for the
+underlying design and consumer rules.
+
+## CI/CD
+
+GitHub Actions workflow (`.github/workflows/ci.yml`), which runs on the
+published export at `github.com/alexsmn/scada-client`. It triggers on push/PR to
+`main` and `release/**`, and on `v*` tags — the old workflow triggered on
+`release/2.5`, which `export.py` does not publish, so it last ran in Feb 2026.
+
+**On a `v*` tag it also cuts a release** (since 2026-11-01). The tag must equal
+`project(scada-client VERSION …)` or the build job stops at once. After the
+tests pass, the macOS and Windows legs run `tools/release/package.sh`, which
+writes a `.dmg` (Apple silicon) and a `.zip` (x64). Each package carries
+`LICENSE`, `COPYRIGHT`, `NOTICE`, every vcpkg port's licence and a
+`SOURCES.txt` naming the commit of each sibling repository. The `release` job
+adds them to the **product release** for that tag — the one that carries the
+Windows Server MSI, `scada-server-<version>.msi`, which is built and uploaded by
+hand. Since 2.6 the Server MSI is separate from `telecontrol-scada-<version>.msi`,
+which carries the Client and the Designer. The Client and the product share one version. A tag whose release has
+no MSI is a **Client-only release**: it is published with
+`gh release edit <tag> --draft=false --latest=false`, so `/releases/latest`
+keeps serving a release that carries a Server installer (2.5.7, until a 2.6
+MSI exists). Only a release carrying the MSI may be marked latest. If the
+release exists, draft or published, the packages are uploaded into it and only
+the notes between the `client-packages` markers are rewritten. Otherwise the
+job creates a **draft** titled `Telecontrol SCADA v<version>`, and the run
+warns, while the MSI is missing, that it is Client-only and must not be marked
+latest. A person publishes it.
+`package.sh` is a script so the same packaging can be dry-run locally:
+`tools/release/package.sh build/ninja <version> <out dir>` after a Release
+build.
+
+- **The display runtime is never packaged** while its licence is unsettled
+  (superproject tasks.md 788). The script deletes it if the build staged it and
+  then refuses any package that still contains one. Lifting that is a
+  deliberate edit to the script, not a configure option.
+- **Signing is optional; secrets switch it on, and each group is
+  all-or-nothing.** `MACOS_CERTIFICATE_P12_BASE64` + `MACOS_CERTIFICATE_PASSWORD`
+  give a Developer ID signature with the hardened runtime.
+  `APPLE_ID` + `APPLE_TEAM_ID` + `APPLE_APP_SPECIFIC_PASSWORD` add notarisation
+  and stapling. With no secrets the release is unsigned (ad hoc on macOS), and
+  its notes tell the user how to open it anyway. Windows is not code-signed.
+  None of these secrets is set yet, so the signed path has never run on a
+  runner. What has been exercised (2026-11-07, on a Mac, ad hoc plus the
+  hardened runtime): nested code is signed inside-out before the bundle, so a
+  dylib or plugin added to the bundle later cannot break the release, and the
+  client starts under the hardened runtime with `client.entitlements`.
+  Notarisation submits the **app** first and staples it, then the `.dmg`, so
+  the copy dragged into /Applications opens on an offline workstation. It
+  reads the notary status from JSON rather than the exit code: `notarytool
+  submit --wait` exits 0 on `Invalid` too ([notarytool(1)](https://keith.github.io/xcode-man-pages/notarytool.1.html),
+  verified 2026-11-07). The import step also adds Apple's Developer ID G2
+  intermediate, pinned by SHA-256, in case the `.p12` lacks the chain.
+- **The `.dmg`'s bundle is not the build's bundle byte for byte.** codesign
+  refuses data files under `Contents/MacOS` ("code object is not signed at all"
+  on `client_ru.qm`). The build mirrors the catalogs there because
+  `InstalledTranslation` reads `applicationDirPath() + "/translations"`. So the
+  script moves them to `Contents/Resources/translations` and leaves a symlink
+  at the old path. `app/qt/client.entitlements` disables library validation,
+  because a hardened-runtime process otherwise refuses to `dlopen` a display
+  runtime signed by anyone else.
+- **The macOS minimum is whatever the runner builds for.** No
+  `CMAKE_OSX_DEPLOYMENT_TARGET` is set (nor vcpkg's), so the release notes read
+  `minos` out of the binary rather than promising a version.
+- **Every action in this workflow is pinned by SHA**, with the release URL in a
+  comment above it. The build legs produce the released binaries, so a moved
+  tag must not reach them.
+
+**Two jobs gate: `analyze` (cppcheck), since 2026-09-20, and `build`, a
+Windows/Ubuntu/macOS matrix, since 2026-10-27.** For a year there was no
+build job, and the obstacle was never Qt: a standalone client build resolves its
+consumed products as sibling checkouts (ADR 0011), and `display`'s **source** is
+deliberately never published (superproject CLAUDE.md, "Repository boundaries are
+commercial"), so one of those siblings could not exist on a public runner. Its
+**binary** is the opposite answer and the same decision: `display_runtime` ships
+as a release asset on this repository, which is the compromise ADR 0013 exists
+to make. Reading only the first half inverts it.
+
+ADR 0013 removed that. The client no longer compiles `display` — it loads the
+schematic renderer as a shared library through a C ABI at run time, carrying
+only the interface header, which `tools/export/products.toml` places at the
+export's root. Every other product in the closure is public (`net` publishes as
+`transport`, `graph_qt` as `graph-qt`). **A client with no runtime binary beside
+it builds and runs**; schematic windows report that there is no display runtime,
+which is a supported state rather than a broken build.
+
+Two things the build job cannot cover. `client_server_e2e_tests` skips there: it
+drives tier binaries, and every tier is a separately sold unpublished product,
+so no public runner can assemble that suite. And it builds Release only —
+Debug is the configuration that catches a `static const` member with no
+definition, and the tree still has nowhere to run one (superproject tasks.md
+476).
+
+**The build job gates, and must not get its `continue-on-error` back.** It
+carried the flag while it bootstrapped: vcpkg builds Qt, gRPC, Boost and the
+rest from source with nothing prebuilt, and a `files` binary cache carried
+between runs by `actions/cache/restore` + `save` is what makes later runs cheap,
+since vcpkg writes each port to it as that port completes (not `x-gha`, which
+vcpkg has removed — the workflow's `env:` block has the detail). The save key
+includes `github.run_attempt`, because a re-run keeps its run id and would
+otherwise be refused the save. The flag came off after the first run green on
+all three platforms (scada-client run 40439310927, 2026-10-27). A build job
+that is allowed to fail is what `core`'s matrix was until 2026-09-27
+(superproject tasks.md 316).
+
+**The Windows leg runs the Qt tests offscreen, and needs three things to.**
+`QT_PLUGIN_PATH` names vcpkg's plugin directory, because Windows' Qt is shared
+and the plugins are not deployed beside the tests. `QT_QPA_FONTDIR` names
+`C:\Windows\Fonts`, because offscreen Qt on Windows otherwise has no fonts at
+all. And `AppEnvironment` leaves a bare `offscreen` alone there: a
+`configfile=D:/...` path is cut at the drive letter. The workflow's comments
+carry the runs behind each. It also builds Release with debug information, so
+the screenshot generator's `crash_trace` prints a named stack on an access
+violation. That is how the two Windows-only use-after-frees in the generator's
+path were found.
+
+The `analyze` job runs the same cppcheck configuration the build runs — see
+`scada_configure_cppcheck()` in `build-support/ScadaProductBase.cmake` — against
+this product's own `.cppcheck-suppressions`. `error:` findings gate the job;
+warnings are uploaded as an artifact and do not.
+
+**The job builds a pinned cppcheck (`CPPCHECK_VERSION` in the workflow, 2.21.0)
+from source and caches it, rather than installing the distro package.** That is
+not gold-plating: `ubuntu-latest` is Ubuntu 24.04, whose package is 2.13, eight
+releases behind, and it disagrees with a developer's local cppcheck in both
+directions. Measured 2026-08-15 over the whole client tree, same flags, same
+suppressions:
+
+| cppcheck | Errors | Total findings |
+|---|---|---|
+| 2.13 (Ubuntu 24.04 package) | 2 | 39 |
+| 2.19 (Ubuntu 26.04 package) | 0 | 41 |
+| 2.21 (pinned; local and CI) | 0 | 314 |
+
+2.13's two errors are `danglingTempReference` at
+`modules/debugger/debugger_module.cpp:42-43`, which it gets wrong and 2.19+ do
+not report: `BasicCommandRegistry::AddCommand` returns a reference into its
+`command_map_`, and `MenuContribution` holds its `title` and `command_id` by
+value, so nothing dangles. Meanwhile 2.13 has no `uninitMemberVarNoCtor` check
+at all — 273 of 2.21's 314 — so it would have gated the job on a false positive
+while hiding a whole category. `core` and `common` still run the distro package
+and carry that exposure; see the backlog.
+
+**When comparing counts, say which cppcheck produced them**, and reproduce a CI
+result with the pinned version rather than whatever is on your machine. Note
+that `docker run ubuntu:latest` is no longer the runner — that tag is 26.04 now;
+`ubuntu:24.04` is what `ubuntu-latest` resolves to.
+
+## Architecture
+
+### Module-Based MVC with Dependency Injection
+
+The application follows a modular MVC architecture with explicit context-based dependency injection.
+
+**Bootstrap flow:**
+```
+main() → AppInit → ClientApplication → [CoreModule, EventModule, MainWindowModule, ...]
+```
+
+**Core pattern — Context structs for DI:**
+
+Each module defines a `*Context` struct and privately inherits from it:
+
+```cpp
+struct EventModuleContext {
+  AnyExecutor executor_;
+  Profile& profile_;
+  scada::services services_;
+  // ...
+};
+
+class EventModule : private EventModuleContext {
+ public:
+  explicit EventModule(EventModuleContext&& context);
+  // ...
+};
+```
+
+### Key Subsystems
+
+| Subsystem | Entry Point | Responsibility |
+|-----------|-------------|----------------|
+| `ClientApplication` | `app/client_application.h` | Top-level orchestrator; owns all modules |
+| `CoreModule` | `core/core_module.h` | Command registries, tracer, progress host |
+| `MainWindowModule` | `main_window/` | Window lifecycle, view management, page navigation |
+| `EventModule` | `modules/events/event_module.h` | Event fetching, journaling, local events |
+| `ControllerRegistry` | `controller/controller_registry.h` | Maps command IDs to controller factories |
+| `Profile` | `profile/profile.h` | User preferences, window layouts, page definitions |
+| `NodeService` | via factory | Device/node browsing and monitoring |
+| `TimedDataService` | via factory | Historical and real-time time-series data |
+| `TaskManager` | `services/` | Async task execution and progress |
+
+### Data Service Backends
+
+Three pluggable backends registered via `REGISTER_DATA_SERVICES` macro:
+
+- **Scada** ("Telecontrol") — Default, connects to `localhost`
+- **OPC UA** — Standard industrial protocol, `opc.tcp://localhost:4840`
+- **Vidicon** — Custom protocol, connects to `localhost`
+
+### Controller Registration
+
+Controllers are registered statically via macros:
+
+```cpp
+REGISTER_CONTROLLER(MyController, my_window_info);
+```
+
+Or dynamically via `ControllerRegistry::AddControllerFactory()`.
+
+### Platform Abstraction
+
+Each module that has UI splits code into:
+- **Shared model code** — in the module root directory, free of any widget toolkit
+- **`qt/` subdirectory** — Qt-specific implementation
+
+`aui_qt` publishes the `UI_QT` define, and a handful of sites still guard on it. That split is what keeps the models unit-testable without a `QApplication`; keep new model code on the toolkit-free side of it.
+
+## Coding Conventions
+
+### Naming
+
+- **Classes/Types:** `PascalCase` — `ClientApplication`, `WindowDefinition`, `EventModule`
+- **Methods:** `PascalCase` — `Start()`, `CreateTree()`, `GetControllerFactory()`
+- **Member variables:** `snake_case_` with trailing underscore — `profile_loaded_`, `quit_promise_`
+- **Local variables:** `snake_case` — `alias_resolver`, `audited_services`
+- **Constants:** `kPascalCase` — `kTableLimitation`
+- **Namespaces:** `snake_case` — `base::`, `scada::`, `net::`
+- **Files:** `snake_case.cpp/.h` — `client_application.cpp`, `event_module.h`
+- **Test files:** `*_unittest.cpp` — `event_module_unittest.cpp`
+- **Mock files:** `*_mock.h`
+
+### Header Guards
+
+`#pragma once` (no `#ifndef` guards).
+
+### Includes
+
+Ordered as: project headers, then third-party/standard headers, separated by blank lines:
+
+```cpp
+#include "app/client_application.h"
+
+#include "base/blinker.h"
+#include "core/core_module.h"
+// ... project headers
+
+#include <memory>
+#include <stack>
+```
+
+### Modern C++ (C++23)
+
+The client builds at **C++23** — `client/CMakeLists.txt` calls
+`scada_product_base()` with no `CXX_STANDARD`, and that default is 23. This
+heading said "C++17+" until 2026-08-26, which undersold it by two standards
+and mislabelled three of the entries below; C++20 features are marked.
+
+- Smart pointers throughout (`std::unique_ptr`, `std::shared_ptr`) — no raw `new`/`delete`
+- Designated initializers for context structs: `.field_ = value` (**C++20** —
+  `-std=c++17 -pedantic-errors` rejects them, verified 2026-08-26)
+- `std::optional<T>` for optional return values
+- `std::string_view` for non-owning string parameters
+- `std::ranges` and `std::views` for range pipelines (**C++20**)
+- Structured bindings
+- `[[nodiscard]]` on functions returning promises/important values
+- `= delete` for non-copyable classes
+- `std::function` for callbacks
+- `std::bind_front` for partial application (**C++20**)
+- Move semantics for context passing: `explicit Module(Context&& context)`
+- `using namespace std::chrono_literals` for duration literals (`1min`)
+
+### Memory Management
+
+- Owned resources use `std::unique_ptr`
+- Shared resources use `std::shared_ptr`
+- Singleton-like modules stored in `std::stack<std::shared_ptr<void>> singletons_` for ordered destruction
+- Destructor resets members in dependency-safe order
+
+### Error Handling
+
+- Async operations use coroutine bodies; legacy/public boundaries may still
+  return `promise<T>` from `scada-core`.
+- Exceptions for fatal errors (`std::runtime_error`)
+- Local event system (`LocalEvents`) for user-visible errors/warnings
+
+### Concurrency
+
+- `boost::asio::io_context` for async I/O
+- `Executor` abstraction for task scheduling
+- Public and module-crossing async APIs may keep returning `promise<T>` for
+  compatibility, but client implementation code should be coroutine-first.
+- Use `AwaitPromise(...)` and `ToPromise(...)` only at legacy boundaries
+  instead of adding `.then()` chains.
+
+### Localization
+
+- UI strings use `u"..."` (UTF-16 string literals) for Russian text
+- Qt `.ts` translation files in `qt/` subdirectories
+- Translation files: `*_ru.ts`
+- **Never run `lupdate` against `app/qt/client_ru.ts`.** Most client UI strings
+  go through the custom `Translate()` helper, which `lupdate` does not
+  recognise as a translation call — a refresh would mark every one of them
+  `vanished`, and `lrelease` drops those, so they would silently stop shipping.
+  Maintain that file by hand. To get an authoritative string list for a form,
+  run `lupdate` over just that form into a scratch `.ts` and merge the result
+  in.
+- **Never hard-code a user-facing string as a `u"..."` literal** — it can never
+  be translated, and no other check sees it (`lupdate` does not recognise
+  `Translate()`, and a missing lookup falls back silently to English).
+  `client_untranslated_string_check` (ctest, `tools/check_untranslated_ui_strings.py`)
+  fails on a literal reaching a message box, a `ResourceError`, a file-dialog
+  title or `setWindowTitle`. Note a namespace-scope
+  `const char16_t k…[] = u"…"` *cannot* call `Translate()` at all — it needs a
+  running QApplication — so make such titles functions returning
+  `std::u16string`.
+- **Never write Russian in a string literal.** The same check's second rule
+  fails on Cyrillic in *any* client string literal, decoding `\uXXXX` escapes
+  first (escaping is how these hid from a grep). It exists because the sink
+  rule above only sees six call shapes and is blind to the larger
+  population — a status-strip cell, a menu caption, a grid placeholder never
+  reach a message box, so a Russian literal sat in each of them permanently
+  untranslatable. Russian in a **comment** is fine and is not reported;
+  `modules/modus/activex/` is allowlisted because those OLESTR names are the
+  Vidicon ActiveX protocol's own identifiers.
+  Two habits keep the sweep honest: pick an English source string that is not
+  already in the empty context of `client_ru.ts` with a *different* Russian
+  translation (`Translate()` has no context to disambiguate with — this is why
+  the tab context menu says `To Favourites` rather than reusing
+  `Add to Favourites`), and preserve the Russian exactly as it displayed, so
+  the change is invisible to the operator and to the screenshot gallery.
+- **The same rule now covers `core/` and `common/`, which is where the rest of
+  the operator's text comes from.** Status-code descriptions, data-quality
+  flags, the boolean Yes/No labels and `common/format.h`'s fallback labels are
+  produced below the client and rendered by it verbatim — but `core/` and
+  `common/` carry no words for them, only invariant forms (`Bad_Timeout`,
+  `STALE`, `true`, `1`). The words live in `services/core_ui_text.cpp`, which
+  `InstallCoreUiText()` plugs into those libraries' providers in `AppInit`, and
+  their Russian lives in `app/qt/client_ru.ts` like everything else — so adding
+  a status code means adding a row there and a catalog entry.
+  `CoreUiTextTest.EveryBadCodeHasASentence` fails on a missing row. Without the
+  providers installed — every server tier, and most unit tests — the invariant
+  forms render, and that is the intended behaviour, not a fallback.
+  These trees are optional to the check: this repo publishes standalone, so it
+  skips whichever of them is absent.
+- A `.ui` form's strings belong to the **form class's context**
+  (`uic` emits `QCoreApplication::translate("<FormClass>", ...)`), not the
+  empty context. `client_ui_translation_check` (ctest, see
+  `tools/check_ui_translations.py`) fails the build when a form string has no
+  translation that would reach the `.qm`; it also records the deliberate
+  exclusions and the remaining untranslated strings.
+- **That check is also the catalog-completeness check, and it compares keys,
+  not files.** Rules 1 and 6 run `lupdate` over every `.ui` form and `.cpp`
+  into a scratch `.ts` and fail on any `(context, source)` the code has and
+  `client_ru.ts` lacks — the string that never reached the catalog at all,
+  which an "untranslated entries" scan cannot see. Comparing `lupdate`'s
+  output file instead would go red on every unrelated edit, since it rewrites
+  `<location>` line numbers. Both need `lupdate` on `PATH`; without it the
+  script exits 77 and ctest reports the test **Skipped** — it reported Passed
+  until 2026-11-15 — so a skip there means those two rules did not run.
+- **The same check has two more rules, and both run without `lupdate`** (they
+  read the sources and the catalogs, so they must not inherit the skip that a
+  missing Qt LinguistTools causes):
+  - **No two shipping messages in one context may share a source.** `lrelease`
+    keeps one entry per (context, source) and drops the rest, so a duplicated
+    pair loses one translation and *which* one is file order rather than
+    intent. Ten sources were duplicated in the empty context until 2026-08-22;
+    `New` carried both «Создание» (the `CATEGORY_NEW` group) and «Новый» (the
+    New-graph/page actions), so all three actions rendered the group label.
+    Fix a genuine clash of meanings with two distinct sources; delete the later
+    copy when it is an accidental repeat.
+  - **Every `Translate("literal")` must have a translation that ships.**
+    `Translate()` falls back to the source on a miss, so a call site whose
+    string never reached `client_ru.ts` renders English and nothing says so.
+    This is the third of three ways the same defect hides — the other two being
+    a bare literal (the check above) and a `.ui` string in the wrong context —
+    and it is the one that catches a translated call site drifting from its
+    entry, since renaming the source in the code silently stops matching.
+    `TRANSLATE_GAPS` is the park for call sites already in that state and is
+    **empty** — the 22 it held when the rule was written drained in one pass
+    (task 442), fourteen of them the graph component's setup menu, which was
+    one omission rather than fourteen decisions. Adding to it is a review
+    conversation, not a fix.
+    Adjacent literals are joined before lookup, because `clang-format` splits
+    any sentence long enough to matter.
+- **Design-time placeholder text in a `.ui` takes `notr="true"`, not a parked
+  entry.** A label whose text a `setText()` overwrites before the form is shown
+  — the write dialog's `(Description)`, `(Value)`, `(Condition)`, `(Status)`
+  and `units`, the limit dialog's `(Description)` — is not a string anyone will
+  ever translate, and leaving it extractable buys a permanent
+  `Ignored N untranslated source text(s)` from `lrelease` plus an entry in
+  `UI_FORM_ALLOWED_UNTRANSLATED` that has to stay true one file away from the
+  form. `notr="true"` on the property is Qt's own way to say it: `lupdate`
+  stops extracting the string, `uic` emits `QString::fromUtf8` instead of
+  `QCoreApplication::translate`, and nothing is left to park. Six were
+  converted on 2026-08-27 (task 385), and the compiled catalog did not change
+  by a byte.
+- **Every message in the catalog must be one `lrelease` compiles** (rule 10).
+  `vanished`, `obsolete`, `unfinished` and an empty translation are all
+  dropped, and `lrelease` says so on every build where nobody reads it: an
+  unfinished entry is a string that renders English, and a dead copy of a live
+  source is the duplicate warning, which is indistinguishable in the output
+  from the real collision the rule above exists for — so the noise is what
+  stops anyone reading either. Twenty such messages sat in `client_ru.ts` until
+  2026-08-27. The rule reads the `.ts` rather than `lrelease`'s stdout, so it
+  needs no LinguistTools, and it has **no parked list on purpose**: translate
+  the string, `notr="true"` the property, or delete the message.
+- **A compiled catalog must be copied by a rule that depends on the `.qm`, not
+  on the link** (rule 9). `app/qt/CMakeLists.txt` stages `client_ru.qm` and
+  `qtbase_ru.qm` twice — to `bin/<Config>/translations`, which the screenshot
+  generator reads, and on macOS into `client.app/Contents/MacOS/translations`,
+  which is the *only* path `InstalledTranslation` finds inside a bundle. The
+  bundle copy was an `add_custom_command(TARGET client_qt POST_BUILD ...)`
+  until 2026-08-27, and POST_BUILD fires only when the target **relinks**:
+  editing `client_ru.ts` regenerates the `.qm` and re-stages it without
+  relinking anything, so the bundle kept the previous catalog and a translation
+  change was invisible to the running app until something forced a link
+  (measured 2026-08-23: 55318 bytes against a fresh 55458). Both copies are now
+  `add_custom_command(OUTPUT ...)` + a target + `add_dependencies()`, and rule
+  9 fails on any POST_BUILD command in that file that names a catalog. Note the
+  OUTPUT spells the bundle path out: an OUTPUT is evaluated with no target in
+  scope, so `$<TARGET_BUNDLE_CONTENT_DIR:client_qt>` there fails the generate
+  step outright.
+- **Two further rules catch the shapes where the string never appears at the
+  call site**, which is where new code trips it. `Translate()` is routinely
+  handed a *variable*, so no rule that reads call-site literals can see the
+  string it will look up:
+  - **A table** — `Translate(column.header)`, with a file-scope `constexpr`
+    table of headers indexed by a paint loop, usually in another translation
+    unit. Rule 7 resolves the member back to the table and requires every
+    literal in it to ship. Eleven English strings shipped inside the Russian
+    device-diagnostics panel through this seam (task 466).
+  - **A function** — `Translate(WriteBlockText(block))`, with the literals in a
+    `switch` somewhere else. Rule 8 resolves the call back to the definition
+    and requires every string it returns to ship (task 469).
+
+  Both are correct code and neither needs avoiding: declare the member or the
+  return type as `const char*` or `std::string_view` so it is an English
+  *source*, and add the strings to `client_ru.ts`. A `QString` there means
+  already-translated output and is not a catalog question. What the rules will
+  not tolerate is a source they cannot read — a function or member they cannot
+  resolve is reported rather than skipped, because being unable to see the
+  string is the defect.
+
+## Testing
+
+### Test Framework
+
+Unit tests follow the `*_unittest.cpp` naming convention (33 test files). Tests are located alongside the source code they test. Test execution uses CTest.
+
+### Test Locations (examples)
+
+- `app/client_application_unittest.cpp`
+- `modules/table/table_model_unittest.cpp`
+- `modules/events/event_table_model_unittest.cpp`
+- `main_window/main_window_unittest.cpp`
+- `profile/page_layout_unittest.cpp`
+
+### Reusable Test Helpers
+
+Put reusable test helpers — shared fakes, fixture bases, mock-factory
+functions, and test-only utilities used by more than one module — under
+`client/test/`. Keep per-module `*_unittest.cpp` files focused on the
+tests themselves; when a helper starts getting copy-pasted across
+modules, move it into `client/test/` and link the module's test target
+against it.
+
+### Running Tests
+
+```bash
+ctest --preset test-release                 # Release
+ctest --preset test-debug                   # Debug
+```
+
+## Command-Line Switches
+
+Logging-related switches (pass as `--switch-name`):
+
+- `verbose-logging`
+- `log-service-read`
+- `log-service-browse`
+- `log-service-history`
+- `log-service-event`
+- `log-service-model-change-event`
+- `log-service-node-semantics-change-event`
+
+## Key Patterns for AI Assistants
+
+1. **New modules** should follow the Context + private inheritance pattern. Define a `*Context` struct, have the module privately inherit from it, and accept `Context&&` in the constructor.
+
+2. **New UI components** keep their toolkit-specific code in a `qt/` subdirectory; shared logic goes in the module root. Use `client_module()` in CMake.
+
+3. **New controllers** should be registered via `REGISTER_CONTROLLER(ControllerClass, window_info)` or dynamically through `ControllerRegistry`.
+
+4. **Tests** should be placed alongside source as `*_unittest.cpp` files.
+
+5. **Member variables** always end with a trailing underscore.
+
+6. **Headers** always use `#pragma once`.
+
+7. **Dependencies** between modules are explicit through Context struct fields — avoid hidden globals.
+
+8. **Destruction order matters** — `ClientApplication::~ClientApplication()` resets members in a specific order to respect dependency chains. Follow this pattern when adding new modules.
+
+9. **Conditional compilation** — `#if defined(UI_QT)` guards code that needs the Qt UI config; `#if defined(_WIN32)` guards Windows-only code such as the Modus/Vidicon ActiveX paths.
+
+13. **`aui/` is slated for extraction into its own repository.** Never add
+    includes of client-repo headers (`profile/`, `resources/`, `ui/`,
+    `modules/`, `main_window/`, …) or scada-common dependencies inside
+    `aui/` — invert the dependency instead (keep the generic seam in aui,
+    move the client-coupled piece to its consumer). Its allowed dependency
+    set is `scada_base`, `graph_qt`, `view_manager_qt`, Qt — see
+    `docs/client/aui-extraction.md`.
+
+11. **Modus/Vidicon ActiveX parameter names** — Never rename OLESTR parameter names in `modules/modus/` (e.g., `"ключ_привязки"`, `"положение"`, `"уставки"`). These Russian-language identifiers are part of the external Vidicon ActiveX protocol interface and must remain unchanged.
+
+10. **Async code** keeps `promise<T>` at public/module boundaries, but new or touched implementation code should use coroutine bodies with `co_await`. Use `AwaitPromise(...)` to await legacy promises and `ToPromise(...)` only at compatibility boundaries; do not add new `.then()` chains for client workflows.
+
+12. **Add a regression unit test for every fixed bug.** When fixing a bug, add a `*_unittest.cpp` test that fails against the pre-fix code and passes after the fix — it locks in the fix and documents the failure mode in an executable form. If writing the test would require a major redesign (e.g., a new mock layer, restructuring the class under test, splitting a module), confirm the scope with the user before embarking; a targeted regression test on existing seams is always preferable to invasive test plumbing.
