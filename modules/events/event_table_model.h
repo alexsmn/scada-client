@@ -10,6 +10,7 @@
 
 #include <boost/signals2/connection.hpp>
 #include <boost/signals2/signal.hpp>
+#include <functional>
 #include <map>
 #include <set>
 #include <span>
@@ -52,6 +53,11 @@ struct EventTableModelContext {
   LocalEventModel& local_event_model_;
   // If true, then show only current events. No historical events are shown.
   const bool current_events_ = true;
+  // Whether the user may acknowledge the server's (current) events, asked at
+  // the moment of acknowledging (CanAcknowledgeEvents, backlog 1070). Local
+  // events are the Client's own and stay acknowledgeable whatever this says.
+  // Unset means allowed.
+  std::function<bool()> can_acknowledge_server_events_;
 };
 
 class EventTableModel : public scada::aui::TableModel,
@@ -79,6 +85,12 @@ class EventTableModel : public scada::aui::TableModel,
   }
   bool IsRowPending(int row) const {
     return IsPending(rows_[row].type, *rows_[row].event);
+  }
+  // Pending, and of a kind the user may acknowledge: a current event needs
+  // the server's permission (`can_acknowledge_server_events_`), a local one
+  // does not.
+  bool IsRowAcknowledgeable(int row) const {
+    return IsRowPending(row) && MayAcknowledge(rows_[row].type);
   }
 
   EventType event_type_at(int row) const { return rows_[row].type; }
@@ -148,6 +160,10 @@ class EventTableModel : public scada::aui::TableModel,
   // historical row alone does not count.
   bool CanAcknowledgeShown() const;
 
+  // Whether something shown is waiting to be acknowledged but the user may not
+  // acknowledge it — the reason CanAcknowledgeShown() is false, when it is.
+  bool IsAcknowledgeShownForbidden() const;
+
   // Whether the journal's historical rows are currently collapsed into flood
   // groups. Decided by the model itself on each rebuild (see
   // kAlarmFloodThreshold), not set by the caller: the journal groups exactly
@@ -216,6 +232,11 @@ class EventTableModel : public scada::aui::TableModel,
   virtual int CompareCells(int row1, int row2, int column_id) override;
 
  private:
+  // Whether the user may acknowledge events of `type`: always for a local
+  // event, by `can_acknowledge_server_events_` for a current one, never for a
+  // historical record.
+  bool MayAcknowledge(EventType type) const;
+
   void AddRows(EventType type, std::span<const scada::Event* const> events);
   void RemoveRows(int first, int count);
   int FindRow(const scada::Event& event) const;

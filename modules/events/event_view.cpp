@@ -14,6 +14,7 @@
 #include "base/utf_convert.h"
 #include "controller/controller_delegate.h"
 #include "controller/selection_model.h"
+#include "events/acknowledge_permission.h"
 #include "events/current_event_model.h"
 #include "events/event_table_model.h"
 #include "events/historical_event_model.h"
@@ -25,6 +26,8 @@
 #include "profile/window_definition_util.h"
 #include "resources/common_resources.h"
 #include "ui/common/client_utils.h"
+
+#include <algorithm>
 
 #if defined(UI_QT)
 #include "aui/severity_colors.h"
@@ -52,9 +55,16 @@ struct EventTableModelHolder {
       : current_event_model{context.node_event_provider_},
         historical_event_model{context.executor_, context.history_service_},
         local_event_model{local_events},
-        event_table_model{{context.executor_, context.node_service_,
-                           current_event_model, historical_event_model,
-                           local_event_model, is_panel}} {}
+        event_table_model{{.executor_ = context.executor_,
+                           .node_service_ = context.node_service_,
+                           .current_event_model_ = current_event_model,
+                           .historical_event_model_ = historical_event_model,
+                           .local_event_model_ = local_event_model,
+                           .current_events_ = is_panel,
+                           .can_acknowledge_server_events_ =
+                               [&session_service = context.session_service_] {
+                                 return CanAcknowledgeEvents(session_service);
+                               }}} {}
 
   CurrentEventModel current_event_model;
   HistoricalEventModel historical_event_model;
@@ -167,11 +177,11 @@ EventView::EventView(const ControllerContext& context,
           .set_execute_handler([this] { AcknowledgeSelection(); })
           .set_enabled_handler([this] { return CanAcknowledgeSelection(); })
           .set_disabled_reason_handler([this] {
-            return table_->GetSelectedRows().empty()
-                       ? Translate("Select an event to acknowledge")
-                       : Translate(
-                             "The selected events are already "
-                             "acknowledged");
+            if (table_->GetSelectedRows().empty())
+              return Translate("Select an event to acknowledge");
+            if (IsSelectionAcknowledgeForbidden())
+              return AcknowledgeNotPermittedReason();
+            return Translate("The selected events are already acknowledged");
           }));
 
   // The journal's «Квитировать все» (footer button and context menu)
@@ -183,7 +193,9 @@ EventView::EventView(const ControllerContext& context,
       Command{ID_ACKNOWLEDGE_ALL}
           .set_execute_handler([this] { model_->AcknowledgeShown(); })
           .set_enabled_handler([this] { return model_->CanAcknowledgeShown(); })
-          .set_disabled_reason_handler([] {
+          .set_disabled_reason_handler([this] {
+            if (model_->IsAcknowledgeShownForbidden())
+              return AcknowledgeNotPermittedReason();
             return Translate(
                 "No event shown here is waiting to be acknowledged");
           }));
@@ -242,12 +254,21 @@ bool EventView::CanAcknowledgeSelection() const {
   auto rows = table_->GetSelectedRows();
   // Pending, not merely unacknowledged: a history row is never acknowledgeable
   // here, so offering it promised an action that silently did nothing
-  // (backlog 889).
+  // (backlog 889). And one the user may acknowledge: a server event from an
+  // account without the right would only be refused (backlog 1070).
   for (auto i = rows.begin(); i != rows.end(); ++i) {
-    if (model_->IsRowPending(*i))
+    if (model_->IsRowAcknowledgeable(*i))
       return true;
   }
   return false;
+}
+
+bool EventView::IsSelectionAcknowledgeForbidden() const {
+  if (CanAcknowledgeSelection())
+    return false;
+  auto rows = table_->GetSelectedRows();
+  return std::ranges::any_of(
+      rows, [this](int row) { return model_->IsRowPending(row); });
 }
 
 std::unique_ptr<UiView> EventView::Init(const WindowDefinition& definition) {

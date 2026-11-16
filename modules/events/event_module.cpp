@@ -16,6 +16,7 @@
 #include "controller/selection_model.h"
 #include "core/global_command_context.h"
 #include "core/selection_command_context.h"
+#include "events/acknowledge_permission.h"
 #include "events/event_fetcher.h"
 #include "events/event_fetcher_builder.h"
 #include "events/event_view.h"
@@ -174,11 +175,15 @@ EventModule::EventModule(EventModuleContext&& context)
           },
       .enabled_handler =
           [this](const GlobalCommandContext&) {
-            return !node_event_provider().unacked_events().empty() ||
+            return HasAcknowledgeableServerEvents() ||
                    !local_events_->events().empty();
           },
       .disabled_reason_handler =
-          [](const GlobalCommandContext&) {
+          [this](const GlobalCommandContext&) {
+            // Server events are waiting, but this account may not
+            // acknowledge them (backlog 1070).
+            if (!node_event_provider().unacked_events().empty())
+              return AcknowledgeNotPermittedReason();
             return Translate("Nothing is waiting to be acknowledged");
           }});
   selection_commands_.AddCommand(BasicCommand<SelectionCommandContext>{
@@ -189,12 +194,22 @@ EventModule::EventModule(EventModuleContext&& context)
                 context.selection.node().node_id());
           },
       .enabled_handler =
-          [](const SelectionCommandContext& context) {
-            return context.selection.timed_data().alerting();
+          [this](const SelectionCommandContext& context) {
+            return context.selection.timed_data().alerting() &&
+                   CanAcknowledgeEvents(*services_.session_service);
           },
       .available_handler =
           [](const SelectionCommandContext& context) {
             return context.selection.timed_data().connected();
+          },
+      .disabled_reason_handler =
+          [](const SelectionCommandContext& context) {
+            // The object has events waiting, but this account may not
+            // acknowledge them (backlog 1070). Otherwise the greyed entry
+            // needs no explanation: there is nothing to acknowledge.
+            return context.selection.timed_data().alerting()
+                       ? AcknowledgeNotPermittedReason()
+                       : std::u16string{};
           }});
 
   ui_command_registry_.AddAction(Action{.command_id_ = ID_HISTORICAL_EVENTS,
@@ -258,10 +273,19 @@ EventModule::EventModule(EventModuleContext&& context)
 
 EventModule::~EventModule() {}
 
+bool EventModule::HasAcknowledgeableServerEvents() {
+  return !node_event_provider().unacked_events().empty() &&
+         CanAcknowledgeEvents(*services_.session_service);
+}
+
 Awaitable<void> EventModule::ConfirmAndAcknowledgeAll(
     DialogService& dialog_service) {
-  const size_t count = node_event_provider().unacked_events().size() +
-                       local_events_->events().size();
+  // The server's events count only when this account may acknowledge them;
+  // the Client's own local events always do (backlog 1070).
+  const bool server_events = HasAcknowledgeableServerEvents();
+  const size_t count =
+      (server_events ? node_event_provider().unacked_events().size() : 0) +
+      local_events_->events().size();
   if (count == 0)
     co_return;
 
@@ -274,7 +298,8 @@ Awaitable<void> EventModule::ConfirmAndAcknowledgeAll(
   if (answer != MessageBoxResult::Yes)
     co_return;
 
-  node_event_provider().AcknowledgeAllEvents();
+  if (server_events)
+    node_event_provider().AcknowledgeAllEvents();
   local_events_->AcknowledgeAll();
 }
 

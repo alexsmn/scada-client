@@ -40,6 +40,9 @@ class EventView : protected ControllerContext,
   virtual ~EventView();
 
   bool CanAcknowledgeSelection() const;
+  // Whether the selection holds a pending event the user may not acknowledge,
+  // and nothing it may — the reason CanAcknowledgeSelection() is false.
+  bool IsSelectionAcknowledgeForbidden() const;
   void AcknowledgeSelection();
 
   // Controller

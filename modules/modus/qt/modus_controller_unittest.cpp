@@ -7,6 +7,7 @@
 #include "modus/modus_view_wrapper.h"
 #include "profile/window_definition.h"
 #include "resources/common_resources.h"
+#include "scada/access_rights.h"
 #include "scada/attribute_service.h"
 #include "timed_data/timed_data_mock.h"
 
@@ -275,12 +276,35 @@ TEST_F(ModusControllerTest, AnUnresolvableDataSourceStillSelectsSomething) {
 // hyperlink — never both.
 TEST_F(ModusControllerTest,
        ADoubleClickAcknowledgesAnAlarmInsteadOfNavigating) {
+  ON_CALL(controller_env_.session_service_, GetAccessRights())
+      .WillByDefault(
+          Return(scada::AccessRightBit(scada::AccessRight::kControl)));
   std::shared_ptr<MockTimedData> data = BindFormula("TS_Q1");
   ON_CALL(*data, IsAlerting()).WillByDefault(Return(true));
   EXPECT_CALL(*data, Acknowledge());
   EXPECT_CALL(controller_env_.controller_delegate_, OpenView(_)).Times(0);
 
   ModusController controller = MakeController();
+  controller.Init(WindowDefinition{});
+  wrapper_.set_hyperlink("next.sde");
+  controller.SelectDataSource("TS_Q1");
+
+  controller.OnDoubleClick();
+}
+
+// Backlog 1070: an account that may not acknowledge (no Operator role, no
+// Configure right) follows the hyperlink instead of sending an
+// acknowledgement the server refuses.
+TEST_F(ModusControllerTest, ADoubleClickNavigatesWhenTheUserMayNotAcknowledge) {
+  ON_CALL(controller_env_.session_service_, GetAccessRights())
+      .WillByDefault(Return(0));
+  std::shared_ptr<MockTimedData> data = BindFormula("TS_Q1");
+  ON_CALL(*data, IsAlerting()).WillByDefault(Return(true));
+  EXPECT_CALL(*data, Acknowledge()).Times(0);
+  EXPECT_CALL(controller_env_.controller_delegate_, OpenView(_));
+
+  ModusController controller = MakeController();
+  wrapper_.set_path("current.sde");
   controller.Init(WindowDefinition{});
   wrapper_.set_hyperlink("next.sde");
   controller.SelectDataSource("TS_Q1");

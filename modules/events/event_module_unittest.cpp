@@ -4,6 +4,7 @@
 #include "aui/test/app_environment.h"
 #include "base/awaitable.h"
 #include "base/boost_log.h"
+#include "base/check.h"
 #include "base/test/awaitable_test.h"
 #include "controller/command_ui_registry.h"
 #include "controller/selection_model.h"
@@ -11,12 +12,16 @@
 #include "controller/window_info.h"
 #include "core/global_command_context.h"
 #include "core/selection_command_context.h"
+#include "events/acknowledge_permission.h"
 #include "events/event_fetcher.h"
 #include "events/local_events.h"
 #include "main_window/main_window_mock.h"
 #include "main_window/opened_view/opened_view_interface.h"
 #include "resources/common_resources.h"
+#include "scada/access_rights.h"
 #include "test/fake_opened_view.h"
+#include "timed_data/timed_data_mock.h"
+#include "timed_data/timed_data_spec.h"
 
 #include <gmock/gmock.h>
 
@@ -187,6 +192,86 @@ TEST_F(EventModuleAcknowledgeAllTest, NoLeavesEverythingUnacknowledged) {
 
 TEST_F(EventModuleAcknowledgeAllTest, YesAcknowledgesEverything) {
   RunAcknowledgeAll(MessageBoxResult::Yes);
+
+  EXPECT_THAT(event_module_.local_events().events(), IsEmpty());
+}
+
+// Backlog 1070: the server authorizes acknowledgement as a Call, which an
+// account with neither the Operator role nor the Configure right lacks — so
+// the commands must not offer it to such an account.
+class EventModuleAcknowledgePermissionTest : public EventModuleTest {
+ protected:
+  void SetAccessRights(std::uint32_t access_rights) {
+    ON_CALL(controller_env_.session_service_, GetAccessRights())
+        .WillByDefault(Return(access_rights));
+  }
+
+  // Selects an object whose events are waiting to be acknowledged.
+  void SelectAlertingObject() {
+    auto data = std::make_shared<NiceMock<MockTimedData>>();
+    ON_CALL(*data, IsAlerting()).WillByDefault(Return(true));
+    selection_.SelectTimedData(TimedDataSpec{data});
+  }
+
+  SelectionCommandContext selection_context() {
+    return {.selection = selection_,
+            .dialog_service = dialog_service_,
+            .main_window = main_window_,
+            .opened_view = opened_view_};
+  }
+
+  const BasicCommand<SelectionCommandContext>& acknowledge_command() {
+    const auto* command =
+        controller_env_.selection_commands_.FindCommand(ID_ACKNOWLEDGE_CURRENT);
+    scada::base::Check(command != nullptr, "ID_ACKNOWLEDGE_CURRENT is registered");
+    return *command;
+  }
+
+  SelectionModel selection_{{controller_env_.timed_data_service_}};
+  NiceMock<MockDialogService> dialog_service_;
+  NiceMock<MockMainWindow> main_window_;
+  FakeOpenedView opened_view_{WindowDefinition{"EventJournal"},
+                              WindowInfo{.name = "EventJournal"}};
+};
+
+TEST_F(EventModuleAcknowledgePermissionTest,
+       AnOperatorMayAcknowledgeTheSelectedObject) {
+  SetAccessRights(scada::AccessRightBit(scada::AccessRight::kControl));
+  SelectAlertingObject();
+
+  EXPECT_TRUE(acknowledge_command().enabled_handler(selection_context()));
+}
+
+TEST_F(EventModuleAcknowledgePermissionTest,
+       AViewOnlyAccountMayNotAndIsToldWhy) {
+  SetAccessRights(0);
+  SelectAlertingObject();
+
+  EXPECT_FALSE(acknowledge_command().enabled_handler(selection_context()));
+  EXPECT_EQ(acknowledge_command().disabled_reason_handler(selection_context()),
+            AcknowledgeNotPermittedReason());
+}
+
+// Local events are the Client's own, acknowledged without the server, so a
+// view-only account can still clear them with «Квитировать все».
+TEST_F(EventModuleAcknowledgePermissionTest,
+       AViewOnlyAccountStillAcknowledgesLocalEvents) {
+  SetAccessRights(0);
+  event_module_.local_events().ReportEvent(LocalEvents::SEV_ERROR, u"Local");
+  const auto* command =
+      controller_env_.global_commands_.FindCommand(ID_ACKNOWLEDGE_ALL);
+  ASSERT_THAT(command, NotNull());
+  const GlobalCommandContext context{.main_window = main_window_,
+                                     .dialog_service = dialog_service_};
+  EXPECT_CALL(dialog_service_, RunMessageBox(_, _, _))
+      .WillOnce([](auto, auto, auto) -> Awaitable<MessageBoxResult> {
+        co_return MessageBoxResult::Yes;
+      });
+  EXPECT_CALL(controller_env_.method_service_, Call).Times(0);
+
+  ASSERT_TRUE(command->enabled_handler(context));
+  command->execute_handler(context);
+  Drain(controller_env_.executor_);
 
   EXPECT_THAT(event_module_.local_events().events(), IsEmpty());
 }

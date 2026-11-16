@@ -921,6 +921,10 @@ void EventTableModel::AcknowledgeRows(std::span<const int> rows) {
 
   for (int row : rows) {
     const Row& r = rows_[row];
+    // A current event the user may not acknowledge is skipped rather than
+    // sent for the server to refuse (backlog 1070).
+    if (!MayAcknowledge(r.type))
+      continue;
     // Every occurrence the row stands for: a collapsed row hides its repeats,
     // so acknowledging only the one on display would clear what the operator
     // can see and leave the rest of the count behind it.
@@ -944,7 +948,7 @@ void EventTableModel::AcknowledgeShown() {
   };
   std::vector<Target> targets;
   for (const Row& row : rows_) {
-    if (row.type == HISTORICAL_EVENT || row.unacked == 0)
+    if (!MayAcknowledge(row.type) || row.unacked == 0)
       continue;
     if (!row.event->acked)
       targets.push_back({row.type, row.event->event_id});
@@ -959,9 +963,29 @@ void EventTableModel::AcknowledgeShown() {
 }
 
 bool EventTableModel::CanAcknowledgeShown() const {
-  return std::ranges::any_of(rows_, [](const Row& row) {
-    return row.type != HISTORICAL_EVENT && row.unacked != 0;
+  return std::ranges::any_of(rows_, [this](const Row& row) {
+    return MayAcknowledge(row.type) && row.unacked != 0;
   });
+}
+
+bool EventTableModel::IsAcknowledgeShownForbidden() const {
+  return !CanAcknowledgeShown() &&
+         std::ranges::any_of(rows_, [](const Row& row) {
+           return row.type != HISTORICAL_EVENT && row.unacked != 0;
+         });
+}
+
+bool EventTableModel::MayAcknowledge(EventType type) const {
+  switch (type) {
+    case CURRENT_EVENT:
+      return !can_acknowledge_server_events_ ||
+             can_acknowledge_server_events_();
+    case LOCAL_EVENT:
+      return true;
+    case HISTORICAL_EVENT:
+      return false;
+  }
+  return false;
 }
 
 void EventTableModel::AckEvent(EventType type, scada::EventId event_id) {

@@ -6,6 +6,7 @@
 #include "display_view/display_live_data.h"
 #include "display_view/display_runtime.h"
 #include "display_view/qt/display_widget.h"
+#include "events/acknowledge_permission.h"
 #include "filesystem/file_cache.h"
 #include "filesystem/file_util.h"
 #include "modus/modus_component.h"
@@ -142,8 +143,11 @@ void ModusController::AcknowledgeSelection() {
 void ModusController::OnDoubleClick() {
   // 2.5.7's `ModusDocument::OnDocDblClick`: an element whose object has an
   // unacknowledged alarm is acknowledged; otherwise its hyperlink is
-  // followed, so a double-click never both acknowledges and navigates.
-  if (selection_.timed_data().alerting()) {
+  // followed, so a double-click never both acknowledges and navigates. An
+  // account that may not acknowledge follows the hyperlink instead of sending
+  // an acknowledgement the server refuses (backlog 1070).
+  if (selection_.timed_data().alerting() &&
+      CanAcknowledgeEvents(session_service_)) {
     AcknowledgeSelection();
     return;
   }

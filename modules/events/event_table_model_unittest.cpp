@@ -585,12 +585,18 @@ class EventFloodGroupingTest : public Test {
   LocalEvents local_events_;
   LocalEventModel local_event_model_{local_events_};
 
+  // What the journal's CanAcknowledgeEvents() check answers (backlog 1070).
+  bool may_acknowledge_server_events_ = true;
+
   EventTableModel model_{{.executor_ = executor_,
                           .node_service_ = node_service_,
                           .current_event_model_ = current_event_model_,
                           .historical_event_model_ = historical_event_model_,
                           .local_event_model_ = local_event_model_,
-                          .current_events_ = false}};
+                          .current_events_ = false,
+                          .can_acknowledge_server_events_ = [this] {
+                            return may_acknowledge_server_events_;
+                          }}};
 };
 
 // A locale-qualified message (server-side catalog translation, ADR 0005 item
@@ -1139,6 +1145,66 @@ TEST_F(EventAlarmChromeTest, AcknowledgeShownIncludesLocalEvents) {
 
   EXPECT_TRUE(local_events_.events().empty());
   EXPECT_FALSE(model_.CanAcknowledgeShown());
+}
+
+// Backlog 1070: an account that may not acknowledge (no Operator role, no
+// Configure right) is not offered the server's events — sending them would
+// only be refused — and the journal can say that this is why.
+TEST_F(EventAlarmChromeTest, ServerEventsNeedTheRightToAcknowledge) {
+  may_acknowledge_server_events_ = false;
+  node_event_provider_.unacked_events_.try_emplace(
+      1, scada::Event{.event_id = 1,
+                      .severity = scada::kSeverityCritical,
+                      .source_node_id = node_id_,
+                      .message = u"trip"});
+  Rebuild();
+  ASSERT_EQ(model_.GetRowCount(), 1);
+  ASSERT_TRUE(model_.IsRowPending(0));
+
+  EXPECT_FALSE(model_.IsRowAcknowledgeable(0));
+  EXPECT_FALSE(model_.CanAcknowledgeShown());
+  EXPECT_TRUE(model_.IsAcknowledgeShownForbidden());
+
+  EXPECT_CALL(node_event_provider_, AcknowledgeEvent(_)).Times(0);
+  model_.AcknowledgeShown();
+  model_.AcknowledgeRow(0);
+}
+
+TEST_F(EventAlarmChromeTest, ServerEventsAreAcknowledgeableWithTheRight) {
+  node_event_provider_.unacked_events_.try_emplace(
+      1, scada::Event{.event_id = 1,
+                      .severity = scada::kSeverityCritical,
+                      .source_node_id = node_id_,
+                      .message = u"trip"});
+  Rebuild();
+  ASSERT_EQ(model_.GetRowCount(), 1);
+
+  EXPECT_TRUE(model_.IsRowAcknowledgeable(0));
+  EXPECT_TRUE(model_.CanAcknowledgeShown());
+  EXPECT_FALSE(model_.IsAcknowledgeShownForbidden());
+
+  EXPECT_CALL(node_event_provider_, AcknowledgeEvent(1));
+  model_.AcknowledgeRow(0);
+}
+
+// Local events are the Client's own and acknowledged without the server, so
+// they stay acknowledgeable for an account that may not acknowledge.
+TEST_F(EventAlarmChromeTest, LocalEventsNeedNoRightToAcknowledge) {
+  may_acknowledge_server_events_ = false;
+  node_event_provider_.unacked_events_.try_emplace(
+      1, scada::Event{.event_id = 1,
+                      .severity = scada::kSeverityCritical,
+                      .source_node_id = node_id_,
+                      .message = u"trip"});
+  local_events_.ReportEvent(LocalEvents::SEV_ERROR, u"comms lost");
+  Rebuild();
+  ASSERT_TRUE(model_.CanAcknowledgeShown());
+  EXPECT_FALSE(model_.IsAcknowledgeShownForbidden());
+
+  EXPECT_CALL(node_event_provider_, AcknowledgeEvent(_)).Times(0);
+  model_.AcknowledgeShown();
+
+  EXPECT_TRUE(local_events_.events().empty());
 }
 
 // Task 721: the journal's per-arrival and per-paint work must be linear in the

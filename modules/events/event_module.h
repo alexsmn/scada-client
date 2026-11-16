@@ -48,6 +48,10 @@ class EventModule : private EventModuleContext {
                       const WindowInfo& window_info,
                       const std::string_view& mode = {});
 
+  // Whether the server has unacknowledged events and this account may
+  // acknowledge them.
+  bool HasAcknowledgeableServerEvents();
+
   // The global «Квитировать все»: asks the operator, naming how many events
   // it will acknowledge system-wide, and acknowledges them only on Yes.
   Awaitable<void> ConfirmAndAcknowledgeAll(DialogService& dialog_service);

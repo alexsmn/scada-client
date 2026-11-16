@@ -1094,6 +1094,11 @@
         <source>No event shown here is waiting to be acknowledged</source>
         <translation>Среди показанных событий нет неквитированных</translation>
     </message>
+    <!-- modules/events/acknowledge_permission.cpp (every acknowledge command) -->
+    <message>
+        <source>Acknowledging requires the Control or Configure privilege</source>
+        <translation>Для квитирования требуется право «Управление» или «Настройка конфигурации»</translation>
+    </message>
     <!-- modules/display_frame/qt/display_frame.cpp (bay strips) -->
     <message>
         <source>Recent events</source>
