@@ -23,6 +23,19 @@ bool IsSkipped(const BulkCreatePreviewRow& row) {
 
 }  // namespace
 
+std::u16string DefaultBulkCreateSourcePath(BulkCreateSourceProtocol protocol,
+                                           bool discrete) {
+  switch (protocol) {
+    case BulkCreateSourceProtocol::kIec60870:
+      return u"{n}";
+    case BulkCreateSourceProtocol::kModbus:
+      return discrete ? u"DISCINPUT:{n}" : u"HOLDREG:INT16:{n}";
+    case BulkCreateSourceProtocol::kNone:
+      return {};
+  }
+  return {};
+}
+
 std::vector<scada::NodeState> PlanBulkCreate(
     const BulkCreatePlan& plan,
     const std::vector<BulkCreatePreviewRow>& rows) {

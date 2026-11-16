@@ -1837,6 +1837,22 @@
         <translation>Шаблон пути источника</translation>
     </message>
     <message>
+        <source>No device</source>
+        <translation>Без устройства</translation>
+    </message>
+    <message>
+        <source>Empty: the objects are created without a source</source>
+        <translation>Пусто: объекты создаются без источника</translation>
+    </message>
+    <message>
+        <source>Object {n}</source>
+        <translation>Объект {n}</translation>
+    </message>
+    <message>
+        <source>Rule {n}</source>
+        <translation>Правило {n}</translation>
+    </message>
+    <message>
         <source>Pattern</source>
         <translation>Шаблон</translation>
     </message>

@@ -68,7 +68,9 @@ QWidget* BulkCreatePreviewPanel::BuildForm() {
   form->setContentsMargins(0, 0, 0, 0);
   form->setLabelAlignment(Qt::AlignLeft);
 
-  name_template_ = new QLineEdit(QStringLiteral("TS{n} current"));
+  // Translated: the former default, `TS{n} current`, reached a Russian
+  // operator's objects in English (backlog 1076).
+  name_template_ = new QLineEdit(Tr("Object {n}"));
   name_template_->setObjectName(QStringLiteral("nameTemplate"));
   // Empty: the Server then assigns free numeric ids, as for an ordinary
   // create. The former default, `ns=2;s=RTU.TS{n}.I`, was a string identifier,

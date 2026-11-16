@@ -269,4 +269,25 @@ TEST(PlanBulkCreateTest, ADataItemWithNoSourcePathIsCreatedUnbound) {
             nullptr);
 }
 
+// Backlog 1076: the wizard proposed `Signal{n}` for every device, which no
+// protocol accepts. The proposal is now the device's own addressing, and
+// nothing at all without a device.
+TEST(BulkCreatePlanTest, DefaultSourcePathIsTheProtocolsAddress) {
+  EXPECT_EQ(DefaultBulkCreateSourcePath(BulkCreateSourceProtocol::kIec60870,
+                                        /*discrete=*/false),
+            u"{n}");
+  EXPECT_EQ(DefaultBulkCreateSourcePath(BulkCreateSourceProtocol::kIec60870,
+                                        /*discrete=*/true),
+            u"{n}");
+  EXPECT_EQ(DefaultBulkCreateSourcePath(BulkCreateSourceProtocol::kModbus,
+                                        /*discrete=*/false),
+            u"HOLDREG:INT16:{n}");
+  EXPECT_EQ(DefaultBulkCreateSourcePath(BulkCreateSourceProtocol::kModbus,
+                                        /*discrete=*/true),
+            u"DISCINPUT:{n}");
+  EXPECT_TRUE(DefaultBulkCreateSourcePath(BulkCreateSourceProtocol::kNone,
+                                          /*discrete=*/false)
+                  .empty());
+}
+
 }  // namespace

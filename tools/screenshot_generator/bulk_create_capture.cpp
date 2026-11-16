@@ -3,6 +3,7 @@
 #include "screenshot_config.h"
 #include "widget_capture.h"
 
+#include "aui/translation.h"
 #include "bulk_create/bulk_create_pattern.h"
 #include "bulk_create/qt/bulk_create_preview_panel.h"
 
@@ -14,7 +15,9 @@ void SaveBulkCreateScreenshot(const ScreenshotSpec& spec) {
   panel.SetExistingAddresses({4003});
 
   BulkCreateParams params;
-  params.name_template = u"TS{n} current";
+  // The wizard's own default for rules, translated as it ships (backlog
+  // 1076); the former `TS{n} current` reached the manual in English.
+  params.name_template = Translate("Rule {n}");
   // Empty, as the wizard now proposes and the manual recommends: the Server
   // assigns the ids. The former string template is one the Server refuses
   // (backlog 960), so the manual must not show it filled in.

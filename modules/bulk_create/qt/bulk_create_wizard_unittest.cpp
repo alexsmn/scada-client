@@ -1,6 +1,7 @@
 #include "bulk_create/qt/bulk_create_wizard.h"
 
 #include "aui/test/app_environment.h"
+#include "aui/translation.h"
 #include "bulk_create/qt/bulk_create_preview_panel.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
@@ -13,6 +14,8 @@
 
 #include <QComboBox>
 #include <QLabel>
+#include <QLineEdit>
+#include <QStringList>
 #include <QWizard>
 
 #include <memory>
@@ -57,6 +60,43 @@ class BulkCreateWizardTest : public ::testing::Test {
 
   static QComboBox* SubjectCombo(QWizard& wizard) {
     return wizard.findChild<QComboBox*>(QStringLiteral("bulkCreateSubject"));
+  }
+
+  // The device types the list is filtered on, and the Devices folder.
+  void AddDeviceTypes() {
+    node_service_.Add({.node_id = scada::devices::id::DeviceType,
+                       .node_class = scada::NodeClass::ObjectType});
+    for (const scada::NodeId& type : {scada::devices::id::ModbusDeviceType,
+                                      scada::devices::id::Iec60870DeviceType,
+                                      scada::devices::id::Iec61850DeviceType,
+                                      scada::devices::id::Iec60870LinkType}) {
+      node_service_.Add({.node_id = type,
+                         .node_class = scada::NodeClass::ObjectType,
+                         .supertype_id = scada::devices::id::DeviceType});
+    }
+    node_service_.Add({.node_id = scada::devices::id::Devices,
+                       .node_class = scada::NodeClass::Object});
+  }
+
+  void AddDevice(std::string_view id,
+                 const scada::NodeId& type,
+                 std::u16string name,
+                 const scada::NodeId& parent = scada::devices::id::Devices) {
+    node_service_.Add({.node_id = scada::NodeId::FromString(std::string{id}),
+                       .node_class = scada::NodeClass::Object,
+                       .type_definition_id = type,
+                       .parent_id = parent,
+                       .reference_type_id = scada::id::Organizes,
+                       .attributes = {.display_name = std::move(name)}});
+  }
+
+  static QStringList DeviceNames(QWizard& wizard) {
+    auto* device =
+        wizard.findChild<QComboBox*>(QStringLiteral("bulkCreateDevice"));
+    QStringList names;
+    for (int i = 0; device && i < device->count(); ++i)
+      names << device->itemText(i);
+    return names;
   }
 };
 
@@ -217,6 +257,101 @@ TEST_F(BulkCreateWizardTest, ItemsOnAModbusDeviceAreCreatedOneStage) {
                            scada::data_items::id::DataItemType_OutputTwoStaged),
         scada::Variant{false});
   }
+}
+
+// Backlog 1076: the list held every DeviceType -- IEC 61850 devices and links
+// included, which the wizard cannot bind a nested source path to -- and had
+// no way to choose "no source". It now offers «No device» first, then only the
+// IEC 60870-5 and MODBUS devices, including those nested under a link.
+TEST_F(BulkCreateWizardTest, TheDeviceListOffersOnlyAddressableDevices) {
+  AddDeviceTypes();
+  AddDevice("ns=2;s=Link", scada::devices::id::Iec60870LinkType, u"Link");
+  AddDevice("ns=2;s=RTU", scada::devices::id::Iec60870DeviceType, u"RTU",
+            scada::NodeId::FromString("ns=2;s=Link"));
+  AddDevice("ns=2;s=IED", scada::devices::id::Iec61850DeviceType, u"IED");
+  AddDevice("ns=2;s=PLC", scada::devices::id::ModbusDeviceType, u"PLC");
+
+  std::unique_ptr<QWizard> wizard = MakeWizard();
+  const QStringList names = DeviceNames(*wizard);
+  ASSERT_EQ(names.size(), 3);
+  EXPECT_EQ(names[0], QString::fromStdU16String(Translate("No device")));
+  EXPECT_TRUE(names[1].contains(QStringLiteral("RTU")));
+  EXPECT_TRUE(names[2].contains(QStringLiteral("PLC")));
+
+  // The first real device is preselected.
+  auto* device =
+      wizard->findChild<QComboBox*>(QStringLiteral("bulkCreateDevice"));
+  EXPECT_EQ(device->currentIndex(), 1);
+}
+
+// The source path proposed follows the device's protocol and the item type,
+// and is empty for «No device»; a path the operator typed survives a change
+// of device.
+TEST_F(BulkCreateWizardTest, TheSourcePathFollowsTheDeviceUntilEdited) {
+  AddDeviceTypes();
+  AddDevice("ns=2;s=RTU", scada::devices::id::Iec60870DeviceType, u"RTU");
+  AddDevice("ns=2;s=PLC", scada::devices::id::ModbusDeviceType, u"PLC");
+
+  std::unique_ptr<QWizard> wizard = MakeWizard();
+  auto* device =
+      wizard->findChild<QComboBox*>(QStringLiteral("bulkCreateDevice"));
+  auto* item_type =
+      wizard->findChild<QComboBox*>(QStringLiteral("bulkCreateItemType"));
+  auto* path =
+      wizard->findChild<QLineEdit*>(QStringLiteral("bulkCreateSourcePath"));
+  ASSERT_NE(device, nullptr);
+  ASSERT_NE(item_type, nullptr);
+  ASSERT_NE(path, nullptr);
+
+  ASSERT_EQ(device->currentIndex(), 1);  // RTU
+  EXPECT_EQ(path->text(), QStringLiteral("{n}"));
+
+  device->setCurrentIndex(2);  // PLC, analog
+  EXPECT_EQ(path->text(), QStringLiteral("HOLDREG:INT16:{n}"));
+  item_type->setCurrentIndex(1);  // discrete
+  EXPECT_EQ(path->text(), QStringLiteral("DISCINPUT:{n}"));
+
+  device->setCurrentIndex(0);  // No device
+  EXPECT_TRUE(path->text().isEmpty());
+
+  path->setText(QStringLiteral("2{nn}"));
+  device->setCurrentIndex(1);
+  EXPECT_EQ(path->text(), QStringLiteral("2{nn}"));
+}
+
+// «No device» creates the items unbound: no Input1, and no two-stage value
+// derived from a device they are not on.
+TEST_F(BulkCreateWizardTest, NoDeviceCreatesUnboundItems) {
+  AddDeviceTypes();
+  AddDevice("ns=2;s=PLC", scada::devices::id::ModbusDeviceType, u"PLC");
+
+  std::unique_ptr<QWizard> wizard = MakeWizard();
+  wizard->findChild<QComboBox*>(QStringLiteral("bulkCreateDevice"))
+      ->setCurrentIndex(0);
+  auto* preview = wizard->findChild<BulkCreatePreviewPanel*>();
+  ASSERT_NE(preview, nullptr);
+  BulkCreateParams params;
+  params.subject = BulkCreateSubject::kDataItem;
+  params.name_template = u"AI{n}";
+  params.count = 1;
+  preview->SetParams(params);
+
+  std::vector<scada::NodeState> posted;
+  EXPECT_CALL(task_manager_, PostInsertTask(_))
+      .WillOnce([&posted](const scada::NodeState& node) {
+        posted.push_back(node);
+        return AcceptInsert();
+      });
+  wizard->accept();
+
+  ASSERT_EQ(posted.size(), 1u);
+  EXPECT_TRUE(scada::GetProperty(posted[0].properties,
+                                 scada::data_items::id::DataItemType_Input1)
+                  .is_null());
+  EXPECT_TRUE(
+      scada::GetProperty(posted[0].properties,
+                         scada::data_items::id::DataItemType_OutputTwoStaged)
+          .is_null());
 }
 
 // Nothing to create must post nothing rather than an empty run.

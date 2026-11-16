@@ -19,6 +19,7 @@
 #include <QFormLayout>
 #include <QLabel>
 #include <QLineEdit>
+#include <QSignalBlocker>
 #include <QVBoxLayout>
 #include <QWizard>
 #include <QWizardPage>
@@ -34,15 +35,36 @@ QString Tr(std::string_view text) {
   return QString::fromStdU16String(Translate(text));
 }
 
-// Every device under `parent`, depth-first, into `combo` — display name shown,
-// NodeId carried as the item's data. Devices nest (a device may organize
-// further devices), which is why this recurses rather than listing one level.
+// Which addressing `device` takes a source path in; kNone for a device the
+// wizard cannot bind items to (see `BulkCreateSourceProtocol`).
+BulkCreateSourceProtocol SourceProtocolOf(const NodeRef& device) {
+  if (IsInstanceOf(device, scada::devices::id::Iec60870DeviceType))
+    return BulkCreateSourceProtocol::kIec60870;
+  if (IsInstanceOf(device, scada::devices::id::ModbusDeviceType))
+    return BulkCreateSourceProtocol::kModbus;
+  return BulkCreateSourceProtocol::kNone;
+}
+
+// Every device under `parent` the wizard can address, depth-first, into
+// `combo` — display name shown, NodeId carried as the item's data, the
+// protocol as `kProtocolRole`. Devices nest (a link organizes its devices),
+// which is why this recurses through every device rather than listing one
+// level; only IEC 60870-5 and MODBUS devices are offered, since the planner
+// binds a source as a path nested under the device and an IEC 61850 device or
+// a link has no such channel (backlog 1076).
+constexpr int kProtocolRole = Qt::UserRole + 1;
+
 void FillDevices(const NodeRef& parent, QComboBox& combo) {
   for (const NodeRef& node : parent.targets(scada::id::Organizes)) {
     if (!IsInstanceOf(node, scada::devices::id::DeviceType))
       continue;
-    combo.addItem(QString::fromStdU16String(GetFullDisplayName(node)),
-                  QString::fromStdString(node.node_id().ToString()));
+    if (const BulkCreateSourceProtocol protocol = SourceProtocolOf(node);
+        protocol != BulkCreateSourceProtocol::kNone) {
+      combo.addItem(QString::fromStdU16String(GetFullDisplayName(node)),
+                    QString::fromStdString(node.node_id().ToString()));
+      combo.setItemData(combo.count() - 1, static_cast<int>(protocol),
+                        kProtocolRole);
+    }
     FillDevices(node, combo);
   }
 }
@@ -86,6 +108,12 @@ class BulkCreateWizard final : public QWizard {
   // The destination device the rules go to, for the transmission subject;
   // null when there is no destination to choose.
   const BulkCreateDestination* destination() const;
+
+  // Proposes the source path for the chosen device and item type -- unless
+  // the operator has typed their own, which a change of device must not wipe.
+  void ApplyDefaultSourcePath();
+  // The last path this proposed; the field still holding it means untouched.
+  QString proposed_source_path_;
 
   QComboBox* subject_ = nullptr;
   QComboBox* destination_ = nullptr;
@@ -148,8 +176,12 @@ class TargetAndTypePage final : public QWizardPage {
     wizard_.device_ = new QComboBox;
     wizard_.device_->setObjectName(QStringLiteral("bulkCreateDevice"));
 
-    wizard_.source_path_ = new QLineEdit(QStringLiteral("Signal{n}"));
+    // Filled by ApplyDefaultSourcePath once the device list exists. It used
+    // to start as `Signal{n}`, which is no protocol's address (backlog 1076).
+    wizard_.source_path_ = new QLineEdit;
     wizard_.source_path_->setObjectName(QStringLiteral("bulkCreateSourcePath"));
+    wizard_.source_path_->setPlaceholderText(
+        Tr("Empty: the objects are created without a source"));
 
     layout->addRow(Tr("What to create"), wizard_.subject_);
     layout->addRow(Tr("Receiving device"), wizard_.destination_);
@@ -163,6 +195,10 @@ class TargetAndTypePage final : public QWizardPage {
 
     connect(wizard_.subject_, &QComboBox::currentIndexChanged, this,
             [this](int) { ApplySubject(); });
+    connect(wizard_.device_, &QComboBox::currentIndexChanged, this,
+            [this](int) { wizard_.ApplyDefaultSourcePath(); });
+    connect(wizard_.item_type_, &QComboBox::currentIndexChanged, this,
+            [this](int) { wizard_.ApplyDefaultSourcePath(); });
     ApplySubject();
   }
 
@@ -291,8 +327,22 @@ BulkCreateWizard::BulkCreateWizard(BulkCreateWizardContext context,
   // Populate the device list after the pages exist, since the combo is built
   // by the first of them. Same walk as the dialog this replaces: devices nest,
   // so a flat pass over the Devices folder would miss every child device.
-  FillDevices(context_.node_service_.GetNode(scada::devices::id::Devices),
-              *device_);
+  //
+  // «No device» comes first, so creating items without a source is a choice
+  // the list offers rather than something reached by clearing the path. The
+  // first real device is still preselected when there is one: that is the
+  // common case, and its protocol gives the path a valid default.
+  {
+    const QSignalBlocker block{device_};
+    device_->addItem(Tr("No device"), QString{});
+    device_->setItemData(0, static_cast<int>(BulkCreateSourceProtocol::kNone),
+                         kProtocolRole);
+    FillDevices(context_.node_service_.GetNode(scada::devices::id::Devices),
+                *device_);
+    if (device_->count() > 1)
+      device_->setCurrentIndex(1);
+  }
+  ApplyDefaultSourcePath();
 
   // Opened on a selection of sources, the run is rules only: one row per
   // source, and no requested NodeId, so the server allocates each rule's id as
@@ -300,7 +350,7 @@ BulkCreateWizard::BulkCreateWizard(BulkCreateWizardContext context,
   if (context_.parent_id_.is_null() && !context_.source_node_ids_.empty()) {
     preview_->SetParams(BulkCreateParams{
         .subject = BulkCreateSubject::kTransmissionItem,
-        .name_template = u"TS{n}",
+        .name_template = Translate("Rule {n}"),
         .node_id_template = {},
         .start_index = 1,
         .count = static_cast<int>(context_.source_node_ids_.size()),
@@ -317,6 +367,17 @@ const BulkCreateDestination* BulkCreateWizard::destination() const {
   if (index < 0 || index >= static_cast<int>(context_.destinations_.size()))
     return nullptr;
   return &context_.destinations_[index];
+}
+
+void BulkCreateWizard::ApplyDefaultSourcePath() {
+  const auto protocol = static_cast<BulkCreateSourceProtocol>(
+      device_->currentData(kProtocolRole).toInt());
+  const QString proposed =
+      QString::fromStdU16String(DefaultBulkCreateSourcePath(
+          protocol, /*discrete=*/item_type_->currentData().toBool()));
+  if (source_path_->text() == proposed_source_path_)
+    source_path_->setText(proposed);
+  proposed_source_path_ = proposed;
 }
 
 BulkCreateSubject BulkCreateWizard::subject() const {

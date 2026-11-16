@@ -53,6 +53,28 @@ struct BulkCreatePlan {
   std::vector<scada::NodeId> source_node_ids;
 };
 
+// The protocol of a data item's source device, as far as the wizard's
+// "Source path template" is concerned: the two protocols whose channel is a
+// path nested under the device (`MakeNestedNodeId`), which is the only
+// binding the planner builds. An IEC 61850 data object is a node of its own,
+// and a link carries no channels, so neither is a source the wizard can
+// address (backlog 1076).
+enum class BulkCreateSourceProtocol { kNone, kIec60870, kModbus };
+
+// The "Source path template" the wizard proposes for a device of `protocol`,
+// stepping with the row number like the name:
+//
+// - IEC 60870-5: `{n}`, the information object address -- the tier reads a
+//   bare number (`ParseIec60870ChannelParams`).
+// - MODBUS: `HOLDREG:INT16:{n}` for an analog item, `DISCINPUT:{n}` for a
+//   discrete one -- holding register / discrete input number n, in the
+//   polling grammar the tier parses (`ParseChannelParams`).
+// - none: empty, so the items are created without a source.
+//
+// It replaced `Signal{n}`, which no protocol accepts as an address.
+std::u16string DefaultBulkCreateSourcePath(BulkCreateSourceProtocol protocol,
+                                           bool discrete);
+
 // Expands `plan` over `rows` into the nodes to create, in row order.
 //
 // **Rows that must not be created are dropped here**, and this is the only
