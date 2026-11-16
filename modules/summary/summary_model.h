@@ -141,6 +141,18 @@ class SummaryModel : private SummaryModelContext,
   // The aggregates whose 2.6 meaning a 2.5.7 Server lacks.
   static bool RequiresServer26(const scada::NodeId& aggregation_id);
 
+  // The aggregates a Server before 2.6 computes, but not as 2.6 does: it
+  // counts Bad samples into Average, Minimum, Maximum and Count, and seeds
+  // Maximum so that an interval of negative values reads about 0 (fixed in
+  // c89d3208a, `common/common/aggregation.cpp`; backlog 1071). Their cells are
+  // shown
+  // -- most intervals are right -- but the notice says they may be wrong.
+  static bool UnreliableBeforeServer26(const scada::NodeId& aggregation_id);
+
+  // Whether the Server is known to be from before 2.6 and the chosen
+  // aggregate is one it computes unreliably. False until the Server answers.
+  bool IsAggregateUnreliable() const;
+
  private:
   class Column;
   class ColumnModel;
@@ -151,8 +163,8 @@ class SummaryModel : private SummaryModelContext,
   void OnColumnTitleChanged(int column);
 
   // Asks the Server whether it is from before 2.6, when the chosen aggregate
-  // depends on it and no answer is in hand or in flight. See
-  // IsAggregateUnsupported.
+  // depends on it (RequiresServer26 or UnreliableBeforeServer26) and no answer
+  // is in hand or in flight. See IsAggregateUnsupported.
   void ProbeServerVersionIfNeeded();
   // Decides the version from the probe's `status`, or decides nothing and
   // lets the next column change ask again when the failure is not "unknown

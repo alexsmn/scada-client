@@ -2271,6 +2271,15 @@
         <source>The Server does not support this. It requires Server version 2.6 or later.</source>
         <translation>Сервер этого не поддерживает: нужен Сервер версии 2.6 или новее.</translation>
     </message>
+    <!-- modules/summary/summary_model.cpp: a Server before 2.6 computes these aggregates the old way (backlog 1071). -->
+    <message>
+        <source>On a Server before version 2.6 the result may be wrong: a maximum below zero is shown as about 0, and Bad-quality values are counted too.</source>
+        <translation>На Сервере версии ниже 2.6 результат может быть неверным: отрицательный максимум показывается как примерно 0, а недостоверные значения тоже учитываются.</translation>
+    </message>
+    <message>
+        <source>On a Server before version 2.6 the result may be wrong: Bad-quality values are counted too.</source>
+        <translation>На Сервере версии ниже 2.6 результат может быть неверным: недостоверные значения тоже учитываются.</translation>
+    </message>
     <message>
         <source>The user list cannot be read. It requires the Administrator role and a Server of version 2.6 or later.</source>
         <translation>Список пользователей не удаётся прочитать: для этого нужны роль администратора и Сервер версии 2.6 или новее.</translation>

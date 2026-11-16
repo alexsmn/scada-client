@@ -249,8 +249,84 @@ TEST_F(SummaryModelTest, TimeIntegralOnAServerBefore26IsBlankAndExplained) {
 
   // The other methods still work on the same Server.
   summary_model_.SetAggregateType(
-      scada::NodeId{scada::id::AggregateFunction_Maximum});
+      scada::NodeId{scada::id::AggregateFunction_Start});
   EXPECT_FALSE(summary_model_.IsAggregateUnsupported());
+  EXPECT_EQ(summary_model_.GetNotice().find(u"2.6"), std::u16string::npos);
+}
+
+// Backlog 1071: a Server before 2.6 counts Bad samples into Average, Minimum,
+// Maximum and Count, and reads an all-negative Maximum as about 0 (both fixed
+// by c89d3208a). The cells are shown, but the notice says they may be wrong,
+// naming the method -- and only Maximum mentions the negative values.
+TEST_F(SummaryModelTest, MaximumOnAServerBefore26IsShownWithACaveat) {
+  timed_data_service_.AddTimedData("item1");
+  summary_model_.Load(
+      WindowDefinition{kSummaryWindowInfo}.AddItem(MakeItem("item1")));
+  int notices = 0;
+  summary_model_.notice_changed_handler = [&] { ++notices; };
+
+  summary_model_.SetAggregateType(
+      scada::NodeId{scada::id::AggregateFunction_Maximum});
+  EXPECT_FALSE(summary_model_.IsAggregateUnreliable());
+  EXPECT_FALSE(summary_model_.IsAggregateWithheld());
+  EXPECT_EQ(summary_model_.GetNotice().find(u"2.6"), std::u16string::npos);
+  Drain(executor_);
+
+  EXPECT_TRUE(summary_model_.IsAggregateUnreliable());
+  EXPECT_FALSE(summary_model_.IsAggregateUnsupported());
+  EXPECT_FALSE(summary_model_.IsAggregateWithheld());
+  EXPECT_GE(notices, 2);
+  const std::u16string notice = summary_model_.GetNotice();
+  EXPECT_NE(notice.find(u"Maximum: "), std::u16string::npos);
+  EXPECT_NE(notice.find(u"2.6"), std::u16string::npos);
+  EXPECT_NE(notice.find(u"below zero"), std::u16string::npos);
+  EXPECT_NE(notice.find(u"Bad-quality"), std::u16string::npos);
+  // Not the "requires 2.6" sentence: the values are there.
+  EXPECT_EQ(notice.find(u"does not support"), std::u16string::npos);
+}
+
+TEST_F(SummaryModelTest, AverageMinimumCountOnAServerBefore26AreCaveated) {
+  timed_data_service_.AddTimedData("item1");
+  summary_model_.Load(
+      WindowDefinition{kSummaryWindowInfo}.AddItem(MakeItem("item1")));
+  summary_model_.SetAggregateType(
+      scada::NodeId{scada::id::AggregateFunction_Average});
+  Drain(executor_);
+
+  for (auto [id, title] : {
+           std::pair{scada::id::AggregateFunction_Average, u"Average: "},
+           std::pair{scada::id::AggregateFunction_Minimum, u"Minimum: "},
+           std::pair{scada::id::AggregateFunction_Count, u"Count: "},
+       }) {
+    SCOPED_TRACE(testing::Message() << id);
+    summary_model_.SetAggregateType(scada::NodeId{id});
+    EXPECT_TRUE(summary_model_.IsAggregateUnreliable());
+    const std::u16string notice = summary_model_.GetNotice();
+    EXPECT_NE(notice.find(title), std::u16string::npos);
+    EXPECT_NE(notice.find(u"Bad-quality"), std::u16string::npos);
+    EXPECT_EQ(notice.find(u"below zero"), std::u16string::npos);
+  }
+
+  // First and Last were right before 2.6.
+  summary_model_.SetAggregateType(
+      scada::NodeId{scada::id::AggregateFunction_End});
+  EXPECT_FALSE(summary_model_.IsAggregateUnreliable());
+  EXPECT_EQ(summary_model_.GetNotice().find(u"2.6"), std::u16string::npos);
+}
+
+TEST_F(SummaryModelTest, MaximumOnA26ServerHasNoCaveat) {
+  node_service_.Add(
+      scada::NodeState{.node_id = scada::data_items::id::DataItemControlType,
+                       .node_class = scada::NodeClass::ObjectType});
+  timed_data_service_.AddTimedData("item1");
+  summary_model_.Load(
+      WindowDefinition{kSummaryWindowInfo}.AddItem(MakeItem("item1")));
+
+  summary_model_.SetAggregateType(
+      scada::NodeId{scada::id::AggregateFunction_Maximum});
+  Drain(executor_);
+
+  EXPECT_FALSE(summary_model_.IsAggregateUnreliable());
   EXPECT_EQ(summary_model_.GetNotice().find(u"2.6"), std::u16string::npos);
 }
 

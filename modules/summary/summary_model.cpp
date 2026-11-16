@@ -498,6 +498,20 @@ bool SummaryModel::RequiresServer26(const scada::NodeId& aggregation_id) {
          aggregation_id == scada::id::AggregateFunction_Total2;
 }
 
+// static
+bool SummaryModel::UnreliableBeforeServer26(
+    const scada::NodeId& aggregation_id) {
+  return aggregation_id == scada::id::AggregateFunction_Average ||
+         aggregation_id == scada::id::AggregateFunction_Minimum ||
+         aggregation_id == scada::id::AggregateFunction_Maximum ||
+         aggregation_id == scada::id::AggregateFunction_Count;
+}
+
+bool SummaryModel::IsAggregateUnreliable() const {
+  return server_before_2_6_.value_or(false) &&
+         UnreliableBeforeServer26(aggregate_filter_.aggregate_type);
+}
+
 bool SummaryModel::IsAggregateUnsupported() const {
   return server_before_2_6_.value_or(false) &&
          RequiresServer26(aggregate_filter_.aggregate_type);
@@ -510,7 +524,8 @@ bool SummaryModel::IsAggregateWithheld() const {
 
 void SummaryModel::ProbeServerVersionIfNeeded() {
   if (server_probe_started_ || server_before_2_6_.has_value() ||
-      !RequiresServer26(aggregate_filter_.aggregate_type)) {
+      (!RequiresServer26(aggregate_filter_.aggregate_type) &&
+       !UnreliableBeforeServer26(aggregate_filter_.aggregate_type))) {
     return;
   }
   server_probe_started_ = true;
@@ -596,6 +611,34 @@ std::u16string SummaryModel::ColumnLimitNotice(size_t dropped) {
       kMaxColumnCount, dropped);
 }
 
+namespace {
+
+// The method's menu title, for the aggregates UnreliableBeforeServer26 names.
+const char* UnreliableAggregateTitle(const scada::NodeId& aggregation_id) {
+  if (aggregation_id == scada::id::AggregateFunction_Average)
+    return "Average";
+  if (aggregation_id == scada::id::AggregateFunction_Minimum)
+    return "Minimum";
+  if (aggregation_id == scada::id::AggregateFunction_Maximum)
+    return "Maximum";
+  return "Count";
+}
+
+// What a Server before 2.6 gets wrong for `aggregation_id`: only Maximum also
+// misreads an all-negative interval.
+std::u16string UnreliableAggregateNotice(const scada::NodeId& aggregation_id) {
+  return u16format(
+      L"{}: {}", Translate(UnreliableAggregateTitle(aggregation_id)),
+      aggregation_id == scada::id::AggregateFunction_Maximum
+          ? Translate("On a Server before version 2.6 the result may be "
+                      "wrong: a maximum below zero is shown as about 0, and "
+                      "Bad-quality values are counted too.")
+          : Translate("On a Server before version 2.6 the result may be "
+                      "wrong: Bad-quality values are counted too."));
+}
+
+}  // namespace
+
 std::u16string SummaryModel::GetNotice() const {
   std::u16string notice;
   if (auto cut = truncated_at())
@@ -615,6 +658,11 @@ std::u16string SummaryModel::GetNotice() const {
                             ? Translate("Time Average")
                             : Translate("Time Integral"),
                         ServerTooOldText());
+  }
+  if (IsAggregateUnreliable()) {
+    if (!notice.empty())
+      notice += u" ";
+    notice += UnreliableAggregateNotice(aggregate_filter_.aggregate_type);
   }
   return notice;
 }
