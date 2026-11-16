@@ -909,3 +909,141 @@ TEST_F(MainWindowTest, OpenedViewShowsTheWorkingStateTheControllerReports) {
   controller->FinishWorking();
   EXPECT_EQ(view.GetDisplayTitle(), view.GetWindowTitle());
 }
+
+// Backlog 1073: a view holding changes the operator has not written. The test
+// says whether changes are pending and how the controller answers the close
+// question; the answer is computed eagerly and handed back through a coroutine
+// that takes it by value, so the hook may destroy the view (and with it this
+// controller) without a frame reading a dead `this` afterwards.
+class PendingChangesController final : public Controller {
+ public:
+  std::unique_ptr<UiView> Init(const WindowDefinition& definition) override {
+#if defined(UI_QT)
+    return std::make_unique<QWidget>();
+#else
+    return nullptr;
+#endif
+  }
+
+  bool HasPendingChanges() const override { return pending_; }
+
+  Awaitable<bool> ResolvePendingChanges() override {
+    ++*resolve_calls_;
+    // A copy, so a hook that destroys this controller is not destroying the
+    // callable it is running in.
+    std::function<bool()> hook = resolve_hook_;
+    return Answer(hook ? hook() : true);
+  }
+
+  bool pending_ = false;
+  std::function<bool()> resolve_hook_;
+  // Outlives the controller, for the case where the hook destroys it.
+  std::shared_ptr<int> resolve_calls_ = std::make_shared<int>(0);
+
+ private:
+  static Awaitable<bool> Answer(bool may_close) { co_return may_close; }
+};
+
+class OpenedViewRequestCloseTest : public Test {
+ protected:
+  std::unique_ptr<OpenedView> MakeView() {
+    auto view = std::make_unique<OpenedView>(OpenedViewContext{
+        .executor_ = controller_env_.executor_,
+        .window_info_ = ControllerEnvironment::kFakeWindowInfo,
+        .window_def_ = definition_,
+        .dialog_service_ = controller_env_.dialog_service_,
+        .controller_factory_ =
+            [this](unsigned, ControllerDelegate&,
+                   DialogService&) -> std::unique_ptr<Controller> {
+          auto result = std::make_unique<PendingChangesController>();
+          controller_ = result.get();
+          return result;
+        }});
+    view->Init();
+    return view;
+  }
+
+  AppEnvironment app_env_;
+  ControllerEnvironment controller_env_;
+  WindowDefinition definition_{ControllerEnvironment::kFakeWindowInfo};
+  PendingChangesController* controller_ = nullptr;
+  StrictMock<MockFunction<void()>> close_;
+};
+
+// Nothing staged: the close is as immediate as it always was, and the
+// controller is never asked.
+TEST_F(OpenedViewRequestCloseTest, NothingPendingClosesAtOnce) {
+  std::unique_ptr<OpenedView> view = MakeView();
+
+  EXPECT_CALL(close_, Call());
+  view->RequestClose(close_.AsStdFunction());
+
+  EXPECT_EQ(*controller_->resolve_calls_, 0);
+}
+
+// Pending changes: the controller is asked first, and the view closes only
+// once it agrees.
+TEST_F(OpenedViewRequestCloseTest,
+       PendingChangesCloseOnlyAfterTheControllerAgrees) {
+  std::unique_ptr<OpenedView> view = MakeView();
+  controller_->pending_ = true;
+  controller_->resolve_hook_ = [] { return true; };
+
+  view->RequestClose(close_.AsStdFunction());
+  Mock::VerifyAndClearExpectations(&close_);  // not closed synchronously
+
+  EXPECT_CALL(close_, Call());
+  Drain(controller_env_.executor_);
+  EXPECT_EQ(*controller_->resolve_calls_, 1);
+}
+
+// Cancel keeps the view, and the next request asks again rather than being
+// swallowed as "already asking".
+TEST_F(OpenedViewRequestCloseTest,
+       CancelKeepsTheViewAndTheNextRequestAsksAgain) {
+  std::unique_ptr<OpenedView> view = MakeView();
+  controller_->pending_ = true;
+  controller_->resolve_hook_ = [] { return false; };
+
+  view->RequestClose(close_.AsStdFunction());
+  Drain(controller_env_.executor_);
+  view->RequestClose(close_.AsStdFunction());
+  Drain(controller_env_.executor_);
+
+  EXPECT_EQ(*controller_->resolve_calls_, 2);
+}
+
+// A second close click while the question is up must not stack a second one.
+TEST_F(OpenedViewRequestCloseTest, ASecondRequestWhileAskingIsIgnored) {
+  std::unique_ptr<OpenedView> view = MakeView();
+  controller_->pending_ = true;
+  StrictMock<MockFunction<void()>> second_close;
+  controller_->resolve_hook_ = [&] {
+    view->RequestClose(second_close.AsStdFunction());
+    return true;
+  };
+
+  EXPECT_CALL(close_, Call());
+  view->RequestClose(close_.AsStdFunction());
+  Drain(controller_env_.executor_);
+
+  EXPECT_EQ(*controller_->resolve_calls_, 1);
+}
+
+// The view went away while the question was up (the node was deleted, the
+// page closed): the resumed request must not close — or touch — it.
+TEST_F(OpenedViewRequestCloseTest, AViewDestroyedWhileAskingIsNotClosed) {
+  std::unique_ptr<OpenedView> view = MakeView();
+  controller_->pending_ = true;
+  std::shared_ptr<int> resolve_calls = controller_->resolve_calls_;
+  controller_->resolve_hook_ = [&] {
+    view.reset();
+    return true;
+  };
+
+  view->RequestClose(close_.AsStdFunction());
+  Drain(controller_env_.executor_);
+
+  EXPECT_FALSE(view);
+  EXPECT_EQ(*resolve_calls, 1);
+}

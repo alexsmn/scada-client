@@ -1,9 +1,11 @@
 #include "parameter_form/qt/device_parameter_form.h"
 
+#include "aui/dialog_service.h"
 #include "aui/models/property_model.h"
 #include "aui/qt/theme_qt.h"
 #include "aui/severity_colors.h"
 #include "aui/translation.h"
+#include "base/u16format.h"
 
 #include <QAction>
 #include <QApplication>
@@ -493,6 +495,38 @@ void DeviceParameterForm::Revert() {
         field, QString::fromStdU16String(field.group->GetValue(field.index)));
   }
   UpdateDirtyUi();
+}
+
+Awaitable<bool> ResolveStagedEdits(QPointer<DeviceParameterForm> form,
+                                   DialogService& dialog_service) {
+  if (!form || !form->dirty())
+    co_return true;
+
+  const std::u16string message = u16format(
+      Translate("\"{}\" has changes that were not applied. Apply them before "
+                "closing?"),
+      form->title().toStdU16String());
+  const std::u16string title = Translate("Unsaved changes");
+  const MessageBoxResult result = co_await dialog_service.RunMessageBox(
+      message, title, MessageBoxMode::QuestionApplyDiscardCancel);
+
+  // Closed under the open box (the node was deleted, the session ended): its
+  // edits went with it, and there is nothing left to keep open.
+  if (!form)
+    co_return true;
+
+  switch (result) {
+    case MessageBoxResult::Apply:
+      form->Apply();
+      co_return true;
+    case MessageBoxResult::Discard:
+      form->Revert();
+      co_return true;
+    default:
+      // Cancel, Escape, or a box that answered something else: keep the
+      // window and the staged edits.
+      co_return false;
+  }
 }
 
 DeviceParameterForm* MakeDeviceParameterForm(scada::aui::PropertyModel& model,

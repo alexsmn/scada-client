@@ -54,6 +54,7 @@
 
 #include <QAction>
 #include <QApplication>
+#include <QCloseEvent>
 #include <QDockWidget>
 #include <QEvent>
 #include <QGuiApplication>
@@ -933,6 +934,20 @@ void MainWindow::OnShowNewViewMenu(const scada::aui::Point& point) {
 }
 
 void MainWindow::closeEvent(QCloseEvent* event) {
+  // Staged edits (the Properties form's) would be lost with the window, so the
+  // operator decides first. The event is refused now and the window closes
+  // itself again once every view has answered Apply or Discard.
+  if (!GetViewsWithPendingChanges().empty()) {
+    event->ignore();
+    if (!resolving_pending_changes_) {
+      resolving_pending_changes_ = true;
+      CoSpawn(executor_, [self = QPointer<MainWindow>{this}] {
+        return ResolvePendingChangesThenClose(self);
+      });
+    }
+    return;
+  }
+
   MainWindowDef& prefs = GetPrefs();
   prefs.bounds = geometry();
   prefs.state = isMaximized() ? MainWindowDef::State::kMaximized
@@ -945,6 +960,34 @@ void MainWindow::closeEvent(QCloseEvent* event) {
   main_window_manager_.OnMainWindowClosed(window_id_);
 
   QMainWindow::closeEvent(event);
+}
+
+// static
+Awaitable<void> MainWindow::ResolvePendingChangesThenClose(
+    QPointer<MainWindow> self) {
+  // `self` is re-checked after every await: the window can go away while a
+  // prompt is up (sign-out, quit from another window).
+  const std::vector<int> window_ids = self->GetViewsWithPendingChanges();
+  for (int window_id : window_ids) {
+    OpenedView* view = self->FindOpenedView(window_id);
+    if (!view)
+      continue;
+    self->ActivateView(*view);
+    bool may_close = false;
+    try {
+      may_close = co_await view->ResolvePendingChanges();
+    } catch (...) {
+      may_close = false;
+    }
+    if (!self)
+      co_return;
+    if (!may_close) {
+      self->resolving_pending_changes_ = false;
+      co_return;
+    }
+  }
+  self->resolving_pending_changes_ = false;
+  self->close();
 }
 
 void MainWindow::SetPopupMenuInterceptor(PopupMenuInterceptor interceptor) {

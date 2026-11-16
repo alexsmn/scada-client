@@ -10,6 +10,14 @@
 
 class MockController : public Controller {
  public:
+  MockController() {
+    // An Awaitable-returning mock needs a default action (root CLAUDE.md,
+    // "Unit Test Guidance"): unstubbed, nothing is pending, so the view may
+    // close.
+    ON_CALL(*this, ResolvePendingChanges())
+        .WillByDefault([]() -> Awaitable<bool> { co_return true; });
+  }
+
   MOCK_METHOD(SelectionModel*, GetSelectionModel, (), (override));
 
   MOCK_METHOD(std::unique_ptr<UiView>,
@@ -17,7 +25,8 @@ class MockController : public Controller {
               (const WindowDefinition& definition),
               (override));
 
-  MOCK_METHOD(bool, CanClose, (), (const override));
+  MOCK_METHOD(bool, HasPendingChanges, (), (const override));
+  MOCK_METHOD(Awaitable<bool>, ResolvePendingChanges, (), (override));
 
   MOCK_METHOD(void, Save, (WindowDefinition & definition), (override));
   MOCK_METHOD(void, OnViewNodeCreated, (const NodeRef& node), (override));

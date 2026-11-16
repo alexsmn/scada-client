@@ -1,6 +1,7 @@
 #include "aui/qt/dialog_service_impl_qt.h"
 
 #include "aui/qt/dialog_util.h"
+#include "aui/translation.h"
 #include "base/check.h"
 
 #include <QAbstractButton>
@@ -56,6 +57,10 @@ MessageBoxResult MapQtMessageBoxResult(int result) {
       return MessageBoxResult::Ok;
     case QMessageBox::Cancel:
       return MessageBoxResult::Cancel;
+    case QMessageBox::Apply:
+      return MessageBoxResult::Apply;
+    case QMessageBox::Discard:
+      return MessageBoxResult::Discard;
     default:
       return MessageBoxResult::Ok;
   }
@@ -87,6 +92,21 @@ Awaitable<MessageBoxResult> DialogServiceImplQt::RunMessageBox(
       message_box->setStandardButtons(QMessageBox::Yes | QMessageBox::No);
       break;
 
+    case MessageBoxMode::QuestionApplyDiscardCancel:
+      message_box->setIcon(QMessageBox::Warning);
+      message_box->setStandardButtons(
+          QMessageBox::Apply | QMessageBox::Discard | QMessageBox::Cancel);
+      // Named here, not by qtbase: its Russian for Discard is «Отклонить» on
+      // Windows and «Не сохранять» on macOS, and neither says what happens to
+      // the edits. Apply matches the form's own button; Cancel keeps Qt's.
+      message_box->button(QMessageBox::Apply)
+          ->setText(QString::fromStdU16String(Translate("Apply")));
+      message_box->button(QMessageBox::Discard)
+          ->setText(QString::fromStdU16String(Translate("Don't apply")));
+      message_box->setDefaultButton(QMessageBox::Apply);
+      message_box->setEscapeButton(QMessageBox::Cancel);
+      break;
+
     default:
       scada::base::NotReached();
   }
@@ -95,8 +115,13 @@ Awaitable<MessageBoxResult> DialogServiceImplQt::RunMessageBox(
     message_box->setDefaultButton(QMessageBox::No);
 
   return StartFinishedModalDialog(
-      std::move(message_box),
-      [](QMessageBox& /*message_box*/, int result) {
+      std::move(message_box), [](QMessageBox& message_box, int result) {
+        // The clicked button, not `result`: Apply and Discard are not
+        // accept/reject roles, and `finished`'s code is only the standard
+        // button's value for some of them. Escape reports the escape button.
+        if (QAbstractButton* clicked = message_box.clickedButton()) {
+          return MapQtMessageBoxResult(message_box.standardButton(clicked));
+        }
         return MapQtMessageBoxResult(result);
       });
 }

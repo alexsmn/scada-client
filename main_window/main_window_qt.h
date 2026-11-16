@@ -7,6 +7,7 @@
 #include "main_window/pane_modes.h"
 
 #include <QMainWindow>
+#include <QPointer>
 
 #include <boost/signals2/connection.hpp>
 #include <functional>
@@ -121,6 +122,12 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   virtual void closeEvent(QCloseEvent* event) override;
 
  private:
+  // Asks each view holding pending changes (backlog 1073) in turn, fronting
+  // it first; closes the window again only if none of them answered Cancel.
+  // Runs detached from closeEvent, which has already ignored the event.
+  static Awaitable<void> ResolvePendingChangesThenClose(
+      QPointer<MainWindow> self);
+
   // Tabs the specialist panels onto the Inspector dock and fronts the
   // Inspector. Re-applied after every page open, because opening a page
   // restores a persisted QMainWindow dock state that includes these docks and
@@ -248,6 +255,10 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   std::unique_ptr<PaneModeController> pane_modes_;
   // Mirrors the last state asked for through SetWindowFlashing.
   bool window_flashing_ = false;
+
+  // ResolvePendingChangesThenClose is running; a second close request while
+  // its prompt is up must not start another.
+  bool resolving_pending_changes_ = false;
   // How many times the taskbar alert was raised; Qt offers no way to read the
   // alert state back, so this is what a test can observe.
   int window_alert_count_ = 0;

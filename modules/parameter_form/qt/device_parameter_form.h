@@ -4,6 +4,9 @@
 #include "parameter_form/limit_row.h"
 #include "parameter_form/parameter_staging.h"
 
+#include "base/awaitable.h"
+
+#include <QPointer>
 #include <QString>
 #include <QWidget>
 
@@ -13,6 +16,7 @@ namespace scada::aui {
 class PropertyModel;
 class PropertyGroup;
 }  // namespace scada::aui
+class DialogService;
 class QHBoxLayout;
 class QLabel;
 class QPushButton;
@@ -44,6 +48,9 @@ class DeviceParameterForm : public QWidget {
 
   // True while there are staged (unwritten) edits.
   bool dirty() const;
+
+  // The object's name, as shown in the form bar.
+  const QString& title() const { return title_; }
 
   // Writes every staged edit through the model, then clears the buffer.
   void Apply();
@@ -114,6 +121,16 @@ class DeviceParameterForm : public QWidget {
 
   std::vector<Field> fields_;
 };
+
+// Settles `form`'s staged edits before it goes away (backlog 1073): with edits
+// staged, asks the operator to apply them, discard them, or cancel the close.
+// Resolves true when the form may close — nothing was staged, the operator
+// chose Apply (the edits are written) or Discard (they are dropped), or the
+// form was destroyed while the question was up — and false on Cancel, leaving
+// the edits staged. Takes a QPointer because the form can be destroyed while
+// the message box is open; nothing is touched after that.
+Awaitable<bool> ResolveStagedEdits(QPointer<DeviceParameterForm> form,
+                                   DialogService& dialog_service);
 
 // Builds a DeviceParameterForm. Ownership transfers to the caller.
 DeviceParameterForm* MakeDeviceParameterForm(scada::aui::PropertyModel& model,

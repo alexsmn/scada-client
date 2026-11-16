@@ -1170,6 +1170,14 @@
         <translation>Несохранённые изменения</translation>
     </message>
     <message>
+        <source>Don&apos;t apply</source>
+        <translation>Не применять</translation>
+    </message>
+    <message>
+        <source>&quot;{}&quot; has changes that were not applied. Apply them before closing?</source>
+        <translation>Изменения в «{}» не применены. Применить их перед закрытием?</translation>
+    </message>
+    <message>
         <source>Address map</source>
         <translation>Карта адресов</translation>
     </message>

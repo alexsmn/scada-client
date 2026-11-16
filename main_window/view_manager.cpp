@@ -19,8 +19,12 @@ ViewManager::ViewManager(QMainWindow& main_window,
       current_page_{std::make_unique<Page>()},
       component_{main_window} {
   component_.SetCloseViewHandler([this](scada::aui::ViewManagerViewId view_id) {
+    // The tab's close button is the operator's request, so a view with
+    // pending changes is asked first (backlog 1073). The view manager outlives
+    // every view (its destructor checks `views_` is empty), so `this` is
+    // valid whenever the view still is.
     if (auto* view = FindViewByComponentId(view_id))
-      CloseView(*view);
+      view->RequestClose([this, view] { CloseView(*view); });
   });
 
   component_.SetActiveViewChangedHandler(

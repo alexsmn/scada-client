@@ -9,6 +9,7 @@
 #include <boost/signals2/signal.hpp>
 #include <filesystem>
 #include <functional>
+#include <vector>
 
 namespace scada::aui {
 class MenuModel;
@@ -125,6 +126,15 @@ class BaseMainWindow : protected MainWindowContext,
   void AttachViewManager(ViewManager& view_manager);
   void Init(ViewManager& view_manager);
   void BeforeClose();
+
+  // Window ids of the open views holding pending changes
+  // (OpenedView::HasPendingChanges), in the order they were opened. Ids, not
+  // pointers: a caller that awaits between lookups re-finds each view with
+  // FindOpenedView, since any of them may close meanwhile.
+  std::vector<int> GetViewsWithPendingChanges() const;
+
+  // The open view with `window_id`, or null.
+  OpenedView* FindOpenedView(int window_id) const;
 
   virtual void OnSelectionChanged() = 0;
 

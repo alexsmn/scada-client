@@ -22,7 +22,8 @@ class OpenedViewCloseCommand final : public CommandHandler {
 
   virtual void ExecuteCommand(unsigned command_id) override {
     scada::base::Check(command_id == ID_VIEW_CLOSE);
-    opened_view_.Close();
+    // Operator-requested: pending edits get their say first.
+    opened_view_.RequestClose();
   }
 
  private:

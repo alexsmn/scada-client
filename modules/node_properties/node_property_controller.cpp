@@ -62,6 +62,7 @@ std::unique_ptr<UiView> NodePropertyController::Init(
       DeviceParameterForm* form = MakeDeviceParameterForm(
           *property_model_, QString::fromStdU16String(ToString16(
                                 property_model_->node().display_name())));
+      form_ = form;
       // Populate the address-map preview from the device's transmission items,
       // off the construction path. Guarded by a QPointer so a late completion
       // cannot touch a destroyed form.
@@ -148,6 +149,25 @@ std::unique_ptr<UiView> NodePropertyController::Init(
       [this] { controller_delegate_.Close(); });
 
   return std::unique_ptr<UiView>{tree_view_};
+}
+
+bool NodePropertyController::HasPendingChanges() const {
+#if defined(UI_QT)
+  return form_ && form_->dirty();
+#else
+  return false;
+#endif
+}
+
+Awaitable<bool> NodePropertyController::ResolvePendingChanges() {
+#if defined(UI_QT)
+  // Not a coroutine of its own: the controller may be destroyed while the
+  // question is up, and ResolveStagedEdits holds only the form's QPointer and
+  // the application-scoped dialog service.
+  return ResolveStagedEdits(form_, dialog_service_);
+#else
+  return Controller::ResolvePendingChanges();
+#endif
 }
 
 void NodePropertyController::Save(WindowDefinition& definition) {

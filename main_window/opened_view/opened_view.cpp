@@ -2,6 +2,7 @@
 
 #include "aui/translation.h"
 #include "base/any_executor.h"
+#include "base/awaitable.h"
 #include "base/check.h"
 #include "base/relative_time_range.h"
 #include "base/utf_convert.h"
@@ -97,6 +98,50 @@ void OpenedView::UpdateTitle() {
 void OpenedView::Close() {
   scada::base::Check(main_window_);
   main_window_->CloseView(*this);
+}
+
+bool OpenedView::HasPendingChanges() const {
+  return controller_ && controller_->HasPendingChanges();
+}
+
+Awaitable<bool> OpenedView::ResolvePendingChanges() {
+  if (!HasPendingChanges())
+    co_return true;
+  // Nothing of `this` after this await: the view may be gone when it resumes.
+  co_return co_await controller_->ResolvePendingChanges();
+}
+
+void OpenedView::RequestClose(std::function<void()> close) {
+  if (!close)
+    close = [this] { Close(); };
+
+  if (!HasPendingChanges()) {
+    close();
+    return;
+  }
+
+  // The prompt is already up; a second click must not stack a second one.
+  if (resolving_close_)
+    return;
+  resolving_close_ = true;
+
+  CoSpawn(executor_,
+          [this, alive = std::weak_ptr<bool>{lifetime_},
+           close = std::move(close)]() -> Awaitable<void> {
+            bool may_close = false;
+            try {
+              may_close = co_await ResolvePendingChanges();
+            } catch (...) {
+              // A prompt that fails to run keeps the view and its edits: losing
+              // them silently is the defect this guards against.
+              may_close = false;
+            }
+            if (alive.expired())
+              co_return;
+            resolving_close_ = false;
+            if (may_close)
+              close();
+          });
 }
 
 void OpenedView::SetModified(bool modified) {

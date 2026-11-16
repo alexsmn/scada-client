@@ -1,8 +1,12 @@
 #include "parameter_form/qt/device_parameter_form.h"
 
+#include "aui/dialog_service_mock.h"
 #include "aui/models/property_model.h"
 #include "aui/test/app_environment.h"
+#include "base/test/awaitable_test.h"
+#include "base/test/test_executor.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <QComboBox>
@@ -124,6 +128,18 @@ QLineEdit* FindEditorWithText(const DeviceParameterForm& form,
       return editor;
   }
   return nullptr;
+}
+
+using ::testing::_;
+
+// A coroutine helper for a gmock action that must do its work eagerly (see
+// the root CLAUDE.md on capturing lambda coroutines as actions).
+Awaitable<MessageBoxResult> Answer(MessageBoxResult result) {
+  co_return result;
+}
+
+Awaitable<MessageBoxResult> AnswerApply() {
+  return Answer(MessageBoxResult::Apply);
 }
 
 class DeviceParameterFormTest : public ::testing::Test {
@@ -313,6 +329,122 @@ TEST_F(DeviceParameterFormTest, SetLimitsAddsAReadOnlyGridTab) {
   EXPECT_EQ(table->item(0, 1)->text(), QStringLiteral("113"));  // LoLo
   EXPECT_EQ(table->item(0, 4)->text(), QStringLiteral("138"));  // HiHi
   EXPECT_EQ(table->item(1, 1)->text(), QString{});  // unset LoLo
+}
+
+// Backlog 1073: the close question. Each case stages a Host edit, answers the
+// message box, and checks what became of the edit.
+class ResolveStagedEditsTest : public DeviceParameterFormTest {
+ protected:
+  // The Connection section, whose SetValue records writes.
+  FakeGroup& connection() {
+    return static_cast<FakeGroup&>(*model_->root().GetSubgroup(1));
+  }
+
+  void StageHostEdit(DeviceParameterForm& form) {
+    QLineEdit* host = FindEditorWithText(form, QStringLiteral("10.20.14.2"));
+    ASSERT_NE(host, nullptr);
+    host->setText(QStringLiteral("10.20.14.9"));
+    ASSERT_TRUE(form.dirty());
+  }
+
+  void AnswerWith(MessageBoxResult result) {
+    EXPECT_CALL(dialog_service_,
+                RunMessageBox(_, _, MessageBoxMode::QuestionApplyDiscardCancel))
+        .WillOnce([result](std::u16string_view, std::u16string_view,
+                           MessageBoxMode) { return Answer(result); });
+  }
+
+  bool Resolve(DeviceParameterForm* form) {
+    return WaitAwaitable(executor_,
+                         ResolveStagedEdits(QPointer<DeviceParameterForm>{form},
+                                            dialog_service_));
+  }
+
+  TestExecutor executor_;
+  testing::StrictMock<MockDialogService> dialog_service_;
+  std::unique_ptr<FakeModel> model_ = MakeDeviceModel();
+};
+
+// Nothing staged: no question at all (the strict mock fails on one).
+TEST_F(ResolveStagedEditsTest, NothingStagedClosesWithoutAsking) {
+  DeviceParameterForm form{*model_, QStringLiteral("RTU-02")};
+
+  EXPECT_TRUE(Resolve(&form));
+}
+
+TEST_F(ResolveStagedEditsTest, ApplyWritesTheEditsAndCloses) {
+  DeviceParameterForm form{*model_, QStringLiteral("RTU-02")};
+  StageHostEdit(form);
+  AnswerWith(MessageBoxResult::Apply);
+
+  EXPECT_TRUE(Resolve(&form));
+
+  EXPECT_FALSE(form.dirty());
+  ASSERT_EQ(connection().writes.size(), 1u);
+  EXPECT_EQ(connection().writes[0].second, u"10.20.14.9");
+}
+
+TEST_F(ResolveStagedEditsTest, DiscardDropsTheEditsAndCloses) {
+  DeviceParameterForm form{*model_, QStringLiteral("RTU-02")};
+  StageHostEdit(form);
+  AnswerWith(MessageBoxResult::Discard);
+
+  EXPECT_TRUE(Resolve(&form));
+
+  EXPECT_FALSE(form.dirty());
+  EXPECT_TRUE(connection().writes.empty());
+  EXPECT_NE(FindEditorWithText(form, QStringLiteral("10.20.14.2")), nullptr);
+}
+
+// The defect's own scenario: the operator changed something and asked to
+// close; Cancel must keep both the window and the edit.
+TEST_F(ResolveStagedEditsTest, CancelKeepsTheWindowAndTheEdits) {
+  DeviceParameterForm form{*model_, QStringLiteral("RTU-02")};
+  StageHostEdit(form);
+  AnswerWith(MessageBoxResult::Cancel);
+
+  EXPECT_FALSE(Resolve(&form));
+
+  EXPECT_TRUE(form.dirty());
+  EXPECT_TRUE(connection().writes.empty());
+  EXPECT_NE(FindEditorWithText(form, QStringLiteral("10.20.14.9")), nullptr);
+}
+
+// The question names the object, so with several Properties tabs open the
+// operator knows which one is asking.
+TEST_F(ResolveStagedEditsTest, TheQuestionNamesTheObject) {
+  DeviceParameterForm form{*model_, QStringLiteral("RTU-02")};
+  StageHostEdit(form);
+  std::u16string asked;
+  EXPECT_CALL(dialog_service_,
+              RunMessageBox(_, _, MessageBoxMode::QuestionApplyDiscardCancel))
+      .WillOnce([&asked](std::u16string_view message, std::u16string_view,
+                         MessageBoxMode) {
+        asked = message;
+        return Answer(MessageBoxResult::Cancel);
+      });
+
+  EXPECT_FALSE(Resolve(&form));
+
+  EXPECT_NE(asked.find(u"RTU-02"), std::u16string::npos);
+}
+
+// The form was destroyed while the box was up (the node was deleted): there
+// is nothing left to keep open or write, and nothing of it is touched.
+TEST_F(ResolveStagedEditsTest, AFormDestroyedWhileAskingMayClose) {
+  auto form =
+      std::make_unique<DeviceParameterForm>(*model_, QStringLiteral("RTU-02"));
+  StageHostEdit(*form);
+  EXPECT_CALL(dialog_service_, RunMessageBox(_, _, _))
+      .WillOnce(
+          [&form](std::u16string_view, std::u16string_view, MessageBoxMode) {
+            form.reset();
+            return AnswerApply();
+          });
+
+  EXPECT_TRUE(Resolve(form.get()));
+
+  EXPECT_TRUE(connection().writes.empty());
 }
 
 }  // namespace

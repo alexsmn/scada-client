@@ -16,10 +16,13 @@ enum class MessageBoxMode {
   Error,
   QuestionYesNo,
   QuestionYesNoDefaultNo,
+  // Pending changes are about to be lost: Apply (the default), Discard, or
+  // Cancel. Answers `Apply`, `Discard` or `Cancel`; Escape is `Cancel`.
+  QuestionApplyDiscardCancel,
   Count
 };
 
-enum class MessageBoxResult { Ok, Cancel, Yes, No };
+enum class MessageBoxResult { Ok, Cancel, Yes, No, Apply, Discard };
 
 class DialogService {
  public:

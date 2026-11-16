@@ -11,6 +11,7 @@
 #include "main_window/opened_view/opened_view_interface.h"
 #include "profile/window_definition.h"
 
+#include <functional>
 #include <memory>
 #include <string>
 
@@ -81,6 +82,23 @@ class OpenedView final : private OpenedViewContext,
   std::u16string GetDisplayTitle() const;
   virtual void Close() override;
 
+  // True while the controller holds changes the operator has not written
+  // (Controller::HasPendingChanges).
+  bool HasPendingChanges() const;
+
+  // Lets the controller settle its pending changes (usually by asking the
+  // operator); resolves true when the view may close. The view may be
+  // destroyed while this is suspended, so it touches nothing after the await.
+  Awaitable<bool> ResolvePendingChanges();
+
+  // An operator-requested close (the tab's close button, «Закрыть»). With
+  // nothing pending, runs `close` now; otherwise asks the controller first
+  // and runs `close` only if it agrees and the view still exists. A second
+  // request while the first is asking is ignored. `close` defaults to
+  // Close(). Programmatic closes (the node was deleted, the page is closing)
+  // keep calling Close() directly.
+  void RequestClose(std::function<void()> close = {});
+
   // ControllerDelegate
   // TODO: Move to private.
   virtual void SetModified(bool modified) override;
@@ -124,4 +142,11 @@ class OpenedView final : private OpenedViewContext,
   std::u16string user_title_;
   // Window is locked for adding of new items.
   bool locked_ = false;
+
+  // RequestClose is waiting on ResolvePendingChanges.
+  bool resolving_close_ = false;
+
+  // Expires with the view, so a RequestClose resumed after the view was
+  // destroyed does nothing.
+  const std::shared_ptr<bool> lifetime_ = std::make_shared<bool>(true);
 };

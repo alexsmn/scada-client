@@ -116,6 +116,23 @@ void BaseMainWindow::BeforeClose() {
   view_manager_->ClosePage();
 }
 
+std::vector<int> BaseMainWindow::GetViewsWithPendingChanges() const {
+  std::vector<int> window_ids;
+  for (OpenedView* view : view_manager_->views()) {
+    if (view->HasPendingChanges())
+      window_ids.push_back(view->window_id());
+  }
+  return window_ids;
+}
+
+OpenedView* BaseMainWindow::FindOpenedView(int window_id) const {
+  for (OpenedView* view : view_manager_->views()) {
+    if (view->window_id() == window_id)
+      return view;
+  }
+  return nullptr;
+}
+
 MainWindowDef& BaseMainWindow::GetPrefs() const {
   scada::base::Check(window_id_ != 0);
   return profile_.GetMainWindow(window_id_);
