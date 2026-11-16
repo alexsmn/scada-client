@@ -2,6 +2,7 @@
 
 #include "aui/color.h"
 #include "aui/test/app_environment.h"
+#include "aui/translation.h"
 #include "base/utf_convert.h"
 #include "controller/selection_model.h"
 #include "model/data_items_node_ids.h"
@@ -313,6 +314,35 @@ TEST_F(InspectorPanelTest, DisabledControlHidesItsHint) {
   auto* hint = panel.findChild<QLabel*>(QStringLiteral("inspectorControlHint"));
   ASSERT_NE(hint, nullptr);
   EXPECT_TRUE(hint->isHidden());
+}
+
+// The hint says what «Control…» leads to for this object, as the host worked
+// it out. It used to promise a two-stage confirmation for every object, false
+// for one-stage objects and with confirmation off (backlog 1074).
+TEST_F(InspectorPanelTest, EnabledControlShowsTheObjectsHint) {
+  InspectorPanel panel{InspectorPanelContext{}};
+  panel.ShowElement(InspectorElementView{
+      .title = QStringLiteral("Ua"),
+      .controllable = true,
+      .control_hint = QStringLiteral("sent in one stage")});
+
+  auto* hint = panel.findChild<QLabel*>(QStringLiteral("inspectorControlHint"));
+  ASSERT_NE(hint, nullptr);
+  EXPECT_FALSE(hint->isHidden());
+  EXPECT_EQ(hint->text(), QStringLiteral("sent in one stage"));
+}
+
+// Without the host's answer the hint claims nothing about stages or
+// confirmation: only what is true of every object.
+TEST_F(InspectorPanelTest, UnknownControlFlowHintClaimsNoStages) {
+  InspectorPanel panel{InspectorPanelContext{}};
+  panel.ShowElement(InspectorElementView{.title = QStringLiteral("Ua"),
+                                         .controllable = true});
+
+  auto* hint = panel.findChild<QLabel*>(QStringLiteral("inspectorControlHint"));
+  ASSERT_NE(hint, nullptr);
+  EXPECT_EQ(hint->text(),
+            QString::fromStdU16String(Translate("Opens the Control dialog.")));
 }
 
 // An available control needs no explanation.

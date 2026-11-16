@@ -1352,8 +1352,24 @@
         <translation>Синхронизаций часов</translation>
     </message>
     <message>
-        <source>Opens the two-stage command confirm. Actions are logged.</source>
-        <translation>Открывает двухэтапное подтверждение команды. Действия журналируются.</translation>
+        <source>Opens the Control dialog.</source>
+        <translation>Открывает окно управления.</translation>
+    </message>
+    <message>
+        <source>Opens the Control dialog. The command is sent in two stages, select then execute, and you confirm it before it is executed.</source>
+        <translation>Открывает окно управления. Команда отправляется в два этапа — выбор и исполнение; перед исполнением запрашивается подтверждение.</translation>
+    </message>
+    <message>
+        <source>Opens the Control dialog. The command is sent in two stages, select then execute, without confirmation.</source>
+        <translation>Открывает окно управления. Команда отправляется в два этапа — выбор и исполнение — без подтверждения.</translation>
+    </message>
+    <message>
+        <source>Opens the Control dialog. You confirm the command before it is sent.</source>
+        <translation>Открывает окно управления. Перед отправкой команды запрашивается подтверждение.</translation>
+    </message>
+    <message>
+        <source>Opens the Control dialog. The command is sent without confirmation.</source>
+        <translation>Открывает окно управления. Команда отправляется без подтверждения.</translation>
     </message>
     <message>
         <source>Create</source>

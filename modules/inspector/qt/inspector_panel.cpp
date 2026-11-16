@@ -278,8 +278,7 @@ QWidget* InspectorPanel::BuildElementView() {
       context_.on_control();
   });
   layout->addWidget(control_);
-  control_hint_ = new QLabel{
-      Tr("Opens the two-stage command confirm. Actions are logged.")};
+  control_hint_ = new QLabel;
   control_hint_->setObjectName(QStringLiteral("inspectorControlHint"));
   control_hint_->setWordWrap(true);
   control_hint_->setStyleSheet(
@@ -582,6 +581,8 @@ void InspectorPanel::RefreshValue() {
   // and the session, which the panel cannot see.
   if (!element.controllable && context_.control_reason)
     element.control_reason = context_.control_reason();
+  if (element.controllable && spec_ && context_.control_hint)
+    element.control_hint = context_.control_hint(spec_->node());
 
   ShowElement(element);
 }
@@ -763,6 +764,12 @@ void InspectorPanel::ShowElement(const InspectorElementView& element) {
   ShowOpenActions(element.open_actions);
 
   control_->setEnabled(element.controllable);
+  // Whether the command goes in one stage or two, and whether it is
+  // confirmed, depends on the object and the profile; a hint that always said
+  // "two-stage confirm" was false for most of them (backlog 1074).
+  control_hint_->setText(element.control_hint.isEmpty()
+                             ? Tr("Opens the Control dialog.")
+                             : element.control_hint);
   control_hint_->setVisible(element.controllable);
   control_reason_->setText(element.control_reason);
   control_reason_->setVisible(!element.controllable &&

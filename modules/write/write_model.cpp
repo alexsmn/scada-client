@@ -11,6 +11,7 @@
 #include "model/data_items_node_ids.h"
 #include "model/nested_node_ids.h"
 #include "model/node_id_util.h"
+#include "modules/write/write_availability.h"
 #include "net/net_executor_adapter.h"
 #include "node_service/node_service.h"
 #include "profile/profile.h"
@@ -41,13 +42,8 @@ WriteModel::WriteModel(WriteContext&& context)
   const auto& node = spec_.node();
   locked_ =
       node[scada::data_items::id::DataItemType_Locked].value().get_or(false);
-  // The property defaults to Yes when absent, which is right for our data
-  // items and wrong for every Variable of a foreign server: it has no Control
-  // object to select, and the Select would fail before the write was tried.
-  two_staged_ =
-      scada_server_ &&
-      node[scada::data_items::id::DataItemType_OutputTwoStaged].value().get_or(
-          true);
+  // Shared with the Inspector's hint (backlog 1074).
+  two_staged_ = IsTwoStagedControl(node, scada_server_);
 
   if (!manual_) {
     auto condition = node[scada::data_items::id::DataItemType_OutputCondition]

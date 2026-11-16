@@ -28,7 +28,8 @@ class WriteAvailabilityTest : public testing::Test {
   NodeRef CreateNode(unsigned id,
                      scada::NodeClass node_class,
                      const scada::NodeId& type_definition_id,
-                     std::optional<std::u16string> output = std::nullopt) {
+                     std::optional<std::u16string> output = std::nullopt,
+                     std::optional<bool> two_staged = std::nullopt) {
     GenericNodeFactory node_factory{address_space_};
     scada::NodeState state{scada::NodeId{id, scada::NamespaceIndexes::SCADA},
                            node_class,
@@ -39,6 +40,10 @@ class WriteAvailabilityTest : public testing::Test {
     if (output) {
       state.properties.emplace_back(scada::data_items::id::DataItemType_Output,
                                     *output);
+    }
+    if (two_staged) {
+      state.properties.emplace_back(
+          scada::data_items::id::DataItemType_OutputTwoStaged, *two_staged);
     }
     const auto [status, node] = node_factory.CreateNode(state);
     scada::base::Check(status);
@@ -96,6 +101,54 @@ TEST_F(WriteAvailabilityTest, EveryBlockingReasonHasText) {
   EXPECT_FALSE(WriteBlockText(WriteBlock::kNotCommandable).empty());
   EXPECT_FALSE(WriteBlockText(WriteBlock::kNoOutputChannel).empty());
   EXPECT_TRUE(WriteBlockText(WriteBlock::kNone).empty());
+}
+
+// The Inspector's hint and the Control dialog read one rule (backlog 1074): a
+// data item's "Two-stage control" decides, absent meaning the nodeset's Yes.
+TEST_F(WriteAvailabilityTest, TwoStagedControlFollowsTheProperty) {
+  const NodeRef one_stage =
+      CreateNode(5, scada::NodeClass::Variable,
+                 scada::data_items::id::AnalogItemType, u"TC.1", false);
+  const NodeRef two_stage =
+      CreateNode(6, scada::NodeClass::Variable,
+                 scada::data_items::id::DiscreteItemType, u"TC.2", true);
+  const NodeRef by_default =
+      CreateNode(7, scada::NodeClass::Variable,
+                 scada::data_items::id::DiscreteItemType, u"TC.3");
+
+  EXPECT_FALSE(IsTwoStagedControl(one_stage, /*scada_server=*/true));
+  EXPECT_TRUE(IsTwoStagedControl(two_stage, /*scada_server=*/true));
+  EXPECT_TRUE(IsTwoStagedControl(by_default, /*scada_server=*/true));
+}
+
+// A foreign OPC UA server has no Control object to select, so even a Yes is
+// written in one stage there.
+TEST_F(WriteAvailabilityTest, ForeignServerControlIsOneStage) {
+  const NodeRef two_stage =
+      CreateNode(8, scada::NodeClass::Variable,
+                 scada::data_items::id::DiscreteItemType, u"TC.2", true);
+  EXPECT_FALSE(IsTwoStagedControl(two_stage, /*scada_server=*/false));
+}
+
+// Each of the four flows reads differently, and only the two-stage ones
+// mention stages; only the confirmed ones promise a confirmation.
+TEST_F(WriteAvailabilityTest, ControlFlowTextNamesStagesAndConfirmation) {
+  const std::string_view two_confirmed = ControlFlowText(true, true);
+  const std::string_view two_unconfirmed = ControlFlowText(true, false);
+  const std::string_view one_confirmed = ControlFlowText(false, true);
+  const std::string_view one_unconfirmed = ControlFlowText(false, false);
+
+  EXPECT_NE(two_confirmed.find("two stages"), std::string_view::npos);
+  EXPECT_NE(two_unconfirmed.find("two stages"), std::string_view::npos);
+  EXPECT_EQ(one_confirmed.find("two stages"), std::string_view::npos);
+  EXPECT_EQ(one_unconfirmed.find("two stages"), std::string_view::npos);
+
+  EXPECT_NE(two_confirmed.find("you confirm"), std::string_view::npos);
+  EXPECT_NE(one_confirmed.find("You confirm"), std::string_view::npos);
+  EXPECT_NE(two_unconfirmed.find("without confirmation"),
+            std::string_view::npos);
+  EXPECT_NE(one_unconfirmed.find("without confirmation"),
+            std::string_view::npos);
 }
 
 }  // namespace

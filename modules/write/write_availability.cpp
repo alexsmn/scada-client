@@ -19,6 +19,31 @@ WriteBlock GetWriteBlock(const NodeRef& node) {
   return WriteBlock::kNone;
 }
 
+bool IsTwoStagedControl(const NodeRef& node, bool scada_server) {
+  // The property defaults to Yes when absent, which is right for our data
+  // items and wrong for every Variable of a foreign server: it has no Control
+  // object to select, and the Select would fail before the write was tried.
+  return scada_server &&
+         node[scada::data_items::id::DataItemType_OutputTwoStaged]
+             .value()
+             .get_or(true);
+}
+
+std::string_view ControlFlowText(bool two_staged, bool confirmation) {
+  // One literal per return, unsplit: tools/check_ui_translations.py reads the
+  // strings a function returns into Translate(), and a concatenation is not
+  // one it can match against client_ru.ts.
+  // clang-format off
+  if (two_staged && confirmation)
+    return "Opens the Control dialog. The command is sent in two stages, select then execute, and you confirm it before it is executed.";
+  if (two_staged)
+    return "Opens the Control dialog. The command is sent in two stages, select then execute, without confirmation.";
+  if (confirmation)
+    return "Opens the Control dialog. You confirm the command before it is sent.";
+  return "Opens the Control dialog. The command is sent without confirmation.";
+  // clang-format on
+}
+
 std::string_view WriteBlockText(WriteBlock block) {
   switch (block) {
     case WriteBlock::kNotCommandable:

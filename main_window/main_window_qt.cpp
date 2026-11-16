@@ -653,6 +653,14 @@ void MainWindow::CreateInspectorPanel() {
             return handler && handler->IsCommandEnabled(ID_WRITE);
           },
       .control_reason = [this] { return ControlUnavailableReason(); },
+      .control_hint =
+          [this](const NodeRef& node) {
+            const bool scada_server =
+                !session_service_ || session_service_->IsScada();
+            return QString::fromStdU16String(Translate(
+                ControlFlowText(IsTwoStagedControl(node, scada_server),
+                                profile_.control_confirmation)));
+          },
       .on_acknowledge =
           [resolve_acknowledge] {
             CommandHandler* handler = resolve_acknowledge();

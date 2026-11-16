@@ -115,6 +115,10 @@ struct InspectorElementView {
   // Why control is unavailable, shown under the disabled Control button.
   // Empty when control is available, or when the reason is not known.
   QString control_reason;
+  // What «Control…» leads to for this object -- two stages or one, with or
+  // without confirmation -- shown under the enabled button. Empty falls back
+  // to a sentence true of every object (backlog 1074).
+  QString control_hint;
 };
 
 // The plotted-series section's contents, for a selection made in a chart view.
@@ -134,8 +138,8 @@ struct InspectorSeriesView {
 
 // Action wiring for the Inspector panel.
 struct InspectorPanelContext {
-  // Triggers the selection-scoped control/write command — the existing
-  // two-stage confirm flow. Wired by the host to ExecuteCommand(ID_WRITE).
+  // Triggers the selection-scoped control/write command, which opens the
+  // Control dialog. Wired by the host to ExecuteCommand(ID_WRITE).
   std::function<void()> on_control;
   // Whether the control command is currently enabled for the active selection.
   std::function<bool()> is_control_enabled;
@@ -143,6 +147,12 @@ struct InspectorPanelContext {
   // because it owns the command resolution and the session; the panel just
   // renders the sentence.
   std::function<QString()> control_reason;
+  // What «Control…» leads to for `node`, asked only while control is
+  // available. The host answers because the session (a foreign server writes
+  // in one stage) and the profile's confirmation setting are its own; it
+  // reads the rule the Control dialog applies (`IsTwoStagedControl`).
+  // Unwired, the hint says only what is true of every object.
+  std::function<QString(const NodeRef& node)> control_hint;
   // Acknowledges the selected journal event — the journal's own command
   // (the host wires ExecuteCommand(ID_ACKNOWLEDGE_CURRENT) through the
   // shell's command resolution).
