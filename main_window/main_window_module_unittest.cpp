@@ -9,6 +9,7 @@
 #include "core/default_node_command_registry.h"
 #include "core/progress_host_impl.h"
 #include "events/event_module.h"
+#include "events/local_events.h"
 #include "favorites/favorites_module.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
@@ -73,6 +74,7 @@ class MainWindowModuleTest : public Test {
       OpenedView>(MainWindow& main_window, WindowDefinition& window_def)>>
       opened_view_factory_;
 
+  LocalEvents local_events_;
   EventModule event_module_{
       {.executor_ = controller_env_.executor_,
        .logger_ = std::make_shared<BoostLogger>(LOG_NAME("Test")),
@@ -81,7 +83,8 @@ class MainWindowModuleTest : public Test {
        .controller_registry_ = controller_env_.controller_registry_,
        .global_commands_ = controller_env_.global_commands_,
        .selection_commands_ = controller_env_.selection_commands_,
-       .ui_command_registry_ = ui_command_registry_}};
+       .ui_command_registry_ = ui_command_registry_,
+       .local_events_ = local_events_}};
 
   PortfolioModule portfolio_module_{
       {.node_service_ = controller_env_.node_service_,

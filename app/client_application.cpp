@@ -194,7 +194,7 @@ Favourites& ClientApplication::favourites() {
 }
 
 LocalEvents& ClientApplication::local_events() {
-  return event_module_->local_events();
+  return local_events_;
 }
 
 bool ClientApplication::HasSelectionCommandForTesting(
@@ -490,12 +490,10 @@ Awaitable<void> ClientApplication::SaveProfileToServerOnQuitAsync() {
     break;
   }
 
-  if (event_module_) {
-    event_module_->local_events().ReportEvent(
-        LocalEvents::SEV_ERROR,
-        Translate("Failed to save the profile to the server; it is kept on "
-                  "this computer only"));
-  }
+  local_events_.ReportEvent(
+      LocalEvents::SEV_ERROR,
+      Translate("Failed to save the profile to the server; it is kept on "
+                "this computer only"));
   co_return;
 }
 
@@ -662,7 +660,8 @@ void ClientApplication::CreateEventAndDataServices(
       .controller_registry_ = *controller_registry_,
       .global_commands_ = core_module_->global_commands(),
       .selection_commands_ = core_module_->selection_commands(),
-      .ui_command_registry_ = *ui_command_registry_});
+      .ui_command_registry_ = *ui_command_registry_,
+      .local_events_ = local_events_});
 
   if (timed_data_service_override_) {
     timed_data_service_ = std::move(timed_data_service_override_);
@@ -684,7 +683,7 @@ void ClientApplication::CreateUserServices(const PostLoginContext& ctx) {
       .attribute_service_ = *ctx.audited_scada_services.attribute_service,
       .node_management_service_ =
           *ctx.audited_scada_services.node_management_service,
-      .local_events_ = event_module_->local_events(),
+      .local_events_ = local_events_,
       .profile_ = *profile_,
       .progress_host_ = core_module_->progress_host()});
   shutdown_stack_.Push([this] { task_manager_.reset(); });
@@ -699,7 +698,7 @@ void ClientApplication::CreateUserServices(const PostLoginContext& ctx) {
       std::make_unique<ConnectionStateReporter>(ConnectionStateReporterContext{
           .executor_ = executor_,
           .session_service_ = *ctx.audited_scada_services.session_service,
-          .local_events_ = event_module_->local_events()});
+          .local_events_ = local_events_});
   shutdown_stack_.Push([this] { connection_state_reporter_.reset(); });
 
   // Held for the whole logged-in lifetime rather than only while
@@ -714,14 +713,14 @@ void ClientApplication::CreateUserServices(const PostLoginContext& ctx) {
       WriteServiceImplContext{.executor_ = executor_,
                               .timed_data_service_ = *timed_data_service_,
                               .profile_ = *profile_,
-                              .local_events_ = &event_module_->local_events()});
+                              .local_events_ = &local_events_});
 
   singletons_.emplace(std::make_shared<WriteModule>(WriteModuleContext{
       .executor_ = executor_,
       .timed_data_service_ = *timed_data_service_,
       .session_service_ = *ctx.audited_scada_services.session_service,
       .profile_ = *profile_,
-      .local_events_ = event_module_->local_events(),
+      .local_events_ = local_events_,
       .selection_commands_ = core_module_->selection_commands(),
       .ui_command_registry_ = *ui_command_registry_}));
 
@@ -782,7 +781,7 @@ ClientApplicationModuleContext ClientApplication::BuildModuleContext(
       .node_service_ = *node_service_,
       .task_manager_ = *task_manager_,
       .timed_data_service_ = *timed_data_service_,
-      .local_events_ = event_module_->local_events(),
+      .local_events_ = local_events_,
       .write_service_ = *write_service_,
       .print_module_ = print_module_,
       .node_service_tree_factory_ =
@@ -847,7 +846,7 @@ void ClientApplication::CreateMainWindow(const PostLoginContext& ctx) {
           .print_service_ =
               print_module_ ? &print_module_->print_service() : nullptr,
           .portfolio_manager_ = portfolio_module_->portfolio_manager(),
-          .local_events_ = event_module_->local_events(),
+          .local_events_ = local_events_,
           .frame_capture_registry_ = frame_capture_registry_,
           .display_selection_registry_ = display_selection_registry_,
           .favourites_ = favorites_module_->favourites(),
@@ -1059,16 +1058,11 @@ Awaitable<void> ClientApplication::QuitAsync() {
 
   LOG_INFO(*logger_) << ("Disconnect");
 
-  // Event module is not created if login fails.
-  // TODO: Create event module unconditionally.
-  //
   // **Informational, not an error.** Quitting is the operator's own request,
   // and a local `SEV_ERROR` is a critical event: with the alarm tone on it
   // would sound one critical tone as the Client closes (backlog 1044).
-  if (event_module_) {
-    event_module_->local_events().ReportEvent(
-        LocalEvents::SEV_INFO, Translate("Disconnecting from server..."));
-  }
+  local_events_.ReportEvent(LocalEvents::SEV_INFO,
+                            Translate("Disconnecting from server..."));
 
   try {
     co_await master_data_services_->Disconnect();

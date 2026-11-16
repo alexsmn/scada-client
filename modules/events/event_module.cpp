@@ -68,16 +68,13 @@ Awaitable<void> OpenWindowDefinition(
 
 EventModule::EventModule(EventModuleContext&& context)
     : EventModuleContext(std::move(context)) {
-  // Before the fetcher, which reports refused acknowledgements into it.
-  local_events_ = std::make_unique<LocalEvents>();
-
   event_fetcher_ = EventFetcherBuilder{
       .executor_ = executor_,
       .logger_ = logger_,
       .services_ = services_,
       // A refusal (e.g. no Call permission) would otherwise leave the
       // event unacknowledged with nothing said (backlog 848).
-      .ack_failed_handler_ = [&local_events = *local_events_,
+      .ack_failed_handler_ = [&local_events = local_events_,
                               &profile = profile_](
                                  std::span<const scada::EventId> /*event_ids*/,
                                  const scada::Status& status) {
@@ -120,14 +117,14 @@ EventModule::EventModule(EventModuleContext&& context)
 
   controller_registry_.AddControllerFactory(
       kEventWindowInfo,
-      [&local_events = *local_events_](const ControllerContext& context) {
+      [&local_events = local_events_](const ControllerContext& context) {
         return std::make_unique<EventView>(context, local_events,
                                            /*is_panel=*/true);
       });
 
   controller_registry_.AddControllerFactory(
       kEventJournalWindowInfo,
-      [&local_events = *local_events_](const ControllerContext& context) {
+      [&local_events = local_events_](const ControllerContext& context) {
         return std::make_unique<EventView>(context, local_events,
                                            /*is_panel=*/false);
       });
@@ -135,7 +132,7 @@ EventModule::EventModule(EventModuleContext&& context)
   // Same view, scoped to the audit trail.
   controller_registry_.AddControllerFactory(
       kAuditLogWindowInfo,
-      [&local_events = *local_events_](const ControllerContext& context) {
+      [&local_events = local_events_](const ControllerContext& context) {
         return std::make_unique<EventView>(context, local_events,
                                            /*is_panel=*/false,
                                            /*audit_only=*/true);
@@ -176,7 +173,7 @@ EventModule::EventModule(EventModuleContext&& context)
       .enabled_handler =
           [this](const GlobalCommandContext&) {
             return HasAcknowledgeableServerEvents() ||
-                   !local_events_->events().empty();
+                   !local_events_.events().empty();
           },
       .disabled_reason_handler =
           [this](const GlobalCommandContext&) {
@@ -285,7 +282,7 @@ Awaitable<void> EventModule::ConfirmAndAcknowledgeAll(
   const bool server_events = HasAcknowledgeableServerEvents();
   const size_t count =
       (server_events ? node_event_provider().unacked_events().size() : 0) +
-      local_events_->events().size();
+      local_events_.events().size();
   if (count == 0)
     co_return;
 
@@ -300,7 +297,7 @@ Awaitable<void> EventModule::ConfirmAndAcknowledgeAll(
 
   if (server_events)
     node_event_provider().AcknowledgeAllEvents();
-  local_events_->AcknowledgeAll();
+  local_events_.AcknowledgeAll();
 }
 
 NodeEventProvider& EventModule::node_event_provider() {

@@ -495,8 +495,10 @@ Awaitable<void> WriteModel::ReportCancelRefusalAsync(
     scada::CoStatus operation,
     LocalEvents* local_events,
     std::u16string source_title) {
-  // Taken before the wait: the answer can come after a sign-out has destroyed
-  // the event module this pointer belongs to (backlog 887 rebuilds it).
+  // Taken before the wait: the answer can come after the Client has begun
+  // shutting down and destroyed the messages this pointer belongs to. A
+  // sign-out no longer does -- the messages are the workstation's and survive
+  // it, so a refusal answered then reaches the next operator (backlog 1072).
   const std::weak_ptr<const void> local_events_alive =
       local_events ? local_events->lifetime() : std::weak_ptr<const void>{};
   const scada::Status status = co_await std::move(operation);
@@ -544,8 +546,8 @@ Awaitable<void> WriteModel::CompleteLegacySelectAsync(
     LocalEvents* local_events,
     std::u16string source_title,
     bool device_cannot_select) {
-  // Taken before the wait, as in ReportCancelRefusalAsync: a sign-out can
-  // destroy the event module while the select is in flight.
+  // Taken before the wait, as in ReportCancelRefusalAsync: shutting down can
+  // destroy the messages while the select is in flight.
   const std::weak_ptr<const void> local_events_alive =
       local_events ? local_events->lifetime() : std::weak_ptr<const void>{};
   const scada::Status status = co_await std::move(select);

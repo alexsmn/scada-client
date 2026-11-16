@@ -45,6 +45,7 @@ class EventModuleTest : public Test {
     return true;
   }();
 
+  LocalEvents local_events_;
   EventModule event_module_{EventModuleContext{
       .executor_ = controller_env_.executor_,
       .logger_ = std::make_shared<BoostLogger>(LOG_NAME("Test")),
@@ -53,7 +54,8 @@ class EventModuleTest : public Test {
       .controller_registry_ = controller_env_.controller_registry_,
       .global_commands_ = controller_env_.global_commands_,
       .selection_commands_ = controller_env_.selection_commands_,
-      .ui_command_registry_ = ui_command_registry_}};
+      .ui_command_registry_ = ui_command_registry_,
+      .local_events_ = local_events_}};
 };
 
 TEST_F(EventModuleTest, CreateControllers) {
@@ -223,7 +225,8 @@ class EventModuleAcknowledgePermissionTest : public EventModuleTest {
   const BasicCommand<SelectionCommandContext>& acknowledge_command() {
     const auto* command =
         controller_env_.selection_commands_.FindCommand(ID_ACKNOWLEDGE_CURRENT);
-    scada::base::Check(command != nullptr, "ID_ACKNOWLEDGE_CURRENT is registered");
+    scada::base::Check(command != nullptr,
+                       "ID_ACKNOWLEDGE_CURRENT is registered");
     return *command;
   }
 
@@ -312,6 +315,7 @@ class EventModuleSeverityMigrationTest : public Test {
   ThresholdsResult Thresholds(boost::json::object profile_data) {
     ControllerEnvironment controller_env;
     UiCommandRegistry ui_command_registry;
+    LocalEvents local_events;
     controller_env.profile_.data() = std::move(profile_data);
     EventModule module{EventModuleContext{
         .executor_ = controller_env.executor_,
@@ -321,7 +325,8 @@ class EventModuleSeverityMigrationTest : public Test {
         .controller_registry_ = controller_env.controller_registry_,
         .global_commands_ = controller_env.global_commands_,
         .selection_commands_ = controller_env.selection_commands_,
-        .ui_command_registry_ = ui_command_registry}};
+        .ui_command_registry_ = ui_command_registry,
+        .local_events_ = local_events}};
     return {.panel = controller_env.profile_.event_panel_severity_min,
             .fetcher =
                 static_cast<unsigned>(module.event_fetcher().severity_min())};

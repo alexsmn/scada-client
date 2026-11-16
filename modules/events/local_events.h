@@ -13,6 +13,10 @@
 #undef ReportEvent
 #endif
 
+// The Client's own messages: events this workstation raises itself rather
+// than receives from the server. Only unacknowledged ones are kept;
+// acknowledging one deletes it. Owned by `ClientApplication` for the life of
+// the process, so they survive a sign-out (backlog 1072).
 class LocalEvents {
  public:
   // TODO: Use `scada::EventSeverity` instead of `Severity`.
@@ -36,9 +40,10 @@ class LocalEvents {
 
   EventSignal& event_signal() SCADA_LIFETIME_BOUND { return event_signal_; }
 
-  // Expires when this object is destroyed. For work that outlives the module
-  // owning it -- a device answering a control Cancel after a sign-out has
-  // rebuilt the session -- to check before it reports here.
+  // Expires when this object is destroyed. For work that can outlive it -- a
+  // device answering a control Cancel while the Client shuts down -- to check
+  // before it reports here. A sign-out does not destroy it: the application
+  // owns it across session rebuilds (backlog 1072).
   std::weak_ptr<const void> lifetime() const { return lifetime_; }
 
  private:

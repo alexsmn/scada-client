@@ -14,6 +14,7 @@
 #include "base/test/scoped_path_override.h"
 #include "controller/controller_registry.h"
 #include "core/global_command_context.h"
+#include "events/alarm_set.h"
 #include "events/local_events.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
@@ -802,6 +803,39 @@ TEST_F(ClientApplicationSignOutTest, NextOperatorGetsTheirOwnProfile) {
   EXPECT_TRUE(saves_[0].carries_outgoing_page);
   EXPECT_EQ(saves_[1].user_id, kIncoming);
   EXPECT_FALSE(saves_[1].carries_outgoing_page);
+}
+
+// Backlog 1072: the Client's own messages are the workstation's, not the
+// account's. A sign-out used to destroy them with the event module, so the
+// next operator never saw e.g. that a device may still be selected.
+TEST_F(ClientApplicationSignOutTest,
+       UnacknowledgedClientMessagesReachTheNextOperator) {
+  StartApp();
+
+  constexpr std::u16string_view kLeftOver = u"Device may stay selected";
+  constexpr std::u16string_view kSeen = u"Already acknowledged";
+  app_.local_events().ReportEvent(LocalEvents::SEV_ERROR, kLeftOver);
+  app_.local_events().ReportEvent(LocalEvents::SEV_WARNING, kSeen);
+  app_.local_events().AcknowledgeEvent(
+      app_.local_events().events().back()->event_id);
+
+  NextLoginIsTheIncomingOperator();
+  ExecuteGlobalCommand(ID_LOGOFF);
+  ASSERT_TRUE(WaitForRebuild());
+
+  auto has_message = [this](std::u16string_view text) {
+    return std::ranges::any_of(app_.local_events().events(),
+                               [text](const scada::Event* event) {
+                                 return event->message.text == text;
+                               });
+  };
+  // Still waiting for an acknowledgement, under a different account...
+  EXPECT_TRUE(has_message(kLeftOver));
+  EXPECT_FALSE(has_message(kSeen));
+  // ...and still counted as an alarm by the rebuilt session.
+  const std::vector<events::AlarmSummary> alarms =
+      events::CollectAlarms(app_.node_event_provider(), app_.local_events());
+  EXPECT_THAT(alarms, SizeIs(1));
 }
 
 TEST_F(ClientApplicationSignOutTest,

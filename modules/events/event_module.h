@@ -32,6 +32,10 @@ struct EventModuleContext {
   BasicCommandRegistry<GlobalCommandContext>& global_commands_;
   BasicCommandRegistry<SelectionCommandContext>& selection_commands_;
   UiCommandRegistry& ui_command_registry_;
+  // The Client's own messages. Owned by the application, not by this module:
+  // the module is rebuilt at every sign-in, and an unacknowledged Client
+  // message must reach the next operator (backlog 1072).
+  LocalEvents& local_events_;
 };
 
 class EventModule : private EventModuleContext {
@@ -41,7 +45,7 @@ class EventModule : private EventModuleContext {
 
   NodeEventProvider& node_event_provider();
   EventFetcher& event_fetcher() SCADA_LIFETIME_BOUND { return *event_fetcher_; }
-  LocalEvents& local_events() SCADA_LIFETIME_BOUND { return *local_events_; }
+  LocalEvents& local_events() SCADA_LIFETIME_BOUND { return local_events_; }
 
  private:
   void AddOpenCommand(unsigned command_id,
@@ -56,8 +60,5 @@ class EventModule : private EventModuleContext {
   // it will acknowledge system-wide, and acknowledges them only on Yes.
   Awaitable<void> ConfirmAndAcknowledgeAll(DialogService& dialog_service);
 
-  // Declared first so it outlives the fetcher, whose acknowledgement queue
-  // reports refusals into it.
-  std::unique_ptr<LocalEvents> local_events_;
   std::shared_ptr<EventFetcher> event_fetcher_;
 };

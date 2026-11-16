@@ -118,7 +118,7 @@ class WriteModel : private WriteContext,
   // Bad_NotSupported — a driver that never selects — reports nothing. Takes no
   // model: the dialog may already be gone when the device answers.
   // `local_events` is checked against its `lifetime()` before the report, so
-  // an answer arriving after the session was torn down reports nothing.
+  // an answer arriving after the Client has destroyed it reports nothing.
   static Awaitable<void> ReportCancelRefusalAsync(scada::CoStatus operation,
                                                   LocalEvents* local_events,
                                                   std::u16string source_title);
