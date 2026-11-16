@@ -420,13 +420,13 @@
         "client.md",
         "client/workbench.md"
       ],
-      "notes": "The reshelled operator workbench: CaptureMainWindow under --theme renders the full shell (activity rail, context bar with KPI severity tiles, editor tabs over EventJournal/Summ/Struct, the Inspector fronted in the right dock, status strip) and saves it under this name so the legacy client-window.png is never overwritten by a themed render. Fixture pending alarms light the tiles and the journal chrome. Kept out of current_generator_owned_subset (subset is auto-* only). Both STALE notes this row carried until 2026-09-19 are DISCHARGED, and were already wrong when they were read: they described the status strip's ping cell widening (120 -> 180, plus the \"no response\" marker, 0db08d4f8, 2026-08-01) and the context bar losing its identity/connection cluster to the status strip (2026-07-26), and asked for a Windows re-render. The tracked PNG already shows both — the context bar carries only breadcrumb, search and severity tiles, and user/connection/server/endpoint sit in the status strip — because it was re-rendered at 87b6a9b4b (2026-09-12), which has 0db08d4f8 as an ancestor. The request for a WINDOWS re-render is obsolete on its own terms too: either host may render the generated set (decided 2026-09-12), and only the manual-modus family needs Windows. This row is the README's hero image, so a note saying \"do not trust this picture\" is not a cheap thing to leave lying around. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it.",
+      "notes": "The reshelled operator workbench: CaptureMainWindow under --theme renders the full shell (activity rail, context bar with KPI severity tiles, editor tabs over EventJournal/Summ/Struct, the Inspector fronted in the right dock, status strip) and saves it under this name so the legacy client-window.png is never overwritten by a themed render. Fixture pending alarms light the tiles and the journal chrome. Kept out of current_generator_owned_subset (subset is auto-* only). Both STALE notes this row carried until 2026-09-19 are DISCHARGED, and were already wrong when they were read: they described the status strip's ping cell widening (120 -> 180, plus the \"no response\" marker, 0db08d4f8, 2026-08-01) and the context bar losing its identity/connection cluster to the status strip (2026-07-26), and asked for a Windows re-render. The tracked PNG already shows both — the context bar carries only breadcrumb, search and severity tiles, and user/connection/server/endpoint sit in the status strip — because it was re-rendered at 87b6a9b4b (2026-09-12), which has 0db08d4f8 as an ancestor. The request for a WINDOWS re-render is obsolete on its own terms too: either host may render the generated set (decided 2026-09-12), and only the manual-modus family needs Windows. This row is the README's hero image, so a note saying \"do not trust this picture\" is not a cheap thing to leave lying around. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it. Re-rendered 2026-11-15 at a clean tree, incidentally, while backlog 1074 checked whether the Inspector's Control hint reached it (it does not: the selection's control is disabled, so the hint is hidden); this cleared the --check-pairs report that the pair had fallen behind its sibling.",
       "captured": {
-        "commit": "f05b985ef",
+        "commit": "41a1b1607",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "6f8797b37ebccb98acb08a9b71cca2b01ebe7ca679424cec39b21a1b5e20147e",
-        "last_rendered": "e39632260"
+        "dirty": false,
+        "sha256": "6cd763ec44ab6f8b544d0775ca887c6392ff4548eaf3564438fe95342cfad472",
+        "last_rendered": "41a1b1607"
       }
     },
     {
@@ -435,13 +435,13 @@
       "theme": "light",
       "published": false,
       "referenced_from": [],
-      "notes": "Light-theme render of workbench-window.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to workbench-window.png, and this is a second appearance of that capture rather than a second capture. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it.",
+      "notes": "Light-theme render of workbench-window.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to workbench-window.png, and this is a second appearance of that capture rather than a second capture. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it. Re-rendered 2026-11-15 at a clean tree, incidentally, while backlog 1074 checked whether the Inspector's Control hint reached it (it does not: the selection's control is disabled, so the hint is hidden); this cleared the --check-pairs report that the pair had fallen behind its sibling.",
       "captured": {
-        "commit": "f05b985ef",
+        "commit": "41a1b1607",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "a304bbe0a8719ec77dcfa427b52361a8b0ea8e4ba144089d79ecb74165f0ff1f",
-        "last_rendered": "ea9d80292"
+        "dirty": false,
+        "sha256": "7cb0cad5a8207f06be20f4ddde364a75f8d936da5ee39ccac3faea83e179d8c2",
+        "last_rendered": "41a1b1607"
       }
     },
     {
@@ -451,13 +451,13 @@
       "referenced_from": [
         "client/workbench.md"
       ],
-      "notes": "The Overview landing cockpit: a fresh page-less profile under the reshell theme boots through CreateInitialPage into MakeOverviewPage - the Explorer sidebar (tabified with its Favorites and Portfolio sibling panes) beside the dominant trend (65%) over the actionable-alarm strip, with the Inspector fronted on the right. Captured via the production seeding path (CaptureOverviewPage), so it guards the reshell initial-page routing too. In current_generator_owned_subset since 2026-09-12: the render was reviewed against the page that embeds it (scada-docs client/workbench.md and the en/ mirror, the «Обзор» section), which is what graduates an image into the published set. Re-rendered 2026-08-29: the Explorer trees stopped drawing a row for their root (ConfigurationTreeView now takes Tree's hidden-root default), because the pane's own dock title already names it — so the tree starts at its content. Re-rendered 2026-09-12: the landing published its whole right-hand third as the Inspector's «select an item» placeholder, because nothing on a freshly seeded page is selected — CaptureOverviewPage now makes the selection the shell's own way, through the Explorer pane the page already docks (SelectSignalForInspector, shared with workbench-window.png), so the card renders its readout, quality badge, limit bands and actions. Either host may render this image and the platform field is what keeps a diff readable (docs/ops/client-screenshots.md); the «pending a Windows re-render» this row used to claim is not owed. Rendered with --only, so no other image in the gallery moved, and provenance was stamped by hand for this row alone: --stamp rewrites every row whose digest differs — see backlog 642. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it.",
+      "notes": "The Overview landing cockpit: a fresh page-less profile under the reshell theme boots through CreateInitialPage into MakeOverviewPage - the Explorer sidebar (tabified with its Favorites and Portfolio sibling panes) beside the dominant trend (65%) over the actionable-alarm strip, with the Inspector fronted on the right. Captured via the production seeding path (CaptureOverviewPage), so it guards the reshell initial-page routing too. In current_generator_owned_subset since 2026-09-12: the render was reviewed against the page that embeds it (scada-docs client/workbench.md and the en/ mirror, the «Обзор» section), which is what graduates an image into the published set. Re-rendered 2026-08-29: the Explorer trees stopped drawing a row for their root (ConfigurationTreeView now takes Tree's hidden-root default), because the pane's own dock title already names it — so the tree starts at its content. Re-rendered 2026-09-12: the landing published its whole right-hand third as the Inspector's «select an item» placeholder, because nothing on a freshly seeded page is selected — CaptureOverviewPage now makes the selection the shell's own way, through the Explorer pane the page already docks (SelectSignalForInspector, shared with workbench-window.png), so the card renders its readout, quality badge, limit bands and actions. Either host may render this image and the platform field is what keeps a diff readable (docs/ops/client-screenshots.md); the «pending a Windows re-render» this row used to claim is not owed. Rendered with --only, so no other image in the gallery moved, and provenance was stamped by hand for this row alone: --stamp rewrites every row whose digest differs — see backlog 642. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it. Re-rendered 2026-11-15 at a clean tree, incidentally, while backlog 1074 checked whether the Inspector's Control hint reached it (it does not: the selection's control is disabled, so the hint is hidden); this cleared the --check-pairs report that the pair had fallen behind its sibling.",
       "captured": {
-        "commit": "f05b985ef",
+        "commit": "41a1b1607",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "920584d8159d89ca88e5c3d43f8b4a524afca8fed6334ff29d04391de80faf71",
-        "last_rendered": "e39632260"
+        "dirty": false,
+        "sha256": "5c6015f0ff1638ece2fe54af92814b53b38496688f625da211db5001355b62a2",
+        "last_rendered": "41a1b1607"
       }
     },
     {
@@ -466,13 +466,13 @@
       "theme": "light",
       "published": false,
       "referenced_from": [],
-      "notes": "Light-theme render of workbench-overview.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to workbench-overview.png, and this is a second appearance of that capture rather than a second capture. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it.",
+      "notes": "Light-theme render of workbench-overview.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to workbench-overview.png, and this is a second appearance of that capture rather than a second capture. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it. Re-rendered 2026-11-15 at a clean tree, incidentally, while backlog 1074 checked whether the Inspector's Control hint reached it (it does not: the selection's control is disabled, so the hint is hidden); this cleared the --check-pairs report that the pair had fallen behind its sibling.",
       "captured": {
-        "commit": "f05b985ef",
+        "commit": "41a1b1607",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "f642b1a7ec0b518b035bde4aeb2fbde6885bf5650ff4dc34ae2233ab69cca2e4",
-        "last_rendered": "ea9d80292"
+        "dirty": false,
+        "sha256": "eff3ded1d4c670bc09c35c6e3c2fe4483ee80cd3c972da99e1f5326772e8df45",
+        "last_rendered": "41a1b1607"
       }
     },
     {
@@ -716,7 +716,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "ef366f047cd377f4623cc00a6543bc7c23bb9914f422225a2dfc7262436462e7",
-        "last_rendered": "e39632260"
+        "last_rendered": "41a1b1607"
       }
     },
     {
@@ -732,7 +732,7 @@
         "platform": "macos",
         "dirty": true,
         "sha256": "9e19f8d488309c7c87a82b2a5c4d056575748ca0d298ebb556396d5abd356fba",
-        "last_rendered": "ea9d80292"
+        "last_rendered": "41a1b1607"
       }
     },
     {
@@ -1101,13 +1101,13 @@
       "referenced_from": [
         "dev/data-items.md"
       ],
-      "notes": "Bulk-create wizard preview (BulkCreate): the naming/addressing step of bulk-create.html — a {n}-token name + NodeId pattern, start/count/step + IOA start/step, and a live preview grid (# / Name / NodeId / IOA / Status) with a 'N new / M conflict' summary. Reshell-only chrome (backlog 5.4), standalone and node-service-free: the capture seeds a demo pattern (TS{n} current, 12 items from IOA 4001) and one existing NodeId (TS8), so row 8 flags as a red 'exists' conflict. Driven by the pure ExpandBulkCreate engine. The actual node creation rides the existing MultiCreateModel::Run (Session.addNodes). Embedded in dev/data-items.md since 2026-09-19, replacing menu-create-object-ts-ti.png: that image is the flat MultiCreate dialog, which ID_ADD_MULTIPLE_ITEMS stopped opening on 2026-09-12. Re-rendered 2026-11-01: the capture also seeds one address the destination's rules already carry (4003), so row 3 reads «повтор адреса» and the summary adds «1 повтор адреса». Re-rendered 2026-11-01 again: the NodeId template is empty by default and shows «Назначает Сервер» (backlog 960) — the former string template is one the Server refuses — so the capture no longer seeds a TS8 NodeId conflict; row 3's duplicate address is the conflict it shows.",
+      "notes": "Bulk-create wizard preview (BulkCreate): the naming/addressing step of bulk-create.html — a {n}-token name + NodeId pattern, start/count/step + IOA start/step, and a live preview grid (# / Name / NodeId / IOA / Status) with a 'N new / M conflict' summary. Reshell-only chrome (backlog 5.4), standalone and node-service-free: the capture seeds a demo pattern (TS{n} current, 12 items from IOA 4001) and one existing NodeId (TS8), so row 8 flags as a red 'exists' conflict. Driven by the pure ExpandBulkCreate engine. The actual node creation rides the existing MultiCreateModel::Run (Session.addNodes). Embedded in dev/data-items.md since 2026-09-19, replacing menu-create-object-ts-ti.png: that image is the flat MultiCreate dialog, which ID_ADD_MULTIPLE_ITEMS stopped opening on 2026-09-12. Re-rendered 2026-11-01: the capture also seeds one address the destination's rules already carry (4003), so row 3 reads «повтор адреса» and the summary adds «1 повтор адреса». Re-rendered 2026-11-01 again: the NodeId template is empty by default and shows «Назначает Сервер» (backlog 960) — the former string template is one the Server refuses — so the capture no longer seeds a TS8 NodeId conflict; row 3's duplicate address is the conflict it shows. Re-rendered 2026-11-15: the name template is the wizard's own translated default for rules, «Правило {n}», instead of the Latin `TS{n} current` the capture used to seed (backlog 1076).",
       "captured": {
-        "commit": "a54995102",
+        "commit": "41a1b1607",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "eb385198afa368ffd530184c96a5f72d9dfeb93383277ab9de50a2085292b972",
-        "last_rendered": "a54995102"
+        "dirty": false,
+        "sha256": "8309f7ed28e70fff182d914a44f07a2e1ec456ebcf1716553ba5c4a28e5539e5",
+        "last_rendered": "41a1b1607"
       }
     },
     {
@@ -1117,13 +1117,13 @@
       "parity_key": "bulk-create",
       "published": false,
       "referenced_from": [],
-      "notes": "Light-theme render of bulk-create.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own. Re-rendered 2026-11-01: the capture also seeds one address the destination's rules already carry (4003), so row 3 reads «повтор адреса» and the summary adds «1 повтор адреса». Re-rendered 2026-11-01 again: the NodeId template is empty by default and shows «Назначает Сервер» (backlog 960) — the former string template is one the Server refuses — so the capture no longer seeds a TS8 NodeId conflict; row 3's duplicate address is the conflict it shows.",
+      "notes": "Light-theme render of bulk-create.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own. Re-rendered 2026-11-01: the capture also seeds one address the destination's rules already carry (4003), so row 3 reads «повтор адреса» and the summary adds «1 повтор адреса». Re-rendered 2026-11-01 again: the NodeId template is empty by default and shows «Назначает Сервер» (backlog 960) — the former string template is one the Server refuses — so the capture no longer seeds a TS8 NodeId conflict; row 3's duplicate address is the conflict it shows. Re-rendered 2026-11-15: the name template is the wizard's own translated default for rules, «Правило {n}», instead of the Latin `TS{n} current` the capture used to seed (backlog 1076).",
       "captured": {
-        "commit": "a54995102",
+        "commit": "41a1b1607",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "b1165439cae71af21984cc821a2db14602a46fe239bbf24b5c227c58e397a651",
-        "last_rendered": "a54995102"
+        "dirty": false,
+        "sha256": "88c5d7944b82be16ecc909730f0c61207379c874f985aca7eb0073b2d110e791",
+        "last_rendered": "41a1b1607"
       }
     },
     {
