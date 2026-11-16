@@ -1181,6 +1181,20 @@
         <source>Address map</source>
         <translation>Карта адресов</translation>
     </message>
+    <!-- Address-map Direction column, shown when a device both polls and
+         retransmits (backlog 1075). -->
+    <message>
+        <source>Direction</source>
+        <translation>Направление</translation>
+    </message>
+    <message>
+        <source>Polled</source>
+        <translation>Опрос</translation>
+    </message>
+    <message>
+        <source>Retransmitted</source>
+        <translation>Ретрансляция</translation>
+    </message>
     <message>
         <source>Reconnect</source>
         <translation>Переподключить</translation>

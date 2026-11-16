@@ -296,6 +296,45 @@ TEST_F(DeviceParameterFormTest, SetAddressMapAddsAReadOnlyGridTab) {
   EXPECT_EQ(table->item(1, 1)->text(), QStringLiteral("TI"));
 }
 
+// Backlog 1075: a device that both polls and retransmits lists both kinds of
+// row, so the grid says which is which; a device with one kind keeps the
+// four-column grid.
+TEST_F(DeviceParameterFormTest, MixedAddressMapShowsADirectionColumn) {
+  auto model = MakeDeviceModel();
+  DeviceParameterForm form{*model, QStringLiteral("RTU-02")};
+
+  form.SetAddressMap({
+      {u"Served", u"TI", u"2001", u"ns=2;s=P",
+       AddressMapRow::Kind::kTransmission},
+      {u"Q1 state", u"TS", u"1001", u"ns=2;s=Q1",
+       AddressMapRow::Kind::kPolled},
+  });
+
+  auto* table =
+      form.findChild<QTableWidget*>(QStringLiteral("addressMapTable"));
+  ASSERT_NE(table, nullptr);
+  ASSERT_EQ(table->columnCount(), 5);
+  EXPECT_EQ(table->horizontalHeaderItem(1)->text(),
+            QStringLiteral("Direction"));
+  EXPECT_EQ(table->item(0, 1)->text(), QStringLiteral("Retransmitted"));
+  EXPECT_EQ(table->item(1, 1)->text(), QStringLiteral("Polled"));
+  EXPECT_EQ(table->item(1, 3)->text(), QStringLiteral("1001"));
+}
+
+TEST_F(DeviceParameterFormTest, PolledOnlyAddressMapHasNoDirectionColumn) {
+  auto model = MakeDeviceModel();
+  DeviceParameterForm form{*model, QStringLiteral("RTU-02")};
+
+  form.SetAddressMap({{u"Q1 state", u"TS", u"1001", u"ns=2;s=Q1",
+                       AddressMapRow::Kind::kPolled}});
+
+  auto* table =
+      form.findChild<QTableWidget*>(QStringLiteral("addressMapTable"));
+  ASSERT_NE(table, nullptr);
+  EXPECT_EQ(table->columnCount(), 4);
+  EXPECT_EQ(table->item(0, 2)->text(), QStringLiteral("1001"));
+}
+
 TEST_F(DeviceParameterFormTest, EmptyAddressMapAddsNoTab) {
   auto model = MakeDeviceModel();
   DeviceParameterForm form{*model, QStringLiteral("RTU-02")};

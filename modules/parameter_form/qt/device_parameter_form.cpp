@@ -25,6 +25,7 @@
 #include <QTableWidgetItem>
 #include <QVBoxLayout>
 
+#include <algorithm>
 #include <memory>
 #include <string_view>
 #include <utility>
@@ -415,18 +416,49 @@ void FillGridRow(QTableWidget* table, int row, const QStringList& cells) {
 
 }  // namespace
 
+namespace {
+
+// The address-map Direction cell: which way the device carries the signal.
+QString AddressMapKindText(AddressMapRow::Kind kind) {
+  switch (kind) {
+    case AddressMapRow::Kind::kPolled:
+      return Tr("Polled");
+    case AddressMapRow::Kind::kTransmission:
+      return Tr("Retransmitted");
+  }
+  return {};
+}
+
+}  // namespace
+
 QWidget* DeviceParameterForm::BuildAddressMapPage() {
-  QTableWidget* table = MakeReadOnlyGrid(
-      QStringLiteral("addressMapTable"),
-      {Tr("Signal"), Tr("Type"), Tr("IOA"), Tr("NodeId")}, FormTokens());
+  // A device that both polls and retransmits lists the same kind of row for
+  // two opposite things, often at overlapping addresses; only then is a
+  // Direction column worth its width.
+  const bool mixed =
+      std::ranges::any_of(address_map_,
+                          [](const AddressMapRow& row) {
+                            return row.kind == AddressMapRow::Kind::kPolled;
+                          }) &&
+      std::ranges::any_of(address_map_, [](const AddressMapRow& row) {
+        return row.kind == AddressMapRow::Kind::kTransmission;
+      });
+
+  QStringList headers{Tr("Signal"), Tr("Type"), Tr("IOA"), Tr("NodeId")};
+  if (mixed)
+    headers.insert(1, Tr("Direction"));
+  QTableWidget* table = MakeReadOnlyGrid(QStringLiteral("addressMapTable"),
+                                         headers, FormTokens());
   table->setRowCount(static_cast<int>(address_map_.size()));
   for (int row = 0; row < static_cast<int>(address_map_.size()); ++row) {
     const AddressMapRow& data = address_map_[row];
-    FillGridRow(table, row,
-                {QString::fromStdU16String(data.signal),
-                 QString::fromStdU16String(data.type),
-                 QString::fromStdU16String(data.ioa),
-                 QString::fromStdU16String(data.node_id)});
+    QStringList cells{QString::fromStdU16String(data.signal),
+                      QString::fromStdU16String(data.type),
+                      QString::fromStdU16String(data.ioa),
+                      QString::fromStdU16String(data.node_id)};
+    if (mixed)
+      cells.insert(1, AddressMapKindText(data.kind));
+    FillGridRow(table, row, cells);
   }
   return table;
 }
