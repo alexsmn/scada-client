@@ -10,7 +10,6 @@
 #include "base/awaitable.h"
 #include "configuration/configuration_module.h"
 #include "core/default_node_command_registry.h"
-#include "events/local_events.h"
 #include "scada/co_result.h"
 #include "scada/data_services_factory.h"
 #include "scada/node_id.h"
@@ -76,6 +75,7 @@ class DialogService;
 class EventModule;
 class NodeEventProvider;
 class Favourites;
+class LocalEvents;
 class AdministrationModule;
 class FavoritesModule;
 class FileSystemComponent;
@@ -294,8 +294,10 @@ class ClientApplication : private ClientApplicationContext {
   // left unacknowledged must still be in the events panel, the journal and
   // the alarm count when the next operator signs in -- whichever account that
   // is (backlog 1072, docs/client/design.md "Client messages"). Declared first
-  // so it outlives everything that reports into it.
-  LocalEvents local_events_;
+  // so it outlives everything that reports into it. Held by pointer so this
+  // header need not include local_events.h, whose `#undef ReportEvent` would
+  // break ATL's atlbase.h in every file that includes both (main.cpp).
+  std::unique_ptr<LocalEvents> local_events_;
 
   std::unique_ptr<CoreModule> core_module_;
 
