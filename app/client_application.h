@@ -268,6 +268,12 @@ class ClientApplication : private ClientApplicationContext {
   Awaitable<void> SignOut();
   Awaitable<void> SignOutAsync();
 
+  // Puts every main window's staged edits (the Properties form's) to the
+  // operator, window by window (MainWindowInterface::ResolvePendingChanges).
+  // True when nothing is staged any more; false on a Cancel, after which
+  // nothing may be torn down. Sign-out runs it first (backlog 1077).
+  Awaitable<bool> ResolvePendingChangesInAllWindowsAsync();
+
   // Tears down everything `PostLoginAsync` built and runs it again, so the
   // account now signed in gets its own profile -- pages, alarm tone, control
   // confirmation, severity threshold -- and every later save goes to it with

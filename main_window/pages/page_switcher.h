@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/any_executor.h"
+#include "base/awaitable.h"
 #include "base/cancelation.h"
 
 #include <string>
@@ -69,10 +70,15 @@ class PageSwitcher : private PageSwitcherContext {
   // revert: it asks for confirmation and then re-opens the persisted copy,
   // discarding unsaved layout changes. Switching to another page saves the
   // current one first, and is refused when that page is open in another window.
+  // Either way the current page's staged edits are put to the operator first
+  // (MainWindowInterface::ResolvePendingChanges), and a Cancel there leaves
+  // the current page open.
   void ActivatePage(int page_id);
 
  private:
-  void OpenPageHelper(const Page& page, bool revert);
+  // Resolves staged edits, then opens `page_id`; `revert` re-opens the current
+  // page's persisted copy without saving it first.
+  Awaitable<void> SwitchToPageAsync(int page_id, bool revert);
 
   Cancelation cancelation_;
 };

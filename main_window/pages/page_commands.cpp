@@ -40,7 +40,45 @@ Awaitable<void> DeleteCurrentPageAsync(MainWindowInterface& main_window,
       Translate("Delete Page"), MessageBoxMode::QuestionYesNo);
   if (answer != MessageBoxResult::Yes)
     co_return;
+  // Deleting closes the page's views, and staged edits with them (backlog
+  // 1077); a Cancel there keeps the page.
+  if (!co_await main_window.ResolvePendingChanges())
+    co_return;
   main_window.DeleteCurrentPage();
+}
+
+// Opening a new page closes the current one's views, so their staged edits are
+// settled first (backlog 1077).
+Awaitable<void> NewPageAsync(MainWindowInterface& main_window,
+                             Profile& profile) {
+  if (!co_await main_window.ResolvePendingChanges())
+    co_return;
+  main_window.SaveCurrentPage();
+  Page& page = profile.AddPage(CreateInitialPage());
+  main_window.OpenPage(page);
+}
+
+// As NewPageAsync, with a copy of the current page.
+Awaitable<void> DuplicateCurrentPageAsync(MainWindowInterface& main_window,
+                                          Profile& profile) {
+  if (!co_await main_window.ResolvePendingChanges())
+    co_return;
+
+  // Save first, so the copy carries what is on screen rather than what was
+  // last persisted — duplicating a page the operator has just rearranged and
+  // getting the old layout would be indistinguishable from a bug.
+  main_window.SaveCurrentPage();
+
+  Page copy = main_window.GetCurrentPage();
+  // AddPage assigns the id and the order; clearing the id here keeps the copy
+  // from looking briefly like the original to anything reading it in between.
+  copy.id = 0;
+  copy.order = 0;
+  copy.title =
+      main_window.GetCurrentPage().GetTitle() + u" — " + Translate("copy");
+
+  Page& duplicate = profile.AddPage(copy);
+  main_window.OpenPage(duplicate);
 }
 
 }  // namespace
@@ -59,9 +97,10 @@ PageCommands::PageCommands(PageCommandsContext&& context)
       {.command_id = ID_PAGE_NEW,
        .title = Translate("New"),
        .execute_handler = [this](const GlobalCommandContext& context) {
-         context.main_window.SaveCurrentPage();
-         auto& page = profile_.AddPage(CreateInitialPage());
-         context.main_window.OpenPage(page);
+         CoSpawn(executor_,
+                 [&main_window = context.main_window, &profile = profile_] {
+                   return NewPageAsync(main_window, profile);
+                 });
        }});
 
   global_commands_.AddCommand(
@@ -110,21 +149,9 @@ PageCommands::PageCommands(PageCommandsContext&& context)
 }
 
 void PageCommands::DuplicateCurrentPage(const GlobalCommandContext& context) {
-  // Save first, so the copy carries what is on screen rather than what was last
-  // persisted — duplicating a page the operator has just rearranged and getting
-  // the old layout would be indistinguishable from a bug.
-  context.main_window.SaveCurrentPage();
-
-  Page copy = context.main_window.GetCurrentPage();
-  // AddPage assigns the id and the order; clearing the id here keeps the copy
-  // from looking briefly like the original to anything reading it in between.
-  copy.id = 0;
-  copy.order = 0;
-  copy.title = context.main_window.GetCurrentPage().GetTitle() + u" — " +
-               Translate("copy");
-
-  Page& duplicate = profile_.AddPage(copy);
-  context.main_window.OpenPage(duplicate);
+  CoSpawn(executor_, [&main_window = context.main_window, &profile = profile_] {
+    return DuplicateCurrentPageAsync(main_window, profile);
+  });
 }
 
 void PageCommands::RenameCurrentPage(const GlobalCommandContext& context) {

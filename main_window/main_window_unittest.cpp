@@ -1047,3 +1047,102 @@ TEST_F(OpenedViewRequestCloseTest, AViewDestroyedWhileAskingIsNotClosed) {
   EXPECT_FALSE(view);
   EXPECT_EQ(*resolve_calls, 1);
 }
+
+// Backlog 1077: closing a window asked about staged edits (1073), but anything
+// else that closes views wholesale -- a page switch, a page delete, a sign-out
+// -- went straight through. They now all ask the main window first.
+#if defined(UI_QT)
+class MainWindowResolvePendingChangesTest : public MainWindowTest {
+ protected:
+  // Opens one view in the main window whose controller reports staged edits
+  // according to `pending_`, and answers the prompt with `answer_`.
+  void OpenPendingView() {
+    EXPECT_CALL(opened_view_factory_, Call(_, _))
+        .WillOnce([this](MainWindow& main_window,
+                         WindowDefinition& window_def) {
+          auto opened_view = std::make_unique<OpenedView>(OpenedViewContext{
+              .executor_ = controller_env_.executor_,
+              .window_info_ = ControllerEnvironment::kFakeWindowInfo,
+              .window_def_ = window_def,
+              .dialog_service_ = main_window.GetDialogService(),
+              .controller_factory_ =
+                  [this](unsigned, ControllerDelegate&,
+                         DialogService&) -> std::unique_ptr<Controller> {
+                auto controller = std::make_unique<PendingChangesController>();
+                controller->pending_ = pending_;
+                controller->resolve_calls_ = resolve_calls_;
+                controller->resolve_hook_ = [this] { return answer_(); };
+                return controller;
+              }});
+          opened_view->Init();
+          return opened_view;
+        });
+    WaitAwaitable(controller_env_.executor_,
+                  main_window_->OpenView(
+                      WindowDefinition{ControllerEnvironment::kFakeWindowInfo},
+                      /*make_active=*/true));
+  }
+
+  bool pending_ = true;
+  std::function<bool()> answer_ = [] { return true; };
+  std::shared_ptr<int> resolve_calls_ = std::make_shared<int>(0);
+};
+
+TEST_F(MainWindowResolvePendingChangesTest, NothingStagedGoesAheadUnasked) {
+  pending_ = false;
+  OpenPendingView();
+
+  EXPECT_TRUE(WaitAwaitable(controller_env_.executor_,
+                            main_window_->ResolvePendingChanges()));
+  EXPECT_EQ(*resolve_calls_, 0);
+}
+
+TEST_F(MainWindowResolvePendingChangesTest, AnAppliedOrDiscardedEditGoesAhead) {
+  OpenPendingView();
+
+  EXPECT_TRUE(WaitAwaitable(controller_env_.executor_,
+                            main_window_->ResolvePendingChanges()));
+  EXPECT_EQ(*resolve_calls_, 1);
+}
+
+TEST_F(MainWindowResolvePendingChangesTest, CancelStopsTheCaller) {
+  answer_ = [] { return false; };
+  OpenPendingView();
+
+  EXPECT_FALSE(WaitAwaitable(controller_env_.executor_,
+                             main_window_->ResolvePendingChanges()));
+  EXPECT_EQ(*resolve_calls_, 1);
+
+  // Cancel is not sticky: the next request asks again.
+  answer_ = [] { return true; };
+  EXPECT_TRUE(WaitAwaitable(controller_env_.executor_,
+                            main_window_->ResolvePendingChanges()));
+  EXPECT_EQ(*resolve_calls_, 2);
+}
+
+// A second request (say, a page switch clicked while the sign-out's prompt is
+// up) must not stack a second prompt; it is refused instead.
+TEST_F(MainWindowResolvePendingChangesTest,
+       ASecondRequestWhileAskingIsRefused) {
+  // Asked while the first prompt is still up: the hook runs inside it.
+  bool spawned = false;
+  std::optional<bool> second;
+  answer_ = [this, &spawned, &second] {
+    if (!spawned) {
+      spawned = true;
+      CoSpawn(controller_env_.executor_, [this, &second]() -> Awaitable<void> {
+        second = co_await main_window_->ResolvePendingChanges();
+      });
+      Drain(controller_env_.executor_);
+    }
+    return true;
+  };
+  OpenPendingView();
+
+  EXPECT_TRUE(WaitAwaitable(controller_env_.executor_,
+                            main_window_->ResolvePendingChanges()));
+  ASSERT_TRUE(second.has_value());
+  EXPECT_FALSE(*second);
+  EXPECT_EQ(*resolve_calls_, 1);
+}
+#endif

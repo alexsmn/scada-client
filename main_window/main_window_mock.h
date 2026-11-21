@@ -22,6 +22,9 @@ class MockMainWindow : public MainWindowInterface {
         .WillByDefault(
             [](const WindowDefinition&,
                bool) -> Awaitable<OpenedViewInterface*> { co_return nullptr; });
+    // Nothing staged: the caller goes ahead.
+    ON_CALL(*this, ResolvePendingChanges())
+        .WillByDefault([]() -> Awaitable<bool> { co_return true; });
   }
 
   MOCK_METHOD(int, GetMainWindowId, (), (const override));
@@ -38,6 +41,10 @@ class MockMainWindow : public MainWindowInterface {
 
   MOCK_METHOD(void, SaveCurrentPage, (), (override));
   MOCK_METHOD(void, DeleteCurrentPage, (), (override));
+
+  // Staged edits.
+
+  MOCK_METHOD(Awaitable<bool>, ResolvePendingChanges, (), (override));
 
   // Views.
 

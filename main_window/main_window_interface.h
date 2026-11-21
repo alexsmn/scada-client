@@ -21,6 +21,20 @@ class MainWindowInterface {
   virtual void SaveCurrentPage() = 0;
   virtual void DeleteCurrentPage() = 0;
 
+  // Staged edits.
+
+  // Puts each view holding staged edits (the Properties form's) to the
+  // operator in turn, fronting it first. Anything that closes views wholesale
+  // -- switching, reverting or deleting a page, signing out -- runs this first
+  // (backlog 1077), as closing the window does (backlog 1073).
+  //
+  // Completes true when nothing is staged any more, each view having applied
+  // or discarded its edits; false when the operator cancelled, a prompt failed,
+  // another resolution was already running, or the window went away meanwhile.
+  // On false the caller leaves every view open. Defaulted so a test double
+  // with no views need not override it.
+  virtual Awaitable<bool> ResolvePendingChanges() { co_return true; }
+
   // Views.
 
   [[nodiscard]] virtual OpenedViewInterface* GetActiveView() const = 0;

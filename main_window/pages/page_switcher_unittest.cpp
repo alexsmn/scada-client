@@ -20,6 +20,10 @@ Awaitable<MessageBoxResult> ReturnMessageBoxResultAsync(
   co_return result;
 }
 
+Awaitable<bool> ReturnResolvedAsync(bool resolved) {
+  co_return resolved;
+}
+
 class PageSwitcherTest : public Test {
  protected:
   Page& AddPage(std::u16string title) {
@@ -103,6 +107,7 @@ TEST_F(PageSwitcherTest, SwitchingToAnotherPageSavesTheCurrentOneFirst) {
       .WillRepeatedly(ReturnRef(current));
 
   InSequence sequence;
+  EXPECT_CALL(main_window_, ResolvePendingChanges());
   EXPECT_CALL(main_window_, SaveCurrentPage());
   EXPECT_CALL(main_window_, OpenPage(Ref(target)));
 
@@ -122,6 +127,7 @@ TEST_F(PageSwitcherTest, ActivatingTheCurrentPageConfirmsTheRevert) {
       });
   // A revert discards unsaved changes, so the outgoing page must NOT be saved.
   EXPECT_CALL(main_window_, SaveCurrentPage()).Times(0);
+  EXPECT_CALL(main_window_, ResolvePendingChanges());
   EXPECT_CALL(main_window_, OpenPage(Ref(current)));
 
   PageSwitcher switcher = MakeSwitcher();
@@ -142,6 +148,60 @@ TEST_F(PageSwitcherTest, CancelingTheRevertLeavesThePageAlone) {
 
   PageSwitcher switcher = MakeSwitcher();
   switcher.ActivatePage(current.id);
+  Drain(executor_);
+}
+
+// Backlog 1077: opening another page closes every view of this one, so the
+// Properties window's staged edits are put to the operator first, and a Cancel
+// keeps the current page -- neither saved nor replaced.
+TEST_F(PageSwitcherTest, CancellingStagedEditsKeepsTheCurrentPage) {
+  Page& current = AddPage(u"Current");
+  Page& target = AddPage(u"Target");
+  EXPECT_CALL(main_window_, GetCurrentPage())
+      .WillRepeatedly(ReturnRef(current));
+  EXPECT_CALL(main_window_, ResolvePendingChanges()).WillOnce([] {
+    return ReturnResolvedAsync(false);
+  });
+  // StrictMock: SaveCurrentPage() or OpenPage() here fails the test.
+
+  PageSwitcher switcher = MakeSwitcher();
+  switcher.ActivatePage(target.id);
+  Drain(executor_);
+}
+
+// The same for a revert: confirming "Return to saved page" still asks about
+// the staged edits, and a Cancel there keeps the page as it is.
+TEST_F(PageSwitcherTest, CancellingStagedEditsStopsARevert) {
+  Page& current = AddPage(u"Current");
+  EXPECT_CALL(main_window_, GetCurrentPage())
+      .WillRepeatedly(ReturnRef(current));
+  EXPECT_CALL(dialog_service_,
+              RunMessageBox(_, _, MessageBoxMode::QuestionYesNo))
+      .WillOnce([](std::u16string_view, std::u16string_view, MessageBoxMode) {
+        return ReturnMessageBoxResultAsync(MessageBoxResult::Yes);
+      });
+  EXPECT_CALL(main_window_, ResolvePendingChanges()).WillOnce([] {
+    return ReturnResolvedAsync(false);
+  });
+
+  PageSwitcher switcher = MakeSwitcher();
+  switcher.ActivatePage(current.id);
+  Drain(executor_);
+}
+
+// A page deleted while the prompt was up is not opened afterwards.
+TEST_F(PageSwitcherTest, APageDeletedWhileAskingIsNotOpened) {
+  Page& current = AddPage(u"Current");
+  const int target_id = AddPage(u"Target").id;
+  EXPECT_CALL(main_window_, GetCurrentPage())
+      .WillRepeatedly(ReturnRef(current));
+  EXPECT_CALL(main_window_, ResolvePendingChanges()).WillOnce([&] {
+    profile_.pages.erase(target_id);
+    return ReturnResolvedAsync(true);
+  });
+
+  PageSwitcher switcher = MakeSwitcher();
+  switcher.ActivatePage(target_id);
   Drain(executor_);
 }
 

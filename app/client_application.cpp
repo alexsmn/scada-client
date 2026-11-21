@@ -61,6 +61,7 @@
 #include "transmission_rules/qt/transmission_rule_selection_panel.h"
 #include "user_access/qt/user_access_selection_panel.h"
 
+#include <QPointer>
 #include <boost/json.hpp>
 
 #include <transport/transport_factory_impl.h>
@@ -950,6 +951,14 @@ Awaitable<void> ClientApplication::SignOut() {
 Awaitable<void> ClientApplication::SignOutAsync() {
   LOG_INFO(*logger_) << ("Sign out");
 
+  // The session rebuild destroys every main window, and the Properties
+  // window's staged edits with it, so they are settled before anything else:
+  // a Cancel abandons the sign-out with the session untouched (backlog 1077).
+  if (!co_await ResolvePendingChangesInAllWindowsAsync()) {
+    LOG_INFO(*logger_) << ("Sign out cancelled: staged edits kept");
+    co_return;
+  }
+
   co_await SaveProfileToServerOnQuitAsync();
 
   auto services = master_data_services_ ? master_data_services_->as_services()
@@ -972,6 +981,27 @@ Awaitable<void> ClientApplication::SignOutAsync() {
   // saved, so reading it again costs a round trip and loses nothing.
   co_await RebuildSessionAsync();
   co_return;
+}
+
+Awaitable<bool> ClientApplication::ResolvePendingChangesInAllWindowsAsync() {
+  if (!main_window_module_)
+    co_return true;
+
+  // Guarded pointers taken up front: a window can close while another
+  // window's prompt is up, and the manager's list changes with it.
+  std::vector<QPointer<MainWindow>> windows;
+  for (MainWindow& window :
+       main_window_module_->main_window_manager().main_windows()) {
+    windows.emplace_back(&window);
+  }
+
+  for (const QPointer<MainWindow>& window : windows) {
+    if (!window)
+      continue;
+    if (!co_await window->ResolvePendingChanges())
+      co_return false;
+  }
+  co_return true;
 }
 
 Awaitable<void> ClientApplication::RebuildSessionAsync() {

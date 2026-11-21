@@ -947,8 +947,9 @@ void MainWindow::closeEvent(QCloseEvent* event) {
   // itself again once every view has answered Apply or Discard.
   if (!GetViewsWithPendingChanges().empty()) {
     event->ignore();
+    // A second close while the prompt is up adds nothing;
+    // ResolveAllPendingChanges would refuse it anyway.
     if (!resolving_pending_changes_) {
-      resolving_pending_changes_ = true;
       CoSpawn(executor_, [self = QPointer<MainWindow>{this}] {
         return ResolvePendingChangesThenClose(self);
       });
@@ -970,9 +971,17 @@ void MainWindow::closeEvent(QCloseEvent* event) {
   QMainWindow::closeEvent(event);
 }
 
+Awaitable<bool> MainWindow::ResolvePendingChanges() {
+  return ResolveAllPendingChanges(QPointer<MainWindow>{this});
+}
+
 // static
-Awaitable<void> MainWindow::ResolvePendingChangesThenClose(
+Awaitable<bool> MainWindow::ResolveAllPendingChanges(
     QPointer<MainWindow> self) {
+  if (!self || self->resolving_pending_changes_)
+    co_return false;
+  self->resolving_pending_changes_ = true;
+
   // `self` is re-checked after every await: the window can go away while a
   // prompt is up (sign-out, quit from another window).
   const std::vector<int> window_ids = self->GetViewsWithPendingChanges();
@@ -981,21 +990,30 @@ Awaitable<void> MainWindow::ResolvePendingChangesThenClose(
     if (!view)
       continue;
     self->ActivateView(*view);
-    bool may_close = false;
+    bool resolved = false;
     try {
-      may_close = co_await view->ResolvePendingChanges();
+      resolved = co_await view->ResolvePendingChanges();
     } catch (...) {
-      may_close = false;
+      // A prompt that fails to run keeps the view and its edits.
+      resolved = false;
     }
     if (!self)
-      co_return;
-    if (!may_close) {
+      co_return false;
+    if (!resolved) {
       self->resolving_pending_changes_ = false;
-      co_return;
+      co_return false;
     }
   }
   self->resolving_pending_changes_ = false;
-  self->close();
+  co_return true;
+}
+
+// static
+Awaitable<void> MainWindow::ResolvePendingChangesThenClose(
+    QPointer<MainWindow> self) {
+  const bool resolved = co_await ResolveAllPendingChanges(self);
+  if (resolved && self)
+    self->close();
 }
 
 void MainWindow::SetPopupMenuInterceptor(PopupMenuInterceptor interceptor) {

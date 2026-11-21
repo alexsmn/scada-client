@@ -56,6 +56,10 @@ Awaitable<MessageBoxResult> ReturnMessageBoxResultAsync(
   co_return result;
 }
 
+Awaitable<bool> ReturnResolvedAsync(bool resolved) {
+  co_return resolved;
+}
+
 }  // namespace
 
 class PageCommandsTest : public Test {
@@ -102,6 +106,8 @@ TEST_F(PageCommandsTest, DeletePageConfirmed) {
       .WillOnce([](std::u16string_view, std::u16string_view, MessageBoxMode) {
         return ReturnMessageBoxResultAsync(MessageBoxResult::Yes);
       });
+  InSequence sequence;
+  EXPECT_CALL(main_window_, ResolvePendingChanges());
   EXPECT_CALL(main_window_, DeleteCurrentPage());
 
   command->execute_handler(command_context_);
@@ -124,6 +130,77 @@ TEST_F(PageCommandsTest, DeletePageDeclinedKeepsThePage) {
 
   command->execute_handler(command_context_);
   Drain(executor_);
+}
+
+// Backlog 1077: deleting the page closes its views, so the Properties
+// window's staged edits are put to the operator after the delete is confirmed,
+// and a Cancel there keeps the page.
+TEST_F(PageCommandsTest, CancellingStagedEditsKeepsThePage) {
+  Page page;
+  page.title = u"Shift";
+  auto* command = commands_.FindCommand(ID_PAGE_DELETE);
+  ASSERT_THAT(command, NotNull());
+
+  EXPECT_CALL(main_window_, GetCurrentPage()).WillRepeatedly(ReturnRef(page));
+  EXPECT_CALL(dialog_service_,
+              RunMessageBox(_, _, MessageBoxMode::QuestionYesNo))
+      .WillOnce([](std::u16string_view, std::u16string_view, MessageBoxMode) {
+        return ReturnMessageBoxResultAsync(MessageBoxResult::Yes);
+      });
+  EXPECT_CALL(main_window_, ResolvePendingChanges()).WillOnce([] {
+    return ReturnResolvedAsync(false);
+  });
+  // StrictMock: a DeleteCurrentPage() call here fails the test.
+
+  command->execute_handler(command_context_);
+  Drain(executor_);
+}
+
+// New and Duplicate open another page in this window, closing the current
+// one's views: staged edits first, and a Cancel opens nothing.
+TEST_F(PageCommandsTest, NewPageAsksAboutStagedEditsFirst) {
+  auto* command = commands_.FindCommand(ID_PAGE_NEW);
+  ASSERT_THAT(command, NotNull());
+  const std::size_t page_count = profile_.pages.size();
+
+  EXPECT_CALL(main_window_, ResolvePendingChanges()).WillOnce([] {
+    return ReturnResolvedAsync(false);
+  });
+  command->execute_handler(command_context_);
+  Drain(executor_);
+  EXPECT_EQ(profile_.pages.size(), page_count);
+
+  InSequence sequence;
+  EXPECT_CALL(main_window_, ResolvePendingChanges());
+  EXPECT_CALL(main_window_, SaveCurrentPage());
+  EXPECT_CALL(main_window_, OpenPage(_));
+  command->execute_handler(command_context_);
+  Drain(executor_);
+  EXPECT_EQ(profile_.pages.size(), page_count + 1);
+}
+
+TEST_F(PageCommandsTest, DuplicatePageAsksAboutStagedEditsFirst) {
+  Page page;
+  page.title = u"Shift";
+  auto* command = commands_.FindCommand(ID_PAGE_DUPLICATE);
+  ASSERT_THAT(command, NotNull());
+  const std::size_t page_count = profile_.pages.size();
+  EXPECT_CALL(main_window_, GetCurrentPage()).WillRepeatedly(ReturnRef(page));
+
+  EXPECT_CALL(main_window_, ResolvePendingChanges()).WillOnce([] {
+    return ReturnResolvedAsync(false);
+  });
+  command->execute_handler(command_context_);
+  Drain(executor_);
+  EXPECT_EQ(profile_.pages.size(), page_count);
+
+  InSequence sequence;
+  EXPECT_CALL(main_window_, ResolvePendingChanges());
+  EXPECT_CALL(main_window_, SaveCurrentPage());
+  EXPECT_CALL(main_window_, OpenPage(_));
+  command->execute_handler(command_context_);
+  Drain(executor_);
+  EXPECT_EQ(profile_.pages.size(), page_count + 1);
 }
 
 // The destructive command comes last in the Page menu, behind a separator; it
@@ -254,6 +331,7 @@ TEST_F(PageMenuModelTest, RevertCurrentPageConfirmedOpensSavedPage) {
       .WillOnce([](std::u16string_view, std::u16string_view, MessageBoxMode) {
         return ReturnMessageBoxResultAsync(MessageBoxResult::Yes);
       });
+  EXPECT_CALL(main_window_, ResolvePendingChanges());
   EXPECT_CALL(main_window_, OpenPage(Ref(page)));
 
   PageMenuModel menu{menu_context_};

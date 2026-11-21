@@ -96,16 +96,23 @@ void PageSwitcher::SetPageIcon(int page_id, std::string_view key) {
 }
 
 void PageSwitcher::ActivatePage(int page_id) {
-  auto i = profile_.pages.find(page_id);
-  if (i == profile_.pages.end())
+  if (!profile_.pages.contains(page_id))
     return;
 
-  const Page& page = i->second;
   const Page& current_page = main_window_.GetCurrentPage();
-
-  const bool revert = page.id == current_page.id;
+  const bool revert = page_id == current_page.id;
   if (!revert) {
-    OpenPageHelper(page, false);
+    // Don't allow to open same page in different windows. Refused before any
+    // staged-edits prompt, so the operator is not asked about edits for a
+    // switch that cannot happen.
+    if (main_window_manager_.IsPageOpened(page_id)) {
+      ShowMessageBox(executor_, dialog_service_,
+                     Translate("The specified page is open in another window."),
+                     /*title=*/{}, MessageBoxMode::Info);
+      return;
+    }
+    CoSpawn(executor_, cancelation_,
+            [this, page_id] { return SwitchToPageAsync(page_id, false); });
     return;
   }
 
@@ -114,28 +121,31 @@ void PageSwitcher::ActivatePage(int page_id) {
   std::u16string message =
       u16format(Translate("Return to saved page {}?"), current_page.GetTitle());
   CoSpawn(executor_, cancelation_,
-          [this, page_ptr = &page,
-           message = std::move(message)]() -> Awaitable<void> {
+          [this, page_id, message = std::move(message)]() -> Awaitable<void> {
             auto message_box_result = co_await dialog_service_.RunMessageBox(
                 message, {}, MessageBoxMode::QuestionYesNo);
             if (message_box_result == MessageBoxResult::Yes)
-              OpenPageHelper(*page_ptr, true);
+              co_await SwitchToPageAsync(page_id, true);
             co_return;
           });
 }
 
-void PageSwitcher::OpenPageHelper(const Page& page, bool revert) {
-  // Don't allow to open same page in different windows.
-  if (!revert && main_window_manager_.IsPageOpened(page.id)) {
-    ShowMessageBox(executor_, dialog_service_,
-                   Translate("The specified page is open in another window."),
-                   /*title=*/{}, MessageBoxMode::Info);
-    return;
-  }
+Awaitable<void> PageSwitcher::SwitchToPageAsync(int page_id, bool revert) {
+  // Opening a page closes every view of the current one, and the Properties
+  // window's staged edits with it, so they are settled first (backlog 1077).
+  if (!co_await main_window_.ResolvePendingChanges())
+    co_return;
 
-  if (!revert) {
+  // The prompts may have stayed up a while: the page can have been deleted, or
+  // opened in another window, meanwhile. Looked up again rather than held.
+  auto i = profile_.pages.find(page_id);
+  if (i == profile_.pages.end())
+    co_return;
+  if (!revert && main_window_manager_.IsPageOpened(page_id))
+    co_return;
+
+  if (!revert)
     main_window_.SaveCurrentPage();
-  }
 
-  main_window_.OpenPage(page);
+  main_window_.OpenPage(i->second);
 }

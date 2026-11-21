@@ -62,6 +62,8 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // BaseMainWindow
   virtual DialogService& GetDialogService() override { return dialog_service_; }
   virtual void SetWindowFlashing(bool flashing) override;
+  // Public because sign-out asks every main window in turn (backlog 1077).
+  virtual Awaitable<bool> ResolvePendingChanges() override;
   // Whether the window is currently asking for the operator's attention.
   // Qt owns the alert itself and exposes no way to read it back — the platform
   // alert state lives behind QPlatformWindow — so the request is mirrored here.
@@ -122,9 +124,15 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   virtual void closeEvent(QCloseEvent* event) override;
 
  private:
-  // Asks each view holding pending changes (backlog 1073) in turn, fronting
-  // it first; closes the window again only if none of them answered Cancel.
-  // Runs detached from closeEvent, which has already ignored the event.
+  // Asks each view holding pending changes in turn, fronting it first, and
+  // completes true when none of them answered Cancel. `self` rather than
+  // `this`: the window can be destroyed while a prompt is up. A second call
+  // while one is running completes false at once rather than stacking prompts.
+  static Awaitable<bool> ResolveAllPendingChanges(QPointer<MainWindow> self);
+
+  // ResolveAllPendingChanges (backlog 1073), then closes the window again if it
+  // succeeded. Runs detached from closeEvent, which has already ignored the
+  // event.
   static Awaitable<void> ResolvePendingChangesThenClose(
       QPointer<MainWindow> self);
 
@@ -256,8 +264,8 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // Mirrors the last state asked for through SetWindowFlashing.
   bool window_flashing_ = false;
 
-  // ResolvePendingChangesThenClose is running; a second close request while
-  // its prompt is up must not start another.
+  // ResolveAllPendingChanges is running; a second request (a close, a page
+  // switch, a sign-out) while its prompt is up must not start another.
   bool resolving_pending_changes_ = false;
   // How many times the taskbar alert was raised; Qt offers no way to read the
   // alert state back, so this is what a test can observe.
