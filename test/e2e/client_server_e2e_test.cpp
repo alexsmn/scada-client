@@ -2341,12 +2341,14 @@ TEST_P(ClientServerE2eTest, ConfigurationChanges_ReachEveryServerCopy) {
           ProxyOpcUaSession edge;
           ASSERT_TRUE(
               edge.Connect(cluster_->Tier(ClusterTier::kIec104)->opcua_port()));
-          // Judged by the listing, not by a Read: the edge answers a Read
-          // of an id it no longer holds Good with an empty name rather than
-          // Bad_NodeIdUnknown (backlog 978), while the deletion itself has
-          // reached it — its device activator stops the link.
           EXPECT_TRUE(WaitUntilNotAChild(edge, kDevicesRoot, link))
               << "the IEC 104 edge still lists a deleted device";
+          // And a Read of the deleted id fails there too. It used to answer
+          // Good with an empty name: the edge's remote configuration turned
+          // the config tier's per-node error into an empty node (backlog 978,
+          // MakeNodeStateFromCoreAttributes).
+          EXPECT_EQ(WaitForDisplayName(edge, link, std::nullopt), std::nullopt)
+              << "the IEC 104 edge still serves a deleted device";
         }
       });
 }
