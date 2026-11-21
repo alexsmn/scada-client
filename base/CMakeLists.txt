@@ -5,7 +5,7 @@ if(NOT SCADA_CXX_MODULES)
   target_precompile_headers(client_base REUSE_FROM scada_base)
 endif()
 
-target_link_libraries(client_base PUBLIC scada_base)
+target_link_libraries(client_base PUBLIC scada_base client_include_roots)
 
 # SecretStore backends (secret_store.h): DPAPI on Windows, the Keychain on
 # macOS.

@@ -1,6 +1,7 @@
 client_module(client_services)
 
 client_module_link_libraries(client_services PUBLIC
+  client_include_roots
   aui
   scada_common
   # `task_manager_impl.cpp` uses `NetExecutorAdapter` / `scada::CoroutineService`

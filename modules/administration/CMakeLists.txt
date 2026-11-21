@@ -1,4 +1,5 @@
 client_module(client_administration)
+client_module_link_libraries(client_administration PUBLIC client_include_roots)
 
 client_module_link_libraries(client_administration PRIVATE
   client_controller

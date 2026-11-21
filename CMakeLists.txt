@@ -179,9 +179,16 @@ endfunction()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aui")
 find_package(ScadaClientAui REQUIRED)
 
-include_directories(client
-  "."
-  "modules"
+# The client's two include roots: the product root (`#include "base/..."`,
+# `"controller/..."`) and `modules/` (`#include "node_table/..."`). An
+# INTERFACE target instead of directory-scoped include_directories(), so a
+# target sees them only by depending on it, and that dependency is visible
+# in the target graph. client_base links it PUBLIC; everything that builds on
+# client_base inherits it.
+add_library(client_include_roots INTERFACE)
+target_include_directories(client_include_roots INTERFACE
+  "${CMAKE_CURRENT_SOURCE_DIR}"
+  "${CMAKE_CURRENT_SOURCE_DIR}/modules"
 )
 
 add_subdirectory(base)

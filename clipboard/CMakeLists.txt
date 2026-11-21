@@ -8,6 +8,7 @@ if(NOT SCADA_CXX_MODULES)
 endif()
 
 target_link_libraries(client_clipboard PUBLIC
+  client_include_roots
   node_service
   # `clipboard_util.cpp` uses coroutine awaitables, which transitively pull in
   # `transport/executor.h`.

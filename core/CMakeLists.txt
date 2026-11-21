@@ -2,7 +2,7 @@ scada_module(client_core)
 
 target_precompile_headers(client_core REUSE_FROM scada_base)
 
-target_link_libraries(client_core PUBLIC scada_base)
+target_link_libraries(client_core PUBLIC scada_base client_include_roots)
 
 # The client facade set is Qt-flavored (see docs/ops/client-cxx-modules.md), and this
 # facade in particular cannot exist without the Qt UI config:
