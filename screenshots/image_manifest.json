@@ -3274,7 +3274,7 @@
       "referenced_from": [
         "dev/designer/properties.md"
       ],
-      "notes": "Properties panel, Russian UI. A single shape of TEC-1 selected. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `panel_property`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+      "notes": "Properties panel (the Inspector) on its Sheet tab, Russian UI. A single shape of TEC-1 selected. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `panel_property`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
     },
     {
       "file": "designer-properties-en.png",
@@ -3288,7 +3288,7 @@
       "referenced_from": [
         "dev/designer/properties.md"
       ],
-      "notes": "Transform panel, Russian UI. A single shape selected. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `panel_transform`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+      "notes": "The Inspector's Shape tab with its Position & size section (formerly the Transform panel), Russian UI. A single shape selected. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `panel_transform`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
     },
     {
       "file": "designer-transform-en.png",
