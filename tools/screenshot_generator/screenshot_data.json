@@ -921,8 +921,8 @@
       "class": "object",
       "type_definition": "SCADA.67",
       "properties": {
-        "SCADA.172": 0,
-        "SCADA.173": 60,
+        "SCADA.172": 3,
+        "SCADA.173": 60000,
         "SCADA.174": 0,
         "SCADA.175": 1000
       }
@@ -934,8 +934,8 @@
       "type_definition": "SCADA.67",
       "properties": {
         "SCADA.172": 1,
-        "SCADA.173": 120,
-        "SCADA.174": 90,
+        "SCADA.173": 120000,
+        "SCADA.174": 30000,
         "SCADA.175": 1000
       }
     },
@@ -946,7 +946,7 @@
       "type_definition": "SCADA.67",
       "properties": {
         "SCADA.172": 2,
-        "SCADA.173": 30,
+        "SCADA.173": 30000,
         "SCADA.174": 0,
         "SCADA.175": 500
       }
@@ -957,8 +957,8 @@
       "class": "object",
       "type_definition": "SCADA.67",
       "properties": {
-        "SCADA.172": 3,
-        "SCADA.173": 10,
+        "SCADA.172": 0,
+        "SCADA.173": 10000,
         "SCADA.174": 0,
         "SCADA.175": 2000
       }
@@ -971,8 +971,8 @@
       "properties": {
         "SCADA.216": "Вкл",
         "SCADA.217": "Откл",
-        "SCADA.218": 32768,
-        "SCADA.219": 8421504
+        "SCADA.218": 4,
+        "SCADA.219": -1
       }
     },
     {
@@ -983,8 +983,8 @@
       "properties": {
         "SCADA.216": "Норма",
         "SCADA.217": "Авария",
-        "SCADA.218": 32768,
-        "SCADA.219": 255
+        "SCADA.218": 4,
+        "SCADA.219": 3
       }
     },
     {
@@ -995,8 +995,8 @@
       "properties": {
         "SCADA.216": "Замкнут",
         "SCADA.217": "Разомкнут",
-        "SCADA.218": 16711680,
-        "SCADA.219": 8421504
+        "SCADA.218": 5,
+        "SCADA.219": -1
       }
     },
     {
@@ -1007,8 +1007,8 @@
       "properties": {
         "SCADA.216": "Работа",
         "SCADA.217": "Стоп",
-        "SCADA.218": 32768,
-        "SCADA.219": 255
+        "SCADA.218": 4,
+        "SCADA.219": 3
       }
     },
     {
@@ -1814,21 +1814,21 @@
     {
       "type": "SimulationItems",
       "filename": "admin-simulation.png",
-      "width": 560,
+      "width": 700,
       "height": 320,
       "min_rows": 4
     },
     {
       "type": "Params",
       "filename": "admin-formats.png",
-      "width": 560,
+      "width": 700,
       "height": 300,
       "min_rows": 4
     },
     {
       "type": "HistoricalDB",
       "filename": "admin-historical-dbs.png",
-      "width": 560,
+      "width": 700,
       "height": 280,
       "min_rows": 3
     },

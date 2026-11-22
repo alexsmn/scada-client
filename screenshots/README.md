@@ -12,47 +12,47 @@ Workspace views and panels — what the operator works in. (56)
 
 | Capture | Preview | |
 |---|---|---|
-| **Account roles**<br>`account-roles.png` | <img src="account-roles.png" alt="Account roles" width="360"> | [Light](account-roles-light.png) |
-| **Admin formats**<br>`admin-formats.png` | <img src="admin-formats.png" alt="Admin formats" width="360"> | [Light](admin-formats-light.png) |
-| **Admin historical dbs**<br>`admin-historical-dbs.png` | <img src="admin-historical-dbs.png" alt="Admin historical dbs" width="360"> | [Light](admin-historical-dbs-light.png) |
-| **Admin simulation**<br>`admin-simulation.png` | <img src="admin-simulation.png" alt="Admin simulation" width="360"> | [Light](admin-simulation-light.png) |
-| **Administration explorer**<br>`administration-explorer.png` | <img src="administration-explorer.png" alt="Administration explorer" width="360"> | [Light](administration-explorer-light.png) |
-| **Audit log**<br>`audit-log.png` | <img src="audit-log.png" alt="Audit log" width="360"> | [Light](audit-log-light.png) |
-| **Breadcrumb**<br>`breadcrumb.png` | <img src="breadcrumb.png" alt="Breadcrumb" width="360"> | [Light](breadcrumb-light.png) |
+| **Account roles**<br>`account-roles.png` | <img src="account-roles.png" alt="Account roles" width="360"> | [Light](account-roles-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/users/) |
+| **Admin formats**<br>`admin-formats.png` | <img src="admin-formats.png" alt="Admin formats" width="360"> | [Light](admin-formats-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
+| **Admin historical dbs**<br>`admin-historical-dbs.png` | <img src="admin-historical-dbs.png" alt="Admin historical dbs" width="360"> | [Light](admin-historical-dbs-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
+| **Admin simulation**<br>`admin-simulation.png` | <img src="admin-simulation.png" alt="Admin simulation" width="360"> | [Light](admin-simulation-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
+| **Administration explorer**<br>`administration-explorer.png` | <img src="administration-explorer.png" alt="Administration explorer" width="360"> | [Light](administration-explorer-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
+| **Audit log**<br>`audit-log.png` | <img src="audit-log.png" alt="Audit log" width="360"> | [Light](audit-log-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/users/) |
+| **Breadcrumb**<br>`breadcrumb.png` | <img src="breadcrumb.png" alt="Breadcrumb" width="360"> | [Light](breadcrumb-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
 | **Bulk create**<br>`bulk-create.png` | <img src="bulk-create.png" alt="Bulk create" width="360"> | [Light](bulk-create-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/data-items/) |
 | **Client retransmission**<br>`client-retransmission.png` | <img src="client-retransmission.png" alt="Client retransmission" width="360"> | [Light](client-retransmission-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
-| **Command field**<br>`command-field.png` | <img src="command-field.png" alt="Command field" width="360"> | [Light](command-field-light.png) |
-| **Config address map**<br>`config-address-map.png` | <img src="config-address-map.png" alt="Config address map" width="360"> | [Light](config-address-map-light.png) |
+| **Command field**<br>`command-field.png` | <img src="command-field.png" alt="Command field" width="360"> | [Light](command-field-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
+| **Config address map**<br>`config-address-map.png` | <img src="config-address-map.png" alt="Config address map" width="360"> | [Light](config-address-map-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/devices/) |
 | **Config limits**<br>`config-limits.png` | <img src="config-limits.png" alt="Config limits" width="360"> | [Light](config-limits-light.png) |
 | **Config parameters**<br>`config-parameters.png` | <img src="config-parameters.png" alt="Config parameters" width="360"> | [Light](config-parameters-light.png) |
-| **Data**<br>`data.png` | <img src="data.png" alt="Data" width="360"> | [Light](data-light.png) |
-| **Debugger**<br>`debugger.png` | <img src="debugger.png" alt="Debugger" width="360"> | [Light](debugger-light.png) |
+| **Data**<br>`data.png` | <img src="data.png" alt="Data" width="360"> | [Light](data-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/data/) |
+| **Debugger**<br>`debugger.png` | <img src="debugger.png" alt="Debugger" width="360"> | [Light](debugger-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/debugger/) |
 | **Device diagnostics**<br>`device-diagnostics.png` | <img src="device-diagnostics.png" alt="Device diagnostics" width="360"> | [Light](device-diagnostics-light.png) |
 | **Device metrics**<br>`device-metrics.png` | <img src="device-metrics.png" alt="Device metrics" width="360"> | [Light](device-metrics-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
 | **Device watch**<br>`device-watch.png` | <img src="device-watch.png" alt="Device watch" width="360"> | [Light](device-watch-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/device-watch/) |
 | **Devices**<br>`devices.png` | <img src="devices.png" alt="Devices" width="360"> | [Light](devices-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
-| **Events alarm surface**<br>`events-alarm-surface.png` | <img src="events-alarm-surface.png" alt="Events alarm surface" width="360"> | [Light](events-alarm-surface-light.png) |
-| **Events**<br>`events.png` | <img src="events.png" alt="Events" width="360"> | [Light](events-light.png) |
+| **Events alarm surface**<br>`events-alarm-surface.png` | <img src="events-alarm-surface.png" alt="Events alarm surface" width="360"> | [Light](events-alarm-surface-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/events/) |
+| **Events**<br>`events.png` | <img src="events.png" alt="Events" width="360"> | [Light](events-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/events/) |
 | **Favorites**<br>`favorites.png` | <img src="favorites.png" alt="Favorites" width="360"> | [Light](favorites-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
 | **Files**<br>`files.png` | <img src="files.png" alt="Files" width="360"> | [Light](files-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
-| **Frame decode pane**<br>`frame-decode-pane.png` | <img src="frame-decode-pane.png" alt="Frame decode pane" width="360"> | [Light](frame-decode-pane-light.png) |
+| **Frame decode pane**<br>`frame-decode-pane.png` | <img src="frame-decode-pane.png" alt="Frame decode pane" width="360"> | [Light](frame-decode-pane-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/device-watch/) |
 | **Graph cursor**<br>`graph-cursor.png` | <img src="graph-cursor.png" alt="Graph cursor" width="360"> | [Light](graph-cursor-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/graph/) |
 | **Hardware tree**<br>`hardware-tree.png` | <img src="hardware-tree.png" alt="Hardware tree" width="360"> | [Light](hardware-tree-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
 | **Inspector event**<br>`inspector-event.png` | <img src="inspector-event.png" alt="Inspector event" width="360"> | [Light](inspector-event-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
 | **Inspector panel**<br>`inspector-panel.png` | <img src="inspector-panel.png" alt="Inspector panel" width="360"> | [Light](inspector-panel-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
 | **Limits chart**<br>`limits-chart.png` | <img src="limits-chart.png" alt="Limits chart" width="360"> | [Light](limits-chart-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/architecture/) |
-| **Object tree**<br>`object-tree.png` | <img src="object-tree.png" alt="Object tree" width="360"> | [Light](object-tree-light.png) |
+| **Object tree**<br>`object-tree.png` | <img src="object-tree.png" alt="Object tree" width="360"> | [Light](object-tree-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
 | **Pages**<br>`pages.png` | <img src="pages.png" alt="Pages" width="360"> | [Light](pages-light.png) |
 | **Parameters**<br>`parameters.png` | <img src="parameters.png" alt="Parameters" width="360"> | [Light](parameters-light.png) |
-| **Password policy**<br>`password-policy.png` | <img src="password-policy.png" alt="Password policy" width="360"> | [Light](password-policy-light.png) |
-| **Portfolio**<br>`portfolio.png` | <img src="portfolio.png" alt="Portfolio" width="360"> | [Light](portfolio-light.png) |
+| **Password policy**<br>`password-policy.png` | <img src="password-policy.png" alt="Password policy" width="360"> | [Light](password-policy-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/users/) |
+| **Portfolio**<br>`portfolio.png` | <img src="portfolio.png" alt="Portfolio" width="360"> | [Light](portfolio-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/portfolio/) |
 | **Rail utilities**<br>`rail-utilities.png` | <img src="rail-utilities.png" alt="Rail utilities" width="360"> | [Light](rail-utilities-light.png) |
-| **Roles**<br>`roles.png` | <img src="roles.png" alt="Roles" width="360"> | [Light](roles-light.png) |
-| **Series inspector**<br>`series-inspector.png` | <img src="series-inspector.png" alt="Series inspector" width="360"> | [Light](series-inspector-light.png) |
-| **Severity tiles**<br>`severity-tiles.png` | <img src="severity-tiles.png" alt="Severity tiles" width="360"> | [Light](severity-tiles-light.png) |
-| **Sheet**<br>`sheet.png` | <img src="sheet.png" alt="Sheet" width="360"> | [Light](sheet-light.png) |
+| **Roles**<br>`roles.png` | <img src="roles.png" alt="Roles" width="360"> | [Light](roles-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/users/) |
+| **Series inspector**<br>`series-inspector.png` | <img src="series-inspector.png" alt="Series inspector" width="360"> | [Light](series-inspector-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/graph/) |
+| **Severity tiles**<br>`severity-tiles.png` | <img src="severity-tiles.png" alt="Severity tiles" width="360"> | [Light](severity-tiles-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/alarms/) |
+| **Sheet**<br>`sheet.png` | <img src="sheet.png" alt="Sheet" width="360"> | [Light](sheet-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/sheet/) |
 | **Substation display**<br>`substation-display.png` | <img src="substation-display.png" alt="Substation display" width="360"> | [Light](substation-display-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
-| **Summary**<br>`summary.png` | <img src="summary.png" alt="Summary" width="360"> | [Light](summary-light.png) |
+| **Summary**<br>`summary.png` | <img src="summary.png" alt="Summary" width="360"> | [Light](summary-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/summary/) |
 | **Table workspace**<br>`table-workspace.png` | <img src="table-workspace.png" alt="Table workspace" width="360"> | [Light](table-workspace-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
 | **Table**<br>`table.png` | <img src="table.png" alt="Table" width="360"> | [Light](table-light.png) |
 | **Ti channel**<br>`ti-channel.png` | <img src="ti-channel.png" alt="Ti channel" width="360"> | [Light](ti-channel-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/devices/) |
@@ -62,9 +62,9 @@ Workspace views and panels — what the operator works in. (56)
 | **Transmission rule**<br>`transmission-rule.png` | <img src="transmission-rule.png" alt="Transmission rule" width="360"> | [Light](transmission-rule-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
 | **Ts channel**<br>`ts-channel.png` | <img src="ts-channel.png" alt="Ts channel" width="360"> | [Light](ts-channel-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/devices/) |
 | **Users admin**<br>`users-admin.png` | <img src="users-admin.png" alt="Users admin" width="360"> | [Light](users-admin-light.png) |
-| **Users rbac**<br>`users-rbac.png` | <img src="users-rbac.png" alt="Users rbac" width="360"> | [Light](users-rbac-light.png) |
+| **Users rbac**<br>`users-rbac.png` | <img src="users-rbac.png" alt="Users rbac" width="360"> | [Light](users-rbac-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/users/) |
 | **Users**<br>`users.png` | <img src="users.png" alt="Users" width="360"> | [Light](users-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/users/) |
-| **Watch filter bar**<br>`watch-filter-bar.png` | <img src="watch-filter-bar.png" alt="Watch filter bar" width="360"> | [Light](watch-filter-bar-light.png) |
+| **Watch filter bar**<br>`watch-filter-bar.png` | <img src="watch-filter-bar.png" alt="Watch filter bar" width="360"> | [Light](watch-filter-bar-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/device-watch/) |
 | **Workbench activity rail**<br>`workbench-activity-rail.png` | <img src="workbench-activity-rail.png" alt="Workbench activity rail" width="360"> | [Light](workbench-activity-rail-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
 | **Workbench overview**<br>`workbench-overview.png` | <img src="workbench-overview.png" alt="Workbench overview" width="360"> | [Light](workbench-overview-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
 | **Workbench window**<br>`workbench-window.png` | <img src="workbench-window.png" alt="Workbench window" width="360"> | [Light](workbench-window-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
@@ -75,24 +75,24 @@ Modal and overlay surfaces. (23)
 
 | Capture | Preview | |
 |---|---|---|
-| **About**<br>`about.png` | <img src="about.png" alt="About" width="360"> | [Light](about-light.png) |
-| **Add favourites**<br>`add-favourites.png` | <img src="add-favourites.png" alt="Add favourites" width="360"> | [Light](add-favourites-light.png) |
-| **Change password**<br>`change-password.png` | <img src="change-password.png" alt="Change password" width="360"> | [Light](change-password-light.png) |
+| **About**<br>`about.png` | <img src="about.png" alt="About" width="360"> | [Light](about-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
+| **Add favourites**<br>`add-favourites.png` | <img src="add-favourites.png" alt="Add favourites" width="360"> | [Light](add-favourites-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
+| **Change password**<br>`change-password.png` | <img src="change-password.png" alt="Change password" width="360"> | [Light](change-password-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/users/) |
 | **Client login**<br>`client-login.png` | <img src="client-login.png" alt="Client login" width="360"> | [Light](client-login-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/getting-started/) |
 | **Command palette**<br>`command-palette.png` | <img src="command-palette.png" alt="Command palette" width="360"> | [Light](command-palette-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
 | **Control select confirm**<br>`control-select-confirm.png` | <img src="control-select-confirm.png" alt="Control select confirm" width="360"> | [Light](control-select-confirm-light.png) |
-| **Csv export**<br>`csv-export.png` | <img src="csv-export.png" alt="Csv export" width="360"> | [Light](csv-export-light.png) |
+| **Csv export**<br>`csv-export.png` | <img src="csv-export.png" alt="Csv export" width="360"> | [Light](csv-export-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/export/) |
 | **Limits**<br>`limits.png` | <img src="limits.png" alt="Limits" width="360"> | [Light](limits-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/architecture/) |
 | **Menu create object service**<br>`menu-create-object-service.png` | <img src="menu-create-object-service.png" alt="Menu create object service" width="360"> | [Light](menu-create-object-service-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/data-items/) |
-| **Message box**<br>`message-box.png` | <img src="message-box.png" alt="Message box" width="360"> | [Light](message-box-light.png) |
+| **Message box**<br>`message-box.png` | <img src="message-box.png" alt="Message box" width="360"> | [Light](message-box-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |
 | **Multi create**<br>`multi-create.png` | <img src="multi-create.png" alt="Multi create" width="360"> | [Light](multi-create-light.png) |
 | **Settings**<br>`settings.png` | <img src="settings.png" alt="Settings" width="360"> | [Light](settings-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
 | **Ti manual control**<br>`ti-manual-control.png` | <img src="ti-manual-control.png" alt="Ti manual control" width="360"> | [Light](ti-manual-control-light.png) |
 | **Ti remote control confirm**<br>`ti-remote-control-confirm.png` | <img src="ti-remote-control-confirm.png" alt="Ti remote control confirm" width="360"> | [Light](ti-remote-control-confirm-light.png) |
 | **Ti remote control disabled**<br>`ti-remote-control-disabled.png` | <img src="ti-remote-control-disabled.png" alt="Ti remote control disabled" width="360"> | [Light](ti-remote-control-disabled-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/data-items/) |
 | **Ti remote control enabled**<br>`ti-remote-control-enabled.png` | <img src="ti-remote-control-enabled.png" alt="Ti remote control enabled" width="360"> | [Light](ti-remote-control-enabled-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/data-items/) |
-| **Time range**<br>`time-range.png` | <img src="time-range.png" alt="Time range" width="360"> | [Light](time-range-light.png) |
-| **Transport**<br>`transport.png` | <img src="transport.png" alt="Transport" width="360"> | [Light](transport-light.png) |
+| **Time range**<br>`time-range.png` | <img src="time-range.png" alt="Time range" width="360"> | [Light](time-range-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/graph/) |
+| **Transport**<br>`transport.png` | <img src="transport.png" alt="Transport" width="360"> | [Light](transport-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/devices/) |
 | **Ts manual control**<br>`ts-manual-control.png` | <img src="ts-manual-control.png" alt="Ts manual control" width="360"> | [Light](ts-manual-control-light.png) |
 | **Ts remote control confirm**<br>`ts-remote-control-confirm.png` | <img src="ts-remote-control-confirm.png" alt="Ts remote control confirm" width="360"> | [Light](ts-remote-control-confirm-light.png) |
 | **Ts remote control disabled**<br>`ts-remote-control-disabled.png` | <img src="ts-remote-control-disabled.png" alt="Ts remote control disabled" width="360"> | [Light](ts-remote-control-disabled-light.png) |

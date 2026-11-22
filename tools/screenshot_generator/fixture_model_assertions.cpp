@@ -23,6 +23,7 @@
 #include "main_window/main_window_manager.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
+#include "model/history_node_ids.h"
 #include "model/node_id_util.h"
 #include "model/security_node_ids.h"
 #include "modules/limits/limit_model.h"
@@ -35,6 +36,7 @@
 #include "null_task_manager.h"
 #include "profile/profile.h"
 #include "profile/window_definition.h"
+#include "properties/property_service.h"
 #include "scada/qualifier.h"
 #include "scada/standard_node_ids.h"
 #include "scada/status.h"
@@ -337,6 +339,56 @@ std::string DescribeHierarchicalParents(
 }
 
 }  // namespace
+
+// The Formats, Simulated Signals and Databases admin tables take their columns
+// from the property declarations of the types their folder can create. Two
+// things kept those columns out, and the captures showed only the name
+// columns: the folders were typed with plain FolderType, which declares no
+// creatable child, and the «Тип» of a simulation signal is a model-defined
+// enumeration whose data type the property service did not fetch before
+// choosing a definition for it, so even with the folder types in place that one
+// column was dropped. This runs on the lazy node service the client uses, where
+// the second one shows; a StaticNodeService keeps every node resident and
+// cannot.
+TEST_F(ScreenshotGenerator, AdminTablesOfferEveryPropertyColumn) {
+  WaitForAwaitable(executor_, app_.Start());
+  ASSERT_TRUE(WaitForPendingNodeLoads(executor_, app_.node_service()));
+
+  struct Table {
+    scada::NodeId folder;
+    std::vector<scada::NodeId> columns;
+  };
+  const Table tables[] = {
+      {scada::data_items::id::TsFormats,
+       {scada::data_items::id::TsFormatType_OpenLabel,
+        scada::data_items::id::TsFormatType_CloseLabel,
+        scada::data_items::id::TsFormatType_OpenColor,
+        scada::data_items::id::TsFormatType_CloseColor}},
+      {scada::data_items::id::SimulationSignals,
+       {scada::data_items::id::SimulationSignalType_Function,
+        scada::data_items::id::SimulationSignalType_Period,
+        scada::data_items::id::SimulationSignalType_Phase,
+        scada::data_items::id::SimulationSignalType_UpdateInterval}},
+      {scada::history::id::HistoricalDatabases,
+       {scada::history::id::HistoricalDatabaseType_Depth,
+        scada::history::id::HistoricalDatabaseType_ItemCount,
+        scada::history::id::HistoricalDatabaseType_WriteValueCount,
+        scada::history::id::HistoricalDatabaseType_PendingTaskCount}},
+  };
+
+  PropertyService property_service;
+  for (const Table& table : tables) {
+    SCOPED_TRACE(table.folder.ToString());
+    scada::StatusOr<PropertyDefs> property_defs = WaitForAwaitable(
+        executor_, property_service.GetChildPropertyDefsStatusAsync(
+                       executor_, app_.node_service().GetNode(table.folder)));
+    ASSERT_TRUE(property_defs.ok());
+    std::vector<scada::NodeId> offered;
+    for (const auto& [declaration, definition] : *property_defs)
+      offered.push_back(declaration.node_id());
+    EXPECT_THAT(offered, testing::IsSupersetOf(table.columns));
+  }
+}
 
 // Every `(parent, child)` edge the fixture's `tree` declares reaches the
 // address space as a forward hierarchical reference. The mirror of
