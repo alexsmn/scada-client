@@ -3168,7 +3168,7 @@
       "file": "designer-toolbar-arrange.png",
       "tag": "manual-designer",
       "referenced_from": [
-        "dev/designer.md"
+        "dev/designer/formatting.md"
       ],
       "notes": "Arrange toolbar, Russian UI. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `toolbar_arrange`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
     },
@@ -3182,7 +3182,7 @@
       "file": "designer-toolbar-format.png",
       "tag": "manual-designer",
       "referenced_from": [
-        "dev/designer.md"
+        "dev/designer/formatting.md"
       ],
       "notes": "Format toolbar, Russian UI. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `toolbar_format`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
     },
@@ -3196,7 +3196,7 @@
       "file": "designer-stencils.png",
       "tag": "manual-designer",
       "referenced_from": [
-        "dev/designer.md"
+        "dev/designer/stencils.md"
       ],
       "notes": "Stencils panel, Russian UI. With the sample document and the default stencil library loaded. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `panel_stencil`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
     },
@@ -3210,7 +3210,7 @@
       "file": "designer-properties.png",
       "tag": "manual-designer",
       "referenced_from": [
-        "dev/designer.md"
+        "dev/designer/properties.md"
       ],
       "notes": "Properties panel, Russian UI. A single shape of TEC-1 selected. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `panel_property`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
     },
@@ -3224,7 +3224,7 @@
       "file": "designer-transform.png",
       "tag": "manual-designer",
       "referenced_from": [
-        "dev/designer.md"
+        "dev/designer/properties.md"
       ],
       "notes": "Transform panel, Russian UI. A single shape selected. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `panel_transform`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
     },
@@ -3238,7 +3238,7 @@
       "file": "designer-navigator.png",
       "tag": "manual-designer",
       "referenced_from": [
-        "dev/designer.md"
+        "dev/designer/properties.md"
       ],
       "notes": "Navigator panel, Russian UI. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `panel_navigator`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
     },
@@ -3247,13 +3247,153 @@
       "tag": "manual-designer",
       "referenced_from": [],
       "notes": "English twin of designer-navigator.png, referenced from en/dev/designer.md only. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `panel_navigator`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-dialog-line.png",
+      "tag": "manual-designer",
+      "referenced_from": [
+        "dev/designer/formatting.md"
+      ],
+      "notes": "Line dialog, Russian UI. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `dialog_line`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-dialog-line-en.png",
+      "tag": "manual-designer",
+      "referenced_from": [],
+      "notes": "English twin of designer-dialog-line.png, referenced from the en/dev/designer pages only. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `dialog_line`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-dialog-fill.png",
+      "tag": "manual-designer",
+      "referenced_from": [
+        "dev/designer/formatting.md"
+      ],
+      "notes": "Fill dialog, Russian UI. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `dialog_fill`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-dialog-fill-en.png",
+      "tag": "manual-designer",
+      "referenced_from": [],
+      "notes": "English twin of designer-dialog-fill.png, referenced from the en/dev/designer pages only. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `dialog_fill`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-dialog-text.png",
+      "tag": "manual-designer",
+      "referenced_from": [
+        "dev/designer/formatting.md"
+      ],
+      "notes": "Text dialog, Russian UI. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `dialog_text`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-dialog-text-en.png",
+      "tag": "manual-designer",
+      "referenced_from": [],
+      "notes": "English twin of designer-dialog-text.png, referenced from the en/dev/designer pages only. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `dialog_text`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-dialog-behavior.png",
+      "tag": "manual-designer",
+      "referenced_from": [
+        "dev/designer/formatting.md"
+      ],
+      "notes": "Behavior dialog, Russian UI. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `dialog_behavior`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-dialog-behavior-en.png",
+      "tag": "manual-designer",
+      "referenced_from": [],
+      "notes": "English twin of designer-dialog-behavior.png, referenced from the en/dev/designer pages only. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `dialog_behavior`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-dialog-document.png",
+      "tag": "manual-designer",
+      "referenced_from": [
+        "dev/designer/formatting.md"
+      ],
+      "notes": "Document Properties dialog, Russian UI. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `dialog_document`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-dialog-document-en.png",
+      "tag": "manual-designer",
+      "referenced_from": [],
+      "notes": "English twin of designer-dialog-document.png, referenced from the en/dev/designer pages only. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `dialog_document`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-dialog-layer.png",
+      "tag": "manual-designer",
+      "referenced_from": [
+        "dev/designer/formatting.md"
+      ],
+      "notes": "Layers dialog, Russian UI. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `dialog_layer`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-dialog-layer-en.png",
+      "tag": "manual-designer",
+      "referenced_from": [],
+      "notes": "English twin of designer-dialog-layer.png, referenced from the en/dev/designer pages only. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `dialog_layer`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-grid.png",
+      "tag": "manual-designer",
+      "referenced_from": [
+        "dev/designer/view.md"
+      ],
+      "notes": "Canvas with rulers and grid, Russian UI. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `canvas_grid`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-grid-en.png",
+      "tag": "manual-designer",
+      "referenced_from": [],
+      "notes": "English twin of designer-grid.png, referenced from the en/dev/designer pages only. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `canvas_grid`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-properties-formulas.png",
+      "tag": "manual-designer",
+      "referenced_from": [
+        "dev/designer/properties.md"
+      ],
+      "notes": "Properties panel in formula view, Russian UI. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `panel_property_formulas`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-properties-formulas-en.png",
+      "tag": "manual-designer",
+      "referenced_from": [],
+      "notes": "English twin of designer-properties-formulas.png, referenced from the en/dev/designer pages only. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `panel_property_formulas`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-tabs.png",
+      "tag": "manual-designer",
+      "referenced_from": [
+        "dev/designer.md"
+      ],
+      "notes": "Document tab strip with two documents, Russian UI. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `canvas_tabs`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-tabs-en.png",
+      "tag": "manual-designer",
+      "referenced_from": [],
+      "notes": "English twin of designer-tabs.png, referenced from the en/dev/designer pages only. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `canvas_tabs`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-save-prompt.png",
+      "tag": "manual-designer",
+      "referenced_from": [
+        "dev/designer.md"
+      ],
+      "notes": "The save-changes question, Russian UI. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `dialog_save_prompt`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-save-prompt-en.png",
+      "tag": "manual-designer",
+      "referenced_from": [],
+      "notes": "English twin of designer-save-prompt.png, referenced from the en/dev/designer pages only. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `dialog_save_prompt`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
     }
   ],
   "counts": {
     "auto-dialog": 46,
     "auto-menu": 22,
     "auto-view": 112,
-    "manual-designer": 16,
+    "manual-designer": 36,
     "manual-diagram": 5,
     "manual-modus": 3,
     "manual-os": 2,
