@@ -1,4 +1,5 @@
 #include "screenshot_fixture.h"
+#include "screenshot_style.h"
 
 #include "aui/qt/theme_qt.h"
 #include "base/utf_convert.h"
@@ -291,8 +292,10 @@ ScreenshotGenerator::ScreenshotGenerator() {
   // Consequence to keep in mind while the native migration runs
   // (docs/client/ux/backlog.md P6): these captures show the Fusion rendering,
   // not what an operator sees. Validate native-look changes by running the
-  // real client, not only by diffing generated PNGs.
-  QApplication::setStyle("Fusion");
+  // real client, not only by diffing generated PNGs. The one place Fusion
+  // misreports something the native styles show — the idle line-edit frame —
+  // is corrected in MakeScreenshotStyle (backlog 793).
+  QApplication::setStyle(MakeScreenshotStyle());
 
   // A focused line edit blinks its caret on a wall-clock timer, so whether
   // the caret is in a capture depended on how long the run took to reach the
