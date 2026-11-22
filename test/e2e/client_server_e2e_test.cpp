@@ -2232,6 +2232,56 @@ TEST_P(ClientServerE2eTest, ConfigurationChanges_ReachEveryServerCopy) {
             << "ConfigureAdmin granted in the Client did not reach the "
                "process that signs the account in";
 
+        // --- A non-root ConfigureAdmin administers other accounts -----------
+        // The account just made ConfigureAdmin — not root — creates a second
+        // account, sets its password and grants it a Role. User
+        // administration is gated on the caller's Roles, not on the vestigial
+        // UserType.AccessRights column a 2.6 grant never writes (backlog
+        // 1093).
+        constexpr char16_t kDelegate[] = u"E2E Delegate";
+        scada::NodeId delegate;
+        const auto administer_as_account = [&](auto& session) {
+          ASSERT_TRUE(session.Connect(
+              Protocol() == E2eProtocol::OpcUa ? opcua_port_ : remote_port_,
+              kAccount, kPassword));
+          scada::Status step{scada::StatusCode::Good};
+          delegate =
+              AddObject(session, kUsersFolder, kUserTypeId, kDelegate, &step);
+          ASSERT_FALSE(delegate.is_null())
+              << "a non-root ConfigureAdmin could not create an account: "
+              << ::ToString(step);
+          step = session.Call(
+              kUserManagement, kModifyUser,
+              {scada::LocalizedText{kDelegate}, /*modify_password=*/true,
+               scada::LocalizedText{kPassword},
+               /*modify_user_configuration=*/false, scada::UInt32{0},
+               /*modify_description=*/false, scada::String{}});
+          ASSERT_TRUE(step) << "a non-root ConfigureAdmin could not set a "
+                               "password: "
+                            << ::ToString(step);
+          step = session.Call(
+              kConfigureAdminRole, kRoleTypeAddIdentity,
+              {scada::Variant{scada::MakeIdentityMappingRuleObject(
+                  {.criteria_type = scada::IdentityCriteriaType::kUserName,
+                   .criteria = "E2E Delegate"})}});
+          ASSERT_TRUE(step) << "a non-root ConfigureAdmin could not grant a "
+                               "Role: "
+                            << ::ToString(step);
+        };
+        if (Protocol() == E2eProtocol::OpcUa) {
+          ProxyOpcUaSession session;
+          administer_as_account(session);
+        } else {
+          ProxyRemoteSession session;
+          administer_as_account(session);
+        }
+        if (::testing::Test::HasFatalFailure())
+          return;
+        EXPECT_TRUE(can_configure(kDelegate, kPassword))
+            << "the Role a non-root ConfigureAdmin granted did not take "
+               "effect at sign-in";
+        ASSERT_TRUE(admin.DeleteNode(delegate).ok());
+
         // --- A rename is honoured at sign-in --------------------------------
         status = admin.WriteDisplayName(account, kRenamedAccount);
         ASSERT_TRUE(status)
