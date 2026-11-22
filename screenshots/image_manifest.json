@@ -52,11 +52,11 @@
       ],
       "notes": "LoginDialog modal shown at startup; rendered by the dialog pipeline. The user combo is captured OPEN, listing the seven operator accounts from the fixture's login_user_list (previously one hard-coded 'root' in a closed combo). Opening it is not just showPopup(): a combo popup is its own top-level window, so the capture composes the popup's grab onto the dialog's (expand_combo in the dialog spec) - which also makes this image wider than its spec width. SPARSER SINCE 2026-09-20: the form is Server / User name / Password plus a spanning `Sign in automatically next time` checkbox, which is the shape docs/product/ui-mockups/screens/login.html draws. Three things went. The `Auto-Login:` label column beside a bare checkbox said the same thing twice and half of it was a fragment. The OPC UA security rows (mode, certificate, private key) moved behind a `Security and certificates` disclosure — they are configuration set once, where everything else here is supplied at every sign-in — so they appear in NEITHER login capture, whose fixture backend does not support them anyway. And the `Connecting to:` summary is no longer drawn when the protocol combo is visible, because there it restated the two controls immediately above it; it survives only in a build carrying one protocol, where it is the only place the protocol is named. The capture's height came down 245 -> 190 to match.",
       "captured": {
-        "commit": "1a80b55ed",
+        "commit": "657c2d6b1",
         "platform": "macos",
-        "dirty": false,
-        "sha256": "ab217d48b8707ad7c9d146c0b3ff426612b8f56d8420ba2f2ab46da96deeb2ca",
-        "last_rendered": "3844d632f"
+        "dirty": true,
+        "sha256": "4240cf1c4c4ab788873123469d7c115cff7faf8fb120180f2f8a7354887e0872",
+        "last_rendered": "657c2d6b1"
       }
     },
     {
@@ -68,11 +68,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of client-login.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own. SPARSER SINCE 2026-09-20: the form is Server / User name / Password plus a spanning `Sign in automatically next time` checkbox, which is the shape docs/product/ui-mockups/screens/login.html draws. Three things went. The `Auto-Login:` label column beside a bare checkbox said the same thing twice and half of it was a fragment. The OPC UA security rows (mode, certificate, private key) moved behind a `Security and certificates` disclosure — they are configuration set once, where everything else here is supplied at every sign-in — so they appear in NEITHER login capture, whose fixture backend does not support them anyway. And the `Connecting to:` summary is no longer drawn when the protocol combo is visible, because there it restated the two controls immediately above it; it survives only in a build carrying one protocol, where it is the only place the protocol is named. The capture's height came down 245 -> 190 to match.",
       "captured": {
-        "commit": "1a80b55ed",
+        "commit": "657c2d6b1",
         "platform": "macos",
-        "dirty": false,
-        "sha256": "b2f57f81f2a8f108b7eb4418c95101870ee216dcc0cd09b05cc575eb223e5d41",
-        "last_rendered": "3844d632f"
+        "dirty": true,
+        "sha256": "5fa3d18981a69f9455b8ee8b7fe64adb1ad2df7b9cae6d12019c01f17e5d9cca",
+        "last_rendered": "657c2d6b1"
       }
     },
     {
@@ -85,11 +85,11 @@
       ],
       "notes": "The same LoginDialog under --theme (backlog 3.1): the .ui form under the design-token appearance. This note described a brand lockup and a 'Connecting to:' summary card until 2026-09-20; the lockup was removed when dialogs.md §1 was applied to this dialog, and the summary is described below. Saved under its own name so the legacy client-login.png the getting-started page embeds is never overwritten by a themed render. In the themed-ctest --only list. Rendered on macOS, a supported host for this gallery since 2026-09-12; out of current_generator_owned_subset (subset is auto-* only). SPARSER SINCE 2026-09-20: the form is Server / User name / Password plus a spanning `Sign in automatically next time` checkbox, which is the shape docs/product/ui-mockups/screens/login.html draws. Three things went. The `Auto-Login:` label column beside a bare checkbox said the same thing twice and half of it was a fragment. The OPC UA security rows (mode, certificate, private key) moved behind a `Security and certificates` disclosure — they are configuration set once, where everything else here is supplied at every sign-in — so they appear in NEITHER login capture, whose fixture backend does not support them anyway. And the `Connecting to:` summary is no longer drawn when the protocol combo is visible, because there it restated the two controls immediately above it; it survives only in a build carrying one protocol, where it is the only place the protocol is named. The capture's height came down 245 -> 190 to match.",
       "captured": {
-        "commit": "1a80b55ed",
+        "commit": "657c2d6b1",
         "platform": "macos",
-        "dirty": false,
-        "sha256": "a8530e72dc5214024aaddaad909a368f0202c10a8f224f7b2bad1557d4e55cfa",
-        "last_rendered": "3844d632f"
+        "dirty": true,
+        "sha256": "2096533534b813ce08a5fb376583a1077910b1d3a214f3761f3969bbda0367af",
+        "last_rendered": "657c2d6b1"
       }
     },
     {
@@ -101,11 +101,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of workbench-login.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own. SPARSER SINCE 2026-09-20: the form is Server / User name / Password plus a spanning `Sign in automatically next time` checkbox, which is the shape docs/product/ui-mockups/screens/login.html draws. Three things went. The `Auto-Login:` label column beside a bare checkbox said the same thing twice and half of it was a fragment. The OPC UA security rows (mode, certificate, private key) moved behind a `Security and certificates` disclosure — they are configuration set once, where everything else here is supplied at every sign-in — so they appear in NEITHER login capture, whose fixture backend does not support them anyway. And the `Connecting to:` summary is no longer drawn when the protocol combo is visible, because there it restated the two controls immediately above it; it survives only in a build carrying one protocol, where it is the only place the protocol is named. The capture's height came down 245 -> 190 to match.",
       "captured": {
-        "commit": "1a80b55ed",
+        "commit": "657c2d6b1",
         "platform": "macos",
-        "dirty": false,
-        "sha256": "9383f3bb0a67bc1d0d7c938b652a1d683d80143a54631b5237437806e4d504e6",
-        "last_rendered": "3844d632f"
+        "dirty": true,
+        "sha256": "1abcb12f99d7a1db5f93d558d01e7dbc9a36eebbbe3132d6e4a7cc442f352add",
+        "last_rendered": "657c2d6b1"
       }
     },
     {
@@ -2279,17 +2279,15 @@
     },
     {
       "file": "structure-en.svg",
-      "tag": "manual-diagram",
+      "tag": "obsolete",
       "referenced_from": [],
-      "notes": "English twin of structure.svg, referenced from en/index.md only. Hand-drawn SVG; keep the two in step."
+      "notes": "English twin of structure.svg, referenced from en/index.md only. Hand-drawn SVG; keep the two in step. Obsolete since 2026-11-22: it drew the on-premise layout (workstations on TCP 2000, a central computer on site), and the Server is now offered only as a hosted service; replaced by hosted-deployment.svg."
     },
     {
       "file": "structure.svg",
-      "tag": "manual-diagram",
-      "referenced_from": [
-        "index.md"
-      ],
-      "notes": "System architecture diagram for 2.6: workstations, the central computer's processes, a site computer, field protocols. Hand-drawn SVG; structure-en.svg is its English twin."
+      "tag": "obsolete",
+      "referenced_from": [],
+      "notes": "System architecture diagram for 2.6: workstations, the central computer's processes, a site computer, field protocols. Hand-drawn SVG; structure-en.svg is its English twin. Obsolete since 2026-11-22: it drew the on-premise layout (workstations on TCP 2000, a central computer on site), and the Server is now offered only as a hosted service; replaced by hosted-deployment.svg."
     },
     {
       "file": "ti-channel.png",
@@ -3449,6 +3447,21 @@
       "tag": "manual-designer",
       "referenced_from": [],
       "notes": "English twin of designer-save-prompt.png, referenced from the en/dev/designer pages only. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `dialog_save_prompt`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "hosted-deployment.svg",
+      "tag": "manual-diagram",
+      "referenced_from": [
+        "index.md",
+        "server.md"
+      ],
+      "notes": "The hosted-only deployment (2026-11-22): Clients over encrypted OPC UA to the Server in Telecontrol's cloud, the cloud to the customer's site gateway over one inbound port, the gateway to the devices. Rendered from docs/diagrams/hosted-deployment.puml; hosted-deployment-en.svg is its English twin."
+    },
+    {
+      "file": "hosted-deployment-en.svg",
+      "tag": "manual-diagram",
+      "referenced_from": [],
+      "notes": "English twin of hosted-deployment.svg, referenced from en/index.md and en/server.md. Rendered from docs/diagrams/hosted-deployment-en.puml."
     }
   ],
   "counts": {
@@ -3459,7 +3472,7 @@
     "manual-diagram": 5,
     "manual-modus": 3,
     "manual-os": 2,
-    "obsolete": 21
+    "obsolete": 23
   },
   "current_generator_owned_subset": [
     "about.png",

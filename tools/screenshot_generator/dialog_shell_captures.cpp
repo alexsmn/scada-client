@@ -69,6 +69,13 @@ bool CaptureLoginDialog(const DialogCaptureContext& context) {
                   : UtfConvert<char16_t>(env.login_user_list.front()));
   settings_store->SetString16("UserList", user_list);
   settings_store->SetString("Host", "127.0.0.1");
+  // The Server is a hosted service reached over encrypted OPC UA, and the
+  // manual's sign-in steps say so: type «OPC UA», the address Telecontrol
+  // gives (shown with the documentation domain), «Подпись и шифрование». A
+  // non-zero security mode also opens the «Защита и сертификаты» disclosure.
+  settings_store->SetString("ServerType", "OpcUa");
+  settings_store->SetString("Host:OpcUa", "scada.example.com");
+  settings_store->SetString("SecurityMode", "SignAndEncrypt");
 
   auto lifetime = StartAwaitable(
       env.executor,
