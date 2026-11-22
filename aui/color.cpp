@@ -1,5 +1,6 @@
 ﻿#include "aui/color.h"
 
+#include "aui/translation.h"
 #include "base/string_util.h"
 #include <charconv>
 #include <format>
@@ -50,9 +51,13 @@ int FindColor(Color color) {
   return -1;
 }
 
-std::u16string_view GetColorName(int index) {
+std::u16string GetColorName(int index) {
+  // The palette names are English source strings; the UI language comes from
+  // the translation catalog, where the names are registered as no-ops
+  // (aui/qt/translation_qt.cpp). Untranslated, a Russian Formats table read
+  // «Green» beside «Подпись 0».
   const ColorEntry* entry = GetColorEntry(index);
-  return entry ? entry->name : std::u16string_view{};
+  return entry ? Translate(entry->debug_name) : std::u16string{};
 }
 
 std::string_view GetColorDebugName(int index) {
@@ -62,7 +67,11 @@ std::string_view GetColorDebugName(int index) {
 
 int FindColorName(std::u16string_view str) {
   for (size_t i = 0; i < std::size(kColorEntries); i++) {
-    if (IsAsciiCaseInsensitiveEqual(str, kColorEntries[i].name)) {
+    // A name picked from a translated list arrives translated; compare the
+    // translated name exactly (case folding is ASCII-only) and keep accepting
+    // the English one.
+    if (str == GetColorName(static_cast<int>(i)) ||
+        IsAsciiCaseInsensitiveEqual(str, kColorEntries[i].name)) {
       return i;
     }
   }

@@ -16,6 +16,16 @@ namespace {
     QT_TRANSLATE_NOOP("", "Telecontrol"),
     QT_TRANSLATE_NOOP("", "Vidicon"),
     QT_TRANSLATE_NOOP("", "Loading"),
+    // The colour palette (aui/color.cpp, GetColorName).
+    QT_TRANSLATE_NOOP("", "Transparent"),
+    QT_TRANSLATE_NOOP("", "Black"),
+    QT_TRANSLATE_NOOP("", "White"),
+    QT_TRANSLATE_NOOP("", "Red"),
+    QT_TRANSLATE_NOOP("", "Green"),
+    QT_TRANSLATE_NOOP("", "Blue"),
+    QT_TRANSLATE_NOOP("", "Yellow"),
+    QT_TRANSLATE_NOOP("", "Cyan"),
+    QT_TRANSLATE_NOOP("", "Crimson"),
 };
 
 }  // namespace

@@ -2697,6 +2697,43 @@ Try again? Choose No to continue without the server copy.</source>
         <source>&lt;Default&gt;</source>
         <translation>&lt;Стандартный&gt;</translation>
     </message>
+    <!-- The colour palette (aui/color.cpp GetColorName; no-ops in aui/qt/translation_qt.cpp). -->
+    <message>
+        <source>Transparent</source>
+        <translation>Прозрачный</translation>
+    </message>
+    <message>
+        <source>Black</source>
+        <translation>Чёрный</translation>
+    </message>
+    <message>
+        <source>White</source>
+        <translation>Белый</translation>
+    </message>
+    <message>
+        <source>Red</source>
+        <translation>Красный</translation>
+    </message>
+    <message>
+        <source>Green</source>
+        <translation>Зелёный</translation>
+    </message>
+    <message>
+        <source>Blue</source>
+        <translation>Синий</translation>
+    </message>
+    <message>
+        <source>Yellow</source>
+        <translation>Жёлтый</translation>
+    </message>
+    <message>
+        <source>Cyan</source>
+        <translation>Голубой</translation>
+    </message>
+    <message>
+        <source>Crimson</source>
+        <translation>Малиновый</translation>
+    </message>
     <!-- Device runtime state in the object tree (services/device_state_notifier.cpp).
          "Disabled" is already translated above, for the device property. -->
     <message>

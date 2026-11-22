@@ -32,7 +32,11 @@ size_t GetColorCount();
 Color GetColor(int index);
 int FindColor(Color color);
 
-std::u16string_view GetColorName(int index);
+// The palette colour's name in the UI language (Translate), for display.
+// Empty for an index outside the palette.
+std::u16string GetColorName(int index);
+// The palette index whose GetColorName() — or untranslated English name — is
+// `name`, compared case-insensitively; -1 when none is.
 int FindColorName(std::u16string_view name);
 
 std::string_view GetColorDebugName(int index);
