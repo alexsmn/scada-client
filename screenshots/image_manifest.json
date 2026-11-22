@@ -2981,12 +2981,125 @@
         "sha256": "21ca043cf9d531088ace36216f705c61641709df80fc6c2d272e85cd7294fe5e",
         "last_rendered": "ea9d80292"
       }
+    },
+    {
+      "file": "designer-window.png",
+      "tag": "manual-designer",
+      "referenced_from": [
+        "dev/designer.md"
+      ],
+      "notes": "Designer main window, Russian UI. The whole Designer window with TEC-1.vds open: the one-row toolbar, Formula bar, tool rail, Stencils/Navigator, Transform over Properties, and the status bar with Grid/Snap/zoom. Scaled from the 2x capture to 1600 px wide. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `overview`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-window-en.png",
+      "tag": "manual-designer",
+      "referenced_from": [],
+      "notes": "English twin of designer-window.png, referenced from en/dev/designer.md only. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `overview`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-toolbar-standard.png",
+      "tag": "manual-designer",
+      "referenced_from": [
+        "dev/designer.md"
+      ],
+      "notes": "Standard toolbar, Russian UI. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `toolbar_standard`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-toolbar-standard-en.png",
+      "tag": "manual-designer",
+      "referenced_from": [],
+      "notes": "English twin of designer-toolbar-standard.png, referenced from en/dev/designer.md only. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `toolbar_standard`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-toolbar-arrange.png",
+      "tag": "manual-designer",
+      "referenced_from": [
+        "dev/designer.md"
+      ],
+      "notes": "Arrange toolbar, Russian UI. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `toolbar_arrange`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-toolbar-arrange-en.png",
+      "tag": "manual-designer",
+      "referenced_from": [],
+      "notes": "English twin of designer-toolbar-arrange.png, referenced from en/dev/designer.md only. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `toolbar_arrange`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-toolbar-format.png",
+      "tag": "manual-designer",
+      "referenced_from": [
+        "dev/designer.md"
+      ],
+      "notes": "Format toolbar, Russian UI. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `toolbar_format`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-toolbar-format-en.png",
+      "tag": "manual-designer",
+      "referenced_from": [],
+      "notes": "English twin of designer-toolbar-format.png, referenced from en/dev/designer.md only. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `toolbar_format`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-stencils.png",
+      "tag": "manual-designer",
+      "referenced_from": [
+        "dev/designer.md"
+      ],
+      "notes": "Stencils panel, Russian UI. With the sample document and the default stencil library loaded. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `panel_stencil`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-stencils-en.png",
+      "tag": "manual-designer",
+      "referenced_from": [],
+      "notes": "English twin of designer-stencils.png, referenced from en/dev/designer.md only. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `panel_stencil`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-properties.png",
+      "tag": "manual-designer",
+      "referenced_from": [
+        "dev/designer.md"
+      ],
+      "notes": "Properties panel, Russian UI. A single shape of TEC-1 selected. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `panel_property`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-properties-en.png",
+      "tag": "manual-designer",
+      "referenced_from": [],
+      "notes": "English twin of designer-properties.png, referenced from en/dev/designer.md only. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `panel_property`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-transform.png",
+      "tag": "manual-designer",
+      "referenced_from": [
+        "dev/designer.md"
+      ],
+      "notes": "Transform panel, Russian UI. A single shape selected. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `panel_transform`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-transform-en.png",
+      "tag": "manual-designer",
+      "referenced_from": [],
+      "notes": "English twin of designer-transform.png, referenced from en/dev/designer.md only. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `panel_transform`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-navigator.png",
+      "tag": "manual-designer",
+      "referenced_from": [
+        "dev/designer.md"
+      ],
+      "notes": "Navigator panel, Russian UI. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `panel_navigator`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-navigator-en.png",
+      "tag": "manual-designer",
+      "referenced_from": [],
+      "notes": "English twin of designer-navigator.png, referenced from en/dev/designer.md only. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `panel_navigator`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
     }
   ],
   "counts": {
     "auto-dialog": 51,
     "auto-menu": 21,
     "auto-view": 102,
+    "manual-designer": 16,
     "manual-diagram": 5,
     "manual-modus": 3,
     "manual-os": 2,
