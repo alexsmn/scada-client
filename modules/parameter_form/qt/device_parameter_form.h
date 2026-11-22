@@ -17,6 +17,7 @@ class PropertyModel;
 class PropertyGroup;
 }  // namespace scada::aui
 class DialogService;
+class QFormLayout;
 class QHBoxLayout;
 class QLabel;
 class QPushButton;
@@ -83,6 +84,12 @@ class DeviceParameterForm : public QWidget {
   void Rebuild();
   QWidget* BuildSectionPage(scada::aui::PropertyGroup& group,
                             const std::vector<int>& field_indices);
+  // Adds one form row per entry of `group` named by `field_indices`. A nested
+  // group (a hierarchical property) becomes a heading row followed by its own
+  // fields, recursively.
+  void AddFieldRows(QFormLayout& form,
+                    scada::aui::PropertyGroup& group,
+                    const std::vector<int>& field_indices);
   // Builds the read-only address-map grid page from address_map_.
   QWidget* BuildAddressMapPage();
   // Builds the read-only limits grid page from limits_.
@@ -131,6 +138,11 @@ class DeviceParameterForm : public QWidget {
 // the message box is open; nothing is touched after that.
 Awaitable<bool> ResolveStagedEdits(QPointer<DeviceParameterForm> form,
                                    DialogService& dialog_service);
+
+// The objectName of the subtab button for the property group titled
+// `section_title`, e.g. "sectionSubtab:Каналы". Lets a caller (the screenshot
+// generator's `click_object`) select a category tab by name.
+QString SectionSubtabObjectName(const QString& section_title);
 
 // Builds a DeviceParameterForm. Ownership transfers to the caller.
 DeviceParameterForm* MakeDeviceParameterForm(scada::aui::PropertyModel& model,

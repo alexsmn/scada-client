@@ -11,6 +11,8 @@
 
 #include "app/client_application.h"
 #include "aui/translation.h"
+#include "base/client_paths.h"
+#include "base/path_service.h"
 #include "controller/window_info.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
@@ -27,9 +29,13 @@
 #include <QMenuBar>
 #include <QPixmap>
 #include <QString>
+#include <QStringList>
+#include <boost/json.hpp>
 #include <gtest/gtest.h>
 
 #include <filesystem>
+#include <fstream>
+#include <span>
 #include <string>
 
 namespace {
@@ -187,6 +193,104 @@ TEST_F(ScreenshotGenerator, CaptureMoreMenu) {
       << " row - it is admin_only, so this capture is running without the "
          "administrator identity the manual's image depicts";
   EXPECT_GT(checkable_rows, 0) << "no checkable view rows above the export row";
+
+  SaveMenuCapture(menu, kFilename, publish_guard);
+}
+
+// The menu bar's «Мнемосхема» menu (Display), which lists the schematic files
+// on the server (dev/displays.md: a schematic with no title is listed under its
+// file name without the extension). The manual's original was captured when
+// the menu was called «Схема».
+//
+// The rows come from the client's file cache (FileCache), which lists the
+// .sde/.xsde files in the public folder — not the server's file store: the
+// synchronizer that would mirror one into the other is commented out in
+// FileSystemComponent. So this capture writes empty schematic files into the
+// fixture's public folder, plus a file-cache.json naming them in menu order
+// (a bare directory listing has no defined order, which would make the image
+// change between runs). None has been opened, so each is listed by its file
+// name without the extension, as the manual says a new schematic is.
+//
+// `ModusModule` registers the file type and the menu's window type, so the
+// generator must install it (`ScreenshotModuleSelection`); without it the menu
+// rendered completely empty. The guard is the row set itself — every
+// schematic, by name, and no <No displays> placeholder.
+namespace {
+
+// Writes an empty .xsde file per stem into the public folder, and a
+// file-cache.json listing them in that order.
+void WriteSchematicFiles(std::span<const char16_t* const> stems) {
+  std::filesystem::path public_dir;
+  ASSERT_TRUE(scada::base::PathService::Get(::client::DIR_PUBLIC, &public_dir));
+  std::filesystem::create_directories(public_dir);
+  boost::json::array cache;
+  for (const char16_t* stem : stems) {
+    const std::filesystem::path file =
+        std::filesystem::path{std::u16string{stem} + u".xsde"};
+    std::ofstream{public_dir / file};
+    cache.push_back(boost::json::object{
+        {"type", "Modus"},
+        {"path", reinterpret_cast<const char*>(file.u8string().c_str())}});
+  }
+  std::ofstream{public_dir / "file-cache.json"}
+      << boost::json::serialize(cache);
+}
+
+}  // namespace
+
+TEST_F(ScreenshotGenerator, CaptureDisplayMenu) {
+  constexpr const char* kFilename = "menu-scheme.png";
+  if (!ShouldCaptureScreenshot(kFilename))
+    GTEST_SKIP() << kFilename << " not requested";
+
+  static constexpr const char16_t* kSchematics[] = {
+      u"Схема ТП-ОС",
+      u"Телемеханика ТП-ОС",
+      u"Схема РП",
+      u"Телемеханика РП",
+      u"Схема ТП-2Н",
+      u"Телемеханика ТП-2Н",
+      u"Схема ТП-МС",
+      u"Телемеханика ТП-МС",
+      u"Сетевые настройки АСДУЭ",
+      u"Схема передачи данных АСДУЭ"};
+  WriteSchematicFiles(kSchematics);
+
+  MainWindow::SetHideForTesting(false);
+
+  {
+    Profile profile;
+    Page page;
+    page.AddWindow(WindowDefinition{"Struct"});
+    profile.AddPage(page);
+    scada::screenshot_generator::SaveSeedProfile(profile);
+  }
+
+  WaitForAwaitable(executor_, app_.Start());
+  ASSERT_TRUE(WaitForPendingNodeLoads(executor_, app_.node_service()));
+  CapturePublishGuard publish_guard{kFilename};
+
+  QMainWindow* qmain = ShowMainWindowForMenuCapture(app_);
+  ASSERT_NE(qmain, nullptr);
+
+  QMenu* menu = PopulateMenuBarMenu(qmain, "Display");
+  ASSERT_NE(menu, nullptr);
+  QStringList rows;
+  for (const QAction* action : menu->actions()) {
+    if (!action->isSeparator())
+      rows.push_back(action->text());
+  }
+  QStringList expected_rows;
+  for (const char16_t* stem : kSchematics)
+    expected_rows.push_back(QString::fromUtf16(stem));
+
+  for (const QString& row : expected_rows) {
+    EXPECT_TRUE(rows.contains(row))
+        << "the Display menu has no " << row.toStdString() << " row";
+  }
+  EXPECT_FALSE(
+      rows.contains(QString::fromStdU16String(Translate("<No displays>"))))
+      << "the Display menu shows its empty placeholder";
 
   SaveMenuCapture(menu, kFilename, publish_guard);
 }

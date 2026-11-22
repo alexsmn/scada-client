@@ -37,6 +37,28 @@ void SortPropertiesRecursive(
   }
 }
 
+// Fetches the property category each of the type's property declarations
+// points at (HasPropertyCategory), so Update() can title its groups. A
+// declaration reached as a child of its type is known by its browse result
+// only, without its own non-hierarchical references, and the category is a
+// node nothing else fetches: without this every property landed in «Прочее»
+// (Misc) and the Properties window showed two tabs, «Атрибуты» and «Прочее».
+// `type_definition`'s chain must already be fetched. Failures are tolerated:
+// an unfetched category degrades to the Misc group, as before.
+Awaitable<void> FetchPropertyCategories(PropertyService& property_service,
+                                        NodeRef type_definition) {
+  if (!type_definition.fetched())
+    co_return;
+  for (const auto& [prop_decl, prop_def] :
+       property_service.GetTypePropertyDefs(type_definition)) {
+    if (!prop_decl)
+      continue;
+    (void)co_await FetchNodeStatus(prop_decl);
+    if (NodeRef category = prop_decl.target(scada::id::HasPropertyCategory))
+      (void)co_await FetchNodeStatus(category);
+  }
+}
+
 }  // namespace
 
 // NodePropertyModel
@@ -70,7 +92,12 @@ NodePropertyModel::NodePropertyModel(PropertyService& property_service,
             // whole chain must be fetched up front. A failed chain fetch
             // degrades to the attributes-only view in Update().
             if (NodeRef type_definition = node.type_definition()) {
-              (void)co_await FetchTypeChainStatus(std::move(type_definition));
+              (void)co_await FetchTypeChainStatus(type_definition);
+              if (cancelation.expired()) {
+                co_return;
+              }
+              co_await FetchPropertyCategories(property_service_,
+                                               std::move(type_definition));
               if (cancelation.expired()) {
                 co_return;
               }

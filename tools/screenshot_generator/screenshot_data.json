@@ -468,7 +468,8 @@
         "limit_lolo": 113.0,
         "limit_lo": 118.0,
         "limit_hi": 133.0,
-        "limit_hihi": 138.0
+        "limit_hihi": 138.0,
+        "SCADA.145": "{TS.104!FLOAT:30001}"
       }
     },
     {
@@ -479,7 +480,8 @@
       "base_value": -32.1,
       "properties": {
         "SCADA.158": -40.0,
-        "SCADA.159": -20.0
+        "SCADA.159": -20.0,
+        "SCADA.145": "{TS.104!FLOAT:30003}"
       }
     },
     {
@@ -542,14 +544,20 @@
       "browse_name": "Коэффициент мощности",
       "class": "variable",
       "type_definition": "analog_item",
-      "base_value": 0.95
+      "base_value": 0.95,
+      "properties": {
+        "SCADA.145": "{TS.104!INT16:30005}"
+      }
     },
     {
       "id": "TIT.210",
       "browse_name": "Суммарная энергия",
       "class": "variable",
       "type_definition": "analog_item",
-      "base_value": 48723
+      "base_value": 48723,
+      "properties": {
+        "SCADA.145": "{TS.104!UINT16:30007}"
+      }
     },
     {
       "id": "TIT.211",
@@ -559,7 +567,8 @@
       "base_value": 42.3,
       "properties": {
         "display_format": "0.#",
-        "units": "°C"
+        "units": "°C",
+        "SCADA.145": "{TS.104!INT16:40769}"
       }
     },
     {
@@ -575,7 +584,8 @@
         "limit_lo": -10.0,
         "limit_hi": 70.0,
         "limit_hihi": 90.0,
-        "SCADA.148": "TIT.211 < 70"
+        "SCADA.148": "TIT.211 < 70",
+        "SCADA.145": "{TS.104!INT16:40770}"
       }
     },
     {
@@ -588,7 +598,8 @@
       "properties": {
         "display_format": "0.#",
         "units": "°C",
-        "SCADA.148": "TIT.211 > 70"
+        "SCADA.148": "TIT.211 > 70",
+        "SCADA.145": "{TS.104!INT16:40771}"
       }
     },
     {
@@ -599,7 +610,8 @@
       "type_definition": "discrete_item",
       "base_value": 0,
       "properties": {
-        "SCADA.148": "TIT.211 < 70"
+        "SCADA.148": "TIT.211 < 70",
+        "SCADA.145": "{TS.104!BOOL:40003:5}"
       },
       "references": [
         {
@@ -615,7 +627,8 @@
       "type_definition": "discrete_item",
       "base_value": 0,
       "properties": {
-        "SCADA.148": "TIT.211 > 70"
+        "SCADA.148": "TIT.211 > 70",
+        "SCADA.145": "{TS.104!BOOL:40003:6}"
       },
       "references": [
         {
@@ -838,7 +851,8 @@
       "type_definition": "analog_item",
       "base_value": 10.4,
       "properties": {
-        "display_format": "0.#"
+        "display_format": "0.#",
+        "SCADA.145": "(TIT.202 + TIT.204 + TIT.207) / 3"
       }
     },
     {
@@ -1840,6 +1854,48 @@
       "height": 480,
       "path": "TS.114",
       "click_object": "limitsSubtab"
+    },
+    {
+      "_comment": "The Properties window on a TI, opened on a category tab. Every category tab needs the fixture's property categories (ScadaTestAddressSpace::AddPropertyCategories); clicking one by its objectName (SectionSubtabObjectName) is also the guard: without the categories the form has only «Атрибуты» and «Прочее», and click_object fails. 984 is the form bar's own minimum width with eight tabs, so a narrower spec would be clamped to it.",
+      "type": "NewProps",
+      "filename": "ti-parameters.png",
+      "width": 984,
+      "height": 320,
+      "path": "TIT.212",
+      "click_object": "sectionSubtab:Уставки"
+    },
+    {
+      "type": "NewProps",
+      "filename": "ti-channel.png",
+      "width": 984,
+      "height": 560,
+      "path": "TIT.212",
+      "click_object": "sectionSubtab:Каналы"
+    },
+    {
+      "type": "NewProps",
+      "filename": "ts-channel.png",
+      "width": 710,
+      "height": 560,
+      "path": "TS.201",
+      "click_object": "sectionSubtab:Каналы"
+    },
+    {
+      "type": "NewProps",
+      "filename": "ti-formula.png",
+      "width": 985,
+      "height": 560,
+      "path": "TIT.724",
+      "click_object": "sectionSubtab:Каналы"
+    },
+    {
+      "_comment": "«Свойства элемента» on the ЭСТРА-ПС «ТИ» group: the configuration table of its four TIs, with the device and channel columns the fixture's Input1 values fill.",
+      "type": "TableEditor",
+      "filename": "ti-element-parameters.png",
+      "width": 1600,
+      "height": 160,
+      "path": "TS.114",
+      "min_rows": 4
     },
     {
       "type": "CusTable",

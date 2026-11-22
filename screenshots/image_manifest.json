@@ -389,11 +389,11 @@
       ],
       "notes": "The preferences surface, from CaptureSettingsPanel: a full-window overlay over the workbench with its own search box, five scope tabs (All, then This client, Profile, This window and This session -- the last added for Control Confirmation by backlog 1046), a category list with counts, and a per-row storage chip saying where each setting lives. Renamed from `settings-dialog.png` on 2026-09-19 (backlog 628): `SettingsDialog` was retired on 2026-08-28 for `SettingsPanel` (backlog 626). What this row said until 2026-09-19 is now wrong in the reassuring direction: it warned the tracked PNG was the last render of the retired dialog and that a diff against it meant nothing. It is not — a fresh render is byte-identical and shows the overlay; it was re-rendered at 15bd4e48b. So the picture is current and the diff is meaningful. The rename interlocked with the manual pages that embed the file, so it landed with them.",
       "captured": {
-        "commit": "c26b0eef1",
+        "commit": "5e8811c18",
         "platform": "macos",
-        "dirty": false,
-        "sha256": "991008aa1ea23827d7258f9a71388b9e64c21ae95e5a5a7fad480a21bf9eea3f",
-        "last_rendered": "c26b0eef1"
+        "dirty": true,
+        "sha256": "b2f7c0b1ab5c534c11b16e5ed60b405f6e0b789fc018883c43f205b6b44235b6",
+        "last_rendered": "5e8811c18"
       },
       "parity_key": "settings"
     },
@@ -405,11 +405,11 @@
       "referenced_from": [],
       "notes": "The light render of settings.png. Same fixture, same spec; only the design-token appearance differs. See that row for what the picture is of.",
       "captured": {
-        "commit": "c26b0eef1",
+        "commit": "5e8811c18",
         "platform": "macos",
-        "dirty": false,
-        "sha256": "3d436480cc67b5d68ae24db19f6391e604cc1834edb1ce0c83e6bda0b5b112cf",
-        "last_rendered": "c26b0eef1"
+        "dirty": true,
+        "sha256": "69fe5cbdcbab4575005b2e9533d23d5e1d747115e9b54963626b1a0c49095265",
+        "last_rendered": "5e8811c18"
       },
       "parity_key": "settings"
     },
@@ -2147,10 +2147,34 @@
     {
       "file": "menu-scheme.png",
       "tag": "auto-menu",
+      "theme": "dark",
+      "published": true,
       "referenced_from": [
         "dev/displays.md"
       ],
-      "notes": "A true QMenu popup, but a MENU-BAR one, not a context menu (audited 2026-08-08): the Display menu listing the configured schematic displays. NOT capturable with the documented aboutToShow() pattern after all (checked 2026-08-15), which is why the other two menu-bar rows are generated and this one is not. DisplayMenuModel lists GetDisplayMenuWindowTypes(), and the only callers of RegisterDisplayMenuWindowType are ModusModule and VidiconModule -- so without one of them installed the menu renders completely empty, not even the <No displays> placeholder. Installing ModusModule is out of scope until the fixture supports a fake Modus runtime, and even then the rows come from the file cache, so the fixture needs display files too."
+      "notes": "Rendered by the screenshot generator (CaptureDisplayMenu): the menu bar's «Мнемосхема» menu (the docs original showed it as «Схема», its pre-2.6 title), listing ten schematics. The rows come from the client's file cache, i.e. the .sde/.xsde files in the local public folder, not the server's file store (FileSystemComponent's synchronizer is commented out), so the capture writes empty schematic files and a file-cache.json fixing their order into the fixture's public folder. Capturable since 2026-11-22, when the generator started installing ModusModule (it renders through the display runtime, not ActiveX), which registers the file type and the menu's window type; without it the menu was completely empty. Popup alone, like menu-excel.png; the menu-bar title is not in the image.",
+      "captured": {
+        "commit": "5e8811c18",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "e1b42ff3e213a68b56fcee1d57e49d3fc035d0302d71bf76838989ee81cc6004",
+        "last_rendered": "5e8811c18"
+      }
+    },
+    {
+      "file": "menu-scheme-light.png",
+      "tag": "auto-menu",
+      "theme": "light",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of menu-scheme.png, produced by the same capture under `--theme light`. Tracked so a theme regression lands as an image diff; not published, the manual takes the dark set.",
+      "captured": {
+        "commit": "5e8811c18",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "b984547230be3c882207d2ddcd916afa94c52249dde508e05948d4de806aebac",
+        "last_rendered": "5e8811c18"
+      }
     },
     {
       "file": "menu-summary.png",
@@ -2223,11 +2247,37 @@
     },
     {
       "file": "ti-channel.png",
-      "tag": "auto-dialog",
+      "tag": "auto-view",
+      "theme": "dark",
+      "parity_key": "node-properties",
+      "published": true,
       "referenced_from": [
         "dev/devices.md"
       ],
-      "notes": "Node properties, Channels tab, TI side."
+      "notes": "The Properties window (NewProps, DeviceParameterForm): one tab per property category, the dirty dot and Revert / Apply in the form bar. TIT.212 on its «Каналы» tab: «Основной ввод» shows the MODBUS channel INT16:40770 on device «КП-02 MODBUS» (the fixture's Input1, `{TS.104!INT16:40770}`), beside the empty «Вывод» and «Резервный ввод» sections. The sections are hierarchical properties; DeviceParameterForm skipped them entirely until 2026-11-22, so the tab offered no device or channel at all, and its device dropdowns staged a bogus edit when their choices arrived. Both fixed with this capture.",
+      "captured": {
+        "commit": "5e8811c18",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "55ced5ee19142c1ed6f9f26dea953f7ae55965750667d8fe6943e907ea8aaddd",
+        "last_rendered": "5e8811c18"
+      }
+    },
+    {
+      "file": "ti-channel-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "parity_key": "node-properties",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of ti-channel.png, produced by the same capture under `--theme light`. Tracked so a theme regression lands as an image diff; not published, the manual takes the dark set.",
+      "captured": {
+        "commit": "5e8811c18",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "d2eed42f0b4665af0f9a1ed94802a1dd064829e9bb3e5d0e5cc6592a9948d46e",
+        "last_rendered": "5e8811c18"
+      }
     },
     {
       "file": "ti-delete.png",
@@ -2262,19 +2312,71 @@
     },
     {
       "file": "ti-element-parameters.png",
-      "tag": "auto-dialog",
+      "tag": "auto-view",
+      "theme": "dark",
+      "parity_key": "table-editor",
+      "published": true,
       "referenced_from": [
         "development.md"
       ],
-      "notes": "Node properties, Element parameters tab."
+      "notes": "«Свойства элемента» (ID_TABLE_CONFIG): the configuration table (TableEditor, NodeTableModel) of a group's elements, one row per item and one column per property. Fixture group TS.114 «ТИ» under ЭСТРА-ПС; its four TIs carry MODBUS channels on «КП-02 MODBUS» (`{TS.104!FLOAT:30001}` and so on), so the Устройство and Канал columns are filled. Guarded at min_rows 4. The window's title («Конфигурация: <группа>») belongs to its tab, not the view, so it is not in the image; the columns are the view's default 100 px, and TableEditor reads no saved column widths, so long headers are cut as in the docs original.",
+      "captured": {
+        "commit": "5e8811c18",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "d4c034301ce474dfb399ca1ab29143e5535ed989bbd0948c38db3393abf4ff1f",
+        "last_rendered": "5e8811c18"
+      }
+    },
+    {
+      "file": "ti-element-parameters-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "parity_key": "table-editor",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of ti-element-parameters.png, produced by the same capture under `--theme light`. Tracked so a theme regression lands as an image diff; not published, the manual takes the dark set.",
+      "captured": {
+        "commit": "5e8811c18",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "c502d49eb57ca4568d9fcf31f1f7f41531cee2cf5442d55a35b5389defb02630",
+        "last_rendered": "5e8811c18"
+      }
     },
     {
       "file": "ti-formula.png",
-      "tag": "auto-dialog",
+      "tag": "auto-view",
+      "theme": "dark",
+      "parity_key": "node-properties",
+      "published": true,
       "referenced_from": [
         "formulas.md"
       ],
-      "notes": "Node properties, Formula tab."
+      "notes": "The Properties window (NewProps, DeviceParameterForm): one tab per property category, the dirty dot and Revert / Apply in the form bar. TIT.724 «Дорасчет Ua среднее» on its «Каналы» tab, with a formula as the «Основной ввод» channel, `(TIT.202 + TIT.204 + TIT.207) / 3`, and no device — a computed object, which is what the page's figure shows.",
+      "captured": {
+        "commit": "5e8811c18",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "b5b415e249bc1fb3c706b86619fe571a7e91b1c772f7595209dc8df989810e8f",
+        "last_rendered": "5e8811c18"
+      }
+    },
+    {
+      "file": "ti-formula-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "parity_key": "node-properties",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of ti-formula.png, produced by the same capture under `--theme light`. Tracked so a theme regression lands as an image diff; not published, the manual takes the dark set.",
+      "captured": {
+        "commit": "5e8811c18",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "a07aaa71a526f971392c230e29b416d09b3603efded92914d43ad10a9ec210da",
+        "last_rendered": "5e8811c18"
+      }
     },
     {
       "file": "ti-manual-control.png",
@@ -2310,12 +2412,38 @@
     },
     {
       "file": "ti-parameters.png",
-      "tag": "auto-dialog",
+      "tag": "auto-view",
+      "theme": "dark",
+      "parity_key": "node-properties",
+      "published": true,
       "referenced_from": [
         "development.md",
         "dev/data-items.md"
       ],
-      "notes": "Node properties, TI root."
+      "notes": "The Properties window (NewProps, DeviceParameterForm): one tab per property category, the dirty dot and Revert / Apply in the form bar. Fixture TI TIT.212 «Температура нагрева» (the page's own example), opened on its «Уставки» tab, whose four limits are the fixture's. Replaced the 2024 hand capture of the pre-2.6 «Параметры: <name>» property grid on 2026-11-22. Needed three fixes to render at all: the fixture's address space gained the property categories (ScadaTestAddressSpace::AddPropertyCategories), NodePropertyModel fetches each declaration's category before titling its tab (they read «SCADA.313» otherwise), and each category tab got an objectName for click_object (SectionSubtabObjectName). Clicking the tab is the guard: without the categories there is no such tab and the capture fails.",
+      "captured": {
+        "commit": "5e8811c18",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "796115be0aa75a2f8872824f01874e29cfd0e8c6bb06bc8907ee866fde1819b0",
+        "last_rendered": "5e8811c18"
+      }
+    },
+    {
+      "file": "ti-parameters-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "parity_key": "node-properties",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of ti-parameters.png, produced by the same capture under `--theme light`. Tracked so a theme regression lands as an image diff; not published, the manual takes the dark set.",
+      "captured": {
+        "commit": "5e8811c18",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "281bdd8ff6526793cbd2b39ccfd9659b25621559227b92f1f17aebbc0f0b5f82",
+        "last_rendered": "5e8811c18"
+      }
     },
     {
       "file": "ti-remote-control-confirm.png",
@@ -2417,11 +2545,37 @@
     },
     {
       "file": "ts-channel.png",
-      "tag": "auto-dialog",
+      "tag": "auto-view",
+      "theme": "dark",
+      "parity_key": "node-properties",
+      "published": true,
       "referenced_from": [
         "dev/devices.md"
       ],
-      "notes": "Node properties, Channels tab, TS side."
+      "notes": "The Properties window (NewProps, DeviceParameterForm): one tab per property category, the dirty dot and Revert / Apply in the form bar. TS.201 «Силовой выключатель» on its «Каналы» tab: «Основной ввод» holds the full-format MODBUS channel BOOL:40003:5 (bit 5 of holding register 40003, the page's own example) on «КП-02 MODBUS». Fewer tabs than a TI, so the form's minimum width is 710.",
+      "captured": {
+        "commit": "5e8811c18",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "bda67e327d2e5e06e7b243471f0e4434b1c0538ab0ef93ed378a8997fc67e7d7",
+        "last_rendered": "5e8811c18"
+      }
+    },
+    {
+      "file": "ts-channel-light.png",
+      "tag": "auto-view",
+      "theme": "light",
+      "parity_key": "node-properties",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of ts-channel.png, produced by the same capture under `--theme light`. Tracked so a theme regression lands as an image diff; not published, the manual takes the dark set.",
+      "captured": {
+        "commit": "5e8811c18",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "887466ab1df47ada3867c454de193b8948f437687b15fe131f10c9bf9f269ad9",
+        "last_rendered": "5e8811c18"
+      }
     },
     {
       "file": "ts-manual-control.png",
@@ -3096,9 +3250,9 @@
     }
   ],
   "counts": {
-    "auto-dialog": 51,
-    "auto-menu": 21,
-    "auto-view": 102,
+    "auto-dialog": 46,
+    "auto-menu": 22,
+    "auto-view": 112,
     "manual-designer": 16,
     "manual-diagram": 5,
     "manual-modus": 3,
@@ -3129,14 +3283,20 @@
     "menu-excel.png",
     "menu-parameters-elements.png",
     "menu-parameters.png",
+    "menu-scheme.png",
     "menu-summary.png",
     "settings.png",
     "substation-display.png",
     "table-workspace.png",
+    "ti-channel.png",
     "ti-delete.png",
+    "ti-element-parameters.png",
+    "ti-formula.png",
+    "ti-parameters.png",
     "ti-remote-control-disabled.png",
     "ti-remote-control-enabled.png",
     "transmission-rule.png",
+    "ts-channel.png",
     "users.png",
     "workbench-activity-rail.png",
     "workbench-login.png",

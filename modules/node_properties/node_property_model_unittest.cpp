@@ -223,6 +223,50 @@ void CollectEditors(
   }
 }
 
+// The names of the root group's entries — the Properties window's tabs.
+std::vector<std::u16string> GroupNames(const scada::aui::PropertyGroup& group) {
+  std::vector<std::u16string> names;
+  for (int i = 0; i < group.GetCount(); ++i)
+    names.push_back(group.GetName(i));
+  return names;
+}
+
+// Each declaration lands in the tab its HasPropertyCategory names. Until
+// 2026-11-22 every one of them landed in «Прочее» (Misc) in the screenshot
+// fixture, whose address space carried no categories, so the Properties
+// window rendered only «Атрибуты» and «Прочее».
+TEST_F(NodePropertyModelTest, GroupsPropertiesByTheirCategory) {
+  const scada::NodeId analog_id{3, scada::NamespaceIndexes::TIT};
+  GenericNodeFactory node_factory{address_space_};
+  auto [status, node] = node_factory.CreateNode(scada::NodeState{
+      .node_id = analog_id,
+      .node_class = scada::NodeClass::Variable,
+      .type_definition_id = scada::data_items::id::AnalogItemType,
+      .parent_id = scada::data_items::id::DataItems,
+      .reference_type_id = scada::id::Organizes,
+      .attributes = scada::NodeAttributes{.display_name = u"Analog"}});
+  ASSERT_TRUE(status);
+
+  auto model = CreateModel(analog_id);
+  Drain(executor_);
+  CompleteFetches(analog_id);
+
+  const scada::aui::PropertyGroup& root = RootGroup(*model);
+  const std::vector<std::u16string> expected_tabs = {
+      u"Каналы", u"Уставки", u"Преобразование", u"Фильтрация"};
+  EXPECT_THAT(GroupNames(root), IsSupersetOf(expected_tabs));
+
+  // The limits really are in their own tab, not merely a tab beside Misc.
+  for (int i = 0; i < root.GetCount(); ++i) {
+    if (root.GetName(i) != u"Уставки")
+      continue;
+    const scada::aui::PropertyGroup* limits = root.GetSubgroup(i);
+    ASSERT_NE(limits, nullptr);
+    EXPECT_THAT(GroupNames(*limits),
+                Contains(std::u16string{u"Уставка верхняя предаварийная"}));
+  }
+}
+
 // Backlog 864: limits are process data, so a session without the Control right
 // sees them read-only while the item's configuration stays editable.
 TEST_F(NodePropertyModelTest, LimitsAreReadOnlyWithoutTheControlRight) {
@@ -251,8 +295,7 @@ TEST_F(NodePropertyModelTest, LimitsAreReadOnlyWithoutTheControlRight) {
     EXPECT_EQ(limit->second == scada::aui::EditData::EditorType::NONE,
               !limits_editable);
 
-    const auto units =
-        editors.find(scada::data_items::id::AnalogItemType_EuHi);
+    const auto units = editors.find(scada::data_items::id::AnalogItemType_EuHi);
     ASSERT_NE(units, editors.end());
     EXPECT_NE(units->second, scada::aui::EditData::EditorType::NONE);
   }

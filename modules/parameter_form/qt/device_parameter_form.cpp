@@ -142,8 +142,6 @@ bool DeviceParameterForm::dirty() const {
 QWidget* DeviceParameterForm::BuildSectionPage(
     PropertyGroup& group,
     const std::vector<int>& field_indices) {
-  const scada::aui::ThemeTokens& tokens = FormTokens();
-
   auto* page = new QWidget;
   auto* outer = new QVBoxLayout{page};
   outer->setContentsMargins(18, 16, 18, 16);
@@ -153,7 +151,42 @@ QWidget* DeviceParameterForm::BuildSectionPage(
   form->setHorizontalSpacing(16);
   form->setVerticalSpacing(10);
 
+  AddFieldRows(*form, group, field_indices);
+
+  outer->addLayout(form);
+  outer->addStretch(1);
+
+  auto* scroll = new QScrollArea;
+  scroll->setFrameShape(QFrame::NoFrame);
+  scroll->setWidgetResizable(true);
+  scroll->setWidget(page);
+  return scroll;
+}
+
+void DeviceParameterForm::AddFieldRows(QFormLayout& form,
+                                       PropertyGroup& group,
+                                       const std::vector<int>& field_indices) {
+  const scada::aui::ThemeTokens& tokens = FormTokens();
+
   for (int index : field_indices) {
+    // A hierarchical property — a data item's «Основной ввод» with its
+    // Устройство and Канал — is a subgroup inside the category. It renders as
+    // a headed run of its own fields. Until 2026-11-22 the form skipped it, so
+    // the Каналы tab offered no way to see or set an item's device and
+    // channel at all.
+    if (PropertyGroup* subgroup = group.GetSubgroup(index)) {
+      auto* heading =
+          new QLabel{QString::fromStdU16String(group.GetName(index))};
+      heading->setStyleSheet(
+          QStringLiteral("color:%1;font-weight:600;").arg(tokens.fg.name()));
+      form.addRow(heading);
+      std::vector<int> sub_indices(subgroup->GetCount());
+      for (int i = 0; i < subgroup->GetCount(); ++i)
+        sub_indices[i] = i;
+      AddFieldRows(form, *subgroup, sub_indices);
+      continue;
+    }
+
     auto* label = new QLabel{QString::fromStdU16String(group.GetName(index))};
     label->setStyleSheet(
         QStringLiteral("color:%1;").arg(tokens.fg_muted.name()));
@@ -168,17 +201,8 @@ QWidget* DeviceParameterForm::BuildSectionPage(
       SetEditorText(field, QString::fromStdU16String(*staged));
     ConnectFieldEditor(field);
     fields_.push_back(field);
-    form->addRow(label, editor);
+    form.addRow(label, editor);
   }
-
-  outer->addLayout(form);
-  outer->addStretch(1);
-
-  auto* scroll = new QScrollArea;
-  scroll->setFrameShape(QFrame::NoFrame);
-  scroll->setWidgetResizable(true);
-  scroll->setWidget(page);
-  return scroll;
 }
 
 QWidget* DeviceParameterForm::CreateFieldEditor(PropertyGroup& group,
@@ -211,12 +235,21 @@ QWidget* DeviceParameterForm::CreateFieldEditor(PropertyGroup& group,
                               bool last) {
               if (*canceled)
                 return;
+              // Inserting ahead of the current row and removing the
+              // placeholder move the current index, which rewrites the edit
+              // text to whichever choice lands there and fires
+              // editTextChanged: a field whose value is not among the choices
+              // (an empty «Устройство (резерв)») came up showing the first
+              // device and staged as an edit. Keep the text the field had.
+              const QString text = combo->currentText();
+              QSignalBlocker blocker{combo};
               for (const std::u16string& choice : choices) {
                 combo->insertItem(combo->count() - 1,
                                   QString::fromStdU16String(choice));
               }
               if (last)
                 combo->removeItem(combo->count() - 1);
+              combo->setEditText(text);
             });
       } else {
         for (const std::u16string& choice : edit_data.choices)
@@ -337,14 +370,18 @@ void DeviceParameterForm::Rebuild() {
   }
 
   for (const auto& [name, group] : sections) {
-    std::vector<int> field_indices;
-    for (int j = 0; j < group->GetCount(); ++j) {
-      if (!IsSection(*group, j))
-        field_indices.push_back(j);
-    }
+    // Every entry, nested groups included: AddFieldRows renders a nested
+    // group as a headed run of its fields.
+    std::vector<int> field_indices(group->GetCount());
+    for (int j = 0; j < group->GetCount(); ++j)
+      field_indices[j] = j;
     const int page_index = pages_->count();
     pages_->addWidget(BuildSectionPage(*group, field_indices));
     add_subtab(name, page_index);
+    // A stable handle per property group, so the screenshot generator's
+    // `click_object` can select a category tab. Keyed by the group's title
+    // because that is all a PropertyGroup exposes.
+    subtab_buttons_.back()->setObjectName(SectionSubtabObjectName(name));
   }
 
   // The device's address-map preview, after the property-group tabs.
@@ -559,6 +596,10 @@ Awaitable<bool> ResolveStagedEdits(QPointer<DeviceParameterForm> form,
       // window and the staged edits.
       co_return false;
   }
+}
+
+QString SectionSubtabObjectName(const QString& section_title) {
+  return QStringLiteral("sectionSubtab:") + section_title;
 }
 
 DeviceParameterForm* MakeDeviceParameterForm(scada::aui::PropertyModel& model,

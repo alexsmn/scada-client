@@ -10,6 +10,7 @@
 #include <gtest/gtest.h>
 
 #include <QComboBox>
+#include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QTableWidget>
@@ -44,6 +45,22 @@ class FakeGroup : public scada::aui::PropertyGroup {
     scada::aui::EditData edit;
     edit.editor_type = scada::aui::EditData::EditorType::DROPDOWN;
     edit.choices = std::move(choices);
+    entries_.push_back(
+        {std::move(name), std::move(value), nullptr, std::move(edit)});
+    return *this;
+  }
+  // A dropdown whose choices arrive later: the form's callback is stored in
+  // `*callback` for the test to invoke.
+  FakeGroup& AddAsyncDropdown(
+      std::u16string name,
+      std::u16string value,
+      scada::aui::EditData::AsyncChoiceCallback* callback) {
+    scada::aui::EditData edit;
+    edit.editor_type = scada::aui::EditData::EditorType::DROPDOWN;
+    edit.async_choice_handler =
+        [callback](const scada::aui::EditData::AsyncChoiceCallback& c) {
+          *callback = c;
+        };
     entries_.push_back(
         {std::move(name), std::move(value), nullptr, std::move(edit)});
     return *this;
@@ -87,7 +104,8 @@ class FakeGroup : public scada::aui::PropertyGroup {
 
 class FakeModel : public scada::aui::PropertyModel {
  public:
-  explicit FakeModel(std::unique_ptr<FakeGroup> root) : root_{std::move(root)} {}
+  explicit FakeModel(std::unique_ptr<FakeGroup> root)
+      : root_{std::move(root)} {}
   PropertyGroup& GetRootGroup() override { return *root_; }
   FakeGroup& root() { return *root_; }
 
@@ -171,6 +189,74 @@ TEST_F(DeviceParameterFormTest, BuildsATabPerSection) {
   }
   EXPECT_TRUE(has_general);
   EXPECT_TRUE(has_connection);
+}
+
+// A hierarchical property inside a category tab — a data item's «Основной
+// ввод» holding its device and channel — renders as a heading followed by its
+// own fields, and those fields stage and apply like any other. The form used
+// to skip nested groups, so the channel could not be seen or set at all.
+TEST_F(DeviceParameterFormTest, RendersAndAppliesNestedGroupFields) {
+  auto input = std::make_unique<FakeGroup>();
+  input->AddLeaf(u"Device", u"RTU-02").AddLeaf(u"Channel", u"INT16:40770");
+  FakeGroup* input_ptr = input.get();
+  auto channels = std::make_unique<FakeGroup>();
+  channels->AddLeaf(u"Lock", u"No")
+      .AddSection(u"Primary input", std::move(input));
+  auto root = std::make_unique<FakeGroup>();
+  root->AddSection(u"Channels", std::move(channels));
+  FakeModel model{std::move(root)};
+
+  DeviceParameterForm form{model, QStringLiteral("TIT.212")};
+
+  bool has_heading = false;
+  for (QLabel* label : form.findChildren<QLabel*>()) {
+    if (label->text() == QStringLiteral("Primary input"))
+      has_heading = true;
+  }
+  EXPECT_TRUE(has_heading);
+  EXPECT_NE(FindEditorWithText(form, QStringLiteral("No")), nullptr);
+
+  QLineEdit* channel = FindEditorWithText(form, QStringLiteral("INT16:40770"));
+  ASSERT_NE(channel, nullptr);
+  channel->setText(QStringLiteral("INT16:40771"));
+  EXPECT_TRUE(form.dirty());
+
+  form.Apply();
+  ASSERT_EQ(input_ptr->writes.size(), 1u);
+  EXPECT_EQ(input_ptr->writes[0].first, 1);
+  EXPECT_EQ(input_ptr->writes[0].second, u"INT16:40771");
+}
+
+// Choices streamed into a dropdown after it is built must not change what it
+// shows or stage an edit — even when its value is not among them, as an empty
+// backup device is not. They used to replace the text with the first choice
+// and mark a freshly opened form dirty.
+TEST_F(DeviceParameterFormTest, AsyncChoicesKeepTheValueAndStageNothing) {
+  scada::aui::EditData::AsyncChoiceCallback empty_callback;
+  scada::aui::EditData::AsyncChoiceCallback set_callback;
+  auto channels = std::make_unique<FakeGroup>();
+  channels->AddAsyncDropdown(u"Backup device", u"", &empty_callback)
+      .AddAsyncDropdown(u"Device", u"RTU-02", &set_callback);
+  auto root = std::make_unique<FakeGroup>();
+  root->AddSection(u"Channels", std::move(channels));
+  FakeModel model{std::move(root)};
+
+  DeviceParameterForm form{model, QStringLiteral("TIT.212")};
+  ASSERT_TRUE(empty_callback);
+  ASSERT_TRUE(set_callback);
+
+  const std::vector<std::u16string> choices = {u"Link : RTU-01",
+                                               u"Link : RTU-05"};
+  empty_callback(choices, /*last=*/true);
+  set_callback(choices, /*last=*/false);
+  set_callback({u"Link : RTU-07"}, /*last=*/true);
+
+  const QList<QComboBox*> combos = form.findChildren<QComboBox*>();
+  ASSERT_EQ(combos.size(), 2);
+  EXPECT_EQ(combos[0]->currentText(), QString{});
+  EXPECT_EQ(combos[1]->currentText(), QStringLiteral("RTU-02"));
+  EXPECT_EQ(combos[1]->count(), 3) << "the Loading… row was not removed";
+  EXPECT_FALSE(form.dirty());
 }
 
 TEST_F(DeviceParameterFormTest, EditingAFieldMarksDirtyAndEnablesApply) {
@@ -265,7 +351,8 @@ TEST_F(DeviceParameterFormTest, ReadOnlyPropertyIsNotEditable) {
   auto model = MakeRicherModel();
   DeviceParameterForm form{*model, QStringLiteral("RTU-02")};
 
-  QLineEdit* type = FindEditorWithText(form, QStringLiteral("ModbusDeviceType"));
+  QLineEdit* type =
+      FindEditorWithText(form, QStringLiteral("ModbusDeviceType"));
   ASSERT_NE(type, nullptr);
   EXPECT_TRUE(type->isReadOnly());
 }
@@ -306,8 +393,7 @@ TEST_F(DeviceParameterFormTest, MixedAddressMapShowsADirectionColumn) {
   form.SetAddressMap({
       {u"Served", u"TI", u"2001", u"ns=2;s=P",
        AddressMapRow::Kind::kTransmission},
-      {u"Q1 state", u"TS", u"1001", u"ns=2;s=Q1",
-       AddressMapRow::Kind::kPolled},
+      {u"Q1 state", u"TS", u"1001", u"ns=2;s=Q1", AddressMapRow::Kind::kPolled},
   });
 
   auto* table =
@@ -367,7 +453,7 @@ TEST_F(DeviceParameterFormTest, SetLimitsAddsAReadOnlyGridTab) {
   EXPECT_EQ(table->item(0, 0)->text(), QStringLiteral("Power"));
   EXPECT_EQ(table->item(0, 1)->text(), QStringLiteral("113"));  // LoLo
   EXPECT_EQ(table->item(0, 4)->text(), QStringLiteral("138"));  // HiHi
-  EXPECT_EQ(table->item(1, 1)->text(), QString{});  // unset LoLo
+  EXPECT_EQ(table->item(1, 1)->text(), QString{});              // unset LoLo
 }
 
 // Backlog 1073: the close question. Each case stages a Host edit, answers the

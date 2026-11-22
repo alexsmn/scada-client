@@ -260,6 +260,12 @@ class ScreenshotGenerator : public ::testing::Test {
   };
 
   scada::base::ScopedPathOverride private_dir_override_{::client::DIR_PRIVATE};
+  // The public folder is where the client's file cache lists schematics from
+  // (FileCache::Refresh) and keeps file-cache.json. Without an override it is
+  // the running user's own ~/Library/Application Support folder, so whatever
+  // schematics the user happened to have would reach the «Мнемосхема» menu. A
+  // capture that needs files writes them here (CaptureDisplayMenu).
+  scada::base::ScopedPathOverride public_dir_override_{::client::DIR_PUBLIC};
 
   SessionEndDialogService session_end_dialog_service_;
 
