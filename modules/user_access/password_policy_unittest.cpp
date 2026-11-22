@@ -6,13 +6,12 @@
 
 namespace {
 
-PasswordPolicy Policy(double min_length,
-                      double max_length,
-                      scada::PasswordOptions options =
-                          scada::PasswordOptions::kNone) {
-  return PasswordPolicy{.min_length = min_length,
-                        .max_length = max_length,
-                        .options = options};
+PasswordPolicy Policy(
+    double min_length,
+    double max_length,
+    scada::PasswordOptions options = scada::PasswordOptions::kNone) {
+  return PasswordPolicy{
+      .min_length = min_length, .max_length = max_length, .options = options};
 }
 
 // A non-positive bound is "unconstrained", which is what a server with no
@@ -65,8 +64,9 @@ TEST(PasswordPolicy, ANonAsciiSymbolCountsAsSpecial) {
 // server implements and must never be read as a password rule.
 TEST(PasswordPolicy, SupportBitsAreNotRequirements) {
   const PasswordPolicy policy =
-      Policy(0, 0, scada::PasswordOptions::kSupportDisableUser |
-                       scada::PasswordOptions::kSupportDescriptionForUser);
+      Policy(0, 0,
+             scada::PasswordOptions::kSupportDisableUser |
+                 scada::PasswordOptions::kSupportDescriptionForUser);
 
   EXPECT_EQ(PasswordPolicyViolation(policy, u"a"), nullptr);
   for (const PasswordRequirement& requirement :
@@ -85,6 +85,20 @@ TEST(PasswordPolicy, RequirementBreakdownReflectsTheMask) {
   EXPECT_FALSE(requirements[1].required);  // lower
   EXPECT_TRUE(requirements[2].required);   // digit
   EXPECT_FALSE(requirements[3].required);  // special
+}
+
+// Each line names its own bit, so one rule can be tested alone: a policy
+// carrying only that bit judges only that rule.
+TEST(PasswordPolicy, EachRequirementCarriesItsOwnBit) {
+  for (const PasswordRequirement& requirement :
+       PasswordRequirementsFor(scada::PasswordOptions::kNone)) {
+    const PasswordPolicy alone = Policy(0, 0, requirement.option);
+    EXPECT_NE(PasswordPolicyViolation(alone, u""), nullptr)
+        << requirement.label;
+  }
+  EXPECT_EQ(PasswordPolicyViolation(
+                Policy(0, 0, PasswordRequirementsFor({})[2].option), u"7"),
+            nullptr);  // the digit line passes a digit
 }
 
 }  // namespace

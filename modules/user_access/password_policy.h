@@ -49,6 +49,10 @@ struct PasswordRequirement {
   // English source string for Translate().
   const char* label;
   bool required;
+  // The single kRequires* bit this line stands for, so a caller can test one
+  // requirement on its own (PasswordPolicyViolation on a policy carrying only
+  // this bit) — the change-password dialog ticks each rule as it is met.
+  scada::PasswordOptions option = scada::PasswordOptions::kNone;
 };
 
 // The kRequires* breakdown, in display order.

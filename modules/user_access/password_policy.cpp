@@ -2,11 +2,11 @@
 
 #include "base/utf_convert.h"
 #include "model/namespaces.h"
-#include "scada/extension_object.h"
-#include "scada/range_encoding.h"
 #include "node_service/node_ref.h"
 #include "node_service/node_service.h"
 #include "scada/basic_types.h"
+#include "scada/extension_object.h"
+#include "scada/range_encoding.h"
 #include "scada/standard_node_ids.h"
 #include "scada/variant.h"
 
@@ -92,14 +92,19 @@ Awaitable<std::optional<PasswordPolicy>> ReadPasswordPolicy(
 
 std::vector<PasswordRequirement> PasswordRequirementsFor(
     scada::PasswordOptions options) {
+  constexpr scada::PasswordOptions kUpper =
+      scada::PasswordOptions::kRequiresUpperCaseCharacters;
+  constexpr scada::PasswordOptions kLower =
+      scada::PasswordOptions::kRequiresLowerCaseCharacters;
+  constexpr scada::PasswordOptions kDigit =
+      scada::PasswordOptions::kRequiresDigitCharacters;
+  constexpr scada::PasswordOptions kSpecial =
+      scada::PasswordOptions::kRequiresSpecialCharacters;
   return {
-      {"Upper-case letter",
-       Has(options, scada::PasswordOptions::kRequiresUpperCaseCharacters)},
-      {"Lower-case letter",
-       Has(options, scada::PasswordOptions::kRequiresLowerCaseCharacters)},
-      {"Digit", Has(options, scada::PasswordOptions::kRequiresDigitCharacters)},
-      {"Special character",
-       Has(options, scada::PasswordOptions::kRequiresSpecialCharacters)},
+      {"Upper-case letter", Has(options, kUpper), kUpper},
+      {"Lower-case letter", Has(options, kLower), kLower},
+      {"Digit", Has(options, kDigit), kDigit},
+      {"Special character", Has(options, kSpecial), kSpecial},
   };
 }
 
@@ -129,8 +134,7 @@ const char* PasswordPolicyViolation(const PasswordPolicy& policy,
       !AnyOf(password, [](char16_t c) { return c >= u'0' && c <= u'9'; })) {
     return "The password needs a digit";
   }
-  if (Has(policy.options,
-          scada::PasswordOptions::kRequiresSpecialCharacters) &&
+  if (Has(policy.options, scada::PasswordOptions::kRequiresSpecialCharacters) &&
       !AnyOf(password, [](char16_t c) {
         // Anything that is not a letter or a digit. Deliberately broader than
         // an ASCII punctuation list: the accounts here carry Cyrillic names,

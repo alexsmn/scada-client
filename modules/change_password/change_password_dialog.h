@@ -3,9 +3,6 @@
 #include "base/any_executor.h"
 
 #include "node_service/node_ref.h"
-#include "user_access/password_policy.h"
-
-#include <optional>
 
 #include <memory>
 
@@ -28,11 +25,14 @@ struct ChangePasswordContext {
   // reset hides the current-password field rather than collecting a
   // credential that is neither checked nor sent.
   bool self_service_ = false;
-  // The policy the new password will actually be validated against, read from
-  // the server (Part 18 §5.2.2). Nullopt when it could not be read, in which
-  // case the client imposes nothing and lets the server be the judge.
-  std::optional<PasswordPolicy> policy_;
 };
 
+// Opens the change-password form, modeless.
+//
+// The form reads the password policy the server publishes (OPC UA Part 18
+// §5.2.2, ReadPasswordPolicy) through `node_service_` once it is open, then
+// lists the rules and keeps OK disabled while the new password breaks one.
+// Until the read completes, or when it fails, no rules are shown and nothing
+// is checked: the server is always the judge (backlog 1100).
 void ShowChangePasswordDialog(DialogService& dialog_service,
                               ChangePasswordContext&& context);
