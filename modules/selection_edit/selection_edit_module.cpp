@@ -86,7 +86,10 @@ void DeleteSelection(AnyExecutor executor,
            message = std::move(message),
            nodes = std::move(nodes)]() mutable -> Awaitable<void> {
             auto result = co_await dialog_service.RunMessageBox(
-                message, Translate("Delete"), MessageBoxMode::QuestionYesNo);
+                // Default No: the command is on the Delete key, and Delete
+                // then Enter must not remove an object tree (backlog 1099).
+                message, Translate("Delete"),
+                MessageBoxMode::QuestionYesNoDefaultNo);
             if (result != MessageBoxResult::Yes) {
               co_return;
             }

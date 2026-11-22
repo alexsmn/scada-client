@@ -1,8 +1,8 @@
 #include "main_window/pages/page_commands.h"
 
 #include "aui/dialog_service_mock.h"
-#include "aui/test/app_environment.h"
 #include "aui/models/simple_menu_model.h"
+#include "aui/test/app_environment.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "controller/command_registry.h"
@@ -19,8 +19,8 @@
 #include "main_window/view_manager_delegate.h"
 #include "profile/profile.h"
 
-#include <gmock/gmock.h>
 #include <QMainWindow>
+#include <gmock/gmock.h>
 
 #include <algorithm>
 #include <chrono>
@@ -80,17 +80,17 @@ class PageCommandsTest : public Test {
   StrictMock<MockMainWindow> main_window_;
   StrictMock<MockDialogService> dialog_service_;
   UiCommandRegistry ui_command_registry_;
-  StrictMock<MockFunction<Awaitable<std::u16string>(
-      DialogService& dialog_service,
-      std::u16string current_title)>>
+  StrictMock<
+      MockFunction<Awaitable<std::u16string>(DialogService& dialog_service,
+                                             std::u16string current_title)>>
       rename_prompt_runner_;
 
   GlobalCommandContext command_context_{.main_window = main_window_,
-                                      .dialog_service = dialog_service_};
+                                        .dialog_service = dialog_service_};
 
-  PageCommands page_commands_{
-      {executor_, commands_, ui_command_registry_, profile_,
-       main_window_manager_, rename_prompt_runner_.AsStdFunction()}};
+  PageCommands page_commands_{{executor_, commands_, ui_command_registry_,
+                               profile_, main_window_manager_,
+                               rename_prompt_runner_.AsStdFunction()}};
 };
 
 // Deleting a page asks first; it used to go on one click (backlog 924).
@@ -102,7 +102,7 @@ TEST_F(PageCommandsTest, DeletePageConfirmed) {
 
   EXPECT_CALL(main_window_, GetCurrentPage()).WillRepeatedly(ReturnRef(page));
   EXPECT_CALL(dialog_service_,
-              RunMessageBox(_, _, MessageBoxMode::QuestionYesNo))
+              RunMessageBox(_, _, MessageBoxMode::QuestionYesNoDefaultNo))
       .WillOnce([](std::u16string_view, std::u16string_view, MessageBoxMode) {
         return ReturnMessageBoxResultAsync(MessageBoxResult::Yes);
       });
@@ -122,7 +122,7 @@ TEST_F(PageCommandsTest, DeletePageDeclinedKeepsThePage) {
 
   EXPECT_CALL(main_window_, GetCurrentPage()).WillRepeatedly(ReturnRef(page));
   EXPECT_CALL(dialog_service_,
-              RunMessageBox(_, _, MessageBoxMode::QuestionYesNo))
+              RunMessageBox(_, _, MessageBoxMode::QuestionYesNoDefaultNo))
       .WillOnce([](std::u16string_view, std::u16string_view, MessageBoxMode) {
         return ReturnMessageBoxResultAsync(MessageBoxResult::No);
       });
@@ -143,7 +143,7 @@ TEST_F(PageCommandsTest, CancellingStagedEditsKeepsThePage) {
 
   EXPECT_CALL(main_window_, GetCurrentPage()).WillRepeatedly(ReturnRef(page));
   EXPECT_CALL(dialog_service_,
-              RunMessageBox(_, _, MessageBoxMode::QuestionYesNo))
+              RunMessageBox(_, _, MessageBoxMode::QuestionYesNoDefaultNo))
       .WillOnce([](std::u16string_view, std::u16string_view, MessageBoxMode) {
         return ReturnMessageBoxResultAsync(MessageBoxResult::Yes);
       });
@@ -230,7 +230,8 @@ TEST_F(PageCommandsTest, RenamePageAcceptedUpdatesCurrentPageTitle) {
       });
 
   bool renamed = false;
-  EXPECT_CALL(main_window_, SetCurrentPageTitle(std::u16string_view{u"New title"}))
+  EXPECT_CALL(main_window_,
+              SetCurrentPageTitle(std::u16string_view{u"New title"}))
       .WillOnce([&renamed](std::u16string_view) { renamed = true; });
 
   command->execute_handler(command_context_);
@@ -249,9 +250,8 @@ TEST_F(PageCommandsTest, RenamePageRejectedDoesNotUpdateCurrentPageTitle) {
   EXPECT_CALL(main_window_, GetCurrentPage()).WillOnce(ReturnRef(page));
   EXPECT_CALL(rename_prompt_runner_,
               Call(Ref(dialog_service_), std::u16string{u"Old title"}))
-      .WillOnce([](DialogService&, std::u16string) {
-        return RejectTitleAsync();
-      });
+      .WillOnce(
+          [](DialogService&, std::u16string) { return RejectTitleAsync(); });
   EXPECT_CALL(main_window_, SetCurrentPageTitle(_)).Times(0);
 
   command->execute_handler(command_context_);
@@ -323,11 +323,10 @@ TEST_F(PageMenuModelTest, RevertCurrentPageConfirmedOpensSavedPage) {
   page_def.title = u"Saved";
   Page& page = profile_.AddPage(page_def);
 
-  EXPECT_CALL(main_window_, GetCurrentPage())
-      .WillRepeatedly(ReturnRef(page));
+  EXPECT_CALL(main_window_, GetCurrentPage()).WillRepeatedly(ReturnRef(page));
   EXPECT_CALL(dialog_service_,
               RunMessageBox(/*message=*/_, /*title=*/_,
-                            MessageBoxMode::QuestionYesNo))
+                            MessageBoxMode::QuestionYesNoDefaultNo))
       .WillOnce([](std::u16string_view, std::u16string_view, MessageBoxMode) {
         return ReturnMessageBoxResultAsync(MessageBoxResult::Yes);
       });
@@ -345,11 +344,10 @@ TEST_F(PageMenuModelTest, RevertCurrentPageCanceledDoesNotOpenPage) {
   page_def.title = u"Saved";
   Page& page = profile_.AddPage(page_def);
 
-  EXPECT_CALL(main_window_, GetCurrentPage())
-      .WillRepeatedly(ReturnRef(page));
+  EXPECT_CALL(main_window_, GetCurrentPage()).WillRepeatedly(ReturnRef(page));
   EXPECT_CALL(dialog_service_,
               RunMessageBox(/*message=*/_, /*title=*/_,
-                            MessageBoxMode::QuestionYesNo))
+                            MessageBoxMode::QuestionYesNoDefaultNo))
       .WillOnce([](std::u16string_view, std::u16string_view, MessageBoxMode) {
         return ReturnMessageBoxResultAsync(MessageBoxResult::No);
       });

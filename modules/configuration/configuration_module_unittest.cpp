@@ -229,10 +229,11 @@ Awaitable<MessageBoxResult> AnswerWith(MessageBoxResult result) {
 }  // namespace
 
 // «Отключить» stops a device's data and control, so it asks first; it used to
-// write on one click (backlog 924). Declining writes nothing.
+// write on one click (backlog 924), and defaults to No so Enter does not stop
+// a device (backlog 1099). Declining writes nothing.
 TEST_F(ConfigurationModuleTest, DisableAsksAndDeclineWritesNothing) {
   EXPECT_CALL(dialog_service_,
-              RunMessageBox(_, _, MessageBoxMode::QuestionYesNo))
+              RunMessageBox(_, _, MessageBoxMode::QuestionYesNoDefaultNo))
       .WillOnce([](std::u16string_view, std::u16string_view, MessageBoxMode) {
         return AnswerWith(MessageBoxResult::No);
       });
@@ -244,7 +245,7 @@ TEST_F(ConfigurationModuleTest, DisableAsksAndDeclineWritesNothing) {
 
 TEST_F(ConfigurationModuleTest, DisableConfirmedWritesDisabled) {
   EXPECT_CALL(dialog_service_,
-              RunMessageBox(_, _, MessageBoxMode::QuestionYesNo))
+              RunMessageBox(_, _, MessageBoxMode::QuestionYesNoDefaultNo))
       .WillOnce([](std::u16string_view, std::u16string_view, MessageBoxMode) {
         return AnswerWith(MessageBoxResult::Yes);
       });

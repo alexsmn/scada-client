@@ -431,6 +431,8 @@ TEST(LoginControllerTest, FailedLoginReportsErrorAfterMessageBox) {
   EXPECT_TRUE(error_reported);
 }
 
+// Default No: accepting cuts off the other desk's session, so a stray Enter at
+// shift change must decline (backlog 1099).
 TEST(LoginControllerTest, ForceLogoffPromptRetriesConnectWhenAccepted) {
   auto settings_store = std::make_shared<MemorySettingsStore>();
   TestExecutor executor;
@@ -454,8 +456,9 @@ TEST(LoginControllerTest, ForceLogoffPromptRetriesConnectWhenAccepted) {
         EXPECT_TRUE(params.allow_remote_logoff);
         co_return co_await second_connect.Wait(executor);
       });
-  EXPECT_CALL(dialog_service, RunMessageBox(/*message=*/_, /*title=*/_,
-                                            MessageBoxMode::QuestionYesNo))
+  EXPECT_CALL(dialog_service,
+              RunMessageBox(/*message=*/_, /*title=*/_,
+                            MessageBoxMode::QuestionYesNoDefaultNo))
       .WillOnce([executor, &force_logoff_message](
                     std::u16string_view, std::u16string_view,
                     MessageBoxMode) -> Awaitable<MessageBoxResult> {
@@ -615,6 +618,8 @@ TEST(LoginControllerTest, DecliningAnUntrustedCertificateTrustsNothing) {
 
 // A different certificate for a host already trusted is the shape of a man in
 // the middle; the prompt says so rather than asking the first-meeting question.
+// A changed certificate may be an interception, so its prompt defaults to No
+// (backlog 1099); a first-seen one keeps the plain question.
 TEST(LoginControllerTest, ChangedServerCertificateIsWarnedAbout) {
   scada::ScopedTempDir pki_dir{"login_pki"};
   auto settings_store = std::make_shared<MemorySettingsStore>();
@@ -634,8 +639,9 @@ TEST(LoginControllerTest, ChangedServerCertificateIsWarnedAbout) {
       .WillOnce([](scada::SessionConnectParams) -> scada::CoStatus {
         co_return scada::StatusCode::Bad_CertificateUntrusted;
       });
-  EXPECT_CALL(dialog_service, RunMessageBox(/*message=*/_, /*title=*/_,
-                                            MessageBoxMode::QuestionYesNo))
+  EXPECT_CALL(dialog_service,
+              RunMessageBox(/*message=*/_, /*title=*/_,
+                            MessageBoxMode::QuestionYesNoDefaultNo))
       .WillOnce([&prompt_text](std::u16string_view message, std::u16string_view,
                                MessageBoxMode) {
         prompt_text = message;  // Eagerly; see the test above.

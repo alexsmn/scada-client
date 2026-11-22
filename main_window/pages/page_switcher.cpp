@@ -123,7 +123,8 @@ void PageSwitcher::ActivatePage(int page_id) {
   CoSpawn(executor_, cancelation_,
           [this, page_id, message = std::move(message)]() -> Awaitable<void> {
             auto message_box_result = co_await dialog_service_.RunMessageBox(
-                message, {}, MessageBoxMode::QuestionYesNo);
+                // Default No: Yes discards the layout changes (backlog 1099).
+                message, {}, MessageBoxMode::QuestionYesNoDefaultNo);
             if (message_box_result == MessageBoxResult::Yes)
               co_await SwitchToPageAsync(page_id, true);
             co_return;

@@ -121,7 +121,7 @@ TEST_F(PageSwitcherTest, ActivatingTheCurrentPageConfirmsTheRevert) {
   EXPECT_CALL(main_window_, GetCurrentPage())
       .WillRepeatedly(ReturnRef(current));
   EXPECT_CALL(dialog_service_,
-              RunMessageBox(_, _, MessageBoxMode::QuestionYesNo))
+              RunMessageBox(_, _, MessageBoxMode::QuestionYesNoDefaultNo))
       .WillOnce([](std::u16string_view, std::u16string_view, MessageBoxMode) {
         return ReturnMessageBoxResultAsync(MessageBoxResult::Yes);
       });
@@ -140,7 +140,7 @@ TEST_F(PageSwitcherTest, CancelingTheRevertLeavesThePageAlone) {
   EXPECT_CALL(main_window_, GetCurrentPage())
       .WillRepeatedly(ReturnRef(current));
   EXPECT_CALL(dialog_service_,
-              RunMessageBox(_, _, MessageBoxMode::QuestionYesNo))
+              RunMessageBox(_, _, MessageBoxMode::QuestionYesNoDefaultNo))
       .WillOnce([](std::u16string_view, std::u16string_view, MessageBoxMode) {
         return ReturnMessageBoxResultAsync(MessageBoxResult::No);
       });
@@ -176,7 +176,7 @@ TEST_F(PageSwitcherTest, CancellingStagedEditsStopsARevert) {
   EXPECT_CALL(main_window_, GetCurrentPage())
       .WillRepeatedly(ReturnRef(current));
   EXPECT_CALL(dialog_service_,
-              RunMessageBox(_, _, MessageBoxMode::QuestionYesNo))
+              RunMessageBox(_, _, MessageBoxMode::QuestionYesNoDefaultNo))
       .WillOnce([](std::u16string_view, std::u16string_view, MessageBoxMode) {
         return ReturnMessageBoxResultAsync(MessageBoxResult::Yes);
       });

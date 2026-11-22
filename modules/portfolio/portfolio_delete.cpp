@@ -22,7 +22,8 @@ Awaitable<void> ConfirmAndDeleteFromPortfolio(
                                        : Translate("Delete Portfolio");
 
   const MessageBoxResult answer = co_await dialog_service.RunMessageBox(
-      message, title, MessageBoxMode::QuestionYesNo);
+      // Default No: neither removal can be undone (backlog 1099).
+      message, title, MessageBoxMode::QuestionYesNoDefaultNo);
   if (answer != MessageBoxResult::Yes)
     co_return;
 

@@ -410,7 +410,9 @@ void LoginController::OnLoginFailed(const scada::Status& status) {
     CoSpawn(executor_, [executor = executor_, controller = weak_from_this(),
                         prompt = dialog_service_.RunMessageBox(
                             Translate(kForceLogoffMessage), {},
-                            MessageBoxMode::QuestionYesNo)]() mutable {
+                            // Yes cuts off the other desk's session, so one
+                            // Enter at shift change must not (backlog 1099).
+                            MessageBoxMode::QuestionYesNoDefaultNo)]() mutable {
       return PromptForceLogoffAsync(std::move(executor), std::move(controller),
                                     std::move(prompt));
     });
@@ -552,8 +554,14 @@ bool LoginController::PromptToTrustServerCertificate() {
   CoSpawn(executor_,
           [executor = executor_, controller = weak_from_this(),
            certificate = rejected->file,
+           // A server presenting a DIFFERENT certificate from the trusted one
+           // may be an interception, so Enter declines it (backlog 1099); a
+           // first-seen certificate keeps the plain question.
            prompt = dialog_service_.RunMessageBox(
-               message, {}, MessageBoxMode::QuestionYesNo)]() mutable {
+               message, {},
+               rejected->replaces_trusted
+                   ? MessageBoxMode::QuestionYesNoDefaultNo
+                   : MessageBoxMode::QuestionYesNo)]() mutable {
             return PromptTrustServerCertificateAsync(
                 std::move(executor), std::move(controller),
                 std::move(certificate), std::move(prompt));

@@ -37,7 +37,8 @@ Awaitable<void> DeleteCurrentPageAsync(MainWindowInterface& main_window,
       u16format(Translate("Delete the page \"{}\"? Its windows can be reopened "
                           "from the trash."),
                 page_title),
-      Translate("Delete Page"), MessageBoxMode::QuestionYesNo);
+      // Default No, as for every destructive question (backlog 1099).
+      Translate("Delete Page"), MessageBoxMode::QuestionYesNoDefaultNo);
   if (answer != MessageBoxResult::Yes)
     co_return;
   // Deleting closes the page's views, and staged edits with them (backlog

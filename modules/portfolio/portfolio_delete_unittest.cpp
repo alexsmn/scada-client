@@ -40,7 +40,7 @@ class PortfolioDeleteTest : public Test {
 
   void OperatorAnswers(MessageBoxResult result) {
     EXPECT_CALL(dialog_service_,
-                RunMessageBox(_, _, MessageBoxMode::QuestionYesNo))
+                RunMessageBox(_, _, MessageBoxMode::QuestionYesNoDefaultNo))
         .WillOnce(Return(ByMove(Answer(result))));
   }
 
@@ -75,7 +75,7 @@ TEST_F(PortfolioDeleteTest, DecliningKeepsTheObject) {
 TEST_F(PortfolioDeleteTest, ConfirmingRemovesTheObjectAndNamesIt) {
   std::u16string question;
   EXPECT_CALL(dialog_service_,
-              RunMessageBox(_, _, MessageBoxMode::QuestionYesNo))
+              RunMessageBox(_, _, MessageBoxMode::QuestionYesNoDefaultNo))
       .WillOnce([&question](std::u16string_view message, std::u16string_view,
                             MessageBoxMode) {
         question = message;

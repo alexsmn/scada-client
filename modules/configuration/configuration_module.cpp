@@ -234,7 +234,8 @@ Awaitable<void> ConfigurationModule::SetDeviceEnabledAsync(
                             "control through it is refused until it is "
                             "enabled again."),
                   ToString16(node.display_name())),
-        Translate("Disable"), MessageBoxMode::QuestionYesNo);
+        // Default No: Enter must not stop a device (backlog 1099).
+        Translate("Disable"), MessageBoxMode::QuestionYesNoDefaultNo);
     if (answer != MessageBoxResult::Yes)
       co_return;
   }
