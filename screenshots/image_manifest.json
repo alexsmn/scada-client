@@ -3286,7 +3286,7 @@
       "referenced_from": [
         "dev/designer/properties.md"
       ],
-      "notes": "The Inspector's Shape tab with its Position & size section (formerly the Transform panel), Russian UI. A single shape selected. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `panel_transform`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+      "notes": "The Inspector's Shape tab: Position & size (formerly the Transform panel), then Fill, Line and Text, Russian UI. A single shape selected. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `panel_transform`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
     },
     {
       "file": "designer-transform-en.png",
