@@ -18,6 +18,7 @@
 #include <boost/range/adaptor/transformed.hpp>
 #include <stdexcept>
 #include <unordered_map>
+#include <vector>
 
 namespace {
 
@@ -124,6 +125,23 @@ scada::CoStatus FetchParentAndTypeChainResident(NodeRef parent_node) {
     }
   }
   co_return scada::Status{scada::StatusCode::Bad_ObjectIsBusy};
+}
+
+// Fetches each property declaration's DataType with its supertype chain and
+// children. GetPropertyDef picks a definition by walking the data type
+// (IsSubtypeOf), and an enumeration's cells read its EnumStrings child; with
+// the data type absent the walk fails, the declaration gets no definition, and
+// its column is silently dropped. Standard NS0 types are always present, so
+// only a model-defined type showed it: the «Тип» enumeration of the Simulated
+// Signals table had no column. A failed fetch is skipped — that one column
+// stays out, as before — rather than failing the whole table.
+Awaitable<void> FetchPropertyDataTypes(std::vector<NodeRef> property_decls) {
+  for (const auto& property_decl : property_decls) {
+    if (property_decl.node_class() != scada::NodeClass::Variable)
+      continue;
+    if (NodeRef data_type = property_decl.data_type())
+      (void)co_await FetchTypeChainStatus(data_type);
+  }
 }
 
 }  // namespace
@@ -264,6 +282,8 @@ Awaitable<PropertyDefs> PropertyService::GetChildPropertyDefsAsync(
                                            property_decls);
   }
 
+  co_await FetchPropertyDataTypes(
+      {property_decls->begin(), property_decls->end()});
   co_return GetPropertyDefs(*property_decls);
 }
 
@@ -286,6 +306,8 @@ PropertyService::GetChildPropertyDefsStatusAsync(AnyExecutor executor,
     }
   }
 
+  co_await FetchPropertyDataTypes(
+      {property_decls->begin(), property_decls->end()});
   co_return GetPropertyDefs(*property_decls);
 }
 
