@@ -5,6 +5,7 @@
 #include "favorites/favourites.h"
 #include "ui_add_favourites_dialog.h"
 
+#include <QListWidget>
 #include <QPushButton>
 
 #include <QDialogButtonBox>
@@ -41,6 +42,15 @@ AddFavouritesDialog::AddFavouritesDialog(AddFavouritesContext&& context,
   for (auto& folder : favourites_.folders())
     ui.folderListWidget->addItem(QString::fromStdU16String(folder.GetTitle()));
   ui.folderListWidget->setCurrentRow(0);
+
+  // Picking an existing group fills the «Group» field, which is what accept()
+  // reads; the first row means no group. Connected after the initial
+  // setCurrentRow so the field opens empty.
+  connect(ui.folderListWidget, &QListWidget::currentRowChanged, this,
+          [this](int row) {
+            ui.folderLineEdit->setText(
+                row <= 0 ? QString{} : ui.folderListWidget->item(row)->text());
+          });
 }
 
 void AddFavouritesDialog::accept() {

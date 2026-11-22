@@ -21,6 +21,7 @@
 
 #include <QApplication>
 #include <QDialog>
+#include <QListWidget>
 
 using namespace testing;
 
@@ -121,6 +122,32 @@ TEST_F(FavoritesModuleTest, AcceptingTheDialogAddsTheFavourite) {
   CloseDialog(*dialog, /*accept=*/true);
 
   EXPECT_THAT(added, ElementsAre(std::u16string{kViewTitle}));
+}
+
+// Regression: the group list was never connected to the «Group» field that
+// accept() reads, so picking an existing group in the list saved the favourite
+// outside it.
+TEST_F(FavoritesModuleTest, PickingAGroupInTheListSavesIntoThatGroup) {
+  ON_CALL(main_window_, GetActiveView()).WillByDefault(Return(&opened_view_));
+  module_.favourites().GetOrAddFolder(u"Substations");
+
+  std::vector<std::u16string> folders;
+  auto subscription = module_.favourites().SubscribeFavouriteAdded(
+      [&folders](const Page& folder, const WindowDefinition& win) {
+        folders.push_back(folder.GetTitle());
+      });
+
+  ExecuteAddToFavouritesCommand();
+
+  QDialog* dialog = FindVisibleDialog();
+  ASSERT_THAT(dialog, NotNull());
+  auto* list = dialog->findChild<QListWidget*>("folderListWidget");
+  ASSERT_THAT(list, NotNull());
+  // Row 0 is "(No Folder)"; the existing group follows it.
+  list->setCurrentRow(1);
+  CloseDialog(*dialog, /*accept=*/true);
+
+  EXPECT_THAT(folders, ElementsAre(std::u16string{u"Substations"}));
 }
 
 // The command is not offered without a view to save, so it must not open a
