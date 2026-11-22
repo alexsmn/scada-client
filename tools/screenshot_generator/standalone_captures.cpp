@@ -99,7 +99,7 @@ constexpr StandaloneCapture kStandaloneCaptures[] = {
     // bulk-create.html), built from a demo pattern with no node service.
     {"bulk-create",
      +[](const StandaloneCaptureContext& c) {
-       SaveBulkCreateScreenshot(c.spec);
+       SaveBulkCreateScreenshot(c.spec, c.json);
      }},
     // The protocol debugger is a --debug-gated window, not a registered view,
     // so the ordinary view sweep cannot reach it; it is built over a fixture

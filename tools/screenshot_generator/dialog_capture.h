@@ -10,6 +10,7 @@
 
 struct DialogSpec;
 class Favourites;
+class QWidget;
 class NodeService;
 class Profile;
 class TimedDataService;
@@ -43,6 +44,11 @@ struct DialogEnvironment {
   // Accounts seeded into the login dialog's user combo, first entry
   // pre-selected. Comes from the fixture's `login_user_list`.
   std::vector<std::string> login_user_list;
+  // The application's main window. The command palette is captured by firing
+  // the window's own Ctrl-K shortcut, so it lists the commands the window has
+  // registered — what an operator sees — rather than a list made up for the
+  // capture. Null is fine for kinds that don't need it.
+  QWidget* main_window = nullptr;
 };
 
 // Builds and shows the dialog identified by `spec.kind`, then grabs a

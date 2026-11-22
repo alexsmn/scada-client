@@ -218,6 +218,9 @@ TEST_F(ScreenshotGenerator, CaptureDialogs) {
   for (int i = 0; i < 20; ++i)
     QApplication::processEvents();
 
+  const auto& main_windows = app_.main_window_manager().main_windows();
+  ASSERT_EQ(main_windows.size(), 1u);
+
   Profile profile;
   DialogEnvironment env{
       .executor = executor_,
@@ -226,7 +229,9 @@ TEST_F(ScreenshotGenerator, CaptureDialogs) {
       .profile = &profile,
       .favourites = &app_.favourites(),
       .dialog_analog_node_id = FixtureConfig().dialog_analog_node_id,
-      .login_user_list = FixtureConfig().login_user_list};
+      .login_user_list = FixtureConfig().login_user_list,
+      .main_window = dynamic_cast<QWidget*>(
+          &const_cast<MainWindow&>(main_windows.front()))};
 
   int captured = 0;
   for (const auto& spec : FixtureConfig().dialogs) {

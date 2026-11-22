@@ -139,6 +139,32 @@ TEST_F(CommandPaletteTest, ExtraItemsAreMatchedAndActivated) {
   EXPECT_TRUE(handler.executed_.empty());  // a tag is not a command
 }
 
+// An entry's detail is its own item role, drawn right-aligned by the list's
+// delegate. It used to follow the title after a '\t' in the item text, which
+// the list draws as a jump to the next tab stop: details sat ragged, and a
+// title ending near a stop ran into its detail («Реактивная мощностьтег»).
+TEST_F(CommandPaletteTest, DetailIsARoleNotPartOfTheTitle) {
+  CommandManager manager;
+  AddCommand(manager, 1, u"Open Display");
+
+  RecordingHandler handler;
+  std::vector<CommandPalette::ExtraItem> extras;
+  extras.push_back({u"Pump Pressure", u"tag", [] {}});
+  CommandPalette palette{nullptr, manager, ResolverFor(handler),
+                         std::move(extras)};
+
+  FilterOf(palette)->setText(QStringLiteral("pump"));
+  QListWidget* list = ListOf(palette);
+  ASSERT_EQ(list->count(), 1);
+  EXPECT_EQ(list->item(0)->text(), QStringLiteral("Pump Pressure"));
+  EXPECT_EQ(list->item(0)->data(CommandPalette::kDetailRole).toString(),
+            QStringLiteral("tag"));
+
+  FilterOf(palette)->setText(QStringLiteral("open"));
+  ASSERT_EQ(list->count(), 1);
+  EXPECT_FALSE(list->item(0)->data(CommandPalette::kDetailRole).isValid());
+}
+
 TEST_F(CommandPaletteTest, EnterRunsTheSelectedCommand) {
   CommandManager manager;
   AddCommand(manager, 1, u"Open Display");

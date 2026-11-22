@@ -12,14 +12,15 @@
 
 #include "null_task_manager.h"
 #include "screenshot_config.h"
+#include "screenshot_wait.h"
 
 #include "aui/qt/dialog_service_impl_qt.h"
 #include "aui/translation.h"
 #include "base/memory_settings_store.h"
 #include "base/relative_time_range.h"
 #include "base/utf_convert.h"
-#include "controller/command_manager.h"
 #include "main_window/command_palette_qt.h"
+#include "main_window/context_bar_qt.h"
 #include "modules/about/about_dialog.h"
 #include "modules/about/about_info.h"
 #include "modules/export/csv/csv_export.h"
@@ -32,6 +33,8 @@
 #include "scada/data_services_factory.h"
 
 #include <QApplication>
+#include <QListWidget>
+#include <QShortcut>
 #include <gtest/gtest.h>
 
 #include <optional>
@@ -39,28 +42,6 @@
 #include <utility>
 
 namespace scada::screenshot_generator {
-namespace {
-
-// Registers a representative spread of operator/engineering commands so the
-// palette capture shows a realistic list. Titles go through Translate() (no
-// Cyrillic literals in source); the generator loads no .ts, so they render in
-// English.
-void RegisterSampleCommands(CommandManager& manager) {
-  const char* const titles[] = {
-      "Acknowledge Alarm", "Acknowledge All Alarms",
-      "Open Display",      "Export to CSV",
-      "Write Value",       "Show Event Journal",
-      "Add to Favorites",  "Print Preview",
-      "Device Metrics",    "Refresh",
-  };
-  unsigned id = 1;
-  for (const char* title : titles) {
-    manager.RegisterCommand(
-        CommandDescriptor{.command_id = id++, .title = Translate(title)});
-  }
-}
-
-}  // namespace
 
 bool CaptureLoginDialog(const DialogCaptureContext& context) {
   DialogEnvironment& env = context.env;
@@ -98,16 +79,74 @@ bool CaptureLoginDialog(const DialogCaptureContext& context) {
 }
 
 bool CaptureCommandPaletteDialog(const DialogCaptureContext& context) {
-  // The palette is a plain modal QDialog (not a CoSpawn'd coroutine like the
-  // others): build it over a fixture command list and let the generic grab
-  // pick it up. The manager can die once the ctor has copied its entries.
-  CommandManager command_manager;
-  RegisterSampleCommands(command_manager);
-  auto* palette =
-      new CommandPalette(nullptr, command_manager,
-                         [](unsigned) -> CommandHandler* { return nullptr; });
-  palette->setAttribute(Qt::WA_DeleteOnClose);
-  palette->show();
+  // Opened the way an operator opens it: the main window's Ctrl-K shortcut,
+  // which shows the palette over every command the window has registered plus
+  // the address-space tags. Until 2026-11-22 the capture built the palette over
+  // ten invented English titles that no catalog translates, so the Russian
+  // manual showed «Acknowledge Alarm», «Refresh»… — a list the client never
+  // displays. The palette is a self-deleting modal QDialog, so the generic grab
+  // picks it up and closes it.
+  QWidget* main_window = context.env.main_window;
+  if (!main_window) {
+    ADD_FAILURE() << "CommandPalette needs the main window";
+    return false;
+  }
+  QShortcut* palette_shortcut = nullptr;
+  for (QShortcut* shortcut : main_window->findChildren<QShortcut*>()) {
+    if (shortcut->key() == ContextBar::PaletteKey()) {
+      palette_shortcut = shortcut;
+      break;
+    }
+  }
+  if (!palette_shortcut) {
+    ADD_FAILURE() << "the main window has no "
+                  << ContextBar::PaletteKey().toString().toStdString()
+                  << " shortcut to open the command palette with";
+    return false;
+  }
+  // The unfiltered list opens on whatever sorts first (aggregation intervals,
+  // «1-Минутные»…), which says nothing about what the palette is for. A query
+  // shows what the manual describes: commands and signals matched as you type.
+  //
+  // The signals come from an address-space browse the first opening starts,
+  // and a palette copies its entries when it is built — so an early palette
+  // has no signals. Reopen until the query matches a signal, as an operator
+  // pressing Ctrl-K again a moment later would. A signal is told from a
+  // command by its entry id, which the palette offsets past every command id
+  // (kExtraItemBase in command_palette_qt.cpp).
+  constexpr unsigned kFirstNonCommandId = 1u << 30;
+  constexpr int kMaxOpenings = 50;
+  for (int opening = 0; opening < kMaxOpenings; ++opening) {
+    emit palette_shortcut->activated();
+    if (context.spec.filter.empty())
+      break;
+    auto* palette = main_window->findChild<CommandPalette*>();
+    if (!palette) {
+      ADD_FAILURE() << "the Ctrl-K shortcut opened no command palette";
+      return false;
+    }
+    palette->PresetFilter(QString::fromStdString(context.spec.filter));
+    bool matches_a_signal = false;
+    if (auto* list = palette->findChild<QListWidget*>()) {
+      for (int row = 0; row < list->count(); ++row) {
+        if (list->item(row)->data(Qt::UserRole).toUInt() >=
+            kFirstNonCommandId) {
+          matches_a_signal = true;
+        }
+      }
+    }
+    if (matches_a_signal)
+      break;
+    if (opening + 1 == kMaxOpenings) {
+      ADD_FAILURE() << "the command palette matched no signal for «"
+                    << context.spec.filter << "»";
+      return false;
+    }
+    // Deleted now rather than deferred, so the next findChild cannot return
+    // this one.
+    delete palette;
+    PumpEventLoopFor(std::chrono::milliseconds{100});
+  }
   return GrabShownDialog(context);
 }
 
@@ -125,17 +164,16 @@ bool CaptureAboutDialog(const DialogCaptureContext& context) {
   //
   // Eagerly-shown self-owned modal; the generic grab rejects it and the dialog
   // deleteLater's itself.
-  ShowAboutDialog(
-      context.dialog_service,
-      AboutInfo{.product = u"Telecontrol SCADA",
-                .version = u"2.6.0",
-                .build_commit = u"9f3c21a",
-                .build_date = u"2026-09-18T10:00:00+03:00",
-                .runtime = u"Qt 6.8.2 · macOS 15.6 · arm64",
-                .server = u"opc.tcp://sub-north.tc.local:4840",
-                .user = u"operator1",
-                .has_session = true,
-                .connected = true});
+  ShowAboutDialog(context.dialog_service,
+                  AboutInfo{.product = u"Telecontrol SCADA",
+                            .version = u"2.6.0",
+                            .build_commit = u"9f3c21a",
+                            .build_date = u"2026-09-18T10:00:00+03:00",
+                            .runtime = u"Qt 6.8.2 · macOS 15.6 · arm64",
+                            .server = u"opc.tcp://sub-north.tc.local:4840",
+                            .user = u"operator1",
+                            .has_session = true,
+                            .connected = true});
   return GrabShownDialog(context);
 }
 
@@ -159,11 +197,11 @@ bool CaptureMessageBoxDialog(const DialogCaptureContext& context) {
   // The shared confirmation surface (DialogService::RunMessageBox), in its
   // question variant — the shape the two-stage confirms and apply/discard
   // prompts use. Mirrors the Excel-import "Apply changes?" call.
-  auto lifetime = StartAwaitable(
-      context.env.executor,
-      context.dialog_service.RunMessageBox(Translate("Apply changes?"),
-                                           Translate("Import"),
-                                           MessageBoxMode::QuestionYesNo));
+  auto lifetime =
+      StartAwaitable(context.env.executor,
+                     context.dialog_service.RunMessageBox(
+                         Translate("Apply changes?"), Translate("Import"),
+                         MessageBoxMode::QuestionYesNo));
   return GrabThenAwait(context, lifetime);
 }
 
@@ -201,10 +239,9 @@ bool CaptureAddFavouritesDialog(const DialogCaptureContext& context) {
   window_def.title = Translate("Voltages");
   auto lifetime = StartAwaitable(
       context.env.executor,
-      ShowAddFavouritesDialog(
-          context.dialog_service,
-          AddFavouritesContext{*context.env.favourites,
-                               std::move(window_def)}));
+      ShowAddFavouritesDialog(context.dialog_service,
+                              AddFavouritesContext{*context.env.favourites,
+                                                   std::move(window_def)}));
   return GrabThenAwait(context, lifetime);
 }
 
@@ -219,10 +256,11 @@ bool CaptureTransportDialog(const DialogCaptureContext& context) {
   // before the lazy body ever reads it. GrabThenAwait waits for the coroutine
   // to unwind, so this local outlives it. Same hazard ShowAddFavouritesDialog
   // documents on its own by-value context parameter.
-  const transport::TransportString endpoint{"TCP;Active;Host=192.168.1.50;Port=2404"};
-  auto lifetime = StartAwaitable(
-      context.env.executor,
-      ShowTransportDialog(context.dialog_service, endpoint));
+  const transport::TransportString endpoint{
+      "TCP;Active;Host=192.168.1.50;Port=2404"};
+  auto lifetime =
+      StartAwaitable(context.env.executor,
+                     ShowTransportDialog(context.dialog_service, endpoint));
   return GrabThenAwait(context, lifetime);
 }
 

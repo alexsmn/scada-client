@@ -241,6 +241,8 @@ void ScreenshotConfig::Load(const std::filesystem::path& path) {
         spec.second_stage = second->as_bool();
       if (auto* value = js.as_object().if_contains("command_value"))
         spec.command_value = value->to_number<double>();
+      if (auto* filter = js.as_object().if_contains("filter"))
+        spec.filter = std::string{filter->as_string()};
       if (IsManagedImage(managed_images, spec))
         dialogs.push_back(std::move(spec));
     }

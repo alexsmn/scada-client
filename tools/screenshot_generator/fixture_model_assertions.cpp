@@ -41,6 +41,7 @@
 #include "scada/variant.h"
 #include "screenshot_wait.h"
 #include "services/device_state_notifier.h"
+#include "services/legacy_event_severity.h"
 #include "user_access/role_membership.h"
 
 #include <QApplication>
@@ -55,6 +56,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -184,6 +186,18 @@ TEST_F(ScreenshotGenerator, DestinationRailEnumeratesTransmissionDevices) {
   EXPECT_EQ(devices[2].rule_count, 2);
   for (const TransmissionDeviceEntry& device : devices)
     EXPECT_FALSE(device.name.empty());
+}
+
+// The fixture stands in for a 2.6 Server, and the client must take it for one.
+// `LegacySeverityProbe` decides "2.5.7" when DataItemControlType is missing,
+// and then multiplies every event severity by ten: from 2026-11-08 until the
+// test address space gained that type, every journal row in the gallery read
+// «Критично 1000» (workbench-window.png, workbench-overview.png), which the
+// images could not be checked for.
+TEST_F(ScreenshotGenerator, TheFixtureServerIsTakenForA26Server) {
+  LegacySeverityProbe probe{std::shared_ptr<scada::AttributeService>{
+      std::shared_ptr<void>{}, &attribute_service_}};
+  EXPECT_FALSE(WaitForAwaitable(executor_, probe.IsServerBefore26()));
 }
 
 // Role membership must survive the real node model, not just a static fake.

@@ -155,6 +155,11 @@ struct DialogSpec {
   // fixture reading renders a review of a no-op, and a discrete item's states
   // are not on the same scale as an analog one's engineering units.
   std::optional<double> command_value;
+  // Text typed into a filtering dialog before the grab ("filter" in the JSON,
+  // UTF-8), so the capture shows the dialog answering a query rather than its
+  // unfiltered first screen. Read by the command palette. Lives in the fixture
+  // because client source may not carry Russian literals.
+  std::string filter;
 };
 
 // Screenshot-generator fixture, loaded once from `screenshot_data.json`.

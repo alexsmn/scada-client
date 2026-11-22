@@ -5,10 +5,13 @@
 #include "controller/command_handler.h"
 #include "controller/command_manager.h"
 
+#include <QApplication>
 #include <QKeyEvent>
 #include <QKeySequence>
 #include <QLineEdit>
 #include <QListWidget>
+#include <QPainter>
+#include <QStyledItemDelegate>
 #include <QVBoxLayout>
 
 #include <algorithm>
@@ -30,6 +33,71 @@ std::u16string ShortcutText(const CommandDescriptor& descriptor) {
       .toString(QKeySequence::NativeText)
       .toStdU16String();
 }
+
+// Draws an entry's title on the left and its detail (shortcut, or «tag») in
+// the secondary text colour against the right edge. The detail used to be
+// appended to the label after a '\t', which QListWidget draws as a jump to
+// the next tab stop rather than as right alignment: details landed at
+// whichever stop followed the title, ragged from row to row, and a title
+// ending near a stop ran straight into its detail («…мощностьтег»).
+class CommandEntryDelegate : public QStyledItemDelegate {
+ public:
+  using QStyledItemDelegate::QStyledItemDelegate;
+
+  // QAbstractItemDelegate
+  void paint(QPainter* painter,
+             const QStyleOptionViewItem& option,
+             const QModelIndex& index) const override {
+    const QString detail = index.data(CommandPalette::kDetailRole).toString();
+    if (detail.isEmpty()) {
+      QStyledItemDelegate::paint(painter, option, index);
+      return;
+    }
+
+    QStyleOptionViewItem opt{option};
+    initStyleOption(&opt, index);
+    const QStyle* style =
+        opt.widget ? opt.widget->style() : QApplication::style();
+    // The inset QCommonStyle gives an item's text inside its text rect, so a
+    // row with a detail lines its title up with the rows without one.
+    const int margin =
+        style->pixelMetric(QStyle::PM_FocusFrameHMargin, nullptr, opt.widget) +
+        1;
+    const int gap = opt.fontMetrics.horizontalAdvance(QLatin1Char(' ')) * 2;
+    const int detail_width = opt.fontMetrics.horizontalAdvance(detail);
+
+    // The row background and selection, without text.
+    QStyleOptionViewItem background_opt{opt};
+    background_opt.text = QString{};
+    style->drawControl(QStyle::CE_ItemViewItem, &background_opt, painter,
+                       opt.widget);
+
+    // The title gets what the detail leaves, so a long one is elided rather
+    // than drawn under the detail.
+    const QRect text_rect =
+        style->subElementRect(QStyle::SE_ItemViewItemText, &opt, opt.widget)
+            .adjusted(margin, 0, -margin, 0);
+    QRect title_rect = text_rect;
+    title_rect.setRight(text_rect.right() - detail_width - gap);
+
+    const bool selected = opt.state & QStyle::State_Selected;
+    const QPalette::ColorGroup group = opt.state & QStyle::State_Enabled
+                                           ? QPalette::Normal
+                                           : QPalette::Disabled;
+    painter->save();
+    painter->setFont(opt.font);
+    painter->setPen(opt.palette.color(
+        group, selected ? QPalette::HighlightedText : QPalette::Text));
+    painter->drawText(title_rect, Qt::AlignLeft | Qt::AlignVCenter,
+                      opt.fontMetrics.elidedText(opt.text, Qt::ElideRight,
+                                                 title_rect.width()));
+    painter->setPen(opt.palette.color(group, selected
+                                                 ? QPalette::HighlightedText
+                                                 : QPalette::PlaceholderText));
+    painter->drawText(text_rect, Qt::AlignRight | Qt::AlignVCenter, detail);
+    painter->restore();
+  }
+};
 
 }  // namespace
 
@@ -72,6 +140,7 @@ CommandPalette::CommandPalette(QWidget* parent,
   list_->setObjectName("commandPaletteList");
   list_->setUniformItemSizes(true);
   list_->setFocusPolicy(Qt::NoFocus);
+  list_->setItemDelegate(new CommandEntryDelegate{list_});
 
   auto* layout = new QVBoxLayout{this};
   layout->setContentsMargins(0, 0, 0, 0);
@@ -103,11 +172,11 @@ void CommandPalette::Refilter() {
 
   list_->clear();
   for (const CommandEntry& entry : matches) {
-    QString label = QString::fromStdU16String(entry.title);
-    if (!entry.detail.empty())
-      label += QStringLiteral("\t") + QString::fromStdU16String(entry.detail);
-    auto* item = new QListWidgetItem{label, list_};
+    auto* item =
+        new QListWidgetItem{QString::fromStdU16String(entry.title), list_};
     item->setData(Qt::UserRole, entry.command_id);
+    if (!entry.detail.empty())
+      item->setData(kDetailRole, QString::fromStdU16String(entry.detail));
   }
   if (list_->count() > 0)
     list_->setCurrentRow(0);

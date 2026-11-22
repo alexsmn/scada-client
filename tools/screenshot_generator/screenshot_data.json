@@ -247,54 +247,63 @@
     {
       "id": "TS.9001",
       "browse_name": "Online",
+      "display_name": "Связь",
       "class": "variable",
       "base_value": 0
     },
     {
       "id": "TS.9002",
       "browse_name": "Enabled",
+      "display_name": "Включено",
       "class": "variable",
       "base_value": 1
     },
     {
       "id": "TS.9003",
       "browse_name": "MessagesIn",
+      "display_name": "Принято сообщений",
       "class": "variable",
       "base_value": 128402
     },
     {
       "id": "TS.9004",
       "browse_name": "MessagesOut",
+      "display_name": "Отправлено сообщений",
       "class": "variable",
       "base_value": 64118
     },
     {
       "id": "TS.9005",
       "browse_name": "BytesIn",
+      "display_name": "Принято байт",
       "class": "variable",
       "base_value": 4213904
     },
     {
       "id": "TS.9006",
       "browse_name": "BytesOut",
+      "display_name": "Отправлено байт",
       "class": "variable",
       "base_value": 1830221
     },
     {
       "id": "TS.9007",
       "browse_name": "InterrogateCount",
+      "display_name": "Число полных опросов",
       "class": "variable",
       "base_value": 512
     },
     {
       "id": "TS.9008",
       "browse_name": "SyncClockCount",
+      "display_name": "Число синхронизаций времени",
       "class": "variable",
       "base_value": 288
     },
     {
       "id": "TS.9101",
       "browse_name": "Online",
+      "display_name": "Связь",
       "class": "variable",
       "base_value": 1
     },
@@ -622,7 +631,7 @@
       "class": "object",
       "type_definition": "SCADA.16",
       "properties": {
-        "SCADA.170": 0,
+        "SCADA.170": 3,
         "SCADA.345": false
       }
     },
@@ -738,8 +747,8 @@
     },
     {
       "id": "USER.11",
-      "browse_name": "root",
-      "display_name": "root",
+      "browse_name": "Инженер",
+      "display_name": "Инженер",
       "class": "object",
       "type_definition": "SCADA.16",
       "properties": {
@@ -1488,7 +1497,13 @@
     "The optional `cursor` flag places and selects a time cursor at two",
     "thirds of the displayed range. It belongs to the configuration, not to",
     "every graph capture: a cursor line drawn across the limits capture",
-    "illustrates nothing it is about."
+    "illustrates nothing it is about.",
+    "",
+    "An item's `color` is honoured as given, as an operator's chosen colour",
+    "is; only a line added without one gets a colour the client checks for",
+    "contrast against the plot (GraphView::NewColor). So pick one readable on",
+    "both appearances: limits-chart.png drew TIT.200 in #0000FF, which is",
+    "barely visible on the dark plot the manual publishes."
   ],
   "graphs": {
     "cursor": {
@@ -1537,7 +1552,7 @@
       "items": [
         {
           "path": "TIT.200",
-          "color": "#0000FF",
+          "color": "#2F80ED",
           "pane": 1,
           "dots": true,
           "stepped": false
@@ -1660,7 +1675,7 @@
       "capture": "bulk-create",
       "filename": "bulk-create.png",
       "width": 560,
-      "height": 760
+      "height": 400
     },
     {
       "capture": "severity-tiles",
@@ -1770,11 +1785,11 @@
       "height": 500
     },
     {
-      "type": "Users",
+      "_comment": "The Users window, which dev/users.md says only a ConfigureAdmin account can open. Captured through the users-grid path, which reads as that administrator (AuthenticatedAttributeService), rather than as the Users view: the view path runs the fixture's anonymous session, which may not read the role map, so every row's Roles cell read «Нет данных» — true of an anonymous reader, and of no one the page addresses. Same panel the window renders (NodeTableController routes the Users folder to UsersGridPanel).",
+      "capture": "users-grid",
       "filename": "users.png",
       "width": 740,
-      "height": 302,
-      "min_rows": 13
+      "height": 302
     },
     {
       "type": "Params",
@@ -2140,8 +2155,10 @@
       "command_value": 1
     },
     {
+      "_comment": "Opened by the main window's own Ctrl-K, so it lists the window's real commands plus the address-space signals (each marked «тег»). `filter` is what the capture types: unfiltered, the list opens on the aggregation intervals that happen to sort first.",
       "kind": "command-palette",
       "filename": "command-palette.png",
+      "filter": "та",
       "width": 560,
       "height": 380
     },
@@ -2201,7 +2218,14 @@
       "height": 170
     }
   ],
-  "_device_log_comment": "Device-log lines for the Log (device watch) capture, delivered as event notifications on `device`. An entry with a `frame` object arrives as a DeviceFrameEventType event and fills the decoded columns; one without is a plain log line, which is also what an older server sends - the #/$ marker then drives the direction column through the client's fallback.",
+  "_bulk_create_comment": "The bulk-create wizard's template step for bulk-create.png: dev/data-items.md's worked example (five TI «Ток фидера 1» … «Ток фидера 5»), which the figure sits directly under. Here rather than in bulk_create_capture.cpp because client source may not carry Russian literals.",
+  "bulk_create": {
+    "name_template": "Ток фидера {n}",
+    "start_index": 1,
+    "count": 5,
+    "index_step": 1
+  },
+  "_device_log_comment":"Device-log lines for the Log (device watch) capture, delivered as event notifications on `device`. An entry with a `frame` object arrives as a DeviceFrameEventType event and fills the decoded columns; one without is a plain log line, which is also what an older server sends - the #/$ marker then drives the direction column through the client's fallback.",
   "device_log": {
     "device": "TS.103",
     "lines": [

@@ -24,6 +24,11 @@ class CommandPalette : public QDialog {
   // palette checks IsCommandEnabled and calls ExecuteCommand on it.
   using HandlerResolver = std::function<CommandHandler*(unsigned command_id)>;
 
+  // The list item role holding an entry's detail — its shortcut, or «tag» for
+  // an address-space entry — which is drawn right-aligned beside the title
+  // rather than appended to the item's text.
+  static constexpr int kDetailRole = Qt::UserRole + 1;
+
   // A non-command entry (e.g. an address-space tag) shown alongside commands
   // and matched the same way; `activate` runs when it is chosen.
   struct ExtraItem {
