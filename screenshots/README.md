@@ -1,6 +1,6 @@
 # Screen gallery
 
-84 captures of the Telecontrol SCADA client, rendered offscreen from a fixture by [`client_screenshot_generator`](../tools/screenshot_generator) and tracked in this repository — so a UI change lands as a reviewable image diff rather than being noticed the next time somebody refreshes the manual.
+90 captures of the Telecontrol SCADA client, rendered offscreen from a fixture by [`client_screenshot_generator`](../tools/screenshot_generator) and tracked in this repository — so a UI change lands as a reviewable image diff rather than being noticed the next time somebody refreshes the manual.
 
 Each capture is rendered in both appearances. The client follows the host OS light/dark preference by default, so both are what operators actually see. The previews below are the dark render; the light one is linked beside it.
 
@@ -8,7 +8,7 @@ Each capture is rendered in both appearances. The client follows the host OS lig
 
 ## Views
 
-Workspace views and panels — what the operator works in. (51)
+Workspace views and panels — what the operator works in. (56)
 
 | Capture | Preview | |
 |---|---|---|
@@ -55,7 +55,12 @@ Workspace views and panels — what the operator works in. (51)
 | **Summary**<br>`summary.png` | <img src="summary.png" alt="Summary" width="360"> | [Light](summary-light.png) |
 | **Table workspace**<br>`table-workspace.png` | <img src="table-workspace.png" alt="Table workspace" width="360"> | [Light](table-workspace-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
 | **Table**<br>`table.png` | <img src="table.png" alt="Table" width="360"> | [Light](table-light.png) |
+| **Ti channel**<br>`ti-channel.png` | <img src="ti-channel.png" alt="Ti channel" width="360"> | [Light](ti-channel-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/devices/) |
+| **Ti element parameters**<br>`ti-element-parameters.png` | <img src="ti-element-parameters.png" alt="Ti element parameters" width="360"> | [Light](ti-element-parameters-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/development/) |
+| **Ti formula**<br>`ti-formula.png` | <img src="ti-formula.png" alt="Ti formula" width="360"> | [Light](ti-formula-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/formulas/) |
+| **Ti parameters**<br>`ti-parameters.png` | <img src="ti-parameters.png" alt="Ti parameters" width="360"> | [Light](ti-parameters-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/development/) |
 | **Transmission rule**<br>`transmission-rule.png` | <img src="transmission-rule.png" alt="Transmission rule" width="360"> | [Light](transmission-rule-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
+| **Ts channel**<br>`ts-channel.png` | <img src="ts-channel.png" alt="Ts channel" width="360"> | [Light](ts-channel-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/devices/) |
 | **Users admin**<br>`users-admin.png` | <img src="users-admin.png" alt="Users admin" width="360"> | [Light](users-admin-light.png) |
 | **Users rbac**<br>`users-rbac.png` | <img src="users-rbac.png" alt="Users rbac" width="360"> | [Light](users-rbac-light.png) |
 | **Users**<br>`users.png` | <img src="users.png" alt="Users" width="360"> | [Light](users-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/users/) |
@@ -96,7 +101,7 @@ Modal and overlay surfaces. (23)
 
 ## Menus
 
-Menus and context menus, captured open. (10)
+Menus and context menus, captured open. (11)
 
 | Capture | Preview | |
 |---|---|---|
@@ -108,6 +113,7 @@ Menus and context menus, captured open. (10)
 | **Menu parameters elements copy**<br>`menu-parameters-elements-copy.png` | <img src="menu-parameters-elements-copy.png" alt="Menu parameters elements copy" width="360"> | [Light](menu-parameters-elements-copy-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/displays/) |
 | **Menu parameters elements**<br>`menu-parameters-elements.png` | <img src="menu-parameters-elements.png" alt="Menu parameters elements" width="360"> | [Light](menu-parameters-elements-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/displays/) |
 | **Menu parameters**<br>`menu-parameters.png` | <img src="menu-parameters.png" alt="Menu parameters" width="360"> | [Light](menu-parameters-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/data-items/) |
+| **Menu scheme**<br>`menu-scheme.png` | <img src="menu-scheme.png" alt="Menu scheme" width="360"> | [Light](menu-scheme-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/displays/) |
 | **Menu summary**<br>`menu-summary.png` | <img src="menu-summary.png" alt="Menu summary" width="360"> | [Light](menu-summary-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/summary/) |
 | **Ti delete**<br>`ti-delete.png` | <img src="ti-delete.png" alt="Ti delete" width="360"> | [Light](ti-delete-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/development/) |
 
