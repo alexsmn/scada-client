@@ -116,13 +116,13 @@
       "referenced_from": [
         "client/workbench.md"
       ],
-      "notes": "Ctrl-K command palette (opt-in UX). Rendered by the dialog pipeline over a fixture command list; regenerate with --theme=dark for the published (workbench) look — the no-theme managed run renders the legacy look, so keep the themed render in img/. Also serves docs/client/ux/shell.md. Published from a macOS render, a supported host for this gallery since 2026-09-12.",
+      "notes": "Ctrl-K command palette. Since 2026-11-22 it is opened by the main window's own Ctrl-K shortcut, so it lists the commands the window has registered plus the address-space signals (marked «тег»), and the capture types the spec's `filter` («та»), which matches commands and one signal. Until then it built the palette over ten invented English titles no catalog translates (Acknowledge Alarm, Refresh…), a list the client never displays. The real palette exposed a client defect fixed the same day: an entry's detail followed a '\\t' in the item text, which the list draws at the next tab stop, so «тег» ran into long titles; a delegate now right-aligns it from its own role. In current_generator_owned_subset since then. Also serves docs/client/ux/shell.md.",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "4d66c1a41",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "888b42e8d2d461c89f6b1204cf5d931747e4cb5fcde9cc61ec5beae08ba524e0",
-        "last_rendered": "e39632260"
+        "dirty": false,
+        "sha256": "8d11e49263336cae03d1f2976ea39a02536c24252f1d0317e2dd45ab2bd46247",
+        "last_rendered": "4d66c1a41"
       }
     },
     {
@@ -134,11 +134,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of command-palette.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "4d66c1a41",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "d7477c3580c3c50b2234b49a1e090e63f86fea11c27ff3b639f33672018db714",
-        "last_rendered": "ea9d80292"
+        "dirty": false,
+        "sha256": "77febe6350c82ce4b9218c8fa592e2d992292740d7f4868e00d7084f8ee56eb1",
+        "last_rendered": "4d66c1a41"
       }
     },
     {
@@ -421,13 +421,13 @@
         "client.md",
         "client/workbench.md"
       ],
-      "notes": "The reshelled operator workbench: CaptureMainWindow under --theme renders the full shell (activity rail, context bar with KPI severity tiles, editor tabs over EventJournal/Summ/Struct, the Inspector fronted in the right dock, status strip) and saves it under this name so the legacy client-window.png is never overwritten by a themed render. Fixture pending alarms light the tiles and the journal chrome. Kept out of current_generator_owned_subset (subset is auto-* only). Both STALE notes this row carried until 2026-09-19 are DISCHARGED, and were already wrong when they were read: they described the status strip's ping cell widening (120 -> 180, plus the \"no response\" marker, 0db08d4f8, 2026-08-01) and the context bar losing its identity/connection cluster to the status strip (2026-07-26), and asked for a Windows re-render. The tracked PNG already shows both — the context bar carries only breadcrumb, search and severity tiles, and user/connection/server/endpoint sit in the status strip — because it was re-rendered at 87b6a9b4b (2026-09-12), which has 0db08d4f8 as an ancestor. The request for a WINDOWS re-render is obsolete on its own terms too: either host may render the generated set (decided 2026-09-12), and only the manual-modus family needs Windows. This row is the README's hero image, so a note saying \"do not trust this picture\" is not a cheap thing to leave lying around. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it. Re-rendered 2026-11-15 at a clean tree, incidentally, while backlog 1074 checked whether the Inspector's Control hint reached it (it does not: the selection's control is disabled, so the hint is hidden); this cleared the --check-pairs report that the pair had fallen behind its sibling.",
+      "notes": "The reshelled operator workbench: CaptureMainWindow under --theme renders the full shell (activity rail, context bar with KPI severity tiles, editor tabs over EventJournal/Summ/Struct, the Inspector fronted in the right dock, status strip) and saves it under this name so the legacy client-window.png is never overwritten by a themed render. Fixture pending alarms light the tiles and the journal chrome. Both STALE notes this row carried until 2026-09-19 are DISCHARGED, and were already wrong when they were read: they described the status strip's ping cell widening (120 -> 180, plus the \"no response\" marker, 0db08d4f8, 2026-08-01) and the context bar losing its identity/connection cluster to the status strip (2026-07-26), and asked for a Windows re-render. The tracked PNG already shows both — the context bar carries only breadcrumb, search and severity tiles, and user/connection/server/endpoint sit in the status strip — because it was re-rendered at 87b6a9b4b (2026-09-12), which has 0db08d4f8 as an ancestor. The request for a WINDOWS re-render is obsolete on its own terms too: either host may render the generated set (decided 2026-09-12), and only the manual-modus family needs Windows. This row is the README's hero image, so a note saying \"do not trust this picture\" is not a cheap thing to leave lying around. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it. Re-rendered 2026-11-15 at a clean tree, incidentally, while backlog 1074 checked whether the Inspector's Control hint reached it (it does not: the selection's control is disabled, so the hint is hidden); this cleared the --check-pairs report that the pair had fallen behind its sibling. Re-rendered 2026-11-22 and joined current_generator_owned_subset: every journal row had read «Критично 1000» since 2026-11-08, because LegacySeverityProbe took the fixture for a 2.5.7 Server (its test address space lacked DataItemControlType) and rescaled each severity by ten.",
       "captured": {
-        "commit": "41a1b1607",
+        "commit": "4d66c1a41",
         "platform": "macos",
         "dirty": false,
-        "sha256": "6cd763ec44ab6f8b544d0775ca887c6392ff4548eaf3564438fe95342cfad472",
-        "last_rendered": "41a1b1607"
+        "sha256": "2f9de0e8bc4ee4a0b4a48b281fe210876b0a50aaabf5fdbd25d8fde817a347c0",
+        "last_rendered": "4d66c1a41"
       }
     },
     {
@@ -438,11 +438,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of workbench-window.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to workbench-window.png, and this is a second appearance of that capture rather than a second capture. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it. Re-rendered 2026-11-15 at a clean tree, incidentally, while backlog 1074 checked whether the Inspector's Control hint reached it (it does not: the selection's control is disabled, so the hint is hidden); this cleared the --check-pairs report that the pair had fallen behind its sibling.",
       "captured": {
-        "commit": "41a1b1607",
+        "commit": "4d66c1a41",
         "platform": "macos",
         "dirty": false,
-        "sha256": "7cb0cad5a8207f06be20f4ddde364a75f8d936da5ee39ccac3faea83e179d8c2",
-        "last_rendered": "41a1b1607"
+        "sha256": "660364b6013bfb6471da4e5fb50f526ad03be90c33217ccaf5e1b3c883e561da",
+        "last_rendered": "4d66c1a41"
       }
     },
     {
@@ -452,13 +452,13 @@
       "referenced_from": [
         "client/workbench.md"
       ],
-      "notes": "The Overview landing cockpit: a fresh page-less profile under the reshell theme boots through CreateInitialPage into MakeOverviewPage - the Explorer sidebar (tabified with its Favorites and Portfolio sibling panes) beside the dominant trend (65%) over the actionable-alarm strip, with the Inspector fronted on the right. Captured via the production seeding path (CaptureOverviewPage), so it guards the reshell initial-page routing too. In current_generator_owned_subset since 2026-09-12: the render was reviewed against the page that embeds it (scada-docs client/workbench.md and the en/ mirror, the «Обзор» section), which is what graduates an image into the published set. Re-rendered 2026-08-29: the Explorer trees stopped drawing a row for their root (ConfigurationTreeView now takes Tree's hidden-root default), because the pane's own dock title already names it — so the tree starts at its content. Re-rendered 2026-09-12: the landing published its whole right-hand third as the Inspector's «select an item» placeholder, because nothing on a freshly seeded page is selected — CaptureOverviewPage now makes the selection the shell's own way, through the Explorer pane the page already docks (SelectSignalForInspector, shared with workbench-window.png), so the card renders its readout, quality badge, limit bands and actions. Either host may render this image and the platform field is what keeps a diff readable (docs/ops/client-screenshots.md); the «pending a Windows re-render» this row used to claim is not owed. Rendered with --only, so no other image in the gallery moved, and provenance was stamped by hand for this row alone: --stamp rewrites every row whose digest differs — see backlog 642. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it. Re-rendered 2026-11-15 at a clean tree, incidentally, while backlog 1074 checked whether the Inspector's Control hint reached it (it does not: the selection's control is disabled, so the hint is hidden); this cleared the --check-pairs report that the pair had fallen behind its sibling.",
+      "notes": "The Overview landing cockpit: a fresh page-less profile under the reshell theme boots through CreateInitialPage into MakeOverviewPage - the Explorer sidebar (tabified with its Favorites and Portfolio sibling panes) beside the dominant trend (65%) over the actionable-alarm strip, with the Inspector fronted on the right. Captured via the production seeding path (CaptureOverviewPage), so it guards the reshell initial-page routing too. In current_generator_owned_subset since 2026-09-12: the render was reviewed against the page that embeds it (scada-docs client/workbench.md and the en/ mirror, the «Обзор» section), which is what graduates an image into the published set. Re-rendered 2026-08-29: the Explorer trees stopped drawing a row for their root (ConfigurationTreeView now takes Tree's hidden-root default), because the pane's own dock title already names it — so the tree starts at its content. Re-rendered 2026-09-12: the landing published its whole right-hand third as the Inspector's «select an item» placeholder, because nothing on a freshly seeded page is selected — CaptureOverviewPage now makes the selection the shell's own way, through the Explorer pane the page already docks (SelectSignalForInspector, shared with workbench-window.png), so the card renders its readout, quality badge, limit bands and actions. Either host may render this image and the platform field is what keeps a diff readable (docs/ops/client-screenshots.md); the «pending a Windows re-render» this row used to claim is not owed. Rendered with --only, so no other image in the gallery moved, and provenance was stamped by hand for this row alone: --stamp rewrites every row whose digest differs — see backlog 642. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it. Re-rendered 2026-11-15 at a clean tree, incidentally, while backlog 1074 checked whether the Inspector's Control hint reached it (it does not: the selection's control is disabled, so the hint is hidden); this cleared the --check-pairs report that the pair had fallen behind its sibling. Re-rendered 2026-11-22: every journal row had read «Критично 1000» since 2026-11-08, because LegacySeverityProbe took the fixture for a 2.5.7 Server (its test address space lacked DataItemControlType) and rescaled each severity by ten.",
       "captured": {
-        "commit": "41a1b1607",
+        "commit": "4d66c1a41",
         "platform": "macos",
         "dirty": false,
-        "sha256": "5c6015f0ff1638ece2fe54af92814b53b38496688f625da211db5001355b62a2",
-        "last_rendered": "41a1b1607"
+        "sha256": "81fad5a9c23588957494bdba340a918e9e4e31e38387ff039f000501fe437c56",
+        "last_rendered": "4d66c1a41"
       }
     },
     {
@@ -469,11 +469,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of workbench-overview.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to workbench-overview.png, and this is a second appearance of that capture rather than a second capture. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it. Re-rendered 2026-11-15 at a clean tree, incidentally, while backlog 1074 checked whether the Inspector's Control hint reached it (it does not: the selection's control is disabled, so the hint is hidden); this cleared the --check-pairs report that the pair had fallen behind its sibling.",
       "captured": {
-        "commit": "41a1b1607",
+        "commit": "4d66c1a41",
         "platform": "macos",
         "dirty": false,
-        "sha256": "eff3ded1d4c670bc09c35c6e3c2fe4483ee80cd3c972da99e1f5326772e8df45",
-        "last_rendered": "41a1b1607"
+        "sha256": "7933eb41e96aaa226adfeb5c6fd5cb1a59e3ef70c0d881d6c6c4bed23e013e7c",
+        "last_rendered": "4d66c1a41"
       }
     },
     {
@@ -921,11 +921,11 @@
       "referenced_from": [],
       "notes": "The Roles view: every Role of Server.ServerCapabilities.RoleSet with the accounts it is granted to, read via the identity mapping rules (Part 18 4.4.3). Admin-gated (WIN_REQUIRES_ADMIN), read-only. THEME-GATED, so reshell-theme rather than auto-view: MakeRolesGridPanel() returns nullptr under the legacy theme (the whole user_access panel family does), so RolesView::Init builds no widget, OpenedView::Init throws 'Can't create widget', and the view never opens. Tagged auto-view until 2026-08-02, which made every default-pipeline run fail this capture - the admin gate was NOT the cause, the session holds Configure. The legacy-theme gate was removed on 2026-08-31 and the row is tagged auto-view, so nothing on the pipeline side blocks publishing it. Members once rendered 'None' for every Role; that gap is closed, pinned by RolesEnumerateTheirMembers (fixture_model_assertions.cpp), and the tracked PNG shows every Role's accounts. The history, for whoever meets it again: The RoleSet and its Roles browse correctly - the capture shows both - but the identity-rule rows the fixture projects under them do not come back from the client browse, so no membership reaches the view. The read path itself is unit-tested against FakeNodeService (role_membership_unittest.cpp); it is the offline fixture's rule projection that is unproven. The manual prose for this surface is written (scada-docs client/workbench.md + en/ mirror, #administration); the image is NOT embedded yet. It used to wait for a Windows regeneration, which was retired on 2026-09-12 (either host may render this gallery), so publishing it is now a manual-figure decision rather than a pipeline step (backlog 734): embed it, set published:true and add it to current_generator_owned_subset. CAPTURED STANDALONE since 2026-08-08 (SaveRolesScreenshot / SaveUsersGridScreenshot in user_access_capture.cpp), not through the view path: the grid is built from the server's published role->permission map, which needs ReadRolePermissions, and the generator's ordinary session is anonymous - so the view-path capture rendered 'No data' over an empty grid. AuthenticatedAttributeService supplies the administrator identity for these captures only. The member/role columns were additionally empty until a client fix the same day (ReadRoleMemberships did not fetch the rule type's chain, so no identity mapping rule read back); the tracked PNG postdates both, and a full dark pass on 2026-09-26 reproduced it pixel for pixel.",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "4d66c1a41",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "ddaec054db3e6de8413556aae952c022988433d409e1e92afd4f7933d86783eb",
-        "last_rendered": "e39632260"
+        "dirty": false,
+        "sha256": "429ce611e7e1d15286166c51c3ef95973230f238a956c6fe998727275104f756",
+        "last_rendered": "4d66c1a41"
       }
     },
     {
@@ -937,11 +937,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of roles.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "4d66c1a41",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "f4c84ed9010d52914edd12b07b4f56e2db45075e66369d462d4ffa04f0be8d6c",
-        "last_rendered": "ea9d80292"
+        "dirty": false,
+        "sha256": "3f6592e5273fbba289adf52e7d28c390eacf24223d31f463104804f6ca4f2179",
+        "last_rendered": "4d66c1a41"
       }
     },
     {
@@ -1113,13 +1113,13 @@
       "referenced_from": [
         "dev/data-items.md"
       ],
-      "notes": "Bulk-create wizard preview (BulkCreate): the naming/addressing step of bulk-create.html — a {n}-token name + NodeId pattern, start/count/step + IOA start/step, and a live preview grid (# / Name / NodeId / IOA / Status) with a 'N new / M conflict' summary. Reshell-only chrome (backlog 5.4), standalone and node-service-free: the capture seeds a demo pattern (TS{n} current, 12 items from IOA 4001) and one existing NodeId (TS8), so row 8 flags as a red 'exists' conflict. Driven by the pure ExpandBulkCreate engine. The actual node creation rides the existing MultiCreateModel::Run (Session.addNodes). Embedded in dev/data-items.md since 2026-09-19, replacing menu-create-object-ts-ti.png: that image is the flat MultiCreate dialog, which ID_ADD_MULTIPLE_ITEMS stopped opening on 2026-09-12. Re-rendered 2026-11-01: the capture also seeds one address the destination's rules already carry (4003), so row 3 reads «повтор адреса» and the summary adds «1 повтор адреса». Re-rendered 2026-11-01 again: the NodeId template is empty by default and shows «Назначает Сервер» (backlog 960) — the former string template is one the Server refuses — so the capture no longer seeds a TS8 NodeId conflict; row 3's duplicate address is the conflict it shows. Re-rendered 2026-11-15: the name template is the wizard's own translated default for rules, «Правило {n}», instead of the Latin `TS{n} current` the capture used to seed (backlog 1076).",
+      "notes": "Bulk-create wizard preview (BulkCreate): the template step under dev/data-items.md's «Серийное создание». Since 2026-11-22 it renders that page's worked example, which the figure sits directly under — data items «Ток фидера {n}», five rows, NodeId template empty («Назначает Сервер») — from the fixture's `bulk_create` block, because client source may not carry Russian literals. Until then it showed the transmission-rule branch («Правило {n}», IOA from 4001, row 3 flagged «повтор адреса»), a different subject from the one the page teaches at that point; the duplicate-address flag is described in the page's prose. Data items have no address column, so the IOA fields and column are hidden, as the wizard hides them. Height 400, down from 760, which was mostly an empty grid. Embedded in dev/data-items.md since 2026-09-19, replacing menu-create-object-ts-ti.png.",
       "captured": {
-        "commit": "41a1b1607",
+        "commit": "4d66c1a41",
         "platform": "macos",
         "dirty": false,
-        "sha256": "8309f7ed28e70fff182d914a44f07a2e1ec456ebcf1716553ba5c4a28e5539e5",
-        "last_rendered": "41a1b1607"
+        "sha256": "7bad8f03ff43f9ae2a3544aa8be6030c7b2729cbefa8e6ceb70a6f2861f14698",
+        "last_rendered": "4d66c1a41"
       }
     },
     {
@@ -1131,11 +1131,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of bulk-create.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own. Re-rendered 2026-11-01: the capture also seeds one address the destination's rules already carry (4003), so row 3 reads «повтор адреса» and the summary adds «1 повтор адреса». Re-rendered 2026-11-01 again: the NodeId template is empty by default and shows «Назначает Сервер» (backlog 960) — the former string template is one the Server refuses — so the capture no longer seeds a TS8 NodeId conflict; row 3's duplicate address is the conflict it shows. Re-rendered 2026-11-15: the name template is the wizard's own translated default for rules, «Правило {n}», instead of the Latin `TS{n} current` the capture used to seed (backlog 1076).",
       "captured": {
-        "commit": "41a1b1607",
+        "commit": "4d66c1a41",
         "platform": "macos",
         "dirty": false,
-        "sha256": "88c5d7944b82be16ecc909730f0c61207379c874f985aca7eb0073b2d110e791",
-        "last_rendered": "41a1b1607"
+        "sha256": "6aeb0ac6e697a6767d5e0c0abf4ca5018505143575f4b0074736090c452e3757",
+        "last_rendered": "4d66c1a41"
       }
     },
     {
@@ -1739,11 +1739,11 @@
       "referenced_from": [],
       "notes": "Users-admin grid (Users window under --theme): the reshell UsersGridPanel returned by NodeTableController for the Users folder — User / Role (Administrator·bad / Operator·good / Observer·muted) / Sessions (Single·Multiple from MultiSessions), with the count header + 'editing requires Administrator' hint and disabled Add-user / Reset-password affordances. Theme-gated reshell chrome (backlog 5.1); the legacy Users view is the generic node-table grid, so it is excluded from the no-theme managed check and guarded by client_screenshot_check_themed. Row selection drives the shared SelectionModel → the RBAC inspector. The spec's width is 740, not the 700 it carried until 2026-08-29: SaveScreenshot resizes to the spec, Qt clamps that to the panel's layout minimum, and 740 is what every render has actually produced — the tracked PNG included. Nothing could see the disagreement while the themed ctest ran the generator directly and checked no dimensions (backlog 630). Backend/Areas/Status/Last-login from the mockup are server-side, absent from the client node model. Fixture Users folder (13 users). The manual prose for this surface is written (scada-docs client/workbench.md + en/ mirror, #administration); the image is NOT embedded yet. It used to wait for a Windows regeneration, which was retired on 2026-09-12 (either host may render this gallery), so publishing it is now a manual-figure decision rather than a pipeline step (backlog 734): embed it, set published:true and add it to current_generator_owned_subset. CAPTURED STANDALONE since 2026-08-08 (SaveRolesScreenshot / SaveUsersGridScreenshot in user_access_capture.cpp), not through the view path: the grid is built from the server's published role->permission map, which needs ReadRolePermissions, and the generator's ordinary session is anonymous - so the view-path capture rendered 'No data' over an empty grid. AuthenticatedAttributeService supplies the administrator identity for these captures only. The member/role columns were additionally empty until a client fix the same day (ReadRoleMemberships did not fetch the rule type's chain, so no identity mapping rule read back); the tracked PNG postdates both, and a full dark pass on 2026-09-26 reproduced it pixel for pixel.",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "4d66c1a41",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "f7d3eb0486905b05e9b93baffad19a4bc09c328b86f5e8d3b3cd737b4c24a57a",
-        "last_rendered": "e39632260"
+        "dirty": false,
+        "sha256": "401edb4ddabb171d410afbd5d22e6bef1085bf59efb2f04cfa1139e1f37f18a5",
+        "last_rendered": "4d66c1a41"
       }
     },
     {
@@ -1755,11 +1755,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of users-admin.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "4d66c1a41",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "a9648a7b870b44000bb28d0f649cbffe99d0fd873d5d608653b4956e3c8394f2",
-        "last_rendered": "ea9d80292"
+        "dirty": false,
+        "sha256": "4a638e59fda0a89fbbb85c806450f9e888d3bc0c95b41bb04335aad04937a389",
+        "last_rendered": "4d66c1a41"
       }
     },
     {
@@ -1786,13 +1786,13 @@
       "referenced_from": [
         "architecture.md"
       ],
-      "notes": "Graph with severity-coloured limit markers drawn (MetrixLine limit styles; TIT.200 carries AnalogItemType_LimitLoLo/Lo/Hi/HiHi in the fixture). SaveGraphScreenshot now makes each graphed node resident (FetchGraphNodesResident) before building the widget, so the node's EU range and limit-band property children are fetched: the axes use the EU range instead of the data auto-range and the limit markers draw. The varying series (same DateTime::Max history fix as graph-cursor.png) now read against the four bands. (The legend's current-value readout is populated: verified 2026-08-15 by rendering this spec and graph-cursor.png under --theme=dark, where the themed legend's Current column reads 125 / -32 / 50.01 - the three series' fixture base_value, delivered by LocalMonitoredItemService through TimedDataImpl's monitored-item subscription. An earlier note here claimed the cell stayed blank; it does not, and the legacy legend this file renders under shows the selected cursor's value in that column anyway, never current().) REWORKED 2026-08-16 (backlog 344): see graph-cursor.png. This row now plots the `limits` variant of the fixture's `graphs` object - a single full-height pane over TIT.200, the one node carrying AnalogItemType_LimitLoLo/Lo/Hi/HiHi - so the four bands and the severity-coloured out-of-band segments are the whole picture, and the time cursor that used to be drawn across every graph capture is gone. The tracked PNG is the current render: a full dark pass on 2026-09-26 reproduced it pixel for pixel.",
+      "notes": "Graph with severity-coloured limit markers drawn (MetrixLine limit styles; TIT.200 carries AnalogItemType_LimitLoLo/Lo/Hi/HiHi in the fixture). SaveGraphScreenshot now makes each graphed node resident (FetchGraphNodesResident) before building the widget, so the node's EU range and limit-band property children are fetched: the axes use the EU range instead of the data auto-range and the limit markers draw. The varying series (same DateTime::Max history fix as graph-cursor.png) now read against the four bands. (The legend's current-value readout is populated: verified 2026-08-15 by rendering this spec and graph-cursor.png under --theme=dark, where the themed legend's Current column reads 125 / -32 / 50.01 - the three series' fixture base_value, delivered by LocalMonitoredItemService through TimedDataImpl's monitored-item subscription. An earlier note here claimed the cell stayed blank; it does not, and the legacy legend this file renders under shows the selected cursor's value in that column anyway, never current().) REWORKED 2026-08-16 (backlog 344): see graph-cursor.png. This row now plots the `limits` variant of the fixture's `graphs` object - a single full-height pane over TIT.200, the one node carrying AnalogItemType_LimitLoLo/Lo/Hi/HiHi - so the four bands and the severity-coloured out-of-band segments are the whole picture, and the time cursor that used to be drawn across every graph capture is gone. The tracked PNG is the current render: a full dark pass on 2026-09-26 reproduced it pixel for pixel. Re-rendered 2026-11-22 and joined current_generator_owned_subset: the fixture coloured the series #0000FF, barely visible on the dark plot the manual publishes. An item's configured colour is honoured as given (only an unconfigured line gets GraphView::NewColor's contrast check), so the fixture now names #2F80ED. One series is by design since backlog 344 split this capture from graph-cursor.png; the three-pane image the manual carried until then was the shared graph.",
       "captured": {
-        "commit": "e39632260",
+        "commit": "4d66c1a41",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "33c587e8b5eefc9c2209483dfd981d8e6460e6bd3672bc50340de64598b143fe",
-        "last_rendered": "e39632260"
+        "dirty": false,
+        "sha256": "c9024fab1049b56f4b5f68ac116bef7b8678c61ba6201f2082e4306e63a8938b",
+        "last_rendered": "4d66c1a41"
       }
     },
     {
@@ -1804,11 +1804,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of limits-chart.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "ea9d80292",
+        "commit": "4d66c1a41",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "69bf9eeaca51f0552395427f33e052263a18e8384a59d5ab9fcd0550fbb61aa4",
-        "last_rendered": "ea9d80292"
+        "dirty": false,
+        "sha256": "18ae71958a0193a0bc6c308550192395c2a94aab7a9c307ffe926beb584ca738",
+        "last_rendered": "4d66c1a41"
       }
     },
     {
@@ -1891,13 +1891,13 @@
       "referenced_from": [
         "dev/data-items.md"
       ],
-      "notes": "Not a menu despite the name (audited 2026-08-08): the modal «Создание сервисных объектов» dialog — a device combo over the list of service items it would create. Rendered by the screenshot generator since 2026-08-15 (dialog kind `create-service-item`); the component list is the selected device's HasComponent data variables, which the fixture states explicitly because a fixture child is otherwise wired by Organizes alone and the list would render empty. Not yet in `current_generator_owned_subset`: swapping the generated render in for the legacy scada-docs image is subtask 13 (bulk replace), which is reviewed a batch at a time.",
+      "notes": "Not a menu despite the name (audited 2026-08-08): the modal «Создание сервисных объектов» dialog — a device combo over the list of service items it would create. Rendered by the screenshot generator since 2026-08-15 (dialog kind `create-service-item`); the component list is the selected device's HasComponent data variables, which the fixture states explicitly because a fixture child is otherwise wired by Organizes alone and the list would render empty. Until 2026-11-22 the list read BytesIn, MessagesOut, Online…: the fixture components carried no display_name, so each fell back to its browse name, where a real device's components take the Russian names its type declares (devices.xml). The fixture now carries those names, and the row joined current_generator_owned_subset.",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "4d66c1a41",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "e2110dae885ca18e3abc909f2c36b9ff73efd8d3371631c3510198c4635f400a",
-        "last_rendered": "e39632260"
+        "dirty": false,
+        "sha256": "513ce7c33e7c2bf51e6fad3bf10fb2b71456dd279e0fa65b7a48cb313dde1ee1",
+        "last_rendered": "4d66c1a41"
       }
     },
     {
@@ -1909,11 +1909,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of menu-create-object-service.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "4d66c1a41",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "d11ee449fde9e5fa49e5faa2da5eaab87feee681bc6f95f7053dd774b700d6cf",
-        "last_rendered": "ea9d80292"
+        "dirty": false,
+        "sha256": "17d2f6cda392f6273bfb3b31e82eed64441c1e032dd0f77155e4009bf74699f2",
+        "last_rendered": "4d66c1a41"
       }
     },
     {
@@ -1930,13 +1930,13 @@
       "referenced_from": [
         "dev/data-items.md"
       ],
-      "notes": "Rendered by the screenshot generator (CaptureObjectMenuCreate): the object tree's context menu on a group with the «Создать» submenu OPEN, which is what dev/data-items.md is about at that point. The open submenu is a COMPOSITE and has to be: an open submenu is a second top-level popup, so no single grab() reaches both and offscreen there is no screen to grab instead. Both halves are real renders of the real widgets; only their relative placement is computed, from the parent's own action geometry and frame width. The submenu lists «Серийное создание...», «Сервисные объекты...», «Объект ТС», «Объект ТИТ» -- one row fewer than the docs original, which also shows «Группа», because the fixture's group type declares no sub-group placeholder. Not yet in current_generator_owned_subset.",
+      "notes": "Rendered by the screenshot generator (CaptureObjectMenuCreate): the object tree's context menu on a group with the «Создать» submenu OPEN, which is what dev/data-items.md is about at that point. The open submenu is a COMPOSITE and has to be: an open submenu is a second top-level popup, so no single grab() reaches both and offscreen there is no screen to grab instead. Both halves are real renders of the real widgets; only their relative placement is computed, from the parent's own action geometry and frame width. The submenu lists «Серийное создание...», «Сервисные объекты...», «Группа», «Объект ТС», «Объект ТИТ». «Группа» was missing until 2026-11-22 because the test address space declared only DataGroupType's <DataItem> placeholder and not data_items.xml's <DataGroup> one; with it added the render matches the page, which tells the reader to create groups with Создать — Группа, and the row joined current_generator_owned_subset.",
       "captured": {
-        "commit": "1a014d850",
+        "commit": "4d66c1a41",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "6a3bd9e2a7e9aaba8beec65c767e5b74b144df446b18ce41c93eae85f4d7adc8",
-        "last_rendered": "e39632260"
+        "dirty": false,
+        "sha256": "12a086b15c5dab3537c8635afd97eed3e4f09c1e143702b5f52d31a2d0c60b02",
+        "last_rendered": "4d66c1a41"
       }
     },
     {
@@ -1947,11 +1947,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of menu-create-object.png, produced by the same capture under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see. Deliberately carries no `parity_key` — the capability's coverage claim belongs to menu-create-object.png, and this is a second appearance of that capture rather than a second capture.",
       "captured": {
-        "commit": "1a014d850",
+        "commit": "4d66c1a41",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "8985732818337ad4128259d4c2302ec6b58d01631dc8218fde3d074464fbbb6b",
-        "last_rendered": "ea9d80292"
+        "dirty": false,
+        "sha256": "a711f740536c41862a9a47fa9b33dd77b9b460eb1d5a4caeaaebf24a1d387bf1",
+        "last_rendered": "4d66c1a41"
       }
     },
     {
@@ -2662,13 +2662,13 @@
       "referenced_from": [
         "dev/users.md"
       ],
-      "notes": "PULLED OUT OF current_generator_owned_subset 2026-08-31, so it is no longer auto-published. The Users *window* now renders UsersGridPanel unconditionally (NodeTableController routes the Users folder to it since the un-themed appearance was removed), where it used to render the generic node-table grid of NodeId / Обозначение / Имя — which is also why the spec width moved from 500 to 740, the panel’s layout minimum. The panel joins its Roles column from the server’s published role map, which needs ReadRolePermissions, and the view path runs an anonymous session, so every account reads «нет данных». That is the surface behaving correctly and the capture telling the truth, but it is a worse figure than the one dev/users.md ships today, so publishing it would regress the manual. users-admin.png is the same panel driven with AuthenticatedAttributeService and has its Roles column filled. Backlog 695 decides whether the manual keeps two figures or one and which name survives; until then scada-docs/img/users.png keeps the old render. Users window. Re-rendered 2026-08-01 with the aui alignment fix; the only visible change is that rows are vertically centred, Qt's own item-view default.",
+      "notes": "The Users window (dev/users.md), which the page says only a ConfigureAdmin account can open. Since 2026-11-22 the row is the `users-grid` capture, driven as the fixture administrator through AuthenticatedAttributeService, and is back in current_generator_owned_subset. It was a `Users` view capture until then, and the view path runs the fixture's anonymous session, which may not read the role map, so every Roles cell read «Нет данных» — true of an anonymous reader and of no one the page addresses. The window itself renders this same UsersGridPanel (NodeTableController routes the Users folder to it), so the figure is the window. users-admin.png is now the same panel at a taller size; backlog 695 decides whether the manual keeps two names. The fixture's duplicate «root» account (USER.11) became «Инженер» the same day.",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "4d66c1a41",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "abe11460734422b1431f6827967b56eb8ca51b97e9ecbba74fbd8f64223202f4",
-        "last_rendered": "e39632260"
+        "dirty": false,
+        "sha256": "c0ef761627a5d52c8d8f56516119302f7e20369d82d2ce8640cdc6b4090a8794",
+        "last_rendered": "4d66c1a41"
       }
     },
     {
@@ -2680,11 +2680,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of users.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "4d66c1a41",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "04ba2c315615ddf10bebdb87648758e9f686b992488079660d73e7fcc0314a78",
-        "last_rendered": "ea9d80292"
+        "dirty": false,
+        "sha256": "2aa0492fa105c27f1a1ce92f1604419e9e0aa2931a02023dab471f7b726e8f13",
+        "last_rendered": "4d66c1a41"
       }
     },
     {
@@ -3109,6 +3109,7 @@
     "bulk-create.png",
     "client-login.png",
     "client-retransmission.png",
+    "command-palette.png",
     "device-metrics.png",
     "device-watch.png",
     "devices-create.png",
@@ -3119,8 +3120,11 @@
     "hardware-tree.png",
     "inspector-event.png",
     "inspector-panel.png",
+    "limits-chart.png",
     "limits.png",
     "menu-copy-object.png",
+    "menu-create-object-service.png",
+    "menu-create-object.png",
     "menu-delete-object.png",
     "menu-excel.png",
     "menu-parameters-elements.png",
@@ -3133,8 +3137,10 @@
     "ti-remote-control-disabled.png",
     "ti-remote-control-enabled.png",
     "transmission-rule.png",
+    "users.png",
     "workbench-activity-rail.png",
     "workbench-login.png",
-    "workbench-overview.png"
+    "workbench-overview.png",
+    "workbench-window.png"
   ]
 }
