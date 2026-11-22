@@ -119,9 +119,11 @@ class EventTableModel : public scada::aui::TableModel,
   // When set, the journal shows ONLY the audit trail — the AuditEventType
   // subtree (see events/audit_events.h). This is what makes an Audit log view
   // possible: the same journal, scoped to the events that record who did what.
+  // When clear (every other journal), the audit trail is hidden instead, so
+  // the two never overlap and the trail stays behind the Audit log's gate.
   //
-  // It is a filter over what was fetched, not a narrowing of the fetch, so it
-  // cannot hide an event the journal would otherwise have shown.
+  // Either way it is a filter over what was fetched, not a narrowing of the
+  // fetch.
   bool audit_only() const { return audit_only_; }
   void SetAuditOnly(bool value);
 

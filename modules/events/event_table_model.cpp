@@ -340,7 +340,14 @@ bool EventTableModel::PassesFilters(const scada::Event& event,
   if (unacknowledged_only_ && event.acked)
     return false;
 
-  if (audit_only_ && !IsAuditEventType(event.event_type_id))
+  // The audit trail and the operator journal are disjoint: the Audit log shows
+  // only the security audit types, and every other journal hides them. OPC UA
+  // Part 2 §4.14.1 Auditing restricts audit events to appropriate users,
+  // https://reference.opcfoundation.org/Core/Part2/v105/docs/4.14.1 — the
+  // Audit log is the admin-gated surface for them, so an operator journal that
+  // listed them would bypass that gate. Operator control audits are a vendor
+  // type outside this list and stay in the journal.
+  if (audit_only_ != IsAuditEventType(event.event_type_id))
     return false;
 
   if (!include_area_filter || filter_node_ids_.empty())

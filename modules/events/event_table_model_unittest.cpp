@@ -275,10 +275,12 @@ TEST(EventTableModelWorkingTest, ReportsTheHistoricalReadStartingAndEnding) {
   EXPECT_FALSE(model.working());
 }
 
-// The Audit log is this journal scoped to the AuditEventType subtree. The
-// filter must be exact in both directions: an ordinary process event in the
-// trail makes it not an audit log, and a stored audit event missing from it
-// makes the trail incomplete while still reading as complete.
+// The Audit log is this journal scoped to the AuditEventType subtree, and
+// every other journal is the complement. The filter must be exact in both
+// directions: an ordinary process event in the trail makes it not an audit
+// log, a stored audit event missing from it makes the trail incomplete while
+// still reading as complete, and an audit event in the operator journal
+// bypasses the Audit log's administrator gate.
 TEST_F(EventTableModelTest, HistoricalEvents_AuditOnlyFilter) {
   TestExecutor executor;
 
@@ -324,7 +326,10 @@ TEST_F(EventTableModelTest, HistoricalEvents_AuditOnlyFilter) {
        .source_node_id = node_id});
 
   historical_event_model.refilter_now();
-  EXPECT_EQ(model.GetRowCount(), 3);
+  // The operator journal hides the audit trail (OPC UA Part 2 §4.14.1): only
+  // the process event is listed.
+  ASSERT_EQ(model.GetRowCount(), 1);
+  EXPECT_FALSE(IsAuditEventType(model.event_at(0).event_type_id));
 
   model.SetAuditOnly(true);
   ASSERT_EQ(model.GetRowCount(), 2);
@@ -337,7 +342,7 @@ TEST_F(EventTableModelTest, HistoricalEvents_AuditOnlyFilter) {
   EXPECT_FALSE(model.unacknowledged_only());
 
   model.SetAuditOnly(false);
-  EXPECT_EQ(model.GetRowCount(), 3);
+  EXPECT_EQ(model.GetRowCount(), 1);
 }
 
 TEST_F(EventTableModelTest, CurrentEvents_AckEvents) {
