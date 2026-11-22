@@ -346,7 +346,8 @@
       "file": "client-window.png",
       "tag": "obsolete",
       "referenced_from": [],
-      "notes": "Retired 2026-10-24: client.md now embeds workbench-window.png, the generated full-window capture, which shows the current menu bar and status strip the page describes. This hand-maintained 2024 figure showed a Modus schematic centre and an Objects dock with a «Все объекты» root row the tree no longer draws, so it contradicted the page beside it. Former note: Docs image is a full main window with a Modus schematic centre; CaptureMainWindow only renders the non-Modus EventJournal + Summ + Struct fallback, so keep this hand-maintained until the fake Modus runtime exists. STALE (2026-08-29): the Objects dock in it still shows a «Все объекты» root row the tree no longer draws. Hand-maintained, so this one needs re-shooting rather than regenerating."
+      "notes": "Retired 2026-10-24: client.md now embeds workbench-window.png, the generated full-window capture, which shows the current menu bar and status strip the page describes. This hand-maintained 2024 figure showed a Modus schematic centre and an Objects dock with a «Все объекты» root row the tree no longer draws, so it contradicted the page beside it. Former note: Docs image is a full main window with a Modus schematic centre; CaptureMainWindow only renders the non-Modus EventJournal + Summ + Struct fallback, so keep this hand-maintained until the fake Modus runtime exists. STALE (2026-08-29): the Objects dock in it still shows a «Все объекты» root row the tree no longer draws. Hand-maintained, so this one needs re-shooting rather than regenerating. Deleted from the manual's img/ on 2026-11-22: no page references it.",
+      "published": false
     },
     {
       "file": "workbench-activity-rail.png",
@@ -479,7 +480,8 @@
       "file": "control-confirm.jpg",
       "tag": "obsolete",
       "referenced_from": [],
-      "notes": "Superseded by t{s,i}-remote-control-confirm.png."
+      "notes": "Superseded by t{s,i}-remote-control-confirm.png. Deleted from the manual's img/ on 2026-11-22: no page references it.",
+      "published": false
     },
     {
       "file": "control-select-confirm.png",
@@ -517,13 +519,15 @@
       "file": "control-ti.jpg",
       "tag": "obsolete",
       "referenced_from": [],
-      "notes": "Superseded by ti-remote-control-enabled.png."
+      "notes": "Superseded by ti-remote-control-enabled.png. Deleted from the manual's img/ on 2026-11-22: no page references it.",
+      "published": false
     },
     {
       "file": "control-ts.jpg",
       "tag": "obsolete",
       "referenced_from": [],
-      "notes": "Superseded by ts-remote-control-enabled.png."
+      "notes": "Superseded by ts-remote-control-enabled.png. Deleted from the manual's img/ on 2026-11-22: no page references it.",
+      "published": false
     },
     {
       "file": "devices-create.png",
@@ -560,31 +564,36 @@
       "file": "devices-off.png",
       "tag": "obsolete",
       "referenced_from": [],
-      "notes": "Retired 2026-08-15: dev/devices.md now embeds `hardware-tree.png`, which is the same window rendered by the generator. The legacy figure showed the devices offline, which is where the filename came from — the figure was never about the state."
+      "notes": "Retired 2026-08-15: dev/devices.md now embeds `hardware-tree.png`, which is the same window rendered by the generator. The legacy figure showed the devices offline, which is where the filename came from — the figure was never about the state. Deleted from the manual's img/ on 2026-11-22: no page references it.",
+      "published": false
     },
     {
       "file": "devices-on.png",
       "tag": "obsolete",
       "referenced_from": [],
-      "notes": "Retired 2026-08-15: client.md now embeds `devices.png`. The legacy figure was a composite of the object tree and a parameters form with two red underlines drawn on top; the generator cannot draw the annotation, and the prose beside it already says what the arrows pointed at."
+      "notes": "Retired 2026-08-15: client.md now embeds `devices.png`. The legacy figure was a composite of the object tree and a parameters form with two red underlines drawn on top; the generator cannot draw the annotation, and the prose beside it already says what the arrows pointed at. Deleted from the manual's img/ on 2026-11-22: no page references it.",
+      "published": false
     },
     {
       "file": "devices-status.png",
       "tag": "obsolete",
       "referenced_from": [],
-      "notes": "Retired 2026-08-15: client.md now embeds the two panes separately — `hardware-tree.png` for the status dots and `device-metrics.png` for the Метрики sheet the legacy figure showed beside it."
+      "notes": "Retired 2026-08-15: client.md now embeds the two panes separately — `hardware-tree.png` for the status dots and `device-metrics.png` for the Метрики sheet the legacy figure showed beside it. Deleted from the manual's img/ on 2026-11-22: no page references it.",
+      "published": false
     },
     {
       "file": "devices-traffic.png",
       "tag": "obsolete",
       "referenced_from": [],
-      "notes": "Retired 2026-08-15: client/device-watch.md now embeds `device-watch.png`. The legacy figure wrapped the same view in the whole main window."
+      "notes": "Retired 2026-08-15: client/device-watch.md now embeds `device-watch.png`. The legacy figure wrapped the same view in the whole main window. Deleted from the manual's img/ on 2026-11-22: no page references it.",
+      "published": false
     },
     {
       "file": "display.png",
       "tag": "obsolete",
       "referenced_from": [],
-      "notes": "Retired 2026-10-24: removed from client/display.md with no replacement. It was a 2024 hand capture of a Modus schematic drawn with live values, and the built-in renderer draws Modus schematics without live values in this version, so the figure promised what the page now warns against. No validated generator capture of a Modus schematic exists (substation-display.png is a Vidicon .vds display inside the display frame, a different window). Former note: Modus schematic; out of scope until fake runtime lands."
+      "notes": "Retired 2026-10-24: removed from client/display.md with no replacement. It was a 2024 hand capture of a Modus schematic drawn with live values, and the built-in renderer draws Modus schematics without live values in this version, so the figure promised what the page now warns against. No validated generator capture of a Modus schematic exists (substation-display.png is a Vidicon .vds display inside the display frame, a different window). Former note: Modus schematic; out of scope until fake runtime lands. Deleted from the manual's img/ on 2026-11-22: no page references it.",
+      "published": false
     },
     {
       "file": "substation-display.png",
@@ -623,19 +632,22 @@
       "file": "events-cur.jpg",
       "tag": "obsolete",
       "referenced_from": [],
-      "notes": "Superseded by menu-events-log.png."
+      "notes": "Superseded by menu-events-log.png. Deleted from the manual's img/ on 2026-11-22: no page references it.",
+      "published": false
     },
     {
       "file": "firewall.jpg",
       "tag": "manual-os",
       "referenced_from": [],
-      "notes": "Windows firewall dialog; OS-level."
+      "notes": "Windows firewall dialog; OS-level. Deleted from the manual's img/ on 2026-11-22: no page references it.",
+      "published": false
     },
     {
       "file": "firewall.png",
       "tag": "manual-os",
       "referenced_from": [],
-      "notes": "Windows firewall dialog; OS-level."
+      "notes": "Windows firewall dialog; OS-level. Deleted from the manual's img/ on 2026-11-22: no page references it.",
+      "published": false
     },
     {
       "file": "graph-cursor.png",
@@ -1837,7 +1849,8 @@
       "file": "login.png",
       "tag": "obsolete",
       "referenced_from": [],
-      "notes": "Superseded by client-login.png."
+      "notes": "Superseded by client-login.png. Deleted from the manual's img/ on 2026-11-22: no page references it.",
+      "published": false
     },
     {
       "file": "menu-copy-object.png",
@@ -1907,7 +1920,8 @@
       "file": "menu-create-object-ts-ti.png",
       "tag": "obsolete",
       "referenced_from": [],
-      "notes": "Not a menu despite the name (audited 2026-08-08): the modal «Создание серии объектов» bulk-create dialog. The generator already renders that dialog as multi-create.png (dialogs kind `multi-create`), so what is owed here is a docs-side re-point, not a new capture — the two differ only in fixture content (this one seeds 9 ТИТ on MODBUS RTU : SmartTermo). OBSOLETE since 2026-09-19 and the re-point is done, but not to multi-create.png: that renders the SAME retired dialog. ID_ADD_MULTIPLE_ITEMS calls ShowBulkCreateWizard (client/modules/create/opened_view_create_command.cpp) and the only surviving caller of ShowMultiCreateDialog is the generator's own dialog_capture.cpp, so dev/data-items.md now embeds bulk-create.png instead. The PNG is still in scada-docs/img/ and is a removal candidate; the multi-create.png pair photographs the same dead surface and wants the same decision."
+      "notes": "Not a menu despite the name (audited 2026-08-08): the modal «Создание серии объектов» bulk-create dialog. The generator already renders that dialog as multi-create.png (dialogs kind `multi-create`), so what is owed here is a docs-side re-point, not a new capture — the two differ only in fixture content (this one seeds 9 ТИТ on MODBUS RTU : SmartTermo). OBSOLETE since 2026-09-19 and the re-point is done, but not to multi-create.png: that renders the SAME retired dialog. ID_ADD_MULTIPLE_ITEMS calls ShowBulkCreateWizard (client/modules/create/opened_view_create_command.cpp) and the only surviving caller of ShowMultiCreateDialog is the generator's own dialog_capture.cpp, so dev/data-items.md now embeds bulk-create.png instead. The PNG is still in scada-docs/img/ and is a removal candidate; the multi-create.png pair photographs the same dead surface and wants the same decision. Deleted from the manual's img/ on 2026-11-22: no page references it.",
+      "published": false
     },
     {
       "file": "menu-create-object.png",
@@ -1975,13 +1989,15 @@
       "file": "menu-events-log.png",
       "tag": "obsolete",
       "referenced_from": [],
-      "notes": "Superseded by events-alarm-surface.png on 2026-09-26 (backlog 39). Hand-captured whole application window over the month journal, eight columns including Объект/Инициатор/Квитировал/Время квитирования. It was retired for CONTRADICTING its own page rather than for being hand-made: client/events.md describes the unacknowledged dot, the severity name, the summary row and the Квитировать все button, and this image — the pre-reshell UI — showed none of them. The docs-side table in the entry sent this row at events-log.png, which is itself obsolete; the live journal surface is events-alarm-surface.png."
+      "notes": "Superseded by events-alarm-surface.png on 2026-09-26 (backlog 39). Hand-captured whole application window over the month journal, eight columns including Объект/Инициатор/Квитировал/Время квитирования. It was retired for CONTRADICTING its own page rather than for being hand-made: client/events.md describes the unacknowledged dot, the severity name, the summary row and the Квитировать все button, and this image — the pre-reshell UI — showed none of them. The docs-side table in the entry sent this row at events-log.png, which is itself obsolete; the live journal surface is events-alarm-surface.png. Deleted from the manual's img/ on 2026-11-22: no page references it.",
+      "published": false
     },
     {
       "file": "menu-events.png",
       "tag": "obsolete",
       "referenced_from": [],
-      "notes": "Not a menu despite the name (audited 2026-08-08): an Events view strip (1263x180) whose subject is the STATUS BAR beneath it — «Диспетчер 1», «Подключен», «Отклик: 0 мс» each carry a red underline drawn on top of the capture. The annotations are editorial, added after the grab, so the image cannot be regenerated by the generator however good the fixture gets. Its event rows are the canonical ones the fixture event-log gap is measured against. Retired 2026-10-04 (operator-role review): a 2024 capture of the old event panel (Объект/Инициатор columns, green fill, «Отклик» status cell) that contradicts client.md; no longer referenced."
+      "notes": "Not a menu despite the name (audited 2026-08-08): an Events view strip (1263x180) whose subject is the STATUS BAR beneath it — «Диспетчер 1», «Подключен», «Отклик: 0 мс» each carry a red underline drawn on top of the capture. The annotations are editorial, added after the grab, so the image cannot be regenerated by the generator however good the fixture gets. Its event rows are the canonical ones the fixture event-log gap is measured against. Retired 2026-10-04 (operator-role review): a 2024 capture of the old event panel (Объект/Инициатор columns, green fill, «Отклик» status cell) that contradicts client.md; no longer referenced. Deleted from the manual's img/ on 2026-11-22: no page references it.",
+      "published": false
     },
     {
       "file": "menu-excel.png",
@@ -2018,19 +2034,22 @@
       "file": "menu-favorites.png",
       "tag": "obsolete",
       "referenced_from": [],
-      "notes": "Superseded by favorites.png on 2026-09-26 (backlog 39). Hand-captured whole application window around the Favourites pane, carrying an OS title bar reading «АРМ Диспетчера (Server: 10.0.0.243)» and a menu bar (Схема/Объект/Далее/Лист) that the client no longer has — the current menu reads Мнемосхема/Сигнал/Дополнительно/Страница. So it documented a UI two vocabularies old. Its one irreproducible part is the OS title bar; everything else the generator now renders."
+      "notes": "Superseded by favorites.png on 2026-09-26 (backlog 39). Hand-captured whole application window around the Favourites pane, carrying an OS title bar reading «АРМ Диспетчера (Server: 10.0.0.243)» and a menu bar (Схема/Объект/Далее/Лист) that the client no longer has — the current menu reads Мнемосхема/Сигнал/Дополнительно/Страница. So it documented a UI two vocabularies old. Its one irreproducible part is the OS title bar; everything else the generator now renders. Deleted from the manual's img/ on 2026-11-22: no page references it.",
+      "published": false
     },
     {
       "file": "menu-files.png",
       "tag": "obsolete",
       "referenced_from": [],
-      "notes": "Superseded by files.png on 2026-09-26 (backlog 39). Hand-captured Files panel listing .xsde schematics. Its predecessor note called the replacement a pure docs-side re-point; opening both showed otherwise — the generated capture was a bare panel over build artefacts (iec104.cfg, server.log) where this one is a titled pane over a schematic file store. The generator gained both before this was retired."
+      "notes": "Superseded by files.png on 2026-09-26 (backlog 39). Hand-captured Files panel listing .xsde schematics. Its predecessor note called the replacement a pure docs-side re-point; opening both showed otherwise — the generated capture was a bare panel over build artefacts (iec104.cfg, server.log) where this one is a titled pane over a schematic file store. The generator gained both before this was retired. Deleted from the manual's img/ on 2026-11-22: no page references it.",
+      "published": false
     },
     {
       "file": "menu-notepad.png",
       "tag": "obsolete",
       "referenced_from": [],
-      "notes": "Not a menu, and not the client at all (audited 2026-08-08): a third-party text editor showing the exported configuration CSV, syntax-highlighted. Obsolete since 2026-09-26: the CSV it shows is gone (ADR 0014 phase 5 replaced it with a UANodeSet XML file), and dev/excel.md no longer embeds it."
+      "notes": "Not a menu, and not the client at all (audited 2026-08-08): a third-party text editor showing the exported configuration CSV, syntax-highlighted. Obsolete since 2026-09-26: the CSV it shows is gone (ADR 0014 phase 5 replaced it with a UANodeSet XML file), and dev/excel.md no longer embeds it. Deleted from the manual's img/ on 2026-11-22: no page references it.",
+      "published": false
     },
     {
       "file": "menu-parameters-elements-copy.png",
@@ -2632,7 +2651,8 @@
       "file": "users.jpg",
       "tag": "obsolete",
       "referenced_from": [],
-      "notes": "Superseded by users.png."
+      "notes": "Superseded by users.png. Deleted from the manual's img/ on 2026-11-22: no page references it.",
+      "published": false
     },
     {
       "file": "users.png",
@@ -2767,8 +2787,8 @@
       "file": "colour-scheme-menu.png",
       "tag": "obsolete",
       "referenced_from": [],
-      "notes": "OBSOLETE (2026-08-02): Settings > Colour scheme is no longer a submenu. The preference toggles moved into the SettingsDialog and the menu now carries a single Settings... item, so the appearance switch is a combo row in that dialog — see settings-dialog.png, which replaced this image in client/workbench.md (RU+EN). The CaptureColourSchemeMenu generator test became CaptureSettingsDialog, and CaptureSettingsPanel when the dialog itself was retired on 2026-08-28; it guards the same reachability there.",
-      "published": true
+      "notes": "OBSOLETE (2026-08-02): Settings > Colour scheme is no longer a submenu. The preference toggles moved into the SettingsDialog and the menu now carries a single Settings... item, so the appearance switch is a combo row in that dialog — see settings-dialog.png, which replaced this image in client/workbench.md (RU+EN). The CaptureColourSchemeMenu generator test became CaptureSettingsDialog, and CaptureSettingsPanel when the dialog itself was retired on 2026-08-28; it guards the same reachability there. Deleted from the manual's img/ on 2026-11-22: no page references it.",
+      "published": false
     },
     {
       "file": "table.png",
@@ -2978,16 +2998,29 @@
     "client-retransmission.png",
     "device-metrics.png",
     "device-watch.png",
+    "devices-create.png",
     "devices.png",
     "favorites.png",
     "files.png",
     "graph-cursor.png",
     "hardware-tree.png",
+    "inspector-event.png",
+    "inspector-panel.png",
     "limits.png",
     "menu-copy-object.png",
+    "menu-delete-object.png",
     "menu-excel.png",
+    "menu-parameters-elements.png",
+    "menu-parameters.png",
     "menu-summary.png",
     "settings.png",
+    "substation-display.png",
+    "table-workspace.png",
+    "ti-delete.png",
+    "ti-remote-control-disabled.png",
+    "ti-remote-control-enabled.png",
+    "transmission-rule.png",
+    "workbench-activity-rail.png",
     "workbench-login.png",
     "workbench-overview.png"
   ]
