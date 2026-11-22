@@ -14,5 +14,8 @@ enum class MainMenuId {
   Window,
   Settings,
   Language,
+  // Actions on the signed-in account (Change Password...). Drawn in the
+  // Settings menu, after the entry that opens the Settings surface.
+  Account,
   Help,
 };

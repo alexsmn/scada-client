@@ -57,6 +57,9 @@ CLIENT_COMMAND_ID(ID_DEV1_REFR, 140)
 CLIENT_COMMAND_ID(ID_DEV1_SYNC, 141)
 CLIENT_COMMAND_ID(ID_OPEN_WATCH, 142)
 CLIENT_COMMAND_ID(ID_CHANGE_PASSWORD, 145)
+// Change Password... for the signed-in account itself, offered to every
+// authenticated user whatever their rights (backlog 1098).
+CLIENT_COMMAND_ID(ID_CHANGE_OWN_PASSWORD, 152)
 // Roles... on a selected account: grant and revoke its Roles (backlog 937).
 CLIENT_COMMAND_ID(ID_ACCOUNT_ROLES, 144)
 // Enable / disable a selected account (backlog 149).

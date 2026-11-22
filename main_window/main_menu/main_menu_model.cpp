@@ -457,10 +457,18 @@ void MainMenuModel::Rebuild() {
   // this is a one-item menu rather than a bare item.
   settings_menu_.Clear();
   settings_menu_.AddItem(ID_SETTINGS, Translate("Settings..."));
+  // The signed-in account's own actions follow it: they are about the person
+  // at the desk, like the preferences, and the web client keeps its Change
+  // password command in the same group (backlog 1098). They are not rows on
+  // the Settings surface, which holds stored values.
+  AddMenuContributions(settings_menu_, ui_command_registry_, commands_,
+                       MainMenuId::Account, admin_);
   AddSubMenu(0, Translate("Settings"), &settings_menu_);
 #else
   // Without the Qt UI config there is no Settings surface, so the toggles stay
   // in the menu.
+  AddMenuContributions(settings_submenu_, ui_command_registry_, commands_,
+                       MainMenuId::Account, admin_);
   AddSubMenu(0, Translate("Settings"), &settings_submenu_);
 #endif
 

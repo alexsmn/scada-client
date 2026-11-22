@@ -551,6 +551,7 @@ std::vector<OperatorUseCaseSmokeCheck> MakeOperatorUseCaseSmokeChecks() {
        .description = "manage users and passwords",
        .registered_window_types = {"Users"},
        .registered_selection_commands = {ID_CHANGE_PASSWORD, ID_ACCOUNT_ROLES},
+       .registered_global_commands = {ID_CHANGE_OWN_PASSWORD},
        .main_window_commands = {ID_USERS_VIEW}},
       {.id = "UC-19",
        .description = "configure transmission rules",

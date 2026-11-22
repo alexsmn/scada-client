@@ -866,6 +866,15 @@ TEST_F(ClientApplicationTest, RunWithNewProfile) {
   StartApp();
 }
 
+// Backlog 1098: a signed-in session carries "Change Password..." for its own
+// account as a global command -- reachable from the Settings menu and the
+// palette with nothing selected -- rather than only the Configure-gated
+// "Set Password..." on a selected user node.
+TEST_F(ClientApplicationTest, SignedInSessionCanChangeItsOwnPassword) {
+  StartApp();
+  EXPECT_TRUE(app_.HasGlobalCommandForTesting(ID_CHANGE_OWN_PASSWORD));
+}
+
 // Ensure that the initial page is created and all windows are defined.
 TEST_F(ClientApplicationTest, OpensKnownWindows) {
   {

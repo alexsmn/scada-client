@@ -1568,6 +1568,14 @@
         <translation>Задать пароль...</translation>
     </message>
     <message>
+        <source>Change Password...</source>
+        <translation>Сменить пароль...</translation>
+    </message>
+    <message>
+        <source>Change Password</source>
+        <translation>Сменить пароль</translation>
+    </message>
+    <message>
         <source>Password</source>
         <translation>Пароль</translation>
     </message>

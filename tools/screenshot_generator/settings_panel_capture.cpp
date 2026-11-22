@@ -130,6 +130,22 @@ TEST_F(ScreenshotGenerator, CaptureSettingsPanel) {
       << "Settings has no Settings... item - the preferences surface, and with "
          "it the appearance switch, is unreachable";
 
+  // The signed-in account changes its own password from the same menu, with
+  // nothing selected and whatever its rights (backlog 1098). Guarded on the
+  // real menu bar, because the menu model is where a contribution can quietly
+  // fail to be mounted.
+  QAction* change_own_password = nullptr;
+  const auto change_password_title =
+      QString::fromStdU16String(Translate("Change Password..."));
+  for (QAction* action : settings_menu->actions()) {
+    if (!action->isSeparator() && action->text() == change_password_title)
+      change_own_password = action;
+  }
+  ASSERT_NE(change_own_password, nullptr)
+      << "Settings has no Change Password... item - a user without the "
+         "Configure right has no way to change their own password";
+  EXPECT_TRUE(change_own_password->isEnabled());
+
   // Opened the way the menu item and the rail's pinned utility both open it,
   // rather than by constructing a panel here.
   auto* main_window = dynamic_cast<MainWindow*>(&main_windows.front());

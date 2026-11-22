@@ -2,6 +2,9 @@ client_component_module(client_component_change_password)
 
 client_module_link_libraries(client_component_change_password PUBLIC
   node_service
+  # change_password_dialog.h carries a PasswordPolicy, and the dialog checks
+  # the new password against it (PasswordPolicyViolation).
+  client_user_access
 )
 
 if(TARGET client_component_change_password_qt_unittests)
