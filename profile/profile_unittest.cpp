@@ -15,7 +15,7 @@ TEST(ProfileTest, AccountKeyedFilesAreSeparate) {
   scada::base::ScopedPathOverride private_dir{client::DIR_PRIVATE};
 
   Profile shared;
-  shared.event_play_sound = true;
+  shared.event_play_sound = false;
   shared.Save();
 
   Profile account;
@@ -27,7 +27,7 @@ TEST(ProfileTest, AccountKeyedFilesAreSeparate) {
   Profile reloaded;
   reloaded.SetAccountKey("ns=1;i=100");
   reloaded.Load();
-  EXPECT_FALSE(reloaded.event_play_sound);
+  EXPECT_TRUE(reloaded.event_play_sound);
 
   // ';' and '_' must not collapse to one name.
   Profile lookalike;
@@ -37,7 +37,7 @@ TEST(ProfileTest, AccountKeyedFilesAreSeparate) {
   Profile shared_again;
   EXPECT_TRUE(shared_again.HasFile());
   shared_again.Load();
-  EXPECT_TRUE(shared_again.event_play_sound);
+  EXPECT_FALSE(shared_again.event_play_sound);
 }
 
 // Regression (backlog 717): a profile.json holding valid JSON that is not an
@@ -97,6 +97,44 @@ TEST(ProfileTest, SpeechDefaultsOnWhenTheProfileHasNoKey) {
   Profile profile;
   profile.Load(boost::json::parse(R"({"soundOnEvents": true})"));
   EXPECT_TRUE(profile.speech_enabled);
+}
+
+// Backlog 552: a profile with no `soundOnEvents` key -- a fresh account, or
+// one saved before the key existed -- sounds the alarm tone. A new operator
+// must not start with a silent annunciator.
+TEST(ProfileTest, AlarmToneDefaultsOnWhenTheProfileHasNoKey) {
+  EXPECT_TRUE(Profile{}.event_play_sound);
+
+  Profile profile;
+  profile.Load(boost::json::parse(R"({"showWriteOk": true})"));
+  EXPECT_TRUE(profile.event_play_sound);
+}
+
+// Backlog 552: the new default reaches absent keys only. An operator who
+// switched the tone off -- or whose profile was saved while the default was
+// off, which wrote the key -- keeps it off.
+TEST(ProfileTest, AnExplicitAlarmToneSettingIsKept) {
+  Profile off;
+  off.Load(boost::json::parse(R"({"soundOnEvents": false})"));
+  EXPECT_FALSE(off.event_play_sound);
+
+  Profile on;
+  on.Load(boost::json::parse(R"({"soundOnEvents": true})"));
+  EXPECT_TRUE(on.event_play_sound);
+}
+
+// Switching the tone off survives a save and a fresh Profile's load, which is
+// what every sign-in does: the key is written either way.
+TEST(ProfileTest, AlarmToneOffSurvivesARoundTripThroughAFreshProfile) {
+  Profile before;
+  before.event_play_sound = false;
+  const boost::json::value saved = before.SaveToValue();
+  ASSERT_TRUE(saved.is_object());
+  EXPECT_EQ(saved.as_object().at("soundOnEvents").as_bool(), false);
+
+  Profile after;
+  after.Load(saved);
+  EXPECT_FALSE(after.event_play_sound);
 }
 
 // Control confirmation is per session by design: it is not written, so a

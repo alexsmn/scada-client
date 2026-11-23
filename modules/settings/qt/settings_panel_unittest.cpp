@@ -538,12 +538,12 @@ TEST_F(SettingsPanelTest, ADisabledCommandExplainsItself) {
 // Backlog 1012: a toggle that differs from its default carries a `Modified`
 // badge, and a row with no fixed default carries none at all.
 TEST_F(SettingsPanelTest, TheBadgeMarksOnlyRowsThatDifferFromTheirDefault) {
-  // Nothing checked: Status Bar (default on) differs, Sound (default off) and
-  // Flash (default off) do not.
+  // Nothing checked: Status Bar and Sound (both default on; Sound since
+  // backlog 552) differ, Flash (default off) does not.
   SettingsPanel panel{nullptr, settings_};
 
   EXPECT_TRUE(BadgeShown(panel, QStringLiteral("status-bar")));
-  EXPECT_FALSE(BadgeShown(panel, QStringLiteral("sound-on-events")));
+  EXPECT_TRUE(BadgeShown(panel, QStringLiteral("sound-on-events")));
   EXPECT_FALSE(BadgeShown(panel, QStringLiteral("flash-window")));
   // Colour scheme resolves from the host; the action holds no value.
   EXPECT_EQ(Badge(panel, QStringLiteral("colour-scheme")), nullptr);
@@ -553,8 +553,8 @@ TEST_F(SettingsPanelTest, TheBadgeMarksOnlyRowsThatDifferFromTheirDefault) {
 TEST_F(SettingsPanelTest, FlippingAToggleRestatesItsBadge) {
   SettingsPanel panel{nullptr, settings_};
 
-  RequireControl<QCheckBox>(panel, QStringLiteral("sound-on-events")).click();
-  EXPECT_TRUE(BadgeShown(panel, QStringLiteral("sound-on-events")));
+  RequireControl<QCheckBox>(panel, QStringLiteral("flash-window")).click();
+  EXPECT_TRUE(BadgeShown(panel, QStringLiteral("flash-window")));
 
   RequireControl<QCheckBox>(panel, QStringLiteral("status-bar")).click();
   EXPECT_FALSE(BadgeShown(panel, QStringLiteral("status-bar")));
@@ -568,11 +568,11 @@ TEST_F(SettingsPanelTest, ResetToDefaultReturnsAModifiedRow) {
   EXPECT_EQ(MenuAction(RowMenu(panel, QStringLiteral("colour-scheme")),
                        QStringLiteral("settings-reset")),
             nullptr);
-  QAction* sound_reset =
-      MenuAction(RowMenu(panel, QStringLiteral("sound-on-events")),
+  QAction* flash_reset =
+      MenuAction(RowMenu(panel, QStringLiteral("flash-window")),
                  QStringLiteral("settings-reset"));
-  ASSERT_NE(sound_reset, nullptr);
-  EXPECT_FALSE(sound_reset->isEnabled());
+  ASSERT_NE(flash_reset, nullptr);
+  EXPECT_FALSE(flash_reset->isEnabled());
 
   QAction* reset = MenuAction(RowMenu(panel, QStringLiteral("status-bar")),
                               QStringLiteral("settings-reset"));
@@ -610,10 +610,14 @@ TEST_F(SettingsPanelTest, TheModifiedFilterKeepsModifiedRowsAndExplainsEmpty) {
   SettingsPanel panel{nullptr, settings_};
 
   panel.modified_filter()->click();
-  EXPECT_EQ(VisibleIds(panel), (std::vector<std::string>{"status-bar"}));
+  EXPECT_EQ(VisibleIds(panel),
+            (std::vector<std::string>{"sound-on-events", "status-bar"}));
 
-  // Flipping the last modified row back drops it from the filtered list, once
+  // Flipping the modified rows back drops them from the filtered list, once
   // the event loop has run the deferred rebuild.
+  RequireControl<QCheckBox>(panel, QStringLiteral("sound-on-events")).click();
+  QCoreApplication::processEvents();
+  EXPECT_EQ(VisibleIds(panel), (std::vector<std::string>{"status-bar"}));
   RequireControl<QCheckBox>(panel, QStringLiteral("status-bar")).click();
   QCoreApplication::processEvents();
   EXPECT_TRUE(VisibleIds(panel).empty());

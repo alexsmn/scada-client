@@ -239,6 +239,10 @@ class EventDispatcherSpeechTest : public Test {
                              .profile_ = profile_,
                              .events_handler_ = [](bool) {},
                              .action_manager_ = action_manager_,
+                             // The tone is on by default (backlog 552); left
+                             // unset, the handler is the platform's real
+                             // annunciator, which needs a QApplication.
+                             .alarm_sound_handler_ = [](bool) {},
                              .speech_service_ = &speech_service_,
                              .event_debounce_ = {}}};
 };

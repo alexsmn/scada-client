@@ -536,7 +536,7 @@ class ClientApplicationLocalProfileTest : public ClientApplicationTest {
     Page page;
     page.title = kPreviousPageTitle;
     local.AddPage(page);
-    local.event_play_sound = true;
+    local.event_play_sound = false;
     MainWindowDef& window = local.GetMainWindow(kWindowId);
     window.bounds = WindowBounds();
     local.Save();
@@ -594,7 +594,7 @@ TEST_F(ClientApplicationLocalProfileTest,
   StartApp();
 
   EXPECT_FALSE(HasPreviousOperatorsPage());
-  EXPECT_FALSE(app_.profile().event_play_sound);
+  EXPECT_TRUE(app_.profile().event_play_sound);
   // The machine's window placement is the one thing that carries over.
   const MainWindowDef* window = app_.profile().FindMainWindow(kWindowId);
   ASSERT_NE(window, nullptr);
@@ -613,7 +613,7 @@ TEST_F(ClientApplicationLocalProfileTest,
   StartApp();
 
   EXPECT_FALSE(HasPreviousOperatorsPage());
-  EXPECT_FALSE(app_.profile().event_play_sound);
+  EXPECT_TRUE(app_.profile().event_play_sound);
   const MainWindowDef* window = app_.profile().FindMainWindow(kWindowId);
   ASSERT_NE(window, nullptr);
   EXPECT_EQ(window->bounds, WindowBounds());
@@ -622,7 +622,7 @@ TEST_F(ClientApplicationLocalProfileTest,
 namespace {
 
 // Writes a local profile file keyed by `account`, holding one page titled
-// `page_title` and the alarm tone switched on.
+// `page_title` and the alarm tone switched off.
 void SaveAccountProfile(const scada::NodeId& account,
                         std::u16string_view page_title) {
   Profile profile;
@@ -630,7 +630,7 @@ void SaveAccountProfile(const scada::NodeId& account,
   Page page;
   page.title = page_title;
   profile.AddPage(page);
-  profile.event_play_sound = true;
+  profile.event_play_sound = false;
   profile.Save();
 }
 
@@ -652,7 +652,7 @@ TEST_F(ClientApplicationLocalProfileTest,
   StartApp();
 
   EXPECT_TRUE(HasPage(app_.profile(), u"Own page"));
-  EXPECT_TRUE(app_.profile().event_play_sound);
+  EXPECT_FALSE(app_.profile().event_play_sound);
   EXPECT_FALSE(HasPreviousOperatorsPage());
 }
 
@@ -666,7 +666,7 @@ TEST_F(ClientApplicationLocalProfileTest,
   StartApp();
 
   EXPECT_FALSE(HasPage(app_.profile(), u"Other operator's page"));
-  EXPECT_FALSE(app_.profile().event_play_sound);
+  EXPECT_TRUE(app_.profile().event_play_sound);
 }
 
 TEST_F(ClientApplicationLocalProfileTest, AnonymousSessionKeepsTheLocalFile) {
@@ -675,7 +675,7 @@ TEST_F(ClientApplicationLocalProfileTest, AnonymousSessionKeepsTheLocalFile) {
   StartApp();
 
   EXPECT_TRUE(HasPreviousOperatorsPage());
-  EXPECT_TRUE(app_.profile().event_play_sound);
+  EXPECT_FALSE(app_.profile().event_play_sound);
 }
 
 // Backlog 887: «Отключиться от сервера» is how one operator hands the
@@ -702,7 +702,7 @@ class ClientApplicationSignOutTest : public ClientApplicationLocalProfileTest {
             Page page;
             page.title = kOutgoingPageTitle;
             outgoing.AddPage(page);
-            outgoing.event_play_sound = true;
+            outgoing.event_play_sound = false;
             json = boost::json::serialize(profile_envelope::Wrap(
                 outgoing.SaveToValue(), boost::json::value{}));
           }
@@ -785,14 +785,14 @@ class ClientApplicationSignOutTest : public ClientApplicationLocalProfileTest {
 TEST_F(ClientApplicationSignOutTest, NextOperatorGetsTheirOwnProfile) {
   StartApp();
   ASSERT_TRUE(HasOutgoingPage());
-  ASSERT_TRUE(app_.profile().event_play_sound);
+  ASSERT_FALSE(app_.profile().event_play_sound);
 
   NextLoginIsTheIncomingOperator();
   ExecuteGlobalCommand(ID_LOGOFF);
   ASSERT_TRUE(WaitForRebuild());
 
   EXPECT_FALSE(HasOutgoingPage());
-  EXPECT_FALSE(app_.profile().event_play_sound);
+  EXPECT_TRUE(app_.profile().event_play_sound);
   EXPECT_THAT(app_.main_window_manager().main_windows(), SizeIs(1));
 
   Wait(app_.Quit());

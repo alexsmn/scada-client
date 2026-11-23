@@ -364,17 +364,20 @@ TEST_F(SettingsMenuFixture, SpeechHasARowBesideTheTone) {
 // Backlog 1012: the `Modified` badge compares a toggle with its default, and
 // says nothing on a row with no fixed default to compare against.
 TEST_F(SettingsMenuFixture, ModifiedMeansDiffersFromTheDefault) {
-  // A fresh fake has nothing checked: Status Bar (default on) differs, Sound
-  // (default off) does not.
+  // A fresh fake has nothing checked: Status Bar and Sound (default on since
+  // backlog 552) differ, Flash (default off) does not.
   std::vector<SettingRow> rows = Catalog();
   EXPECT_TRUE(SettingRowIsModified(Require(rows, "status-bar")));
-  EXPECT_FALSE(SettingRowIsModified(Require(rows, "sound-on-events")));
+  EXPECT_TRUE(SettingRowIsModified(Require(rows, "sound-on-events")));
+  EXPECT_FALSE(SettingRowIsModified(Require(rows, "flash-window")));
 
   delegate_.SetChecked(ID_VIEW_STATUS_BAR);
   delegate_.SetChecked(ID_EVENT_PLAY_SOUND);
+  delegate_.SetChecked(ID_EVENT_FLASH_WINDOW);
   rows = Catalog();
   EXPECT_FALSE(SettingRowIsModified(Require(rows, "status-bar")));
-  EXPECT_TRUE(SettingRowIsModified(Require(rows, "sound-on-events")));
+  EXPECT_FALSE(SettingRowIsModified(Require(rows, "sound-on-events")));
+  EXPECT_TRUE(SettingRowIsModified(Require(rows, "flash-window")));
 }
 
 // Language, Colour scheme and Widget style resolve from the host, and an
@@ -398,7 +401,7 @@ TEST_F(SettingsMenuFixture, RowsWithNoFixedDefaultAreNeverModified) {
 TEST_F(SettingsMenuFixture, ResetActivatesOnlyAModifiedEnabledRow) {
   // Control Confirmation defaults to on, so checked is its default.
   delegate_.SetChecked(ID_WRITE_CONFIRMATION);
-  delegate_.SetChecked(ID_EVENT_PLAY_SOUND);
+  // Sound is left unchecked, which differs from its default (on).
   delegate_.SetChecked(ID_EVENT_FLASH_WINDOW);
   delegate_.Disable(ID_EVENT_FLASH_WINDOW);
   const std::vector<SettingRow> rows = Catalog();
@@ -418,10 +421,9 @@ TEST_F(SettingsMenuFixture, ResetActivatesOnlyAModifiedEnabledRow) {
 }
 
 TEST_F(SettingsMenuFixture, TheModifiedFilterKeepsOnlyModifiedRows) {
-  // Everything at its default except Sound (on) and Status Bar (off).
-  for (int id :
-       {ID_WRITE_CONFIRMATION, ID_SHOW_WRITEOK, ID_SHOW_EVENTS, ID_HIDE_EVENTS,
-        ID_OPT_SPEECH, ID_MODUS_TOPOLOGY, ID_EVENT_PLAY_SOUND}) {
+  // Everything at its default except Sound (off) and Status Bar (off).
+  for (int id : {ID_WRITE_CONFIRMATION, ID_SHOW_WRITEOK, ID_SHOW_EVENTS,
+                 ID_HIDE_EVENTS, ID_OPT_SPEECH, ID_MODUS_TOPOLOGY}) {
     delegate_.SetChecked(id);
   }
   const std::vector<SettingRow> rows = Catalog();

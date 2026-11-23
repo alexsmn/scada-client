@@ -99,7 +99,7 @@ constexpr std::array kDescriptors = {
             "holds; elsewhere it sounds once. It silences the tone only: the "
             "banner and the severity "
             "colours are ISA-18.2 signals and stay unconditional.",
-        .default_checked = false,
+        .default_checked = true,
     },
     // Beside the tone, as in the Settings menu: the two annunciators of the
     // same edge. Undescribed, the switch had no row on this screen — the only

@@ -109,8 +109,12 @@ class Profile {
   bool event_auto_hide = true;
   // flash main window if there are any unacknowledged events
   bool event_flash_window = false;
-  // play sound if there are any unacknowledged events
-  bool event_play_sound = false;
+  // Play a tone while an alarm stands escalated; saved as `soundOnEvents`.
+  // On by default (backlog 552, decided 2026-11-23): a fresh profile must not
+  // leave a new operator with a silent annunciator
+  // (docs/client/ux/principles.md §3). Only an absent key takes this default;
+  // a saved profile always writes the key, so an explicit choice is kept.
+  bool event_play_sound = true;
 
   // announce new alarms aloud; saved as `speech` (backlog 1046)
   bool speech_enabled = true;
