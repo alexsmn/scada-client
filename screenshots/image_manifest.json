@@ -3428,6 +3428,20 @@
       "notes": "English twin of designer-properties-formulas.png, referenced from the en/dev/designer pages only. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `panel_property_formulas`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
     },
     {
+      "file": "designer-preview.png",
+      "tag": "manual-designer",
+      "referenced_from": [
+        "dev/designer/view.md"
+      ],
+      "notes": "View > Preview on PS-110 with a value typed for four sources, Russian UI. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `preview`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-preview-en.png",
+      "tag": "manual-designer",
+      "referenced_from": [],
+      "notes": "English twin of designer-preview.png, referenced from the en/dev/designer pages only. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `preview`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
       "file": "designer-tabs.png",
       "tag": "manual-designer",
       "referenced_from": [
@@ -3475,7 +3489,7 @@
     "auto-dialog": 46,
     "auto-menu": 22,
     "auto-view": 112,
-    "manual-designer": 38,
+    "manual-designer": 40,
     "manual-diagram": 5,
     "manual-modus": 3,
     "manual-os": 2,
