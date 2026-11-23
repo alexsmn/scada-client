@@ -257,10 +257,13 @@ native application on each host OS:
   and the box also supplies Qt's own translated labels.
 - **Exception — process semantics are ours, not the platform's.** Alarm
   severity, data quality (good/uncertain/bad), and single-line equipment state
-  are functional safety colours (ISA-101, ISA-18.2/EEMUA 191). They keep their
-  fixed token values, must not follow the OS accent, and must not invert with
-  the system theme. Colour is still never the only signal — always pair with a
-  label or shape.
+  are functional safety colours (ISA-101, ISA-18.2/EEMUA 191). Their meaning,
+  hue family and order are fixed; each scheme (dark, light, high contrast)
+  carries its own token values, tuned only in lightness, because one colour
+  cannot read on both a near-black and a white window (superproject
+  `docs/client/ux/principles.md` §9). They must not follow the OS accent or be
+  derived from the system palette. Colour is still never the only signal —
+  always pair with a label or shape.
 
 The information architecture from the reshell still stands (Activity bar →
 Explorer → workspace tabs → Inspector → status strip, operator-first, one home

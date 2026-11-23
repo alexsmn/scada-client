@@ -143,9 +143,10 @@ inventing chrome. **The direction is a native desktop look and feel:**
 - **Dialogs follow [`docs/client/ux/dialogs.md`](../docs/client/ux/dialogs.md)**: no repeated title
   or brand mark in the content; always `QDialogButtonBox`.
 - **Exception — process semantics are ours, not the platform's.** Alarm
-  severity, data quality and equipment state keep fixed safety colours
-  (ISA-101, ISA-18.2/EEMUA 191), never follow the accent or invert, and are
-  always paired with a label or shape.
+  severity, data quality and equipment state are safety colours (ISA-101,
+  ISA-18.2/EEMUA 191): their meaning, hue family and order are fixed in every
+  scheme and only their lightness is tuned per scheme, they never follow the
+  accent, and they are always paired with a label or shape.
 
 The information architecture (Activity bar → Explorer → workspace tabs →
 Inspector → status strip) stands; only the chrome is native. The mockups in
