@@ -9,11 +9,11 @@
 #include "events/event_set.h"
 #include "events/node_event_provider.h"
 #include "model/data_items_node_ids.h"
-#include "modules/table/quality_mark.h"
 #include "modules/table/sparkline.h"
 #include "modules/table/table_model.h"
 #include "node_service/node_util.h"
 #include "profile/profile.h"
+#include "services/data_quality.h"
 #include "ui/common/client_utils.h"
 
 int g_time_format = TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC;
@@ -56,20 +56,6 @@ std::u16string FormatCellTime(scada::Time time) {
     return std::u16string{};
 
   return UtfConvert<char16_t>(FormatTime(time, g_time_format));
-}
-
-// The short, translated label shown in the quality column so quality is never
-// signalled by colour alone (backlog cross-cutting acceptance).
-std::u16string QualityLabel(scada::aui::Quality quality) {
-  switch (quality) {
-    case scada::aui::Quality::kBad:
-      return Translate("Bad");
-    case scada::aui::Quality::kUncertain:
-      return Translate("Uncertain");
-    case scada::aui::Quality::kGood:
-      break;
-  }
-  return Translate("Good");
 }
 
 }  // namespace
@@ -163,23 +149,21 @@ void TableRow::GetValueCell(TableCellEx& cell) const {
 }
 
 bool TableRow::HasDeliveredValue() const {
-  return QualityFromValue(timed_data_.current()).has_value();
+  return DataQualityFor(timed_data_.current()).has_value();
 }
 
 void TableRow::GetQualityCell(TableCellEx& cell) const {
   const std::optional<scada::aui::Quality> quality =
-      QualityFromValue(timed_data_.current());
+      DataQualityFor(timed_data_.current());
 
   // No reading has ever arrived — typically a row whose formula resolves to no
   // node at all. Say so instead of vouching for data that does not exist; the
-  // Value cell beside it is empty for the same reason.
-  if (!quality) {
-    cell.text = Translate("No data");
-    return;
-  }
-
-  cell.text = QualityLabel(*quality);
-  cell.text_color = scada::aui::QualityColor(*quality);
+  // Value cell beside it is empty for the same reason. The label is never the
+  // colour alone (principle §5), and it is the same word the Inspector's pill
+  // shows for the same value.
+  cell.text = DataQualityLabel(quality);
+  if (quality)
+    cell.text_color = scada::aui::QualityColor(*quality);
 }
 
 void TableRow::GetEventCell(TableCellEx& cell) const {
@@ -256,7 +240,7 @@ void TableRow::GetCellEx(TableCellEx& cell) const {
   if (cell.column_id != TableModel::COLUMN_TITLE &&
       cell.column_id != TableModel::COLUMN_QUALITY) {
     const scada::aui::Quality quality =
-        QualityFromQualifier(timed_data_.current().qualifier);
+        DataQualityFor(timed_data_.current().qualifier);
     if (quality != scada::aui::Quality::kGood)
       cell.text_color = scada::aui::QualityColor(quality);
   }

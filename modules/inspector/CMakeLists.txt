@@ -14,6 +14,9 @@ client_module_link_libraries(client_inspector
     aui
     # The event card's severity band naming/colouring (event_severity).
     client_events
+    # The quality band and its label (services/data_quality.h), shared with
+    # the table and the Explorer dot.
+    client_services
     timed_data
 )
 

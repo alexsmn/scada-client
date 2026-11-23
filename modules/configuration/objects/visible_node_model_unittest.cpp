@@ -1,5 +1,6 @@
 #include "configuration/objects/visible_node_model.h"
 
+#include "aui/severity_colors.h"
 #include "base/test/test_executor.h"
 #include "profile/profile.h"
 #include "timed_data/timed_data_service_mock.h"
@@ -20,14 +21,18 @@ class VisibleNodeModelTest : public Test {
 };
 
 // Stands in for a data-variable node: it carries a value quality, so the model
-// paints a status dot for it.
+// paints a status dot for it. Good unless a test says otherwise.
 class TestVisibleNode : public VisibleNode {
  public:
   MOCK_METHOD(std::u16string, GetText, (), (const));
   MOCK_METHOD(bool, IsBad, (), (const));
   MOCK_METHOD(bool, IsAlerting, (), (const));
 
-  virtual bool HasQuality() const override { return true; }
+  virtual std::optional<scada::aui::Quality> GetQuality() const override {
+    return quality;
+  }
+
+  std::optional<scada::aui::Quality> quality = scada::aui::Quality::kGood;
 };
 
 // Stands in for a group/folder node: it has a Value column (the device state)
@@ -86,6 +91,42 @@ TEST_F(VisibleNodeModelTest, GroupNodeShowsNoStatusDot) {
   // An offline device colours the Value text, but still claims no quality.
   ON_CALL(*group_node, IsBad()).WillByDefault(Return(true));
   EXPECT_FALSE(model_.GetStatusColor(tree_node).has_value());
+}
+
+// Backlog 1120: the dot is the value's quality band and nothing else. An
+// alarm used to turn a good value's dot amber -- the uncertain colour -- so
+// "in alarm" read as doubtful data. The alarm keeps its own cue, the Value
+// cell's background.
+TEST_F(VisibleNodeModelTest, AlarmDoesNotColourTheQualityDot) {
+  int value = 0;
+  void* tree_node = &value;
+  auto node = std::make_shared<NiceMock<TestVisibleNode>>();
+  ON_CALL(*node, IsBad()).WillByDefault(Return(false));
+  ON_CALL(*node, IsAlerting()).WillByDefault(Return(true));
+  model_.SetNode(tree_node, node);
+
+  EXPECT_EQ(model_.GetStatusColor(tree_node),
+            scada::aui::QualityColor(scada::aui::Quality::kGood));
+  EXPECT_EQ(model_.GetBackgroundColor(tree_node), profile_.alarm_color);
+}
+
+// The dot follows the shared band: uncertain (stale) is amber, bad is red.
+TEST_F(VisibleNodeModelTest, StatusDotFollowsTheQualityBand) {
+  int value = 0;
+  void* tree_node = &value;
+  auto node = std::make_shared<NiceMock<TestVisibleNode>>();
+  model_.SetNode(tree_node, node);
+
+  node->quality = scada::aui::Quality::kUncertain;
+  EXPECT_EQ(model_.GetStatusColor(tree_node),
+            scada::aui::QualityColor(scada::aui::Quality::kUncertain));
+  // An uncertain value's text is tinted like the table's, not painted bad.
+  EXPECT_EQ(model_.GetTextColor(tree_node),
+            scada::aui::QualityColor(scada::aui::Quality::kUncertain));
+
+  node->quality = scada::aui::Quality::kBad;
+  EXPECT_EQ(model_.GetStatusColor(tree_node),
+            scada::aui::QualityColor(scada::aui::Quality::kBad));
 }
 
 // A proxy standing in for a group must not manufacture a dot either: it

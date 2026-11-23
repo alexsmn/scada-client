@@ -45,6 +45,7 @@ module;
 #include "services/alias_service.h"
 #include "services/connection_state_reporter.h"
 #include "services/create_tree.h"
+#include "services/data_quality.h"
 #include "services/device_state_notifier.h"
 #include "services/legacy_event_severity.h"
 #include "services/server_kind.h"
@@ -75,6 +76,10 @@ export {
 
   // create_tree.h
   using ::CreateTree;
+
+  // data_quality.h
+  using ::DataQualityFor;
+  using ::DataQualityLabel;
 
   // device_state_notifier.h (ToString/ToLocalizedString extend the global
   // overload sets also exported by scada.core; exporting the name here

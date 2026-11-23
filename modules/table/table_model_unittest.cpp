@@ -3,6 +3,7 @@
 #include "aui/dialog_service_mock.h"
 #include "aui/severity_colors.h"
 #include "aui/test/recording_table_model_observer.h"
+#include "aui/translation.h"
 #include "base/blinker_mock.h"
 #include "base/observer_list.h"
 #include "base/test/awaitable_test.h"
@@ -13,11 +14,11 @@
 #include "common/node_state.h"
 #include "events/node_event_provider_mock.h"
 #include "model/data_items_node_ids.h"
-#include "modules/table/quality_mark.h"
 #include "modules/table/sparkline.h"
 #include "modules/table/table_row.h"
 #include "node_service/test/fake_node_service.h"
 #include "profile/profile.h"
+#include "services/data_quality.h"
 #include "timed_data/timed_data_mock.h"
 #include "timed_data/timed_data_observer.h"
 #include "timed_data/timed_data_service_mock.h"
@@ -333,7 +334,7 @@ TEST_F(TableModelTest, UndeliveredRowRendersNoTimestamps) {
   // the timestamps the local delivery path stamps on a failed read.
   const scada::DataValue undelivered{scada::Variant{}, scada::Qualifier{},
                                      stamp, stamp};
-  ASSERT_FALSE(QualityFromValue(undelivered).has_value())
+  ASSERT_FALSE(DataQualityFor(undelivered).has_value())
       << "fixture must model a row that never received a reading";
 
   EXPECT_CALL(row_context->timed_data, GetNode()).Times(AnyNumber());
@@ -349,6 +350,31 @@ TEST_F(TableModelTest, UndeliveredRowRendersNoTimestamps) {
   EXPECT_EQ(table_model_.GetCellText(0, TableModel::COLUMN_SERVER_TIMESTAMP),
             u"");
   EXPECT_EQ(table_model_.GetCellText(0, TableModel::COLUMN_CHANGE_TIME), u"");
+}
+
+// Backlog 1120: the Quality column names the shared band, so a stale value
+// reads «Неопределённо» here exactly as the Inspector's pill does, and an
+// offline one «Недостоверно» — in the band's colour, on the value too.
+TEST_F(TableModelTest, QualityColumnNamesTheSharedBand) {
+  const auto& row_context = SetFormula();
+
+  scada::DataValue current{42.0, scada::Qualifier{}.set_stale(true),
+                           scada::kNullTime, scada::kNullTime};
+  EXPECT_CALL(row_context->timed_data, GetNode()).Times(AnyNumber());
+  EXPECT_CALL(row_context->timed_data, GetDataValue())
+      .Times(AnyNumber())
+      .WillRepeatedly([&] { return current; });
+
+  EXPECT_EQ(table_model_.GetCellText(0, TableModel::COLUMN_QUALITY),
+            Translate("Uncertain"));
+  EXPECT_EQ(GetTextColor(table_model_, 0, TableModel::COLUMN_QUALITY),
+            scada::aui::QualityColor(scada::aui::Quality::kUncertain));
+
+  current.qualifier = scada::Qualifier{}.set_online(false);
+  EXPECT_EQ(table_model_.GetCellText(0, TableModel::COLUMN_QUALITY),
+            Translate("Bad"));
+  EXPECT_EQ(GetTextColor(table_model_, 0, TableModel::COLUMN_QUALITY),
+            scada::aui::QualityColor(scada::aui::Quality::kBad));
 }
 
 // The complement: a real timestamp still renders.
@@ -374,8 +400,7 @@ TEST_F(TableModelTest, DeliveredTimestampsRender) {
         TableModel::COLUMN_SERVER_TIMESTAMP, TableModel::COLUMN_CHANGE_TIME}) {
     const std::u16string text = table_model_.GetCellText(0, column);
     EXPECT_NE(text.find(u"2026"), std::u16string::npos)
-        << "column " << column << " rendered "
-        << UtfConvert<char>(text);
+        << "column " << column << " rendered " << UtfConvert<char>(text);
   }
 }
 

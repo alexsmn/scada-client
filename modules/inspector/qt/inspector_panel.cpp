@@ -17,6 +17,7 @@
 #include "scada/data_value.h"
 #include "scada/node_id.h"
 #include "scada/qualifier.h"
+#include "services/data_quality.h"
 #include "timed_data/timed_data_spec.h"
 
 #include <QFont>
@@ -207,26 +208,6 @@ LimitBand BreachedLimitBand(const std::vector<InspectorLimitRow>& limits) {
       return limit.band;
   }
   return LimitBand::kNormal;
-}
-
-InspectorQualityBand InspectorQualityBandFor(
-    const scada::Qualifier& qualifier) {
-  // general_bad(), as the object tree uses: the server marks a value
-  // offline, stale, failed or misconfigured without setting BAD, and checking
-  // BAD alone called such a value good (backlog 923).
-  return qualifier.general_bad() ? InspectorQualityBand::kBad
-                                 : InspectorQualityBand::kGood;
-}
-
-InspectorQualityBand InspectorQualityBandFor(const scada::DataValue& value) {
-  // DataValue::is_null() means "no value and a zero qualifier" — nothing was
-  // ever delivered for this node. Falling through to the Qualifier mapping
-  // here would report Good, which is how an unresolvable binding (a display
-  // element whose data source names no real node) came to show a good-quality
-  // pill next to an empty readout.
-  if (value.is_null())
-    return InspectorQualityBand::kUnknown;
-  return InspectorQualityBandFor(value.qualifier);
 }
 
 InspectorPanel::InspectorPanel(InspectorPanelContext context, QWidget* parent)
@@ -668,7 +649,7 @@ void InspectorPanel::RefreshValue() {
   if (spec_) {
     element.value_text = QString::fromStdU16String(spec_->GetCurrentString(
         ValueFormat{FORMAT_QUALITY | FORMAT_UNITS | FORMAT_STATUS}));
-    element.quality = InspectorQualityBandFor(spec_->current());
+    element.quality = DataQualityFor(spec_->current());
     element.updated_text = QString::fromStdString(
         FormatTime(spec_->change_time(), TIME_FORMAT_TIME));
     element.limits = MakeLimitRows(spec_->node(), spec_->current());
@@ -862,17 +843,26 @@ void InspectorPanel::ShowElement(const InspectorElementView& element) {
   }
   limit_badge_->setVisible(breach_color.has_value());
 
-  // Three bands, three readings. kUnknown is deliberately neutral rather than
-  // alarming: nothing is wrong with the process, the client simply has no
-  // reading — but it must not borrow the good band's colour or wording.
-  QColor pill = tokens.good;
-  QString quality_text = Tr("Good");
-  if (element.quality == InspectorQualityBand::kBad) {
-    pill = tokens.bad;
-    quality_text = Tr("Bad");
-  } else if (element.quality == InspectorQualityBand::kUnknown) {
-    pill = tokens.fg_muted;
-    quality_text = Tr("No data");
+  // The shared band and its label, so the pill says what the table's Quality
+  // column says for the same value (backlog 1120). No data is deliberately
+  // neutral rather than alarming: nothing is wrong with the process, the
+  // client simply has no reading -- but it must not borrow the good band's
+  // colour or wording.
+  const QString quality_text =
+      QString::fromStdU16String(DataQualityLabel(element.quality));
+  QColor pill = tokens.fg_muted;
+  if (element.quality) {
+    switch (*element.quality) {
+      case scada::aui::Quality::kGood:
+        pill = tokens.good;
+        break;
+      case scada::aui::Quality::kUncertain:
+        pill = tokens.uncertain;
+        break;
+      case scada::aui::Quality::kBad:
+        pill = tokens.bad;
+        break;
+    }
   }
   quality_->setText(quality_text);
   quality_->setStyleSheet(

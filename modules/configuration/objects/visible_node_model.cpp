@@ -5,6 +5,7 @@
 #include "configuration/tree/configuration_tree_model.h"
 #include "model/data_items_node_ids.h"
 #include "profile/profile.h"
+#include "services/data_quality.h"
 #include "services/device_state_notifier.h"
 #include "timed_data/timed_data_property.h"
 
@@ -61,6 +62,11 @@ scada::aui::Color VisibleNodeModel::GetTextColor(void* tree_node) {
   if (!node || node->IsBad())
     return profile_.bad_value_color;
 
+  // An uncertain (stale) value is tinted like the table's value cells, so it
+  // neither passes for good nor borrows the bad colour.
+  if (node->GetQuality() == scada::aui::Quality::kUncertain)
+    return scada::aui::QualityColor(scada::aui::Quality::kUncertain);
+
   return scada::aui::ColorCode::Transparent;
 }
 
@@ -78,23 +84,15 @@ std::optional<scada::aui::Color> VisibleNodeModel::GetStatusColor(
   if (!node)
     return std::nullopt;  // no live value (folder/object): no status dot
 
-  // Only data variables have a value quality. A group's Value column shows its
-  // device's connection state as text, not a quality, so dotting its folder
-  // icon would claim a quality the row does not have.
-  if (!node->HasQuality())
+  // Only data variables that have delivered a value carry a quality: a group's
+  // Value column is its device's connection state, and an unresolved row has
+  // nothing to vouch for. Alarm state is deliberately absent -- the dot used to
+  // turn amber for an alerting node, which read as doubtful data (backlog
+  // 1120); the alarm blinks the Value cell's background instead.
+  const std::optional<scada::aui::Quality> quality = node->GetQuality();
+  if (!quality)
     return std::nullopt;
-
-  // A row whose node is still resolving has delivered nothing yet. Falling
-  // through would paint it green, because the placeholder is neither bad nor
-  // alerting — a row with an empty value claiming good quality.
-  if (!node->IsResolved())
-    return std::nullopt;
-
-  const scada::aui::Quality quality = node->IsBad() ? scada::aui::Quality::kBad
-                                      : node->IsAlerting()
-                                          ? scada::aui::Quality::kUncertain
-                                          : scada::aui::Quality::kGood;
-  return scada::aui::QualityColor(quality);
+  return scada::aui::QualityColor(*quality);
 }
 
 const VisibleNode* VisibleNodeModel::GetNode(void* tree_node) const {
@@ -161,12 +159,8 @@ bool ProxyVisibleNode::IsAlerting() const {
   return underlying_node_ && underlying_node_->IsAlerting();
 }
 
-bool ProxyVisibleNode::IsResolved() const {
-  return underlying_node_ && underlying_node_->IsResolved();
-}
-
-bool ProxyVisibleNode::HasQuality() const {
-  return underlying_node_ && underlying_node_->HasQuality();
+std::optional<scada::aui::Quality> ProxyVisibleNode::GetQuality() const {
+  return underlying_node_ ? underlying_node_->GetQuality() : std::nullopt;
 }
 
 // DataItemVisibleNode
@@ -199,15 +193,14 @@ std::u16string DataItemVisibleNode::GetText() const {
 }
 
 bool DataItemVisibleNode::IsBad() const {
-  return spec_.current().qualifier.general_bad();
+  return GetQuality() == scada::aui::Quality::kBad;
 }
 
-bool DataItemVisibleNode::IsResolved() const {
-  // Subscribed is not the same as delivered. Until a value arrives the
-  // qualifier is a default zero, which is "not bad" — so falling through would
-  // paint the good band next to an empty cell. Same rule as the Inspector's
-  // quality pill (InspectorQualityBandFor).
-  return !spec_.current().is_null();
+std::optional<scada::aui::Quality> DataItemVisibleNode::GetQuality() const {
+  // Subscribed is not the same as delivered: until a value arrives the
+  // qualifier is a default zero, which is "not bad", and DataQualityFor
+  // answers std::nullopt for it rather than the good band.
+  return DataQualityFor(spec_.current());
 }
 
 bool DataItemVisibleNode::IsAlerting() const {

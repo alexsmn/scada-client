@@ -29,48 +29,6 @@
 
 namespace {
 
-// The pure quality-band mapping needs no QApplication.
-TEST(InspectorQualityBandTest, GoodQualifierIsGood) {
-  EXPECT_EQ(InspectorQualityBandFor(scada::Qualifier{}),
-            InspectorQualityBand::kGood);
-}
-
-TEST(InspectorQualityBandTest, BadQualifierIsBad) {
-  const scada::Qualifier bad{scada::Qualifier::BAD};
-  EXPECT_EQ(InspectorQualityBandFor(bad), InspectorQualityBand::kBad);
-}
-
-// The server marks these states without BAD; the band must still read Bad,
-// as the object tree does (backlog 923).
-TEST(InspectorQualityBandTest, OfflineStaleFailedAndMisconfiguredAreBad) {
-  for (unsigned flag :
-       {scada::Qualifier::OFFLINE, scada::Qualifier::STALE,
-        scada::Qualifier::FAILED, scada::Qualifier::MISCONFIGURED}) {
-    EXPECT_EQ(InspectorQualityBandFor(scada::Qualifier{flag}),
-              InspectorQualityBand::kBad)
-        << flag;
-  }
-}
-
-// Regression: a value that was never delivered carries a default-constructed
-// Qualifier, which is zero and therefore "not BAD". Mapping that through the
-// Qualifier alone reported Good, so a display element bound to a node the
-// server does not have showed a good-quality pill next to an empty readout.
-TEST(InspectorQualityBandTest, NeverDeliveredValueIsUnknown) {
-  EXPECT_EQ(InspectorQualityBandFor(scada::DataValue{}),
-            InspectorQualityBand::kUnknown);
-}
-
-TEST(InspectorQualityBandTest, DeliveredValueKeepsItsQualifierBand) {
-  const scada::DataValue good{42.0, scada::Qualifier{}, scada::kNullTime,
-                              scada::kNullTime};
-  EXPECT_EQ(InspectorQualityBandFor(good), InspectorQualityBand::kGood);
-
-  const scada::DataValue bad{42.0, scada::Qualifier{scada::Qualifier::BAD},
-                             scada::kNullTime, scada::kNullTime};
-  EXPECT_EQ(InspectorQualityBandFor(bad), InspectorQualityBand::kBad);
-}
-
 class InspectorPanelTest : public ::testing::Test {
  protected:
   // Qt requires a QApplication before any QWidget; destroyed with the fixture.
@@ -94,7 +52,7 @@ TEST_F(InspectorPanelTest, ShowElementFillsReadoutAndControl) {
       InspectorElementView{.title = QStringLiteral("Q1"),
                            .node_id_text = QStringLiteral("ns=2;s=North.Q1"),
                            .value_text = QStringLiteral("195.7 A"),
-                           .quality = InspectorQualityBand::kGood,
+                           .quality = scada::aui::Quality::kGood,
                            .updated_text = QStringLiteral("21:53:58"),
                            .controllable = true});
 
@@ -118,7 +76,7 @@ TEST_F(InspectorPanelTest, ControlDisabledWhenNotControllable) {
   panel.ShowElement(
       InspectorElementView{.title = QStringLiteral("Bus"),
                            .value_text = QStringLiteral("115 kV"),
-                           .quality = InspectorQualityBand::kGood,
+                           .quality = scada::aui::Quality::kGood,
                            .updated_text = QStringLiteral("21:53"),
                            .controllable = false});
   auto* control =
@@ -220,7 +178,7 @@ InspectorElementView BreachingElement(LimitBand band) {
   return InspectorElementView{
       .title = QStringLiteral("Ua"),
       .value_text = QStringLiteral("10.9"),
-      .quality = InspectorQualityBand::kGood,
+      .quality = scada::aui::Quality::kGood,
       .limits = {row("HiHi", LimitBand::kHiHi), row("Hi", LimitBand::kHi),
                  row("Lo", LimitBand::kLo), row("LoLo", LimitBand::kLoLo)}};
 }
@@ -576,6 +534,9 @@ class FormulaTimedData : public BaseTimedData {
     return UtfConvert<char16_t>(formula_);
   }
 
+  // Delivers `value` as the live reading.
+  void Deliver(const scada::DataValue& value) { UpdateCurrent(value); }
+
  private:
   const std::string formula_;
 };
@@ -590,9 +551,19 @@ class FormulaTimedDataService : public TimedDataService {
   virtual std::shared_ptr<TimedData> GetFormulaTimedData(
       std::string_view formula,
       const scada::AggregateFilter& aggregation) override {
-    return std::make_shared<FormulaTimedData>(std::string{formula});
+    last_ = std::make_shared<FormulaTimedData>(std::string{formula});
+    return last_;
   }
+
+  // The datum the last formula spec connected to.
+  std::shared_ptr<FormulaTimedData> last_;
 };
+
+// The quality pill's text, or empty when the panel has no pill.
+QString QualityPillText(InspectorPanel& panel) {
+  auto* pill = panel.findChild<QLabel*>(QStringLiteral("qualityPill"));
+  return pill ? pill->text() : QString{};
+}
 
 // A Table expression row selects a node-less spec that still carries a live
 // value; the inspector shows it (regression: it used to clear on any null
@@ -615,6 +586,63 @@ TEST_F(InspectorPanelTest, FormulaRowSelectionFillsTheInspector) {
       panel.findChild<QLabel*>(QStringLiteral("inspectorSubtitle"));
   ASSERT_NE(subtitle, nullptr);
   EXPECT_EQ(subtitle->text(), QStringLiteral("{TIT.200}+{TIT.201}"));
+}
+
+// Backlog 1120: a stale reading is uncertain, not bad. The pill used to map
+// every quality flag to Bad, so a stale value read «Недостоверно» here and
+// «Неопределённо» in the table's Quality column. Both now read the shared band
+// (`DataQualityFor`), in the uncertain colour.
+TEST_F(InspectorPanelTest, StaleValueReadsUncertainLikeTheTable) {
+  FormulaTimedDataService service;
+  SelectionModel selection{{service}};
+  TimedDataSpec spec{service, "{TIT.200}"};
+  ASSERT_NE(service.last_, nullptr);
+  service.last_->Deliver(scada::DataValue{42.0,
+                                          scada::Qualifier{}.set_stale(true),
+                                          scada::kNullTime, scada::kNullTime});
+  selection.SelectTimedData(spec);
+
+  InspectorPanel panel{InspectorPanelContext{}};
+  panel.ShowSelection(selection);
+
+  EXPECT_EQ(QualityPillText(panel),
+            QString::fromStdU16String(Translate("Uncertain")));
+  auto* pill = panel.findChild<QLabel*>(QStringLiteral("qualityPill"));
+  ASSERT_NE(pill, nullptr);
+  EXPECT_TRUE(pill->styleSheet().contains(
+      scada::aui::ActiveThemeTokens().uncertain.name()));
+}
+
+TEST_F(InspectorPanelTest, OfflineValueReadsBad) {
+  FormulaTimedDataService service;
+  SelectionModel selection{{service}};
+  TimedDataSpec spec{service, "{TIT.200}"};
+  ASSERT_NE(service.last_, nullptr);
+  service.last_->Deliver(scada::DataValue{42.0,
+                                          scada::Qualifier{}.set_online(false),
+                                          scada::kNullTime, scada::kNullTime});
+  selection.SelectTimedData(spec);
+
+  InspectorPanel panel{InspectorPanelContext{}};
+  panel.ShowSelection(selection);
+
+  EXPECT_EQ(QualityPillText(panel),
+            QString::fromStdU16String(Translate("Bad")));
+}
+
+// Regression: a value that was never delivered carries a zero Qualifier,
+// which is not BAD; the pill must say so rather than vouch for it.
+TEST_F(InspectorPanelTest, UndeliveredValueReadsNoData) {
+  FormulaTimedDataService service;
+  SelectionModel selection{{service}};
+  TimedDataSpec spec{service, "{TIT.200}"};
+  selection.SelectTimedData(spec);
+
+  InspectorPanel panel{InspectorPanelContext{}};
+  panel.ShowSelection(selection);
+
+  EXPECT_EQ(QualityPillText(panel),
+            QString::fromStdU16String(Translate("No data")));
 }
 
 // A node-backed live datum — the shape of an Explorer selection, where the

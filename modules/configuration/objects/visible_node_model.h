@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aui/color.h"
+#include "aui/severity_colors.h"
 #include "base/blinker.h"
 #include "timed_data/timed_data_spec.h"
 
@@ -23,19 +24,20 @@ class VisibleNode {
   void SetChangeHandler(ChangeHandler change_handler);
 
   virtual std::u16string GetText() const = 0;
+  // Whether the Value text reads as bad: a data variable's bad quality band,
+  // or a group's device not being online.
   virtual bool IsBad() const { return false; }
+  // Whether the node has an unacknowledged alarm. Alarm state, not quality:
+  // it blinks the Value cell's background and never touches the status dot.
   virtual bool IsAlerting() const { return false; }
-  // Whether this node speaks for a real live value yet. A node that is still
-  // resolving reports no quality at all rather than borrowing the good band —
-  // "not bad" must never be allowed to read as "good" when nothing has been
-  // delivered.
-  virtual bool IsResolved() const { return true; }
-  // Whether this node carries a data quality of its own — i.e. it stands for a
-  // data variable's live value. Only such nodes get a status dot. A group
-  // (folder) shows its device's connection state as *text* in the Value
-  // column; that is not a value quality, and painting a good/bad dot on the
-  // folder icon would read as a quality claim about the folder itself.
-  virtual bool HasQuality() const { return false; }
+  // The quality band of the node's live value (`DataQualityFor`, the mapping
+  // the Inspector and the table share), or std::nullopt when the node carries
+  // no value quality: a folder or group, whose Value column shows a device
+  // state rather than a value, or a data variable that has delivered nothing
+  // yet -- "not bad" must never read as "good" when nothing has arrived.
+  virtual std::optional<scada::aui::Quality> GetQuality() const {
+    return std::nullopt;
+  }
 
  protected:
   void NotifyChanged();
@@ -58,8 +60,7 @@ class ProxyVisibleNode final
   virtual std::u16string GetText() const override;
   virtual bool IsBad() const override;
   virtual bool IsAlerting() const override;
-  virtual bool IsResolved() const override;
-  virtual bool HasQuality() const override;
+  virtual std::optional<scada::aui::Quality> GetQuality() const override;
 
  private:
   std::shared_ptr<VisibleNode> underlying_node_;
@@ -75,8 +76,7 @@ class DataItemVisibleNode final : private Blinker, public VisibleNode {
   virtual std::u16string GetText() const override;
   virtual bool IsBad() const override;
   virtual bool IsAlerting() const override;
-  virtual bool IsResolved() const override;
-  virtual bool HasQuality() const override { return true; }
+  virtual std::optional<scada::aui::Quality> GetQuality() const override;
 
  private:
   void SetAlerting(bool alerting);
@@ -97,7 +97,7 @@ class DataGroupVisibleNode final : public VisibleNode {
   // VisibleNode
   virtual std::u16string GetText() const override;
   virtual bool IsBad() const override;
-  // No override of HasQuality: a group has no value quality, so it gets no
+  // No override of GetQuality: a group has no value quality, so it gets no
   // status dot. Its device state still colours the Value text via IsBad.
 
  private:
@@ -136,9 +136,10 @@ class VisibleNodeModel {
   scada::aui::Color GetBackgroundColor(void* tree_node);
 
   // Quality status-dot colour for a data variable's live value
-  // (good/uncertain/bad), or none when the node carries no value quality —
-  // folders/objects and groups, whose Value column shows a device state rather
-  // than a value.
+  // (good/uncertain/bad, from `VisibleNode::GetQuality`), or none when the node
+  // carries no value quality — folders/objects and groups, whose Value column
+  // shows a device state rather than a value. Never alarm state, which has its
+  // own cue in `GetBackgroundColor`.
   std::optional<scada::aui::Color> GetStatusColor(void* tree_node);
 
  private:

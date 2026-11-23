@@ -58,7 +58,7 @@ void SaveInspectorScreenshot(const ScreenshotSpec& spec) {
       .title = QStringLiteral("Напряжение Ua"),
       .node_id_text = QStringLiteral("TIT.723"),
       .value_text = QStringLiteral("10,9 кВ"),
-      .quality = InspectorQualityBand::kGood,
+      .quality = scada::aui::Quality::kGood,
       .updated_text = QStringLiteral("15:32:20"),
       // The band labels go through Translate() exactly as the live panel does
       // (ShowElement takes them already rendered), so the capture shows the

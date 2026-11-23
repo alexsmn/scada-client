@@ -1,5 +1,6 @@
 #pragma once
 
+#include "aui/severity_colors.h"
 #include "modules/inspector/limit_band.h"
 
 #include <QColor>
@@ -13,13 +14,8 @@
 #include <vector>
 
 namespace scada {
-class DataValue;
 class NodeId;
-class Qualifier;
 }  // namespace scada
-namespace scada::aui {
-enum class SeverityLevel;
-}  // namespace scada::aui
 class NodeRef;
 class SelectionModel;
 class TimedDataSpec;
@@ -28,20 +24,6 @@ class QLabel;
 class QVBoxLayout;
 class QPushButton;
 class QStackedWidget;
-
-// The quality band for the Inspector's state-hero pill. A pure mapping so it
-// can be unit-tested without a running QApplication.
-//
-// kUnknown is the "nothing has ever been delivered" band. It exists because a
-// default-constructed Qualifier is zero, and zero is *not* BAD — so a value
-// that never arrived is indistinguishable from a good measurement at the
-// Qualifier level. Presenting absent data as good is exactly the failure mode
-// the HMI principles forbid (see docs/client/ux/principles.md).
-enum class InspectorQualityBand { kGood, kBad, kUnknown };
-InspectorQualityBand InspectorQualityBandFor(const scada::Qualifier& qualifier);
-// Prefer this overload wherever a whole DataValue is at hand: it can tell an
-// undelivered value from a good one, which the Qualifier alone cannot.
-InspectorQualityBand InspectorQualityBandFor(const scada::DataValue& value);
 
 // One configured limit band in the Measurements section.
 struct InspectorLimitRow {
@@ -122,9 +104,11 @@ struct InspectorElementView {
   QString title;
   QString node_id_text;
   QString value_text;
-  // Defaults to kUnknown so a card filled without a live spec cannot claim
-  // good quality for a readout it never received.
-  InspectorQualityBand quality = InspectorQualityBand::kUnknown;
+  // The value's quality band (`DataQualityFor` in services/data_quality.h, the
+  // mapping the table and the Explorer dot share). std::nullopt -- the default
+  // -- means nothing was delivered, so a card filled without a live spec
+  // cannot claim good quality for a readout it never received.
+  std::optional<scada::aui::Quality> quality;
   QString updated_text;
   // The node's configured limit bands, most severe first. Empty when the node
   // configures none, which hides the limits block entirely.
