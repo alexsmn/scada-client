@@ -935,11 +935,11 @@
       ],
       "notes": "The Roles view: every Role of Server.ServerCapabilities.RoleSet with the accounts it is granted to, read via the identity mapping rules (Part 18 4.4.3). Admin-gated (WIN_REQUIRES_ADMIN), read-only. THEME-GATED, so reshell-theme rather than auto-view: MakeRolesGridPanel() returns nullptr under the legacy theme (the whole user_access panel family does), so RolesView::Init builds no widget, OpenedView::Init throws 'Can't create widget', and the view never opens. Tagged auto-view until 2026-08-02, which made every default-pipeline run fail this capture - the admin gate was NOT the cause, the session holds Configure. The legacy-theme gate was removed on 2026-08-31 and the row is tagged auto-view, so nothing on the pipeline side blocks publishing it. Members once rendered 'None' for every Role; that gap is closed, pinned by RolesEnumerateTheirMembers (fixture_model_assertions.cpp), and the tracked PNG shows every Role's accounts. The history, for whoever meets it again: The RoleSet and its Roles browse correctly - the capture shows both - but the identity-rule rows the fixture projects under them do not come back from the client browse, so no membership reaches the view. The read path itself is unit-tested against FakeNodeService (role_membership_unittest.cpp); it is the offline fixture's rule projection that is unproven. The manual prose for this surface is written (scada-docs client/workbench.md + en/ mirror, #administration); the image is NOT embedded yet. It used to wait for a Windows regeneration, which was retired on 2026-09-12 (either host may render this gallery), so publishing it is now a manual-figure decision rather than a pipeline step (backlog 734): embed it, set published:true and add it to current_generator_owned_subset. CAPTURED STANDALONE since 2026-08-08 (SaveRolesScreenshot / SaveUsersGridScreenshot in user_access_capture.cpp), not through the view path: the grid is built from the server's published role->permission map, which needs ReadRolePermissions, and the generator's ordinary session is anonymous - so the view-path capture rendered 'No data' over an empty grid. AuthenticatedAttributeService supplies the administrator identity for these captures only. The member/role columns were additionally empty until a client fix the same day (ReadRoleMemberships did not fetch the rule type's chain, so no identity mapping rule read back); the tracked PNG postdates both, and a full dark pass on 2026-09-26 reproduced it pixel for pixel. Published 2026-11-22 on dev/users.md (every Qt view gets a manual figure).",
       "captured": {
-        "commit": "fa6a7f4e4",
+        "commit": "aa97b6318",
         "platform": "macos",
         "dirty": false,
         "sha256": "70bae350838a815fff654e956ffcb484c0df3110e7eb5a2f3801cabb9546883b",
-        "last_rendered": "fa6a7f4e4"
+        "last_rendered": "aa97b6318"
       }
     },
     {
@@ -951,11 +951,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of roles.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "fa6a7f4e4",
+        "commit": "aa97b6318",
         "platform": "macos",
         "dirty": false,
         "sha256": "390b1cf77c8bc0f1ecaa2a94d6f05b5d39e1a90de588cd520c8b9bf2dc2fd81d",
-        "last_rendered": "fa6a7f4e4"
+        "last_rendered": "aa97b6318"
       }
     },
     {
@@ -969,11 +969,11 @@
       ],
       "notes": "The Roles dialog an administrator opens with Roles... on an account in the Users view (backlog 937): one checkbox per Role the server lets an administrator edit, checked where the account holds it. Rendered for the fixture administrator «Администратор», who holds both of the fixture's Roles, so both rows are checked. CAPTURED STANDALONE (SaveAccountRolesScreenshot in user_access_capture.cpp) for the reason roles.png is: the checkboxes come from ReadRoleMemberships, which needs the administrator identity the generator's ordinary session lacks.md without a figure. Published 2026-11-22 on dev/users.md (every Qt view gets a manual figure).",
       "captured": {
-        "commit": "fa6a7f4e4",
+        "commit": "aa97b6318",
         "platform": "macos",
         "dirty": false,
         "sha256": "59315487c081629fce4bc519f6d77f4e9f52dfb0986f14dbc9c6d8de0de667b2",
-        "last_rendered": "fa6a7f4e4"
+        "last_rendered": "aa97b6318"
       }
     },
     {
@@ -985,11 +985,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of account-roles.png, produced by the same capture spec under `--theme light`. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "fa6a7f4e4",
+        "commit": "aa97b6318",
         "platform": "macos",
         "dirty": false,
         "sha256": "c09c0ab21ea35681baaa867c3545c9b03d08da6e50aef3051959c6e2d5b6d1f6",
-        "last_rendered": "fa6a7f4e4"
+        "last_rendered": "aa97b6318"
       }
     },
     {
@@ -1071,11 +1071,11 @@
       ],
       "notes": "The users-admin RBAC inspector (right region of users-admin.html) for the fixture's Администратор. Rewritten 2026-08-01 onto the ROLE model: it lists the Roles the account holds and derives the permission breakdown from them through the same default role->permission map the server enforces with, replacing the coarse Administrator/Operator/Observer pill that read the retired AccessRights bitmask - a pill that would have kept asserting authority for an account whose Role had been revoked. Three states stay distinct: the Roles list, 'None' (holds no Role - real, and grants nothing), and 'No data' (the RoleSet could not be read, which also suppresses every permission row). The Roles list is real as of 2026-08-08: this capture shows Operator, ConfigureAdmin. It showed 'None' until then, which was a CLIENT bug rather than a fixture gap - ReadRoleMemberships resolved a rule's Criteria through the type's property declarations without fetching the type chain, so every rule read back empty against the real node model (regression test: ScreenshotGenerator.RolesEnumerateTheirMembers). SECOND FIXTURE FACT, easy to trip over: the panel now READS what each Role grants from the server (the RolePermissions attribute, Part 3 5.2.9) instead of carrying its own map, and that attribute requires ReadRolePermissions. The generator wires the real attribute service straight into the client, so the client's empty ServiceContext -- which a real server would have replaced with the session's identity -- reads as ANONYMOUS and the attribute is refused, collapsing the whole panel to 'No data'. AuthenticatedAttributeService supplies the administrator identity for this capture only; do not widen it to the generator's other services, which would change UserAccessLevel narrowing and with it every writability affordance. Published 2026-11-22 on dev/users.md (every Qt view gets a manual figure).",
       "captured": {
-        "commit": "fa6a7f4e4",
+        "commit": "aa97b6318",
         "platform": "macos",
         "dirty": false,
         "sha256": "e997a17208b5f83c9990c3c9fe99a8edf3c136715d6dd3ccc5f1a35722d9a197",
-        "last_rendered": "fa6a7f4e4"
+        "last_rendered": "aa97b6318"
       }
     },
     {
@@ -1087,11 +1087,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of users-rbac.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "fa6a7f4e4",
+        "commit": "aa97b6318",
         "platform": "macos",
         "dirty": false,
         "sha256": "3505a1d74c1bad374d6a994012f5a6aac47383a7bb18c3d64c754c010d7eaa02",
-        "last_rendered": "fa6a7f4e4"
+        "last_rendered": "aa97b6318"
       }
     },
     {
@@ -1785,11 +1785,11 @@
       "referenced_from": [],
       "notes": "Users-admin grid (Users window under --theme): the reshell UsersGridPanel returned by NodeTableController for the Users folder — User / Role (Administrator·bad / Operator·good / Observer·muted) / Sessions (Single·Multiple from MultiSessions), with the count header + 'editing requires Administrator' hint and disabled Add-user / Reset-password affordances. Theme-gated reshell chrome (backlog 5.1); the legacy Users view is the generic node-table grid, so it is excluded from the no-theme managed check and guarded by client_screenshot_check_themed. Row selection drives the shared SelectionModel → the RBAC inspector. The spec's width is 740, not the 700 it carried until 2026-08-29: SaveScreenshot resizes to the spec, Qt clamps that to the panel's layout minimum, and 740 is what every render has actually produced — the tracked PNG included. Nothing could see the disagreement while the themed ctest ran the generator directly and checked no dimensions (backlog 630). Backend/Areas/Status/Last-login from the mockup are server-side, absent from the client node model. Fixture Users folder (13 users). The manual prose for this surface is written (scada-docs client/workbench.md + en/ mirror, #administration); the image is NOT embedded yet. It used to wait for a Windows regeneration, which was retired on 2026-09-12 (either host may render this gallery), so publishing it is now a manual-figure decision rather than a pipeline step (backlog 734): embed it, set published:true and add it to current_generator_owned_subset. CAPTURED STANDALONE since 2026-08-08 (SaveRolesScreenshot / SaveUsersGridScreenshot in user_access_capture.cpp), not through the view path: the grid is built from the server's published role->permission map, which needs ReadRolePermissions, and the generator's ordinary session is anonymous - so the view-path capture rendered 'No data' over an empty grid. AuthenticatedAttributeService supplies the administrator identity for these captures only. The member/role columns were additionally empty until a client fix the same day (ReadRoleMemberships did not fetch the rule type's chain, so no identity mapping rule read back); the tracked PNG postdates both, and a full dark pass on 2026-09-26 reproduced it pixel for pixel.",
       "captured": {
-        "commit": "fa6a7f4e4",
+        "commit": "aa97b6318",
         "platform": "macos",
         "dirty": false,
         "sha256": "d1f056e5d435a4aef183ba811d673702a49899fdd84e7ed41e8743f19cf4c7a7",
-        "last_rendered": "fa6a7f4e4"
+        "last_rendered": "aa97b6318"
       }
     },
     {
@@ -1801,11 +1801,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of users-admin.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "fa6a7f4e4",
+        "commit": "aa97b6318",
         "platform": "macos",
         "dirty": false,
         "sha256": "9b097195f1cef800bc4ec155d56bce138428d53f9ce34150862417dbb2d4940b",
-        "last_rendered": "fa6a7f4e4"
+        "last_rendered": "aa97b6318"
       }
     },
     {
@@ -2868,11 +2868,11 @@
       ],
       "notes": "The Users window (dev/users.md), which the page says only a ConfigureAdmin account can open. Since 2026-11-22 the row is the `users-grid` capture, driven as the fixture administrator through AuthenticatedAttributeService, and is back in current_generator_owned_subset. It was a `Users` view capture until then, and the view path runs the fixture's anonymous session, which may not read the role map, so every Roles cell read «Нет данных» — true of an anonymous reader and of no one the page addresses. The window itself renders this same UsersGridPanel (NodeTableController routes the Users folder to it), so the figure is the window. users-admin.png is now the same panel at a taller size; backlog 695 decides whether the manual keeps two names. The fixture's duplicate «root» account (USER.11) became «Инженер» the same day.",
       "captured": {
-        "commit": "fa6a7f4e4",
+        "commit": "aa97b6318",
         "platform": "macos",
         "dirty": false,
         "sha256": "e2d16cb5bdce01ceb90d0f7b138e6ef825e58b7be0c9f0333d79598309cfde78",
-        "last_rendered": "fa6a7f4e4"
+        "last_rendered": "aa97b6318"
       }
     },
     {
@@ -2884,11 +2884,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of users.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "fa6a7f4e4",
+        "commit": "aa97b6318",
         "platform": "macos",
         "dirty": false,
         "sha256": "fd213820dc5c11848d8c93fe24eb696eb4314b43ae6b2832b8ec316c6d55dfd7",
-        "last_rendered": "fa6a7f4e4"
+        "last_rendered": "aa97b6318"
       }
     },
     {
