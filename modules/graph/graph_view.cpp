@@ -8,6 +8,7 @@
 #include "common/formula_util.h"
 #include "controller/controller_delegate.h"
 #include "controller/selection_model.h"
+#include "graph/graph_empty_state.h"
 #include "graph/graph_export_table.h"
 #include "graph/graph_setup_dialog.h"
 #include "graph/graph_view_loader.h"
@@ -37,6 +38,7 @@ GraphView::~GraphView() = default;
 
 std::unique_ptr<UiView> GraphView::Init(const WindowDefinition& definition) {
   graph_ = new MetrixGraph(MetrixGraphContext{timed_data_service_, executor_});
+  empty_state_ = new GraphEmptyState{*graph_};
   // The graph is owned by the view widget, which the shell destroys before
   // this controller, so the handler never outlives `this`.
   graph_->working_changed_handler = [this] {
@@ -200,8 +202,16 @@ QSize GraphView::GetImageSize() const {
 }
 
 void GraphView::RenderImage(QPainter& painter) {
-  if (graph_)
-    graph_->render(&painter);
+  if (!graph_)
+    return;
+  // The hint tells an operator how to fill the graph on screen; a printed or
+  // saved picture of an empty graph should show the empty graph, not the hint.
+  const bool hint_shown = empty_state_ && !empty_state_->isHidden();
+  if (hint_shown)
+    empty_state_->hide();
+  graph_->render(&painter);
+  if (hint_shown)
+    empty_state_->show();
 }
 
 bool GraphView::SaveImage(const std::filesystem::path& path) {
@@ -278,8 +288,25 @@ bool GraphView::IsSeriesStepped() const {
 }
 
 void GraphView::NotifySeriesChanged() {
+  UpdateEmptyState();
   if (change_handler)
     change_handler();
+}
+
+bool GraphView::HasAnyLine() const {
+  return std::ranges::any_of(graph_->panes(), [](const GraphPane* pane) {
+    return !pane->plot().lines().empty();
+  });
+}
+
+void GraphView::UpdateEmptyState() {
+  if (!empty_state_)
+    return;
+  const bool empty = !HasAnyLine();
+  empty_state_->setVisible(empty);
+  // Panes created after the hint stack above it.
+  if (empty)
+    empty_state_->raise();
 }
 
 bool GraphView::FindColor(scada::aui::Color color) const {

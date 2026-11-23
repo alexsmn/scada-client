@@ -17,6 +17,7 @@
 #include <filesystem>
 #include <memory>
 
+class GraphEmptyState;
 class GraphExportTable;
 
 namespace scada {
@@ -95,6 +96,14 @@ class GraphView : protected ControllerContext,
   // wires SeriesModel::change_handler.
   void NotifySeriesChanged();
 
+  // True while some pane plots at least one line.
+  bool HasAnyLine() const;
+
+  // Shows the empty-state hint while nothing is plotted and hides it once a
+  // line is (backlog 1125). Every change of the lines ends in
+  // NotifySeriesChanged(), which calls this.
+  void UpdateEmptyState();
+
   MetrixGraph::MetrixLine* GetConfigurableLine() const;
 
   void ChooseLineColor();
@@ -125,6 +134,9 @@ class GraphView : protected ControllerContext,
   SelectionModel selection_{{timed_data_service_}};
 
   MetrixGraph* graph_ = nullptr;
+
+  // A child of |graph_|, which owns it.
+  GraphEmptyState* empty_state_ = nullptr;
 
   GraphRange prezoom_horizontal_range_;
 

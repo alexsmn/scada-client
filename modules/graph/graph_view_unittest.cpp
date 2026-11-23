@@ -21,9 +21,12 @@
 #include "common/test/scoped_temp_dir.h"
 #include "controller/window_info.h"
 #include "graph/graph_component.h"
+#include "graph/graph_empty_state.h"
 #include "scada/co_result.h"
 
 #include <QImage>
+#include <QPainter>
+#include <QPalette>
 #include <QSet>
 #include <QWidget>
 
@@ -139,6 +142,120 @@ TEST_F(GraphViewTest, SaveImageWritesThePictureAtItsOnScreenSize) {
     for (int x = 0; x < saved.width(); x += 4)
       colours.insert(saved.pixel(x, y));
   EXPECT_GT(colours.size(), 1);
+}
+
+// Backlog 1125: a graph that plots nothing says so and says how to fill it.
+// The Overview's dominant trend used to be two thirds of the workspace drawing
+// only a time axis.
+namespace {
+
+QWidget* FindEmptyState(QWidget& graph) {
+  return graph.findChild<QWidget*>(QStringLiteral("graphEmptyState"));
+}
+
+// True when some pixel of |image| is dominated by |channel| (0 red, 1 green,
+// 2 blue) — text drawn in that pure colour over black.
+bool HasPixelDominatedBy(const QImage& image, int channel) {
+  for (int y = 0; y < image.height(); ++y) {
+    for (int x = 0; x < image.width(); ++x) {
+      const QColor c = image.pixelColor(x, y);
+      const int v[] = {c.red(), c.green(), c.blue()};
+      if (v[channel] > 128 && v[(channel + 1) % 3] < 40 &&
+          v[(channel + 2) % 3] < 40)
+        return true;
+    }
+  }
+  return false;
+}
+
+}  // namespace
+
+TEST_F(GraphViewTest, EmptyGraphSaysHowToFillIt) {
+  auto& graph = *static_cast<QWidget*>(ui_view_.get());
+  QWidget* empty_state = FindEmptyState(graph);
+  ASSERT_THAT(empty_state, NotNull());
+  EXPECT_TRUE(empty_state->isVisibleTo(&graph));
+  EXPECT_FALSE(GraphEmptyState::TitleText().isEmpty());
+  EXPECT_FALSE(GraphEmptyState::HintText().isEmpty());
+  // It must not swallow the graph's own clicks and context menu.
+  EXPECT_TRUE(empty_state->testAttribute(Qt::WA_TransparentForMouseEvents));
+}
+
+TEST_F(GraphViewTest, EmptyStateGoesWithTheFirstLineAndReturnsWithoutIt) {
+  auto& graph = *static_cast<QWidget*>(ui_view_.get());
+  QWidget* empty_state = FindEmptyState(graph);
+  ASSERT_THAT(empty_state, NotNull());
+
+  graph_view_.AddContainedItem(kTestNodeId, 0);
+  EXPECT_FALSE(empty_state->isVisibleTo(&graph));
+
+  // Deleting the pane takes its line with it. (RemoveContainedItem would match
+  // by node id, which this fixture's formula lines do not resolve back to.)
+  auto* handler = graph_view_.GetCommandHandler(ID_GRAPH_DELETE_PANE);
+  ASSERT_THAT(handler, NotNull());
+  handler->ExecuteCommand(ID_GRAPH_DELETE_PANE);
+  EXPECT_TRUE(empty_state->isVisibleTo(&graph));
+}
+
+TEST_F(GraphViewTest, EmptyStateFollowsTheGraphsSize) {
+  auto& graph = *static_cast<QWidget*>(ui_view_.get());
+  graph.resize(400, 240);
+  graph.show();
+  QWidget* empty_state = FindEmptyState(graph);
+  ASSERT_THAT(empty_state, NotNull());
+  EXPECT_EQ(empty_state->geometry(), graph.rect());
+
+  graph.resize(500, 300);
+  EXPECT_EQ(empty_state->geometry(), graph.rect());
+}
+
+// Palette roles, not baked colours: the title takes WindowText and the hint
+// PlaceholderText, so both follow the theme.
+TEST_F(GraphViewTest, EmptyStatePaintsWithPaletteRoles) {
+  auto& graph = *static_cast<QWidget*>(ui_view_.get());
+  QWidget* empty_state = FindEmptyState(graph);
+  ASSERT_THAT(empty_state, NotNull());
+  empty_state->resize(600, 200);
+  QPalette palette = empty_state->palette();
+  palette.setColor(QPalette::WindowText, Qt::red);
+  palette.setColor(QPalette::PlaceholderText, Qt::green);
+  empty_state->setPalette(palette);
+
+  QImage image{empty_state->size(), QImage::Format_ARGB32_Premultiplied};
+  image.fill(Qt::black);
+  {
+    QPainter painter{&image};
+    empty_state->render(&painter, {}, {}, QWidget::DrawChildren);
+  }
+  EXPECT_TRUE(HasPixelDominatedBy(image, /*red=*/0));
+  EXPECT_TRUE(HasPixelDominatedBy(image, /*green=*/1));
+}
+
+// The hint is for the operator at the screen; a printed or saved picture of an
+// empty graph shows the graph alone, and the hint is back afterwards.
+TEST_F(GraphViewTest, PictureOfAnEmptyGraphLeavesTheHintOut) {
+  auto& graph = *static_cast<QWidget*>(ui_view_.get());
+  graph.resize(400, 240);
+  graph.show();
+  QWidget* empty_state = FindEmptyState(graph);
+  ASSERT_THAT(empty_state, NotNull());
+
+  auto render = [&] {
+    QImage image{graph.size(), QImage::Format_ARGB32_Premultiplied};
+    image.fill(Qt::transparent);
+    QPainter painter{&image};
+    graph_view_.RenderImage(painter);
+    return image;
+  };
+
+  const QImage with_hint_shown = render();
+  EXPECT_TRUE(empty_state->isVisibleTo(&graph));
+
+  empty_state->hide();
+  const QImage without_hint = render();
+  empty_state->show();
+
+  EXPECT_EQ(with_hint_shown, without_hint);
 }
 
 TEST_F(GraphViewTest, GraphSetupCommandRegistered) {

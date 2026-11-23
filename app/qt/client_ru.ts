@@ -841,6 +841,16 @@
         <source>To graph</source>
         <translation>На график</translation>
     </message>
+    <!-- modules/graph/graph_empty_state.cpp: the hint over a graph that
+         plots nothing yet (backlog 1125). -->
+    <message>
+        <source>No signals on the graph</source>
+        <translation>На графике нет сигналов</translation>
+    </message>
+    <message>
+        <source>Tick a signal in the Objects tree to plot it</source>
+        <translation>Отметьте сигнал флажком в дереве «Объекты»</translation>
+    </message>
     <!-- modules/inspector/qt/inspector_panel.cpp (event card) -->
     <message>
         <source>Acknowledged</source>

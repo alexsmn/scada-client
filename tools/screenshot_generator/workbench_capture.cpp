@@ -220,6 +220,13 @@ TEST_F(ScreenshotGenerator, CaptureOverviewPage) {
   qmain->show();
   scada::screenshot_generator::PumpEventLoopFor(std::chrono::milliseconds(500));
 
+  // The seeded trend plots nothing, so it must say how to fill it rather than
+  // publish two thirds of the hero as a bare time axis (backlog 1125).
+  auto* graph_empty_state =
+      qmain->findChild<QWidget*>(QStringLiteral("graphEmptyState"));
+  ASSERT_NE(graph_empty_state, nullptr);
+  EXPECT_TRUE(graph_empty_state->isVisible());
+
   // The landing's Inspector is a pane like any other, so with nothing selected
   // it renders its "select an item" placeholder — which published the whole
   // right-hand third of the hero as an empty column. Make the selection the
