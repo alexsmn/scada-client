@@ -41,6 +41,9 @@ class StatusBarModelImpl final : public StatusBarModel {
   // Supplies the per-severity alarm counts surfaced via GetSeverityCount().
   void SetSeverityCountProvider(SeverityCountProvider provider);
 
+  // Supplies the unread-critical count surfaced via GetUnackedCriticalCount().
+  void SetUnackedCriticalCountProvider(AlarmCountProvider provider);
+
   void NotifyPanesChanged(int index, int count = 1);
 
   // StatusBarModel
@@ -51,6 +54,7 @@ class StatusBarModelImpl final : public StatusBarModel {
   virtual bool IsPaneHiddenWhenEmpty(int index) const override;
   virtual int GetAlarmCount() const override;
   virtual int GetSeverityCount(SeverityLevel level) const override;
+  virtual int GetUnackedCriticalCount() const override;
   [[nodiscard]] virtual boost::signals2::scoped_connection
   SubscribePanesChanged(const PanesChangedCallback& callback) override;
 
@@ -58,6 +62,7 @@ class StatusBarModelImpl final : public StatusBarModel {
   std::vector<StatusPane> panes_;
   AlarmCountProvider alarm_count_provider_;
   SeverityCountProvider severity_count_provider_;
+  AlarmCountProvider unacked_critical_count_provider_;
 
   boost::signals2::signal<void(int, int)> panes_changed_signal_;
 };

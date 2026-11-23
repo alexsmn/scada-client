@@ -46,6 +46,10 @@ class EventStatusProvider final : private EventObserver {
   // the live severity KPI tiles.
   int GetSeverityCount(scada::aui::SeverityLevel level) const;
 
+  // Number of critical alarms nobody has acknowledged, standing or cleared,
+  // for the escalation ladder's annunciator (backlog 1117).
+  int GetUnackedCriticalCount() const;
+
  private:
   // EventObserver
   void OnEvents(std::span<const scada::Event* const> events) override;

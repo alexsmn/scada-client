@@ -18,4 +18,4 @@ class MockStatusBarModel : public StatusBarModel {
               (override));
 };
 
-}  // namespace aui
+}  // namespace scada::aui

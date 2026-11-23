@@ -52,6 +52,10 @@ int EventStatusProvider::GetSeverityCount(
   return 0;
 }
 
+int EventStatusProvider::GetUnackedCriticalCount() const {
+  return GetTileCounts().unacknowledged_critical;
+}
+
 std::u16string EventStatusProvider::GetPanelFilterText() const {
   // The events panel's threshold, which hides rows from that panel only
   // (backlog 889); the fetcher behind the top-bar tiles is never narrowed.

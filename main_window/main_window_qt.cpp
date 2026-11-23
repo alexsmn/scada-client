@@ -339,7 +339,9 @@ void MainWindow::CreateContextBar() {
                 scada::aui::SeverityLevel::kCritical),
             .warning = status_bar_model_->GetSeverityCount(
                 scada::aui::SeverityLevel::kWarning),
-            .unacknowledged = status_bar_model_->GetAlarmCount()};
+            .unacknowledged = status_bar_model_->GetAlarmCount(),
+            .unacknowledged_critical =
+                status_bar_model_->GetUnackedCriticalCount()};
       },
       [this](const QString& initial_text) { ShowCommandPalette(initial_text); },
       this);

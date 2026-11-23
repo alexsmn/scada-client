@@ -36,6 +36,10 @@ std::shared_ptr<scada::aui::StatusBarModel> StatusBarModelBuilder::Build() {
   model->SetSeverityCountProvider(std::bind_front(
       &EventStatusProvider::GetSeverityCount, event_status_provider));
 
+  // Unread criticals, for the annunciator rung beside the tiles (backlog 1117).
+  model->SetUnackedCriticalCountProvider(std::bind_front(
+      &EventStatusProvider::GetUnackedCriticalCount, event_status_provider));
+
   event_status_provider->Init([model, panel_filter_pane_index] {
     model->NotifyPanesChanged(panel_filter_pane_index);
   });

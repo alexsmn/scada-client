@@ -1037,7 +1037,7 @@
       ],
       "notes": "The Audit log view: the event journal scoped to the AuditEventType subtree (see client/modules/events/audit_events.h). Admin-gated. The capture demonstrates the filter rather than asserting it - the fixture seeds 13 events of which 4 carry audit types, and only those 4 appear. Acknowledgement chrome is deliberately absent (no unacknowledged-only toggle, no Acknowledge-all footer): an audit entry records that something happened, and there is nothing to acknowledge. The refused call renders in the warning band, which is the row an operator is looking for. NOT published. It used to wait for a Windows regeneration, which was retired on 2026-09-12 (either host may render this gallery), so publishing it is now a manual-figure decision rather than a pipeline step (backlog 734). Published 2026-11-22 on dev/users.md (every Qt view gets a manual figure).",
       "captured": {
-        "commit": "1a80b55ed",
+        "commit": "72dedb188",
         "platform": "macos",
         "dirty": false,
         "sha256": "f78b502f7774658208d1a2dec313b6416b9874c0c7e1229c79dc4450995103df",
@@ -1611,7 +1611,7 @@
       ],
       "notes": "Current-events panel (the docked Event window, EventView with is_panel=true) — the unacked-only surface, as distinct from the EventJournal history in events-log.png. Renders the fixture's two pending alarms (ids 1008/1009, acknowledged:false); every other fixture event defaults to acked and is deliberately absent. Untagged until 2026-08-01, so the managed-image gate skipped it and the on-disk render sat stale from before those pending alarms existed — showing a header row over an empty body. min_rows:2 on the fixture spec now fails the capture if the unacked path stops delivering. Published 2026-11-22 on client/events.md (every Qt view gets a manual figure).",
       "captured": {
-        "commit": "1a80b55ed",
+        "commit": "72dedb188",
         "platform": "macos",
         "dirty": false,
         "sha256": "fbd5ec0f1b04a7495086c35b527ec6798063894fa4c4c9cf0f10920edca7e57d",

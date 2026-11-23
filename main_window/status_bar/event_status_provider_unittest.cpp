@@ -126,4 +126,32 @@ TEST_F(EventStatusTileCountsTest, CountsFallAsAlarmsAreAcknowledged) {
                 .critical = 0, .warning = 1, .unacknowledged = 1}));
 }
 
+// ISA-18.2 states in the counts (backlog 1117): an acknowledged critical
+// still standing stays in the Critical tile but is no longer unread, and one
+// that cleared unread has left the tile but still annunciates. The main window
+// rebuilds the counts from the status-bar model, so the unread-critical count
+// is its own accessor.
+TEST_F(EventStatusTileCountsTest, AcknowledgedStandingAndClearedUnreadCount) {
+  scada::Event standing;
+  standing.event_id = 1;
+  standing.severity = scada::kSeverityCritical;
+  standing.source_node_id = scada::NodeId{7, 1};
+  standing.condition_id = standing.source_node_id;
+  standing.active = true;
+  standing.acked = true;
+  node_event_provider_.current_events_.emplace(1, standing);
+
+  scada::Event cleared = standing;
+  cleared.event_id = 2;
+  cleared.source_node_id = cleared.condition_id = scada::NodeId{8, 1};
+  cleared.active = false;
+  cleared.acked = false;
+  node_event_provider_.current_events_.emplace(2, cleared);
+
+  EXPECT_EQ(provider_.GetSeverityCount(scada::aui::SeverityLevel::kCritical),
+            1);
+  EXPECT_EQ(provider_.GetAlarmCount(), 1);
+  EXPECT_EQ(provider_.GetUnackedCriticalCount(), 1);
+}
+
 }  // namespace

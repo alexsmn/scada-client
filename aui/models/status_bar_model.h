@@ -42,6 +42,11 @@ class StatusBarModel {
   // KPI tiles. Refreshed with the panes; default 0 for models without alarms.
   virtual int GetSeverityCount(SeverityLevel level) const { return 0; }
 
+  // Count of critical alarms nobody has acknowledged, standing or cleared: the
+  // escalation ladder's annunciator rung. Not the critical severity count,
+  // which counts standing alarms whether read or not (backlog 1117).
+  virtual int GetUnackedCriticalCount() const { return 0; }
+
   // Notifies after the text of |count| panes starting at |index| changed.
   [[nodiscard]] virtual boost::signals2::scoped_connection
   SubscribePanesChanged(const PanesChangedCallback& callback) = 0;

@@ -20,6 +20,11 @@ void StatusBarModelImpl::SetSeverityCountProvider(
   severity_count_provider_ = std::move(provider);
 }
 
+void StatusBarModelImpl::SetUnackedCriticalCountProvider(
+    AlarmCountProvider provider) {
+  unacked_critical_count_provider_ = std::move(provider);
+}
+
 int StatusBarModelImpl::GetPaneCount() const {
   return static_cast<int>(panes_.size());
 }
@@ -48,6 +53,11 @@ int StatusBarModelImpl::GetAlarmCount() const {
 
 int StatusBarModelImpl::GetSeverityCount(SeverityLevel level) const {
   return severity_count_provider_ ? severity_count_provider_(level) : 0;
+}
+
+int StatusBarModelImpl::GetUnackedCriticalCount() const {
+  return unacked_critical_count_provider_ ? unacked_critical_count_provider_()
+                                          : 0;
 }
 
 boost::signals2::scoped_connection StatusBarModelImpl::SubscribePanesChanged(

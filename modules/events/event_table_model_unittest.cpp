@@ -1,5 +1,7 @@
 #include "events/event_table_model.h"
+
 #include "aui/translation.h"
+#include "events/alarm_state.h"
 
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
@@ -403,6 +405,47 @@ class EventJournalAlarmSurfaceTest : public EventTableModelTest {
     return -1;
   }
 };
+
+// ISA-18.2's three alarm-list states on the events panel (backlog 1117): an
+// acknowledged Condition still standing keeps its row — no pending dot, no
+// fill, its state spelled out — instead of leaving the panel the moment it was
+// acknowledged; one that cleared unread is drawn plain with its dot.
+TEST_F(EventJournalAlarmSurfaceTest, ConditionRowsShowTheirAlarmState) {
+  scada::Event& first = FirstEvent();
+  first.severity = scada::kSeverityCritical;
+  first.condition_id = first.source_node_id;
+  first.active = true;
+  Init();
+
+  EXPECT_EQ(CellText(EventColumnState),
+            events::AlarmStateLabel(events::AlarmState::kUnackedActive));
+  EXPECT_EQ(CellBackground(),
+            BackgroundFor(scada::aui::EventBackground::kCritical));
+  const int rows = event_table_model_->GetRowCount();
+
+  first.acked = true;
+  first.acknowledged_time = scada::Now();
+  const scada::Event* updated[] = {&first};
+  event_observer_->OnEvents(updated);
+
+  ASSERT_EQ(event_table_model_->GetRowCount(), rows);
+  EXPECT_EQ(&event_table_model_->event_at(0), &first);
+  EXPECT_FALSE(event_table_model_->IsRowPending(0));
+  EXPECT_EQ(CellText(EventColumnState),
+            events::AlarmStateLabel(events::AlarmState::kAckedActive));
+  EXPECT_NE(CellBackground(),
+            BackgroundFor(scada::aui::EventBackground::kCritical));
+
+  first.acked = false;
+  first.acknowledged_time = {};
+  first.active = false;
+  event_observer_->OnEvents(updated);
+  EXPECT_TRUE(event_table_model_->IsRowPending(0));
+  EXPECT_EQ(CellText(EventColumnState),
+            events::AlarmStateLabel(events::AlarmState::kUnackedReturned));
+  EXPECT_NE(CellBackground(),
+            BackgroundFor(scada::aui::EventBackground::kCritical));
+}
 
 // A client-side error is an alarm like any other: `LocalEvents::ReportEvent`
 // maps `SEV_ERROR` onto `scada::kSeverityCritical`, the journal bands on
