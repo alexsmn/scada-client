@@ -19,10 +19,12 @@
 #include "scada/qualifier.h"
 #include "timed_data/timed_data_spec.h"
 
+#include <QFont>
 #include <QFrame>
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QPalette>
 #include <QPointer>
 #include <QPushButton>
 #include <QScrollArea>
@@ -64,9 +66,13 @@ QWidget* KeyValueRow(const QString& key,
   auto* key_label = new QLabel{key};
   key_label->setStyleSheet(
       QStringLiteral("color:%1;").arg(tokens.fg_subtle.name()));
+  // Weight through the font and colour through the inherited palette, not a
+  // stylesheet: a stylesheet colour would override the palette, and the
+  // breached limit row recolours this label through its palette.
   auto* value_label = new QLabel;
-  value_label->setStyleSheet(
-      QStringLiteral("color:%1;font-weight:600;").arg(tokens.fg.name()));
+  QFont value_font = value_label->font();
+  value_font.setWeight(QFont::DemiBold);
+  value_label->setFont(value_font);
   value_label->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
   layout->addWidget(key_label);
   layout->addStretch(1);
@@ -116,6 +122,7 @@ std::vector<InspectorLimitRow> MakeLimitRows(const NodeRef& node,
     rows.push_back(
         {.label = Tr(label),
          .value = QString::fromStdU16String(FormatValue(node, value, {}, 0)),
+         .band = limit_band,
          .breached = band == limit_band});
   };
   add("HiHi", hihi, LimitBand::kHiHi);
@@ -125,7 +132,82 @@ std::vector<InspectorLimitRow> MakeLimitRows(const NodeRef& node,
   return rows;
 }
 
+// Paints `widget`'s text in `color` through its palette, or with no colour
+// returns it to the palette it inherits. Through QPalette rather than a
+// stylesheet (client/CLAUDE.md "UX design system").
+void SetTextColor(QWidget& widget, const std::optional<QColor>& color) {
+  if (!color) {
+    // A palette with nothing resolved: the widget inherits every role again.
+    widget.setPalette(QPalette{});
+    return;
+  }
+  QPalette palette = widget.palette();
+  palette.setColor(QPalette::WindowText, *color);
+  palette.setColor(QPalette::Text, *color);
+  widget.setPalette(palette);
+}
+
+// The solid severity colour for a value sitting in `band`, or nullopt inside
+// the normal band.
+std::optional<QColor> LimitBreachColor(LimitBand band) {
+  const std::optional<scada::aui::Color> color =
+      scada::aui::SeverityColor(LimitBreachSeverity(band));
+  if (!color)
+    return std::nullopt;
+  return color->qcolor();
+}
+
+// The readout's font: the widget's own font, half again as large and bold,
+// rather than a hard-coded pixel size.
+QFont ReadoutFont(QFont font) {
+  constexpr double kReadoutScale = 1.5;
+  if (font.pointSizeF() > 0)
+    font.setPointSizeF(font.pointSizeF() * kReadoutScale);
+  else if (font.pixelSize() > 0)
+    font.setPixelSize(static_cast<int>(font.pixelSize() * kReadoutScale));
+  font.setWeight(QFont::Bold);
+  return font;
+}
+
 }  // namespace
+
+scada::aui::SeverityLevel LimitBreachSeverity(LimitBand band) {
+  switch (band) {
+    case LimitBand::kHi:
+    case LimitBand::kLo:
+      return scada::aui::SeverityLevel::kWarning;
+    case LimitBand::kHiHi:
+    case LimitBand::kLoLo:
+      return scada::aui::SeverityLevel::kCritical;
+    case LimitBand::kNormal:
+      break;
+  }
+  return scada::aui::SeverityLevel::kNone;
+}
+
+QString LimitBreachText(LimitBand band) {
+  switch (band) {
+    case LimitBand::kHi:
+      return Tr("Above limit");
+    case LimitBand::kLo:
+      return Tr("Below limit");
+    case LimitBand::kHiHi:
+      return Tr("Above alarm limit");
+    case LimitBand::kLoLo:
+      return Tr("Below alarm limit");
+    case LimitBand::kNormal:
+      break;
+  }
+  return {};
+}
+
+LimitBand BreachedLimitBand(const std::vector<InspectorLimitRow>& limits) {
+  for (const InspectorLimitRow& limit : limits) {
+    if (limit.breached)
+      return limit.band;
+  }
+  return LimitBand::kNormal;
+}
 
 InspectorQualityBand InspectorQualityBandFor(
     const scada::Qualifier& qualifier) {
@@ -220,19 +302,39 @@ QWidget* InspectorPanel::BuildElementView() {
 
   // State hero: big value + quality pill.
   auto* hero = new QFrame;
+  hero->setObjectName(QStringLiteral("inspectorElementHero"));
+  // Scoped to the frame itself, as the event hero's is: unscoped, the border
+  // rule cascaded onto the child labels and boxed the readout on its own.
   hero->setStyleSheet(
-      QStringLiteral("background:%1;border:1px solid %2;border-radius:6px;")
-          .arg(tokens.surface_muted.name(), tokens.border.name()));
+      QStringLiteral("#inspectorElementHero{background:%1;border:1px solid %2;"
+                     "border-radius:6px;}")
+          .arg(tokens.surface_muted.name(),
+               // HexArgb: the border token is translucent, and name()'s
+               // default HexRgb drops the alpha and draws it opaque black.
+               tokens.border.name(QColor::HexArgb)));
   auto* hero_layout = new QHBoxLayout{hero};
   hero_layout->setContentsMargins(14, 12, 14, 12);
+  // The readout and, under it, the out-of-limit badge. Both take the breached
+  // band's severity colour through their palettes (principles §2: an
+  // out-of-limit value recolours), and the badge says the breach in words and
+  // an arrow, so colour is never the only signal (§5).
+  auto* readout = new QVBoxLayout;
+  readout->setContentsMargins(0, 0, 0, 0);
+  readout->setSpacing(2);
   value_ = new QLabel;
   value_->setObjectName(QStringLiteral("inspectorValue"));
-  value_->setStyleSheet(
-      QStringLiteral("color:%1;font-size:20px;font-weight:700;")
-          .arg(tokens.fg.name()));
+  value_->setFont(ReadoutFont(value_->font()));
+  readout->addWidget(value_);
+  limit_badge_ = new QLabel;
+  limit_badge_->setObjectName(QStringLiteral("inspectorLimitBadge"));
+  QFont badge_font = limit_badge_->font();
+  badge_font.setWeight(QFont::DemiBold);
+  limit_badge_->setFont(badge_font);
+  limit_badge_->setVisible(false);
+  readout->addWidget(limit_badge_);
   quality_ = new QLabel;
   quality_->setObjectName(QStringLiteral("qualityPill"));
-  hero_layout->addWidget(value_);
+  hero_layout->addLayout(readout);
   hero_layout->addStretch(1);
   hero_layout->addWidget(quality_);
   layout->addWidget(hero);
@@ -328,7 +430,10 @@ QWidget* InspectorPanel::BuildEventView() {
   hero->setStyleSheet(
       QStringLiteral("#inspectorEventHero{background:%1;border:1px solid %2;"
                      "border-radius:6px;}")
-          .arg(tokens.surface_muted.name(), tokens.border.name()));
+          .arg(tokens.surface_muted.name(),
+               // HexArgb: the border token is translucent, and name()'s
+               // default HexRgb drops the alpha and draws it opaque black.
+               tokens.border.name(QColor::HexArgb)));
   auto* hero_layout = new QVBoxLayout{hero};
   hero_layout->setContentsMargins(14, 12, 14, 12);
   hero_layout->setSpacing(8);
@@ -739,6 +844,24 @@ void InspectorPanel::ShowElement(const InspectorElementView& element) {
   value_->setText(element.value_text.isEmpty() ? QStringLiteral("—")
                                                : element.value_text);
 
+  // An out-of-limit readout recolours in the breached band's own severity --
+  // amber for Hi/Lo, red for HiHi/LoLo -- and the badge names the breach. The
+  // quality pill is independent: an out-of-limit value can be perfectly good
+  // data, and quality says only that.
+  const LimitBand breach = BreachedLimitBand(element.limits);
+  const std::optional<QColor> breach_color = LimitBreachColor(breach);
+  SetTextColor(*value_, breach_color);
+  SetTextColor(*limit_badge_, breach_color);
+  if (breach_color) {
+    const bool above = breach == LimitBand::kHi || breach == LimitBand::kHiHi;
+    limit_badge_->setText(
+        (above ? QStringLiteral("▲ ") : QStringLiteral("▼ ")) +
+        LimitBreachText(breach));
+  } else {
+    limit_badge_->clear();
+  }
+  limit_badge_->setVisible(breach_color.has_value());
+
   // Three bands, three readings. kUnknown is deliberately neutral rather than
   // alarming: nothing is wrong with the process, the client simply has no
   // reading — but it must not borrow the good band's colour or wording.
@@ -797,15 +920,18 @@ void InspectorPanel::ShowLimits(const std::vector<InspectorLimitRow>& limits) {
   for (const InspectorLimitRow& limit : limits) {
     QLabel* value_label = nullptr;
     QWidget* row = KeyValueRow(limit.label, &value_label, tokens);
-    // The breached band explains the value's colour, so it is named by its own
-    // object name as well as coloured — colour is never the only signal.
+    // The breached band explains the value's colour, so it takes the same
+    // severity colour as the readout -- the band's own, not a blanket red --
+    // and the badge above says the breach in words.
     value_label->setObjectName(limit.breached
                                    ? QStringLiteral("inspectorLimitBreached")
                                    : QStringLiteral("inspectorLimitValue"));
     value_label->setText(limit.value);
     if (limit.breached) {
-      value_label->setStyleSheet(
-          QStringLiteral("color:%1;font-weight:700;").arg(tokens.bad.name()));
+      SetTextColor(*value_label, LimitBreachColor(limit.band));
+      QFont font = value_label->font();
+      font.setWeight(QFont::Bold);
+      value_label->setFont(font);
     }
     layout->addWidget(row);
   }

@@ -1,6 +1,8 @@
 #include "inspector/qt/inspector_panel.h"
 
 #include "aui/color.h"
+#include "aui/qt/theme_qt.h"
+#include "aui/severity_colors.h"
 #include "aui/test/app_environment.h"
 #include "aui/translation.h"
 #include "base/utf_convert.h"
@@ -15,6 +17,7 @@
 
 #include <gtest/gtest.h>
 
+#include <QFrame>
 #include <QLabel>
 #include <QPushButton>
 #include <QStackedWidget>
@@ -146,6 +149,7 @@ TEST_F(InspectorPanelTest, LimitRowsMarkTheBreachedBand) {
           {.label = QStringLiteral("HiHi"), .value = QStringLiteral("11.5")},
           {.label = QStringLiteral("Hi"),
            .value = QStringLiteral("10.8"),
+           .band = LimitBand::kHi,
            .breached = true}}});
 
   auto* limits = panel.findChild<QWidget*>(QStringLiteral("inspectorLimits"));
@@ -163,6 +167,169 @@ TEST_F(InspectorPanelTest, LimitRowsMarkTheBreachedBand) {
       panel.findChildren<QLabel*>(QStringLiteral("inspectorLimitValue"));
   ASSERT_EQ(plain.size(), 1);
   EXPECT_EQ(plain.front()->text(), QStringLiteral("11.5"));
+}
+
+// Backlog 1116: a Hi/Lo breach is a warning and HiHi/LoLo an alarm, so the
+// breach takes the band's own severity rather than a blanket critical red.
+TEST(LimitBreachTest, SeverityFollowsTheBand) {
+  using scada::aui::SeverityLevel;
+  EXPECT_EQ(LimitBreachSeverity(LimitBand::kNormal), SeverityLevel::kNone);
+  EXPECT_EQ(LimitBreachSeverity(LimitBand::kHi), SeverityLevel::kWarning);
+  EXPECT_EQ(LimitBreachSeverity(LimitBand::kLo), SeverityLevel::kWarning);
+  EXPECT_EQ(LimitBreachSeverity(LimitBand::kHiHi), SeverityLevel::kCritical);
+  EXPECT_EQ(LimitBreachSeverity(LimitBand::kLoLo), SeverityLevel::kCritical);
+}
+
+// Every breach has words of its own (the non-colour cue); the normal band none.
+TEST(LimitBreachTest, EveryBreachIsNamedInWords) {
+  EXPECT_TRUE(LimitBreachText(LimitBand::kNormal).isEmpty());
+  const QString hi = LimitBreachText(LimitBand::kHi);
+  const QString lo = LimitBreachText(LimitBand::kLo);
+  const QString hihi = LimitBreachText(LimitBand::kHiHi);
+  const QString lolo = LimitBreachText(LimitBand::kLoLo);
+  for (const QString& text : {hi, lo, hihi, lolo})
+    EXPECT_FALSE(text.isEmpty());
+  EXPECT_NE(hi, lo);
+  EXPECT_NE(hi, hihi);
+  EXPECT_NE(lo, lolo);
+  EXPECT_NE(hihi, lolo);
+}
+
+TEST(LimitBreachTest, BreachedBandIsTheBreachedRows) {
+  EXPECT_EQ(BreachedLimitBand({}), LimitBand::kNormal);
+  EXPECT_EQ(
+      BreachedLimitBand({{.band = LimitBand::kHiHi}, {.band = LimitBand::kHi}}),
+      LimitBand::kNormal);
+  EXPECT_EQ(BreachedLimitBand({{.band = LimitBand::kHiHi},
+                               {.band = LimitBand::kLo, .breached = true}}),
+            LimitBand::kLo);
+}
+
+QColor SeverityQColor(scada::aui::SeverityLevel level) {
+  return scada::aui::SeverityColor(level)->qcolor();
+}
+
+// An element card for a value breaching `band`, with all four limits shown.
+InspectorElementView BreachingElement(LimitBand band) {
+  const auto row = [band](const char* label, LimitBand row_band) {
+    return InspectorLimitRow{.label = QString::fromLatin1(label),
+                             .value = QString::fromLatin1(label),
+                             .band = row_band,
+                             .breached = row_band == band};
+  };
+  return InspectorElementView{
+      .title = QStringLiteral("Ua"),
+      .value_text = QStringLiteral("10.9"),
+      .quality = InspectorQualityBand::kGood,
+      .limits = {row("HiHi", LimitBand::kHiHi), row("Hi", LimitBand::kHi),
+                 row("Lo", LimitBand::kLo), row("LoLo", LimitBand::kLoLo)}};
+}
+
+// Backlog 1116: above Hi the readout, the badge and the breached limit all
+// read amber (warning), and the badge says so in words -- not the critical red
+// the limit used to take whatever the band, and not a plain readout.
+TEST_F(InspectorPanelTest, HiBreachReadsAsAWarning) {
+  InspectorPanel panel{InspectorPanelContext{}};
+  panel.ShowElement(BreachingElement(LimitBand::kHi));
+
+  const QColor warning = SeverityQColor(scada::aui::SeverityLevel::kWarning);
+  ASSERT_NE(warning, SeverityQColor(scada::aui::SeverityLevel::kCritical));
+
+  auto* value = panel.findChild<QLabel*>(QStringLiteral("inspectorValue"));
+  ASSERT_NE(value, nullptr);
+  EXPECT_EQ(value->palette().color(QPalette::WindowText), warning);
+
+  auto* badge = panel.findChild<QLabel*>(QStringLiteral("inspectorLimitBadge"));
+  ASSERT_NE(badge, nullptr);
+  EXPECT_FALSE(badge->isHidden());
+  EXPECT_TRUE(badge->text().contains(LimitBreachText(LimitBand::kHi)));
+  EXPECT_EQ(badge->palette().color(QPalette::WindowText), warning);
+
+  auto breached =
+      panel.findChildren<QLabel*>(QStringLiteral("inspectorLimitBreached"));
+  ASSERT_EQ(breached.size(), 1);
+  EXPECT_EQ(breached.front()->text(), QStringLiteral("Hi"));
+  EXPECT_EQ(breached.front()->palette().color(QPalette::WindowText), warning);
+  // Coloured through the palette: a stylesheet colour is what the UX rules
+  // forbid, and it would override the palette anyway.
+  EXPECT_TRUE(breached.front()->styleSheet().isEmpty());
+  EXPECT_TRUE(value->styleSheet().isEmpty());
+}
+
+TEST_F(InspectorPanelTest, LoBreachSaysBelowLimit) {
+  InspectorPanel panel{InspectorPanelContext{}};
+  panel.ShowElement(BreachingElement(LimitBand::kLo));
+
+  auto* badge = panel.findChild<QLabel*>(QStringLiteral("inspectorLimitBadge"));
+  ASSERT_NE(badge, nullptr);
+  EXPECT_TRUE(badge->text().contains(LimitBreachText(LimitBand::kLo)));
+  EXPECT_EQ(badge->palette().color(QPalette::WindowText),
+            SeverityQColor(scada::aui::SeverityLevel::kWarning));
+}
+
+// Above HiHi the same three cues read in the critical colour.
+TEST_F(InspectorPanelTest, HiHiBreachReadsAsCritical) {
+  InspectorPanel panel{InspectorPanelContext{}};
+  panel.ShowElement(BreachingElement(LimitBand::kHiHi));
+
+  const QColor critical = SeverityQColor(scada::aui::SeverityLevel::kCritical);
+  auto* value = panel.findChild<QLabel*>(QStringLiteral("inspectorValue"));
+  ASSERT_NE(value, nullptr);
+  EXPECT_EQ(value->palette().color(QPalette::WindowText), critical);
+
+  auto* badge = panel.findChild<QLabel*>(QStringLiteral("inspectorLimitBadge"));
+  ASSERT_NE(badge, nullptr);
+  EXPECT_TRUE(badge->text().contains(LimitBreachText(LimitBand::kHiHi)));
+  EXPECT_EQ(badge->palette().color(QPalette::WindowText), critical);
+
+  auto breached =
+      panel.findChildren<QLabel*>(QStringLiteral("inspectorLimitBreached"));
+  ASSERT_EQ(breached.size(), 1);
+  EXPECT_EQ(breached.front()->palette().color(QPalette::WindowText), critical);
+}
+
+// Back inside the limits, the badge goes and the readout returns to the
+// inherited text colour.
+TEST_F(InspectorPanelTest, ReturnToNormalClearsTheBreach) {
+  InspectorPanel panel{InspectorPanelContext{}};
+  auto* value = panel.findChild<QLabel*>(QStringLiteral("inspectorValue"));
+  ASSERT_NE(value, nullptr);
+  const QColor normal = value->palette().color(QPalette::WindowText);
+
+  panel.ShowElement(BreachingElement(LimitBand::kHiHi));
+  panel.ShowElement(BreachingElement(LimitBand::kNormal));
+
+  EXPECT_EQ(value->palette().color(QPalette::WindowText), normal);
+  auto* badge = panel.findChild<QLabel*>(QStringLiteral("inspectorLimitBadge"));
+  ASSERT_NE(badge, nullptr);
+  EXPECT_TRUE(badge->isHidden());
+  EXPECT_TRUE(
+      panel.findChildren<QLabel*>(QStringLiteral("inspectorLimitBreached"))
+          .isEmpty());
+}
+
+// The hero frame's border must not cascade onto its labels: unscoped, it drew a
+// box round the readout alone, and would box the breach badge too.
+TEST_F(InspectorPanelTest, HeroFrameStyleIsScopedToTheFrame) {
+  InspectorPanel panel{InspectorPanelContext{}};
+  auto* hero = panel.findChild<QFrame*>(QStringLiteral("inspectorElementHero"));
+  ASSERT_NE(hero, nullptr);
+  EXPECT_TRUE(
+      hero->styleSheet().startsWith(QStringLiteral("#inspectorElementHero{")));
+}
+
+// The hero borders' token is translucent; named without its alpha it drew an
+// opaque black frame in the light theme (docs/client/ux/design-language.md:
+// a token carrying an alpha must be named HexArgb).
+TEST_F(InspectorPanelTest, HeroBordersKeepTheTokensAlpha) {
+  InspectorPanel panel{InspectorPanelContext{}};
+  const QString border =
+      scada::aui::ActiveThemeTokens().border.name(QColor::HexArgb);
+  for (const char* name : {"inspectorElementHero", "inspectorEventHero"}) {
+    auto* hero = panel.findChild<QFrame*>(QString::fromLatin1(name));
+    ASSERT_NE(hero, nullptr) << name;
+    EXPECT_TRUE(hero->styleSheet().contains(border)) << name;
+  }
 }
 
 // A node with no configured bands renders no limits block at all rather than

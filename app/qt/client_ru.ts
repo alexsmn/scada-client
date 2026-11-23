@@ -639,6 +639,24 @@
         <source>No data</source>
         <translation>Нет данных</translation>
     </message>
+    <!-- modules/inspector: the out-of-limit badge under the readout (1116).
+         Hi/Lo are the warning limits, HiHi/LoLo the alarm ones. -->
+    <message>
+        <source>Above limit</source>
+        <translation>Выше уставки</translation>
+    </message>
+    <message>
+        <source>Below limit</source>
+        <translation>Ниже уставки</translation>
+    </message>
+    <message>
+        <source>Above alarm limit</source>
+        <translation>Выше аварийной уставки</translation>
+    </message>
+    <message>
+        <source>Below alarm limit</source>
+        <translation>Ниже аварийной уставки</translation>
+    </message>
     <!-- main_menu / modules/modus: Settings-menu entries. -->
     <message>
         <source>Language</source>

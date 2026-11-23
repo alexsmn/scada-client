@@ -50,8 +50,9 @@ void SaveInspectorScreenshot(const ScreenshotSpec& spec) {
   // A representative analog signal selection: a live value with its configured
   // limit bands, currently above the Hi warning limit — so the capture shows
   // both the Measurements limits block and the marked breach that explains the
-  // value's colouring. The control action is disabled with its reason, which
-  // documents the disabled affordance.
+  // value's colouring: an amber (warning) readout with its «Выше уставки»
+  // badge. The control action is disabled with its reason, which documents the
+  // disabled affordance.
   InspectorPanel panel{InspectorPanelContext{}};
   panel.ShowElement(InspectorElementView{
       .title = QStringLiteral("Напряжение Ua"),
@@ -62,12 +63,19 @@ void SaveInspectorScreenshot(const ScreenshotSpec& spec) {
       // The band labels go through Translate() exactly as the live panel does
       // (ShowElement takes them already rendered), so the capture shows the
       // shipped Russian wording rather than the English keys.
-      .limits = {{.label = Tr("HiHi"), .value = QStringLiteral("11,5")},
+      .limits = {{.label = Tr("HiHi"),
+                  .value = QStringLiteral("11,5"),
+                  .band = LimitBand::kHiHi},
                  {.label = Tr("Hi"),
                   .value = QStringLiteral("10,8"),
+                  .band = LimitBand::kHi,
                   .breached = true},
-                 {.label = Tr("Lo"), .value = QStringLiteral("9,5")},
-                 {.label = Tr("LoLo"), .value = QStringLiteral("9,0")}},
+                 {.label = Tr("Lo"),
+                  .value = QStringLiteral("9,5"),
+                  .band = LimitBand::kLo},
+                 {.label = Tr("LoLo"),
+                  .value = QStringLiteral("9,0"),
+                  .band = LimitBand::kLoLo}},
       .controllable = false,
       .control_reason = Tr("The signal has no output channel")});
   SaveScreenshot(&panel, spec);

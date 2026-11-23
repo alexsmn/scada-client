@@ -1,5 +1,7 @@
 #pragma once
 
+#include "modules/inspector/limit_band.h"
+
 #include <QColor>
 #include <QIcon>
 #include <QString>
@@ -15,6 +17,9 @@ class DataValue;
 class NodeId;
 class Qualifier;
 }  // namespace scada
+namespace scada::aui {
+enum class SeverityLevel;
+}  // namespace scada::aui
 class NodeRef;
 class SelectionModel;
 class TimedDataSpec;
@@ -44,10 +49,29 @@ struct InspectorLimitRow {
   QString label;
   // The limit, formatted with the node's own value format.
   QString value;
+  // Which band this row is the limit of. A breached row takes this band's own
+  // severity (amber for Hi/Lo, red for HiHi/LoLo), and so do the readout and
+  // the breach badge above it.
+  LimitBand band = LimitBand::kNormal;
   // Whether the current value sits in this band — the row the operator needs
   // to see when a value is coloured.
   bool breached = false;
 };
+
+// The alarm severity of a value sitting in `band`: a warning for Hi/Lo,
+// critical for HiHi/LoLo, none inside the normal band. The same coarse levels
+// the event journal colours by, so a limit breach reads in the one severity
+// ramp (docs/client/ux/principles.md §5).
+scada::aui::SeverityLevel LimitBreachSeverity(LimitBand band);
+
+// The breach badge's words for `band` («Выше уставки», «Ниже аварийной
+// уставки», …), already translated; empty inside the normal band. The badge is
+// the breach's non-colour cue (principles §5).
+QString LimitBreachText(LimitBand band);
+
+// The band the readout is out of, read off the rows: the breached row's band,
+// or kNormal when no row is breached.
+LimitBand BreachedLimitBand(const std::vector<InspectorLimitRow>& limits);
 
 // One step of the selected event's lifecycle in the alarm card's History
 // section.
@@ -263,6 +287,8 @@ class InspectorPanel : public QWidget {
   QLabel* subtitle_ = nullptr;
   QLabel* value_ = nullptr;
   QLabel* quality_ = nullptr;
+  // The out-of-limit badge under the readout; hidden inside the normal band.
+  QLabel* limit_badge_ = nullptr;
   QLabel* updated_ = nullptr;
   QPushButton* control_ = nullptr;
   // Describes what the Control button does. Hidden while control is
