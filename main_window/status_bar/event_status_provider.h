@@ -7,7 +7,6 @@
 
 #include <boost/signals2/connection.hpp>
 #include <functional>
-#include <optional>
 #include <string>
 
 class LocalEvents;
@@ -29,8 +28,12 @@ class EventStatusProvider final : private EventObserver {
 
   void Init(const ChangeNotifier& change_notifier);
 
-  std::u16string GetEventCountText() const;
-  std::u16string GetSeverityText() const;
+  // The events panel's minimum-severity filter, as a reminder that the panel
+  // hides rows ("Panel filter: severity >= N"). Empty when the panel shows
+  // every event, so the status strip says nothing about an unset filter.
+  // Alarm counts are not here: they live once, in the top bar's tiles
+  // (principles §8).
+  std::u16string GetPanelFilterText() const;
 
   // The KPI severity tile counts for the current alarm set — the single
   // aggregation the accessors below are views onto.
@@ -43,16 +46,7 @@ class EventStatusProvider final : private EventObserver {
   // the live severity KPI tiles.
   int GetSeverityCount(scada::aui::SeverityLevel level) const;
 
-  // The worst active (unacknowledged) alarm, as a label and a colour from the
-  // severity single source. Both are empty when nothing is asserted — a calm
-  // status strip says nothing rather than saying "normal".
-  std::u16string GetHighestSeverityText() const;
-  std::optional<scada::aui::Color> GetHighestSeverityColor() const;
-
  private:
-  // Highest severity among the currently unacknowledged alarms, or kNone.
-  scada::aui::SeverityLevel HighestUnackedLevel() const;
-
   // EventObserver
   void OnEvents(std::span<const scada::Event* const> events) override;
 

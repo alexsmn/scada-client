@@ -2681,18 +2681,11 @@ Try again? Choose No to continue without the server copy.</source>
              survive translation intact. -->
         <translation>Сервер: {} мс</translation>
     </message>
-    <!-- Status strip: event pane (main_window/status_bar). -->
+    <!-- Status strip: the events panel's severity filter, shown only while set
+         (main_window/status_bar/event_status_provider.cpp). -->
     <message>
-        <source>Events: {}</source>
-        <translation>События: {}</translation>
-    </message>
-    <message>
-        <source>No events</source>
-        <translation>Нет событий</translation>
-    </message>
-    <message>
-        <source>Severity: {}</source>
-        <translation>Важность: {}</translation>
+        <source>Panel filter: severity ≥ {}</source>
+        <translation>Фильтр панели: важность ≥ {}</translation>
     </message>
     <!-- Workspace tab context menu (main_window/tab_popup_menu.h). Deliberately
          shorter than the Favourites menu's own "Добавить в избранное" — a tab

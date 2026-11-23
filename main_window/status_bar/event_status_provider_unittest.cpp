@@ -45,16 +45,31 @@ class EventStatusTileCountsTest : public ::testing::Test {
   EventStatusProvider provider_{node_event_provider_, local_events_, profile_};
 };
 
-// Backlog 889: «Важность: N» names the events panel's threshold, which hides
-// rows from that panel only. The fetcher is never narrowed by it, so the
-// counts beside it are not reduced either.
-TEST_F(EventStatusTileCountsTest, SeverityTextNamesThePanelThreshold) {
+// Backlog 889: the panel's threshold hides rows from that panel only. The
+// fetcher is never narrowed by it, so the counts behind the tiles are not
+// reduced either. Backlog 1122: it is worded as a filter, «Фильтр панели:
+// важность ≥ N», because the bare «Важность: N» read as a count.
+TEST_F(EventStatusTileCountsTest, PanelFilterTextNamesTheThreshold) {
   profile_.event_panel_severity_min = 500;
   AddAlarm(1, scada::kSeverityWarning - 1);
 
-  EXPECT_EQ(provider_.GetSeverityText(),
-            u16format(Translate("Severity: {}"), 500u));
+  EXPECT_EQ(provider_.GetPanelFilterText(),
+            u16format(Translate("Panel filter: severity ≥ {}"), 500u));
   EXPECT_EQ(provider_.GetAlarmCount(), 1);
+}
+
+// An unfiltered panel (the scale's floor matches every event) needs no
+// reminder, so the strip's cell is empty and hides (backlog 1122).
+TEST_F(EventStatusTileCountsTest, PanelFilterTextIsEmptyWhenUnset) {
+  profile_.event_panel_severity_min = scada::kSeverityMin;
+  AddAlarm(1, scada::kSeverityCritical);
+
+  EXPECT_EQ(provider_.GetPanelFilterText(), u"");
+}
+
+// The default profile is unfiltered.
+TEST_F(EventStatusTileCountsTest, PanelFilterTextIsEmptyByDefault) {
+  EXPECT_EQ(provider_.GetPanelFilterText(), u"");
 }
 
 TEST_F(EventStatusTileCountsTest, EmptyAlarmSetIsAllZero) {

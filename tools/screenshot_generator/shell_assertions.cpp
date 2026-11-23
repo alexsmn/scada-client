@@ -11,6 +11,7 @@
 
 #include "aui/translation.h"
 #include "authenticated_attribute_service.h"
+#include "base/u16format.h"
 #include "base/utf_convert.h"
 #include "common/format.h"
 #include "configuration/objects/visible_node_model.h"
@@ -31,6 +32,7 @@
 #include "null_task_manager.h"
 #include "profile/profile.h"
 #include "profile/window_definition.h"
+#include "scada/event.h"
 #include "scada/qualifier.h"
 #include "scada/standard_node_ids.h"
 #include "scada/status.h"
@@ -120,6 +122,79 @@ TEST_F(ScreenshotGenerator, StatusBarNamesTheSignedInUser) {
   }
   EXPECT_TRUE(found) << "no status-bar pane names the signed-in user "
                      << expected_user.toStdString();
+
+  MainWindow::SetHideForTesting(true);
+}
+
+namespace {
+
+// The texts of the status strip's visible, non-empty panes.
+std::vector<QString> VisibleStatusPaneTexts(const QStatusBar& status_bar) {
+  std::vector<QString> texts;
+  for (const QLabel* pane : status_bar.findChildren<QLabel*>()) {
+    if (pane->isVisible() && !pane->text().isEmpty())
+      texts.push_back(pane->text());
+  }
+  return texts;
+}
+
+// Shows a main window whose profile carries `severity_min` as the events
+// panel's threshold (on the 1-1000 scale), and returns its status strip.
+QStatusBar* ShowStatusStripWithPanelFilter(ClientApplication& app,
+                                           AnyExecutor& executor,
+                                           int severity_min) {
+  {
+    Profile profile;
+    Page page;
+    page.AddWindow(WindowDefinition{"Struct"});
+    profile.AddPage(page);
+    profile.data().as_object()["severityMin"] = severity_min;
+    profile.data().as_object()["severityScale"] = 1000;
+    scada::screenshot_generator::SaveSeedProfile(profile);
+  }
+
+  WaitForAwaitable(executor, app.Start());
+  if (!WaitForPendingNodeLoads(executor, app.node_service()))
+    return nullptr;
+
+  QMainWindow* qmain = ShowMainWindowForMenuCapture(app);
+  return qmain ? qmain->findChild<QStatusBar*>() : nullptr;
+}
+
+}  // namespace
+
+// Backlog 1122: the strip carries no alarm count and no highest severity --
+// they live once, in the top bar's tiles (principles §8) -- and the events
+// panel's threshold appears only while it hides rows, worded as a filter so
+// it cannot read as a count. An unfiltered panel leaves no cell behind.
+TEST_F(ScreenshotGenerator, StatusStripShowsNoPanelFilterWhenUnset) {
+  MainWindow::SetHideForTesting(false);
+
+  QStatusBar* status_bar = ShowStatusStripWithPanelFilter(
+      app_, executor_, static_cast<int>(scada::kSeverityMin));
+  ASSERT_NE(status_bar, nullptr);
+
+  const QString filter_prefix =
+      QString::fromStdU16String(Translate("Panel filter: severity ≥ {}"))
+          .section(u'{', 0, 0);
+  for (const QString& text : VisibleStatusPaneTexts(*status_bar)) {
+    EXPECT_FALSE(text.startsWith(filter_prefix))
+        << "unfiltered panel still shows " << text.toStdString();
+  }
+
+  MainWindow::SetHideForTesting(true);
+}
+
+TEST_F(ScreenshotGenerator, StatusStripRemindsOfAPanelFilter) {
+  MainWindow::SetHideForTesting(false);
+
+  QStatusBar* status_bar =
+      ShowStatusStripWithPanelFilter(app_, executor_, /*severity_min=*/500);
+  ASSERT_NE(status_bar, nullptr);
+
+  const QString expected = QString::fromStdU16String(
+      u16format(Translate("Panel filter: severity ≥ {}"), 500));
+  EXPECT_THAT(VisibleStatusPaneTexts(*status_bar), testing::Contains(expected));
 
   MainWindow::SetHideForTesting(true);
 }

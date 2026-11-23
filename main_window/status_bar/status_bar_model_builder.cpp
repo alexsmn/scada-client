@@ -12,50 +12,36 @@
 std::shared_ptr<scada::aui::StatusBarModel> StatusBarModelBuilder::Build() {
   auto model = std::make_shared<scada::aui::StatusBarModelImpl>();
 
-  // Event count and min severity.
+  // The events panel's minimum-severity filter, shown only while it hides
+  // rows. The strip carries no alarm count and no highest severity: those
+  // live once, in the top bar's tiles (principles §8; backlog 1122), and the
+  // strip is where I am, not what is wrong now (shell.md §2.7).
 
   auto event_status_provider = std::make_shared<EventStatusProvider>(
       node_event_provider_, local_events_, profile_);
 
-  int event_count_pane_index = model->AddPane(
-      {.text_provider = std::bind_front(&EventStatusProvider::GetEventCountText,
-                                        event_status_provider),
-       .size = 100});
-
-  int severity_pane_index = model->AddPane(
-      {.text_provider = std::bind_front(&EventStatusProvider::GetSeverityText,
-                                        event_status_provider),
-       .size = 100});
-
-  // Highest active alarm severity, coloured from the severity single source.
-  // Empty when nothing is asserted.
-  int highest_severity_pane_index = model->AddPane(
+  int panel_filter_pane_index = model->AddPane(
       {.text_provider = std::bind_front(
-           &EventStatusProvider::GetHighestSeverityText, event_status_provider),
-       .color_provider =
-           std::bind_front(&EventStatusProvider::GetHighestSeverityColor,
-                           event_status_provider),
-       .size = 130});
+           &EventStatusProvider::GetPanelFilterText, event_status_provider),
+       .size = 220,
+       // Empty unless the panel is filtered, so it must not shift the strip.
+       .hidden_when_empty = true});
 
   // The unacknowledged-alarm count for chrome that shows an unread badge (the
-  // activity rail); refreshed together with the panes below.
+  // activity rail).
   model->SetAlarmCountProvider(std::bind_front(
       &EventStatusProvider::GetAlarmCount, event_status_provider));
 
-  // Per-severity unacknowledged counts for the live KPI tiles.
+  // Per-severity unacknowledged counts for the live KPI tiles in the top bar.
   model->SetSeverityCountProvider(std::bind_front(
       &EventStatusProvider::GetSeverityCount, event_status_provider));
 
-  event_status_provider->Init([model, event_count_pane_index,
-                               severity_pane_index,
-                               highest_severity_pane_index] {
-    model->NotifyPanesChanged(event_count_pane_index);
-    model->NotifyPanesChanged(severity_pane_index);
-    model->NotifyPanesChanged(highest_severity_pane_index);
+  event_status_provider->Init([model, panel_filter_pane_index] {
+    model->NotifyPanesChanged(panel_filter_pane_index);
   });
 
-  // An armed frame capture. Placed before the user pane so it sits next to the
-  // alarm cells — it is a "something is running" state, not an identity.
+  // An armed frame capture. Placed before the user pane, at the strip's head —
+  // it is a "something is running" state, not an identity.
 
   auto capture_status_provider =
       std::make_shared<CaptureStatusProvider>(frame_capture_registry_);

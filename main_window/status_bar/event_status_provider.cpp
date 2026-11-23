@@ -8,9 +8,6 @@
 #include "profile/profile.h"
 #include "scada/event.h"
 
-#include <algorithm>
-#include <ranges>
-
 void EventStatusProvider::Init(const ChangeNotifier& change_notifier) {
   change_notifier_ = change_notifier;
 
@@ -24,14 +21,6 @@ void EventStatusProvider::Init(const ChangeNotifier& change_notifier) {
 
 EventStatusProvider::~EventStatusProvider() {
   node_event_provider_.RemoveObserver(*this);
-}
-
-std::u16string EventStatusProvider::GetEventCountText() const {
-  size_t event_count = node_event_provider_.unacked_events().size() +
-                       local_events_.events().size();
-
-  return event_count != 0 ? u16format(Translate("Events: {}"), event_count)
-                          : Translate("No events");
 }
 
 events::SeverityTileCounts EventStatusProvider::GetTileCounts() const {
@@ -63,30 +52,18 @@ int EventStatusProvider::GetSeverityCount(
   return 0;
 }
 
-std::u16string EventStatusProvider::GetSeverityText() const {
+std::u16string EventStatusProvider::GetPanelFilterText() const {
   // The events panel's threshold, which hides rows from that panel only
-  // (backlog 889); the fetcher behind the counts beside it is never narrowed.
-  return u16format(Translate("Severity: {}"),
-                   profile_.event_panel_severity_min);
-}
-
-scada::aui::SeverityLevel EventStatusProvider::HighestUnackedLevel() const {
-  scada::UInt32 highest = 0;
-  for (const scada::Event& event :
-       node_event_provider_.unacked_events() | std::views::values) {
-    highest = std::max(highest, event.severity);
+  // (backlog 889); the fetcher behind the top-bar tiles is never narrowed.
+  // Empty at the scale's floor, which matches every event: an unfiltered
+  // panel needs no reminder. Worded as a filter rather than «Важность: N»,
+  // which read as a count beside the alarm cells it used to sit next to
+  // (backlog 1122).
+  if (profile_.event_panel_severity_min <= scada::kSeverityMin) {
+    return {};
   }
-  return events::SeverityLevelForEvent(highest);
-}
-
-std::u16string EventStatusProvider::GetHighestSeverityText() const {
-  // Empty when calm: no active alarm, nothing to shout about.
-  return events::SeverityLevelLabel(HighestUnackedLevel());
-}
-
-std::optional<scada::aui::Color> EventStatusProvider::GetHighestSeverityColor()
-    const {
-  return scada::aui::SeverityColor(HighestUnackedLevel());
+  return u16format(Translate("Panel filter: severity ≥ {}"),
+                   profile_.event_panel_severity_min);
 }
 
 void EventStatusProvider::OnEvents(
