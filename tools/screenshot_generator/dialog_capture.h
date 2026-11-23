@@ -44,6 +44,9 @@ struct DialogEnvironment {
   // Accounts seeded into the login dialog's user combo, first entry
   // pre-selected. Comes from the fixture's `login_user_list`.
   std::vector<std::string> login_user_list;
+  // The account the fixture's session is signed in as. The control review
+  // names it as the operator the command is logged against.
+  scada::NodeId session_user_node_id;
   // The application's main window. The command palette is captured by firing
   // the window's own Ctrl-K shortcut, so it lists the commands the window has
   // registered — what an operator sees — rather than a list made up for the

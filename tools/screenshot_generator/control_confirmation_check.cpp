@@ -6,7 +6,6 @@
 #include "screenshot_wait.h"
 
 #include "app/client_application.h"
-#include "aui/translation.h"
 #include "base/utf_convert.h"
 #include "model/node_id_util.h"
 #include "modules/write/write_model.h"
@@ -31,7 +30,7 @@ using scada::screenshot_generator::WaitForPendingNodeLoads;
 }  // namespace
 
 // A control review is worth capturing only if it reviews a change. The
-// prompt quotes the point's present reading beside the value the command
+// review quotes the point's present reading beside the value the command
 // would write, and both are rendered by the item's own formatting — so a
 // commanded value that formats to the present reading produces a dialog
 // showing «Вкл» commanding «Вкл», which is a well-formed PNG of an operator
@@ -87,30 +86,18 @@ TEST_F(ScreenshotGenerator, ControlConfirmationsReviewARealChange) {
     scada::screenshot_generator::PumpEventLoopFor(
         std::chrono::milliseconds{500});
 
-    const std::u16string message =
-        model->GetConfirmationMessage(commanded, second_stage);
-    // Read the two quoted values back out of the real prompt rather than
-    // recomputing them: that is what the reader of the manual sees, and it
-    // keeps the check working whichever way WriteModel formats a value.
-    auto quoted_after = [&message](std::u16string_view label) {
-      const size_t at = message.find(label);
-      if (at == std::u16string::npos)
-        return std::u16string();
-      const size_t from = at + label.size();
-      const size_t eol = message.find(u'\n', from);
-      std::u16string text =
-          message.substr(from, eol == std::u16string::npos ? eol : eol - from);
-      const size_t first = text.find_first_not_of(u" \t");
-      return first == std::u16string::npos ? std::u16string()
-                                           : text.substr(first);
-    };
-    const std::u16string present = quoted_after(Translate("Present:"));
-    const std::u16string command = quoted_after(Translate("Command:"));
+    // Read the two values out of the real review rather than recomputing
+    // them: that is what the reader of the manual sees, and it keeps the
+    // check working whichever way WriteModel formats a value.
+    const ControlReview review =
+        model->GetControlReview(commanded, second_stage, scada::Now());
+    const std::u16string& present = review.present;
+    const std::u16string& command = review.command;
 
     EXPECT_FALSE(present.empty())
-        << "the prompt quotes no present reading, so the value never arrived";
+        << "the review quotes no present reading, so the value never arrived";
     EXPECT_FALSE(command.empty())
-        << "the prompt quotes no commanded value, so command_value does not "
+        << "the review quotes no commanded value, so command_value does not "
            "render for this item";
     EXPECT_NE(present, command)
         << "the capture reviews a no-op: the command formats to the reading "

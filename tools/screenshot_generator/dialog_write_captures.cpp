@@ -12,6 +12,7 @@
 
 #include "aui/qt/dialog_service_impl_qt.h"
 #include "modules/limits/limit_dialog.h"
+#include "modules/write/qt/control_review_dialog.h"
 #include "modules/write/write_dialog.h"
 #include "modules/write/write_model.h"
 #include "node_service/node_ref.h"
@@ -24,6 +25,7 @@
 #include <gtest/gtest.h>
 
 #include <chrono>
+#include <ctime>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -87,11 +89,12 @@ bool HasWriteServices(const DialogCaptureContext& context, const char* what) {
 
 // Both WriteDialog variants, which differ only in `manual`.
 //
-// Which of the two dialogs the model builds is the node's doing, not the kind's:
-// WriteModel asks TimedDataSpec::logical(), so an AnalogItemType node renders
-// the editable numeric field with its engineering unit (the ti-* captures) and
-// a DiscreteItemType node renders the read-only two-state combo labelled from
-// its HasTsFormat target (the ts-* captures, whose specs name TS.201/TS.202).
+// Which of the two dialogs the model builds is the node's doing, not the
+// kind's: WriteModel asks TimedDataSpec::logical(), so an AnalogItemType node
+// renders the editable numeric field with its engineering unit (the ti-*
+// captures) and a DiscreteItemType node renders the read-only two-state combo
+// labelled from its HasTsFormat target (the ts-* captures, whose specs name
+// TS.201/TS.202).
 bool CaptureWriteDialog(const DialogCaptureContext& context, bool manual) {
   const char* const what = manual ? "Manual WriteDialog" : "Remote WriteDialog";
   if (!HasWriteServices(context, what))
@@ -147,15 +150,16 @@ bool CaptureRemoteWriteDialog(const DialogCaptureContext& context) {
 }
 
 bool CaptureControlConfirmationDialog(const DialogCaptureContext& context) {
-  // The operator's review of a control command. The prompt itself comes from a
-  // real WriteModel over a fixture item, so the capture cannot drift from the
-  // shipped wording; it is then shown through the ordinary DialogService
-  // question box, which is what StartWriting() does.
+  // The operator's review of a control command (backlog 1118). The review
+  // itself comes from a real WriteModel over a fixture item, so the capture
+  // cannot drift from the shipped wording; it is then shown through the real
+  // ControlReviewDialog, which is what the Control dialog installs as the
+  // model's reviewer.
   //
-  // `spec.second_stage` picks which of the two prompts is rendered: the
-  // ordinary one-shot review, or the operate stage of a select-before-operate
-  // command, which GetConfirmationMessage prefixes with "the remote device is
-  // ready". The select is not actually issued in either case — a Control-object
+  // `spec.second_stage` picks which of the two reviews is rendered: the
+  // ordinary one-stage review, or the operate stage of a select-before-operate
+  // command, whose stage row says the device is selected and waiting. The
+  // select is not actually issued in either case — a Control-object
   // Call needs a server, and this capture is of the review step, not of the
   // two-phase exchange (that is covered by the iec104 tier E2E and by
   // WriteModelTest.TwoStagedControlSelectsConfirmsThenOperates).
@@ -174,12 +178,21 @@ bool CaptureControlConfirmationDialog(const DialogCaptureContext& context) {
   // without this the review renders a plausible no-op instead of failing.
   WarmUpCurrentValue(*env.timed_data_service, context.node_id);
 
+  // The review names the operator, so the account the fixture's session is
+  // signed in as has to be resident too — otherwise the row reads «анонимно».
+  const scada::NodeId operator_id = env.session_user_node_id;
+  if (!FetchDialogNodeResident(env.executor, *env.node_service, operator_id)) {
+    ADD_FAILURE() << kWhat << ": fixture session user not found";
+    return false;
+  }
+
   auto model = std::make_shared<WriteModel>(
       WriteContext{.executor_ = env.executor,
                    .timed_data_service_ = *env.timed_data_service,
                    .node_id_ = context.node_id,
                    .profile_ = *env.profile,
-                   .manual_ = false});
+                   .manual_ = false,
+                   .user_id_ = operator_id});
   model->set_dialog_service(&context.dialog_service);
 
   // Default: a value clear of the analog fixture reading, so Present and
@@ -198,10 +211,10 @@ bool CaptureControlConfirmationDialog(const DialogCaptureContext& context) {
   if (model->discrete()) {
     // `commanded` is the item's raw value, which is not an index into
     // GetDiscreteStates(): WriteModel labels a state by inverting the raw value
-    // (`get_or(true) ? 0 : 1`), so raw 0 is the *second* label. Compare in index
-    // space, or the check silently passes the very case it exists to catch —
-    // raw 0 against a present index of 1 looks like a difference and renders
-    // «Вкл» commanding «Вкл».
+    // (`get_or(true) ? 0 : 1`), so raw 0 is the *second* label. Compare in
+    // index space, or the check silently passes the very case it exists to
+    // catch — raw 0 against a present index of 1 looks like a difference and
+    // renders «Вкл» commanding «Вкл».
     if (commanded != 0 && commanded != 1) {
       ADD_FAILURE() << kWhat
                     << ": a discrete item's command_value is a raw state, so "
@@ -218,13 +231,24 @@ bool CaptureControlConfirmationDialog(const DialogCaptureContext& context) {
     }
   }
 
-  const std::u16string message =
-      model->GetConfirmationMessage(commanded, context.spec.second_stage);
+  // A fixed time, so the capture does not change on every render. Built from
+  // the local wall clock because the review shows local time: a UTC instant
+  // would read 14:05 on one host and 06:05 on another.
+  std::tm local_time{};
+  local_time.tm_year = 2026 - 1900;
+  local_time.tm_mon = 10;  // November
+  local_time.tm_mday = 23;
+  local_time.tm_hour = 14;
+  local_time.tm_min = 5;
+  local_time.tm_isdst = -1;
+  const scada::Time review_time = std::chrono::time_point_cast<scada::Duration>(
+      std::chrono::system_clock::from_time_t(std::mktime(&local_time)));
+  ControlReview review = model->GetControlReview(
+      commanded, context.spec.second_stage, review_time);
   auto lifetime = StartAwaitable(
       env.executor,
-      context.dialog_service.RunMessageBox(
-          message, model->GetSourceTitle(),
-          MessageBoxMode::QuestionYesNoDefaultNo));
+      RunControlReviewDialog(context.dialog_service.GetParentWidget(),
+                             std::move(review)));
   PumpEventsFor(std::chrono::milliseconds{200});
   return GrabThenAwait(context, lifetime);
 }

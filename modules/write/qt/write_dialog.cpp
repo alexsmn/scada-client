@@ -2,6 +2,7 @@
 
 #include "aui/qt/dialog_service_impl_qt.h"
 #include "aui/qt/dialog_util.h"
+#include "modules/write/qt/control_review_dialog.h"
 #include "modules/write/write_model.h"
 #include "ui_write_dialog.h"
 
@@ -52,6 +53,13 @@ WriteDialog::WriteDialog(std::shared_ptr<WriteModel> model, QWidget* parent)
 
   dialog_service_.parent_widget = this;
   model_->set_dialog_service(&dialog_service_);
+  // The second stage of the two-stage confirm: a review naming the object,
+  // the values, the operator, the time and the stage (backlog 1118). A plain
+  // lambda returning a coroutine that takes everything by value — the frame
+  // outlives this call.
+  model_->set_control_reviewer([this](ControlReview review) {
+    return RunControlReviewDialog(this, std::move(review));
+  });
 
   setWindowTitle(QString::fromStdU16String(model_->GetWindowTitle()));
 
@@ -70,6 +78,8 @@ WriteDialog::WriteDialog(std::shared_ptr<WriteModel> model, QWidget* parent)
   ui.lockCheckBox->setChecked(model_->locked());
   ui.conditionHeaderLabel->setVisible(model_->has_condition());
   ui.conditionLabel->setVisible(model_->has_condition());
+  // A blocked command names its interlock, which can be a long formula.
+  ui.conditionLabel->setWordWrap(true);
 
   if (model_->discrete()) {
     for (const auto& state : model_->GetDiscreteStates())
@@ -134,8 +144,8 @@ void WriteDialog::SeedValueControl() {
 }
 
 void WriteDialog::UpdateCondition() {
-  ui.conditionLabel->setText(model_->IsConditionOk() ? tr("Satisfied")
-                                                     : tr("Unsatisfied"));
+  ui.conditionLabel->setText(
+      QString::fromStdU16String(model_->GetConditionText()));
   ui.buttonBox->button(QDialogButtonBox::Ok)
       ->setEnabled(model_->IsConditionOk());
 }

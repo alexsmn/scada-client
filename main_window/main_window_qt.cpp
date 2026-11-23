@@ -41,6 +41,7 @@
 #include "main_window/view_manager.h"
 #include "main_window/window_definition_builder.h"
 #include "modules/inspector/limit_band.h"
+#include "modules/write/control_confirmation.h"
 #include "modules/write/write_availability.h"
 #include "node_service/node_util.h"
 #include "profile/profile.h"
@@ -657,9 +658,14 @@ void MainWindow::CreateInspectorPanel() {
           [this](const NodeRef& node) {
             const bool scada_server =
                 !session_service_ || session_service_->IsScada();
-            return QString::fromStdU16String(Translate(
-                ControlFlowText(IsTwoStagedControl(node, scada_server),
-                                profile_.control_confirmation)));
+            // The confirmation the dialog will actually apply: a stored "off"
+            // counts only for an administrator (backlog 1118).
+            const bool confirmation = IsControlConfirmationRequired(
+                profile_.control_confirmation,
+                session_service_ &&
+                    CanSwitchOffControlConfirmation(*session_service_));
+            return QString::fromStdU16String(Translate(ControlFlowText(
+                IsTwoStagedControl(node, scada_server), confirmation)));
           },
       .on_acknowledge =
           [resolve_acknowledge] {

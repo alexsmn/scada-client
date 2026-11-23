@@ -26,6 +26,13 @@ struct WriteContext {
   // understands (docs/product/multi-server-and-distribution.md, "foreign
   // server" item 1).
   const bool scada_server_ = true;
+  // Whether the signed-in account may switch control confirmation off
+  // (`CanSwitchOffControlConfirmation`). False — the safe default — makes
+  // every command go through the review whatever the profile says.
+  const bool may_skip_confirmation_ = false;
+  // The signed-in account's user node, which the review names as the operator
+  // the command is logged against. Null for an anonymous session.
+  const scada::NodeId user_id_;
 };
 
 // The context is taken **by value**: this returns a lazy awaitable, and a

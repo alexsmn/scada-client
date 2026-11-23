@@ -8,6 +8,7 @@
 #include "controller/selection_model.h"
 #include "core/selection_command_context.h"
 #include "model/data_items_node_ids.h"
+#include "modules/write/control_confirmation.h"
 #include "modules/write/write_availability.h"
 #include "modules/write/write_dialog.h"
 #include "node_service/node_util.h"
@@ -44,15 +45,27 @@ WriteModule::WriteModule(WriteModuleContext&& context)
            [this](const SelectionCommandContext& context) {
              // `ExecuteWriteDialog` returns a lazy awaitable — spawn it
              // detached so the dialog actually opens.
-             CoSpawn(executor_,
-                     [this, &dialog_service = context.dialog_service,
-                      node_id = context.selection.node().node_id()]() {
-                       return ExecuteWriteDialog(
-                           dialog_service,
-                           WriteContext{executor_, timed_data_service_, node_id,
-                                        profile_, false, &local_events_,
-                                        session_service_.IsScada()});
-                     });
+             CoSpawn(executor_, [this, &dialog_service = context.dialog_service,
+                                 node_id =
+                                     context.selection.node().node_id()]() {
+               return ExecuteWriteDialog(
+                   dialog_service,
+                   WriteContext{
+                       .executor_ = executor_,
+                       .timed_data_service_ = timed_data_service_,
+                       .node_id_ = node_id,
+                       .profile_ = profile_,
+                       .manual_ = false,
+                       .local_events_ = &local_events_,
+                       .scada_server_ = session_service_.IsScada(),
+                       // Read when the dialog opens, so the review
+                       // follows the account signed in now.
+                       .may_skip_confirmation_ =
+                           CanSwitchOffControlConfirmation(session_service_),
+                       .user_id_ = session_service_.IsAnonymous()
+                                       ? scada::NodeId{}
+                                       : session_service_.GetUserId()});
+             });
            },
        // Both gates read the shared node rule (`GetWriteBlock`), which the
        // Inspector also uses to tell the operator why control is unavailable.

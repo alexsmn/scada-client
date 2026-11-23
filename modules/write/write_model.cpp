@@ -3,7 +3,9 @@
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
 #include "base/check.h"
+#include "base/format_time.h"
 #include "base/u16format.h"
+#include "base/utf_convert.h"
 #include "common/format.h"
 #include "common/formula_util.h"
 #include "events/local_event_util.h"
@@ -62,6 +64,11 @@ WriteModel::WriteModel(WriteContext&& context)
         spec_.node().service()->GetNode(device_id).StartFetch();
       }
     }
+
+    // The review names the operator; the status strip keeps the account's
+    // node fetched, so this is normally warm already.
+    if (!user_id_.is_null() && node.service())
+      node.service()->GetNode(user_id_).StartFetch();
   }
 }
 
@@ -226,6 +233,35 @@ bool WriteModel::IsConditionOk() const {
   return !value.qualifier.general_bad() && value.value.get_or(false);
 }
 
+std::u16string WriteModel::GetConditionText() const {
+  if (IsConditionOk())
+    return Translate("Satisfied");
+
+  // The condition's title is its formula with the operands' aliases
+  // (ExpressionTimedData::GetTitle), which is how the engineer configured the
+  // interlock — the one thing the operator needs to find what blocks the
+  // command.
+  const std::u16string interlock = condition_.GetTitle().text;
+  const std::u16string verdict = condition_.current().qualifier.general_bad()
+                                     ? Translate("Cannot be evaluated:")
+                                     : Translate("Not met:");
+  return interlock.empty() ? verdict : verdict + u' ' + interlock;
+}
+
+bool WriteModel::IsConfirmationRequired() const {
+  return !manual_ && IsControlConfirmationRequired(
+                         profile_.control_confirmation, may_skip_confirmation_);
+}
+
+std::u16string WriteModel::GetOperatorName() const {
+  const NodeRef& node = spec_.node();
+  if (user_id_.is_null() || !node || !node.service())
+    return Translate("anonymous");
+  const std::u16string name =
+      node.service()->GetNode(user_id_).display_name().text;
+  return name.empty() ? Translate("anonymous") : name;
+}
+
 void WriteModel::OnWriteComplete(const scada::Status& status) {
   // A Server from before 2.6 has no Control object, so it refuses the Select
   // as an unknown node before anything reaches the device. That is not the
@@ -321,63 +357,63 @@ void WriteModel::ReportSuccess() {
   ReportRequestResult(title, scada::StatusCode::Good, *local_events_, profile_);
 }
 
-std::u16string WriteModel::GetConfirmationMessage(double value,
-                                                  bool second_stage) const {
+ControlReview WriteModel::GetControlReview(double value,
+                                           bool second_stage,
+                                           scada::Time now) const {
   // Present the operator what the point reads now and what the command will
-  // make it, so an irreversible field action is reviewed — not just answered
-  // yes/no — before it is sent (principle §7 in docs/client/ux/principles.md).
-  // Formatted as in the dialog itself: this is the last screen before an
-  // irreversible command, so it must not drop the «?» of an invalid reading
-  // (backlog 908) or the letters of an offline or stale one (backlog 923).
-  const std::u16string present_str = GetCurrentValue(/*formatted=*/true);
-  const std::u16string command_str =
-      spec_.GetValueString(value, {}, ValueFormat{FORMAT_UNITS});
-
-  std::u16string message;
-  // A 2.5.7 Server accepts a select on a device that cannot select without
-  // contacting it (backlog 1034), so nothing is waiting: do not say it is.
-  if (second_stage && !(legacy_control_ && device_cannot_select_)) {
+  // make it, who it is logged against, when, and which stage this is, so an
+  // irreversible field action is reviewed — not just answered yes/no — before
+  // it is sent (principle §7 in docs/client/ux/principles.md, backlog 1118).
+  // The present reading is formatted as in the dialog itself: this is the last
+  // screen before an irreversible command, so it must not drop the «?» of an
+  // invalid reading (backlog 908) or the letters of an offline or stale one
+  // (backlog 923).
+  std::u16string stage;
+  if (!second_stage) {
+    stage = Translate(
+        "One stage: the command goes to the device as soon as you send it.");
+  } else if (legacy_control_ && device_cannot_select_) {
+    // A 2.5.7 Server accepts a select on a device that cannot select without
+    // contacting it (backlog 1034), so nothing is waiting: do not say it is.
+    stage = Translate(
+        "Stage 2 of 2: the command goes to the device as soon as you send "
+        "it.");
+  } else {
     // The operate stage of a select-before-operate command: the device has
-    // accepted the select and is waiting. This was a bare u"..." literal, so
-    // it could never be translated — it must go through Translate() like the
-    // rest of the review.
-    message += Translate("The remote device is ready to execute the command.");
-    message += u"\n\n";
+    // accepted the select and is waiting.
+    stage = Translate(
+        "Stage 2 of 2: the device has accepted the selection and is waiting "
+        "for the command.");
   }
-  message += spec_.GetTitle().text;
-  message += u"\n\n";
-  message += Translate("Present:");
-  message += u"  ";
-  message += present_str;
-  message += u'\n';
-  message += Translate("Command:");
-  message += u"  ";
-  message += command_str;
-  message += u"\n\n";
-  message += Translate(
-      "This control command is sent to physical equipment and cannot be "
-      "undone remotely. Send it?");
-  return message;
+
+  return ControlReview{
+      .title = GetWindowTitle(),
+      .object = spec_.GetTitle().text,
+      .present = GetCurrentValue(/*formatted=*/true),
+      .command = spec_.GetValueString(value, {}, ValueFormat{FORMAT_UNITS}),
+      .operator_name = GetOperatorName(),
+      .time = UtfConvert<char16_t>(
+          FormatTime(now, TIME_FORMAT_DATE | TIME_FORMAT_TIME)),
+      .stage = std::move(stage),
+      .warning = Translate("This control command is sent to physical "
+                           "equipment and cannot be undone remotely."),
+  };
 }
 
 void WriteModel::StartWriting(bool second_stage) {
-  if (!profile_.control_confirmation) {
+  if (!IsConfirmationRequired()) {
     StartWritingHelper();
     return;
   }
 
-  // Request confirmation from the user. The message/title are handed to the
-  // coroutine by value so they outlive the RunMessageBox prompt (see the
-  // ConfirmAndStartWritingAsync declaration).
-  CoSpawn(
-      executor_,
-      [executor = executor_, model = weak_from_this(),
-       dialog_service = dialog_service_, title = spec_.GetTitle().text,
-       message = GetConfirmationMessage(write_value_, second_stage)]() mutable {
-        return ConfirmAndStartWritingAsync(
-            std::move(executor), std::move(model), *dialog_service,
-            std::move(message), std::move(title));
-      });
+  // Ask the operator to review the command. The review and the reviewer are
+  // handed to the coroutine by value, so they outlive this call.
+  CoSpawn(executor_, [model = weak_from_this(), reviewer = control_reviewer_,
+                      review = GetControlReview(write_value_, second_stage,
+                                                scada::Now())]() mutable {
+    return ConfirmAndStartWritingAsync(std::move(model), std::move(reviewer),
+                                       std::move(review));
+  });
 }
 
 void WriteModel::StartWritingHelper() {
@@ -573,16 +609,17 @@ Awaitable<void> WriteModel::CompleteWriteAsync(AnyExecutor executor,
 }
 
 Awaitable<void> WriteModel::ConfirmAndStartWritingAsync(
-    AnyExecutor executor,
     std::weak_ptr<WriteModel> model,
-    DialogService& dialog_service,
-    std::u16string message,
-    std::u16string title) {
+    ControlReviewer reviewer,
+    ControlReview review) {
   try {
-    auto message_box_result = co_await dialog_service.RunMessageBox(
-        message, title, MessageBoxMode::QuestionYesNoDefaultNo);
+    // No reviewer declines: a command that needs review is never sent
+    // without one.
+    bool send = false;
+    if (reviewer)
+      send = co_await reviewer(std::move(review));
     if (auto model_ptr = model.lock()) {
-      if (message_box_result == MessageBoxResult::Yes) {
+      if (send) {
         model_ptr->StartWritingHelper();
       } else {
         model_ptr->CancelOutstandingSelect();

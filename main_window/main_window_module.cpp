@@ -32,6 +32,7 @@
 #include "main_window/status_bar/status_bar_model_builder.h"
 #include "main_window/window_definition_builder.h"
 #include "modules/node_properties/node_property_component.h"
+#include "modules/write/control_confirmation.h"
 #include "node_service/node_ref.h"
 #include "profile/profile.h"
 #include "resources/common_resources.h"
@@ -326,9 +327,30 @@ void RegisterMainWindowCommandActions(
   global_commands.AddCommand(MakeProfileOptionCommand(
       ID_HIDE_EVENTS, Translate("Hide Events on Acknowledge"), profile,
       &Profile::event_auto_hide));
-  global_commands.AddCommand(MakeProfileOptionCommand(
-      ID_WRITE_CONFIRMATION, Translate("Control Confirmation"), profile,
-      &Profile::control_confirmation));
+  // Only an administrator may switch control confirmation off (backlog 1118).
+  // For anyone else the toggle stays visible but disabled, ticked because
+  // confirmation applies to them whatever the profile holds, and says why —
+  // disable, don't hide (principle §7).
+  global_commands.AddCommand(
+      BasicCommand<GlobalCommandContext>{ID_WRITE_CONFIRMATION}
+          .set_title(Translate("Control Confirmation"))
+          .set_execute_handler(
+              [&profile, &session_service](const GlobalCommandContext&) {
+                if (CanSwitchOffControlConfirmation(session_service))
+                  profile.control_confirmation = !profile.control_confirmation;
+              })
+          .set_enabled_handler([&session_service](const GlobalCommandContext&) {
+            return CanSwitchOffControlConfirmation(session_service);
+          })
+          .set_checked_handler(
+              [&profile, &session_service](const GlobalCommandContext&) {
+                return IsControlConfirmationRequired(
+                    profile.control_confirmation,
+                    CanSwitchOffControlConfirmation(session_service));
+              })
+          .set_disabled_reason_handler([](const GlobalCommandContext&) {
+            return Translate(ControlConfirmationAdminOnlyText());
+          }));
   global_commands.AddCommand(MakeProfileOptionCommand(
       ID_OPT_SPEECH, Translate("Speech"), profile, &Profile::speech_enabled,
       [&speech_service] { return speech_service.is_ok(); }));

@@ -4,12 +4,15 @@
 
 #include "aui/dialog_service.h"
 #include "base/awaitable.h"
+#include "modules/write/control_confirmation.h"
 #include "modules/write/write_dialog.h"
 #include "node_service/node_ref.h"
 #include "scada/co_result.h"
+#include "scada/date_time.h"
 #include "scada/status.h"
 #include "timed_data/timed_data_spec.h"
 
+#include <functional>
 #include <optional>
 #include <string_view>
 
@@ -33,6 +36,15 @@ class WriteModel : private WriteContext,
     dialog_service_ = dialog_service;
   }
 
+  // Shows `review` and answers whether the operator chose to send the
+  // command. The Qt dialog installs the review dialog; a test installs a
+  // recorder. Without one a command needing review is declined — never sent
+  // unreviewed.
+  using ControlReviewer = std::function<Awaitable<bool>(ControlReview review)>;
+  void set_control_reviewer(ControlReviewer reviewer) {
+    control_reviewer_ = std::move(reviewer);
+  }
+
   bool discrete() const { return discrete_; }
   // True when the operator is entering a value into the point by hand, false
   // when this is a command sent out to a device. The two read differently to
@@ -48,6 +60,19 @@ class WriteModel : private WriteContext,
   std::u16string GetCurrentValue(bool formatted) const;
   std::u16string GetStatusText() const;
   bool IsConditionOk() const;
+  // The condition row's text: «Satisfied», or — when the command is blocked —
+  // which interlock blocks it, by the condition's own formula, and whether it
+  // is not met or cannot be evaluated (backlog 1118). «Unsatisfied» alone left
+  // the operator to find the interlock in the configuration.
+  std::u16string GetConditionText() const;
+
+  // Whether a control command is reviewed before it is sent: the profile's
+  // switch, honoured only for an account that may switch it off
+  // (`IsControlConfirmationRequired`). Manual input is never reviewed.
+  bool IsConfirmationRequired() const;
+
+  // Who the command is logged against: the signed-in account's display name.
+  std::u16string GetOperatorName() const;
 
   std::vector<std::u16string> GetDiscreteStates() const;
   int GetCurrentDiscreteState() const;
@@ -66,14 +91,17 @@ class WriteModel : private WriteContext,
   // to spawn it on.
   void ReportInputError(std::u16string message);
 
-  // The review an operator answers before `value` is sent: the point's present
-  // reading, the commanded value, and an irreversibility warning.
-  // `second_stage` prefixes the operate half of a select-before-operate
-  // command, where the outstation is already selected and waiting.
+  // The review an operator answers before `value` is sent: the object, the
+  // point's present reading, the commanded value, the operator, the time
+  // `now`, the stage, and an irreversibility warning (principle §7).
+  // `second_stage` marks the operate half of a select-before-operate command,
+  // where the outstation is already selected and waiting.
   //
-  // Public so the documentation screenshot generator captures the real prompt
+  // Public so the documentation screenshot generator captures the real review
   // rather than a copy that can drift from it.
-  std::u16string GetConfirmationMessage(double value, bool second_stage) const;
+  ControlReview GetControlReview(double value,
+                                 bool second_stage,
+                                 scada::Time now) const;
 
   std::function<void()> current_change_handler;
   std::function<void()> condition_change_handler;
@@ -157,31 +185,29 @@ class WriteModel : private WriteContext,
   static Awaitable<void> CompleteWriteAsync(AnyExecutor executor,
                                             std::weak_ptr<WriteModel> model,
                                             scada::CoStatus operation);
-  // Owns `message`/`title` for the lifetime of the confirmation prompt: the
-  // RunMessageBox awaitable is created and awaited inside this coroutine, so
-  // the string_views it takes stay valid (a prompt created by the caller would
-  // bind views into caller locals that die before the lazy coroutine reads
-  // them).
+  // Shows `review` through `reviewer` and sends the command — or releases the
+  // selection — on the answer. Everything is by value: the frame outlives the
+  // CoSpawn call that starts it.
   static Awaitable<void> ConfirmAndStartWritingAsync(
-      AnyExecutor executor,
       std::weak_ptr<WriteModel> model,
-      DialogService& dialog_service,
-      std::u16string message,
-      std::u16string title);
+      ControlReviewer reviewer,
+      ControlReview review);
   static Awaitable<void> ReportWriteErrorAsync(
       AnyExecutor executor,
       std::function<void(bool ok)> completion_handler,
       DialogService& dialog_service,
       std::u16string message,
       std::u16string title);
-  // Owns `message`/`title` for the lifetime of the prompt, for the same reason
-  // ConfirmAndStartWritingAsync does. Unlike ReportWriteErrorAsync this
+  // Owns `message`/`title` for the lifetime of the prompt: the RunMessageBox
+  // awaitable is created and awaited inside this coroutine, so the
+  // string_views it takes stay valid. Unlike ReportWriteErrorAsync this
   // completes nothing when the box is dismissed — there is no write in flight.
   static Awaitable<void> ShowInputErrorAsync(DialogService& dialog_service,
                                              std::u16string message,
                                              std::u16string title);
 
   DialogService* dialog_service_ = nullptr;
+  ControlReviewer control_reviewer_;
 
   TimedDataSpec spec_;
   bool discrete_ = false;

@@ -1,8 +1,10 @@
 #include "modules/write/write_model.h"
 
 #include "base/async_completion.h"
+#include "base/format_time.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
+#include "base/utf_convert.h"
 #include "common/formula_util.h"
 #include "common/node_state.h"
 #include "events/local_events.h"
@@ -105,12 +107,46 @@ class RecordingDialogService : public DialogService {
   std::unique_ptr<scada::base::AsyncCompletion> message_box_completion_;
 };
 
+// Stands in for the Qt review dialog: records every review the model asks
+// for and answers it when the test says so.
+class RecordingReviewer {
+ public:
+  explicit RecordingReviewer(AnyExecutor executor)
+      : executor_{std::move(executor)} {}
+
+  // What WriteModel installs through set_control_reviewer. A plain lambda
+  // returning a coroutine that takes the review by value, as the real one is.
+  WriteModel::ControlReviewer AsReviewer() {
+    return [this](ControlReview review) { return Review(std::move(review)); };
+  }
+
+  void Complete(bool send) {
+    send_ = send;
+    completion_->Complete();
+  }
+
+  std::vector<ControlReview> reviews;
+
+ private:
+  Awaitable<bool> Review(ControlReview review) {
+    reviews.push_back(std::move(review));
+    completion_ = std::make_unique<scada::base::AsyncCompletion>(executor_);
+    co_await completion_->Wait();
+    co_return send_;
+  }
+
+  AnyExecutor executor_;
+  bool send_ = false;
+  std::unique_ptr<scada::base::AsyncCompletion> completion_;
+};
+
 class WriteModelTest : public Test {
  protected:
   WriteModelTest()
       : node_service_{scada::services{.attribute_service = &attribute_service_,
                                       .method_service = &method_service_}},
-        dialog_service_{executor_} {
+        dialog_service_{executor_},
+        reviewer_{executor_} {
     node_service_.Add(
         scada::NodeState{.node_id = kDataItemTypeId,
                          .node_class = scada::NodeClass::VariableType,
@@ -148,7 +184,9 @@ class WriteModelTest : public Test {
                           two_staged)
             .set_property(scada::data_items::id::DataItemType_Locked, false)
             .set_property(scada::data_items::id::DataItemType_Output,
-                          scada::String{output_formula}));
+                          scada::String{output_formula})
+            .set_property(scada::data_items::id::DataItemType_OutputCondition,
+                          scada::String{output_condition_}));
 
     // The item's Control object, which carries Select/Operate/Cancel. It has
     // to exist here because StaticNodeService::GetScadaNode answers an unknown
@@ -163,9 +201,16 @@ class WriteModelTest : public Test {
         .attributes = {.display_name = u"Control"}});
 
     auto model = std::make_shared<WriteModel>(WriteContext{
-        executor_, timed_data_service_, kDataItemId, profile_,
-        /*manual_=*/false, local_events ? local_events : &local_events_});
+        .executor_ = executor_,
+        .timed_data_service_ = timed_data_service_,
+        .node_id_ = kDataItemId,
+        .profile_ = profile_,
+        .manual_ = false,
+        .local_events_ = local_events ? local_events : &local_events_,
+        .may_skip_confirmation_ = may_skip_confirmation_,
+        .user_id_ = user_id_});
     model->set_dialog_service(&dialog_service_);
+    model->set_control_reviewer(reviewer_.AsReviewer());
     model->status_change_handler = [this] { ++status_changes_; };
     model->completion_handler = [this](bool ok) { completion_ = ok; };
     return model;
@@ -242,6 +287,15 @@ class WriteModelTest : public Test {
   Profile profile_;
   LocalEvents local_events_;
   RecordingDialogService dialog_service_;
+  RecordingReviewer reviewer_;
+  // The account's right to switch confirmation off. True by default so the
+  // cases that set `profile_.control_confirmation = false` to take the review
+  // out of the picture still can; the gate's own cases clear it.
+  bool may_skip_confirmation_ = true;
+  // The signed-in account's user node; null is an anonymous session.
+  scada::NodeId user_id_;
+  // The item's OutputCondition formula, the interlock; empty for none.
+  std::string output_condition_;
   int status_changes_ = 0;
   std::optional<bool> completion_;
   // Methods invoked on the Control object, in order, with their arguments.
@@ -317,8 +371,14 @@ TEST_F(WriteModelTest, AForeignServersVariableIsWrittenWithoutASelect) {
                       }));
 
   auto model = std::make_shared<WriteModel>(
-      WriteContext{executor_, timed_data_service_, kDataItemId, profile_,
-                   /*manual_=*/false, &local_events_, /*scada_server_=*/false});
+      WriteContext{.executor_ = executor_,
+                   .timed_data_service_ = timed_data_service_,
+                   .node_id_ = kDataItemId,
+                   .profile_ = profile_,
+                   .manual_ = false,
+                   .local_events_ = &local_events_,
+                   .scada_server_ = false,
+                   .may_skip_confirmation_ = may_skip_confirmation_});
   model->set_dialog_service(&dialog_service_);
   model->status_change_handler = [this] { ++status_changes_; };
   model->completion_handler = [this](bool ok) { completion_ = ok; };
@@ -353,16 +413,19 @@ TEST_F(WriteModelTest, TwoStagedControlSelectsConfirmsThenOperates) {
   ASSERT_EQ(called_arguments_.size(), 1u);
   ASSERT_EQ(called_arguments_[0].size(), 1u);
   EXPECT_DOUBLE_EQ(called_arguments_[0][0].get<double>(), 42.0);
-  ASSERT_THAT(dialog_service_.modes,
-              ElementsAre(MessageBoxMode::QuestionYesNoDefaultNo));
+  ASSERT_THAT(reviewer_.reviews, SizeIs(1));
+  EXPECT_TRUE(dialog_service_.modes.empty());
   EXPECT_FALSE(completion_.has_value());
 
-  // The prompt tells the operator the device is armed and waiting, which is
-  // only true because a select really did precede it.
-  EXPECT_NE(dialog_service_.messages.at(0).find(u"ready to execute"),
+  // The review tells the operator this is the operate stage and the device is
+  // armed and waiting, which is only true because a select really did precede
+  // it.
+  EXPECT_NE(reviewer_.reviews.at(0).stage.find(u"Stage 2 of 2"),
+            std::u16string::npos);
+  EXPECT_NE(reviewer_.reviews.at(0).stage.find(u"waiting"),
             std::u16string::npos);
 
-  dialog_service_.CompleteMessageBox(MessageBoxResult::Yes);
+  reviewer_.Complete(/*send=*/true);
   Drain(executor_);
 
   // Phase two: confirming operates on the selection already held.
@@ -400,10 +463,9 @@ TEST_F(WriteModelTest, DecliningTwoStagedControlCancelsTheSelection) {
 
   ASSERT_THAT(called_methods_,
               ElementsAre(scada::data_items::id::DataItemControlType_Select));
-  ASSERT_THAT(dialog_service_.modes,
-              ElementsAre(MessageBoxMode::QuestionYesNoDefaultNo));
+  ASSERT_THAT(reviewer_.reviews, SizeIs(1));
 
-  dialog_service_.CompleteMessageBox(MessageBoxResult::No);
+  reviewer_.Complete(/*send=*/false);
   Drain(executor_);
 
   // The selection is released and the operate is never sent.
@@ -412,9 +474,8 @@ TEST_F(WriteModelTest, DecliningTwoStagedControlCancelsTheSelection) {
                           scada::data_items::id::DataItemControlType_Cancel));
   EXPECT_EQ(completion_, false);
 
-  // No error box behind the one confirmation prompt...
-  EXPECT_THAT(dialog_service_.modes,
-              ElementsAre(MessageBoxMode::QuestionYesNoDefaultNo));
+  // No error box behind the one review...
+  EXPECT_TRUE(dialog_service_.modes.empty());
 
   // ...but the refusal is reported, naming the point, even though the
   // "report successful control" setting is off.
@@ -443,7 +504,7 @@ TEST_F(WriteModelTest, ReleasedOrNeverArmedSelectionReportsNothing) {
     auto model = CreateModel(/*two_staged=*/true);
     model->Write(42.0, /*lock=*/false);
     Drain(executor_);
-    dialog_service_.CompleteMessageBox(MessageBoxResult::No);
+    reviewer_.Complete(/*send=*/false);
     Drain(executor_);
 
     EXPECT_EQ(completion_, false);
@@ -536,12 +597,12 @@ TEST_F(WriteModelTest, ServerWithoutControlObjectSelectsByFlaggedWrite) {
   EXPECT_EQ(writes[0].node_id, kDataItemId);
   EXPECT_TRUE(writes[0].flags.select());
   EXPECT_DOUBLE_EQ(writes[0].value.get<double>(), 42.0);
-  ASSERT_THAT(dialog_service_.modes,
-              ElementsAre(MessageBoxMode::QuestionYesNoDefaultNo));
-  EXPECT_NE(dialog_service_.messages.at(0).find(u"ready to execute"),
+  ASSERT_THAT(reviewer_.reviews, SizeIs(1));
+  EXPECT_TRUE(dialog_service_.modes.empty());
+  EXPECT_NE(reviewer_.reviews.at(0).stage.find(u"waiting"),
             std::u16string::npos);
 
-  dialog_service_.CompleteMessageBox(MessageBoxResult::Yes);
+  reviewer_.Complete(/*send=*/true);
   Drain(executor_);
 
   // The operate is the unflagged write; no Operate call was sent to a Server
@@ -576,7 +637,7 @@ TEST_F(WriteModelTest, DecliningAfterAFlaggedSelectSendsNoCancel) {
   auto model = CreateModel(/*two_staged=*/true);
   model->Write(42.0, /*lock=*/false);
   Drain(executor_);
-  dialog_service_.CompleteMessageBox(MessageBoxResult::No);
+  reviewer_.Complete(/*send=*/false);
   Drain(executor_);
   model.reset();
   Drain(executor_);
@@ -675,15 +736,17 @@ TEST_F(WriteModelTest, DecliningAFlaggedSelectOnAModbusDeviceReportsNothing) {
   select_answer.Complete();
   Drain(executor_);
 
-  ASSERT_THAT(dialog_service_.modes,
-              ElementsAre(MessageBoxMode::QuestionYesNoDefaultNo));
-  EXPECT_EQ(dialog_service_.messages.at(0).find(u"ready to execute"),
+  ASSERT_THAT(reviewer_.reviews, SizeIs(1));
+  // Still the operate stage, but nothing is waiting.
+  EXPECT_NE(reviewer_.reviews.at(0).stage.find(u"Stage 2 of 2"),
+            std::u16string::npos);
+  EXPECT_EQ(reviewer_.reviews.at(0).stage.find(u"waiting"),
             std::u16string::npos);
   // The rest of the review is still there.
-  EXPECT_NE(dialog_service_.messages.at(0).find(u"Send it?"),
+  EXPECT_NE(reviewer_.reviews.at(0).warning.find(u"cannot be undone"),
             std::u16string::npos);
 
-  dialog_service_.CompleteMessageBox(MessageBoxResult::No);
+  reviewer_.Complete(/*send=*/false);
   Drain(executor_);
   model.reset();
   Drain(executor_);
@@ -726,7 +789,7 @@ TEST_F(WriteModelTest, DecliningAFlaggedSetPointSelectReportsNothing) {
   Drain(executor_);
   select_answer.Complete();
   Drain(executor_);
-  dialog_service_.CompleteMessageBox(MessageBoxResult::No);
+  reviewer_.Complete(/*send=*/false);
   Drain(executor_);
 
   EXPECT_THAT(local_events_.events(), IsEmpty());
@@ -746,9 +809,9 @@ TEST_F(WriteModelTest,
   Drain(executor_);
   select_answer.Complete();
   Drain(executor_);
-  EXPECT_NE(dialog_service_.messages.at(0).find(u"ready to execute"),
+  EXPECT_NE(reviewer_.reviews.at(0).stage.find(u"waiting"),
             std::u16string::npos);
-  dialog_service_.CompleteMessageBox(MessageBoxResult::No);
+  reviewer_.Complete(/*send=*/false);
   Drain(executor_);
 
   ASSERT_THAT(local_events_.events(), SizeIs(1));
@@ -848,7 +911,7 @@ TEST_F(WriteModelTest, CancelRefusedAfterTheDialogClosedIsStillReported) {
   auto model = CreateModel(/*two_staged=*/true);
   model->Write(42.0, /*lock=*/false);
   Drain(executor_);
-  dialog_service_.CompleteMessageBox(MessageBoxResult::No);
+  reviewer_.Complete(/*send=*/false);
   Drain(executor_);
   model.reset();
 
@@ -903,8 +966,7 @@ TEST_F(WriteModelTest, DestroyedModelWithASelectionOutstandingReleasesIt) {
   auto model = CreateModel(/*two_staged=*/true);
   model->Write(42.0, /*lock=*/false);
   Drain(executor_);
-  ASSERT_THAT(dialog_service_.modes,
-              ElementsAre(MessageBoxMode::QuestionYesNoDefaultNo));
+  ASSERT_THAT(reviewer_.reviews, SizeIs(1));
 
   model.reset();
   Drain(executor_);
@@ -973,25 +1035,195 @@ TEST_F(WriteModelTest, CancelRefusedAfterTheEventSinkIsGoneReportsNothing) {
 }
 
 TEST_F(WriteModelTest, ControlCommandConfirmationReviewsPresentAndCommand) {
-  // control_confirmation defaults to true, so a control write must prompt for
-  // a deliberate review before anything reaches the device.
+  // control_confirmation defaults to true, so a control write must be
+  // reviewed deliberately before anything reaches the device.
   auto model = CreateModel();
   model->Write(42.0, /*lock=*/false);
   Drain(executor_);
 
-  // A yes/no confirmation is shown and, crucially, nothing is written yet —
-  // StrictMock<MockAttributeService> would fail on an unexpected Write().
-  ASSERT_THAT(dialog_service_.modes,
-              ElementsAre(MessageBoxMode::QuestionYesNoDefaultNo));
+  // The review is shown — not a yes/no question box — and, crucially, nothing
+  // is written yet: StrictMock<MockAttributeService> would fail on an
+  // unexpected Write().
+  ASSERT_THAT(reviewer_.reviews, SizeIs(1));
+  EXPECT_TRUE(dialog_service_.modes.empty());
   EXPECT_FALSE(completion_.has_value());
 
-  // The prompt reviews the present reading vs. the commanded value and warns
-  // that the action is irreversible — not a bare "Switch X to Y?".
-  const std::u16string& message = dialog_service_.messages.at(0);
-  EXPECT_NE(message.find(u"Present"), std::u16string::npos);
-  EXPECT_NE(message.find(u"Command"), std::u16string::npos);
-  EXPECT_NE(message.find(u"42"), std::u16string::npos);
-  EXPECT_NE(message.find(u"cannot be undone remotely"), std::u16string::npos);
+  // It reviews the object, the commanded value, the stage, and warns that the
+  // action is irreversible — not a bare "Switch X to Y?" (backlog 1118).
+  const ControlReview& review = reviewer_.reviews.at(0);
+  EXPECT_EQ(review.title, model->GetWindowTitle());
+  EXPECT_EQ(review.object, u"Output");
+  EXPECT_NE(review.command.find(u"42"), std::u16string::npos);
+  EXPECT_NE(review.stage.find(u"One stage"), std::u16string::npos);
+  EXPECT_NE(review.warning.find(u"cannot be undone remotely"),
+            std::u16string::npos);
+  EXPECT_FALSE(review.time.empty());
+}
+
+// Sending from the review writes the value the review showed.
+TEST_F(WriteModelTest, SendingFromTheReviewWritesTheCommand) {
+  EXPECT_CALL(attribute_service_, Write(_, _))
+      .WillOnce(DoAll(
+          WithArg<1>([](const auto& inputs) {
+            ASSERT_EQ(inputs.size(), 1u);
+            EXPECT_DOUBLE_EQ(inputs[0].value.template get<double>(), 42.0);
+          }),
+          [](scada::ServiceContext, std::vector<scada::WriteValue>) {
+            return scada::MakeAttributeResult<scada::StatusCode>(
+                std::vector{scada::StatusCode::Good});
+          }));
+
+  auto model = CreateModel();
+  model->Write(42.0, /*lock=*/false);
+  Drain(executor_);
+  reviewer_.Complete(/*send=*/true);
+  Drain(executor_);
+
+  EXPECT_EQ(completion_, true);
+}
+
+// Cancelling the review sends nothing and leaves the dialog open.
+TEST_F(WriteModelTest, CancellingTheReviewSendsNothing) {
+  auto model = CreateModel();
+  model->Write(42.0, /*lock=*/false);
+  Drain(executor_);
+  reviewer_.Complete(/*send=*/false);
+  Drain(executor_);
+
+  EXPECT_EQ(completion_, false);
+  EXPECT_TRUE(model->GetStatusText().empty());
+}
+
+// Backlog 1118: only an administrator may switch confirmation off. An
+// operator's session reviews every command even when the profile says "off"
+// — a stored "off" from an administrator's session never reaches them.
+TEST_F(WriteModelTest, AnOperatorCannotSwitchConfirmationOff) {
+  profile_.control_confirmation = false;
+  may_skip_confirmation_ = false;
+
+  auto model = CreateModel();
+  EXPECT_TRUE(model->IsConfirmationRequired());
+  model->Write(42.0, /*lock=*/false);
+  Drain(executor_);
+
+  // Reviewed, and nothing written (StrictMock).
+  EXPECT_THAT(reviewer_.reviews, SizeIs(1));
+  EXPECT_FALSE(completion_.has_value());
+}
+
+// An administrator keeps the switch, for commissioning and test benches.
+TEST_F(WriteModelTest, AnAdministratorMaySwitchConfirmationOff) {
+  profile_.control_confirmation = false;
+  may_skip_confirmation_ = true;
+
+  EXPECT_FALSE(CreateModel()->IsConfirmationRequired());
+}
+
+// Manual input is not a command to the field and was never reviewed.
+TEST_F(WriteModelTest, ManualInputIsNeverReviewed) {
+  may_skip_confirmation_ = false;
+  CreateModel();  // Seeds the item.
+  auto manual = std::make_shared<WriteModel>(
+      WriteContext{.executor_ = executor_,
+                   .timed_data_service_ = timed_data_service_,
+                   .node_id_ = kDataItemId,
+                   .profile_ = profile_,
+                   .manual_ = true});
+
+  EXPECT_FALSE(manual->IsConfirmationRequired());
+}
+
+// A model nobody installed a reviewer on declines rather than sending an
+// unreviewed command.
+TEST_F(WriteModelTest, WithoutAReviewerTheCommandIsDeclined) {
+  auto model = CreateModel();
+  model->set_control_reviewer({});
+  model->Write(42.0, /*lock=*/false);
+  Drain(executor_);
+
+  // StrictMock: no Write reached the server.
+  EXPECT_EQ(completion_, false);
+}
+
+// The review names who the command is logged against, and when (principle
+// §7: always show who the action is logged against).
+TEST_F(WriteModelTest, ReviewNamesTheOperatorAndTheTime) {
+  user_id_ = scada::NodeId{9300, 1};
+  node_service_.Add(
+      scada::NodeState{.node_id = user_id_,
+                       .node_class = scada::NodeClass::Object,
+                       .type_definition_id = scada::NodeId{9301, 1},
+                       .attributes = {.display_name = u"Operator Ivanov"}});
+
+  auto model = CreateModel();
+  const scada::Time now =
+      std::chrono::sys_days{std::chrono::year{2026} / 11 / 23} +
+      std::chrono::hours{14};
+  const ControlReview review =
+      model->GetControlReview(42.0, /*second_stage=*/false, now);
+
+  EXPECT_EQ(review.operator_name, u"Operator Ivanov");
+  EXPECT_EQ(review.time, UtfConvert<char16_t>(FormatTime(
+                             now, TIME_FORMAT_DATE | TIME_FORMAT_TIME)));
+}
+
+TEST_F(WriteModelTest, AnAnonymousSessionIsNamedAsSuch) {
+  auto model = CreateModel();
+
+  EXPECT_EQ(model->GetOperatorName(), u"anonymous");
+}
+
+// Backlog 1118: a blocked command names the interlock that blocks it. The
+// condition row used to read «Условие: Нарушено» and leave the operator to
+// find the formula in the configuration.
+class WriteModelConditionTest : public WriteModelTest {
+ protected:
+  static constexpr std::string_view kInterlock = "TIT.211 > 70";
+
+  WriteModelConditionTest() {
+    output_condition_ = std::string{kInterlock};
+    ON_CALL(timed_data_service_, GetFormulaTimedData(Eq(kInterlock), _))
+        .WillByDefault(Return(condition_data_));
+    // An expression's title is its formula over the operands' aliases.
+    ON_CALL(*condition_data_, GetTitle())
+        .WillByDefault(Return(u"TIT.211 > 70"));
+  }
+
+  void SetCondition(bool value, scada::Qualifier qualifier = {}) {
+    ON_CALL(*condition_data_, GetDataValue())
+        .WillByDefault(Return(scada::DataValue{scada::Variant{value}, qualifier,
+                                               scada::Time{}, scada::Time{}}));
+  }
+
+  std::shared_ptr<NiceMock<MockTimedData>> condition_data_ =
+      std::make_shared<NiceMock<MockTimedData>>();
+};
+
+TEST_F(WriteModelConditionTest, AMetConditionReadsSatisfied) {
+  SetCondition(true);
+  auto model = CreateModel();
+
+  ASSERT_TRUE(model->has_condition());
+  EXPECT_TRUE(model->IsConditionOk());
+  EXPECT_EQ(model->GetConditionText(), u"Satisfied");
+}
+
+TEST_F(WriteModelConditionTest, AnUnmetConditionNamesTheInterlock) {
+  SetCondition(false);
+  auto model = CreateModel();
+
+  EXPECT_FALSE(model->IsConditionOk());
+  EXPECT_EQ(model->GetConditionText(), u"Not met: TIT.211 > 70");
+}
+
+// A condition whose operands are invalid blocks the command too, but for a
+// different reason: it cannot be evaluated, which is not the same as false.
+TEST_F(WriteModelConditionTest, AnInvalidConditionSaysItCannotBeEvaluated) {
+  SetCondition(true, scada::Qualifier{scada::Qualifier::BAD});
+  auto model = CreateModel();
+
+  EXPECT_FALSE(model->IsConditionOk());
+  EXPECT_EQ(model->GetConditionText(), u"Cannot be evaluated: TIT.211 > 70");
 }
 
 // The confirmation is the last screen before an irreversible command, so it
@@ -1009,10 +1241,10 @@ TEST_F(WriteModelTest, ConfirmationMarksAnInvalidPresentValue) {
   model->Write(42.0, /*lock=*/false);
   Drain(executor_);
 
-  ASSERT_EQ(dialog_service_.messages.size(), 1u);
-  const std::u16string& message = dialog_service_.messages.at(0);
-  EXPECT_NE(message.find(u"5?"), std::u16string::npos) << message;
-  EXPECT_NE(message.find(u"[С]"), std::u16string::npos) << message;
+  ASSERT_THAT(reviewer_.reviews, SizeIs(1));
+  const std::u16string& present = reviewer_.reviews.at(0).present;
+  EXPECT_NE(present.find(u"5?"), std::u16string::npos) << present;
+  EXPECT_NE(present.find(u"[С]"), std::u16string::npos) << present;
 }
 
 TEST_F(WriteModelTest, OfflineValueWithoutBadShowsItsStatusLetter) {

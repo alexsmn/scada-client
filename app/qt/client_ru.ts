@@ -305,23 +305,48 @@
     </message>
     <!-- modules/write/write_model.cpp — the control-command review an
          operator answers before an irreversible field action
-         (docs/ux/principles.md §7). Goes through Translate(), so it
-         lives in the empty context and lupdate never sees it. -->
+         (docs/client/ux/principles.md §7, backlog 1118), and the Control
+         dialog's condition row. Goes through Translate(), so it lives in
+         the empty context and lupdate never sees it. The review's row
+         labels are ControlReviewDialog's own. -->
     <message>
-        <source>The remote device is ready to execute the command.</source>
-        <translation>Устройство готово выполнить команду.</translation>
+        <source>One stage: the command goes to the device as soon as you send it.</source>
+        <translation>Один этап: команда уходит на устройство сразу после отправки.</translation>
     </message>
     <message>
-        <source>Present:</source>
-        <translation>Текущее:</translation>
+        <source>Stage 2 of 2: the command goes to the device as soon as you send it.</source>
+        <translation>Этап 2 из 2: команда уходит на устройство сразу после отправки.</translation>
     </message>
     <message>
-        <source>Command:</source>
-        <translation>Команда:</translation>
+        <source>Stage 2 of 2: the device has accepted the selection and is waiting for the command.</source>
+        <translation>Этап 2 из 2: устройство приняло выбор и ожидает команду.</translation>
     </message>
     <message>
-        <source>This control command is sent to physical equipment and cannot be undone remotely. Send it?</source>
-        <translation>Эта команда управления передаётся на оборудование и не может быть отменена дистанционно. Отправить?</translation>
+        <source>This control command is sent to physical equipment and cannot be undone remotely.</source>
+        <translation>Эта команда управления передаётся на оборудование и не может быть отменена дистанционно.</translation>
+    </message>
+    <message>
+        <source>anonymous</source>
+        <translation>анонимно</translation>
+    </message>
+    <message>
+        <source>Satisfied</source>
+        <translation>Выполнено</translation>
+    </message>
+    <message>
+        <source>Not met:</source>
+        <translation>Нарушено:</translation>
+    </message>
+    <message>
+        <source>Cannot be evaluated:</source>
+        <translation>Не определено:</translation>
+    </message>
+    <!-- modules/write/control_confirmation.cpp — the disabled reason of
+         «Подтверждение управления» for an account without the Configure
+         right (backlog 1118). -->
+    <message>
+        <source>Only an administrator can switch control confirmation off.</source>
+        <translation>Отключить подтверждение управления может только администратор.</translation>
     </message>
     <message>
         <source>Search tags, objects, commands…</source>
@@ -3977,19 +4002,49 @@ Trust the new certificate only if the server&apos;s operator confirms that it wa
         <translation>Отмена</translation>
     </message>
     <message>
-        <location filename="../../modules/write/qt/write_dialog.cpp" line="88"/>
-        <source>Satisfied</source>
-        <translation>Выполнено</translation>
-    </message>
-    <message>
-        <location filename="../../modules/write/qt/write_dialog.cpp" line="89"/>
-        <source>Unsatisfied</source>
-        <translation>Нарушено</translation>
-    </message>
-    <message>
         <location filename="../../modules/write/qt/write_dialog.cpp" line="108"/>
         <source>Incorrect floating point value.</source>
         <translation>Указано некорректное значение с плавающей точкой.</translation>
+    </message>
+</context>
+<context>
+    <name>ControlReviewDialog</name>
+    <message>
+        <location filename="../../modules/write/qt/control_review_dialog.cpp" line="35"/>
+        <source>Object:</source>
+        <translation>Объект:</translation>
+    </message>
+    <message>
+        <location filename="../../modules/write/qt/control_review_dialog.cpp" line="36"/>
+        <source>Present:</source>
+        <translation>Текущее:</translation>
+    </message>
+    <message>
+        <location filename="../../modules/write/qt/control_review_dialog.cpp" line="43"/>
+        <source>Command:</source>
+        <translation>Команда:</translation>
+    </message>
+    <message>
+        <location filename="../../modules/write/qt/control_review_dialog.cpp" line="44"/>
+        <source>Operator:</source>
+        <translation>Оператор:</translation>
+    </message>
+    <message>
+        <location filename="../../modules/write/qt/control_review_dialog.cpp" line="45"/>
+        <source>Time:</source>
+        <translation>Время:</translation>
+    </message>
+    <message>
+        <location filename="../../modules/write/qt/control_review_dialog.cpp" line="46"/>
+        <source>Stage:</source>
+        <translation>Этап:</translation>
+    </message>
+    <!-- Accept button: names the action, not the assent
+         (docs/client/ux/dialogs.md §3). -->
+    <message>
+        <location filename="../../modules/write/qt/control_review_dialog.cpp" line="57"/>
+        <source>Send command</source>
+        <translation>Отправить команду</translation>
     </message>
 </context>
 <context>

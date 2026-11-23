@@ -64,7 +64,6 @@ using scada::screenshot_generator::WaitForPendingNodeLoads;
 
 }  // namespace
 
-
 // The limits dialog draws whatever the target node's four limit-band
 // properties hold, and nothing else — so a node without them captures a
 // dialog whose every field is blank. `limits.png` shipped that way against
@@ -138,7 +137,8 @@ TEST_F(ScreenshotGenerator, ControlDialogNodeCarriesItsOutputCondition) {
 }
 
 // The mirror of the test above, for the capture that shows the dialog refusing
-// the command. ti-remote-control-disabled.png is the same `write-remote` kind
+// the command — and naming the interlock that refuses it.
+// ti-remote-control-disabled.png is the same `write-remote` kind
 // over a different node — the fixture cannot make one node's condition read
 // both ways in a single run — so the whole capture rests on the dialog spec's
 // `node` override reaching a node whose formula is falsy. Neither half is
@@ -209,6 +209,10 @@ TEST_F(ScreenshotGenerator, DisabledControlDialogNodeConditionIsUnsatisfied) {
   EXPECT_FALSE(model->IsConditionOk())
       << "the condition formula must evaluate falsy over the fixture data, so "
          "the dialog reads Not satisfied and its OK button is disabled";
+  // The blocked dialog names its interlock (backlog 1118); the capture is the
+  // manual's picture of that, so it has to quote the formula.
+  EXPECT_NE(model->GetConditionText().find(u"TIT.211"), std::u16string::npos)
+      << UtfConvert<char>(model->GetConditionText());
 }
 
 // The TS captures are the same two dialog kinds as the TI ones over a

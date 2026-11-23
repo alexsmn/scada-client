@@ -39,5 +39,6 @@ bool IsTwoStagedControl(const NodeRef& node, bool scada_server);
 // What pressing the Inspector's «Control…» will lead to, as an untranslated
 // English key for Translate(): whether the command goes in two stages
 // (`IsTwoStagedControl`) and whether the operator is asked to confirm it
-// (`Profile::control_confirmation`).
+// (`IsControlConfirmationRequired`: the profile switch, honoured only for an
+// administrator).
 std::string_view ControlFlowText(bool two_staged, bool confirmation);

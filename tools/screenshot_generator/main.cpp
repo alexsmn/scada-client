@@ -230,6 +230,7 @@ TEST_F(ScreenshotGenerator, CaptureDialogs) {
       .favourites = &app_.favourites(),
       .dialog_analog_node_id = FixtureConfig().dialog_analog_node_id,
       .login_user_list = FixtureConfig().login_user_list,
+      .session_user_node_id = FixtureConfig().session_user_node_id,
       .main_window = dynamic_cast<QWidget*>(
           &const_cast<MainWindow&>(main_windows.front()))};
 

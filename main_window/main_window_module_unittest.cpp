@@ -1,5 +1,6 @@
 #include "main_window/main_window_module.h"
 
+#include "aui/dialog_service_mock.h"
 #include "aui/test/app_environment.h"
 #include "base/boost_log.h"
 #include "base/test/awaitable_test.h"
@@ -13,18 +14,19 @@
 #include "favorites/favorites_module.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
+#include "main_window/main_window_mock.h"
 #include "main_window/opened_view/opened_view_command_registry.h"
 #include "modules/web/web_component.h"
 #include "portfolio/portfolio_module.h"
 #include "profile/profile.h"
 #include "resources/common_resources.h"
-#include "aui/dialog_service_mock.h"
-#include "main_window/main_window_mock.h"
 #include "services/speech_service_mock.h"
 
 #include <gmock/gmock.h>
 
+#include "base/check.h"
 #include "base/debug_util.h"
+#include "scada/access_rights.h"
 
 using namespace testing;
 namespace {
@@ -264,4 +266,55 @@ TEST_F(MainWindowModuleTest, SpeechOptionLivesUnderSettings) {
 
   EXPECT_THAT(contributions,
               Contains(Field(&MenuContribution::command_id, ID_OPT_SPEECH)));
+}
+
+// Backlog 1118: only an administrator may switch control confirmation off.
+// For anyone else the setting stays visible but disabled, reads as on —
+// confirmation applies to them whatever the profile holds — and says why.
+class ControlConfirmationSettingTest : public MainWindowModuleTest {
+ protected:
+  const BasicCommand<GlobalCommandContext>& Command() {
+    const auto* command =
+        controller_env_.global_commands_.FindCommand(ID_WRITE_CONFIRMATION);
+    scada::base::Check(command != nullptr);
+    return *command;
+  }
+
+  GlobalCommandContext Context() {
+    return GlobalCommandContext{command_main_window_, command_dialog_service_};
+  }
+
+  void SetAdministrator(bool administrator) {
+    ON_CALL(controller_env_.session_service_, GetAccessRights())
+        .WillByDefault(
+            Return(administrator
+                       ? scada::AccessRightBit(scada::AccessRight::kConfigure)
+                       : 0u));
+  }
+};
+
+TEST_F(ControlConfirmationSettingTest, AnOperatorCannotSwitchItOff) {
+  SetAdministrator(false);
+  controller_env_.profile_.control_confirmation = false;
+  const auto& command = Command();
+
+  EXPECT_FALSE(command.enabled_handler(Context()));
+  EXPECT_TRUE(command.checked_handler(Context()));
+  EXPECT_EQ(command.disabled_reason_handler(Context()),
+            u"Only an administrator can switch control confirmation off.");
+
+  controller_env_.profile_.control_confirmation = true;
+  command.execute_handler(Context());
+  EXPECT_TRUE(controller_env_.profile_.control_confirmation);
+}
+
+TEST_F(ControlConfirmationSettingTest, AnAdministratorCanSwitchItOff) {
+  SetAdministrator(true);
+  controller_env_.profile_.control_confirmation = true;
+  const auto& command = Command();
+
+  EXPECT_TRUE(command.enabled_handler(Context()));
+  command.execute_handler(Context());
+  EXPECT_FALSE(controller_env_.profile_.control_confirmation);
+  EXPECT_FALSE(command.checked_handler(Context()));
 }
