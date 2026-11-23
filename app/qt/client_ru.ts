@@ -1122,6 +1122,10 @@
         <source>No event shown here is waiting to be acknowledged</source>
         <translation>Среди показанных событий нет неквитированных</translation>
     </message>
+    <message>
+        <source>Acknowledge the {} events shown in this journal? Events hidden by its filters stay unacknowledged.</source>
+        <translation>Квитировать события, показанные в журнале ({})? События, скрытые фильтрами, останутся неквитированными.</translation>
+    </message>
     <!-- modules/events/acknowledge_permission.cpp (every acknowledge command) -->
     <message>
         <source>Acknowledging requires the Control or Configure privilege</source>

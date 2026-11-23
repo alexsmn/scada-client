@@ -788,6 +788,15 @@ void MainWindow::TabifySpecialistDocks() {
   inspector_dock_->raise();
 }
 
+void MainWindow::RevealInspector() {
+  if (!inspector_dock_)
+    return;
+  // Shown as well as raised: the operator may have closed the dock, and a
+  // reveal that silently does nothing reads as a dead double-click.
+  inspector_dock_->show();
+  inspector_dock_->raise();
+}
+
 void MainWindow::OpenPage(const Page& page) {
   if (pane_modes_) {
     // Conform the page to the active mode BEFORE the view manager builds it.

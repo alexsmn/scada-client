@@ -41,4 +41,6 @@ class MockControllerDelegate : public ControllerDelegate {
               (override));
 
   MOCK_METHOD(void, Focus, (), (override));
+
+  MOCK_METHOD(void, RevealInspector, (), (override));
 };

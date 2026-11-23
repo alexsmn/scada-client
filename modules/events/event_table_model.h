@@ -156,6 +156,23 @@ class EventTableModel : public scada::aui::TableModel,
   // can see, never an alarm a filter hides (backlog 869, decided 2026-10-04).
   void AcknowledgeShown();
 
+  // One live occurrence to acknowledge, identified by event id rather than row
+  // so it survives the regrouping an acknowledgement notification causes.
+  struct AcknowledgeTarget {
+    EventType type;
+    scada::EventId event_id;
+  };
+
+  // Every unacknowledged live occurrence the journal shows and the user may
+  // acknowledge — what AcknowledgeShown() acknowledges, in the same filter
+  // scope. Its size is the count the journal's confirmation names
+  // (backlog 1119).
+  std::vector<AcknowledgeTarget> GetShownAcknowledgeTargets() const;
+
+  // Acknowledges exactly `targets` — the occurrences the operator was asked
+  // about, never one that arrived while the question was open (backlog 1119).
+  void AcknowledgeTargets(std::span<const AcknowledgeTarget> targets);
+
   // Whether AcknowledgeShown() has anything to do: a shown live (current or
   // local) occurrence is unacknowledged. A historical row's acknowledged flag
   // is a record, not something the journal can change, so an unacknowledged

@@ -945,15 +945,16 @@ void EventTableModel::AcknowledgeRows(std::span<const int> rows) {
 }
 
 void EventTableModel::AcknowledgeShown() {
+  AcknowledgeTargets(GetShownAcknowledgeTargets());
+}
+
+std::vector<EventTableModel::AcknowledgeTarget>
+EventTableModel::GetShownAcknowledgeTargets() const {
   // Resolved to event ids up front for the reason AcknowledgeRows() gives:
   // each acknowledgement notifies, and the notification removes or regroups
   // rows under the loop. Only unacknowledged live occurrences are targeted, so
   // a journal full of acknowledged history sends nothing for them.
-  struct Target {
-    EventType type;
-    scada::EventId event_id;
-  };
-  std::vector<Target> targets;
+  std::vector<AcknowledgeTarget> targets;
   for (const Row& row : rows_) {
     if (!MayAcknowledge(row.type) || row.unacked == 0)
       continue;
@@ -964,9 +965,17 @@ void EventTableModel::AcknowledgeShown() {
         targets.push_back({row.type, repeat->event_id});
     }
   }
+  return targets;
+}
 
-  for (const Target& target : targets)
-    AckEvent(target.type, target.event_id);
+void EventTableModel::AcknowledgeTargets(
+    std::span<const AcknowledgeTarget> targets) {
+  // The right is re-read here, not only when the targets were collected: the
+  // session may have changed while a confirmation was open (backlog 1070).
+  for (const AcknowledgeTarget& target : targets) {
+    if (MayAcknowledge(target.type))
+      AckEvent(target.type, target.event_id);
+  }
 }
 
 bool EventTableModel::CanAcknowledgeShown() const {

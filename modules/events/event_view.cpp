@@ -165,7 +165,17 @@ EventView::EventView(const ControllerContext& context,
 
   table_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });
 
-  table_->SetDoubleClickHandler([this] { AcknowledgeSelection(); });
+  // A double-click opens the row — the Inspector comes forward on the event
+  // the selection already published — and never acknowledges it.
+  // Acknowledging is read-then-act (EEMUA 191; docs/client/ux/principles.md
+  // §3), and a double-click is the gesture that opens everywhere else in the
+  // workbench, so an operator meaning to look must not clear the alarm
+  // (backlog 1119, decided 2026-11-23). Acknowledge stays on the Inspector's
+  // button, the context menu and the toolbar.
+  table_->SetDoubleClickHandler([this] {
+    if (!table_->GetSelectedRows().empty())
+      controller_delegate_.RevealInspector();
+  });
 
   table_->SetKeyPressHandler(
       [this](scada::aui::KeyCode key_code) { return OnKeyPressed(key_code); });
@@ -187,11 +197,12 @@ EventView::EventView(const ControllerContext& context,
   // The journal's «Квитировать все» (footer button and context menu)
   // acknowledges what the journal shows, after its zone, severity, object and
   // unacknowledged-only filters — never an alarm a filter hides (backlog 869,
-  // decided 2026-10-04). The unscoped command stays registered globally in
+  // decided 2026-10-04). More than one event asks first (backlog 1119); see
+  // AcknowledgeShown(). The unscoped command stays registered globally in
   // EventModule for surfaces that show no filtered rows.
   command_registry_.AddCommand(
       Command{ID_ACKNOWLEDGE_ALL}
-          .set_execute_handler([this] { model_->AcknowledgeShown(); })
+          .set_execute_handler([this] { AcknowledgeShown(); })
           .set_enabled_handler([this] { return model_->CanAcknowledgeShown(); })
           .set_disabled_reason_handler([this] {
             if (model_->IsAcknowledgeShownForbidden())
@@ -233,6 +244,41 @@ void EventView::AcknowledgeSelection() {
   // before acknowledging any of them, because acknowledging can remove rows or
   // regroup them and leave row indices stale mid-loop.
   model_->AcknowledgeRows(table_->GetSelectedRows());
+}
+
+void EventView::AcknowledgeShown() {
+  std::vector<EventTableModel::AcknowledgeTarget> targets =
+      model_->GetShownAcknowledgeTargets();
+  if (targets.size() <= 1) {
+    model_->AcknowledgeTargets(targets);
+    return;
+  }
+  // The model is shared, not borrowed: the view may close while the question
+  // is open, and the answer must then still reach nothing that is gone.
+  CoSpawn(executor_,
+          [model = model_, &dialog_service = dialog_service_,
+           targets = std::move(targets)]() -> Awaitable<void> {
+            return ConfirmAndAcknowledgeShown(dialog_service, model, targets);
+          });
+}
+
+// static
+Awaitable<void> EventView::ConfirmAndAcknowledgeShown(
+    DialogService& dialog_service,
+    std::shared_ptr<EventTableModel> model,
+    std::vector<EventTableModel::AcknowledgeTarget> targets) {
+  // Default No: Return must not clear a screen of alarms the operator has not
+  // read (docs/client/ux/dialogs.md §4, backlog 1119). The count is the one
+  // acknowledged: an event arriving while the question is open is not in
+  // `targets` and stays unacknowledged.
+  const MessageBoxResult answer = co_await dialog_service.RunMessageBox(
+      u16format(Translate("Acknowledge the {} events shown in this journal? "
+                          "Events hidden by its filters stay unacknowledged."),
+                targets.size()),
+      Translate("Acknowledge All"), MessageBoxMode::QuestionYesNoDefaultNo);
+  if (answer != MessageBoxResult::Yes)
+    co_return;
+  model->AcknowledgeTargets(targets);
 }
 
 void EventView::OnSelectionChanged() {

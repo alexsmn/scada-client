@@ -162,7 +162,8 @@ EventModule::EventModule(EventModuleContext&& context)
       // every workstation, and it is reachable from the main menu and the
       // command palette, far from any event list (backlog 933). The journal's
       // own «Квитировать все», which acknowledges only what it shows (backlog
-      // 869), is a separate command and does not ask.
+      // 869), is a separate command; it asks too once more than one event is
+      // shown (backlog 1119, EventView::AcknowledgeShown).
       .execute_handler =
           [this](const GlobalCommandContext& context) {
             CoSpawn(executor_,

@@ -96,4 +96,19 @@ TEST_F(AlarmFooterTest, AckAllExecutesTheCommand) {
   EXPECT_EQ(handler_.executed, std::vector<unsigned>{ID_ACKNOWLEDGE_ALL});
 }
 
+// Backlog 1119: acknowledging every shown alarm is the strip's most
+// consequential action, so it is a plain platform button — no accent fill of
+// its own, and never the default button that Return presses.
+TEST_F(AlarmFooterTest, AckAllIsAPlainButtonNotThePrimary) {
+  handler_.enabled = true;
+  model_.NotifyChanged();
+
+  QPushButton* acknowledge = AckAll(*footer_);
+  ASSERT_NE(acknowledge, nullptr);
+  EXPECT_TRUE(acknowledge->styleSheet().isEmpty());
+  EXPECT_FALSE(footer_->styleSheet().contains(QStringLiteral("QPushButton")));
+  EXPECT_FALSE(acknowledge->isDefault());
+  EXPECT_FALSE(acknowledge->autoDefault());
+}
+
 }  // namespace

@@ -256,6 +256,11 @@ void OpenedView::Focus() {
   Activate();
 }
 
+void OpenedView::RevealInspector() {
+  if (main_window_)
+    main_window_->RevealInspector();
+}
+
 void OpenedView::ShowPopupMenu(scada::aui::MenuModel* merge_menu,
                                const scada::aui::Point& point,
                                bool right_click) {

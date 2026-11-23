@@ -9,12 +9,14 @@
 #include "controller/selection_model.h"
 #include "controller/time_model.h"
 #include "events/event_menu_model.h"
+#include "events/event_table_model.h"
 #include "events/expanded_event_model.h"
 #include "export/export_model.h"
 #include "scada/event.h"
 
 #include <boost/signals2/connection.hpp>
 #include <memory>
+#include <vector>
 
 namespace scada::aui {
 class Table;
@@ -45,6 +47,11 @@ class EventView : protected ControllerContext,
   bool IsSelectionAcknowledgeForbidden() const;
   void AcknowledgeSelection();
 
+  // The journal's «Квитировать все»: acknowledges the shown pending events at
+  // once when there is one, and asks a default-No question naming the count
+  // when there are more (backlog 1119).
+  void AcknowledgeShown();
+
   // Controller
   virtual std::unique_ptr<UiView> Init(
       const WindowDefinition& definition) override;
@@ -73,6 +80,14 @@ class EventView : protected ControllerContext,
   std::u16string MakeTitle() const;
 
   void ExportToExcel();
+
+  // Asks whether to acknowledge `targets`, then acknowledges exactly them.
+  // Static and given the model by shared ownership, because the view may be
+  // destroyed while the question is open.
+  static Awaitable<void> ConfirmAndAcknowledgeShown(
+      DialogService& dialog_service,
+      std::shared_ptr<EventTableModel> model,
+      std::vector<EventTableModel::AcknowledgeTarget> targets);
 
   void SelectSeverity();
   Awaitable<void> SelectSeverityAsync();

@@ -127,6 +127,7 @@ class OpenedView final : private OpenedViewContext,
   SubscribeContainedItemChanged(
       const ContainedItemChangedCallback& callback) override;
   virtual void Focus() override;
+  virtual void RevealInspector() override;
 
   std::unique_ptr<Controller> controller_;
 

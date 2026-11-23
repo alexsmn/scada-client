@@ -120,6 +120,10 @@ class BaseMainWindow : protected MainWindowContext,
   // TODO: Move to a separate class.
   void ExecuteDefaultNodeCommand(const NodeRef& node);
 
+  // Shows and fronts the Inspector dock (ControllerDelegate::RevealInspector).
+  // A shell without an Inspector does nothing.
+  virtual void RevealInspector() {}
+
   static void SetHideForTesting(bool hide = true) { g_hide_for_testing = hide; }
 
  protected:

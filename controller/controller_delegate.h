@@ -69,4 +69,11 @@ class ControllerDelegate {
       const ContainedItemChangedCallback& callback) = 0;
 
   virtual void Focus() = 0;
+
+  // Brings the shell's Inspector forward — shown and fronted in its dock —
+  // so it reads the subject this view has already published through its
+  // selection. A view calls it for "open this row" gestures that must not
+  // act on the row (the event journal's double-click, backlog 1119). The
+  // default (headless/test hosts, shells without an Inspector) does nothing.
+  virtual void RevealInspector() {}
 };

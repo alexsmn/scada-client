@@ -43,12 +43,13 @@ QWidget* MakeAlarmFooter(AlarmFooterContext context) {
 
   auto* acknowledge = new QPushButton{Tr("Acknowledge All"), footer};
   acknowledge->setObjectName(QStringLiteral("alarmFooterAckAll"));
-  acknowledge->setStyleSheet(
-      QStringLiteral("QPushButton{background:%1;color:%2;border:none;"
-                     "border-radius:4px;padding:3px 10px;font-weight:600;}"
-                     "QPushButton:disabled{background:%3;color:%4;}")
-          .arg(tokens.accent.name(), tokens.accent_fg.name(),
-               tokens.surface_muted.name(), tokens.fg_subtle.name()));
+  // A plain platform button, never the accent-filled primary: acknowledging
+  // every shown alarm is the screen's most consequential action, not its
+  // invited one, and the accent fill made it the strip's loudest control
+  // (backlog 1119; docs/client/ux/principles.md §3, dialogs.md §5). Nor is it
+  // a default button, so Return in the journal never presses it.
+  acknowledge->setAutoDefault(false);
+  acknowledge->setDefault(false);
   layout->addWidget(acknowledge);
 
   auto refresh = [summary = std::move(context.summary),

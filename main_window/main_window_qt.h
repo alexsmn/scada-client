@@ -49,6 +49,9 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   explicit MainWindow(MainWindowContext&& context);
   ~MainWindow();
 
+  // BaseMainWindow
+  void RevealInspector() override;
+
   // Switches the left sidebar to `mode`: closes the panes that do not belong
   // to it, opens the ones that do, fronts the first, and records the choice in
   // the window's profile preferences. Public because selecting a pane's mode
@@ -141,6 +144,7 @@ class MainWindow final : public QMainWindow, public BaseMainWindow {
   // restores a persisted QMainWindow dock state that includes these docks and
   // would otherwise leave them stacked vertically.
   void TabifySpecialistDocks();
+
   void CreateMenuBar();
   void CreateStatusBar();
   // The top context bar: the command/search field and alarm state.
