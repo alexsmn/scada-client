@@ -104,7 +104,7 @@ inline Awaitable<void> HistoricalEventModel::UpdateAsync(
     scada::Time from,
     scada::Time to) {
   auto result = co_await history_service_.HistoryReadEvents(
-      scada::id::Server, from, to,
+      scada::ServiceContext{}, scada::id::Server, from, to,
       scada::EventFilter{scada::EventFilter::ACKED});
   if (request_cancelation.canceled()) {
     co_return;

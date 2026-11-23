@@ -68,6 +68,7 @@ class LegacySeverityHistoryService final : public scada::HistoryService {
   }
 
   scada::CoStatusOr<scada::HistoryReadEventsResult> HistoryReadEvents(
+      scada::ServiceContext context,
       scada::NodeId node_id,
       scada::Time from,
       scada::Time to,
@@ -76,8 +77,8 @@ class LegacySeverityHistoryService final : public scada::HistoryService {
     // cannot leave the coroutine reading a dead member.
     auto inner = inner_;
     auto probe = probe_;
-    auto result = co_await inner->HistoryReadEvents(std::move(node_id), from,
-                                                    to, std::move(filter));
+    auto result = co_await inner->HistoryReadEvents(
+        std::move(context), std::move(node_id), from, to, std::move(filter));
     if (result.ok() && !result->events.empty() &&
         co_await probe->IsServerBefore26()) {
       RescaleLegacySeverities(result->events);

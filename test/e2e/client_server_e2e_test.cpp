@@ -18,6 +18,7 @@
 #include "scada/history_service.h"
 #include "scada/identity_mapping_rule_encoding.h"
 #include "scada/method_service.h"
+#include "scada/monitored_item_subscription_pump.h"
 #include "scada/node_management_service.h"
 #include "scada/read_value_id.h"
 #include "scada/session_service.h"
@@ -32,7 +33,11 @@
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
+#include <functional>
+#include <map>
 #include <optional>
+#include <set>
+#include <span>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -367,8 +372,68 @@ class ProxyOpcUaSession {
       scada::Time to) {
     return Run([this, from, to] {
       return services_.history_service_->HistoryReadEvents(
-          scada::NodeId{scada::id::Server}, from, to, scada::EventFilter{});
+          scada::ServiceContext{}, scada::NodeId{scada::id::Server}, from, to,
+          scada::EventFilter{});
     });
+  }
+
+  // Subscribes to the Server object's audit events. Received events
+  // accumulate in received_events() while PumpUntil runs this session's I/O.
+  // The process tree stays out: a burst of device events would push an audit
+  // event out of the item's queue before a Publish collects it.
+  scada::Status SubscribeServerEvents() {
+    event_pump_ = std::make_unique<scada::MonitoredItemSubscriptionPump>(
+        io_.get_executor(), *services_.monitored_item_service_,
+        scada::MonitoredItemSubscriptionOptions{},
+        [this](std::vector<scada::MonitoredItemNotification> notifications) {
+          for (const scada::MonitoredItemNotification& notification :
+               notifications) {
+            const auto* event_notification =
+                std::get_if<scada::EventNotification>(&notification);
+            if (!event_notification)
+              continue;
+            if (const auto* event =
+                    std::any_cast<scada::Event>(&event_notification->event)) {
+              received_events_.push_back(*event);
+            }
+          }
+        },
+        [](scada::Status) {});
+    if (scada::Status status = event_pump_->Start(); !status)
+      return status;
+    const std::vector<scada::MonitoredItemCreateResult> results = Run([this] {
+      return event_pump_->AddItems({scada::MonitoredItemCreateRequest{
+          .item_to_monitor = {scada::NodeId{scada::id::Server},
+                              scada::AttributeId::EventNotifier},
+          .parameters = {.filter =
+                             scada::EventFilter{
+                                 .of_type = {scada::id::AuditEventType}}},
+          .client_handle = 1}});
+    });
+    return results.empty() ? scada::Status{scada::StatusCode::Bad}
+                           : results.front().status;
+  }
+
+  // Runs every one of `sessions`' I/O, in turn, until `done()` holds or
+  // `timeout` passes; false on the timeout. Each session's I/O runs only when
+  // driven, so sessions that must stay alive together are pumped together.
+  static bool PumpUntil(std::initializer_list<ProxyOpcUaSession*> sessions,
+                        std::chrono::milliseconds timeout,
+                        const std::function<bool()>& done) {
+    const auto deadline = std::chrono::steady_clock::now() + timeout;
+    while (!done()) {
+      if (std::chrono::steady_clock::now() >= deadline)
+        return false;
+      for (ProxyOpcUaSession* session : sessions) {
+        session->io_.restart();
+        session->io_.run_for(std::chrono::milliseconds{50});
+      }
+    }
+    return true;
+  }
+
+  const std::vector<scada::Event>& received_events() const {
+    return received_events_;
   }
 
   scada::StatusOr<std::vector<scada::AddNodesResult>> AddNode(
@@ -458,6 +523,8 @@ class ProxyOpcUaSession {
   std::shared_ptr<opcua::ClientSession> session_;
   ::DataServices services_;
   bool connected_ = false;
+  std::unique_ptr<scada::MonitoredItemSubscriptionPump> event_pump_;
+  std::vector<scada::Event> received_events_;
 };
 
 // The same in-process client stack over the NATIVE (gRPC) session instead of
@@ -1120,6 +1187,181 @@ TEST_P(ClientServerE2eTest, Events_HistoryReadThroughProxy) {
     EXPECT_GE(event.time, window_start)
         << "event time precedes the requested window";
   }
+}
+
+// The standard audit types this server raises (opcua_base.xml): who signed
+// in, who failed to, and every account and role change.
+bool IsSecurityAuditEvent(const scada::Event& event) {
+  if (event.event_type_id.namespace_index() != 0 ||
+      event.event_type_id.type() != scada::NodeIdType::Numeric) {
+    return false;
+  }
+  switch (event.event_type_id.numeric_id()) {
+    case scada::id::AuditEventType:
+    case scada::id::AuditSecurityEventType:
+    case scada::id::AuditSessionEventType:
+    case 2071:  // AuditCreateSessionEventType
+    case scada::id::AuditActivateSessionEventType:
+    case scada::id::AuditUpdateEventType:
+    case scada::id::AuditWriteUpdateEventType:
+    case scada::id::AuditUpdateMethodEventType:
+      return true;
+    default:
+      return false;
+  }
+}
+
+// "type xN, ..." for every EventTypeId in `events`, for failure messages.
+std::string DescribeEventTypes(std::span<const scada::Event> events) {
+  std::map<std::string, int> counts;
+  for (const scada::Event& event : events)
+    ++counts[event.event_type_id.ToString()];
+  std::string description;
+  for (const auto& [type, count] : counts) {
+    if (!description.empty())
+      description += ", ";
+    description += type + " x" + std::to_string(count);
+  }
+  return description.empty() ? "nothing" : description;
+}
+
+// The port of an OPC UA endpoint given as host:port or as a URL.
+int PortOf(std::string_view endpoint) {
+  const std::size_t colon = endpoint.rfind(':');
+  return colon == std::string_view::npos
+             ? 0
+             : std::stoi(std::string{endpoint.substr(colon + 1)});
+}
+
+// The security audit trail is the security administrator's (OPC UA Part 2
+// §4.14.1, https://reference.opcfoundation.org/Core/Part2/v105/docs/4.14):
+// the server withholds AuditEventType and its standard subtypes from every
+// session without the SecurityAdmin role, live and from history (Part 3 §8.55
+// PermissionType bit 11 ReceiveEvents,
+// https://reference.opcfoundation.org/Core/Part3/v105/docs/8.55; backlog
+// 1106). Runs against the cluster this suite launches, or against a running
+// one (dev/local-cluster) when SCADA_E2E_EXTERNAL_OPCUA_HOST names its proxy
+// and SCADA_E2E_EXTERNAL_OPERATOR_USER / _PASSWORD a non-administrator.
+TEST_P(ClientServerE2eTest, Events_AuditTrailReachesOnlyTheSecurityAdmin) {
+  if (Topology() != ServerTopology::Cluster || Protocol() != E2eProtocol::OpcUa)
+    GTEST_SKIP() << "the direct proxy sessions run once, under Cluster/OpcUa";
+
+  const ExternalServerTarget* external = GetExternalServerTarget();
+  std::u16string admin_user = u"root";
+  std::u16string admin_password;
+  // The fixture's guest holds no access rights: an Observer, which lacks
+  // SecurityAdmin exactly as an operator does.
+  std::u16string operator_user = u"guest";
+  std::u16string operator_password;
+  if (external) {
+    const char* user = std::getenv("SCADA_E2E_EXTERNAL_OPERATOR_USER");
+    if (!user || !*user)
+      GTEST_SKIP() << "set SCADA_E2E_EXTERNAL_OPERATOR_USER (and _PASSWORD) "
+                      "to a non-administrator of the external deployment";
+    const char* password = std::getenv("SCADA_E2E_EXTERNAL_OPERATOR_PASSWORD");
+    operator_user = UtfConvert<char16_t>(user);
+    operator_password = UtfConvert<char16_t>(password ? password : "");
+    admin_user = UtfConvert<char16_t>(external->user);
+    admin_password = UtfConvert<char16_t>(external->password);
+  }
+
+  // A running deployment raised its startup audit (its tiers' own sessions)
+  // before this test began; a launched one raises it after this instant.
+  const scada::Time window_start =
+      scada::Now() -
+      (external ? std::chrono::hours(24) : std::chrono::hours(1));
+  StartServer();
+  const int port = external ? PortOf(external->opcua_host) : opcua_port_;
+
+  ProxyOpcUaSession admin;
+  ASSERT_TRUE(admin.Connect(port, admin_user, admin_password));
+  ProxyOpcUaSession operator_session;
+  ASSERT_TRUE(operator_session.Connect(port, operator_user, operator_password));
+  ASSERT_TRUE(admin.SubscribeServerEvents());
+  ASSERT_TRUE(operator_session.SubscribeServerEvents());
+
+  // Let both subscriptions settle on the server before anything is raised.
+  ProxyOpcUaSession::PumpUntil({&admin, &operator_session},
+                               std::chrono::seconds{2}, [] { return false; });
+
+  // Live: a failed sign-in, which the proxy raises as an
+  // AuditActivateSessionEventType.
+  {
+    ProxyOpcUaSession intruder;
+    EXPECT_FALSE(intruder.Connect(port, admin_user, u"e2e-wrong-password"));
+  }
+  EXPECT_TRUE(ProxyOpcUaSession::PumpUntil(
+      {&admin, &operator_session}, std::chrono::seconds{30},
+      [&] {
+        return std::ranges::any_of(admin.received_events(),
+                                   IsSecurityAuditEvent);
+      }))
+      << "the administrator never received a sign-in's audit event; it "
+         "received "
+      << DescribeEventTypes(admin.received_events());
+  // The administrator has it, so it was raised; give the operator's
+  // subscription the same chance to (wrongly) deliver it.
+  ProxyOpcUaSession::PumpUntil({&admin, &operator_session},
+                               std::chrono::seconds{3}, [] { return false; });
+  EXPECT_FALSE(std::ranges::any_of(operator_session.received_events(),
+                                   IsSecurityAuditEvent))
+      << "a session without SecurityAdmin received the security audit trail: "
+      << DescribeEventTypes(operator_session.received_events());
+
+  // History: the archive keeps the audit trail, and hands it back to the
+  // administrator alone.
+  const auto read_history = [&](ProxyOpcUaSession& session) {
+    return session.ReadEventHistory(window_start,
+                                    scada::Now() + std::chrono::minutes(1));
+  };
+  scada::StatusOr<scada::HistoryReadEventsResult> admin_history{
+      scada::StatusCode::Bad};
+  const auto deadline =
+      std::chrono::steady_clock::now() + std::chrono::seconds{30};
+  while (std::chrono::steady_clock::now() < deadline) {
+    admin_history = read_history(admin);
+    if (admin_history.ok() &&
+        std::ranges::any_of(admin_history->events, IsSecurityAuditEvent)) {
+      break;
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds{500});
+  }
+  ASSERT_TRUE(admin_history.ok()) << ::ToString(admin_history.status());
+  EXPECT_TRUE(std::ranges::any_of(admin_history->events, IsSecurityAuditEvent))
+      << "the administrator read no audit event back from history; it read "
+      << DescribeEventTypes(admin_history->events);
+
+  const scada::StatusOr<scada::HistoryReadEventsResult> operator_history =
+      read_history(operator_session);
+  ASSERT_TRUE(operator_history.ok()) << ::ToString(operator_history.status());
+  EXPECT_FALSE(
+      std::ranges::any_of(operator_history->events, IsSecurityAuditEvent))
+      << "a session without SecurityAdmin read the security audit trail back: "
+      << DescribeEventTypes(operator_history->events);
+  // Everything else still reaches the operator: its history is exactly the
+  // administrator's without the audit trail. Non-audit events the
+  // administrator read before the operator did are all there, and the operator
+  // read nothing the administrator cannot read after it.
+  const auto non_audit_ids = [](std::span<const scada::Event> events) {
+    std::set<scada::EventId> ids;
+    for (const scada::Event& event : events) {
+      if (!IsSecurityAuditEvent(event))
+        ids.insert(event.event_id);
+    }
+    return ids;
+  };
+  const std::set<scada::EventId> operator_ids =
+      non_audit_ids(operator_history->events);
+  EXPECT_TRUE(
+      std::ranges::includes(operator_ids, non_audit_ids(admin_history->events)))
+      << "the operator lost events that are not audit events";
+  const scada::StatusOr<scada::HistoryReadEventsResult> admin_history_after =
+      read_history(admin);
+  ASSERT_TRUE(admin_history_after.ok())
+      << ::ToString(admin_history_after.status());
+  EXPECT_TRUE(std::ranges::includes(non_audit_ids(admin_history_after->events),
+                                    operator_ids))
+      << "the operator read events the administrator cannot";
 }
 
 TEST_P(ClientServerE2eTest, Connect_Success) {

@@ -67,6 +67,7 @@ class FakeHistoryService final : public scada::HistoryService {
   }
 
   scada::CoStatusOr<scada::HistoryReadEventsResult> HistoryReadEvents(
+      scada::ServiceContext,
       scada::NodeId,
       scada::Time,
       scada::Time,
@@ -133,9 +134,10 @@ class LegacyEventSeverityTest : public Test {
   }
 
   std::vector<unsigned> ReadHistorySeverities() {
-    auto result = WaitAwaitable(
-        executor_, services_.history_service_->HistoryReadEvents(
-                       scada::id::Server, {}, {}, scada::EventFilter{}));
+    auto result =
+        WaitAwaitable(executor_, services_.history_service_->HistoryReadEvents(
+                                     scada::ServiceContext{}, scada::id::Server,
+                                     {}, {}, scada::EventFilter{}));
     EXPECT_TRUE(result.ok());
     std::vector<unsigned> severities;
     for (const scada::Event& event : result->events)
