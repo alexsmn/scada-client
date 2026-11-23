@@ -3295,6 +3295,20 @@
       "notes": "English twin of designer-transform.png, referenced from en/dev/designer.md only. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `panel_transform`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
     },
     {
+      "file": "designer-data.png",
+      "tag": "manual-designer",
+      "referenced_from": [
+        "dev/designer/properties.md"
+      ],
+      "notes": "The Inspector's Data tab, Russian UI: Tags, Bound cells, Custom properties and Hint for a single TEC-1 shape. The recipe gives the shape two illustrative tags and a hint description, since TEC-1 carries none. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `panel_inspector_data`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
+      "file": "designer-data-en.png",
+      "tag": "manual-designer",
+      "referenced_from": [],
+      "notes": "English twin of designer-data.png, referenced from en/dev/designer.md only. Rendered by the Designer's own screenshot generator (designer_screenshot_generator, recipe `panel_inspector_data`) and copied here by hand; regenerate with `designer_screenshot_generator <dir> --lang ru` for this file and without `--lang` for the -en twin."
+    },
+    {
       "file": "designer-navigator.png",
       "tag": "manual-designer",
       "referenced_from": [
@@ -3468,7 +3482,7 @@
     "auto-dialog": 46,
     "auto-menu": 22,
     "auto-view": 112,
-    "manual-designer": 36,
+    "manual-designer": 38,
     "manual-diagram": 5,
     "manual-modus": 3,
     "manual-os": 2,
