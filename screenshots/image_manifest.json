@@ -499,11 +499,11 @@
       "referenced_from": [],
       "notes": "The operate-stage review of a select-before-operate command: the outstation has accepted the Select and is armed, and the operator is asked to confirm before the Operate goes out (answering no now sends Cancel instead of leaving the selection armed until sboTimeout). Since 2026-11-23 (backlog 1118) this is the ControlReviewDialog rather than a «Да/Нет» question box: object, present, command, operator, time and stage, with «Отправить команду» beside a default Cancel. The review comes from the real WriteModel::GetControlReview(value, second_stage=true, fixed local time) over the fixture analog item and is shown through the real RunControlReviewDialog, so it cannot drift from the shipped wording; its stage row says the device has accepted the selection and is waiting. The operator is the fixture session user (session_user_node_id). The select itself is not issued — a Control-object Call needs a server; the two-phase exchange is covered by the iec104 tier E2E and WriteModelTest.TwoStagedControlSelectsConfirmsThenOperates. Published from a macOS render pending the Windows update-screenshots review; candidate for current_generator_owned_subset after that review. Unpublished 2026-10-04 (operator-role review): the copy in scada-docs/img contradicted the page text (2024 captures, one in English, or — for events-alarm-surface.png — a local message shown as Критично 800 and audit rows in the operator journal), and graduating the gallery render into current_generator_owned_subset needs a fresh capture run against the current write dialog and journal, which that review could not do. Removed from img/ and from the pages; republish once a reviewed render exists.",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "b6dd269f0",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "2833b542d4283f52f108f4eef28a314673035d2f21560f8925068e7a3aacb46a",
-        "last_rendered": "53741be2f"
+        "dirty": false,
+        "sha256": "bae528c1354fd3e3710868ff75053c89d41f0a2cec474c8ba1519ff29d197c72",
+        "last_rendered": "b6dd269f0"
       },
       "published": false
     },
@@ -516,11 +516,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of control-select-confirm.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "b6dd269f0",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "082d227cfc524388726bc7e236acb5083f1c2c89f65c57d6b8dd1cdf964efe72",
-        "last_rendered": "53741be2f"
+        "dirty": false,
+        "sha256": "a6df26c945736cb6701c2b0fea297f27bdbd86433ee87362db20ded3606d9180",
+        "last_rendered": "b6dd269f0"
       }
     },
     {
@@ -2497,11 +2497,11 @@
       "referenced_from": [],
       "notes": "The operator's review of a direct control command on an analog point, from the control-confirm dialog kind over the fixture-wide TIT.212: present 41 °C beside a commanded 12.5 °C, the operator, a fixed local time, the stage «Один этап», then the irreversibility warning, in the ControlReviewDialog (backlog 1118, 2026-11-23; it was a «Да/Нет» question box). The review is WriteModel::GetControlReview itself rather than a copy, so it cannot drift from the shipped wording. Distinct from control-select-confirm.png, which is the same kind with second_stage set and therefore reads «Этап 2 из 2» in its stage row. ScreenshotGenerator.ControlConfirmationsReviewARealChange asserts the quoted present and commanded values differ — a command that formats to the present reading still writes a well-formed PNG. Unpublished 2026-10-04 (operator-role review): the copy in scada-docs/img contradicted the page text (2024 captures, one in English, or — for events-alarm-surface.png — a local message shown as Критично 800 and audit rows in the operator journal), and graduating the gallery render into current_generator_owned_subset needs a fresh capture run against the current write dialog and journal, which that review could not do. Removed from img/ and from the pages; republish once a reviewed render exists.",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "b6dd269f0",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "d45ab6a41deb7f5c72688f556fa1d5a748be1dea30a220d8e452ec6e032ff116",
-        "last_rendered": "53741be2f"
+        "dirty": false,
+        "sha256": "f389ec9fa72f43686437d758075ba78b31e4244a43dae1171a40fa36b2eb39b1",
+        "last_rendered": "b6dd269f0"
       },
       "published": false
     },
@@ -2514,11 +2514,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of ti-remote-control-confirm.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "b6dd269f0",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "8bee470878050eb83d1cf6532c04d515f49deeb9178b0e3d85dd70597b0a9bd2",
-        "last_rendered": "53741be2f"
+        "dirty": false,
+        "sha256": "d1737abd969c3393c6e84f9c2e7c5c024e9e1f8e793eedb2a19581ccf6285718",
+        "last_rendered": "b6dd269f0"
       }
     },
     {
@@ -2531,11 +2531,11 @@
       ],
       "notes": "Remote-control dialog disabled state, TI. Renders from the fixture since 2026-08-15: the `write-remote` dialog spec carries a `node` override naming TIT.213 («Температура масла»), whose DataItemType_OutputCondition formula `TIT.211 > 70` evaluates false over the fixture data, so the condition row reads «Нарушено: TIT.211 > 70» — naming the interlock since 2026-11-23 (backlog 1118; it read a bare «Нарушено») — and the Execute button is disabled. The override exists because one node cannot render both this and ti-remote-control-enabled.png in a single run. ScreenshotGenerator.DisabledControlDialogNodeConditionIsUnsatisfied asserts both the override and the falsy evaluation — the structural check only asserts the PNG exists, so a dropped override would ship the enabled dialog under this name. Its new-value box also pre-fills 58 as of 2026-08-15: BuildWriteDialog warms the item's subscription before building the dialog, so this capture no longer depends on an earlier capture in the same run having subscribed to the node first — which is the only reason ti-remote-control-enabled.png ever showed its 41. The tracked gallery has no PNG for it yet: the Qt gallery is a Windows baseline and this was verified on macOS.",
       "captured": {
-        "commit": "b043cb310",
+        "commit": "b6dd269f0",
         "platform": "macos",
         "dirty": false,
-        "sha256": "47407bb86a7f556a278a37842725a7e82f3bd26ae3be761eabe8449bc253e2ef",
-        "last_rendered": "53741be2f"
+        "sha256": "2f6d2d5508c5cef01ca861719fdc3816df9cf0729fa5371301010839f62ed06c",
+        "last_rendered": "b6dd269f0"
       }
     },
     {
@@ -2547,11 +2547,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of ti-remote-control-disabled.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "b043cb310",
+        "commit": "b6dd269f0",
         "platform": "macos",
         "dirty": false,
-        "sha256": "d8244bdf92144c92be0e56288e572acff5617804f50e539ceb339328f782d60d",
-        "last_rendered": "53741be2f"
+        "sha256": "3af569d4df5821c930d7270348d9459c57dd70745bcd0fa8820ded2ca40481b5",
+        "last_rendered": "b6dd269f0"
       }
     },
     {
@@ -2661,11 +2661,11 @@
       "referenced_from": [],
       "notes": "The same review on a discrete point, which is a different prompt rather than a resized copy: WriteModel takes its discrete branch from TimedDataSpec::logical() and quotes the HasTsFormat state labels instead of engineering units. TS.201 reads «Вкл» and the command is «Откл», shown in the ControlReviewDialog with the operator, time and stage (backlog 1118, 2026-11-23). The spec's command_value is the item's raw state, not an index into the labels — WriteModel inverts (get_or(true) ? 0 : 1), so raw 0 would command the state the point is already in. BuildControlConfirmation also warms the TimedDataService subscription first, for the reason the write dialogs do: an unarrived value reads back as the get_or default, which on a two-state item is itself a valid state and renders a plausible no-op. ScreenshotGenerator.ControlConfirmationsReviewARealChange asserts against exactly that. Unpublished 2026-10-04 (operator-role review): the copy in scada-docs/img contradicted the page text (2024 captures, one in English, or — for events-alarm-surface.png — a local message shown as Критично 800 and audit rows in the operator journal), and graduating the gallery render into current_generator_owned_subset needs a fresh capture run against the current write dialog and journal, which that review could not do. Removed from img/ and from the pages; republish once a reviewed render exists.",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "b6dd269f0",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "30a88f443959406339b92adee6bfddd79868cd8594b00e599afd948c1f329ac7",
-        "last_rendered": "53741be2f"
+        "dirty": false,
+        "sha256": "25a9e3da44754cbc26b6797fa627b91d390b43a9af81b6cde22de70ccf074f87",
+        "last_rendered": "b6dd269f0"
       },
       "published": false
     },
@@ -2678,11 +2678,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of ts-remote-control-confirm.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "b6dd269f0",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "a992f869a51009ecc9999a191a368f3d7fcddddf848fac4f9ba4df9025a5f3d7",
-        "last_rendered": "53741be2f"
+        "dirty": false,
+        "sha256": "0246d0e8cf130dda19d6d5e852465c5ec5f1fd940b9e3fdc91f3bc44f1bc4c6d",
+        "last_rendered": "b6dd269f0"
       }
     },
     {
@@ -2693,11 +2693,11 @@
       "referenced_from": [],
       "notes": "Remote-control dialog disabled state, TS. Renders from the fixture since 2026-08-15 over TS.202 («Секционный выключатель»), whose DataItemType_OutputCondition formula `TIT.211 > 70` evaluates false, so the condition row reads «Нарушено: TIT.211 > 70» (the interlock named since 2026-11-23, backlog 1118) and Execute is disabled — the same two-node split TIT.212/TIT.213 make on the analog side, for the same reason: one node cannot render both variants in a single run. The tracked gallery has no PNG for it yet (Windows baseline; verified on macOS). Unpublished 2026-10-04 (operator-role review): the copy in scada-docs/img contradicted the page text (2024 captures, one in English, or — for events-alarm-surface.png — a local message shown as Критично 800 and audit rows in the operator journal), and graduating the gallery render into current_generator_owned_subset needs a fresh capture run against the current write dialog and journal, which that review could not do. Removed from img/ and from the pages; republish once a reviewed render exists.",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "b6dd269f0",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "d752f1281c09be1592c900a5ed4f6d999678b2a3d373ecef0e632f34436a5418",
-        "last_rendered": "53741be2f"
+        "dirty": false,
+        "sha256": "d12c38ace4933616075855510e925ba41a3d3657b900e9da50889151b295c0bd",
+        "last_rendered": "b6dd269f0"
       },
       "published": false
     },
@@ -2710,11 +2710,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of ts-remote-control-disabled.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "b6dd269f0",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "410e68dc5391e2a97efb2b85e93a20789c18d5835bf5c9a571ae44eb92c6c525",
-        "last_rendered": "53741be2f"
+        "dirty": false,
+        "sha256": "97719581ea2b2559707b91354840d67632c31cd7543b6fed2ca9c2a126184fd3",
+        "last_rendered": "b6dd269f0"
       }
     },
     {
