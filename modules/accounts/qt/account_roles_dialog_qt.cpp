@@ -2,6 +2,7 @@
 
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
+#include "user_access/role_membership.h"
 
 #include <QDialogButtonBox>
 #include <QLabel>
@@ -35,7 +36,8 @@ AccountRolesDialog::AccountRolesDialog(
   list_ = new QListWidget;
   list_->setObjectName(QStringLiteral("accountRolesList"));
   for (const AccountRoleChoice& choice : choices_) {
-    auto* item = new QListWidgetItem{QString::fromStdU16String(choice.name)};
+    auto* item = new QListWidgetItem{QString::fromStdU16String(
+        RoleDisplayName(choice.role_id, choice.name))};
     item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
     item->setCheckState(choice.held ? Qt::Checked : Qt::Unchecked);
     list_->addItem(item);

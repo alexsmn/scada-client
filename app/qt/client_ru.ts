@@ -754,6 +754,31 @@
         <source>Observer</source>
         <translation>Наблюдатель</translation>
     </message>
+    <!-- modules/user_access/role_membership.cpp: well-known Role labels -->
+    <message>
+        <source>Anonymous</source>
+        <translation>Анонимный</translation>
+    </message>
+    <message>
+        <source>Authenticated user</source>
+        <translation>Пользователь</translation>
+    </message>
+    <message>
+        <source>Engineer</source>
+        <translation>Инженер</translation>
+    </message>
+    <message>
+        <source>Supervisor</source>
+        <translation>Руководитель</translation>
+    </message>
+    <message>
+        <source>Configuration administrator</source>
+        <translation>Администратор конфигурации</translation>
+    </message>
+    <message>
+        <source>Security administrator</source>
+        <translation>Администратор безопасности</translation>
+    </message>
     <!-- modules/user_access/qt/user_access_panel.cpp -->
     <message>
         <source>Access rights</source>

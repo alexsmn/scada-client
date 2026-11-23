@@ -2,7 +2,9 @@
 
 #include "aui/qt/theme_qt.h"
 #include "aui/test/app_environment.h"
+#include "scada/authorization.h"
 
+#include <QHeaderView>
 #include <QLabel>
 #include <QTableWidget>
 
@@ -16,7 +18,8 @@ class RolesGridPanelTest : public ::testing::Test {
 
   static std::vector<RoleMembership> SampleRoles() {
     return {
-        {.name = u"Operator", .members = {u"ivanov", u"petrov"},
+        {.name = u"Operator",
+         .members = {u"ivanov", u"petrov"},
          .well_known = true},
         // A Role nobody holds, and a custom one.
         {.name = u"Engineer", .members = {}, .well_known = true},
@@ -61,13 +64,40 @@ TEST_F(RolesGridPanelTest, UnreadableRoleSetSaysSoRatherThanShowingNone) {
   EXPECT_FALSE(title->text().contains(QStringLiteral("0")));
 }
 
-// The admin gate is stated, matching WIN_REQUIRES_ADMIN on the view.
-TEST_F(RolesGridPanelTest, StatesTheAdminRequirement) {
+// A well-known Role reads as its translated label rather than the standard
+// BrowseName; a custom Role keeps its own name (backlog 1129).
+TEST_F(RolesGridPanelTest, WellKnownRolesShowTheirDisplayName) {
+  RolesGridPanel panel;
+  panel.ShowRoles(std::vector<RoleMembership>{
+      {.node_id = scada::WellKnownRoleId(scada::WellKnownRole::kConfigureAdmin),
+       .name = u"ConfigureAdmin",
+       .well_known = true},
+      {.node_id = scada::NodeId{7, 1}, .name = u"Shift A"}});
+
+  auto* grid = panel.findChild<QTableWidget*>(QStringLiteral("rolesGrid"));
+  ASSERT_NE(grid, nullptr);
+  EXPECT_EQ(grid->item(0, 0)->text(),
+            QStringLiteral("Configuration administrator"));
+  EXPECT_EQ(grid->item(1, 0)->text(), QStringLiteral("Shift A"));
+  EXPECT_EQ(grid->horizontalHeader()->sectionResizeMode(0),
+            QHeaderView::ResizeToContents);
+}
+
+// The admin requirement is stated only to a session that lacks it; telling an
+// administrator they need the Administrator role is wrong (backlog 1129).
+TEST_F(RolesGridPanelTest, StatesTheAdminRequirementOnlyToNonAdministrators) {
   RolesGridPanel panel;
 
   auto* hint = panel.findChild<QLabel*>(QStringLiteral("rolesHint"));
   ASSERT_NE(hint, nullptr);
   EXPECT_FALSE(hint->text().isEmpty());
+  EXPECT_FALSE(hint->isHidden());
+
+  panel.SetCanAdminister(true);
+  EXPECT_TRUE(hint->isHidden());
+
+  panel.SetCanAdminister(false);
+  EXPECT_FALSE(hint->isHidden());
 }
 
 }  // namespace

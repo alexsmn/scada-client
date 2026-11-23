@@ -424,4 +424,19 @@ TEST(RoleMembershipChangesTest, StopsAtTheFirstRefusal) {
   EXPECT_EQ(methods.calls.size(), 1u);
 }
 
+// The standard BrowseNames are identifiers; what an operator reads is the
+// label (backlog 1129). A custom Role's name is the administrator's own text.
+TEST(RoleDisplayNameTest, LabelsWellKnownRolesAndKeepsCustomNames) {
+  EXPECT_EQ(RoleDisplayName(
+                scada::WellKnownRoleId(scada::WellKnownRole::kConfigureAdmin),
+                u"ConfigureAdmin"),
+            u"Configuration administrator");
+  EXPECT_EQ(RoleDisplayName(scada::WellKnownRoleId(
+                                scada::WellKnownRole::kAuthenticatedUser),
+                            u"AuthenticatedUser"),
+            u"Authenticated user");
+  EXPECT_EQ(RoleDisplayName(scada::NodeId{7, 1}, u"Shift A"), u"Shift A");
+  EXPECT_EQ(WellKnownRoleLabelKey(scada::NodeId{7, 1}), nullptr);
+}
+
 }  // namespace

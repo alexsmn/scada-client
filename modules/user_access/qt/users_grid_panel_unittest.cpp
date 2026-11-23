@@ -80,8 +80,75 @@ TEST_F(UsersGridPanelTest, SelectingARowEmitsUserActivated) {
   EXPECT_EQ(*activated, (scada::NodeId{2, 1}));
 }
 
+// A well-known Role reads as its translated label, not the standard
+// BrowseName the server publishes; a custom Role keeps the administrator's own
+// name. The whole list is on the cell's tooltip, so a narrow column truncates
+// nothing the operator cannot reach (backlog 1129).
+TEST_F(UsersGridPanelTest, RolesShowDisplayNamesWithTheWholeListOnTheTooltip) {
+  UsersGridPanel panel;
+  std::vector<UserGridRow> rows = SampleRows();
+  rows[0].roles->push_back({scada::NodeId{7, 1}, u"Shift leads"});
+  panel.ShowRows(rows);
+
+  auto* grid = panel.findChild<QTableWidget*>(QStringLiteral("usersGrid"));
+  ASSERT_NE(grid, nullptr);
+  EXPECT_EQ(grid->item(0, 2)->text(),
+            QStringLiteral("Configuration administrator, Shift leads"));
+  EXPECT_EQ(grid->item(0, 2)->toolTip(), grid->item(0, 2)->text());
+  EXPECT_FALSE(grid->item(0, 2)->text().contains(QStringLiteral("Configure") +
+                                                 QStringLiteral("Admin")));
+}
+
+// Without the Configure right the Server refuses every account change
+// (backlog 1093), so nothing here may offer one: both buttons are disabled
+// and the reason is shown, beside them and on hover (principles.md §7).
+TEST_F(UsersGridPanelTest, WithoutTheRightActionsAreDisabledAndSayWhy) {
+  UsersGridPanel panel;
+  panel.SetCanAdminister(false);
+  panel.ShowRows(SampleRows());
+
+  auto* add = panel.findChild<QPushButton*>(QStringLiteral("usersAddUser"));
+  auto* reset =
+      panel.findChild<QPushButton*>(QStringLiteral("usersResetPassword"));
+  auto* hint = panel.findChild<QLabel*>(QStringLiteral("usersHint"));
+  ASSERT_NE(add, nullptr);
+  ASSERT_NE(reset, nullptr);
+  ASSERT_NE(hint, nullptr);
+
+  auto* grid = panel.findChild<QTableWidget*>(QStringLiteral("usersGrid"));
+  ASSERT_NE(grid, nullptr);
+  grid->selectRow(1);
+
+  EXPECT_FALSE(add->isEnabled());
+  EXPECT_FALSE(reset->isEnabled());
+  EXPECT_FALSE(hint->isHidden());
+  EXPECT_EQ(add->toolTip(), hint->text());
+  EXPECT_EQ(reset->toolTip(), hint->text());
+}
+
+// An administrator gets the actions and is not told they lack the role.
+TEST_F(UsersGridPanelTest, WithTheRightTheReasonIsHidden) {
+  UsersGridPanel panel;
+  panel.SetCanAdminister(true);
+  panel.ShowRows(SampleRows());
+
+  auto* add = panel.findChild<QPushButton*>(QStringLiteral("usersAddUser"));
+  auto* hint = panel.findChild<QLabel*>(QStringLiteral("usersHint"));
+  ASSERT_NE(add, nullptr);
+  ASSERT_NE(hint, nullptr);
+  EXPECT_TRUE(add->isEnabled());
+  EXPECT_TRUE(hint->isHidden());
+  EXPECT_TRUE(add->toolTip().isEmpty());
+
+  // Losing the right (a session re-read) takes them away again.
+  panel.SetCanAdminister(false);
+  EXPECT_FALSE(add->isEnabled());
+  EXPECT_FALSE(hint->isHidden());
+}
+
 TEST_F(UsersGridPanelTest, ResetPasswordFollowsSelectionAndEmitsActionsMenu) {
   UsersGridPanel panel;
+  panel.SetCanAdminister(true);
   panel.ShowRows(SampleRows());
 
   const QList<QPushButton*> buttons = panel.findChildren<QPushButton*>();
@@ -111,8 +178,10 @@ TEST_F(UsersGridPanelTest, ResetPasswordFollowsSelectionAndEmitsActionsMenu) {
   EXPECT_FALSE(right_click);  // the button path, not a right-click.
 }
 
-TEST_F(UsersGridPanelTest, AddUserIsEnabledAndEmitsActionsMenu) {
+TEST_F(UsersGridPanelTest,
+       AddUserIsEnabledForAnAdministratorAndEmitsActionsMenu) {
   UsersGridPanel panel;
+  panel.SetCanAdminister(true);
   panel.ShowRows(SampleRows());
 
   const QList<QPushButton*> buttons = panel.findChildren<QPushButton*>();
@@ -122,8 +191,7 @@ TEST_F(UsersGridPanelTest, AddUserIsEnabledAndEmitsActionsMenu) {
       add = button;
   }
   ASSERT_NE(add, nullptr);
-  // Add-user is parent-scoped, so it is always enabled (access-right-gated at
-  // the command level) — no user selection required.
+  // Add-user is parent-scoped: no user selection required.
   EXPECT_TRUE(add->isEnabled());
 
   int emitted = 0;

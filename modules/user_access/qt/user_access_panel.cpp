@@ -10,6 +10,7 @@
 #include "node_service/node_util.h"
 #include "scada/basic_types.h"
 #include "scada/variant.h"
+#include "user_access/role_membership.h"
 
 #include <QFrame>
 #include <QHBoxLayout>
@@ -191,7 +192,8 @@ void UserAccessPanel::ShowAccount(
 
   QStringList role_names;
   for (const AccountRole& role : *roles) {
-    role_names << QString::fromStdU16String(role.name);
+    role_names << QString::fromStdU16String(
+        RoleDisplayName(role.node_id, role.name));
   }
   ShowAccess(name, role_names, MakePermissionDisplays(*roles));
 }

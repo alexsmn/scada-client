@@ -49,6 +49,9 @@ void SaveUsersGridScreenshot(const ScreenshotSpec& spec,
   CapturePublishGuard publish_guard{spec.filename};
 
   std::unique_ptr<UsersGridPanel> panel{MakeUsersGridPanel()};
+  // The capture reads as the administrator (authenticated_attribute_service),
+  // so it shows what an administrator sees: actions enabled, no reason.
+  panel->SetCanAdminister(true);
 
   const std::optional<std::vector<UserGridRow>> rows =
       scada::screenshot_generator::WaitForAwaitable(
@@ -73,6 +76,7 @@ void SaveRolesScreenshot(const ScreenshotSpec& spec,
   CapturePublishGuard publish_guard{spec.filename};
 
   std::unique_ptr<RolesGridPanel> panel{MakeRolesGridPanel()};
+  panel->SetCanAdminister(true);  // read as the administrator, as above
 
   // Await the read instead of spawning it: the view path spawns and the
   // capture then raced it, grabbing a grid that had not been filled yet.

@@ -1,5 +1,6 @@
 #include "user_access/role_membership.h"
 
+#include "aui/translation.h"
 #include "base/utf_convert.h"
 #include "model/data_items_node_ids.h"
 #include "model/security_node_ids.h"
@@ -249,4 +250,34 @@ Awaitable<scada::Status> ApplyRoleMembershipChanges(
     }
   }
   co_return scada::StatusCode::Good;
+}
+
+const char* WellKnownRoleLabelKey(const scada::NodeId& role_id) {
+  using scada::WellKnownRole;
+  using scada::WellKnownRoleId;
+  if (role_id == WellKnownRoleId(WellKnownRole::kAnonymous))
+    return "Anonymous";
+  if (role_id == WellKnownRoleId(WellKnownRole::kAuthenticatedUser))
+    return "Authenticated user";
+  if (role_id == WellKnownRoleId(WellKnownRole::kObserver))
+    return "Observer";
+  if (role_id == WellKnownRoleId(WellKnownRole::kOperator))
+    return "Operator";
+  if (role_id == WellKnownRoleId(WellKnownRole::kEngineer))
+    return "Engineer";
+  if (role_id == WellKnownRoleId(WellKnownRole::kSupervisor))
+    return "Supervisor";
+  if (role_id == WellKnownRoleId(WellKnownRole::kConfigureAdmin))
+    return "Configuration administrator";
+  if (role_id == WellKnownRoleId(WellKnownRole::kSecurityAdmin))
+    return "Security administrator";
+  return nullptr;
+}
+
+std::u16string RoleDisplayName(const scada::NodeId& role_id,
+                               std::u16string_view server_name) {
+  if (const char* key = WellKnownRoleLabelKey(role_id)) {
+    return Translate(key);
+  }
+  return std::u16string{server_name};
 }

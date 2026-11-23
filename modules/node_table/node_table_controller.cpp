@@ -10,6 +10,7 @@
 #include "profile/profile.h"
 #include "remote/session_proxy.h"
 #include "resources/common_resources.h"
+#include "scada/session_service.h"
 #include "services/task_manager.h"
 #include "ui/common/client_utils.h"
 #include "user_access/users_grid_reloader.h"
@@ -54,9 +55,18 @@ struct UsersReloadState {
 // Re-reads the Users view's rows into `panel`. Holds nothing of the
 // controller: the services outlive it, `state` is shared, and `panel` is
 // checked after every wait.
+// Whether the session may administer accounts: the Configure right, which the
+// Server derives from the same Roles when it gates Add/ModifyUser, role grants
+// and another account's password (backlog 1093). Read on every reload rather
+// than once, so the panel follows the session it is actually talking to.
+bool CanAdministerUsers(const scada::SessionService& session_service) {
+  return session_service.HasAccessRight(scada::AccessRight::kConfigure);
+}
+
 void ReloadUsers(AnyExecutor executor,
                  NodeService& node_service,
                  scada::AttributeService& attribute_service,
+                 scada::SessionService& session_service,
                  std::shared_ptr<UsersReloadState> state,
                  QPointer<UsersGridPanel> panel) {
   if (state->running) {
@@ -65,7 +75,7 @@ void ReloadUsers(AnyExecutor executor,
   }
   state->running = true;
   CoSpawn(executor,
-          [executor, &node_service, &attribute_service, state,
+          [executor, &node_service, &attribute_service, &session_service, state,
            panel]() -> Awaitable<void> {
             do {
               state->again = false;
@@ -74,6 +84,7 @@ void ReloadUsers(AnyExecutor executor,
               if (!panel) {
                 break;
               }
+              panel->SetCanAdminister(CanAdministerUsers(session_service));
               // nullopt is "the account list could not be read" — which a
               // non-administrator gets by design (Part 18 §5.2.1), and so does
               // anyone on a Server older than 2.6, which has no UserManagement
@@ -133,6 +144,7 @@ std::unique_ptr<UiView> NodeTableController::Init(
       model_->parent_node().node_id() == scada::security::id::Users) {
     {
       UsersGridPanel* panel = MakeUsersGridPanel();
+      panel->SetCanAdminister(CanAdministerUsers(session_service_));
       // Selecting a user row drives the shared SelectionModel, so the RBAC
       // inspector (UserAccessPanel) fills exactly as it does from the grid.
       QObject::connect(panel, &UsersGridPanel::UserActivated, panel,
@@ -159,10 +171,11 @@ std::unique_ptr<UiView> NodeTableController::Init(
       // as it was until the view was reopened (found with backlog 149).
       auto reload = [executor = executor_, &node_service = node_service_,
                      &attribute_service = attribute_service_,
+                     &session_service = session_service_,
                      state = std::make_shared<UsersReloadState>(),
                      panel_ptr = QPointer<UsersGridPanel>{panel}] {
-        ReloadUsers(executor, node_service, attribute_service, state,
-                    panel_ptr);
+        ReloadUsers(executor, node_service, attribute_service, session_service,
+                    state, panel_ptr);
       };
       reload();
       users_reloader_ =

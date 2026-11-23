@@ -3,6 +3,7 @@
 #include "aui/qt/theme_qt.h"
 #include "aui/severity_colors.h"
 #include "aui/translation.h"
+#include "user_access/role_membership.h"
 
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -36,7 +37,8 @@ QString RolesText(const std::optional<std::vector<AccountRole>>& roles) {
   }
   QStringList names;
   for (const AccountRole& role : *roles) {
-    names << QString::fromStdU16String(role.name);
+    names << QString::fromStdU16String(
+        RoleDisplayName(role.node_id, role.name));
   }
   return names.join(QStringLiteral(", "));
 }
@@ -102,12 +104,11 @@ QWidget* UsersGridPanel::BuildHeader() {
           .arg(tokens.fg.name()));
 
   add_user_ = new QPushButton{Tr("Add user")};
+  add_user_->setObjectName(QStringLiteral("usersAddUser"));
   reset_password_ = new QPushButton{Tr("Reset password")};
-  // Both reuse the host's view context menu. Add-user (parent-scoped create) is
-  // always enabled — the create is access-right-gated at the command level, and
-  // the admin-role hint explains the requirement. Reset-password acts on the
-  // highlighted user, so it enables once a row is selected.
-  reset_password_->setEnabled(false);
+  reset_password_->setObjectName(QStringLiteral("usersResetPassword"));
+  // Both reuse the host's view context menu, and both are disabled until the
+  // host says the session may administer accounts (UpdateActions).
   connect(add_user_, &QPushButton::clicked, this, [this] {
     Q_EMIT ActionsMenuRequested(
         add_user_->mapToGlobal(add_user_->rect().bottomLeft()),
@@ -120,15 +121,19 @@ QWidget* UsersGridPanel::BuildHeader() {
           /*right_click=*/false);
   });
 
-  auto* hint = new QLabel{Tr("Editing requires the Administrator role")};
-  hint->setStyleSheet(
+  // The reason the buttons are disabled. Shown only to a session that lacks
+  // the right: to an administrator it would say they are not one.
+  hint_ = new QLabel{Tr("Editing requires the Administrator role")};
+  hint_->setObjectName(QStringLiteral("usersHint"));
+  hint_->setStyleSheet(
       QStringLiteral("color:%1;font-size:11px;").arg(tokens.fg_subtle.name()));
 
   layout->addWidget(title_);
   layout->addStretch(1);
-  layout->addWidget(hint);
+  layout->addWidget(hint_);
   layout->addWidget(add_user_);
   layout->addWidget(reset_password_);
+  UpdateActions();
   return host;
 }
 
@@ -142,8 +147,14 @@ QWidget* UsersGridPanel::BuildGrid() {
   grid_->setEditTriggers(QAbstractItemView::NoEditTriggers);
   grid_->setSelectionBehavior(QAbstractItemView::SelectRows);
   grid_->setSelectionMode(QAbstractItemView::SingleSelection);
-  grid_->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
-  grid_->horizontalHeader()->setStretchLastSection(true);
+  // The User and Roles columns share the spare width, so an account holding
+  // two or three Roles shows them all; Description and Status fit their text.
+  // A Roles cell still too narrow carries the whole list as its tooltip.
+  QHeaderView* header = grid_->horizontalHeader();
+  header->setSectionResizeMode(0, QHeaderView::Stretch);
+  header->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+  header->setSectionResizeMode(2, QHeaderView::Stretch);
+  header->setSectionResizeMode(3, QHeaderView::ResizeToContents);
 
   grid_->setContextMenuPolicy(Qt::CustomContextMenu);
   connect(grid_, &QTableWidget::itemSelectionChanged, this,
@@ -164,6 +175,23 @@ bool UsersGridPanel::unavailable() const {
   return !unavailable_->isHidden();
 }
 
+void UsersGridPanel::SetCanAdminister(bool can_administer) {
+  can_administer_ = can_administer;
+  UpdateActions();
+}
+
+void UsersGridPanel::UpdateActions() {
+  hint_->setVisible(!can_administer_);
+  add_user_->setEnabled(can_administer_);
+  reset_password_->setEnabled(can_administer_ && HasSelection());
+  // A disabled button says why on hover too, where the eye already is.
+  const QString reason = can_administer_
+                             ? QString{}
+                             : Tr("Editing requires the Administrator role");
+  add_user_->setToolTip(reason);
+  reset_password_->setToolTip(reason);
+}
+
 void UsersGridPanel::ShowRows(const std::vector<UserGridRow>& rows) {
   const scada::aui::ThemeTokens& tokens = PanelTokens();
   rows_ = rows;
@@ -181,7 +209,9 @@ void UsersGridPanel::ShowRows(const std::vector<UserGridRow>& rows) {
     grid_->setItem(
         i, 1, new QTableWidgetItem(QString::fromStdU16String(row.description)));
 
-    auto* roles = new QTableWidgetItem(RolesText(row.roles));
+    const QString roles_text = RolesText(row.roles);
+    auto* roles = new QTableWidgetItem(roles_text);
+    roles->setToolTip(roles_text);
     roles->setForeground(RolesColor(row.roles, tokens));
     grid_->setItem(i, 2, roles);
 
@@ -198,7 +228,7 @@ bool UsersGridPanel::HasSelection() const {
 
 void UsersGridPanel::OnSelectionChanged() {
   // Reset-password acts on the selected user, so it follows the selection.
-  reset_password_->setEnabled(HasSelection());
+  UpdateActions();
 
   const QList<QTableWidgetItem*> selected = grid_->selectedItems();
   if (selected.isEmpty())

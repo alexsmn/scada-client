@@ -3,6 +3,7 @@
 #include "aui/qt/theme_qt.h"
 #include "aui/severity_colors.h"
 #include "aui/translation.h"
+#include "user_access/role_membership.h"
 
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -74,7 +75,12 @@ QWidget* RolesGridPanel::BuildHeader() {
   layout->addWidget(title_);
   layout->addStretch(1);
   layout->addWidget(hint_);
+  SetCanAdminister(false);
   return host;
+}
+
+void RolesGridPanel::SetCanAdminister(bool can_administer) {
+  hint_->setVisible(!can_administer);
 }
 
 QWidget* RolesGridPanel::BuildGrid() {
@@ -86,6 +92,11 @@ QWidget* RolesGridPanel::BuildGrid() {
   grid_->setEditTriggers(QAbstractItemView::NoEditTriggers);
   grid_->setSelectionBehavior(QAbstractItemView::SelectRows);
   grid_->setSelectionMode(QAbstractItemView::SingleSelection);
+  // A Role's name is never cut off — "Configuration administrator" is the
+  // longest well-known label; Members takes what is left and carries the whole
+  // list as its tooltip.
+  grid_->horizontalHeader()->setSectionResizeMode(
+      0, QHeaderView::ResizeToContents);
   grid_->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
   return grid_;
 }
@@ -113,9 +124,12 @@ void RolesGridPanel::ShowRoles(
     const RoleMembership& role = roles_[i];
 
     grid_->setItem(i, 0,
-                   new QTableWidgetItem(QString::fromStdU16String(role.name)));
+                   new QTableWidgetItem(QString::fromStdU16String(
+                       RoleDisplayName(role.node_id, role.name))));
 
-    auto* members = new QTableWidgetItem(MembersText(role.members));
+    const QString members_text = MembersText(role.members);
+    auto* members = new QTableWidgetItem(members_text);
+    members->setToolTip(members_text);
     members->setForeground(role.members.empty() ? tokens.fg_subtle : tokens.fg);
     grid_->setItem(i, 1, members);
 

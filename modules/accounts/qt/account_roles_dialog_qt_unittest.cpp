@@ -33,6 +33,9 @@ TEST_F(AccountRolesDialogTest, ChecksTheRolesTheAccountHolds) {
 
   ASSERT_EQ(dialog.list()->count(), 3);
   EXPECT_EQ(dialog.list()->item(1)->text(), QStringLiteral("Operator"));
+  // A well-known Role reads as its label, not its BrowseName (backlog 1129).
+  EXPECT_EQ(dialog.list()->item(2)->text(),
+            QStringLiteral("Configuration administrator"));
   EXPECT_EQ(dialog.list()->item(0)->checkState(), Qt::Unchecked);
   EXPECT_EQ(dialog.list()->item(1)->checkState(), Qt::Checked);
   EXPECT_EQ(dialog.CheckedRoles(), std::vector<scada::NodeId>{kOperator});

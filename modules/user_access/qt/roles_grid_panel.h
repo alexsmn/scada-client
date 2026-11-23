@@ -38,6 +38,12 @@ class RolesGridPanel : public QWidget {
   // read path preserves (role_membership.h).
   void ShowRoles(const std::optional<std::vector<RoleMembership>>& roles);
 
+  // Whether this session may administer Roles (the Configure access right the
+  // Server checks, backlog 1093). The "editing requires" hint is shown only
+  // when it may not: to an administrator it would say they are not one.
+  // Starts false.
+  void SetCanAdminister(bool can_administer);
+
   const std::vector<RoleMembership>& roles() const SCADA_LIFETIME_BOUND {
     return roles_;
   }

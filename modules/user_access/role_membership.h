@@ -168,3 +168,18 @@ Awaitable<scada::Status> ApplyRoleMembershipChanges(
     NodeService& node_service,
     std::u16string account,
     std::vector<RoleMembershipChange> changes);
+
+// The English label of a well-known Role (OPC UA Part 3 §4.9.2 Well Known
+// Roles, https://reference.opcfoundation.org/Core/Part3/v105/docs/4.9.2), as a
+// literal for Translate(); nullptr for any other Role. The server publishes
+// the standard BrowseNames ("ConfigureAdmin", "AuthenticatedUser"), which are
+// identifiers rather than words an operator reads, and the same in every
+// language.
+const char* WellKnownRoleLabelKey(const scada::NodeId& role_id);
+
+// What a Role is called on screen: the translated label of a well-known Role,
+// and otherwise the name the server publishes — a custom Role's name is the
+// administrator's own text and has no translation. Display only: never key an
+// authorization decision on it.
+std::u16string RoleDisplayName(const scada::NodeId& role_id,
+                               std::u16string_view server_name);

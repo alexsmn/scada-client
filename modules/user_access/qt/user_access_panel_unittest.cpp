@@ -64,7 +64,9 @@ TEST_F(UserAccessPanelTest, ShowsEveryRoleHeld) {
   auto* stack = panel.findChild<QStackedWidget*>();
   ASSERT_NE(stack, nullptr);
   EXPECT_EQ(stack->currentIndex(), 1);
-  EXPECT_EQ(RolesText(panel), QStringLiteral("Operator, ConfigureAdmin"));
+  // Labels, not the standard BrowseNames the server publishes (backlog 1129).
+  EXPECT_EQ(RolesText(panel),
+            QStringLiteral("Operator, Configuration administrator"));
   EXPECT_TRUE(HasLabel(panel, QStringLiteral("root")));
 }
 
