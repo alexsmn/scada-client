@@ -71,7 +71,7 @@ TEST_F(ContextBarTest, RefreshAlarmStateRereadsTheCounts) {
   ASSERT_NE(alarms, nullptr);
   EXPECT_TRUE(alarms->annunciator()->isHidden());
 
-  counts_ = {.critical = 1, .unacknowledged = 1};
+  counts_ = {.critical = 1, .unacknowledged = 1, .unacknowledged_critical = 1};
   bar.RefreshAlarmState();
 
   EXPECT_FALSE(alarms->annunciator()->isHidden());

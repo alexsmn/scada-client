@@ -16,7 +16,7 @@ class CurrentEventModel : private EventObserver {
   ~CurrentEventModel() { node_event_provider_.RemoveObserver(*this); }
 
   auto events() const {
-    return node_event_provider_.unacked_events() | std::views::values;
+    return node_event_provider_.current_events() | std::views::values;
   }
 
   bool working() const { return node_event_provider_.IsAcking(); }

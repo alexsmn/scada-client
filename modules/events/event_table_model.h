@@ -41,6 +41,10 @@ enum EventColumnId {
   // so existing column ids in saved state stay stable; shown first in the
   // view only under the opt-in token theme.
   EventColumnUnacked,
+  // The row's ISA-18.2 alarm state in words (events/alarm_state.h): active or
+  // returned to normal, acknowledged or not, or a plain event (backlog 1117).
+  // Appended for the same reason as the marker above.
+  EventColumnState,
   EventColumnCount
 };
 

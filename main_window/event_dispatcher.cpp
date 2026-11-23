@@ -89,7 +89,7 @@ events::AlarmEscalation EventDispatcher::CurrentEscalation() const {
 void EventDispatcher::ShowEvents(bool added) {
   showing_events_ = false;
 
-  bool has_events = !node_event_provider_.unacked_events().empty() ||
+  bool has_events = CountUnackedEvents(node_event_provider_) != 0 ||
                     !local_events_.events().empty();
 
   if (has_events != has_events_) {

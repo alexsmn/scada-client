@@ -33,7 +33,7 @@ class FakeNodeEventProvider : public NodeEventProvider {
     return scada::kSeverityMin;
   }
   void SetSeverityMin(scada::EventSeverity) override {}
-  const EventContainer& unacked_events() const override { return events; }
+  const EventContainer& current_events() const override { return events; }
   const EventSet* GetItemUnackedEvents(const scada::NodeId&) const override {
     return nullptr;
   }

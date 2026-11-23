@@ -120,6 +120,10 @@ EventView::EventView(const ControllerContext& context,
       // instead of leaving colour as its only signal.
       {EventColumnSeverity, Translate("Severity"), 165,
        scada::aui::TableColumn::RIGHT},
+      // The ISA-18.2 state in words, so acknowledged-but-standing and
+      // cleared-unread rows never depend on colour alone (backlog 1117).
+      {EventColumnState, Translate("State"), 210,
+       scada::aui::TableColumn::LEFT},
       {EventColumnValue, Translate("Value"), 100,
        scada::aui::TableColumn::RIGHT,
        scada::aui::TableColumn::DataType::General,

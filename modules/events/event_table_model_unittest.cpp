@@ -101,7 +101,7 @@ class EventTableModelTest : public Test {
   TestNodeGenerator test_nodes_{.count = 3};
 
   // `EventTableModel` requires stable event pointers. The container type is
-  // mandated by `NodeEventProvider::unacked_events()`.
+  // mandated by `NodeEventProvider::current_events()`.
   NodeEventProvider::EventContainer test_events_ =
       GenerateEvents(test_nodes_, 0, 100);
 };
@@ -116,7 +116,7 @@ EventTableModelTest::EventTableModelTest() {
              .display_name = test_nodes_.display_name(i)}});
   }
 
-  ON_CALL(node_event_provider_, unacked_events())
+  ON_CALL(node_event_provider_, current_events())
       .WillByDefault(ReturnRef(test_events_));
 
   EXPECT_CALL(node_event_provider_, AddObserver(_))
@@ -139,7 +139,7 @@ EventTableModelTest::~EventTableModelTest() {
 }
 
 void EventTableModelTest::Init() {
-  EXPECT_CALL(node_event_provider_, unacked_events());
+  EXPECT_CALL(node_event_provider_, current_events());
 
   event_table_model_->Init(/*range*/ {}, /*filter_items*/ {});
 
@@ -202,7 +202,7 @@ TEST(EventTableModelUnacknowledgedFilterTest,
 
   NiceMock<MockNodeEventProvider> node_event_provider;
   NodeEventProvider::EventContainer empty_current;
-  ON_CALL(node_event_provider, unacked_events())
+  ON_CALL(node_event_provider, current_events())
       .WillByDefault(ReturnRef(empty_current));
   CurrentEventModel current_event_model{node_event_provider};
 
@@ -246,7 +246,7 @@ TEST(EventTableModelWorkingTest, ReportsTheHistoricalReadStartingAndEnding) {
 
   NiceMock<MockNodeEventProvider> node_event_provider;
   NodeEventProvider::EventContainer empty_current;
-  ON_CALL(node_event_provider, unacked_events())
+  ON_CALL(node_event_provider, current_events())
       .WillByDefault(ReturnRef(empty_current));
   CurrentEventModel current_event_model{node_event_provider};
 
@@ -293,7 +293,7 @@ TEST_F(EventTableModelTest, HistoricalEvents_AuditOnlyFilter) {
 
   NiceMock<MockNodeEventProvider> node_event_provider;
   NodeEventProvider::EventContainer empty_current;
-  ON_CALL(node_event_provider, unacked_events())
+  ON_CALL(node_event_provider, current_events())
       .WillByDefault(ReturnRef(empty_current));
   CurrentEventModel current_event_model{node_event_provider};
 
@@ -924,12 +924,12 @@ using EventAlarmChromeTest = EventFloodGroupingTest;
 // tracks the highest severity among them; acknowledged history stays out.
 TEST_F(EventAlarmChromeTest, AlarmSummaryCountsPendingAndHighestSeverity) {
   // Pending means live: a history record is never pending (backlog 889).
-  node_event_provider_.unacked_events_.try_emplace(
+  node_event_provider_.current_events_.try_emplace(
       1, scada::Event{.event_id = 1,
                       .severity = scada::kSeverityWarning,
                       .source_node_id = node_id_,
                       .message = u"warn"});
-  node_event_provider_.unacked_events_.try_emplace(
+  node_event_provider_.current_events_.try_emplace(
       2, scada::Event{.event_id = 2,
                       .severity = scada::kSeverityCritical,
                       .source_node_id = node_id_,
@@ -956,7 +956,7 @@ TEST_F(EventAlarmChromeTest, EmptyJournalSummarizesCalm) {
 // The leading pending-dot cell marks unacknowledged rows; acknowledged rows
 // stay empty, so the actionable rows read at a glance.
 TEST_F(EventAlarmChromeTest, PendingDotMarksUnacknowledgedRows) {
-  node_event_provider_.unacked_events_.try_emplace(
+  node_event_provider_.current_events_.try_emplace(
       1, scada::Event{.event_id = 1,
                       .severity = scada::kSeverityCritical,
                       .source_node_id = node_id_,
@@ -985,7 +985,7 @@ TEST_F(EventAlarmChromeTest, LiveAlarmIsNotDuplicatedByItsHistoryCopy) {
                           .severity = scada::kSeverityCritical,
                           .source_node_id = node_id_,
                           .message = u"crit"};
-  node_event_provider_.unacked_events_.try_emplace(event_id, live);
+  node_event_provider_.current_events_.try_emplace(event_id, live);
   historical_event_model_.AddEvent(live);
   historical_event_model_.AddEvent({.event_id = 8,
                                     .source_node_id = node_id_,
@@ -1023,7 +1023,7 @@ TEST_F(EventAlarmChromeTest, CountsUnacknowledgedByArea) {
 
   // Two pending alarms under area A (one direct, one via containment), one
   // acknowledged under A, and one pending outside every area.
-  auto& live = node_event_provider_.unacked_events_;
+  auto& live = node_event_provider_.current_events_;
   live.try_emplace(
       1, scada::Event{.event_id = 1, .source_node_id = in_a, .message = u"m1"});
   live.try_emplace(
@@ -1058,7 +1058,7 @@ TEST_F(EventAlarmChromeTest, AcknowledgeShownSkipsWhatTheFiltersHide) {
        .type_definition_id = scada::data_items::id::AnalogItemType,
        .attributes = {.browse_name = "n2", .display_name = u"N2"}});
 
-  auto& live = node_event_provider_.unacked_events_;
+  auto& live = node_event_provider_.current_events_;
   const int flood = events::kAlarmFloodThreshold + 2;
   std::set<scada::EventId> shown_ids;
   for (int i = 0; i < flood; ++i) {
@@ -1108,7 +1108,7 @@ TEST_F(EventAlarmChromeTest, AcknowledgeShownSkipsWhatTheFiltersHide) {
 // reports so — the footer's button and the menu item disable on it — even
 // though the server still holds unacknowledged alarms.
 TEST_F(EventAlarmChromeTest, NothingShownMeansNothingToAcknowledge) {
-  node_event_provider_.unacked_events_.try_emplace(
+  node_event_provider_.current_events_.try_emplace(
       1, scada::Event{.event_id = 1,
                       .severity = scada::kSeverityWarning,
                       .source_node_id = node_id_,
@@ -1157,7 +1157,7 @@ TEST_F(EventAlarmChromeTest, AcknowledgeShownIncludesLocalEvents) {
 // only be refused — and the journal can say that this is why.
 TEST_F(EventAlarmChromeTest, ServerEventsNeedTheRightToAcknowledge) {
   may_acknowledge_server_events_ = false;
-  node_event_provider_.unacked_events_.try_emplace(
+  node_event_provider_.current_events_.try_emplace(
       1, scada::Event{.event_id = 1,
                       .severity = scada::kSeverityCritical,
                       .source_node_id = node_id_,
@@ -1176,7 +1176,7 @@ TEST_F(EventAlarmChromeTest, ServerEventsNeedTheRightToAcknowledge) {
 }
 
 TEST_F(EventAlarmChromeTest, ServerEventsAreAcknowledgeableWithTheRight) {
-  node_event_provider_.unacked_events_.try_emplace(
+  node_event_provider_.current_events_.try_emplace(
       1, scada::Event{.event_id = 1,
                       .severity = scada::kSeverityCritical,
                       .source_node_id = node_id_,
@@ -1196,7 +1196,7 @@ TEST_F(EventAlarmChromeTest, ServerEventsAreAcknowledgeableWithTheRight) {
 // they stay acknowledgeable for an account that may not acknowledge.
 TEST_F(EventAlarmChromeTest, LocalEventsNeedNoRightToAcknowledge) {
   may_acknowledge_server_events_ = false;
-  node_event_provider_.unacked_events_.try_emplace(
+  node_event_provider_.current_events_.try_emplace(
       1, scada::Event{.event_id = 1,
                       .severity = scada::kSeverityCritical,
                       .source_node_id = node_id_,
@@ -1226,7 +1226,7 @@ class EventJournalScalingTest : public Test {
         {.node_id = node_id_,
          .type_definition_id = scada::data_items::id::AnalogItemType,
          .attributes = {.browse_name = "n1", .display_name = u"N1"}});
-    ON_CALL(node_event_provider_, unacked_events())
+    ON_CALL(node_event_provider_, current_events())
         .WillByDefault(ReturnRef(live_));
     ON_CALL(node_event_provider_, AddObserver(_))
         .WillByDefault(
@@ -1326,7 +1326,7 @@ class EventJournalScalingTest : public Test {
   NiceMock<MockNodeEventProvider> node_event_provider_;
   EventObserver* observer_ = nullptr;
   std::optional<CurrentEventModel> current_event_model_;
-  // Stable event storage, as `NodeEventProvider::unacked_events()` provides.
+  // Stable event storage, as `NodeEventProvider::current_events()` provides.
   NodeEventProvider::EventContainer live_;
   scada::EventId next_id_ = 1;
 

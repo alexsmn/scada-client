@@ -36,7 +36,7 @@ class EventStatusTileCountsTest : public ::testing::Test {
     scada::Event event;
     event.event_id = event_id;
     event.severity = severity;
-    node_event_provider_.unacked_events_.emplace(event_id, event);
+    node_event_provider_.current_events_.emplace(event_id, event);
   }
 
   testing::NiceMock<MockNodeEventProvider> node_event_provider_;
@@ -85,8 +85,10 @@ TEST_F(EventStatusTileCountsTest, CountsBySeverityAndTotal) {
   AddAlarm(4, scada::kSeverityNormal);
 
   EXPECT_EQ(provider_.GetTileCounts(),
-            (events::SeverityTileCounts{
-                .critical = 2, .warning = 1, .unacknowledged = 4}));
+            (events::SeverityTileCounts{.critical = 2,
+                                        .warning = 1,
+                                        .unacknowledged = 4,
+                                        .unacknowledged_critical = 2}));
 
   // The per-level accessors are views onto the same aggregation.
   EXPECT_EQ(provider_.GetSeverityCount(scada::aui::SeverityLevel::kCritical),
@@ -104,8 +106,10 @@ TEST_F(EventStatusTileCountsTest, CountsTheClientsOwnAlarmsButNotItsNotes) {
   local_events_.ReportEvent(LocalEvents::SEV_INFO, u"command sent");
 
   EXPECT_EQ(provider_.GetTileCounts(),
-            (events::SeverityTileCounts{
-                .critical = 1, .warning = 1, .unacknowledged = 2}));
+            (events::SeverityTileCounts{.critical = 1,
+                                        .warning = 1,
+                                        .unacknowledged = 2,
+                                        .unacknowledged_critical = 1}));
 }
 
 // Acknowledging drops the event from the client's event model, so the tiles
@@ -115,7 +119,7 @@ TEST_F(EventStatusTileCountsTest, CountsFallAsAlarmsAreAcknowledged) {
   AddAlarm(2, scada::kSeverityWarning);
   ASSERT_EQ(provider_.GetAlarmCount(), 2);
 
-  node_event_provider_.unacked_events_.erase(1);
+  node_event_provider_.current_events_.erase(1);
 
   EXPECT_EQ(provider_.GetTileCounts(),
             (events::SeverityTileCounts{

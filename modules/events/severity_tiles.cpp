@@ -7,6 +7,11 @@ namespace events {
 SeverityTileCounts CountSeverityTiles(std::span<const AlarmSummary> alarms) {
   SeverityTileCounts counts;
   for (const AlarmSummary& alarm : alarms) {
+    if (!alarm.acknowledged) {
+      ++counts.unacknowledged;
+      if (alarm.severity == scada::aui::SeverityLevel::kCritical)
+        ++counts.unacknowledged_critical;
+    }
     if (!alarm.active) {
       continue;
     }
@@ -19,9 +24,6 @@ SeverityTileCounts CountSeverityTiles(std::span<const AlarmSummary> alarms) {
         break;
       case scada::aui::SeverityLevel::kNone:
         break;
-    }
-    if (!alarm.acknowledged) {
-      ++counts.unacknowledged;
     }
   }
   return counts;

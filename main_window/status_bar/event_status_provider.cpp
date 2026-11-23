@@ -24,12 +24,12 @@ EventStatusProvider::~EventStatusProvider() {
 }
 
 events::SeverityTileCounts EventStatusProvider::GetTileCounts() const {
-  // The client's event model retains only alarms nobody has acknowledged yet
-  // (NodeEventProvider drops an event once it is acked) and carries no
-  // condition-cleared state, so every alarm it knows about is active and
-  // unacknowledged. The set is CollectAlarms', the same one the escalation
-  // ladder reads, so a tone never sounds over tiles that show nothing
-  // (backlog 888).
+  // The client's event model keeps every current alarm in its ISA-18.2 state —
+  // unacknowledged, acknowledged but still standing, or cleared unread
+  // (backlog 1117) — and the tiles count active ones by severity and unread
+  // ones as Unacknowledged. The set is CollectAlarms', the same one the
+  // escalation ladder reads, so a tone never sounds over tiles that show
+  // nothing (backlog 888).
   return events::CountSeverityTiles(
       events::CollectAlarms(node_event_provider_, local_events_));
 }

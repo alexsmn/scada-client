@@ -180,7 +180,7 @@ EventModule::EventModule(EventModuleContext&& context)
           [this](const GlobalCommandContext&) {
             // Server events are waiting, but this account may not
             // acknowledge them (backlog 1070).
-            if (!node_event_provider().unacked_events().empty())
+            if (CountUnackedEvents(node_event_provider()) != 0)
               return AcknowledgeNotPermittedReason();
             return Translate("Nothing is waiting to be acknowledged");
           }});
@@ -272,7 +272,9 @@ EventModule::EventModule(EventModuleContext&& context)
 EventModule::~EventModule() {}
 
 bool EventModule::HasAcknowledgeableServerEvents() {
-  return !node_event_provider().unacked_events().empty() &&
+  // An acknowledged alarm still standing is current but has nothing left to
+  // acknowledge (backlog 1117).
+  return CountUnackedEvents(node_event_provider()) != 0 &&
          CanAcknowledgeEvents(*services_.session_service);
 }
 
@@ -282,7 +284,7 @@ Awaitable<void> EventModule::ConfirmAndAcknowledgeAll(
   // the Client's own local events always do (backlog 1070).
   const bool server_events = HasAcknowledgeableServerEvents();
   const size_t count =
-      (server_events ? node_event_provider().unacked_events().size() : 0) +
+      (server_events ? CountUnackedEvents(node_event_provider()) : 0) +
       local_events_.events().size();
   if (count == 0)
     co_return;

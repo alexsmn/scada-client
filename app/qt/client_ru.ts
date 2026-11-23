@@ -1143,6 +1143,23 @@
         <source>Nothing is waiting to be acknowledged</source>
         <translation>Нет неквитированных событий</translation>
     </message>
+    <!-- modules/events/alarm_state.cpp: ISA-18.2 alarm states (backlog 1117). -->
+    <message>
+        <source>Active, unacknowledged</source>
+        <translation>Активно, не квитировано</translation>
+    </message>
+    <message>
+        <source>Active, acknowledged</source>
+        <translation>Активно, квитировано</translation>
+    </message>
+    <message>
+        <source>Returned to normal, unacknowledged</source>
+        <translation>В норме, не квитировано</translation>
+    </message>
+    <message>
+        <source>Returned to normal</source>
+        <translation>В норме</translation>
+    </message>
     <message>
         <source>No event shown here is waiting to be acknowledged</source>
         <translation>Среди показанных событий нет неквитированных</translation>

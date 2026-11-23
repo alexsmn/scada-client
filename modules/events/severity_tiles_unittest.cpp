@@ -44,16 +44,28 @@ TEST(SeverityTilesTest, CountsUnacknowledgedAcrossSeverities) {
   EXPECT_EQ(counts.warning, 1);
 }
 
-// A cleared alarm leaves the tiles even while still unread: the tiles report
-// what is wrong now, not what has been read (ISA-18.2 separates alarm state
-// from acknowledgement).
-TEST(SeverityTilesTest, IgnoresInactiveAlarmsEntirely) {
+// A cleared alarm leaves the severity tiles even while still unread: they
+// report what is wrong now (ISA-18.2 separates alarm state from
+// acknowledgement). It is still unread, so Unacknowledged keeps it — and a
+// cleared-unread critical still annunciates (backlog 1117).
+TEST(SeverityTilesTest, InactiveAlarmsCountOnlyAsUnacknowledged) {
   const std::vector<AlarmSummary> alarms{
       Alarm(SeverityLevel::kCritical, false, /*active=*/false),
       Alarm(SeverityLevel::kWarning, false, /*active=*/false),
   };
 
-  EXPECT_EQ(CountSeverityTiles(alarms), SeverityTileCounts{});
+  EXPECT_EQ(
+      CountSeverityTiles(alarms),
+      (SeverityTileCounts{.unacknowledged = 2, .unacknowledged_critical = 1}));
+}
+
+// An acknowledged alarm still standing is still wrong: it stays in its
+// severity tile, and leaves the unacknowledged ones (backlog 1117).
+TEST(SeverityTilesTest, AcknowledgedActiveAlarmStaysInItsSeverityTile) {
+  const std::vector<AlarmSummary> alarms{
+      Alarm(SeverityLevel::kCritical, /*acknowledged=*/true, /*active=*/true)};
+
+  EXPECT_EQ(CountSeverityTiles(alarms), (SeverityTileCounts{.critical = 1}));
 }
 
 // kNone is not a severity tile, but an unread one still needs looking at.

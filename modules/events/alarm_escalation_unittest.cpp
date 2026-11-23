@@ -19,8 +19,8 @@ TEST(AlarmEscalationTest, CalmWhenNothingStands) {
 // The gap this ladder exists to close: one unacknowledged critical, far below
 // the flood threshold, used to light nothing in the context bar at all.
 TEST(AlarmEscalationTest, OneCriticalAnnunciatesWithoutFlooding) {
-  const AlarmEscalation escalation =
-      EscalationFor(SeverityTileCounts{.critical = 1, .unacknowledged = 1});
+  const AlarmEscalation escalation = EscalationFor(SeverityTileCounts{
+      .critical = 1, .unacknowledged = 1, .unacknowledged_critical = 1});
   EXPECT_TRUE(escalation.annunciating);
   EXPECT_FALSE(escalation.flooding);
   EXPECT_TRUE(escalation.escalated());
@@ -43,10 +43,23 @@ TEST(AlarmEscalationTest, FloodNeedsNoCritical) {
 }
 
 TEST(AlarmEscalationTest, BothRungsLightTogether) {
-  const AlarmEscalation escalation = EscalationFor(SeverityTileCounts{
-      .critical = 3, .unacknowledged = kAlarmFloodThreshold + 1});
+  const AlarmEscalation escalation = EscalationFor(
+      SeverityTileCounts{.critical = 3,
+                         .unacknowledged = kAlarmFloodThreshold + 1,
+                         .unacknowledged_critical = 3});
   EXPECT_TRUE(escalation.annunciating);
   EXPECT_TRUE(escalation.flooding);
+}
+
+// An acknowledged critical still standing fills its tile but nobody has to be
+// told about it again; one that cleared unread is out of the tile but still
+// unread. The annunciator follows the unread one (backlog 1117 — the two
+// counts coincided only while the client had no Condition state).
+TEST(AlarmEscalationTest, AnnunciatesOnUnreadCriticalsNotActiveOnes) {
+  EXPECT_FALSE(EscalationFor(SeverityTileCounts{.critical = 1}).annunciating);
+  EXPECT_TRUE(EscalationFor(SeverityTileCounts{.unacknowledged = 1,
+                                               .unacknowledged_critical = 1})
+                  .annunciating);
 }
 
 // The flood boundary is the shared one, and the web client repeats the same

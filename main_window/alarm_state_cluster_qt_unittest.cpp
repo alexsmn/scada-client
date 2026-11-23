@@ -45,7 +45,7 @@ TEST_F(AlarmStateClusterTest, NoAlarmsLightsNeitherRung) {
 // Rung 1 below the flood threshold: the only thing marking a critical alarm
 // nobody has taken.
 TEST_F(AlarmStateClusterTest, UnacknowledgedCriticalAnnunciatesWithoutFlood) {
-  counts_ = {.critical = 1, .unacknowledged = 1};
+  counts_ = {.critical = 1, .unacknowledged = 1, .unacknowledged_critical = 1};
   AlarmStateCluster& cluster = MakeCluster();
 
   EXPECT_TRUE(IsShownIn(*cluster.annunciator()));
@@ -67,7 +67,7 @@ TEST_F(AlarmStateClusterTest, FloodPillStatesTheUnacknowledgedCount) {
 TEST_F(AlarmStateClusterTest, RefreshFollowsTheCountsBothWays) {
   AlarmStateCluster& cluster = MakeCluster();
 
-  counts_ = {.critical = 2, .unacknowledged = 2};
+  counts_ = {.critical = 2, .unacknowledged = 2, .unacknowledged_critical = 2};
   cluster.Refresh();
   EXPECT_TRUE(IsShownIn(*cluster.annunciator()));
 
@@ -82,7 +82,7 @@ TEST_F(AlarmStateClusterTest, RefreshFollowsTheCountsBothWays) {
 // moves the phase.
 TEST_F(AlarmStateClusterTest, FlashPhaseComesFromTheClock) {
   scada::base::ScopedMockClockOverride clock;
-  counts_ = {.critical = 1, .unacknowledged = 1};
+  counts_ = {.critical = 1, .unacknowledged = 1, .unacknowledged_critical = 1};
   AlarmStateCluster& cluster = MakeCluster();
 
   const bool first = cluster.annunciator_flash_on();

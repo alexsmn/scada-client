@@ -53,17 +53,14 @@ struct AlarmEscalation {
 // already has them, and computing the ladder from a second traversal would let
 // the chip and the tile beside it disagree about the same alarms.
 //
-// A caveat worth knowing, because the field name does not say it:
-// `counts.critical` is *active* criticals, where rung 1 is defined on
-// *unacknowledged* criticals. Those coincide today — the client's event model
-// has no cleared-but-unread state, so `NodeEventProvider` retains only
-// unacknowledged events and every alarm the counts see is unacknowledged (see
-// the note on `CountSeverityTiles`). When that provider gains a
-// condition-active flag, this function is one of the places that has to choose
-// again, and it must choose the unacknowledged count.
+// Rung 1 reads `unacknowledged_critical`, not `critical`: the tile counts
+// *active* criticals, which since backlog 1117 include acknowledged ones still
+// standing (no reason to annunciate) and exclude criticals that cleared unread
+// (still unread, so still annunciated). The two counts used to coincide only
+// because the client's event model had no Condition state.
 inline AlarmEscalation EscalationFor(const SeverityTileCounts& counts) {
   return AlarmEscalation{
-      .annunciating = counts.critical > 0,
+      .annunciating = counts.unacknowledged_critical > 0,
       .flooding = IsAlarmFlood(counts.unacknowledged),
   };
 }

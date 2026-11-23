@@ -8,11 +8,13 @@
 // come from the severity single source (aui/severity_colors.h, backlog 0.2) so
 // a token change restyles the tiles with everything else.
 //
-// Counts are of *active* alarms — an operator acts on what is currently wrong,
-// so a returned-to-normal alarm leaves the tiles even if it is still unread
-// (ISA-18.2 distinguishes alarm state from acknowledgement). Unacknowledged is
-// tracked separately rather than as a severity, because it answers a different
-// question: what has nobody looked at yet.
+// Severity counts are of *active* alarms — an operator acts on what is
+// currently wrong, so a returned-to-normal alarm leaves the severity tiles even
+// if it is still unread, and an acknowledged one still standing stays in them
+// (ISA-18.2 distinguishes alarm state from acknowledgement; backlog 1117 gave
+// the client both). Unacknowledged is tracked separately rather than as a
+// severity, because it answers a different question: what has nobody looked
+// at yet — which includes an alarm that cleared unread.
 
 #include "aui/severity_colors.h"
 
@@ -28,7 +30,7 @@ struct AlarmSummary {
   scada::aui::SeverityLevel severity = scada::aui::SeverityLevel::kNone;
   bool acknowledged = false;
   // False once the condition has cleared; such an alarm no longer counts
-  // towards the severity tiles.
+  // towards the severity tiles (see events::IsAlarmActive).
   bool active = true;
 };
 
@@ -36,16 +38,19 @@ struct AlarmSummary {
 struct SeverityTileCounts {
   int critical = 0;
   int warning = 0;
-  // Active alarms nobody has acknowledged yet, across severities.
+  // Alarms nobody has acknowledged yet, across severities, active or cleared.
   int unacknowledged = 0;
+  // Of those, the critical ones: the escalation ladder's annunciator rung.
+  int unacknowledged_critical = 0;
 
   friend bool operator==(const SeverityTileCounts&,
                          const SeverityTileCounts&) = default;
 };
 
-// Aggregates `alarms` into tile counts. Inactive alarms are ignored; alarms of
-// severity kNone count towards neither severity tile (but still towards
-// unacknowledged, since an unread event is unread whatever its severity).
+// Aggregates `alarms` into tile counts. Inactive alarms count towards no
+// severity tile; alarms of severity kNone count towards neither severity tile.
+// Any unacknowledged alarm counts towards unacknowledged, whatever its
+// severity and whether or not it still stands — unread is unread.
 SeverityTileCounts CountSeverityTiles(std::span<const AlarmSummary> alarms);
 
 // A tile ready to render: caption, count, and the colour the severity single

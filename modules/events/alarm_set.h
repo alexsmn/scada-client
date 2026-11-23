@@ -10,9 +10,10 @@ class NodeEventProvider;
 namespace events {
 
 // The alarms the severity tiles and the escalation ladder both count: every
-// unacknowledged server event, plus the client's own messages at warning
-// severity or above. An info-level client message ("command sent") is a
-// record, not an alarm, and counts towards neither.
+// current server event — unacknowledged events, and Conditions still active
+// although acknowledged (backlog 1117) — plus the client's own unacknowledged
+// messages at warning severity or above. An info-level client message ("command
+// sent") is a record, not an alarm, and counts towards neither.
 //
 // One function for both consumers because they used to read different sets —
 // the ladder counted every local message, the tiles none — so a run of

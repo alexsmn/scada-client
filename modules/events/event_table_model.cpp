@@ -11,6 +11,7 @@
 #include "base/utf_convert.h"
 #include "base/utils.h"
 #include "events/alarm_flood.h"
+#include "events/alarm_state.h"
 #include "events/current_event_model.h"
 #include "events/event_grouping.h"
 #include "events/event_severity.h"
@@ -34,6 +35,7 @@ namespace {
 // a bare u"" literal it rendered English in a Russian journal.
 
 void GetEventColors(const scada::Event& event,
+                    bool live,
                     scada::aui::Color& text_color,
                     scada::aui::Color& back_color) {
   // The colours themselves come from the single severity source, so they follow
@@ -48,10 +50,36 @@ void GetEventColors(const scada::Event& event,
   // colour exclusively for abnormal conditions") and §5, which describes the
   // intended design as "a red alarm row also carries a severity label and an
   // unacknowledged dot".
+  //
+  // On a live row the fill is spent only on an alarm that demands attention:
+  // unacknowledged and still standing (or a plain event nobody has read). An
+  // acknowledged alarm still standing keeps its severity as text colour — still
+  // wrong, no longer shouting — and one that cleared unread is drawn plain,
+  // its pending dot and «Returned to normal, unacknowledged» state cell saying
+  // what is left to do (ISA-18.2's three states, backlog 1117). A journal
+  // record keeps its severity fill: it records what was raised.
   const std::optional<scada::aui::EventBackground> background =
       events::EventBackgroundForSeverity(event.severity);
   if (!background)
     return;
+
+  if (live) {
+    switch (events::AlarmStateFor(event)) {
+      case events::AlarmState::kAckedActive:
+        if (const auto color = scada::aui::SeverityColor(
+                events::SeverityLevelForEvent(event.severity))) {
+          text_color = *color;
+        }
+        return;
+      case events::AlarmState::kUnackedReturned:
+      case events::AlarmState::kReturned:
+        return;
+      case events::AlarmState::kUnackedActive:
+      case events::AlarmState::kUnackedEvent:
+      case events::AlarmState::kAckedEvent:
+        break;
+    }
+  }
 
   const scada::aui::EventRowColors colors =
       scada::aui::EventRowColorsFor(*background);
@@ -230,7 +258,8 @@ void EventTableModel::GetEventCell(const Row& row,
                                    const scada::Event& event,
                                    int group_count,
                                    scada::aui::TableCell& cell) const {
-  GetEventColors(event, cell.text_color, cell.cell_color);
+  GetEventColors(event, /*live=*/row.type != HISTORICAL_EVENT, cell.text_color,
+                 cell.cell_color);
 
   switch (cell.column_id) {
     case EventColumnTime:
@@ -311,6 +340,9 @@ void EventTableModel::GetEventCell(const Row& row,
       // cue).
       if (IsPending(row.type, event))
         cell.text = u"●";
+      break;
+    case EventColumnState:
+      cell.text = events::AlarmStateLabel(events::AlarmStateFor(event));
       break;
     default:
       scada::base::NotReached();
@@ -661,9 +693,12 @@ void EventTableModel::OnCurrentEvents(
     std::span<const scada::Event* const> events) {
   std::vector<const scada::Event*> partitioned_events(events.begin(),
                                                       events.end());
+  // An acknowledged Condition still standing stays current (backlog 1117): it
+  // updates its row like any other change. Only an event that left the current
+  // set — acknowledged and, for a Condition, returned to normal — is removed.
   auto first_unacked = std::stable_partition(
       partitioned_events.begin(), partitioned_events.end(),
-      [](const scada::Event* event) { return event->acked; });
+      [](const scada::Event* event) { return !scada::IsRetained(*event); });
 
   // Remove acked. An acknowledged occurrence may be collapsed inside a group
   // rather than be a row of its own, so drop that one occurrence and keep the
@@ -1085,6 +1120,10 @@ int EventTableModel::CompareCells(int row1, int row2, int column_id) {
       // Pending (unacknowledged) rows order together; ties keep their
       // relative order via the stable sort.
       return Compare(event1.acked, event2.acked);
+    case EventColumnState:
+      // In declaration order: the states that demand action first.
+      return Compare(events::AlarmStateFor(event1),
+                     events::AlarmStateFor(event2));
     case EventColumnSeverity:
       // Compare the severity itself, not its cell text: the text sorts
       // lexically, which already misordered "100" against "80" and now also
