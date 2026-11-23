@@ -257,7 +257,7 @@ const ExternalServerTarget* GetExternalServerTarget() {
   // Resolved once: the environment cannot change mid-run, and every test asks.
   static const std::optional<ExternalServerTarget> target =
       []() -> std::optional<ExternalServerTarget> {
-    ExternalServerTarget target{
+    ExternalServerTarget configured{
         .remote_host = GetEnvOr("SCADA_E2E_EXTERNAL_HOST", {}),
         .opcua_host = GetEnvOr("SCADA_E2E_EXTERNAL_OPCUA_HOST", {}),
         .user = GetEnvOr("SCADA_E2E_EXTERNAL_USER", "root"),
@@ -265,9 +265,9 @@ const ExternalServerTarget* GetExternalServerTarget() {
         .trusted_certificate = GetEnvOr("SCADA_E2E_EXTERNAL_TRUSTED_CERT", {}),
         .security_mode = GetEnvOr("SCADA_E2E_EXTERNAL_SECURITY_MODE", {}),
     };
-    if (target.remote_host.empty() && target.opcua_host.empty())
+    if (configured.remote_host.empty() && configured.opcua_host.empty())
       return std::nullopt;
-    return target;
+    return configured;
   }();
   return target ? &*target : nullptr;
 }
