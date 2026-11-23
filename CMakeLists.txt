@@ -130,11 +130,25 @@ if(NOT SCADA_DISPLAY_RUNTIME_LIBRARY)
     "libdisplay_runtime.<so|dylib|dll>")
 endif()
 
+# The runtime's own data, which sits beside the library in its build tree and
+# in its release archive: today `Stencils/`, the stencil the runtime draws
+# Modus widgets from (it looks in `Stencils/` beside itself). Whatever the
+# runtime's folder carries there travels with it; the client names no file in
+# it. Absent, the runtime draws its approximations.
+if(SCADA_DISPLAY_RUNTIME_LIBRARY)
+  get_filename_component(_client_runtime_dir "${SCADA_DISPLAY_RUNTIME_LIBRARY}"
+                         DIRECTORY)
+  file(GLOB SCADA_DISPLAY_RUNTIME_STENCILS CONFIGURE_DEPENDS
+       "${_client_runtime_dir}/Stencils/*.vdc")
+  unset(_client_runtime_dir)
+endif()
+
 # client_stage_display_runtime(<executable> [DIRECTORY <dir>])
 #
 # Copies the configured runtime next to `<executable>`, which is where
-# `DisplayRuntime::SearchPaths()` looks first. Does nothing when no runtime was
-# configured -- that is a supported state, not a build error.
+# `DisplayRuntime::SearchPaths()` looks first, and its `Stencils/` beside it.
+# Does nothing when no runtime was configured -- that is a supported state,
+# not a build error.
 #
 # DIRECTORY overrides the destination, for a target whose executable does not
 # sit directly in the runtime output directory: a macOS .app puts it inside the
@@ -166,8 +180,22 @@ function(client_stage_display_runtime target)
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
       "${SCADA_DISPLAY_RUNTIME_LIBRARY}" "${_dir}"
     COMMENT "Stage the display runtime for ${target}")
+  set(_outputs "${_staged}")
 
-  add_custom_target(${target}_stage_display_runtime DEPENDS "${_staged}")
+  foreach(_stencil IN LISTS SCADA_DISPLAY_RUNTIME_STENCILS)
+    get_filename_component(_stencil_name "${_stencil}" NAME)
+    set(_staged_stencil "${_dir}/Stencils/${_stencil_name}")
+    add_custom_command(
+      OUTPUT "${_staged_stencil}"
+      DEPENDS "${_stencil}"
+      COMMAND ${CMAKE_COMMAND} -E make_directory "${_dir}/Stencils"
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${_stencil}" "${_dir}/Stencils"
+      COMMENT "Stage the display runtime's ${_stencil_name} for ${target}")
+    list(APPEND _outputs "${_staged_stencil}")
+  endforeach()
+
+  add_custom_target(${target}_stage_display_runtime DEPENDS ${_outputs})
   add_dependencies(${target} ${target}_stage_display_runtime)
 endfunction()
 

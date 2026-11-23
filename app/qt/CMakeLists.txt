@@ -267,6 +267,13 @@ if(SCADA_DISPLAY_RUNTIME_LIBRARY)
   install(FILES "${SCADA_DISPLAY_RUNTIME_LIBRARY}"
     DESTINATION "$<IF:$<BOOL:${APPLE}>,client.app/Contents/MacOS,bin>"
     COMPONENT Client)
+  # The runtime's Stencils/, beside it as in its own folder (see
+  # SCADA_DISPLAY_RUNTIME_STENCILS in client/CMakeLists.txt).
+  if(SCADA_DISPLAY_RUNTIME_STENCILS)
+    install(FILES ${SCADA_DISPLAY_RUNTIME_STENCILS}
+      DESTINATION "$<IF:$<BOOL:${APPLE}>,client.app/Contents/MacOS,bin>/Stencils"
+      COMPONENT Client)
+  endif()
 endif()
 
 # Convenience launcher

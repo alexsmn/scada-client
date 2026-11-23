@@ -37,6 +37,11 @@
 // never do is accept a table ABOVE its own ABI: the members past its knowledge
 // are not the ones it thinks they are.
 //
+// THE LIBRARY'S FOLDER. The library reads `Stencils/Modus.vdc` beside itself,
+// the Modus stencil it draws a Modus scheme's widgets from, and draws their
+// approximations without it. A host that installs the library keeps that
+// folder beside it; the release archive and the client's build both do.
+//
 // This file is deliberately C, not C++: no namespaces, no templates, no fixed
 // enum underlying types, nothing a C compiler would reject. A host may bind to
 // it from any language that speaks C.
