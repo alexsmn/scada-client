@@ -1438,13 +1438,19 @@ TEST_P(ClientServerE2eTest, ProfileSave_PersistsPagesOnServer) {
 TEST_P(ClientServerE2eTest, ProfileLoad_ReadsTheServerCopyOnNextSignIn) {
   // Runs under Cluster too, where both the save and the read are routed to
   // the configuration owner (see ProfileSave_PersistsPagesOnServer).
-  // An OPC UA client session never learns the node id of the user it signed in
-  // as -- opcuapp's `ClientSession::GetUserId()` answers null, because
-  // ActivateSession carries no such thing -- so over OPC UA the client neither
-  // reads nor writes a server profile, and there is nothing here to prove.
-  if (Protocol() == E2eProtocol::OpcUa)
-    GTEST_SKIP() << "an OPC UA client session has no user node id, so it has "
-                    "no server profile to load";
+  //
+  // Runs over OPC UA too (backlog 1110). It was skipped there because an OPC
+  // UA session never learns its user's node id -- ActivateSession carries no
+  // such thing, so opcuapp's `ClientSession::GetUserId()` answers null -- and
+  // the client therefore neither read nor wrote a server profile. The OPC UA
+  // backend now looks the account up in the Users folder
+  // (`UserNodeSessionService`, client/services/user_node_session.h).
+  //
+  // So this test names NO target user: both runs save to, and the second reads
+  // from, whatever account the session itself says it signed in as. With an
+  // explicit `--test-profile-save-user-id` (as ProfileSave_PersistsPagesOnServer
+  // passes) the save succeeds over OPC UA even when the session has no user,
+  // which is how that test stayed green over a feature that did not work.
 
   // Backlog 743. This was skipped while the client read `<user>!ProfileJson`:
   // `SaveProfile` stores the profile on the account's UserExtensionType row,
@@ -1456,8 +1462,7 @@ TEST_P(ClientServerE2eTest, ProfileLoad_ReadsTheServerCopyOnNextSignIn) {
   constexpr int kGuestUserId = 12;
   constexpr std::string_view kSavedPageTitle = "E2E Server Profile Page";
   const std::vector<std::string> client_args{
-      "--test-profile-save-file=" + profile_save_file_.string(),
-      "--test-profile-save-user-id=USER.12"};
+      "--test-profile-save-file=" + profile_save_file_.string()};
 
   WriteClientSettings(/*password=*/"", /*user=*/"guest");
   StartServer();
