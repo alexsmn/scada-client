@@ -3,8 +3,10 @@
 
 #include "base/awaitable.h"
 #include "base/time/time.h"
+#include "base/utf_convert.h"
 #include "export/configuration/configuration_transfer_client.h"
 #include "model/namespace_uris.h"
+#include "opcua/client/application_pki.h"
 #include "opcua/client/client_session.h"
 #include "opcua_bridge/client_adapters.h"
 #include "remote/remote_services.h"
@@ -293,6 +295,42 @@ class ProxyOpcUaSession {
                   "opc.tcp://127.0.0.1:" + std::to_string(opcua_port),
               .user_name = user,
               .password = password});
+    });
+    connected_ = static_cast<bool>(status);
+    return status;
+  }
+
+  // Signs in to `host` ("host:port") over a SignAndEncrypt endpoint, as the
+  // Qt client does against a hosted Server: its own certificate generated in
+  // `pki_root` on first use (opcua::ApplicationPki, the Client's own PKI), the
+  // server authenticated against `trusted_certificate`.
+  scada::Status ConnectSecured(
+      const std::string& host,
+      std::u16string user,
+      std::u16string password,
+      const std::filesystem::path& pki_root,
+      const std::filesystem::path& trusted_certificate) {
+    opcua::ApplicationPki pki{pki_root};
+    if (!pki.EnsureOwnCertificate("urn:telecontrol:scada:e2e", "localhost")
+             .good()) {
+      return scada::StatusCode::Bad;
+    }
+    std::filesystem::create_directories(pki.trusted_dir());
+    std::filesystem::copy_file(
+        trusted_certificate, pki.trusted_dir() / "ServerCertificate.pem",
+        std::filesystem::copy_options::overwrite_existing);
+    auto status = Run([&] {
+      return services_.session_service_->ConnectStatus(
+          scada::SessionConnectParams{
+              .host = host,
+              .user_name = user,
+              .password = password,
+              .security = {
+                  .mode = scada::SessionSecuritySettings::Mode::SignAndEncrypt,
+                  .client_certificate_path = pki.own_certificate().string(),
+                  .client_private_key_path = pki.own_private_key().string(),
+                  .trusted_certificates_dir = pki.trusted_dir().string(),
+                  .rejected_certificates_dir = pki.rejected_dir().string()}});
     });
     connected_ = static_cast<bool>(status);
     return status;
@@ -1385,6 +1423,9 @@ TEST_P(ClientServerE2eTest, ProfileSave_PersistsPagesOnServer) {
   // scada-config's DB (ServerConfigDatabasePath) -- the topology a
   // scada-setup site has. This skipped Cluster from 2026-09-12 as "pending a
   // server-tier gap (remote-config write routing)"; backlog 878 ran it.
+  if (UsesExternalServer())
+    GTEST_SKIP() << "signs in as the fixture's guest and reads the profile "
+                    "back from the server's own database";
   constexpr int kGuestUserId = 12;
   constexpr std::string_view kSavedPageTitle = "E2E Server Profile Page";
 
@@ -2503,6 +2544,70 @@ TEST_P(ClientServerE2eTest, Accounts_DisableEnableAndAProtectedServiceAccount) {
     ASSERT_FALSE(devices->empty());
     EXPECT_FALSE(devices->front().references.empty());
   }
+}
+
+// User administration on a hosted Server (docs/ops/hosted-opcua-listener.md):
+// the administrator account the customer is handed signs in over the
+// SignAndEncrypt UserName listener and creates an account, sets its password
+// and grants it a Role, and the new account then signs in there. The same
+// services the Client's Create - User, Set Password... and Roles... commands
+// call, through the Client's own OPC UA data services. Runs only against an
+// external OPC UA target with SCADA_E2E_EXTERNAL_TRUSTED_CERT set, and leaves
+// it as it found it; the hermetic topologies have
+// ConfigurationChanges_ReachEveryServerCopy.
+TEST_P(ClientServerE2eTest, Accounts_HostedAdministratorManagesUsers) {
+  const auto* target = GetExternalServerTarget();
+  if (!target || Protocol() != E2eProtocol::OpcUa ||
+      target->trusted_certificate.empty()) {
+    GTEST_SKIP() << "needs an external OPC UA target and "
+                    "SCADA_E2E_EXTERNAL_TRUSTED_CERT";
+  }
+
+  constexpr char16_t kAccount[] = u"E2E Hosted Operator";
+  constexpr char16_t kPassword[] = u"E2e-hosted-pass-1";
+  const scada::NodeId kOperatorRole{15680, 0};
+  const auto sign_in = [&](std::u16string user, std::u16string password,
+                           const char* pki) {
+    ProxyOpcUaSession session;
+    return session.ConnectSecured(target->opcua_host, std::move(user),
+                                  std::move(password), workspace_.path() / pki,
+                                  target->trusted_certificate);
+  };
+
+  ProxyOpcUaSession admin;
+  ASSERT_TRUE(admin.ConnectSecured(
+      target->opcua_host, UtfConvert<char16_t>(target->user),
+      UtfConvert<char16_t>(target->password), workspace_.path() / "pki-admin",
+      target->trusted_certificate))
+      << "the administrator could not sign in";
+
+  scada::Status status{scada::StatusCode::Good};
+  const scada::NodeId account =
+      AddObject(admin, kUsersFolder, kUserTypeId, kAccount, &status);
+  ASSERT_FALSE(account.is_null())
+      << "Create - User was refused: " << ::ToString(status);
+  status =
+      admin.Call(kUserManagement, kModifyUser,
+                 {scada::LocalizedText{kAccount},
+                  /*modify_password=*/true, scada::LocalizedText{kPassword},
+                  /*modify_user_configuration=*/false, scada::UInt32{0},
+                  /*modify_description=*/false, scada::String{}});
+  EXPECT_TRUE(status) << "Set Password... was refused: " << ::ToString(status);
+  status =
+      admin.Call(kOperatorRole, kRoleTypeAddIdentity,
+                 {scada::Variant{scada::MakeIdentityMappingRuleObject(
+                     {.criteria_type = scada::IdentityCriteriaType::kUserName,
+                      .criteria = "E2E Hosted Operator"})}});
+  EXPECT_TRUE(status) << "granting Operator was refused: "
+                      << ::ToString(status);
+  EXPECT_TRUE(sign_in(kAccount, kPassword, "pki-account"))
+      << "the account the administrator made cannot sign in";
+
+  const auto deleted = admin.DeleteNode(account);
+  ASSERT_TRUE(deleted.ok());
+  EXPECT_THAT(*deleted, ::testing::ElementsAre(scada::StatusCode::Good));
+  EXPECT_FALSE(sign_in(kAccount, kPassword, "pki-account"))
+      << "a deleted account can still sign in";
 }
 
 INSTANTIATE_TEST_SUITE_P(

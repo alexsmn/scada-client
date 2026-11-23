@@ -70,22 +70,36 @@ extern const std::string_view kStartupCompletedLog;
 // entirely through the environment (see GetExternalServerTarget); unset — the
 // default — leaves the suite hermetic and self-launching.
 struct ExternalServerTarget {
-  // "host:port" of the client-facing session endpoint per protocol. An empty
-  // opcua_host means the deployment does not expose OPC UA publicly (the GCP
-  // demo publishes only the native gRPC port), and OpcUa parameters skip.
+  // "host:port" (or an opc.tcp:// URL) of the client-facing session endpoint
+  // per protocol. An empty one means the deployment does not expose that
+  // protocol, and its parameters skip: the GCP demo publishes no named-account
+  // OPC UA endpoint, and a hosted customer Server publishes no gRPC port.
   std::string remote_host;
   std::string opcua_host;
   // Credentials substituted for the suite's own root/"" login.
   std::string user;
   std::string password;
+  // PEM of the server certificate to provision as trusted, as an operator who
+  // compared its fingerprint and answered the Client's trust prompt would
+  // have. Empty leaves the PKI untrusted, so a secured login is refused.
+  std::string trusted_certificate;
+  // OPC UA security mode for logins whose test asks for none ("None" / "Auto"
+  // / "SignAndEncrypt"). A hosted Server refuses an unsecured session, so the
+  // suite's default would fail every login there. Empty keeps the default.
+  std::string security_mode;
 };
 
-// The external target when SCADA_E2E_EXTERNAL_HOST is set, else nullptr:
+// The external target when SCADA_E2E_EXTERNAL_HOST or
+// SCADA_E2E_EXTERNAL_OPCUA_HOST is set, else nullptr:
 //
-//   SCADA_E2E_EXTERNAL_HOST        host:port of the native (gRPC) endpoint
-//   SCADA_E2E_EXTERNAL_OPCUA_HOST  host:port of the OPC UA endpoint, optional
-//   SCADA_E2E_EXTERNAL_USER        login user, default "root"
-//   SCADA_E2E_EXTERNAL_PASSWORD    password for that user, default empty
+//   SCADA_E2E_EXTERNAL_HOST          host:port of the native (gRPC) endpoint
+//   SCADA_E2E_EXTERNAL_OPCUA_HOST    host:port or URL of the OPC UA endpoint
+//   SCADA_E2E_EXTERNAL_USER          login user, default "root"
+//   SCADA_E2E_EXTERNAL_PASSWORD      password for that user, default empty
+//   SCADA_E2E_EXTERNAL_TRUSTED_CERT  path of the server certificate PEM the
+//                                    client trusts, optional
+//   SCADA_E2E_EXTERNAL_SECURITY_MODE OPC UA security mode for tests that set
+//                                    none, optional
 //
 // In this mode the suite launches no server, so every assertion that reads
 // server-side state (process liveness, server logs, the config SQLite DB, tier

@@ -257,15 +257,17 @@ const ExternalServerTarget* GetExternalServerTarget() {
   // Resolved once: the environment cannot change mid-run, and every test asks.
   static const std::optional<ExternalServerTarget> target =
       []() -> std::optional<ExternalServerTarget> {
-    auto* host = std::getenv("SCADA_E2E_EXTERNAL_HOST");
-    if (!host || !*host)
-      return std::nullopt;
-    return ExternalServerTarget{
-        .remote_host = host,
+    ExternalServerTarget target{
+        .remote_host = GetEnvOr("SCADA_E2E_EXTERNAL_HOST", {}),
         .opcua_host = GetEnvOr("SCADA_E2E_EXTERNAL_OPCUA_HOST", {}),
         .user = GetEnvOr("SCADA_E2E_EXTERNAL_USER", "root"),
         .password = GetEnvOr("SCADA_E2E_EXTERNAL_PASSWORD", {}),
+        .trusted_certificate = GetEnvOr("SCADA_E2E_EXTERNAL_TRUSTED_CERT", {}),
+        .security_mode = GetEnvOr("SCADA_E2E_EXTERNAL_SECURITY_MODE", {}),
     };
+    if (target.remote_host.empty() && target.opcua_host.empty())
+      return std::nullopt;
+    return target;
   }();
   return target ? &*target : nullptr;
 }
@@ -316,6 +318,9 @@ void ClientServerE2eTest::SetUp() {
     if (Protocol() == E2eProtocol::OpcUa && target->opcua_host.empty())
       GTEST_SKIP() << "external server target exposes no OPC UA endpoint (set "
                       "SCADA_E2E_EXTERNAL_OPCUA_HOST)";
+    if (Protocol() == E2eProtocol::Remote && target->remote_host.empty())
+      GTEST_SKIP() << "external server target exposes no native (gRPC) "
+                      "endpoint (set SCADA_E2E_EXTERNAL_HOST)";
     ASSERT_TRUE(std::filesystem::exists(GetClientExePath()));
     PrepareWorkspace();
     return;
@@ -469,9 +474,12 @@ void ClientServerE2eTest::WriteClientSettings(std::string_view password,
   auto opcua_host = std::string{"127.0.0.1:"} + std::to_string(opcua_port_);
   std::string login_user{user};
   std::string login_password{password};
+  std::string login_security_mode{security_mode};
   if (const auto* target = GetExternalServerTarget()) {
     remote_host = target->remote_host;
     opcua_host = target->opcua_host;
+    if (login_security_mode.empty())
+      login_security_mode = target->security_mode;
     // The deployment owns its own credentials. Substitute them only for the
     // suite's "correct credentials" login (root with the fixture's empty
     // password) — a test that deliberately passes wrong credentials, or a
@@ -489,17 +497,23 @@ void ClientServerE2eTest::WriteClientSettings(std::string_view password,
       {"Password", login_password},
       {"AutoLogin", true},
   };
-  if (!security_mode.empty())
-    root["SecurityMode"] = std::string{security_mode};
+  if (!login_security_mode.empty())
+    root["SecurityMode"] = login_security_mode;
   root["OpcUaPkiDirectory"] = pki_dir_.string();
   // Every local topology presents the fixture's certificate; an external
   // target presents its own, which this suite cannot know in advance.
-  if (trust_server && !UsesExternalServer()) {
-    std::filesystem::create_directories(pki_dir_ / "trusted");
-    std::filesystem::copy_file(
-        GetServerFixtureDir() / "Certificates" / "ServerCertificate.pem",
-        pki_dir_ / "trusted" / "ServerCertificate.pem",
-        std::filesystem::copy_options::overwrite_existing);
+  if (trust_server) {
+    const auto* target = GetExternalServerTarget();
+    const std::filesystem::path certificate =
+        target
+            ? std::filesystem::path{target->trusted_certificate}
+            : GetServerFixtureDir() / "Certificates" / "ServerCertificate.pem";
+    if (!certificate.empty()) {
+      std::filesystem::create_directories(pki_dir_ / "trusted");
+      std::filesystem::copy_file(
+          certificate, pki_dir_ / "trusted" / "ServerCertificate.pem",
+          std::filesystem::copy_options::overwrite_existing);
+    }
   }
   WriteTextFile(settings_file_, boost::json::serialize(root));
 }
