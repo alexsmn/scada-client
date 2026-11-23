@@ -121,13 +121,13 @@ class TreeModelAdapter : public QAbstractItemModel {
 
   std::vector<QIcon> icons_;
 
-  // Status-badged icons (WithStatusDot) by (icon index, rgba, device pixel
-  // ratio). Qt asks for DecorationRole on every paint and every sizeHint, and
-  // composing the badge allocates a pixmap and runs a QPainter each time; the
-  // whole space is three quality colours x the icon count. Cleared whenever
-  // icons_ is reloaded.
-  mutable std::map<std::tuple<int, std::uint32_t, qreal>, QPixmap>
-      status_badge_cache_;
+  // Status-badged icons (WithStatusGlyph) by (icon index, quality band, rgba,
+  // glyph diameter, device pixel ratio). Qt asks for DecorationRole on every
+  // paint and every sizeHint, and composing the badge allocates a pixmap and
+  // runs a QPainter each time; the whole space is three bands x the icon count
+  // per theme and font. Cleared whenever icons_ is reloaded.
+  using StatusBadgeKey = std::tuple<int, int, std::uint32_t, int, qreal>;
+  mutable std::map<StatusBadgeKey, QPixmap> status_badge_cache_;
 
   // Retained so a theme change can re-render the glyphs in the new tint; empty
   // when the adapter carries a bitmap strip, which cannot be recoloured.

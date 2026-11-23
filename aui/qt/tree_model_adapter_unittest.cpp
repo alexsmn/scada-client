@@ -6,6 +6,7 @@
 
 #include <QApplication>
 #include <QFont>
+#include <QImage>
 #include <QPalette>
 #include <QPixmap>
 #include <QVariant>
@@ -71,11 +72,12 @@ class ColorStubTreeModel : public TreeModel {
   virtual Color GetBackgroundColor(void* node, int column_id) override {
     return background_color;
   }
-  virtual std::optional<Color> GetStatusColor(void* node) override {
-    return status_color;
+  virtual std::optional<StatusIndicator> GetStatusIndicator(
+      void* node) override {
+    return status;
   }
 
-  std::optional<Color> status_color;
+  std::optional<StatusIndicator> status;
 
  private:
   int root_ = 0;
@@ -224,10 +226,10 @@ TEST_F(TreeModelAdapterTest, InvalidIndexHasNoDataAndBaseFlags) {
 }
 
 // The status badge is composed with a QPainter; Qt asks for it on every paint
-// and every sizeHint, so the composed pixmap is cached per (icon, colour, dpr)
-// and the same pixmap comes back for the same key.
+// and every sizeHint, so the composed pixmap is cached per (icon, band, colour,
+// size, dpr) and the same pixmap comes back for the same key.
 TEST_F(TreeModelAdapterColorTest, StatusBadgeIsComposedOnceAndShared) {
-  model_->status_color = SeverityColor(SeverityLevel::kWarning);
+  model_->status = StatusIndicator{.quality = Quality::kUncertain};
   const QPixmap first =
       adapter_.data(adapter_.index(0, 0), Qt::DecorationRole).value<QPixmap>();
   const QPixmap second =
@@ -235,11 +237,43 @@ TEST_F(TreeModelAdapterColorTest, StatusBadgeIsComposedOnceAndShared) {
   ASSERT_FALSE(first.isNull());
   EXPECT_EQ(first.cacheKey(), second.cacheKey());
 
-  // A different colour is a different badge, not a stale one.
-  model_->status_color = SeverityColor(SeverityLevel::kCritical);
+  // A different band is a different badge, not a stale one.
+  model_->status = StatusIndicator{.quality = Quality::kBad};
   const QPixmap other =
       adapter_.data(adapter_.index(0, 0), Qt::DecorationRole).value<QPixmap>();
   EXPECT_NE(first.cacheKey(), other.cacheKey());
+}
+
+// Backlog 1121: the three bands used to be one ellipse in three colours. Under
+// a monochrome reading (alpha only — what a colour-blind operator is left
+// with) the three composed badges must still differ.
+TEST_F(TreeModelAdapterColorTest, StatusBadgesDifferBeyondColour) {
+  auto alpha_mask = [&](Quality quality) {
+    model_->status = StatusIndicator{.quality = quality};
+    const QImage image = adapter_.data(adapter_.index(0, 0), Qt::DecorationRole)
+                             .value<QPixmap>()
+                             .toImage()
+                             .convertToFormat(QImage::Format_Alpha8);
+    return image;
+  };
+  const QImage good = alpha_mask(Quality::kGood);
+  const QImage uncertain = alpha_mask(Quality::kUncertain);
+  const QImage bad = alpha_mask(Quality::kBad);
+  ASSERT_FALSE(good.isNull());
+  EXPECT_NE(good, uncertain);
+  EXPECT_NE(good, bad);
+  EXPECT_NE(uncertain, bad);
+}
+
+// The badge's state in words is the name cell's tooltip; other columns and
+// rows without a badge carry none.
+TEST_F(TreeModelAdapterColorTest, StatusBadgeLabelIsTheNameCellTooltip) {
+  EXPECT_FALSE(adapter_.data(adapter_.index(0, 0), Qt::ToolTipRole).isValid());
+
+  model_->status =
+      StatusIndicator{.quality = Quality::kBad, .label = u"Недостоверно"};
+  EXPECT_EQ(adapter_.data(adapter_.index(0, 0), Qt::ToolTipRole).toString(),
+            QStringLiteral("Недостоверно"));
 }
 
 }  // namespace scada::aui

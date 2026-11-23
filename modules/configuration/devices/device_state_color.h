@@ -4,6 +4,7 @@
 #include "services/device_state_notifier.h"
 
 #include <optional>
+#include <string>
 
 class NodeRef;
 
@@ -14,6 +15,12 @@ class NodeRef;
 // is unit-testable without Qt; the caller resolves the colour through
 // scada::aui::QualityColor (which is itself theme-gated).
 std::optional<scada::aui::Quality> DeviceStateQuality(DeviceState state);
+
+// The operator-facing name of a device's connection state, translated — the
+// hardware-tree badge's tooltip: «Есть связь» / «Нет связи» / «Отключено».
+// Disabled shares the uncertain band's half-filled shape with a stale value, so
+// the tooltip is what says which it is. Empty for Unknown, which has no badge.
+std::u16string DeviceStateLabel(DeviceState state);
 
 // Computes a device's coarse DeviceState from its current Online/Disabled Value
 // attributes, read directly from `device` (no delivered monitored-item value

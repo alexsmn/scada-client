@@ -180,6 +180,7 @@ using aui::TableModel;
 using aui::ColorRole;
 
 // models/tree_model.h
+using aui::StatusIndicator;
 using aui::TreeModel;
 
 // models/tree_node_model.h

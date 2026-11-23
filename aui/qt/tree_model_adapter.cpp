@@ -6,7 +6,9 @@
 #include "aui/models/tree_model.h"
 #include "aui/qt/color_role_qt.h"
 #include "aui/qt/image_util.h"
+#include "aui/qt/status_glyph.h"
 #include "aui/qt/theme_qt.h"
+#include "aui/severity_colors.h"
 #include "base/check.h"
 
 #include <QApplication>
@@ -30,13 +32,14 @@ QPixmap IconPixmap(const QIcon& icon) {
   return icon.pixmap(sizes.isEmpty() ? QSize{16, 16} : sizes.first());
 }
 
-// Returns `base` with a small filled quality dot drawn to its left (a status
-// badge before the node icon), preserving the base pixmap's device-pixel ratio
-// so it stays crisp on high-DPI displays.
-QPixmap WithStatusDot(const QPixmap& base, const QColor& color) {
-  const qreal dpr = base.isNull() ? 1.0 : base.devicePixelRatio();
-  const int dot = 8;  // logical px
-  const int gap = 3;  // logical px between dot and icon
+// Returns `base` with `glyph` (a status badge) drawn to its left, before the
+// node icon, preserving the base pixmap's device-pixel ratio so it stays crisp
+// on high-DPI displays.
+QPixmap WithStatusGlyph(const QPixmap& base, const QPixmap& glyph) {
+  const qreal dpr =
+      base.isNull() ? glyph.devicePixelRatio() : base.devicePixelRatio();
+  const int dot = static_cast<int>(glyph.width() / glyph.devicePixelRatio());
+  const int gap = 3;  // logical px between glyph and icon
   const int base_w = base.isNull() ? 0 : static_cast<int>(base.width() / dpr);
   const int base_h =
       base.isNull() ? dot : static_cast<int>(base.height() / dpr);
@@ -48,11 +51,10 @@ QPixmap WithStatusDot(const QPixmap& base, const QColor& color) {
   result.fill(Qt::transparent);
 
   QPainter painter{&result};
-  painter.setRenderHint(QPainter::Antialiasing);
-  painter.setPen(Qt::NoPen);
-  painter.setBrush(color);
-  painter.drawEllipse(QRectF{0.0, (height - dot) / 2.0, static_cast<qreal>(dot),
-                             static_cast<qreal>(dot)});
+  painter.setRenderHint(QPainter::SmoothPixmapTransform);
+  painter.drawPixmap(QRectF{0.0, (height - dot) / 2.0, static_cast<qreal>(dot),
+                            static_cast<qreal>(dot)},
+                     glyph, QRectF{glyph.rect()});
   if (!base.isNull())
     painter.drawPixmap(dot + gap, (height - base_h) / 2, base);
   return result;
@@ -268,26 +270,47 @@ QVariant TreeModelAdapter::data(const QModelIndex& index, int role) const {
       const int icon_index = model_->GetIcon(node);
       const bool has_icon =
           icon_index >= 0 && icon_index < static_cast<int>(icons_.size());
-      // A quality status dot precedes the node icon when the model supplies
-      // one.
-      const std::optional<Color> status = model_->GetStatusColor(node);
+      // A status badge -- a quality band as colour and shape -- precedes the
+      // node icon when the model supplies one.
+      const std::optional<StatusIndicator> status =
+          model_->GetStatusIndicator(node);
       if (!status)
         return has_icon ? QVariant(icons_[icon_index]) : QVariant();
       const QPixmap base =
           has_icon ? IconPixmap(icons_[icon_index]) : QPixmap{};
-      const Rgba rgba = status->rgba();
+      const qreal dpr =
+          base.isNull() ? qApp->devicePixelRatio() : base.devicePixelRatio();
+      // The colour is part of the key because QualityColor follows the
+      // active severity theme.
+      const Color color = QualityColor(status->quality);
+      const Rgba rgba = color.rgba();
       const std::uint32_t packed = (std::uint32_t{rgba.r} << 24) |
                                    (std::uint32_t{rgba.g} << 16) |
                                    (std::uint32_t{rgba.b} << 8) | rgba.a;
-      const auto key = std::make_tuple(has_icon ? icon_index : -1, packed,
-                                       base.devicePixelRatio());
+      const int diameter =
+          StatusGlyphDiameter(QApplication::font("QAbstractItemView"));
+      const StatusBadgeKey key{has_icon ? icon_index : -1,
+                               static_cast<int>(status->quality), packed,
+                               diameter, dpr};
       auto it = status_badge_cache_.find(key);
       if (it == status_badge_cache_.end()) {
-        it = status_badge_cache_
-                 .emplace(key, WithStatusDot(base, status->qcolor()))
+        const QPixmap glyph =
+            DrawStatusGlyph(status->quality, color.qcolor(), diameter, dpr);
+        it = status_badge_cache_.emplace(key, WithStatusGlyph(base, glyph))
                  .first;
       }
       return QVariant(it->second);
+    }
+    case Qt::ToolTipRole: {
+      // The badge's state in words: the shape tells bands apart, the tooltip
+      // names the one shown.
+      if (index.column() != 0)
+        return QVariant();
+      const std::optional<StatusIndicator> status =
+          model_->GetStatusIndicator(node);
+      if (!status || status->label.empty())
+        return QVariant();
+      return QString::fromStdU16String(status->label);
     }
     case Qt::FontRole:
       // Value/timestamp columns render in the design-system monospace font so

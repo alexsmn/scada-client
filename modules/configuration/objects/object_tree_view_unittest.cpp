@@ -294,7 +294,7 @@ class ObjectTreeViewTest : public Test {
   // returns `bad_value_color` when the row has no VisibleNode at all, and
   // Transparent when it has one that is not bad -- and a ProxyVisibleNode
   // whose fetch has not landed reports IsBad() == false, so it reads as
-  // subscribed. GetStatusColor cannot be used here: it answers nullopt for
+  // subscribed. GetStatusIndicator cannot be used here: it answers nullopt for
   // *both* an absent node and an unresolved one, which is what made an earlier
   // version of this test unable to distinguish a broken fix from a slow one.
   //

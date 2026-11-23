@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aui/color.h"
+#include "aui/models/tree_model.h"
 #include "aui/severity_colors.h"
 #include "base/blinker.h"
 #include "timed_data/timed_data_spec.h"
@@ -135,12 +136,15 @@ class VisibleNodeModel {
   scada::aui::Color GetTextColor(void* tree_node);
   scada::aui::Color GetBackgroundColor(void* tree_node);
 
-  // Quality status-dot colour for a data variable's live value
-  // (good/uncertain/bad, from `VisibleNode::GetQuality`), or none when the node
-  // carries no value quality — folders/objects and groups, whose Value column
-  // shows a device state rather than a value. Never alarm state, which has its
-  // own cue in `GetBackgroundColor`.
-  std::optional<scada::aui::Color> GetStatusColor(void* tree_node);
+  // Quality status badge for a data variable's live value: its
+  // good/uncertain/bad band (from `VisibleNode::GetQuality`) and that band's
+  // label («Достоверно» / «Неопределённо» / «Недостоверно», from
+  // `DataQualityLabel`) for the tooltip. None when the node carries no value
+  // quality — folders/objects and groups, whose Value column shows a device
+  // state rather than a value. Never alarm state, which has its own cue in
+  // `GetBackgroundColor`.
+  std::optional<scada::aui::StatusIndicator> GetStatusIndicator(
+      void* tree_node);
 
  private:
   const VisibleNode* GetNode(void* tree_node) const;

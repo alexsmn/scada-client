@@ -1,5 +1,6 @@
 #include "configuration/devices/device_state_color.h"
 
+#include "aui/translation.h"
 #include "model/devices_node_ids.h"
 #include "node_service/node_ref.h"
 #include "scada/standard_node_ids.h"
@@ -52,6 +53,21 @@ std::optional<scada::aui::Quality> DeviceStateQuality(DeviceState state) {
       break;
   }
   return std::nullopt;
+}
+
+std::u16string DeviceStateLabel(DeviceState state) {
+  switch (state) {
+    case DeviceState::Online:
+      return Translate("Online");
+    case DeviceState::Offline:
+      return Translate("Offline");
+    case DeviceState::Disabled:
+      return Translate("Disabled");
+    case DeviceState::Unknown:
+    case DeviceState::Count:
+      break;
+  }
+  return {};
 }
 
 DeviceState DeviceStateFromNode(const NodeRef& device) {

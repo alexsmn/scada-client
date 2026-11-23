@@ -274,17 +274,18 @@ std::optional<DeviceState> HardwareTreeModel::GetDeviceStateForTesting(
                           : std::nullopt;
 }
 
-std::optional<scada::aui::Color> HardwareTreeModel::GetStatusColor(
-    void* tree_node) {
+std::optional<scada::aui::StatusIndicator>
+HardwareTreeModel::GetStatusIndicator(void* tree_node) {
   auto* device_tree_node = dynamic_cast<DeviceTreeNode*>(
       static_cast<ConfigurationTreeNode*>(tree_node));
   if (!device_tree_node)
     return std::nullopt;
-  std::optional<scada::aui::Quality> quality =
-      DeviceStateQuality(device_tree_node->device_state());
+  const DeviceState state = device_tree_node->device_state();
+  std::optional<scada::aui::Quality> quality = DeviceStateQuality(state);
   if (!quality)
-    return std::nullopt;  // Unknown state: no dot.
-  return scada::aui::QualityColor(*quality);
+    return std::nullopt;  // Unknown state: no badge.
+  return scada::aui::StatusIndicator{.quality = *quality,
+                                     .label = DeviceStateLabel(state)};
 }
 
 std::unique_ptr<ConfigurationTreeNode> HardwareTreeModel::CreateTreeNode(

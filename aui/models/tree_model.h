@@ -3,17 +3,33 @@
 #include "aui/color.h"
 #include "aui/models/color_role.h"
 #include "aui/models/edit_data.h"
+#include "aui/severity_colors.h"
 
 #include <boost/signals2/connection.hpp>
 #include <boost/signals2/signal.hpp>
 #include <functional>
 #include <optional>
+#include <string>
 
 namespace scada::aui {
 
 // GetIcon's "this row has no icon" answer. A tree whose rows are told apart by
 // indentation and the twisty alone returns this for every node.
 inline constexpr int kNoIcon = -1;
+
+// A node's status badge: the quality band it shows and the operator-facing name
+// of the state behind it. The adapter draws the band as a colour *and* a shape
+// (filled / half / ring with «?») and offers `label` as the row's tooltip, so
+// the state never rests on colour alone (docs/client/ux/principles.md §5).
+// `label` is the model's because the referent differs per tree: a value's
+// quality («Недостоверно») in the Explorer, a device's link state («Нет связи»)
+// in the hardware tree.
+struct StatusIndicator {
+  Quality quality = Quality::kGood;
+  std::u16string label;
+
+  bool operator==(const StatusIndicator&) const = default;
+};
 
 class TreeModel {
  public:
@@ -86,9 +102,9 @@ class TreeModel {
     return ColorRole::Default;
   }
 
-  // Optional status-indicator colour for a node (e.g. a quality dot drawn on
-  // the name column). Default: none, so the node shows no status dot.
-  virtual std::optional<Color> GetStatusColor(void* node) {
+  // Optional status badge for a node, drawn before the name column's icon.
+  // Default: none, so the node shows no badge.
+  virtual std::optional<StatusIndicator> GetStatusIndicator(void* node) {
     return std::nullopt;
   }
 

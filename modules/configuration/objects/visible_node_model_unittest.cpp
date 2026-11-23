@@ -1,5 +1,7 @@
 #include "configuration/objects/visible_node_model.h"
 
+#include "services/data_quality.h"
+
 #include "aui/severity_colors.h"
 #include "base/test/test_executor.h"
 #include "profile/profile.h"
@@ -60,7 +62,7 @@ TEST_F(VisibleNodeModelTest, UnresolvedProxyNodeShowsNoStatusDot) {
   auto proxy_node = std::make_shared<ProxyVisibleNode>();
   model_.SetNode(tree_node, proxy_node);
 
-  EXPECT_FALSE(model_.GetStatusColor(tree_node).has_value());
+  EXPECT_FALSE(model_.GetStatusIndicator(tree_node).has_value());
 
   auto underlying_node = std::make_shared<NiceMock<TestVisibleNode>>();
   ON_CALL(*underlying_node, IsBad()).WillByDefault(Return(false));
@@ -68,7 +70,7 @@ TEST_F(VisibleNodeModelTest, UnresolvedProxyNodeShowsNoStatusDot) {
   proxy_node->SetUnderlyingNode(underlying_node);
 
   // Once it speaks for a real value, the good band is honest again.
-  EXPECT_TRUE(model_.GetStatusColor(tree_node).has_value());
+  EXPECT_TRUE(model_.GetStatusIndicator(tree_node).has_value());
 
   proxy_node->SetChangeHandler(nullptr);
 }
@@ -86,11 +88,11 @@ TEST_F(VisibleNodeModelTest, GroupNodeShowsNoStatusDot) {
   ON_CALL(*group_node, IsAlerting()).WillByDefault(Return(false));
   model_.SetNode(tree_node, group_node);
 
-  EXPECT_FALSE(model_.GetStatusColor(tree_node).has_value());
+  EXPECT_FALSE(model_.GetStatusIndicator(tree_node).has_value());
 
   // An offline device colours the Value text, but still claims no quality.
   ON_CALL(*group_node, IsBad()).WillByDefault(Return(true));
-  EXPECT_FALSE(model_.GetStatusColor(tree_node).has_value());
+  EXPECT_FALSE(model_.GetStatusIndicator(tree_node).has_value());
 }
 
 // Backlog 1120: the dot is the value's quality band and nothing else. An
@@ -105,8 +107,8 @@ TEST_F(VisibleNodeModelTest, AlarmDoesNotColourTheQualityDot) {
   ON_CALL(*node, IsAlerting()).WillByDefault(Return(true));
   model_.SetNode(tree_node, node);
 
-  EXPECT_EQ(model_.GetStatusColor(tree_node),
-            scada::aui::QualityColor(scada::aui::Quality::kGood));
+  EXPECT_EQ(model_.GetStatusIndicator(tree_node)->quality,
+            scada::aui::Quality::kGood);
   EXPECT_EQ(model_.GetBackgroundColor(tree_node), profile_.alarm_color);
 }
 
@@ -118,15 +120,35 @@ TEST_F(VisibleNodeModelTest, StatusDotFollowsTheQualityBand) {
   model_.SetNode(tree_node, node);
 
   node->quality = scada::aui::Quality::kUncertain;
-  EXPECT_EQ(model_.GetStatusColor(tree_node),
-            scada::aui::QualityColor(scada::aui::Quality::kUncertain));
+  EXPECT_EQ(model_.GetStatusIndicator(tree_node)->quality,
+            scada::aui::Quality::kUncertain);
   // An uncertain value's text is tinted like the table's, not painted bad.
   EXPECT_EQ(model_.GetTextColor(tree_node),
             scada::aui::QualityColor(scada::aui::Quality::kUncertain));
 
   node->quality = scada::aui::Quality::kBad;
-  EXPECT_EQ(model_.GetStatusColor(tree_node),
-            scada::aui::QualityColor(scada::aui::Quality::kBad));
+  EXPECT_EQ(model_.GetStatusIndicator(tree_node)->quality,
+            scada::aui::Quality::kBad);
+}
+
+// Backlog 1121: the badge names its band in words for the tooltip, with the
+// same label the Inspector pill and the table's Quality column use, so the
+// three surfaces cannot drift apart.
+TEST_F(VisibleNodeModelTest, StatusBadgeNamesItsBand) {
+  int value = 0;
+  void* tree_node = &value;
+  auto node = std::make_shared<NiceMock<TestVisibleNode>>();
+  model_.SetNode(tree_node, node);
+
+  for (scada::aui::Quality quality :
+       {scada::aui::Quality::kGood, scada::aui::Quality::kUncertain,
+        scada::aui::Quality::kBad}) {
+    node->quality = quality;
+    const auto status = model_.GetStatusIndicator(tree_node);
+    ASSERT_TRUE(status.has_value());
+    EXPECT_EQ(status->label, DataQualityLabel(quality));
+    EXPECT_FALSE(status->label.empty());
+  }
 }
 
 // A proxy standing in for a group must not manufacture a dot either: it
@@ -141,7 +163,7 @@ TEST_F(VisibleNodeModelTest, ProxyOverGroupNodeShowsNoStatusDot) {
   auto group_node = std::make_shared<NiceMock<TestQualitylessVisibleNode>>();
   proxy_node->SetUnderlyingNode(group_node);
 
-  EXPECT_FALSE(model_.GetStatusColor(tree_node).has_value());
+  EXPECT_FALSE(model_.GetStatusIndicator(tree_node).has_value());
 
   proxy_node->SetChangeHandler(nullptr);
 }

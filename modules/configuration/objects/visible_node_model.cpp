@@ -78,7 +78,7 @@ scada::aui::Color VisibleNodeModel::GetBackgroundColor(void* tree_node) {
   return scada::aui::ColorCode::Transparent;
 }
 
-std::optional<scada::aui::Color> VisibleNodeModel::GetStatusColor(
+std::optional<scada::aui::StatusIndicator> VisibleNodeModel::GetStatusIndicator(
     void* tree_node) {
   const VisibleNode* node = GetNode(tree_node);
   if (!node)
@@ -92,7 +92,8 @@ std::optional<scada::aui::Color> VisibleNodeModel::GetStatusColor(
   const std::optional<scada::aui::Quality> quality = node->GetQuality();
   if (!quality)
     return std::nullopt;
-  return scada::aui::QualityColor(*quality);
+  return scada::aui::StatusIndicator{.quality = *quality,
+                                     .label = DataQualityLabel(*quality)};
 }
 
 const VisibleNode* VisibleNodeModel::GetNode(void* tree_node) const {

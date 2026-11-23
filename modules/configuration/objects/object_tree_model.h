@@ -36,7 +36,7 @@ class ObjectTreeModel : private ObjectTreeModelContext,
                                          int column_id) override;
   virtual scada::aui::Color GetBackgroundColor(void* tree_node,
                                                int column_id) override;
-  virtual std::optional<scada::aui::Color> GetStatusColor(
+  virtual std::optional<scada::aui::StatusIndicator> GetStatusIndicator(
       void* tree_node) override;
   virtual bool IsMonospaceColumn(int column_id) const override;
 

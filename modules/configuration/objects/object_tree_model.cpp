@@ -51,13 +51,13 @@ class ObjectTreeModel::ObjectTreeNode : public ConfigurationTreeNode {
   // No icon. The Objects explorer is the operator's tree, and there every row
   // is either a container or a data item — a distinction the twisty and the
   // indentation already make. A per-row glyph would only repeat it, while the
-  // one thing that varies, live quality, rides the status dot
-  // (VisibleNodeModel::GetStatusColor) as docs/client/ux/principles.md §5 requires:
-  // state is a dot, never artwork. This is what
-  // docs/product/ui-mockups/screens/operator-shell.html shows — its rows carry no icon
-  // element at all, unlike the engineering tree in config-workbench.html,
-  // which mixes links, devices and signals at one level and still needs a kind
-  // glyph.
+  // one thing that varies, live quality, rides the status badge
+  // (VisibleNodeModel::GetStatusIndicator) as docs/client/ux/principles.md §5
+  // requires: state is a shaped badge with a tooltip, never artwork. This is
+  // what docs/product/ui-mockups/screens/operator-shell.html shows — its rows
+  // carry no icon element at all, unlike the engineering tree in
+  // config-workbench.html, which mixes links, devices and signals at one level
+  // and still needs a kind glyph.
   //
   // Overridden rather than left to the base, which classifies by node class
   // and always yields a glyph. HardwareTreeModel keeps that behaviour.
@@ -126,10 +126,10 @@ scada::aui::Color ObjectTreeModel::GetBackgroundColor(void* tree_node,
     return ConfigurationTreeModel::GetBackgroundColor(tree_node, column_id);
 }
 
-std::optional<scada::aui::Color> ObjectTreeModel::GetStatusColor(
+std::optional<scada::aui::StatusIndicator> ObjectTreeModel::GetStatusIndicator(
     void* tree_node) {
-  // Quality dot on the name column, from the node's live value.
-  return visible_node_model_.GetStatusColor(tree_node);
+  // Quality badge on the name column, from the node's live value.
+  return visible_node_model_.GetStatusIndicator(tree_node);
 }
 
 bool ObjectTreeModel::IsMonospaceColumn(int column_id) const {
