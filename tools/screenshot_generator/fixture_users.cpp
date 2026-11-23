@@ -18,6 +18,8 @@
 #include "model/security_node_ids.h"
 #include "scada/access_rights.h"
 #include "scada/authorization.h"
+#include "scada/localized_text.h"
+#include "scada/range_encoding.h"
 #include "scada/standard_node_ids.h"
 #include "scada/user_management_encoding.h"
 
@@ -63,16 +65,15 @@ void ProjectFixtureUsersOntoStandardModel(AddressSpaceImpl& address_space,
 
   // The RoleSet and the two Roles that carry a coarse right. The rest are
   // implied at request time and would add nothing a fixture can show.
-  ensure_node(
-      scada::NodeState{.node_id = role_set,
-                       .node_class = scada::NodeClass::Object,
-                       .type_definition_id = {scada::id::FolderType,
-                                              scada::NamespaceIndexes::NS0},
-                       .parent_id = objects_folder,
-                       .reference_type_id = organizes,
-                       .attributes = scada::NodeAttributes{
-                           .browse_name = "RoleSet",
-                           .display_name = u"RoleSet"}});
+  ensure_node(scada::NodeState{
+      .node_id = role_set,
+      .node_class = scada::NodeClass::Object,
+      .type_definition_id = {scada::id::FolderType,
+                             scada::NamespaceIndexes::NS0},
+      .parent_id = objects_folder,
+      .reference_type_id = organizes,
+      .attributes = scada::NodeAttributes{.browse_name = "RoleSet",
+                                          .display_name = u"RoleSet"}});
   ensure_node(scada::NodeState{
       .node_id = scada::WellKnownRoleId(scada::WellKnownRole::kOperator),
       .node_class = scada::NodeClass::Object,
@@ -89,9 +90,8 @@ void ProjectFixtureUsersOntoStandardModel(AddressSpaceImpl& address_space,
                              scada::NamespaceIndexes::NS0},
       .parent_id = role_set,
       .reference_type_id = organizes,
-      .attributes =
-          scada::NodeAttributes{.browse_name = "ConfigureAdmin",
-                                .display_name = u"ConfigureAdmin"}});
+      .attributes = scada::NodeAttributes{.browse_name = "ConfigureAdmin",
+                                          .display_name = u"ConfigureAdmin"}});
   ensure_node(scada::NodeState{
       .node_id = sec::IdentityMappingRuleType,
       .node_class = scada::NodeClass::ObjectType,
@@ -171,11 +171,10 @@ void ProjectFixtureUsersOntoStandardModel(AddressSpaceImpl& address_space,
           .reference_type_id = {scada::id::Organizes,
                                 scada::NamespaceIndexes::NS0},
           .attributes = scada::NodeAttributes{.browse_name = name},
-          .properties = {
-              {sec::IdentityMappingRuleType_CriteriaType,
-               static_cast<scada::Int32>(
-                   scada::IdentityCriteriaType::kUserName)},
-              {sec::IdentityMappingRuleType_Criteria, name}}});
+          .properties = {{sec::IdentityMappingRuleType_CriteriaType,
+                          static_cast<scada::Int32>(
+                              scada::IdentityCriteriaType::kUserName)},
+                         {sec::IdentityMappingRuleType_Criteria, name}}});
       scada::base::Check(rule_result.first,
                          "fixture identity rule not created for " + name);
     };
@@ -198,16 +197,54 @@ void ProjectFixtureUsersOntoStandardModel(AddressSpaceImpl& address_space,
       .reference_type_id = organizes,
       .attributes = scada::NodeAttributes{.browse_name = "UserManagement",
                                           .display_name = u"UserManagement"}});
-  ensure_node(scada::NodeState{
-      .node_id = users_property,
-      .node_class = scada::NodeClass::Variable,
-      .type_definition_id = {scada::id::PropertyType,
-                             scada::NamespaceIndexes::NS0},
-      .parent_id = user_management,
-      .reference_type_id = {scada::id::HasProperty,
-                            scada::NamespaceIndexes::NS0},
-      .attributes = scada::NodeAttributes{
-          .browse_name = "Users",
-          .display_name = u"Users",
-          .value = scada::EncodeUserManagementUsers(users)}});
+  ensure_node(
+      scada::NodeState{.node_id = users_property,
+                       .node_class = scada::NodeClass::Variable,
+                       .type_definition_id = {scada::id::PropertyType,
+                                              scada::NamespaceIndexes::NS0},
+                       .parent_id = user_management,
+                       .reference_type_id = {scada::id::HasProperty,
+                                             scada::NamespaceIndexes::NS0},
+                       .attributes = scada::NodeAttributes{
+                           .browse_name = "Users",
+                           .display_name = u"Users",
+                           .value = scada::EncodeUserManagementUsers(users)}});
+
+  // The password policy a deployment publishes beside the account list (OPC UA
+  // Part 18 §5.2.2), so the change-password form and the Password policy view
+  // show rules rather than their empty state. A server takes these from its
+  // configuration and imposes none by default; this is one representative
+  // policy, not a product default.
+  const auto add_policy_property = [&](scada::NumericId id,
+                                       std::string_view browse_name,
+                                       scada::Variant value) {
+    ensure_node(
+        scada::NodeState{.node_id = {id, scada::NamespaceIndexes::NS0},
+                         .node_class = scada::NodeClass::Variable,
+                         .type_definition_id = {scada::id::PropertyType,
+                                                scada::NamespaceIndexes::NS0},
+                         .parent_id = user_management,
+                         .reference_type_id = {scada::id::HasProperty,
+                                               scada::NamespaceIndexes::NS0},
+                         .attributes = scada::NodeAttributes{
+                             .browse_name = std::string{browse_name},
+                             .display_name = UtfConvert<char16_t>(browse_name),
+                             .value = std::move(value)}});
+  };
+  add_policy_property(
+      scada::id::UserManagement_PasswordLength, "PasswordLength",
+      scada::Variant{scada::MakeRangeObject({.low = 8, .high = 64})});
+  add_policy_property(
+      scada::id::UserManagement_PasswordOptions, "PasswordOptions",
+      scada::Variant{static_cast<scada::UInt32>(
+          static_cast<std::uint32_t>(
+              scada::PasswordOptions::kRequiresUpperCaseCharacters) |
+          static_cast<std::uint32_t>(
+              scada::PasswordOptions::kRequiresLowerCaseCharacters) |
+          static_cast<std::uint32_t>(
+              scada::PasswordOptions::kRequiresDigitCharacters))});
+  add_policy_property(
+      scada::id::UserManagement_PasswordRestrictions, "PasswordRestrictions",
+      scada::Variant{scada::LocalizedText{
+          u"Пароль не должен совпадать с именем пользователя."}});
 }

@@ -8,6 +8,7 @@
 
 #include "dialog_kinds.h"
 
+#include "dialog_pump.h"
 #include "null_task_manager.h"
 #include "screenshot_config.h"
 
@@ -25,9 +26,12 @@
 #include "ui/common/client_utils.h"
 
 #include <QApplication>
+#include <QDialog>
+#include <QLineEdit>
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <chrono>
 #include <vector>
 
 namespace scada::screenshot_generator {
@@ -94,8 +98,12 @@ bool FetchDeviceTreeResident(const DialogCaptureContext& context,
 }  // namespace
 
 bool CaptureChangePasswordDialog(const DialogCaptureContext& context) {
-  // Set Password for the fixture administrator (USER.5, the same user the
-  // users-rbac capture shows). LocalEvents only collects the (never-fired)
+  // A signed-in user changing their own password (Client 2.6.9's «Сменить
+  // пароль…»), for the fixture administrator (USER.5, the same user the
+  // users-rbac capture shows). The form reads the fixture's password policy,
+  // so it lists the rules; the typed new password meets the length and the
+  // lower-case and digit rules but not the upper-case one, which shows both
+  // marks and OK disabled. LocalEvents only collects the (never-fired)
   // completion toast.
   DialogEnvironment& env = context.env;
   if (!env.node_service || !env.profile) {
@@ -113,7 +121,37 @@ bool CaptureChangePasswordDialog(const DialogCaptureContext& context) {
       ChangePasswordContext{.user_ = env.node_service->GetNode(user_id),
                             .executor_ = env.executor,
                             .local_events_ = local_events,
-                            .profile_ = *env.profile});
+                            .profile_ = *env.profile,
+                            .node_service_ = env.node_service,
+                            .self_service_ = true});
+
+  QDialog* dialog = nullptr;
+  for (QWidget* widget : QApplication::topLevelWidgets()) {
+    if (widget->objectName() == QStringLiteral("ChangePasswordDialog") &&
+        widget->isVisible()) {
+      dialog = qobject_cast<QDialog*>(widget);
+    }
+  }
+  if (!dialog) {
+    ADD_FAILURE() << "ChangePasswordDialog: the form did not open";
+    return false;
+  }
+  // The policy read is asynchronous; wait for the rules to appear.
+  QWidget* rules =
+      dialog->findChild<QWidget*>(QStringLiteral("changePasswordRules"));
+  if (!rules || !PumpEventsUntil([rules] { return rules->isVisible(); },
+                                 std::chrono::seconds{2})) {
+    ADD_FAILURE() << "ChangePasswordDialog: the password rules never appeared";
+    return false;
+  }
+  const auto type = [dialog](const char* name, const QString& text) {
+    if (auto* edit = dialog->findChild<QLineEdit*>(QString::fromLatin1(name)))
+      edit->setText(text);
+  };
+  type("currentLineEdit", QStringLiteral("current-password"));
+  type("newLineEdit", QStringLiteral("smena2026"));
+  type("repeatLineEdit", QStringLiteral("smena2026"));
+  dialog->adjustSize();
   return GrabShownDialog(context);
 }
 
@@ -130,10 +168,10 @@ bool CaptureMultiCreateDialog(const DialogCaptureContext& context) {
     ADD_FAILURE() << "MultiCreateDialog: Devices folder not found";
     return false;
   }
-  ShowMultiCreateDialog(context.dialog_service,
-                        MultiCreateContext{*env.node_service,
-                                           context.task_manager,
-                                           scada::data_items::id::DataItems});
+  ShowMultiCreateDialog(
+      context.dialog_service,
+      MultiCreateContext{*env.node_service, context.task_manager,
+                         scada::data_items::id::DataItems});
   return GrabShownDialog(context);
 }
 
@@ -153,10 +191,9 @@ bool CaptureCreateServiceItemDialog(const DialogCaptureContext& context) {
 
   ShowCreateServiceItemDialog(
       context.dialog_service,
-      CreateServiceItemContext{
-          .node_service_ = *env.node_service,
-          .task_manager_ = context.task_manager,
-          .parent_id_ = scada::data_items::id::DataItems});
+      CreateServiceItemContext{.node_service_ = *env.node_service,
+                               .task_manager_ = context.task_manager,
+                               .parent_id_ = scada::data_items::id::DataItems});
   QApplication::processEvents();
 
   // Point the combo at the RTU with a full set of diagnostic variables. The
@@ -170,8 +207,7 @@ bool CaptureCreateServiceItemDialog(const DialogCaptureContext& context) {
     return false;
   if (!ReportIfDialogListEmpty(context.spec))
     return false;
-  return GrabAndCloseVisibleDialogOrReport(context.spec,
-                                           context.publish_guard);
+  return GrabAndCloseVisibleDialogOrReport(context.spec, context.publish_guard);
 }
 
 }  // namespace scada::screenshot_generator
