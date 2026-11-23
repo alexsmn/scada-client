@@ -159,6 +159,8 @@ constexpr StatusTextEntry kStatusTexts[] = {
      QT_TRANSLATE_NOOP("", "The certificate has expired or is not yet valid")},
     {scada::StatusCode::Bad_SecurityModeInsufficient,
      QT_TRANSLATE_NOOP("", "The server requires a secure connection")},
+    {scada::StatusCode::Bad_IdentityChangeNotSupported,
+     QT_TRANSLATE_NOOP("", "The server cannot change the user of a session")},
 };
 
 struct QualifierFlagTextEntry {

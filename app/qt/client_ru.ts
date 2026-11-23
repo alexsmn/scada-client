@@ -3066,6 +3066,10 @@ Trust the new certificate only if the server&apos;s operator confirms that it wa
         <source>The server requires a secure connection</source>
         <translation>Сервер требует защищённого соединения</translation>
     </message>
+    <message>
+        <source>The server cannot change the user of a session</source>
+        <translation>Сервер не поддерживает смену пользователя сеанса</translation>
+    </message>
     <!-- Data-quality flags, rendered as a space-separated run
          (client/services/core_ui_text.cpp). Kept abbreviated exactly as before: the
          strip sits in a narrow grid cell. -->
