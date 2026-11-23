@@ -184,13 +184,13 @@
       "referenced_from": [
         "dev/users.md"
       ],
-      "notes": "Set Password dialog for the fixture administrator (USER.5).4). Published 2026-11-22 on dev/users.md (every Qt view gets a manual figure).",
+      "notes": "Change Password, the self-service form (Client 2.6.9's «Сменить пароль…») for the fixture administrator (USER.5): the current-password field, the rules of the fixture's password policy with one unmet, and OK disabled. Until 2026-11-23 it was the administrator's Set Password reset with no rules. Published on dev/users.md.",
       "captured": {
-        "commit": "1a80b55ed",
+        "commit": "4cf31094d",
         "platform": "macos",
         "dirty": false,
-        "sha256": "09ea2f805f372d81d0ec841052ce5503a09b9ed3ac8caa436c76e5acfb299514",
-        "last_rendered": "3844d632f"
+        "sha256": "55617c9019882d8f0145609d303b825f47a818b8cfd53ae8865f17e3bc7ca876",
+        "last_rendered": "4cf31094d"
       }
     },
     {
@@ -202,11 +202,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of change-password.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "1a80b55ed",
+        "commit": "4cf31094d",
         "platform": "macos",
         "dirty": false,
-        "sha256": "b598bd057d1b2d4b88a769ef76f21c9b1300bcfdc4558708182798991602d994",
-        "last_rendered": "3844d632f"
+        "sha256": "7dfc17467cb257add8ea57e4f01c9ad08e6d8fa6cce84947f63c052491e500b6",
+        "last_rendered": "4cf31094d"
       }
     },
     {
@@ -1003,11 +1003,11 @@
       ],
       "notes": "The Password policy view: what the server publishes on the UserManagement object (OPC UA Part 18 5.2.2) - the length range, the required character classes, and the deployment's own wording of the rule, shown verbatim. Read-only; the policy is server configuration. THEME-GATED, so reshell-theme rather than auto-view: MakePasswordPolicyPanel() returns nullptr under the legacy theme, so the view builds no widget and never opens - same gate and same 2026-08-02 retag as roles.png. (The legacy-theme gate this describes was removed on 2026-08-31 and the panel factory now always builds; the row is tagged auto-view.) The fixture configures no policy, so the capture shows the unconstrained case (Any length, nothing required) - which is a REAL state and deliberately distinct from 'No data', the unreadable case that also suppresses every requirement row. The manual prose for this surface is written (scada-docs client/workbench.md + en/ mirror, #administration); the image is NOT embedded yet. It used to wait for a Windows regeneration, which was retired on 2026-09-12 (either host may render this gallery), so publishing it is now a manual-figure decision rather than a pipeline step (backlog 734): embed it, set published:true and add it to current_generator_owned_subset. Published 2026-11-22 on dev/users.md (every Qt view gets a manual figure).",
       "captured": {
-        "commit": "2ab9399ee",
+        "commit": "4cf31094d",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "88cdc05c91b19b08091e02c2c23bec47ce2a2973dac04c85590248e8978711dd",
-        "last_rendered": "3844d632f"
+        "dirty": false,
+        "sha256": "3f3fde463822b59713f9d0781947f60827eef4b2c08bababf1539f93ec30615d",
+        "last_rendered": "4cf31094d"
       }
     },
     {
@@ -1019,11 +1019,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of password-policy.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "0ed6944b1",
+        "commit": "4cf31094d",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "ccd50514dcfd95f53a1d76069275829b07936c68a2d44ca3c70bff23a2be8e33",
-        "last_rendered": "3844d632f"
+        "dirty": false,
+        "sha256": "81f06b38710b171d8a8f5677f6eaa13b0723abc6fd6783704072b5c8462d6425",
+        "last_rendered": "4cf31094d"
       }
     },
     {
