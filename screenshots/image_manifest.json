@@ -431,11 +431,11 @@
       ],
       "notes": "The reshelled operator workbench: CaptureMainWindow under --theme renders the full shell (activity rail, context bar with KPI severity tiles, editor tabs over EventJournal/Summ/Struct, the Inspector fronted in the right dock, status strip) and saves it under this name so the legacy client-window.png is never overwritten by a themed render. Fixture pending alarms light the tiles and the journal chrome. Both STALE notes this row carried until 2026-09-19 are DISCHARGED, and were already wrong when they were read: they described the status strip's ping cell widening (120 -> 180, plus the \"no response\" marker, 0db08d4f8, 2026-08-01) and the context bar losing its identity/connection cluster to the status strip (2026-07-26), and asked for a Windows re-render. The tracked PNG already shows both — the context bar carries only breadcrumb, search and severity tiles, and user/connection/server/endpoint sit in the status strip — because it was re-rendered at 87b6a9b4b (2026-09-12), which has 0db08d4f8 as an ancestor. The request for a WINDOWS re-render is obsolete on its own terms too: either host may render the generated set (decided 2026-09-12), and only the manual-modus family needs Windows. This row is the README's hero image, so a note saying \"do not trust this picture\" is not a cheap thing to leave lying around. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it. Re-rendered 2026-11-15 at a clean tree, incidentally, while backlog 1074 checked whether the Inspector's Control hint reached it (it does not: the selection's control is disabled, so the hint is hidden); this cleared the --check-pairs report that the pair had fallen behind its sibling. Re-rendered 2026-11-22 and joined current_generator_owned_subset: every journal row had read «Критично 1000» since 2026-11-08, because LegacySeverityProbe took the fixture for a 2.5.7 Server (its test address space lacked DataItemControlType) and rescaled each severity by ten.",
       "captured": {
-        "commit": "f9a024850",
+        "commit": "d63fb45ad",
         "platform": "macos",
         "dirty": false,
-        "sha256": "69d6a9e1ee05548da9cf70b958688ca2e77c744be61f394cfe584d628fa540ea",
-        "last_rendered": "f9a024850"
+        "sha256": "8084df96fb72b0dea2f148b6310e9d6acfd237c04c01837ca93d3f23aa21a76b",
+        "last_rendered": "d63fb45ad"
       }
     },
     {
@@ -446,11 +446,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of workbench-window.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to workbench-window.png, and this is a second appearance of that capture rather than a second capture. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it. Re-rendered 2026-11-15 at a clean tree, incidentally, while backlog 1074 checked whether the Inspector's Control hint reached it (it does not: the selection's control is disabled, so the hint is hidden); this cleared the --check-pairs report that the pair had fallen behind its sibling.",
       "captured": {
-        "commit": "f9a024850",
+        "commit": "d63fb45ad",
         "platform": "macos",
         "dirty": false,
-        "sha256": "2e34c1320d1f83c44c4bf739beed40e27ea44732da3bcb5504dfadb71c63fc4e",
-        "last_rendered": "f9a024850"
+        "sha256": "c21d3befc17de850f3ed551d98692b3288ccf119e90b682a56876b293cdda6cd",
+        "last_rendered": "d63fb45ad"
       }
     },
     {
@@ -462,11 +462,11 @@
       ],
       "notes": "The Overview landing cockpit: a fresh page-less profile under the reshell theme boots through CreateInitialPage into MakeOverviewPage - the Explorer sidebar (tabified with its Favorites and Portfolio sibling panes) beside the dominant trend (65%) over the actionable-alarm strip, with the Inspector fronted on the right. Captured via the production seeding path (CaptureOverviewPage), so it guards the reshell initial-page routing too. In current_generator_owned_subset since 2026-09-12: the render was reviewed against the page that embeds it (scada-docs client/workbench.md and the en/ mirror, the «Обзор» section), which is what graduates an image into the published set. Re-rendered 2026-08-29: the Explorer trees stopped drawing a row for their root (ConfigurationTreeView now takes Tree's hidden-root default), because the pane's own dock title already names it — so the tree starts at its content. Re-rendered 2026-09-12: the landing published its whole right-hand third as the Inspector's «select an item» placeholder, because nothing on a freshly seeded page is selected — CaptureOverviewPage now makes the selection the shell's own way, through the Explorer pane the page already docks (SelectSignalForInspector, shared with workbench-window.png), so the card renders its readout, quality badge, limit bands and actions. Either host may render this image and the platform field is what keeps a diff readable (docs/ops/client-screenshots.md); the «pending a Windows re-render» this row used to claim is not owed. Rendered with --only, so no other image in the gallery moved, and provenance was stamped by hand for this row alone: --stamp rewrites every row whose digest differs — see backlog 642. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it. Re-rendered 2026-11-15 at a clean tree, incidentally, while backlog 1074 checked whether the Inspector's Control hint reached it (it does not: the selection's control is disabled, so the hint is hidden); this cleared the --check-pairs report that the pair had fallen behind its sibling. Re-rendered 2026-11-22: every journal row had read «Критично 1000» since 2026-11-08, because LegacySeverityProbe took the fixture for a 2.5.7 Server (its test address space lacked DataItemControlType) and rescaled each severity by ten. Re-rendered 2026-11-23 for backlog 1125: the dominant trend, which plots nothing on a fresh profile, now carries its empty-state hint («На графике нет сигналов / Отметьте сигнал флажком в дереве «Объекты»», GraphEmptyState) where it drew only a time axis. The diff region is the hint alone.",
       "captured": {
-        "commit": "f9a024850",
+        "commit": "d63fb45ad",
         "platform": "macos",
         "dirty": false,
-        "sha256": "917b22f606ad3f24ab648c98ee53e00de6225c7cc0c0c9879dedee5f32a5eb32",
-        "last_rendered": "f9a024850"
+        "sha256": "2e3834d13a6333469eac5fee2f6f8972e2721b4e37aa7e7615a5c4e625b5805d",
+        "last_rendered": "d63fb45ad"
       }
     },
     {
@@ -477,11 +477,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of workbench-overview.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to workbench-overview.png, and this is a second appearance of that capture rather than a second capture. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it. Re-rendered 2026-11-15 at a clean tree, incidentally, while backlog 1074 checked whether the Inspector's Control hint reached it (it does not: the selection's control is disabled, so the hint is hidden); this cleared the --check-pairs report that the pair had fallen behind its sibling. Re-rendered 2026-11-23 for backlog 1125: the dominant trend, which plots nothing on a fresh profile, now carries its empty-state hint («На графике нет сигналов / Отметьте сигнал флажком в дереве «Объекты»», GraphEmptyState) where it drew only a time axis. The diff region is the hint alone.",
       "captured": {
-        "commit": "f9a024850",
+        "commit": "d63fb45ad",
         "platform": "macos",
         "dirty": false,
-        "sha256": "734946615f7701869bc3082868565f1412c93bbb267be1440d52f0b03b6bb33e",
-        "last_rendered": "f9a024850"
+        "sha256": "988994a93401b4d16aa72e07e1eb8b9ef9d2dec6a9c780fe89757e84e22c5cc2",
+        "last_rendered": "d63fb45ad"
       }
     },
     {
@@ -1270,11 +1270,11 @@
       ],
       "notes": "Hardware explorer under --theme: filter field + per-device good/uncertain/bad status dots (Subsystems / HardwareTreeView). Theme-gated reshell chrome (backlog 5.0/4.2); the legacy view is a bare tree, so it is excluded from the no-theme managed check. Fixture devices KP-01 offline / KP-02 online / KP-03 disabled. Published 2026-08-15: it replaced `devices-off.png` in dev/devices.md and the tree half of `devices-status.png` in client.md — both legacy captures of this same window. Dark, like the rest of the published subset, and the status dots exist only under --theme, so this image cannot be published legacy. Re-rendered 2026-08-29: the Explorer trees stopped drawing a row for their root (ConfigurationTreeView now takes Tree's hidden-root default), because the pane's own dock title already names it — so the tree starts at its content. macOS render, like the one it replaces; the gallery is still not a Windows baseline (docs/ops/client-screenshots.md). Rendered with --only, so no other image in the gallery moved, and provenance was deliberately NOT stamped: --stamp rewrites every row whose digest differs, and with no digests recorded anywhere yet that is all 63 of them — see backlog 642. The «Все оборудование» top row is what went. The same render also caught up with a fixture change nobody had re-rendered for: 3e61559f9 (2026-08-23) nested the -104 RTU under an Iec60870LinkType link, so КП-01 МЭК-60870 is no longer a top-level row — it sits inside «Канал МЭК-104», collapsed here. That is the fixture's shape catching up, not a device disappearing.",
       "captured": {
-        "commit": "2fad11dc9",
+        "commit": "d63fb45ad",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "147b97eb5443191815a288dc3f279abb95ede00f5f7282cd265796df9ab41af4",
-        "last_rendered": "865ac7a22"
+        "dirty": false,
+        "sha256": "4eb109ec80eca16171e46438e4d8ba204119ebf825796042028b6ac52403409d",
+        "last_rendered": "d63fb45ad"
       }
     },
     {
@@ -1286,11 +1286,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of hardware-tree.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "c121a69c0",
+        "commit": "d63fb45ad",
         "platform": "macos",
-        "dirty": true,
-        "sha256": "b781b9ce3e5d91f7252542c7fdbc24f14c6bd91069858f9fd6ff3b5a1534df7c",
-        "last_rendered": "865ac7a22"
+        "dirty": false,
+        "sha256": "04808cf4af32a21e429ed73d9296e83384573ad62c2f306467f4d76989cf5137",
+        "last_rendered": "d63fb45ad"
       }
     },
     {
@@ -1474,11 +1474,11 @@
       ],
       "notes": "Objects explorer (the Struct window, ObjectTreeModel) — the operator's device/signal tree, collapsed to its top level. Untagged until 2026-08-01, so the managed-image gate skipped it and the on-disk render sat two UI generations stale: it still showed the retired items.bmp glyphs (yellow folders, blue variable icons) from before both the Lucide SVG migration and the deliberate removal of per-row icons from this tree (ObjectTreeModel::ObjectTreeNode::GetIcon returns kNoIcon — principles.md §5, state is a dot, never artwork). Only the root row keeps a glyph. Rendered on macOS, which is now a supported host for the gallery (the Windows requirement was retired 2026-09-12 and survives only for the manual-modus ActiveX family). Published 2026-08-15 in place of `devices-on.png`, the hand-annotated composite client.md used for the object panel. What the annotation pointed at — binding a device in the group's parameters — the surrounding prose already states, and since the fixture bound a device to a group (pinned by DataGroupShowsItsDeviceLinkState) the Значение column shows that group's link state, «Есть связь». Re-rendered dark for the published subset. Task 116 changed this render: the two data-item rows (Ua, Дорасчет Ua средн…) lose the expander triangle they used to draw, because the leaf-type check meant to suppress it had been comparing an instance against a supertype chain and so never matched. Containers keep theirs. Measured 2026-08-16 by building the generator before and after on one macOS machine: this is the only capture of the 22 that moves. The re-renders below carry it; it was a fix, not drift. Re-rendered 2026-08-29: the Explorer trees stopped drawing a row for their root (ConfigurationTreeView now takes Tree's hidden-root default), because the pane's own dock title already names it — so the tree starts at its content. macOS render, like the one it replaces; the gallery is legitimately mixed-platform (docs/ops/client-screenshots.md). Rendered with --only, so no other image in the gallery moved, and provenance was deliberately NOT stamped: --stamp rewrites every row whose digest differs, and with no digests recorded anywhere yet that is all 63 of them — see backlog 642. The «Все объекты» top row is what went. Re-rendered 2026-09-12 with the row ORDER fixed: the rows had been ordered by display name alone -- one flat alphabetical run, Latin before Cyrillic, with the two data-item rows among the containers -- because Tree::SetCompareHandler invalidated only the filter, so every row already resident when ConfigurationTreeView called SetSorted(true) kept the order Qt's own lessThan had given it. Now grouped as the comparator asks: containers by type definition (SCADA.62, then .108, .115, .118), then the two data items, names ascending within each group (visual_review V43). The Значение column and the data-item quality dots fill in a full pass and stay empty under --only, because a row's live value is subscribed when the row is first rendered as visible (docs/ops/client-screenshots.md); the tracked PNG is the full-pass render, and a full dark pass on 2026-09-26 reproduced it pixel for pixel.",
       "captured": {
-        "commit": "1a80b55ed",
+        "commit": "d63fb45ad",
         "platform": "macos",
         "dirty": false,
-        "sha256": "50c88a335b4f2dc2360d0378e47200173c6ef08faba2348ca37bb7f9bac971e8",
-        "last_rendered": "53741be2f"
+        "sha256": "297ab28d050458dcc74f9ee52bbb245a6fe4f126062c5fa5b97c9a7c761a193b",
+        "last_rendered": "d63fb45ad"
       }
     },
     {
@@ -1490,11 +1490,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of devices.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "1a80b55ed",
+        "commit": "d63fb45ad",
         "platform": "macos",
         "dirty": false,
-        "sha256": "252779d0afebef0386506e91c324b8edc9c1c0dbb529489f8405c12df05782b4",
-        "last_rendered": "53741be2f"
+        "sha256": "ee67cf66ab8ed26ea1be9821af01004c2f20b4d4cb7bf083ef62fbd341fb1ac8",
+        "last_rendered": "d63fb45ad"
       }
     },
     {
