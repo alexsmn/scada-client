@@ -2,6 +2,9 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <cmath>
+
 namespace scada::aui {
 namespace {
 
@@ -9,6 +12,25 @@ namespace {
 Color C(int r, int g, int b) {
   return Color{Rgba{static_cast<std::uint8_t>(r), static_cast<std::uint8_t>(g),
                     static_cast<std::uint8_t>(b)}};
+}
+
+// WCAG 2.x relative luminance of an sRGB colour,
+// https://www.w3.org/TR/WCAG22/#dfn-relative-luminance
+double RelativeLuminance(Color color) {
+  const Rgba rgba = color.rgba();
+  auto linear = [](std::uint8_t channel) {
+    const double c = channel / 255.0;
+    return c <= 0.04045 ? c / 12.92 : std::pow((c + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * linear(rgba.r) + 0.7152 * linear(rgba.g) +
+         0.0722 * linear(rgba.b);
+}
+
+// WCAG 2.x contrast ratio, https://www.w3.org/TR/WCAG22/#dfn-contrast-ratio
+double ContrastRatio(Color a, Color b) {
+  const double la = RelativeLuminance(a);
+  const double lb = RelativeLuminance(b);
+  return (std::max(la, lb) + 0.05) / (std::min(la, lb) + 0.05);
 }
 
 // Restores the process-wide severity theme so tests don't leak state into each
@@ -88,6 +110,24 @@ TEST_F(SeverityColorsTest, QualityColourFollowsTheTheme) {
 
   SetSeverityTheme(SeverityTheme::kHighContrast);
   EXPECT_EQ(QualityColor(Quality::kBad), C(255, 107, 107));
+}
+
+// Row text must stay legible on its severity fill in every theme: WCAG 2.x
+// SC 1.4.3 Contrast (Minimum) asks 4.5:1 for normal text,
+// https://www.w3.org/TR/WCAG22/#contrast-minimum. The light warning row once
+// carried white text on its amber fill at 3.0:1 (backlog 1123).
+TEST_F(SeverityColorsTest, RowTextMeetsWcagAaOnItsFill) {
+  for (const SeverityTheme theme : {SeverityTheme::kDark, SeverityTheme::kLight,
+                                    SeverityTheme::kHighContrast}) {
+    SetSeverityTheme(theme);
+    for (const EventBackground background :
+         {EventBackground::kCritical, EventBackground::kWarning}) {
+      const EventRowColors colors = EventRowColorsFor(background);
+      EXPECT_GE(ContrastRatio(colors.text, colors.background), 4.5)
+          << "theme " << static_cast<int>(theme) << ", background "
+          << static_cast<int>(background);
+    }
+  }
 }
 
 }  // namespace

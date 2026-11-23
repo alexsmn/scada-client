@@ -70,8 +70,9 @@ constexpr std::array kDescriptors = {
         .description =
             "Follow system, Dark, Light or High contrast. The choice applies "
             "live and in full. Alarm severity, data quality and switchgear "
-            "state keep their fixed values whichever scheme is picked: those "
-            "are safety signals, not styling.",
+            "state keep their meaning and hue in every scheme, only lightened "
+            "or darkened to stay legible on its background, and never take "
+            "the system accent colour: those are safety signals, not styling.",
     },
     SettingDescriptor{
         .command_id = ID_SETTINGS_STYLE,

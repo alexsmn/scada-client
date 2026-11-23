@@ -252,7 +252,8 @@ TEST(ThemeQtTest, SystemTokensComeFromTheLivePalette) {
   EXPECT_EQ(t.topbar_bg, palette.color(QPalette::Window));
 
   // Process semantics do NOT follow the desktop (principles.md §9): alarm,
-  // quality and single-line colours are safety signals with fixed values.
+  // quality and single-line colours are safety signals taken from our own
+  // ramp — the dark one, for this dark palette — never from the palette.
   const ThemeTokens& dark = GetThemeTokens(Theme::kDark);
   EXPECT_EQ(t.severity_critical, dark.severity_critical);
   EXPECT_EQ(t.bad, dark.bad);

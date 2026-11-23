@@ -3367,8 +3367,8 @@ Trust the new certificate only if the server&apos;s operator confirms that it wa
         <translation>Язык интерфейса оператора. Хранится на этом компьютере, поэтому не переносится вместе с учётной записью на другое рабочее место.</translation>
     </message>
     <message>
-        <source>Follow system, Dark, Light or High contrast. The choice applies live and in full. Alarm severity, data quality and switchgear state keep their fixed values whichever scheme is picked: those are safety signals, not styling.</source>
-        <translation>Как в системе, Тёмная, Светлая или Высококонтрастная. Выбор применяется сразу и полностью. Цвета важности тревог, качества данных и состояния коммутационных аппаратов не зависят от схемы: это функциональная сигнализация, а не оформление.</translation>
+        <source>Follow system, Dark, Light or High contrast. The choice applies live and in full. Alarm severity, data quality and switchgear state keep their meaning and hue in every scheme, only lightened or darkened to stay legible on its background, and never take the system accent colour: those are safety signals, not styling.</source>
+        <translation>Как в системе, Тёмная, Светлая или Высококонтрастная. Выбор применяется сразу и полностью. Цвета важности тревог, качества данных и состояния коммутационных аппаратов сохраняют смысл и оттенок в любой схеме — меняется только яркость, чтобы они читались на своём фоне, — и никогда не берут системный акцентный цвет: это функциональная сигнализация, а не оформление.</translation>
     </message>
     <message>
         <source>The platform style controls are drawn with. The colour scheme layers over it rather than replacing it, which is why the two are separate settings.</source>

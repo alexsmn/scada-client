@@ -17,11 +17,18 @@ struct ThemeTable {
 };
 
 // Values from docs/client/ux/design-language.md — critical maps to
-// `severity-critical`, warning to `severity-medium`. The bright dark-theme
-// fills carry dark text; the dark light/high-contrast fills carry light text.
+// `severity-critical`, warning to `severity-medium`, each with its `-fg`
+// companion. The ramp is per theme on purpose: a severity keeps its meaning and
+// hue family in every scheme, but its lightness is tuned to the background it
+// sits on, because no single fill reads on both a near-black and a white window
+// (design-language.md §2 "Severity ramp"). Every text colour clears WCAG 2.x
+// 4.5:1 on its fill — `SeverityColorsTest.RowTextMeetsWcagAaOnItsFill` pins it.
 constexpr Rgba kDarkText{11, 22, 35};      // #0b1623
 constexpr Rgba kLightText{255, 255, 255};  // #ffffff
-constexpr Rgba kHcText{0, 0, 0};           // #000000
+// `severity-medium-fg` in light: the amber fill is too light for white text
+// (3.0:1), so it carries near-black (6.2:1), as the web client does.
+constexpr Rgba kLightWarningText{17, 17, 17};  // #111111
+constexpr Rgba kHcText{0, 0, 0};               // #000000
 
 constexpr ThemeTable kDark{
     .critical = {.background = {232, 90, 82}, .text = kDarkText},
@@ -30,7 +37,7 @@ constexpr ThemeTable kDark{
 
 constexpr ThemeTable kLight{
     .critical = {.background = {143, 36, 31}, .text = kLightText},
-    .warning = {.background = {193, 138, 36}, .text = kLightText},
+    .warning = {.background = {193, 138, 36}, .text = kLightWarningText},
 };
 
 constexpr ThemeTable kHighContrast{
