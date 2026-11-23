@@ -63,8 +63,9 @@ class LegacySeverityHistoryService final : public scada::HistoryService {
       : inner_{std::move(inner)}, probe_{std::move(probe)} {}
 
   scada::CoStatusOr<scada::HistoryReadRawResult> HistoryReadRaw(
+      scada::ServiceContext context,
       scada::HistoryReadRawDetails details) override {
-    return inner_->HistoryReadRaw(std::move(details));
+    return inner_->HistoryReadRaw(std::move(context), std::move(details));
   }
 
   scada::CoStatusOr<scada::HistoryReadEventsResult> HistoryReadEvents(

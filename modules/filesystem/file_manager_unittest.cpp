@@ -70,8 +70,8 @@ TEST_F(FileManagerTest, DownloadFileFromServer_SendsExpectedServerRequests) {
       });
 
   EXPECT_CALL(view_service_,
-              TranslateBrowsePaths(/*inputs=*/kSomeLongPathBrowse))
-      .WillOnce([&](std::vector<scada::BrowsePath>)
+              TranslateBrowsePaths(testing::_, /*inputs=*/kSomeLongPathBrowse))
+      .WillOnce([&](scada::ServiceContext, std::vector<scada::BrowsePath>)
                     -> scada::CoStatusOr<std::vector<scada::BrowsePathResult>> {
         co_return std::vector{scada::BrowsePathResult{
             .targets = {scada::BrowsePathTarget{.target_id = file_node_id}}}};
@@ -87,8 +87,8 @@ TEST_F(FileManagerTest, DownloadFileFromServer_SendsExpectedServerRequests) {
 }
 
 TEST_F(FileManagerTest, DownloadFileFromServer_TranslateBrowsePathFails) {
-  EXPECT_CALL(view_service_, TranslateBrowsePaths(_))
-      .WillOnce([](std::vector<scada::BrowsePath>)
+  EXPECT_CALL(view_service_, TranslateBrowsePaths(testing::_, _))
+      .WillOnce([](scada::ServiceContext, std::vector<scada::BrowsePath>)
                     -> scada::CoStatusOr<std::vector<scada::BrowsePathResult>> {
         co_return scada::StatusCode::Bad;
       });
@@ -101,8 +101,8 @@ TEST_F(FileManagerTest,
        DownloadFileFromServer_TranslateBrowsePathReturnsNoTarget) {
   // A successful translate that resolves to zero (or more than one) target
   // must surface as a rejection, not silently succeed.
-  EXPECT_CALL(view_service_, TranslateBrowsePaths(_))
-      .WillOnce([](std::vector<scada::BrowsePath>)
+  EXPECT_CALL(view_service_, TranslateBrowsePaths(testing::_, _))
+      .WillOnce([](scada::ServiceContext, std::vector<scada::BrowsePath>)
                     -> scada::CoStatusOr<std::vector<scada::BrowsePathResult>> {
         co_return std::vector{scada::BrowsePathResult{.targets = {}}};
       });
@@ -114,8 +114,8 @@ TEST_F(FileManagerTest,
 TEST_F(FileManagerTest, DownloadFileFromServer_ReadFails) {
   const scada::NodeId file_node_id{111, 22};
 
-  EXPECT_CALL(view_service_, TranslateBrowsePaths(_))
-      .WillOnce([&](std::vector<scada::BrowsePath>)
+  EXPECT_CALL(view_service_, TranslateBrowsePaths(testing::_, _))
+      .WillOnce([&](scada::ServiceContext, std::vector<scada::BrowsePath>)
                     -> scada::CoStatusOr<std::vector<scada::BrowsePathResult>> {
         co_return std::vector{scada::BrowsePathResult{
             .targets = {scada::BrowsePathTarget{.target_id = file_node_id}}}};
@@ -136,8 +136,8 @@ TEST_F(FileManagerTest, DownloadFileFromServer_WrongValueType) {
   // must see the rejection rather than a silently-written empty file.
   const scada::NodeId file_node_id{111, 22};
 
-  EXPECT_CALL(view_service_, TranslateBrowsePaths(_))
-      .WillOnce([&](std::vector<scada::BrowsePath>)
+  EXPECT_CALL(view_service_, TranslateBrowsePaths(testing::_, _))
+      .WillOnce([&](scada::ServiceContext, std::vector<scada::BrowsePath>)
                     -> scada::CoStatusOr<std::vector<scada::BrowsePathResult>> {
         co_return std::vector{scada::BrowsePathResult{
             .targets = {scada::BrowsePathTarget{.target_id = file_node_id}}}};

@@ -568,8 +568,8 @@ TEST(MetrixDataSourceTest, AppliesEarliestTimestampFromHistoryRead) {
   const auto earliest = scada::base::DecodeDoubleT(100.0);
   const auto latest = scada::base::DecodeDoubleT(200.0);
 
-  EXPECT_CALL(history_service, HistoryReadRaw(_))
-      .WillOnce([&](scada::HistoryReadRawDetails details)
+  EXPECT_CALL(history_service, HistoryReadRaw(testing::_, _))
+      .WillOnce([&](scada::ServiceContext, scada::HistoryReadRawDetails details)
                     -> scada::CoStatusOr<scada::HistoryReadRawResult> {
         EXPECT_EQ(details.node_id, kTestNodeId);
         EXPECT_EQ(details.max_count, 1u);
@@ -600,15 +600,15 @@ TEST(MetrixDataSourceTest, DropsCanceledEarliestTimestampRead) {
   bool first_started = false;
   bool second_started = false;
 
-  EXPECT_CALL(history_service, HistoryReadRaw(_))
-      .WillOnce([&](scada::HistoryReadRawDetails details)
+  EXPECT_CALL(history_service, HistoryReadRaw(testing::_, _))
+      .WillOnce([&](scada::ServiceContext, scada::HistoryReadRawDetails details)
                     -> scada::CoStatusOr<scada::HistoryReadRawResult> {
         EXPECT_EQ(details.node_id, kTestNodeId);
         first_started = true;
         co_await first_completion.Wait();
         co_return first_result;
       })
-      .WillOnce([&](scada::HistoryReadRawDetails details)
+      .WillOnce([&](scada::ServiceContext, scada::HistoryReadRawDetails details)
                     -> scada::CoStatusOr<scada::HistoryReadRawResult> {
         EXPECT_EQ(details.node_id, kTestNodeId);
         second_started = true;
