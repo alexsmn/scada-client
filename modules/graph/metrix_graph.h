@@ -161,6 +161,13 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
   virtual void changeEvent(QEvent* event) override;
 #endif
 
+  // Graph — a neutral badge for every series' current value, never a solid
+  // badge in the pen colour: a pen may be any colour an operator picked,
+  // alarm red included, and a saturated badge on the axis reads as an alarm
+  // (docs/client/ux/principles.md §1, backlog 1124). The series is still named
+  // by the strip of pen colour graph_qt draws beside a neutral fill.
+  QColor GetCurrentValueFill(const GraphLine& line) const override;
+
  private:
 #if defined(UI_QT)
   // Applies the explicit theme's canvas colour, if a theme override is active

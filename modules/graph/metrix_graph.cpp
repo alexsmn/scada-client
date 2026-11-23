@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <optional>
 
 #if defined(UI_QT)
@@ -52,10 +53,15 @@ const scada::aui::ThemeTokens& ChartTokens() {
 
 // Formats an already-typed data value through the series' own value formatter
 // (engineering units / decimals), matching the legend's live-value column.
+// The value grid's cells: the default value format less the engineering units,
+// which SeriesLabel prints once after the series name instead of in every
+// cell of the row.
+constexpr ValueFormat kGridValueFormat{.flags = FORMAT_DEFAULT & ~FORMAT_UNITS};
+
 QString FormatDataValue(const MetrixDataSource& data_source,
                         const scada::DataValue& value) {
-  return QString::fromStdU16String(
-      data_source.timed_data().GetValueString(value.value, value.qualifier));
+  return QString::fromStdU16String(data_source.timed_data().GetValueString(
+      value.value, value.qualifier, kGridValueFormat));
 }
 
 // Formats a raw numeric aggregate (min/max/average) through the same formatter
@@ -63,7 +69,20 @@ QString FormatDataValue(const MetrixDataSource& data_source,
 // with the live value.
 QString FormatNumber(const MetrixDataSource& data_source, double number) {
   return QString::fromStdU16String(data_source.timed_data().GetValueString(
-      scada::Variant{number}, scada::Qualifier{}));
+      scada::Variant{number}, scada::Qualifier{}, kGridValueFormat));
+}
+
+// The series' name as the value grid shows it: the title, followed by its
+// engineering units when the item has any ("Частота, Гц"). The grid is the
+// trend's legend (docs/client/ux/design-language.md §5), and its numeric cells
+// stay bare so the columns line up — so this is where the units go.
+QString SeriesLabel(const MetrixDataSource& data_source) {
+  QString label = QString::fromStdU16String(data_source.title());
+  if (!data_source.units().empty()) {
+    label += QStringLiteral(", ");
+    label += QString::fromStdU16String(data_source.units());
+  }
+  return label;
 }
 
 // Placeholder shown when a cell has no value (no cursor, or no good sample in
@@ -125,7 +144,7 @@ void MetrixGraph::Legend::Update() {
   title_width_ = 0;
   for (auto i = plot().lines().begin(); i != plot().lines().end(); ++i) {
     MetrixLine& line = static_cast<MetrixLine&>(**i);
-    auto title = QString::fromStdU16String(line.data_source().title());
+    const QString title = SeriesLabel(line.data_source());
     auto width = QFontMetrics(font()).horizontalAdvance(title);
     title_width_ = std::max(title_width_, width);
   }
@@ -233,7 +252,7 @@ void MetrixGraph::Legend::PaintThemed(QPainter& painter) const {
     const QRect name_rect{kThemedPad + kThemedSwatchW + kThemedSwatchGap, top,
                           title_width_, kThemedRow};
     painter.drawText(name_rect, Qt::AlignLeft | Qt::AlignVCenter,
-                     QString::fromStdU16String(data_source.title()));
+                     SeriesLabel(data_source));
 
     // Value cells.
     const scada::DataValue current = data_source.timed_data().current();
@@ -440,6 +459,21 @@ void MetrixGraph::ApplyChartPalette() {
 }
 
 #endif  // defined(UI_QT)
+
+QColor MetrixGraph::GetCurrentValueFill(const GraphLine& line) const {
+  // A tint of the chart's own text over its own canvas rather than a theme
+  // token: the canvas can be an operator's pinned colour (SetCanvasColor), and
+  // the badge has to stand off whatever it is drawn on.
+  constexpr double kTint = 0.16;
+  const QColor background = background_color();
+  const QColor text = text_color();
+  auto mix = [kTint](int fg, int bg) {
+    return static_cast<int>(std::lround(fg * kTint + bg * (1.0 - kTint)));
+  };
+  return QColor{mix(text.red(), background.red()),
+                mix(text.green(), background.green()),
+                mix(text.blue(), background.blue())};
+}
 
 void MetrixGraph::UpdateCurBox() {
 #if defined(UI_QT)

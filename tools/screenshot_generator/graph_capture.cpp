@@ -13,6 +13,7 @@
 #include "base/time_utils.h"
 #include "controller/selection_model.h"
 #include "graph/metrix_graph.h"
+#include "graph/trend_pens.h"
 #include "inspector/qt/inspector_panel.h"
 #include "profile/window_definition.h"
 #include "scada/node_id.h"
@@ -45,12 +46,15 @@ WindowDefinition MakeGraphDefinition(const boost::json::value& json) {
   }
 
   for (const auto& ji : graph.at("items").as_array()) {
-    def.AddItem("Item")
-        .SetString("path", std::string(ji.at("path").as_string()))
-        .SetString("clr", std::string(ji.at("color").as_string()))
-        .SetInt("pane", static_cast<int>(ji.at("pane").as_int64()))
-        .SetInt("dots", ji.at("dots").as_bool() ? 1 : 0)
-        .SetInt("stepped", ji.at("stepped").as_bool() ? 1 : 0);
+    auto& item = def.AddItem("Item")
+                     .SetString("path", std::string(ji.at("path").as_string()))
+                     .SetInt("pane", static_cast<int>(ji.at("pane").as_int64()))
+                     .SetInt("dots", ji.at("dots").as_bool() ? 1 : 0)
+                     .SetInt("stepped", ji.at("stepped").as_bool() ? 1 : 0);
+    // No `clr` without a fixture colour: GraphViewLoader then gives the line
+    // the default pen, as it does for any series saved without one.
+    if (const auto* color = ji.as_object().if_contains("color"))
+      item.SetString("clr", std::string(color->as_string()));
   }
 
   const auto& ts = graph.at("time_scale").as_object();
@@ -169,14 +173,22 @@ void BuildGraphFromJson(MetrixGraph& graph,
       graph.SelectPane(&pane);
   }
 
-  // Lines.
+  // Lines. An item without a `color` gets the pen a series added in the
+  // client gets (GraphView::NewColor), so the captures show the default pens.
+  std::vector<QColor> used_colors;
   for (const auto& ji : jgraph.at("items").as_array()) {
     auto path = std::string(ji.at("path").as_string());
     int pane_ix = static_cast<int>(ji.at("pane").as_int64());
     auto* pane = pane_map[pane_ix];
     auto& line = graph.NewLine(path, *pane);
-    line.SetColor(QColor(
-        QString::fromStdString(std::string(ji.at("color").as_string()))));
+    const auto* jcolor = ji.as_object().if_contains("color");
+    const QColor color =
+        jcolor
+            ? QColor(QString::fromStdString(std::string(jcolor->as_string())))
+            : ChooseNewPenColor(QColor{}, graph.background_color(),
+                                used_colors);
+    used_colors.push_back(color);
+    line.SetColor(color);
     line.set_dots_shown(ji.at("dots").as_bool());
     line.set_stepped(ji.at("stepped").as_bool());
   }

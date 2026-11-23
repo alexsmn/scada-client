@@ -463,6 +463,7 @@
       "type_definition": "analog_item",
       "base_value": 125.4,
       "properties": {
+        "units": "МВт",
         "SCADA.158": 110.0,
         "SCADA.159": 140.0,
         "limit_lolo": 113.0,
@@ -479,6 +480,7 @@
       "type_definition": "analog_item",
       "base_value": -32.1,
       "properties": {
+        "units": "Мвар",
         "SCADA.158": -40.0,
         "SCADA.159": -20.0,
         "SCADA.145": "{TS.104!FLOAT:30003}"
@@ -534,6 +536,7 @@
       "base_value": 50.01,
       "history_stddev": 0.01,
       "properties": {
+        "units": "Гц",
         "SCADA.158": 49.95,
         "SCADA.159": 50.05,
         "display_format": "0.00"
@@ -1470,21 +1473,18 @@
     "items": [
       {
         "path": "TIT.200",
-        "color": "#0000FF",
         "pane": 1,
         "dots": true,
         "stepped": false
       },
       {
         "path": "TIT.201",
-        "color": "#FF0000",
         "pane": 2,
         "dots": true,
         "stepped": false
       },
       {
         "path": "TIT.208",
-        "color": "#FF8C00",
         "pane": 3,
         "dots": true,
         "stepped": false
@@ -1513,11 +1513,13 @@
     "every graph capture: a cursor line drawn across the limits capture",
     "illustrates nothing it is about.",
     "",
-    "An item's `color` is honoured as given, as an operator's chosen colour",
-    "is; only a line added without one gets a colour the client checks for",
-    "contrast against the plot (GraphView::NewColor). So pick one readable on",
-    "both appearances: limits-chart.png drew TIT.200 in #0000FF, which is",
-    "barely visible on the dark plot the manual publishes."
+    "An item's optional `color` is honoured as given, as an operator's",
+    "chosen colour is. Leave it out to show the default pen a new series",
+    "gets (ChooseNewPenColor in modules/graph/trend_pens.h), which is what",
+    "every graph here does: the captures used to hard-code red and orange,",
+    "the alarm hues, and the manual taught that as the trend's look",
+    "(backlog 1124). limits-chart.png before that drew TIT.200 in #0000FF,",
+    "barely visible on the dark plot."
   ],
   "graphs": {
     "cursor": {
@@ -1535,14 +1537,12 @@
       "items": [
         {
           "path": "TIT.201",
-          "color": "#FF0000",
           "pane": 1,
           "dots": true,
           "stepped": false
         },
         {
           "path": "TIT.208",
-          "color": "#FF8C00",
           "pane": 2,
           "dots": true,
           "stepped": false
@@ -1566,7 +1566,6 @@
       "items": [
         {
           "path": "TIT.200",
-          "color": "#2F80ED",
           "pane": 1,
           "dots": true,
           "stepped": false

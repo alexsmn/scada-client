@@ -32,6 +32,10 @@ class MetrixDataSource : public GraphDataSource {
   }
   std::string GetPath() const { return timed_data_.formula(); }
   const std::u16string& title() const SCADA_LIFETIME_BOUND { return title_; }
+  // The node's engineering units (AnalogItemType_EngineeringUnits), empty when
+  // it has none — a discrete item, an expression, or an analog nobody
+  // configured units for.
+  const std::u16string& units() const SCADA_LIFETIME_BOUND { return units_; }
 
   // Configured analog-limit bands (AnalogItemType_LimitLoLo/Lo/Hi/HiHi), or
   // kGraphUnknownValue when the node does not carry that band. Fed to
@@ -62,6 +66,7 @@ class MetrixDataSource : public GraphDataSource {
 
   void UpdateRange();
   void UpdateLimits();
+  void UpdateUnits();
 
   void ScheduleUpdateEarliestTimestamp();
   void SetEarliestTimestamp(scada::Time timestamp);
@@ -73,6 +78,7 @@ class MetrixDataSource : public GraphDataSource {
 
   TimedDataSpec timed_data_;
   std::u16string title_;
+  std::u16string units_;
 
   scada::Time earliest_timestamp_ = scada::kNullTime;
   Cancelation update_horizontal_range_cancelation_;

@@ -8,6 +8,8 @@
 #include "controller/test/controller_environment.h"
 #include "graph/metrix_data_source.h"
 #include "graph/metrix_graph.h"
+#include "graph/trend_pens.h"
+#include "model/data_items_node_ids.h"
 #include "model/node_id_util.h"
 #include "node_service/test/fake_node_service.h"
 #include "resources/common_resources.h"
@@ -554,4 +556,122 @@ TEST_F(GraphViewTest, TenPanesKeepEveryLineOnReopen) {
       ++lines;
   }
   EXPECT_EQ(lines, kPaneCount);
+}
+
+// Backlog 1124: the first series of a dark-theme trend was drawn in alarm red,
+// because NewColor took the first readable entry of the colour-name palette
+// (Black, White, Red, …). A new series now takes the categorical pen sequence.
+TEST_F(GraphViewTest, NewColorOnDarkCanvasIsTheFirstTrendPenNotRed) {
+  graph_view_.SetGraphColor(QColor{0x17, 0x17, 0x17});
+
+  const QColor color = graph_view_.NewColor().qcolor();
+
+  EXPECT_EQ(color, TrendPenSequence()[0]);
+  EXPECT_NE(color, QColor(Qt::red));
+}
+
+TEST_F(GraphViewTest, SecondSeriesTakesTheSecondTrendPen) {
+  graph_view_.SetGraphColor(QColor{0xff, 0xff, 0xff});
+
+  graph_view_.AddContainedItem(kTestNodeId, 0);
+
+  EXPECT_EQ(graph_view_.GetSeriesColor().qcolor(), TrendPenSequence()[0]);
+  EXPECT_EQ(graph_view_.NewColor().qcolor(), TrendPenSequence()[1]);
+}
+
+// An operator's own default pen (set from the line setup dialog) is a choice,
+// so it wins over the sequence even in a hue the sequence avoids.
+TEST_F(GraphViewTest, NewColorHonoursTheOperatorsDefaultPen) {
+  graph_view_.SetGraphColor(QColor{0x17, 0x17, 0x17});
+  env_.profile_.graph_view.default_color = scada::aui::ColorCode::Red;
+
+  EXPECT_EQ(graph_view_.NewColor(),
+            scada::aui::Color{scada::aui::ColorCode::Red});
+}
+
+// A saved series keeps the colour it was saved with; only a series saved
+// without one takes a default pen.
+TEST_F(GraphViewTest, LoadKeepsASavedPenColour) {
+  WindowDefinition def{"Graph"};
+  def.AddItem("GraphPane").SetInt("ix", 1);
+  def.AddItem("Item")
+      .SetString("path", NodeIdToScadaString(kTestNodeId))
+      .SetString("clr", "#FFFF0000")
+      .SetInt("pane", 1);
+
+  GraphView view{env_.MakeControllerContext()};
+  std::unique_ptr<UiView> ui = view.Init(def);
+
+  ASSERT_TRUE(view.HasSeries());
+  EXPECT_EQ(view.GetSeriesColor(),
+            scada::aui::Color{scada::aui::ColorCode::Red});
+}
+
+// Backlog 1124: the current-value badge on the axis was a solid badge in the
+// pen colour — a red badge for a red pen. The trend's badge is neutral on
+// either canvas, whatever the pen.
+TEST_F(GraphViewTest, CurrentValueBadgeIsNeutral) {
+  MetrixGraph graph{
+      MetrixGraphContext{env_.timed_data_service_, env_.executor_}};
+  auto& line = graph.NewLine(NodeIdToScadaString(kTestNodeId), graph.NewPane());
+  line.SetColor(QColor{Qt::red});
+
+  for (const QColor canvas : {QColor{0x17, 0x17, 0x17}, QColor{Qt::white}}) {
+    graph.SetCanvasColor(canvas);
+    const QColor fill = graph.GetCurrentValueFill(line);
+    EXPECT_EQ(fill.red(), fill.green());
+    EXPECT_EQ(fill.green(), fill.blue());
+    EXPECT_NE(fill, canvas);
+  }
+  graph.DeleteAllPanes();
+}
+
+// Backlog 1124: the trend named no units anywhere. The series learns its
+// node's engineering units, which the value grid prints after the name.
+TEST(MetrixDataSourceTest, ReadsTheNodesEngineeringUnits) {
+  TestExecutor executor;
+  NiceMock<scada::MockHistoryService> history_service;
+  scada::services services{.history_service = &history_service};
+  FakeNodeService node_service{services};
+  NodeRef node = node_service.Add(scada::NodeState{
+      .node_id = kTestNodeId,
+      .properties = {{scada::data_items::id::AnalogItemType_EngineeringUnits,
+                      scada::LocalizedText{u"Hz"}}}});
+
+  MetrixDataSource data_source{executor};
+  data_source.SetTimedData(
+      MakeTimedDataSpec(node, scada::base::DecodeDoubleT(200.0)));
+  Drain(executor);
+
+  EXPECT_EQ(data_source.units(), u"Hz");
+}
+
+// The vertical axis is a fixed 50 px, and an analog's default format appends
+// its units: a tick read «-32 Мвар» and clipped to «-32 Мва». Axis labels are
+// the number alone; the units are printed once, after the name in the grid.
+TEST(MetrixDataSourceTest, AxisLabelCarriesNoUnits) {
+  TestExecutor executor;
+  NiceMock<scada::MockHistoryService> history_service;
+  scada::services services{.history_service = &history_service};
+  FakeNodeService node_service{services};
+  NodeRef node = node_service.Add(scada::NodeState{
+      .node_id = kTestNodeId,
+      .node_class = scada::NodeClass::Variable,
+      .type_definition_id = scada::data_items::id::AnalogItemType,
+      .properties = {{scada::data_items::id::AnalogItemType_EngineeringUnits,
+                      scada::LocalizedText{u"Hz"}}}});
+
+  MetrixDataSource data_source{executor};
+  data_source.SetTimedData(
+      MakeTimedDataSpec(node, scada::base::DecodeDoubleT(200.0)));
+  Drain(executor);
+
+  // Precondition: this node's default format does carry the units, so the
+  // assertion below is about the axis and not about a unitless node.
+  ASSERT_NE(data_source.timed_data()
+                .GetValueString(scada::Variant{50.0}, {})
+                .find(u"Hz"),
+            std::u16string::npos);
+  EXPECT_EQ(data_source.GetYAxisLabel(50.0).toStdU16String().find(u"Hz"),
+            std::u16string::npos);
 }

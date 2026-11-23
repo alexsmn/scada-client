@@ -233,10 +233,19 @@ void MetrixDataSource::UpdateLimits() {
   }
 }
 
+void MetrixDataSource::UpdateUnits() {
+  units_ =
+      timed_data_.node()[scada::data_items::id::AnalogItemType_EngineeringUnits]
+          .value()
+          .get_or(scada::LocalizedText{})
+          .text;
+}
+
 void MetrixDataSource::OnItemChanged() {
   title_ = timed_data_.GetTitle().text;
   UpdateRange();
   UpdateLimits();
+  UpdateUnits();
 
   SetEarliestTimestamp(GetTimeRange(timed_data_).first);
   ScheduleUpdateEarliestTimestamp();
@@ -276,7 +285,12 @@ void MetrixDataSource::OnPropertyChanged(const PropertySet& properties) {
 
 #if defined(UI_QT)
 QString MetrixDataSource::GetYAxisLabel(double value) const {
-  return QString::fromStdU16String(timed_data_.GetValueString(value, {}));
+  // Number only: the axis is a fixed 50 px (Graph::kVerticalAxisWidth), and a
+  // tick reading «-32 Мвар» clipped to «-32 Мва». The units are in the value
+  // grid, after the series name.
+  constexpr ValueFormat kAxisFormat{.flags = FORMAT_DEFAULT & ~FORMAT_UNITS};
+  return QString::fromStdU16String(
+      timed_data_.GetValueString(value, {}, kAxisFormat));
 }
 #endif
 
