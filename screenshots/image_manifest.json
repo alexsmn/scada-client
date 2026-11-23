@@ -2994,13 +2994,6 @@
       }
     },
     {
-      "file": "colour-scheme-menu.png",
-      "tag": "obsolete",
-      "referenced_from": [],
-      "notes": "OBSOLETE (2026-08-02): Settings > Colour scheme is no longer a submenu. The preference toggles moved into the SettingsDialog and the menu now carries a single Settings... item, so the appearance switch is a combo row in that dialog — see settings-dialog.png, which replaced this image in client/workbench.md (RU+EN). The CaptureColourSchemeMenu generator test became CaptureSettingsDialog, and CaptureSettingsPanel when the dialog itself was retired on 2026-08-28; it guards the same reachability there. Deleted from the manual's img/ on 2026-11-22: no page references it.",
-      "published": false
-    },
-    {
       "file": "table.png",
       "tag": "auto-view",
       "theme": "dark",
@@ -3486,7 +3479,7 @@
     "manual-diagram": 5,
     "manual-modus": 3,
     "manual-os": 2,
-    "obsolete": 23
+    "obsolete": 22
   },
   "current_generator_owned_subset": [
     "about.png",
