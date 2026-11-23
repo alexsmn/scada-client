@@ -17,7 +17,8 @@ Lucide
   glyphs, and the About dialog's header mark. ISC requires no attribution in
   the product
   UI, but the notice must travel with copies of the files, which is what
-  res/icons/LICENSE is for. A subset of Lucide is Feather-derived and MIT
+  res/icons/LICENSE is for; tools/release/package.sh ships it in every
+  package as THIRD-PARTY-LICENSES/lucide.txt. A subset of Lucide is Feather-derived and MIT
   (© 2013-present Cole Bemis); the same applies.
 
   The files are used verbatim, at the geometry Lucide publishes (24 px grid,

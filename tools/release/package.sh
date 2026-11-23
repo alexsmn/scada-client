@@ -85,6 +85,9 @@ stage_documents() {
     [ -f "$port_dir/copyright" ] &&
       cp "$port_dir/copyright" "$dest/THIRD-PARTY-LICENSES/$port.txt"
   done
+  # The icons are Lucide (ISC), compiled into the binary: NOTICE names them,
+  # and the licence text it points to has to travel with every copy too.
+  cp "$client_root/res/icons/LICENSE" "$dest/THIRD-PARTY-LICENSES/lucide.txt"
 
   {
     echo "Telecontrol SCADA Client $version"
