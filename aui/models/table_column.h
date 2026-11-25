@@ -38,6 +38,14 @@ struct TableColumn {
   // is ordinary. This also keeps `client/CLAUDE.md`'s sizing rule — the width
   // comes from font metrics via the delegate rather than from a pixel constant.
   bool size_to_content = false;
+  // Elide an over-long cell in the MIDDLE rather than at the end.
+  //
+  // For a column whose text is a path — the journal's «ЭСТРА-ПС : ТИ :
+  // Коэффициент…» — the end is the part that tells rows apart: every row of
+  // one substation shares the prefix, and right-elision cut off exactly the
+  // signal's own name (backlog 1126). The model should also return the full
+  // text as the cell's tooltip, so the elided part stays one hover away.
+  bool elide_middle = false;
 };
 
 struct GridCell {

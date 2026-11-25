@@ -20,6 +20,8 @@
 #include <QMenu>
 #include <QPalette>
 #include <QSortFilterProxyModel>
+#include <QStyleOptionViewItem>
+#include <QStyledItemDelegate>
 
 namespace scada::aui {
 
@@ -66,6 +68,20 @@ int DefaultColumnWidth(const TableColumn& column) {
   return column.width * mono_advance / ui_advance;
 }
 
+// Draws a `TableColumn::elide_middle` column: the stock delegate with the
+// elision point moved to the middle, so a path keeps its leaf.
+class ElideMiddleDelegate : public QStyledItemDelegate {
+ public:
+  using QStyledItemDelegate::QStyledItemDelegate;
+
+ protected:
+  virtual void initStyleOption(QStyleOptionViewItem* option,
+                               const QModelIndex& index) const override {
+    QStyledItemDelegate::initStyleOption(option, index);
+    option->textElideMode = Qt::ElideMiddle;
+  }
+};
+
 void SetDefaultItemColors(QPalette& palette) {
   for (auto group :
        {QPalette::Active, QPalette::Inactive, QPalette::Disabled}) {
@@ -101,6 +117,18 @@ Table::Table(std::shared_ptr<TableModel> model,
 
   for (int i = 0; i < static_cast<int>(model_adapter_->columns().size()); ++i)
     setColumnWidth(i, DefaultColumnWidth(model_adapter_->columns()[i]));
+
+  // QAbstractItemView::textElideMode is view-wide, so a per-column mode takes
+  // a delegate of its own. Parented to the view: Qt deletes it after the view
+  // has stopped drawing, which a member would not guarantee.
+  QStyledItemDelegate* elide_middle_delegate = nullptr;
+  for (int i = 0; i < static_cast<int>(model_adapter_->columns().size()); ++i) {
+    if (!model_adapter_->columns()[i].elide_middle)
+      continue;
+    if (!elide_middle_delegate)
+      elide_middle_delegate = new ElideMiddleDelegate{this};
+    setItemDelegateForColumn(i, elide_middle_delegate);
+  }
 
   // A `size_to_content` column cannot be sized here: these tables populate
   // asynchronously, so at construction the model is empty and content sizing

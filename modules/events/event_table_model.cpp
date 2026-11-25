@@ -1107,6 +1107,14 @@ bool EventTableModel::working() const {
     return historical_event_model_.working();
 }
 
+std::u16string EventTableModel::GetTooltip(int row, int column_id) {
+  if (column_id != EventColumnItem)
+    return {};
+  scada::aui::TableCell cell{.row = row, .column_id = column_id};
+  GetCell(cell);
+  return cell.text;
+}
+
 int EventTableModel::CompareCells(int row1, int row2, int column_id) {
   const auto& event1 = *rows_[row1].event;
   const auto& event2 = *rows_[row2].event;

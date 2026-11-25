@@ -9,6 +9,8 @@
 #include <QFontMetrics>
 #include <QGuiApplication>
 #include <QHeaderView>
+#include <QStyleOptionViewItem>
+#include <QStyledItemDelegate>
 
 #include <gtest/gtest.h>
 
@@ -261,6 +263,41 @@ TEST_F(TableTest, SizeToContentLeavesTheSectionResizable) {
 
   EXPECT_EQ(table.horizontalHeader()->sectionResizeMode(0),
             QHeaderView::Interactive);
+}
+
+// Backlog 1126: the journal's Signal column right-elided «ЭСТРА-ПС : ТИ :
+// Коэффи…», keeping the prefix every row shares and cutting off the signal's
+// own name. An `elide_middle` column elides in the middle so the leaf survives.
+TEST_F(TableTest, ElideMiddleColumnElidesInTheMiddle) {
+  auto model = std::make_shared<LateTableModel>();
+  model->Populate();
+  std::vector<TableColumn> columns = {
+      {.id = kTitleColumn, .title = u"Path", .elide_middle = true},
+      {.id = kValueColumn, .title = u"Value"}};
+  Table table{model, columns};
+
+  // The delegate's option is what it paints with. initStyleOption is
+  // protected, so reach it through a member pointer named via a subclass.
+  struct OptionPeek : QStyledItemDelegate {
+    static QStyleOptionViewItem For(const QStyledItemDelegate& delegate,
+                                    const QModelIndex& index) {
+      QStyleOptionViewItem option;
+      option.textElideMode = Qt::ElideRight;
+      (delegate.*&OptionPeek::initStyleOption)(&option, index);
+      return option;
+    }
+  };
+
+  const QModelIndex path_cell = table.model()->index(0, 0);
+  const auto* path_delegate = qobject_cast<const QStyledItemDelegate*>(
+      table.itemDelegateForIndex(path_cell));
+  ASSERT_NE(path_delegate, nullptr);
+  EXPECT_EQ(OptionPeek::For(*path_delegate, path_cell).textElideMode,
+            Qt::ElideMiddle);
+
+  // Other columns keep the view's own delegate, and with it right-elision.
+  EXPECT_EQ(table.itemDelegateForIndex(table.model()->index(0, 1)),
+            table.itemDelegate());
 }
 
 }  // namespace

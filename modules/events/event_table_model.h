@@ -252,6 +252,9 @@ class EventTableModel : public scada::aui::TableModel,
   // aui::TableModel
   virtual int GetRowCount() override;
   virtual void GetCell(scada::aui::TableCell& cell) override;
+  // The Item column's full path: the view elides it in the middle (backlog
+  // 1126), so the tooltip is where the part it dropped can be read.
+  virtual std::u16string GetTooltip(int row, int column_id) override;
   virtual int CompareCells(int row1, int row2, int column_id) override;
 
  private:

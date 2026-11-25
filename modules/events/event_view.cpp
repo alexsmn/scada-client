@@ -113,9 +113,22 @@ EventView::EventView(const ControllerContext& context,
       audit_only_{audit_only},
       model_{CreateEventTableModel(context, local_events, is_panel)} {
   const scada::aui::TableColumn kEventViewColumns[] = {
-      {EventColumnTime, Translate("Time"), 150, scada::aui::TableColumn::LEFT,
-       scada::aui::TableColumn::DataType::DateTime},
-      {EventColumnItem, Translate("Item"), 170, scada::aui::TableColumn::LEFT},
+      // Sized to its content: a fixed width elided the milliseconds off every
+      // row, whatever the font (backlog 1126).
+      {.id = EventColumnTime,
+       .title = Translate("Time"),
+       .width = 150,
+       .alignment = scada::aui::TableColumn::LEFT,
+       .data_type = scada::aui::TableColumn::DataType::DateTime,
+       .size_to_content = true},
+      // A path whose rows share their prefix: elide in the middle so the
+      // signal's own name survives; the model's tooltip carries the whole path
+      // (backlog 1126).
+      {.id = EventColumnItem,
+       .title = Translate("Item"),
+       .width = 170,
+       .alignment = scada::aui::TableColumn::LEFT,
+       .elide_middle = true},
       // Wide enough for the named alarm band, which spells the severity out
       // instead of leaving colour as its only signal.
       {EventColumnSeverity, Translate("Severity"), 165,

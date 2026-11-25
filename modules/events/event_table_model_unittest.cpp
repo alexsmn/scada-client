@@ -680,6 +680,24 @@ TEST_F(EventFloodGroupingTest, ALocalEventIsAttributedToTheLocalEventSource) {
   EXPECT_FALSE(cell.text.empty());
 }
 
+// Backlog 1126: the view elides the Item column in the middle, so the tooltip
+// must carry the whole path or the elided part could not be read at all. No
+// other column has one: a tooltip repeating an unelided cell is noise.
+TEST_F(EventFloodGroupingTest, TheItemTooltipCarriesTheFullPath) {
+  historical_event_model_.AddEvent({.event_id = 1,
+                                    .time = scada::Time{},
+                                    .source_node_id = node_id_,
+                                    .message = u"over limit"});
+  Rebuild();
+
+  ASSERT_EQ(model_.GetRowCount(), 1);
+  scada::aui::TableCell cell{.row = 0, .column_id = EventColumnItem};
+  model_.GetCell(cell);
+  ASSERT_FALSE(cell.text.empty());
+  EXPECT_EQ(model_.GetTooltip(0, EventColumnItem), cell.text);
+  EXPECT_EQ(model_.GetTooltip(0, EventColumnMessage), u"");
+}
+
 // Backlog 889: the journal cannot acknowledge a history record, and an alarm
 // that is still pending is shown by its live row instead of the history copy.
 // So an unacknowledged record with no live row is not pending here: no dot, no
