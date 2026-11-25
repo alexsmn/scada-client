@@ -1037,11 +1037,11 @@
       ],
       "notes": "The Audit log view: the event journal scoped to the AuditEventType subtree (see client/modules/events/audit_events.h). Admin-gated. The capture demonstrates the filter rather than asserting it - the fixture seeds 13 events of which 4 carry audit types, and only those 4 appear. Acknowledgement chrome is deliberately absent (no unacknowledged-only toggle, no Acknowledge-all footer): an audit entry records that something happened, and there is nothing to acknowledge. Since 2026-11-24 (backlog 1127) the view reads each entry as Время / Кто / Действие / Объект / Результат rather than wearing the journal's process columns: the actor is a column of its own (the fixture's audit events name one through `user_id`), the method is a translated action («Включение в роль», not «AddIdentity ivanov»), and the refused removal is marked «✕ Отказано: Bad_UserAccessDenied» in Результат with no severity fill and no plant-area rail — before that it was banded as a process «Предупреждение 600». NOT published. It used to wait for a Windows regeneration, which was retired on 2026-09-12 (either host may render this gallery), so publishing it is now a manual-figure decision rather than a pipeline step (backlog 734). Published 2026-11-22 on dev/users.md (every Qt view gets a manual figure).",
       "captured": {
-        "commit": "cb8aded64",
+        "commit": "4d53bef65",
         "platform": "macos",
         "dirty": false,
-        "sha256": "af4f05f38755fd34195d93f86982e877fb6284f377c877c21cedd9c239e4939c",
-        "last_rendered": "a945a3980"
+        "sha256": "5646d74318536fd71e9aa450300faa6ddbd66769a214290c5d9739b1f0b26ebe",
+        "last_rendered": "4d53bef65"
       }
     },
     {
@@ -1053,11 +1053,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of audit-log.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "cb8aded64",
+        "commit": "4d53bef65",
         "platform": "macos",
         "dirty": false,
-        "sha256": "e8a204a50e7b69493ebe22393b7415a41b720af80ba08f78f38b83258d6a242a",
-        "last_rendered": "a945a3980"
+        "sha256": "4f64f08b72dbc2c434f0cbbb9a660d805fed04e5387d577fad15f9dd73982d35",
+        "last_rendered": "4d53bef65"
       }
     },
     {
