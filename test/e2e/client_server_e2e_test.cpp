@@ -494,6 +494,22 @@ class ProxyOpcUaSession {
                            : scada::Status{result->front()};
   }
 
+  // Replaces a file's contents in place: a Write of its Value, which the
+  // filesystem tier accepts since backlog 1147.
+  scada::Status WriteValue(const scada::NodeId& node_id, scada::Variant value) {
+    auto result = Run([this, &node_id, &value] {
+      return services_.attribute_service_->Write(
+          scada::ServiceContext{},
+          {scada::WriteValue{.node_id = node_id,
+                             .attribute_id = scada::AttributeId::Value,
+                             .value = value}});
+    });
+    if (!result.ok())
+      return result.status();
+    return result->empty() ? scada::Status{scada::StatusCode::Bad}
+                           : scada::Status{result->front()};
+  }
+
   // The Qt client's configuration transfer (ADR 0014), over this session's
   // Call service — the production client code, not a stand-in for it.
   scada::StatusOr<std::string> ExportConfiguration() {
@@ -906,6 +922,61 @@ TEST_P(ClientServerE2eTest, FileSystem_CreateAndDeleteThroughProxy) {
   EXPECT_FALSE(std::filesystem::exists(file_path))
       << "DeleteNodes via the proxy did not remove the file from the "
          "filesystem tier's disk";
+}
+
+// A file's contents are replaced in place through the proxy (backlog 1147):
+// a Write of the Value lands on the tier's disk, the node keeps its id and
+// stays listed — where delete-then-add made a syncing Client see the file
+// vanish — and a Read returns the new bytes.
+TEST_P(ClientServerE2eTest, FileSystem_WriteReplacesInPlaceThroughProxy) {
+  if (Topology() != ServerTopology::Cluster || Protocol() != E2eProtocol::OpcUa)
+    GTEST_SKIP() << "FileSystem aggregation exists in the Cluster topology; "
+                    "the direct-session check runs once, under OpcUa";
+  if (UsesExternalServer())
+    GTEST_SKIP() << "asserts against tier workspaces/state the suite owns only "
+                    "when it launches the cluster itself";
+
+  StartServer();
+
+  const auto file_dir = filesystem_tier_->WorkspaceDir() / "FileSystem";
+  std::filesystem::create_directories(file_dir);
+  WriteTextFile(file_dir / "replace.txt", "before");
+
+  ProxyOpcUaSession session;
+  ASSERT_TRUE(session.Connect(opcua_port_));
+
+  scada::NodeId file_id;
+  const auto deadline =
+      std::chrono::steady_clock::now() + std::chrono::seconds{20};
+  while (!FindFileChild(session, "replace.txt", &file_id) &&
+         std::chrono::steady_clock::now() < deadline) {
+    std::this_thread::sleep_for(std::chrono::milliseconds{250});
+  }
+  ASSERT_FALSE(file_id.is_null()) << "replace.txt never became browsable";
+
+  constexpr std::string_view kContents = "after: replaced in place";
+  const scada::Status written = session.WriteValue(
+      file_id, scada::ByteString{kContents.begin(), kContents.end()});
+  ASSERT_TRUE(written.good())
+      << "Write of the Value via the proxy failed: " << ::ToString(written);
+
+  EXPECT_EQ(ReadFileOrEmpty(file_dir / "replace.txt"), kContents);
+  const auto value = session.ReadValue(file_id);
+  ASSERT_TRUE(scada::IsGood(value.status_code));
+  const auto* bytes = value.value.get_if<scada::ByteString>();
+  ASSERT_TRUE(bytes);
+  EXPECT_EQ(std::string(bytes->begin(), bytes->end()), kContents);
+
+  // The same node, still listed once, and no scratch file beside it.
+  scada::NodeId after_id;
+  EXPECT_TRUE(FindFileChild(session, "replace.txt", &after_id));
+  EXPECT_EQ(after_id, file_id);
+  size_t entries = 0;
+  for (const auto& entry : std::filesystem::directory_iterator{file_dir}) {
+    const std::string name = entry.path().filename().string();
+    entries += name == "replace.txt" || name.starts_with(".~scada");
+  }
+  EXPECT_EQ(entries, 1u);
 }
 
 /**
