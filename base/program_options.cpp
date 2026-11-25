@@ -31,8 +31,6 @@ void InitProgramOptions(int argc, char* argv[]) {
       "log-service-node-semantics-change-event",
       "Log node semantics change events")("log-alias-service",
                                           "Log alias service operations")(
-      "node-service-v2", "Use v2 node service")(
-      "log-severity", po::value<std::string>(), "Log severity level")(
       "otlp-endpoint", po::value<std::string>(),
       "OTLP/gRPC endpoint (host:port) process metrics are exported to; "
       "unset disables export")(
