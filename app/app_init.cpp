@@ -1,6 +1,7 @@
 #include "app/app_init.h"
 
 #include "model/node_id_util.h"
+#include "opcua_bridge/conversion.h"
 #include "services/core_ui_text.h"
 
 #include "base/boost_log_init.h"
@@ -76,6 +77,8 @@ AppInit::AppInit(int argc, char* argv[]) {
   // it. Installed here, but only called at display time — after
   // InstalledTranslation loads the .qm.
   InstallCoreUiText();
+  // ExtensionObject equality compares payloads through the bridge's codec.
+  scada::opcua_bridge::InstallExtensionObjectEncoder();
   client::RegisterPathProvider();
   InitE2eLogPathOverride();
 
