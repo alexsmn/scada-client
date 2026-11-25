@@ -481,6 +481,47 @@ std::filesystem::path WriteBoundModusFixture(const scada::ScopedTempDir& dir) {
   return path;
 }
 
+// A Modus element bound to a third-party server's node by namespace URI
+// (docs/product/foreign-node-references.md, phase 4): the runtime hands the
+// client the braced reference whole, which is what the formula service
+// resolves through the connection, and a value for it reaches the element.
+TEST(DisplayRuntimeModusBindingTest,
+     ANamespaceUriBindingReachesTheClientWhole) {
+  if (!HaveRuntime())
+    GTEST_SKIP() << "this client was configured without a display runtime";
+
+  scada::ScopedTempDir dir{"client_display_runtime"};
+  const std::filesystem::path path = dir.path() / "foreign.xsde";
+  {
+    std::ofstream file(path, std::ios::binary);
+    file << R"(<?xml version="1.0" encoding="UTF-8"?>
+<SDEDocument Version="520">
+  <Pages>
+    <Page title="Main">
+      <SDEObjects>
+        <Type typ="5" ObjectType="Text">
+          <SDE tag="1" sTag="12" origin="12 4" rectWidth="8" rectHeight="2"
+               inText="0000"
+               ключ_привязки="текст={nsu=urn:plant;s=Plant.Temperature}"/>
+        </Type>
+      </SDEObjects>
+    </Page>
+  </Pages>
+</SDEDocument>)";
+  }
+
+  DisplayError error;
+  std::unique_ptr<DisplayRuntimeDocument> document =
+      DisplayRuntimeDocument::Open(path, DisplayDocumentKind::kModus, &error);
+  ASSERT_NE(document, nullptr) << error.message;
+
+  const std::string binding = "{nsu=urn:plant;s=Plant.Temperature}";
+  EXPECT_EQ(document->DataSources(), (std::vector<std::string>{binding}));
+  EXPECT_GT(document->SetDataSourceText(binding, "42,5").w, 0);
+  ASSERT_TRUE(document->FindDataSourceShape(binding));
+  EXPECT_EQ(document->FindDataSourceShape(binding)->text, "42,5");
+}
+
 TEST(DisplayRuntimeModusBindingTest, AValueReachesOnlyTheElementBoundToIt) {
   if (!HaveRuntime())
     GTEST_SKIP() << "this client was configured without a display runtime";

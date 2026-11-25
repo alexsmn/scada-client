@@ -2,5 +2,6 @@
 
 #include "resources/common_resources.h"
 
-const WindowInfo kVidiconDisplayWindowInfo = {
-    ID_VIDICON_DISPLAY_VIEW, "VidiconDisplay", u"Display", WIN_REQUIRES_SCADA};
+// Not WIN_REQUIRES_SCADA: see kModusWindowInfo (modus/modus_component.h).
+const WindowInfo kVidiconDisplayWindowInfo = {ID_VIDICON_DISPLAY_VIEW,
+                                              "VidiconDisplay", u"Display"};

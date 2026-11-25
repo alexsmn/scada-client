@@ -115,6 +115,14 @@ TEST_F(ModusModuleTest, RegistersAControllerFactoryForTheModusWindowType) {
       kModusWindowInfo.command_id)));
 }
 
+// A Modus display opens on any OPC UA server: the controller factory and the
+// command router withhold only what is flagged WIN_REQUIRES_SCADA, and a
+// display's `{nsu=…}` bindings resolve on a foreign server
+// (docs/product/foreign-node-references.md, phase 4).
+TEST_F(ModusModuleTest, TheDisplayIsNotWithheldOnAForeignServer) {
+  EXPECT_FALSE(kModusWindowInfo.requires_scada_server());
+}
+
 TEST_F(ModusModuleTest, RegistersBothModusDocumentExtensions) {
   InstallModule();
 
