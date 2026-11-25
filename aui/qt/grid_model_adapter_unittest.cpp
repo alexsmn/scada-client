@@ -12,6 +12,7 @@
 #include <QAbstractItemModelTester>
 #include <QApplication>
 #include <QColor>
+#include <QIcon>
 #include <QItemSelectionModel>
 #include <QPalette>
 #include <QSignalSpy>
@@ -223,6 +224,26 @@ TEST_F(GridModelAdapterTest, ColorRoleResolvesAgainstTheCurrentPalette) {
   QApplication::setPalette(original);
 }
 
+// A warning is colour and shape together (principles §5): the role's text
+// takes the solid warning severity colour and the cell draws the platform's
+// warning icon, with no fill. Regression: a duplicate retransmission address
+// read as plain text in the Status column, no colour or icon, easy to miss in
+// a long grid (backlog 1128). Any other role draws no icon.
+TEST_F(GridModelAdapterTest, WarningRolePairsColourWithAnIcon) {
+  model_->cell_role = ColorRole::Warning;
+  EXPECT_EQ(Data(Qt::ForegroundRole).value<QColor>(),
+            SeverityColor(SeverityLevel::kWarning)->qcolor());
+  EXPECT_FALSE(Data(Qt::BackgroundRole).isValid());
+  const QVariant icon = Data(Qt::DecorationRole);
+  ASSERT_TRUE(icon.isValid());
+  EXPECT_FALSE(icon.value<QIcon>().isNull());
+
+  model_->cell_role = ColorRole::Disabled;
+  EXPECT_FALSE(Data(Qt::DecorationRole).isValid());
+  model_->cell_role = ColorRole::Default;
+  EXPECT_FALSE(Data(Qt::DecorationRole).isValid());
+}
+
 // A column's alignment reaches Qt as Qt's own flags. Regression: the adapter
 // returned the aui enum raw, and Qt read it as a flag mask — LEFT(0) became
 // "no alignment" and RIGHT(1)/CENTER(2) became AlignLeft/AlignRight, so every
@@ -259,7 +280,6 @@ TEST_F(GridModelAdapterTest, RolesThatDoNotReadTheCellDoNotFetchIt) {
   Data(Qt::SizeHintRole);
   Data(Qt::CheckStateRole);
   Data(Qt::FontRole);
-  Data(Qt::DecorationRole);
   EXPECT_EQ(model_->get_cell_calls, 0);
 
   Data(Qt::DisplayRole);

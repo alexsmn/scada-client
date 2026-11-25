@@ -28,6 +28,15 @@ enum class ColorRole {
   // Prompt text in an otherwise empty cell ("Enter expression"). Recolours
   // the text only.
   Placeholder,
+  // A configuration fault the engineer has to act on — two retransmission
+  // rules sharing a destination address (backlog 1128). The text takes the
+  // design system's warning severity colour and the cell carries the
+  // platform's warning icon: colour is never the only signal
+  // (docs/client/ux/principles.md §5), so the adapter draws the shape with
+  // the role rather than trusting every model to remember it. The grid and
+  // table adapters draw the icon; a tree answers a column-0 icon of its own,
+  // so a tree model must not ask for this role until its adapter does too.
+  Warning,
 };
 
 }  // namespace scada::aui

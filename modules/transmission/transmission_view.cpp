@@ -87,6 +87,8 @@ std::unique_ptr<UiView> TransmissionView::Init(
                 },
             .current = model_->device().node_id(),
             .current_count = [this] { return model_->GetRowCount(); },
+            .current_conflicts =
+                [this] { return model_->CountDuplicateAddresses(); },
             .model = model_.get(),
             .on_device =
                 [this](const scada::NodeId& device_id) {

@@ -57,6 +57,10 @@ class TransmissionModel
   // not been fetched is never one.
   bool IsDuplicateAddress(int row) const;
 
+  // How many rows `IsDuplicateAddress` flags: the conflict count the
+  // destination rail shows beside the open device's rule count.
+  int CountDuplicateAddresses() const;
+
   // ContentsModel
   virtual void AddContainedItem(const scada::NodeId& node_id,
                                 unsigned flags) override;

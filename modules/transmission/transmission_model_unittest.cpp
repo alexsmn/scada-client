@@ -275,7 +275,17 @@ TEST_F(TransmissionModelTest, RulesSharingAnAddressAreFlagged) {
     EXPECT_EQ(StatusText(row),
               duplicate ? u"Duplicate address" : std::u16string{})
         << row;
+    // Backlog 1128: the label alone was plain text, easy to miss in a long
+    // grid. Both rows of the pair take the warning role, which brings the
+    // warning colour and icon; a clean row stays unstyled.
+    scada::aui::GridCell cell{.row = row, .column = 2};
+    model_->GetCell(cell);
+    EXPECT_EQ(cell.color_role, duplicate ? scada::aui::ColorRole::Warning
+                                         : scada::aui::ColorRole::Default)
+        << row;
   }
+  // The rail's conflict count: both rules of the pair.
+  EXPECT_EQ(model_->CountDuplicateAddresses(), 2);
 }
 
 // Backlog 1018: a FLOAT rule at 40001 occupies 40001 and 40002, so the next

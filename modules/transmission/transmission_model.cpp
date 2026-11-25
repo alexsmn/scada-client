@@ -148,11 +148,14 @@ void TransmissionModel::GetCell(scada::aui::GridCell& cell) {
     }
 
     case 2:
-      // Text, not colour: the duplicate is a configuration fault the
-      // engineer has to read, and a text cell needs no palette role the
-      // native styles do not have.
-      if (IsDuplicateAddress(cell.row))
+      // A duplicate silently corrupts what the dispatch centre receives, so
+      // it must not be easy to miss in a long grid: the label, the warning
+      // colour and the warning icon together (backlog 1128; colour is never
+      // the only signal, docs/client/ux/principles.md §5).
+      if (IsDuplicateAddress(cell.row)) {
         cell.text = Translate("Duplicate address");
+        cell.color_role = scada::aui::ColorRole::Warning;
+      }
       break;
   }
 }
@@ -171,6 +174,15 @@ bool TransmissionModel::IsDuplicateAddress(int row) const {
       return true;
   }
   return false;
+}
+
+int TransmissionModel::CountDuplicateAddresses() const {
+  int count = 0;
+  for (int row = 0; row < static_cast<int>(rows_.size()); ++row) {
+    if (IsDuplicateAddress(row))
+      ++count;
+  }
+  return count;
 }
 
 std::vector<TransmissionAddressSpan> TransmissionModel::UsedAddresses() const {

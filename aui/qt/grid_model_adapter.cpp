@@ -87,13 +87,14 @@ int GridModelAdapter::columnCount(const QModelIndex& parent) const {
 
 QVariant GridModelAdapter::data(const QModelIndex& index, int role) const {
   // Decide by role before touching the model: a delegate asks for seven roles
-  // per paint and per sizeHint, this answers five, and GetCell formats the
+  // per paint and per sizeHint, this answers six, and GetCell formats the
   // value each time it is called.
   switch (role) {
     case Qt::DisplayRole:
     case Qt::EditRole:
     case Qt::ForegroundRole:
     case Qt::BackgroundRole:
+    case Qt::DecorationRole:
     case Qt::TextAlignmentRole:
       break;
     default:
@@ -131,6 +132,10 @@ QVariant GridModelAdapter::data(const QModelIndex& index, int role) const {
       if (!IsTransparent(cell.cell_color))
         return cell.cell_color.qcolor();
       return QVariant();
+    case Qt::DecorationRole:
+      // A grid cell has no icon of its own; only a role that pairs its colour
+      // with a shape draws one.
+      return ColorRoleDecoration(cell.color_role);
     case Qt::TextAlignmentRole:
       // The cell's own alignment wins over its column's. Qt needs its own
       // flags here: this used to hand back the aui enum raw, which Qt reads as
@@ -231,11 +236,11 @@ void GridModelAdapter::OnGridRangeChanged(GridModel& model,
 
   // Naming the roles matters as much as the bounds: an empty role list means
   // "every role", which is another route to repainting and re-reading editors
-  // the change did not touch. These are the five `data()` answers.
+  // the change did not touch. These are the six `data()` answers.
   dataChanged(index(bounded.row(), bounded.column()),
               index(bounded.last_row(), bounded.last_column()),
               {Qt::DisplayRole, Qt::EditRole, Qt::ForegroundRole,
-               Qt::BackgroundRole, Qt::TextAlignmentRole});
+               Qt::BackgroundRole, Qt::DecorationRole, Qt::TextAlignmentRole});
 }
 
 void GridModelAdapter::OnGridRowsAdding(GridModel& model,

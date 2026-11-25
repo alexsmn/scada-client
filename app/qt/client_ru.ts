@@ -895,6 +895,12 @@
         <source>Duplicate address</source>
         <translation>Повтор адреса</translation>
     </message>
+    <!-- modules/transmission/qt/transmission_destination_rail.cpp: the
+         conflict count's tooltip on the open device's rail row (1128) -->
+    <message>
+        <source>Rules sharing an address</source>
+        <translation>Правил с общим адресом</translation>
+    </message>
     <!-- modules/table: reshell Trend (sparkline) column -->
     <message>
         <source>Trend</source>

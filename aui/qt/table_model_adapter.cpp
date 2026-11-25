@@ -144,10 +144,12 @@ QVariant TableModelAdapter::data(const QModelIndex& index, int role) const {
       return IsTransparent(cell.cell_color) ? QVariant{}
                                             : cell.cell_color.qcolor();
     case Qt::DecorationRole:
-      return (cell.icon_index >= 0 &&
-              cell.icon_index < static_cast<int>(icons_.size()))
-                 ? icons_[cell.icon_index]
-                 : QVariant();
+      if (cell.icon_index >= 0 &&
+          cell.icon_index < static_cast<int>(icons_.size()))
+        return icons_[cell.icon_index];
+      // A role that pairs its colour with a shape draws it when the cell has
+      // no icon of its own (see `ColorRole::Warning`).
+      return ColorRoleDecoration(cell.color_role);
     default:
       return QVariant();
   }

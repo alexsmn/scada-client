@@ -13,6 +13,11 @@ namespace scada::aui {
 // view's own colour alone.
 QVariant ColorRoleForeground(ColorRole role);
 
+// The icon a role draws in front of the cell's text: the platform style's
+// warning icon for `Warning`, which pairs the role's colour with a shape;
+// unset for every other role.
+QVariant ColorRoleDecoration(ColorRole role);
+
 // The background counterpart of `ColorRoleForeground`. Unset for the roles
 // that recolour text only.
 QVariant ColorRoleBackground(ColorRole role);

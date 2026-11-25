@@ -21,6 +21,8 @@ class StubGridModel : public scada::aui::GridModel {
   virtual void GetCell(scada::aui::GridCell& cell) override {}
 
   void NotifyChanged() { NotifyModelChanged(); }
+  // What an address edit announces: rows repainted, none added or removed.
+  void NotifyRowsRepainted() { NotifyRowsChanged(0, 1); }
 };
 
 class TransmissionDestinationRailTest : public testing::Test {
@@ -32,6 +34,7 @@ class TransmissionDestinationRailTest : public testing::Test {
             .browse = [this] { return BrowseFixedDevices(); },
             .current = scada::NodeId{702, 4},
             .current_count = [this] { return current_count_; },
+            .current_conflicts = [this] { return current_conflicts_; },
             .model = &model_,
             .on_device =
                 [this](const scada::NodeId& id) { chosen_.push_back(id); }});
@@ -53,6 +56,7 @@ class TransmissionDestinationRailTest : public testing::Test {
   AnyExecutor executor_ = MakeAnyExecutor(std::make_shared<MessageLoopQt>());
   StubGridModel model_;
   int current_count_ = 4;
+  int current_conflicts_ = 0;
   std::vector<scada::NodeId> chosen_;
 };
 
@@ -87,6 +91,35 @@ TEST_F(TransmissionDestinationRailTest, ModelChangeRefreshesTheOpenCount) {
   EXPECT_TRUE(list->item(0)->text().contains(QStringLiteral("5")));
   // The other device's count is untouched.
   EXPECT_TRUE(list->item(1)->text().contains(QStringLiteral("2")));
+
+  delete list;
+}
+
+// Backlog 1128: rules sharing a destination address corrupt what the
+// dispatch centre receives, so the open device's rail row carries their count
+// behind a warning mark -- a shape and a number -- and names it on hover. An
+// address edit (rows repainted, none added) can make or
+// clear a conflict, so it refreshes the row too.
+TEST_F(TransmissionDestinationRailTest, ConflictsMarkTheOpenDevicesRow) {
+  current_conflicts_ = 2;
+  QListWidget* list = MakeRail();
+  ASSERT_NE(list, nullptr);
+  ASSERT_EQ(list->count(), 2);
+
+  // A long device name elides in the middle, keeping the counts at the end.
+  EXPECT_EQ(list->textElideMode(), Qt::ElideMiddle);
+  // Read on fill, without waiting for the grid's next change.
+  EXPECT_TRUE(list->item(0)->text().endsWith(QStringLiteral("\u26A0 2")))
+      << list->item(0)->text().toStdString();
+  EXPECT_FALSE(list->item(0)->toolTip().isEmpty());
+  // The other device's conflicts are unknown, so it carries no mark.
+  EXPECT_FALSE(list->item(1)->text().contains(QStringLiteral("\u26A0")));
+
+  current_conflicts_ = 0;
+  model_.NotifyRowsRepainted();
+  EXPECT_FALSE(list->item(0)->text().contains(QStringLiteral("\u26A0")));
+  EXPECT_TRUE(list->item(0)->text().contains(QStringLiteral("4")));
+  EXPECT_TRUE(list->item(0)->toolTip().isEmpty());
 
   delete list;
 }
