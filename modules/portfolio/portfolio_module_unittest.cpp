@@ -31,12 +31,12 @@ TEST_F(PortfolioModuleTest, ItemsSurviveASaveAndLoad) {
   portfolio.items = {feeder, breaker};
 
   boost::json::value profile_data{boost::json::object{}};
-  SavePortfolios(manager_, profile_data);
+  SavePortfolios(manager_, {}, profile_data);
 
   StaticNodeService node_service;
   PortfolioManager loaded{
       PortfolioManagerContext{.node_service_ = node_service}};
-  LoadPortfolios(profile_data, loaded);
+  LoadPortfolios(profile_data, {}, loaded);
 
   ASSERT_EQ(1u, loaded.portfolios.size());
   EXPECT_EQ(u"Feeders", loaded.portfolios.front().name);
@@ -53,7 +53,7 @@ TEST_F(PortfolioModuleTest, LoadsTheLegacyBareStringItems) {
     ]
   })");
 
-  LoadPortfolios(profile_data, manager_);
+  LoadPortfolios(profile_data, {}, manager_);
 
   ASSERT_EQ(1u, manager_.portfolios.size());
   EXPECT_EQ(u"Legacy", manager_.portfolios.front().name);
@@ -64,10 +64,10 @@ TEST_F(PortfolioModuleTest, LoadsTheLegacyBareStringItems) {
 // A profile with no portfolios, or one that is not an object at all, loads
 // nothing and never throws — it is a user-editable file.
 TEST_F(PortfolioModuleTest, ToleratesAMissingOrMalformedList) {
-  LoadPortfolios(boost::json::value{boost::json::object{}}, manager_);
-  LoadPortfolios(boost::json::value{"junk"}, manager_);
-  LoadPortfolios(boost::json::parse(R"({"portfolios": "junk"})"), manager_);
-  LoadPortfolios(boost::json::parse(R"({"portfolios": [3, "x", {}]})"),
+  LoadPortfolios(boost::json::value{boost::json::object{}}, {}, manager_);
+  LoadPortfolios(boost::json::value{"junk"}, {}, manager_);
+  LoadPortfolios(boost::json::parse(R"({"portfolios": "junk"})"), {}, manager_);
+  LoadPortfolios(boost::json::parse(R"({"portfolios": [3, "x", {}]})"), {},
                  manager_);
 
   // The three entries of the last call are each a portfolio with no name and

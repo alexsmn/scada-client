@@ -4,7 +4,12 @@
 #include "base/test/scoped_path_override.h"
 
 #include <boost/json.hpp>
+#include <cstddef>
 #include <gtest/gtest.h>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
 
 namespace {
 
@@ -162,6 +167,101 @@ TEST(ProfileTest, ARetiredModus2KeyIsCarriedThroughUnread) {
   const boost::json::value saved = profile.SaveToValue();
   ASSERT_TRUE(saved.is_object());
   EXPECT_EQ(saved.as_object().at("modus2").as_bool(), true);
+}
+
+// One connection's namespace table: `uris[i]` is the URI it gave index i.
+// Both connections below give the model's own namespaces their canonical
+// indexes; past those, the server's namespaces arrive in its own order.
+struct TestConnection {
+  std::vector<std::string> uris;
+
+  void Attach(Profile& profile) const {
+    profile.SetNamespaceLookups(
+        [this](std::string_view uri) -> std::optional<scada::NamespaceIndex> {
+          for (std::size_t i = 0; i < uris.size(); ++i) {
+            if (uris[i] == uri)
+              return static_cast<scada::NamespaceIndex>(i);
+          }
+          return std::nullopt;
+        },
+        [this](scada::NamespaceIndex index) -> std::optional<std::string> {
+          if (index >= uris.size() || uris[index].empty())
+            return std::nullopt;
+          return uris[index];
+        });
+  }
+};
+
+// A workspace saved against a third-party server reopens on the same nodes
+// when the next connect hands out the server's namespaces in another order:
+// the profile stores them by URI, never by this session's index
+// (docs/product/foreign-node-references.md, phase 3).
+TEST(ProfileTest, ForeignReferencesReopenOnTheSameNodesAfterAReorder) {
+  constexpr scada::NamespaceIndex kFirst = 200;
+  constexpr scada::NamespaceIndex kSecond = 201;
+  TestConnection before;
+  before.uris.resize(kSecond + 1);
+  before.uris[kFirst] = "urn:plant";
+  before.uris[kSecond] = "urn:boiler";
+  TestConnection after;
+  after.uris.resize(kSecond + 1);
+  after.uris[kFirst] = "urn:boiler";
+  after.uris[kSecond] = "urn:plant";
+
+  Profile saving;
+  before.Attach(saving);
+  Page page;
+  page.id = 1;
+  WindowDefinition& window = page.AddWindow(WindowDefinition{"Graph"});
+  // What MakeNodeIdFormula and NodeIdToScadaString write this session.
+  window.AddItem("Item").SetString("path", "{NS200.Plant.Temperature}");
+  window.AddItem("Item").SetString("path", "NS201.7");
+  window.AddItem("Item").SetString("path", "TS.1379");
+  window.AddItem("Cell").SetString("text", "={NS201.Pressure} * 2");
+  saving.AddPage(page);
+  saving.node_table.default_sort_property_id =
+      scada::NodeId{std::string{"Plant.Unit"}, kFirst};
+
+  const boost::json::value saved = saving.SaveToValue();
+  const std::string text = boost::json::serialize(saved);
+  EXPECT_NE(text.find("{nsu=urn:plant;s=Plant.Temperature}"), std::string::npos)
+      << text;
+  EXPECT_EQ(text.find("NS200"), std::string::npos) << text;
+  EXPECT_EQ(text.find("NS201"), std::string::npos) << text;
+  // Our own namespaces keep the form older Clients read.
+  EXPECT_NE(text.find("\"TS.1379\""), std::string::npos) << text;
+
+  Profile loading;
+  after.Attach(loading);
+  loading.Load(saved);
+
+  ASSERT_EQ(loading.pages.size(), 1u);
+  const WindowDefinition& reopened = loading.pages.begin()->second.GetWindow(0);
+  ASSERT_EQ(reopened.items.size(), 4u);
+  EXPECT_EQ(reopened.items[0].GetString("path"), "{NS201.Plant.Temperature}");
+  EXPECT_EQ(reopened.items[1].GetString("path"), "NS200.7");
+  EXPECT_EQ(reopened.items[2].GetString("path"), "TS.1379");
+  EXPECT_EQ(reopened.items[3].GetString("text"), "={NS200.Pressure} * 2");
+  EXPECT_EQ(loading.node_table.default_sort_property_id,
+            (scada::NodeId{std::string{"Plant.Unit"}, kSecond}));
+}
+
+// A profile saved before the URI form keeps reading: its `NS<n>` references
+// are this-session indexes still, as they always were.
+TEST(ProfileTest, SessionScopedReferencesFromAnOlderProfileStillLoad) {
+  Profile profile;
+  profile.Load(boost::json::parse(R"({
+    "pages": [{"id": 1, "windows": [{"type": "Graph", "id": 1,
+      "items": [{"name": "Item", "path": "{NS200.Plant.Temperature}"}]}]}],
+    "nodeTable": {"sort-property-id": "NS200.5"}
+  })"));
+
+  ASSERT_EQ(profile.pages.size(), 1u);
+  EXPECT_EQ(
+      profile.pages.begin()->second.GetWindow(0).items[0].GetString("path"),
+      "{NS200.Plant.Temperature}");
+  EXPECT_EQ(profile.node_table.default_sort_property_id,
+            (scada::NodeId{5u, 200}));
 }
 
 }  // namespace

@@ -250,6 +250,18 @@ Awaitable<void> ClientApplication::LoadProfileAsync() {
   profile_ = std::make_unique<Profile>();
   profile_loaded_ = true;
   shutdown_stack_.Push([this] { profile_.reset(); });
+  // A saved workspace names a node outside the model's namespaces by URI, so
+  // it reopens on the same node whatever index the next connection gives that
+  // namespace (docs/product/foreign-node-references.md).
+  if (master_data_services_) {
+    profile_->SetNamespaceLookups(
+        [services = master_data_services_](std::string_view uri) {
+          return services->NamespaceIndexForUri(uri);
+        },
+        [services = master_data_services_](scada::NamespaceIndex index) {
+          return services->NamespaceUriForIndex(index);
+        });
+  }
 
   const ServerProfileRead read = co_await ReadServerProfileAsync();
   const boost::json::value& server = read.document;

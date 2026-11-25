@@ -14,6 +14,7 @@
 #include <filesystem>
 #include <functional>
 #include <map>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -36,6 +37,14 @@ struct MainWindowDef {
 
 class Profile {
  public:
+  // The shapes of scada::NamespaceIndexForUri and scada::NamespaceUriForIndex
+  // (model/node_id_util.h), spelled out: not every consumer of this header
+  // reaches the model library.
+  using NamespaceIndexForUri =
+      std::function<std::optional<scada::NamespaceIndex>(std::string_view)>;
+  using NamespaceUriForIndex =
+      std::function<std::optional<std::string>(scada::NamespaceIndex)>;
+
   using PageMap = std::map<int, Page>;
 
   Profile();
@@ -84,6 +93,30 @@ class Profile {
   // is not an ASCII letter or digit is written as `_XX`, so the mapping from
   // account to file name is one-to-one and always a valid file name.
   void SetAccountKey(std::string_view account_key);
+
+  // The signed-in connection's namespace lookups, which every node reference
+  // the profile stores is written and read through: a namespace the model has
+  // no short name for is stored by URI, in the OPC UA Part 6 `nsu=` form, so
+  // that it reopens on the same node whatever index the next connection gives
+  // that namespace (docs/product/foreign-node-references.md). Set before
+  // `Load`. Without them only the model's canonical table is known, and a
+  // reference to any other namespace is stored as `NS<n>`, as before.
+  void SetNamespaceLookups(NamespaceIndexForUri index_for_uri,
+                           NamespaceUriForIndex uri_for_index);
+
+  const NamespaceIndexForUri& namespace_index_for_uri() const
+      SCADA_LIFETIME_BOUND {
+    return namespace_index_for_uri_;
+  }
+  const NamespaceUriForIndex& namespace_uri_for_index() const
+      SCADA_LIFETIME_BOUND {
+    return namespace_uri_for_index_;
+  }
+
+  // `node_id` as text to store in the profile (scada::NodeIdToStoredString).
+  std::string StoreNodeId(const scada::NodeId& node_id) const;
+  // Text the profile stored, read back (scada::NodeIdFromStoredString).
+  scada::NodeId LoadNodeId(std::string_view text) const;
 
   // Writes the profile to its file. Never throws: it runs from
   // ~ClientApplication, where an escaping exception is std::terminate.
@@ -184,6 +217,13 @@ class Profile {
   boost::json::value SerializeToValue() const;
 
   std::filesystem::path GetFilePath();
+
+  // Rewrites the node references in the window items of a serialized page, to
+  // (`to_stored`) or from the stored `nsu=` form.
+  void RewritePageReferences(boost::json::value& page, bool to_stored) const;
+
+  NamespaceIndexForUri namespace_index_for_uri_;
+  NamespaceUriForIndex namespace_uri_for_index_;
 
   // Empty for the shared per-OS-user file; see SetAccountKey.
   std::string file_suffix_;

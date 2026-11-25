@@ -51,16 +51,19 @@ PortfolioModule::PortfolioModule(PortfolioModuleContext&& context)
                                     .checkable = true});
   RegisterPortfolioCommandActions(ui_command_registry_);
 
-  LoadPortfolios(profile_.data(), *portfolio_manager_);
+  LoadPortfolios(profile_.data(), profile_.namespace_index_for_uri(),
+                 *portfolio_manager_);
 
   profile_.RegisterSerializer([this](boost::json::value& data) {
-    SavePortfolios(*portfolio_manager_, data);
+    SavePortfolios(*portfolio_manager_, profile_.namespace_uri_for_index(),
+                   data);
   });
 }
 
 PortfolioModule::~PortfolioModule() = default;
 
 void LoadPortfolios(const boost::json::value& profile_data,
+                    const scada::NamespaceIndexForUri& index_for_uri,
                     PortfolioManager& portfolio_manager) {
   const auto* pfoliose = GetList(profile_data, "portfolios");
   if (!pfoliose) {
@@ -82,7 +85,8 @@ void LoadPortfolios(const boost::json::value& profile_data,
       std::string_view path = iteme.is_string()
                                   ? std::string_view{iteme.as_string()}
                                   : GetString(iteme, "path");
-      if (auto node_id = NodeIdFromScadaString(path); !node_id.is_null()) {
+      if (auto node_id = scada::NodeIdFromStoredString(path, index_for_uri);
+          !node_id.is_null()) {
         portfolio.items.insert(node_id);
       }
     }
@@ -90,6 +94,7 @@ void LoadPortfolios(const boost::json::value& profile_data,
 }
 
 void SavePortfolios(const PortfolioManager& portfolio_manager,
+                    const scada::NamespaceUriForIndex& uri_for_index,
                     boost::json::value& profile_data) {
   boost::json::array portfolio_storage;
   for (const Portfolio& portfolio : portfolio_manager.portfolios) {
@@ -98,7 +103,8 @@ void SavePortfolios(const PortfolioManager& portfolio_manager,
     boost::json::array item_storage;
     for (const scada::NodeId& node_id : portfolio.items) {
       boost::json::value iteme{boost::json::object{}};
-      SetKey(iteme, "path", NodeIdToScadaString(node_id));
+      SetKey(iteme, "path",
+             scada::NodeIdToStoredString(node_id, uri_for_index));
       item_storage.emplace_back(std::move(iteme));
     }
     pfolioe.as_object()["items"] = std::move(item_storage);

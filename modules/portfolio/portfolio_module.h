@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/lifetime.h"
+#include "model/node_id_util.h"
 
 #include <boost/json/fwd.hpp>
 #include <memory>
@@ -39,11 +40,16 @@ void RegisterPortfolioCommandActions(UiCommandRegistry& ui_command_registry);
 //
 // Appends every portfolio found under `profile_data` to `portfolio_manager`.
 // Unknown or malformed entries are skipped, never fatal — the profile is a
-// file the user can edit.
+// file the user can edit. An item stored by namespace URI resolves through
+// `index_for_uri` (scada::NodeIdFromStoredString).
 void LoadPortfolios(const boost::json::value& profile_data,
+                    const scada::NamespaceIndexForUri& index_for_uri,
                     PortfolioManager& portfolio_manager);
 
 // Writes `portfolio_manager`'s portfolios under `profile_data["portfolios"]`,
-// replacing whatever was there. `profile_data` must be a JSON object.
+// replacing whatever was there. `profile_data` must be a JSON object. An item
+// in a namespace the model has no short name for is written by URI, from
+// `uri_for_index` (scada::NodeIdToStoredString).
 void SavePortfolios(const PortfolioManager& portfolio_manager,
+                    const scada::NamespaceUriForIndex& uri_for_index,
                     boost::json::value& profile_data);

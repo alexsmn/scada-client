@@ -11,6 +11,7 @@
 #include "base/time_utils.h"
 #include "base/utils.h"
 #include "base/value_util.h"
+#include "common/formula_util.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 
@@ -37,6 +38,24 @@ void LoadMainWindowDef(MainWindowDef& main_window,
   main_window.pane_mode = GetString(data, "paneMode", "");
 }
 
+// The window-item attributes that hold a node reference or a formula: `path`
+// (every view's item, written by `MakeNodeIdFormula` or `NodeIdToScadaString`)
+// and a sheet cell's `text` when it is a formula (`=…`).
+void RewriteWindowItem(
+    boost::json::value& item,
+    const std::function<std::string(std::string_view)>& rewrite) {
+  auto* object = item.if_object();
+  if (!object)
+    return;
+  if (auto* path = object->if_contains("path"); path && path->is_string()) {
+    *path = rewrite(std::string_view{path->as_string()});
+  }
+  if (auto* text = object->if_contains("text");
+      text && text->is_string() && text->as_string().starts_with('=')) {
+    *text = rewrite(std::string_view{text->as_string()});
+  }
+}
+
 }  // namespace
 
 // MainWindowDef
@@ -46,6 +65,41 @@ MainWindowDef::MainWindowDef() {}
 // Profile
 
 Profile::Profile() {}
+
+void Profile::SetNamespaceLookups(NamespaceIndexForUri index_for_uri,
+                                  NamespaceUriForIndex uri_for_index) {
+  namespace_index_for_uri_ = std::move(index_for_uri);
+  namespace_uri_for_index_ = std::move(uri_for_index);
+}
+
+std::string Profile::StoreNodeId(const scada::NodeId& node_id) const {
+  return scada::NodeIdToStoredString(node_id, namespace_uri_for_index_);
+}
+
+scada::NodeId Profile::LoadNodeId(std::string_view text) const {
+  return scada::NodeIdFromStoredString(text, namespace_index_for_uri_);
+}
+
+void Profile::RewritePageReferences(boost::json::value& page,
+                                    bool to_stored) const {
+  const auto rewrite = [&](std::string_view formula) {
+    return to_stored
+               ? FormulaReferencesToStored(formula, namespace_uri_for_index_)
+               : FormulaReferencesFromStored(formula, namespace_index_for_uri_);
+  };
+  auto* page_object = page.if_object();
+  auto* windows = page_object ? page_object->if_contains("windows") : nullptr;
+  if (!windows || !windows->is_array())
+    return;
+  for (boost::json::value& window : windows->as_array()) {
+    auto* window_object = window.if_object();
+    auto* items = window_object ? window_object->if_contains("items") : nullptr;
+    if (!items || !items->is_array())
+      continue;
+    for (boost::json::value& item : items->as_array())
+      RewriteWindowItem(item, rewrite);
+  }
+}
 
 void Profile::Load() {
   BOOST_LOG_TRIVIAL(info) << "Load profile";
@@ -124,7 +178,9 @@ void Profile::Load(const boost::json::value& document) {
 
   // pages root
   if (auto* pagese = GetList(data, "pages")) {
-    for (auto& pagee : *pagese) {
+    for (const auto& stored_pagee : *pagese) {
+      boost::json::value pagee = stored_pagee;
+      RewritePageReferences(pagee, /*to_stored=*/false);
       Page page;
       try {
         page.Load(pagee);
@@ -141,8 +197,11 @@ void Profile::Load(const boost::json::value& document) {
   // out-of-page
   if (auto* out_pagese = data.is_object()
                              ? data.as_object().if_contains("floatingWindows")
-                             : nullptr)
-    out_wins.Load(*out_pagese);
+                             : nullptr) {
+    boost::json::value out_page = *out_pagese;
+    RewritePageReferences(out_page, /*to_stored=*/false);
+    out_wins.Load(out_page);
+  }
 
   if (auto* event_journal = FindDict(data, "eventJournal")) {
     if (auto* state = FindDict(*event_journal, "defaultState"))
@@ -165,7 +224,7 @@ void Profile::Load(const boost::json::value& document) {
 
   if (auto* node = FindDict(data, "nodeTable")) {
     node_table.default_sort_property_id =
-        NodeIdFromScadaString(GetString(*node, "sort-property-id"));
+        LoadNodeId(GetString(*node, "sort-property-id"));
   }
 
   if (auto* node = FindDict(data, "timedData"))
@@ -238,13 +297,19 @@ boost::json::value Profile::SerializeToValue() const {
   {
     boost::json::array list;
     for (const auto& [_, page] : pages) {
-      list.emplace_back(page.Save(false));
+      boost::json::value pagee = page.Save(false);
+      RewritePageReferences(pagee, /*to_stored=*/true);
+      list.emplace_back(std::move(pagee));
     }
     data.as_object()["pages"] = std::move(list);
   }
 
   // out-of-page
-  data.as_object()["floatingWindows"] = out_wins.Save(true);
+  {
+    boost::json::value out_page = out_wins.Save(true);
+    RewritePageReferences(out_page, /*to_stored=*/true);
+    data.as_object()["floatingWindows"] = std::move(out_page);
+  }
 
   // Event Journal
   {
@@ -277,7 +342,7 @@ boost::json::value Profile::SerializeToValue() const {
     boost::json::value node{boost::json::object{}};
     if (!node_table.default_sort_property_id.is_null()) {
       SetKey(node, "sort-property-id",
-             NodeIdToScadaString(node_table.default_sort_property_id));
+             StoreNodeId(node_table.default_sort_property_id));
     }
     data.as_object()["nodeTable"] = std::move(node);
   }
