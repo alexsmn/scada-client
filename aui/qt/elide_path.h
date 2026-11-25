@@ -14,7 +14,9 @@ namespace scada::aui {
 //  2. the root and the leaf, the middle replaced by one ellipsis
 //     («ЭСТРА-ПС : … : Коэффициент мощности»);
 //  3. the leaf alone behind an ellipsis («… : Коэффициент мощности»);
-//  4. the leaf's start, elided at its end («Коэффициент мо…»).
+//  4. the leaf alone, elided at its end if even that does not fit
+//     («Коэффициент мо…»). A leaf that fits bare carries no ellipsis; the
+//     tooltip is where the dropped prefix is read.
 //
 // A path with no separator is a plain name and elides at its end.
 //
