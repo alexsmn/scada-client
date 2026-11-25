@@ -38,11 +38,11 @@ std::vector<SeverityTile> BuildSeverityTiles(
   tiles.reserve(3);
   tiles.push_back({.caption = std::move(caption_critical),
                    .count = counts.critical,
-                   .color = scada::aui::SeverityColor(
+                   .color = scada::aui::SeverityTextColor(
                        scada::aui::SeverityLevel::kCritical)});
   tiles.push_back({.caption = std::move(caption_warning),
                    .count = counts.warning,
-                   .color = scada::aui::SeverityColor(
+                   .color = scada::aui::SeverityTextColor(
                        scada::aui::SeverityLevel::kWarning)});
   // Unacknowledged is a workflow state, not a severity, so it carries no
   // severity colour — the widget renders it in the neutral token.

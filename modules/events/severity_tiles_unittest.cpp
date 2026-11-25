@@ -109,9 +109,11 @@ TEST(SeverityTilesTest, TileColorsComeFromSeveritySingleSource) {
       BuildSeverityTiles(SeverityTileCounts{}, u"C", u"W", u"U");
 
   ASSERT_EQ(tiles.size(), 3u);
+  // The tiles are text, so they take the text form of the ramp (backlog 1144).
   EXPECT_EQ(tiles[0].color,
-            scada::aui::SeverityColor(SeverityLevel::kCritical));
-  EXPECT_EQ(tiles[1].color, scada::aui::SeverityColor(SeverityLevel::kWarning));
+            scada::aui::SeverityTextColor(SeverityLevel::kCritical));
+  EXPECT_EQ(tiles[1].color,
+            scada::aui::SeverityTextColor(SeverityLevel::kWarning));
   EXPECT_FALSE(tiles[2].color.has_value());
 }
 

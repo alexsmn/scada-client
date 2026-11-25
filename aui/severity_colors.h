@@ -48,6 +48,16 @@ enum class SeverityLevel { kNone, kWarning, kCritical };
 // the ramp declines to give.
 std::optional<Color> SeverityColor(SeverityLevel level);
 
+// The severity colour for *text* drawn straight on the window or a base
+// surface (a breached limit value, a status-strip cue, a journal row that keeps
+// its severity as text). It differs from `SeverityColor` only where the solid
+// is too light to read as text: the light scheme's amber (`#c18a24`, 3.0:1 on
+// white) becomes `severity-medium-text` (`#8a5f0f`, 5.6:1). Every value clears
+// WCAG 2.2 SC 1.4.3's 4.5:1 on its scheme's window and surface
+// (https://www.w3.org/TR/WCAG22/#contrast-minimum, backlog 1144). Fills, dots
+// and lines keep `SeverityColor`. Returns std::nullopt for `kNone`.
+std::optional<Color> SeverityTextColor(SeverityLevel level);
+
 // A node/value's data quality, for the Explorer status dots and other quality
 // cues.
 enum class Quality { kGood, kUncertain, kBad };

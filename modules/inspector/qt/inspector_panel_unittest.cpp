@@ -163,8 +163,9 @@ TEST(LimitBreachTest, BreachedBandIsTheBreachedRows) {
             LimitBand::kLo);
 }
 
+// The breach is text on the window, so it takes the ramp's text form.
 QColor SeverityQColor(scada::aui::SeverityLevel level) {
-  return scada::aui::SeverityColor(level)->qcolor();
+  return scada::aui::SeverityTextColor(level)->qcolor();
 }
 
 // An element card for a value breaching `band`, with all four limits shown.
@@ -212,6 +213,33 @@ TEST_F(InspectorPanelTest, HiBreachReadsAsAWarning) {
   // forbid, and it would override the palette anyway.
   EXPECT_TRUE(breached.front()->styleSheet().isEmpty());
   EXPECT_TRUE(value->styleSheet().isEmpty());
+}
+
+// Backlog 1144: in the light scheme the breach must not be painted in the
+// solid amber #c18a24, which is 3.0:1 on white -- below WCAG 2.2 SC 1.4.3's
+// 4.5:1 for the normal-size badge and limit. It takes the text form, #8a5f0f.
+TEST_F(InspectorPanelTest, LightHiBreachTextIsReadable) {
+  // Restores the process-wide ramp even when an ASSERT returns early.
+  struct LightRamp {
+    LightRamp() {
+      scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kLight);
+    }
+    ~LightRamp() {
+      scada::aui::SetSeverityTheme(scada::aui::SeverityTheme::kDark);
+    }
+  } light_ramp;
+  InspectorPanel panel{InspectorPanelContext{}};
+  panel.ShowElement(BreachingElement(LimitBand::kHi));
+
+  const QColor text_amber{0x8a, 0x5f, 0x0f};
+  auto* badge = panel.findChild<QLabel*>(QStringLiteral("inspectorLimitBadge"));
+  ASSERT_NE(badge, nullptr);
+  EXPECT_EQ(badge->palette().color(QPalette::WindowText), text_amber);
+  auto breached =
+      panel.findChildren<QLabel*>(QStringLiteral("inspectorLimitBreached"));
+  ASSERT_EQ(breached.size(), 1);
+  EXPECT_EQ(breached.front()->palette().color(QPalette::WindowText),
+            text_amber);
 }
 
 TEST_F(InspectorPanelTest, LoBreachSaysBelowLimit) {

@@ -69,7 +69,7 @@ TEST_F(SessionStatusStallTest, StalledSessionIsMarkedInThePane) {
   // Colour is an additional cue only: it resolves to nothing under the legacy
   // severity theme, which is why the marker above has to be in the text.
   EXPECT_EQ(provider_.GetPingColor(),
-            scada::aui::SeverityColor(scada::aui::SeverityLevel::kWarning));
+            scada::aui::SeverityTextColor(scada::aui::SeverityLevel::kWarning));
 }
 
 TEST_F(SessionStatusStallTest, StallIsAnnouncedOnceAndRecoveryOnce) {

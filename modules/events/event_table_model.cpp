@@ -67,7 +67,8 @@ void GetEventColors(const scada::Event& event,
   if (live) {
     switch (events::AlarmStateFor(event)) {
       case events::AlarmState::kAckedActive:
-        if (const auto color = scada::aui::SeverityColor(
+        // Severity as text on the base surface, so the text form (1144).
+        if (const auto color = scada::aui::SeverityTextColor(
                 events::SeverityLevelForEvent(event.severity))) {
           text_color = *color;
         }

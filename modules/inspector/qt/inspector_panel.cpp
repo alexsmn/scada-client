@@ -148,11 +148,12 @@ void SetTextColor(QWidget& widget, const std::optional<QColor>& color) {
   widget.setPalette(palette);
 }
 
-// The solid severity colour for a value sitting in `band`, or nullopt inside
-// the normal band.
+// The severity text colour for a value sitting in `band`, or nullopt inside
+// the normal band. The text form, not the solid: the readout, the badge and
+// the breached limit are text on the window (backlog 1144).
 std::optional<QColor> LimitBreachColor(LimitBand band) {
   const std::optional<scada::aui::Color> color =
-      scada::aui::SeverityColor(LimitBreachSeverity(band));
+      scada::aui::SeverityTextColor(LimitBreachSeverity(band));
   if (!color)
     return std::nullopt;
   return color->qcolor();

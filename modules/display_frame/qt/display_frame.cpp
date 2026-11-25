@@ -166,7 +166,10 @@ QColor SeverityColor(const scada::aui::ThemeTokens& tokens, unsigned severity) {
     case scada::aui::SeverityLevel::kCritical:
       return tokens.severity_critical;
     case scada::aui::SeverityLevel::kWarning:
-      return tokens.severity_medium;
+      // Text on the table, so the text form: the light solid amber is 3.0:1
+      // on white (backlog 1144).
+      return scada::aui::SeverityTextColor(scada::aui::SeverityLevel::kWarning)
+          ->qcolor();
     case scada::aui::SeverityLevel::kNone:
       break;
   }

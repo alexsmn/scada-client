@@ -20,9 +20,10 @@ QVariant ColorRoleForeground(ColorRole role) {
     case ColorRole::Placeholder:
       return palette.color(QPalette::Normal, QPalette::PlaceholderText);
     case ColorRole::Warning:
-      // One severity palette system-wide (principles §5): the same solid
-      // warning the Inspector's limit badge takes, following the theme.
-      return SeverityColor(SeverityLevel::kWarning)->qcolor();
+      // One severity palette system-wide (principles §5): the same warning
+      // text colour the Inspector's limit badge takes, following the theme --
+      // the text form, since a cell is text on the base (backlog 1144).
+      return SeverityTextColor(SeverityLevel::kWarning)->qcolor();
     case ColorRole::Default:
       return QVariant{};
   }

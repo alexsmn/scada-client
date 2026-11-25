@@ -99,7 +99,8 @@ std::optional<scada::aui::Color> SessionStatusProvider::GetPingColor() const {
   const std::optional<scada::Duration> ping_delay = PingDelay();
   if (!ping_delay || *ping_delay < kPingStallThreshold)
     return std::nullopt;
-  return scada::aui::SeverityColor(scada::aui::SeverityLevel::kWarning);
+  // The pane's text colour, so the text form of the amber (backlog 1144).
+  return scada::aui::SeverityTextColor(scada::aui::SeverityLevel::kWarning);
 }
 
 std::u16string SessionStatusProvider::GetEndpointText() const {

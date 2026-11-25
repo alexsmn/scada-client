@@ -60,6 +60,15 @@ constexpr SolidRamp kLightSolid{.warning = {193, 138, 36},
 constexpr SolidRamp kHcSolid{.warning = {255, 255, 0},
                              .critical = {255, 107, 107}};
 
+// Text-on-window ramp (`severity-*-text`): the solid ramp, except where the
+// solid fails 4.5:1 as text on its own scheme's window. Only the light amber
+// does (3.0:1 on white, 2.6:1 on `#ececec`); `#8a5f0f` keeps the amber hue at
+// 5.6:1 / 4.8:1. The fill stays `#c18a24`, because darkening it would need
+// white row text and put warning rows beside critical's `#8f241f` (backlog
+// 1144).
+constexpr SolidRamp kLightTextRamp{.warning = {138, 95, 15},
+                                   .critical = {143, 36, 31}};
+
 // Quality ramp (Explorer status dots) per theme — the good/uncertain/bad
 // tokens from docs/client/ux/design-language.md.
 struct QualityRamp {
@@ -100,6 +109,10 @@ const SolidRamp& SolidRampFor(SeverityTheme theme) {
       break;
   }
   return kDarkSolid;
+}
+
+const SolidRamp& TextRampFor(SeverityTheme theme) {
+  return theme == SeverityTheme::kLight ? kLightTextRamp : SolidRampFor(theme);
 }
 
 // Function-local static (not a namespace-scope global) holds the active theme.
@@ -149,6 +162,14 @@ std::optional<Color> SeverityColor(SeverityLevel level) {
   if (level == SeverityLevel::kNone)
     return std::nullopt;
   const SolidRamp& ramp = SolidRampFor(CurrentTheme());
+  return Color{level == SeverityLevel::kCritical ? ramp.critical
+                                                 : ramp.warning};
+}
+
+std::optional<Color> SeverityTextColor(SeverityLevel level) {
+  if (level == SeverityLevel::kNone)
+    return std::nullopt;
+  const SolidRamp& ramp = TextRampFor(CurrentTheme());
   return Color{level == SeverityLevel::kCritical ? ramp.critical
                                                  : ramp.warning};
 }

@@ -225,14 +225,14 @@ TEST_F(GridModelAdapterTest, ColorRoleResolvesAgainstTheCurrentPalette) {
 }
 
 // A warning is colour and shape together (principles §5): the role's text
-// takes the solid warning severity colour and the cell draws the platform's
+// takes the warning severity text colour and the cell draws the platform's
 // warning icon, with no fill. Regression: a duplicate retransmission address
 // read as plain text in the Status column, no colour or icon, easy to miss in
 // a long grid (backlog 1128). Any other role draws no icon.
 TEST_F(GridModelAdapterTest, WarningRolePairsColourWithAnIcon) {
   model_->cell_role = ColorRole::Warning;
   EXPECT_EQ(Data(Qt::ForegroundRole).value<QColor>(),
-            SeverityColor(SeverityLevel::kWarning)->qcolor());
+            SeverityTextColor(SeverityLevel::kWarning)->qcolor());
   EXPECT_FALSE(Data(Qt::BackgroundRole).isValid());
   const QVariant icon = Data(Qt::DecorationRole);
   ASSERT_TRUE(icon.isValid());

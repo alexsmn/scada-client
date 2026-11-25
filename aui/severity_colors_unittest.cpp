@@ -130,5 +130,50 @@ TEST_F(SeverityColorsTest, RowTextMeetsWcagAaOnItsFill) {
   }
 }
 
+// Backlog 1144: severity *text* on the window must clear WCAG 2.2 SC 1.4.3's
+// 4.5:1 (https://www.w3.org/TR/WCAG22/#contrast-minimum) in every scheme. The
+// light solid amber (#c18a24) is 3.0:1 on white, so text takes its own token.
+// The backgrounds are each scheme's `--bg` and `--surface`
+// (docs/client/ux/design-language.md §2, `aui/qt/theme_qt.cpp`).
+TEST_F(SeverityColorsTest, SeverityTextMeetsWcagAaOnTheWindow) {
+  struct Scheme {
+    SeverityTheme theme;
+    Color window;
+    Color surface;
+  };
+  const Scheme schemes[] = {
+      {SeverityTheme::kDark, C(0x1e, 0x1e, 0x1e), C(0x17, 0x17, 0x17)},
+      {SeverityTheme::kLight, C(0xec, 0xec, 0xec), C(0xff, 0xff, 0xff)},
+      {SeverityTheme::kHighContrast, C(0, 0, 0), C(0, 0, 0)},
+  };
+  for (const Scheme& scheme : schemes) {
+    SetSeverityTheme(scheme.theme);
+    for (const SeverityLevel level :
+         {SeverityLevel::kWarning, SeverityLevel::kCritical}) {
+      const std::optional<Color> text = SeverityTextColor(level);
+      ASSERT_TRUE(text.has_value());
+      EXPECT_GE(ContrastRatio(*text, scheme.window), 4.5)
+          << "theme " << static_cast<int>(scheme.theme) << ", level "
+          << static_cast<int>(level);
+      EXPECT_GE(ContrastRatio(*text, scheme.surface), 4.5)
+          << "theme " << static_cast<int>(scheme.theme) << ", level "
+          << static_cast<int>(level);
+    }
+  }
+  EXPECT_EQ(SeverityTextColor(SeverityLevel::kNone), std::nullopt);
+}
+
+// The text token departs from the fill only where it must: the light amber
+// fill stays #c18a24 (its row text is near-black, 6.2:1), while its text form
+// is #8a5f0f.
+TEST_F(SeverityColorsTest, LightWarningTextIsDarkerThanItsFill) {
+  SetSeverityTheme(SeverityTheme::kLight);
+  EXPECT_EQ(SeverityColor(SeverityLevel::kWarning), C(193, 138, 36));
+  EXPECT_EQ(SeverityTextColor(SeverityLevel::kWarning), C(138, 95, 15));
+  SetSeverityTheme(SeverityTheme::kDark);
+  EXPECT_EQ(SeverityTextColor(SeverityLevel::kWarning),
+            SeverityColor(SeverityLevel::kWarning));
+}
+
 }  // namespace
 }  // namespace scada::aui
