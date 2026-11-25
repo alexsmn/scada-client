@@ -673,7 +673,14 @@ void ClientApplication::CreateEventAndDataServices(
         .alias_resolver_ = ctx.alias_resolver,
         .node_service_ = *node_service_,
         .history_service_ = ctx.coroutine_history_service,
-        .node_event_provider_ = event_module_->node_event_provider()});
+        .node_event_provider_ = event_module_->node_event_provider(),
+        // A display binding or formula naming a node by namespace URI
+        // (`{nsu=…;s=…}`) resolves through the connection signed in now
+        // (docs/product/foreign-node-references.md).
+        .namespace_index_for_uri_ =
+            [services = master_data_services_](std::string_view uri) {
+              return services->NamespaceIndexForUri(uri);
+            }});
   }
   shutdown_stack_.Push([this] { timed_data_service_.reset(); });
 }
