@@ -26,6 +26,8 @@
 
 #include "base/debug_util.h"
 
+#include <algorithm>
+
 namespace {
 
 Awaitable<void> AddContainedItemAsync(SummaryModel& model,
@@ -44,7 +46,12 @@ Awaitable<void> AddContainedItemAsync(SummaryModel& model,
 
 class SummaryModel::Column {
  public:
-  Column(SummaryModel& model, int index, std::string formula);
+  // A `comparison` column reads the same formula comparison_shift() earlier.
+  Column(SummaryModel& model, int index, std::string formula, bool comparison);
+
+  const std::string& formula() const { return formula_; }
+  bool comparison() const { return comparison_; }
+  void set_index(int index) { index_ = index; }
 
   int width() const { return width_; }
   void set_width(int width) { width_ = width; }
@@ -60,25 +67,44 @@ class SummaryModel::Column {
   const TimedDataSpec& timed_data() const { return timed_data_; }
 
  private:
+  // The Last aggregate's value for `row`, or an empty value when the interval
+  // has none. Row -1 is the lead-in interval before the period.
+  scada::DataValue GetLastValue(int row) const;
+  // The consumption of `row` (ComputeConsumption), computed for every row at
+  // once and kept until the data changes.
+  scada::DataValue GetConsumptionValue(int row) const;
+
   void OnTvq(const scada::DataValue& data_value);
 
   void OnTimedDataUpdates(std::span<const scada::DataValue> values);
   void OnTimedDataReady();
   void OnPropertyChanged(const PropertySet& properties);
 
+  // The row's own interval start, moved back for a comparison column.
+  scada::Time GetSourceTime(int row) const;
+
   SummaryModel& model_;
-  const int index_;
+  int index_;
   const std::string formula_;
+  const bool comparison_;
 
   int width_ = 0;
 
   TimedDataSpec timed_data_;
+
+  // ComputeConsumption over the column, reset whenever its data changes.
+  mutable std::optional<std::vector<std::optional<double>>> consumption_;
 };
 
 SummaryModel::Column::Column(SummaryModel& model,
                              int index,
-                             std::string formula)
-    : model_(model), index_(index), formula_{std::move(formula)}, width_(100) {
+                             std::string formula,
+                             bool comparison)
+    : model_(model),
+      index_(index),
+      formula_{std::move(formula)},
+      comparison_{comparison},
+      width_(100) {
   timed_data_.update_handler =
       [this](std::span<const scada::DataValue> values) {
         OnTimedDataUpdates(values);
@@ -91,15 +117,30 @@ SummaryModel::Column::Column(SummaryModel& model,
 }
 
 std::u16string SummaryModel::Column::GetTitle() const {
+  std::u16string title;
   if (model_.path_title_) {
-    if (auto node = timed_data_.node()) {
-      auto title = GetFullDisplayName(node);
-      if (!title.empty())
-        return title;
-    }
+    if (auto node = timed_data_.node())
+      title = GetFullDisplayName(node);
   }
+  if (title.empty())
+    title = timed_data_.GetTitle().text;
 
-  return timed_data_.GetTitle().text;
+  if (!comparison_)
+    return title;
+
+  // Names the window it reads, so a printout of the columns side by side
+  // says which is which.
+  const scada::Time start = model_.start_time_ - model_.comparison_shift();
+  return u16format(L"{} ({} {})", title, Translate("from"),
+                   UtfConvert<char16_t>(
+                       FormatTime(start, TIME_FORMAT_DATE | TIME_FORMAT_TIME)));
+}
+
+scada::Time SummaryModel::Column::GetSourceTime(int row) const {
+  // GetRowTime() checks its row; the lead-in row lies before the first.
+  const scada::Time time = row == -1 ? model_.start_time_ - model_.interval()
+                                     : model_.GetRowTime(row);
+  return comparison_ ? time - model_.comparison_shift() : time;
 }
 
 void SummaryModel::Column::UpdateTimes() {
@@ -107,14 +148,30 @@ void SummaryModel::Column::UpdateTimes() {
   auto timed_data_copy = timed_data_;
 
   timed_data_.Reset();
+  consumption_.reset();
   timed_data_.SetAggregateFilter(model_.aggregate_filter_);
-  timed_data_.SetRange({model_.start_time_, model_.end_time_});
+  // Consumption measures the first row from the interval before it.
+  const scada::Duration shift =
+      comparison_ ? model_.comparison_shift() : scada::Duration::zero();
+  const scada::Time start_time = model_.consumption_
+                                     ? model_.start_time_ - model_.interval()
+                                     : model_.start_time_;
+  timed_data_.SetRange({start_time - shift, model_.end_time_ - shift});
   timed_data_.Connect(model_.timed_data_service(), formula_);
   model_.OnColumnChanged(index_);
 }
 
 void SummaryModel::Column::OnTvq(const scada::DataValue& data_value) {
-  int row = model_.GetRowForTime(data_value.source_timestamp);
+  if (consumption_) {
+    // A reading changes its own row and every row measured from it, which
+    // can be any row below.
+    consumption_.reset();
+    model_.OnColumnChanged(index_);
+    return;
+  }
+  int row = model_.GetRowForTime(comparison_ ? data_value.source_timestamp +
+                                                   model_.comparison_shift()
+                                             : data_value.source_timestamp);
   if (row != -1)
     model_.OnCellChanged(index_, row);
 }
@@ -127,6 +184,7 @@ void SummaryModel::Column::OnTimedDataUpdates(
 }
 
 void SummaryModel::Column::OnTimedDataReady() {
+  consumption_.reset();
   model_.OnColumnChanged(index_);
 }
 
@@ -142,7 +200,13 @@ void SummaryModel::Column::OnPropertyChanged(const PropertySet& properties) {
 }
 
 scada::DataValue SummaryModel::Column::GetDataValue(int row) const {
-  auto time = model_.GetRowTime(row);
+  if (model_.consumption_)
+    return GetConsumptionValue(row);
+  return GetLastValue(row);
+}
+
+scada::DataValue SummaryModel::Column::GetLastValue(int row) const {
+  auto time = GetSourceTime(row);
   const auto* value = timed_data_.GetValueAt(time);
   if (!value || value->source_timestamp < time) {
     return {};
@@ -150,8 +214,31 @@ scada::DataValue SummaryModel::Column::GetDataValue(int row) const {
   return *value;
 }
 
+scada::DataValue SummaryModel::Column::GetConsumptionValue(int row) const {
+  if (!consumption_) {
+    const auto reading = [this](int r) -> std::optional<double> {
+      double value = 0;
+      scada::DataValue data_value = GetLastValue(r);
+      if (data_value.is_null() || !data_value.value.get(value))
+        return std::nullopt;
+      return value;
+    };
+    std::vector<std::optional<double>> readings;
+    readings.reserve(model_.row_count_);
+    for (int r = 0; r < static_cast<int>(model_.row_count_); ++r)
+      readings.push_back(reading(r));
+    consumption_ = ComputeConsumption(reading(-1), readings);
+  }
+
+  const std::optional<double>& value = (*consumption_)[row];
+  if (!value)
+    return {};
+  const scada::Time time = model_.GetRowTime(row);
+  return scada::DataValue{*value, {}, time, time};
+}
+
 bool SummaryModel::Column::IsReady(int row) const {
-  auto time = model_.GetRowTime(row);
+  auto time = GetSourceTime(row);
   return timed_data_.range_ready({time, time + model_.interval()});
 }
 
@@ -256,7 +343,10 @@ scada::aui::HeaderModel& SummaryModel::column_model() {
 }
 
 int SummaryModel::AddColumn(std::string formula) {
-  if (columns_.size() >= kMaxColumnCount) {
+  // The cap is on items; a comparison column comes with its item.
+  const size_t item_count = static_cast<size_t>(std::ranges::count_if(
+      columns_, [](const auto& column) { return !column->comparison(); }));
+  if (item_count >= kMaxColumnCount) {
     // Every column holds a history subscription per row, so the cap stays;
     // what changed is that hitting it is said (backlog 962).
     ++dropped_column_count_;
@@ -269,8 +359,16 @@ int SummaryModel::AddColumn(std::string formula) {
   }
 
   int index = static_cast<int>(columns_.size());
-  auto& column = columns_.emplace_back(
-      std::make_unique<Column>(*this, index, std::move(formula)));
+  if (comparison_ != PeriodComparison::kNone) {
+    columns_.push_back(std::make_unique<Column>(*this, index + 1, formula,
+                                                /*comparison=*/true));
+  }
+  // Inserted before its comparison column, which was made first only so the
+  // formula could still be copied.
+  auto& column = *columns_.insert(
+      columns_.begin() + index,
+      std::make_unique<Column>(*this, index, std::move(formula),
+                               /*comparison=*/false));
   column_model_->NotifyModelChanged();
 
   auto node_id = column->GetNodeId();
@@ -281,9 +379,17 @@ int SummaryModel::AddColumn(std::string formula) {
 }
 
 void SummaryModel::DeleteColumn(int index) {
+  // A comparison column goes with its item, and the item with its comparison
+  // column: neither means anything alone.
+  if (columns_[index]->comparison())
+    --index;
   auto node_id = columns_[index]->GetNodeId();
 
-  columns_.erase(columns_.begin() + index);
+  const bool paired = index + 1 < static_cast<int>(columns_.size()) &&
+                      columns_[index + 1]->comparison();
+  columns_.erase(columns_.begin() + index,
+                 columns_.begin() + index + (paired ? 2 : 1));
+  ReindexColumns();
   column_model_->NotifyModelChanged();
 
   if (!node_id.is_null() && FindColumn(node_id) == -1)
@@ -293,7 +399,7 @@ void SummaryModel::DeleteColumn(int index) {
 int SummaryModel::FindColumn(const scada::NodeId& node_id,
                              int starting_index) const {
   for (int i = starting_index; i < static_cast<int>(columns_.size()); ++i) {
-    if (columns_[i]->GetNodeId() == node_id)
+    if (!columns_[i]->comparison() && columns_[i]->GetNodeId() == node_id)
       return i;
   }
   return -1;
@@ -307,6 +413,11 @@ void SummaryModel::Load(const WindowDefinition& definition) {
   const scada::NodeId aggregate_type =
       definition.Get<scada::NodeId>("AggregateType")
           .value_or(scada::id::AggregateFunction_End);
+  consumption_ = definition.FindItem("Consumption") != nullptr &&
+                 aggregate_type == scada::id::AggregateFunction_End;
+  comparison_ = PeriodComparison::kNone;
+  if (const WindowItem* comparison = definition.FindItem("Comparison"))
+    comparison_ = ParsePeriodComparison(comparison->GetString("period"));
 
   SetParams(time_range,
             scada::AggregateFilter{scada::GetLocalAggregateStartTime(),
@@ -332,6 +443,8 @@ void SummaryModel::Load(const WindowDefinition& definition) {
 void SummaryModel::Save(WindowDefinition& definition) {
   for (size_t i = 0; i < columns_.size(); ++i) {
     const Column& column = *columns_[i];
+    if (column.comparison())
+      continue;
     WindowItem& item = definition.AddItem("Item");
     item.SetString("path", column.timed_data().formula());
     item.SetInt("width", column.width());
@@ -340,6 +453,12 @@ void SummaryModel::Save(WindowDefinition& definition) {
   SaveTimeRange(definition, GetTimeRange());
   definition.Set("Interval", interval());
   definition.Set("AggregateType", aggregate_type());
+  if (consumption_)
+    definition.AddItem("Consumption");
+  if (comparison_ != PeriodComparison::kNone) {
+    definition.AddItem("Comparison")
+        .SetString("period", PeriodComparisonName(comparison_));
+  }
 }
 
 void SummaryModel::GetCell(scada::aui::GridCell& cell) {
@@ -447,9 +566,61 @@ void SummaryModel::SetTimeRange(const scada::RelativeTimeRange& time_range) {
 }
 
 void SummaryModel::SetAggregateType(scada::NodeId aggregate_type) {
+  consumption_ = false;
   auto new_filter = aggregate_filter_;
   new_filter.aggregate_type = std::move(aggregate_type);
   SetParams(time_range_, std::move(new_filter));
+}
+
+void SummaryModel::SetConsumption() {
+  consumption_ = true;
+  auto new_filter = aggregate_filter_;
+  new_filter.aggregate_type = scada::id::AggregateFunction_End;
+  SetParams(time_range_, std::move(new_filter));
+}
+
+void SummaryModel::SetComparison(PeriodComparison comparison) {
+  if (comparison_ == comparison)
+    return;
+  comparison_ = comparison;
+  // Made anew, so they read with the new shift.
+  RebuildComparisonColumns();
+  column_model_->NotifyModelChanged();
+  NotifyModelChanged();
+}
+
+scada::Duration SummaryModel::comparison_shift() const {
+  // The shown rows' own span, so the earlier rows line up one to one.
+  return PeriodComparisonShift(comparison_, end_time_ - start_time_);
+}
+
+bool SummaryModel::IsComparisonColumn(int column) const {
+  return IsColumnIndex(column) && columns_[column]->comparison();
+}
+
+void SummaryModel::ReindexColumns() {
+  for (int i = 0; i < static_cast<int>(columns_.size()); ++i)
+    columns_[i]->set_index(i);
+}
+
+void SummaryModel::RebuildComparisonColumns() {
+  std::erase_if(columns_,
+                [](const auto& column) { return column->comparison(); });
+  if (comparison_ != PeriodComparison::kNone) {
+    std::vector<std::unique_ptr<Column>> columns;
+    columns.reserve(columns_.size() * 2);
+    for (auto& column : columns_) {
+      std::string formula = column->formula();
+      const int width = column->width();
+      columns.push_back(std::move(column));
+      auto& twin = columns.emplace_back(
+          std::make_unique<Column>(*this, static_cast<int>(columns.size()),
+                                   std::move(formula), /*comparison=*/true));
+      twin->set_width(width);
+    }
+    columns_ = std::move(columns);
+  }
+  ReindexColumns();
 }
 
 void SummaryModel::SetInterval(scada::Duration interval) {
@@ -695,6 +866,9 @@ std::u16string SummaryModel::GetExportDescription() {
     if (aggregate_filter_.aggregate_type == scada::NodeId{id})
       description = Translate(title);
   }
+  // Read through Last, but it is not Last that the cells show.
+  if (consumption_)
+    description = Translate("Consumption");
   for (const auto& [interval, title] : kIntervalTitles) {
     if (aggregate_filter_.interval == interval) {
       if (!description.empty())

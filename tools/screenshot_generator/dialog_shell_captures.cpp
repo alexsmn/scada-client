@@ -19,6 +19,8 @@
 #include "base/memory_settings_store.h"
 #include "base/relative_time_range.h"
 #include "base/utf_convert.h"
+#include "events/event_statistics.h"
+#include "events/qt/event_statistics_dialog.h"
 #include "main_window/command_palette_qt.h"
 #include "main_window/context_bar_qt.h"
 #include "modules/about/about_dialog.h"
@@ -181,6 +183,40 @@ bool CaptureAboutDialog(const DialogCaptureContext& context) {
                             .user = u"operator1",
                             .has_session = true,
                             .connected = true});
+  return GrabShownDialog(context);
+}
+
+bool CaptureEventStatisticsDialog(const DialogCaptureContext& context) {
+  // Fixed samples rather than the fixture's journal, for the reason the About
+  // capture gives: the fixture holds a handful of events, and a statistics
+  // window over them would show nothing worth reading. These are a shift's
+  // worth at a substation, counted through the same ComputeEventStatistics the
+  // journal calls.
+  using events::EventStatisticsSample;
+  const scada::NodeId breaker{1, 3};
+  const scada::NodeId transformer{2, 3};
+  const scada::NodeId feeder{3, 3};
+  std::vector<EventStatisticsSample> samples;
+  const auto add = [&samples](const scada::NodeId& object, std::u16string name,
+                              unsigned severity, int count, int pending) {
+    for (int i = 0; i < count; ++i) {
+      samples.push_back({.object = object,
+                         .object_name = name,
+                         .severity = severity,
+                         .pending = i < pending});
+    }
+  };
+  add(breaker, u"ПС Северная / Выключатель Q1", 900, 3, 1);
+  add(breaker, u"ПС Северная / Выключатель Q1", 1, 9, 0);
+  add(transformer, u"ПС Северная / Трансформатор Т1", 700, 5, 2);
+  add(transformer, u"ПС Северная / Трансформатор Т1", 1, 2, 0);
+  add(feeder, u"ПС Северная / Фидер 10 кВ №4", 1, 6, 0);
+
+  // Eagerly shown and self-deleting on close; the generic grab rejects it.
+  MakeEventStatisticsDialog(events::ComputeEventStatistics(samples),
+                            Translate("Event Journal for Day"),
+                            /*parent=*/nullptr)
+      ->show();
   return GrabShownDialog(context);
 }
 

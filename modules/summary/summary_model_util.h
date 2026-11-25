@@ -1,10 +1,14 @@
 #pragma once
 
 #include "base/check.h"
-#include "base/struct_writer.h"
 #include "base/relative_time_range.h"
+#include "base/struct_writer.h"
 #include "common/aggregation.h"
 #include "scada/date_time.h"
+
+#include <optional>
+#include <span>
+#include <vector>
 
 namespace {
 
@@ -60,6 +64,38 @@ inline SummaryModelParams CalculateSummaryModelParams(
   scada::base::Check(result.row_count <= kMaxRowCount);
 
   return result;
+}
+
+// The Summary's «Расход» (consumption) of a cumulative counter, per row,
+// from the counter's last reading in each interval (the Last aggregate).
+//
+// `lead_in` is the last reading in the interval before the first row, which
+// is what the first row's consumption is measured from. A row's consumption is
+// its last reading minus the last reading before it. A row with no reading
+// consumed nothing — a counter that did not change has no samples to report,
+// which is exactly why the Last values leave empty cells — so it is 0 once a
+// reading before it is known, and unknown (nullopt) until then.
+//
+// A counter that was reset or replaced reads lower than before; that row
+// shows the negative difference rather than hiding it, so the operator sees
+// the reset where it happened.
+inline std::vector<std::optional<double>> ComputeConsumption(
+    std::optional<double> lead_in,
+    std::span<const std::optional<double>> last_readings) {
+  std::vector<std::optional<double>> consumption;
+  consumption.reserve(last_readings.size());
+  std::optional<double> baseline = lead_in;
+  for (const std::optional<double>& reading : last_readings) {
+    if (!baseline)
+      consumption.push_back(std::nullopt);
+    else if (!reading)
+      consumption.push_back(0.0);
+    else
+      consumption.push_back(*reading - *baseline);
+    if (reading)
+      baseline = reading;
+  }
+  return consumption;
 }
 
 inline std::ostream& operator<<(std::ostream& stream,

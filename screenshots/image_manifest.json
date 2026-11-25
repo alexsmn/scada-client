@@ -11,11 +11,11 @@
       "notes": "Favorites pane: saved windows in two folders, showing all three window-type glyphs — folder, table and chart-spline (Lucide). Seeded from the fixture's `favourites` block, expanded via the spec's `expand` flag and guarded at min_rows 2; it rendered as a blank panel for months because nothing seeded the store and no guard noticed. Not published yet: no manual page embeds it. Re-pointed 2026-09-26 (backlog 39, option (a)): rendered with `frame: \"window\"`, so the capture is the whole main window around the pane — menu bar, context bar with the severity tiles, activity rail, tab strip, status strip — which is what tells a reader WHERE Favourites lives, and is what the bare panel could not say. It replaces menu-favorites.png. **It does not carry the OS title bar** that the hand-captured original had, and no offscreen grab can: `grab()` renders the Qt widget tree, and screenshot_fixture.cpp records that PrintWindow(PW_RENDERFULLCONTENT) was tried for exactly this and abandoned.",
       "published": true,
       "captured": {
-        "commit": "77c1db7f0",
+        "commit": "baabbfb37",
         "platform": "macos",
-        "dirty": false,
-        "sha256": "ea54d221e0c21877a9541b1eade8ece7b3343c313ae6f43058247f2fede4ba1a",
-        "last_rendered": "77c1db7f0"
+        "dirty": true,
+        "sha256": "6256baf4a5eebfff51d989f1b90f74fffc33c7ce5b1fa2a8746b94288d578e60",
+        "last_rendered": "baabbfb37"
       }
     },
     {
@@ -27,11 +27,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of favorites.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "77c1db7f0",
+        "commit": "baabbfb37",
         "platform": "macos",
-        "dirty": false,
-        "sha256": "2cec7476c3ed9938149c3dd403fadde0c2e316469b64b2d69a4805723e2eb007",
-        "last_rendered": "77c1db7f0"
+        "dirty": true,
+        "sha256": "ac2f08fb0c41a2c3cd65ddca76c90c8949745ea0f9c72a2c6c84bda04e7c816f",
+        "last_rendered": "baabbfb37"
       }
     },
     {
@@ -173,6 +173,40 @@
         "dirty": true,
         "sha256": "6e3f263fde283925e2514bb5544744cc2473efab3f63474580184425cad9681b",
         "last_rendered": "53741be2f"
+      }
+    },
+    {
+      "file": "event-statistics.png",
+      "tag": "auto-dialog",
+      "theme": "dark",
+      "published": true,
+      "parity_key": "event-statistics",
+      "referenced_from": [
+        "client/events.md"
+      ],
+      "notes": "Event journal's Statistics… dialog over fixed samples (a shift at a substation), counted through ComputeEventStatistics. Added 2026-11-24 with the dialog.",
+      "captured": {
+        "commit": "baabbfb37",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "a40635565982de1d4817375fd577ad0d0625779dee51a19004ebf27e671ce86a",
+        "last_rendered": "baabbfb37"
+      }
+    },
+    {
+      "file": "event-statistics-light.png",
+      "tag": "auto-dialog",
+      "theme": "light",
+      "parity_key": "event-statistics",
+      "published": false,
+      "referenced_from": [],
+      "notes": "Light-theme render of event-statistics.png, produced by the same capture spec under `--theme light`. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
+      "captured": {
+        "commit": "baabbfb37",
+        "platform": "macos",
+        "dirty": true,
+        "sha256": "88170f631eb5858d050f751f9f5611cc414577ec2520d3185db077819bfb474b",
+        "last_rendered": "baabbfb37"
       }
     },
     {
@@ -397,11 +431,11 @@
       ],
       "notes": "The preferences surface, from CaptureSettingsPanel: a full-window overlay over the workbench with its own search box, five scope tabs (All, then This client, Profile, This window and This session -- the last added for Control Confirmation by backlog 1046), a category list with counts, and a per-row storage chip saying where each setting lives. Renamed from `settings-dialog.png` on 2026-09-19 (backlog 628): `SettingsDialog` was retired on 2026-08-28 for `SettingsPanel` (backlog 626). What this row said until 2026-09-19 is now wrong in the reassuring direction: it warned the tracked PNG was the last render of the retired dialog and that a diff against it meant nothing. It is not — a fresh render is byte-identical and shows the overlay; it was re-rendered at 15bd4e48b. So the picture is current and the diff is meaningful. The rename interlocked with the manual pages that embed the file, so it landed with them.",
       "captured": {
-        "commit": "53741be2f",
+        "commit": "baabbfb37",
         "platform": "macos",
-        "dirty": false,
-        "sha256": "8f1b17e4e8c28290306f29311b374feefcdbcddb2e21f29afe5935417aeaec61",
-        "last_rendered": "53741be2f"
+        "dirty": true,
+        "sha256": "64c82e9237a6fcb5e526287fbd18c43c509ab99e503853b3668c7978efe916bc",
+        "last_rendered": "baabbfb37"
       },
       "parity_key": "settings"
     },
@@ -413,11 +447,11 @@
       "referenced_from": [],
       "notes": "The light render of settings.png. Same fixture, same spec; only the design-token appearance differs. See that row for what the picture is of.",
       "captured": {
-        "commit": "53741be2f",
+        "commit": "baabbfb37",
         "platform": "macos",
-        "dirty": false,
-        "sha256": "8f7061dcca73cd271f5a961c8af97d237e96511e36aab3be83932c8be11ffca2",
-        "last_rendered": "53741be2f"
+        "dirty": true,
+        "sha256": "78269533857561b137ac48715686fdc4310486e8b6ba2cf53113edba484e130b",
+        "last_rendered": "baabbfb37"
       },
       "parity_key": "settings"
     },
@@ -431,11 +465,11 @@
       ],
       "notes": "The reshelled operator workbench: CaptureMainWindow under --theme renders the full shell (activity rail, context bar with KPI severity tiles, editor tabs over EventJournal/Summ/Struct, the Inspector fronted in the right dock, status strip) and saves it under this name so the legacy client-window.png is never overwritten by a themed render. Fixture pending alarms light the tiles and the journal chrome. Both STALE notes this row carried until 2026-09-19 are DISCHARGED, and were already wrong when they were read: they described the status strip's ping cell widening (120 -> 180, plus the \"no response\" marker, 0db08d4f8, 2026-08-01) and the context bar losing its identity/connection cluster to the status strip (2026-07-26), and asked for a Windows re-render. The tracked PNG already shows both — the context bar carries only breadcrumb, search and severity tiles, and user/connection/server/endpoint sit in the status strip — because it was re-rendered at 87b6a9b4b (2026-09-12), which has 0db08d4f8 as an ancestor. The request for a WINDOWS re-render is obsolete on its own terms too: either host may render the generated set (decided 2026-09-12), and only the manual-modus family needs Windows. This row is the README's hero image, so a note saying \"do not trust this picture\" is not a cheap thing to leave lying around. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it. Re-rendered 2026-11-15 at a clean tree, incidentally, while backlog 1074 checked whether the Inspector's Control hint reached it (it does not: the selection's control is disabled, so the hint is hidden); this cleared the --check-pairs report that the pair had fallen behind its sibling. Re-rendered 2026-11-22 and joined current_generator_owned_subset: every journal row had read «Критично 1000» since 2026-11-08, because LegacySeverityProbe took the fixture for a 2.5.7 Server (its test address space lacked DataItemControlType) and rescaled each severity by ten.",
       "captured": {
-        "commit": "cb8aded64",
+        "commit": "baabbfb37",
         "platform": "macos",
-        "dirty": false,
-        "sha256": "ca5f96f70eac0742f4219524561023bb3b3b08e18810bf143e26d639a70aa007",
-        "last_rendered": "77c1db7f0"
+        "dirty": true,
+        "sha256": "6a66ccd66b1f1a1bf956dd6bc0a61c65f5d223da008b9e0b029f6bf333dc25f6",
+        "last_rendered": "baabbfb37"
       }
     },
     {
@@ -446,11 +480,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of workbench-window.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to workbench-window.png, and this is a second appearance of that capture rather than a second capture. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it. Re-rendered 2026-11-15 at a clean tree, incidentally, while backlog 1074 checked whether the Inspector's Control hint reached it (it does not: the selection's control is disabled, so the hint is hidden); this cleared the --check-pairs report that the pair had fallen behind its sibling.",
       "captured": {
-        "commit": "77c1db7f0",
+        "commit": "baabbfb37",
         "platform": "macos",
-        "dirty": false,
-        "sha256": "379bea6b1f92f75abdf8ea06e1ca37a371e37511c7ace092d7b09a4021fbbe97",
-        "last_rendered": "77c1db7f0"
+        "dirty": true,
+        "sha256": "37b040b0a4458891436c0646742550421e241f278b584e400c4aeb37179d0b49",
+        "last_rendered": "baabbfb37"
       }
     },
     {
@@ -462,11 +496,11 @@
       ],
       "notes": "The Overview landing cockpit: a fresh page-less profile under the reshell theme boots through CreateInitialPage into MakeOverviewPage - the Explorer sidebar (tabified with its Favorites and Portfolio sibling panes) beside the dominant trend (65%) over the actionable-alarm strip, with the Inspector fronted on the right. Captured via the production seeding path (CaptureOverviewPage), so it guards the reshell initial-page routing too. In current_generator_owned_subset since 2026-09-12: the render was reviewed against the page that embeds it (scada-docs client/workbench.md and the en/ mirror, the «Обзор» section), which is what graduates an image into the published set. Re-rendered 2026-08-29: the Explorer trees stopped drawing a row for their root (ConfigurationTreeView now takes Tree's hidden-root default), because the pane's own dock title already names it — so the tree starts at its content. Re-rendered 2026-09-12: the landing published its whole right-hand third as the Inspector's «select an item» placeholder, because nothing on a freshly seeded page is selected — CaptureOverviewPage now makes the selection the shell's own way, through the Explorer pane the page already docks (SelectSignalForInspector, shared with workbench-window.png), so the card renders its readout, quality badge, limit bands and actions. Either host may render this image and the platform field is what keeps a diff readable (docs/ops/client-screenshots.md); the «pending a Windows re-render» this row used to claim is not owed. Rendered with --only, so no other image in the gallery moved, and provenance was stamped by hand for this row alone: --stamp rewrites every row whose digest differs — see backlog 642. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it. Re-rendered 2026-11-15 at a clean tree, incidentally, while backlog 1074 checked whether the Inspector's Control hint reached it (it does not: the selection's control is disabled, so the hint is hidden); this cleared the --check-pairs report that the pair had fallen behind its sibling. Re-rendered 2026-11-22: every journal row had read «Критично 1000» since 2026-11-08, because LegacySeverityProbe took the fixture for a 2.5.7 Server (its test address space lacked DataItemControlType) and rescaled each severity by ten. Re-rendered 2026-11-23 for backlog 1125: the dominant trend, which plots nothing on a fresh profile, now carries its empty-state hint («На графике нет сигналов / Отметьте сигнал флажком в дереве «Объекты»», GraphEmptyState) where it drew only a time axis. The diff region is the hint alone.",
       "captured": {
-        "commit": "cb8aded64",
+        "commit": "baabbfb37",
         "platform": "macos",
-        "dirty": false,
-        "sha256": "300b2263412d9bc7b3b9e0073363472c62545dc88c0e0bac7e13a729b2d6748f",
-        "last_rendered": "77c1db7f0"
+        "dirty": true,
+        "sha256": "32a631e9b27ed5e6e052b5fea385c98a85ccd895876f14545a7065d804079bbf",
+        "last_rendered": "baabbfb37"
       }
     },
     {
@@ -477,11 +511,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of workbench-overview.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to workbench-overview.png, and this is a second appearance of that capture rather than a second capture. Re-rendered 2026-09-20, and the cause is `a1ec914aa` rather than anything in this capture: the Explorer's top-level leaves (TC1, TC2, TC8, Ua, Дорасчет Ua среднее) now carry their values and quality dots. That fix let a failed synchronous classification in `ObjectTreeModel::CreateVisibleNode` fall through to the asynchronous path, and the V45 finding in docs/parity/qt-web-parity.json had already named this capture as the one contrast it could not explain and predicted exactly these five rows. Rendered incidentally by a full pass taken for backlog 772; the diff region is the Explorer tree alone and nothing in the device-log change reaches it. Re-rendered 2026-11-15 at a clean tree, incidentally, while backlog 1074 checked whether the Inspector's Control hint reached it (it does not: the selection's control is disabled, so the hint is hidden); this cleared the --check-pairs report that the pair had fallen behind its sibling. Re-rendered 2026-11-23 for backlog 1125: the dominant trend, which plots nothing on a fresh profile, now carries its empty-state hint («На графике нет сигналов / Отметьте сигнал флажком в дереве «Объекты»», GraphEmptyState) where it drew only a time axis. The diff region is the hint alone.",
       "captured": {
-        "commit": "77c1db7f0",
+        "commit": "baabbfb37",
         "platform": "macos",
-        "dirty": false,
-        "sha256": "beae961fc48eed7076b7c4041e9c827acba1f857b0e261141f463d986effbd2e",
-        "last_rendered": "77c1db7f0"
+        "dirty": true,
+        "sha256": "b18caf7b0f4215fb8e604dacbef97197e5bf043eae370a810b108f4da31989ce",
+        "last_rendered": "baabbfb37"
       }
     },
     {
@@ -1037,11 +1071,11 @@
       ],
       "notes": "The Audit log view: the event journal scoped to the AuditEventType subtree (see client/modules/events/audit_events.h). Admin-gated. The capture demonstrates the filter rather than asserting it - the fixture seeds 13 events of which 4 carry audit types, and only those 4 appear. Acknowledgement chrome is deliberately absent (no unacknowledged-only toggle, no Acknowledge-all footer): an audit entry records that something happened, and there is nothing to acknowledge. Since 2026-11-24 (backlog 1127) the view reads each entry as Время / Кто / Действие / Объект / Результат rather than wearing the journal's process columns: the actor is a column of its own (the fixture's audit events name one through `user_id`), the method is a translated action («Включение в роль», not «AddIdentity ivanov»), and the refused removal is marked «✕ Отказано: Bad_UserAccessDenied» in Результат with no severity fill and no plant-area rail — before that it was banded as a process «Предупреждение 600». NOT published. It used to wait for a Windows regeneration, which was retired on 2026-09-12 (either host may render this gallery), so publishing it is now a manual-figure decision rather than a pipeline step (backlog 734). Published 2026-11-22 on dev/users.md (every Qt view gets a manual figure).",
       "captured": {
-        "commit": "4d53bef65",
+        "commit": "baabbfb37",
         "platform": "macos",
-        "dirty": false,
-        "sha256": "5646d74318536fd71e9aa450300faa6ddbd66769a214290c5d9739b1f0b26ebe",
-        "last_rendered": "fe48abca6"
+        "dirty": true,
+        "sha256": "86b5774ed49a2979180b249d8c26c5562e6cae6dbfa172335e6d715a9e8ab121",
+        "last_rendered": "baabbfb37"
       }
     },
     {
@@ -1053,11 +1087,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of audit-log.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "4d53bef65",
+        "commit": "baabbfb37",
         "platform": "macos",
-        "dirty": false,
-        "sha256": "4f64f08b72dbc2c434f0cbbb9a660d805fed04e5387d577fad15f9dd73982d35",
-        "last_rendered": "fe48abca6"
+        "dirty": true,
+        "sha256": "c37046a4534661f5ba29b94a8f157a44a70c591854ddf13c1142a851140f38b7",
+        "last_rendered": "baabbfb37"
       }
     },
     {
@@ -1651,11 +1685,11 @@
       ],
       "notes": "Event journal as an alarm surface (backlog 2.2) under --theme: leading pending-dot column (severity-coloured), the Severity column naming the alarm band (Критично 800 / Предупреждение 600), an unacknowledged row's Acknowledge-Time cell reading '— pending —', and the alarm footer (displayed-backlog summary + Acknowledge-all). Fixture seeds two pending alarms (ids 1008/1009, acknowledged:false). A second EventJournal spec alongside the legacy events-log.png, which keeps rendering the unchanged legacy journal in the no-theme pipeline. Guarded by client_screenshot_check_themed. Published from a macOS render (a supported host since 2026-09-12); kept out of current_generator_owned_subset (subset is auto-* only). Re-pointed 2026-09-26 (backlog 39): this also serves client/events.md, replacing menu-events-log.png. That page's own text says the journal is augmented «точкой \"не квитировано\" в первом столбце, названием важности, итоговой строкой со сводкой неквитированных событий и кнопкой Квитировать все» — all four are visible here and NONE was visible in the image the page carried, which showed a Важность column of bare numbers and no dot column at all. Widened 800→1250 in the same change so the Сообщение column renders: it is the most informative column and its absence was the one thing the retired hand capture had over this one. Residual, pre-existing and not introduced here: the Время column still elides to «16.04.2026 15:02:00…», because the grid gives the extra width to Сообщение rather than to the timestamp. Unpublished 2026-10-04 (operator-role review): the copy in scada-docs/img contradicted the page text (2024 captures, one in English, or — for events-alarm-surface.png — a local message shown as Критично 800 and audit rows in the operator journal), and graduating the gallery render into current_generator_owned_subset needs a fresh capture run against the current write dialog and journal, which that review could not do. Removed from img/ and from the pages; republish once a reviewed render exists. Published 2026-11-22 (1103): the operator journal now hides the security audit types, so the fixture's audit events (seeded for audit-log.png) no longer appear here.",
       "captured": {
-        "commit": "cb8aded64",
+        "commit": "baabbfb37",
         "platform": "macos",
-        "dirty": false,
-        "sha256": "7be45915f55909397131714d62dd86de6fcbff39770bb0e7410c6956e11b0739",
-        "last_rendered": "a945a3980"
+        "dirty": true,
+        "sha256": "a34c297fe436212facae0c21814420a345e8d0eb2241ea62ea69495f7fcd16cd",
+        "last_rendered": "baabbfb37"
       },
       "published": true
     },
@@ -1668,11 +1702,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of events-alarm-surface.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Carries its base capture's `parity_key`: this is a second appearance of that capture, so it belongs to the same matrix row rather than claiming coverage of its own.",
       "captured": {
-        "commit": "cb8aded64",
+        "commit": "baabbfb37",
         "platform": "macos",
-        "dirty": false,
-        "sha256": "daa5144b1d7732076d357aa9497473d0659271b2e3818c9685fe6309d4e758ab",
-        "last_rendered": "a945a3980"
+        "dirty": true,
+        "sha256": "891b299488977c8eb744d1720695bf9225a4f838743b8a5e8ce23e7d6154a096",
+        "last_rendered": "baabbfb37"
       }
     },
     {
@@ -2231,11 +2265,11 @@
       ],
       "notes": "Rendered by the screenshot generator (CaptureSummaryFunctionMenu): the Item menu's Function submenu with the Summary view active, eight checkable aggregate rows (seven until backlog 870 added Time Average and renamed Sum to Time Integral, 2026-10-26). It was the command toolbar's Function dropdown until backlog 697 removed that toolbar on 2026-10-04; the submenu is the same commands and rendered byte-identical. Needed SummaryModule installed in the generator's module set (it registers the aggregate actions) plus an explicitly activated Summary view -- a window shown offscreen never becomes active, and every row resolves through the active view. «Последнее» reads as checked: the fixture's Summ window sets no AggregateType, so the model takes its default, which is the default client/summary.md states. Reviewed against that page on 2026-10-04 and moved into current_generator_owned_subset the same day.",
       "captured": {
-        "commit": "99b39c599",
+        "commit": "baabbfb37",
         "platform": "macos",
-        "dirty": false,
-        "sha256": "cdc445deaf451e46fd0d2ebd70f2c0f51195c9679d30657cc14fead9c7454566",
-        "last_rendered": "53741be2f"
+        "dirty": true,
+        "sha256": "d12b26ce0e4dcdd7048924372a6dfeda0406c285ce1473116005e90a7dc971ac",
+        "last_rendered": "baabbfb37"
       }
     },
     {
@@ -2246,11 +2280,11 @@
       "referenced_from": [],
       "notes": "Light-theme render of menu-summary.png, produced by the same capture spec under `--theme light`. Tracked so a theme regression lands as an image diff: the client follows the host OS light/dark preference by default, so this is what half the operators actually see, and until 2026-09-13 the gallery had no baseline for it at all. Deliberately carries no `parity_key` — the capability's coverage claim belongs to menu-summary.png, and this is a second appearance of that capture rather than a second capture.",
       "captured": {
-        "commit": "99b39c599",
+        "commit": "baabbfb37",
         "platform": "macos",
-        "dirty": false,
-        "sha256": "419f90d6c24d38315f68c596addb5b94c1ac616a194b2402ccc308c082920efe",
-        "last_rendered": "53741be2f"
+        "dirty": true,
+        "sha256": "90ca230c4095f48d8f2b0cc90385207de90f5dd9e1acd0af04b85f973987b07f",
+        "last_rendered": "baabbfb37"
       }
     },
     {
@@ -3486,7 +3520,7 @@
     }
   ],
   "counts": {
-    "auto-dialog": 46,
+    "auto-dialog": 48,
     "auto-menu": 22,
     "auto-view": 112,
     "manual-designer": 40,
@@ -3519,6 +3553,7 @@
     "device-watch.png",
     "devices-create.png",
     "devices.png",
+    "event-statistics.png",
     "events-alarm-surface.png",
     "events.png",
     "favorites.png",

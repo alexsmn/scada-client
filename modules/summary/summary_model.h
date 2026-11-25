@@ -9,6 +9,7 @@
 #include "base/time/time.h"
 #include "common/node_state.h"
 #include "controller/contents_model.h"
+#include "controller/period_comparison.h"
 #include "controller/time_model.h"
 #include "export/export_model.h"
 #include "node_service/node_ref.h"
@@ -54,7 +55,26 @@ class SummaryModel : private SummaryModelContext,
   const scada::NodeId& aggregate_type() const {
     return aggregate_filter_.aggregate_type;
   }
+  // Choosing an aggregate turns consumption off.
   void SetAggregateType(scada::NodeId aggregate_type);
+
+  // Whether the cells show a cumulative counter's consumption per interval
+  // (ComputeConsumption) rather than an aggregate. Computed here from the Last
+  // aggregate, which every Server supports, plus one interval before the
+  // period to measure the first row from.
+  bool consumption() const { return consumption_; }
+  void SetConsumption();
+
+  // Comparing adds, after each item's column, a column of the same item over
+  // the window comparison_shift() earlier, same function and interval. The
+  // added columns are not items: they are not saved as items, deleting one
+  // deletes its item, and they come back with the comparison.
+  PeriodComparison comparison() const { return comparison_; }
+  void SetComparison(PeriodComparison comparison);
+  // How far back the comparison columns read; zero for kNone.
+  scada::Duration comparison_shift() const;
+  // Whether `column` is a comparison column rather than an item's own.
+  bool IsComparisonColumn(int column) const;
 
   void SetParams(const scada::RelativeTimeRange& time_range,
                  scada::AggregateFilter aggregate_filter);
@@ -192,6 +212,15 @@ class SummaryModel : private SummaryModelContext,
   scada::Time end_time_ = scada::kNullTime;
   scada::RelativeTimeRange time_range_;
   scada::AggregateFilter aggregate_filter_;
+  // Implies aggregate_filter_.aggregate_type == End.
+  bool consumption_ = false;
+  PeriodComparison comparison_ = PeriodComparison::kNone;
+
+  // Gives every column its position again after columns were inserted or
+  // removed, since a column notifies by it.
+  void ReindexColumns();
+  // Adds or removes the comparison columns to match comparison_.
+  void RebuildComparisonColumns();
 
   size_t row_count_ = 0;
 

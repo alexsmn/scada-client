@@ -1833,6 +1833,47 @@
         <source>Time Integral</source>
         <translation>Интеграл по времени</translation>
     </message>
+    <!-- The Summary's consumption of a cumulative counter (SummaryModel::SetConsumption). -->
+    <message>
+        <source>Consumption</source>
+        <translation>Расход</translation>
+    </message>
+    <!-- The Summary's "Compare with" submenu (SummaryComparison); the items
+         complete the submenu's title: «Сравнить с» → «предыдущими сутками». -->
+    <message>
+        <source>Compare with</source>
+        <translation>Сравнить с</translation>
+    </message>
+    <message>
+        <source>Day earlier</source>
+        <translation>Предыдущими сутками</translation>
+    </message>
+    <message>
+        <source>Week earlier</source>
+        <translation>Предыдущей неделей</translation>
+    </message>
+    <message>
+        <source>Previous period</source>
+        <translation>Предыдущим периодом</translation>
+    </message>
+    <!-- A comparison series' name after the item's (PeriodComparisonSuffix). -->
+    <message>
+        <source>a day earlier</source>
+        <translation>на сутки раньше</translation>
+    </message>
+    <message>
+        <source>a week earlier</source>
+        <translation>на неделю раньше</translation>
+    </message>
+    <message>
+        <source>previous period</source>
+        <translation>предыдущий период</translation>
+    </message>
+    <!-- A comparison column's title: «Насос (с 14.11.2004 10:00)». -->
+    <message>
+        <source>from</source>
+        <translation>с</translation>
+    </message>
     <message>
         <source>Average</source>
         <translation>Среднее</translation>
@@ -3398,6 +3439,33 @@ Trust the new certificate only if the server&apos;s operator confirms that it wa
     <message>
         <source>Search settings</source>
         <translation>Поиск настроек</translation>
+    </message>
+    <!-- The event journal's message search box (filter bar): placeholder and
+         tooltip. -->
+    <message>
+        <source>Search…</source>
+        <translation>Поиск…</translation>
+    </message>
+    <message>
+        <source>Search messages</source>
+        <translation>Поиск по сообщениям</translation>
+    </message>
+    <!-- The event journal's statistics (events/event_statistics.h). -->
+    <message>
+        <source>Statistics…</source>
+        <translation>Статистика…</translation>
+    </message>
+    <message>
+        <source>Event Statistics</source>
+        <translation>Статистика событий</translation>
+    </message>
+    <message>
+        <source>Routine</source>
+        <translation>Обычные</translation>
+    </message>
+    <message>
+        <source>Total</source>
+        <translation>Всего</translation>
     </message>
     <message>
         <source>Close Settings</source>

@@ -1,5 +1,6 @@
 #include "modules/summary/summary_model.h"
 
+#include "aui/translation.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "base/test/test_time.h"
@@ -186,6 +187,129 @@ TEST_F(SummaryModelTest, HourlySummaryForDayShows24Rows) {
   EXPECT_EQ(summary_model_.GetRowTime(23), start_time + std::chrono::hours(23));
   EXPECT_EQ(summary_model_.GetCellText(/*row=*/0, /*column=*/0), u"0");
   EXPECT_EQ(summary_model_.GetCellText(/*row=*/23, /*column=*/0), u"23");
+}
+
+// Consumption reads each hour's last counter reading and shows how much it
+// grew since the last reading before it: the first row from the hour before
+// the period, an hour with no reading as 0. It survives a save and reopen, and
+// a printout names it rather than the Last it is read through.
+TEST_F(SummaryModelTest, ConsumptionShowsHowMuchACounterGrewPerInterval) {
+  const auto start_time = TestTimeFromString("15 Nov 2004 10:00:00 UTC");
+  const auto time_range =
+      scada::RelativeTimeRange{start_time, start_time + std::chrono::hours(4)};
+
+  auto timed_data = timed_data_service_.AddTimedData("item1");
+  const std::pair<int, double> readings[] = {
+      {-1, 100}, {0, 110}, {2, 130}, {3, 175}};
+  for (const auto& [hour, value] : readings) {
+    const auto timestamp = start_time + std::chrono::hours(hour);
+    timed_data->data_values.emplace_back(value, scada::Qualifier{}, timestamp,
+                                         timestamp);
+  }
+
+  const auto window_def =
+      WindowDefinition{kSummaryWindowInfo}
+          .AddItem(MakeItem("item1"))
+          .AddItem("scada::RelativeTimeRange", time_range)
+          .AddItem("Interval", std::chrono::hours(1))
+          .AddItem("AggregateType", scada::id::AggregateFunction_End)
+          .AddItem(WindowItem{"Consumption"});
+  summary_model_.Load(window_def);
+
+  ASSERT_TRUE(summary_model_.consumption());
+  ASSERT_EQ(summary_model_.row_model().GetCount(), 4);
+  EXPECT_EQ(summary_model_.GetCellText(/*row=*/0, /*column=*/0), u"10");
+  EXPECT_EQ(summary_model_.GetCellText(/*row=*/1, /*column=*/0), u"0");
+  EXPECT_EQ(summary_model_.GetCellText(/*row=*/2, /*column=*/0), u"20");
+  EXPECT_EQ(summary_model_.GetCellText(/*row=*/3, /*column=*/0), u"45");
+
+  EXPECT_TRUE(summary_model_.GetExportDescription().starts_with(
+      Translate("Consumption")));
+
+  WindowDefinition saved{kSummaryWindowInfo};
+  summary_model_.Save(saved);
+  EXPECT_EQ(saved, window_def);
+
+  // Choosing an aggregate turns it off and shows the readings again.
+  summary_model_.SetAggregateType(scada::id::AggregateFunction_End);
+  EXPECT_FALSE(summary_model_.consumption());
+  EXPECT_EQ(summary_model_.GetCellText(/*row=*/0, /*column=*/0), u"110");
+}
+
+// Comparing sets the same item's earlier window beside it, row for row: a day
+// earlier here. The comparison column is not an item: it is not saved, and
+// deleting it deletes the item with it.
+TEST_F(SummaryModelTest, ComparisonSetsTheEarlierWindowBesideEachItem) {
+  const auto start_time = TestTimeFromString("15 Nov 2004 10:00:00 UTC");
+  const auto time_range =
+      scada::RelativeTimeRange{start_time, start_time + std::chrono::hours(2)};
+
+  auto timed_data = timed_data_service_.AddTimedData("item1");
+  for (int hour : {-24, -23, 0, 1}) {
+    const auto timestamp = start_time + std::chrono::hours(hour);
+    timed_data->data_values.emplace_back(hour, scada::Qualifier{}, timestamp,
+                                         timestamp);
+  }
+
+  const auto window_def =
+      WindowDefinition{kSummaryWindowInfo}
+          .AddItem(MakeItem("item1"))
+          .AddItem("scada::RelativeTimeRange", time_range)
+          .AddItem("Interval", std::chrono::hours(1))
+          .AddItem("AggregateType", scada::id::AggregateFunction_End);
+  summary_model_.Load(window_def);
+  ASSERT_EQ(summary_model_.column_model().GetCount(), 1);
+
+  summary_model_.SetComparison(PeriodComparison::kDayEarlier);
+  ASSERT_EQ(summary_model_.column_model().GetCount(), 2);
+  EXPECT_FALSE(summary_model_.IsComparisonColumn(0));
+  EXPECT_TRUE(summary_model_.IsComparisonColumn(1));
+  EXPECT_EQ(summary_model_.GetCellText(/*row=*/0, /*column=*/0), u"0");
+  EXPECT_EQ(summary_model_.GetCellText(/*row=*/1, /*column=*/0), u"1");
+  EXPECT_EQ(summary_model_.GetCellText(/*row=*/0, /*column=*/1), u"-24");
+  EXPECT_EQ(summary_model_.GetCellText(/*row=*/1, /*column=*/1), u"-23");
+  EXPECT_NE(summary_model_.column_model().GetTitle(1),
+            summary_model_.column_model().GetTitle(0));
+
+  // Saved as a setting, not as a second item.
+  WindowDefinition saved{kSummaryWindowInfo};
+  summary_model_.Save(saved);
+  EXPECT_EQ(std::ranges::count_if(
+                saved.items,
+                [](const WindowItem& item) { return item.name_is("Item"); }),
+            1);
+  SummaryModel reopened{
+      SummaryModelContext{executor_, node_service_, timed_data_service_}};
+  reopened.Load(saved);
+  EXPECT_EQ(reopened.comparison(), PeriodComparison::kDayEarlier);
+  EXPECT_EQ(reopened.column_model().GetCount(), 2);
+
+  // An item added while comparing brings its comparison column along.
+  timed_data_service_.AddTimedData("item2");
+  EXPECT_EQ(summary_model_.AddColumn("item2"), 2);
+  EXPECT_EQ(summary_model_.column_model().GetCount(), 4);
+  EXPECT_TRUE(summary_model_.IsComparisonColumn(3));
+
+  summary_model_.DeleteColumn(1);
+  EXPECT_EQ(summary_model_.column_model().GetCount(), 2);
+  EXPECT_FALSE(summary_model_.IsComparisonColumn(0));
+
+  summary_model_.SetComparison(PeriodComparison::kNone);
+  EXPECT_EQ(summary_model_.column_model().GetCount(), 1);
+}
+
+// The previous period is as long as the shown one and ends where it starts.
+TEST_F(SummaryModelTest, ThePreviousPeriodEndsWhereTheShownOneStarts) {
+  const auto start_time = TestTimeFromString("15 Nov 2004 10:00:00 UTC");
+  summary_model_.SetParams(
+      scada::RelativeTimeRange{start_time, start_time + std::chrono::hours(6)},
+      scada::AggregateFilter{scada::GetLocalAggregateStartTime(),
+                             std::chrono::hours(1),
+                             scada::NodeId{scada::id::AggregateFunction_End}});
+  summary_model_.SetComparison(PeriodComparison::kPreviousPeriod);
+  EXPECT_EQ(summary_model_.comparison_shift(), std::chrono::hours(6));
+  summary_model_.SetComparison(PeriodComparison::kWeekEarlier);
+  EXPECT_EQ(summary_model_.comparison_shift(), std::chrono::weeks(1));
 }
 
 // A printout names the method and interval the operator chose (backlog 875),

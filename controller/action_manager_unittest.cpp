@@ -17,7 +17,8 @@ TEST(CanExpandCommandCategoryTest, OpenExpands) {
 TEST(CanExpandCommandCategoryTest, TheGroupedCategoriesCollapse) {
   for (CommandCategory category :
        {CATEGORY_CREATE, CATEGORY_DEVICE, CATEGORY_PERIOD, CATEGORY_NEW,
-        CATEGORY_AGGREGATION, CATEGORY_INTERVAL, CATEGORY_EXPORT}) {
+        CATEGORY_AGGREGATION, CATEGORY_INTERVAL, CATEGORY_COMPARE,
+        CATEGORY_EXPORT}) {
     EXPECT_FALSE(CanExpandCommandCategory(category))
         << "category " << static_cast<int>(category);
   }

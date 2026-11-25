@@ -8,10 +8,11 @@
 
 struct GraphViewSaver {
   void Save() {
-    scada::Time time = scada::base::DecodeDoubleT(
-        graph_.horizontal_axis().range().high());
+    scada::Time time =
+        scada::base::DecodeDoubleT(graph_.horizontal_axis().range().high());
     scada::Duration span = std::chrono::round<std::chrono::microseconds>(
-        std::chrono::duration<double>{graph_.horizontal_axis().range().delta()});
+        std::chrono::duration<double>{
+            graph_.horizontal_axis().range().delta()});
 
     // time scale
     {
@@ -31,6 +32,11 @@ struct GraphViewSaver {
     }
 
     SaveTimeRange(definition_, graph_view_.GetTimeRange());
+
+    if (graph_view_.comparison() != PeriodComparison::kNone) {
+      definition_.AddItem("Comparison")
+          .SetString("period", PeriodComparisonName(graph_view_.comparison()));
+    }
 
     // Only an operator-pinned canvas colour is persisted. A canvas that simply
     // follows QPalette::Base must not be written out: the stored value would be
@@ -59,6 +65,9 @@ struct GraphViewSaver {
   }
 
   void SaveLine(const MetrixGraph::MetrixLine& line) {
+    // Made again from the comparison on load, so not an item of its own.
+    if (line.compared_line)
+      return;
     WindowItem& item = definition_.AddItem("Item");
     item.SetInt("pane", pane_ix);
     item.SetString("path", line.data_source().GetPath());

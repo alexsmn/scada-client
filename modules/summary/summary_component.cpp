@@ -50,10 +50,25 @@ void RegisterSummaryCommandActions(UiCommandRegistry& ui_command_registry) {
       {ID_AGGREGATION_MAX, "Maximum"},
       {ID_AGGREGATION_AVG, "Average"},
       {ID_AGGREGATION_TIME_AVG, "Time Average"},
-      {ID_AGGREGATION_SUM, "Time Integral"}};
+      {ID_AGGREGATION_SUM, "Time Integral"},
+      // Not an OPC UA aggregate: the Summary derives it from Last
+      // (SummaryModel::SetConsumption).
+      {ID_AGGREGATION_CONSUMPTION, "Consumption"}};
   for (const auto& [command_id, title] : aggregation_actions) {
     ui_command_registry.AddAction(Action{.command_id_ = command_id,
                                          .category_ = CATEGORY_AGGREGATION,
+                                         .title_ = Translate(title),
+                                         .flags_ = Action::CHECKABLE});
+  }
+
+  // Each toggles: choosing the checked one again turns comparing off.
+  const std::pair<unsigned, const char*> compare_actions[] = {
+      {ID_COMPARE_DAY_EARLIER, "Day earlier"},
+      {ID_COMPARE_WEEK_EARLIER, "Week earlier"},
+      {ID_COMPARE_PREVIOUS_PERIOD, "Previous period"}};
+  for (const auto& [command_id, title] : compare_actions) {
+    ui_command_registry.AddAction(Action{.command_id_ = command_id,
+                                         .category_ = CATEGORY_COMPARE,
                                          .title_ = Translate(title),
                                          .flags_ = Action::CHECKABLE});
   }

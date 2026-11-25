@@ -4,6 +4,7 @@
 #include "events/audit_events.h"
 
 #include "aui/severity_colors.h"
+#include "aui/text_fold.h"
 #include "aui/translation.h"
 #include "base/check.h"
 #include "base/excel.h"
@@ -270,6 +271,28 @@ void EventTableModel::GetOccurrenceCell(scada::aui::TableCell& cell) {
   GetEventCell(*row, *event, /*group_count=*/1, cell);
 }
 
+std::vector<events::EventStatisticsSample>
+EventTableModel::GetStatisticsSamples() const {
+  std::vector<events::EventStatisticsSample> samples;
+  const int count = GetOccurrenceCount();
+  samples.reserve(count);
+  for (int i = 0; i < count; ++i) {
+    const auto [row, event] = OccurrenceAt(i);
+    // Named the way the Object column names it, so a count reads against the
+    // rows it counts.
+    std::u16string name;
+    if (row->node)
+      name = GetFullDisplayName(row->node);
+    else if (row->type == LOCAL_EVENT)
+      name = Translate("Local Event");
+    samples.push_back({.object = event->source_node_id,
+                       .object_name = std::move(name),
+                       .severity = event->severity,
+                       .pending = IsPending(row->type, *event)});
+  }
+  return samples;
+}
+
 void EventTableModel::GetEventCell(const Row& row,
                                    const scada::Event& event,
                                    int group_count,
@@ -412,6 +435,12 @@ bool EventTableModel::PassesFilters(const scada::Event& event,
   // type outside this list and stay in the journal.
   if (audit_only_ != IsAuditEventType(event.event_type_id))
     return false;
+
+  if (!folded_text_filter_.empty() &&
+      FoldForSearch(event.message.text).find(folded_text_filter_) ==
+          std::u16string::npos) {
+    return false;
+  }
 
   if (!include_area_filter || filter_node_ids_.empty())
     return true;
@@ -862,6 +891,14 @@ void EventTableModel::SetAuditOnly(bool value) {
   RefilterNow();
 }
 
+void EventTableModel::SetTextFilter(std::u16string_view text) {
+  if (text_filter_ == text)
+    return;
+  text_filter_ = text;
+  folded_text_filter_ = FoldForSearch(text);
+  RefilterNow();
+}
+
 void EventTableModel::SetUnacknowledgedOnly(bool value) {
   if (unacknowledged_only_ == value)
     return;
@@ -883,9 +920,15 @@ void EventTableModel::RefilterNow() {
     NotifyItemsRemoved(0, count);
   }
 
+  // Filtered like every other row: AddRows() filters a local event as it
+  // arrives, so a rebuild that let them all through showed a different journal
+  // after any filter change than before it — the Audit log listed the
+  // Client's own messages, and the severity and search filters skipped them.
   std::vector<const scada::Event*> local_events;
-  for (const scada::Event& event : local_event_model_.events())
-    local_events.push_back(&event);
+  for (const scada::Event& event : local_event_model_.events()) {
+    if (IsEventShown(event))
+      local_events.push_back(&event);
+  }
 
   std::vector<const scada::Event*> current_events;
   for (const scada::Event& event : current_event_model_.events()) {
@@ -1125,7 +1168,7 @@ std::u16string EventTableModel::MakeTitle() const {
     }
   }
 
-  if (severity_min_ || !filter_node_ids_.empty())
+  if (severity_min_ || !filter_node_ids_.empty() || !text_filter_.empty())
     title += u" (" + Translate("Filter") + u")";
 
   return title;

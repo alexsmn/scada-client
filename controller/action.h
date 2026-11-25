@@ -21,6 +21,8 @@ enum CommandCategory {
   CATEGORY_EDIT,
   CATEGORY_AGGREGATION,
   CATEGORY_INTERVAL,
+  // The Summary's earlier window beside the shown one.
+  CATEGORY_COMPARE,
   CATEGORY_COUNT,
 };
 

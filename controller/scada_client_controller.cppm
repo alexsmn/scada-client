@@ -64,6 +64,7 @@ export {
   // action.h (incl. the unscoped CommandCategory enumerators)
   using ::Action;
   using ::CATEGORY_AGGREGATION;
+  using ::CATEGORY_COMPARE;
   using ::CATEGORY_COUNT;
   using ::CATEGORY_CREATE;
   using ::CATEGORY_DEVICE;

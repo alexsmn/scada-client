@@ -22,7 +22,17 @@ class MetrixDataSource : public GraphDataSource {
   virtual ~MetrixDataSource();
 
   void SetTimedData(const TimedDataSpec& spec);
+  // `range` is in the graph's time; a shifted source reads it time_shift()
+  // earlier.
   void SetRange(const scada::TimeRange& range);
+
+  // Draws the item's history `shift` later than it happened, so an earlier
+  // period lies over the shown one — a comparison line. A shifted source has
+  // no current value: "now" a day ago is not a value the operator can read off
+  // the axis. `title_suffix` follows the item's title in the legend and the
+  // export, to say which period the line is.
+  void SetTimeShift(scada::Duration shift, std::u16string title_suffix);
+  scada::Duration time_shift() const { return time_shift_; }
 
   bool is_ready() const { return timed_data_.ready(); }
   scada::NodeId node_id() const { return timed_data_.node_id(); }
@@ -79,6 +89,9 @@ class MetrixDataSource : public GraphDataSource {
   TimedDataSpec timed_data_;
   std::u16string title_;
   std::u16string units_;
+
+  scada::Duration time_shift_ = scada::Duration::zero();
+  std::u16string title_suffix_;
 
   scada::Time earliest_timestamp_ = scada::kNullTime;
   Cancelation update_horizontal_range_cancelation_;

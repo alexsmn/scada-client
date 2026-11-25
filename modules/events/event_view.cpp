@@ -34,7 +34,9 @@
 #include "events/qt/alarm_footer.h"
 #include "events/qt/area_sidebar.h"
 #include "events/qt/event_filter_bar.h"
+#include "events/qt/event_statistics_dialog.h"
 
+#include <QDialog>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -411,6 +413,8 @@ std::unique_ptr<UiView> EventView::Init(const WindowDefinition& definition) {
     }
     if (auto time_range = RestoreTimeRange(definition))
       model_->SetTimeRange(*time_range);
+    if (const WindowItem* search = definition.FindItem("Search"))
+      model_->SetTextFilter(search->GetString16("text"));
   }
 
   // The panel's threshold is a filter on its own rows, restored from the
@@ -470,6 +474,7 @@ std::unique_ptr<UiView> EventView::Init(const WindowDefinition& definition) {
         .severity_min = model_->severity_min(),
         .severity_max = scada::kSeverityMax,
         .time_range = model_->time_range(),
+        .text_filter = model_->text_filter(),
         .on_unacknowledged_only =
             [this](bool value) { model_->SetUnacknowledgedOnly(value); },
         .on_severity_min =
@@ -479,6 +484,20 @@ std::unique_ptr<UiView> EventView::Init(const WindowDefinition& definition) {
         .on_time_range =
             [this](const scada::RelativeTimeRange& time_range) {
               SetTimeRange(time_range);
+            },
+        .on_text_filter =
+            [this](const std::u16string& text) {
+              model_->SetTextFilter(text);
+              controller_delegate_.SetTitle(MakeTitle());
+            },
+        // Not on the Audit log: its rows are calls on accounts and roles, and
+        // a count per alarm band would band them as the journal refuses to.
+        .on_statistics =
+            audit_only_ ? std::function<void()>{} : [this, container] {
+              MakeEventStatisticsDialog(events::ComputeEventStatistics(
+                                            model_->GetStatisticsSamples()),
+                                        MakeTitle(), container)
+                  ->show();
             },
     }));
     // Areas sidebar beside the journal: every top-level area with its
@@ -546,6 +565,9 @@ void EventView::Save(WindowDefinition& definition) {
 
   if (!is_panel_)
     SaveTimeRange(definition, model_->time_range());
+
+  if (!is_panel_ && !model_->text_filter().empty())
+    definition.AddItem("Search").SetString("text", model_->text_filter());
 
   for (auto& item : model_->filter_items()) {
     WindowItem& window_item = definition.AddItem("Item");

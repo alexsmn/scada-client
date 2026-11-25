@@ -42,6 +42,8 @@ constexpr DialogCapture kDialogCaptures[] = {
     {"command-palette",
      &scada::screenshot_generator::CaptureCommandPaletteDialog},
     {"about", &scada::screenshot_generator::CaptureAboutDialog},
+    {"event-statistics",
+     &scada::screenshot_generator::CaptureEventStatisticsDialog},
     {"change-password",
      &scada::screenshot_generator::CaptureChangePasswordDialog},
     {"time-range", &scada::screenshot_generator::CaptureTimeRangeDialog},
@@ -95,8 +97,8 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
   }
 
   // Per-call stubs — cheap to construct, no shared state. They outlive the
-  // capture only by the width of this scope, which is why every coroutine-driven
-  // kind waits for its awaitable to unwind before returning.
+  // capture only by the width of this scope, which is why every
+  // coroutine-driven kind waits for its awaitable to unwind before returning.
   NullTransportFactory transport_factory;
   NullTaskManager task_manager;
   DialogServiceImplQt dialog_service;  // parent_widget = nullptr
@@ -111,7 +113,7 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
       .publish_guard = publish_guard,
       // A spec may name its own target node; otherwise every node-driven kind
       // shares the fixture-wide one.
-      .node_id = spec.node_id.is_null() ? env.dialog_analog_node_id
-                                        : spec.node_id,
+      .node_id =
+          spec.node_id.is_null() ? env.dialog_analog_node_id : spec.node_id,
   });
 }

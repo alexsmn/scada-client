@@ -31,8 +31,12 @@ scada::Time GetLatestTimestamp(const TimedDataSpec& spec) {
 
 class MetrixPointEnum : public PointEnumerator {
  public:
-  explicit MetrixPointEnum(TimedDataSpec& timed_data)
-      : timed_data_(timed_data) {}
+  // `shift_seconds` moves every point later by that much; a shifted
+  // enumeration leaves out the current value.
+  MetrixPointEnum(TimedDataSpec& timed_data, double shift_seconds)
+      : timed_data_(timed_data),
+        shift_seconds_{shift_seconds},
+        include_current_{shift_seconds == 0} {}
 
   // Returns false if there is no data and iterator is invalid.
   bool Reset(double from,
@@ -46,6 +50,8 @@ class MetrixPointEnum : public PointEnumerator {
 
  private:
   TimedDataSpec& timed_data_;
+  const double shift_seconds_;
+  const bool include_current_;
   size_t current_position_ = 0;
   size_t last_position_ = 0;
   std::size_t count_ = 0;
@@ -70,19 +76,21 @@ bool MetrixPointEnum::Reset(double x_from,
 
   const auto& values = timed_data_.values();
 
-  current_position_ = LowerBound(values, scada::base::DecodeDoubleT(x_from));
+  current_position_ =
+      LowerBound(values, scada::base::DecodeDoubleT(x_from - shift_seconds_));
   if (include_left_bound && current_position_ != 0) {
     --current_position_;
   }
 
-  last_position_ = UpperBound(values, scada::base::DecodeDoubleT(x_to));
+  last_position_ =
+      UpperBound(values, scada::base::DecodeDoubleT(x_to - shift_seconds_));
   if (include_right_bound && last_position_ != values.size()) {
     ++last_position_;
   }
 
   count_ += last_position_ - current_position_;
 
-  if (!timed_data_.current().is_null()) {
+  if (include_current_ && !timed_data_.current().is_null()) {
     if (values.empty() || values.back().source_timestamp <
                               timed_data_.current().source_timestamp) {
       ++count_;
@@ -104,13 +112,14 @@ bool MetrixPointEnum::EnumNext(GraphPoint& point) {
   if (current_position_ != last_position_) {
     const auto& data_value = values[current_position_];
     // TODO: Duplicate code block.
-    point.x = scada::base::EncodeDoubleT(data_value.source_timestamp);
+    point.x = scada::base::EncodeDoubleT(data_value.source_timestamp) +
+              shift_seconds_;
     point.y = data_value.value.get_or(0.0);
     point.good = data_value.qualifier.good();
     last_value_time_ = data_value.source_timestamp;
     ++current_position_;
 
-  } else if (!enum_current_passed_) {
+  } else if (include_current_ && !enum_current_passed_) {
     enum_current_passed_ = true;
 
     const scada::DataValue& current = timed_data_.current();
@@ -161,7 +170,21 @@ void MetrixDataSource::SetTimedData(const TimedDataSpec& spec) {
 }
 
 void MetrixDataSource::SetRange(const scada::TimeRange& range) {
-  timed_data_.SetRange(range);
+  if (time_shift_ == scada::Duration::zero()) {
+    timed_data_.SetRange(range);
+    return;
+  }
+  // The live tail has no meaning a period ago: read up to "now" then.
+  const scada::Time to =
+      range.second == kTimedDataCurrentOnly ? scada::Now() : range.second;
+  timed_data_.SetRange({range.first - time_shift_, to - time_shift_});
+}
+
+void MetrixDataSource::SetTimeShift(scada::Duration shift,
+                                    std::u16string title_suffix) {
+  time_shift_ = shift;
+  title_suffix_ = std::move(title_suffix);
+  OnItemChanged();
 }
 
 std::unique_ptr<PointEnumerator> MetrixDataSource::EnumPoints(
@@ -169,7 +192,8 @@ std::unique_ptr<PointEnumerator> MetrixDataSource::EnumPoints(
     double to,
     bool include_left_bound,
     bool include_right_bound) {
-  auto point_enum = std::make_unique<MetrixPointEnum>(timed_data_);
+  auto point_enum = std::make_unique<MetrixPointEnum>(
+      timed_data_, std::chrono::duration<double>{time_shift_}.count());
   bool has_data =
       point_enum->Reset(from, to, include_left_bound, include_right_bound);
   return has_data ? std::move(point_enum) : nullptr;
@@ -242,7 +266,7 @@ void MetrixDataSource::UpdateUnits() {
 }
 
 void MetrixDataSource::OnItemChanged() {
-  title_ = timed_data_.GetTitle().text;
+  title_ = timed_data_.GetTitle().text + title_suffix_;
   UpdateRange();
   UpdateLimits();
   UpdateUnits();
@@ -277,7 +301,7 @@ void MetrixDataSource::OnPropertyChanged(const PropertySet& properties) {
     OnItemChanged();
 
   if (properties.is_title_changed()) {
-    title_ = timed_data_.GetTitle().text;
+    title_ = timed_data_.GetTitle().text + title_suffix_;
     if (observer_)
       observer_->OnDataSourceItemChanged();
   }
@@ -295,6 +319,9 @@ QString MetrixDataSource::GetYAxisLabel(double value) const {
 #endif
 
 void MetrixDataSource::SetCurrentValue(double value) {
+  // See SetTimeShift(): a period ago has no current value.
+  if (time_shift_ != scada::Duration::zero())
+    value = kGraphUnknownValue;
   if (current_value_ == value)
     return;
 
@@ -350,6 +377,7 @@ GraphRange MetrixDataSource::GetHorizontalRange() const {
     return {};
   }
 
-  return {scada::base::EncodeDoubleT(earliest_timestamp_),
-          scada::base::EncodeDoubleT(latest_timestamp), GraphRange::TIME};
+  return {scada::base::EncodeDoubleT(earliest_timestamp_ + time_shift_),
+          scada::base::EncodeDoubleT(latest_timestamp + time_shift_),
+          GraphRange::TIME};
 }

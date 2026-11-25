@@ -7,6 +7,7 @@
 #include "controller/contents_model.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
+#include "controller/period_comparison.h"
 #include "controller/selection_model.h"
 #include "controller/series_model.h"
 #include "controller/time_model.h"
@@ -75,6 +76,10 @@ class GraphView : protected ControllerContext,
   virtual bool AreSeriesDotsShown() const override;
   virtual bool IsSeriesStepped() const override;
 
+  // The earlier period drawn dashed over each line (PeriodComparison).
+  PeriodComparison comparison() const { return comparison_; }
+  void SetComparison(PeriodComparison comparison);
+
   // ContentsModel
   virtual void AddContainedItem(const scada::NodeId& node_id,
                                 unsigned flags) override;
@@ -139,6 +144,15 @@ class GraphView : protected ControllerContext,
   GraphEmptyState* empty_state_ = nullptr;
 
   GraphRange prezoom_horizontal_range_;
+
+  // Removes every comparison line, then — when comparing — adds one after each
+  // line: the same item, shifted, dashed, in its line's colour.
+  void SyncComparisonLines();
+  // Gives each comparison line its line's colour, weight, dots and steps
+  // again, after the operator restyled the line.
+  void RestyleComparisonLines();
+
+  PeriodComparison comparison_ = PeriodComparison::kNone;
 
   CommandRegistry command_registry_;
 

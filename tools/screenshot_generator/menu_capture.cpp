@@ -408,9 +408,10 @@ TEST_F(ScreenshotGenerator, CaptureSummaryFunctionMenu) {
 
   CapturePublishGuard publish_guard{kFilename};
 
-  // Eight aggregate functions: First, Last, Count, Minimum, Maximum, Average,
-  // Time Average, Time Integral (see RegisterSummaryCommandActions; the time
-  // pair since backlog 870). A row that stopped being
+  // Nine functions: First, Last, Count, Minimum, Maximum, Average, Time
+  // Average, Time Integral (see RegisterSummaryCommandActions; the time pair
+  // since backlog 870) and Consumption, which the Summary derives from Last
+  // (2026-11-24). A row that stopped being
   // checkable, or a menu that resolved no checked row, would still render.
   int visible_rows = 0;
   int checkable_rows = 0;
@@ -425,10 +426,10 @@ TEST_F(ScreenshotGenerator, CaptureSummaryFunctionMenu) {
     if (action->isChecked())
       ++checked_rows;
   }
-  EXPECT_EQ(CountMenuRows(*menu), 8) << "expected the eight aggregate rows";
-  EXPECT_EQ(visible_rows, 8)
+  EXPECT_EQ(CountMenuRows(*menu), 9) << "expected the nine function rows";
+  EXPECT_EQ(visible_rows, 9)
       << "an aggregate row resolved no command handler and was hidden";
-  EXPECT_EQ(checkable_rows, 8) << "an aggregate row stopped being checkable";
+  EXPECT_EQ(checkable_rows, 9) << "an aggregate row stopped being checkable";
   EXPECT_EQ(checked_rows, 1)
       << "expected exactly one aggregate function to read as selected";
 

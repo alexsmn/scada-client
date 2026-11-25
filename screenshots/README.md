@@ -1,6 +1,6 @@
 # Screen gallery
 
-90 captures of the Telecontrol SCADA client, rendered offscreen from a fixture by [`client_screenshot_generator`](../tools/screenshot_generator) and tracked in this repository — so a UI change lands as a reviewable image diff rather than being noticed the next time somebody refreshes the manual.
+91 captures of the Telecontrol SCADA client, rendered offscreen from a fixture by [`client_screenshot_generator`](../tools/screenshot_generator) and tracked in this repository — so a UI change lands as a reviewable image diff rather than being noticed the next time somebody refreshes the manual.
 
 Each capture is rendered in both appearances. The client follows the host OS light/dark preference by default, so both are what operators actually see. The previews below are the dark render; the light one is linked beside it.
 
@@ -71,7 +71,7 @@ Workspace views and panels — what the operator works in. (56)
 
 ## Dialogs
 
-Modal and overlay surfaces. (23)
+Modal and overlay surfaces. (24)
 
 | Capture | Preview | |
 |---|---|---|
@@ -82,6 +82,7 @@ Modal and overlay surfaces. (23)
 | **Command palette**<br>`command-palette.png` | <img src="command-palette.png" alt="Command palette" width="360"> | [Light](command-palette-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/workbench/) |
 | **Control select confirm**<br>`control-select-confirm.png` | <img src="control-select-confirm.png" alt="Control select confirm" width="360"> | [Light](control-select-confirm-light.png) |
 | **Csv export**<br>`csv-export.png` | <img src="csv-export.png" alt="Csv export" width="360"> | [Light](csv-export-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/export/) |
+| **Event statistics**<br>`event-statistics.png` | <img src="event-statistics.png" alt="Event statistics" width="360"> | [Light](event-statistics-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/events/) |
 | **Limits**<br>`limits.png` | <img src="limits.png" alt="Limits" width="360"> | [Light](limits-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/architecture/) |
 | **Menu create object service**<br>`menu-create-object-service.png` | <img src="menu-create-object-service.png" alt="Menu create object service" width="360"> | [Light](menu-create-object-service-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/dev/data-items/) |
 | **Message box**<br>`message-box.png` | <img src="message-box.png" alt="Message box" width="360"> | [Light](message-box-light.png)<br>[Manual](https://telecontrol-ru.github.io/scada/en/client/) |

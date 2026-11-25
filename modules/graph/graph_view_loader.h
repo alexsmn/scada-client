@@ -23,6 +23,8 @@ struct GraphViewLoader {
         ReadTimeScale(item);
       } else if (item.name_is("Graph")) {
         ReadGraph(item);
+      } else if (item.name_is("Comparison")) {
+        comparison_ = ParsePeriodComparison(item.GetString("period"));
       }
     }
 
@@ -31,6 +33,9 @@ struct GraphViewLoader {
       graph_.SetHorizontalScrollBarVisible(
           profile_.graph_view.default_scroll_bar);
     }
+
+    // After the lines and the time scale, which the comparison lines follow.
+    graph_view_.SetComparison(comparison_);
   }
 
   void ReadGraph(const WindowItem& item) {
@@ -121,9 +126,10 @@ struct GraphViewLoader {
     if (auto time_range = RestoreTimeRange(definition_)) {
       auto [start, end] = scada::ToTimeRange(*time_range, now);
       graph_.horizontal_axis().SetRange(
-          GraphRange{scada::base::EncodeDoubleT(start), scada::base::EncodeDoubleT(end), GraphRange::TIME});
-      graph_.horizontal_axis().SetTimeFit(time_range->type !=
-                                          scada::RelativeTimeRange::Type::Custom);
+          GraphRange{scada::base::EncodeDoubleT(start),
+                     scada::base::EncodeDoubleT(end), GraphRange::TIME});
+      graph_.horizontal_axis().SetTimeFit(
+          time_range->type != scada::RelativeTimeRange::Type::Custom);
     } else {
       scada::Time now = scada::Now();
       graph_.horizontal_axis().SetRange(GraphRange(
@@ -142,6 +148,7 @@ struct GraphViewLoader {
   PaneMap pane_map;
 
   bool time_scale_loaded_ = false;
+  PeriodComparison comparison_ = PeriodComparison::kNone;
 
   static const size_t kMaxPanes = 10;
 };

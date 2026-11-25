@@ -13,7 +13,10 @@
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QLineEdit>
+#include <QPushButton>
 #include <QSpinBox>
+#include <QTimer>
 #include <QWidget>
 
 #include <utility>
@@ -144,5 +147,51 @@ QWidget* MakeEventFilterBar(EventFilterBarContext context) {
   layout->addWidget(period);
 
   layout->addStretch(1);
+
+  // Message search, at the trailing end where a filter field conventionally
+  // sits. The clear button is the platform's own.
+  auto* search = new QLineEdit{bar};
+  search->setObjectName(QStringLiteral("eventSearch"));
+  search->setClearButtonEnabled(true);
+  // Short, so it is not clipped where the workbench gives the journal little
+  // room; the tooltip says what is searched.
+  search->setPlaceholderText(QString::fromStdU16String(Translate("Search…")));
+  search->setToolTip(QString::fromStdU16String(Translate("Search messages")));
+  search->setText(QString::fromStdU16String(context.text_filter));
+  // No minimum width of its own: the bar's minimum is every window's that
+  // hosts the journal, and a forced one here widened them all.
+  auto* search_timer = new QTimer{search};
+  search_timer->setSingleShot(true);
+  search_timer->setInterval(kEventSearchDelayMs);
+  auto apply_search = [search, callback = context.on_text_filter] {
+    if (callback)
+      callback(search->text().toStdU16String());
+  };
+  QObject::connect(search_timer, &QTimer::timeout, search, apply_search);
+  QObject::connect(search, &QLineEdit::textChanged, search,
+                   [search_timer, apply_search](const QString& text) {
+                     if (text.isEmpty()) {
+                       search_timer->stop();
+                       apply_search();
+                     } else {
+                       search_timer->start();
+                     }
+                   });
+  // Enter applies at once rather than waiting out the delay.
+  QObject::connect(search, &QLineEdit::returnPressed, search,
+                   [search_timer, apply_search] {
+                     search_timer->stop();
+                     apply_search();
+                   });
+  layout->addWidget(search);
+
+  if (context.on_statistics) {
+    auto* statistics = new QPushButton{
+        QString::fromStdU16String(Translate("Statistics…")), bar};
+    statistics->setObjectName(QStringLiteral("eventStatistics"));
+    QObject::connect(statistics, &QPushButton::clicked, bar,
+                     [callback = context.on_statistics] { callback(); });
+    layout->addWidget(statistics);
+  }
   return bar;
 }

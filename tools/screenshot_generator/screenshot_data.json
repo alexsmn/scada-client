@@ -2123,7 +2123,7 @@
     {
       "capture": "settings",
       "filename": "settings.png",
-      "width": 948,
+      "width": 1088,
       "height": 572
     }
   ],
@@ -2220,6 +2220,12 @@
       "filter": "та",
       "width": 560,
       "height": 380
+    },
+    {
+      "kind": "event-statistics",
+      "filename": "event-statistics.png",
+      "width": 560,
+      "height": 420
     },
     {
       "kind": "about",

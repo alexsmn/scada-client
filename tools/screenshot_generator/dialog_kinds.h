@@ -88,8 +88,7 @@ bool GrabThenAwait(const DialogCaptureContext& context,
 // leaves no awaitable to unwind.
 inline bool GrabShownDialog(const DialogCaptureContext& context) {
   QApplication::processEvents();
-  return GrabAndCloseVisibleDialogOrReport(context.spec,
-                                           context.publish_guard);
+  return GrabAndCloseVisibleDialogOrReport(context.spec, context.publish_guard);
 }
 
 // --- The kinds. One per `DialogSpec::kind`, each named by the fixture.
@@ -101,6 +100,7 @@ inline bool GrabShownDialog(const DialogCaptureContext& context) {
 bool CaptureLoginDialog(const DialogCaptureContext& context);
 bool CaptureCommandPaletteDialog(const DialogCaptureContext& context);
 bool CaptureAboutDialog(const DialogCaptureContext& context);
+bool CaptureEventStatisticsDialog(const DialogCaptureContext& context);
 bool CaptureTimeRangeDialog(const DialogCaptureContext& context);
 bool CaptureMessageBoxDialog(const DialogCaptureContext& context);
 bool CaptureCsvExportDialog(const DialogCaptureContext& context);

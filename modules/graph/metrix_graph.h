@@ -103,6 +103,11 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
 
     std::unique_ptr<MetrixDataSource> data_source_;
 
+    // Set on a comparison line (GraphView::SyncComparisonLines): the line whose
+    // earlier period this one draws, dashed in its colour. Never saved as an
+    // item. The two are deleted together, since they share an item.
+    MetrixLine* compared_line = nullptr;
+
     // The graph to tell when this line's history arrives. Set by
     // MetrixGraph::NewLine once the line is in a plot; history can be reported
     // before that, when graph() would dereference a null plot.

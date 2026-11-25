@@ -297,6 +297,51 @@ TEST_F(GraphViewTest, NewLineUsesDefaultLineWidth) {
   EXPECT_EQ(graph_item->GetInt("width"), 4);
 }
 
+// «Compare with» draws each line's earlier period as a second, dashed line in
+// the line's colour, named for the period. It is not an item: the window saves
+// one item and the comparison, and reopening draws the comparison line again.
+// Choosing the checked command again removes it.
+TEST_F(GraphViewTest, ComparisonDrawsTheEarlierPeriodBesideEachLine) {
+  graph_view_.AddContainedItem(kTestNodeId, 0);
+  const auto series_count = [](GraphView& view) {
+    auto data = view.GetExportData();
+    auto* table = std::get_if<ExportModel::TableExportData>(&data);
+    return table ? table->columns.size() - 1 : 0u;
+  };
+  ASSERT_EQ(series_count(graph_view_), 1u);
+
+  CommandHandler* compare =
+      graph_view_.GetCommandHandler(ID_COMPARE_DAY_EARLIER);
+  ASSERT_THAT(compare, NotNull());
+  compare->ExecuteCommand(ID_COMPARE_DAY_EARLIER);
+  EXPECT_EQ(graph_view_.comparison(), PeriodComparison::kDayEarlier);
+  EXPECT_TRUE(compare->IsCommandChecked(ID_COMPARE_DAY_EARLIER));
+  ASSERT_EQ(series_count(graph_view_), 2u);
+  {
+    auto data = graph_view_.GetExportData();
+    auto& table = std::get<ExportModel::TableExportData>(data);
+    EXPECT_TRUE(table.columns[2].title.ends_with(
+        PeriodComparisonSuffix(PeriodComparison::kDayEarlier)));
+  }
+
+  WindowDefinition saved;
+  graph_view_.Save(saved);
+  EXPECT_EQ(std::ranges::count_if(
+                saved.items,
+                [](const WindowItem& item) { return item.name_is("Item"); }),
+            1);
+  ASSERT_THAT(saved.FindItem("Comparison"), NotNull());
+
+  GraphView reopened{env_.MakeControllerContext()};
+  std::unique_ptr<UiView> reopened_ui = reopened.Init(saved);
+  EXPECT_EQ(reopened.comparison(), PeriodComparison::kDayEarlier);
+  EXPECT_EQ(series_count(reopened), 2u);
+
+  compare->ExecuteCommand(ID_COMPARE_DAY_EARLIER);
+  EXPECT_EQ(graph_view_.comparison(), PeriodComparison::kNone);
+  EXPECT_EQ(series_count(graph_view_), 1u);
+}
+
 // Regression: deleting the selected pane frees its lines, one of which the
 // series model may still be reporting. DeleteSelectedPane must re-derive from
 // the now-current pane (it used to leave the in-tab inspector holding a

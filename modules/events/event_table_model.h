@@ -6,6 +6,7 @@
 #include "aui/models/table_model.h"
 #include "base/any_executor_timer.h"
 #include "events/event_grouping.h"
+#include "events/event_statistics.h"
 #include "node_service/node_ref.h"
 
 #include <boost/signals2/connection.hpp>
@@ -137,6 +138,16 @@ class EventTableModel : public scada::aui::TableModel,
   bool audit_only() const { return audit_only_; }
   void SetAuditOnly(bool value);
 
+  // Text the journal's message must contain to be shown — the journal's search
+  // box. Matched case-blind over both of the client's alphabets
+  // (FoldForSearch), as a substring of the event's message. Empty shows every
+  // message. Like the other filters it narrows what was fetched, not the
+  // fetch, so it applies to the current and local rows as well.
+  const std::u16string& text_filter() const SCADA_LIFETIME_BOUND {
+    return text_filter_;
+  }
+  void SetTextFilter(std::u16string_view text);
+
   const ItemIds& filter_items() const SCADA_LIFETIME_BOUND {
     return filter_node_ids_;
   }
@@ -251,6 +262,11 @@ class EventTableModel : public scada::aui::TableModel,
   // here rather than through GetCell().
   void GetOccurrenceCell(scada::aui::TableCell& cell);
 
+  // One sample per occurrence the journal shows — every filter applied, each
+  // member of a collapsed row on its own — for its statistics
+  // (events/event_statistics.h).
+  std::vector<events::EventStatisticsSample> GetStatisticsSamples() const;
+
   void CancelRequest();
 
   std::u16string MakeTitle() const;
@@ -342,6 +358,10 @@ class EventTableModel : public scada::aui::TableModel,
   unsigned severity_min_ = 0;
   bool unacknowledged_only_ = false;
   bool audit_only_ = false;
+  // As typed, for the search box and the saved window; and folded once, for
+  // matching.
+  std::u16string text_filter_;
+  std::u16string folded_text_filter_;
   ItemIds filter_node_ids_;
 
   // Rows displayed in grid.

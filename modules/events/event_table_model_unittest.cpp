@@ -741,6 +741,69 @@ TEST_F(EventFloodGroupingTest, ALocalEventIsAttributedToTheLocalEventSource) {
   EXPECT_FALSE(cell.text.empty());
 }
 
+// The journal's search box keeps the rows whose message contains the text,
+// case-blind in either alphabet, and gives every row back once cleared.
+TEST_F(EventFloodGroupingTest, TheSearchKeepsOnlyMatchingMessages) {
+  historical_event_model_.AddEvent({.event_id = 1,
+                                    .time = scada::Time{},
+                                    .source_node_id = node_id_,
+                                    .message = u"Авария насоса Н-2"});
+  historical_event_model_.AddEvent(
+      {.event_id = 2,
+       .time = scada::Time{} + std::chrono::seconds(1),
+       .source_node_id = node_id_,
+       .message = u"Значение в норме"});
+  historical_event_model_.AddEvent(
+      {.event_id = 3,
+       .time = scada::Time{} + std::chrono::seconds(2),
+       .source_node_id = node_id_,
+       .message = u"Pump failure"});
+  Rebuild();
+  ASSERT_EQ(model_.GetRowCount(), 3);
+
+  model_.SetTextFilter(u"АВАРИЯ");
+  ASSERT_EQ(model_.GetRowCount(), 1);
+  EXPECT_EQ(model_.event_at(0).message.text, u"Авария насоса Н-2");
+
+  model_.SetTextFilter(u"pump");
+  ASSERT_EQ(model_.GetRowCount(), 1);
+  EXPECT_EQ(model_.event_at(0).message.text, u"Pump failure");
+
+  model_.SetTextFilter(u"нет такого");
+  EXPECT_EQ(model_.GetRowCount(), 0);
+
+  model_.SetTextFilter(u"");
+  EXPECT_EQ(model_.GetRowCount(), 3);
+}
+
+// A search that changes the journal names it as filtered, like the severity
+// and object filters do.
+TEST_F(EventFloodGroupingTest, ASearchMarksTheTitleAsFiltered) {
+  const std::u16string unfiltered = model_.MakeTitle();
+  model_.SetTextFilter(u"насос");
+  EXPECT_NE(model_.MakeTitle(), unfiltered);
+  model_.SetTextFilter(u"");
+  EXPECT_EQ(model_.MakeTitle(), unfiltered);
+}
+
+// A rebuild filters the Client's own events like every other row. It used to
+// let them all through, so after any filter change the search, the severity
+// threshold and the Audit log's scope stopped applying to them — while an
+// arrival was filtered as usual.
+TEST_F(EventFloodGroupingTest, ARebuildFiltersLocalEventsToo) {
+  local_events_.ReportEvent(LocalEvents::SEV_ERROR,
+                            scada::LocalizedText{u"Разрыв связи с сервером"});
+  Rebuild();
+  ASSERT_EQ(model_.GetRowCount(), 1);
+
+  model_.SetTextFilter(u"насос");
+  EXPECT_EQ(model_.GetRowCount(), 0);
+
+  model_.SetTextFilter(u"");
+  model_.SetAuditOnly(true);
+  EXPECT_EQ(model_.GetRowCount(), 0);
+}
+
 // Backlog 1126: the view elides the Item column in the middle, so the tooltip
 // must carry the whole path or the elided part could not be read at all. No
 // other column has one: a tooltip repeating an unelided cell is noise.
@@ -1005,6 +1068,31 @@ TEST_F(EventFloodGroupingTest, ExpandedRowsCarryEveryOccurrence) {
 
 // Every occurrence keeps its own timestamp; the export must not repeat the
 // representative's row `count` times.
+// The statistics count what happened, not how the journal folded it: every
+// member of a flood group is a sample, against the object the Object column
+// names, and a search narrows the samples as it narrows the rows.
+TEST_F(EventFloodGroupingTest, StatisticsSampleEveryShownOccurrence) {
+  const int count = events::kAlarmFloodThreshold + 4;
+  AddRepeats(u"comms lost", count, /*first_id=*/1);
+  AddRepeats(u"transformer overheating", 1, /*first_id=*/100);
+  Rebuild();
+  ASSERT_TRUE(model_.grouped());
+
+  std::vector<events::EventStatisticsSample> samples =
+      model_.GetStatisticsSamples();
+  ASSERT_EQ(samples.size(), static_cast<size_t>(count + 1));
+  scada::aui::TableCell item{.row = 0, .column_id = EventColumnItem};
+  model_.GetCell(item);
+  ASSERT_FALSE(item.text.empty());
+  for (const auto& sample : samples) {
+    EXPECT_EQ(sample.object, node_id_);
+    EXPECT_EQ(sample.object_name, item.text);
+  }
+
+  model_.SetTextFilter(u"transformer");
+  EXPECT_EQ(model_.GetStatisticsSamples().size(), 1u);
+}
+
 TEST_F(EventFloodGroupingTest, ExpandedRowsKeepTheirOwnTimes) {
   const int count = events::kAlarmFloodThreshold + 4;
   AddRepeats(u"comms lost", count, /*first_id=*/1);

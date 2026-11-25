@@ -20,6 +20,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <list>
 #include <vector>
 
 #if defined(UI_QT)
@@ -148,6 +149,23 @@ std::unique_ptr<UiView> GraphView::Init(const WindowDefinition& definition) {
             return graph_->primary_line() && graph_->primary_line()->stepped();
           }));
 
+  constexpr std::pair<unsigned, PeriodComparison> kCompareCommands[] = {
+      {ID_COMPARE_DAY_EARLIER, PeriodComparison::kDayEarlier},
+      {ID_COMPARE_WEEK_EARLIER, PeriodComparison::kWeekEarlier},
+      {ID_COMPARE_PREVIOUS_PERIOD, PeriodComparison::kPreviousPeriod}};
+  for (const auto& [command_id, comparison] : kCompareCommands) {
+    command_registry_.AddCommand(
+        Command{command_id}
+            .set_execute_handler([this, comparison = comparison] {
+              SetComparison(comparison_ == comparison ? PeriodComparison::kNone
+                                                      : comparison);
+              controller_delegate_.SetModified(true);
+            })
+            .set_checked_handler([this, comparison = comparison] {
+              return comparison_ == comparison;
+            }));
+  }
+
   command_registry_.AddCommand(
       Command{ID_GRAPH_SCROLL_BAR}
           .set_execute_handler([this] {
@@ -169,6 +187,10 @@ std::unique_ptr<UiView> GraphView::Init(const WindowDefinition& definition) {
 
 ExportModel::ExportData GraphView::GetExportData() {
   std::vector<GraphExportSeries> series;
+  // A comparison line's values moved to where the line draws them, so a row
+  // holds the shown period's value beside the earlier one. Kept until the
+  // table has taken its snapshot. A list, so the spans stay valid.
+  std::list<std::vector<scada::DataValue>> shifted_values;
   scada::Time from = scada::kNullTime;
   scada::Time to = scada::kNullTime;
   if (graph_) {
@@ -181,9 +203,20 @@ ExportModel::ExportData GraphView::GetExportData() {
         const auto& data_source =
             static_cast<MetrixGraph::MetrixLine&>(*graph_line).data_source();
         const TimedDataSpec& timed_data = data_source.timed_data();
+        std::span<const scada::DataValue> values = timed_data.values();
+        if (const scada::Duration shift = data_source.time_shift();
+            shift != scada::Duration::zero()) {
+          auto& shifted =
+              shifted_values.emplace_back(values.begin(), values.end());
+          for (scada::DataValue& value : shifted) {
+            value.source_timestamp += shift;
+            value.server_timestamp += shift;
+          }
+          values = shifted;
+        }
         series.push_back(GraphExportSeries{
             .title = data_source.title(),
-            .values = timed_data.values(),
+            .values = values,
             .format = [&timed_data](const scada::DataValue& value) {
               return timed_data.GetValueString(value.value, value.qualifier,
                                                ValueFormat{0});
@@ -288,6 +321,7 @@ bool GraphView::IsSeriesStepped() const {
 }
 
 void GraphView::NotifySeriesChanged() {
+  RestyleComparisonLines();
   UpdateEmptyState();
   if (change_handler)
     change_handler();
@@ -372,6 +406,66 @@ void GraphView::DeleteSelectedPane() {
   controller_delegate_.SetModified(true);
 }
 
+void GraphView::SetComparison(PeriodComparison comparison) {
+  comparison_ = comparison;
+  SyncComparisonLines();
+}
+
+void GraphView::SyncComparisonLines() {
+  // "Previous period" is the span on screen now; it is fixed when the lines
+  // are made, so panning does not slide the earlier period along.
+  const scada::Duration shift = PeriodComparisonShift(
+      comparison_,
+      std::chrono::duration_cast<scada::Duration>(std::chrono::duration<double>{
+          graph_->horizontal_axis().range().delta()}));
+  const std::u16string suffix = PeriodComparisonSuffix(comparison_);
+
+  for (GraphPane* graph_pane : graph_->panes()) {
+    auto& pane = static_cast<MetrixGraph::MetrixPane&>(*graph_pane);
+    // Copied: deleting and adding lines changes the plot's list.
+    const std::vector<GraphLine*> lines{pane.plot().lines().begin(),
+                                        pane.plot().lines().end()};
+    std::vector<MetrixGraph::MetrixLine*> originals;
+    for (GraphLine* graph_line : lines) {
+      auto& line = static_cast<MetrixGraph::MetrixLine&>(*graph_line);
+      if (line.compared_line)
+        pane.plot().DeleteLine(line);
+      else
+        originals.push_back(&line);
+    }
+
+    if (comparison_ == PeriodComparison::kNone)
+      continue;
+
+    for (MetrixGraph::MetrixLine* original : originals) {
+      MetrixGraph::MetrixLine& twin =
+          graph_->NewLine(original->data_source().GetPath(), pane);
+      twin.compared_line = original;
+      twin.set_dashed(true);
+      twin.data_source().SetTimeShift(shift, suffix);
+      twin.UpdateTimeRange();
+    }
+  }
+
+  RestyleComparisonLines();
+  for (GraphPane* pane : graph_->panes())
+    static_cast<MetrixGraph::MetrixPane*>(pane)->UpdateLegend();
+}
+
+void GraphView::RestyleComparisonLines() {
+  for (GraphPane* pane : graph_->panes()) {
+    for (GraphLine* graph_line : pane->plot().lines()) {
+      auto& line = static_cast<MetrixGraph::MetrixLine&>(*graph_line);
+      if (const MetrixGraph::MetrixLine* original = line.compared_line) {
+        line.SetColor(original->color());
+        line.SetLineWeight(original->line_weight());
+        line.set_dots_shown(original->dots_shown());
+        line.set_stepped(original->stepped());
+      }
+    }
+  }
+}
+
 void GraphView::ClearPane(MetrixGraph::MetrixPane& pane) {
   const GraphPlot::Lines& lines = pane.plot().lines();
   while (!lines.empty()) {
@@ -430,6 +524,7 @@ void GraphView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
   line.SetLineWeight(profile_.graph_view.default_width);
   line.UpdateTimeRange();
   graph_->horizontal_axis().Fit();
+  SyncComparisonLines();
 
   NotifyContainedItemChanged(line.data_source().node_id(), true);
 

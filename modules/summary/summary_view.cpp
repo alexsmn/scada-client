@@ -106,9 +106,30 @@ std::unique_ptr<UiView> SummaryView::Init(const WindowDefinition& definition) {
               model_->SetAggregateType(aggregate_type);
             })
             .set_checked_handler([this, aggregate_type = aggregate_type] {
-              return model_->aggregate_type() == aggregate_type;
+              return !model_->consumption() &&
+                     model_->aggregate_type() == aggregate_type;
             }));
   }
+  constexpr std::pair<unsigned, PeriodComparison> kCompareCommands[] = {
+      {ID_COMPARE_DAY_EARLIER, PeriodComparison::kDayEarlier},
+      {ID_COMPARE_WEEK_EARLIER, PeriodComparison::kWeekEarlier},
+      {ID_COMPARE_PREVIOUS_PERIOD, PeriodComparison::kPreviousPeriod}};
+  for (const auto& [command_id, comparison] : kCompareCommands) {
+    command_registry_.AddCommand(
+        Command{command_id}
+            .set_execute_handler([this, comparison = comparison] {
+              model_->SetComparison(model_->comparison() == comparison
+                                        ? PeriodComparison::kNone
+                                        : comparison);
+            })
+            .set_checked_handler([this, comparison = comparison] {
+              return model_->comparison() == comparison;
+            }));
+  }
+  command_registry_.AddCommand(
+      Command{ID_AGGREGATION_CONSUMPTION}
+          .set_execute_handler([this] { model_->SetConsumption(); })
+          .set_checked_handler([this] { return model_->consumption(); }));
 
 #if defined(UI_QT)
   // A notice above the grid when the row cap cuts the period, which it used

@@ -17,8 +17,9 @@ class NodeService;
 //
 // The bar is the discoverable, always-visible surfacing of the journal filters,
 // complementing the right-click context menu (`EventMenuModel`). It hosts an
-// "Unacknowledged only" toggle, a minimum-severity control and a Period
-// selector; the area scope lives in the Areas sidebar beside the journal
+// "Unacknowledged only" toggle, a minimum-severity control, a Period
+// selector, a message search box and a Statistics button; the area scope lives
+// in the Areas sidebar beside the journal
 // (`MakeEventAreaSidebar`). The caller gates it
 // on the active UX theme and only builds it for the full historical journal
 // (where the time range is meaningful), not the docked current-events panel.
@@ -41,16 +42,27 @@ struct EventFilterBarContext {
   unsigned severity_min = 0;
   unsigned severity_max = 0;
   scada::RelativeTimeRange time_range;
+  // The message search box's text.
+  std::u16string text_filter;
 
   // Invoked on user changes. Any callback may be empty.
   std::function<void(bool)> on_unacknowledged_only;
   std::function<void(unsigned)> on_severity_min;
   std::function<void(const scada::RelativeTimeRange&)> on_time_range;
+  // Called once typing pauses (kEventSearchDelay), not per keystroke: each
+  // call rebuilds the journal, and a month of history is a long rebuild to
+  // repeat for every letter. Clearing the box applies at once.
+  std::function<void(const std::u16string&)> on_text_filter;
+  // Opens the statistics of what the journal shows. Empty hides the button.
+  std::function<void()> on_statistics;
 };
 
 // Builds the filter strip. The returned widget owns its controls and invokes
 // the callbacks on user changes.
 QWidget* MakeEventFilterBar(EventFilterBarContext context);
+
+// How long the search box waits after the last keystroke before filtering.
+inline constexpr int kEventSearchDelayMs = 300;
 
 // The fixed period ranges the bar offers, in display order. Mirrors the
 // toolbar's quick-pick ranges so a range set there reflects onto a preset.
