@@ -1,5 +1,6 @@
 ﻿#include "events/event_table_model.h"
 
+#include "events/audit_entry.h"
 #include "events/audit_events.h"
 
 #include "aui/severity_colors.h"
@@ -185,6 +186,20 @@ void EventTableModel::GetCell(scada::aui::TableCell& cell) {
   GetEventCell(row, *row.event, 1 + static_cast<int>(row.repeats.size()), cell);
 }
 
+std::u16string EventTableModel::GetAuditObject(
+    const Row& row,
+    const scada::Event& event) const {
+  const events::AuditEntry entry =
+      events::DescribeAuditEvent(event, event.message.text);
+  const std::u16string node =
+      row.node ? ToString16(row.node.display_name()) : std::u16string{};
+  if (entry.subject.empty())
+    return node;
+  if (entry.names_role && !node.empty())
+    return entry.subject + u" → " + node;
+  return entry.subject;
+}
+
 int EventTableModel::GetOccurrenceCount() const {
   EnsureOccurrenceOffsets();
   return occurrence_offsets_.back();
@@ -258,8 +273,13 @@ void EventTableModel::GetEventCell(const Row& row,
                                    const scada::Event& event,
                                    int group_count,
                                    scada::aui::TableCell& cell) const {
-  GetEventColors(event, /*live=*/row.type != HISTORICAL_EVENT, cell.text_color,
-                 cell.cell_color);
+  // The Audit log draws no severity colour: a refused administrative call is a
+  // security result, which the Result column marks, not a process alarm
+  // (backlog 1127).
+  if (!audit_only_) {
+    GetEventColors(event, /*live=*/row.type != HISTORICAL_EVENT,
+                   cell.text_color, cell.cell_color);
+  }
 
   switch (cell.column_id) {
     case EventColumnTime:
@@ -343,6 +363,16 @@ void EventTableModel::GetEventCell(const Row& row,
       break;
     case EventColumnState:
       cell.text = events::AlarmStateLabel(events::AlarmStateFor(event));
+      break;
+    case EventColumnAuditAction:
+      cell.text = events::DescribeAuditEvent(event, event.message.text).action;
+      break;
+    case EventColumnAuditObject:
+      cell.text = GetAuditObject(row, event);
+      break;
+    case EventColumnAuditResult:
+      cell.text = events::AuditOutcomeLabel(
+          events::DescribeAuditEvent(event, event.message.text));
       break;
     default:
       scada::base::NotReached();

@@ -1422,7 +1422,8 @@
       "hours_ago": 0.4,
       "severity": "normal",
       "message": "AddIdentity ivanov",
-      "node_id": "USER.3",
+      "user_id": "USER.1",
+      "node_id": "NS0.15680",
       "change_mask": 8,
       "event_type": 2127
     },
@@ -1431,6 +1432,7 @@
       "hours_ago": 1.1,
       "severity": "normal",
       "message": "ModifyUser petrov",
+      "user_id": "USER.1",
       "node_id": "USER.4",
       "change_mask": 8,
       "event_type": 2127
@@ -1440,6 +1442,7 @@
       "hours_ago": 2.3,
       "severity": "warning",
       "message": "RemoveUser kozlov — Bad_UserAccessDenied",
+      "user_id": "USER.2",
       "node_id": "USER.5",
       "change_mask": 8,
       "event_type": 2127
@@ -1449,6 +1452,7 @@
       "hours_ago": 3.0,
       "severity": "normal",
       "message": "Вход в систему: ivanov",
+      "user_id": "USER.3",
       "node_id": "USER.3",
       "change_mask": 8,
       "event_type": 2075

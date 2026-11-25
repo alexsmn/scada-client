@@ -347,6 +347,67 @@ TEST_F(EventTableModelTest, HistoricalEvents_AuditOnlyFilter) {
   EXPECT_EQ(model.GetRowCount(), 1);
 }
 
+// The Audit log reads a refused administrative call as who did what to whom
+// with what result, and never bands it as a process alarm: the Server raises a
+// refusal at Warning, and the journal used to paint it «Предупреждение 600»
+// (backlog 1127).
+TEST_F(EventTableModelTest, AuditOnly_ReadsActionObjectResultWithoutSeverity) {
+  TestExecutor executor;
+
+  StaticNodeService node_service;
+  const scada::NodeId role_id{7, scada::NamespaceIndexes::SCADA};
+  node_service.Add({.node_id = role_id,
+                    .node_class = scada::NodeClass::Object,
+                    .type_definition_id = scada::NodeId{scada::id::RoleType},
+                    .attributes = {.browse_name = "Operators",
+                                   .display_name = u"Operators"}});
+
+  NiceMock<MockNodeEventProvider> node_event_provider;
+  NodeEventProvider::EventContainer empty_current;
+  ON_CALL(node_event_provider, current_events())
+      .WillByDefault(ReturnRef(empty_current));
+  CurrentEventModel current_event_model{node_event_provider};
+
+  NiceMock<scada::MockHistoryService> history_service;
+  HistoricalEventModel historical_event_model{executor, history_service};
+  LocalEvents local_events;
+  LocalEventModel local_event_model{local_events};
+
+  EventTableModel model{{.executor_ = executor,
+                         .node_service_ = node_service,
+                         .current_event_model_ = current_event_model,
+                         .historical_event_model_ = historical_event_model,
+                         .local_event_model_ = local_event_model,
+                         .current_events_ = false}};
+  model.SetAuditOnly(true);
+
+  historical_event_model.AddEvent(
+      {.event_type_id = scada::NodeId{scada::id::AuditUpdateMethodEventType,
+                                      scada::NamespaceIndexes::NS0},
+       .event_id = 1,
+       .severity = scada::kSeverityWarning,
+       .source_node_id = role_id,
+       .message = scada::ToLocalizedText(
+           std::u16string_view{u"AddIdentity kozlov — Bad_UserAccessDenied"})});
+  historical_event_model.refilter_now();
+  ASSERT_EQ(model.GetRowCount(), 1);
+
+  const auto cell = [&](int column_id) {
+    scada::aui::TableCell result{.row = 0, .column_id = column_id};
+    model.GetCell(result);
+    return result;
+  };
+  EXPECT_EQ(cell(EventColumnAuditAction).text, u"Adding to a role");
+  EXPECT_EQ(cell(EventColumnAuditObject).text, u"kozlov → Operators");
+  EXPECT_EQ(cell(EventColumnAuditResult).text,
+            u"✕ Denied: Bad_UserAccessDenied");
+
+  const scada::aui::TableCell plain{};
+  const scada::aui::TableCell result = cell(EventColumnAuditResult);
+  EXPECT_EQ(result.cell_color, plain.cell_color);
+  EXPECT_EQ(result.text_color, plain.text_color);
+}
+
 TEST_F(EventTableModelTest, CurrentEvents_AckEvents) {
   Init();
 

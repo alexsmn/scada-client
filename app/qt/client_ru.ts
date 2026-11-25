@@ -2105,6 +2105,61 @@
         <source>Audit log</source>
         <translation>Журнал аудита</translation>
     </message>
+    <!-- The Audit log's columns and its reading of the Server's method audits
+         (modules/events/event_view.cpp, audit_entry.cpp; backlog 1127).
+         Actions are nouns: the record says what was done, not a command. -->
+    <message>
+        <source>Who</source>
+        <translation>Кто</translation>
+    </message>
+    <message>
+        <source>Result</source>
+        <translation>Результат</translation>
+    </message>
+    <message>
+        <source>Applied</source>
+        <translation>Выполнено</translation>
+    </message>
+    <message>
+        <source>Denied</source>
+        <translation>Отказано</translation>
+    </message>
+    <message>
+        <source>Adding a user</source>
+        <translation>Добавление пользователя</translation>
+    </message>
+    <message>
+        <source>Modifying a user</source>
+        <translation>Изменение пользователя</translation>
+    </message>
+    <message>
+        <source>Removing a user</source>
+        <translation>Удаление пользователя</translation>
+    </message>
+    <message>
+        <source>Changing a password</source>
+        <translation>Смена пароля</translation>
+    </message>
+    <message>
+        <source>Verifying a password</source>
+        <translation>Проверка пароля</translation>
+    </message>
+    <message>
+        <source>Adding a role</source>
+        <translation>Добавление роли</translation>
+    </message>
+    <message>
+        <source>Removing a role</source>
+        <translation>Удаление роли</translation>
+    </message>
+    <message>
+        <source>Adding to a role</source>
+        <translation>Включение в роль</translation>
+    </message>
+    <message>
+        <source>Removing from a role</source>
+        <translation>Исключение из роли</translation>
+    </message>
     <message>
         <source>Length</source>
         <translation>Длина</translation>

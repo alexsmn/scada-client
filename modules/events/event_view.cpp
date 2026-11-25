@@ -100,6 +100,18 @@ scada::EventSeverity ParseSeverity(std::u16string_view str) {
   return static_cast<scada::EventSeverity>(severity);
 }
 
+// How many columns a saved table layout (`Table::SaveState`) describes; zero
+// when it describes none.
+size_t SavedColumnCount(const boost::json::value& state) {
+  const boost::json::object* object = state.if_object();
+  if (!object)
+    return 0;
+  const boost::json::value* columns = object->if_contains("columns");
+  if (!columns || !columns->is_array())
+    return 0;
+  return columns->as_array().size();
+}
+
 }  // namespace
 
 // EventView
@@ -152,19 +164,46 @@ EventView::EventView(const ControllerContext& context,
        scada::aui::TableColumn::DataType::DateTime},
   };
 
-  size_t count = std::size(kEventViewColumns);
-  if (is_panel)
-    count -= 2;
+  // The Audit log reads an audit event as who did what to what, with what
+  // result (backlog 1127). It has no item, value, severity, alarm state or
+  // acknowledgement: the journal's columns for those described a process
+  // event, and put the actor where the signal goes.
+  const scada::aui::TableColumn kAuditLogColumns[] = {
+      // Sized to its content, as the journal's is (backlog 1126).
+      {.id = EventColumnTime,
+       .title = Translate("Time"),
+       .width = 150,
+       .alignment = scada::aui::TableColumn::LEFT,
+       .data_type = scada::aui::TableColumn::DataType::DateTime,
+       .size_to_content = true},
+      {EventColumnUser, Translate("Who"), 120, scada::aui::TableColumn::LEFT},
+      {EventColumnAuditAction, Translate("Action"), 210,
+       scada::aui::TableColumn::LEFT},
+      {EventColumnAuditObject, Translate("Object"), 220,
+       scada::aui::TableColumn::LEFT},
+      {EventColumnAuditResult, Translate("Result"), 260,
+       scada::aui::TableColumn::LEFT},
+  };
 
-  std::vector<scada::aui::TableColumn> columns(kEventViewColumns,
-                                               kEventViewColumns + count);
+  std::vector<scada::aui::TableColumn> columns;
+  if (audit_only) {
+    columns.assign(std::begin(kAuditLogColumns), std::end(kAuditLogColumns));
+  } else {
+    size_t count = std::size(kEventViewColumns);
+    if (is_panel)
+      count -= 2;
+    columns.assign(kEventViewColumns, kEventViewColumns + count);
+  }
   // The exports carry the journal's record columns; the leading pending-dot
   // marker added below is display chrome and stays out of them.
   export_columns_ = columns;
   // Leading pending marker: a severity-coloured dot on every unacknowledged row
   // (see EventColumnUnacked), first so the actionable rows read at a glance.
-  columns.insert(columns.begin(), {EventColumnUnacked, u"", 28,
-                                   scada::aui::TableColumn::CENTER});
+  // Not on the Audit log, where nothing is pending.
+  if (!audit_only) {
+    columns.insert(columns.begin(), {EventColumnUnacked, u"", 28,
+                                     scada::aui::TableColumn::CENTER});
+  }
 
   // cppcheck-suppress noCopyConstructor
   // cppcheck-suppress noOperatorEq
@@ -172,7 +211,7 @@ EventView::EventView(const ControllerContext& context,
 
 #if defined(UI_QT)
   // Newest-first on the Time column, which the leading dot column precedes.
-  table_->sortByColumn(1, Qt::DescendingOrder);
+  table_->sortByColumn(audit_only ? 0 : 1, Qt::DescendingOrder);
 #endif
 
   table_->SetContextMenuHandler([this](const scada::aui::Point& point) {
@@ -382,10 +421,16 @@ std::unique_ptr<UiView> EventView::Init(const WindowDefinition& definition) {
         static_cast<scada::EventSeverity>(profile_.event_panel_severity_min)));
   }
 
-  if (auto* state = definition.FindItem("State"))
+  // The saved layout addresses columns by position. The Audit log's column set
+  // changed with backlog 1127, so a layout saved over the old one, and the
+  // journal's default (a different set), would scramble it.
+  if (auto* state = definition.FindItem("State");
+      state && (!audit_only_ || SavedColumnCount(state->attributes) ==
+                                    std::size(export_columns_))) {
     table_->RestoreState(state->attributes);
-  else if (!is_panel_)
+  } else if (!is_panel_ && !audit_only_) {
     table_->RestoreState(profile_.event_journal.default_state);
+  }
 
   model_->UnlockUpdate();
 
@@ -443,15 +488,20 @@ std::unique_ptr<UiView> EventView::Init(const WindowDefinition& definition) {
     auto* body_layout = new QHBoxLayout{body};
     body_layout->setContentsMargins(0, 0, 0, 0);
     body_layout->setSpacing(0);
-    body_layout->addWidget(MakeEventAreaSidebar(EventAreaSidebarContext{
-        .executor = executor_,
-        .model = *model_,
-        .browse_areas = [this] { return BrowseEventAreas(node_service_); },
-        .counts =
-            [this](std::span<const scada::NodeId> areas) {
-              return model_->CountUnacknowledgedByArea(areas);
-            },
-        .on_area = apply_area}));
+    // Not on the Audit log: an audit entry is about an account or a role, not
+    // a plant area, and the rail's per-area pending counts are counts of
+    // alarms (backlog 1127).
+    if (!audit_only_) {
+      body_layout->addWidget(MakeEventAreaSidebar(EventAreaSidebarContext{
+          .executor = executor_,
+          .model = *model_,
+          .browse_areas = [this] { return BrowseEventAreas(node_service_); },
+          .counts =
+              [this](std::span<const scada::NodeId> areas) {
+                return model_->CountUnacknowledgedByArea(areas);
+              },
+          .on_area = apply_area}));
+    }
     body_layout->addWidget(table_->CreateParentIfNecessary(), 1);
     layout->addWidget(body, 1);
     // Alarm footer: the displayed backlog summary plus Acknowledge-all, so

@@ -45,6 +45,12 @@ enum EventColumnId {
   // returned to normal, acknowledged or not, or a plain event (backlog 1117).
   // Appended for the same reason as the marker above.
   EventColumnState,
+  // The Audit log's reading of an audit event (events/audit_entry.h): the
+  // action in words, what it was done to, and whether it took effect (backlog
+  // 1127). Appended for the same reason as the marker above.
+  EventColumnAuditAction,
+  EventColumnAuditObject,
+  EventColumnAuditResult,
   EventColumnCount
 };
 
@@ -375,6 +381,12 @@ class EventTableModel : public scada::aui::TableModel,
                     const scada::Event& event,
                     int group_count,
                     scada::aui::TableCell& cell) const;
+
+  // The Audit log's Object cell: the account or role the audited call named,
+  // then — for a call made on a Role — the role it joined or left
+  // («ivanov → Operator»). With no named subject, the source node alone.
+  std::u16string GetAuditObject(const Row& row,
+                                const scada::Event& event) const;
 
   // The row and the event behind the `index`-th occurrence, in row order.
   std::pair<const Row*, const scada::Event*> OccurrenceAt(int index) const;
