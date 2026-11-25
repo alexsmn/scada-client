@@ -1,5 +1,6 @@
 
 #include "aui/qt/table.h"
+#include "aui/qt/elide_path.h"
 #include "aui/qt/image_util.h"
 
 #include "aui/models/table_model.h"
@@ -11,6 +12,7 @@
 #include <algorithm>
 
 #include <QAction>
+#include <QApplication>
 #include <QClipboard>
 #include <QEvent>
 #include <QFontMetrics>
@@ -18,8 +20,10 @@
 #include <QHeaderView>
 #include <QKeyEvent>
 #include <QMenu>
+#include <QPainter>
 #include <QPalette>
 #include <QSortFilterProxyModel>
+#include <QStyle>
 #include <QStyleOptionViewItem>
 #include <QStyledItemDelegate>
 
@@ -68,18 +72,31 @@ int DefaultColumnWidth(const TableColumn& column) {
   return column.width * mono_advance / ui_advance;
 }
 
-// Draws a `TableColumn::elide_middle` column: the stock delegate with the
-// elision point moved to the middle, so a path keeps its leaf.
-class ElideMiddleDelegate : public QStyledItemDelegate {
+// Draws a `TableColumn::path_separator` column: the stock delegate, with the
+// text fitted by `ElidePath` so a path gives up its prefix before its leaf.
+class PathElideDelegate : public QStyledItemDelegate {
  public:
-  using QStyledItemDelegate::QStyledItemDelegate;
+  PathElideDelegate(QString separator, QObject* parent)
+      : QStyledItemDelegate{parent}, separator_{std::move(separator)} {}
 
- protected:
-  virtual void initStyleOption(QStyleOptionViewItem* option,
-                               const QModelIndex& index) const override {
-    QStyledItemDelegate::initStyleOption(option, index);
-    option->textElideMode = Qt::ElideMiddle;
+  virtual void paint(QPainter* painter,
+                     const QStyleOptionViewItem& option,
+                     const QModelIndex& index) const override {
+    QStyleOptionViewItem item = option;
+    initStyleOption(&item, index);
+    const QWidget* const widget = item.widget;
+    QStyle* const style = widget ? widget->style() : QApplication::style();
+    // The style insets item text by the focus-frame margin on each side
+    // (QCommonStyle's viewItemDrawText); fit the text to what remains.
+    const int margin =
+        style->pixelMetric(QStyle::PM_FocusFrameHMargin, nullptr, widget) + 1;
+    item.text = ElidePath(item.text, separator_, item.fontMetrics,
+                          item.rect.width() - 2 * margin);
+    style->drawControl(QStyle::CE_ItemViewItem, &item, painter, widget);
   }
+
+ private:
+  const QString separator_;
 };
 
 void SetDefaultItemColors(QPalette& palette) {
@@ -118,16 +135,16 @@ Table::Table(std::shared_ptr<TableModel> model,
   for (int i = 0; i < static_cast<int>(model_adapter_->columns().size()); ++i)
     setColumnWidth(i, DefaultColumnWidth(model_adapter_->columns()[i]));
 
-  // QAbstractItemView::textElideMode is view-wide, so a per-column mode takes
-  // a delegate of its own. Parented to the view: Qt deletes it after the view
-  // has stopped drawing, which a member would not guarantee.
-  QStyledItemDelegate* elide_middle_delegate = nullptr;
+  // A delegate per path column: elision is the delegate's to decide, and the
+  // view's textElideMode would apply to every column. Parented to the view, so
+  // Qt deletes it after the view has stopped drawing.
   for (int i = 0; i < static_cast<int>(model_adapter_->columns().size()); ++i) {
-    if (!model_adapter_->columns()[i].elide_middle)
+    const TableColumn& column = model_adapter_->columns()[i];
+    if (column.path_separator.empty())
       continue;
-    if (!elide_middle_delegate)
-      elide_middle_delegate = new ElideMiddleDelegate{this};
-    setItemDelegateForColumn(i, elide_middle_delegate);
+    setItemDelegateForColumn(
+        i, new PathElideDelegate{
+               QString::fromStdU16String(column.path_separator), this});
   }
 
   // A `size_to_content` column cannot be sized here: these tables populate

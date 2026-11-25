@@ -121,14 +121,15 @@ EventView::EventView(const ControllerContext& context,
        .alignment = scada::aui::TableColumn::LEFT,
        .data_type = scada::aui::TableColumn::DataType::DateTime,
        .size_to_content = true},
-      // A path whose rows share their prefix: elide in the middle so the
-      // signal's own name survives; the model's tooltip carries the whole path
-      // (backlog 1126).
+      // A path whose rows share their prefix: give up its middle and its root
+      // before the signal's own name; the model's tooltip carries the whole
+      // path (backlog 1126). The separator is GetFullDisplayName's
+      // (common/node_service/node_util.cpp).
       {.id = EventColumnItem,
        .title = Translate("Item"),
        .width = 170,
        .alignment = scada::aui::TableColumn::LEFT,
-       .elide_middle = true},
+       .path_separator = u" : "},
       // Wide enough for the named alarm band, which spells the severity out
       // instead of leaving colour as its only signal.
       {EventColumnSeverity, Translate("Severity"), 165,
