@@ -12,9 +12,13 @@
 #include "scada/status.h"
 #include "timed_data/timed_data_spec.h"
 
+#include <boost/signals2/connection.hpp>
+
 #include <functional>
 #include <optional>
+#include <set>
 #include <string_view>
+#include <vector>
 
 // Parses a number the operator typed into the Control dialog. Accepts either
 // a decimal point or a decimal comma, so «12,5» typed on a Russian keyboard is
@@ -57,6 +61,10 @@ class WriteModel : private WriteContext,
 
   std::u16string GetWindowTitle() const;
   std::u16string GetSourceTitle() const;
+  // The object with the groups and device above it («ПС Северная : Q1 :
+  // Силовой выключатель»), for the dialog header and the review. Falls back to
+  // the bare title while the node is unresolved.
+  std::u16string GetObjectPath() const;
   std::u16string GetCurrentValue(bool formatted) const;
   std::u16string GetStatusText() const;
   bool IsConditionOk() const;
@@ -65,6 +73,9 @@ class WriteModel : private WriteContext,
   // is not met or cannot be evaluated (backlog 1118). «Unsatisfied» alone left
   // the operator to find the interlock in the configuration.
   std::u16string GetConditionText() const;
+  // What each input of the condition formula reads now, by name, e.g.
+  // «Температура T1 (TIT.211) = 58 °C». Empty when the inputs are not known.
+  std::u16string GetConditionReadings() const;
 
   // Whether a control command is reviewed before it is sent: the profile's
   // switch, honoured only for an account that may switch it off
@@ -236,4 +247,11 @@ class WriteModel : private WriteContext,
   // select is sent and again when it is accepted.
   bool device_cannot_select_ = false;
   TimedDataSpec condition_;
+
+  // Fetches the node of each condition input not yet loaded, once, so its
+  // reading is formatted with its units and labels; the condition row is
+  // redrawn when one arrives.
+  void FetchConditionInputs();
+  std::set<scada::NodeId> condition_inputs_fetching_;
+  std::vector<boost::signals2::scoped_connection> condition_input_fetches_;
 };

@@ -11,6 +11,7 @@
 #include "screenshot_config.h"
 
 #include "aui/qt/dialog_service_impl_qt.h"
+#include "model/data_items_node_ids.h"
 #include "modules/limits/limit_dialog.h"
 #include "modules/write/qt/control_review_dialog.h"
 #include "modules/write/write_dialog.h"
@@ -18,6 +19,7 @@
 #include "node_service/node_ref.h"
 #include "node_service/node_service.h"
 #include "profile/profile.h"
+#include "timed_data/timed_data.h"
 #include "timed_data/timed_data_service.h"
 #include "timed_data/timed_data_spec.h"
 
@@ -76,6 +78,34 @@ void WarmUpCurrentValue(TimedDataService& timed_data_service,
                   std::chrono::seconds{2});
 }
 
+// Makes the nodes the item's OutputCondition reads resident, as
+// ResolveDialogNode does for the item itself. The blocked dialog names each
+// input with its live value (WriteModel::GetConditionReadings), formatted from
+// the input's display format and units, which are property children nothing
+// else loads here: without this, ti-remote-control-disabled.png read
+// «Температура (TIT.211) = 42» beside a table that shows 42.3 °C.
+void FetchConditionInputsResident(const DialogCaptureContext& context,
+                                  const NodeRef& node) {
+  const scada::String condition =
+      node[scada::data_items::id::DataItemType_OutputCondition].value().get_or(
+          scada::String{});
+  if (condition.empty())
+    return;
+  DialogEnvironment& env = context.env;
+  TimedDataSpec spec{*env.timed_data_service, condition};
+  PumpEventsUntil([&spec] { return !spec.operands().empty(); },
+                  std::chrono::seconds{2});
+  std::vector<scada::NodeId> input_ids;
+  for (const std::shared_ptr<TimedData>& input : spec.operands()) {
+    if (input && input->GetNode())
+      input_ids.push_back(input->GetNode().node_id());
+  }
+  if (!input_ids.empty() &&
+      !FetchNodesResident(env.executor, *env.node_service, input_ids)) {
+    ADD_FAILURE() << "failed to fetch the output condition's inputs";
+  }
+}
+
 // Reports unless the write family has everything it needs on `env`.
 bool HasWriteServices(const DialogCaptureContext& context, const char* what) {
   if (context.env.timed_data_service && context.env.profile &&
@@ -99,11 +129,14 @@ bool CaptureWriteDialog(const DialogCaptureContext& context, bool manual) {
   const char* const what = manual ? "Manual WriteDialog" : "Remote WriteDialog";
   if (!HasWriteServices(context, what))
     return false;
-  if (!ResolveDialogNode(context, what))
+  const NodeRef node = ResolveDialogNode(context, what);
+  if (!node)
     return false;
 
   DialogEnvironment& env = context.env;
   WarmUpCurrentValue(*env.timed_data_service, context.node_id);
+  if (!manual)
+    FetchConditionInputsResident(context, node);
 
   WriteContext write_context{.executor_ = env.executor,
                              .timed_data_service_ = *env.timed_data_service,

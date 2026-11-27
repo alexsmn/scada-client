@@ -9,9 +9,13 @@
 #include "profile/profile.h"
 #include "timed_data/timed_data_service_mock.h"
 
+#include <QCheckBox>
 #include <QComboBox>
 #include <QDialog>
+#include <QDialogButtonBox>
 #include <QEvent>
+#include <QLabel>
+#include <QPushButton>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -81,11 +85,11 @@ class WriteDialogSeedTest : public Test {
         .attributes = {.display_name = u"Output"}});
   }
 
-  std::shared_ptr<scada::aui::qt::test::AwaitableResult<void>> ShowDialog() {
+  std::shared_ptr<scada::aui::qt::test::AwaitableResult<void>> ShowDialog(
+      bool manual = true) {
     return scada::aui::qt::test::StartAwaitable(ExecuteWriteDialog(
-        dialog_service_,
-        WriteContext{executor_, timed_data_service_, kDataItemId, profile_,
-                     /*manual_=*/true}));
+        dialog_service_, WriteContext{executor_, timed_data_service_,
+                                      kDataItemId, profile_, manual}));
   }
 
   // StartOwnedModalDialog destroys the dialog through deleteLater(), which
@@ -165,4 +169,47 @@ TEST_F(WriteDialogSeedTest, ValueArrivingAfterOperatorInputLeavesItAlone) {
 
         dialog.reject();
       });
+}
+
+// UX audit 2026-11-25, item 3.3: a field command is not sent on Return. The
+// new value is pre-seeded with the opposite state, so Execute as the default
+// put a breaker trip one keystroke from opening the dialog whenever the review
+// was switched off.
+TEST_F(WriteDialogSeedTest, ACommandDefaultsToCancelNotExecute) {
+  auto result = ShowDialog(/*manual=*/false);
+
+  scada::aui::qt::test::ProcessEventsUntilSettled(result, [](QDialog& dialog) {
+    auto* buttons = dialog.findChild<QDialogButtonBox*>("buttonBox");
+    ASSERT_NE(buttons, nullptr);
+    QPushButton* execute = buttons->button(QDialogButtonBox::Ok);
+    QPushButton* cancel = buttons->button(QDialogButtonBox::Cancel);
+    ASSERT_NE(execute, nullptr);
+    ASSERT_NE(cancel, nullptr);
+    EXPECT_FALSE(execute->isDefault());
+    EXPECT_FALSE(execute->autoDefault());
+    EXPECT_TRUE(cancel->isDefault());
+    // A command dialog carries no manual-input note.
+    EXPECT_EQ(dialog.findChild<QLabel*>("manualNoteLabel"), nullptr);
+
+    dialog.reject();
+  });
+}
+
+// UX audit 2026-11-25, item 3.4: Manual Input says that nothing reaches the
+// equipment, and its lock box says what it does, because the form is otherwise
+// the same as a control command's.
+TEST_F(WriteDialogSeedTest, ManualInputSaysNothingIsSentToTheEquipment) {
+  auto result = ShowDialog(/*manual=*/true);
+
+  scada::aui::qt::test::ProcessEventsUntilSettled(result, [](QDialog& dialog) {
+    auto* note = dialog.findChild<QLabel*>("manualNoteLabel");
+    ASSERT_NE(note, nullptr);
+    EXPECT_FALSE(note->text().isEmpty());
+
+    auto* lock = dialog.findChild<QCheckBox*>("lockCheckBox");
+    ASSERT_NE(lock, nullptr);
+    EXPECT_FALSE(lock->text().isEmpty());
+
+    dialog.reject();
+  });
 }

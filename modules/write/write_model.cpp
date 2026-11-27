@@ -15,12 +15,15 @@
 #include "model/node_id_util.h"
 #include "modules/write/write_availability.h"
 #include "net/net_executor_adapter.h"
+#include "node_service/node_format.h"
 #include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "profile/profile.h"
 #include "scada/co_result.h"
 #include "scada/write_flags.h"
 #include "services/output_two_staged_default.h"
 #include "services/server_compatibility.h"
+#include "timed_data/timed_data.h"
 
 #include <charconv>
 
@@ -37,6 +40,7 @@ WriteModel::WriteModel(WriteContext&& context)
   discrete_ = spec_.logical();
 
   condition_.property_change_handler = [this](const PropertySet& properties) {
+    FetchConditionInputs();
     if (current_change_handler)
       condition_change_handler();
   };
@@ -118,6 +122,20 @@ std::u16string WriteModel::GetWindowTitle() const {
 
 std::u16string WriteModel::GetSourceTitle() const {
   return spec_.GetTitle().text;
+}
+
+std::u16string WriteModel::GetObjectPath() const {
+  // The object's own name alone — «Силовой выключатель» — cannot tell one
+  // substation's breaker from another's, and the review is where the operator
+  // confirms *which* breaker trips (principles.md §7; UX audit 2026-11-25,
+  // item 3.1). GetFullDisplayName walks the groups and device above the item,
+  // the same path the journal's Signal column shows.
+  if (const NodeRef& node = spec_.node()) {
+    std::u16string path = GetFullDisplayName(node);
+    if (!path.empty())
+      return path;
+  }
+  return GetSourceTitle();
 }
 
 std::optional<double> ParseOperatorNumber(std::u16string_view text) {
@@ -241,11 +259,81 @@ std::u16string WriteModel::GetConditionText() const {
   // (ExpressionTimedData::GetTitle), which is how the engineer configured the
   // interlock — the one thing the operator needs to find what blocks the
   // command.
+  //
+  // Phrased as what is *required* rather than «Not met: X», which read two
+  // ways — "X must hold and does not" or "the violation is X" — and followed by
+  // what each input reads now, by name: «TIT.211» alone does not tell the
+  // operator which value to look at or how far it is from the limit (UX audit
+  // 2026-11-25, item 3.2).
   const std::u16string interlock = condition_.GetTitle().text;
   const std::u16string verdict = condition_.current().qualifier.general_bad()
                                      ? Translate("Cannot be evaluated:")
-                                     : Translate("Not met:");
-  return interlock.empty() ? verdict : verdict + u' ' + interlock;
+                                     : Translate("Required:");
+  std::u16string text =
+      interlock.empty() ? verdict : verdict + u' ' + interlock;
+  const std::u16string readings = GetConditionReadings();
+  if (!readings.empty())
+    text += u"; " + Translate("now:") + u' ' + readings;
+  return text;
+}
+
+void WriteModel::FetchConditionInputs() {
+  // FormatValue reads an input's units, display format and state labels from
+  // its node and type, which an operand resolved only for its value has not
+  // loaded: «Температура = 42» instead of «42.3 °C». Fetch each input once and
+  // redraw the condition row when it arrives.
+  for (const std::shared_ptr<TimedData>& input : condition_.operands()) {
+    if (!input)
+      continue;
+    const NodeRef node = input->GetNode();
+    if (!node || (node.fetched() && node.children_fetched()) ||
+        !condition_inputs_fetching_.insert(node.node_id()).second) {
+      continue;
+    }
+    condition_input_fetches_.push_back(
+        node.SubscribeNodeFetched([this](const NodeFetchedEvent&) {
+          if (condition_change_handler)
+            condition_change_handler();
+        }));
+    // The units and display format are the node's properties, which are its
+    // children: a node-only fetch leaves the reading as a bare «42».
+    node.StartFetch(NodeFetchStatus::NodeAndChildren);
+  }
+}
+
+std::u16string WriteModel::GetConditionReadings() const {
+  std::u16string readings;
+  const auto add_reading = [&readings](const NodeRef& node,
+                                       const scada::DataValue& value,
+                                       const std::u16string& alias) {
+    if (!node)
+      return;
+    std::u16string name = ToString16(node.display_name());
+    // The formula names the input by its alias; repeat it so the reading can
+    // be matched to the formula beside it.
+    if (!alias.empty() && alias != name)
+      name += u" (" + alias + u')';
+    if (!readings.empty())
+      readings += u", ";
+    readings += name + u" = " +
+                FormatValue(node, value.value, value.qualifier,
+                            FORMAT_QUALITY | FORMAT_UNITS | FORMAT_STATUS);
+  };
+
+  const auto operands = condition_.operands();
+  if (operands.empty()) {
+    // A condition that is a single discrete item rather than an expression.
+    add_reading(condition_.node(), condition_.current(),
+                condition_.GetTitle().text);
+    return readings;
+  }
+  for (const std::shared_ptr<TimedData>& input : operands) {
+    if (input) {
+      add_reading(input->GetNode(), input->GetDataValue(),
+                  UtfConvert<char16_t>(input->GetFormula(/*aliases=*/true)));
+    }
+  }
+  return readings;
 }
 
 bool WriteModel::IsConfirmationRequired() const {
@@ -388,7 +476,7 @@ ControlReview WriteModel::GetControlReview(double value,
 
   return ControlReview{
       .title = GetWindowTitle(),
-      .object = spec_.GetTitle().text,
+      .object = GetObjectPath(),
       .present = GetCurrentValue(/*formatted=*/true),
       .command = spec_.GetValueString(value, {}, ValueFormat{FORMAT_UNITS}),
       .operator_name = GetOperatorName(),

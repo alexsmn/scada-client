@@ -334,8 +334,12 @@
         <translation>Выполнено</translation>
     </message>
     <message>
-        <source>Not met:</source>
-        <translation>Нарушено:</translation>
+        <source>Required:</source>
+        <translation>Требуется:</translation>
+    </message>
+    <message>
+        <source>now:</source>
+        <translation>сейчас:</translation>
     </message>
     <message>
         <source>Cannot be evaluated:</source>
@@ -4181,6 +4185,14 @@ Trust the new certificate only if the server&apos;s operator confirms that it wa
         <translation>Отмена</translation>
     </message>
     <message>
+        <source>The value is entered into the system by hand; no command is sent to the equipment.</source>
+        <translation>Значение задаётся в системе вручную; команда на оборудование не передаётся.</translation>
+    </message>
+    <message>
+        <source>Ignore values from the device</source>
+        <translation>Не принимать значения от устройства</translation>
+    </message>
+    <message>
         <location filename="../../modules/write/qt/write_dialog.cpp" line="108"/>
         <source>Incorrect floating point value.</source>
         <translation>Указано некорректное значение с плавающей точкой.</translation>
@@ -4196,7 +4208,7 @@ Trust the new certificate only if the server&apos;s operator confirms that it wa
     <message>
         <location filename="../../modules/write/qt/control_review_dialog.cpp" line="36"/>
         <source>Present:</source>
-        <translation>Текущее:</translation>
+        <translation>Текущее значение:</translation>
     </message>
     <message>
         <location filename="../../modules/write/qt/control_review_dialog.cpp" line="43"/>

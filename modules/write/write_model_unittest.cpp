@@ -179,6 +179,10 @@ class WriteModelTest : public Test {
         scada::NodeState{.node_id = kDataItemId,
                          .node_class = scada::NodeClass::Variable,
                          .type_definition_id = kDataItemTypeId,
+                         .parent_id = parent_id_,
+                         .reference_type_id = parent_id_.is_null()
+                                                  ? scada::NodeId{}
+                                                  : scada::id::Organizes,
                          .attributes = {.display_name = u"Output"}}
             .set_property(scada::data_items::id::DataItemType_OutputTwoStaged,
                           two_staged)
@@ -296,6 +300,8 @@ class WriteModelTest : public Test {
   scada::NodeId user_id_;
   // The item's OutputCondition formula, the interlock; empty for none.
   std::string output_condition_;
+  // The group the item is organized under; null leaves it at the top.
+  scada::NodeId parent_id_;
   int status_changes_ = 0;
   std::optional<bool> completion_;
   // Methods invoked on the Control object, in order, with their arguments.
@@ -1167,6 +1173,29 @@ TEST_F(WriteModelTest, ReviewNamesTheOperatorAndTheTime) {
                              now, TIME_FORMAT_DATE | TIME_FORMAT_TIME)));
 }
 
+// UX audit 2026-11-25, item 3.1: the review names the object by its path, so
+// two substations' identically named breakers cannot be confused at the last
+// screen before the command.
+TEST_F(WriteModelTest, ReviewNamesTheObjectByItsPath) {
+  const scada::NodeId group_id{9500, 1};
+  node_service_.Add(
+      scada::NodeState{.node_id = scada::data_items::id::DataGroupType,
+                       .node_class = scada::NodeClass::ObjectType,
+                       .attributes = {.display_name = u"Data group"}});
+  node_service_.Add(scada::NodeState{
+      .node_id = group_id,
+      .node_class = scada::NodeClass::Object,
+      .type_definition_id = scada::data_items::id::DataGroupType,
+      .attributes = {.display_name = u"North substation"}});
+  parent_id_ = group_id;
+
+  auto model = CreateModel();
+  EXPECT_EQ(model->GetObjectPath(), u"North substation : Output");
+  EXPECT_EQ(
+      model->GetControlReview(1.0, /*second_stage=*/false, scada::Now()).object,
+      u"North substation : Output");
+}
+
 TEST_F(WriteModelTest, AnAnonymousSessionIsNamedAsSuch) {
   auto model = CreateModel();
 
@@ -1213,7 +1242,40 @@ TEST_F(WriteModelConditionTest, AnUnmetConditionNamesTheInterlock) {
   auto model = CreateModel();
 
   EXPECT_FALSE(model->IsConditionOk());
-  EXPECT_EQ(model->GetConditionText(), u"Not met: TIT.211 > 70");
+  EXPECT_EQ(model->GetConditionText(), u"Required: TIT.211 > 70");
+}
+
+// UX audit 2026-11-25, item 3.2: the blocked command says what each input of
+// the interlock reads now, by name and by the alias the formula uses, so the
+// operator need not look «TIT.211» up to learn which value blocks them.
+TEST_F(WriteModelConditionTest, AnUnmetConditionSaysWhatItsInputsReadNow) {
+  const scada::NodeId input_id{9400, 1};
+  node_service_.Add(
+      scada::NodeState{.node_id = input_id,
+                       .node_class = scada::NodeClass::Variable,
+                       .type_definition_id = kDataItemTypeId,
+                       .attributes = {.display_name = u"Oil temperature"}});
+  auto input = std::make_shared<NiceMock<MockTimedData>>();
+  ON_CALL(*input, GetNode()).WillByDefault([this, input_id] {
+    return node_service_.GetNode(input_id);
+  });
+  ON_CALL(*input, GetFormula(_)).WillByDefault(Return("TIT.211"));
+  ON_CALL(*input, GetDataValue())
+      .WillByDefault(
+          Return(scada::DataValue{scada::Variant{58.0}, scada::Qualifier{},
+                                  scada::Time{}, scada::Time{}}));
+  const std::vector<std::shared_ptr<TimedData>> operands{input};
+  ON_CALL(*condition_data_, GetOperands())
+      .WillByDefault(
+          Return(std::span<const std::shared_ptr<TimedData>>{operands}));
+  SetCondition(false);
+  auto model = CreateModel();
+
+  const std::u16string text = model->GetConditionText();
+  EXPECT_TRUE(
+      text.starts_with(u"Required: TIT.211 > 70; now: "
+                       u"Oil temperature (TIT.211) = 58"))
+      << UtfConvert<char>(text);
 }
 
 // A condition whose operands are invalid blocks the command too, but for a

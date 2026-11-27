@@ -6,8 +6,10 @@
 #include "modules/write/write_model.h"
 #include "ui_write_dialog.h"
 
+#include <QCheckBox>
 #include <QComboBox>
 #include <QDialogButtonBox>
+#include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
 
@@ -48,8 +50,22 @@ WriteDialog::WriteDialog(std::shared_ptr<WriteModel> model, QWidget* parent)
   // by asking the operator to re-read the title to learn what they are agreeing
   // to. Manual entry writes a value into the point; a command is executed on
   // a device, so the two are labelled differently.
-  ui.buttonBox->button(QDialogButtonBox::Ok)
-      ->setText(model_->manual() ? tr("Write") : tr("Execute"));
+  QPushButton* const accept_button = ui.buttonBox->button(QDialogButtonBox::Ok);
+  accept_button->setText(model_->manual() ? tr("Write") : tr("Execute"));
+
+  // A field command is not sent on Return. The new-value box is pre-seeded
+  // with the state opposite the present one, so with Execute as the default,
+  // opening the dialog on a closed breaker and pressing Return started the
+  // trip. The review that follows defaults to Cancel, but an administrator may
+  // switch the review off, and then nothing stood between Return and the field
+  // (UX audit 2026-11-25, item 3.3; docs/client/ux/dialogs.md §4). Manual input
+  // keeps the ordinary default: it writes a value, not a command.
+  if (!model_->manual()) {
+    accept_button->setAutoDefault(false);
+    accept_button->setDefault(false);
+    if (QPushButton* cancel = ui.buttonBox->button(QDialogButtonBox::Cancel))
+      cancel->setDefault(true);
+  }
 
   dialog_service_.parent_widget = this;
   model_->set_dialog_service(&dialog_service_);
@@ -63,8 +79,28 @@ WriteDialog::WriteDialog(std::shared_ptr<WriteModel> model, QWidget* parent)
 
   setWindowTitle(QString::fromStdU16String(model_->GetWindowTitle()));
 
+  // The path, not the bare name: two substations' «Силовой выключатель» are
+  // told apart only by what is above them (UX audit 2026-11-25, item 3.1).
   ui.descriptionLabel->setText(
-      QString::fromStdU16String(model_->GetSourceTitle()));
+      QString::fromStdU16String(model_->GetObjectPath()));
+  ui.descriptionLabel->setWordWrap(true);
+
+  // Manual input and a control command share this form, and differed only in
+  // the accept button's word, so an operator could believe a breaker opened
+  // when only the system's value changed, or the reverse (audit item 3.4).
+  if (model_->manual()) {
+    auto* note = new QLabel(
+        tr("The value is entered into the system by hand; no command is sent "
+           "to the equipment."),
+        this);
+    note->setObjectName(QStringLiteral("manualNoteLabel"));
+    note->setWordWrap(true);
+    ui.verticalLayout->insertWidget(
+        ui.verticalLayout->indexOf(ui.descriptionLabel) + 1, note);
+    // «Блокировка» alone does not say what it does: it makes the Server ignore
+    // the device's telemetry for this object until it is unblocked.
+    ui.lockCheckBox->setText(tr("Ignore values from the device"));
+  }
   ui.currentValueLabel->setText(
       QString::fromStdU16String(model_->GetCurrentValue(true)));
 
